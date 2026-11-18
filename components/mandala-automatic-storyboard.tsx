@@ -1,9 +1,10 @@
 "use client";
-import {useMemo} from "react";
+import {useMemo,useState} from "react";
 import {ArrowRight,Film,Play} from "lucide-react";
 import {suggestVideoConcept} from "@/lib/mandala/auto-video-concept.mjs";
 import {getVideoCreativeDirections,applyVideoCreativeDirection} from "@/lib/mandala/video-creative-directions.mjs";
 import {buildAlignedStorySceneGuides} from "@/lib/mandala/storyboard-content-alignment.mjs";
+import {resolveSelectedVideoFilm} from "@/lib/mandala/video-story-selection.mjs";
 import {conceptSceneAlignment,storyReviewRequired} from "@/lib/mandala/video-story-review.mjs";
 import {MandalaStoryboardSceneSketch} from "./mandala-storyboard-scene-sketch";
 import {planReviewedFilmedStory,planReviewedStoryWithPhotos,isReviewedFilmedStorySequence,
@@ -22,6 +23,7 @@ type Props={
  appliedStoryKey?:string|null;
  phrases:readonly string[];transcript:object|null;approvedConcept:ApprovedVideoConcept|null;
  draftConcept?:ApprovedVideoConcept|null;
+ suggestedConcept?:ApprovedVideoConcept|null;selectedDirectionId?:string|null;
  scenes:readonly unknown[];appliedShots:readonly Shot[]|null;
  resolveMedia:(id:string)=>{poster:string|null;title:string};
  disabled:boolean;
@@ -66,19 +68,22 @@ const clock=(time:number)=>{
 
 export function MandalaAutomaticStoryboard({
  locale,goal,theme,durationSeconds,aspect,styleIndex,pace,personalization,appliedStoryKey,selectedTopic=null,
- phrases,transcript,approvedConcept,draftConcept=null,scenes,appliedShots,resolveMedia,disabled,onApply,onChooseQuality,fiveSceneShots
+ phrases,transcript,approvedConcept,draftConcept=null,suggestedConcept=null,selectedDirectionId=null,
+ scenes,appliedShots,resolveMedia,disabled,onApply,onChooseQuality,fiveSceneShots,onOpenIdeas
 }:Props){
  const t=words[locale];
+ const [expandedScene,setExpandedScene]=useState<number|null>(null);
  const phraseKey=phrases.join("\u001f");
  const personalizationKey=JSON.stringify(personalization??null);
  // Concept and Story get the SAME confirmed Goals/Ideas/phrases/transcript.
- const suggested=useMemo(()=>suggestVideoConcept({
+ const localSuggested=useMemo(()=>suggestVideoConcept({
   locale,goal,theme,styleIndex,phrases:phraseKey?phraseKey.split("\u001f"):[],
   speechTranscript:transcript,personalization:JSON.parse(personalizationKey),
   selectedTopicId:selectedTopic?.topicId||null,creativeBrief:selectedTopic?.brief||null
  }) as unknown as ApprovedVideoConcept,
  [locale,goal,theme,styleIndex,phraseKey,transcript,personalizationKey,
   selectedTopic?.topicId,selectedTopic?.brief]);
+ const suggested=suggestedConcept||localSuggested;
  // Ideas initially shows the first creative direction even before approval.
  // Story must use that exact screenplay, or the current choice/edit, not raw tags.
  const defaultDirection=useMemo(()=>getVideoCreativeDirections(suggested,locale)[0],
@@ -88,8 +93,12 @@ export function MandalaAutomaticStoryboard({
   [suggested,defaultDirection]);
  const sameIntent=(candidate:ApprovedVideoConcept|null|undefined)=>Boolean(candidate&&
   (candidate.signature===suggested.signature||candidate.baseSignature===suggested.signature));
- const concept=(sameIntent(draftConcept)?draftConcept:null)||
-  (sameIntent(approvedConcept)?approvedConcept:null)||defaultFilm;
+ const currentDraft=sameIntent(draftConcept)?draftConcept:null;
+ const currentApproved=sameIntent(approvedConcept)?approvedConcept:null;
+ const choice=resolveSelectedVideoFilm<ApprovedVideoConcept>({
+  base:suggested,locale,selectedDirectionId,draft:currentDraft,approved:currentApproved
+ });
+ const concept=choice.concept||defaultFilm;
  const scriptSceneAlignment=conceptSceneAlignment(concept);
  const scriptNeedsReview=storyReviewRequired(concept);
  const guides=useMemo(()=>buildAlignedStorySceneGuides({
@@ -130,7 +139,7 @@ export function MandalaAutomaticStoryboard({
    .map(scene=>[scene.id,scene]));
  // Reviewed planner currently returns depictedEventVerified:false.
  // This also gates the curated six-shot scripts, not only the new v3 corpus.
- const eligible=filmedProposalReady&&!v3RequiresActionProof&&
+ const eligible=filmedProposalReady&&!v3RequiresActionProof&&!choice.selectionMissing&&
   scriptSceneAlignment.aligned&&!scriptNeedsReview&&
   proposal.shots.every(shot=>{
    const photo=STORY_PHOTO_BY_ID.get(shot.sceneId);
@@ -170,7 +179,7 @@ export function MandalaAutomaticStoryboard({
 
  // The author's six scenes stay six scenes; never fold them into five cards.
  // A five-cut editor montage is an explicitly separate legacy 20s flow.
- const manualFiveReady=Boolean(!v3RequiresActionProof&&durationSeconds===20&&fiveSceneShots?.length===5&&
+ const manualFiveReady=Boolean(!choice.selectionMissing&&!v3RequiresActionProof&&durationSeconds===20&&fiveSceneShots?.length===5&&
   fiveSceneShots.every(shot=>isReviewedFilmedStoryScene(sceneCatalog.get(shot.sceneId),"portrait")));
  const visibleCount=manualFiveReady?5:guides.scenes.length;
  const compactCards=Array.from({length:visibleCount},(_,index)=>{
@@ -180,7 +189,20 @@ export function MandalaAutomaticStoryboard({
   const to=manualFiveReady&&shot?shot.startSeconds+shot.durationSeconds:(index+1)*durationSeconds/guides.scenes.length;
   return {guide,shot,from,to};
  });
+ if(choice.selectionMissing)return <section className={styles.storyAutoRoot}
+  data-video-auto-storyboard data-storyboard-selection-missing
+  data-storyboard-selected-direction={selectedDirectionId||undefined} role="status">
+   <strong>{locale==="ru"?"История изменилась":locale==="es"?"La historia ha cambiado":"Story selection changed"}</strong>
+   <p>{locale==="ru"?"Выбранный фильм не соответствует текущим настройкам. Вернитесь в «Идеи» и выберите историю заново.":
+     locale==="es"?"La historia seleccionada no corresponde a los ajustes actuales. Vuelve a Ideas para elegirla.":
+     "The selected film is no longer available for these preferences. Reopen Ideas and choose a story."}</p>
+   <button type="button" className={styles.storyAutoApply} onClick={onOpenIdeas}>
+    {t.ideas}<ArrowRight size={17}/>
+   </button>
+ </section>;
  return <div className={styles.storyAutoRoot} data-video-auto-storyboard
+  data-storyboard-selection-source={choice.source}
+  data-storyboard-selected-direction={choice.directionId||undefined}
   data-storyboard-source={manualFiveReady||applied?"montage":replacingGraphics?"filmed-replacement":"ideas"}
   data-storyboard-scenes={compactCards.length}
   data-storyboard-clips={manualFiveReady?fiveSceneShots?.length||0:eligible?proposal.shots.length:0}
@@ -195,7 +217,7 @@ export function MandalaAutomaticStoryboard({
   data-storyboard-graphics-mode="screenplay-scene-sketch"
   data-storyboard-media-ready={manualFiveReady||eligible}
   data-storyboard-action-proof={v3RequiresActionProof?"editorial_unverified":"legacy"}
-  data-storyboard-selected-direction={concept.creativeDirectionId||undefined}>
+  data-storyboard-concept-direction={concept.creativeDirectionId||undefined}>
   <div className={styles.storyAutoHead}>
    {concept.creativeTitle?<strong data-video-story-selected-title>{concept.creativeTitle}</strong>:null}
    <p className={styles.storyAutoMeta}>
@@ -222,6 +244,7 @@ export function MandalaAutomaticStoryboard({
     return <li key={index} className={styles.storyAutoCard}
       data-video-story-scene={index+1} data-concept-scene-id={authored?.sceneId||undefined}
       data-video-story-media-matched={Boolean(shot)}
+      data-storyboard-expanded={expandedScene===index}
       data-story-media-kind={photo?"photo":shot?"video":"missing"}
       data-storyboard-continuity={authored?.continuityKeys?.join(",")||undefined}>
      <div className={styles.storyAutoPoster}>
@@ -240,7 +263,13 @@ export function MandalaAutomaticStoryboard({
       <span className={styles.srOnly}>{t.scene} {index+1}</span>
       <small data-storyboard-scene-time>{clock(from)}–{clock(to)}</small>
       <strong>{title}</strong>
-      <p data-storyboard-scene-action>{guide.visual}</p>
+      <button type="button" className={styles.storyAutoAction}
+        data-storyboard-scene-action aria-expanded={expandedScene===index}
+        title={guide.visual}
+        aria-label={(locale==="ru"?"Раскрыть действие сцены ":locale==="es"?"Ver acción de escena ":"Expand scene action ")+(index+1)+": "+guide.visual}
+        onClick={()=>setExpandedScene(current=>current===index?null:index)}>
+        {guide.visual}
+      </button>
       {authored?<small data-storyboard-media-brief>
         {locale==="ru"?"Подбираем видео или фото именно этого действия":
           locale==="es"?"Vídeo o foto de esta acción exacta":
