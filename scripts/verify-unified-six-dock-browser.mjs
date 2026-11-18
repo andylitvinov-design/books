@@ -955,7 +955,7 @@ try{
  await login.getByRole('button',{name:'Продолжить просмотр'}).click();
  await login.waitFor({state:'hidden',timeout:15000});
  // The mode switch itself never prompts or creates a private account.
- await page.locator('[data-profile-mode="work"]').click();
+ await page.locator('[data-profile-space-work]').click();
  await page.waitForURL(/\/ru\/practice\/?$/,{timeout:45000});
  await page.locator('[data-practice-showcase]').waitFor({state:'visible',timeout:45000});
  results.push({journey:"Public Profile → guest action opens OAuth choice → dismiss → free Life/Work mode switch",passed:true});
