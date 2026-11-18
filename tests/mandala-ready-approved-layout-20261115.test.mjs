@@ -82,12 +82,18 @@ test("Ready keeps the local Canvas compositor active but visually hidden",()=>{
 test("Montage Settings Audio works on a real iPhone touch and remains keyboard accessible",()=>{
  const idx=studio.indexOf("data-video-montage-open-audio");
  assert.ok(idx>0);
- const button=studio.slice(idx,idx+460);
- assert.ok(button.includes('onPointerUp={()=>{setMontagePanel("audio");setBasicPanelTab("music");}}'));
- assert.ok(button.includes('onClick={()=>{setMontagePanel("audio");setBasicPanelTab("music");}}'));
+ const button=studio.slice(idx,idx+400);
+ assert.ok(button.includes('onPointerUp={openMontageAudioFromSettings}'));
+ assert.ok(button.includes('onClick={openMontageAudioFromSettings}'));
+ assert.ok(studio.includes('const montageAudioNavQueuedRef=useRef(false)'));
+ assert.ok(studio.includes('window.requestAnimationFrame(()=>{\n      montageAudioNavQueuedRef.current=false'));
+ assert.ok(studio.includes('montageAudioShortcutIgnoreNextUntilRef.current=performance.now()+600'));
+ assert.ok(studio.includes('performance.now()<montageAudioShortcutIgnoreNextUntilRef.current'));
+
  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
  for(const name of ["montageAudio","ownAudioStep","montageAudioTab","montageAudioAfterExport"])
    assert.ok(browser.includes('if(engine==="webkit")await '+name+'.tap();'),name+" requires actual WebKit touch");
  assert.ok(browser.includes('toHaveAttribute("data-montage-panel","audio",{timeout:15000})'));
+ assert.ok(browser.includes('requestAnimationFrame(()=>requestAnimationFrame(resolve))'));
  assert.ok(browser.includes("ready-real-encoded-mp4-auth-gate-verified"));
 });

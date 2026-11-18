@@ -2073,6 +2073,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [montageStyleSettingsOpen,setMontageStyleSettingsOpen] = useState(false);
   // Montage is a preference-first wizard: detailed timeline is available only under Text.
   const [montagePanel,setMontagePanel] = useState<"settings"|"effects"|"text"|"concept"|"audio"|"promo">("effects");
+  const montageAudioNavQueuedRef=useRef(false);
+  const montageAudioShortcutIgnoreNextUntilRef=useRef(0);
   const [hypnoEntryGroup,setHypnoEntryGroup] = useState<"visual"|"audio"|"effects">("visual");
   const [storyFormat,setStoryFormat] = useState<"visual"|"motion"|"talking_character"|"ai_cinematic">("visual");
   const [approvedVideoConcept,setApprovedVideoConcept] = useState<ApprovedVideoConcept|null>(null);
@@ -5804,7 +5806,23 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     return startFromHero();
   };
 
+  // Safari may retarget the compatibility click to the *new* Audio footer
+  // after pointer-up unmounts the Settings shortcut, opening Text instead.
+  // Defer this single navigation until pointer-up/click dispatch completes.
+  const openMontageAudioFromSettings=()=>{
+    if(montageAudioNavQueuedRef.current)return;
+    montageAudioNavQueuedRef.current=true;
+    window.requestAnimationFrame(()=>{
+      montageAudioNavQueuedRef.current=false;
+      if(!aliveRef.current)return;
+      montageAudioShortcutIgnoreNextUntilRef.current=performance.now()+600;
+      setMontagePanel("audio");setBasicPanelTab("music");
+    });
+  };
+
   const continueMontageOrGenerate=()=>{
+    if(montageAudioNavQueuedRef.current||
+      performance.now()<montageAudioShortcutIgnoreNextUntilRef.current)return;
     // Style → Audio → Text → Story → Montage PRO; format choices navigate,
     // but never charge or render without the destination workspace's checks.
     if(montagePanel==="effects"){
@@ -9021,10 +9039,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               </button>
               <button type="button" data-video-montage-open-audio
                 disabled={recording||preparing}
-                // Safari can lose click as Settings unmounts; commit the same
-                // Audio tab on pointer release. Click remains for keyboard.
-                onPointerUp={()=>{setMontagePanel("audio");setBasicPanelTab("music");}}
-                onClick={()=>{setMontagePanel("audio");setBasicPanelTab("music");}}>
+                // One gesture, one deferred transition: no ghost Add Text click.
+                onPointerUp={openMontageAudioFromSettings}
+                onClick={openMontageAudioFromSettings}>
                 <Music2 size={17} aria-hidden="true"/>
                 {locale==="ru"?"Расширенные настройки аудио":locale==="es"?"Opciones de audio":"Advanced audio"}
               </button>

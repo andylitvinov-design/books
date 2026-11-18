@@ -609,6 +609,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       else await montageAudio.click();
       await expect(page.locator('[data-video-basic-editor]'))
         .toHaveAttribute("data-montage-panel","audio",{timeout:15000});
+      // Two native paint frames catch WebKit's delayed compatibility click:
+      // it must not ghost-activate the Audio → Text footer after this tap.
+      await page.evaluate(()=>new Promise(resolve=>
+        requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+      await expect(page.locator('[data-video-basic-editor]')).toHaveAttribute("data-montage-panel","audio");
       await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
       const compactGrid=page.locator('[data-video-audio-compact-grid]');
       await expect(compactGrid).toBeVisible();
