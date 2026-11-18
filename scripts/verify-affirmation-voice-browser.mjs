@@ -605,8 +605,15 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await durationSelect.selectOption("10");
       await expect(durationSelect).toHaveValue("10");
       const montageAudio=page.locator('[data-video-montage-open-audio]');
-      await montageAudio.click();
-      await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
+      if(engine==="webkit")await montageAudio.tap();
+      else await montageAudio.click();
+      await expect(page.locator('[data-video-basic-editor]'))
+        .toHaveAttribute("data-montage-panel","audio",{timeout:15000});
+      // Two native paint frames catch WebKit's delayed compatibility click:
+      // it must not ghost-activate the Audio → Text footer after this tap.
+      await page.evaluate(()=>new Promise(resolve=>
+        requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+      await expect(page.locator('[data-video-basic-editor]')).toHaveAttribute("data-montage-panel","audio");
       await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
       const compactGrid=page.locator('[data-video-audio-compact-grid]');
       await expect(compactGrid).toBeVisible();
@@ -967,7 +974,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         // Montage Audio step, never in the intentionally hidden Style footer.
         await openMontageSettingsViaQuality(page);
         const ownAudioStep=page.locator('[data-video-montage-open-audio]');
-        await ownAudioStep.click();
+        if(engine==="webkit")await ownAudioStep.tap();
+        else await ownAudioStep.click();
+        await expect(page.locator('[data-video-basic-editor]')).toHaveAttribute("data-montage-panel","audio");
         await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
         const ownCreate=page.locator("[data-video-quick-generate]");
         await expect(ownCreate).toBeEnabled({timeout:30000});
@@ -1277,7 +1286,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await openMontageSettingsViaQuality(page);
       const montageAudioTab=page.locator('[data-video-montage-open-audio]');
       await expect(montageAudioTab).toBeVisible();
-      await montageAudioTab.click();
+      if(engine==="webkit")await montageAudioTab.tap();
+      else await montageAudioTab.click();
+      await expect(page.locator('[data-video-basic-editor]')).toHaveAttribute("data-montage-panel","audio");
       await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
       const generate=page.locator("[data-video-quick-generate]");
       await expect(generate).toBeVisible({timeout:30000});
@@ -1310,6 +1321,18 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         await montageProOffer.locator('[data-video-montage-pro-choice="free"]').click();
         await expect(page.locator("[data-mandala-free-video]")).toHaveAttribute("data-active-workspace","ready");
         await expect(page.locator("[data-video-ready]")).toHaveAttribute("data-ready-state","choose");
+        // Safari cannot export from a display:none Canvas; visually keep only
+        // Ready's single public player, and preserve the hidden compositor.
+        const readySourceStage=page.locator("[data-video-live-stage]");
+        const sourceCompositor=await readySourceStage.evaluate(node=>{
+          const box=node.getBoundingClientRect();
+          return {display:getComputedStyle(node).display,width:box.width,height:box.height,
+            canvas:Boolean(node.querySelector("canvas[data-mandala-cinematic-canvas]"))};
+        });
+        assert.notEqual(sourceCompositor.display,"none","Ready must retain Safari's real Canvas");
+        assert.ok(sourceCompositor.canvas&&sourceCompositor.width>0&&sourceCompositor.width<=4&&
+          sourceCompositor.height>0&&sourceCompositor.height<=4,
+          "Ready encoder must remain mounted at 2px without a duplicate visible player");
         await expect(page.locator("[data-ready-video-tiers]")).toHaveCount(0);
         const readyGenerate=page.locator("[data-ready-generate]");
         // The primary action must follow the player immediately on phone.
@@ -1381,6 +1404,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         await expect(page.locator("[data-ready-generating]")).toBeVisible({timeout:20000});
         const readyCheckin=page.locator("[data-ready-checkin] [data-ready-sequential-checkin]");
         await expect(readyCheckin).toBeVisible({timeout:20000});
+        await expect(readyCheckin).toContainText("1 / 7");
         await expect(readyCheckin.locator("[data-ready-checkin-score]")).toHaveCount(11);
         const firstTone=await readyCheckin.getAttribute("data-checkin-tone");
         const firstImage=await readyCheckin.locator("img").getAttribute("src");
@@ -1389,9 +1413,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         await readyCheckin.locator('[data-ready-checkin-score="5"]').click();
         await expect(readyCheckin).not.toHaveAttribute("data-checkin-tone",firstTone,{timeout:5000});
         await expect(readyCheckin.locator("img")).not.toHaveAttribute("src",firstImage,{timeout:5000});
+        await expect(readyCheckin).toContainText("2 / 7");
         // No unsolicited optional survey should cover the intentional export.
         // No retired floating survey or overlay may block the actual export.
         await expect(page.locator("[data-video-effect-overlay]")).toHaveCount(0);
+        await expect(page.locator("[data-video-effect-reopen]")).toBeHidden();
         // The idle source remains preload=none until the user's actual Create
         // gesture; Safari must then start a physical decode, never a CSS-only
         // preview or an unverified download.
@@ -1484,6 +1510,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           // The optional progress/check-in overlay must get out of the way
           // automatically when verified Ready appears, without bypassing the UI.
           await expect(page.locator("[data-video-effect-overlay]")).toHaveCount(0);
+          await expect(page.locator("[data-video-effect-reopen]")).toBeHidden();
+          await expect(readyCheckin).toBeVisible();
+          await expect(readyCheckin).toContainText("2 / 7");
           // The visitor-started check-in can remain inline, never above Save.
           // Clicking Save below proves it does not intercept the actual action.
           await readyView.locator("[data-ready-save]").click();
@@ -1677,7 +1706,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await page.locator('[data-video-quick-control="editor"]').click();
       await openMontageSettingsViaQuality(page);
       const montageAudioAfterExport=page.locator('[data-video-montage-open-audio]');
-      await montageAudioAfterExport.click();
+      if(engine==="webkit")await montageAudioAfterExport.tap();
+      else await montageAudioAfterExport.click();
+      await expect(page.locator('[data-video-basic-editor]')).toHaveAttribute("data-montage-panel","audio");
       await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
       // Leaving an attached stale voice invalidates export; selected music is independent.
       const soundtrackLabels=await page.locator("[data-video-live-audio]").allTextContents();
