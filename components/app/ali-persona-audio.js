@@ -35,7 +35,10 @@ function deviceSpeech(persona,locale,finish){
  speech.speak(utterance)
  return ()=>{utterance.onend=null;utterance.onerror=null;speech.cancel()}
 }
-export function playAliPersonaAudio(personaId,locale,onPlaying=()=>{}){
+/** @param {string} personaId
+ * @param {'en'|'ru'|'es'} locale
+ * @param {(isPlaying:boolean)=>void} [onPlaying] */
+export function playAliPersonaAudio(personaId,locale,onPlaying=(isPlaying)=>{}){
  stopAliPersonaAudio()
  const persona=getAliPersona(personaId)
  if(typeof window==='undefined')return ()=>{}
