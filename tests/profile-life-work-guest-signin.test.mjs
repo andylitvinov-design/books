@@ -10,7 +10,9 @@ test('Profile Life and Work keep existing public mode switch',()=>{
  assert.match(mode,/data-profile-mode="live"/)
  assert.match(mode,/data-profile-mode="work"/)
  assert.match(profile,/ProfileModeSwitch locale=\{selected\} active="live"/)
- assert.match(work,/ProfileModeSwitch/)
+ assert.match(work,/data-profile-mode-switch/)
+ assert.match(work,/data-profile-mode="live"/)
+ assert.match(work,/data-profile-mode="work"/)
 })
 test('guest Life actions open a modal; mode switch bypasses gate',()=>{
  const source=read('components/app/app-workspace.jsx')
