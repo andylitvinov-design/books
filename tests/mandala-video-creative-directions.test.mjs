@@ -85,8 +85,12 @@ test("category Love yields original anonymous films; unknown intent and transcri
     .test(d.idea+" "+d.story)));
   assert.ok(suggestions.every(d=>d.storyboard.every(x=>x.sourceVerified===false)));
   const unknown=suggestVideoConcept({locale,goal:"unrelated unknown topic",theme:"relationships"});
-  assert.equal(getVideoCreativeDirections({...unknown,semanticConfidence:"low"},locale).length,0,
-    "An unknown topic does not justify invented personal history");
+  const unknownDirections=getVideoCreativeDirections({...unknown,semanticConfidence:"low"},locale);
+  assert.equal(unknownDirections.length,3,
+    "An unfamiliar explicit goal still receives three clearly fictional film directions");
+  assert.ok(unknownDirections.every(direction=>
+    direction.provenance==="v3_authored_composition"&&direction.review.status==="pass"&&
+    direction.storyboard.length===direction.conceptScenes.length));
   const speaking=suggestVideoConcept({locale,goal:labels[locale],theme:"relationships",
    selectedTopicId:"ready-relationship",speechTranscript:{text:"Create a video from what I am saying"}});
   assert.equal(getVideoCreativeDirections(speaking,locale).length,0);
@@ -141,7 +145,7 @@ test("mobile editor selects directions, hides advanced settings, and carries app
  assert.match(css,/\.panel \.actions\{position:fixed/);
  assert.match(studio,/selectedTopic=\{selectedConceptTopic\}/);
  assert.match(studio,/!approved\.storyboard\?\.length&&cinematicPlan/);
- assert.match(montage,/approvedConcept\?\.baseSignature===suggested\.signature/);
+ assert.match(montage,/sameIntent\(approvedConcept\)/);
  assert.match(montage,/selectedTopicId:selectedTopic\?\.topicId/);
  assert.match(montage,/buildAlignedStorySceneGuides/);
 });
