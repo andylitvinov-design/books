@@ -96,3 +96,8 @@
 .frame .mouthTalk{display:none!important;opacity:0!important}
 .frame .mouthRest{opacity:1!important}
 .frame[data-photo-persona] .livingPortrait{animation:none!important;transform:none!important}
+
+/* Never display animated cartoon eye or mouth under a photographic portrait. */
+.frame[data-photo-persona] .illustration{display:none!important}
+.frame .head,.frame .eyes,.frame .mouthTalk,.frame .mouthRest{animation:none!important;transform:none!important}
+.frame[data-photo-persona] .livingPortraitMouth{display:none!important}
