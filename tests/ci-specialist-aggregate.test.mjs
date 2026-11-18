@@ -1,4 +1,4 @@
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance } from '../lib/ci/production-base-impact.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -2501,4 +2501,121 @@ test('stale protected BASE with disjoint public image advance reuses green Speci
  await assert.rejects(()=>verify({...api,compare:async()=>({...compare,
    files:[{filename:'lib/crm/retired-route.mjs',status:'modified'}]})},
    ctx,source,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);
+});
+
+test('trusted policy plus independently proven production changes may be composed without another Core wave',async()=>{
+ const current='c'.repeat(40), prior='d'.repeat(40), base=BASE;
+ const safe=[
+   'scripts/ci-specialist-aggregate.mjs',
+   'tests/ci-specialist-aggregate.test.mjs',
+   'components/shamanica-mobile.tsx',
+   'lib/shamanica-recommendations.mjs',
+   'docs/guides/wellbeing-guide.md',
+   'public/images/new-production-thumb.webp',
+ ];
+ const diff=(files,other={})=>({
+   status:'ahead',ahead_by:2,behind_by:0,total_commits:2,
+   base_commit:{sha:base},merge_base_commit:{sha:base},
+   commits:[{sha:prior},{sha:current}],
+   files:files.map(filename=>({filename,status:'modified'})),...other,
+ });
+ const candidate=['components/my-coach-live-dialogue.jsx',
+   'lib/coaching/groq-coach-provider.mjs'];
+ assert.equal(safeTrustedPolicyAdvance(diff(safe),base,current,candidate),true,
+   'CI policy then unrelated app/media/docs should not discard successful Core');
+ for(const forbidden of [
+   'app/api/auth/route.js','package-lock.json',
+   'supabase/migrations/20261118.sql',
+   '.github/workflows/hh-pr-core-release.yml',
+   'components/my-coach-live-dialogue.jsx',
+   'components/coaching-live-dialogue.jsx',
+   'lib/ci/required-gate-policy.mjs',
+   'docs/operations/CI_RELEASE_POLICY.md',
+   'docs/guides/production-release-policy.md',
+ ]){
+   assert.equal(safeTrustedPolicyAdvance(diff([...safe,forbidden]),base,current,candidate),
+     false,forbidden);
+ }
+ for(const broken of [
+   {status:'diverged'},
+   {behind_by:1},
+   {commits:[{sha:current}]},
+   {merge_base_commit:{sha:prior}},
+   {files:[{filename:'scripts/ci-specialist-aggregate.mjs',status:'removed'}]},
+   {files:[{filename:'components/shamanica-mobile.tsx',status:'renamed',previous_filename:'components/old.tsx'}]},
+   {files:[{filename:safe[0],status:'modified'},{filename:safe[0],status:'modified'}]},
+   {files:Array(100).fill({filename:safe[0],status:'modified'})},
+ ]){
+   assert.equal(safeTrustedPolicyAdvance(diff(safe,broken),base,current,candidate),false,
+     'unverified or unsafe compound compare');
+ }
+ assert.equal(safeTrustedPolicyAdvance(diff(safe.slice(2)),base,current,candidate),false,
+   'without policy change there is no trusted policy exception');
+ assert.equal(safeTrustedPolicyAdvance(diff(safe),base,current,
+   [...candidate,'scripts/ci-specialist-aggregate.mjs']),false,'candidate cannot certify itself');
+
+ const changedRows=[{filename:candidate[0],status:'M'}];
+ let used=false;
+ const api={target:async()=>current,compare:async()=>diff(safe)};
+ const result=await revalidateAfterTrustedPolicyAdvance(api,
+   {repo,number:27,head:SHA,base},{changedRows},{
+     loadPolicy:async sha=>({verify:async (_api,ctx,files,options)=>{
+       assert.equal(sha,current);
+       assert.equal(options.trustedPolicyBaseSha,current);
+       assert.equal(ctx.head,SHA);
+       assert.equal(files.changedRows,changedRows);
+       used=true;return {risk:'STRICT',expected:[],executed:[],advisory:{}};
+     }})
+   });
+ assert.equal(used,true);
+ assert.equal(result.policyRevalidatedAgainst,current);
+});
+
+test('real CI policy and disjoint dock browser QA change preserve successful sensitive Core',()=>{
+ const base=BASE,latest='c'.repeat(40),intermediate='d'.repeat(40);
+ const qa='scripts/verify-unified-six-dock-browser.mjs';
+ const compare=(filenames,opts={})=>({
+   status:'ahead',ahead_by:2,behind_by:0,total_commits:2,
+   base_commit:{sha:base},merge_base_commit:{sha:base},
+   commits:[{sha:intermediate},{sha:latest}],
+   files:filenames.map(filename=>({filename,status:'modified'})),...opts,
+ });
+ const target=[
+   'scripts/ci-specialist-aggregate.mjs',
+   'tests/ci-specialist-aggregate.test.mjs',
+   'tests/ci-specialist-wait.test.mjs',
+   qa,
+ ];
+ const candidates=[
+   'app/api/holistic-agent/turn/route.js',
+   'components/mandala-video-personalization.tsx',
+   'lib/mandala/dot-story-photo-fallback.mjs',
+   'app/[locale]/services/page.tsx',
+ ];
+ for(const changed of candidates) {
+   assert.equal(safeTrustedPolicyAdvance(compare(target),base,latest,[changed]),true,
+     'real CI-policy + dock-browser production delta must not restart #5025/#5036/#5034/#5041');
+   assert.equal(safeIndependentQaAdvance(compare([qa]),base,latest,[changed]),true,
+     'pure independent browser QA should not change valid Core');
+ }
+ for(const bad of [
+   'scripts/verify-affirmation-voice-browser.mjs',
+   'scripts/verify-public-services-production.mjs',
+   'scripts/verify-admin-auth-browser.mjs',
+   'scripts/ci-pr-readiness.mjs',
+   '.github/workflows/hh-pr-core-release.yml',
+   'app/api/auth/route.js',
+ ]) {
+   assert.equal(safeTrustedPolicyAdvance(compare([...target.slice(0,3),bad]),base,latest,
+     candidates),false,bad);
+   assert.equal(safeIndependentQaAdvance(compare([bad]),base,latest,candidates),false,bad);
+ }
+ assert.equal(safeTrustedPolicyAdvance(compare(target),base,latest,[qa]),false,
+   'changed browser QA cannot certify a candidate changing the same file');
+ assert.equal(safeIndependentQaAdvance(compare([qa],{status:'diverged'}),base,latest,candidates),false);
+ assert.equal(safeIndependentQaAdvance(compare([qa],{files:[{
+   filename:qa,status:'removed'}]}),base,latest,candidates),false);
+ assert.equal(safeIndependentQaAdvance(compare([qa],{commits:[]}),base,latest,candidates),false);
+ assert.equal(safeIndependentQaAdvance(compare([qa],{files:[
+   {filename:qa,status:'modified'},{filename:qa,status:'modified'}]}),base,latest,candidates),false);
 });
