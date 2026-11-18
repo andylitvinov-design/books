@@ -1,19 +1,6 @@
 name: HH PR three-cohort evidence backfill
 on:
   workflow_dispatch:
-  push:
-    branches: ['codex/bootstrap-books']
-    paths:
-      - '.github/workflows/hh-pr-three-cohort-backfill.yml'
-      - 'scripts/ci-pr-three-cohorts.cjs'
-      - 'scripts/ci-pr-cohort-backfill.cjs'
-      - 'scripts/ci-pr-cohort-compact.cjs'
-      - 'scripts/ci-pr-gap-attribution.cjs'
-      - 'scripts/ci-pr-graphql-timeline.cjs'
-      - 'tests/ci-pr-three-cohorts.test.cjs'
-      - 'tests/ci-pr-cohort-compact.test.cjs'
-      - 'tests/ci-pr-gap-attribution.test.cjs'
-      - 'tests/ci-pr-graphql-timeline.test.cjs'
   pull_request:
     branches: ['codex/bootstrap-books']
     paths:
@@ -51,7 +38,7 @@ jobs:
     if: >-
       github.repository == 'andylitvinov-design/books' &&
       github.ref == 'refs/heads/codex/bootstrap-books' &&
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     concurrency:
