@@ -20,14 +20,33 @@ const AUDIO_HEADERS={'Content-Type':'audio/mpeg',
 
 // Public, fixed editorial text only. Never synthesize visitor data or accept
 // arbitrary text, voice IDs or query arguments. Share EXISTING voice budgets.
+
+const validRequest=(request,params)=>{
+ if(request.headers.get('sec-fetch-site')==='cross-site')return null
+ const url=new URL(request.url)
+ const {locale,persona}=params
+ if(!['en','ru','es'].includes(locale)||!isAliPersonaId(persona)||
+  url.search||url.pathname!==`/api/ali/voice/${locale}/${persona}`)return null
+ return {locale,persona}
+}
+
+// A cached readiness check prevents a delayed 503 from blocking iOS user-gesture
+// fallback TTS. It never requests audio or spends a TTS character.
+export async function HEAD(request,{params}){
+ const selection=validRequest(request,await params)
+ if(!selection)return new Response(null,{status:400,headers:{'Cache-Control':'no-store'}})
+ const available=Boolean(googleChirpConfig()||myCoachFishConfig())
+ return new Response(null,{status:available?204:503,headers:{
+  'Cache-Control':'public,max-age=60,s-maxage=300',
+  'X-Content-Type-Options':'nosniff'
+ }})
+}
+
 export async function GET(request,{params}){
  try{
-  if(request.headers.get('sec-fetch-site')==='cross-site')throw new AppError('ALI_VOICE_CROSS_SITE',403)
-  const {locale,persona}=await params
-  const pathname=new URL(request.url)
-  if(!['en','ru','es'].includes(locale)||!isAliPersonaId(persona)||
-   pathname.search||pathname.pathname!==`/api/ali/voice/${locale}/${persona}`)
-   throw new AppError('ALI_VOICE_INVALID',400)
+  const selection=validRequest(request,await params)
+  if(!selection)throw new AppError('ALI_VOICE_INVALID',400)
+  const {locale,persona}=selection
   const text=aliPersonaGreeting(persona,locale)
   const config=getAppConfig()
   const chirp=googleChirpConfig()
