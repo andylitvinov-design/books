@@ -178,7 +178,7 @@ test('AI secretary product remains in Telegram Business, never unsupported V3 bo
 
 // Exercise the actual route with a sandboxed NextResponse, without real
 // provider calls, client data, Telegram sends or paid model processing.
-test('all 15 public service handoffs use Wave bot or a truthful 503 without switching chats',async()=>{
+test('all 15 public service handoffs use Ali bot or a truthful 503 without switching chats',async()=>{
  const raw=source('app/api/public/telegram-service-entry/route.js');
  const compiled=raw.replace(/^import\s+.*$/gm,'').replace(/^export\s+/gm,'');
  class Reply {
@@ -213,8 +213,9 @@ test('all 15 public service handoffs use Wave bot or a truthful 503 without swit
   assert.equal((await getHuman({url})).location,expectedBot,'ready bot takes service handoff independent of human automation');
   for(const unavailable of [getOffline,getDisabled,getTransportOff]){
    const response=await unavailable({url});
-   assert.equal(response.status,503,'unready Wave must not redirect to another chat');
-   assert.match(response.body,/Wave/);
+   assert.equal(response.status,503,'unready Ali must not redirect to another chat');
+   assert.match(response.body,/Ali/);
+   assert.doesNotMatch(response.body,/Wave/,'the public fallback uses the approved Ali name');
   }
   assert.match(redirect.headers['Cache-Control'],/no-store/);
  }
