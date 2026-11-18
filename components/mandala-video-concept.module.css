@@ -181,7 +181,7 @@
 .shotAction{color:#315345}
 .shotEmotion{display:block;margin-top:4px;color:#74887e;font-size:11px}
 @media(min-width:600px){
-  .directionGrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .directionGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .directionOption{align-content:start}
 }
 @media(max-width:359px){
@@ -239,3 +239,7 @@
 .storyReviewNotice p{font:500 12.5px/1.4 Arial,Helvetica,sans-serif;margin:0}
 .storyReviewNotice button{display:flex;align-items:center;justify-content:center;gap:6px;
   background:#dff3e7;border-color:#94cbb3}
+
+/* A short factual trace of the confirmed preferences used in the ranking. */
+.directionOption .directionFit{color:#346c59;font:600 11.5px/1.35 Arial,Helvetica,sans-serif;
+ overflow-wrap:anywhere}

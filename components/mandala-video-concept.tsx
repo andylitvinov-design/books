@@ -108,12 +108,12 @@ const COPY={
  }
 } as const;
 const DIRECTION_UI={
-  ru:{title:"Выберите историю",lead:"Три разных сюжета по вашей цели. Выберите тот, который откликается.",
-    badge:"Режиссёрские варианты",settings:"Творческие настройки",ideaEdit:"Изменить идею",ideaSave:"Сохранить идею",quality:"Уточните цель, чтобы получить три законченные истории. Сырой сценарий нельзя одобрить."},
-  en:{title:"Choose your story",lead:"Three different films inspired by your goal. Choose the one that feels right.",
-    badge:"Creative directions",settings:"Creative settings",ideaEdit:"Edit idea",ideaSave:"Save idea",quality:"Refine your goal to receive three complete film stories. An unfinished draft cannot be approved."},
-  es:{title:"Elige tu historia",lead:"Tres relatos distintos basados en tu objetivo. Elige el que más te inspire.",
-    badge:"Propuestas creativas",settings:"Ajustes creativos",ideaEdit:"Editar idea",ideaSave:"Guardar idea",quality:"Concreta tu objetivo para recibir tres historias completas. Un borrador incompleto no se puede aprobar."}
+  ru:{title:"Выберите историю",lead:"Два сюжета по вашей цели и выбранным состояниям. Выберите тот, который откликается.",
+    badge:"Режиссёрские варианты",settings:"Творческие настройки",ideaEdit:"Изменить идею",ideaSave:"Сохранить идею",quality:"Уточните цель, чтобы подобрать две законченные истории. Сырой сценарий нельзя одобрить."},
+  en:{title:"Choose your story",lead:"Two film stories selected for your goal and confirmed preferences. Choose the one that feels right.",
+    badge:"Creative directions",settings:"Creative settings",ideaEdit:"Edit idea",ideaSave:"Save idea",quality:"Refine your goal to receive two complete film stories. An unfinished draft cannot be approved."},
+  es:{title:"Elige tu historia",lead:"Dos historias elegidas según tu objetivo y preferencias confirmadas. Elige la que más te inspire.",
+    badge:"Propuestas creativas",settings:"Ajustes creativos",ideaEdit:"Editar idea",ideaSave:"Guardar idea",quality:"Concreta tu objetivo para recibir dos historias completas. Un borrador incompleto no se puede aprobar."}
 } as const;
 export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speechTranscript=null,ownerFields,profile=null,selectedTopic=null,durationSeconds=30,approvedConcept,draftConcept=null,signedIn,
   loginUnavailable,disabled,onRefreshLogin,onApprove,onDraftChange,onOpenGoal,onOpenStyle}:Props){
@@ -453,6 +453,17 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
              {("pitch" in direction&&direction.pitch)?String(direction.pitch):
                direction.storyboard?.[0]?.action||direction.idea}
            </span>
+           {Array.isArray(direction.matchFactors)?<small className={css.directionFit}
+             data-video-concept-matched-factors={direction.matchFactors.join(",")}>
+             {word("Учтено:","Based on:","Basado en:")}{" "}
+             {direction.matchFactors.map(key=>({
+               current:word("состояние сейчас","current state","estado actual"),
+               desired:word("желаемое чувство","desired feeling","estado deseado"),
+               focus:word("направление развития","growth focus","área de desarrollo"),
+               energy:word("уровень энергии","energy level","nivel de energía"),
+               topic:word("тема запроса","your goal","tu objetivo")
+             } as Record<string,string>)[key]||key).join(" · ")}
+           </small>:null}
          </button>)}
        </div>
      </section>:null}

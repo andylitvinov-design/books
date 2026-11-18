@@ -217,10 +217,10 @@ async function verifyWorkspaceHydration(browser,locale){
     await ideasConceptTab.tap();
     const concept=page.locator("[data-video-ideas-concept-panel]");
     await expect(concept).toBeVisible();
-    // Concept Intelligence v3: a specific goal has a real narrative and three
-    // distinct, touch-operable choices, never a catalog arrow-chain.
+    // Concept Intelligence: two personalized, touch-operable film choices,
+    // not a generic four-beat catalog summary.
     const directionCards=concept.locator("[data-video-concept-direction]");
-    if(await directionCards.count()===3){
+    if(await directionCards.count()===2){
       const ideaText=await directionCards.first().textContent();
       assert.doesNotMatch(ideaText||"",/→|The story opens with/i);
       const firstStory=await concept.locator("[data-video-concept-paragraph]").textContent();

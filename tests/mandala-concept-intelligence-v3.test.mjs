@@ -35,7 +35,7 @@ const personalization={
 };
 const inspect=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 
-test("v3 corpus: 20 distinct topics × 3 locales produce three quality-gated, different stories",()=>{
+test("v3 corpus: 20 distinct topics × 3 locales produce two quality-gated, different stories",()=>{
  let reviewed=0;
  for(const [topicId,goal] of topics){
   assert.ok(getMyTubeTopic(topicId),"canonical topic missing: "+topicId);
@@ -44,11 +44,11 @@ test("v3 corpus: 20 distinct topics × 3 locales produce three quality-gated, di
     locale,goal,theme:"life",selectedTopicId:topicId,personalization
    });
    const choices=getVideoCreativeDirections(base,locale);
-   assert.equal(choices.length,3,locale+":"+topicId+" must not fall back to arrow catalog");
-   assert.equal(new Set(choices.map(x=>x.id)).size,3,locale+":"+topicId+": direction ids");
-   assert.equal(new Set(choices.map(x=>x.symbol)).size,3,locale+":"+topicId+": symbols");
-   assert.equal(new Set(choices.map(x=>x.centralAction)).size,3,locale+":"+topicId+": actions");
-   assert.equal(new Set(choices.map(x=>x.endingImage)).size,3,locale+":"+topicId+": endings");
+   assert.equal(choices.length,2,locale+":"+topicId+" must not fall back to arrow catalog");
+   assert.equal(new Set(choices.map(x=>x.id)).size,2,locale+":"+topicId+": direction ids");
+   assert.equal(new Set(choices.map(x=>x.symbol)).size,2,locale+":"+topicId+": symbols");
+   assert.equal(new Set(choices.map(x=>x.centralAction)).size,2,locale+":"+topicId+": actions");
+   assert.equal(new Set(choices.map(x=>x.endingImage)).size,2,locale+":"+topicId+": endings");
    for(const direction of choices){
     assert.equal(direction.review.status,"pass",topicId+":"+locale+":"+direction.id+
       " "+JSON.stringify(direction.review.hardFailures));
@@ -107,7 +107,7 @@ test("v3 corpus: 20 distinct topics × 3 locales produce three quality-gated, di
    }
   }
  }
- assert.equal(reviewed,180,"20 topics × three languages × three directions");
+ assert.equal(reviewed,120,"20 topics × three languages × two directions");
 });
 
 test("core film roles are pure, give auditable metadata, and do not infer personal history",()=>{
@@ -127,7 +127,7 @@ test("core film roles are pure, give auditable metadata, and do not infer person
  assert.equal(v3.schemaVersion,"hh-creative-concept-v3");
  assert.equal(v3.intentSignature,base.signature);
  assert.equal(v3.durationSeconds,30);
- assert.equal(v3.directions.length,3);
+ assert.equal(v3.directions.length,2);
  assert.equal(v3.selectedDirectionId,null);
  assert.deepEqual(v3.userEditedFields,[]);
  assert.equal(v3.approvedMedia,false);
@@ -185,7 +185,7 @@ test("avoided imagery cannot leak into published story or storyboard",()=>{
   selectedTopicId:"ready-relationship"
  });
  const excluded=getVideoCreativeDirections({...base,avoidImagery:["water","forest"]},"en");
- assert.equal(excluded.length,3);
+ assert.equal(excluded.length,2);
  const texts=excluded.map(x=>[x.idea,x.story,x.world,
    ...(x.storyboard||[]).map(shot=>shot.action)].join(" "));
  for(const script of texts)assert.doesNotMatch(script,/forest|woods|rain|river|lake|ocean|water/i);
@@ -196,7 +196,7 @@ test("avoided imagery cannot leak into published story or storyboard",()=>{
  }
 });
 
-test("iPhone Concept remains a single editor with safe-area, 3 cards, independent drafts and montage handoff",()=>{
+test("iPhone Concept remains a single editor with safe-area, 2 cards, independent drafts and montage handoff",()=>{
  const ui=inspect("components/mandala-video-concept.tsx");
  const css=inspect("components/mandala-video-concept.module.css");
  const montage=inspect("components/mandala-automatic-storyboard.tsx");
@@ -219,7 +219,7 @@ test("iPhone Concept remains a single editor with safe-area, 3 cards, independen
  assert.match(css,/safe-area-inset-bottom/);
  assert.match(css,/textarea:focus/);
  assert.match(css,/prefers-reduced-motion:reduce/);
- assert.match(montage,/approvedConcept\?\.baseSignature===suggested\.signature/);
+ assert.match(montage,/sameIntent\(approvedConcept\)/);
  assert.match(studio,/!approved\.storyboard\?\.length&&cinematicPlan/);
  assert.match(director,/generateThreePremises/);
  assert.doesNotMatch(director,/The story opens with|Something begins to change/);
@@ -248,7 +248,7 @@ test("unfamiliar personal goals still receive authored films rather than arrow c
   const base=suggestVideoConcept({locale,goal,theme:"life",personalization});
   const unknown={...base,hasPersonalInput:true,semanticConfidence:"low",topicId:"custom-topic"};
   const choices=getVideoCreativeDirections(unknown,locale);
-  assert.equal(choices.length,3,"an unrecognized goal still gets three editorial options");
+  assert.equal(choices.length,2,"an unrecognized goal still gets two editorial options");
   assert.ok(choices.every(choice=>choice.review.status==="pass"&&
    choice.conceptScenes?.length===choice.storyboard.length));
   assert.ok(choices.every(choice=>!choice.story.includes("→")));
