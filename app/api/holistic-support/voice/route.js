@@ -7,6 +7,7 @@ import { readBody, PRIVATE_HEADERS, safeError } from '@/lib/app/http'
 import { VOICE_STUDIO_MODEL, VOICE_STUDIO_OPENROUTER_MODEL, VOICE_STUDIO_OPENROUTER_FREE_MODEL, voiceStudioReady, voiceStudioKey, voiceStudioOpenRouterKey, voiceStudioOpenRouterFreeKey, voiceStudioProviders, validateStudioRequest, buildStudioPayload, buildOpenRouterStudioPayload, buildOpenRouterFreePayload } from '@/lib/mandala/voice-studio.mjs'
 import { requestStudioAudio } from '@/lib/mandala/voice-studio-provider.mjs'
 import { requestOpenRouterStudioAudio } from '@/lib/mandala/voice-studio-openrouter-provider.mjs'
+import {fishStudioConfig,fishStudioLanguages,requestFishStudioAudio} from '@/lib/mandala/voice-studio-fish.mjs'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -20,10 +21,11 @@ const fail = (error, auth) => {
 }
 export async function GET() {
   const providers=voiceStudioProviders(process.env)
-  const configured = voiceStudioReady(process.env)
+  const fishLanguages=fishStudioLanguages(process.env)
+  const configured = voiceStudioReady(process.env)||fishLanguages.length>0
   // Guest voices must reflect only provider routes that cannot bill.
   // The optional paid custom-voice provider never makes public samples ready.
-  const publicFree=providers.gemini||providers.openrouterFree
+  const publicFree=providers.gemini||providers.openrouterFree||fishLanguages.length>0
   const languages=providers.gemini?['en','ru','es']:
     providers.openrouterFree?['en']:[]
   return NextResponse.json({
@@ -31,9 +33,10 @@ export async function GET() {
     model:VOICE_STUDIO_MODEL,
     backupModel:VOICE_STUDIO_OPENROUTER_MODEL,
     freeBackupModel:VOICE_STUDIO_OPENROUTER_FREE_MODEL,
-    providers,
+    providers:{...providers,fishFree:fishLanguages.length>0},
+    fishLanguages,
     languages,
-    mode:'gemini-free-openrouter-free-optional-paid',
+    mode:'gemini-free-openrouter-free-fish-free-optional-paid',
     customRequiresSignIn:true,
     publicAffirmationsEnabled:publicFree,
   },{headers:PRIVATE_HEADERS})
@@ -43,7 +46,7 @@ export async function POST(request) {
   try {
     // Opt-in reuse of the existing server-side Google credential is permitted
     // ONLY after Free-tier attestation and enabling the explicit reuse flag.
-    if(!voiceStudioReady(process.env))
+    if(!voiceStudioReady(process.env)&&fishStudioLanguages(process.env).length===0)
       throw new AppError('VOICE_STUDIO_NOT_CONFIGURED',503)
     const config = getAppConfig()
     requireSameOrigin(request,config)
@@ -69,10 +72,19 @@ export async function POST(request) {
       }
     }
     await consumeRate(config,{op:'voice-studio-free-global'},120,3600)
+    let wav,provider,primaryFailure,freeFailure
+    if(validated.provider==='fish'){
+      // Separate consent and approval; no fallback to any other vendor or paid model.
+      const vendor=fishStudioConfig(process.env,validated.language)
+      if(!vendor)throw new AppError('VOICE_STUDIO_FISH_DISABLED',503)
+      await consumeRate(config,{op:'voice-studio-fish-free-day'},20,86400)
+      wav=await requestFishStudioAudio({vendor,text:validated.text,
+        signal:AbortSignal.any([request.signal,AbortSignal.timeout(20000)])})
+      provider='fish-free'
+    }else{
     const primaryKey=voiceStudioKey(process.env)
     const freeKey=voiceStudioOpenRouterFreeKey(process.env)
     const backupKey=voiceStudioOpenRouterKey(process.env)
-    let wav,provider,primaryFailure,freeFailure
     if(primaryKey) {
       try{
         wav=await requestStudioAudio({key:primaryKey,payload:buildStudioPayload(validated),
@@ -112,6 +124,7 @@ export async function POST(request) {
     if(!wav) {
       const failure=freeFailure||primaryFailure
       throw new AppError(failure?.code||'TTS_PROVIDER_UNAVAILABLE',failure?.status||503)
+    }
     }
     const response = new NextResponse(wav,{
       headers:{

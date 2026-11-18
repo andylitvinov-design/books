@@ -12,6 +12,7 @@ import css from "./mandala-cloud-voice-studio.module.css";
 
 type VoiceLanguage = "ru" | "en";
 type Mode = "sample" | "custom";
+type VoiceEngine = "original" | "fish";
 type Background = "none" | NatureBed;
 const initialLanguage = (locale:PublicLocale):VoiceLanguage => locale==="ru"?"ru":"en";
 const text = {
@@ -64,6 +65,23 @@ const text = {
     sourceAdded:"Se copió un fragmento de tu meditación. Revísalo antes de enviar.",backupUsed:"Se usó el respaldo OpenRouter/xAI.",freeUsed:"Audio generado mediante OpenRouter/Deepgram gratis."
   }
 } as const;
+const fishText={
+  ru:{label:"Провайдер голоса",original:"Стандартные голоса",fish:"Fish Audio · бесплатно",voice:"Fish · русский голос",
+    hint:"Ваш ранее подключённый русский голос Fish. Проверьте тембр на коротком образце.",
+    consent:"Согласен отправить только выбранный отрывок в Fish Audio (бесплатная модель). Fish может использовать текст для обучения модели. Не отправляю личные, медицинские данные или результаты тестов.",
+    privacy:"С Fish Audio используется только явно выбранный текст. Бесплатная модель заявлена до 30 ноября 2026 года; платных замен нет.",
+    ready:"Создано Fish Audio · бесплатно.",unavailable:"Fish Audio пока не разрешён или срок бесплатного доступа закончился. Доступна собственная запись и голос устройства."},
+  en:{label:"Voice provider",original:"Standard voices",fish:"Fish Audio · free",voice:"Fish · English voice",
+    hint:"Your existing English Fish voice. Check its sound with a short sample.",
+    consent:"I consent to send only my chosen excerpt to Fish Audio using the free model. Fish may use input to improve models. I will not include personal, medical or test-result information.",
+    privacy:"Fish Audio receives only text submitted on request. Free access is published through November 30, 2026; there is no paid fallback.",
+    ready:"Created with Fish Audio · free.",unavailable:"Fish Audio has not been approved or the free window expired. Device voice and your own audio are still available."},
+  es:{label:"Proveedor de voz",original:"Voces estándar",fish:"Fish Audio · gratis",voice:"Fish · voz en inglés o ruso",
+    hint:"Voz Fish existente para el idioma ruso o inglés que selecciones.",
+    consent:"Autorizo enviar solo el fragmento elegido a Fish Audio con el modelo gratuito. Fish puede usar el texto para mejorar modelos. No incluiré datos personales, médicos ni resultados de pruebas.",
+    privacy:"Fish recibe solo texto enviado voluntariamente. Oferta gratuita hasta el 30 de noviembre de 2026; sin sustitución de pago.",
+    ready:"Creado con Fish Audio · gratis.",unavailable:"Fish Audio no está autorizado o finalizó la oferta gratuita. Puedes usar voz local o una grabación propia."}
+} as const;
 const offlineCopy={
   ru:{title:"Или используйте свой голос бесплатно",lead:"Загрузите готовую запись медитации. Файл останется на устройстве, вызов Google не нужен.",ready:"Собственная запись добавлена. Настройте фон и громкость, затем подготовьте WAV.",invalid:"Выберите WAV, MP3, M4A, AAC или WebM до 15 МБ.",import:"Загрузить запись голоса"},
   en:{title:"Or use your own voice for free",lead:"Upload a recorded meditation. The file stays on your device; no Google call is needed.",ready:"Your recording is ready. Choose music and volumes, then prepare the WAV.",invalid:"Select a WAV, MP3, M4A, AAC or WebM file up to 15 MB.",import:"Upload voice recording"},
@@ -94,6 +112,7 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",sourceIsPublic=fal
   onAudioInvalidated?:()=>void;
 }) {
   const t=text[locale];
+  const f=fishText[locale];
   const b=balanceCopy[locale];
   const o=offlineCopy[locale];
   const attachLabel=locale==="ru"?"Добавить озвучку в видео":locale==="es"?"Añadir narración al vídeo":"Add narration to video";
@@ -102,6 +121,7 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",sourceIsPublic=fal
   const titleId=useId();
   const [language,setLanguage]=useState<VoiceLanguage>(initialLanguage(locale));
   const [voiceId,setVoiceId]=useState("mark");
+  const [engine,setEngine]=useState<VoiceEngine>("original");
   const [mode,setMode]=useState<Mode>("sample");
   const [script,setScript]=useState("");
   const [personalText,setPersonalText]=useState(false);
@@ -111,7 +131,8 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",sourceIsPublic=fal
   const [musicLevel,setMusicLevel]=useState(12);
   const [available,setAvailable]=useState(false);
   const [availableLanguages,setAvailableLanguages]=useState<string[]>([]);
-  const languageAvailable=available&&availableLanguages.includes(language);
+  const [fishLanguages,setFishLanguages]=useState<string[]>([]);
+  const languageAvailable=engine==="fish"?fishLanguages.includes(language):available&&availableLanguages.includes(language);
   const [checking,setChecking]=useState(true);
   const [busy,setBusy]=useState(false);
   const [mixing,setMixing]=useState(false);
@@ -139,6 +160,7 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",sourceIsPublic=fal
       .then(async result=>{if(!result.ok)throw new Error("STATUS");return result.json();})
       .then(data=>{
         setAvailable(data.enabled===true);
+        setFishLanguages(Array.isArray(data.fishLanguages)?data.fishLanguages.filter((value:unknown)=>value==="ru"||value==="en"):[]);
         setAvailableLanguages(Array.isArray(data.languages)?data.languages.filter(
           (value:unknown)=>value==="ru"||value==="en"||value==="es"):[]);
       })
@@ -223,8 +245,8 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",sourceIsPublic=fal
     controllerRef.current=abort;
     try{
       const apiMode=mode==="sample"?"sample":personalText?"custom":"short_text";
-      const body=apiMode==="sample"?{mode:apiMode,voiceId,language}:
-        {mode:apiMode,voiceId,language,text:script.trim(),consent:true};
+      const body=apiMode==="sample"?{mode:apiMode,voiceId,language,provider:engine}:
+        {mode:apiMode,voiceId,language,provider:engine,text:script.trim(),consent:true};
       const response=await fetch("/api/holistic-support/voice",{
         method:"POST",signal:abort.signal,cache:"no-store",
         headers:{"Content-Type":"application/json"},
@@ -242,7 +264,8 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",sourceIsPublic=fal
       if(token!==latestRef.current)return;
       const next=URL.createObjectURL(blob);
       urlRef.current=next;setWav(blob);setAudioUrl(next);
-      setNotice(response.headers.get("X-HH-Voice-Provider")==="openrouter"?t.backupUsed:
+      setNotice(response.headers.get("X-HH-Voice-Provider")==="fish-free"?f.ready:
+        response.headers.get("X-HH-Voice-Provider")==="openrouter"?t.backupUsed:
         response.headers.get("X-HH-Voice-Provider")==="openrouter-free"?t.freeUsed:"");
     }catch(error){
       if(token!==latestRef.current)return;
@@ -326,7 +349,15 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",sourceIsPublic=fal
             {lang==="ru"?"Русский":"English"}
           </button>)}
       </div>
-      {groups.map(group=>(
+      <div className={css.language} role="group" aria-label={f.label} data-voice-provider-select>
+        <button type="button" data-voice-provider="original" aria-pressed={engine==="original"}
+          onClick={()=>{resetAudio();setEngine("original");setConsent(false);}}>{f.original}</button>
+        <button type="button" data-voice-provider="fish" aria-pressed={engine==="fish"}
+          onClick={()=>{resetAudio();setEngine("fish");setConsent(false);}}>{f.fish}</button>
+      </div>
+      {engine==="fish"?<div className={css.group} data-fish-voice-choice>
+        <h3>{f.voice}</h3><p className={css.hint}>{f.hint}</p>
+      </div>:groups.map(group=>(
         <div key={group} className={css.group}>
           <h3>{group==="male"?t.male:t.female}</h3>
           <div className={css.voices}>
@@ -361,7 +392,7 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",sourceIsPublic=fal
           </label>
           <span className={css.count}>{Array.from(script).length} / {VOICE_STUDIO_MAX_CHARS}</span>
           <label className={css.consent}><input type="checkbox" checked={consent}
-            onChange={event=>setConsent(event.currentTarget.checked)}/><span>{t.consent}</span></label>
+            onChange={event=>setConsent(event.currentTarget.checked)}/><span>{engine==="fish"?f.consent:t.consent}</span></label>
           <p className={css.hint}>{personalText?t.register:t.guestText}</p>
         </>:null}
       </fieldset>
@@ -393,9 +424,9 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",sourceIsPublic=fal
             onChange={event=>changeLevel("music",Number(event.currentTarget.value))}/>
         </label>
       </div>
-      {ambientSrc?<p className={css.hint}>{locale==="ru"?"В этой версии природный фон берётся из авторской библиотеки; выбранная ранее дорожка не отправляется провайдеру.":"This pilot uses the first-party nature library; existing editor audio is never uploaded to Google."}</p>:null}
+      {ambientSrc?<p className={css.hint}>{locale==="ru"?"В этой версии природный фон берётся из авторской библиотеки; выбранная ранее дорожка не отправляется провайдеру.":"This pilot uses the first-party nature library; existing editor audio is never uploaded to a cloud voice provider."}</p>:null}
       <p role="status" className={languageAvailable?css.ready:css.unavailable}>
-        {checking?t.general:languageAvailable?t.ready:t.unavailable}
+        {checking?t.general:languageAvailable?t.ready:engine==="fish"?f.unavailable:t.unavailable}
       </p>
       <button type="button" className={css.primary} data-voice-studio-generate
         disabled={!languageAvailable||busy||mixing||(mode==="custom"&&(!consent||!script.trim()))}
@@ -434,7 +465,7 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",sourceIsPublic=fal
       </div>:null}
       {notice?<p role="status" aria-live="polite" className={css.error}>{notice}</p>:null}
       <p className={css.hint}>{b.note}</p>
-      <p className={css.hint}>{t.privacy}</p>
+      <p className={css.hint}>{engine==="fish"?f.privacy:t.privacy}</p>
       <p className={css.hint}>{t.notice}</p>
     </section>
   );
