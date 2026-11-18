@@ -64,10 +64,15 @@ test('service welcome photo is limited to first signed consent message and uses 
  const v3=source('lib/crm/telegram-ai-diagnostic-v3-service.js');
  const webhook=source('app/api/app/crm/messenger/webhook/[provider]/route.js');
  const sender=source('lib/crm/messenger-provider.js');
- assert.match(v3,/return serviceStart&&canReply\?\{\.\.\.greeting,serviceWelcome:true\}/);
+ assert.match(v3,/if\(freeStart\)return \{\.\.\.greeting,freeWelcomePhoto:true\}/);
+ assert.match(v3,/welcomePhotoKey=serviceStart\?\.service/);
+ assert.match(v3,/serviceWelcome:true/);
  assert.match(webhook,/serviceWelcome:aiIntake\.serviceWelcome===true/);
  assert.match(sender,/serviceWelcome\?'sendPhoto':'sendMessage'/);
- assert.match(sender,/photo:TELEGRAM_EXPLORE_PHOTO,caption:text/);
+ assert.match(sender,/photo:topicPhoto\|\|TELEGRAM_EXPLORE_PHOTO,caption:text/);
+ assert.match(sender,/const V3_WELCOME_PHOTOS=Object\.freeze/);
+ assert.match(sender,/if\(freeWelcomePhoto\|\|\(!serviceWelcome&&topicPhoto\)\)/);
+ assert.match(webhook,/welcomePhotoKey:aiIntake\.welcomePhotoKey/);
  assert.match(sender,/serviceConsent=keyboard\.length===1/);
  assert.match(sender,/text\.length>900/);
  assert.match(sender,/error\?\.code!=='PROVIDER_REJECTED'/);
