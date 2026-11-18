@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {storyReviewSignature,storyReviewRequired,validEditorialShotActions}
+import {storyReviewSignature,storyReviewRequired,conceptSceneAlignment,validEditorialShotActions}
  from "../lib/mandala/video-story-review.mjs";
 const storyboard=Array.from({length:6},(_,index)=>({
  title:"Scene "+(index+1),emotion:"A distinct feeling "+index,
@@ -42,7 +42,9 @@ test("Ideas and Montage connect explicit editorial review to the same shot actio
  const story=readFileSync(new URL("../components/mandala-automatic-storyboard.tsx",import.meta.url),"utf8");
  assert.match(ui,/const storyboardNeedsReview=storyReviewRequired\(concept\)/);
  assert.match(ui,/!storyboardNeedsReview/);
- assert.match(ui,/keywords:shot\.action\.trim\(\)===shotDrafts\[index\]\.trim\(\)/);
+ assert.match(ui,/keywords:changed\?\[\]:\[\.\.\.shot\.keywords\]/);
+ assert.match(ui,/conceptText=conceptText\.replace\(before,after\)/);
+ assert.match(ui,/visualSubject:changed\?"human_action":shot\.visualSubject/);
  assert.match(ui,/data-video-storyboard-action-edit/);
  assert.match(ui,/data-video-storyboard-confirm/);
  assert.match(ui,/onDraftChange\?\.\(next\)/);
@@ -50,4 +52,34 @@ test("Ideas and Montage connect explicit editorial review to the same shot actio
  assert.match(story,/data-storyboard-shot-direction/);
  assert.match(story,/data-storyboard-continuity/);
  assert.match(story,/const visibleCount=manualFiveReady\?5:guides\.scenes\.length/);
+});
+
+test("a verified editorial signature cannot override a changed or reordered physical screenplay",()=>{
+ const source=storyboard.map((shot,index)=>({
+  id:"plot:scene:"+(index+1),action:shot.action,narrative:shot.action
+ }));
+ const selected={...original,conceptScenes:source,
+  conceptText:source.map(x=>x.narrative).join("\n\n"),
+  storyboard:storyboard.map((shot,index)=>({...shot,sceneId:source[index].id}))};
+ assert.equal(conceptSceneAlignment(selected).aligned,true);
+ assert.equal(storyReviewRequired(selected),false);
+ const reordered={...selected,conceptText:source.map(x=>x.action).reverse().join("\n\n")};
+ assert.equal(conceptSceneAlignment(reordered).aligned,false);
+ assert.equal(storyReviewRequired(reordered),true);
+ assert.equal(storyReviewRequired({...reordered,
+  userEditedFields:["conceptText"],storyReviewSignature:storyReviewSignature(reordered)}),true);
+ const replaced={...selected,storyboard:selected.storyboard.map((shot,index)=>
+   index===2?{...shot,action:"A mountain appears unrelated to this selected scenario."}:shot)};
+ assert.equal(conceptSceneAlignment(replaced).aligned,false);
+ assert.equal(storyReviewRequired(replaced),true);
+});
+test("Ideas and Montage render source-bound story graphics without claiming stock video",()=>{
+ const ideas=readFileSync(new URL("../components/mandala-video-concept.tsx",import.meta.url),"utf8");
+ const montage=readFileSync(new URL("../components/mandala-automatic-storyboard.tsx",import.meta.url),"utf8");
+ assert.match(ideas,/data-video-concept-scene-graphic/);
+ assert.match(ideas,/MandalaStoryboardSceneSketch locale=\{locale\} action=\{shot\.beat\}/);
+ assert.match(montage,/MandalaStoryboardSceneSketch locale=\{locale\} action=\{guide\.visual\}/);
+ assert.match(montage,/data-storyboard-graphics-mode="screenplay-scene-sketch"/);
+ assert.match(montage,/scriptSceneAlignment\.aligned&&!scriptNeedsReview/);
+ assert.match(montage,/data-video-story-media-missing/);
 });

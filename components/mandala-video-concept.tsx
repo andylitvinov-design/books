@@ -319,7 +319,7 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
         // Edits invalidate tags and visual props inherited from the old action.
         keywords:changed?[]:[...shot.keywords],
         searchKeywords:changed?[]:[...(shot.searchKeywords||[])],
-        visualSubject:changed?"":shot.visualSubject,
+        visualSubject:changed?"human_action":shot.visualSubject,
         continuityKeys:changed?[]:shot.continuityKeys};
     });
     // Keep all three representations of the event in sync.

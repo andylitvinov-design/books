@@ -10,6 +10,8 @@ import {
 } from "../lib/mandala/cinematic-concept-v3.mjs";
 import {buildConceptShotSketch} from "../lib/mandala/video-concept-semantic.mjs";
 import {buildAlignedStorySceneGuides} from "../lib/mandala/storyboard-content-alignment.mjs";
+import {describeStoryboardSceneGraphic} from "../lib/mandala/storyboard-scene-graphic.mjs";
+import {conceptSceneAlignment} from "../lib/mandala/video-story-review.mjs";
 import {selectVideoStoryFamily,listAuthoredFilmPlots} from "../lib/mandala/film-story-atlas-v3.mjs";
 
 const locales=["ru","en","es"];
@@ -91,6 +93,17 @@ test("v3 corpus: 20 distinct topics × 3 locales produce two quality-gated, diff
     assert.ok(guides.scenes.every((x,index)=>
       x.visual===direction.storyboard[index].visualAction&&
       x.sourceSceneId===direction.storyboard[index].sceneId&&x.requiresLiteralMatch===true));
+    assert.equal(conceptSceneAlignment(chosen).aligned,true,
+      "all six visible actions must occur in the selected screenplay in order");
+    for(const [index,guide] of guides.scenes.entries()){
+      const graphic=describeStoryboardSceneGraphic({
+        action:guide.visual,visualSubject:chosen.storyboard[index].visualSubject,
+        keywords:chosen.storyboard[index].keywords
+      });
+      assert.equal(graphic.sourceAction,chosen.storyboard[index].action);
+      assert.equal(graphic.visualStatus,"editorial_scene_sketch_unverified");
+      assert.ok(graphic.cueIds.length<=2);
+    }
     for(const seconds of [20,30,42,60]){
       const resized=buildConceptShotSketch(chosen,seconds);
       assert.equal(resized.length,chosen.conceptScenes.length);
