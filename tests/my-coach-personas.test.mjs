@@ -224,7 +224,7 @@ test('Play starts the authored natural voice once, without recording or extra ch
   const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
   const voice=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
   assert.ok(ui.includes('getCoachPresentation(personaId,conversationLang)?.text'))
-  assert.ok(ui.includes("const conversationLang=['en','ru','es'].includes(speechLocale)?speechLocale:deviceSpeechLocale"))
+  assert.ok(ui.includes("const conversationLang=['en','ru','es'].includes(speechLocale)?speechLocale:lang"))
   assert.ok(ui.includes('const [cloudAgreed,setCloudAgreed]=useState(false)'))
   assert.ok(ui.includes('introduction={introduction} onSessionStart={()=>setCloudAgreed(true)}'))
   assert.ok(ui.includes('voiceProviderDetails'))
