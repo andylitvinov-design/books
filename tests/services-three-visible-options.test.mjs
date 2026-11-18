@@ -118,11 +118,13 @@ test("real consultation cards have bounded closed geometry and expand at full wi
  const own=read("components/services-personal-consultation-mobile.module.css");
  const catalog=read("components/services-unified-catalog.module.css");
  const browser=read("scripts/verify-public-services-production.mjs");
- for(const expected of ["height:154px!important","grid-template-columns:88px minmax(0,1fr)!important",
+ for(const expected of ["height:146px!important","grid-template-columns:88px minmax(0,1fr)!important",
   "grid-template-rows:minmax(0,1fr) 44px 0px!important",
   ".section .card>:global([data-service-card-actions]){display:contents!important}",
   "height:auto!important;min-height:154px!important;max-height:none!important",
   "grid-column:1/-1!important;grid-row:3!important"])assert.ok(own.includes(expected),expected);
+ for(const marker of ["max-height:72px","font-size:12px!important","text-overflow:ellipsis"])
+  assert.ok(own.includes(marker),"multilingual heading "+marker);
  assert.ok(!catalog.includes("Correct final mobile featured-card grid"));
  assert.ok(browser.includes("compact.cards.every(card => card.height <= 177)"));
 });

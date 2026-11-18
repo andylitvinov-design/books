@@ -112,12 +112,12 @@
 }
 
 /* Actual mounted consultation cards live in THIS component, not a catalogue
-   descendant. Fit the heading and three closed 154px cards in one iPhone view.
+   descendant. Fit the heading and three closed 146px cards in one iPhone view.
    Keep each real 44px action to the right and open details at full width. */
 @media (min-width:351px) and (max-width:760px){
  .section .card:not(:has([data-service-card-controls] button[aria-expanded="true"])){
-  display:grid!important;height:154px!important;min-height:154px!important;
-  max-height:154px!important;padding:7px!important;
+  display:grid!important;height:146px!important;min-height:146px!important;
+  max-height:146px!important;padding:7px!important;
   grid-template-columns:88px minmax(0,1fr)!important;
   grid-template-rows:minmax(0,1fr) 44px 0px!important;
   column-gap:9px!important;row-gap:3px!important
@@ -143,11 +143,21 @@
   grid-column:1/-1!important;grid-row:3!important
  }
  .section .card:has([data-service-card-controls] button[aria-expanded="true"]){
-  height:auto!important;min-height:154px!important;max-height:none!important;
+  height:auto!important;min-height:146px!important;max-height:none!important;
   grid-template-columns:88px minmax(0,1fr)!important;
   grid-template-rows:minmax(0,1fr) 44px auto!important
  }
  .section .card:has([data-service-card-controls] button[aria-expanded="true"]) .content{
   overflow:visible!important
  }
+}
+
+/* Compact multilingual heading; retain visible, legible title and one-line lead. */
+@media (min-width:351px) and (max-width:760px){
+ .section .heading{min-height:0!important;max-height:72px;margin-bottom:6px!important;
+  padding:3px 6px 4px 9px!important;align-items:center}
+ .section .heading h2{font-size:clamp(20px,5.4vw,22px)!important;line-height:1.07!important}
+ .section .heading p{display:block!important;margin-top:2px!important;
+  font-size:12px!important;line-height:1.17!important;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 }
