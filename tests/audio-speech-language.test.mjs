@@ -11,6 +11,8 @@ const client=read("../lib/mandala/consented-audio-stt.ts");
 test("audio language is independent of EN/RU/ES UI and defaults to auto",()=>{
   assert.match(studio,/useState<"auto"\|VideoLocale>\("auto"\)/);
   assert.match(studio,/data-video-audio-language-picker/);
+  assert.ok(studio.indexOf("const [recording, setRecording]")<studio.indexOf("const spokenAudioLanguagePicker="));
+  assert.ok(studio.indexOf("const [preparing, setPreparing]")<studio.indexOf("const spokenAudioLanguagePicker="));
   assert.match(studio,/data-video-audio-language value=\{spokenAudioLanguage\}/);
   assert.match(studio,/value="ru">Русский/);
   assert.match(studio,/spokenAudioLanguage!=="auto"/);

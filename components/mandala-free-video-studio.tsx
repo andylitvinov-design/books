@@ -2454,26 +2454,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [pendingAutoVoice,setPendingAutoVoice]=useState<TimedSpeechTranscript|null>(null);
   const sttAbortRef=useRef<AbortController|null>(null);
   useEffect(()=>()=>sttAbortRef.current?.abort(),[]);
-  const spokenAudioLanguagePicker=<label data-video-audio-language-picker
-    style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",margin:"8px 0"}}>
-    <span style={{fontSize:14,fontWeight:600}}>{locale==="ru"?"Язык речи":locale==="es"?"Idioma del audio":"Spoken language"}</span>
-    <select data-video-audio-language value={spokenAudioLanguage}
-      disabled={sttBusy||micRecording||recording||preparing}
-      aria-label={locale==="ru"?"Язык аудиозаписи":locale==="es"?"Idioma hablado en el audio":"Language spoken in the recording"}
-      style={{flex:"1 1 160px",minWidth:0,maxWidth:"100%",minHeight:38,borderRadius:10,padding:"6px 10px",border:"1px solid #cbd5d1",background:"#fff",color:"#153c33",fontSize:14}}
-      onChange={event=>{
-        const language=event.currentTarget.value as "auto"|VideoLocale;
-        if(language===spokenAudioLanguage)return;
-        sttAbortRef.current?.abort();
-        setSpokenAudioLanguage(language);
-        setVoiceTranscript(null);setVoiceVisualPlan(null);setAudioPlanApplied(false);setSttError("");
-      }}>
-      <option value="auto">{locale==="ru"?"Определить автоматически · без перевода":locale==="es"?"Detectar automáticamente · sin traducir":"Auto-detect · no translation"}</option>
-      <option value="ru">Русский</option>
-      <option value="en">English</option>
-      <option value="es">Español</option>
-    </select>
-  </label>;
   // Same-tab iHelp handoff is read once; the IndexedDB record is deleted.
   useEffect(()=>{
     if(!studioHydrated)return;
@@ -2610,6 +2590,26 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [photoConsent,setPhotoConsent] = useState(false);
   const [recording, setRecording] = useState(false);
   const [preparing, setPreparing] = useState(false);
+  const spokenAudioLanguagePicker=<label data-video-audio-language-picker
+    style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",margin:"8px 0"}}>
+    <span style={{fontSize:14,fontWeight:600}}>{locale==="ru"?"Язык речи":locale==="es"?"Idioma del audio":"Spoken language"}</span>
+    <select data-video-audio-language value={spokenAudioLanguage}
+      disabled={sttBusy||micRecording||recording||preparing}
+      aria-label={locale==="ru"?"Язык аудиозаписи":locale==="es"?"Idioma hablado en el audio":"Language spoken in the recording"}
+      style={{flex:"1 1 160px",minWidth:0,maxWidth:"100%",minHeight:38,borderRadius:10,padding:"6px 10px",border:"1px solid #cbd5d1",background:"#fff",color:"#153c33",fontSize:14}}
+      onChange={event=>{
+        const language=event.currentTarget.value as "auto"|VideoLocale;
+        if(language===spokenAudioLanguage)return;
+        sttAbortRef.current?.abort();
+        setSpokenAudioLanguage(language);
+        setVoiceTranscript(null);setVoiceVisualPlan(null);setAudioPlanApplied(false);setSttError("");
+      }}>
+      <option value="auto">{locale==="ru"?"Определить автоматически · без перевода":locale==="es"?"Detectar automáticamente · sin traducir":"Auto-detect · no translation"}</option>
+      <option value="ru">Русский</option>
+      <option value="en">English</option>
+      <option value="es">Español</option>
+    </select>
+  </label>;
   const [progress,setProgress] = useState(0);
   const [videoEffectSession,setVideoEffectSession] = useState(0);
   const [videoEffectStarted,setVideoEffectStarted] = useState(false);
