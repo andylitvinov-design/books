@@ -38,6 +38,7 @@ on:
       - 'scripts/ci-pr-quality-event.cjs'
       - 'scripts/ci-pr-control-tower-wakeup.cjs'
       - 'scripts/ci-pr-pm-agent-inbox.cjs'
+      - 'scripts/ci-pr-commander-pr-completion.cjs'
       - '.github/hh-pr-directions.json'
   # Owner PM Issue #3890 remains served by scheduled Watchdog and
   # authenticated workflow_dispatch. Do not subscribe globally to
