@@ -10,7 +10,7 @@ import styles from "./services-personal-consultation-mobile.module.css";
 const copy = {
   ru: {
     title: "Личная консультация",
-    lead: "Выберите удобный формат",
+    lead: "Выберите удобный формат", count: "3 варианта",
     free: { title: "Экспресс-диагностика", detail: "Быстрый ответ на ваш запрос", tag: "Бесплатно", action: "Пройти сейчас" },
     remote: { title: "Расширенная диагностика", detail: "Дистанционно по фото", action: "Заказать",
       request: "Хочу заказать расширенный дистанционный разбор по фото. Подскажите условия и безопасный способ передать материалы." },
@@ -20,7 +20,7 @@ const copy = {
   },
   en: {
     title: "Personal consultation",
-    lead: "Choose your preferred format",
+    lead: "Choose your preferred format", count: "3 options",
     free: { title: "Express review", detail: "A quick response to your question", tag: "Free", action: "Start now" },
     remote: { title: "Extended review", detail: "Remote · with a photo", action: "Request",
       request: "I would like an extended remote photo-based review. Please confirm the terms and a secure way to share materials." },
@@ -30,7 +30,7 @@ const copy = {
   },
   es: {
     title: "Consulta personal",
-    lead: "Elige el formato más cómodo",
+    lead: "Elige el formato más cómodo", count: "3 opciones",
     free: { title: "Revisión exprés", detail: "Una respuesta breve a tu consulta", tag: "Gratis", action: "Empezar" },
     remote: { title: "Revisión ampliada", detail: "A distancia · con foto", action: "Solicitar",
       request: "Quisiera una revisión ampliada a distancia con foto. Confirma las condiciones y cómo enviar los materiales de forma segura." },
@@ -78,6 +78,7 @@ export function ServicesPersonalConsultationMobile({ locale }: { locale: PublicL
           <h2 id="assist-consultation-title">{t.title}</h2>
           <p>{t.lead}</p>
         </div>
+        <span className={styles.count} data-support-three-count aria-hidden="true">{t.count}</span>
       </header>
       <div className={styles.cards}>
         <article className={styles.card} data-support-uniform-card data-consultation-choice="free">
