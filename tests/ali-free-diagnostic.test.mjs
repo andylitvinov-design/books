@@ -171,7 +171,8 @@ test('free review has one photo-before-text welcome and an explicit booking choi
  const sender=source('lib/crm/messenger-provider.js');
  assert.match(service,/freeStart&&canReply\?\{\.\.\.greeting,freeWelcomePhoto:true\}/);
  assert.match(service,/!activeServiceConsent&&!activeFreeConsent/);
- assert.match(service,/ctx\.mode===FREE_DIAGNOSTIC_MODE&&action==='book'/);
+ assert.match(service,/if\(action==='book'&&\['consent','interview','review_confirm'\]/);
+ assert.doesNotMatch(service,/\+'\/services\/free-consultation'/);
  assert.match(service,/services\/free-consultation/);
  assert.match(webhook,/freeWelcomePhoto:aiIntake\.freeWelcomePhoto===true/);
  assert.match(sender,/TELEGRAM_FREE_REVIEW_WELCOME_PHOTO/);
@@ -238,8 +239,8 @@ test('production hook is consent-first, never uses external LLM or silent CRM ha
  assert.match(handler,/return promptResult/);
  assert.match(handler,/ctx\.mode===FREE_DIAGNOSTIC_MODE\?chatAllowed:/);
  assert.match(handler,/serviceCopy&&ctx\.mode!==SECRETARY_MODES\.PSYCHOLOGIST\?serviceAllowed:allowed/);
- assert.match(handler,/prior\.ctx\.mode===FREE_DIAGNOSTIC_MODE\)\?v3CanChat\(env\):/);
- assert.match(handler,/prior\.ctx\.mode!==SECRETARY_MODES\.PSYCHOLOGIST\?v3ServiceIntakeReady\(env\):v3CanStart\(env\)/);
+ assert.match(handler,/prior\.ctx\.conversationKind==='general'\?v3CanChat\(env\):v3ServiceIntakeReady\(env\)/);
+ assert.match(handler,/wavePsychologistNativeTurn/);
  assert.doesNotMatch(planner,/\bfetch\s*\(|\baxios\s*\(|\bingestMessengerEventInTransaction\s*\(/);
  const local={VERCEL_ENV:'production',HH_CRM_TG_AI_V3_SCHEMA_READY:'true',
    HH_CRM_TG_AI_V3_ENABLED:'true',HH_CRM_TG_AI_V3_FREE_TIER_CONFIRMED:'true',
