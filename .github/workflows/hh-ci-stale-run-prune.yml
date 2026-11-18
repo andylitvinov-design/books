@@ -72,9 +72,9 @@ jobs:
       - name: Batch prune superseded queued PR runs and report CI metrics
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          HH_CI_PRUNE_LIMIT: '120'
+          HH_CI_PRUNE_LIMIT: '300'
           HH_CI_WINDOW_MINUTES: '60'
-          HH_CI_JOB_SAMPLE: '8'
+          HH_CI_JOB_SAMPLE: '20'
           HH_CI_RELEASE_BRANCH: codex/public-book-library
         run: node scripts/ci-prune-stale-runs.mjs
       # P1 evidence is advisory, bounded and read-only; it reuses this runner
