@@ -1148,10 +1148,16 @@
 .root[data-my-coach-immersive-session] .languageControl{
   min-width:0;overflow:hidden;padding-inline:2px;cursor:pointer;
 }
+.root[data-my-coach-immersive-session] .languageChoice{
+  display:inline-flex;align-items:center;justify-content:center;gap:1px;min-width:0;
+}
+.root[data-my-coach-immersive-session] .languageChoice::after{
+  content:'⌄';color:#175c4e;font:900 13px/1 system-ui;pointer-events:none;
+}
 .root[data-my-coach-immersive-session] .languageControl select{
-  box-sizing:border-box;display:block;width:100%;min-width:0;max-width:100%;
+  box-sizing:border-box;display:block;width:30px;min-width:0;max-width:30px;
   padding:1px 0;border:0;background:transparent;color:#175c4e;
-  font:800 10px/1.15 system-ui;text-align:center;text-align-last:center;
+  font:800 12px/1.2 system-ui;text-align:center;text-align-last:center;
   appearance:none;-webkit-appearance:none;cursor:pointer;
 }
 .root[data-my-coach-immersive-session] .languageControl:focus-within{
