@@ -137,15 +137,21 @@ async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase,classif
     // checks. Import the same protected policy, never a PR-authored bypass.
     const disjointPublicSource=pr.mergeable===true&&
       approved('safeDisjointPublicSourceAdvance');
+    // Specialist itself loads the NEW protected validator and re-evaluates all
+    // real Core/specialist evidence after policy + unrelated source merges.
+    // Mirror that exact approval, never independently invent broader rules.
+    const trustedPolicyAdvance=pr.mergeable===true&&
+      approved('safeTrustedPolicyAdvance');
     if(!detachedCi&&!independentRaster&&!documentationOnly&&!independentMaintenance&&
-       !independentPresentation&&!disjointPublicSource)
+       !independentPresentation&&!disjointPublicSource&&!trustedPolicyAdvance)
       return fail('SENSITIVE_COMPARE_UNSAFE');
     revalidatedReason=detachedCi?'ISOLATED_CI_PUBLIC_MEDIA_REVALIDATED':
       independentRaster?'INDEPENDENT_PUBLIC_RASTER_REVALIDATED':
       documentationOnly?'INDEPENDENT_DOCS_BASE_REVALIDATED':
       independentMaintenance?'INDEPENDENT_CI_MAINTENANCE_REVALIDATED':
       independentPresentation?'INDEPENDENT_PUBLIC_PRESENTATION_REVALIDATED':
-      'DISJOINT_PUBLIC_SOURCE_REVALIDATED';
+      disjointPublicSource?'DISJOINT_PUBLIC_SOURCE_REVALIDATED':
+      'TRUSTED_POLICY_BASE_REVALIDATED';
    }
   }
   const finalBranch=(await github.rest.repos.getBranch({owner,repo,branch:'codex/public-book-library'})).data;
@@ -230,6 +236,10 @@ async function loadTrustedClassifier(workspace){
  // disjoint runtime drift until the protected Specialist patch is published.
  if(typeof impact.safeDisjointPublicSourceAdvance==='function')
    names.push('safeDisjointPublicSourceAdvance');
+ // Available even before the compound policy lands: the older trusted
+ // function accepts policy-only advances, never mixed unsafe code.
+ if(typeof impact.safeTrustedPolicyAdvance==='function')
+   names.push('safeTrustedPolicyAdvance');
  const baseAdvancePolicy=Object.fromEntries(names.map(name=>[name,impact[name]]));
  return {classifierBase,decideRoute:mod.decideRoute,baseAdvancePolicy};
 }

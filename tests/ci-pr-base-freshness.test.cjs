@@ -264,7 +264,8 @@ test('trusted production-base policy is loaded from the same pinned SHA and miss
  for(const signal of ['INDEPENDENT_DOCS_BASE_REVALIDATED',
    'INDEPENDENT_CI_MAINTENANCE_REVALIDATED',
    'INDEPENDENT_PUBLIC_PRESENTATION_REVALIDATED',
-   'DISJOINT_PUBLIC_SOURCE_REVALIDATED'])
+   'DISJOINT_PUBLIC_SOURCE_REVALIDATED',
+   'TRUSTED_POLICY_BASE_REVALIDATED'])
    assert.ok(workflow.includes('freshness.reason==="'+signal+'"'));
 });
 
@@ -388,4 +389,50 @@ test('native AutoMerge preserves green Core for deleting or renaming unrelated c
  copied.rest.repos.compareCommits=async()=>({data:verified(['docs/guides/independent.md'])});
  assert.match((await assessBaseFreshness({github:copied,owner:'o',repo:'r',
    pr,verifiedRunBase:old,baseAdvancePolicy:policy})).reason,/SENSITIVE_(CI_BASE_STALE|BASE_STALE)/);
+});
+
+test('native AutoMerge mirrors Specialist mixed protected-policy plus independent source proof',async()=>{
+ const comparison={status:'ahead',ahead_by:2,behind_by:0,total_commits:2,
+   base_commit:{sha:old},merge_base_commit:{sha:old},
+   commits:[{sha:'d'.repeat(40)},{sha:head}],files:[
+     {filename:'scripts/ci-specialist-aggregate.mjs',status:'modified'},
+     {filename:'components/shamanica-mobile.tsx',status:'modified'},
+   ]};
+ const github=api('lib/billing/stripe-provider.js');
+ let current=comparison,reads=0;
+ github.rest.repos.compareCommits=async()=>({data:current});
+ const policy={
+   safeDocumentationAdvance:()=>false,
+   safeIndependentCiMaintenanceAdvance:()=>false,
+   verifiedIndependentPublicRasterAdvance:()=>false,
+   safeIndependentPublicPresentationAdvance:()=>false,
+   safeDisjointPublicSourceAdvance:()=>false,
+   safeTrustedPolicyAdvance:(d,base,live,paths)=>{
+     reads++;
+     return base===old&&live===head&&paths.length===1&&
+       paths[0]==='lib/billing/stripe-provider.js'&&d.status==='ahead'&&
+       d.base_commit?.sha===old&&d.merge_base_commit?.sha===old&&
+       d.commits?.length===2&&d.commits[1].sha===head&&
+       d.files?.length===2&&
+       d.files[0].filename==='scripts/ci-specialist-aggregate.mjs'&&
+       d.files[1].filename==='components/shamanica-mobile.tsx';
+   },
+ };
+ const options={github,owner:'o',repo:'r',pr:{...pr,mergeable:true},
+   verifiedRunBase:old,baseAdvancePolicy:policy};
+ const accepted=await assessBaseFreshness(options);
+ assert.equal(accepted.ok,true);
+ assert.equal(accepted.reason,'TRUSTED_POLICY_BASE_REVALIDATED');
+ assert.equal(reads,1,'native merge shares protected Specialist policy function');
+ for(const state of [null,false])
+   assert.equal((await assessBaseFreshness({...options,
+     pr:{...pr,mergeable:state}})).reason,'SENSITIVE_COMPARE_UNSAFE',
+     'native ARM requires affirmative mergeability even if Specialist accepted pending');
+ current={...comparison,files:[...comparison.files,{filename:'app/api/auth/route.js',status:'modified'}]};
+ assert.equal((await assessBaseFreshness(options)).reason,'SENSITIVE_COMPARE_UNSAFE');
+ current={...comparison,status:'diverged'};
+ assert.equal((await assessBaseFreshness(options)).reason,'SENSITIVE_COMPARE_UNSAFE');
+ const absent={...policy,safeTrustedPolicyAdvance:undefined};
+ assert.equal((await assessBaseFreshness({...options,baseAdvancePolicy:absent})).reason,
+   'SENSITIVE_COMPARE_UNSAFE');
 });
