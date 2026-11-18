@@ -85,11 +85,11 @@ const backgroundNames:Record<string,{ru:string;en:string;es:string}>={
 };
 
 export function MandalaAffirmationVoice({
-  locale,lines,enabled,durationSeconds,disabled,approvalPending=false,initialPreferences,onAttach,onGenerating,onInvalidate,onPreferencesChange,onDetachLocal,compact=false,therapyLayout=false,ownVoiceOnly=false,extraActions,
+  locale,lines,enabled,durationSeconds,disabled,approvalPending=false,initialPreferences,onAttach,onGenerating,onInvalidate,onPreferencesChange,onDetachLocal,compact=false,therapyLayout=false,ownVoiceOnly=false,approvedMeditationText="",extraActions,
 }:{
   locale:PublicLocale;lines:string[];enabled:boolean;durationSeconds:number;disabled:boolean;approvalPending?:boolean;
   initialPreferences?:AffirmationVoicePreferences;
-  compact?:boolean;therapyLayout?:boolean;ownVoiceOnly?:boolean;extraActions?:ReactNode;
+  compact?:boolean;therapyLayout?:boolean;ownVoiceOnly?:boolean;approvedMeditationText?:string;extraActions?:ReactNode;
   onAttach:(result:AffirmationVoiceResult)=>void;
   onGenerating:(value:boolean)=>void;
   onInvalidate?:()=>void;
@@ -100,7 +100,14 @@ export function MandalaAffirmationVoice({
   const levels=levelCopy[locale];
   const [phraseChoice,setPhraseChoice]=useState<number|"all">(0);
   const selectedIndex=phraseChoice==="all"?null:Math.min(phraseChoice,Math.max(0,lines.length-1));
-  const speechText=enabled?affirmationNarrationForSelection(lines,phraseChoice==="all"?"all":selectedIndex??0):"";
+  // Selected meditation text is distinct from 40-character affirmation rows.
+  // It is supplied only after an explicit local review/approval and never sent
+  // to the provider until the separately revocable consent + Generate gesture.
+  const approvedShort=therapyLayout&&approvedMeditationText&&
+    Array.from(approvedMeditationText.trim()).length<=650&&
+    !/[<>]/u.test(approvedMeditationText)?approvedMeditationText.trim():"";
+  const speechText=therapyLayout&&approvedMeditationText?approvedShort:
+    enabled?affirmationNarrationForSelection(lines,phraseChoice==="all"?"all":selectedIndex??0):"";
   const initialVoiceId=initialPreferences?.voiceId??"maya";
   const [language,setLanguage]=useState<SpeechLanguage>(()=>initialPreferences?.language??locale);
   const [voiceId,setVoiceId]=useState(initialVoiceId);
@@ -514,8 +521,14 @@ export function MandalaAffirmationVoice({
     id="video-affirmation-voice" data-video-affirmation-voice data-video-affirmation-phase={generationPhase} aria-labelledby="video-affirmation-voice-title">
     <div className={css.heading}>
       <AudioLines size={20} aria-hidden="true"/>
-      <div><h4 id="video-affirmation-voice-title">{ownVoiceOnly?t.own:therapyLayout?(locale==="ru"?"Голос для ваших фраз":locale==="es"?"Voz para tus frases":"Voice for your phrases"):t.title}</h4><p>{ownVoiceOnly?t.myVoiceLead:therapyLayout?(locale==="ru"?"Выберите голос для выбранной фразы.":locale==="es"?"Elige una voz para tu frase.":"Choose a voice for your phrase."):t.lead}</p></div>
+      <div><h4 id="video-affirmation-voice-title">{ownVoiceOnly?t.own:therapyLayout&&approvedShort?(locale==="ru"?"Голос для медитации":locale==="es"?"Voz para la meditación":"Voice for meditation"):therapyLayout?(locale==="ru"?"Голос для ваших фраз":locale==="es"?"Voz para tus frases":"Voice for your phrases"):t.title}</h4><p>{ownVoiceOnly?t.myVoiceLead:therapyLayout&&approvedShort?(locale==="ru"?"Текст утверждён. Выберите голос и подтвердите согласие перед озвучкой.":locale==="es"?"Texto aprobado. Elige una voz y autoriza la narración.":"Text approved. Choose a voice and consent before narration."):therapyLayout?(locale==="ru"?"Выберите голос для выбранной фразы.":locale==="es"?"Elige una voz para tu frase.":"Choose a voice for your phrase."):t.lead}</p></div>
     </div>
+    {approvedShort?<details className={css.transcriptDisclosure}
+      data-video-therapy-approved-meditation>
+      <summary>{locale==="ru"?"Утверждённый текст · ~30 сек":
+        locale==="es"?"Texto aprobado · ~30 s":"Approved meditation · ~30 sec"}</summary>
+      <div className={css.transcript}><p data-therapy-approved-spoken-text>{approvedShort}</p></div>
+    </details>:null}
     {!ownVoiceOnly&&voiceGender!=="own" && !compact ? <div className={css.selectedPhrase} data-video-affirmation-selection-summary>
       <small>{t.phrase} · {t.voice}: <strong data-video-affirmation-selected-voice>{VOICE_STUDIO_VOICES.find(v=>v.id===voiceId)?.name[locale]}</strong></small>
       <p data-video-affirmation-selected-phrase>{approvalPending?t.pendingText:speechText||t.enable}</p>
@@ -526,7 +539,7 @@ export function MandalaAffirmationVoice({
         <p data-video-affirmation-spoken-text>{speechText}</p>
       </div>:<p className={css.hint} role="status">{t.enable}</p>}
     </details> : null}
-    {!ownVoiceOnly&&voiceGender!=="own" && (compact||lines.length>1)?<label className={css.phrasePick}>
+    {!approvedShort&&!ownVoiceOnly&&voiceGender!=="own" && (compact||lines.length>1)?<label className={css.phrasePick}>
       <span className={css.phrasePickTitle}><span>{t.phrase}</span>
         {compact?<small data-video-affirmation-phrase-count>{phraseChoice==="all"?lines.length:lines.length?Math.min((selectedIndex??0)+1,lines.length):0} / {lines.length} {t.phraseCount}</small>:null}
       </span>

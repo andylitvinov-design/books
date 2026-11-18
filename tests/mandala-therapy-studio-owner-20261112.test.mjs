@@ -21,13 +21,15 @@ test("Approved four Therapy tabs replace the format switch",()=>{
  assert.match(ui,/\["meditation","voice","practice","course"\] as const/);
  assert.match(ui,/if\(id==="course"\)setIsCourse\(true\)/);
  assert.match(ui,/else if\(id==="meditation"\)setIsCourse\(false\)/);
- assert.match(ui,/editor\(isCourse\)/);
+ assert.match(ui,/editor\(isCourse,text=>/);
+ assert.match(ui,/onMeditationApproved\?\.\(text\)/);
  assert.match(parent,/coursePreview=\{isCourse\}/);
  assert.match(ui,/role="tablist"/);
  assert.match(ui,/role="tabpanel"/);
 });
 test("Source stays one existing private local meditation generator and one real phrase narrator",()=>{
- assert.match(parent,/editor=\{isCourse=><MandalaPersonalMeditation/);
+ assert.match(parent,/editor=\{\(isCourse,onApproved\)=><MandalaPersonalMeditation/);
+ assert.match(parent,/onApproved=\{onApproved\}/);
  assert.match(parent,/voiceEditor=\{hypnoVoiceEditor\}/);
  assert.match(parent,/onVideoPhrases=\{\(\)=>\{/);
  assert.match(writer,/buildPersonalMeditationScript/);
@@ -119,7 +121,7 @@ test("Owner Therapy mobile: one introduction and compact controls, no feature re
  assert.match(writer,/compactTherapy\?extraField:null/);
  assert.match(writer,/!compactTherapy\?extraField:null/);
  assert.match(writer,/<details className=\{css\.context\} data-meditation-context/);
- assert.match(css,/\.hero\{display:none\}/);
+ assert.match(css,/\.hero\{min-height:78px/);
  assert.match(css,/\.main\{padding:0;border:0/);
  assert.match(css,/\[data-meditation-main-filters\] label:nth-child\(2\)\{grid-column:1\/-1/);
  assert.match(css,/\[data-meditation-generate\]\{min-height:52px/);
@@ -137,6 +139,25 @@ test("Voice one-screen retains explicit cloud consent and existing real WAV path
  assert.match(voice,/mode:"affirmations",voiceId,language,text:speechText,consent:true/);
  assert.match(styles,/data-therapy-voice-ui="true"/);
  assert.match(css,/\.scriptHost\[data-pane="practice"\],\.scriptHost\[data-pane="voice"\]\{display:none\}/);
+});
+
+test("Owner-approved A/B script reaches the single Voice editor with explicit consent",()=>{
+ const chosen=read("lib/mandala/short-meditation-choices.mjs");
+ const voice=read("components/mandala-affirmation-voice.tsx");
+ const stage=read("components/mandala-video-mobile.module.css");
+ assert.match(chosen,/buildShortMeditationChoices/);
+ assert.match(writer,/data-meditation-short-picker/);
+ assert.match(writer,/data-meditation-choice=\{index\}/);
+ assert.match(writer,/onApproved\?\.\(currentText\)/);
+ assert.match(parent,/onMeditationApproved=\{setApprovedMeditationText\}/);
+ assert.match(parent,/approvedMeditationText=\{activeWorkspace==="effects"\?approvedMeditationText:""\}/);
+ assert.match(parent,/isCurrentNarrationApproved\(attachedAudio\.spokenText\)/);
+ assert.match(voice,/const speechText=therapyLayout&&approvedMeditationText\?approvedShort:/);
+ assert.match(voice,/data-video-therapy-approved-meditation/);
+ assert.match(voice,/data-video-affirmation-voice-consent/);
+ assert.match(voice,/mode:"affirmations",voiceId,language,text:speechText,consent:true/);
+ assert.match(stage,/\[data-active-workspace="effects"\] \[data-video-live-stage\]\{display:none!important\}/);
+ assert.doesNotMatch(ui,/data-therapy-format-switch|data-therapy-format="/);
 });
 
 test("Voice footer has exactly two large next-step actions, no charge or synthesis on navigation",()=>{

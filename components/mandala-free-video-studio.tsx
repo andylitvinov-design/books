@@ -162,7 +162,7 @@ type ImportedEditorDraft={
 };
 // A selected sound is only a preview; attaching it is a separate, explicit step.
 type PresetId = Exclude<AmbientMusic,"none">;
-type AttachedAudio = {kind:"preset";id:PresetId} | {kind:"presets";ids:PresetId[]} | {kind:"file";file:File;id:string;narration?:true;spokenText?:string;speechSeconds?:number;mixSeconds?:number;nonLoop?:true;voiceId?:string;language?:string;bed?:string};
+type AttachedAudio = {kind:"preset";id:PresetId} | {kind:"presets";ids:PresetId[]} | {kind:"file";file:File;id:string;narration?:true;spokenText?:string;speechSeconds?:number;mixSeconds?:number;nonLoop?:true;meditationApproved?:true;voiceId?:string;language?:string;bed?:string};
 type Job = {
   recorder: MediaRecorder;
   stream: MediaStream;
@@ -2184,6 +2184,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [hypnoLight,setHypnoLight] = useState<HypnoLightSettings>({enabled:false,cyclesPerMinute:6,opacity:.18});
   const [therapyJumpRequested,setTherapyJumpRequested] = useState(false);
   const [therapyInitialFormat,setTherapyInitialFormat]=useState<"single"|"course">("single");
+  // Private in-memory handoff: a user's explicitly approved short script,
+  // never a background provider request or CRM/profile persistence.
+  const [approvedMeditationText,setApprovedMeditationText]=useState("");
   const [scores,setScores] = useState<Record<(typeof checkOrder)[number],number>>({energy:5,money:5,relationships:5,goals:5});
   const [touchedScores,setTouchedScores] = useState<Partial<Record<(typeof checkOrder)[number],number>>>({});
   const [theme, setTheme] = useState<VideoTheme>("energy");
@@ -3089,11 +3092,29 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const affirmationLines = linesForVideoAffirmations(locale,theme,affirmations);
   // Authored setup clips suppress the original transient duplicate overlays.
   const currentAffirmationSpeech=affirmations.enabled?affirmationNarrationText(affirmationLines):"";
+  // A changed goal or scenario cannot reuse a previously approved meditation
+  // transcript, even if the user is still viewing the Voice pane. Do not key
+  // this to the attached audio/duration: narration attachment is not a new goal.
+  const meditationScenarioIdentity=JSON.stringify([
+    theme,wish,sceneName,caption,speed,brightness,meditationFocus,
+    affirmationLines,affirmations.enabled,
+  ]);
+  const approvedScenarioRef=useRef(meditationScenarioIdentity);
+  useLayoutEffect(()=>{
+    if(approvedScenarioRef.current===meditationScenarioIdentity)return;
+    approvedScenarioRef.current=meditationScenarioIdentity;
+    setApprovedMeditationText("");
+  },[meditationScenarioIdentity]);
+  const isCurrentNarrationApproved=(spoken:string|undefined|null)=>Boolean(spoken&&(
+    ((activeWorkspace==="effects"||
+      (attachedAudio?.kind==="file"&&attachedAudio.meditationApproved===true))&&
+      spoken===approvedMeditationText)||
+    isApprovedAffirmationNarration(affirmationLines,spoken,affirmations.enabled)));
   // Phrase selection is part of the approved narration itself: removing a spoken
   // line invalidates its WAV immediately, even while the phrase editor is pending.
   // Other changes (duration/voice preferences) wait until pending edits are approved.
   const narrationPhraseMismatch=attachedAudio?.kind==="file"&&attachedAudio.narration&&
-    !isApprovedAffirmationNarration(affirmationLines,attachedAudio.spokenText,affirmations.enabled);
+    !isCurrentNarrationApproved(attachedAudio.spokenText);
   const narrationDurationMismatch=attachedAudio?.kind==="file"&&attachedAudio.narration&&
     Math.abs((attachedAudio.mixSeconds??0)-duration)>0.35;
   const narrationInvalid=Boolean(attachedAudio?.kind==="file"&&attachedAudio.narration&&
@@ -4633,11 +4654,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     // export at unity gain instead of silently reducing both by another 20%.
     setSoundVolume(100);
     setAttachedAudio({kind:"file",file:entry.file,id:entry.url,narration:true,
+      ...(activeWorkspace==="effects"&&Boolean(approvedMeditationText)&&
+        clip.spokenText===approvedMeditationText?{meditationApproved:true as const}:{}),
       spokenText:clip.spokenText,speechSeconds:clip.speechSeconds,mixSeconds:clip.mixSeconds,
       voiceId:clip.voiceId,language:clip.language,bed:clip.bed});
     // A new narration length must not throw away the chosen four-shot film.
     if(duration!==clip.mixSeconds)changeVideoDuration(clip.mixSeconds as (typeof durations)[number]);
-    setNotice(locale==="ru"?"Голос аффирмаций добавлен в видео.":
+    setNotice(clip.spokenText===approvedMeditationText?
+      (locale==="ru"?"Голос медитации добавлен в видео.":locale==="es"?"La narración de la meditación se ha añadido al vídeo.":"Meditation voice attached to video."):
+      locale==="ru"?"Голос аффирмаций добавлен в видео.":
       locale==="es"?"La voz de las afirmaciones está añadida al vídeo.":"Affirmation voice has been attached to your video.");
   }
   async function applyHypnoAudioEffects(next:{whisper:boolean;binaural:boolean;beatHz:number;repeatEverySeconds?:number;whisperGain?:number}){
@@ -4651,7 +4676,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       setActiveWorkspace("phrases");
       return;
     }
-    if(next.whisper&&(!hypnoSpeechSource||!isApprovedAffirmationNarration(affirmationLines,hypnoSpeechText,affirmations.enabled))){
+    if(next.whisper&&(!hypnoSpeechSource||!isCurrentNarrationApproved(hypnoSpeechText))){
       setNotice(locale==="ru"?"Сначала создайте озвучку фраз в блоке «Озвучка фраз».":
         locale==="es"?"Primero crea la voz de tus frases.":"Create a spoken-phrases track first.");
       return;
@@ -4677,7 +4702,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       const backgroundFile=baseAudio?.kind==="file"?baseAudio.file:null;
       const includesNarration=Boolean(next.whisper||(baseAudio?.kind==="file"&&baseAudio.narration));
       const effectSpokenText=next.whisper?hypnoSpeechText:(baseAudio?.kind==="file"?baseAudio.spokenText??"":"");
-      if(includesNarration&&!isApprovedAffirmationNarration(affirmationLines,effectSpokenText,affirmations.enabled)){
+      if(includesNarration&&!isCurrentNarrationApproved(effectSpokenText)){
         setNotice(locale==="ru"?"Сначала обновите устаревшую озвучку выбранных фраз.":"Regenerate the outdated spoken-phrase track before applying audio effects.");
         return;
       }
@@ -4707,6 +4732,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       setAudioRights(true);setSoundVolume(100);
       setAttachedAudio({kind:"file",file:entry.file,id:entry.url,nonLoop:true,
         ...(includesNarration?{narration:true,spokenText:effectSpokenText,speechSeconds,
+          ...(baseAudio?.kind==="file"&&baseAudio.meditationApproved===true&&
+            effectSpokenText===approvedMeditationText?{meditationApproved:true as const}:{}),
           mixSeconds:duration,voiceId:voicePreferences.voiceId,language:voicePreferences.language,bed:voicePreferences.bed}:{} )});
       setHypnoWhisperEnabled(next.whisper);setHypnoBinauralEnabled(next.binaural);setHypnoBeatHz(next.beatHz);
       setNotice(locale==="ru"?"Аудиоэффекты добавлены в звуковую дорожку видео.":
@@ -4727,7 +4754,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     void applyHypnoAudioEffects({whisper:hypnoWhisperEnabled,binaural:!hypnoBinauralEnabled,beatHz:hypnoBeatHz});
   }
   async function toggleHypnoVoice(){
-    if(!hypnoSpeechSource||phrasePending||narrationInvalid||!isApprovedAffirmationNarration(affirmationLines,hypnoSpeechText,affirmations.enabled))return;
+    if(!hypnoSpeechSource||phrasePending||narrationInvalid||!isCurrentNarrationApproved(hypnoSpeechText))return;
     if(attachedAudio?.kind==="file"&&attachedAudio.narration&&audioRights){
       setHypnoWhisperEnabled(false);setHypnoBinauralEnabled(false);previousHypnoAudioRef.current=null;
       clearUploadedAudio();setAttachedAudio(null);
@@ -6243,12 +6270,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               (locale==="ru"?"Выберите фразу и голос для её озвучивания.":locale==="es"?"Elige una frase y una voz para narrarla.":"Choose a phrase and a voice to narrate it."):
               (locale==="ru"?"Озвучка выбранных фраз":locale==="es"?"Narración de las frases elegidas":"Narration of your chosen phrases")}</p></div>
         </div>
-        {phrasePending&&<p className={videoStyles.phraseVoiceNotice} role="status" data-video-voice-approval-required>
+        {phrasePending&&(activeWorkspace!=="effects"||!approvedMeditationText)&&<p className={videoStyles.phraseVoiceNotice} role="status" data-video-voice-approval-required>
           {locale==="ru"?"Подтвердите новые фразы выше, прежде чем создавать голос.":locale==="es"?"Confirma las frases nuevas arriba antes de crear la voz.":"Approve the new phrases above before generating their voice."}
         </p>}
         <MandalaAffirmationVoice locale={locale} lines={affirmationLines}
-          enabled={affirmations.enabled} durationSeconds={duration}
-          disabled={recording||preparing} approvalPending={phrasePending}
+          enabled={affirmations.enabled}
+          approvedMeditationText={activeWorkspace==="effects"?approvedMeditationText:""}
+          durationSeconds={activeWorkspace==="effects"&&approvedMeditationText?30:duration}
+          disabled={recording||preparing} approvalPending={phrasePending&&(activeWorkspace!=="effects"||!approvedMeditationText)}
           initialPreferences={voicePreferences} onAttach={attachGeneratedAffirmationAudio}
           onInvalidate={()=>{
             const staleHypnoTrack=Boolean(hypnoWhisperEnabled||hypnoBinauralEnabled||
@@ -7841,7 +7870,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         data-video-effects-panel aria-label={workspaceCopy[locale].effects.title}>
         {activeWorkspace==="effects" ? <MandalaTherapyStudio locale={locale} initialFormat={therapyInitialFormat}
           disabled={recording||preparing||hypnoAudioBusy}
-          editor={isCourse=><MandalaPersonalMeditation key={isCourse?"course":"single"}
+          onMeditationApproved={setApprovedMeditationText}
+          editor={(isCourse,onApproved)=><MandalaPersonalMeditation key={isCourse?"course":"single"}
             coursePreview={isCourse} compactTherapy approvedVideoConcept={approvedVideoConcept}
             locale={locale} theme={theme} wish={wish}
             scene={sceneName} caption={caption} sound={attachedAudio?appliedAudioName:""}
@@ -7851,9 +7881,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             pace={speed} brightness={brightness}
             affirmations={affirmationLines} affirmationsEnabled={affirmations.enabled}
             focus={meditationFocus} disabled={recording||preparing}
+            onApproved={onApproved}
             onNarrationReady={attachMeditationNarration}
-            onNarrationInvalidated={()=>setAttachedAudio(current=>
-              current?.kind==="file"&&current.nonLoop?null:current)}/>}
+            onNarrationInvalidated={()=>{
+              setApprovedMeditationText("");
+              setAttachedAudio(current=>
+                current?.kind==="file"&&current.nonLoop?null:current);
+            }}/>} 
           voiceEditor={hypnoVoiceEditor}
           onVideoPhrases={()=>{
             setActiveWorkspace("phrases");setIdeasSubtab("personalization");setStudioMode("pump");

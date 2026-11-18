@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { MeditationCourseEnquiry } from "./meditation-course-enquiry";
 import { BookOpen, Check, ChevronDown, Clipboard, Download, FileText, Headphones, Leaf, RotateCcw, Sparkles, Square } from "lucide-react";
+import {buildShortMeditationChoices} from "@/lib/mandala/short-meditation-choices.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import type { VideoTheme } from "@/lib/mandala/holistic-video-themes";
 import type { GuidedMeditationFocus } from "./mandala-guided-course";
@@ -40,6 +41,7 @@ type Props = {
   seedScript?:string;
   onNarrationReady?:(file:File)=>Promise<boolean>;
   onNarrationInvalidated?:()=>void;
+  onApproved?:(approvedText:string)=>void;
 };
 type CourseDay={id:string;number:number;title:string;motif:string};
 type WriterOrigin="local"|"gemini_free"|"openrouter_free"|"edited"|null;
@@ -123,6 +125,29 @@ const copy = {
     privacy:"Texto creado localmente. La voz en la nube envía solo el fragmento aprobado a Google; no se guarda en CRM."
   }
 } as const;
+const shortCopy={
+ en:{eyebrow:"YOUR MEDITATIONS ARE READY",title:"Choose your meditation",
+  intro:"Two short texts prepared locally from your scenario. Choose the one that feels right.",
+  option:"Option",duration:"≈ 0:30",text:"Meditation text",
+  choose:"Choose this meditation",regenerate:"Generate 2 new options",
+  customize:"Customize text",finishEdit:"Done editing",approved:"Text approved. Choose a voice next.",
+  voiceReady:"Approved meditation text",empty:"Please add meditation text first.",tooLong:"Keep the short text within 650 characters.",
+  local:"Locally composed · no AI or paid render",safety:"A reflective exercise, not medical treatment."},
+ ru:{eyebrow:"ВАШИ МЕДИТАЦИИ ГОТОВЫ",title:"Выберите медитацию",
+  intro:"Два коротких текста по вашему сценарию, подготовленных локально. Выберите подходящий.",
+  option:"Вариант",duration:"≈ 0:30",text:"Текст медитации",
+  choose:"Утвердить эту медитацию",regenerate:"Предложить 2 новых варианта",
+  customize:"Изменить текст",finishEdit:"Завершить правку",approved:"Текст утверждён. Теперь выберите голос.",
+  voiceReady:"Утверждённый текст",empty:"Сначала добавьте текст медитации.",tooLong:"Сократите текст до 650 символов.",
+  local:"Создано локально · без AI и платного рендера",safety:"Практика для рефлексии, не медицинское лечение."},
+ es:{eyebrow:"TUS MEDITACIONES ESTÁN LISTAS",title:"Elige tu meditación",
+  intro:"Dos textos breves preparados localmente a partir de tu escenario. Elige uno.",
+  option:"Opción",duration:"≈ 0:30",text:"Texto de meditación",
+  choose:"Aprobar esta meditación",regenerate:"Generar otras 2 opciones",
+  customize:"Editar texto",finishEdit:"Terminar edición",approved:"Texto aprobado. Ahora elige una voz.",
+  voiceReady:"Texto aprobado",empty:"Primero añade un texto de meditación.",tooLong:"Reduce el texto a 650 caracteres.",
+  local:"Creado localmente · sin IA ni render de pago",safety:"Práctica reflexiva, no tratamiento médico."}
+} as const;
 const themeLabels = {
   en:{money:"Money",energy:"Energy",relationships:"Relationships",goals:"Goals",life:"Meaning",health:"Wellbeing"},
   ru:{money:"Деньги",energy:"Энергия",relationships:"Отношения",goals:"Цели",life:"Смыслы",health:"Самочувствие"},
@@ -163,7 +188,7 @@ const courseCopy={
 } as const;
 
 export function MandalaPersonalMeditation({
-  locale,theme,wish,scene,sound,caption,audioSrc,pace,brightness,affirmations,affirmationsEnabled,focus,disabled,coursePreview=false,compactTherapy=false,approvedVideoConcept=null,seedScript,onNarrationReady,onNarrationInvalidated
+  locale,theme,wish,scene,sound,caption,audioSrc,pace,brightness,affirmations,affirmationsEnabled,focus,disabled,coursePreview=false,compactTherapy=false,approvedVideoConcept=null,seedScript,onNarrationReady,onNarrationInvalidated,onApproved
 }:Props) {
   const t=copy[locale];
   const course=courseCopy[locale];
@@ -195,6 +220,11 @@ export function MandalaPersonalMeditation({
   const [script,setScript]=useState("");
   const seededScriptRef=useRef("");
   const [variantIndex,setVariantIndex]=useState(0);
+  const [shortTab,setShortTab]=useState<0|1>(0);
+  const [shortCycle,setShortCycle]=useState(0);
+  const [shortDrafts,setShortDrafts]=useState<{key:string;values:[string,string]}|null>(null);
+  const [shortEditing,setShortEditing]=useState(false);
+  const [shortApproval,setShortApproval]=useState<{key:string;index:0|1;text:string}|null>(null);
   const [generatedFor,setGeneratedFor]=useState("");
   const [notice,setNotice]=useState("");
   const [generationMode,setGenerationMode]=useState<"local"|"ai">("local");
@@ -477,6 +507,103 @@ export function MandalaPersonalMeditation({
                   onChange={event=>setExtra(event.currentTarget.value)}/>
               </label>
   );
+  // Compact Therapy keeps two real local 30-second scripts ready immediately.
+  // No optional cloud writer, remote voice or video render runs on page load.
+  if(compactTherapy&&!coursePreview){
+    const st=shortCopy[locale];
+    const shortKey=signature+"::"+shortCycle;
+    const choices=buildShortMeditationChoices({
+      locale,theme:actualTheme,wish:effectiveWish,scene,caption,focus,
+      extra,cycle:shortCycle
+    });
+    const base:[string,string]=[choices.items[0]?.text||"",choices.items[1]?.text||""];
+    const values:[string,string]=shortDrafts?.key===shortKey?shortDrafts.values:base;
+    const currentText=values[shortTab];
+    const approved=shortApproval?.key===shortKey&&
+      shortApproval.text===values[shortApproval.index];
+    const customize=(value:string)=>{
+      const next:[string,string]=[...values] as [string,string];
+      next[shortTab]=value;
+      setShortDrafts({key:shortKey,values:next});
+      editorRevisionRef.current++;
+      stopNarration();
+      setShortApproval(null);setScript("");setGeneratedFor("");
+      onNarrationInvalidated?.();
+    };
+    const accept=()=>{
+      if(disabled||!choices.safe||!currentText.trim()){
+        setNotice(st.empty);return;
+      }
+      if(Array.from(currentText).length>650){setNotice(st.tooLong);return;}
+      if(isMeditationSafetyResponse(buildPersonalMeditationScript({locale,wish:currentText,length:3}),locale)){
+        setNotice(t.safety);return;
+      }
+      stopNarration();
+      setScript(currentText);
+      setWriterOrigin(shortDrafts?.key===shortKey?"edited":"local");
+      setGeneratedFor(signature);
+      setShortApproval({key:shortKey,index:shortTab,text:currentText});
+      setNotice(st.approved);
+      onNarrationInvalidated?.();
+      onApproved?.(currentText);
+    };
+    const refresh=()=>{
+      if(disabled)return;
+      stopNarration();onNarrationInvalidated?.();
+      setShortCycle(value=>value+1);
+      setShortTab(0);setShortDrafts(null);setShortApproval(null);
+      setScript("");setGeneratedFor("");setWriterOrigin(null);
+      setShortEditing(false);setNotice("");
+    };
+    return <section className={css.shortPanel} id="personal-meditation"
+      data-video-personal-meditation data-meditation-short-picker
+      data-meditation-length-seconds="30" data-meditation-choices-ready={choices.safe?"true":"false"}
+      aria-labelledby="personal-meditation-heading">
+      <header className={css.shortHeading}>
+        <span className={css.icon}><Leaf size={21} aria-hidden="true"/></span>
+        <div><small>{st.eyebrow}</small><h3 id="personal-meditation-heading">{st.title}</h3>
+        <p>{st.intro}</p></div>
+      </header>
+      {choices.safe?<div className={css.shortChoiceTabs} role="tablist" aria-label={st.title}
+        data-meditation-choice-tabs>
+        {([0,1] as const).map(index=><button type="button" key={index}
+          id={"meditation-choice-"+index} role="tab" aria-selected={shortTab===index}
+          aria-controls="meditation-short-body" data-meditation-choice={index}
+          disabled={disabled} onClick={()=>{
+            if(index!==shortTab){stopNarration();onNarrationInvalidated?.();}
+            setShortTab(index);setShortEditing(false);
+          }}>
+          <span>{st.option} {index===0?"A":"B"}</span>
+          <strong>{choices.items[index]?.title}</strong>
+        </button>)}
+      </div>:null}
+      {choices.safe?<section className={css.shortBody} id="meditation-short-body"
+        role="tabpanel" aria-labelledby={"meditation-choice-"+shortTab}>
+        <div className={css.shortMeta}>
+          <span><FileText size={16} aria-hidden="true"/>{st.duration}</span>
+          <span className={css.shortPill}><Leaf size={15} aria-hidden="true"/>{st.text}</span>
+        </div>
+        {shortEditing?<textarea className={css.shortTextarea} data-meditation-script
+          aria-label={st.text} maxLength={650} rows={9} value={currentText}
+          onChange={event=>customize(event.currentTarget.value)}/>:
+          <div className={css.shortText} role="document" data-meditation-script
+            aria-label={st.text}>{currentText}</div>}
+      </section>:<p className={css.safety} role="alert">{choices.warning}</p>}
+      {choices.safe?<button type="button" className={css.shortApprove}
+        data-meditation-approve disabled={disabled||!currentText.trim()||Array.from(currentText).length>650}
+        onClick={accept}><Check size={21} aria-hidden="true"/>{st.choose}</button>:null}
+      {choices.safe?<div className={css.shortSecondary}>
+        <button type="button" data-meditation-generate disabled={disabled}
+          onClick={refresh}><RotateCcw size={17} aria-hidden="true"/>{st.regenerate}</button>
+        <button type="button" data-meditation-customize disabled={disabled}
+          aria-expanded={shortEditing} onClick={()=>setShortEditing(value=>!value)}>
+          <Sparkles size={17} aria-hidden="true"/>{shortEditing?st.finishEdit:st.customize}</button>
+      </div>:null}
+      {approved?<p className={css.notice} data-meditation-approved role="status">{st.approved}</p>:null}
+      {notice?<p className={css.notice} role="status" aria-live="polite">{notice}</p>:null}
+      <small className={css.shortPrivacy}>{st.safety}</small>
+    </section>;
+  }
   return (
     <section className={css.panel} id="personal-meditation" data-video-personal-meditation
       aria-labelledby="personal-meditation-heading">

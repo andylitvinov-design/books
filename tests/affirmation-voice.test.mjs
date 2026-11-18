@@ -61,8 +61,16 @@ test("real button uses selected runtime affirmations and attaches WAV to existin
   assert.match(voiceEditor,/onAttach\(\{file,speechFile,/);
   assert.match(page,/setAttachedAudio\(\{kind:"file",file:entry\.file,id:entry\.url,narration:true/);
   assert.match(page,/narrationInvalid/);
-  assert.match(page,/const narrationPhraseMismatch=attachedAudio\?\.kind==="file"&&attachedAudio\.narration&&[\s\S]*!isApprovedAffirmationNarration\(affirmationLines,attachedAudio\.spokenText,affirmations\.enabled\)/,
+  assert.match(page,/const narrationPhraseMismatch=attachedAudio\?\.kind==="file"&&attachedAudio\.narration&&[\s\S]*!isCurrentNarrationApproved\(attachedAudio\.spokenText\)/,
     "removing an actually spoken phrase invalidates its WAV immediately, even during pending edits");
+  assert.match(page,/attachedAudio\?\.kind==="file"&&attachedAudio\.meditationApproved===true/,
+    "only provenance-marked Therapy narration may remain valid in Ready");
+  assert.match(page,/spoken===approvedMeditationText\)\|\|/,
+    "a marked Therapy track still requires exact approved meditation text");
+  assert.match(page,/isApprovedAffirmationNarration\(affirmationLines,spoken,affirmations\.enabled\)/,
+    "Ideas narration must still be checked against approved phrase lines");
+  assert.match(page,/phrasePending&&\(activeWorkspace!=="effects"\|\|!approvedMeditationText\)/,
+    "pending Ideas phrases must continue to block their voice requests");
   assert.match(page,/narrationPhraseMismatch \|\| \(!phrasePending&&/,
     "only unrelated duration and voice-setting changes wait for phrase approval");
   assert.match(page,/narrationDurationMismatch[\s\S]*Math\.abs\(\(attachedAudio\.mixSeconds\?\?0\)-duration\)>0\.35/,
@@ -129,7 +137,7 @@ test("all six voices can be selected and their real samples requested before phr
   const editor=read("components/mandala-affirmation-voice.tsx");
   const page=read("components/mandala-free-video-studio.tsx");
   const styles=read("components/mandala-affirmation-voice.module.css");
-  assert.match(page,/disabled=\{recording\|\|preparing\} approvalPending=\{phrasePending\}/);
+  assert.match(page,/disabled=\{recording\|\|preparing\} approvalPending=\{phrasePending&&\(activeWorkspace!=="effects"\|\|!approvedMeditationText\)\}/);
   assert.match(editor,/approvalPending\?\:boolean/);
   assert.match(editor,/disabled=\{busy\|\|disabled\} onClick=\{\(\)=>\{/);
   assert.doesNotMatch(editor,/disabled=\{busy\|\|disabled\|\|approvalPending\} onClick/);
@@ -361,7 +369,7 @@ test("mobile one-phrase selection uses approved lines only, revokes consent and 
     "do not leave the removed spoken line attached merely because its text changed");
   assert.ok(ui.includes('body:JSON.stringify({mode:"affirmations",voiceId,language,text:speechText,consent:true})'));
   assert.match(ui,/data-video-affimations-audio-ready/);
-  assert.match(parent,/isApprovedAffirmationNarration\(affirmationLines,attachedAudio\.spokenText,affirmations\.enabled\)/);
+  assert.match(parent,/isCurrentNarrationApproved\(attachedAudio\.spokenText\)/);
   assert.match(css,/\.phrasePick select\{/);
   assert.doesNotMatch(ui,/autoPlay/);
 });
@@ -416,7 +424,7 @@ test("anonymous selected phrase can never hit paid backup even if operator custo
 test("hypno remix keeps the actual consented spoken phrase and refuses stale source",()=>{
   const parent=read("components/mandala-free-video-studio.tsx");
   assert.match(parent,/setHypnoSpeechText\(clip\.source==="local"\?"":clip\.spokenText\)/);
-  assert.match(parent,/isApprovedAffirmationNarration\(affirmationLines,hypnoSpeechText,affirmations\.enabled\)/);
+  assert.match(parent,/isCurrentNarrationApproved\(hypnoSpeechText\)/);
   assert.match(parent,/spokenText:effectSpokenText/);
   assert.match(parent,/spokenText:hypnoSpeechText/);
   assert.doesNotMatch(parent,/spokenText:currentAffirmationSpeech/);

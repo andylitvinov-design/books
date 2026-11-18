@@ -5729,3 +5729,7 @@
 .studio[data-active-workspace="ready"] .notice,
 .studio[data-active-workspace="ready"] .warning,
 .studio[data-active-workspace="ready"] [data-video-result-empty]{display:none}
+
+/* 18 Nov: reviewing meditation text is not a video-preview step. Keep the
+   existing Canvas/player mounted for Ready, Montage and all other tabs. */
+.studio[data-active-workspace="effects"] [data-video-live-stage]{display:none!important}
