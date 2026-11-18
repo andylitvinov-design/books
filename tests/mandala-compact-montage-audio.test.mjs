@@ -98,3 +98,29 @@ test("Audio two-button route never performs premature render and keeps a single-
   assert.match(css,/order:1;min-height:49px;border:1px solid #087e61!important/);
   assert.match(studio,/filteredAudio\.slice\(0,12\)/);
 });
+
+test("Audio has two usable music buttons under tracks and one bottom Add Affirmations",()=>{
+  const from=source.indexOf('{montagePanel==="audio" ? <div className={videoStyles.montageAudioCompact}');
+  const until=source.indexOf('data-video-audio-bed-panel',from);
+  const pane=source.slice(from,until+250);
+  for(const text of ["data-video-audio-primary-actions","data-video-audio-all-music",
+    "data-video-audio-upload-my-audio","data-video-audio-upload-action",
+    "data-video-audio-add-text","All music","Upload my audio","Add Affirmations",
+    "Добавить аффирмации","Añadir afirmaciones"]){
+    assert.ok(pane.includes(text),text);
+  }
+  assert.ok(pane.indexOf("data-video-audio-compact-grid")<
+    pane.indexOf("data-video-audio-primary-actions"),"actions below tracks");
+  assert.ok(pane.indexOf("data-video-audio-compact-volume")<
+    pane.indexOf("data-video-audio-add-text"),"affirmations button below volume");
+  assert.ok(pane.includes("onClick={openAudioLibrary}"),"opens existing library");
+  assert.ok(pane.includes("onClick={continueMontageOrGenerate}"),"advances to Text, not video export");
+  assert.ok(pane.includes("StudioMusicPicker locale={locale} initialOpen"),
+    "one tap opens verified source catalog");
+  assert.ok(!pane.includes("data-video-music-to-mv-create"),"no obsolete music-to-video CTA");
+  assert.ok(css.includes(".audioCompactActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))"));
+  assert.ok(css.includes(".audioCompactGrid>.audioCompactUpload{order:2}"),"upload tile third on mobile");
+  assert.ok(css.includes('[data-video-stage-actions="montage"]{\\n    display:none!important}'),
+    "hide redundant two-button footer only on mobile Audio");
+  assert.ok(source.includes('setMontagePanel("text")'),"original Text stage remains");
+});

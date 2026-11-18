@@ -15,10 +15,10 @@ const extra={
 };
 const SAFE_MIME=new Set(["audio/mpeg","audio/mp4","audio/wav"]);
 const MAX_SIZE=15*1024*1024;
-export function StudioMusicPicker({locale="en",disabled=false,onSelect}){
+export function StudioMusicPicker({locale="en",disabled=false,onSelect,initialOpen=false}){
  const t=text[locale]||text.en;
  const e=extra[locale]||extra.en;
- const [open,setOpen]=useState(false);
+ const [open,setOpen]=useState(Boolean(initialOpen));
  const [loading,setLoading]=useState(false);
  const [category,setCategory]=useState("all");
  const [tag,setTag]=useState("all"),[query,setQuery]=useState("");
