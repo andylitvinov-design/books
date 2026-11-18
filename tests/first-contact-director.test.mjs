@@ -135,3 +135,39 @@ test('Spanish and voluntary psychologist depth preserve one question and a 3-que
   assert.equal(stop.move,'offer_skip_or_pause');
   assert.equal(stop.state.questionCounts.contact,3);
 });
+
+test('partial answers and missing slots are recorded per stage in the session',()=>{
+  const start=run(emptyFirstContactState(),'У меня сложности на работе',[
+    evidence('intent','разобраться с работой','сложности на работе'),
+  ]);
+  assert.equal(start.state.stageResults.understand.status,'in_progress');
+  assert.equal(start.state.stageResults.understand.answered,false);
+  assert.equal(start.state.stageResults.understand.score,0);
+  assert.ok(start.state.stageResults.understand.requiredMissing.includes('difficulty'));
+  const r=run(start.state,'Мне трудно выступать на совещаниях',[
+    evidence('situation','публичные выступления','на совещаниях'),
+  ]);
+  assert.equal(r.state.stageResults.understand.score,50);
+  assert.equal(r.state.stageResults.understand.answered,true);
+  assert.ok(r.state.stageResults.understand.missing.includes('difficulty'));
+  assert.equal(r.state.stage,'understand');
+});
+test('clarification ceiling offers an alternative once and then waits without looping',()=>{
+  let state=emptyFirstContactState();
+  for(const utterance of ['Не знаю','Пока не понимаю','Трудно сказать']){
+    state=run(state,utterance).state;
+  }
+  const firstCap=run(state,'Пока не хочу рассказывать');
+  assert.equal(firstCap.move,'await_client_choice');
+  assert.equal(firstCap.question,null);
+  assert.equal(firstCap.state.questionCounts.contact,2);
+});
+test('replay of a verified turn ID is rejected before another stage move',()=>{
+  const s=emptyFirstContactState();
+  const once=advanceFirstContact(s,{turnId:'one',utterance:'Хочу обсудить отношения'});
+  let failed=false;
+  try{advanceFirstContact(once.state,{turnId:'one',utterance:'Хочу обсудить отношения'});}catch(e){
+    failed=String(e).includes('FIRST_CONTACT_TURN_REPLAY');
+  }
+  assert.equal(failed,true);
+});
