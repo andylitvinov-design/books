@@ -2891,7 +2891,10 @@ test('only real PR work or a core-control change launches extra orchestrator Act
  assert.match(push,/hh-pr-repair-worker\.yml/);
  assert.doesNotMatch(push,/tests\//,'editing an old test cannot flood PR reconciliation');
  assert.doesNotMatch(push,/ci-pr-monitor-feed\.cjs/,'read-only monitor edits must not wake PR coordinator');
- assert.ok((push.match(/^      - /gm)||[]).length<=10,'push owner trigger is tightly scoped');
+ // Eleven exact core-control paths include the Commander owner PR gateway.
+ // Keep bounded push routing; never subscribe to tests, telemetry or PR source.
+ assert.ok((push.match(/^      - /gm)||[]).length<=11,'push owner trigger is tightly scoped');
+ assert.match(push,/ci-pr-commander-pr-completion\.cjs/);
  assert.match(watchdog,/^  reactivate-schedules:/m,
   'trusted schedule repair remains reachable from source push');
 });
