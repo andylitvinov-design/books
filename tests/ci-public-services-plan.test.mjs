@@ -1747,3 +1747,21 @@ test('Nov 16 isolated Video Studio PRs do not allocate unrelated public-services
   ]) assert.equal(covers(publicPaths, sensitive), true,
     'mixed service/auth/consent/payment source still requires Public Services browser QA: ' + sensitive);
 });
+
+test('Practice SSR is owned by exact practitioner browser workflows, not the unrelated 13-case Public Services matrix',()=>{
+  const pub=pathsOf('hh-public-services-production.yml');
+  const visual=pathsOf('practice-visual-browser.yml');
+  const owner=pathsOf('practice-visual-services.yml');
+  for(const path of ['components/practice-showcase.jsx','components/practice-showcase.module.css']){
+    assert.equal(covers(pub,path),false,path+' must not launch 20-minute public checkout QA');
+    assert.equal(covers(visual,path),true,path+' must keep real Chromium and WebKit');
+    assert.equal(covers(owner,path),true,path+' must keep practitioner editor checks');
+  }
+  const browser=workflow('practice-visual-browser.yml');
+  assert.match(browser,/verify-practice-visual-browser\\.mjs/);
+  assert.match(browser,/Chromium and WebKit/);
+  assert.match(browser,/320, 354, 390 and 430 pixels/);
+  for(const path of ['components/consultation-choice-capture.tsx',
+    'components/commerce/service-cart.tsx','app/api/service-enquiries/route.ts'])
+    assert.equal(covers(pub,path),true,path+' must still have Public Services coverage');
+});
