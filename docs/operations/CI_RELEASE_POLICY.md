@@ -2,6 +2,14 @@
 
 This is the authoritative current policy for CI and production delivery. GitHub ruleset 26269892 is the authoritative configuration; verify its current readback before delivery and do not modify it as part of routine releases.
 
+## Production publication is batched hourly (owner decision, 15 November 2026)
+
+**Single ordinary publisher.** Following a protected merge to `codex/public-book-library`, do not independently create or promote a Vercel Production deployment. The trusted default control branch `codex/bootstrap-books` owns the **existing** `.github/workflows/hh-hourly-vercel-production.yml`, scheduled `0 * * * *` (the top of each hour in America/Toronto). It reads the latest protected site SHA, checks existing Vercel Production deployments within the previous 60 minutes and for the same SHA, and sends at most one non-emergency request per run. GitHub schedule delivery can be delayed; do not manufacture a second release to compensate.
+
+Connected chats, Codex, workers, bots, release coordinators, and tools must **not** invoke Vercel `create_deployment`, `request_promote`, CLI `--prod`, redeploy, REST API deploys, Deploy Hooks, or a manual GitHub Actions release after a normal PR merge. A merge is `MERGED_AWAITING_HOURLY` until exact canonical-alias/SHA and scoped LIVE acceptance are verified. `git.deploymentEnabled:false` on Production is preserved. An independently triggered API/CLI release can bypass the workflow's hourly guard, so neither that setting nor a green CI run proves team-wide rate limiting; investigate unexplained new deploys instead of claiming one/hour globally.
+
+Only an **explicit emergency Deploy Now** approval by the owner for a particular release authorizes `workflow_dispatch emergency=true`; the existing required PR checks and safe deployment validation still apply. The separate manual `cleanup_mode=dry-run|apply` remains bounded, with current LIVE and 30 READY rollbacks protected. No additional scheduled workflows, paid services, token movement, preview builds or production deploys may be created just to implement or check this policy.
+
 ## Immediate PR and GitHub CI Fast Lane (owner decision, 3 November 2026)
 
 This is the default, event-driven path and overrides older text below that suggests Triage, Watchdog, scheduled sweeps, priority labels or Repair are mandatory before a routine PR can start CI or merge.
@@ -11,6 +19,18 @@ This is the default, event-driven path and overrides older text below that sugge
 3. **Exception path only.** On independently verified RED, missing real Core registration, merge conflict or stale/outdated check, route that single PR:HEAD to the corresponding CI, source-Repair or conflict owner with the first failing run/job and current SHA. No global queue and no speculative rerun for passing, queued or running jobs. One owner, one meaningful repair batch and one guarded exact-HEAD verification; retain all real security/privacy/consent/payment and browser/WebKit gates.
 4. **Measure the real first delay.** Keep distinct `request_received → first meaningful source published → PR.created_at → first actual pull_request Core run.created_at → first Core job.started_at` where trustworthy timestamps exist. Source editing and subsequent HEAD/CI cycles belong to separate metrics; comparing original Triage time with the *last* HEAD's CI queue is not an initial delay. Missing evidence must remain unknown, not zero. For a selected 1/6/12/24/48-hour cohort count all PRs **created in that period**, and show the measured subset next to every average/median/P90.
 5. **Zero added spend.** Reuse existing GitHub Actions, caching and native auto-merge. No new paid runner, parallel CI blast, external backstop, service or frequency increase. A production-only CI/documentation change must not demand a new functional site release; verify Vercel production SHA/alias separately from the protected GitHub merge.
+
+## Metadata-only edits: stop duplicate Core waves (owner decision, 13 November 2026)
+
+- The existing production Core release workflow does **not** subscribe to `pull_request.edited`. Changing a PR title/body without changing its source HEAD must not launch a fresh Core/Specialist wave. PR comments are the normal progress channel.
+- A real `synchronize` (new source HEAD), `opened`, `reopened` or `ready_for_review` event still launches the existing protected exact-HEAD Core and applicable Specialist validation. Converting to Draft remains fail-closed.
+- Genuine missing-Core recovery is preserved by the trusted control-plane `scripts/ci-pr-core-metadata-wake.cjs`: after a signed, leased, exact-head reservation, the owner PAT uses a verified Draft → Ready transition. PR body edits are **not** its current wake mechanism. The worker does not fabricate statuses or source commits.
+- When changing a Ready PR's target base, an `edited` event alone no longer starts Core. Require a genuine Ready transition or source synchronization, or use the existing verified missing-CI recovery if applicable, before attempting protected merge. Missing, failed, stale or skipped checks still block.
+- No new job, status, workflow, polling, expensive build, Vercel preview or branch-protection exemption is introduced. `hh-merge-check` still requires real Core and Specialist from the current source HEAD, with sensitive base freshness and external reviews/leases intact.
+
+## Safe protected-base advances (13 November 2026)
+
+The old `BASE_ADVANCED: PRODUCTION_BASE_CHANGED` signal is not a source regression by itself. Preserve the current immutable exact-HEAD Core, Specialist, Guard, review and conflict gate. When a protected production commit advances during sensitive Specialist execution, successful already-running checks may be reused only with complete trusted ancestry/commit/file evidence, a live mergeable PR, and a disjoint public raster-only production delta (PNG, JPEG, WebP, AVIF or GIF under `public/images`, `public/photos`, or `public/assets`). SVG, executable application code, CSS, CI/policy, security, privacy, billing, dependencies, renames/deletions, incomplete results and unknown mergeability do not qualify. The control-plane auto-merge verifier must apply the same compatibility boundary; the policy does not waive a required check or create a new workflow/CI wave. This is narrower than treating lack of a Git conflict as complete logical compatibility.
 
 ## Production and merge gates
 

@@ -13,10 +13,11 @@ test("Montage audio is an owner-approved compact panel, not a second generator",
   for(const marker of ["data-video-audio-category","data-video-audio-compact-grid",
     "data-video-audio-compact-track","data-video-audio-compact-select","data-video-audio-compact-play",
     "data-video-audio-compact-upload","data-video-audio-compact-selected","data-video-audio-compact-volume",
-    "data-video-audio-compact-attach","data-video-audio-affirmations",
+    "data-video-audio-compact-attach",
     "data-video-audio-library","{deepAudioPane}"])assert.ok(pane.includes(marker),marker);
   assert.doesNotMatch(pane,/data-video-audio-mode=/);
-  assert.match(pane,/filteredAudio\.slice\(0,5\)/);
+  assert.match(pane,/filteredAudio\.slice\(0,12\)/);
+  assert.doesNotMatch(pane,/data-video-audio-affirmations|data-video-voice-studio/);
   assert.match(pane,/setAudioCategoryOverride\(item\.id\)/);
   assert.match(pane,/attachedPresetIds\.includes\(id\)/);
   assert.match(pane,/toggleQuickMusic\(id\)/);
@@ -27,12 +28,12 @@ test("Montage audio is an owner-approved compact panel, not a second generator",
   assert.ok(source.includes('data-montage-panel={activeWorkspace==="editor"?montagePanel:undefined}'));
   assert.ok(css.includes('.montageAudioHero'));
   assert.ok(source.includes('onClick={attachSelectedAudio}'));
-  assert.ok(source.includes('onClick={createQuickVideo}'));
+  assert.ok(source.includes('onClick={openReadyForGeneration}'));
 });
 test("Style, Add text, Audio, Montage PRO and real audio source actions remain",()=>{
   const start=source.indexOf('<nav className={videoStyles.montageQuickTools}');
   const rail=source.slice(start,source.indexOf('</nav>',start));
-  assert.match(rail,/id:"effects".*id:"audio"[\s\S]*id:"text".*id:"promo"/);
+  assert.match(rail,/id:"effects".*id:"audio"[\s\S]*id:"text"[\s\S]*id:"concept"[\s\S]*id:"promo"/);
   assert.ok(source.includes('"Choose your style"'));
   assert.match(source,/"Add Text"/);
   assert.ok(source.includes('data-video-audio-compact-upload'));
@@ -40,19 +41,14 @@ test("Style, Add text, Audio, Montage PRO and real audio source actions remain",
   assert.ok(source.includes('data-video-audio-rights'));
 });
 
-test("The compact Audio pane preserves one opt-in consented RU/EN voice editor",()=>{
+test("Montage Audio shows music only; voice lives in Hypno",()=>{
   const panel=source.slice(source.indexOf('{montagePanel==="audio" ? <div className={videoStyles.montageAudioCompact}'),
     source.indexOf('{musicWarning?<p role="alert" className={videoStyles.montageAudioWarning}>'));
-  assert.ok(panel.includes('data-video-voice-studio open={voiceStudioActivated}'));
-  assert.ok(panel.includes('onToggle={event=>setVoiceStudioActivated(event.currentTarget.open)}'));
-  assert.match(panel,/voiceStudioActivated\?<MandalaCloudVoiceStudio locale=\{locale\}/);
-  assert.match(panel,/sourceText=\{currentAffirmationSpeech\} sourceIsPublic/);
-  assert.match(panel,/onAudioReady=\{attachMeditationNarration\}/);
-  assert.match(panel,/onAudioInvalidated=\{\(\)=>setAttachedAudio/);
-  assert.doesNotMatch(panel,/data-video-basic-tab/);
-  assert.match(source,/if\(hash==="voice-studio"\)\{[\s\S]*?setMontagePanel\("audio"\);setBasicPanelTab\("voice"\);/);
+  assert.doesNotMatch(panel,/data-video-voice-studio|MandalaCloudVoiceStudio|data-video-audio-affirmations/);
+  assert.match(source,/voiceEditor=\{activeWorkspace==="effects"\?hypnoVoiceEditor:null\}/);
+  assert.match(source,/"voice-studio":"effects"/);
+  assert.match(source,/if\(hash==="voice-studio"\)\{setHypnoEntryGroup\("audio"\)/);
 });
-
 
 test("compact Montage Audio runs the existing macOS WebKit and Chromium paths",()=>{
   const workflow=readFileSync(new URL("../.github/workflows/holistic-support-mandala.yml",import.meta.url),"utf8");
@@ -82,4 +78,23 @@ test("physical original-motion WebKit exports selected licensed music without re
   assert.match(browser,/assert\.ok\(probe\.streams\.some\(s => s\.codec_type === 'audio'\)\)/);
   assert.match(browser,/Math\.sqrt\(power \/ \(pcm\.length \/ 2\)\) > 0\.003/,"real exported audio must decode and be audible");
   assert.match(browser,/sceneCorrelations:/,"preserve four physical footage comparisons");
+});
+
+test("Audio two-button route never performs premature render and keeps a single-row soundtrack",()=>{
+  const studio=source;
+  const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
+  const from=studio.indexOf('data-video-stage-actions="montage"');
+  const actions=studio.slice(from,studio.indexOf("data-video-narration-reapproval",from));
+  assert.ok(from>0,"reuse one existing Montage footer, no second button component");
+  assert.match(actions,/onClick=\{continueMontageOrGenerate\}/);
+  assert.match(actions,/onClick=\{openReadyForGeneration\}/);
+  assert.doesNotMatch(actions,/onClick=\{createQuickVideo\}/);
+  assert.match(studio,/const openReadyForGeneration\s*=/);
+  assert.match(css,/grid-auto-flow:column;grid-auto-columns:clamp\(84px,27vw,112px\)/);
+  assert.match(css,/max-width:100%;overflow-x:auto;overflow-y:hidden/);
+  assert.match(css,/\[data-video-order-bar\] \.quickOrderSummary\{\s*display:none!important/);
+  assert.match(css,/\[data-video-stage-actions="montage"\]>\.quickGenerate/);
+  assert.match(css,/order:0;min-height:49px;background:#fffcf7!important/);
+  assert.match(css,/order:1;min-height:49px;border:1px solid #087e61!important/);
+  assert.match(studio,/filteredAudio\.slice\(0,12\)/);
 });

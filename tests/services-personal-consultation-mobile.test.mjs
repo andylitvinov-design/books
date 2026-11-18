@@ -18,7 +18,7 @@ test('consultation choice shelf is inside the actual Services/Assist route', () 
 test('three distinct real request actions with existing consented CRM and free wizard', () => {
   assert.match(component, /free-situation-review#request-free-review/);
   assert.equal((component.match(/<ContactChannelChooser /g) || []).length, 2);
-  assert.equal((component.match(/compactPhone compactTrigger stayAfterSave/g) || []).length, 2);
+  assert.equal((component.match(/compactPhone compactTrigger compactMessenger stayAfterSave/g) || []).length, 2);
   assert.match(component, /publicServiceTitle=\{remoteServiceTitle\}/);
   assert.match(component, /publicServiceTitle=\{videoServiceTitle\}/);
   assert.match(component, /not medical diagnosis/i);
@@ -43,4 +43,13 @@ test('Spanish Services mounts one mobile consultation shelf with all real action
   assert.ok(spanishPage.includes('<ServicesMagicalHelpMobile locale="es" />'));
   assert.ok(spanishPage.includes('<PublicSiteHeader locale="es"'));
   assert.ok(spanishPage.includes('<ServicesExplorerProvider>'));
+});
+
+test('mobile consultation keeps image and right-column CTA when messenger choices expand', () => {
+  assert.match(css, /\.card:has\(\[data-compact-messenger="true"\]\) > \.photo\{grid-column:1;grid-row:1 \/ 3\}/);
+  assert.match(css, /\.card:has\(\[data-compact-messenger="true"\]\) > \.order\{grid-column:2;grid-row:2;/);
+  assert.match(css, /\.card:has\(\[data-compact-messenger="true"\] details\[open\]\)\{padding-bottom:82px\}/);
+  assert.match(css, /details\[open\] > div\)\{position:absolute;left:8px;right:8px;bottom:8px;/);
+  assert.doesNotMatch(css, /\.card:has\(\.order details\[open\]\) \.photo\{display:none\}/);
+  assert.doesNotMatch(css, /\.card:has\(\.order details\[open\]\)\{grid-template-columns:minmax\(0,1fr\)\}/);
 });

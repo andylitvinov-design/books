@@ -5977,3 +5977,6 @@
 body:has([data-my-coach-immersive-session]) .mobile-bottom-navigation,
 body:has([data-my-coach-immersive-session]) [data-sitewide-antistress-banner],
 body:has([data-my-coach-immersive-session]) .launcher{display:none!important}
+
+/* Subscription picker: the old 2x2 pricing preview duplicates the compact Plans dialog. */
+[data-profile-active="settings"] #hh-settings-overview-plans{display:none}

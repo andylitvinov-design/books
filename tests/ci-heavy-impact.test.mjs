@@ -191,7 +191,7 @@ test('Free Review workflow preserves post-merge real browser, functional build a
   assert.match(yaml, /node --test tests\/retired-situation-promo-sitewide\.test\.mjs/);
   assert.match(yaml, /if: github\.event_name == 'pull_request' && steps\.impact\.outputs\.browser == 'true'/);
   assert.match(yaml, /if: github\.event_name != 'pull_request' \|\| steps\.impact\.outputs\.browser == 'true'/);
-  assert.match(yaml, /if: github\.event_name == 'push'/);
+  assert.match(yaml, /if: github\.event_name == 'workflow_dispatch'/);
   assert.match(yaml, /npm run build/);
   assert.doesNotMatch(yaml, /npx tsc --noEmit/);
 });
@@ -563,4 +563,41 @@ test('Mandala policy-only impact tests route to fast Guard, while video, voice a
     'Mandala Ready source gate must still exist');
   assert.match(mandalaSource, /- name: Generate dedicated scenario music and four classic performances/);
   assert.match(mandalaSource, /- name: Mandala and mobile support contracts/);
+});
+
+test('App R1 no-op lanes use only slim runners and skip PostgreSQL', () => {
+  const yaml = read('hh-app-r1.yml');
+  const job = (id, next) => {
+    const first = yaml.indexOf('  ' + id + ':\n');
+    assert.ok(first >= 0, id + ' exists');
+    const last = next ? yaml.indexOf('  ' + next + ':\n', first + 1) : yaml.length;
+    assert.ok(last > first, id + ' has stable boundaries');
+    return yaml.slice(first, last);
+  };
+  const unit = job('unit-build', 'course-banner-browser');
+  const browser = job('course-banner-browser', 'database');
+  const db = job('database');
+  const route = (source, expression) =>
+    assert.ok(source.includes('runs-on: ' + '$' + '{{ ' + expression + ' }}'),
+      'runner selection must be exactly guarded by trusted impact');
+  route(unit, "needs.impact.outputs.profile == 'true' && 'ubuntu-latest' || 'ubuntu-slim'");
+  route(browser, "matrix.browser != 'none' && 'ubuntu-24.04' || 'ubuntu-slim'");
+  route(db, "needs.impact.outputs.database == 'true' && 'ubuntu-latest' || 'ubuntu-slim'");
+  assert.ok(db.includes('image: ' + '$' + "{{ needs.impact.outputs.database == 'true' && 'postgres:17-alpine' || '' }}"),
+    'PostgreSQL starts only when the verified impact includes database');
+  for (const [name, body, flag] of [
+    ['unit-build', unit, 'profile'], ['course-banner-browser', browser, 'banner'], ['database', db, 'database'],
+  ]) {
+    assert.ok(body.includes("needs.impact.result == 'success'"), name + ' requires successful classifier');
+    assert.ok(body.includes("if: needs.impact.outputs." + flag + " != 'true'"),
+      name + ' retains the exact negative assertion');
+    assert.ok(body.includes("if: needs.impact.outputs." + flag + " == 'true'"),
+      name + ' retains real positive checks');
+  }
+  assert.match(db, /run: npm run test:app:db/);
+  assert.match(db, /node scripts\/ci-client-memory-rls\.mjs/);
+  assert.match(db, /node scripts\/ci-coaching-rls\.mjs/);
+  assert.ok(browser.includes('chromium') && browser.includes('webkit'));
+  assert.match(unit, /node --conditions=react-server --test tests\/app-auth-pkce\.integration\.mjs/);
+  assert.doesNotMatch(yaml, /continue-on-error:\s*true/);
 });

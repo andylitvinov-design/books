@@ -1,9 +1,9 @@
 "use client";
 
-import {useCallback,useEffect,useRef,useState} from "react";
+import {forwardRef,useCallback,useEffect,useImperativeHandle,useRef,useState} from "react";
 import Link from "next/link";
 import {Download,Send,RefreshCw,MessageCircle,CheckCircle2} from "lucide-react";
-import {appFetch} from "@/lib/app/client-fetch";
+import {appFetch,getCabinetBootstrap} from "@/lib/app/client-fetch";
 import {savePrivateMp4} from "@/lib/mandala/signed-private-video-upload.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./mandala-video-delivery.module.css";
@@ -13,8 +13,15 @@ type State={
  telegram:{linkAvailable:boolean;linked:boolean;sendingAvailable:boolean;automatic:boolean;consentSaved:boolean};
  whatsapp:{manualShare:boolean;automatic:boolean};
 };
+export type VideoDeliveryStatus={
+ notice:string;busy:boolean;uploadPercent:number|null;savedId:string|null;cloudAvailable:boolean|null;
+ telegramConnectUrl?:string|null;whatsappConnectUrl?:string|null;whatsappLinked?:boolean|null;
+ whatsappConsentRequired?:boolean;
+};
+export type VideoDeliveryHandle={saveToLibrary:()=>Promise<void>;sendToTelegram:()=>Promise<void>;shareToWhatsApp:(consentApproved?:boolean)=>Promise<void>};
 type Props={
  locale:PublicLocale;open:boolean;onClose:()=>void;
+ onStatusChange?:(status:VideoDeliveryStatus)=>void;
  blob:Blob;url:string;extension:"mp4"|"webm";mime:string;bytes:number;
  theme:string;aspect:"portrait"|"landscape"|"square";duration:number;
 };
@@ -34,6 +41,8 @@ const COPY={
   wait:"Подготавливаем приватную доставку…",
   uploading:"Загружаем видео частями: {percent}%. Не закрывайте вкладку.",
   uploadRetry:"Загрузка прервалась. Нажмите «Сохранить» ещё раз — продолжим тот же файл без новой записи.",
+  cloudSaveOff:"Сохранение в Мои видео пока не включено на сервере. MP4 остаётся на устройстве — можно скачать файл.",
+  signInRequired:"Войдите через Google в Мой дом и проверьте вход. Ваше видео остаётся здесь.",
   uploadExpired:"Срок загрузки истёк. Удалите незавершённую запись в «Моих видео» и повторите сохранение.",
   accepted:"Telegram принял видео к отправке. Это ещё не подтверждение получения или просмотра.",
   duplicate:"Отправка этого ролика уже обрабатывалась. Повторного сообщения не создаём.",
@@ -41,6 +50,13 @@ const COPY={
   error:"Не удалось подтвердить отправку или сохранить настройки. Видео осталось на устройстве; проверьте кабинет и попробуйте позже.",
   cancelled:"Поделиться отменено.",
   privacy:"Файл загружается на сервер только после разрешения на доставку. Автоотправку можно отключить здесь в любое время.",
+  telegramStart:"Откройте Telegram, нажмите Start, вернитесь и выберите «Проверить и отправить»",
+  whatsappConnect:"Привязать WhatsApp к кабинету, подтвердив номер",
+  whatsappStart:"Подтвердите привязку в своём WhatsApp, затем вернитесь сюда",
+  whatsappUnavailable:"Официальная привязка WhatsApp пока недоступна. Видео можно скачать на устройство",
+  whatsappTapAgain:"WhatsApp подтверждён. Нажмите WhatsApp ещё раз для передачи MP4",
+  whatsappShare:"Выберите WhatsApp и свой чат в меню телефона. Сайт не может автоматически выбрать получателя",
+  shared:"Файл передан в системное меню, но доставка получателю не подтверждена",
  },
  en:{
   title:"Where should we send your video?",device:"Download file",telegram:"Telegram",savePrivate:"Save to My Videos",savedPrivate:"Video verified and saved in your private library.",openMyVideos:"Open My Videos",refreshLogin:"Check sign-in",
@@ -57,6 +73,8 @@ const COPY={
   wait:"Preparing private delivery…",
   uploading:"Uploading video in parts: {percent}%. Keep this tab open.",
   uploadRetry:"Upload interrupted. Tap Save again to resume the same file without reserving another video.",
+  cloudSaveOff:"Saving to My Videos is not enabled on the server yet. The MP4 stays here; you can download it.",
+  signInRequired:"Sign in with Google in My House, then check sign-in. Your video stays here.",
   uploadExpired:"Upload expired. Delete the unfinished entry in My Videos before trying again.",
   accepted:"Telegram accepted the video for sending. This does not confirm delivery or viewing.",
   duplicate:"A delivery attempt already exists for this video. No duplicate message was sent.",
@@ -64,6 +82,13 @@ const COPY={
   error:"Could not verify delivery or save preferences. Your local video remains available; review your account before trying again.",
   cancelled:"Sharing cancelled.",
   privacy:"The video is uploaded only after you agree to delivery. You can disable automatic delivery here.",
+  telegramStart:"Open Telegram, tap Start, return and select Check & send",
+  whatsappConnect:"Link your own WhatsApp to My House",
+  whatsappStart:"Verify the link in your own WhatsApp, then return here",
+  whatsappUnavailable:"Official WhatsApp linking is unavailable. You can download the video instead",
+  whatsappTapAgain:"WhatsApp verified. Tap WhatsApp again to share the MP4",
+  whatsappShare:"Select WhatsApp and your own chat in the device Share menu. The site cannot pick the recipient",
+  shared:"File handed to device sharing; recipient delivery is not confirmed",
  },
  es:{
   title:"¿Dónde enviar tu vídeo?",device:"Descargar archivo",telegram:"Telegram",savePrivate:"Guardar en Mis vídeos",savedPrivate:"Vídeo verificado y guardado en tu biblioteca privada.",openMyVideos:"Abrir Mis vídeos",refreshLogin:"Comprobar acceso",
@@ -80,6 +105,8 @@ const COPY={
   wait:"Preparando entrega privada…",
   uploading:"Subiendo el vídeo por partes: {percent} %. Mantén esta pestaña abierta.",
   uploadRetry:"Subida interrumpida. Pulsa Guardar para reanudar el mismo archivo sin crear otro registro.",
+  cloudSaveOff:"Guardar en Mis vídeos aún no está habilitado en el servidor. El MP4 permanece aquí; puedes descargarlo.",
+  signInRequired:"Inicia sesión con Google en Mi espacio y comprueba el acceso. Tu vídeo sigue aquí.",
   uploadExpired:"La carga caducó. Borra la entrada incompleta en Mis vídeos y vuelve a intentarlo.",
   accepted:"Telegram aceptó el vídeo para envío, pero no ha confirmado su entrega o visualización.",
   duplicate:"Este vídeo ya tiene un intento de envío. No enviamos duplicados.",
@@ -87,6 +114,13 @@ const COPY={
   error:"No se pudo verificar el envío o guardar la preferencia. El vídeo local sigue disponible; revisa tu cuenta antes de reintentarlo.",
   cancelled:"Compartir cancelado.",
   privacy:"El vídeo solo se sube cuando autorizas el envío. Puedes desactivar el envío automático aquí.",
+  telegramStart:"Abre Telegram, pulsa Start, vuelve y elige Comprobar y enviar",
+  whatsappConnect:"Vincula tu WhatsApp a Mi espacio",
+  whatsappStart:"Confirma el vínculo en tu WhatsApp y vuelve aquí",
+  whatsappUnavailable:"La vinculación oficial de WhatsApp no está disponible. Puedes descargar el vídeo",
+  whatsappTapAgain:"WhatsApp verificado. Pulsa WhatsApp otra vez para compartir el MP4",
+  whatsappShare:"Selecciona WhatsApp y tu propio chat. El sitio no puede elegir al destinatario",
+  shared:"Archivo pasado al menú Compartir. No se confirma la entrega al destinatario",
  }
 } as const;
 const MAX_BYTES=12_000_000;
@@ -95,7 +129,9 @@ function errorCode(error:unknown){
  return typeof error==="object"&&error!==null&&"code" in error?String(error.code):"";
 }
 
-export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mime,bytes,theme,aspect,duration}:Props){
+export const MandalaVideoDelivery=forwardRef<VideoDeliveryHandle,Props>(function MandalaVideoDelivery({
+ locale,open,onClose,onStatusChange,blob,url,extension,mime,bytes,theme,aspect,duration
+},ref){
  const t=COPY[locale]||COPY.en;
  const [state,setState]=useState<State|null>(null);
  const [session,setSession]=useState<"checking"|"signed_in"|"guest"|"unavailable">("checking");
@@ -105,7 +141,12 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
  const [uploadPercent,setUploadPercent]=useState<number|null>(null);
  const [busy,setBusy]=useState(false);
  const [botUrl,setBotUrl]=useState("");
+ const [whatsappUrl,setWhatsappUrl]=useState("");
+ const [whatsappLink,setWhatsappLink]=useState<{available:boolean;linked:boolean;accountId:string}|null>(null);
+ const [whatsappConsentRequired,setWhatsappConsentRequired]=useState(false);
+ const directActionRef=useRef(false);
  const inFlight=useRef<Promise<string>|null>(null);
+ const savingRef=useRef(false);
  const autoAttempted=useRef(false);
  // A new video may auto-send only if opt-in was already active when this result loaded.
  // Turning on delivery beside an existing video must not upload that file silently.
@@ -118,6 +159,7 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
   try{
    const next=await appFetch("personal-videos/delivery") as State;
    setState(next);setSession("signed_in");
+   if(next.telegram.linked)setBotUrl("");
    return next;
   }catch(error){
    setSession(errorCode(error)==="SIGN_IN_REQUIRED"?"guest":"unavailable");
@@ -139,8 +181,38 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
   })();
   return()=>{active=false};
  },[]);
+ const refreshWhatsApp=useCallback(async()=>{
+  try{
+   // This API requires the exact verified Cabinet account ID on every read/write.
+   const bootstrap=await getCabinetBootstrap("portrait");
+   const accountId=bootstrap?.account?.id;
+   if(typeof accountId!=="string"||!accountId)throw new Error("ACCOUNT_REQUIRED");
+   const data=await appFetch("whatsapp-link",undefined,"GET",{accountId}) as {available?:boolean;linked?:boolean};
+   const next={available:data.available===true,linked:data.linked===true,accountId};
+   setWhatsappLink(next);
+   if(next.linked){setWhatsappUrl("");setWhatsappConsentRequired(false);}
+   return next;
+  }catch{
+   setWhatsappLink(null);
+   return null;
+  }
+ },[]);
  // A guest can finish OAuth in a separate tab without losing the video Blob.
  useEffect(()=>{if(open)void refresh();},[open,refresh]);
+ useEffect(()=>{void refreshWhatsApp();},[refreshWhatsApp]);
+ // Returning from Telegram or WhatsApp refreshes identity; it never auto-sends.
+ useEffect(()=>{
+  if(!botUrl&&!whatsappUrl)return;
+  const check=()=>{
+   if(document.visibilityState!=="visible")return;
+   if(botUrl)void refresh();
+   if(whatsappUrl)void refreshWhatsApp();
+  };
+  window.addEventListener("focus",check);
+  document.addEventListener("visibilitychange",check);
+  return()=>{window.removeEventListener("focus",check);
+   document.removeEventListener("visibilitychange",check);};
+ },[botUrl,whatsappUrl,refresh,refreshWhatsApp]);
  async function shareFromDevice(){
   try{
    // File construction and navigator.canShare may themselves throw in older
@@ -151,7 +223,7 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
     setNotice(t.noShare);return;
    }
    await navigator.share({files:[file],title:"Holistic House video"});
-   setNotice("");
+   setNotice(t.shared);
   }catch(error){
    setNotice(error instanceof DOMException&&error.name==="AbortError"?t.cancelled:t.noShare);
   }
@@ -173,16 +245,30 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
   return task;
  }
  async function saveToLibrary(){
-  if(busy||session!=="signed_in"||!readyMp4)return;
+  // The explicit Ready Save click calls this same existing idempotent uploader.
+  // A double tap, expired session or disabled cloud must never create a new slot.
+  if(savingRef.current||busy)return;
+  if(savedId){setNotice(t.savedPrivate);return;}
+  if(!readyMp4){setNotice(t.unsupported);return;}
+  savingRef.current=true;
   setBusy(true);setUploadPercent(0);setNotice(t.wait);
   try{
+   const current=session==="signed_in"&&state?state:await refresh();
+   if(!current){setNotice(t.signInRequired);return;}
+   if(!current.cloudAvailable){setNotice(t.cloudSaveOff);return;}
    const id=await privateUpload();
    setSavedId(id);
-   setNotice(t.savedPrivate);setUploadPercent(null);
+   setNotice(t.savedPrivate);
   }catch(error){
-   setNotice(errorCode(error)==="PRIVATE_UPLOAD_EXPIRED"?t.uploadExpired:t.uploadRetry);
+   const code=errorCode(error);
+   setNotice(code==="SIGN_IN_REQUIRED"?t.signInRequired:
+     code==="FEATURE_UNAVAILABLE"?t.cloudSaveOff:
+     code==="PRIVATE_UPLOAD_EXPIRED"?t.uploadExpired:t.uploadRetry);
+  }finally{
+   savingRef.current=false;
+   setUploadPercent(null);
+   setBusy(false);
   }
-  finally{setBusy(false);}
  }
  async function sendViaBot(automatic:boolean){
   if(busy||!readyMp4)return;
@@ -195,6 +281,7 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
   let uploadComplete=false;
   try{
    const id=await privateUpload();
+   setSavedId(id);
    uploadComplete=true;setUploadPercent(null);
    const result=await appFetch("personal-videos/"+id+"/delivery",{
     channel:"telegram",automatic,consent:!automatic,locale
@@ -228,6 +315,7 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
    if(!/^https:\/\/t\.me\/[A-Za-z0-9_]+\?start=[A-Za-z0-9_-]{32}$/.test(link))
     throw new Error("INVALID_BOT_LINK");
    setBotUrl(link);
+   setNotice(t.telegramStart);
   }catch{setNotice(t.error);}
   finally{setBusy(false);}
  }
@@ -246,7 +334,68 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
   }catch{setNotice(t.error);}
   finally{setBusy(false);}
  }
- if(!open)return notice?<p className={css.notice} role="status" aria-live="polite" data-video-delivery-status>{notice}</p>:null;
+ // Ready uses one direct action per button; only unverified accounts need inline pairing.
+ async function sendToTelegram(){
+  if(busy||savingRef.current||directActionRef.current)return;
+  directActionRef.current=true;
+  try{
+   if(!readyMp4){setNotice(t.unsupported);return;}
+   const current=await refresh();
+   if(!current){setNotice(t.signInRequired);return;}
+   if(!current.telegram.linked){
+    if(!current.telegram.linkAvailable){setNotice(t.cloudOff);return;}
+    await connect();return;
+   }
+   setBotUrl("");
+   if(!current.cloudAvailable||!current.telegram.sendingAvailable){
+    setNotice(t.cloudOff);return;
+   }
+   await sendViaBot(false);
+  }finally{directActionRef.current=false;}
+ }
+ async function shareToWhatsApp(consentApproved:boolean=false){
+  if(busy||savingRef.current||directActionRef.current)return;
+  // Web Share must be called during the original iPhone user gesture. It
+  // cannot target a specific app/chat and never proves provider delivery.
+  if(whatsappLink?.linked){
+   setNotice(t.whatsappShare);
+   await shareFromDevice();
+   return;
+  }
+  directActionRef.current=true;
+  try{
+   const current=await refreshWhatsApp();
+   if(!current){setNotice(t.signInRequired);return;}
+   if(current.linked){setNotice(t.whatsappTapAgain);return;}
+   if(!current.available){setNotice(t.whatsappUnavailable);return;}
+   // A separate unchecked, purpose-specific checkbox is required BEFORE
+   // initiating the one-use Meta-webhook-verified WhatsApp link.
+   if(consentApproved!==true){
+    setWhatsappConsentRequired(true);
+    setNotice(t.whatsappConnect);return;
+   }
+   if(!whatsappConsentRequired){setNotice(t.whatsappConnect);return;}
+   const data=await appFetch("whatsapp-link",{
+    action:"begin",noticeVersion:"hh-whatsapp-account-link-v1",permissionAccepted:true
+   },"POST",{accountId:current.accountId}) as {linkUrl?:unknown};
+   const link=String(data.linkUrl||"");
+   if(!/^https:\/\/wa\.me\/[1-9][0-9]{7,14}\?text=HHWA%20[A-Za-z0-9_-]{43}$/.test(link))
+    throw new Error("INVALID_WHATSAPP_LINK");
+   setWhatsappUrl(link);
+   setWhatsappConsentRequired(false);
+   setNotice(t.whatsappStart);
+  }catch{setNotice(t.whatsappUnavailable);}
+  finally{directActionRef.current=false;}
+ }
+ useImperativeHandle(ref,()=>({saveToLibrary,sendToTelegram,shareToWhatsApp}),
+  [saveToLibrary,sendToTelegram,shareToWhatsApp]);
+ useEffect(()=>{
+  onStatusChange?.({notice,busy,uploadPercent,savedId,cloudAvailable:state?.cloudAvailable??null,
+   telegramConnectUrl:botUrl||null,whatsappConnectUrl:whatsappUrl||null,
+   whatsappLinked:whatsappLink?.linked??null,whatsappConsentRequired});
+ },[notice,busy,uploadPercent,savedId,state?.cloudAvailable,botUrl,whatsappUrl,whatsappLink?.linked,whatsappConsentRequired,onStatusChange]);
+ if(!open)return onStatusChange?null:
+   notice?<p className={css.notice} role="status" aria-live="polite" data-video-delivery-status>{notice}</p>:null;
  const accountLocale=locale==="es"?"en":locale;
  return <section className={css.root} aria-label={t.title} data-video-messenger-delivery>
   <div className={css.heading}><h4>{t.title}</h4>
@@ -314,4 +463,4 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
   {notice?<p className={css.notice} role="status" aria-live="polite">{notice}</p>:null}
   <small className={css.privacy}>{t.privacy}</small>
  </section>;
-}
+});

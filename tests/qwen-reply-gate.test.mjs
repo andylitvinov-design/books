@@ -30,6 +30,12 @@ test('Russian and English one focused question is accepted',()=>{
  assert.equal(gate('ru','Я не знаю, что изменить.', 'Какого результата вам хотелось бы достичь?').accepted,true);
  assert.equal(gate('en','I am unsure what to do.','What outcome matters to you most?').accepted,true);
 });
+test('asking what the client wants to change does not become advice',()=>{
+ const user='I feel stuck and do not know what I want.';
+ assert.equal(gate('en',user,'What would you like to change about your goal?').accepted,true);
+ assert.equal(gate('en',user,'Would you like to try an exercise?').reason,'advice_before_goal');
+ assert.equal(gate('en',user,'What would you like to change? You should schedule a meeting.').reason,'advice_before_goal');
+});
 test('explicit stopping refuses suggestions or more questions',()=>{
  assert.equal(gate('en','No more advice or questions. End this conversation.', 'Understood. Could we talk later?').accepted,false);
  assert.equal(gate('ru','Хватит, закончим.','Понял, предлагаю сначала подумать.').accepted,false);
@@ -45,6 +51,16 @@ test('rejects multiple questions and unverified action claims',()=>{
  assert.equal(gate('en','I want to prepare for a meeting.','What date? What time?').reason,'too_many_questions');
  assert.equal(gate('ru','Хочу поговорить.','Я уже забронировал время.').reason,'unverified_action_claim');
  assert.equal(gate('en','I would like to talk.','I booked your appointment.').reason,'unverified_action_claim');
+});
+test('rejects common claims that an appointment or message was already arranged',()=>{
+ for(const response of ["I've booked you for tomorrow.",'Your session is scheduled for tomorrow.',
+  'I sent the message to the specialist.','Your appointment has been scheduled.'])
+  assert.equal(gate('en','I would like a consultation.',response,'secretary').reason,'unverified_action_claim',response);
+ for(const response of ['Я записала вас на завтра.','Ваш приём назначен на завтра.','Я отправила сообщение специалисту.'])
+  assert.equal(gate('ru','Я хочу консультацию.',response,'secretary').reason,'unverified_action_claim',response);
+ for(const [locale,response] of [['en','I have not booked anything.'],['en','No appointment has been scheduled.'],
+  ['ru','Я не записала вас.'],['ru','Никакая встреча не назначена.']])
+  assert.equal(gate(locale,locale==='ru'?'Спасибо':'Thank you',response,'secretary').accepted,true,response);
 });
 test('English responses in Russian and Russian in English reject without translating',()=>{
  assert.equal(gate('ru','Моя цель — выбрать курс.','A good first step would be to browse your options.').reason,'clearly_wrong_language');

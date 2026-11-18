@@ -37,7 +37,9 @@ test("negation never reverses a stated preference",()=>{
 });
 test("mobile page wires all localized questions while preserving crisis and guest privacy",()=>{
   const component=read("components/services-assist-mobile.tsx");
-  for(const key of ["inferAssistPreferences","nextAssistQuestion","rankAssistOffers","data-assist-recommendation","urgent.test(selection.text)","setPreferences"]){
+  const cards=read("components/assist-top-recommendations.tsx");
+  assert(cards.includes("data-assist-recommendation"));
+  for(const key of ["inferAssistPreferences","nextAssistQuestion","rankAssistOffers","urgent.test(selection.text)","setPreferences"]){
     assert(component.includes(key),key);
   }
   assert.equal((component.match(/questions:\{/g)||[]).length,3);

@@ -57,37 +57,9 @@ on:
       - "next.config.ts"
       - "package.json"
       - "package-lock.json"
-  push:
-    branches: [codex/public-book-library]
-    paths:
-      - "app/api/admin/heygen-youtube/**"
-      - "components/heygen-en-youtube-publisher.jsx"
-      - "lib/youtube/heygen-en-*"
-      - "tests/heygen-en-youtube.test.mjs"
-      - "tests/owner-telegram-video-cut-recovery.test.mjs"
-      - "lib/practitioners/owner-telegram-video-*"
-      - "lib/practitioners/owner-telegram-story-render.mjs"
-      - "lib/practitioners/owner-telegram-story-rights.mjs"
-      - "lib/mandala/dot-story-*"
-      - "tests/dot-story-*.test.mjs"
-      - "tests/owner-telegram-youtube-metadata.test.mjs"
-      - "scripts/openverse-video-sfx.mjs"
-      - "tests/openverse-video-sfx.test.mjs"
-      - "scripts/propose-openverse-video-sfx.mjs"
-      - "tests/propose-openverse-video-sfx.test.mjs"
-      - "app/api/admin/telegram-video/**"
-      - "app/api/internal/housekeeping/route.js"
-      - "lib/youtube/owner-publication-service.js"
-      - "lib/youtube/upload-history-store.js"
-      - "app/api/admin/youtube-publications/**"
-      - "app/api/app/practice/youtube/share/**"
-      - "supabase/migrations/20261028154000_hh_owner_youtube_publication_queue.sql"
-      - "supabase/migrations/20261028162000_hh_owner_youtube_consent_policy_fix.sql"
-      - "supabase/migrations/20261028164500_hh_owner_youtube_moderator_review_only.sql"
-      - "supabase/migrations/20261028165500_hh_owner_youtube_creator_row_scope.sql"
-      - "tests/youtube-owner-publications.test.mjs"
-      - "tests/owner-telegram-youtube-visibility.test.mjs"
-      - ".github/workflows/hh-owner-telegram-video.yml"
+      - '!app/api/app/crm/messenger/webhook/**'
+      - '!lib/app/client-telegram-transport.js'
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:

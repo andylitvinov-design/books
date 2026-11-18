@@ -64,12 +64,18 @@ test('each direction keeps a single-question dialogue and routes to existing fir
    assert.ok(projects.includes('href:"'+suffix+'"'),suffix)
 })
 
-test('test focus filters only the existing cleared, guest-eligible catalogue; consent remains required',()=>{
+test('test topics prioritize existing cleared guest tests while the complete catalogue stays searchable and consented',()=>{
  assert.match(agent,/focus=\{testFocus\}/)
  assert.match(agent,/setTestFocus\(option\.focus\);setGuideLink\("tests"\);setTestChatOpen\(true\)/)
  assert.match(runner,/const FOCUS_TERMS =/)
  assert.match(runner,/rightsStatus === 'cleared' && item\.guestEligible === true/)
- assert.match(runner,/const source = !search\.trim\(\) && !expanded && focusMatches\.length \? focusMatches : ALL_TESTS/)
+ // Focus controls ranking, not eligibility: the full cleared guest catalogue is still searchable.
+ assert.match(runner,/const recommended = focusMatches\.length \? focusMatches : ALL_TESTS/)
+ assert.match(runner,/const ranked = \[/)
+ assert.match(runner,/\.\.\.recommended\.filter\(entry => entry\.item\.key !== featured\?\.item\.key\)/)
+ assert.match(runner,/\.\.\.ALL_TESTS\.filter\(entry => !recommended\.some/)
+ assert.match(runner,/const filtered = ranked\.filter\(entry =>/)
+ assert.match(runner,/filtered\.slice\(0,visibleCount\)/)
  assert.match(runner,/if \(!adult \|\| !definition \|\| busy\) return/)
  assert.match(runner,/hasTraumaAdministration\(definition\)/)
 })

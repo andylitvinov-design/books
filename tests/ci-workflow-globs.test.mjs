@@ -5,13 +5,14 @@ import { parsePrTrigger, matchesTrigger } from '../lib/ci/specialist-aggregate.m
 
 const workflow = (name) => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 
-test('My Progress uses a valid broad dynamic Next.js pathname and production push only', () => {
+test('My Progress retains required production push and targeted PR source checks', () => {
   const s = workflow('hh-my-progress-release.yml');
   assert.ok(s.includes("      - 'app/**/app/my-progress/**'"));
   assert.ok(!s.includes("      - 'app/**/app/**/page.jsx'"));
   assert.doesNotMatch(s, /\[\[\.\.\.path\]\]/);
   assert.doesNotMatch(s, /codex\/my-progress-unified-history-20261028/);
-  assert.match(s, /push:\s*\n\s*branches: \['codex\/public-book-library'\]/);
+  assert.match(s, /^  pull_request:/m);
+  assert.match(s, /^  push:/m);
 });
 
 test('Practitioner editor validates dynamic routes without spurious push trigger', () => {
@@ -111,7 +112,8 @@ test('YouTube and Free Review: obsolete PR commits cancel safely; Draft saves br
   const free = workflow('hh-free-review-live-mobile.yml');
   assert.match(youtube, /npm run build/, 'YouTube local real video UI build must remain');
   assert.match(youtube, /verify-youtube-phone-mobile\.mjs/, 'YouTube mobile acceptance must remain');
-  assert.match(free, /^  push:/m, 'post-merge production verification cannot be cancelled');
+  assert.doesNotMatch(free, /^  push:/m, 'do not smoke unupdated live alias before hourly publish');
+  assert.match(free, /if: github.event_name == 'workflow_dispatch'/, 'post-hourly explicit LIVE audit retained');
   assert.match(free, /Verify PR's local production build, not old live alias/, 'PR acceptance must test exact source');
   assert.match(free, /tests\/private-material-handoff\.test\.mjs/, 'privacy/consent checks must remain');
 });
@@ -178,7 +180,7 @@ test('Public Services exact-head routing preserves source contracts and real ris
 
 test('Core classification and all applicable Core checks share the first scheduled runner', () => {
   const s=workflow('hh-pr-core-release.yml');
-  const core=s.split('\n  scope:')[1]?.split('\n  hh-specialist:')[0];
+  const core=s.split('\n  scope:')[1]?.split('\n  hh-merge-check:')[0];
   assert.ok(core, 'Unified Core job must exist');
   assert.match(core, /name: core-lint-types-build/);
   assert.match(core, /runs-on: ubuntu-24\.04/);
@@ -337,7 +339,7 @@ test('Core runs CI policy regressions only when relevant CI or manifest files ch
     assert.ok(source.includes(required),'Relevant CI contract owner lost: '+required);
   assert.match(source,/node scripts\/ci-source-preflight\.mjs/);
   assert.match(source,/run: npm run build/);
-  assert.match(source,/^  hh-specialist:/m);
+  assert.doesNotMatch(source,/^  hh-specialist:/m);
   assert.match(source,/^  hh-merge-check:/m);
 });
 
@@ -541,9 +543,24 @@ test('Stories physical five-scene MP4 is mandatory in the macOS WebKit release p
   const s=workflow('holistic-support-mandala.yml');
   assert.match(s,/scripts\/benchmarking\/verify-five-scene-stories-browser\.mjs/);
   const mac=s.slice(s.indexOf('  voice-webkit-macos:'));
-  assert.match(mac,/if \[\[ "\$\{GITHUB_HEAD_REF:-\}" == codex\/stories-\* \]\]/);
+  assert.match(mac,/if \[\[ "\$\{GITHUB_HEAD_REF:-\}" == codex\/stories-\* \|\| "\$\{GITHUB_HEAD_REF:-\}" == codex\/video-story-five-cards-quality-last-20261112 \]\]/);
   assert.match(mac,/HH_STORIES_E2E_ENGINE=webkit/);
   assert.match(mac,/node scripts\/benchmarking\/verify-five-scene-stories-browser\.mjs/);
   assert.match(mac,/artifacts\/benchmarking\/five-scene-stories-webkit\.json/);
   assert.doesNotMatch(mac,/continue-on-error:\s*true/);
 });
+
+test('Axis private planner trigger accepts catch-all routes without GitHub character classes', () => {
+  const source = workflow('hh-profile-axis-matching.yml');
+  assert.ok(source.includes("      - 'app/api/app/**/route.js'"));
+  assert.ok(!source.includes("      - 'app/api/app/[...path]/route.js'"));
+  const trigger = parsePrTrigger(source, '.github/workflows/hh-profile-axis-matching.yml');
+  for (const path of ['app/api/app/[...path]/route.js', 'app/api/app/[[...path]]/route.js'])
+    assert.equal(matchesTrigger(trigger, [path], 'codex/public-book-library'), true);
+  assert.equal(matchesTrigger(trigger, ['docs/unrelated.md'], 'codex/public-book-library'), false);
+  assert.match(source, /tests\/intelligence-plan\.test\.mjs/);
+  assert.ok(source.includes('node --conditions=react-server --test tests/app-auth-pkce.integration.mjs'));
+  assert.ok(source.includes('github.event.pull_request.draft == false'));
+  assert.doesNotMatch(source, /continue-on-error:\s*true/);
+});
+

@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {
   TELEGRAM_AI_DIAGNOSTIC_V3,V3_LABELS,V3_COPY,V3_BUTTONS,v3StartLocale,
-  v3CanStart,v3ModelKey,v3Context,v3ButtonsFor,v3IsStop,v3Action,v3CanCallModel,v3DailyReplyCount,
+  v3CanStart,v3CanChat,v3ModelKey,v3Context,v3ButtonsFor,v3IsStop,v3Action,v3CanCallModel,v3DailyReplyCount,v3WantsGeneralChat,V3_CHAT_COPY,v3ChatPreConsentSafetyReply,
 } from '../lib/crm/telegram-ai-diagnostic-v3.mjs';
 import {v3Generate,v3ModelMessages} from '../lib/crm/telegram-ai-diagnostic-v3-model.mjs';
+import {waveTelegramLocalReply} from '../lib/crm/telegram-wave-local-reply.mjs';
 
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const env={
@@ -51,7 +52,13 @@ test('V3 is a separate, consented three-language journey, not fixed six question
   }
   assert.ok(new Set(V3_BUTTONS).size===V3_BUTTONS.length,
     'V3 button labels must be unambiguous across locales and legacy V2');
-  assert.ok(!V3_BUTTONS.includes('Не сейчас'));
+  // The current warm, consent-first V3 intentionally offers "Not now".
+  // A decline must be recognized in each locale and must never reach a model.
+  assert.ok(V3_BUTTONS.includes(V3_LABELS.ru.decline));
+  for(const lang of ['ru','en','es'])
+    assert.equal(v3Action({rawText:V3_LABELS[lang].decline}),'decline',lang);
+  for(const lang of ['ru','en','es'])
+    assert.equal(v3WantsGeneralChat(V3_LABELS[lang].decline),false,lang);
   assert.equal(v3Action({inlineAction:'v3:send'}),'send');
   assert.equal(v3Action({rawText:'/finish'}),'finish');
   assert.equal(v3Action({rawText:'сложности с отношениями'}),null);
@@ -158,4 +165,122 @@ test('Postgres Date and ISO string preserve actual daily Telegram V3 reply quota
   assert.equal(v3DailyReplyCount({reply_day:utc,reply_count:35},'2026-11-12'),0);
   assert.equal(v3DailyReplyCount({reply_day:new Date('invalid'),reply_count:14},'2026-11-11'),0);
   assert.equal(v3DailyReplyCount({reply_day:null,reply_count:25},'2026-11-11'),0);
+});
+
+test('Consent is explained once; follow-up nudges do not repeat the privacy wall',()=>{
+  for(const locale of ['ru','en','es']){
+    const messages=V3_COPY[locale];
+    assert.ok(messages.intro.length<500);
+    assert.ok(messages.nudge.length>30&&messages.nudge.length<180);
+    assert.ok(messages.intro.includes('OpenRouter'));
+    assert.ok(messages.intro.includes('/stop'));
+    assert.doesNotMatch(messages.nudge,/OpenRouter|medical|медицинск|médic/i);
+    assert.notEqual(messages.intro,messages.nudge);
+  }
+  const service=source('lib/crm/telegram-ai-diagnostic-v3-service.js');
+  assert.ok(service.includes("if(start&&active&&row?.stage==='consent')"));
+  assert.ok(service.includes("allowed?copy.nudge:copy.notReady"));
+  assert.ok(service.includes("ai_consent_at=now()"));
+  assert.ok(service.includes("row&&Number(row.last_update_id)>=updateId"));
+});
+
+test('free Telegram conversation is consent gated and shares Secretary/Coach',()=>{
+ for(const locale of ['ru','en','es']){
+  assert.deepEqual(v3ButtonsFor(locale,'chat_consent'),
+    [[V3_LABELS[locale].chatagree,V3_LABELS[locale].chatlater]]);
+  assert.match(V3_CHAT_COPY[locale].intro,/OpenRouter/);
+  assert.match(V3_CHAT_COPY[locale].intro,/\/stop/);
+ }
+ assert.equal(v3WantsGeneralChat('Привет'),true);
+ assert.equal(v3WantsGeneralChat('Поговорим?'),true);
+ assert.equal(v3WantsGeneralChat('Да, начать'),false);
+ assert.equal(v3WantsGeneralChat('/start hhreview_ru'),false);
+ assert.equal(v3Context({conversationKind:'general',turns:[]}).conversationKind,'general');
+ assert.equal(v3Action({inlineAction:'v3:chatagree'}),'chatagree');
+ assert.match(v3ModelMessages({kind:'chat',locale:'ru',turns:[{role:'user',text:'Привет'}]})[0].content,/Secretary Mind/);
+ assert.match(v3ModelMessages({kind:'chat',locale:'ru',turns:[{role:'user',text:'Хочу разобраться в отношениях'}]})[0].content,/Coach Mind/);
+ assert.match(source('lib/crm/telegram-ai-diagnostic-v3-service.js'),/generalStart/);
+});
+
+
+test('General chat pre-consent danger is answered safely, without diagnostic or LLM',()=>{
+  const ru=v3ChatPreConsentSafetyReply('Не хочу больше жить','ru');
+  const en=v3ChatPreConsentSafetyReply('I want to kill myself','en');
+  const es=v3ChatPreConsentSafetyReply('No puedo respirar','es');
+  assert.match(ru,/экстренн/);
+  assert.match(en,/emergency/);
+  assert.match(es,/emergencia/);
+  assert.equal(v3ChatPreConsentSafetyReply('Поговорим?','ru'),null);
+  assert.equal(v3ChatPreConsentSafetyReply('Я хочу курс','ru'),null);
+  const service=source('lib/crm/telegram-ai-diagnostic-v3-service.js');
+  assert.match(service,/const urgent=v3ChatPreConsentSafetyReply\(raw,lang\)/);
+  assert.match(service,/urgent\?\[\]:v3ButtonsFor\(lang,'chat_consent'\)/);
+  assert.match(service,/action==='chatlater'\|\|action==='decline'/);
+  assert.match(service,/const urgentDuringChat=v3ChatPreConsentSafetyReply\(prior.ctx.pending.text,prior.locale\)/);
+  assert.match(service,/if\(urgentDuringChat\)\{\s*result=\{text:urgentDuringChat,freeCostVerified:true\}/);
+});
+
+test('Telegram chat uses shared Reaction, Conversation and Reasoning Mind signals',()=>{
+  const turns=[
+    {role:'user',text:'Хочу обсудить работу'},
+    {role:'assistant',text:'Я слушаю. Что сейчас важнее?'},
+    {role:'user',text:'Нет, давай поговорим об отношениях'},
+  ];
+  const prompt=v3ModelMessages({kind:'chat',locale:'ru',turns});
+  assert.match(prompt[0].content,/Reaction\/Conversation\/Reasoning Mind context/);
+  assert.match(prompt[0].content,/rationaleCode/);
+  assert.match(prompt[0].content,/contradictionSignals/);
+  assert.equal(prompt.at(-1).content,turns.at(-1).text);
+  assert.ok(prompt.length<=10,'owned Ollama max messages remains respected');
+});
+
+test('Ali is the only client-facing assistant name; legacy Wave chat buttons keep working',()=>{
+  for(const locale of ['ru','en','es']){
+    assert.match(V3_CHAT_COPY[locale].intro,/Ali/);
+    assert.match(V3_CHAT_COPY[locale].intro,/OpenRouter/);
+    assert.doesNotMatch(V3_CHAT_COPY[locale].intro,/Qwen/i);
+    assert.match(V3_COPY[locale].intro,/Ali/);
+    assert.match(V3_LABELS[locale].chatagree,/Ali/);
+  }
+  assert.equal(v3Action({rawText:'Начать диалог с ИИ'}),'chatagree');
+  assert.equal(v3Action({rawText:'Поговорить с Wave'}),'chatagree');
+  assert.equal(v3Action({rawText:'Chat with Wave'}),'chatagree');
+  assert.equal(v3Action({rawText:'Hablar con Wave'}),'chatagree');
+  assert.equal(v3Action({rawText:'Поговорить с Али'}),'chatagree');
+  assert.equal(v3Action({rawText:'Chat with Ali'}),'chatagree');
+  assert.equal(v3Action({rawText:'Hablar con Ali'}),'chatagree');
+  assert.match(v3ModelMessages({kind:'chat',locale:'ru',turns:[{role:'user',text:'Привет'}]})[0].content,/Ali/);
+});
+
+test('Wave local chat remains consent-gated and is independent of any model key',()=>{
+  const local={...env,HH_CRM_TG_AI_V3_SCHEMA_READY:'true',
+    HH_COUNCIL_OPENROUTER_API_KEY:'',HH_AGENT_OWNED_ENABLED:'false'};
+  assert.equal(v3CanStart(local),false,'diagnostic external inference still needs a verified key');
+  assert.equal(v3CanChat(local),true,'local-only chat can still answer after consent');
+  assert.equal(v3CanChat({...local,HH_CRM_TG_AI_V3_ENABLED:'false'}),false);
+  assert.equal(v3CanChat({...local,HH_CRM_TG_AI_V3_SCHEMA_READY:'false'}),false);
+  assert.equal(v3CanChat({...local,VERCEL_ENV:'preview'}),false);
+  const service=source('lib/crm/telegram-ai-diagnostic-v3-service.js');
+  assert.match(service,/const generalStart=chatAllowed/);
+  assert.match(service,/purposeReady=general\|\|ctx\.mode===FREE_DIAGNOSTIC_MODE\?chatAllowed:allowed/);
+  assert.match(service,/if\(!row.ai_consent_at\|\|!\(\(ctx.conversationKind==='general'\|\|ctx.mode===FREE_DIAGNOSTIC_MODE\)\?chatAllowed:allowed\)\)/);
+  assert.match(service,/waveTelegramLocalReply\(\{locale:prior.locale,turns\}\)/);
+  assert.match(service,/wave_telegram_inference/);
+});
+
+test('Wave fallback preserves short-turn context, handles model identity and stays safe',()=>{
+  const incoming=(text,history=[],locale='ru')=>waveTelegramLocalReply({
+    locale,turns:[...history,{role:'user',text}]});
+  assert.match(incoming('Поговорим?'),/поболта|пообща|разговар/i);
+  assert.match(incoming("Let's chat",[],'en'),/chat/i);
+  assert.match(incoming('Hablemos',[],'es'),/conversar/);
+  assert.match(incoming('О Qwen'),/Ali/);
+  assert.match(incoming('О Qwen'),/Qwen/);
+  assert.match(incoming('What is your name?',[],'en'),/Ali/);
+  assert.match(incoming('Quiero morir',[],'es'),/emergencia/);
+  assert.match(incoming('Не хочу больше жить'),/экстренн/);
+  assert.match(incoming('Объясни квантовую физику'),/Ali/);
+  assert.doesNotMatch(incoming('Объясни квантовую физику'),/квантовая физика —/);
+  assert.ok(incoming('Поговорим?').length<700);
+  assert.equal(incoming('Спасибо',[{role:'assistant',text:'Привет'}]).length>0,true);
 });

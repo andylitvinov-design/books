@@ -123,7 +123,11 @@ test("mobile audio controls preserve native HTTPS playback, private files, EN/RU
   assert.match(studio,/const seenAudioSearchIds=new Set<string>\(\)/);
   assert.match(studio,/const rankedAudioPool=filteredLibraryAudio\.filter/);
   assert.match(studio,/rankPersonalMusic\(\{tracks:rankedAudioPool/);
-  assert.match(studio,/voiceBedMode\?mandalaAudioTracks\.filter/);
+  // New recommendations must obey production's reviewed-real-recordings-only rule.
+  // Legacy synthetic voice beds stay resolvable for saved projects, never offered
+  // as newly selected background music beside a confirmed voice.
+  assert.ok(studio.includes("tracks:voiceBedMode?[]:rankedAudioPool,"));
+  assert.match(studio,/data-phrase-music-guidance=\{voiceBedMode\?"voice":"melody"\}/);
   assert.match(studio,/if\(seenAudioSearchIds\.has\(track\.id\)\)return false/);
   assert.match(studio,/return !audioThemeOverride\|\|track\.themes\.includes\(audioThemeOverride\)/);
   for (const text of ["Real recording", "Реальная запись", "Grabación real", "shortened and loudness-normalized", "сокращена и нормализована по громкости", "acortada y normalizada"]) assert.ok(studio.includes(text),text);

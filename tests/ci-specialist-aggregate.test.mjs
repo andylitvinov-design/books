@@ -1,10 +1,10 @@
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance } from '../lib/ci/production-base-impact.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import {
   TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns, concurrencyOnlyAdvisory, selfTriggerRemovalAdvisory, isConcurrencyAdvisoryRun,
-  inspectJobs, trustedConditionalJobs, validateParameters,
+  inspectJobs, trustedConditionalJobs, trustedRequiredJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
 import { verify, githubReader, optionalMandalaMacosSkip, optionalProfileWriterSkip, revalidateAfterTrustedPolicyAdvance, verifiedOptionalOwnerSelectorMigration, trustedAdditiveActionlint } from '../scripts/ci-specialist-aggregate.mjs';
 // Run the focused dependency state/timeout regressions inside the existing
@@ -354,9 +354,17 @@ test('only definitively PR-inapplicable BASE jobs can be skipped',()=>{
 });
 
 
+const profileWriterLegacyGuard = "    if: ${{ github.event_name == 'pull_request' && (github.event.pull_request.base.ref == 'codex/holistic-intelligence-core-20261029' || github.event.pull_request.base.ref == 'codex/public-book-library') && (github.head_ref == 'feat/meditation-writer-device-voice-v1-20261030' || github.head_ref == 'fix/ci-ffmpeg-verified-github-asset-20261105') }}";
+const profileWriterReadyGuard = "    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
+function legacyProfileAxisSource(source) {
+  const ready = '  writer-practical-focused:\n' + profileWriterReadyGuard;
+  assert.equal(source.split(ready).length, 2, 'current Axis workflow has one Ready writer guard');
+  return source.replace(ready, '  writer-practical-focused:\n' + profileWriterLegacyGuard);
+}
+
 test('BASE-excluded writer-only job is neutral for unrelated dock PR only when axis suite passes', async () => {
   const filename = '.github/workflows/hh-profile-axis-matching.yml';
-  const source = readFileSync(filename,'utf8');
+  const source = legacyProfileAxisSource(readFileSync(filename,'utf8'));
   const branch = 'feat/mytube-unified-six-bottom-prod-20261103';
   const files = candidate => ({
     base:new Map([[filename,source]]),
@@ -398,7 +406,7 @@ test('BASE-excluded writer-only job is neutral for unrelated dock PR only when a
 
 test('profile-axis writer skip stays branch-conditional after exact one-line selective workflow migration',()=>{
   const file='.github/workflows/hh-profile-axis-matching.yml';
-  const base=readFileSync(file,'utf8');
+  const base=legacyProfileAxisSource(readFileSync(file,'utf8'));
   const oldPath="      - '.github/workflows/hh-profile-axis-matching.yml'";
   const contract="      - 'tests/ci-pr-selective-workflows.test.mjs'";
   assert.equal(base.split(oldPath).length,2);
@@ -731,6 +739,31 @@ test('approved migration destinations contain the exact retired scope and the or
     }
     assert.ok(!successor.includes('continue-on-error: true'),item.into+' must fail closed');
   }
+});
+
+test('retired optional workflow owners are explicitly reviewed without allowing arbitrary YAML deletion',()=>{
+  for(const [old,successor] of [
+    ['.github/workflows/hh-app-regression.yml','.github/workflows/hh-actionlint.yml'],
+    ['.github/workflows/hh-loose-release-ready-once.yml','.github/workflows/hh-actionlint.yml'],
+  ]){
+    assert.equal(APPROVED_SPECIALIST_REPLACEMENTS[old],successor);
+    const successorYaml=readFileSync(successor,'utf8');
+    const oldYaml='name: retired one-time check\non:\n  workflow_dispatch:\njobs:\n  legacy:\n    runs-on: ubuntu-latest\n';
+    const base=new Map([[old,oldYaml],[successor,successorYaml]]);
+    const current=new Map([[successor,successorYaml]]);
+    const changed=[old];
+    const expected=expectedWorkflows({base,current,changed});
+    assert.deepEqual(expected,[successor], 'approved successor must really trigger for removed YAML '+old);
+    assert.deepEqual(resolveExpectedSpecialists({base,current,changed,expected}).delegated,
+      [{retired:old,replacement:successor}]);
+    const tampered=new Map([[successor,successorYaml+'\n# not BASE approved']]);
+    assert.throws(()=>resolveExpectedSpecialists({base,current:tampered,changed,expected}),
+      /UNTRUSTED_SPECIALIST_REPLACEMENT/);
+  }
+  const unknown='.github/workflows/unknown-obsolete-check.yml';
+  const base=new Map([[unknown,'on:\n  workflow_dispatch:\n']]);
+  assert.throws(()=>resolveExpectedSpecialists({base,current:new Map(),changed:[unknown],expected:[]}),
+    /UNAPPROVED_WORKFLOW_DELETION/);
 });
 
 test('all workflow deletions, even push-only and files excluded from original PR trigger, require an approved replacement',()=>{
@@ -1281,6 +1314,33 @@ test('missing HEAD-index row can be recovered by exact workflow then tracked unt
   assert.ok(clock.elapsed()>=180_000,'queued evidence is not accepted as passed');
 });
 
+test('late registered exact-HEAD actionlint is discovered without another Core wave', async () => {
+  const clock=virtualSpecialistClock();
+  let probes=0;
+  const api={
+    pr:async()=>pr(),
+    changed:async()=>[{filename:'lib/crm/a.js'}],
+    // The general HEAD index stays stale; only the scoped workflow index
+    // receives this real and completed run after GitHub propagation.
+    runs:async()=>[],
+    runsForWorkflow:async(sha,filename)=>{
+      assert.equal(sha,SHA);
+      assert.equal(filename,path);
+      probes++;
+      return clock.elapsed()<90_000 ? [] : [run()];
+    },
+    jobs:async()=>[{name:'specialist',status:'completed',conclusion:'success'}],
+  };
+  const result=await verify(api,{repo,number:27,head:SHA,base:BASE},
+    {base:new Map([[path,yaml]]),current:new Map([[path,yaml]])},
+    {maxWaitMs:180_000,pollMs:10_000,...clock});
+  assert.deepEqual(result.expected,[path]);
+  assert.equal(result.executed.length,1,'real successful job evidence remains mandatory');
+  assert.ok(probes>=3,'scoped workflow lookup must retry within the discovery window');
+  assert.ok(clock.elapsed()>=90_000 && clock.elapsed()<120_000,
+    'late registration must pass before the fail-closed deadline');
+});
+
 test('foreign direct workflow evidence never authorizes missing specialist', async () => {
   const clock=virtualSpecialistClock();
   const api={
@@ -1761,6 +1821,37 @@ test('trusted Mandala WebKit allowlist accepts exact branch entries and the full
     'encoded video work is never excused from WebKit');
 });
 
+test('BASE-owned Mandala WebKit list accepts 25-32 strict literal routes, never 33 or a changed guard',()=>{
+  const path='.github/workflows/holistic-support-mandala.yml';
+  const original=readFileSync(path,'utf8');
+  const guard=original.match(/^  voice-webkit-macos:\n    if: \$\{\{ (.+) \}\}$/m)?.[0];
+  assert.ok(guard,'trusted macOS job has a single literal branch guard');
+  const extra=n=>Array.from({length:n},(_,i)=>
+    "startsWith(github.head_ref, 'fix/ci-webkit-budget-probe-"+i+"-')");
+  const extended=n=>original.replace(guard,guard.replace(/\) \}\}$/,
+    ' || '+extra(n).join(' || ')+') }}'));
+  const safe=['components/holistic-support-goal-filter.tsx'];
+  const out='feat/support-confidence-harmony-goal-filter-20261102';
+  const skip=(base,branch=out,changed=safe,current=base)=>optionalMandalaMacosSkip({
+    base:new Map([[path,base]]),current:new Map([[path,current]])
+  },branch,changed);
+  const literalRoutes=guard.match(/(?:startsWith\(github\.head_ref, '[^']+'\)|github\.head_ref == '[^']+')/g)||[];
+  const toLimit=32-literalRoutes.length;
+  assert.ok(toLimit>=1 && toLimit<=8,'the reviewed BASE allowlist has 24-31 literal routes');
+  assert.equal(skip(original),true,'reviewed BASE literal routes remain checkable');
+  assert.equal(skip(extended(1)),true,'one additional literal prefix remains checkable');
+  assert.equal(skip(extended(toLimit)),true,'exactly 32 static predicates remain checkable');
+  assert.equal(skip(extended(toLimit+1)),false,'33 predicates fail closed');
+  assert.equal(skip(extended(toLimit),'fix/ci-webkit-budget-probe-'+(toLimit-1)+'-check'),false,
+    'a matching WebKit branch must actually execute macOS');
+  assert.equal(skip(extended(toLimit),out,['lib/mandala/audio-render.mjs']),false,
+    'encoded audio source cannot skip macOS');
+  assert.equal(skip(original,out,safe,extended(1)),false,
+    'PR changing the trusted macOS guard cannot certify its own skip');
+  assert.equal(skip(extended(1).replace(extra(1)[0],'success()')),false,
+    'arbitrary GitHub expressions are not static allowlist predicates');
+});
+
 test('VideoProjectV2 source changes require real macOS WebKit acceptance on video feature PRs', () => {
   const path = '.github/workflows/holistic-support-mandala.yml';
   const actual = readFileSync(path, 'utf8');
@@ -2142,4 +2233,128 @@ test('base movement during Specialist preserves exact-HEAD results only for prov
   api.compare=async()=>comparison('tests/pr-fast-lane.test.mjs');
   api.pr=async()=>({...pr(),head:{...pr().head,sha:'d'.repeat(40)}});
   await assert.rejects(()=>verify(api,ctx,files,{maxWaitMs:0}),/PR_HEAD_CHANGED/);
+});
+
+test('Axis Ready PR requires practical writer job despite planner workflow changes', () => {
+  const file='.github/workflows/hh-profile-axis-matching.yml';
+  const source=readFileSync(file,'utf8');
+  const writer=source.split('  writer-practical-focused:\n')[1]?.split('  axis-unit-types-build:\n')[0];
+  assert.ok(writer, 'writer job must remain present');
+  assert.ok(writer.includes(profileWriterReadyGuard), 'Ready PR may not skip writer tests');
+  assert.doesNotMatch(writer,/github\.head_ref|continue-on-error:\s*true/,
+    'no PR-branch exemptions or silent success');
+  for (const retained of ['Practical director and prior writer regressions',
+    'Load original checksum-verified FFmpeg', 'Lint writer API, UI and contracts',
+    'TypeScript contract check']) assert.ok(writer.includes(retained), 'retain '+retained);
+  const required=trustedRequiredJobs(source).sort();
+  assert.deepEqual(required,['axis-unit-types-build','writer-practical-focused']);
+  assert.equal(optionalProfileWriterSkip({
+    base:new Map([[file,legacyProfileAxisSource(source)]]),
+    current:new Map([[file,source]]),
+  },'codex/hh-intelligence-private-api-20261029'),false,
+  'edited Axis guard may not inherit a BASE-only writer skip');
+  const axis={name:'axis-unit-types-build',status:'completed',conclusion:'success'};
+  const writerJob={name:'writer-practical-focused',status:'completed',conclusion:'success'};
+  assert.equal(inspectJobs([axis,writerJob],file,[],required),2);
+  assert.throws(()=>inspectJobs([axis,{...writerJob,conclusion:'skipped'}],file,[],required),
+    /UNSUCCESSFUL_SPECIALIST_JOB/, 'a skipped writer cannot satisfy protected Specialist');
+});
+
+
+test('inert raster production-base advance is ancestry-proven, conflict-independent and never generic path disjointness', () => {
+  const old = 'a'.repeat(40), newest = 'b'.repeat(40);
+  const diff = (paths, overrides = {}) => ({
+    status:'ahead', ahead_by:1, behind_by:0, total_commits:1,
+    base_commit:{sha:old}, merge_base_commit:{sha:old},
+    commits:[{sha:newest}],
+    files:paths.map(filename=>({filename,status:'modified'})), ...overrides,
+  });
+  const checked = paths => verifiedIndependentPublicRasterAdvance(
+    diff(paths),old,newest,['lib/crm/contact.js']);
+  assert.equal(checked(['public/images/welcome.webp']), true);
+  assert.equal(checked(['public/photos/team/person.png']), true);
+  for(const path of ['public/images/fraud.svg','public/images/script.js',
+    'public/images/../private.png','.github/workflows/core.yml',
+    'app/api/payment/route.ts','supabase/migrations/123.sql','package-lock.json',
+    'components/mandala-video.tsx','public/images/page.css']) {
+    assert.equal(checked([path]),false,path);
+  }
+  assert.equal(verifiedIndependentPublicRasterAdvance(
+    diff(['public/images/banner.png']),old,newest,['public/images/banner.png']),false);
+  for(const bad of [{status:'diverged'},{behind_by:1},{commits:[]},
+    {total_commits:2},{files:[]},
+    {files:[{filename:'public/images/a.png',status:'removed'}]},
+    {files:[{filename:'public/images/a.png',status:'renamed',previous_filename:'public/images/b.png'}]}]) {
+    assert.equal(verifiedIndependentPublicRasterAdvance(
+      diff(['public/images/a.png'],bad),old,newest,['lib/crm/contact.js']),false);
+  }
+});
+
+test('additive coaching build registration drops unrelated specialists', () => {
+  const app = '.github/workflows/hh-app-r1.yml';
+  const coach = '.github/workflows/hh-personal-coaching-session.yml';
+  const audio = '.github/workflows/hh-live-audio-ci.yml';
+  const ia = '.github/workflows/ia-v2.yml';
+  const opora = '.github/workflows/opora-module-ci.yml';
+  const publicServices = '.github/workflows/hh-public-services-production.yml';
+  const workflow = patterns => "on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths:\n" +
+    patterns.map(pattern => "      - '" + pattern + "'\n").join('');
+  const sources = new Map([
+    [app, workflow(['package.json', 'lib/app/**'])],
+    [coach, workflow(['tests/coaching-live-voice.test.mjs', 'lib/personal-coaching/**'])],
+    [audio, workflow(['package.json', 'app/api/live-audio/**'])],
+    [ia, workflow(['package.json', 'lib/security/**'])],
+    [opora, workflow(['package.json', 'data/opora/**'])],
+    [publicServices, workflow(['package.json', 'components/public-consultation-cta.tsx'])],
+  ]);
+  const original = {
+    scripts: {
+      'test:coaching:release': 'node --test tests/coaching-life-plan.test.mjs tests/coaching-report.test.mjs',
+      prebuild: 'node --check scripts/source-check.mjs && npm run test:coaching:release',
+    },
+    dependencies: { next: '15.0.0' },
+  };
+  const proposed = structuredClone(original);
+  const added = 'tests/coach-spoken-text.test.mjs';
+  proposed.scripts['test:coaching:release'] =
+    'node --test ' + added + ' ' + original.scripts['test:coaching:release'].slice('node --test '.length);
+  const changed = ['package.json', added, 'lib/coaching/coach-spoken-text.mjs',
+    'tests/coaching-live-voice.test.mjs'];
+  const classify = (next = proposed, paths = changed, prior = original) => classifyPackageImpact({
+    changed: paths, basePackage: JSON.stringify(prior), currentPackage: JSON.stringify(next),
+  });
+  const impact = classify();
+  assert.deepEqual(impact, {
+    mode: 'scoped', reason: 'ADDITIVE_COACHING_BUILD_TEST', workflows: [app],
+  });
+  const before = expectedWorkflows({base:sources, current:sources, changed});
+  const after = expectedWorkflows({base:sources, current:sources, changed,
+    packageImpact:impact});
+  assert.equal(before.length, 6, 'package changes previously triggered six independent suites');
+  assert.deepEqual(after, [app, coach],
+    'retain App and coaching owners but not unrelated billing, audio, IA and OPORA owners');
+  assert.ok(after.length * 2 <= before.length, 'more than halve the routed suites');
+  const missingOwner = new Map(sources);
+  missingOwner.delete(app);
+  assert.throws(() => expectedWorkflows({base:missingOwner, current:sources, changed,
+    packageImpact:impact}), /PACKAGE_ROUTE_OWNER_UNAVAILABLE/);
+  assert.equal(classify(proposed, changed.filter(path => path !== added)).mode, 'full');
+  assert.equal(classify(proposed, [...changed, 'package-lock.json']).mode, 'full');
+  const mutate = (change) => {
+    const bad = structuredClone(proposed);
+    change(bad);
+    assert.equal(classify(bad).mode, 'full', 'unsafe manifest/script change must remain full');
+  };
+  mutate(bad => { bad.dependencies.next = '16.0.0'; });
+  mutate(bad => { bad.scripts.prebuild = 'echo skip'; });
+  mutate(bad => { bad.scripts['test:coaching:release'] += ' && echo bypass'; });
+  mutate(bad => { bad.scripts['test:coaching:release'] =
+    bad.scripts['test:coaching:release'].replace(added, 'tests/billing-bypass.test.mjs'); });
+  mutate(bad => { bad.scripts['test:coaching:release'] =
+    bad.scripts['test:coaching:release'].replace('tests/coaching-report.test.mjs', 'tests/unrelated.test.mjs'); });
+  const noBuild = structuredClone(original);
+  noBuild.scripts.prebuild = 'echo skip';
+  const proposedNoBuild = structuredClone(proposed);
+  proposedNoBuild.scripts.prebuild = 'echo skip';
+  assert.equal(classify(proposedNoBuild, changed, noBuild).mode, 'full');
 });

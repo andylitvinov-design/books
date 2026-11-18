@@ -1,44 +1,23 @@
-.root{display:grid;gap:11px;min-width:0;color:var(--hh-light-text,#143d3a);padding:2px 0 8px}
-.header{display:grid;gap:4px;padding:0 5px}
-.eyebrow{display:flex;align-items:center;gap:5px;color:#a47b35;font:800 10px/1.2 Arial,sans-serif;letter-spacing:.15em}
-.header h2{margin:0;color:#123c39;font:600 clamp(24px,5.6vw,33px)/1.13 Georgia,serif;letter-spacing:-.025em}
-.header p{margin:0;color:#58685e;font:500 clamp(12px,3.15vw,14px)/1.3 Arial,sans-serif}
-.features{display:grid;gap:7px}
-.feature{display:grid;grid-template-columns:clamp(82px,28%,132px) minmax(0,1fr) auto;gap:10px;align-items:center;min-width:0;min-height:91px;padding:7px 9px 7px 7px;background:var(--hh-light-surface,#fffcf7);border:1px solid #e8ddcd;border-radius:18px;box-shadow:0 4px 12px #68482d12}
-.thumb{display:flex;align-items:flex-end;justify-content:flex-start;align-self:stretch;min-width:0;min-height:78px;padding:8px;border-radius:13px;background-color:#b5aa83;background-size:cover;background-position:center}
-.thumb svg{box-sizing:content-box;color:#fff;padding:6px;background:#0c4e43b2;border:1px solid #ffffffa6;border-radius:50%;box-shadow:0 2px 7px #0b352b36}
-.thumb[data-feature="greeting"]{background-image:linear-gradient(170deg,#123a2633,#264a2c26),url("/images/holistic-house/support-mock-portrait.webp");background-position:center 38%}
-.thumb[data-feature="cinematic"]{background-image:linear-gradient(175deg,#16361d06,#163d3155),url("/videos/holistic-house/film-collection-v3/sun-autumn-hills.jpg")}
-.thumb[data-feature="portrait"]{background-image:linear-gradient(170deg,#17362908,#16442a50),url("/images/holistic-house/pro-enhance-gallery.webp")}
-.featureText{display:grid;align-content:center;gap:5px;min-width:0}
-.featureText h3{margin:0;color:#173a36;font:800 clamp(13px,3.3vw,17px)/1.16 Arial,sans-serif;overflow-wrap:anywhere}
-.featureText p{margin:0;color:#596761;font:500 clamp(11px,2.8vw,13px)/1.28 Arial,sans-serif}
-.price{justify-self:end;display:inline-flex;align-items:center;justify-content:center;min-width:46px;min-height:33px;padding:3px 6px;border-radius:22px;background:#e5f4e8;color:#095b43;font:800 clamp(16px,4vw,21px)/1 Arial,sans-serif;white-space:nowrap}
-.benefits{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:center;min-width:0;padding:9px 4px;border-radius:16px;background:linear-gradient(105deg,#edf8ef,#f3f6e9);color:#224b3f}
-.benefits span{display:flex;align-items:center;justify-content:center;gap:4px;min-width:0;padding:2px 4px;text-align:center;font:700 clamp(9px,2.5vw,12px)/1.2 Arial,sans-serif}
-.benefits span+span{border-left:1px solid #c3dccd}
-.benefits svg{flex:none;color:#08745b}
-.actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;min-width:0}
-.freeCard,.proCard{display:flex;flex-direction:column;min-width:0;gap:7px;min-height:145px;padding:13px 11px 10px;border-radius:21px;border:1px solid #cfe3d5;box-shadow:0 5px 16px #48553c19}
-.freeCard{background:linear-gradient(155deg,#fffefa,#edf6ef)}
-.proCard{position:relative;overflow:hidden;color:#fff;background:linear-gradient(145deg,#06916e,#075944 70%,#063b30);border-color:#0c866c}
-.freeCard h3,.proCard h3{display:flex;align-items:center;gap:7px;min-width:0;margin:0;font:700 clamp(16px,4.05vw,22px)/1.12 Georgia,serif}
-.freeCard h3{color:#173d36}.proCard h3{color:#fff7e6}
-.freeCard h3 svg{color:#0e735d;flex:none}.proCard h3 svg{color:#e9bd5c;flex:none}
-.freeCard p,.proCard p{flex:1;margin:0;font:500 clamp(11px,2.85vw,13px)/1.3 Arial,sans-serif}
-.freeCard p{color:#52695b}.proCard p{color:#e9f8ee}
-.freeCard button,.proCard button{display:flex;justify-content:center;align-items:center;gap:7px;min-width:0;width:100%;min-height:44px;padding:6px;border-radius:999px;cursor:pointer;font:800 clamp(12px,3.3vw,16px)/1.2 Arial,sans-serif}
-.freeCard button{border:1px solid #8ccdb5;background:linear-gradient(180deg,#f9fff9,#dff0e8);color:#09553e}
-.proCard button{position:relative;border:1px solid #e8be6e;background:linear-gradient(180deg,#ffedb6,#e4af52);color:#432e0a;box-shadow:0 2px 8px #082b1e33}
-.freeCard button:focus-visible,.proCard button:focus-visible{outline:3px solid #176e6e;outline-offset:3px}
-.freeCard button:disabled,.proCard button:disabled{opacity:.55;cursor:not-allowed}
-.crown{position:absolute;right:8px;top:5px;color:#f2c667;opacity:.8}
-.proCard h3,.proCard p{position:relative;z-index:1}
-.priceNote{margin:0 4px;color:#68766e;text-align:center;font:500 11px/1.25 Arial,sans-serif}
-@media(max-width:355px){
-.feature{grid-template-columns:76px minmax(0,1fr) 42px;gap:6px;min-height:90px;padding:6px}
-.thumb{min-height:76px}.featureText h3{font-size:12px}.featureText p{font-size:10.5px}
-.price{min-width:40px;font-size:15px}.benefits span{flex-direction:column;gap:2px;font-size:9px}
-.actions{gap:6px}.freeCard,.proCard{padding:10px 8px;min-height:146px}
-.freeCard h3,.proCard h3{font-size:15px}
-}
+.root{display:grid;gap:8px;min-width:0;color:var(--hh-light-text,#143d3a);padding:0 0 3px}
+.header{display:grid;gap:3px;padding:0 4px}
+.header h2{display:flex;align-items:center;gap:7px;min-width:0;margin:0;color:#123c39;font:600 clamp(22px,5.7vw,31px)/1.13 Georgia,serif;letter-spacing:-.02em}
+.header h2 svg{flex:none;color:#bb8b3d}
+.header p{margin:0;color:#596d60;font:500 clamp(11px,2.9vw,13px)/1.25 Arial,Helvetica,sans-serif}
+.options{display:grid;gap:7px}
+.option{display:grid;grid-template-columns:clamp(72px,26%,132px) minmax(0,1fr) clamp(67px,20%,90px);gap:8px;align-items:center;min-width:0;min-height:94px;padding:6px;background:var(--hh-light-surface,#fffcf7);border:1px solid #e6dacb;border-radius:18px;box-shadow:0 3px 11px #68482d12}
+.thumb{align-self:stretch;display:flex;align-items:flex-end;justify-content:flex-start;min-height:82px;min-width:0;padding:6px;border-radius:13px;background-color:#a6b5a1;background-size:cover;background-position:center}
+.thumb[data-feature="free"]{background-image:linear-gradient(175deg,#22352010,#264a2c4d),url("/videos/holistic-house/film-collection-v3/sun-autumn-hills.jpg")}
+.thumb[data-feature="character"]{background-image:linear-gradient(175deg,#123a2619,#264a2c45),url("/images/holistic-house/pro-enhance-hero.webp");background-position:38% center}
+.thumb[data-feature="cinematic"]{background-image:linear-gradient(175deg,#16361d0d,#163d3155),url("/images/holistic-house/pro-enhance-gallery.webp")}
+.thumbIcon{display:grid;place-items:center;width:31px;height:31px;border-radius:50%;color:#fff;background:#0b614dbc;border:1px solid #ffffffbd;box-shadow:0 1px 6px #10392a30}
+.optionText{display:grid;align-content:center;gap:5px;min-width:0}
+.optionText h3{margin:0;color:#183e36;font:800 clamp(12px,3.5vw,16px)/1.14 Arial,Helvetica,sans-serif;overflow-wrap:break-word}
+.optionText p{margin:0;color:#5b6d62;font:500 clamp(10.5px,2.85vw,12px)/1.26 Arial,Helvetica,sans-serif;overflow-wrap:break-word}
+.optionAction{align-self:stretch;display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:6px;min-width:0}
+.price{display:grid;place-items:center;min-height:28px;min-width:0;padding:4px 3px;border-radius:22px;background:#e5f4e8;color:#075b43;font:800 clamp(14px,4vw,19px)/1 Arial,Helvetica,sans-serif;white-space:nowrap}
+.optionAction button{display:flex;align-items:center;justify-content:center;gap:3px;min-width:0;width:100%;min-height:42px;padding:4px;border:1px solid #087b62;border-radius:999px;background:linear-gradient(145deg,#079a76,#075740);color:#fff;cursor:pointer;font:800 clamp(10px,2.8vw,12px)/1.15 Arial,Helvetica,sans-serif;box-shadow:0 2px 6px #0b6a4d26}
+.optionAction button svg{flex:none}
+.optionAction button:focus-visible{outline:3px solid #b78c41;outline-offset:3px}
+.optionAction button:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:355px){.root{gap:7px}.header h2{font-size:22px}.header p{font-size:11px}.option{grid-template-columns:73px minmax(0,1fr) 65px;gap:6px;min-height:90px;padding:5px;border-radius:15px}.thumb{min-height:79px;padding:5px}.optionText h3{font-size:12px}.optionText p{font-size:10px}.optionAction{gap:4px}.optionAction button{font-size:10px;min-height:42px}.price{font-size:14px;min-height:25px}}
+@media(min-width:760px){.option{grid-template-columns:clamp(115px,25%,175px) minmax(0,1fr) 105px;min-height:105px;padding:8px}.thumb{min-height:90px}.optionAction button{min-height:44px;font-size:13px}}

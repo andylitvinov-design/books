@@ -16,7 +16,7 @@ const copy = {
     lead: "Оракулы · Дао · Таро · Духовные подсказки",
     back: "Все услуги Assist", entry: "Spiritual Reading",
     entryLead: "Даосские чтения, Таро и подбор мастера", entryAction: "Открыть",
-    free: "Бесплатно", freeTitle: "Taoist AI Reading",
+    free: "Бесплатно", freeTitle: "Чтение И-Цзин",
     freeDescription: "Бесплатная даосская подсказка по вашему вопросу",
     freeAction: "Получить чтение",
     taoTitle: "Taoist Reading с мастером",
@@ -41,7 +41,7 @@ const copy = {
     lead: "Oracles · Dao · Tarot · Spiritual reflection",
     back: "All Assist services", entry: "Spiritual Reading",
     entryLead: "Taoist insights, Tarot and practitioners", entryAction: "Explore",
-    free: "Free", freeTitle: "Taoist AI Reading",
+    free: "Free", freeTitle: "I Ching reflection",
     freeDescription: "A free Taoist reflection on your question",
     freeAction: "Get a reading",
     taoTitle: "Taoist Reading with a master",
@@ -66,7 +66,7 @@ const copy = {
     lead: "Oráculos · Dao · Tarot · Reflexión espiritual",
     back: "Todos los servicios", entry: "Spiritual Reading",
     entryLead: "Lecturas taoístas, Tarot y profesionales", entryAction: "Explorar",
-    free: "Gratis", freeTitle: "Taoist AI Reading",
+    free: "Gratis", freeTitle: "Reflexión del I Ching",
     freeDescription: "Una reflexión taoísta gratuita sobre tu pregunta",
     freeAction: "Obtener lectura",
     taoTitle: "Taoist Reading con un maestro",
@@ -90,19 +90,30 @@ const copy = {
 
 export function SpiritualReadingEntry({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
-  return <Link href={"/" + locale + "/services/spiritual-reading"} prefetch={false}
-    data-assist-spiritual-entry className={styles.entry}>
-    <span className={styles.entryMark} aria-hidden="true"><Sparkles size={24}/></span>
-    <span className={styles.entryWords}><strong>{t.entry}</strong><small>{t.entryLead}</small></span>
-    <span className={styles.entryAction}>{t.entryAction}<ArrowRight size={17} aria-hidden="true"/></span>
-  </Link>;
+  const root = "/" + locale;
+  return <div className={styles.entryGroup} data-assist-spiritual-options>
+    <Link href={root + "/services/spiritual-reading"} prefetch={false}
+      data-assist-spiritual-entry className={styles.entry}>
+      <span className={styles.entryMark} aria-hidden="true"><Sparkles size={24}/></span>
+      <span className={styles.entryWords}><strong>{t.entry}</strong><small>{t.entryLead}</small></span>
+      <span className={styles.entryAction}>{t.entryAction}<ArrowRight size={17} aria-hidden="true"/></span>
+    </Link>
+    <nav className={styles.entryChoices} aria-label={t.entryLead}>
+      <Link href={root + "/holistic-support#dao-guidance"} prefetch={false}
+        data-assist-spiritual-choice="free">{t.freeTitle}</Link>
+      <Link href={root + "/services/spiritual-reading#spiritual-tao"} prefetch={false}
+        data-assist-spiritual-choice="tao">{t.taoTitle}</Link>
+      <Link href={root + "/services/spiritual-reading#spiritual-tarot"} prefetch={false}
+        data-assist-spiritual-choice="tarot">{t.tarotTitle}</Link>
+    </nav>
+  </div>;
 }
 
 function SpiritualAction({ locale, label, service }: { locale: PublicLocale; label: string; service: string }) {
   const t = copy[locale];
   const pagePath = "/" + locale + "/services/spiritual-reading";
   return <div className={styles.request}>
-    <ContactChannelChooser locale={locale} label={label} className={styles.action}
+    <ContactChannelChooser locale={locale} label={label} className={styles.action} compactMessenger
       event="service_request_start" whatsappUrl={whatsappEnquiryUrl({
         locale, service, request: t.enquiry, pagePath,
       })} attributes={{ "data-spiritual-enquiry": service }} />
@@ -140,21 +151,21 @@ export function SpiritualReadingPageContent({
             </Link>
           </div>
         </article>
-        <article className={styles.card} data-spiritual-service="tao-master">
+        <article className={styles.card} id="spiritual-tao" data-spiritual-service="tao-master">
           <div className={styles.photo}><Image src="/images/holistic-house/andy-about.png" alt="" fill sizes="(max-width: 450px) 34vw, 210px" unoptimized /></div>
           <div className={styles.info}>
             <h2>{t.taoTitle}</h2>
             <p className={styles.description}><Compass aria-hidden="true"/>{t.taoDescription}</p>
-            <SpiritualAction locale={locale} label={t.taoAction} service="Taoist Reading" />
           </div>
+          <SpiritualAction locale={locale} label={t.taoAction} service="Taoist Reading" />
         </article>
-        <article className={styles.card} data-spiritual-service="tarot">
+        <article className={styles.card} id="spiritual-tarot" data-spiritual-service="tarot">
           <div className={styles.photo}><Image src="/images/holistic-house/mandala-gold-reference.webp" alt="" fill sizes="(max-width: 450px) 34vw, 210px" unoptimized /></div>
           <div className={styles.info}>
             <h2>{t.tarotTitle}</h2>
             <p className={styles.description}><Layers3 aria-hidden="true"/>{t.tarotDescription}</p>
-            <SpiritualAction locale={locale} label={t.tarotAction} service="Tarot Reading" />
           </div>
+          <SpiritualAction locale={locale} label={t.tarotAction} service="Tarot Reading" />
         </article>
         <article className={styles.card} data-spiritual-service="tarot-masters">
           <div className={styles.photo}>

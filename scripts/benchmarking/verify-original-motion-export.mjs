@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {installGuestVideoBlobCapture,readRealGuestVideo} from './real-guest-video-file.mjs';
+import {completeThreeStepGoalsQuiz} from './complete-three-step-goals-quiz.mjs';
 
 // Local, anonymous acceptance: exercise actual UI and inspect the real test-owned movie Blob.
 const origin = 'http://127.0.0.1:3100';
@@ -31,8 +32,10 @@ page.on('console', message => {
 try {
   await page.goto(`${origin}/ru/holistic-support/mandala`, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.locator('[data-video-studio-hydrated="true"]').waitFor({ timeout: 60000 });
-  // Select real source footage through the visitor-visible three-stage route.
-  await page.locator('[data-video-continue-scenarios]').click();
+  // Complete all three real Goal selections before the visitor's Ideas CTA.
+  await completeThreeStepGoalsQuiz(page,{engine});
+  if(engine==='webkit')await page.locator('[data-video-continue-scenarios]').tap();
+  else await page.locator('[data-video-continue-scenarios]').click();
   assert.equal(await page.locator('[data-video-quick-control="phrases"]').getAttribute('aria-pressed'),
     'true','GOALS_MUST_OPEN_IDEAS');
   const editor=page.locator('[data-video-quick-control="editor"]');
@@ -53,10 +56,7 @@ try {
   await page.waitForFunction(()=>
     document.querySelector('[data-video-montage-style="3"]')
       ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
-  await page.locator('[data-video-montage-tab="concept"]').click();
-  const settings=page.locator('[data-video-story-open-settings]');
-  await settings.waitFor({state:'visible',timeout:20000});
-  await settings.click();
+  await openMontageSettings(page);
   const sourceFormat=page.locator('[data-video-montage-preference="format"]');
   await sourceFormat.waitFor({state:'visible',timeout:20000});
   await sourceFormat.selectOption('portrait');
@@ -85,27 +85,53 @@ try {
   await conceptPanel.waitFor({state:'visible',timeout:15000});
   await conceptPanel.locator('[data-video-concept-approve]').click();
   await page.locator('[data-video-quick-control="editor"]').click();
-  const settingsTab=page.locator('[data-video-story-open-settings]');
-  await page.locator('[data-video-montage-tab="concept"]').click();
-  await settingsTab.click();
+  await openMontageSettings(page);
   await page.locator('[data-video-quick-control="phrases"]').click();
   await page.locator('[data-video-ideas-tab="concept"]').click();
   assert.equal(await page.locator('[data-video-concept-auto]').getAttribute('data-concept-approved'),
     'true','APPROVED_CONCEPT_MUST_PERSIST');
   await page.locator('[data-video-quick-control="editor"]').click();
-  await page.locator('[data-video-montage-tab="concept"]').click();
-  await settingsTab.click();
+  await openMontageSettings(page);
   const textTools=page.locator('[data-video-concept-text-tools]');
   await textTools.locator(':scope > summary').click();
   assert.equal(await textTools.getAttribute('open'),'','TIMELINE_DISCLOSURE_MUST_OPEN');
   const addVideo=page.locator('[data-video-timeline-add-video]');
   await addVideo.waitFor({state:'visible',timeout:20000});
-  await addVideo.click();
-  await page.locator('[data-free-film-compilation-catalog]').waitFor({state:'visible'});
+  // Native touch must commit the real visitor's opt-in. Desktop click can be
+  // lost when Safari unmounts the timeline while switching workspaces.
+  if (engine === 'webkit') await addVideo.tap();
+  else await addVideo.click();
+  try {
+    await page.waitForFunction(() => {
+      const studio=document.querySelector('[data-mandala-free-video]');
+      const catalog=document.querySelector('[data-free-film-compilation-catalog]');
+      return studio?.getAttribute('data-active-workspace') === 'video'
+        && studio?.getAttribute('data-video-advanced-open') === 'true'
+        && !!catalog && catalog.getClientRects().length>0;
+    },undefined,{timeout:15000});
+    await page.locator('[data-free-film-compilation-catalog]').waitFor({state:'visible',timeout:15000});
+  } catch(error) {
+    // Safe structural diagnostics, never print a wish, media, customer or token.
+    const state=await page.evaluate(() => {
+      const studio=document.querySelector('[data-mandala-free-video]');
+      const catalog=document.querySelector('[data-free-film-compilation-catalog]');
+      return {workspace:studio?.getAttribute('data-active-workspace')||null,
+        advanced:studio?.getAttribute('data-video-advanced-open')||null,
+        scenario:studio?.getAttribute('data-video-scenario-open')||null,
+        catalogPresent:Boolean(catalog),
+        catalogVisible:Boolean(catalog?.getClientRects().length)};
+    }).catch(()=>({diagnosticsUnavailable:true}));
+    console.error('HH_ORIGINAL_MOTION_CATALOG_NOT_OPEN '+JSON.stringify({engine,state}));
+    throw error;
+  }
   const preset = page.locator('[data-free-film-preset="motion-film-goal-achievement"]');
   const more = page.locator('[data-free-film-more]');
-  if (await more.getAttribute('aria-expanded') !== 'true') await more.click();
-  await preset.click();
+  if (await more.getAttribute('aria-expanded') !== 'true') {
+    if (engine === 'webkit') await more.tap();
+    else await more.click();
+  }
+  if (engine === 'webkit') await preset.tap();
+  else await preset.click();
   // React can commit the selected original-motion plan after Playwright's
   // pointer action resolves. Wait for the actual selection, not a fixed delay;
   // fail closed with diagnostic evidence if the real application never commits.
@@ -130,17 +156,14 @@ try {
   assert.equal(await preset.getAttribute('aria-pressed'), 'true');
   assert.deepEqual(await page.locator('[data-free-film-source]').evaluateAll(nodes => nodes.map(node => node.dataset.freeFilmSource)), ids);
   await page.locator('[data-video-quick-control="editor"]').click();
-  // Match the real post-#3676 Montage. Format/duration are available through Story → Video settings.
-  await page.locator('[data-video-montage-tab="concept"]').click();
-  await settingsTab.waitFor({state:'visible'});
-  await settingsTab.click();
+  // Match the real post-#3676 Montage. Format/duration remain available via Montage → Advanced storyboard → Video settings.
+  await openMontageSettings(page);
   assert.equal(await page.locator('[data-video-basic-editor]').getAttribute('data-montage-panel'),'settings');
   const duration=page.locator('[data-video-montage-preference="duration"]');
   await duration.waitFor({state:'visible'});
   await duration.selectOption('20');
   assert.equal(await duration.inputValue(),'20');
-  await page.locator('[data-video-montage-tab="concept"]').click();
-  await settingsTab.click();
+  await openMontageSettings(page);
   const audioTab=page.locator('[data-video-montage-open-audio]');
   await audioTab.click();
   await page.locator('[data-video-montage-audio]').waitFor({state:'visible'});
@@ -163,8 +186,17 @@ try {
     'the compact music picker keeps its three-track rights and mix limit');
   await page.locator('[data-video-audio-compact-selected]').waitFor({state:'visible'});
   const generate = page.locator('[data-video-quick-generate]');
-  await generate.click({timeout:30000});
-  // The actual verified film moves to Ready; guests cannot use direct Save.
+  // Montage Generate is navigation only; the physical encoder starts only
+  // after the guest explicitly chooses Generate in the Ready workspace.
+  if (engine === 'webkit') await generate.tap({timeout:30000});
+  else await generate.click({timeout:30000});
+  const readyChoice = page.locator('[data-video-ready][data-ready-state="choose"]');
+  await readyChoice.waitFor({state:'visible',timeout:15000});
+  const readyGenerate = readyChoice.locator('[data-ready-generate]');
+  await readyGenerate.waitFor({state:'visible',timeout:15000});
+  if (engine === 'webkit') await readyGenerate.tap({timeout:30000});
+  else await readyGenerate.click({timeout:30000});
+  // Ready creates the actual film; guests cannot use direct Save.
   // Reuse the first-party encoded Blob and prove the login gate instead.
   let captured;
   try{
@@ -229,4 +261,17 @@ try {
 } finally {
   await browser.close();
   await rm(dir, { recursive: true, force: true });
+}
+
+
+async function openMontageSettings(page){
+  // Extra contains only the three video choices; the original detailed settings
+  // remain available via the existing Story > Video settings action.
+  await page.locator('[data-video-montage-tab="concept"]').click();
+  await page.locator('[data-video-story-open-settings]').click();
+  const advanced=page.locator('[data-video-stories-advanced]');
+  await advanced.locator(':scope > summary').click();
+  const settings=advanced.locator('[data-video-stories-settings]');
+  await settings.waitFor({state:'visible',timeout:20000});
+  await settings.click();
 }

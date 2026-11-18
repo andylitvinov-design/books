@@ -7,7 +7,7 @@ import PersonalVideoMessengerPanel from './personal-video-messenger-panel'
 import SupportPhotoCabinet from '@/components/app/support-photo-cabinet'
 
 const COPY={
-  en:{title:'My Videos',subtitle:'Your private saved videos, separate from the public video editor.',new:'Create free video',
+  en:{title:'My Videos',subtitle:'Your private saved videos, separate from the public video editor.',new:'Create free video',myPage:'Publish on My Page',
     empty:'You have no saved videos yet.',disabled:'Private cloud saving is not enabled yet. Free local downloads remain available.',
     file:'Select a finished MP4 (up to 12 MB)',theme:'Theme',aspect:'Format',consent:'I agree to save this finished video privately in my Holistic House account. The original photo and wish are not uploaded.',
     upload:'Save in My House',busy:'Uploading securely…',download:'Get private download',play:'Play',delete:'Delete video',confirm:'Delete this saved video from your private account?',
@@ -18,7 +18,7 @@ const COPY={
     size:'Each file ≤12 MB · Up to 3 videos · Finished MP4 only.',music:'This page stores finished videos, not your original photos.',
     states:{ready:'Ready',pending:'Upload pending',failed:'Upload failed',deleting:'Delete pending'},
     themes:{money:'Money',relationships:'Relationships',energy:'Energy',goals:'Goals',health:'Health',life:'Personal growth'}},
-  ru:{title:'Мои видео',subtitle:'Приватная библиотека готовых роликов в вашем кабинете.',new:'Создать бесплатное видео',
+  ru:{title:'Мои видео',subtitle:'Приватная библиотека готовых роликов в вашем кабинете.',new:'Создать бесплатное видео',myPage:'На Мою страницу',
     empty:'Пока нет сохранённых видео.',disabled:'Облачное сохранение пока выключено. Бесплатное скачивание на устройство работает.',
     file:'Выберите готовый MP4 (до 12 МБ)',theme:'Тема',aspect:'Формат',consent:'Разрешаю сохранить только готовое видео в моём приватном кабинете Holistic House. Исходное фото и пожелание не отправляются.',
     upload:'Сохранить в My House',busy:'Безопасная загрузка…',download:'Приватное скачивание',play:'Смотреть',delete:'Удалить видео',confirm:'Удалить это видео из личного кабинета?',
@@ -29,7 +29,7 @@ const COPY={
     size:'Каждый файл ≤12 МБ · Не более 3 видео · Только готовый MP4.',music:'Исходные фотографии и пожелания здесь не хранятся.',
     states:{ready:'Готово',pending:'Загрузка не завершена',failed:'Ошибка загрузки',deleting:'Удаление не завершено'},
     themes:{money:'Деньги',relationships:'Отношения',energy:'Энергия',goals:'Цели',health:'Здоровье',life:'Развитие'}},
-  es:{title:'Mis vídeos',subtitle:'Biblioteca privada de vídeos terminados en tu cuenta.',new:'Crear vídeo gratuito',
+  es:{title:'Mis vídeos',subtitle:'Biblioteca privada de vídeos terminados en tu cuenta.',new:'Crear vídeo gratuito',myPage:'Publicar en Mi página',
     empty:'Todavía no hay vídeos guardados.',disabled:'El almacenamiento privado no está activado. La descarga local sigue disponible.',
     file:'Selecciona un MP4 terminado (máximo 12 MB)',theme:'Tema',aspect:'Formato',consent:'Autorizo guardar únicamente el vídeo final en mi cuenta privada de Holistic House. No se envían la foto original ni mi petición.',
     upload:'Guardar en Mi Casa',busy:'Subiendo con seguridad…',download:'Descarga privada',play:'Ver',delete:'Eliminar vídeo',confirm:'¿Eliminar este vídeo de tu biblioteca privada?',
@@ -139,7 +139,10 @@ export default function MyPersonalVideos({accountId,locale='en'}){
   return <section style={{maxWidth:840,margin:'0 auto',padding:'16px'}} data-my-personal-videos>
     <div style={{display:'flex',justifyContent:'space-between',alignItems:'start',flexWrap:'wrap',gap:12}}>
       <div><h1>{t.title}</h1><p>{t.subtitle}</p></div>
-      <Link href={'/'+locale+'/holistic-support/mandala'} prefetch={false}>{t.new}</Link>
+      <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
+        <Link href={'/'+locale+'/my-page'} prefetch={false} data-my-videos-publish-page>{t.myPage}</Link>
+        <Link href={'/'+locale+'/holistic-support/mandala'} prefetch={false}>{t.new}</Link>
+      </div>
     </div>
     <SupportPhotoCabinet locale={locale} />
     {status==='disabled'&&<p role="status">{t.disabled}</p>}

@@ -115,7 +115,7 @@ test('storyboard choice preview is honest about editorial coverage and physical 
  const topic=listTelegramStoryTopics(category.id,sub.id)[0];
  const scenario=listTelegramStoryScenarios(topic.id)[0];
  const plots=listTelegramStoryPlots(scenario.id);
- assert.equal(plots.length,4);
+ assert.equal(plots.length,6); // six canonical MyTube variants; physical footage stays unverified
  for(const plot of plots){
   const proof=inspectStoryPlotCoverage(plot.id);
   assert.equal(proof.minimumSources,4);

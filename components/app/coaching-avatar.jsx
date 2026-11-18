@@ -2,6 +2,7 @@
 import {useId} from 'react'
 import Image from 'next/image'
 import {COACH_PERSONAS} from '@/lib/coaching/persona-registry.mjs'
+import MyCoachMotionMedia from '@/components/my-coach-motion-media'
 import {COACH_AVATAR_OPTIONS} from '@/lib/personal-coaching/coaching-avatar-state.mjs'
 import styles from './coaching-avatar.module.css'
 
@@ -10,7 +11,7 @@ const copy={
  ru:{label:'Образ коуча',idle:'Готов к разговору',thinking:'Думает',speaking:'Говорит',paused:'Пауза',listening:'Слушает',device:'2D-аватар · голос устройства',photo:'Живое фото · голос устройства'},
  es:{label:'Imagen del coach',idle:'Listo para escuchar',thinking:'Pensando',speaking:'Hablando',paused:'En pausa',listening:'Escuchando',device:'Avatar ilustrado · voz del dispositivo',photo:'Foto animada · voz del dispositivo'},
 }
-export default function CoachingAvatar({locale='en',avatarId='warm',onAvatarChange,phase='idle',beat=0,showPicker=true,displayName='',size='compact',personaId=null}){
+export default function CoachingAvatar({locale='en',avatarId='warm',onAvatarChange,phase='idle',beat=0,showPicker=true,displayName='',size='compact',personaId=null,playbackStream=null,scene='calm'}){
  const lang=['ru','en','es'].includes(locale)?locale:'en'
  const t=copy[lang]
  const profile=COACH_AVATAR_OPTIONS.find(item=>item.id===avatarId)||COACH_AVATAR_OPTIONS[0]
@@ -20,8 +21,15 @@ export default function CoachingAvatar({locale='en',avatarId='warm',onAvatarChan
  const photoId=!showPicker&&size==='large'&&COACH_PERSONAS.some(p=>p.id===personaId)?personaId:null
  const palette={'--avatar-bg':profile.bg,'--avatar-shirt':profile.shirt,
   '--beat-speed':(0.27+(Math.abs(beat)%4)*0.05)+'s'}
- return <div className={styles.frame} data-coach-avatar="true" data-avatar-size={size==='large'?'large':'compact'} data-phase={state}
-  data-avatar-id={profile.id} data-photo-persona={photoId||undefined} style={palette} aria-label={t.label}>
+
+ // This component never requests microphone permission or starts speech.
+ // An optional, already-authorized playback MediaStream can drive real RMS.
+ const hasMotionVideo=Boolean(photoId)&&['mira','max','sofia','alex'].includes(photoId)
+ const posterPath=photoId?'/images/holistic-house/my-coach-motion/'+photoId+'-still.'+(photoId==='harry'?'svg':'webp'):null
+
+ return <div className={styles.frame} data-coach-avatar="true" data-photo-motion="static" data-avatar-size={size==='large'?'large':'compact'} data-phase={state}
+  data-avatar-id={profile.id} data-photo-persona={photoId||undefined}
+  data-coach-motion-video={hasMotionVideo?'true':undefined} style={palette} aria-label={t.label}>
   <div className={styles.face} aria-hidden="true">
    <svg className={styles.illustration} viewBox="0 0 146 146" focusable="false">
     <defs><linearGradient id={skinId} x1="0" y1="0" x2="1" y2="1">
@@ -45,13 +53,16 @@ export default function CoachingAvatar({locale='en',avatarId='warm',onAvatarChan
      <ellipse className={styles.mouthTalk} cx="73" cy="103" rx="11" ry="6" fill="#905452"/>
     </g>
    </svg>
-   {photoId&&<picture className={styles.livingPortrait}>
-     <source media="(prefers-reduced-motion: reduce)" type="image/webp"
-       srcSet={'/images/holistic-house/my-coach-motion/'+photoId+'-still.webp'}/>
-     <Image className={styles.livingPortraitImage}
-       src={'/images/holistic-house/my-coach-motion/'+photoId+'-living.webp'}
-       width={370} height={697} unoptimized loading="eager" alt="" draggable={false}/>
-   </picture>}
+   {photoId&&<div className={styles.livingPortrait} aria-hidden="true">
+     <picture className={styles.livingPortraitBase}>
+       <source media="(prefers-reduced-motion: reduce)" type={photoId==='harry'?'image/svg+xml':'image/webp'}
+         srcSet={posterPath}/>
+       <Image className={styles.livingPortraitImage}
+         src={posterPath}
+         width={370} height={697} unoptimized loading="eager" alt="" draggable={false}/>
+     </picture>
+     {hasMotionVideo&&<MyCoachMotionMedia personaId={photoId} phase={state} context="avatar" scene={scene} />}
+   </div>}
   </div>
   <div className={styles.info}>
    {showPicker?<label className={styles.choice}>

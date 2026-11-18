@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+// New signed Business-chat request/confirmation/RLS cases join existing CRM CI.
+import './assist-telegram-business-request.test.mjs';
+import './telegram-secretary-business.test.mjs';
+import './crm-telegram-first-contact.test.mjs';
 import vm from 'node:vm';
 import {parseTelegramHomeCallback} from '../lib/crm/telegram-companion-menu.mjs';
 import {readFileSync} from 'node:fs';
@@ -29,15 +33,24 @@ function normalizer(){
  return context;
 }
 async function routeRun({source=candidate,payload=callback(),diagnostic='off',companion='off',provider='telegram',authorized=true}={}){
- const context=normalizer(),calls={ingest:0,ack:0,send:0,ensure:0,intake:0,aiV3:0,companion:0,companionSend:0,waProof:0,waIntake:0,waSend:0};
+ const context=normalizer(),calls={ingest:0,ack:0,send:0,ensure:0,intake:0,aiV3:0,companion:0,companionSend:0,waProof:0,waIntake:0,waSend:0,botCapture:0,businessCapture:0};
  class Response{constructor(body,{status=200}={}){this.body=body;this.status=status}static json(body,opts){return new Response(body,opts)}}
  Object.assign(context,{Buffer,NextResponse:Response,MESSENGER_CHANNELS:['telegram','whatsapp'],PRIVATE_HEADERS:{},getAppConfig:()=>({}),verifyMessengerWebhook:()=>authorized,verifyMessengerChallenge:()=>null,
    safeError:()=>({status:503}),telegramDiagnosticReady:()=>false,channelTransportReady:()=>true,
    processWhatsAppAccountLink:async()=>{calls.waProof++;return {handled:false}},
    processWhatsAppDiagnostic:async()=>{calls.waIntake++;return {handled:false}},
+   processWhatsAppSecretary:async()=>({handled:false}),
    sendWhatsAppDiagnosticPrompt:async()=>{calls.waSend++},
    // Production CRM webhook routes owner-only video commands before diagnostic callbacks.
-   receiveOwnerTelegramVideoWebhook:async()=>({handled:false}),
+   receiveOwnerTelegramVideoCrmFallback:async()=>({handled:false}),
+   // The business account is an independent Telegram update, not this callback route.
+   telegramBusinessRequestFromUpdate:()=>null,
+   processTelegramBusinessConversation:async()=>({handled:false}),
+   processTelegramBusinessSecretary:async()=>({handled:false}),
+   gateTelegramBusinessSecretaryOptOut:async()=>({blocked:false}),
+   // Mock the new, owner-scoped lead persistence boundary without real DB writes.
+   captureTelegramBusinessLead:async()=>{calls.businessCapture++;return {created:false}},
+   captureTelegramBotLead:async()=>{calls.botCapture++;return {created:false}},
    // WhatsApp locale marker helper belongs to the production normalizer, not this VM.
    whatsappExpressReviewLocale:()=>null,
    processTelegramCompanion:async()=>{calls.companion++;return companion==='handled'?{handled:true,to:'123456789',locale:'ru',text:'test companion welcome',markup:null}:{handled:false}},
@@ -106,4 +119,17 @@ test('signed companion home callback is handled by its own route without CRM lea
  assert.equal(result.calls.ack,1);
  assert.equal(result.calls.ingest,0);
  assert.equal(result.calls.intake,0);
+});
+
+test('first private Telegram text invokes deduped lead capture; callbacks never do',async()=>{
+  const payload={update_id:19,message:{message_id:9,date:1,
+    chat:{id:123456789,type:'private'},
+    from:{first_name:'Fictional',is_bot:false},text:'I want help'}};
+  const inbound=await routeRun({payload});
+  assert.equal(inbound.response.status,200);
+  assert.equal(inbound.calls.botCapture,1);
+  assert.equal(inbound.calls.ingest,1);
+  const clicked=await routeRun({payload:callback('hhv2:ru:yes')});
+  assert.equal(clicked.response.status,200);
+  assert.equal(clicked.calls.botCapture,0);
 });

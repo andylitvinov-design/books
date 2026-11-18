@@ -57,16 +57,18 @@ test("All courses lists every series without mandatory category and keeps each o
   assert.equal(listMyTubeCourseSeries(list,"temple","greek").length,2);
 });
 
-test("MyTube shows course names and lessons immediately; category filters optional",()=>{
+test("MyTube course navigation reveals topic after area and lessons only after playlist click",()=>{
   const discovery=read("components/video-discovery.tsx");
-  const feed=read("components/library-feed.tsx");
-  assert.match(discovery,/const \[courseType,setCourseType\]=useState\("all"\)/);
-  assert.match(discovery,/const \[courseSeriesId,setCourseSeriesId\]=useState\("all"\)/);
-  assert.match(discovery,/data-mytube-course-type="all"/);
-  assert.match(discovery,/data-mytube-course-series="all"/);
-  assert.match(discovery,/activeCourseSeries!=="all"/);
-  assert.match(feed,/data-mytube-course-heading=\{courseInfo\.id\}/);
-  assert.match(feed,/visibleLimit = mytubeShelf === "courses" \? filtered\.length/);
+  const playlists=read("components/mytube-course-playlists.tsx");
+  assert.match(discovery,/<MyTubeCoursePlaylists locale=\{locale\} items=\{ordered\}/);
+  assert.doesNotMatch(discovery,/const \[courseType,setCourseType\]/);
+  assert.doesNotMatch(discovery,/data-mytube-course-series="all"/);
+  assert.match(playlists,/data-mytube-course-type=\{value\}/);
+  assert.match(playlists,/category&&topics\.length>0/);
+  assert.match(playlists,/data-mytube-course-series=\{group\.id\}/);
+  assert.match(playlists,/isOpen&&<div className=\{styles\.lessons\}/);
+  assert.match(playlists,/sortMyTubeCourseLessons\(group\.lessons\)/);
+  assert.match(playlists,/selectedLesson&&<div className=\{styles\.player\}/);
 });
 
 test("all verified PsiMaster planetary meditations complement the original Sun and Ajna set",()=>{

@@ -608,19 +608,20 @@ export async function startPresetMixAudio(
  * The Safari WebCodecs path uses the same per-lane gains with OfflineAudioContext.
  */
 export async function startLayeredVideoAudio(
-  file:File,bedId:OriginalMelodyPreset,masterVolume=80,bedVolumePercent=30,
+  file:File,bedId:OriginalMelodyPreset|CuratedAudioPreset,masterVolume=80,bedVolumePercent=30,
   options:{seconds:number;startSeconds?:number;loop?:boolean;
-    fadeSeconds?:number;deferStart?:boolean}={seconds:30},
+    fadeSeconds?:number;deferStart?:boolean;
+    approvedCuratedBedIds?:readonly CuratedAudioPreset[]}={seconds:30},
 ):Promise<AmbientSession|null>{
-  // Keep this module's existing import-free CommonJS test interface and avoid
-  // a new iOS user-gesture await before AudioContext.resume(). The public
-  // project draft uses the same five first-party names and exact bounds.
+  // Preserve import-free legacy preview and require a caller-approved curated bed ID.
+  // No new await before iOS AudioContext.resume() in the Create click.
   const names:readonly OriginalMelodyPreset[]=[
     "warm-morning","wings-of-light","heart-harmony","quiet-stars","bright-path"
   ];
   const fadeSeconds=options.fadeSeconds??1;
   if(typeof window==="undefined"||!isSupportedLocalAudio(file)||
-     !names.includes(bedId)||
+     !(names.includes(bedId as OriginalMelodyPreset)||
+       (isCuratedAudioPreset(bedId)&&options.approvedCuratedBedIds?.includes(bedId)===true))||
      !Number.isFinite(options.seconds)||options.seconds<3||options.seconds>60||
      !Number.isFinite(options.startSeconds??0)||(options.startSeconds??0)<0||
      (options.startSeconds??0)>=options.seconds||

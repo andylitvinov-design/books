@@ -20,9 +20,12 @@ test('housekeeping skips absent optional table but executes exact bounded cleanu
  for(const installed of [false,true]){
   const calls=[];
   const db={query:async(sql,args)=>{calls.push({sql,args});if(sql.includes('to_regclass'))return {rows:[{receipts:installed?'app_private.crm_wa_diagnostic_receipts':null}]};if(sql.startsWith('insert into app_private.housekeeping_runs'))return {rows:[{id:'fictional'}]};if(sql.startsWith('update app_private.housekeeping_runs'))return {rows:[{id:'fictional',guest_sessions_deleted:0,viewer_sessions_deleted:0,intents_deleted:0}]};return {rows:[]}}};
-  const context=vm.createContext({AppError:Error,transaction:async(_config,_actor,work)=>work(db),fetch:()=>{throw Error('REAL_NETWORK_DENIED')}} ,{codeGeneration:{strings:false,wasm:false}});
+  let nativeCleanupCalls=0;
+  const purgeExpiredNativeDialogueSessions=async(connection,limit)=>{assert.equal(connection,db);assert.equal(limit,17);nativeCleanupCalls++;};
+  const context=vm.createContext({AppError:Error,transaction:async(_config,_actor,work)=>work(db),purgeExpiredNativeDialogueSessions,fetch:()=>{throw Error('REAL_NETWORK_DENIED')}} ,{codeGeneration:{strings:false,wasm:false}});
   vm.runInContext(source,context,{timeout:1000});await context.runAppHousekeeping({}, {batchSize:17});
   const purges=calls.filter(x=>x.sql.includes('delete from app_private.crm_wa_diagnostic_receipts'));
+  assert.equal(nativeCleanupCalls,1);
   assert.equal(purges.length,installed?1:0);if(installed)assert.equal(purges[0].args[0],17);
  }
 });

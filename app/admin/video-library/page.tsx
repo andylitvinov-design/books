@@ -62,6 +62,8 @@ export default async function VideoLibraryCoveragePage({searchParams}:Props){
   <div className={styles.content}>
    <nav className={styles.links} aria-label={t.title}>
     <Link href="/admin/videos">{t.back}</Link>
+    <Link href="/admin/music-library">{locale==="ru"?"Моя музыка · загрузка до 30":locale==="es"?"Mi música · subir hasta 30":"My music · upload up to 30"}</Link>
+    <Link href="/admin/video-library/photos">{locale==="ru"?"Фото по сценам":locale==="es"?"Fotos por escena":"Photos by scene"}</Link>
     <Link href="/admin/automations">{locale==='ru'?'Автоматизации':locale==='es'?'Automatizaciones':'Automations'}</Link>
     <Link href={"/api/admin/video-library/coverage?aspect="+aspect}>{t.json}</Link>
    </nav>

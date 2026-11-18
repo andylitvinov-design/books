@@ -1,9 +1,12 @@
 import Link from 'next/link'
+import { SiteNavigation } from '@/components/site-navigation'
 import InstantCabinetLink from './instant-cabinet-link'
 import { ProfileModeSwitch } from '../master-mode-switch'
-import { Activity, BookOpen, ClipboardList, FileClock, FileText, House, LockKeyhole, ListChecks, Route } from 'lucide-react'
+import { Activity, BookOpen, ClipboardList, FileClock, FileText, House, LockKeyhole, ListChecks, Route, UserRound, Settings2, ChevronDown } from 'lucide-react'
 import { assessmentHistoryTitle } from '@/lib/assessments/personal-guidance'
 import styles from './profile-hub-tabs.module.css'
+import { ProfilePresentationPlayer } from './profile-presentation-player'
+import { profilePresentationForLocale } from '@/lib/profile-presentation.mjs'
 
 const COPY = {
   ru: {
@@ -130,10 +133,46 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
   const current = active === 'view' ? 'today' : active === 'results' ? 'reports' : active
   const settingsMode = current === 'settings'
   const s = SETTINGS_HUB_COPY[selected]
+  // Switch real locale routes while retaining the current profile section.
+  // Language navigation works for visitors; only account actions require sign-in.
+  const languageHref = language => {
+    // Public entry must remain public; the protected Profile keeps its current section.
+    if (publicEntry) return language === 'en' ? '/' : '/' + language
+    const targetRoot = '/' + language + '/app'
+    if (settingsMode) return targetRoot + '/settings'
+    if (current === 'tests') return targetRoot + '/tests'
+    if (current === 'state') return targetRoot + '/monitoring'
+    if (current === 'path') return targetRoot + '/portrait?space=path'
+    if (current === 'courses') return targetRoot + '/course?view=courses'
+    if (current === 'reports') return targetRoot + '/portrait?space=reports'
+    return targetRoot + '/portrait'
+  }
+  const presentation = profilePresentationForLocale(selected)
   return <section className={styles.hub} data-profile-hub-tabs data-profile-active={current}>
     <header className={styles.heading}>
-      <div><p className={styles.eyebrow}>{t.label}</p><h2>{settingsMode ? s.pageTitle : t.title}</h2></div>
-      {!settingsMode && <ProfileModeSwitch locale={selected} active="live" />}
+      <div className={styles.headingTitle}>
+        <h2 aria-label={settingsMode ? s.pageTitle : t.title}>
+          <span className={styles.titleFull}>{settingsMode ? s.pageTitle : t.title}</span>
+          <span className={styles.titleCompact}>{settingsMode ? (selected === 'ru' ? 'Профиль' : selected === 'es' ? 'Perfil' : 'Profile') : 'My Space'}</span>
+        </h2>
+      </div>
+      <div className={styles.profileHeadingActions}>
+        <details className={styles.languageSwitch} data-profile-language-switch>
+          <summary aria-label={selected === 'ru' ? 'Выбрать язык сайта' : 'Choose site language'}>
+            {selected.toUpperCase()}<ChevronDown size={13} aria-hidden="true" />
+          </summary>
+          <div className={styles.languageOptions}>
+            {(publicEntry ? ['ru', 'en', 'es'] : ['ru', 'en']).map(language =>
+              <Link key={language} href={languageHref(language)} prefetch={false}
+                lang={language} hrefLang={language} aria-current={selected === language ? 'page' : undefined}
+                data-profile-language={language}>{language.toUpperCase()}</Link>)}
+          </div>
+        </details>
+        {!settingsMode && <ProfileModeSwitch locale={selected} active="live" />}
+        <div className={styles.headingNav} data-profile-chrome-navigation>
+          <SiteNavigation locale={selected} compact />
+        </div>
+      </div>
     </header>
     <nav className={settingsMode ? styles.settingsTabs : styles.tabs} aria-label={settingsMode ? s.menu : COPY[selected].navigation}>
       {settingsMode ? [
@@ -152,14 +191,26 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
           <span className={styles.resultBadge} aria-label={resultCount + ' ' + COPY[selected].count}>{resultCount}</span>}
       </InstantCabinetLink>)}
     </nav>
+    {current !== 'today' && !settingsMode && <div className={styles.myPageSubnav} data-profile-my-page-placement="below-tabs">
+      <Link href={'/' + selected + '/my-page'} prefetch={false} className={styles.myPageLink} data-profile-my-page>
+        <UserRound size={15} aria-hidden="true" />
+        {selected==='ru'?'Моя страница':selected==='es'?'Mi página':'My Page'}
+      </Link>
+      <Link href={root + '/settings'} prefetch={false} className={styles.myPageLink} data-profile-settings-link>
+        <Settings2 size={15} aria-hidden="true" />
+        {selected==='ru'?'Настройки':selected==='es'?'Ajustes':'Settings'}
+      </Link>
+    </div>}
     {(current === 'today' || settingsMode) && <>
       <div className={styles.hero} data-profile-video-hero>
         <h1 className={styles.srOnly}>{t.hero}</h1>
         <div className={styles.videoFrame}>
-          <video controls playsInline preload="none" poster={POSTER} aria-label={t.video}>
+          {presentation ? <ProfilePresentationPlayer key={selected}
+            locale={selected} presentation={presentation} poster={POSTER} />
+          : <video controls playsInline preload="none" poster={POSTER} aria-label={t.video}>
             <source src={VIDEO} type="video/mp4" />
             <track kind="captions" src="/videos/holistic-house/profile-scenic.en.vtt" srcLang="en" label="English" />
-          </video>
+          </video>}
         </div>
         {settingsMode ? <nav className={styles.settingsQuickActions} data-profile-settings-actions aria-label={s.menu}>
           <a href="#hh-settings-account">{s.detail}</a>
@@ -171,6 +222,16 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
           <InstantCabinetLink href={paths.state} prefetch={false}><Activity size={19} aria-hidden="true" />{t.actions[1]}</InstantCabinetLink>
           <InstantCabinetLink href={paths.courses} prefetch={false}><BookOpen size={19} aria-hidden="true" />{t.actions[2]}</InstantCabinetLink>
         </nav>}
+        <div className={styles.myPageBelowVideo} data-profile-my-page-placement="below-video-buttons">
+          <Link href={'/' + selected + '/my-page'} prefetch={false} className={styles.myPageLink} data-profile-my-page>
+            <UserRound size={15} aria-hidden="true" />
+            {selected==='ru'?'Моя страница':selected==='es'?'Mi página':'My Page'}
+          </Link>
+          <Link href={root + '/settings'} prefetch={false} className={styles.myPageLink} data-profile-settings-link>
+            <Settings2 size={15} aria-hidden="true" />
+            {selected==='ru'?'Настройки':selected==='es'?'Ajustes':'Settings'}
+          </Link>
+        </div>
         <p className={styles.srOnly}>{t.privacy}</p>
       </div>
     </>}

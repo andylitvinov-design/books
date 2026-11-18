@@ -47,7 +47,9 @@ test('owner My Clients merges existing real CRM, direct, request and business ro
  const hub=source('components/app/messages-hub.jsx')
  const client=source('components/app/messages-simple-inbox.jsx')
  const css=source('components/app/messages-simple-inbox.module.css')
- assert.match(hub,/if\(ownerAccountId\)return <MessagesSimpleInbox/)
+ assert.match(hub,/if\(ownerAccountId\)\{[\s\S]*?const ownerInbox=<MessagesSimpleInbox/)
+ assert.match(hub,/data-embedded-owner-messages/)
+ assert.match(hub,/data-owner-telegram-settings-shortcut/)
  assert.match(hub,/embedded=\{embedded\}/)
  assert.match(hub,/onClientsCount=\{onClientsCount\}/)
  assert.match(client,/data-embedded=\{embedded\|\|undefined\}/)
@@ -116,7 +118,15 @@ test('zero owned orders shows exactly two real free offer links, and truthful EN
 test('practitioner client inbox is unified without revealing owner-only CRM',()=>{
  const hub=source('components/app/messages-hub.jsx')
  const ui=source('components/app/messages-simple-inbox.jsx')
- assert.match(hub,/if\(embedded&&requestData\?\.accountId\)return <MessagesSimpleInbox/)
+ assert.match(hub,/if\(ownerAccountId\)\{[\s\S]*?const ownerInbox=<MessagesSimpleInbox/)
+ assert.match(hub,/if\(!embedded\)return ownerInbox/)
+ assert.match(hub,/if\(embedded&&requestData\?\.accountId\)return <div className=\{styles.embeddedMessages\} data-embedded-member-messages>/)
+ const ownerSection=hub.slice(hub.indexOf('if(ownerAccountId){'),hub.indexOf('if(ownerBootstrapPending&&!data)'))
+ const memberSection=hub.slice(hub.indexOf('if(embedded&&requestData?.accountId)'),hub.indexOf('if(embedded)return'))
+ assert.match(ownerSection,/data-owner-telegram-settings-shortcut/)
+ assert.match(ownerSection,/\/app\/messages\/telegram-settings/)
+ assert.doesNotMatch(memberSection,/data-owner-telegram-settings-shortcut/)
+ assert.equal((hub.match(/data-owner-telegram-settings-shortcut/g)||[]).length,1)
  assert.match(hub,/crmEnabled=\{false\} embedded/)
  assert.match(hub,/accountId=\{requestData\.accountId\}/)
  assert.match(ui,/crmEnabled=true,onClientsCount/)
@@ -258,17 +268,25 @@ test('owner Messenger preserves one chat with six in-chat entries and locale con
  // and keeps audio language, error recovery and close/pause behavior visible.
  assert.match(landing,/data-hh-ai-intro-play onClick=\{start\}/);
  assert.match(landing,/const start=\(\)=>\{/);
- assert.match(landing,/videoRef\.current\?\.play\(\)/);
+ assert.match(landing,/const media=videoRef\.current;\s*if\(!media\)return;\s*if\(media\.error\)media\.load\(\);\s*const attempt=media\.play\(\)/);
  assert.match(landing,/<video ref=\{videoRef\} src=\{introduction\.src\} controls playsInline preload="none"/);
- assert.match(landing,/onError=\{\(\)=>setFailed\(true\)\}/);
+ assert.match(landing,/onError=\{fail\} onPlaying=\{\(\)=>\{setNativeStarted\(true\);setFailed\(false\);\}\}/);
  assert.match(landing,/const close=\(\)=>\{/);
  assert.match(landing,/videoRef\.current\?\.pause\(\)/);
  assert.match(landing,/onClick=\{close\}/);
  assert.match(landing,/const retry=\(\)=>\{/);
  assert.match(landing,/onClick=\{retry\}/);
- assert.doesNotMatch(landing,/youtube-nocookie|<iframe|autoPlay|autoplay|useEffect\(/);
+ // The original video stays user-activated. Safari failure fallback is also
+ // explicitly gated behind Play + a real playback failure, never autoplayed.
+ assert.match(landing,/playing&&failed&&<iframe/);
+ assert.match(landing,/data-hh-ai-intro-fallback="heygen"/);
+ assert.match(landing,/src=\{introduction\.embed\}/);
+ assert.match(landing,/if\(!playing\|\|failed\|\|nativeStarted\)return;/);
+ assert.match(landing,/window\.setTimeout\(/);
+ assert.match(landing,/window\.clearTimeout\(timer\)/);
+ assert.doesNotMatch(landing,/<video[^>]*\bautoPlay\b|<iframe[^>]*\bautoPlay\b|youtube-nocookie/);
  assert.equal((landing.match(/setPlaying\(true\)/g)||[]).length,1,'only user-activated start may reveal the native player');
- assert.match(landing,/const start=\(\)=>\{\s*setFailed\(false\);\s*setPlaying\(true\);/);
+ assert.match(landing,/const start=\(\)=>\{\s*setNativeStarted\(false\);\s*setFailed\(false\);\s*setPlaying\(true\);/);
  assert.match(landing,/videoLanguage:"English audio"/);
  assert.match(landing,/videoLanguage:"Русская озвучка"/);
  assert.match(landing,/videoLanguage:"Audio en inglés"/);

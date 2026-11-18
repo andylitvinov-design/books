@@ -457,19 +457,35 @@
 .root[data-compact][data-chat-skin="messenger"] .composerMore summary::-webkit-details-marker{display:none}
 .root[data-compact][data-chat-skin="messenger"] .composerMenu{
   position:absolute;right:0;bottom:calc(100% + 9px);z-index:15;
-  display:grid;gap:6px;width:min(230px,calc(100vw - 38px));
+  display:grid;gap:6px;width:min(300px,calc(100vw - 38px));
+  max-height:min(65dvh,520px);overflow-y:auto;overscroll-behavior:contain;
   padding:10px;border:1px solid #e6dfd5;border-radius:16px;
   background:#fffcf7;box-shadow:0 9px 22px #26382d31
 }
-.root[data-compact][data-chat-skin="messenger"] .composerMenu :is(label,button){
+.root[data-compact][data-chat-skin="messenger"] .composerMenu > :is(label,button){
   position:relative;box-sizing:border-box;display:flex;align-items:center;
   justify-content:flex-start;gap:10px;min-height:44px;width:100%;
   padding:9px 11px;margin:0;border:1px solid #e6e2d9;border-radius:11px;
   background:#fff;color:#1b6050;font:700 13px/1.3 system-ui,sans-serif;
   cursor:pointer
 }
+.root[data-compact][data-chat-skin="messenger"] .composerMenu .voiceSettings>summary{
+ box-sizing:border-box;display:flex;align-items:center;width:100%;min-height:44px;
+ padding:9px 11px;border:1px solid #e6e2d9;border-radius:11px;
+ background:#fff;color:#1b6050;font:700 13px/1.3 system-ui,sans-serif;cursor:pointer
+}
+.root[data-compact][data-chat-skin="messenger"] .composerMenu .voiceSettings[open]>summary{
+ background:#f0f8f4;border-color:#afd5c3
+}
+.root[data-compact][data-chat-skin="messenger"] .composerMenu .voiceSettings [data-hh-voice-companion]{
+ box-sizing:border-box;width:100%;max-height:min(50dvh,390px);
+ overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain
+}
+.root[data-compact][data-chat-skin="messenger"] .composerMenu .voiceSettings :is(button,select,input):focus-visible{
+ outline:3px solid #168b71;outline-offset:2px
+}
 .root[data-compact][data-chat-skin="messenger"] .composerMenu label>svg{flex:none}
-.root[data-compact][data-chat-skin="messenger"] .composerMenu :is(button,label):focus-within{
+.root[data-compact][data-chat-skin="messenger"] .composerMenu > :is(button,label):focus-within{
   outline:3px solid #176e6e;outline-offset:1px
 }
 .root[data-compact][data-chat-skin="messenger"]>.videoReview{
@@ -646,3 +662,35 @@
 .root[data-compact] .videoEditOptions button,
 .root[data-compact] .videoCommands button{min-height:44px;text-align:left}
 .root[data-compact] .judgmentChoices button{align-self:stretch;text-align:left}
+
+/* Welcome-only iChat composer: normal dialogue retains its bottom-docked field. */
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form{
+ display:grid;grid-template-columns:minmax(0,1fr);gap:4px;margin:0;padding:0;border:0;
+ background:transparent;min-width:0
+}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form textarea{
+ display:block;box-sizing:border-box;width:100%;min-width:0;height:48px;min-height:48px;
+ max-height:90px;padding:10px 12px;resize:vertical;font-size:16px;line-height:1.35
+}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions{
+ display:flex;justify-content:flex-end;align-items:center;flex-wrap:nowrap;gap:5px;min-width:0
+}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions button{
+ min-width:44px;min-height:44px;padding:8px
+}
+
+/* Only shown inside the conversation after an actual answer. No tracking until tapped. */
+.hiLearningRating{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:7px 0;color:#5d7485;font-size:12px}
+.hiLearningRating button{border:1px solid #cbd8df;border-radius:8px;background:transparent;color:inherit;font:inherit;padding:5px 9px;cursor:pointer}
+.hiLearningRating button{min-height:44px}
+.hiLearningRating button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.hiLearningRating button:disabled{opacity:.55;cursor:default}
+.hiLearningRating button:hover:not(:disabled){background:#edf5f7}
+
+/* Non-sensitive goal context from the user's three-step support quiz. */
+.supportContext{display:flex;align-items:center;justify-content:space-between;gap:9px;
+ margin:6px 3px;color:#36594c;font:600 12px/1.35 system-ui,sans-serif}
+.supportContext span{flex:1;min-width:0;overflow-wrap:anywhere}
+.supportContext button{flex:none;min-height:36px;padding:7px 11px;border:1px solid #afd9bf;
+ border-radius:12px;background:#edf8f1;color:#166648;cursor:pointer;font:700 12px system-ui,sans-serif}
+.supportContext button:focus-visible{outline:3px solid #168b71;outline-offset:2px}

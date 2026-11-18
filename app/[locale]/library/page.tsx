@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { LibraryHub, libraryCopy, type LibraryView } from "@/components/library-hub";
-import { loadPublicLibraryFeed } from "@/lib/public-library-feed";
-import { loadApprovedVideoDiscoveries } from "@/lib/video-discovery/approved-meditations";
 import { metadataBaseFor } from "@/data/site-metadata";
 import { getHomeopathyLocaleParams, isSupportedLocale } from "@/data/remedies";
 
@@ -41,8 +39,10 @@ export default async function LibraryPage({ params, searchParams }: Props) {
   const view: LibraryView = rawView === "videos" || rawView === "books" || rawView === "dao" ? rawView : "latest";
   const { videos, articles } = view === "books" || view === "dao"
     ? { videos: [], articles: [] }
-    : await loadPublicLibraryFeed(locale);
-  const approvedMeditations = view === "videos" ? await loadApprovedVideoDiscoveries() : [];
+    : await (await import("@/lib/public-library-feed")).loadPublicLibraryFeed(locale);
+  const approvedMeditations = view === "videos"
+    ? await (await import("@/lib/video-discovery/approved-meditations")).loadApprovedVideoDiscoveries()
+    : [];
   return <LibraryHub locale={locale} view={view} publishedVideos={videos}
     articles={articles} approvedMeditations={approvedMeditations} />;
 }

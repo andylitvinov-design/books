@@ -18,7 +18,7 @@ test("Messenger owns locale without losing the transcript or advancing unrelated
   assert.match(ui,/onConversationLocaleChange\?\.\(turnLocale\)/);
   assert.match(ui,/planJudgmentTurn\(\{message:text,locale:turnLocale,/);
   assert.match(ui,/used==="browser"\?turnCopy.used/);
-  assert.match(hub,/onConversationLocaleChange=\{setLocale\}/);
+  assert.match(hub,/onConversationLocaleChange=\{chooseLocale\}/);
   assert.match(hub,/className=\{styles.root\} lang=\{locale\}/);
   assert.match(wrapper,/onConversationLocaleChange=\{onConversationLocaleChange\}/);
   assert.match(ui,/onCreateVideo=\{\(\)=>startContent\(\)\}/);

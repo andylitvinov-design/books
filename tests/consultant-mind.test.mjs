@@ -1,7 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {consultServiceQuestion} from "../lib/assist/consultant-mind.mjs";
+import {consultServiceQuestion,resolveConsultantSuggestion} from "../lib/assist/consultant-mind.mjs";
+
+test("previous consultant suggestions resolve only against its published source catalogue",()=>{
+ for(const locale of ["ru","en"]){
+  const original=consultServiceQuestion({message:locale==="ru"?"Сколько стоит психотерапия?":"What is the price of psychotherapy?",locale});
+  const item=original.suggestions.find(x=>x.id==="service:therapy");
+  assert.ok(item);assert.deepEqual(resolveConsultantSuggestion(item.id,locale),item);
+  assert.equal(resolveConsultantSuggestion("service:invented",locale),null);
+ }
+});
 import {ASSIST_OFFER_CATALOG,assistPriceLabel,rankAssistOffers} from "../lib/assist/service-match.mjs";
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 const ask=(message,locale="ru",history=[])=>consultServiceQuestion({message,locale,history});
@@ -69,6 +78,26 @@ test("follow-up uses previous USER text without obeying assistant claims",()=>{
  assert.match(price.reply,/Цена не подтверждена/u);
  assert.doesNotMatch(price.reply,/€1\b/u);
 });
+test("current service overrides prior service and reset prevents stale pricing",()=>{
+ for(const [locale,old,reset,follow,newQuestion,newId] of [
+  ['ru','Сколько стоит сеанс Рейки?','Сменить тему','А цена?','Сколько стоит бизнес-консультация?','service:business'],
+  ['en','How much does a Reiki session cost?','Change topic','How much?','How much is business consulting?','service:business'],
+ ]){
+  const oldHistory=[{role:'user',text:old},{role:'assistant',text:'Let me know.'}];
+  const switched=ask(newQuestion,locale,oldHistory);
+  assert.equal(switched.suggestions[0].id,newId,newQuestion);
+  assert.equal(ask(follow,locale,[...oldHistory,{role:'user',text:reset}]),null,reset);
+ }
+});
+test('a conversational topic switch prevents a previous service being used for a later price question',()=>{
+ for(const [locale,old,reset,follow] of [
+  ['ru','Сколько стоит сеанс Рейки?','Давай сменим тему и поговорим об отношениях.','А цена?'],
+  ['en','How much does a Reiki session cost?',"Let's change the subject and talk about relationships.",'How much?'],
+ ]){
+  const history=[{role:'user',text:old},{role:'assistant',text:'Understood.'},{role:'user',text:reset}];
+  assert.equal(ask(follow,locale,history),null,locale);
+ }
+});
 test("quality cannot fabricate guaranteed outcomes or reviews",()=>{
  const r=ask("Насколько качественна психотерапия, есть отзывы?");
  assert.equal(r.intent,"quality");assert.match(r.reply,/результат не гарантируется/u);
@@ -108,4 +137,26 @@ test("server only calls Consultant after auth, throttling and safety gate",()=>{
  assert(route.indexOf("const consultation=")<route.indexOf("const nativeReply="));
  const skill=read("lib/assist/consultant-mind.mjs");
  assert(!/fetch\(|sendBeacon|localStorage|window\.|document\./u.test(skill));
+});
+
+test('short price continuation refers only to verified user-authored personal prices',()=>{
+ const history=[{role:'user',text:'Сколько стоит 30 минут личной консультации?'},
+  {role:'assistant',text:'Опубликованные условия.'}];
+ const hour=ask('А час?','ru',history);
+ assert.equal(hour?.intent,'price');assert.match(hour.reply,/60 минут — €100/u);
+ assert.doesNotMatch(hour.reply,/€50|записал вас/u);
+ assert.equal(hour.modelUsed,false);assert.equal(hour.suggestions.length,0);
+ const half=ask('А полчаса?','ru',history);
+ assert.match(half.reply,/30 минут — €50/u);assert.doesNotMatch(half.reply,/€100/u);
+ const en=ask('And an hour?','en',[{role:'user',text:'How much is a personal consultation?'}]);
+ assert.equal(en?.intent,'price');assert.match(en.reply,/60 minutes cost €100/u);
+ const reiki=ask('А час?','ru',[{role:'user',text:'Сколько стоит сеанс Рейки?'}]);
+ assert.equal(reiki?.intent,'price');assert.match(reiki.reply,/не подтверждена/u);
+ assert.doesNotMatch(reiki.reply,/€50|€100/u);
+});
+test('short prices cannot be inferred from assistant content or old topics',()=>{
+ assert.equal(ask('А час?','ru',[{role:'assistant',text:'Сессия €50.'}]),null);
+ assert.equal(ask('А час?','ru',[{role:'user',text:'Сколько стоит сеанс Рейки?'},
+  {role:'user',text:'Сменить тему'}]),null);
+ assert.equal(ask('А час?','ru',[]),null);
 });

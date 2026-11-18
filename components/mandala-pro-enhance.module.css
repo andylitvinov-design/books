@@ -64,3 +64,21 @@
  border-color:var(--hh-studio-deep,#006b4b);color:#fff
 }
 @media(prefers-reduced-motion:reduce){.catalogToggle svg{transition:none}}
+
+/* Owner-approved 13 Nov PRO: the first visible 30-character rail is now
+ * immediately above this panel. The Extra photo action stays on one row. */
+.panel{gap:8px}
+.section[data-video-pro-tier-panel="extra"]{padding:10px 11px;background:#fcfaf5;border-radius:15px;box-shadow:none}
+.photoRow{display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:9px;align-items:center;min-width:0}
+.photoRow .featureIcon{width:38px;height:38px}
+.photoCopy{min-width:0}
+.photoCopy strong{font-size:13px;line-height:1.2;font-weight:820}
+.photoCopy p{margin:3px 0 0;color:#61736a;font-size:11px;line-height:1.25}
+.photoRow .secondaryButton{grid-column:auto;min-height:40px;white-space:nowrap;padding:8px 10px}
+.tiers{margin-top:3px}
+.moreScenes{margin-top:12px;padding:10px;border:1px solid #e7ded4;border-radius:12px;background:#fffaf5}
+.moreScenes summary{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#1a5b48;cursor:pointer;font-size:12px;font-weight:800}
+.moreScenes summary::marker{content:""}
+.scenesCatalog{margin-top:12px;min-width:0}
+.notice{padding:3px 5px;background:transparent;border:0;font-size:10.5px;color:#806b58}
+@media(max-width:359px){.photoRow{grid-template-columns:38px minmax(0,1fr)}.photoRow .secondaryButton{grid-column:2;justify-self:start}.photoCopy p{font-size:10.5px}}

@@ -59,6 +59,7 @@ function rig(){
     stopMovieSound(){events.push("stop-film");},
     setPreviewPlaying(value){events.push("film:"+value);},
     acquirePlaybackSession(){events.push("session");return ()=>events.push("restore");},
+    ensureAuditionOutput(){events.push("gain");return true;},
     setAudioAuto(value){events.push("auto:"+value);},
     flushSync(callback){callback();},
     chooseMusic(choice){

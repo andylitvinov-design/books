@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance } from '../lib/ci/production-base-impact.mjs';
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
@@ -196,7 +196,10 @@ export function optionalMandalaMacosSkip(files, branch, changed) {
   const fixed = "github.event_name == 'pull_request' && github.event.pull_request.draft == false && (";
   if (!guard?.startsWith(fixed) || !guard.endsWith(')')) return false;
   const predicates = guard.slice(fixed.length, -1).split(' || ');
-  if (!predicates.length || predicates.length > 24) return false;
+  // Bound the immutable BASE-owned literal list, including newly required
+  // WebKit branch routes (24 in BASE, 25 after fix/montage-audio). No dynamic
+  // expressions, changed macOS job, or encoded-media skip gains permission.
+  if (!predicates.length || predicates.length > 32) return false;
   // Trusted BASE guards may include literal startsWith prefixes and one
   // literal exact branch. Reject every computed or unknown expression.
   const rules = predicates.map(item => {
@@ -407,7 +410,10 @@ export async function verify(api,ctx,files,options={}) {
     return Math.max(minimum, Math.min(maximum, n));
   };
   const maxWait = boundedMs(options.maxWaitMs ?? 35*60_000, 40*60_000);
-  const missingGrace = Math.min(maxWait, boundedMs(options.missingGraceMs ?? 60_000, 120_000));
+  // A real exact-HEAD actionlint run can be registered after the first Core
+  // Specialist index read. Give GitHub a bounded second minute before
+  // declaring NOT_TRIGGERED; never infer PASS from absence.
+  const missingGrace = Math.min(maxWait, boundedMs(options.missingGraceMs ?? 120_000, 180_000));
   // An expected workflow can be created on GitHub but temporarily absent
   // from its HEAD-indexed Actions list while other specialists are queued.
   // Never certify a missing job; only postpone NOT_TRIGGERED for the bounded
@@ -484,9 +490,18 @@ export async function verify(api,ctx,files,options={}) {
       // Specialist, dependency or security policy changes.
       const unrelatedCiMaintenance = pinnedChangeRows &&
         safeIndependentCiMaintenanceAdvance(diff, ctx.base, liveBaseSha, changed);
+      // Reuse unchanged source checks if the newer protected BASE contains
+      // nothing but independently proven public raster assets. GitHub must
+      // report this PR as actually mergeable: no guessed/null conflict state.
+      const inertPublicImages = pinnedChangeRows && live.mergeable === true &&
+        changedRows.every(row => ['A','M','added','modified'].includes(row.status)) &&
+        verifiedIndependentPublicRasterAdvance(diff, ctx.base, liveBaseSha, changed);
       if (!documentationOnly && !independentlyRevalidated &&
-          !isolatedCiPolicy && !unrelatedCiMaintenance) {
+          !isolatedCiPolicy && !unrelatedCiMaintenance && !inertPublicImages) {
         throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+      }
+      if (inertPublicImages) {
+        console.log('CI_BASE_ADVANCE_REUSED: only independent public raster assets advanced; exact-HEAD checks retained');
       }
       if (unrelatedCiMaintenance) {
         console.log('CI_BASE_ADVANCE_REUSED: exact-HEAD checks retained after unrelated protected CI maintenance; no second CI wave');
@@ -593,10 +608,15 @@ export async function verify(api,ctx,files,options={}) {
       !isConcurrencyAdvisoryRun(run,pr,concurrencyAdvisory) &&
       !isConcurrencyAdvisoryRun(run,pr,selfTriggerAdvisory));
     state=inspectWorkflowRuns({expected,runs:eligibleRuns(allRuns),pr});
-    if (state.missing.length && now() - start >= missingGrace &&
+    // Probe the one missing workflow EARLY, then retry its authenticated
+    // exact-HEAD index. The old code first probed at its own missing deadline
+    // and immediately failed if GitHub indexing lagged: no chance to recover.
+    if (state.missing.length && now() - start >= Math.min(missingGrace, 20_000) &&
         typeof api.runsForWorkflow === 'function') {
       for (const filename of state.missing) {
-        if (now() - (probeTimes.get(filename) ?? -Infinity) < 120_000) continue;
+        // At most one lookup per missing workflow every 30 seconds, for
+        // a bounded 2-minute discovery window; no full Core rerun.
+        if (now() - (probeTimes.get(filename) ?? -Infinity) < 30_000) continue;
         const rows = await api.runsForWorkflow(ctx.head, filename);
         if (!Array.isArray(rows) || rows.length > 100)
           throw Error('INCOMPLETE_WORKFLOW_FALLBACK');

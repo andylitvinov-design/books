@@ -165,7 +165,10 @@ test("video UI choices affect the actual free MP4/WebM recording and the user se
   assert.match(studio,/data-video-montage-preference="format"/);
   assert.match(studio,/data-video-montage-preference="speed"/);
   assert.match(studio,/onChange=\{event=>setSpeed\(event.currentTarget.value as Speed\)\}/);
-  assert.match(studio,/setBrightness\("bright"\)/);
+  // Brightness is automatic per chosen style, no longer a visible control.
+  assert.match(studio,/setBrightness\(index===1\|\|index===5\?"bright":"soft"\)/);
+  assert.doesNotMatch(studio,/className=\{videoStyles\.montageEffectBrightness\}/,
+    "removed Brightness selector must not return");
   assert.match(studio,/captionMode==="custom"/);
   // Selection now uses the filtered catalog's stable track IDs, not the
   // removed fixed five-preset `choice` loop. Preserve export contract below.
@@ -192,7 +195,8 @@ test("client photo consent and privacy are enforced without payment or server ph
   assert.match(studio,/if\(photoUrl&&!backgroundOnly&&!photoConsent\)/);
   assert.match(studio,/setPhotoConsent\(false\)/);
   assert.match(studio,/data-video-photo-consent/);
-  assert.match(studio,/disabled=\{!canGenerate\}/);
+  assert.match(studio,/data-mandala-video-generate[\s\S]*?disabled=\{!studioHydrated\|\|recording\|\|preparing\} onClick=\{openReadyForGeneration\}/);
+   assert.match(studio,/if\(!canGenerate\)\{/,"Ready retains verified source/rights/credit guards");
   assert.match(studio,/const source = backgroundOnly \? BACKGROUND_CLIP : photoUrl \|\| frameUrl \|\| BACKGROUND_CLIP/);
   assert.match(studio,/URL\.revokeObjectURL\(result\.url\)/);
   // Only these two bounded same-origin GETs are permitted: the original
@@ -230,7 +234,7 @@ test("the video mandala hero mirrors Support's 3-part entry, with functional rou
   assert.match(studio,/data-mandala-cinematic-canvas/);
   assert.match(studio,/startFromHero/);
   assert.match(studio,/document\.querySelector\("\[data-video-photo-consent\]"\)\?\.scrollIntoView/);
-  assert.match(studio,/onClick=\{\(\)=>void createVideo\(\)\}/);
+  assert.match(studio,/data-mandala-video-generate[\s\S]*?onClick=\{openReadyForGeneration\}/);
   assert.match(studio,/data-mandala-video-download/);
   assert.match(studio,/data-video-theme=\{item\}/);
   assert.match(css,/\.heroCanvas canvas\{display:block/);

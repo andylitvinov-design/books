@@ -136,6 +136,9 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
   const audioNotice = locale === "es" && video.language !== "es" ? (video.language === "ru" ? "Audio en ruso" : "Audio en inglés") : "";
   const mirrorId = video.heygenId ? existingYouTubeMirrors[video.heygenId] : undefined;
   const playbackYouTubeId = mirrorId || video.youtubeId;
+  // Show an immediate off-site link while the owner-approved English YouTube
+  // mirror still lacks a verified channel upload receipt. No guessed video IDs.
+  const directFallbackLink = isHeygen && !playbackYouTubeId && Boolean(fallbackPoster) && !internalOnly;
   const playerParams = new URLSearchParams({ autoplay: "1", playsinline: "1", rel: "0", hl: locale, cc_lang_pref: video.language });
   // Six previously approved public copies avoid the broken HeyGen embed.
   // Unique method/intro videos without an exact mirror keep their original source.
@@ -182,7 +185,7 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
           <iframe ref={playerRef} className="site-video-iframe" data-video-playback={playbackYouTubeId ? "youtube" : "heygen"} src={embedUrl} title={video.title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen loading="eager" referrerPolicy="strict-origin-when-cross-origin" tabIndex={0} />
         ) : (
           <button className="site-video-play" type="button" disabled={!interactive} aria-busy={!interactive} aria-label={`${text.play}: ${video.title}`} onClick={() => { setShowRecovery(false); setPlaying(true); }}>
-            {!isHeygen && fallbackPoster && !localPosterFailed && (
+            {fallbackPoster && !approvedPoster && !localPosterFailed && (
               <Image className="site-video-poster site-video-fallback-poster" src={fallbackPoster} alt="" fill unoptimized={fallbackPoster.endsWith(".webp")} onError={() => setLocalPosterFailed(true)} loading="lazy" sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} />
             )}
             {approvedPoster && poster ? (
@@ -191,7 +194,7 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
               ) : (
                 <Image className="site-video-poster" src={approvedPoster} alt="" fill unoptimized={approvedPoster.endsWith(".webp")} priority={posterPriority} loading={posterPriority ? undefined : "lazy"} sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} onError={() => setPoster(null)} />
               )
-            ) : isHeygen ? (
+            ) : isHeygen && (!fallbackPoster || localPosterFailed) ? (
               <Film aria-hidden="true" className="site-video-generic-poster" strokeWidth={0.8} style={{ position: "absolute", width: "50%", height: "70%", opacity: 0.12 }} />
             ) : poster && (!fallbackPoster || localPosterFailed) ? (
               <Image key={poster} className="site-video-poster" src={`https://i.ytimg.com/vi/${video.youtubeId}/${poster === "maxres" ? "maxresdefault" : "hqdefault"}.jpg`} alt="" fill unoptimized loading="lazy" sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} onError={showFallbackPoster} onLoad={(event) => { if (event.currentTarget.naturalWidth <= 120) showFallbackPoster(); }} />
@@ -203,7 +206,7 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
           </button>
         )}
       </div>
-      {playing && isHeygen && !playbackYouTubeId && showRecovery && (
+      {playing && isHeygen && !playbackYouTubeId && showRecovery && !directFallbackLink && (
         <div className={styles.recovery} role="note" data-video-recovery="heygen">
           <span>{text.stalled}</span>
           <button type="button" onClick={() => { setPlaying(false); setShowRecovery(false); }}>{text.retry}</button>
@@ -214,11 +217,15 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
       {minimal ? (
         <figcaption className="site-video-caption">
           <span className={styles.accessibleTitle} id={titleId} lang={textLanguage}>{video.title}</span>
-          {(!internalOnly || video.transcript) && <details ref={transcriptRef} className="site-video-transcript">
+          {((!internalOnly && !directFallbackLink) || video.transcript) && <details ref={transcriptRef} className="site-video-transcript">
             <summary>{video.transcript ? text.transcriptShort : text.details}<ChevronDown aria-hidden="true" /></summary>
-            <div className="site-video-more">{video.transcript && <p lang={textLanguage}>{video.transcript}</p>}{externalLink && <div className="site-video-actions">{externalLink}</div>}</div>
+            <div className="site-video-more">{video.transcript && <p lang={textLanguage}>{video.transcript}</p>}{externalLink && !directFallbackLink && <div className="site-video-actions">{externalLink}</div>}</div>
           </details>}
-          {mirrorLink && <div className={styles.quickWatch}>{mirrorLink}</div>}
+          {(mirrorLink || (directFallbackLink && externalLink)) && (
+            <div className={styles.quickWatch} data-video-direct-watch={directFallbackLink ? "heygen-fallback" : undefined}>
+              {mirrorLink || externalLink}
+            </div>
+          )}
           {masterLink}
           {(isHeygen || audioNotice) && <span className="site-video-ai-badge" title={isHeygen ? aiDisclosure : undefined} aria-label={[audioNotice, isHeygen ? aiDisclosure : ""].filter(Boolean).join(". ")}>{audioNotice}{audioNotice && isHeygen ? " · " : ""}{isHeygen ? (isApprovedAndyIntro ? text.avatarShort : text.aiShort) : ""}</span>}
         </figcaption>

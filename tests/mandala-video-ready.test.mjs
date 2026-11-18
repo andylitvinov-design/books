@@ -20,7 +20,7 @@ test("Ready is the sixth existing editor tab, never a seventh or a parallel rend
 });
 test("Video must be verified; guests get login before save, and existing signed upload is reused",()=>{
   assert.match(ready,/if\(!verified\|\|!video\|\|disabled\)return/);
-  assert.match(ready,/if\(!signedIn\|\|intent==="telegram"\|\|intent==="house"\)/,
+  assert.match(ready,/if\(!signedIn\|\|intent==="house"\)/,
     "guest save and Telegram entry open the action-invoked gate");
   assert.match(studio,/<MandalaVideoReady/);
   assert.match(ready,/data-video-ready/);
@@ -96,41 +96,47 @@ test("Save gate matches approved warm mobile design and all three locales",()=>{
 });
 
 
-test("all three Ready offers expand inline, generate scripts without navigation or paid rendering",()=>{
+test("Ready guided meditation and 8-session actions open sixth Therapy tab without inline expansion",()=>{
   const css=readFileSync(new URL("../components/mandala-video-ready.module.css",import.meta.url),"utf8");
-  assert.match(ready,/const \[activeOffer,setActiveOffer\]=useState<Offer\|null>\(null\)/);
-  assert.match(ready,/data-ready-offer-panel data-ready-offer=\{activeOffer\}/);
-  assert.match(ready,/id="ready-inline-offer"/);
-  for(const offer of ["meditation","ritual","journey"]){
-    assert.match(ready,new RegExp('onClick=\\{\\(\\)=>selectOffer\\("'+offer+'"\\)\\}'));
-    assert.match(ready,new RegExp('aria-expanded=\\{activeOffer==="'+offer+'"\\}'));
-    assert.doesNotMatch(ready,new RegExp('selectView\\("'+offer+'"\\)'));
+  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  const therapy=readFileSync(new URL("../components/mandala-therapy-studio.tsx",import.meta.url),"utf8");
+  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+  const tabs=[...studio.matchAll(/\{id:"(video|phrases|editor|pro|ready|effects)",Icon:/g)].map(hit=>hit[1]);
+  assert.deepEqual(tabs,["video","phrases","editor","pro","ready","effects"]);
+  for(const [offer,format] of [["meditation","single"],["journey","course"]]){
+    assert.match(ready,new RegExp('onClick=\\{\\(\\)=>onOpenTherapy\\("'+format+'"\\)\\} data-ready-'+offer));
+    assert.match(ready,new RegExp('data-ready-therapy-format="'+format+'"'));
+    assert.doesNotMatch(ready,new RegExp('onClick=\\{\\(\\)=>selectOffer\\("'+offer+'"\\)\\}'));
+    assert.doesNotMatch(ready,new RegExp('data-ready-'+offer+'[^>]*aria-expanded'));
   }
-  assert.match(ready,/data-ready-generate-text/);
+  assert.match(studio,/onOpenTherapy=\{format=>\{/);
+  assert.match(studio,/setTherapyInitialFormat\(format\)/);
+  assert.match(studio,/activateQuickWorkspace\("effects"\)/);
+  assert.match(studio,/initialFormat=\{therapyInitialFormat\}/);
+  assert.match(studio,/focus=\{meditationFocus\}/);
+  assert.match(therapy,/const \[isCourse,setIsCourse\]=useState\(initialFormat==="course"\)/);
+  assert.match(therapy,/const \[pane,setPane\]=useState<Pane>\("meditation"\)/);
+  assert.match(therapy,/data-therapy-format="single"/);
+  assert.match(therapy,/data-therapy-format="course"/);
+  assert.match(browser,/ready-therapy-one-tap-navigation-verified/);
+  assert.match(browser,/toHaveAttribute\("data-therapy-course","true"\)/);
+  assert.match(browser,/toHaveAttribute\("data-therapy-course","false"\)/);
+  // Preserve the optional local ritual and existing actual account-gated delivery.
+  assert.match(ready,/onClick=\{\(\)=>selectOffer\("ritual"\)\} data-ready-ritual/);
+  assert.match(ready,/data-ready-offer-panel data-ready-offer=\{activeOffer\}/);
   assert.match(ready,/onClick=\{generateOffer\}/);
-  assert.match(ready,/generatedOffer===activeOffer/);
-  assert.match(ready,/buildPersonalMeditationScript\(/);
-  assert.match(ready,/buildPersonalImageryCourse\(/);
-  assert.match(ready,/selectResourcePractice\(/);
-  assert.match(ready,/data-ready-meditation-text/);
   assert.match(ready,/data-ready-ritual-result/);
-  assert.match(ready,/data-ready-eight-sessions/);
-  assert.match(ready,/courseTexts\.map\(/);
-  assert.match(ready,/ritual\.status==="blocked"\?/);
-  assert.match(ready,/meditationEditor/);
   assert.match(ready,/data-ready-save-choices/);
   assert.match(ready,/data-ready-save-gate-overlay/);
-  assert.doesNotMatch(ready,/onClick=\{onOpenCourse\} data-ready-journey/);
+  assert.match(ready,/onSendTelegramDirect/);
+  assert.match(ready,/onShareWhatsApp/);
   assert.match(css,/\.offerPanel\{display:grid/);
-  assert.match(css,/\.journey>button\[aria-expanded="true"\]/);
-  assert.match(css,/scroll-margin-bottom:calc\(82px \+ env\(safe-area-inset-bottom\)\)/);
-  assert.match(css,/white-space:pre-wrap/);
   for(const loc of ["en","ru","es"]){
-    const start=ready.indexOf("  "+loc+":{",ready.indexOf("const COPY={"));
-    const end=loc==="en"?ready.indexOf("  ru:{",start):loc==="ru"?ready.indexOf("  es:{",start):ready.indexOf("} as const;",start);
-    const lang=ready.slice(start,end);
-    for(const label of ["generateText","copyText","medText","sessionText"])
-      assert.ok(lang.includes(label+":"),loc+" has "+label);
+    const from=ready.indexOf("  "+loc+":{",ready.indexOf("const COPY={"));
+    const to=loc==="en"?ready.indexOf("  ru:{",from):loc==="ru"?ready.indexOf("  es:{",from):ready.indexOf("} as const;",from);
+    const lang=ready.slice(from,to);
+    for(const key of ["meditationNext","journeyNext","generateText"])
+      assert.ok(lang.includes(key+":"),loc+" preserves "+key);
   }
 });
 
@@ -159,62 +165,45 @@ test("the three reused local writers return goal-aware texts for EN, RU and ES",
 });
 
 
-test("Ready offers exactly three compact selectable video formats above existing ideas",()=>{
-  const css=readFileSync(new URL("../components/mandala-video-ready.module.css",import.meta.url),"utf8");
-  assert.match(ready,/type VideoTier="basic"\|"photo"\|"character"/);
-  assert.match(ready,/data-ready-video-tiers/);
-  assert.match(ready,/role="radiogroup"/);
-  assert.match(ready,/type="radio" name="ready-video-tier"/);
-  assert.match(ready,/data-ready-video-tier=\{tier.id\}/);
-  assert.match(ready,/checked=\{videoTier===tier.id\}/);
-  assert.match(ready,/setVideoTier\(tier.id\);setVideoGenerationNotice\(""\)/);
-  assert.match(ready,/price:"€3"/);
-  assert.match(ready,/price:"€5"/);
+test("Ready has one Free Generate immediately below the preview; Extra owns paid formats",()=>{
+  const offer=readFileSync(new URL("../components/mandala-montage-pro-offer.tsx",import.meta.url),"utf8");
+  assert.doesNotMatch(ready,/data-ready-video-tiers|data-ready-video-tier=|name="ready-video-tier"/);
+  assert.doesNotMatch(ready,/createVideoCartSelection|VIDEO_CART_STORAGE_KEY|useRouter/);
+  assert.match(studio,/promo:\{ru:"Extra",en:"Extra",es:"Extra"\}/);
+  assert.match(studio,/montagePanel==="promo" \? <MandalaMontageProOffer/);
+  assert.match(studio,/montagePanel==="settings" \? <details className=\{videoStyles\.montageStoryAdvanced\}/);
+  assert.match(offer,/data-video-montage-pro-offer/);
+  const preview=ready.indexOf("{header}");
+  const generate=ready.indexOf('data-ready-generate>');
+  const ideas=ready.indexOf('className={css.nextTitle}');
+  assert.ok(preview>0&&generate>preview&&ideas>generate,"Ready preview → Free Generate → ideas");
   assert.match(ready,/onClick=\{generateSelectedVideo\} data-ready-generate/);
-  assert.ok(ready.indexOf("data-ready-video-tiers")<ready.indexOf("data-ready-meditation"));
-  assert.match(ready,/data-ready-meditation/);
-  assert.match(ready,/data-ready-ritual/);
-  assert.match(ready,/data-ready-journey/);
-  assert.match(css,/\.tierList\{display:grid;gap:7px\}/);
-  assert.match(css,/\.tierOption\{/);
-  assert.match(css,/@media\(max-width:350px\)/);
-  for(const locale of ["en","ru","es"]){
-    const start=ready.indexOf("  "+locale+":{",ready.indexOf("const COPY={"));
-    const end=locale==="en"?ready.indexOf("  ru:{",start):
-      locale==="ru"?ready.indexOf("  es:{",start):ready.indexOf("} as const;",start);
-    for(const key of ["videoChooseTitle","videoBasic","videoPhoto","videoCharacter",
-      "videoFree","videoPaidInfo","videoCartAction","videoFreeHold","videoGenerate","videoIdeas"])
-      assert.ok(ready.slice(start,end).includes(key+":"),locale+" "+key);
-  }
-});
-
-test("Free uses the original generator; paid Ready tiers reuse the fixed-SKU manual cart",()=>{
-  assert.match(ready,/if\(videoTier!=="basic"\)/);
-  assert.match(ready,/const id=videoTier==="photo"\?"video-extra":"video-pro"/);
-  assert.match(ready,/createVideoCartSelection\(id\)/);
-  assert.match(ready,/window\.sessionStorage\.setItem\(VIDEO_CART_STORAGE_KEY,JSON\.stringify\(selection\)\)/);
-  assert.match(ready,/window\.dispatchEvent\(new Event\(SERVICE_CART_UPDATED_EVENT\)\)/);
-  assert.match(ready,/router\.push\("\/"\+locale\+"\/cart\?video="\+id\)/);
-  assert.match(ready,/data-ready-video-payment-disclosure/);
-  assert.match(ready,/videoTier==="basic"\?t\.videoGenerate:t\.videoCartAction/);
-  assert.match(ready,/if\(!basicFreeAvailable\)/);
   assert.match(ready,/onGenerateBasicVideo\(\)/);
-  assert.doesNotMatch(ready,/fetch\(.*pay|fetch\(.*billing|window\.location\s*=/);
-  assert.doesNotMatch(ready,/createVideoCartSelection\(id,\s*(wish|focus|anchor)/);
-  assert.match(studio,/basicFreeAvailable=\{basicVideoAccess\.allowed\}/);
-  assert.match(studio,/basicFreeIssue=\{basicVideoAccess\.reason\}/);
-  assert.match(studio,/basicCreditCost=\{basicVideoAccess\.chargeCredits\}/);
+  assert.match(studio,/return createQuickVideo\(\)/);
   assert.match(studio,/readyBasicVideoAccess\(/);
   assert.match(ready,/data-ready-video-credit-cost/);
   assert.match(ready,/data-ready-sign-in-credits/);
-  assert.match(studio,/onGenerateBasicVideo=\{\(\)=>\{/);
-  assert.match(studio,/if\(!freeVideoSelected\)\{/);
-  assert.match(studio,/return createQuickVideo\(\)/);
+  assert.match(ready,/if\(!basicFreeAvailable\)/);
+  assert.match(ready,/data-ready-generating/);
+  assert.match(ready,/data-ready-checkin/);
+  assert.match(ready,/progressQuestionnaire/);
+  assert.match(ready,/rendering\?t\.generating/);
   const prices=Object.fromEntries(VIDEO_CART_PRODUCTS.map(item=>[item.id,item.amountMinor]));
   assert.deepEqual(prices,{"video-extra":300,"video-pro":500});
   assert.deepEqual(createVideoCartSelection("video-extra"),{id:"video-extra",brief:""});
   assert.deepEqual(createVideoCartSelection("video-pro"),{id:"video-pro",brief:""});
   assert.equal(createVideoCartSelection("video-unknown"),null);
+});
+
+test("Safari-visible Ready player unlocks new encoded Blob before final credit-confirmed state",()=>{
+  assert.match(studio,/if\(result\?\.url&&result\.mode!=="catalog"\)setReadyGenerationPending\(false\)/);
+  assert.match(studio,/checking=\{Boolean\(!readyGenerationPending&&result&&playbackStatus==="checking"\)\}/);
+  assert.match(studio,/progressQuestionnaire=\{renderCheckIn\("ready-assessment-heading"\)\}/);
+  assert.match(studio,/activeWorkspace==="video"\?renderCheckIn\("video-assessment-heading"\):null/);
+  assert.match(ready,/data-video-file=\{video\?"true":undefined\}/);
+  assert.match(ready,/onCanPlay=\{event=>onVerifyPlayback\(event\.currentTarget\)\}/);
+  assert.match(ready,/\{completed\?<button type="button" data-ready-generate-new onClick=\{onStartNewVideo\}>/);
+  assert.match(studio,/playbackStatus==="ready"&&creditConfirmed/);
 });
 
 test("WebKit voice advanced settings use native one-tap disclosure without a double toggle",()=>{
@@ -245,4 +234,175 @@ test("Ready Basic auto-attaches suggested music before Generate without bypassin
   assert.match(studio,/if\(audioNeedsAttachment\)\{\s*setNotice\(audioUi\.needsAttach\)/);
   assert.match(studio,/onGenerateBasicVideo=\{\(\)=>\{/);
   assert.match(studio,/return createQuickVideo\(\)/);
+});
+
+test("approved Ready result has a thin status, full video and two secure primary actions",()=>{
+  const css=readFileSync(new URL("../components/mandala-video-ready.module.css",import.meta.url),"utf8");
+  const studioCss=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
+  assert.match(ready,/data-ready-state=\{completed\?"complete":"choose"\}/);
+  assert.match(ready,/data-ready-status/);
+  assert.match(ready,/\{completed\?<p className=\{css\.readyStatus\}/);
+  assert.match(ready,/data-ready-save><Download/);
+  assert.match(ready,/data-ready-telegram><Send/);
+  assert.match(ready,/data-ready-generate-new onClick=\{onStartNewVideo\}/);
+  assert.match(ready,/onLoadedData=\{event=>onVerifyPlayback\(event\.currentTarget\)\}/);
+  assert.match(ready,/onCanPlay=\{event=>onVerifyPlayback\(event\.currentTarget\)\}/);
+  assert.match(studio,/onVerifyPlayback=\{confirmVideoPlayback\}/);
+  assert.match(studio,/onStartNewVideo=\{\(\)=>\{/);
+  assert.match(studio,/inert=\{activeWorkspace==="ready"\}/);
+  assert.match(studioCss,/data-active-workspace="ready"[^\n]*\[data-video-result\]:not\(\[hidden\]\)/);
+  assert.match(css,/\.root\[data-ready-state="complete"\] \.selectedVideo\{width:100%;aspect-ratio:16\/9/);
+  assert.match(css,/\.root\[data-ready-state="complete"\] \.journey\{grid-template-columns:minmax\(0,1fr\)/);
+  for(const locale of ["en","ru","es"]){
+    const start=ready.indexOf("  "+locale+":{",ready.indexOf("const COPY={"));
+    const end=locale==="en"?ready.indexOf("  ru:{",start):
+      locale==="ru"?ready.indexOf("  es:{",start):ready.indexOf("} as const;",start);
+    for(const key of ["ready","nextSteps","nextLead","newVideo","sendTelegram","meditationNext","journeyNext"]){
+      assert.ok(ready.slice(start,end).includes(key+":"),locale+" missing "+key);
+    }
+  }
+});
+
+
+test("verified voice retains the original narration while Music Match forbids synthesized bed suggestions",()=>{
+  const source=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+  assert.ok(source.includes("tracks:voiceBedMode?[]:rankedAudioPool,"));
+  assert.match(source,/data-phrase-music-guidance=\{voiceBedMode\?"voice":"melody"\}/);
+  assert.match(browser,/await expect\(personalMusic\.locator\('\[role="radio"\]'\)\)\.toHaveCount\(0\)/);
+  assert.match(browser,/await expect\(page\.locator\("\[data-video-live-audio\]"\)\)\.toContainText\(expectedFileName\)/);
+  assert.match(browser,/await page\.locator\("\[data-video-bed-volume\]"\)\.focus\(\)/);
+  assert.match(browser,/await page\.waitForFunction\(previous=>/);
+});
+
+
+test("real Safari encoded-Blob guest helper gates Save without relying on the removed Download button",()=>{
+  const helper=readFileSync(new URL("../scripts/benchmarking/real-guest-video-file.mjs",import.meta.url),"utf8");
+  assert.match(helper,/await ready\.locator\('\[data-ready-save\]'\)\.click\(\)/);
+  assert.doesNotMatch(helper,/data-ready-download/);
+  assert.match(helper,/await expect\(page\.locator\('\[data-mandala-video-download\]'\)\)\.toBeHidden\(\)/);
+  assert.match(helper,/await expect\.poll\(\(\)=>renderedPlayer\.evaluate/);
+  assert.match(helper,/window\.__hhTestRecordedVideoBlobs/);
+  assert.match(helper,/assert\.equal\(downloads,0,'GUEST_DOWNLOAD_MUST_REQUIRE_LOGIN'\)/);
+  assert.match(helper,/data-ready-save-gate-signin/);
+  assert.match(helper,/\[data-video-effect-overlay\]/);
+});
+
+
+test("verified signed-in Ready Save uploads directly through the existing signed private MP4 uploader",()=>{
+  const css=readFileSync(new URL("../components/mandala-video-ready.module.css",import.meta.url),"utf8");
+  assert.match(ready,/if\(!signedIn\|\|intent==="house"\)/);
+  assert.match(ready,/if\(intent==="save"\)\{onSaveDirect\(\);return;\}/);
+  assert.match(ready,/data-ready-save-status/);
+  assert.match(ready,/disabled=\{disabled\|\|saveStatus\.busy\}/);
+  assert.match(ready,/data-ready-download-fallback/);
+  assert.match(studio,/const deliveryRef=useRef<VideoDeliveryHandle\|null>\(null\)/);
+  assert.match(studio,/if\(deliveryRef\.current\)void deliveryRef\.current\.saveToLibrary\(\)/);
+  assert.match(studio,/onStatusChange=\{setReadySaveStatus\}/);
+  assert.match(delivery,/forwardRef<VideoDeliveryHandle,Props>/);
+  assert.match(delivery,/useImperativeHandle\(ref,\(\)=>\(\{saveToLibrary,sendToTelegram,shareToWhatsApp\}\)/);
+  assert.match(delivery,/if\(!current\.cloudAvailable\)\{setNotice\(t\.cloudSaveOff\);return;\}/);
+  assert.match(delivery,/savingRef\.current=true/);
+  assert.match(delivery,/const id=await privateUpload\(\)/);
+  assert.match(delivery,/setSavedId\(id\)/);
+  assert.match(css,/\.saveStatus\{display:flex/);
+  for(const loc of ["en","ru","es"]){
+    const i=delivery.indexOf(" "+loc+":{");
+    const e=loc==="en"?delivery.indexOf(" es:{",i):
+      loc==="ru"?delivery.indexOf(" en:{",i):delivery.indexOf("} as const;",i);
+    assert.ok(i>0&&e>i&&delivery.slice(i,e).includes("cloudSaveOff:"),loc+" clear cloud error");
+  }
+});
+
+test("Ready primes Safari media on trusted Create before awaiting account credit hold",()=>{
+  const begin=studio.indexOf("async function createVideo(");
+  const end=studio.indexOf("  function stopSoundPreview()",begin);
+  assert.ok(begin>0&&end>begin);
+  const create=studio.slice(begin,end);
+  const at=(fragment)=>{
+    const position=create.indexOf(fragment);
+    assert.ok(position>=0,"Missing render step: "+fragment);
+    return position;
+  };
+  const primedVideo=at("const stylePreparation=");
+  const primedAudio=at("const audioPreparation =");
+  const audioStarted=at("musicSession=audioPreparation?await withLocalMediaDeadline");
+  const sceneCheck=at("if(!(await filmPreparation))");
+  const masterStarted=at("await withLocalMediaDeadline(master.play(),12000)");
+  const creditHold=at('const hold=await videoCreditRequest("hold"');
+  const encoder=at("const canvas = canvasRef.current;");
+  assert.ok(primedVideo<primedAudio&&primedAudio<audioStarted&&audioStarted<sceneCheck);
+  assert.ok(sceneCheck<masterStarted&&masterStarted<creditHold&&creditHold<encoder,
+    "No network hold/capability call may steal the original Safari tap before decoders start");
+  assert.ok(at('appFetch("video-export/capabilities"')>masterStarted);
+  assert.match(studio,/async function withLocalMediaDeadline<T>/);
+  assert.match(studio,/image_load_timeout/);
+  assert.match(create,/await withLocalMediaDeadline\(image\.decode\(\),20000\)/);
+  assert.match(create,/setExportUnavailable\(true\)/);
+});
+
+test("credit hold times out instead of leaving a signed-in iPhone in Preparing",async()=>{
+  const {postVideoCreditAction}=await import("../lib/video-credits/client.mjs");
+  const originalFetch=globalThis.fetch;
+  let aborted=false;
+  try{
+    globalThis.fetch=(url,init)=>{
+      assert.equal(url,"/api/app/video-credits/hold");
+      assert.equal(init.method,"POST");
+      assert.equal(init.credentials,"same-origin");
+      return new Promise((_resolve,reject)=>init.signal.addEventListener("abort",()=>{
+        aborted=true;reject(new Error("AbortError"));
+      },{once:true}));
+    };
+    await assert.rejects(postVideoCreditAction("hold",{operationId:"synthetic-hold"},{timeoutMs:40}),
+      /VIDEO_CREDITS_UNAVAILABLE/);
+    assert.equal(aborted,true,"the hung browser request must be aborted");
+  }finally{globalThis.fetch=originalFetch;}
+});
+
+test("Add Video keeps the optional source editor closed on landing and opens it on user navigation",()=>{
+  assert.match(studio,/const \[firstVideoAdvancedOpen,setFirstVideoAdvancedOpen\] = useState\(false\)/);
+  assert.match(studio,/open=\{firstVideoAdvancedOpen\}/);
+  assert.match(studio,/setFirstVideoAdvancedOpen\(opened\)/,
+    "real native summary toggle owns open and close");
+  const from=studio.indexOf("const openQuickDetailed=");
+  const to=studio.indexOf("const openVideoScenarioStep",from);
+  assert.ok(from>0&&to>from);
+  assert.match(studio.slice(from,to),
+    /if\(anchor==="video-templates"\)\{[\s\S]*?setFirstVideoAdvancedOpen\(true\)/,
+    "Add Video reveals the real first-party source editor before Safari can lose a second tap");
+  assert.match(studio,/data-video-first-video-advanced>/);
+});
+
+
+test("Ready Telegram sends directly to the verified own bot without the chooser",()=>{
+  assert.match(ready,/if\(intent==="telegram"\)\{onSendTelegramDirect\(\);return;\}/);
+  assert.match(studio,/onSendTelegramDirect=\{\(\)=>\{if\(deliveryRef\.current\)void deliveryRef\.current\.sendToTelegram\(\);\}\}/);
+  assert.match(delivery,/async function sendToTelegram\(\)/);
+  assert.match(delivery,/const current=await refresh\(\)/);
+  assert.match(delivery,/if\(!current\.telegram\.linked\)/);
+  assert.match(delivery,/if\(!current\.cloudAvailable\|\|!current\.telegram\.sendingAvailable\)/);
+  assert.match(delivery,/await sendViaBot\(false\)/);
+  assert.match(ready,/data-ready-telegram-link-step/);
+  assert.match(ready,/data-ready-verify-telegram/);
+  assert.doesNotMatch(ready,/if\(!signedIn\|\|intent==="telegram"/);
+});
+
+test("Ready WhatsApp requires own verified link, never claims Meta MP4 delivery",()=>{
+  assert.match(ready,/data-ready-whatsapp><MessageCircle/);
+  assert.match(ready,/data-ready-whatsapp-link-step/);
+  assert.match(delivery,/getCabinetBootstrap\("portrait"\)/);
+  assert.match(delivery,/appFetch\("whatsapp-link",undefined,"GET",\{accountId\}\)/);
+  assert.match(delivery,/accountId:current\.accountId/);
+  assert.match(delivery,/if\(consentApproved!==true\)/);
+  assert.match(ready,/data-ready-whatsapp-link-consent/);
+  assert.match(ready,/disabled=\{!whatsappConsent\|\|saveStatus\.busy\}/);
+  assert.match(ready,/onShareWhatsApp\(true\)/);
+  assert.match(delivery,/if\(whatsappLink\?\.linked\)\{/);
+  assert.match(delivery,/await shareFromDevice\(\)/);
+  assert.match(delivery,/action:"begin",noticeVersion:"hh-whatsapp-account-link-v1",permissionAccepted:true/);
+  assert.match(delivery,/setWhatsappUrl\(link\)/);
+  assert.match(delivery,/setNotice\(t\.whatsappUnavailable\)/);
+  assert.match(ready,/direct automated MP4 sending is not enabled/);
+  assert.doesNotMatch(delivery,/channel:"whatsapp"/);
 });

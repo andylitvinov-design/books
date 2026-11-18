@@ -155,8 +155,11 @@ test("server auth, rate, safety and published catalogue remain on the original A
   const auth=route.indexOf("await auth.verified()");
   const rate=route.indexOf("await consumeRate(config,{op:\"holistic-agent-turn\"");
   const safety=route.indexOf("const safety = preflight(body.message");
-  const judgment=route.indexOf("const judgment=planJudgmentTurn(");
+  const judgment=route.indexOf("const inspectedJudgment=");
   assert.ok(entry>=0&&auth>entry&&rate>auth&&safety>rate&&judgment>safety);
+  assert.match(route,/const judgment=inspectedJudgment;/);
+  assert.equal((route.match(/\bplanJudgmentTurn\(/g)||[]).length,1);
+  assert.ok(route.indexOf("?verifyJudgmentChoice(")<route.indexOf("await readNativeDialogueSession("));
   assert.match(route,/verifyJudgmentChoice/);
   assert.match(route,/PRIVATE_HEADERS/);
   assert.match(route,/buildHolisticGuidedTurn/);
@@ -180,6 +183,14 @@ test("unsupported correction is acknowledged without reviving old advice",()=>{
   assert.equal(next.choices.length,0);
   assert.equal(next.pending,null);
   assert.ok((next.reply.match(/[?？]/g)||[]).length===1);
+});
+test('a goal correction, forgetting or topic change invalidates the prior pending choice',()=>{
+ const first=planJudgmentTurn({message:'I feel lonely',locale:'en',safety:safe});assert.ok(first.pending);
+ for(const message of ['No, actually I want to speak more calmly.','Please forget my goal.',
+  'New topic: I want to talk about relationships.']){
+  const next=planJudgmentTurn({message,locale:'en',safety:safe,pending:first.pending});
+  assert.equal(next.pending,null,message);assert.equal(next.choices.length,0,message);assert.equal(next.actionExecuted,false,message);
+ }
 });
 
 test("current user words override stale or mismatched signed choice",()=>{

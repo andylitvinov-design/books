@@ -170,7 +170,7 @@ test('first valid signed incoming update upgrades existing webhook once, without
   await mockedBotApi(async(calls,allowed)=>{
     const once=await ensureTelegramInlineWebhookUpdates(env)
     assert.deepEqual(once,{ready:true,updated:true})
-    assert.deepEqual(allowed(),['message','callback_query'])
+    assert.deepEqual(allowed(),['message','callback_query','business_connection','business_message'])
     const set=calls.find(x=>x.method==='setWebhook')
     assert.equal(set.httpMethod,'POST')
     assert.equal(set.body.url,WEBHOOK)

@@ -1692,3 +1692,58 @@ test('exact #3843 iHelp photo dialogue uses real Mandala owner, never unrelated 
   assert.equal(planPublicServicesChangedPaths([
     'components/contact-channel-chooser.tsx']).mode,'full');
 });
+
+test('Nov 16 isolated Video Studio PRs do not allocate unrelated public-services browser matrix', () => {
+  const publicPaths = pathsOf('hh-public-services-production.yml');
+  const mandalaPaths = pathsOf('holistic-support-mandala.yml');
+  const isolated = [
+    'components/mandala-automatic-storyboard.tsx',
+    'components/mandala-video-concept.tsx',
+    'components/mandala-video-concept.module.css',
+    'components/mandala-video-ready.tsx',
+    'components/mandala-video-ready.module.css',
+    'components/mandala-video-effect-journey.module.css',
+    'components/mandala-therapy-studio.tsx',
+  ];
+  for (const file of isolated) {
+    assert.equal(covers(mandalaPaths, file), true,
+      'real Mandala specialist must still test ' + file);
+    assert.equal(covers(publicPaths, file), false,
+      'unrelated Public Services E2E must not run for ' + file);
+  }
+  // Actual video-focused changed-path inventories from PR #4732 and #4742.
+  const videoPRs = [
+    [
+      'components/mandala-video-effect-journey.module.css',
+      'components/mandala-video-mobile.module.css',
+      'components/mandala-video-ready.module.css',
+      'components/mandala-video-ready.tsx',
+      'docs/design/VIDEO_READY_APPROVED_LAYOUT_20261115.md',
+      'scripts/verify-affirmation-voice-browser.mjs',
+      'tests/mandala-ready-approved-layout-20261115.test.mjs',
+      'tests/mandala-video-ready.test.mjs',
+    ],
+    [
+      'components/mandala-free-video-studio.tsx',
+      'components/mandala-therapy-studio.tsx',
+      'components/mandala-video-ready.tsx',
+      'scripts/verify-affirmation-voice-browser.mjs',
+      'tests/mandala-video-ready.test.mjs',
+    ],
+  ];
+  for (const paths of videoPRs) {
+    assert.equal(paths.some(file => covers(publicPaths, file)), false,
+      'video-only PR must not launch unrelated Public Services browser suite');
+    assert.equal(paths.some(file => covers(mandalaPaths, file)), true,
+      'video-only PR must still execute Mandala required specialist');
+  }
+  for (const sensitive of [
+    'middleware.ts',
+    'components/sitewide-lead-capture.tsx',
+    'app/api/payments/new-gateway/route.js',
+    'scripts/verify-home-consultation-first-screen.mjs',
+    'components/mandala-service-cart.tsx',
+    'components/mandala-new-public-booking.tsx',
+  ]) assert.equal(covers(publicPaths, sensitive), true,
+    'mixed service/auth/consent/payment source still requires Public Services browser QA: ' + sensitive);
+});
