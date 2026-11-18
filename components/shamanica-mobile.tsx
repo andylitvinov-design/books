@@ -82,7 +82,7 @@ export function ShamanicaMobile({locale}:{locale:PublicLocale}){
  return <main className={styles.page} lang={locale} data-shamanica-mobile>
   <div className={styles.container}>
    <header className={styles.header}>
-    <Link className={styles.brand} href={"/"+locale} prefetch={false}><Leaf size={33} strokeWidth={1.8} aria-hidden="true"/><span>Holistic House</span></Link>
+    <Link className={styles.brand} href={locale==="en"?"/":"/"+locale} prefetch={false}><Leaf size={33} strokeWidth={1.8} aria-hidden="true"/><span>Holistic House</span></Link>
     <div className={styles.tools}>
      <label className={styles.lang}>
       <span className={styles.srOnly}>Language</span>
@@ -92,7 +92,7 @@ export function ShamanicaMobile({locale}:{locale:PublicLocale}){
      </label>
      <Link className={styles.iconButton} href={"/"+locale+"/explore"} aria-label={t.search} prefetch={false}><Search size={22}/></Link>
      <details className={styles.menu}><summary className={styles.iconButton} aria-label={t.menu}><Menu size={22}/></summary>
-      <nav className={styles.menuPop}><Link href={"/"+locale}>{t.self}</Link><Link href={"/"+locale+"/services"}>{t.work}</Link><Link href={"/"+locale+"/academy"}>{t.services.learning[0]}</Link></nav>
+      <nav className={styles.menuPop}><Link href={locale==="en"?"/":"/"+locale}>{t.self}</Link><Link href={"/"+locale+"/services"}>{t.work}</Link><Link href={"/"+locale+"/academy"}>{t.services.learning[0]}</Link></nav>
      </details>
     </div>
    </header>
