@@ -66,7 +66,10 @@ test('service welcome photo is limited to first signed consent message and uses 
  const webhook=source('app/api/app/crm/messenger/webhook/[provider]/route.js');
  const sender=source('lib/crm/messenger-provider.js');
  assert.match(v3,/if\(freeStart\)return \{\.\.\.greeting,freeWelcomePhoto:true\}/);
- assert.match(v3,/welcomePhotoKey=serviceStart\?\.service/);
+ assert.match(v3,/const welcomePhotoKey=aliWelcomePhotoKey\(\{/);
+ assert.match(v3,/service:serviceStart\?\.service\|\|null/);
+ assert.match(v3,/offerId:serviceStart\?\.offerId\|\|null/);
+ assert.match(v3,/if\(!canReply\)return greeting;/);
  assert.match(v3,/serviceWelcome:true/);
  assert.match(webhook,/serviceWelcome:aiIntake\.serviceWelcome===true/);
  assert.match(sender,/serviceWelcome\?'sendPhoto':'sendMessage'/);
