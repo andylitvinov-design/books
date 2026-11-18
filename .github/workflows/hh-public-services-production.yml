@@ -86,7 +86,12 @@ on:
       - 'components/remote-energy-*'
       - 'components/taoist-*'
       - 'components/*service*'
-      - 'components/practice-showcase*'
+      # The practitioner-only /[locale]/practice page is already owned by
+      # practice-visual-browser.yml (real Chromium/WebKit, 320–430px) and
+      # practice-visual-services.yml (service/editor contracts, lint and build).
+      # Its JSX/CSS must not consume the unrelated checkout/Alchemy/Reiki
+      # 13-case Public Services browser matrix. Other public conversion
+      # routes and checkout/security triggers below remain unchanged.
       - 'lib/holistic-support/**'
       # Pure, side-effect-free Intelligence Core policy/bridge input parsers
       # have their own focused axis-to-offer unit, type and production-build gate.
