@@ -1395,7 +1395,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const showLandingComposer=compact&&messengerView&&!pageHelp&&!messages.length&&!supportQuizOpen;
   const composer=(
     <form onSubmit={submit} className={styles.form}>
-      <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)} placeholder={t.placeholder}
+      <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)}
+        placeholder={showLandingComposer?(locale==="ru"?"Опиши ситуацию, вопрос или цель…":locale==="es"?"Describe tu situación, pregunta o meta…":"Describe your situation, concern, or goal…"):t.placeholder}
         onFocus={()=>{
           if(!compact||!messengerView)return;
           composerFocused.current=true;
@@ -1466,8 +1467,13 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           <>
             <MessengerAiLanding locale={locale} composer={composer} onCreateVideo={()=>startContent()}
               onPractice={()=>startGuided("meditation")} onSupport={openSupportQuiz}
-              onAsk={()=>composerRef.current?.focus({preventScroll:true})}/>
-            <MessengerSixProjects locale={locale} onSelect={startProject}/>
+              onAsk={()=>composerRef.current?.focus({preventScroll:true})}
+              onTopicSelect={text=>{setDraft(text);window.requestAnimationFrame(()=>composerRef.current?.focus({preventScroll:true}));}}
+              onStartAnalysis={()=>{if(draft.trim()){void sendTurn(draft);}else openSupportQuiz();}}/>
+            <details className={styles.alchemistTools} data-hh-alchemist-tools>
+              <summary>{locale==="ru"?"Другие возможности Ali":locale==="es"?"Más posibilidades de Ali":"More ways Ali can help"}</summary>
+              <MessengerSixProjects locale={locale} onSelect={startProject}/>
+            </details>
           </>}
       </>}
       {compact&&(!messengerView||pageHelp)&&<p className={styles.assistant} data-hh-ai-welcome>{pageHelp?.greeting??starter.welcome}</p>}

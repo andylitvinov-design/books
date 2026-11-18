@@ -365,9 +365,13 @@ export default function MessagesOrdersClients({locale:routeLocale='en',children}
       </button>
     </div>
     <header className={styles.head} data-hh-ai-assistant-header>
-      <div><h1>{locale==='ru'?'ИИ-ассистент':locale==='es'?'Asistente IA':'AI Assistant'}</h1>
-        <p>{locale==='ru'?'Спросить · Исследовать · Учиться · Создавать':
-          locale==='es'?'Preguntar · Explorar · Aprender · Crear':'Ask · Explore · Learn · Create'}</p></div>
+      <div><h1>{section==='ai'?
+          (locale==='ru'?'Ali · Внутренний алхимик':locale==='es'?'Ali · Alquimista interior':'Ali · Inner Alchemist'):
+          (locale==='ru'?'ИИ-ассистент':locale==='es'?'Asistente IA':'AI Assistant')}</h1>
+        <p>{section==='ai'?
+          (locale==='ru'?'Понять · Поддержать · Изменить':locale==='es'?'Comprender · Apoyar · Transformar':'Understand · Support · Transform'):
+          (locale==='ru'?'Спросить · Исследовать · Учиться · Создавать':
+          locale==='es'?'Preguntar · Explorar · Aprender · Crear':'Ask · Explore · Learn · Create')}</p></div>
       <div className={styles.headerActions} data-hh-ai-assistant-actions>
         <div className={styles.languagePicker} data-hh-messenger-language-switcher
           role="group" aria-label={locale==='ru'?'Язык мессенджера':locale==='es'?'Idioma del mensajero':'Messenger language'}>
