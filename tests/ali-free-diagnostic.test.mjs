@@ -184,6 +184,12 @@ test('free review has one photo-before-text welcome and an explicit booking choi
  assert.doesNotMatch(sender,/text\.length>900\|\|!text\.includes\('OpenRouter'\)/);
 });
 
+test('a natural question about booking gets a real public request link, not a warning',()=>{
+ const reply=turn('Can I book a session?',{stage:'challenge',slots:{goal:'Clarity'}});
+ assert.equal(reply.stage,'challenge','booking must not fabricate an answered phase');
+ assert.match(reply.reply,/https:\/\/holistichouse\.vercel\.app\/en\/services\/free-consultation/);
+ assert.equal(questions(reply.reply),0,'a booking request should not trigger another interrogation question');
+});
 test('existing compact Telegram menu offers Free Diagnostic as second-level choice',()=>{
  for(const locale of ['ru','en']){
    const menu=telegramExploreDetailButtons(locale,'consultation');
