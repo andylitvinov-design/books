@@ -254,3 +254,16 @@ test("unfamiliar personal goals still receive authored films rather than arrow c
   assert.ok(choices.every(choice=>!choice.story.includes("→")));
  }
 });
+
+
+test("storyboard camera plan reads actions from screenplay scenes, never reauthors them",()=>{
+ const plot=listAuthoredFilmPlots("growth")[0];
+ const original=makeSixShotStoryboard(plot,"en");
+ const scenes=original.map(shot=>({id:shot.sceneId,action:shot.visualAction}));
+ scenes[1]={...scenes[1],action:"The character folds the failed page and places it on the table."};
+ const storyboard=makeSixShotStoryboard(plot,"en",scenes);
+ assert.equal(storyboard.length,scenes.length);
+ assert.deepEqual(storyboard.map(s=>s.sceneId),scenes.map(s=>s.id));
+ assert.deepEqual(storyboard.map(s=>s.visualAction),scenes.map(s=>s.action));
+ assert.notEqual(storyboard[1].visualAction,original[1].visualAction);
+});
