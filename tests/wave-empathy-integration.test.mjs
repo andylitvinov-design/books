@@ -14,6 +14,25 @@ test('Wave first-party native path reflects new mixed feelings with no model/pro
  assert.equal(a?.modelUsed,false);assert.equal(a?.externalCalled,false);
  assert.ok((a?.reply.match(/[?？]/gu)||[]).length<=1);
 });
+test('Ali keeps a concrete, accepting conversation across several short client turns',()=>{
+ const firstMessage='Я последнее время очень устаю, всё раздражает';
+ const first=waveNativeTurn({message:firstMessage,locale:'ru'});
+ assert.match(first?.reply||'',/усталости и раздражении/u);
+ assert.match(first?.reply||'',/с работой, отношениями/u);
+ const nextMessage='Работа. Постоянно чего-то требуют.';
+ const second=waveNativeTurn({message:nextMessage,locale:'ru',history:[
+  {role:'user',text:firstMessage},{role:'assistant',text:first.reply}
+ ]});
+ assert.match(second?.reply||'',/постоянно чего-то требуют/u);
+ assert.match(second?.reply||'',/отключаться после рабочего дня/u);
+ const final=waveNativeTurn({message:'Хочу научиться отключаться после работы.',locale:'ru',history:[
+  {role:'user',text:firstMessage},{role:'assistant',text:first.reply},
+  {role:'user',text:nextMessage},{role:'assistant',text:second.reply}
+ ]});
+ assert.match(final?.reply||'',/рабочих мыслей/u);
+ assert.doesNotMatch(final?.reply||'',/записаться|оплатить|диагноз/u);
+ assert.ok((final?.reply.match(/[?？]/gu)||[]).length<=1);
+});
 test('Wave native direct task is not hijacked by an emotion preface',()=>{
  assert.equal(waveNativeTurn({message:'Мне страшно. Сколько стоит консультация?',locale:'ru'}),null);
 });
