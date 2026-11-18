@@ -6332,7 +6332,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             previousHypnoAudioRef.current=null;
             if(staleHypnoTrack){clearUploadedAudio();setAttachedAudio(null);}
           }}
-          compact={activeWorkspace==="phrases"&&ideasVoiceAdvancedOpen}
+          compact={activeWorkspace==="effects"||(activeWorkspace==="phrases"&&ideasVoiceAdvancedOpen)}
+           therapyLayout={activeWorkspace==="effects"}
           ownVoiceOnly={activeWorkspace==="phrases"&&ideasVoiceMode==="my-voice"&&ideasVoiceAdvancedOpen}
           extraActions={<>
         <div className={videoStyles.ideasVoiceActions} data-video-ideas-voice-actions>
@@ -7660,7 +7661,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           setTherapyInitialFormat(format);
           activateQuickWorkspace("effects");
           window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
-            const destination=document.querySelector<HTMLElement>('[data-therapy-format="'+format+'"]');
+            const destination=document.querySelector<HTMLElement>('[data-therapy-subtab="'+(format==="course"?"course":"meditation")+'"]');
             destination?.focus({preventScroll:true});
             document.querySelector("[data-video-effects-panel]")
               ?.scrollIntoView({block:"start",behavior:"auto"});

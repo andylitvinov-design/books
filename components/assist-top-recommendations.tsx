@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, BookOpen } from "lucide-react";
+import { ServicesCardActions } from "@/components/services-card-actions";
 import type { PublicLocale } from "@/lib/public-locales";
 import type { AssistPreferences } from "@/lib/assist/service-match.mjs";
 import { assistPriceLabel } from "@/lib/assist/service-match.mjs";
@@ -12,7 +13,7 @@ import { resolveTelegramServiceHandoffUrl } from "@/lib/app/telegram-entry-url.m
 import styles from "./assist-top-recommendations.module.css";
 
 type Focus = "stress" | "relationships" | "energy" | "health" | "work" | "growth" | "general" | null;
-type ProductId = "review" | "therapy" | "constellation" | "business" | "opora" | "reiki" | "mandala";
+type ProductId = "review" | "therapy" | "constellation" | "business" | "opora" | "reiki" | "mandala" | "mytube";
 type Product = { path:string; image:string; requestId?: "coaching" | "constellations" | "business" | "reiki" };
 const products:Record<ProductId,Product> = {
   review:{path:"services/free-situation-review",image:"/images/holistic-house/video-posters/hypnotherapy-en-v1.webp"},
@@ -22,6 +23,7 @@ const products:Record<ProductId,Product> = {
   opora:{path:"courses/antistress",image:"/images/holistic-house/course-focus-mountain-boy.webp"},
   reiki:{path:"services/remote-energy-support",image:"/images/holistic-house/reiki-approved-sunrise-v3.webp",requestId:"reiki"},
   mandala:{path:"holistic-support/mandala",image:"/academy/reiki-yggdrasil/source/eastern-tradition.png"},
+  mytube:{path:"mytube",image:"/images/holistic-house/assist-video-botanical.svg"},
 };
 const copy = {
   ru:{
@@ -38,6 +40,7 @@ const copy = {
       opora:["14-дневный курс ОПОРА","Ежедневные упражнения для самоподдержки."],
       reiki:["Дистанционная Рейки-сессия","Дополнительная символическая практика для отдыха."],
       mandala:["Персональная мандала","Визуальная практика для саморефлексии."],
+      mytube:["MyTube · видео","Бесплатные материалы для знакомства с темой."],
     },
   },
   en:{
@@ -54,6 +57,7 @@ const copy = {
       opora:["14-day OPORA Course","Daily self-guided exercises for support."],
       reiki:["Remote Reiki Session","Optional symbolic practice for rest and reflection."],
       mandala:["Personal Mandala","Visual reflection on your situation."],
+      mytube:["MyTube · Videos","Free videos to explore this topic."],
     },
   },
   es:{
@@ -70,20 +74,22 @@ const copy = {
       opora:["Curso OPORA de 14 días","Ejercicios diarios de apoyo personal."],
       reiki:["Sesión de Reiki a distancia","Práctica simbólica opcional para descansar."],
       mandala:["Mandala personal","Reflexión visual sobre tu situación."],
+      mytube:["MyTube · Vídeos","Vídeos gratuitos para explorar el tema."],
     },
   },
 } as const;
 
 export function AssistTopRecommendations({
-  locale,focus,preferences={},priorityIds=[],matchingIds,noMatchLabel,
+  locale,focus,preferences={},priorityIds=[],matchingIds,allowedIds,noMatchLabel,
 }:{
   locale:PublicLocale;focus:Focus;preferences?:AssistPreferences;
-  priorityIds?:readonly string[];matchingIds?:readonly string[];noMatchLabel?:string;
+  priorityIds?:readonly string[];matchingIds?:readonly string[];allowedIds?:readonly string[];noMatchLabel?:string;
 }){
   const t=copy[locale];
   // Keep budget/mode/channel hard filters authoritative even if the same
   // Consultant Mind just named a more relevant first choice.
-  const eligible=rankAssistProducts(focus??"general",preferences,20) as ProductId[];
+  const eligible=(rankAssistProducts(focus??"general",preferences,20) as ProductId[])
+    .filter(id=>!allowedIds||allowedIds.includes(id));
   const prioritized=priorityIds.filter((id):id is ProductId=>
     Object.hasOwn(products,id)&&eligible.includes(id as ProductId));
   const productIds:readonly ProductId[]=matchingIds?.length===0?[]:
@@ -102,24 +108,21 @@ export function AssistTopRecommendations({
         const draft=item.requestId?telegramServiceRequestUrl(item.requestId,locale):null;
         const handoff=draft?resolveTelegramServiceHandoffUrl(draft,locale):null;
         const priced=id==="review"||id==="therapy"||id==="constellation"||id==="business";
-        const price=priced?assistPriceLabel(id,locale)
+        const price=(priced||id==="mytube")?assistPriceLabel(id,locale)
           .replaceAll(" minutes — ","m · ").replaceAll(" минут — ","м · ")
           .replaceAll(" minutos — ","min · ").replaceAll("; "," / "):t.price;
-        return <article className={styles.card} data-assist-best-card={id} data-assist-recommendation={id} key={id}>
-          <Link href={href} className={styles.product} prefetch={false} data-assist-product-link={id} aria-label={t.open+": "+title}>
-            <span className={styles.thumbnail}><Image src={item.image} alt="" fill sizes="(max-width:760px) 68px, 110px"/></span>
-            <span className={styles.content}>
-              <strong>{title}</strong>
-              <span className={styles.description}>{description}</span>
-              <small className={styles.price}>{price}</small>
-            </span>
+        return <article className={styles.card} data-support-uniform-card data-assist-best-card={id} data-assist-recommendation={id} key={id}>
+          <Link href={href} className={styles.thumbnail} data-support-uniform-photo prefetch={false} tabIndex={-1} aria-hidden="true">
+            <Image src={item.image} alt="" fill sizes="(max-width:760px) 34vw, 110px"/>
           </Link>
-          {draft?<a className={styles.action} href={handoff||draft} target="_blank" rel="noopener noreferrer"
-              referrerPolicy="no-referrer" aria-label={t.request+": "+title+" — Telegram"} data-assist-best-action={id}>
-              {t.request}<ArrowRight size={16} aria-hidden="true"/>
-            </a>:<Link className={styles.action} href={href} prefetch={false} data-assist-best-action={id}>
-              {t.open}<ArrowRight size={16} aria-hidden="true"/>
-            </Link>}
+          <div className={styles.content} data-support-uniform-copy>
+            <h3><Link href={href} prefetch={false} data-assist-product-link={id}>{title}</Link></h3>
+            <p className={styles.description}>{description}</p>
+          </div>
+          <span className={styles.price} data-support-uniform-price>{price}</span>
+          <ServicesCardActions locale={locale} title={title} description={description}
+            href={href} request={description} trackingId={id} actionTrackingId={id}
+            telegramUrl={id==="review"?"/api/public/telegram-option-entry?offer=browse_situation&locale="+locale:handoff||draft||undefined}/>
         </article>;
       })}
     </div>

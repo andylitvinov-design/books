@@ -156,13 +156,13 @@ export function ServicesThreeVisibleOptions({id,locale}:{id:ThreeGroup;locale:Pu
       const description=translate(offer.description,locale);
       const price=tags[locale][offer.price];
       const href="/"+(offer.fixedLocale||locale)+"/"+offer.path;
-      return <article className={styles.offer} key={offer.id}
+      return <article className={styles.offer} data-support-uniform-card key={offer.id}
         data-service-variant={id+"-"+offer.id} data-service-price-kind={offer.price}>
-        <div className={styles.image}>
-          <Image src={offer.photo} alt="" fill unoptimized loading="lazy" sizes="(max-width:760px) 78px, 90px" />
+        <div className={styles.image} data-support-uniform-photo>
+          <Image src={offer.photo} alt="" fill unoptimized loading="lazy" sizes="(max-width:760px) 34vw, 90px" />
         </div>
-        <div className={styles.copy}>
-          <span className={styles.price} data-service-price>{price}</span>
+        <div className={styles.copy} data-support-uniform-copy>
+          <span className={styles.price} data-service-price data-support-uniform-price>{price}</span>
           <h3>{title}</h3>
           <p>{description}</p>
         </div>

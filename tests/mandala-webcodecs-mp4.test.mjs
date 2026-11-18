@@ -15,6 +15,22 @@ test("Safari MP4 uses browser-local WebCodecs rather than MediaRecorder",()=>{
   assert.match(studio,/if\(useWebCodecsMp4\)/);
   assert.match(studio,/stream = canvas\.captureStream\(framesPerSecond\)/);
 });
+
+test("physical-iPhone Ready repair runs the mandatory macOS WebKit video and AAC E2E",()=>{
+  const workflow=readFileSync(new URL("../.github/workflows/holistic-support-mandala.yml",import.meta.url),"utf8");
+  const job=workflow.split("  voice-webkit-macos:")[1];
+  assert.ok(job,"the real native WebKit job is required");
+  const gate=job.slice(0,job.indexOf("\n    needs:"));
+  assert.match(gate,/github\.event_name == 'pull_request'/);
+  assert.match(gate,/github\.event\.pull_request\.draft == false/);
+  assert.match(gate,/github\.head_ref == 'fix\/iphone-ready-mp4-export-20261118'/);
+  assert.match(job,/needs: \[webkit_preflight\]/);
+  assert.match(job,/runs-on: macos-15/);
+  assert.match(job,/Build exact voice release candidate/);
+  assert.match(job,/WebKit recorded movie contains video and audible consented voice/);
+  assert.doesNotMatch(job,/continue-on-error: true/);
+});
+
 test("Safari movie retains the real Canvas scene, story, hypno and stage captions",()=>{
   for(const marker of [
     "paintCinematicFrame(ctx,image,effect,time",

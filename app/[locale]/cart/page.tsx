@@ -34,6 +34,7 @@ export default async function CartPage({ params }: Props) {
     <PersonalCart locale={locale} paypalEnabled={personalPayPalEnabled()} wiseEnabled={wisePaymentsEnabled()}
       squareLinks={configuredSquarePaymentLinks()} squareApiEnabled={squareGateway.enabled} squareApiEnvironment={squareGateway.environment}
       squareApiPrices={squareGateway.enabled ? squareGateway.prices : {}} verifiedPayPalEnabled={verifiedPayPalCheckout}
-      hostedPayPalLinks={configuredPayPalHostedLinks()} stripeLinks={configuredIndividualCardLinks()} />
+      hostedPayPalLinks={configuredPayPalHostedLinks()} stripeLinks={configuredIndividualCardLinks()}
+      paidVideoTrackingEnabled={process.env.HH_VIDEO_PAID_ORDERS_SCHEMA_APPROVED === "true" && process.env.HH_VIDEO_PAID_ORDERS_ENABLED === "true"} />
   </main>;
 }

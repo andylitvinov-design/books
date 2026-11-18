@@ -80,40 +80,40 @@ export function ServicesPersonalConsultationMobile({ locale }: { locale: PublicL
         </div>
       </header>
       <div className={styles.cards}>
-        <article className={styles.card} data-consultation-choice="free">
-          <div className={styles.photo}>
-            <Image src="/images/holistic-house/messenger-zen-stones.svg" alt="" fill unoptimized sizes="110px" />
+        <article className={styles.card} data-support-uniform-card data-consultation-choice="free">
+          <div className={styles.photo} data-support-uniform-photo>
+            <Image src="/images/holistic-house/messenger-zen-stones.svg" alt="" fill unoptimized sizes="(max-width:760px) 34vw, 110px" />
           </div>
-          <div className={styles.content}>
+          <div className={styles.content} data-support-uniform-copy>
             
             <h3>{t.free.title}</h3>
             <p><Zap size={18} aria-hidden="true" />{t.free.detail}</p>
           </div>
-          <span className={styles.priceTag} data-service-price-kind="free">{t.free.tag}</span>
+          <span className={styles.priceTag} data-support-uniform-price data-service-price-kind="free">{t.free.tag}</span>
           <ServicesCardActions locale={locale} title={t.free.title} description={d.free}
             href={"/" + locale + "/services/free-situation-review"} trackingId="free" />
         </article>
-        <article className={styles.card} data-consultation-choice="remote-photo">
-          <div className={styles.photo}>
-            <Image src="/images/holistic-house/report-lighthouse-coast.webp" alt="" fill sizes="110px" />
+        <article className={styles.card} data-support-uniform-card data-consultation-choice="remote-photo">
+          <div className={styles.photo} data-support-uniform-photo>
+            <Image src="/images/holistic-house/report-lighthouse-coast.webp" alt="" fill sizes="(max-width:760px) 34vw, 110px" />
           </div>
-          <div className={styles.content}>
+          <div className={styles.content} data-support-uniform-copy>
             <h3>{t.remote.title}</h3>
             <p><Camera size={19} aria-hidden="true" />{t.remote.detail}</p>
           </div>
-          <span className={styles.priceTag} data-service-price-kind="quote">{priceLabels[locale].quote}</span>
+          <span className={styles.priceTag} data-support-uniform-price data-service-price-kind="quote">{priceLabels[locale].quote}</span>
           <ServicesCardActions locale={locale} title={t.remote.title} description={d.remote}
             href={"/" + locale + "/services/alchemy-of-soul"} request={t.remote.request} trackingId="remote-photo" />
         </article>
-        <article className={styles.card} data-consultation-choice="video">
-          <div className={styles.photo}>
-            <StaticPortrait src="/images/holistic-house/andy-about.png" alt="" fill sizes="110px" />
+        <article className={styles.card} data-support-uniform-card data-consultation-choice="video">
+          <div className={styles.photo} data-support-uniform-photo>
+            <StaticPortrait src="/images/holistic-house/andy-about.png" alt="" fill sizes="(max-width:760px) 34vw, 110px" />
           </div>
-          <div className={styles.content}>
+          <div className={styles.content} data-support-uniform-copy>
             <h3>{t.live.title}</h3>
             <p><Video size={19} aria-hidden="true" />{t.live.detail}</p>
           </div>
-          <span className={styles.priceTag} data-service-price-kind="paid">{priceLabels[locale].session}</span>
+          <span className={styles.priceTag} data-support-uniform-price data-service-price-kind="paid">{priceLabels[locale].session}</span>
           <ServicesCardActions locale={locale} title={t.live.title} description={d.live}
             href={"/" + locale + "/services/free-consultation"} request={t.live.request} trackingId="video" />
         </article>
