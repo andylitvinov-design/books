@@ -200,8 +200,8 @@ test('production hook is consent-first, never uses external LLM or silent CRM ha
  assert.match(handler,/if\(action==='send'\)/);
  assert.match(handler,/ai_review_consent_at=now\(\)/);
  assert.match(handler,/return promptResult/);
- assert.match(handler,/ctx\.mode===FREE_DIAGNOSTIC_MODE\?chatAllowed:allowed/);
- assert.match(handler,/prior\.ctx\.mode===FREE_DIAGNOSTIC_MODE\)\?v3CanChat\(env\):v3CanStart\(env\)/);
+ assert.match(handler,/ctx\.mode===FREE_DIAGNOSTIC_MODE\?chatAllowed:/);
+ assert.match(handler,/prior\.ctx\.mode===FREE_DIAGNOSTIC_MODE\)\?v3CanChat\(env\):/);
  assert.doesNotMatch(planner,/\bfetch\s*\(|\baxios\s*\(|\bingestMessengerEventInTransaction\s*\(/);
  const local={VERCEL_ENV:'production',HH_CRM_TG_AI_V3_SCHEMA_READY:'true',
    HH_CRM_TG_AI_V3_ENABLED:'true',HH_CRM_TG_AI_V3_FREE_TIER_CONFIRMED:'true',

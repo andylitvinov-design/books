@@ -16,7 +16,9 @@ test('first service response is only a warm short portrait caption; AI consent c
   assert.doesNotMatch(intro,/OpenRouter|medical records|медицинских документов|documentos médicos|\/stop|consent|соглас|aprobación|payment|оплат/i);
   assert.equal(countQuestions(intro),0);
   const consent=v3ServiceCopy(lang,service).consent;
-  assert.match(consent,/OpenRouter/);
+  // Keyless service interview uses protected local answers; never imply external AI use.
+  assert.doesNotMatch(consent,/OpenRouter/);
+  assert.match(consent,/внешней AI-модели|modelo de IA externo|external AI model/i);
   assert.match(consent,/medical records|медицинских документов|documentos médicos/i);
   assert.match(consent,/approve|одобрите|apruebes/i);
   assert.ok(consent.length<270);

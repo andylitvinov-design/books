@@ -35,7 +35,7 @@ test('unsigned arbitrary text, forged option, category override and missing cons
  assert.equal(v3Context({turns:[],serviceRequest:'reiki',offerId:'reiki_remote'}).offerId,'reiki_remote')
  const route=src('app/api/public/telegram-option-entry/route.js')
  assert.match(route,/telegramPublicDiagnosticReady\(env\)/)
- assert.match(route,/channelTransportReady\('telegram',env\)&&v3CanStart\(env\)/)
+ assert.match(route,/channelTransportReady\('telegram',env\)&&v3ServiceIntakeReady\(env\)/)
  assert.match(route,/if\(!offer\)return reject\(\)/)
  assert.match(src('components/services-three-visible-options.tsx'),/telegramUrl=\{/)
  assert.match(src('components/services-card-actions.tsx'),/telegramUrl=\{telegramUrl\}/)
