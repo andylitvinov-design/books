@@ -358,3 +358,24 @@
 .panel[data-therapy-voice-ui="true"] .voiceCard{min-height:0}
 .panel[data-therapy-voice-ui="true"] .voiceAdvanced{margin:0}
 .panel[data-therapy-voice-ui="true"] .voiceAdvanced>summary{min-height:28px;padding:3px 2px;font-size:12px}
+
+/* Fish references reuse the original Therapy voice picker; no gender is claimed. */
+.panel .genderTabs{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+.panel .genderTabs button{min-height:44px;padding:7px 2px;font-size:clamp(10px,2.9vw,13px)}
+.panel .fishCards{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.panel .fishNote{display:block;margin:7px 0;color:#286950;font-size:12px;line-height:1.4}
+.panel[data-voice-layout="compact"] .genderTabs{grid-template-columns:repeat(4,minmax(0,1fr))}
+.panel[data-voice-layout="compact"] .genderTabs button{min-height:44px;white-space:normal;overflow-wrap:anywhere}
+.panel[data-voice-layout="compact"] .fishCards{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+.panel[data-voice-layout="compact"] .voiceCardSelect[data-video-affirmation-voice-card="fish-ru"]::before{background-image:url("/videos/holistic-house/film-collection-v2/meadow-morning.jpg")}
+.panel[data-voice-layout="compact"] .voiceCardSelect[data-video-affirmation-voice-card="fish-en"]::before{background-image:url("/videos/holistic-house/film-collection-v2/sea-breeze.jpg")}
+@media(max-width:360px){.panel .genderTabs button,.panel[data-voice-layout="compact"] .genderTabs button{font-size:10px}}
+
+/* Approved voice-use filter: one compact row, no extra editor or new screen. */
+.panel .fishPurposes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:7px 0}
+.panel .fishPurposes button{min-width:0;min-height:44px;padding:7px 12px;border:1px solid #c3dfd2;border-radius:99px;background:#fffcf7;color:#145b46;font:750 clamp(12px,3.2vw,14px)/1.2 system-ui;cursor:pointer}
+.panel .fishPurposes button[aria-pressed="true"]{background:#0b8064;border-color:#0b8064;color:#fff}
+.panel[data-therapy-voice-ui="true"] .fishCards,.panel[data-voice-layout="compact"] .fishCards{display:grid!important;grid-template-columns:none!important;grid-auto-flow:column!important;grid-auto-columns:minmax(128px,calc((100% - 8px)/2.12))!important;overflow-x:auto!important;scroll-snap-type:x proximity;overscroll-behavior-x:contain;gap:8px!important;scrollbar-width:thin}
+.panel .fishCards .voiceCard{scroll-snap-align:start}
+.panel .fishCards .voiceCardSelect:disabled{opacity:.65;cursor:not-allowed}
+@media(max-width:350px){.panel .fishPurposes button{font-size:12px;padding:6px}}

@@ -8,7 +8,7 @@ import { mixVoiceWithNature } from "@/lib/mandala/voice-audio-mix";
 import { VOICE_BED_PRESETS } from "@/lib/mandala/voice-audio-mix";
 import type { NatureBed } from "@/lib/mandala/voice-audio-mix";
 import { VOICE_STUDIO_MAX_CHARS, VOICE_STUDIO_VOICES, studioExcerpt } from "@/lib/mandala/voice-studio.mjs";
-import {FISH_VOICES} from "@/lib/mandala/voice-studio-fish.mjs";
+import {FISH_PUBLIC_VOICES} from "@/lib/mandala/voice-studio-fish.mjs";
 import css from "./mandala-cloud-voice-studio.module.css";
 
 type VoiceLanguage = "ru" | "en";
@@ -77,17 +77,17 @@ const balanceCopy={
 } as const;
 const fishCopy={
  ru:{pick:"Источник голоса",studio:"Студийные голоса",fish:"Fish Audio · бесплатно",
-   intro:"Один разрешённый голос на русском и один на английском. Бесплатная озвучка короткого фрагмента, с мягким темпом и природным фоном.",
+   intro:"Утверждённые Fish Official голоса RU/EN для коучинга и медитаций. Только короткая бесплатная озвучка с природным фоном.",
    consent:"Разрешаю передать этот проверенный мной фрагмент Fish Audio (бесплатная модель). Я не включаю имена, контакты, медицинские сведения и другой личный текст. Fish может использовать текст для улучшения моделей.",
    ready:"Fish Audio готов для короткой WAV-озвучки.",unavailable:"Fish Audio не активирован: требуется подтверждение бесплатного тарифа, прав на голос и условий приватности.",
    used:"Аудио создано бесплатной моделью Fish Audio.",privacy:"Fish получает только явно подтверждённый текст; запись остаётся в браузере."},
  en:{pick:"Voice provider",studio:"Studio voices",fish:"Fish Audio · free",
-   intro:"One approved Russian and one English voice. Free short-form narration with gentle pacing and a nature background.",
+   intro:"Approved RU/EN Fish voices for coaching and meditation. Free short-form narration with gentle pacing and a nature background.",
    consent:"I agree to send this reviewed excerpt to Fish Audio's free model. I will not include names, contact details, medical or other personal information. Fish may use text to improve models.",
    ready:"Fish Audio is ready for short WAV narration.",unavailable:"Fish Audio is not activated: free-tier, voice rights and data terms need approval.",
    used:"Audio created by the free Fish Audio model.",privacy:"Fish receives only text you explicitly approve; the audio remains in this browser."},
  es:{pick:"Proveedor de voz",studio:"Voces del estudio",fish:"Fish Audio · gratis",
-   intro:"Una voz aprobada en ruso y otra en inglés. Voz suave para fragmentos breves con sonido natural.",
+   intro:"Voces Fish RU/EN aprobadas para coaching y meditación, con un ritmo suave y fondo natural.",
    consent:"Autorizo enviar este fragmento revisado al modelo gratuito de Fish Audio. No incluiré nombres, datos de contacto ni datos médicos o personales. Fish puede usar el texto para mejorar sus modelos.",
    ready:"Fish Audio listo para narraciones breves WAV.",unavailable:"Fish Audio aún no está activado: faltan aprobaciones del uso gratuito, las voces y la privacidad.",
    used:"Audio creado mediante Fish Audio gratis.",privacy:"Fish recibe solo el texto aceptado explícitamente; el audio queda en este navegador."},
@@ -352,24 +352,27 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",sourceIsPublic=fal
         <button type="button" data-voice-provider="studio" aria-pressed={provider==="studio"}
           onClick={()=>{resetAudio();setProvider("studio");setVoiceId("mark");setConsent(false);}}>{f.studio}</button>
         <button type="button" data-voice-provider="fish" aria-pressed={provider==="fish"}
-          onClick={()=>{resetAudio();setProvider("fish");setVoiceId("fish-"+language);setConsent(false);}}>{f.fish}</button>
+          onClick={()=>{resetAudio();setProvider("fish");setVoiceId(language==="ru"?"fish-igor":"fish-selene");setConsent(false);}}>{f.fish}</button>
       </div>
       <div className={css.language} role="group" aria-label={t.language}>
         {(["ru","en"] as const).map(lang=>
           <button key={lang} type="button" aria-pressed={lang===language}
-            onClick={()=>{resetAudio();setLanguage(lang);if(provider==="fish")setVoiceId("fish-"+lang);}}>
+            onClick={()=>{resetAudio();setLanguage(lang);if(provider==="fish")setVoiceId(lang==="ru"?"fish-igor":"fish-selene");}}>
             {lang==="ru"?"Русский":"English"}
           </button>)}
       </div>
       {provider==="fish"?<div className={css.group}>
         <h3>Fish Audio · {language==="ru"?"Русский":"English"}</h3>
         <div className={css.voices+" "+css.fishVoices}>
-          {FISH_VOICES.filter(voice=>voice.language===language).map(voice=>
+          {FISH_PUBLIC_VOICES.filter(voice=>voice.language===language).map(voice=>
             <button type="button" key={voice.id} data-voice-id={voice.id}
-              aria-pressed={voice.id===voiceId} onClick={()=>{resetAudio();setVoiceId(voice.id);}}
+              aria-pressed={voice.id===voiceId} disabled={Boolean(voice.requiresProviderLicense)}
+              onClick={()=>{resetAudio();setVoiceId(voice.id);}}
               className={css.voice}>
               <span className={css.voiceTop}>{voice.name[locale]}</span>
-              <span className={css.provider}>Fish Audio · S2.1 Pro Free</span>
+              <span className={css.provider}>{voice.requiresProviderLicense?
+                (locale==="ru"?"Требуется лицензия":locale==="es"?"Licencia requerida":"License required"):
+                "Fish Official · S2.1 Pro Free"}</span>
             </button>)}
         </div>
       </div>:groups.map(group=>(
