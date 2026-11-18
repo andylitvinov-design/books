@@ -54,7 +54,7 @@ test("No customer upload, fake video or unbounded output",()=>{
     "single Safari encoder stalls are not necessarily corrupted frame timestamps");
   assert.match(helper,/seconds\+20\)\*1000\+decoderHoldMs/,
     "whole-export deadline must still reject unbounded stalls");
-  assert.match(studio,/frameRate:Math\.min\(safeWebkitRetry\?8:10,framesPerSecond\)/,
+  assert.match(studio,/frameRate:Math\.min\(\(safeWebkitRetry\|\|isApplePhone\)\?8:10,framesPerSecond\)/,
     "Safari must pace real 10-second H.264+AAC exports without skipping timed scenes");
   assert.match(helper,/const time=i\/frameRate/);
   assert.match(helper,/audio_decode_invalid/);
@@ -124,7 +124,7 @@ test("silent WebKit exports H.264 even without AudioEncoder, never fakes voice A
 test("Safari failure exposes a safe code and an explicit lighter same-renderer retry",()=>{
   assert.match(studio,/const \[webkitRecoveryReason,setWebkitRecoveryReason\] = useState<string\|null>\(null\)/);
   assert.match(studio,/setWebkitRecoveryReason\(null\)/);
-  assert.match(studio,/const safariRetryScale=useWebCodecsMp4&&safeWebkitRetry/);
+  assert.match(studio,/const safariRetryScale=useWebCodecsMp4&&\(safeWebkitRetry\|\|isApplePhone\)/);
   assert.match(studio,/540\/\(quality==="fullhd"\?1080:720\)/);
   assert.match(studio,/data-video-webkit-safe-retry/);
   assert.match(studio,/onClick=\{\(\)=>void createVideo\(false,false,true\)\}/);
@@ -173,14 +173,14 @@ test("explicit Safari WebM retry uses a different recorder, preserves sound",asy
   const formats=orderRecordingMimes({mp4:["video/mp4"],
     webm:['video/webm;codecs="vp8,opus"',"video/webm"],preferWebm:true,
     userAgent:"Mozilla/5.0 (iPhone) AppleWebKit/605.1.15"});
-  assert.deepEqual(formats,['video/webm;codecs="vp8,opus"',"video/webm"]);
+  assert.deepEqual(formats,[],"iPhone never starts a WebM that it cannot play");
   assert.ok(studio.includes("const useWebCodecsMp4=!forceMp4ForRetry&&selectWebCodecsForRecording({"));
   assert.ok(studio.includes("hasWebCodecs,safariWebKit,procedural,proceduralRoute,preferWebm"));
   assert.ok(studio.includes('const mimeTypes = preferWebm\n        ? recordingMimes(Boolean(musicSession),true).filter(mime=>mime.startsWith("video/webm"))'));
   assert.ok(studio.includes("if (musicSession) stream.addTrack(musicSession.track);"));
   assert.ok(studio.includes("onClick={()=>void createVideo(true)}"));
   assert.ok(studio.includes('const extension=isWebm?"webm":"mp4"'));
-  assert.ok(studio.includes('if(!isMp4&&!isWebm){'));
+  assert.ok(studio.includes('if((isApplePhone&&isWebm)||(!isMp4&&!isWebm)){'));
   assert.ok(studio.includes('playbackStatus==="ready"&&result.mode!=="catalog"'));
 });
 
@@ -319,12 +319,16 @@ test("Safari failed encoded MP4 offers native WebM without lost credits",()=>{
 
 test("real Safari MEDIA_ERR_SRC_NOT_SUPPORTED gets exactly one on-device WebM recovery",async()=>{
   const {shouldAutoRecoverSafariPlayback:recover}=await import("../lib/mandala/recording-codecs.mjs");
-  const params={safariWebKit:true,format:"mp4",errorCode:4,nativeWebm:true};
+  const params={safariWebKit:true,format:"mp4",errorCode:4,nativeWebm:true,
+    userAgent:"Mozilla/5.0 (Macintosh; Intel Mac OS X) AppleWebKit/605.1.15 Safari/605.1.15"};
   assert.equal(recover(params),true);
   assert.equal(recover({...params,errorCode:3}),true,"actual native decode errors also permit one WebM retry");
   for(const invalid of [
     {alreadyAttempted:true},{format:"webm"},
     {errorCode:0},{nativeWebm:false},{safariWebKit:false},{catalog:true},
+    {userAgent:"Mozilla/5.0 (iPhone; CPU iPhone OS 26_1 like Mac OS X) AppleWebKit/605.1.15"},
+    {userAgent:"Mozilla/5.0 (iPad; CPU OS 26_1 like Mac OS X) AppleWebKit/605.1.15"},
+    {userAgent:"Mozilla/5.0 (Macintosh; Intel Mac OS X) AppleWebKit/605.1.15",maxTouchPoints:5},
   ])assert.equal(recover({...params,...invalid}),false,JSON.stringify(invalid));
   assert.match(studio,/const autoWebmRetryForRef=useRef<string\|null>\(null\)/);
   assert.match(studio,/autoWebmRetryForRef\.current=signature/);
@@ -471,4 +475,31 @@ test("Safari accepts longer-than-180s licensed MP3 music and retains only its au
   assert.match(helper,/audio_size_invalid/);
   assert.match(helper,/first_party_audio_unavailable/);
   assert.match(helper,/audioSource\.add\(audioBuffer\)/,"AAC remains required for selected music");
+});
+
+test("physical iPhone gets one 540p H264/AAC encode, never auto-unplayable WebM",async()=>{
+  const {orderRecordingMimes,prefersSafariWebm,isAppleMobileDevice,
+    shouldAutoRecoverSafariPlayback}=await import("../lib/mandala/recording-codecs.mjs");
+  const iphone="Mozilla/5.0 (iPhone; CPU iPhone OS 26_1 like Mac OS X) AppleWebKit/605.1.15";
+  const ipadDesktop="Mozilla/5.0 (Macintosh; Intel Mac OS X) AppleWebKit/605.1.15 Safari/605.1.15";
+  assert.equal(isAppleMobileDevice(iphone,0),true);
+  assert.equal(isAppleMobileDevice(ipadDesktop,5),true);
+  assert.equal(prefersSafariWebm(iphone,0),false);
+  assert.equal(prefersSafariWebm(ipadDesktop,5),false);
+  const args={mp4:['video/mp4;codecs="avc1.42E01E,mp4a.40.2"'],
+    webm:['video/webm;codecs="vp8,opus"'],userAgent:iphone};
+  assert.deepEqual(orderRecordingMimes(args),args.mp4);
+  assert.deepEqual(orderRecordingMimes({...args,preferWebm:true}),[]);
+  assert.deepEqual(orderRecordingMimes({...args,userAgent:ipadDesktop,maxTouchPoints:5,preferWebm:true}),[]);
+  assert.equal(shouldAutoRecoverSafariPlayback({safariWebKit:true,format:"mp4",errorCode:4,
+    nativeWebm:true,userAgent:iphone}),false);
+  assert.match(studio,/const isApplePhone=\/iPhone\|iPad\|iPod\/i.test\(ua\)/);
+  assert.match(studio,/safariRetryScale=useWebCodecsMp4&&\(safeWebkitRetry\|\|isApplePhone\)/);
+  assert.match(studio,/if\(!safariWebKit\|\|isApplePhone\|\|safeWebkitRetry\|\|!recoverable/);
+  assert.match(studio,/userAgent:ua,maxTouchPoints:navigator.maxTouchPoints/);
+  assert.match(helper,/avc1\.42001f/);
+  assert.match(helper,/selectedAvcCodec\?\{fullCodecString:selectedAvcCodec\}:\{\}/);
+  assert.match(helper,/const h264=baselineSupported\|\|await canEncodeVideo\("avc",videoConfig\)/);
+  assert.match(studio,/creditValidRef\.current=Boolean\(creditOpRef\.current\)/);
+  assert.match(studio,/if\(creditOpRef\.current&&!creditValidRef\.current\)/);
 });
