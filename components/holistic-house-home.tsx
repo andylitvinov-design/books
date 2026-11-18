@@ -3,19 +3,13 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
-import { HomepageContactCta } from "@/components/homepage-contact-cta";
-import { HomeSectionCarousel } from "@/components/home-section-carousel";
-import { MySpaceTopics } from "@/components/my-space-topics";
-import { ProfileHubTabs } from "@/components/app/profile-hub-tabs";
-import { HomeMoreDisclosure } from "@/components/home-more-disclosure";
-import { HomeFeaturedWorkspace } from "@/components/home-featured-workspace";
 import { HomePresentationVideoSection } from "@/components/home-presentation-video-section";
-import { FreeMobileAppBanner } from "@/components/free-mobile-app-banner";
+import { HomeDialogueEntry } from "@/components/home-dialogue-entry";
+import { HomeDeferredSections } from "@/components/home-deferred-sections";
 
 
 
 
-import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { LOCAL_ACQUISITION } from "@/data/local-acquisition";
 import type { Locale } from "@/data/remedies";
 
@@ -55,19 +49,16 @@ export function HolisticHouseHome({ locale = "en" }: HolisticHouseHomeProps) {
   const entry = LOCAL_ACQUISITION[locale];
 
   return (
-    <main className="house-home house-home--services" lang={locale} data-home-design="approved-v2">
-      <ProfileHubTabs locale={locale} publicEntry />
-      <MySpaceTopics locale={locale} publicHome />
-
-      <HomeSectionCarousel locale={locale} />
-      <HomeMoreDisclosure locale={locale} />
-      <HomeFeaturedWorkspace locale={locale} />
-      <Suspense fallback={null}>
-        <HomePresentationVideoSection locale={locale} />
-      </Suspense>
-      <FreeMobileAppBanner locale={locale} />
-
-      <PersonalTestimonials locale={locale} variant="home" />
+    <main className="house-home house-home--services" lang={locale} data-home-design="dialogue-first-v1">
+      <HomeDialogueEntry locale={locale} />
+      {/* The approved presentation is SECONDARY. Its video is never part of
+          Home's first-screen hydration, and no YouTube iframe autoplays. */}
+      <div data-home-video-below-fold style={{contentVisibility:"auto",containIntrinsicSize:"auto 250px",margin:"18px auto 0",maxWidth:720}}>
+        <Suspense fallback={null}>
+          <HomePresentationVideoSection locale={locale} />
+        </Suspense>
+      </div>
+      <HomeDeferredSections locale={locale} />
 
       <section className="service-home-about" aria-labelledby="service-home-about-title">
         <div className="service-home-about__copy">
@@ -93,8 +84,6 @@ export function HolisticHouseHome({ locale = "en" }: HolisticHouseHomeProps) {
           </span>
         </div>
       </section>
-
-      <HomepageContactCta locale={locale} />
 
       <footer className="service-home-footer">
         <Link className="house-wordmark" href={locale === "ru" ? "/ru" : "/"} prefetch={false}>Holistic House</Link>

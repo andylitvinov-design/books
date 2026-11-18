@@ -91,3 +91,7 @@
 }
 @media(max-height:600px){.modal .explain{font-size:13px;margin:6px 0 8px}
   .modal .questionHead{margin-bottom:7px}}
+
+/* Ready already has an inline questionnaire and export progress. Hide the
+   optional portal's redundant floating progress pill in this workspace only. */
+body:has([data-active-workspace="ready"]) .reopen{display:none}

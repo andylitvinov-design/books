@@ -2,6 +2,7 @@ import { PublicSiteHeader } from "@/components/public-site-header";
 import { redirect } from "next/navigation";
 import { ServicesConversionHero } from "@/components/services-conversion-hero";
 import { ServicesAssistMobile } from "@/components/services-assist-mobile";
+import { ServicesAssistQuiz } from "@/components/services-assist-quiz";
 import { ServicesPersonalConsultationMobile } from "@/components/services-personal-consultation-mobile";
 import { AssistReikiSession } from "@/components/assist-reiki-session";
 import { ServicesMagicalHelpMobile } from "@/components/services-magical-help-mobile";
@@ -12,6 +13,7 @@ import { ServicesVideoGenerationCard } from "@/components/services-video-generat
 import { ServicesCoursesShelf } from "@/components/services-courses-shelf";
 import { ServicesCoachTherapistMobile } from "@/components/services-coach-therapist-mobile";
 import compactStyles from "@/components/services-unified-catalog.module.css";
+import uniformStyles from "@/components/services-support-uniform.module.css";
 import { ServicesStudioOffers } from "@/components/services-studio-offers";
 import { SpiritualReadingEntry } from "@/components/services-spiritual-reading";
 import { ServicesIntroMedia, ServicesMethodVideos, ServicesDirectoryInvitation } from "@/components/services-studio-extras";
@@ -24,18 +26,19 @@ import { spanishMetadata } from "@/lib/spanish-metadata";
 
 export const metadata = spanishMetadata(
   "/es/services",
-  "Sesiones personales y tres opciones gratuitas | Holistic House",
+  "Support — apoyo personal | Holistic House",
   "Comienza con pruebas gratuitas, una revisión escrita o Wu Xing. Sesiones personales con Andrey Litvinov en Toronto y en línea desde €50."
 );
 
-export default async function SpanishServicesPage({ searchParams }: { searchParams: Promise<{catalog?:string}> }) {
-  if ((await searchParams)?.catalog === "1") redirect("/es/services/catalog#service-listings");
+export default async function SpanishServicesPage({ searchParams }: { searchParams: Promise<{catalog?:string;assist?:string}> }) {
+  const query = await searchParams;
+  if (query?.catalog === "1") redirect("/es/services/catalog#service-listings");
   return (
-    <main className={"services-shell services-shell--studio " + assistStyles.assistPage + " " + compactStyles.page} lang="es">
+    <main className={"services-shell services-shell--studio " + assistStyles.assistPage + " " + compactStyles.page + " " + uniformStyles.page} lang="es">
       <PublicSiteHeader locale="es" showAssessmentStrip={false} />
       <ServicesExplorerProvider>
-        {/* The original Spanish dialogue stays above the entire lower-page catalogue. */}
-        <ServicesAssistMobile locale="es" />
+        {/* Scenic four-step quiz by default; retain Ali when the guest explicitly chooses chat. */}
+        {query?.assist==="chat" ? <ServicesAssistMobile locale="es" /> : <ServicesAssistQuiz locale="es" />}
         <div className={compactStyles.featured} data-services-featured>
           <ServicesPersonalConsultationMobile locale="es" />
         </div>

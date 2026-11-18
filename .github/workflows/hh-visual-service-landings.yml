@@ -28,7 +28,6 @@ on:
       - 'app/sitewide-capture.css'
       - 'tests/visual-service-story.test.mjs'
       - 'scripts/verify-visual-service-mobile.mjs'
-      - '.github/workflows/hh-visual-service-landings.yml'
 permissions:
   contents: read
 concurrency:

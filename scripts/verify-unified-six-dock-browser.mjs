@@ -12,9 +12,9 @@ mkdirSync(folder,{recursive:true});
 const results=[];
 const ids=["mytube","video","coach","ai","services","practice","profile"];
 const labels={
-  en:["MyTube","MyVideo","My Coach","AI/Chat","Services","Study","Profile"],
-  ru:["MyTube","MyVideo","Мой коуч","ИИ/Чат","Услуги","Обучение","Профиль"],
-  es:["MyTube","MyVideo","Mi coach","IA/Chat","Servicios","Estudiar","Perfil"],
+  en:["MyTube","MyVideo","My Coach","AI/Chat","Support","Study","Profile"],
+  ru:["MyTube","MyVideo","Мой коуч","ИИ/Чат","Поддержка","Обучение","Профиль"],
+  es:["MyTube","MyVideo","Mi coach","IA/Chat","Apoyo","Estudiar","Perfil"],
 };
 
 // The fixed dock belongs to the ROOT shell, not to individual pages. Check
@@ -805,14 +805,40 @@ try{
  assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);
  await page.locator("[data-unified-dock-item=practice]").click();
  await page.waitForURL(/\/ru\/holistic-support\/mobile\/?$/,{timeout:30000});
- const studyEntry=page.locator("[data-study-personalized-path]");
+ // Practice offers the approved five-question learning quiz above the three Academy schools.
+ // Verify the first question requires a real choice before advancing.
+ const studyEntry=page.locator("[data-holistic-study-academy]");
  await studyEntry.waitFor({state:"visible",timeout:30000});
- assert.equal(await studyEntry.locator("nav button").count(),5,
-   "Practice now opens the approved five-question Study path");
- assert.equal(await studyEntry.locator("[data-study-next]").isDisabled(),true);
- await studyEntry.locator('section[aria-label] [role="group"] button').first().click();
- assert.equal(await studyEntry.locator('[data-study-recommendation]').first().getAttribute('data-study-recommendation'),
-   "study-opora","stress answer selects the real anti-stress course");
+ assert.equal(await studyEntry.locator("[data-study-school-nav]").count(),3,
+   "Practice opens three approved Academy learning pathways");
+ assert.equal(await studyEntry.locator("[data-study-academy-group]").count(),3,
+   "Practice lists the three grouped Academy programs");
+ assert.equal(await studyEntry.locator("[data-study-academy-course]").count(),8,
+   "Practice links to eight source-backed courses");
+ const academyQuiz=studyEntry.locator('[data-study-mobile-quiz] [data-study-personalized-path]');
+ await academyQuiz.waitFor({state:"visible",timeout:30000});
+ assert.equal(await academyQuiz.getAttribute("data-study-step"),"1",
+   "Approved Academy quiz starts at the first question");
+ assert.equal(await academyQuiz.locator('[aria-current="step"]').count(),1,
+   "The quiz exposes exactly one active step");
+ const choices=academyQuiz.locator('[role="group"]').first().locator('button[aria-pressed]');
+ assert.equal(await choices.count(),4,
+   "The active first question offers four genuine choices, excluding the four recommendation-tab buttons");
+ const nextStep=academyQuiz.locator('[data-study-next]');
+ // Academy intentionally presets the published stress goal. Verify that
+ // the selected choice enables Next and a real different answer replaces it.
+ await expect(choices.first()).toHaveAttribute("aria-pressed","true");
+ await expect(nextStep).toBeEnabled();
+ await choices.nth(1).click();
+ await expect(choices.first()).toHaveAttribute("aria-pressed","false");
+ await expect(choices.nth(1)).toHaveAttribute("aria-pressed","true");
+ await expect(nextStep).toBeEnabled();
+ await nextStep.click();
+ assert.equal(await academyQuiz.getAttribute("data-study-step"),"2",
+   "Only a genuine selected first answer advances the Academy quiz");
+ await studyEntry.locator('[data-study-school-nav="free"]').click();
+ assert.equal(new URL(page.url()).hash,"#study-free",
+   "Public Academy navigation reaches the free programs without a fake request");
  // The older consultation tabs are still accessible on their explicit view.
  await page.goto(origin+"/ru/holistic-support/mobile?view=meditation",
    {waitUntil:"domcontentloaded",timeout:75000});
@@ -852,7 +878,8 @@ try{
  assert.equal(await page.locator(".mobile-bottom-navigation:visible").count(),0);
  await homeDock.locator('[data-unified-dock-item="practice"]').click();
  await page.waitForURL(/\/ru\/holistic-support\/mobile\/?$/,{timeout:45000});
- await page.locator("[data-study-personalized-path]").waitFor({state:"visible",timeout:30000});
+ await page.locator("[data-holistic-study-academy]").waitFor({state:"visible",timeout:30000});
+ assert.equal(await page.locator("[data-holistic-study-academy] [data-study-academy-course]").count(),8);
  assert.equal(await page.locator("[data-support-practice-tabs]:visible").count(),0,
    "the approved Study page does not show the retired top menu");
  assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);

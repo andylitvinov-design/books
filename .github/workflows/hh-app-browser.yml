@@ -36,6 +36,11 @@ on:
       - 'next.config.*'
       - 'package.json'
       - 'package-lock.json'
+      # Commander signed PR completion is validated by Core and the focused Guard, not this unrelated heavy suite.
+      - '!app/api/app/commander/**'
+      # Public Ali greeting and support quiz: focused conversation owner; private Messenger/auth changes keep full tests.
+      - '!components/app/messenger-ai-landing.*'
+      - '!components/app/messenger-support-quiz.*'
 permissions:
   contents: read
   pull-requests: read

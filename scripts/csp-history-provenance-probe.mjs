@@ -59,7 +59,7 @@ export async function verifyHistoryProvenance({ browser, origin, evidencePath })
     pathname: location.pathname, hash: location.hash }));
   const ready = async path => {
     await expect(page).toHaveURL(origin + path);
-    if (path === "/") await expect(page.locator('main[data-home-design="approved-v2"]')).toBeVisible();
+    if (path === "/") await expect(page.locator('main[data-home-design="dialogue-first-v1"] [data-home-dialogue-entry]')).toBeVisible();
     else await expect(page.locator("#psychic-alchemy-video")).toBeVisible();
     await expect.poll(() => page.evaluate(() => history.pushState.toString().includes('__NA'))).toBe(true);
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));

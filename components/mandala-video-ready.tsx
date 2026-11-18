@@ -33,7 +33,7 @@ type Props={
 const COPY={
   en:{
     saveGateTitle:"Save your video free",saveGateLead:"Your video is ready. Sign in to save it in My Videos, download it or send it to Telegram.",saveGateTag:"YOUR VIDEO · YOUR CHOICE",saveGateBenefitSave:"Keep in My Videos",saveGateBenefitDownload:"Download to device",saveGateBenefitTelegram:"Send to Telegram",saveGateBenefitPractice:"Meditation or course",saveGateLogin:"Sign in to My House",saveGateTelegram:"Open Telegram · tap Start",saveGateTelegramConnect:"Get secure Telegram link",saveGateTelegramChecking:"Checking Telegram link…",saveGateTelegramUnavailable:"Telegram linking is unavailable. You can still use My House.",saveGateTelegramPending:"Tap Start in the Telegram chat, then return here.",saveGateTelegramLinked:"Telegram linked to your account.",saveGateTelegramVerify:"Check Telegram connection",saveGateContinue:"Continue saving",saveGateOr:"or",saveGateClose:"Close",saveGatePrivacy:"Free within available limits · Sent only with consent · Private by choice",saveGateSignInHint:"First sign in to My House. Open it in a new tab so your video stays here. Then check your sign-in.",saveGateTelegramHint:"Start connects the bot to your signed-in account. It does not send or save the video automatically.",saveGateRefresh:"Check sign-in",saveGateUnavailable:"Could not verify your account. The video stays on your device.",
-    ready:"Your video is ready!",nextSteps:"Next steps: create a deeper practice",nextLead:"Continue your video as a gentle practice or a series.",newVideo:"Generate New Video",sendTelegram:"Send to Telegram",connectWhatsApp:"Connect WhatsApp",whatsapp:"WhatsApp",openTelegramStart:"Open Telegram · Start",telegramVerifySend:"Check link & send",openWhatsAppStart:"Open WhatsApp · verify",whatsappVerify:"Check WhatsApp",waLinkConsent:"I agree to link my own WhatsApp to this account for private practitioner messages. No marketing subscription or automatic video delivery.",whatsappLimit:"WhatsApp uses the device Share menu after linking your own account. Select your own chat; direct automated MP4 sending is not enabled.",meditationNext:"Add a Guided Meditation",meditationNextHint:"Add voice and music to your video.",journeyNext:"Create an 8-Session Video Therapy",journeyNextHint:"Eight connected steps for your goal.",preview:"Preview, save or continue your journey.",
+    ready:"Your video is ready!",nextSteps:"Next steps: create a deeper practice",nextLead:"Expand your video into a guided practice or a full program.",newVideo:"Generate New Video",sendTelegram:"Send to Telegram",connectWhatsApp:"Connect WhatsApp",whatsapp:"WhatsApp",openTelegramStart:"Open Telegram · Start",telegramVerifySend:"Check link & send",openWhatsAppStart:"Open WhatsApp · verify",whatsappVerify:"Check WhatsApp",waLinkConsent:"I agree to link my own WhatsApp to this account for private practitioner messages. No marketing subscription or automatic video delivery.",whatsappLimit:"WhatsApp uses the device Share menu after linking your own account. Select your own chat; direct automated MP4 sending is not enabled.",meditationNext:"Add a Guided Meditation",meditationNextHint:"Turn your video into a full meditation with voice and music.",journeyNext:"Create an 8-Session Video Therapy",journeyNextHint:"A step-by-step program to work deeply with your goal.",preview:"Preview, save or continue your journey.",
     generating:"Your video is being generated on this device…",
     notReady:"Your video is not ready yet",createFirst:"Create and verify a video in PRO first.",
     videoChooseTitle:"Choose a video option",videoChooseHint:"Choose a format, then generate your video.",
@@ -344,6 +344,7 @@ export function MandalaVideoReady({
   const completed=Boolean(verified&&video);
   const videoTime=video?`${Math.floor(video.duration/60)}:${String(Math.round(video.duration%60)).padStart(2,"0")}`:"0:00";
   const waiting=rendering||checking;
+  const pendingStatus=rendering?t.generating:checking?t.verifying:t.notReady;
   const header=<div className={css.selectedVideo} data-aspect={aspect}
     data-video-file={video?"true":undefined}>
     {video?<video key={video.url} src={video.url} playsInline controls preload="auto"
@@ -354,7 +355,7 @@ export function MandalaVideoReady({
     <div className={css.example}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/videos/holistic-house/film-collection-v2/meadow-morning.jpg" alt=""/>
-      <span>{rendering?t.generating:checking?t.verifying:t.notReady}</span>
+
     </div>}
   </div>;
   return <section className={css.root} data-video-ready data-ready-view={view}
@@ -362,12 +363,15 @@ export function MandalaVideoReady({
     data-ready-has-video={video?"true":"false"}
     aria-label={view==="login"?t.authTitle:t.ready}>
     {(view==="home"||view==="login")?<>
-      {completed?<p className={css.readyStatus} role="status" data-ready-status>
-        <CheckCircle2 size={19} aria-hidden="true"/><strong>{t.ready}</strong>
-        <span className={css.readyTime}><Clock3 size={15} aria-hidden="true"/>{videoTime}</span>
-      </p>:null}
+      <p className={css.readyStatus} role="status" data-ready-status
+        data-ready-status-phase={completed?"complete":rendering?"rendering":checking?"verifying":"idle"}>
+        {completed?<CheckCircle2 size={19} aria-hidden="true"/>:<Clock3 size={19} aria-hidden="true"/>}
+        <strong>{completed?t.ready:pendingStatus}</strong>
+        {completed?<span className={css.readyTime}><Clock3 size={15} aria-hidden="true"/>{videoTime}</span>:
+          rendering?<span className={css.readyTime} aria-hidden="true">{Math.round(Math.max(0,Math.min(100,renderProgress)))}%</span>:null}
+      </p>
       {header}
-      {!completed?<button type="button" className={css.primary}
+      {!completed&&!waiting?<button type="button" className={css.primary}
         disabled={disabled||checking} onClick={generateSelectedVideo} data-ready-generate>
         <Play size={19} aria-hidden="true"/>{t.videoGenerate}<ArrowRight size={18} aria-hidden="true"/>
       </button>:null}
@@ -375,11 +379,9 @@ export function MandalaVideoReady({
         <p className={css.note} data-ready-video-credit-cost>
           <ShieldCheck size={17} aria-hidden="true"/>{basicCreditCost} {t.videoIncludedCredit}
         </p>:null}
-      {waiting&&!completed?<div className={css.generateProgress}
-        data-ready-generating role="status" aria-live="polite">
-        <strong>{rendering?t.generating:t.verifying}</strong>
-        {rendering?<progress max={100} value={Math.min(100,Math.max(0,renderProgress))}
-          aria-label={t.generating}/>:null}
+      {waiting&&!completed&&rendering?<div className={css.generateProgress} data-ready-generating>
+        <progress max={100} value={Math.min(100,Math.max(0,renderProgress))}
+          aria-label={t.generating}/>
       </div>:null}
       {!checkinDismissed&&((waiting&&!completed)||checkinEngaged)?
         <div className={css.progressQuestionnaire} data-ready-checkin>
@@ -447,20 +449,11 @@ export function MandalaVideoReady({
       <h3 className={css.nextTitle}>{completed?t.nextSteps:t.videoIdeas}</h3>
       {completed?<p className={css.nextLead}>{t.nextLead}</p>:null}
       <div className={css.journey}>
-        {completed?<button type="button" data-ready-generate-new onClick={onStartNewVideo}>
-          <div className={css.thumbnail}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/videos/holistic-house/film-collection-v2/meadow-morning.jpg" alt=""/>
-          </div>
-          <Play size={22} aria-hidden="true"/>
-          <span><strong>{t.newVideo}</strong><small>{t.videoBasicHint}</small></span>
-          <ArrowRight size={21} aria-hidden="true"/>
-        </button>:null}
         <button type="button" onClick={()=>onOpenTherapy("single")} data-ready-meditation
           data-ready-therapy-format="single" disabled={disabled}>
           <div className={css.thumbnail}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={completed?"/images/holistic-house/reiki-approved-sunrise-v3.webp":"/videos/holistic-house/film-collection-v2/meadow-morning.jpg"} alt=""/>
+            <img src={completed?"/images/holistic-house/ready-save-sunrise-portrait.jpg":"/videos/holistic-house/film-collection-v2/meadow-morning.jpg"} alt=""/>
           </div>
           <Headphones size={22} aria-hidden="true"/>
           <span><strong>{completed?t.meditationNext:t.meditation}</strong><small>{completed?t.meditationNextHint:t.meditationHint}</small></span>
@@ -480,7 +473,7 @@ export function MandalaVideoReady({
           data-ready-therapy-format="course" disabled={disabled}>
           <div className={css.thumbnail}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={completed?"/images/holistic-house/course-focus-mountain-boy.webp":"/images/holistic-house/reiki-approved-sunrise-v3.webp"} alt=""/>
+            <img src={completed?"/images/holistic-house/messenger-zen-stones.svg":"/images/holistic-house/reiki-approved-sunrise-v3.webp"} alt=""/>
           </div>
           <BookOpen size={22} aria-hidden="true"/>
           <span><strong>{completed?t.journeyNext:t.journey}</strong><small>{completed?t.journeyNextHint:t.journeyHint}</small></span>
@@ -561,6 +554,11 @@ export function MandalaVideoReady({
           {notice?<p role="status" className={css.note}>{notice}</p>:null}
         </>}
       </section>:null}
+      {completed?<button type="button" data-ready-generate-new onClick={onStartNewVideo}>
+        <Sparkles size={23} aria-hidden="true"/>
+        <strong>{t.newVideo}</strong>
+        <ArrowRight size={22} aria-hidden="true"/>
+      </button>:null}
       </>:null}
     </>:null}
     {view==="login"?<div className={css.gateBackdrop} data-ready-save-gate-overlay

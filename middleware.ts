@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { canonicalRedirectTarget, privateMigrationBridge } from './lib/canonical-redirect'
 import { refreshAdminAuth } from './lib/app/admin-auth-refresh'
+import { personalVideoStorageCsp } from './lib/app/personal-video-storage-csp.mjs'
 function privatePath(pathname: string) {
   const decoded = (() => { try { return decodeURIComponent(pathname) } catch { return pathname } })().replace(/\/+/g, '/')
   return /^\/(en|ru|es)\/client(?:\/|$)/.test(decoded)
@@ -135,6 +136,17 @@ export async function middleware(request: NextRequest) {
   // the default restrictive policy; no network upload is introduced.
   const ownerMessengerImages = /^\/(en|ru|es)\/app\/(?:messages|practice)\/?$/.test(pathname)
   const publicMandalaLocalImages = /^\/(en|ru|es)\/holistic-support\/mandala\/?$/.test(pathname)
+  // Only the existing public Video Studio music selector may stream the
+  // signed private music preview or fetch the selected source for local export.
+  // Derive the exact origin from server configuration; never allow arbitrary hosts.
+  const studioMusicStorageOrigin = (() => {
+    if (!publicMandalaLocalImages) return ''
+    try {
+      const url = new URL(process.env.HH_APP_SUPABASE_URL || '')
+      return url.protocol === 'https:' && /^[a-z0-9]{20}\.supabase\.co$/.test(url.hostname)
+        ? ' ' + url.origin : ''
+    } catch { return '' }
+  })()
   // Signed user-owned portrait URLs are exposed only inside the authenticated My Videos cabinet.
   const privateSupportPhotoCabinet = /^\/(en|ru|es)\/app\/videos\/?$/.test(pathname)
   const privateSupportPhotoOrigin = (() => {
@@ -148,6 +160,7 @@ export async function middleware(request: NextRequest) {
   // First-party private Messages uploads use a signed URL on the configured
   // private Supabase project. Allow only that exact storage origin on these
   // protected inbox routes; never widen arbitrary client/guest pages.
+  const personalVideoStorage = personalVideoStorageCsp(pathname,process.env)
   const directMessageStorageOrigin = (() => {
     if (!ownerMessengerImages) return ''
     try {
@@ -254,8 +267,8 @@ export async function middleware(request: NextRequest) {
     "default-src 'self'", `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com${youtubeOAuthUploadAllowed ? ' https://accounts.google.com' : ''}${developmentEval}`, "style-src 'self' 'unsafe-inline'",
     (academyVideoPage ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : publicVideoDocument ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : "img-src 'self' data: https://www.google-analytics.com") + (ownerMessengerImages || publicMandalaLocalImages || supportMobilePublishedMedia || privateSupportPhotoCabinet ? ' blob:' : '') + listingImageOrigin + eventsPosterImageOrigin + practitionerCourseMediaOrigin + reikiPhotoOrigin + directMessageStorageOrigin + privateSupportPhotoOrigin,
     youtubeOAuthUploadAllowed ? "frame-src https://accounts.google.com" : publicVideoDocument ? "frame-src https://www.youtube-nocookie.com https://app.heygen.com" + (practitionerCourseReader || humanSpecialistVideoPage ? ' https://player.vimeo.com' : '') : messengerIntroductionVideo ? "frame-src https://app.heygen.com" : sessionEducationEmbed ? "frame-src https://www.youtube-nocookie.com" : practitionerDraftPreview ? "frame-src blob:" : "frame-src 'none'",
-    (tantraReikiPage ? "media-src 'self' https://psitrends.com" : "media-src 'self'") + ((ownerRecorderPage||deliveryOrigin||reportNarrationReader||reikiIntroAudioManager||coachingOwnerAudioManager||practitionerCourseEditor||publicMandalaLocalImages||ownerMessengerImages||liveAudioPage) ? ' blob:' : '') + deliveryOrigin + reikiIntroAudioOrigin + practitionerCourseMediaOrigin + (supportMobilePublishedMedia ? listingImageOrigin : '') + humanSpecialistPresentationOrigin + directMessageStorageOrigin + ((messengerIntroductionVideo||studioIntroductionVideo) ? ' https://resource2.heygen.ai' : ''),
-    "font-src 'self'", "connect-src 'self'" + liveAudioOrigin + (youtubeOAuthUploadAllowed ? " https://www.googleapis.com https://accounts.google.com https://oauth2.googleapis.com" : "") + deliveryOrigin + directMessageStorageOrigin + externalVideoUploadOrigin + practitionerCourseMediaOrigin + ((reikiIntroAudioManager||coachingOwnerAudioManager) ? reikiIntroAudioOrigin : '') + (privateDocument ? "" : " https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com"), "object-src 'none'", "base-uri 'none'", "form-action 'self'" + (youtubeOAuthUploadAllowed ? " https://accounts.google.com" : ""), "frame-ancestors 'none'",
+    (tantraReikiPage ? "media-src 'self' https://psitrends.com" : "media-src 'self'") + ((ownerRecorderPage||deliveryOrigin||reportNarrationReader||reikiIntroAudioManager||coachingOwnerAudioManager||practitionerCourseEditor||publicMandalaLocalImages||ownerMessengerImages||liveAudioPage) ? ' blob:' : '') + deliveryOrigin + reikiIntroAudioOrigin + practitionerCourseMediaOrigin + (supportMobilePublishedMedia ? listingImageOrigin : '') + humanSpecialistPresentationOrigin  + directMessageStorageOrigin + personalVideoStorage.media + studioMusicStorageOrigin + ((messengerIntroductionVideo||studioIntroductionVideo) ? ' https://resource2.heygen.ai' : ''),
+    "font-src 'self'", "connect-src 'self'" + liveAudioOrigin + (youtubeOAuthUploadAllowed ? " https://www.googleapis.com https://accounts.google.com https://oauth2.googleapis.com" : "") + deliveryOrigin + directMessageStorageOrigin + personalVideoStorage.connect + studioMusicStorageOrigin + externalVideoUploadOrigin + practitionerCourseMediaOrigin + ((reikiIntroAudioManager||coachingOwnerAudioManager) ? reikiIntroAudioOrigin : '') + (privateDocument ? "" : " https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com"), "object-src 'none'", "base-uri 'none'", "form-action 'self'" + (youtubeOAuthUploadAllowed ? " https://accounts.google.com" : ""), "frame-ancestors 'none'",
   ].join('; ')
   requestHeaders.set('x-nonce', nonce)
   requestHeaders.set('x-csp-class', cspClass)

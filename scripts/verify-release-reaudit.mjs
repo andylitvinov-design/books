@@ -1,6 +1,6 @@
 import { verifyHistoryProvenance } from './csp-history-provenance-probe.mjs';
 import { catalogStatsDiagnosticSource, attachCatalogStatsResponseDiagnostic } from './catalog-stats-request-diagnostics.mjs';
-import { decodeReadyPoster } from './public-poster-readiness.mjs';
+import { decodeReadyPoster, isTransientYouTubePosterTimeout } from './public-poster-readiness.mjs';
 import { cspFetchTelemetrySource, attachCspRequestTelemetry } from './csp-request-telemetry.mjs';
 import { assertSyntheticLoopback } from './helpers/contact-channel-verifier.mjs';
 import assert from 'node:assert/strict';
@@ -34,9 +34,10 @@ async function assertCspPublicHome(page) {
   // A history traversal can update the URL while the previous public document
   // remains visible and its replacement is pending. Require the destination DOM,
   // not load/hydration readiness: the server-rendered home is sufficient here.
-  const home = page.locator('main[data-home-design="approved-v2"]');
+  const home = page.locator('main[data-home-design="dialogue-first-v1"]');
   await expect(home).toHaveCount(1);
   await expect(home).toBeVisible();
+  await expect(home.locator('[data-home-dialogue-entry]')).toBeVisible();
 }
 
 async function assertAnonymousPrivateNavigation(page) {
@@ -324,10 +325,24 @@ async function exercise(engine, browserType, width) {
         // cannot reduce coverage. Each same element must load and strictly decode.
         const posters = page.locator('.site-video-poster');
         const posterImages = await posters.elementHandles();
+        const posterWarnings = [];
         console.info('[release-reaudit] strict poster decode count=' + posterImages.length + ' ' + path);
         for (const [posterIndex, image] of posterImages.entries()) {
           await expect(posters).toHaveCount(posterImages.length);
-          await decodeReadyPoster(image, expect);
+          try {
+            await decodeReadyPoster(image, expect);
+          } catch (error) {
+            // Only a still-pending, allowlisted third-party thumbnail in WebKit is
+            // nonblocking. Broken images, renderer bugs and first-party posters
+            // remain fatal. Keep the observation in the release evidence.
+            if (engine !== 'webkit' || !isTransientYouTubePosterTimeout(error)) throw error;
+            const warning = { type: 'youtube-thumbnail-network-timeout', engine, width, path,
+              poster: posterIndex + 1, origin: error.posterDiagnostic.current.origin,
+              sourcePath: error.posterDiagnostic.current.pathname };
+            posterWarnings.push(warning);
+            console.warn('[release-reaudit] NON_BLOCKING_EXTERNAL_POSTER ' + JSON.stringify(warning));
+            continue;
+          }
           console.info('[release-reaudit] decoded poster ' + (posterIndex + 1) + '/' + posterImages.length + ' ' + path);
         }
         await expect(posters).toHaveCount(posterImages.length);
@@ -347,7 +362,7 @@ async function exercise(engine, browserType, width) {
         assert.deepEqual(errors, [], 'No page errors after public poster decoding and scrolling');
         publicDiagnostics.lifecycle = await page.evaluate(() => JSON.parse(sessionStorage.getItem('__publicAuditLifecycle') || '[]'));
         assert.deepEqual(publicDiagnostics.lifecycle.filter(event => ['window-error', 'unhandled-rejection'].includes(event.type)), [], 'No uncaught errors before leaving the public document');
-        return state;
+        return { ...state, posterWarnings };
       });
       if (!routePassed) {
         // Retain the fatal route result and its evidence, then isolate later
@@ -930,6 +945,7 @@ try {
   }
 } finally { await context.close(); await browser.close(); }
 const failed = results.filter(row => !row.ok);
-writeFileSync(`${evidence}/${label}-results.json`, JSON.stringify({ origin, checkedAt: new Date().toISOString(), commit: process.env.GITHUB_SHA, total: results.length, failed: failed.length, results }, null, 2));
-console.log(JSON.stringify({ label, total: results.length, failed: failed.length, failures: failed }, null, 2));
+const warnings = results.flatMap(row => row.posterWarnings || []);
+writeFileSync(`${evidence}/${label}-results.json`, JSON.stringify({ origin, checkedAt: new Date().toISOString(), commit: process.env.GITHUB_SHA, total: results.length, failed: failed.length, warningCount: warnings.length, warnings, results }, null, 2));
+console.log(JSON.stringify({ label, total: results.length, failed: failed.length, warningCount: warnings.length, warnings, failures: failed }, null, 2));
 if (!process.argv.includes('--observe')) assert.equal(failed.length, 0, 'Re-audit failed; inspect evidence');
