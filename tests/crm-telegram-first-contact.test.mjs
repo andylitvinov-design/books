@@ -47,14 +47,21 @@ test('signed webhook, STOP gate, CRM commit and subsequent AI reply remain in or
   assert.match(capture,/crm_tg_diagnostic_sessions/)
   assert.match(capture,/crm_tg_companion_sessions/)
   assert.match(capture,/if\(revoked\)return \{created:false,suppressed:true\}/)
-  assert.match(capture,/on conflict\(owner_id,email_hash\) do nothing/)
+  assert.match(capture,/ingestMessengerEventInTransaction\(db,'telegram'/)
+  assert.match(capture,/eventId:'tg:first-contact:'\+event.userId/)
+  assert.match(capture,/messageId:'tg:first-contact:'\+event.userId/)
+  assert.match(capture,/body:'Telegram conversation started'/)
+  const botCapture=capture.slice(capture.indexOf('export async function captureTelegramBotLead'),
+    capture.indexOf('export async function captureTelegramBusinessLead'))
+  assert.doesNotMatch(botCapture,/insert into app\.crm_contacts|insert into app\.crm_opportunities/)
+  assert.doesNotMatch(botCapture,/body:event\.body|body:event\.rawText/)
   assert.match(capture,/app\.crm_opportunities/)
   assert.doesNotMatch(capture,/marketing_opt_in_at|crm_consent_ledger|sendOneMessengerMessage/)
   assert.match(capture,/replyConsent:null,marketingConsent:false/)
 })
 
 
-test('optional first-contact CRM failure never suppresses an already signed bot response',async()=>{
+test('first-contact bot failures trigger Telegram retry; Business best-effort stays separate',async()=>{
  const {captureTelegramLeadBestEffort}=await import('../lib/crm/telegram-lead-capture-policy.mjs');
  const results=[];
  const accepted=await captureTelegramLeadBestEffort(async()=>({created:true}),()=>results.push('unavailable'));
@@ -66,8 +73,9 @@ test('optional first-contact CRM failure never suppresses an already signed bot 
  assert.deepEqual(results,['unavailable']);
  assert.deepEqual(await captureTelegramLeadBestEffort(async()=>{throw new Error('permission denied')},
    ()=>{throw new Error('logger failed')}),{created:false,unavailable:true});
- const bot=route.indexOf('captureTelegramLeadBestEffort(\\n            ()=>captureTelegramBotLead');
- assert.ok(bot>=0 || route.includes('()=>captureTelegramBotLead(event,config)'));
+ const bot=route.indexOf('await captureTelegramBotLead(event,config)');
+ assert.ok(bot>=0&&bot<route.indexOf('processTelegramCompanion(event,config)'));
+ assert.match(route,/throw new AppError\('TELEGRAM_CRM_CONTACT_UNCONFIRMED',503\)/);
  assert.match(route,/HH_TG_BOT_LEAD_CAPTURE_UNAVAILABLE/);
  assert.match(route,/HH_TG_BUSINESS_LEAD_CAPTURE_UNAVAILABLE/);
  assert.match(route,/HH_TG_INLINE_WEBHOOK_SYNC_UNAVAILABLE/);
