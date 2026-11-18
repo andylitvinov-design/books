@@ -213,3 +213,31 @@ test('event-driven native merge requires same-run Core plus unified Specialist g
   assert.ok(native.includes("steps.freshness.outputs.eligible == 'true'"),
     'merge must still require protected production-base freshness');
 });
+
+test('critical-check audit reads complete inventories above 100 without treating size as a blocker',async()=>{
+ const noise=Array.from({length:120},(_,i)=>({id:i+1,name:'optional-'+i,
+   status:'completed',conclusion:'failure',head_sha:HEAD,app:{slug:'github-actions'}}));
+ const critical={id:500,name:'focused-unit-types-build',
+   status:'completed',conclusion:'success',head_sha:HEAD,app:{slug:'github-actions'}};
+ const checks=[...noise,critical],world=makeTestWorld();
+ let pages=[];
+ world.github.rest.checks.listForRef=async({page=1,per_page})=>{
+   pages.push(page);assert.equal(per_page,100);
+   return {data:{total_count:checks.length,check_runs:checks.slice((page-1)*100,page*100)}};
+ };
+ assert.equal((await check(world)).ok,true);
+ assert.deepEqual(pages,[1,2]);
+ checks[120]={...critical,conclusion:'failure'};
+ assert.equal((await check(world)).reason,'CRITICAL_CHECK_FAILED:focused-unit-types-build');
+ checks[120]={...critical,status:'in_progress',conclusion:null};
+ assert.equal((await check(world)).reason,'CRITICAL_CHECK_PENDING:focused-unit-types-build');
+ checks[120]=critical;
+ world.github.rest.checks.listForRef=async({page=1})=>({data:{
+   total_count:checks.length+1,check_runs:checks.slice((page-1)*100,page*100)}});
+ assert.equal((await check(world)).reason,'CRITICAL_CHECK_INVENTORY_INCOMPLETE');
+ world.github.rest.checks.listForRef=async({page=1})=>({data:{
+   total_count:page===1?121:122,check_runs:checks.slice((page-1)*100,page*100)}});
+ assert.equal((await check(world)).reason,'CRITICAL_CHECK_INVENTORY_INCOMPLETE');
+ world.github.rest.checks.listForRef=async()=>({data:{total_count:501,check_runs:checks.slice(0,100)}});
+ assert.equal((await check(world)).reason,'CRITICAL_CHECK_INVENTORY_INCOMPLETE');
+});

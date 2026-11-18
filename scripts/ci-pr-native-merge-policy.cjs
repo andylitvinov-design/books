@@ -89,15 +89,29 @@ const CRITICAL_DOMAIN_CHECKS=new Set([
 async function auditIndependentDomainChecks({github,owner,repo,expectedHead}){
  if(typeof github?.rest?.checks?.listForRef!=='function')
   return {ok:false,reason:'CRITICAL_CHECK_API_UNAVAILABLE'};
- const data=(await github.rest.checks.listForRef({
-  owner,repo,ref:expectedHead,per_page:100,filter:'latest'
- })).data;
- if(!Number.isSafeInteger(data?.total_count)||data.total_count<0||
-    data.total_count>100||!Array.isArray(data.check_runs)||
-    data.check_runs.length!==data.total_count)
-  return {ok:false,reason:'CRITICAL_CHECK_INVENTORY_INCOMPLETE'};
+ // GitHub may report >100 checks for one source SHA. Do not classify a
+ // normal first-page truncation as a product failure. Require complete,
+ // consistent pagination; real critical RED/PENDING on any page stays fatal.
+ const checks=[];
+ let total=null;
+ for(let page=1;page<=5;page++){
+  const data=(await github.rest.checks.listForRef({
+   owner,repo,ref:expectedHead,per_page:100,page,filter:'latest'
+  })).data;
+  if(!Number.isSafeInteger(data?.total_count)||data.total_count<0||
+     data.total_count>500||!Array.isArray(data.check_runs)||
+     data.check_runs.length>100||(total!==null&&total!==data.total_count))
+   return {ok:false,reason:'CRITICAL_CHECK_INVENTORY_INCOMPLETE'};
+  total=data.total_count;
+  if(checks.length+data.check_runs.length>total)
+   return {ok:false,reason:'CRITICAL_CHECK_INVENTORY_INCOMPLETE'};
+  checks.push(...data.check_runs);
+  if(checks.length===total)break;
+  if(data.check_runs.length!==100||page===5)
+   return {ok:false,reason:'CRITICAL_CHECK_INVENTORY_INCOMPLETE'};
+ }
  for(const name of CRITICAL_DOMAIN_CHECKS){
-  const matches=data.check_runs.filter(c=>c?.name===name);
+  const matches=checks.filter(c=>c?.name===name);
   if(matches.some(c=>c.head_sha!==expectedHead||
      c.app?.slug!=='github-actions'))
    return {ok:false,reason:'CRITICAL_CHECK_PROOF_UNVERIFIED:'+name};
