@@ -237,14 +237,16 @@ test("Ready Basic auto-attaches suggested music before Generate without bypassin
   assert.match(studio,/return createQuickVideo\(\)/);
 });
 
-test("approved Ready result has a thin status, full video and two secure primary actions",()=>{
+test("approved Ready result has a thin status, full player and account-gated Save, Telegram and WhatsApp",()=>{
   const css=readFileSync(new URL("../components/mandala-video-ready.module.css",import.meta.url),"utf8");
   const studioCss=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
   assert.match(ready,/data-ready-state=\{completed\?"complete":"choose"\}/);
   assert.match(ready,/data-ready-status/);
-  assert.match(ready,/\{completed\?<p className=\{css\.readyStatus\}/);
+  assert.match(ready,/data-ready-status-phase=\{completed\?"complete":rendering\?"rendering":checking\?"verifying":"idle"\}/);
+  assert.match(ready,/<strong>\{completed\?t\.ready:pendingStatus\}<\/strong>/);
   assert.match(ready,/data-ready-save><Download/);
   assert.match(ready,/data-ready-telegram><Send/);
+  assert.match(ready,/data-ready-whatsapp><MessageCircle/);
   assert.match(ready,/data-ready-generate-new onClick=\{onStartNewVideo\}/);
   assert.match(ready,/onLoadedData=\{event=>onVerifyPlayback\(event\.currentTarget\)\}/);
   assert.match(ready,/onCanPlay=\{event=>onVerifyPlayback\(event\.currentTarget\)\}/);
