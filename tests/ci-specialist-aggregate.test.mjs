@@ -2502,3 +2502,70 @@ test('stale protected BASE with disjoint public image advance reuses green Speci
    files:[{filename:'lib/crm/retired-route.mjs',status:'modified'}]})},
    ctx,source,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);
 });
+
+test('trusted policy plus independently proven production changes may be composed without another Core wave',async()=>{
+ const current='c'.repeat(40), prior='d'.repeat(40), base=BASE;
+ const safe=[
+   'scripts/ci-specialist-aggregate.mjs',
+   'tests/ci-specialist-aggregate.test.mjs',
+   'components/shamanica-mobile.tsx',
+   'lib/shamanica-recommendations.mjs',
+   'docs/guides/independent-release.md',
+   'public/images/new-production-thumb.webp',
+ ];
+ const diff=(files,other={})=>({
+   status:'ahead',ahead_by:2,behind_by:0,total_commits:2,
+   base_commit:{sha:base},merge_base_commit:{sha:base},
+   commits:[{sha:prior},{sha:current}],
+   files:files.map(filename=>({filename,status:'modified'})),...other,
+ });
+ const candidate=['components/my-coach-live-dialogue.jsx',
+   'lib/coaching/groq-coach-provider.mjs'];
+ assert.equal(safeTrustedPolicyAdvance(diff(safe),base,current,candidate),true,
+   'CI policy then unrelated app/media/docs should not discard successful Core');
+ for(const forbidden of [
+   'app/api/auth/route.js','package-lock.json',
+   'supabase/migrations/20261118.sql',
+   '.github/workflows/hh-pr-core-release.yml',
+   'components/my-coach-live-dialogue.jsx',
+   'components/coaching-live-dialogue.jsx',
+   'lib/ci/required-gate-policy.mjs',
+   'docs/operations/CI_RELEASE_POLICY.md',
+ ]){
+   assert.equal(safeTrustedPolicyAdvance(diff([...safe,forbidden]),base,current,candidate),
+     false,forbidden);
+ }
+ for(const broken of [
+   {status:'diverged'},
+   {behind_by:1},
+   {commits:[{sha:current}]},
+   {merge_base_commit:{sha:prior}},
+   {files:[{filename:'scripts/ci-specialist-aggregate.mjs',status:'removed'}]},
+   {files:[{filename:'components/shamanica-mobile.tsx',status:'renamed',previous_filename:'components/old.tsx'}]},
+   {files:[{filename:safe[0],status:'modified'},{filename:safe[0],status:'modified'}]},
+   {files:Array(100).fill({filename:safe[0],status:'modified'})},
+ ]){
+   assert.equal(safeTrustedPolicyAdvance(diff(safe,broken),base,current,candidate),false,
+     'unverified or unsafe compound compare');
+ }
+ assert.equal(safeTrustedPolicyAdvance(diff(safe.slice(2)),base,current,candidate),false,
+   'without policy change there is no trusted policy exception');
+ assert.equal(safeTrustedPolicyAdvance(diff(safe),base,current,
+   [...candidate,'scripts/ci-specialist-aggregate.mjs']),false,'candidate cannot certify itself');
+
+ const changedRows=[{filename:candidate[0],status:'M'}];
+ let used=false;
+ const api={target:async()=>current,compare:async()=>diff(safe)};
+ const result=await revalidateAfterTrustedPolicyAdvance(api,
+   {repo,number:27,head:SHA,base},{changedRows},{
+     loadPolicy:async sha=>({verify:async (_api,ctx,files,options)=>{
+       assert.equal(sha,current);
+       assert.equal(options.trustedPolicyBaseSha,current);
+       assert.equal(ctx.head,SHA);
+       assert.equal(files.changedRows,changedRows);
+       used=true;return {risk:'STRICT',expected:[],executed:[],advisory:{}};
+     }})
+   });
+ assert.equal(used,true);
+ assert.equal(result.policyRevalidatedAgainst,current);
+});
