@@ -2510,7 +2510,7 @@ test('trusted policy plus independently proven production changes may be compose
    'tests/ci-specialist-aggregate.test.mjs',
    'components/shamanica-mobile.tsx',
    'lib/shamanica-recommendations.mjs',
-   'docs/guides/independent-release.md',
+   'docs/guides/wellbeing-guide.md',
    'public/images/new-production-thumb.webp',
  ];
  const diff=(files,other={})=>({
@@ -2531,6 +2531,7 @@ test('trusted policy plus independently proven production changes may be compose
    'components/coaching-live-dialogue.jsx',
    'lib/ci/required-gate-policy.mjs',
    'docs/operations/CI_RELEASE_POLICY.md',
+   'docs/guides/production-release-policy.md',
  ]){
    assert.equal(safeTrustedPolicyAdvance(diff([...safe,forbidden]),base,current,candidate),
      false,forbidden);
