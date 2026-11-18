@@ -109,3 +109,32 @@ test("main authenticated chat applies semantic re-ranking only AFTER published s
   assert.ok(route.indexOf("const axisOffers=publishedAxisOffers(")<route.indexOf("rankVerifiedSuggestions({"));
   assert.ok(route.indexOf("const safety=preflight(")<route.indexOf("rankVerifiedSuggestions({"));
 });
+
+test("verified paid sources cannot reappear through unindexed fallback",()=>{
+  const item={id:"service:alchemy",kind:"service",title:"Paid",href:"/ru/services/alchemy-of-soul"};
+  const source={...item,status:"published",free:false,axisLinks:[{ref:"meaning::meaning"}]};
+  assert.deepEqual(rankVerifiedSuggestions({suggestions:[item],sourceOffers:[source],
+    message:"хочу понять смысл",locale:"ru"}),[]);
+});
+test("a known source ID with a changed URL is not a fallback suggestion",()=>{
+  const item={id:"test:work",kind:"test",title:"Test",href:"/ru/client/tests"};
+  const source={...item,status:"published",free:true,href:"/ru/client/private"};
+  assert.deepEqual(rankVerifiedSuggestions({suggestions:[item],sourceOffers:[source],
+    message:"проблема на работе",locale:"ru"}),[]);
+});
+test("matched semantic option is not padded with unindexed unrelated audio",()=>{
+  const testItem={id:"test:work",kind:"test",title:"Confidence",href:"/ru/client/tests"};
+  const originalAudio={id:"audio:reiki:flight:ru",kind:"audio",title:"Approved audio",
+    href:"https://media.example/audio.mp3"};
+  const sources=[{...testItem,status:"published",free:true,
+    axisLinks:[{ref:"goal::confidence"}]}];
+  assert.deepEqual(rankVerifiedSuggestions({suggestions:[testItem,originalAudio],
+    sourceOffers:sources,message:"Боюсь осуждения",locale:"ru"}),[testItem]);
+});
+test("untranslated video audio is not labeled as language-matched",()=>{
+  const item={id:"youtube:abcdefghijk",kind:"video",title:"Original English recording",
+    href:"https://www.youtube.com/watch?v=abcdefghijk"};
+  const source={...item,status:"published",free:true,originalLanguage:"en"};
+  assert.deepEqual(rankVerifiedSuggestions({suggestions:[item],sourceOffers:[source],
+    message:"Меня тревожит стресс",locale:"ru"}),[]);
+});
