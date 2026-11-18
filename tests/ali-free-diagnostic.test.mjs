@@ -23,7 +23,9 @@ test('a separate free mode exists on the existing RU/EN/ES review link',()=>{
    assert.equal(v3FreeDiagnosticStart('/start hhreview_'+locale).mode,FREE_DIAGNOSTIC_MODE);
    assert.equal(v3FreeDiagnosticStart('/start hhdiagnostic_'+locale).locale,locale);
    assert.equal(v3StartLocale('/start hhdiagnostic_'+locale),locale);
-   assert.match(aliFreeDiagnosticIntro(locale),/\/stop/);
+   const welcome=aliFreeDiagnosticIntro(locale);
+   assert.ok(welcome.length<155,locale+' first screen must be warm and brief');
+   assert.doesNotMatch(welcome,/\/stop|not a medical|diagnos|OpenRouter|medical records|no envíes|документы|не диагноз/i);
    assert.ok(FREE_DIAGNOSTIC_LIBRARY[locale].questions.goal.length>=3);
    assert.ok(FREE_DIAGNOSTIC_LIBRARY[locale].questions.support.length>=3);
  }
@@ -32,17 +34,17 @@ test('a separate free mode exists on the existing RU/EN/ES review link',()=>{
  assert.equal(v3FreeDiagnosticStart('/start hhreview_en?client_private=1'),null);
  assert.equal(v3FreeDiagnosticStart('I need a diagnostic'),null);
 });
-test('full goal → obstacle → situation → effects → attempts → support → review',()=>{
+test('three gentle questions lead to review without an interrogation',()=>{
  let stage='goal',slots={},turns=[];
- const answers=['I want a clear path in my career','I struggle with making decisions',
-   'Recently I have changed jobs','My confidence at work is affected',
-   'I tried talking with my manager','My friend sometimes helps'];
- const progress=['challenge','situation','impact','attempts','support','ready'];
+ const answers=['I want a clear path in my career',
+   'I struggle with making decisions',
+   'My friend sometimes helps'];
+ const progress=['challenge','support','ready'];
  for(let i=0;i<answers.length;i++){
    const p=turn(answers[i],{stage,slots,turns});
    assert.equal(p.stage,progress[i]);
-   assert.equal(questions(p.reply),i===5?0:1);
-   assert.ok(p.reply.length<950);
+   assert.equal(questions(p.reply),i===2?0:1);
+   assert.ok(p.reply.length<320,'each reply should fit an easy Telegram screen');
    slots=p.slots;stage=p.stage;
    turns.push({role:'user',text:answers[i]},{role:'assistant',text:p.reply});
  }
@@ -72,7 +74,7 @@ test('real first-time client can answer the numbered sample fields in one turn',
  assert.equal(p.slots.goal,'to understand my direction');
  assert.equal(p.slots.challenge,'uncertainty');
  assert.match(p.slots.situation,/negative events/);
- assert.equal(p.stage,'impact','only the missing details remain');
+ assert.equal(p.stage,'support','optional details are kept but do not trigger six more questions');
 });
 test('negative life events are kept as client situation, not a fictional goal',()=>{
  const first=turn('Currently I am going through lots of negative events in my life');
@@ -83,7 +85,7 @@ test('negative life events are kept as client situation, not a fictional goal',(
  const second=turn('I want to know where to go next',{stage:first.stage,slots:first.slots});
  assert.equal(second.stage,'challenge');
  const third=turn('Too many decisions',{stage:second.stage,slots:second.slots});
- assert.equal(third.stage,'impact','known situation should not be asked again');
+ assert.equal(third.stage,'support','known situation should not be asked again');
 });
 test('greetings, first-time uncertainty, referral and vague wording do not fill facts',()=>{
  for(const message of ['Hi','My happening life','I need help','Help please lol',
@@ -154,6 +156,34 @@ test('skip button belongs only to this consented V3 free mode',()=>{
  assert.equal(skipped.stage,'attempts');
  assert.equal(skipped.slots.impact,undefined);
 });
+test('free review has one photo-before-text welcome and an explicit booking choice',()=>{
+ for(const locale of ['ru','en','es']){
+   const welcome=v3ButtonsFor(locale,'free_consent');
+   assert.deepEqual(welcome,[[V3_LABELS[locale].agree,V3_LABELS[locale].decline],[V3_LABELS[locale].book]]);
+   assert.deepEqual(v3ButtonsFor(locale,'free_ready'),[[V3_LABELS[locale].finish,V3_LABELS[locale].book]]);
+   const selected=telegramInlineButtonForText(V3_LABELS[locale].book,locale);
+   assert.equal(telegramInlineCallbackSelection(selected.callback_data).inlineAction,'v3:book');
+   assert.equal(v3Action({rawText:V3_LABELS[locale].book}),'book');
+   assert.match(FREE_DIAGNOSTIC_LIBRARY[locale].booking,/€50/);
+ }
+ const service=source('lib/crm/telegram-ai-diagnostic-v3-service.js');
+ const webhook=source('app/api/app/crm/messenger/webhook/[provider]/route.js');
+ const sender=source('lib/crm/messenger-provider.js');
+ assert.match(service,/freeStart&&canReply\?\{\.\.\.greeting,freeWelcomePhoto:true\}/);
+ assert.match(service,/!activeServiceConsent&&!activeFreeConsent/);
+ assert.match(service,/ctx\.mode===FREE_DIAGNOSTIC_MODE&&action==='book'/);
+ assert.match(service,/services\/free-consultation/);
+ assert.match(webhook,/freeWelcomePhoto:aiIntake\.freeWelcomePhoto===true/);
+ assert.match(sender,/TELEGRAM_FREE_REVIEW_WELCOME_PHOTO/);
+ assert.match(sender,/andy-about\.png/);
+ assert.match(sender,/text!==freeDiagnosticCopy\(lang\)\.intro/);
+ assert.match(sender,/if\(freeWelcomePhoto\)\{/);
+ assert.ok(sender.indexOf("await readProvider(endpoint+'/sendPhoto'") <
+   sender.indexOf("const method=serviceWelcome?"),
+   'photo must be sent before first text, not as a giant caption');
+ assert.doesNotMatch(sender,/text\.length>900\|\|!text\.includes\('OpenRouter'\)/);
+});
+
 test('existing compact Telegram menu offers Free Diagnostic as second-level choice',()=>{
  for(const locale of ['ru','en']){
    const menu=telegramExploreDetailButtons(locale,'consultation');
