@@ -79,3 +79,15 @@ test("canonical taxonomy has exactly four unique choices at every stage, RU/EN/E
   assert.ok(studio.includes('goalQuizReady=goalQuizState.audience==="others"||goalQuizState.complete'));
   assert.ok(director.includes('const quickTopicPanel=videoAudience==="others"'));
 });
+
+test("Goal question two keeps the four first-question images and photo-card hierarchy",()=>{
+ assert.match(director,/data-video-goal-subcategory-cards/);
+ assert.match(director,/taxonomySubcategories\.map\(\(item,index\)=>/);
+ assert.match(director,/videoGoalCategories\[index\]\.art/);
+ assert.match(director,/data-video-goal-subcategory-label/);
+ assert.match(layout,/\[data-video-goal-subcategory-cards\]\[data-mytube-subcategories\]/);
+ assert.match(layout,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)!important/);
+ assert.match(layout,/\[data-video-goal-subcategory-cards\] button\[data-auto-video-subcategory\]\[aria-pressed="true"\]/);
+ assert.match(layout,/img\[data-video-goal-art\]/);
+ for(const art of ["stress","love","energy","growth"])assert.ok(director.includes('art:"'+art+'"'));
+});
