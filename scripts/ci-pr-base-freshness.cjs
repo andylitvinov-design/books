@@ -125,12 +125,18 @@ async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase,classif
       (!baseAdvancePolicy||approved('verifiedIndependentPublicRasterAdvance'));
     const documentationOnly=approved('safeDocumentationAdvance');
     const independentMaintenance=approved('safeIndependentCiMaintenanceAdvance');
-    if(!detachedCi&&!independentRaster&&!documentationOnly&&!independentMaintenance)
+    // Only the production-pinned Specialist policy may approve independent
+    // public-page advances. No filename-only control-plane waiver.
+    const independentPresentation=pr.mergeable===true&&
+      approved('safeIndependentPublicPresentationAdvance');
+    if(!detachedCi&&!independentRaster&&!documentationOnly&&!independentMaintenance&&
+       !independentPresentation)
       return fail('SENSITIVE_COMPARE_UNSAFE');
     revalidatedReason=detachedCi?'ISOLATED_CI_PUBLIC_MEDIA_REVALIDATED':
       independentRaster?'INDEPENDENT_PUBLIC_RASTER_REVALIDATED':
       documentationOnly?'INDEPENDENT_DOCS_BASE_REVALIDATED':
-      'INDEPENDENT_CI_MAINTENANCE_REVALIDATED';
+      independentMaintenance?'INDEPENDENT_CI_MAINTENANCE_REVALIDATED':
+      'INDEPENDENT_PUBLIC_PRESENTATION_REVALIDATED';
    }
   }
   const finalBranch=(await github.rest.repos.getBranch({owner,repo,branch:'codex/public-book-library'})).data;
@@ -207,6 +213,10 @@ async function loadTrustedClassifier(workspace){
    'verifiedIndependentPublicRasterAdvance'];
  if(names.some(name=>typeof impact[name]!=='function'))
    throw Error('PROTECTED_BASE_ADVANCE_POLICY_UNAVAILABLE');
+ // Backward-compatible two-branch rollout: until production ships the new
+ // policy, absence means HOLD on presentation drift, never a spurious PASS.
+ if(typeof impact.safeIndependentPublicPresentationAdvance==='function')
+   names.push('safeIndependentPublicPresentationAdvance');
  const baseAdvancePolicy=Object.fromEntries(names.map(name=>[name,impact[name]]));
  return {classifierBase,decideRoute:mod.decideRoute,baseAdvancePolicy};
 }

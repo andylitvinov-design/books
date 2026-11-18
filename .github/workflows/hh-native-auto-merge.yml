@@ -383,7 +383,8 @@ jobs:
               freshness.reason==="ISOLATED_CI_PUBLIC_MEDIA_REVALIDATED" ||
               freshness.reason==="INDEPENDENT_PUBLIC_RASTER_REVALIDATED" ||
               freshness.reason==="INDEPENDENT_DOCS_BASE_REVALIDATED" ||
-              freshness.reason==="INDEPENDENT_CI_MAINTENANCE_REVALIDATED"));
+              freshness.reason==="INDEPENDENT_CI_MAINTENANCE_REVALIDATED" ||
+              freshness.reason==="INDEPENDENT_PUBLIC_PRESENTATION_REVALIDATED"));
       - name: Revalidate sensitive BASE with one protected sync or signed Ready
         if: >-
           github.event_name == 'workflow_run' &&
