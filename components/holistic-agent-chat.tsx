@@ -1497,17 +1497,17 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
             onClick={()=>voice.speak(m.text)}
             style={{minWidth:32,minHeight:32,marginInlineStart:6,border:"1px solid #E9DFD1",borderRadius:10,background:"#FFFCF7",color:"#143D3A"}}>🔊</button>}
         </div>:
-        <p key={index} data-hh-chat-turn={m.role} className={m.role==="user"?styles.user:styles.assistant}>
-          {m.variant==="alternative"&&<strong className={styles.alternativeLabel}>{locale==="ru"?"Альтернативный ответ · AI на устройстве":locale==="es"?"Respuesta alternativa · IA en el dispositivo":"Alternative answer · On-device AI"}{"\n"}</strong>}{m.voiceNoteUrl?<span className={styles.voiceNoteMessage} data-hh-sent-voice-message>
+        <div key={index} data-hh-chat-turn={m.role} className={m.role==="user"?styles.user:styles.assistant}>
+          {m.variant==="alternative"&&<strong className={styles.alternativeLabel}>{locale==="ru"?"Альтернативный ответ · AI на устройстве":locale==="es"?"Respuesta alternativa · IA en el dispositivo":"Alternative answer · On-device AI"}{"\n"}</strong>}{m.voiceNoteUrl?<div className={styles.voiceNoteMessage} data-hh-sent-voice-message>
             <audio controls preload="metadata" src={m.voiceNoteUrl}
               aria-label={locale==="ru"?"Голосовое сообщение":locale==="es"?"Mensaje de voz":"Voice message"}/>
             <details><summary>{locale==="ru"?"Текст голосового":locale==="es"?"Texto transcrito":"Voice transcript"}</summary>
               {m.text}</details>
-          </span>:m.text}{voiceEnabled&&!m.voiceNoteUrl&&<button type="button" data-hh-voice-turn={index}
+          </div>:m.text}{voiceEnabled&&!m.voiceNoteUrl&&<button type="button" data-hh-voice-turn={index}
             aria-label={voice.t.play} title={voice.t.play}
             disabled={!voice.playbackConsent||!voice.supported}
             onClick={()=>voice.speak(m.text)}
-            style={{minWidth:32,minHeight:32,marginInlineStart:6,border:"1px solid #E9DFD1",borderRadius:10,background:"#FFFCF7",color:"#143D3A"}}>🔊</button>}</p>)}
+            style={{minWidth:32,minHeight:32,marginInlineStart:6,border:"1px solid #E9DFD1",borderRadius:10,background:"#FFFCF7",color:"#143D3A"}}>🔊</button>}</div>)}
       {lastAnswerRef.current&&messages[messages.length-1]?.role==="assistant"&&<div className={styles.answerActions} data-hh-alternative-actions>
         <strong>{locale==="ru"?"Ответ не подошёл?":locale==="es"?"¿No te convence la respuesta?":"Not quite the answer you wanted?"}</strong>
         <button type="button" disabled={alternativeBusy||busy} onClick={()=>void requestAlternativeAnswer("different")}>
