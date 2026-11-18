@@ -179,8 +179,9 @@
   .shell :global(.prescription-admin-titleblock) :global(.prescription-admin-description) { display: none; }
   .shell :global(.prescription-admin-navigation--tabs) { gap: 6px !important; margin-bottom: 8px !important; padding-bottom: 5px; }
   .shell :global(.prescription-admin-navigation--tabs) a { min-height: 38px; padding: 8px 11px; font-size: 11px; }
-  .top { flex-wrap: nowrap; gap: 8px; margin: 8px 0 12px; }
-  .top .primary { padding-inline: 12px; font-size: 12px; }
+  .top { flex-wrap: wrap; gap: 8px; margin: 8px 0 12px; }
+  .top .back { width: 100%; }
+  .top .primary { flex: 1 1 142px; min-width: 0; padding-inline: 10px; font-size: 12px; white-space: normal; text-align: center; }
   .sheet { border-radius: 17px; padding: 12px; }
   .heading h2 { font-size: 25px; }
   .heading span { font-size: 11px; }

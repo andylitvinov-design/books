@@ -47,6 +47,7 @@ const copy = {
     reportHomeopathy: 'Гомеопатия',
     reportBach: 'Бах',
     reportMixed: 'Гомеопатия + Бах',
+    reportGeneral: 'Отчёт по консультации (без препаратов)',
     note: 'Общие инструкции (дополнительно)',
     notePlaceholder: 'Общие указания для клиента…',
     analysis: 'Анализ',
@@ -131,6 +132,7 @@ const copy = {
     reportHomeopathy: 'Homeopathy',
     reportBach: 'Bach',
     reportMixed: 'Homeopathy + Bach',
+    reportGeneral: 'Consultation report (no remedies)',
     note: 'General instructions (optional)',
     notePlaceholder: 'General client instructions…',
     analysis: 'Analysis',
@@ -212,14 +214,18 @@ function initialReportScore(consultation, key) {
   return score == null ? '' : String(score)
 }
 
-export function ConsultationForm({ action, remedies, consultation, payment, requestId, clients = [], selectedClientId, recommendedTestOptions = { en: [], ru: [] }, saveFooterTargetId = null }) {
+export function ConsultationForm({ action, remedies, consultation, payment, requestId, clients = [], selectedClientId, recommendedTestOptions = { en: [], ru: [] }, saveFooterTargetId = null, initialReportKind = 'remedies' }) {
   const selectedClientLocale = clients.find((client) => client.id === selectedClientId)?.preferredLocale
   const initialReportLocale = consultation?.languagePreference === 'ru' || consultation?.languagePreference === 'en'
     ? consultation.languagePreference
     : selectedClientLocale === 'ru' ? 'ru' : 'en'
   const [reportLocale, setReportLocale] = useState(initialReportLocale)
   const [state, submit, pending] = useActionState(action, {})
-  const [items, setItems] = useState(() => initialConsultationRows(consultation, remedies, consultation ? 1 : 1))
+  const [items, setItems] = useState(() => initialConsultationRows(consultation, remedies, 1))
+  // Dedicated classic and general report routes own the type; no in-form conversion.
+  const reportKind = consultation
+    ? consultation.recommendationType === 'general' ? 'general' : 'remedies'
+    : initialReportKind === 'general' ? 'general' : 'remedies'
   const [focused, setFocused] = useState(null)
   const [error, setError] = useState('')
   const [paymentStatus, setPaymentStatus] = useState(payment?.paymentStatus ?? 'unpaid')
@@ -228,12 +234,12 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
   const [includeDistanceHomeopathy, setIncludeDistanceHomeopathy] = useState(consultation?.includeDistanceHomeopathy === true)
   const [dateIssued, setDateIssued] = useState(consultation?.dateIssued ?? new Date().toLocaleDateString('en-CA'))
   const [note, setNote] = useState(consultation?.generalInstructions ?? '')
-  const [analysis, setAnalysis] = useState(() => consultation?.analysis ?? getOwnerReportTextTemplate(initialReportLocale).analysis)
+  const [analysis, setAnalysis] = useState(() => consultation?.analysis ?? getOwnerReportTextTemplate(initialReportLocale, consultation?.recommendationType === 'general' || (!consultation && initialReportKind === 'general') ? 'general' : 'homeopathy').analysis)
   const [progressBefore, setProgressBefore] = useState(() => initialReportScore(consultation, 'progressBefore'))
   const [progressAfter, setProgressAfter] = useState(() => initialReportScore(consultation, 'progressAfter'))
   const [recommendationsText, setRecommendationsText] = useState(consultation?.recommendationsText ?? '')
   const [templateReviewed, setTemplateReviewed] = useState(Boolean(consultation))
-  const [additionalNotes, setAdditionalNotes] = useState(() => consultation?.additionalNotes ?? getOwnerReportTextTemplate(initialReportLocale).additionalNotes)
+  const [additionalNotes, setAdditionalNotes] = useState(() => consultation?.additionalNotes ?? getOwnerReportTextTemplate(initialReportLocale, consultation?.recommendationType === 'general' || (!consultation && initialReportKind === 'general') ? 'general' : 'homeopathy').additionalNotes)
   const [recommendedTestKeys, setRecommendedTestKeys] = useState(() => consultation?.recommendedTestKeys ?? [])
   const [daoResourceScore, setDaoResourceScore] = useState(() => consultation?.daoResourceScore == null ? '' : String(consultation.daoResourceScore))
   const [daoResourcePublished, setDaoResourcePublished] = useState(() => consultation?.daoResourcePublished !== false)
@@ -252,8 +258,9 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
   }, [])
 
   const labels = copy[uiLocale]
-  const reportType = useMemo(() => detectedType(items), [items])
-  const reportLabel = reportType === 'mixed' ? labels.reportMixed : reportType === 'bach' ? labels.reportBach : labels.reportHomeopathy
+  const selectedRemedyType = useMemo(() => detectedType(items), [items])
+  const reportType = reportKind === 'general' ? 'general' : selectedRemedyType
+  const reportLabel = reportType === 'general' ? labels.reportGeneral : reportType === 'mixed' ? labels.reportMixed : reportType === 'bach' ? labels.reportBach : labels.reportHomeopathy
   const daoScoreInvalid = (() => { try { parseDaoResourceScore(daoResourceScore); return false } catch { return true } })()
   const progressScoresInvalid = (() => { try { parseReportProgressScore(progressBefore); parseReportProgressScore(progressAfter); return false } catch { return true } })()
 
@@ -264,8 +271,8 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
       ? 'Изменить язык сохранённого отчёта? Заголовки и приложения переключатся, но ваш текст не будет переведён.'
       : 'Change the saved report language? Headings and appendices will switch, but your text will not be translated.')) return
     if (!consultation) {
-      const previousTemplate = getOwnerReportTextTemplate(reportLocale)
-      const nextTemplate = getOwnerReportTextTemplate(next)
+      const previousTemplate = getOwnerReportTextTemplate(reportLocale, reportType)
+      const nextTemplate = getOwnerReportTextTemplate(next, reportType)
       // Only replace untouched examples; never silently destroy practitioner notes.
       setAnalysis((current) => !current.trim() || current === previousTemplate.analysis ? nextTemplate.analysis : current)
       setAdditionalNotes((current) => !current.trim() || current === previousTemplate.additionalNotes ? nextTemplate.additionalNotes : current)
@@ -276,7 +283,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
 
   function restoreReportTemplate() {
     if (consultation) return
-    const template = getOwnerReportTextTemplate(reportLocale)
+    const template = getOwnerReportTextTemplate(reportLocale, reportType)
     if ((analysis !== template.analysis || additionalNotes !== template.additionalNotes) &&
         !window.confirm(labels.templateReplaceConfirm)) return
     setAnalysis(template.analysis)
@@ -373,7 +380,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
         <span>{includeRecommendation
           ? includeInvoice
             ? paymentStatus === 'received' ? labels.receiptHint : labels.invoiceHint
-            : labels.prescriptionOnlyHint
+            : reportKind === 'general' ? (uiLocale === 'ru' ? 'Будет сохранён отчёт по консультации без назначений.' : 'A consultation report without remedies will be saved.') : labels.prescriptionOnlyHint
           : includeInvoice
             ? paymentStatus === 'received' ? labels.receiptOnlyHint : labels.invoiceOnlyHint
             : labels.noDocumentError}</span>
@@ -392,9 +399,12 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
     if (!includeRecommendation && !includeInvoice) {
       event.preventDefault()
       setError(labels.noDocumentError)
-    } else if (includeRecommendation && !validateConsultationRows(items)) {
+    } else if (includeRecommendation && reportKind !== 'general' && !validateConsultationRows(items)) {
       event.preventDefault()
       setError(labels.chooseError)
+    } else if (includeRecommendation && reportKind === 'general' && ![analysis, recommendationsText, additionalNotes, note].some(value => value.trim())) {
+      event.preventDefault()
+      setError(uiLocale === 'ru' ? 'Добавьте анализ или рекомендации для отчёта.' : 'Add analysis or recommendations to the report.')
     } else if (includeRecommendation && progressScoresInvalid) {
       event.preventDefault()
       setError(labels.progressError)
@@ -410,12 +420,13 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
     <input type="hidden" name="languageChangeConfirmed" value={reportLocale !== initialReportLocale ? 'yes' : 'no'} />
     <input type="hidden" name="paymentRevision" value={payment?.updatedAt ?? ''} />
     <input type="hidden" name="requestId" value={requestId ?? ''} />
-    <input type="hidden" name="itemsJson" value={JSON.stringify(serializeConsultationRows(items))} />
+    <input type="hidden" name="recommendationType" value={reportType} />
+    <input type="hidden" name="itemsJson" value={JSON.stringify(reportKind === 'general' ? [] : serializeConsultationRows(items))} />
     <input type="hidden" name="recommendedTestsJson" value={JSON.stringify(recommendedTestKeys)} />
 
     <ol className="consultation-studio-progress" aria-label={labels.workflow}>
       <li><span>01</span>{labels.client}</li>
-      <li><span>02</span>{labels.items}</li>
+      <li><span>02</span>{reportKind === 'general' ? labels.reportGeneral : labels.items}</li>
       <li><span>03</span>{labels.documentsHeading}</li>
     </ol>
 
@@ -446,12 +457,12 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
         <span className="consultation-studio-section-index" aria-hidden="true">02</span>
         <div>
           <h2 id="consultation-items-heading">{labels.recommendationsHeading}</h2>
-          <p>{labels.recommendationsHint}</p>
+          <p>{reportKind === 'general' ? (uiLocale === 'ru' ? 'Анализ и индивидуальные рекомендации — без выбора препаратов.' : 'Analysis and personal guidance, without selecting remedies.') : labels.recommendationsHint}</p>
         </div>
         <ClipboardList aria-hidden="true" size={21} strokeWidth={1.5} />
       </div>
       <p className="consultation-studio-report-type">{labels.reportAuto}: <strong>{reportLabel}</strong></p>
-
+      {reportKind !== 'general' && <>
       <fieldset className="consultation-remedy-fieldset consultation-remedy-fieldset--compact">
         <legend>{labels.items}</legend>
         <div className="consultation-remedies">{items.map((item, index) => {
@@ -552,6 +563,8 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
 
       <ConsultationTextImport remedies={remedies} onApply={applyParsed} uiLocale={uiLocale} />
       <p className="consultation-clinical-note">{uiLocale === 'ru' ? 'Проверьте рекомендации самостоятельно. Потенция и схема приёма остаются пустыми до вашего решения.' : 'Review recommendations yourself. Potency and dosing stay blank until you enter them.'}</p>
+      </>}
+      {reportKind === 'general' && <p className="consultation-clinical-note" role="note">{uiLocale === 'ru' ? 'Отчёт без гомеопатии и эссенций Баха: препараты, дозировки и приложения по гомеопатии не будут сохранены или показаны клиенту.' : 'Consultation-only format: no remedy selection, dosing, or homeopathy appendices will appear in the saved client report.'}</p>}
     </section>}
 
     {includeRecommendation && <section className="consultation-studio-card consultation-report-notes-panel" aria-label={labels.analysis + ', ' + labels.clientRecommendations + ' & ' + labels.clientNotes}>
@@ -605,7 +618,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
       <ConsultationRecommendedTests locale={reportLocale}
         options={recommendedTestOptions[reportLocale] || []}
         analysis={analysis} additionalNotes={additionalNotes} generalInstructions={note}
-        isDraftTemplate={!consultation && analysis === getOwnerReportTextTemplate(reportLocale).analysis}
+        isDraftTemplate={!consultation && analysis === getOwnerReportTextTemplate(reportLocale, reportType).analysis}
         selectedKeys={recommendedTestKeys} onChange={setRecommendedTestKeys} />
       {!consultation && <label className="consultation-template-review">
         <input
@@ -624,7 +637,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
           <input type="date" name="followUpDate" defaultValue={consultation?.followUpDate ?? ''} />
           <small>{labels.followUpDateHint}</small>
         </label>
-        <p>{reportFollowUpCopy(reportLocale).description}</p>
+        <p>{reportType === 'general' ? reportFollowUpCopy(reportLocale, 'general').description : reportFollowUpCopy(reportLocale).description}</p>
       </div>
       <label className="consultation-note consultation-legacy-instructions">{labels.note}
         <textarea name="generalInstructions" rows={2} value={note} onChange={(event) => setNote(event.target.value)} placeholder={labels.notePlaceholder} />
@@ -650,7 +663,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
           </label>
         </div>
       </details>
-      <label className="consultation-studio-document-choice consultation-distance-homeopathy-choice" data-selected={includeDistanceHomeopathy}>
+      {reportKind !== 'general' && <label className="consultation-studio-document-choice consultation-distance-homeopathy-choice" data-selected={includeDistanceHomeopathy}>
         <input type="checkbox" name="includeDistanceHomeopathy" checked={includeDistanceHomeopathy} onChange={event => setIncludeDistanceHomeopathy(event.target.checked)} />
         <span>
           <strong>{uiLocale === 'ru' ? 'Дистанционная гомеопатия' : 'Distance homeopathy'}</strong>
@@ -658,7 +671,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
             ? 'Добавить полный текст статьи последним приложением к отчёту клиента и PDF — без ссылки на сайт.'
             : 'Add the full article as the final appendix in the client report and PDF, without a website link.'}</small>
         </span>
-      </label>
+      </label>}
     </section>}
 
     <section className="consultation-studio-card" aria-labelledby="consultation-documents-heading">
@@ -674,7 +687,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
     <div className="consultation-studio-document-choices" role="group" aria-label={labels.documentsHeading}>
       <label className="consultation-studio-document-choice" data-selected={includeRecommendation}>
         <input type="checkbox" name="includeRecommendation" checked={includeRecommendation} onChange={(event) => { setIncludeRecommendation(event.target.checked); setError('') }} />
-        <span><strong>{labels.prescriptionChoice}</strong><small>{labels.prescriptionChoiceHint}</small></span>
+        <span><strong>{reportKind === 'general' ? labels.reportGeneral : labels.prescriptionChoice}</strong><small>{reportKind === 'general' ? (uiLocale === 'ru' ? 'Анализ, рекомендации и материалы без препаратов' : 'Analysis, recommendations and materials; no remedies') : labels.prescriptionChoiceHint}</small></span>
       </label>
       <label className="consultation-studio-document-choice" data-selected={includeInvoice}>
         <input type="checkbox" name="includeInvoice" checked={includeInvoice} onChange={(event) => { setIncludeInvoice(event.target.checked); setError('') }} />
