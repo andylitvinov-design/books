@@ -18,7 +18,7 @@ const profile=(currentIds,desiredIds,focusIds,energyStart=4,energyTarget=7)=>({
 const topic=(locale,topicId,goal,personalization)=>suggestVideoConcept({
  locale,theme:"energy",goal,selectedTopicId:topicId,personalization
 });
-test("catalog inventory is 256 editorial four-beat templates, not 150 finished films",()=>{
+test("canonical inventory retains 256 editorial subjects while independent film layer adds scripts",()=>{
  const audit=auditMyTubeTaxonomy();
  assert.equal(audit.ok,true,JSON.stringify(audit.errors));
  assert.equal(audit.counts.scenarios,256);
@@ -52,9 +52,9 @@ test("actual stress films change with current state, desired state and focus in 
   assert.ok(a.every(x=>x.personalizationSignals?.source==="confirmed_answers"));
   const results=a.map(x=>getVideoCreativeDirections(x,locale));
   assert.ok(results.every(x=>x.length===2));
-  assert.equal(results[0][0].id,"v3-between-tasks");
-  assert.equal(results[1][0].id,"v3-one-thing");
-  assert.equal(results[2][0].id,"v3-request-for-help");
+  assert.equal(results[0][0].id,"film256-stress-relief-s2");
+  assert.equal(results[1][0].id,"film256-stress-relief-s1");
+  assert.equal(results[2][0].id,"film256-stress-relief-s2");
   assert.notDeepEqual(results[0].map(x=>x.id),results[1].map(x=>x.id));
   for(let i=0;i<results.length;i++)for(const choice of results[i]){
    assert.equal(choice.personalizationRankVersion,FILM_PERSONALIZATION_RANK_VERSION);
@@ -75,8 +75,8 @@ test("growth options are selected from different authored stories for distinct p
   profile(["stuck","discouraged"],["supported","connected"],["connection"],4,8));
  const a=getVideoCreativeDirections(low,"en").map(x=>x.id);
  const b=getVideoCreativeDirections(engaged,"en").map(x=>x.id);
- assert.deepEqual(a,["v3-small-proof","v3-first-imperfect-line"]);
- assert.deepEqual(b,["v3-borrowed-skill","v3-small-proof"]);
+ assert.deepEqual(a,["film256-personal-growth-s3","film256-personal-growth-s2"]);
+ assert.deepEqual(b,["film256-personal-growth-s4","film256-personal-growth-s2"]);
  assert.equal(new Set(a).size,2);
  assert.equal(new Set(b).size,2);
 });
@@ -116,6 +116,6 @@ test("64-topic audit routes everyday fatigue to gentle scenes, motivation to gro
   profile(["fatigue","drained"],["rested","calm"],["anchor"],2,4));
  const options=getVideoCreativeDirections(fatigue,"en");
  assert.equal(options.length,2);
- assert.equal(options[0].id,"v3-between-tasks");
+ assert.equal(options[0].id,"film256-evening-fatigue-s2");
  assert.ok(options.every(x=>x.storyboard.length===6));
 });
