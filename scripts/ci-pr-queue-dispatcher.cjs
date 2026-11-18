@@ -11,6 +11,7 @@ const {WORKFLOWS,admission,snapshot,verifiedGhostRepairCapacity,
 const {repairMode,safeFiles,hasVerifiedSourceHandoff,verifiedCoreCodeFailure}=require('./ci-pr-repair-worker.cjs');
 const {trustedWorkerWake,trustedControlPush}=require('./ci-pr-commander-pr-completion.cjs');
 const {eligibleMachineTruncation}=require('./ci-pr-manual-resume.cjs');
+const {sourceRepairBudget}=require('./ci-pr-autonomous-repair-budget.cjs');
 const {safeSourcePath: safeFreeSourcePath,
  assessCompleteFreeRepairScope}=require('./ci-pr-repair-free-agent.cjs');
 const {verifiedRunnerReceipt,recentlyStartedRunner}=require('./ci-pr-runner-evidence.cjs');
@@ -831,6 +832,58 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    comments=await readCompleteIssueComments(github,owner,repo,task.pr_number,limited);
    if(!comments){blocked('OWNER_HISTORY_INCOMPLETE');continue;}
   }catch(err){blocked('OWNER_HISTORY_UNAVAILABLE');continue;}
+  const repairBudget=task.lane==='repair'?
+   sourceRepairBudget(comments,{prNumber:task.pr_number}):null;
+  if(repairBudget&&repairBudget.status!=='ELIGIBLE'){
+   if(repairBudget.status!=='EXHAUSTED'){
+    blocked(repairBudget.status);continue;
+   }
+   blocked('AUTONOMOUS_SOURCE_PATCH_LIMIT_REACHED');
+   const marker='<!-- HH_AUTONOMOUS_SOURCE_BUDGET_V1 pr='+task.pr_number+
+    ' head='+task.head_sha+' -->';
+   if(comments.some(c=>trustedControlComment(c)&&String(c.body||'').includes(marker))){
+    blocked('AUTONOMOUS_SOURCE_PATCH_LIMIT_ALREADY_RECORDED');continue;
+   }
+   if(dryRun){summary.wouldManualSourceEscalations++;continue;}
+   try{
+    const exact=(await limited('source-budget-exact-head',()=>
+     github.rest.pulls.get({owner,repo,pull_number:task.pr_number}))).data;
+    if(!validPR(exact)||exact.head?.sha!==task.head_sha||
+       laneOf(exact)!=='repair'){
+     blocked('SOURCE_BUDGET_HEAD_MOVED');continue;
+    }
+    await limited('source-budget-owner-receipt',()=>github.rest.issues.createComment({
+     owner,repo,issue_number:task.pr_number,
+     body:marker+'\nThe protected automatic Repair Worker has already published '+
+      repairBudget.count+' distinct source commits. The current PR HEAD '+
+      task.head_sha+' still needs review. Automatic repair limit reached: '+
+      'no fourth model call, code write, paid fallback, or CI bypass authorized.'
+    }));
+    const after=(await limited('source-budget-after-comment',()=>
+     github.rest.pulls.get({owner,repo,pull_number:task.pr_number}))).data;
+    if(!validPR(after)||after.head?.sha!==task.head_sha){
+     blocked('SOURCE_BUDGET_FINAL_HEAD_MOVED');continue;
+    }
+    await limited('source-budget-owner-hold',()=>github.rest.issues.addLabels({
+     owner,repo,issue_number:task.pr_number,labels:['hh:repair-manual']
+    }));
+    const held=(await limited('source-budget-held-head',()=>
+     github.rest.pulls.get({owner,repo,pull_number:task.pr_number}))).data;
+    if(held?.head?.sha===task.head_sha&&held.labels?.some(l=>l.name==='hh:repair-manual')){
+     try{await limited('source-budget-retire-hint',()=>
+      github.rest.issues.removeLabel({owner,repo,issue_number:task.pr_number,
+       name:'hh:repair-needed'}));}
+     catch(err){if(err?.status!==404)throw err;}
+    }
+    summary.manualSourceEscalations++;
+    log('AUTONOMOUS_SOURCE_PATCH_LIMIT #'+task.pr_number+
+     ' count='+repairBudget.count+' HEAD='+task.head_sha.slice(0,12));
+   }catch(error){
+    blocked('SOURCE_BUDGET_ESCALATION_UNAVAILABLE');
+    log('Source repair budget escalation #'+task.pr_number+': '+error.message);
+   }
+   continue;
+  }
   // This one-shot recovery is available only to a NEW OIDC-authenticated
   // owner request and an exact-HEAD, Actions-bot-signed model truncation.
   // A public issue comment or a machine-only Watchdog scan cannot grant it.
@@ -1320,6 +1373,8 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
       owner_retry_request_id:ownerProof.requestId}:{}),
     assigned_executor_id:task.lane==='ci'?CI_EXECUTOR:REPAIR_EXECUTOR,
     executor_kind:'github_actions',assignment_status:'SELECTED_RESERVED_NOT_STARTED',
+    ...(task.lane==='repair'?{autonomous_source_patch_attempt:repairBudget.nextAttempt,
+      autonomous_source_patch_max:3}:{}),
     ...(errorTaskId?{error_task_id:errorTaskId}:{})};
   const reservedBody=commentBody(claim);
   let reservationCommentId=null;
