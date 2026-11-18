@@ -110,6 +110,6 @@ test('daily scheduled storage prune is isolated from hourly deployment and prese
  assert.match(workflow,/github\.event\.schedule == '11 05 \* \* \*'/);
  assert.match(workflow,/CLEANUP_MODE: \$\{\{ github\.event_name == 'schedule' && 'apply' \|\| inputs\.cleanup_mode \}\}/);
  assert.match(workflow,/inputs\.emergency == true && inputs\.cleanup_mode == 'off'/);
- assert.match(workflow,/if: >-\s+[\s\S]*?github\.event\.schedule == '37 \* \* \* \*'[\s\S]*?jobs:/);
+ assert.match(workflow,/jobs:\s+publish:\s+[\s\S]*?github\.event\.schedule == '37 \* \* \* \*'/);
  assert.match(workflow,/node scripts\/ci-vercel-deployment-prune\.mjs "\$CLEANUP_MODE"/);
 });
