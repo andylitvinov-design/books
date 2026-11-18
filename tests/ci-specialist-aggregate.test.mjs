@@ -1,4 +1,4 @@
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance } from '../lib/ci/production-base-impact.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -2569,4 +2569,53 @@ test('trusted policy plus independently proven production changes may be compose
    });
  assert.equal(used,true);
  assert.equal(result.policyRevalidatedAgainst,current);
+});
+
+test('real CI policy and disjoint dock browser QA change preserve successful sensitive Core',()=>{
+ const base=BASE,latest='c'.repeat(40),intermediate='d'.repeat(40);
+ const qa='scripts/verify-unified-six-dock-browser.mjs';
+ const compare=(filenames,opts={})=>({
+   status:'ahead',ahead_by:2,behind_by:0,total_commits:2,
+   base_commit:{sha:base},merge_base_commit:{sha:base},
+   commits:[{sha:intermediate},{sha:latest}],
+   files:filenames.map(filename=>({filename,status:'modified'})),...opts,
+ });
+ const target=[
+   'scripts/ci-specialist-aggregate.mjs',
+   'tests/ci-specialist-aggregate.test.mjs',
+   'tests/ci-specialist-wait.test.mjs',
+   qa,
+ ];
+ const candidates=[
+   'app/api/holistic-agent/turn/route.js',
+   'components/mandala-video-personalization.tsx',
+   'lib/mandala/dot-story-photo-fallback.mjs',
+   'app/[locale]/services/page.tsx',
+ ];
+ for(const changed of candidates) {
+   assert.equal(safeTrustedPolicyAdvance(compare(target),base,latest,[changed]),true,
+     'real CI-policy + dock-browser production delta must not restart #5025/#5036/#5034/#5041');
+   assert.equal(safeIndependentQaAdvance(compare([qa]),base,latest,[changed]),true,
+     'pure independent browser QA should not change valid Core');
+ }
+ for(const bad of [
+   'scripts/verify-affirmation-voice-browser.mjs',
+   'scripts/verify-public-services-production.mjs',
+   'scripts/verify-admin-auth-browser.mjs',
+   'scripts/ci-pr-readiness.mjs',
+   '.github/workflows/hh-pr-core-release.yml',
+   'app/api/auth/route.js',
+ ]) {
+   assert.equal(safeTrustedPolicyAdvance(compare([...target.slice(0,3),bad]),base,latest,
+     candidates),false,bad);
+   assert.equal(safeIndependentQaAdvance(compare([bad]),base,latest,candidates),false,bad);
+ }
+ assert.equal(safeTrustedPolicyAdvance(compare(target),base,latest,[qa]),false,
+   'changed browser QA cannot certify a candidate changing the same file');
+ assert.equal(safeIndependentQaAdvance(compare([qa],{status:'diverged'}),base,latest,candidates),false);
+ assert.equal(safeIndependentQaAdvance(compare([qa],{files:[{
+   filename:qa,status:'removed'}]}),base,latest,candidates),false);
+ assert.equal(safeIndependentQaAdvance(compare([qa],{commits:[]}),base,latest,candidates),false);
+ assert.equal(safeIndependentQaAdvance(compare([qa],{files:[
+   {filename:qa,status:'modified'},{filename:qa,status:'modified'}]}),base,latest,candidates),false);
 });
