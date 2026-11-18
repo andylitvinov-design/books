@@ -167,3 +167,57 @@ test('No new external calls, consent bypass or implicit CRM handoff',()=>{
  assert.match(handler,/ingestMessengerEventInTransaction/);
  assert.match(handler,/readyForReview\?\[\[V3_LABELS\[locale\]\.finish\]\]/);
 });
+
+
+test('Screenshot regression: what, why photo, and consent never become a request',()=>{
+ const history=[{role:'user',text:"I agree, let's talk"},{role:'assistant',text:'What situation would you like to explore?'},
+   {role:'user',text:'Что?'},{role:'assistant',text:'Достаточно пары слов. Фото не нужно.'},
+   {role:'user',text:'Почему фото'}];
+ const consent=step("I agree, let's talk");
+ assert.equal(consent.stage,'goal');
+ assert.deepEqual(consent.slots,{});
+ const confused=step('Что?','goal',{},'ru');
+ assert.equal(confused.stage,'goal');
+ assert.deepEqual(confused.slots,{});
+ assert.match(confused.reply,/понятно|извините/i);
+ assert.equal(countQuestions(confused.reply),1);
+ const photo=step('Почему фото','goal',{},'ru');
+ assert.equal(photo.stage,'goal');
+ assert.deepEqual(photo.slots,{});
+ assert.match(photo.reply,/Фото не требуется/);
+ assert.equal(countQuestions(photo.reply),1);
+ assert.equal(aliIntakeStageFromTurns(history,true),'goal');
+ assert.equal(aliGuidedIntakeSummary({locale:'ru',turns:history,
+   slots:{goal:"I agree, let's talk",challenge:'Почему фото'}}),null);
+ assert.equal(aliGuidedIntakeSummary({locale:'ru',slots:{source:'Я из Meetup'}}),null);
+ const real=step('Хочу разобраться в отношениях','goal',{},'ru',history);
+ assert.equal(real.stage,'challenge');
+ assert.match(real.slots.goal,/отношениях/);
+});
+
+test('Explanations preserve the pending question across stages and languages',()=>{
+ for(const [locale,confusion,photo] of [
+   ['ru','Что?','Почему фото'],
+   ['en','What?','Why photo'],
+   ['es','¿Qué?','¿Por qué la foto?'],
+ ]){
+   for(const [stage,slots] of [['goal',{}],
+     ['challenge',{goal:'I want clarity'}],['situation',{goal:'I want clarity',challenge:'I feel stuck'}]]){
+     const a=step(confusion,stage,slots,locale);
+     const b=step(photo,stage,slots,locale);
+     assert.equal(a.stage,stage);
+     assert.equal(b.stage,stage);
+     assert.deepEqual(a.slots,slots);
+     assert.deepEqual(b.slots,slots);
+     assert.equal(countQuestions(a.reply),1);
+     assert.equal(countQuestions(b.reply),1);
+   }
+ }
+ const personal=step('Почему я боюсь близости?','goal',{},'ru');
+ assert.equal(personal.stage,'challenge');
+ assert.match(personal.slots.goal,/боюсь близости/);
+ const old=aliGuidedIntakeSummary({locale:'en',turns:[
+   {role:'user',text:'What?'},{role:'user',text:'Why photo'},
+   {role:'user',text:'I agree, let’s talk'}]});
+ assert.equal(old,null);
+});
