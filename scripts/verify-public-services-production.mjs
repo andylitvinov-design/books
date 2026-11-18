@@ -127,14 +127,14 @@ try {
     await expect(quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice]')).toHaveCount(4);
     await expect(quiz.locator("[data-services-quiz-category]")).toHaveCount(6);
     await expect(quiz.locator("[data-services-quiz-category] img")).toHaveCount(6);
-    await expect(quiz.locator("[data-services-business-link]"))
-      .toHaveAttribute("href", "#service-group-services");
+    await expect(quiz.locator("[data-services-shamanica-link]"))
+      .toHaveAttribute("href", "/"+locale+"/shamanica");
     assert.equal(await page.locator("[data-hh-unified-dock]").count(), 1,
       "Keep the real site dock; never add a second mock dock");
     // The approved screenshot is 390px wide. At smaller widths content may
     // scroll, but no controls may disappear sideways or behind a fixed rail.
     const firstScreen = await page.evaluate(() => {
-      const last = document.querySelector('[data-services-quiz-category="videos"]');
+      const last = document.querySelector('[data-services-quiz-category="learning"]');
       const dock = document.querySelector("[data-hh-unified-dock]");
       if (!last || !dock) return null;
       return {
@@ -166,7 +166,7 @@ try {
     // Six photographic first-screen categories stay on /services and expose exactly three matching options.
     const quickTargets = {
       therapy: "consultation", homeopathy: "homeopathy", constellations: "services",
-      practice: "reiki", study: "courses", videos: "video",
+      business: "business", tests: "browse", learning: "courses",
     };
     for (const [category, group] of Object.entries(quickTargets)) {
       const card = quiz.locator('[data-services-quiz-category="' + category + '"]');
@@ -180,10 +180,8 @@ try {
       await expect(target.locator(':scope > [data-services-three-visible] > [data-service-variant]')).toHaveCount(3);
       await expect(target.locator(':scope > [data-services-three-visible] > [data-service-variant]').first()).toBeVisible();
     }
-    await expect(quiz.locator("[data-services-business-link]")).toHaveAttribute("href", "#service-group-services");
-    await quiz.locator("[data-services-business-link]").click();
-    assert.equal(new URL(page.url()).pathname, "/" + locale + "/services", "Business category must stay on Services");
-    assert.equal(new URL(page.url()).hash, "#service-group-services");
+    await expect(quiz.locator("[data-services-shamanica-link]")).toHaveAttribute("href", "/" + locale + "/shamanica");
+    await expect(quiz.locator('[data-services-quiz-category="business"]')).toHaveAttribute("href", "#service-group-business");
     // Business has its own topic, need and start-format branching.
     await quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice="business_support"]').click();
     await expect(quiz).toHaveAttribute("data-services-quiz-step", "2");
@@ -248,10 +246,10 @@ try {
       { timeout: 30000, message: 'Mobile Services catalogue must hydrate before interactions' },
     ).toBe(true);
     const panelIds = [
-      "reiki", "browse", "reading", "consultation", "services", "video", "courses",
+      "reiki", "browse", "reading", "consultation", "services", "business", "video", "courses",
       "coach", "magical", "homeopathy", "about", "testimonials", "mytube", "directory",
     ];
-    const servicePanelIds = new Set(panelIds.slice(0, 10));
+    const servicePanelIds = new Set(panelIds.slice(0, 11));
     await expect(catalog.locator("[data-services-unified-panel]")).toHaveCount(panelIds.length);
     for (const id of panelIds) {
       const panel = catalog.locator('[data-services-unified-panel="' + id + '"]');

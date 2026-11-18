@@ -19,12 +19,12 @@ import styles from "./services-assist-quiz.module.css";
 type QuestionKey = "topic" | "need" | "mode" | "budget";
 type QuizTopic = "stress_energy" | "relationships_esteem" | "money_growth" | "business_support";
 type Focus = "stress" | "relationships" | "energy" | "work" | "health" | "growth";
-type Category = "therapy" | "homeopathy" | "constellations" | "practice" | "study" | "videos" | "business";
+type Category = "therapy" | "homeopathy" | "constellations" | "business" | "tests" | "learning";
 type Choice = readonly [string, string];
 type QuizQuestion = { title: string; options: readonly Choice[] };
 type QuizCopy = {
   title: string; lead: string; button: string; all: string; other: string; privacy: string;
-  empty: string; section: string; step: string; profile: string; summary: string;
+  empty: string; section: string; step: string; profile: string; summary: string; shamanica: string;
   questions: Record<Exclude<QuestionKey, "need">, QuizQuestion>;
   needs: Record<QuizTopic, QuizQuestion>;
   businessMode: QuizQuestion;
@@ -49,6 +49,7 @@ const copy: Record<PublicLocale, QuizCopy> = {
     "button": "Посмотреть рекомендации",
     "all": "Все услуги",
     "other": "Предпочитаете диалог с Ali?",
+    "shamanica": "Шаманика · энергетические и магические практики",
     "privacy": "Ответы остаются в браузере. Мы не сохраняем их и не отправляем ИИ или в CRM.",
     "empty": "Под выбранные условия подтверждённых вариантов пока нет. Измените формат или бюджет.",
     "section": "Направления поддержки",
@@ -228,13 +229,12 @@ const copy: Record<PublicLocale, QuizCopy> = {
       ]
     },
     "categories": {
-      "therapy": "Психотерапия\nи поддержка",
-      "homeopathy": "Гомеопатия\nи ремедии",
-      "constellations": "Расстановки\nи отношения",
-      "practice": "Практики\nи энергия",
-      "study": "Курсы\nи обучение",
-      "videos": "Видео\nи медитации",
-      "business": "Деньги и бизнес"
+      "therapy": "Терапия\nи коучинг",
+      "homeopathy": "Гомеопатия\nи средства",
+      "constellations": "Отношения\nи расстановки",
+      "business": "Бизнес\nи карьера",
+      "tests": "Тесты\nи самопомощь",
+      "learning": "Курсы, видео\nи медитации"
     }
   },
   "en": {
@@ -243,6 +243,7 @@ const copy: Record<PublicLocale, QuizCopy> = {
     "button": "See recommendations",
     "all": "All services",
     "other": "Prefer to chat with Ali?",
+    "shamanica": "Shamanica · energy & symbolic practices",
     "privacy": "Answers stay in your browser. They are not stored or sent to AI or CRM.",
     "empty": "No verified options match your choices yet. Try another format or budget.",
     "section": "Areas of support",
@@ -422,13 +423,12 @@ const copy: Record<PublicLocale, QuizCopy> = {
       ]
     },
     "categories": {
-      "therapy": "Psychotherapy\n& support",
+      "therapy": "Therapy\n& coaching",
       "homeopathy": "Homeopathy\n& remedies",
-      "constellations": "Constellations\n& relationships",
-      "practice": "Practices\n& energy",
-      "study": "Courses\n& learning",
-      "videos": "Videos\n& meditations",
-      "business": "Money & business"
+      "constellations": "Relationships\n& constellations",
+      "business": "Business\n& career",
+      "tests": "Tests\n& self-help",
+      "learning": "Courses, videos\n& meditations"
     }
   },
   "es": {
@@ -437,6 +437,7 @@ const copy: Record<PublicLocale, QuizCopy> = {
     "button": "Ver recomendaciones",
     "all": "Todos los servicios",
     "other": "¿Prefieres hablar con Ali?",
+    "shamanica": "Shamanica · energía y prácticas simbólicas",
     "privacy": "Las respuestas quedan en tu navegador. No se guardan ni se envían a IA o CRM.",
     "empty": "No hay opciones verificadas para esos criterios. Cambia formato o presupuesto.",
     "section": "Áreas de apoyo",
@@ -616,13 +617,12 @@ const copy: Record<PublicLocale, QuizCopy> = {
       ]
     },
     "categories": {
-      "therapy": "Psicoterapia\ny apoyo",
+      "therapy": "Terapia\ny coaching",
       "homeopathy": "Homeopatía\ny remedios",
-      "constellations": "Constelaciones\ny relaciones",
-      "practice": "Prácticas\ny energía",
-      "study": "Cursos\ny formación",
-      "videos": "Vídeos\ny meditación",
-      "business": "Dinero y negocios"
+      "constellations": "Relaciones\ny constelaciones",
+      "business": "Negocios\ny carrera",
+      "tests": "Tests\ny autoayuda",
+      "learning": "Cursos, vídeos\ny meditación"
     }
   }
 };
@@ -639,13 +639,13 @@ const needIcons: Record<string, LucideIcon> = {
   business_strategy:Compass, business_clients:UsersRound, business_team:HeartHandshake, business_change:BriefcaseBusiness,
 };
 
-const categories: readonly { key: Exclude<Category, "business">; image: string; Icon: LucideIcon }[] = [
+const categories: readonly { key: Category; image: string; Icon: LucideIcon }[] = [
   { key: "therapy", image: "/images/holistic-house/messenger-zen-stones.svg", Icon: Flower2 },
   { key: "homeopathy", image: "/images/holistic-house/distance-homeopathy.webp", Icon: HandHeart },
   { key: "constellations", image: "/images/holistic-house/homepage-constellations.svg", Icon: HeartHandshake },
-  { key: "practice", image: "/images/holistic-house/reiki-practitioner-sunrise.webp", Icon: Leaf },
-  { key: "study", image: "/images/holistic-house/books-library.webp", Icon: GraduationCap },
-  { key: "videos", image: "/images/holistic-house/assist-video-botanical.svg", Icon: MonitorPlay },
+  { key: "business", image: "/images/holistic-house/andy-about.png", Icon: BriefcaseBusiness },
+  { key: "tests", image: "/images/holistic-house/course-start-heron.webp", Icon: Compass },
+  { key: "learning", image: "/images/holistic-house/assist-video-botanical.svg", Icon: MonitorPlay },
 ];
 
 export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
@@ -791,8 +791,8 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
           </a>)}
       </div>
       <div className={styles.categoryExtras}>
-        <a href={"#" + serviceGroupAnchor(servicesCategoryTargets.business)}
-          data-services-business-link data-services-quiz-target={servicesCategoryTargets.business}><BriefcaseBusiness size={15} aria-hidden="true" /> {t.categories.business}</a>
+        <Link href={"/" + locale + "/shamanica"} prefetch={false}
+          data-services-shamanica-link><Leaf size={15} aria-hidden="true" /> {t.shamanica}</Link>
         <Link href={"/" + locale + "/services?assist=chat"} prefetch={false}>{t.other}</Link>
       </div>
     </section>
