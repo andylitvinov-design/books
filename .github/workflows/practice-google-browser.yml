@@ -16,6 +16,8 @@ on:
       - 'app/*/practice/page.jsx'
       - 'tests/practice-google-return-and-services-v5.test.mjs'
       - 'scripts/verify-practice-post-google-browser.mjs'
+      # Commander signed PR completion is validated by Core and the focused Guard, not this unrelated heavy suite.
+      - '!app/api/app/commander/**'
   push:
     branches: ['codex/public-book-library']
     paths:
