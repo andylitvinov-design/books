@@ -686,3 +686,11 @@
 .hiLearningRating button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
 .hiLearningRating button:disabled{opacity:.55;cursor:default}
 .hiLearningRating button:hover:not(:disabled){background:#edf5f7}
+
+/* Non-sensitive goal context from the user's three-step support quiz. */
+.supportContext{display:flex;align-items:center;justify-content:space-between;gap:9px;
+ margin:6px 3px;color:#36594c;font:600 12px/1.35 system-ui,sans-serif}
+.supportContext span{flex:1;min-width:0;overflow-wrap:anywhere}
+.supportContext button{flex:none;min-height:36px;padding:7px 11px;border:1px solid #afd9bf;
+ border-radius:12px;background:#edf8f1;color:#166648;cursor:pointer;font:700 12px system-ui,sans-serif}
+.supportContext button:focus-visible{outline:3px solid #168b71;outline-offset:2px}
