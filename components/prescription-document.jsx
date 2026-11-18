@@ -23,7 +23,7 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
   const guidance = (document.additionalNotes || document.recommendationsText) ? undefined : recommendationGuidance(document, locale)
   const progress = resolveReportProgress(document)
   const reportHeading = clientReportHeading(locale, document.recommendationType)
-  const followUpSession = reportFollowUpDetails(document.followUpDate, locale)
+  const followUpSession = reportFollowUpDetails(document.followUpDate, locale, document.recommendationType)
   const recommendedTests = Array.isArray(document.recommendedTests)
     ? document.recommendedTests : resolveRecommendedTests(document, locale)
   const alternateLocale = locale === 'ru' ? 'en' : 'ru'
@@ -35,7 +35,7 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
       return true
     })
   const mixed = document.recommendationType === 'mixed'
-  const groups = mixed
+  const groups = document.recommendationType === 'general' ? [] : mixed
     ? [
         { type: 'homeopathy', title: locale === 'ru' ? 'ГОМЕОПАТИЧЕСКИЕ НАЗНАЧЕНИЯ' : 'HOMEOPATHIC PRESCRIPTIONS', items: document.items.filter((item) => recommendationItemType(item, document.recommendationType) === 'homeopathy') },
         { type: 'bach', title: locale === 'ru' ? 'НАЗНАЧЕНИЯ · ЭССЕНЦИИ БАХА' : 'BACH ESSENCE PRESCRIPTIONS', items: document.items.filter((item) => recommendationItemType(item, document.recommendationType) === 'bach') },
@@ -201,7 +201,7 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
       </section>}
       {document.followUp && <div className="canonical-follow-up"><span>{labels.followUp}</span><strong>{document.followUp}</strong></div>}
 
-      {document.includeDistanceHomeopathy && <DistanceHomeopathyGuide locale={locale} embedded report />}
+      {document.recommendationType !== 'general' && document.includeDistanceHomeopathy && <DistanceHomeopathyGuide locale={locale} embedded report />}
       <DaoStageDisclosure score={document.daoResourceScore} locale={locale}
         published={document.daoResourcePublished !== false} />
       <DocumentSignature date={document.dateIssued} locale={locale} compact />

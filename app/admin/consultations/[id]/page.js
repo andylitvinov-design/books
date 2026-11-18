@@ -21,7 +21,7 @@ export default async function ConsultationResult({ params, searchParams }) {
   const publication=await inspectSavedClientReportPublication(recommendation,store)
   const documents = [
     ...(payment ? [{ record: payment, kind: 'payment', paymentStatus: payment.paymentStatus, currency: payment.currency, amount: payment.amount, editHref: `/admin/payments/${payment.id}#edit-payment` }] : []),
-    { record: recommendation, kind: 'recommendation', recommendationType: recommendation.recommendationType, count: recommendation.items.length, editHref: `/admin/consultations/${recommendation.id}/edit#edit-recommendation` },
+    { record: recommendation, kind: 'recommendation', recommendationType: recommendation.recommendationType, count: recommendation.items.length, editHref: recommendation.recommendationType === 'general' ? `/admin/reports/general/${recommendation.id}/edit#edit-recommendation` : `/admin/consultations/${recommendation.id}/edit#edit-recommendation` },
   ].map(({ record, ...display }) => ({ ...display, id: record.id, active: record.status === 'active', revoke: revokeConsultationDocumentAction.bind(null, id, record.id), reactivate: reactivateConsultationDocumentAction.bind(null, id, record.id) }))
   return <main className="prescription-admin-shell consultation-result">
     {materialNotice && <section className="report-save-publication-state" role="status">
@@ -31,7 +31,7 @@ export default async function ConsultationResult({ params, searchParams }) {
       <p>{materialNotice === 'staged'
         ? 'Выбор сохранён. Клиент увидит материалы только после проверки и публикации сессии.'
         : 'Отчёт создан, но прикрепление материалов не подтверждено. Откройте редактор и повторите выбор. Второй отчёт создавать не нужно.'}</p>
-      {recommendation.clientId && <a href={`/admin/consultations/${id}/edit#report-video-materials-editor`}>
+      {recommendation.clientId && <a href={`${recommendation.recommendationType === 'general' ? `/admin/reports/general/${id}/edit` : `/admin/consultations/${id}/edit`}#report-video-materials-editor`}>
         {materialNotice === 'staged' ? 'Проверить материалы →' : 'Повторить выбор →'}</a>}
     </section>}
     <ResultScreen clientId={recommendation.clientId} logout={logout}
