@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import {personalVideoStorageCsp} from "../lib/app/personal-video-storage-csp.mjs";
 import {readFileSync} from "node:fs";
 import {selectResourcePractice} from "../lib/mandala/resource-practice-selector.mjs";
 import {VIDEO_CART_PRODUCTS,createVideoCartSelection} from "../lib/commerce/cart.js";
@@ -314,6 +315,80 @@ test("verified signed-in Ready Save uploads directly through the existing signed
       loc==="ru"?delivery.indexOf(" en:{",i):delivery.indexOf("} as const;",i);
     assert.ok(i>0&&e>i&&delivery.slice(i,e).includes("cloudSaveOff:"),loc+" clear cloud error");
   }
+});
+
+test("personal signed MP4 CSP is confined to exact origin, EN/RU/ES pages and a server flag",()=>{
+  const env={HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED:"true",
+    HH_APP_SUPABASE_URL:"https://abcdefghijklmnopqrst.supabase.co"};
+  const api="https://abcdefghijklmnopqrst.supabase.co";
+  const tus="https://abcdefghijklmnopqrst.storage.supabase.co";
+  for(const locale of ["en","ru","es"]){
+    assert.deepEqual(personalVideoStorageCsp("/"+locale+"/holistic-support/mandala",env),
+      {connect:" "+api+" "+tus,media:""});
+    assert.deepEqual(personalVideoStorageCsp("/"+locale+"/app/videos",env),
+      {connect:" "+api+" "+tus,media:" blob: "+api});
+  }
+  for(const path of ["/en/app/messages","/ru/app/practice","/en/app/videos/another",
+      "/ru/holistic-support/mobile","/api/app/personal-videos","/admin/videos"]){
+    assert.deepEqual(personalVideoStorageCsp(path,env),{connect:"",media:""},path);
+  }
+  assert.deepEqual(personalVideoStorageCsp("/ru/holistic-support/mandala",
+    {...env,HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED:"false"}),{connect:"",media:""});
+  assert.deepEqual(personalVideoStorageCsp("/ru/app/videos",
+    {...env,HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED:"false"}),{connect:"",media:" blob:"});
+  for(const bad of ["http://abcdefghijklmnopqrst.supabase.co",
+    "https://abcdefghijklmnopqrst.supabase.co.evil.test",
+    "https://abcdefghijklmnopqrst.supabase.co:4433",
+    "https://user:secret@abcdefghijklmnopqrst.supabase.co",
+    "https://abcdefghijklmnopqrst.supabase.co/other-path",
+    "https://abcdefghijklmnopqrst.supabase.co/?api_key=bad",
+    "https://other.supabase.co"]){
+    assert.deepEqual(personalVideoStorageCsp("/en/holistic-support/mandala",
+      {...env,HH_APP_SUPABASE_URL:bad}),{connect:"",media:""},bad);
+  }
+  const middleware=readFileSync(new URL("../middleware.ts",import.meta.url),"utf8");
+  assert.match(middleware,/personalVideoStorageCsp\(pathname,process\.env\)/);
+  assert.match(middleware,/"connect-src 'self'".*personalVideoStorage\.connect/);
+  assert.match(middleware,/directMessageStorageOrigin \+ personalVideoStorage\.media/);
+  assert.match(middleware,/humanSpecialistVideoPage/);
+  assert.doesNotMatch(middleware,/connect-src[^\n]*https:\/\/\*\.supabase\.co/);
+});
+
+test("Add video keeps the existing hydrated first-video editor visible across Safari workspace transitions",()=>{
+  const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
+  const source=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  const exportBrowser=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
+  const decoder=readFileSync(new URL("../scripts/verify-tantra-testimonials.mjs",import.meta.url),"utf8");
+  assert.match(source,/data-video-advanced-open=\{\(showAdvancedVideo\|\|videoScenarioOpen\)\?"true":"false"\}/);
+  assert.match(source,/const openVideoScenarioStep = \(\) => \{[\s\S]*?setVideoScenarioOpen\(true\);[\s\S]*?setShowAdvancedVideo\(true\);/);
+  assert.match(source,/onAddVideo=\{\(\)=>\{[\s\S]*?openVideoScenarioStep\(\);/);
+  assert.match(css,/data-video-advanced-open="false"\] \.quickBuilder>\[data-video-first-video-advanced\]/);
+  assert.match(exportBrowser,/data-first-free-video\]\[data-first-video-hydrated="true"\]/);
+  // Third-party native WebKit decoder recovery must not throw away healthy metadata.
+  assert.match(decoder,/if\(needsInitialMetadata\)el\.load\(\)/);
+  assert.match(decoder,/\,pendingNoMetadata\)/);
+  assert.doesNotMatch(decoder,/if \(el\.readyState === 0\) el\.load\(\)/);
+  // Real WebKit seeks that rebuild the decoder cannot be mistaken for success:
+  // one same-source recovery only after native seeking ends and fresh frames move.
+  assert.match(decoder,/const rebuildingSameSourceSeek = Boolean\(/);
+  assert.match(decoder,/stalled\.paused && stalled\.seeking && !stalled\.ended/);
+  assert.match(decoder,/stalled\.frames === 0/);
+  assert.match(decoder,/stalled\.presentedFrame\.at > initial\.presentedFrame\.at/);
+  assert.match(decoder,/!genuineSameSourceStall && !pendingNoMetadata && !rebuildingSameSourceSeek/);
+  assert.match(decoder,/el\.paused && !el\.seeking &&/);
+  assert.match(decoder,/Math\.abs\(el\.currentTime - pinned\.time\) < 0\.1/);
+  assert.match(decoder,/observation\.nativeSeekRecovery\.after = resumed/);
+  assert.match(decoder,/frame\.mediaTime > before\.time \+ 0\.35/);
+  assert.doesNotMatch(decoder,/if \(rebuildingSameSourceSeek\)[\s\S]*?metadataReload: true/);
+  // WebKit/GStreamer can reset presentedFrames after the native decoder is
+  // rebuilt, even as the actual player clock and decoded frames advance.
+  // Never require this resettable counter to be monotonic across resumes.
+  assert.match(decoder,/frame\.at > \(before\.presentedFrame\?\.at \?\? -1\)/);
+  assert.match(decoder,/frame\.mediaTime > before\.time \+ 0\.35/);
+  assert.match(decoder,/Math\.abs\(frame\.mediaTime - el\.currentTime\) < 0\.35/);
+  assert.doesNotMatch(decoder,/frame\.presentedFrames > before\.presentedFrame\.presentedFrames/);
+  assert.match(decoder,/!el\.paused && !el\.seeking && !el\.ended && !el\.error/);
+  assert.match(decoder,/sample\.error, null/);
 });
 
 test("Ready primes Safari media on trusted Create before awaiting account credit hold",()=>{
