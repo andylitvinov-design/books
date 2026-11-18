@@ -48,4 +48,3 @@ export async function GET(request){
  return new NextResponse(message,{status:503,headers:{...headers,
    'Content-Type':'text/plain; charset=utf-8','Retry-After':'60'}})
 }
-}
