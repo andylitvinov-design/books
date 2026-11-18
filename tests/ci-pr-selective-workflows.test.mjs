@@ -25,7 +25,6 @@ const ownerWorkflows = [
   "hh-sitemap-runtime-assets.yml",
   "hh-video-feature-lab.yml",
   "holistic-house-ocean-audio.yml",
-  "library-public-feed.yml",
   "mentor-community-acceptance.yml",
   "practice-material-previews.yml",
   "hh-first-video-live-export.yml",
@@ -39,7 +38,7 @@ const ownerWorkflows = [
 // changes to their own validation policy; all real domain QA remains required.
 // #4820 preserved Course billing/private checks and Growth user-consent checks
 // on owner-YAML changes while removing only duplicate CI-policy-test fanout.
-const highRiskSelfChecks = ["hh-course-presets.yml","hh-growth-journey.yml","hh-personal-coaching-session.yml","opora-module-ci.yml","hh-public-test-collections.yml","hh-kling-video.yml","practitioner-presentations.yml","pro-reiki-master-paths.yml","hh-reports-development-program.yml","hh-support-mobile-mock-browser.yml","hh-public-journey-wave1.yml"];
+const highRiskSelfChecks = ["hh-course-presets.yml","hh-growth-journey.yml","hh-personal-coaching-session.yml","opora-module-ci.yml","hh-public-test-collections.yml","hh-kling-video.yml","practitioner-presentations.yml","pro-reiki-master-paths.yml","hh-reports-development-program.yml","hh-support-mobile-mock-browser.yml","hh-public-journey-wave1.yml","library-public-feed.yml"];
 const contractFile = 'docs/operations/CI_OWNER_ROUTE_MIGRATION_20261104.md';
 const legacyTrigger = 'tests/ci-pr-selective-workflows.test.mjs';
 const source = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
@@ -262,4 +261,82 @@ test('shared Telegram provider transport has one canonical suite and independent
       'shared canonical notification owner must preserve '+test);
   assert.match(source('hh-owner-telegram-video.yml'),/^  workflow_dispatch:/m,
     'the full media acceptance remains manually callable');
+});
+
+test('Commander signed PR completion avoids unrelated old heavy checks but retains exact owner and mixed-change coverage',()=>{
+  const route='app/api/app/commander/pr-completion/route.js';
+  const owned=[
+    ['hh-app-r1.yml','app/api/app/direct-messages/route.js'],
+    ['hh-app-browser.yml','app/api/app/direct-messages/route.js'],
+    ['ia-v2.yml','app/api/app/direct-messages/route.js'],
+    ['hh-profile-axis-matching.yml','lib/holistic-support/axis-offer-matcher.mjs'],
+    ['hh-private-audio-e2e.yml','lib/app/session.js'],
+    ['practice-google-browser.yml','components/app/practice-inner-navigation.jsx'],
+  ];
+  for(const [name,realSource] of owned){
+    const entry=trigger(name);
+    assert.ok(entry.paths.includes('!app/api/app/commander/**'),name+': missing scoped Commander exception');
+    assert.equal(matchesTrigger(entry,[route],TARGET),false,name+': unrelated heavy domain started on Commander');
+    assert.equal(matchesTrigger(entry,[realSource],TARGET),true,name+': owner source lost protection');
+    assert.equal(matchesTrigger(entry,[route,realSource],TARGET),true,name+': mixed PR must still run owner');
+  }
+  for(const name of ['hh-pr-core-release.yml','hh-pr-sweep-guard.yml'])
+    assert.equal(matchesTrigger(trigger(name),[route],TARGET),true,name+': Commander has no real gate');
+  const guard=source('hh-pr-sweep-guard.yml');
+  assert.ok(guard.includes('node --test tests/commander-pr-*.test.mjs'),
+    'Commander signed source, exact HEAD, worker receipt and LIVE contract tests stay executable');
+  for(const path of ['lib/agent-director/pr-head-history.mjs','tests/commander-pr-journey.test.mjs'])
+    assert.equal(matchesTrigger(trigger('hh-pr-sweep-guard.yml'),[path],TARGET),true,
+      path+': focused source changes must trigger independent guard');
+});
+
+
+test('Commander-only source changes do not trigger the unrelated postmerge Reports suite',()=>{
+  const sourceText=source('hh-reports-development-program.yml');
+  const push=sourceText.split(/^  pull_request:/m)[0];
+  const owner=sourceText.split(/^  pull_request:/m)[1]||'';
+  assert.match(push,/^      - 'app\/api\/app\/\*\*'$/m);
+  assert.match(push,/^      - '!app\/api\/app\/commander\/\*\*'$/m);
+  assert.ok(!owner.includes("'!app/api/app/commander/**'"),
+    'only unrelated postmerge Reports fanout is retired, not the owned PR validation');
+  assert.match(owner,/^      - 'lib\/profile\/development-program\.js'$/m);
+});
+
+test('public Ali support screens run one focused conversation owner, not three unrelated private App/IA suites',()=>{
+  const ui=['components/app/messenger-ai-landing.tsx',
+    'components/app/messenger-ai-landing.module.css',
+    'components/app/messenger-support-quiz.tsx',
+    'components/app/messenger-support-quiz.module.css'];
+  const privateOwners=['hh-app-r1.yml','hh-app-browser.yml','ia-v2.yml'];
+  for(const file of ui){
+    for(const name of privateOwners){
+      const t=trigger(name);
+      assert.equal(matchesTrigger(t,[file],TARGET),false,name+': public-only Ali UI allocated private CI');
+      assert.equal(matchesTrigger(t,[file,'app/api/app/direct-messages/route.js'],TARGET),true,
+        name+': private Messenger route must always trigger owner on mixed PR');
+    }
+    assert.equal(matchesTrigger(trigger('hh-home-conversation.yml'),[file],TARGET),true,
+      file+': focused public dialogue owner missing');
+    assert.equal(matchesTrigger(trigger('hh-pr-core-release.yml'),[file],TARGET),true,
+      file+': production Core lost coverage');
+  }
+  const owned=source('hh-home-conversation.yml');
+  assert.ok(owned.includes('node --test')&&owned.includes('tests/messenger-support-quiz.test.mjs'),
+    'public Ali consent/need selection unit test must run, not just trigger');
+  assert.ok(owned.includes('npx eslint')&&owned.includes('components/app/messenger-support-quiz.tsx'),
+    'public Ali component JSX must be linted by focused owner');
+  const quiz='tests/messenger-support-quiz.test.mjs';
+  assert.equal(matchesTrigger(trigger('hh-home-conversation.yml'),[quiz],TARGET),true);
+  assert.equal(matchesTrigger(trigger('hh-pr-core-release.yml'),[quiz],TARGET),true);
+});
+
+test('signed CRM and Commander isolated postmerge changes cannot restart whole report suite',()=>{
+  const workflow=source('hh-reports-development-program.yml');
+  const push=workflow.match(/^  push:\n[\s\S]*?(?=^  pull_request:)/m)?.[0]||'';
+  assert.ok(push.includes("'app/api/app/**'"),'real report APIs keep push acceptance');
+  for(const excluded of ['!app/api/app/commander/**','!app/api/app/crm/messenger/webhook/**'])
+    assert.ok(push.includes("'"+excluded+"'"),'postmerge report exclusion missing: '+excluded);
+  assert.match(push,/'lib\/clients\/session-delivery-service\.js'/);
+  assert.match(push,/'lib\/documents\/report-progress\.js'/);
+  assert.match(workflow,/^  pull_request:/m,'real PR report validation retained');
 });
