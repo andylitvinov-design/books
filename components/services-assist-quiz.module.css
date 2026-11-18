@@ -47,9 +47,9 @@
 .choice>span {min-width:0}
 .choice[aria-pressed="true"] {border-color:#b6f1ac;background:#e5f5d8;box-shadow:0 0 0 2px #edffb264}
 .check {position:absolute;right:4px;top:4px;color:#086347}
-.moreTopics {position:absolute;right:14px;bottom:2px;display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:19px;margin:0;padding:2px 4px;border:0;background:transparent;color:#f2fff4;text-decoration:underline;text-underline-offset:3px;font:650 11.5px/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
-.moreTopics svg {flex:none}
-.rotated {transform:rotate(180deg)}
+.choices[data-question-kind="topic"] .choice {min-height:73px}
+.summary {margin:0 0 11px;padding:10px 12px;border-radius:15px;background:#eff8ec;color:#174537;font:500 12px/1.5 Arial,Helvetica,sans-serif}
+.summary strong {font-weight:750}
 .submit {display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:49px;margin-top:auto;border:1px solid #dcf8de;border-radius:17px;background:#e2f6dd;color:#09503d;font:750 16px/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
 .submit:disabled {opacity:.64;cursor:not-allowed}
 .categories {margin:14px 1px 0}
@@ -90,6 +90,17 @@
   .categoryName {font-size:11.5px}
   .categoryIcon {left:6px}
   .categoryHeader h2 {font-size:21px}
+}
+/* Keep all six real photographic categories above the fixed seven-tab dock on
+   390–430px phones, including Russian two-line labels; never hide content. */
+@media (min-width:390px) and (max-width:760px){
+ .hero{min-height:94px;margin-bottom:5px;padding-block:10px 8px}
+ .form{min-height:207px;padding-block:10px 12px}
+ .categories{margin-top:10px}
+ .categoryHeader{margin-bottom:6px}
+ .category{min-height:112px}
+ .categoryMedia{height:60px}
+ .categoryInfo{padding:14px 8px 6px}
 }
 @media(min-width:761px){.root{display:none}}
 @media(prefers-reduced-motion:reduce){.root *{scroll-behavior:auto!important}}

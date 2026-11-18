@@ -11,7 +11,8 @@ const directory = read('components/services-directory-page.tsx')
 
 test('the real dedicated Spanish services route renders a complete existing conversion page', () => {
   assert.match(es, /export default async function SpanishServicesPage/)
-  assert.match(es, /<main className=\{"services-shell services-shell--studio " \+ assistStyles\.assistPage \+ " " \+ compactStyles\.page\} lang="es">/)
+  assert.ok(es.includes('import uniformStyles from "@/components/services-support-uniform.module.css"'))
+  assert.ok(es.includes('compactStyles.page + " " + uniformStyles.page} lang="es"'))
   assert.match(es, /<ServicesCompactCatalog locale="es">/)
   assert.ok(es.indexOf('<ServicesAssistMobile locale="es" />')<es.indexOf('<ServicesCompactCatalog locale="es">'),'Spanish dialogue remains above compact catalog')
   assert.match(es, /<ServicesAssistMobile locale="es"\s*\/>/)

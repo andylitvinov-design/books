@@ -9,6 +9,7 @@ import {runInNewContext} from 'node:vm'
 import {chooseDictationLanguage,detectedSpeechLocale,coachSpokenTurnLocale,ios27NeedsSpeechRecovery,
   readDictationResults,hasCoachSpokenAnswer} from '../lib/personal-coaching/my-coach-dictation.mjs'
 import {appendSpokenAnswer} from '../lib/personal-coaching/speech-text.js'
+import {coachVoiceFragmentNeedsReview,coachDraftWithoutUncertainSpeech} from '../lib/personal-coaching/coach-voice-turn-quality.mjs'
 import {coachRecordingMime,createCoachVoiceGate,coachFallbackLocale,coachRecordedSupported,startCoachRecordedTurn} from '../lib/personal-coaching/coach-recorded-turn.mjs'
 
 const source=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
@@ -19,7 +20,7 @@ const executable=source.slice(start,end)+'\n  return null\n})\nMyCoachSpeechLoop
 
 function createSession({ttsFailures=[],respond,stuckCue=false,skipSpeechStart=false}={}){
   const voices=[],inputs=[],phases=[],cueVolumes=[],timers=new Map()
-  let id=0,starts=0,intros=0,ttsCalls=0,cues=0,spoken=0
+  let id=0,starts=0,intros=0,ttsCalls=0,cues=0,spoken=0,deviceSpoken=0
   class Recognition{
     constructor(){this.started=false;this.aborted=false;voices.push(this)}
     start(){this.started=true;if(!skipSpeechStart)this.onstart?.()}
@@ -41,7 +42,15 @@ function createSession({ttsFailures=[],respond,stuckCue=false,skipSpeechStart=fa
     SpeechSynthesisUtterance:class{constructor(text){this.text=text}},
     speechSynthesis:{
       cancel(){},
-      speak(cue){cues++;cueVolumes.push(cue.volume);if(!stuckCue)queueMicrotask(()=>cue.onend?.())},
+      speak(utterance){
+        // Distinguish Safari's short audio-session cue from the no-cost
+        // device-narration fallback. The latter has real start/end events.
+        const recoveryCue=typeof utterance.volume==='number'
+        if(recoveryCue){cues++;cueVolumes.push(utterance.volume)}
+        else deviceSpoken++
+        if(!recoveryCue||!stuckCue)
+          queueMicrotask(()=>{utterance.onstart?.();utterance.onend?.()})
+      },
     },
   }
   const fakeDocument={visibilityState:'visible',addEventListener(){},removeEventListener(){}}
@@ -59,6 +68,8 @@ function createSession({ttsFailures=[],respond,stuckCue=false,skipSpeechStart=fa
     setTimeout:schedule,clearTimeout:cancel,queueMicrotask,AbortController,
     chooseDictationLanguage,detectedSpeechLocale,coachSpokenTurnLocale,ios27NeedsSpeechRecovery,
     readDictationResults,appendSpokenAnswer,hasCoachSpokenAnswer,
+    // The VM runs the real controller body; inject its real pure imports.
+    coachVoiceFragmentNeedsReview,coachDraftWithoutUncertainSpeech,
     // In Web Speech-only fixtures the new iPhone recorder is intentionally absent.
     coachRecordedSupported:()=>false,startCoachRecordedTurn:()=>null,
     coachSpokenText:text=>({text}),
@@ -98,6 +109,7 @@ function createSession({ttsFailures=[],respond,stuckCue=false,skipSpeechStart=fa
     get intros(){return intros},
     get ttsCalls(){return ttsCalls},
     get spoken(){return spoken},
+    get deviceSpoken(){return deviceSpoken},
     get cues(){return cues},
     get cueVolumes(){return cueVolumes},
     flushShortTimers(){
@@ -131,7 +143,8 @@ test('one Play sustains five iOS 27 synthetic turns and recovers one failed natu
   assert.equal(session.intros,1,'the original introduction is not played repeatedly')
   assert.deepEqual(session.inputs,phrases,'all five user turns reach the model exactly once')
   assert.equal(session.ttsCalls,5,'one synthesis attempt per answer, no paid retry')
-  assert.equal(session.spoken,4,'one failed TTS cannot stop later turns')
+  assert.equal(session.spoken,4,'natural TTS still streams on four successful turns')
+  assert.equal(session.deviceSpoken,1,'the failed natural turn is spoken by device instead of going silent')
   assert.equal(session.cues,6,'first post-MP3 mic and all five follow-ups each get a real recovery cue')
   assert.ok(session.cueVolumes.every(volume=>volume>0&&volume<=0.3),'a muted cue does not reset iOS audio')
   assert.ok(session.phases.includes('listening'))
@@ -201,7 +214,8 @@ test('one Play sustains TEN synthetic iOS 27 client/coach turns with bounded TTS
   assert.equal(session.intros,1,'one authored introduction per session')
   assert.deepEqual(session.inputs,phrases,'all ten distinct user phrases delivered once')
   assert.equal(session.ttsCalls,10,'no hidden provider retries')
-  assert.equal(session.spoken,8,'failed natural audio does not freeze later turns')
+  assert.equal(session.spoken,8,'successful natural audio remains primary')
+  assert.equal(session.deviceSpoken,2,'two natural failures receive audible device fallback')
   assert.equal(session.cues,11,'the first Safari turn also follows a recovery cue')
   session.ref.current.stop()
   assert.equal(mic.aborted,true)
@@ -217,7 +231,7 @@ test('a deaf iOS recognizer retries a bounded number of times, then stops claimi
     assert.equal(mic.aborted,true,'detach a failed silent Safari recognizer')
     if(count<4)session.flushShortTimers()
   }
-  assert.equal(session.phases.at(-1),'idle','do not show an endless false listening state')
+  assert.equal(session.phases.at(-1),'ready','preserve the one-Play session without a fake Listening indicator')
   assert.equal(session.cues,4,'only bounded local reset cues, no paid STT/TTS retry')
   assert.deepEqual(session.inputs,[])
   assert.equal(session.ttsCalls,0)
@@ -317,7 +331,7 @@ test('recorded fallback completes one consented voice turn with a single STT cal
   assert.equal(typeof tick,'function');
   time=200;loud=true;tick();time=350;tick();
   assert.ok(phases.includes('hearing'));
-  loud=false;time=1600;tick();
+  loud=false;time=2400;tick(); // 1.9s VAD hold preserves ordinary mid-sentence pauses
   for(let i=0;i<12&&!answer;i++)await new Promise(resolve=>setImmediate(resolve));
   assert.equal(answer,'Я хочу обсудить свою цель');
   assert.equal(uploads,1);
