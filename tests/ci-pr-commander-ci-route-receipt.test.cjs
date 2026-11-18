@@ -276,3 +276,49 @@ test('accepted dispatch upgrades one row under row lock, archives previous state
  a.match(list,/assignment_receipt,route_receipt,route_recorded_at/);
  a.match(list,/where inbox_owner_id=\$3::uuid/);
 });
+
+
+test('verified reusable Core workflow OIDC persists follow-up without source write',()=>{
+ const migration=fs.readFileSync('supabase/migrations/20261118011700_commander_ci_route_followup_reusable_oidc.sql','utf8');
+ const edge=fs.readFileSync('supabase/functions/agent-commander-private-store-v1/index.ts','utf8');
+ const wrapper=fs.readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+ a.match(migration,/commander_ci_route_followup_record_v1\(uuid\)/);
+ a.match(migration,/hh-pr-direct-core-failure\.yml@refs\/heads\/codex\/bootstrap-books/);
+ a.match(migration,/hh-native-auto-merge\.yml@refs\/heads\/codex\/bootstrap-books/);
+ a.match(migration,/position\(new_identity IN current_def\)/);
+ a.match(migration,/position\(old_identity IN current_def\)/);
+ a.match(migration,/UNRECOGNIZED_IDENTITY_RULE/);
+ a.match(edge,/claims\.job_workflow_ref === "andylitvinov-design\/books\/\.github\/workflows\/hh-pr-direct-core-failure\.yml@refs\/heads\/codex\/bootstrap-books"/);
+ a.match(wrapper,/uses: \.\/\.github\/workflows\/hh-pr-direct-core-failure\.yml/);
+ a.doesNotMatch(migration,/GRANT.*(?:public|anon|authenticated)/i);
+});
+
+
+test('signed historical CI HEAD stays visible without overwriting newer owner task',()=>{
+ const sql=fs.readFileSync('supabase/migrations/20261118012500_commander_ci_historical_head_readback_v1.sql','utf8');
+ a.match(sql,/HISTORICAL_HEAD_READBACK_PENDING/);
+ a.match(sql,/coalesce\(t\.payload->'ciIncident'->>'head_sha',''\) !~/);
+ a.match(sql,/sourceTaskHeadSha/);
+ a.match(sql,/NO_SIGNED_HISTORICAL_ROUTE/);
+ a.match(sql,/DO_NOT_DISPATCH_OLD_HEAD/);
+ a.match(sql,/route_followup_receipt=v_receipt/);
+ a.match(sql,/taskSourceMatches',false/);
+ a.match(sql,/sourceFixVerified',false/);
+ a.match(sql,/liveVerified',false/);
+ a.match(sql,/No commander_tasks mutation or new worker grant/);
+ a.doesNotMatch(sql,/EXECUTE\s+.*(?:workflow_dispatch|model|worker)/i);
+});
+
+
+test('an existing owner task gains historical CI route without a fabricated repair',()=>{
+ const source=fs.readFileSync('supabase/migrations/20261118013500_commander_existing_owner_ci_route_readback_v1.sql','utf8');
+ a.match(source,/EXISTING_OWNER_TASK_CI_ROUTE_READONLY/);
+ a.match(source,/MATCHED_CHAT_EVENT_RECORDED/);
+ a.match(source,/NO_SIGNED_EXISTING_OWNER_ROUTE/);
+ a.match(source,/NO_AUTOMATIC_SOURCE_DISPATCH/);
+ a.match(source,/sourceFixVerified',false/);
+ a.match(source,/liveVerified',false/);
+ a.match(source,/Never mutate existing owner task/);
+ a.match(source,/t\.payload->'ciIncident' IS NULL/);
+ a.match(source,/UNRECOGNIZED_FUNCTION/);
+});
