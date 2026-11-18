@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowRight, ArrowUp, BriefcaseBusiness, ChevronDown, HeartHandshake, Mic, Route, Sparkles, Leaf, Heart, TrendingUp, X, CheckCircle2, Play, Pause, UserRound } from "lucide-react";
 import { SiteNavigation } from "@/components/site-navigation";
 import AliPersonaPicker from "@/components/app/ali-persona-picker";
@@ -103,6 +103,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
   const t=COPY[locale];
   const {persona}=useAliPersona();
   const [personaOpen,setPersonaOpen]=useState(false);
+  const closePersona=useCallback(()=>setPersonaOpen(false),[]);
   const [greetingSpeaking,setGreetingSpeaking]=useState(false);
   useEffect(()=>()=>stopAliPersonaAudio(),[]);
   const startGuideGreeting=()=>{
@@ -266,7 +267,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
         <small className={styles.privacy}>{t.transferPrivacy}</small>
       </div>
     </div>
-    <AliPersonaPicker open={personaOpen} onClose={()=>setPersonaOpen(false)} locale={locale}/>
+    <AliPersonaPicker open={personaOpen} onClose={closePersona} locale={locale}/>
     <Link className={styles.continue} href={"/"+(locale==="es"?"en":locale)+"/app/portrait?space=path"}
       prefetch={false} data-home-continue-path>
       <span className={styles.continueIcon}><Route size={25} aria-hidden="true"/></span>
