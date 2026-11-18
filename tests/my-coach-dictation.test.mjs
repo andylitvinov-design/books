@@ -275,10 +275,14 @@ test('toolbar language setting controls transcription, response, persona intro a
  assert.ok(ui.includes('<Languages size={21}'))
  assert.ok(ui.includes('value={speechLocale}'))
  assert.ok(ui.includes('onChange={event=>setSpeechLocale(event.target.value)}'))
- for(const language of ['auto','ru','en'])assert.ok(ui.includes('<option value="'+language+'">'))
- assert.ok(ui.includes('chooseDictationLanguage({locale:lang,browserLanguages})'))
- assert.ok(ui.includes('setDeviceSpeechLocale(chosen.split(\'-\')[0])'))
- assert.ok(ui.includes("const conversationLang=['en','ru','es'].includes(speechLocale)?speechLocale:deviceSpeechLocale"))
+ // The route language wins on entry; changing the toolbar is an explicit override.
+ for(const language of ['en','ru','es'])
+   assert.ok(ui.includes('<option value="'+language+'">'+language.toUpperCase()+'</option>'))
+ assert.ok(ui.includes('const [speechLocale,setSpeechLocale]=useState(lang)'))
+ assert.ok(ui.includes('useEffect(()=>{setSpeechLocale(lang)},[lang])'))
+ assert.ok(ui.includes("const conversationLang=['en','ru','es'].includes(speechLocale)?speechLocale:lang"))
+ assert.ok(!ui.includes('setDeviceSpeechLocale('))
+ assert.ok(!ui.includes('<option value="auto">'))
  assert.ok(ui.includes('locale={conversationLang} speechLocale={speechLocale}'))
  assert.ok(ui.includes('getCoachPresentation(personaId,conversationLang)?.text'))
  assert.ok(ui.includes('coachIntroAudioPath(personaId,conversationLang)'))
@@ -292,4 +296,31 @@ test('toolbar language setting controls transcription, response, persona intro a
  assert.ok(loop.includes("['en','ru','es'].includes(speechLocaleRef.current)?speechLocaleRef.current"))
  assert.ok(loop.includes('recognition.lang=chooseDictationLanguage'))
  assert.ok(loop.includes('restartSilentRecognition(recognition)'))
+})
+
+
+test('My Coach entry inherits the site locale, with a visible manual RU/EN/ES override',()=>{
+  const ui=source('components/my-coach-live-dialogue.jsx')
+  const loop=source('components/my-coach-speech-loop.jsx')
+  const css=source('components/my-coach-live-dialogue.module.css')
+  assert.match(ui,/const \[speechLocale,setSpeechLocale\]=useState\(lang\)/)
+  assert.match(ui,/useEffect\(\(\)=>\{setSpeechLocale\(lang\)\},\[lang\]\)/)
+  assert.match(ui,/const conversationLang=\['en','ru','es'\]\.includes\(speechLocale\)\?speechLocale:lang/)
+  assert.doesNotMatch(ui,/deviceSpeechLocale|setDeviceSpeechLocale|<option value="auto"/)
+  assert.match(ui,/data-coach-language-control/)
+  for(const language of ['en','ru','es'])
+    assert.ok(ui.includes('<option value="'+language+'">'+language.toUpperCase()+'</option>'))
+  assert.ok(ui.includes('locale={conversationLang} speechLocale={speechLocale}'))
+  assert.ok(ui.includes('value={speechLocale}'))
+  assert.ok(css.includes('font:800 12px/1.2 system-ui'))
+  assert.ok(loop.includes('selection:speechLocaleRef.current'),
+    'the explicit locale is forwarded to speech recognition')
+  assert.ok(loop.includes('coachIntroAudioPath(personaId,lang)'),
+    'the introduction MP3 path follows the selected locale')
+  assert.ok(loop.includes('locale:replyLocale,personaId'),
+    'TTS receives the same locale as the coach reply')
+  for(const [locale,asr] of [['en','en-GB'],['ru','ru-RU'],['es','es-ES']])
+    assert.equal(chooseDictationLanguage({locale,selection:locale,
+      browserLanguages:['ru-RU','en-US','es-ES'],lastTranscript:'Мама'}),asr,
+      'the route/manual selection wins over device language and old text')
 })
