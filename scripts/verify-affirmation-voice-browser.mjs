@@ -66,6 +66,19 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(continueToIdeas).toBeDisabled();
     const subcategories=page.locator('[data-auto-video-subcategory]');
     await expect(subcategories).toHaveCount(4);
+    const subcategoryArt=page.locator('[data-video-goal-subcategory-cards] [data-video-goal-art]');
+    await expect(subcategoryArt).toHaveCount(4);
+    for(const width of [320,354,390,430]){
+      await page.setViewportSize({width,height:840});
+      for(const photo of await subcategoryArt.all()){
+        await photo.scrollIntoViewIfNeeded();
+        await expect.poll(()=>photo.evaluate(img=>img.complete&&img.naturalWidth>0),
+          {message:"Goal 2 photo loads at "+width}).toBe(true);
+      }
+      const overflows=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1);
+      assert.equal(overflows,false,"Goal step 2 fits "+width);
+    }
+    await page.setViewportSize({width:390,height:840});
     await subcategories.first().click();
     await expect(quizProgress).toContainText('3 / 3');
     await expect(continueToIdeas).toBeDisabled();
@@ -747,11 +760,29 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const preferredName=locale==="ru"?"Андрей":locale==="es"?"Andrés":"Andy";
       const personalClosing=locale==="ru"?"Андрей, я в тебя верю":
         locale==="es"?"Andrés, creo en ti":"Andy, I believe in you";
+      const personalQuiz=phrases.locator("[data-video-personalization]");
+      const nextQuiz=personalQuiz.locator("[data-video-personalization-clarify-continue]");
+      const backQuiz=personalQuiz.locator("[data-video-personalization-clarify-back]");
+      await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","1");
+      await expect(phrases.locator('[data-personalization-kind="current"]')).toBeVisible();
+      await expect(phrases.locator('[data-personalization-kind="desired"]')).toBeHidden();
+      await nextQuiz.click();
+      await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","2");
+      await expect(phrases.locator('[data-personalization-kind="desired"]')).toBeVisible();
+      await nextQuiz.click();
+      await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","3");
+      await expect(phrases.locator('[data-personalization-kind="strength"]')).toBeVisible();
+      await nextQuiz.click();
+      await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","4");
       const firstNameInput=phrases.locator("[data-video-personalization-name]");
       await expect(firstNameInput).toBeVisible();
       await firstNameInput.fill(preferredName);
+      await backQuiz.click();
+      await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","3");
+      await nextQuiz.click();
       await expect(firstNameInput).toHaveValue(preferredName);
-      await conceptTab.click();
+      await nextQuiz.click();
+      await expect(conceptTab).toHaveAttribute("aria-pressed","true");
       await expect(phrases.locator("[data-video-ideas-concept-panel]")).toBeVisible();
       await personalTab.click();
       const advancedText=phrases.locator('[data-video-phrase-audio-shortcut]');

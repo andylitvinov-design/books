@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance } from '../lib/ci/production-base-impact.mjs';
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
@@ -450,6 +450,7 @@ export async function verify(api,ctx,files,options={}) {
     !verifiedOptionalOwnerSelectorMigration(files,changedRows));
   const approvedBaseChanges = new Set();
   const approvedPresentationBases = new Set();
+  const approvedDisjointBases = new Set();
   async function verifyCurrentBase(live) {
     assertSame(live, ctx, false);
     if (!requireCurrentBase) return;
@@ -464,7 +465,8 @@ export async function verify(api,ctx,files,options={}) {
     if (!pinnedChangeRows || typeof api.compare !== 'function') {
       throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
     }
-    if (approvedPresentationBases.has(liveBaseSha) && live.mergeable !== true)
+    if ((approvedPresentationBases.has(liveBaseSha) || approvedDisjointBases.has(liveBaseSha)) &&
+        live.mergeable !== true)
       throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
     if (!approvedBaseChanges.has(liveBaseSha)) {
       // Only a complete, ancestry-proven, documentation-only target advance
@@ -504,10 +506,20 @@ export async function verify(api,ctx,files,options={}) {
       // A positive GitHub mergeable result and complete ancestry proof are required.
       const independentPresentation = pinnedChangeRows && live.mergeable === true &&
         safeIndependentPublicPresentationAdvance(diff, ctx.base, liveBaseSha, changed);
+      // A real protected production promotion may change unrelated public
+      // product files while this PR's Core and specialists are still running.
+      // Do not discard those successful results merely because BASE moved.
+      // Require GitHub's affirmative mergeability and complete source proof.
+      const disjointPublicSource = pinnedChangeRows && live.mergeable === true &&
+        safeDisjointPublicSourceAdvance(diff, ctx.base, liveBaseSha, changed);
       if (!documentationOnly && !independentlyRevalidated &&
           !isolatedCiPolicy && !unrelatedCiMaintenance && !inertPublicImages &&
-          !independentPresentation) {
+          !independentPresentation && !disjointPublicSource) {
         throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+      }
+      if (disjointPublicSource) {
+        approvedDisjointBases.add(liveBaseSha);
+        console.log('CI_BASE_ADVANCE_REUSED: verified disjoint public product source; preserve green exact-HEAD checks');
       }
       if (independentPresentation) {
         approvedPresentationBases.add(liveBaseSha);
