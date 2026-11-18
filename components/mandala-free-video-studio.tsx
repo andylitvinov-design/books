@@ -8918,24 +8918,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 return false;
               }}
               onChooseQuality={sourceReady=>{
-                if(!sourceReady){
-                  setNotice(locale==="ru"
-                    ?"Пока нет подтверждённых видеокадров для каждого действия этой истории. Сначала подберите соответствующие материалы; случайные пейзажи не используем."
-                    :locale==="es"
-                      ?"Faltan tomas verificadas para las acciones de esta historia. Primero elige imágenes adecuadas; no usamos paisajes al azar."
-                      :"This story still needs footage verified for each depicted action. Choose relevant sources first; unrelated landscapes are not used.");
-                  return;
-                }
-                // Commit the user-selected fifth step in this real touch event.
-                // Source approval remains independent and cannot trigger billing.
+                // Selecting a video type is navigation, not source approval,
+                // a media licence, a render or a credit transaction.
                 flushSync(()=>{
                   setActiveWorkspace("editor");
                   setMontagePanel("promo");
                 });
                 setNotice(sourceReady?"":locale==="ru"?
-                  "Раскадровка пока не применена. Проверьте исходные сцены в дополнительных настройках монтажа перед созданием.":
-                  locale==="es"?"El guion visual aún no se ha aplicado. Revisa las escenas en las opciones avanzadas antes de crear el vídeo.":
-                  "Storyboard not yet applied. Review the source scenes in advanced Montage options before creating the video.");
+                  "Формат выбрать можно, но для создания видео пока не хватает подходящих кадров. Добавьте их в Сюжет → Настройки видео.":
+                  locale==="es"?"Puedes elegir el formato, pero aún falta material acorde al guion. Añádelo en Guion → Ajustes de vídeo.":
+                  "You can choose a video type, but matching footage is still missing. Add relevant media in Story → Video settings.");
                 window.requestAnimationFrame(()=>
                   document.querySelector('[data-video-montage-tools]')?.scrollIntoView({behavior:"smooth",block:"start"}));
               }}
