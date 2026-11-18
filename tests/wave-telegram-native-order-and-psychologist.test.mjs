@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {wavePsychologistNativeTurn,wavePsychologistNativeSummary} from '../lib/assist/wave-psychologist-native.mjs';
+import {aliFreeDiagnosticTurn} from '../lib/assist/ali-free-diagnostic.mjs';
 import {v3Action,v3ButtonsFor,v3Context,V3_LABELS,v3ServiceIntakeReady,
   v3CanStart,v3ServiceStart,v3ServiceCopy} from '../lib/crm/telegram-ai-diagnostic-v3.mjs';
 import {SECRETARY_MODES} from '../lib/assist/secretary-modes.mjs';
@@ -128,4 +129,16 @@ test('product and consent safety invariants: no new model API, bot, webhook, or 
  assert.doesNotMatch(flow,/https:\/\/t\.me\/holistichouse\?text=/);
  assert.match(flow,/serviceFinalize|promptResult/);
  assert.match(flow,/encryptContext\(current,savedContext,config\)/);
+});
+test('Free Review booking FAQ stays in Wave and offers native Book, not a website',()=>{
+ const sample=[['ru','Как записаться?','Записаться к Андрею'],
+   ['en','Can I book a session?','Book with Andrey'],
+   ['es','¿Puedo reservar una sesión?','Reservar con Andrey']];
+ for(const [locale,message,button] of sample){
+  const reply=aliFreeDiagnosticTurn({locale,message,
+    stage:'challenge',slots:{goal:'Clarity'}});
+  assert.equal(reply.stage,'challenge');
+  assert.match(reply.reply,new RegExp(button));
+  assert.doesNotMatch(reply.reply,/https?:\/\//);
+ }
 });

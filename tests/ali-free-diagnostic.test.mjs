@@ -143,8 +143,8 @@ test('boundary, explicit stop and severe symptoms do not create a lead',()=>{
 test('skip button belongs only to this consented V3 free mode',()=>{
  for(const locale of ['ru','en','es']){
    const buttons=v3ButtonsFor(locale,'free_interview',1);
-   assert.deepEqual(buttons,[[V3_LABELS[locale].skip,V3_LABELS[locale].finish]]);
-   assert.deepEqual(v3ButtonsFor(locale,'free_interview',0),[[V3_LABELS[locale].skip]]);
+   assert.deepEqual(buttons,[[V3_LABELS[locale].skip,V3_LABELS[locale].finish],[V3_LABELS[locale].book]]);
+   assert.deepEqual(v3ButtonsFor(locale,'free_interview',0),[[V3_LABELS[locale].skip,V3_LABELS[locale].book]]);
    const inline=telegramInlineButtonForText(V3_LABELS[locale].skip,locale);
    assert.equal(inline.callback_data,'hhv3:'+locale+':skip');
    assert.equal(telegramInlineCallbackSelection(inline.callback_data).inlineAction,'v3:skip');
@@ -169,11 +169,11 @@ test('free review has one photo-before-text welcome and an explicit booking choi
  const service=source('lib/crm/telegram-ai-diagnostic-v3-service.js');
  const webhook=source('app/api/app/crm/messenger/webhook/[provider]/route.js');
  const sender=source('lib/crm/messenger-provider.js');
- assert.match(service,/freeStart&&canReply\?\{\.\.\.greeting,freeWelcomePhoto:true\}/);
+ assert.match(service,/if\(freeStart\)return \{\.\.\.greeting,freeWelcomePhoto:true\}/);
  assert.match(service,/!activeServiceConsent&&!activeFreeConsent/);
  assert.match(service,/if\(action==='book'&&\['consent','interview','review_confirm'\]/);
  assert.doesNotMatch(service,/\+'\/services\/free-consultation'/);
- assert.match(service,/services\/free-consultation/);
+ assert.doesNotMatch(service,/services\/free-consultation/);
  assert.match(webhook,/freeWelcomePhoto:aiIntake\.freeWelcomePhoto===true/);
  assert.match(sender,/TELEGRAM_FREE_REVIEW_WELCOME_PHOTO/);
  assert.match(sender,/andy-about\.png/);
@@ -185,10 +185,11 @@ test('free review has one photo-before-text welcome and an explicit booking choi
  assert.doesNotMatch(sender,/text\.length>900\|\|!text\.includes\('OpenRouter'\)/);
 });
 
-test('a natural question about booking gets a real public request link, not a warning',()=>{
+test('a natural booking question directs to the Telegram Book button, not an external website',()=>{
  const reply=turn('Can I book a session?',{stage:'challenge',slots:{goal:'Clarity'}});
  assert.equal(reply.stage,'challenge','booking must not fabricate an answered phase');
- assert.match(reply.reply,/https:\/\/holistichouse\.vercel\.app\/en\/services\/free-consultation/);
+ assert.match(reply.reply,/Book with Andrey/);
+ assert.doesNotMatch(reply.reply,/https?:\/\//);
  assert.equal(questions(reply.reply),0,'a booking request should not trigger another interrogation question');
 });
 test('existing compact Telegram menu offers Free Diagnostic as second-level choice',()=>{
@@ -237,8 +238,8 @@ test('production hook is consent-first, never uses external LLM or silent CRM ha
  assert.match(handler,/if\(action==='send'\)/);
  assert.match(handler,/ai_review_consent_at=now\(\)/);
  assert.match(handler,/return promptResult/);
- assert.match(handler,/ctx\.mode===FREE_DIAGNOSTIC_MODE\?chatAllowed:/);
- assert.match(handler,/serviceCopy&&ctx\.mode!==SECRETARY_MODES\.PSYCHOLOGIST\?serviceAllowed:allowed/);
+ assert.match(handler,/const purposeReady=general\?chatAllowed:serviceAllowed/);
+ assert.match(handler,/ctx\.conversationKind==='general'\?chatAllowed:serviceAllowed/);
  assert.match(handler,/prior\.ctx\.conversationKind==='general'\?v3CanChat\(env\):v3ServiceIntakeReady\(env\)/);
  assert.match(handler,/wavePsychologistNativeTurn/);
  assert.doesNotMatch(planner,/\bfetch\s*\(|\baxios\s*\(|\bingestMessengerEventInTransaction\s*\(/);
