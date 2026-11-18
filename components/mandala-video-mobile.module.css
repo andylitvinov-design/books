@@ -5594,7 +5594,6 @@
    grid-auto-columns:84px}
 }
 
-
 /* 18 Nov approved one-screen Montage Audio: two native actions and one next step.
    The full verified library opens on demand; uploads retain native iPhone input. */
 .audioCompactActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0}
@@ -5617,8 +5616,9 @@
 @media(max-width:759px){
   /* First two music previews + native upload tile remain visible without scrolling. */
   .studio[data-montage-panel="audio"] .audioCompactGrid>*{order:4}
-  .studio[data-montage-panel="audio"] .audioCompactGrid>:first-child{order:0}
-  .studio[data-montage-panel="audio"] .audioCompactGrid>:nth-child(2){order:1}
+  /* Hidden audio transport is sibling #1: count visible article cards. */
+  .studio[data-montage-panel="audio"] .audioCompactGrid>.audioCompactTile:nth-of-type(1){order:0}
+  .studio[data-montage-panel="audio"] .audioCompactGrid>.audioCompactTile:nth-of-type(2){order:1}
   .studio[data-montage-panel="audio"] .audioCompactGrid>.audioCompactUpload{order:2}
   /* Add Affirmations is the only bottom CTA in this Audio step.
      The original Ready/Generate workflow stays available in its own top tab. */

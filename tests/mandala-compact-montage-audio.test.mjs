@@ -120,6 +120,8 @@ test("Audio has two usable music buttons under tracks and one bottom Add Affirma
   assert.ok(!pane.includes("data-video-music-to-mv-create"),"no obsolete music-to-video CTA");
   assert.ok(css.includes(".audioCompactActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))"));
   assert.ok(css.includes(".audioCompactGrid>.audioCompactUpload{order:2}"),"upload tile third on mobile");
+  assert.ok(css.includes(".audioCompactGrid>.audioCompactTile:nth-of-type(1){order:0}"));
+  assert.ok(css.includes(".audioCompactGrid>.audioCompactTile:nth-of-type(2){order:1}"));
   assert.ok(css.includes('[data-video-stage-actions="montage"]{') &&
     css.includes('display:none!important}'),
     "hide redundant two-button footer only on mobile Audio");

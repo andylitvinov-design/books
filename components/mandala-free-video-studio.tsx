@@ -4,7 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import dynamic from "next/dynamic";
 import { MandalaSmartAnimation } from "./mandala-smart-animation";
 import Link from "next/link";
-import {StudioMusicPicker} from "./studio-music-picker";
+import {StudioMusicPicker,StudioMusicFeatured} from "./studio-music-picker";
 import { flushSync } from "react-dom";
 import { ArrowRight, Brain, BarChart3, Camera, Check, ChevronDown, ChevronRight, ListVideo, RefreshCw, Coins, Download, Film, HandHeart, Headphones, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Clock3, Smile, Paperclip, Search, Mic, Pause, Play, Share2, Scissors, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, Zap, X, Save, FolderOpen, Type, MessageCircleQuestion } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
@@ -2428,6 +2428,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [importedAudioSeconds,setImportedAudioSeconds]=useState<number|null>(null);
   const messengerAudioHandoffRef=useRef<{locale:PublicLocale;promise:ReturnType<typeof consumeMessengerAudio>}|null>(null);
   const uploadedAudioRef = useRef<{file:File;url:string}|null>(null);
+  const verifiedLibraryAudioFileRef=useRef<File|null>(null);
   const [audioPlaybackError,setAudioPlaybackError] = useState(false);
   const [audioRights,setAudioRights] = useState(false);
   // Temporary user-owned voice transcript: never place it in browser storage.
@@ -4524,6 +4525,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     }catch{stopSoundPreview();setMusicWarning(ui.soundUnavailable);}
   }
   function clearUploadedAudio(){
+    verifiedLibraryAudioFileRef.current=null;
     sttAbortRef.current?.abort();sttAbortRef.current=null;
     setSttBusy(false);setSttError("");setManualTranscript("");
     setVoiceTranscript(null);setVoiceVisualPlan(null);setAudioPlanApplied(false);
@@ -4536,10 +4538,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setAudioRights(false);
     if(audioInputRef.current)audioInputRef.current.value="";
   }
-  function chooseAudioFile(file:File|undefined){
+  function chooseAudioFile(file:File|undefined,fromVerifiedMusicLibrary=false){
     if(!file)return;
     if(!isSupportedLocalAudio(file)) {setMusicWarning(ui.audioBadFile);return;}
     clearUploadedAudio();
+    verifiedLibraryAudioFileRef.current=fromVerifiedMusicLibrary?file:null;
     const entry={file,url:URL.createObjectURL(file)};
     uploadedAudioRef.current=entry;
     setUploadedAudio(entry);
@@ -4764,6 +4767,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       locale==="es"?"La narración y la música se han adjuntado al vídeo.":
       "Meditation narration and background are now attached to the video.");
     return true;
+  }
+  function attachVerifiedStudioMusic(file:File){
+    const selected=chooseAudioFile(file,true);
+    if(!selected)return;
+    setAudioRights(true);
+    setAttachedAudio({kind:"file",file:selected.file,id:selected.url});
+    setAudioAuto(false);
+    setMusicWarning("");
   }
   function chooseMusic(choice:AmbientMusic){
     if(choice!=="none"&&!curatedAudioTracks.some(track=>track.id===choice))return;
@@ -6169,8 +6180,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               setAudioPlaybackError(true);setSoundPreview(false);setMusicWarning(ui.soundUnavailable);
             }}
             onLoadedMetadata={event=>{
-              if(uploadedAudio && Number.isFinite(event.currentTarget.duration) &&
-                event.currentTarget.duration>180){
+              if(uploadedAudio && uploadedAudio.file!==verifiedLibraryAudioFileRef.current &&
+                Number.isFinite(event.currentTarget.duration) &&event.currentTarget.duration>180){
                 setAudioDurationInvalid(true);
                 setMusicWarning(ui.audioTooLong);
               }
@@ -9272,10 +9283,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 {id:"energy",theme:"energy",mood:"uplift"},{id:"love",theme:"relationships",mood:"all"}
               ] as const).map((item,index)=><button key={item.id} type="button"
                 data-video-audio-category={item.id} aria-pressed={audioCategory===item.id}
-                disabled={recording||preparing} onClick={()=>{
+                disabled={recording||preparing} onClick={event=>{
                   stopSoundPreview();setAudioCategoryOverride(item.id);setAudioThemeOverride(null);setAudioMood("all");
                   setAudioKind("melody");setAudioPace("all");setAudioSearch("");
                   setShowAllAudio(false);setAudioAuto(false);
+                  const grid=event.currentTarget.closest("[data-video-montage-audio]")
+                    ?.querySelector<HTMLElement>("[data-video-audio-compact-grid]");
+                  if(grid)grid.scrollLeft=0;
                 }}>{(locale==="ru"?["Все","Самочувствие","Фокус","Спокойствие","Энергия","Любовь"]:
                   locale==="es"?["Todo","Bienestar","Enfoque","Calma","Energía","Amor"]:
                     ["All","Wellbeing","Focus","Calm","Energy","Love"])[index]}</button>)}
@@ -9283,6 +9297,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <div className={videoStyles.audioCompactGrid} data-video-audio-compact-grid
               role="group" aria-label={locale==="ru"?"Выберите до трёх аудиодорожек":
                 locale==="es"?"Selecciona hasta tres pistas":"Select up to three tracks"}>
+              <StudioMusicFeatured locale={locale} category={audioCategory}
+                disabled={recording||preparing||micRecording}
+                selectedFilename={uploadedAudio?.file===verifiedLibraryAudioFileRef.current?
+                  uploadedAudio.file.name:null}
+                posters={[0,1,2].map(index=>quickStyleFilmFor(theme,index)?.poster||
+                  quickCanvasPoster(quickStyleSceneIds[theme][index] as LocalSceneId))}
+                onSelect={attachVerifiedStudioMusic}
+                onDeselect={()=>{
+                  if(uploadedAudio&&uploadedAudio.file===verifiedLibraryAudioFileRef.current){
+                    clearUploadedAudio();setAttachedAudio(null);setMusicWarning("");
+                  }
+                }}
+                onPreviewStart={stopSoundPreview}
+                onError={setMusicWarning}/>
               {filteredAudio.slice(0,12).map((track,index)=>{
                 const id=track.id as PresetId;
                 const checked=!uploadedAudio&&attachedPresetIds.includes(id);
@@ -9357,7 +9385,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               <span>{uploadedAudio?uploadedAudio.file.name:attachedPresetIds.length?appliedAudioName:
                 locale==="ru"?"Выберите музыку":locale==="es"?"Elige música":"Choose music"}
                 <small>{locale==="ru"?" · выбрано ":locale==="es"?" · seleccionadas ":" · selected "}
-                  {attachedPresetIds.length}/3</small>
+                  {uploadedAudio?1:attachedPresetIds.length}/3</small>
               </span>
             </div>
             {uploadedAudio?<div className={videoStyles.audioCompactRights}>
@@ -9415,11 +9443,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   <StudioMusicPicker locale={locale} initialOpen
                     disabled={recording||preparing||micRecording}
                     onSelect={(file:File)=>{
-                      const selected=chooseAudioFile(file);
-                      if(!selected)return;
-                      setAudioRights(true);
-                      setAttachedAudio({kind:"file",file:selected.file,id:selected.url});
-                      setAudioAuto(false);setMusicWarning("");
+                      attachVerifiedStudioMusic(file);
                       closeAudioLibrary(false);
                     }}/>
 
