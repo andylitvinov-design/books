@@ -33,6 +33,11 @@ export type ApprovedVideoConcept={
   baseSignature?:string;creativeDirectionId?:string;creativeTitle?:string;creativeMode?:string;
   creativeSymbol?:string;creativePitch?:string;creativeSchemaVersion?:string;
   creativeReview?:{score:number;hardFailures:string[];status:"pass"|"revise"|"needs_input"};
+  creativeMatchFactors?:string[];creativeRankVersion?:string;
+  personalizationSignals?:{
+    source:"confirmed_answers";currentIds:string[];desiredIds:string[];focusIds:string[];
+    energyStart:number|null;energyTarget:number|null
+  }|null;
   psychologicalBrief?:{family:string;[key:string]:unknown};
   userEditedFields?:string[];
   storyReviewSignature?:string|null;
@@ -123,7 +128,7 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
     locale,goal,theme,styleIndex,phrases:phraseSignature?phraseSignature.split("\u001f"):[],speechTranscript,
     personalization:profile?summarizeVideoGoalProfile(profile,locale):null,
     selectedTopicId:selectedTopic?.topicId||null,creativeBrief:selectedTopic?.brief||null
-  }) as ApprovedVideoConcept,[locale,goal,theme,styleIndex,phraseSignature,speechTranscript,profile,selectedTopic?.topicId,selectedTopic?.brief]);
+  }) as unknown as ApprovedVideoConcept,[locale,goal,theme,styleIndex,phraseSignature,speechTranscript,profile,selectedTopic?.topicId,selectedTopic?.brief]);
   const [chosenDirectionId,setChosenDirectionId]=useState<string|null>(null);
   const directions=useMemo(()=>getVideoCreativeDirections(suggested,locale),
     [suggested,locale]);
@@ -456,7 +461,7 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
            {Array.isArray(direction.matchFactors)?<small className={css.directionFit}
              data-video-concept-matched-factors={direction.matchFactors.join(",")}>
              {word("Учтено:","Based on:","Basado en:")}{" "}
-             {direction.matchFactors.map(key=>({
+             {direction.matchFactors.map((key:string)=>({
                current:word("состояние сейчас","current state","estado actual"),
                desired:word("желаемое чувство","desired feeling","estado deseado"),
                focus:word("направление развития","growth focus","área de desarrollo"),

@@ -74,7 +74,7 @@ export function MandalaAutomaticStoryboard({
   locale,goal,theme,styleIndex,phrases:phraseKey?phraseKey.split("\u001f"):[],
   speechTranscript:transcript,personalization:JSON.parse(personalizationKey),
   selectedTopicId:selectedTopic?.topicId||null,creativeBrief:selectedTopic?.brief||null
- }) as ApprovedVideoConcept,
+ }) as unknown as ApprovedVideoConcept,
  [locale,goal,theme,styleIndex,phraseKey,transcript,personalizationKey,
   selectedTopic?.topicId,selectedTopic?.brief]);
  // Ideas initially shows the first creative direction even before approval.
