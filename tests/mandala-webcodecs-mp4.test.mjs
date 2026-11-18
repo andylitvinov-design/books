@@ -451,3 +451,22 @@ test("one iPhone hardware fallback keeps the same reserved credit and every real
  assert.match(branch,/paintSingleVideoTextOverlay\(ctx,time,singleTextSource/);
  assert.match(branch,/audio:files\.length\?\{files,volume:soundVolume\}:undefined/);
 });
+
+test("Safari accepts longer-than-180s licensed MP3 music and retains only its audible excerpt",()=>{
+  // This formerly rejected valid 4–8-minute classical scores even when the
+  // requested MP4 was only 20–30 seconds long.
+  assert.doesNotMatch(helper,/decoded\.duration>180/);
+  assert.match(helper,/decoded\.duration<=0/);
+  assert.match(helper,/if\(entry\.loop && decoded\.duration>seconds-startSeconds\)/);
+  assert.match(helper,/Math\.ceil\(\(seconds-startSeconds\)\*decoded\.sampleRate\)/);
+  assert.match(helper,/offline\.createBuffer\(decoded\.numberOfChannels,frames,decoded\.sampleRate\)/);
+  assert.match(helper,/excerpt\.copyToChannel\(decoded\.getChannelData\(channel\)\.subarray\(0,frames\),channel\)/);
+  assert.match(helper,/decoded=excerpt/);
+  assert.match(helper,/source\.loop=entry\.loop/);
+  assert.match(helper,/if\(!entry\.loop && "file" in entry && decoded\.duration > seconds-startSeconds \+ \.10\)/,
+    "non-looped narration must still reject truncation");
+  assert.match(helper,/narration_longer_than_video/);
+  assert.match(helper,/audio_size_invalid/);
+  assert.match(helper,/first_party_audio_unavailable/);
+  assert.match(helper,/audioSource\.add\(audioBuffer\)/,"AAC remains required for selected music");
+});
