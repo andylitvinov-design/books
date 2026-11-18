@@ -54,16 +54,28 @@ test('four topics and contextual needs/modes/budget use the same site quiz',()=>
      assert.ok(telegramSupportQuizMarkupAllowed(budgets));
      for(let budget=0;budget<4;budget++){
       const digits=formatDigits+budget;
-      const callback=parseTelegramSupportCallback('hhsq:'+lang+':'+digits);
-      assert.deepEqual(callback,{locale:lang,digits,action:'support'+digits});
-      assert.deepEqual(parseTelegramHomeCallback('hhsq:'+lang+':'+digits),
-        {locale:lang,action:'support'+digits});
-      const deepLink=telegramSupportStartCommand(lang,digits);
-      assert.equal(telegramSupportStartSelection(deepLink)?.selection.digits,digits);
-      assert.equal(v3SupportStart(deepLink)?.selection.digits,digits);
-      assert.equal(v3Context({turns:[],supportSelection:digits}).supportSelection,digits);
-      assert.ok(telegramSupportSummary(lang,digits).length>20);
-      assert.ok(telegramSupportFirstQuestion(lang,digits).length>20);
+      const modes=telegramSupportQuizButtons(lang,digits);
+      assert.equal(modes.inline_keyboard.length,4,'3 conversation modes and Back');
+      assert.ok(telegramSupportQuizMarkupAllowed(modes));
+      assert.equal(telegramSupportStartCommand(lang,digits),null,'4 choices are not AI consent');
+      for(let mode=0;mode<3;mode++){
+       const full=digits+mode;
+       const callback=parseTelegramSupportCallback('hhsq:'+lang+':'+full);
+       assert.deepEqual(callback,{locale:lang,digits:full,action:'support'+full});
+       assert.deepEqual(parseTelegramHomeCallback('hhsq:'+lang+':'+full),
+         {locale:lang,action:'support'+full});
+       const deepLink=telegramSupportStartCommand(lang,full);
+       assert.equal(telegramSupportStartSelection(deepLink)?.selection.digits,full);
+       assert.equal(v3SupportStart(deepLink)?.selection.digits,full);
+       assert.equal(v3Context({turns:[],supportSelection:full}).supportSelection,full);
+       assert.equal(telegramSupportSelection(full).chatMode,
+         ['secretary','coach','talk'][mode]);
+       assert.ok(telegramSupportSummary(lang,full).length>20);
+       assert.ok(telegramSupportFirstQuestion(lang,full).length>20);
+      }
+      // Deep links sent by an older menu version remain valid Secretary entries.
+      const old='/start hhsupport_'+lang+'_'+digits;
+      assert.equal(v3SupportStart(old)?.selection.chatMode,'secretary');
      }
     }
    }
@@ -95,7 +107,7 @@ test('reject malformed callbacks and keyboards; never turn quiz into consent',()
   'hhsq:ru:abcd','hhsq:ru:012;','hhsq:ru:3/0','hhsq:ru:9999']){
   assert.equal(parseTelegramSupportCallback(callback),null);
  }
- assert.equal(telegramSupportSelection('00000'),null);
+ assert.equal(telegramSupportSelection('00003'),null);
  assert.equal(telegramSupportStartSelection('/start hhsupport_ru_9999'),null);
  assert.equal(v3Context({turns:[],supportSelection:'xyz'}).supportSelection,undefined);
  assert.equal(telegramSupportQuizMarkupAllowed({inline_keyboard:[
@@ -108,6 +120,13 @@ test('reject malformed callbacks and keyboards; never turn quiz into consent',()
  assert.ok(v3.includes('supportStart?telegramSupportIntro'));
  assert.ok(v3.includes("supportStart.selection.topic==='business_support'"));
  assert.ok(v3.includes("supportStart.selection.digits"));
+ assert.ok(v3.includes('supportChatStart'));
+ assert.ok(v3.includes("supportChatStart?'chat_consent'"));
+ assert.ok(v3.includes("conversationKind:'general'"));
+ assert.ok(v3.includes('ctx.supportSelection?telegramSupportFirstQuestion'));
+ const model=source('lib/crm/telegram-ai-diagnostic-v3-model.mjs');
+ assert.ok(model.includes("selected.chatMode==='coach'"));
+ assert.ok(model.includes("selected.chatMode==='talk'"));
  assert.ok(v3.includes('!activeServiceConsent&&!activeFreeConsent&&!activeSupportConsent&&'));
  assert.ok(v3.includes(".supportSelection"));
 });
