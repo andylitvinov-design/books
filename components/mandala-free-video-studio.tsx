@@ -3093,7 +3093,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // Authored setup clips suppress the original transient duplicate overlays.
   const currentAffirmationSpeech=affirmations.enabled?affirmationNarrationText(affirmationLines):"";
   const isCurrentNarrationApproved=(spoken:string|undefined|null)=>Boolean(spoken&&(
-    spoken===approvedMeditationText||
+    (activeWorkspace==="effects"&&spoken===approvedMeditationText)||
     isApprovedAffirmationNarration(affirmationLines,spoken,affirmations.enabled)));
   // Phrase selection is part of the approved narration itself: removing a spoken
   // line invalidates its WAV immediately, even while the phrase editor is pending.
@@ -6251,14 +6251,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               (locale==="ru"?"Выберите фразу и голос для её озвучивания.":locale==="es"?"Elige una frase y una voz para narrarla.":"Choose a phrase and a voice to narrate it."):
               (locale==="ru"?"Озвучка выбранных фраз":locale==="es"?"Narración de las frases elegidas":"Narration of your chosen phrases")}</p></div>
         </div>
-        {phrasePending&&!approvedMeditationText&&<p className={videoStyles.phraseVoiceNotice} role="status" data-video-voice-approval-required>
+        {phrasePending&&(activeWorkspace!=="effects"||!approvedMeditationText)&&<p className={videoStyles.phraseVoiceNotice} role="status" data-video-voice-approval-required>
           {locale==="ru"?"Подтвердите новые фразы выше, прежде чем создавать голос.":locale==="es"?"Confirma las frases nuevas arriba antes de crear la voz.":"Approve the new phrases above before generating their voice."}
         </p>}
         <MandalaAffirmationVoice locale={locale} lines={affirmationLines}
           enabled={affirmations.enabled}
           approvedMeditationText={activeWorkspace==="effects"?approvedMeditationText:""}
           durationSeconds={activeWorkspace==="effects"&&approvedMeditationText?30:duration}
-          disabled={recording||preparing} approvalPending={phrasePending&&!approvedMeditationText}
+          disabled={recording||preparing} approvalPending={phrasePending&&(activeWorkspace!=="effects"||!approvedMeditationText)}
           initialPreferences={voicePreferences} onAttach={attachGeneratedAffirmationAudio}
           onInvalidate={()=>{
             const staleHypnoTrack=Boolean(hypnoWhisperEnabled||hypnoBinauralEnabled||

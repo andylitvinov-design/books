@@ -112,7 +112,9 @@ test("all phrase changes including catalog and idea are staged until explicit Ap
 test("TTS never speaks an outdated script when phrases are staged",()=>{
   const studio=read("components/mandala-free-video-studio.tsx");
   const compact=read("components/mandala-hypno-compact.tsx");
-  assert.match(studio,/disabled=\{recording\|\|preparing\}\s+approvalPending=\{phrasePending\}\s+initialPreferences=\{voicePreferences\}\s+onAttach=\{attachGeneratedAffirmationAudio\}/);
+  assert.match(studio,/disabled=\{recording\|\|preparing\}\s+approvalPending=\{phrasePending&&\(activeWorkspace!=="effects"\|\|!approvedMeditationText\)\}\s+initialPreferences=\{voicePreferences\}\s+onAttach=\{attachGeneratedAffirmationAudio\}/);
+  assert.match(studio,/activeWorkspace==="effects"&&spoken===approvedMeditationText/);
+  assert.match(studio,/isApprovedAffirmationNarration\(affirmationLines,spoken,affirmations\.enabled\)/);
   // An unapproved draft blocks narration generation, not public voice comparisons.
   const voice=read("components/mandala-affirmation-voice.tsx");
   assert.ok(voice.includes("disabled={!languageAvailable||!speechText||!consent||busy||mixing||disabled||approvalPending}"));
