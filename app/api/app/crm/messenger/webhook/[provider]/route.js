@@ -352,6 +352,7 @@ export async function POST(request,{params}){
                 to:aiIntake.to,text:aiIntake.reply,keyboard:aiIntake.keyboard,
                 locale:aiIntake.locale,approvedPilotGuest:aiIntake.approvedPilotGuest,
                 serviceWelcome:aiIntake.serviceWelcome===true,
+                freeWelcomePhoto:aiIntake.freeWelcomePhoto===true,
               })
               if(aiIntake.voiceOffer)await bindTelegramWaveVoiceOffer(
                 config,aiIntake.voiceOffer,delivered.providerId)
