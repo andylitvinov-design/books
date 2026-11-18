@@ -59,9 +59,23 @@ test('Work mirrors Life and Home visual design without duplicate primary navigat
   assert.match(css,/\.workGrid\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
   assert.match(css,/@media\(max-width:360px\)/)
   assert.match(screen,/data-work-create-tools/)
+  assert.match(screen,/data-work-create-buttons/)
+  assert.match(screen,/data-work-account-actions/)
+  assert.match(screen,/FEATURED_CREATIONS\.map/)
+  assert.match(screen,/CREATE\.filter/)
+  assert.match(work,/className=\{styles\.activeCount\}/)
   assert.match(screen,/data-work-more-tools/)
   assert.match(screen,/activeCount=\{metric\} requestCount=\{requestMetric\}/)
   assert.match(screen,/reports:root \+ '\?panel=express-reports'/)
   assert.match(screen,/onClickCapture=\{interceptGuestWorkLink\}/)
   assert.match(screen,/data-work-settings/)
 });
+
+test('Work does not crash SSR when expandable practitioner tools render', () => {
+  const screen=read('components/practice-showcase.jsx')
+  const lucideImports=screen.match(/import\s*\{([\s\S]*?)\}\s*from 'lucide-react'/)?.[1] || ''
+  assert.match(screen, /<BriefcaseBusiness\s+size=/)
+  assert.match(lucideImports, /\bBriefcaseBusiness\b/, 'missing lucide icon caused /en/practice HTTP 500')
+  assert.match(screen, /data-work-more-tools/)
+  assert.match(screen, /data-work-create-tools/)
+})

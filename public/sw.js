@@ -2,7 +2,10 @@
 importScripts('/course-notifications-sw.js')
 const CACHE_NAME = 'psialchemy-public-v1'
 const OFFLINE_CACHE_NAME = 'hh-public-offline-v1'
-const OFFLINE_PATHS = ['/holistic-house-offline-en.html', '/holistic-house-offline-ru.html', '/holistic-house-offline-es.html']
+// Install only EN/RU offline documents. The Spanish document is obtained only
+// after an explicit successful visit to an /es route, never on first load.
+const OFFLINE_PATHS = ['/holistic-house-offline-en.html', '/holistic-house-offline-ru.html']
+const SPANISH_OFFLINE_PATH = '/holistic-house-offline-es.html'
 const PRIVATE_PREFIXES = ['/en/client', '/ru/client', '/es/client', '/en/app', '/ru/app', '/es/app', '/en/report/', '/ru/report/', '/es/report/', '/api/app', '/api/client', '/ru/prescriptions/', '/en/prescriptions/', '/api/prescriptions/', '/api/prescription-access', '/api/admin/', '/admin', '/document-preview/']
 function policy(url) {
   let pathname = url.pathname
@@ -48,9 +51,24 @@ self.addEventListener('fetch', (event) => {
   if (request.mode === 'navigate' && requestPolicy === 'network-first' &&
       (url.pathname === '/' || /^\/(?:ru|en|es)(?:\/|$)/.test(url.pathname))) {
     const locale = url.pathname.match(/^\/(ru|en|es)(?:\/|$)/)?.[1] || 'en'
-    event.respondWith(fetch(request).catch(async () => {
+    const networkResponse = fetch(request)
+    // Keep Spanish entirely opt-in: no /es page or Spanish offline document
+    // is fetched on EN/RU visits. After someone chooses Spanish, preserve
+    // its localized offline experience for subsequent navigations.
+    if (locale === 'es') {
+      event.waitUntil(networkResponse.then(async (response) => {
+        if (!response.ok) return
+        const cache = await caches.open(OFFLINE_CACHE_NAME)
+        if (!await cache.match(SPANISH_OFFLINE_PATH)) {
+          await cache.add(SPANISH_OFFLINE_PATH)
+        }
+      }).catch(() => undefined))
+    }
+    event.respondWith(networkResponse.catch(async () => {
       const cache = await caches.open(OFFLINE_CACHE_NAME)
-      return await cache.match('/holistic-house-offline-' + locale + '.html') || Response.error()
+      return await cache.match('/holistic-house-offline-' + locale + '.html')
+        || await cache.match('/holistic-house-offline-en.html')
+        || Response.error()
     }))
     return
   }

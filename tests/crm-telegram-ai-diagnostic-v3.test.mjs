@@ -180,9 +180,10 @@ test('Consent is explained once; follow-up nudges do not repeat the privacy wall
   }
   const service=source('lib/crm/telegram-ai-diagnostic-v3-service.js');
   assert.ok(service.includes("if(start&&active&&row?.stage==='consent')"));
-  assert.ok(service.includes("const purposeReady=general||ctx.mode===FREE_DIAGNOSTIC_MODE?chatAllowed:allowed;"));
+  assert.ok(service.includes("const purposeReady=general||ctx.mode===FREE_DIAGNOSTIC_MODE?chatAllowed:"));
+  assert.ok(service.includes("serviceCopy&&ctx.mode!==SECRETARY_MODES.PSYCHOLOGIST?serviceAllowed:allowed"));
   assert.ok(service.includes("const reminder=general?(chatAllowed?chat.nudge:copy.notReady):"));
-  assert.ok(service.includes("(allowed?(serviceCopy?serviceCopy.consentNudge:copy.nudge):copy.notReady)"));
+  assert.ok(service.includes("(purposeReady?(serviceCopy?serviceCopy.welcomeNudge:copy.nudge):copy.notReady)"));
   assert.ok(service.includes("purposeReady?v3ButtonsFor(lang,general?'chat_consent':"));
   assert.ok(service.includes("ai_consent_at=now()"));
   assert.ok(service.includes("row&&Number(row.last_update_id)>=updateId"));
@@ -266,8 +267,10 @@ test('Wave local chat remains consent-gated and is independent of any model key'
   assert.equal(v3CanChat({...local,VERCEL_ENV:'preview'}),false);
   const service=source('lib/crm/telegram-ai-diagnostic-v3-service.js');
   assert.match(service,/const generalStart=chatAllowed/);
-  assert.match(service,/purposeReady=general\|\|ctx\.mode===FREE_DIAGNOSTIC_MODE\?chatAllowed:allowed/);
-  assert.match(service,/if\(!row.ai_consent_at\|\|!\(\(ctx.conversationKind==='general'\|\|ctx.mode===FREE_DIAGNOSTIC_MODE\)\?chatAllowed:allowed\)\)/);
+  assert.match(service,/purposeReady=general\|\|ctx\.mode===FREE_DIAGNOSTIC_MODE\?chatAllowed:/);
+  assert.match(service,/serviceCopy&&ctx\.mode!==SECRETARY_MODES\.PSYCHOLOGIST\?serviceAllowed:allowed/);
+  assert.match(service,/if\(!row.ai_consent_at\|\|!/);
+  assert.match(service,/serviceCopy&&ctx\.mode!==SECRETARY_MODES\.PSYCHOLOGIST\?serviceAllowed:allowed/);
   assert.match(service,/waveTelegramLocalReply\(\{locale:prior.locale,turns\}\)/);
   assert.match(service,/wave_telegram_inference/);
 });

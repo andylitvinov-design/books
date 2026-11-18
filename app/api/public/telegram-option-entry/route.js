@@ -1,7 +1,7 @@
 import {NextResponse} from 'next/server'
 import {channelTransportReady,telegramPublicDiagnosticReady} from '@/lib/crm/messenger-policy'
 import {telegramDiagnosticPublicUrl} from '@/lib/crm/telegram-diagnostic.mjs'
-import {v3CanStart} from '@/lib/crm/telegram-ai-diagnostic-v3.mjs'
+import {v3ServiceIntakeReady} from '@/lib/crm/telegram-ai-diagnostic-v3.mjs'
 import {telegramServiceOption} from '@/lib/assist/telegram-service-options.mjs'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
@@ -18,7 +18,7 @@ export async function GET(request){
  const publicUrl=telegramDiagnosticPublicUrl(offer.locale,env)
  if(typeof publicUrl==='string'&&telegramPublicDiagnosticReady(env)&&
    env.HH_CRM_TG_AI_V3_SCHEMA_READY==='true'&&
-   channelTransportReady('telegram',env)&&v3CanStart(env)){
+   channelTransportReady('telegram',env)&&v3ServiceIntakeReady(env)){
   const url=new URL(publicUrl)
   if(url.origin==='https://t.me'&&/^\/[A-Za-z0-9_]{5,32}$/.test(url.pathname)&&
      /bot$/i.test(url.pathname)&&url.searchParams.get('start')==='hhreview_'+offer.locale)

@@ -272,7 +272,7 @@ test('toolbar language setting controls transcription, response, persona intro a
  const loop=source('components/my-coach-speech-loop.jsx')
  const css=source('components/my-coach-live-dialogue.module.css')
  assert.ok(ui.includes('data-coach-language-control'))
- assert.ok(ui.includes('<Languages size={21}'))
+ assert.ok(ui.includes('<Languages size={16}'))
  assert.ok(ui.includes('value={speechLocale}'))
  assert.ok(ui.includes('onChange={event=>setSpeechLocale(event.target.value)}'))
  // The route language wins on entry; changing the toolbar is an explicit override.
@@ -323,4 +323,26 @@ test('My Coach entry inherits the site locale, with a visible manual RU/EN/ES ov
     assert.equal(chooseDictationLanguage({locale,selection:locale,
       browserLanguages:['ru-RU','en-US','es-ES'],lastTranscript:'Мама'}),asr,
       'the route/manual selection wins over device language and old text')
+})
+
+test('approved one-row mobile voice: manual language in header, real volume, Text and End only',()=>{
+ const ui=source('components/my-coach-live-dialogue.jsx')
+ const css=source('components/my-coach-live-dialogue.module.css')
+ const speech=source('components/my-coach-speech-loop.jsx')
+ const recorded=source('lib/personal-coaching/coach-recorded-turn.mjs')
+ const header=ui.slice(ui.indexOf('<header className={styles.sessionTopbar}>'),ui.indexOf('</header>'))
+ const row=ui.slice(ui.indexOf('<div className={styles.voiceControls} data-coach-inline-voice>'),
+   ui.indexOf('<p className={styles.voicePlayNotice}',ui.indexOf('data-coach-inline-voice')))
+ assert.match(header,/data-coach-language-control/)
+ assert.match(header,/value=\{speechLocale\}/)
+ assert.doesNotMatch(header,/<option value="auto">/)
+ assert.match(row,/data-coach-live-wave/)
+ assert.match(row,/onMicLevel=\{level=>\{/)
+ assert.match(row,/className=\{styles.keyboardControl\}/)
+ assert.match(row,/className=\{styles.endControl\}/)
+ assert.doesNotMatch(row,/replayControl|data-coach-language-control/)
+ assert.match(css,/grid-template-columns:62px minmax\(0,1fr\) 50px 50px/)
+ assert.match(css,/\.voicePlayNotice\{display:none\}/)
+ assert.match(speech,/micLevelRef.current\?\.\(value\)/)
+ assert.match(recorded,/onLevel\(Math.min\(1,Math.max\(0,\(rms-0.012\)\*7\)\)\)/)
 })

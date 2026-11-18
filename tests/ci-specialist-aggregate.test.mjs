@@ -1,4 +1,4 @@
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance } from '../lib/ci/production-base-impact.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -2357,4 +2357,53 @@ test('additive coaching build registration drops unrelated specialists', () => {
   const proposedNoBuild = structuredClone(proposed);
   proposedNoBuild.scripts.prebuild = 'echo skip';
   assert.equal(classify(proposedNoBuild, changed, noBuild).mode, 'full');
+});
+
+test('disjoint, protected public presentation advances retain successful sensitive PR evidence', async () => {
+  const live='c'.repeat(40), extra='d'.repeat(40);
+  const diff = (names, changes={}) => ({
+    status:'ahead', ahead_by:2, behind_by:0, total_commits:2,
+    base_commit:{sha:BASE}, merge_base_commit:{sha:BASE},
+    commits:[{sha:extra},{sha:live}],
+    files:names.map(filename=>({filename,status:'modified'})), ...changes,
+  });
+  const candidate=['lib/crm/lead-service.mjs'];
+  const allowed=['app/[locale]/about/page.tsx','components/academy-course-picker.tsx'];
+  assert.equal(safeIndependentPublicPresentationAdvance(diff(allowed),BASE,live,candidate),true);
+  const badTargets=[
+    'app/[locale]/page.tsx', 'app/api/coaching/route.ts',
+    'app/[locale]/cabinet/page.tsx', 'app/[locale]/about/layout.tsx',
+    'app/[locale]/auth/page.tsx', 'components/mandala-voice-surface.tsx',
+    'components/nav.tsx', '.github/workflows/hh-pr-core-release.yml',
+    'lib/ci/specialist-aggregate.mjs', 'package-lock.json', 'next.config.ts',
+    'public/images/site-banner.webp',
+  ];
+  for (const path of badTargets)
+    assert.equal(safeIndependentPublicPresentationAdvance(diff([path]),BASE,live,candidate),false,path);
+  for(const candidatePath of [
+    'components/academy-student.tsx', 'app/[locale]/about/page.tsx',
+    '.github/workflows/new.yml', 'lib/ci/specialist-aggregate.mjs',
+    'package.json', 'supabase/migrations/1.sql',
+  ]) assert.equal(safeIndependentPublicPresentationAdvance(
+    diff(allowed),BASE,live,[candidatePath]),false,candidatePath);
+  for(const broken of [
+    {status:'diverged'}, {behind_by:1}, {commits:[{sha:live}]},
+    {files:[{filename:allowed[0],status:'renamed',previous_filename:'app/old.tsx'}]},
+    {files:[{filename:allowed[0],status:'deleted'}]},
+    {files:[{filename:allowed[0],status:'modified'},{filename:allowed[0],status:'modified'}]},
+    {files:Array(100).fill({filename:allowed[0],status:'modified'})},
+  ]) assert.equal(safeIndependentPublicPresentationAdvance(
+    diff(allowed,broken),BASE,live,candidate),false,'invalid protected-base evidence');
+
+  const sources={base:new Map([[path,yaml]]),current:new Map([[path,yaml]]),
+    changedRows:[{filename:candidate[0],status:'modified'}]};
+  const api={pr:async()=>({...pr(),base:{...pr().base,sha:live},mergeable:true}),
+    target:async()=>live,compare:async()=>diff(allowed),
+    runs:async()=>[run()],jobs:async()=>[{name:'test',status:'completed',conclusion:'success'}]};
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  assert.deepEqual((await verify(api,ctx,sources,{maxWaitMs:0})).expected,[path]);
+  await assert.rejects(()=>verify({...api,pr:async()=>({...pr(),base:{...pr().base,sha:live},
+    mergeable:null})},ctx,sources,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);
+  await assert.rejects(()=>verify({...api,compare:async()=>diff(['app/[locale]/about/layout.tsx'])},
+    ctx,sources,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);
 });

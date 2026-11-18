@@ -8,7 +8,7 @@ import {TELEGRAM_SERVICE_OPTIONS} from '../lib/assist/telegram-service-options.m
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const countQuestions=text=>(text.match(/[?？]/gu)||[]).length;
 
-test('first service response is only a warm short portrait caption; AI consent comes after it',()=>{
+test('first service response is a short thematic photo caption; one button starts Ali locally',()=>{
  for(const lang of ['ru','en','es'])for(const service of ['general','coaching','homeopathy','reiki','constellations','business','business_strategy']){
   const intro=v3ServiceCopy(lang,service).intro;
   assert.ok(intro.length<260,lang+' '+service+' should fit one light Telegram photo caption');
@@ -16,11 +16,12 @@ test('first service response is only a warm short portrait caption; AI consent c
   assert.doesNotMatch(intro,/OpenRouter|medical records|медицинских документов|documentos médicos|\/stop|consent|соглас|aprobación|payment|оплат/i);
   assert.equal(countQuestions(intro),0);
   const consent=v3ServiceCopy(lang,service).consent;
-  assert.match(consent,/OpenRouter/);
-  assert.ok(consent.length<140,'separate opt-in should fit two brief lines');
-  assert.doesNotMatch(consent,/medical records|медицинских документов|documentos médicos/i);
-  assert.match(consent,/approve|подтвердите|apruebes/i);
-  assert.ok(consent.length<270);
+  assert.doesNotMatch(consent,/OpenRouter/);
+  assert.doesNotMatch(consent,/external AI model|медицинских документов|documentos médicos/i);
+  assert.ok(consent.length<130,'privacy detail is concise and does not interrupt the welcome');
+  assert.match(consent,/approve|одобрите|apruebes/i);
+  assert.match(consent,/approve|одобрите|apruebes/i);
+  assert.ok(consent.length<130);
   assert.ok(v3ServiceCopy(lang,service).first.length<95);
   assert.deepEqual(v3ButtonsFor(lang,'consent'),[[V3_LABELS[lang].agree,V3_LABELS[lang].decline]]);
   assert.deepEqual(v3ButtonsFor(lang,'service_consent'),[[V3_LABELS[lang].serviceagree,V3_LABELS[lang].decline]]);
