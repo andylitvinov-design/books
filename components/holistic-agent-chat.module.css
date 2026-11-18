@@ -694,7 +694,7 @@
 .supportContext button{flex:none;min-height:36px;padding:7px 11px;border:1px solid #afd9bf;
  border-radius:12px;background:#edf8f1;color:#166648;cursor:pointer;font:700 12px system-ui,sans-serif}
 .supportContext button:focus-visible{outline:3px solid #168b71;outline-offset:2px}
-\n
+
 /* Conversation-first onboarding: large editable message, single composer, existing voice/send. */
 .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form{
  position:relative;min-height:104px;
