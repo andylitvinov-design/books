@@ -243,3 +243,10 @@
 /* A short factual trace of the confirmed preferences used in the ranking. */
 .directionOption .directionFit{color:#346c59;font:600 11.5px/1.35 Arial,Helvetica,sans-serif;
  overflow-wrap:anywhere}
+
+/* Cinematic shot sketches: visible graphics depict each authored event schematically. */
+.storyShotGraphicRow{display:grid;grid-template-columns:clamp(82px,24vw,106px) minmax(0,1fr);gap:10px;align-items:center;min-width:0}
+.storyShotGraphicFrame{height:78px;border:1px solid #d7e4d8;border-radius:10px;overflow:hidden;min-width:0}
+.storyShotGraphicText{min-width:0;color:inherit;overflow-wrap:anywhere;line-height:1.4}
+.storyShotGraphicText .shotEmotion{display:block}
+@media(max-width:350px){.storyShotGraphicRow{grid-template-columns:79px minmax(0,1fr);gap:7px}.storyShotGraphicFrame{height:72px}}
