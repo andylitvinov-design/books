@@ -86,7 +86,7 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupp
   useEffect(()=>{void prepareAliNaturalVoice();return ()=>stopAliPersonaAudio();},[]);
   const playGreeting=()=>{
     if(speaking){stopAliPersonaAudio();setSpeaking(false);return;}
-    playAliPersonaAudio(persona.id,locale,setSpeaking);
+    playAliPersonaAudio(persona.id,locale,(isPlaying:boolean)=>setSpeaking(isPlaying));
   };
   const guideName=persona.name[locale];
   const welcomeTitle=locale==="ru"?`Привет! Я ${guideName}.`:
