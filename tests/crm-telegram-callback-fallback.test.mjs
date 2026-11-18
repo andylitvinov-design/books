@@ -3,6 +3,7 @@ import test from 'node:test';
 // New signed Business-chat request/confirmation/RLS cases join existing CRM CI.
 import './assist-telegram-business-request.test.mjs';
 import './telegram-secretary-business.test.mjs';
+import './crm-telegram-first-contact.test.mjs';
 import vm from 'node:vm';
 import {parseTelegramHomeCallback} from '../lib/crm/telegram-companion-menu.mjs';
 import {readFileSync} from 'node:fs';
