@@ -23,7 +23,7 @@ test("public Home has one light conversation-first entry and preserves seven rea
  assert.match(home,/data-home-design="dialogue-first-v1"/);
  assert.match(home,/data-home-video-below-fold/);
  assert.match(entry,/data-home-dialogue-header/);
- assert.match(entry,/<h1>My Space<\/h1>/);
+ assert.match(entry,/<h1>Holistic House<\/h1>/);
  assert.match(entry,/<SiteNavigation locale=\{locale\} compact \/>/);
  assert.match(entry,/data-home-intent-form/);
  assert.match(entry,/data-home-send-to-ali/);
@@ -50,6 +50,8 @@ test("initial paint is local and deferred: no media network or large course bund
  assert.match(lazy,/ssr:false/);
  assert.match(content,/ssr:false/);
  assert.match(content,/MySpaceTopics/);
+ assert.doesNotMatch(content,/^import \{ MySpaceTopics \} from/m);
+ assert.match(content,/import\("\.\/my-space-topics"\)/);
  assert.match(catalog,/HomeFeaturedWorkspace/);
  assert.doesNotMatch(main,/<HomeFeaturedWorkspace|<HomeSectionCarousel|<MySpaceTopics/);
  assert.doesNotMatch(entry,/https:\/\/|<iframe|<video|fetch\(/);
@@ -117,7 +119,7 @@ test("Home starter sends on one tap, Ali preserves original wording and shows re
  const home=read("components/home-dialogue-entry.tsx");
  const chat=read("components/holistic-agent-chat.tsx");
  const hub=read("components/app/messages-orders-clients.jsx");
- assert.match(home,/onClick=\{\(\)=>startConversationWith\(hint\.prompt\)\}/);
+ assert.match(home,/onClick=\{\(\)=>startConversationWith\(hint\.prompt,hint\.id==="business"\?"business":mode\)\}/);
  assert.match(home,/startConversationWith\(draft\)/);
  assert.match(chat,/homeHandoffPhase==="queued"/);
  assert.match(chat,/homeHandoffPhase==="retry"/);
@@ -127,4 +129,35 @@ test("Home starter sends on one tap, Ali preserves original wording and shows re
  assert.match(chat,/startContent\(turnLocale,text\)/);
  assert.doesNotMatch(chat,/text:safeIntent/);
  assert.match(hub,/const timeout=window\.setTimeout\(\(\)=>controller\.abort\(\),6000\)/);
+});
+
+test("approved scenic Home shows four clear choices above the wide Ali composer in three languages",()=>{
+ const entry=read("components/home-dialogue-entry.tsx");
+ const css=read("components/home-dialogue-entry.module.css");
+ const deferred=read("components/home-deferred-content.tsx");
+ for(const phrase of ["Energy & Stress Release","Love & Confidence","Money & Growth","Business Support","Holistic House","What do you need today?","Энергия и снятие стресса","Apoyo empresarial"])
+   assert.ok(entry.includes(phrase),phrase);
+ for(const id of ["stress","love","money","business"])assert.ok(entry.includes('id:"'+id+'"'),id);
+ assert.match(entry,/data-home-free-review/);
+ assert.match(entry,/freeReviewTitle:"Understand my situation"/);
+ assert.match(entry,/freeReviewDetail:"Get a free personal review"/);
+ assert.match(entry,/freeReviewTitle:"Разобраться в своей ситуации"/);
+ assert.match(entry,/freeReviewTitle:"Comprender mi situación"/);
+ assert.match(entry,/services\/free-situation-review/);
+ assert.ok(entry.indexOf("data-home-free-review")<entry.indexOf("data-home-focus-grid"));
+ assert.ok(entry.indexOf("data-home-focus-grid")<entry.indexOf("data-home-intent-form"));
+ assert.match(css,/\.reviewCta\{box-sizing:border-box;display:flex/);
+ assert.match(css,/@media\(min-width:356px\) and \(max-width:430px\)/);
+ assert.match(css,/\.language summary\{min-width:44px\}/);
+ assert.match(css,/\{width:44px;min-width:44px\}/);
+ assert.match(entry,/data-home-focus-grid/);
+ assert.ok(entry.indexOf('data-home-focus-grid')<entry.indexOf('data-home-intent-form'));
+ assert.match(entry,/data-home-continue-path/);
+ assert.match(entry,/data-home-send-to-ali/);
+ assert.match(css,/\.focusGrid\{display:grid;grid-template-columns:repeat\(2/);
+ assert.match(css,/\.composer\{display:flex;flex-direction:column/);
+ assert.match(css,/\.scene\{[^\n]*ideas-pine-reference\.webp/);
+ assert.doesNotMatch(entry,/<iframe|<video|fetch\(/);
+ assert.doesNotMatch(entry,/data-home-service-action/);
+ assert.match(deferred,/<MySpaceTopics locale=\{locale\} publicHome\/>/);
 });
