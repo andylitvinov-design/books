@@ -241,7 +241,20 @@ export default function PrCompletionClient(){
              <strong>{ci.category} · {ci.conclusion||'исход неизвестен'}</strong>
              <p>{ci.reasonCode||'Причина не указана'} · {ci.classificationStatus||'без статуса классификации'}</p>
              <p>Маршрут: {ci.routeState||'не подтверждён'} · {ci.responsibleRole||'исполнитель не назначен'}</p>
-             <p>{ci.workerStarted?'Запуск воркера подтверждён':'Запуск воркера не подтверждён'}; вызов AI отдельно не подтверждён</p>
+             <p>{ci.workerStarted?'Кодовый Repair Worker начал работу':'Кодовый Repair Worker не подтверждён'}; AI-диагностика учитывается отдельно</p>
+             {ci.diagnostic&&<p>
+               AI-диагност: {ci.diagnostic.status==='COMPLETED_VERIFIED'?
+                 'ответ модели подтверждён':ci.diagnostic.status==='COMPLETED_UNVERIFIED'?
+                 'ответ модели не подтверждён':ci.diagnostic.status==='QUEUED'?
+                 'назначен, ожидает запуска':ci.diagnostic.status==='RUNNING'?
+                 'исполнитель работает':ci.diagnostic.status==='FAILED'?
+                 'ошибка выполнения':ci.diagnostic.status==='BLOCKED'?
+                 'заблокирован':'статус не подтверждён'}
+               {ci.diagnostic.modelResponseVerified&&
+                 ' · '+ci.diagnostic.model+' · $0.00'}
+               {ci.diagnostic.reasonCode&&' · '+ci.diagnostic.reasonCode}.
+               Кодовый патч и LIVE проверяются отдельно.
+              </p>}
              {ci.url&&<a href={ci.url} target="_blank" rel="noopener noreferrer">Открыть CI #{ci.runId}</a>}
             </div>)}
            </div>}
