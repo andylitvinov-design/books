@@ -96,13 +96,13 @@ export function MandalaTherapyWalletDialog({locale,signedIn,onClose,onRefreshLog
   if(!signedIn){setStatus("unavailable");setProviders([]);setAccountId(null);return;}
   let active=true;
   setStatus("loading");
-  void getCabinetBootstrap("portrait",{refresh:true}).then(async snapshot=>{
+  void getCabinetBootstrap("portrait",{refresh:true}).then(async (snapshot:{account?:{id?:string}})=>{
    const id=snapshot?.account?.id;
    if(typeof id!=="string"||!/^[0-9a-f-]{36}$/i.test(id))throw Error("WALLET_ACCOUNT_UNAVAILABLE");
    const result=await appFetch("wallet/status",undefined,"GET",{accountId:id});
    if(active)setAccountId(id);
    return result;
-  }).then(result=>{
+  }).then((result:unknown)=>{
    if(!active)return;
    const data=result as {enabled?:boolean;currency?:string;providers?:unknown};
    if(data.enabled!==true||data.currency!=="CAD"){setStatus("unavailable");setProviders([]);return;}
