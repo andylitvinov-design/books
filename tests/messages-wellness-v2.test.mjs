@@ -226,7 +226,7 @@ test('Messenger keeps the same header and tab shell across AI, Orders, Clients a
 })
 
 
-test('owner Messenger preserves one chat with six in-chat entries and locale control',()=>{
+test('owner Messenger preserves one chat, Get Support plus six choices and locale control',()=>{
  const ui=source('components/app/messages-orders-clients.jsx')
  const ai=source('components/app/messenger-ai-workspace.jsx')
  const css=source('components/app/messenger-ai-workspace.module.css')
@@ -240,7 +240,7 @@ test('owner Messenger preserves one chat with six in-chat entries and locale con
  for(const id of ['video','meditation'])assert.ok(chat.includes('data-hh-ai-start="'+id+'"'))
  assert.ok(chat.includes('startGuided(kind:'))
  assert.ok(chat.includes('isCasualGreeting(text)'))
- // One original protected chat. The approved six-action landing opens only
+ // One original protected chat. Approved Get Support plus six actions open only
  // on a user gesture; its old IHelpTopics rail and automatic prompt transfer
  // were retired. Auth/consent, one composer and local draft remain intact.
  assert.doesNotMatch(ai,/data-chat-menu-rail/)
@@ -256,14 +256,17 @@ test('owner Messenger preserves one chat with six in-chat entries and locale con
  assert.match(chat,/onCreateVideo=\{(?:startContent|\(\)\s*=>\s*startContent\(\))\}/)
  assert.match(chat,/onPractice=\{\(\)=>startGuided\("meditation"\)\}/)
  assert.match(chat,/onAsk=\{\(\)=>composerRef\.current\?\.focus\(\{preventScroll:true\}\)\}/)
+ assert.match(chat,/onSupport=\{openSupportQuiz\}/)
+ assert.match(chat,/function openSupportQuiz\(\)/)
+ assert.match(chat,/setSupportQuizOpen\(true\)/)
  assert.match(chat,/if\(!quickPrompt\)return;\s*setDraft\(quickPrompt\.text\.slice\(0,2000\)\)/)
  const landing=source('components/app/messenger-ai-landing.tsx')
  assert.match(landing,/const ACTIONS=\[/)
- for(const id of ['test','video','practice','session','course','ask'])
+ for(const id of ['support','test','video','practice','session','course','ask'])
    assert.ok(landing.includes('{id:"'+id+'"'),id)
- assert.equal((landing.match(/\{id:"(?:test|video|practice|session|course|ask)"/g)||[]).length,6)
+ assert.equal((landing.match(/\{id:"(?:support|test|video|practice|session|course|ask)"/g)||[]).length,7)
  assert.match(landing,/data-hh-ai-choice=\{item\.id\}/)
- assert.match(landing,/onClick=\{item\.id==="video"\?onCreateVideo:/)
+ assert.match(landing,/onClick=\{item\.id==="support"\?onSupport:item\.id==="video"\?onCreateVideo:/)
  // The hero is a native MP4 player, starts only after the explicit tap,
  // and keeps audio language, error recovery and close/pause behavior visible.
  assert.match(landing,/data-hh-ai-intro-play onClick=\{start\}/);

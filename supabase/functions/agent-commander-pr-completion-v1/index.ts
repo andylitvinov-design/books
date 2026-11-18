@@ -288,8 +288,11 @@ async function workerAction(sql,body,action,origin){
     " or (state='BLOCKED' and (last_checked_at is null or last_checked_at<now()-interval '45 minutes'))"+
     " order by case when state='QUEUED' then 0 when state='WATCHING' then 1 when state='LEASED' then 2 else 3 end, coalesce(last_checked_at,created_at),created_at for update skip locked limit 1");
    if(!rows.length)return null;
+   // An already-blocked owner command remains forever read-only, including
+   // after verified conflict resolution moves BLOCKED -> WATCHING. A new
+   // authenticated owner command is needed for a new code-writer grant.
    const row=rows[0],previouslyBlocked=row.state==='BLOCKED'||
-    (row.state==='LEASED'&&row.evidence?.blockedRecheckOnly===true);
+    row.evidence?.blockedRecheckOnly===true;
    const first=!previouslyBlocked&&row.dispatch_attempted_at==null;
    const lease=crypto.randomUUID();
    const evidence={...(row.evidence&&typeof row.evidence==='object'?row.evidence:{}),

@@ -105,7 +105,8 @@ test('only signed proven non-dispatch capacity denial may re-arm the source CAS'
 test('stale BLOCKED requests use read-only cooldown, preserve lease restart intent and terminal GitHub proof',()=>{
  const src=file('supabase/functions/agent-commander-pr-completion-v1/index.ts');
  assert.match(src,/state='BLOCKED' and \(last_checked_at is null or last_checked_at<now\(\)-interval '45 minutes'\)/);
- assert.match(src,/row\.state==='LEASED'&&row\.evidence\?\.blockedRecheckOnly===true/);
+ assert.match(src,/row\.evidence\?\.blockedRecheckOnly===true/);
+ assert.doesNotMatch(src,/row\.state==='LEASED'&&row\.evidence\?\.blockedRecheckOnly===true/);
  assert.match(src,/dispatchEligibleOnce:first/);
  assert.match(src,/const first=!previouslyBlocked&&row\.dispatch_attempted_at==null/);
  assert.match(src,/blockedRecheckOnly:previouslyBlocked/);

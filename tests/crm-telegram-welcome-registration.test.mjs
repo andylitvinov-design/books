@@ -20,7 +20,7 @@ test('the first start preserves direct contact, diagnostic and separate marketin
  assert.ok(svc.includes('const firstStart=firstMenu&&'))
  assert.ok(svc.includes("firstStart?'registrationWelcome':'welcome'"))
  assert.ok(svc.includes('firstStart?telegramCompanionRegistrationButtons(language):'))
- assert.ok(svc.includes('telegramExploreMenuButtons(language)'))
+ assert.ok(svc.includes("language==='es'?telegramMenuKeyboard('es'):telegramMainMenuButtons(language)"))
  assert.ok(svc.includes('const diagnostic=STATE_RE.test(raw)'))
  assert.ok(svc.includes('if(!row&&(stop||diagnostic))return {handled:false}'))
  const route=file('app/api/app/crm/messenger/webhook/[provider]/route.js')
