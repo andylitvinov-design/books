@@ -293,7 +293,7 @@ test('one Play exposes informed free-only speech fallback without second consent
 });
 
 test('recorded fallback completes one consented voice turn with a single STT call',async()=>{
-  let time=0,tick=null,loud=false,uploads=0,stopped=0,answer='',phases=[];
+  let time=0,tick=null,loud=false,uploads=0,stopped=0,answer='',phases=[],levels=[];
   class FakeRecorder{
     static isTypeSupported(type){return type==='audio/mp4';}
     constructor(){this.state='inactive';this.mimeType='audio/mp4';}
@@ -326,16 +326,18 @@ test('recorded fallback completes one consented voice turn with a single STT cal
     clearInterval:()=>{tick=null;},
   };
   assert.equal(coachRecordedSupported(environment),true);
-  const capture=startCoachRecordedTurn({locale:'ru',environment,onState:phase=>phases.push(phase),onResult:text=>{answer=text;},onFailure:code=>assert.fail(code)});
+  const capture=startCoachRecordedTurn({locale:'ru',environment,onState:phase=>phases.push(phase),onLevel:level=>levels.push(level),onResult:text=>{answer=text;},onFailure:code=>assert.fail(code)});
   for(let i=0;i<12&&!tick;i++)await new Promise(resolve=>setImmediate(resolve));
   assert.equal(typeof tick,'function');
   time=200;loud=true;tick();time=350;tick();
   assert.ok(phases.includes('hearing'));
+  assert.ok(levels.some(level=>level>0.15),'real microphone RMS drives the waveform');
   loud=false;time=2400;tick(); // 1.9s VAD hold preserves ordinary mid-sentence pauses
   for(let i=0;i<12&&!answer;i++)await new Promise(resolve=>setImmediate(resolve));
   assert.equal(answer,'Я хочу обсудить свою цель');
   assert.equal(uploads,1);
   assert.equal(stopped,1);
+  assert.equal(levels.at(-1),0,'capture closure resets live waveform');
   assert.ok(phases.includes('transcribing'));
   capture.cancel();
 });
