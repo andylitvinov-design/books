@@ -198,7 +198,7 @@ async function verifyWorkspaceHydration(browser,locale){
       }else{
         const missing=await cards.first().getAttribute('data-story-media-kind')==='missing';
         await expect(cards.first()).toContainText(missing?
-          (locale==="ru"?"Нужен кадр":locale==="es"?"Falta vídeo":"Footage needed"):
+          (locale==="ru"?"Нужен видеокадр":locale==="es"?"Falta vídeo":"Footage needed"):
           (locale==="ru"?"Превью недоступно":locale==="es"?"Vista previa no disponible":"Preview unavailable"));
       }
     }else{
