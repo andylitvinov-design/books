@@ -85,11 +85,11 @@ test('service welcome photo is limited to first signed consent message and uses 
  assert.match(sender,/telegramInlineMarkup\(keyboard,locale\)/);
  assert.match(v3,/if\(row\.stage==='consent'\)/);
  assert.equal(v3Action({inlineAction:'v3:agree'}),'agree');
- assert.match(v3,/serviceCopy&&ctx.serviceDisclosureSeen!==true/);
- assert.match(v3,/serviceDisclosureSeen:true/);
- assert.match(v3,/serviceCopy\.consent/);
- assert.match(v3,/v3ButtonsFor\(lang,'service_consent'\)/);
- assert.match(v3,/serviceCopy\?\(action==='serviceagree'/);
+ assert.match(v3,/const emergency=v3ChatPreConsentSafetyReply\(raw,lang\)/);
+ assert.match(v3,/serviceCopy\?\(action==='agree'\|\|action==='serviceagree'/);
+ assert.match(v3,/!event.inlineAction&&isExplicitYes\(raw\)/);
+ assert.match(v3,/serviceCopy&&ctx.mode!==SECRETARY_MODES\.PSYCHOLOGIST\?serviceAllowed:allowed/);
+ assert.match(v3,/serviceCopy\?'consent':ctx.mode===FREE_DIAGNOSTIC_MODE/);
  assert.match(source('lib/crm/telegram-ai-diagnostic-v3.mjs'),/raw\.serviceDisclosureSeen===true/);
  assert.equal(v3Action({inlineAction:'v3:servicesend'}),'send');
 });
