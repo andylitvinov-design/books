@@ -92,7 +92,7 @@ export default async function VideoLibraryPhotosPage({searchParams}:Props){
            style={{display:"block",borderRadius:10,padding:10,background:scenario.id===selected?.id?"#E6F6F1":"#FFFCF7",
              border:"1px solid #E9DFD1",color:"#143D3A",textDecoration:"none",fontSize:14}}>
           {scenario.label[locale]}
-         </Link>))))}
+         </Link>)))}
        </div>
       </details>)}
     </div>
