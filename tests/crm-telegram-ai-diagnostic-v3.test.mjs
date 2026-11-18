@@ -52,12 +52,13 @@ test('V3 is a separate, consented three-language journey, not fixed six question
   }
   assert.ok(new Set(V3_BUTTONS).size===V3_BUTTONS.length,
     'V3 button labels must be unambiguous across locales and legacy V2');
-  // The warm, optional consent button is a safe refusal, not a forced interview.
-  // Verify each language's explicit refusal remains handled without AI consent.
-  for(const lang of ['ru','en','es']){
-    assert.ok(V3_BUTTONS.includes(V3_LABELS[lang].decline));
-    assert.equal(v3Action({rawText:V3_LABELS[lang].decline}),'decline');
-  }
+  // The current warm, consent-first V3 intentionally offers "Not now".
+  // A decline must be recognized in each locale and must never reach a model.
+  assert.ok(V3_BUTTONS.includes(V3_LABELS.ru.decline));
+  for(const lang of ['ru','en','es'])
+    assert.equal(v3Action({rawText:V3_LABELS[lang].decline}),'decline',lang);
+  for(const lang of ['ru','en','es'])
+    assert.equal(v3WantsGeneralChat(V3_LABELS[lang].decline),false,lang);
   assert.equal(v3Action({inlineAction:'v3:send'}),'send');
   assert.equal(v3Action({rawText:'/finish'}),'finish');
   assert.equal(v3Action({rawText:'сложности с отношениями'}),null);
