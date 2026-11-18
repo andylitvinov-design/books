@@ -299,3 +299,22 @@ test('scheduled CI Worker is an hourly backstop, not an extra ten-minute PR scan
  assert.match(yaml,/scripts\/ci-pr-schedule-fallback\.cjs/);
  assert.match(yaml,/reservation_run_id/);
 });
+
+test('existing CI Worker schedule rescues stale Watchdog before no-label return',()=>{
+ const workflow=require('node:fs').readFileSync('.github/workflows/hh-pr-ci-worker.yml','utf8');
+ const start=workflow.indexOf("if(context.eventName==='schedule')");
+ const next=workflow.indexOf('// Control-code pushes only syntax-check',start);
+ const block=workflow.slice(start,next);
+ assert.ok(start>=0&&next>start,'schedule route remains bounded');
+ const wake=block.indexOf('wakeStaleWatchdog({github,context');
+ const fallback=block.indexOf('scheduledBackstop({');
+ assert.ok(wake>=0&&fallback>wake,'rescue also runs with NO_ACTIONABLE_LABELS');
+ assert.match(block,/dryRun:!Boolean\(token\)/);
+ assert.match(block,/HH_CI_SCHEDULE_WATCHDOG_LIVENESS/);
+ assert.match(block,/HH_CI_SCHEDULE_FALLBACK/);
+ assert.equal((workflow.match(/cron:/g)||[]).length,1);
+ assert.match(workflow,/cron: '3 \* \* \* \*'/);
+ const policy=require('node:fs').readFileSync('scripts/ci-pr-control-tower-wakeup.cjs','utf8');
+ assert.match(policy,/WATCHDOG_MANUAL_COOLDOWN_MS=11\*60_000/);
+ assert.match(policy,/if\(info\.decision!=='WAKE_STALE_WATCHDOG'\)return report\(\)/);
+});
