@@ -34,6 +34,8 @@ export function MandatoryMessengerActions({locale,whatsappUrl,label,telegramUrl,
      .catch(()=>{if(!abort.signal.aborted){setServiceBot(null);setBotKind(null);}});
    return ()=>abort.abort();
  },[telegramUrl,whatsappUrl,locale,active]);
+ const directBot=typeof telegramUrl==='string'&&
+   /^https:\/\/t\.me\/holistichouse_bot\?start=hhitem_[a-z]+_[a-z0-9]+_(?:ru|en|es)$/.test(telegramUrl);
  const serviceRoute=active?resolveTelegramServiceHandoffUrl(
    telegramUrl||telegramEnquiryUrlFromWhatsApp(whatsappUrl),locale):null;
  // Every service/order request keeps its selected product; never launch the
@@ -43,7 +45,7 @@ export function MandatoryMessengerActions({locale,whatsappUrl,label,telegramUrl,
   <p className={styles.intro}>{t.intro}</p></>}
   <div className={styles.actions} role="group" aria-label={t.title}>
    <a href={whatsappUrl} className={styles.whatsapp} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" data-messenger-only-channel="whatsapp"><MessageCircle size={19} aria-hidden="true"/>WhatsApp</a>
-   <a href={serviceRoute||serviceBot||telegramUrl||telegramEnquiryUrlFromWhatsApp(whatsappUrl)} data-telegram-route={serviceRoute?"service-router":serviceBot?(botKind||"review"):telegramUrl?"manual":"service"} className={styles.telegram} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" data-messenger-only-channel="telegram"><Send size={19} aria-hidden="true"/>Telegram</a>
+   <a href={serviceRoute||serviceBot||telegramUrl||telegramEnquiryUrlFromWhatsApp(whatsappUrl)} data-telegram-route={serviceRoute?"service-router":serviceBot?(botKind||"review"):directBot?"service-bot":telegramUrl?"manual":"service"} className={styles.telegram} target={directBot?"_self":"_blank"} rel="noopener noreferrer" referrerPolicy="no-referrer" data-messenger-only-channel="telegram"><Send size={19} aria-hidden="true"/>Telegram</a>
   </div>
   {!compact&&<p className={styles.note}>{t.note}</p>}
  </>;
