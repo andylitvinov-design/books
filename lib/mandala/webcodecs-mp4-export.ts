@@ -200,11 +200,22 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
   // avc1.42E01E (level 3.0) which cannot describe portrait Full HD.
   // The preflight must match the CanvasSource and AudioBufferSource codecs.
   const videoBitrate=Math.min(4_000_000,Math.max(1_200_000,canvas.width*canvas.height*2.8));
-  const h264=await canEncodeVideo("avc",{
-    width:canvas.width,height:canvas.height,frameRate,
-    quality:new Quality({bitrate:videoBitrate}),
-  });
+  // A single 540p/8fps iPhone pass uses baseline H.264 level 3.1.
+  // Full profile/level negotiation for a larger canvas is kept on desktop.
+  const mobileCompatAvcCodec=typeof navigator!=="undefined"&&(
+    /iPhone|iPad|iPod/i.test(navigator.userAgent)||
+    (/Macintosh/i.test(navigator.userAgent)&&navigator.maxTouchPoints>1))
+    ?"avc1.42001f":undefined;
+  const videoConfig={width:canvas.width,height:canvas.height,frameRate,
+    quality:new Quality({bitrate:videoBitrate})};
+  const baselineSupported=Boolean(mobileCompatAvcCodec&&await canEncodeVideo("avc",{
+    ...videoConfig,fullCodecString:mobileCompatAvcCodec,
+  }));
+  const h264=baselineSupported||await canEncodeVideo("avc",videoConfig);
   if(!h264)throw new Error("webcodecs_h264_unsupported");
+  // An unavailable baseline profile falls back to a preflighted AVC encoder,
+  // not a second expensive movie render.
+  const selectedAvcCodec=baselineSupported?mobileCompatAvcCodec:undefined;
   if(audio){
     const aac=await canEncodeAudio("aac",{
       sampleRate:SAMPLE_RATE,numberOfChannels:2,
@@ -220,6 +231,7 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
   const output=new Output({format:new Mp4OutputFormat({fastStart:"in-memory"}),target});
   const videoSource=new CanvasSource(canvas,{
     codec:"avc", quality:new Quality({bitrate:videoBitrate}),
+    ...(selectedAvcCodec?{fullCodecString:selectedAvcCodec}:{}),
     keyFrameInterval:2,
   });
   output.addVideoTrack(videoSource);
