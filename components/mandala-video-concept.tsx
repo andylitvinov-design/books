@@ -15,8 +15,9 @@ import {suggestVideoConcept,reviseVideoConcept,videoConceptIsValid}
   from "@/lib/mandala/auto-video-concept.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
 import {buildVideoConceptNarrative} from "@/lib/mandala/video-concept-narrative.mjs";
-import {storyReviewSignature,storyReviewRequired,validEditorialShotActions}
+import {storyReviewSignature,storyReviewRequired,conceptSceneAlignment,validEditorialShotActions}
   from "@/lib/mandala/video-story-review.mjs";
+import {MandalaStoryboardSceneSketch} from "./mandala-storyboard-scene-sketch";
 import {getVideoCreativeDirections,applyVideoCreativeDirection} from "@/lib/mandala/video-creative-directions.mjs";
 import {reviewConceptQuality} from "@/lib/mandala/cinematic-concept-v3.mjs";
 import css from "./mandala-video-concept.module.css";
@@ -43,7 +44,8 @@ export type ApprovedVideoConcept={
   storyReviewSignature?:string|null;
   conceptScenes?:Array<{id:string;index:number;action:string;narrative:string}>;
   storySource?:string;storyboard?:Array<{title:string;action:string;emotion:string;keywords:string[];sceneId?:string;
-    startSeconds?:number;endSeconds?:number;visualSubject?:string;shotType?:string;
+    startSeconds?:number;endSeconds?:number;visualSubject?:string;visualAction?:string;
+    shotType?:string;searchKeywords?:string[];
     continuityKeys?:string[];sourceStatus?:string}>;
   avoidImagery?:string[];speechBeatsSource?:string;personalizationFocus?:string|null;
   parameters?:Record<string,{value:string|string[]|null;status:string;source:string}>;
@@ -198,7 +200,9 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
   // If the author changes the plot, the old six shots are NOT silently
   // treated as an approved illustration of the rewritten story.
   const storyboardNeedsReview=storyReviewRequired(concept);
-  const creativeReady=(!isStoryFilm||passV3||passCurated)&&!storyboardNeedsReview;
+  const storyboardSceneAlignment=conceptSceneAlignment(concept);
+  const creativeReady=(!isStoryFilm||passV3||passCurated)&&
+    !storyboardNeedsReview&&storyboardSceneAlignment.aligned;
   const taxonomy=getMyTubeTaxonomy();
   const categories=taxonomy.categories;
   const category=categories.find(c=>c.id===concept.categoryId)||categories[0];
@@ -308,12 +312,31 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
   };
   const saveShotEdits=()=>{
     if(!concept.storyboard||!validEditorialShotActions(shotDrafts))return;
-    const next:ApprovedVideoConcept={...concept,
-      storyboard:concept.storyboard.map((shot,index)=>({
-        ...shot,action:shotDrafts[index].trim(),
-        // An edited action must not inherit search tags for an older event.
-        keywords:shot.action.trim()===shotDrafts[index].trim()?[...shot.keywords]:[]
-      })),
+    const storyboard=concept.storyboard.map((shot,index)=>{
+      const action=shotDrafts[index].trim();
+      const changed=shot.action.trim()!==action;
+      return {...shot,action,visualAction:action,
+        // Edits invalidate tags and visual props inherited from the old action.
+        keywords:changed?[]:[...shot.keywords],
+        searchKeywords:changed?[]:[...(shot.searchKeywords||[])],
+        visualSubject:changed?"":shot.visualSubject,
+        continuityKeys:changed?[]:shot.continuityKeys};
+    });
+    // Keep all three representations of the event in sync.
+    let conceptText=concept.conceptText||"";
+    const conceptScenes=concept.conceptScenes?.map((scene,index)=>{
+      const before=concept.storyboard?.[index]?.action||"";
+      const after=storyboard[index].action;
+      if(before!==after)conceptText=conceptText.replace(before,after);
+      return {...scene,action:after,narrative:before===after?
+        scene.narrative:scene.narrative.replace(before,after)};
+    });
+    const next:ApprovedVideoConcept={...concept,storyboard,
+      conceptText:conceptScenes?conceptText:concept.conceptText,
+      conceptScenes,
+      parameters:concept.parameters?{...concept.parameters,
+       visualActions:{value:storyboard.map(shot=>shot.action),
+         status:"manual",source:"editor"}}:undefined,
       userEditedFields:[...new Set([...(concept.userEditedFields||[]),"storyboard"])]};
     setCustom(next);setDraftByDirection(rows=>({...rows,[next.signature]:next}));
     setApprovedSignature(null);setHasLocalEdits(true);setShotEditing(false);
@@ -321,7 +344,8 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
   };
   const confirmRevisedStory=()=>{
     const review=storyReviewSignature(concept);
-    if(!review||!validEditorialShotActions(concept.storyboard?.map(shot=>shot.action)))return;
+    if(!review||!validEditorialShotActions(concept.storyboard?.map(shot=>shot.action))||
+      !storyboardSceneAlignment.aligned)return;
     const next:ApprovedVideoConcept={...concept,storyReviewSignature:review};
     setCustom(next);setDraftByDirection(rows=>({...rows,[next.signature]:next}));
     setApprovedSignature(null);setHasLocalEdits(true);
@@ -506,7 +530,7 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
       </div>
       {textEditing?<>
         <textarea className={css.narrativeInput} data-video-concept-text-input
-          aria-label={t.textTitle} rows={5} maxLength={1200} autoFocus
+          aria-label={t.textTitle} rows={5} maxLength={6000} autoFocus
           value={textDraft} disabled={disabled} onChange={event=>setTextDraft(event.target.value)}/>
         <div className={css.narrativeButtons}>
           <button type="button" onClick={saveTextEdit} disabled={disabled||!textDraft.trim()}>
@@ -562,11 +586,22 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
       <summary>{word("Предложенная раскадровка","Suggested storyboard","Guion gráfico propuesto")}
         {" · "}{durationSeconds}{word(" сек","s"," s")} · {sketch.length} {word("кадров","shots","tomas")}
         <ChevronDown size={17} aria-hidden="true"/></summary>
-      <ol className={css.parameterList}>{sketch.map(shot=><li key={shot.number}>
-        <strong>{timecode(shot.startSeconds)}–{timecode(shot.endSeconds)}</strong> ·
-        {" "}{shot.title?<span className={css.shotTitle}>{shot.title}</span>:
-          shotKinds[shot.shotKind]}: <span className={css.shotAction}>{shot.beat}</span>
-        {shot.emotion?<small className={css.shotEmotion}>{shot.emotion}</small>:null}
+      <ol className={css.parameterList}>{sketch.map((shot,index)=><li key={shot.number}
+        data-video-concept-scene-graphic={shot.number}>
+        <div className={css.storyShotGraphicRow}>
+         <div className={css.storyShotGraphicFrame}>
+          <MandalaStoryboardSceneSketch locale={locale} action={shot.beat}
+            visualSubject={concept.storyboard?.[index]?.visualSubject}
+            keywords={concept.storyboard?.[index]?.keywords}
+            shotType={concept.storyboard?.[index]?.shotType}/>
+         </div>
+         <div className={css.storyShotGraphicText}>
+          <strong>{timecode(shot.startSeconds)}–{timecode(shot.endSeconds)}</strong> ·
+          {" "}{shot.title?<span className={css.shotTitle}>{shot.title}</span>:
+            shotKinds[shot.shotKind]}: <span className={css.shotAction}>{shot.beat}</span>
+          {shot.emotion?<small className={css.shotEmotion}>{shot.emotion}</small>:null}
+         </div>
+        </div>
       </li>)}</ol>
       <p className={css.status}>{word(
         "Это план сцен, не подтверждение наличия разных видеоматериалов. Подбор и проверка MP4 — в Монтаже.",
@@ -591,14 +626,21 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
           </div>
         </>:<button type="button" data-video-storyboard-edit disabled={disabled||ideaEditing||textEditing}
           onClick={startShotEdit}>{word("Уточнить действия в сценах","Edit scene actions","Editar acciones de escenas")}</button>}
-        {storyboardNeedsReview&&!shotEditing?<div className={css.storyReviewNotice}
+        {!storyboardSceneAlignment.aligned?<p role="status"
+         data-video-storyboard-concept-mismatch className={css.storyReviewNotice}>
+         {word("Сценарий и действия разошлись. Сверьте все шесть действий с текстом и их порядок.",
+           "The story no longer contains the six actions in order. Update the story and shot list.",
+           "La historia ya no contiene las seis acciones en orden. Corrige el texto y las tomas.")}
+       </p>:null}
+       {storyboardNeedsReview&&!shotEditing?<div className={css.storyReviewNotice}
           data-video-storyboard-review-required role="status">
           <p>{word(
             "Вы изменили историю. Проверьте шесть действий выше: они должны соответствовать новому тексту. При необходимости измените сцены.",
             "You changed the story. Review the six actions above against your new text; edit any scenes that no longer fit.",
             "Has cambiado la historia. Revisa las seis acciones con el nuevo texto y corrige las escenas que ya no encajen."
           )}</p>
-          <button type="button" data-video-storyboard-confirm disabled={disabled||ideaEditing||textEditing}
+          <button type="button" data-video-storyboard-confirm
+            disabled={disabled||ideaEditing||textEditing||!storyboardSceneAlignment.aligned}
             onClick={confirmRevisedStory}>
             <Check size={16}/>{word("Я проверил(а) соответствие сцен",
               "I've reviewed the six scenes","He revisado las seis escenas")}
