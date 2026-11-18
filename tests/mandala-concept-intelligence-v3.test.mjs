@@ -236,3 +236,21 @@ test("quality review rejects a storyboard event differing from its source concep
  assert.ok(verdict.hardFailures.includes("concept_storyboard_scene_mismatch"));
  assert.notEqual(verdict.status,"pass");
 });
+
+
+test("unfamiliar personal goals still receive authored films rather than arrow catalog copy",()=>{
+ for(const locale of ["en","ru","es"]){
+  const goal={
+   en:"A fresh start with something I have never tried",
+   ru:"Хочу попробовать нечто совершенно новое",
+   es:"Quiero intentar algo nuevo en mi vida"
+  }[locale];
+  const base=suggestVideoConcept({locale,goal,theme:"life",personalization});
+  const unknown={...base,hasPersonalInput:true,semanticConfidence:"low",topicId:"custom-topic"};
+  const choices=getVideoCreativeDirections(unknown,locale);
+  assert.equal(choices.length,3,"an unrecognized goal still gets three editorial options");
+  assert.ok(choices.every(choice=>choice.review.status==="pass"&&
+   choice.conceptScenes?.length===choice.storyboard.length));
+  assert.ok(choices.every(choice=>!choice.story.includes("→")));
+ }
+});
