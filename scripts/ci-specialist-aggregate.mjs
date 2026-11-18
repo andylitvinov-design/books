@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance } from '../lib/ci/production-base-impact.mjs';
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
@@ -449,6 +449,7 @@ export async function verify(api,ctx,files,options={}) {
   const requireCurrentBase=!pinnedChangeRows || (requiresCurrentProductionBase(changed) &&
     !verifiedOptionalOwnerSelectorMigration(files,changedRows));
   const approvedBaseChanges = new Set();
+  const approvedPresentationBases = new Set();
   async function verifyCurrentBase(live) {
     assertSame(live, ctx, false);
     if (!requireCurrentBase) return;
@@ -463,6 +464,8 @@ export async function verify(api,ctx,files,options={}) {
     if (!pinnedChangeRows || typeof api.compare !== 'function') {
       throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
     }
+    if (approvedPresentationBases.has(liveBaseSha) && live.mergeable !== true)
+      throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
     if (!approvedBaseChanges.has(liveBaseSha)) {
       // Only a complete, ancestry-proven, documentation-only target advance
       // may pass. Security, runtime, CI, unknown and incomplete diffs stay blocked.
@@ -496,9 +499,19 @@ export async function verify(api,ctx,files,options={}) {
       const inertPublicImages = pinnedChangeRows && live.mergeable === true &&
         changedRows.every(row => ['A','M','added','modified'].includes(row.status)) &&
         verifiedIndependentPublicRasterAdvance(diff, ctx.base, liveBaseSha, changed);
+      // If a protected PR shipped an independent public page/feature component,
+      // its successful tests remain usable for a genuinely disjoint candidate.
+      // A positive GitHub mergeable result and complete ancestry proof are required.
+      const independentPresentation = pinnedChangeRows && live.mergeable === true &&
+        safeIndependentPublicPresentationAdvance(diff, ctx.base, liveBaseSha, changed);
       if (!documentationOnly && !independentlyRevalidated &&
-          !isolatedCiPolicy && !unrelatedCiMaintenance && !inertPublicImages) {
+          !isolatedCiPolicy && !unrelatedCiMaintenance && !inertPublicImages &&
+          !independentPresentation) {
         throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+      }
+      if (independentPresentation) {
+        approvedPresentationBases.add(liveBaseSha);
+        console.log('CI_BASE_ADVANCE_REUSED: independent public presentation advanced; exact-HEAD checks preserved');
       }
       if (inertPublicImages) {
         console.log('CI_BASE_ADVANCE_REUSED: only independent public raster assets advanced; exact-HEAD checks retained');

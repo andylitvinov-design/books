@@ -1,7 +1,7 @@
 "use client";
 import {
  Armchair,ArrowRight,BookOpen,Box,BriefcaseBusiness,CalendarDays,Camera,Car,Check,
- Clock3,Coffee,DoorOpen,FileText,Film,Flower2,Footprints,Hand,
+ Clock3,CloudRain,Bus,Keyboard,Wind,Smile,Coffee,DoorOpen,FileText,Film,Flower2,Footprints,Hand,
  Handshake,Heart,House,Image as ImageIcon,KeyRound,Lamp,Landmark,Laptop,
  Luggage,Mail,Map,MessageSquare,Mountain,Music2,NotebookPen,
  Pencil,Scissors,Shirt,Smartphone,StickyNote,Sunrise,Table2,Target,
@@ -18,6 +18,7 @@ const ICONS={
  invitation:Mail,phone:Smartphone,message:MessageSquare,letter:Mail,
  notebook:NotebookPen,pencil:Pencil,paper:FileText,drawing:ImageIcon,
  box:Box,notes:StickyNote,calendar:CalendarDays,clock:Clock3,
+ transit:Bus,rain:CloudRain,breath:Wind,typing:Keyboard,smile:Smile,
  money:Wallet,computer:Laptop,desk:BriefcaseBusiness,lamp:Lamp,
  light:Sunrise,door:DoorOpen,window:AppWindow,house:House,bridge:Landmark,
  train:Train,car:Car,street:Footprints,book:BookOpen,cup:Coffee,
