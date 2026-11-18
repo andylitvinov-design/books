@@ -127,7 +127,7 @@ test("Messenger hides big Voice strip and keeps the settings behind composer plu
  assert.match(menu,/\{voiceControls\}/);
  assert.match(menu,/\{voiceAttachment\}/);
  assert.equal((chat.match(/<VoiceCompanionControls\b/g)||[]).length,1);
- assert.match(chat,/privacyOnly=\{Boolean\(pageHelp\)\}\|\|messengerView\}/);
+ assert.match(chat,/privacyOnly=\{Boolean\(pageHelp\)\|\|messengerView\}/);
  assert.match(chat,/\{compact&&!messengerView&&voiceEnabled&&<details className=\{styles.compactSettings\} data-hh-voice-settings>/);
  assert.match(chat,/\{!compact&&settings\}/);
  assert.match(chat,/data-hh-conversation-mic/);
