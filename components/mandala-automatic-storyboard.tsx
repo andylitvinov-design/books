@@ -1,5 +1,5 @@
 "use client";
-import {useMemo} from "react";
+import {useMemo,useState} from "react";
 import {ArrowRight,Film,Play} from "lucide-react";
 import {suggestVideoConcept} from "@/lib/mandala/auto-video-concept.mjs";
 import {getVideoCreativeDirections,applyVideoCreativeDirection} from "@/lib/mandala/video-creative-directions.mjs";
@@ -72,6 +72,7 @@ export function MandalaAutomaticStoryboard({
  scenes,appliedShots,resolveMedia,disabled,onApply,onChooseQuality,fiveSceneShots,onOpenIdeas
 }:Props){
  const t=words[locale];
+ const [expandedScene,setExpandedScene]=useState<number|null>(null);
  const phraseKey=phrases.join("\u001f");
  const personalizationKey=JSON.stringify(personalization??null);
  // Concept and Story get the SAME confirmed Goals/Ideas/phrases/transcript.
@@ -243,6 +244,7 @@ export function MandalaAutomaticStoryboard({
     return <li key={index} className={styles.storyAutoCard}
       data-video-story-scene={index+1} data-concept-scene-id={authored?.sceneId||undefined}
       data-video-story-media-matched={Boolean(shot)}
+      data-storyboard-expanded={expandedScene===index}
       data-story-media-kind={photo?"photo":shot?"video":"missing"}
       data-storyboard-continuity={authored?.continuityKeys?.join(",")||undefined}>
      <div className={styles.storyAutoPoster}>
@@ -261,7 +263,13 @@ export function MandalaAutomaticStoryboard({
       <span className={styles.srOnly}>{t.scene} {index+1}</span>
       <small data-storyboard-scene-time>{clock(from)}–{clock(to)}</small>
       <strong>{title}</strong>
-      <p data-storyboard-scene-action>{guide.visual}</p>
+      <button type="button" className={styles.storyAutoAction}
+        data-storyboard-scene-action aria-expanded={expandedScene===index}
+        title={guide.visual}
+        aria-label={(locale==="ru"?"Раскрыть действие сцены ":locale==="es"?"Ver acción de escena ":"Expand scene action ")+(index+1)+": "+guide.visual}
+        onClick={()=>setExpandedScene(current=>current===index?null:index)}>
+        {guide.visual}
+      </button>
       {authored?<small data-storyboard-media-brief>
         {locale==="ru"?"Подбираем видео или фото именно этого действия":
           locale==="es"?"Vídeo o foto de esta acción exacta":
