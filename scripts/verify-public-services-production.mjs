@@ -187,7 +187,9 @@ try {
     // Business has its own topic, need and start-format branching.
     await quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice="business_support"]').click();
     await expect(quiz).toHaveAttribute("data-services-quiz-step", "2");
-    await expect(quiz.locator('[data-services-quiz-question="need"] [data-services-quiz-choice]')).toHaveCount(4);
+    await expect(quiz.locator('[data-services-quiz-question="need"] [data-services-quiz-choice]')).toHaveCount(5);
+    await expect(quiz.locator('[data-services-quiz-question="need"] [data-services-quiz-choice="business_burnout"]')).toBeVisible();
+    await expect(quiz.locator('[data-services-quiz-question="need"] [data-services-quiz-choice="business_change"]')).toBeVisible();
     await quiz.locator('[data-services-quiz-question="need"] [data-services-quiz-choice="business_strategy"]').click();
     await expect(quiz).toHaveAttribute("data-services-quiz-step", "3");
     await quiz.locator('[data-services-quiz-question="mode"] [data-services-quiz-choice="consultation"]').click();
