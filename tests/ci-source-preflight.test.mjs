@@ -97,14 +97,14 @@ test('Core restores trusted Next/TypeScript cache before standalone preflight an
     'trusted cache must be available before the standalone typecheck and required Next build');
   const cache=workflow.slice(restore,preflight);
   assert.match(cache,/id: ci_trusted_next_cache/);
-  assert.match(cache,/uses: actions\\/cache\\/restore@v4/);
-  assert.match(cache,/tsconfig\\.tsbuildinfo/);
+  assert.match(cache,/uses: actions\/cache\/restore@v4/);
+  assert.match(cache,/tsconfig\.tsbuildinfo/);
   assert.match(cache,/hh-core-next-v2-/);
   assert.ok(cache.includes("steps.diff.outputs.ci_only != 'true'"),'no untrusted CI-only cache promotion');
-  assert.doesNotMatch(workflow,/actions\\/cache\\/save@v4/,'PR never publishes compiler cache');
-  assert.match(source,/run\\(tsc,\\['--noEmit','--incremental','--tsBuildInfoFile','tsconfig\\.tsbuildinfo','--pretty','false'\\]\\)/);
+  assert.doesNotMatch(workflow,/actions\/cache\/save@v4/,'PR never publishes compiler cache');
+  assert.match(source,/run\(tsc,\['--noEmit','--incremental','--tsBuildInfoFile','tsconfig\.tsbuildinfo','--pretty','false'\]\)/);
   assert.match(workflow,/run: npm run build -- --no-lint/,'mandatory Next build still independently checks TypeScript');
-  assert.match(source,/const typechecked=fullTypes\\|\\|\\(!typecheckDelegated&&impactsTypes\\(paths\\)\\)/,
+  assert.match(source,/const typechecked=fullTypes\|\|\(!typecheckDelegated&&impactsTypes\(paths\)\)/,
     'privileged and unknown routes still get standalone tsc');
 });
 
