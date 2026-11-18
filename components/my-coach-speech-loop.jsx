@@ -873,8 +873,11 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   }
 
   function toggle(){
+    if(phaseRef.current==='ready'&&blockedResumeRef.current){
+      blockedResumeRef.current()
+      return
+    }
     if(phaseRef.current==='ready'){
-      if(blockedResumeRef.current){blockedResumeRef.current();return}
       retryAttemptsRef.current=0
       recordedSttUnavailableRef.current=false
       startListening()
