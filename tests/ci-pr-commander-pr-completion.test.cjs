@@ -444,3 +444,63 @@ test('protected Commander gateway source updates wake the existing Watchdog with
  assert.match(workflow,/id-token: write/);
  assert.equal((workflow.match(/cron:/g)||[]).length,1,'do not add a second schedule');
 });
+
+
+test('a resolved historical DIRTY conflict resumes READ-ONLY WATCHING after two exact GitHub reads',async()=>{
+ const stale='c'.repeat(40),liveSha='d'.repeat(40),baseSha='e'.repeat(40);
+ const taskOld={...task,requestedHeadSha:stale,dispatchEligibleOnce:false,
+  blockedRecheckOnly:true,previousReasonCode:'MERGE_CONFLICT_REQUIRES_SEMANTIC_REPAIR'};
+ const clean={...base,head:{...base.head,sha:liveSha,ref:'fix/pr'},base:{...base.base,sha:baseSha},
+  mergeable:true,mergeable_state:'clean',labels:[{name:'hh:repair-needed'}]};
+ const f=mock(taskOld,clean);let calls=0;
+ f.github.rest.pulls.get=async()=>{calls++;return {data:clean}};
+ const r=await run({...f,context,dispatch:async()=>{throw Error('UNSAFE_SOURCE_WRITER')}}); 
+ assert.equal(calls,2);
+ assert.equal(r.status,'WATCHING');
+ assert.equal(r.reasonCode,'MERGE_CONFLICT_RESOLVED_WATCH_ONLY');
+ assert.equal(r.dispatchAccepted,false);
+ assert.equal(f.calls.some(x=>x.action==='arm_dispatch'),false);
+ const receipt=f.calls.find(x=>x.action==='finish');
+ assert.equal(receipt.headSha,liveSha);
+ assert.equal(receipt.blockedRecheckOnly,true);
+});
+test('historically recovered conflict stays WATCHING on same HEAD without regaining source rights',async()=>{
+ const sha='f'.repeat(40),baseSha='e'.repeat(40);
+ const old={...task,requestedHeadSha:sha,blockedRecheckOnly:true,
+  dispatchEligibleOnce:false,previousReasonCode:'MERGE_CONFLICT_RESOLVED_WATCH_ONLY'};
+ const p={...base,head:{...base.head,ref:'fix/pr',sha},base:{...base.base,sha:baseSha},
+  mergeable:true,mergeable_state:'behind',labels:[]};
+ const m=mock(old,p);let calls=0;
+ m.github.rest.pulls.get=async()=>{calls++;return {data:p}};
+ const out=await run({...m,context,dispatch:async()=>{throw Error('SHOULD_NOT_DISPATCH')}});
+ assert.equal(out.status,'WATCHING');
+ assert.equal(calls,2);
+ assert.equal(m.calls.filter(x=>x.action==='arm_dispatch').length,0);
+});
+test('only verified conflict history can reopen; stale second read, security hold and other blockers fail closed',async()=>{
+ const sha='f'.repeat(40),old='d'.repeat(40);
+ const taskOld={...task,requestedHeadSha:old,blockedRecheckOnly:true,
+  dispatchEligibleOnce:false,previousReasonCode:'MERGE_CONFLICT_REQUIRES_SEMANTIC_REPAIR'};
+ const clean={...base,head:{...base.head,ref:'fix/pr',sha},base:{...base.base,sha:'e'.repeat(40)},
+  mergeable:true,mergeable_state:'clean',labels:[]};
+ const cases=[
+  {first:clean,second:{...clean,head:{...clean.head,sha:'b'.repeat(40)}},reason:'HEAD_MOVED'},
+  {first:clean,second:{...clean,base:{...clean.base,sha:'b'.repeat(40)}},reason:'BASE_MOVED'},
+  {first:clean,second:{...clean,labels:[{name:'hh:hold'}]},reason:'HOLD_ADDED'},
+  {first:{...clean,mergeable:false,mergeable_state:'dirty'},second:clean,reason:'STILL_DIRTY'},
+  {first:clean,second:null,reason:'READ_FAILED'}
+ ];
+ for(const c of cases){
+  const m=mock(taskOld,c.first);let calls=0;
+  m.github.rest.pulls.get=async()=>{calls++;if(calls===2&&!c.second)throw Error('GH_UNAVAILABLE');
+   return {data:calls===1?c.first:c.second};};
+  const out=await run({...m,context,dispatch:async()=>{throw Error('UNSAFE_WRITE')}});
+  assert.equal(out.status,'BLOCKED',c.reason);
+  assert.equal(m.calls.filter(x=>x.action==='arm_dispatch').length,0,c.reason);
+  assert.equal(m.calls.find(x=>x.action==='finish').headSha,old,c.reason);
+ }
+ const unrelated=mock({...taskOld,previousReasonCode:'OWNER_REPAIR_DISPATCH_HTTP_403'},clean);
+ let read=0;unrelated.github.rest.pulls.get=async()=>{read++;return {data:clean}};
+ const blocked=await run({...unrelated,context,dispatch:async()=>{throw Error('UNSAFE_WRITE')}});
+ assert.equal(blocked.status,'BLOCKED');assert.equal(read,1);
+});
