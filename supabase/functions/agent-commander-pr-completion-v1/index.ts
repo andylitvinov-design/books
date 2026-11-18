@@ -77,7 +77,7 @@ async function authenticatedOwner(req){
  const user=await r.json().catch(()=>null);
  return user&&UUID.test(user.id||'')&&user.email_confirmed_at?user.id:null;
 }
-async function readPR(number){
+async function readPR(number,{terminalControlReadback=false}={}){
  const r=await fetch('https://api.github.com/repos/'+REPO+'/pulls/'+number,{
   cache:'no-store',redirect:'error',signal:AbortSignal.timeout(9000),
   headers:{Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',
@@ -86,7 +86,12 @@ async function readPR(number){
  const raw=await r.text();
  if(raw.length>200000)throw Error('GITHUB_PR_RESPONSE_OVERSIZED');
  const pr=JSON.parse(raw);
- if(pr.number!==number||pr.base?.ref!==BASE||pr.base?.repo?.full_name!==REPO||
+ // Only a previously BLOCKED owner request may reconcile a terminal PR on
+ // the protected control base. Never admit an open control PR for repair.
+ const controlTerminal=terminalControlReadback&&pr.state==='closed'&&
+  pr.base?.ref==='codex/bootstrap-books';
+ if(pr.number!==number||(!controlTerminal&&pr.base?.ref!==BASE)||
+  pr.base?.repo?.full_name!==REPO||
   pr.head?.repo?.full_name!==REPO||!SHA.test(pr.head?.sha||''))
   throw Error('PR_UNSUPPORTED_REPO_OR_SHA');
  return pr;
@@ -218,16 +223,26 @@ async function workerAction(sql,body,action,origin){
    const rows=await tx.unsafe('select * from '+T+
     " where state='QUEUED' or (state='WATCHING' and (last_checked_at is null or last_checked_at<now()-interval '3 minutes'))"+
     " or (state='LEASED' and lease_until<now())"+
-    " order by case when state='QUEUED' then 0 else 1 end, coalesce(last_checked_at,created_at),created_at for update skip locked limit 1");
+    // Stale historical BLOCKED tasks are observed at low frequency, after all
+    // live requests. They are NEVER new repair grants, even if HEAD changed.
+    " or (state='BLOCKED' and (last_checked_at is null or last_checked_at<now()-interval '45 minutes'))"+
+    " order by case when state='QUEUED' then 0 when state='WATCHING' then 1 when state='LEASED' then 2 else 3 end, coalesce(last_checked_at,created_at),created_at for update skip locked limit 1");
    if(!rows.length)return null;
-   const row=rows[0],first=row.dispatch_attempted_at==null;
+   const row=rows[0],previouslyBlocked=row.state==='BLOCKED'||
+    (row.state==='LEASED'&&row.evidence?.blockedRecheckOnly===true);
+   const first=!previouslyBlocked&&row.dispatch_attempted_at==null;
    const lease=crypto.randomUUID();
+   const evidence={...(row.evidence&&typeof row.evidence==='object'?row.evidence:{}),
+    blockedRecheckOnly:previouslyBlocked};
    await tx.unsafe('update '+T+
     " set state='LEASED',lease_token=$1::uuid,lease_until=now()+interval '4 minutes',"+
-    " first_attempt_at=coalesce(first_attempt_at,now()),updated_at=now()"+
-    ' where request_id=$2::uuid',[lease,row.request_id]);
+    " first_attempt_at=coalesce(first_attempt_at,now()),updated_at=now(),"+
+    " evidence=$3::text::jsonb"+
+    ' where request_id=$2::uuid',[lease,row.request_id,JSON.stringify(evidence)]);
    return {requestId:row.request_id,leaseToken:lease,prNumber:row.pr_number,
-    requestedHeadSha:row.requested_head_sha,dispatchEligibleOnce:first};
+    requestedHeadSha:row.requested_head_sha,dispatchEligibleOnce:first,
+    blockedRecheckOnly:previouslyBlocked,
+    previousReasonCode:previouslyBlocked?label(row.reason_code):null};
   });
   return json(200,{schema:FUNCTION,item:result},origin);
  }
@@ -275,7 +290,9 @@ async function workerAction(sql,body,action,origin){
   }
  }
  if(state==='MERGED'||state==='CLOSED_UNMERGED'){
-  const pr=await readPR(prior[0].pr_number);
+  const pr=await readPR(prior[0].pr_number,{
+   terminalControlReadback:body.blockedRecheckOnly===true&&
+    prior[0].evidence?.blockedRecheckOnly===true});
   if(pr.state!=='closed'||state==='MERGED'&&(
     pr.merged!==true||!SHA.test(pr.merge_commit_sha||'')||
     !Number.isFinite(Date.parse(pr.merged_at||'')))||
@@ -297,6 +314,7 @@ async function workerAction(sql,body,action,origin){
     dispatchAccepted:body.dispatchAccepted===true,
     candidateProof:'NOT_ATTESTED_BY_GATEWAY',liveVerified:false,
     followedCurrentHead:verifiedFollowedHead!==null,
+    blockedRecheckOnly:prior[0].evidence?.blockedRecheckOnly===true,
     safeCapacityRetryDeferred:verifiedNoDispatch}),
    id,lease,verifiedFollowedHead,verifiedNoDispatch]);
  if(rows.length!==1)return json(409,{error:'LEASE_CAS_FAILED'},origin);
