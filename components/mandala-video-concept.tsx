@@ -36,7 +36,8 @@ export type ApprovedVideoConcept={
   psychologicalBrief?:{family:string;[key:string]:unknown};
   userEditedFields?:string[];
   storyReviewSignature?:string|null;
-  storySource?:string;storyboard?:Array<{title:string;action:string;emotion:string;keywords:string[];
+  conceptScenes?:Array<{id:string;index:number;action:string;narrative:string}>;
+  storySource?:string;storyboard?:Array<{title:string;action:string;emotion:string;keywords:string[];sceneId?:string;
     startSeconds?:number;endSeconds?:number;visualSubject?:string;shotType?:string;
     continuityKeys?:string[];sourceStatus?:string}>;
   avoidImagery?:string[];speechBeatsSource?:string;personalizationFocus?:string|null;
@@ -60,7 +61,7 @@ const COPY={
   example:"Это пример без личной цели. Уточните её во вкладке «Цель», чтобы получить подходящий вариант.",
   goal:"Цель",category:"Категория",subcategory:"Подкатегория",topic:"Тема",
   style:"Стиль",scenario:"Сценарий",emotion:"Эмоциональная программа",meaning:"Смысл",motif:"Мотив",
-  stages:"Четыре смысловых эпизода",story:"Основная идея",editing:"Редактирование концепции",
+  stages:"Эмоциональная дуга · 4 фазы",story:"Основная идея",editing:"Редактирование концепции",
   textTitle:"Текст концепции",textEdit:"Изменить текст",textSave:"Сохранить текст",textCancel:"Отмена",parameters:"Параметры концепции",
   preview:"Редакционный сценарий, не готовое видео. Перед записью проверим подходящие видеосцены.",
   approve:"Одобрить и продолжить",edit:"Редактировать концепцию",editHelp:"Требуется регистрация",
@@ -77,7 +78,7 @@ const COPY={
   example:"This is an example without a personal goal. Add your goal to get a more relevant suggestion.",
   goal:"Goal",category:"Category",subcategory:"Subcategory",topic:"Topic",
   style:"Style",scenario:"Scenario",emotion:"Emotional journey",meaning:"Meaning",motif:"Motif",
-  stages:"Four story stages",story:"Main idea",editing:"Edit concept",
+  stages:"Emotional arc · 4 phases",story:"Main idea",editing:"Edit concept",
   textTitle:"Concept story",textEdit:"Edit text",textSave:"Save text",textCancel:"Cancel",parameters:"Concept parameters",
   preview:"An editorial story, not a finished film. We check suitable source footage before export.",
   approve:"Approve & continue",edit:"Edit concept",editHelp:"Sign-in required",
@@ -94,7 +95,7 @@ const COPY={
   example:"Este es un ejemplo sin objetivo personal. Añade tu objetivo para una mejor propuesta.",
   goal:"Objetivo",category:"Categoría",subcategory:"Subcategoría",topic:"Tema",
   style:"Estilo",scenario:"Guion",emotion:"Programa emocional",meaning:"Sentido",motif:"Motivo",
-  stages:"Cuatro fases",story:"Idea principal",editing:"Editar concepto",
+  stages:"Arco emocional · 4 fases",story:"Idea principal",editing:"Editar concepto",
   textTitle:"Texto del concepto",textEdit:"Editar texto",textSave:"Guardar texto",textCancel:"Cancelar",parameters:"Parámetros del concepto",
   preview:"Es un guion editorial, no un vídeo terminado. Verificamos los clips antes de exportar.",
   approve:"Aprobar y continuar",edit:"Editar concepto",editHelp:"Requiere acceso",
@@ -403,8 +404,10 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
     word("Отклик","Response","Respuesta"),
     word("Финал","Closing shot","Plano final")
   ];
-  const timecode=(seconds:number)=>
-    String(Math.floor(seconds/60)).padStart(2,"0")+":"+String(seconds%60).padStart(2,"0");
+  const timecode=(seconds:number)=>{
+    const whole=Math.round(seconds);
+    return String(Math.floor(whole/60)).padStart(2,"0")+":"+String(whole%60).padStart(2,"0");
+  };
   const problemTopic=concept.topicId==="anxiety-no-reason"||concept.topicId==="constant-anxiety";
   const parameterLabels:Record<string,string|null>={
     purpose:purposeLabel(concept.semanticPurpose),
@@ -476,7 +479,10 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
     </section>
     <section className={css.narrativeCard} data-video-concept-text>
       <div className={css.narrativeHeading}>
-        <h4>{t.textTitle}</h4>
+        <h4 data-video-concept-scene-count={concept.storyboard?.length||undefined}>
+          {t.textTitle}{concept.storyboard?.length?
+            " · "+concept.storyboard.length+" "+word("сцен","scenes","escenas"):""}
+        </h4>
         {!textEditing?<button type="button" className={css.narrativeEdit}
           data-video-concept-text-edit disabled={disabled} onClick={startTextEdit}>
           <Pencil size={16}/>{t.textEdit}
@@ -555,7 +561,7 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
         {shotEditing?<>
           {shotDrafts.map((action,index)=><label key={index}>
             <strong>{word("Сцена","Scene","Escena")} {index+1} ·
-              {" "}{timecode(index*5)}–{timecode((index+1)*5)}</strong>
+              {" "}{timecode(sketch[index]?.startSeconds??index*5)}–{timecode(sketch[index]?.endSeconds??(index+1)*5)}</strong>
             <textarea data-video-storyboard-action-edit={index+1} rows={2} maxLength={360}
               disabled={disabled} value={action}
               onChange={event=>setShotDrafts(items=>items.map((item,i)=>
@@ -586,7 +592,7 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
     </details>
     <details className={css.beats} data-video-concept-beats>
       <summary>{t.stages}<ChevronDown size={17} aria-hidden="true"/></summary>
-      <ol>{concept.sceneOutline.map((beat,index)=><li key={index}>{beat}</li>)}</ol>
+      <ol>{concept.emotionalProgram.map((phase,index)=><li key={index}>{phase}</li>)}</ol>
     </details>
     {concept.parameters?<details className={css.parameters} data-video-concept-all-parameters>
       <summary><strong>{DIRECTION_UI[locale].settings}</strong><ChevronDown size={19} aria-hidden="true"/></summary>

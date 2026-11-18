@@ -47,6 +47,8 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/hh-private-audio-e2e.yml'
+      # Commander signed PR completion is validated by Core and the focused Guard, not this unrelated heavy suite.
+      - '!app/api/app/commander/**'
   push:
     branches: ['codex/public-book-library']
     paths:

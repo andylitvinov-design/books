@@ -98,3 +98,11 @@
 /* The single live message field follows the welcome question, before topic cards. */
 .inlineComposer{min-width:0;padding:7px 8px;border:1px solid #e9dfd1;border-radius:16px;
  background:#fffcf7;box-sizing:border-box;box-shadow:0 2px 8px #443d3410}
+
+/* The new primary support path opens a staged quiz inside the same AI chat. */
+.card[data-hh-ai-choice="support"]{grid-column:1/-1;min-height:66px;flex-direction:row;
+ justify-content:center;gap:12px;padding:12px 18px;background:#e1f5ec;
+ border-color:#9dd1b8;color:#0c684d}
+.card[data-hh-ai-choice="support"] .art{background-image:url("/images/holistic-house/reiki-approved-sunrise-v3.webp");opacity:.16;height:100%}
+.card[data-hh-ai-choice="support"] strong{font-size:clamp(14px,3.7vw,17px)}
+@media(max-width:355px){.card[data-hh-ai-choice="support"]{min-height:57px;padding:9px 14px}}

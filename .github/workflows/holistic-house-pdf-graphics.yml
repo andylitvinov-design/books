@@ -17,7 +17,6 @@ on:
       - "tests/report-premium-editorial-v8.test.mjs"
       - "tests/report-editorial-quiet-v8.test.mjs"
       - "tests/report-mobile-content-parity-v9.test.mjs"
-      - ".github/workflows/holistic-house-pdf-graphics.yml"
   workflow_dispatch:
 
 permissions:

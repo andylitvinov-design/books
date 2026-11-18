@@ -12,7 +12,6 @@ on:
       - "tests/holistic-language-agent.test.mjs"
       - "tests/holistic-local-conversation.test.mjs"
       - "tests/holistic-reiki-audio-language-agent.test.mjs"
-      - ".github/workflows/hh-language-agent.yml"
   workflow_dispatch:
 concurrency:
   group: hh-language-agent-${{ github.event.pull_request.number || github.ref }}

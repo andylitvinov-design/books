@@ -4792,10 +4792,19 @@
 
 
 /* Ready workspace: six compact tabs, only the actual verified film, existing delivery. */
-.studio[data-active-workspace="ready"] .quickBuilder>.previewStage,
 .studio[data-active-workspace="ready"] .quickBuilder>.workspaceHeading,
 .studio[data-active-workspace="ready"] .quickBuilder>[data-video-result],
 .studio[data-active-workspace="ready"] .quickBuilder>[data-video-result-empty]{display:none!important}
+/* Safari Ready must keep the original Canvas/HD decoder composited during local
+   MP4 export. display:none on the parent can suspend source-frame decoding.
+   Keep this ONE original renderer mounted, invisible and non-interactive. */
+.studio[data-active-workspace="ready"] .quickBuilder>.previewStage{
+ display:block!important;position:absolute!important;
+ left:0!important;top:0!important;width:2px!important;height:2px!important;
+ min-height:0!important;max-height:2px!important;margin:0!important;padding:0!important;
+ border:0!important;box-shadow:none!important;overflow:hidden!important;
+ opacity:0!important;pointer-events:none!important;z-index:-1!important;
+}
 .studio[data-active-workspace="ready"] .quickBuilder>[data-video-ready]{display:grid!important;order:3;grid-column:1/-1;min-width:0}
 .studio[data-active-workspace="pro"] .quickBuilder>[data-video-result]:not([hidden]){display:grid!important}
 .studio .quickVideoNav button[data-video-quick-control="ready"][aria-pressed="true"]{color:#fff!important;background:linear-gradient(135deg,#329c7b,#067a67)!important;border-color:#08745d!important;box-shadow:0 3px 14px #0875532b!important}
@@ -5713,3 +5722,10 @@
    must be display-hidden. Opacity:0 + inert alone are still Playwright-visible. */
 .studio[data-active-workspace="ready"] .quickBuilder>[data-video-result]:not([hidden]) [data-mandala-video-download],
 .studio[data-active-workspace="ready"] .quickBuilder>[data-video-result]:not([hidden]) [data-video-save-direct]{display:none!important}
+
+/* Ready owns the single status/progress block; suppress legacy editor
+   notices and duplicate empty-result preview, never the actual video. */
+.studio[data-active-workspace="ready"] .quickHint,
+.studio[data-active-workspace="ready"] .notice,
+.studio[data-active-workspace="ready"] .warning,
+.studio[data-active-workspace="ready"] [data-video-result-empty]{display:none}

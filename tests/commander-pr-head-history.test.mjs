@@ -47,11 +47,15 @@ test('history is private, paginated and never confuses queue time with PR cycle'
  assert.match(edge,/if\(action==='history'\)/);
  assert.match(edge,/OWNER_PR_NOT_IN_QUEUE/);
  assert.match(edge,/ciHistoryAvailable:true/);
- assert.match(edge,/where pr_number=\$1 and repository=\$2/);
+ // Owner-scoped history and exact repository/PR/owner evidence are required.
+ assert.match(edge,/where owner_id=\$1::uuid and pr_number=\$2/);
+ assert.match(edge,/where e\.pr_number=\$1 and e\.repository=\$2 and e\.inbox_owner_id=\$4::uuid/);
  assert.match(client,/История HEAD и CI/);
  assert.match(client,/Загрузить более ранние HEAD/);
  assert.match(client,/ownerRequestAfterMerge/);
- assert.match(client,/GitHub смержен · Production LIVE проверяется/);
+ assert.match(client,/Production LIVE подтверждён/);
+ assert.match(client,/GitHub смержен · Production LIVE ожидает подтверждения/);
+ assert.match(client,/productionVerified===true/);
  assert.match(client,/journeys\[item.requestId\]\?\.currentHeadSha/);
  assert.doesNotMatch(client,/dangerouslySetInnerHTML|GITHUB_TOKEN/);
 });

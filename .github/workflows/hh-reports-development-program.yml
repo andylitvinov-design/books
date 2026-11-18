@@ -10,6 +10,8 @@ on:
       - 'lib/profile/development-program.js'
       - 'lib/app/development-goals.js'
       - 'app/api/app/**'
+      # The Commander PR API is independently guarded by Core and PR Sweep Guard.
+      - '!app/api/app/commander/**'
       - 'tests/reports-development-program.test.mjs'
       - 'tests/profile-portrait-test-suggestions.test.mjs'
       - 'tests/goal-profile-journey.test.mjs'
@@ -31,6 +33,8 @@ on:
       - 'public/images/holistic-house/report-lighthouse-coast.svg'
       - 'tests/client-report-coastal-v2.test.mjs'
       - '.github/workflows/hh-client-report-coastal-v2.yml'
+      # Signed Telegram CRM provider ingress has dedicated CRM/App security owners, not report builder.
+      - '!app/api/app/crm/messenger/webhook/**'
   pull_request:
     branches: ['codex/public-book-library']
     paths:

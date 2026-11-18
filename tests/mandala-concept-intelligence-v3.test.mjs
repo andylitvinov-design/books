@@ -58,6 +58,13 @@ test("v3 corpus: 20 distinct topics × 3 locales produce three quality-gated, di
     assert.ok(direction.idea.length>=60);
     assert.ok(direction.story.length>=500);
     assert.ok(direction.storyboard.length===6);
+    assert.equal(direction.conceptScenes.length,6);
+    assert.equal(direction.story.split("\n\n").length,6,"six separately written scenes");
+    assert.ok(direction.conceptScenes.every((scene,index)=>
+      scene.id===direction.storyboard[index].sceneId&&
+      scene.action===direction.storyboard[index].visualAction&&
+      direction.story.includes(scene.narrative)),
+      "storyboard must depict the same events in the same order");
     assert.doesNotMatch(direction.idea+" "+direction.story,
       /→|The story opens with|Something begins to change|Then comes the turning point|Over 30 seconds|шесть кадров|4\/10/i);
     assert.ok(direction.storyboard.every((shot,index)=>
@@ -69,6 +76,7 @@ test("v3 corpus: 20 distinct topics × 3 locales produce three quality-gated, di
     assert.ok(videoConceptIsValid(chosen),topicId+":"+locale);
     assert.equal(chosen.baseSignature,base.signature);
     assert.equal(chosen.conceptText,direction.story);
+    assert.deepEqual(chosen.conceptScenes,direction.conceptScenes);
     assert.equal(chosen.mainMessage,direction.idea);
     assert.equal(chosen.creativeSchemaVersion,"hh-creative-concept-v3");
     assert.equal(chosen.mediaBindingStatus,"editorial_only_unverified");
@@ -81,7 +89,20 @@ test("v3 corpus: 20 distinct topics × 3 locales produce three quality-gated, di
      locale,goal:chosen.goal,concept:chosen,count:6,phrases:[]
     });
     assert.ok(guides.scenes.every((x,index)=>
-      x.visual===direction.storyboard[index].visualAction&&x.requiresLiteralMatch===true));
+      x.visual===direction.storyboard[index].visualAction&&
+      x.sourceSceneId===direction.storyboard[index].sceneId&&x.requiresLiteralMatch===true));
+    for(const seconds of [20,30,42,60]){
+      const resized=buildConceptShotSketch(chosen,seconds);
+      assert.equal(resized.length,chosen.conceptScenes.length);
+      assert.equal(resized[0].startSeconds,0);
+      assert.equal(resized.at(-1).endSeconds,seconds);
+      assert.deepEqual(resized.map(x=>x.sceneId),chosen.conceptScenes.map(x=>x.id));
+      const montage=buildAlignedStorySceneGuides({
+        locale,goal:chosen.goal,concept:chosen,count:Math.ceil(seconds/5),phrases:[]
+      }).scenes;
+      assert.deepEqual(montage.map(x=>x.visual),chosen.conceptScenes.map(x=>x.action));
+      assert.deepEqual(montage.map(x=>x.sourceSceneId),chosen.conceptScenes.map(x=>x.id));
+    }
     reviewed++;
    }
   }
@@ -202,4 +223,16 @@ test("iPhone Concept remains a single editor with safe-area, 3 cards, independen
  assert.match(studio,/!approved\.storyboard\?\.length&&cinematicPlan/);
  assert.match(director,/generateThreePremises/);
  assert.doesNotMatch(director,/The story opens with|Something begins to change/);
+});
+
+
+test("quality review rejects a storyboard event differing from its source concept scene",()=>{
+ const base=suggestVideoConcept({locale:"en",goal:"Personal Growth",theme:"life",
+   selectedTopicId:"personal-growth",personalization});
+ const good=getVideoCreativeDirections(base,"en")[0];
+ const changed={...good,storyboard:good.storyboard.map((shot,i)=>
+   i===2?{...shot,visualAction:"A random unrelated train travels through a tunnel."}:shot)};
+ const verdict=reviewConceptQuality(changed,{locale:"en",goal:"Personal Growth"});
+ assert.ok(verdict.hardFailures.includes("concept_storyboard_scene_mismatch"));
+ assert.notEqual(verdict.status,"pass");
 });

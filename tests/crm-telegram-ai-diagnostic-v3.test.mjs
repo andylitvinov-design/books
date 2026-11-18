@@ -52,7 +52,13 @@ test('V3 is a separate, consented three-language journey, not fixed six question
   }
   assert.ok(new Set(V3_BUTTONS).size===V3_BUTTONS.length,
     'V3 button labels must be unambiguous across locales and legacy V2');
-  assert.ok(!V3_BUTTONS.includes('Не сейчас'));
+  // The current warm, consent-first V3 intentionally offers "Not now".
+  // A decline must be recognized in each locale and must never reach a model.
+  assert.ok(V3_BUTTONS.includes(V3_LABELS.ru.decline));
+  for(const lang of ['ru','en','es'])
+    assert.equal(v3Action({rawText:V3_LABELS[lang].decline}),'decline',lang);
+  for(const lang of ['ru','en','es'])
+    assert.equal(v3WantsGeneralChat(V3_LABELS[lang].decline),false,lang);
   assert.equal(v3Action({inlineAction:'v3:send'}),'send');
   assert.equal(v3Action({rawText:'/finish'}),'finish');
   assert.equal(v3Action({rawText:'сложности с отношениями'}),null);
@@ -173,7 +179,10 @@ test('Consent is explained once; follow-up nudges do not repeat the privacy wall
   }
   const service=source('lib/crm/telegram-ai-diagnostic-v3-service.js');
   assert.ok(service.includes("if(start&&active&&row?.stage==='consent')"));
-  assert.ok(service.includes("allowed?copy.nudge:copy.notReady"));
+  assert.ok(service.includes("const purposeReady=general||ctx.mode===FREE_DIAGNOSTIC_MODE?chatAllowed:allowed;"));
+  assert.ok(service.includes("const reminder=general?(chatAllowed?chat.nudge:copy.notReady):"));
+  assert.ok(service.includes("(allowed?(serviceCopy?serviceCopy.consentNudge:copy.nudge):copy.notReady)"));
+  assert.ok(service.includes("purposeReady?v3ButtonsFor(lang,general?'chat_consent':"));
   assert.ok(service.includes("ai_consent_at=now()"));
   assert.ok(service.includes("row&&Number(row.last_update_id)>=updateId"));
 });

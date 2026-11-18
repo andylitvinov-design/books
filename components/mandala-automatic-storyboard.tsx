@@ -90,7 +90,7 @@ export function MandalaAutomaticStoryboard({
   (sameIntent(approvedConcept)?approvedConcept:null)||defaultFilm;
  const guides=useMemo(()=>buildAlignedStorySceneGuides({
   locale,goal:concept.goal||goal,phrases:phraseKey?phraseKey.split("\u001f"):[],
-  concept,count:Math.max(4,Math.ceil(durationSeconds/5)),pace
+  concept,count:concept.storyboard?.length||Math.max(4,Math.ceil(durationSeconds/5)),pace
  }),[locale,goal,concept,phraseKey,durationSeconds,pace]);
  const storyKey=JSON.stringify([
   concept.signature,concept.storyboard?.map(shot=>[shot.title,shot.action,shot.emotion])??null,
@@ -111,7 +111,7 @@ export function MandalaAutomaticStoryboard({
  const filmedProposalReady=proposal.ok&&proposal.shots.length===guides.scenes.length;
  // All authored six-shot stories require actual scene-level visual evidence.
  // Catalogue tags cannot prove that an object or action appears in a clip.
- const v3RequiresActionProof=Array.isArray(concept.storyboard)&&concept.storyboard.length===6;
+ const v3RequiresActionProof=Array.isArray(concept.storyboard)&&concept.storyboard.length>0;
  const currentMatchesProposal=filmedProposalReady&&appliedShots?.length===proposal.shots.length&&
   appliedShots.every((shot,index)=>shot.sceneId===proposal.shots[index].sceneId&&
    Math.abs(shot.startSeconds-proposal.shots[index].startMs/1000)<.01);
@@ -200,7 +200,7 @@ export function MandalaAutomaticStoryboard({
   <ol className={styles.storyAutoList} data-video-auto-storyboard-list>
    {compactCards.map((item,index)=>{
     const {guide,shot,from,to}=item;
-    const authored=concept.storyboard?.length===6?concept.storyboard[index]:null;
+    const authored=concept.storyboard?.length===guides.scenes.length?concept.storyboard[index]:null;
     const camera=authored?.shotType&&Object.prototype.hasOwnProperty.call(cameraNames[locale],authored.shotType)?
       cameraNames[locale][authored.shotType as keyof typeof cameraNames[typeof locale]]:null;
     const photo=shot?STORY_PHOTO_BY_ID.get(shot.sceneId):null;
@@ -211,7 +211,8 @@ export function MandalaAutomaticStoryboard({
     const generic=/^(?:step|шаг|paso)\s*\d+$/i.test(guide.title);
     const title=generic?(emotion||media?.title||lead):guide.title;
     return <li key={index} className={styles.storyAutoCard}
-      data-video-story-scene={index+1} data-video-story-media-matched={Boolean(shot)}
+      data-video-story-scene={index+1} data-concept-scene-id={authored?.sceneId||undefined}
+      data-video-story-media-matched={Boolean(shot)}
       data-story-media-kind={photo?"photo":shot?"video":"missing"}
       data-storyboard-continuity={authored?.continuityKeys?.join(",")||undefined}>
      <div className={styles.storyAutoPoster}>
@@ -228,6 +229,11 @@ export function MandalaAutomaticStoryboard({
       <small data-storyboard-scene-time>{clock(from)}–{clock(to)}</small>
       <strong>{title}</strong>
       <p data-storyboard-scene-action>{guide.visual}</p>
+      {authored?<small data-storyboard-media-brief>
+        {locale==="ru"?"Подбираем видео или фото именно этого действия":
+          locale==="es"?"Vídeo o foto de esta acción exacta":
+          "Video or photo depicting this exact action"}
+      </small>:null>
       {authored?<small data-storyboard-shot-direction>
         {[camera,authored.emotion||emotion].filter(Boolean).join(" · ")}
       </small>:null}

@@ -134,6 +134,8 @@ jobs:
         run: node --test tests/crm-salesbot-operator-assist.test.mjs
       - name: Lint SalesBot operator-assist contract and UI
         run: npx eslint lib/crm/salesbot-operator.mjs components/app/crm-salesbot-assist.jsx tests/crm-salesbot-operator-assist.test.mjs
+      - name: Signed CRM webhook keeps Dot owner-video and FFmpeg boundaries isolated
+        run: node --test tests/owner-telegram-crm-ffmpeg-trace.test.mjs
       - name: Read-only owner Telegram BotFather identity and webhook preflight
         run: node --conditions=react-server --test tests/crm-telegram-preflight.test.mjs
       - name: Verify owner-only Telegram pilot link without recipient disclosure

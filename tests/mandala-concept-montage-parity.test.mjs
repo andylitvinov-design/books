@@ -4,6 +4,7 @@ import {readFileSync} from "node:fs";
 import {suggestVideoConcept} from "../lib/mandala/auto-video-concept.mjs";
 import {getVideoCreativeDirections,applyVideoCreativeDirection} from "../lib/mandala/video-creative-directions.mjs";
 import {buildAlignedStorySceneGuides} from "../lib/mandala/storyboard-content-alignment.mjs";
+import {buildConceptShotSketch} from "../lib/mandala/video-concept-semantic.mjs";
 
 const source=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 
@@ -33,8 +34,10 @@ test("owner screenshot: Making Room for Love remains one 30-second six-shot film
  const storyboard=buildAlignedStorySceneGuides({
    locale:"en",goal:selected.goal,concept:selected,count:6,phrases:[],pace:"slow"
  }).scenes;
- assert.deepEqual(storyboard.map((shot,index)=>[shot.index,index*5,(index+1)*5]),
+ const timed=buildConceptShotSketch(selected,30);
+ assert.deepEqual(timed.map(shot=>[shot.number,shot.startSeconds,shot.endSeconds]),
    [[1,0,5],[2,5,10],[3,10,15],[4,15,20],[5,20,25],[6,25,30]]);
+ assert.deepEqual(storyboard.map(scene=>scene.index),[1,2,3,4,5,6]);
  assert.deepEqual(storyboard.map(scene=>scene.title),[
    "The long way home","The second chair","A gentle look back",
    "A place for memories","An invitation","The door opens"
@@ -108,4 +111,22 @@ test("Selecting or editing any film in Ideas updates Montage's editorial source 
  assert.match(studio,/setDraftVideoConcept\(draft\)/);
  assert.match(studio,/setDraftVideoConcept\(approved\)/);
  assert.match(studio,/draftConcept=\{draftVideoConcept\}/);
+});
+
+
+test("20 and 45 seconds keep exactly the authored scene count",()=>{
+ const base=suggestVideoConcept({locale:"en",goal:"Ready for a Relationship",
+   theme:"relationships",selectedTopicId:"ready-relationship"});
+ const selected=applyVideoCreativeDirection(base,getVideoCreativeDirections(base,"en")[0]);
+ for(const seconds of [20,45]){
+  const shots=buildConceptShotSketch(selected,seconds);
+  const guides=buildAlignedStorySceneGuides({
+   locale:"en",goal:selected.goal,concept:selected,count:Math.ceil(seconds/5),phrases:[]
+  }).scenes;
+  assert.equal(shots.length,selected.storyboard.length);
+  assert.equal(guides.length,selected.storyboard.length);
+  assert.equal(shots.at(-1).endSeconds,seconds);
+  assert.deepEqual(shots.map(s=>s.beat),selected.storyboard.map(s=>s.action));
+  assert.deepEqual(guides.map(s=>s.visual),selected.storyboard.map(s=>s.action));
+ }
 });

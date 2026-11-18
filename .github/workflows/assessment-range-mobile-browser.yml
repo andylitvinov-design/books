@@ -12,7 +12,6 @@ on:
       - 'scripts/helpers/assessment-range-mobile-fixture.mjs'
       - 'scripts/verify-assessment-range-mobile-browser.mjs'
       - 'tests/assessment-range-mobile-fixture.test.mjs'
-      - '.github/workflows/assessment-range-mobile-browser.yml'
   workflow_dispatch:
 
 permissions:

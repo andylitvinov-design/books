@@ -20,6 +20,20 @@ test('avatar mounts in actual HolisticAgentChat without second data path',()=>{
   assert.match(avatar,/if\(externalSpeech\)return/);
   assert.match(avatar,/companionVoice\?\.stop\(\)/);
 });
+test('icon-only speaker does not offer a second voice selector even without Companion',()=>{
+ const avatar=read('components/app/emotional-avatar.tsx');
+ const start=avatar.indexOf('if(iconOnly)return');
+ const end=avatar.indexOf('if(!state.visible)',start);
+ assert.ok(start>0&&end>start);
+ const toolbar=avatar.slice(start,end);
+ assert.match(toolbar,/data-hh-speech-control/);
+ assert.match(toolbar,/onClick=\{toggleVoice\}/);
+ assert.doesNotMatch(toolbar,/<details|voiceDetails|voiceSelector|>Aa</);
+ assert.match(avatar,/const voiceSelector=/);
+ assert.match(avatar,/^\s*\{voiceSelector\}\s*$/m);
+ assert.match(avatar,/createDeviceSpeech/);
+});
+
 test('voice requires a user click and state only changes on real utterance callbacks',()=>{
   const avatar=read('components/app/emotional-avatar.tsx');
   const speech=read('lib/assistant-avatar/device-speech.mjs');

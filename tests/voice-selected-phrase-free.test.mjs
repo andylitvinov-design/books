@@ -126,6 +126,7 @@ test("actual voice route never calls paid fallback for guest modes after free pr
   const {runInNewContext}=await import("node:vm");
   const ts=(await import("typescript")).default;
   const voice=await import("../lib/mandala/voice-studio.mjs");
+  const fish=await import("../lib/mandala/voice-studio-fish.mjs");
   const calls=[],rates=[];
   class AppError extends Error{constructor(code,status){super(code);this.code=code;this.status=status;}}
   class FakeResponse{constructor(body,options={}){this.body=body;this.status=options.status||200;this.headers=options.headers||{};}
@@ -138,6 +139,8 @@ test("actual voice route never calls paid fallback for guest modes after free pr
     "@/lib/app/database":{consumeRate:async(_config,rule)=>rates.push(rule.op)},
     "@/lib/app/http":{readBody:async request=>request.syntheticBody,PRIVATE_HEADERS:{},safeError:e=>({code:e.code||"ERROR",status:e.status||500})},
     "@/lib/mandala/voice-studio.mjs":voice,
+    "@/lib/mandala/voice-studio-fish.mjs":fish,
+    "@/lib/mandala/voice-studio-fish-provider.mjs":{requestFishWav:async()=>{calls.push("fish");throw new AppError("FISH_CALL_FORBIDDEN",500);}},
     "@/lib/mandala/voice-studio-provider.mjs":{requestStudioAudio:async()=>{calls.push("free");throw new AppError("FREE_UNAVAILABLE",503);}},
     "@/lib/mandala/voice-studio-openrouter-provider.mjs":{requestOpenRouterStudioAudio:async()=>{calls.push("paid");return new Uint8Array([1,2,3]);}},
   };
@@ -155,6 +158,10 @@ test("actual voice route never calls paid fallback for guest modes after free pr
     assert.ok(!calls.includes("paid"),mode+" must not reach the paid provider");
     assert.ok(!rates.includes("voice-studio-openrouter-paid-day"),mode+" must not consume paid quota");
   }
+  calls.length=0;rates.length=0;
+  const fishBlocked=await exports.POST({syntheticBody:{provider:"fish",mode:"sample",voiceId:"fish-en",language:"en"},headers:new Headers()});
+  assert.equal(fishBlocked.status,503,"unapproved Fish must fail closed");
+  assert.ok(!calls.includes("fish")&&!calls.includes("paid"),"no Fish or paid provider without separate approval");
   calls.length=0;rates.length=0;
   const custom=await exports.POST({syntheticBody:{mode:"custom",voiceId:"maya",language:"en",text:"Synthetic operator text",consent:true},headers:new Headers()});
   assert.equal(custom.status,200);
