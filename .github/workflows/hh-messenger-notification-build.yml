@@ -26,7 +26,6 @@ on:
       - 'lib/app/client-telegram-*.js'
       - 'app/api/app/practitioner-client-messages/route.js'
       - 'supabase/migrations/*messenger_pending_contacts*'
-      - '.github/workflows/hh-messenger-notification-build.yml'
   workflow_dispatch:
 permissions:
   contents: read

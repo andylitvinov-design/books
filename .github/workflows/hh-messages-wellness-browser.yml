@@ -12,7 +12,6 @@ on:
       - 'scripts/verify-messages-wellness-browser.mjs'
       - 'components/sitewide-antistress-banner.tsx'
       - 'public/images/holistic-house/messenger-zen-stones.svg'
-      - '.github/workflows/hh-messages-wellness-browser.yml'
   workflow_dispatch:
 permissions:
   contents: read

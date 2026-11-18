@@ -64,7 +64,6 @@ on:
       - 'tests/es-*.test.mjs'
       - 'tests/ru-about-video-presentation.test.mjs'
       - 'public/images/holistic-house/video-posters/**'
-      - '.github/workflows/site-video-browser.yml'
       - 'scripts/ci-site-video-scope.mjs'
       - 'tests/ci-site-video-scope.test.mjs'
       - 'app/**/about/page.tsx'

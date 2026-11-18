@@ -20,7 +20,6 @@ on:
       - '.codex/config.toml'
       - '.vscode/mcp.json'
       - 'docs/design/VISUAL_MCP_AUTO_QA.md'
-      - '.github/workflows/visual-to-code-skill.yml'
 permissions:
   contents: read
 jobs:
