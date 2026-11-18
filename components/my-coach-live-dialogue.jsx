@@ -139,6 +139,8 @@ const voiceGateText={
  es:{title:'Antes de hablar por voz',cancel:'Ahora no',agree:'Aceptar y hablar',tapToHear:'Toca para escuchar al coach',playbackUnavailable:'La reproducción de voz no está disponible aquí. Prueba Safari o escribe.',naturalUnavailable:'La voz natural del coach no está disponible ahora. Vuelve a intentarlo o escribe.'},
 }
 const quickTopics=[{id:'stress',icon:Leaf,art:'stones'},{id:'energy',icon:Zap,art:'sunrise'},{id:'relationships',icon:Heart,art:'lotus'}]
+// Stationary without real microphone samples; bars respond only to input RMS.
+const microphoneWaveGains=Object.freeze([.28,.36,.45,.57,.78,.64,.49,.74,.95,1.12,.81,.55,.39,.62,.87,1.05,.88,.68,.53,.72,.9,.59,.44,.33,.26])
 
 const reasons={
   feature_disabled:'disabled',server_not_configured:'config',rate_limited:'limit',
@@ -187,6 +189,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const pending=useRef(null),composerRef=useRef(null),transcriptRef=useRef(null)
   const composerDetailsRef=useRef(null),speechRef=useRef(null)
   const replayControllerRef=useRef(null),replayPlayerRef=useRef(null)
+  const micWaveRef=useRef(null)
   const sessionRootRef=useRef(null)
   const replayAudioContextRef=useRef(null)
   // The 20-minute format counts active foreground seconds, not wall-clock
@@ -259,6 +262,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     return ()=>controller.abort()
   },[])
   useEffect(()=>{if(transcriptRef.current)transcriptRef.current.scrollTop=transcriptRef.current.scrollHeight},[turns,speechPreview])
+  useEffect(()=>{
+    if(voiceState.phase!=='listening'){
+      micWaveRef.current?.style.setProperty('--coach-mic-level','0')
+      if(micWaveRef.current)micWaveRef.current.dataset.voiceDetected='false'
+    }
+  },[voiceState.phase])
   useEffect(()=>{
     // Availability is metadata only. No coach/client text reaches the TTS vendor
     // until the customer separately checks the natural-voice consent box.
@@ -657,7 +666,25 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       <Link className={styles.sessionBrand} href={'/'+lang+'/coaching/sessions'} aria-label="Holistic House">
         <span className={styles.sessionBrandMark} aria-hidden="true">✿</span><span>Holistic House</span>
       </Link>
-      <Link className={styles.chooseCoach} href={'/'+lang+'/my-coach'}><ArrowRight size={16} aria-hidden="true"/>{ui.choose}</Link>
+      <div className={styles.sessionTopbarActions}>
+        <label className={styles.languageControl}
+          title={captions.languageLabel+' · '+conversationLang.toUpperCase()} data-coach-language-control>
+          <Languages size={16} aria-hidden="true"/>
+          <span className={styles.languageChoice}>
+            <select aria-label={captions.languageLabel} value={speechLocale}
+              onChange={event=>setSpeechLocale(event.target.value)}>
+              <option value="en">EN</option>
+              <option value="ru">RU</option>
+              <option value="es">ES</option>
+            </select>
+          </span>
+        </label>
+        <Link className={styles.chooseCoach} href={'/'+lang+'/my-coach'} aria-label={ui.choose}>
+          <ArrowRight size={16} aria-hidden="true"/>
+          <span className={styles.chooseCoachFull}>{ui.choose}</span>
+          <span className={styles.chooseCoachShort} aria-hidden="true">{{ru:'Коучи',en:'Coaches',es:'Coaches'}[lang]}</span>
+        </Link>
+      </div>
     </header>
     <div className={styles.sessionScroll} data-coaching-session-scroll>
     <section className={styles.sessionHero} aria-label={name} data-voice-phase={voiceState.phase}>
@@ -709,38 +736,35 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             toggleComposer()
           }}>{({ru:'Подвести итог',en:'Reflect & close',es:'Resumir y cerrar'}[lang])}</button>
         </div>}
-      <div className={styles.voiceControls}>
-        <label className={styles.languageControl} title={captions.languageLabel+' · '+conversationLang.toUpperCase()} data-coach-language-control>
-          <Languages size={21} aria-hidden="true"/>
-          <span className={styles.languageChoice}>
-            <select aria-label={captions.languageLabel} value={speechLocale}
-              onChange={event=>setSpeechLocale(event.target.value)}>
-              <option value="en">EN</option>
-              <option value="ru">RU</option>
-              <option value="es">ES</option>
-            </select>
-          </span>
-        </label>
-        <button type="button" className={styles.keyboardControl} onClick={toggleComposer}
-          aria-label={ui.type} title={ui.type}><Keyboard size={21} aria-hidden="true"/><span>{ui.keyboardShort}</span></button>
+      <div className={styles.voiceControls} data-coach-inline-voice>
         <div className={styles.voiceCenter} data-voice-active={voiceState.phase!=='idle'?'true':undefined}>
-          <span className={styles.voiceWaveLeft} aria-hidden="true"><i/><i/><i/><i/><i/></span>
           <MyCoachSpeechLoop ref={speechRef} locale={conversationLang} speechLocale={speechLocale} initialDraft={draft}
             introduction={introduction} onSessionStart={()=>setCloudAgreed(true)}
             cloudAvailable={cloudAvailable} cloudAgreed={cloudAgreed} cloudProvider={cloudProvider} personaId={personaId} enabled={true}
             canStart={!busy&&!paused&&!replaying} onTurn={(text,spoken)=>sendMessage(text,{voiceTurn:true,utteranceLocale:spoken?.locale})}
             onCancelTurn={()=>pending.current?.abort()} onVoiceStateChange={setVoiceState}
+            onMicLevel={level=>{
+              const wave=micWaveRef.current
+              if(!wave)return
+              const rms=Math.min(1,Math.max(0,Number(level)||0))
+              wave.style.setProperty('--coach-mic-level',String(rms))
+              wave.dataset.voiceDetected=rms>0.15?'true':'false'
+            }}
             onTranscript={setSpeechPreview} onDraft={text=>{setDraft(text);setError('')}}/>
-          <span className={styles.voiceWaveRight} aria-hidden="true"><i/><i/><i/><i/><i/></span>
         </div>
-        <button type="button" className={styles.replayControl} onClick={()=>replayCoachReply()}
-          disabled={!replayBlocked&&voiceState.phase!=='ready'&&(!latestCoachText||voiceState.phase!=='idle'||replaying)}
-          aria-label={replayBlocked||voiceState.phase==='ready'?voiceGate.tapToHear:ui.replay}
-          title={replayBlocked||voiceState.phase==='ready'?voiceGate.tapToHear:ui.replay}>
-          <Volume2 size={21} aria-hidden="true"/><span>{ui.replayShort}</span>
-        </button>
+        <div className={styles.microphoneWave} ref={micWaveRef} data-coach-live-wave
+          data-mic-phase={voiceState.phase}
+          aria-label={{ru:'Индикатор громкости микрофона',en:'Live microphone volume',es:'Volumen del micrófono'}[lang]}
+          role="img">
+          <span className={styles.waveBars} aria-hidden="true">
+            {microphoneWaveGains.map((gain,index)=><i key={index}
+              style={{'--wave-gain':String(gain)}}/>)}
+          </span>
+        </div>
+        <button type="button" className={styles.keyboardControl} onClick={toggleComposer}
+          aria-label={ui.type} title={ui.type}><Keyboard size={17} aria-hidden="true"/><span>{ui.keyboardShort}</span></button>
         <Link className={styles.endControl} href={'/'+lang+'/my-coach'} aria-label={ui.end} title={ui.end}>
-          <PhoneOff size={21} aria-hidden="true"/><span>{lang==='ru'?'Конец':lang==='es'?'Salir':'End'}</span>
+          <PhoneOff size={17} aria-hidden="true"/><span>{lang==='ru'?'Конец':lang==='es'?'Salir':'End'}</span>
         </Link>
       </div>
       <p className={styles.voicePlayNotice} data-coach-voice-consent-one-play>{({
