@@ -598,3 +598,29 @@
   .root .languageCompact{width:48px}
 }
 @media(prefers-reduced-motion:reduce){.root .languageOptions button{transition:none}}
+
+
+/* Persona identity occupies the SAME approved header row; no extra mobile bar. */
+.root .presenterIdentity{display:flex;align-items:center;gap:9px;min-width:0;flex:1}
+.root .presenterIdentity img{flex:none;display:block;width:44px;height:44px;border-radius:14px;
+ object-fit:cover;object-position:center 30%;border:1px solid #d0e5d9;background:#ecf3ea}
+.root .presenterIdentity>div{min-width:0;flex:1}
+.root .presenterIdentity h1{margin:0 0 3px;color:#154b3c;
+ font:800 clamp(16px,2.8vw,23px)/1.08 system-ui,sans-serif;letter-spacing:-.025em;
+ overflow-wrap:normal;text-wrap:balance}
+.root .presenterIdentity p{font:550 11px/1.25 system-ui,sans-serif;color:#716f64;margin:0}
+@media(max-width:540px){
+ .root .presenterIdentity{gap:6px}
+ .root .presenterIdentity img{width:36px;height:42px;border-radius:11px}
+ .root .presenterIdentity h1{font-size:clamp(13px,3.8vw,17px);line-height:1.12}
+ .root .presenterIdentity p{font-size:9px;line-height:1.18}
+}
+@media(max-width:355px){
+ .root .presenterIdentity img{width:29px;height:36px}
+ .root .presenterIdentity{gap:5px}
+ .root .presenterIdentity h1{font-size:12px}
+ .root .presenterIdentity p{display:none}
+ .root .headerActions{gap:3px}
+ .root .headerActions>button{width:39px;height:42px}
+}
+.root[data-section="ai"][data-chat-editing="true"] .presenterIdentity img{width:30px;height:32px}
