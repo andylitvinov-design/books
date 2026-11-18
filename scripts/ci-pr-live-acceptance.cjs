@@ -98,48 +98,86 @@ async function hasPriorLiveReceipt(github,pr,marker){
  }
  return null; // incomplete history cannot permit duplicate notice
 }
-async function sweep({github,context,fetcher=global.fetch,core}={}){
+async function sweep({github,context,fetcher=global.fetch,core,proofImpl=proofFor,now=Date.now()}={}){
  if(context?.repo?.owner+'/'+context?.repo?.repo!==REPO||
    context?.ref!=='refs/heads/codex/bootstrap-books'||
    context.eventName!=='schedule')
   return {status:'SKIPPED_NOT_SCHEDULE'};
+ // One already scheduled runner, bounded GitHub API cost. Fair rotation avoids
+ // one unresolved deployment or Supabase-only PR starving every other merge.
  const list=await github.rest.pulls.list({owner:OWNER,repo:BOOKS,
-  state:'closed',base:PROD,sort:'updated',direction:'desc',per_page:40});
- if(!Array.isArray(list?.data)||list.data.length>40)return {status:'GITHUB_PR_LIST_UNVERIFIED'};
+  state:'closed',base:PROD,sort:'updated',direction:'desc',per_page:100});
+ if(!Array.isArray(list?.data)||list.data.length>100)
+  return {status:'GITHUB_PR_LIST_UNVERIFIED'};
  const candidates=list.data.filter(p=>p.merged_at&&
    Number.isFinite(Date.parse(p.merged_at))&&
-   Date.now()-Date.parse(p.merged_at)>=0&&
-   Date.now()-Date.parse(p.merged_at)<=36*3600000&&
-   p.user?.login===OWNER).slice(0,12);
- let inspected=0;
- for(const entry of candidates){
+   now-Date.parse(p.merged_at)>=0&&
+   now-Date.parse(p.merged_at)<=72*3600000&&
+   p.user?.login===OWNER).slice(0,50);
+ if(!candidates.length)return {status:'NO_RECENT_MERGED_PR',inspected:0};
+ const offset=Math.floor(now/1200000)%candidates.length;
+ const rotated=[...candidates.slice(offset),...candidates.slice(0,offset)];
+ let inspected=0,proofAttempts=0;
+ const unresolved=[];
+ for(const entry of rotated){
+  if(inspected>=10||proofAttempts>=3)break;
   inspected++;
-  const pr=(await github.rest.pulls.get({owner:OWNER,repo:BOOKS,pull_number:entry.number})).data;
+  let pr;
+  try{pr=(await github.rest.pulls.get({owner:OWNER,repo:BOOKS,
+    pull_number:entry.number})).data;}
+  catch{
+   unresolved.push({pr:entry.number,reason:'GITHUB_PR_READ_UNAVAILABLE'});
+   continue;
+  }
   if(!pr||pr.number!==entry.number||pr.merged!==true||
      pr.state!=='closed'||!SHA.test(pr.merge_commit_sha||''))continue;
   const marker='<!-- '+MARKER+' pr='+pr.number+' merge='+pr.merge_commit_sha+' -->';
-  const prior=await hasPriorLiveReceipt(github,pr,marker);
-  if(prior===null)return {status:'HISTORY_UNVERIFIED',pr:pr.number,inspected};
+  let prior;
+  try{prior=await hasPriorLiveReceipt(github,pr,marker);}
+  catch{prior=null;}
+  if(prior===null){
+   unresolved.push({pr:pr.number,reason:'HISTORY_UNVERIFIED'});
+   continue;
+  }
   if(prior)continue;
-  const proof=await proofFor({github,pr,fetcher});
-  if(!proof.verified)return {status:'LIVE_UNVERIFIED',reason:proof.reason,
-   pr:pr.number,inspected};
-  // Recheck exact merge identity immediately before posting a LIVE claim.
-  const current=(await github.rest.pulls.get({owner:OWNER,repo:BOOKS,pull_number:pr.number})).data;
+  proofAttempts++;
+  let proof;
+  try{proof=await proofImpl({github,pr,fetcher});}
+  catch{proof=no('LIVE_PROOF_READ_UNAVAILABLE');}
+  if(!proof?.verified){
+   unresolved.push({pr:pr.number,reason:proof?.reason||'LIVE_PROOF_UNVERIFIED'});
+   continue;
+  }
+  // The confirmed merge and HEAD ancestry must remain exact at publication.
+  let current;
+  try{current=(await github.rest.pulls.get({owner:OWNER,repo:BOOKS,
+    pull_number:pr.number})).data;}
+  catch{
+   unresolved.push({pr:pr.number,reason:'MERGE_READBACK_UNAVAILABLE'});
+   continue;
+  }
   if(current?.state!=='closed'||current.merged!==true||
-     current.merge_commit_sha!==pr.merge_commit_sha)
-   return {status:'MERGE_READBACK_CHANGED',pr:pr.number,inspected};
-  await github.rest.issues.createComment({owner:OWNER,repo:BOOKS,
-   issue_number:pr.number,body:marker+'\n**Production LIVE independently verified.**\n'+
-   'Merged '+proof.mergeSha+' is an ancestor of currently served '+
-   proof.productionSha+' at '+ORIGIN+
-   '. Deployment '+proof.deploymentId+
-   '; GitHub Vercel status and canonical HTML verified. '+
-   'Signed GitHub release receipt, not evidence that every user journey was tested.'});
+     current.merge_commit_sha!==pr.merge_commit_sha){
+   unresolved.push({pr:pr.number,reason:'MERGE_READBACK_CHANGED'});
+   continue;
+  }
+  try{
+   await github.rest.issues.createComment({owner:OWNER,repo:BOOKS,
+    issue_number:pr.number,body:marker+'\n**Production LIVE independently verified.**\n'+
+    'Merged '+proof.mergeSha+' is an ancestor of currently served '+
+    proof.productionSha+' at '+ORIGIN+
+    '. Deployment '+proof.deploymentId+
+    '; GitHub Vercel status and canonical HTML verified. '+
+    'Signed GitHub release receipt, not proof that every user journey was tested.'});
+  }catch{
+   return {status:'LIVE_NOTICE_UNCONFIRMED',pr:pr.number,inspected,proofAttempts};
+  }
   core?.info?.('HH_PR_LIVE_PROOF '+JSON.stringify({pr:pr.number,
    deployment:proof.deploymentId,merge:proof.mergeSha}));
-  return {status:'LIVE_VERIFIED_NOTICE_SENT',pr:pr.number,inspected};
+  return {status:'LIVE_VERIFIED_NOTICE_SENT',pr:pr.number,inspected,proofAttempts};
  }
- return {status:'NO_ELIGIBLE_UNNOTIFIED_PR',inspected};
+ return {status:unresolved.length?'LIVE_PENDING_RECHECK':'NO_ELIGIBLE_UNNOTIFIED_PR',
+  inspected,proofAttempts,unresolved:unresolved.slice(0,3)};
+
 }
 module.exports={verifyLiveEvidence,proofFor,sweep,hasPriorLiveReceipt,MARKER};
