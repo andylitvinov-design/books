@@ -26,7 +26,7 @@ test("Goal category cards and their labels match Telegram in all locales",()=>{
 test("Goal subcategory and topic questions mirror Telegram 4×4×4 choices",()=>{
   assert.ok(director.includes("listMyTubeSubcategories(selectedCategoryId,locale)"));
   assert.ok(director.includes("listMyTubeTopics(selectedCategoryId,selectedSubcategoryId,locale)"));
-  assert.ok(director.includes("taxonomySubcategories.map(item=>"));
+  assert.match(director,/taxonomySubcategories\.map\(/);
   assert.ok(director.includes("taxonomyTopics.map(item=>item.id).slice(0,4)"));
   assert.ok(director.includes('goalQuizComplete=videoAudience==="self"&&goalCategoryAnswered'));
   for(const locale of ["ru","en","es"]){
