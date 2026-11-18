@@ -28,7 +28,7 @@
 .choose>span:last-child{display:block;min-height:28px;margin-top:3px;
  color:#768077;font:550 11px/1.25 system-ui,sans-serif}
 .listen{display:flex;gap:6px;align-items:center;justify-content:center;
- align-self:stretch;min-height:37px;margin:3px 7px 7px;border:1px solid #bfe2d3;
+ align-self:stretch;min-height:44px;margin:3px 7px 7px;border:1px solid #bfe2d3;
  border-radius:12px;background:#eaf7f0;color:#0d6d58;cursor:pointer;
  font:760 12px/1.2 system-ui,sans-serif}
 .listen[aria-pressed="true"]{background:#177e68;color:#fff;border-color:#177e68}
@@ -39,5 +39,5 @@
 .dialog :is(button):focus-visible{outline:3px solid #17896b;outline-offset:2px}
 @media(max-width:355px){.dialog{padding:12px;border-radius:20px}.grid{gap:8px}
  .choose img{height:94px}.choose strong{font-size:15px}.choose>span:last-child{font-size:10px}
- .heading h2{font-size:20px}.listen{min-height:34px}}
+ .heading h2{font-size:20px}.listen{min-height:40px}}
 @media(prefers-reduced-motion:reduce){.card{transition:none}}
