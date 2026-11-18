@@ -74,7 +74,7 @@ test('safety is mandatory and no external action can be authorized',()=>{
 });
 test('psychologist depth requires explicit mode consent; no yes shortcut',()=>{
  const a=planEmpathyTurn({message:'Мне страшно',role:'secretary_psychologist',safety:SAFE});
- assert.equal(a.role,'secretary');assert.match(a.question,/помочь/u);
+ assert.equal(a.role,'secretary');assert.match(a.question,/тревог/u);
  const b=planEmpathyTurn({message:'Мне страшно',role:'secretary_psychologist',consent:{psychologistMode:true},safety:SAFE});
  assert.equal(b.role,'secretary_psychologist');assert.match(b.question,/трудное/u);
 });
@@ -117,4 +117,19 @@ test('no raw dialogue, client identity, or private history in the strategy',()=>
 test('input overflow, stop and safety language are all fail closed',()=>{
  for(const message of ['','x'.repeat(3001),'Стоп','Хочу умереть и мне страшно','I want to die. I am afraid'])
   assert.equal(planEmpathyTurn({message,safety:SAFE}),null);
+});
+
+test('everyday mixed tiredness receives a specific, accepting first reply',()=>{
+ const p=planEmpathyTurn({message:'Я последнее время очень устаю, всё раздражает',locale:'ru',safety:SAFE});
+ assert.equal(p?.emotion,'overload');assert.equal(p?.locale,'ru');
+ assert.match(p?.reply||'',/усталости и раздражении/u);
+ assert.match(p?.reply||'',/с работой, отношениями/u);
+ assert.doesNotMatch(p?.reply||'',/чем я могу помочь|запиш|купить/u);
+});
+test('everyday English and Spanish exhaustion are also understood',()=>{
+ for(const [message,locale] of [["I've been really exhausted lately",'en'],['Me cansa todo','es']]){
+  const p=planEmpathyTurn({message,locale,safety:SAFE});
+  assert.equal(p?.emotion,'overload');assert.equal(p?.locale,locale);
+  assert.equal((p?.reply.match(/[?？]/gu)||[]).length,1);
+ }
 });
