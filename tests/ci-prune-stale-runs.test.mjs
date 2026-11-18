@@ -644,6 +644,7 @@ test('trusted production sweep cancels a six-hour-old running orphan only with e
     },
     commitPulls:async()=>[terminal],pr:async()=>terminal,run:async()=>abandoned,
     compare:async()=>({status:'ahead',ahead_by:8,behind_by:0}),
+    jobs:async()=>({total_count:1,jobs:[{id:771,status:'in_progress',name:'worker'}]}),
     cancel:async id=>cancelled.push(id),
     forceCancel:async()=>{throw Error('Never force a started old job');},
   };
@@ -684,6 +685,76 @@ test('production sweep cannot cancel recently running, open, ambiguous or change
     const result=await prune(api,{repo,target:TARGET,number:null},{settleMs:0,sleep:async()=>{}});
     assert.equal(cancelled,0,mode);
     assert.deepEqual(result.cancelledRunning,[],mode);
+  }
+});
+
+test('production sweep classifies GitHub in-progress metadata with completed jobs as advisory', async () => {
+  const merged = pr({state:'closed',created_at:'2026-11-11T20:43:41Z',
+    closed_at:'2026-11-11T23:27:00Z',merged_at:'2026-11-11T23:27:00Z'});
+  const ghost = run({pull_requests:[],status:'in_progress',
+    created_at:'2026-11-11T20:43:45Z'});
+  let cancelCalls = 0;
+  const api = {
+    list:async(page,branch,status)=>({workflow_runs:status==='in_progress'?[ghost]:[]}),
+    commitPulls:async()=>[merged],pr:async()=>merged,run:async()=>ghost,
+    compare:async()=>({status:'ahead',ahead_by:8,behind_by:0}),
+    jobs:async()=>({total_count:3,jobs:[
+      {id:101,status:'completed',conclusion:'success'},
+      {id:102,status:'completed',conclusion:'failed'},
+      {id:103,status:'completed',conclusion:'skipped'}]}),
+    cancel:async()=>{cancelCalls++;},
+    forceCancel:async()=>{throw Error('No force cancellation for ghost run');},
+  };
+  const result=await prune(api,{repo,target:TARGET,number:null},{settleMs:0,sleep:async()=>{}});
+  assert.equal(cancelCalls,0);
+  assert.deepEqual(result.errors,[]);
+  assert.deepEqual(result.cancelledRunning,[]);
+  assert.equal(result.staleRunningMetadata.length,1);
+  assert.equal(result.staleRunningMetadata[0].reason,'RUN_IN_PROGRESS_ALL_JOBS_COMPLETED');
+  assert.equal(result.partial,true);
+});
+
+test('production sweep treats 409 after a proven running job finishes as terminal metadata drift', async () => {
+  const merged = pr({state:'closed',created_at:'2026-11-11T20:43:41Z',
+    closed_at:'2026-11-11T23:27:00Z',merged_at:'2026-11-11T23:27:00Z'});
+  const ghost = run({pull_requests:[],status:'in_progress',
+    created_at:'2026-11-11T20:43:45Z'});
+  let jobProbes=0, cancelCalls=0;
+  const api={
+    list:async(page,branch,status)=>({workflow_runs:status==='in_progress'?[ghost]:[]}),
+    commitPulls:async()=>[merged],pr:async()=>merged,run:async()=>ghost,
+    compare:async()=>({status:'ahead',ahead_by:8,behind_by:0}),
+    jobs:async()=>({total_count:1,jobs:[{id:751,status:++jobProbes===1?'in_progress':'completed'}]}),
+    cancel:async()=>{cancelCalls++;throw Error('GitHub POST /actions/runs/100/cancel: HTTP 409');},
+  };
+  const result=await prune(api,{repo,target:TARGET,number:null},{settleMs:0,sleep:async()=>{}});
+  assert.equal(cancelCalls,1);
+  assert.equal(result.staleRunningMetadata.length,1);
+  assert.equal(result.staleRunningMetadata[0].reason,'GITHUB_IN_PROGRESS_TERMINAL_JOBS_CANCEL_409');
+  assert.deepEqual(result.errors,[]);
+  assert.deepEqual(result.cancelled,[]);
+  assert.equal(result.partial,true);
+});
+
+test('production sweep never cancels a running merged-run with unproven job pagination', async () => {
+  const merged = pr({state:'closed',created_at:'2026-11-11T20:43:41Z',
+    closed_at:'2026-11-11T23:27:00Z',merged_at:'2026-11-11T23:27:00Z'});
+  const old = run({pull_requests:[],status:'in_progress',
+    created_at:'2026-11-11T20:43:45Z'});
+  for(const response of [{total_count:2,jobs:[{id:1,status:'in_progress'}]},null]){
+    let cancelled=0;
+    const api={
+      list:async(page,branch,status)=>({workflow_runs:status==='in_progress'?[old]:[]}),
+      commitPulls:async()=>[merged],pr:async()=>merged,run:async()=>old,
+      compare:async()=>({status:'ahead',ahead_by:8,behind_by:0}),
+      jobs:async()=>response,
+      cancel:async()=>{cancelled++;},
+    };
+    const result=await prune(api,{repo,target:TARGET,number:null},{settleMs:0,sleep:async()=>{}});
+    assert.equal(cancelled,0);
+    assert.deepEqual(result.errors,[]);
+    assert.deepEqual(result.staleRunningMetadata,[]);
+    assert.equal(result.partial,true);
   }
 });
 
