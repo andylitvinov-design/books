@@ -483,3 +483,28 @@ test("Ready WhatsApp requires own verified link, never claims Meta MP4 delivery"
   assert.match(ready,/direct automated MP4 sending is not enabled/);
   assert.doesNotMatch(delivery,/channel:"whatsapp"/);
 });
+
+
+test("Ready catches the physical iPhone MP4 playback error and offers a safe retry",()=>{
+  const css=readFileSync(new URL("../components/mandala-video-ready.module.css",import.meta.url),"utf8");
+  assert.match(ready,/onError=\{event=>onPlaybackError\(event\.currentTarget\)\}/,
+    "the visible Ready video must report real native Safari decoding failures");
+  assert.match(ready,/data-ready-export-failed/);
+  assert.match(ready,/data-ready-retry-compatible/);
+  assert.match(ready,/role="alert" data-ready-export-failed/);
+  assert.match(ready,/onRetryExport\}/);
+  assert.match(ready,/retryCompatible:"Retry in compatibility mode"/);
+  assert.match(ready,/retryCompatible:"Повторить в совместимом режиме"/);
+  assert.match(ready,/retryCompatible:"Reintentar en modo compatible"/);
+  assert.match(css,/\.exportFailure\{display:grid/);
+  assert.match(studio,/video=\{!readyGenerationPending&&playbackStatus!=="failed"&&result/,
+    "rejected MP4 must become a real poster, not a black broken native player");
+  assert.match(studio,/onPlaybackError=\{handleNativeVideoPlaybackFailure\}/);
+  assert.match(studio,/onError=\{event=>handleNativeVideoPlaybackFailure\(event\.currentTarget\)\}/);
+  assert.match(studio,/if\(rejectedPlaybackUrlRef\.current===result\.url\)return/);
+  assert.match(studio,/if\(result\?\.url===rejectedPlaybackUrlRef\.current\)return/);
+  assert.match(studio,/if\(creditOpRef\.current\)return/);
+  assert.match(studio,/setPlaybackStatus\("failed"\)/);
+  assert.match(studio,/setPendingCompatibleRetry\(signature\)/,
+    "existing one-shot native WebM recovery remains connected");
+});

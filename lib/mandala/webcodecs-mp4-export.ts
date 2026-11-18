@@ -249,7 +249,11 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
       // MP4 presentation timestamps remain exact even when a native decoder
       // briefly buffers at the original four-scene shot boundary.
       const time=i/frameRate;
-      if(performance.now()-startedAt > time*1000+decoderHoldMs+maxEncoderPresentationLagMs)
+      // A slower iPhone can spend several seconds in *valid* native H.264
+      // encode calls. Those milliseconds are already included in the pacing
+      // clock above, so exclude them here too. The whole-export deadline
+      // below still bounds cumulative work; original PTS/frames stay exact.
+      if(performance.now()-startedAt > time*1000+decoderHoldMs+encoderHoldMs+maxEncoderPresentationLagMs)
         throw new Error("video_encoder_timeline_drift");
       const frameWorkStartedAt=performance.now();
       const decoderHoldBeforeFrame=decoderHoldMs;

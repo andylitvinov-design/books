@@ -23,6 +23,8 @@ type Props={
   locale:PublicLocale;theme:VideoTheme;wish:string;focus:GuidedMeditationFocus;aspect:"portrait"|"landscape"|"square";
   video:VideoFile|null;verified:boolean;checking:boolean;rendering:boolean;renderProgress:number;
   progressQuestionnaire:ReactNode;generationNotice:string;signedIn:boolean;
+  exportFailed:boolean;canRetryExport:boolean;onRetryExport:()=>void;
+  onPlaybackError:(player:HTMLVideoElement)=>void;
   loginUnavailable:boolean;disabled:boolean;meditationEditor:ReactNode;
   onOpenDelivery:()=>void;onRefreshLogin:()=>void;onOpenCourse:()=>void;onOpenTherapy:(format:"single"|"course")=>void;onReturnToPro:()=>void;
   onGenerateBasicVideo:()=>boolean;onStartNewVideo:()=>void;onVerifyPlayback:(player:HTMLVideoElement)=>void;
@@ -47,7 +49,7 @@ const COPY={
     videoGuestSignIn:"Sign in to use video credits",
     videoIncludedCredit:"included video credits for this export · no payment",
     videoSetup:"Finish the required video settings in PRO, then generate.",videoIdeas:"More ideas for this video",
-    verifying:"Checking playback on this device…",failed:"No playable exported video is available yet.",
+    verifying:"Checking playback on this device…",failed:"No playable exported video is available yet.",retryCompatible:"Retry in compatibility mode",
     signIn:"Sign in to save and download",save:"Save to My Videos",download:"Download",
     telegram:"Telegram",house:"My House",continue:"Continue with this video",
     meditation:"Personal meditation",meditationHint:"Turn your video into a gentle guided practice.",
@@ -90,7 +92,7 @@ const COPY={
     videoGuestSignIn:"Войти и использовать видеокредиты",
     videoIncludedCredit:"включённых видеокредитов за экспорт · без оплаты",
     videoSetup:"Завершите настройки во вкладке PRO, затем создайте видео.",videoIdeas:"Другие идеи для этого видео",
-    verifying:"Проверяем воспроизведение на устройстве…",failed:"Пока нет проверенного готового видео.",
+    verifying:"Проверяем воспроизведение на устройстве…",failed:"Пока нет проверенного готового видео.",retryCompatible:"Повторить в совместимом режиме",
     signIn:"Войдите, чтобы сохранить и скачать",save:"В Мои видео",download:"Скачать",
     telegram:"Telegram",house:"Мой дом",continue:"Продолжить с этим видео",
     meditation:"Личная медитация",meditationHint:"Превратите видео в бережную практику с сопровождением.",
@@ -133,7 +135,7 @@ const COPY={
     videoGuestSignIn:"Iniciar sesión y usar créditos",
     videoIncludedCredit:"créditos de vídeo incluidos para exportar · sin pago",
     videoSetup:"Completa la configuración en PRO y genera el vídeo.",videoIdeas:"Más ideas para este vídeo",
-    verifying:"Verificando el vídeo en tu dispositivo…",failed:"Aún no hay un vídeo reproducible verificado.",
+    verifying:"Verificando el vídeo en tu dispositivo…",failed:"Aún no hay un vídeo reproducible verificado.",retryCompatible:"Reintentar en modo compatible",
     signIn:"Inicia sesión para guardar y descargar",save:"Mis vídeos",download:"Descargar",
     telegram:"Telegram",house:"Mi espacio",continue:"Continúa con este vídeo",
     meditation:"Meditación personal",meditationHint:"Convierte el vídeo en una práctica guiada y suave.",
@@ -164,7 +166,8 @@ const COPY={
 
 export function MandalaVideoReady({
   locale,theme,wish,focus,aspect,video,verified,checking,rendering,renderProgress,
-  generationNotice,signedIn,loginUnavailable,disabled,
+  generationNotice,exportFailed,canRetryExport,onRetryExport,onPlaybackError,
+  signedIn,loginUnavailable,disabled,
   meditationEditor,onOpenDelivery,onRefreshLogin,onOpenCourse,onOpenTherapy,onReturnToPro,
   onGenerateBasicVideo,onStartNewVideo,onVerifyPlayback,onSaveDirect,
   onSendTelegramDirect,onShareWhatsApp,saveStatus,
@@ -350,6 +353,7 @@ export function MandalaVideoReady({
     {video?<video key={video.url} src={video.url} playsInline controls preload="auto"
       onLoadedData={event=>onVerifyPlayback(event.currentTarget)}
       onCanPlay={event=>onVerifyPlayback(event.currentTarget)}
+      onError={event=>onPlaybackError(event.currentTarget)}
       aria-label={completed?t.ready:t.verifying}/>:
     /* Approved first-party example, never labelled an exported personal movie. */
     <div className={css.example}>
@@ -370,6 +374,13 @@ export function MandalaVideoReady({
         {completed?<span className={css.readyTime}><Clock3 size={15} aria-hidden="true"/>{videoTime}</span>:
           rendering?<span className={css.readyTime} aria-hidden="true">{Math.round(Math.max(0,Math.min(100,renderProgress)))}%</span>:null}
       </p>
+      {exportFailed&&!waiting&&!completed?<div className={css.exportFailure}
+        role="alert" data-ready-export-failed>
+        <strong>{t.failed}</strong>
+        <p>{generationNotice||t.failed}</p>
+        {canRetryExport?<button type="button" onClick={onRetryExport}
+          data-ready-retry-compatible>{t.retryCompatible}<ArrowRight size={17} aria-hidden="true"/></button>:null}
+      </div>:null}
       {header}
       {!completed&&!waiting?<button type="button" className={css.primary}
         disabled={disabled||checking} onClick={generateSelectedVideo} data-ready-generate>
@@ -389,7 +400,7 @@ export function MandalaVideoReady({
             onFirstAnswer={()=>setCheckinEngaged(true)}
             onDismiss={()=>setCheckinDismissed(true)}/>
         </div>:null}
-      {(videoGenerationNotice||generationNotice)&&!rendering?
+      {(videoGenerationNotice||generationNotice)&&!rendering&&!exportFailed?
         <p className={css.tierNotice} role="status" data-ready-video-tier-notice>
           {videoGenerationNotice||generationNotice}</p>:null}
       {videoGenerationNotice&&basicFreeIssue==="guest_used"?
