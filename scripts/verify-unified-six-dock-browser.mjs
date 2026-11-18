@@ -575,6 +575,16 @@ try{
  await chat.locator('[data-hh-ai-landing]').waitFor({state:"visible",timeout:15000});
  const log=chat.locator('[role="log"]');
  const projectGrid=chat.locator('[data-hh-messenger-six-projects]');
+ // Inner Alchemist begins with an inviting question, not a wall of service cards.
+ // Keep the entire canonical six-project catalogue available after user intent.
+ const alchemistTools=chat.locator('[data-hh-alchemist-tools]');
+ await alchemistTools.waitFor({state:"visible",timeout:15000});
+ assert.equal(await alchemistTools.evaluate(node=>node.open),false,
+   "six legacy service cards are tucked away until requested");
+ assert.equal(await chat.locator('[data-hh-alchemist-topic]').count(),8,
+   "eight conversational problem starters are available without opening a catalogue");
+ await chat.locator('[data-hh-ai-inline-composer] textarea').waitFor({state:"visible",timeout:15000});
+ await alchemistTools.locator('summary').click();
  await projectGrid.waitFor({state:"visible",timeout:15000});
  const projects=chat.locator('[data-hh-messenger-six-projects] [data-hh-ai-project]');
  const six=["hint","test","mytube","sessions","practice","ai-video"];
