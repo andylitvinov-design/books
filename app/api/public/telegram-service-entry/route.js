@@ -42,9 +42,9 @@ export async function GET(request){
      if(entry)return NextResponse.redirect(entry.href,{status:307,headers})
    }
  }
- const message=locale==='ru'?'Wave временно недоступен. Повторите запрос позже. Заявка не отправлена.':
-   locale==='es'?'Wave no está disponible ahora. Inténtalo más tarde. No se envió ninguna solicitud.':
-   'Wave is temporarily unavailable. Please try again later. No request was submitted.'
+ const message=locale==='ru'?'Ali временно недоступен. Повторите запрос позже. Заявка не отправлена.':
+   locale==='es'?'Ali no está disponible ahora. Inténtalo más tarde. No se envió ninguna solicitud.':
+   'Ali is temporarily unavailable. Please try again later. No request was submitted.'
  return new NextResponse(message,{status:503,headers:{...headers,
    'Content-Type':'text/plain; charset=utf-8','Retry-After':'60'}})
 }

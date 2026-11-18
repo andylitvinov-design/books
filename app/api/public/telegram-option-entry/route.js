@@ -26,9 +26,9 @@ export async function GET(request){
  }
  // Do not quietly leave the selected Wave-bot journey for a different chat.
  // No enquiry was sent; the same bot entry can be retried after availability returns.
- const message=offer.locale==='ru'?'Wave временно недоступен. Повторите запрос позже. Заявка не отправлена.':
-   offer.locale==='es'?'Wave no está disponible ahora. Inténtalo más tarde. No se envió ninguna solicitud.':
-   'Wave is temporarily unavailable. Please try again later. No request was submitted.'
+ const message=offer.locale==='ru'?'Ali временно недоступен. Повторите запрос позже. Заявка не отправлена.':
+   offer.locale==='es'?'Ali no está disponible ahora. Inténtalo más tarde. No se envió ninguna solicitud.':
+   'Ali is temporarily unavailable. Please try again later. No request was submitted.'
  return new NextResponse(message,{status:503,headers:{...headers,
    'Content-Type':'text/plain; charset=utf-8','Retry-After':'60'}})
 }
