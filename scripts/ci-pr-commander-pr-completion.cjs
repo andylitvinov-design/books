@@ -97,13 +97,43 @@ async function run({github,core,context,ownerToken='',fetcher=global.fetch,
   const response=await github.rest.pulls.get({owner:'andylitvinov-design',repo:'books',pull_number:task.prNumber});
   const pr=response?.data;
   decision=readback(pr,task.prNumber,{terminalReadbackOnly:task.blockedRecheckOnly===true});
-  // A formerly BLOCKED request is a READ-ONLY terminal reconciliation: do not
-  // authorize a new source writer, even if labels or a stale HEAD changed.
+  // Historical BLOCKED owner tasks are READ-ONLY forever. A resolved
+  // semantic merge conflict may return to WATCHING after TWO exact-source
+  // GitHub PR reads. It must NEVER grant a new writer, even if the HEAD moves
+  // or the old hh:repair-needed hint remains on the branch.
   if(task.blockedRecheckOnly===true&&
-     !['MERGED','CLOSED_UNMERGED'].includes(decision.status))
-   decision={status:'BLOCKED',headSha:task.requestedHeadSha,
-    reasonCode:/^[A-Z0-9_]{3,90}$/.test(task.previousReasonCode||'')?
-     task.previousReasonCode:'PR_BLOCKED_RECHECK_UNCHANGED'};
+     !['MERGED','CLOSED_UNMERGED'].includes(decision.status)){
+   const conflictReason=['MERGE_CONFLICT_REQUIRES_SEMANTIC_REPAIR',
+    'MERGE_CONFLICT_RESOLVED_WATCH_ONLY'].includes(task.previousReasonCode);
+   let recovered=false;
+   if(conflictReason&&decision.status==='WATCHING'&&pr?.state==='open'&&
+      pr.draft!==true&&pr.mergeable===true&&
+      ['clean','blocked','behind'].includes(pr.mergeable_state)&&
+      SHA.test(pr.base?.sha||'')&&SHA.test(pr.head?.sha||'')){
+    try{
+     const live=(await github.rest.pulls.get({
+      owner:'andylitvinov-design',repo:'books',pull_number:task.prNumber})).data;
+     const verified=readback(live,task.prNumber);
+     recovered=verified.status==='WATCHING'&&live.state==='open'&&
+      live.draft!==true&&live.mergeable===true&&
+      ['clean','blocked','behind'].includes(live.mergeable_state)&&
+      live.head.sha===pr.head.sha&&
+      live.head?.ref===pr.head?.ref&&
+      live.base?.sha===pr.base.sha&&
+      live.base?.ref==='codex/public-book-library'&&
+      // The original owner's intent is retained for observation only.
+      task.dispatchEligibleOnce===false;
+    }catch{
+     recovered=false; // GitHub outage or changed PR cannot reopen a hold.
+    }
+   }
+   decision=recovered?
+    {status:'WATCHING',reasonCode:'MERGE_CONFLICT_RESOLVED_WATCH_ONLY',
+     headSha:pr.head.sha,eligibleForFirstRepair:false}:
+    {status:'BLOCKED',headSha:task.requestedHeadSha,
+     reasonCode:/^[A-Z0-9_]{3,90}$/.test(task.previousReasonCode||'')?
+      task.previousReasonCode:'PR_BLOCKED_RECHECK_UNCHANGED'};
+  }
   // The owner has explicitly sent a NEW authenticated PR command. Only an
   // Actions-bot-proven, finished zero-price model truncation can request ONE
   // additional isolated legacy-code run. Keep hh:repair-manual in place until
