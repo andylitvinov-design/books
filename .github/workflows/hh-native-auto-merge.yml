@@ -141,7 +141,7 @@ jobs:
             // A pull_request workflow can report a synthetic test-merge head_sha.
             // Its immutable PR association, not run.head_sha, identifies the actual
             // source HEAD and the production base against which CI ran.
-            // Core's hh-specialist job validates relevant specialist CI. The
+            // Core's unified hh-merge-check job validates all applicable specialist CI. The
             // base SHA is checked independently by the trusted freshness
             // classifier below, allowing proven non-sensitive base advancement.
             const matchesCurrentSource = run => run.event === "pull_request" &&
@@ -307,8 +307,8 @@ jobs:
               const match=page.jobs.filter(j=>j.name===name);
               return match.length===1&&match[0].status==="completed"&&match[0].conclusion==="success";
             };
-            if(!passed("hh-merge-check")||!passed("hh-specialist")){
-              core.info("CI_AUTO_MERGE: unified or Specialist evidence missing");return;
+            if(!passed("core-lint-types-build")||!passed("hh-merge-check")){
+              core.info("CI_AUTO_MERGE: Core or unified specialist evidence missing");return;
             }
             const policy=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-base-freshness.cjs');
             const baseLog=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-core-tested-base-logs.cjs');
