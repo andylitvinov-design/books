@@ -348,3 +348,44 @@ test('native AutoMerge reuses successful Specialist proof on disjoint production
  active=diff(changes,{status:'diverged'});
  assert.equal((await assessBaseFreshness(args)).reason,'SENSITIVE_COMPARE_UNSAFE');
 });
+
+test('native AutoMerge preserves green Core for deleting or renaming unrelated candidate files',async()=>{
+ const verified=(paths)=>({status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+   base_commit:{sha:old},merge_base_commit:{sha:old},
+   commits:[{sha:head}],files:paths.map(filename=>({filename,status:'modified'}))});
+ const names=[];
+ const policy={
+   safeDocumentationAdvance:(compare,base,live,paths)=>{
+     names.push([...paths]);return base===old&&live===head&&
+       compare.status==='ahead'&&compare.files.length===1&&
+       compare.files[0].filename==='docs/guides/independent.md'&&
+       !paths.includes(compare.files[0].filename);
+   },
+   safeIndependentCiMaintenanceAdvance:()=>false,
+   verifiedIndependentPublicRasterAdvance:()=>false,
+   safeIndependentPublicPresentationAdvance:()=>false,
+   safeDisjointPublicSourceAdvance:()=>false,
+ };
+ for(const [filename,status,previous,expected] of [
+   ['components/retired-public-widget.tsx','removed',undefined,
+     ['components/retired-public-widget.tsx']],
+   ['components/mandala-modern-widget.tsx','renamed','components/mandala-legacy-widget.tsx',
+     ['components/mandala-modern-widget.tsx','components/mandala-legacy-widget.tsx']],
+ ]){
+   const github=api(filename,status,previous);
+   github.rest.repos.compareCommits=async()=>({data:verified(['docs/guides/independent.md'])});
+   const outcome=await assessBaseFreshness({github,owner:'o',repo:'r',
+     pr,verifiedRunBase:old,baseAdvancePolicy:policy});
+   assert.equal(outcome.ok,true,status+' candidate change must not erase valid Core');
+   assert.equal(outcome.reason,'INDEPENDENT_DOCS_BASE_REVALIDATED');
+   assert.deepEqual(names.at(-1),expected,'all old/new paths retained for overlap checks');
+   github.rest.repos.compareCommits=async()=>({data:verified([filename])});
+   assert.equal((await assessBaseFreshness({github,owner:'o',repo:'r',
+     pr,verifiedRunBase:old,baseAdvancePolicy:policy})).reason,
+     'SENSITIVE_COMPARE_UNSAFE','candidate-target direct overlap still blocks');
+ }
+ const copied=api('components/mandala-stale.tsx','copied');
+ copied.rest.repos.compareCommits=async()=>({data:verified(['docs/guides/independent.md'])});
+ assert.match((await assessBaseFreshness({github:copied,owner:'o',repo:'r',
+   pr,verifiedRunBase:old,baseAdvancePolicy:policy})).reason,/SENSITIVE_(CI_BASE_STALE|BASE_STALE)/);
+});
