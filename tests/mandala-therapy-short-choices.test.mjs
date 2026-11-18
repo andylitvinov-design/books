@@ -76,3 +76,12 @@ test("Existing Therapy editor switches approved text to the actual Voice tab",()
  assert.doesNotMatch(host,/data-therapy-format-switch|data-therapy-format="/);
  assert.match(host,/"meditation","voice","practice","course"/);
 });
+
+test("An approved A/B narration is revoked when the goal or scenario changes",()=>{
+ const parent=read("components/mandala-free-video-studio.tsx");
+ assert.match(parent,/const meditationScenarioIdentity=JSON\.stringify\(\[/);
+ assert.match(parent,/theme,wish,sceneName,caption,speed,brightness,meditationFocus,/);
+ assert.match(parent,/if\(approvedScenarioRef\.current===meditationScenarioIdentity\)return/);
+ assert.match(parent,/approvedScenarioRef\.current=meditationScenarioIdentity;\s*setApprovedMeditationText\(""\);/);
+ assert.match(parent,/\(activeWorkspace==="effects"&&spoken===approvedMeditationText\)/);
+});

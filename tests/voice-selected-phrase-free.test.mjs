@@ -117,7 +117,10 @@ test("phone voice picker keeps phrase summary compact and audible result accessi
   const parent=read("components/mandala-free-video-studio.tsx");
   assert.match(css,/\.selectedPhrase\{/);
   assert.match(css,/\.selectedPhrase p\{/);
-  assert.ok(parent.includes("approvalPending={phrasePending}"));
+  assert.ok(parent.includes('approvalPending={phrasePending&&(activeWorkspace!=="effects"||!approvedMeditationText)}'),
+    "unapproved Ideas phrases remain blocked even after meditation approval");
+  assert.ok(parent.includes('activeWorkspace==="effects"&&spoken===approvedMeditationText'),
+    "an approved meditation is scoped to Therapy, never Ideas");
   assert.ok(parent.includes("onAttach={attachGeneratedAffirmationAudio}"));
   assert.ok(parent.includes("data-video-voice-approval-required"));
 });

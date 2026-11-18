@@ -3092,6 +3092,19 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const affirmationLines = linesForVideoAffirmations(locale,theme,affirmations);
   // Authored setup clips suppress the original transient duplicate overlays.
   const currentAffirmationSpeech=affirmations.enabled?affirmationNarrationText(affirmationLines):"";
+  // A changed goal or scenario cannot reuse a previously approved meditation
+  // transcript, even if the user is still viewing the Voice pane. Do not key
+  // this to the attached audio/duration: narration attachment is not a new goal.
+  const meditationScenarioIdentity=JSON.stringify([
+    theme,wish,sceneName,caption,speed,brightness,meditationFocus,
+    affirmationLines,affirmations.enabled,
+  ]);
+  const approvedScenarioRef=useRef(meditationScenarioIdentity);
+  useLayoutEffect(()=>{
+    if(approvedScenarioRef.current===meditationScenarioIdentity)return;
+    approvedScenarioRef.current=meditationScenarioIdentity;
+    setApprovedMeditationText("");
+  },[meditationScenarioIdentity]);
   const isCurrentNarrationApproved=(spoken:string|undefined|null)=>Boolean(spoken&&(
     (activeWorkspace==="effects"&&spoken===approvedMeditationText)||
     isApprovedAffirmationNarration(affirmationLines,spoken,affirmations.enabled)));
