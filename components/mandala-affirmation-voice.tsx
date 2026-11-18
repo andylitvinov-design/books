@@ -648,7 +648,7 @@ export function MandalaAffirmationVoice({
     </div>
     <small className={css.hint}>{levels.balanced}</small>
     </details>
-    <div className={css.consentRow}><button className={css.consent} type="button"
+    <div className={css.consentRow} data-therapy-voice-cloud-consent><button className={css.consent} type="button"
       data-video-affirmation-voice-consent role="checkbox" aria-checked={consent}
       disabled={busy||disabled||approvalPending||!speechText}
       onTouchStart={event=>{
@@ -727,7 +727,7 @@ export function MandalaAffirmationVoice({
       {busy?<LoaderCircle size={18} aria-hidden="true"/>:<Volume2 size={18} aria-hidden="true"/>}
       {busy?mixing?t.mixing:t.busy:therapyLayout?t.generate:compact?t.generateApply:t.generate}
     </button>
-    {!languageAvailable?<small className={css.warning} role="status">{t.unavailable}</small>:<small className={css.hint}>{t.limit}</small>}
+    {!languageAvailable?<small className={css.warning} role="status">{t.unavailable}</small>:<small className={css.hint} data-therapy-voice-cloud-limit>{t.limit}</small>}
     {audioUrl?<div className={css.result} data-video-affimations-audio-ready>
       <strong><Check size={16} aria-hidden="true"/>{t.finished} · {VOICE_STUDIO_VOICES.find(v=>v.id===voiceId)?.name[locale]} · {t.status}: {speechSeconds.toFixed(1)} {t.seconds}</strong>
       <audio ref={generatedAudioRef} controls preload="metadata" src={audioUrl} aria-label={t.finished+" · "+(VOICE_STUDIO_VOICES.find(v=>v.id===voiceId)?.name[locale]||"")}/>

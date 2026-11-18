@@ -138,3 +138,23 @@ test("Voice one-screen retains explicit cloud consent and existing real WAV path
  assert.match(styles,/data-therapy-voice-ui="true"/);
  assert.match(css,/\.scriptHost\[data-pane="practice"\],\.scriptHost\[data-pane="voice"\]\{display:none\}/);
 });
+
+test("Voice footer has exactly two large next-step actions, no charge or synthesis on navigation",()=>{
+ assert.match(ui,/data-therapy-voice-next/);
+ assert.match(ui,/data-therapy-voice-to-practice/);
+ assert.match(ui,/data-therapy-voice-to-course/);
+ assert.match(ui,/onClick=\{\(\)=>openFromVoice\("practice"\)\}/);
+ assert.match(ui,/onClick=\{\(\)=>openFromVoice\("course"\)\}/);
+ assert.match(ui,/if\(target==="course"\)setIsCourse\(true\)/);
+ for(const phrase of ["Narrate meditation (20 EXP)","Озвучить медитацию (20 EXP)","Narrar meditación (20 EXP)"])
+  assert.ok(ui.includes(phrase));
+ assert.match(ui,/Создать видео без озвучки/);
+ assert.doesNotMatch(ui,/fetch\(|checkout|supabase|credit|deduct|charge|createQuickVideo/);
+ const voice=read("components/mandala-affirmation-voice.tsx");
+ assert.match(voice,/data-therapy-voice-cloud-consent/);
+ assert.match(voice,/data-therapy-voice-cloud-limit/);
+ assert.match(css,/\.voicePrimaryNext\{/);
+ assert.match(css,/\.voiceSecondaryNext\{/);
+ assert.match(css,/data-video-generate-affirmation-audio/);
+ assert.match(css,/min-height:52px/);
+});

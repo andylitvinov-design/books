@@ -115,3 +115,27 @@
  .tabs button svg{width:15px;height:15px}
  .voiceArea{padding:8px}
 }
+
+/* 18 Nov follow-up: two user-requested next-step buttons at the END of Therapy Voice. */
+.voiceNextActions{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin:10px 0 0}
+.voiceNextActions button{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;min-height:52px;padding:10px 14px;border-radius:16px;cursor:pointer;font:800 clamp(14px,3.7vw,17px)/1.22 system-ui,sans-serif;text-align:center}
+.voiceNextActions button span{min-width:0;flex:1;overflow-wrap:break-word}
+.voiceNextActions button svg{flex:none}
+.voicePrimaryNext{border:1px solid #087e62;background:linear-gradient(110deg,#159c78,#006e56);color:#fff;box-shadow:0 3px 9px #006d4e26}
+.voiceSecondaryNext{border:1px solid #cdddcf;background:#fffcf7;color:#155a47;box-shadow:0 2px 6px #59432b13}
+.voiceArea :global([data-hypno-voice]) > :global(button),
+.voiceArea :global([data-hypno-voice]) > :global([data-video-voice-studio]),
+.voiceArea :global([data-hypno-voice]) > :global(p):not([data-video-narration-stale]){display:none}
+.voiceArea :global([data-video-affirmation-voice]) :global([data-video-generate-affirmation-audio]),
+.voiceArea :global([data-video-affirmation-voice]) :global([data-therapy-voice-cloud-consent]),
+.voiceArea :global([data-video-affirmation-voice]) :global([data-therapy-voice-cloud-limit]){display:none}
+@media(max-width:759px){
+ .voiceArea{padding:9px 10px}
+ .voiceNextActions{gap:7px;margin-top:6px}
+ .voiceNextActions button{min-height:48px;padding:8px 10px;border-radius:14px}
+ .voiceEmpty{min-height:26px;padding:0;margin:3px 0 0}
+}
+@media(max-width:355px){
+ .voiceNextActions button{gap:6px;font-size:14px;min-height:49px;padding:7px 8px}
+ .voiceNextActions button svg{width:19px;height:19px}
+}
