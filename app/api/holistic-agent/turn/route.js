@@ -34,6 +34,7 @@ import { generateOwnedOllama, validatedOllamaConfig } from "@/lib/holistic-suppo
 import { readMyAgentMemory } from "@/lib/holistic-support/agent-memory-store";
 import { createNativeDialogueSession, readNativeDialogueSession, advanceNativeDialogueMessage } from "@/lib/holistic-support/native-dialogue-session-store";
 import { nativeDialogueEventFromUtterance, understandConversationTurn } from "@/lib/holistic-support/conversation-intelligence.mjs";
+import { rankVerifiedSuggestions } from "@/lib/holistic-support/semantic-method-catalog.mjs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -643,8 +644,13 @@ export async function POST(request) {
       safety, catalogs:{services,axisOffers,publishedReikiAudio:publicAudio,
         meditationVideos,publishedSourceIds},limit:2,
     });
-    const decision=meditationDeclined?{...rawDecision,suggestions:(rawDecision.suggestions||[])
+    const candidateDecision=meditationDeclined?{...rawDecision,suggestions:(rawDecision.suggestions||[])
       .filter(item=>!item.id?.startsWith('youtube:'))}:rawDecision;
+    // Rank only the verified catalogue: no new link, payment or forced filler.
+    const decision={...candidateDecision,suggestions:rankVerifiedSuggestions({
+      suggestions:candidateDecision.suggestions,sourceOffers:axisOffers,
+      message:body.message,selectedGoal:goal,locale:body.locale,limit:2,
+    })};
     const enabled=process.env.HH_AGENT_OWNED_ENABLED==="true";
     const configured=enabled && validatedOllamaConfig({
       endpoint:process.env.HH_AGENT_OLLAMA_ENDPOINT,
