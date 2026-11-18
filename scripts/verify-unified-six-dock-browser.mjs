@@ -12,9 +12,9 @@ mkdirSync(folder,{recursive:true});
 const results=[];
 const ids=["mytube","video","coach","ai","services","practice","profile"];
 const labels={
-  en:["MyTube","MyVideo","My Coach","AI/Chat","Support","Study","Profile"],
-  ru:["MyTube","MyVideo","Мой коуч","ИИ/Чат","Поддержка","Обучение","Профиль"],
-  es:["MyTube","MyVideo","Mi coach","IA/Chat","Apoyo","Estudiar","Perfil"],
+  en:["MyTube","MyVideo","My Coach","AI/Chat","Support","Shamanica","Profile"],
+  ru:["MyTube","MyVideo","Мой коуч","ИИ/Чат","Поддержка","Шаманика","Профиль"],
+  es:["MyTube","MyVideo","Mi coach","IA/Chat","Apoyo","Shamanica","Perfil"],
 };
 
 // The fixed dock belongs to the ROOT shell, not to individual pages. Check
@@ -282,7 +282,7 @@ async function inspect(browserType,locale,width){
   if(locale==="ru" || width===390){
     const prefix="/"+locale;
     const routeCases=[
-      ["practice",prefix+"/holistic-support/mobile","practice"],
+      ["practice",prefix+"/shamanica","practice"],
       ["video",prefix+"/holistic-support/mandala","video"],
       ["ai",prefix+"/app/messages?section=ai","ai"],
       ["coach",prefix+"/my-coach","coach"],
@@ -451,7 +451,7 @@ async function inspect(browserType,locale,width){
       ["mytube","/ru/mytube"],
       ["coach","/ru/my-coach"],
       ["services","/ru/services"],
-      ["practice","/ru/holistic-support/mobile"],
+      ["practice","/ru/shamanica"],
     ]){
       await page.locator('[data-unified-dock-item="'+tab+'"]').click();
       await page.waitForURL(url=>url.pathname===path||url.pathname===path+"/",{timeout:45000});
@@ -804,8 +804,29 @@ try{
  await page.locator("#hh-clients-panel").waitFor({state:"visible"});
  assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);
  await page.locator("[data-unified-dock-item=practice]").click();
- await page.waitForURL(/\/ru\/holistic-support\/mobile\/?$/,{timeout:30000});
- // Practice offers the approved five-question learning quiz above the three Academy schools.
+ await page.waitForURL(/\/ru\/shamanica\/?$/,{timeout:30000});
+
+ const shamanicaHome=page.locator("[data-shamanica-mobile]");
+ await shamanicaHome.waitFor({state:"visible",timeout:30000});
+ assert.equal(await shamanicaHome.locator("[data-shamanica-service]").count(),5,
+   "Shamanica displays the five approved service directions");
+ const shamanicaQuiz=shamanicaHome.locator("[data-shamanica-quiz]");
+ await expect(shamanicaQuiz).toHaveAttribute("data-quiz-step","1");
+ assert.equal(await shamanicaQuiz.locator("[data-shamanica-answer]").count(),4,
+   "Shamanica asks the four requested goals in a compact 2-by-2 mobile quiz");
+ await shamanicaQuiz.locator('[data-shamanica-answer="energy"]').click();
+ await expect(shamanicaQuiz).toHaveAttribute("data-quiz-step","2");
+ await shamanicaQuiz.locator('[data-shamanica-answer="learning"]').click();
+ await expect(shamanicaQuiz).toHaveAttribute("data-quiz-step","3");
+ await shamanicaQuiz.locator('[data-shamanica-answer="free"]').click();
+ await page.waitForURL(/\/ru\/shamanica\/results(?:\?|\/$)/,{timeout:45000});
+ await page.locator("[data-shamanica-results]").waitFor({state:"visible",timeout:30000});
+ assert.equal(await page.locator("[data-recommended-service]").count(),2,
+   "Shamanica shows exactly two personal directions on a separate screen");
+ // The previous Academy and its five-question learning quiz remain available
+ // through their explicit legacy address; the new dock no longer targets it.
+ await page.goto(origin+"/ru/holistic-support/mobile",{waitUntil:"domcontentloaded",timeout:75000});
+ // Legacy Study offers the approved five-question learning quiz above the three Academy schools.
  // Verify the first question requires a real choice before advancing.
  const studyEntry=page.locator("[data-holistic-study-academy]");
  await studyEntry.waitFor({state:"visible",timeout:30000});
@@ -846,7 +867,7 @@ try{
  assert.equal(await page.locator("[data-support-practice-tabs] > *").count(),3);
  await page.locator('[data-support-practice-tabs] button').nth(1).click();
  assert.equal(await page.locator('[data-support-practice-tabs] button').nth(1).getAttribute("aria-pressed"),"true");
- results.push({journey:"MyTube → Video → six real iChat choices → one protected transcript → private Orders/Clients → Practice",passed:true});
+ results.push({journey:"MyTube → Video → six real iChat choices → Orders/Clients → Shamanica quiz → published Academy",passed:true});
  // Both Home and Practice now share the original Practice visual dock,
  // with canonical Services and My Coach destinations.
  await page.goto(origin+"/ru",{waitUntil:"domcontentloaded",timeout:75000});
@@ -877,14 +898,15 @@ try{
  assert.equal(await page.locator('[data-unified-dock-item="services"][aria-current="page"]').count(),1);
  assert.equal(await page.locator(".mobile-bottom-navigation:visible").count(),0);
  await homeDock.locator('[data-unified-dock-item="practice"]').click();
- await page.waitForURL(/\/ru\/holistic-support\/mobile\/?$/,{timeout:45000});
- await page.locator("[data-holistic-study-academy]").waitFor({state:"visible",timeout:30000});
- assert.equal(await page.locator("[data-holistic-study-academy] [data-study-academy-course]").count(),8);
+ await page.waitForURL(/\/ru\/shamanica\/?$/,{timeout:45000});
+ await page.locator("[data-shamanica-mobile]").waitFor({state:"visible",timeout:30000});
+ assert.equal(await page.locator("[data-shamanica-service]").count(),5);
+ await expect(page.locator("[data-shamanica-quiz]")).toHaveAttribute("data-quiz-step","1");
  assert.equal(await page.locator("[data-support-practice-tabs]:visible").count(),0,
-   "the approved Study page does not show the retired top menu");
+   "the approved Shamanica landing does not show the old Support top menu");
  assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);
  assert.equal(await page.locator('[data-hh-unified-dock] [data-unified-dock-item]').count(),7);
- results.push({journey:"Holistic House Home → Services → Practice with one seven-tab dock",passed:true});
+ results.push({journey:"Holistic House Home → Services → Shamanica with one seven-tab dock",passed:true});
 
  // Profile unification: both Home and Practice open the existing private hub.
  // The protected CSP transition must remain a full server-authorized reload.
