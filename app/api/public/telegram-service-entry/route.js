@@ -1,7 +1,7 @@
 import {NextResponse} from 'next/server'
 import {channelTransportReady} from '@/lib/crm/messenger-policy'
 import {telegramDiagnosticPublicUrl} from '@/lib/crm/telegram-diagnostic.mjs'
-import {v3CanStart} from '@/lib/crm/telegram-ai-diagnostic-v3.mjs'
+import {v3ServiceIntakeReady} from '@/lib/crm/telegram-ai-diagnostic-v3.mjs'
 import {telegramServiceRequestUrl,telegramBusinessStrategyRequestUrl} from '@/lib/assist/telegram-business-request.mjs'
 import {resolveTelegramServiceEntry,isTelegramServiceDraft} from '@/lib/app/telegram-entry-url.mjs'
 
@@ -37,11 +37,11 @@ export async function GET(request){
  // Prefer the existing consent-gated private service bot whenever it is ready;
  // the human @holistichouse message remains the safe fallback if not.
  if(env.HH_CRM_TG_AI_V3_SCHEMA_READY==='true'&&
-    channelTransportReady('telegram',env)&&v3CanStart(env)){
+    channelTransportReady('telegram',env)&&v3ServiceIntakeReady(env)){
    const publicBot=telegramDiagnosticPublicUrl(locale,env)
    if(typeof publicBot==='string'){
      const entry=resolveTelegramServiceEntry({
-       available:true,aiInterviewAvailable:true,url:publicBot.split('?')[0],
+       available:true,serviceInterviewAvailable:true,url:publicBot.split('?')[0],
      },manual,locale,offer)
      if(entry)target=entry.href
    }
