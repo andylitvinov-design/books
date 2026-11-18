@@ -6,7 +6,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import {
   ArrowRight, BarChart3, BookOpen, ChevronRight, ClipboardList,
-  FileText, Heart, Home, Leaf, LockKeyhole, MessageCircle, Play, Plus, Settings2,
+  FileText, Heart, Home, Leaf, LockKeyhole, MessageCircle, Play, Plus, Settings2, BriefcaseBusiness,
   Sparkles, UserRound, Users
 } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
