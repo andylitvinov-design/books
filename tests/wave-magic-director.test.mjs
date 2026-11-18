@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {planWaveMagicDirector, WAVE_MAGIC_DIRECTOR_VERSION, WAVE_DIALOGUE_STAGES} from '../lib/holistic-support/wave-magic-director.mjs';
 
 const run=(message,{locale='ru',history=[],selectedChoiceId=null,psychologistModeConsented=false,safety={status:'clear'}}={})=>
@@ -80,4 +81,25 @@ test('EN/ES natural single-question flow, no unverified action claim',()=>{
   assert.ok(r.reply.length<220);assert.ok((r.reply.match(/[?？]/gu)||[]).length===1);
   assert.equal(r.noAction,true);
  }
+});
+
+test('director retains five stages within the 12-turn website window',()=>{
+ const messages=[
+   'У меня конфликт на работе, вчера спорили с коллегой',
+   'Я хочу разобраться в этом спокойно',
+   'Трудно, мне мешает страх осуждения',
+   'Это важно для меня',
+   'Похоже, это тянется давно',
+   'Раньше помогало подготовить аргументы',
+   'Я выбираю сначала поговорить с коллегой',
+ ];
+ const history=messages.flatMap(text=>[{role:'user',text},
+   {role:'assistant',text:'Хорошо, понял, продолжайте.'}]);
+ const current='Можем обсудить выбранный вариант?';
+ const request={message:current,locale:'ru',safety:{status:'clear'}};
+ assert.equal(planWaveMagicDirector({...request,history:history.slice(-12)}).completeness,100);
+ assert.equal(planWaveMagicDirector({...request,history:history.slice(-8)}).completeness,60);
+ const router=readFileSync(new URL('../lib/holistic-support/wave-native-router.mjs',import.meta.url),'utf8');
+ assert.match(router,/const directorHistory=Array\.isArray\(history\)\?history\.slice\(-12\)/u);
+ assert.match(router,/planWaveMagicDirector\(\{message:raw,locale:lang,history:directorHistory/u);
 });
