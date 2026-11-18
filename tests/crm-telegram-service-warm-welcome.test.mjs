@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {v3ServiceCopy,v3ServiceStart,V3_LABELS,v3ButtonsFor,v3Action} from '../lib/crm/telegram-ai-diagnostic-v3.mjs';
+import {v3ServiceCopy,v3ServiceStart,V3_LABELS,v3ButtonsFor,v3Action,v3WantsGeneralChat} from '../lib/crm/telegram-ai-diagnostic-v3.mjs';
 import {aliServiceScenario} from '../lib/assist/ali-service-scenario.mjs';
 import {aliGuidedIntakeTurn,aliGuidedIntakeSummary,aliIntakeStageFromTurns} from '../lib/assist/ali-guided-intake.mjs';
 import {TELEGRAM_SERVICE_OPTIONS} from '../lib/assist/telegram-service-options.mjs';
@@ -70,4 +70,21 @@ test('service welcome photo is limited to first signed consent message and uses 
  assert.match(v3,/if\(row\.stage==='consent'\)/);
  assert.equal(v3Action({inlineAction:'v3:agree'}),'agree');
  assert.equal(v3Action({inlineAction:'v3:servicesend'}),'send');
+});
+
+test('typed friendly consent/decline labels never switch a selected service to general chat',()=>{
+ for(const [consent,decline] of [
+   ['Давайте 🌿','Не сейчас'],
+   ['Let’s talk 🌿','Not now'],
+   ['Hablemos 🌿','Ahora no'],
+ ]){
+  assert.equal(v3Action({rawText:consent}),'agree');
+  assert.equal(v3Action({rawText:decline}),'decline');
+  assert.equal(v3WantsGeneralChat(consent),false);
+  assert.equal(v3WantsGeneralChat(decline),false);
+ }
+ const service=source('lib/crm/telegram-ai-diagnostic-v3-service.js');
+ assert.match(service,/const activeServiceConsent=active/);
+ assert.match(service,/!activeServiceConsent&&/);
+ assert.match(service,/openContext\(\{\.\.\.row,owner_id:connected\.owner_id\},config\)\.serviceRequest/);
 });
