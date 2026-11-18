@@ -20,7 +20,7 @@ const privateHeaders = {
 
 const inputKeys = [
   'patientName', 'clientMode', 'clientId', 'consultationId', 'dateIssued',
-  'languagePreference', 'amount', 'currency', 'service', 'paymentStatus',
+  'languagePreference', 'recommendationType', 'amount', 'currency', 'service', 'paymentStatus',
   'paymentMethod', 'documentNumber', 'recommendationNumber',
   'generalInstructions', 'analysis', 'progressBefore', 'progressAfter', 'recommendationsText', 'additionalNotes', 'followUp', 'followUpDate', 'patientDob', 'internalNotes', 'daoResourceScore',
 ]
@@ -33,6 +33,7 @@ function errorMessage(error, locale) {
   if (/language/i.test(message)) return ru ? 'Выберите язык отчёта: английский или русский.' : 'Choose the report language: English or Russian.'
   if (/client|patient/i.test(message)) return ru ? 'Сначала выберите или заполните клиента.' : 'Select or enter a client first.'
   if (/amount|service|currency|payment/i.test(message)) return ru ? 'Проверьте данные счёта и сумму.' : 'Check the invoice service and amount.'
+  if (/General report needs an analysis/i.test(message)) return ru ? 'Добавьте анализ или рекомендации для отчёта.' : 'Add an analysis or recommendation to the report.'
   if (/item|remedy|potency|granules|times per day|essence/i.test(message)) return ru ? 'Проверьте выбранные препараты и их параметры.' : 'Check the selected remedies and their details.'
   return ru ? 'Не удалось сформировать просмотр. Проверьте поля документа.' : 'Could not prepare the preview. Check the document fields.'
 }

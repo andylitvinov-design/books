@@ -161,7 +161,8 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
     (item.role==='instruction'&&item.kind==='audio')))
   const hasMaterials=Boolean(materialsVideos.length||materialsYoutubeResources.length||supplementary.length||linkedResources.length||libraryMaterials.length)
   const hasFullReport=Boolean(reportContent)
-  const hasRecommendation=Boolean(recommendation?.items?.length)
+  const isGeneralReport=recommendation?.recommendationType==='general'
+  const hasRecommendation=Boolean(isGeneralReport||recommendation?.items?.length)
   const recommendedTests=Array.isArray(recommendation?.recommendedTests)?recommendation.recommendedTests:[]
   const hasHomeopathyRecommendation=hasRecommendation&&recommendation.items.some(item=>
     recommendationItemType(item,recommendation.recommendationType)==='homeopathy')
@@ -231,10 +232,11 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         {plan.nextStep&&<p><strong>{ru?'Ваш следующий шаг':'Your next step'}:</strong> {plan.nextStep}</p>}
         {!plan.nextStep&&plan.focus&&<p>{plan.focus}</p>}
         {!plan.nextStep&&!plan.focus&&hasRecommendation&&<p>{
-          ru?'Просмотрите назначения и индивидуальные инструкции ниже.':
-          'Review the assigned items and your practitioner’s individual instructions below.'
+          isGeneralReport
+            ? (ru?'Просмотрите анализ и личные рекомендации ниже.':'Review the session analysis and your personal recommendations below.')
+            : (ru?'Просмотрите назначения и индивидуальные инструкции ниже.':'Review the assigned items and your practitioner’s individual instructions below.')
         }</p>}
-        <a href={nextAnchor} data-hh-engagement-action="next_step" className={styles.nextStepLink}>{hasRecommendation?(ru?'Смотреть назначения ↓':'View prescriptions ↓'):(ru?'Перейти к материалам ↓':'Continue to materials ↓')}</a>
+        <a href={nextAnchor} data-hh-engagement-action="next_step" className={styles.nextStepLink}>{hasRecommendation?(isGeneralReport?(ru?'Смотреть отчёт ↓':'View report ↓'):(ru?'Смотреть назначения ↓':'View prescriptions ↓')):(ru?'Перейти к материалам ↓':'Continue to materials ↓')}</a>
       </div>}
       <div className={styles.practitionerCredit}>{ru?'Подготовлено специалистом':'Prepared by'} · Andrii Litvinov · Holistic House</div>
     </section>}
