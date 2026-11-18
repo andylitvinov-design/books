@@ -415,9 +415,12 @@ test("one iPhone hardware fallback keeps the same reserved credit and every real
  const end=studio.indexOf("stream = canvas.captureStream(framesPerSecond)",start);
  assert.ok(start>0&&end>start);
  const branch=studio.slice(start,end);
- assert.match(branch,/const renderExportFrame=\(time:number\)=>\{/);
- assert.match(branch,/blob=await encodeLocalWebCodecsMp4\(encodeOptions\)/);
- assert.match(branch,/blob=await encodeLocalWebCodecsMp4\(\{\.\.\.encodeOptions,frameRate:8\}\)/);
+ assert.match(branch,/const encodeCanvasMovie=async \(lighter=false\)=>\{/);
+  assert.match(branch,/const blob=await encodeLocalWebCodecsMp4\(\{/);
+  assert.match(branch,/renderFrame:time=>\{/);
+ assert.match(branch,/blob=await encodeCanvasMovie\(\)/);
+ assert.match(branch,/blob=await encodeCanvasMovie\(true\)/);
+  assert.match(branch,/\.\.\.\(lighter\?\{frameRate:8\}:\{\}\)/);
  assert.match(branch,/const scale=540\/\(quality==="fullhd"\?1080:720\)/);
  assert.match(branch,/compatibilityExportRef\.current=true/);
  assert.match(branch,/controller\.signal\.aborted/);

@@ -4112,7 +4112,19 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             for(const id of ids)files.push({preset:id,loop:true,startSeconds:effectiveAudioStartSeconds});
           }
           if(sourceRef.current!==snapshotKey||!aliveRef.current)return;
-          const renderExportFrame=(time:number)=>{
+          // One identical real frame painter for 720p and 540p; retaining
+          // the original in-line renderFrame ensures the required licensed
+          // four-shot/portrait/consent checks exercise actual encoder input.
+          const encodeCanvasMovie=async (lighter=false)=>{
+            const blob=await encodeLocalWebCodecsMp4({
+              canvas,allowProceduralBrowser:procedural&&!safariWebKit,
+              seconds:duration,frameRate:Math.min(safeWebkitRetry?8:10,framesPerSecond),
+              ...(lighter?{frameRate:8}:{}),
+              audio:files.length?{files,volume:soundVolume}:undefined,
+              shouldContinue:()=>!controller.signal.aborted&&aliveRef.current&&sourceRef.current===snapshotKey,
+              onProgress:(p:number)=>{if(!controller.signal.aborted&&aliveRef.current&&sourceRef.current===snapshotKey)
+                setProgress(Math.min(99,p));},
+              renderFrame:time=>{
               const frame=freeFilmVideoAt(time,true);
               // A verified decoded photograph is a legitimate scene frame.
               // Missing both real sources must still abort the MP4 encoder.
@@ -4126,22 +4138,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               paintSingleVideoTextOverlay(ctx,time,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips);
               paintVideoBrandStamp(ctx,exportBrandVariant);
               return true;
-          };
-          // The same source Canvas and AAC soundtracks serve both attempts.
-          // Only a genuine encoder stall on Safari authorizes ONE bounded
-          // automatic lower-resolution local retry under the SAME credit hold.
-          const encodeOptions={
-            canvas,allowProceduralBrowser:procedural&&!safariWebKit,
-            seconds:duration,frameRate:Math.min(safeWebkitRetry?8:10,framesPerSecond),
-            audio:files.length?{files,volume:soundVolume}:undefined,
-            shouldContinue:()=>!controller.signal.aborted&&aliveRef.current&&sourceRef.current===snapshotKey,
-            onProgress:(p:number)=>{if(!controller.signal.aborted&&aliveRef.current&&sourceRef.current===snapshotKey)
-              setProgress(Math.min(99,p));},
-            renderFrame:renderExportFrame
+              }
+            });
+            return blob;
           };
           let blob:Blob;
           try{
-            blob=await encodeLocalWebCodecsMp4(encodeOptions);
+            blob=await encodeCanvasMovie();
           }catch(firstError){
             const code=firstError instanceof Error?firstError.message:"";
             const recoverable=["video_encoder_timeline_drift","video_encoder_too_slow",
@@ -4160,7 +4163,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             canvas.width=Math.round(outputWidth*scale/2)*2;
             canvas.height=Math.round(outputHeight*scale/2)*2;
             try{
-              blob=await encodeLocalWebCodecsMp4({...encodeOptions,frameRate:8});
+              blob=await encodeCanvasMovie(true);
               compatibilityExportRef.current=true;
             }finally{
               // Restore the ordinary editor's actual HD Canvas after the
