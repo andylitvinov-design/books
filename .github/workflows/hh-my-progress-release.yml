@@ -13,7 +13,6 @@ on:
       - 'app/**/app/my-progress/**'
       - 'tests/my-progress.test.mjs'
       - 'supabase/migrations/20261029013946_hh_my_progress_video_marks_20261028.sql'
-      - '.github/workflows/hh-my-progress-release.yml'
   push:
     branches: ['codex/public-book-library']
     paths:

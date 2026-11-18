@@ -30,7 +30,7 @@ test('Edge function authenticates owner or signed exact-workflow OIDC, not model
  assert.match(s,/hh-pr-ten-minute-watchdog\.yml@refs\/heads\/codex\/bootstrap-books/);
  assert.match(s,/authenticatedOwner\(req\)/);
  assert.match(s,/business_brain\.owner_access/);
- assert.match(s,/readPR\(number\)/);
+ assert.match(s,/readPR\(number,\{terminalControlReadback=false\}=\{\}\)/);
  assert.match(s,/for update skip locked limit 1/);
  assert.match(s,/lease_token=\$1::uuid/);
  assert.match(s,/action==='arm_dispatch'/);
@@ -97,4 +97,23 @@ test('only signed proven non-dispatch capacity denial may re-arm the source CAS'
   'OWNER_REPAIR_DIRECT_CLAIMED_AWAITING_OUTCOME',
   'OWNER_REPAIR_DISPATCH_AMBIGUOUS_NO_RETRY'])
   assert.equal(allowed.includes(code),false,code);
+});
+
+// Historical BLOCKED requests must be observed without spending a fresh model
+// or source-write grant. A former control PR can become MERGED only via a
+// signed worker plus a second independent GitHub readback.
+test('stale BLOCKED requests use read-only cooldown, preserve lease restart intent and terminal GitHub proof',()=>{
+ const src=file('supabase/functions/agent-commander-pr-completion-v1/index.ts');
+ assert.match(src,/state='BLOCKED' and \(last_checked_at is null or last_checked_at<now\(\)-interval '45 minutes'\)/);
+ assert.match(src,/row\.state==='LEASED'&&row\.evidence\?\.blockedRecheckOnly===true/);
+ assert.match(src,/dispatchEligibleOnce:first/);
+ assert.match(src,/const first=!previouslyBlocked&&row\.dispatch_attempted_at==null/);
+ assert.match(src,/blockedRecheckOnly:previouslyBlocked/);
+ assert.match(src,/previousReasonCode:previouslyBlocked\?label\(row\.reason_code\):null/);
+ assert.match(src,/terminalControlReadback:body\.blockedRecheckOnly===true&&/);
+ assert.match(src,/prior\[0\]\.evidence\?\.blockedRecheckOnly===true/);
+ assert.match(src,/controlTerminal=terminalControlReadback&&pr\.state==='closed'/);
+ assert.match(src,/pr\.base\?\.ref==='codex\/bootstrap-books'/);
+ assert.match(src,/pr\.base\?\.repo\?\.full_name!==REPO/);
+ assert.match(src,/lease_until>now\(\)/);
 });

@@ -93,7 +93,7 @@ test('GitHub new HEAD alone does not prove AI wrote commit or CI went green',()=
  const gh={pr:{...pr,head:{...pr.head,sha:NEW}},checksComplete:true,checks:[checked(NEW,'failure')],
   commentsComplete:true,comments:[]};
  const r=buildPrCompletionJourney({item,github:gh,observedAt:NOW});
- assert.equal(byId(r,'commit').state,'done');
+ assert.equal(byId(r,'commit').state,'working');
  assert.match(byId(r,'commit').detail,/авторство AI не подтверждается/);
  assert.equal(byId(r,'model').state,'unknown');
  assert.equal(byId(r,'recheck').state,'attention');
@@ -207,4 +207,58 @@ test('live check is server-owned, details-only and cannot accept user-supplied s
  assert.match(client,/productionVerified===true/);
  assert.match(client,/Vercel LIVE/);
  assert.doesNotMatch(client,/dangerouslySetInnerHTML|GITHUB_TOKEN|VERCEL_TOKEN/);
+});
+
+test('bot-signed exact AI Worker run confirms model response but NOT a patch',()=>{
+ const receipt={schema:'HH_PR_TASK_V1',task_key:'a'.repeat(32),
+  pr_number:4811,head_sha:ORIGINAL,lane:'repair',state:'MANUAL',
+  owner_run_id:'44101341789',source_published:false,new_sha:null,
+  ai_execution:{schema:'HH_PR_AI_EXECUTION_EVIDENCE_V1',
+   model_request_attempted:true,model_response_confirmed:true,patch_verified:false},
+  model_run:{schema:'HH_FREE_AI_MODEL_RUN_V1',pr_number:4811,
+   source_head:ORIGINAL,run_id:'44101341789',
+   model:'recursive/flint-v1.0:free',
+   model_call_started_at:'2026-11-17T00:32:00Z',
+   response_received_at:'2026-11-17T00:33:00Z'}};
+ const comment={...bot,body:'<!-- HH_PR_TASK_V1 -->\n'+
+  String.fromCharCode(96).repeat(3)+'json\n'+JSON.stringify(receipt)+'\n'+
+  String.fromCharCode(96).repeat(3)};
+ const result=buildPrCompletionJourney({item:ownerItem,
+  github:{...evidence,comments:[comment]},observedAt:NOW});
+ assert.equal(byId(result,'model').state,'done');
+ assert.match(byId(result,'model').detail,/recursive\/flint-v1\.0:free/);
+ assert.equal(byId(result,'commit').state,'waiting');
+ assert.equal(result.modelCallVerified,true);
+ assert.equal(result.repairCommitVerified,false);
+ const forged=buildPrCompletionJourney({item:ownerItem,
+  github:{...evidence,comments:[{...comment,user:{...bot.user,id:0}}]},observedAt:NOW});
+ assert.equal(byId(forged,'model').state,'unknown');
+ const incomplete=buildPrCompletionJourney({item:ownerItem,
+  github:{...evidence,commentsComplete:false,comments:[comment]},observedAt:NOW});
+ assert.equal(incomplete.modelCallVerified,false);
+});
+test('published repair commit requires bot signature plus independent GitHub source SHA',()=>{
+ const receipt={schema:'HH_PR_TASK_V1',task_key:'b'.repeat(32),
+  pr_number:4811,head_sha:ORIGINAL,lane:'repair',state:'PUBLISHED',
+  owner_run_id:'44101341789',source_published:true,verified_source_fix:true,
+  new_sha:NEW,created_at:'2026-11-17T00:36:00Z'};
+ const comment={...bot,body:'<!-- HH_PR_TASK_V1 -->\n'+
+   String.fromCharCode(96).repeat(3)+'json\n'+JSON.stringify(receipt)+'\n'+
+   String.fromCharCode(96).repeat(3)};
+ const gh={...evidence,pr:{...pr,head:{...pr.head,sha:NEW}},
+  checks:[checked(NEW,'success')],comments:[comment]};
+ const valid=buildPrCompletionJourney({item:ownerItem,github:gh,observedAt:NOW});
+ assert.equal(byId(valid,'commit').state,'done');
+ assert.equal(valid.repairCommitVerified,true);
+ const moved=buildPrCompletionJourney({item:ownerItem,
+  github:{...gh,pr:{...pr,head:{...pr.head,sha:'c'.repeat(40)}}},observedAt:NOW});
+ assert.equal(byId(moved,'commit').state,'working');
+ assert.equal(moved.repairCommitVerified,false);
+ const historical=buildPrCompletionJourney({item:ownerItem,
+  github:{...gh,pr:{...pr,head:{...pr.head,sha:'c'.repeat(40)}}},
+  verifiedCommitShas:[NEW],observedAt:NOW});
+ assert.equal(historical.repairCommitVerified,true);
+ const foreign=buildPrCompletionJourney({item:ownerItem,
+  github:{...gh,comments:[{...comment,body:comment.body.replace('"pr_number":4811','"pr_number":9999')}]},observedAt:NOW});
+ assert.equal(foreign.repairCommitVerified,false);
 });
