@@ -37,7 +37,7 @@ for (const engine of [chromium,webkit]){
             .waitFor({state:"visible",timeout:15000});
           const header=root.locator("[data-home-dialogue-header]");
           await header.locator("h1").waitFor({state:"visible"});
-          assert.equal((await header.locator("h1").innerText()).trim(),"My Space",
+          assert.equal((await header.locator("h1").innerText()).trim(),"Holistic House",
             label+": one-line identity");
           assert.equal(await page.locator("header.house-header--services").count(),0,
             label+": no old Holistic House top header");
@@ -54,7 +54,7 @@ for (const engine of [chromium,webkit]){
           const actionRect=await header.locator(".site-navigation").boundingBox();
           assert.ok(headerRect&&titleRect&&actionRect&&titleRect.y<headerRect.y+headerRect.height&&
             titleRect.x+titleRect.width<=actionRect.x+1,
-            label+": header keeps My Space and search/menu on the same row");
+            label+": header keeps Holistic House and search/menu on the same row");
           const personal=root.locator('[data-home-mode-button="self"]');
           const business=root.locator('[data-home-mode-button="business"]');
           assert.equal(await personal.innerText(),labels[0],label+": personal label");
@@ -63,8 +63,21 @@ for (const engine of [chromium,webkit]){
           await business.click();
           assert.equal(await root.getAttribute("data-home-mode"),"business",
             label+": switch updates composer context without leaving Home");
-          assert.equal(await root.locator("[data-home-intent-option]").count(),3,
-            label+": three contextual business starts");
+          assert.equal(await root.locator("[data-home-intent-option]").count(),4,
+            label+": four needs including business support");
+          const review=root.locator("[data-home-free-review]");
+          assert.equal(await review.count(),1,label+": one primary free review entry");
+          assert.equal(await review.getAttribute("href"),"/"+locale+"/services/free-situation-review",
+            label+": real localized free review route");
+          const reviewBox=await review.boundingBox();
+          const focusBox=await root.locator("[data-home-focus-grid]").boundingBox();
+          assert.ok(reviewBox&&focusBox&&reviewBox.y+reviewBox.height<=focusBox.y,
+            label+": free review appears above all four needs");
+          assert.equal(await root.locator("[data-home-focus-grid]").count(),1,label+": grouped choices");
+          const cards=await root.locator("[data-home-focus-grid]").boundingBox();
+          const composer=await root.locator("[data-home-intent-composer]").boundingBox();
+          assert.ok(cards&&composer&&cards.y+cards.height<=composer.y,
+            label+": four topics above the Ali composer");
           await personal.click();
           assert.equal(await root.getAttribute("data-home-mode"),"self");
           const hero=root.locator("[data-home-dialogue-hero]");
