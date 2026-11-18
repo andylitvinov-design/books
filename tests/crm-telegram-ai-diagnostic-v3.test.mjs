@@ -57,7 +57,8 @@ test('V3 is a separate, consented three-language journey, not fixed six question
   assert.ok(V3_BUTTONS.includes(V3_LABELS.ru.decline));
   for(const lang of ['ru','en','es'])
     assert.equal(v3Action({rawText:V3_LABELS[lang].decline}),'decline',lang);
-  assert.equal(v3CanCallModel(V3_LABELS.ru.decline),false);
+  for(const lang of ['ru','en','es'])
+    assert.equal(v3WantsGeneralChat(V3_LABELS[lang].decline),false,lang);
   assert.equal(v3Action({inlineAction:'v3:send'}),'send');
   assert.equal(v3Action({rawText:'/finish'}),'finish');
   assert.equal(v3Action({rawText:'сложности с отношениями'}),null);
