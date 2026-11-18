@@ -20,7 +20,7 @@ test('global issue comments no longer spawn no-op Actions; PM inbox is scheduled
  // GitHub filters issue_comment only AFTER starting a workflow run; removing
  // this event avoids thousands of skipped executions from unrelated PR chat.
  assert.doesNotMatch(workflow,/^  issue_comment:/m);
- assert.ok(workflow.includes("cron: '7,27,47 * * * *'"));
+ assert.ok(workflow.includes("cron: '13,33,53 * * * *'"));
  assert.ok(workflow.includes('  workflow_dispatch:'));
  assert.match(guard,/hh-watchdog-inspection-only/);
  assert.match(guard,/hh-control-tower-single-writer/);
@@ -2881,7 +2881,7 @@ test('only real PR work or a core-control change launches extra orchestrator Act
  assert.match(observe,/^  pull_request:/m,'queue owner contracts still checked on PR');
  assert.match(observe,/^  workflow_dispatch:/m,'manual queue audit retained');
  assert.match(watch,/^  schedule:/m,'periodic owner reinspection retained');
- assert.match(watch,/cron: '7,27,47 \* \* \* \*'/,'20-minute recovery cadence retained');
+ assert.match(watch,/cron: '13,33,53 \* \* \* \*'/,'20-minute recovery cadence retained');
  assert.match(watch,/^  workflow_run:/m,'worker completion continues to wake orchestrator');
  assert.match(watch,/^  workflow_dispatch:/m,'direct signed repair handoff retained');
  const push=watch.split('  push:\n')[1]?.split('  workflow_dispatch:\n')[0]||'';

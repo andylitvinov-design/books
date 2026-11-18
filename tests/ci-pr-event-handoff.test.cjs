@@ -143,7 +143,7 @@ test('cron remains independent while failed Core handoffs isolate pending branch
  const yaml=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
  const direct=fs.readFileSync('.github/workflows/hh-pr-direct-core-failure.yml','utf8');
  const contract=fs.readFileSync('.github/workflows/hh-pr-watchdog-contract-ci.yml','utf8');
- assert.ok(yaml.includes("cron: '7,27,47 * * * *'"));
+ assert.ok(yaml.includes("cron: '13,33,53 * * * *'"));
  assert.ok(!yaml.includes("  failed-core-event-handoff:"));
  assert.ok(!yaml.includes("      - 'HH PR core release gate'"));
  const native=fs.readFileSync(".github/workflows/hh-native-auto-merge.yml","utf8");

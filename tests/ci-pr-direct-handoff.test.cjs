@@ -117,7 +117,7 @@ test('watchdog has only two worker-completion listeners; Core owns quality-failu
  assert.match(native,/pull_request_target:\n    # One existing PR-target event[\s\S]*?types: \[opened, reopened, synchronize, ready_for_review\]/);
  assert.doesNotMatch(watchdog,/^  pull_request_target:/m);
  assert.doesNotMatch(watchdog,/^  issue_comment:/m);
- assert.ok(watchdog.includes("cron: '7,27,47 * * * *'"));
+ assert.ok(watchdog.includes("cron: '13,33,53 * * * *'"));
  assert.ok(watchdog.includes('  workflow_dispatch:'));
  assert.ok(watchdog.includes('HH PM inbox using verified Github free secret'));
 });
