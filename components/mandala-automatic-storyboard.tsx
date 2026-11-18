@@ -233,7 +233,7 @@ export function MandalaAutomaticStoryboard({
         {locale==="ru"?"Подбираем видео или фото именно этого действия":
           locale==="es"?"Vídeo o foto de esta acción exacta":
           "Video or photo depicting this exact action"}
-      </small>:null>
+      </small>:null}
       {authored?<small data-storyboard-shot-direction>
         {[camera,authored.emotion||emotion].filter(Boolean).join(" · ")}
       </small>:null}
