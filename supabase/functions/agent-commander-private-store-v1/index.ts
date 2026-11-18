@@ -703,6 +703,21 @@ async function receiveCommanderCiRoute(req,origin){
     return reply(400,{recorded:false,outcome:"INVALID_ROUTE_RECEIPT"},origin);
   if(p.dispatchAccepted>0&&!(p.category==="TYPESCRIPT"||p.category==="SOURCE_CODE"))
     return reply(403,{recorded:false,outcome:"UNSAFE_CATEGORY_DISPATCH_REJECTED"},origin);
+  // Signed route alone is not enough: fetch the current PR independently and
+  // refuse diagnostic execution on a superseded, forked or draft HEAD.
+  let eligibleTriageHead=null;
+  if(p.category==="TEST_FAILURE"&&p.state==="TASK_ROUTED_TO_REVIEW"&&
+     p.reason==="NO_SAFE_AUTOMATIC_WRITER_FOR_CATEGORY"&&p.dispatchAccepted===0){
+    try{
+      const fresh=await githubPublic("/pulls/"+p.prNumber);
+      if(fresh?.number===p.prNumber&&fresh.state==="open"&&fresh.draft!==true&&
+        fresh.head?.sha===p.headSha&&
+        fresh.head?.repo?.full_name==="andylitvinov-design/books"&&
+        fresh.base?.repo?.full_name==="andylitvinov-design/books"&&
+        fresh.base?.ref==="codex/public-book-library")
+        eligibleTriageHead=p.headSha;
+    }catch{ /* Fail closed without changing the signed review receipt. */ }
+  }
   const dbUrl=Deno.env.get("SUPABASE_DB_URL");
   if(!dbUrl)return reply(503,{recorded:false,outcome:"PRIVATE_DATABASE_NOT_CONFIGURED"},origin);
   const db=postgres(dbUrl,{max:1,connect_timeout:6,idle_timeout:4,ssl:"require",prepare:false});
@@ -775,6 +790,87 @@ async function receiveCommanderCiRoute(req,origin){
       await tx.unsafe(
         "update business_brain.commander_tasks set payload=jsonb_set(payload,'{ciLatestRoute}',$1::text::jsonb,true),updated_at=now() where task_id=$2::uuid and owner_id=$3::uuid",
         [jsonbText(record),e.associated_task_id,e.inbox_owner_id]);
+      // Zero-price, read-only AI diagnosis is an executor assignment, NOT a
+      // source Repair Worker dispatch. One task per verified PR and HEAD.
+      let diagnosticQueued=false;
+      if(!prior&&eligibleTriageHead===e.head_sha&&e.category==="TEST_FAILURE"&&
+         p.state==="TASK_ROUTED_TO_REVIEW"&&
+         p.reason==="NO_SAFE_AUTOMATIC_WRITER_FOR_CATEGORY"&&
+         p.dispatchAcknowledged===false&&p.workerStarted===false&&
+         c.requires_human===false&&c.status==="DIAGNOSTIC_ONLY"&&
+         c.source_write_authorized===false&&c.execution_authorized===false&&
+         c.responsible_role==="test-triage-agent"){
+        const configured=Boolean(Deno.env.get("HH_PM_OPENROUTER_API_KEY")||
+          Deno.env.get("OPENROUTER_API_KEY"));
+        const prompt="Диагностируй только ошибку тестов GitHub PR #"+e.pr_number+
+          ". Репозиторий andylitvinov-design/books. Точный HEAD "+e.head_sha+
+          ". Подтверждённый запуск Core CI: https://github.com/andylitvinov-design/books/actions/runs/"+p.runId+
+          ". Уточни причину: код продукта / fixture / тестовый oracle / окружение или CI-политика. "+
+          "Укажи конкретный план исправления и какие проверенные факты ещё нужны. "+
+          "Не изменяй файлы, не запускай CI, не утверждай, что ремонт/merge/LIVE состоялись. "+
+          "Не ослабляй тесты и не выдумывай результаты GitHub.";
+        const bytes=new Uint8Array(await crypto.subtle.digest("SHA-256",
+          new TextEncoder().encode(prompt)));
+        const hash=Array.from(bytes,b=>b.toString(16).padStart(2,"0")).join("");
+        const runId=await stableScopeId(e.inbox_owner_id,
+          "ci-auto-test-triage:"+e.pr_number+":"+e.head_sha);
+        const idem="ci-auto-triage-v1:"+e.pr_number+":"+e.head_sha;
+        const status=configured?"QUEUED":"BLOCKED";
+        const reason=configured?"OPENROUTER_WORKER_QUEUED":"OPENROUTER_API_KEY_NOT_CONFIGURED";
+        const payload={schema:"HH_CI_TEST_TRIAGE_READONLY_V1",
+          message:prompt,modelId:"openrouter/free",confirmGitHubWrite:false,
+          contextCapsule:{prNumber:e.pr_number,headSha:e.head_sha,
+            workflowRunId:p.runId,category:"TEST_FAILURE"},
+          goal:"Diagnose signed exact-HEAD test failure without GitHub writes.",
+          acceptanceCriteria:["Identify likely test failure root cause",
+            "List evidence and a concrete safe repair plan","Never claim code change or LIVE"]};
+        await tx.unsafe(
+          "insert into business_brain.commander_execution_runs "+
+          "(run_id,owner_id,chat_id,task_id,idempotency_key,request_sha256,executor,status,reason_code,request_payload,receipt) "+
+          "values($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5,$6,'openrouter',$7,$8,$9::text::jsonb,$10::text::jsonb) "+
+          "on conflict do nothing",
+          [runId,e.inbox_owner_id,chats[0].chat_id,e.associated_task_id,
+           idem,hash,status,reason,jsonbText(payload),
+           jsonbText({schema:"HH_CI_TEST_TRIAGE_ASSIGNMENT_V1",state:"NOT_STARTED",sourceWrite:null})]);
+        const runs=await tx.unsafe(
+          "select run_id,executor,status from business_brain.commander_execution_runs "+
+          "where owner_id=$1::uuid and chat_id=$2::uuid and idempotency_key=$3 limit 1",
+          [e.inbox_owner_id,chats[0].chat_id,idem]);
+        if(runs.length!==1||runs[0].run_id!==runId||runs[0].executor!=="openrouter")
+          throw Error("SIGNED_CI_DIAGNOSTIC_EXECUTOR_NOT_ASSIGNED");
+        const assignment={schema:"HH_CI_TEST_TRIAGE_ASSIGNMENT_V1",
+          prNumber:e.pr_number,headSha:e.head_sha,workflowRunId:p.runId,
+          diagnosticRunId:runId,executor:"openrouter",role:"test-triage-agent",
+          state:runs[0].status==="QUEUED"?"DIAGNOSTIC_QUEUED_NOT_STARTED":
+            runs[0].status==="COMPLETED"?"DIAGNOSTIC_COMPLETED":
+            "DIAGNOSTIC_NOT_AVAILABLE",
+          workerStarted:false,sourceWriteAuthorized:false,sourceWriteVerified:false,
+          mergeVerified:false,liveVerified:false};
+        const assigned=await tx.unsafe(
+          "update business_brain.commander_ci_event_inbox "+
+          "set assignment_receipt=$1::text::jsonb where ci_event_id=$2::uuid "+
+          "and inbox_owner_id=$3::uuid and assignment_receipt is null returning ci_event_id",
+          [jsonbText(assignment),p.inboxId,e.inbox_owner_id]);
+        if(assigned.length!==1)throw Error("CI_DIAGNOSTIC_ASSIGNMENT_RECEIPT_NOT_SAVED");
+        diagnosticQueued=runs[0].status==="QUEUED";
+        const eventId=await stableScopeId(e.inbox_owner_id,
+          "ci-test-triage:"+e.pr_number+":"+e.head_sha);
+        const event={schema:"HH_COMMANDER_EVENT_V1",id:eventId,
+          kind:"github_report",author:"Agents Director · signed test triage",
+          text:"PR #"+e.pr_number+" · TEST_FAILURE: "+
+            (diagnosticQueued?"AI-диагност назначен и поставлен в очередь.":
+              "AI-диагност не запущен: "+runs[0].status+".")+
+            " Исправление исходников, merge и LIVE НЕ подтверждены.",
+          diagnosticRunId:runId,sourceVerified:true,
+          proofLevel:"SIGNED_CI_ASSIGNMENT_NOT_MODEL_EXECUTION",
+          createdAt:new Date().toISOString()};
+        await tx.unsafe(
+          "insert into business_brain.commander_chat_events "+
+          "(event_id,chat_id,owner_id,kind,payload,source_verified) "+
+          "values($1::uuid,$2::uuid,$3::uuid,'github_report',$4::text::jsonb,true) "+
+          "on conflict(event_id) do nothing",
+          [eventId,chats[0].chat_id,e.inbox_owner_id,jsonbText(event)]);
+      }
       const chatEventId=await stableScopeId(e.inbox_owner_id,"github-ci-route:"+p.inboxId+(prior?":dispatch-accepted":""));
       const event={schema:"HH_COMMANDER_EVENT_V1",id:chatEventId,
         kind:"github_report",author:"GitHub Actions · verified CI routing",
@@ -793,7 +889,8 @@ async function receiveCommanderCiRoute(req,origin){
         [chatEventId,chats[0].chat_id,e.inbox_owner_id,jsonbText(event)]);
       await tx.unsafe(
         "update business_brain.commander_chats set execution_state=$1,updated_at=now() where chat_id=$2::uuid and owner_id=$3::uuid",
-        [commanderCiChatExecutionState(p.state),chats[0].chat_id,e.inbox_owner_id]);
+        [diagnosticQueued?"AWAITING_EXECUTOR_NOT_DISPATCHED":
+          commanderCiChatExecutionState(p.state),chats[0].chat_id,e.inbox_owner_id]);
       return {code:202,outcome:prior?"UPGRADED_TO_DISPATCH_ACCEPTED":"RECORDED"};
     });
     return reply(result.code,{recorded:result.code===200||result.code===202,
