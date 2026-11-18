@@ -90,13 +90,13 @@ begin
  return new;
 end $$;
 create function app_private.video_paid_job_insert_guard() returns trigger
- language plpgsql security invoker set search_path='' as $
+ language plpgsql security invoker set search_path='' as $$
 begin
  if new.paid_order_id is not null and
     current_setting('hh.moderator',true) is distinct from '1'
  then raise exception 'VIDEO_PAID_JOB_NOT_AUTHORIZED' using errcode='42501'; end if;
  return new;
-end $;
+end $$;
 create trigger video_paid_job_insert before insert on app_private.video_generation_jobs
  for each row execute function app_private.video_paid_job_insert_guard();
 revoke execute on function app_private.video_paid_job_insert_guard() from public,anon,authenticated,service_role;

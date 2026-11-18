@@ -61,6 +61,8 @@ test('new pipeline extends previous job ledger rather than inventing a second',(
  assert.match(sql,/force row level security/);
  assert.match(sql,/video_generation_jobs_source_exclusive/);
  assert.match(sql,/video_paid_job_insert_guard/);
+ assert.equal(sql.split('as $$').length-1,2);
+ assert.equal(sql.split('end $$;').length-1,2);
  assert.match(sql,/hh_video_paid_qa_exact_asset_read/);
  assert.match(sql,/hh.video_paid_qa_video_id/);
  assert.doesNotMatch(sql,/create table app_private\.video_generation_jobs/);
