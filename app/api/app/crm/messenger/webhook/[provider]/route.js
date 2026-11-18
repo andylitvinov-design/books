@@ -1,3 +1,4 @@
+import {telegramSupportUnavailable} from '@/lib/crm/telegram-support-quiz.mjs'
 import { NextResponse,after } from 'next/server'
 import { getAppConfig } from '@/lib/app/config'
 import {channelTransportReady} from '@/lib/crm/messenger-policy'
@@ -303,9 +304,11 @@ export async function POST(request,{params}){
           }
           continue
         }
-        const diagnosticEvent=companion.reviewRequested
-          ?{...event,rawText:'/start hhreview_'+companion.reviewLocale,inlineAction:null}
-          :event
+        const diagnosticEvent=companion.supportStart
+          ?{...event,rawText:companion.supportStart,inlineAction:null}
+          :companion.reviewRequested
+            ?{...event,rawText:'/start hhreview_'+companion.reviewLocale,inlineAction:null}
+            :event
         // The V3 interviewer reuses this signed CRM bot and takes priority ONLY
         // for explicitly started or already active V3 diagnostic sessions.
         const aiIntake=await processTelegramAiV3(diagnosticEvent,config)
@@ -372,6 +375,21 @@ export async function POST(request,{params}){
               console.error('HH_CRM_TG_V3_AI_AFTER_FAILED')
             }
           })
+          continue
+        }
+        // A completed Support quiz must NEVER disappear into a fallback router.
+        // When V3 consented AI is disabled, show a safe public website route.
+        if(companion.supportStart){
+          if(event.callbackId){
+            try{await acknowledgeTelegramInlineCallback({
+              callbackId:event.callbackId,to:event.userId,
+              messageId:event.callbackMessageId})}catch{}
+          }
+          try{await sendTelegramCompanionMessage({
+            to:String(event.userId),text:telegramSupportUnavailable(
+              companion.supportLocale,companion.supportDigits),
+            locale:companion.supportLocale,
+          })}catch{console.error('HH_CRM_TG_SUPPORT_FALLBACK_NOT_CONFIRMED')}
           continue
         }
         const intake=await processTelegramDiagnostic(diagnosticEvent,config)
