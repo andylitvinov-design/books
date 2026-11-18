@@ -57,7 +57,8 @@ test('UI retains protected chat and history while exposing visible selectable vo
 test('public natural voice route is fixed-content, rate-limited and does not accept private chat turns',()=>{
  const route=source('app/api/ali/voice/[locale]/[persona]/route.js')
  assert.match(route,/aliPersonaGreeting\(persona,locale\)/)
- assert.match(route,/pathname.search/)
+ assert.match(route,/url.search/)
+ assert.match(route,/export async function HEAD/)
  assert.match(route,/my-coach-google-global/)
  assert.match(route,/my-coach-public-intro-global-day/)
  assert.match(route,/s-maxage=86400/)
