@@ -219,7 +219,7 @@ test('selected persona opens immersive My Coach session with real avatar, stages
   for(const token of ['data-my-coach-immersive-session','sessionHero','sessionPortrait','sessionAvatar',
     'CoachingAvatar locale={lang}','sessionProgressSegments','conversationPanel','quickGoalCard',
     'sessionBottomNav','goalRow','onVoiceStateChange={setVoiceState}']) assert.ok(ui.includes(token),token)
-  for(const token of ['data-coach-stage-index={visibleStageIndex+1}','onClick={()=>replayCoachReply()}',
+  for(const token of ['data-coach-stage-index={visibleStageIndex+1}','replayCoachReply(result.reply)',
     'onClick={()=>chooseTopic(id)}','composerRef.current?.focus()',
     'progressValid?lastRecordedProgress.index:provisionalIndex',
     'coachingBrainSafety(input)||coachingBrainBoundary(input)']) assert.ok(ui.includes(token),token)
@@ -232,6 +232,7 @@ test('selected persona opens immersive My Coach session with real avatar, stages
   assert.ok(discoveryCss.includes('personaWelcome:has([data-my-coach-immersive-session])'))
   assert.ok(pageCss.includes('fullWidth:has([data-my-coach-immersive-session])'))
   assert.ok(ui.includes("readiness.status==='checking'"))
+  assert.ok(!ui.includes("className={styles.replayControl}"),"no Replay button in the approved mobile toolbar")
 })
 
 test('My Coach displays live voice in the transcript without recording/uploading a media file',()=>{
