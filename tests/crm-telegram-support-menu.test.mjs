@@ -108,4 +108,6 @@ test('reject malformed callbacks and keyboards; never turn quiz into consent',()
  assert.ok(v3.includes('supportStart?telegramSupportIntro'));
  assert.ok(v3.includes("supportStart.selection.topic==='business_support'"));
  assert.ok(v3.includes("supportStart.selection.digits"));
+ assert.ok(v3.includes('!activeServiceConsent&&!activeSupportConsent&&'));
+ assert.ok(v3.includes(".supportSelection"));
 });
