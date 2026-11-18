@@ -2402,8 +2402,10 @@ test('disjoint, protected public presentation advances retain successful sensiti
     runs:async()=>[run()],jobs:async()=>[{name:'test',status:'completed',conclusion:'success'}]};
   const ctx={repo,number:27,head:SHA,base:BASE};
   assert.deepEqual((await verify(api,ctx,sources,{maxWaitMs:0})).expected,[path]);
-  await assert.rejects(()=>verify({...api,pr:async()=>({...pr(),base:{...pr().base,sha:live},
-    mergeable:null})},ctx,sources,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);
+  assert.deepEqual((await verify({...api,pr:async()=>({...pr(),
+    base:{...pr().base,sha:live},mergeable:null,mergeable_state:'unknown'})},
+    ctx,sources,{maxWaitMs:0})).expected,[path],
+    'fully proven disjoint public page drift can finish CI while GitHub recalculates mergeability');
   await assert.rejects(()=>verify({...api,compare:async()=>diff(['app/[locale]/about/layout.tsx'])},
     ctx,sources,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);
 });
@@ -2468,10 +2470,35 @@ test('unrelated protected public product advances do not invalidate a long-runni
   const sources={base:new Map([[path,yaml]]),current:new Map([[path,yaml]]),changedRows};
   const ctx={repo,number:27,head:SHA,base:BASE};
   assert.deepEqual((await verify(api,ctx,sources,{maxWaitMs:0})).expected,[path]);
-  await assert.rejects(()=>verify({...api,pr:async()=>({...pr(),
-    base:{...pr().base,sha:live},mergeable:null})},ctx,sources,{maxWaitMs:0}),
-    /PRODUCTION_BASE_CHANGED/);
+  const unknown={...api,pr:async()=>({...pr(),
+    base:{...pr().base,sha:live},mergeable:null,mergeable_state:'unknown'})};
+  assert.deepEqual((await verify(unknown,ctx,sources,{maxWaitMs:0})).expected,[path],
+    'GitHub mergeability recalculation is not a failed product check');
+  for(const prState of [
+    {mergeable:false,mergeable_state:'dirty'},
+    {mergeable:null,mergeable_state:'dirty'},
+  ]) await assert.rejects(()=>verify({...api,pr:async()=>({...pr(),
+    base:{...pr().base,sha:live},...prState})},ctx,sources,{maxWaitMs:0}),
+    /MERGE_CONFLICT/, 'confirmed dirty merge remains blocked');
   await assert.rejects(()=>verify({...api,compare:async()=>compare(
     ['app/api/holistic-support/voice/route.js'])},ctx,sources,{maxWaitMs:0}),
     /PRODUCTION_BASE_CHANGED/);
+});
+
+test('stale protected BASE with disjoint public image advance reuses green Specialist after candidate deletion',async()=>{
+ const current='c'.repeat(40);
+ const source={base:new Map([[path,yaml]]),current:new Map([[path,yaml]]),
+   changedRows:[{filename:'lib/crm/retired-route.mjs',status:'D'}]};
+ const compare={status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+   base_commit:{sha:BASE},merge_base_commit:{sha:BASE},
+   commits:[{sha:current}],files:[{filename:'public/images/site-card.webp',status:'added'}]};
+ const api={pr:async()=>({...pr(),base:{...pr().base,sha:current},
+   mergeable:null,mergeable_state:'unknown'}),
+   target:async()=>current,compare:async()=>compare,
+   runs:async()=>[run()],jobs:async()=>[{name:'test',status:'completed',conclusion:'success'}]};
+ const ctx={repo,number:27,head:SHA,base:BASE};
+ assert.deepEqual((await verify(api,ctx,source,{maxWaitMs:0})).expected,[path]);
+ await assert.rejects(()=>verify({...api,compare:async()=>({...compare,
+   files:[{filename:'lib/crm/retired-route.mjs',status:'modified'}]})},
+   ctx,source,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);
 });
