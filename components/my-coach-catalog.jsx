@@ -279,7 +279,6 @@ export default function MyCoachCatalog({ locale = 'en' }) {
   const [selectedId, setSelectedId] = useState('mira')
   const [expandedId, setExpandedId] = useState(null)
   const [directoryMode, setDirectoryMode] = useState('all')
-  const [showIntroHero, setShowIntroHero] = useState(false)
   const [humanExpanded, setHumanExpanded] = useState(false)
   const [humanContactOpen, setHumanContactOpen] = useState(false)
   const [settings, setSettings] = useState(() => normalizeCoachSettings('mira'))
@@ -361,7 +360,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
         </nav>
       </header>
 
-      {showIntroHero && <section className={[styles.hero, heroStyles.landing].join(' ')} id="my-coach-top" aria-labelledby="my-coach-heading">
+      <section className={[styles.hero, heroStyles.landing].join(' ')} id="my-coach-top" aria-labelledby="my-coach-heading">
         <div className={[styles.heroCopy, heroStyles.heroHeading].join(' ')}>
           <h1 id="my-coach-heading">My Coach</h1>
           <p className={heroStyles.tagline}>{hw.tagline}</p>
@@ -431,9 +430,14 @@ export default function MyCoachCatalog({ locale = 'en' }) {
             </button>
           })}
         </div>
-      </section>}
+        <div className={heroStyles.benefitTiles}>
+          <Link href={'/' + lang + '/holistic-support/mobile'}><BookOpen size={27} aria-hidden="true" /><strong>{hw.review}</strong></Link>
+          <a href="#all-coaches"><Sparkles size={27} aria-hidden="true" /><strong>{hw.hint}</strong></a>
+          <Link href={startHref} prefetch={false}><Leaf size={27} aria-hidden="true" /><strong>{hw.plan}</strong></Link>
+        </div>
+      </section>
       <section className={[heroStyles.directoryHeading, styles.compactHeading].join(" ")} id="all-coaches" aria-label={hw.browse}>
-        <Link href={'/' + lang} className={heroStyles.directoryBack} aria-label={lang === 'ru' ? 'На главную' : lang === 'es' ? 'Inicio' : 'Home'}>‹</Link>
+        <a href="#my-coach-top" className={heroStyles.directoryBack} aria-label={hw.back}>‹</a>
         <div><h2>My Coach</h2><p>{directoryMode === 'human' ? h.intro : directoryMode === 'ai' ? hw.browse : directoryMode === 'express' ? extra.diagnosticLead : directoryMode === 'tao' ? extra.taoLead : h.combinedIntro}</p></div>
       </section>
 
@@ -517,7 +521,11 @@ export default function MyCoachCatalog({ locale = 'en' }) {
               <span>{t.favorites}</span>
             </button>
             <button type="button" className={styles.introSmall}
-              aria-label={d.introAction} aria-expanded={showIntroHero} onClick={() => setShowIntroHero(value => !value)}>
+              aria-label={d.introAction}
+              onClick={() => document.getElementById('my-coach-top')?.scrollIntoView({
+                behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+                block: 'start',
+              })}>
               <BookOpen size={16} aria-hidden="true"/><span>{d.introAction}</span>
             </button>
           </div>
