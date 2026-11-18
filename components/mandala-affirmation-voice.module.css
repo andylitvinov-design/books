@@ -349,3 +349,12 @@
  .panel[data-therapy-voice-ui="true"] .deviceSampleButton,
  .panel[data-therapy-voice-ui="true"] .recordShortcut{font-size:10px}
 }
+
+/* The Therapy Voice step now only selects/previews. Its cloud POST remains
+   consent-gated in Ideas, and the two Therapy next buttons are navigation-only. */
+.panel[data-therapy-voice-ui="true"]>.heading p{display:none}
+.panel[data-therapy-voice-ui="true"]>.voiceChoices{gap:5px;margin:0}
+.panel[data-therapy-voice-ui="true"] .voiceCardSelect{min-height:88px}
+.panel[data-therapy-voice-ui="true"] .voiceCard{min-height:0}
+.panel[data-therapy-voice-ui="true"] .voiceAdvanced{margin:0}
+.panel[data-therapy-voice-ui="true"] .voiceAdvanced>summary{min-height:28px;padding:3px 2px;font-size:12px}
