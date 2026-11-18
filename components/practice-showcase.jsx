@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import styles from './practice-showcase.module.css'
-import PracticeWorkProfileIntro from './practice-work-profile-intro'
+import PracticeWorkProfileIntro, {PracticeWorkProfilePresentation} from './practice-work-profile-intro'
 
 const COPY = {
   ru: {
@@ -118,6 +118,15 @@ const CREATE = [
   { key:'material', label:'materialOne', Icon:FileText, tint:'mint' },
 ]
 
+const QUICK_CREATE_LABELS = {
+  en:{service:'Add Service',course:'Create Course',material:'Add Material',practice:'Add Practice',myPage:'My Page',myPageHint:'My profile and info',settings:'Settings',settingsHint:'Preferences and account'},
+  ru:{service:'Добавить услугу',course:'Создать курс',material:'Добавить материал',practice:'Добавить практику',myPage:'Моя страница',myPageHint:'Профиль и информация',settings:'Настройки',settingsHint:'Аккаунт и предпочтения'},
+  es:{service:'Añadir servicio',course:'Crear curso',material:'Añadir material',practice:'Añadir práctica',myPage:'Mi página',myPageHint:'Perfil e información',settings:'Ajustes',settingsHint:'Cuenta y preferencias'},
+}
+const FEATURED_CREATIONS = [
+  {key:'service',Icon:Leaf},{key:'course',Icon:Plus},{key:'material',Icon:FileText}
+]
+
 const CATEGORIES = [
   { key:'session', label:'session', icon:Leaf, artwork:'sessions' },
   { key:'meditationList', label:'meditation', icon:Play, artwork:'meditations' },
@@ -206,12 +215,14 @@ function countRequests(list) {
 export default function PracticeShowcase({ locale = 'en' }) {
   const router = useRouter()
   const t = COPY[locale] || COPY.en
+  const shortcut = QUICK_CREATE_LABELS[locale] || QUICK_CREATE_LABELS.en
   const [session, setSession] = useState('checking')
   const [practice, setPractice] = useState(null)
   const [displayName, setDisplayName] = useState('')
   const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState('')
   const [pendingAction, setPendingAction] = useState('')
+  const [moreCreateOpen, setMoreCreateOpen] = useState(false)
   const [nextAction, setNextAction] = useState('')
   const [telegramAvailable, setTelegramAvailable] = useState(false)
   const signedIn = session === 'signed'
@@ -414,31 +425,6 @@ export default function PracticeShowcase({ locale = 'en' }) {
     <div className={styles.shell}>
       <PracticeWorkProfileIntro locale={locale} onAction={openAction} activeCount={metric} requestCount={requestMetric} />
 
-      <section className={styles.identity} aria-label={t.yourProfile}>
-        <span className={styles.avatar} aria-hidden="true">{signedIn
-          ? (profilePhoto
-            ? <Image src={profilePhoto} alt="" width={68} height={68} unoptimized />
-            : (initials || <UserRound size={42}/>))
-          : <Image src="/images/holistic-house/support-reference-avatar.webp" alt="" width={68} height={68} />}</span>
-        <div className={styles.identityCopy}>
-          <strong>{signedIn ? (name || t.emptyName) : t.defaultName}</strong>
-          <small>{t.practitioner}</small>
-          <div className={styles.identityActions} data-work-profile-actions>
-            <button type="button" onClick={() => void openAction('profile')}>{t.profile} <ArrowRight size={15}/></button>
-            <Link href={'/' + locale + '/my-page'} prefetch={false}
-              className={styles.myPageAction} data-work-my-page>
-              <UserRound size={15} aria-hidden="true" />
-              {locale === 'ru' ? 'Моя страница' : locale === 'es' ? 'Mi página' : 'My Page'}
-            </Link>
-            <Link href={'/' + (locale === 'es' ? 'en' : locale) + '/app/settings'} prefetch={false}
-              className={styles.myPageAction} data-work-settings>
-              <Settings2 size={15} aria-hidden="true" />
-              {locale === 'ru' ? 'Настройки' : locale === 'es' ? 'Ajustes' : 'Settings'}
-            </Link>
-          </div>
-        </div>
-
-      </section>
 
       {signedIn && RESUMABLE_ACTIONS.has(nextAction) && <section
         className={styles.resumePanel} data-practice-after-google role="status">
@@ -455,20 +441,47 @@ export default function PracticeShowcase({ locale = 'en' }) {
         </button>
       </section>}
 
-      <details className={styles.createDisclosure} data-work-create-tools>
-        <summary><span className={styles.disclosureIcon}><Plus size={22} aria-hidden="true"/></span>
-          <span>{t.creations}</span><ChevronRight size={22} aria-hidden="true"/></summary>
-        <div className={styles.quickGrid} aria-label={t.creations}>
-        {CREATE.map(({ key, label, Icon, tint }) =>
-          <button key={key} type="button" className={styles.quickTile + ' ' + styles[tint]}
-            onClick={() => void openAction(key)} aria-busy={busy === key}>
-            <span className={styles.tileIcon}><Icon size={25} strokeWidth={1.9} aria-hidden="true"/></span>
+
+      <nav className={styles.accountNav} data-work-account-actions aria-label={t.yourProfile}>
+        <Link href={'/' + locale + '/my-page'} prefetch={false}
+          className={styles.accountTile} data-work-my-page>
+          <span className={styles.accountIcon}><UserRound size={29} aria-hidden="true"/></span>
+          <span><strong>{shortcut.myPage}</strong><small>{shortcut.myPageHint}</small></span>
+        </Link>
+        <Link href={'/' + (locale === 'es' ? 'en' : locale) + '/app/settings'} prefetch={false}
+          className={styles.accountTile} data-work-settings>
+          <span className={styles.accountIcon}><Settings2 size={29} aria-hidden="true"/></span>
+          <span><strong>{shortcut.settings}</strong><small>{shortcut.settingsHint}</small></span>
+        </Link>
+      </nav>
+
+      <nav className={styles.createActions} data-work-create-buttons aria-label={t.creations}>
+        {FEATURED_CREATIONS.map(({key,Icon}) =>
+          <button key={key} type="button" data-work-create-button={key}
+            className={styles.createAction + (key === 'service' ? ' ' + styles.createActionPrimary : '')}
+            aria-busy={busy === key} onClick={() => void openAction(key)}>
+            <Icon size={29} strokeWidth={1.9} aria-hidden="true"/>
+            <strong>{shortcut[key]}</strong>
+          </button>)}
+        <button type="button" data-work-create-button="practice" className={styles.createAction}
+          aria-expanded={moreCreateOpen && signedIn} aria-controls="work-create-more-options"
+          onClick={() => signedIn ? setMoreCreateOpen(value => !value) : openAction('create')}>
+          <Sparkles size={29} strokeWidth={1.9} aria-hidden="true"/>
+          <strong>{shortcut.practice}</strong>
+        </button>
+      </nav>
+
+      <div id="work-create-more-options" className={styles.extraCreateChoices}
+        data-work-create-tools hidden={!moreCreateOpen || !signedIn} aria-label={t.creations}>
+        {CREATE.filter(({key}) => !['service','course','material'].includes(key))
+          .map(({key,label,Icon,tint}) => <button key={key} type="button"
+            className={styles.quickTile + ' ' + styles[tint]} onClick={() => void openAction(key)}
+            aria-busy={busy === key}>
+            <span className={styles.tileIcon}><Icon size={25} aria-hidden="true"/></span>
             <span className={styles.tileCopy}><strong>{t[label]}</strong><small>{t.add}</small></span>
             <ChevronRight className={styles.tileArrow} size={15} aria-hidden="true"/>
-          </button>
-        )}
-        </div>
-      </details>
+          </button>)}
+      </div>
 
       <details className={styles.moreDisclosure} data-work-more-tools>
         <summary><span className={styles.disclosureIcon}><BriefcaseBusiness size={22} aria-hidden="true"/></span>
@@ -504,6 +517,22 @@ export default function PracticeShowcase({ locale = 'en' }) {
           )}
         </div>
       </section>
+      <section className={styles.identity} aria-label={t.yourProfile}>
+        <span className={styles.avatar} aria-hidden="true">{signedIn
+          ? (profilePhoto
+            ? <Image src={profilePhoto} alt="" width={68} height={68} unoptimized />
+            : (initials || <UserRound size={42}/>))
+          : <Image src="/images/holistic-house/support-reference-avatar.webp" alt="" width={68} height={68} />}</span>
+        <div className={styles.identityCopy}>
+          <strong>{signedIn ? (name || t.emptyName) : t.defaultName}</strong>
+          <small>{t.practitioner}</small>
+          <div className={styles.identityActions} data-work-profile-actions>
+            <button type="button" onClick={() => void openAction('profile')}>{t.profile} <ArrowRight size={15}/></button>
+          </div>
+        </div>
+
+      </section>
+        <PracticeWorkProfilePresentation locale={locale} />
       </details>
 
       {notice && !pendingAction && <p className={styles.notice} role="status">{notice}</p>}
