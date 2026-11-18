@@ -1,4 +1,4 @@
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance } from '../lib/ci/production-base-impact.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -2406,4 +2406,72 @@ test('disjoint, protected public presentation advances retain successful sensiti
     mergeable:null})},ctx,sources,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);
   await assert.rejects(()=>verify({...api,compare:async()=>diff(['app/[locale]/about/layout.tsx'])},
     ctx,sources,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);
+});
+
+test('unrelated protected public product advances do not invalidate a long-running green PR',async()=>{
+  const live='c'.repeat(40);
+  const productionFiles=[
+    'app/[locale]/shamanica/page.tsx',
+    'app/[locale]/shamanica/results/page.tsx',
+    'components/shamanica-mobile.module.css',
+    'components/shamanica-mobile.tsx',
+    'components/unified-mobile-dock.tsx',
+    'lib/shamanica-recommendations.mjs',
+    'lib/unified-mobile-dock.mjs',
+    'tests/holistic-master-unified-dock.test.mjs',
+    'tests/holistic-study-academy.test.mjs',
+    'tests/shamanica-mobile.test.mjs',
+  ];
+  const candidate=[
+    'components/my-coach-live-dialogue.jsx','lib/coaching/groq-coach-provider.mjs',
+    'lib/personal-coaching/coach-barge-in.mjs','tests/my-coach-barge-in.test.mjs',
+  ];
+  const compare=(filenames,override={})=>({
+    status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:BASE},merge_base_commit:{sha:BASE},
+    commits:[{sha:live}],files:filenames.map(filename=>({filename,status:'modified'})),
+    ...override,
+  });
+  assert.equal(safeDisjointPublicSourceAdvance(compare(productionFiles),BASE,live,candidate),true,
+    'Real #5030 Shamanica advancement must not erase valid Core/coach checks');
+  for(const [reason,bad] of [
+    ['actual file overlap',compare([candidate[0]])],
+    ['private API',compare(['app/api/holistic-support/voice/route.js'])],
+    ['security policy',compare(['lib/security/authorization.mjs'])],
+    ['changing CI gate',compare(['.github/workflows/hh-pr-core-release.yml'])],
+    ['dependency manifest',compare(['package-lock.json'])],
+    ['user profile',compare(['components/app/client-profile.tsx'])],
+    ['feature intersection',compare(['components/coaching-live-dialogue.jsx'])],
+    ['renamed file',compare(productionFiles,[{}])],
+    ['divergent base',{...compare(productionFiles),status:'diverged'}],
+    ['incomplete commit evidence',{...compare(productionFiles),commits:[]}],
+    ['incomplete file evidence',{...compare(productionFiles),files:[]}],
+  ]) {
+    const d=reason==='renamed file'?compare(productionFiles,{files:[
+      {filename:productionFiles[0],status:'renamed',previous_filename:'app/old.tsx'},
+    ]}):bad;
+    assert.equal(safeDisjointPublicSourceAdvance(d,BASE,live,candidate),false,reason);
+  }
+  for(const forbiddenCandidate of [
+    '.github/workflows/hh-pr-core-release.yml', 'package.json',
+    'lib/ci/required-gate-policy.mjs','supabase/migrations/1.sql',
+  ]) assert.equal(safeDisjointPublicSourceAdvance(
+    compare(productionFiles),BASE,live,[forbiddenCandidate]),false,forbiddenCandidate);
+  const changedRows=[{filename:'lib/crm/leads.js',status:'modified'}];
+  const api={
+    pr:async()=>({...pr(),base:{...pr().base,sha:live},mergeable:true}),
+    target:async()=>live,
+    compare:async()=>compare(productionFiles),
+    runs:async()=>[run()],
+    jobs:async()=>[{name:'test',status:'completed',conclusion:'success'}],
+  };
+  const sources={base:new Map([[path,yaml]]),current:new Map([[path,yaml]]),changedRows};
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  assert.deepEqual((await verify(api,ctx,sources,{maxWaitMs:0})).expected,[path]);
+  await assert.rejects(()=>verify({...api,pr:async()=>({...pr(),
+    base:{...pr().base,sha:live},mergeable:null})},ctx,sources,{maxWaitMs:0}),
+    /PRODUCTION_BASE_CHANGED/);
+  await assert.rejects(()=>verify({...api,compare:async()=>compare(
+    ['app/api/holistic-support/voice/route.js'])},ctx,sources,{maxWaitMs:0}),
+    /PRODUCTION_BASE_CHANGED/);
 });
