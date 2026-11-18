@@ -92,8 +92,12 @@ async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase,classif
     return fail(actual===pr.base.sha?'SENSITIVE_CI_BASE_UNVERIFIED':'SENSITIVE_BASE_STALE');
    }
    if(verifiedRunBase!==actual){
-    // One bounded read-only Compare; no HEAD refresh or duplicate CI run.
-    if(!rows.length||!rows.every(row=>['M','A'].includes(row.status)))
+    // Source deletes/renames are not production-base changes. Retain BOTH
+    // old/new path names for overlap checks, rather than forcing a full
+    // Core rerun when another PR advanced only independent public content.
+    // GitHub's verified target comparison still blocks actual target
+    // deletes/renames, and native merge still requires mergeable=true.
+    if(!rows.length||!rows.every(row=>['M','A','D','R'].includes(row.status)))
       return fail(actual===pr.base.sha?'SENSITIVE_CI_BASE_STALE':'SENSITIVE_BASE_STALE');
     let comparison;
     try{
