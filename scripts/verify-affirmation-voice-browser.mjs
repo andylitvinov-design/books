@@ -602,8 +602,21 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await montageStoryTab.click();
       await expect(montageStoryTab).toHaveAttribute("aria-pressed","true");
       await expect(page.locator('[data-video-auto-storyboard-list]')).toBeVisible({timeout:20000});
-      await expect(page.locator('[data-video-story-select-quality]')).toBeVisible();
-      await montageProTab.click();
+      const montageStoryboard=page.locator('[data-video-auto-storyboard]');
+      const sourceReady=await montageStoryboard.getAttribute('data-storyboard-media-ready')==='true';
+      const chooseQuality=page.locator('[data-video-story-select-quality]');
+      await expect(chooseQuality).toBeVisible();
+      await expect(chooseQuality).toBeEnabled();
+      // Tap the actual Story CTA, including when authored shots lack footage.
+      // No rendering, source approval or credits are triggered by navigation.
+      if(engine==='webkit')await chooseQuality.tap();
+      else await chooseQuality.click();
+      await expect(montageProTab).toHaveAttribute('aria-pressed','true');
+      await expect(page.locator('[data-video-basic-editor]'))
+        .toHaveAttribute('data-montage-panel','promo');
+      if(!sourceReady){
+        await expect(page.locator('[data-video-montage-pro-offer]')).toBeVisible();
+      }
       const montageProOffer=page.locator('[data-video-montage-pro-offer]');
       await expect(montageProOffer).toBeVisible();
       await expect(montageProOffer.locator('[data-video-pro-feature]')).toHaveCount(3);

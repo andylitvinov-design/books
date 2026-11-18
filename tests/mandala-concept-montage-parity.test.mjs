@@ -77,7 +77,12 @@ test("Curated and v3 six-shot fiction are not auto-bound to clips based on vague
  assert.match(ui,/data-storyboard-clips=\{manualFiveReady\?fiveSceneShots/);
  assert.match(ui,/onChooseQuality\(sourceReady\)/);
  const studio=source("components/mandala-free-video-studio.tsx");
- assert.match(studio,/if\(!sourceReady\)\{/);
+ const qualitySelection=studio.slice(studio.indexOf("onChooseQuality={sourceReady=>{"),
+   studio.indexOf("onOpenIdeas={()=>",studio.indexOf("onChooseQuality={sourceReady=>{"));
+ assert.match(qualitySelection,/setMontagePanel\("promo"\)/);
+ assert.match(qualitySelection,/setNotice\(sourceReady\?""/);
+ assert.doesNotMatch(qualitySelection,/if\(!sourceReady\)\{[\s\S]*?return;/,
+   "missing scene footage must not block video-type selection");
  assert.match(studio,/setMontagePanel\("concept"\)/);
  assert.match(studio,/draftConcept=\{draftVideoConcept\}/);
  assert.match(studio,/setAppliedStoryKey\(null\)/);

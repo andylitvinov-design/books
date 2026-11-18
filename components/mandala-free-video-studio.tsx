@@ -8891,14 +8891,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 return false;
               }}
               onChooseQuality={sourceReady=>{
-                if(!sourceReady){
-                  setNotice(locale==="ru"
-                    ?"Пока нет подтверждённых видеокадров для каждого действия этой истории. Сначала подберите соответствующие материалы; случайные пейзажи не используем."
-                    :locale==="es"
-                      ?"Faltan tomas verificadas para las acciones de esta historia. Primero elige imágenes adecuadas; no usamos paisajes al azar."
-                      :"This story still needs footage verified for each depicted action. Choose relevant sources first; unrelated landscapes are not used.");
-                  return;
-                }
+                // Quality/type selection is navigation, not a media licence,
+                // export approval or billable render. Missing authored footage
+                // must never trap the visitor on the Story tab.
                 // Commit the user-selected fifth step in this real touch event.
                 // Source approval remains independent and cannot trigger billing.
                 flushSync(()=>{
@@ -8906,9 +8901,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   setMontagePanel("promo");
                 });
                 setNotice(sourceReady?"":locale==="ru"?
-                  "Раскадровка пока не применена. Проверьте исходные сцены в дополнительных настройках монтажа перед созданием.":
-                  locale==="es"?"El guion visual aún no se ha aplicado. Revisa las escenas en las opciones avanzadas antes de crear el vídeo.":
-                  "Storyboard not yet applied. Review the source scenes in advanced Montage options before creating the video.");
+                  "Вы можете выбрать формат, но для создания видео пока не хватает кадров по сценарию. Добавьте подходящие материалы в Сюжет → Настройки видео.":
+                  locale==="es"?"Puedes elegir el formato, pero aún faltan imágenes que coincidan con el guion. Añade material adecuado en Guion → Ajustes de vídeo.":
+                  "You can choose a video type, but matching footage is still missing. Add relevant media in Story → Video settings before creating.");
                 window.requestAnimationFrame(()=>
                   document.querySelector('[data-video-montage-tools]')?.scrollIntoView({behavior:"smooth",block:"start"}));
               }}
