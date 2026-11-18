@@ -4,7 +4,7 @@ import {createPortal} from 'react-dom'
 import {Check,History,Pause,Play,Sparkles,X} from 'lucide-react'
 import {ALI_PERSONAS} from '@/lib/holistic-support/ali-personas.mjs'
 import {useAliPersona} from './use-ali-persona'
-import {playAliPersonaAudio,stopAliPersonaAudio} from './ali-persona-audio'
+import {playAliPersonaAudio,stopAliPersonaAudio,prepareAliNaturalVoice} from './ali-persona-audio'
 import css from './ali-persona-picker.module.css'
 
 const COPY={
@@ -28,6 +28,7 @@ export default function AliPersonaPicker({open,onClose,locale='en'}){
  const [mounted,setMounted]=useState(false)
  const dialogRef=useRef(null)
  useEffect(()=>setMounted(true),[])
+ useEffect(()=>{if(open)void prepareAliNaturalVoice()},[open])
  useEffect(()=>{
   if(!open){stopAliPersonaAudio();return}
   const onKey=event=>{if(event.key==='Escape')onClose()}
