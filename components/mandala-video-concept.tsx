@@ -56,7 +56,9 @@ type Props={
   profile?:VideoGoalProfile|null;durationSeconds?:number;
   selectedTopic?:{categoryId:string;subcategoryId:string;topicId:string;brief?:string}|null;
   ownerFields?:Partial<Record<"references"|"delivery"|"wordsAndVoice"|"soundtrack"|"timelineBinding"|"creationMode",string|null>>;
-  phrases:string[];approvedConcept:ApprovedVideoConcept|null;draftConcept?:ApprovedVideoConcept|null; signedIn:boolean;loginUnavailable:boolean;disabled:boolean;
+  phrases:string[];approvedConcept:ApprovedVideoConcept|null;draftConcept?:ApprovedVideoConcept|null;
+  suggestedConcept?:ApprovedVideoConcept|null;selectedDirectionId?:string|null;
+  signedIn:boolean;loginUnavailable:boolean;disabled:boolean;
   onRefreshLogin:()=>void;onApprove:(concept:ApprovedVideoConcept)=>void;
   onDraftChange?:(concept:ApprovedVideoConcept)=>void;
   onOpenGoal:()=>void;onOpenStyle:()=>void;
@@ -123,18 +125,23 @@ const DIRECTION_UI={
     badge:"Propuestas creativas",settings:"Ajustes creativos",ideaEdit:"Editar idea",ideaSave:"Guardar idea",quality:"Concreta tu objetivo para recibir dos historias completas. Un borrador incompleto no se puede aprobar."}
 } as const;
 export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speechTranscript=null,ownerFields,profile=null,selectedTopic=null,durationSeconds=30,approvedConcept,draftConcept=null,signedIn,
-  loginUnavailable,disabled,onRefreshLogin,onApprove,onDraftChange,onOpenGoal,onOpenStyle}:Props){
+  loginUnavailable,disabled,onRefreshLogin,onApprove,onDraftChange,onOpenGoal,onOpenStyle,
+  suggestedConcept=null,selectedDirectionId=null}:Props){
   const t=COPY[locale]||COPY.en;
   const phraseSignature=phrases.join("\u001f");
-  const suggested=useMemo(()=>suggestVideoConcept({
+  const localSuggested=useMemo(()=>suggestVideoConcept({
     locale,goal,theme,styleIndex,phrases:phraseSignature?phraseSignature.split("\u001f"):[],speechTranscript,
     personalization:profile?summarizeVideoGoalProfile(profile,locale):null,
     selectedTopicId:selectedTopic?.topicId||null,creativeBrief:selectedTopic?.brief||null
   }) as unknown as ApprovedVideoConcept,[locale,goal,theme,styleIndex,phraseSignature,speechTranscript,profile,selectedTopic?.topicId,selectedTopic?.brief]);
-  const [chosenDirectionId,setChosenDirectionId]=useState<string|null>(null);
+  const suggested=suggestedConcept||localSuggested;
+  const [chosenDirection,setChosenDirection]=useState<{intentSignature:string;id:string}|null>(null);
   const directions=useMemo(()=>getVideoCreativeDirections(suggested,locale),
     [suggested,locale]);
-  const selectedDirection=directions.find(d=>d.id===chosenDirectionId)||
+  const localDirectionId=chosenDirection?.intentSignature===suggested.signature?
+    chosenDirection.id:null;
+  const selectedDirection=directions.find(d=>d.id===selectedDirectionId)||
+    directions.find(d=>d.id===localDirectionId)||
     (draftConcept?.baseSignature===suggested.signature?
       directions.find(d=>d.id===draftConcept?.creativeDirectionId):undefined)||
     (approvedConcept?.baseSignature===suggested.signature?
@@ -242,8 +249,8 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
   },[loginOpen]);
 
   const chooseDirection=(id:string)=>{
-    if(id===selectedDirection?.id)return;
-    setChosenDirectionId(id);
+    if(id===selectedDirection?.id&&selectedDirectionId===id)return;
+    setChosenDirection({intentSignature:suggested.signature,id});
     setCustom(null);setApprovedSignature(null);
     const direction=directions.find(d=>d.id===id);
     const next=direction?applyVideoCreativeDirection(suggested,direction) as ApprovedVideoConcept:null;
