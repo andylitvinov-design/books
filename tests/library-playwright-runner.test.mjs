@@ -24,3 +24,17 @@ test('Library cannot silently skip real Chromium/WebKit and localized mobile jou
   assert.match(library, /cancel-in-progress:/);
   assert.match(library, /persist-credentials: false/);
 });
+
+test('Library reuses only the protected Core compiler cache without bypassing build or lint', () => {
+  const core = readFileSync('.github/workflows/hh-pr-core-release.yml', 'utf8');
+  const key = "hh-core-next-v2-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}";
+  assert.ok(core.includes('key: ' + key), 'Core must own the exact trusted cache key');
+  assert.ok(library.includes('key: ' + key), 'Library must restore identical protected cache');
+  assert.match(library, /uses: actions\/cache\/restore@v4/);
+  assert.match(library, /path: \|\n\s+\.next\/cache\n\s+tsconfig\.tsbuildinfo/);
+  assert.doesNotMatch(library, /actions\/cache\/save@v4/, 'PR must never publish shared compiler cache');
+  assert.match(library, /run: npm run build -- --no-lint/);
+  assert.match(library, /run: npx --no-install eslint/, 'keep mandatory lint before build');
+  assert.match(library, /node scripts\/verify-ideas-mobile-browser\.mjs/, 'keep real browser acceptance');
+  assert.match(library, /node scripts\/verify-unified-six-dock-browser\.mjs/, 'keep real navigation browser acceptance');
+});
