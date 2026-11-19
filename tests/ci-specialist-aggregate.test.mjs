@@ -3178,3 +3178,63 @@ test('revalidate actual #5148 Services plus CI policy promotion without erasing 
  ]) assert.equal(safeTrustedPolicyAdvance(diff(undefined,changed),BASE,latest,candidate),
   false,'unverified protected policy cannot turn red CI green');
 });
+
+
+test('exact 20-file #5093 video PR accepts independent Services plus protected policy advance',()=>{
+ const latest='c'.repeat(40);
+ const candidate=[
+  'components/mandala-automatic-storyboard.tsx',
+  'components/mandala-free-video-studio.tsx',
+  'components/mandala-video-mobile.module.css',
+  'lib/mandala/recording-codecs.d.mts',
+  'lib/mandala/recording-codecs.mjs',
+  'lib/mandala/webcodecs-mp4-export.ts',
+  'scripts/benchmarking/complete-three-step-goals-quiz.mjs',
+  'scripts/benchmarking/first-video-live-export.mjs',
+  'scripts/benchmarking/real-guest-video-file.mjs',
+  'scripts/benchmarking/verify-five-scene-stories-browser.mjs',
+  'scripts/benchmarking/verify-original-motion-export.mjs',
+  'scripts/verify-affirmation-voice-browser.mjs',
+  'tests/mandala-automatic-storyboard-tab.test.mjs',
+  'tests/mandala-express-one-click.test.mjs',
+  'tests/mandala-free-video.test.mjs',
+  'tests/mandala-native-audio-files.test.mjs',
+  'tests/mandala-video-concept.test.mjs',
+  'tests/mandala-webcodecs-mp4.test.mjs',
+  'tests/mandala-workspace-tabs.test.mjs',
+  'tests/video-director-chat-live-acceptance.test.mjs',
+ ];
+ const safeTarget=[
+  'components/services-assist-quiz.module.css',
+  'components/services-assist-quiz.tsx',
+  'lib/services-quick-categories.ts',
+  'public/images/holistic-house/support-first-screen-photos.webp',
+  'scripts/verify-public-services-production.mjs',
+ ];
+ const policyTarget=['lib/ci/production-base-impact.mjs',
+  'tests/ci-specialist-aggregate.test.mjs'];
+ const diff=(filenames,override={})=>({
+  status:'ahead',ahead_by:3,behind_by:0,total_commits:3,
+  base_commit:{sha:BASE},merge_base_commit:{sha:BASE},
+  commits:[{sha:'d'.repeat(40)},{sha:'e'.repeat(40)},{sha:latest}],
+  files:filenames.map(filename=>({filename,status:'modified'})),...override,
+ });
+ assert.equal(candidate.length,20);
+ assert.equal(safeMixedProtectedAdvance(diff(safeTarget),BASE,latest,candidate),true,
+  'all 20 video + browser acceptance helpers must retain successful exact-HEAD Core');
+ assert.equal(safeTrustedPolicyAdvance(diff([...policyTarget,...safeTarget]),BASE,latest,candidate),true,
+  'protected CI-only policy + public Services should not turn #5093 red');
+ for(const filename of [
+  'scripts/benchmarking/verify-auth-session.mjs',
+  'scripts/benchmarking/verify-payment-checkout.mjs',
+  'components/mandala-another-player.tsx',
+  '.github/workflows/hh-native-auto-merge.yml',
+  'app/api/auth/route.ts',
+ ]) assert.equal(safeTrustedPolicyAdvance(diff([...policyTarget,...safeTarget,filename]),
+  BASE,latest,candidate),false,'must not waive unknown QA, same-video or security: '+filename);
+ assert.equal(safeTrustedPolicyAdvance(diff([...policyTarget,...safeTarget]),
+  BASE,latest,[...candidate,'scripts/benchmarking/verify-unclassified-user-data.mjs']),false,
+  'an unknown additional candidate script cannot inherit unrelated-video safety');
+ assert.equal(safeTrustedPolicyAdvance(diff([...policyTarget,...safeTarget],{status:'diverged'}),
+  BASE,latest,candidate),false);
+});
