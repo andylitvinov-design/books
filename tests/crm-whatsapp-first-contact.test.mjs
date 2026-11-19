@@ -15,9 +15,10 @@ test('a signed, correctly scoped customer WhatsApp message qualifies without dia
   assert.equal(whatsappCrmInboundCandidate(event,env,now),true)
   assert.equal(whatsappCrmInboundCandidate({...event,rawText:'',photoFileId:'1234567890123'},env,now),true)
   assert.equal(whatsappCrmInboundCandidate({...event,sentAt:now-22*3600_000},env,now),true)
+  assert.equal(whatsappCrmInboundCandidate({...event,sentAt:now-5*86400_000},env,now),true)
   for(const changed of [
     {type:'receipt'},{userId:'invalid'},{accountId:'12345678902'},
-    {eventId:'bad'},{messageId:'bad'},{sentAt:now-24*3600_000},
+    {eventId:'bad'},{messageId:'bad'},{sentAt:now-8*86400_000},
     {sentAt:now+70_000},{stop:true},{rawText:'STOP'},
     {rawText:'стоп'},{rawText:'unsubscribe'},
   ])assert.equal(whatsappCrmInboundCandidate({...event,...changed},env,now),false,
@@ -36,6 +37,9 @@ test('verified WhatsApp webhook persists contact before Secretary and consent-fi
   assert.match(route,/HH_CRM_WA_FIRST_CONTACT_UNAVAILABLE/)
   assert.match(service,/app_private\.crm_msg_resolve/)
   assert.match(service,/ingestMessengerEventInTransaction\(db,'whatsapp'/)
+  assert.match(service,/crm_wa_diagnostic_sessions/)
+  assert.match(service,/stage='stopped'/)
+  assert.match(service,/pg_advisory_xact_lock/)
   assert.match(service,/ingestMessengerUpdate\('whatsapp'/)
   assert.match(service,/eventId:'wa:first-contact:'\+event.userId/)
   assert.match(service,/messageId:'wa:first-contact:'\+event.userId/)
@@ -45,6 +49,8 @@ test('verified WhatsApp webhook persists contact before Secretary and consent-fi
   assert.doesNotMatch(service,/body:event\.body|body:event\.rawText/)
   assert.doesNotMatch(service,/marketing_opt_in_at|sendOneMessengerMessage/)
   assert.equal((route.match(/recordWhatsAppInboundReceipt\(event,config\)/g)||[]).length,3)
+  assert.match(route,/waCaptureSuppressed/)
+  assert.match(route,/first.suppressed===true/)
 })
 test('retries of signed Meta events are safely deduplicated in the existing CRM ingest',()=>{
   const db=source('lib/crm/messenger-webhook.js')

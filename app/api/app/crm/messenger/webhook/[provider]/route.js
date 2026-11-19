@@ -206,19 +206,22 @@ export async function POST(request,{params}){
     }
     for(const event of updates){
       if(provider==='whatsapp'){
+        let waCaptureSuppressed=false
         // The same signed Meta message must first create a CRM contact and
         // replyable thread even when the client has not chosen a service or
         // consented to AI diagnostics. Never store unconsented message text.
         if(event.type==='incoming'){
-          try{await captureWhatsAppFirstContact(event,config)}
-          catch{
+          try{
+            const first=await captureWhatsAppFirstContact(event,config)
+            waCaptureSuppressed=first.suppressed===true
+          }catch{
             console.error('HH_CRM_WA_FIRST_CONTACT_UNAVAILABLE')
             throw new AppError('WHATSAPP_CRM_CONTACT_UNCONFIRMED',503)
           }
         }
         const proof=await processWhatsAppAccountLink(event,config)
         if(proof.handled||!channelTransportReady('whatsapp')){
-          if(proof.handled&&event.type==='incoming')
+          if(proof.handled&&event.type==='incoming'&&!waCaptureSuppressed)
             await recordWhatsAppInboundReceipt(event,config)
           continue
         }
@@ -229,7 +232,8 @@ export async function POST(request,{params}){
           if(secretary.handled){
             // Each accepted WhatsApp update is reflected in the operator CRM,
             // but outside explicit intake only a neutral receipt is retained.
-            await recordWhatsAppInboundReceipt(event,config)
+            if(!waCaptureSuppressed)
+              await recordWhatsAppInboundReceipt(event,config)
             if(secretary.reply){
               try{
                 await consumeRate(config,{op:'hh-wa-secretary-chat',
@@ -266,7 +270,8 @@ export async function POST(request,{params}){
           // If intake stored an explicitly consented message, the original
           // provider event already exists and this idempotent receipt is a no-op.
           // Otherwise retain a neutral touchpoint, never personal text/media.
-          await recordWhatsAppInboundReceipt(event,config)
+          if(!waCaptureSuppressed)
+            await recordWhatsAppInboundReceipt(event,config)
           if(intake.handled&&intake.reply){
             // Consent/CRM state are committed before one reply attempt.
             // Uncertain provider outcomes must not automatically repeat.
