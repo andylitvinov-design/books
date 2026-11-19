@@ -2,8 +2,11 @@
 /**
  * Exact-PR GitHub pull_request_target -> Conflict Repair handoff.
  * Run only trusted default-branch code; never checkout or execute PR head.
- * This is a one-PR event adapter for the EXISTING signed dispatcher lease,
- * not a second queue, full PR scan, source writer or CI rerun.
+ * The normal single-writer Watchdog owns actual manual conflict handoffs.
+ * An event-runner may only record an exact-HEAD conflict hint; it NEVER
+ * reserves that global writer or triggers another workflow, source/CI write,
+ * merge or deployment. The original dispatcher route remains for a
+ * caller that already holds the shared writer lease.
  */
 const REPO='andylitvinov-design/books';
 const PROD='codex/public-book-library';
@@ -68,7 +71,8 @@ function currentDirty(pr,eventPr){
   pr.head?.ref===eventPr.head.ref&&
   pr.mergeable===false&&pr.mergeable_state==='dirty');
 }
-async function run({github,core,context,dryRun=false,dispatchRun=null,readPr=null}={}){
+async function run({github,core,context,dryRun=false,dispatchRun=null,readPr=null,
+ enqueueOnly=false}={}){
  const result={schema:'HH_CONFLICT_EVENT_HANDOFF_V1',outcome:'UNVERIFIED_EVENT',
   prNumber:null,headSha:null,labelAdded:false,dispatchAccepted:0,
   manualConflictHandoffs:0,reason:null,blockingLabel:null,
@@ -126,6 +130,16 @@ async function run({github,core,context,dryRun=false,dispatchRun=null,readPr=nul
      !(pr.labels||[]).some(label=>label.name===CONFLICT)){
    result.outcome='CONFLICT_LABEL_READBACK_UNVERIFIED';return result;
   }
+ }
+ // The PR-target event is NOT a global Control Tower writer. Only enqueue
+ // the positively verified current HEAD's DIRTY conflict and return.
+ // The scheduled/signed Watchdog retains exclusive shared-writer ownership
+ // for exactly-once semantic handoff and manual queue retirement.
+ if(enqueueOnly){
+  result.outcome='CONFLICT_QUEUED_FOR_SHARED_WATCHDOG';
+  result.reason='VERIFIED_DIRTY_EXACT_HEAD';
+  result.nextAction='WATCHDOG_SEMANTIC_CONFLICT_HANDOFF';
+  return result;
  }
  const dispatch=dispatchRun||require('./ci-pr-queue-dispatcher.cjs').run;
  try{

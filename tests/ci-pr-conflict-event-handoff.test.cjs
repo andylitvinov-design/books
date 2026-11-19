@@ -83,7 +83,12 @@ test('single event workflow never falls into full Watchdog inventory scan',()=>{
  assert.match(native,/  conflict-event-handoff:/);
  assert.doesNotMatch(watchdog,/^  pull_request_target:/m,'only one trusted PR-target workflow starts');
  assert.doesNotMatch(watchdog,/^  conflict-event-handoff:/m);
- assert.match(native,/group: hh-control-tower-single-writer/);
+ const conflict=native.split('  conflict-event-handoff:\n')[1]?.split('  prune-head:\n')[0];
+ assert.ok(conflict,'dedicated exact-PR event handler must exist');
+ assert.match(conflict,/group: hh-conflict-event-pr-\$\{\{ github\.event\.pull_request\.number \}\}/);
+ assert.doesNotMatch(conflict,/group: hh-control-tower-single-writer/);
+ assert.match(conflict,/enqueueOnly:true/);
+ assert.doesNotMatch(conflict,/wakeStaleWatchdog|publishCiSignalOnly|ci-pr-queue-dispatcher\.cjs/);
  assert.match(native,/ci-pr-conflict-event-handoff\.cjs/);
 });
 
@@ -192,5 +197,50 @@ test('explicit hard holds report precise reason and never pass into a source or 
   assert.equal(r.reason,reason);
   assert.equal(r.nextAction,'REVIEW_EXPLICIT_HOLD_OR_SOURCE_OWNER');
   assert.equal(writes,0);assert.equal(dispatches,0);
+ }
+});
+
+test('exact-HEAD PR event queues verified conflict without the global writer',async()=>{
+ let current=source(), reads=0, labels=0, dispatched=0;
+ const github={rest:{pulls:{get:async()=>({data:(reads++,current)})},
+   issues:{addLabels:async({issue_number,labels:next})=>{
+     assert.equal(issue_number,3162);
+     assert.deepEqual(next,['hh:conflict-repair-needed']);
+     labels++;
+     current=source(['hh:conflict-repair-needed']);
+     return {data:{}};
+   }}}};
+ const receipt=await run({github,core,context:event(),enqueueOnly:true,
+   dispatchRun:async()=>{dispatched++;throw Error('global writer forbidden');}});
+ assert.equal(receipt.outcome,'CONFLICT_QUEUED_FOR_SHARED_WATCHDOG');
+ assert.equal(receipt.nextAction,'WATCHDOG_SEMANTIC_CONFLICT_HANDOFF');
+ assert.equal(receipt.mergeAuthorized,false);
+ assert.equal(receipt.dispatchAccepted,0);
+ assert.equal(reads,2,'label has exact-HEAD readback before enqueue');
+ assert.equal(labels,1);
+ assert.equal(dispatched,0,'event cannot compete with shared Watchdog dispatcher');
+ const again=await run({github,core,context:event(),enqueueOnly:true,
+   dispatchRun:async()=>{dispatched++;throw Error('global writer forbidden');}});
+ assert.equal(again.outcome,'CONFLICT_QUEUED_FOR_SHARED_WATCHDOG');
+ assert.equal(labels,1,'exact-HEAD hint must not be rewritten');
+ assert.equal(dispatched,0);
+});
+
+test('PR-local conflict enqueue rejects stale HEAD, unknown state and owner holds',async()=>{
+ for(const value of [
+   source([],{mergeable:null,mergeable_state:'unknown'}),
+   source([],{mergeable:true,mergeable_state:'clean'}),
+   source([],{head:{...source().head,sha:'c'.repeat(40)}}),
+   source(['hh:hold']),
+   source(['hh:repair-manual']),
+ ]){
+   let labels=0,dispatches=0;
+   const gh={rest:{pulls:{get:async()=>({data:value})},
+     issues:{addLabels:async()=>{labels++;throw Error('wrong branch')}}}};
+   const result=await run({github:gh,core,context:event(),enqueueOnly:true,
+     dispatchRun:async()=>{dispatches++;}});
+   assert.notEqual(result.outcome,'CONFLICT_QUEUED_FOR_SHARED_WATCHDOG');
+   assert.equal(labels,0);
+   assert.equal(dispatches,0);
  }
 });
