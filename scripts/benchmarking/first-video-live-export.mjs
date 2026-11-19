@@ -171,7 +171,9 @@ try {
   // Use the real visitor actions; do not bypass hydration, rights, or editor.
   row.phase='goals-three-native-quiz-answers';
   await completeThreeStepGoalsQuiz(page,{engine});
-  const continueToIdeas=page.locator('[data-video-continue-scenarios]');
+  // Native tap on the real visible Goal CTA. The old Continue remains hidden
+  // but its real readiness gate is still checked by the shared quiz helper.
+  const continueToIdeas=page.locator('[data-video-goal-create-cta]');
   await continueToIdeas.waitFor({state:'visible',timeout:40000});
   row.phase='goals-to-ideas-native-tap';
   if(engine==='webkit')await continueToIdeas.tap();

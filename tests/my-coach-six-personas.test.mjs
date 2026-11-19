@@ -46,8 +46,9 @@ test('six unique Google voices retain the previous cost and consent gates',()=>{
     assert.ok(voices.every(Boolean))
   }
   assert.equal(Object.keys(COACH_CHIRP_VOICE_NAMES).length,10)
-  assert.equal(myCoachFishVoice('merlin','ru',{}),MY_COACH_FISH_VOICES.merlin)
-  assert.equal(myCoachFishVoice('harry','ru',{}),MY_COACH_FISH_VOICES.harry)
+  // Never narrate Russian with English Fish references when native rights are pending.
+  assert.equal(myCoachFishVoice('merlin','ru',{}),null)
+  assert.equal(myCoachFishVoice('harry','ru',{}),null)
   assert.match(read('lib/coaching/my-coach-google-chirp.mjs'),/HH_MY_COACH_GOOGLE_CHIRP_COST_APPROVED/)
 })
 test('Merlin remains static while Harry has a real still and silent MP4 loop',()=>{
