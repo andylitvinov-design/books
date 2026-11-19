@@ -45,8 +45,10 @@ test('every published offer has a unique contextual RU EN ES journey',()=>{
    assert.equal(scenario.questions.goal,j.questions[0]);
    assert.equal(scenario.questions.challenge,j.questions[1]);
    assert.equal(v3ServiceCopy(locale,service,id).first,j.questions[0]);
-   assert.equal(aliWelcomePhotoKey({service,offerId:id}),id);
-   assert.ok(aliWelcomePhotoUrl(id)?.startsWith('https://holistichouse.vercel.app/images/'));
+   const photoKey=aliWelcomePhotoKey({service,offerId:id});
+   const expectedPhotoKey=TELEGRAM_SERVICE_OPTIONS[id].channels?.includes('telegram_business')?'general':id;
+   assert.equal(photoKey,expectedPhotoKey);
+   assert.ok(aliWelcomePhotoUrl(photoKey)?.startsWith('https://holistichouse.vercel.app/images/'));
   }
  }
 });
