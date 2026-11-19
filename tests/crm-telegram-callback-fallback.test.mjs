@@ -52,6 +52,8 @@ async function routeRun({source=candidate,payload=callback(),diagnostic='off',co
    // Mock the new, owner-scoped lead persistence boundary without real DB writes.
    captureTelegramBusinessLead:async()=>{calls.businessCapture++;if(leadFailure)throw new Error('synthetic role 42501');return {created:false}},
    captureTelegramBotLead:async()=>{calls.botCapture++;if(leadFailure)throw new Error('synthetic role 42501');return {created:false}},
+   captureWhatsAppFirstContact:async()=>({handled:false,created:false}),
+   recordWhatsAppInboundReceipt:async()=>({recorded:false}),
    // WhatsApp locale marker helper belongs to the production normalizer, not this VM.
    whatsappExpressReviewLocale:()=>null,
    processTelegramCompanion:async()=>{calls.companion++;return companion==='handled'?{handled:true,to:'123456789',locale:'ru',text:'test companion welcome',markup:null}:{handled:false}},
@@ -135,13 +137,17 @@ test('first private Telegram text invokes deduped lead capture; callbacks never 
   assert.equal(clicked.calls.botCapture,0);
 });
 
-test('signed /start reaches its reply even when CRM role and inline sync are unavailable',async()=>{
+test('signed /start retries on CRM failure; optional inline sync never blocks a durable reply',async()=>{
  const payload={update_id:114,message:{message_id:11,date:1,chat:{id:123456789,type:'private'},
    from:{first_name:'Fictional',is_bot:false},text:'/start'}};
  for(const flags of [{leadFailure:true},{syncFailure:true},{leadFailure:true,syncFailure:true}]){
   const result=await routeRun({payload,diagnostic:'handled',...flags});
-  assert.equal(result.response.status,200);
+  // A failed first-contact commit must be retried by Telegram, not acknowledged.
+  assert.equal(result.response.status,flags.leadFailure?503:200);
   assert.equal(result.calls.botCapture,1);
+  // Even a temporarily unavailable CRM first-contact receipt may not
+  // silence the protected dialogue. Telegram 503 retries ONLY the missing
+  // receipt; session-level update idempotency owns duplicate prompt safety.
   assert.equal(result.calls.aiV3,1);
   assert.equal(result.calls.intake,1);
   assert.equal(result.calls.send,1);
@@ -149,6 +155,17 @@ test('signed /start reaches its reply even when CRM role and inline sync are una
   assert.equal(result.calls.ingest,0);
  }
 });
+test('signed Companion welcome remains replyable when first-contact CRM is unavailable',async()=>{
+ const payload={update_id:116,message:{message_id:11,date:1,chat:{id:123456789,type:'private'},
+   from:{first_name:'Fictional',is_bot:false},text:'/start'}};
+ const result=await routeRun({payload,companion:'handled',leadFailure:true});
+ assert.equal(result.response.status,503,'Telegram must retry the missing first-contact receipt');
+ assert.equal(result.calls.botCapture,1);
+ assert.equal(result.calls.companionSend,1,'visitor still receives the welcome');
+ assert.equal(result.calls.aiV3,0);
+ assert.equal(result.calls.ingest,0);
+});
+
 test('signed Business message survives optional lead-capture denial without a fake CRM receipt',async()=>{
  const payload={update_id:115,business_message:{business_connection_id:'test-connection',
     message_id:12,date:1,chat:{id:123456789,type:'private'},

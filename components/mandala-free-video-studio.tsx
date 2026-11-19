@@ -24,6 +24,7 @@ import {planAudioVisualStoryboard} from "@/lib/mandala/audio-visual-storyboard.m
 import {suggestVideoConcept} from "@/lib/mandala/auto-video-concept.mjs";
 import {createPreviewGainGroup} from "@/lib/mandala/preview-volume";
 import type {PreviewGainGroup} from "@/lib/mandala/preview-volume";
+import {planExpressVideo} from "@/lib/mandala/express-video-director.mjs";
 import {deriveAudioVideoConcept} from "@/lib/mandala/audio-concept-director.mjs";
 import {consumeVoiceStudioHandoff} from "@/lib/mandala/voice-studio-handoff.mjs";
 import {requestConsentedTimedTranscript} from "@/lib/mandala/consented-audio-stt";
@@ -96,10 +97,10 @@ import {rankPersonalMusic} from "@/lib/mandala/music-match.mjs";
 import { getGoalTreeAudioChoices } from "@/lib/mandala/goal-tree-audio-playlists.mjs";
 import {curatedAudioTracks,recommendCuratedAudio,curatedAudioMatchesCategory,inferVideoAudioCategory} from "@/lib/mandala/curated-audio-recommendations.mjs";
 import type { MoneySceneId } from "@/lib/mandala/money-flow-effects";
-import { orderRecordingMimes, proceduralMp4Route, selectWebCodecsForRecording, shouldAutoRecoverSafariPlayback } from "@/lib/mandala/recording-codecs.mjs";
+import { isAppleMobileDevice, orderRecordingMimes, proceduralMp4Route, selectWebCodecsForRecording, shouldAutoRecoverSafariPlayback } from "@/lib/mandala/recording-codecs.mjs";
 import { prepareFourFilmSources } from "@/lib/mandala/free-film-source-loader.mjs";
 import {verifiedCategorySource,verifiedSceneAspect,canonicalSourceMasterKey} from "@/lib/mandala/category-video-storyboard.mjs";
-import {STORY_PHOTO_BY_ID,isTrustedStoryPhoto} from "@/lib/mandala/story-photo-library.mjs";
+import {STORY_PHOTO_BY_ID,isTrustedStoryPhoto,getMyTubeScenarioPhotos,MYTUBE_SCENARIO_PHOTO_COVERAGE} from "@/lib/mandala/story-photo-library.mjs";
 import { ensureDecodedVideoOnUserIntent } from "@/lib/mandala/intent-video-loading.mjs";
 import { resolveLicensedSourceFrame, assessLicensedSourceFrame,validateLicensedSourcePlayback } from "@/lib/mandala/free-film-source-clock.mjs";
 
@@ -1305,7 +1306,8 @@ function recordingMimes(withAudio: boolean, preferWebm = false, forceMp4ForRetry
   // MediaRecorder support does not prove final native playback. Choose a
   // Safari native MP4 first on iPhone, then expose an explicit alternate retry.
   const isApplePhone=typeof navigator!=="undefined" &&
-    /iPhone|iPad|iPod/.test(navigator.userAgent);
+    (/iPhone|iPad|iPod/i.test(navigator.userAgent)||
+      (/Macintosh/i.test(navigator.userAgent)&&navigator.maxTouchPoints>1));
   // The reported iPhone fails to decode a finalized WebM. Try an explicitly
   // AVC/AAC-capable MP4 recorder first there; keep the alternate format for
   // a real playback failure, without claiming that MIME support guarantees it.
@@ -2079,6 +2081,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [storyFormat,setStoryFormat] = useState<"visual"|"motion"|"talking_character"|"ai_cinematic">("visual");
   const [approvedVideoConcept,setApprovedVideoConcept] = useState<ApprovedVideoConcept|null>(null);
   const [draftVideoConcept,setDraftVideoConcept] = useState<ApprovedVideoConcept|null>(null);
+  // The user's creative choice belongs to Video Studio, not to either tab.
+  // Scope it to the confirmed input signature to invalidate old selections.
+  const [chosenFilm,setChosenFilm] = useState<{intentSignature:string;directionId:string}|null>(null);
   const [selectedConceptTopic,setSelectedConceptTopic] = useState<{categoryId:string;subcategoryId:string;topicId:string;brief?:string}|null>(null);
   const [appliedStoryKey,setAppliedStoryKey]=useState<string|null>(null);
   const [audioLibraryOpen,setAudioLibraryOpen] = useState(false);
@@ -2428,6 +2433,24 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const audioInputRef = useRef<HTMLInputElement>(null);
   const [uploadedAudio,setUploadedAudio] = useState<{file:File;url:string}|null>(null);
   const [importedAudioSeconds,setImportedAudioSeconds]=useState<number|null>(null);
+  // Read a local uploaded audio's duration; no transcription, upload or play.
+  useEffect(()=>{
+    if(!uploadedAudio)return;
+    let mounted=true;
+    const probe=new Audio();
+    const onMetadata=()=>{
+      if(mounted&&Number.isFinite(probe.duration)&&probe.duration>0)
+        setImportedAudioSeconds(probe.duration);
+    };
+    probe.preload="metadata";
+    probe.addEventListener("loadedmetadata",onMetadata);
+    probe.src=uploadedAudio.url;probe.load();
+    return()=>{
+      mounted=false;
+      probe.removeEventListener("loadedmetadata",onMetadata);
+      probe.removeAttribute("src");probe.load();
+    };
+  },[uploadedAudio?.url]);
   const messengerAudioHandoffRef=useRef<{locale:PublicLocale;promise:ReturnType<typeof consumeMessengerAudio>}|null>(null);
   const uploadedAudioRef = useRef<{file:File;url:string}|null>(null);
   const verifiedLibraryAudioFileRef=useRef<File|null>(null);
@@ -2436,6 +2459,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // Temporary user-owned voice transcript: never place it in browser storage.
   const [sttBusy,setSttBusy]=useState(false);
   const [sttError,setSttError]=useState("");
+  // Speech language belongs to the recording, not the website locale.
+  const [spokenAudioLanguage,setSpokenAudioLanguage]=useState<"auto"|VideoLocale>("auto");
   const [manualTranscript,setManualTranscript]=useState("");
   const [voiceTranscript,setVoiceTranscript]=useState<TimedSpeechTranscript|null>(null);
   const [voiceVisualPlan,setVoiceVisualPlan]=useState<AudioVisualPlan|null>(null);
@@ -2584,6 +2609,26 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [photoConsent,setPhotoConsent] = useState(false);
   const [recording, setRecording] = useState(false);
   const [preparing, setPreparing] = useState(false);
+  const spokenAudioLanguagePicker=<label data-video-audio-language-picker
+    style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",margin:"8px 0"}}>
+    <span style={{fontSize:14,fontWeight:600}}>{locale==="ru"?"Язык речи":locale==="es"?"Idioma del audio":"Spoken language"}</span>
+    <select data-video-audio-language value={spokenAudioLanguage}
+      disabled={sttBusy||micRecording||recording||preparing}
+      aria-label={locale==="ru"?"Язык аудиозаписи":locale==="es"?"Idioma hablado en el audio":"Language spoken in the recording"}
+      style={{flex:"1 1 160px",minWidth:0,maxWidth:"100%",minHeight:38,borderRadius:10,padding:"6px 10px",border:"1px solid #cbd5d1",background:"#fff",color:"#153c33",fontSize:14}}
+      onChange={event=>{
+        const language=event.currentTarget.value as "auto"|VideoLocale;
+        if(language===spokenAudioLanguage)return;
+        sttAbortRef.current?.abort();
+        setSpokenAudioLanguage(language);
+        setVoiceTranscript(null);setVoiceVisualPlan(null);setAudioPlanApplied(false);setSttError("");
+      }}>
+      <option value="auto">{locale==="ru"?"Определить автоматически · без перевода":locale==="es"?"Detectar automáticamente · sin traducir":"Auto-detect · no translation"}</option>
+      <option value="ru">Русский</option>
+      <option value="en">English</option>
+      <option value="es">Español</option>
+    </select>
+  </label>;
   const [progress,setProgress] = useState(0);
   const [videoEffectSession,setVideoEffectSession] = useState(0);
   const [videoEffectStarted,setVideoEffectStarted] = useState(false);
@@ -3091,6 +3136,25 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const caption = captionMode==="none" ? "" :
     captionMode==="custom" ? customCaption.trim() : sceneName;
   const affirmationLines = linesForVideoAffirmations(locale,theme,affirmations);
+  // One canonical creative brief for BOTH Ideas and Montage. Previously Story
+  // generated another brief, and could silently fall back to an unrelated film.
+  const filmPhraseSignature=affirmationLines.join("\u001f");
+  const confirmedFilmPersonalization=useMemo(
+    ()=>ideasProfileConfirmed?summarizeVideoGoalProfile(ideasProfile,locale):null,
+    [ideasProfileConfirmed,ideasProfile,locale]
+  );
+  const sharedFilmBrief=useMemo(()=>suggestVideoConcept({
+    locale,goal:wish,theme,styleIndex:quickStyleIndex,
+    phrases:filmPhraseSignature?filmPhraseSignature.split("\u001f"):[],
+    speechTranscript:voiceTranscript,personalization:confirmedFilmPersonalization,
+    selectedTopicId:selectedConceptTopic?.topicId||null,
+    creativeBrief:selectedConceptTopic?.brief||null
+  }) as unknown as ApprovedVideoConcept,[
+    locale,wish,theme,quickStyleIndex,filmPhraseSignature,voiceTranscript,
+    confirmedFilmPersonalization,selectedConceptTopic?.topicId,selectedConceptTopic?.brief
+  ]);
+  const activeFilmDirectionId=chosenFilm?.intentSignature===sharedFilmBrief.signature
+    ?chosenFilm.directionId:null;
   // Authored setup clips suppress the original transient duplicate overlays.
   const currentAffirmationSpeech=affirmations.enabled?affirmationNarrationText(affirmationLines):"";
   // Phrase selection is part of the approved narration itself: removing a spoken
@@ -3791,6 +3855,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     // deadlock. Chromium retains its tested native recorder implementation.
     const ua=typeof navigator==="undefined"?"":navigator.userAgent;
     const safariWebKit=/AppleWebKit/i.test(ua)&&!/Chrome|Chromium|Edg|OPR/i.test(ua);
+    const isApplePhone=/iPhone|iPad|iPod/i.test(ua)||
+      (/Macintosh/i.test(ua)&&navigator.maxTouchPoints>1);
     const hasWebCodecs=typeof VideoEncoder!=="undefined"&&
       typeof VideoEncoder.isConfigSupported==="function"&&typeof VideoFrame!=="undefined"&&
       (!attachedAudio || (typeof AudioEncoder!=="undefined"&&
@@ -4055,8 +4121,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       }
       const [outputWidth, outputHeight] = formatDimensions(aspect, quality);
       // A deliberate retry reduces only encoder dimensions, not audio or shots.
-      const safariRetryScale=useWebCodecsMp4&&safeWebkitRetry
+      // On physical iPhone choose conservative, native-decodable MP4 on the FIRST
+      // attempt. Do not encode 720p first and retry automatically at 540p.
+      const safariRetryScale=useWebCodecsMp4&&(safeWebkitRetry||isApplePhone)
         ? 540/(quality==="fullhd"?1080:720):1;
+      if(useWebCodecsMp4&&isApplePhone)compatibilityExportRef.current=true;
       canvas.width=Math.round(outputWidth*safariRetryScale/2)*2;
       canvas.height=Math.round(outputHeight*safariRetryScale/2)*2;
       const ctx = canvas.getContext("2d", { alpha: false });
@@ -4120,7 +4189,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           const encodeCanvasMovie=async (lighter=false)=>{
             const blob=await encodeLocalWebCodecsMp4({
               canvas,allowProceduralBrowser:procedural&&!safariWebKit,
-              seconds:duration,frameRate:Math.min(safeWebkitRetry?8:10,framesPerSecond),
+              seconds:duration,frameRate:Math.min((safeWebkitRetry||isApplePhone)?8:10,framesPerSecond),
               ...(lighter?{frameRate:8}:{}),
               audio:files.length?{files,volume:soundVolume}:undefined,
               shouldContinue:()=>!controller.signal.aborted&&aliveRef.current&&sourceRef.current===snapshotKey,
@@ -4151,7 +4220,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             const code=firstError instanceof Error?firstError.message:"";
             const recoverable=["video_encoder_timeline_drift","video_encoder_too_slow",
               "webcodecs_h264_unsupported","video_output_size_invalid"].includes(code);
-            if(!safariWebKit||safeWebkitRetry||!recoverable||
+            if(!safariWebKit||isApplePhone||safeWebkitRetry||!recoverable||
               controller.signal.aborted||!aliveRef.current||sourceRef.current!==snapshotKey)
               throw firstError;
             // A slower physical iPhone can exceed the 720p encoder budget.
@@ -4203,7 +4272,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             const code=safeReasons.includes(reason)?reason:"unexpected_encoder_failure";
             // Fixed diagnostic code only: no media, storyboard, voice or text.
             console.warn("HH_WEBKIT_MP4_EXPORT_FAILURE:"+code);
-            const canRetry=!safeWebkitRetry&&[
+            const canRetry=!isApplePhone&&!safeWebkitRetry&&[
               "video_encoder_timeline_drift","video_encoder_too_slow",
               "webcodecs_h264_unsupported","unexpected_encoder_failure",
             ].includes(code);
@@ -4337,7 +4406,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         const extension=isWebm?"webm":"mp4";
         const type=isWebm?"video/webm":"video/mp4";
         const blob=new Blob(chunks,{type});
-        if(!isMp4&&!isWebm){
+        if((isApplePhone&&isWebm)||(!isMp4&&!isWebm)){
           if(creditOpRef.current)void releaseCredit(creditOpRef.current);
           setPlaybackStatus("failed");
           setNotice(locale==="ru"
@@ -4903,7 +4972,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       recorder.start(250);
       // Voice capture is attempted only when the visitor explicitly chose Record.
       // On iPhone browser STT may use Apple's or another browser vendor's service.
-      micSpeechRef.current=recipientAudioSelected?startDeviceVoiceCapture(locale):null;
+      micSpeechRef.current=recipientAudioSelected&&spokenAudioLanguage!=="auto"
+        ?startDeviceVoiceCapture(spokenAudioLanguage):null;
       setMusicWarning("");
       setMicRecording(true);
     }catch{
@@ -4914,6 +4984,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   }
   function handleNativeVideoPlaybackFailure(video:HTMLVideoElement){
     if(!result)return;
+    // The previous Result verifier must not reject Ready's current Blob if
+    // its decoder finishes unloading during the workspace handoff.
+    if(activeWorkspace==="ready"&&video===resultVideoRef.current)return;
     // Two native players can observe the same failing Blob. A stale event
     // must not corrupt a newer successful movie or trigger a second retry.
     if(video.currentSrc&&video.currentSrc!==result.url)return;
@@ -4926,6 +4999,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       .some(mime=>mime.startsWith("video/webm"));
     const autoRetry=shouldAutoRecoverSafariPlayback({
       safariWebKit,format:result.extension,errorCode,nativeWebm,
+      userAgent:ua,maxTouchPoints:navigator.maxTouchPoints,
       alreadyAttempted:autoWebmRetryForRef.current===signature,
       catalog:result.mode==="catalog"
     });
@@ -4942,9 +5016,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       ?locale==="ru"?"Safari отклонил MP4. Повторяем в совместимом WebM без списания за нерабочее видео."
         :locale==="es"?"Safari rechazó el MP4. Reintentando WebM sin cobrar por el vídeo fallido."
         :"Safari rejected the MP4. Retrying in compatible WebM without charging for the failed movie."
-      :locale==="ru"?"iPhone не воспроизводит этот "+result.extension.toUpperCase()+" (ошибка "+errorCode+"). Кредиты возвращаются. Выберите совместимый повтор."
-        :locale==="es"?"El iPhone no puede reproducir "+result.extension.toUpperCase()+" (error "+errorCode+"). Los créditos se devuelven."
-        :"iPhone cannot play this "+result.extension.toUpperCase()+" (error "+errorCode+"). Your credits are released; try compatibility mode.");
+      :locale==="ru"?"iPhone не воспроизводит "+result.extension.toUpperCase()+" (ошибка "+errorCode+"). Повтор автоматически не запускается; кредиты возвращены."
+        :locale==="es"?"Este iPhone no reproduce "+result.extension.toUpperCase()+" (error "+errorCode+"). Sin reintento automático; créditos devueltos."
+        :"iPhone cannot play "+result.extension.toUpperCase()+" (error "+errorCode+"). No automatic retry; your credits are released.");
   }
   function confirmVideoPlayback(video:HTMLVideoElement){
     if(result?.url===rejectedPlaybackUrlRef.current)return;
@@ -5322,6 +5396,53 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       return false;
     }
   };
+  // MyTube → the ONE existing Video Studio Canvas montage. The user explicitly
+  // chose a canonical scenario; six verified-source photos replace only this
+  // selection, never generic MP4 fallback or unrelated client imagery.
+  // Browser decode and source checks still run during real video export.
+  const photoScenarioLoadedRef=useRef<string|null>(null);
+  useEffect(()=>{
+    const chosen=new URLSearchParams(window.location.search).get("photoScenario");
+    if(!chosen||photoScenarioLoadedRef.current===chosen)return;
+    photoScenarioLoadedRef.current=chosen;
+    const meta=MYTUBE_SCENARIO_PHOTO_COVERAGE[chosen];
+    const photos=getMyTubeScenarioPhotos(chosen);
+    if(!meta||photos.length!==6){
+      setNotice(locale==="ru"?"Подборка фотографий не найдена. Выберите сценарий в MyTube."
+        :locale==="es"?"No se encontró el conjunto de fotos. Elige una historia en MyTube."
+        :"Photo selection was not found. Choose a MyTube story.");
+      return;
+    }
+    const selectedTheme:VideoTheme=meta.categoryId==="love-relationships"?"relationships":
+      meta.categoryId==="stress-anxiety"?"health":
+      meta.categoryId==="energy-confidence"?"energy":
+      meta.topicId.includes("money")||meta.topicId.includes("income")||
+      meta.topicId.includes("financial")?"money":"goals";
+    const preset=FREE_FILM_PRESETS.find(item=>item.theme===selectedTheme);
+    if(!preset){
+      setNotice(locale==="ru"?"Не найден монтажный шаблон для этого сюжета."
+        :locale==="es"?"No hay plantilla de montaje para esta historia."
+        :"No montage template is available for this story.");
+      return;
+    }
+    const edit:FreeFilmCompilationEdit={
+      clipIds:photos.map(photo=>photo.id),
+      durationSecondsByStage:[5,5,5,5,5,5],
+      captionTexts:["","","","","",""],
+    };
+    if(applyAutoFilm(preset.id,30,edit,"portrait",true)){
+      setActiveWorkspace("video");
+      setMontagePanel("settings");
+      setNotice(locale==="ru"
+        ?"Подобраны 6 разных реальных фотографий для «"+meta.titleRu+"». Проверьте кадры и создайте 30-секундное видео."
+        :locale==="es"
+          ?"Se han añadido 6 fotos distintas. Revisa las escenas y crea un vídeo de 30 segundos."
+          :"Six distinct real photographs are ready. Review the scenes and create a 30-second video.");
+    }
+  // One explicit deep link. Never fetch client-selected remote URLs.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
+
   const createFiveSceneStory=()=>{
     if(recording||preparing)return;
     if((draftVideoConcept||approvedVideoConcept)?.storyboard?.length===6&&
@@ -5430,17 +5551,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     sttAbortRef.current=controller;setSttBusy(true);setSttError("");
     setVoiceTranscript(null);setVoiceVisualPlan(null);setAudioPlanApplied(false);
     try{
-      // Prefer genuine on-device audio-track recognition where the browser has
-      // an installed local language pack; only the explicit click may fall
-      // back to the pre-existing consented, zero-cost-confirmed server bridge.
-      let transcript:TimedSpeechTranscript;
-      try{
-        transcript=await transcribeDeviceAudioFile(entry.file,locale,controller.signal);
-      }catch{
-        if(controller.signal.aborted)return;
-        const transcriptFromFreeService=await requestConsentedTimedTranscript(entry.file,locale,true,controller.signal);
-        transcript=transcriptFromFreeService;
+      // Auto detection needs an audio-aware model; browser STT cannot infer
+      // Russian speech from an English UI locale. Exactly one network fallback.
+      let transcript:TimedSpeechTranscript|null=null;
+      if(spokenAudioLanguage!=="auto"){
+        try{
+          transcript=await transcribeDeviceAudioFile(entry.file,spokenAudioLanguage,controller.signal);
+        }catch{
+          if(controller.signal.aborted)return;
+        }
       }
+      if(!transcript)transcript=await requestConsentedTimedTranscript(
+        entry.file,spokenAudioLanguage,true,controller.signal);
       if(sttAbortRef.current!==controller||
         uploadedAudioRef.current?.file!==entry.file)return;
       setVoiceTranscript(transcript);
@@ -5458,7 +5580,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     }catch(error){
       if(controller.signal.aborted)return;
       const code=error instanceof Error?error.message:"";
-      setSttError(code==="AUDIO_STT_FREE_PROVIDER_NOT_CONFIGURED"?
+      setSttError(code==="AUDIO_STT_LANGUAGE_MISMATCH"?
+        (locale==="ru"?"Текст распознан на другом языке. Выберите «Русский» и повторите; перевод не выполняется.":
+          locale==="es"?"El texto no coincide con el idioma del audio. Selecciona su idioma e inténtalo de nuevo; no traducimos.":
+            "The transcript language does not match the audio. Select the spoken language and try again; no translation is performed.") :
+        code==="AUDIO_STT_FREE_PROVIDER_NOT_CONFIGURED"?
         (locale==="ru"?"Для файла нет доступного автоматического распознавания. Продиктуйте текст в поле ниже через клавиатуру телефона или перейдите в монтаж без таймкодов. Платный сервис не использован.":
           locale==="es"?"Este navegador no puede transcribir el archivo sin un servicio disponible. Puedes dictar el texto abajo o editar sin tiempos.":
             "No automatic transcription for this file in this browser. Use the keyboard microphone to dictate below, or edit without timestamps. No paid service was used.") :
@@ -5633,6 +5759,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     return true;
   };
 
+  // flushSync commits the recipe on the same trusted user gesture. This ref
+  // replaces stale React closures before the existing real MP4 writer starts.
+  const expressRenderRef=useRef<()=>boolean>(()=>false);
+  expressRenderRef.current=startFromHero;
   // This is a local, non-persistent preview. A click also unlocks muted
   // same-origin footage on iOS before React's paint effect starts.
   const openAffirmationPreview = () => {
@@ -5961,14 +6091,127 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       });
     }));
   };
-  // Apply the selected Goal scenes, then open Ready without rendering.
-  const generateFromGoal=()=>{
-    if(!goalQuizReady||!studioHydrated||recording||preparing)return false;
-    let goalValid=true;
-    flushSync(()=>{goalValid=goalContinueRef.current?.()!==false;});
-    if(!goalValid)return false;
-    return openReadyForGeneration();
+  // Express: source-backed storyboard + licensed music or exact user audio
+  // + actual protected local encoder, all initiated by ONE Create gesture.
+  const generateExpressFromCurrent=()=>{
+    if(!studioHydrated||recording||preparing||preparingRef.current||
+       jobRef.current||webCodecJobRef.current||sttBusy||micRecording)return false;
+    if(creditCatalog===null||creditCatalog.blocked||creditSession==="checking"||
+       creditSession==="unavailable"){
+      setNotice(locale==="ru"?"Экспорт пока не готов: проверяем доступ и кредиты.":
+        locale==="es"?"La exportación aún no está disponible.":
+          "Export eligibility and credits are not yet available.");
+      return false;
+    }
+    if(creditCatalog.chargeRequired&&creditSession==="guest"&&guestFirstVideoUsed){
+      setNotice(locale==="ru"?"Первое бесплатное видео уже использовано. Для нового войдите в аккаунт.":
+        locale==="es"?"Tu primer vídeo gratuito ya se utilizó. Inicia sesión.":
+          "Your free first video has been used. Sign in to create another.");
+      setActiveWorkspace("pro");return false;
+    }
+    if(photoPending||phrasePending||narrationInvalid||hypnoAudioBusy){
+      setNotice(locale==="ru"?"Завершите подготовку фото и подтвердите изменения голоса.":
+        locale==="es"?"Completa la foto y confirma las modificaciones de voz.":
+          "Finish photo preparation and approve pending voice edits.");
+      return false;
+    }
+    if(photoUrl&&!backgroundOnly&&!photoConsent){
+      setNotice(supportUi.heroConsent);return false;
+    }
+    const original=uploadedAudio||(attachedAudio?.kind==="file"?
+      {file:attachedAudio.file,url:attachedAudio.id}:null);
+    if(original&&!audioRights){
+      setNotice(ui.audioRightsHelp);
+      setActiveWorkspace("editor");setMontagePanel("audio");return false;
+    }
+    const measured=original?(importedAudioSeconds??voiceTranscript?.durationSeconds??
+      (attachedAudio?.kind==="file"?attachedAudio.speechSeconds:null)??null):null;
+    const recipe=planExpressVideo({
+      locale,goal:wish,theme,selectedTopicId:selectedConceptTopic?.topicId||null,
+      personalization:confirmedFilmPersonalization,transcript:voiceTranscript,
+      hasAudio:Boolean(original),audioDurationSeconds:measured
+    });
+    if(!recipe.canRender){
+      setNotice(recipe.reason==="AUDIO_DURATION_UNKNOWN"
+        ?(locale==="ru"?"Подготавливаем сведения о длительности аудио.":
+          locale==="es"?"Leyendo la duración del audio.":"Reading audio duration.")
+        :recipe.reason==="AUDIO_OVER_59_SECONDS"
+        ?(locale==="ru"?"Аудио длиннее 59 секунд. Экспресс не обрезает медитацию; используйте длинный редактор.":
+          locale==="es"?"Audio de más de 59 s. Exprés no recorta tu grabación.":
+            "Audio is longer than 59 seconds. Express never truncates it.")
+        :(locale==="ru"?"Не хватает подходящих проверенных кадров или музыки. Откройте ручной монтаж.":
+          locale==="es"?"No hay suficientes recursos autorizados. Usa el montaje manual.":
+            "No complete rights-reviewed footage and music match. Use manual montage."));
+      return false;
+    }
+    const nextTheme=recipe.theme as VideoTheme;
+    const preset=FREE_FILM_PRESETS.find(item=>item.theme===nextTheme);
+    if(!preset){setNotice(ui.videoUnavailable);return false;}
+    let plan:CinematicStoryboard;
+    try{
+      plan=compileFreeFilmPreset(preset,locale,recipe.durationSeconds,"portrait",{
+        clipIds:recipe.clipIds,durationSecondsByStage:recipe.durationSecondsByStage,
+        captionTexts:recipe.captionTexts,excludedMotifs:recipe.excludedMotifs
+      });
+    }catch{
+      setNotice(locale==="ru"?"Кадры не прошли проверку формата и источников. Экспорт не начат.":
+        locale==="es"?"Escenas no validadas; no se inició la exportación.":
+          "Footage failed its real source and timeline checks; no export started.");
+      return false;
+    }
+    const speech=Boolean(original)&&Boolean(voiceTranscript?.text||
+      recipientAudioSelected||(attachedAudio?.kind==="file"&&attachedAudio.narration));
+    const selected=!original&&attachedAudio?.kind==="preset"&&
+      curatedAudioTracks.some(track=>track.id===attachedAudio.id)?
+      attachedAudio.id:recipe.musicId;
+    const musicTrack=!original&&selected?selected as PresetId:null;
+    const voiceBed=speech&&recipe.musicId&&
+      MYTUBE_REVIEWED_MUSIC_BEDS.some(id=>id===recipe.musicId)?
+      recipe.musicId as `curated-${string}`:null;
+    stopSoundPreview();stopMovieSound();
+    // Updating React and invoking the current callback happen synchronously
+    // within the same Safari tap. No intermediate Match Footage / Ready click.
+    flushSync(()=>{
+      setStudioMode("pump");setActiveWorkspace("ready");
+      setReadyGenerationPending(true);
+      setPracticeType("video");
+      setPracticeLevels(current=>({...current,video:"basic"}));
+      setCreationMode("catalog");setFreeVideoPlan(null);
+      setActiveFreeFilmPreset(preset.id);
+      setCinematicPlan(plan);setTimelineTextClips(null);
+      setTheme(nextTheme);setVideoCategory(nextTheme);
+      if(nextTheme==="money")setMoneyScene(preset.clips[0] as MoneySceneId);
+      else{setMoneyScene(null);setOtherScene(otherVideoScenes[nextTheme][0].id);}
+      setAspect("portrait");setDuration(recipe.durationSeconds);
+      setQuality("hd");setActiveMontageStyleId(null);
+      setSpeed(original?"slow":"dynamic");setBrightness("soft");
+      if(!photoUrl||!photoConsent)setBackgroundOnly(true);
+      setAudioStartSeconds(0);setAudioAuto(false);setMusicWarning("");
+      setCaptionMode("none");
+      setAffirmations(current=>({...current,enabled:false,selected:[]}));
+      if(original){
+        setMusic("none");setSoundVolume(100);
+        setAttachedAudio({kind:"file",file:original.file,id:original.url,nonLoop:true});
+        setMusicBed(voiceBed?{id:voiceBed,volumePercent:15,fadeSeconds:1}:
+          {id:"none",volumePercent:30,fadeSeconds:1});
+      }else{
+        setMusic(musicTrack||"none");setSoundVolume(75);
+        setAttachedAudio(musicTrack?{kind:"preset",id:musicTrack}:null);
+        setMusicBed({id:"none",volumePercent:30,fadeSeconds:1});
+      }
+      setPreviewSeekSeconds(0);setPreviewPlayhead(0);
+      setPreviewPlaying(false);setIntroPlaying(false);
+    });
+    const started=expressRenderRef.current();
+    if(!started){
+      setReadyGenerationPending(false);
+      setNotice(locale==="ru"?"Создание не началось: проверьте ограничения аудио, кадров и кредитов.":
+        locale==="es"?"No se inició: verifica audio, escenas y créditos.":
+          "Video did not start. Check audio, footage and credit eligibility.");
+    }
+    return started;
   };
+  const generateFromGoal=()=>generateExpressFromCurrent();
 
   const openVideoScenarioStep = () => {
     setIntroPlaying(false);setIntroDismissed(true);
@@ -6157,6 +6400,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   locale==="es"?"Al pulsar Transcribir, el audio se enviará una vez al servicio externo. El sitio no guarda audio ni texto.":
                     "Pressing Transcribe sends the audio once to an external speech recognition service. This site stores neither audio nor text."}
               </small>
+              {spokenAudioLanguagePicker}
               <button type="button" className={videoStyles.audioMicButton}
                 data-video-audio-transcribe
                 disabled={!studioHydrated||sttBusy||recording||preparing||micRecording}
@@ -6710,7 +6954,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <button type="button" data-video-recipient-audio-record disabled={sttBusy||recording||preparing}
           aria-pressed={micRecording} onClick={()=>{if(micRecording)stopMicRecording();else void startMicRecording();}}>
           <Mic size={17}/>{micRecording?(locale==="ru"?"Стоп":locale==="es"?"Parar":"Stop"):
-            locale==="ru"?"Записать и распознать":locale==="es"?"Grabar y transcribir":"Record & transcribe"}</button>
+            spokenAudioLanguage==="auto"
+              ?(locale==="ru"?"Записать аудио":locale==="es"?"Grabar audio":"Record audio")
+              :(locale==="ru"?"Записать и распознать":locale==="es"?"Grabar y transcribir":"Record & transcribe")}</button>
       </div>
       {uploadedAudio?<div className={videoStyles.recipientAudioSelected}>
         <strong>{uploadedAudio.file.name}</strong><button type="button" disabled={sttBusy} onClick={clearUploadedAudio}>×</button>
@@ -6727,10 +6973,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     <div className={videoStyles.recipientAudioStep}>
       <b>2</b><div><strong>{locale==="ru"?"Расшифровка и анализ":locale==="es"?"Transcripción":"Transcribe and analyze"}</strong>
       <small data-video-recipient-audio-stt-notice>
-        {locale==="ru"?"При записи браузер попробует распознать речь сразу (его служба может обработать голос). Для файла сначала используется локальный режим, а по нажатию «Расшифровать» и при недоступности локального режима — существующий бесплатный внешний сервис. Сайт не сохраняет запись и текст.":
-          locale==="es"?"Al grabar, el navegador intentará reconocer tu voz (puede utilizar su servicio de voz). Para archivos, primero se prueba el modo local, luego el servicio gratuito autorizado. No guardamos audio ni texto.":
-            "Recording tries browser speech recognition (your browser may process microphone audio externally). Uploaded files use verified on-device recognition first, then the existing free speech service after your Transcribe click. This site stores neither audio nor text."}
+        {locale==="ru"?"Выберите язык речи независимо от языка сайта. «Авто» определит его без перевода после нажатия «Расшифровать». При ручном выборе браузер может распознать речь во время записи; при необходимости доступен существующий бесплатный сервис после вашего нажатия. Сайт не сохраняет запись и текст.":
+          locale==="es"?"Elige el idioma del audio, no el de la página. «Auto» lo detecta sin traducir al pulsar Transcribir. Al elegir idioma, el navegador puede reconocer la voz; el servicio gratuito se utiliza solo después de tu clic. No guardamos audio ni texto.":
+            "Choose the language spoken in the audio, not the website's language. Auto detects it without translation when you press Transcribe. With a selected language, browser recognition may run while recording; the free service is used only after your click. This site stores neither audio nor text."}
       </small>
+      {spokenAudioLanguagePicker}
       <button type="button" data-video-recipient-audio-transcribe
         disabled={!uploadedAudio||!studioHydrated||!audioRights||sttBusy||recording||preparing||micRecording}
         onClick={()=>void transcribeVideoVoice()}><AudioLines size={17}/>
@@ -6828,6 +7075,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>:null}
       </div>
     </div>
+    {uploadedAudio?<button type="button" className={videoStyles.quickGenerate}
+      data-video-recipient-express-create
+      disabled={!studioHydrated||recording||preparing||micRecording||sttBusy||
+        !audioRights||!(importedAudioSeconds||voiceTranscript?.durationSeconds)}
+      onClick={generateExpressFromCurrent}>
+      <Film size={19}/>{locale==="ru"?"Создать видео с моим аудио · 1 клик":
+        locale==="es"?"Crear vídeo con mi audio · 1 clic":
+          "Create video with my audio · 1 click"}
+    </button>:null}
+    {uploadedAudio&&!voiceTranscript?<small data-video-recipient-express-source-note>
+      {locale==="ru"?"Без расшифровки видеоряд следует описанию, а не неизвестным словам записи. Оригинальный звук сохраняется без повторов.":
+        locale==="es"?"Sin transcripción, las escenas siguen el tema, no las palabras desconocidas; audio original sin bucles.":
+          "Without transcription, scenes follow your topic rather than unrecognized words; audio is never looped."}
+    </small>:null}
     {musicWarning?<p role="status">{musicWarning}</p>:null}
     <button type="button" className={videoStyles.recipientAudioNext} data-video-recipient-audio-next
       disabled={!audioPlanApplied||!voiceVisualPlan?.canExport||!audioRights} onClick={goRecipientAudioToMontage}>
@@ -6966,6 +7227,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   );
   // Visiting Ready alone is not proof of a verified exported movie.
   const readyResultVerified=Boolean(!readyGenerationPending&&result&&result.mode!=="catalog"&&playbackStatus==="ready"&&creditConfirmed);
+  const iphoneLocalPlayback=typeof navigator!=="undefined"&&
+    isAppleMobileDevice(navigator.userAgent,navigator.maxTouchPoints);
+  // The native MP4 writer is an alternate encoder; do not retry the same
+  // Safari WebCodecs path or select WebM that this iPhone cannot play.
+  const nativeIphoneMp4Available=recordingMimes(Boolean(attachedAudio)||musicBed.id!=="none",false,true)
+    .some(mime=>mime.startsWith("video/mp4;codecs=")&&mime.includes("avc1."));
   // The only workspace tab rail stays in the same place above the ONE player
   // for every mode; portal relocation previously changed geometry and focus.
   return (
@@ -7149,9 +7416,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </div>
           <div className={videoStyles.stageActionPair} data-video-stage-actions="goal" data-video-request-after-topic>
             <button type="button" className={videoStyles.quickGenerate} data-video-stage-generate="goal"
-              disabled={!goalQuizReady||!studioHydrated||recording||preparing} onClick={generateFromGoal}>
+              disabled={(!goalQuizReady&&!wish.trim()&&!uploadedAudio)||!studioHydrated||recording||preparing}
+              onClick={generateFromGoal} data-video-express-create>
               <Play size={20} fill="currentColor" aria-hidden="true"/>
               {locale==="ru"?"Создать видео":locale==="es"?"Generar vídeo":"Generate video"}
+              <small>{locale==="ru"?"Экспресс · 1 клик":locale==="es"?"Exprés · 1 clic":"Express · 1 click"}</small>
               {creditCatalog?.chargeRequired && creditCatalog.ready ?
                 <small>{creditSession==="guest"&&!guestFirstVideoUsed
                   ?locale==="ru"?"Первое бесплатно":locale==="es"?"Primero gratis":"First free"
@@ -7608,7 +7877,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       {activeWorkspace==="ready"?<MandalaVideoReady
         courseFlow={readyCourseFlow} locale={locale} theme={theme} wish={wish} focus={meditationFocus} aspect={aspect}
         video={!readyGenerationPending&&playbackStatus!=="failed"&&result&&result.mode!=="catalog"?{
-          url:result.url,extension:result.extension,bytes:result.bytes,duration
+          url:result.url,extension:result.extension,bytes:result.bytes,duration,blob:result.blob
         }:null}
         verified={Boolean(!readyGenerationPending&&result&&result.mode!=="catalog"&&playbackStatus==="ready"&&creditConfirmed)}
         checking={Boolean(!readyGenerationPending&&result&&playbackStatus==="checking")}
@@ -7616,11 +7885,19 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         progressQuestionnaire={renderCheckIn("ready-assessment-heading")}
         generationNotice={notice}
         exportFailed={Boolean(exportUnavailable||playbackStatus==="failed")}
-        canRetryExport={Boolean(canGenerate&&!creditOpRef.current&&!recording&&!preparing)}
+        canRetryExport={Boolean(canGenerate&&!creditOpRef.current&&!recording&&!preparing&&
+          (!iphoneLocalPlayback||nativeIphoneMp4Available))}
+        nativeIphoneMp4Retry={iphoneLocalPlayback&&nativeIphoneMp4Available}
         onRetryExport={()=>{
           // A new local attempt reserves a new idempotent hold only after the
           // rejected one has been released. Never publish a catalog substitute.
           if(creditOpRef.current)return;
+          if(iphoneLocalPlayback){
+            // Same licensed frames and selected AAC, original native Safari
+            // MediaRecorder instead of another rejected WebCodecs/WebM job.
+            if(nativeIphoneMp4Available)void createVideo(false,true);
+            return;
+          }
           const webm=recordingMimes(Boolean(attachedAudio),true)
             .some(mime=>mime.startsWith("video/webm"));
           if(result?.extension==="mp4"&&webm)void createVideo(true);
@@ -7874,6 +8151,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <div className={videoStyles.ideasConceptPane} id="video-ideas-concept-panel"
           data-video-ideas-concept-panel hidden={ideasSubtab!=="concept"}>
           <MandalaVideoConcept locale={locale} goal={wish} theme={theme} selectedTopic={selectedConceptTopic}
+            suggestedConcept={sharedFilmBrief} selectedDirectionId={activeFilmDirectionId}
             profile={ideasProfileConfirmed?ideasProfile:null} durationSeconds={duration}
             speechTranscript={voiceTranscript} approvedConcept={approvedVideoConcept}
             draftConcept={draftVideoConcept}
@@ -7893,6 +8171,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             onRefreshLogin={()=>void refreshCreditSession()}
             onDraftChange={draft=>{
               setDraftVideoConcept(draft);
+              setChosenFilm(draft.creativeDirectionId?{
+                intentSignature:draft.baseSignature||draft.signature,
+                directionId:draft.creativeDirectionId
+              }:null);
               setApprovedVideoConcept(null);
               setAppliedStoryKey(null);
             }}
@@ -7901,6 +8183,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             onApprove={approved=>{
               setApprovedVideoConcept(approved);
               setDraftVideoConcept(approved);
+              setChosenFilm(approved.creativeDirectionId?{
+                intentSignature:approved.baseSignature||approved.signature,
+                directionId:approved.creativeDirectionId
+              }:null);
               // Approval is local and free: only unedited storyboard overlays may change.
               // Existing manually edited text clips, voice, music and media are retained.
               if(!timelineTextClips?.length){
@@ -8245,7 +8531,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 ?"Este es un MP4 original del catálogo, no tu montaje personalizado. Usa un navegador compatible con la grabación Canvas para generar la versión ajustada."
                 :"This is an existing catalog MP4, not your custom montage. Use a browser with Canvas recording to export your selected settings."}
             </p>:null}
-            <video ref={resultVideoRef} key={result.url} src={result.url} controls playsInline preload="auto"
+            {activeWorkspace!=="ready"?<video ref={resultVideoRef} key={result.url} src={result.url} controls playsInline preload="auto"
               onPlay={()=>setVideoEffectStarted(true)}
               onEnded={()=>{setVideoEffectEnded(true);
                 window.requestAnimationFrame(()=>document.getElementById("video-effect-journey")
@@ -8254,7 +8540,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               onLoadedData={event=>confirmVideoPlayback(event.currentTarget)}
               onCanPlay={event=>confirmVideoPlayback(event.currentTarget)}
               onPlaying={event=>confirmVideoPlayback(event.currentTarget)}
-              onError={event=>handleNativeVideoPlaybackFailure(event.currentTarget)}/>
+              onError={event=>handleNativeVideoPlaybackFailure(event.currentTarget)}/>:null}
             {playbackStatus!=="failed"&&result.mode!=="catalog"&&creditCatalog?.chargeRequired&&creditSession!=="signed_in"
               ?<div className={videoStyles.guestPreviewActions} data-video-guest-preview-actions>
                 <button type="button" data-video-guest-play onClick={()=>{
@@ -8836,14 +9122,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </div>:null}
             <MandalaAutomaticStoryboard
               locale={locale} goal={wish} theme={theme} durationSeconds={duration}
+              suggestedConcept={sharedFilmBrief} selectedDirectionId={activeFilmDirectionId}
               aspect={aspect} styleIndex={quickStyleIndex} pace={speed}
-              personalization={ideasProfileConfirmed?summarizeVideoGoalProfile(ideasProfile,locale):null}
-              selectedTopic={musicMvCreative?.selected?{
-                topicId:selectedConceptTopic?.topicId||"",
-                brief:[selectedConceptTopic?.brief,
-                  musicMvCreative.directions.find(item=>item.id===musicMvCreative.selected)?.storyPitch]
-                  .filter(Boolean).join(" ").slice(0,550)
-              }:selectedConceptTopic}
+              personalization={confirmedFilmPersonalization}
+              selectedTopic={selectedConceptTopic}
               appliedStoryKey={appliedStoryKey} phrases={affirmationLines}
               fiveSceneShots={cinematicPlan?.version===FREE_FILM_PLAN_VERSION?
                 cinematicPlan.shots.map(shot=>({
@@ -8891,24 +9173,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 return false;
               }}
               onChooseQuality={sourceReady=>{
-                if(!sourceReady){
-                  setNotice(locale==="ru"
-                    ?"Пока нет подтверждённых видеокадров для каждого действия этой истории. Сначала подберите соответствующие материалы; случайные пейзажи не используем."
-                    :locale==="es"
-                      ?"Faltan tomas verificadas para las acciones de esta historia. Primero elige imágenes adecuadas; no usamos paisajes al azar."
-                      :"This story still needs footage verified for each depicted action. Choose relevant sources first; unrelated landscapes are not used.");
-                  return;
-                }
-                // Commit the user-selected fifth step in this real touch event.
-                // Source approval remains independent and cannot trigger billing.
+                // Selecting a video type is navigation, not source approval,
+                // a media licence, a render or a credit transaction.
                 flushSync(()=>{
                   setActiveWorkspace("editor");
                   setMontagePanel("promo");
                 });
                 setNotice(sourceReady?"":locale==="ru"?
-                  "Раскадровка пока не применена. Проверьте исходные сцены в дополнительных настройках монтажа перед созданием.":
-                  locale==="es"?"El guion visual aún no se ha aplicado. Revisa las escenas en las opciones avanzadas antes de crear el vídeo.":
-                  "Storyboard not yet applied. Review the source scenes in advanced Montage options before creating the video.");
+                  "Формат выбрать можно, но для создания видео пока не хватает подходящих кадров. Добавьте их в Сюжет → Настройки видео.":
+                  locale==="es"?"Puedes elegir el formato, pero aún falta material acorde al guion. Añádelo en Guion → Ajustes de vídeo.":
+                  "You can choose a video type, but matching footage is still missing. Add relevant media in Story → Video settings.");
                 window.requestAnimationFrame(()=>
                   document.querySelector('[data-video-montage-tools]')?.scrollIntoView({behavior:"smooth",block:"start"}));
               }}

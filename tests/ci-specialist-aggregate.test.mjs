@@ -1,4 +1,4 @@
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance } from '../lib/ci/production-base-impact.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -2357,4 +2357,405 @@ test('additive coaching build registration drops unrelated specialists', () => {
   const proposedNoBuild = structuredClone(proposed);
   proposedNoBuild.scripts.prebuild = 'echo skip';
   assert.equal(classify(proposedNoBuild, changed, noBuild).mode, 'full');
+});
+
+test('disjoint, protected public presentation advances retain successful sensitive PR evidence', async () => {
+  const live='c'.repeat(40), extra='d'.repeat(40);
+  const diff = (names, changes={}) => ({
+    status:'ahead', ahead_by:2, behind_by:0, total_commits:2,
+    base_commit:{sha:BASE}, merge_base_commit:{sha:BASE},
+    commits:[{sha:extra},{sha:live}],
+    files:names.map(filename=>({filename,status:'modified'})), ...changes,
+  });
+  const candidate=['lib/crm/lead-service.mjs'];
+  const allowed=['app/[locale]/about/page.tsx','components/academy-course-picker.tsx'];
+  assert.equal(safeIndependentPublicPresentationAdvance(diff(allowed),BASE,live,candidate),true);
+  const badTargets=[
+    'app/[locale]/page.tsx', 'app/api/coaching/route.ts',
+    'app/[locale]/cabinet/page.tsx', 'app/[locale]/about/layout.tsx',
+    'app/[locale]/auth/page.tsx', 'components/mandala-voice-surface.tsx',
+    'components/nav.tsx', '.github/workflows/hh-pr-core-release.yml',
+    'lib/ci/specialist-aggregate.mjs', 'package-lock.json', 'next.config.ts',
+    'public/images/site-banner.webp',
+  ];
+  for (const path of badTargets)
+    assert.equal(safeIndependentPublicPresentationAdvance(diff([path]),BASE,live,candidate),false,path);
+  for(const candidatePath of [
+    'components/academy-student.tsx', 'app/[locale]/about/page.tsx',
+    '.github/workflows/new.yml', 'lib/ci/specialist-aggregate.mjs',
+    'package.json', 'supabase/migrations/1.sql',
+  ]) assert.equal(safeIndependentPublicPresentationAdvance(
+    diff(allowed),BASE,live,[candidatePath]),false,candidatePath);
+  for(const broken of [
+    {status:'diverged'}, {behind_by:1}, {commits:[{sha:live}]},
+    {files:[{filename:allowed[0],status:'renamed',previous_filename:'app/old.tsx'}]},
+    {files:[{filename:allowed[0],status:'deleted'}]},
+    {files:[{filename:allowed[0],status:'modified'},{filename:allowed[0],status:'modified'}]},
+    {files:Array(100).fill({filename:allowed[0],status:'modified'})},
+  ]) assert.equal(safeIndependentPublicPresentationAdvance(
+    diff(allowed,broken),BASE,live,candidate),false,'invalid protected-base evidence');
+
+  const sources={base:new Map([[path,yaml]]),current:new Map([[path,yaml]]),
+    changedRows:[{filename:candidate[0],status:'modified'}]};
+  const api={pr:async()=>({...pr(),base:{...pr().base,sha:live},mergeable:true}),
+    target:async()=>live,compare:async()=>diff(allowed),
+    runs:async()=>[run()],jobs:async()=>[{name:'test',status:'completed',conclusion:'success'}]};
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  assert.deepEqual((await verify(api,ctx,sources,{maxWaitMs:0})).expected,[path]);
+  assert.deepEqual((await verify({...api,pr:async()=>({...pr(),
+    base:{...pr().base,sha:live},mergeable:null,mergeable_state:'unknown'})},
+    ctx,sources,{maxWaitMs:0})).expected,[path],
+    'fully proven disjoint public page drift can finish CI while GitHub recalculates mergeability');
+  await assert.rejects(()=>verify({...api,compare:async()=>diff(['app/[locale]/about/layout.tsx'])},
+    ctx,sources,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);
+});
+
+test('unrelated protected public product advances do not invalidate a long-running green PR',async()=>{
+  const live='c'.repeat(40);
+  const productionFiles=[
+    'app/[locale]/shamanica/page.tsx',
+    'app/[locale]/shamanica/results/page.tsx',
+    'components/shamanica-mobile.module.css',
+    'components/shamanica-mobile.tsx',
+    'components/unified-mobile-dock.tsx',
+    'lib/shamanica-recommendations.mjs',
+    'lib/unified-mobile-dock.mjs',
+    'tests/holistic-master-unified-dock.test.mjs',
+    'tests/holistic-study-academy.test.mjs',
+    'tests/shamanica-mobile.test.mjs',
+  ];
+  const candidate=[
+    'components/my-coach-live-dialogue.jsx','lib/coaching/groq-coach-provider.mjs',
+    'lib/personal-coaching/coach-barge-in.mjs','tests/my-coach-barge-in.test.mjs',
+  ];
+  const compare=(filenames,override={})=>({
+    status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:BASE},merge_base_commit:{sha:BASE},
+    commits:[{sha:live}],files:filenames.map(filename=>({filename,status:'modified'})),
+    ...override,
+  });
+  assert.equal(safeDisjointPublicSourceAdvance(compare(productionFiles),BASE,live,candidate),true,
+    'Real #5030 Shamanica advancement must not erase valid Core/coach checks');
+  for(const [reason,bad] of [
+    ['actual file overlap',compare([candidate[0]])],
+    ['private API',compare(['app/api/holistic-support/voice/route.js'])],
+    ['security policy',compare(['lib/security/authorization.mjs'])],
+    ['changing CI gate',compare(['.github/workflows/hh-pr-core-release.yml'])],
+    ['dependency manifest',compare(['package-lock.json'])],
+    ['user profile',compare(['components/app/client-profile.tsx'])],
+    ['feature intersection',compare(['components/coaching-live-dialogue.jsx'])],
+    ['renamed file',compare(productionFiles,[{}])],
+    ['divergent base',{...compare(productionFiles),status:'diverged'}],
+    ['incomplete commit evidence',{...compare(productionFiles),commits:[]}],
+    ['incomplete file evidence',{...compare(productionFiles),files:[]}],
+  ]) {
+    const d=reason==='renamed file'?compare(productionFiles,{files:[
+      {filename:productionFiles[0],status:'renamed',previous_filename:'app/old.tsx'},
+    ]}):bad;
+    assert.equal(safeDisjointPublicSourceAdvance(d,BASE,live,candidate),false,reason);
+  }
+  for(const forbiddenCandidate of [
+    '.github/workflows/hh-pr-core-release.yml', 'package.json',
+    'lib/ci/required-gate-policy.mjs','supabase/migrations/1.sql',
+  ]) assert.equal(safeDisjointPublicSourceAdvance(
+    compare(productionFiles),BASE,live,[forbiddenCandidate]),false,forbiddenCandidate);
+  const changedRows=[{filename:'lib/crm/leads.js',status:'modified'}];
+  const api={
+    pr:async()=>({...pr(),base:{...pr().base,sha:live},mergeable:true}),
+    target:async()=>live,
+    compare:async()=>compare(productionFiles),
+    runs:async()=>[run()],
+    jobs:async()=>[{name:'test',status:'completed',conclusion:'success'}],
+  };
+  const sources={base:new Map([[path,yaml]]),current:new Map([[path,yaml]]),changedRows};
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  assert.deepEqual((await verify(api,ctx,sources,{maxWaitMs:0})).expected,[path]);
+  const unknown={...api,pr:async()=>({...pr(),
+    base:{...pr().base,sha:live},mergeable:null,mergeable_state:'unknown'})};
+  assert.deepEqual((await verify(unknown,ctx,sources,{maxWaitMs:0})).expected,[path],
+    'GitHub mergeability recalculation is not a failed product check');
+  for(const prState of [
+    {mergeable:false,mergeable_state:'dirty'},
+    {mergeable:null,mergeable_state:'dirty'},
+  ]) await assert.rejects(()=>verify({...api,pr:async()=>({...pr(),
+    base:{...pr().base,sha:live},...prState})},ctx,sources,{maxWaitMs:0}),
+    /MERGE_CONFLICT/, 'confirmed dirty merge remains blocked');
+  await assert.rejects(()=>verify({...api,compare:async()=>compare(
+    ['app/api/holistic-support/voice/route.js'])},ctx,sources,{maxWaitMs:0}),
+    /PRODUCTION_BASE_CHANGED/);
+});
+
+test('stale protected BASE with disjoint public image advance reuses green Specialist after candidate deletion',async()=>{
+ const current='c'.repeat(40);
+ const source={base:new Map([[path,yaml]]),current:new Map([[path,yaml]]),
+   changedRows:[{filename:'lib/crm/retired-route.mjs',status:'D'}]};
+ const compare={status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+   base_commit:{sha:BASE},merge_base_commit:{sha:BASE},
+   commits:[{sha:current}],files:[{filename:'public/images/site-card.webp',status:'added'}]};
+ const api={pr:async()=>({...pr(),base:{...pr().base,sha:current},
+   mergeable:null,mergeable_state:'unknown'}),
+   target:async()=>current,compare:async()=>compare,
+   runs:async()=>[run()],jobs:async()=>[{name:'test',status:'completed',conclusion:'success'}]};
+ const ctx={repo,number:27,head:SHA,base:BASE};
+ assert.deepEqual((await verify(api,ctx,source,{maxWaitMs:0})).expected,[path]);
+ await assert.rejects(()=>verify({...api,compare:async()=>({...compare,
+   files:[{filename:'lib/crm/retired-route.mjs',status:'modified'}]})},
+   ctx,source,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);
+});
+
+test('trusted policy plus independently proven production changes may be composed without another Core wave',async()=>{
+ const current='c'.repeat(40), prior='d'.repeat(40), base=BASE;
+ const safe=[
+   'scripts/ci-specialist-aggregate.mjs',
+   'tests/ci-specialist-aggregate.test.mjs',
+   'components/shamanica-mobile.tsx',
+   'lib/shamanica-recommendations.mjs',
+   'docs/guides/wellbeing-guide.md',
+   'public/images/new-production-thumb.webp',
+ ];
+ const diff=(files,other={})=>({
+   status:'ahead',ahead_by:2,behind_by:0,total_commits:2,
+   base_commit:{sha:base},merge_base_commit:{sha:base},
+   commits:[{sha:prior},{sha:current}],
+   files:files.map(filename=>({filename,status:'modified'})),...other,
+ });
+ const candidate=['components/my-coach-live-dialogue.jsx',
+   'lib/coaching/groq-coach-provider.mjs'];
+ assert.equal(safeTrustedPolicyAdvance(diff(safe),base,current,candidate),true,
+   'CI policy then unrelated app/media/docs should not discard successful Core');
+ for(const forbidden of [
+   'app/api/auth/route.js','package-lock.json',
+   'supabase/migrations/20261118.sql',
+   '.github/workflows/hh-pr-core-release.yml',
+   'components/my-coach-live-dialogue.jsx',
+   'components/coaching-live-dialogue.jsx',
+   'lib/ci/required-gate-policy.mjs',
+   'docs/operations/CI_RELEASE_POLICY.md',
+   'docs/guides/production-release-policy.md',
+ ]){
+   assert.equal(safeTrustedPolicyAdvance(diff([...safe,forbidden]),base,current,candidate),
+     false,forbidden);
+ }
+ for(const broken of [
+   {status:'diverged'},
+   {behind_by:1},
+   {commits:[{sha:current}]},
+   {merge_base_commit:{sha:prior}},
+   {files:[{filename:'scripts/ci-specialist-aggregate.mjs',status:'removed'}]},
+   {files:[{filename:'components/shamanica-mobile.tsx',status:'renamed',previous_filename:'components/old.tsx'}]},
+   {files:[{filename:safe[0],status:'modified'},{filename:safe[0],status:'modified'}]},
+   {files:Array(100).fill({filename:safe[0],status:'modified'})},
+ ]){
+   assert.equal(safeTrustedPolicyAdvance(diff(safe,broken),base,current,candidate),false,
+     'unverified or unsafe compound compare');
+ }
+ assert.equal(safeTrustedPolicyAdvance(diff(safe.slice(2)),base,current,candidate),false,
+   'without policy change there is no trusted policy exception');
+ assert.equal(safeTrustedPolicyAdvance(diff(safe),base,current,
+   [...candidate,'scripts/ci-specialist-aggregate.mjs']),false,'candidate cannot certify itself');
+
+ const changedRows=[{filename:candidate[0],status:'M'}];
+ let used=false;
+ const api={target:async()=>current,compare:async()=>diff(safe)};
+ const result=await revalidateAfterTrustedPolicyAdvance(api,
+   {repo,number:27,head:SHA,base},{changedRows},{
+     loadPolicy:async sha=>({verify:async (_api,ctx,files,options)=>{
+       assert.equal(sha,current);
+       assert.equal(options.trustedPolicyBaseSha,current);
+       assert.equal(ctx.head,SHA);
+       assert.equal(files.changedRows,changedRows);
+       used=true;return {risk:'STRICT',expected:[],executed:[],advisory:{}};
+     }})
+   });
+ assert.equal(used,true);
+ assert.equal(result.policyRevalidatedAgainst,current);
+});
+
+test('real CI policy and disjoint dock browser QA change preserve successful sensitive Core',()=>{
+ const base=BASE,latest='c'.repeat(40),intermediate='d'.repeat(40);
+ const qa='scripts/verify-unified-six-dock-browser.mjs';
+ const compare=(filenames,opts={})=>({
+   status:'ahead',ahead_by:2,behind_by:0,total_commits:2,
+   base_commit:{sha:base},merge_base_commit:{sha:base},
+   commits:[{sha:intermediate},{sha:latest}],
+   files:filenames.map(filename=>({filename,status:'modified'})),...opts,
+ });
+ const target=[
+   'scripts/ci-specialist-aggregate.mjs',
+   'tests/ci-specialist-aggregate.test.mjs',
+   'tests/ci-specialist-wait.test.mjs',
+   qa,
+ ];
+ const candidates=[
+   'app/api/holistic-agent/turn/route.js',
+   'components/mandala-video-personalization.tsx',
+   'lib/mandala/dot-story-photo-fallback.mjs',
+   'app/[locale]/services/page.tsx',
+ ];
+ for(const changed of candidates) {
+   assert.equal(safeTrustedPolicyAdvance(compare(target),base,latest,[changed]),true,
+     'real CI-policy + dock-browser production delta must not restart #5025/#5036/#5034/#5041');
+   assert.equal(safeIndependentQaAdvance(compare([qa]),base,latest,[changed]),true,
+     'pure independent browser QA should not change valid Core');
+ }
+ for(const bad of [
+   'scripts/verify-affirmation-voice-browser.mjs',
+   'scripts/verify-public-services-production.mjs',
+   'scripts/verify-admin-auth-browser.mjs',
+   'scripts/ci-pr-readiness.mjs',
+   '.github/workflows/hh-pr-core-release.yml',
+   'app/api/auth/route.js',
+ ]) {
+   assert.equal(safeTrustedPolicyAdvance(compare([...target.slice(0,3),bad]),base,latest,
+     candidates),false,bad);
+   assert.equal(safeIndependentQaAdvance(compare([bad]),base,latest,candidates),false,bad);
+ }
+ assert.equal(safeTrustedPolicyAdvance(compare(target),base,latest,[qa]),false,
+   'changed browser QA cannot certify a candidate changing the same file');
+ assert.equal(safeIndependentQaAdvance(compare([qa],{status:'diverged'}),base,latest,candidates),false);
+ assert.equal(safeIndependentQaAdvance(compare([qa],{files:[{
+   filename:qa,status:'removed'}]}),base,latest,candidates),false);
+ assert.equal(safeIndependentQaAdvance(compare([qa],{commits:[]}),base,latest,candidates),false);
+ assert.equal(safeIndependentQaAdvance(compare([qa],{files:[
+   {filename:qa,status:'modified'},{filename:qa,status:'modified'}]}),base,latest,candidates),false);
+});
+
+test('revalidated protected policy follows a second safe target promotion without another Core wave',async()=>{
+  const first='c'.repeat(40),second='d'.repeat(40);
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  const changedRows=[{filename:'components/my-coach-live-dialogue.jsx',status:'M'}];
+  const files={changedRows};
+  const policy=['scripts/ci-specialist-aggregate.mjs'];
+  const qa=['scripts/verify-unified-six-dock-browser.mjs'];
+  const diff=target=>({status:'ahead',ahead_by:target===first?1:2,
+    behind_by:0,total_commits:target===first?1:2,
+    base_commit:{sha:BASE},merge_base_commit:{sha:BASE},
+    commits:target===first?[{sha:first}]:[{sha:first},{sha:second}],
+    files:[...policy,...(target===first?[]:qa)].map(filename=>({filename,status:'modified'}))});
+  let current=first,compares=[],loaded=[],verified=[],cleaned=[];
+  const api={
+    target:async()=>current,
+    compare:async(_,target)=>{compares.push(target);return diff(target);},
+  };
+  const result=await revalidateAfterTrustedPolicyAdvance(api,ctx,files,{
+    loadPolicy:async target=>{
+      loaded.push(target);
+      return {
+        safeTrustedPolicyAdvance:(d,base,live,changed)=>{
+          assert.equal(base,BASE);assert.equal(live,target);
+          assert.deepEqual(changed,[changedRows[0].filename]);
+          return d.status==='ahead'&&d.commits.at(-1).sha===target&&
+            d.files.every(f=>[...policy,...qa].includes(f.filename));
+        },
+        verify:async(_api,c,s,o)=>{
+          assert.equal(c.head,SHA);assert.equal(s,files);
+          assert.equal(o.trustedPolicyBaseSha,target);
+          verified.push(target);
+          if(target===first){current=second;throw Error(
+            'PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');}
+          return {risk:'STRICT',expected:[],executed:[],advisory:{}};
+        },
+        cleanup:()=>cleaned.push(target),
+      };
+    },
+  });
+  assert.deepEqual(loaded,[first,second]);
+  assert.deepEqual(verified,[first,second]);
+  assert.deepEqual(cleaned,[first,second]);
+  assert.deepEqual(compares,[first,second]);
+  assert.equal(result.policyRevalidatedAgainst,second);
+  assert.equal(result.policyRevalidationAttempts,2);
+});
+test('newly protected policy cannot waive unsafe mixed drift or changed PR head',async()=>{
+  const target='c'.repeat(40),ctx={repo,number:27,head:SHA,base:BASE};
+  const changedRows=[{filename:'components/my-coach-live-dialogue.jsx',status:'M'}];
+  const files={changedRows};
+  const diff=filename=>({
+    status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:BASE},merge_base_commit:{sha:BASE},
+    commits:[{sha:target}],files:[
+      {filename:'scripts/ci-specialist-aggregate.mjs',status:'modified'},
+      {filename,status:'modified'},
+    ],
+  });
+  const unsafe={target:async()=>target,compare:async()=>diff('app/api/auth/route.js')};
+  let verified=false,cleanup=false;
+  await assert.rejects(()=>revalidateAfterTrustedPolicyAdvance(unsafe,ctx,files,{
+    loadPolicy:async()=>({
+      safeTrustedPolicyAdvance:()=>false,
+      verify:async()=>{verified=true;throw Error('must not validate');},
+      cleanup:()=>{cleanup=true;},
+    }),
+  }),/PRODUCTION_BASE_CHANGED/);
+  assert.equal(verified,false);
+  assert.equal(cleanup,true);
+  const safe={...unsafe,compare:async()=>diff('scripts/verify-unified-six-dock-browser.mjs')};
+  let calls=0;
+  await assert.rejects(()=>revalidateAfterTrustedPolicyAdvance(safe,ctx,files,{
+    loadPolicy:async()=>({
+      safeTrustedPolicyAdvance:()=>true,
+      verify:async()=>{calls++;throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PR_HEAD_CHANGED');},
+    }),
+  }),/PR_HEAD_CHANGED/);
+  assert.equal(calls,1,'source HEAD errors never retry');
+});
+
+test('real #5031: independent Telegram CRM TEST-only production promotion keeps Mandala Core green',async()=>{
+  const live='c'.repeat(40);
+  const delta={status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:BASE},merge_base_commit:{sha:BASE},
+    commits:[{sha:live}],files:[{filename:'tests/crm-telegram-cabinet-entry.test.mjs',status:'modified'}]};
+  const mandala=[
+    'components/mandala-auto-video-director.tsx',
+    'components/mandala-video-personalization.tsx',
+    'scripts/verify-affirmation-voice-browser.mjs',
+    'tests/mandala-video-goal-mobile-hierarchy.test.mjs',
+  ];
+  assert.equal(safeIndependentDomainTestAdvance(delta,BASE,live,mandala),true,
+    'unrelated CRM test does not change video-editor runtime or its existing required checks');
+  assert.equal(safeIndependentDomainTestAdvance(delta,BASE,live,[
+    'lib/crm/messenger-provider.js',
+    'tests/crm-telegram-companion-photo-fallback.test.mjs',
+  ]),false,'#5071 touched CRM/Telegram and must not reuse stale CRM test results');
+  for(const [label,row] of [
+    ['candidate overlap',['tests/crm-telegram-cabinet-entry.test.mjs']],
+    ['shared runtime',['lib/shared/formatters.js']],
+    ['same target domain',['lib/crm/telegram-lead-capture.js']],
+  ]) assert.equal(safeIndependentDomainTestAdvance(delta,BASE,live,row),false,label);
+  for(const path of [
+    'tests/ci-specialist-aggregate.test.mjs',
+    'tests/required-gate-policy.test.mjs',
+    'tests/auth-cabinet.test.mjs',
+    'tests/crm-telegram-privacy.test.mjs',
+    'app/api/auth/route.js',
+    'supabase/migrations/20261119000.sql',
+  ]) assert.equal(safeIndependentDomainTestAdvance({...delta,files:[
+    {filename:path,status:'modified'}]},BASE,live,mandala),false,path);
+  assert.equal(safeIndependentDomainTestAdvance({...delta,status:'diverged'},BASE,live,mandala),false);
+  assert.equal(safeIndependentDomainTestAdvance({...delta,commits:[]},BASE,live,mandala),false);
+  assert.equal(safeIndependentDomainTestAdvance({...delta,files:[
+    {filename:'tests/crm-telegram-cabinet-entry.test.mjs',status:'removed'}
+  ]},BASE,live,mandala),false);
+  assert.equal(safeIndependentDomainTestAdvance({...delta,files:[
+    {filename:'tests/crm-telegram-cabinet-entry.test.mjs',status:'modified'},
+    {filename:'tests/crm-telegram-cabinet-entry.test.mjs',status:'modified'},
+  ]},BASE,live,mandala),false);
+});
+test('Specialist still requires genuine exact-HEAD jobs across isolated domain TEST-only target moves',async()=>{
+  const live='c'.repeat(40);
+  const changedRows=[{filename:'lib/crm/a.js',status:'M'}];
+  const sources={base:new Map([[path,yaml]]),current:new Map([[path,yaml]]),changedRows};
+  const diff={status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:BASE},merge_base_commit:{sha:BASE},
+    commits:[{sha:live}],files:[{filename:'tests/mandala-auto-video-director-ui.test.mjs',status:'modified'}]};
+  const api={pr:async()=>({...pr(),mergeable:true,base:{...pr().base,sha:live}}),
+    target:async()=>live,compare:async()=>diff,
+    runs:async()=>[run()],jobs:async()=>[{name:'test',status:'completed',conclusion:'success'}]};
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  assert.deepEqual((await verify(api,ctx,sources,{maxWaitMs:0})).expected,[path]);
+  await assert.rejects(()=>verify({...api,runs:async()=>[run({conclusion:'failure'})]},
+    ctx,sources,{maxWaitMs:0}),/SPECIALIST_FAILED/);
+  await assert.rejects(()=>verify({...api,compare:async()=>({...diff,files:[
+    {filename:'tests/crm-telegram-cabinet-entry.test.mjs',status:'modified'}]})},
+    ctx,sources,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);
 });

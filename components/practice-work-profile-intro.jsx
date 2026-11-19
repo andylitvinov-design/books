@@ -49,8 +49,6 @@ export default function PracticeWorkProfileIntro({locale,onAction,activeCount,re
   const language=['ru','es'].includes(locale)?locale:'en'
   const t=COPY[language]
   const lifeLocale=language==='es'?'en':language
-  const [showVideo,setShowVideo]=useState(false)
-  const presentation=showVideo?profilePresentationForLocale(language):null
   const hasServices=/^[0-9]+$/.test(String(activeCount))
   const hasRequests=/^[0-9]+$/.test(String(requestCount))&&Number(requestCount)>0
   return <section className={styles.hub} data-profile-hub-tabs data-profile-work-hub data-profile-active="today">
@@ -97,8 +95,9 @@ export default function PracticeWorkProfileIntro({locale,onAction,activeCount,re
         <span className={styles.serviceIcon}><Leaf size={28} aria-hidden="true"/></span>
         <span className={styles.serviceText}>
           <strong>{t.services}</strong>
-          <small>{t.servicesHint}{hasServices?' · '+activeCount+' '+t.active:''}</small>
+          <small>{t.servicesHint}</small>
         </span>
+        {hasServices&&<span className={styles.activeCount} aria-label={activeCount+' '+t.active}>{activeCount} {t.active}</span>}
         <span className={styles.heroArrow}><ArrowRight size={24} aria-hidden="true"/></span>
       </button>
     </section>
@@ -126,6 +125,16 @@ export default function PracticeWorkProfileIntro({locale,onAction,activeCount,re
       <ArrowRight size={22} aria-hidden="true"/>
     </button>
 
+  </section>
+}
+
+// The presentation remains available without mounting the media player on first paint.
+export function PracticeWorkProfilePresentation({locale}){
+  const language=['ru','es'].includes(locale)?locale:'en'
+  const t=COPY[language]
+  const [showVideo,setShowVideo]=useState(false)
+  const presentation=showVideo?profilePresentationForLocale(language):null
+  return <>
     <div className={styles.presentation} data-work-presentation-disclosure>
       <button type="button" onClick={()=>setShowVideo(value=>!value)}
         aria-expanded={showVideo} aria-controls="work-profile-presentation"
@@ -142,5 +151,5 @@ export default function PracticeWorkProfileIntro({locale,onAction,activeCount,re
           </video>}
       </div>}
     </div>
-  </section>
+  </>
 }

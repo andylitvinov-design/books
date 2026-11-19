@@ -1,6 +1,7 @@
 import {telegramSupportUnavailable} from '@/lib/crm/telegram-support-quiz.mjs'
 import { NextResponse,after } from 'next/server'
 import { getAppConfig } from '@/lib/app/config'
+import {AppError} from '@/lib/assessments/contracts'
 import {channelTransportReady} from '@/lib/crm/messenger-policy'
 import {consumeRate} from '@/lib/app/database'
 import { PRIVATE_HEADERS, safeError } from '@/lib/app/http'
@@ -18,6 +19,7 @@ import { receiveOwnerTelegramVideoCrmFallback } from '@/lib/practitioners/owner-
 import {processTelegramBusinessConversation} from '@/lib/crm/telegram-business-service'
 import {captureTelegramBotLead,captureTelegramBusinessLead} from '@/lib/crm/telegram-lead-capture'
 import {captureTelegramLeadBestEffort} from '@/lib/crm/telegram-lead-capture-policy.mjs'
+import {captureWhatsAppFirstContact,recordWhatsAppInboundReceipt} from '@/lib/crm/whatsapp-lead-capture'
 import {telegramBusinessMessageFromUpdate} from '@/lib/assist/telegram-business-request.mjs'
 import {parseHiTelegramRating} from '@/lib/holistic-support/hi-learning-policy.mjs'
 import {insertHiLearningQuality} from '@/lib/holistic-support/hi-learning-store'
@@ -195,6 +197,10 @@ export async function POST(request,{params}){
     }
 
     const updates=normalizeMessengerUpdates(provider,body)
+    // Never silence a valid client reply because the independent, encrypted
+    // first-contact CRM receipt has a temporary persistence failure. Preserve
+    // Telegram's retry by returning 503 AFTER normal dialogue processing.
+    let botLeadCapturePendingRetry=false
     // A previously registered bot may subscribe to 'message' only. Upgrade
     // the SAME already-owned signed webhook before its next inline prompt.
     // Never replace a foreign webhook or drop Telegram's pending updates.
@@ -204,13 +210,34 @@ export async function POST(request,{params}){
     }
     for(const event of updates){
       if(provider==='whatsapp'){
+        let waCaptureSuppressed=false
+        // The same signed Meta message must first create a CRM contact and
+        // replyable thread even when the client has not chosen a service or
+        // consented to AI diagnostics. Never store unconsented message text.
+        if(event.type==='incoming'){
+          try{
+            const first=await captureWhatsAppFirstContact(event,config)
+            waCaptureSuppressed=first.suppressed===true
+          }catch{
+            console.error('HH_CRM_WA_FIRST_CONTACT_UNAVAILABLE')
+            throw new AppError('WHATSAPP_CRM_CONTACT_UNCONFIRMED',503)
+          }
+        }
         const proof=await processWhatsAppAccountLink(event,config)
-        if(proof.handled||!channelTransportReady('whatsapp'))continue
+        if(proof.handled||!channelTransportReady('whatsapp')){
+          if(proof.handled&&event.type==='incoming'&&!waCaptureSuppressed)
+            await recordWhatsAppInboundReceipt(event,config)
+          continue
+        }
         if(event.type==='incoming'){
           // Reuse the verified public Secretary catalogue, not a second AI
           // provider. Never intercept consent, STOP or an active private intake.
           const secretary=await processWhatsAppSecretary(event,config)
           if(secretary.handled){
+            // Each accepted WhatsApp update is reflected in the operator CRM,
+            // but outside explicit intake only a neutral receipt is retained.
+            if(!waCaptureSuppressed)
+              await recordWhatsAppInboundReceipt(event,config)
             if(secretary.reply){
               try{
                 await consumeRate(config,{op:'hh-wa-secretary-chat',
@@ -244,6 +271,11 @@ export async function POST(request,{params}){
                 ?'Aún no puedo confirmar la solicitud. Envía /retry_request.'
                 :'I cannot confirm your request yet. Send /retry_request.'
           }
+          // If intake stored an explicitly consented message, the original
+          // provider event already exists and this idempotent receipt is a no-op.
+          // Otherwise retain a neutral touchpoint, never personal text/media.
+          if(!waCaptureSuppressed)
+            await recordWhatsAppInboundReceipt(event,config)
           if(intake.handled&&intake.reply){
             // Consent/CRM state are committed before one reply attempt.
             // Uncertain provider outcomes must not automatically repeat.
@@ -251,7 +283,8 @@ export async function POST(request,{params}){
               to:intake.to,text:intake.reply,keyboard:intake.keyboard,locale:intake.locale
             })}catch{console.error('HH_CRM_WA_PROMPT_SEND_UNCONFIRMED')}
           }
-          // No contact is created from an unconsented generic message.
+          // Every verified, connected inbound has a contact and at least
+          // a neutral message receipt, independent of the chosen scenario.
           continue
         }
       }
@@ -264,10 +297,16 @@ export async function POST(request,{params}){
         }
         // A signed first customer message is visible in CRM even when the
         // voluntary diagnostic has not yet reached /agree. No raw text is stored.
-        if(event.type==='incoming'&&!event.callbackId)
-          await captureTelegramLeadBestEffort(
-            ()=>captureTelegramBotLead(event,config),
-            ()=>console.error('HH_TG_BOT_LEAD_CAPTURE_UNAVAILABLE'))
+        // The customer must appear in the CRM inbox before any bot reply.
+        // On a transient persistence failure Telegram retries the signed
+        // update; do not return a false 200 success and silently lose a lead.
+        if(event.type==='incoming'&&!event.callbackId){
+          try{await captureTelegramBotLead(event,config)}
+          catch{
+            console.error('HH_TG_BOT_LEAD_CAPTURE_UNAVAILABLE')
+            botLeadCapturePendingRetry=true
+          }
+        }
         const companion=await processTelegramCompanion(event,config)
         if(companion.handled){
           // Client-initiated bootstrap of native Telegram Menu. Never do this
@@ -311,11 +350,15 @@ export async function POST(request,{params}){
           }
           continue
         }
-        const diagnosticEvent=companion.supportStart
-          ?{...event,rawText:companion.supportStart,inlineAction:null}
-          :companion.reviewRequested
-            ?{...event,rawText:'/start hhreview_'+companion.reviewLocale,inlineAction:null}
-            :event
+        const diagnosticEvent=companion.assistantStart
+          ?{...event,rawText:companion.assistantStart,inlineAction:null}
+          :companion.businessStart
+            ?{...event,rawText:companion.businessStart,inlineAction:null}
+            :companion.supportStart
+              ?{...event,rawText:companion.supportStart,inlineAction:null}
+              :companion.reviewRequested
+                ?{...event,rawText:'/start hhreview_'+companion.reviewLocale,inlineAction:null}
+                :event
         // The V3 interviewer reuses this signed CRM bot and takes priority ONLY
         // for explicitly started or already active V3 diagnostic sessions.
         const aiIntake=await processTelegramAiV3(diagnosticEvent,config)
@@ -401,6 +444,27 @@ export async function POST(request,{params}){
           })}catch{console.error('HH_CRM_TG_SUPPORT_FALLBACK_NOT_CONFIRMED')}
           continue
         }
+        // A selected Menu journey must not disappear into generic CRM handling.
+        // If V3 is unavailable, only verified first-party links are offered.
+        if(companion.assistantStart||companion.businessStart){
+          const lang=companion.assistantLocale||companion.businessLocale||'en'
+          const isBusiness=Boolean(companion.businessStart)
+          if(event.callbackId){
+            try{await acknowledgeTelegramInlineCallback({
+              callbackId:event.callbackId,to:event.userId,
+              messageId:event.callbackMessageId})}catch{}
+          }
+          const text=isBusiness
+            ?(lang==='ru'?'💼 Бизнес-услуги доступны здесь: ':'💼 Business consulting is here: ')+
+              'https://holistichouse.vercel.app/'+lang+'/services/business-consulting'
+            :(lang==='ru'?'💬 Диалог с Ali сейчас недоступен в Telegram. Откройте чат на сайте: ':
+              '💬 Ali chat is temporarily unavailable in Telegram. Open it on the website: ')+
+              'https://holistichouse.vercel.app/'+lang+'/app/messages?section=ai'
+          try{await sendTelegramCompanionMessage({
+            to:String(event.userId),text,locale:lang,
+          })}catch{console.error('HH_CRM_TG_MENU_HANDOFF_FALLBACK_UNCONFIRMED')}
+          continue
+        }
         const intake=await processTelegramDiagnostic(diagnosticEvent,config)
         if(intake.handled){
           if(event.callbackId){
@@ -425,6 +489,21 @@ export async function POST(request,{params}){
           }
           continue
         }
+        if(companion.reviewRequested){
+          if(event.callbackId){
+            try{await acknowledgeTelegramInlineCallback({
+              callbackId:event.callbackId,to:event.userId,
+              messageId:event.callbackMessageId})}catch{}
+          }
+          const lang=companion.reviewLocale||'en'
+          try{await sendTelegramCompanionMessage({
+            to:String(event.userId),locale:lang,
+            text:(lang==='ru'?'🧭 Бесплатная диагностика доступна здесь: ':
+              '🧭 Free personal review is available here: ')+
+              'https://holistichouse.vercel.app/'+lang+'/services/free-situation-review',
+          })}catch{console.error('HH_CRM_TG_DIAGNOSTIC_FALLBACK_UNCONFIRMED')}
+          continue
+        }
         // Diagnostic buttons must never fall through to ordinary CRM ingestion.
         if(event.callbackId)continue
         // Never turn untranscribed private audio into a fake text CRM lead.
@@ -432,6 +511,10 @@ export async function POST(request,{params}){
       }
       await ingestMessengerUpdate(provider,event,config)
     }
+    // If the contact write failed, Telegram retries this signed update. The
+    // committed Companion/V3 stages and provider event hashes prevent a
+    // duplicate bot response; a later attempt can still create the CRM lead.
+    if(botLeadCapturePendingRetry)throw new AppError('TELEGRAM_CRM_CONTACT_UNCONFIRMED',503)
     return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
   }catch(error){
     const safe=safeError(error)

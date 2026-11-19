@@ -335,3 +335,46 @@
 .screen .moreDisclosure .offerCard strong{font-size:11px}
 }
 @media(prefers-reduced-motion:reduce){.createDisclosure>summary>svg:last-child,.moreDisclosure>summary>svg:last-child{transition:none}}
+
+/* Approved mock fidelity: two account cards and four immediate creation choices. */
+.screen .accountNav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin:15px 0 16px}
+.screen .accountTile{display:flex;align-items:center;gap:13px;min-height:78px;padding:11px 14px;border:1px solid #e2ece3;border-radius:22px;background:linear-gradient(100deg,#f1faf3,#fffdfa);box-shadow:0 6px 16px #173b2d14;color:#104538;text-decoration:none}
+.screen .accountIcon{display:grid;place-items:center;flex:none;width:49px;height:49px;border-radius:17px;background:#e6f4e9;color:#075e4b}
+.screen .accountTile>span:nth-child(2){display:grid;gap:3px;min-width:0}
+.screen .accountTile strong{font-size:clamp(15px,3.7vw,20px);font-weight:830;line-height:1.1}
+.screen .accountTile small{font-size:clamp(11px,2.8vw,14px);line-height:1.28;color:#597168}
+.screen .createActions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:0 0 13px}
+.screen .createAction{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:104px;padding:10px 4px;border:1px solid #e6e5df;border-radius:22px;background:#fffdfa;color:#164c42;box-shadow:0 7px 17px #1b382a19;text-align:center;font:inherit}
+.screen .createAction strong{font-size:clamp(12px,2.9vw,16px);font-weight:780;line-height:1.2}
+.screen .createAction svg{flex:none;color:#0d6653}
+.screen .createActionPrimary{background:linear-gradient(145deg,#10af8a,#007660);border-color:#39a992;color:#fff}
+.screen .createActionPrimary svg{color:#fff}
+.screen .extraCreateChoices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:-1px 0 15px}
+.screen .extraCreateChoices[hidden]{display:none}
+.screen .extraCreateChoices .quickTile{min-height:72px}
+.screen .moreDisclosure .identity{margin:0 13px 13px}
+@media(max-width:590px){
+.screen .accountNav{gap:8px;margin:12px 0}
+.screen .accountTile{gap:7px;min-height:68px;padding:8px 9px;border-radius:19px}
+.screen .accountIcon{width:39px;height:39px;border-radius:14px}
+.screen .accountIcon svg{width:26px;height:26px}
+.screen .accountTile strong{font-size:clamp(14px,3.7vw,17px)}
+.screen .accountTile small{font-size:clamp(10px,2.6vw,12px)}
+.screen .createActions{gap:6px}
+.screen .createAction{gap:7px;min-height:93px;padding:8px 3px;border-radius:17px}
+.screen .createAction svg{width:24px;height:24px}
+.screen .createAction strong{font-size:clamp(11px,2.9vw,14px)}
+.screen .extraCreateChoices{gap:6px}
+.screen .extraCreateChoices .quickTile{min-height:66px}
+}
+@media(max-width:360px){
+.screen .accountNav{gap:6px}
+.screen .accountTile{gap:5px;padding:6px}
+.screen .accountIcon{width:33px;height:35px}
+.screen .accountIcon svg{width:23px;height:23px}
+.screen .accountTile strong{font-size:12.5px}
+.screen .accountTile small{font-size:10px}
+.screen .createAction{min-height:92px;padding:7px 2px;border-radius:14px}
+.screen .createAction strong{font-size:10.5px}
+.screen .extraCreateChoices{grid-template-columns:repeat(3,minmax(0,1fr))}
+}

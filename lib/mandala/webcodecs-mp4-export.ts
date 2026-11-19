@@ -90,13 +90,27 @@ async function prepareLocalAudio(audio:BrowserMovieAudio,seconds:number):Promise
       file=await response.blob();
     }else file=entry.file;
     if(file.size<44||file.size>15*1024*1024)throw new Error("audio_size_invalid");
-    const decoded=await offline.decodeAudioData(await file.arrayBuffer());
-    if(!decoded.length||!Number.isFinite(decoded.duration)||decoded.duration>180)
+    let decoded=await offline.decodeAudioData(await file.arrayBuffer());
+    // Long, otherwise valid classical/curated MP3 music is not corrupt audio.
+    // The former 180-second ceiling rejected it before producing any MP4.
+    if(!decoded.length||!Number.isFinite(decoded.duration)||decoded.duration<=0)
       throw new Error("audio_decode_invalid");
     const startSeconds=Number.isFinite(entry.startSeconds)
       ?Math.max(0,Math.min(seconds-.1,entry.startSeconds||0)):0;
+    // Spoken narration is NEVER silently truncated or looped.
     if(!entry.loop && "file" in entry && decoded.duration > seconds-startSeconds + .10)
       throw new Error("narration_longer_than_video");
+    // The actual movie uses at most 60 seconds of looped music. Retain only
+    // the audible excerpt after decoding instead of holding a multi-minute
+    // uncompressed soundtrack alongside Safari's H.264/AAC video encoder.
+    if(entry.loop && decoded.duration>seconds-startSeconds){
+      const frames=Math.min(decoded.length,Math.max(1,
+        Math.ceil((seconds-startSeconds)*decoded.sampleRate)));
+      const excerpt=offline.createBuffer(decoded.numberOfChannels,frames,decoded.sampleRate);
+      for(let channel=0;channel<decoded.numberOfChannels;channel++)
+        excerpt.copyToChannel(decoded.getChannelData(channel).subarray(0,frames),channel);
+      decoded=excerpt;
+    }
     const source=offline.createBufferSource();
     source.buffer=decoded;
     source.loop=entry.loop;
@@ -186,11 +200,22 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
   // avc1.42E01E (level 3.0) which cannot describe portrait Full HD.
   // The preflight must match the CanvasSource and AudioBufferSource codecs.
   const videoBitrate=Math.min(4_000_000,Math.max(1_200_000,canvas.width*canvas.height*2.8));
-  const h264=await canEncodeVideo("avc",{
-    width:canvas.width,height:canvas.height,frameRate,
-    quality:new Quality({bitrate:videoBitrate}),
-  });
+  // A single 540p/8fps iPhone pass uses baseline H.264 level 3.1.
+  // Full profile/level negotiation for a larger canvas is kept on desktop.
+  const mobileCompatAvcCodec=typeof navigator!=="undefined"&&(
+    /iPhone|iPad|iPod/i.test(navigator.userAgent)||
+    (/Macintosh/i.test(navigator.userAgent)&&navigator.maxTouchPoints>1))
+    ?"avc1.42001f":undefined;
+  const videoConfig={width:canvas.width,height:canvas.height,frameRate,
+    quality:new Quality({bitrate:videoBitrate})};
+  const baselineSupported=Boolean(mobileCompatAvcCodec&&await canEncodeVideo("avc",{
+    ...videoConfig,fullCodecString:mobileCompatAvcCodec,
+  }));
+  const h264=baselineSupported||await canEncodeVideo("avc",videoConfig);
   if(!h264)throw new Error("webcodecs_h264_unsupported");
+  // An unavailable baseline profile falls back to a preflighted AVC encoder,
+  // not a second expensive movie render.
+  const selectedAvcCodec=baselineSupported?mobileCompatAvcCodec:undefined;
   if(audio){
     const aac=await canEncodeAudio("aac",{
       sampleRate:SAMPLE_RATE,numberOfChannels:2,
@@ -206,6 +231,7 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
   const output=new Output({format:new Mp4OutputFormat({fastStart:"in-memory"}),target});
   const videoSource=new CanvasSource(canvas,{
     codec:"avc", quality:new Quality({bitrate:videoBitrate}),
+    ...(selectedAvcCodec?{fullCodecString:selectedAvcCodec}:{}),
     keyFrameInterval:2,
   });
   output.addVideoTrack(videoSource);
