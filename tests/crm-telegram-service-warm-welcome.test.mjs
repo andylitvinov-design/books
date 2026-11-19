@@ -96,7 +96,9 @@ test('service welcome photo is limited to first signed consent message and uses 
  assert.match(v3,/const agrees=general\?action==='chatagree':/);
  assert.match(v3,/serviceCopy\?\(action==='agree'\|\|action==='serviceagree'/);
  assert.match(v3,/!event\.inlineAction&&isExplicitYes\(raw\)/);
- assert.match(v3,/serviceCopy&&ctx.mode!==SECRETARY_MODES\.PSYCHOLOGIST\?serviceAllowed:allowed/);
+ // A confirmed service always uses the service-intake readiness gate; only general chat may use chat readiness.
+ assert.match(v3,/const purposeReady=general\?chatAllowed:serviceAllowed;/);
+ assert.match(v3,/if\(!agrees\|\|!purposeReady\)/);
  assert.match(v3,/serviceCopy\?'consent':ctx.mode===FREE_DIAGNOSTIC_MODE/);
  assert.match(v3,/if\(!agrees\|\|!purposeReady\)/);
  assert.match(v3,/stage='interview',locale=\$3,ai_consent_at=now\(\)/);
