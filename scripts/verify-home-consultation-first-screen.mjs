@@ -27,9 +27,105 @@ for (const engine of [chromium,webkit]){
           hasTouch:true,reducedMotion:"reduce",
         });
         const label=engine.name()+":"+locale+":"+width;
+        const scriptEvents=[];
+        page.on("pageerror",error=>scriptEvents.push("pageerror:"+error.message.slice(0,240)));
+        page.on("console",message=>{
+          if(message.type()==="error")scriptEvents.push("console:"+message.text().slice(0,360));
+        });
+        page.on("requestfailed",request=>{
+          if(request.url().includes("/instant-home/fast.js"))
+            scriptEvents.push("script-request-failed:"+String(request.failure()?.errorText).slice(0,160));
+        });
+        page.on("response",response=>{
+          if(response.url().includes("/instant-home/fast.js"))
+            scriptEvents.push("script-status:"+response.status());
+        });
         try {
           const response=await page.goto(origin+path,{waitUntil:"domcontentloaded",timeout:60000});
           assert.equal(response?.status(),200,label+": Home HTTP 200");
+          // Direct EN/RU HTML is intentionally CDN-first: verify the real
+          // browser-visible static controls, not the obsolete React header.
+          if (locale !== "es") {
+            const fast=page.locator('body[data-fast-home="'+locale+'"]');
+            await fast.waitFor({state:"attached",timeout:20000});
+            try {
+              await page.locator('html[data-home-interactive="true"]').waitFor({state:"attached",timeout:12000});
+            } catch(error) {
+              // Fail closed with the actual first-party asset/CSP diagnostics.
+              // The form and intent controls are NOT considered working without executed JS.
+              const asset=await page.request.get(origin+"/instant-home/fast.js",{timeout:12000}).catch(()=>null);
+              const state=await page.evaluate(()=>({
+                script:document.querySelector('script[src*="instant-home/fast.js"]')?.getAttribute("src")||null,
+                composer:Boolean(document.getElementById("ali-form")),
+                input:Boolean(document.getElementById("ali-message")),
+              }));
+              const servedCsp=response?.headers()["content-security-policy"]||"missing";
+              throw Error(label+": CDN Home JS did not initialize; asset="+(asset?.status()??"unavailable")+
+                " csp="+servedCsp.slice(0,900)+
+                " document="+JSON.stringify(state)+" events="+JSON.stringify(scriptEvents)+
+                " original="+error.message.slice(0,160));
+            }
+            const first=fast.locator('[data-home-dialogue-entry]');
+            await first.waitFor({state:"visible"});
+            const brand=fast.locator('header.header .brand');
+            await brand.waitFor({state:"visible"});
+            assert.match(await brand.innerText(),/Holistic House/,label+": brand present");
+            const language=fast.locator('[data-home-language-switch]');
+            await language.locator('summary').click();
+            assert.equal(await language.locator('a[aria-current="page"]').getAttribute('lang'),locale);
+            assert.equal(await language.locator('a[lang]').count(),3);
+            await page.keyboard.press("Escape");
+            assert.equal(await language.getAttribute('open'),null);
+            const personal=first.locator('[data-home-mode-button="self"]');
+            const business=first.locator('[data-home-mode-button="business"]');
+            assert.equal(await personal.innerText(),labels[0]);
+            assert.equal(await business.innerText(),labels[1]);
+            assert.equal(await personal.getAttribute("aria-pressed"),"true");
+            await business.click();
+            assert.equal(await business.getAttribute("aria-pressed"),"true",label+": business mode selected");
+            const tiles=first.locator('[data-home-intent-option]');
+            assert.equal(await tiles.count(),4,label+": four contextual choices");
+            assert.match(await tiles.first().locator(".label").innerText(),
+              locale==="ru"?/Клиенты/:/Clients/,label+": business choices change");
+            const review=first.locator('[data-home-free-review]');
+            assert.equal(await review.getAttribute("href"),"/"+locale+"/explore/business",
+              label+": verified business review");
+            await personal.click();
+            assert.equal(await personal.getAttribute("aria-pressed"),"true");
+            assert.equal(await review.getAttribute("href"),"/"+locale+"/services/free-situation-review");
+            const input=first.locator('[data-home-intent-composer]');
+            const send=first.locator('[data-home-send-to-ali]');
+            await input.waitFor({state:"visible"});
+            assert.equal(await send.isDisabled(),true);
+            await input.fill(locale==="ru"?"Помогите с работой":"Please help with my work");
+            assert.equal(await send.isEnabled(),true,label+": true interactive composer");
+            await input.fill("");
+            const hero=first.locator('[data-home-dialogue-hero]');
+            const heroRect=await hero.boundingBox();
+            assert.ok(heroRect&&heroRect.y<600,label+": Hero visible in first viewport");
+            const navigation=fast.locator('header.header details').last();
+            await navigation.locator('summary').click();
+            assert.equal(await navigation.getAttribute("open"),"");
+            await page.keyboard.press("Escape");
+            assert.equal(await navigation.getAttribute("open"),null);
+            const dock=page.locator('[data-hh-unified-dock] [data-unified-dock-item]');
+            assert.deepEqual(await dock.evaluateAll(nodes=>nodes.map(n=>n.getAttribute("data-unified-dock-item"))),
+              ["mytube","video","coach","ai","services","practice","profile"]);
+            assert.equal(await fast.locator('[data-home-deferred-sections]').count(),1);
+            assert.equal(await page.locator('[data-home-deferred-sections]').count(),1);
+            assert.equal(await page.locator("iframe").count(),0,label+": no iframe before video opt-in");
+            const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth);
+            assert.ok(overflow<=2,label+": no horizontal overflow "+overflow);
+            const box=await first.boundingBox();
+            assert.ok(box&&box.x>=-1&&box.x+box.width<=width+2,label+": fits mobile viewport");
+            evidence.push({engine:engine.name(),locale,width,mode:"cdn-interactive",sevenButtons:7,
+              firstScreenStart:Math.round(heroRect.y),heroHeight:Math.round(heroRect.height)});
+            if(engine===webkit&&width===390)
+              await page.screenshot({path:output+"/home-"+locale+"-webkit-390.png",fullPage:false});
+            continue;
+          }
+          assert.equal(await page.locator('body[data-fast-home]').count(),0,
+            label+": Spanish remains explicit Next.js Home");
           const root=page.locator("[data-home-dialogue-entry]");
           await root.waitFor({state:"visible",timeout:30000});
           // React must be hydrated before exercising the actual mode click.
@@ -67,8 +163,8 @@ for (const engine of [chromium,webkit]){
             label+": four needs including business support");
           const review=root.locator("[data-home-free-review]");
           assert.equal(await review.count(),1,label+": one primary free review entry");
-          assert.equal(await review.getAttribute("href"),"/"+locale+"/services/free-situation-review",
-            label+": real localized free review route");
+          assert.equal(await review.getAttribute("href"),"/"+locale+"/explore/business",
+            label+": real localized business review route");
           const reviewBox=await review.boundingBox();
           const focusBox=await root.locator("[data-home-focus-grid]").boundingBox();
           assert.ok(reviewBox&&focusBox&&reviewBox.y+reviewBox.height<=focusBox.y,
@@ -80,6 +176,8 @@ for (const engine of [chromium,webkit]){
             label+": four topics above the Ali composer");
           await personal.click();
           assert.equal(await root.getAttribute("data-home-mode"),"self");
+          assert.equal(await review.getAttribute("href"),"/"+locale+"/services/free-situation-review",
+            label+": personal mode restores real free review route");
           const hero=root.locator("[data-home-dialogue-hero]");
           const heroRect=await hero.boundingBox();
           assert.ok(heroRect&&heroRect.y<600,label+": dialogue takes the first viewport");

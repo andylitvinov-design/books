@@ -11,7 +11,7 @@ export function HolisticHouseLoadingScene() {
       <div className={styles.tint} aria-hidden="true" />
       <div className={styles.content}>
         <span className={styles.symbol} aria-hidden="true">✦</span>
-        <h1 className={styles.wordmark}>Holistic <span>House</span></h1>
+        <p className={styles.wordmark}>Holistic <span>House</span></p>
         <span className={styles.divider} aria-hidden="true" />
         <div className={styles.progress} aria-hidden="true">
           <span /><span /><span />

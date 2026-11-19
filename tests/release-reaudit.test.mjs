@@ -365,7 +365,7 @@ test('release re-audit follows current My Space Today guest Profile and explicit
     "toHaveAttribute('data-csp-class', 'private')",
     "locator('[data-cabinet-guest-overview]')",
     "locator('a[href=\"/en/client/tests\"]')",
-    "locator('[data-profile-hub-tabs] [data-profile-tab=\"today\"]')",
+    "locator('[data-profile-space-life]')",
     "locator('[data-profile-tests-first], [data-my-tests-dashboard], [data-profile-results-archive]')).toHaveCount(0)",
     "locator('.mobile-bottom-navigation')).toHaveCount(0)",
     "cspPage.goto(origin + '/en/personality-profiles', { waitUntil: 'domcontentloaded' })",
@@ -499,4 +499,17 @@ test('release WebKit warning does not bypass browser, local poster, CSP or build
   assert.match(source, /warningCount: warnings\.length/);
   assert.match(source, /assert\.deepEqual\(errors, \[\]/);
   assert.match(source, /assert\.equal\(failed\.length, 0, 'Re-audit failed; inspect evidence'\)/);
+});
+
+
+test('static EN/RU first screen and full Next Home both preserve release privacy and media assertions', () => {
+ const verifier=read('scripts/verify-release-reaudit.mjs');
+ const history=read('scripts/csp-history-provenance-probe.mjs');
+ const video=read('scripts/verify-site-video-browser.mjs');
+ for (const anchor of ["body[data-fast-home]", "document.documentElement.dataset.homeInteractive", "data-home-intent-option", "data-home-intent-form", "const fromFastHome", "await publicAbout.click()", "cspPage.goBack(", "cspPage.goForward("])
+   assert.ok(verifier.includes(anchor), 'Missing CDN/CSP verification: '+anchor);
+ assert.match(history,/const homePath = '\/\?full=1'/);
+ assert.match(history,/await ready\(homePath\)/);
+ for (const anchor of ['body[data-fast-home]', 'data-home-full-experience', 'data-video-slot="home-presentation"', 'await full.click()'])
+   assert.ok(video.includes(anchor), 'Missing original video playback acceptance: '+anchor);
 });

@@ -1,4 +1,5 @@
 "use client";
+import {HomeIntentPanel, type HomeIntentId} from "@/components/app/home-intent-panel";
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import {Mic, Paperclip, Plus, Send, X} from "lucide-react";
@@ -283,10 +284,10 @@ type NativeLanguageModel = { availability:(options:unknown)=>Promise<string>;
   create:(options?:unknown)=>Promise<NativePromptSession> };
 export type HolisticAgentPageHelp = {greeting:string;section?:string;actions:Array<{id:string;label:string;prompt:string;reply:string;href?:string;track?:"video"|"meditation"|"hint"}>};
 export type HolisticAgentQuickPrompt = {revision:number;text:string;format?:"video"|"audio"|"course"|"service"|"test"};
-export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,authenticated=false,authStatus="guest",onAuthRetry,pageHelp,messengerView=false,onConversationLocaleChange}:{
+export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,authenticated=false,authStatus="guest",onAuthRetry,pageHelp,messengerView=false,onConversationLocaleChange,homeIntent=null}:{
  locale:PublicLocale;compact?:boolean;quickPrompt?:HolisticAgentQuickPrompt|null;authenticated?:boolean;
  authStatus?:"guest"|"checking"|"authenticated"|"unavailable";onAuthRetry?:()=>void;pageHelp?:HolisticAgentPageHelp|null;messengerView?:boolean;
- onConversationLocaleChange?:(value:PublicLocale)=>void
+ onConversationLocaleChange?:(value:PublicLocale)=>void;homeIntent?:HomeIntentId|null
 }) {
   const [locale,setLocale]=useState<PublicLocale>(routeLocale);
   useEffect(()=>setLocale(routeLocale),[routeLocale]);
@@ -1408,7 +1409,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       </div>
     </div>
   </article>;
-  const showLandingComposer=compact&&messengerView&&!pageHelp&&!messages.length&&!supportQuizOpen;
+  const showLandingComposer=compact&&messengerView&&!pageHelp&&!messages.length&&!supportQuizOpen&&!homeIntent&&homeHandoffPhase==="idle";
   const composer=(
     <form onSubmit={submit} className={styles.form}>
       <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)}
@@ -1478,7 +1479,11 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<64;
         followTail.current=atBottom;
         if(atBottom)setNewBelow(false)}}>
-      {compact&&messengerView&&!pageHelp&&!messages.length&&<>
+      {compact&&messengerView&&!pageHelp&&homeIntent&&<HomeIntentPanel locale={locale} intent={homeIntent}
+        disabled={busy} onAsk={prompt=>{setEntryOpen(false);void sendTurn(prompt);}}/>}
+      {compact&&messengerView&&!pageHelp&&!homeIntent&&!messages.length&&homeHandoffPhase!=="idle"&&
+        <p className={styles.assistant} data-home-handoff-context>{locale==="ru"?"Али получил ваш вопрос — сейчас подберём следующий шаг.":locale==="es"?"Ali recibió tu pregunta. Vamos a buscar el siguiente paso.":"Ali has your question. Let's find the next step."}</p>}
+      {compact&&messengerView&&!pageHelp&&!homeIntent&&!messages.length&&homeHandoffPhase==="idle"&&<>
         {supportQuizOpen?<MessengerSupportQuiz locale={locale}
           onCancel={()=>setSupportQuizOpen(false)} onFinish={completeSupportQuiz}/>:
           <>

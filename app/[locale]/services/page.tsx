@@ -13,7 +13,6 @@ import { ServicesExplorerProvider } from "@/components/services-explorer-state";
 import { ServicesCompactCatalog, ServicesCompactPanel, ServicesHomeopathyLinks } from "@/components/services-unified-catalog";
 import { ServicesVideoGenerationCard } from "@/components/services-video-generation-card";
 import { ServicesCoursesShelf } from "@/components/services-courses-shelf";
-import { BusinessServiceBrowser } from "@/components/business-service-browser";
 import { ServicesCoachTherapistMobile } from "@/components/services-coach-therapist-mobile";
 import compactStyles from "@/components/services-unified-catalog.module.css";
 import uniformStyles from "@/components/services-support-uniform.module.css";
@@ -28,7 +27,7 @@ import { personalPayPalEnabled } from "@/lib/commerce/paypal-personal";
 import { publicLocales, type PublicLocale } from "@/lib/public-locales";
 import { metadataBaseFor } from "@/data/site-metadata";
 
-type PageProps = { params: Promise<{ locale: string }>; searchParams?: Promise<{ catalog?: string; assist?: string }> };
+type PageProps = { params: Promise<{ locale: string }>; searchParams?: Promise<{ catalog?: string; assist?: string; topic?: string; need?: string }> };
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 // Production release marker: Wu Xing marketplace featured service.
@@ -96,7 +95,7 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
       <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
       <ServicesExplorerProvider>
         {/* Four-question public entry; the original Ali dialogue stays available on explicit request. */}
-        {query?.assist==="chat" ? <ServicesAssistMobile locale={locale} /> : <ServicesAssistQuiz locale={locale} />}
+        {query?.assist==="chat" ? <ServicesAssistMobile locale={locale} /> : <ServicesAssistQuiz locale={locale} initialTopic={query?.topic} initialNeed={query?.need} />}
         <div className={compactStyles.featured} data-services-featured>
           <ServicesPersonalConsultationMobile locale={locale} />
         </div>
@@ -106,7 +105,9 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
           </ServicesCompactPanel>
           <ServicesCompactPanel id="homeopathy"><ServicesHomeopathyLinks locale={locale} /></ServicesCompactPanel>
           <ServicesCompactPanel id="services"><ServicesStudioOffers locale={locale} splitExtras /></ServicesCompactPanel>
-          <ServicesCompactPanel id="business"><BusinessServiceBrowser locale={locale} /></ServicesCompactPanel>
+          <ServicesCompactPanel id="business">
+            <p>{locale==="ru"?"Бизнес-разбор, стратегия и вопросы команды — выберите подходящий формат.":locale==="es"?"Revisión empresarial, estrategia y trabajo en equipo: elige el formato adecuado.":"Business review, strategy and team support — choose the right format."}</p>
+          </ServicesCompactPanel>
           <ServicesCompactPanel id="reiki"><AssistReikiSession locale={locale} /></ServicesCompactPanel>
           <ServicesCompactPanel id="courses"><ServicesCoursesShelf locale={locale} /></ServicesCompactPanel>
           <ServicesCompactPanel id="video"><ServicesVideoGenerationCard locale={locale} /></ServicesCompactPanel>

@@ -51,7 +51,7 @@ test('EN/RU shared services are preserved; Spanish has separate existing routes'
   assert.match(shared, /<PublicConsultationCta locale=\{locale\}/)
   assert.match(shared, /<ServicesCompactPanel id="consultation">/)
   assert.match(shared, /<ServicesCompactPanel id="mytube">/)
-  assert.match(shared, /<ServicesAssistQuiz locale=\{locale\} \/>/)
+  assert.match(shared, /<ServicesAssistQuiz locale=\{locale\} initialTopic=\{query\?\.topic\} initialNeed=\{query\?\.need\} \/>/)
   assert.match(es, /<ServicesAssistQuiz locale="es" \/>/)
   assert.match(shared, /query\?\.assist==="chat"/)
   assert.match(es, /query\?\.assist==="chat"/)
