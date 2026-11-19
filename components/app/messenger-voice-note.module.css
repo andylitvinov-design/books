@@ -1,0 +1,32 @@
+.mic{display:grid;place-items:center;flex:none;cursor:pointer}
+.mic[data-recording="true"]{color:#b53c33!important;background:#fff0ec!important;border-color:#e9b7ad!important}
+.mic:focus-visible{outline:3px solid #188972;outline-offset:2px}
+.panel{
+  position:absolute;inset-inline-end:0;bottom:calc(100% + 12px);z-index:50;
+  box-sizing:border-box;width:min(324px,calc(100vw - 30px));min-width:0;
+  padding:10px;border:1px solid #c8ded2;border-radius:16px;
+  background:#fffdfa;color:#1f4639;box-shadow:0 12px 30px #183f302b;
+  font:500 12px/1.4 system-ui,sans-serif;text-align:start;
+}
+.row{display:flex;align-items:center;gap:7px;justify-content:space-between;min-width:0}
+.live{display:inline-flex;align-items:center;gap:6px;font:700 13px/1.3 system-ui;white-space:nowrap}
+.live i{width:8px;height:8px;flex:none;border-radius:50%;background:#d94d43;animation:pulse 1.1s ease-in-out infinite}
+.label{flex:1;min-width:0;color:#406254;font-weight:650;line-height:1.3}
+.player{box-sizing:border-box;display:block;max-width:100%;min-width:0;width:100%;height:38px;margin:8px 0;color-scheme:light}
+.panel button{cursor:pointer;font:700 12px/1.2 system-ui}
+.panel button:focus-visible,.native:focus-within{outline:3px solid #16886e;outline-offset:2px}
+.primary,.small{box-sizing:border-box;display:grid;place-items:center;flex:none;width:36px;height:36px;border-radius:11px}
+.primary{border:1px solid #cd7370;background:#fff2f0;color:#ad3f38}
+.small{border:1px solid #dfebe2;background:#fff;color:#527364}
+.send{display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:none;max-width:46%;min-height:39px;padding:6px 9px;border:0;border-radius:12px;background:#16977c;color:#fff;line-height:1.15}
+.send span{white-space:normal;max-width:90px}
+.send:disabled,.small:disabled{opacity:.6;cursor:default}
+.consent{flex:1;min-width:0;color:#667e73;font:500 10px/1.35 system-ui}
+.error{margin:7px 0 0;color:#a24642;font:600 11px/1.4 system-ui}
+.native{position:relative;display:inline-flex;align-items:center;justify-content:center;min-height:36px;margin-top:7px;padding:6px 9px;border:1px solid #bfdccf;border-radius:11px;color:#14624d;cursor:pointer}
+.native input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.spinner{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{50%{opacity:.36}}
+@media(prefers-reduced-motion:reduce){.live i,.spinner{animation:none}}
+@media(max-width:354px){.panel{width:min(300px,calc(100vw - 20px));padding:8px}.send{max-width:48%}}

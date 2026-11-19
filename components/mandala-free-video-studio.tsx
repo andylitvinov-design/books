@@ -9739,8 +9739,21 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   onChange={event=>{chooseAudioFile(event.currentTarget.files?.[0]);event.currentTarget.value="";}}/>
               </label>
             </div>
-            <StudioMusicPicker locale={locale} disabled={recording||preparing||micRecording}
-              onSelect={attachVerifiedStudioMusic}/>
+            <div className={videoStyles.audioCompactActions} data-video-audio-primary-actions>
+              <button type="button" data-video-audio-all-music
+                disabled={recording||preparing||micRecording} onClick={openAudioLibrary}>
+                <Music2 size={18} aria-hidden="true"/>
+                <span>{locale==="ru"?"Вся музыка":locale==="es"?"Toda la música":"All music"}</span>
+              </button>
+              <label className={videoStyles.audioCompactUploadAction} data-video-audio-upload-my-audio>
+                <Paperclip size={18} aria-hidden="true"/>
+                <span>{locale==="ru"?"Загрузить моё аудио":locale==="es"?"Subir mi audio":"Upload my audio"}</span>
+                <input type="file" data-video-audio-upload-action
+                  accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/aac,audio/webm,.mp3,.m4a,.wav,.aac,.mp4,.webm"
+                  disabled={recording||preparing}
+                  onChange={event=>{chooseAudioFile(event.currentTarget.files?.[0]);event.currentTarget.value="";}}/>
+              </label>
+            </div>
             <div className={videoStyles.audioCompactSelection} data-video-audio-compact-selected
               role="status" aria-live="polite"><Check size={16} aria-hidden="true"/>
               <span>{uploadedAudio?uploadedAudio.file.name:attachedPresetIds.length?appliedAudioName:
@@ -9756,18 +9769,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 disabled={recording||preparing||micRecording||audioDurationInvalid||!audioRights}
                 onClick={attachSelectedAudio}>{audioNeedsAttachment?audioUi.attach:audioUi.attached}</button>
             </div>:null}
-            <div className={videoStyles.montageAdvancedShortcuts} data-video-music-to-mv>
-              <button type="button" data-video-music-to-mv-create
-                disabled={recording||preparing||smartCutBusy||!attachedAudio||
-                  attachedAudio.kind==="presets"||(attachedAudio.kind==="file"&&!audioRights)}
-                onClick={()=>void smartCutFromAudio()}>
-                <Film size={17} aria-hidden="true"/>
-                {smartCutBusy?(locale==="ru"?"Анализируем музыку…":locale==="es"?
-                    "Analizando música…":"Analyzing music…"):
-                  locale==="ru"?"Создать видеоряд под музыку":locale==="es"?
-                    "Crear vídeo con música":"Create video to music"}
-              </button>
-            </div>
             {musicMvReport?<p role="status" data-video-music-to-mv-report>
               {musicMvReport.bpm===null
                 ?locale==="ru"?"Монтаж основан на вашей теме; точный BPM не определён.":
@@ -9790,6 +9791,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 disabled={recording||preparing}
                 onClick={()=>{setAudioAuto(false);chooseMusic("none");setAttachedAudio(null);}}>{ui.noMusic}</button>
             </div>
+            <button type="button" className={videoStyles.audioCompactAffirmations}
+              data-video-audio-add-text disabled={!studioHydrated||recording||preparing}
+              onClick={continueMontageOrGenerate}>
+              <Sparkles size={20} aria-hidden="true"/>
+              <span><strong>{locale==="ru"?"Добавить аффирмации":locale==="es"?"Añadir afirmaciones":"Add Affirmations"}</strong></span>
+            </button>
             {audioLibraryOpen ? <div className={videoStyles.montageAudioOverlay}
               data-video-audio-library-overlay onMouseDown={event=>{
                 if(event.target===event.currentTarget)closeAudioLibrary(true);

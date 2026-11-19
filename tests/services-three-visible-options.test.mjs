@@ -92,3 +92,50 @@ test("all six photograph category cards and business stay on the same Services p
   assert.match(source, /path:"services\/systemic-constellations"/);
   assert.match(source, /path:"services\/business-consulting"/);
 });
+
+
+test("all mobile service trios use compact photo-left and actions-right without losing full disclosures", () => {
+  const feature=read("components/services-personal-consultation-mobile.tsx");
+  const featureCss=read("components/services-personal-consultation-mobile.module.css");
+  const shared=read("components/services-unified-catalog.module.css");
+  const browser=read("scripts/verify-public-services-production.mjs");
+  for (const language of ["3 варианта","3 options","3 opciones"])
+    assert.ok(feature.includes(language),"Missing localized three-choice heading badge: "+language);
+  assert.match(feature,/data-support-three-count/);
+  assert.match(featureCss,/\.card>:global\(\[data-service-card-actions\]\)\{display:contents\}/);
+  assert.match(featureCss,/\.card :global\(\[data-service-card-controls\]\)\{/);
+  assert.match(featureCss,/grid-column:2;grid-row:2/);
+  assert.match(featureCss,/grid-column:1\/-1;grid-row:3/);
+  assert.match(css,/\.actions\{display:contents;grid-column:auto;grid-row:auto\}/);
+  assert.match(css,/\.offer :global\(\[data-service-card-controls\]\)\{/);
+  assert.match(shared,/three featured offers AND their attractive heading/);
+  assert.match(browser,/compact\.cards\.length, 3/);
+  assert.match(browser,/expandedRow\.width >= expandedCard\.width - 23/);
+  assert.match(browser,/compact\.cards\.every\(card => card\.height <= 177\)/);
+});
+
+test("real consultation cards have bounded closed geometry and expand at full width",()=>{
+ const own=read("components/services-personal-consultation-mobile.module.css");
+ const catalog=read("components/services-unified-catalog.module.css");
+ const browser=read("scripts/verify-public-services-production.mjs");
+ for(const expected of ["height:146px!important","grid-template-columns:88px minmax(0,1fr)!important",
+  "grid-template-rows:minmax(0,1fr) 44px 0px!important",
+  ".section .card>:global([data-service-card-actions]){display:contents!important}",
+  "height:auto!important;min-height:154px!important;max-height:none!important",
+  "grid-column:1/-1!important;grid-row:3!important"])assert.ok(own.includes(expected),expected);
+ for(const marker of ["max-height:72px","font-size:12px!important","text-overflow:ellipsis"])
+  assert.ok(own.includes(marker),"multilingual heading "+marker);
+ assert.ok(!catalog.includes("Correct final mobile featured-card grid"));
+ assert.ok(browser.includes("compact.cards.every(card => card.height <= 177)"));
+});
+
+test("localized consultation heading stays phone-readable inside its real 75px budget",()=>{
+ const css=read("components/services-personal-consultation-mobile.module.css");
+ const component=read("components/services-personal-consultation-mobile.tsx");
+ const browser=read("scripts/verify-public-services-production.mjs");
+ assert.ok(css.includes("min-height:48px;margin:0 1px 8px;padding:4px 6px 5px 9px;"));
+ assert.ok(css.includes("font:700 clamp(19px,5.1vw,22px)/1.08"));
+ for(const label of ["Личная консультация","Personal consultation","Consulta personal"])
+  assert.ok(component.includes(label),"locale heading missing "+label);
+ assert.ok(browser.includes("compact.headingHeight <= 75"),"real WebKit/Chromium height gate must remain");
+});

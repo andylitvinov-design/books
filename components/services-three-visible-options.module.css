@@ -24,3 +24,58 @@
  .copy p{font-size:11px}
  .price{font-size:10px;padding:3px 5px}
 }
+
+
+/* Same compact photo-left / copy+actions-right rhythm for every 3-offer
+   category. Expanded Details and messenger links use the FULL card width. */
+@media(max-width:760px){
+  .options{gap:8px;padding:0 9px 10px}
+  .offer{
+    position:relative;grid-template-columns:76px minmax(0,1fr);
+    grid-template-rows:minmax(0,1fr) auto auto;column-gap:8px;row-gap:3px;
+    min-height:137px;padding:7px;align-items:stretch;
+    border-radius:16px;overflow:visible
+  }
+  .image{grid-column:1;grid-row:1/3;width:100%;height:100%;min-height:121px;border-radius:12px}
+  .copy{position:static;grid-column:2;grid-row:1;min-height:0;padding:24px 0 0}
+  .price{
+    position:absolute;top:7px;right:7px;max-width:calc(100% - 92px);
+    min-height:22px;padding:3px 7px;font-size:11px
+  }
+  .copy h3{margin:0 0 3px;font-size:clamp(15px,4.2vw,17px);line-height:1.12}
+  .copy p{
+    display:-webkit-box;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+    font-size:12px;line-height:1.2
+  }
+  .actions{display:contents;grid-column:auto;grid-row:auto}
+  .offer :global([data-service-card-controls]){
+    grid-column:2;grid-row:2;align-self:end;min-width:0;gap:4px
+  }
+  .offer :global([data-service-card-controls] > button){
+    min-height:44px;gap:3px;padding:6px 3px;
+    font-size:clamp(11px,3.3vw,13px);border-radius:13px
+  }
+  .offer :global([data-service-card-controls] > button:first-child){
+    border:0;background:transparent;box-shadow:none;color:#076b57;
+    text-decoration:underline;text-underline-offset:3px
+  }
+  .offer :global([data-service-card-controls] > button:last-child){
+    border-color:#138b76;background:linear-gradient(135deg,#138b76,#006b59);color:#fff
+  }
+  .offer :global([data-service-card-controls] > button svg){width:13px;height:13px}
+  .offer :global([data-service-card-details]),
+  .offer :global([data-service-card-order]){
+    grid-column:1/-1;grid-row:3;min-width:0;margin:5px 0 0
+  }
+  .offer :global([data-service-card-order]){padding:0;border:0;background:transparent}
+}
+@media(max-width:350px){
+  .options{gap:7px;padding:0 7px 9px}
+  .offer{grid-template-columns:70px minmax(0,1fr);column-gap:7px;padding:6px}
+  .image{min-height:119px}
+  .copy{padding-top:23px}
+  .copy h3{font-size:15px}
+  .copy p{font-size:11.5px}
+  .price{right:6px;top:6px;max-width:calc(100% - 82px);font-size:10px;padding:3px 5px}
+  .offer :global([data-service-card-controls]){gap:3px}
+}
