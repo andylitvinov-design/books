@@ -60,6 +60,10 @@ for (const engine of [chromium,webkit]) {
         // Owner P0: all public product enquiries must be customer-initiated
         // Telegram/WhatsApp, never a direct email/phone CRM write.
         const messenger=final.locator('[data-messenger-only-contact]');
+        // The review deliberately lazy-loads its private form after disclosure.
+        // Wait for actual client-side mount; do not accept a missing form.
+        if (path.endsWith("/free-situation-review"))
+          await messenger.waitFor({state:"visible",timeout:15000});
         assert.equal(await messenger.count(),1,label+" one messenger-only final capture");
         const details=messenger.locator('details');
         if(await details.count()&&await details.getAttribute('open')===null)
