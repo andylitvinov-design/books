@@ -1941,6 +1941,81 @@ test('Watchdog classifies red Core jobs and records blocker diagnostics before b
 
 
 const mergedCleanup=require('../scripts/ci-pr-merged-queue-cleanup.cjs');
+
+test('soft queued-Action pressure cutoff activates safe cleanup before 60-run cap',async()=>{
+ const f=cleanupFixture(),at=Date.parse('2026-11-12T18:00:00Z');
+ const idle=await mergedCleanup.runCleanup({github:f.github,context:f.context,
+    observedQueued:40,observedRemaining:4700,now:at});
+ assert.equal(idle.status,'NO_CONFIRMED_BUDGET_OR_PRESSURE');
+ assert.deepEqual(f.calls.cancel,[]);
+ const real=await mergedCleanup.runCleanup({github:f.github,context:f.context,
+    observedQueued:95,observedRemaining:4700,now:at});
+ assert.equal(real.status,'CANCELLATION_ACCEPTED_NOT_TERMINAL');
+ assert.deepEqual(f.calls.cancel,[1001]);
+});
+
+test('closed without merge and with zero-job exact source may release stale queued CI',async()=>{
+ const f=cleanupFixture(),at=Date.parse('2026-11-12T18:00:00Z');
+ const closed={...f.pr,merged:false,merged_at:null,closed_at:'2026-11-11T20:10:00Z'};
+ f.github.rest.pulls.list=async()=>({data:[{...closed,merged:undefined}]});
+ f.github.rest.pulls.get=async()=>({data:closed});
+ assert.equal(mergedCleanup.closedUnmergedProduction(closed,f.run,at),true);
+ const x=await mergedCleanup.runCleanup({github:f.github,context:f.context,
+    observedQueued:95,observedRemaining:4700,now:at});
+ assert.equal(x.status,'CANCELLATION_ACCEPTED_NOT_TERMINAL');
+ assert.equal(x.eligible,1);
+ assert.deepEqual(f.calls.cancel,[1001]);
+ assert.equal(x.force_cancel_attempts,0);
+ assert.equal(x.delete_attempts,0);
+});
+
+test('closed-unmerged source releases nothing on missing closure, wrong HEAD or real job',async()=>{
+ const at=Date.parse('2026-11-12T18:00:00Z');
+ const mutations=[
+  p=>({...p,merged:undefined}),p=>({...p,merged:true}),
+  p=>({...p,closed_at:null}),
+  p=>({...p,closed_at:'2026-11-11T18:40:00Z'}),
+  p=>({...p,closed_at:'2026-11-12T17:50:00Z'}),
+  p=>({...p,head:{...p.head,sha:'c'.repeat(40)}}),
+  p=>({...p,state:'open'}),
+  p=>({...p,merged_at:'2026-11-11T20:10:00Z'}),
+  p=>({...p,base:{...p.base,ref:'codex/bootstrap-books'}})
+ ];
+ for(const mutate of mutations){
+  const f=cleanupFixture();
+  const c={...f.pr,merged:false,merged_at:null,closed_at:'2026-11-11T20:10:00Z'};
+  f.github.rest.pulls.list=async()=>({data:[{...c,merged:undefined}]});
+  f.github.rest.pulls.get=async()=>({data:mutate(c)});
+  const r=await mergedCleanup.runCleanup({github:f.github,context:f.context,
+    observedQueued:95,observedRemaining:4700,now:at});
+  assert.deepEqual(f.calls.cancel,[],'invalid closed PR must never be cancelled');
+  assert.equal(r.eligible,0);
+ }
+ const f=cleanupFixture(),c={...f.pr,merged:false,merged_at:null,
+   closed_at:'2026-11-11T20:10:00Z'};
+ f.github.rest.pulls.list=async()=>({data:[{...c,merged:undefined}]});
+ f.github.rest.pulls.get=async()=>({data:c});
+ f.github.rest.actions.listJobsForWorkflowRun=async()=>({data:{
+   total_count:1,jobs:[{id:71,status:'queued'}]}});
+ const r=await mergedCleanup.runCleanup({github:f.github,context:f.context,
+   observedQueued:95,observedRemaining:4700,now:at});
+ assert.equal(r.eligible,0);assert.deepEqual(f.calls.cancel,[]);
+});
+
+test('closed-unmerged 409 remains GitHub support issue; no force cancellation',async()=>{
+ const f=cleanupFixture(),at=Date.parse('2026-11-12T18:00:00Z');
+ const c={...f.pr,merged:false,merged_at:null,closed_at:'2026-11-11T20:10:00Z'};
+ f.github.rest.pulls.list=async()=>({data:[{...c,merged:undefined}]});
+ f.github.rest.pulls.get=async()=>({data:c});
+ f.github.rest.actions.cancelWorkflowRun=async()=>{throw Object.assign(Error('409'),{status:409});};
+ let force=0;
+ f.github.rest.actions.forceCancelWorkflowRun=async()=>{force++;return {status:202};};
+ const r=await mergedCleanup.runCleanup({github:f.github,context:f.context,
+   observedQueued:95,observedRemaining:4700,now:at});
+ assert.equal(force,0);
+ assert.equal(r.non_cancelable[0].code,'QUEUED_WITH_ZERO_JOBS_CANCEL_409');
+});
+
 function cleanupFixture({state='closed',sha='b'.repeat(40),created='2026-11-11T18:00:00Z',
  merged='2026-11-11T20:00:00Z',runStatus='queued',attempt=1,compareStatus='ahead',
  compareBase='a'.repeat(40),unique=true,runAssoc=[],newPR=null}={}){
@@ -1999,7 +2074,7 @@ test('queue cleanup fails closed on merged PR changes, invalid actor, no budget,
  assert.equal((await mergedCleanup.runCleanup({github:f.github,context:f.context,
   observedQueued:139,observedRemaining:120})).status,'NO_CONFIRMED_BUDGET_OR_PRESSURE');
  assert.equal((await mergedCleanup.runCleanup({github:f.github,context:f.context,
-  observedQueued:60,observedRemaining:4700})).status,'NO_CONFIRMED_BUDGET_OR_PRESSURE');
+  observedQueued:40,observedRemaining:4700})).status,'NO_CONFIRMED_BUDGET_OR_PRESSURE');
  const noMergeFlag=cleanupFixture({newPR:{...f.pr,merged:undefined}});
  const stillUnverified=await mergedCleanup.runCleanup({github:noMergeFlag.github,context:noMergeFlag.context,
   observedQueued:139,observedRemaining:4700,now:Date.parse('2026-11-12T18:00:00Z')});
@@ -2014,11 +2089,12 @@ test('same existing scheduled or verified reconcile Watchdog runner owns bounded
  const workflow=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
  const source=fs.readFileSync('scripts/ci-pr-merged-queue-cleanup.cjs','utf8');
  assert.match(workflow,/trustedContext\(context\)/);
- assert.match(workflow,/Number\(report\.queuedActions\)>100/);
- assert.match(workflow,/report\.queuedActions\)>100/);
+ assert.match(workflow,/Number\(report\.queuedActions\)>40/);
+ assert.match(workflow,/report\.queuedActions\)>40/);
  assert.doesNotMatch(source,/createWorkflowDispatch|reRunWorkflow|createPullRequest|setInterval\s*\(/);
  assert.match(source,/context\.eventName!=='workflow_dispatch'/);
  assert.equal(mergedCleanup.MAX_CANCELS,12);
+ assert.equal(mergedCleanup.THRESHOLD,40);
 });
 
 

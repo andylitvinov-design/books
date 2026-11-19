@@ -266,11 +266,12 @@ jobs:
             const eventFastPath=isTrustedQualityFailureEvent(context);
             const report=await run({github,core,context,repairGithub,
               hasMergeToken:Boolean(token),dryRun,directHandoffLocal:true,eventFastPath});
-            // Reuse this EXISTING scheduled runner only when the observed
-            // GitHub Actions queue is severely saturated. Cancel only queued
-            // first-attempt PR checks proven ancestral to ALREADY MERGED PRs.
+            // Reuse this EXISTING scheduled runner when queued Actions exceed
+            // the soft 40-run pressure line, BEFORE optional worker capacity
+            // is blocked at 60/72. Actual cancellation still demands uniquely
+            // owned stale PR/run ancestry and positive safe state evidence.
             // No new workflow, runner, CI dispatch, or source modification.
-            if(!dryRun&&Number(report.queuedActions)>100&&
+            if(!dryRun&&Number(report.queuedActions)>40&&
                Number(report.apiRemaining)>=250){
               try{
                 const {trustedContext,runCleanup}=require(process.env.GITHUB_WORKSPACE+
