@@ -1,4 +1,8 @@
 import test from 'node:test';
+// Include all selected-offer and Support Secretary scenario regressions in the
+// existing protected Telegram CRM suite without adding a separate CI job.
+import './ali-secretary-offer-journeys.test.mjs';
+import './ali-secretary-support-journeys.test.mjs';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
@@ -55,7 +59,8 @@ test('Owner CRM transfer requires existing confirmation path; no early lead',()=
  const code=source('lib/crm/telegram-ai-diagnostic-v3-service.js');
  const ui=source('components/mandatory-messenger-actions.tsx');
  assert.match(code,/serviceStart=v3ServiceStart\(raw\)/);
- assert.match(code,/serviceRequest:serviceStart.service/);
+ assert.match(code,/serviceRequest:serviceEntry.service/);
+ assert.match(code,/serviceEntry=serviceStart\|\|\(!row\?naturalServiceCandidate:null\)/);
  assert.match(code,/if\(action==='send'\)/);
  assert.match(code,/Confirmed service request/);
  assert.match(code,/ingestMessengerEventInTransaction/);
