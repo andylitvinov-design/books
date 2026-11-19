@@ -69,7 +69,7 @@ const quickNavigation = read("lib/services-quick-categories.ts");
 test("all six photograph category cards and business stay on the same Services page with visible 3-option targets", () => {
   const targets = {
     therapy: "consultation", homeopathy: "homeopathy", constellations: "services",
-    practice: "reiki", study: "courses", videos: "video", business: "services",
+    practice: "reiki", study: "courses", videos: "video", business: "business",
   };
   for (const [key, panel] of Object.entries(targets)) {
     assert.ok(quickNavigation.includes(key + ': "' + panel + '"'), "Missing category-to-group link: " + key);
@@ -80,7 +80,7 @@ test("all six photograph category cards and business stay on the same Services p
   assert.match(catalog, /id=\{serviceGroupAnchor\(id\)\} tabIndex=\{-1\}/);
   assert.doesNotMatch(quizSource, /\{categories\.map\(\(\{key,path/);
   assert.match(layout, /\.panel\[id\^="service-group-"\]\{scroll-margin-top/);
-  const visibleFirst = ["consultation", "homeopathy", "services", "reiki", "courses", "video"];
+  const visibleFirst = ["consultation", "homeopathy", "services", "business", "browse", "courses"];
   const positions = visibleFirst.map(key => page.indexOf('<ServicesCompactPanel id="' + key + '"'));
   assert.ok(positions.every(position => position >= 0));
   assert.ok(positions.every((position, index) => index === 0 || position > positions[index - 1]),
@@ -91,4 +91,23 @@ test("all six photograph category cards and business stay on the same Services p
   assert.match(source, /path:"services\/imagery-therapy"/);
   assert.match(source, /path:"services\/systemic-constellations"/);
   assert.match(source, /path:"services\/business-consulting"/);
+});
+
+test("Support keeps its four-question first screen and renders ten compact categories below it", () => {
+  const uniform = read("components/services-support-uniform.module.css");
+  assert.match(page, /<ServicesAssistQuiz locale=\{locale\}/);
+  const idsInPage = [...page.matchAll(/<ServicesCompactPanel id="([^"]+)"/g)].map(match => match[1]);
+  assert.deepEqual(idsInPage.slice(0, 10),
+    ["consultation","homeopathy","services","business","browse","courses","video","coach","reiki","reading"]);
+  assert.equal(idsInPage.length,14, "Ten service groups and four informational sections");
+  assert.ok(!idsInPage.includes("magical"), "Ritual extras belong in Shamanica / optional reading formats");
+  assert.ok(page.indexOf("<ServicesPersonalConsultationMobile") > page.indexOf('<ServicesCompactPanel id="consultation">'),
+    "Legacy diagnostics are optional content, not an extra giant top-level section");
+  assert.ok(page.indexOf("<ServicesMagicalHelpMobile") > page.indexOf('<ServicesCompactPanel id="reading">'),
+    "Published legacy formats are preserved for people who open the reading disclosure");
+  assert.match(uniform, /data-services-unified-catalog/);
+  assert.match(uniform, /grid-template-columns:83px minmax\(0,1fr\)/);
+  assert.match(uniform, /min-height:44px!important/);
+  assert.match(uniform, /@media \(max-width:350px\)/);
+  assert.match(uniform, /@media \(min-width:761px\)/);
 });
