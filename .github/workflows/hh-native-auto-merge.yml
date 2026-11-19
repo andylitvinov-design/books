@@ -318,12 +318,14 @@ jobs:
             const {owner,repo}=context.repo,fullRepo=owner+"/"+repo;
             const number=Number('${{ steps.ready.outputs.pr }}');
             const expectedHead='${{ steps.ready.outputs.head }}';
-            const expectedBase='${{ steps.ready.outputs.base }}';
+            // The initial PR.base.sha is a snapshot; current protected BASE is
+            // independently verified by the trusted freshness classifier below.
             const runId=Number('${{ steps.ready.outputs.core_run }}');
             if(!Number.isSafeInteger(runId)||runId<1)return;
             const pr=(await github.rest.pulls.get({owner,repo,pull_number:number})).data;
             if(pr.state!=="open"||pr.draft||pr.base?.ref!=="codex/public-book-library"||
-               pr.base.sha!==expectedBase||pr.head?.sha!==expectedHead||
+               !/^[a-f0-9]{40}$/.test(pr.base?.sha||"")||
+               pr.head?.sha!==expectedHead||
                pr.head.repo?.full_name!==fullRepo||pr.mergeable===false||
                pr.mergeable_state==="dirty"){
               core.info("CI_AUTO_MERGE: PR changed before base verification");return;
@@ -476,7 +478,10 @@ jobs:
               github,owner:context.repo.owner,repo:context.repo.repo,
               number:Number('${{ steps.ready.outputs.pr }}'),
               expectedHead:'${{ steps.ready.outputs.head }}',
-              expectedBase:'${{ steps.ready.outputs.base }}'
+              // An independently verified protected SHA replaces stale PR
+              // snapshot identity; the safety guard re-reads the ref twice.
+              expectedBase:'${{ steps.freshness.outputs.verified_base }}',
+              allowVerifiedBaseAdvance:true
             });
             core.info('CI_AUTO_MERGE_SAFETY: '+verdict.reason);
             if(verdict.ok)core.setOutput('eligible','true');

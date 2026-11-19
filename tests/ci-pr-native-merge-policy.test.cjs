@@ -17,6 +17,10 @@ function makeTestWorld(opts={}){
  const comments=opts.comments??[];
  const github={
   rest:{
+   repos:{getBranch:async()=>({data:{
+    protected:opts.protectedBase!==false,
+    commit:{sha:typeof opts.branchSha==='function'?opts.branchSha():opts.branchSha??BASE}
+   }})},
    pulls:{get:async()=>({data:pr})},
    checks:{listForRef:async()=>({data:{
      total_count:(opts.checkRuns??[]).length,
@@ -50,6 +54,56 @@ test('Green with zero mandatory approvals and resolved discussions is eligible',
  assert.deepEqual(await check(makeTestWorld()),
   {ok:true,reason:'REVIEW_LEASE_CONFLICT_HEAD_VERIFIED'});
 });
+test('native event can reuse exact-head CI across a proven independent protected base advance',async()=>{
+ const oldSnapshot='c'.repeat(40);
+ const world=makeTestWorld({pr:{base:{
+  ref:'codex/public-book-library',sha:oldSnapshot
+ }}});
+ const ordinary=await check(world);
+ assert.equal(ordinary.reason,'PR_HEAD_BASE_OR_STATE_CHANGED',
+  'hourly and other legacy callers keep strict immutable BASE checks');
+ const nativeArgs={github:world.github,owner:OWNER,repo:REPO,
+  number:42,expectedHead:HEAD,expectedBase:BASE,allowVerifiedBaseAdvance:true};
+ assert.deepEqual(await auditNativeMerge(nativeArgs),
+  {ok:true,reason:'REVIEW_LEASE_CONFLICT_HEAD_VERIFIED'},
+  'latest protected-branch receipt wins over stale PR.base.sha');
+ for(const opts of [{protectedBase:false},{branchSha:'d'.repeat(40)}]){
+  const changed=makeTestWorld({pr:{base:{ref:'codex/public-book-library',sha:oldSnapshot}},...opts});
+  assert.equal((await auditNativeMerge({...nativeArgs,github:changed.github})).reason,
+   'VERIFIED_PRODUCTION_BASE_MOVED',
+   'unprotected or moved refs cannot reuse CI evidence');
+ }
+ let reads=0;
+ const moved=makeTestWorld({
+  pr:{base:{ref:'codex/public-book-library',sha:oldSnapshot}},
+  branchSha:()=>++reads===1?BASE:'d'.repeat(40)
+ });
+ assert.equal((await auditNativeMerge({...nativeArgs,github:moved.github})).reason,
+  'VERIFIED_PRODUCTION_BASE_MOVED',
+  'a second production advance before ARM must fail closed');
+ assert.equal(reads,2);
+ const invalid=makeTestWorld({pr:{base:{ref:'other',sha:oldSnapshot}}});
+ assert.equal((await auditNativeMerge({...nativeArgs,github:invalid.github})).reason,
+  'PR_HEAD_BASE_OR_STATE_CHANGED','wrong target remains blocked');
+ const changedHead=makeTestWorld({pr:{base:{ref:'codex/public-book-library',sha:oldSnapshot},
+  head:{sha:'d'.repeat(40),repo:{full_name:OWNER+'/'+REPO}}}});
+ assert.equal((await auditNativeMerge({...nativeArgs,github:changedHead.github})).reason,
+  'PR_HEAD_BASE_OR_STATE_CHANGED','changed source still blocks');
+ const denied=makeTestWorld({pr:{base:{ref:'codex/public-book-library',sha:oldSnapshot},
+  mergeable:false,mergeable_state:'dirty'}});
+ assert.equal((await auditNativeMerge({...nativeArgs,github:denied.github})).reason,
+  'MERGE_CONFLICT','real conflicts remain blocking');
+});
+
+test('native workflow binds safety to separately verified SHA instead of stale PR snapshot',()=>{
+ const native=fs.readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+ assert.ok(native.includes("expectedBase:'${{ steps.freshness.outputs.verified_base }}'"));
+ assert.ok(native.includes('allowVerifiedBaseAdvance:true'));
+ assert.ok(!native.includes("pr.base.sha!==expectedBase"));
+ assert.ok(native.includes('steps.freshness.outputs.eligible'));
+ assert.ok(native.includes('PR_REQUIRES_CURRENT_BASE'));
+});
+
 test('required approval is enforced without inventing an approval when count is zero',async()=>{
  assert.equal((await check(makeTestWorld({parameters:{required_approving_review_count:1}}))).reason,
   'MANDATORY_APPROVAL_MISSING');
