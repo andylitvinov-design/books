@@ -21,6 +21,10 @@ jobs:
         run: sleep 150
       - name: Lighthouse mobile (public home only)
         run: npx --yes lighthouse@12.6.0 https://holistichouse.vercel.app/ --quiet --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" --only-categories=performance,seo --output=json --output-path=artifacts/lighthouse-mobile.json
+      - name: Lighthouse mobile (Russian homepage)
+        run: npx --yes lighthouse@12.6.0 https://holistichouse.vercel.app/ru --quiet --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" --only-categories=performance,seo --output=json --output-path=artifacts/lighthouse-ru-mobile.json
+      - name: Lighthouse mobile (Spanish homepage)
+        run: npx --yes lighthouse@12.6.0 https://holistichouse.vercel.app/es --quiet --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" --only-categories=performance,seo --output=json --output-path=artifacts/lighthouse-es-mobile.json
       - name: Lighthouse mobile (services catalog)
         run: npx --yes lighthouse@12.6.0 https://holistichouse.vercel.app/en/services --quiet --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" --only-categories=performance,seo --output=json --output-path=artifacts/lighthouse-services-mobile.json
       - name: Lighthouse mobile (homeopathy remedy detail)
