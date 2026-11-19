@@ -7,7 +7,8 @@ import { ServicesCardActions } from "@/components/services-card-actions";
 import { telegramServiceOptionDirectBotUrl } from "@/lib/assist/telegram-service-options.mjs";
 import styles from "./services-three-visible-options.module.css";
 
-type ThreeGroup = Exclude<ServicesPanelId, "about" | "testimonials" | "mytube" | "directory">;
+type CatalogGroup = Exclude<ServicesPanelId, "about" | "testimonials" | "mytube" | "directory">;
+export type ThreeGroup = CatalogGroup | "shamanica-artifacts" | "shamanica-learning";
 type Text3 = readonly [string, string, string]; // RU, EN, ES
 type Price = "free" | "express" | "full" | "from50" | "quote";
 type Option = {
@@ -133,6 +134,28 @@ const groups: Record<ThreeGroup, readonly Option[]> = {
       description:["Символический предмет; материалы и условия уточняются.","A symbolic object; materials and terms by arrangement.","Objeto simbólico; materiales y condiciones por acordar."],
       path:"temple-support", photo:"/academy/reiki-yggdrasil/source/advanced-runes.png", price:"quote" },
   ],
+  "shamanica-artifacts": [
+    { id:"personal", name:["Персональный талисман","Personal talisman","Talismán personal"],
+      description:["Символический предмет для личного намерения; материалы и стоимость уточняются.","A symbolic object for your intention; materials and price are confirmed individually.","Objeto simbólico personal; materiales y precio a confirmar."],
+      path:"holistic-support#talismans", photo:"/academy/reiki-yggdrasil/source/advanced-runes.png", price:"quote" },
+    { id:"fu", name:["Даосский талисман Фу","Daoist Fu talisman","Talismán taoísta Fu"],
+      description:["Выбор символа из опубликованного каталога; мастер подтвердит цену и изготовление.","Explore the published Fu catalogue; a practitioner confirms materials and price.","Explora el catálogo Fu; el maestro confirma materiales y precio."],
+      path:"holistic-support#talismans", photo:"/images/holistic-house/tao-fu-balance.webp", price:"quote" },
+    { id:"mandala", name:["Мандала для личной цели","Mandala for a personal goal","Mandala para una meta personal"],
+      description:["Создание символического изображения для вашей цели; условия по запросу.","Create a symbolic image for reflection on your goal; terms on request.","Imagen simbólica personal para reflexionar sobre una meta; consultar precio."],
+      path:"holistic-support/mandala", photo:"/images/holistic-house/mandala-gold-reference.webp", price:"quote" },
+  ],
+  "shamanica-learning": [
+    { id:"practitioner", name:["Практик Рейки · бесплатный курс","Reiki Practitioner · free course","Practicante de Reiki · curso gratis"],
+      description:["Опубликованный вводный курс с короткими уроками и практиками.","Published introductory course with short lessons and practices.","Curso introductorio publicado con lecciones y prácticas."],
+      path:"academy/principles-of-energywork", photo:"/images/holistic-house/reiki-practitioner-sunrise.webp", price:"free" },
+    { id:"tantra", name:["Тантра Рейки · введение и инициация","Tantra Reiki · introduction & initiation","Tantra Reiki · introducción e iniciación"],
+      description:["Бесплатная вводная практика и информация об инициации первой ступени.","Free introductory practice and information about Level 1 initiation.","Práctica inicial gratis e información sobre iniciación de nivel 1."],
+      path:"academy/reiki/tantra-reiki/free-initiation", photo:"/images/holistic-house/tantra-reiki-yin-yang-cover.svg", price:"free" },
+    { id:"yggdrasil", name:["Рейки Иггдрасиль · базовый курс","Reiki Yggdrasil · basic course","Reiki Yggdrasil · curso básico"],
+      description:["Основная программа; подробности ступеней и стоимость уточняются отдельно.","Explore the basic programme; level details and pricing are confirmed separately.","Programa básico; los niveles y precios se confirman por separado."],
+      path:"academy/reiki/yggdrasil", photo:"/academy/reiki-yggdrasil/source/basic-program.jpg", price:"quote" },
+  ],
   homeopathy: [
     { id:"free", name:["Бесплатный разбор ситуации","Free situation review","Revisión gratuita de situación"],
       description:["Письменная предварительная рефлексия без назначения лечения.","Written reflection, not a treatment prescription.","Reflexión escrita, no una prescripción de tratamiento."],
@@ -155,7 +178,7 @@ const tags: Record<PublicLocale, Record<Price, string>> = {
 const translate = (values:Text3, locale:PublicLocale):string =>
   values[locale==="ru"?0:locale==="en"?1:2];
 
-export function isThreeOptionGroup(id:ServicesPanelId):id is ThreeGroup {
+export function isThreeOptionGroup(id:ServicesPanelId):id is CatalogGroup {
   return Object.prototype.hasOwnProperty.call(groups,id);
 }
 
