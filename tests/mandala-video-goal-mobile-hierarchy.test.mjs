@@ -8,14 +8,13 @@ const studio=read("mandala-free-video-studio.tsx");
 const layout=read("mandala-video-goal-refresh.css");
 const mobile=layout.slice(layout.indexOf("/* Goal 1: owner mobile correction"));
 
-test("Goal keeps one live audience toggle in the same mobile title row",()=>{
-  assert.match(studio,/data-video-director-audience-controls/);
-  assert.match(studio,/1\. Choose your goal/);
-  assert.match(studio,/1\. Выберите цель/);
-  assert.match(studio,/1\. Elige tu objetivo/);
-  assert.match(director,/createPortal\(audienceBar,audienceTarget\)/);
-  assert.match(mobile,/grid-template-columns:minmax\(0,1fr\) auto!important/);
-  assert.match(mobile,/white-space:nowrap!important/);
+test("Goal uses Life/Work as only audience switch and collapses the old empty row",()=>{
+ assert.match(studio,/data-video-director-audience-controls/);
+ assert.match(studio,/1\. Choose your goal/);
+ assert.match(director,/changeVideoAudience\(scope==="life"\?"self":"others"\)/);
+ assert.doesNotMatch(director,/createPortal\(audienceBar,audienceTarget\)/);
+ assert.match(mobile,/grid-template-columns:minmax\(0,1fr\) auto!important/);
+ assert.match(layout,/max-height:880px/);
 });
 test("Subcategories are a distinct prominent step with touch-sized choices",()=>{
   assert.match(director,/data-auto-video-subcategories/);

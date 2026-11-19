@@ -445,8 +445,8 @@ test("the approved single wish and match action precede goal cards, category, to
  assert.ok(prompt>=0&&prompt<goal&&goal<topic&&topic<next,"approved wish → goal → category/topic → Ideas order");
  assert.match(studio,/data-video-wish-above-goals/);
  assert.match(studio,/data-video-director-audience-controls/);
- assert.match(director,/data-auto-video-audience=\{mode\}/);
- assert.match(director,/createPortal\(audienceBar,audienceTarget\)/);
+ assert.doesNotMatch(director,/data-auto-video-audience=\{mode\}/);
+ assert.match(director,/changeVideoAudience\(scope==="life"\?"self":"others"\)/);
  assert.doesNotMatch(studio,/data-video-goal-audience-option/);
  assert.match(director,/data-video-goal-topic-chips/);
  assert.match(director,/onClick=\{designFromRequest\}/);
