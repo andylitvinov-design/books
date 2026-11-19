@@ -258,10 +258,10 @@ test('Wave local chat remains consent-gated and is independent of any model key'
   assert.equal(v3ServiceIntakeReady({...local,HH_CRM_TG_AI_V3_SCHEMA_READY:'false'}),false);
   assert.equal(v3ServiceIntakeReady({...local,HH_CRM_TG_AI_V3_ENABLED:'false'}),false);
   assert.equal(v3ServiceIntakeReady({...local,VERCEL_ENV:'preview'}),false);
-  assert.match(service,/if\(\(serviceCopy\|\|ctx\.supportSelection\)\)\&\&ctx\.mode!==SECRETARY_MODES\.PSYCHOLOGIST&&/);
+  assert.match(service,/if\(\(serviceCopy\|\|ctx\.supportSelection\)\&\&ctx\.mode!==SECRETARY_MODES\.PSYCHOLOGIST&&/);
   assert.match(service,/ctx\.conversationKind!==\x27general\x27&&!event\.voiceNote/);
   assert.match(service,/if\(!row.ai_consent_at\|\|!/);
-  assert.match(service,/if\(\(serviceCopy\|\|ctx\.supportSelection\)\)\&\&ctx\.mode!==SECRETARY_MODES\.PSYCHOLOGIST&&/);
+  assert.match(service,/if\(\(serviceCopy\|\|ctx\.supportSelection\)\&\&ctx\.mode!==SECRETARY_MODES\.PSYCHOLOGIST&&/);
   assert.match(service,/ctx\.conversationKind!==\x27general\x27&&!event\.voiceNote/);
   assert.match(service,/waveTelegramLocalReply\(\{locale:prior.locale,turns\}\)/);
   assert.match(service,/wave_telegram_inference/);
