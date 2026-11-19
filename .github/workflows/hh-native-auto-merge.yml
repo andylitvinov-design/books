@@ -837,7 +837,9 @@ jobs:
 
   conflict-event-handoff:
     name: verified-dirty-conflict-event-handoff
-    # Reuse the exact same signed single-writer lease as Core/Watchdog.
+    # This event is PR-local and ONLY records a verified conflict hint.
+    # It never dispatches the global code writer or reserves Control Tower.
+    # The existing Watchdog owns all serialized conflict handoff/worker work.
     # Never checkout or execute untrusted pull request HEAD code.
     if: >-
       github.repository == 'andylitvinov-design/books' &&
@@ -847,7 +849,8 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.draft == false
     concurrency:
-      group: hh-control-tower-single-writer
+      # One bad/dirty PR cannot evict the pending Watchdog for another PR.
+      group: hh-conflict-event-pr-${{ github.event.pull_request.number || github.run_id }}
       cancel-in-progress: false
     # Read-only GitHub API/Node orchestration: one-vCPU slim runner is
     # sufficient and stays below its 15-minute hard cap.
@@ -904,8 +907,10 @@ jobs:
             }
             const {run}=require(process.env.GITHUB_WORKSPACE+
               '/scripts/ci-pr-conflict-event-handoff.cjs');
-            const result=await run({github,core,context,dryRun:false});
-            core.info('HH_CONFLICT_EVENT_HANDOFF '+JSON.stringify(result));
+            // Never enter the globally serialized dispatcher from a PR event.
+            // It will read this exact-HEAD hint on its own existing cadence.
+            const result=await run({github,core,context,dryRun:false,queueOnly:true});
+            core.info('HH_CONFLICT_EVENT_HINT '+JSON.stringify(result));
             await core.summary.addHeading('Conflict: exact-HEAD event handoff')
               .addCodeBlock(JSON.stringify(result,null,2)).write();
             // No new runner or job: use this authenticated PR event to detect
