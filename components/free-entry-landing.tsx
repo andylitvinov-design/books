@@ -10,7 +10,6 @@ import { FreeSituationReviewForm } from "@/components/free-situation-review-form
 import { SiteVideoPlayer } from "@/components/site-video-player";
 import { getServiceVideoMedia } from "@/data/service-video-library";
 import { locallyArchivedVideoPosterIds, testimonialVideos } from "@/components/personal-testimonials";
-import { LazyPersonalTestimonials } from "@/components/lazy-personal-testimonials";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./free-entry-landing.module.css";
 
@@ -420,11 +419,30 @@ ru: {
     recording: "Este vídeo existente presenta mi enfoque de alquimia psíquica. Es una introducción general, no un vídeo específico sobre la revisión exprés gratuita.",
     audio: "Presentación de Andrey · audio en español",
     storiesEyebrow: "TESTIMONIOS REALES EN VÍDEO",
-    storiesTitle: "Tres experiencias reales de clientes",
-    storiesLead: "Vídeos sobre otros formatos de trabajo personal, no sobre este servicio gratuito. El audio original es en inglés; los títulos están traducidos.",
+    storiesTitle: "Experiencias de clientes en vídeo",
+    storiesLead: "Testimonios de otras sesiones, no de esta revisión gratuita. Los títulos están en español; el audio original es en inglés o ruso.",
     enAudio: "Audio original en inglés", ruAudio: "Audio original en ruso",
     storiesNote: "Son experiencias personales, no resultados típicos o garantizados ni evidencia de eficacia médica.",
   },
+} as const;
+
+
+const translatedOtherLanguageReviewTitles = {
+  ru: [
+    "Бизнес-расстановки — отзыв", "Бизнес-консультирование — отзыв",
+    "Клэр — отзыв", "Опыт совместной работы",
+    "Психическая алхимия — отзыв", "Семейные расстановки — отзыв",
+  ],
+  en: [
+    "Anton Korchinsky — client review", "Yuri Goncharenko — client review",
+    "Business constellations — review", "Tatyana Razumovskaya — business consultation review",
+    "Express assessment — review", "Elena Bakhtina — client review",
+  ],
+  es: [
+    "Anton Korchinsky — testimonio", "Yuri Goncharenko — testimonio",
+    "Constelaciones empresariales — testimonio", "Tatyana Razumovskaya — consulta de negocios",
+    "Evaluación exprés — testimonio", "Elena Bakhtina — testimonio",
+  ],
 } as const;
 
 const situationApproach = {
@@ -488,9 +506,15 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
     },
     poster: "/images/holistic-house/video-posters/psychic-alchemy-es-v1.webp",
   } : getServiceVideoMedia("overview", locale);
-  const featuredReviewVideos = kind !== "situation" ? [] : locale === "ru"
-    ? [testimonialVideos.ru[4], testimonialVideos.ru[1], testimonialVideos.ru[3]]
-    : testimonialVideos[locale].slice(0, 3);
+  // All twelve genuine source recordings appear once, page-language titles first.
+  // Keep original audio and poster identity, without dubbing or autoplay.
+  const originalLanguageReviews = locale === "ru"
+    ? [testimonialVideos.ru[4], ...testimonialVideos.ru.slice(0, 4), testimonialVideos.ru[5]]
+    : testimonialVideos[locale];
+  const otherLanguageReviews = locale === "ru"
+    ? testimonialVideos.en.map((item, i) => ({ ...item, title: translatedOtherLanguageReviewTitles.ru[i] ?? item.title }))
+    : testimonialVideos.ru.map((item, i) => ({ ...item, title: translatedOtherLanguageReviewTitles[locale][i] ?? item.title }));
+  const reviewVideos = kind === "situation" ? [...originalLanguageReviews, ...otherLanguageReviews] : [];
 
   return (
     <main className={styles.page} lang={locale} data-free-entry-landing={kind}>
@@ -595,15 +619,21 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
                   <h2 id="free-review-stories-title">{situationVideoStory[locale].storiesTitle}</h2>
                   <p>{situationVideoStory[locale].storiesLead}</p>
                 </header>
-                <p className={styles.reviewSwipeHint}>{locale === "ru" ? "Листайте видеоотзывы →" : locale === "es" ? "Desliza para ver más vídeos →" : "Swipe for more reviews →"}</p>
-                <div className={styles.reviewPreviewGrid} role="region" aria-label={situationVideoStory[locale].storiesTitle} tabIndex={0}>
-                  {featuredReviewVideos.map((item) => (
+                <p className={styles.reviewCount}>
+                  {locale === "ru" ? `Все ${reviewVideos.length} видеоотзывов — сначала на русском, затем на английском`
+                    : locale === "es" ? `Los ${reviewVideos.length} vídeos — audio original en inglés y ruso`
+                    : `All ${reviewVideos.length} videos — English audio first, then Russian`}
+                </p>
+                <div className={styles.reviewPreviewGrid} role="region" aria-label={situationVideoStory[locale].storiesTitle}
+                  data-review-list-direction="vertical" data-review-count={reviewVideos.length}>
+                  {reviewVideos.map((item, index) => (
                     <article className={styles.reviewPreviewCard} key={item.id} data-testimonial-video-id={item.id}>
                       <p className={styles.reviewAudioLabel}>
-                        {item.language === "ru" ? situationVideoStory[locale].ruAudio : situationVideoStory[locale].enAudio}
+                        <span>{String(index + 1).padStart(2, "0")} / {reviewVideos.length}</span>
+                        <span>{item.language === "ru" ? situationVideoStory[locale].ruAudio : situationVideoStory[locale].enAudio}</span>
                       </p>
                       <SiteVideoPlayer video={{ youtubeId: item.id, title: item.title, language: item.language }}
-                        locale={locale} compact
+                        locale={locale} textLanguage={locale} compact
                         fallbackPoster={locallyArchivedVideoPosterIds.has(item.id)
                           ? "/images/holistic-house/testimonial-posters/" + item.id + ".webp"
                           : undefined} />
@@ -627,11 +657,6 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
                 </div>
                 <div className={styles.reviewProcessPhoto}><Image src={images.process} alt={t.processAlt} fill sizes="(max-width: 720px) 100vw, 40vw" /></div>
               </section>
-              <LazyPersonalTestimonials
-                locale={locale}
-                summary={situationFirstScreen[locale].reviews}
-                className={styles.reviewStories}
-              />
             </>
           } enableWizard={process.env.HH_FREE_EXPRESS_V2_ENABLED === "true"}>
             <div className={styles.coachingLink}>

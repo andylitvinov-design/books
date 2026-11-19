@@ -43,7 +43,7 @@ test("free landings explain benefits before closing with one short capture", () 
   const proof = landing.indexOf('data-featured-free-review-testimonials');
   const final = landing.lastIndexOf("<CompactLeadCapture");
   assert.ok(hero > 0 && hero < video && video < outcome && outcome < proof && proof < process && process < final,
-    "A separate video introduction and three visible reviews belong to the same landing");
+    "A separate introduction and all twelve genuine client videos belong to one landing");
   assert.match(landing, /kind === "tests" \? <section className=\{\[styles\.scene, styles\.processScene/,
     "Only Wu Xing hides the redundant process section");
   assert.match(landing, /data-free-review-intro-video/);
@@ -131,17 +131,19 @@ test("mobile layout offers one meaning per screen, authentic images, and accessi
   assert.match(landing, /"\/images\/holistic-house\/andy-about\.png"/);
   assert.match(landing, /"\/images\/holistic-house\/course-start-heron\.webp"/);
   assert.match(landing, /"\/academy\/reiki-yggdrasil\/source\/eastern-tradition\.png"/);
-  assert.match(landing, /<LazyPersonalTestimonials\s+locale=\{locale\}/);
-  assert.doesNotMatch(landing, /<PersonalTestimonials locale=\{locale\} variant="all"/);
-  const lazyArchive = read("components/lazy-personal-testimonials.tsx");
-  assert.match(lazyArchive, /dynamic\(/);
-  assert.match(lazyArchive, /ssr: false/);
-  assert.match(lazyArchive, /openedOnce \? <PersonalTestimonials locale=\{locale\} variant="all" sameAudioOnly \/>/);
+  assert.match(landing, /const reviewVideos = kind === "situation"/);
+  assert.match(landing, /reviewVideos\.map\(\(item, index\) =>/);
+  assert.match(landing, /data-review-list-direction="vertical"/);
+  assert.match(landing, /data-review-count=\{reviewVideos\.length\}/);
+  assert.doesNotMatch(landing, /<LazyPersonalTestimonials|featuredReviewVideos|reviewSwipeHint/);
   assert.match(landing, /<PersonalExpressEnquiry locale=\{locale\} intro=\{/);
   assert.doesNotMatch(landing, /<FreeDiagnosisOffers/);
   assert.match(read("components/personal-express-enquiry.tsx"), /data-personal-express-enquiry/);
-  assert.match(lazyArchive, /data-review-stories/);
-  assert.match(lazyArchive, /onToggle=/);
+
+
+  assert.match(css, /\.reviewPreviewGrid\{display:flex;flex-direction:column/);
+  assert.match(css, /\.reviewPreviewCard :global\(\.site-video-title\)\{color:#143d3a/);
+  assert.doesNotMatch(css, /grid-auto-flow:column|scroll-snap-type:x mandatory/);
   assert.match(css, /\.reviewBenefitsList/);
   assert.match(css, /\.reviewProcess/);
   assert.match(css, /\.reviewApproach/);

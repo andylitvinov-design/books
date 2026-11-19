@@ -16,12 +16,9 @@ test("express landing has one service; consultation hub keeps its existing three
   assert.match(landing, /<PersonalExpressEnquiry locale=\{locale\} intro=\{/);
   assert.doesNotMatch(landing, /<FreeDiagnosisOffers/);
   assert.match(hub, /<FreeDiagnosisOffers locale=\{lang\} \/>/);
-  assert.match(landing, /<LazyPersonalTestimonials\s+locale=\{locale\}/);
-  assert.doesNotMatch(landing, /<PersonalTestimonials locale=\{locale\} variant="all"/);
-  const lazyArchive = source("components/lazy-personal-testimonials.tsx");
-  assert.match(lazyArchive, /dynamic\(/);
-  assert.match(lazyArchive, /ssr: false/);
-  assert.match(lazyArchive, /openedOnce \? <PersonalTestimonials locale=\{locale\} variant="all" sameAudioOnly \/>/);
+  assert.match(landing, /data-review-list-direction="vertical"/);
+  assert.match(landing, /reviewVideos\.map/);
+  assert.doesNotMatch(landing, /<LazyPersonalTestimonials|featuredReviewVideos/);
   assert.match(hub, /<PersonalTestimonials locale=\{lang\} variant="all" \/>/);
   assert.match(landing, /data-free-review-intro-video/);
   assert.match(landing, /data-featured-free-review-testimonials/);
