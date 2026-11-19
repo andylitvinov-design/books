@@ -445,3 +445,10 @@
 @media(max-width:760px){
  .page :global([data-services-unified-panel] > [role="region"][hidden]){display:none!important}
 }
+
+/* Only the ten compact source-backed offer groups are shown by default.
+   Hide duplicate legacy consultation formats until the visitor explicitly
+   expands that category; preserve its original booking actions afterward. */
+@media(max-width:760px){
+ .page :global([data-services-unified-catalog] [data-services-unified-panel="consultation"][data-expanded="false"] [data-assist-personal-consultation]){display:none!important}
+}
