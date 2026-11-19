@@ -15,13 +15,21 @@ export interface StoryPhoto {
  readonly tags:readonly string[];
  readonly categories:readonly string[];
  readonly stage:number;
- readonly durationSeconds:5;
+ readonly durationSeconds:number;
+ readonly photoId?:number;
+ readonly creatorName?:string;
+ readonly nativeAspect?:"landscape"|"portrait";
+ readonly sourceWidth?:number;
+ readonly sourceHeight?:number;
  readonly approval:string;
 }
 export type StoryBusinessPhoto=StoryPhoto;
 export declare const STORY_PHOTO_LIBRARY_VERSION:string;
 export declare const STORY_BUSINESS_PHOTOS:readonly StoryBusinessPhoto[];
 export declare const STORY_WIKIMEDIA_PHOTOS:readonly StoryPhoto[];
+/** 33 static licensed Pexels sources for the six canonical First Light plot modes. */
+export declare const STORY_FIRST_LIGHT_PHOTOS:readonly StoryPhoto[];
+export declare const STORY_FIRST_LIGHT_PHOTO_BY_ID:ReadonlyMap<string,StoryPhoto>;
 export declare const STORY_PHOTOS:readonly StoryPhoto[];
 export declare const STORY_PHOTO_BY_ID:ReadonlyMap<string,StoryPhoto>;
 export declare function isTrustedStoryPhoto(photo:unknown):photo is StoryPhoto;

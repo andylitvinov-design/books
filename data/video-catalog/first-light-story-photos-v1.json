@@ -1,0 +1,908 @@
+{
+  "schemaVersion": "hh-first-light-plot-photo-v1",
+  "usage": "Existing Holistic House first-party photo proxy; licensed Pexels sources. Actual JPEG bytes and scene suitability must be verified at render time.",
+  "photos": [
+    {
+      "id": "story-photo-pexels-94038",
+      "provider": "pexels",
+      "providerPhotoId": 94038,
+      "creator": "Marolyn Dudfield",
+      "sourcePage": "https://www.pexels.com/photo/brown-grass-under-the-sun-and-blue-sky-94038/",
+      "upstreamSrc": "https://images.pexels.com/photos/94038/pexels-photo-94038.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Золотой рассвет над полем",
+      "descriptionEn": "sunrise, meadow, warm-light, renewal, opening",
+      "width": 5184,
+      "height": 3456,
+      "tags": [
+        "sunrise",
+        "meadow",
+        "warm-light",
+        "renewal",
+        "opening"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-846071",
+      "provider": "pexels",
+      "providerPhotoId": 846071,
+      "creator": "Kieran White",
+      "sourcePage": "https://www.pexels.com/photo/close-up-photography-of-vintage-camera-846071/",
+      "upstreamSrc": "https://images.pexels.com/photos/846071/pexels-photo-846071.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Камера в мягком солнечном свете",
+      "descriptionEn": "camera, observation, light, frame, detail",
+      "width": 2048,
+      "height": 1361,
+      "tags": [
+        "camera",
+        "observation",
+        "light",
+        "frame",
+        "detail"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-4881115",
+      "provider": "pexels",
+      "providerPhotoId": 4881115,
+      "creator": "Ketut Subiyanto",
+      "sourcePage": "https://www.pexels.com/photo/women-standing-on-the-bus-stop-4881115/",
+      "upstreamSrc": "https://images.pexels.com/photos/4881115/pexels-photo-4881115.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Люди на городской остановке",
+      "descriptionEn": "bus-stop, people, city, morning, waiting",
+      "width": 4000,
+      "height": 6000,
+      "tags": [
+        "bus-stop",
+        "people",
+        "city",
+        "morning",
+        "waiting"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-6877437",
+      "provider": "pexels",
+      "providerPhotoId": 6877437,
+      "creator": "cottonbro studio",
+      "sourcePage": "https://www.pexels.com/photo/reflection-of-a-woman-in-the-mirror-reading-a-script-6877437/",
+      "upstreamSrc": "https://images.pexels.com/photos/6877437/pexels-photo-6877437.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Тихая репетиция перед зеркалом",
+      "descriptionEn": "rehearsal, mirror, script, reflection, confidence",
+      "width": 5840,
+      "height": 3893,
+      "tags": [
+        "rehearsal",
+        "mirror",
+        "script",
+        "reflection",
+        "confidence"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-6877446",
+      "provider": "pexels",
+      "providerPhotoId": 6877446,
+      "creator": "cottonbro studio",
+      "sourcePage": "https://www.pexels.com/photo/woman-sitting-by-the-mirror-holding-a-script-6877446/",
+      "upstreamSrc": "https://images.pexels.com/photos/6877446/pexels-photo-6877446.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Последние строки перед выступлением",
+      "descriptionEn": "rehearsal, script, mirror, preparation, confidence",
+      "width": 3700,
+      "height": 5550,
+      "tags": [
+        "rehearsal",
+        "script",
+        "mirror",
+        "preparation",
+        "confidence"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-6926218",
+      "provider": "pexels",
+      "providerPhotoId": 6926218,
+      "creator": "cottonbro studio",
+      "sourcePage": "https://www.pexels.com/photo/woman-wearing-white-robe-while-standing-in-front-of-window-s-curtain-6926218/",
+      "upstreamSrc": "https://images.pexels.com/photos/6926218/pexels-photo-6926218.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Силуэт у окна перед новым началом",
+      "descriptionEn": "curtains, window, quiet, reflection, preparation",
+      "width": 6029,
+      "height": 4019,
+      "tags": [
+        "curtains",
+        "window",
+        "quiet",
+        "reflection",
+        "preparation"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-7747182",
+      "provider": "pexels",
+      "providerPhotoId": 7747182,
+      "creator": "Enes Çelik",
+      "sourcePage": "https://www.pexels.com/photo/woman-sitting-with-hands-clasped-while-meditating-7747182/",
+      "upstreamSrc": "https://images.pexels.com/photos/7747182/pexels-photo-7747182.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Спокойная пауза в домашней обстановке",
+      "descriptionEn": "calm, breathing, home, peace, reflection",
+      "width": 2405,
+      "height": 3600,
+      "tags": [
+        "calm",
+        "breathing",
+        "home",
+        "peace",
+        "reflection"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-8843705",
+      "provider": "pexels",
+      "providerPhotoId": 8843705,
+      "creator": "ANTONI SHKRABA production",
+      "sourcePage": "https://www.pexels.com/photo/woman-and-men-on-painting-course-8843705/",
+      "upstreamSrc": "https://images.pexels.com/photos/8843705/pexels-photo-8843705.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Разговор участников творческой мастерской",
+      "descriptionEn": "workshop, art, people, dialogue, support",
+      "width": 6000,
+      "height": 4000,
+      "tags": [
+        "workshop",
+        "art",
+        "people",
+        "dialogue",
+        "support"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-8997905",
+      "provider": "pexels",
+      "providerPhotoId": 8997905,
+      "creator": "PNW Production",
+      "sourcePage": "https://www.pexels.com/photo/a-person-holding-a-letter-and-a-pen-8997905/",
+      "upstreamSrc": "https://images.pexels.com/photos/8997905/pexels-photo-8997905.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Письмо, раскрывающее новый выбор",
+      "descriptionEn": "letter, pen, paper, reflection, future",
+      "width": 3270,
+      "height": 4898,
+      "tags": [
+        "letter",
+        "pen",
+        "paper",
+        "reflection",
+        "future"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-10410011",
+      "provider": "pexels",
+      "providerPhotoId": 10410011,
+      "creator": "Mathias Reding",
+      "sourcePage": "https://www.pexels.com/photo/people-walking-on-the-sidewalk-beside-a-glass-building-10410011/",
+      "upstreamSrc": "https://images.pexels.com/photos/10410011/pexels-photo-10410011.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Город в отражениях витрин",
+      "descriptionEn": "reflection, glass, pedestrians, city, change",
+      "width": 4040,
+      "height": 6059,
+      "tags": [
+        "reflection",
+        "glass",
+        "pedestrians",
+        "city",
+        "change"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-10614490",
+      "provider": "pexels",
+      "providerPhotoId": 10614490,
+      "creator": "Alexey Demidov",
+      "sourcePage": "https://www.pexels.com/photo/man-walking-in-forest-at-sunrise-10614490/",
+      "upstreamSrc": "https://images.pexels.com/photos/10614490/pexels-photo-10614490.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Человек на тропе в утреннем лесу",
+      "descriptionEn": "forest, walking, morning, sunlight, quiet",
+      "width": 3648,
+      "height": 5472,
+      "tags": [
+        "forest",
+        "walking",
+        "morning",
+        "sunlight",
+        "quiet"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-11584498",
+      "provider": "pexels",
+      "providerPhotoId": 11584498,
+      "creator": "SERHAT TUĞ",
+      "sourcePage": "https://www.pexels.com/photo/beautiful-view-of-the-sky-at-sunrise-11584498/",
+      "upstreamSrc": "https://images.pexels.com/photos/11584498/pexels-photo-11584498.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Восходящее солнце и облака",
+      "descriptionEn": "sunrise, sky, golden, first-light, hope",
+      "width": 2448,
+      "height": 3264,
+      "tags": [
+        "sunrise",
+        "sky",
+        "golden",
+        "first-light",
+        "hope"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-12640960",
+      "provider": "pexels",
+      "providerPhotoId": 12640960,
+      "creator": "Ethan Brooke",
+      "sourcePage": "https://www.pexels.com/photo/sunrise-over-a-field-12640960/",
+      "upstreamSrc": "https://images.pexels.com/photos/12640960/pexels-photo-12640960.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Простор поля на рассвете",
+      "descriptionEn": "sunrise, field, open-space, new-day, hope",
+      "width": 3840,
+      "height": 2561,
+      "tags": [
+        "sunrise",
+        "field",
+        "open-space",
+        "new-day",
+        "hope"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-12995093",
+      "provider": "pexels",
+      "providerPhotoId": 12995093,
+      "creator": "Josh Hild",
+      "sourcePage": "https://www.pexels.com/photo/a-man-walking-on-a-street-in-a-city-12995093/",
+      "upstreamSrc": "https://images.pexels.com/photos/12995093/pexels-photo-12995093.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Пешеход в солнечном городе",
+      "descriptionEn": "walking, city, sunlight, transition, choice",
+      "width": 3591,
+      "height": 5386,
+      "tags": [
+        "walking",
+        "city",
+        "sunlight",
+        "transition",
+        "choice"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-15914819",
+      "provider": "pexels",
+      "providerPhotoId": 15914819,
+      "creator": "carcdann",
+      "sourcePage": "https://www.pexels.com/photo/skyscrapers-in-sunlight-at-end-of-street-15914819/",
+      "upstreamSrc": "https://images.pexels.com/photos/15914819/pexels-photo-15914819.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Свет между стеклянными небоскрёбами",
+      "descriptionEn": "skyscrapers, glass, reflection, city, sunlight",
+      "width": 3200,
+      "height": 4800,
+      "tags": [
+        "skyscrapers",
+        "glass",
+        "reflection",
+        "city",
+        "sunlight"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-16249816",
+      "provider": "pexels",
+      "providerPhotoId": 16249816,
+      "creator": "kaya Yu",
+      "sourcePage": "https://www.pexels.com/photo/street-in-city-in-sunlight-16249816/",
+      "upstreamSrc": "https://images.pexels.com/photos/16249816/pexels-photo-16249816.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Светлая улица между высотками",
+      "descriptionEn": "city, street, sunlight, urban, morning",
+      "width": 1830,
+      "height": 2735,
+      "tags": [
+        "city",
+        "street",
+        "sunlight",
+        "urban",
+        "morning"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-17123438",
+      "provider": "pexels",
+      "providerPhotoId": 17123438,
+      "creator": "Mak_ jp",
+      "sourcePage": "https://www.pexels.com/photo/sunlight-over-empty-street-17123438/",
+      "upstreamSrc": "https://images.pexels.com/photos/17123438/pexels-photo-17123438.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Солнечная полоса на пустой улице",
+      "descriptionEn": "city, street, sunlight, quiet, hope",
+      "width": 4000,
+      "height": 6000,
+      "tags": [
+        "city",
+        "street",
+        "sunlight",
+        "quiet",
+        "hope"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-19291526",
+      "provider": "pexels",
+      "providerPhotoId": 19291526,
+      "creator": "Vitaly Gorbachev",
+      "sourcePage": "https://www.pexels.com/photo/woman-sitting-by-the-window-in-sunlight-19291526/",
+      "upstreamSrc": "https://images.pexels.com/photos/19291526/pexels-photo-19291526.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Размышление у окна",
+      "descriptionEn": "window, thoughtful, city, warm-light, reflection",
+      "width": 5319,
+      "height": 2700,
+      "tags": [
+        "window",
+        "thoughtful",
+        "city",
+        "warm-light",
+        "reflection"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-20394493",
+      "provider": "pexels",
+      "providerPhotoId": 20394493,
+      "creator": "zeynep acar",
+      "sourcePage": "https://www.pexels.com/photo/person-walking-next-to-a-glass-building-reflecting-itself-20394493/",
+      "upstreamSrc": "https://images.pexels.com/photos/20394493/pexels-photo-20394493.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Отражение прохожего в стеклянном городе",
+      "descriptionEn": "mirror, reflection, glass, city, walking",
+      "width": 2690,
+      "height": 4032,
+      "tags": [
+        "mirror",
+        "reflection",
+        "glass",
+        "city",
+        "walking"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-28863833",
+      "provider": "pexels",
+      "providerPhotoId": 28863833,
+      "creator": "Petra Reid",
+      "sourcePage": "https://www.pexels.com/photo/golden-field-of-wildflowers-at-sunrise-28863833/",
+      "upstreamSrc": "https://images.pexels.com/photos/28863833/pexels-photo-28863833.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Цветы в золотом утреннем свете",
+      "descriptionEn": "flowers, sunrise, golden, beauty, renewal",
+      "width": 4480,
+      "height": 6720,
+      "tags": [
+        "flowers",
+        "sunrise",
+        "golden",
+        "beauty",
+        "renewal"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-32858014",
+      "provider": "pexels",
+      "providerPhotoId": 32858014,
+      "creator": "Adem Erkoç",
+      "sourcePage": "https://www.pexels.com/photo/tranquil-golden-wheat-field-at-sunrise-32858014/",
+      "upstreamSrc": "https://images.pexels.com/photos/32858014/pexels-photo-32858014.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Пшеничное поле в первых лучах",
+      "descriptionEn": "sunrise, wheat, golden, hope, morning",
+      "width": 4000,
+      "height": 6000,
+      "tags": [
+        "sunrise",
+        "wheat",
+        "golden",
+        "hope",
+        "morning"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-32868822",
+      "provider": "pexels",
+      "providerPhotoId": 32868822,
+      "creator": "Eyüpcan Timur",
+      "sourcePage": "https://www.pexels.com/photo/crowded-urban-bus-stop-with-people-waiting-32868822/",
+      "upstreamSrc": "https://images.pexels.com/photos/32868822/pexels-photo-32868822.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Остановка в тёплом городском свете",
+      "descriptionEn": "bus-stop, crowd, city, sunlight, waiting",
+      "width": 6240,
+      "height": 4160,
+      "tags": [
+        "bus-stop",
+        "crowd",
+        "city",
+        "sunlight",
+        "waiting"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-33246825",
+      "provider": "pexels",
+      "providerPhotoId": 33246825,
+      "creator": "Matheus Bertelli",
+      "sourcePage": "https://www.pexels.com/photo/creative-art-session-with-artists-in-studio-33246825/",
+      "upstreamSrc": "https://images.pexels.com/photos/33246825/pexels-photo-33246825.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Совместное творчество в студии",
+      "descriptionEn": "workshop, art, painting, creative, community",
+      "width": 4016,
+      "height": 6024,
+      "tags": [
+        "workshop",
+        "art",
+        "painting",
+        "creative",
+        "community"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-34308517",
+      "provider": "pexels",
+      "providerPhotoId": 34308517,
+      "creator": "Necip Duman",
+      "sourcePage": "https://www.pexels.com/photo/photographer-holding-camera-outdoors-in-sunlight-34308517/",
+      "upstreamSrc": "https://images.pexels.com/photos/34308517/pexels-photo-34308517.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Наблюдение через объектив на улице",
+      "descriptionEn": "camera, photographer, observation, city, sunlight",
+      "width": 3955,
+      "height": 5932,
+      "tags": [
+        "camera",
+        "photographer",
+        "observation",
+        "city",
+        "sunlight"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-34688328",
+      "provider": "pexels",
+      "providerPhotoId": 34688328,
+      "creator": "Ruslan Sikunov",
+      "sourcePage": "https://www.pexels.com/photo/relaxed-woman-enjoying-sunlight-by-window-34688328/",
+      "upstreamSrc": "https://images.pexels.com/photos/34688328/pexels-photo-34688328.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Тёплый свет у окна",
+      "descriptionEn": "window, sunlight, calm, reflection, hope",
+      "width": 6774,
+      "height": 4705,
+      "tags": [
+        "window",
+        "sunlight",
+        "calm",
+        "reflection",
+        "hope"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-36113252",
+      "provider": "pexels",
+      "providerPhotoId": 36113252,
+      "creator": "Serbay Arıbal",
+      "sourcePage": "https://www.pexels.com/photo/elderly-man-waiting-at-bus-stop-in-city-street-36113252/",
+      "upstreamSrc": "https://images.pexels.com/photos/36113252/pexels-photo-36113252.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Один человек на городской остановке",
+      "descriptionEn": "bus-stop, person, city, solitude, waiting",
+      "width": 3275,
+      "height": 5010,
+      "tags": [
+        "bus-stop",
+        "person",
+        "city",
+        "solitude",
+        "waiting"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-36545819",
+      "provider": "pexels",
+      "providerPhotoId": 36545819,
+      "creator": "M.R. Fathur",
+      "sourcePage": "https://www.pexels.com/photo/man-walking-in-sunlit-forest-pathway-36545819/",
+      "upstreamSrc": "https://images.pexels.com/photos/36545819/pexels-photo-36545819.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Солнечная тропа и силуэт",
+      "descriptionEn": "forest, path, sunbeams, grounding, journey",
+      "width": 3168,
+      "height": 4752,
+      "tags": [
+        "forest",
+        "path",
+        "sunbeams",
+        "grounding",
+        "journey"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-36697953",
+      "provider": "pexels",
+      "providerPhotoId": 36697953,
+      "creator": "Vitaly Gariev",
+      "sourcePage": "https://www.pexels.com/photo/artists-collaborating-in-a-studio-environment-36697953/",
+      "upstreamSrc": "https://images.pexels.com/photos/36697953/pexels-photo-36697953.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Творческий разговор двух художников",
+      "descriptionEn": "workshop, conversation, people, creative, collaboration",
+      "width": 3840,
+      "height": 2160,
+      "tags": [
+        "workshop",
+        "conversation",
+        "people",
+        "creative",
+        "collaboration"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-37129604",
+      "provider": "pexels",
+      "providerPhotoId": 37129604,
+      "creator": "Huỳnh Như Mavi",
+      "sourcePage": "https://www.pexels.com/photo/woman-writing-in-journal-by-a-window-37129604/",
+      "upstreamSrc": "https://images.pexels.com/photos/37129604/pexels-photo-37129604.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Записи в дневнике перед новым днём",
+      "descriptionEn": "journal, writing, sunlight, morning, choice",
+      "width": 4480,
+      "height": 6720,
+      "tags": [
+        "journal",
+        "writing",
+        "sunlight",
+        "morning",
+        "choice"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-37500867",
+      "provider": "pexels",
+      "providerPhotoId": 37500867,
+      "creator": "高 长华",
+      "sourcePage": "https://www.pexels.com/photo/sunlit-urban-street-in-early-morning-37500867/",
+      "upstreamSrc": "https://images.pexels.com/photos/37500867/pexels-photo-37500867.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Тихая городская улица утром",
+      "descriptionEn": "city, street, morning, sunlight, first-light",
+      "width": 6000,
+      "height": 4000,
+      "tags": [
+        "city",
+        "street",
+        "morning",
+        "sunlight",
+        "first-light"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-37713503",
+      "provider": "pexels",
+      "providerPhotoId": 37713503,
+      "creator": "Alexander Mass",
+      "sourcePage": "https://www.pexels.com/photo/elegant-woman-writing-by-window-in-soft-light-37713503/",
+      "upstreamSrc": "https://images.pexels.com/photos/37713503/pexels-photo-37713503.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Письмо будущему себе у окна",
+      "descriptionEn": "letter, writing, window, soft-light, future",
+      "width": 4000,
+      "height": 6000,
+      "tags": [
+        "letter",
+        "writing",
+        "window",
+        "soft-light",
+        "future"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-37713506",
+      "provider": "pexels",
+      "providerPhotoId": 37713506,
+      "creator": "Alexander Mass",
+      "sourcePage": "https://www.pexels.com/photo/elegant-woman-writing-a-letter-by-sunlit-desk-37713506/",
+      "upstreamSrc": "https://images.pexels.com/photos/37713506/pexels-photo-37713506.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Письмо себе из завтрашнего дня",
+      "descriptionEn": "letter, writing, sunlight, future, choice",
+      "width": 4000,
+      "height": 6000,
+      "tags": [
+        "letter",
+        "writing",
+        "sunlight",
+        "future",
+        "choice"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    },
+    {
+      "id": "story-photo-pexels-40043387",
+      "provider": "pexels",
+      "providerPhotoId": 40043387,
+      "creator": "Ivett M",
+      "sourcePage": "https://www.pexels.com/photo/warm-morning-light-streaming-through-window-40043387/",
+      "upstreamSrc": "https://images.pexels.com/photos/40043387/pexels-photo-40043387.jpeg?auto=compress&cs=tinysrgb&w=1280",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "titleRu": "Первые лучи сквозь занавеску",
+      "descriptionEn": "window, curtain, sunbeam, awakening, quiet",
+      "width": 2080,
+      "height": 3120,
+      "tags": [
+        "window",
+        "curtain",
+        "sunbeam",
+        "awakening",
+        "quiet"
+      ],
+      "moods": [
+        "gentle",
+        "hopeful"
+      ]
+    }
+  ],
+  "plots": {
+    "morning-energy-s1-p1": [
+      [
+        "story-photo-pexels-94038",
+        "story-photo-pexels-11584498"
+      ],
+      [
+        "story-photo-pexels-4881115",
+        "story-photo-pexels-36113252"
+      ],
+      [
+        "story-photo-pexels-32868822",
+        "story-photo-pexels-12995093"
+      ],
+      [
+        "story-photo-pexels-37500867",
+        "story-photo-pexels-17123438"
+      ]
+    ],
+    "morning-energy-s1-p2": [
+      [
+        "story-photo-pexels-37500867",
+        "story-photo-pexels-16249816"
+      ],
+      [
+        "story-photo-pexels-20394493",
+        "story-photo-pexels-12995093"
+      ],
+      [
+        "story-photo-pexels-10410011",
+        "story-photo-pexels-17123438"
+      ],
+      [
+        "story-photo-pexels-15914819",
+        "story-photo-pexels-19291526"
+      ]
+    ],
+    "morning-energy-s1-p3": [
+      [
+        "story-photo-pexels-40043387",
+        "story-photo-pexels-34688328"
+      ],
+      [
+        "story-photo-pexels-36697953",
+        "story-photo-pexels-33246825"
+      ],
+      [
+        "story-photo-pexels-8843705",
+        "story-photo-pexels-36697953"
+      ],
+      [
+        "story-photo-pexels-33246825",
+        "story-photo-pexels-37129604"
+      ]
+    ],
+    "morning-energy-s1-p4": [
+      [
+        "story-photo-pexels-34688328",
+        "story-photo-pexels-19291526"
+      ],
+      [
+        "story-photo-pexels-37713503",
+        "story-photo-pexels-37129604"
+      ],
+      [
+        "story-photo-pexels-8997905",
+        "story-photo-pexels-37713506"
+      ],
+      [
+        "story-photo-pexels-37713506",
+        "story-photo-pexels-12640960"
+      ]
+    ],
+    "morning-energy-s1-p5": [
+      [
+        "story-photo-pexels-10614490",
+        "story-photo-pexels-36545819"
+      ],
+      [
+        "story-photo-pexels-34308517",
+        "story-photo-pexels-10410011"
+      ],
+      [
+        "story-photo-pexels-846071",
+        "story-photo-pexels-15914819"
+      ],
+      [
+        "story-photo-pexels-28863833",
+        "story-photo-pexels-32858014"
+      ]
+    ],
+    "morning-energy-s1-p6": [
+      [
+        "story-photo-pexels-6926218",
+        "story-photo-pexels-34688328"
+      ],
+      [
+        "story-photo-pexels-6877437",
+        "story-photo-pexels-7747182"
+      ],
+      [
+        "story-photo-pexels-6877446",
+        "story-photo-pexels-37129604"
+      ],
+      [
+        "story-photo-pexels-11584498",
+        "story-photo-pexels-32858014"
+      ]
+    ]
+  }
+}
