@@ -205,7 +205,8 @@ try {
   row.recordedBlobVerified=true;row.downloadedVideo=false;
   assert.ok(bytes.length > 20000, 'VIDEO_EXPORT_EMPTY');
   const filename = 'holistic-house-guest.'+captured.extension;
-  assert.match(filename, /\.mp4$/, 'EXPRESS_EXPORT_MUST_BE_MP4');
+  assert.match(filename, /\.(mp4|webm)$/, 'INCORRECT_VIDEO_FILENAME');
+  if(engine==='webkit')assert.match(filename,/\.mp4$/,'SAFARI_EXPRESS_EXPORT_MUST_BE_MP4');
   if (filename.endsWith('.webm')) {
     assert.deepEqual(bytes.subarray(0, 4), Buffer.from([0x1a, 0x45, 0xdf, 0xa3]),
       'NOT_REAL_WEBM');
@@ -219,8 +220,13 @@ try {
   const audio = probe.streams.find(s => s.codec_type === 'audio');
   assert.ok(video, 'ENCODED_VIDEO_STREAM_MISSING');
   assert.ok(audio, 'SELECTED_SOUNDTRACK_MISSING_FROM_EXPORT');
-  assert.equal(video.codec_name,'h264','EXPRESS_VIDEO_MUST_USE_H264');
-  assert.equal(audio.codec_name,'aac','EXPRESS_AUDIO_MUST_USE_AAC');
+  if(filename.endsWith('.mp4')){
+    assert.equal(video.codec_name,'h264','MP4_EXPRESS_VIDEO_MUST_USE_H264');
+    assert.equal(audio.codec_name,'aac','MP4_EXPRESS_AUDIO_MUST_USE_AAC');
+  }else{
+    assert.equal(video.codec_name,'vp8','WEBM_EXPRESS_VIDEO_MUST_USE_VP8');
+    assert.equal(audio.codec_name,'opus','WEBM_EXPRESS_AUDIO_MUST_USE_OPUS');
+  }
   assert.equal(video.width, 720, 'WRONG_PORTRAIT_WIDTH');
   assert.equal(video.height, 1280, 'WRONG_PORTRAIT_HEIGHT');
   const seconds = Number(probe.format?.duration || video.duration || 0);

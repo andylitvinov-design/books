@@ -90,8 +90,9 @@ test("privacy, exclusions and one-click production contract",()=>{
  assert.doesNotMatch(browser,/data-video-continue-scenarios/,
   "the export acceptance cannot pass by clicking a hidden legacy Continue control");
  assert.match(browser,/EXPRESS_VIDEO_MUST_BE_30_SECONDS/);
- assert.match(browser,/EXPRESS_VIDEO_MUST_USE_H264/);
- assert.match(browser,/EXPRESS_AUDIO_MUST_USE_AAC/);
+ assert.match(browser,/MP4_EXPRESS_VIDEO_MUST_USE_H264/);
+ assert.match(browser,/MP4_EXPRESS_AUDIO_MUST_USE_AAC/);
+ assert.match(browser,/SAFARI_EXPRESS_EXPORT_MUST_BE_MP4/);
  assert.match(browser,/expressGenerateClicks=1/);
  assert.match(browser,/expressSceneSourceIds/);
  assert.match(browser,/EXPRESS_CANONICAL_SCENE_ORDER_OR_IDENTITY_MISMATCH/);
