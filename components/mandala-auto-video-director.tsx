@@ -58,6 +58,7 @@ type Props={
   recipientAudioPanel?:ReactNode;audioStoryboardReady?:boolean;onAudioToMontage?:()=>void;
   onAudioSelectionChange?:(active:boolean)=>void;
   onGoalChange:(value:string)=>void;
+  onPickPhoto?:()=>void;onOpenPro?:()=>void;
   onConceptTopicChange?:(selection:{categoryId:string;subcategoryId:string;topicId:string;brief?:string}|null)=>void;
   onGoalQuizChange?:(state:{step:1|2|3;complete:boolean;audience:"self"|"others"})=>void;
   onCategoryChange?:(theme:VideoTheme)=>void;
@@ -182,7 +183,7 @@ const themeLabels={
 
 export function MandalaAutoVideoDirector({
  locale,goal,theme,aspect,presets,scenes,disabled,activePresetId,clipLabel,
- audioAttached=false,audioTrackLabel="",audioTrackId=null,onPickAudio,onOpenAudio,recipientAudioPanel,audioStoryboardReady=false,onAudioToMontage,onAudioSelectionChange,onGoalChange,onConceptTopicChange,onGoalQuizChange,onCategoryChange,onAspectChange,onContinue,goalContinueRef,onClarify,helpOpen=false,onShowAll,onInvalidate,onApply,onCreate,canCreate=false,rendering=false,createFeedback=""
+ audioAttached=false,audioTrackLabel="",audioTrackId=null,onPickAudio,onOpenAudio,recipientAudioPanel,audioStoryboardReady=false,onAudioToMontage,onAudioSelectionChange,onGoalChange,onPickPhoto,onOpenPro,onConceptTopicChange,onGoalQuizChange,onCategoryChange,onAspectChange,onContinue,goalContinueRef,onClarify,helpOpen=false,onShowAll,onInvalidate,onApply,onCreate,canCreate=false,rendering=false,createFeedback=""
 }:Props){
  const t=copy[locale];
  // A licensed four-shot sample is visible before any click; no recording begins automatically.
@@ -199,6 +200,8 @@ export function MandalaAutoVideoDirector({
  // Keep the user's wording in each mode separately; switching never silently replaces it.
  const [requestDrafts,setRequestDrafts]=useState({self:"",others:""});
  const requestDraft=requestDrafts[videoAudience];
+ const [quickScope,setQuickScope]=useState<"life"|"work">("life");
+ const [quickFlow,setQuickFlow]=useState<"guide"|"instant">("guide");
  const setRequestDraft=(next:string)=>setRequestDrafts(previous=>({...previous,[videoAudience]:next}));
  const [recipientKindId,setRecipientKindId]=useState<string>("");
  const [recipientAudioMode,setRecipientAudioMode]=useState(false);
@@ -855,6 +858,7 @@ export function MandalaAutoVideoDirector({
  // canonical category/topic UI and the same verified four-shot film renderer.
  const designFromRequest=()=>{
   if(disabled||!requestDraft.trim())return;
+  if(quickFlow==="instant"&&goalQuizComplete){onCreate?.();return;}
   setGoalQuizStep(1);setGoalCategoryAnswered(false);
   if(videoAudience==="others"){
    if(recipientAudioMode)return;
@@ -915,14 +919,14 @@ export function MandalaAutoVideoDirector({
   requestAnalysisMeta?.matchLevel==="category";
  const requestField=<label className={css.topicInput} data-video-request-input>
    <span className={css.srOnly}>{t.input}</span>
-   <input type="text" data-auto-video-input value={requestDraft}
-     maxLength={160} disabled={disabled}
+   <textarea data-auto-video-input value={requestDraft}
+     rows={4} maxLength={160} disabled={disabled}
      placeholder={videoAudience==="others"
        ?(locale==="ru"?"Кому и что вы хотите сказать?"
          :locale==="es"?"¿Para quién es el vídeo y qué quieres decir?"
          :"Who is it for, and what would you like to say?")
-       :t.placeholder}
-     onKeyDown={event=>{if(event.key==="Enter"){event.preventDefault();designFromRequest();}}}
+       :(locale==="ru"?"Опишите цель или пожелание…":locale==="es"?"Describe tu objetivo…":"Describe your goal or wish…")}
+     onKeyDown={event=>{if(event.key==="Enter"&&(event.ctrlKey||event.metaKey)){event.preventDefault();designFromRequest();}}}
      onChange={event=>{
        const text=event.currentTarget.value;
        const fallback=selectedTaxonomyTopic?.topic.label[locale]||
@@ -945,14 +949,45 @@ export function MandalaAutoVideoDirector({
        setIncludeMeaningCaption(false);setTimelineEdits(null);setConfirmedTimelineKey(null);
      }}/>
  </label>;
- const requestInput=<div className={css.requestComposer} data-video-request-composer>
-  {requestField}
-  <button type="button" data-video-request-design className={css.designRequest}
-   disabled={disabled||!goal.trim()} onClick={designFromRequest}>
-   <Sparkles size={17} aria-hidden="true"/>
-   <span>{locale==="ru"?"Подобрать":locale==="es"?"Elegir":"Match"}</span>
-   <ArrowRight size={17} aria-hidden="true"/>
-  </button>
+ const requestInput=<div className={css.requestShell} data-video-request-composer>
+  <div className={css.requestComposer} data-video-request-card>
+   {requestField}
+   <div className={css.requestToolbar} data-video-request-toolbar>
+    <button type="button" data-video-request-add-photo className={css.toolbarIcon}
+      disabled={disabled||!onPickPhoto} onClick={()=>onPickPhoto?.()} aria-label={locale==="ru"?"Добавить фото":locale==="es"?"Añadir foto":"Add photo"}>+</button>
+    <details className={css.composerMenu} data-video-prompt-tier>
+     <summary><Sparkles size={16} aria-hidden="true"/>{locale==="ru"?"Бесплатно":locale==="es"?"Gratis":"Free"}⌄</summary>
+     <div className={css.composerMenuList}>
+      <span aria-current="true">{locale==="ru"?"Бесплатно · локальное видео":locale==="es"?"Gratis · vídeo local":"Free · local video"}</span>
+      <button type="button" disabled={disabled||!onOpenPro} onClick={e=>{e.currentTarget.closest("details")?.removeAttribute("open");onOpenPro?.();}}>Pro · {locale==="ru"?"расширенный режим":locale==="es"?"modo avanzado":"advanced mode"}</button>
+     </div>
+    </details>
+    <details className={css.composerMenu} data-video-prompt-flow>
+     <summary>{quickFlow==="guide"?"Guide me":"Just make it"}⌄</summary>
+     <div className={css.composerMenuList}>
+      <button type="button" onClick={e=>{setQuickFlow("guide");e.currentTarget.closest("details")?.removeAttribute("open");}}>Guide me</button>
+      <button type="button" onClick={e=>{setQuickFlow("instant");e.currentTarget.closest("details")?.removeAttribute("open");}}>Just make it</button>
+     </div>
+    </details>
+    <button type="button" className={css.toolbarIcon} data-video-request-microphone disabled={disabled||!onOpenAudio}
+      onClick={()=>onOpenAudio?.()} aria-label={locale==="ru"?"Записать голос":locale==="es"?"Grabar voz":"Record voice"}><AudioLines size={20}/></button>
+    <button type="button" data-video-request-design className={css.designRequest}
+      disabled={disabled||!goal.trim()} onClick={designFromRequest} aria-label={locale==="ru"?"Продолжить":locale==="es"?"Continuar":"Continue"}>
+      <Play size={19} fill="currentColor"/></button>
+   </div>
+  </div>
+  {videoAudience==="self"&&goalQuizStep===1?<div className={css.quickIntentRow} data-video-quick-intents role="group" aria-label="Quick wishes">
+   {([
+    ["calm",locale==="ru"?"Меньше тревоги":locale==="es"?"Menos ansiedad":"Less anxiety",locale==="ru"?"Хочу больше спокойствия":locale==="es"?"Quiero más calma":"I want more calm"],
+    ["love",locale==="ru"?"Больше любви":locale==="es"?"Más amor":"More love",locale==="ru"?"Хочу больше любви и близости":locale==="es"?"Quiero más amor":"I want more love"],
+    ["strength",locale==="ru"?"Внутренняя сила":locale==="es"?"Fuerza interior":"Inner strength",locale==="ru"?"Хочу быть увереннее":locale==="es"?"Quiero más confianza":"I want inner confidence"]
+   ] as const).map(([id,label,wishText])=><button type="button" key={id} data-video-quick-intent={id}
+     disabled={disabled} aria-pressed={requestDraft===wishText} onClick={()=>{
+      setRequestDraft(wishText);onGoalChange(wishText);onInvalidate?.();
+      setPromptDesignedFor(null);setPromptClassification(null);
+      setProposalContext({goal:wishText,theme});setProposal(recommendAutoVideo({goal:wishText,locale,fallbackTheme:theme,presets,scenes}));
+     }}>{label}</button>)}
+  </div>:null}
   {promptDesignedFor===goal?<div className={css.requestAnalysis}
    data-video-request-analysis data-confidence={promptClassification?.confidence||"unresolved"}
    role="status" aria-live="polite">
@@ -1089,6 +1124,14 @@ export function MandalaAutoVideoDirector({
    </div>;
  const goalPanel=<div className={css.goalPanel} data-auto-video-goal-panel>
    {audienceTarget?null:audienceBar}
+   {videoAudience==="self"&&goalQuizStep===1?<div className={css.quickStartHeading} data-video-quick-start>
+    <h3>{locale==="ru"?"Быстрый старт":locale==="es"?"Inicio rápido":"Quick Start"}</h3>
+    <div className={css.quickScopeToggle} role="group" aria-label="Life or Work">
+     {(["life","work"] as const).map(scope=><button type="button" key={scope}
+       data-video-quick-scope={scope} aria-pressed={quickScope===scope} disabled={disabled} onClick={()=>setQuickScope(scope)}>
+       {scope==="life"?(locale==="ru"?"Жизнь":locale==="es"?"Vida":"Life"):locale==="ru"?"Работа":locale==="es"?"Trabajo":"Work"}</button>)}
+    </div>
+   </div>:null}
    {videoAudience==="self"?<div data-video-goal-quiz-progress role="status" aria-live="polite">
      <strong>{locale==="ru"?"Шаг":locale==="es"?"Paso":"Step"} {goalQuizStep} / 3</strong>
      <span aria-hidden="true" data-video-goal-quiz-dots>
@@ -1112,7 +1155,11 @@ export function MandalaAutoVideoDirector({
        {/* eslint-disable-next-line @next/next/no-img-element */}
        <img data-video-goal-art src={"/images/video-goal-art/"+item.art+".webp"} alt="" loading="lazy"/>
        <span className={css.categoryIcon}><item.Icon size={21} aria-hidden="true"/></span>
-       <strong>{taxonomyCategories.find(category=>category.id===item.id)?.label||item.id}</strong>
+       <strong>{({
+        en:{life:["Goals & Money","Love & Relationships","Energy & Confidence","Stress & Anxiety"],work:["Career & Money","Team & Relations","Focus & Confidence","Stress & Burnout"]},
+        ru:{life:["Цели и деньги","Любовь и отношения","Энергия и уверенность","Стресс и тревога"],work:["Карьера и деньги","Команда и общение","Фокус и уверенность","Стресс и выгорание"]},
+        es:{life:["Metas y dinero","Amor y relaciones","Energía y confianza","Estrés y ansiedad"],work:["Carrera y dinero","Equipo y relaciones","Concentración y confianza","Estrés laboral"]}
+       } as const)[locale][quickScope][videoGoalCategories.findIndex(category=>category.id===item.id)]}</strong>
          {selectedCategoryId===item.id&&goalCategoryAnswered&&!requestNeedsChoice?<span className={css.categorySelected} aria-hidden="true">
            <Check size={15} strokeWidth={3}/></span>:null}
        </button>)}
