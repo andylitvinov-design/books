@@ -192,6 +192,7 @@ export async function POST(request,{params}){
       const secretary=await processTelegramBusinessSecretary(body,config)
       if(secretary.handled){
         if(secretary.reply){
+          let providerAccepted=false
           try{
             await consumeRate(config,{op:'hh-tg-secretary-reply',
               connectionId:secretary.connectionId,chatId:secretary.to,
@@ -199,29 +200,50 @@ export async function POST(request,{params}){
             await consumeRate(config,{op:'hh-tg-secretary-chat',
               connectionId:secretary.connectionId,chatId:secretary.to},15,86400)
             await consumeRate(config,{op:'hh-tg-secretary-global'},100,86400)
+            // Telemetry failures do not silence otherwise permitted messages.
+            try{await setTelegramBusinessReplyState(config,telegramBusinessInbox,'send_pending')}
+            catch{console.error('HH_TG_SECRETARY_REPLY_STATE_UNAVAILABLE')}
             await sendHolisticBusinessRequestReply({
               connectionId:secretary.connectionId,to:secretary.to,
               text:secretary.reply,buttons:secretary.buttons||[],
             })
-          }catch{
-            // Unknown send state never triggers an automatic duplicate retry.
-            console.error('HH_TG_SECRETARY_REPLY_NOT_CONFIRMED')
+            providerAccepted=true
+          }catch(error){
+            // Unknown Telegram acceptance is never blindly retried.
+            const failure=telegramBusinessReplyFailure(error)
+            try{await setTelegramBusinessReplyState(config,telegramBusinessInbox,telegramBusinessReplyCrmState(failure))}
+            catch{console.error('HH_TG_SECRETARY_REPLY_STATE_UNAVAILABLE')}
+            console.error('HH_TG_SECRETARY_REPLY_FAILED:'+failure)
           }
+          if(providerAccepted)try{await setTelegramBusinessReplyState(config,telegramBusinessInbox,'provider_accepted')}
+            catch{console.error('HH_TG_SECRETARY_REPLY_STATE_UNAVAILABLE')}
         }
         return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
       }
       // Unknown first customer message should not disappear into a silent chat.
       // Reply at most once, only after the first CRM contact commit.
       if(businessLead?.created){
+        let providerAccepted=false
         try{
           const text=businessLead.locale==='ru'
-            ?'Здравствуйте! Я помощник Holistic House. Ваше обращение получено. Подскажите, какая помощь вам сейчас нужна?'
+            ?'Здравствуйте! Я Ali, помощник Holistic House. Ваше сообщение получено. Чем могу помочь?'
             :businessLead.locale==='es'
-              ?'¡Hola! Soy el asistente de Holistic House. Recibimos tu mensaje. ¿En qué te podemos ayudar?'
-              :'Hello! I am the Holistic House assistant. We received your message. What would you like help with?'
+              ?'¡Hola! Soy Ali, el asistente de Holistic House. Recibimos tu mensaje. ¿En qué puedo ayudarte?'
+              :'Hello! I’m Ali, the Holistic House assistant. We received your message. How can I help?'
+          // Neutral acknowledgement only, not an approved booking or paid order.
+          try{await setTelegramBusinessReplyState(config,telegramBusinessInbox,'send_pending')}
+          catch{console.error('HH_TG_BUSINESS_FIRST_REPLY_STATE_UNAVAILABLE')}
           await sendHolisticBusinessRequestReply({connectionId:businessLead.connectionId,
             to:businessLead.chatId,text})
-        }catch{console.error('HH_TG_BUSINESS_FIRST_REPLY_NOT_CONFIRMED')}
+          providerAccepted=true
+        }catch(error){
+          const failure=telegramBusinessReplyFailure(error)
+          try{await setTelegramBusinessReplyState(config,telegramBusinessInbox,telegramBusinessReplyCrmState(failure))}
+          catch{console.error('HH_TG_BUSINESS_FIRST_REPLY_STATE_UNAVAILABLE')}
+          console.error('HH_TG_BUSINESS_FIRST_REPLY_FAILED:'+failure)
+        }
+        if(providerAccepted)try{await setTelegramBusinessReplyState(config,telegramBusinessInbox,'provider_accepted')}
+          catch{console.error('HH_TG_BUSINESS_FIRST_REPLY_STATE_UNAVAILABLE')}
       }
     }
 

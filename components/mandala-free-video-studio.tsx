@@ -6131,8 +6131,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const generateExpressFromCurrent=()=>{
     if(!studioHydrated||recording||preparing||preparingRef.current||
        jobRef.current||webCodecJobRef.current||sttBusy||micRecording)return false;
-    if(creditCatalog===null||creditCatalog.blocked||creditSession==="checking"||
-       creditSession==="unavailable"){
+    if(creditCatalog===null||creditCatalog.blocked||
+       (creditCatalog.chargeRequired&&(creditSession==="checking"||
+         creditSession==="unavailable"))){
       setNotice(locale==="ru"?"Экспорт пока не готов: проверяем доступ и кредиты.":
         locale==="es"?"La exportación aún no está disponible.":
           "Export eligibility and credits are not yet available.");

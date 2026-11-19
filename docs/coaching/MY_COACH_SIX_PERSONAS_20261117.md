@@ -17,8 +17,13 @@ Merlin's first-party still comes from #4748 and remains static. At the owner's
 19 November request Harry now uses the owner-supplied portrait, cropped to 3:4,
 with a silent six-second H.264 MP4 loop and WebP fallback stored in the existing
 first-party My Coach media folder. The old SVG remains as an unused rollback
-asset. This loop has subtle idle movement and blinks; it is not lip-synced to
-speech and is not a live video call. Reduced-motion users receive the still.
+asset. The six-second calm loop remains for idle/greeting/speaking. An additional
+owner-requested eight-second `harry-attentive.mp4` (H.264 600×800, 24fps, silent)
+plays only in the `listening` phase: two nods and visibly moving hands, rendered
+from the same supplied picture using offline portrait warps. It is not real-time
+motion capture, speech lip-sync or a video call. The selected phase changes the
+video source and safely remounts the video element; the existing still remains
+for reduced-motion users and playback failures.
 No paid rendering, new voice, model or consent flag was enabled. Actual signed-in
 iPhone playback still needs separate QA.
 

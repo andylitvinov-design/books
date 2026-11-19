@@ -102,3 +102,16 @@ test("privacy, exclusions and one-click production contract",()=>{
  const denied=planExpressVideo({goal:"No ocean, without water",theme:"life"});
  assert.ok(denied.reason==="SCENARIO_IMAGERY_EXCLUDED"||denied.canRender);
 });
+
+test("Express guest-local generation only requires a verified session when credits are charged",()=>{
+ const source=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+ const from=source.indexOf("const generateExpressFromCurrent=");
+ const to=source.indexOf("const generateFromGoal=",from);
+ assert.ok(from>0&&to>from,"real Express click handler must exist");
+ const handler=source.slice(from,to);
+ assert.match(handler,/creditCatalog===null\|\|creditCatalog\.blocked\|\|/);
+ assert.match(handler,/\(creditCatalog\.chargeRequired&&\(creditSession==="checking"\|\|/);
+ assert.match(handler,/creditSession==="unavailable"\)\)/);
+ assert.match(handler,/if\(creditCatalog\.chargeRequired&&creditSession==="guest"&&guestFirstVideoUsed\)/);
+ assert.match(handler,/flushSync\(\(\)=>\{/);
+});
