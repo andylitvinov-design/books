@@ -3117,3 +3117,64 @@ test('real #5148 public Services promotion preserves unrelated #5093 media expor
   {name:'test',status:'completed',conclusion:'failure'}]},
   ctx,files,{maxWaitMs:0}),/UNSUCCESSFUL_SPECIALIST_JOB|SPECIALIST_FAILED/);
 });
+
+
+test('revalidate actual #5148 Services plus CI policy promotion without erasing #5093 green MP4 checks',async()=>{
+ const latest='c'.repeat(40),candidate=[
+  'components/mandala-free-video-studio.tsx',
+  'lib/mandala/recording-codecs.mjs',
+  'scripts/benchmarking/real-guest-video-file.mjs',
+  'tests/video-director-chat-live-acceptance.test.mjs',
+ ];
+ const policy=[
+  'lib/ci/production-base-impact.mjs',
+  'tests/ci-specialist-aggregate.test.mjs',
+ ];
+ const services=[
+  'components/services-assist-quiz.module.css',
+  'components/services-assist-quiz.tsx',
+  'lib/services-quick-categories.ts',
+  'public/images/holistic-house/support-first-screen-photos.webp',
+  'scripts/verify-public-services-production.mjs',
+ ];
+ const diff=(names=[...policy,...services],overrides={})=>({
+  status:'ahead',ahead_by:2,behind_by:0,total_commits:2,
+  base_commit:{sha:BASE},merge_base_commit:{sha:BASE},
+  commits:[{sha:'d'.repeat(40)},{sha:latest}],
+  files:names.map(filename=>({filename,status:'modified'})),
+  ...overrides,
+ });
+ assert.equal(safeTrustedPolicyAdvance(diff(),BASE,latest,candidate),true,
+  'new protected validator must reuse exact-HEAD Core after separate Services and CI merges');
+ let called=false;
+ const rows=candidate.map(filename=>({filename,status:'M'}));
+ const api={target:async()=>latest,compare:async()=>diff()};
+ const result=await revalidateAfterTrustedPolicyAdvance(api,
+  {repo,number:27,head:SHA,base:BASE},{changedRows:rows},{
+   loadPolicy:async()=>({safeTrustedPolicyAdvance,
+    verify:async(_api,ctx,files,options)=>{
+     called=true;assert.equal(ctx.head,SHA);
+     assert.equal(options.trustedPolicyBaseSha,latest);
+     assert.deepEqual(files.changedRows,rows);
+     return {risk:'STRICT',expected:[],executed:[],advisory:{},head:SHA};
+    }}),
+  });
+ assert.equal(called,true,'new protected Specialist must re-evaluate actual exact-head jobs');
+ assert.equal(result.policyRevalidatedAgainst,latest);
+ for(const critical of [
+  candidate[0], 'components/mandala-another-player.tsx',
+  'app/api/auth/route.ts','app/api/services/checkout/route.ts',
+  'lib/services/private-client-profile.mjs',
+  'package-lock.json','.github/workflows/hh-pr-core-release.yml',
+  'lib/ci/required-gate-policy.mjs',
+ ]) assert.equal(safeTrustedPolicyAdvance(diff([...policy,...services,critical]),
+  BASE,latest,candidate),false,'unsafe mixed policy advance: '+critical);
+ assert.equal(safeTrustedPolicyAdvance(diff(services),BASE,latest,candidate),false,
+  'no changed protected policy means this strict revalidation path cannot be used');
+ for(const changed of [
+  {status:'diverged'},{behind_by:1},{commits:[]},
+  {files:[{filename:policy[0],status:'deleted'}]},
+  {files:[{filename:policy[0],status:'modified'},{filename:policy[0],status:'modified'}]},
+ ]) assert.equal(safeTrustedPolicyAdvance(diff(undefined,changed),BASE,latest,candidate),
+  false,'unverified protected policy cannot turn red CI green');
+});
