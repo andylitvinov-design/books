@@ -140,17 +140,16 @@ const copy={
    timeline:"Línea de montaje",openMontage:"Abrir montaje (opcional)",montageHelp:"Cambia el orden y la duración; después confirma el guion.",reorder:"Ordenar escena",less:"Acortar",more:"Alargar",audioHint:"Música, voz y frases se ajustan en las secciones actuales.",replaceScene:"Cambiar clip",replacementHint:"Solo están disponibles vídeos aprobados del catálogo.",
  }
 } as const;
+// First-screen categories and photographic art follow the canonical Telegram hierarchy.
 const videoGoalCategories=[
- {id:"stress-anxiety",theme:"health",Icon:Leaf,art:"stress"},
+ {id:"goals-money",theme:"money",Icon:Sprout,art:"growth"},
  {id:"love-relationships",theme:"relationships",Icon:Heart,art:"love"},
  {id:"energy-confidence",theme:"energy",Icon:Zap,art:"energy"},
- {id:"goals-money",theme:"money",Icon:Sprout,art:"growth"},
+ {id:"stress-anxiety",theme:"health",Icon:Leaf,art:"stress"},
 ] as const;
 type CanonicalCategoryId=(typeof videoGoalCategories)[number]["id"];
-const goalCardLabels={"ru":{"stress-anxiety":"Снятие стресса и расслабление","love-relationships":"Любовь и отношения","energy-confidence":"Энергия и уверенность","goals-money":"Развитие и изменения"},"en":{"stress-anxiety":"Stress relief and relaxation","love-relationships":"Love and relationships","energy-confidence":"Energy and confidence","goals-money":"Growth and change"},"es":{"stress-anxiety":"Aliviar el estrés y relajarse","love-relationships":"Amor y relaciones","energy-confidence":"Energía y confianza","goals-money":"Desarrollo y cambios"}} as const;
 // All buttons are canonical 4×4×4 taxonomy topics, not decorative tags.
 const goalTopicIds:Record<CanonicalCategoryId,readonly string[]>={"energy-confidence":["calm-presence","self-confidence","self-acceptance","healthy-habits","body-awareness","breathing-practices","motivation-drive","recovery-after-load","morning-energy"],"stress-anxiety":["stress-relief","constant-anxiety","anxiety-no-reason","work-stress","burnout","low-mood","inner-child","apathy","emotional-emptiness"],"love-relationships":["emotional-intimacy","couple-communication","find-love","ready-relationship","family-relationships","rebuilding-trust","choosing-partner","breakup-recovery","fear-intimacy"],"goals-money":["personal-growth","life-transitions","goal-setting","financial-stability","self-discipline","career-growth","income-growth","business-decisions","life-purpose"]};
-const quickTopicLabels={"ru":{"calm-presence":"Спокойствие","self-confidence":"Уверенность","self-acceptance":"Баланс","healthy-habits":"Здоровье","body-awareness":"Тело","breathing-practices":"Дыхание","motivation-drive":"Внутренняя сила","recovery-after-load":"Ресурс","morning-energy":"Новый день"},"en":{"calm-presence":"Calm","self-confidence":"Confidence","self-acceptance":"Balance","healthy-habits":"Wellbeing","body-awareness":"Body","breathing-practices":"Breathing","motivation-drive":"Inner strength","recovery-after-load":"Recharge","morning-energy":"New day"},"es":{"calm-presence":"Calma","self-confidence":"Confianza","self-acceptance":"Equilibrio","healthy-habits":"Bienestar","body-awareness":"Cuerpo","breathing-practices":"Respiración","motivation-drive":"Fuerza interior","recovery-after-load":"Recuperación","morning-energy":"Nuevo día"}} as const;
 const initialCategoryForTheme:Record<VideoTheme,CanonicalCategoryId>={
  energy:"energy-confidence",money:"goals-money",relationships:"love-relationships",
  goals:"goals-money",life:"goals-money",health:"stress-anxiety",
@@ -1113,19 +1112,27 @@ export function MandalaAutoVideoDirector({
        {/* eslint-disable-next-line @next/next/no-img-element */}
        <img data-video-goal-art src={"/images/video-goal-art/"+item.art+".webp"} alt="" loading="lazy"/>
        <span className={css.categoryIcon}><item.Icon size={21} aria-hidden="true"/></span>
-       <strong>{goalCardLabels[locale][item.id]}</strong>
+       <strong>{taxonomyCategories.find(category=>category.id===item.id)?.label||item.id}</strong>
          {selectedCategoryId===item.id&&goalCategoryAnswered&&!requestNeedsChoice?<span className={css.categorySelected} aria-hidden="true">
            <Check size={15} strokeWidth={3}/></span>:null}
        </button>)}
      </div>:null}
      {goalQuizStep===2&&goalCategoryAnswered&&subcategoriesOpen&&!requestNeedsChoice?<div className={css.subcategories} data-auto-video-subcategories>
        <p className={css.popularHeading} data-video-goal-category-title>{locale==="ru"?"2. Выберите подкатегорию":locale==="es"?"2. Elige una subcategoría":"2. Choose a subcategory"}</p>
-       <div className={css.topicChoices} role="group" data-mytube-subcategories
+       <div className={css.goalChoices} role="group" data-mytube-subcategories data-video-goal-subcategory-cards
          aria-label={locale==="ru"?"Подкатегории цели":locale==="es"?"Subcategorías":"Goal subcategories"}>
-         {taxonomySubcategories.map(item=><button type="button" key={item.id}
+         {taxonomySubcategories.map((item,index)=><button type="button" key={item.id}
            data-auto-video-subcategory={item.id} aria-pressed={selectedSubcategoryId===item.id}
            disabled={disabled} title={item.chooseWhen}
-           onClick={()=>chooseTaxonomySubcategory(item.id)}><span>{item.label}</span></button>)}
+           onClick={()=>chooseTaxonomySubcategory(item.id)}>
+           {/* Reuse the exact four first-screen visual assets at every Goal question. */}
+           {/* eslint-disable-next-line @next/next/no-img-element */}
+           <img data-video-goal-art src={"/images/video-goal-art/"+videoGoalCategories[index].art+".webp"}
+             alt="" loading="lazy"/>
+           <span data-video-goal-subcategory-label>{item.label}</span>
+           {selectedSubcategoryId===item.id?<span className={css.categorySelected} aria-hidden="true">
+             <Check size={15} strokeWidth={3}/></span>:null}
+         </button>)}
        </div>
      </div>:null}
    </>:<div className={css.recipientCatalog} data-video-recipient-catalog data-video-recipient-aspect={aspect}>
@@ -1211,11 +1218,10 @@ export function MandalaAutoVideoDirector({
       const item=getMyTubeTopic(id);
       if(!item||item.category.id!==selectedCategoryId)return null;
       const fullLabel=item.topic.label[locale];
-      const shortLabels=quickTopicLabels[locale] as Partial<Record<string,string>>;
       return <button type="button" key={id} data-video-goal-topic={id}
         aria-pressed={selectedTopicId===id} aria-label={fullLabel} title={fullLabel}
         disabled={disabled} onClick={()=>chooseTaxonomyTopic(id)}>
-        <span>{shortLabels[id]||fullLabel}</span>
+        <span>{fullLabel}</span>
         {selectedTopicId===id?<Check size={15} aria-hidden="true"/>:null}
       </button>;
     })}

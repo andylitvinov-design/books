@@ -2,11 +2,13 @@
 import {cloneElement,isValidElement,useCallback,useEffect,useMemo,useRef,useState} from 'react'
 import {useSearchParams} from 'next/navigation'
 import Link from 'next/link'
-import {ArrowLeft,ArrowRight,Bell,Clock3,Headphones,MessageCircle,PackageCheck,History,SquarePen,ChevronDown,ShoppingBag,Leaf,Search,SlidersHorizontal,UsersRound,ChevronRight,Sparkles,Newspaper} from 'lucide-react'
+import {ArrowLeft,ArrowRight,Bell,Clock3,Headphones,MessageCircle,PackageCheck,UserRound,SquarePen,ChevronDown,ShoppingBag,Leaf,Search,SlidersHorizontal,UsersRound,ChevronRight,Sparkles,Newspaper} from 'lucide-react'
 import PracticeRequestConversation from './practice-request-conversation'
 import MessengerAiWorkspace from './messenger-ai-workspace'
 import MessagesDailyBriefing from './messages-daily-briefing'
 import MessengerGuestGate from './messenger-guest-gate'
+import AliPersonaPicker from './ali-persona-picker'
+import {useAliPersona} from './use-ali-persona'
 import styles from './messages-orders-clients.module.css'
 
 const TEXT={
@@ -96,6 +98,9 @@ export default function MessagesOrdersClients({locale:routeLocale='en',children}
   const [locale,setLocale]=useState(routeLocale)
   useEffect(()=>setLocale(routeLocale),[routeLocale])
   const t=TEXT[locale]||TEXT.en,status=STATES[locale]||STATES.en
+  const {persona}=useAliPersona()
+  const [personaOpen,setPersonaOpen]=useState(false)
+  const closePersona=useCallback(()=>setPersonaOpen(false),[])
   const [section,setSection]=useState(()=>{
     const requested=searchParams.get('section')
     return requested==='clients'||searchParams.has('requestId')||searchParams.has('to')||searchParams.has('tab')?'clients':
@@ -365,9 +370,13 @@ export default function MessagesOrdersClients({locale:routeLocale='en',children}
       </button>
     </div>
     <header className={styles.head} data-hh-ai-assistant-header>
-      <div><h1>{locale==='ru'?'ИИ-ассистент':locale==='es'?'Asistente IA':'AI Assistant'}</h1>
-        <p>{locale==='ru'?'Спросить · Исследовать · Учиться · Создавать':
-          locale==='es'?'Preguntar · Explorar · Aprender · Crear':'Ask · Explore · Learn · Create'}</p></div>
+      <div className={styles.presenterIdentity} data-hh-ali-active-persona={persona.id}>
+        <img src={persona.image} alt="" width={44} height={44}/>
+        <div><h1>{persona.name[locale]} · {locale==='ru'?'Внутренний алхимик':
+          locale==='es'?'Alquimista interior':'Inner Alchemist'}</h1>
+        <p>{locale==='ru'?'Понимание · Поддержка · Изменения':
+          locale==='es'?'Comprender · Acompañar · Transformar':'Understand · Support · Transform'}</p></div>
+      </div>
       <div className={styles.headerActions} data-hh-ai-assistant-actions>
         <div className={styles.languagePicker} data-hh-messenger-language-switcher
           role="group" aria-label={locale==='ru'?'Язык мессенджера':locale==='es'?'Idioma del mensajero':'Messenger language'}>
@@ -391,11 +400,12 @@ export default function MessagesOrdersClients({locale:routeLocale='en',children}
           </label>
         </div>
         <button type="button" className={styles.notificationSettings}
-          data-hh-ai-chat-history
-          onClick={()=>{chooseSection('ai');window.dispatchEvent(new Event('hh:messenger-open-history'));}}
-          aria-label={locale==='ru'?'История диалогов':locale==='es'?'Historial de conversaciones':'Conversation history'}
-          title={locale==='ru'?'История':locale==='es'?'Historial':'History'}>
-          <History size={24} aria-hidden="true"/>
+          data-hh-ali-persona-open
+          onClick={()=>{chooseSection('ai');setPersonaOpen(true)}}
+          aria-label={locale==='ru'?'Выбрать ведущего':locale==='es'?'Elegir guía':'Choose persona'}
+          title={locale==='ru'?'Персоналия':locale==='es'?'Personaje':'Persona'}>
+          <UserRound size={24} aria-hidden="true"/>
+          <span className={styles.personaActionText}>{locale==='ru'?'Персона':locale==='es'?'Guía':'Persona'}</span>
         </button>
         <button type="button" className={styles.refresh}
           data-hh-ai-new-chat
@@ -406,6 +416,7 @@ export default function MessagesOrdersClients({locale:routeLocale='en',children}
         </button>
       </div>
     </header>
+    <AliPersonaPicker open={personaOpen} onClose={closePersona} locale={locale}/>
     <div id="hh-ai-panel" role="tabpanel" data-hh-messenger-ai hidden={section!=='ai'}>
       <MessengerAiWorkspace key={aiSession} locale={locale}
           onConversationLocaleChange={chooseLocale} authenticated={aiIdentity.status==='authenticated'} authStatus={aiIdentity.status}

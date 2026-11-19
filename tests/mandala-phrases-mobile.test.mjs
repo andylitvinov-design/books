@@ -115,7 +115,7 @@ test("TTS never speaks an outdated script when phrases are staged",()=>{
   assert.match(studio,/disabled=\{recording\|\|preparing\}\s+approvalPending=\{phrasePending\}\s+initialPreferences=\{voicePreferences\}\s+onAttach=\{attachGeneratedAffirmationAudio\}/);
   // An unapproved draft blocks narration generation, not public voice comparisons.
   const voice=read("components/mandala-affirmation-voice.tsx");
-  assert.ok(voice.includes("disabled={!languageAvailable||!speechText||!consent||busy||mixing||disabled||approvalPending}"));
+  assert.ok(voice.includes("disabled={!languageAvailable||!speechText||!consent||busy||mixing||disabled||approvalPending||Boolean(FISH_PUBLIC_VOICES.find(v=>v.id===voiceId)?.requiresProviderLicense)}"),"staged phrases and unlicensed Fish voices must both block audio generation");
   assert.ok(voice.includes("if(!languageAvailable||disabled||approvalPending||busy"));
   assert.ok(voice.includes("data-video-affirmation-voice-preview={v.id}"));
   assert.match(studio,/data-video-voice-approval-required/);

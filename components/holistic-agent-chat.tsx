@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import {Mic, Paperclip, Plus, Send, X} from "lucide-react";
 import {MessengerAiLanding} from "@/components/app/messenger-ai-landing";
+import {useAliPersona} from "@/components/app/use-ali-persona";
 import {MessengerSupportQuiz, type SupportQuizSelection} from "@/components/app/messenger-support-quiz";
 import {MessengerSixProjects,messengerProject} from "@/components/app/messenger-six-projects";
 import { peekHomeAliHandoff, acknowledgeHomeAliHandoff } from "@/lib/home-ali-handoff.mjs";
@@ -291,9 +292,21 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   useEffect(()=>setLocale(routeLocale),[routeLocale]);
   const t=copy[locale];
   const starter=messengerStarter[locale];
+  const {persona}=useAliPersona();
   const voiceEnabled=process.env.NEXT_PUBLIC_HH_VOICE_COMPANION_WEB==="true";
-  // No browser speech, device voice discovery or local preferences when OFF.
+  // Only the existing device speech controller handles the AI chat's spoken replies.
   const voice=useVoiceCompanion(locale,voiceEnabled);
+  useEffect(()=>{
+    if(!messengerView||!voiceEnabled)return;
+    if(voice.speechLocale!==locale)voice.setSpeechLocale(locale);
+    const available=voice.voices.filter(item=>item.lang.toLowerCase().startsWith(locale));
+    if(available.length){
+      const ordered=[...available].sort((a,b)=>a.name.localeCompare(b.name));
+      const selected=ordered[persona.voice.slot%ordered.length]?.voiceURI;
+      if(selected&&selected!==voice.voiceId)voice.setVoiceId(selected);
+    }
+    if(Math.abs(voice.rate-persona.voice.rate)>0.015)voice.setRate(persona.voice.rate);
+  },[messengerView,voiceEnabled,locale,persona.id,voice.voices,voice.voiceId,voice.rate,voice.setVoiceId,voice.setRate,voice.speechLocale,voice.setSpeechLocale]);
   const [mode,setMode]=useState<Mode>("rules");
   const [agree,setAgree]=useState(false);
   const [axisRef,setAxisRef]=useState("");
@@ -1097,8 +1110,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     // A fresh topic or stop request must not inherit the old goal.
     const leaveSupport=/^(?:стоп|сменим тему|сменить тему|новая тема|другая тема|stop|cancel|switch topics|new topic|change topic|cambiar de tema|otro tema)[.!?\\s]*$/iu.test(text);
     if(leaveSupport)setSupportSelection(null);
-    // Preserve five-stage first-contact context without exposing additional
-    // history to optional owned/browser inference modes.
+    // Rules conversation retains up to twelve first-party turns; optional
+    // owned/inference modes remain limited to six turns.
     const historyLimit=mode==="rules"?12:6;
     const previousTurns=(!leaveSupport&&supportSelection)
       ?[{role:"user" as const,text:supportSummary(supportSelection,turnLocale)},...messages.slice(-(historyLimit-1))]
@@ -1321,7 +1334,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   </label>:null;
   const resetControl=<button type="button" onClick={resetConversation}>{t.reset}</button>;
   const voiceControls=voiceEnabled?<VoiceCompanionControls voice={voice} locale={locale}
-    privacyOnly={Boolean(pageHelp)}
+    privacyOnly={Boolean(pageHelp)||messengerView}
     greeting={pageHelp?.greeting??starter.welcome}
     latestReply={[...messages].reverse().find(item=>item.role==="assistant")?.text}
     onTranscript={text=>setDraft(prev=>((prev?prev+" ":"")+text).slice(0,2000))}
@@ -1434,7 +1447,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           <Mic size={20} aria-hidden="true"/>
         </button>}
         {messengerView&&<EmotionalAvatar messages={messages} busy={busy}
-          status={status} locale={locale} compact={compact} iconOnly companionVoice={voiceEnabled?voice:undefined}/>}
+          status={status} locale={locale} compact={compact} iconOnly personaId={persona.id}
+          companionVoice={voiceEnabled?voice:undefined}/>}
         {!messengerView&&resetControl}
         <button type="submit" disabled={busy||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"||!draft.trim()||(mode==="owned"&&!agree&&!(compact&&(testChatOpen||testOfferFromText(draft))))}
           aria-label={messengerView?(busy?t.loading:t.send):undefined}>{messengerView?<Send size={20} aria-hidden="true"/>:busy?t.loading:t.send}</button>
@@ -1477,7 +1491,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       {!compact&&!messages.length&&<p className={styles.muted}>{t.start}</p>}
       {messages.map((m,index)=>messengerView&&m.role==="assistant"?
         <div key={index} className={styles.messageWithAvatar} data-hh-ai-assistant-message>
-          <img src="/images/holistic-house/reiki-approved-sunrise-v3.webp"
+          <img src={persona.image||"/images/holistic-house/reiki-approved-sunrise-v3.webp"}
             width={37} height={37} loading="lazy" alt="" className={styles.messagePortrait}/>
           <p className={styles.assistant}>{m.variant==="alternative"&&<strong className={styles.alternativeLabel}>{locale==="ru"?"Альтернативный ответ · AI на устройстве":locale==="es"?"Respuesta alternativa · IA en el dispositivo":"Alternative answer · On-device AI"}{"\n"}</strong>}{m.text}</p>
           {voiceEnabled&&<button type="button" data-hh-voice-turn={index}

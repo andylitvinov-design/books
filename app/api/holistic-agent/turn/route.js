@@ -22,7 +22,7 @@ import { resolveComplaintTurn } from "@/lib/holistic-support/complaint-mind.mjs"
 import { reviewPracticeBoundary } from "@/lib/holistic-support/practice-boundary.mjs";
 import { consultServiceQuestion, resolveConsultantSuggestion } from "@/lib/assist/consultant-mind.mjs";
 import { salesMindTurn } from "@/lib/holistic-support/sales-mind.mjs";
-import { routeMindRole } from "@/lib/holistic-support/mind-role-router.mjs";
+import { planWaveMagicTurn } from "@/lib/holistic-support/wave-magic-director.mjs";
 import { resolveWisdomRequest } from "@/lib/app/coaching-wisdom.js";
 import { resolveConversationFocus } from "@/lib/holistic-support/conversation-context.mjs";
 import { detectConversationLocale } from "@/lib/holistic-support/conversation-locale.mjs";
@@ -34,6 +34,7 @@ import { generateOwnedOllama, validatedOllamaConfig } from "@/lib/holistic-suppo
 import { readMyAgentMemory } from "@/lib/holistic-support/agent-memory-store";
 import { createNativeDialogueSession, readNativeDialogueSession, advanceNativeDialogueMessage } from "@/lib/holistic-support/native-dialogue-session-store";
 import { nativeDialogueEventFromUtterance, understandConversationTurn } from "@/lib/holistic-support/conversation-intelligence.mjs";
+import { rankVerifiedSuggestions } from "@/lib/holistic-support/semantic-method-catalog.mjs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -221,14 +222,26 @@ export async function POST(request) {
     const stateEvent=nativeFrame?nativeDialogueEventFromUtterance({message:body.message,locale:body.locale,state:nativeFrame.state}):null;
     const meditationDeclined=stateEvent?.type==='refuse_meditation' ||
       (nativeFrame?.state.declinedMeditation?.value==='meditation' && stateEvent?.type!=='allow_meditation');
+    // Wave Magic Director shares modes and empathy after host authentication/safety.
+    const wavePlan=planWaveMagicTurn({message:body.message,locale:body.locale,
+      history:body.history,selectedGoal:body.selectedGoal,safety,channel:"web"});
     const finish=async (data,{pendingAdviceConfirmation=false}={})=>{
+      // Server already verified catalogue provenance; do not invent options.
+      if(Array.isArray(data.suggestions)){
+        const two=data.suggestions.slice(0,2);
+        data={...data,suggestions:two,
+          ...(data.decision?.suggestions?{decision:{...data.decision,suggestions:two}}:{})};
+      }
+      data={...data,alchemy:{version:wavePlan.version,mode:wavePlan.mode,
+        depth:wavePlan.depth,intent:wavePlan.intent,dialogueStage:wavePlan.dialogueStage,
+        nextAction:wavePlan.nextAction,consentRequired:wavePlan.consentRequired}};
       if(nativeFrame){
         const clearChoices=['stop','new_question','cancel_to_talk','decline_booking','clear_topic','clear_goal_statement','refuse_advice','pause_topic','choose'].includes(stateEvent.type) ||
           (stateEvent.type==='refuse_meditation'&&!stateEvent.mixed);
         const hidden=new Set([...(body.feedback?.dismissedIds||[]),...(body.feedback?.completedIds||[])]);
         const suggestions=(clearChoices?[]:(Array.isArray(data.suggestions)?data.suggestions:[]))
           .filter(item=>typeof item?.id==='string'&&SAFE_CONTENT_ID.test(item.id)&&!hidden.has(item.id)&&
-            !(meditationDeclined&&item.id.startsWith('youtube:'))).slice(0,3);
+            !(meditationDeclined&&item.id.startsWith('youtube:'))).slice(0,2);
         const ids=suggestions.map(item=>item.id);
         if(new Set(ids).size!==ids.length)throw new AppError('INVALID_AGENT_SUGGESTIONS',503);
         data={...data,suggestions,...(data.decision?{decision:{...data.decision,suggestions}}:{})};
@@ -378,8 +391,7 @@ export async function POST(request) {
       body.usePrivateProfile!==true && body.usePrivateHistory!==true &&
       body.useAgentMemory!==true && body.preferredFormat==null &&
       (!body.chosenAxes||body.chosenAxes.length===0)
-      ?waveNativeTurn({message:body.message,locale:body.locale,history:body.history,
-        selectedChoiceId:nativeFrame?.state?.selectedChoiceId??null}):null;
+      ?waveNativeTurn({message:body.message,locale:body.locale,history:body.history}):null;
     if(waveReply)return await finish({
       status:"clarify",reply:waveReply.reply,modelUsed:false,
       source:WAVE_NATIVE_ROUTER_VERSION,
@@ -412,8 +424,7 @@ export async function POST(request) {
     // One shared Ali role decision for the website and Telegram. This is only
     // editorial routing after existing auth/rate/safety; it grants no actions
     // or permission to enter a deeper psychologist interview.
-    const aliMode=routeMindRole({message:body.message,locale:body.locale,
-      history:body.history,selectedGoal:body.selectedGoal});
+    const aliMode=wavePlan.roleDecision;
     // Sales Mind only handles genuine service exploration/objections; booking,
     // factual price lookup and explicit selections stay with Secretary/Consultant.
     // Keep the same upstream safety, auth, rate, user-context and STOP gates.
@@ -443,16 +454,15 @@ export async function POST(request) {
       ["rules","owned"].includes(body.mode)
       ? consultServiceQuestion({message:body.message,locale:body.locale,history:body.history})
       : null;
-    const consultationSuggestions=consultation?.suggestions?.slice(0,2)||[];
     if(consultation)return await finish({
       status:consultation.status,reply:consultation.reply,
       mindRole:["choose","quality","compare"].includes(consultation.intent)?"sales":"consultant",
       modelUsed:false,source:"consultant-rules",
-      memorySaved:false,userAuthorized:true,suggestions:consultationSuggestions,
+      memorySaved:false,userAuthorized:true,suggestions:consultation.suggestions,
       usedSavedTestEvidence:false,usedSavedVideoHistory:false,
       browserModelAllowed:false,
       decision:{status:consultation.status,message:consultation.reply,
-        question:null,suggestions:consultationSuggestions},
+        question:null,suggestions:consultation.suggestions},
     });
     if(nativeFrame&&!judgmentPriority&&body.judgmentContext==null&&body.judgmentChoice==null&&
        stateEvent.type==='ask_price'&&(nativeFrame.state.goal||nativeFrame.state.goalStatement)){
@@ -632,10 +642,15 @@ export async function POST(request) {
       history:{completedIds},
       feedback:body.feedback||{},
       safety, catalogs:{services,axisOffers,publishedReikiAudio:publicAudio,
-        meditationVideos,publishedSourceIds},
+        meditationVideos,publishedSourceIds},limit:2,
     });
-    const decision=meditationDeclined?{...rawDecision,suggestions:(rawDecision.suggestions||[])
+    const candidateDecision=meditationDeclined?{...rawDecision,suggestions:(rawDecision.suggestions||[])
       .filter(item=>!item.id?.startsWith('youtube:'))}:rawDecision;
+    // Rank only the verified catalogue: no new link, payment or forced filler.
+    const decision={...candidateDecision,suggestions:rankVerifiedSuggestions({
+      suggestions:candidateDecision.suggestions,sourceOffers:axisOffers,
+      message:body.message,selectedGoal:goal,locale:body.locale,limit:2,
+    })};
     const enabled=process.env.HH_AGENT_OWNED_ENABLED==="true";
     const configured=enabled && validatedOllamaConfig({
       endpoint:process.env.HH_AGENT_OLLAMA_ENDPOINT,
@@ -686,7 +701,7 @@ export async function POST(request) {
           reply:generated.text,intent:fastRule?.id||""})
       : generated.text;
     const suggestions=(Array.isArray(decision.suggestions)?decision.suggestions:[])
-      .slice(0,3).map(({id,kind,href,title})=>({id,kind,href,title}));
+      .slice(0,2).map(({id,kind,href,title})=>({id,kind,href,title}));
     return await finish({
       status:decision.status, reply:finalReply, modelUsed:generated.modelUsed,
       mindRole:generated.modelUsed?envelope.mindRole:null,

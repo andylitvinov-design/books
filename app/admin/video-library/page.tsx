@@ -9,6 +9,8 @@ import {auditSiteVideoSlotCoverage} from "@/lib/video-library/site-placements.mj
 import {getOwnerVaultRegistrySnapshot} from "@/lib/video-library/registry-health-server.js";
 import {SITE_VIDEO_SLOTS} from "@/lib/site-videos/model";
 import taxonomy from "@/data/video-catalog/mytube-content-taxonomy-4x4x4-v2.json";
+import videoResearch from "@/data/video-catalog/pexels-video-research-20261119.json";
+import {auditResearchedVideoCandidates,researchVideoLinksForOwner} from "@/lib/video-library/researched-video-candidates.mjs";
 import styles from "./video-library.module.css";
 
 export const dynamic="force-dynamic";
@@ -36,6 +38,7 @@ export default async function VideoLibraryCoveragePage({searchParams}:Props){
  const topicNames=new Map(taxonomy.categories.flatMap(category=>
    category.subcategories.flatMap(sub=>sub.topics.map(topic=>[topic.id,topic.label[locale]] as const))));
  const count=report.summary;
+ const videoSourcing=auditResearchedVideoCandidates(videoResearch);
  const slots=auditSiteVideoSlotCoverage();
  const slotLabels=new Map(SITE_VIDEO_SLOTS.map(slot=>[slot.id,slot.label[locale==="es"?"en":locale]] as const));
  const slotStatus=(value:string)=>value==="built_in_public_reference_playback_unverified"?
@@ -74,6 +77,31 @@ export default async function VideoLibraryCoveragePage({searchParams}:Props){
    </div>
    <p className={styles.disclaimer}>{t.limit} {t.unbound} {t.unknown}</p>
    <p className={styles.subtle}>{liveVault.observedAt?t.dbChecked+": "+liveVault.observedAt:t.dbUnknown}. {t.r2Unverified}.</p>
+   <section className={styles.section} aria-labelledby="video-source-research-heading">
+    <h2 id="video-source-research-heading">{locale==="ru"?"Новые источники видео":locale==="es"?"Nuevas fuentes de vídeo":"New video source leads"} · {videoSourcing.sourcePageCount}</h2>
+    <p className={styles.subtle}>{locale==="ru"
+      ?"Индивидуальные страницы реальных видеосъёмок, доступные для редакторского просмотра. Не загружены в монтаж, права и кадры пока не подтверждены. Здесь показаны только ссылки на оригинальные страницы."
+      :locale==="es"?"Páginas de vídeo para revisión editorial. No son archivos aprobados ni importados al editor."
+      :"Individual stock-video pages for editorial review only. No approved or downloaded MP4 has been added to the editor."}
+    </p>
+    <p className={styles.subtle}>{locale==="ru"?"Вертикальные":"Portrait"}: {videoSourcing.portraitSourcePages} · {locale==="ru"?"Горизонтальные":"Landscape"}: {videoSourcing.landscapeSourcePages} · {locale==="ru"?"Доступно в монтаже: 0":"Ready to render: 0"}</p>
+    <div className={styles.categories}>
+     {taxonomy.categories.map(category=>{
+      const leads=researchVideoLinksForOwner(videoResearch,{categoryId:category.id,orientation:aspect,limit:30});
+      return <details className={styles.category} key={category.id}>
+       <summary><span className={styles.categoryName}>{category.label[locale]}</span>
+        <span className={styles.categoryCount}>{leads.length}</span></summary>
+       <div className={styles.topicList}>
+        {leads.length?leads.map(item=><div key={item.id} className={styles.topicRow}>
+         <a href={item.sourcePage} target="_blank" rel="noopener noreferrer">{item.visualTags.slice(0,4).join(" · ")}</a>
+         <span className={styles.topicCount}>{item.durationClaimSeconds}s</span>
+         <small className={styles.topicState}>{locale==="ru"?"Кандидат · проверка кадров и прав":"Source lead · footage and rights not verified"} · {item.id}</small>
+        </div>):<p className={styles.subtle}>{locale==="ru"?"Нет исходных видео для этого формата":"No source pages for this aspect"}</p>}
+       </div>
+      </details>;
+     })}
+    </div>
+   </section>
    <section className={styles.section} aria-labelledby="video-coverage-heading">
     <div className={styles.sectionHead}>
      <h1 id="video-coverage-heading">{t.sources}</h1>

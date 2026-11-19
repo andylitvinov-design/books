@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
- STORY_PHOTOS,STORY_BUSINESS_PHOTOS,STORY_WIKIMEDIA_PHOTOS,STORY_PHOTO_BY_ID,
+ STORY_PHOTOS,STORY_BUSINESS_PHOTOS,STORY_WIKIMEDIA_PHOTOS,STORY_SCENARIO_PHOTOS,STORY_PHOTO_BY_ID,
  isTrustedStoryPhoto,chooseConceptStoryPhoto,isAllowedStoryPhotoResponseUrl
 } from "../lib/mandala/story-photo-library.mjs";
 import {planReviewedFilmedStory,planReviewedStoryWithPhotos} from "../lib/mandala/reviewed-filmed-story.mjs";
@@ -13,7 +13,7 @@ test("Story photo catalog keeps Pexels and Wikimedia Commons sources and license
    "the stretching photo must survive its neighbouring catalog row");
  assert.ok(STORY_PHOTO_BY_ID.has("story-photo-relationship-couple-wall-unsplash"),
    "the couple photo must not be parsed as a subscript of the preceding row");
- assert.equal(STORY_PHOTOS.length,STORY_BUSINESS_PHOTOS.length+STORY_WIKIMEDIA_PHOTOS.length);
+ assert.equal(STORY_PHOTOS.length,STORY_BUSINESS_PHOTOS.length+STORY_WIKIMEDIA_PHOTOS.length+STORY_SCENARIO_PHOTOS.length);
  assert.equal(new Set(STORY_PHOTOS.map(photo=>photo.id)).size,STORY_PHOTOS.length);
  assert.ok(STORY_PHOTOS.every(isTrustedStoryPhoto));
  assert.ok(STORY_WIKIMEDIA_PHOTOS.every(photo=>

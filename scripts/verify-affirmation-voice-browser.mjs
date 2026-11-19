@@ -66,6 +66,19 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(continueToIdeas).toBeDisabled();
     const subcategories=page.locator('[data-auto-video-subcategory]');
     await expect(subcategories).toHaveCount(4);
+    const subcategoryArt=page.locator('[data-video-goal-subcategory-cards] [data-video-goal-art]');
+    await expect(subcategoryArt).toHaveCount(4);
+    for(const width of [320,354,390,430]){
+      await page.setViewportSize({width,height:840});
+      for(const photo of await subcategoryArt.all()){
+        await photo.scrollIntoViewIfNeeded();
+        await expect.poll(()=>photo.evaluate(img=>img.complete&&img.naturalWidth>0),
+          {message:"Goal 2 photo loads at "+width}).toBe(true);
+      }
+      const overflows=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1);
+      assert.equal(overflows,false,"Goal step 2 fits "+width);
+    }
+    await page.setViewportSize({width:390,height:840});
     await subcategories.first().click();
     await expect(quizProgress).toContainText('3 / 3');
     await expect(continueToIdeas).toBeDisabled();
@@ -184,7 +197,25 @@ async function verifyWorkspaceHydration(browser,locale){
         // unrelated stock frames depict the six authored physical events.
         await expect(automaticStoryboard).toHaveAttribute("data-storyboard-action-proof","editorial_unverified");
         await expect(automaticStoryboard).toHaveAttribute("data-storyboard-media-ready","false");
-        await expect(cards.locator('img')).toHaveCount(0);
+        // Six genuine, rights-reviewed photographs are visual references, not
+        // proof that the filmed physical actions have been verified for export.
+        const referenceCount=Number(await automaticStoryboard.getAttribute("data-storyboard-reference-count"));
+        assert.equal(referenceCount,storyboardShotCount,
+          "every authored 30-second scene must retain its own photographic reference");
+        await expect(automaticStoryboard).toHaveAttribute("data-storyboard-graphics-mode",
+          "licensed-photographic-references");
+        await expect(automaticStoryboard).toHaveAttribute("data-storyboard-reference-status",
+          "editorial_photo_reference_not_action_verified");
+        const referencePhotos=cards.locator('img[data-storyboard-reference-photo]');
+        await expect(referencePhotos).toHaveCount(referenceCount);
+        for(let i=0;i<referenceCount;i++){
+          const photo=referencePhotos.nth(i);
+          assert.ok((await photo.getAttribute("src"))?.startsWith("/"),
+            "each editorial reference must use a trusted first-party photograph");
+          assert.ok((await photo.getAttribute("alt"))?.trim(),
+            "each editorial reference must name the illustrated subject");
+        }
+        await expect(automaticStoryboard.locator('[data-video-auto-storyboard-apply]')).toHaveCount(0);
       }
       await expect(automaticStoryboard.locator('[data-video-auto-storyboard-list]')).toBeVisible();
       await expect(cards.first()).toContainText(
@@ -379,6 +410,40 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(firstCaption).toHaveValue(locale==="ru"?"День рождения":"Birthday");
     await expect(page.locator('[data-video-mandala-hero]')).toHaveAttribute(
       "data-video-preview-clips",/^(4|5|6|7|8|9|10|11|12)$/);
+    // Speech-driven path: one Continue tap, no separate Match Footage gate.
+    // The transcription API is intercepted; no provider or paid render is called.
+    await page.locator('[data-video-quick-control="video"]').click();
+    await page.locator('[data-auto-video-recipient-kind="audio_visual"]').click();
+    const sampleLines=locale==="ru"
+      ?["Солнце светит утром","Дети улыбаются","Все радуются дню","Тёплый свет вокруг"]
+      :locale==="es"
+        ?["Brilla el sol","Los niños sonríen","Todos disfrutan del día","Hay luz y alegría"]
+        :["The sun shines","Children are happy","They enjoy the day","Warm light surrounds us"];
+    const speech={text:sampleLines.join(" "),durationSeconds:16,segments:sampleLines.map((text,i)=>({
+      text,startSeconds:i*4,endSeconds:(i+1)*4
+    }))};
+    let sttMockCalls=0;
+    await page.route("**/api/holistic-support/audio-storyboard",async route=>{
+      if(route.request().method()!=="POST")return route.abort();
+      sttMockCalls++;
+      await route.fulfill({status:200,contentType:"application/json",
+        body:JSON.stringify({transcript:speech,charged:false,mediaGenerated:false})});
+    });
+    await page.locator('[data-video-recipient-audio-upload]').setInputFiles({
+      name:"sample.wav",mimeType:"audio/wav",buffer:wav(16)
+    });
+    const nextWithSpeech=page.locator('[data-video-recipient-audio-next]');
+    await expect(nextWithSpeech).toBeDisabled();
+    await page.locator('[data-video-recipient-audio-transcribe]').click();
+    await expect(page.locator('[data-video-recipient-audio-transcript]')).toBeVisible({timeout:30000});
+    await expect(page.locator('[data-video-recipient-audio-concept-preview]')).toBeVisible();
+    await expect(page.locator('[data-video-recipient-audio-plan]')).toHaveCount(0);
+    await expect(nextWithSpeech).toBeEnabled();
+    await nextWithSpeech.click();
+    await expect(studio).toHaveAttribute("data-active-workspace","editor");
+    await expect(page.locator('[data-video-montage-tab="concept"]')).toHaveAttribute("aria-pressed","true");
+    assert.equal(sttMockCalls,1,"one explicitly consented mocked transcription, not an automatic provider request");
+    await expect(page.locator('[data-video-montage-concept]')).toBeVisible();
   }finally{release();await context.close();}
 }
 // Real guest route browser acceptance: the fragment carries only optional
@@ -747,11 +812,29 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const preferredName=locale==="ru"?"Андрей":locale==="es"?"Andrés":"Andy";
       const personalClosing=locale==="ru"?"Андрей, я в тебя верю":
         locale==="es"?"Andrés, creo en ti":"Andy, I believe in you";
+      const personalQuiz=phrases.locator("[data-video-personalization]");
+      const nextQuiz=personalQuiz.locator("[data-video-personalization-clarify-continue]");
+      const backQuiz=personalQuiz.locator("[data-video-personalization-clarify-back]");
+      await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","1");
+      await expect(phrases.locator('[data-personalization-kind="current"]')).toBeVisible();
+      await expect(phrases.locator('[data-personalization-kind="desired"]')).toBeHidden();
+      await nextQuiz.click();
+      await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","2");
+      await expect(phrases.locator('[data-personalization-kind="desired"]')).toBeVisible();
+      await nextQuiz.click();
+      await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","3");
+      await expect(phrases.locator('[data-personalization-kind="strength"]')).toBeVisible();
+      await nextQuiz.click();
+      await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","4");
       const firstNameInput=phrases.locator("[data-video-personalization-name]");
       await expect(firstNameInput).toBeVisible();
       await firstNameInput.fill(preferredName);
+      await backQuiz.click();
+      await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","3");
+      await nextQuiz.click();
       await expect(firstNameInput).toHaveValue(preferredName);
-      await conceptTab.click();
+      await nextQuiz.click();
+      await expect(conceptTab).toHaveAttribute("aria-pressed","true");
       await expect(phrases.locator("[data-video-ideas-concept-panel]")).toBeVisible();
       await personalTab.click();
       const advancedText=phrases.locator('[data-video-phrase-audio-shortcut]');
@@ -789,7 +872,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         assert.equal(shape.widths.length,3,"3 voice cards "+width);
         assert.ok(shape.widths.every(x=>x>=60),"readable cards "+width+" "+JSON.stringify(shape));
         assert.ok(shape.tops.every(x=>Math.abs(x-shape.tops[0])<3),"one card row "+width);
-        assert.ok(shape.genders.length===2&&Math.abs(shape.genders[0]-shape.genders[1])<3,"two gender tabs "+width);
+        assert.ok(shape.genders.length===3&&shape.genders.every(x=>Math.abs(x-shape.genders[0])<3),"female/male/Fish filters on one row "+width);
         assert.ok(shape.consentTop<shape.choiceTop,"explicit consent precedes voice cards "+width);
         assert.ok(shape.action>=shape.sampleBottom&&shape.action-shape.sampleBottom<32,
           "generation follows voice sample "+width);
@@ -798,6 +881,32 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           await page.screenshot({path:"artifacts/hypno-compact/ideas-voice-"+locale+"-"+width+".png",fullPage:true});}
       }
       await page.setViewportSize({width:390,height:840});
+      // Same original selector is mounted in Therapy -> Voice. Both real
+      // Fish reference IDs must appear even when the API is still on hold.
+      const fishTab=compactVoicePanel.locator('[data-video-affirmation-gender="fish"]');
+      await expect(fishTab).toBeVisible();
+      if(engine==="webkit")await fishTab.tap();
+      else await fishTab.click();
+      await expect(fishTab).toHaveAttribute("aria-pressed","true");
+      const rolePicker=compactVoicePanel.locator('[data-fish-voice-purpose]');
+      await expect(rolePicker).toBeVisible();
+      const coachingRole=rolePicker.locator('[data-fish-purpose="coaching"]');
+      const meditationRole=rolePicker.locator('[data-fish-purpose="meditation"]');
+      await expect(coachingRole).toBeVisible();
+      await expect(meditationRole).toBeVisible();
+      if(engine==="webkit")await coachingRole.tap(); else await coachingRole.click();
+      await expect(compactVoicePanel.locator('[data-video-affirmation-voice-card^="fish-"]')).toHaveCount(4);
+      await expect(compactVoicePanel.locator('[data-video-affirmation-voice-card="fish-igor"]')).toBeVisible();
+      if(engine==="webkit")await meditationRole.tap(); else await meditationRole.click();
+      await expect(compactVoicePanel.locator('[data-video-affirmation-voice-card^="fish-"]')).toHaveCount(2);
+      await expect(compactVoicePanel.locator('[data-video-affirmation-voice-card="fish-selene"]')).toBeVisible();
+      await expect(compactVoicePanel.locator('[data-video-affirmation-voice-card="fish-calm-meditation"]')).toBeDisabled();
+      await expect(compactVoicePanel.locator('[data-voice-fish-status]')).toBeVisible();
+      for(const item of await compactVoicePanel.locator('[data-video-affirmation-voice-preview^="fish-"]').all())
+        await expect(item).toBeDisabled();
+      await expect(compactVoicePanel.locator('[data-video-generate-affirmation-audio]')).toBeDisabled();
+      await compactVoicePanel.locator('[data-video-affirmation-gender="female"]').click();
+      await expect(compactVoicePanel.locator('[data-video-affirmation-voice-card="maya"]')).toBeVisible();
       await myVoiceModeButton.click();
       await expect(myVoiceModeButton).toHaveAttribute("aria-pressed","true");
       await expect(phrases.locator("[data-video-ideas-own-upload]")).toHaveCount(1);
@@ -1492,6 +1601,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         // The verified film can auto-open Ready and hide legacy Result actions.
         const readyView=page.locator("[data-video-ready]");
         const readyVideo=readyView.locator("video");
+        const readyPlay=readyView.locator("[data-ready-play-verify]");
         phase(engine,"waiting-for-export");
         try {
           // An iPhone/WebKit MP4 can require a physical Play gesture before
@@ -1500,7 +1610,17 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           let verificationTapped=false;
           const verifyPlayback=page.locator("[data-video-verify-playback]");
           await expect.poll(async()=>{
-            if(await output.isVisible()||await guestPreview.isVisible()||await readyVideo.isVisible())return true;
+            if(await output.isVisible()||await guestPreview.isVisible()||
+              await readyView.getAttribute("data-ready-state")==="complete")return true;
+            if(!verificationTapped&&await readyVideo.isVisible()&&await readyPlay.isVisible()){
+              try{
+                await readyPlay.click({timeout:2000});
+                verificationTapped=true;
+              }catch(error){
+                if(await readyView.getAttribute("data-ready-state")==="complete")return true;
+                if(await readyPlay.isVisible())throw error;
+              }
+            }
             if(!verificationTapped&&await verifyPlayback.isVisible()){
               try{
                 await verifyPlayback.click({timeout:2000});
@@ -1513,9 +1633,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
                 if(await verifyPlayback.isVisible())throw error;
               }
             }
-            return await output.isVisible()||await guestPreview.isVisible()||await readyVideo.isVisible();
+            return await output.isVisible()||await guestPreview.isVisible()||
+              await readyView.getAttribute("data-ready-state")==="complete";
           },{timeout:45000,intervals:[250,500,1000]}).toBe(true);
-          if(!await guestPreview.isVisible()&&!await readyVideo.isVisible())
+          if(!await guestPreview.isVisible()&&
+            await readyView.getAttribute("data-ready-state")!=="complete")
             await output.waitFor({state:"visible",timeout:45000});
         } catch (error) {
           phase(engine,"download-control-timed-out");
@@ -1551,6 +1673,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           // The actual verified export was promoted to the approved Ready tab.
           // Legacy Result is deliberately CSS-hidden in Ready; never click it.
           await expect(readyView).toHaveAttribute("data-ready-view","home");
+          await expect(page.locator("[data-mandala-video-preview]")).toHaveCount(1);
+          await expect(readyVideo).toHaveAttribute("data-ready-native-player","true");
           await expect(page.locator("[data-video-result]"))
             .toHaveAttribute("data-video-result-mode","rendered");
           await expect(output).toBeHidden();

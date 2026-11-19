@@ -15,7 +15,7 @@ export interface StoryPhoto {
  readonly tags:readonly string[];
  readonly categories:readonly string[];
  readonly stage:number;
- readonly durationSeconds:5;
+ readonly durationSeconds:5|10;
  readonly approval:string;
 }
 export type StoryBusinessPhoto=StoryPhoto;
@@ -35,3 +35,17 @@ export declare function chooseConceptStoryPhoto(options?:{
  category?:"business"|"love"|"stress"|"energy"|"body";
  description?:string;stage?:number;usedIds?:readonly string[];avoid?:string|string[];
 }):StoryPhoto|null;
+
+/** Immutable snapshot of the 256 canonical photo bindings (real Pexels JPEGs only). */
+export declare const STORY_SCENARIO_PHOTOS:readonly StoryPhoto[];
+export declare const MYTUBE_SCENARIO_PHOTO_COVERAGE:Readonly<Record<string,{
+ readonly categoryId:string;
+ readonly topicId:string;
+ readonly titleRu:string;
+ readonly photoIds:readonly string[];
+ readonly sceneNos:readonly number[];
+}>>;
+export declare const MYTUBE_SCENARIO_PHOTO_SUMMARY:Readonly<{
+ scenarios:number;photos:number;links:number;minimumUniquePhotos:number;
+}>;
+export declare function getMyTubeScenarioPhotos(scenarioId:string):readonly StoryPhoto[];

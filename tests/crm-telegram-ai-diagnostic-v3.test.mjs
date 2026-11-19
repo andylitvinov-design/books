@@ -3,39 +3,18 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {
   TELEGRAM_AI_DIAGNOSTIC_V3,V3_LABELS,V3_COPY,V3_BUTTONS,v3StartLocale,
-  v3CanStart,v3CanChat,v3ModelKey,v3Context,v3ButtonsFor,v3IsStop,v3Action,v3CanCallModel,v3DailyReplyCount,v3WantsGeneralChat,V3_CHAT_COPY,v3ChatPreConsentSafetyReply,
+  v3CanStart,v3CanChat,v3ServiceIntakeReady,v3ModelKey,v3Context,v3ButtonsFor,v3IsStop,v3Action,v3CanCallModel,v3DailyReplyCount,v3WantsGeneralChat,V3_CHAT_COPY,v3ChatPreConsentSafetyReply,
 } from '../lib/crm/telegram-ai-diagnostic-v3.mjs';
 import {v3Generate,v3ModelMessages} from '../lib/crm/telegram-ai-diagnostic-v3-model.mjs';
 import {waveTelegramLocalReply} from '../lib/crm/telegram-wave-local-reply.mjs';
 
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const env={
-  VERCEL_ENV:'production',HH_CRM_TG_AI_V3_ENABLED:'true',
+  VERCEL_ENV:'production',HH_CRM_TG_AI_V3_SCHEMA_READY:'true',HH_CRM_TG_AI_V3_ENABLED:'true',
   HH_CRM_TG_AI_V3_FREE_TIER_CONFIRMED:'true',
   HH_CRM_TG_AI_V3_SHARED_KEY_APPROVED:'true',
   HH_COUNCIL_OPENROUTER_API_KEY:'synthetic-free-key-not-real',
 };
-const model='google/gemma-4-31b-it:free';
-const reply=payload=>new Response(JSON.stringify(payload),{status:200});
-function mockProvider({text='I hear you. What would change if this became easier?',cost=0,pricing='0'}={}){
-  const calls=[];
-  const fetcher=async (url,opts={})=>{
-    const u=String(url),body=opts.body?JSON.parse(opts.body):null;
-    calls.push({url:u,method:opts.method,body});
-    if(u.endsWith('/key'))return reply({data:{label:'test'}});
-    if(u.endsWith('/models'))return reply({data:[{
-      id:model,pricing:{prompt:pricing,completion:pricing},
-      architecture:{input_modalities:['text'],output_modalities:['text']},
-    }]});
-    if(u.endsWith('/chat/completions'))return reply({
-      model,choices:[{finish_reason:'stop',message:{content:text}}],
-      usage:{cost},
-    });
-    throw Error('Unexpected provider URL');
-  };
-  return {fetcher,calls};
-}
-
 test('V3 is a separate, consented three-language journey, not fixed six questions',()=>{
   assert.equal(TELEGRAM_AI_DIAGNOSTIC_V3,3);
   assert.deepEqual(['ru','en','es'].map(l=>v3StartLocale('/start hreview_'+l)),[null,null,null]);
@@ -45,7 +24,7 @@ test('V3 is a separate, consented three-language journey, not fixed six question
     assert.ok(V3_COPY[lang].intro.length<950);
     assert.deepEqual(v3ButtonsFor(lang,'consent'),[[V3_LABELS[lang].agree,V3_LABELS[lang].decline]]);
     assert.deepEqual(v3ButtonsFor(lang,'interview',1),[]);
-    assert.deepEqual(v3ButtonsFor(lang,'interview',2),[[V3_LABELS[lang].finish,V3_LABELS[lang].continue]]);
+    assert.deepEqual(v3ButtonsFor(lang,'interview',2),[[V3_LABELS[lang].finish,V3_LABELS[lang].book],[V3_LABELS[lang].continue]]);
     assert.deepEqual(v3ButtonsFor(lang,'review_confirm'),[
       [V3_LABELS[lang].send],[V3_LABELS[lang].edit,V3_LABELS[lang].cancel],
     ]);
@@ -105,33 +84,38 @@ test('Model prompt works with real context and never assumes a fixed diagnostic 
   assert.match(summary.at(-1).content,/Summarize/);
 });
 
-test('External free adapter checks zero-priced catalog, denial of training and zero charged cost',async()=>{
-  const api=mockProvider();
-  const result=await v3Generate({locale:'en',turns:[{role:'user',text:'I cannot make a decision'}]},env,api.fetcher);
-  assert.equal(result.freeCostVerified,true);
-  assert.equal(result.model,model);
-  const call=api.calls.find(x=>x.url.endsWith('chat/completions'));
-  assert.ok(call);
-  assert.equal(call.body.model,model);
-  assert.equal(call.body.provider.max_price.prompt,0);
-  assert.equal(call.body.provider.max_price.completion,0);
-  assert.equal(call.body.provider.allow_fallbacks,false);
-  assert.equal(call.body.provider.data_collection,'deny');
-  assert.equal(call.body.messages.at(-1).content,'I cannot make a decision');
-  assert.ok(!api.calls.some(x=>x.url.includes('gemini')));
+test('OpenRouter is never called by Telegram V3, even when a legacy key exists',async()=>{
+ const network=[];
+ const mockFetch=async(...args)=>{network.push(args);throw Error('UNEXPECTED_NETWORK');};
+ for(const [locale,text] of [
+   ['ru','Поговорим?'],['en',"Let's chat"],['es','Quiero charlar']]){
+   const answer=await v3Generate({kind:'chat',locale,
+     turns:[{role:'user',text}]},env,mockFetch);
+   assert.equal(answer.provider,'holistic-house-native');
+   assert.equal(answer.modelUsed,false);
+   assert.equal(answer.freeCostVerified,true);
+   assert.ok(answer.text.length>12&&answer.text.length<=900);
+   assert.ok((answer.text.match(/[?？]/gu)||[]).length<=1);
+ }
+ assert.equal(network.length,0,'client chat never called an external fetcher');
+ const adapter=source('lib/crm/telegram-ai-diagnostic-v3-model.mjs');
+ assert.doesNotMatch(adapter,/openrouter\.ai|inspectOpenRouterFreeAccess|FREE_MODEL_KEY_NOT_CONFIGURED/);
+ assert.match(adapter,/waveTelegramLocalReply\(\{locale,turns\}\)/);
 });
 
-test('Free adapter rejects paid responses and long multi-question model output',async()=>{
-  const paid=mockProvider({cost:0.01});
-  await assert.rejects(
-    v3Generate({locale:'ru',turns:[{role:'user',text:'Нужно решение'}]},env,paid.fetcher),
-    /FREE_MODEL_NOT_VERIFIED/,
-  );
-  const long=mockProvider({text:'What happened? When? Why?'});
-  await assert.rejects(
-    v3Generate({locale:'ru',turns:[{role:'user',text:'Нужно решение'}]},env,long.fetcher),
-    /FREE_MODEL_TOO_MANY_QUESTIONS/,
-  );
+test('Non-chat model fallback refuses provider calls; invalid owned endpoint stays native',async()=>{
+ await assert.rejects(
+   v3Generate({kind:'summary',locale:'en',
+     turns:[{role:'user',text:'Need clarity'}]},env),
+   /NATIVE_INTAKE_REQUIRED/);
+ const invalidOwned={...env,HH_AGENT_OWNED_ENABLED:'true',
+   HH_AGENT_OLLAMA_ENDPOINT:'http://unsafe.example/api/chat',
+   HH_AGENT_OLLAMA_MODEL:'qwen2.5',
+   HH_AGENT_OLLAMA_TOKEN:'012345678901234567890123'};
+ const reply=await v3Generate({kind:'chat',locale:'ru',
+   turns:[{role:'user',text:'Хочу поговорить'}]},invalidOwned);
+ assert.equal(reply.provider,'holistic-house-native');
+ assert.doesNotMatch(reply.text,/OpenRouter/);
 });
 
 test('Signed CRM webhook is only routing; legacy V2 and owner/private bot remain intact',()=>{
@@ -180,8 +164,8 @@ test('Consent is explained once; follow-up nudges do not repeat the privacy wall
   }
   const service=source('lib/crm/telegram-ai-diagnostic-v3-service.js');
   assert.ok(service.includes("if(start&&active&&row?.stage==='consent')"));
-  assert.ok(service.includes("const purposeReady=general||ctx.mode===FREE_DIAGNOSTIC_MODE?chatAllowed:"));
-  assert.ok(service.includes("serviceCopy&&ctx.mode!==SECRETARY_MODES.PSYCHOLOGIST?serviceAllowed:allowed"));
+  assert.ok(service.includes("const purposeReady=general?chatAllowed:serviceAllowed;"));
+  assert.ok(service.includes("if(!agrees||!purposeReady)"));
   assert.ok(service.includes("const reminder=general?(chatAllowed?chat.nudge:copy.notReady):"));
   assert.ok(service.includes("(purposeReady?(serviceCopy?serviceCopy.welcomeNudge:copy.nudge):copy.notReady)"));
   assert.ok(service.includes("purposeReady?v3ButtonsFor(lang,general?'chat_consent':"));
@@ -193,7 +177,7 @@ test('free Telegram conversation is consent gated and shares Secretary/Coach',()
  for(const locale of ['ru','en','es']){
   assert.deepEqual(v3ButtonsFor(locale,'chat_consent'),
     [[V3_LABELS[locale].chatagree,V3_LABELS[locale].chatlater]]);
-  assert.match(V3_CHAT_COPY[locale].intro,/OpenRouter/);
+  assert.doesNotMatch(V3_CHAT_COPY[locale].intro,/OpenRouter/);
   assert.ok(V3_CHAT_COPY[locale].intro.length<165);
  }
  assert.equal(v3WantsGeneralChat('Привет'),true);
@@ -242,7 +226,7 @@ test('Telegram chat uses shared Reaction, Conversation and Reasoning Mind signal
 test('Ali is the only client-facing assistant name; legacy Wave chat buttons keep working',()=>{
   for(const locale of ['ru','en','es']){
     assert.match(V3_CHAT_COPY[locale].intro,/Ali/);
-    assert.match(V3_CHAT_COPY[locale].intro,/OpenRouter/);
+    assert.doesNotMatch(V3_CHAT_COPY[locale].intro,/OpenRouter/);
     assert.doesNotMatch(V3_CHAT_COPY[locale].intro,/Qwen/i);
     assert.match(V3_COPY[locale].intro,/Ali/);
     assert.match(V3_LABELS[locale].chatagree,/Ali/);
@@ -265,12 +249,20 @@ test('Wave local chat remains consent-gated and is independent of any model key'
   assert.equal(v3CanChat({...local,HH_CRM_TG_AI_V3_ENABLED:'false'}),false);
   assert.equal(v3CanChat({...local,HH_CRM_TG_AI_V3_SCHEMA_READY:'false'}),false);
   assert.equal(v3CanChat({...local,VERCEL_ENV:'preview'}),false);
+  // The native, consent-gated Secretary / service intake never requires a
+  // model key or a paid/free inference quota. General AI chat retains its
+  // own stricter quota+consent admission.
+  assert.equal(v3ServiceIntakeReady(local),true);
+  assert.equal(v3ServiceIntakeReady({...local,HH_CRM_TG_AI_V3_FREE_TIER_CONFIRMED:'false'}),true);
+  assert.equal(v3CanChat({...local,HH_CRM_TG_AI_V3_FREE_TIER_CONFIRMED:'false'}),false);
+  assert.equal(v3ServiceIntakeReady({...local,HH_CRM_TG_AI_V3_ENABLED:'false'}),false);
+  assert.equal(v3ServiceIntakeReady({...local,VERCEL_ENV:'preview'}),false);
   const service=source('lib/crm/telegram-ai-diagnostic-v3-service.js');
   assert.match(service,/const generalStart=chatAllowed/);
-  assert.match(service,/purposeReady=general\|\|ctx\.mode===FREE_DIAGNOSTIC_MODE\?chatAllowed:/);
-  assert.match(service,/serviceCopy&&ctx\.mode!==SECRETARY_MODES\.PSYCHOLOGIST\?serviceAllowed:allowed/);
+  assert.match(service,/purposeReady=general\?chatAllowed:serviceAllowed/);
+  assert.match(service,/const purposeReady=general\?chatAllowed:serviceAllowed/);
   assert.match(service,/if\(!row.ai_consent_at\|\|!/);
-  assert.match(service,/serviceCopy&&ctx\.mode!==SECRETARY_MODES\.PSYCHOLOGIST\?serviceAllowed:allowed/);
+  assert.match(service,/const purposeReady=general\?chatAllowed:serviceAllowed/);
   assert.match(service,/waveTelegramLocalReply\(\{locale:prior.locale,turns\}\)/);
   assert.match(service,/wave_telegram_inference/);
 });

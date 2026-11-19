@@ -110,3 +110,89 @@
 }
 @media(min-width:768px){.root{width:min(calc(100% - 36px),900px)}.hero{padding:36px 36px 26px}.focusCard{min-height:105px}.composer{min-height:170px}}
 @media(prefers-reduced-motion:reduce){.scene{transform:none}}
+
+/* 18 Nov owner-approved iPhone first viewport: four choices and Ali composer
+   remain usable ABOVE the fixed seven-destination dock. Larger viewports
+   keep the full writing experience, testimonials and secondary content. */
+@media (max-width:430px){
+ .root{padding-top:4px}
+ .modes{margin:6px auto 7px}
+ .mode,.modeActive{min-height:44px;padding:8px 6px}
+ .hero{padding:12px 11px 12px}
+ .heroContent{gap:6px}
+ .kicker{font-size:9px;line-height:1.1}
+ .kicker svg{width:14px;height:14px}
+ .hero h2{margin:0;font-size:clamp(29px,7.5vw,34px);line-height:1.035;letter-spacing:-.03em}
+ .subtitle{margin:0;font-size:14px;line-height:1.25}
+ .reviewCta{min-height:67px;margin:2px 0 0;padding:8px 10px;gap:8px;border-radius:18px}
+ .reviewCtaIcon{width:33px;height:33px;border-radius:11px}
+ .reviewCtaIcon svg{width:23px;height:23px}
+ .reviewCtaText{gap:2px}
+ .reviewCtaText strong{font-size:clamp(15px,4.2vw,17px);line-height:1.15}
+ .reviewCtaText small{font-size:12px;line-height:1.2}
+ .focusGrid{gap:7px;margin:2px 0 0}
+ .focusCard{min-height:72px;padding:8px 8px;gap:6px;border-radius:15px}
+ .focusIcon{width:21px;height:21px}
+ .focusCopy strong{font-size:clamp(13px,3.65vw,15px);line-height:1.17}
+ .focusArrow{width:15px;height:15px;padding:3px}
+ .composer{display:flex;flex-direction:row;align-items:center;gap:5px;min-height:72px;margin:4px 0 0;padding:7px 8px;border-radius:19px}
+ .composer textarea{display:block;flex:1 1 0%;width:0;min-width:0;height:48px;min-height:48px;max-height:120px;padding:8px 5px;resize:vertical;overflow-y:auto;font-size:16px;line-height:1.3}
+ .composerButtons{flex:none;align-self:center;gap:4px;flex-wrap:nowrap}
+ .composerButtons button{width:44px;height:44px;min-width:44px;border-radius:14px}
+ .benefits,.privacy{display:none}
+ .composer{scroll-margin-bottom:calc(var(--ia222-bottom-height,100px) + 16px)}
+ .continue{min-height:60px;margin-top:8px}
+}
+@media(max-width:355px){
+ .hero{padding:11px 9px 11px}
+ .hero h2{font-size:29px}
+ .focusCard{padding:7px 6px;gap:5px;min-height:70px}
+ .focusCopy strong{font-size:13px}
+ .reviewCtaText strong{font-size:15px}
+ .composer{padding:6px;gap:3px}
+ .composerButtons{gap:3px}
+}
+/* On shorter phones, preserve accessible scroll, but never waste the first
+   view on decorative spacing at the expense of the Ali input. */
+@media(max-width:430px) and (max-height:730px){
+ .header{min-height:50px;padding-top:4px;padding-bottom:4px}
+ .mode,.modeActive{min-height:44px}
+ .hero{padding-top:10px}
+ .heroContent{gap:5px}
+ .reviewCta{min-height:63px}
+ .focusCard{min-height:67px}
+ .composer{min-height:66px}
+}
+/* First-screen shared Persona selector: small enough not to crowd the mobile form. */
+.guideRow{display:flex;align-items:center;gap:8px;width:100%;min-width:0;
+  padding:5px 7px;box-sizing:border-box;border:1px solid #e4e8d26b;
+  border-radius:17px;background:#0e4239ad;backdrop-filter:blur(5px)}
+.guideIdentity{display:flex;align-items:center;gap:9px;min-width:0;flex:1;padding:0;
+  border:0;background:transparent;color:#fff;text-align:left;cursor:pointer}
+.guideIdentity img{flex:none;display:block;width:46px;height:46px;object-fit:cover;
+  object-position:center 28%;border-radius:13px;border:1px solid #e8f5ddbb}
+.guideIdentity>span{display:flex;min-width:0;flex:1;flex-direction:column;gap:4px}
+.guideIdentity strong{font:780 15px/1.1 system-ui,sans-serif}
+.guideIdentity small{font:530 11px/1.2 system-ui,sans-serif;color:#e9f7e8;
+  white-space:normal;overflow-wrap:anywhere}
+.guideIdentity>svg{flex:none;opacity:.85}
+.guideAudio{display:grid;place-items:center;flex:none;width:44px;height:44px;
+  box-sizing:border-box;border:1px solid #c8eadb;border-radius:13px;
+  background:#fffdf5;color:#0b6856;cursor:pointer}
+.guideAudio[aria-pressed="true"]{background:#1aa081;color:white}
+.guideIdentity:focus-visible,.guideAudio:focus-visible{outline:3px solid #9fe6cb;outline-offset:2px}
+@media(max-width:430px){
+  .guideRow{gap:5px;padding:4px 5px;border-radius:14px}
+  .guideIdentity{gap:7px}
+  .guideIdentity img{width:40px;height:40px;border-radius:10px}
+  .guideIdentity strong{font-size:14px}
+  .guideIdentity small{font-size:10px;line-height:1.15}
+  .guideAudio{width:42px;height:42px;border-radius:11px}
+}
+@media(max-width:355px){
+  .guideIdentity img{width:35px;height:39px}
+  .guideIdentity>svg{width:14px}
+  .guideIdentity strong{font-size:13px}
+  .guideIdentity small{font-size:9px}
+  .guideAudio{width:38px;height:40px}
+}

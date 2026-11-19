@@ -8,7 +8,7 @@ import { VOICE_STUDIO_MODEL, VOICE_STUDIO_OPENROUTER_MODEL, VOICE_STUDIO_OPENROU
 import { requestStudioAudio } from '@/lib/mandala/voice-studio-provider.mjs'
 import { requestOpenRouterStudioAudio } from '@/lib/mandala/voice-studio-openrouter-provider.mjs'
 import {fishConfig,fishLanguages,validateFishRequest} from '@/lib/mandala/voice-studio-fish.mjs'
-import {requestFishWav} from '@/lib/mandala/voice-studio-fish-provider.mjs'
+import {requestFishWav,approvedFishReference} from '@/lib/mandala/voice-studio-fish-provider.mjs'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -37,6 +37,7 @@ export async function GET() {
     providers,
     languages,
     fishLanguages:fishAvailable,
+    fishLicenseHold:['fish-calm-meditation'],
     mode:'gemini-free-openrouter-free-fish-free-optional-paid',
     customRequiresSignIn:true,
     publicAffirmationsEnabled:publicFree,
@@ -74,11 +75,14 @@ export async function POST(request) {
     }
     await consumeRate(config,{op:'voice-studio-free-global'},120,3600)
     if(validated.provider==='fish'){
-      const vendor=fishConfig(process.env,validated.language)
-      if(!vendor)throw new AppError('FISH_STUDIO_NOT_APPROVED',503)
+      const configuredVendor=fishConfig(process.env,validated.language)
+      if(!configuredVendor)throw new AppError('FISH_STUDIO_NOT_APPROVED',503)
+      const referenceId=approvedFishReference(validated.voiceId,process.env)
+      if(!referenceId)throw new AppError('FISH_VOICE_LICENSE_REQUIRED',403)
+      const vendor={...configuredVendor,referenceId}
       await consumeRate(config,{op:'voice-studio-fish-global-hour'},12,3600)
       await consumeRate(config,{op:'voice-studio-fish-global-day'},30,86400)
-      const wav=await requestFishWav({vendor,input:validated,
+      const wav=await requestFishWav({vendor,input:validated,env:process.env,
         signal:AbortSignal.any([request.signal,AbortSignal.timeout(20000)])})
       const response=new NextResponse(wav,{headers:{
         ...PRIVATE_HEADERS,'Content-Type':'audio/wav',

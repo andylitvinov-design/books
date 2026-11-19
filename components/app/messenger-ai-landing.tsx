@@ -6,6 +6,8 @@ import {BookOpen, CalendarDays, ClipboardCheck, Clapperboard, Flower2,
   HandHeart, MessageCircle, Play, X} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./messenger-ai-landing.module.css";
+import {useAliPersona} from "./use-ali-persona";
+import {playAliPersonaAudio,stopAliPersonaAudio,prepareAliNaturalVoice} from "./ali-persona-audio";
 
 // Owner's original HeyGen exports, not a YouTube player and not time-limited
 // files2.heygen.ai signed downloads. Both captioned MP4s were checked as
@@ -79,6 +81,21 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupp
   locale:PublicLocale;onCreateVideo:()=>void;onPractice:()=>void;onAsk:()=>void;onSupport:()=>void;composer?:ReactNode
 }){
   const t=COPY[locale];
+  const {persona}=useAliPersona();
+  const [speaking,setSpeaking]=useState(false);
+  useEffect(()=>{void prepareAliNaturalVoice();return ()=>stopAliPersonaAudio();},[]);
+  const playGreeting=()=>{
+    if(speaking){stopAliPersonaAudio();setSpeaking(false);return;}
+    playAliPersonaAudio(persona.id,locale,(isPlaying:boolean)=>setSpeaking(isPlaying));
+  };
+  const guideName=persona.name[locale];
+  const welcomeTitle=locale==="ru"?`Привет! Я ${guideName}.`:
+    locale==="es"?`¡Hola! Soy ${guideName}.`:`Hi! I'm ${guideName}.`;
+  const guideRole=locale==="ru"?"Ваш внутренний алхимик":
+    locale==="es"?"Tu alquimista interior":"Your Inner Alchemist";
+  const guideLead=locale==="ru"?"Давайте разберёмся в вашей ситуации, найдём главное и вместе выберем следующий шаг.":
+    locale==="es"?"Comprendamos tu situación y elijamos juntos el mejor siguiente paso.":
+    "Let's understand your situation, find what matters most, and choose the best next step together.";
   // Spanish has no recorded master; use the existing English version with
   // an explicit "Audio en inglés" label, never silently present Russian audio.
   const introduction=INTRO[locale==="ru"?"ru":"en"];
@@ -136,8 +153,11 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupp
     });
   };
 
-  return <section className={css.root} data-hh-ai-landing aria-label={t.title}>
-    <div className={css.hero} data-hh-ai-video-hero data-playing={playing?"true":"false"}>
+  return <section className={css.root} data-hh-ai-landing aria-label={welcomeTitle}>
+    <div className={css.hero} data-hh-ai-video-hero data-playing={playing?"true":"false"}
+      data-hh-ali-hero-persona={persona.id}>
+      <img className={css.heroPortrait} src={persona.image} alt="" width={320} height={285}
+        loading="eager" fetchPriority="high"/>
       <div className={css.player} aria-hidden={!playing} data-backup={failed?"true":"false"}>
         <video ref={videoRef} src={introduction.src} controls playsInline preload="none"
           poster="/images/holistic-house/reiki-approved-sunrise-v3.webp"
@@ -158,14 +178,23 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupp
       </div>
       {!playing&&<>
         <div className={css.heroCopy}>
-          <em>{t.hi}</em>
-          <h2>{t.title}</h2>
-          <p>{t.lead}</p>
+          <em>{welcomeTitle}</em>
+          <h2>{guideRole}</h2>
+          <p>{guideLead}</p>
         </div>
+        <button type="button" className={css.voicePlay} data-hh-ai-persona-voice-play
+          aria-pressed={speaking} onClick={playGreeting}
+          aria-label={locale==="ru"?(speaking?"Остановить приветствие":"Послушать приветствие"):
+            locale==="es"?(speaking?"Detener saludo":"Escuchar saludo"):
+            (speaking?"Stop greeting":"Listen to greeting")}>
+          {speaking?<X size={18} aria-hidden="true"/>:<Play size={18} fill="currentColor" aria-hidden="true"/>}
+          <span>{speaking?(locale==="ru"?"Стоп":locale==="es"?"Detener":"Stop"):
+            locale==="ru"?"Послушать":locale==="es"?"Escuchar":"Listen"}</span>
+        </button>
         <button type="button" className={css.play}
           data-hh-ai-intro-play onClick={start}
           aria-label={t.watch} title={t.watch}>
-          <Play size={27} fill="currentColor" aria-hidden="true"/>
+          <Clapperboard size={22} aria-hidden="true"/>
         </button>
         <span className={css.languageNote}>
           {Math.round(introduction.durationSeconds)}s · {t.videoLanguage}
@@ -173,7 +202,7 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupp
       </>}
     </div>
     <div className={css.question} data-hh-ai-landing-question>
-      <img src="/images/holistic-house/reiki-approved-sunrise-v3.webp"
+      <img src={persona.image}
         width={42} height={42} alt="" loading="lazy"/>
       <strong>{t.question}</strong>
     </div>

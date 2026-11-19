@@ -11,7 +11,8 @@ test('native menu is scoped to private chats and available in RU EN ES',()=>{
   assert.equal(commands.length,8);
   assert.equal(new Set(commands.map(x=>x.command)).size,8);
   assert.ok(commands.every(x=>/^[a-z0-9_]{1,32}$/.test(x.command)&&x.description.length>0&&x.description.length<=256));
-  for(const key of ['support','menu','tests','academy','library','events','cabinet','stop'])assert.ok(commands.some(x=>x.command===key));
+  assert.deepEqual(commands.map(x=>x.command),
+    ['support','business','study','diagnostic','profile','video','coach','assistant']);
   assert.equal(commands.some(x=>x.command==='lang_es'),false,'Spanish is not offered in the native RU/EN menu');
  }
 });
@@ -51,9 +52,29 @@ test('preserves existing BotFather commands, their descriptions and order',()=>{
  assert.equal(merged.find(x=>x.command==='agree')?.description,'Old consent');
  assert.equal(merged.find(x=>x.command==='video')?.description,'Old video');
  assert.equal(merged.filter(x=>x.command==='video').length,1);
- assert.ok(merged.some(x=>x.command==='menu'));
+ assert.ok(merged.some(x=>x.command==='assistant'));
+ assert.equal(merged.some(x=>x.command==='menu'),false,'previous bot-owned Menu retired');
  assert.equal(telegramCompanionCommandsEqual(merged,mergeTelegramCompanionNativeCommands(merged,'ru')),true);
 });
+test('retire the full previous eight-command menu and preserve unrelated BotFather commands',()=>{
+ const old=[
+  {command:'support',description:'🌿 Получить поддержку'},
+  {command:'menu',description:'Главное меню'},
+  {command:'tests',description:'Бесплатные тесты'},
+  {command:'academy',description:'Курсы и Reiki'},
+  {command:'library',description:'Библиотека и практики'},
+  {command:'events',description:'События'},
+  {command:'cabinet',description:'Мой кабинет'},
+  {command:'stop',description:'Остановить диалог'},
+  {command:'start',description:'Owner custom welcome'}
+ ];
+ const result=mergeTelegramCompanionNativeCommands(old,'ru');
+ assert.deepEqual(result.slice(0,8),telegramCompanionNativeCommands('ru'));
+ assert.equal(result.length,9);
+ assert.equal(result[8].command,'start');
+ assert.equal(telegramCompanionCommandsEqual(result,mergeTelegramCompanionNativeCommands(result,'ru')),true);
+});
+
 test('fail closed instead of truncating or overwriting an unknown command menu',()=>{
  assert.equal(mergeTelegramCompanionNativeCommands(null),null);
  assert.equal(mergeTelegramCompanionNativeCommands([{command:'BAD',description:'x'}]),null);
@@ -97,8 +118,12 @@ test('first Home reply may bootstrap native Menu once per hour without blocking 
  assert.ok(route.includes("HH_CRM_TG_COMMAND_MENU_SETUP_FAILED"));
  assert.ok(route.includes('after(async()=>'));
  // It must not mutate webhooks and must not interfere with existing customer /stop.
- assert.ok(route.includes('const diagnosticEvent=companion.supportStart'));
+ assert.ok(route.includes('const diagnosticEvent=companion.assistantStart'));
+ assert.ok(route.includes(':companion.supportStart'));
+ assert.ok(route.includes(':companion.businessStart'));
  assert.ok(route.includes('?{...event,rawText:companion.supportStart,inlineAction:null}'));
+ assert.ok(route.includes('?{...event,rawText:companion.assistantStart,inlineAction:null}'));
+ assert.ok(route.includes('?{...event,rawText:companion.businessStart,inlineAction:null}'));
  assert.ok(route.includes(':companion.reviewRequested'));
  assert.ok(route.includes("rawText:'/start hhreview_'+companion.reviewLocale,inlineAction:null"));
  assert.ok(route.includes('const aiIntake=await processTelegramAiV3(diagnosticEvent,config)'));

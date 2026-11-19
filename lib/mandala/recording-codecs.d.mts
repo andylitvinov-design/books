@@ -1,3 +1,4 @@
+export function isAppleMobileDevice(userAgent?:string,maxTouchPoints?:number):boolean;
 export function prefersSafariWebm(userAgent?:string,maxTouchPoints?:number):boolean;
 export function orderRecordingMimes(args:{
   mp4:readonly string[]; webm:readonly string[];
@@ -15,4 +16,5 @@ export function selectWebCodecsForRecording(args?:{
 export function shouldAutoRecoverSafariPlayback(args?:{
   safariWebKit?:boolean;format?:string;errorCode?:number;nativeWebm?:boolean;
   alreadyAttempted?:boolean;catalog?:boolean;
+  userAgent?:string;maxTouchPoints?:number;
 }):boolean;
