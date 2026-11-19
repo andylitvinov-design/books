@@ -83,15 +83,16 @@ test('single event workflow never falls into full Watchdog inventory scan',()=>{
  assert.match(native,/  conflict-event-handoff:/);
  assert.doesNotMatch(watchdog,/^  pull_request_target:/m,'only one trusted PR-target workflow starts');
  assert.doesNotMatch(watchdog,/^  conflict-event-handoff:/m);
- const conflict=native.split('  conflict-event-handoff:\n')[1]?.split('  prune-head:\n')[0];
- assert.ok(conflict,'dedicated exact-PR event handler must exist');
- assert.match(conflict,/group: hh-conflict-event-pr-\$\{\{ github\.event\.pull_request\.number \}\}/);
- assert.doesNotMatch(conflict,/group: hh-control-tower-single-writer/);
- assert.match(conflict,/enqueueOnly:true/);
- assert.match(conflict,/actions: write/,'bounded verified cron rescue needs Actions permission');
- assert.match(conflict,/result\.labelAdded===true/);
- assert.match(conflict,/wakeStaleWatchdog/,'one verified new conflict can rescue a stale cron');
- assert.doesNotMatch(conflict,/publishCiSignalOnly|ci-pr-queue-dispatcher\.cjs/);
+ const eventJob=native.split('  conflict-event-handoff:\n')[1]?.split('\n  prune-head:')[0];
+ assert.ok(eventJob,'the single native conflict-event job must exist');
+ assert.match(eventJob,/group: hh-conflict-event-pr-\$\{\{ github\.event\.pull_request\.number \|\| github\.run_id \}\}/);
+ assert.doesNotMatch(eventJob,/group: hh-control-tower-single-writer/,
+   'PR-local hint must not consume the shared Watchdog source-writer queue');
+ assert.match(eventJob,/run\(\{github,core,context,dryRun:false,queueOnly:true\}\)/);
+ assert.match(eventJob,/result\.labelAdded===true/);
+ assert.doesNotMatch(eventJob,/publishCiSignalOnly/);
+ assert.match(watchdog,/group: hh-control-tower-single-writer/,
+   'real Watchdog/Control Tower still preserves its global writer lease');
  assert.match(native,/ci-pr-conflict-event-handoff\.cjs/);
 });
 
@@ -203,47 +204,41 @@ test('explicit hard holds report precise reason and never pass into a source or 
  }
 });
 
-test('exact-HEAD PR event queues verified conflict without the global writer',async()=>{
- let current=source(), reads=0, labels=0, dispatched=0;
- const github={rest:{pulls:{get:async()=>({data:(reads++,current)})},
-   issues:{addLabels:async({issue_number,labels:next})=>{
-     assert.equal(issue_number,3162);
-     assert.deepEqual(next,['hh:conflict-repair-needed']);
-     labels++;
-     current=source(['hh:conflict-repair-needed']);
-     return {data:{}};
-   }}}};
- const receipt=await run({github,core,context:event(),enqueueOnly:true,
-   dispatchRun:async()=>{dispatched++;throw Error('global writer forbidden');}});
- assert.equal(receipt.outcome,'CONFLICT_QUEUED_FOR_SHARED_WATCHDOG');
- assert.equal(receipt.nextAction,'WATCHDOG_SEMANTIC_CONFLICT_HANDOFF');
- assert.equal(receipt.mergeAuthorized,false);
- assert.equal(receipt.dispatchAccepted,0);
- assert.equal(reads,2,'label has exact-HEAD readback before enqueue');
- assert.equal(labels,1);
- assert.equal(dispatched,0,'event cannot compete with shared Watchdog dispatcher');
- const again=await run({github,core,context:event(),enqueueOnly:true,
-   dispatchRun:async()=>{dispatched++;throw Error('global writer forbidden');}});
- assert.equal(again.outcome,'CONFLICT_QUEUED_FOR_SHARED_WATCHDOG');
- assert.equal(labels,1,'exact-HEAD hint must not be rewritten');
+// PR-local event handling must never run the shared source/CI dispatcher.
+// Verified conflict hints are only durable metadata for the existing
+// serialized Watchdog, which retains all owner/lease/source safety checks.
+test('PR-scoped dirty event verifies hint but never dispatches common writer',async()=>{
+ let current=source(),writes=0,reads=0,dispatched=0;
+ const github={rest:{pulls:{get:async()=>{reads++;return {data:current};}},
+  issues:{addLabels:async args=>{
+   writes++;assert.deepEqual(args.labels,['hh:conflict-repair-needed']);
+   current=source(['hh:conflict-repair-needed']);return {data:{}};
+  }}}};
+ const first=await run({github,core,context:event(),queueOnly:true,
+  dispatchRun:async()=>{dispatched++;throw Error('shared writer must not run');}});
+ assert.equal(first.outcome,'CONFLICT_QUEUE_HINT_VERIFIED');
+ assert.equal(first.reason,'SERIALIZED_WATCHDOG_HANDOFF_PENDING');
+ assert.equal(first.mergeAuthorized,false);
+ assert.equal(first.sourceCommitVerified,false);
+ assert.equal(writes,1);assert.equal(reads,2);assert.equal(dispatched,0);
+ const next=await run({github,core,context:event(),queueOnly:true,
+  dispatchRun:async()=>{dispatched++;throw Error('duplicate shared dispatch');}});
+ assert.equal(next.outcome,'CONFLICT_QUEUE_HINT_VERIFIED');
+ assert.equal(writes,1,'one durable hint for repeated exact-HEAD events');
  assert.equal(dispatched,0);
 });
-
-test('PR-local conflict enqueue rejects stale HEAD, unknown state and owner holds',async()=>{
- for(const value of [
-   source([],{mergeable:null,mergeable_state:'unknown'}),
-   source([],{mergeable:true,mergeable_state:'clean'}),
-   source([],{head:{...source().head,sha:'c'.repeat(40)}}),
-   source(['hh:hold']),
-   source(['hh:repair-manual']),
+test('PR-local event never labels stale HEAD, unverified mergeability or held PR',async()=>{
+ for(const candidate of [
+  source([],{mergeable:null,mergeable_state:'unknown'}),
+  source([],{head:{...source().head,sha:'e'.repeat(40)}}),
+  source(['hh:hold']),source(['hh:blocked'])
  ]){
-   let labels=0,dispatches=0;
-   const gh={rest:{pulls:{get:async()=>({data:value})},
-     issues:{addLabels:async()=>{labels++;throw Error('wrong branch')}}}};
-   const result=await run({github:gh,core,context:event(),enqueueOnly:true,
-     dispatchRun:async()=>{dispatches++;}});
-   assert.notEqual(result.outcome,'CONFLICT_QUEUED_FOR_SHARED_WATCHDOG');
-   assert.equal(labels,0);
-   assert.equal(dispatches,0);
+  let writes=0,dispatches=0;
+  const github={rest:{pulls:{get:async()=>({data:candidate})},
+   issues:{addLabels:async()=>{writes++;}}}};
+  const result=await run({github,core,context:event(),queueOnly:true,
+   dispatchRun:async()=>{dispatches++;}});
+  assert.notEqual(result.outcome,'CONFLICT_QUEUE_HINT_VERIFIED');
+  assert.equal(writes,0);assert.equal(dispatches,0);
  }
 });

@@ -271,16 +271,15 @@ test('trusted production PR event safely wakes old cron once; rejects forged eve
  assert.equal((await wakeStaleWatchdog({github:busy,context,summary:{production:1},now:NOW})).decision,
    'WATCHDOG_ALREADY_RUNNING');
 });
-test('one verified PR-local conflict may wake an existing stale Watchdog, not global dispatch',()=>{
+test('PR event backstop runs in the original Watchdog job without new cron',()=>{
  const fs=require('node:fs');
  const yaml=fs.readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
  const job=yaml.split('  conflict-event-handoff:')[1]?.split('  completion-wait:')[0];
  assert.ok(job);assert.match(job,/HH_PR_EVENT_WATCHDOG_LIVENESS/);
  assert.match(job,/wakeStaleWatchdog/);
- assert.match(job,/result\.outcome==='CONFLICT_QUEUED_FOR_SHARED_WATCHDOG'/);
- assert.match(job,/result\.labelAdded===true/,'do not duplicate wake for held/known conflicts');
- assert.match(job,/group: hh-conflict-event-pr-/);
- assert.doesNotMatch(job,/group: hh-control-tower-single-writer/);
+ assert.match(job,/result\.outcome==='CONFLICT_QUEUE_HINT_VERIFIED'/);
+ assert.match(job,/result\.labelAdded===true/,
+  'only a first verified DIRTY hint can wake a stale scheduled controller');
  assert.match(job,/github.event_name == 'pull_request_target'/);
  assert.doesNotMatch(job,/^\s*schedule:/m);
 });
