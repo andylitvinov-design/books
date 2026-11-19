@@ -88,7 +88,9 @@ test('single event workflow never falls into full Watchdog inventory scan',()=>{
  assert.match(conflict,/group: hh-conflict-event-pr-\$\{\{ github\.event\.pull_request\.number \}\}/);
  assert.doesNotMatch(conflict,/group: hh-control-tower-single-writer/);
  assert.match(conflict,/enqueueOnly:true/);
- assert.doesNotMatch(conflict,/wakeStaleWatchdog|publishCiSignalOnly|ci-pr-queue-dispatcher\.cjs/);
+ assert.match(conflict,/result\.labelAdded===true/);
+ assert.match(conflict,/wakeStaleWatchdog/,'one verified new conflict can rescue a stale cron');
+ assert.doesNotMatch(conflict,/publishCiSignalOnly|ci-pr-queue-dispatcher\.cjs/);
  assert.match(native,/ci-pr-conflict-event-handoff\.cjs/);
 });
 

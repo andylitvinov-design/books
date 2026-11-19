@@ -455,7 +455,10 @@ test('four bounded Watchdog control jobs retain slim; conflict uses native PR-ta
   assert.ok(conflict);
   assert.match(conflict,/^    runs-on: ubuntu-slim$/m);
   assert.match(conflict,/^    timeout-minutes: 5$/m);
-  assert.match(conflict,/group: hh-control-tower-single-writer/);
+  assert.match(conflict,/group: hh-conflict-event-pr-/);
+  assert.doesNotMatch(conflict,/group: hh-control-tower-single-writer/,
+    'a conflict cannot reserve the Watchdog/Dispatcher lease');
+  assert.match(conflict,/enqueueOnly:true/);
   assert.match(w,/HH PR 10-minute watchdog/);
   assert.doesNotMatch(w,/continue-on-error:\s*true/);
 });
@@ -696,14 +699,17 @@ test('PR-target event consolidation keeps protected conflict, Ready stage, sourc
  const conflict=native.split('  conflict-event-handoff:\n')[1]?.split('\n  prune-head:\n')[0];
  const prune=native.split('  prune-head:\n')[1];
  assert.ok(conflict&&prune);
- assert.match(conflict,/group: hh-control-tower-single-writer/);
+ assert.match(conflict,/group: hh-conflict-event-pr-/);
+ assert.doesNotMatch(conflict,/group: hh-control-tower-single-writer/);
  assert.match(conflict,/ref: codex\/bootstrap-books/);
  assert.match(conflict,/persist-credentials: false/);
  assert.match(conflict,/publishReadyStage/);
- assert.match(conflict,/HH_CONFLICT_EVENT_HANDOFF/);
+ assert.match(conflict,/HH_CONFLICT_EVENT_ENQUEUE/);
  assert.match(conflict,/HH_PR_DIRECTION_EVENT_SEED/);
  assert.match(conflict,/HH_PR_EVENT_WATCHDOG_LIVENESS/);
- assert.match(conflict,/HH_PR_EVENT_CI_DAYTIME_SIGNAL/);
+ assert.match(conflict,/result\.labelAdded===true/);
+ assert.doesNotMatch(conflict,/HH_PR_EVENT_CI_DAYTIME_SIGNAL/,
+   'global signal reporting stays in the existing serialized Watchdog');
  assert.match(prune,/github.event.action == 'synchronize'/);
  assert.match(prune,/node scripts\/ci-prune-stale-runs\.mjs/);
  const enable=native.split('  enable:\n')[1]?.split('\n  failed-core-handoff:\n')[0];

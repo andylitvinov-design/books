@@ -907,6 +907,25 @@ jobs:
             core.info('HH_CONFLICT_EVENT_ENQUEUE '+JSON.stringify(result));
             await core.summary.addHeading('Conflict: exact-HEAD event handoff')
               .addCodeBlock(JSON.stringify(result,null,2)).write();
+            // Preserve the existing cron-outage backstop without putting a
+            // normal/blocked PR on the global Control Tower writer lease.
+            // Only the FIRST positively verified new DIRTY label for this
+            // source HEAD may even inspect/dispatch an existing Watchdog.
+            // Already labelled, clean, held, stale or unknown PRs cost zero
+            // global Watchdog API calls here. No new workflow or cron.
+            if (result.outcome==='CONFLICT_QUEUED_FOR_SHARED_WATCHDOG' &&
+                result.labelAdded===true) {
+              try {
+                const {wakeStaleWatchdog}=require(process.env.GITHUB_WORKSPACE+
+                  '/scripts/ci-pr-control-tower-wakeup.cjs');
+                const liveness=await wakeStaleWatchdog({github,context,
+                  summary:{production:1},dryRun:false,log:msg=>core.info(msg)});
+                core.info('HH_PR_EVENT_WATCHDOG_LIVENESS '+JSON.stringify(liveness));
+              } catch(error) {
+                core.warning('HH_PR_EVENT_WATCHDOG_LIVENESS_UNAVAILABLE '+
+                  String(error?.message||error).slice(0,120));
+              }
+            }
   prune-head:
     # Reuse trusted production workflow; no extra GitHub Actions workflow.
     if: >-
