@@ -406,7 +406,7 @@ export function MandalaAutomaticStoryboard({
      locale==="es"?"Es un montaje fotográfico ilustrativo; las acciones no están confirmadas como filmaciones.":
      "This is an illustrative photo montage; the scripted actions were not verified as filmed events."}
   </p>:null}
-  {(!hasSixPhotoReferences||photoAdaptationApplied||eligible)?<button type="button" className={styles.storyAutoApply}
+  <button type="button" className={styles.storyAutoApply}
     data-video-story-select-quality
     data-video-auto-storyboard-apply={!manualFiveReady&&!applied&&eligible?true:undefined}
     disabled={disabled} onClick={()=>{
@@ -422,6 +422,6 @@ export function MandalaAutomaticStoryboard({
       onChooseQuality(sourceReady);
     }}>
     <Play size={17} aria-hidden="true"/>{t.quality}<ArrowRight size={19} aria-hidden="true"/>
-  </button>:null}
+  </button>
  </div>;
 }
