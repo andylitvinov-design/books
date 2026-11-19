@@ -184,7 +184,29 @@ async function verifyWorkspaceHydration(browser,locale){
         // unrelated stock frames depict the six authored physical events.
         await expect(automaticStoryboard).toHaveAttribute("data-storyboard-action-proof","editorial_unverified");
         await expect(automaticStoryboard).toHaveAttribute("data-storyboard-media-ready","false");
-        await expect(cards.locator('img')).toHaveCount(0);
+        // These are visible, rights-reviewed PHOTO REFERENCES, never evidence
+        // that the six precise actions were filmed or that export is eligible.
+        await expect(automaticStoryboard).toHaveAttribute(
+          "data-storyboard-graphics-mode","licensed-photographic-references");
+        await expect(automaticStoryboard).toHaveAttribute("data-storyboard-reference-count","6");
+        await expect(automaticStoryboard).toHaveAttribute(
+          "data-storyboard-reference-status","editorial_photo_reference_not_action_verified");
+        const referenceLabel=locale==="ru"?"Фото · референс":
+          locale==="es"?"Foto · referencia":"Photo · reference";
+        for(let i=0;i<storyboardShotCount;i++){
+          const card=cards.nth(i);
+          await expect(card).toHaveAttribute("data-storyboard-reference-only","true");
+          await expect(card).toHaveAttribute("data-video-story-media-matched","false");
+          await expect(card).toHaveAttribute("data-story-media-kind","reference");
+          const image=card.locator("[data-storyboard-reference-photo]");
+          await expect(image).toBeVisible();
+          assert.ok((await image.getAttribute("src"))?.startsWith("/"),
+            "reference "+(i+1)+" uses a first-party approved photo URL");
+          assert.ok((await image.getAttribute("alt"))?.trim(),
+            "reference "+(i+1)+" retains a meaningful editorial description");
+          await expect(card.locator("[data-storyboard-photo-reference-label]"))
+            .toHaveText(referenceLabel);
+        }
       }
       await expect(automaticStoryboard.locator('[data-video-auto-storyboard-list]')).toBeVisible();
       await expect(cards.first()).toContainText(
