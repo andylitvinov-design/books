@@ -68,6 +68,18 @@ function localMetadata(file){
   video.onerror=()=>finish(false);video.src=url;video.load();
  });
 }
+/**
+ * @typedef {{
+ *   id: string,
+ *   theme: string,
+ *   collection: string,
+ *   label: {en:string,ru:string,es:string},
+ *   poster: string,
+ *   video: string,
+ *   allowedAspects: string[]
+ * }} ApprovedSiteVideo
+ * @param {{locale?: 'ru'|'en'|'es', scenes?: ApprovedSiteVideo[]}} props
+ */
 export default function AdminVideoLibraryClips({locale='ru',scenes=[]}){
  const t=text[locale]||text.ru;
  const [items,setItems]=useState([]),[files,setFiles]=useState([]);
