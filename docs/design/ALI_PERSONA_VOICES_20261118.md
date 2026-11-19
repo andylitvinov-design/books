@@ -31,7 +31,7 @@ Status: implementation PR. Production release requires green CI and owner's exis
 ## Mobile layout / acceptance
 
 1. iPhone narrow 320px, standard 375/393px and landscape: **same one-row** toolbar with locale, persona and new-chat actions; no horizontal overflow.
-2. Persona modal: safe-area padding, 2x2 portrait grid, full 44px-or-large selection hit targets, clear Listen/Stop actions, scrollable when device height is small.
+2. Persona modal: safe-area padding, four stacked landscape portrait cards, full 44px-or-large selection hit targets, clear Listen/Stop actions, scrollable when device height is small.
 3. Person change persists on reload and history remains unchanged.
 4. EN/RU/ES labels, greeting speech, menu names, keyboard Escape and focus states.
 5. Hero Play voices current presenter; video Play still opens former HeyGen introduction.
@@ -42,3 +42,11 @@ Status: implementation PR. Production release requires green CI and owner's exis
 
 - iOS system TTS voices are OS-dependent. The four natural voices are deterministic only when the already-approved Fish/Chirp provider is configured; the browser fallback can offer different pitch/rate if the OS lacks four distinct voices.
 - Live AI speech remains governed by the existing opted-in browser speech feature, not a new per-message cloud TTS bill.
+
+## Owner's approved visual correction · 2026-11-18
+
+- **Never place Personas in the very top four-section tab bar** (AI / Orders / Chats / News). Preserve these four destinations in their original order and size.
+- Put a very **short Persona / Персона / Guía control in the second header**, directly to the right of the selected guide's identity (“Ali · Inner Alchemist”), occupying the former **Previous Chats/history** control position **after the language switcher and before New Chat**. On iPhone 356px+ show the small icon and one-word label; at 320–355px use an accessible icon-only 40px control. Do not add another row or crowd the composer.
+- The approved picker is a **vertical four-item portrait list**, not a 2×2 grid. Each item has portrait on the left, name, soft style tag, one short description, a clear selection indicator, and voice Play/Stop with a compact audio waveform. The selection only becomes active after pressing the large **Choose {name}** button at the bottom. Cancel and X leave the previous guide selected. 
+- Keep the existing protected chat history reachable via the small link at the bottom of the picker; persona changes must not reset current chat, chosen language, order, or privacy consents. Keep the existing main welcome Play button, and use selected name/voice for that greeting.
+- Verify through automated tests that **data-hh-ali-persona-open is absent from data-chat-top-tabs** and is present precisely once in the Ali header, that the four portraits remain accessible on 320/375/390/430px screens, and that changing the candidate without confirming preserves the current guide.
