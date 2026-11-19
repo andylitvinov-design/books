@@ -51,7 +51,7 @@ async function routeRun({source=candidate,payload=callback(),diagnostic='off',co
    processTelegramBusinessSecretary:async()=>({handled:false}),
    gateTelegramBusinessSecretaryOptOut:async()=>({blocked:false}),
    // Mock the new, owner-scoped lead persistence boundary without real DB writes.
-   captureTelegramBusinessLead:async()=>{calls.businessCapture++;if(leadFailure)throw new Error('synthetic role 42501');return {created:false}},
+   captureTelegramBusinessLead:async update=>{calls.businessCapture++;if(leadFailure&&update?.business_message)throw new Error('synthetic role 42501');return {created:false}},
    captureTelegramBotLead:async()=>{calls.botCapture++;if(leadFailure)throw new Error('synthetic role 42501');return {created:false}},
    captureTelegramBotConsentedMessage:async()=>{if(historyFailure)throw new Error('synthetic history outage');return false},
    suppressTelegramBusinessLead:async()=>true,
