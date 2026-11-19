@@ -857,7 +857,9 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: read
-      actions: read
+      # Only the first newly verified DIRTY label can use the guarded
+      # existing Watchdog cron-outage dispatch; all other events are PR-local.
+      actions: write
       issues: write
       pull-requests: read
       checks: read
