@@ -372,7 +372,9 @@ test("WebKit traverses Ideas Personalization and Concept before consented Voice/
  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
  const modes=browser.indexOf('const ideasModes=phrases.locator("[data-video-ideas-tabs]")');
  const personal=browser.indexOf('const personalTab=ideasModes.locator',modes);
- const concept=browser.indexOf('await conceptTab.click()',personal);
+ const quiz=browser.indexOf('const nextQuiz=personalQuiz.locator',personal);
+ const fourth=browser.indexOf('toHaveAttribute("data-video-personalization-step","4")',quiz);
+ const concept=browser.indexOf('await expect(conceptTab).toHaveAttribute("aria-pressed","true")',fourth);
  const back=browser.indexOf('await personalTab.click()',concept);
  const opened=browser.indexOf('await advancedText.click()',back);
  const voice=browser.indexOf('await voiceModeButton.click()',opened);
@@ -381,7 +383,7 @@ test("WebKit traverses Ideas Personalization and Concept before consented Voice/
  const tap=browser.indexOf('await recordEntry.click()',record);
  const phrase=browser.indexOf('const phraseSelector=page.locator',tap);
  const consent=browser.indexOf('await narrationConsent.tap()',phrase);
- assert.ok(modes>=0&&personal>modes&&concept>personal&&back>concept&&
+ assert.ok(modes>=0&&personal>modes&&quiz>personal&&fourth>quiz&&concept>fourth&&back>concept&&
    opened>back&&voice>opened&&my>voice&&record>my&&tap>record&&
    phrase>tap&&consent>phrase,"real WebKit route must use visible controls before TTS consent");
  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
