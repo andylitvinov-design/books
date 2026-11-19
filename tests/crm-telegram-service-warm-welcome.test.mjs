@@ -8,6 +8,8 @@ import {TELEGRAM_SERVICE_OPTIONS} from '../lib/assist/telegram-service-options.m
 import {aliWelcomePhotoKey,aliWelcomePhotoUrl} from '../lib/crm/telegram-welcome-photo-catalog.mjs';
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const countQuestions=text=>(text.match(/[?？]/gu)||[]).length;
+const botOffers=Object.fromEntries(Object.entries(TELEGRAM_SERVICE_OPTIONS)
+ .filter(([,offer])=>!offer.channels||offer.channels.includes('telegram_bot')));
 
 test('first service response is a short thematic photo caption; one button starts Ali locally',()=>{
  for(const lang of ['ru','en','es'])for(const service of ['general','coaching','homeopathy','reiki','constellations','business','business_strategy']){
@@ -31,7 +33,7 @@ test('first service response is a short thematic photo caption; one button start
  }
 });
 test('all published options, in RU/EN/ES, receive exactly their selected title in the greeting',()=>{
- for(const [id,entry] of Object.entries(TELEGRAM_SERVICE_OPTIONS))for(const lang of ['ru','en','es']){
+ for(const [id,entry] of Object.entries(botOffers))for(const lang of ['ru','en','es']){
   const deep='/start hhitem_'+id+'_'+lang;
   assert.equal(v3ServiceStart(deep).offerId,id);
   const greeting=v3ServiceCopy(lang,entry.service,id);
