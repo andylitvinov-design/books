@@ -76,7 +76,7 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.match(director,/const videoGoalCategories=\[/);
  assert.match(director,/data-auto-video-category=\{item.id\}/);
  assert.match(director,/data-auto-video-topic-panel/);
- assert.match(director,/taxonomySubcategories\.map\(item=>/);
+ assert.match(director,/taxonomySubcategories\.map\(\(item,index\)=>/);
  assert.match(director,/taxonomyTopics\.map\(item=>/);
  assert.match(director,/taxonomyScenarios\.length===4/);
  assert.match(director,/const STSE_ENABLED=process\.env\.NEXT_PUBLIC_HH_STSE_ENABLED!=="false"/);
@@ -86,7 +86,7 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.match(director,/data-stse-media-unbound/);
  assert.match(director,/data-mytube-scenario=\{scenario.id\}/);
 
- assert.match(director,/taxonomySubcategories\.map\(item=>/);
+ assert.match(director,/taxonomySubcategories\.map\(\(item,index\)=>/);
  assert.match(director,/data-auto-video-clarify/);
  assert.match(director,/data-auto-video-refine-panel/);
  assert.match(director,/data-auto-video-option=\{id\}/);
@@ -346,7 +346,7 @@ test("owner correction: explicit quiz category precedes its four subcategories a
    "an initial suggestion or unmatched wish must not count as an answered category");
  assert.match(director,/if\(!classification\|\|broad\)\{[\s\S]*?setProposal\(null\);setTimelineEdits\(null\);return/,
    "unresolved or broad wishes must not inherit a ready film timeline");
- assert.match(goalBlock,/taxonomySubcategories\.map\(item=>/);
+ assert.match(goalBlock,/taxonomySubcategories\.map\(\(item,index\)=>/);
  assert.match(goalBlock,/data-auto-video-subcategory=\{item\.id\}/);
  assert.match(goalBlock,/selectedSubcategoryId===item\.id/);
  assert.doesNotMatch(goalBlock,/categoryPoster|scenePoster\(item.poster\)/);
