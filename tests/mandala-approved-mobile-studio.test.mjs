@@ -124,8 +124,11 @@ test("privacy, local goal and experimental efficacy note remain enforced",()=>{
     "approved goal comes from the single local wish state");
   assert.match(auto,/data-auto-video-input value=\{requestDraft\}[\s\S]*?maxLength=\{160\}/,
     "the same personal goal retains its strict 160-character browser limit");
-  assert.match(auto,/const text=event\.currentTarget\.value;[\s\S]*?onGoalChange\(nextGoal\)/,
-    "typing updates the same local state and real source-backed proposal without remote upload");
+  assert.match(auto,/onChange=\{event=>applyRequestDraft\(event\.currentTarget\.value\)\}/,
+    "typed goals use the same bounded local update as dictation");
+  const sharedPrompt=auto.slice(auto.indexOf("const applyRequestDraft="),auto.indexOf("const togglePromptDictation="));
+  assert.match(sharedPrompt,/setRequestDraft\(text\);[\s\S]*?onGoalChange\(nextGoal\)/,
+    "shared input handler updates local goal and source-backed proposal without remote upload");
   assert.match(s,/data-video-montage-tab=\{item.id\}/);
   assert.match(s,/data-video-voice-studio/);
   assert.match(s,/sourceText=\{currentAffirmationSpeech\}/,

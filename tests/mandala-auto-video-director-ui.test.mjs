@@ -491,14 +491,16 @@ test("new prompt and profile choice invalidate every prior MyTube plot selection
  }
  const request=director.slice(director.indexOf("const requestInput="),director.indexOf("const profilePanel="));
  const field=director.slice(director.indexOf("const requestField="),director.indexOf("const requestInput="));
+ const sharedPrompt=director.slice(director.indexOf("const applyRequestDraft="),director.indexOf("const togglePromptDictation="));
  assert.match(request,/\{requestField\}/,"visible request composer must use the resettable field");
  assert.match(request,/onClick=\{designFromRequest\}/,"Design action must invoke checked handler");
- assert.match(field,/onChange=\{event=>/,"typing must trigger the reset handler");
- assert.match(field,/onGoalChange\(nextGoal\)/,"typing must update the active request");
+ assert.match(field,/onChange=\{event=>applyRequestDraft\(event\.currentTarget\.value\)\}/,
+  "typing delegates to the same scene reset handler as dictation");
+ assert.match(sharedPrompt,/onGoalChange\(nextGoal\)/,"typing must update the active request");
  for(const setter of ["setSelectedSubcategoryId(","setSelectedTopicId("])
-   assert.ok(!field.includes(setter),"optional request preserves taxonomy");
+  assert.ok(!sharedPrompt.includes(setter),"optional request preserves taxonomy");
  for(const setter of ["setSelectedScenarioId(","setSelectedPlotId(","setTimelineEdits("])
-   assert.ok(field.includes(setter),"new request invalidates stale storyboard");
+  assert.ok(sharedPrompt.includes(setter),"new request invalidates stale storyboard");
 });
 
 test("Just make it sends a typed wish straight to the existing rights-checked Express renderer",()=>{
