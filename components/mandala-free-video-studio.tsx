@@ -1822,8 +1822,8 @@ const quickVideoCopy = {
  * only on-device Free is enabled; no unverified wallet or paid entitlement. */
 const approvedMobileCopy = {
   ru: {
-    introTitle:"Создать персональное видео",
-    intro:"Персональное видео для поддержки энергии, мотивации и уверенности. Выберите цель, образы и звук.",
+    introTitle:"Создайте своё видео",
+    intro:"Превратите своё намерение в личное видео с образами и звуком.",
     disclosure:"Краткие кадры и гипноаффирмации — экспериментальные приёмы, их влияние на убеждения не доказано.",
     benefits:["На основе ваших целей","Личные установки","Аффирмации по выбору","Природные образы и звуки"],
     directions:"1. Выберите направление",
@@ -1837,8 +1837,8 @@ const approvedMobileCopy = {
     affirmations:"Аффирмации",photo:"Моё фото",voice:"Голос",music:"Музыка",extra:"5. Дополнительные параметры",
   },
   en: {
-    introTitle:"Create your personal video",
-    intro:"Support for energy, motivation and confidence with personal imagery and optional affirmations. Choose your goal, visuals and sound.",
+    introTitle:"Create Your Video Therapy",
+    intro:"Turn your intention into a personal video with real scenes and sound.",
     disclosure:"Brief frames and hypnoaffirmations are experimental; effects on beliefs are not proven.",
     benefits:["Based on your goals","Personal intentions","Optional affirmations","Nature visuals and sound"],
     directions:"1. Choose a direction",
@@ -1852,8 +1852,8 @@ const approvedMobileCopy = {
     affirmations:"Affirmations",photo:"My photo",voice:"Voice",music:"Music",extra:"5. Additional settings",
   },
   es: {
-    introTitle:"Crea tu vídeo personal",
-    intro:"Imágenes y afirmaciones opcionales para apoyar la energía, la motivación y la confianza. Elige tu objetivo, imagen y sonido.",
+    introTitle:"Crea tu videoterapia personal",
+    intro:"Transforma tu intención en un vídeo personal con imágenes y sonido.",
     disclosure:"Los fotogramas breves y las hipnoafirmaciones son experimentales; no hay pruebas de que cambien las creencias.",
     benefits:["Según tus objetivos","Intenciones personales","Afirmaciones opcionales","Naturaleza y sonidos"],
     directions:"1. Elige la dirección",
@@ -7322,16 +7322,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </button>)}
       </nav>
         
-        <header className={videoStyles.quickHeader}>
-          <div className={videoStyles.quickHeaderText}>
+        <header className={videoStyles.quickHeader} data-video-goal-hero>
+          <div className={videoStyles.quickHeaderText} data-video-goal-hero-text>
             <h2 id="video-quick-heading">{approved.introTitle}</h2>
             <p>{approved.intro}</p>
           </div>
-          <div className={videoStyles.quickHeaderArt}>
+          <div className={videoStyles.quickHeaderArt} data-video-goal-hero-art>
             {/* Existing first-party portrait is a still. This Play button controls
                 the ONE actual MP4 preview below; no duplicate player or autoplay. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/holistic-house/support-reference-avatar.webp" alt="" aria-hidden="true"/>
+            <img src="/images/holistic-house/support-mock-hero.webp" alt="" aria-hidden="true"/>
             <button type="button" className={videoStyles.quickHeaderPlay}
               data-video-quick-hero-play aria-label={approved.previewPlay}
               disabled={recording||preparing}
@@ -7350,13 +7350,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <Sparkles size={18} aria-hidden="true"/>{quick.smart}
           </button>
         </header>
-        <div className={videoStyles.quickBenefits} aria-label={approvedMobileCopy[locale].introTitle}>
+        <div className={videoStyles.quickBenefits} data-video-goal-benefits aria-label={approvedMobileCopy[locale].introTitle}>
           {approved.benefits.map((benefit,index)=>{
             const Icon=[Sparkles,Heart,Leaf,Music2][index];
             return <span key={benefit}><Icon size={21} aria-hidden="true"/>{benefit}</span>;
           })}
         </div>
-        <p className={videoStyles.quickDisclosure} role="note">{approved.disclosure}</p>
+        <p className={videoStyles.quickDisclosure} data-video-goal-disclosure role="note">{approved.disclosure}</p>
 
 
 
@@ -7365,7 +7365,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           data-video-goal-quiz-step={goalQuizState.step}
           data-video-goal-quiz-audience={goalQuizState.audience}
           aria-labelledby="quick-theme-title">
-          <div className={videoStyles.quickSectionHeading}>
+          <div className={videoStyles.quickSectionHeading} data-video-goal-heading>
             <h3 id="quick-theme-title"><Target size={21} aria-hidden="true"/>{activeWorkspace==="effects"?(locale==="ru"?"1. Цель и состояние":locale==="es"?"1. Objetivo y estado":"1. Goal and state"):(locale==="ru"?"1. Выберите цель":locale==="es"?"1. Elige tu objetivo":"1. Choose your goal")}</h3>
             {/* The ONE real recipient-aware toggle lives in the existing Video Director. */}
             <div data-video-director-audience-controls/>
@@ -7427,7 +7427,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               disabled={(!goalQuizReady&&!wish.trim()&&!uploadedAudio)||!studioHydrated||recording||preparing}
               onClick={generateFromGoal} data-video-express-create>
               <Play size={20} fill="currentColor" aria-hidden="true"/>
-              {locale==="ru"?"Создать видео":locale==="es"?"Generar vídeo":"Generate video"}
+              {locale==="ru"?"Создать видео":locale==="es"?"Crear vídeo":"Create Video"}
               <small>{locale==="ru"?"Экспресс · 1 клик":locale==="es"?"Exprés · 1 clic":"Express · 1 click"}</small>
               {creditCatalog?.chargeRequired && creditCatalog.ready ?
                 <small>{creditSession==="guest"&&!guestFirstVideoUsed
@@ -8399,6 +8399,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             if(previewPlaying)startMovieSound({kind:"preset",id:chosenId},soundVolume);
           }}
           onGoalChange={next=>{setWish(next.slice(0,800));setSuggestion("");setCinematicPlan(null);}}
+          onSelectPro={()=>activateQuickWorkspace("pro")}
+          onAddAsset={onPickPhoto}
+          onExpress={generateFromGoal}
           onConceptTopicChange={setSelectedConceptTopic}
           onCategoryChange={next=>{setQuickStyleIndex(0);selectCategory(next);}}
           onAspectChange={next=>{

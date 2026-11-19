@@ -128,3 +128,28 @@ test("macOS WebKit uses real Ideas Text→Voice switch and own-voice opt-in",()=
  assert.match(browser,/data-hypno-idea-details/);
  assert.doesNotMatch(browser,/advancedVoice\.click\(\{force:true\}\)/);
 });
+
+test("19 Nov beige Codex composer keeps real Free/Pro, Guide/Express and canonical 2x2 choices",()=>{
+ assert.match(director,/textarea rows=\{4\} data-auto-video-input value=\{requestDraft\}/);
+ for(const token of ["data-video-goal-composer-surface","data-video-composer-toolbar",
+   "data-video-model-menu","data-video-guide-menu","data-video-composer-add",
+   "data-video-composer-mic","data-video-goal-shortcuts","data-video-quick-context={value}"])
+   assert.ok(director.includes(token),token);
+ assert.match(director,/onClick=\{submitComposer\}/);
+ assert.match(director,/onClick=\{designFromRequest\}/);
+ assert.match(director,/onExpress\?\.\(\)/);
+ assert.match(director,/onContinue\?\.\(\)/);
+ assert.match(director,/maxLength=\{160\}/);
+ assert.match(director,/event.ctrlKey\|\|event.metaKey/);
+ assert.match(director,/data-auto-video-category=\{item.id\}/);
+ assert.match(studio,/onSelectPro=\{\(\)=>activateQuickWorkspace\("pro"\)\}/);
+ assert.match(studio,/onAddAsset=\{onPickPhoto\}/);
+ assert.match(studio,/onExpress=\{generateFromGoal\}/);
+ assert.match(css,/data-video-goal-composer-surface/);
+ assert.match(css,/height:132px!important/);
+ assert.match(css,/data-video-quick-start/);
+ assert.match(css,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)!important/);
+ assert.match(studio,/data-video-stage-generate="goal"/);
+ assert.match(studio,/onClick=\{generateFromGoal\}/);
+ assert.match(studio,/onClick=\{continueToIdeas\}/);
+});
