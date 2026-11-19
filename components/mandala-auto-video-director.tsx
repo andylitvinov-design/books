@@ -74,7 +74,7 @@ type Props={
         shots:readonly {sceneId:string;beatIndex:number;strategyId:string;
           requiredTags:readonly string[]}[]}},
     options?:{keepGoalFlow?:boolean})=>void|boolean;
-  onCreate?:()=>void;canCreate?:boolean;rendering?:boolean;createFeedback?:string;
+  onCreate?:()=>void;onInstantCreate?:()=>boolean;canCreate?:boolean;rendering?:boolean;createFeedback?:string;
 };
 const copy={
  ru:{
@@ -183,7 +183,7 @@ const themeLabels={
 
 export function MandalaAutoVideoDirector({
  locale,goal,theme,aspect,presets,scenes,disabled,activePresetId,clipLabel,
- audioAttached=false,audioTrackLabel="",audioTrackId=null,onPickAudio,onOpenAudio,recipientAudioPanel,audioStoryboardReady=false,onAudioToMontage,onAudioSelectionChange,onGoalChange,onPickPhoto,onOpenPro,onConceptTopicChange,onGoalQuizChange,onCategoryChange,onAspectChange,onContinue,goalContinueRef,onClarify,helpOpen=false,onShowAll,onInvalidate,onApply,onCreate,canCreate=false,rendering=false,createFeedback=""
+ audioAttached=false,audioTrackLabel="",audioTrackId=null,onPickAudio,onOpenAudio,recipientAudioPanel,audioStoryboardReady=false,onAudioToMontage,onAudioSelectionChange,onGoalChange,onPickPhoto,onOpenPro,onConceptTopicChange,onGoalQuizChange,onCategoryChange,onAspectChange,onContinue,goalContinueRef,onClarify,helpOpen=false,onShowAll,onInvalidate,onApply,onCreate,onInstantCreate,canCreate=false,rendering=false,createFeedback=""
 }:Props){
  const t=copy[locale];
  // A licensed four-shot sample is visible before any click; no recording begins automatically.
@@ -858,7 +858,7 @@ export function MandalaAutoVideoDirector({
  // canonical category/topic UI and the same verified four-shot film renderer.
  const designFromRequest=()=>{
   if(disabled||!requestDraft.trim())return;
-  if(quickFlow==="instant"&&goalQuizComplete){onCreate?.();return;}
+  if(quickFlow==="instant"){onInstantCreate?.();return;}
   setGoalQuizStep(1);setGoalCategoryAnswered(false);
   if(videoAudience==="others"){
    if(recipientAudioMode)return;
@@ -938,6 +938,7 @@ export function MandalaAutoVideoDirector({
        const recipient=videoAudience==="others"?getRecipientVideoKind(recipientKindId):null;
        const requestTheme=(recipient?.theme||theme) as VideoTheme;
        setRequestDraft(text);
+       onConceptTopicChange?.(null); // A new wish cannot inherit an old confirmed topic.
        onInvalidate?.();onGoalChange(nextGoal);
        setPromptDesignedFor(null);setPromptClassification(null);
        setProposalContext({goal:nextGoal,theme:requestTheme});
@@ -972,7 +973,11 @@ export function MandalaAutoVideoDirector({
     <button type="button" className={css.toolbarIcon} data-video-request-microphone disabled={disabled||!onOpenAudio}
       onClick={()=>onOpenAudio?.()} aria-label={locale==="ru"?"Записать голос":locale==="es"?"Grabar voz":"Record voice"}><AudioLines size={20}/></button>
     <button type="button" data-video-request-design className={css.designRequest}
-      disabled={disabled||!goal.trim()} onClick={designFromRequest} aria-label={locale==="ru"?"Продолжить":locale==="es"?"Continuar":"Continue"}>
+      disabled={disabled||!goal.trim()} onClick={designFromRequest}
+      data-video-request-flow={quickFlow}
+      aria-label={quickFlow==="instant"
+        ?locale==="ru"?"Автоматически создать видео":locale==="es"?"Crear vídeo automáticamente":"Create video automatically"
+        :locale==="ru"?"Продолжить":locale==="es"?"Continuar":"Continue"}>
       <Play size={19} fill="currentColor"/></button>
    </div>
   </div>
@@ -983,7 +988,8 @@ export function MandalaAutoVideoDirector({
     ["strength",locale==="ru"?"Внутренняя сила":locale==="es"?"Fuerza interior":"Inner strength",locale==="ru"?"Хочу быть увереннее":locale==="es"?"Quiero más confianza":"I want inner confidence"]
    ] as const).map(([id,label,wishText])=><button type="button" key={id} data-video-quick-intent={id}
      disabled={disabled} aria-pressed={requestDraft===wishText} onClick={()=>{
-      setRequestDraft(wishText);onGoalChange(wishText);onInvalidate?.();
+      setRequestDraft(wishText);onConceptTopicChange?.(null);
+      onGoalChange(wishText);onInvalidate?.();
       setPromptDesignedFor(null);setPromptClassification(null);
       setProposalContext({goal:wishText,theme});setProposal(recommendAutoVideo({goal:wishText,locale,fallbackTheme:theme,presets,scenes}));
      }}>{label}</button>)}
