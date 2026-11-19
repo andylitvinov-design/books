@@ -412,11 +412,11 @@ export default function MyCoachCatalog({ locale = 'en' }) {
               onClick={() => { setSelectedId(id); setSettings(normalizeCoachSettings(id)) }}>
               <span className={heroStyles.railPortrait} data-persona={id} aria-hidden="true">
                 <picture>
-                  <source media="(prefers-reduced-motion: reduce)" type={id === 'harry' ? 'image/svg+xml' : 'image/webp'}
-                    srcSet={`/images/holistic-house/my-coach-motion/${id}-still.${id === 'harry' ? 'svg' : 'webp'}`} />
+                  <source media="(prefers-reduced-motion: reduce)" type="image/webp"
+                    srcSet={`/images/holistic-house/my-coach-motion/${id}-still.webp`} />
                   <img
                     className={heroStyles.railPhoto}
-                    src={`/images/holistic-house/my-coach-motion/${id}-still.${id === 'harry' ? 'svg' : 'webp'}`}
+                    src={`/images/holistic-house/my-coach-motion/${id}-still.webp`}
                     alt=""
                     width={288}
                     height={320}
