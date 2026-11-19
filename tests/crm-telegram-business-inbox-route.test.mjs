@@ -7,7 +7,7 @@ const sql=read('supabase/migrations/20261119021000_hh_crm_tg_owner_handoff_v1.sq
 const hook=read('app/api/app/crm/messenger/webhook/[provider]/route.js')
 const send=read('app/api/app/crm/messenger/route.js')
 const store=read('lib/crm/messenger-store.js')
-const {canReply,channelTransportReady,crmReplyTransportReady}=await import('../lib/crm/messenger-policy.js')
+const {canReply,channelTransportReady,crmReplyTransportReady,telegramBusinessTransportReady}=await import('../lib/crm/messenger-policy.js')
 
 test('Business CRM inbox is signed, officially can_reply verified and owner scoped',()=>{
  assert.ok(hook.indexOf('verifyMessengerWebhook')<hook.indexOf('captureTelegramBusinessInbox(body,config,businessLead)'))
@@ -37,7 +37,8 @@ test('An AI does not interrupt a human after an accepted owner CRM reply',()=>{
  assert.match(sql,/i\.status IN \('accepted','delivered','read'\)/)
  assert.match(sql,/interval '48 hours'/)
  assert.match(inbox,/if\(!ready\)return false/)
- assert.ok(hook.indexOf('if(inbox.humanActive)')<hook.indexOf('processTelegramBusinessConversation(body,config)'))
+ assert.ok(hook.indexOf('if(telegramBusinessInbox.humanActive)')>=0);
+ assert.ok(hook.indexOf('if(telegramBusinessInbox.humanActive)')<hook.indexOf('processTelegramBusinessConversation(body,config)'))
  assert.ok(hook.indexOf('telegramBotHumanTakeover(event,config)')<hook.indexOf('processTelegramCompanion(event,config)'))
  assert.match(hook,/await ingestMessengerUpdate\('telegram',event,config\)/)
 })
@@ -64,6 +65,8 @@ test('Business replies use their separate transport, not the public Telegram bot
    HH_CRM_MSG_TELEGRAM_WEBHOOK_SECRET:'local_test_secret',
    HH_CRM_MSG_TELEGRAM_USERNAME:'holistichouse_bot'};
  assert.equal(channelTransportReady('telegram',env),false);
+ assert.equal(telegramBusinessTransportReady(env),true);
+ assert.match(inbox,/!telegramBusinessTransportReady\(env\)/);
  assert.equal(crmReplyTransportReady('telegram_business',env),true);
  assert.equal(crmReplyTransportReady('telegram',env),false);
  assert.match(store,/crmReplyTransportReady\(replyChannel\)/);
