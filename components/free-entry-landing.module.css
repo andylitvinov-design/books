@@ -558,3 +558,91 @@
  .page[data-free-entry-landing="situation"] .reviewPreviewCard{scroll-snap-align:none;min-width:0;width:100%;padding:10px}
  
 }
+
+/* Situation review FAQ: photo-led native accordions, no scripts or overlays. */
+.reviewFaq{
+  margin:12px 0 24px;
+  padding:clamp(18px,3vw,32px);
+  border:1px solid #e4d6c5;
+  border-radius:24px;
+  background:#fffcf7;
+  scroll-margin-top:86px;
+}
+.reviewFaqHeading{
+  display:grid;
+  grid-template-columns:minmax(0,1.35fr) minmax(180px,.65fr);
+  gap:24px;
+  align-items:center;
+  margin-bottom:20px;
+}
+.reviewFaqIntro{min-width:0}
+.reviewFaqIntro .sectionLabel{color:#966246}
+.reviewFaqIntro h2{
+  margin:0 0 11px;
+  color:#48352d;
+  font:400 clamp(28px,3vw,42px)/1.16 Georgia,'Times New Roman',serif;
+  letter-spacing:-.025em;
+  text-wrap:balance;
+}
+.reviewFaqIntro>p:last-child{margin:0;color:#65574c;font-size:16px;line-height:1.55}
+.reviewFaqPhoto{
+  position:relative;
+  width:100%;
+  height:155px;
+  overflow:hidden;
+  border-radius:16px;
+  background:#e8ded2;
+}
+.reviewFaqPhoto img{object-fit:cover}
+.reviewFaqList{display:grid;gap:9px}
+.reviewFaqItem{
+  min-width:0;
+  overflow:hidden;
+  border:1px solid #e8dbcc;
+  border-radius:14px;
+  background:#fff;
+}
+.reviewFaqItem[open]{background:#fffaf4;border-color:#d9bfa8}
+.reviewFaqItem>summary{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  min-height:58px;
+  padding:15px 19px;
+  cursor:pointer;
+  list-style:none;
+  color:#47382f;
+  font-size:17px;
+  font-weight:700;
+  line-height:1.4;
+}
+.reviewFaqItem>summary::-webkit-details-marker{display:none}
+.reviewFaqItem>summary span{min-width:0}
+.reviewFaqItem>summary svg{
+  flex:none;
+  color:#925d49;
+  transition:transform .18s ease;
+}
+.reviewFaqItem[open]>summary svg{transform:rotate(180deg)}
+.reviewFaqItem>p{
+  margin:0;
+  padding:0 19px 17px;
+  max-width:75ch;
+  color:#66574c;
+  font-size:16px;
+  line-height:1.6;
+}
+.reviewFaqItem>summary:focus-visible{outline:3px solid #b1734a;outline-offset:-4px}
+@media(max-width:720px){
+  .reviewFaq{padding:17px 14px;margin:10px 0 20px;border-radius:18px}
+  .reviewFaqHeading{display:flex;flex-direction:column;align-items:stretch;gap:12px;margin-bottom:14px}
+  .reviewFaqPhoto{order:-1;height:125px;border-radius:12px}
+  .reviewFaqIntro h2{font-size:clamp(27px,7vw,34px);margin-bottom:7px}
+  .reviewFaqIntro>p:last-child{font-size:16px;line-height:1.48}
+  .reviewFaqItem>summary{min-height:56px;padding:13px 14px;font-size:16px}
+  .reviewFaqItem>p{padding:0 14px 15px;font-size:16px;line-height:1.55}
+}
+@media(prefers-reduced-motion:reduce){
+  .reviewFaqItem>summary svg{transition:none}
+}

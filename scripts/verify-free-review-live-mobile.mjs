@@ -152,7 +152,7 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           const reviews = main.locator("[data-featured-free-review-testimonials]");
           await reviews.waitFor({ state: "visible" });
           const feed = reviews.locator('[data-review-list-direction="vertical"]');
-          const geometry = await feed.evaluate(element => {
+          const reviewGeometry = await feed.evaluate(element => {
             const cards = [...element.querySelectorAll("[data-testimonial-video-id]")];
             const boxes = cards.map(card => {
               const r=card.getBoundingClientRect();
@@ -175,28 +175,50 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
               docOverflow:document.documentElement.scrollWidth-window.innerWidth,
             };
           });
-          assert.equal(geometry.ids.length,12,"all twelve real review videos show immediately");
-          assert.equal(new Set(geometry.ids).size,12,"one card for each approved original");
-          assert.equal(geometry.ids[0],locale==="ru"?"muOnIHllI7E":"Dk0LBmOivQo",
+          assert.equal(reviewGeometry.ids.length,12,"all twelve real review videos show immediately");
+          assert.equal(new Set(reviewGeometry.ids).size,12,"one card for each approved original");
+          assert.equal(reviewGeometry.ids[0],locale==="ru"?"muOnIHllI7E":"Dk0LBmOivQo",
             "RU prioritizes express diagnosis; EN/ES original English videos");
-          assert.equal(geometry.direction,"column","video reviews are vertical, not a carousel");
-          assert.equal(geometry.frames,12,"all twelve real poster players appear");
-          assert.equal(geometry.iframes,0,"no iframe autoplay");
-          assert.ok(geometry.allVisible,"no hidden testimonials or extra reveal");
-          assert.ok(geometry.boxes.every((r,i)=>r.left>=-2&&r.right<=width+2
-            &&(i===0||r.top>=geometry.boxes[i-1].bottom-2)),
+          assert.equal(reviewGeometry.direction,"column","video reviews are vertical, not a carousel");
+          assert.equal(reviewGeometry.frames,12,"all twelve real poster players appear");
+          assert.equal(reviewGeometry.iframes,0,"no iframe autoplay");
+          assert.ok(reviewGeometry.allVisible,"no hidden testimonials or extra reveal");
+          assert.ok(reviewGeometry.boxes.every((r,i)=>r.left>=-2&&r.right<=width+2
+            &&(i===0||r.top>=reviewGeometry.boxes[i-1].bottom-2)),
             "each full-width video card fits the phone and stacks vertically");
-          assert.ok(geometry.captions.every(c=>c.title.length>8
+          assert.ok(reviewGeometry.captions.every(c=>c.title.length>8
             &&c.color==="rgb(20, 61, 58)"&&/youtu(?:\.be|be\.com)/.test(c.link)),
             "titles readable, external YouTube links preserved");
-          assert.ok(geometry.docOverflow<=2,"no sideways document scrolling");
+          assert.ok(reviewGeometry.docOverflow<=2,"no sideways document scrolling");
           assert.equal(await main.locator("[data-review-stories]").count(),0,
             "no second hidden archive");
-          record.testimonials=geometry.ids.length;
+          record.testimonials=reviewGeometry.ids.length;
           if(width===390)await reviews.screenshot({
             path:output+"/"+name+"-all-twelve-reviews.png",
             animations:"disabled",timeout:45000
           });
+
+          const faq = main.locator("[data-free-review-faq]");
+          assert.equal(await faq.count(), 1, "one FAQ at the bottom of the free review");
+          const faqItems = faq.locator("details");
+          assert.equal(await faqItems.count(), 7, "seven localized native FAQ questions");
+          assert.equal(await faq.locator("img").count(), 1, "FAQ has its own photo");
+          assert.ok((await faq.locator("h2").innerText()).trim().length > 8);
+          assert.equal(await faqItems.evaluateAll(items => items.filter(el => el.open).length), 0,
+            "answers start closed and never block the landing");
+          const firstFaq = faqItems.first();
+          await firstFaq.locator("summary").click();
+          assert.equal(await firstFaq.evaluate(el => el.open), true, "tapping FAQ question reveals answer");
+          assert.ok((await firstFaq.locator("p").innerText()).trim().length > 24);
+          if (width === 390) await faq.screenshot({
+            path: output + "/" + name + "-faq.png", animations: "disabled", timeout: 20000 });
+          await firstFaq.locator("summary").click();
+          assert.equal(await firstFaq.evaluate(el => el.open), false, "tapping again collapses answer");
+          const faqOverflow = await faq.evaluate(el => ({
+            width:el.getBoundingClientRect().width,
+            scroll:document.documentElement.scrollWidth - window.innerWidth,
+          }));
+          assert.ok(faqOverflow.scroll <= 2, "FAQ does not create horizontal scrolling");
           const play = video.locator("button.site-video-play");
           await play.waitFor({ state: "visible" });
           await play.click({ timeout: 15000 });

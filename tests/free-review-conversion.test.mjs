@@ -214,3 +214,24 @@ test("free-review closing messenger buttons stay compact without losing either a
   }
   assert.match(entryCss, /@media \(max-width: 580px\)/);
 });
+
+test("free review ends with seven photo-led, language-matched native FAQ accordions", () => {
+  const serviceEnd = landing.indexOf("</PersonalExpressEnquiry>");
+  const faqStart = landing.indexOf('id="free-review-faq"');
+  const otherPages = landing.indexOf('kind !== "situation" ? <section', faqStart);
+  assert.ok(serviceEnd > 0 && faqStart > serviceEnd && otherPages > faqStart,
+    "FAQ follows the actual free review request, and is never a generic footer");
+  assert.match(landing, /data-free-review-faq/);
+  assert.match(landing, /t\.faq\.map\(\(\[question, answer\]\) =>/);
+  assert.match(landing, /<details key=\{question\} className=\{styles\.reviewFaqItem\}>/);
+  assert.match(landing, /<summary><span>\{question\}<\/span><ChevronDown/);
+  assert.match(landing, /<Image src=\{images\.outcome\} alt=\{t\.outcomeAlt\} fill/);
+  for(const q of ["Is it really free?", "Это действительно бесплатно?", "¿De verdad es gratis?",
+    "Will Andrey read my question personally?", "Вы сами прочитаете мой вопрос?",
+    "¿Andrey leerá mi pregunta personalmente?"]){
+    assert.ok(landing.includes(q), "missing question on matching language: " + q);
+  }
+  assert.match(css, /\.reviewFaqItem>summary\{/);
+  assert.match(css, /\.reviewFaqItem\[open\]>summary svg/);
+  assert.match(css, /@media\(max-width:720px\)/);
+});

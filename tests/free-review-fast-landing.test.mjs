@@ -33,3 +33,9 @@ test("request wizard and contact chooser load only after request opens and keep 
   assert.match(enquiry, /id="request-free-review"/);
   assert.match(enquiry, /allowSecureExpressClaim/);
 });
+
+test("public free review FAQ stays server-rendered and works without JavaScript", () => {
+  assert.match(landing, /data-free-review-faq/);
+  assert.match(landing, /<details key=\{question\} className=\{styles\.reviewFaqItem\}>/);
+  assert.doesNotMatch(landing, /FAQModal|FAQDrawer|FaqPortal/);
+});
