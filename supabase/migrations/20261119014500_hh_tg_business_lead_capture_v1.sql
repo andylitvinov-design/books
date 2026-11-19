@@ -34,8 +34,8 @@ BEGIN
   END IF;
   PERFORM pg_catalog.pg_advisory_xact_lock(
     pg_catalog.hashtextextended(v_owner::text||':telegram-lead:'||p_email_hash,0));
-  SELECT id,suppressed INTO v_contact,v_suppressed
-    FROM app.crm_contacts WHERE owner_id=v_owner AND email_hash=p_email_hash LIMIT 1;
+  SELECT c.id,c.suppressed INTO v_contact,v_suppressed
+    FROM app.crm_contacts c WHERE owner_id=v_owner AND email_hash=p_email_hash LIMIT 1;
   IF coalesce(v_suppressed,false) THEN
     RETURN QUERY SELECT false,true;
     RETURN;
@@ -51,7 +51,7 @@ BEGIN
       INSERT INTO app.crm_activity(id,owner_id,contact_id,kind)
       VALUES (p_activity_id,v_owner,v_contact,'contact_created');
     ELSE
-      SELECT id,suppressed INTO v_contact,v_suppressed FROM app.crm_contacts
+      SELECT c.id,c.suppressed INTO v_contact,v_suppressed FROM app.crm_contacts c
        WHERE owner_id=v_owner AND email_hash=p_email_hash LIMIT 1;
       IF v_contact IS NULL THEN
         RAISE EXCEPTION 'HH_TG_LEAD_CONTACT_UNCONFIRMED' USING ERRCODE='23505';

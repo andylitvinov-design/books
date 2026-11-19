@@ -104,6 +104,7 @@ test('Business lead capture stays behind a narrowly scoped private definer',()=>
  assert.match(sql,/GRANT EXECUTE ON FUNCTION app_private\.crm_tg_business_lead_capture_v1[\s\S]*TO hh_app_inbox/i)
  assert.doesNotMatch(sql,/GRANT\s+(?:SELECT|INSERT|UPDATE|ALL)\s+ON\s+app\.crm_contacts\s+TO\s+hh_app_inbox/i)
  assert.match(sql,/v_suppressed/i)
+ assert.match(sql,/SELECT c\.id,c\.suppressed INTO v_contact,v_suppressed/i)
  assert.match(sql,/pg_advisory_xact_lock/i)
  assert.match(sql,/ON CONFLICT \(owner_id,email_hash\) DO NOTHING/i)
  assert.match(sql,/app\.crm_opportunities/i)
