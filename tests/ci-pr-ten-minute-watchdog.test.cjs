@@ -2585,3 +2585,128 @@ test('ghost cleanup rotates distant queued clusters rather than repeated neighbo
  assert.equal(cleanupRotationStart(95,-1),0);
  assert.equal(cleanupRotationStart(95,Infinity),0);
 });
+
+
+test('terminal 14-day merged PR wrapper validator never mistakes live CI for a ghost',()=>{
+ const {expiredTerminalShell,linkedMergedPR,jobsFullyTerminated,DELETE_AFTER}=
+  require('../scripts/ci-pr-terminal-ghost-prune.cjs');
+ const now=Date.parse('2026-11-19T18:00:00Z'),full='andylitvinov-design/books';
+ const old=new Date(now-DELETE_AFTER-1000).toISOString();
+ const run={id:42067547905,name:'HH PR core release gate',
+  path:'.github/workflows/hh-pr-core-release.yml',event:'pull_request',
+  status:'in_progress',conclusion:null,run_attempt:1,
+  repository:{full_name:full},head_repository:{full_name:full},
+  head_branch:'feat/old-merged',head_sha:'a'.repeat(40),pull_requests:[],
+  created_at:old,updated_at:old};
+ const pr={number:3445,state:'closed',merged:true,
+  base:{ref:'codex/public-book-library',repo:{full_name:full}},
+  head:{ref:run.head_branch,sha:'b'.repeat(40),repo:{full_name:full}},
+  created_at:new Date(now-20*86400000).toISOString(),
+  merged_at:new Date(now-10*86400000).toISOString()};
+ assert.equal(expiredTerminalShell(run,now),true);
+ assert.equal(linkedMergedPR(run,pr,now),true);
+ for(const x of [
+  {...run,status:'queued'}, {...run,run_attempt:2},
+  {...run,conclusion:'success'}, {...run,event:'push'},
+  {...run,name:'HH native auto-merge'},
+  {...run,head_branch:'codex/public-book-library'},
+  {...run,updated_at:new Date(now-360000).toISOString()},
+  {...run,created_at:new Date(now-DELETE_AFTER+1000).toISOString()},
+  {...run,head_repository:{full_name:'someone/books'}}])
+  assert.equal(expiredTerminalShell(x,now),false);
+ for(const p of [{...pr,state:'open'}, {...pr,merged:false},
+   {...pr,head:{...pr.head,ref:'other-branch'}},
+   {...pr,base:{...pr.base,ref:'codex/bootstrap-books'}}])
+  assert.equal(linkedMergedPR(run,p,now),false);
+ const page={total_count:1,jobs:[{id:7,status:'completed',
+   conclusion:'skipped',completed_at:old}]};
+ assert.equal(jobsFullyTerminated(page,now),true);
+ assert.equal(jobsFullyTerminated({...page,jobs:[{...page.jobs[0],status:'in_progress'}]},now),false);
+ assert.equal(jobsFullyTerminated({...page,jobs:[{...page.jobs[0],completed_at:new Date(now-1000).toISOString()}]},now),false);
+ assert.equal(jobsFullyTerminated({...page,total_count:2},now),false);
+});
+test('old merged PR ghost deletion requires fresh exact identity and all terminal jobs',async()=>{
+ const {run:prune,DELETE_AFTER}=require('../scripts/ci-pr-terminal-ghost-prune.cjs');
+ const now=Date.parse('2026-11-19T18:00:00Z'),full='andylitvinov-design/books';
+ const old=new Date(now-DELETE_AFTER-1000).toISOString();
+ const shell={id:42067547905,name:'HH PR core release gate',
+  path:'.github/workflows/hh-pr-core-release.yml',event:'pull_request',
+  status:'in_progress',conclusion:null,run_attempt:1,
+  repository:{full_name:full},head_repository:{full_name:full},
+  head_branch:'feat/old-merged',head_sha:'a'.repeat(40),pull_requests:[],
+  created_at:old,updated_at:old};
+ const pr={number:3445,state:'closed',draft:false,merged:true,
+  base:{ref:'codex/public-book-library',repo:{full_name:full}},
+  head:{ref:shell.head_branch,sha:'b'.repeat(40),repo:{full_name:full}},
+  created_at:new Date(now-20*86400000).toISOString(),
+  merged_at:new Date(now-10*86400000).toISOString()};
+ const context={repo:{owner:'andylitvinov-design',repo:'books'},
+   ref:'refs/heads/codex/bootstrap-books',eventName:'schedule'};
+ let deleted=false,deletes=0;
+ const github={rest:{
+   actions:{
+    listWorkflowRunsForRepo:async()=>({data:{total_count:1,workflow_runs:[shell]}}),
+    getWorkflowRun:async()=>{if(deleted)throw Object.assign(Error('gone'),{status:404});return {data:shell};},
+    listJobsForWorkflowRun:async()=>({data:{total_count:1,
+      jobs:[{id:7,status:'completed',conclusion:'skipped',completed_at:old}]}}),
+    deleteWorkflowRun:async()=>{deletes++;deleted=true;return {status:204};}
+   },
+   pulls:{list:async()=>({data:[pr]}),get:async()=>({data:pr})}
+ }};
+ const output=await prune({github,context,now,observedQueued:93,observedRemaining:4500});
+ assert.equal(output.status,'DELETED_READBACK_404');
+ assert.deepEqual(output.deleted,[{run_id:shell.id,pr:pr.number}]);
+ assert.equal(deletes,1);
+ for(const change of [
+   {context:{...context,eventName:'push'}},
+   {observedQueued:20},
+   {observedRemaining:200}])
+  {deleted=false;deletes=0;
+   const bad=await prune({github,context,now,observedQueued:93,observedRemaining:4500,...change});
+   assert.equal(deletes,0,JSON.stringify(bad));}
+});
+test('terminal ghost refuses unmerged PR, live job, stale run identity and incomplete inventory',async()=>{
+ const {run:prune,DELETE_AFTER}=require('../scripts/ci-pr-terminal-ghost-prune.cjs');
+ const now=Date.parse('2026-11-19T18:00:00Z'),old=new Date(now-DELETE_AFTER-2000).toISOString();
+ const full='andylitvinov-design/books',sha='a'.repeat(40);
+ const shell={id:2345,name:'HH PR core release gate',
+  path:'.github/workflows/hh-pr-core-release.yml',event:'pull_request',
+  status:'in_progress',conclusion:null,run_attempt:1,
+  repository:{full_name:full},head_repository:{full_name:full},
+  head_branch:'feat/old',head_sha:sha,pull_requests:[],created_at:old,updated_at:old};
+ const pr={number:44,state:'closed',merged:true,draft:false,
+  base:{ref:'codex/public-book-library',repo:{full_name:full}},
+  head:{ref:shell.head_branch,sha,repo:{full_name:full}},
+  created_at:new Date(now-20*86400000).toISOString(),
+  merged_at:new Date(now-10*86400000).toISOString()};
+ const ctx={repo:{owner:'andylitvinov-design',repo:'books'},ref:'refs/heads/codex/bootstrap-books',eventName:'schedule'};
+ for(const mode of ['unmerged','live-job','changed-shell','incomplete','foreign-pr']){
+   let deletes=0;
+   const gh={rest:{
+     actions:{
+      listWorkflowRunsForRepo:async()=>({data:{
+       total_count:mode==='incomplete'?2:1,workflow_runs:[shell]}}),
+      getWorkflowRun:async()=>({data:mode==='changed-shell'?{...shell,head_sha:'c'.repeat(40)}:shell}),
+      listJobsForWorkflowRun:async()=>({data:{total_count:1,jobs:[{
+        id:77,status:mode==='live-job'?'in_progress':'completed',
+        conclusion:mode==='live-job'?null:'success',completed_at:old}]}}),
+      deleteWorkflowRun:async()=>{deletes++;return {status:204};}
+     },
+     pulls:{
+      list:async()=>({data:[pr]}),
+      get:async()=>({data:mode==='unmerged'?{...pr,merged:false}:
+        mode==='foreign-pr'?{...pr,head:{...pr.head,ref:'other'}}:pr})
+     }}};
+   const verdict=await prune({github:gh,context:ctx,now,observedQueued:93,observedRemaining:4500});
+   assert.equal(deletes,0,mode+' must stay protected');
+   assert.equal(verdict.deleted.length,0);
+ }
+});
+test('terminal PR ghost cleanup stays within existing protected Watchdog, not new CI',()=>{
+ const fs=require('node:fs'),wf=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ const src=fs.readFileSync('scripts/ci-pr-terminal-ghost-prune.cjs','utf8');
+ assert.match(wf,/HH_TERMINAL_PR_GHOST_RECONCILE/);
+ assert.match(wf,/if\(trustedContext\(context\)\)/);
+ assert.match(wf,/Number\(report\\.queuedActions\\)>40/);
+ assert.doesNotMatch(src,/createWorkflowDispatch|updateBranch|createPullRequest|reRunWorkflow|forceCancelWorkflowRun/);
+});
