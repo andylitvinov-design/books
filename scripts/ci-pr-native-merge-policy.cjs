@@ -31,9 +31,14 @@ function repairCanary(pr){
    /^test\/pr-repair-/.test(pr.head.ref)||
    typeof pr.title==='string'&&/^test\(repair\):/i.test(pr.title)));
 }
-function sameHead(pr,{owner,repo,number,expectedHead,expectedBase}){
+function sameHead(pr,{owner,repo,number,expectedHead,expectedBase,allowVerifiedBaseAdvance=false}){
+ // A PR's base.sha may lag the protected ref after Core passed. The
+ // event-driven caller may reuse its exact-HEAD results ONLY when the trusted
+ // freshness gate just proved the current protected SHA independently.
+ // The legacy/hourly callers retain strict base-snapshot matching.
  return pr?.number===number&&pr.state==='open'&&pr.draft===false&&
-  pr.base?.ref===PROD&&pr.base?.sha===expectedBase&&
+  pr.base?.ref===PROD&&SHA.test(pr.base?.sha||'')&&
+  (allowVerifiedBaseAdvance===true||pr.base.sha===expectedBase)&&
   pr.head?.sha===expectedHead&&
   pr.head.repo?.full_name===owner+'/'+repo;
 }
@@ -122,7 +127,8 @@ async function auditIndependentDomainChecks({github,owner,repo,expectedHead}){
  }
  return {ok:true,reason:'CRITICAL_DOMAIN_CHECKS_NOT_RED'};
 }
-async function auditNativeMerge({github,owner,repo,number,expectedHead,expectedBase}){
+async function auditNativeMerge({github,owner,repo,number,expectedHead,expectedBase,
+  allowVerifiedBaseAdvance=false}){
  const deny=reason=>({ok:false,reason});
  if(!github?.rest?.pulls?.get||!github?.rest?.issues?.listComments||
     !github?.request||!github?.graphql||
@@ -130,10 +136,23 @@ async function auditNativeMerge({github,owner,repo,number,expectedHead,expectedB
     !SHA.test(expectedHead||'')||!SHA.test(expectedBase||''))
   return deny('INVALID_MERGE_PREFLIGHT');
  try{
-  const identity={owner,repo,number,expectedHead,expectedBase};
+  const identity={owner,repo,number,expectedHead,expectedBase,allowVerifiedBaseAdvance};
+  const checkVerifiedProtectedBase=async()=>{
+   // A PR's base.sha is GitHub's mutable snapshot, NOT the authoritative
+   // protected ref. In opt-in native release mode, independently verify the
+   // exact protected SHA passed by the already successful freshness check.
+   // A second read at the end closes this event race before native ARM.
+   if(!allowVerifiedBaseAdvance)return true;
+   if(typeof github.rest.repos?.getBranch!=='function')return false;
+   const current=(await github.rest.repos.getBranch({
+    owner,repo,branch:PROD
+   })).data;
+   return current?.protected===true&&current?.commit?.sha===expectedBase;
+  };
   const first=(await github.rest.pulls.get({owner,repo,pull_number:number})).data;
   if(repairCanary(first))return deny('REPAIR_CANARY_NEVER_MERGE');
   if(!sameHead(first,identity))return deny('PR_HEAD_BASE_OR_STATE_CHANGED');
+  if(!(await checkVerifiedProtectedBase()))return deny('VERIFIED_PRODUCTION_BASE_MOVED');
   if(held(first))return deny(held(first)==='hh:repair-manual'?
     'LEGACY_MANUAL_SOURCE_NOT_RELEASED':'MANUAL_OR_OWNER_HOLD');
   if(!mergeable(first))return deny(first?.mergeable===false||first?.mergeable_state==='dirty'
@@ -173,6 +192,7 @@ async function auditNativeMerge({github,owner,repo,number,expectedHead,expectedB
   const final=(await github.rest.pulls.get({owner,repo,pull_number:number})).data;
   if(repairCanary(final))return deny('REPAIR_CANARY_NEVER_MERGE');
   if(!sameHead(final,identity))return deny('PR_CHANGED_BEFORE_ARM');
+  if(!(await checkVerifiedProtectedBase()))return deny('VERIFIED_PRODUCTION_BASE_MOVED');
   if(held(final))return deny(held(final)==='hh:repair-manual'?
     'LEGACY_MANUAL_SOURCE_NOT_RELEASED':'HOLD_ADDED_BEFORE_ARM');
   if(!mergeable(final))return deny('MERGEABILITY_CHANGED_BEFORE_ARM');
