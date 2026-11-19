@@ -460,7 +460,7 @@ test('multiple in-progress Specialist workflows keep normal thirty-second pollin
 });
 
 
-test('real sensitive Specialist accepts only mergeable, proved unrelated public raster target advances', async () => {
+test('real sensitive Specialist accepts independent raster drift while GitHub recomputes mergeability', async () => {
   const updated='c'.repeat(40);
   let current={...pr,mergeable:true,mergeable_state:'behind',
     base:{...pr.base,sha:updated}};
@@ -482,7 +482,8 @@ test('real sensitive Specialist accepts only mergeable, proved unrelated public 
   current={...current,mergeable:false,mergeable_state:'dirty'};
   await assert.rejects(()=>verify(api,ctx,pinned,{maxWaitMs:0}),/MERGE_CONFLICT/);
   current={...current,mergeable:null,mergeable_state:'unknown'};
-  await assert.rejects(()=>verify(api,ctx,pinned,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);
+  assert.equal((await verify(api,ctx,pinned,{maxWaitMs:0})).head,head,
+    'pending GitHub mergeability is not a conflict; native merge still requires positive proof');
   current={...current,mergeable:true,mergeable_state:'behind'};
   compare=completeCompare('app/api/payment/route.ts');
   await assert.rejects(()=>verify(api,ctx,pinned,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);

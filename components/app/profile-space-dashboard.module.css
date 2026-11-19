@@ -33,3 +33,95 @@
 .dashboard a:focus-visible{outline:3px solid #006c5a;outline-offset:3px}
 @media(max-width:370px){.mode{gap:6px}.mode a{font-size:13px}.scenic{padding:16px 9px 10px}.path{padding:10px 7px;gap:7px;min-height:70px}.pathIcon{width:38px;min-width:38px}.cards{gap:6px}.card{min-height:99px}.photo{flex-basis:32%;min-height:99px}.cardBody{padding:8px 14px 8px 6px;gap:3px}.cardBody strong{font-size:12px}.cardBody small{font-size:10px}.cardIcon{width:27px;height:27px}.cardArrow{width:14px;height:14px;right:3px}.account{gap:6px}.account a{gap:5px;border-width:3px}}
 @media(min-width:700px){.dashboard{max-width:920px;margin:0 auto}.scenic{padding:32px 25px 18px}.path{max-width:800px;margin:30px auto 0}.card{min-height:146px}.photo{min-height:146px}.cardBody{padding:17px 28px 17px 16px}.cardBody strong{font-size:22px}.cardBody small{font-size:15px}.cardArrow{right:13px}.account a{min-height:70px}}
+
+
+/* Owner's latest photo-led My Space reference (18 Nov): keep the canonical
+   dashboard and its existing four-photo sprite, not a competing profile. */
+.scenic{
+ background-image:
+   linear-gradient(93deg,rgba(6,51,52,.83) 0%,rgba(15,64,58,.56) 47%,rgba(39,92,69,.09) 100%),
+   url("/images/holistic-house/reiki-approved-sunrise-v3.webp");
+ background-position:center,center 51%;
+ background-size:cover,cover;
+ padding:22px 17px 15px;
+ box-shadow:0 9px 24px #173d3430;
+}
+.eyebrow{margin-left:4px!important;text-shadow:0 2px 8px #102c2b55}
+.title{text-shadow:0 3px 14px #102e2b78}
+.intro{max-width:39ch;margin-left:4px!important;text-shadow:0 2px 10px #0b3230ad}
+.path{
+ min-height:75px;margin-top:20px;
+ background:linear-gradient(130deg,#fffefa 0%,#e9f8e9 52%,#d3f1d2 100%);
+ border:1px solid #eaffeb;border-radius:22px;
+ box-shadow:0 8px 19px #07352c38;
+}
+.cards{gap:10px;margin-top:11px}
+.card{min-height:116px;border-radius:21px;box-shadow:0 6px 17px #2943371e}
+.photo{flex:0 0 36%;min-height:116px}
+.cardBody{gap:4px;padding:11px 7px 28px 10px}
+.cardBody strong{font-size:clamp(14px,3.65vw,18px);line-height:1.16;letter-spacing:-.025em}
+.cardBody small{font-size:clamp(11px,2.85vw,13px);line-height:1.28}
+.cardArrow{top:auto;right:8px;bottom:8px;transform:none;padding:4px}
+.account{gap:10px;margin-top:11px}
+.account a{min-height:64px;border-width:4px;background:linear-gradient(120deg,#eaf6ef,#def2e8)}
+@media(max-width:370px){
+ .scenic{padding:17px 11px 12px}
+ .path{margin-top:13px;min-height:70px;padding:10px 9px}
+ .card{min-height:109px;border-radius:18px}
+ .photo{flex-basis:34%;min-height:109px}
+ .cardBody{gap:3px;padding:9px 5px 24px 7px}
+ .cardBody strong{font-size:13px}
+ .cardBody small{font-size:10.7px}
+ .cardArrow{right:5px;bottom:6px}
+ .account{gap:7px}
+ .account a{min-height:59px}
+}
+@media(min-width:700px){
+ .scenic{padding:32px 26px 20px}
+ .card{min-height:165px}
+ .photo{min-height:165px}
+ .cardBody{padding:17px 15px 32px 16px}
+ .cardBody strong{font-size:21px}
+ .cardBody small{font-size:15px}
+}
+
+
+/* Match the screenshot's full usable iPhone profile viewport: no tiny type,
+   but the two rows and My Page / Settings sit above the shared dock. */
+@media(max-width:430px){
+ .mode{margin:5px 0 7px}
+ .mode a{min-height:47px;padding:8px 5px}
+ .scenic{padding:15px 12px 11px;border-radius:22px}
+ .title{font-size:clamp(32px,8.2vw,42px)!important;line-height:1.06}
+ .eyebrow{font-size:10px}
+ .intro{font-size:13px;line-height:1.3}
+ .path{min-height:65px;margin-top:13px;padding:8px 10px;border-radius:18px;gap:7px}
+ .pathIcon{width:37px;min-width:37px;height:40px}
+ .pathIcon svg{width:24px;height:24px}
+ .pathText strong{font-size:clamp(17px,4.4vw,20px)}
+ .pathText small{font-size:12px}
+ .pathArrow{width:33px;height:33px;padding:6px}
+ .cards{gap:8px;margin-top:8px}
+ .card{min-height:101px;border-radius:17px}
+ .photo{min-height:101px}
+ .cardBody{gap:3px;padding:7px 6px 22px 8px}
+ .cardIcon{width:26px;height:26px}
+ .cardIcon svg{width:18px;height:18px}
+ .cardBody strong{font-size:clamp(13px,3.7vw,16px)}
+ .cardBody small{font-size:11px;line-height:1.2}
+ .cardArrow{right:5px;bottom:5px;width:16px;height:16px;padding:3px}
+ .account{gap:8px;margin-top:8px}
+ .account a{min-height:58px;gap:6px;padding:7px;border-width:3px;border-radius:17px}
+ .account a>svg{width:21px;height:21px}
+ .account a strong{font-size:clamp(13px,3.7vw,16px)}
+ .account a small{font-size:10px}
+}
+@media(max-width:370px){
+ .scenic{padding:13px 10px 9px}
+ .title{font-size:32px!important}
+ .path{min-height:63px;margin-top:10px}
+ .card{min-height:98px}
+ .photo{min-height:98px}
+ .cardBody{padding:7px 5px 21px 7px}
+ .account a{min-height:55px}
+}

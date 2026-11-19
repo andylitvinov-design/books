@@ -168,3 +168,19 @@ test("actual voice route never calls paid fallback for guest modes after free pr
   assert.ok(calls.includes("paid"),"the explicitly authenticated optional custom path remains intact");
   assert.ok(rates.includes("voice-studio-openrouter-paid-day"));
 });
+
+test("Fish RU/EN cards are visible and genuine in the existing Therapy phrase Voice picker",()=>{
+ const ui=read("components/mandala-affirmation-voice.tsx");
+ const policy=read("lib/mandala/voice-studio-fish.mjs");
+ const route=read("app/api/holistic-support/voice/route.js");
+ assert.ok(ui.includes('"fish","own"'),"Fish is the fourth selector, no duplicate editor");
+ assert.ok(ui.includes('data-fish-voice-purpose'),"Coaching/Meditation filters stay on the same page");
+ assert.ok(ui.includes('FISH_PUBLIC_VOICES.filter(v=>v.purpose===fishPurpose).map(v=><div'),"approved Fish voices, purpose-filtered");
+ assert.ok(ui.includes('fishAvailableLanguages.includes(v.language)'),"fail closed without activation");
+ assert.ok(ui.includes('provider:"fish",mode:"sample"'),"fixed public Fish sample");
+ assert.ok(ui.includes('provider:"fish",mode:"affirmations"'),"approved phrase goes to Fish itself");
+ assert.ok(ui.includes('voiceGender==="fish"?f.consent'),"Fish data opt-in is independent");
+ assert.ok(ui.includes('onAttach({file,speechFile'),"same WAV and video attachment");
+ assert.ok(policy.includes("'affirmations'"));
+ assert.ok(route.includes('requestFishWav'));
+});

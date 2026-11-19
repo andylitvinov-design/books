@@ -68,7 +68,7 @@ test("provider never transcribes without explicit free-project approval",()=>{
  assert.match(helper,/fetch\("\/api\/holistic-support\/audio-storyboard"/);
  assert.match(helper,/method:"POST",cache:"no-store",credentials:"same-origin"/);
  assert.match(helper,/form.append\("consent","yes"\)/);
- assert.match(source,/requestConsentedTimedTranscript\(entry.file,locale,true,controller.signal\)/);
+ assert.match(source,/requestConsentedTimedTranscript\(\s*entry.file,spokenAudioLanguage,true,controller.signal\)/);
  assert.doesNotMatch(source,/\bfetch\s*\(|\bFormData\b/);
 });
 
@@ -101,7 +101,7 @@ test("recipient audio shows STT failure at step 2 and preserves local manual pro
  assert.ok(recipient.indexOf("data-video-recipient-audio-error")>
    recipient.indexOf("data-video-recipient-audio-transcribe"));
  assert.ok(recipient.indexOf("data-video-recipient-audio-error")<
-   recipient.indexOf("data-video-recipient-audio-plan"));
+   recipient.indexOf("data-video-recipient-audio-concept-preview"));
  assert.equal(recipient.split("data-video-recipient-audio-error").length-1,1);
  assert.match(recipient,/data-video-recipient-audio-manual/);
  assert.match(recipient,/data-video-recipient-audio-transcript/);

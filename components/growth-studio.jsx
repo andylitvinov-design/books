@@ -13,6 +13,7 @@ import GrowthStudioConnections from './growth-studio-connections'
 import {CHANNEL_CAPABILITIES,reviewGrowthPublication,publicationStatusLabel} from '@/lib/growth-studio/channel-capabilities.mjs'
 import {GROWTH_INSTAGRAM_ACCOUNT_TARGETS} from '@/lib/growth-studio/instagram-accounts.mjs'
 import {instagramPublishReadiness,facebookPagePublishReadiness} from '@/lib/growth-studio/instagram-publish-readiness.mjs'
+import {getInstagramManualHandoff} from '@/lib/growth-studio/instagram-manual-handoff.mjs'
 import {GROWTH_BRANDS,GROWTH_CHANNELS,GROWTH_LANGUAGES,publicCampaignLink,orderGrowthPosts} from '@/lib/growth-studio/model.mjs'
 import {analyzeGrowthSocialSeo} from '@/lib/growth-studio/social-seo.mjs'
 import styles from './growth-studio.module.css'
@@ -200,6 +201,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
   const [workspaceOpen,setWorkspaceOpen]=useState(false)
   const [storageVerified,setStorageVerified]=useState(false)
   const [tab,setTab]=useState('compose')
+  const [manualHandoffId,setManualHandoffId]=useState(null)
   const [evergreenSource,setEvergreenSource]=useState(null)
   const [filter,setFilter]=useState('active')
   const [brandFilter,setBrandFilter]=useState('all')
@@ -276,6 +278,15 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
         target.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})
       }
     }))
+  }
+  // A saved owner-only Growth Studio session is the single publishing surface.
+  // No automatic Meta call occurs when starting an Instagram draft.
+  const startInstagramPost=()=>{
+    if(busy||!ready||!storageVerified)return
+    setEditing(null)
+    setForm({...empty(),locale,brand:'holistic_house',channel:'instagram',
+      socialAccountId:'wizards_secrets',placement:'story'})
+    openWorkspace('compose')
   }
   const set=field=>event=>setForm(old=>{
     const value=event.target.value
@@ -483,6 +494,10 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
       <div className={styles.quickLaunchActions}>
         <button type="button" className={styles.quickLaunchPrimary} disabled={!ready||!storageVerified||busy}
           onClick={()=>openWorkspace('compose')}><Plus size={17} aria-hidden="true"/>{t.quickStart}</button>
+        <button type="button" className={styles.quickLaunchSecondary} disabled={!ready||!storageVerified||busy}
+          onClick={startInstagramPost} data-instagram-practitioner-start>
+          <Send size={16} aria-hidden="true"/>{locale==='ru'?'Instagram · новая Story': 'Instagram · new Story'}
+        </button>
         {!ready&&<button type="button" className={styles.quickLaunchSecondary}
           onClick={refresh} disabled={busy}><RefreshCcw size={16} aria-hidden="true"/>{t.refreshStore}</button>}
         {records.length>0&&<button type="button" className={styles.quickLaunchSecondary}
@@ -741,6 +756,12 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
             </a></>}
           </p>}
         <div className={styles.postButtons}>
+          {getInstagramManualHandoff(post)&&
+            <button type="button" aria-expanded={manualHandoffId===post.id}
+              onClick={()=>setManualHandoffId(current=>current===post.id?null:post.id)}
+              data-instagram-manual-open>
+              <Send size={15}/>{locale==='ru'?'Передать в Instagram вручную':'Share manually in Instagram'}
+            </button>}
           {post.status==='draft'&&<button type="button" disabled={busy||!ready||!storageVerified} onClick={()=>execute('approve',post)}><Check size={15}/>{t.approve}</button>}
           {post.status==='approved'&&<button type="button" disabled={busy||!ready||!storageVerified} onClick={()=>execute('plan',post)}><CalendarDays size={15}/>{t.plan}</button>}
           {post.channel==='instagram'&&post.status==='approved'&&post.socialAccountId&&
@@ -796,6 +817,30 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
           {post.sourceUrl&&<button type="button" onClick={()=>copyLink(post)}><Copy size={15}/>{t.copy}</button>}
           <button type="button" onClick={()=>duplicate(post)}><Plus size={15}/>{t.duplicate}</button>
         </div>
+        {manualHandoffId===post.id&&getInstagramManualHandoff(post)&&
+          <section className={styles.help} data-instagram-manual-handoff
+            aria-label={locale==='ru'?'Ручная публикация в Instagram':'Manual Instagram publication'}>
+            <h3>{getInstagramManualHandoff(post).accountLabel} · {post.placement==='story'?'Story':'Feed'}</h3>
+            <p>{locale==='ru'
+              ?'Без Meta OAuth публикацию можно завершить в приложении Instagram. Проверьте выбранный профиль перед отправкой.'
+              :'Without Meta OAuth you can finish publishing in the Instagram app. Verify the account before posting.'}</p>
+            <div className={styles.postButtons}>
+              <a href={getInstagramManualHandoff(post).mediaUrl} target="_blank" rel="noopener noreferrer"
+                className={styles.deliveryLink}>
+                {locale==='ru'?'1 · Открыть и сохранить фото/видео':'1 · Open and save photo/video'}
+              </a>
+              <button type="button" onClick={()=>copyPost(post)}>
+                <Copy size={15}/>{locale==='ru'?'2 · Скопировать текст':'2 · Copy caption'}
+              </button>
+              <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer"
+                className={styles.deliveryLink}>
+                {locale==='ru'?'3 · Открыть Instagram':'3 · Open Instagram'}
+              </a>
+            </div>
+            <p className={styles.hint}>{locale==='ru'
+              ?'Выберите сохранённый файл в Instagram и подтвердите публикацию там. Для Story текст нужно добавить на изображение или видео. Этот шаг не означает подтверждения от Meta и не меняет статус на «Опубликовано».'
+              :'Select the saved file in Instagram and confirm posting there. For Stories, place text on the image or video. This handoff is not a Meta receipt and does not mark the post as published.'}</p>
+          </section>}
       </article>)}
     </div>}
     </>}

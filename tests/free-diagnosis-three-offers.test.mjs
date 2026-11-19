@@ -16,7 +16,10 @@ test("express landing has one service; consultation hub keeps its existing three
   assert.match(landing, /<PersonalExpressEnquiry locale=\{locale\} intro=\{/);
   assert.doesNotMatch(landing, /<FreeDiagnosisOffers/);
   assert.match(hub, /<FreeDiagnosisOffers locale=\{lang\} \/>/);
-  assert.match(landing, /<PersonalTestimonials locale=\{locale\} variant="all" \/>/);
+  assert.match(landing, /data-review-list-direction="vertical"/);
+  assert.match(landing, /reviewVideos\.map/);
+  assert.match(landing, /data-review-count=\{reviewVideos\.length\}/);
+  assert.doesNotMatch(landing, /<LazyPersonalTestimonials|featuredReviewVideos|reviewSwipeHint/);
   assert.match(hub, /<PersonalTestimonials locale=\{lang\} variant="all" \/>/);
   assert.match(landing, /data-free-review-intro-video/);
   assert.match(landing, /data-featured-free-review-testimonials/);
