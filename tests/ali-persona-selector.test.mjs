@@ -44,6 +44,12 @@ test('UI retains protected chat and history while exposing visible selectable vo
  assert.match(picker,/data-ali-voice-preview=\{persona.id\}/)
  assert.match(picker,/ALI_PERSONAS.map\(/)
  assert.match(picker,/role="dialog" aria-modal="true"/)
+ assert.match(picker,/data-ali-persona-confirm/)
+ assert.match(picker,/setCandidate\(persona.id\)/)
+ assert.match(picker,/data-selected=\{candidate===persona.id\}/)
+ assert.match(picker,/t.description\[persona.id\]/)
+ assert.match(picker,/role="group" aria-label=\{t.heading\}/)
+
  assert.match(picker,/hh:messenger-open-history/)
  assert.match(landing,/data-hh-ai-persona-voice-play/)
  assert.match(landing,/playAliPersonaAudio\(persona.id,locale/)
@@ -69,7 +75,7 @@ test('public natural voice route is fixed-content, rate-limited and does not acc
  assert.doesNotMatch(route,/request.json\(/)
  assert.doesNotMatch(route,/searchParams.get\(/)
  const styles=source('components/app/ali-persona-picker.module.css')
- assert.match(styles,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
+ assert.match(styles,/\.grid\{display:flex;flex-direction:column/)
  assert.match(styles,/env\(safe-area-inset-top\)/)
  assert.match(styles,/max-height:100%/)
 })
@@ -92,4 +98,20 @@ test('Home and existing Messenger share persona and natural greeting, not separa
  assert.match(picker,/hh:messenger-open-history/)
  assert.match(messages,/data-hh-ali-active-persona=\{persona.id\}/)
  assert.doesNotMatch(home,/<iframe|<video|fetch\(/)
+});
+
+test('approved location: Persona replaces history in Ali header, never the main top tabs',()=>{
+ const header=source('components/app/messages-orders-clients.jsx')
+ const css=source('components/app/messages-orders-clients.module.css')
+ const tabs=header.slice(header.indexOf('data-chat-top-tabs'),header.indexOf('<header className={styles.head}'))
+ assert.ok(tabs.includes('hh-orders-panel')&&tabs.includes('hh-clients-panel')&&tabs.includes('hh-news-panel'))
+ assert.ok(!tabs.includes('data-hh-ali-persona-open'),'do not add Persona as a fifth top tab')
+ assert.match(header,/data-hh-ali-active-persona=\{persona.id\}/)
+ const actions=header.slice(header.indexOf('data-hh-ai-assistant-actions'),header.indexOf('<\/header>',header.indexOf('data-hh-ai-assistant-actions')))
+ assert.ok(actions.indexOf('data-hh-messenger-language-switcher')<actions.indexOf('data-hh-ali-persona-open'))
+ assert.ok(actions.indexOf('data-hh-ali-persona-open')<actions.indexOf('data-hh-ai-new-chat'))
+ assert.match(actions,/styles.personaActionText/)
+ assert.match(actions,/Персона/)
+ assert.match(css,/button\[data-hh-ali-persona-open\]/)
+ assert.match(css,/@media\(max-width:355px\)/)
 });
