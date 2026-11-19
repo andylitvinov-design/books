@@ -24,7 +24,7 @@ test('V3 is a separate, consented three-language journey, not fixed six question
     assert.ok(V3_COPY[lang].intro.length<950);
     assert.deepEqual(v3ButtonsFor(lang,'consent'),[[V3_LABELS[lang].agree,V3_LABELS[lang].decline]]);
     assert.deepEqual(v3ButtonsFor(lang,'interview',1),[]);
-    assert.deepEqual(v3ButtonsFor(lang,'interview',2),[[V3_LABELS[lang].finish,V3_LABELS[lang].continue]]);
+    assert.deepEqual(v3ButtonsFor(lang,'interview',2),[[V3_LABELS[lang].finish,V3_LABELS[lang].book],[V3_LABELS[lang].continue]]);
     assert.deepEqual(v3ButtonsFor(lang,'review_confirm'),[
       [V3_LABELS[lang].send],[V3_LABELS[lang].edit,V3_LABELS[lang].cancel],
     ]);
