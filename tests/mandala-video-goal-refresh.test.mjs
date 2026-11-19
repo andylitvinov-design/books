@@ -37,3 +37,15 @@ test("Mobile tabs retain six working workspaces; the one video player remains in
   assert.match(studio, /onClick=\{continueToIdeas\}/);
   assert.match(css, /prefers-reduced-motion:reduce/);
 });
+
+
+test("Continue is hidden only in unfinished self quiz, never after switching to recipient",()=>{
+  // WebKit real-user flow: finish 3-step self quiz, switch to 'others' (resets
+  // step to 1), select Greeting/Birthday and tap Continue to Ideas once.
+  // Old unqualified selector hid the enabled Continue in both audiences.
+  assert.match(studio, /data-video-topic-section\s+data-video-goal-quiz-step=\{goalQuizState\.step\}\s+data-video-goal-quiz-audience=\{goalQuizState\.audience\}/);
+  assert.match(css, /\[data-video-topic-section\]\[data-video-goal-quiz-step="1"\]\[data-video-goal-quiz-audience="self"\] \[data-video-stage-actions="goal"\]/);
+  assert.doesNotMatch(css, /\[data-video-topic-section\]\[data-video-goal-quiz-step="1"\] \[data-video-stage-actions="goal"\]/);
+  assert.match(director, /const resetAudienceStory=\(\)=>\{\s+setGoalQuizStep\(1\)/);
+  assert.match(studio, /data-video-continue-scenarios[\s\S]*?onClick=\{continueToIdeas\}/);
+});
