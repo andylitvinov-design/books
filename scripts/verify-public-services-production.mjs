@@ -200,7 +200,9 @@ try {
     await submitQuiz.click();
     await visible(page.locator("[data-services-quiz-results]"));
     await visible(quiz.locator("[data-services-quiz-summary]"));
-    await expect(page.locator('[data-services-quiz-results] [data-assist-best-card="business"]')).toHaveCount(1);
+    const businessGroup = page.locator('[data-services-quiz-results] [data-services-priority-category="business"]');
+    await expect(businessGroup).toHaveCount(1);
+    await expect(businessGroup.locator("[data-services-three-visible-options] [data-service-card]")).toHaveCount(3);
     if (width === 390) {
       await quiz.locator('[data-quiz-dot="1"]').click();
       await quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice="money_growth"]').click();
