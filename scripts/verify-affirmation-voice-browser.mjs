@@ -392,6 +392,40 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(firstCaption).toHaveValue(locale==="ru"?"День рождения":"Birthday");
     await expect(page.locator('[data-video-mandala-hero]')).toHaveAttribute(
       "data-video-preview-clips",/^(4|5|6|7|8|9|10|11|12)$/);
+    // Speech-driven path: one Continue tap, no separate Match Footage gate.
+    // The transcription API is intercepted; no provider or paid render is called.
+    await page.locator('[data-video-quick-control="video"]').click();
+    await page.locator('[data-auto-video-recipient-kind="audio_visual"]').click();
+    const sampleLines=locale==="ru"
+      ?["Солнце светит утром","Дети улыбаются","Все радуются дню","Тёплый свет вокруг"]
+      :locale==="es"
+        ?["Brilla el sol","Los niños sonríen","Todos disfrutan del día","Hay luz y alegría"]
+        :["The sun shines","Children are happy","They enjoy the day","Warm light surrounds us"];
+    const speech={text:sampleLines.join(" "),durationSeconds:16,segments:sampleLines.map((text,i)=>({
+      text,startSeconds:i*4,endSeconds:(i+1)*4
+    }))};
+    let sttMockCalls=0;
+    await page.route("**/api/holistic-support/audio-storyboard",async route=>{
+      if(route.request().method()!=="POST")return route.abort();
+      sttMockCalls++;
+      await route.fulfill({status:200,contentType:"application/json",
+        body:JSON.stringify({transcript:speech,charged:false,mediaGenerated:false})});
+    });
+    await page.locator('[data-video-recipient-audio-upload]').setInputFiles({
+      name:"sample.wav",mimeType:"audio/wav",buffer:wav(16)
+    });
+    const nextWithSpeech=page.locator('[data-video-recipient-audio-next]');
+    await expect(nextWithSpeech).toBeDisabled();
+    await page.locator('[data-video-recipient-audio-transcribe]').click();
+    await expect(page.locator('[data-video-recipient-audio-transcript]')).toBeVisible({timeout:30000});
+    await expect(page.locator('[data-video-recipient-audio-concept-preview]')).toBeVisible();
+    await expect(page.locator('[data-video-recipient-audio-plan]')).toHaveCount(0);
+    await expect(nextWithSpeech).toBeEnabled();
+    await nextWithSpeech.click();
+    await expect(studio).toHaveAttribute("data-active-workspace","editor");
+    await expect(page.locator('[data-video-montage-tab="concept"]')).toHaveAttribute("aria-pressed","true");
+    assert.equal(sttMockCalls,1,"one explicitly consented mocked transcription, not an automatic provider request");
+    await expect(page.locator('[data-video-montage-concept]')).toBeVisible();
   }finally{release();await context.close();}
 }
 // Real guest route browser acceptance: the fragment carries only optional
