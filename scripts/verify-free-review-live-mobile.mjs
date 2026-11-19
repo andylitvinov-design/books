@@ -147,8 +147,10 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           const radios = enquiry.locator('input[name="express-review-focus"]');
           assert.equal(await radios.count(), 2, "exactly two request focuses");
           assert.equal(await enquiry.locator('input[name="express-review-focus"]:checked').count(), 1, "a single selected focus");
-          assert.equal(await enquiry.locator('[data-messenger-only-contact]').count(),1,
-            "one customer-initiated messenger handoff; no email-only capture");
+          // The private messenger chooser is intentionally deferred for fast first paint.
+          // Its presence is checked after the real customer opens the form.
+          assert.equal(await enquiry.locator('[data-messenger-only-contact]').count(),0,
+            "private contact is not loaded before a visitor opens the disclosure");
           const featured = main.locator("[data-featured-free-review-testimonials]");
           await featured.waitFor({ state: "visible" });
           const featuredGeometry = await featured.evaluate(section => {
@@ -263,6 +265,8 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
             "no modal after clicking the hero CTA");
           const widget=enquiry.locator('[data-messenger-only-contact]');
           await widget.waitFor({state:"visible",timeout:15000});
+          assert.equal(await widget.count(),1,
+            "one customer-initiated messenger handoff; no email-only capture");
           const details=widget.locator('details');
           if(await details.count()&&await details.getAttribute('open')===null)
             await details.locator(':scope > summary').click();
