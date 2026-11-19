@@ -40,6 +40,10 @@ const fixtureModules = {
   '@/data/academy/catalog': { isPublicLocale: value => locales.includes(value) },
   '@/data/site-metadata': { metadataBaseFor: () => new URL('https://synthetic-site.invalid') },
   '@/components/public-site-header': { PublicSiteHeader: () => React.createElement('header', null, 'Synthetic header') },
+  // Isolate the consented V3 child form in this legacy server-render test.
+  // This fixture tests surrounding routing and privacy, not form submission.
+  './express-google-parity-form': {__esModule:true, default: () => React.createElement('section',
+    {'data-synthetic-google-express-parity':true}, 'Synthetic consented form')},
   './coaching-intake-form.module.css': styles, '../coaching-page.module.css': styles,
 }
 function compileActual(source, fileName) {
