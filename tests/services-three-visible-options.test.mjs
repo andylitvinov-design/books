@@ -9,10 +9,10 @@ const css = read("components/services-three-visible-options.module.css");
 const layout = read("components/services-unified-catalog.module.css");
 const page = read("app/[locale]/services/page.tsx");
 
-const ids = ["reiki","browse","reading","consultation","services","video","courses","coach","magical","homeopathy"];
+const ids = ["reiki","browse","reading","consultation","services","business","video","courses","coach","magical","homeopathy"];
 const information = ["about","testimonials","mytube","directory"];
 
-test("all ten real service directions render three real offers immediately; no blank accordion required", () => {
+test("all eleven real service directions render three real offers immediately; no blank accordion required", () => {
   for (const [index, id] of ids.entries()) {
     const start = source.indexOf("  " + id + ": [");
     const next = source.indexOf("  " + ids[index + 1] + ": [");

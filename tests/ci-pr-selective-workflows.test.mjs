@@ -9,23 +9,15 @@ import { parsePrTrigger, matchesTrigger, TARGET } from '../lib/ci/specialist-agg
 // Core, Guard and actionlint still verify CI routing and workflow changes.
 const ownerWorkflows = [
   "admin-seo-dashboard.yml",
-  "dao-iching-library.yml",
-  "hh-benchmark-program.yml",
-  "hh-benchmark-public-browser.yml",
   "hh-energywork-ai.yml",
   "hh-event-referral-contract.yml",
   "hh-growth-studio.yml",
   "hh-home-conversation.yml",
   "hh-ideas-coaching-public.yml",
-  "hh-live-seo-audit.yml",
   "hh-live-audio-ci.yml",
   "hh-public-performance-audit.yml",
   "hh-support-guided-recommendations.yml",
   "holistic-house-native.yml",
-  "hh-sitemap-runtime-assets.yml",
-  "hh-video-feature-lab.yml",
-  "holistic-house-ocean-audio.yml",
-  "mentor-community-acceptance.yml",
   "practice-material-previews.yml",
   "hh-first-video-live-export.yml",
   "hh-direct-video-notes.yml",
@@ -43,6 +35,103 @@ const contractFile = 'docs/operations/CI_OWNER_ROUTE_MIGRATION_20261104.md';
 const legacyTrigger = 'tests/ci-pr-selective-workflows.test.mjs';
 const source = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 const trigger = name => parsePrTrigger(source(name), name);
+
+// Second wave of noncritical QA is explicit opt-in. Real protected Core,
+// actionlint, private, billing and CRM checks remain mandatory.
+const additionalOnDemandQa = ['hh-indexnow.yml','visual-to-code-skill.yml'];
+test('second-wave optional QA never gates ordinary PRs while preserving true executions', () => {
+  for (const name of additionalOnDemandQa) {
+    const yaml = source(name), route = trigger(name);
+    assert.deepEqual(route?.types,['labeled'],name+': source PRs must not auto-dispatch');
+    assert.equal(matchesTrigger(route,['scripts/compare-ui-screenshots.mjs','scripts/submit-indexnow.mjs'],TARGET),
+      false,name+': optional owner must not join required specialist aggregation');
+    assert.match(yaml,/github\.event\.label\.name == 'qa-optional'/,name+': missing explicit opt-in job condition');
+    assert.match(yaml,/^  workflow_dispatch:$/m,name+': missing manual workflow');
+    assert.doesNotMatch(yaml,/continue-on-error:\s*true/,name+': real QA failures still block');
+  }
+  const index=source('hh-indexnow.yml');
+  assert.match(index,/^  push:$/m,'keep published IndexNow push notification');
+  assert.match(index,/node scripts\/submit-indexnow\.mjs --submit/);
+  for (const name of ['hh-pr-core-release.yml','hh-actionlint.yml','hh-crm-source-check.yml',
+    'hh-app-browser.yml','hh-billing-isolated.yml','hh-public-services-production.yml'])
+    assert.ok(trigger(name),name+': lost mandatory security/product PR owner');
+});
+
+ 
+test('CI scope noise: unrelated shared files do not launch visual/media/SEO specialists', () => {
+  const ignored = [
+    ['practice-visual-browser.yml','AGENTS.md'],
+    ['practice-visual-browser.yml','app/api/app/unrelated/route.js'],
+    ['tantra-testimonials.yml','middleware.ts'],
+    ['tantra-testimonials.yml','components/csp-navigation-boundary.tsx'],
+    ['tantra-testimonials.yml','lib/csp-prehydration.js'],
+    ['maya-reader-bundle.yml','next.config.ts'],
+    ['tantra-pdf-source-qa.yml','next.config.ts'],
+    ['visual-to-code-skill.yml','AGENTS.md'],
+    ['holistic-house-pdf-graphics.yml','package.json'],
+    ['hh-profile-axis-matching.yml','app/api/app/practice/editor/route.js']
+  ];
+  for(const [name,file] of ignored)
+    assert.equal(matchesTrigger(trigger(name),[file],TARGET),false,name+': unrelated '+file+' started a domain CI suite');
+  const required = [
+    ['practice-visual-browser.yml','app/api/app/practice/service/route.js'],
+    ['practice-visual-browser.yml','app/api/app/[...path]/route.js'],
+    ['tantra-testimonials.yml','components/tantra-video-testimonials.tsx'],
+    ['maya-reader-bundle.yml','app/books/maya-tradition/page.tsx'],
+    ['tantra-pdf-source-qa.yml','lib/academy/reiki-guide-pdf.js'],
+    ['holistic-house-pdf-graphics.yml','lib/prescriptions/pdf.js'],
+    ['hh-profile-axis-matching.yml','lib/holistic-support/axis-offer-matcher.mjs'],
+    ['hh-profile-axis-matching.yml','app/api/app/[...path]/route.js'],
+    ['hh-public-services-production.yml','components/public-consultation-cta.tsx'],
+    ['release-reaudit.yml','next.config.ts'],
+    ['release-reaudit.yml','middleware.ts'],
+    ['hh-public-performance-audit.yml','scripts/measure-hh-public-ttfb.mjs'],
+    ['hh-public-services-production.yml','scripts/measure-hh-public-ttfb.mjs'],
+    ['hh-pr-core-release.yml','package.json']
+  ];
+  for(const [name,file] of required)
+    assert.equal(matchesTrigger(trigger(name),[file],TARGET),true,name+': lost real domain/security owner for '+file);
+  for(const [name,own,unrelated] of [
+    ['practice-visual-browser.yml','app/api/app/practice/service/route.js','app/api/app/unrelated/route.js'],
+    ['tantra-testimonials.yml','components/tantra-video-testimonials.tsx','middleware.ts'],
+    ['hh-profile-axis-matching.yml','lib/holistic-support/axis-offer-matcher.mjs','app/api/app/practice/editor/route.js']
+  ]) assert.equal(matchesTrigger(trigger(name),[unrelated,own],TARGET),true,name+': mixed PR must retain own real QA');
+});
+
+// Owner-approved PR budget: retain one low-cost public performance owner,
+// defer nine noncritical/duplicative domain matrices to explicit dispatch or
+// existing protected production pushes. Core, security, money, CRM and private
+// data owners continue to run their real exact-HEAD checks on every matching PR.
+const onDemandQa = [
+  "dao-iching-library.yml",
+  "hh-benchmark-program.yml",
+  "hh-benchmark-public-browser.yml",
+  "hh-live-seo-audit.yml",
+  "hh-video-feature-lab.yml",
+  "holistic-house-ocean-audio.yml",
+  "hh-sitemap-runtime-assets.yml",
+  "hh-visual-service-landings.yml",
+  "mentor-community-acceptance.yml"
+];
+test('ten-to-one noncritical PR budget retains Core and source security', () => {
+  assert.equal(onDemandQa.length, 9, 'nine noncritical PR workloads must be deferred');
+  for (const name of onDemandQa) {
+    const yaml=source(name);
+    assert.deepEqual(trigger(name)?.types,['labeled'],name + ': opt-in event route changed');
+    assert.equal(matchesTrigger(trigger(name), ['package.json','components/holistic-house-home.tsx'], TARGET), false,
+      name + ': optional QA must not block ordinary PRs');
+    assert.match(yaml,/github\.event\.label\.name == 'qa-optional'/,name + ': explicit opt-in guard missing');
+    assert.match(yaml,/^  workflow_dispatch:\s*$/m,name + ': on-demand QA unavailable');
+    assert.doesNotMatch(yaml,/continue-on-error:\s*true/,name + ': genuine failures must remain visible');
+  }
+  assert.ok(trigger('hh-public-performance-audit.yml')?.paths?.length,
+    'one lightweight public-performance PR owner must remain');
+  for (const name of [
+    'hh-pr-core-release.yml','hh-crm-source-check.yml',
+    'hh-billing-isolated.yml','hh-app-r1.yml',
+    'hh-public-services-production.yml','hh-actionlint.yml',
+  ]) assert.ok(trigger(name),name + ': critical PR owner is missing');
+});
 
 test('optional workflow routes exclude retired shared fan-out triggers and retain owned coverage', () => {
   assert.equal(new Set(ownerWorkflows).size, ownerWorkflows.length);
@@ -83,7 +172,6 @@ test('unrelated library and sitemap edits do not awaken Dao and growth browser o
   assert.equal(matchesTrigger(trigger('visual-to-code-skill.yml'),['app/layout.tsx'],TARGET),false);
   assert.equal(matchesTrigger(trigger('practice-google-browser.yml'),['components/practice-showcase.jsx'],TARGET),false);
   for (const [owner, changed] of [
-    ['dao-iching-library.yml','components/dao-hexagram-card.tsx'],
     ['hh-growth-journey.yml','components/topic-growth-guide.tsx'],
     ['hh-ideas-coaching-public.yml','components/ideas-discovery.tsx'],
     ['hh-kling-video.yml','lib/kling-video.mjs'],

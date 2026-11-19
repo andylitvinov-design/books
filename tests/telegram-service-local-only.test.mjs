@@ -47,9 +47,9 @@ test('only service uses keyless gate; STOP, consent, CRM and deep model gate rem
  assert.match(diag,/serviceInterviewAvailable:v3ServiceIntakeReady\(env\)/);
  assert.match(diag,/aiInterviewAvailable:[^\n]+v3CanStart\(env\)/);
  const service=src('lib/crm/telegram-ai-diagnostic-v3-service.js');
- for(const phrase of ['supportChatStart?chatAllowed:serviceAllowed',
-  'const purposeReady=general?chatAllowed:serviceAllowed',
-  "prior.ctx.conversationKind==='general'?v3CanChat(env):v3ServiceIntakeReady(env)",
+ for(const phrase of ['supportSecretaryStart||assistantStart)?chatAllowed:serviceEntry?serviceAllowed:allowed',
+  'const purposeReady=general||ctx.mode===FREE_DIAGNOSTIC_MODE||',
+  "prior.ctx.supportSelection&&prior.ctx.mode!==SECRETARY_MODES.PSYCHOLOGIST",
   "provider:'wave-psychologist-native'",
   'if(stop)',"if(action==='send')",'ai_review_consent_at=now()','if(!row.ai_consent_at||!']){
    assert.ok(service.includes(phrase),phrase);

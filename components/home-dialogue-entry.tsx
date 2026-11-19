@@ -2,9 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowRight, ArrowUp, BriefcaseBusiness, ChevronDown, HeartHandshake, Mic, Route, Sparkles, Leaf, Heart, TrendingUp, X, CheckCircle2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { ArrowRight, ArrowUp, BriefcaseBusiness, ChevronDown, HeartHandshake, Mic, Route, Sparkles, Leaf, Heart, TrendingUp, X, CheckCircle2, Play, Pause, UserRound } from "lucide-react";
 import { SiteNavigation } from "@/components/site-navigation";
+import AliPersonaPicker from "@/components/app/ali-persona-picker";
+import {useAliPersona} from "@/components/app/use-ali-persona";
+import {playAliPersonaAudio,stopAliPersonaAudio} from "@/components/app/ali-persona-audio";
 import { stageHomeAliHandoff } from "@/lib/home-ali-handoff.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./home-dialogue-entry.module.css";
@@ -98,6 +101,20 @@ const FOCUS_ICONS = [Leaf, Heart, TrendingUp, BriefcaseBusiness] as const;
 export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
   const router=useRouter();
   const t=COPY[locale];
+  const {persona}=useAliPersona();
+  const [personaOpen,setPersonaOpen]=useState(false);
+  const closePersona=useCallback(()=>setPersonaOpen(false),[]);
+  const [greetingSpeaking,setGreetingSpeaking]=useState(false);
+  useEffect(()=>()=>stopAliPersonaAudio(),[]);
+  const startGuideGreeting=()=>{
+    if(greetingSpeaking){stopAliPersonaAudio();setGreetingSpeaking(false);return}
+    playAliPersonaAudio(persona.id,locale,(playing:boolean)=>setGreetingSpeaking(playing));
+  };
+  const greetingName=persona.name[locale];
+  const guideLine=locale==="ru"?`Привет! Я ${greetingName}.`:
+    locale==="es"?`¡Hola! Soy ${greetingName}.`:`Hi! I’m ${greetingName}.`;
+  const guideSubtitle=locale==="ru"?"Вместе найдём подходящий следующий шаг":
+    locale==="es"?"Encontraremos juntos el mejor siguiente paso":"Let’s find your best next step together";
   const [mode,setMode]=useState<Mode>("self");
   const [draft,setDraft]=useState("");
   const [error,setError]=useState("");
@@ -183,6 +200,24 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
       <div className={styles.scene} aria-hidden="true"/>
       <div className={styles.heroContent}>
         <div className={styles.kicker}><Sparkles size={18} aria-hidden="true"/> HOLISTIC HOUSE</div>
+        <div className={styles.guideRow} data-home-ali-persona={persona.id}>
+          <button type="button" className={styles.guideIdentity}
+            data-home-open-ali-persona onClick={()=>setPersonaOpen(true)}
+            aria-label={locale==="ru"?"Персоналия · выбрать ведущего":
+              locale==="es"?"Personaje · elegir guía":"Persona · choose your guide"}>
+            <img src={persona.image} alt="" width={48} height={48} loading="lazy"/>
+            <span><strong>{guideLine}</strong><small>{guideSubtitle}</small></span>
+            <UserRound size={17} aria-hidden="true"/>
+          </button>
+          <button type="button" className={styles.guideAudio} data-home-ali-greeting-play
+            onClick={startGuideGreeting} aria-pressed={greetingSpeaking}
+            aria-label={greetingSpeaking?
+              (locale==="ru"?"Остановить приветствие":locale==="es"?"Detener saludo":"Stop greeting"):
+              (locale==="ru"?"Послушать приветствие":locale==="es"?"Escuchar saludo":"Listen to greeting")}>
+            {greetingSpeaking?<Pause size={18} aria-hidden="true"/>:
+              <Play size={18} fill="currentColor" aria-hidden="true"/>}
+          </button>
+        </div>
         <h2>{t.title}</h2>
         <p className={styles.subtitle}>{mode==="business"?t.businessSubtitle:t.subtitle}</p>
         <Link href={"/"+locale+"/services/free-situation-review"} prefetch={false}
@@ -232,6 +267,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
         <small className={styles.privacy}>{t.transferPrivacy}</small>
       </div>
     </div>
+    <AliPersonaPicker open={personaOpen} onClose={closePersona} locale={locale}/>
     <Link className={styles.continue} href={"/"+(locale==="es"?"en":locale)+"/app/portrait?space=path"}
       prefetch={false} data-home-continue-path>
       <span className={styles.continueIcon}><Route size={25} aria-hidden="true"/></span>

@@ -18,7 +18,7 @@ test("self catalogue remains canonical while others have Reels plus three existi
   assert.match(director,/const videoGoalCategories=\[/);
   assert.match(director,/videoAudience==="self"\?<[^\n]*>/);
   assert.match(director,/data-auto-video-category=\{item.id\}/);
-  assert.match(director,/data-auto-video-audience=\{mode\}/);
+  assert.match(director,/changeVideoAudience\(scope==="life"\?"self":"others"\)/);
   assert.match(director,/data-auto-video-recipient-kind=\{item.id\}/);
   assert.match(director,/data-auto-video-recipient-occasion=\{item.id\}/);
   assert.match(director,/getRecipientVideoKind\(recipientKindId\)/);

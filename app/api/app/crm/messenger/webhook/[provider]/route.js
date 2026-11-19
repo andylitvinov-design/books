@@ -12,12 +12,14 @@ import { verifyMessengerWebhook,verifyMessengerChallenge,normalizeMessengerUpdat
 import { sendTelegramDiagnosticPrompt, sendWhatsAppDiagnosticPrompt, ensureTelegramInlineWebhookUpdates, acknowledgeTelegramInlineCallback, sendTelegramCompanionMessage, sendHolisticBusinessRequestReply, sendHolisticBusinessWelcomePhoto } from '@/lib/crm/messenger-provider'
 import { telegramPresentationOnStart } from '@/lib/crm/telegram-presentation.mjs'
 import {processTelegramCompanion} from '@/lib/crm/telegram-companion-service'
-import {processTelegramAiV3,finishTelegramAiV3,finishTelegramWaveVoiceV3,bindTelegramWaveVoiceOffer,deliverTelegramWaveVoiceV3} from '@/lib/crm/telegram-ai-diagnostic-v3-service'
+import {processTelegramAiV3,finishTelegramAiV3,finishTelegramFreePackagePhoto,finishTelegramWaveVoiceV3,bindTelegramWaveVoiceOffer,deliverTelegramWaveVoiceV3} from '@/lib/crm/telegram-ai-diagnostic-v3-service'
 import {finalizeTelegramV3Service,notifyOwnerTelegramV3Service} from '@/lib/crm/telegram-v3-service-finalizer'
+import {notifyOwnerAliFreePackage} from '@/lib/crm/telegram-free-package-owner-notice'
 import {shouldBootstrapTelegramNativeMenu} from '@/lib/crm/telegram-companion-native-commands.mjs'
 import { receiveOwnerTelegramVideoCrmFallback } from '@/lib/practitioners/owner-telegram-video-crm-fallback'
 import {processTelegramBusinessConversation} from '@/lib/crm/telegram-business-service'
 import {captureTelegramBotLead,captureTelegramBusinessLead} from '@/lib/crm/telegram-lead-capture'
+import {captureTelegramBusinessInbox,telegramBotHumanTakeover} from '@/lib/crm/telegram-business-inbox'
 import {captureTelegramLeadBestEffort} from '@/lib/crm/telegram-lead-capture-policy.mjs'
 import {captureWhatsAppFirstContact,recordWhatsAppInboundReceipt} from '@/lib/crm/whatsapp-lead-capture'
 import {telegramBusinessMessageFromUpdate} from '@/lib/assist/telegram-business-request.mjs'
@@ -106,6 +108,13 @@ export async function POST(request,{params}){
       ?await captureTelegramLeadBestEffort(
         ()=>captureTelegramBusinessLead(body,config),
         ()=>console.error('HH_TG_BUSINESS_LEAD_CAPTURE_UNAVAILABLE')):null
+    // The signed Business connection gets its own private thread in the same
+    // CRM inbox; before owner handoff only neutral metadata is saved.
+    if(provider==='telegram'){
+      const inbox=await captureTelegramBusinessInbox(body,config,businessLead)
+      // A confirmed human reply takes precedence over AI service/FAQ scripts.
+      if(inbox.humanActive)return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
+    }
     // Separate signed Business-chat service intake: only public service-code
     // messages and explicit short replies, never ordinary personal text or
     // diagnostic/Companion updates. Confirmation persists before acknowledgement.
@@ -307,6 +316,16 @@ export async function POST(request,{params}){
             botLeadCapturePendingRetry=true
           }
         }
+        // After the owner manually replies in CRM, keep later client messages
+        // encrypted in the same inbox and do NOT let AI interrupt the human.
+        // STOP and explicit bot/menu restarts remain serviced normally.
+        if(event.type==='incoming'&&!event.callbackId&&!event.stop&&
+          !/^(?:стоп|stop|остановить|parar|detener)$/i.test(String(event.rawText||'').trim())&&
+          !/^\/(?:ai|start)(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(String(event.rawText||'').trim())&&
+          await telegramBotHumanTakeover(event,config)){
+          await ingestMessengerUpdate('telegram',event,config)
+          continue
+        }
         const companion=await processTelegramCompanion(event,config)
         if(companion.handled){
           // Client-initiated bootstrap of native Telegram Menu. Never do this
@@ -406,6 +425,26 @@ export async function POST(request,{params}){
               console.error('HH_CRM_TG_V3_PROMPT_SEND_FAILED',evidence)
             }
           }
+          if(aiIntake.ownerProgress)after(async()=>{
+            try{await notifyOwnerAliFreePackage(config,aiIntake.ownerProgress)}
+            catch{console.error('HH_ALI_FREE_STAGE_NOTICE_UNCONFIRMED')}
+          })
+          if(aiIntake.photoVerify)after(async()=>{
+            try{
+              const ready=await finishTelegramFreePackagePhoto(config,aiIntake.photoVerify)
+              if(ready?.reply){
+                try{
+                  await sendTelegramDiagnosticPrompt({
+                    to:ready.to,text:ready.reply,keyboard:ready.keyboard,
+                    locale:ready.locale,approvedPilotGuest:ready.approvedPilotGuest})
+                }catch{console.error('HH_ALI_FREE_PHOTO_ACK_UNCONFIRMED')}
+              }
+              if(ready?.ownerProgress){
+                try{await notifyOwnerAliFreePackage(config,ready.ownerProgress)}
+                catch{console.error('HH_ALI_FREE_PHOTO_OWNER_NOTICE_UNCONFIRMED')}
+              }
+            }catch{console.error('HH_ALI_FREE_PHOTO_PROCESS_UNCONFIRMED')}
+          })
           if(aiIntake.generate)after(async()=>{
             try{
               const ready=aiIntake.generate.voiceNote
@@ -421,6 +460,10 @@ export async function POST(request,{params}){
                   to:ready.to,text:ready.reply,keyboard:ready.keyboard,
                   locale:ready.locale,approvedPilotGuest:ready.approvedPilotGuest,
                 })
+              }
+              if(ready?.ownerProgress){
+                try{await notifyOwnerAliFreePackage(config,ready.ownerProgress)}
+                catch{console.error('HH_ALI_FREE_ANSWER_OWNER_NOTICE_UNCONFIRMED')}
               }
             }catch{
               // Never log client text, credentials, model prompt or Telegram IDs.

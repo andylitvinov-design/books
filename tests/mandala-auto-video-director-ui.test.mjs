@@ -76,7 +76,7 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.match(director,/const videoGoalCategories=\[/);
  assert.match(director,/data-auto-video-category=\{item.id\}/);
  assert.match(director,/data-auto-video-topic-panel/);
- assert.match(director,/taxonomySubcategories\.map\(item=>/);
+ assert.match(director,/taxonomySubcategories\.map\(\(item,index\)=>/);
  assert.match(director,/taxonomyTopics\.map\(item=>/);
  assert.match(director,/taxonomyScenarios\.length===4/);
  assert.match(director,/const STSE_ENABLED=process\.env\.NEXT_PUBLIC_HH_STSE_ENABLED!=="false"/);
@@ -86,7 +86,7 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.match(director,/data-stse-media-unbound/);
  assert.match(director,/data-mytube-scenario=\{scenario.id\}/);
 
- assert.match(director,/taxonomySubcategories\.map\(item=>/);
+ assert.match(director,/taxonomySubcategories\.map\(\(item,index\)=>/);
  assert.match(director,/data-auto-video-clarify/);
  assert.match(director,/data-auto-video-refine-panel/);
  assert.match(director,/data-auto-video-option=\{id\}/);
@@ -346,7 +346,7 @@ test("owner correction: explicit quiz category precedes its four subcategories a
    "an initial suggestion or unmatched wish must not count as an answered category");
  assert.match(director,/if\(!classification\|\|broad\)\{[\s\S]*?setProposal\(null\);setTimelineEdits\(null\);return/,
    "unresolved or broad wishes must not inherit a ready film timeline");
- assert.match(goalBlock,/taxonomySubcategories\.map\(item=>/);
+ assert.match(goalBlock,/taxonomySubcategories\.map\(\(item,index\)=>/);
  assert.match(goalBlock,/data-auto-video-subcategory=\{item\.id\}/);
  assert.match(goalBlock,/selectedSubcategoryId===item\.id/);
  assert.doesNotMatch(goalBlock,/categoryPoster|scenePoster\(item.poster\)/);
@@ -445,8 +445,8 @@ test("the approved single wish and match action precede goal cards, category, to
  assert.ok(prompt>=0&&prompt<goal&&goal<topic&&topic<next,"approved wish → goal → category/topic → Ideas order");
  assert.match(studio,/data-video-wish-above-goals/);
  assert.match(studio,/data-video-director-audience-controls/);
- assert.match(director,/data-auto-video-audience=\{mode\}/);
- assert.match(director,/createPortal\(audienceBar,audienceTarget\)/);
+ assert.doesNotMatch(director,/data-auto-video-audience=\{mode\}/);
+ assert.match(director,/changeVideoAudience\(scope==="life"\?"self":"others"\)/);
  assert.doesNotMatch(studio,/data-video-goal-audience-option/);
  assert.match(director,/data-video-goal-topic-chips/);
  assert.match(director,/onClick=\{designFromRequest\}/);
@@ -491,12 +491,37 @@ test("new prompt and profile choice invalidate every prior MyTube plot selection
  }
  const request=director.slice(director.indexOf("const requestInput="),director.indexOf("const profilePanel="));
  const field=director.slice(director.indexOf("const requestField="),director.indexOf("const requestInput="));
+ const sharedPrompt=director.slice(director.indexOf("const applyRequestDraft="),director.indexOf("const togglePromptDictation="));
  assert.match(request,/\{requestField\}/,"visible request composer must use the resettable field");
  assert.match(request,/onClick=\{designFromRequest\}/,"Design action must invoke checked handler");
- assert.match(field,/onChange=\{event=>/,"typing must trigger the reset handler");
- assert.match(field,/onGoalChange\(nextGoal\)/,"typing must update the active request");
+ assert.match(field,/onChange=\{event=>applyRequestDraft\(event\.currentTarget\.value\)\}/,
+  "typing delegates to the same scene reset handler as dictation");
+ assert.match(sharedPrompt,/onGoalChange\(nextGoal\)/,"typing must update the active request");
  for(const setter of ["setSelectedSubcategoryId(","setSelectedTopicId("])
-   assert.ok(!field.includes(setter),"optional request preserves taxonomy");
+  assert.ok(!sharedPrompt.includes(setter),"optional request preserves taxonomy");
  for(const setter of ["setSelectedScenarioId(","setSelectedPlotId(","setTimelineEdits("])
-   assert.ok(field.includes(setter),"new request invalidates stale storyboard");
+  assert.ok(sharedPrompt.includes(setter),"new request invalidates stale storyboard");
+});
+
+test("Just make it sends a typed wish straight to the existing rights-checked Express renderer",()=>{
+ const handler=director.slice(director.indexOf("const designFromRequest="),director.indexOf("const analyzedPath="));
+ assert.match(handler,/if\(quickFlow==="instant"\)\{onInstantCreate\?\.\(\);return;\}/);
+ assert.doesNotMatch(handler,/quickFlow==="instant"&&goalQuizComplete/,
+   "an optional three-step quiz must not gate one-click generation");
+ assert.doesNotMatch(handler,/if\(quickFlow==="instant"\)\{onCreate/,
+   "the old handler opened Ready instead of starting a video");
+ assert.match(director,/onInstantCreate\?:\(\)=>boolean/);
+ assert.match(studio,/onInstantCreate=\{generateFromGoal\}/,
+   "instant mode and the existing Generate video action use the same handler");
+ assert.match(studio,/const generateFromGoal=\(\)=>generateExpressFromCurrent\(\)/);
+ assert.match(studio,/planExpressVideo\(\{/);
+ assert.match(studio,/compileFreeFilmPreset\(preset,locale,recipe\.durationSeconds,"portrait"/);
+ assert.match(studio,/const started=expressRenderRef\.current\(\)/);
+ assert.match(studio,/expressRenderRef\.current=startFromHero/);
+ assert.match(studio,/onCreate=\{openReadyForGeneration\}/,
+   "guided creation remains distinct from the instant trusted-gesture export");
+ assert.match(director,/onConceptTopicChange\?\.\(null\)/,
+   "new wishes invalidate an older canonical topic");
+ assert.match(director,/data-video-request-flow=\{quickFlow\}/);
+ assert.match(director,/Create video automatically/);
 });

@@ -163,3 +163,36 @@
  .focusCard{min-height:67px}
  .composer{min-height:66px}
 }
+/* First-screen shared Persona selector: small enough not to crowd the mobile form. */
+.guideRow{display:flex;align-items:center;gap:8px;width:100%;min-width:0;
+  padding:5px 7px;box-sizing:border-box;border:1px solid #e4e8d26b;
+  border-radius:17px;background:#0e4239ad;backdrop-filter:blur(5px)}
+.guideIdentity{display:flex;align-items:center;gap:9px;min-width:0;flex:1;padding:0;
+  border:0;background:transparent;color:#fff;text-align:left;cursor:pointer}
+.guideIdentity img{flex:none;display:block;width:46px;height:46px;object-fit:cover;
+  object-position:center 28%;border-radius:13px;border:1px solid #e8f5ddbb}
+.guideIdentity>span{display:flex;min-width:0;flex:1;flex-direction:column;gap:4px}
+.guideIdentity strong{font:780 15px/1.1 system-ui,sans-serif}
+.guideIdentity small{font:530 11px/1.2 system-ui,sans-serif;color:#e9f7e8;
+  white-space:normal;overflow-wrap:anywhere}
+.guideIdentity>svg{flex:none;opacity:.85}
+.guideAudio{display:grid;place-items:center;flex:none;width:44px;height:44px;
+  box-sizing:border-box;border:1px solid #c8eadb;border-radius:13px;
+  background:#fffdf5;color:#0b6856;cursor:pointer}
+.guideAudio[aria-pressed="true"]{background:#1aa081;color:white}
+.guideIdentity:focus-visible,.guideAudio:focus-visible{outline:3px solid #9fe6cb;outline-offset:2px}
+@media(max-width:430px){
+  .guideRow{gap:5px;padding:4px 5px;border-radius:14px}
+  .guideIdentity{gap:7px}
+  .guideIdentity img{width:40px;height:40px;border-radius:10px}
+  .guideIdentity strong{font-size:14px}
+  .guideIdentity small{font-size:10px;line-height:1.15}
+  .guideAudio{width:42px;height:42px;border-radius:11px}
+}
+@media(max-width:355px){
+  .guideIdentity img{width:35px;height:39px}
+  .guideIdentity>svg{width:14px}
+  .guideIdentity strong{font-size:13px}
+  .guideIdentity small{font-size:9px}
+  .guideAudio{width:38px;height:40px}
+}

@@ -66,6 +66,19 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(continueToIdeas).toBeDisabled();
     const subcategories=page.locator('[data-auto-video-subcategory]');
     await expect(subcategories).toHaveCount(4);
+    const subcategoryArt=page.locator('[data-video-goal-subcategory-cards] [data-video-goal-art]');
+    await expect(subcategoryArt).toHaveCount(4);
+    for(const width of [320,354,390,430]){
+      await page.setViewportSize({width,height:840});
+      for(const photo of await subcategoryArt.all()){
+        await photo.scrollIntoViewIfNeeded();
+        await expect.poll(()=>photo.evaluate(img=>img.complete&&img.naturalWidth>0),
+          {message:"Goal 2 photo loads at "+width}).toBe(true);
+      }
+      const overflows=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1);
+      assert.equal(overflows,false,"Goal step 2 fits "+width);
+    }
+    await page.setViewportSize({width:390,height:840});
     await subcategories.first().click();
     await expect(quizProgress).toContainText('3 / 3');
     await expect(continueToIdeas).toBeDisabled();
@@ -184,29 +197,37 @@ async function verifyWorkspaceHydration(browser,locale){
         // unrelated stock frames depict the six authored physical events.
         await expect(automaticStoryboard).toHaveAttribute("data-storyboard-action-proof","editorial_unverified");
         await expect(automaticStoryboard).toHaveAttribute("data-storyboard-media-ready","false");
-        // These are visible, rights-reviewed PHOTO REFERENCES, never evidence
-        // that the six precise actions were filmed or that export is eligible.
-        await expect(automaticStoryboard).toHaveAttribute(
-          "data-storyboard-graphics-mode","licensed-photographic-references");
-        await expect(automaticStoryboard).toHaveAttribute("data-storyboard-reference-count","6");
-        await expect(automaticStoryboard).toHaveAttribute(
-          "data-storyboard-reference-status","editorial_photo_reference_not_action_verified");
+        // Six genuine, rights-reviewed photographs are visual references, not
+        // proof that the filmed physical actions have been verified for export.
+        const referenceCount=Number(await automaticStoryboard.getAttribute("data-storyboard-reference-count"));
+        assert.equal(referenceCount,storyboardShotCount,
+          "every authored 30-second scene must retain its own photographic reference");
+        await expect(automaticStoryboard).toHaveAttribute("data-storyboard-graphics-mode",
+          "licensed-photographic-references");
+        await expect(automaticStoryboard).toHaveAttribute("data-storyboard-reference-status",
+          "editorial_photo_reference_not_action_verified");
+        const referencePhotos=cards.locator('img[data-storyboard-reference-photo]');
+        await expect(referencePhotos).toHaveCount(referenceCount);
+        for(let i=0;i<referenceCount;i++){
+          const photo=referencePhotos.nth(i);
+          assert.ok((await photo.getAttribute("src"))?.startsWith("/"),
+            "each editorial reference must use a trusted first-party photograph");
+          assert.ok((await photo.getAttribute("alt"))?.trim(),
+            "each editorial reference must name the illustrated subject");
+        }
+        // Preserve the Therapy A/B photo safeguards and the newer photo-count contract.
         const referenceLabel=locale==="ru"?"Фото · референс":
           locale==="es"?"Foto · referencia":"Photo · reference";
-        for(let i=0;i<storyboardShotCount;i++){
+        for(let i=0;i<referenceCount;i++){
           const card=cards.nth(i);
           await expect(card).toHaveAttribute("data-storyboard-reference-only","true");
           await expect(card).toHaveAttribute("data-video-story-media-matched","false");
           await expect(card).toHaveAttribute("data-story-media-kind","reference");
-          const image=card.locator("[data-storyboard-reference-photo]");
-          await expect(image).toBeVisible();
-          assert.ok((await image.getAttribute("src"))?.startsWith("/"),
-            "reference "+(i+1)+" uses a first-party approved photo URL");
-          assert.ok((await image.getAttribute("alt"))?.trim(),
-            "reference "+(i+1)+" retains a meaningful editorial description");
+          await expect(card.locator("[data-storyboard-reference-photo]")).toBeVisible();
           await expect(card.locator("[data-storyboard-photo-reference-label]"))
             .toHaveText(referenceLabel);
         }
+        await expect(automaticStoryboard.locator('[data-video-auto-storyboard-apply]')).toHaveCount(0);
       }
       await expect(automaticStoryboard.locator('[data-video-auto-storyboard-list]')).toBeVisible();
       await expect(cards.first()).toContainText(
@@ -804,11 +825,29 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const preferredName=locale==="ru"?"Андрей":locale==="es"?"Andrés":"Andy";
       const personalClosing=locale==="ru"?"Андрей, я в тебя верю":
         locale==="es"?"Andrés, creo en ti":"Andy, I believe in you";
+      const personalQuiz=phrases.locator("[data-video-personalization]");
+      const nextQuiz=personalQuiz.locator("[data-video-personalization-clarify-continue]");
+      const backQuiz=personalQuiz.locator("[data-video-personalization-clarify-back]");
+      await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","1");
+      await expect(phrases.locator('[data-personalization-kind="current"]')).toBeVisible();
+      await expect(phrases.locator('[data-personalization-kind="desired"]')).toBeHidden();
+      await nextQuiz.click();
+      await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","2");
+      await expect(phrases.locator('[data-personalization-kind="desired"]')).toBeVisible();
+      await nextQuiz.click();
+      await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","3");
+      await expect(phrases.locator('[data-personalization-kind="strength"]')).toBeVisible();
+      await nextQuiz.click();
+      await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","4");
       const firstNameInput=phrases.locator("[data-video-personalization-name]");
       await expect(firstNameInput).toBeVisible();
       await firstNameInput.fill(preferredName);
+      await backQuiz.click();
+      await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","3");
+      await nextQuiz.click();
       await expect(firstNameInput).toHaveValue(preferredName);
-      await conceptTab.click();
+      await nextQuiz.click();
+      await expect(conceptTab).toHaveAttribute("aria-pressed","true");
       await expect(phrases.locator("[data-video-ideas-concept-panel]")).toBeVisible();
       await personalTab.click();
       const advancedText=phrases.locator('[data-video-phrase-audio-shortcut]');

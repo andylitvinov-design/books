@@ -8,6 +8,7 @@ import { PersonalExpressEnquiry } from "@/components/personal-express-enquiry";
 import { TelegramDiagnosticEntry } from "@/components/telegram-diagnostic-entry";
 import { FreeSituationReviewForm } from "@/components/free-situation-review-form";
 import { SiteVideoPlayer } from "@/components/site-video-player";
+import { DeferredYoutubeReview } from "@/components/deferred-youtube-review";
 import { getServiceVideoMedia } from "@/data/service-video-library";
 import { locallyArchivedVideoPosterIds, testimonialVideos } from "@/components/personal-testimonials";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -292,7 +293,7 @@ situation: {
       eyebrow: "REVISIÓN PERSONAL EXPRÉS · CON ANDREY",
       title: "Cuéntame qué te preocupa.",
       lead: "¿Tienes una decisión difícil o una situación que se repite? Cuéntame una pregunta concreta. La leeré yo mismo y te responderé por escrito, gratis.",
-      value: "Revisión personal escrita · gratis · sin llamada.",
+      value: "Revisión personal escrita · gratis · sin cita o videollamada.",
       bullets: ["Define tu pregunta.", "Observa recursos y dificultades.", "Explora un posible próximo paso."],
       outcomeTitle: "Comprende mejor tu pregunta",
       outcomeLead: "Leeré tu mensaje y te compartiré lo que observe.",
@@ -641,7 +642,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
                         <span>{String(index + 1).padStart(2, "0")} / {reviewVideos.length}</span>
                         <span>{item.language === "ru" ? situationVideoStory[locale].ruAudio : situationVideoStory[locale].enAudio}</span>
                       </p>
-                      <SiteVideoPlayer video={{ youtubeId: item.id, title: item.title, language: item.language }}
+                      <DeferredYoutubeReview video={{ youtubeId: item.id, title: item.title, language: item.language }}
                         locale={locale} textLanguage={locale} compact
                         fallbackPoster={locallyArchivedVideoPosterIds.has(item.id)
                           ? "/images/holistic-house/testimonial-posters/" + item.id + ".webp"
