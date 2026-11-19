@@ -165,6 +165,7 @@ test('Consent is explained once; follow-up nudges do not repeat the privacy wall
   const service=source('lib/crm/telegram-ai-diagnostic-v3-service.js');
   assert.ok(service.includes("if(start&&active&&row?.stage==='consent')"));
   assert.ok(service.includes("const purposeReady=general?chatAllowed:serviceAllowed;"));
+  assert.ok(service.includes("const agrees=general?action==='chatagree':"));
   assert.ok(service.includes("if(!row.ai_consent_at||!(ctx.conversationKind==='general'?chatAllowed:serviceAllowed))"));
   assert.ok(service.includes("const reminder=general?(chatAllowed?chat.nudge:copy.notReady):"));
   assert.ok(service.includes("(purposeReady?(serviceCopy?serviceCopy.welcomeNudge:copy.nudge):copy.notReady)"));
@@ -251,8 +252,11 @@ test('Wave local chat remains consent-gated and is independent of any model key'
   assert.equal(v3CanChat({...local,VERCEL_ENV:'preview'}),false);
   const service=source('lib/crm/telegram-ai-diagnostic-v3-service.js');
   assert.match(service,/const generalStart=chatAllowed/);
+  assert.match(service,/const purposeReady=general\?chatAllowed:serviceAllowed;/);
+  assert.match(service,/serviceCopy\?\(action==='agree'\|\|action==='serviceagree'/);
   assert.match(service,/purposeReady=general\?chatAllowed:serviceAllowed;/);
   assert.match(service,/if\(!row\.ai_consent_at\|\|!\(ctx\.conversationKind==='general'\?chatAllowed:serviceAllowed\)\)/);
+  assert.match(service,/ctx\.conversationKind==='general'\?chatAllowed:serviceAllowed/);
   assert.match(service,/if\(!row.ai_consent_at\|\|!/);
   assert.match(service,/if\(!row\.ai_consent_at\|\|!\(ctx\.conversationKind==='general'\?chatAllowed:serviceAllowed\)\)/);
   assert.match(service,/waveTelegramLocalReply\(\{locale:prior.locale,turns\}\)/);

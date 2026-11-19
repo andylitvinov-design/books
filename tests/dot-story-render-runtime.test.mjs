@@ -12,6 +12,7 @@ import {requiredStoryRightsCredits,storyYoutubeDescription} from '../lib/practit
 import {listTelegramStoryCategories,listTelegramStorySubcategories,listTelegramStoryTopics,listTelegramStoryScenarios,listTelegramStoryPlots} from '../lib/mandala/telegram-story-plots.mjs';
 // Run first-party-photo and Supabase scene-bound Pexels acceptance under the existing owner video specialist.
 import './dot-story-pexels-photo-selection.test.mjs';
+import './dot-story-v3-scene-photos.test.mjs';
 // Execute the new photo fallback's provenance, First Light and plan tests in the
 // existing owner-video specialist without adding a new CI workflow.
 import './dot-story-photo-fallback.test.mjs';
