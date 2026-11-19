@@ -850,7 +850,8 @@ export default function AppWorkspace({ locale, path = [] }) {
            {page === 'progress' && <MyProgress key={data.account.id} data={data} locale={locale} />}
           {page === 'my-coaching-plan' && <MyCoachingPlan key={data.account.id} accountId={data.account.id} locale={locale} />}
           {page === 'course' && !courseLanding && <ProfileCoursesSwitch locale={locale} mode={courseChoiceMode} />}
-           {page === 'course' && <div id="my-courses-content" data-course-content><MyCourse data={data} locale={locale} /></div>}
+           {page === 'course' && <div id="my-courses-content" data-course-content aria-hidden="true" />}
+           {page === 'course' && <MyCourse data={data} locale={locale} />}
           {page === 'business' && <BusinessCoaching key={data.account.id} accountId={data.account.id} locale={locale} />}
           {page === 'coaching' && (['egyptian','greek'].includes(recordId)
              ? <TraditionCoaching key={data.account.id + recordId} accountId={data.account.id}
