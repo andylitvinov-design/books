@@ -8464,6 +8464,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           onApply={(presetId,seconds,edit,options)=>
             applyAutoFilm(presetId,seconds,edit,aspect,options?.keepGoalFlow)}
           onCreate={openReadyForGeneration}
+          onInstantCreate={generateFromGoal}
           canCreate={canStartSelectedFilm} rendering={recording||preparing}
           createFeedback={preparing||exportUnavailable?notice:""}/>
       <nav className={videoStyles.quickPracticeShortcuts} data-video-practice-shortcuts

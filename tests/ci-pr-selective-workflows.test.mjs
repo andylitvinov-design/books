@@ -36,6 +36,27 @@ const legacyTrigger = 'tests/ci-pr-selective-workflows.test.mjs';
 const source = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 const trigger = name => parsePrTrigger(source(name), name);
 
+// Second wave of noncritical QA is explicit opt-in. Real protected Core,
+// actionlint, private, billing and CRM checks remain mandatory.
+const additionalOnDemandQa = ['hh-indexnow.yml','visual-to-code-skill.yml'];
+test('second-wave optional QA never gates ordinary PRs while preserving true executions', () => {
+  for (const name of additionalOnDemandQa) {
+    const yaml = source(name), route = trigger(name);
+    assert.deepEqual(route?.types,['labeled'],name+': source PRs must not auto-dispatch');
+    assert.equal(matchesTrigger(route,['scripts/compare-ui-screenshots.mjs','scripts/submit-indexnow.mjs'],TARGET),
+      false,name+': optional owner must not join required specialist aggregation');
+    assert.match(yaml,/github\.event\.label\.name == 'qa-optional'/,name+': missing explicit opt-in job condition');
+    assert.match(yaml,/^  workflow_dispatch:$/m,name+': missing manual workflow');
+    assert.doesNotMatch(yaml,/continue-on-error:\s*true/,name+': real QA failures still block');
+  }
+  const index=source('hh-indexnow.yml');
+  assert.match(index,/^  push:$/m,'keep published IndexNow push notification');
+  assert.match(index,/node scripts\/submit-indexnow\.mjs --submit/);
+  for (const name of ['hh-pr-core-release.yml','hh-actionlint.yml','hh-crm-source-check.yml',
+    'hh-app-browser.yml','hh-billing-isolated.yml','hh-public-services-production.yml'])
+    assert.ok(trigger(name),name+': lost mandatory security/product PR owner');
+});
+
  
 test('CI scope noise: unrelated shared files do not launch visual/media/SEO specialists', () => {
   const ignored = [
@@ -58,7 +79,6 @@ test('CI scope noise: unrelated shared files do not launch visual/media/SEO spec
     ['tantra-testimonials.yml','components/tantra-video-testimonials.tsx'],
     ['maya-reader-bundle.yml','app/books/maya-tradition/page.tsx'],
     ['tantra-pdf-source-qa.yml','lib/academy/reiki-guide-pdf.js'],
-    ['visual-to-code-skill.yml','scripts/compare-ui-screenshots.mjs'],
     ['holistic-house-pdf-graphics.yml','lib/prescriptions/pdf.js'],
     ['hh-profile-axis-matching.yml','lib/holistic-support/axis-offer-matcher.mjs'],
     ['hh-profile-axis-matching.yml','app/api/app/[...path]/route.js'],
