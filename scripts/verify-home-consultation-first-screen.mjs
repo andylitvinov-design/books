@@ -27,6 +27,16 @@ for (const engine of [chromium,webkit]){
           hasTouch:true,reducedMotion:"reduce",
         });
         const label=engine.name()+":"+locale+":"+width;
+        const scriptEvents=[];
+        page.on("pageerror",error=>scriptEvents.push("pageerror:"+error.message.slice(0,240)));
+        page.on("requestfailed",request=>{
+          if(request.url().includes("/instant-home/fast.js"))
+            scriptEvents.push("script-request-failed:"+String(request.failure()?.errorText).slice(0,160));
+        });
+        page.on("response",response=>{
+          if(response.url().includes("/instant-home/fast.js"))
+            scriptEvents.push("script-status:"+response.status());
+        });
         try {
           const response=await page.goto(origin+path,{waitUntil:"domcontentloaded",timeout:60000});
           assert.equal(response?.status(),200,label+": Home HTTP 200");
@@ -35,7 +45,21 @@ for (const engine of [chromium,webkit]){
           if (locale !== "es") {
             const fast=page.locator('body[data-fast-home="'+locale+'"]');
             await fast.waitFor({state:"attached",timeout:20000});
-            await page.locator('html[data-home-interactive="true"]').waitFor({state:"attached",timeout:20000});
+            try {
+              await page.locator('html[data-home-interactive="true"]').waitFor({state:"attached",timeout:12000});
+            } catch(error) {
+              // Fail closed with the actual first-party asset/CSP diagnostics.
+              // The form and intent controls are NOT considered working without executed JS.
+              const asset=await page.request.get(origin+"/instant-home/fast.js",{timeout:12000}).catch(()=>null);
+              const state=await page.evaluate(()=>({
+                script:document.querySelector('script[src*="instant-home/fast.js"]')?.getAttribute("src")||null,
+                composer:Boolean(document.getElementById("ali-form")),
+                input:Boolean(document.getElementById("ali-message")),
+              }));
+              throw Error(label+": CDN Home JS did not initialize; asset="+(asset?.status()??"unavailable")+
+                " document="+JSON.stringify(state)+" events="+JSON.stringify(scriptEvents)+
+                " original="+error.message.slice(0,160));
+            }
             const first=fast.locator('[data-home-dialogue-entry]');
             await first.waitFor({state:"visible"});
             const brand=fast.locator('header.header .brand');
