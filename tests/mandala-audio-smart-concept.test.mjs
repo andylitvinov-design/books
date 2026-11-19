@@ -9,6 +9,7 @@ import {
 } from "../lib/mandala/auto-video-concept.mjs";
 import {planAudioVisualStoryboard} from "../lib/mandala/audio-visual-storyboard.mjs";
 import {getMyTubeTopic} from "../lib/mandala/mytube-content-taxonomy.mjs";
+import {buildAlignedStorySceneGuides} from "../lib/mandala/storyboard-content-alignment.mjs";
 
 const speaking=(lines)=>({
  text:lines.join(" "),durationSeconds:lines.length*4,
@@ -235,4 +236,18 @@ test("author-supplied audio remains actual speech while editorial main idea diff
  assert.equal(p.motifId,"nest");
  assert.equal(p.emotionalProgram.length,4);
  assert.equal(Object.keys(p.parameters).length,38);
+});
+
+test("selected Russian phrases reach their scenes intact and in order",()=>{
+ const phrases=["Я замечаю новую возможность", "Я делаю шаг к цели", "Я развиваю навыки"];
+ const plan=buildAlignedStorySceneGuides({locale:"ru",goal:"Работа и развитие",phrases,count:6});
+ assert.equal(plan.professional,true);
+ assert.deepEqual(plan.scenes.slice(0,phrases.length).map(scene=>scene.sourcePhrase),phrases);
+ assert.equal(plan.scenes.length,6);
+});
+
+test("empty and non-string phrases do not displace valid selections",()=>{
+ const phrases=["",null,"First phrase",42,"Second phrase"];
+ const plan=buildAlignedStorySceneGuides({locale:"en",goal:"A quiet morning",phrases,count:6});
+ assert.deepEqual(plan.scenes.slice(0,2).map(scene=>scene.sourcePhrase),["First phrase","Second phrase"]);
 });
