@@ -405,6 +405,7 @@ export default function MessagesOrdersClients({locale:routeLocale='en',children}
           aria-label={locale==='ru'?'Выбрать ведущего':locale==='es'?'Elegir guía':'Choose persona'}
           title={locale==='ru'?'Персоналия':locale==='es'?'Personaje':'Persona'}>
           <UserRound size={24} aria-hidden="true"/>
+          <span className={styles.personaActionText}>{locale==='ru'?'Персона':locale==='es'?'Guía':'Persona'}</span>
         </button>
         <button type="button" className={styles.refresh}
           data-hh-ai-new-chat
