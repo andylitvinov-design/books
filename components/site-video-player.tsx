@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { StaticPortrait } from "@/components/static-portrait";
 import { useEffect, useId, useRef, useState } from "react";
+import {resolveVerifiedEnglishYouTubeId} from "@/lib/youtube/verified-english-player-client";
 import { parseSiteVideoSource, siteVideoWatchUrl, type PublishedSiteVideo } from "@/lib/site-videos/model";
 import styles from "./site-video-minimal.module.css";
 
@@ -116,6 +117,10 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
   const text = copy[locale];
   const [playing, setPlaying] = useState(false);
   const [showRecovery, setShowRecovery] = useState(false);
+  const [verifiedEnglishYoutubeId,setVerifiedEnglishYoutubeId] = useState<string|null>(null);
+  const [youtubeLookup,setYoutubeLookup] = useState<"idle"|"checking"|"unavailable">("idle");
+  const youtubeLookupAbort=useRef<AbortController|null>(null);
+  useEffect(()=>()=>youtubeLookupAbort.current?.abort(),[]);
   // SSR may appear before React attaches handlers on a slow connection.
   const [interactive, setInteractive] = useState(false);
   useEffect(() => { setInteractive(true); }, []);
@@ -129,31 +134,33 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
   const duration = videoDuration(video.durationSeconds);
   const watchUrl = siteVideoWatchUrl(video);
   const isHeygen = Boolean(video.heygenId);
+  // English HeyGen masters are archival sources, never an English site player.
+  const englishYoutubeOnly = isHeygen && video.language === "en";
   const approvedPoster = video.heygenId ? approvedAndyPosters[video.heygenId] : undefined;
   const isApprovedAndyIntro = Boolean(approvedPoster);
-  const watchLabel = isHeygen ? text.watchHeygen : text.watch;
+  const watchLabel = englishYoutubeOnly ? text.watch : isHeygen ? text.watchHeygen : text.watch;
   const aiDisclosure = isApprovedAndyIntro ? text.andyAiDisclosure : text.aiDisclosure;
   const audioNotice = locale === "es" && video.language !== "es" ? (video.language === "ru" ? "Audio en ruso" : "Audio en inglés") : "";
   const mirrorId = video.heygenId ? existingYouTubeMirrors[video.heygenId] : undefined;
-  const playbackYouTubeId = mirrorId || video.youtubeId;
+  const playbackYouTubeId = englishYoutubeOnly ? verifiedEnglishYoutubeId : (mirrorId || video.youtubeId);
   // Show an immediate off-site link while the owner-approved English YouTube
   // mirror still lacks a verified channel upload receipt. No guessed video IDs.
-  const directFallbackLink = isHeygen && !playbackYouTubeId && Boolean(fallbackPoster) && !internalOnly;
+  const directFallbackLink = isHeygen && !englishYoutubeOnly && !playbackYouTubeId && Boolean(fallbackPoster) && !internalOnly;
   const playerParams = new URLSearchParams({ autoplay: "1", playsinline: "1", rel: "0", hl: locale, cc_lang_pref: video.language });
   // Six previously approved public copies avoid the broken HeyGen embed.
   // Unique method/intro videos without an exact mirror keep their original source.
   const embedUrl = playbackYouTubeId
     ? `https://www.youtube-nocookie.com/embed/${playbackYouTubeId}?${playerParams.toString()}`
-    : `https://app.heygen.com/embeds/${video.heygenId}`;
+    : englishYoutubeOnly ? null : `https://app.heygen.com/embeds/${video.heygenId}`;
 
   useEffect(() => { if (playing) playerRef.current?.focus(); }, [playing]);
   // Cross-origin frames can load despite inner media failure. Offer help without
   // claiming we can read the third-party video's internal readyState.
   useEffect(() => {
-    if (!playing || !isHeygen || playbackYouTubeId) return;
+    if (!playing || !isHeygen || englishYoutubeOnly || playbackYouTubeId) return;
     const timer = window.setTimeout(() => setShowRecovery(true), 7000);
     return () => window.clearTimeout(timer);
-  }, [playing, isHeygen, playbackYouTubeId]);
+  }, [playing, isHeygen, englishYoutubeOnly, playbackYouTubeId]);
   function openTranscript() {
     setPlaying(false);
     setShowRecovery(false);
@@ -164,7 +171,26 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
   }
   function showFallbackPoster() { setPoster((current) => current === "maxres" ? "hq" : current === "hq" ? "direct" : null); }
 
-  const externalLink = internalOnly ? null : <a className="site-video-watch-link" href={watchUrl} target="_blank" rel="noopener noreferrer" aria-label={`${watchLabel}: ${video.title} (${text.newTab})`}>{watchLabel}<ExternalLink aria-hidden="true" /></a>;
+  const verifiedWatchUrl=englishYoutubeOnly
+    ?(verifiedEnglishYoutubeId?`https://www.youtube.com/watch?v=${verifiedEnglishYoutubeId}`:null)
+    :watchUrl;
+  const playSelected=()=>{
+    setShowRecovery(false);
+    if(!englishYoutubeOnly){setPlaying(true);return;}
+    if(verifiedEnglishYoutubeId){setPlaying(true);return;}
+    if(youtubeLookup==="checking")return;
+    youtubeLookupAbort.current?.abort();
+    const controller=new AbortController();
+    youtubeLookupAbort.current=controller;
+    setYoutubeLookup("checking");
+    void (async()=>{
+      const id=await resolveVerifiedEnglishYouTubeId(video.heygenId,controller.signal);
+      if(controller.signal.aborted)return;
+      if(id){setVerifiedEnglishYoutubeId(id);setYoutubeLookup("idle");setPlaying(true);}
+      else setYoutubeLookup("unavailable");
+    })();
+  };
+  const externalLink = internalOnly || !verifiedWatchUrl ? null : <a className="site-video-watch-link" href={verifiedWatchUrl} target="_blank" rel="noopener noreferrer" aria-label={`${watchLabel}: ${video.title} (${text.newTab})`}>{watchLabel}<ExternalLink aria-hidden="true" /></a>;
   const masterLink = video.practitionerSlug && video.practitionerName ? (
     <p className="site-video-master-byline">
       <span>{text.master}: </span>
@@ -173,7 +199,7 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
       </Link>
     </p>
   ) : null;
-  const mirrorLink = mirrorId && !internalOnly ? <a className="site-video-watch-link" href={`https://www.youtube.com/watch?v=${mirrorId}`}
+  const mirrorLink = mirrorId && !englishYoutubeOnly && !internalOnly ? <a className="site-video-watch-link" href={`https://www.youtube.com/watch?v=${mirrorId}`}
     target="_blank" rel="noopener noreferrer" aria-label={`${text.watch}: ${video.title} (${text.newTab})`}>
     {text.watch}<ExternalLink aria-hidden="true" />
   </a> : null;
@@ -181,10 +207,10 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
   return (
     <figure className={["site-video-player", compact && "site-video-player--compact", minimal && "site-video-player--minimal", minimal && styles.minimal, className].filter(Boolean).join(" ")} aria-labelledby={titleId} lang={locale}>
       <div className="site-video-frame">
-        {playing ? (
+        {playing && embedUrl ? (
           <iframe ref={playerRef} className="site-video-iframe" data-video-playback={playbackYouTubeId ? "youtube" : "heygen"} src={embedUrl} title={video.title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen loading="eager" referrerPolicy="strict-origin-when-cross-origin" tabIndex={0} />
         ) : (
-          <button className="site-video-play" type="button" disabled={!interactive} aria-busy={!interactive} aria-label={`${text.play}: ${video.title}`} onClick={() => { setShowRecovery(false); setPlaying(true); }}>
+          <button className="site-video-play" type="button" disabled={!interactive||youtubeLookup==="checking"} aria-busy={!interactive||youtubeLookup==="checking"} aria-label={`${text.play}: ${video.title}`} onClick={playSelected}>
             {fallbackPoster && !approvedPoster && !localPosterFailed && (
               <Image className="site-video-poster site-video-fallback-poster" src={fallbackPoster} alt="" fill unoptimized={fallbackPoster.endsWith(".webp")} onError={() => setLocalPosterFailed(true)} loading="lazy" sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} />
             )}
@@ -206,7 +232,14 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
           </button>
         )}
       </div>
-      {playing && isHeygen && !playbackYouTubeId && showRecovery && !directFallbackLink && (
+      {englishYoutubeOnly&&youtubeLookup!=="idle"&&!playing&&
+        <p role="status" data-english-video-source="youtube"
+          className={styles.recovery}>
+          {youtubeLookup==="checking"
+            ? "Checking the verified English YouTube video…"
+            : "This video has not yet been verified on the English YouTube channel."}
+        </p>}
+      {playing && isHeygen && !englishYoutubeOnly && !playbackYouTubeId && showRecovery && !directFallbackLink && (
         <div className={styles.recovery} role="note" data-video-recovery="heygen">
           <span>{text.stalled}</span>
           <button type="button" onClick={() => { setPlaying(false); setShowRecovery(false); }}>{text.retry}</button>
@@ -217,9 +250,9 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
       {minimal ? (
         <figcaption className="site-video-caption">
           <span className={styles.accessibleTitle} id={titleId} lang={textLanguage}>{video.title}</span>
-          {((!internalOnly && !directFallbackLink) || video.transcript) && <details ref={transcriptRef} className="site-video-transcript">
+          {((!internalOnly && !directFallbackLink) || video.transcript || isHeygen) && <details ref={transcriptRef} className="site-video-transcript">
             <summary>{video.transcript ? text.transcriptShort : text.details}<ChevronDown aria-hidden="true" /></summary>
-            <div className="site-video-more">{video.transcript && <p lang={textLanguage}>{video.transcript}</p>}{externalLink && !directFallbackLink && <div className="site-video-actions">{externalLink}</div>}</div>
+            <div className="site-video-more">{video.transcript && <p lang={textLanguage}>{video.transcript}</p>}{isHeygen&&<p>{aiDisclosure}</p>}{externalLink && !directFallbackLink && <div className="site-video-actions">{externalLink}</div>}</div>
           </details>}
           {(mirrorLink || (directFallbackLink && externalLink)) && (
             <div className={styles.quickWatch} data-video-direct-watch={directFallbackLink ? "heygen-fallback" : undefined}>
@@ -227,7 +260,7 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
             </div>
           )}
           {masterLink}
-          {(isHeygen || audioNotice) && <span className="site-video-ai-badge" title={isHeygen ? aiDisclosure : undefined} aria-label={[audioNotice, isHeygen ? aiDisclosure : ""].filter(Boolean).join(". ")}>{audioNotice}{audioNotice && isHeygen ? " · " : ""}{isHeygen ? (isApprovedAndyIntro ? text.avatarShort : text.aiShort) : ""}</span>}
+          {audioNotice&&<span className="site-video-audio-language">{audioNotice}</span>}
         </figcaption>
       ) : (
         <figcaption className="site-video-caption">

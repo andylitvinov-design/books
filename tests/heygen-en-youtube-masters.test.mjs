@@ -86,3 +86,20 @@ test('public profile switches to exact verified EN channel mirror without token 
  assert.match(player, /<SiteVideoPlayer key=/)
  assert.match(profile, /<ProfilePresentationPlayer key=\{selected\}/)
 })
+
+test('all public English HeyGen masters require exact paired English-channel YouTube receipts',()=>{
+ const endpoint=read('app/api/public/english-intro-video/route.js')
+ const player=read('components/site-video-player.tsx')
+ assert.ok(endpoint.includes("params.getAll('videoId')"))
+ assert.ok(endpoint.includes("ENGLISH_YOUTUBE_MASTERS.some(master=>master.videoId===videoId)"))
+ assert.ok(endpoint.includes("verifiedEnglishIntroYoutubeId(receipt,channels.en)"))
+ assert.ok(!endpoint.includes('token_ciphertext'))
+ assert.ok(!endpoint.includes('refreshToken'))
+ assert.ok(player.includes('const englishYoutubeOnly = isHeygen && video.language === "en"'))
+ assert.ok(player.includes('verifiedEnglishYoutubeId'))
+ assert.ok(player.includes('resolveVerifiedEnglishYouTubeId(video.heygenId,controller.signal)'))
+ assert.ok(player.includes('englishYoutubeOnly ? null : `https://app.heygen.com'))
+ assert.ok(player.includes('data-english-video-source="youtube"'))
+ assert.ok(!player.includes('className="site-video-ai-badge"'))
+ assert.ok(player.includes('{isHeygen&&<p>{aiDisclosure}</p>}'))
+});

@@ -332,9 +332,11 @@ async function verifyWorkspaceHydration(browser,locale){
     const goalTab=page.locator('[data-video-quick-control="video"]');
     await goalTab.click();
     await expect(goalTab).toHaveAttribute("aria-pressed","true");
-    const others=page.locator('[data-auto-video-audience="others"]');
-    await expect(page.locator('[data-auto-video-audience]')).toHaveCount(2);
-    await expect(page.locator('[data-video-goal-audience-option]')).toHaveCount(0);
+    // The approved compact Goal UI uses the visible Life/Work switch.
+    // Legacy For Myself / For Others buttons are deliberately absent.
+    const others=page.locator('[data-video-quick-scope="work"]');
+    await expect(page.locator('[data-auto-video-audience]')).toHaveCount(0);
+    await expect(page.locator('[data-video-quick-scope]')).toHaveCount(2);
     await others.click();
     await expect(others).toHaveAttribute("aria-pressed","true");
     const recipientCatalog=page.locator('[data-video-recipient-catalog]');
@@ -401,7 +403,14 @@ async function verifyWorkspaceHydration(browser,locale){
     const birthday=page.locator('[data-auto-video-recipient-occasion="birthday"]');
     await birthday.click();
     await expect(birthday).toHaveAttribute("aria-pressed","true");
-    await continueToIdeas.click();
+    // In Work mode the old footer Continue is hidden; test the native CTA.
+    await goalTab.click();
+    await expect(studio).toHaveAttribute("data-active-workspace","video");
+    await expect(continueToIdeas).toBeHidden();
+    const recipientCreate=page.locator('[data-video-goal-create-cta]');
+    await expect(recipientCreate).toBeVisible({timeout:15000});
+    await expect(recipientCreate).toBeEnabled();
+    await recipientCreate.click();
     await expect(ideas).toHaveAttribute("aria-pressed","true");
     await expect(studio).toHaveAttribute("data-active-workspace","phrases");
     // These are the actual source-backed montage title inputs; source edits
