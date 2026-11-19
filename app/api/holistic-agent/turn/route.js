@@ -18,6 +18,7 @@ import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.
 import { progressConversationTurn,progressDialogueReply } from "@/lib/holistic-support/dialogue-progression.mjs";
 import { nativeSecretaryTurn } from "@/lib/holistic-support/native-secretary.mjs";
 import { waveNativeTurn,WAVE_NATIVE_ROUTER_VERSION } from "@/lib/holistic-support/wave-native-router.mjs";
+import {planDialogueDirectorTurn,publicDialogueDirectorState} from "@/lib/holistic-support/dialogue-director.mjs";
 import { resolveComplaintTurn } from "@/lib/holistic-support/complaint-mind.mjs";
 import { reviewPracticeBoundary } from "@/lib/holistic-support/practice-boundary.mjs";
 import { consultServiceQuestion, resolveConsultantSuggestion } from "@/lib/assist/consultant-mind.mjs";
@@ -193,6 +194,17 @@ export async function POST(request) {
     const recentUnsafe = body.history.some(turn => turn.role==="user" &&
       preflight(turn.text,body.locale).status!=="clear");
     if (recentUnsafe && safety.status==="clear") safety.status="human_review";
+    // Read-only plan after authentication, safety and throttling; never a permission.
+    const dialogueDirector=body.mode==="rules"&&safety.status==="clear"&&!recentUnsafe&&
+      body.judgmentContext==null&&body.judgmentChoice==null&&
+      body.usePrivateProfile!==true&&body.usePrivateHistory!==true&&
+      body.useAgentMemory!==true&&body.preferredFormat==null&&
+      (!body.chosenAxes||body.chosenAxes.length===0)
+      ?planDialogueDirectorTurn({message:body.message,locale:body.locale,
+        history:body.history,
+        roleHint:routeMindRole({message:body.message,locale:body.locale,
+          history:body.history,selectedGoal:body.selectedGoal}).role,
+        psychologistConsent:false,selectedService:false,safety}):null;
     // Verify signed continuations before reading optional state or producing an
     // early answer. Judgment is evaluated once for this exact safe turn.
     const judgmentEligible=body.mode==="rules"&&safety.status==="clear"&&!recentUnsafe;
@@ -222,6 +234,9 @@ export async function POST(request) {
     const meditationDeclined=stateEvent?.type==='refuse_meditation' ||
       (nativeFrame?.state.declinedMeditation?.value==='meditation' && stateEvent?.type!=='allow_meditation');
     const finish=async (data,{pendingAdviceConfirmation=false}={})=>{
+      // Exposes only phase and explicit-evidence flags, never a client transcript.
+      if(dialogueDirector&&data?.status!=="safety_handoff")
+        data={...data,dialogueDirector:publicDialogueDirectorState(dialogueDirector)};
       if(nativeFrame){
         const clearChoices=['stop','new_question','cancel_to_talk','decline_booking','clear_topic','clear_goal_statement','refuse_advice','pause_topic','choose'].includes(stateEvent.type) ||
           (stateEvent.type==='refuse_meditation'&&!stateEvent.mixed);
@@ -442,15 +457,18 @@ export async function POST(request) {
       ["rules","owned"].includes(body.mode)
       ? consultServiceQuestion({message:body.message,locale:body.locale,history:body.history})
       : null;
+    // Show at most two published relevant options in ordinary chat.
+    const consultantChoices=Array.isArray(consultation?.suggestions)?
+      consultation.suggestions.slice(0,2):[];
     if(consultation)return await finish({
       status:consultation.status,reply:consultation.reply,
       mindRole:["choose","quality","compare"].includes(consultation.intent)?"sales":"consultant",
       modelUsed:false,source:"consultant-rules",
-      memorySaved:false,userAuthorized:true,suggestions:consultation.suggestions,
+      memorySaved:false,userAuthorized:true,suggestions:consultantChoices,
       usedSavedTestEvidence:false,usedSavedVideoHistory:false,
       browserModelAllowed:false,
       decision:{status:consultation.status,message:consultation.reply,
-        question:null,suggestions:consultation.suggestions},
+        question:null,suggestions:consultantChoices},
     });
     if(nativeFrame&&!judgmentPriority&&body.judgmentContext==null&&body.judgmentChoice==null&&
        stateEvent.type==='ask_price'&&(nativeFrame.state.goal||nativeFrame.state.goalStatement)){
