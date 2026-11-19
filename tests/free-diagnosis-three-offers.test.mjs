@@ -16,7 +16,7 @@ test("express landing has one service; consultation hub keeps its existing three
   assert.match(landing, /<PersonalExpressEnquiry locale=\{locale\} intro=\{/);
   assert.doesNotMatch(landing, /<FreeDiagnosisOffers/);
   assert.match(hub, /<FreeDiagnosisOffers locale=\{lang\} \/>/);
-  assert.match(landing, /<PersonalTestimonials locale=\{locale\} variant="all" \/>/);
+  assert.match(landing, /<PersonalTestimonials locale=\{locale\} variant="all" sameAudioOnly \/>/);
   assert.match(hub, /<PersonalTestimonials locale=\{lang\} variant="all" \/>/);
   assert.match(landing, /data-free-review-intro-video/);
   assert.match(landing, /data-featured-free-review-testimonials/);
