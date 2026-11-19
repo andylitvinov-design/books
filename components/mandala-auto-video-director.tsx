@@ -2,7 +2,8 @@
 
 import {useCallback,useEffect,useMemo,useRef,useState,type ReactNode} from "react";
 import {createPortal} from "react-dom";
-import {Check,Sparkles,Target,Play,ArrowRight,Sun,Heart,Sprout,BriefcaseBusiness,Gift,AudioLines,Film,Leaf,Zap,Moon,Star} from "lucide-react";
+import {Check,Sparkles,Target,Play,ArrowRight,Sun,Heart,Sprout,BriefcaseBusiness,Gift,AudioLines,Film,Leaf,Zap,Moon,Star,Mic,RectangleHorizontal,RectangleVertical,Square} from "lucide-react";
+import {startDeviceVoiceCapture} from "@/lib/mandala/device-audio-stt.mjs";
 import {AUTO_VIDEO_GOALS,recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
 import {recommendMyTubeTopicStoryClips} from "@/lib/mandala/mytube-video-tagging.mjs";
 import {searchApprovedVideoScenes,videoSceneTagLabel} from "@/lib/mandala/video-scene-search.mjs";
@@ -74,7 +75,7 @@ type Props={
         shots:readonly {sceneId:string;beatIndex:number;strategyId:string;
           requiredTags:readonly string[]}[]}},
     options?:{keepGoalFlow?:boolean})=>void|boolean;
-  onCreate?:()=>void;canCreate?:boolean;rendering?:boolean;createFeedback?:string;
+  onCreate?:()=>void;onInstantCreate?:()=>boolean;canCreate?:boolean;rendering?:boolean;createFeedback?:string;
 };
 const copy={
  ru:{
@@ -183,7 +184,7 @@ const themeLabels={
 
 export function MandalaAutoVideoDirector({
  locale,goal,theme,aspect,presets,scenes,disabled,activePresetId,clipLabel,
- audioAttached=false,audioTrackLabel="",audioTrackId=null,onPickAudio,onOpenAudio,recipientAudioPanel,audioStoryboardReady=false,onAudioToMontage,onAudioSelectionChange,onGoalChange,onPickPhoto,onOpenPro,onConceptTopicChange,onGoalQuizChange,onCategoryChange,onAspectChange,onContinue,goalContinueRef,onClarify,helpOpen=false,onShowAll,onInvalidate,onApply,onCreate,canCreate=false,rendering=false,createFeedback=""
+ audioAttached=false,audioTrackLabel="",audioTrackId=null,onPickAudio,onOpenAudio,recipientAudioPanel,audioStoryboardReady=false,onAudioToMontage,onAudioSelectionChange,onGoalChange,onPickPhoto,onOpenPro,onConceptTopicChange,onGoalQuizChange,onCategoryChange,onAspectChange,onContinue,goalContinueRef,onClarify,helpOpen=false,onShowAll,onInvalidate,onApply,onCreate,onInstantCreate,canCreate=false,rendering=false,createFeedback=""
 }:Props){
  const t=copy[locale];
  // A licensed four-shot sample is visible before any click; no recording begins automatically.
@@ -200,7 +201,13 @@ export function MandalaAutoVideoDirector({
  // Keep the user's wording in each mode separately; switching never silently replaces it.
  const [requestDrafts,setRequestDrafts]=useState({self:"",others:""});
  const requestDraft=requestDrafts[videoAudience];
- const [quickScope,setQuickScope]=useState<"life"|"work">("life");
+ // Only Life/Work selects the same real self/recipient modes.
+ const quickScope=videoAudience==="self"?"life":"work";
+ const promptDictationRef=useRef<{session:NonNullable<ReturnType<typeof startDeviceVoiceCapture>>;startedAt:number}|null>(null);
+ const promptDictationGeneration=useRef(0);
+ const [dictatingPrompt,setDictatingPrompt]=useState(false);
+ const [promptDictationMessage,setPromptDictationMessage]=useState("");
+ useEffect(()=>()=>{promptDictationGeneration.current+=1;promptDictationRef.current?.session.abort();promptDictationRef.current=null;},[]);
  const [quickFlow,setQuickFlow]=useState<"guide"|"instant">("guide");
  const setRequestDraft=(next:string)=>setRequestDrafts(previous=>({...previous,[videoAudience]:next}));
  const [recipientKindId,setRecipientKindId]=useState<string>("");
@@ -248,7 +255,7 @@ export function MandalaAutoVideoDirector({
    first?.scrollIntoView({block:"nearest"});
  },[goalQuizStep,videoAudience]);
  const [goalTarget,setGoalTarget]=useState<HTMLElement|null>(null);
- const [audienceTarget,setAudienceTarget]=useState<HTMLElement|null>(null);
+ 
  const [topicTarget,setTopicTarget]=useState<HTMLElement|null>(null);
  const [ideaTarget,setIdeaTarget]=useState<HTMLElement|null>(null);
  const [montageTarget,setMontageTarget]=useState<HTMLElement|null>(null);
@@ -278,7 +285,7 @@ export function MandalaAutoVideoDirector({
  const [confirmedTimelineKey,setConfirmedTimelineKey]=useState<string|null>(null);
  useEffect(()=>{
    setGoalTarget(document.querySelector<HTMLElement>("[data-video-director-goal-controls]"));
-   setAudienceTarget(document.querySelector<HTMLElement>("[data-video-director-audience-controls]"));
+   
    setTopicTarget(document.querySelector<HTMLElement>("[data-video-director-topic-controls]"));
    setIdeaTarget(document.querySelector<HTMLElement>("[data-video-director-idea-controls]"));
    setMontageTarget(document.querySelector<HTMLElement>("[data-video-director-style-controls]"));
@@ -636,7 +643,10 @@ export function MandalaAutoVideoDirector({
  };
  const changeVideoAudience=(mode:"self"|"others")=>{
    if(disabled||mode===videoAudience)return;
-   const kind=getRecipientVideoKind(recipientKindId);
+    promptDictationGeneration.current+=1;
+    promptDictationRef.current?.session.abort();promptDictationRef.current=null;
+    setDictatingPrompt(false);setPromptDictationMessage("");
+    const kind=getRecipientVideoKind(recipientKindId);
    const selectedSelfTheme=videoGoalCategories.find(item=>item.id===selectedCategoryId)?.theme||theme;
    const nextTheme=(mode==="others"?(kind?.theme||selectedSelfTheme):selectedSelfTheme) as VideoTheme;
    const nextGoal=mode==="others"
@@ -858,7 +868,7 @@ export function MandalaAutoVideoDirector({
  // canonical category/topic UI and the same verified four-shot film renderer.
  const designFromRequest=()=>{
   if(disabled||!requestDraft.trim())return;
-  if(quickFlow==="instant"&&goalQuizComplete){onCreate?.();return;}
+  if(quickFlow==="instant"){onInstantCreate?.();return;}
   setGoalQuizStep(1);setGoalCategoryAnswered(false);
   if(videoAudience==="others"){
    if(recipientAudioMode)return;
@@ -917,6 +927,60 @@ export function MandalaAutoVideoDirector({
  });
  const broadRequestMatch=requestAnalysisMeta?.matchLevel==="context"||
   requestAnalysisMeta?.matchLevel==="category";
+ // Same prompt handler for speech and keyboard, without duplicate scene logic.
+ const applyRequestDraft=(text:string)=>{
+       const fallback=selectedTaxonomyTopic?.topic.label[locale]||
+         taxonomySubcategories.find(row=>row.id===selectedSubcategoryId)?.label||"";
+       const nextGoal=videoAudience==="others"
+         ?buildRecipientVideoBrief({kindId:recipientKindId,occasionId:recipientOccasionId,
+           wish:text,locale})
+         :text.trim()||fallback;
+       const recipient=videoAudience==="others"?getRecipientVideoKind(recipientKindId):null;
+       const requestTheme=(recipient?.theme||theme) as VideoTheme;
+       setRequestDraft(text);
+       onConceptTopicChange?.(null); // A new wish cannot inherit an old confirmed topic.
+       onInvalidate?.();onGoalChange(nextGoal);
+       setPromptDesignedFor(null);setPromptClassification(null);
+       setProposalContext({goal:nextGoal,theme:requestTheme});
+       setProposal(recommendAutoVideo({goal:nextGoal,locale,fallbackTheme:requestTheme,
+         preferredTheme:recipient?requestTheme:null,presets,scenes}));
+       setOverrideId(null);setSeconds(null);setSelectedMeaningAxisId("");
+       setSelectedScenarioId("");setSelectedPlotId("");setSymbolicPlotFallback(false);
+       setSelectedMotifId("");setSelectedStyleId("");setMeaningHandoff(null);
+       setIncludeMeaningCaption(false);setTimelineEdits(null);setConfirmedTimelineKey(null);
+     
+ };
+ const togglePromptDictation=()=>{
+   if(disabled)return;
+   const active=promptDictationRef.current;
+   if(active){
+     promptDictationRef.current=null;setDictatingPrompt(false);
+     const generation=promptDictationGeneration.current;
+     const duration=Math.max(.1,Math.min(59,(performance.now()-active.startedAt)/1000));
+     void active.session.stop(duration).then(transcript=>{
+       if(generation!==promptDictationGeneration.current)return;
+       const words=transcript?.text?.trim();
+       if(!words){
+         setPromptDictationMessage(locale==="ru"?"Речь не распознана. Попробуйте ещё раз или введите текст.":locale==="es"?"No se reconoció voz. Prueba otra vez o escribe.":"Speech not recognized. Try again or type.");
+         return;
+       }
+       const next=Array.from([requestDraft.trim(),words].filter(Boolean).join(" ")).slice(0,160).join("");
+       applyRequestDraft(next);
+       setPromptDictationMessage(locale==="ru"?"Речь добавлена в поле цели.":locale==="es"?"Voz añadida al objetivo.":"Speech added to your goal.");
+     }).catch(()=>{
+       if(generation===promptDictationGeneration.current)setPromptDictationMessage(locale==="ru"?"Не удалось завершить диктовку.":locale==="es"?"No se pudo terminar el dictado.":"Could not finish dictation.");
+     });
+     return;
+   }
+   const session=startDeviceVoiceCapture(locale);
+   if(!session){
+     setPromptDictationMessage(locale==="ru"?"Диктовка недоступна. Используйте микрофон клавиатуры или раздел Audio.":locale==="es"?"Dictado no disponible. Usa el micrófono del teclado o Audio.":"Dictation unavailable. Use the keyboard microphone or Audio.");
+     return;
+   }
+   promptDictationRef.current={session,startedAt:performance.now()};
+   setDictatingPrompt(true);
+   setPromptDictationMessage(locale==="ru"?"Говорите и нажмите микрофон ещё раз. Служба браузера может обрабатывать речь.":locale==="es"?"Habla y pulsa otra vez. El navegador puede procesar voz.":"Speak, then tap again to stop. Browser speech services may process audio.");
+ };
  const requestField=<label className={css.topicInput} data-video-request-input>
    <span className={css.srOnly}>{t.input}</span>
    <textarea data-auto-video-input value={requestDraft}
@@ -927,27 +991,7 @@ export function MandalaAutoVideoDirector({
          :"Who is it for, and what would you like to say?")
        :(locale==="ru"?"Опишите цель или пожелание…":locale==="es"?"Describe tu objetivo…":"Describe your goal or wish…")}
      onKeyDown={event=>{if(event.key==="Enter"&&(event.ctrlKey||event.metaKey)){event.preventDefault();designFromRequest();}}}
-     onChange={event=>{
-       const text=event.currentTarget.value;
-       const fallback=selectedTaxonomyTopic?.topic.label[locale]||
-         taxonomySubcategories.find(row=>row.id===selectedSubcategoryId)?.label||"";
-       const nextGoal=videoAudience==="others"
-         ?buildRecipientVideoBrief({kindId:recipientKindId,occasionId:recipientOccasionId,
-           wish:text,locale})
-         :text.trim()||fallback;
-       const recipient=videoAudience==="others"?getRecipientVideoKind(recipientKindId):null;
-       const requestTheme=(recipient?.theme||theme) as VideoTheme;
-       setRequestDraft(text);
-       onInvalidate?.();onGoalChange(nextGoal);
-       setPromptDesignedFor(null);setPromptClassification(null);
-       setProposalContext({goal:nextGoal,theme:requestTheme});
-       setProposal(recommendAutoVideo({goal:nextGoal,locale,fallbackTheme:requestTheme,
-         preferredTheme:recipient?requestTheme:null,presets,scenes}));
-       setOverrideId(null);setSeconds(null);setSelectedMeaningAxisId("");
-       setSelectedScenarioId("");setSelectedPlotId("");setSymbolicPlotFallback(false);
-       setSelectedMotifId("");setSelectedStyleId("");setMeaningHandoff(null);
-       setIncludeMeaningCaption(false);setTimelineEdits(null);setConfirmedTimelineKey(null);
-     }}/>
+     onChange={event=>applyRequestDraft(event.currentTarget.value)}/>
  </label>;
  const requestInput=<div className={css.requestShell} data-video-request-composer>
   <div className={css.requestComposer} data-video-request-card>
@@ -955,6 +999,24 @@ export function MandalaAutoVideoDirector({
    <div className={css.requestToolbar} data-video-request-toolbar>
     <button type="button" data-video-request-add-photo className={css.toolbarIcon}
       disabled={disabled||!onPickPhoto} onClick={()=>onPickPhoto?.()} aria-label={locale==="ru"?"Добавить фото":locale==="es"?"Añadir foto":"Add photo"}>+</button>
+    <details className={css.formatMenu} data-video-prompt-aspect>
+      <summary aria-label={(locale==="ru"?"Формат видео: ":locale==="es"?"Formato de vídeo: ":"Video format: ")+(aspect==="landscape"?"16:9":aspect==="portrait"?"9:16":"1:1")}
+        title={locale==="ru"?"Выбрать формат":locale==="es"?"Elegir formato":"Choose video format"}>
+        {aspect==="portrait"?<RectangleVertical size={21} aria-hidden="true"/>:aspect==="square"?<Square size={19} aria-hidden="true"/>:<RectangleHorizontal size={21} aria-hidden="true"/>}
+      </summary>
+      <div className={css.formatMenuList} role="group" aria-label={locale==="ru"?"Соотношение сторон":locale==="es"?"Relación de aspecto":"Video aspect ratio"}>
+        {(["landscape","portrait","square"] as const).map(format=><button type="button" key={format}
+          data-video-request-aspect={format} aria-pressed={aspect===format}
+          disabled={disabled||(videoAudience==="others"&&format!=="portrait")||!onAspectChange}
+          onClick={event=>{onAspectChange?.(format);event.currentTarget.closest("details")?.removeAttribute("open");}}>
+          {format==="landscape"?<RectangleHorizontal size={19} aria-hidden="true"/>:format==="portrait"?<RectangleVertical size={19} aria-hidden="true"/>:<Square size={18} aria-hidden="true"/>}
+          <span>{format==="landscape"?"16:9 · "+(locale==="ru"?"Горизонтальное":locale==="es"?"Horizontal":"Landscape"):
+            format==="portrait"?"9:16 · "+(locale==="ru"?"Вертикальное":locale==="es"?"Vertical":"Portrait"):
+            "1:1 · "+(locale==="ru"?"Квадрат":locale==="es"?"Cuadrado":"Square")}</span>
+          {aspect===format?<Check size={15} aria-hidden="true"/>:null}
+        </button>)}
+      </div>
+    </details>
     <details className={css.composerMenu} data-video-prompt-tier>
      <summary><Sparkles size={16} aria-hidden="true"/>{locale==="ru"?"Бесплатно":locale==="es"?"Gratis":"Free"}⌄</summary>
      <div className={css.composerMenuList}>
@@ -969,21 +1031,32 @@ export function MandalaAutoVideoDirector({
       <button type="button" onClick={e=>{setQuickFlow("instant");e.currentTarget.closest("details")?.removeAttribute("open");}}>Just make it</button>
      </div>
     </details>
-    <button type="button" className={css.toolbarIcon} data-video-request-microphone disabled={disabled||!onOpenAudio}
-      onClick={()=>onOpenAudio?.()} aria-label={locale==="ru"?"Записать голос":locale==="es"?"Grabar voz":"Record voice"}><AudioLines size={20}/></button>
+    <button type="button" className={css.toolbarIcon} data-video-request-microphone
+      disabled={disabled} aria-pressed={dictatingPrompt} onClick={togglePromptDictation}
+      aria-label={dictatingPrompt
+        ?(locale==="ru"?"Завершить диктовку":locale==="es"?"Terminar dictado":"Stop dictation")
+        :(locale==="ru"?"Продиктовать цель":locale==="es"?"Dictar objetivo":"Dictate goal")}>
+      <Mic size={21} aria-hidden="true"/>
+    </button>
     <button type="button" data-video-request-design className={css.designRequest}
-      disabled={disabled||!goal.trim()} onClick={designFromRequest} aria-label={locale==="ru"?"Продолжить":locale==="es"?"Continuar":"Continue"}>
+      disabled={disabled||!goal.trim()} onClick={designFromRequest}
+      data-video-request-flow={quickFlow}
+      aria-label={quickFlow==="instant"
+        ?locale==="ru"?"Автоматически создать видео":locale==="es"?"Crear vídeo automáticamente":"Create video automatically"
+        :locale==="ru"?"Продолжить":locale==="es"?"Continuar":"Continue"}>
       <Play size={19} fill="currentColor"/></button>
    </div>
   </div>
-  {videoAudience==="self"&&goalQuizStep===1?<div className={css.quickIntentRow} data-video-quick-intents role="group" aria-label="Quick wishes">
+  {promptDictationMessage?<p className={css.promptMicStatus} role="status" aria-live="polite" data-video-prompt-dictation-status>{promptDictationMessage}</p>:null}
+   {videoAudience==="self"&&goalQuizStep===1?<div className={css.quickIntentRow} data-video-quick-intents role="group" aria-label="Quick wishes">
    {([
     ["calm",locale==="ru"?"Меньше тревоги":locale==="es"?"Menos ansiedad":"Less anxiety",locale==="ru"?"Хочу больше спокойствия":locale==="es"?"Quiero más calma":"I want more calm"],
     ["love",locale==="ru"?"Больше любви":locale==="es"?"Más amor":"More love",locale==="ru"?"Хочу больше любви и близости":locale==="es"?"Quiero más amor":"I want more love"],
     ["strength",locale==="ru"?"Внутренняя сила":locale==="es"?"Fuerza interior":"Inner strength",locale==="ru"?"Хочу быть увереннее":locale==="es"?"Quiero más confianza":"I want inner confidence"]
    ] as const).map(([id,label,wishText])=><button type="button" key={id} data-video-quick-intent={id}
      disabled={disabled} aria-pressed={requestDraft===wishText} onClick={()=>{
-      setRequestDraft(wishText);onGoalChange(wishText);onInvalidate?.();
+      setRequestDraft(wishText);onConceptTopicChange?.(null);
+      onGoalChange(wishText);onInvalidate?.();
       setPromptDesignedFor(null);setPromptClassification(null);
       setProposalContext({goal:wishText,theme});setProposal(recommendAutoVideo({goal:wishText,locale,fallbackTheme:theme,presets,scenes}));
      }}>{label}</button>)}
@@ -1109,26 +1182,13 @@ export function MandalaAutoVideoDirector({
    setSelectedMotifId("");setSelectedStyleId("");setMeaningHandoff(null);
    setIncludeMeaningCaption(false);setTimelineEdits(null);setConfirmedTimelineKey(null);
  };
- const audienceBar=<div className={css.audienceBar} data-video-audience-switch>
-     <span>{locale==="ru"?"Для кого видео?":locale==="es"?"¿Para quién?":"Who is this video for?"}</span>
-     <div className={css.audienceToggle} role="group" aria-label={
-       locale==="ru"?"Кому предназначено видео":locale==="es"?"Destinatario del vídeo":"Video audience"}>
-       {(["self","others"] as const).map(mode=><button key={mode} type="button"
-         data-auto-video-audience={mode} aria-pressed={videoAudience===mode}
-         disabled={disabled} onClick={()=>changeVideoAudience(mode)}>
-         {mode==="self"
-           ?locale==="ru"?"Для себя":locale==="es"?"Para mí":"For myself"
-           :locale==="ru"?"Для других":locale==="es"?"Para otros":"For others"}
-       </button>)}
-     </div>
-   </div>;
  const goalPanel=<div className={css.goalPanel} data-auto-video-goal-panel>
-   {audienceTarget?null:audienceBar}
-   {videoAudience==="self"&&goalQuizStep===1?<div className={css.quickStartHeading} data-video-quick-start>
+   
+   {(videoAudience==="others"||goalQuizStep===1)?<div className={css.quickStartHeading} data-video-quick-start>
     <h3>{locale==="ru"?"Быстрый старт":locale==="es"?"Inicio rápido":"Quick Start"}</h3>
-    <div className={css.quickScopeToggle} role="group" aria-label="Life or Work">
+    <div className={css.quickScopeToggle} role="group" aria-label={locale==="ru"?"Для себя или для других":locale==="es"?"Para mí o para otros":"For myself or others"}>
      {(["life","work"] as const).map(scope=><button type="button" key={scope}
-       data-video-quick-scope={scope} aria-pressed={quickScope===scope} disabled={disabled} onClick={()=>setQuickScope(scope)}>
+       data-video-quick-scope={scope} aria-pressed={quickScope===scope} disabled={disabled} onClick={()=>changeVideoAudience(scope==="life"?"self":"others")}>
        {scope==="life"?(locale==="ru"?"Жизнь":locale==="es"?"Vida":"Life"):locale==="ru"?"Работа":locale==="es"?"Trabajo":"Work"}</button>)}
     </div>
    </div>:null}
@@ -1544,7 +1604,7 @@ export function MandalaAutoVideoDirector({
    {requestTarget?createPortal(requestInput,requestTarget):requestInput}
    {profileTarget?createPortal(profilePanel,profileTarget):profilePanel}
    {goalTarget?createPortal(goalPanel,goalTarget):goalPanel}
-   {audienceTarget?createPortal(audienceBar,audienceTarget):null}
+   
    {topicTarget?createPortal(quickTopicPanel,topicTarget):null}
    {ideaTarget?createPortal(<details ref={bindIdeaRefinement}
      className={css.ideaRefinement} data-video-ideas-refinement

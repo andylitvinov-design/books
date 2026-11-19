@@ -625,7 +625,9 @@ test('production workflow directory can be parsed without silently ignoring unkn
     assert.equal(names.length,97,'Only the named visual service workflow uses the 97th slot');
     assert.ok(names.includes('hh-visual-service-landings.yml'),'The 97th workflow must be visual service acceptance');
     const visual=readFileSync('.github/workflows/hh-visual-service-landings.yml','utf8');
-    assert.match(visual,/pull_request:\s*\n\s*branches: \[codex\/public-book-library\]/,'Visual acceptance runs against the production PR base');
+    assert.match(visual,/^  workflow_dispatch:/m,'Optional visual acceptance retains manual dispatch');
+    assert.match(visual,/^  pull_request:\s*\n    types: \[labeled\]/m,'Optional visual QA needs an explicit PR label');
+    assert.match(visual,/github\.event\.label\.name == 'qa-optional'/,'Visual QA must verify its opt-in label');
     assert.match(visual,/permissions:\s*\n\s*contents: read/,'Visual acceptance has read-only repository permissions');
     assert.match(visual,/persist-credentials: false/,'Checkout must not retain credentials');
     assert.match(visual,/npm ci --include=dev --no-audit --no-fund/,'Visual acceptance uses the lockfile');
@@ -2206,6 +2208,68 @@ test('independent production CI maintenance keeps already-green sensitive PRs on
   assert.equal(safeIndependentCiMaintenanceAdvance(good,BASE,live,['tests/pr-fast-lane.test.mjs']),false);
 });
 
+
+test('optional workflow selector narrowing reuses verified exact-HEAD checks, never overlapping source or weakened jobs', () => {
+  const live='f'.repeat(40);
+  const candidate=['components/mandala-automatic-storyboard.tsx',
+    'lib/mandala/recording-codecs.mjs'];
+  const trigger=(filename,{removed=[],excluded=[],comments=[]}={})=>{
+    const edits=[
+      ...removed.map(path=>"-      - '"+path+"'"),
+      ...excluded.map(path=>"+      - '"+path+"'"),
+      ...comments.map(note=>'+      # '+note),
+    ];
+    return {filename,status:'modified',additions:excluded.length+comments.length,
+      deletions:removed.length,changes:edits.length,
+      patch:"@@ -4,8 +4,8 @@ on:\n    paths:\n"+edits.join('\n')};
+  };
+  const selectors=[
+    trigger('.github/workflows/holistic-house-pdf-graphics.yml',{removed:['package.json']}),
+    trigger('.github/workflows/maya-reader-bundle.yml',{removed:['next.config.ts']}),
+    trigger('.github/workflows/practice-visual-browser.yml',{
+      removed:['app/api/app/*/route.js','.github/workflows/practice-visual-browser.yml'],
+      comments:['Practice API owner remains independent']}),
+    trigger('.github/workflows/tantra-pdf-source-qa.yml',{removed:['next.config.ts']}),
+    trigger('.github/workflows/tantra-testimonials.yml',{removed:['middleware.ts']}),
+    trigger('.github/workflows/visual-to-code-skill.yml',{removed:['AGENTS.md']}),
+    trigger('.github/workflows/hh-profile-axis-matching.yml',{
+      excluded:['!app/api/app/practice/**']}),
+    {filename:'tests/ci-pr-selective-workflows.test.mjs',status:'modified'},
+  ];
+  const comparison=rows=>({
+    status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:BASE},merge_base_commit:{sha:BASE},
+    commits:[{sha:live}],files:rows,
+  });
+  assert.equal(safeIndependentCiMaintenanceAdvance(comparison(selectors),BASE,live,candidate),true,
+    'a protected, independently tested selector-only CI narrowing must not discard green jobs');
+  const path='.github/workflows/practice-visual-browser.yml';
+  const old=selectors.find(row=>row.filename===path);
+  for (const [name,bad] of [
+    ['added positive source owner',{...trigger(path,{excluded:['!app/api/auth/**']}),patch:"@@ -1,2 +1,3 @@ on:\n+      - 'app/api/auth/**'"}],
+    ['removed exclusion',trigger(path,{removed:['!app/api/app/direct-messages/**']})],
+    ['modified step',{...old,patch:"@@ -1,3 +1,3 @@\n-      - run: npm test\n+      - run: true",additions:1,deletions:1,changes:2}],
+    ['incomplete patch',{...old,deletions:old.deletions+1,changes:old.changes+1}],
+    ['no patch',{...old,patch:null}],
+    ['renamed source',{...old,previous_filename:'other.yml'}],
+    ['file removed',{...old,status:'removed'}],
+  ]) {
+    assert.equal(safeIndependentCiMaintenanceAdvance(comparison([bad]),BASE,live,candidate),
+      false,name+' cannot waive required freshness');
+  }
+  assert.equal(safeIndependentCiMaintenanceAdvance(comparison([
+    ...selectors,{filename:'components/mandala-free-video-studio.tsx',status:'modified'}
+  ]),BASE,live,[...candidate,'components/mandala-free-video-studio.tsx']),false,
+  'real same-file video overlap must remain a BASE_ADVANCED blocker');
+  assert.equal(safeIndependentCiMaintenanceAdvance(comparison(selectors),BASE,live,
+    ['lib/ci/specialist-aggregate.mjs']),false,'a candidate policy rewrite requires new trusted-base verification');
+  assert.equal(safeIndependentCiMaintenanceAdvance({...comparison(selectors),
+    commits:[]},BASE,live,candidate),false,'a truncated ancestor proof never authorizes reuse');
+  assert.equal(safeIndependentCiMaintenanceAdvance({...comparison(selectors),
+    files:[...selectors,{...selectors[0]}]},BASE,live,candidate),false,'duplicate target paths are not proof');
+});
+
+
 test('base movement during Specialist preserves exact-HEAD results only for proven disjoint CI delta', async () => {
   const live='c'.repeat(40);
   const comparison=filename=>({
@@ -2483,6 +2547,65 @@ test('unrelated protected public product advances do not invalidate a long-runni
   await assert.rejects(()=>verify({...api,compare:async()=>compare(
     ['app/api/holistic-support/voice/route.js'])},ctx,sources,{maxWaitMs:0}),
     /PRODUCTION_BASE_CHANGED/);
+});
+
+test('unrelated scoped production APIs cannot block an unchanged passing CRM PR', async () => {
+  const live = 'c'.repeat(40);
+  const candidate = ['lib/crm/lead-service.mjs', 'app/api/app/crm/route.js'];
+  const target = [
+    'app/api/video/montage/route.ts',
+    'lib/shamanica/sources.mjs',
+    'components/business-team-analysis.tsx',
+  ];
+  const compare = (names, override = {}) => ({
+    status: 'ahead', ahead_by: 1, behind_by: 0, total_commits: 1,
+    base_commit: {sha: BASE}, merge_base_commit: {sha: BASE},
+    commits: [{sha: live}],
+    files: names.map(filename => ({filename, status: 'modified'})),
+    ...override,
+  });
+  assert.equal(safeDisjointPublicSourceAdvance(compare(target), BASE, live, candidate), true,
+    'separate API/features must not force another Core or Specialist wave');
+  for (const path of [
+    candidate[0], 'lib/crm/another-file.mjs',
+    'components/ali-persona.tsx', 'app/api/telegram/route.js',
+    'lib/video/auth-token.mjs', 'lib/shared/video-state.mjs',
+    'app/api/video/voice/route.ts', 'components/ui/video-panel.tsx',
+    'app/[locale]/page.tsx', 'package-lock.json',
+    '.github/workflows/hh-pr-core-release.yml',
+  ]) {
+    assert.equal(safeDisjointPublicSourceAdvance(compare([path]), BASE, live, candidate), false,
+      'overlap, shared source or cross-feature dependency must still block: ' + path);
+  }
+  for (const override of [
+    {status: 'diverged'}, {behind_by: 1}, {commits: []},
+    {total_commits: 2}, {files: []},
+    {files: [{filename: target[0], status: 'renamed', previous_filename: 'old.ts'}]},
+    {files: [{filename: target[0], status: 'removed'}]},
+    {files: [{filename: target[0], status: 'modified'}, {filename: target[0], status: 'modified'}]},
+  ]) {
+    assert.equal(safeDisjointPublicSourceAdvance(compare(target, override), BASE, live, candidate), false,
+      'incomplete or unsafe GitHub comparison cannot waive a gate');
+  }
+  const sources = {
+    base: new Map([[path, yaml]]), current: new Map([[path, yaml]]),
+    changedRows: candidate.map(filename => ({filename, status: 'M'})),
+  };
+  const api = {
+    pr: async () => ({...pr(), base: {...pr().base, sha: live}, mergeable: true}),
+    target: async () => live,
+    compare: async () => compare(target),
+    runs: async () => [run()],
+    jobs: async () => [{name: 'test', status: 'completed', conclusion: 'success'}],
+  };
+  const ctx = {repo, number: 27, head: SHA, base: BASE};
+  assert.deepEqual((await verify(api, ctx, sources, {maxWaitMs: 0})).expected, [path]);
+  await assert.rejects(() => verify({...api, compare: async () =>
+    compare(['app/api/telegram/route.js'])}, ctx, sources, {maxWaitMs: 0}),
+  /PRODUCTION_BASE_CHANGED/);
+  await assert.rejects(() => verify({...api, pr: async () => ({
+    ...pr(), base: {...pr().base, sha: live}, mergeable: false, mergeable_state: 'dirty',
+  })}, ctx, sources, {maxWaitMs: 0}), /MERGE_CONFLICT/);
 });
 
 test('stale protected BASE with disjoint public image advance reuses green Specialist after candidate deletion',async()=>{
