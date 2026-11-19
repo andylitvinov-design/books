@@ -824,6 +824,36 @@ try{
 
  const shamanicaHome=page.locator("[data-shamanica-mobile]");
  await shamanicaHome.waitFor({state:"visible",timeout:30000});
+ // Owner-approved Shamanica screenshot fits the FIRST iPhone viewport.
+ // All five service actions must sit above the single fixed nav and AI orb.
+ await page.evaluate(async()=>{
+   window.scrollTo({top:0,behavior:"instant"});
+   await new Promise(done=>requestAnimationFrame(()=>requestAnimationFrame(done)));
+ });
+ const oneScreen=await page.evaluate(()=>{
+   const cards=[...document.querySelectorAll("[data-shamanica-service]")];
+   const quiz=document.querySelector("[data-shamanica-quiz]");
+   const dock=document.querySelector("[data-hh-unified-dock]");
+   const hero=document.getElementById("shamanica-hero-title");
+   return {
+     width:innerWidth,height:innerHeight,
+     cards:cards.length,quizStep:quiz?.getAttribute("data-quiz-step"),
+     heroTop:hero?.getBoundingClientRect().top,
+     quizBottom:quiz?.getBoundingClientRect().bottom,
+     lastCardBottom:cards.at(-1)?.getBoundingClientRect().bottom,
+     dockTop:dock?.getBoundingClientRect().top,
+     overflowX:document.documentElement.scrollWidth-innerWidth,
+   };
+ });
+ assert.equal(oneScreen.cards,5,"Shamanica has five visible service links");
+ if(oneScreen.width>=360 && oneScreen.height>=740){
+   assert.ok(oneScreen.lastCardBottom<=oneScreen.dockTop-26,
+     "Shamanica hero, quiz and five services must fit above the dock on a normal iPhone: "+JSON.stringify(oneScreen));
+   assert.ok(oneScreen.overflowX<=2,"Shamanica has no horizontal mobile overflow: "+JSON.stringify(oneScreen));
+ }
+ await page.screenshot({path:folder+"/shamanica-first-screen-ru-390-webkit.png",fullPage:false,animations:"disabled"});
+ results.push({journey:"Shamanica one-screen hero + quiz + five services",
+   oneScreen,passed:true});
  assert.equal(await shamanicaHome.locator("[data-shamanica-service]").count(),5,
    "Shamanica displays the five approved service directions");
  const shamanicaQuiz=shamanicaHome.locator("[data-shamanica-quiz]");
