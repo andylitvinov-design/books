@@ -313,7 +313,7 @@ situation: {
       cta: "Solicitar revisión exprés gratis", secondary: "Cómo funciona",
       photoAlt: "Andrey Litvinov", outcomeAlt: "Faro junto al mar", processAlt: "Espacio tranquilo con luz matinal",
       faq: [
-        ["¿De verdad es gratis?", "Sí. Leeré tu pregunta personalmente y te responderé por escrito. Una sesión en directo es aparte y opcional."],
+        ["¿De verdad es gratis?", "Sí. Leeré tu pregunta personalmente y te responderé por escrito. Una consulta en directo es opcional y aparte."],
         ["¿Cómo empiezo?", "Elige Telegram o WhatsApp y envíame un mensaje breve. Abrir el enlace no envía nada por sí solo."],
         ["¿Qué recibiré?", "Te compartiré lo que observe y te sugeriré un primer paso. Es una reflexión personal, no un test automático."],
         ["¿Tengo que hacer un dibujo?", "A veces propongo unas preguntas y un dibujo YO–META–PROBLEMA. Si hace falta, te explicaré cómo compartirlo."],
