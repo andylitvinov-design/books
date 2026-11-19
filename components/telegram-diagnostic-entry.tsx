@@ -6,33 +6,33 @@ import styles from "./telegram-diagnostic-entry.module.css";
 const copy = {
 en: {
     title: "Where would you like to write?",
-    intro: "Choose Telegram or WhatsApp, whichever feels easier. My assistant may help with the first questions; I'll read your request personally.",
+    intro: "Choose Telegram or WhatsApp, whichever is easier. Ali can guide your free review, and Andrey will personally read the summary you choose to send.",
     telegram: "Write on Telegram",
-    telegramHint: "Personal chat with Andrey · English",
+    telegramHint: "Ali assistant · English",
     whatsapp: "Write on WhatsApp",
     whatsappHint: "Personal message",
     manual: "WhatsApp opens a prepared message. You decide whether to send it.",
-    note: "The link opens a chat, but doesn't send a message. Tap Send there; use the secure questionnaire for private documents.",
+    note: "Opening Telegram does not send your request. Tap Start to begin. Your summary reaches Andrey only after your approval. Photos and drawings are optional; private documents belong in the secure questionnaire.",
   },
 ru: {
     title: "Где вам удобнее написать?",
-    intro: "Напишите там, где вам удобнее. Помощник может уточнить первые детали, а я лично прочитаю ваш запрос.",
+    intro: "Напишите в Telegram или WhatsApp — как вам удобнее. Ali поможет с бесплатным разбором, а Андрей лично прочитает резюме, которое вы решите отправить.",
     telegram: "Написать в Telegram",
-    telegramHint: "Личный чат с Андреем · на русском",
+    telegramHint: "Помощник Ali · на русском",
     whatsapp: "Написать в WhatsApp",
     whatsappHint: "Личное сообщение",
     manual: "WhatsApp откроет готовый текст. Проверьте его и нажмите «Отправить».",
-    note: "Ссылка открывает чат, но ничего не отправляет. Нажмите «Отправить». Личные документы — только через защищённую анкету.",
+    note: "Открытие Telegram не создаёт заявку. Нажмите Start, чтобы начать. Резюме попадёт Андрею только после вашего согласия; фото и рисунок необязательны. Личные документы — через защищённую анкету.",
   },
   es: {
     title: "¿Dónde prefieres escribir?",
-    intro: "Escríbeme por Telegram o WhatsApp, como prefieras. Mi asistente puede hacerte las primeras preguntas; leeré tu solicitud personalmente.",
+    intro: "Escribe por Telegram o WhatsApp, como prefieras. Ali te acompaña en la revisión gratuita y Andrey leerá el resumen que decidas compartir.",
     telegram: "Escribir a Andrey por Telegram",
-    telegramHint: "Chat personal · español",
+    telegramHint: "Asistente Ali · español",
     whatsapp: "Escribir a Andrey por WhatsApp",
     whatsappHint: "Mensaje personal",
     manual: "WhatsApp abre un mensaje preparado. Revísalo y pulsa Enviar.",
-    note: "El enlace abre el chat, pero no envía nada. Pulsa Enviar; los documentos privados van por el formulario seguro.",
+    note: "Abrir Telegram no envía una solicitud. Pulsa Start para comenzar; el resumen llegará al profesional solo si lo apruebas. La foto y el dibujo son opcionales; usa el formulario protegido para documentos privados.",
   },
 } as const;
 
@@ -51,7 +51,7 @@ export function TelegramDiagnosticEntry({ locale }: { locale: PublicLocale }) {
         {telegramUrl ? (
           <a href={telegramUrl} target="_blank" rel="noopener noreferrer nofollow"
             referrerPolicy="no-referrer" data-express-review-channel="telegram"
-            data-channel-locale={locale} data-telegram-route="human-business" className={styles.action}>
+            data-channel-locale={locale} data-telegram-route="ali-free-diagnostic-v3" className={styles.action}>
             <span className={styles.icon} aria-hidden="true"><Send size={21} strokeWidth={2.2} /></span>
             <span className={styles.actionText}><strong>{t.telegram}</strong><small>{t.telegramHint}</small></span>
           </a>

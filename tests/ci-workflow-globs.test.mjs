@@ -105,7 +105,23 @@ test('YouTube and Free Review: obsolete PR commits cancel safely; Draft saves br
     assert.ok(source.includes('group: ' + prefix + '-' + suffix), file + ' must group by PR number and independent manual run');
     assert.ok(source.includes('cancel-in-progress: ' + cancel), file + ' must not cancel production or manual runs');
     assert.match(source, /^  workflow_dispatch:/m, file + ' must preserve manual verification');
-    assert.match(source, /playwright install --with-deps chromium webkit/, file + ' must retain actual browser QA');
+    if(file==='hh-free-review-live-mobile.yml'){
+      // This job may use the same digest-pinned official Playwright image as
+      // our trusted Free Express v2 QA instead of spending 12 minutes
+      // downloading browser binaries and apt dependencies. Real Chromium +
+      // WebKit acceptance must still run; a source-only replacement is RED.
+      const trusted=workflow('hh-free-express-wizard-v2.yml')
+        .match(/image: (mcr\.microsoft\.com\/playwright:v1\.63\.0-noble@sha256:[a-f0-9]{64})/);
+      assert.ok(trusted, 'trusted browser image must be pinned in existing workflow');
+      assert.ok(source.includes('image: '+trusted[1]),'same trusted Chromium/WebKit digest');
+      assert.match(source,/npm install --prefix \/tmp\/hh-free-review-browser.*playwright@1\.63\.0/);
+      assert.match(source,/test -d \/ms-playwright/,'real preinstalled browsers required');
+      assert.match(source,/scripts\/verify-free-review-live-mobile\.mjs/,'real browser journey required');
+      assert.match(source,/npm run start/,'real local production build required');
+    }else{
+      assert.match(source,/playwright install --with-deps chromium webkit/,
+        file+' must retain actual browser QA');
+    }
     assert.doesNotMatch(source, /continue-on-error:\s*true/);
   }
   const youtube = workflow('youtube-phone-uploader.yml');

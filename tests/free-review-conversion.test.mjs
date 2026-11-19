@@ -158,8 +158,17 @@ test("express review WebKit reveal stays immediately below its button throughout
   assert.match(express, /data-express-inline-disclosure hidden=\{!expanded\}/);
   assert.match(express, /const closeDisclosure = useCallback\(\(\) => \{/);
   assert.match(express, /window\.history\.replaceState\(window\.history\.state/);
-  assert.match(express, /if \(expanded\) closeDisclosure\(\); else setExpanded\(true\)/);
-  assert.match(express, /event\.key === "Escape"[\s\S]*?closeDisclosure\(\)/);
+  assert.match(express, /if \(expandedRef\.current\) closeDisclosure\(\); else openDisclosure\(\)/);
+  assert.match(express, /const expandedRef = useRef\(false\)/);
+  assert.match(express, /window\.addEventListener\("keydown", onEscape, true\)/);
+  assert.match(express, /\}, \[closeDisclosure\]\);/);
+  // A touch on a non-focusable choice can place focus on body at 320px.
+  // An expanded form still closes on Escape; a nested active modal takes priority.
+  assert.match(express, /event\.key !== "Escape"/);
+  assert.match(express, /panelRef\.current\?\.hidden !== false/);
+  assert.match(express, /event\.preventDefault\(\)/);
+  assert.match(express, /activeDialog\?\.contains\(document\.activeElement\)\) return/);
+  assert.match(express, /closeDisclosure\(\);\s*revealRef\.current\?\.focus\(\)/);
   assert.match(read("scripts/verify-free-review-live-mobile.mjs"), /closing clears the stale review anchor/);
   assert.match(expressCss, /\.disclosure\[hidden\]\{display:none!important\}/);
   assert.match(expressCss, /@keyframes expressUnfold\{from\{opacity:0\}to\{opacity:1\}\}/);
