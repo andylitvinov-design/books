@@ -1,18 +1,5 @@
 name: Dao I Ching Library focused verification
 on:
-  pull_request:
-    branches: ['codex/public-book-library']
-    paths:
-      - 'app/[locale]/dao/hexagrams/**'
-      - 'app/es/dao/hexagrams/**'
-      - 'app/[locale]/library/page.tsx'
-      - 'app/ia-v2.css'
-      - 'app/es/library/page.tsx'
-      - 'components/dao-*'
-      - 'data/dao-*'
-      - 'data/dao-hexagrams-editorial/**'
-      - 'lib/dao-divination.*'
-      - 'tests/dao-*.test.mjs'
   workflow_dispatch:
 permissions:
   contents: read

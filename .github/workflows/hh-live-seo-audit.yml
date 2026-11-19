@@ -20,22 +20,6 @@ on:
       - 'app/books/**'
       - 'app/not-found.tsx'
       - 'lib/seo-descriptions.ts'
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
-    paths:
-      - 'scripts/verify-live-sitemap.mjs'
-      - 'scripts/verify-public-tests-mobile.mjs'
-      - 'app/[locale]/tests/**'
-      - 'tests/public-tests-seo-landing.test.mjs'
-      - 'scripts/verify-public-assets.mjs'
-      - 'data/academy/catalog.ts'
-      - 'tests/seo-nightly-crawl.test.mjs'
-      - 'tests/seo-build-dedup-policy.test.mjs'
-      - 'tests/seo-browser-matrix-policy.test.mjs'
-      - 'data/seo.js'
-      - 'app/[locale]/books/**'
-      - 'app/books/**'
-      - 'app/not-found.tsx'
 permissions:
   contents: read
 concurrency:

@@ -1,10 +1,5 @@
 name: HH Video Studio feature lab (official docs, no competitor access)
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    branches: [codex/public-book-library]
-    paths:
-      - 'tools/video-feature-lab/**'
   workflow_dispatch:
 
 permissions:

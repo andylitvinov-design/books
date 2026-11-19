@@ -1,10 +1,5 @@
 name: Holistic House benchmark public mobile browser smoke
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
-    branches: ['codex/public-book-library']
-    paths:
-      - 'scripts/benchmarking/public-browser-smoke.mjs'
   workflow_dispatch:
 
 permissions:

@@ -445,7 +445,7 @@ test('cheap Mandala UI source contracts fail before macOS WebKit without skippin
 test('benchmark scripts and standalone Video Studio UI do not allocate unrelated CI, while owner gates remain', () => {
   const benchmark = workflow('hh-benchmark-program.yml');
   const benchmarkTriggers = [...benchmark.matchAll(/^      - "scripts\/benchmarking\/plan\.mjs"$/gm)];
-  assert.equal(benchmarkTriggers.length, 2, 'offline benchmark plan remains covered for PR and production push');
+  assert.equal(benchmarkTriggers.length, 1, 'offline benchmark is postmerge-only; redundant PR owner is deferred');
   assert.doesNotMatch(benchmark, /- "scripts\/benchmarking\/\*\*"/,
     'unrelated video/media scripts must not launch a competitor benchmark runner');
   for (const owner of [

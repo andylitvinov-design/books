@@ -1,19 +1,7 @@
 name: Holistic House clean-room benchmark program
 
 on:
-  pull_request:
-    branches:
-      - codex/public-book-library
-    paths:
-      - "docs/benchmarking/**"
-      - "data/benchmarking/**"
-      - "lib/benchmarking/**"
-      - "scripts/benchmarking/plan.mjs"
-      - "tests/benchmark-reference-matrix.test.mjs"
-      - "components/free-entry-landing.tsx"
-      - "components/free-entry-landing.module.css"
-      - "tests/benchmark-free-tests-first-pilot.test.mjs"
-      - ".github/workflows/hh-benchmark-free-test-pilot.yml"
+  workflow_dispatch:
   push:
     branches:
       - codex/public-book-library
