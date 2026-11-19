@@ -1040,7 +1040,7 @@ function compileFreeFilmPreset(
   }
   const hasLicensedPhotos=clipIds.some(id=>STORY_PHOTO_BY_ID.has(id));
   if(hasLicensedPhotos){
-    if(aspect!=="portrait"||clipIds.length<4||clipIds.length>12||
+    if((aspect!=="portrait"&&aspect!=="landscape")||clipIds.length<4||clipIds.length>12||
       new Set(clipIds).size!==clipIds.length||clipIds.some(id=>{
         const photo=STORY_PHOTO_BY_ID.get(id);
         if(photo)return !isTrustedStoryPhoto(photo);
@@ -1080,7 +1080,8 @@ function compileFreeFilmPreset(
       verified.map(scene=>scene?.durationSeconds??NaN),edit?.durationSecondsByStage??null);
   if(verified.some((scene,index)=>{
     const photo=STORY_PHOTO_BY_ID.get(clipIds[index]);
-    return photo? !isTrustedStoryPhoto(photo)||aspect!=="portrait"||
+    return photo? !isTrustedStoryPhoto(photo)||
+      (aspect!=="portrait"&&aspect!=="landscape")||
         timings[index].durationSeconds>photo.durationSeconds:
       !scene||!verifiedSceneAspect(scene,aspect)||
         !Number.isFinite(scene.durationSeconds)||
@@ -2776,7 +2777,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // the actual decoded-frame check remains mandatory during export.
   const freeFilmSourcesListed=freeFilmShots.length>=4&&freeFilmShots.length<=12&&
     freeFilmShots.every((shot,index)=>{
-      if(shot.photo)return aspect==="portrait"&&isTrustedStoryPhoto(shot.photo)&&
+      if(shot.photo)return (aspect==="portrait"||aspect==="landscape")&&
+        isTrustedStoryPhoto(shot.photo)&&
         cinematicPlan!.shots[index].durationSeconds<=shot.photo.durationSeconds;
       const verified=verifiedCategorySource(FREE_FILM_CATALOG_BY_ID.get(shot.sceneId));
       return Boolean(shot.film&&verified&&verifiedSceneAspect(verified,aspect)&&
@@ -4428,6 +4430,25 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             ?"Safari no finalizó la grabación: el archivo no tiene una cabecera MP4/WebM válida."
             :"Safari did not finalize recording: the file has no valid MP4/WebM header.");
           return;
+        }
+        // Native generic MP4 can report support but omit AAC or use a
+        // different video codec. Inspect the finalized LOCAL file before any
+        // account credit can be completed or the player offered as Ready.
+        if(isApplePhone&&isMp4){
+          try{
+            const {verifyNativeSafariMp4Tracks}=await import("@/lib/mandala/webcodecs-mp4-export");
+            await verifyNativeSafariMp4Tracks(blob,Boolean(job.musicSession));
+          }catch{
+            if(creditOpRef.current)void releaseCredit(creditOpRef.current);
+            setPlaybackStatus("failed");setExportUnavailable(true);
+            setNotice(locale==="ru"
+              ?"На этом iPhone не удалось получить MP4 с корректным видео и AAC. Кредиты освобождены."
+              :locale==="es"
+              ?"Este iPhone no creó un MP4 con vídeo y AAC válidos. Se han liberado los créditos."
+              :"This iPhone did not produce an MP4 with valid video and AAC. Credits are released.");
+            return;
+          }
+          if(sourceRef.current!==snapshotKey||!aliveRef.current)return;
         }
         creditValidRef.current=Boolean(creditOpRef.current);
         setResult({url:URL.createObjectURL(blob),extension,bytes:blob.size,blob,mime:type,
@@ -9184,7 +9205,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   behavior:"smooth",block:"start"
                 });
               }}
-              onApply={(shots,concept,key,captions)=>{
+              onApply={(shots,concept,key,captions,outputAspect="portrait")=>{
                 const preset=aspectFilmPresets.find(option=>option.theme===theme);
                 if(!preset)return false;
                 const edit:FreeFilmCompilationEdit={
@@ -9192,7 +9213,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   durationSecondsByStage:shots.map(shot=>shot.durationMs/1000),
                   captionTexts:shots.map((_,index)=>captions[index]||""),
                 };
-                if(applyAutoFilm(preset.id,duration,edit,"portrait",true)){
+                if(applyAutoFilm(preset.id,duration,edit,outputAspect,true)){
                   setAppliedStoryKey(key);
                   setMontageScriptText(captions.filter(Boolean).join("\n")||
                     concept.sceneOutline.join("\n"));

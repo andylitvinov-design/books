@@ -210,3 +210,22 @@ test("real photograph reference remains separate from opt-in six-photo rendering
   assert.ok(STORY_PHOTO_BY_ID.has(id),"only existing source-page-reviewed Pexels used");
  }
 });
+
+test("six selected, actual decoded JPEGs may use original MP4 renderer in 9:16 or 16:9 only",()=>{
+ const source=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+ const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
+ assert.match(tab,/data-storyboard-photo-output-aspect/);
+ assert.match(tab,/const \[photoOutputAspect,setPhotoOutputAspect\]=useState<"portrait"\|"landscape">/);
+ assert.match(tab,/onClick=\{\(\)=>setPhotoOutputAspect\(format\)\}/);
+ assert.match(tab,/aspect===photoOutputAspect/);
+ assert.match(tab,/photoOutputAspect\)\)onChooseQuality\(true\)/);
+ assert.match(source,/if\(\(aspect!=="portrait"&&aspect!=="landscape"\)\|\|clipIds.length<4/);
+ assert.match(source,/return photo\? !isTrustedStoryPhoto\(photo\)\|\|/);
+ assert.match(source,/\(aspect!=="portrait"&&aspect!=="landscape"\)/);
+ assert.match(source,/\(aspect==="portrait"\|\|aspect==="landscape"\)&&/);
+ assert.match(source,/applyAutoFilm\(preset.id,duration,edit,outputAspect,true\)/);
+ assert.match(css,/\.storyPhotoAspectChoices\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+ assert.match(css,/\[aria-pressed="true"\]/);
+ assert.doesNotMatch(tab,/onApply\(references,/);
+ assert.match(tab,/depictedEventVerified:false as const/);
+});

@@ -29,7 +29,8 @@ type Props={
  scenes:readonly unknown[];appliedShots:readonly Shot[]|null;
  resolveMedia:(id:string)=>{poster:string|null;title:string};
  disabled:boolean;
- onApply:(shots:readonly CategoryStoryboardShot[],concept:ApprovedVideoConcept,key:string,captions:string[])=>boolean;
+ onApply:(shots:readonly CategoryStoryboardShot[],concept:ApprovedVideoConcept,key:string,
+   captions:string[],outputAspect?:"portrait"|"landscape")=>boolean;
  onChooseQuality:(sourceReady:boolean)=>void;
  fiveSceneShots?:readonly Shot[]|null;
  onPreview:(second:number)=>void;onOpenIdeas:()=>void;
@@ -102,6 +103,8 @@ export function MandalaAutomaticStoryboard({
  const t=words[locale];
  const [expandedScene,setExpandedScene]=useState<number|null>(null);
  const [loadedPhotoIds,setLoadedPhotoIds]=useState<readonly string[]>([]);
+ const [photoOutputAspect,setPhotoOutputAspect]=useState<"portrait"|"landscape">(
+   aspect==="landscape"?"landscape":"portrait");
  const phraseKey=phrases.join("\u001f");
  const personalizationKey=JSON.stringify(personalization??null);
  // Concept and Story get the SAME confirmed Goals/Ideas/phrases/transcript.
@@ -136,7 +139,7 @@ export function MandalaAutomaticStoryboard({
  }),[locale,goal,concept,phraseKey,durationSeconds,pace]);
  const storyKey=JSON.stringify([
   concept.signature,concept.storyboard?.map(shot=>[shot.title,shot.action,shot.emotion])??null,
-  phraseKey,styleIndex,pace,durationSeconds,"portrait",theme,
+  phraseKey,styleIndex,pace,durationSeconds,photoOutputAspect,theme,
   concept.avoidImagery||[],personalizationKey
  ]);
  const references=useMemo(()=>storyboardPhotoReferences({
@@ -166,7 +169,7 @@ export function MandalaAutomaticStoryboard({
  const currentMatchesProposal=filmedProposalReady&&appliedShots?.length===proposal.shots.length&&
   appliedShots.every((shot,index)=>shot.sceneId===proposal.shots[index].sceneId&&
    Math.abs(shot.startSeconds-proposal.shots[index].startMs/1000)<.01);
- const photoAdaptationApplied=Boolean(hasSixPhotoReferences&&aspect==="portrait"&&
+ const photoAdaptationApplied=Boolean(hasSixPhotoReferences&&aspect===photoOutputAspect&&
    !choice.selectionMissing&&appliedStoryKey===storyKey&&
    appliedShots?.length===6&&appliedShots.every((shot,index)=>
      shot.sceneId===references[index]?.id&&
@@ -280,7 +283,8 @@ export function MandalaAutomaticStoryboard({
    <p className={styles.storyAutoMeta}>
     <Film size={14} aria-hidden="true"/>{compactCards.length} {locale==="ru"?"сцен":locale==="es"?"escenas":"scenes"}
     <span aria-hidden="true">·</span>{manualFiveReady?20:durationSeconds}s
-    <span aria-hidden="true">·</span>9:16
+    <span aria-hidden="true">·</span>{hasSixPhotoReferences?
+       photoOutputAspect==="landscape"?"16:9":"9:16":"9:16"}
     {eligible?<small>({proposal.shots.length} {t.clips})</small>:null}
    </p>
    <small className={styles.storyAutoLead}>{lead} · {statusText} · {paceText}</small>
@@ -362,6 +366,17 @@ export function MandalaAutomaticStoryboard({
       locale==="es"?"Las fotos reales ilustran la historia, pero las acciones exactas aún no están verificadas. Para exportar se necesitan medios adecuados.":
        "Real photos illustrate the story, but the exact shot actions are not yet verified. Matching media is still required to export.")
      :noRelevant}</p>:null}
+  {hasSixPhotoReferences&&durationSeconds===30?
+   <div className={styles.storyPhotoAspectChoices} data-storyboard-photo-output-aspect
+     role="group" aria-label={locale==="ru"?"Формат фотомонтажа":
+       locale==="es"?"Formato del montaje fotográfico":"Photo montage format"}>
+     {(["portrait","landscape"] as const).map(format=>
+      <button key={format} type="button" disabled={disabled}
+        aria-pressed={photoOutputAspect===format}
+        onClick={()=>setPhotoOutputAspect(format)}>
+        {format==="portrait"?"9:16 · Vertical":"16:9 · Horizontal"}
+      </button>)}
+   </div>:null}
   {hasSixPhotoReferences&&!photoAdaptationApplied&&durationSeconds===30&&
    !scriptNeedsReview&&scriptSceneAlignment.aligned&&!choice.selectionMissing?
    <button type="button" className={styles.storyAutoApply}
@@ -378,7 +393,7 @@ export function MandalaAutomaticStoryboard({
          depictedEventVerified:false as const
        })) as CategoryStoryboardShot[];
        if(onApply(photoShots,concept,storyKey,guides.scenes.map(beat=>
-         beat.sourcePhrase||"")))onChooseQuality(true);
+         beat.sourcePhrase||""),photoOutputAspect))onChooseQuality(true);
      }}>
      <Film size={17} aria-hidden="true"/>
      {locale==="ru"?"Использовать эти 6 фото в видео":
