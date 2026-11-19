@@ -424,9 +424,14 @@ export function clipMusicBuffer(context:AudioContext,sound:AudioBuffer,maxSecond
   if(!sound.length||!Number.isFinite(sound.duration)||sound.duration<=0||
      !Number.isFinite(maxSeconds)||maxSeconds<=0||maxSeconds>60)
     throw new Error("invalid_music_excerpt");
-  const frames=Math.min(sound.length,Math.max(1,Math.ceil(maxSeconds*sound.sampleRate)));
+  // The native AudioBuffer has sampleRate; test/audio shims may only provide
+  // sample length and duration, which determine the same exact sample rate.
+  const rate=Number.isFinite(sound.sampleRate)&&sound.sampleRate>0
+    ?sound.sampleRate:sound.length/sound.duration;
+  if(!Number.isFinite(rate)||rate<=0)throw new Error("invalid_music_excerpt");
+  const frames=Math.min(sound.length,Math.max(1,Math.ceil(maxSeconds*rate)));
   if(frames===sound.length)return sound;
-  const excerpt=context.createBuffer(sound.numberOfChannels,frames,sound.sampleRate);
+  const excerpt=context.createBuffer(sound.numberOfChannels,frames,rate);
   for(let channel=0;channel<sound.numberOfChannels;channel++)
     excerpt.copyToChannel(sound.getChannelData(channel).subarray(0,frames),channel);
   return excerpt;
