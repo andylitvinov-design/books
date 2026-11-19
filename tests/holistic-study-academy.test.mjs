@@ -31,5 +31,5 @@ test("Study TSX parses, mobile touch and bottom dock stay intact",()=>{
  assert.deepEqual(sf.parseDiagnostics.map(d=>ts.flattenDiagnosticMessageText(d.messageText," ")),[]);
  for(const marker of ["@media(max-width:350px)","safe-area-inset-bottom","focus-visible"])
    assert.ok(css.includes(marker));
- assert.ok(read("lib/unified-mobile-dock.mjs").includes('case "practice": return prefix+"/holistic-support/mobile"'));
+ assert.ok(read("lib/unified-mobile-dock.mjs").includes('case "practice": return prefix+"/shamanica"'));
 });

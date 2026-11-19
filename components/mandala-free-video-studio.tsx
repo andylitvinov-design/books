@@ -96,10 +96,10 @@ import {rankPersonalMusic} from "@/lib/mandala/music-match.mjs";
 import { getGoalTreeAudioChoices } from "@/lib/mandala/goal-tree-audio-playlists.mjs";
 import {curatedAudioTracks,recommendCuratedAudio,curatedAudioMatchesCategory,inferVideoAudioCategory} from "@/lib/mandala/curated-audio-recommendations.mjs";
 import type { MoneySceneId } from "@/lib/mandala/money-flow-effects";
-import { orderRecordingMimes, proceduralMp4Route, selectWebCodecsForRecording, shouldAutoRecoverSafariPlayback } from "@/lib/mandala/recording-codecs.mjs";
+import { isAppleMobileDevice, orderRecordingMimes, proceduralMp4Route, selectWebCodecsForRecording, shouldAutoRecoverSafariPlayback } from "@/lib/mandala/recording-codecs.mjs";
 import { prepareFourFilmSources } from "@/lib/mandala/free-film-source-loader.mjs";
 import {verifiedCategorySource,verifiedSceneAspect,canonicalSourceMasterKey} from "@/lib/mandala/category-video-storyboard.mjs";
-import {STORY_PHOTO_BY_ID,isTrustedStoryPhoto} from "@/lib/mandala/story-photo-library.mjs";
+import {STORY_PHOTO_BY_ID,isTrustedStoryPhoto,getMyTubeScenarioPhotos,MYTUBE_SCENARIO_PHOTO_COVERAGE} from "@/lib/mandala/story-photo-library.mjs";
 import { ensureDecodedVideoOnUserIntent } from "@/lib/mandala/intent-video-loading.mjs";
 import { resolveLicensedSourceFrame, assessLicensedSourceFrame,validateLicensedSourcePlayback } from "@/lib/mandala/free-film-source-clock.mjs";
 
@@ -2440,6 +2440,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // Temporary user-owned voice transcript: never place it in browser storage.
   const [sttBusy,setSttBusy]=useState(false);
   const [sttError,setSttError]=useState("");
+  // Speech language belongs to the recording, not the website locale.
+  const [spokenAudioLanguage,setSpokenAudioLanguage]=useState<"auto"|VideoLocale>("auto");
   const [manualTranscript,setManualTranscript]=useState("");
   const [voiceTranscript,setVoiceTranscript]=useState<TimedSpeechTranscript|null>(null);
   const [voiceVisualPlan,setVoiceVisualPlan]=useState<AudioVisualPlan|null>(null);
@@ -2588,6 +2590,26 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [photoConsent,setPhotoConsent] = useState(false);
   const [recording, setRecording] = useState(false);
   const [preparing, setPreparing] = useState(false);
+  const spokenAudioLanguagePicker=<label data-video-audio-language-picker
+    style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",margin:"8px 0"}}>
+    <span style={{fontSize:14,fontWeight:600}}>{locale==="ru"?"Язык речи":locale==="es"?"Idioma del audio":"Spoken language"}</span>
+    <select data-video-audio-language value={spokenAudioLanguage}
+      disabled={sttBusy||micRecording||recording||preparing}
+      aria-label={locale==="ru"?"Язык аудиозаписи":locale==="es"?"Idioma hablado en el audio":"Language spoken in the recording"}
+      style={{flex:"1 1 160px",minWidth:0,maxWidth:"100%",minHeight:38,borderRadius:10,padding:"6px 10px",border:"1px solid #cbd5d1",background:"#fff",color:"#153c33",fontSize:14}}
+      onChange={event=>{
+        const language=event.currentTarget.value as "auto"|VideoLocale;
+        if(language===spokenAudioLanguage)return;
+        sttAbortRef.current?.abort();
+        setSpokenAudioLanguage(language);
+        setVoiceTranscript(null);setVoiceVisualPlan(null);setAudioPlanApplied(false);setSttError("");
+      }}>
+      <option value="auto">{locale==="ru"?"Определить автоматически · без перевода":locale==="es"?"Detectar automáticamente · sin traducir":"Auto-detect · no translation"}</option>
+      <option value="ru">Русский</option>
+      <option value="en">English</option>
+      <option value="es">Español</option>
+    </select>
+  </label>;
   const [progress,setProgress] = useState(0);
   const [videoEffectSession,setVideoEffectSession] = useState(0);
   const [videoEffectStarted,setVideoEffectStarted] = useState(false);
@@ -4931,7 +4953,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       recorder.start(250);
       // Voice capture is attempted only when the visitor explicitly chose Record.
       // On iPhone browser STT may use Apple's or another browser vendor's service.
-      micSpeechRef.current=recipientAudioSelected?startDeviceVoiceCapture(locale):null;
+      micSpeechRef.current=recipientAudioSelected&&spokenAudioLanguage!=="auto"
+        ?startDeviceVoiceCapture(spokenAudioLanguage):null;
       setMusicWarning("");
       setMicRecording(true);
     }catch{
@@ -4942,6 +4965,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   }
   function handleNativeVideoPlaybackFailure(video:HTMLVideoElement){
     if(!result)return;
+    // The previous Result verifier must not reject Ready's current Blob if
+    // its decoder finishes unloading during the workspace handoff.
+    if(activeWorkspace==="ready"&&video===resultVideoRef.current)return;
     // Two native players can observe the same failing Blob. A stale event
     // must not corrupt a newer successful movie or trigger a second retry.
     if(video.currentSrc&&video.currentSrc!==result.url)return;
@@ -5351,6 +5377,53 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       return false;
     }
   };
+  // MyTube → the ONE existing Video Studio Canvas montage. The user explicitly
+  // chose a canonical scenario; six verified-source photos replace only this
+  // selection, never generic MP4 fallback or unrelated client imagery.
+  // Browser decode and source checks still run during real video export.
+  const photoScenarioLoadedRef=useRef<string|null>(null);
+  useEffect(()=>{
+    const chosen=new URLSearchParams(window.location.search).get("photoScenario");
+    if(!chosen||photoScenarioLoadedRef.current===chosen)return;
+    photoScenarioLoadedRef.current=chosen;
+    const meta=MYTUBE_SCENARIO_PHOTO_COVERAGE[chosen];
+    const photos=getMyTubeScenarioPhotos(chosen);
+    if(!meta||photos.length!==6){
+      setNotice(locale==="ru"?"Подборка фотографий не найдена. Выберите сценарий в MyTube."
+        :locale==="es"?"No se encontró el conjunto de fotos. Elige una historia en MyTube."
+        :"Photo selection was not found. Choose a MyTube story.");
+      return;
+    }
+    const selectedTheme:VideoTheme=meta.categoryId==="love-relationships"?"relationships":
+      meta.categoryId==="stress-anxiety"?"health":
+      meta.categoryId==="energy-confidence"?"energy":
+      meta.topicId.includes("money")||meta.topicId.includes("income")||
+      meta.topicId.includes("financial")?"money":"goals";
+    const preset=FREE_FILM_PRESETS.find(item=>item.theme===selectedTheme);
+    if(!preset){
+      setNotice(locale==="ru"?"Не найден монтажный шаблон для этого сюжета."
+        :locale==="es"?"No hay plantilla de montaje para esta historia."
+        :"No montage template is available for this story.");
+      return;
+    }
+    const edit:FreeFilmCompilationEdit={
+      clipIds:photos.map(photo=>photo.id),
+      durationSecondsByStage:[5,5,5,5,5,5],
+      captionTexts:["","","","","",""],
+    };
+    if(applyAutoFilm(preset.id,30,edit,"portrait",true)){
+      setActiveWorkspace("video");
+      setMontagePanel("settings");
+      setNotice(locale==="ru"
+        ?"Подобраны 6 разных реальных фотографий для «"+meta.titleRu+"». Проверьте кадры и создайте 30-секундное видео."
+        :locale==="es"
+          ?"Se han añadido 6 fotos distintas. Revisa las escenas y crea un vídeo de 30 segundos."
+          :"Six distinct real photographs are ready. Review the scenes and create a 30-second video.");
+    }
+  // One explicit deep link. Never fetch client-selected remote URLs.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
+
   const createFiveSceneStory=()=>{
     if(recording||preparing)return;
     if((draftVideoConcept||approvedVideoConcept)?.storyboard?.length===6&&
@@ -5459,17 +5532,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     sttAbortRef.current=controller;setSttBusy(true);setSttError("");
     setVoiceTranscript(null);setVoiceVisualPlan(null);setAudioPlanApplied(false);
     try{
-      // Prefer genuine on-device audio-track recognition where the browser has
-      // an installed local language pack; only the explicit click may fall
-      // back to the pre-existing consented, zero-cost-confirmed server bridge.
-      let transcript:TimedSpeechTranscript;
-      try{
-        transcript=await transcribeDeviceAudioFile(entry.file,locale,controller.signal);
-      }catch{
-        if(controller.signal.aborted)return;
-        const transcriptFromFreeService=await requestConsentedTimedTranscript(entry.file,locale,true,controller.signal);
-        transcript=transcriptFromFreeService;
+      // Auto detection needs an audio-aware model; browser STT cannot infer
+      // Russian speech from an English UI locale. Exactly one network fallback.
+      let transcript:TimedSpeechTranscript|null=null;
+      if(spokenAudioLanguage!=="auto"){
+        try{
+          transcript=await transcribeDeviceAudioFile(entry.file,spokenAudioLanguage,controller.signal);
+        }catch{
+          if(controller.signal.aborted)return;
+        }
       }
+      if(!transcript)transcript=await requestConsentedTimedTranscript(
+        entry.file,spokenAudioLanguage,true,controller.signal);
       if(sttAbortRef.current!==controller||
         uploadedAudioRef.current?.file!==entry.file)return;
       setVoiceTranscript(transcript);
@@ -5487,7 +5561,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     }catch(error){
       if(controller.signal.aborted)return;
       const code=error instanceof Error?error.message:"";
-      setSttError(code==="AUDIO_STT_FREE_PROVIDER_NOT_CONFIGURED"?
+      setSttError(code==="AUDIO_STT_LANGUAGE_MISMATCH"?
+        (locale==="ru"?"Текст распознан на другом языке. Выберите «Русский» и повторите; перевод не выполняется.":
+          locale==="es"?"El texto no coincide con el idioma del audio. Selecciona su idioma e inténtalo de nuevo; no traducimos.":
+            "The transcript language does not match the audio. Select the spoken language and try again; no translation is performed.") :
+        code==="AUDIO_STT_FREE_PROVIDER_NOT_CONFIGURED"?
         (locale==="ru"?"Для файла нет доступного автоматического распознавания. Продиктуйте текст в поле ниже через клавиатуру телефона или перейдите в монтаж без таймкодов. Платный сервис не использован.":
           locale==="es"?"Este navegador no puede transcribir el archivo sin un servicio disponible. Puedes dictar el texto abajo o editar sin tiempos.":
             "No automatic transcription for this file in this browser. Use the keyboard microphone to dictate below, or edit without timestamps. No paid service was used.") :
@@ -6186,6 +6264,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   locale==="es"?"Al pulsar Transcribir, el audio se enviará una vez al servicio externo. El sitio no guarda audio ni texto.":
                     "Pressing Transcribe sends the audio once to an external speech recognition service. This site stores neither audio nor text."}
               </small>
+              {spokenAudioLanguagePicker}
               <button type="button" className={videoStyles.audioMicButton}
                 data-video-audio-transcribe
                 disabled={!studioHydrated||sttBusy||recording||preparing||micRecording}
@@ -6739,7 +6818,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <button type="button" data-video-recipient-audio-record disabled={sttBusy||recording||preparing}
           aria-pressed={micRecording} onClick={()=>{if(micRecording)stopMicRecording();else void startMicRecording();}}>
           <Mic size={17}/>{micRecording?(locale==="ru"?"Стоп":locale==="es"?"Parar":"Stop"):
-            locale==="ru"?"Записать и распознать":locale==="es"?"Grabar y transcribir":"Record & transcribe"}</button>
+            spokenAudioLanguage==="auto"
+              ?(locale==="ru"?"Записать аудио":locale==="es"?"Grabar audio":"Record audio")
+              :(locale==="ru"?"Записать и распознать":locale==="es"?"Grabar y transcribir":"Record & transcribe")}</button>
       </div>
       {uploadedAudio?<div className={videoStyles.recipientAudioSelected}>
         <strong>{uploadedAudio.file.name}</strong><button type="button" disabled={sttBusy} onClick={clearUploadedAudio}>×</button>
@@ -6756,10 +6837,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     <div className={videoStyles.recipientAudioStep}>
       <b>2</b><div><strong>{locale==="ru"?"Расшифровка и анализ":locale==="es"?"Transcripción":"Transcribe and analyze"}</strong>
       <small data-video-recipient-audio-stt-notice>
-        {locale==="ru"?"При записи браузер попробует распознать речь сразу (его служба может обработать голос). Для файла сначала используется локальный режим, а по нажатию «Расшифровать» и при недоступности локального режима — существующий бесплатный внешний сервис. Сайт не сохраняет запись и текст.":
-          locale==="es"?"Al grabar, el navegador intentará reconocer tu voz (puede utilizar su servicio de voz). Para archivos, primero se prueba el modo local, luego el servicio gratuito autorizado. No guardamos audio ni texto.":
-            "Recording tries browser speech recognition (your browser may process microphone audio externally). Uploaded files use verified on-device recognition first, then the existing free speech service after your Transcribe click. This site stores neither audio nor text."}
+        {locale==="ru"?"Выберите язык речи независимо от языка сайта. «Авто» определит его без перевода после нажатия «Расшифровать». При ручном выборе браузер может распознать речь во время записи; при необходимости доступен существующий бесплатный сервис после вашего нажатия. Сайт не сохраняет запись и текст.":
+          locale==="es"?"Elige el idioma del audio, no el de la página. «Auto» lo detecta sin traducir al pulsar Transcribir. Al elegir idioma, el navegador puede reconocer la voz; el servicio gratuito se utiliza solo después de tu clic. No guardamos audio ni texto.":
+            "Choose the language spoken in the audio, not the website's language. Auto detects it without translation when you press Transcribe. With a selected language, browser recognition may run while recording; the free service is used only after your click. This site stores neither audio nor text."}
       </small>
+      {spokenAudioLanguagePicker}
       <button type="button" data-video-recipient-audio-transcribe
         disabled={!uploadedAudio||!studioHydrated||!audioRights||sttBusy||recording||preparing||micRecording}
         onClick={()=>void transcribeVideoVoice()}><AudioLines size={17}/>
@@ -6995,6 +7077,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   );
   // Visiting Ready alone is not proof of a verified exported movie.
   const readyResultVerified=Boolean(!readyGenerationPending&&result&&result.mode!=="catalog"&&playbackStatus==="ready"&&creditConfirmed);
+  const iphoneLocalPlayback=typeof navigator!=="undefined"&&
+    isAppleMobileDevice(navigator.userAgent,navigator.maxTouchPoints);
+  // The native MP4 writer is an alternate encoder; do not retry the same
+  // Safari WebCodecs path or select WebM that this iPhone cannot play.
+  const nativeIphoneMp4Available=recordingMimes(Boolean(attachedAudio)||musicBed.id!=="none",false,true)
+    .some(mime=>mime.startsWith("video/mp4;codecs=")&&mime.includes("avc1."));
   // The only workspace tab rail stays in the same place above the ONE player
   // for every mode; portal relocation previously changed geometry and focus.
   return (
@@ -7637,7 +7725,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       {activeWorkspace==="ready"?<MandalaVideoReady
         courseFlow={readyCourseFlow} locale={locale} theme={theme} wish={wish} focus={meditationFocus} aspect={aspect}
         video={!readyGenerationPending&&playbackStatus!=="failed"&&result&&result.mode!=="catalog"?{
-          url:result.url,extension:result.extension,bytes:result.bytes,duration
+          url:result.url,extension:result.extension,bytes:result.bytes,duration,blob:result.blob
         }:null}
         verified={Boolean(!readyGenerationPending&&result&&result.mode!=="catalog"&&playbackStatus==="ready"&&creditConfirmed)}
         checking={Boolean(!readyGenerationPending&&result&&playbackStatus==="checking")}
@@ -7645,11 +7733,19 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         progressQuestionnaire={renderCheckIn("ready-assessment-heading")}
         generationNotice={notice}
         exportFailed={Boolean(exportUnavailable||playbackStatus==="failed")}
-        canRetryExport={Boolean(canGenerate&&!creditOpRef.current&&!recording&&!preparing)}
+        canRetryExport={Boolean(canGenerate&&!creditOpRef.current&&!recording&&!preparing&&
+          (!iphoneLocalPlayback||nativeIphoneMp4Available))}
+        nativeIphoneMp4Retry={iphoneLocalPlayback&&nativeIphoneMp4Available}
         onRetryExport={()=>{
           // A new local attempt reserves a new idempotent hold only after the
           // rejected one has been released. Never publish a catalog substitute.
           if(creditOpRef.current)return;
+          if(iphoneLocalPlayback){
+            // Same licensed frames and selected AAC, original native Safari
+            // MediaRecorder instead of another rejected WebCodecs/WebM job.
+            if(nativeIphoneMp4Available)void createVideo(false,true);
+            return;
+          }
           const webm=recordingMimes(Boolean(attachedAudio),true)
             .some(mime=>mime.startsWith("video/webm"));
           if(result?.extension==="mp4"&&webm)void createVideo(true);
@@ -8283,7 +8379,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 ?"Este es un MP4 original del catálogo, no tu montaje personalizado. Usa un navegador compatible con la grabación Canvas para generar la versión ajustada."
                 :"This is an existing catalog MP4, not your custom montage. Use a browser with Canvas recording to export your selected settings."}
             </p>:null}
-            <video ref={resultVideoRef} key={result.url} src={result.url} controls playsInline preload="auto"
+            {activeWorkspace!=="ready"?<video ref={resultVideoRef} key={result.url} src={result.url} controls playsInline preload="auto"
               onPlay={()=>setVideoEffectStarted(true)}
               onEnded={()=>{setVideoEffectEnded(true);
                 window.requestAnimationFrame(()=>document.getElementById("video-effect-journey")
@@ -8292,7 +8388,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               onLoadedData={event=>confirmVideoPlayback(event.currentTarget)}
               onCanPlay={event=>confirmVideoPlayback(event.currentTarget)}
               onPlaying={event=>confirmVideoPlayback(event.currentTarget)}
-              onError={event=>handleNativeVideoPlaybackFailure(event.currentTarget)}/>
+              onError={event=>handleNativeVideoPlaybackFailure(event.currentTarget)}/>:null}
             {playbackStatus!=="failed"&&result.mode!=="catalog"&&creditCatalog?.chargeRequired&&creditSession!=="signed_in"
               ?<div className={videoStyles.guestPreviewActions} data-video-guest-preview-actions>
                 <button type="button" data-video-guest-play onClick={()=>{

@@ -641,23 +641,32 @@ test('stale dirty mergeability is overridden only by an exact fast-forward Compa
   }
 });
 
-test('early readiness fails closed for stale SHA, conflicts, Draft, forks and API unknown', () => {
-  const mutations = [
+test('early readiness blocks real conflicts and identity failures, but defers transient mergeability', () => {
+  const hardBlocks = [
     [{ ...earlyLive, head: { ...earlyLive.head, sha: 'c'.repeat(40) } }, 'superseded_head'],
     [{ ...earlyLive, base: { ...earlyLive.base, sha: 'bad' } }, 'invalid_live_base_sha'],
     [{ ...earlyLive, mergeable: false }, 'conflict'],
     [{ ...earlyLive, mergeable_state: 'dirty' }, 'conflict'],
-    [{ ...earlyLive, mergeable: null }, 'mergeability_pending'],
-    [{ ...earlyLive, mergeable_state: 'unknown' }, 'mergeability_pending'],
     [{ ...earlyLive, draft: true }, 'draft'],
     [{ ...earlyLive, state: 'closed' }, 'closed'],
     [{ ...earlyLive, number: 7 }, 'pr_mismatch'],
     [{ ...earlyLive, head: { ...earlyLive.head, repo: { full_name: 'fork/external' } } }, 'fork_head'],
   ];
-  for (const [live, code] of mutations) {
+  for (const [live, code] of hardBlocks) {
     const result = assessPrReadiness(earlyEvent, live, earlyRepo);
     assert.equal(result.ready, false, code);
     assert.equal(result.code, code);
+  }
+  // GitHub's transient mergeable=null/unknown is only advisory at the
+  // *early* efficiency preflight. The required hh-merge-check and native
+  // merge authority still require full positive conflict and CI evidence.
+  for (const live of [
+    { ...earlyLive, mergeable: null },
+    { ...earlyLive, mergeable_state: 'unknown' },
+  ]) {
+    const result = assessPrReadiness(earlyEvent, live, earlyRepo);
+    assert.equal(result.ready, true);
+    assert.equal(result.code, 'mergeability_deferred');
   }
   assert.equal(assessPrReadiness({}, earlyLive, earlyRepo).ready, false);
   assert.equal(assessPrReadiness(earlyEvent, earlyLive, 'wrong/repo').ready, false);
