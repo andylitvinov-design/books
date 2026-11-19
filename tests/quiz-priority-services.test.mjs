@@ -16,6 +16,7 @@ test("Shamanica keeps exactly two quiz-ranked categories with three real service
   assert.match(offers,/shamanica-learning/);
   assert.match(offers,/data-service-price/);
   assert.match(offers,/ServicesCardActions/);
+  assert.match(offers,/id.startsWith\\("shamanica-"\\) \\? undefined/);
   for (const goal of SHAMANICA_GOALS) {
     const groups=shamanicaRecommendations({goal,method:"unsure",start:"personal"});
     assert.equal(groups.length,2);
