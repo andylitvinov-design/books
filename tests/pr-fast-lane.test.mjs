@@ -1283,7 +1283,7 @@ test('production-base impact analyzer runs CI-only contracts without unrelated N
   assert.ok(source.includes("steps.diff.outputs.ci_only != 'true'"),'CI-only route must not run full Next build');
 });
 
-test('event-driven CI recognizes synthetic merge SHA only through exact PR source and base', async () => {
+test('event-driven CI matches synthetic merges by current HEAD and protected CI, not stale event BASE', async () => {
   const native = workflow('hh-native-auto-merge.yml');
   const begin = native.indexOf('          script: |\n', native.indexOf('  enable:\n'));
   const end = native.indexOf('      - name: Enable native auto-merge for this exact head', begin);
@@ -1396,7 +1396,13 @@ test('event-driven CI recognizes synthetic merge SHA only through exact PR sourc
   }]}]), false, 'old source SHA cannot authorize new HEAD');
   assert.equal(await decide([{...good, pull_requests: [{
     number: 42, head: live.head, base: {ref: live.base.ref, sha: 'c'.repeat(40)}
-  }]}]), false, 'old production base cannot authorize ARM');
+  }]}]), true, 'old production base is not a source change when protected exact-HEAD CI passed');
+  assert.equal(await decide([{...good, pull_requests: [{
+    number: 42, head: live.head, base: {ref: 'unsafe-target', sha: base}
+  }]}]), false, 'wrong production target cannot authorize ARM');
+  assert.equal(await decide([{...good, pull_requests: [{
+    number: 42, head: live.head, base: {ref: live.base.ref, sha: 'not-a-sha'}
+  }]}]), false, 'malformed event base must not authorize ARM');
   assert.equal(await decide([good, specialist], {...live, draft: true}), false, 'Draft does not ARM');
   assert.equal(await decide([good, specialist], {...live, mergeable: false, mergeable_state: 'dirty'}), false,
     'conflicted PR does not ARM');

@@ -3002,6 +3002,8 @@ test('mixed protected releases reuse green product checks but never security, ov
  });
  const check=(delta,paths=candidate)=>safeMixedProtectedAdvance(delta,BASE,live,paths);
  assert.equal(check(compare()),true,'one mixed independent production promotion must not invalidate #5093');
+ assert.equal(safeScopedDisjointProductionAdvance(compare(['app/api/app/account/profile/route.js']),
+  BASE,live,candidate),false,'legacy scoped route must never allow private profile merely by category');
  for(const blocked of [
   'components/mandala-another-player.tsx',
   'components/mandala-free-video-studio.tsx',
@@ -3033,7 +3035,8 @@ test('mixed protected releases reuse green product checks but never security, ov
  assert.equal(check(deep),true,'100-commit REST listing cap must not invalidate complete protected-path proof');
  assert.equal(check({...deep,commits:[]}),false,'no commits cannot be inferred');
  assert.equal(check({...deep,files:[{filename:accepted[0],status:'modified'},{filename:'lib/security/auth.mjs',status:'modified'}]}),false);
- const files={base:new Map([[path,yaml]]),current:new Map([[path,yaml]]),
+ const matchingWorkflow=yaml.replace("'lib/crm/**'","'components/mandala-*'");
+ const files={base:new Map([[path,matchingWorkflow]]),current:new Map([[path,matchingWorkflow]]),
   changedRows:candidate.map(filename=>({filename,status:'M'}))};
  const api={pr:async()=>({...pr(),base:{...pr().base,sha:live},mergeable:true}),
   target:async()=>live,compare:async()=>compare(),
