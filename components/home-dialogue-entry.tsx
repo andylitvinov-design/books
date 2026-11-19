@@ -7,7 +7,7 @@ import { ArrowRight, ArrowUp, BriefcaseBusiness, ChevronDown, HeartHandshake, Mi
 import { SiteNavigation } from "@/components/site-navigation";
 import AliPersonaPicker from "@/components/app/ali-persona-picker";
 import {useAliPersona} from "@/components/app/use-ali-persona";
-import {playAliPersonaAudio,stopAliPersonaAudio} from "@/components/app/ali-persona-audio";
+import {playAliPersonaAudio,stopAliPersonaAudio,prepareAliNaturalVoice} from "@/components/app/ali-persona-audio";
 import { stageHomeAliHandoff } from "@/lib/home-ali-handoff.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./home-dialogue-entry.module.css";
@@ -105,7 +105,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
   const [personaOpen,setPersonaOpen]=useState(false);
   const closePersona=useCallback(()=>setPersonaOpen(false),[]);
   const [greetingSpeaking,setGreetingSpeaking]=useState(false);
-  useEffect(()=>()=>stopAliPersonaAudio(),[]);
+  useEffect(()=>{void prepareAliNaturalVoice();return ()=>stopAliPersonaAudio();},[]);
   const startGuideGreeting=()=>{
     if(greetingSpeaking){stopAliPersonaAudio();setGreetingSpeaking(false);return}
     playAliPersonaAudio(persona.id,locale,(playing:boolean)=>setGreetingSpeaking(playing));
