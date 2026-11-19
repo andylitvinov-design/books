@@ -771,7 +771,10 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           locale==="es"?"Ya elegiste un tema. ¿Prefieres información, opciones de apoyo o ayuda para enviar una consulta?":
             "You've chosen a topic. Would you like information, support options, or help with an enquiry first?");
     setSupportQuizOpen(false);setSupportSelection(choice);
-    if(choice.mode==="talk"){setMode("rules");setFriendTone("friendly");}
+    if(choice.mode==="talk"){setMode("rules");setFriendTone("friendly");
+      // Friend never silently reuses prior test, history or memory opt-ins.
+      setAxisRef("");setUseSavedTests(false);setUseSavedHistory(false);setUseAgentMemory(false);
+    }
     setEntryOpen(false);setFormat("");setProjectFlow(null);
     followTail.current=true;setNewBelow(false);
     setMessages([{role:"user",text:supportSummary(choice,locale)},
