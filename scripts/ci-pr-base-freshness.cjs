@@ -146,9 +146,14 @@ async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase,classif
     // waiving failed/queued real workflows or hosting rules.
     const independentQaAdvance=pr.mergeable===true&&
       approved('safeIndependentQaAdvance');
+    // Reuse exactly the Specialist's *protected production* policy for
+    // disjoint domain test-only updates. Do not trust PR-authored policy,
+    // unconfirmed mergeability or synthetic/missing required Core jobs.
+    const independentDomainTest=pr.mergeable===true&&
+      approved('safeIndependentDomainTestAdvance');
     if(!detachedCi&&!independentRaster&&!documentationOnly&&!independentMaintenance&&
        !independentPresentation&&!disjointPublicSource&&!trustedPolicyAdvance&&
-       !independentQaAdvance)
+       !independentQaAdvance&&!independentDomainTest)
       return fail('SENSITIVE_COMPARE_UNSAFE');
     revalidatedReason=detachedCi?'ISOLATED_CI_PUBLIC_MEDIA_REVALIDATED':
       independentRaster?'INDEPENDENT_PUBLIC_RASTER_REVALIDATED':
@@ -157,7 +162,8 @@ async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase,classif
       independentPresentation?'INDEPENDENT_PUBLIC_PRESENTATION_REVALIDATED':
       disjointPublicSource?'DISJOINT_PUBLIC_SOURCE_REVALIDATED':
       trustedPolicyAdvance?'TRUSTED_POLICY_BASE_REVALIDATED':
-      'INDEPENDENT_QA_BASE_REVALIDATED';
+      independentQaAdvance?'INDEPENDENT_QA_BASE_REVALIDATED':
+      'INDEPENDENT_DOMAIN_TEST_BASE_REVALIDATED';
    }
   }
   const finalBranch=(await github.rest.repos.getBranch({owner,repo,branch:'codex/public-book-library'})).data;
@@ -250,6 +256,10 @@ async function loadTrustedClassifier(workspace){
  // target movement; old protected policies continue to HOLD instead.
  if(typeof impact.safeIndependentQaAdvance==='function')
    names.push('safeIndependentQaAdvance');
+ // Backward-compatible rollout: no helper in protected production means no
+ // domain-test exemption. Only load exact current protected SHA.
+ if(typeof impact.safeIndependentDomainTestAdvance==='function')
+   names.push('safeIndependentDomainTestAdvance');
  const baseAdvancePolicy=Object.fromEntries(names.map(name=>[name,impact[name]]));
  return {classifierBase,decideRoute:mod.decideRoute,baseAdvancePolicy};
 }
