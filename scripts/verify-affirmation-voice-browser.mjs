@@ -405,8 +405,14 @@ async function verifyWorkspaceHydration(browser,locale){
     // real visible Goal rail before using its in-panel Continue button.
     await goalTab.click();
     await expect(studio).toHaveAttribute("data-active-workspace","video");
-    await expect(continueToIdeas).toBeVisible({timeout:15000});
-    await continueToIdeas.click();
+    // For Others, the native compact Goal CTA is the visible navigation entry.
+    // The legacy footer Continue button intentionally stays hidden in that mode.
+    // Exercise the actual clicked handler rather than unveiling hidden controls.
+    await expect(continueToIdeas).toBeHidden();
+    const recipientCreate=page.locator('[data-video-goal-create-cta]');
+    await expect(recipientCreate).toBeVisible({timeout:15000});
+    await expect(recipientCreate).toBeEnabled();
+    await recipientCreate.click();
     await expect(ideas).toHaveAttribute("aria-pressed","true");
     await expect(studio).toHaveAttribute("data-active-workspace","phrases");
     // These are the actual source-backed montage title inputs; source edits
