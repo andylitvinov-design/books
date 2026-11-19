@@ -30,12 +30,8 @@ export async function GET(request){
    :telegramServiceRequestUrl(service,locale)
  if(!manual||!isTelegramServiceDraft(manual,locale))return invalid()
  const env=process.env
- let target=manual
- // Human Business chat automation and the bot are independent channels.
- // A service CTA enters the existing private bot when verified and ready.
- // Otherwise the public offer remains a manual @holistichouse draft.
- // Prefer the existing consent-gated private service bot whenever it is ready;
- // the human @holistichouse message remains the safe fallback if not.
+ // The only consultation-order conversation is Wave in the signed Telegram bot.
+ // Missing readiness must be visible, not silently replaced by a human-chat DM.
  if(env.HH_CRM_TG_AI_V3_SCHEMA_READY==='true'&&
     channelTransportReady('telegram',env)&&v3ServiceIntakeReady(env)){
    const publicBot=telegramDiagnosticPublicUrl(locale,env)
@@ -43,8 +39,12 @@ export async function GET(request){
      const entry=resolveTelegramServiceEntry({
        available:true,serviceInterviewAvailable:true,url:publicBot.split('?')[0],
      },manual,locale,offer)
-     if(entry)target=entry.href
+     if(entry)return NextResponse.redirect(entry.href,{status:307,headers})
    }
  }
- return NextResponse.redirect(target,{status:307,headers})
+ const message=locale==='ru'?'Ali временно недоступен. Повторите запрос позже. Заявка не отправлена.':
+   locale==='es'?'Ali no está disponible ahora. Inténtalo más tarde. No se envió ninguna solicitud.':
+   'Ali is temporarily unavailable. Please try again later. No request was submitted.'
+ return new NextResponse(message,{status:503,headers:{...headers,
+   'Content-Type':'text/plain; charset=utf-8','Retry-After':'60'}})
 }

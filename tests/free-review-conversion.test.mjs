@@ -43,7 +43,7 @@ test("free landings explain benefits before closing with one short capture", () 
   const proof = landing.indexOf('data-featured-free-review-testimonials');
   const final = landing.lastIndexOf("<CompactLeadCapture");
   assert.ok(hero > 0 && hero < video && video < outcome && outcome < proof && proof < process && process < final,
-    "A separate video introduction and three visible reviews belong to the same landing");
+    "A separate video introduction and all twelve visible reviews belong to one landing");
   assert.match(landing, /kind === "tests" \? <section className=\{\[styles\.scene, styles\.processScene/,
     "Only Wu Xing hides the redundant process section");
   assert.match(landing, /data-free-review-intro-video/);
@@ -131,17 +131,19 @@ test("mobile layout offers one meaning per screen, authentic images, and accessi
   assert.match(landing, /"\/images\/holistic-house\/andy-about\.png"/);
   assert.match(landing, /"\/images\/holistic-house\/course-start-heron\.webp"/);
   assert.match(landing, /"\/academy\/reiki-yggdrasil\/source\/eastern-tradition\.png"/);
-  assert.match(landing, /<LazyPersonalTestimonials\s+locale=\{locale\}/);
-  assert.doesNotMatch(landing, /<PersonalTestimonials locale=\{locale\} variant="all"/);
-  const lazyArchive = read("components/lazy-personal-testimonials.tsx");
-  assert.match(lazyArchive, /dynamic\(/);
-  assert.match(lazyArchive, /ssr: false/);
-  assert.match(lazyArchive, /openedOnce \? <PersonalTestimonials locale=\{locale\} variant="all" sameAudioOnly \/>/);
+  assert.match(landing, /const reviewVideos = kind === "situation"/);
+  assert.match(landing, /reviewVideos\.map/);
+  assert.match(landing, /data-review-list-direction="vertical"/);
+  assert.match(landing, /data-review-count=\{reviewVideos\.length\}/);
+  assert.doesNotMatch(landing, /<LazyPersonalTestimonials|featuredReviewVideos|reviewSwipeHint/);
   assert.match(landing, /<PersonalExpressEnquiry locale=\{locale\} intro=\{/);
   assert.doesNotMatch(landing, /<FreeDiagnosisOffers/);
   assert.match(read("components/personal-express-enquiry.tsx"), /data-personal-express-enquiry/);
-  assert.match(lazyArchive, /data-review-stories/);
-  assert.match(lazyArchive, /onToggle=/);
+  assert.doesNotMatch(landing, /data-review-stories/);
+  assert.match(css, /\.reviewPreviewGrid\{display:flex;flex-direction:column/);
+  assert.doesNotMatch(css, /grid-auto-flow:column|scroll-snap-type:x mandatory/);
+  assert.match(css, /\.reviewPreviewCard :global\(\.site-video-title\)\{color:#143d3a/);
+  assert.match(css, /\.reviewPreviewCard :global\(\.site-video-poster-title\)\{display:none\}/);
   assert.match(css, /\.reviewBenefitsList/);
   assert.match(css, /\.reviewProcess/);
   assert.match(css, /\.reviewApproach/);
@@ -211,4 +213,25 @@ test("free-review closing messenger buttons stay compact without losing either a
     assert.ok(entry.includes('data-express-review-channel="' + channel + '"'));
   }
   assert.match(entryCss, /@media \(max-width: 580px\)/);
+});
+
+test("free review has six native, photo-led FAQs at the very end in EN, RU and ES", () => {
+  const anchor = landing.indexOf('data-free-review-faq');
+  const enquiry = landing.indexOf('</PersonalExpressEnquiry>');
+  assert.ok(anchor > enquiry, "FAQ comes after the working request form");
+  assert.match(landing, /id="free-review-faq" data-free-review-faq/);
+  assert.match(landing, /<Image src=\{images\.process\} alt=\{t\.processAlt\} fill/);
+  assert.match(landing, /\{t\.faq\.map\(\(\[question, answer\]\) => \(/);
+  assert.match(landing, /<details key=\{question\} className=\{styles\.reviewFaqItem\}>/);
+  assert.match(landing, /<summary><span>\{question\}<\/span>/);
+  assert.match(landing, /href="#request-free-review"/);
+  for (const localeQuestion of [
+    "How do I begin?", "Как начать?", "¿Cómo empiezo?",
+    "What about my privacy?", "Что с конфиденциальностью?", "¿Qué ocurre con mis datos privados?",
+  ]) assert.ok(landing.includes(localeQuestion), localeQuestion);
+  assert.match(css, /\.reviewFaqItem>summary\{/);
+  assert.match(css, /\.reviewFaqItem>summary:focus-visible/);
+  assert.match(css, /\.reviewFaqItem\[open\]/);
+  assert.match(css, /\.reviewFaqPhoto/);
+  assert.match(css, /@media\(max-width:720px\)/);
 });
