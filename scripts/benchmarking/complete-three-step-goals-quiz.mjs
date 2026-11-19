@@ -11,7 +11,12 @@ export async function completeThreeStepGoalsQuiz(page,{
   const progress=page.locator('[data-video-goal-quiz-progress]');
   const next=page.locator('[data-video-continue-scenarios]');
   await progress.waitFor({state:'visible',timeout:15000});
-  await next.waitFor({state:'visible',timeout:15000});
+  // The old lower Continue is intentionally hidden on the updated one-screen
+  // Goal mobile layout. It still exposes the real three-stage readiness gate;
+  // only the prominent Create Video CTA is visible and taps continueToIdeas.
+  await next.waitFor({state:'attached',timeout:15000});
+  const visibleAdvance=page.locator('[data-video-goal-create-cta]');
+  await visibleAdvance.waitFor({state:'visible',timeout:15000});
   assert.match(await progress.innerText(),/1\s*\/\s*3/,'GOAL_QUIZ_MUST_START_AT_STEP_ONE');
   assert.equal(await next.isDisabled(),true,'IDEAS_CTA_MUST_START_DISABLED');
   const steps=[
@@ -33,4 +38,6 @@ export async function completeThreeStepGoalsQuiz(page,{
     },{expected:step.expected,disabled:step.disabled},{timeout:15000});
   }
   assert.equal(await next.isEnabled(),true,'IDEAS_CTA_MUST_UNLOCK_AFTER_THREE_CHOICES');
+  assert.equal(await visibleAdvance.isEnabled(),true,
+    'VISIBLE_CREATE_CTA_MUST_ALLOW_THE_COMPLETED_THREE_CHOICE_QUIZ');
 }

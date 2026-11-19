@@ -115,3 +115,26 @@ test("Express guest-local generation only requires a verified session when credi
  assert.match(handler,/if\(creditCatalog\.chargeRequired&&creditSession==="guest"&&guestFirstVideoUsed\)/);
  assert.match(handler,/flushSync\(\(\)=>\{/);
 });
+
+
+test("WebKit filmed-story acceptance follows the visible Goal CTA, never a hidden legacy Continue",()=>{
+ const read=path=>readFileSync(new URL("../scripts/benchmarking/"+path,import.meta.url),"utf8");
+ const helper=read("complete-three-step-goals-quiz.mjs");
+ const original=read("verify-original-motion-export.mjs");
+ const scenes=read("verify-five-scene-stories-browser.mjs");
+ assert.match(helper,/next\.waitFor\(\{state:'attached'/,
+  "hidden lower Continue is only read for real three-step readiness");
+ assert.doesNotMatch(helper,/next\.waitFor\(\{state:'visible'/);
+ assert.match(helper,/action\.disabled===disabled/,
+  "the quiz still verifies each actual step and no bypass");
+ for(const [file,source] of [["original-motion",original],["five-scene",scenes]]){
+  assert.match(source,/\[data-video-goal-create-cta\]/,
+   file+" must tap the actual visible first-screen CTA");
+  assert.doesNotMatch(source,/\[data-video-continue-scenarios\]'\)\.(?:tap|click)\(/,
+   file+" may never tap an intentionally hidden old control");
+ }
+ assert.match(original,/GOALS_MUST_OPEN_IDEAS/,
+  "original-motion still verifies actual Ideas navigation");
+ assert.match(scenes,/STORIES_FINAL_H264_MP4_REQUIRED/,
+  "five-scene export must still verify real H264 MP4");
+});
