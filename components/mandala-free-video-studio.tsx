@@ -7793,9 +7793,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <button type="button" className={videoStyles.heroRailMine} data-video-my-film
           data-video-therapy-intro-close={introPlaying?"true":undefined}
           onClick={()=>{
-            if(introPlaying||introYoutubeStatus!=="idle"){
-              closeIntro();setStudioIntroOpen(false);return;
-            }
+            if(introPlaying||introYoutubeStatus!=="idle")closeIntro();
             setStudioIntroOpen(false);
             setIntroPlaying(false);setIntroDismissed(true);
             if(result){
