@@ -335,6 +335,12 @@ async function verifyWorkspaceHydration(browser,locale){
     // Owner-approved Life/Work is the ONLY public selector; 'Work' preserves
     // the same recipient-format flow without restoring the retired audience row.
     await expect(page.locator('[data-auto-video-audience]')).toHaveCount(0);
+    // Returning from Ideas retains the completed Self quiz at step 3. The
+    // Life/Work switch is intentionally present only on step 1, so navigate
+    // back using the real visible controls rather than weakening the check.
+    const backGoal=page.locator('[data-video-goal-quiz-back]');
+    for(let step=0;step<2&&await backGoal.count();step++)await backGoal.click();
+    await expect(page.locator('[data-video-goal-quiz-progress]')).toContainText('1 / 3');
     const scopes=page.locator('[data-video-quick-scope]');
     await expect(scopes).toHaveCount(2);
     const work=page.locator('[data-video-quick-scope="work"]');
