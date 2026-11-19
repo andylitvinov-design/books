@@ -15,7 +15,7 @@ export interface StoryPhoto {
  readonly tags:readonly string[];
  readonly categories:readonly string[];
  readonly stage:number;
- readonly durationSeconds:5;
+ readonly durationSeconds:5|10;
  readonly approval:string;
 }
 export type StoryBusinessPhoto=StoryPhoto;
