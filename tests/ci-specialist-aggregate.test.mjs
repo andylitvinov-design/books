@@ -2619,3 +2619,83 @@ test('real CI policy and disjoint dock browser QA change preserve successful sen
  assert.equal(safeIndependentQaAdvance(compare([qa],{files:[
    {filename:qa,status:'modified'},{filename:qa,status:'modified'}]}),base,latest,candidates),false);
 });
+
+test('revalidated protected policy follows a second safe target promotion without another Core wave',async()=>{
+  const first='c'.repeat(40),second='d'.repeat(40);
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  const changedRows=[{filename:'components/my-coach-live-dialogue.jsx',status:'M'}];
+  const files={changedRows};
+  const policy=['scripts/ci-specialist-aggregate.mjs'];
+  const qa=['scripts/verify-unified-six-dock-browser.mjs'];
+  const diff=target=>({status:'ahead',ahead_by:target===first?1:2,
+    behind_by:0,total_commits:target===first?1:2,
+    base_commit:{sha:BASE},merge_base_commit:{sha:BASE},
+    commits:target===first?[{sha:first}]:[{sha:first},{sha:second}],
+    files:[...policy,...(target===first?[]:qa)].map(filename=>({filename,status:'modified'}))});
+  let current=first,compares=[],loaded=[],verified=[],cleaned=[];
+  const api={
+    target:async()=>current,
+    compare:async(_,target)=>{compares.push(target);return diff(target);},
+  };
+  const result=await revalidateAfterTrustedPolicyAdvance(api,ctx,files,{
+    loadPolicy:async target=>{
+      loaded.push(target);
+      return {
+        safeTrustedPolicyAdvance:(d,base,live,changed)=>{
+          assert.equal(base,BASE);assert.equal(live,target);
+          assert.deepEqual(changed,[changedRows[0].filename]);
+          return d.status==='ahead'&&d.commits.at(-1).sha===target&&
+            d.files.every(f=>[...policy,...qa].includes(f.filename));
+        },
+        verify:async(_api,c,s,o)=>{
+          assert.equal(c.head,SHA);assert.equal(s,files);
+          assert.equal(o.trustedPolicyBaseSha,target);
+          verified.push(target);
+          if(target===first){current=second;throw Error(
+            'PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');}
+          return {risk:'STRICT',expected:[],executed:[],advisory:{}};
+        },
+        cleanup:()=>cleaned.push(target),
+      };
+    },
+  });
+  assert.deepEqual(loaded,[first,second]);
+  assert.deepEqual(verified,[first,second]);
+  assert.deepEqual(cleaned,[first,second]);
+  assert.deepEqual(compares,[first,second]);
+  assert.equal(result.policyRevalidatedAgainst,second);
+  assert.equal(result.policyRevalidationAttempts,2);
+});
+test('newly protected policy cannot waive unsafe mixed drift or changed PR head',async()=>{
+  const target='c'.repeat(40),ctx={repo,number:27,head:SHA,base:BASE};
+  const changedRows=[{filename:'components/my-coach-live-dialogue.jsx',status:'M'}];
+  const files={changedRows};
+  const diff=filename=>({
+    status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:BASE},merge_base_commit:{sha:BASE},
+    commits:[{sha:target}],files:[
+      {filename:'scripts/ci-specialist-aggregate.mjs',status:'modified'},
+      {filename,status:'modified'},
+    ],
+  });
+  const unsafe={target:async()=>target,compare:async()=>diff('app/api/auth/route.js')};
+  let verified=false,cleanup=false;
+  await assert.rejects(()=>revalidateAfterTrustedPolicyAdvance(unsafe,ctx,files,{
+    loadPolicy:async()=>({
+      safeTrustedPolicyAdvance:()=>false,
+      verify:async()=>{verified=true;throw Error('must not validate');},
+      cleanup:()=>{cleanup=true;},
+    }),
+  }),/PRODUCTION_BASE_CHANGED/);
+  assert.equal(verified,false);
+  assert.equal(cleanup,true);
+  const safe={...unsafe,compare:async()=>diff('scripts/verify-unified-six-dock-browser.mjs')};
+  let calls=0;
+  await assert.rejects(()=>revalidateAfterTrustedPolicyAdvance(safe,ctx,files,{
+    loadPolicy:async()=>({
+      safeTrustedPolicyAdvance:()=>true,
+      verify:async()=>{calls++;throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PR_HEAD_CHANGED');},
+    }),
+  }),/PR_HEAD_CHANGED/);
+  assert.equal(calls,1,'source HEAD errors never retry');
+});

@@ -487,7 +487,7 @@ test("Ready WhatsApp requires own verified link, never claims Meta MP4 delivery"
 
 test("Ready catches the physical iPhone MP4 playback error and offers a safe retry",()=>{
   const css=readFileSync(new URL("../components/mandala-video-ready.module.css",import.meta.url),"utf8");
-  assert.match(ready,/onError=\{event=>onPlaybackError\(event\.currentTarget\)\}/,
+  assert.match(ready,/onError=\{event=>handleReadyPlaybackError\(event\.currentTarget\)\}/,
     "the visible Ready video must report real native Safari decoding failures");
   assert.match(ready,/data-ready-export-failed/);
   assert.match(ready,/data-ready-retry-compatible/);
@@ -524,4 +524,34 @@ test("client MP4 global quota is RLS-safe and expired signed upload reservations
   assert.match(personalVideos,/created_at<now\(\)-interval '3 hours'/);
   assert.match(personalVideos,/const \{error\}=await storage\.remove\(\[file\.object_key\]\)/);
   assert.match(personalVideos,/if\(error\)continue/);
+});
+
+test("iPhone Ready verifies one visible exported MP4 and retries its transport without another encode",()=>{
+  assert.match(ready,/import \{isAppleMobileDevice\} from "@\/lib\/mandala\/recording-codecs\.mjs"/);
+  assert.match(ready,/type VideoFile=\{url:string;extension:"mp4"\|"webm";bytes:number;duration:number;blob\?:Blob\}/);
+  assert.match(studio,/blob:result\.blob/);
+  assert.match(studio,/\{activeWorkspace!=="ready"\?<video ref=\{resultVideoRef\}/,
+    "the inactive legacy decoder must be unmounted while Ready owns the video");
+  assert.match(ready,/data-mandala-video-preview data-ready-native-player/);
+  assert.match(ready,/player\.srcObject=video\.blob/);
+  assert.match(ready,/isAppleMobileDevice\(navigator\.userAgent,navigator\.maxTouchPoints\)/);
+  assert.match(ready,/readySourceModeRef\.current=attached\?"safari-blob":"object-url"/);
+  assert.match(ready,/readyUrlRecoveryRef\.current=video\.url/);
+  assert.match(ready,/player\.srcObject=null;\s*player\.src=video\.url;/);
+  assert.match(ready,/player\.dataset\.readyMediaTransport="blob-url"/);
+  assert.match(ready,/player\.load\(\);\s*return;/);
+  assert.match(ready,/onPlaybackError\(player\)/,
+    "only after the original Blob has been retried via a second source transport may it fail");
+  assert.doesNotMatch(ready,/<video key=\{video\.url\} src=\{video\.url\}/,
+    "React must not eagerly create a competing blob: decoder before Safari srcObject attaches");
+  assert.match(ready,/checking&&video&&!rendering\?<button/);
+  assert.match(ready,/data-ready-play-verify/);
+  assert.match(studio,/nativeIphoneMp4Retry=\{iphoneLocalPlayback&&nativeIphoneMp4Available\}/);
+  assert.match(studio,/if\(nativeIphoneMp4Available\)void createVideo\(false,true\)/,
+    "the explicit retry must use the existing native MP4 recorder, not a second WebCodecs run");
+  assert.match(studio,/!iphoneLocalPlayback\|\|nativeIphoneMp4Available/);
+  assert.match(ready,/!waiting&&!exportFailed&&!courseFlow/,
+    "one clear retry CTA rather than another identical Generate action when MP4 failed");
+  assert.match(studio,/if\(creditOpRef\.current\)return/);
+  assert.match(studio,/playbackStatus==="ready"&&creditConfirmed/);
 });
