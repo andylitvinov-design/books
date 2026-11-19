@@ -186,11 +186,11 @@ try {
     }
     await expect(quiz.locator("[data-services-shamanica-link]")).toHaveAttribute("href", "/" + locale + "/shamanica");
     await expect(quiz.locator("[data-services-extra-categories]")).toHaveCount(1);
-    const more = quiz.locator("[data-services-extra-categories]");
-    await more.locator("summary").click();
-    await expect(more.locator("nav a")).toHaveCount(4);
-    await expect(more.locator('nav a[href="#service-group-browse"]')).toHaveCount(1);
-    await more.locator("summary").click();
+    const extraCategories = quiz.locator("[data-services-extra-categories]");
+    await extraCategories.locator("summary").click();
+    await expect(extraCategories.locator("nav a")).toHaveCount(4);
+    await expect(extraCategories.locator('nav a[href="#service-group-browse"]')).toHaveCount(1);
+    await extraCategories.locator("summary").click();
     await expect(quiz.locator('[data-services-quiz-category="business"]')).toHaveAttribute("href", "#service-group-business");
     // Business has its own topic, need and start-format branching.
     await quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice="business_support"]').click();
@@ -246,9 +246,9 @@ try {
     for (const selector of legacyPhoneSelectors) {
       await expect(page.locator(selector + ":visible")).toHaveCount(0);
     }
-    // The approved lower page is a compact, one-panel-at-a-time catalogue.
-    // The original messenger and the three real consultation cards stay visible.
-    await visible(page.locator("[data-assist-personal-consultation]"));
+    // The approved 10-category shelf has no duplicate large featured cards.
+    // Older diagnostic formats remain accessible inside the consultation disclosure.
+    await expect(page.locator("[data-assist-personal-consultation]")).toBeHidden();
     const catalog = page.locator("[data-services-unified-catalog]");
     await visible(catalog);
     // Browser acceptance must exercise hydrated React handlers, not
@@ -258,10 +258,10 @@ try {
       { timeout: 30000, message: 'Mobile Services catalogue must hydrate before interactions' },
     ).toBe(true);
     const panelIds = [
-      "reiki", "browse", "reading", "consultation", "services", "business", "video", "courses",
-      "coach", "magical", "homeopathy", "about", "testimonials", "mytube", "directory",
+      "consultation", "homeopathy", "services", "business", "browse", "courses",
+      "video", "coach", "reiki", "reading", "about", "testimonials", "mytube", "directory",
     ];
-    const servicePanelIds = new Set(panelIds.slice(0, 11));
+    const servicePanelIds = new Set(panelIds.slice(0, 10));
     await expect(catalog.locator("[data-services-unified-panel]")).toHaveCount(panelIds.length);
     for (const id of panelIds) {
       const panel = catalog.locator('[data-services-unified-panel="' + id + '"]');
@@ -742,21 +742,21 @@ try {
         await visible(free.locator('a[href="/' + locale + '/services/dao-health-profile"]').first());
         await visible(free.locator('a[href="/' + locale + '/courses/antistress"]'));
         assert.equal(await page.locator("h1#services-conversion-title").count(), 1);
-        // Eleven groups with three published options apiece, including the
-        // distinct Business category in EN, RU and ES. Keep ordering identical.
+        // Ten main categories with three real offers each; esoteric extras
+        // stay inside the voluntary Spiritual Reading disclosure / Shamanica.
         const visibleVariants=page.locator('[data-services-unified-catalog] [data-services-three-visible]');
-        await expect(visibleVariants).toHaveCount(11);
-        await expect(visibleVariants.locator('[data-service-variant]')).toHaveCount(33);
+        await expect(visibleVariants).toHaveCount(10);
+        await expect(visibleVariants.locator('[data-service-variant]')).toHaveCount(30);
         const actualGroups=await visibleVariants.evaluateAll(nodes=>
           nodes.map(node=>({id:node.getAttribute("data-services-three-visible"),
             declared:node.getAttribute("data-services-offer-count"),
             visible:node.getClientRects().length>0,
             options:node.querySelectorAll("[data-service-variant]").length})));
         assert.deepEqual(actualGroups.map(x=>x.id),
-          ["consultation","homeopathy","services","business","reiki","courses","video","browse","reading","coach","magical"],
+          ["consultation","homeopathy","services","business","browse","courses","video","coach","reiki","reading"],
           "The first six category targets must remain visible in their approved order");
         assert.ok(actualGroups.every(x=>x.declared==="3"&&x.visible&&x.options===3),
-          "Each of the eleven service panels displays all three choices without opening an accordion");
+          "Each of the ten service panels displays all three choices without opening an accordion");
         assert.equal(await page.evaluate(() => {
           const selectors = ["#consultation","#free-insights","#solutions","#services-conversion-title",
             "[data-services-meet]",'[data-personal-testimonials="services"]',
@@ -777,7 +777,9 @@ try {
         await expect(paid.locator("h2#services-personal-title")).toBeHidden();
         await expect(paid.locator("[data-services-studio-card]:visible")).toHaveCount(0);
         await expect(page.locator('[data-services-unified-panel="video"] [data-assist-video-generation]')).toBeHidden();
-        await visible(page.locator('[data-services-unified-panel="video"] [data-service-card-actions] button').first());
+        // Legacy panel-level actions are hidden by the approved three-offer layout.
+        // Require a real visible action within the first of the three video offers.
+        await visible(page.locator('[data-services-unified-panel="video"] > [data-services-three-visible] > [data-service-variant] [data-service-card-actions] button').first());
         assert.equal(await page.locator("#find-your-service").count(), 0);
       }
       await assertNoDevIssueOverlay(page, locale + "/services/" + width);
