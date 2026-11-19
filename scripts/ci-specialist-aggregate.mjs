@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, REVALIDATABLE_CI_POLICY_FILES } from '../lib/ci/production-base-impact.mjs';
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
@@ -862,6 +862,7 @@ function loadProtectedValidator(liveSha) {
     }
     return {
       path: join(dir, 'scripts/ci-specialist-aggregate.mjs'),
+      impactPath: join(dir, 'lib/ci/production-base-impact.mjs'),
       cleanup: () => rmSync(dir, {recursive:true, force:true}),
     };
   } catch (error) {
@@ -872,31 +873,85 @@ function loadProtectedValidator(liveSha) {
 
 export async function revalidateAfterTrustedPolicyAdvance(api, ctx, files, options={}) {
   const blocked = () => Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
-  const target = await api.target();
   const changed = files.changedRows?.flatMap(row => row.previous_filename
     ? [row.filename, row.previous_filename] : [row.filename]);
-  if (!Array.isArray(changed) || !changed.length || changed.some(path => typeof path !== 'string')) throw blocked();
-  const diff = await api.compare(ctx.base, target);
-  if (!safeTrustedPolicyAdvance(diff, ctx.base, target, changed)) throw blocked();
-  // Avoid wasting a policy recheck while production is still moving.
-  if (await api.target() !== target) throw blocked();
+  if (!Array.isArray(changed) || !changed.length ||
+      changed.some(path => typeof path !== 'string')) throw blocked();
+
+  // Always execute policy code from the CURRENT protected production commit,
+  // never the PR source or an untrusted checkpoint. The old immutable policy
+  // can fail to understand a mixed target advance approved by a newer reviewed
+  // policy. Loading the new policy is permitted ONLY if GitHub Compare proves
+  // at least one exact trusted CI validator/test path changed; loading is NOT
+  // permission to PASS. The latest policy must independently approve ALL rows.
   const loader = options.loadPolicy ?? (async sha => {
     const extracted = loadProtectedValidator(sha);
     try {
-      const policyModule = await import(pathToFileURL(extracted.path).href);
-      return {verify:policyModule.verify,cleanup:extracted.cleanup};
+      const [policyModule, impact] = await Promise.all([
+        import(pathToFileURL(extracted.path).href),
+        import(pathToFileURL(extracted.impactPath).href),
+      ]);
+      return {verify:policyModule.verify,
+        safeTrustedPolicyAdvance:impact.safeTrustedPolicyAdvance,
+        cleanup:extracted.cleanup};
     } catch (error) { extracted.cleanup(); throw error; }
   });
-  const policy = await loader(target);
-  try {
-    if (typeof policy?.verify !== 'function') throw Error('TRUSTED_SPECIALIST_POLICY_NOT_EXECUTABLE');
-    const result = await policy.verify(api, ctx, files, {trustedPolicyBaseSha:target});
-    // No second moving-base exception: fail closed and coalesce at next run.
-    if (await api.target() !== target) throw blocked();
-    return {...result, policyRevalidatedAgainst:target};
-  } finally {
-    if (typeof policy?.cleanup === 'function') policy.cleanup();
+  const policyFiles = new Set(REVALIDATABLE_CI_POLICY_FILES);
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const target = await api.target();
+    if (!/^[0-9a-f]{40}$/.test(target || '')) throw blocked();
+    const diff = await api.compare(ctx.base, target);
+    const oldPolicyAccepts = safeTrustedPolicyAdvance(diff, ctx.base, target, changed);
+    const possibleNewPolicy = Array.isArray(diff?.files) && diff.files.some(row =>
+      policyFiles.has(row?.filename) && !changed.includes(row.filename) &&
+      ['added','modified'].includes(row.status) && !row.previous_filename);
+    if (!oldPolicyAccepts && !possibleNewPolicy) throw blocked();
+
+    // Do not fetch a stale validator if another protected merge already won.
+    if (await api.target() !== target) {
+      console.log('CI_BASE_ADVANCE_RETRY: target changed before protected policy load');
+      continue;
+    }
+    const policy = await loader(target);
+    try {
+      if (typeof policy?.verify !== 'function')
+        throw Error('TRUSTED_SPECIALIST_POLICY_NOT_EXECUTABLE');
+      const currentImpact = typeof policy.safeTrustedPolicyAdvance === 'function'
+        ? policy.safeTrustedPolicyAdvance : safeTrustedPolicyAdvance;
+      if (!currentImpact(diff, ctx.base, target, changed)) throw blocked();
+
+      // Target can move while the new validator reviews successful workflows.
+      // Retry only this read-only policy check on a different verified SHA;
+      // never rerun green Core, create commits or waive actual failing jobs.
+      if (await api.target() !== target) {
+        console.log('CI_BASE_ADVANCE_RETRY: target changed before evidence recheck');
+        continue;
+      }
+      let result;
+      try {
+        result = await policy.verify(api, ctx, files,
+          {trustedPolicyBaseSha:target});
+      } catch (error) {
+        if (String(error?.message || error).includes(
+              'PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED') &&
+            await api.target() !== target) {
+          console.log('CI_BASE_ADVANCE_RETRY: protected target moved during evidence recheck');
+          continue;
+        }
+        throw error; // real HEAD conflict, incomplete/failed job or API denial
+      }
+      if (await api.target() !== target) {
+        console.log('CI_BASE_ADVANCE_RETRY: protected target moved after successful recheck');
+        continue;
+      }
+      return {...result, policyRevalidatedAgainst:target,
+        policyRevalidationAttempts:attempt+1};
+    } finally {
+      if (typeof policy?.cleanup === 'function') policy.cleanup();
+    }
   }
+  // Never certify a perpetually moving or unproven target as green.
+  throw blocked();
 }
 
 // Normalize observable symptoms across PRs without claiming identical root causes.
