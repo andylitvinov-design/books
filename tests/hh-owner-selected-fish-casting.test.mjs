@@ -25,7 +25,8 @@ test('native RU voice mapping requires separate rights; unknown original IDs fai
  const verified={HH_MY_COACH_FISH_RU_CAST_RIGHTS_APPROVED:'true'}
  for(const [id,voice] of Object.entries(OWNER_FISH_RU_CAST)){
    assert.equal(myCoachFishVoice(id,'ru',verified),voice)
-   assert.equal(myCoachFishVoice(id,'ru',{}),MY_COACH_FISH_VOICES[id])
+   assert.equal(myCoachFishVoice(id,'ru',{}),null,
+     'Russian speech must not use the English voice if native rights are pending')
  }
  assert.deepEqual(OWNER_FISH_RU_UNRESOLVED,['mira','sofia'])
  for(const id of OWNER_FISH_RU_UNRESOLVED)
@@ -64,4 +65,20 @@ test('both studio pickers enable voices by server whitelist, not just client fla
  const api=read('app/api/holistic-support/voice/route.js')
  assert.match(api,/fishLicensedVoices/)
  assert.match(api,/approvedFishReference\(v.id,process.env\)/)
+})
+
+test('all six Russian and four historical personas refuse implicit English synthesis',()=>{
+ for(const id of [...Object.keys(MY_COACH_FISH_VOICES)]){
+   assert.equal(myCoachFishVoice(id,'ru',{}),null,id+' RU requires explicit native model')
+   assert.equal(myCoachFishVoice(id,'es',{}),null,id+' ES must not use English')
+ }
+ const speech=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
+ assert.match(speech,/if\(replyLocale!=='en'&&!matches\.length\)return false/)
+})
+test('WebKit audio recipient Continue commits same-tap Montage navigation',()=>{
+ const ui=readFileSync(new URL('../components/mandala-free-video-studio.tsx',import.meta.url),'utf8')
+ const part=ui.slice(ui.indexOf('const goRecipientAudioToMontage='),ui.indexOf('// Existing recorder, STT API, shot matcher'))
+ assert.match(part,/flushSync\(\(\)=>\{setActiveWorkspace\("editor"\)/)
+ assert.match(part,/function goRecipientAudioToManualMontage/)
+ assert.match(part,/data-video-montage-concept/)
 })

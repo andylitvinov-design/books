@@ -46,7 +46,8 @@ test('Russian Mira never activates obsolete candidate; exact owner identity must
  assert.equal(myCoachFishVoice('mira','ru',gated),null)
  assert.equal(myCoachFishVoice('mira','en',gated),myCoachFishVoice('mira','en',{}))
  assert.equal(myCoachFishVoice('max','ru',gated),OWNER_FISH_RU_CAST.max)
- assert.equal(myCoachFishVoice('mira','ru',{}),myCoachFishVoice('mira','en',{}))
+ assert.equal(myCoachFishVoice('mira','ru',{}),null,
+   'no licensed native RU cast must never fall back to English Sarah')
 })
 
 

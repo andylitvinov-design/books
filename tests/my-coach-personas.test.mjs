@@ -125,7 +125,7 @@ test('Living Coach keeps static face identity and uses real MP4 playback, never 
   assert.ok(avatar.includes('MyCoachMotionMedia personaId={photoId}'))
   assert.match(css,/\.livingPortraitMouth\{display:none!important\}/)
   assert.match(css,/\.frame \.head,\.frame \.eyes,\.frame \.mouthTalk,\.frame \.halo\{animation:none!important/)
-  assert.ok(media.includes("const VIDEO_PERSONAS=new Set(['mira','max','sofia','alex'])"))
+  assert.ok(media.includes("const VIDEO_PERSONAS=new Set(['mira','max','sofia','alex','harry'])"))
   assert.ok(media.includes("MEDIA_ROOT+personaId+'-still.webp'"))
   assert.ok(media.includes("MEDIA_ROOT+personaId+'-'+clip+'.mp4'"))
   assert.ok(media.includes('muted loop playsInline autoPlay'))
@@ -161,11 +161,10 @@ test('mobile My Coach hero displays a still/MP4 scene with no CSS lip or eye dis
 // field and every opted-in natural-voice request failed before TTS.
 test('Mira Russian voice is locale-specific and never enabled without approved usage rights',()=>{
  assert.equal(myCoachFishVoice('mira','en',{}),MY_COACH_FISH_VOICES.mira)
- assert.equal(myCoachFishVoice('mira','ru',{}),MY_COACH_FISH_VOICES.mira)
- assert.equal(myCoachFishVoice('mira','ru',{HH_MY_COACH_MIRA_RU_VOICE_RIGHTS_APPROVED:'false'}),MY_COACH_FISH_VOICES.mira)
- // Obsolete Mira 'mur' model approval must not override the owner's new
- // 'Спокойный женский' identity. Exactly audited identity and rights are mandatory.
- assert.equal(myCoachFishVoice('mira','ru',{HH_MY_COACH_MIRA_RU_VOICE_RIGHTS_APPROVED:'true'}),MY_COACH_FISH_VOICES.mira)
+ assert.equal(myCoachFishVoice('mira','ru',{}),null)
+ assert.equal(myCoachFishVoice('mira','ru',{HH_MY_COACH_MIRA_RU_VOICE_RIGHTS_APPROVED:'false'}),null)
+ // Obsolete Mira 'mur' approval must never resurrect an EN or wrong RU voice.
+ assert.equal(myCoachFishVoice('mira','ru',{HH_MY_COACH_MIRA_RU_VOICE_RIGHTS_APPROVED:'true'}),null)
  assert.equal(myCoachFishVoice('mira','ru',{HH_MY_COACH_FISH_RU_CAST_RIGHTS_APPROVED:'true'}),null)
  assert.equal(myCoachFishVoice('max','ru',{HH_MY_COACH_FISH_RU_CAST_RIGHTS_APPROVED:'true'}),OWNER_FISH_RU_CAST.max)
  assert.equal(myCoachFishVoice('__proto__','ru',{}),null)
