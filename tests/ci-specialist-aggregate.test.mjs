@@ -1,4 +1,4 @@
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedOptionalTriggerNarrowing, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance } from '../lib/ci/production-base-impact.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -2206,6 +2206,124 @@ test('independent production CI maintenance keeps already-green sensitive PRs on
   assert.equal(safeIndependentCiMaintenanceAdvance(good,BASE,BASE,candidate),false);
   assert.equal(safeIndependentCiMaintenanceAdvance(good,BASE,live,[]),false);
   assert.equal(safeIndependentCiMaintenanceAdvance(good,BASE,live,['tests/pr-fast-lane.test.mjs']),false);
+});
+
+test('seven unrelated optional workflow selector narrowings cannot invalidate green exact-HEAD PRs', async () => {
+  const live='c'.repeat(40);
+  const protectedRows = [
+    {
+      "filename": ".github/workflows/hh-profile-axis-matching.yml",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "changes": 2,
+      "patch": "@@ -133,6 +133,8 @@ on:\n       - '.github/workflows/hh-portrait-sectors.yml'\n       # Commander signed PR completion is validated by Core and the focused Guard, not this unrelated heavy suite.\n       - '!app/api/app/commander/**'\n+      # Shared Practice editor routes are independently covered by App/Practice owners.\n+      - '!app/api/app/practice/**'\n permissions:\n   contents: read\n concurrency:"
+    },
+    {
+      "filename": ".github/workflows/holistic-house-pdf-graphics.yml",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 1,
+      "changes": 1,
+      "patch": "@@ -7,7 +7,6 @@ on:\n       - \"scripts/build-report-pdf-art.mjs\"\n       - \"scripts/render-premium-report-samples.mjs\"\n       - \"tests/report-premium-pagination-v5.test.mjs\"\n-      - \"package.json\"\n       - \"public/images/holistic-house/report-lighthouse-coast.webp\"\n       - \"tests/report-photo-contain-exif.test.mjs\"\n       - \"tests/report-illustrations.test.mjs\""
+    },
+    {
+      "filename": ".github/workflows/maya-reader-bundle.yml",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 3,
+      "changes": 3,
+      "patch": "@@ -2,7 +2,6 @@ name: Maya reader runtime bundle\n on:\n   pull_request:\n     paths:\n-      - 'next.config.ts'\n       - 'app/media/**'\n       - 'data/media.*'\n       - 'scripts/verify-vercel-media-trace.mjs'\n@@ -16,14 +15,12 @@ on:\n   push:\n     branches: ['codex/public-book-library']\n     paths:\n-      - 'next.config.ts'\n       - 'app/books/**'\n       - 'data/library.ts'\n       - 'data/reader-content.ts'\n       - 'source-books/book-3-maya-tradition/outputs/*.html'\n       - 'scripts/verify-maya-reader-release.mjs'\n       - 'tests/maya-*.test.mjs'\n-      - '.github/workflows/maya-reader-bundle.yml'\n permissions:\n   contents: read\n jobs:"
+    },
+    {
+      "filename": ".github/workflows/practice-visual-browser.yml",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 13,
+      "changes": 17,
+      "patch": "@@ -4,21 +4,15 @@ on:\n     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]\n     branches: ['codex/public-book-library']\n     paths:\n-      - '.agents/skills/visual-to-code-pro/**'\n-      - '.codex/config.toml'\n-      - '.vscode/mcp.json'\n-      - 'AGENTS.md'\n       - 'app/*/practice/page.jsx'\n       - 'components/practice-showcase.jsx'\n       - 'components/practice-showcase.module.css'\n       - 'components/app/my-services-dashboard.jsx'\n       - 'components/app/practice-inner-navigation.jsx'\n       - 'app/api/app/practice/**'\n       - 'app/api/app/\\[...path\\]/route.js'\n-      # The exact dispatcher is cross-domain. Node's BASE-trusted glob reader\n-      # does not match GitHub's escaped Next route, so also use this narrowly\n-      # bounded one-segment route with explicit Messenger exclusions.\n-      - 'app/api/app/*/route.js'\n+      # Practice visuals keep explicit Practice APIs and the real shared dispatcher.\n+      # Generic sibling app API routes belong to the private App/IA owners.\n       - '!app/api/app/direct-messages/**'\n       - '!app/api/app/practitioner-client-messages/**'\n       - '!app/api/app/notification-channels/**'\n@@ -40,16 +34,13 @@ on:\n       - 'components/app/practice-inner-navigation.jsx'\n       - 'app/api/app/practice/**'\n       - 'app/api/app/\\[...path\\]/route.js'\n-      # The exact dispatcher is cross-domain. Node's BASE-trusted glob reader\n-      # does not match GitHub's escaped Next route, so also use this narrowly\n-      # bounded one-segment route with explicit Messenger exclusions.\n-      - 'app/api/app/*/route.js'\n+      # Practice visuals keep explicit Practice APIs and the real shared dispatcher.\n+      # Generic sibling app API routes belong to the private App/IA owners.\n       - '!app/api/app/direct-messages/**'\n       - '!app/api/app/practitioner-client-messages/**'\n       - '!app/api/app/notification-channels/**'\n       - 'scripts/verify-practice-visual-browser.mjs'\n       - 'scripts/compare-ui-screenshots.mjs'\n-      - '.github/workflows/practice-visual-browser.yml'\n concurrency:\n   group: hh-practice-visual-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}\n   cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"
+    },
+    {
+      "filename": ".github/workflows/tantra-pdf-source-qa.yml",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 1,
+      "changes": 1,
+      "patch": "@@ -10,7 +10,6 @@ on:\n       - 'app/api/academy/reiki-guide/route.js'\n       - 'tests/reiki-guide-pdf.test.mjs'\n       - 'tests/tantra-pdf-full-original.test.mjs'\n-      - 'next.config.ts'\n permissions:\n   contents: read\n jobs:"
+    },
+    {
+      "filename": ".github/workflows/tantra-testimonials.yml",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 7,
+      "changes": 7,
+      "patch": "@@ -4,12 +4,9 @@ on:\n     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]\n     branches: ['codex/public-book-library']\n     paths:\n-      - 'middleware.ts'\n       - 'components/tantra-reiki-testimonials.tsx'\n       - 'components/tantra-video-testimonials.tsx'\n       - 'components/academy-video-player.tsx'\n-      - 'components/csp-navigation-boundary.tsx'\n-      - 'lib/csp-prehydration.js'\n       - 'tests/tantra-video-lifecycle.test.mjs'\n       - 'data/academy/tantra-reiki-full.generated.json'\n       - 'data/academy/tantra-native-assets.json'\n@@ -19,19 +16,15 @@ on:\n   push:\n     branches: ['codex/public-book-library']\n     paths:\n-      - 'middleware.ts'\n       - 'components/tantra-reiki-testimonials.tsx'\n       - 'components/tantra-video-testimonials.tsx'\n       - 'components/academy-video-player.tsx'\n-      - 'components/csp-navigation-boundary.tsx'\n-      - 'lib/csp-prehydration.js'\n       - 'tests/tantra-video-lifecycle.test.mjs'\n       - 'data/academy/tantra-reiki-full.generated.json'\n       - 'data/academy/tantra-native-assets.json'\n       - 'public/images/tantra-reiki/**'\n       - 'scripts/verify-tantra-testimonials.mjs'\n       - 'tests/video-csp-navigation.test.mjs'\n-      - '.github/workflows/tantra-testimonials.yml'\n   workflow_dispatch:\n permissions:\n   contents: read"
+    },
+    {
+      "filename": ".github/workflows/visual-to-code-skill.yml",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 1,
+      "changes": 1,
+      "patch": "@@ -3,7 +3,6 @@ on:\n   pull_request:\n     branches: ['codex/public-book-library']\n     paths:\n-      - 'AGENTS.md'\n       - 'app/holistic-light-tokens.css'\n       - 'docs/design/HOLISTIC_LIGHT_DESIGN_BIBLE.md'\n       - 'scripts/holistic-light-design-qa.mjs'"
+    }
+  ];
+  const maintenance={filename:'tests/ci-pr-selective-workflows.test.mjs',status:'modified'};
+  const candidate=[
+    'components/mandala-automatic-storyboard.tsx',
+    'lib/mandala/recording-codecs.mjs',
+    'scripts/verify-affirmation-voice-browser.mjs',
+  ];
+  const compare=(rows,override={})=>({
+    status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:BASE},merge_base_commit:{sha:BASE},
+    commits:[{sha:live}],files:rows,...override,
+  });
+  assert.equal(protectedRows.length,7,'exact production incident fixture is complete');
+  for(const row of protectedRows)
+    assert.equal(verifiedOptionalTriggerNarrowing(row),true,row.filename);
+  const legitimate=compare([...protectedRows,maintenance]);
+  assert.equal(safeIndependentCiMaintenanceAdvance(legitimate,BASE,live,candidate),true,
+    'new trigger narrowing must reuse successful source and WebKit checks');
+  assert.equal(safeIndependentCiMaintenanceAdvance(legitimate,BASE,live,
+    ['app/api/holistic-agent/turn/route.js','components/holistic-agent-chat.tsx']),true,
+    'independent AI Assistant source should not rebuild after optional YAML cleanup');
+  for(const invalid of [
+    {...legitimate,status:'diverged'},
+    {...legitimate,behind_by:1},
+    {...legitimate,commits:[]},
+    {...legitimate,files:[...protectedRows,maintenance,maintenance]},
+    {...legitimate,files:[...protectedRows,{filename:'package.json',status:'modified'}]},
+    {...legitimate,files:[...protectedRows,{filename:'.github/workflows/hh-pr-core-release.yml',status:'modified'}]},
+    {...legitimate,files:[...protectedRows,{...maintenance,status:'removed'}]},
+  ]) assert.equal(safeIndependentCiMaintenanceAdvance(invalid,BASE,live,candidate),false,
+    'unverified ancestry, path overlap or mandatory policy changes cannot be exempt');
+  for(const altered of [
+    {...protectedRows[0],patch:protectedRows[0].patch.replace(
+      "+      - '!app/api/app/practice/**'", "+      - 'app/api/app/practice/**'")},
+    {...protectedRows[0],patch:protectedRows[0].patch+"\n+    permissions: write"},
+    {...protectedRows[0],patch:protectedRows[0].patch.replace('@@ on:','@@ jobs:')},
+    {...protectedRows[0],patch:protectedRows[0].patch.replace(
+      "+      - '!app/api/app/practice/**'", "-      - '!app/api/app/practice/**'")},
+    {...protectedRows[0],previous_filename:'other.yml'},
+    {...protectedRows[0],status:'renamed'},
+    {...protectedRows[0],changes:100},
+    {...protectedRows[0],filename:'.github/workflows/hh-pr-core-release.yml'},
+  ]) assert.equal(verifiedOptionalTriggerNarrowing(altered),false,
+    'expanded trigger, job/permission change, rename or incomplete patch must block');
+  assert.equal(safeIndependentCiMaintenanceAdvance(legitimate,BASE,live,
+    ['.github/workflows/hh-profile-axis-matching.yml']),false,'same-file overlap is never reusable');
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  const sources={base:new Map([[path,yaml]]),current:new Map([[path,yaml]]),
+    changedRows:[{filename:candidate[0],status:'M'}]};
+  const api={
+    pr:async()=>({...pr(),base:{...pr().base,sha:live},mergeable:true}),
+    target:async()=>live,
+    compare:async()=>legitimate,
+    runs:async()=>[run()],
+    jobs:async()=>[{name:'test',status:'completed',conclusion:'success'}],
+  };
+  assert.deepEqual((await verify(api,ctx,sources,{maxWaitMs:0})).expected,[path]);
 });
 
 test('base movement during Specialist preserves exact-HEAD results only for proven disjoint CI delta', async () => {
