@@ -99,7 +99,7 @@ import type { MoneySceneId } from "@/lib/mandala/money-flow-effects";
 import { orderRecordingMimes, proceduralMp4Route, selectWebCodecsForRecording, shouldAutoRecoverSafariPlayback } from "@/lib/mandala/recording-codecs.mjs";
 import { prepareFourFilmSources } from "@/lib/mandala/free-film-source-loader.mjs";
 import {verifiedCategorySource,verifiedSceneAspect,canonicalSourceMasterKey} from "@/lib/mandala/category-video-storyboard.mjs";
-import {STORY_PHOTO_BY_ID,isTrustedStoryPhoto} from "@/lib/mandala/story-photo-library.mjs";
+import {STORY_PHOTO_BY_ID,isTrustedStoryPhoto,getMyTubeScenarioPhotos,MYTUBE_SCENARIO_PHOTO_COVERAGE} from "@/lib/mandala/story-photo-library.mjs";
 import { ensureDecodedVideoOnUserIntent } from "@/lib/mandala/intent-video-loading.mjs";
 import { resolveLicensedSourceFrame, assessLicensedSourceFrame,validateLicensedSourcePlayback } from "@/lib/mandala/free-film-source-clock.mjs";
 
@@ -5374,6 +5374,53 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       return false;
     }
   };
+  // MyTube → the ONE existing Video Studio Canvas montage. The user explicitly
+  // chose a canonical scenario; six verified-source photos replace only this
+  // selection, never generic MP4 fallback or unrelated client imagery.
+  // Browser decode and source checks still run during real video export.
+  const photoScenarioLoadedRef=useRef<string|null>(null);
+  useEffect(()=>{
+    const chosen=new URLSearchParams(window.location.search).get("photoScenario");
+    if(!chosen||photoScenarioLoadedRef.current===chosen)return;
+    photoScenarioLoadedRef.current=chosen;
+    const meta=MYTUBE_SCENARIO_PHOTO_COVERAGE[chosen];
+    const photos=getMyTubeScenarioPhotos(chosen);
+    if(!meta||photos.length!==6){
+      setNotice(locale==="ru"?"Подборка фотографий не найдена. Выберите сценарий в MyTube."
+        :locale==="es"?"No se encontró el conjunto de fotos. Elige una historia en MyTube."
+        :"Photo selection was not found. Choose a MyTube story.");
+      return;
+    }
+    const selectedTheme:VideoTheme=meta.categoryId==="love-relationships"?"relationships":
+      meta.categoryId==="stress-anxiety"?"health":
+      meta.categoryId==="energy-confidence"?"energy":
+      meta.topicId.includes("money")||meta.topicId.includes("income")||
+      meta.topicId.includes("financial")?"money":"goals";
+    const preset=FREE_FILM_PRESETS.find(item=>item.theme===selectedTheme);
+    if(!preset){
+      setNotice(locale==="ru"?"Не найден монтажный шаблон для этого сюжета."
+        :locale==="es"?"No hay plantilla de montaje para esta historia."
+        :"No montage template is available for this story.");
+      return;
+    }
+    const edit:FreeFilmCompilationEdit={
+      clipIds:photos.map(photo=>photo.id),
+      durationSecondsByStage:[5,5,5,5,5,5],
+      captionTexts:["","","","","",""],
+    };
+    if(applyAutoFilm(preset.id,30,edit,"portrait",true)){
+      setActiveWorkspace("video");
+      setMontagePanel("settings");
+      setNotice(locale==="ru"
+        ?"Подобраны 6 разных реальных фотографий для «"+meta.titleRu+"». Проверьте кадры и создайте 30-секундное видео."
+        :locale==="es"
+          ?"Se han añadido 6 fotos distintas. Revisa las escenas y crea un vídeo de 30 segundos."
+          :"Six distinct real photographs are ready. Review the scenes and create a 30-second video.");
+    }
+  // One explicit deep link. Never fetch client-selected remote URLs.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
+
   const createFiveSceneStory=()=>{
     if(recording||preparing)return;
     if((draftVideoConcept||approvedVideoConcept)?.storyboard?.length===6&&
