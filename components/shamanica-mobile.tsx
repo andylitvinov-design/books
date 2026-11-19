@@ -81,7 +81,7 @@ export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;au
  const choices=step===0?goals.map((id,i)=>({id,label:t.goals[i]}))
   :step===1?methods.map((id,i)=>({id,label:t.methods[i]}))
   :starts.map((id,i)=>({id,label:t.starts[i]}));
- return <main className={styles.page} lang={locale} data-shamanica-mobile>
+ return <main className={styles.page} lang={locale} data-shamanica-mobile data-shamanica-business-page={business?"true":undefined}>
   <div className={styles.container}>
    <header className={styles.header}>
     <Link className={styles.brand} href={locale==="en"?"/":"/"+locale} prefetch={false}><Leaf size={33} strokeWidth={1.8} aria-hidden="true"/><span>Holistic House</span></Link>
@@ -101,7 +101,7 @@ export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;au
    <nav className={styles.audiences} aria-label="Audience">
     <Link className={!business?styles.audienceActive:undefined} aria-current={!business?"page":undefined} href={"/"+locale+"/shamanica"}><Heart size={18}/>{t.self}</Link>
     <Link className={business?styles.audienceActive:undefined} aria-current={business?"page":undefined} href={"/"+locale+"/shamanica/business"}><BriefcaseBusiness size={18}/>{t.work}</Link>
-    <Link href={"/"+locale+"/holistic-support/mobile"}><Sparkles size={18}/>{t.help}</Link>
+    {business?<button type="button" data-shamanica-ihelp-trigger aria-label={t.help} onClick={()=>window.dispatchEvent(new Event("hh:open-ihelp"))}><Sparkles size={18}/>{t.help}</button>:<Link href={"/"+locale+"/holistic-support/mobile"}><Sparkles size={18}/>{t.help}</Link>}
    </nav>
    {business?<ShamanicaBusinessContent locale={locale}/>:<>
    <section className={styles.hero} aria-labelledby="shamanica-hero-title">

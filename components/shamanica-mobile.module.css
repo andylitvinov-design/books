@@ -46,3 +46,22 @@
 @media(max-width:560px){.container{padding-inline:9px}.brand span{font-size:clamp(20px,5.5vw,27px)}.brand svg{width:27px;height:27px}.tools{gap:5px}.iconButton,.lang{min-width:35px;height:36px;padding:0 6px}.audiences{gap:5px}.audiences a{font-size:clamp(10px,2.7vw,14px)}.hero{min-height:253px;padding:15px}.hero h1{font-size:clamp(43px,11vw,65px)}.heroText{max-width:86%}.heroText p{font-size:14px;max-width:260px}.quiz{padding:14px 12px}.quiz h2{font-size:clamp(24px,5.9vw,30px)}.answer{min-height:79px;padding:10px 9px;font-size:clamp(13px,3.5vw,16px)}.answer svg{width:24px;height:24px}.serviceGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.serviceCard,.serviceCard:nth-child(n+4){grid-column:span 1;min-height:220px}.serviceCard:last-child{grid-column:1/-1;min-height:190px}.servicePhoto{height:92px}.serviceCard:last-child .servicePhoto{height:101px}.serviceIcon{top:73px}.serviceBody{padding:20px 10px 10px}.serviceBody h3{font-size:clamp(15px,3.9vw,18px)}.serviceBody p{font-size:clamp(12px,3vw,14px)}}
 @media(max-width:350px){.brand span{font-size:19px}.hero{min-height:271px}.audiences a{font-size:10px}.answer{font-size:12px;gap:6px}.answer svg{width:22px;height:22px}}
 @media(prefers-reduced-motion:reduce){.answer{transition:none}}
+
+/* Compact business-only shell; preserve the existing personal page and app dock. */
+@media(max-width:759px){
+ .page[data-shamanica-business-page="true"] .container{padding:5px 9px calc(var(--hh-unified-nav-height,94px) + 5px)}
+ .page[data-shamanica-business-page="true"] .header{min-height:36px;margin:0 2px 4px}
+ .page[data-shamanica-business-page="true"] .brand span{font-size:clamp(20px,5.4vw,25px)}
+ .page[data-shamanica-business-page="true"] .brand svg{width:25px;height:25px}
+ .page[data-shamanica-business-page="true"] .tools{gap:4px}
+ .page[data-shamanica-business-page="true"] .iconButton,.page[data-shamanica-business-page="true"] .lang{min-width:33px;height:34px;padding:0 6px}
+ .page[data-shamanica-business-page="true"] .audiences{gap:5px;margin-bottom:6px}
+ .page[data-shamanica-business-page="true"] .audiences a,.page[data-shamanica-business-page="true"] .audiences button{min-width:0;min-height:37px;padding:5px 4px;font-size:clamp(10.5px,2.95vw,13px)}
+ .page[data-shamanica-business-page="true"] .audiences button{display:flex;align-items:center;justify-content:center;gap:5px;border:1px solid #ece4db;border-radius:30px;background:#fffbf8;color:var(--ink);box-shadow:0 3px 8px #42522c1b;font-family:inherit;font-weight:760;cursor:pointer}
+ .page[data-shamanica-business-page="true"] .audiences button svg{flex:none;width:clamp(15px,3.8vw,20px)}
+}
+@media(max-width:759px) and (max-height:800px){
+ .page[data-shamanica-business-page="true"] .header{min-height:34px;margin-bottom:3px}
+ .page[data-shamanica-business-page="true"] .audiences{margin-bottom:4px}
+ .page[data-shamanica-business-page="true"] .audiences a,.page[data-shamanica-business-page="true"] .audiences button{min-height:34px}
+}
