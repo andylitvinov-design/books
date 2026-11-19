@@ -110,3 +110,10 @@
 }
 @media(min-width:768px){.root{width:min(calc(100% - 36px),900px)}.hero{padding:36px 36px 26px}.focusCard{min-height:105px}.composer{min-height:170px}}
 @media(prefers-reduced-motion:reduce){.scene{transform:none}}
+/* Static server-rendered paid-session CTA: direct, keyboard-accessible, and above free-review. */
+.sessionCta{box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:48px;padding:10px 14px;border:1px solid #d3e5da;border-radius:14px;background:#163c35df;color:#fff;text-decoration:none}
+.sessionCta strong{display:block;font:800 16px/1.25 system-ui,sans-serif}
+.sessionCta small{display:block;margin-top:3px;color:#e2f4ea;font:500 12px/1.3 system-ui,sans-serif}
+.sessionCta svg{flex:none}
+.sessionCta:focus-visible{outline:3px solid #00a47c;outline-offset:3px}
+@media(max-width:430px){.sessionCta{min-height:46px;padding:8px 12px}.sessionCta strong{font-size:15px}.sessionCta small{font-size:11px}}

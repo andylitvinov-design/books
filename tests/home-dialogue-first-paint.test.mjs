@@ -115,11 +115,11 @@ test("non-destructive Home handoff and compare-and-delete prevent missing first 
  assert.equal(peekHomeAliHandoff(storage,"ru",10010+HOME_ALI_HANDOFF_MAX_AGE+1),null);
  assert.equal(storage.entries().length,0);
 });
-test("Home starter sends on one tap, Ali preserves original wording and shows retry",()=>{
+test("Home topic opens contextual offers and typed requests retain Ali retry",()=>{
  const home=read("components/home-dialogue-entry.tsx");
  const chat=read("components/holistic-agent-chat.tsx");
  const hub=read("components/app/messages-orders-clients.jsx");
- assert.match(home,/onClick=\{\(\)=>startConversationWith\(hint\.prompt,hint\.id==="business"\?"business":mode\)\}/);
+ assert.match(home,/onClick=\{\(\)=>router\.push\(chatPath\+"&intent="\+hint\.id\)\}/);
  assert.match(home,/startConversationWith\(draft\)/);
  assert.match(chat,/homeHandoffPhase==="queued"/);
  assert.match(chat,/homeHandoffPhase==="retry"/);

@@ -23,7 +23,10 @@ test('first screen shows six owner-requested projects with explanatory subtitles
    assert.ok(projects.includes('id:"'+id+'"'),id)
    assert.ok(projectCss.includes('data-hh-ai-project="'+id+'"'),id)
  }
- assert.match(agent,/messengerView&&!pageHelp&&!messages\.length&&<>/)
+ // Preserve the six-project landing only for ordinary, unstaged Messenger entry.
+ assert.match(agent,/compact&&messengerView&&!pageHelp&&!homeIntent&&!messages\.length&&homeHandoffPhase==="idle"&&<>/)
+ // A verified public Home intent opens its contextual panel instead of the six-project landing.
+ assert.match(agent,/compact&&messengerView&&!pageHelp&&homeIntent&&<HomeIntentPanel/)
  assert.match(agent,/<MessengerSixProjects locale=\{locale\} onSelect=\{startProject\}\/>/)
  assert.match(agentCss,/data-hh-messenger-six-projects/)
  assert.match(projectCss,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
