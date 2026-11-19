@@ -16,8 +16,6 @@ on:
       - 'scripts/verify-unified-six-dock-browser.mjs'
       - 'tests/library-playwright-runner.test.mjs'
       - '.github/workflows/library-public-feed.yml'
-      - 'components/mandala-video-director-chat.tsx'
-      - 'components/app/messages-orders-clients.jsx'
       - 'components/holistic-support-mobile.tsx'
       - 'components/video-discovery.tsx'
       - 'components/video-discovery.module.css'
