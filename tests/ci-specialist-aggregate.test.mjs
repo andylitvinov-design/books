@@ -1839,19 +1839,25 @@ test('BASE-owned Mandala WebKit list accepts 25-32 strict literal routes, never 
   },branch,changed);
   const literalRoutes=guard.match(/(?:startsWith\(github\.head_ref, '[^']+'\)|github\.head_ref == '[^']+')/g)||[];
   const toLimit=32-literalRoutes.length;
-  assert.ok(toLimit>=1 && toLimit<=8,'the reviewed BASE allowlist has 24-31 literal routes');
+  assert.ok(toLimit>=0 && toLimit<=8,'the reviewed BASE allowlist has 24-32 literal routes');
+  const ownerVoice="github.head_ref == 'feat/approved-fish-coach-meditation-voices-20261119'";
+  assert.ok(literalRoutes.includes(ownerVoice),'owner voice casting must execute the real macOS gate');
   assert.equal(skip(original),true,'reviewed BASE literal routes remain checkable');
-  assert.equal(skip(extended(1)),true,'one additional literal prefix remains checkable');
+  if(toLimit>=1)
+    assert.equal(skip(extended(1)),true,'one more literal prefix within 32 remains checkable');
   assert.equal(skip(extended(toLimit)),true,'exactly 32 static predicates remain checkable');
   assert.equal(skip(extended(toLimit+1)),false,'33 predicates fail closed');
-  assert.equal(skip(extended(toLimit),'fix/ci-webkit-budget-probe-'+(toLimit-1)+'-check'),false,
-    'a matching WebKit branch must actually execute macOS');
+  assert.equal(skip(original,'feat/approved-fish-coach-meditation-voices-20261119'),false,
+    'newly-required owner Fish release branch must run macOS WebKit');
+  if(toLimit>=1)
+    assert.equal(skip(extended(toLimit),'fix/ci-webkit-budget-probe-'+(toLimit-1)+'-check'),false,
+      'a matching WebKit branch must actually execute macOS');
   assert.equal(skip(extended(toLimit),out,['lib/mandala/audio-render.mjs']),false,
     'encoded audio source cannot skip macOS');
   assert.equal(skip(original,out,safe,extended(1)),false,
     'PR changing the trusted macOS guard cannot certify its own skip');
-  assert.equal(skip(extended(1).replace(extra(1)[0],'success()')),false,
-    'arbitrary GitHub expressions are not static allowlist predicates');
+  assert.equal(skip(original.replace(ownerVoice,'success()')),false,
+    'arbitrary GitHub expressions are never trusted allowlist predicates');
 });
 
 test('VideoProjectV2 source changes require real macOS WebKit acceptance on video feature PRs', () => {
