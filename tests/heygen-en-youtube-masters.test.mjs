@@ -97,7 +97,7 @@ test('all public English HeyGen masters require exact paired English-channel You
  assert.ok(!endpoint.includes('refreshToken'))
  assert.ok(player.includes('const englishYoutubeOnly = isHeygen && video.language === "en"'))
  assert.ok(player.includes('verifiedEnglishYoutubeId'))
- assert.ok(player.includes('fetch("/api/public/english-intro-video?videoId="+'))
+ assert.ok(player.includes('resolveVerifiedEnglishYouTubeId(video.heygenId,controller.signal)'))
  assert.ok(player.includes('englishYoutubeOnly ? null : `https://app.heygen.com'))
  assert.ok(player.includes('data-english-video-source="youtube"'))
  assert.ok(!player.includes('className="site-video-ai-badge"'))

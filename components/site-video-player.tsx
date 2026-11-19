@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { StaticPortrait } from "@/components/static-portrait";
 import { useEffect, useId, useRef, useState } from "react";
+import {resolveVerifiedEnglishYouTubeId} from "@/lib/youtube/verified-english-player-client";
 import { parseSiteVideoSource, siteVideoWatchUrl, type PublishedSiteVideo } from "@/lib/site-videos/model";
 import styles from "./site-video-minimal.module.css";
 
@@ -183,20 +184,10 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
     youtubeLookupAbort.current=controller;
     setYoutubeLookup("checking");
     void (async()=>{
-      try{
-        const response=await fetch("/api/public/english-intro-video?videoId="+
-          encodeURIComponent(video.heygenId||""),{
-            cache:"no-store",credentials:"omit",signal:controller.signal,
-          });
-        const data=response.ok?await response.json() as {youtubeId?:unknown}:null;
-        if(controller.signal.aborted)return;
-        const id=data?.youtubeId;
-        if(typeof id==="string"&&/^[A-Za-z0-9_-]{11}$/.test(id)){
-          setVerifiedEnglishYoutubeId(id);setYoutubeLookup("idle");setPlaying(true);
-        }else setYoutubeLookup("unavailable");
-      }catch{
-        if(!controller.signal.aborted)setYoutubeLookup("unavailable");
-      }
+      const id=await resolveVerifiedEnglishYouTubeId(video.heygenId,controller.signal);
+      if(controller.signal.aborted)return;
+      if(id){setVerifiedEnglishYoutubeId(id);setYoutubeLookup("idle");setPlaying(true);}
+      else setYoutubeLookup("unavailable");
     })();
   };
   const externalLink = internalOnly || !verifiedWatchUrl ? null : <a className="site-video-watch-link" href={verifiedWatchUrl} target="_blank" rel="noopener noreferrer" aria-label={`${watchLabel}: ${video.title} (${text.newTab})`}>{watchLabel}<ExternalLink aria-hidden="true" /></a>;

@@ -30,8 +30,8 @@ test("EN/ES studio intro uses verified owner YouTube; no app badges/buttons on a
   const hero=studio.indexOf('showIntroHero ? <div className={videoStyles.therapyHero}');
   const rail=studio.indexOf('data-video-intro-my-rail',hero);
   const frame=studio.slice(hero,rail);
-  assert.ok(studio.includes('fetch("/api/public/english-intro-video"'));
-  assert.ok(studio.includes('credentials:"omit"'));
+  assert.ok(studio.includes('resolveVerifiedEnglishYouTubeId()'));
+  assert.ok(read("lib/youtube/verified-english-player-client.ts").includes('credentials:"omit"'));
   assert.ok(studio.includes('introYoutubeRequestRef.current'));
   assert.ok(studio.includes('typeof id==="string"'));
   assert.ok(frame.includes('data-video-therapy-youtube="verified"'));

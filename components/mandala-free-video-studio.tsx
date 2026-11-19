@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {resolveVerifiedEnglishYouTubeId} from "@/lib/youtube/verified-english-player-client";
 import dynamic from "next/dynamic";
 import { MandalaSmartAnimation } from "./mandala-smart-animation";
 import Link from "next/link";
@@ -2211,7 +2212,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [previewFrameRevision,setPreviewFrameRevision]=useState(0);
 
   // RU master stays intact. The EN/ES intro is the owner's exact verified
-  // @aatapro YouTube upload, never a direct HeyGen MP4 or provider iframe.
+  // @aatapro YouTube upload, never a direct provider MP4 or provider iframe.
   const introVideo = locale==="ru" ? {
     src:"https://resource2.heygen.ai/movio/video/72e3e6f45c3664b0b8d75281b1b413a5/2e30e44294964059b57670860ee3828b/caption.mp4",
     embed:"https://app.heygen.com/embeds/72e3e6f45c3664b0b8d75281b1b413a5",
@@ -2237,19 +2238,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       setIntroYoutubeId(null);setIntroPlaying(false);
       setIntroYoutubeStatus("checking");
       void (async()=>{
-        try{
-          const response=await fetch("/api/public/english-intro-video",{
-            method:"GET",cache:"no-store",credentials:"omit",
-          });
-          const data=response.ok?await response.json() as {youtubeId?:unknown}:null;
-          if(requestId!==introYoutubeRequestRef.current)return;
-          const id=data?.youtubeId;
-          if(typeof id==="string"&&/^[A-Za-z0-9_-]{11}$/.test(id)){
-            setIntroYoutubeId(id);setIntroYoutubeStatus("ready");setIntroPlaying(true);
-          }else setIntroYoutubeStatus("missing");
-        }catch{
-          if(requestId===introYoutubeRequestRef.current)setIntroYoutubeStatus("missing");
-        }
+        const id=await resolveVerifiedEnglishYouTubeId();
+        if(requestId!==introYoutubeRequestRef.current)return;
+        if(id){setIntroYoutubeId(id);setIntroYoutubeStatus("ready");setIntroPlaying(true);}
+        else setIntroYoutubeStatus("missing");
       })();
       return;
     }
