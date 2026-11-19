@@ -6166,7 +6166,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       attachedAudio.id:recipe.musicId;
     const musicTrack=!original&&selected?selected as PresetId:null;
     const voiceBed=speech&&recipe.musicId&&
-      MYTUBE_REVIEWED_MUSIC_BEDS.includes(recipe.musicId)?
+      MYTUBE_REVIEWED_MUSIC_BEDS.some(id=>id===recipe.musicId)?
       recipe.musicId as `curated-${string}`:null;
     stopSoundPreview();stopMovieSound();
     // Updating React and invoking the current callback happen synchronously
