@@ -1,4 +1,4 @@
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance, safeScopedDisjointProductionAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance, safeScopedDisjointProductionAdvance, safeMixedProtectedAdvance } from '../lib/ci/production-base-impact.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -2975,4 +2975,72 @@ test('PR #5093 media MP4 survives fully verified unrelated Ali CRM production ad
     {files:[{filename:target[0],status:'renamed',previous_filename:'old.js'}]},
     {files:[{filename:target[0],status:'modified'},{filename:target[0],status:'modified'}]},
   ]) assert.equal(check({...diff(),...broken}),false,'never accept unverified base change');
+});
+
+
+test('mixed protected releases reuse green product checks but never security, overlap, CI workflow or dependency changes',async()=>{
+ const live='c'.repeat(40);
+ const candidate=[
+  'components/mandala-free-video-studio.tsx',
+  'lib/mandala/recording-codecs.mjs',
+  'tests/mandala-webcodecs-mp4.test.mjs',
+ ];
+ const accepted=[
+  'components/home-dialogue-entry.tsx',
+  'lib/assist/ali-guided-intake.mjs',
+  'tests/ci-heavy-impact.test.mjs',
+  'tests/ci-pr-selective-workflows.test.mjs',
+  'docs/guides/quiet-progress.md',
+  'public/images/holistic-house/new-shape.webp',
+ ];
+ const compare=(filenames=accepted,other={})=>({
+  status:'ahead',ahead_by:2,behind_by:0,total_commits:2,
+  base_commit:{sha:BASE},merge_base_commit:{sha:BASE},
+  commits:[{sha:'d'.repeat(40)},{sha:live}],
+  files:filenames.map(filename=>({filename,status:'modified'})),
+  ...other,
+ });
+ const check=(delta,paths=candidate)=>safeMixedProtectedAdvance(delta,BASE,live,paths);
+ assert.equal(check(compare()),true,'one mixed independent production promotion must not invalidate #5093');
+ for(const blocked of [
+  'components/mandala-another-player.tsx',
+  'components/mandala-free-video-studio.tsx',
+  'lib/shared/video-settings.mjs',
+  'app/api/auth/route.ts',
+  'app/api/app/account/profile/route.js',
+  'app/api/billing/checkout/route.ts',
+  'lib/security/permission-guard.mjs',
+  'supabase/migrations/002.sql',
+  '.github/workflows/hh-pr-core-release.yml',
+  'package-lock.json',
+  'next.config.ts',
+ ])assert.equal(check(compare([blocked])),false,blocked);
+ assert.equal(check(compare(['tests/ci-heavy-impact.test.mjs']),[
+  'scripts/ci-specialist-aggregate.mjs'
+ ]),false,'CI-policy candidate never waives a newer CI unit test');
+ for(const broken of [
+  {status:'diverged'}, {behind_by:1},{commits:[]},
+  {files:[]},{total_commits:3},
+  {files:[{filename:accepted[0],status:'renamed',previous_filename:'old.tsx'}]},
+  {files:[{filename:accepted[0],status:'removed'}]},
+  {files:[{filename:accepted[0],status:'modified'},{filename:accepted[0],status:'modified'}]},
+  {files:Array.from({length:300},(_,i)=>({filename:'docs/notes/n'+i+'.md',status:'modified'}))},
+ ])assert.equal(check(compare(accepted,broken)),false,'no incomplete/protected-base compare evidence');
+ const deep=compare(accepted,{
+  ahead_by:120,total_commits:120,
+  commits:Array.from({length:100},(_,i)=>({sha:(i+1).toString(16).padStart(40,'0')})),
+ });
+ assert.equal(check(deep),true,'100-commit REST listing cap must not invalidate complete protected-path proof');
+ assert.equal(check({...deep,commits:[]}),false,'no commits cannot be inferred');
+ assert.equal(check({...deep,files:[{filename:accepted[0],status:'modified'},{filename:'lib/security/auth.mjs',status:'modified'}]}),false);
+ const files={base:new Map([[path,yaml]]),current:new Map([[path,yaml]]),
+  changedRows:candidate.map(filename=>({filename,status:'M'}))};
+ const api={pr:async()=>({...pr(),base:{...pr().base,sha:live},mergeable:true}),
+  target:async()=>live,compare:async()=>compare(),
+  runs:async()=>[run()],jobs:async()=>[{name:'test',status:'completed',conclusion:'success'}]};
+ assert.deepEqual((await verify(api,{repo,number:27,head:SHA,base:BASE},files,{maxWaitMs:0})).expected,[path],
+  'real Specialist uses mixed policy but still requires completed exact-HEAD jobs');
+ await assert.rejects(()=>verify({...api,jobs:async()=>[{name:'test',status:'completed',conclusion:'failure'}]},
+  {repo,number:27,head:SHA,base:BASE},files,{maxWaitMs:0}),/UNSUCCESSFUL_SPECIALIST_JOB|SPECIALIST_FAILED/,
+  'a failed specialist never passes the mixed-drift rule');
 });
