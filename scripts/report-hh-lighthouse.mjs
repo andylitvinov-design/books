@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync, appendFileSync } from "node:fs";
-const sources = ["mobile", "desktop", "services-mobile", "remedy-mobile"];
+const sources = ["mobile", "ru-mobile", "es-mobile", "desktop", "services-mobile", "remedy-mobile"];
 const output = {};
 for (const mode of sources) {
   const data = JSON.parse(readFileSync("artifacts/lighthouse-" + mode + ".json", "utf8"));
@@ -14,6 +14,12 @@ for (const mode of sources) {
     tbtMs: audits["total-blocking-time"]?.numericValue ?? null,
     fcpMs: audits["first-contentful-paint"]?.numericValue ?? null,
     inpMs: audits["interaction-to-next-paint"]?.numericValue ?? null,
+    initialScriptTransferBytes: (audits["network-requests"]?.details?.items ?? [])
+      .filter(item => item.resourceType === "Script" && Number.isFinite(item.transferSize))
+      .reduce((sum, item) => sum + item.transferSize, 0),
+    initialScriptResourceBytes: (audits["network-requests"]?.details?.items ?? [])
+      .filter(item => item.resourceType === "Script" && Number.isFinite(item.resourceSize))
+      .reduce((sum, item) => sum + item.resourceSize, 0),
     opportunities: Object.values(audits)
       .filter(a => a.details?.type === "opportunity" && a.details?.overallSavingsMs > 100)
       .sort((a,b) => b.details.overallSavingsMs - a.details.overallSavingsMs)
@@ -22,7 +28,7 @@ for (const mode of sources) {
 }
 // These are Lighthouse lab observations, not 75th-percentile real-user CWV.
 // INP is reported only when available; never infer it from TBT.
-const mobileModes = ["mobile", "services-mobile", "remedy-mobile"];
+const mobileModes = ["mobile", "ru-mobile", "es-mobile", "services-mobile", "remedy-mobile"];
 output.mobileThresholds = Object.fromEntries(mobileModes.map(mode => {
   const page = output[mode];
   const lcpGood = page.lcpMs === null ? null : page.lcpMs < 2500;
@@ -40,6 +46,11 @@ if(process.env.GITHUB_STEP_SUMMARY) {
   for (const mode of mobileModes) {
     const item = output[mode], target = output.mobileThresholds[mode];
     lines.push("| "+mode+" | "+item.performance+" | "+item.seo+" | "+(item.lcpMs ?? "N/A")+" | "+(item.cls ?? "N/A")+" | "+(target.labPass ? "pass" : "needs improvement")+" |");
+  }
+  lines.push("", "## Home locale initial JS (Lighthouse lab, network-request totals)", "| Locale | Script transfer bytes | Script resource bytes | LCP ms |", "| --- | ---: | ---: | ---: |");
+  for (const mode of ["mobile", "ru-mobile", "es-mobile"]) {
+    const page = output[mode];
+    lines.push("| "+mode+" | "+page.initialScriptTransferBytes+" | "+page.initialScriptResourceBytes+" | "+(page.lcpMs ?? "N/A")+" |");
   }
   lines.push("**Note:** Two consecutive 'Good' real-user CWV readings require sufficient Chrome UX Report or Speed Insights field traffic. Lighthouse is not a substitute.");
   appendFileSync(process.env.GITHUB_STEP_SUMMARY,lines.join("\n")+"\n");
