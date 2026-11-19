@@ -33,7 +33,7 @@ function normalizer(){
  vm.runInContext(safe+normal,context,{timeout:1000});
  return context;
 }
-async function routeRun({source=candidate,payload=callback(),diagnostic='off',companion='off',provider='telegram',authorized=true,leadFailure=false,syncFailure=false}={}){
+async function routeRun({source=candidate,payload=callback(),diagnostic='off',companion='off',provider='telegram',authorized=true,leadFailure=false,syncFailure=false,businessHuman=false,botHuman=false}={}){
  const context=normalizer(),calls={ingest:0,ack:0,send:0,ensure:0,intake:0,aiV3:0,companion:0,companionSend:0,waProof:0,waIntake:0,waSend:0,botCapture:0,businessCapture:0};
  class Response{constructor(body,{status=200}={}){this.body=body;this.status=status}static json(body,opts){return new Response(body,opts)}}
  Object.assign(context,{Buffer,NextResponse:Response,MESSENGER_CHANNELS:['telegram','whatsapp'],PRIVATE_HEADERS:{},console:{error:()=>{}},captureTelegramLeadBestEffort,getAppConfig:()=>({}),verifyMessengerWebhook:()=>authorized,verifyMessengerChallenge:()=>null,
@@ -52,6 +52,8 @@ async function routeRun({source=candidate,payload=callback(),diagnostic='off',co
    // Mock the new, owner-scoped lead persistence boundary without real DB writes.
    captureTelegramBusinessLead:async()=>{calls.businessCapture++;if(leadFailure)throw new Error('synthetic role 42501');return {created:false}},
    captureTelegramBotLead:async()=>{calls.botCapture++;if(leadFailure)throw new Error('synthetic role 42501');return {created:false}},
+   captureTelegramBusinessInbox:async()=>({matched:true,recorded:true,humanActive:businessHuman}),
+   telegramBotHumanTakeover:async()=>botHuman,
    captureWhatsAppFirstContact:async()=>({handled:false,created:false}),
    recordWhatsAppInboundReceipt:async()=>({recorded:false}),
    // WhatsApp locale marker helper belongs to the production normalizer, not this VM.
@@ -175,4 +177,25 @@ test('signed Business message survives optional lead-capture denial without a fa
  assert.equal(result.calls.businessCapture,1);
  assert.equal(result.calls.botCapture,0);
  assert.equal(result.calls.ingest,0);
+});
+
+test('accepted owner CRM reply pauses all automated Telegram Business followups',async()=>{
+ const payload={update_id:201,business_message:{business_connection_id:'synthetic-connection',
+   message_id:21,date:1,chat:{id:123456789,type:'private'},
+   from:{id:123456789,is_bot:false},text:'A question for a person'}};
+ const result=await routeRun({payload,businessHuman:true});
+ assert.equal(result.response.status,200);
+ assert.equal(result.calls.businessCapture,1);
+ assert.equal(result.calls.botCapture,0);
+ assert.equal(result.calls.aiV3+result.calls.companion+result.calls.ingest,0);
+});
+test('accepted owner reply keeps later Telegram bot texts in CRM without invoking AI',async()=>{
+ const payload={update_id:202,message:{message_id:22,date:1,
+   chat:{id:123456789,type:'private'},
+   from:{first_name:'Fictional',is_bot:false},text:'For the human adviser'}};
+ const result=await routeRun({payload,botHuman:true});
+ assert.equal(result.response.status,200);
+ assert.equal(result.calls.botCapture,1);
+ assert.equal(result.calls.ingest,1);
+ assert.equal(result.calls.aiV3+result.calls.companion+result.calls.intake,0);
 });

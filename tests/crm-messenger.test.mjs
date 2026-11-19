@@ -322,7 +322,8 @@ test('v3 quick replies are neutral owner-selected drafts, not scheduled or auto-
   assert.match(ui,/role="group" aria-label=\{lang==='ru'\?'Быстрые ответы'/)
   assert.match(ui,/onClick=\{\(\)=>\{pendingRequest\.current=null;setText\(item\.text\);setShowQuickReplies\(false\)\}\}/)
   assert.match(ui,/disabled=\{busy\|\|threadLoading\|\|!selected\.reply\.ok\}/)
-  assert.doesNotMatch(ui,/setInterval\(|sendOneMessengerMessage\(/)
+  assert.doesNotMatch(ui,/sendOneMessengerMessage\(/)
+  assert.match(ui,/document\.visibilityState!=='visible'/)
   assert.match(api,/action==='send'/)
 })
 
