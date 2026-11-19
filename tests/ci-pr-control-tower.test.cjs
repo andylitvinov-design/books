@@ -2471,7 +2471,7 @@ test('persistent inconsistent counts or worker occupancy never authorise ghost p
 test('409 fallback never admits unverified or congested runners',async()=>{
  const variants=[{ghostJobs:1},{run:{status:'completed'}},{run:{pull_requests:[{number:55}]}},
   {pr:{merged:false,merged_at:null}},{comparison:'diverged'},
-  {workerQueued:1},{queueCount:99},{queueCount:251},
+  {workerQueued:1},{queueCount:71},{queueCount:251},
   {activeCount:21},{activeCount:9,jobStatus:'in_progress'},
   {activeCount:20,jobStatus:'in_progress'}];
  for(const opts of variants){
@@ -2642,7 +2642,7 @@ test('read-only fallback fails closed for open or duplicate PR, changed run and 
  for(const variant of ['open','duplicate','moved','jobs','worker','queue']){
   const f=ghostFixture(variant==='jobs'?{ghostJobs:1}:
    variant==='worker'?{workerQueued:1}:
-   variant==='queue'?{queueCount:99}:{});
+   variant==='queue'?{queueCount:71}:{});
   const pr=(await f.github.rest.pulls.get()).data;
   f.github.rest.pulls.list=async()=>({data:variant==='duplicate'?[pr,pr]:
     [variant==='open'?{...pr,state:'open',merged_at:null}:pr]});
