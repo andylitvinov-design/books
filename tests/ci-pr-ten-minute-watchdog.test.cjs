@@ -795,7 +795,7 @@ test('native AutoMerge paginates trusted Core history and preserves exact-head e
     head:{sha:head,ref:'feature/forty-two',repo:{full_name:full}}};
   const makeRun=(id,conclusion='success',associatedHead=head,associatedBase=base)=>({
     id,name:'HH PR core release gate',workflow_id:1,event:'pull_request',head_branch:pr.head.ref,
-    head_sha:'f'.repeat(40),path:'.github/workflows/hh-pr-core-release.yml@refs/pull/42/merge',
+    head_sha:'f'.repeat(40),run_attempt:1,path:'.github/workflows/hh-pr-core-release.yml@refs/pull/42/merge',
     status:'completed',conclusion,created_at:new Date(1800000000000-id*1000).toISOString(),
     pull_requests:[{number:42,head:{ref:pr.head.ref,sha:associatedHead},
       base:{ref:pr.base.ref,sha:associatedBase}}]
@@ -804,6 +804,8 @@ test('native AutoMerge paginates trusted Core history and preserves exact-head e
   const current=[coreRun,...Array.from({length:99},(_,i)=>makeRun(i+2))];
   const prior=makeRun(200,'success','c'.repeat(40));
   async function decide(pages,totals,{required=['release-ready'],jobs=[
+    {id:10,run_id:1,name:'core-lint-types-build',status:'completed',conclusion:'success'},
+    {id:11,run_id:1,name:'hh-merge-check',status:'completed',conclusion:'success'},
     {name:'hh-core-verified',status:'completed',conclusion:'success'},
     {name:'hh-specialist',status:'completed',conclusion:'success'},
     {name:'release-ready',status:'completed',conclusion:'success'},
@@ -855,10 +857,23 @@ test('native AutoMerge paginates trusted Core history and preserves exact-head e
     required:['hh-merge-check'],
     jobs:[{name:'hh-merge-check',status:'completed',conclusion:'success'}],
   });
-  assert.equal(single.ok,true,'single branch-required status still needs real job PASS');
+  assert.equal(single.ok,false,
+    'one green required status without exact-run Core proof must never arm native merge');
+  const singleWithCore=await decide([current,[prior]],[101,101],{
+    required:['hh-merge-check'],
+    jobs:[
+      {id:10,run_id:1,name:'core-lint-types-build',status:'completed',conclusion:'success'},
+      {id:11,run_id:1,name:'hh-merge-check',status:'completed',conclusion:'success'},
+    ],
+  });
+  assert.equal(singleWithCore.ok,true,
+    'single protected required status may arm only after both real same-run jobs passed');
   const redSingle=await decide([current,[prior]],[101,101],{
     required:['hh-merge-check'],
-    jobs:[{name:'hh-merge-check',status:'completed',conclusion:'failure'}],
+    jobs:[
+      {id:10,run_id:1,name:'core-lint-types-build',status:'completed',conclusion:'success'},
+      {id:11,run_id:1,name:'hh-merge-check',status:'completed',conclusion:'failure'},
+    ],
   });
   assert.equal(redSingle.ok,false,'red unified status never arms native merge');
   const newerRed=await decide([[makeRun(0,'failure'),...current.slice(0,99)],[prior]],[101,101]);

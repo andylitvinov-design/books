@@ -206,8 +206,9 @@ test('event-driven native merge requires same-run Core plus unified Specialist g
   const native=fs.readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
   assert.ok(native.includes('if(!passed("core-lint-types-build")||!passed("hh-merge-check")){'));
   assert.ok(!native.includes('if(!passed("hh-merge-check")||!passed("hh-specialist")){'));
-  assert.ok(native.includes('page.jobs.length!==page.total_count'),
-    'incomplete Core run job pagination must remain fail-closed');
+  assert.ok(native.includes('jobPage.total_count !== jobs.length') &&
+    native.includes('jobs.some(j=>j.run_id!==runId'),
+    'a complete Core job inventory must be checked exactly once and the second step must bind immutable run IDs');
   assert.ok(native.includes('match.length===1&&match[0].status==="completed"&&match[0].conclusion==="success"'),
     'required exact-run job proof must reject duplicate, skipped, pending and failed jobs');
   assert.ok(native.includes("steps.freshness.outputs.eligible == 'true'"),
