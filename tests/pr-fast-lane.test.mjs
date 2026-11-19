@@ -659,8 +659,9 @@ test('PR-only cancellation safeguards owner video, SEO and performance audit wit
   for(const [filename,group,contracts] of specs){
     const s=workflow(filename);
     if (filename === 'hh-live-seo-audit.yml') {
-      // Retain published SEO coverage, defer the optional PR crawl to manual QA.
-      assert.doesNotMatch(s,/^  pull_request:/m,filename+' must not fan out on PRs');
+      // Retain published SEO coverage, permit extra browser audit only on an explicit label.
+      assert.match(s,/^  pull_request:\s*\n    types: \[labeled\]/m,filename+' must be labeled-only');
+      assert.match(s,/github\.event\.label\.name == 'qa-optional'/,filename+' must verify the opt-in label');
       assert.match(s,/^  workflow_dispatch:/m,filename+' remains manually runnable');
       assert.match(s,/^  push:/m,filename+' retains independent published SEO audit');
     } else {

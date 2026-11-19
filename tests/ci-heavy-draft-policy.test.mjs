@@ -5,12 +5,23 @@ import { parsePrTrigger, matchesTrigger } from '../lib/ci/specialist-aggregate.m
 
 const workflows = [
   'assessment-range-mobile-browser.yml',
-  'hh-benchmark-public-browser.yml',
   'hh-home-conversation.yml',
   'site-video-browser.yml',
 ];
 
 const read = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
+ 
+test('optional benchmark browser has explicit label-only entry, not a required Ready PR gate', () => {
+  const name='hh-benchmark-public-browser.yml';
+  const source=read(name);
+  const route=parsePrTrigger(source,'.github/workflows/'+name);
+  assert.deepEqual(route.types,['labeled']);
+  assert.equal(matchesTrigger(route,['scripts/benchmarking/public-browser-smoke.mjs'],'codex/public-book-library'),false);
+  assert.match(source,/github\.event\.label\.name == 'qa-optional'/);
+  assert.match(source,/^  workflow_dispatch:/m);
+  assert.doesNotMatch(source,/continue-on-error:\s*true/);
+});
+
 
 for (const name of workflows) {
   test(name + ': draft skips heavy job, but ready-for-review and later commits trigger it', () => {
@@ -498,7 +509,6 @@ test('wave 5: Support Mock readiness loop is bounded, strict and ShellCheck-clea
 
 const heavyDraftStage = [
   ['ia-v2.yml', ['verify']],
-  ['hh-live-seo-audit.yml', ['audit', 'public-tests-mobile']],
   ['hh-public-performance-audit.yml', ['measure-public']],
 ];
 
@@ -518,6 +528,17 @@ for (const [name, jobs] of heavyDraftStage) {
   });
 }
 
+test('optional live SEO audit requires the owner QA label while keeping published push checks',()=>{
+  const source=read('hh-live-seo-audit.yml');
+  const route=parsePrTrigger(source,'.github/workflows/hh-live-seo-audit.yml');
+  assert.deepEqual(route.types,['labeled']);
+  assert.equal(matchesTrigger(route,['data/seo.js'],'codex/public-book-library'),false);
+  assert.match(source,/github\.event\.label\.name == 'qa-optional'/);
+  assert.match(source,/^  push:/m);
+  assert.match(source,/^  workflow_dispatch:/m);
+  assert.doesNotMatch(source,/continue-on-error:\s*true/);
+});
+
 test('Draft staging keeps full IA security, SEO source-build and production monitoring', () => {
   const ia = read('ia-v2.yml');
   // IA workflow changes run their own security and browser acceptance on the exact head.
@@ -532,7 +553,9 @@ test('Draft staging keeps full IA security, SEO source-build and production moni
   const seo = read('hh-live-seo-audit.yml');
   const sourceBlock = seo.split('  source-build:')[1]?.split('  audit:')[0];
   assert.ok(sourceBlock);
-  assert.ok(sourceBlock.includes("    if: $" + "{{ github.event_name == 'pull_request' && github.event.pull_request.draft == false }}"));
+  assert.ok(sourceBlock.includes("github.event.pull_request.draft == false"));
+  assert.ok(sourceBlock.includes("github.event.label.name == 'qa-optional'"));
+  assert.match(seo,/^  pull_request:\s*\n    types: \[labeled\]/m,'SEO extra QA runs only by explicit PR label');
   assert.match(sourceBlock, /npm run build/);
   assert.match(seo, /^  push:/m);
   assert.match(seo, /^  workflow_dispatch:/m);
