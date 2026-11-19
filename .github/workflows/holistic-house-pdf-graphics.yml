@@ -7,7 +7,6 @@ on:
       - "scripts/build-report-pdf-art.mjs"
       - "scripts/render-premium-report-samples.mjs"
       - "tests/report-premium-pagination-v5.test.mjs"
-      - "package.json"
       - "public/images/holistic-house/report-lighthouse-coast.webp"
       - "tests/report-photo-contain-exif.test.mjs"
       - "tests/report-illustrations.test.mjs"
