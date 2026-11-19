@@ -337,8 +337,8 @@ async function verifyWorkspaceHydration(browser,locale){
     // back through its real buttons before asserting step-1 Life/Work controls.
     const backGoal=page.locator('[data-video-goal-quiz-back]');
     for(let step=0;step<2&&await backGoal.count();step++)await backGoal.click();
-    await expect(page.locator('[data-video-quick-scope]')).toHaveCount(2);
-    const others=page.locator('[data-video-quick-scope="work"]');
+    await expect(page.locator('[data-auto-video-audience]')).toHaveCount(2);
+    const others=page.locator('[data-auto-video-audience="work"]');
     await expect(page.locator('[data-video-goal-audience-option]')).toHaveCount(0);
     await others.click();
     await expect(goalQuiz).toHaveAttribute("data-video-goal-quiz-audience","others");
