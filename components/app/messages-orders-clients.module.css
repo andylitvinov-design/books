@@ -624,3 +624,24 @@
  .root .headerActions>button{width:39px;height:42px}
 }
 .root[data-section="ai"][data-chat-editing="true"] .presenterIdentity img{width:30px;height:32px}
+
+/* Persona replaces ONLY the old history shortcut beside Ali; top folder tabs are unchanged. */
+.root .headerActions>button[data-hh-ali-persona-open]{
+ display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none;
+ gap:1px;box-sizing:border-box;min-width:57px;width:57px;height:48px;
+ padding:3px 4px;border:1px solid #cfe5d8;border-radius:14px;
+ color:#086f59;background:#eef9f0;box-shadow:0 3px 10px #234a3a12;
+ cursor:pointer}
+.root .headerActions>button[data-hh-ali-persona-open] svg{width:19px;height:19px}
+.root .personaActionText{font:730 10px/1.1 system-ui,sans-serif;white-space:nowrap}
+.root .headerActions>button[data-hh-ali-persona-open]:focus-visible{outline:3px solid #158368;outline-offset:2px}
+@media(max-width:760px){
+ .root .headerActions>button[data-hh-ali-persona-open]{
+  width:54px;min-width:54px;height:44px;gap:0;padding:2px}
+ .root .personaActionText{font-size:9px}
+}
+@media(max-width:355px){
+ .root .headerActions>button[data-hh-ali-persona-open]{
+  width:40px;min-width:40px;height:42px;padding:3px}
+ .root .personaActionText{display:none}
+}
