@@ -1166,12 +1166,20 @@ export function MandalaAutoVideoDirector({
      </div>:null}
      {goalQuizStep===2&&goalCategoryAnswered&&subcategoriesOpen&&!requestNeedsChoice?<div className={css.subcategories} data-auto-video-subcategories>
        <p className={css.popularHeading} data-video-goal-category-title>{locale==="ru"?"2. Выберите подкатегорию":locale==="es"?"2. Elige una subcategoría":"2. Choose a subcategory"}</p>
-       <div className={css.topicChoices} role="group" data-mytube-subcategories
+       <div className={css.goalChoices} role="group" data-mytube-subcategories data-video-goal-subcategory-cards
          aria-label={locale==="ru"?"Подкатегории цели":locale==="es"?"Subcategorías":"Goal subcategories"}>
-         {taxonomySubcategories.map(item=><button type="button" key={item.id}
+         {taxonomySubcategories.map((item,index)=><button type="button" key={item.id}
            data-auto-video-subcategory={item.id} aria-pressed={selectedSubcategoryId===item.id}
            disabled={disabled} title={item.chooseWhen}
-           onClick={()=>chooseTaxonomySubcategory(item.id)}><span>{item.label}</span></button>)}
+           onClick={()=>chooseTaxonomySubcategory(item.id)}>
+           {/* Reuse the exact four first-screen visual assets at every Goal question. */}
+           {/* eslint-disable-next-line @next/next/no-img-element */}
+           <img data-video-goal-art src={"/images/video-goal-art/"+videoGoalCategories[index].art+".webp"}
+             alt="" loading="lazy"/>
+           <span data-video-goal-subcategory-label>{item.label}</span>
+           {selectedSubcategoryId===item.id?<span className={css.categorySelected} aria-hidden="true">
+             <Check size={15} strokeWidth={3}/></span>:null}
+         </button>)}
        </div>
      </div>:null}
    </>:<div className={css.recipientCatalog} data-video-recipient-catalog data-video-recipient-aspect={aspect}>
