@@ -9,7 +9,8 @@ import { TelegramDiagnosticEntry } from "@/components/telegram-diagnostic-entry"
 import { FreeSituationReviewForm } from "@/components/free-situation-review-form";
 import { SiteVideoPlayer } from "@/components/site-video-player";
 import { getServiceVideoMedia } from "@/data/service-video-library";
-import { PersonalTestimonials, locallyArchivedVideoPosterIds, testimonialVideos } from "@/components/personal-testimonials";
+import { locallyArchivedVideoPosterIds, testimonialVideos } from "@/components/personal-testimonials";
+import { LazyPersonalTestimonials } from "@/components/lazy-personal-testimonials";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./free-entry-landing.module.css";
 
@@ -626,10 +627,11 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
                 </div>
                 <div className={styles.reviewProcessPhoto}><Image src={images.process} alt={t.processAlt} fill sizes="(max-width: 720px) 100vw, 40vw" /></div>
               </section>
-              <details className={styles.reviewStories} data-review-stories>
-                <summary>{situationFirstScreen[locale].reviews}<ArrowRight size={18} aria-hidden="true" /></summary>
-                <PersonalTestimonials locale={locale} variant="all" sameAudioOnly />
-              </details>
+              <LazyPersonalTestimonials
+                locale={locale}
+                summary={situationFirstScreen[locale].reviews}
+                className={styles.reviewStories}
+              />
             </>
           } enableWizard={process.env.HH_FREE_EXPRESS_V2_ENABLED === "true"}>
             <div className={styles.coachingLink}>
