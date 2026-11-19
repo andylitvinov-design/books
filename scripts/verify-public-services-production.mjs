@@ -767,7 +767,9 @@ try {
         await expect(paid.locator("h2#services-personal-title")).toBeHidden();
         await expect(paid.locator("[data-services-studio-card]:visible")).toHaveCount(0);
         await expect(page.locator('[data-services-unified-panel="video"] [data-assist-video-generation]')).toBeHidden();
-        await visible(page.locator('[data-services-unified-panel="video"] [data-service-card-actions] button').first());
+        // Legacy panel-level actions are hidden by the approved three-offer layout.
+        // Require a real visible action within the first of the three video offers.
+        await visible(page.locator('[data-services-unified-panel="video"] > [data-services-three-visible] > [data-service-variant] [data-service-card-actions] button').first());
         assert.equal(await page.locator("#find-your-service").count(), 0);
       }
       await assertNoDevIssueOverlay(page, locale + "/services/" + width);
