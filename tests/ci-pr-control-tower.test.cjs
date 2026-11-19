@@ -2168,7 +2168,8 @@ test('real merged-PR 409/409 root defers sibling runs, not independent PRs',asyn
   head_repository:{full_name:full},head_branch:branch,head_sha:old,
   created_at:'2026-11-10T10:00:00Z',pull_requests:[]});
  const desired=[item(901),item(902),item(903),item(904,'feat/proven-B')];
- const items=[],rotation=Math.floor(now/(10*60*1000))%desired.length;
+ const {cleanupRotationStart}=require('../scripts/ci-pr-merged-queue-cleanup.cjs');
+ const items=[],rotation=cleanupRotationStart(desired.length,now);
  desired.forEach((row,i)=>{items[(rotation+i)%desired.length]=row;});
  const merged={number:4368,state:'closed',merged:true,merged_at:'2026-11-11T10:00:00Z',
   created_at:'2026-11-09T10:00:00Z',base:{ref:'codex/public-book-library',

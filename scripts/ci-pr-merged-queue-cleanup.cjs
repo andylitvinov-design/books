@@ -16,10 +16,25 @@ const CONTROL='codex/bootstrap-books', SHA=/^[a-f0-9]{40}$/i;
 // Reclaim stale runs *before* the normal 60/72 queued-run admission stop.
 // No cancellation is authorized without complete exact-run PR proof.
 const GRACE=30*60*1000, THRESHOLD=40;
-const MAX_CANCELS=12,MAX_BRANCHES=12,MAX_COMPARES=14,MAX_JOBLESS_409=4;
+// Platform-level 409 cannot be repaired by repeated calls in this tick.
+// Reserve full normal cancellation quota for independently proven other PRs.
+const MAX_CANCELS=12,MAX_BRANCHES=12,MAX_COMPARES=14,MAX_JOBLESS_409=2;
 const MAX_FORCE_CANCELS=2,MAX_DELETE_ATTEMPTS=2;
 const DELETE_MIN_AGE_MS=14*24*60*60*1000+60*60*1000;
 const date=s=>{const x=Date.parse(s||'');return Number.isFinite(x)?x:null;};
+// The queue is newest-first. Adjacent 10-minute sweeps previously moved by
+// just ONE row, repeatedly hitting the same 409 branch and holding Watchdog.
+// A coprime quarter-page stride reaches distinct zones in four ticks and all
+// offsets over a full cycle. It changes only read order. Exact SHA/PR/ancestry
+// and zero-job rechecks remain mandatory for any cancellation.
+function cleanupRotationStart(total,now){
+ if(!Number.isSafeInteger(total)||total<1||total>100||
+    !Number.isFinite(now)||now<0)return 0;
+ const gcd=(a,b)=>{while(b){const t=a%b;a=b;b=t;}return a;};
+ let stride=Math.max(1,Math.floor(total/4));
+ while(gcd(stride,total)!==1)stride++;
+ return ((Math.floor(now/600_000)%total)*stride)%total;
+}
 function queuedPRRun(run){
  return run&&Number.isSafeInteger(run.id)&&run.id>0&&
   run.status==='queued'&&run.event==='pull_request'&&run.run_attempt===1&&
@@ -158,7 +173,7 @@ async function runCleanup({github,context,core={info(){},warning(){}},
  const denied409Branches=new Set();
  // Rotate the bounded queue page so one uncancellable GitHub zombie cannot
  // starve all other independently verified stale merged-PR checks forever.
- const rotation=Math.floor(now/(10*60*1000))%Math.max(1,response.workflow_runs.length);
+ const rotation=cleanupRotationStart(response.workflow_runs.length,now);
  for(let index=0;index<response.workflow_runs.length;index++){
   if(out.cancel_attempts>=limit)break;
   const item=response.workflow_runs[(rotation+index)%response.workflow_runs.length];
@@ -434,4 +449,4 @@ async function runCleanup({github,context,core={info(){},warning(){}},
 }
 module.exports={queuedPRRun,mergedProduction,closedUnmergedProduction,staleOpenProduction,validOpenAncestry,
  uniqueRunOwner,validComparison,trustedContext,runCleanup,MAX_CANCELS,
- oldEnoughForDelete,DELETE_MIN_AGE_MS,THRESHOLD};
+ oldEnoughForDelete,DELETE_MIN_AGE_MS,THRESHOLD,cleanupRotationStart,MAX_JOBLESS_409};
