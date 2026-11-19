@@ -76,7 +76,7 @@ test('About reviews stay on Holistic House with genuine local posters and intern
   assert.match(testimonials, /locallyArchivedVideoPosterIds\.has\(item\.id\)/)
   assert.match(testimonials, /internalOnly=\{isAbout\}/)
   assert.match(testimonials, /id=\{isHome \? "testimonials" : isAbout \? "about-testimonials"/)
-  assert.match(player, /internalOnly \? null : <a/)
+  assert.match(player, /internalOnly \|\| !verifiedWatchUrl \? null : <a/)
   assert.match(source('../components/page-video.tsx'), /internalOnly=\{internalOnly\}/)
   assert.doesNotMatch(source('../components/psychic-alchemy-intro-video.tsx'), /app\.heygen\.com\/share|target="_blank"/)
   assert.doesNotMatch(aboutCopy, /https:\/\/(?:t\.me|designrr\.page)/)

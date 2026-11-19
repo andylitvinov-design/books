@@ -154,9 +154,12 @@ test("the testimonial gallery uses real ID-matched archived frames instead of de
   assert.doesNotMatch(component, /homepage-constellations\.svg|homepage-guided-imagery\.svg/);
   assert.match(component, /data-testimonial-video-id=\{item\.id\}/);
   assert.match(player, /fallbackPoster\?: string/);
-  assert.match(player, /onClick=\{\(\) => \{ setShowRecovery\(false\); setPlaying\(true\); \}\}/);
+  // English mirrors require their verified source while local YouTube testimonials play on click.
+  assert.match(player, /onClick=\{playSelected\}/);
+  assert.match(player, /if\(!englishYoutubeOnly\)\{setPlaying\(true\);return;\}/);
   assert.match(player, /youtube-nocookie\.com\/embed\/\$\{playbackYouTubeId\}/);
-  assert.match(player, /href=\{watchUrl\}/);
+  assert.match(player, /const verifiedWatchUrl=englishYoutubeOnly/);
+  assert.match(player, /href=\{verifiedWatchUrl\}/);
   // Two older RU About clips remain in the catalog without a wrong-person thumbnail.
   for (const id of ["m9RfDgK76PU", "5oj0BIbLT4w"]) {
     assert.ok(component.includes(`id: "${id}"`));

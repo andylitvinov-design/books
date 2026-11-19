@@ -8,10 +8,8 @@ on:
       - 'lib/app/session.js'
       - 'app/api/app/practitioner/**'
       - 'app/api/app/\[...path\]/route.js'
-      # The exact dispatcher is cross-domain. Node's BASE-trusted glob reader
-      # does not match GitHub's escaped Next route, so also use this narrowly
-      # bounded one-segment route with explicit Messenger exclusions.
-      - 'app/api/app/*/route.js'
+      # The exact shared catch-all dispatcher remains; unrelated sibling APIs
+      # belong to App R1/IA rather than this video-specific owner.
       - '!app/api/app/direct-messages/**'
       - '!app/api/app/practitioner-client-messages/**'
       - '!app/api/app/notification-channels/**'
@@ -46,11 +44,9 @@ on:
       - 'app/sitemap.ts'
       # Run the costly production build/browser suite only for its actual
       # video, public content, services and locale paths, not every app page.
-      - 'app/**/services/**'
       - 'app/**/about/**'
-      - 'app/**/homeopathy/**'
-      - 'app/**/books/**'
-      - 'app/es/**'
+      - 'app/es/about/**'
+      - 'app/es/page.tsx'
       - 'app/page.tsx'
       - 'middleware.ts'
       - 'scripts/verify-site-video-browser.mjs'
@@ -76,10 +72,8 @@ on:
       - 'lib/app/session.js'
       - 'app/api/app/practitioner/**'
       - 'app/api/app/\[...path\]/route.js'
-      # The exact dispatcher is cross-domain. Node's BASE-trusted glob reader
-      # does not match GitHub's escaped Next route, so also use this narrowly
-      # bounded one-segment route with explicit Messenger exclusions.
-      - 'app/api/app/*/route.js'
+      # The exact shared catch-all dispatcher remains; unrelated sibling APIs
+      # belong to App R1/IA rather than this video-specific owner.
       - '!app/api/app/direct-messages/**'
       - '!app/api/app/practitioner-client-messages/**'
       - '!app/api/app/notification-channels/**'
@@ -105,7 +99,8 @@ on:
       - 'data/about-es.ts'
       - 'data/spanish-*'
       - 'data/remedies-es.*'
-      - 'app/es/**'
+      - 'app/es/about/**'
+      - 'app/es/page.tsx'
       - 'app/layout.tsx'
       - 'app/page.tsx'
       - 'app/sitemap.ts'

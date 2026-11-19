@@ -36,10 +36,11 @@ test("all three placements reuse the existing click-to-load video player and kee
   const showcase = read("components/service-video-showcase.tsx");
   const player = read("components/site-video-player.tsx");
   assert.match(showcase, /<SiteVideoPlayer video=\{video.video\} locale=\{locale\}/);
-  assert.match(player, /playing \? \(/);
-  assert.match(player, /onClick=\{\(\) => \{ setShowRecovery\(false\); setPlaying\(true\); \}\}/);
+  assert.match(player, /playing && embedUrl \? \(/);
+  assert.match(player, /onClick=\{playSelected\}/);
+  assert.match(player, /if\(!englishYoutubeOnly\)\{setPlaying\(true\);return;\}/);
   assert.match(player, /youtube-nocookie.com\/embed\/\$\{playbackYouTubeId\}/);
-  assert.match(player, /const externalLink = internalOnly \? null/);
+  assert.match(player, /const externalLink = internalOnly \|\| !verifiedWatchUrl \? null/);
 });
 
 test("personal free review has portrait, locale-matched explainer and twelve vertically stacked videos", () => {
