@@ -54,7 +54,8 @@ test('distinct mode prompts, voluntary safety, and review-only transfer',()=>{
  assert.match(deep,/not ask for photos in Telegram/);
  for(const locale of ['ru','en','es']){
    assert.doesNotMatch(SECRETARY_PSYCHOLOGIST_COPY[locale].intro,/OpenRouter|Qwen/);
-   assert.match(SECRETARY_PSYCHOLOGIST_COPY[locale].intro,/Wave/);
+   assert.match(SECRETARY_PSYCHOLOGIST_COPY[locale].intro,/Ali/);
+   assert.doesNotMatch(SECRETARY_PSYCHOLOGIST_COPY[locale].intro,/\bWave\b/);
    assert.match(SECRETARY_PSYCHOLOGIST_COPY[locale].intro,/\/stop/);
    const q=v3ModelMessages({kind:'question',mode:'secretary_psychologist',locale,
      turns:[{role:'user',text:'I want to understand what gets in my way'}]});
