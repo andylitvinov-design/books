@@ -101,7 +101,7 @@ situation: {
       cta: "Ask for my free review", secondary: "What happens next",
       photoAlt: "Andrey Litvinov", outcomeAlt: "Lighthouse on the coast", processAlt: "Calm, sunlit room",
       faq: [
-        ["Is it really free?", "Yes. I'll take a personal look at one question and reply in writing. A live session is separate, and you don't have to book one."],
+        ["Is it really free?", "Yes. I'll look at one question and respond in writing. A live session is separate, and there's no obligation to book one."],
         ["How do I start?", "Write a few words to me on Telegram or WhatsApp. We can clarify the question together before the review."],
         ["Will I need to fill out a questionnaire?", "Sometimes a short private questionnaire helps me understand the situation. I'll explain if it's useful for your question."],
         ["Will I need to draw anything?", "Not always. I may suggest a simple ME — GOAL — PROBLEM drawing. If so, we'll agree how to share it privately."],
@@ -208,7 +208,7 @@ situation: {
       cta: "Получить бесплатный разбор", secondary: "Как это устроено",
       photoAlt: "Андрей Литвинов", outcomeAlt: "Маяк на побережье", processAlt: "Спокойная комната с утренним светом",
       faq: [
-        ["Это действительно бесплатно?", "Да. Я лично рассмотрю один вопрос и отвечу письменно. Живая консультация оплачивается отдельно и совершенно необязательна."],
+        ["Это действительно бесплатно?", "Да. Я лично рассмотрю один вопрос и напишу ответ. Живая сессия — отдельная услуга, записываться на неё необязательно."],
         ["Как начать?", "Напишите мне пару слов в Telegram или WhatsApp. Сначала уточним, с чем вы хотите разобраться."],
         ["Нужно ли заполнять анкету?", "Иногда короткая личная анкета помогает лучше понять ситуацию. Если она понадобится, я объясню, как её заполнить."],
         ["Обязательно ли рисовать?", "Нет. Иногда я предлагаю рисунок «Я — Цель — Проблема». Если он пригодится, договоримся, как передать его приватно."],
@@ -315,7 +315,7 @@ situation: {
       cta: "Solicitar revisión exprés gratis", secondary: "Cómo funciona",
       photoAlt: "Andrey Litvinov", outcomeAlt: "Faro junto al mar", processAlt: "Espacio tranquilo con luz matinal",
       faq: [
-        ["¿De verdad es gratis?", "Sí. Revisaré personalmente una pregunta y te responderé por escrito. Una sesión en directo es aparte y opcional."],
+        ["¿De verdad es gratis?", "Sí. Revisaré personalmente una pregunta y te responderé por escrito. Una consulta en directo es opcional y aparte."],
         ["¿Cómo empiezo?", "Escríbeme unas palabras por Telegram o WhatsApp. Primero aclararemos qué te gustaría comprender."],
         ["¿Tengo que rellenar un cuestionario?", "A veces un cuestionario breve y privado me ayuda a entender tu situación. Te explicaré cómo hacerlo si hace falta."],
         ["¿Es obligatorio hacer un dibujo?", "No. En algunos casos propongo un dibujo YO — META — PROBLEMA y acordamos cómo compartirlo de forma privada."],

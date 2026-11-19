@@ -635,7 +635,7 @@
 }
 .reviewFaqItem>summary:focus-visible{outline:3px solid #b1734a;outline-offset:-4px}
 @media(max-width:720px){
-  .reviewFaq{padding:17px 14px;margin:10px 0 20px;border-radius:18px}
+  .reviewFaq{padding:17px 14px;margin:10px 0 calc(112px + env(safe-area-inset-bottom));border-radius:18px}
   .reviewFaqHeading{display:flex;flex-direction:column;align-items:stretch;gap:12px;margin-bottom:14px}
   .reviewFaqPhoto{order:-1;height:125px;border-radius:12px}
   .reviewFaqIntro h2{font-size:clamp(27px,7vw,34px);margin-bottom:7px}
