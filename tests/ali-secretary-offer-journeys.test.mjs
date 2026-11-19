@@ -15,6 +15,8 @@ import {aliWelcomePhotoKey,aliWelcomePhotoUrl}
 const source=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const countQuestions=x=>(x.match(/[?？]/gu)||[]).length;
 const locales=['ru','en','es'];
+const botOffers=Object.fromEntries(Object.entries(TELEGRAM_SERVICE_OPTIONS)
+ .filter(([,offer])=>!offer.channels||offer.channels.includes('telegram_bot')));
 
 test('every published offer has a unique contextual RU EN ES journey',()=>{
  const ids=Object.keys(TELEGRAM_SERVICE_OPTIONS);
@@ -50,7 +52,7 @@ test('every published offer has a unique contextual RU EN ES journey',()=>{
 });
 
 test('every published offer follows photo → warm greeting → goal → obstacle → review with no invented booking',()=>{
- for(const [id,{service}] of Object.entries(TELEGRAM_SERVICE_OPTIONS)){
+ for(const [id,{service}] of Object.entries(botOffers)){
   for(const locale of locales){
    const j=aliSecretaryOfferJourney(id,service,locale);
    const first=aliGuidedIntakeTurn({locale,serviceRequest:service,offerId:id,
@@ -73,7 +75,7 @@ test('every published offer follows photo → warm greeting → goal → obstacl
 });
 
 test('a direct question about the selected offer has a factual answer without consuming a stage',()=>{
- for(const [id,{service}] of Object.entries(TELEGRAM_SERVICE_OPTIONS)){
+ for(const [id,{service}] of Object.entries(botOffers)){
   for(const locale of locales){
    const url=aliSecretaryOfferJourney(id,service,locale).url;
    const link=aliSecretaryOfferLinkReply('open',locale,service,id);
@@ -95,7 +97,7 @@ test('a direct question about the selected offer has a factual answer without co
 });
 
 test('self-service courses and tests include the verified direct link at review, not a sales obligation',()=>{
- for(const [id,{service}]of Object.entries(TELEGRAM_SERVICE_OPTIONS))for(const locale of locales){
+ for(const [id,{service}]of Object.entries(botOffers))for(const locale of locales){
    const offer=aliSecretaryOfferJourney(id,service,locale);
    const hint=aliSecretaryOfferActionHint(id,service,locale);
    if(['course','access'].includes(offer.kind)){
