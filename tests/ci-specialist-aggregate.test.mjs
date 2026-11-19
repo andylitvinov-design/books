@@ -3047,3 +3047,67 @@ test('mixed protected releases reuse green product checks but never security, ov
   {repo,number:27,head:SHA,base:BASE},files,{maxWaitMs:0}),/UNSUCCESSFUL_SPECIALIST_JOB|SPECIALIST_FAILED/,
   'a failed specialist never passes the mixed-drift rule');
 });
+
+
+test('PR #5093 retains exact-head gates after independent Services #5148 merges',()=>{
+  const live='c'.repeat(40);
+  const videoPaths=[
+    'components/mandala-automatic-storyboard.tsx',
+    'components/mandala-free-video-studio.tsx',
+    'components/mandala-video-mobile.module.css',
+    'lib/mandala/recording-codecs.d.mts',
+    'lib/mandala/recording-codecs.mjs',
+    'lib/mandala/webcodecs-mp4-export.ts',
+    'scripts/benchmarking/first-video-live-export.mjs',
+    'scripts/benchmarking/real-guest-video-file.mjs',
+    'scripts/verify-affirmation-voice-browser.mjs',
+    'tests/mandala-automatic-storyboard-tab.test.mjs',
+    'tests/mandala-express-one-click.test.mjs',
+    'tests/mandala-free-video.test.mjs',
+    'tests/mandala-native-audio-files.test.mjs',
+    'tests/mandala-video-concept.test.mjs',
+    'tests/mandala-webcodecs-mp4.test.mjs',
+    'tests/mandala-workspace-tabs.test.mjs',
+    'tests/video-director-chat-live-acceptance.test.mjs',
+  ];
+  const services=[
+    {filename:'components/services-assist-quiz.module.css',status:'modified'},
+    {filename:'components/services-assist-quiz.tsx',status:'modified'},
+    {filename:'lib/services-quick-categories.ts',status:'modified'},
+    {filename:'public/images/holistic-house/support-first-screen-photos.webp',status:'added'},
+    {filename:'scripts/verify-public-services-production.mjs',status:'modified'},
+  ];
+  const diff=(rows=services,override={})=>({
+    status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:BASE},merge_base_commit:{sha:BASE},
+    commits:[{sha:live}],files:rows,...override,
+  });
+  const check=(rows=services,candidate=videoPaths,override={})=>
+    safeMixedProtectedAdvance(diff(rows,override),BASE,live,candidate);
+  assert.equal(check(),true,
+    'five real #5148 Services paths must not invalidate #5093 video Core/macOS evidence');
+  assert.equal(safeScopedDisjointProductionAdvance(diff(services.filter(
+    row=>!row.filename.endsWith('.webp'))),BASE,live,videoPaths),true,
+    'Services UI/fixture and video renderer must classify as different domains');
+  for (const blocked of [
+    'components/mandala-free-video-studio.tsx',
+    'lib/mandala/recording-codecs.mjs',
+    'lib/shared/payment-settings.mjs',
+    'app/api/billing/checkout/route.ts',
+    '.github/workflows/hh-pr-core-release.yml',
+    'lib/ci/specialist-aggregate.mjs',
+    'package-lock.json',
+    'next.config.ts',
+  ]) assert.equal(check([...services,{filename:blocked,status:'modified'}]),false,
+    'same-domain, security, shared and release changes must still block: '+blocked);
+  assert.equal(check(services,['components/services-review-catalog.tsx']),false,
+    'two Services changes cannot masquerade as disjoint feature domains');
+  for (const rows of [
+    [...services,{filename:services[0].filename,status:'modified'}],
+    [...services,{filename:'lib/mandala/recording-codecs.mjs',status:'renamed',previous_filename:'old.mjs'}],
+    services.map((row,i)=>i===0?{...row,status:'removed'}:row),
+  ])assert.equal(check(rows),false,'incomplete, renamed or deleted delta stays blocking');
+  for(const broken of [{status:'diverged'},{behind_by:1},{commits:[]},{files:[]}])
+    assert.equal(safeMixedProtectedAdvance(diff(services,broken),BASE,live,videoPaths),false,
+      'unverifiable compare ancestry must stay blocking');
+});
