@@ -83,7 +83,9 @@ test('service welcome photo is limited to first signed consent message and uses 
  assert.match(sender,/serviceConsent=keyboard\.length===1/);
  assert.match(sender,/text\.length>900/);
  assert.match(sender,/error\?\.code!=='PROVIDER_REJECTED'/);
- assert.match(sender,/if\(!serviceWelcome\|\|error/);
+ assert.match(sender,/if\(!serviceWelcome&&!body\.reply_markup\)throw error/);
+ assert.match(sender,/if\(serviceWelcome\)fallback\.reply_markup=body\.reply_markup/);
+ assert.match(sender,/text:serviceWelcome\?text:welcome\.text/);
  assert.match(sender,/payload=await readProvider\(endpoint\+'\/sendMessage'/);
  assert.match(sender,/telegramInlineMarkup\(keyboard,locale\)/);
  assert.match(v3,/if\(row\.stage==='consent'\)/);
