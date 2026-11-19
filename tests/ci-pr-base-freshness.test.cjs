@@ -586,3 +586,67 @@ test('native AutoMerge reads completed Core jobs once per event and pins that ev
     'log base fallback gets the single verified exact-Core job proof');
   assert.match(enable,/if\(!passed\("core-lint-types-build"\)\|\|!passed\("hh-merge-check"\)\)/);
 });
+
+
+test('AutoMerge mirrors the already-protected mixed and scoped drift policy on the same exact HEAD',async()=>{
+ const live='b'.repeat(40),runBase='a'.repeat(40);
+ const candidate='lib/billing/stripe-provider.js';
+ const changed=['lib/assist/ali-free-diagnostic.mjs',
+   'tests/ci-heavy-impact.test.mjs','docs/guides/editor-progress.md'];
+ let comparison={status:'ahead',ahead_by:2,behind_by:0,total_commits:2,
+  base_commit:{sha:runBase},merge_base_commit:{sha:runBase},
+  commits:[{sha:'c'.repeat(40)},{sha:live}],
+  files:changed.map(filename=>({filename,status:'modified'}))};
+ const github={rest:{
+  repos:{getBranch:async()=>({data:{commit:{sha:live},protected:true}}),
+    compareCommits:async params=>{
+      assert.equal(params.base,runBase);assert.equal(params.head,live);
+      return {data:comparison};
+    }},
+  pulls:{listFiles:async()=>({data:[{filename:candidate,status:'modified'}]})},
+ }};
+ const approved={safeDocumentationAdvance:()=>false,
+  safeIndependentCiMaintenanceAdvance:()=>false,
+  verifiedIndependentPublicRasterAdvance:()=>false,
+  safeMixedProtectedAdvance:(delta,base,target,paths)=>{
+   assert.equal(base,runBase);assert.equal(target,live);
+   assert.deepEqual(paths,[candidate]);
+   return delta.status==='ahead'&&delta.merge_base_commit?.sha===runBase&&
+      delta.files.length===3&&
+      delta.files.every(row=>changed.includes(row.filename)&&row.status==='modified');
+  },
+ };
+ const args={github,owner:'andylitvinov-design',repo:'books',pr:{
+  number:5157,changed_files:1,mergeable:true,base:{sha:runBase}
+ },verifiedRunBase:runBase,classifierBase:live,
+  decideRoute:()=> 'FULL',baseAdvancePolicy:approved};
+ const ok=await assess(args);
+ assert.equal(ok.ok,true,'same HEAD passed Core and scoped specialist; unrelated target did not invalidate it');
+ assert.equal(ok.reason,'MIXED_INDEPENDENT_BASE_REVALIDATED');
+ for(const state of [false,null]){
+  assert.equal((await assess({...args,pr:{...args.pr,mergeable:state}})).reason,
+   'SENSITIVE_COMPARE_UNSAFE','native positive mergeability remains mandatory');
+ }
+ comparison={...comparison,status:'diverged'};
+ assert.equal((await assess(args)).reason,'SENSITIVE_COMPARE_UNSAFE');
+ comparison={...comparison,status:'ahead',
+  files:[{filename:'app/api/auth/route.ts',status:'modified'}]};
+ assert.equal((await assess(args)).reason,'SENSITIVE_COMPARE_UNSAFE');
+ comparison={...comparison,files:changed.map(filename=>({filename,status:'modified'}))};
+ const absent={...approved,safeMixedProtectedAdvance:undefined};
+ assert.equal((await assess({...args,baseAdvancePolicy:absent})).reason,'SENSITIVE_COMPARE_UNSAFE',
+  'missing protected helper is HOLD, not a fabricated success');
+ const scoped={...approved,safeMixedProtectedAdvance:undefined,
+  safeScopedDisjointProductionAdvance:(_delta,base,target,paths)=>
+    base===runBase&&target===live&&paths[0]===candidate};
+ assert.equal((await assess({...args,baseAdvancePolicy:scoped})).reason,
+  'MIXED_INDEPENDENT_BASE_REVALIDATED','earlier shipped scoped proof also reaches native AutoMerge');
+});
+test('native base revalidation source accepts only helpers pinned to verified production SHA',()=>{
+ const src=require('node:fs').readFileSync('scripts/ci-pr-base-freshness.cjs','utf8');
+ assert.ok(src.includes("impactUrl.searchParams.set('sha',classifierBase)"));
+ assert.ok(src.includes("names.push('safeMixedProtectedAdvance')"));
+ assert.ok(src.includes("names.push('safeScopedDisjointProductionAdvance')"));
+ assert.ok(src.includes("approved('safeMixedProtectedAdvance')"));
+ assert.ok(src.includes("approved('safeScopedDisjointProductionAdvance')"));
+});
