@@ -11,6 +11,8 @@ import {SITE_VIDEO_SLOTS} from "@/lib/site-videos/model";
 import taxonomy from "@/data/video-catalog/mytube-content-taxonomy-4x4x4-v2.json";
 import videoResearch from "@/data/video-catalog/pexels-video-research-20261119.json";
 import {auditResearchedVideoCandidates,researchVideoLinksForOwner} from "@/lib/video-library/researched-video-candidates.mjs";
+import AdminVideoLibraryClips from "@/components/admin-video-library-clips";
+import sceneCatalog from "@/data/video-catalog/scene-taxonomy.json";
 import styles from "./video-library.module.css";
 
 export const dynamic="force-dynamic";
@@ -66,6 +68,7 @@ export default async function VideoLibraryCoveragePage({searchParams}:Props){
    <nav className={styles.links} aria-label={t.title}>
     <Link href="/admin/videos">{t.back}</Link>
     <Link href="/admin/music-library">{locale==="ru"?"Моя музыка · загрузка до 30":locale==="es"?"Mi música · subir hasta 30":"My music · upload up to 30"}</Link>
+    <Link href="#owner-video-upload">{locale==="ru"?"Добавить MP4":locale==="es"?"Subir MP4":"Add MP4"}</Link>
     <Link href="/admin/video-library/photos">{locale==="ru"?"Фото по сценам":locale==="es"?"Fotos por escena":"Photos by scene"}</Link>
     <Link href="/admin/automations">{locale==='ru'?'Автоматизации':locale==='es'?'Automatizaciones':'Automations'}</Link>
     <Link href={"/api/admin/video-library/coverage?aspect="+aspect}>{t.json}</Link>
@@ -77,6 +80,11 @@ export default async function VideoLibraryCoveragePage({searchParams}:Props){
    </div>
    <p className={styles.disclaimer}>{t.limit} {t.unbound} {t.unknown}</p>
    <p className={styles.subtle}>{liveVault.observedAt?t.dbChecked+": "+liveVault.observedAt:t.dbUnknown}. {t.r2Unverified}.</p>
+   <AdminVideoLibraryClips locale={locale}
+     scenes={sceneCatalog.scenes.filter(scene=>scene.media==="licensed_mp4"&&scene.status==="approved")
+       .map(scene=>({id:scene.id,theme:scene.theme,collection:scene.collection,
+         label:scene.label,poster:scene.poster,video:scene.video,
+         allowedAspects:scene.allowedAspects}))}/>
    <section className={styles.section} aria-labelledby="video-source-research-heading">
     <h2 id="video-source-research-heading">{locale==="ru"?"Новые источники видео":locale==="es"?"Nuevas fuentes de vídeo":"New video source leads"} · {videoSourcing.sourcePageCount}</h2>
     <p className={styles.subtle}>{locale==="ru"
