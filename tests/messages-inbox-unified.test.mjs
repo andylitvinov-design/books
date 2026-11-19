@@ -148,7 +148,7 @@ test('Messages uses the current seven-destination My Coach and Services global d
   for(const locale of ['en','ru','es']){
     assert.equal(isUnifiedMobileDockPath('/'+locale+'/app/messages'),true)
     assert.equal(unifiedMobileDockHref(locale,'ai'),'/'+locale+'/app/messages?section=ai')
-    assert.equal(unifiedMobileDockHref(locale,'practice'),'/'+locale+'/holistic-support/mobile')
+    assert.equal(unifiedMobileDockHref(locale,'practice'),'/'+locale+'/shamanica')
     assert.equal(unifiedMobileDockHref(locale,'coach'),'/'+locale+'/my-coach')
     assert.equal(unifiedMobileDockHref(locale,'master'),null,'removed master alias must not be exposed')
     assert.ok(unifiedMobileDockHref(locale,'video'))

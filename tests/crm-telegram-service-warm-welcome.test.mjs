@@ -5,6 +5,7 @@ import {v3ServiceCopy,v3ServiceStart,V3_LABELS,v3ButtonsFor,v3Action,v3WantsGene
 import {aliServiceScenario} from '../lib/assist/ali-service-scenario.mjs';
 import {aliGuidedIntakeTurn,aliGuidedIntakeSummary,aliIntakeStageFromTurns} from '../lib/assist/ali-guided-intake.mjs';
 import {TELEGRAM_SERVICE_OPTIONS} from '../lib/assist/telegram-service-options.mjs';
+import {aliWelcomePhotoKey,aliWelcomePhotoUrl} from '../lib/crm/telegram-welcome-photo-catalog.mjs';
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const countQuestions=text=>(text.match(/[?？]/gu)||[]).length;
 
@@ -66,7 +67,12 @@ test('service welcome photo is limited to first signed consent message and uses 
  const webhook=source('app/api/app/crm/messenger/webhook/[provider]/route.js');
  const sender=source('lib/crm/messenger-provider.js');
  assert.match(v3,/if\(freeStart\)return \{\.\.\.greeting,freeWelcomePhoto:true\}/);
- assert.match(v3,/welcomePhotoKey=serviceStart\?\.service/);
+ assert.match(v3,/const welcomePhotoKey=aliWelcomePhotoKey\(\{/);
+ assert.match(v3,/service:serviceStart\?\.service\|\|null/);
+ assert.match(v3,/if\(!canReply\)return greeting/);
+ assert.equal(aliWelcomePhotoKey({service:'homeopathy'}),'homeopathy');
+ assert.match(aliWelcomePhotoUrl('homeopathy'),/^https:\/\/holistichouse\.vercel\.app\/images\/holistic-house\//);
+ assert.equal(aliWelcomePhotoUrl('https://untrusted.example/image.jpg'),null);
  assert.match(v3,/serviceWelcome:true/);
  assert.match(webhook,/serviceWelcome:aiIntake\.serviceWelcome===true/);
  assert.match(sender,/serviceWelcome\?'sendPhoto':'sendMessage'/);
@@ -82,11 +88,15 @@ test('service welcome photo is limited to first signed consent message and uses 
  assert.match(sender,/telegramInlineMarkup\(keyboard,locale\)/);
  assert.match(v3,/if\(row\.stage==='consent'\)/);
  assert.equal(v3Action({inlineAction:'v3:agree'}),'agree');
- assert.match(v3,/serviceCopy&&ctx.serviceDisclosureSeen!==true/);
- assert.match(v3,/serviceDisclosureSeen:true/);
- assert.match(v3,/serviceCopy\.consent/);
- assert.match(v3,/v3ButtonsFor\(lang,'service_consent'\)/);
- assert.match(v3,/serviceCopy\?\(action==='serviceagree'/);
+ // Current single explicit consent enters Ali's local dialogue directly.
+ // A legacy second-stage consent button is accepted only for existing sessions.
+ assert.match(v3,/const agrees=general\?action==='chatagree':/);
+ assert.match(v3,/serviceCopy\?\(action==='agree'\|\|action==='serviceagree'/);
+ assert.match(v3,/!event\.inlineAction&&isExplicitYes\(raw\)/);
+ assert.match(v3,/if\(!agrees\|\|!purposeReady\)/);
+ assert.match(v3,/stage='interview',locale=\$3,ai_consent_at=now\(\)/);
+ assert.match(v3,/serviceCopy\?\.first/);
+ assert.doesNotMatch(v3,/serviceDisclosureSeen:true/);
  assert.match(source('lib/crm/telegram-ai-diagnostic-v3.mjs'),/raw\.serviceDisclosureSeen===true/);
  assert.equal(v3Action({inlineAction:'v3:servicesend'}),'send');
 });
