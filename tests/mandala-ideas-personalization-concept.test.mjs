@@ -45,8 +45,11 @@ test("Personalization recovers the approved three-question photo cards for RU EN
     assert.ok(personal.includes('data-personalization-kind="'+kind+'"'),kind);
   for(const id of ["energy","desired-level","choice","axis","mood"])
     assert.ok(personal.includes('data-video-personalization-'+id),id);
-  assert.match(personal,/selected.length>=3/);
-  assert.match(personal,/old.axes.length>=3/);
+  assert.match(personal,/onChange\(old=>\(\{\.\.\.old,\[side\]:\[id\]\}\)\)/);
+  assert.match(personal,/onChange\(old=>\(\{\.\.\.old,axes:\[id\]\}\)\)/);
+  assert.match(personal,/advanceTo\(side==="current"\?2:3\)/);
+  assert.match(personal,/advanceTo\(4\)/);
+  assert.doesNotMatch(personal,/selected\.length>=3|old\.axes\.length>=3|onClick=\{goNext\}/);
   assert.match(personal,/onContinue/);
   assert.match(personal,/onBack/);
   for(const photo of ["morning-dew.jpg","wealth-sunrise.jpg","mountain-air.jpg"]){
@@ -168,18 +171,51 @@ test("Name question stays in browser and personal closing follows the existing v
     "the preferred name never enters the concept/service personalization summary");
 });
 
-test("Personalization preserves choices across four photo-first quiz steps, with optional name last",()=>{
- assert.match(personal,/useState<1\|2\|3\|4>\(1\)/);
+test("Personalization has six one-question screens and preserves chosen answers through Back",()=>{
+ assert.match(personal,/type QuizStep=1\|2\|3\|4\|5\|6/);
+ assert.match(personal,/useState<QuizStep>\(1\)/);
  assert.match(personal,/data-video-personalization-step=\{quizStep\}/);
  assert.match(personal,/data-video-personalization-progress/);
- assert.match(personal,/\[1,2,3,4\] as const/);
- for(const stage of [1,2,3,4])assert.ok(personal.includes('hidden={quizStep!=='+stage+'}'));
- assert.ok(personal.indexOf('data-video-personalization-name-question')>
-   personal.indexOf('data-personalization-kind="strength"'),"name follows the three questions");
- assert.match(personal,/if\(quizStep===4\)\{onContinue\(\);return;\}/);
+ assert.match(personal,/\[1,2,3,4,5,6\] as const/);
+ assert.match(personal,/\{quizStep\} \/ 6/);
+ for(const stage of [1,2,3,4,5,6])assert.ok(personal.includes('hidden={quizStep!=='+stage+'}'));
+ for(const kind of ["current","desired","strength","energy-current","energy-desired"])
+   assert.ok(personal.includes('data-personalization-kind="'+kind+'"'),kind);
+ assert.ok(personal.indexOf('data-personalization-kind="strength"')<
+   personal.indexOf('data-personalization-kind="energy-current"'));
+ assert.ok(personal.indexOf('data-personalization-kind="energy-current"')<
+   personal.indexOf('data-personalization-kind="energy-desired"'));
+ assert.ok(personal.indexOf('data-personalization-kind="energy-desired"')<
+   personal.indexOf('data-video-personalization-name-question'),"name stays sixth");
+ assert.match(personal,/\{quizStep===6\?<button[^\n]+data-video-personalization-clarify-continue/);
+ assert.match(personal,/onClick=\{onContinue\}/);
+ assert.doesNotMatch(personal,/forward:"Continue"|forward:"Продолжить"|forward:"Continuar"/);
  assert.match(personal,/if\(quizStep===1\)\{onBack\(\);return;\}/);
  assert.match(personal,/quizRef\.current\?\.scrollIntoView/);
  assert.match(css,/\.card\[hidden\],\.nameCard\[hidden\]\{display:none!important\}/);
  assert.match(personal,/data-video-personalization-name type="text"/);
- for(const word of ["previous","forward","quizStep"])assert.ok(personal.includes(word));
+ for(const word of ["previous","next","quizStep"])assert.ok(personal.includes(word));
+});
+
+test("Energy now and desired energy each require one button from 1 to 10 and auto-advance",()=>{
+ assert.match(personal,/const energyScores=\[1,2,3,4,5,6,7,8,9,10\] as const/);
+ assert.match(personal,/data-video-personalization-energy-options="current"/);
+ assert.match(personal,/data-video-personalization-energy-options="desired"/);
+ assert.match(personal,/data-video-personalization-energy=\{score\}/);
+ assert.match(personal,/data-video-personalization-desired-level=\{score\}/);
+ assert.match(personal,/aria-pressed=\{value\.energy===score\}/);
+ assert.match(personal,/aria-pressed=\{value\.desiredLevel===score\}/);
+ assert.match(personal,/onClick=\{\(\)=>chooseEnergy\("energy",score\)\}/);
+ assert.match(personal,/onClick=\{\(\)=>chooseEnergy\("desiredLevel",score\)\}/);
+ assert.match(personal,/advanceTo\(field==="energy"\?5:6\)/);
+ assert.match(personal,/onChange\(old=>\(\{\.\.\.old,\[field\]:score\}\)\)/);
+ assert.doesNotMatch(personal,/type="range"/);
+ for(const line of ["Сколько энергии у меня сейчас?","Сколько энергии я хочу иметь?",
+  "How much energy do I have now?","How much energy would I like?",
+  "¿Cuánta energía tengo ahora?","¿Cuánta energía quiero tener?"])
+   assert.ok(personal.includes(line),line);
+ assert.match(css,/\.energyGrid\{display:grid;grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
+ assert.match(css,/\.energyGrid button\{[^}]*min-height:54px/);
+ assert.match(css,/\.energyGrid button\[aria-pressed="true"\]/);
+ assert.match(css,/@media\(max-width:370px\)/);
 });
