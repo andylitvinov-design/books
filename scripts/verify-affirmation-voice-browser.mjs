@@ -332,11 +332,16 @@ async function verifyWorkspaceHydration(browser,locale){
     const goalTab=page.locator('[data-video-quick-control="video"]');
     await goalTab.click();
     await expect(goalTab).toHaveAttribute("aria-pressed","true");
-    const others=page.locator('[data-auto-video-audience="others"]');
-    await expect(page.locator('[data-auto-video-audience]')).toHaveCount(2);
+    // Return to step 1 after the self quiz; Work now replaces the obsolete
+    // For Others toggle without changing recipient privacy or export checks.
+    const backGoal=page.locator('[data-video-goal-quiz-back]');
+    for(let i=0;i<2&&await backGoal.count();i++)await backGoal.click();
+    await expect(page.locator('[data-video-quick-scope]')).toHaveCount(2);
     await expect(page.locator('[data-video-goal-audience-option]')).toHaveCount(0);
+    const others=page.locator('[data-video-quick-scope="work"]');
     await others.click();
-    await expect(others).toHaveAttribute("aria-pressed","true");
+    const audienceState=page.locator('[data-video-goal-quiz-audience]');
+    await expect(audienceState).toHaveAttribute("data-video-goal-quiz-audience","others");
     const recipientCatalog=page.locator('[data-video-recipient-catalog]');
     await expect(recipientCatalog).toBeVisible();
     await expect(recipientCatalog).toHaveAttribute("data-video-recipient-aspect","portrait");
@@ -401,7 +406,12 @@ async function verifyWorkspaceHydration(browser,locale){
     const birthday=page.locator('[data-auto-video-recipient-occasion="birthday"]');
     await birthday.click();
     await expect(birthday).toHaveAttribute("aria-pressed","true");
-    await continueToIdeas.click();
+    // Work mode shows one native Goal CTA; the old footer Continue is hidden.
+    await expect(continueToIdeas).toBeHidden();
+    const recipientCreate=page.locator('[data-video-goal-create-cta]');
+    await expect(recipientCreate).toBeVisible({timeout:15000});
+    await expect(recipientCreate).toBeEnabled();
+    await recipientCreate.click();
     await expect(ideas).toHaveAttribute("aria-pressed","true");
     await expect(studio).toHaveAttribute("data-active-workspace","phrases");
     // These are the actual source-backed montage title inputs; source edits
