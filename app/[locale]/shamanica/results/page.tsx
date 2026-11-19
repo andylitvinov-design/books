@@ -4,33 +4,110 @@ import Link from "next/link";
 import { ArrowRight, ArrowLeft, Sparkles } from "lucide-react";
 import { notFound } from "next/navigation";
 import { isPublicLocale } from "@/data/academy/catalog";
-import { shamanicaRecommendations,shamanicaServiceHref } from "@/lib/shamanica-recommendations.mjs";
+import { shamanicaRecommendations } from "@/lib/shamanica-recommendations.mjs";
+import { ServicesThreeVisibleOptions } from "@/components/services-three-visible-options";
 import styles from "@/components/shamanica-mobile.module.css";
-type Props={params:Promise<{locale:string}>;searchParams:Promise<{goal?:string;method?:string;start?:string}>};
-const images={remedies:"/images/holistic-house/distance-homeopathy.webp",artifacts:"/images/holistic-house/tao-fu-balance.webp",energy:"/images/holistic-house/reiki-approved-sunrise-v3.webp",rituals:"/images/holistic-house/mandala-gold-reference.webp",learning:"/academy/reiki-yggdrasil/source/temple-studies.png"} as const;
-const translations={
- ru:{title:"Ваш путь в Шаманике",eyebrow:"ВАША ПЕРСОНАЛЬНАЯ ПОДБОРКА",lead:"Два подходящих направления по вашим ответам. Выберите, с чего начать.",action:"Посмотреть предложение",again:"Изменить ответы",all:"Все услуги Шаманики",items:{remedies:["Подбор препаратов","Индивидуальная консультация по гомеопатическим средствам."],artifacts:["Артефакты и места силы","Символические предметы и персональные талисманы."],energy:["Энергетическая поддержка","Выберите формат Рейки-сеанса и оставьте запрос."],rituals:["Мандалы и ритуалы","Создайте личную мандалу или изучите практики."],learning:["Обучение","Вводные уроки, школы Рейки и мистерий."]}},
- en:{title:"Your Shamanica path",eyebrow:"YOUR PERSONAL SELECTION",lead:"Two directions based on your answers. Choose where to begin.",action:"Explore",again:"Change answers",all:"All Shamanica services",items:{remedies:["Remedy guidance","Learn about a personal homeopathy consultation."],artifacts:["Artefacts & power places","Discover symbolic objects and talismans."],energy:["Energy support","Request a personal Reiki session."],rituals:["Mandalas & rituals","Create a mandala or explore symbolic practices."],learning:["Learning","Introductory courses, Reiki and mysteries."]}},
- es:{title:"Tu camino en Shamanica",eyebrow:"SELECCIÓN PERSONAL",lead:"Dos caminos basados en tus respuestas.",action:"Explorar",again:"Cambiar respuestas",all:"Todos los servicios",items:{remedies:["Orientación sobre remedios","Consulta personal sobre preparados homeopáticos."],artifacts:["Objetos y lugares de poder","Objetos simbólicos y talismanes."],energy:["Apoyo energético","Solicita una sesión personal de Reiki."],rituals:["Mandalas y rituales","Crea un mandala y explora prácticas."],learning:["Aprendizaje","Cursos introductorios, Reiki y misterios."]}}
+import priorityStyles from "@/components/shamanica-results-services.module.css";
+
+type Props = {
+  params: Promise<{locale:string}>;
+  searchParams: Promise<{goal?:string;method?:string;start?:string}>;
+};
+const photos = {
+  remedies: "/images/holistic-house/distance-homeopathy.webp",
+  artifacts: "/images/holistic-house/tao-fu-balance.webp",
+  energy: "/images/holistic-house/reiki-approved-sunrise-v3.webp",
+  rituals: "/images/holistic-house/mandala-gold-reference.webp",
+  learning: "/academy/reiki-yggdrasil/source/temple-studies.png",
 } as const;
-export const metadata:Metadata={title:"Shamanica — personal path | Holistic House",robots:{index:false,follow:true}};
-export default async function ShamanicaResults({params,searchParams}:Props){
- const {locale}=await params;
- if(!isPublicLocale(locale))notFound();
- const args=await searchParams;
- const items=shamanicaRecommendations(args) as Array<keyof typeof images>;
- const t=translations[locale];
- return <main lang={locale} className={styles.resultsPage} data-shamanica-results>
- <div className={styles.resultsShell}>
-  <Link href={"/"+locale+"/shamanica"} className={styles.backLink}><ArrowLeft size={19}/>{t.again}</Link>
-  <span className={styles.resultsEyebrow}><Sparkles size={18}/>{t.eyebrow}</span>
-  <h1>{t.title}</h1><p className={styles.resultsLead}>{t.lead}</p>
-  <div className={styles.resultCards}>{items.map((id,index)=><Link key={id} href={shamanicaServiceHref(locale,id)} prefetch={false} className={styles.resultCard} data-recommended-service={id}>
-   <div className={styles.resultPhoto}><Image src={images[id]} alt="" fill sizes="(max-width:600px) 100vw, 230px"/></div>
-   <div className={styles.resultText}><span className={styles.resultNumber}>{index+1} / 2</span><h2>{t.items[id][0]}</h2><p>{t.items[id][1]}</p>
-   <span className={styles.resultLink}>{t.action}<ArrowRight size={17}/></span></div>
-  </Link>)}</div>
-  <Link href={"/"+locale+"/shamanica#shamanica-services-title"} className={styles.allServices}>{t.all}<ArrowRight size={18}/></Link>
- </div>
- </main>;
+// A single, published three-card service component is shared with Services.
+// Categories set the priority; individual offers inside them can be ordered.
+const offerGroups = {
+  remedies: "homeopathy",
+  artifacts: "shamanica-artifacts",
+  energy: "reiki",
+  rituals: "magical",
+  learning: "shamanica-learning",
+} as const;
+type ShamanicaPriority = keyof typeof offerGroups;
+const translations = {
+  ru: {
+    title: "Ваш путь в Шаманике", eyebrow: "ВАША ПЕРСОНАЛЬНАЯ ПОДБОРКА",
+    lead: "Два направления по вашим ответам. В каждом — три конкретные услуги с ценой и возможностью заказа.",
+    again: "Изменить ответы", all: "Все услуги Шаманики", priority: "Приоритет",
+    items: {
+      remedies: ["Подбор препаратов", "Бесплатный разбор, экспресс или полная личная сессия."],
+      artifacts: ["Артефакты и места силы", "Талисманы, символические предметы и личные намерения."],
+      energy: ["Энергетическая поддержка", "Сеансы Рейки и варианты личной практики."],
+      rituals: ["Мандалы и ритуалы", "Персональные мандалы, ритуалы и талисманы."],
+      learning: ["Обучение", "Конкретные программы Рейки и посвящения."],
+    },
+  },
+  en: {
+    title: "Your Shamanica path", eyebrow: "YOUR PERSONAL SELECTION",
+    lead: "Two priorities based on your answers. Each includes three real offers with prices and request options.",
+    again: "Change answers", all: "All Shamanica services", priority: "Priority",
+    items: {
+      remedies: ["Remedy guidance", "Written review, express or full personal session."],
+      artifacts: ["Artefacts & power places", "Talismans, symbolic objects and personal intentions."],
+      energy: ["Energy support", "Reiki sessions and individual practice options."],
+      rituals: ["Mandalas & rituals", "Personal mandalas, rituals and talismans."],
+      learning: ["Learning", "Specific Reiki courses and initiation options."],
+    },
+  },
+  es: {
+    title: "Tu camino en Shamanica", eyebrow: "SELECCIÓN PERSONAL",
+    lead: "Dos prioridades según tus respuestas. Cada una ofrece tres servicios reales con precio y solicitud.",
+    again: "Cambiar respuestas", all: "Todos los servicios", priority: "Prioridad",
+    items: {
+      remedies: ["Orientación sobre remedios", "Revisión escrita, sesión exprés o completa."],
+      artifacts: ["Objetos y lugares de poder", "Talismanes, objetos simbólicos e intenciones."],
+      energy: ["Apoyo energético", "Sesiones de Reiki y opciones de práctica."],
+      rituals: ["Mandalas y rituales", "Mandalas personales, rituales y talismanes."],
+      learning: ["Aprendizaje", "Cursos de Reiki y opciones de iniciación."],
+    },
+  },
+} as const;
+
+export const metadata: Metadata = {
+  title: "Shamanica — personal path | Holistic House",
+  robots: { index:false, follow:true },
+};
+
+export default async function ShamanicaResults({params,searchParams}:Props) {
+  const {locale} = await params;
+  if (!isPublicLocale(locale)) notFound();
+  const args = await searchParams;
+  const priorities = shamanicaRecommendations(args) as ShamanicaPriority[];
+  const t = translations[locale];
+  return <main lang={locale} className={styles.resultsPage} data-shamanica-results>
+    <div className={styles.resultsShell}>
+      <Link href={"/"+locale+"/shamanica"} className={styles.backLink}>
+        <ArrowLeft size={19} aria-hidden="true"/>{t.again}
+      </Link>
+      <span className={styles.resultsEyebrow}><Sparkles size={18} aria-hidden="true"/>{t.eyebrow}</span>
+      <h1>{t.title}</h1>
+      <p className={styles.resultsLead}>{t.lead}</p>
+      <div className={styles.resultCards} data-shamanica-priority-groups>
+        {priorities.map((id,index) => <section key={id}
+          className={priorityStyles.priorityGroup} data-recommended-service={id}
+          data-shamanica-priority={index+1} data-priority-offer-count="3">
+          <header className={priorityStyles.priorityHeader}>
+            <div className={priorityStyles.priorityImage}>
+              <Image src={photos[id]} alt="" fill sizes="(max-width:560px) 74px, 90px"/>
+            </div>
+            <div className={priorityStyles.priorityIntro}>
+              <span className={priorityStyles.priorityIndex}>{t.priority} {index+1} / 2</span>
+              <h2>{t.items[id][0]}</h2>
+              <p>{t.items[id][1]}</p>
+            </div>
+          </header>
+          <ServicesThreeVisibleOptions locale={locale} id={offerGroups[id]}/>
+        </section>)}
+      </div>
+      <Link href={"/"+locale+"/shamanica#shamanica-services-title"} className={styles.allServices}>
+        {t.all}<ArrowRight size={18} aria-hidden="true"/>
+      </Link>
+    </div>
+  </main>;
 }
