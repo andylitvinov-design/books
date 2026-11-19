@@ -9,23 +9,15 @@ import { parsePrTrigger, matchesTrigger, TARGET } from '../lib/ci/specialist-agg
 // Core, Guard and actionlint still verify CI routing and workflow changes.
 const ownerWorkflows = [
   "admin-seo-dashboard.yml",
-  "dao-iching-library.yml",
-  "hh-benchmark-program.yml",
-  "hh-benchmark-public-browser.yml",
   "hh-energywork-ai.yml",
   "hh-event-referral-contract.yml",
   "hh-growth-studio.yml",
   "hh-home-conversation.yml",
   "hh-ideas-coaching-public.yml",
-  "hh-live-seo-audit.yml",
   "hh-live-audio-ci.yml",
   "hh-public-performance-audit.yml",
   "hh-support-guided-recommendations.yml",
   "holistic-house-native.yml",
-  "hh-sitemap-runtime-assets.yml",
-  "hh-video-feature-lab.yml",
-  "holistic-house-ocean-audio.yml",
-  "mentor-community-acceptance.yml",
   "practice-material-previews.yml",
   "hh-first-video-live-export.yml",
   "hh-direct-video-notes.yml",
@@ -43,6 +35,41 @@ const contractFile = 'docs/operations/CI_OWNER_ROUTE_MIGRATION_20261104.md';
 const legacyTrigger = 'tests/ci-pr-selective-workflows.test.mjs';
 const source = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 const trigger = name => parsePrTrigger(source(name), name);
+
+// Owner-approved PR budget: retain one low-cost public performance owner,
+// defer nine noncritical/duplicative domain matrices to explicit dispatch or
+// existing protected production pushes. Core, security, money, CRM and private
+// data owners continue to run their real exact-HEAD checks on every matching PR.
+const onDemandQa = [
+  "dao-iching-library.yml",
+  "hh-benchmark-program.yml",
+  "hh-benchmark-public-browser.yml",
+  "hh-live-seo-audit.yml",
+  "hh-video-feature-lab.yml",
+  "holistic-house-ocean-audio.yml",
+  "hh-sitemap-runtime-assets.yml",
+  "hh-visual-service-landings.yml",
+  "mentor-community-acceptance.yml"
+];
+test('ten-to-one noncritical PR budget retains Core and source security', () => {
+  assert.equal(onDemandQa.length, 9, 'nine noncritical PR workloads must be deferred');
+  for (const name of onDemandQa) {
+    const yaml=source(name);
+    assert.deepEqual(trigger(name)?.types,['labeled'],name + ': opt-in event route changed');
+    assert.equal(matchesTrigger(trigger(name), ['package.json','components/holistic-house-home.tsx'], TARGET), false,
+      name + ': optional QA must not block ordinary PRs');
+    assert.match(yaml,/github\.event\.label\.name == 'qa-optional'/,name + ': explicit opt-in guard missing');
+    assert.match(yaml,/^  workflow_dispatch:\s*$/m,name + ': on-demand QA unavailable');
+    assert.doesNotMatch(yaml,/continue-on-error:\s*true/,name + ': genuine failures must remain visible');
+  }
+  assert.ok(trigger('hh-public-performance-audit.yml')?.paths?.length,
+    'one lightweight public-performance PR owner must remain');
+  for (const name of [
+    'hh-pr-core-release.yml','hh-crm-source-check.yml',
+    'hh-billing-isolated.yml','hh-app-r1.yml',
+    'hh-public-services-production.yml','hh-actionlint.yml',
+  ]) assert.ok(trigger(name),name + ': critical PR owner is missing');
+});
 
 test('optional workflow routes exclude retired shared fan-out triggers and retain owned coverage', () => {
   assert.equal(new Set(ownerWorkflows).size, ownerWorkflows.length);
@@ -83,7 +110,6 @@ test('unrelated library and sitemap edits do not awaken Dao and growth browser o
   assert.equal(matchesTrigger(trigger('visual-to-code-skill.yml'),['app/layout.tsx'],TARGET),false);
   assert.equal(matchesTrigger(trigger('practice-google-browser.yml'),['components/practice-showcase.jsx'],TARGET),false);
   for (const [owner, changed] of [
-    ['dao-iching-library.yml','components/dao-hexagram-card.tsx'],
     ['hh-growth-journey.yml','components/topic-growth-guide.tsx'],
     ['hh-ideas-coaching-public.yml','components/ideas-discovery.tsx'],
     ['hh-kling-video.yml','lib/kling-video.mjs'],
