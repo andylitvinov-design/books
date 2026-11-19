@@ -658,10 +658,13 @@ test('PR-only cancellation safeguards owner video, SEO and performance audit wit
   ];
   for(const [filename,group,contracts] of specs){
     const s=workflow(filename);
-    assert.match(s,/^  pull_request:/m,filename+' must still validate PR changes');
     if (filename === 'hh-live-seo-audit.yml') {
+      // Retain published SEO coverage, defer the optional PR crawl to manual QA.
+      assert.doesNotMatch(s,/^  pull_request:/m,filename+' must not fan out on PRs');
+      assert.match(s,/^  workflow_dispatch:/m,filename+' remains manually runnable');
       assert.match(s,/^  push:/m,filename+' retains independent published SEO audit');
     } else {
+      assert.match(s,/^  pull_request:/m,filename+' must still validate PR changes');
       assert.doesNotMatch(s,/^  push:/m,filename+' must not rerun merged source checks');
     }
     assert.match(s,/^    paths:/m,filename+' must retain relevant path filters');
