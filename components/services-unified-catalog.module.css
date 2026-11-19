@@ -226,3 +226,60 @@
 .panel[id^="service-group-"]{scroll-margin-top:74px}
 .panel[id^="service-group-"]:target{outline:2px solid #248268;outline-offset:-2px}
 @media(prefers-reduced-motion:reduce){.panel[id^="service-group-"]{scroll-behavior:auto}}
+
+
+/* Owner screenshot 18 Nov: three featured offers AND their attractive heading
+   occupy one iPhone content screen when Details/Order are collapsed.
+   Override the retired full-width footer-action grid, not real action handlers. */
+@media(max-width:760px){
+  .featured :global([data-assist-personal-consultation]){
+    margin:8px auto 18px;padding:0;border:0;background:transparent;box-shadow:none
+  }
+  .featured :global([data-assist-personal-consultation] > header){
+    display:flex;align-items:center;min-height:52px;margin:0 1px 8px;
+    padding:6px 6px 7px 11px
+  }
+  .featured :global([data-assist-personal-consultation] > header h2){
+    font-size:clamp(22px,6.25vw,26px);line-height:1.08
+  }
+  .featured :global([data-assist-personal-consultation] > header p){
+    margin-top:3px;font-size:12px;line-height:1.2
+  }
+  .featured :global([data-assist-personal-consultation] > div){gap:8px}
+  .featured :global([data-consultation-choice]){
+    grid-template-columns:minmax(76px,27%) minmax(0,1fr)!important;
+    grid-template-rows:minmax(0,1fr) auto auto;column-gap:9px;row-gap:3px;
+    align-items:stretch;min-height:139px;padding:7px;border-radius:17px
+  }
+  .featured :global([data-consultation-choice] > div:first-child){
+    grid-column:1;grid-row:1/3!important;min-height:123px;height:100%;border-radius:12px
+  }
+  .featured :global([data-consultation-choice] > div:nth-child(2)){
+    grid-column:2;grid-row:1;gap:3px;min-height:0;padding:23px 0 0
+  }
+  .featured :global([data-consultation-choice] h3){
+    font-size:clamp(16px,4.75vw,18px);line-height:1.1
+  }
+  .featured :global([data-consultation-choice] p){
+    margin:0;font-size:clamp(11.5px,3.3vw,12.5px);line-height:1.2
+  }
+  .featured :global([data-consultation-choice] > [data-service-card-actions]){
+    display:contents;grid-column:auto;grid-row:auto;margin:0;padding:0
+  }
+  .featured :global([data-consultation-choice] [data-service-card-controls]){
+    grid-column:2;grid-row:2;align-self:end
+  }
+  .featured :global([data-consultation-choice] [data-service-card-details]),
+  .featured :global([data-consultation-choice] [data-service-card-order]){
+    grid-column:1/-1;grid-row:3
+  }
+}
+@media(max-width:350px){
+  .featured :global([data-consultation-choice]){
+    grid-template-columns:72px minmax(0,1fr)!important;column-gap:7px;padding:6px;min-height:137px
+  }
+  .featured :global([data-consultation-choice] > div:first-child){min-height:123px}
+  .featured :global([data-consultation-choice] > div:nth-child(2)){padding-top:22px}
+  .featured :global([data-consultation-choice] h3){font-size:16px}
+  .featured :global([data-consultation-choice] p){font-size:11.5px}
+}
