@@ -133,6 +133,8 @@ on:
       - '.github/workflows/hh-portrait-sectors.yml'
       # Commander signed PR completion is validated by Core and the focused Guard, not this unrelated heavy suite.
       - '!app/api/app/commander/**'
+      # Shared Practice editor routes are independently covered by App/Practice owners.
+      - '!app/api/app/practice/**'
 permissions:
   contents: read
 concurrency:

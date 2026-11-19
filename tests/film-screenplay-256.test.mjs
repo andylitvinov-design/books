@@ -64,7 +64,9 @@ test("every one of 256 original scenario IDs has a complete RU/EN/ES 30-second s
 
 test("the screenshot's four motivation films are individually directed, not relabeled stock shots",()=>{
  assert.deepEqual(film256EditorialOverrideIds,[
-  "motivation-drive-s1","motivation-drive-s2","motivation-drive-s3","motivation-drive-s4"
+  "motivation-drive-s1","motivation-drive-s2","motivation-drive-s3","motivation-drive-s4",
+  "money-blocks-s1","money-blocks-s2","money-blocks-s3","money-blocks-s4",
+  "couple-conflict-s1","couple-conflict-s2","couple-conflict-s3","couple-conflict-s4"
  ]);
  for(const locale of locales){
   const films=listCompleteFilmScreenplays("motivation-drive",locale);
