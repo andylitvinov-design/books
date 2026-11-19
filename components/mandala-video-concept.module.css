@@ -118,13 +118,13 @@
 .panel .guestNote{font-size:10px}
 
 @media(max-width:759px){
-  .panel{padding:14px 11px calc(var(--hh-unified-nav-height,90px) + env(safe-area-inset-bottom,0px) + 90px);
+  .panel{padding:14px 11px calc(var(--hh-unified-nav-height,90px) + env(safe-area-inset-bottom,0px) + 164px);
     scroll-margin-top:calc(env(safe-area-inset-top,0px) + 12px)}
   /* The one action rail stays visible ABOVE the existing unified bottom nav. */
   .panel .actions{position:fixed;z-index:65;
     left:max(10px,env(safe-area-inset-left,0px));
     right:max(10px,env(safe-area-inset-right,0px));
-    bottom:calc(var(--hh-unified-nav-height,90px) + env(safe-area-inset-bottom,0px) + 8px);
+    bottom:calc(var(--hh-unified-nav-height,90px) + env(safe-area-inset-bottom,0px) + 54px);
     margin:0;max-width:560px;margin-inline:auto;padding:7px;
     background:rgba(255,252,247,.98);border:1px solid #d5e5d9;border-radius:16px;
     box-shadow:0 5px 26px #173d3329;backdrop-filter:blur(8px)}
@@ -181,7 +181,7 @@
 .shotAction{color:#315345}
 .shotEmotion{display:block;margin-top:4px;color:#74887e;font-size:11px}
 @media(min-width:600px){
-  .directionGrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .directionGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .directionOption{align-content:start}
 }
 @media(max-width:359px){
@@ -189,3 +189,64 @@
  .directionOptionTop strong{font-size:14px}
  .directionIdea{font-size:12.5px}
 }
+
+/* Concept v3: cinematic pitch, independent editable idea, readable film first. */
+.directionPitch{font:500 12.5px/1.42 Arial,Helvetica,sans-serif;color:#61776d;
+  overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;
+  -webkit-line-clamp:3;overflow:hidden}
+.mainIdeaHeading{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}
+.mainIdeaHeading h4{margin:0;flex:1 1 110px}
+.ideaEdit{display:flex;align-items:center;justify-content:center;gap:5px;
+  border:1px solid #c4dece;border-radius:11px;background:#fff;
+  padding:7px 9px;min-height:42px;color:#1b7259;cursor:pointer;
+  font:700 12px/1.25 Arial,Helvetica,sans-serif}
+.ideaEdit:disabled{opacity:.55;cursor:not-allowed}
+.ideaEditor{display:grid;gap:8px}
+.ideaEditor textarea{width:100%;min-height:90px;max-height:40vh;resize:vertical;
+  border:1px solid #a1d4be;border-radius:12px;padding:11px;background:#fff;
+  color:#133b2f;font:600 15px/1.45 Arial,Helvetica,sans-serif}
+.panel [data-video-concept-shot-sketch] .parameterList>li{
+  padding:12px;line-height:1.45;overflow-wrap:anywhere}
+.panel [data-video-concept-shot-sketch] .shotAction{
+  display:block;margin-top:6px;font-size:13px;line-height:1.5}
+.panel [data-video-concept-shot-sketch] summary{font-size:13.5px}
+.panel [data-video-concept-shot-sketch] .shotEmotion{margin-top:5px}
+@media(max-width:759px){
+  /* Chat/FAB remains a separate overlay below this rail; reserve space
+     for nav + chat + fixed actions and a focused iOS keyboard. */
+  .panel{scroll-padding-bottom:calc(var(--hh-unified-nav-height,90px) + 180px)}
+  .panel:has(textarea:focus) .actions{position:static;transform:none;margin:16px 0}
+  .panel:has(textarea:focus){padding-bottom:calc(var(--hh-unified-nav-height,90px) + 36px)}
+}
+@media(max-width:359px){
+  .ideaEdit{font-size:11px;padding:6px 7px}
+  .directionPitch{font-size:12px}
+}
+
+/* Six authored shots stay compact; editing is opt-in and only opens in Ideas. */
+.storyShotEditor{display:grid;gap:9px;padding:4px 12px 13px}
+.storyShotEditor>button,.storyEditorActions button,.storyReviewNotice button{
+  min-height:44px;border:1px solid #a6d1bd;border-radius:11px;background:#fff;
+  color:#145e49;padding:9px 12px;font:750 13px/1.35 Arial,Helvetica,sans-serif;cursor:pointer}
+.storyShotEditor label{display:grid;gap:6px;color:#204f40;font:700 12px/1.3 Arial,Helvetica,sans-serif}
+.storyShotEditor textarea{display:block;width:100%;min-height:75px;resize:vertical;
+  border:1px solid #bfdaca;border-radius:10px;padding:9px;color:#183d32;
+  background:#fff;font:500 14px/1.4 Arial,Helvetica,sans-serif}
+.storyEditorActions{display:grid;grid-template-columns:1.2fr .8fr;gap:8px}
+.storyShotEditor button:disabled{opacity:.5;cursor:not-allowed}
+.storyReviewNotice{display:grid;gap:9px;border:1px solid #b8dccc;background:#eef8f0;
+  padding:10px;border-radius:11px;color:#234f40}
+.storyReviewNotice p{font:500 12.5px/1.4 Arial,Helvetica,sans-serif;margin:0}
+.storyReviewNotice button{display:flex;align-items:center;justify-content:center;gap:6px;
+  background:#dff3e7;border-color:#94cbb3}
+
+/* A short factual trace of the confirmed preferences used in the ranking. */
+.directionOption .directionFit{color:#346c59;font:600 11.5px/1.35 Arial,Helvetica,sans-serif;
+ overflow-wrap:anywhere}
+
+/* Cinematic shot sketches: visible graphics depict each authored event schematically. */
+.storyShotGraphicRow{display:grid;grid-template-columns:clamp(82px,24vw,106px) minmax(0,1fr);gap:10px;align-items:center;min-width:0}
+.storyShotGraphicFrame{height:78px;border:1px solid #d7e4d8;border-radius:10px;overflow:hidden;min-width:0}
+.storyShotGraphicText{min-width:0;color:inherit;overflow-wrap:anywhere;line-height:1.4}
+.storyShotGraphicText .shotEmotion{display:block}
+@media(max-width:350px){.storyShotGraphicRow{grid-template-columns:79px minmax(0,1fr);gap:7px}.storyShotGraphicFrame{height:72px}}

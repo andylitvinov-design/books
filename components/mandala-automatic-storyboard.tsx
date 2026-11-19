@@ -1,11 +1,17 @@
 "use client";
-import {useMemo} from "react";
+import {useMemo,useState} from "react";
 import {ArrowRight,Film,Play} from "lucide-react";
 import {suggestVideoConcept} from "@/lib/mandala/auto-video-concept.mjs";
+import {getVideoCreativeDirections,applyVideoCreativeDirection} from "@/lib/mandala/video-creative-directions.mjs";
 import {buildAlignedStorySceneGuides} from "@/lib/mandala/storyboard-content-alignment.mjs";
+import {resolveSelectedVideoFilm} from "@/lib/mandala/video-story-selection.mjs";
+import {conceptSceneAlignment,storyReviewRequired} from "@/lib/mandala/video-story-review.mjs";
+import {MandalaStoryboardSceneSketch} from "./mandala-storyboard-scene-sketch";
 import {planReviewedFilmedStory,planReviewedStoryWithPhotos,isReviewedFilmedStorySequence,
  isReviewedStoryWithPhotosSequence,isReviewedFilmedStoryScene} from "@/lib/mandala/reviewed-filmed-story.mjs";
 import {STORY_PHOTO_BY_ID,isTrustedStoryPhoto} from "@/lib/mandala/story-photo-library.mjs";
+import {storyboardPhotoReferences,STORYBOARD_REFERENCE_STATUS} from "@/lib/mandala/storyboard-photo-references.mjs";
+import type {StoryboardReferencePhoto} from "@/lib/mandala/storyboard-photo-references.mjs";
 import type {CategoryStoryboardShot} from "@/lib/mandala/category-video-storyboard.mjs";
 import type {ApprovedVideoConcept} from "./mandala-video-concept";
 import styles from "./mandala-video-mobile.module.css";
@@ -18,6 +24,8 @@ type Props={
  pace:"slow"|"dynamic";personalization?:{currentState?:string;desiredState?:string;focus?:string}|null;
  appliedStoryKey?:string|null;
  phrases:readonly string[];transcript:object|null;approvedConcept:ApprovedVideoConcept|null;
+ draftConcept?:ApprovedVideoConcept|null;
+ suggestedConcept?:ApprovedVideoConcept|null;selectedDirectionId?:string|null;
  scenes:readonly unknown[];appliedShots:readonly Shot[]|null;
  resolveMedia:(id:string)=>{poster:string|null;title:string};
  disabled:boolean;
@@ -55,6 +63,24 @@ const words={
   empty:"No hay suficientes tomas reales revisadas para esta duración. No se usarán dibujos; elige un vídeo más corto.",
   noPoster:"Vista previa no disponible",quality:"Elegir calidad de generación",clips:"clips"}
 } as const;
+function StoryboardReferencePoster({photo,locale,action,keywords}:{
+ photo:StoryboardReferencePhoto;locale:Locale;action:string;keywords:readonly string[]
+}){
+ const [unavailable,setUnavailable]=useState(false);
+ if(unavailable)return <div className={styles.storyAutoNoPoster} data-storyboard-reference-unavailable>
+  <MandalaStoryboardSceneSketch locale={locale} action={action} keywords={keywords}/>
+  <small className={styles.storyAutoNeedsFootage}>{locale==="ru"?"Фото недоступно":
+    locale==="es"?"Foto no disponible":"Photo unavailable"}</small>
+ </div>;
+ return <>
+  {/* eslint-disable-next-line @next/next/no-img-element */}
+  <img src={photo.src} alt={photo.labels[locale]} loading="lazy" decoding="async"
+   onError={()=>setUnavailable(true)} data-storyboard-reference-photo/>
+  <small className={styles.storyAutoNeedsFootage} data-storyboard-photo-reference-label>
+   {locale==="ru"?"Фото · референс":locale==="es"?"Foto · referencia":"Photo · reference"}
+  </small>
+ </>;
+}
 const clock=(time:number)=>{
  const seconds=Math.max(0,Math.floor(time));
  return String(Math.floor(seconds/60)).padStart(2,"0")+":"+String(seconds%60).padStart(2,"0");
@@ -62,28 +88,46 @@ const clock=(time:number)=>{
 
 export function MandalaAutomaticStoryboard({
  locale,goal,theme,durationSeconds,aspect,styleIndex,pace,personalization,appliedStoryKey,selectedTopic=null,
- phrases,transcript,approvedConcept,scenes,appliedShots,resolveMedia,disabled,onApply,onChooseQuality,fiveSceneShots
+ phrases,transcript,approvedConcept,draftConcept=null,suggestedConcept=null,selectedDirectionId=null,
+ scenes,appliedShots,resolveMedia,disabled,onApply,onChooseQuality,fiveSceneShots,onOpenIdeas
 }:Props){
  const t=words[locale];
+ const [expandedScene,setExpandedScene]=useState<number|null>(null);
  const phraseKey=phrases.join("\u001f");
  const personalizationKey=JSON.stringify(personalization??null);
  // Concept and Story get the SAME confirmed Goals/Ideas/phrases/transcript.
- const suggested=useMemo(()=>suggestVideoConcept({
+ const localSuggested=useMemo(()=>suggestVideoConcept({
   locale,goal,theme,styleIndex,phrases:phraseKey?phraseKey.split("\u001f"):[],
   speechTranscript:transcript,personalization:JSON.parse(personalizationKey),
   selectedTopicId:selectedTopic?.topicId||null,creativeBrief:selectedTopic?.brief||null
- }) as ApprovedVideoConcept,
+ }) as unknown as ApprovedVideoConcept,
  [locale,goal,theme,styleIndex,phraseKey,transcript,personalizationKey,
   selectedTopic?.topicId,selectedTopic?.brief]);
- const concept=approvedConcept?.signature===suggested.signature||
-  (approvedConcept?.baseSignature===suggested.signature&&
-   Boolean(approvedConcept?.creativeDirectionId))?approvedConcept:suggested;
+ const suggested=suggestedConcept||localSuggested;
+ // Ideas initially shows the first creative direction even before approval.
+ // Story must use that exact screenplay, or the current choice/edit, not raw tags.
+ const defaultDirection=useMemo(()=>getVideoCreativeDirections(suggested,locale)[0],
+  [suggested,locale]);
+ const defaultFilm=useMemo(()=>defaultDirection?
+  applyVideoCreativeDirection(suggested,defaultDirection) as ApprovedVideoConcept:suggested,
+  [suggested,defaultDirection]);
+ const sameIntent=(candidate:ApprovedVideoConcept|null|undefined)=>Boolean(candidate&&
+  (candidate.signature===suggested.signature||candidate.baseSignature===suggested.signature));
+ const currentDraft=sameIntent(draftConcept)?draftConcept:null;
+ const currentApproved=sameIntent(approvedConcept)?approvedConcept:null;
+ const choice=resolveSelectedVideoFilm<ApprovedVideoConcept>({
+  base:suggested,locale,selectedDirectionId,draft:currentDraft,approved:currentApproved
+ });
+ const concept=choice.concept||defaultFilm;
+ const scriptSceneAlignment=conceptSceneAlignment(concept);
+ const scriptNeedsReview=storyReviewRequired(concept);
  const guides=useMemo(()=>buildAlignedStorySceneGuides({
   locale,goal:concept.goal||goal,phrases:phraseKey?phraseKey.split("\u001f"):[],
-  concept,count:Math.max(4,Math.ceil(durationSeconds/5)),pace
+  concept,count:concept.storyboard?.length||Math.max(4,Math.ceil(durationSeconds/5)),pace
  }),[locale,goal,concept,phraseKey,durationSeconds,pace]);
  const storyKey=JSON.stringify([
-  concept.signature,phraseKey,styleIndex,pace,durationSeconds,"portrait",theme,
+  concept.signature,concept.storyboard?.map(shot=>[shot.title,shot.action,shot.emotion])??null,
+  phraseKey,styleIndex,pace,durationSeconds,"portrait",theme,
   concept.avoidImagery||[],personalizationKey
  ]);
  const proposal=useMemo(()=>{
@@ -98,10 +142,13 @@ export function MandalaAutomaticStoryboard({
     :planReviewedFilmedStory(parameters);
  },[concept,locale,durationSeconds,scenes,pace,goal,phraseKey,guides]);
  const filmedProposalReady=proposal.ok&&proposal.shots.length===guides.scenes.length;
+ // All authored six-shot stories require actual scene-level visual evidence.
+ // Catalogue tags cannot prove that an object or action appears in a clip.
+ const v3RequiresActionProof=Array.isArray(concept.storyboard)&&concept.storyboard.length>0;
  const currentMatchesProposal=filmedProposalReady&&appliedShots?.length===proposal.shots.length&&
   appliedShots.every((shot,index)=>shot.sceneId===proposal.shots[index].sceneId&&
    Math.abs(shot.startSeconds-proposal.shots[index].startMs/1000)<.01);
- const applied=Boolean(currentMatchesProposal&&appliedStoryKey===storyKey&&
+ const applied=Boolean(!v3RequiresActionProof&&currentMatchesProposal&&appliedStoryKey===storyKey&&
   (isReviewedFilmedStorySequence({shots:appliedShots,scenes,
     aspect:aspect as "portrait"|"landscape"|"square"})||
    isReviewedStoryWithPhotosSequence({shots:appliedShots,scenes,
@@ -110,11 +157,15 @@ export function MandalaAutomaticStoryboard({
  const sceneCatalog=new Map(scenes.filter((scene):scene is {id:string}=>Boolean(
    scene&&typeof scene==="object"&&"id" in scene&&typeof scene.id==="string"))
    .map(scene=>[scene.id,scene]));
- const eligible=filmedProposalReady&&proposal.shots.every(shot=>{
-  const photo=STORY_PHOTO_BY_ID.get(shot.sceneId);
-  return photo?isTrustedStoryPhoto(photo):
-    isReviewedFilmedStoryScene(sceneCatalog.get(shot.sceneId),"portrait");
- });
+ // Reviewed planner currently returns depictedEventVerified:false.
+ // This also gates the curated six-shot scripts, not only the new v3 corpus.
+ const eligible=filmedProposalReady&&!v3RequiresActionProof&&!choice.selectionMissing&&
+  scriptSceneAlignment.aligned&&!scriptNeedsReview&&
+  proposal.shots.every(shot=>{
+   const photo=STORY_PHOTO_BY_ID.get(shot.sceneId);
+   return photo?isTrustedStoryPhoto(photo):
+     isReviewedFilmedStoryScene(sceneCatalog.get(shot.sceneId),"portrait");
+  });
  const proposalHasPhotos=proposal.ok&&proposal.shots.some(shot=>STORY_PHOTO_BY_ID.has(shot.sceneId));
  const shots=eligible?proposal.shots.map(shot=>({
   sceneId:shot.sceneId,startSeconds:shot.startMs/1000,
@@ -137,47 +188,85 @@ export function MandalaAutomaticStoryboard({
  const statusText=guides.professional?
   (locale==="ru"?"Работа и развитие":locale==="es"?"Trabajo y desarrollo":"Work and growth"):
   (locale==="ru"?"По вашей теме":locale==="es"?"Según tu tema":"On your topic");
+ const cameraNames={
+  ru:{"medium":"Средний план","close-up":"Крупный план",detail:"Деталь",wide:"Общий план"},
+  en:{"medium":"Medium shot","close-up":"Close-up",detail:"Detail",wide:"Wide shot"},
+  es:{"medium":"Plano medio","close-up":"Primer plano",detail:"Detalle",wide:"Plano general"}
+ } as const;
  const paceText=pace==="dynamic"?
   (locale==="ru"?"Энергичный темп":locale==="es"?"Ritmo dinámico":"Dynamic pace"):
   (locale==="ru"?"Спокойный темп":locale==="es"?"Ritmo pausado":"Gentle pace");
 
- // Exactly five mobile summary cards; the verified six 5-second footage cuts
- // remain intact at 30 seconds. The last card represents both closing cuts.
- const manualFiveReady=Boolean(fiveSceneShots?.length===5&&
+ // The author's six scenes stay six scenes; never fold them into five cards.
+ // A five-cut editor montage is an explicitly separate legacy 20s flow.
+ const manualFiveReady=Boolean(!choice.selectionMissing&&!v3RequiresActionProof&&durationSeconds===20&&fiveSceneShots?.length===5&&
   fiveSceneShots.every(shot=>isReviewedFilmedStoryScene(sceneCatalog.get(shot.sceneId),"portrait")));
- const visibleCount=manualFiveReady?5:Math.min(5,guides.scenes.length);
+ const visibleCount=manualFiveReady?5:guides.scenes.length;
+ // A finished screenplay may have no exact action-verified footage yet.
+ // Show distinct, licensed REAL photos from this specific scenario as visual
+ // references instead of six generic sketches. Never mark these as exportable.
+ const references=useMemo(()=>storyboardPhotoReferences({
+  scenarioId:concept.scenarioId||"",categoryId:concept.categoryId||"",
+  shotCount:visibleCount,avoidImagery:concept.avoidImagery||[]
+ }),[concept.scenarioId,concept.categoryId,concept.avoidImagery,visibleCount]);
+ const photoReferenceCount=references.filter((photo,index)=>Boolean(photo&&
+  !(manualFiveReady?fiveSceneShots?.[index]:shots[index]))).length;
  const compactCards=Array.from({length:visibleCount},(_,index)=>{
-  const first=Math.floor(index*guides.scenes.length/visibleCount);
-  const last=Math.max(first+1,Math.floor((index+1)*guides.scenes.length/visibleCount));
-  const guide=guides.scenes[last-1];
-  const shot=manualFiveReady?(fiveSceneShots?.[index]??null):(shots[last-1]??null);
-  const from=manualFiveReady&&shot?shot.startSeconds:first*durationSeconds/guides.scenes.length;
-  const to=manualFiveReady&&shot?shot.startSeconds+shot.durationSeconds:last*durationSeconds/guides.scenes.length;
+  const guide=guides.scenes[index];
+  const shot=manualFiveReady?(fiveSceneShots?.[index]??null):(shots[index]??null);
+  const from=manualFiveReady&&shot?shot.startSeconds:index*durationSeconds/guides.scenes.length;
+  const to=manualFiveReady&&shot?shot.startSeconds+shot.durationSeconds:(index+1)*durationSeconds/guides.scenes.length;
   return {guide,shot,from,to};
  });
+ if(choice.selectionMissing)return <section className={styles.storyAutoRoot}
+  data-video-auto-storyboard data-storyboard-selection-missing
+  data-storyboard-selected-direction={selectedDirectionId||undefined} role="status">
+   <strong>{locale==="ru"?"История изменилась":locale==="es"?"La historia ha cambiado":"Story selection changed"}</strong>
+   <p>{locale==="ru"?"Выбранный фильм не соответствует текущим настройкам. Вернитесь в «Идеи» и выберите историю заново.":
+     locale==="es"?"La historia seleccionada no corresponde a los ajustes actuales. Vuelve a Ideas para elegirla.":
+     "The selected film is no longer available for these preferences. Reopen Ideas and choose a story."}</p>
+   <button type="button" className={styles.storyAutoApply} onClick={onOpenIdeas}>
+    {t.ideas}<ArrowRight size={17}/>
+   </button>
+ </section>;
  return <div className={styles.storyAutoRoot} data-video-auto-storyboard
+  data-storyboard-selection-source={choice.source}
+  data-storyboard-selected-direction={choice.directionId||undefined}
   data-storyboard-source={manualFiveReady||applied?"montage":replacingGraphics?"filmed-replacement":"ideas"}
   data-storyboard-scenes={compactCards.length}
-  data-storyboard-clips={manualFiveReady?fiveSceneShots?.length||0:guides.scenes.length}
+  data-storyboard-clips={manualFiveReady?fiveSceneShots?.length||0:eligible?proposal.shots.length:0}
   data-storyboard-source-ids={eligible?proposal.shots.map(shot=>shot.sceneId).join(","):""}
   data-reviewed-filmed-only={!proposalHasPhotos}
   data-reviewed-media-only="true" data-photo-fallback={proposalHasPhotos?"licensed":undefined}
   data-storyboard-aligned-to-settings={manualFiveReady||applied}
-  data-storyboard-media-ready={manualFiveReady||eligible}>
+  data-storyboard-aligned-to-concept={v3RequiresActionProof&&
+    scriptSceneAlignment.aligned&&!scriptNeedsReview}
+  data-storyboard-script-check={scriptSceneAlignment.checked?
+    scriptSceneAlignment.reason:"curated_editorial_review"}
+  data-storyboard-graphics-mode={photoReferenceCount?"licensed-photographic-references":"screenplay-scene-sketch"}
+  data-storyboard-reference-count={photoReferenceCount}
+  data-storyboard-reference-status={photoReferenceCount?STORYBOARD_REFERENCE_STATUS:undefined}
+  data-storyboard-media-ready={manualFiveReady||eligible}
+  data-storyboard-action-proof={v3RequiresActionProof?"editorial_unverified":"legacy"}
+  data-storyboard-concept-direction={concept.creativeDirectionId||undefined}>
   <div className={styles.storyAutoHead}>
+   {concept.creativeTitle?<strong data-video-story-selected-title>{concept.creativeTitle}</strong>:null}
    <p className={styles.storyAutoMeta}>
     <Film size={14} aria-hidden="true"/>{compactCards.length} {locale==="ru"?"сцен":locale==="es"?"escenas":"scenes"}
     <span aria-hidden="true">·</span>{manualFiveReady?20:durationSeconds}s
     <span aria-hidden="true">·</span>9:16
-    {!manualFiveReady&&guides.scenes.length>compactCards.length?
-     <small>({guides.scenes.length} {t.clips})</small>:null}
+    {eligible?<small>({proposal.shots.length} {t.clips})</small>:null}
    </p>
    <small className={styles.storyAutoLead}>{lead} · {statusText} · {paceText}</small>
   </div>
   <ol className={styles.storyAutoList} data-video-auto-storyboard-list>
    {compactCards.map((item,index)=>{
     const {guide,shot,from,to}=item;
+    const authored=concept.storyboard?.length===guides.scenes.length?concept.storyboard[index]:null;
+    const camera=authored?.shotType&&Object.prototype.hasOwnProperty.call(cameraNames[locale],authored.shotType)?
+      cameraNames[locale][authored.shotType as keyof typeof cameraNames[typeof locale]]:null;
     const photo=shot?STORY_PHOTO_BY_ID.get(shot.sceneId):null;
+    const reference=shot?null:references[index]||null;
     const media=photo?{poster:photo.src,title:photo.labels[locale]}:
       shot?resolveMedia(shot.sceneId):null;
     const emotion=guides.professional?professionalArc[locale][Math.min(3,guide.stage-1)]:
@@ -185,29 +274,66 @@ export function MandalaAutomaticStoryboard({
     const generic=/^(?:step|шаг|paso)\s*\d+$/i.test(guide.title);
     const title=generic?(emotion||media?.title||lead):guide.title;
     return <li key={index} className={styles.storyAutoCard}
-      data-video-story-scene={index+1} data-video-story-media-matched={Boolean(shot)}
-      data-story-media-kind={photo?"photo":shot?"video":"missing"}>
+      data-video-story-scene={index+1} data-concept-scene-id={authored?.sceneId||undefined}
+      data-video-story-media-matched={Boolean(shot)}
+      data-storyboard-expanded={expandedScene===index}
+      data-story-media-kind={photo?"photo":shot?"video":reference?"reference":"missing"}
+      data-storyboard-reference-only={Boolean(reference&&!shot)}
+      data-storyboard-reference-id={reference?.id||undefined}
+      data-storyboard-continuity={authored?.continuityKeys?.join(",")||undefined}>
      <div className={styles.storyAutoPoster}>
       {media?.poster? /* eslint-disable-next-line @next/next/no-img-element */
        <img src={media.poster} alt={media.title} loading="lazy"/>:
+       reference?<StoryboardReferencePoster key={reference.id} photo={reference}
+        locale={locale} action={guide.visual} keywords={authored?.keywords||guide.keywords}/>:
        <div className={styles.storyAutoNoPoster} data-video-story-media-missing={!shot}>
-        <Film size={19}/><small>{shot?t.noPoster:
-         (locale==="ru"?"Нужен кадр":locale==="es"?"Falta vídeo":"Footage needed")}</small>
+        <MandalaStoryboardSceneSketch locale={locale} action={guide.visual}
+          visualSubject={authored?.visualSubject}
+          keywords={authored?.keywords||guide.keywords} shotType={authored?.shotType}/>
+        <small className={styles.storyAutoNeedsFootage}>{shot?t.noPoster:
+         (locale==="ru"?"Нужен видеокадр":locale==="es"?"Falta vídeo":"Footage needed")}</small>
        </div>}
       <span>{index+1}</span>
      </div>
      <div className={styles.storyAutoBody}>
-      <span className={styles.srOnly}>{t.scene} {index+1} · {clock(from)}–{clock(to)}</span>
+      <span className={styles.srOnly}>{t.scene} {index+1}</span>
+      <small data-storyboard-scene-time>{clock(from)}–{clock(to)}</small>
       <strong>{title}</strong>
-      <p>{media?.title||guide.visual}{photo?" · "+(locale==="ru"?"Фото":locale==="es"?"Foto":"Photo"):null}</p>
+      <button type="button" className={styles.storyAutoAction}
+        data-storyboard-scene-action aria-expanded={expandedScene===index}
+        title={guide.visual}
+        aria-label={(locale==="ru"?"Раскрыть действие сцены ":locale==="es"?"Ver acción de escena ":"Expand scene action ")+(index+1)+": "+guide.visual}
+        onClick={()=>setExpandedScene(current=>current===index?null:index)}>
+        {guide.visual}
+      </button>
+      {authored?<small data-storyboard-media-brief>
+        {locale==="ru"?"Подбираем видео или фото именно этого действия":
+          locale==="es"?"Vídeo o foto de esta acción exacta":
+          "Video or photo depicting this exact action"}
+      </small>:null}
+      {authored?<small data-storyboard-shot-direction>
+        {[camera,authored.emotion||emotion].filter(Boolean).join(" · ")}
+      </small>:null}
+      {media?.title?<small data-storyboard-media-title>{media.title}
+        {photo?" · "+(locale==="ru"?"Фото":locale==="es"?"Foto":"Photo"):null}</small>:null}
      </div>
     </li>;
    })}
   </ol>
+  {scriptNeedsReview?<p className={styles.storyAutoEmpty} role="status"
+    data-storyboard-script-review-needed>
+    {locale==="ru"?"История и шесть кадров требуют сверки в «Идеях» перед выпуском.":
+      locale==="es"?"Revisa la historia y las seis escenas en Ideas antes de exportar.":
+      "Review the screenplay and all six shots in Ideas before export."}
+  </p>:null}
   {!manualFiveReady&&replacingGraphics?<p className={styles.storyAutoEmpty} role="status"
    data-video-story-graphics-detected>{t.replace}</p>:null}
   {!manualFiveReady&&!eligible?<p className={styles.storyAutoEmpty} role="status"
-   data-video-story-missing-relevant-media>{noRelevant}</p>:null}
+   data-video-story-missing-relevant-media>{photoReferenceCount?
+     (locale==="ru"?"Реальные фото показывают направление сюжета, но конкретные действия сцен ещё не подтверждены. Для экспорта нужен соответствующий материал.":
+      locale==="es"?"Las fotos reales ilustran la historia, pero las acciones exactas aún no están verificadas. Para exportar se necesitan medios adecuados.":
+       "Real photos illustrate the story, but the exact shot actions are not yet verified. Matching media is still required to export.")
+     :noRelevant}</p>:null}
   <button type="button" className={styles.storyAutoApply}
     data-video-story-select-quality
     data-video-auto-storyboard-apply={!manualFiveReady&&!applied&&eligible?true:undefined}

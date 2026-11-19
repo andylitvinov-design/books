@@ -86,7 +86,7 @@ const run = async (locale, width) => {
     return route.continue();
   });
   try {
-    const path = "/" + locale + "/holistic-support/mobile?view=talisman";
+    const path = "/" + locale + "/holistic-support/mobile";
     const response = await page.goto(origin+path+"?view=meditation",{waitUntil:"domcontentloaded",timeout:60000});
     assert.equal(response?.status(),200,"Public mobile support route");
     // SSR shows a button before React hydration. Await the existing photo/UI

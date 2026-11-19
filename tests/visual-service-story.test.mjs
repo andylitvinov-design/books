@@ -9,7 +9,11 @@ test("each shared personal service has photo or approved click-to-play video on 
   const routes = ["psychohomeopathy", "imagery-therapy", "systemic-constellations"];
   for (const route of routes) {
     const page = read("app/[locale]/services/" + route + "/page.tsx");
-    assert.match(page, /PersonalServiceLanding/, route);
+    if (route === "psychohomeopathy") {
+      assert.match(page, /permanentRedirect\("\/" \+ locale \+ "\/services\/alchemy-of-soul"\)/);
+    } else {
+      assert.match(page, /PersonalServiceLanding/, route);
+    }
   }
   assert.match(ui, /data-visual-service-landing="one-screen"/);
   assert.match(ui, /data-service-visual-screen="introduction"/);

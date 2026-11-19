@@ -16,7 +16,12 @@ test('RU/EN/ES Cabinet entry uses one fixed tokenless website URL',()=>{
   assert.deepEqual(inline,{inline_keyboard:[[{text:lang==='ru'?'🏠 Открыть мой кабинет':lang==='en'?'🏠 Open my Cabinet':'🏠 Abrir mi espacio',url:'https://holistichouse.vercel.app/'+lang+'/app'}]]})
   assert.ok(!/token=|code=|chat_id=|auth_key=/.test(inline.inline_keyboard[0][0].url))
   assert.ok(companionMessage(lang,'cabinet').length>100)
-  assert.ok(telegramCompanionNativeCommands(lang).some(item=>item.command==='cabinet'))
+  // The owner-approved eight-item native menu now calls this entry /profile.
+  // /cabinet remains a valid legacy typed command and Cabinet remains in the
+  // reply keyboard and signed tokenless website link, asserted above.
+  const nativeNames=telegramCompanionNativeCommands(lang).map(item=>item.command)
+  assert.equal(nativeNames.includes('cabinet'),false)
+  assert.equal(nativeNames.includes('profile'),true)
  }
 })
 
@@ -28,7 +33,7 @@ test('Existing AI, direct review, stop and marketing consent remain separate',()
  const service=read('lib/crm/telegram-companion-service.js')
  const provider=read('lib/crm/messenger-provider.js')
  assert.match(service,/action==='cabinet'/)
- assert.ok(service.includes("markup=language==='es'?telegramCabinetLinkButtons(language):telegramExploreDetailButtons(language,'cabinet')"))
+ assert.ok(service.includes("markup=language==='es'?telegramCabinetLinkButtons(language):telegramMainDetailButtons(language,'cabinet')"))
  assert.match(provider,/telegramCabinetLinkButtons\(lang\)/)
  assert.match(service,/action==='daily_off'/)
  assert.match(service,/action==='review'/)

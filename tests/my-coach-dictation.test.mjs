@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {detectedSpeechLocale,chooseDictationLanguage,readDictationResults,ios27NeedsSpeechRecovery,hasCoachSpokenAnswer} from '../lib/personal-coaching/my-coach-dictation.mjs'
+import {detectedSpeechLocale,chooseDictationLanguage,coachSpokenTurnLocale,readDictationResults,ios27NeedsSpeechRecovery,hasCoachSpokenAnswer} from '../lib/personal-coaching/my-coach-dictation.mjs'
 import {appendSpokenAnswer} from '../lib/personal-coaching/speech-text.js'
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 test('Auto follows device language and remembered transcript; manual RU/EN override works',()=>{
@@ -13,6 +13,24 @@ test('Auto follows device language and remembered transcript; manual RU/EN overr
  assert.equal(chooseDictationLanguage({locale:'ru',selection:'en',browserLanguages:['ru-RU']}),'en-GB')
  assert.equal(chooseDictationLanguage({locale:'es'}),'es-ES')
 })
+test('explicit spoken locale beats wrong-script ASR and live RU/EN switch does not require Play again',()=>{
+ assert.equal(coachSpokenTurnLocale({selection:'en',recognizedLanguage:'en-GB',transcript:'Мать селфи'}),'en')
+ assert.equal(coachSpokenTurnLocale({selection:'ru',recognizedLanguage:'ru-RU',transcript:'Mother selfie'}),'ru')
+ assert.equal(coachSpokenTurnLocale({selection:'auto',recognizedLanguage:'en-GB',transcript:'I want to talk'}),'en')
+ assert.equal(coachSpokenTurnLocale({selection:'auto',recognizedLanguage:'ru-RU',transcript:'Хочу поговорить'}),'ru')
+ const loop=source('components/my-coach-speech-loop.jsx')
+ const ui=source('components/my-coach-live-dialogue.jsx')
+ for(const token of ['speechLocaleRef.current=speechLocale',
+   'selection:selectionAtRecognitionRef.current',
+   'recognizedLanguageRef.current=recognition.lang',
+   'if(heardRef.current.trim())return',
+   'restartSilentRecognition(recognition)',
+   'turnRef.current?.(text,{locale:utteranceLocale})'])assert.ok(loop.includes(token),token)
+ assert.ok(ui.includes('utteranceLocale:spoken?.locale'))
+ assert.ok(ui.includes("voiceTurn&&['en','ru','es'].includes(utteranceLocale)"))
+ assert.ok(!ui.includes("disabled={voiceState.phase!=='idle'}>"),'the live language selector must never be disabled')
+})
+
 test('One shared coaching Brain gets text detected as Russian or English',()=>{
  assert.equal(detectedSpeechLocale('Мне тревожно','en'),'ru')
  assert.equal(detectedSpeechLocale('I feel anxious','ru'),'en')
@@ -59,10 +77,12 @@ test('iOS 27 recognizer recovery retains locale detection and re-primes after re
   const loop=source('components/my-coach-speech-loop.jsx')
   for(const marker of ['ios27NeedsSpeechRecovery(window.navigator)',
     'hasRecognizedRef.current','cue.onend=finishCue',
-    'cue.onerror=finishCue','recognition.continuous=false',
+    'cue.onerror=failCue','recognition.continuous=false',
     'restartSilentRecognition(recognition)','settleTimerRef.current=setTimeout',
     'void deliver(appendSpokenAnswer(draftAtStartRef.current,heard,1200))',
-    'iosResultTimerRef.current=setTimeout'])
+    'iosResultTimerRef.current=setTimeout',
+    'armSilentWatchdog(14000)','armSilentWatchdog(9000)',
+    'cue.volume=0.2','cue.onend=finishCue','cue.onerror=failCue'])
     assert.ok(loop.includes(marker),marker)
 })
 
@@ -228,4 +248,101 @@ test('short yes/no/number answers are complete coaching turns, not missing speec
  assert.ok(iosWatchdog.includes('hasCoachSpokenAnswer(heard)'))
  assert.doesNotMatch(iosWatchdog,/restartSilentRecognition\(recognition\)|recognition\.abort\(\)/,
   'iOS never aborts a recognized short utterance before natural onend')
+})
+
+
+test('Safari audio-capture recovers while denied and missing devices fail clearly',()=>{
+ const loop=source('components/my-coach-speech-loop.jsx')
+ assert.ok(loop.includes("if(event.error==='audio-capture'){"))
+ assert.ok(loop.includes("restartSilentRecognition(recognition,'capture')"))
+ assert.ok(loop.includes("const permissionRequest=microphonePermissionRef.current"))
+ assert.ok(loop.includes("void permissionRequest.then(begin,begin)"))
+ assert.ok(loop.includes("reason==='capture'?[800,1500,2600]"))
+ assert.ok(!loop.includes("event.error==='audio-capture'?t.noMicrophone"))
+ for(const message of ["captureRetry:'","captureFailed:'"])assert.equal(loop.split(message).length,4)
+})
+
+test('iOS 27 Safari installed PWA without Version UA gets WebKit speech recovery',()=>{
+ assert.equal(ios27NeedsSpeechRecovery({userAgent:'Mozilla/5.0 (iPhone; CPU iPhone OS 27_2 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148'}),true)
+ assert.equal(ios27NeedsSpeechRecovery({userAgent:'Mozilla/5.0 (iPhone; CPU iPhone OS 27_2 like Mac OS X) AppleWebKit/605.1.15 CriOS/150.0 Mobile'}),false)
+})
+
+test('toolbar language setting controls transcription, response, persona intro and natural voice',()=>{
+ const ui=source('components/my-coach-live-dialogue.jsx')
+ const loop=source('components/my-coach-speech-loop.jsx')
+ const css=source('components/my-coach-live-dialogue.module.css')
+ assert.ok(ui.includes('data-coach-language-control'))
+ assert.ok(ui.includes('<Languages size={16}'))
+ assert.ok(ui.includes('value={speechLocale}'))
+ assert.ok(ui.includes('onChange={event=>setSpeechLocale(event.target.value)}'))
+ // The route language wins on entry; changing the toolbar is an explicit override.
+ for(const language of ['en','ru','es'])
+   assert.ok(ui.includes('<option value="'+language+'">'+language.toUpperCase()+'</option>'))
+ assert.ok(ui.includes('const [speechLocale,setSpeechLocale]=useState(lang)'))
+ assert.ok(ui.includes('useEffect(()=>{setSpeechLocale(lang)},[lang])'))
+ assert.ok(ui.includes("const conversationLang=['en','ru','es'].includes(speechLocale)?speechLocale:lang"))
+ assert.ok(!ui.includes('setDeviceSpeechLocale('))
+ assert.ok(!ui.includes('<option value="auto">'))
+ assert.ok(ui.includes('locale={conversationLang} speechLocale={speechLocale}'))
+ assert.ok(ui.includes('getCoachPresentation(personaId,conversationLang)?.text'))
+ assert.ok(ui.includes('coachIntroAudioPath(personaId,conversationLang)'))
+ assert.ok(ui.includes("?utteranceLocale:['en','ru','es'].includes(speechLocale)"))
+ assert.ok(ui.includes("role:'assistant',content:answer,locale:responseLocale"))
+ assert.ok(ui.includes('locale:latestCoachTurn?.locale||detectedSpeechLocale(spoken,conversationLang)'))
+ assert.ok(!ui.includes('className={styles.transcriptLanguage}'))
+ assert.ok(css.includes('.languageControl select'))
+ assert.ok(css.includes('.captionMore'))
+ assert.ok(loop.includes("['en','ru','es'].includes(result.locale)?result.locale"))
+ assert.ok(loop.includes("['en','ru','es'].includes(speechLocaleRef.current)?speechLocaleRef.current"))
+ assert.ok(loop.includes('recognition.lang=chooseDictationLanguage'))
+ assert.ok(loop.includes('restartSilentRecognition(recognition)'))
+})
+
+
+test('My Coach entry inherits the site locale, with a visible manual RU/EN/ES override',()=>{
+  const ui=source('components/my-coach-live-dialogue.jsx')
+  const loop=source('components/my-coach-speech-loop.jsx')
+  const css=source('components/my-coach-live-dialogue.module.css')
+  assert.match(ui,/const \[speechLocale,setSpeechLocale\]=useState\(lang\)/)
+  assert.match(ui,/useEffect\(\(\)=>\{setSpeechLocale\(lang\)\},\[lang\]\)/)
+  assert.match(ui,/const conversationLang=\['en','ru','es'\]\.includes\(speechLocale\)\?speechLocale:lang/)
+  assert.doesNotMatch(ui,/deviceSpeechLocale|setDeviceSpeechLocale|<option value="auto"/)
+  assert.match(ui,/data-coach-language-control/)
+  for(const language of ['en','ru','es'])
+    assert.ok(ui.includes('<option value="'+language+'">'+language.toUpperCase()+'</option>'))
+  assert.ok(ui.includes('locale={conversationLang} speechLocale={speechLocale}'))
+  assert.ok(ui.includes('value={speechLocale}'))
+  assert.ok(css.includes('font:800 12px/1.2 system-ui'))
+  assert.ok(loop.includes('selection:speechLocaleRef.current'),
+    'the explicit locale is forwarded to speech recognition')
+  assert.ok(loop.includes('coachIntroAudioPath(personaId,lang)'),
+    'the introduction MP3 path follows the selected locale')
+  assert.ok(loop.includes('locale:replyLocale,personaId'),
+    'TTS receives the same locale as the coach reply')
+  for(const [locale,asr] of [['en','en-GB'],['ru','ru-RU'],['es','es-ES']])
+    assert.equal(chooseDictationLanguage({locale,selection:locale,
+      browserLanguages:['ru-RU','en-US','es-ES'],lastTranscript:'Мама'}),asr,
+      'the route/manual selection wins over device language and old text')
+})
+
+test('approved one-row mobile voice: manual language in header, real volume, Text and End only',()=>{
+ const ui=source('components/my-coach-live-dialogue.jsx')
+ const css=source('components/my-coach-live-dialogue.module.css')
+ const speech=source('components/my-coach-speech-loop.jsx')
+ const recorded=source('lib/personal-coaching/coach-recorded-turn.mjs')
+ const header=ui.slice(ui.indexOf('<header className={styles.sessionTopbar}>'),ui.indexOf('</header>'))
+ const row=ui.slice(ui.indexOf('<div className={styles.voiceControls} data-coach-inline-voice>'),
+   ui.indexOf('<p className={styles.voicePlayNotice}',ui.indexOf('data-coach-inline-voice')))
+ assert.match(header,/data-coach-language-control/)
+ assert.match(header,/value=\{speechLocale\}/)
+ assert.doesNotMatch(header,/<option value="auto">/)
+ assert.match(row,/data-coach-live-wave/)
+ assert.match(row,/onMicLevel=\{level=>\{/)
+ assert.match(row,/className=\{styles.keyboardControl\}/)
+ assert.match(row,/className=\{styles.endControl\}/)
+ assert.doesNotMatch(row,/replayControl|data-coach-language-control/)
+ assert.match(css,/grid-template-columns:62px minmax\(0,1fr\) 50px 50px/)
+ assert.match(css,/\.voicePlayNotice\{display:none\}/)
+ assert.match(speech,/micLevelRef.current\?\.\(value\)/)
+ assert.match(recorded,/onLevel\(Math.min\(1,Math.max\(0,\(rms-0.012\)\*7\)\)\)/)
 })

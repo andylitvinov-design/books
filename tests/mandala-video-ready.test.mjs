@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import {personalVideoStorageCsp} from "../lib/app/personal-video-storage-csp.mjs";
 import {readFileSync} from "node:fs";
 import {selectResourcePractice} from "../lib/mandala/resource-practice-selector.mjs";
 import {VIDEO_CART_PRODUCTS,createVideoCartSelection} from "../lib/commerce/cart.js";
@@ -236,14 +237,16 @@ test("Ready Basic auto-attaches suggested music before Generate without bypassin
   assert.match(studio,/return createQuickVideo\(\)/);
 });
 
-test("approved Ready result has a thin status, full video and two secure primary actions",()=>{
+test("approved Ready result has a thin status, full player and account-gated Save, Telegram and WhatsApp",()=>{
   const css=readFileSync(new URL("../components/mandala-video-ready.module.css",import.meta.url),"utf8");
   const studioCss=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
   assert.match(ready,/data-ready-state=\{completed\?"complete":"choose"\}/);
   assert.match(ready,/data-ready-status/);
-  assert.match(ready,/\{completed\?<p className=\{css\.readyStatus\}/);
+  assert.match(ready,/data-ready-status-phase=\{completed\?"complete":rendering\?"rendering":checking\?"verifying":"idle"\}/);
+  assert.match(ready,/<strong>\{completed\?t\.ready:pendingStatus\}<\/strong>/);
   assert.match(ready,/data-ready-save><Download/);
   assert.match(ready,/data-ready-telegram><Send/);
+  assert.match(ready,/data-ready-whatsapp><MessageCircle/);
   assert.match(ready,/data-ready-generate-new onClick=\{onStartNewVideo\}/);
   assert.match(ready,/onLoadedData=\{event=>onVerifyPlayback\(event\.currentTarget\)\}/);
   assert.match(ready,/onCanPlay=\{event=>onVerifyPlayback\(event\.currentTarget\)\}/);
@@ -312,6 +315,80 @@ test("verified signed-in Ready Save uploads directly through the existing signed
       loc==="ru"?delivery.indexOf(" en:{",i):delivery.indexOf("} as const;",i);
     assert.ok(i>0&&e>i&&delivery.slice(i,e).includes("cloudSaveOff:"),loc+" clear cloud error");
   }
+});
+
+test("personal signed MP4 CSP is confined to exact origin, EN/RU/ES pages and a server flag",()=>{
+  const env={HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED:"true",
+    HH_APP_SUPABASE_URL:"https://abcdefghijklmnopqrst.supabase.co"};
+  const api="https://abcdefghijklmnopqrst.supabase.co";
+  const tus="https://abcdefghijklmnopqrst.storage.supabase.co";
+  for(const locale of ["en","ru","es"]){
+    assert.deepEqual(personalVideoStorageCsp("/"+locale+"/holistic-support/mandala",env),
+      {connect:" "+api+" "+tus,media:""});
+    assert.deepEqual(personalVideoStorageCsp("/"+locale+"/app/videos",env),
+      {connect:" "+api+" "+tus,media:" blob: "+api});
+  }
+  for(const path of ["/en/app/messages","/ru/app/practice","/en/app/videos/another",
+      "/ru/holistic-support/mobile","/api/app/personal-videos","/admin/videos"]){
+    assert.deepEqual(personalVideoStorageCsp(path,env),{connect:"",media:""},path);
+  }
+  assert.deepEqual(personalVideoStorageCsp("/ru/holistic-support/mandala",
+    {...env,HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED:"false"}),{connect:"",media:""});
+  assert.deepEqual(personalVideoStorageCsp("/ru/app/videos",
+    {...env,HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED:"false"}),{connect:"",media:" blob:"});
+  for(const bad of ["http://abcdefghijklmnopqrst.supabase.co",
+    "https://abcdefghijklmnopqrst.supabase.co.evil.test",
+    "https://abcdefghijklmnopqrst.supabase.co:4433",
+    "https://user:secret@abcdefghijklmnopqrst.supabase.co",
+    "https://abcdefghijklmnopqrst.supabase.co/other-path",
+    "https://abcdefghijklmnopqrst.supabase.co/?api_key=bad",
+    "https://other.supabase.co"]){
+    assert.deepEqual(personalVideoStorageCsp("/en/holistic-support/mandala",
+      {...env,HH_APP_SUPABASE_URL:bad}),{connect:"",media:""},bad);
+  }
+  const middleware=readFileSync(new URL("../middleware.ts",import.meta.url),"utf8");
+  assert.match(middleware,/personalVideoStorageCsp\(pathname,process\.env\)/);
+  assert.match(middleware,/"connect-src 'self'".*personalVideoStorage\.connect/);
+  assert.match(middleware,/directMessageStorageOrigin \+ personalVideoStorage\.media/);
+  assert.match(middleware,/humanSpecialistVideoPage/);
+  assert.doesNotMatch(middleware,/connect-src[^\n]*https:\/\/\*\.supabase\.co/);
+});
+
+test("Add video keeps the existing hydrated first-video editor visible across Safari workspace transitions",()=>{
+  const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
+  const source=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  const exportBrowser=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
+  const decoder=readFileSync(new URL("../scripts/verify-tantra-testimonials.mjs",import.meta.url),"utf8");
+  assert.match(source,/data-video-advanced-open=\{\(showAdvancedVideo\|\|videoScenarioOpen\)\?"true":"false"\}/);
+  assert.match(source,/const openVideoScenarioStep = \(\) => \{[\s\S]*?setVideoScenarioOpen\(true\);[\s\S]*?setShowAdvancedVideo\(true\);/);
+  assert.match(source,/onAddVideo=\{\(\)=>\{[\s\S]*?openVideoScenarioStep\(\);/);
+  assert.match(css,/data-video-advanced-open="false"\] \.quickBuilder>\[data-video-first-video-advanced\]/);
+  assert.match(exportBrowser,/data-first-free-video\]\[data-first-video-hydrated="true"\]/);
+  // Third-party native WebKit decoder recovery must not throw away healthy metadata.
+  assert.match(decoder,/if\(needsInitialMetadata\)el\.load\(\)/);
+  assert.match(decoder,/\,pendingNoMetadata\)/);
+  assert.doesNotMatch(decoder,/if \(el\.readyState === 0\) el\.load\(\)/);
+  // Real WebKit seeks that rebuild the decoder cannot be mistaken for success:
+  // one same-source recovery only after native seeking ends and fresh frames move.
+  assert.match(decoder,/const rebuildingSameSourceSeek = Boolean\(/);
+  assert.match(decoder,/stalled\.paused && stalled\.seeking && !stalled\.ended/);
+  assert.match(decoder,/stalled\.frames === 0/);
+  assert.match(decoder,/stalled\.presentedFrame\.at > initial\.presentedFrame\.at/);
+  assert.match(decoder,/!genuineSameSourceStall && !pendingNoMetadata && !rebuildingSameSourceSeek/);
+  assert.match(decoder,/el\.paused && !el\.seeking &&/);
+  assert.match(decoder,/Math\.abs\(el\.currentTime - pinned\.time\) < 0\.1/);
+  assert.match(decoder,/observation\.nativeSeekRecovery\.after = resumed/);
+  assert.match(decoder,/frame\.mediaTime > before\.time \+ 0\.35/);
+  assert.doesNotMatch(decoder,/if \(rebuildingSameSourceSeek\)[\s\S]*?metadataReload: true/);
+  // WebKit/GStreamer can reset presentedFrames after the native decoder is
+  // rebuilt, even as the actual player clock and decoded frames advance.
+  // Never require this resettable counter to be monotonic across resumes.
+  assert.match(decoder,/frame\.at > \(before\.presentedFrame\?\.at \?\? -1\)/);
+  assert.match(decoder,/frame\.mediaTime > before\.time \+ 0\.35/);
+  assert.match(decoder,/Math\.abs\(frame\.mediaTime - el\.currentTime\) < 0\.35/);
+  assert.doesNotMatch(decoder,/frame\.presentedFrames > before\.presentedFrame\.presentedFrames/);
+  assert.match(decoder,/!el\.paused && !el\.seeking && !el\.ended && !el\.error/);
+  assert.match(decoder,/sample\.error, null/);
 });
 
 test("Ready primes Safari media on trusted Create before awaiting account credit hold",()=>{
@@ -405,4 +482,76 @@ test("Ready WhatsApp requires own verified link, never claims Meta MP4 delivery"
   assert.match(delivery,/setNotice\(t\.whatsappUnavailable\)/);
   assert.match(ready,/direct automated MP4 sending is not enabled/);
   assert.doesNotMatch(delivery,/channel:"whatsapp"/);
+});
+
+
+test("Ready catches the physical iPhone MP4 playback error and offers a safe retry",()=>{
+  const css=readFileSync(new URL("../components/mandala-video-ready.module.css",import.meta.url),"utf8");
+  assert.match(ready,/onError=\{event=>handleReadyPlaybackError\(event\.currentTarget\)\}/,
+    "the visible Ready video must report real native Safari decoding failures");
+  assert.match(ready,/data-ready-export-failed/);
+  assert.match(ready,/data-ready-retry-compatible/);
+  assert.match(ready,/role="alert" data-ready-export-failed/);
+  assert.match(ready,/onRetryExport\}/);
+  assert.match(ready,/retryCompatible:"Retry in compatibility mode"/);
+  assert.match(ready,/retryCompatible:"Повторить в совместимом режиме"/);
+  assert.match(ready,/retryCompatible:"Reintentar en modo compatible"/);
+  assert.match(css,/\.exportFailure\{display:grid/);
+  assert.match(studio,/video=\{!readyGenerationPending&&playbackStatus!=="failed"&&result/,
+    "rejected MP4 must become a real poster, not a black broken native player");
+  assert.match(studio,/onPlaybackError=\{handleNativeVideoPlaybackFailure\}/);
+  assert.match(studio,/onError=\{event=>handleNativeVideoPlaybackFailure\(event\.currentTarget\)\}/);
+  assert.match(studio,/if\(rejectedPlaybackUrlRef\.current===result\.url\)return/);
+  assert.match(studio,/if\(result\?\.url===rejectedPlaybackUrlRef\.current\)return/);
+  assert.match(studio,/if\(creditOpRef\.current\)return/);
+  assert.match(studio,/setPlaybackStatus\("failed"\)/);
+  assert.match(studio,/setPendingCompatibleRetry\(signature\)/,
+    "existing one-shot native WebM recovery remains connected");
+});
+
+test("client MP4 global quota is RLS-safe and expired signed upload reservations are reaped only after token expiry",()=>{
+  const personalVideos=readFileSync(new URL("../lib/app/personal-videos.js",import.meta.url),"utf8");
+  const migration=readFileSync(new URL("../supabase/migrations/20261118052326_hh_personal_video_global_quota_rls_guard.sql",import.meta.url),"utf8");
+  assert.match(personalVideos,/select pg_advisory_xact_lock\(598228614\)/);
+  assert.match(personalVideos,/select app_private\.personal_video_reserved_global_bytes\(\) total/);
+  assert.doesNotMatch(personalVideos,/select coalesce\(sum\(bytes\),0\)::bigint total from app_private\.personal_videos where status/);
+  assert.match(migration,/SECURITY DEFINER/);
+  assert.match(migration,/SET search_path = pg_catalog/);
+  assert.match(migration,/REVOKE ALL ON FUNCTION[\s\S]*FROM PUBLIC, anon, authenticated, hh_app_inbox/);
+  assert.match(migration,/GRANT EXECUTE ON FUNCTION[\s\S]*TO hh_app_backend/);
+  assert.match(personalVideos,/status='deleted' and released_at is null and created_at<now\(\)-interval '3 hours'/);
+  assert.match(personalVideos,/status='pending' and created_at<now\(\)-interval '3 hours'/);
+  assert.match(personalVideos,/created_at<now\(\)-interval '3 hours'/);
+  assert.match(personalVideos,/const \{error\}=await storage\.remove\(\[file\.object_key\]\)/);
+  assert.match(personalVideos,/if\(error\)continue/);
+});
+
+test("iPhone Ready verifies one visible exported MP4 and retries its transport without another encode",()=>{
+  assert.match(ready,/import \{isAppleMobileDevice\} from "@\/lib\/mandala\/recording-codecs\.mjs"/);
+  assert.match(ready,/type VideoFile=\{url:string;extension:"mp4"\|"webm";bytes:number;duration:number;blob\?:Blob\}/);
+  assert.match(studio,/blob:result\.blob/);
+  assert.match(studio,/\{activeWorkspace!=="ready"\?<video ref=\{resultVideoRef\}/,
+    "the inactive legacy decoder must be unmounted while Ready owns the video");
+  assert.match(ready,/data-mandala-video-preview data-ready-native-player/);
+  assert.match(ready,/player\.srcObject=video\.blob/);
+  assert.match(ready,/isAppleMobileDevice\(navigator\.userAgent,navigator\.maxTouchPoints\)/);
+  assert.match(ready,/readySourceModeRef\.current=attached\?"safari-blob":"object-url"/);
+  assert.match(ready,/readyUrlRecoveryRef\.current=video\.url/);
+  assert.match(ready,/player\.srcObject=null;\s*player\.src=video\.url;/);
+  assert.match(ready,/player\.dataset\.readyMediaTransport="blob-url"/);
+  assert.match(ready,/player\.load\(\);\s*return;/);
+  assert.match(ready,/onPlaybackError\(player\)/,
+    "only after the original Blob has been retried via a second source transport may it fail");
+  assert.doesNotMatch(ready,/<video key=\{video\.url\} src=\{video\.url\}/,
+    "React must not eagerly create a competing blob: decoder before Safari srcObject attaches");
+  assert.match(ready,/checking&&video&&!rendering\?<button/);
+  assert.match(ready,/data-ready-play-verify/);
+  assert.match(studio,/nativeIphoneMp4Retry=\{iphoneLocalPlayback&&nativeIphoneMp4Available\}/);
+  assert.match(studio,/if\(nativeIphoneMp4Available\)void createVideo\(false,true\)/,
+    "the explicit retry must use the existing native MP4 recorder, not a second WebCodecs run");
+  assert.match(studio,/!iphoneLocalPlayback\|\|nativeIphoneMp4Available/);
+  assert.match(ready,/!waiting&&!exportFailed&&!courseFlow/,
+    "one clear retry CTA rather than another identical Generate action when MP4 failed");
+  assert.match(studio,/if\(creditOpRef\.current\)return/);
+  assert.match(studio,/playbackStatus==="ready"&&creditConfirmed/);
 });

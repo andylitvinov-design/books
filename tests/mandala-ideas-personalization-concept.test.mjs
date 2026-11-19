@@ -2,6 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync,existsSync} from "node:fs";
 import {suggestMeaningPhrases} from "../lib/mandala/video-meaning-phrases.mjs";
+import {appendPersonalVideoClosingPhrase,personalVideoClosingPhrase,normalizePersonalVideoName}
+  from "../lib/mandala/video-goal-idea-phrases.mjs";
+import {planIdeaSelection} from "../lib/mandala/video-idea-selection.mjs";
 
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 const studio=read("components/mandala-free-video-studio.tsx");
@@ -61,7 +64,7 @@ test("Changing personal answers recomputes the original localized phrase editor 
   assert.match(ideas,/profile\?\.current\?\.length\?profile\.current\.map\(goalCurrentMeaningId\)/);
   assert.match(ideas,/profile\?\.desired\?\.length\?profile\.desired\.map\(goalDesiredMeaningId\)/);
   assert.match(ideas,/remembered&&isIdeaEditorSnapshot\(remembered,signature\)/);
-  assert.match(ideas,/ideasDraft:plan.editor/);
+  assert.match(ideas,/ideasDraft:\{\.\.\.plan\.editor,locale:outputLocale\}/);
   assert.equal((ideas.match(/data-video-ideas-compact/g)||[]).length,1);
   const relationship=suggestMeaningPhrases("en",["connection"],"loneliness","connection",4,6,0,7);
   assert.ok(relationship.some(line=>line.includes("connection")||line.includes("contact")));
@@ -102,10 +105,81 @@ test("Concept uses canonical selected filters and numeric energy, while WebKit p
   assert.match(personal,/energyStart:value\.energy,energyTarget:value\.desiredLevel/);
   assert.match(engine,/selectedTopicId:explicitTopic\?\.topic\.id/);
   assert.match(semantic,/put\(p,"pace",dynamic\?"dynamic"/);
-  const applyStart=ideas.indexOf("const apply=(candidates:string[],indices:number[])=>");
+  const applyStart=ideas.indexOf("const apply=(candidates:string[],indices:number[],outputLocale:VideoLocale=captionLocale)=>");
   const projectionStart=ideas.indexOf("const plan=planIdeaSelection",applyStart);
   assert.ok(applyStart>=0&&projectionStart>applyStart);
   assert.match(ideas.slice(applyStart,projectionStart),/lastApplied\.current=signature/);
   assert.match(browser,/await unselectedToggle\.click\(\)/);
   assert.match(browser,/toHaveAttribute\('aria-pressed','true'\)/);
+});
+
+test("Preferred name appears in last suggested AND fifth selected video phrase in RU/EN/ES",()=>{
+  const sample=[
+    "I can pause","I can choose","I am learning","I can rest",
+    "I can grow","My pace matters","A gentler day is possible",
+  ];
+  for(const [locale,name,expected] of [
+    ["ru","Андрей","Андрей, я в тебя верю"],
+    ["en","Andy","Andy, I believe in you"],
+    ["es","Andrés","Andrés, creo en ti"],
+  ]){
+    assert.equal(personalVideoClosingPhrase(locale,name),expected);
+    const suggested=appendPersonalVideoClosingPhrase(sample,locale,name);
+    assert.equal(suggested.length,7);
+    assert.equal(suggested.at(-1),expected);
+    const chosen=[0,1,2,3,suggested.length-1];
+    const plan=planIdeaSelection(suggested,chosen,suggested,"profile-with-name");
+    assert.equal(plan.settingsPatch.presetOverride.at(-1),expected);
+    assert.equal(plan.editor.chosen.at(-1),6);
+  }
+  assert.deepEqual(appendPersonalVideoClosingPhrase(sample,"en",""),sample,
+    "blank name keeps the existing seven proposals unchanged");
+  assert.equal(personalVideoClosingPhrase("en","<b>Mary Jane</b>"),"Mary Jane, I believe in you");
+  assert.equal(normalizePersonalVideoName("Alice 123"),"Alice");
+  assert.ok(personalVideoClosingPhrase("en","A".repeat(70)).length<=36,
+    "the full supportive closing must fit the current subtitle/voice limit");
+  assert.ok(personalVideoClosingPhrase("ru","Александра-Екатерина").endsWith("я в тебя верю"));
+});
+
+test("Name question stays in browser and personal closing follows the existing video projection",()=>{
+  assert.match(personal,/name:"",current:\["fatigue"\]/);
+  assert.match(personal,/data-video-personalization-name-question/);
+  assert.match(personal,/data-video-personalization-name type="text"/);
+  for(const line of ["Как вас зовут?","What is your name?","¿Cómo te llamas?"])
+    assert.ok(personal.includes(line),line);
+  assert.match(ideas,/personalClosingPhrase=personalVideoClosingPhrase\(captionLocale,profile\?\.name\)/);
+  assert.match(ideas,/appendPersonalVideoClosingPhrase\(pool,captionLocale,profile\?\.name\)/);
+  assert.match(ideas,/initialChosen=personalClosingPhrase\?/);
+  assert.match(personal,/const name=event\.currentTarget\.value;/);
+  assert.match(ideas,/priorClosing=personalVideoClosingPhrase\(captionLocale,profile\?\.name\)/);
+  assert.match(ideas,/nextClosing=personalVideoClosingPhrase\(next,profile\?\.name\)/);
+  assert.match(ideas,/translateVideoGoalPhrase\(line,captionLocale,next\)/);
+  assert.match(ideas,/data-video-text-language=\{language\}/);
+  assert.match(browser,/const preferredName=locale===/);
+  assert.match(browser,/data-video-personalization-name/);
+  assert.match(browser,/const selectedClosing=montageIdeas.locator/);
+  assert.match(ideas,/ideasDraft:\{\.\.\.plan\.editor,locale:outputLocale\}/);
+  assert.match(ideas,/options\[options\.length-1\]===personalClosingPhrase/);
+  assert.match(ideas,/ideasDraft:\{\.\.\.plan\.editor,locale:outputLocale\}/);
+  assert.ok(css.includes(".nameCard input:focus-visible"));
+  const summary=personal.slice(personal.indexOf("export function summarizeVideoGoalProfile"),
+    personal.indexOf("export function MandalaVideoPersonalization"));
+  assert.ok(!summary.includes("value.name"),
+    "the preferred name never enters the concept/service personalization summary");
+});
+
+test("Personalization preserves choices across four photo-first quiz steps, with optional name last",()=>{
+ assert.match(personal,/useState<1\|2\|3\|4>\(1\)/);
+ assert.match(personal,/data-video-personalization-step=\{quizStep\}/);
+ assert.match(personal,/data-video-personalization-progress/);
+ assert.match(personal,/\[1,2,3,4\] as const/);
+ for(const stage of [1,2,3,4])assert.ok(personal.includes('hidden={quizStep!=='+stage+'}'));
+ assert.ok(personal.indexOf('data-video-personalization-name-question')>
+   personal.indexOf('data-personalization-kind="strength"'),"name follows the three questions");
+ assert.match(personal,/if\(quizStep===4\)\{onContinue\(\);return;\}/);
+ assert.match(personal,/if\(quizStep===1\)\{onBack\(\);return;\}/);
+ assert.match(personal,/quizRef\.current\?\.scrollIntoView/);
+ assert.match(css,/\.card\[hidden\],\.nameCard\[hidden\]\{display:none!important\}/);
+ assert.match(personal,/data-video-personalization-name type="text"/);
+ for(const word of ["previous","forward","quizStep"])assert.ok(personal.includes(word));
 });

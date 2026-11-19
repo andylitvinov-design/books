@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { assertHistoryProvenanceEvidence } from '../scripts/csp-history-provenance-probe.mjs';
 const entry = (key, document = 'original', hash = '', pathname = '/en/about') => ({ key, document, hash, pathname, owned: true });
@@ -38,4 +39,19 @@ for (const [name, mutate] of [
 test('persisted pageshow can establish foreign restore when its document and entry match', () => {
   const value = evidence(); value.events[0].type = 'pageshow'; value.events[0].persisted = true;
   assert.equal(assertHistoryProvenanceEvidence(value).foreignHistoryReloadVerified, true);
+});
+
+
+test('CSP browser audit identifies the actual dialogue-first home and keeps a nonempty hero assertion',()=>{
+  const home = readFileSync(new URL('../components/holistic-house-home.tsx',import.meta.url),'utf8');
+  const audit = readFileSync(new URL('../scripts/verify-release-reaudit.mjs',import.meta.url),'utf8');
+  const history = readFileSync(new URL('../scripts/csp-history-provenance-probe.mjs',import.meta.url),'utf8');
+  assert.match(home,/data-home-design="dialogue-first-v1"/);
+  assert.match(home,/HomeDialogueEntry/);
+  for (const source of [audit,history]) {
+    assert.ok(source.includes('main[data-home-design='), 'Homepage SSR anchor must remain an actual main element');
+    assert.match(source,/dialogue-first-v1/);
+    assert.match(source,/data-home-dialogue-entry/);
+    assert.doesNotMatch(source,/approved-v2/);
+  }
 });

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import test from "node:test";
+import {shouldAutoRecoverSafariPlayback} from "../lib/mandala/recording-codecs.mjs";
 
 const helper=readFileSync(new URL("../lib/mandala/webcodecs-mp4-export.ts",import.meta.url),"utf8");
 const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
@@ -14,6 +15,22 @@ test("Safari MP4 uses browser-local WebCodecs rather than MediaRecorder",()=>{
   assert.match(studio,/if\(useWebCodecsMp4\)/);
   assert.match(studio,/stream = canvas\.captureStream\(framesPerSecond\)/);
 });
+
+test("physical-iPhone Ready repair runs the mandatory macOS WebKit video and AAC E2E",()=>{
+  const workflow=readFileSync(new URL("../.github/workflows/holistic-support-mandala.yml",import.meta.url),"utf8");
+  const job=workflow.split("  voice-webkit-macos:")[1];
+  assert.ok(job,"the real native WebKit job is required");
+  const gate=job.slice(0,job.indexOf("\n    needs:"));
+  assert.match(gate,/github\.event_name == 'pull_request'/);
+  assert.match(gate,/github\.event\.pull_request\.draft == false/);
+  assert.match(gate,/github\.head_ref == 'fix\/iphone-ready-mp4-export-20261118'/);
+  assert.match(job,/needs: \[webkit_preflight\]/);
+  assert.match(job,/runs-on: macos-15/);
+  assert.match(job,/Build exact voice release candidate/);
+  assert.match(job,/WebKit recorded movie contains video and audible consented voice/);
+  assert.doesNotMatch(job,/continue-on-error: true/);
+});
+
 test("Safari movie retains the real Canvas scene, story, hypno and stage captions",()=>{
   for(const marker of [
     "paintCinematicFrame(ctx,image,effect,time",
@@ -32,12 +49,12 @@ test("No customer upload, fake video or unbounded output",()=>{
   assert.match(helper,/video_encoder_too_slow/);
   assert.match(helper,/video_encoder_timeline_drift/);
   assert.match(helper,/const maxEncoderPresentationLagMs=3000/);
-  assert.match(helper,/time\*1000\+decoderHoldMs\+maxEncoderPresentationLagMs/);
+  assert.match(helper,/time\*1000\+decoderHoldMs\+encoderHoldMs\+maxEncoderPresentationLagMs/);
   assert.doesNotMatch(helper,/time\*1000\+decoderHoldMs\+750/,
     "single Safari encoder stalls are not necessarily corrupted frame timestamps");
   assert.match(helper,/seconds\+20\)\*1000\+decoderHoldMs/,
     "whole-export deadline must still reject unbounded stalls");
-  assert.match(studio,/frameRate:Math\.min\(safeWebkitRetry\?8:10,framesPerSecond\)/,
+  assert.match(studio,/frameRate:Math\.min\(\(safeWebkitRetry\|\|isApplePhone\)\?8:10,framesPerSecond\)/,
     "Safari must pace real 10-second H.264+AAC exports without skipping timed scenes");
   assert.match(helper,/const time=i\/frameRate/);
   assert.match(helper,/audio_decode_invalid/);
@@ -107,7 +124,7 @@ test("silent WebKit exports H.264 even without AudioEncoder, never fakes voice A
 test("Safari failure exposes a safe code and an explicit lighter same-renderer retry",()=>{
   assert.match(studio,/const \[webkitRecoveryReason,setWebkitRecoveryReason\] = useState<string\|null>\(null\)/);
   assert.match(studio,/setWebkitRecoveryReason\(null\)/);
-  assert.match(studio,/const safariRetryScale=useWebCodecsMp4&&safeWebkitRetry/);
+  assert.match(studio,/const safariRetryScale=useWebCodecsMp4&&\(safeWebkitRetry\|\|isApplePhone\)/);
   assert.match(studio,/540\/\(quality==="fullhd"\?1080:720\)/);
   assert.match(studio,/data-video-webkit-safe-retry/);
   assert.match(studio,/onClick=\{\(\)=>void createVideo\(false,false,true\)\}/);
@@ -156,14 +173,14 @@ test("explicit Safari WebM retry uses a different recorder, preserves sound",asy
   const formats=orderRecordingMimes({mp4:["video/mp4"],
     webm:['video/webm;codecs="vp8,opus"',"video/webm"],preferWebm:true,
     userAgent:"Mozilla/5.0 (iPhone) AppleWebKit/605.1.15"});
-  assert.deepEqual(formats,['video/webm;codecs="vp8,opus"',"video/webm"]);
+  assert.deepEqual(formats,[],"iPhone never starts a WebM that it cannot play");
   assert.ok(studio.includes("const useWebCodecsMp4=!forceMp4ForRetry&&selectWebCodecsForRecording({"));
   assert.ok(studio.includes("hasWebCodecs,safariWebKit,procedural,proceduralRoute,preferWebm"));
   assert.ok(studio.includes('const mimeTypes = preferWebm\n        ? recordingMimes(Boolean(musicSession),true).filter(mime=>mime.startsWith("video/webm"))'));
   assert.ok(studio.includes("if (musicSession) stream.addTrack(musicSession.track);"));
   assert.ok(studio.includes("onClick={()=>void createVideo(true)}"));
   assert.ok(studio.includes('const extension=isWebm?"webm":"mp4"'));
-  assert.ok(studio.includes('if(!isMp4&&!isWebm){'));
+  assert.ok(studio.includes('if((isApplePhone&&isWebm)||(!isMp4&&!isWebm)){'));
   assert.ok(studio.includes('playbackStatus==="ready"&&result.mode!=="catalog"'));
 });
 
@@ -218,7 +235,13 @@ test("physical voice WebKit checks real Settings and Audio, exclusive Hypno tabs
  assert.match(firstVideo,/const concept=page\.locator\('\[data-video-ideas-concept-panel\]'\)/);
  assert.match(firstVideo,/await concept\.waitFor\(\{state:'visible',timeout:15000\}\)/,
    "the actual Concept panel is visible before explicit guest approval");
- assert.match(firstVideo,/await concept\.locator\('\[data-video-concept-approve\]'\)\.click\(\)/,
+ // The current visitor path verifies native guest Approve is enabled before
+ // using the platform-specific real tap/click. Preserve all three checks.
+ assert.match(firstVideo,/const conceptApprove=concept\.locator\('\[data-video-concept-approve\]'\)/,
+   "the button belongs to the reviewed Ideas Concept");
+ assert.match(firstVideo,/await conceptApprove\.isEnabled\(\)/,
+   "a guest can genuinely approve their preview, not just see an inert control");
+ assert.match(firstVideo,/else await conceptApprove\.click\(\)/,
    "guest explicitly approves Concept before timeline editing");
  assert.match(firstVideo,/const textTools=page\.locator\('\[data-video-concept-text-tools\]'\)/,
    "original timeline is reachable through the Concept disclosure");
@@ -248,8 +271,9 @@ test("Safari deferred MP4 decoding requires a real user Play gesture, not a fals
   assert.match(studio,/data-video-verify-playback/);
   assert.match(studio,/player\.play\(\)\.then\(\(\)=>confirmVideoPlayback\(player\)\)/);
   assert.match(studio,/video\.videoWidth>0 && video\.videoHeight>0/);
-  assert.match(studio,/onError=\{event=>\{[\s\S]*?setPlaybackStatus\("failed"\)/,
-    "genuine native media decoding errors must still be rejected");
+  assert.match(studio,/onError=\{event=>handleNativeVideoPlaybackFailure\(event\.currentTarget\)\}/);
+  assert.match(studio,/function handleNativeVideoPlaybackFailure\([\s\S]*?setPlaybackStatus\("failed"\)/,
+    "visible and hidden native decoder failures must both reject bad media");
   assert.match(studio,/playbackStatus==="ready"&&\(result\.mode==="catalog"\|\|creditConfirmed\)/,
     "a finished download remains gated by real playback and confirmed video credits");
   const e2e=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
@@ -295,11 +319,16 @@ test("Safari failed encoded MP4 offers native WebM without lost credits",()=>{
 
 test("real Safari MEDIA_ERR_SRC_NOT_SUPPORTED gets exactly one on-device WebM recovery",async()=>{
   const {shouldAutoRecoverSafariPlayback:recover}=await import("../lib/mandala/recording-codecs.mjs");
-  const params={safariWebKit:true,format:"mp4",errorCode:4,nativeWebm:true};
+  const params={safariWebKit:true,format:"mp4",errorCode:4,nativeWebm:true,
+    userAgent:"Mozilla/5.0 (Macintosh; Intel Mac OS X) AppleWebKit/605.1.15 Safari/605.1.15"};
   assert.equal(recover(params),true);
+  assert.equal(recover({...params,errorCode:3}),true,"actual native decode errors also permit one WebM retry");
   for(const invalid of [
-    {alreadyAttempted:true},{format:"webm"},{errorCode:3},
+    {alreadyAttempted:true},{format:"webm"},
     {errorCode:0},{nativeWebm:false},{safariWebKit:false},{catalog:true},
+    {userAgent:"Mozilla/5.0 (iPhone; CPU iPhone OS 26_1 like Mac OS X) AppleWebKit/605.1.15"},
+    {userAgent:"Mozilla/5.0 (iPad; CPU OS 26_1 like Mac OS X) AppleWebKit/605.1.15"},
+    {userAgent:"Mozilla/5.0 (Macintosh; Intel Mac OS X) AppleWebKit/605.1.15",maxTouchPoints:5},
   ])assert.equal(recover({...params,...invalid}),false,JSON.stringify(invalid));
   assert.match(studio,/const autoWebmRetryForRef=useRef<string\|null>\(null\)/);
   assert.match(studio,/autoWebmRetryForRef\.current=signature/);
@@ -343,7 +372,9 @@ test("WebKit traverses Ideas Personalization and Concept before consented Voice/
  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
  const modes=browser.indexOf('const ideasModes=phrases.locator("[data-video-ideas-tabs]")');
  const personal=browser.indexOf('const personalTab=ideasModes.locator',modes);
- const concept=browser.indexOf('await conceptTab.click()',personal);
+ const quiz=browser.indexOf('const nextQuiz=personalQuiz.locator',personal);
+ const fourth=browser.indexOf('toHaveAttribute("data-video-personalization-step","4")',quiz);
+ const concept=browser.indexOf('await expect(conceptTab).toHaveAttribute("aria-pressed","true")',fourth);
  const back=browser.indexOf('await personalTab.click()',concept);
  const opened=browser.indexOf('await advancedText.click()',back);
  const voice=browser.indexOf('await voiceModeButton.click()',opened);
@@ -352,7 +383,7 @@ test("WebKit traverses Ideas Personalization and Concept before consented Voice/
  const tap=browser.indexOf('await recordEntry.click()',record);
  const phrase=browser.indexOf('const phraseSelector=page.locator',tap);
  const consent=browser.indexOf('await narrationConsent.tap()',phrase);
- assert.ok(modes>=0&&personal>modes&&concept>personal&&back>concept&&
+ assert.ok(modes>=0&&personal>modes&&quiz>personal&&fourth>quiz&&concept>fourth&&back>concept&&
    opened>back&&voice>opened&&my>voice&&record>my&&tap>record&&
    phrase>tap&&consent>phrase,"real WebKit route must use visible controls before TTS consent");
  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
@@ -376,4 +407,99 @@ test("failed Safari output hides guest Watch and labels the result as a playback
   assert.match(result,/data-video-verify-playback/);
   assert.match(result,/data-video-playback-error/);
   assert.match(result,/playbackStatus==="ready"&&result\.mode!=="catalog"&&creditConfirmed/);
+});
+
+
+test("iPhone encoder backlog is budgeted consistently with the pacing clock",()=>{
+  // At 20% of a 20-second film, 3.5s of actual native H.264 encoder work
+  // used to be counted as corrupt PTS although the frame timestamps are valid.
+  const ptsMs=4000,decoderHoldMs=0,encoderHoldMs=3500,elapsedMs=7600;
+  assert.ok(elapsedMs>ptsMs+decoderHoldMs+3000,"the old guard falsely rejects this movie");
+  assert.ok(elapsedMs<ptsMs+decoderHoldMs+encoderHoldMs+3000,"encoder work is already paced");
+  assert.match(helper,/time\*1000\+decoderHoldMs\+encoderHoldMs\+maxEncoderPresentationLagMs/);
+  assert.match(helper,/seconds\+20\)\*1000\+decoderHoldMs/,"whole-export deadline remains bounded");
+  assert.match(helper,/const time=i\/frameRate/,"presentation timestamps stay real");
+  assert.match(helper,/if\(!decodedRealFrame\)throw new Error\("licensed_scene_frame_unavailable"\)/);
+});
+
+
+test("native Safari decode errors recover only into a verified alternate and never loop",()=>{
+ for(const errorCode of [3,4]){
+  assert.equal(shouldAutoRecoverSafariPlayback({safariWebKit:true,format:"mp4",errorCode,
+    nativeWebm:true,alreadyAttempted:false,catalog:false}),true);
+  assert.equal(shouldAutoRecoverSafariPlayback({safariWebKit:true,format:"mp4",errorCode,
+    nativeWebm:true,alreadyAttempted:true}),false);
+  assert.equal(shouldAutoRecoverSafariPlayback({safariWebKit:true,format:"mp4",errorCode,
+    nativeWebm:false}),false);
+ }
+ assert.equal(shouldAutoRecoverSafariPlayback({safariWebKit:true,format:"webm",errorCode:3,nativeWebm:true}),false);
+ assert.equal(shouldAutoRecoverSafariPlayback({safariWebKit:true,format:"mp4",errorCode:2,nativeWebm:true}),false);
+ assert.equal(shouldAutoRecoverSafariPlayback({safariWebKit:false,format:"mp4",errorCode:4,nativeWebm:true}),false);
+});
+
+
+test("one iPhone hardware fallback keeps the same reserved credit and every real scene",()=>{
+ const start=studio.indexOf("if(useWebCodecsMp4){");
+ const end=studio.indexOf("stream = canvas.captureStream(framesPerSecond)",start);
+ assert.ok(start>0&&end>start);
+ const branch=studio.slice(start,end);
+ assert.match(branch,/const encodeCanvasMovie=async \(lighter=false\)=>\{/);
+  assert.match(branch,/const blob=await encodeLocalWebCodecsMp4\(\{/);
+  assert.match(branch,/renderFrame:time=>\{/);
+ assert.match(branch,/blob=await encodeCanvasMovie\(\)/);
+ assert.match(branch,/blob=await encodeCanvasMovie\(true\)/);
+  assert.match(branch,/\.\.\.\(lighter\?\{frameRate:8\}:\{\}\)/);
+ assert.match(branch,/const scale=540\/\(quality==="fullhd"\?1080:720\)/);
+ assert.match(branch,/compatibilityExportRef\.current=true/);
+ assert.match(branch,/controller\.signal\.aborted/);
+ assert.doesNotMatch(branch,/videoCreditRequest\("hold"|appFetch\("render"/);
+ assert.match(branch,/if\(usingFreeFilmCompilation&&!frame&&!hasStoryboardPhotoAt\(time\)\)return false/);
+ assert.match(branch,/paintSingleVideoTextOverlay\(ctx,time,singleTextSource/);
+ assert.match(branch,/audio:files\.length\?\{files,volume:soundVolume\}:undefined/);
+});
+
+test("Safari accepts longer-than-180s licensed MP3 music and retains only its audible excerpt",()=>{
+  // This formerly rejected valid 4–8-minute classical scores even when the
+  // requested MP4 was only 20–30 seconds long.
+  assert.doesNotMatch(helper,/decoded\.duration>180/);
+  assert.match(helper,/decoded\.duration<=0/);
+  assert.match(helper,/if\(entry\.loop && decoded\.duration>seconds-startSeconds\)/);
+  assert.match(helper,/Math\.ceil\(\(seconds-startSeconds\)\*decoded\.sampleRate\)/);
+  assert.match(helper,/offline\.createBuffer\(decoded\.numberOfChannels,frames,decoded\.sampleRate\)/);
+  assert.match(helper,/excerpt\.copyToChannel\(decoded\.getChannelData\(channel\)\.subarray\(0,frames\),channel\)/);
+  assert.match(helper,/decoded=excerpt/);
+  assert.match(helper,/source\.loop=entry\.loop/);
+  assert.match(helper,/if\(!entry\.loop && "file" in entry && decoded\.duration > seconds-startSeconds \+ \.10\)/,
+    "non-looped narration must still reject truncation");
+  assert.match(helper,/narration_longer_than_video/);
+  assert.match(helper,/audio_size_invalid/);
+  assert.match(helper,/first_party_audio_unavailable/);
+  assert.match(helper,/audioSource\.add\(audioBuffer\)/,"AAC remains required for selected music");
+});
+
+test("physical iPhone gets one 540p H264/AAC encode, never auto-unplayable WebM",async()=>{
+  const {orderRecordingMimes,prefersSafariWebm,isAppleMobileDevice,
+    shouldAutoRecoverSafariPlayback}=await import("../lib/mandala/recording-codecs.mjs");
+  const iphone="Mozilla/5.0 (iPhone; CPU iPhone OS 26_1 like Mac OS X) AppleWebKit/605.1.15";
+  const ipadDesktop="Mozilla/5.0 (Macintosh; Intel Mac OS X) AppleWebKit/605.1.15 Safari/605.1.15";
+  assert.equal(isAppleMobileDevice(iphone,0),true);
+  assert.equal(isAppleMobileDevice(ipadDesktop,5),true);
+  assert.equal(prefersSafariWebm(iphone,0),false);
+  assert.equal(prefersSafariWebm(ipadDesktop,5),false);
+  const args={mp4:['video/mp4;codecs="avc1.42E01E,mp4a.40.2"'],
+    webm:['video/webm;codecs="vp8,opus"'],userAgent:iphone};
+  assert.deepEqual(orderRecordingMimes(args),args.mp4);
+  assert.deepEqual(orderRecordingMimes({...args,preferWebm:true}),[]);
+  assert.deepEqual(orderRecordingMimes({...args,userAgent:ipadDesktop,maxTouchPoints:5,preferWebm:true}),[]);
+  assert.equal(shouldAutoRecoverSafariPlayback({safariWebKit:true,format:"mp4",errorCode:4,
+    nativeWebm:true,userAgent:iphone}),false);
+  assert.match(studio,/const isApplePhone=\/iPhone\|iPad\|iPod\/i.test\(ua\)/);
+  assert.match(studio,/safariRetryScale=useWebCodecsMp4&&\(safeWebkitRetry\|\|isApplePhone\)/);
+  assert.match(studio,/if\(!safariWebKit\|\|isApplePhone\|\|safeWebkitRetry\|\|!recoverable/);
+  assert.match(studio,/userAgent:ua,maxTouchPoints:navigator.maxTouchPoints/);
+  assert.match(helper,/avc1\.42001f/);
+  assert.match(helper,/selectedAvcCodec\?\{fullCodecString:selectedAvcCodec\}:\{\}/);
+  assert.match(helper,/const h264=baselineSupported\|\|await canEncodeVideo\("avc",videoConfig\)/);
+  assert.match(studio,/creditValidRef\.current=Boolean\(creditOpRef\.current\)/);
+  assert.match(studio,/if\(creditOpRef\.current&&!creditValidRef\.current\)/);
 });

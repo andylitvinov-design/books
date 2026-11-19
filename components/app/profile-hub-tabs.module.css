@@ -206,3 +206,177 @@
   .hub .headingNav :global([data-site-search-trigger]){width:44px;min-width:44px;height:44px}
   .hub .headingNav :global(.site-main-menu-trigger){width:44px;min-width:44px;min-height:44px}
 }
+
+
+/* The profile landing uses the public Home's calm brand chrome; no second tab rail. */
+.hub[data-profile-active="today"] .heading{margin-bottom:0;background:#fffcf7;border-color:#e3d9cb;border-radius:19px;padding:7px 9px}
+.hub[data-profile-active="today"] .headingTitle{display:flex;align-items:center;gap:7px}
+.hub[data-profile-active="today"] .heading h2{font-size:clamp(18px,4.9vw,26px);letter-spacing:-.04em}
+.brandMark{display:block;flex:none;width:29px;height:29px;background:url("/icons/holistic-house-teal.svg") center/contain no-repeat}
+.stateLinks{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 9px}
+.stateLinks a{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:7px 12px;border:1px solid #cde1d5;border-radius:13px;background:#eaf6ee;color:#075d4d;text-decoration:none;font-size:13px;font-weight:750}
+.stateLinks a:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+@media(max-width:430px){
+ .hub[data-profile-active="today"] .heading{padding:7px 5px;gap:4px}
+ .hub[data-profile-active="today"] .headingTitle{gap:4px}
+ .hub[data-profile-active="today"] .heading h2{font-size:clamp(15px,4.4vw,19px)}
+ .hub[data-profile-active="today"] .brandMark{width:23px;height:23px}
+}
+
+
+/* HH_MOCKUP_PORTRAIT_V2: approved head/rays mobile composition; no image downloads. */
+.archive{
+  --report-dark:#123c39;
+  box-sizing:border-box;width:min(100%,1050px);max-width:1050px;
+  margin:9px auto 20px;padding:clamp(10px,2.3vw,20px);
+  color:var(--report-dark);background:#fffaf2;
+  border:1px solid #e7ddcf;border-radius:22px;
+  box-shadow:0 10px 28px rgba(45,64,51,.035)
+}
+.archive .archiveHeading{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;padding:9px 10px 13px;margin:0;
+  border-radius:16px
+}
+.archive .archiveHeading h2{display:flex;align-items:center;gap:10px;font:700 clamp(22px,4.9vw,31px)/1.16 Georgia,serif;letter-spacing:-.03em;margin:0}
+.archive .archiveHeading h2 svg{color:#087b68;flex:none}
+.archive .archiveHeading p{font:450 13px/1.4 system-ui,sans-serif;color:#667477;margin:6px 0 0}
+.archive .total{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  flex:none;width:65px;height:65px;min-width:0;padding:4px 5px;
+  border-radius:19px;background:#def5ec;color:#005f50;
+  font:750 26px/1 system-ui,sans-serif
+}
+.archive .total small{margin-top:4px;font:750 10px/1.05 system-ui,sans-serif}
+.reportPortrait{
+  overflow:hidden;position:relative;
+  display:flex;flex-direction:column;
+  padding:5px 9px 15px;border:1px solid #e5e5d9;
+  border-radius:20px;background:
+    radial-gradient(ellipse at 25% 44%,rgba(78,208,195,.18),transparent 55%),
+    radial-gradient(ellipse at 80% 47%,rgba(246,204,158,.24),transparent 56%),
+    linear-gradient(165deg,#fffaf2,#f5fbf9 66%,#fffbf5)
+}
+.reportPortraitScene{position:relative;isolation:isolate;min-height:clamp(330px,98vw,450px);width:100%;margin:0 auto}
+.reportPortraitScene::before{
+  content:"";position:absolute;z-index:0;
+  width:min(64%,310px);aspect-ratio:1;left:50%;top:12%;
+  transform:translateX(-50%);border:1px solid #f3d7a9;border-radius:50%;
+  box-shadow:0 0 0 15px rgba(255,255,255,.26),0 0 55px rgba(61,175,158,.19)
+}
+.reportPortraitScene::after{
+  content:"";position:absolute;z-index:1;inset:10% 0;
+  pointer-events:none;opacity:.45;
+  background:linear-gradient(to bottom,transparent 43%,#fffaf3 49.9%,transparent 50.3%),
+    linear-gradient(to right,transparent 49.7%,rgba(255,224,176,.65) 50%,transparent 50.3%)
+}
+.reportPortraitArt{
+  position:absolute;z-index:2;inset:0;
+  overflow:hidden;display:block;pointer-events:auto;
+  background:transparent;border:0;border-radius:16px;
+}
+.reportPortraitArt :global(section[class*="visualCompact"]){
+  width:100%;height:100%;margin:0!important;padding:0!important;
+  border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important
+}
+.reportPortraitArt :global([class*="visualHeader"]){display:none!important}
+.reportPortraitArt :global([class*="modelStage"]){
+  width:100%;height:100%!important;min-height:100%!important;
+  padding:0!important;margin:0!important;border-radius:0!important;
+  border:0!important;background:transparent!important;overflow:hidden
+}
+.reportPortraitArt :global(svg[class*="model"]){
+  display:block;width:100%!important;height:100%!important;
+  max-height:none!important;filter:drop-shadow(0 8px 15px rgba(28,122,114,.14))
+}
+.reportPortraitArt :global([class*="portraitArt"]){opacity:.95}
+.reportPortraitSectors{position:absolute;z-index:4;inset:0;pointer-events:none}
+.reportSectorChip{
+  box-sizing:border-box;position:absolute;display:flex;align-items:center;
+  justify-content:center;gap:6px;width:42%;min-height:61px;
+  padding:8px 8px;border:1px solid #cfe8df;border-radius:999px;
+  background:rgba(249,255,252,.93);box-shadow:0 5px 18px rgba(18,77,70,.07);
+  color:#214842;backdrop-filter:blur(7px)
+}
+.reportSectorChip strong{font:750 clamp(12px,2.9vw,16px)/1.22 system-ui,sans-serif}
+.reportSectorChip svg{flex:none;color:#088677}
+.reportSectorChip[data-report-sector="0"]{left:0;top:8%;background:linear-gradient(115deg,#e4f6ed,#fafffb)}
+.reportSectorChip[data-report-sector="1"]{right:0;top:8%;border-color:#f0e0c2;background:linear-gradient(115deg,#fff8ec,#fffdf8)}
+.reportSectorChip[data-report-sector="1"] svg{color:#c18a2e}
+.reportSectorChip[data-report-sector="2"]{left:0;bottom:10%;border-color:#f3d7d2;background:linear-gradient(115deg,#fff5f2,#fffaf8)}
+.reportSectorChip[data-report-sector="2"] svg{color:#ed796c}
+.reportSectorChip[data-report-sector="3"]{right:0;bottom:10%;border-color:#d1e5ee;background:linear-gradient(115deg,#edf9fd,#fafcff)}
+.reportSectorChip[data-report-sector="3"] svg{color:#178dbf}
+.reportPortraitFooter{position:relative;z-index:5;margin:0 auto;width:min(100%,520px);text-align:center}
+.reportPortraitFooter h3{margin:0 0 13px;font:400 clamp(25px,5.7vw,38px)/1.14 Georgia,serif;letter-spacing:-.035em;color:#252d2d}
+.reportPortraitLink{
+  box-sizing:border-box;width:100%;min-height:54px;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  margin:0 auto;padding:12px 14px;border-radius:999px;
+  border:1px solid #00755e;background:linear-gradient(110deg,#00ac8d,#006554);
+  color:white!important;text-decoration:none!important;
+  font:800 clamp(14px,3.8vw,19px)/1.2 system-ui,sans-serif;
+  box-shadow:0 7px 14px rgba(9,117,93,.15)
+}
+.reportPortraitLink:hover{background:linear-gradient(110deg,#009478,#005745)}
+.reportPortraitLink svg{flex:none}
+.reportPortraitCaption{max-width:480px;margin:9px auto 0!important;color:#59766e;font:450 10.5px/1.35 system-ui,sans-serif}
+.archive .recent{
+  margin:16px 0 0;padding:13px 12px 9px;
+  border:1px solid #e8dfd3;border-radius:17px;
+  background:rgba(255,255,255,.72)
+}
+.reportRecentHeading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 8px}
+.reportRecentHeading h3{margin:0;font:700 clamp(18px,4vw,23px)/1.2 Georgia,serif;color:#143d3a}
+.reportRecentHeading a{display:inline-flex;align-items:center;gap:5px;min-height:44px;flex:none;color:#076e58;text-decoration:none;font:750 12px/1.2 system-ui,sans-serif}
+.archive .recent ul{display:grid;gap:6px;margin:0}
+.archive .recent li a{display:flex;align-items:center;gap:8px;min-height:51px;padding:7px 9px;border-radius:12px;background:#fffdf9;border:1px solid #e8dfd5}
+.reportResultIcon{flex:none;display:grid;place-items:center;width:33px;height:33px;border-radius:11px;background:#edf8f4;color:#119c87}
+.archive .recent li .reportResultTitle{flex:1 1 auto;min-width:0;font:750 13px/1.33 system-ui,sans-serif;overflow-wrap:anywhere}
+.archive .recent li time{flex:none;color:#6b777c;font:550 11px/1.2 system-ui,sans-serif;white-space:nowrap}
+.reportResultArrow{flex:none;color:#69847f}
+.archive .actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:13px 0 0}
+.archive .actions a{display:inline-flex;align-items:center;justify-content:center;min-width:0;min-height:51px;padding:10px 7px;border-radius:14px;font:750 13px/1.2 system-ui,sans-serif}
+.archive .actions .reportStartTest{border-color:#028469;background:linear-gradient(110deg,#05aa8b,#008365);color:#fff}
+.archive .actions .reportMyTests{border-color:#baded1;background:#f3fbf7;color:#125c4d}
+.archive .privacy{margin-top:10px;align-items:flex-start;font-size:10.5px}
+.archive a:focus-visible{outline:3px solid #0c8975;outline-offset:2px}
+@media(min-width:760px){
+  .reportPortraitScene{height:450px;max-width:780px}
+  .reportSectorChip{width:31%;min-height:68px}
+  .reportSectorChip strong{font-size:16px}
+  .reportPortraitArt{max-width:640px;left:50%;transform:translateX(-50%)}
+  .archive .recent{padding:14px 18px}
+}
+@media(max-width:430px){
+  .archive{padding:9px}
+  .archive .archiveHeading{padding:10px 5px 12px}
+  .archive .archiveHeading h2{font-size:clamp(19px,5.7vw,25px)}
+  .archive .archiveHeading p{font-size:12px}
+  .archive .total{width:57px;height:60px;border-radius:17px;font-size:24px}
+  .reportPortrait{padding:3px 6px 12px}
+  .reportPortraitScene{min-height:clamp(300px,99vw,415px)}
+  .reportSectorChip{width:43%;min-height:60px;padding:7px 6px;gap:5px}
+  .reportSectorChip strong{font-size:clamp(11px,2.92vw,13.5px)}
+  .reportSectorChip svg{width:21px;height:21px}
+  .reportPortraitFooter h3{margin-bottom:11px}
+  .reportPortraitLink{min-height:52px}
+  .archive .recent{padding:11px 10px 8px}
+  .archive .recent li a{gap:6px}
+  .archive .recent li .reportResultTitle{font-size:12.5px}
+  .archive .recent li time{font-size:10px}
+  .reportResultIcon{width:28px;height:30px}
+  .reportResultIcon svg{width:17px}
+  .archive .actions a{font-size:11.5px;min-height:49px;gap:6px}
+}
+@media(max-width:349px){
+  .reportSectorChip{width:46%;min-height:59px}
+  .reportSectorChip svg{width:18px;height:18px}
+  .reportSectorChip strong{font-size:10.5px}
+  .archive .archiveHeading h2{font-size:18px}
+  .archive .recent li time{font-size:9px}
+  .reportResultIcon{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .reportPortraitArt :global(svg[class*="model"]){filter:none}
+}

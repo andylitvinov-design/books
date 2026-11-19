@@ -1,7 +1,9 @@
 name: Holistic House IndexNow public search notification
 
 on:
+  # Explicit extra QA only: add the qa-optional label to an affected PR.
   pull_request:
+    types: [labeled]
     branches: ['codex/public-book-library']
     paths:
       - 'public/fd5a76df78ea5cb826818733ae65556c.txt'
@@ -9,7 +11,6 @@ on:
       - 'scripts/indexnow-client.mjs'
       - 'scripts/submit-indexnow.mjs'
       - 'tests/indexnow-submission.test.mjs'
-      - '.github/workflows/hh-indexnow.yml'
   push:
     branches: ['codex/public-book-library']
     paths:
@@ -26,6 +27,7 @@ permissions:
 
 jobs:
   validate:
+    if: ${{ github.event_name != 'pull_request' || github.event.label.name == 'qa-optional' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 7
     steps:

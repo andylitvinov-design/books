@@ -42,7 +42,7 @@ test("all three placements reuse the existing click-to-load video player and kee
   assert.match(player, /const externalLink = internalOnly \? null/);
 });
 
-test("personal free review has portrait-led hero, a separate locale-matched explainer and three visible previews", () => {
+test("personal free review has portrait, locale-matched explainer and twelve vertically stacked videos", () => {
   const free = read("components/free-entry-landing.tsx");
   const css = read("components/free-entry-landing.module.css");
   const hero = free.indexOf('aria-labelledby="free-entry-title"');
@@ -51,28 +51,31 @@ test("personal free review has portrait-led hero, a separate locale-matched expl
   const proof = free.indexOf('data-featured-free-review-testimonials');
   const process = free.indexOf('id="how-it-works"');
   assert.ok(hero >= 0 && hero < video && video < outcome && outcome < proof && proof < process,
-    "Portrait → intro → value → three authentic client videos → steps");
+    "Portrait → intro → value → all authentic client videos → steps");
   assert.match(free, /getServiceVideoMedia\("overview", locale\)/);
   assert.match(free, /heygenId: "2c251709aba74fd96ae8be43257a080b"/);
   assert.match(free, /language: "es" as const/);
-  assert.match(free, /const featuredReviewVideos/);
+  assert.match(free, /const reviewVideos = kind === "situation"/);
   assert.match(free, /testimonialVideos\.ru\[4\]/);
-  assert.match(free, /testimonialVideos\[locale\]\.slice\(0, 3\)/);
-  assert.match(free, /featuredReviewVideos\.map/);
+  assert.match(free, /testimonialVideos\[locale\]/);
+  assert.match(free, /reviewVideos\.map/);
+  assert.match(free, /data-review-count=\{reviewVideos\.length\}/);
+  assert.doesNotMatch(free, /featuredReviewVideos|reviewSwipeHint/);
   assert.match(free, /data-testimonial-video-id=\{item\.id\}/);
   assert.match(free, /locallyArchivedVideoPosterIds\.has\(item\.id\)/);
   assert.match(free, /item\.language === "ru"/);
   assert.match(free, /"Esta revisión exprés gratuita"|vídeo específico sobre la revisión exprés/);
-  assert.match(free, /"Видео Андрея · русский язык"/);
-  assert.match(free, /"Andrey's introduction · English audio"/);
+  assert.match(free, /"Андрей рассказывает о работе · на русском"/);
+  assert.match(free, /"Introduction by Andrey · English"/);
   assert.match(free, /href=\{kind === "situation" \? "#request-free-review"/);
   assert.match(free, /<PersonalExpressEnquiry locale=\{locale\} intro=\{/);
-  assert.match(free, /<PersonalTestimonials locale=\{locale\} variant="all" \/>/);
+  assert.match(free, /data-review-list-direction="vertical"/);
+  assert.doesNotMatch(free, /<LazyPersonalTestimonials|data-review-stories/);
   assert.doesNotMatch(free, /data-featured-constellations-video|siteVideoWatchUrl/);
   assert.match(css, /\.situationHero \.heroVisual/);
   assert.match(css, /\.reviewIntro/);
   assert.match(css, /\.reviewPreviewGrid/);
-  assert.match(css, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(css, /\.reviewPreviewGrid\{display:flex;flex-direction:column/);
   assert.match(css, /@media\(max-width:600px\)/);
   assert.match(css, /@media\(max-width:360px\)/);
   assert.match(css, /:focus-visible/);

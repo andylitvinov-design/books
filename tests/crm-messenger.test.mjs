@@ -322,7 +322,8 @@ test('v3 quick replies are neutral owner-selected drafts, not scheduled or auto-
   assert.match(ui,/role="group" aria-label=\{lang==='ru'\?'Быстрые ответы'/)
   assert.match(ui,/onClick=\{\(\)=>\{pendingRequest\.current=null;setText\(item\.text\);setShowQuickReplies\(false\)\}\}/)
   assert.match(ui,/disabled=\{busy\|\|threadLoading\|\|!selected\.reply\.ok\}/)
-  assert.doesNotMatch(ui,/setInterval\(|sendOneMessengerMessage\(/)
+  assert.doesNotMatch(ui,/sendOneMessengerMessage\(/)
+  assert.match(ui,/document\.visibilityState!=='visible'/)
   assert.match(api,/action==='send'/)
 })
 
@@ -508,7 +509,7 @@ test('owner sees actionable missing-consent state; terminal blocks do not strand
   assert.match(policy,/if\(diagnosticConsentRequired&&diagnosticConsented!==true\)/)
   assert.match(policy,/reason:'CONSENT_REQUIRED'/)
   assert.ok(store.includes("row.status==='queued'&&check.ok"))
-  assert.ok(store.includes('diagnosticConsentRequired:publicDiagnostic'))
+  assert.ok(store.includes('diagnosticConsentRequired:false'))
   assert.ok(store.includes('diagnosticConsented:row.diagnostic_consented===true'))
   assert.ok(route.includes('reason:dispatch.reason'))
   assert.ok(ui.includes('CONSENT_REQUIRED:'))

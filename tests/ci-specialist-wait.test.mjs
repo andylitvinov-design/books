@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggregateError } from '../scripts/ci-specialist-aggregate.mjs';
 import { inspectJobs, trustedRequiredJobs, inspectWorkflowRuns } from '../lib/ci/specialist-aggregate.mjs';
+import { safeComposedIndependentAdvance } from '../lib/ci/production-base-impact.mjs';
 
 const repo = 'andylitvinov-design/books', head = 'a'.repeat(40), base = 'b'.repeat(40);
 const path = '.github/workflows/mobile.yml';
@@ -460,7 +461,7 @@ test('multiple in-progress Specialist workflows keep normal thirty-second pollin
 });
 
 
-test('real sensitive Specialist accepts only mergeable, proved unrelated public raster target advances', async () => {
+test('real sensitive Specialist accepts independent raster drift while GitHub recomputes mergeability', async () => {
   const updated='c'.repeat(40);
   let current={...pr,mergeable:true,mergeable_state:'behind',
     base:{...pr.base,sha:updated}};
@@ -482,8 +483,46 @@ test('real sensitive Specialist accepts only mergeable, proved unrelated public 
   current={...current,mergeable:false,mergeable_state:'dirty'};
   await assert.rejects(()=>verify(api,ctx,pinned,{maxWaitMs:0}),/MERGE_CONFLICT/);
   current={...current,mergeable:null,mergeable_state:'unknown'};
-  await assert.rejects(()=>verify(api,ctx,pinned,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);
+  assert.equal((await verify(api,ctx,pinned,{maxWaitMs:0})).head,head,
+    'pending GitHub mergeability is not a conflict; native merge still requires positive proof');
   current={...current,mergeable:true,mergeable_state:'behind'};
   compare=completeCompare('app/api/payment/route.ts');
   await assert.rejects(()=>verify(api,ctx,pinned,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);
+});
+
+test('composed independent BASE advance reuses the same HEAD only with complete protected row proofs', () => {
+  const tested = 'c'.repeat(40), live = 'd'.repeat(40);
+  const candidate = ['lib/crm/private-inbox.js'];
+  const change = (paths) => ({
+    status: 'ahead', ahead_by: 1, behind_by: 0, total_commits: 1,
+    base_commit: { sha: tested }, merge_base_commit: { sha: tested },
+    commits: [{ sha: live }],
+    files: paths.map(filename => ({ filename, status: 'modified' })),
+  });
+  const good = change(['docs/help/getting-started.md', 'public/images/home/portrait.webp']);
+  assert.equal(safeComposedIndependentAdvance(good, tested, live, candidate), true,
+    'independent documentation + raster reuses real existing Core evidence');
+  assert.equal(safeComposedIndependentAdvance(change([
+    'docs/help/getting-started.md', 'tests/academy-module.test.mjs',
+  ]), tested, live, candidate), true, 'unrelated domain tests remain independent');
+  for (const blocked of [
+    ['docs/help/getting-started.md', 'lib/crm/private-inbox.js'],
+    ['docs/help/getting-started.md', '.github/workflows/hh-pr-core-release.yml'],
+    ['docs/help/getting-started.md', 'lib/ci/specialist-aggregate.mjs'],
+    ['docs/help/getting-started.md', 'app/api/auth/route.ts'],
+    ['docs/help/getting-started.md', 'tests/ci-specialist-wait.test.mjs'],
+  ]) {
+    assert.equal(safeComposedIndependentAdvance(change(blocked), tested, live, candidate), false,
+      'source overlap, protected release policy, shared security and sensitive code never pass: ' + blocked);
+  }
+  assert.equal(safeComposedIndependentAdvance({ ...good,
+    files: [...good.files, { ...good.files[0] }] }, tested, live, candidate), false);
+  assert.equal(safeComposedIndependentAdvance({ ...good,
+    files: [{ ...good.files[0], status: 'renamed', previous_filename: 'docs/old.md' }, good.files[1]] },
+    tested, live, candidate), false);
+  assert.equal(safeComposedIndependentAdvance({ ...good, commits: [] }, tested, live, candidate), false);
+  assert.equal(safeComposedIndependentAdvance({ ...good, status: 'diverged' }, tested, live, candidate), false);
+  assert.equal(safeComposedIndependentAdvance({ ...good, files: [good.files[0]] }, tested, live, candidate), false,
+    'single-category proof cannot substitute a complete-list check');
+  assert.equal(safeComposedIndependentAdvance(good, tested, live, []), false);
 });

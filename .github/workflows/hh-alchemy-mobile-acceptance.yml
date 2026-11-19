@@ -7,7 +7,6 @@ on:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
-      - '.github/workflows/hh-alchemy-mobile-acceptance.yml'
       - 'scripts/ci-alchemy-impact.mjs'
       - 'tests/ci-alchemy-impact.test.mjs'
       - 'components/alchemy-soul-landing.tsx'

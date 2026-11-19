@@ -16,10 +16,11 @@ test("Therapy is sixth, after Ready; six original destinations remain intact",()
  assert.match(parent,/data-video-quick-control=\{item\.id\}/);
  assert.equal((parent.match(/<MandalaTherapyStudio /g)||[]).length,1);
 });
-test("Single and eight sessions selector appears BEFORE Meditation Voice Practice subtabs",()=>{
- assert.ok(ui.indexOf("data-therapy-format-switch")<ui.indexOf("data-therapy-tabs"));
- for(const format of ["single","course"])assert.match(ui,new RegExp('data-therapy-format="'+format+'"'));
- for(const tab of ["meditation","voice","practice"])assert.ok(ui.includes('data-therapy-subtab={id}'));
+test("Approved four Therapy tabs replace the format switch",()=>{
+ assert.doesNotMatch(ui,/data-therapy-format-switch|data-therapy-format="(?:single|course)"/);
+ assert.match(ui,/\["meditation","voice","practice","course"\] as const/);
+ assert.match(ui,/if\(id==="course"\)setIsCourse\(true\)/);
+ assert.match(ui,/else if\(id==="meditation"\)setIsCourse\(false\)/);
  assert.match(ui,/editor\(isCourse\)/);
  assert.match(parent,/coursePreview=\{isCourse\}/);
  assert.match(ui,/role="tablist"/);
@@ -52,7 +53,7 @@ test("Existing visual, quiet and binaural effects remain optional with no automa
  assert.match(browser,/data-therapy-effects-toggle/);
 });
 test("Mobile visuals have roomy touch targets and correct eight-draft disclosure",()=>{
- assert.match(css,/min-height:74px/);
+ assert.match(css,/grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
  assert.match(css,/min-height:50px/);
  assert.match(css,/@media\(max-width:355px\)/);
  assert.match(ui,/Eight-session mode starts with a plan and one script/);
@@ -123,4 +124,37 @@ test("Owner Therapy mobile: one introduction and compact controls, no feature re
  assert.match(css,/\[data-meditation-main-filters\] label:nth-child\(2\)\{grid-column:1\/-1/);
  assert.match(css,/\[data-meditation-generate\]\{min-height:52px/);
  assert.match(ui,/data-therapy-advanced-effects/);
+});
+
+test("Voice one-screen retains explicit cloud consent and existing real WAV path",()=>{
+ const voice=read("components/mandala-affirmation-voice.tsx");
+ const styles=read("components/mandala-affirmation-voice.module.css");
+ assert.match(parent,/therapyLayout=\{activeWorkspace==="effects"\}/);
+ assert.match(ui,/data-active-therapy-pane=\{pane\}/);
+ assert.match(voice,/data-therapy-voice-ui=\{therapyLayout\?"true":"false"\}/);
+ assert.match(voice,/data-video-therapy-own-voice/);
+ assert.match(voice,/role="checkbox" aria-checked=\{consent\}/);
+ assert.match(voice,/mode:"affirmations",voiceId,language,text:speechText,consent:true/);
+ assert.match(styles,/data-therapy-voice-ui="true"/);
+ assert.match(css,/\.scriptHost\[data-pane="practice"\],\.scriptHost\[data-pane="voice"\]\{display:none\}/);
+});
+
+test("Voice footer has exactly two large next-step actions, no charge or synthesis on navigation",()=>{
+ assert.match(ui,/data-therapy-voice-next/);
+ assert.match(ui,/data-therapy-voice-to-practice/);
+ assert.match(ui,/data-therapy-voice-to-course/);
+ assert.match(ui,/onClick=\{\(\)=>openFromVoice\("practice"\)\}/);
+ assert.match(ui,/onClick=\{\(\)=>openFromVoice\("course"\)\}/);
+ assert.match(ui,/if\(target==="course"\)setIsCourse\(true\)/);
+ for(const phrase of ["Narrate meditation (20 EXP)","Озвучить медитацию (20 EXP)","Narrar meditación (20 EXP)"])
+  assert.ok(ui.includes(phrase));
+ assert.match(ui,/Создать видео без озвучки/);
+ assert.doesNotMatch(ui,/fetch\(|checkout|supabase|credit|deduct|charge|createQuickVideo/);
+ const voice=read("components/mandala-affirmation-voice.tsx");
+ assert.match(voice,/data-therapy-voice-cloud-consent/);
+ assert.match(voice,/data-therapy-voice-cloud-limit/);
+ assert.match(css,/\.voicePrimaryNext\{/);
+ assert.match(css,/\.voiceSecondaryNext\{/);
+ assert.match(css,/data-video-generate-affirmation-audio/);
+ assert.match(css,/min-height:52px/);
 });

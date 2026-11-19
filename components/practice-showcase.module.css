@@ -297,3 +297,84 @@
 .screen .identityCopy .myPageAction svg{flex:none}
 @media(max-width:590px){.screen .identityActions{gap:0 6px}.screen .identityCopy .identityActions button,.screen .identityCopy .myPageAction{min-height:44px}}
 @media(max-width:354px){.screen .identityCopy .myPageAction{padding:5px 6px;font-size:10px}}
+
+
+/* Work: identity and secondary tools below the photography-led primary navigation. */
+.screen .shell{width:min(100%,980px);padding-top:12px}
+.screen .identity{display:flex;align-items:center;gap:13px;padding:13px 16px;margin:5px 0 14px;border:1px solid #e6e8df;border-radius:22px;background:#fffdf9;box-shadow:0 6px 18px #23432a17}
+.screen .avatar{flex:none;width:64px;height:64px}
+.screen .identityCopy{display:grid;flex:1;justify-items:start;gap:4px}
+.screen .identityCopy strong{font-size:clamp(17px,4vw,23px)}
+.screen .identityCopy small{font-size:clamp(12px,3vw,14px)}
+.screen .identityCopy .identityActions{display:flex;gap:3px 11px;flex-wrap:wrap}
+.screen .identityCopy .identityActions button{min-height:44px;color:#08705a;font-size:13px}
+.screen .identityCopy .myPageAction{font-size:13px;min-height:44px}
+.createDisclosure,.moreDisclosure{margin:11px 0;border:1px solid #e0e7dc;border-radius:21px;background:#fffdf8;box-shadow:0 5px 14px #183b2d14}
+.createDisclosure>summary,.moreDisclosure>summary{display:flex;align-items:center;gap:12px;min-height:69px;padding:11px 16px;color:#104b40;font-size:clamp(16px,3.8vw,19px);font-weight:790;line-height:1.2;cursor:pointer;list-style:none}
+.createDisclosure>summary::-webkit-details-marker,.moreDisclosure>summary::-webkit-details-marker{display:none}
+.createDisclosure>summary::marker,.moreDisclosure>summary::marker{content:""}
+.disclosureIcon{display:grid;place-items:center;flex:none;width:43px;height:43px;border-radius:15px;background:#e2f4e8;color:#067458}
+.createDisclosure>summary>span:nth-child(2),.moreDisclosure>summary>span:nth-child(2){flex:1}
+.createDisclosure>summary>svg:last-child,.moreDisclosure>summary>svg:last-child{flex:none;transition:transform .16s}
+.createDisclosure[open]>summary>svg:last-child,.moreDisclosure[open]>summary>svg:last-child{transform:rotate(90deg)}
+.screen .createDisclosure .quickGrid{padding:0 13px 15px;margin:0}
+.screen .moreDisclosure .offers,.screen .moreDisclosure .toolbox{padding:6px 13px 13px;margin:0}
+.screen .moreDisclosure .offerRail{grid-template-columns:repeat(3,minmax(0,1fr))}
+.screen .moreDisclosure .offerCard{height:104px}
+.screen .moreDisclosure .toolGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:590px){
+.screen .shell{padding-top:10px;padding-inline:clamp(10px,3vw,18px)}
+.screen .identity{gap:10px;padding:11px 12px}.screen .avatar{width:54px;height:54px}
+.screen .identityCopy strong{font-size:17px}.screen .identityCopy small{font-size:12px}
+.screen .identityCopy .myPageAction,.screen .identityCopy .identityActions button{font-size:12px}
+}
+@media(max-width:360px){
+.screen .identity{gap:7px}.screen .avatar{width:48px;height:48px}
+.screen .identityCopy .identityActions{gap:1px 4px}
+.screen .identityCopy .myPageAction{font-size:11px;padding:4px 6px}
+.screen .moreDisclosure .offerCard strong{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){.createDisclosure>summary>svg:last-child,.moreDisclosure>summary>svg:last-child{transition:none}}
+
+/* Approved mock fidelity: two account cards and four immediate creation choices. */
+.screen .accountNav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin:15px 0 16px}
+.screen .accountTile{display:flex;align-items:center;gap:13px;min-height:78px;padding:11px 14px;border:1px solid #e2ece3;border-radius:22px;background:linear-gradient(100deg,#f1faf3,#fffdfa);box-shadow:0 6px 16px #173b2d14;color:#104538;text-decoration:none}
+.screen .accountIcon{display:grid;place-items:center;flex:none;width:49px;height:49px;border-radius:17px;background:#e6f4e9;color:#075e4b}
+.screen .accountTile>span:nth-child(2){display:grid;gap:3px;min-width:0}
+.screen .accountTile strong{font-size:clamp(15px,3.7vw,20px);font-weight:830;line-height:1.1}
+.screen .accountTile small{font-size:clamp(11px,2.8vw,14px);line-height:1.28;color:#597168}
+.screen .createActions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:0 0 13px}
+.screen .createAction{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:104px;padding:10px 4px;border:1px solid #e6e5df;border-radius:22px;background:#fffdfa;color:#164c42;box-shadow:0 7px 17px #1b382a19;text-align:center;font:inherit}
+.screen .createAction strong{font-size:clamp(12px,2.9vw,16px);font-weight:780;line-height:1.2}
+.screen .createAction svg{flex:none;color:#0d6653}
+.screen .createActionPrimary{background:linear-gradient(145deg,#10af8a,#007660);border-color:#39a992;color:#fff}
+.screen .createActionPrimary svg{color:#fff}
+.screen .extraCreateChoices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:-1px 0 15px}
+.screen .extraCreateChoices[hidden]{display:none}
+.screen .extraCreateChoices .quickTile{min-height:72px}
+.screen .moreDisclosure .identity{margin:0 13px 13px}
+@media(max-width:590px){
+.screen .accountNav{gap:8px;margin:12px 0}
+.screen .accountTile{gap:7px;min-height:68px;padding:8px 9px;border-radius:19px}
+.screen .accountIcon{width:39px;height:39px;border-radius:14px}
+.screen .accountIcon svg{width:26px;height:26px}
+.screen .accountTile strong{font-size:clamp(14px,3.7vw,17px)}
+.screen .accountTile small{font-size:clamp(10px,2.6vw,12px)}
+.screen .createActions{gap:6px}
+.screen .createAction{gap:7px;min-height:93px;padding:8px 3px;border-radius:17px}
+.screen .createAction svg{width:24px;height:24px}
+.screen .createAction strong{font-size:clamp(11px,2.9vw,14px)}
+.screen .extraCreateChoices{gap:6px}
+.screen .extraCreateChoices .quickTile{min-height:66px}
+}
+@media(max-width:360px){
+.screen .accountNav{gap:6px}
+.screen .accountTile{gap:5px;padding:6px}
+.screen .accountIcon{width:33px;height:35px}
+.screen .accountIcon svg{width:23px;height:23px}
+.screen .accountTile strong{font-size:12.5px}
+.screen .accountTile small{font-size:10px}
+.screen .createAction{min-height:92px;padding:7px 2px;border-radius:14px}
+.screen .createAction strong{font-size:10.5px}
+.screen .extraCreateChoices{grid-template-columns:repeat(3,minmax(0,1fr))}
+}

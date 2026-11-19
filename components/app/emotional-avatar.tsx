@@ -5,6 +5,8 @@ import {Volume2, VolumeX} from 'lucide-react';
 import {classifyAvatarEmotion} from '@/lib/assistant-avatar/emotion-policy.mjs';
 import {initialAvatarState, reduceAvatar, type AvatarState} from '@/lib/assistant-avatar/avatar-machine';
 import {createDeviceSpeech, type SpeechController} from '@/lib/assistant-avatar/device-speech';
+import {getAliPersona} from '@/lib/holistic-support/ali-personas.mjs';
+import type {AliPersonaId} from '@/lib/holistic-support/ali-personas.mjs';
 import styles from './emotional-avatar.module.css';
 
 type ChatMessage = {role:'user'|'assistant';text:string};
@@ -12,7 +14,7 @@ type Locale = 'ru'|'en'|'es';
 type CompanionVoice = {supported:boolean;playbackConsent:boolean;speaking:boolean;
   speak:(text:string)=>void;stop:()=>void};
 type AvatarProps = {messages:ChatMessage[];busy:boolean;status:string;locale:Locale;
-  compact:boolean;iconOnly?:boolean;companionVoice?:CompanionVoice};
+  compact:boolean;iconOnly?:boolean;companionVoice?:CompanionVoice;personaId?:AliPersonaId};
 const copy = {
   ru:{name:'Визуальный помощник',idle:'Я рядом',reacting:'Слушаю',thinking:'Готовлю ответ',speaking:'Озвучиваю',error:'Ответ недоступен',
     show:'Показать лицо',hide:'Скрыть лицо',expand:'Увеличить портрет',collapse:'Уменьшить портрет',listen:'Озвучить ответ',stop:'Остановить озвучку',voice:'Голос устройства',defaultVoice:'По умолчанию',noLocalVoice:'Нет локальных голосов для этого языка',
@@ -25,11 +27,12 @@ const copy = {
     unavailable:'La voz del dispositivo no está disponible. Puedes leer la respuesta.',otherAudio:'Ya se reproduce otro audio. Inténtalo al terminar.'},
 } as const;
 
-export default function EmotionalAvatar({messages,busy,status,locale,compact,iconOnly=false,companionVoice}:AvatarProps) {
+export default function EmotionalAvatar({messages,busy,status,locale,compact,iconOnly=false,companionVoice,personaId}:AvatarProps) {
   // The Voice Companion is the sole speech controller when enabled. The
   // original avatar adapter is kept only as the feature-flag-off fallback.
   const externalSpeech=Boolean(companionVoice);
   const t=copy[locale]||copy.en;
+  const persona=personaId?getAliPersona(personaId):null;
   const faceId=useId();
   const shirtId=useId();
   const [state,dispatch]=useReducer(reduceAvatar,compact,initialAvatarState);
@@ -144,11 +147,15 @@ export default function EmotionalAvatar({messages,busy,status,locale,compact,ico
     const ownerTurn=turnId.current;
     const ownerSpeech=Math.max(++speechId.current,state.speechId+1);
     speechId.current=ownerSpeech;
-    const result=speech.current?.speak(latestReply,locale,{voiceURI:selectedVoiceURI||undefined,
+    const orderedVoices=[...deviceVoices].sort((a,b)=>a.name.localeCompare(b.name));
+    const personaVoice=iconOnly&&persona&&orderedVoices.length?
+      orderedVoices[persona.voice.slot%orderedVoices.length]?.voiceURI:undefined;
+    const voiceURI=personaVoice||selectedVoiceURI||undefined;
+    const result=speech.current?.speak(latestReply,locale,{voiceURI,
       onStart:()=>{setVoiceNotice('');dispatch({type:'SPEECH_START',turnId:ownerTurn,speechId:ownerSpeech});},
       onEnd:reason=>{dispatch({type:'SPEECH_END',turnId:ownerTurn,speechId:ownerSpeech});
         if(ownerTurn===turnId.current&&(reason==='error'||reason==='timeout'))setVoiceNotice(t.unavailable);},
-    });
+    },{voiceURI,rate:persona?.voice.rate});
     if(!result?.ok)setVoiceNotice(result?.reason==='busy'?t.otherAudio:t.unavailable);
   }
   function hide(){speech.current?.stop();companionVoice?.stop();setExpanded(false);dispatch({type:'HIDE'});}
@@ -159,6 +166,8 @@ export default function EmotionalAvatar({messages,busy,status,locale,compact,ico
   const voiceSelector=<label className={styles.voiceSelector}><span>{t.voice}</span><select aria-label={t.voice} value={selectedVoiceURI} onChange={event=>setSelectedVoiceURI(event.target.value)}>
     <option value="">{t.defaultVoice}</option>{deviceVoices.map(voice=><option key={voice.voiceURI} value={voice.voiceURI}>{voice.name}</option>)}
   </select>{deviceVoices.length===0&&<small>{t.noLocalVoice}</small>}</label>;
+  // The compact chat composer contains playback only. The voice picker
+  // belongs in Settings and must not return when Companion is disabled.
   if(iconOnly)return <div className={styles.iconVoiceControls}>
     <button type="button" className={styles.iconOnly}
       data-hh-speech-control aria-label={actuallySpeaking?t.stop:t.listen}
@@ -166,7 +175,6 @@ export default function EmotionalAvatar({messages,busy,status,locale,compact,ico
       disabled={!canSpeak||!latestReply||busy} onClick={toggleVoice}>
       {actuallySpeaking?<VolumeX size={21} aria-hidden="true"/>:<Volume2 size={21} aria-hidden="true"/>}
     </button>
-    {!externalSpeech&&<details className={styles.voiceDetails}><summary aria-label={t.voice} title={t.voice}>Aa</summary>{voiceSelector}</details>}
   </div>;
   if(!state.visible)return <div className={styles.hidden} data-hh-emotional-avatar-hidden>
     <button type="button" onClick={()=>dispatch({type:'SHOW'})}>{t.show}</button>

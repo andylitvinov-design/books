@@ -105,7 +105,23 @@ test('YouTube and Free Review: obsolete PR commits cancel safely; Draft saves br
     assert.ok(source.includes('group: ' + prefix + '-' + suffix), file + ' must group by PR number and independent manual run');
     assert.ok(source.includes('cancel-in-progress: ' + cancel), file + ' must not cancel production or manual runs');
     assert.match(source, /^  workflow_dispatch:/m, file + ' must preserve manual verification');
-    assert.match(source, /playwright install --with-deps chromium webkit/, file + ' must retain actual browser QA');
+    if(file==='hh-free-review-live-mobile.yml'){
+      // This job may use the same digest-pinned official Playwright image as
+      // our trusted Free Express v2 QA instead of spending 12 minutes
+      // downloading browser binaries and apt dependencies. Real Chromium +
+      // WebKit acceptance must still run; a source-only replacement is RED.
+      const trusted=workflow('hh-free-express-wizard-v2.yml')
+        .match(/image: (mcr\.microsoft\.com\/playwright:v1\.63\.0-noble@sha256:[a-f0-9]{64})/);
+      assert.ok(trusted, 'trusted browser image must be pinned in existing workflow');
+      assert.ok(source.includes('image: '+trusted[1]),'same trusted Chromium/WebKit digest');
+      assert.match(source,/npm install --prefix \/tmp\/hh-free-review-browser.*playwright@1\.63\.0/);
+      assert.match(source,/test -d \/ms-playwright/,'real preinstalled browsers required');
+      assert.match(source,/scripts\/verify-free-review-live-mobile\.mjs/,'real browser journey required');
+      assert.match(source,/npm run start/,'real local production build required');
+    }else{
+      assert.match(source,/playwright install --with-deps chromium webkit/,
+        file+' must retain actual browser QA');
+    }
     assert.doesNotMatch(source, /continue-on-error:\s*true/);
   }
   const youtube = workflow('youtube-phone-uploader.yml');
@@ -180,7 +196,7 @@ test('Public Services exact-head routing preserves source contracts and real ris
 
 test('Core classification and all applicable Core checks share the first scheduled runner', () => {
   const s=workflow('hh-pr-core-release.yml');
-  const core=s.split('\n  scope:')[1]?.split('\n  hh-specialist:')[0];
+  const core=s.split('\n  scope:')[1]?.split('\n  hh-merge-check:')[0];
   assert.ok(core, 'Unified Core job must exist');
   assert.match(core, /name: core-lint-types-build/);
   assert.match(core, /runs-on: ubuntu-24\.04/);
@@ -304,6 +320,8 @@ test('IA and Mandala browsers allocate expensive runners only after cheap exact-
     'macOS WebKit must retain original video release guard');
   assert.ok(macosGuard?.includes("startsWith(github.head_ref, 'feat/voice-timed-storyboard-')"),
     'the consented voice storyboard must run existing macOS WebKit MP4/AAC release acceptance');
+  assert.ok(macosGuard?.includes("startsWith(github.head_ref, 'fix/recipient-speech-')"),
+    'one-tap spoken audio montage must execute protected macOS WebKit before merge');
   assert.match(mandala, /^  voice-webkit-macos:\n    if: .+\n    needs: \[webkit_preflight\]\n    runs-on: macos-15/m);
   for (const source of [ia, mandala]) {
     assert.match(source, /node scripts\/ci-pr-readiness\.mjs/);
@@ -339,7 +357,7 @@ test('Core runs CI policy regressions only when relevant CI or manifest files ch
     assert.ok(source.includes(required),'Relevant CI contract owner lost: '+required);
   assert.match(source,/node scripts\/ci-source-preflight\.mjs/);
   assert.match(source,/run: npm run build/);
-  assert.match(source,/^  hh-specialist:/m);
+  assert.doesNotMatch(source,/^  hh-specialist:/m);
   assert.match(source,/^  hh-merge-check:/m);
 });
 
@@ -427,7 +445,7 @@ test('cheap Mandala UI source contracts fail before macOS WebKit without skippin
 test('benchmark scripts and standalone Video Studio UI do not allocate unrelated CI, while owner gates remain', () => {
   const benchmark = workflow('hh-benchmark-program.yml');
   const benchmarkTriggers = [...benchmark.matchAll(/^      - "scripts\/benchmarking\/plan\.mjs"$/gm)];
-  assert.equal(benchmarkTriggers.length, 2, 'offline benchmark plan remains covered for PR and production push');
+  assert.equal(benchmarkTriggers.length, 2, 'benchmark plan remains covered on opt-in PR and protected production push');
   assert.doesNotMatch(benchmark, /- "scripts\/benchmarking\/\*\*"/,
     'unrelated video/media scripts must not launch a competitor benchmark runner');
   for (const owner of [

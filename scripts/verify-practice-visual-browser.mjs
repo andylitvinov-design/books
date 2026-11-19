@@ -19,50 +19,38 @@ const practitioner = {
   practitioner:{profile:{displayName:''},draftProfile:{displayName:''}},
   services:[],requests:[],
 }
-const title={en:'My Space',ru:'Моё пространство',es:'Mi espacio'}
+const title={en:'My Work',ru:'Моя работа',es:'Mi trabajo'}
 const reply=(route,status,data)=>route.fulfill({
   status,contentType:'application/json',body:JSON.stringify(data),
 })
 const report=[]
+
 const measure=page=>page.evaluate(()=>{
   const root=document.querySelector('[data-practice-showcase]')
-  const rect=el=>{
-    if(!el)return null
-    const r=el.getBoundingClientRect()
+  const el=selector=>root?.querySelector(selector)
+  const rect=node=>{
+    if(!node)return null
+    const r=node.getBoundingClientRect()
     return {x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom}
   }
-  const el=selector=>root?.querySelector(selector)
-  const all=selector=>[...root.querySelectorAll(selector)].map(rect)
-  const scenic=el('[data-work-video-hero] video')
-  const video=el('[data-work-video-hero] .site-video-frame') || scenic
-  const headerControls=el('[data-practice-workspace-heading] [class*="profileHeadingActions"]')
-  // The unified seven-item dock is the only visible navigation on public Work.
-  // The legacy five-item Practice nav remains in the DOM but is hidden by the shell.
-  const bottom=document.querySelector('[data-hh-unified-dock]')
+  const dock=document.querySelector('[data-hh-unified-dock]')
   return {
     viewport:document.documentElement.clientWidth,
     documentWidth:document.documentElement.scrollWidth,
-    state:root.dataset.authState,
-    heading:el('[data-practice-workspace-heading] h2')?.textContent?.trim(),
+    state:root?.dataset.authState,
+    heading:el('[data-work-profile-scenic-hero] h1')?.textContent?.trim(),
     header:rect(el('[data-practice-workspace-heading]')),
-    language:rect(el('[data-practice-workspace-heading] [data-profile-language-switch]')),
-    languageModeDirection:headerControls?getComputedStyle(headerControls).flexDirection:null,
-    switch:rect(el('[data-profile-mode-switch]')),
-    tabs:rect(el('[data-work-profile-tabs]')),
-    tabRects:all('[data-work-profile-tab]'),
-    hero:rect(el('[data-work-video-hero]')),
-    video:rect(video),
-    videoPoster:scenic?.getAttribute('poster'),
-    videoObjectFit:scenic?getComputedStyle(scenic).objectFit:null,
-    actions:rect(el('[data-work-profile-quick-actions]')),
-    actionRects:all('[data-work-quick-action]'),
-    identity:rect(el('[class*="identity"]')),
-    grid:rect(el('[class*="quickGrid"]')),
-    tileRects:all('[class*="quickGrid"] > button'),
-    offers:rect(el('[class*="offers"]')),
-    offerRects:all('[class*="offerRail"] > button'),
-    dock:rect(bottom),
-    dockPosition:bottom?getComputedStyle(bottom).position:'missing',
+    language:rect(el('[data-profile-language-switch]')),
+    modes:rect(el('[data-profile-mode-switch]')),
+    hero:rect(el('[data-work-profile-scenic-hero]')),
+    service:rect(el('[data-work-primary-action="services"]')),
+    grid:rect(el('[data-work-primary-grid]')),
+    cards:[...root.querySelectorAll('[data-work-primary-grid] [data-work-card]')].map(rect),
+    reports:rect(el('[data-work-card="reports"]')),
+    account:rect(el('[data-work-account-actions]')),
+    create:rect(el('[data-work-create-buttons]')),
+    dock:rect(dock),
+    dockPosition:dock?getComputedStyle(dock).position:'missing'
   }
 })
 
@@ -103,103 +91,72 @@ for(const browserType of [chromium,webkit]){
           await page.waitForFunction(expected=>document.querySelector('[data-practice-showcase]')?.dataset.authState===expected,
             state,{timeout:35000})
           await page.evaluate(async()=>{await document.fonts.ready})
-          await page.waitForFunction(()=>[...document.querySelectorAll('[data-practice-showcase] img')].every(
-            img=>img.complete&&img.naturalWidth>0),null,{timeout:20000})
+
           const g=await measure(page)
           assert.equal(g.state,state,label+' real auth-state distinction')
-          assert.equal(g.heading,title[locale],label+' same My Space header as Live')
-          assert.equal(await root.locator('[data-master-network-heading], [data-master-mode-switch]').count(),0,
-            label+' no old Master Network masthead or double finder/share gate')
+          assert.equal(g.heading,title[locale],label+' scenic Work heading')
+          assert.equal(await root.locator('[data-master-network-heading],[data-master-mode-switch]').count(),0,
+            label+' no legacy double master header')
           assert.equal(await root.locator('[data-profile-mode="work"]').getAttribute('aria-current'),
-            'page',label+' Work active in Profile switch')
-          assert.equal(await page.locator('.hh-header, .hh-nav').count(),0,
-            label+' no legacy Holistic House / Practice / Account bar above Work')
-          const myPage=root.locator('[data-work-my-page]')
-          assert.equal(await myPage.getAttribute('href'),'/'+locale+'/my-page',
-            label+' existing universal My Page entry remains reachable')
-          assert.equal(await myPage.isVisible(),true,
-            label+' My Page link is present for guest and owner')
-          assert.equal(await root.locator('[data-practice-workspace-heading] [data-work-my-page]').count(),0,
-            label+' My Page must not crowd the My Space/Live/Work heading')
-          assert.equal(await root.locator('[data-work-profile-actions] [data-work-my-page]').count(),1,
-            label+' My Page stays beside Edit profile below film and four actions')
-          const pageRect=await myPage.boundingBox()
-          assert.ok(pageRect && pageRect.height>=44 && pageRect.width>0,
-            label+' My Page button stays usable on the narrow mobile card')
+            'page',label+' Work active')
           assert.equal(await root.locator('[data-profile-mode="live"]').getAttribute('href'),
-            '/'+(locale==='es'?'en':locale)+'/app/portrait',label+' reversible Live link')
-          assert.equal(await root.locator('[data-work-profile-tab]').count(),6,label+' six compact tabs before video')
-          assert.equal(await root.locator('[data-work-profile-tab="today"]').getAttribute('aria-current'),
-            'page',label+' initial Work/Today tab')
-          assert.equal(await root.locator('[data-work-quick-action]').count(),4,
-            label+' four actions immediately below video')
-          assert.equal(await root.locator('[class*="quickGrid"] > button').count(),6,
-            label+' existing six practitioner creation controls preserved')
-          assert.equal(await root.locator('[class*="offerRail"] > button').count(),6,
-            label+' existing six offering categories preserved')
-          assert.equal(await root.locator('[data-legacy-practice-bottom-nav] button').count(),5,
-            label+' legacy buttons preserved for the protected editor')
+            '/'+(locale==='es'?'en':locale)+'/app/portrait',label+' reversible Life')
+          assert.equal(await root.locator('[data-work-home-link]').getAttribute('href'),
+            '/'+locale,label+' public Holistic House wordmark')
+          assert.equal(await root.locator('[data-work-primary-grid] button').count(),4,
+            label+' four functional core cards')
+          for(const key of ['requests','clients','courseList','materials'])
+            assert.equal(await root.locator('[data-work-card="'+key+'"]').count(),1,label+' '+key)
+          assert.equal(await root.locator('[data-work-card="reports"]').count(),1,label+' reports action')
+          assert.equal(await root.locator('[data-work-create-buttons] > button').count(),4,
+            label+' four visible creation shortcuts')
+          assert.equal(await root.locator('[data-work-create-tools]').isVisible(),false,
+            label+' additional creation types initially hidden')
+          assert.equal(await root.locator('[data-work-more-tools]').getAttribute('open'),null,
+            label+' secondary tool grid hidden by default')
+          assert.equal(await root.locator('[data-work-create-tools] > button').count(),
+            3,label+' three further creation types retained, six in total')
+          assert.equal(await root.locator('[data-work-more-tools] [class*="offerRail"] > button').count(),
+            6,label+' six category links retained')
+          assert.equal(await root.locator('[data-work-my-page]').getAttribute('href'),
+            '/'+locale+'/my-page',label+' personal page retained')
+          assert.equal(await root.locator('[data-work-settings]').count(),1,
+            label+' separate account settings retained')
+          assert.equal(await root.locator('[data-legacy-practice-bottom-nav] button').count(),
+            5,label+' original legacy editor nav retained')
           assert.equal(await root.locator('[data-legacy-practice-bottom-nav]').isVisible(),false,
-            label+' old five-button dock must not visually duplicate the unified dock')
+            label+' legacy nav is visually hidden')
           const unifiedDock=page.locator('[data-hh-unified-dock]')
           await unifiedDock.waitFor({state:'visible',timeout:15000})
           assert.equal(await unifiedDock.locator('[data-unified-dock-item]').count(),7,
-            label+' visible sitewide seven-button dock')
+            label+' shared seven-button navigation retained')
           assert.equal(await unifiedDock.locator('[data-unified-dock-item="profile"]').getAttribute('aria-current'),
-            'page',label+' Profile selected on public Work')
+            'page',label+' Profile selected')
           const localeNav=root.locator('[data-practice-workspace-heading] [data-profile-language-switch]')
-          assert.equal(await localeNav.locator('a').count(),2,label+' RU/EN switch')
-          for(const language of ['ru','en'])
+          assert.equal(await localeNav.locator('a').count(),3,label+' EN/RU/ES options')
+          for(const language of ['ru','en','es'])
             assert.equal(await localeNav.locator('a[lang="'+language+'"]').getAttribute('href'),
-              '/'+language+'/practice',label+' Work language route')
-          assert.equal(g.languageModeDirection,'row',label+' RU/EN and Life/Work stay in one row')
-          assert.ok(g.language && g.switch && g.language.width>0,label+' both profile switches exist')
-          assert.ok(Math.abs((g.language.y+g.language.height/2)-(g.switch.y+g.switch.height/2))<=4,
-            label+' RU/EN and Life/Work have aligned vertical centers')
-          assert.ok(g.language.right<=g.switch.x+2,
-            label+' RU/EN is strictly LEFT of Life/Work, never above it')
-          assert.ok(g.language.x>=-3 && g.switch.right<=g.viewport+3,
-            label+' header controls fit iPhone width')
-          const presentation=root.locator('[data-work-video-hero] [data-profile-presentation-locale]')
-          if(locale==='ru'||locale==='en'){
-            assert.equal(await presentation.count(),1,label+' localized presentation player')
-            assert.equal(await presentation.getAttribute('data-profile-presentation-source'),
-              locale==='ru'?'youtube':'heygen',label+' verified media source')
-            assert.equal(await presentation.locator('.site-video-frame').count(),1,label+' video frame')
-            assert.equal(await presentation.locator('button.site-video-play').count(),1,
-              label+' publicly playable presentation poster')
-            assert.equal(await root.locator('[data-work-video-hero] video').count(),0,
-              label+' RU/EN must not use scenic placeholder')
-          }else{
-            assert.equal(await presentation.count(),0,label+' no invented ES presentation')
-            const scenic=root.locator('[data-work-video-hero] video')
-            assert.equal(await scenic.count(),1,label+' ES scenic fallback')
-            assert.match(await scenic.locator('source').getAttribute('src'),/sun-autumn-hills\.mp4/,
-              label+' source-backed scenic fallback')
-            assert.match(g.videoPoster||'',/sun-autumn-hills\.jpg/,label+' real poster')
-            assert.equal(g.videoObjectFit,'cover',label+' scenic crop')
-          }
-          for(const key of ['header','switch','tabs','hero','video','actions','identity','grid','offers','dock'])
+              '/'+language+'/practice',label+' language route')
+          for(const key of ['header','language','modes','hero','service','grid','reports','account','create','dock'])
             assert.ok(g[key]&&g[key].width>0,label+' missing region '+key+': '+JSON.stringify(g))
-          assert.ok(g.header.bottom<=g.tabs.y+3&&g.tabs.bottom<=g.hero.y+3,
-            label+' Work header → six tabs → video')
-          assert.ok(g.video.bottom<=g.actions.y+3&&g.actions.bottom<=g.identity.y+3,
-            label+' film → four actions → practitioner tools')
-          const pagePosition=await myPage.boundingBox()
-          assert.ok(pagePosition && pagePosition.y>=g.actions.bottom-3 &&
-            pagePosition.y+pagePosition.height<=g.identity.bottom+3,
-            label+' My Page appears below the video controls, INSIDE the profile card')
-          assert.ok(g.identity.bottom<=g.grid.y+3&&g.grid.bottom<=g.offers.y+3,
-            label+' profile → six service-creation tiles → offers')
-          const maxHeroHeight=locale==='es'?330:370
-          assert.ok(g.hero.height>150&&g.hero.height<maxHeroHeight,
-            label+' compact mobile video proportions, including accessible presentation controls')
-          assert.ok(g.documentWidth<=g.viewport+3,label+' unexpected horizontal overflow: '+JSON.stringify(g))
-          for(const [name,rects] of [
-            ['tabs',g.tabRects],['quick',g.actionRects],['tiles',g.tileRects],['offers',g.offerRects]
-          ])assert.ok(rects.every(r=>r.width>0&&r.x>=-3&&r.right<=g.viewport+3),
-            label+' '+name+' controls clipped off screen')
-          assert.equal(g.dockPosition,'fixed',label+' existing unified dock remains fixed')
+          assert.ok(g.header.bottom<=g.modes.y+4&&g.modes.bottom<=g.hero.y+4,
+            label+' header → mode → scenic hero')
+          assert.ok(g.hero.bottom<=g.grid.y+4&&g.grid.bottom<=g.reports.y+4,
+            label+' scenic hero → four cards → reports')
+          assert.ok(g.reports.bottom<=g.account.y+80&&g.account.bottom<=g.create.y+4,
+            label+' reports → paired account cards → four creations')
+          assert.ok(g.hero.height>=220&&g.hero.height<=370,label+' mobile hero size')
+          assert.equal(g.cards.length,4,label+' measured cards')
+          for(const item of g.cards)
+            assert.ok(item.width>0&&item.x>=-3&&item.right<=g.viewport+3,
+              label+' card clipped on phone')
+          assert.ok(g.documentWidth<=g.viewport+3,
+            label+' unexpected horizontal overflow: '+JSON.stringify(g))
+          assert.equal(g.dockPosition,'fixed',label+' global dock fixed')
+          assert.equal(await root.locator('[data-work-presentation-disclosure] [data-profile-video-hero]').count(),0,
+            label+' no heavy player mounted on first paint')
+          assert.equal(await root.locator('[data-work-presentation-disclosure] > button').isVisible(),
+            false,label+' presentation stays inside collapsed secondary tools')
           if(item.width===390&&!item.ready){
             await page.screenshot({path:out+'/'+label+'.png',fullPage:false})
             await page.screenshot({path:out+'/'+label+'-full.png',fullPage:true})
@@ -207,33 +164,45 @@ for(const browserType of [chromium,webkit]){
           if(item.ready){
             await page.waitForURL(url=>url.pathname==='/'+locale+'/practice'&&!url.search,{timeout:10000})
             assert.equal(await root.locator('[data-practice-after-google]').count(),0,
-              label+' no extra post-OAuth banner above new header')
-            await root.locator('[data-work-quick-action="service"]').click()
+              label+' no post-OAuth displacement')
+            await root.locator('[data-work-create-button="service"]').click()
             await page.waitForURL(url=>url.pathname==='/'+locale+'/app/practice'&&
               url.searchParams.get('panel')==='services'&&url.searchParams.get('create')==='1',
               {timeout:35000})
           }else if(item.session==='guest'&&item.width===390){
-            await root.locator('[data-work-quick-action="service"]').click()
+            await root.locator('[data-work-primary-action="services"]').click()
             const dialog=root.getByRole('dialog')
             await dialog.waitFor({state:'visible',timeout:5000})
             await dialog.getByRole('button',{name:/Telegram/i}).waitFor({state:'visible',timeout:5000})
             await dialog.locator('button').last().click()
             await dialog.waitFor({state:'hidden',timeout:5000})
-            assert.ok(page.url().endsWith('/'+locale+'/practice'),
-              label+' cancel leaves guest in Work without editor')
-            await root.locator('[data-work-profile-tab="requests"]').click()
+            await root.locator('[data-work-card="requests"]').click()
             await dialog.waitFor({state:'visible',timeout:5000})
             await page.keyboard.press('Escape')
             await dialog.waitFor({state:'hidden',timeout:5000})
+            await root.locator('[data-work-more-tools] > summary').click()
+            const videoToggle=root.locator('[data-work-presentation-disclosure] > button')
+            await videoToggle.click()
+            const video=root.locator('[data-work-presentation-disclosure] [data-profile-video-hero]')
+            await video.waitFor({state:'visible',timeout:15000})
             if(locale==='ru'||locale==='en'){
-              const targetLanguage=locale==='ru'?'en':'ru'
-              await root.locator('[data-profile-language-switch] a[lang="'+targetLanguage+'"]').click()
-              await page.waitForURL(url=>url.pathname==='/'+targetLanguage+'/practice',{timeout:35000})
-              assert.equal(await page.locator('[data-practice-showcase] [role="dialog"]:visible').count(),0,
-                label+' guest language choice must not open authentication')
-              await page.locator('[data-work-video-hero] [data-profile-presentation-locale="'+targetLanguage+'"]')
-                .waitFor({state:'visible',timeout:15000})
+              const presentation=video.locator('[data-profile-presentation-locale]')
+              assert.equal(await presentation.count(),1,label+' requested real presentation player')
+              assert.equal(await presentation.getAttribute('data-profile-presentation-locale'),
+                locale,label+' media locale aligned')
+            }else{
+              assert.equal(await video.locator('video').count(),1,label+' ES scenic fallback')
+              assert.match(await video.locator('source').getAttribute('src'),
+                /sun-autumn-hills\.mp4/,label+' real scenic source')
             }
+            await videoToggle.click()
+            assert.equal(await video.count(),0,label+' closed video unmounted')
+            const targetLanguage=locale==='ru'?'en':'ru'
+            await localeNav.locator('summary').click()
+            await localeNav.locator('a[lang="'+targetLanguage+'"]').click()
+            await page.waitForURL(url=>url.pathname==='/'+targetLanguage+'/practice',{timeout:35000})
+            assert.equal(await page.locator('[data-practice-showcase] [role="dialog"]:visible').count(),0,
+              label+' guest language change does not require sign-in')
           }
           assert.deepEqual(errors,[],label+' no browser runtime exceptions')
           report.push({label,ok:true,geometry:g,fixture:'synthetic, no real OAuth or provider'})
@@ -249,4 +218,4 @@ await writeFile(out+'/manifest.json',JSON.stringify({
   kind:'synthetic Work visual and route acceptance; not real auth/DB or physical Safari E2E',
   origin,cases:report,
 },null,2)+'\n')
-console.log('Work/Live compact hierarchy, 6+4 actions and OAuth gate: '+report.length+' browser cases passed')
+console.log('Work scenic dashboard, 4+6 actions and OAuth gate: '+report.length+' browser cases passed')

@@ -1,0 +1,807 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  ArrowRight, BatteryCharging, BookOpen, BriefcaseBusiness, Check, ChevronDown,
+  CircleHelp, Compass, CreditCard, Flower2, Gift, GraduationCap,
+  HandHeart, HeartHandshake, HeartPulse, Leaf, MessageCircle,
+  MonitorPlay, UserRound, UsersRound, Wallet, type LucideIcon,
+} from "lucide-react";
+import type { PublicLocale } from "@/lib/public-locales";
+import type { AssistMode, AssistBudget, AssistPreferences } from "@/lib/assist/service-match.mjs";
+import { rankAssistProducts } from "@/lib/assist/product-recommendations.mjs";
+import { AssistTopRecommendations } from "./assist-top-recommendations";
+import { serviceGroupAnchor, servicesCategoryTargets } from "@/lib/services-quick-categories";
+import styles from "./services-assist-quiz.module.css";
+
+type QuestionKey = "topic" | "need" | "mode" | "budget";
+type QuizTopic = "stress_energy" | "relationships_esteem" | "money_growth" | "business_support";
+type Focus = "stress" | "relationships" | "energy" | "work" | "health" | "growth";
+type Category = "therapy" | "homeopathy" | "constellations" | "business" | "tests" | "learning";
+type Choice = readonly [string, string];
+type QuizQuestion = { title: string; options: readonly Choice[] };
+type QuizCopy = {
+  title: string; lead: string; button: string; all: string; other: string; privacy: string;
+  empty: string; section: string; step: string; profile: string; summary: string; shamanica: string;
+  questions: Record<Exclude<QuestionKey, "need">, QuizQuestion>;
+  needs: Record<QuizTopic, QuizQuestion>;
+  businessMode: QuizQuestion;
+  categories: Record<Category, string>;
+};
+const questionKeys = ["topic", "need", "mode", "budget"] as const;
+const publicLocales: readonly PublicLocale[] = ["ru", "en", "es"];
+const topicFocus: Record<QuizTopic, Focus> = {
+  stress_energy:"stress", relationships_esteem:"relationships", money_growth:"growth", business_support:"work",
+};
+const needFocus: Record<string, Focus> = {
+  stress_tension:"stress", energy_fatigue:"energy", stress_overload:"stress", health_wellbeing:"health",
+  relationship_couple:"relationships", relationship_family:"relationships",
+  esteem_confidence:"growth", relationship_boundaries:"relationships",
+  growth_income:"growth", growth_career:"growth", growth_ideas:"growth", growth_direction:"growth",
+  business_strategy:"work", business_clients:"work", business_team:"work", business_change:"work",
+};
+const copy: Record<PublicLocale, QuizCopy> = {
+  "ru": {
+    "title": "Подберём вашу поддержку",
+    "lead": "4 коротких вопроса · Рекомендации под ваш запрос",
+    "button": "Посмотреть рекомендации",
+    "all": "Все услуги",
+    "other": "Предпочитаете диалог с Ali?",
+    "shamanica": "Шаманика · энергетические и магические практики",
+    "privacy": "Ответы остаются в браузере. Мы не сохраняем их и не отправляем ИИ или в CRM.",
+    "empty": "Под выбранные условия подтверждённых вариантов пока нет. Измените формат или бюджет.",
+    "section": "Направления поддержки",
+    "step": "Вопрос",
+    "profile": "Личный кабинет",
+    "summary": "Ваш запрос",
+    "questions": {
+      "topic": {
+        "title": "С чем вам нужна поддержка?",
+        "options": [
+          [
+            "stress_energy",
+            "Снять стресс и вернуть энергию"
+          ],
+          [
+            "relationships_esteem",
+            "Отношения и самооценка"
+          ],
+          [
+            "money_growth",
+            "Деньги и идеи личного роста"
+          ],
+          [
+            "business_support",
+            "Поддержка бизнеса"
+          ]
+        ]
+      },
+      "mode": {
+        "title": "Какой формат вам ближе?",
+        "options": [
+          [
+            "human",
+            "Личная сессия"
+          ],
+          [
+            "self",
+            "Курс или практика"
+          ],
+          [
+            "video",
+            "Видео и медитации"
+          ],
+          [
+            "any",
+            "Помогите выбрать"
+          ]
+        ]
+      },
+      "budget": {
+        "title": "С чего удобно начать?",
+        "options": [
+          [
+            "free",
+            "Бесплатно"
+          ],
+          [
+            "under50",
+            "До €50"
+          ],
+          [
+            "under100",
+            "До €100"
+          ],
+          [
+            "flexible",
+            "Готов обсудить"
+          ]
+        ]
+      }
+    },
+    "needs": {
+      "stress_energy": {
+        "title": "Что сейчас сложнее всего?",
+        "options": [
+          [
+            "stress_tension",
+            "Стресс и напряжение"
+          ],
+          [
+            "energy_fatigue",
+            "Усталость и мало сил"
+          ],
+          [
+            "stress_overload",
+            "Перегрузка и тревога"
+          ],
+          [
+            "health_wellbeing",
+            "Самочувствие и баланс"
+          ]
+        ]
+      },
+      "relationships_esteem": {
+        "title": "Что вы хотите улучшить?",
+        "options": [
+          [
+            "relationship_couple",
+            "Пара и близость"
+          ],
+          [
+            "relationship_family",
+            "Семья и близкие"
+          ],
+          [
+            "esteem_confidence",
+            "Уверенность в себе"
+          ],
+          [
+            "relationship_boundaries",
+            "Границы и конфликты"
+          ]
+        ]
+      },
+      "money_growth": {
+        "title": "Какие идеи вам нужны?",
+        "options": [
+          [
+            "growth_income",
+            "Личный доход и деньги"
+          ],
+          [
+            "growth_career",
+            "Работа и карьера"
+          ],
+          [
+            "growth_ideas",
+            "Личное развитие"
+          ],
+          [
+            "growth_direction",
+            "Ясность и следующий шаг"
+          ]
+        ]
+      },
+      "business_support": {
+        "title": "В чём нужна бизнес-поддержка?",
+        "options": [
+          [
+            "business_strategy",
+            "Стратегия и решения"
+          ],
+          [
+            "business_clients",
+            "Клиенты и продвижение"
+          ],
+          [
+            "business_team",
+            "Команда и партнёрство"
+          ],
+          [
+            "business_change",
+            "Рост или перемены"
+          ]
+        ]
+      }
+    },
+    "businessMode": {
+      "title": "Как удобнее начать?",
+      "options": [
+        [
+          "consultation",
+          "Бизнес-консультация"
+        ],
+        [
+          "written",
+          "Письменный разбор"
+        ],
+        [
+          "human",
+          "Обсудить со специалистом"
+        ],
+        [
+          "any",
+          "Помогите выбрать"
+        ]
+      ]
+    },
+    "categories": {
+      "therapy": "Терапия\nи коучинг",
+      "homeopathy": "Гомеопатия\nи средства",
+      "constellations": "Отношения\nи расстановки",
+      "business": "Бизнес\nи карьера",
+      "tests": "Тесты\nи самопомощь",
+      "learning": "Курсы, видео\nи медитации"
+    }
+  },
+  "en": {
+    "title": "Find your support",
+    "lead": "4 short questions · Recommendations for your needs",
+    "button": "See recommendations",
+    "all": "All services",
+    "other": "Prefer to chat with Ali?",
+    "shamanica": "Shamanica · energy & symbolic practices",
+    "privacy": "Answers stay in your browser. They are not stored or sent to AI or CRM.",
+    "empty": "No verified options match your choices yet. Try another format or budget.",
+    "section": "Areas of support",
+    "step": "Question",
+    "profile": "My profile",
+    "summary": "Your needs",
+    "questions": {
+      "topic": {
+        "title": "What do you need help with?",
+        "options": [
+          [
+            "stress_energy",
+            "Ease stress & restore energy"
+          ],
+          [
+            "relationships_esteem",
+            "Improve relationships & esteem"
+          ],
+          [
+            "money_growth",
+            "Get money & self-growth ideas"
+          ],
+          [
+            "business_support",
+            "Get business support"
+          ]
+        ]
+      },
+      "mode": {
+        "title": "What kind of support fits?",
+        "options": [
+          [
+            "human",
+            "Personal session"
+          ],
+          [
+            "self",
+            "Course or practice"
+          ],
+          [
+            "video",
+            "Videos & meditations"
+          ],
+          [
+            "any",
+            "Help me choose"
+          ]
+        ]
+      },
+      "budget": {
+        "title": "Where would you like to start?",
+        "options": [
+          [
+            "free",
+            "Free"
+          ],
+          [
+            "under50",
+            "Up to €50"
+          ],
+          [
+            "under100",
+            "Up to €100"
+          ],
+          [
+            "flexible",
+            "Let's discuss"
+          ]
+        ]
+      }
+    },
+    "needs": {
+      "stress_energy": {
+        "title": "What's hardest right now?",
+        "options": [
+          [
+            "stress_tension",
+            "Stress and tension"
+          ],
+          [
+            "energy_fatigue",
+            "Low energy or fatigue"
+          ],
+          [
+            "stress_overload",
+            "Overwhelm or worry"
+          ],
+          [
+            "health_wellbeing",
+            "Everyday wellbeing"
+          ]
+        ]
+      },
+      "relationships_esteem": {
+        "title": "What would you like to improve?",
+        "options": [
+          [
+            "relationship_couple",
+            "Intimacy and partnership"
+          ],
+          [
+            "relationship_family",
+            "Family relationships"
+          ],
+          [
+            "esteem_confidence",
+            "Confidence and self-esteem"
+          ],
+          [
+            "relationship_boundaries",
+            "Boundaries and conflict"
+          ]
+        ]
+      },
+      "money_growth": {
+        "title": "Which ideas would help most?",
+        "options": [
+          [
+            "growth_income",
+            "Personal income ideas"
+          ],
+          [
+            "growth_career",
+            "Work and career direction"
+          ],
+          [
+            "growth_ideas",
+            "Self-growth ideas"
+          ],
+          [
+            "growth_direction",
+            "Clarity and next steps"
+          ]
+        ]
+      },
+      "business_support": {
+        "title": "Where does your business need help?",
+        "options": [
+          [
+            "business_strategy",
+            "Strategy and decisions"
+          ],
+          [
+            "business_clients",
+            "Clients and marketing"
+          ],
+          [
+            "business_team",
+            "Team and partnerships"
+          ],
+          [
+            "business_change",
+            "Growth or transition"
+          ]
+        ]
+      }
+    },
+    "businessMode": {
+      "title": "How would you like to begin?",
+      "options": [
+        [
+          "consultation",
+          "Business consultation"
+        ],
+        [
+          "written",
+          "Written situation review"
+        ],
+        [
+          "human",
+          "Talk to a specialist"
+        ],
+        [
+          "any",
+          "Help me choose"
+        ]
+      ]
+    },
+    "categories": {
+      "therapy": "Therapy\n& coaching",
+      "homeopathy": "Homeopathy\n& remedies",
+      "constellations": "Relationships\n& constellations",
+      "business": "Business\n& career",
+      "tests": "Tests\n& self-help",
+      "learning": "Courses, videos\n& meditations"
+    }
+  },
+  "es": {
+    "title": "Encontremos tu apoyo",
+    "lead": "4 preguntas breves · Recomendaciones a tu medida",
+    "button": "Ver recomendaciones",
+    "all": "Todos los servicios",
+    "other": "¿Prefieres hablar con Ali?",
+    "shamanica": "Shamanica · energía y prácticas simbólicas",
+    "privacy": "Las respuestas quedan en tu navegador. No se guardan ni se envían a IA o CRM.",
+    "empty": "No hay opciones verificadas para esos criterios. Cambia formato o presupuesto.",
+    "section": "Áreas de apoyo",
+    "step": "Pregunta",
+    "profile": "Mi perfil",
+    "summary": "Tu necesidad",
+    "questions": {
+      "topic": {
+        "title": "¿En qué necesitas apoyo?",
+        "options": [
+          [
+            "stress_energy",
+            "Reducir estrés y recuperar energía"
+          ],
+          [
+            "relationships_esteem",
+            "Relaciones y autoestima"
+          ],
+          [
+            "money_growth",
+            "Ideas de ingresos y crecimiento"
+          ],
+          [
+            "business_support",
+            "Apoyo para mi negocio"
+          ]
+        ]
+      },
+      "mode": {
+        "title": "¿Qué tipo de apoyo prefieres?",
+        "options": [
+          [
+            "human",
+            "Sesión personal"
+          ],
+          [
+            "self",
+            "Curso o práctica"
+          ],
+          [
+            "video",
+            "Vídeos y meditación"
+          ],
+          [
+            "any",
+            "Ayúdame a elegir"
+          ]
+        ]
+      },
+      "budget": {
+        "title": "¿Por dónde quieres empezar?",
+        "options": [
+          [
+            "free",
+            "Gratis"
+          ],
+          [
+            "under50",
+            "Hasta €50"
+          ],
+          [
+            "under100",
+            "Hasta €100"
+          ],
+          [
+            "flexible",
+            "Quiero consultarlo"
+          ]
+        ]
+      }
+    },
+    "needs": {
+      "stress_energy": {
+        "title": "¿Qué te cuesta más ahora?",
+        "options": [
+          [
+            "stress_tension",
+            "Estrés y tensión"
+          ],
+          [
+            "energy_fatigue",
+            "Cansancio o poca energía"
+          ],
+          [
+            "stress_overload",
+            "Sobrecarga y preocupación"
+          ],
+          [
+            "health_wellbeing",
+            "Bienestar cotidiano"
+          ]
+        ]
+      },
+      "relationships_esteem": {
+        "title": "¿Qué te gustaría mejorar?",
+        "options": [
+          [
+            "relationship_couple",
+            "Pareja e intimidad"
+          ],
+          [
+            "relationship_family",
+            "Relaciones familiares"
+          ],
+          [
+            "esteem_confidence",
+            "Confianza y autoestima"
+          ],
+          [
+            "relationship_boundaries",
+            "Límites y conflictos"
+          ]
+        ]
+      },
+      "money_growth": {
+        "title": "¿Qué ideas te ayudarían?",
+        "options": [
+          [
+            "growth_income",
+            "Ideas para mis ingresos"
+          ],
+          [
+            "growth_career",
+            "Trabajo y carrera"
+          ],
+          [
+            "growth_ideas",
+            "Crecimiento personal"
+          ],
+          [
+            "growth_direction",
+            "Claridad y próximos pasos"
+          ]
+        ]
+      },
+      "business_support": {
+        "title": "¿Qué necesita tu negocio?",
+        "options": [
+          [
+            "business_strategy",
+            "Estrategia y decisiones"
+          ],
+          [
+            "business_clients",
+            "Clientes y marketing"
+          ],
+          [
+            "business_team",
+            "Equipo y socios"
+          ],
+          [
+            "business_change",
+            "Crecer o cambiar"
+          ]
+        ]
+      }
+    },
+    "businessMode": {
+      "title": "¿Cómo prefieres empezar?",
+      "options": [
+        [
+          "consultation",
+          "Consulta de negocios"
+        ],
+        [
+          "written",
+          "Revisión por escrito"
+        ],
+        [
+          "human",
+          "Hablar con especialista"
+        ],
+        [
+          "any",
+          "Ayúdame a elegir"
+        ]
+      ]
+    },
+    "categories": {
+      "therapy": "Terapia\ny coaching",
+      "homeopathy": "Homeopatía\ny remedios",
+      "constellations": "Relaciones\ny constelaciones",
+      "business": "Negocios\ny carrera",
+      "tests": "Tests\ny autoayuda",
+      "learning": "Cursos, vídeos\ny meditación"
+    }
+  }
+};
+
+const choiceIcons: Record<Exclude<QuestionKey, "need">, Record<string, LucideIcon>> = {
+  topic:{stress_energy:Flower2,relationships_esteem:UsersRound,money_growth:Compass,business_support:BriefcaseBusiness},
+  mode:{human:UserRound,self:BookOpen,video:MonitorPlay,any:CircleHelp,consultation:BriefcaseBusiness,written:MessageCircle},
+  budget:{free:Gift,under50:Wallet,under100:CreditCard,flexible:MessageCircle},
+};
+const needIcons: Record<string, LucideIcon> = {
+  stress_tension:Flower2, energy_fatigue:BatteryCharging, stress_overload:HeartPulse, health_wellbeing:Leaf,
+  relationship_couple:HeartHandshake, relationship_family:UsersRound, esteem_confidence:Compass, relationship_boundaries:HandHeart,
+  growth_income:Wallet, growth_career:BriefcaseBusiness, growth_ideas:BookOpen, growth_direction:Compass,
+  business_strategy:Compass, business_clients:UsersRound, business_team:HeartHandshake, business_change:BriefcaseBusiness,
+};
+
+const categories: readonly { key: Category; image: string; Icon: LucideIcon }[] = [
+  { key: "therapy", image: "/images/holistic-house/messenger-zen-stones.svg", Icon: Flower2 },
+  { key: "homeopathy", image: "/images/holistic-house/distance-homeopathy.webp", Icon: HandHeart },
+  { key: "constellations", image: "/images/holistic-house/homepage-constellations.svg", Icon: HeartHandshake },
+  { key: "business", image: "/images/holistic-house/andy-about.png", Icon: BriefcaseBusiness },
+  { key: "tests", image: "/images/holistic-house/course-start-heron.webp", Icon: Compass },
+  { key: "learning", image: "/images/holistic-house/assist-video-botanical.svg", Icon: MonitorPlay },
+];
+
+export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
+  const t = copy[locale];
+  const [answers, setAnswers] = useState<Partial<Record<QuestionKey, string>>>({});
+  const [step, setStep] = useState(0);
+  const [submitted, setSubmitted] = useState(false);
+  const questionHeading = useRef<HTMLSpanElement>(null);
+  const currentKey = questionKeys[step];
+  const topic = (answers.topic as QuizTopic | undefined) || "stress_energy";
+  const question = currentKey === "need" ? t.needs[topic] :
+    currentKey === "mode" && topic === "business_support" ? t.businessMode : t.questions[currentKey];
+  const options = question.options;
+  const ready = questionKeys.every(key => Boolean(answers[key]));
+  const focus: Focus = needFocus[answers.need || ""] || topicFocus[topic];
+  const preferredMode = answers.mode;
+  const preferences: AssistPreferences = {
+    mode: preferredMode === "written" || preferredMode === "consultation" ? "human" : preferredMode as AssistMode | undefined,
+    channel: preferredMode === "written" ? "async" : preferredMode === "consultation" ? "online" : undefined,
+    budget: answers.budget as AssistBudget | undefined,
+  };
+  // Personal money and growth are separate from an explicit business inquiry.
+  const matchingIds = rankAssistProducts(focus, preferences, 20)
+    .filter((id: string) => topic === "business_support"
+      ? id === "business" || id === "review" || id === "constellation"
+      : id !== "business").slice(0, 3);
+  const summary = [
+    t.questions.topic.options.find(([value]) => value === answers.topic)?.[1],
+    t.needs[topic].options.find(([value]) => value === answers.need)?.[1],
+    (topic === "business_support" ? t.businessMode : t.questions.mode).options.find(([value]) => value === answers.mode)?.[1],
+    t.questions.budget.options.find(([value]) => value === answers.budget)?.[1],
+  ].filter(Boolean).join(" · ");
+
+  function selectOption(key: QuestionKey, value: string) {
+    setAnswers(old => key === "topic" && old.topic !== value ? { topic: value } : { ...old, [key]: value });
+    setSubmitted(false);
+    if (step < questionKeys.length - 1) {
+      setStep(index => Math.min(index + 1, questionKeys.length - 1));
+      requestAnimationFrame(() => questionHeading.current?.focus());
+    }
+  }
+  function jumpTo(index: number) {
+    if (index > step && !answers[questionKeys[index]]) return;
+    setStep(index);
+    setSubmitted(false);
+    requestAnimationFrame(() => questionHeading.current?.focus());
+  }
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (ready) setSubmitted(true);
+  }
+  useEffect(() => {
+    if (!submitted) return;
+    const frame = requestAnimationFrame(() => {
+      const target = document.getElementById("assist-recommendations") ||
+        document.querySelector<HTMLElement>("[data-services-quiz-results]");
+      target?.focus({ preventScroll: true });
+      target?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+        block: "start",
+      });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [submitted]);
+
+  return <section className={styles.root} data-services-quiz data-services-quiz-questions="4"
+    data-services-quiz-step={step + 1} data-quiz-route={topic} lang={locale} aria-labelledby="services-quiz-title">
+    <div className={styles.brandBar}>
+      <Link href={"/" + locale} prefetch={false} className={styles.brand} aria-label="Holistic House">
+        <Flower2 size={40} strokeWidth={1.5} aria-hidden="true" />
+        <span><strong>Holistic House</strong><small>S U P P O R T</small></span>
+      </Link>
+      <div className={styles.brandActions}>
+        <details className={styles.languageMenu}>
+          <summary aria-label="Language"><span>{locale.toUpperCase()}</span><ChevronDown size={16} aria-hidden="true" /></summary>
+          <div className={styles.languageOptions}>{publicLocales.map(lang =>
+            <Link href={"/" + lang + "/services"} prefetch={false} key={lang} lang={lang}
+              aria-current={lang === locale ? "page" : undefined}>{lang.toUpperCase()}</Link>)}</div>
+        </details>
+        <Link className={styles.profile} href={"/" + (locale === "es" ? "en" : locale) + "/app/portrait"}
+          prefetch={false} aria-label={t.profile}><UserRound size={22} aria-hidden="true" /></Link>
+      </div>
+    </div>
+
+    <header className={styles.hero}>
+      <h1 id="services-quiz-title">{t.title}</h1>
+      <p>{t.lead}</p>
+    </header>
+
+    <form className={styles.form} data-services-quiz-form onSubmit={submit}>
+      <div className={styles.progress}>
+        <span>{t.step} {step + 1} / {questionKeys.length}</span>
+        <div className={styles.progressSteps} aria-label={t.step + " " + (step + 1)}>
+          {questionKeys.map((key, index) =>
+            <button type="button" key={key} className={styles.progressDot} data-quiz-dot={index + 1}
+              aria-label={t.step + " " + (index + 1)} aria-current={step === index ? "step" : undefined}
+              data-complete={Boolean(answers[key])} disabled={index > step && !answers[key]}
+              onClick={() => jumpTo(index)}><span className={styles.progressInner}>
+                {answers[key] && index !== step ? <Check size={13} aria-hidden="true" /> : null}
+              </span></button>)}
+        </div>
+      </div>
+
+      <fieldset className={styles.question} data-services-quiz-question={currentKey} key={currentKey}>
+        <legend><span ref={questionHeading} tabIndex={-1} className={styles.questionTitle}>{question.title}</span></legend>
+        <div className={styles.choices} data-question-kind={currentKey}>
+          {options.map(([value, label]) => {
+            const selected = answers[currentKey] === value;
+            const Icon = currentKey === "need" ? needIcons[value] : choiceIcons[currentKey][value];
+            return <button type="button" className={styles.choice} key={value}
+              data-services-quiz-choice={value} aria-pressed={selected}
+              onClick={() => selectOption(currentKey, value)}>
+              <Icon size={27} strokeWidth={1.7} aria-hidden="true" />
+              <span>{label}</span>
+              {selected ? <Check className={styles.check} size={16} strokeWidth={3} aria-hidden="true" /> : null}
+            </button>;
+          })}
+        </div>
+      </fieldset>
+      {step === questionKeys.length - 1 ? <button type="submit" className={styles.submit}
+        data-services-quiz-submit disabled={!ready} aria-controls="assist-recommendations">
+        {t.button}<ArrowRight size={19} aria-hidden="true" />
+      </button> : null}
+    </form>
+
+    <section className={styles.categories} data-services-quick-categories aria-labelledby="services-quiz-categories-title">
+      <div className={styles.categoryHeader}>
+        <h2 id="services-quiz-categories-title">{t.section}</h2>
+        <a href="#services-unified-heading">{t.all}<ArrowRight size={17} aria-hidden="true" /></a>
+      </div>
+      <div className={styles.categoryGrid}>
+        {categories.map(({key,image,Icon}) =>
+          <a href={"#" + serviceGroupAnchor(servicesCategoryTargets[key])} key={key}
+            className={styles.category} data-services-quiz-category={key}
+            data-services-quiz-target={servicesCategoryTargets[key]}>
+            <span className={styles.categoryMedia}>
+              <Image src={image} alt="" fill sizes="(max-width: 520px) 32vw, 160px" />
+            </span>
+            <span className={styles.categoryInfo}>
+              <span className={styles.categoryIcon}><Icon size={26} strokeWidth={1.65} aria-hidden="true" /></span>
+              <span className={styles.categoryName}>{t.categories[key]}</span>
+            </span>
+          </a>)}
+      </div>
+      <div className={styles.categoryExtras}>
+        <Link href={"/" + locale + "/shamanica"} prefetch={false}
+          data-services-shamanica-link><Leaf size={15} aria-hidden="true" /> {t.shamanica}</Link>
+        <Link href={"/" + locale + "/services?assist=chat"} prefetch={false}>{t.other}</Link>
+      </div>
+    </section>
+
+    {submitted ? <div className={styles.results} tabIndex={-1} data-services-quiz-results>
+      <p className={styles.summary} data-services-quiz-summary><strong>{t.summary}:</strong> {summary}</p>
+      <AssistTopRecommendations locale={locale} focus={focus} preferences={preferences}
+        matchingIds={matchingIds} allowedIds={matchingIds} categoryGroups noMatchLabel={t.empty} />
+    </div> : null}
+    <p className={styles.privacy}>{t.privacy}</p>
+  </section>;
+}

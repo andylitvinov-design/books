@@ -28,7 +28,7 @@ try {
     });
     const page = await ctx.newPage();
     page.setDefaultTimeout(20000);
-    const errors = [], requests = [], path = "/" + locale + "/holistic-support/mobile?view=healing";
+    const errors = [], requests = [], path = "/" + locale + "/holistic-support/mobile";
     page.on("pageerror", e => errors.push(e.message));
     await ctx.route("**/*", route => {
       const url = new URL(route.request().url());

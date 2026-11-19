@@ -1,15 +1,17 @@
 'use client'
-
 import {useEffect,useRef,useState} from 'react'
 import {PUBLIC_COACH_PERSONA_IDS} from '@/lib/coaching/persona-registry.mjs'
+import {coachVisualClip,normalizeCoachVisualScene} from '@/lib/coaching/coach-visual-cues.mjs'
 import styles from './my-coach-motion-media.module.css'
 
+// Merlin remains static. Harry uses a single verified, silent six-second MP4 loop;
+// do not request scene-specific Harry MP4 clips that do not exist.
+const VIDEO_PERSONAS=new Set(['mira','max','sofia','alex','harry'])
 const PHASES=new Set(['greeting','idle','listening','speaking'])
 const MEDIA_ROOT='/images/holistic-house/my-coach-motion/'
 
-// Decorative, silent and intentionally not a microphone/speech controller.
-// These local 24fps MP4 loops never contact a video-generation provider.
-export default function MyCoachMotionMedia({personaId,phase='idle',context='card',className=''}){
+// Decorative silent video. Never synthesizes facial movement or reads audio.
+export default function MyCoachMotionMedia({personaId,phase='idle',context='card',className='',scene}){
   const containerRef=useRef(null)
   const videoRef=useRef(null)
   const [motionAllowed,setMotionAllowed]=useState(false)
@@ -17,12 +19,13 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   const [pageVisible,setPageVisible]=useState(true)
   const [videoReady,setVideoReady]=useState(false)
   const supported=PUBLIC_COACH_PERSONA_IDS.includes(personaId)
+  const hasVideo=VIDEO_PERSONAS.has(personaId)
   const state=PHASES.has(phase)?phase:'idle'
-  // Frame-matched, seamless first-party v3 greeting on the hero, profile and
-  // public cards. Real conversation listening/speaking clips stay independent.
-  const expressiveGreeting=state==='greeting'||(state==='idle'&&context==='card')
-  const poster=supported?MEDIA_ROOT+personaId+(expressiveGreeting?'-greeting-real-v3.webp':'-still.webp'):null
-  const src=supported?MEDIA_ROOT+personaId+(expressiveGreeting?'-greeting-real-v3.mp4':'-'+state+'.mp4'):null
+  const fallbackScene=state==='greeting'?'welcome':state==='listening'?'attentive':'calm'
+  const visualScene=state==='speaking'?normalizeCoachVisualScene(scene,'explain'):fallbackScene
+  const clip=coachVisualClip(state,visualScene)
+  const poster=supported?MEDIA_ROOT+personaId+'-still.webp':null
+  const src=supported&&hasVideo?(personaId==='harry'?MEDIA_ROOT+'harry-calm.mp4':MEDIA_ROOT+personaId+'-'+clip+'.mp4'):null
 
   useEffect(()=>{
     const preference=window.matchMedia?.('(prefers-reduced-motion: reduce)')
@@ -53,11 +56,9 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
     },{rootMargin:'60px',threshold:0.05})
     observer.observe(node)
     return()=>observer.disconnect()
-  },[personaId])
-  useEffect(()=>{
-    setVideoReady(false)
-  },[src])
-  const shouldPlay=supported&&motionAllowed&&inViewport&&pageVisible
+  },[personaId,supported])
+  useEffect(()=>{setVideoReady(false)},[src])
+  const shouldPlay=supported&&hasVideo&&motionAllowed&&inViewport&&pageVisible
   useEffect(()=>{
     const video=videoRef.current
     if(!video)return
@@ -68,13 +69,17 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   if(!supported)return null
   return <span ref={containerRef} className={[styles.media,className].filter(Boolean).join(' ')}
     data-coach-motion-media={personaId} data-coach-motion-context={context}
-    data-coach-motion-state={state} data-coach-motion-clip={expressiveGreeting?'greeting-real-v3':state}
-    data-coach-motion-ready={videoReady?'true':'false'}
+    data-coach-motion-state={state} data-coach-motion-clip={hasVideo?(personaId==='harry'?'calm':clip):'still'}
+    data-coach-motion-scene={visualScene} data-coach-motion-ready={videoReady?'true':'false'}
     aria-hidden="true">
     <img src={poster} className={styles.poster} alt="" draggable={false} loading="lazy" decoding="async" />
-    {shouldPlay&&<video key={src} ref={videoRef} className={styles.video}
-      src={src} poster={poster} muted loop playsInline autoPlay preload="none"
+    {shouldPlay&&<video ref={videoRef} className={styles.video}
+      src={src} poster={poster} muted loop playsInline autoPlay preload="metadata"
       controls={false} disablePictureInPicture
       onPlaying={()=>setVideoReady(true)} onError={()=>setVideoReady(false)} />}
+    {motionAllowed&&hasVideo&&<span className={styles.sceneGraphics}>
+      <span className={styles.sceneHalo}/><span className={styles.sceneArc}/>
+      <span className={styles.scenePoint}/>
+    </span>}
   </span>
 }

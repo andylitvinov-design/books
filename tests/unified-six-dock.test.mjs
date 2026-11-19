@@ -15,7 +15,7 @@ test("one seven-button dock includes Services and My Coach on existing destinati
    "/"+locale+"/my-coach",
    "/"+locale+"/app/messages?section=ai",
    "/"+locale+"/services",
-   "/"+locale+"/holistic-support/mobile",
+   "/"+locale+"/shamanica",
    "/"+(locale==="es"?"en":locale)+"/app/portrait"
   ]);
   for(const id of UNIFIED_DOCK_IDS)assert.ok(unifiedMobileDockHref(locale,id));
@@ -26,9 +26,9 @@ test("one seven-button dock includes Services and My Coach on existing destinati
 test("shared seven-tab dock has the approved labels in every language",()=>{
  const dock=read("components/unified-mobile-dock.tsx");
  const expected={
-  en:{mytube:"MyTube",video:"MyVideo",coach:"My Coach",ai:"AI/Chat",services:"Services",practice:"Study",profile:"Profile"},
-  ru:{mytube:"MyTube",video:"MyVideo",coach:"Мой коуч",ai:"ИИ/Чат",services:"Услуги",practice:"Обучение",profile:"Профиль"},
-  es:{mytube:"MyTube",video:"MyVideo",coach:"Mi coach",ai:"IA/Chat",services:"Servicios",practice:"Estudiar",profile:"Perfil"}
+  en:{mytube:"MyTube",video:"MyVideo",coach:"My Coach",ai:"AI/Chat",services:"Support",practice:"Shamanica",profile:"Profile"},
+  ru:{mytube:"MyTube",video:"MyVideo",coach:"Мой коуч",ai:"ИИ/Чат",services:"Поддержка",practice:"Шаманика",profile:"Профиль"},
+  es:{mytube:"MyTube",video:"MyVideo",coach:"Mi coach",ai:"IA/Chat",services:"Apoyo",practice:"Shamanica",profile:"Perfil"}
  };
  for(const [locale,names] of Object.entries(expected)){
   const row=dock.split("\n").find(line=>line.trimStart().startsWith(locale+": {"));
@@ -83,7 +83,7 @@ test("Holistic House Home and Free Analysis share exactly one fixed seven-button
 
 test("route-aware single dock, guest/signed-in consistency and private pages excluded",()=>{
  for(const locale of ["en","ru","es"]){
-  for(const path of ["mytube","holistic-support/mandala","holistic-support/mobile","practice",
+  for(const path of ["mytube","holistic-support/mandala","holistic-support/mobile","shamanica","practice",
    "app/messages","app/portrait","app/practice","temple-insights","masters","my-coach","services","services/free-situation-review"]){
    assert.ok(isUnifiedMobileDockPath("/"+locale+"/"+path),path);
   }
@@ -91,6 +91,7 @@ test("route-aware single dock, guest/signed-in consistency and private pages exc
   assert.equal(unifiedMobileDockActive("/"+locale+"/holistic-support/mandala"),"video");
   assert.equal(unifiedMobileDockActive("/"+locale+"/holistic-support/mandala","#video-director-chat"),"ai");
   assert.equal(unifiedMobileDockActive("/"+locale+"/holistic-support/mobile"),"practice");
+  assert.equal(unifiedMobileDockActive("/"+locale+"/shamanica"),"practice");
   // Public Work is the second Profile mode; only the protected editor is Study.
   assert.equal(unifiedMobileDockActive("/"+locale+"/practice"),"profile");
   assert.equal(unifiedMobileDockActive("/"+locale+"/app/practice"),"practice");

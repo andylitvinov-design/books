@@ -165,7 +165,10 @@ test("video UI choices affect the actual free MP4/WebM recording and the user se
   assert.match(studio,/data-video-montage-preference="format"/);
   assert.match(studio,/data-video-montage-preference="speed"/);
   assert.match(studio,/onChange=\{event=>setSpeed\(event.currentTarget.value as Speed\)\}/);
-  assert.match(studio,/setBrightness\("bright"\)/);
+  // Brightness is automatic per chosen style, no longer a visible control.
+  assert.match(studio,/setBrightness\(index===1\|\|index===5\?"bright":"soft"\)/);
+  assert.doesNotMatch(studio,/className=\{videoStyles\.montageEffectBrightness\}/,
+    "removed Brightness selector must not return");
   assert.match(studio,/captionMode==="custom"/);
   // Selection now uses the filtered catalog's stable track IDs, not the
   // removed fixed five-preset `choice` loop. Preserve export contract below.
@@ -503,7 +506,7 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
     "approved wish and Match button precede goal, category, topic chips and the original next-stage action");
   assert.match(studio,/data-video-wish-above-goals/);
   assert.match(studio,/data-video-director-audience-controls/);
-  assert.match(read("components/mandala-auto-video-director.tsx"),/data-auto-video-audience=\{mode\}/);
+  assert.match(read("components/mandala-auto-video-director.tsx"),/changeVideoAudience\(scope==="life"\?"self":"others"\)/);
   assert.doesNotMatch(studio,/data-video-goal-audience-option/);
   assert.match(css,/data-video-scenario-open="false"[\s\S]*?data-auto-video-director\]\{display:none!important\}/);
   assert.match(studio,/data-video-director-topic-controls/);

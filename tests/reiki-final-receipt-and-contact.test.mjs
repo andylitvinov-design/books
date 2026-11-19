@@ -53,13 +53,14 @@ test("WhatsApp and Telegram draft only a generic course-next-step request", () =
     assert.doesNotMatch(message, /end-01|motivation|firstName|email|accountId|\{\s*"answers"/);
     const telegram = telegramEnquiryUrlFromWhatsApp(url);
     assert.equal(new URL(telegram).pathname, "/" + TELEGRAM_USERNAME);
-    const telegramMessage = new URL(telegram).searchParams.get("text") || "";
-    // Telegram forwards only the public service title. Detailed lesson progress
-    // and personal initiation requests are deliberately kept in WhatsApp.
-    assert.equal(telegramMessage, locale === "ru"
-      ? "Здравствуйте! Меня интересует «Reiki Practitioner». Подскажите, как оформить запрос."
-      : "Hello! I am interested in «Reiki Practitioner». Could you help me make a request?");
-    assert.doesNotMatch(telegramMessage, /пять|five|инициац|initiation|accountId|answers/i);
+    const tgUrl = new URL(telegram);
+    assert.equal(tgUrl.origin, "https://t.me");
+    assert.deepEqual([...tgUrl.searchParams.keys()], ["text"]);
+    const tgText = tgUrl.searchParams.get("text") || "";
+    // Telegram accepts only the selected public service. The longer WhatsApp
+    // request, course completion details and the public-page URL stay in WhatsApp.
+    assert.match(tgText, /Reiki Practitioner/);
+    assert.doesNotMatch(tgText, /five|пять|initiati|инициац|completed all|Я завершил|https?:\/\/|Page:|Страница:|utm_|end-01|motivation|firstName|email|accountId|answers/i);
   }
   assert.match(learner, /href=\{reikiWhatsAppUrl\}/);
   assert.match(learner, /href=\{reikiTelegramUrl\}/);

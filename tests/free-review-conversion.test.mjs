@@ -43,7 +43,7 @@ test("free landings explain benefits before closing with one short capture", () 
   const proof = landing.indexOf('data-featured-free-review-testimonials');
   const final = landing.lastIndexOf("<CompactLeadCapture");
   assert.ok(hero > 0 && hero < video && video < outcome && outcome < proof && proof < process && process < final,
-    "A separate video introduction and three visible reviews belong to the same landing");
+    "A separate video introduction and all twelve visible reviews belong to one landing");
   assert.match(landing, /kind === "tests" \? <section className=\{\[styles\.scene, styles\.processScene/,
     "Only Wu Xing hides the redundant process section");
   assert.match(landing, /data-free-review-intro-video/);
@@ -68,7 +68,7 @@ test("free landings explain benefits before closing with one short capture", () 
 test("all three locales explain real service advantages without health claims or invented diagnoses", () => {
   for (const phrase of [
     "Understand your starting point", "Лучше поймите себя", "Conoce mejor tu punto de partida",
-    "Free personal express review with Andrey.", "Личная экспресс-диагностика с Андреем.", "Revisión personal exprés gratuita con Andrey.",
+    "Tell me what's on your mind.", "Давайте разберём ваш вопрос.", "Cuéntame qué te preocupa.",
     "Discover what gives you strength.", "Узнайте, что даёт вам внутреннюю опору.",
     "Descubre qué te da fuerza.", "A symbolic guide for reflection — not a medical test.",
     "Символическая модель для самоисследования, а не медицинский тест.",
@@ -77,8 +77,8 @@ test("all three locales explain real service advantages without health claims or
     "Условный пример — не ваш персональный профиль.",
     "diagnose or treat health conditions", "не диагностируют и не лечат заболевания",
   ]) assert.ok(landing.includes(phrase), "Missing benefit/safety: " + phrase);
-  for (const phrase of ["Free personal express review with Andrey.", "Личная экспресс-диагностика с Андреем.",
-    "Revisión personal exprés gratuita con Andrey.", "Five Elements", "Пять элементов", "Cinco Elementos"]) {
+  for (const phrase of ["Tell me what's on your mind.", "Давайте разберём ваш вопрос.",
+    "Cuéntame qué te preocupa.", "Five Elements", "Пять элементов", "Cinco Elementos"]) {
     assert.ok(landing.includes(phrase) || situationPage.includes(phrase) || daoPage.includes(phrase), phrase);
   }
   assert.doesNotMatch(landing + capture, /guaranteed cure|лечим все|100% success|medical diagnosis provided/i);
@@ -90,9 +90,9 @@ test("free drawing entry reuses private intake without duplicate collection or m
   assert.match(landing, /<FreeSituationReviewForm locale=\{locale\} \/>/);
   assert.match(form, /<FreeDrawingIntake locale=\{locale\}/);
   assert.match(intake, /\/coaching\/intake\?topic=/);
-  assert.match(intake, /Sign in to save an encrypted private draft/);
-  assert.match(intake, /Saving does not send it to a coach/);
-  assert.match(intake, /Keep the photo on your device/);
+  assert.match(intake, /Sign in to keep a private, encrypted draft/);
+  assert.match(intake, /Saving the draft doesn't send it to Andrey/);
+  assert.match(intake, /Keep any photo on your own device/);
   assert.doesNotMatch(intake, /<form|<textarea|navigator\.clipboard|ContactChannelChooser|whatsappEnquiryUrl|localStorage|sessionStorage|fetch\(|sendBeacon/);
   assert.match(intakeCss, /@media\(max-width:767px\)/);
 });
@@ -131,14 +131,24 @@ test("mobile layout offers one meaning per screen, authentic images, and accessi
   assert.match(landing, /"\/images\/holistic-house\/andy-about\.png"/);
   assert.match(landing, /"\/images\/holistic-house\/course-start-heron\.webp"/);
   assert.match(landing, /"\/academy\/reiki-yggdrasil\/source\/eastern-tradition\.png"/);
-  assert.match(landing, /<PersonalTestimonials locale=\{locale\} variant="all" \/>/);
+  assert.match(landing, /const reviewVideos = kind === "situation"/);
+  assert.match(landing, /reviewVideos\.map/);
+  assert.match(landing, /data-review-list-direction="vertical"/);
+  assert.match(landing, /data-review-count=\{reviewVideos\.length\}/);
+  assert.doesNotMatch(landing, /<LazyPersonalTestimonials|featuredReviewVideos|reviewSwipeHint/);
   assert.match(landing, /<PersonalExpressEnquiry locale=\{locale\} intro=\{/);
   assert.doesNotMatch(landing, /<FreeDiagnosisOffers/);
   assert.match(read("components/personal-express-enquiry.tsx"), /data-personal-express-enquiry/);
-  assert.match(landing, /data-review-stories/);
+  assert.doesNotMatch(landing, /data-review-stories/);
+  assert.match(css, /\.reviewPreviewGrid\{display:flex;flex-direction:column/);
+  assert.doesNotMatch(css, /grid-auto-flow:column|scroll-snap-type:x mandatory/);
+  assert.match(css, /\.reviewPreviewCard :global\(\.site-video-title\)\{color:#143d3a/);
+  assert.match(css, /\.reviewPreviewCard :global\(\.site-video-poster-title\)\{display:none\}/);
   assert.match(css, /\.reviewBenefitsList/);
   assert.match(css, /\.reviewProcess/);
   assert.match(css, /\.reviewApproach/);
+  assert.match(css, /font-size:17px;line-height:1\.58/);
+  assert.match(css, /\.reviewBenefitsList p,[\s\S]*?\.approachList p,[\s\S]*?\.reviewSteps p\{font-size:16px/);
   assert.match(landing, /id="how-i-review"/);
 });
 
@@ -150,8 +160,17 @@ test("express review WebKit reveal stays immediately below its button throughout
   assert.match(express, /data-express-inline-disclosure hidden=\{!expanded\}/);
   assert.match(express, /const closeDisclosure = useCallback\(\(\) => \{/);
   assert.match(express, /window\.history\.replaceState\(window\.history\.state/);
-  assert.match(express, /if \(expanded\) closeDisclosure\(\); else setExpanded\(true\)/);
-  assert.match(express, /event\.key === "Escape"[\s\S]*?closeDisclosure\(\)/);
+  assert.match(express, /if \(expandedRef\.current\) closeDisclosure\(\); else openDisclosure\(\)/);
+  assert.match(express, /const expandedRef = useRef\(false\)/);
+  assert.match(express, /window\.addEventListener\("keydown", onEscape, true\)/);
+  assert.match(express, /\}, \[closeDisclosure\]\);/);
+  // A touch on a non-focusable choice can place focus on body at 320px.
+  // An expanded form still closes on Escape; a nested active modal takes priority.
+  assert.match(express, /event\.key !== "Escape"/);
+  assert.match(express, /panelRef\.current\?\.hidden !== false/);
+  assert.match(express, /event\.preventDefault\(\)/);
+  assert.match(express, /activeDialog\?\.contains\(document\.activeElement\)\) return/);
+  assert.match(express, /closeDisclosure\(\);\s*revealRef\.current\?\.focus\(\)/);
   assert.match(read("scripts/verify-free-review-live-mobile.mjs"), /closing clears the stale review anchor/);
   assert.match(expressCss, /\.disclosure\[hidden\]\{display:none!important\}/);
   assert.match(expressCss, /@keyframes expressUnfold\{from\{opacity:0\}to\{opacity:1\}\}/);
@@ -188,4 +207,40 @@ test("mobile browser acceptance taps the entire focus card and validates the nat
   assert.match(script, /"focus change never creates hidden consent or unverified web submission"/);
   assert.match(script, /"changing the selected focus never fabricates a CRM lead"/);
   assert.match(css, /\.choice\{[^}]*min-height:94px/);
+});
+
+
+test("free-review closing messenger buttons stay compact without losing either action", () => {
+  const entry = read("components/telegram-diagnostic-entry.tsx");
+  const entryCss = read("components/telegram-diagnostic-entry.module.css");
+  assert.match(landing, /className=\{styles\.reviewContact\}/);
+  assert.match(landing, /<TelegramDiagnosticEntry locale=\{locale\} \/>/);
+  assert.match(entryCss, /:global\(\[data-personal-express-enquiry\]\) \.entry/);
+  assert.match(entryCss, /:global\(\[data-personal-express-enquiry\]\) \.content p/);
+  assert.match(entryCss, /:global\(\[data-personal-express-enquiry\]\) \.channels/);
+  for (const channel of ["telegram", "whatsapp-manual"]) {
+    assert.ok(entry.includes('data-express-review-channel="' + channel + '"'));
+  }
+  assert.match(entryCss, /@media \(max-width: 580px\)/);
+});
+
+test("free review has six native, photo-led FAQs at the very end in EN, RU and ES", () => {
+  const anchor = landing.indexOf('data-free-review-faq');
+  const enquiry = landing.indexOf('</PersonalExpressEnquiry>');
+  assert.ok(anchor > enquiry, "FAQ comes after the working request form");
+  assert.match(landing, /id="free-review-faq" data-free-review-faq/);
+  assert.match(landing, /<Image src=\{images\.process\} alt=\{t\.processAlt\} fill/);
+  assert.match(landing, /\{t\.faq\.map\(\(\[question, answer\]\) => \(/);
+  assert.match(landing, /<details key=\{question\} className=\{styles\.reviewFaqItem\}>/);
+  assert.match(landing, /<summary><span>\{question\}<\/span>/);
+  assert.match(landing, /href="#request-free-review"/);
+  for (const localeQuestion of [
+    "How do I begin?", "Как начать?", "¿Cómo empiezo?",
+    "What about my privacy?", "Что с конфиденциальностью?", "¿Qué ocurre con mis datos privados?",
+  ]) assert.ok(landing.includes(localeQuestion), localeQuestion);
+  assert.match(css, /\.reviewFaqItem>summary\{/);
+  assert.match(css, /\.reviewFaqItem>summary:focus-visible/);
+  assert.match(css, /\.reviewFaqItem\[open\]/);
+  assert.match(css, /\.reviewFaqPhoto/);
+  assert.match(css, /@media\(max-width:720px\)/);
 });

@@ -11,7 +11,8 @@ const directory = read('components/services-directory-page.tsx')
 
 test('the real dedicated Spanish services route renders a complete existing conversion page', () => {
   assert.match(es, /export default async function SpanishServicesPage/)
-  assert.match(es, /<main className=\{"services-shell services-shell--studio " \+ assistStyles\.assistPage \+ " " \+ compactStyles\.page\} lang="es">/)
+  assert.ok(es.includes('import uniformStyles from "@/components/services-support-uniform.module.css"'))
+  assert.ok(es.includes('compactStyles.page + " " + uniformStyles.page} lang="es"'))
   assert.match(es, /<ServicesCompactCatalog locale="es">/)
   assert.ok(es.indexOf('<ServicesAssistMobile locale="es" />')<es.indexOf('<ServicesCompactCatalog locale="es">'),'Spanish dialogue remains above compact catalog')
   assert.match(es, /<ServicesAssistMobile locale="es"\s*\/>/)
@@ -37,7 +38,8 @@ test('Spanish catalog already reuses the canonical practitioner directory withou
 })
 
 test('Spanish page keeps explicit, working navigation into the original optional catalog', () => {
-  assert.match(es, /if \(\(await searchParams\)\?\.catalog === "1"\) redirect\("\/es\/services\/catalog#service-listings"\)/)
+  assert.match(es, /const query = await searchParams;/)
+  assert.match(es, /if \(query\?\.catalog === "1"\) redirect\("\/es\/services\/catalog#service-listings"\)/)
   assert.match(es, /<ServicesDirectoryInvitation locale="es"\s*\/>/)
   assert.match(es, /spanishMetadata\(/)
   assert.match(es, /"\/es\/services"/)
@@ -46,7 +48,13 @@ test('Spanish page keeps explicit, working navigation into the original optional
 test('EN/RU shared services are preserved; Spanish has separate existing routes', () => {
   assert.match(shared, /export default async function ServicesPage/)
   assert.match(sharedCatalog, /export default async function DirectoryRoute/)
-  assert.match(shared, /<PublicConsultationCta locale=\{locale as Locale\}/)
+  assert.match(shared, /<PublicConsultationCta locale=\{locale\}/)
+  assert.match(shared, /<ServicesCompactPanel id="consultation">/)
+  assert.match(shared, /<ServicesCompactPanel id="mytube">/)
+  assert.match(shared, /<ServicesAssistQuiz locale=\{locale\} \/>/)
+  assert.match(es, /<ServicesAssistQuiz locale="es" \/>/)
+  assert.match(shared, /query\?\.assist==="chat"/)
+  assert.match(es, /query\?\.assist==="chat"/)
   assert.match(sharedCatalog, /<ServicesDirectoryPage locale=\{locale as Locale\}/)
   assert.doesNotMatch(es, /service_role|SUPABASE_SECRET|navigator\.sendBeacon/)
   assert.doesNotMatch(esCatalog, /service_role|SUPABASE_SECRET/)

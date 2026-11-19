@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
-import {HOLISTIC_TELEGRAM_ACCOUNT,telegramServiceRequestDraft,telegramServiceRequestUrl,parseTelegramServiceDraft,telegramBusinessRequestFromUpdate,isHolisticBusinessConnection,telegramBusinessRequestReply,telegramBusinessMessageFromUpdate,
- telegramBusinessClientChoice,telegramBusinessConversationReply,telegramBusinessServiceTitle} from '../lib/assist/telegram-business-request.mjs';
+import {HOLISTIC_TELEGRAM_ACCOUNT,telegramServiceRequestDraft,telegramServiceRequestUrl,parseTelegramServiceDraft,parseTelegramPublicServiceRequest,telegramBusinessRequestFromUpdate,isHolisticBusinessConnection,telegramBusinessRequestReply,telegramBusinessMessageFromUpdate,
+ telegramBusinessClientChoice,telegramBusinessConversationReply,telegramBusinessServiceTitle,detectTelegramMessageLocale} from '../lib/assist/telegram-business-request.mjs';
 const get=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('15 real service request drafts are filled into a normal user chat, no /start',()=>{
  assert.equal(HOLISTIC_TELEGRAM_ACCOUNT,'holistichouse');
@@ -56,8 +56,17 @@ test('Assist and signed Telegram webhook preserve bot diagnostics, prefill, limi
  // The current Assist renders product cards by item.requestId; the older
  // direct-id lookup is retained as a supported call shape.
  assert.match(ui,/telegramServiceRequestUrl\((?:id|item\.requestId),locale\)/);
- assert.match(ui,/target="_blank"/);
- assert.match(ui,/data-assist-best-action=\{id\}/);
+ const controls=get('components/services-card-actions.tsx');
+ const channels=get('components/mandatory-messenger-actions.tsx');
+ assert.ok(ui.includes('ServicesCardActions'));
+ assert.ok(ui.includes('actionTrackingId={id}'));
+ assert.ok(ui.includes('telegramUrl={id==="review"'));
+ assert.ok(controls.includes('data-assist-best-action={actionTrackingId}'));
+ assert.ok(controls.includes('MandatoryMessengerActions'));
+ assert.ok(channels.includes('target="_blank"'));
+ assert.ok(channels.includes('data-messenger-only-channel="whatsapp"'));
+ assert.ok(channels.includes('data-messenger-only-channel="telegram"'));
+
  assert.match(route,/verifyMessengerWebhook\(provider,raw,request.headers\)/);
  assert.match(route,/processTelegramBusinessConversation\(body,config\)/);
  assert.match(get('lib/crm/telegram-business-service.js'),/HH_CRM_TG_CHAT_AUTOMATION_ENABLED!=='true'/);
@@ -128,20 +137,26 @@ test('the actual locked state machine requires initial request, format and disti
    if(sql.startsWith('select * from app_private.crm_tg_business_service_sessions'))
     return {rows:row?[{...row}]:[]};
    if(sql.startsWith('insert into app_private.crm_tg_business_service_sessions')){
-    row={operation_id:args[2],practitioner_id:args[3],service_key:args[4],
-      locale:args[5],stage:'format',delivery_format:null,
-      consent_at:null,reference_code:null,last_update_id:args[6]};
+    const review=sql.includes("'personal_review'");
+    row={operation_id:args[3],practitioner_id:args[4],service_key:review?'personal_review':args[5],
+      offer_id:review?args[5]:null,source_path:review?args[6]:null,
+      locale:review?args[7]:args[6],telegram_peer_hash:args[2],
+      stage:review?'review_understanding':'format',delivery_format:null,
+      consent_at:null,reference_code:null,last_update_id:args[review?8:7]};
     return {rows:[]};
    }
    if(sql.startsWith('update app_private.crm_tg_business_service_sessions')){
-    if(sql.includes("stage='stopped'"))row.stage='stopped';
+    if(sql.includes('set stage=$3'))row.stage=args[2];
+    else if(sql.includes("stage='stopped'"))row.stage='stopped';
     else if(sql.includes("stage='cancelled'"))row.stage='cancelled';
     else if(sql.includes("stage='confirm'")){
-      row.stage='confirm';row.delivery_format=args[2];
+      row.stage='confirm';row.delivery_format=sql.includes("delivery_format='async'")?'async':args[2];
     }else if(sql.includes("stage='committing'")){
       row.stage='committing';row.consent_at=new Date().toISOString();
     }
-    row.last_update_id=args[sql.includes('delivery_format=$3')?3:2];
+    row.last_update_id=sql.includes('set stage=$3')?args[3]:
+      sql.includes("delivery_format='async'")?args[2]:
+      args[sql.includes('delivery_format=$3')?3:2];
     return {rows:[],rowCount:1};
    }
    throw new Error('UNRECOGNIZED SQL: '+sql.slice(0,65));
@@ -152,11 +167,12 @@ test('the actual locked state machine requires initial request, format and disti
    randomUUID:()=> '11111111-1111-4111-8111-111111111111',
    PRACTITIONER_ID:'246aa1a3-a371-5a83-9f4b-cd23ff027a76',
    telegramBusinessClientChoice,telegramBusinessConversationReply,
+   detectTelegramMessageLocale,
    webhookTransaction:async(_config,fn)=>fn(mock),
    Date,Number,String,
  },{codeGeneration:{strings:false,wasm:false}});
  vm.runInContext(reply+body,context,{timeout:2000});
- const k={business:'a'.repeat(64),user:'b'.repeat(64),lock:'synthetic-lock'};
+ const k={business:'a'.repeat(64),user:'b'.repeat(64),peer:'c'.repeat(64),lock:'synthetic-lock'};
  const event=(text,updateId,request=null)=>({
    connectionId:'synthetic-business-connection',chatId:'123456789',
    messageId:updateId,updateId,text,request,
@@ -190,6 +206,33 @@ test('the actual locked state machine requires initial request, format and disti
  assert.equal(afterStop.commit,undefined);
  assert.equal(row.stage,'stopped');
  assert.equal(recorded.slice(attempts).some(x=>x.sql.startsWith('insert into ')),false);
+
+ row=null;
+ const review=await context.stage(event('site request',31,{
+  service:'personal_review',offerId:'personal_extended_review',locale:'en',
+  name:'Extended review',sourcePath:'/en/services'}),{},k);
+ assert.equal(row.service_key,'personal_review');
+ assert.equal(row.offer_id,'personal_extended_review');
+ assert.equal(row.stage,'review_understanding');
+ assert.match(review.reply,/Extended review/);
+ const reminder=await context.stage(event('Услугу я ж заказал',32),{},k);
+ assert.match(reminder.reply,/Extended review/);
+ assert.match(reminder.reply,/Извините/iu);
+ assert.equal(row.offer_id,'personal_extended_review');
+ const situation=await context.stage(event('The situation is about work.',33),{},k);
+ assert.equal(row.stage,'review_outcome');
+ assert.match(situation.reply,/helpful outcome/);
+ const outcome=await context.stage(event('I want clarity.',34),{},k);
+ assert.equal(row.stage,'review_action');
+ assert.match(outcome.reply,/Send request/);
+ const request=await context.stage(event('Send request',35),{},k);
+ assert.equal(row.stage,'confirm');
+ assert.equal(row.delivery_format,'async');
+ assert.match(request.reply,/Confirm/);
+ const confirmation=await context.stage(event('Confirm',36),{},k);
+ assert.equal(row.stage,'committing');
+ assert.equal(confirmation.commit.service,'personal_review');
+ assert.equal(confirmation.commit.format,'async');
 });
 test('only explicit confirmed provider session can create an existing encrypted CRM enquiry',()=>{
  const source=get('lib/crm/telegram-business-service.js');
@@ -251,9 +294,9 @@ test('one atomic CRM transaction for enquiry + session, STOP/Cancel uses same lo
  assert.ok(begin>0&&end>begin);
  const backend=source.slice(begin,end);
  assert.match(backend,/await lock\(db,intent.lock\)/);
- assert.match(backend,/const finalize=async\(id,referenceCode\)=>/);
- assert.match(backend,/return finalize\(id,ref\)/);
- assert.match(backend,/return finalize\(prior.id,prior.reference_code\)/);
+ assert.match(backend,/const finalize=async\(id,referenceCode,contactId\)=>/);
+ assert.match(backend,/return finalize\(id,ref,contactId\)/);
+ assert.match(backend,/return finalize\(prior.id,prior.reference_code,state.contact_id\|\|null\)/);
  assert.match(backend,/and stage='committing' and consent_at is not null/);
  assert.match(backend,/if\(marked.rowCount!==1\)throw new AppError/);
  assert.doesNotMatch(source,/async function complete\(/);
@@ -291,4 +334,59 @@ test('first signed Telegram Business enquiry sends the existing female avatar ex
  assert.ok(first>0&&photo>first&&message>photo,'must await photo first, then send text');
  assert.ok(route.indexOf('await sendHolisticBusinessWelcomePhoto(',photo+1)<0,'welcome only in first request branch');
  assert.match(route,/HH_TG_BUSINESS_WELCOME_PHOTO_NOT_CONFIRMED/);
+});
+
+test('exact published Business Strategy & Archetypal Coaching site request begins a signed personal Telegram Business dialogue',()=>{
+ const publicTitles={
+  en:'Business Strategy & Archetypal Coaching',
+  ru:'Бизнес-консалтинг и архетипический коучинг',
+  es:'Consultoría de negocios y coaching arquetípico',
+ };
+ const intro={en:'Hello! I am interested in «',ru:'Здравствуйте! Меня интересует «',
+   es:'¡Hola! Me interesa «'};
+ const end={en:'». Could you help me make a request?',
+   ru:'». Подскажите, как оформить запрос.',
+   es:'». ¿Cómo puedo solicitarlo?'};
+ const content=get('data/business-consulting-copy.ts');
+ for(const locale of ['en','ru','es']){
+  const title=publicTitles[locale];
+  assert.ok(content.includes('"title": "'+title+'"'),
+   'The source of truth for the published '+locale+' service changed');
+  const message=intro[locale]+title+end[locale];
+  const parsed=parseTelegramPublicServiceRequest(message);
+  assert.equal(parsed?.service,'business');
+  assert.equal(parsed?.locale,locale);
+  assert.equal(parsed?.name,telegramBusinessServiceTitle('business',locale));
+  // The normal web URL is not an automatic CRM lead or a bot login.
+  assert.equal(parseTelegramServiceDraft(message),null);
+  const signed=fixture();
+  signed.business_message.text=message;
+  assert.equal(telegramBusinessMessageFromUpdate(signed)?.request?.service,'business');
+  assert.equal(telegramBusinessRequestFromUpdate(signed)?.service,'business');
+  const first=telegramBusinessConversationReply('format',parsed);
+  assert.ok(first?.length>20&&first.length<600);
+  assert.doesNotMatch(first,/start=|@holistichouse_bot|https?:/);
+  for(const mutate of [
+   v=>{v.business_message.from.id=999},
+   v=>{v.business_message.chat.type='channel'},
+   v=>{v.business_message.sender_business_bot={id:999}},
+   v=>{v.business_message.forward_origin={type:'user'}},
+   v=>{v.business_message.date=0},
+  ]){
+   const altered=structuredClone(signed);mutate(altered);
+   assert.equal(telegramBusinessMessageFromUpdate(altered),null);
+  }
+ }
+ for(const text of [
+  'Hello! I am interested in «Business Strategy & Archetypal Coaching». Private documents attached.',
+  'Hello! I am interested in «Business Strategy & Archetypal Coaching»',
+  'Hello! I am interested in «Other Business». Could you help me make a request?',
+  'Hello! I am interested in «Business Strategy & Archetypal Coaching». Could you help me make a request? [HH-REQ:reiki:en]',
+  '/stop','What is your coaching price?','x'.repeat(400),null
+ ])assert.equal(parseTelegramPublicServiceRequest(text),null);
+ const handler=get('lib/crm/telegram-business-service.js');
+ assert.match(handler,/const action=telegramBusinessClientChoice\(event\.text\),request=event\.request/);
+ assert.match(handler,/if\(request&&\(!old\|\|old\.stage==='submitted'/);
+ assert.match(handler,/response\(event,request\.locale,request\.service,'format'\)/);
+ assert.match(handler,/assertHolisticBusinessConnection/);
 });
