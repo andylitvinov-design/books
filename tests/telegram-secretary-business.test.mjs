@@ -245,7 +245,7 @@ test('new FAQs do not hijack personal messages, STOP, published named prices or 
  assert.equal(classifyTelegramSecretaryQuery('рейки','ru').kind,'catalog');
 });
 
-test('free-review website always opens the verified HUMAN Telegram account, regardless of bot readiness',()=>{
+test('free-review website starts the consented Ali Telegram bot; manual Telegram Business remains independent',()=>{
  const view=f('components/telegram-diagnostic-entry.tsx');
  const source=f('lib/crm/express-review-channel-handoff.mjs');
  const expected={
@@ -257,20 +257,20 @@ test('free-review website always opens the verified HUMAN Telegram account, rega
   const link=telegramExpressReviewHandoff(locale);
   const uri=new URL(link);
   assert.equal(uri.origin,'https://t.me');
-  assert.equal(uri.pathname,'/holistichouse');
-  assert.deepEqual([...uri.searchParams.keys()],['text']);
-  assert.equal(uri.searchParams.get('text'),draft);
+  assert.equal(uri.pathname,'/holistichouse_bot');
+  assert.deepEqual([...uri.searchParams.keys()],['start']);
+  assert.equal(uri.searchParams.get('start'),'hhreview_'+locale);
   assert.equal(matchTelegramFreeReviewDraft(draft)?.locale,locale);
   assert.ok(view.includes(locale==='ru'?'Написать в Telegram':
      locale==='es'?'Escribir a Andrey por Telegram':'Write on Telegram'));
  }
  assert.equal(telegramExpressReviewHandoff('invalid'),null);
  assert.match(source,/telegramExpressReviewHandoff/);
- assert.match(view,/data-telegram-route="human-business"/);
+ assert.match(view,/data-telegram-route="ali-free-diagnostic-v3"/);
  assert.doesNotMatch(view,/\/api\/public\/telegram-diagnostic|setTelegramUrl|telegramUnavailable|Telegram is not available right now|hhreview_/);
- assert.match(view,/The link opens a chat, but doesn't send a message/);
-  assert.match(view,/use the secure questionnaire for private documents/);
- assert.match(view,/Ссылка открывает чат, но ничего не отправляет/);
-  assert.match(view,/Личные документы — только через защищённую анкету/);
+ assert.match(view,/Opening Telegram does not send your request/);
+ assert.match(view,/Открытие Telegram не создаёт заявку/);
+ assert.match(view,/secure questionnaire/);
+ assert.match(view,/защищённую анкету/);
  assert.doesNotMatch(view,/HH_CRM_MSG_TELEGRAM_TOKEN|https?:\/\/openrouter\.ai/i);
 });
