@@ -18,6 +18,7 @@ import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.
 import { progressConversationTurn,progressDialogueReply } from "@/lib/holistic-support/dialogue-progression.mjs";
 import { nativeSecretaryTurn } from "@/lib/holistic-support/native-secretary.mjs";
 import { waveNativeTurn,WAVE_NATIVE_ROUTER_VERSION } from "@/lib/holistic-support/wave-native-router.mjs";
+import {planDialogueDirectorTurn,publicDialogueDirectorState} from "@/lib/holistic-support/dialogue-director.mjs";
 import { resolveComplaintTurn } from "@/lib/holistic-support/complaint-mind.mjs";
 import { reviewPracticeBoundary } from "@/lib/holistic-support/practice-boundary.mjs";
 import { consultServiceQuestion, resolveConsultantSuggestion } from "@/lib/assist/consultant-mind.mjs";
@@ -225,6 +226,16 @@ export async function POST(request) {
     // Wave Magic Director shares modes and empathy after host authentication/safety.
     const wavePlan=planWaveMagicTurn({message:body.message,locale:body.locale,
       history:body.history,selectedGoal:body.selectedGoal,safety,channel:"web"});
+    // Read-only plan after authentication, safety and throttling; never a permission.
+    const dialogueDirector=body.mode==="rules"&&safety.status==="clear"&&!recentUnsafe&&
+      body.judgmentContext==null&&body.judgmentChoice==null&&
+      body.usePrivateProfile!==true&&body.usePrivateHistory!==true&&
+      body.useAgentMemory!==true&&body.preferredFormat==null&&
+      (!body.chosenAxes||body.chosenAxes.length===0)
+      ?planDialogueDirectorTurn({message:body.message,locale:body.locale,
+        history:body.history,
+        roleHint:wavePlan.roleDecision.role,
+        psychologistConsent:false,selectedService:false,safety}):null;
     const finish=async (data,{pendingAdviceConfirmation=false}={})=>{
       // Server already verified catalogue provenance; do not invent options.
       if(Array.isArray(data.suggestions)){
@@ -235,6 +246,9 @@ export async function POST(request) {
       data={...data,alchemy:{version:wavePlan.version,mode:wavePlan.mode,
         depth:wavePlan.depth,intent:wavePlan.intent,dialogueStage:wavePlan.dialogueStage,
         nextAction:wavePlan.nextAction,consentRequired:wavePlan.consentRequired}};
+      // Exposes only phase and explicit-evidence flags, never a client transcript.
+      if(dialogueDirector&&data?.status!=="safety_handoff")
+        data={...data,dialogueDirector:publicDialogueDirectorState(dialogueDirector)};
       if(nativeFrame){
         const clearChoices=['stop','new_question','cancel_to_talk','decline_booking','clear_topic','clear_goal_statement','refuse_advice','pause_topic','choose'].includes(stateEvent.type) ||
           (stateEvent.type==='refuse_meditation'&&!stateEvent.mixed);
@@ -454,15 +468,18 @@ export async function POST(request) {
       ["rules","owned"].includes(body.mode)
       ? consultServiceQuestion({message:body.message,locale:body.locale,history:body.history})
       : null;
+    // Show at most two published relevant options in ordinary chat.
+    const consultantChoices=Array.isArray(consultation?.suggestions)?
+      consultation.suggestions.slice(0,2):[];
     if(consultation)return await finish({
       status:consultation.status,reply:consultation.reply,
       mindRole:["choose","quality","compare"].includes(consultation.intent)?"sales":"consultant",
       modelUsed:false,source:"consultant-rules",
-      memorySaved:false,userAuthorized:true,suggestions:consultation.suggestions,
+      memorySaved:false,userAuthorized:true,suggestions:consultantChoices,
       usedSavedTestEvidence:false,usedSavedVideoHistory:false,
       browserModelAllowed:false,
       decision:{status:consultation.status,message:consultation.reply,
-        question:null,suggestions:consultation.suggestions},
+        question:null,suggestions:consultantChoices},
     });
     if(nativeFrame&&!judgmentPriority&&body.judgmentContext==null&&body.judgmentChoice==null&&
        stateEvent.type==='ask_price'&&(nativeFrame.state.goal||nativeFrame.state.goalStatement)){
