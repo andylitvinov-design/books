@@ -422,7 +422,13 @@ async function verifyWorkspaceHydration(browser,locale){
     const birthday=page.locator('[data-auto-video-recipient-occasion="birthday"]');
     await birthday.click();
     await expect(birthday).toHaveAttribute("aria-pressed","true");
-    await continueToIdeas.click();
+    // Work uses the real visible first-screen CTA; the old scenario button
+    // remains hidden in this mobile mode. Both call the same continueToIdeas
+    // handler, which validates the selected recipient before opening Ideas.
+    const workContinue=page.locator("[data-video-goal-create-cta]");
+    await expect(workContinue).toBeVisible();
+    await expect(workContinue).toBeEnabled();
+    await workContinue.click();
     await expect(ideas).toHaveAttribute("aria-pressed","true");
     await expect(studio).toHaveAttribute("data-active-workspace","phrases");
     // These are the actual source-backed montage title inputs; source edits
