@@ -45,6 +45,10 @@ on:
       # Public Ali greeting and support quiz: focused conversation owner; private Messenger/auth changes keep full tests.
       - '!components/app/messenger-ai-landing.*'
       - '!components/app/messenger-support-quiz.*'
+      # Only the decorative Profile Space CSS module. Its visual/viewport
+      # behavior remains covered by exact-HEAD Core + App R1. Never exclude
+      # TSX/auth/CRM/private data, mixed PRs, or the whole components/app tree.
+      - '!components/app/profile-space-dashboard.module.css'
   workflow_dispatch:
 permissions:
   contents: read

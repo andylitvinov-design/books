@@ -340,3 +340,31 @@ test('signed CRM and Commander isolated postmerge changes cannot restart whole r
   assert.match(push,/'lib\/documents\/report-progress\.js'/);
   assert.match(workflow,/^  pull_request:/m,'real PR report validation retained');
 });
+test('cosmetic Profile CSS does not invoke heavy private IA; real private source remains gated',()=>{
+  const ia=trigger('ia-v2.yml');
+  const app=trigger('hh-app-r1.yml');
+  const cosmetic='components/app/profile-space-dashboard.module.css';
+  const homeProfileFiles=[
+    cosmetic,
+    'components/home-dialogue-entry.module.css',
+    'components/sitewide-ihelp.module.css',
+    'tests/home-profile-iphone-viewport.test.mjs',
+  ];
+  assert.equal(matchesTrigger(ia,[cosmetic],TARGET),false,
+    'prevent thousand-test encrypted IA/Postgres/Redis pipeline from cosmetic CSS');
+  assert.equal(matchesTrigger(ia,homeProfileFiles,TARGET),false,
+    'visual-only PR #5000 should not need unrelated encrypted IA');
+  assert.equal(matchesTrigger(app,[cosmetic],TARGET),true,
+    'profile App R1 must remain the actual regression owner');
+  for(const owned of [
+    'components/app/profile-space-dashboard.jsx',
+    'components/app/profile-space-dashboard.tsx',
+    'components/app/account-summary.module.css',
+    'app/api/app/client/profile/route.js',
+    'lib/app/owner-session.js',
+    'supabase/migrations/20261119050000_private_users.sql'
+  ]) assert.equal(matchesTrigger(ia,[owned],TARGET),true,
+    'real source, private CSS, auth or migration still requires full IA: '+owned);
+  assert.equal(matchesTrigger(ia,[cosmetic,'components/app/profile-space-dashboard.jsx'],TARGET),
+    true,'a mixed CSS + runtime PR must still execute full IA');
+});
