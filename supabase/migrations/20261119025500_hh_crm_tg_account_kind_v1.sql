@@ -6,16 +6,27 @@ BEGIN;
 ALTER TABLE app.crm_msg_accounts
   ADD COLUMN IF NOT EXISTS account_kind text NOT NULL DEFAULT 'primary';
 
-ALTER TABLE app.crm_msg_accounts
-  ADD CONSTRAINT crm_msg_accounts_kind_check
-  CHECK (account_kind='primary' OR
-    (channel='telegram' AND account_kind='business'));
-
--- Existing rows are automatically 'primary'. Do not rewrite IDs, ownership,
--- content, contact associations, message receipts, or past opt-out states.
-ALTER TABLE app.crm_msg_accounts
-  ADD CONSTRAINT crm_msg_accounts_owner_channel_kind_key
-  UNIQUE (owner_id,channel,account_kind);
+-- Also safe on environments where the reviewed SQL has already been applied.
+DO $ddl$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_constraint
+      WHERE conrelid='app.crm_msg_accounts'::pg_catalog.regclass
+        AND conname='crm_msg_accounts_kind_check') THEN
+    ALTER TABLE app.crm_msg_accounts
+      ADD CONSTRAINT crm_msg_accounts_kind_check
+      CHECK (account_kind='primary' OR
+        (channel='telegram' AND account_kind='business'));
+  END IF;
+  -- Existing rows are already 'primary'. Keep their original identity/threads.
+  IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_constraint
+      WHERE conrelid='app.crm_msg_accounts'::pg_catalog.regclass
+        AND conname='crm_msg_accounts_owner_channel_kind_key') THEN
+    ALTER TABLE app.crm_msg_accounts
+      ADD CONSTRAINT crm_msg_accounts_owner_channel_kind_key
+      UNIQUE (owner_id,channel,account_kind);
+  END IF;
+END;
+$ddl$;
 
 -- Old uniqueness prevented Bot + Business under one owner. Only remove it
 -- AFTER the stronger subtype-aware owner key exists in this transaction.
