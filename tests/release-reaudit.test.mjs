@@ -365,7 +365,7 @@ test('release re-audit follows current My Space Today guest Profile and explicit
     "toHaveAttribute('data-csp-class', 'private')",
     "locator('[data-cabinet-guest-overview]')",
     "locator('a[href=\"/en/client/tests\"]')",
-    "locator('[data-profile-hub-tabs] [data-profile-tab=\"today\"]')",
+    "locator('[data-profile-space-life]')",
     "locator('[data-profile-tests-first], [data-my-tests-dashboard], [data-profile-results-archive]')).toHaveCount(0)",
     "locator('.mobile-bottom-navigation')).toHaveCount(0)",
     "cspPage.goto(origin + '/en/personality-profiles', { waitUntil: 'domcontentloaded' })",

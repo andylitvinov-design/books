@@ -198,8 +198,13 @@ try{
       // Prove that the editor has hydrated before exercising the separately
       // hydrated header's EN/RU event; an SSR-only click is not an E2E action.
       const videoLanguage = target.locator('.site-video-language-picker button')
-      await videoLanguage.nth(1).click()
-      await expect(videoLanguage.nth(1)).toHaveAttribute('aria-pressed', 'true')
+      // SSR can expose the button before React has attached click handlers.
+      // Keep the same real user gesture and exact asserted outcome; retry
+      // only until hydration acknowledges a visible language change.
+      await expect(async () => {
+        await videoLanguage.nth(1).click()
+        await expect(videoLanguage.nth(1)).toHaveAttribute('aria-pressed', 'true', { timeout: 1800 })
+      }).toPass({ intervals: [250, 500, 1000], timeout: 12_000 })
       await videoLanguage.nth(0).click()
       await expect(videoLanguage.nth(0)).toHaveAttribute('aria-pressed', 'true')
       const ru = target.locator('.prescription-admin-header button[lang="ru"]')

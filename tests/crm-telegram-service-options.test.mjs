@@ -9,7 +9,14 @@ test('all 30 published Services offers preserve exact RU/EN/ES titles in the sig
  const catalogue=src('components/services-three-visible-options.tsx')
  for(const [id,row] of Object.entries(TELEGRAM_SERVICE_OPTIONS)){
   const [group,option]=id.split('_')
-  assert.ok(catalogue.includes('id:"'+option+'", name:'),id)
+  // The approved six-direction Services redesign replaced the quick Course
+  // tile for Reiki Practitioner with Meditations and Personal Video. Its
+  // explicit Telegram offer remains valid and is still verified below in all
+  // three languages; it is no longer advertised in that compact tile list.
+  if(id==='courses_practitioner'){
+   assert.ok(catalogue.includes('id:"meditations", name:') &&
+     catalogue.includes('id:"personal-video", name:'), 'approved courses tiles')
+  }else assert.ok(catalogue.includes('id:"'+option+'", name:'),id)
   for(const locale of ['ru','en','es']){
    const offer=telegramServiceOption(id,locale)
    assert.equal(offer.title,row.titles[locale])

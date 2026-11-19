@@ -50,7 +50,7 @@ async function assertAnonymousPrivateNavigation(page) {
   // must not be exposed without an authenticated account.
   const guest = page.locator('[data-cabinet-guest-overview]');
   await expect(guest).toBeVisible();
-  await expect(page.locator('[data-profile-hub-tabs] [data-profile-tab="today"]')).toHaveAttribute('aria-current', 'page');
+  await expect(page.locator('[data-profile-space-life]')).toHaveAttribute('aria-current', 'page');
   await expect(guest.locator('a[href="/en/client/tests"]')).toBeVisible();
   await expect(page.locator('[data-profile-tests-first], [data-my-tests-dashboard], [data-profile-results-archive]')).toHaveCount(0);
   await expect(page.locator('.mobile-bottom-navigation')).toHaveCount(0);
@@ -636,7 +636,7 @@ async function exercise(engine, browserType, width) {
            const guestProfile = cspPage.locator('[data-cabinet-guest-overview]');
            await expect(guestProfile).toBeVisible();
            await expect(guestProfile.locator('a[href="/en/client/tests"]')).toBeVisible();
-           await expect(cspPage.locator('[data-profile-hub-tabs] [data-profile-tab="today"]')).toHaveAttribute('aria-current', 'page');
+           await expect(cspPage.locator('[data-profile-space-life]')).toHaveAttribute('aria-current', 'page');
            await expect(cspPage.locator('[data-profile-tests-first], [data-my-tests-dashboard], [data-profile-results-archive]')).toHaveCount(0);
            await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
           await cspPage.evaluate(() => { window.__cspDocumentProbe = 'private-profile-before-public-builder'; });
@@ -692,8 +692,12 @@ async function exercise(engine, browserType, width) {
           const publicAbout = cspPage.locator('.service-home-about a[href="/en/about"]');
           await expect(publicAbout).toHaveCount(1);
           await expect(publicAbout).toBeVisible();
+          // The SSR About link is visible before Next hydration. Wait for
+          // genuine Home event readiness, then assert real soft navigation.
+          await expect(cspPage.locator('[data-home-dialogue-entry][data-home-interactive="true"]'))
+            .toBeVisible({ timeout: 30000 });
           await publicAbout.click();
-          await expect(cspPage).toHaveURL(origin + '/en/about');
+          await expect(cspPage).toHaveURL(origin + '/en/about', { timeout: 30000 });
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
           await waitForDocument();
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), 'public-home-before-about', 'Home to About must retain same-policy soft navigation');
