@@ -15,10 +15,10 @@ test("approved Goal screen orders wish and real match action BEFORE goal cards",
  assert.ok(studio.indexOf("data-video-director-topic-controls")<studio.indexOf("data-video-continue-scenarios"));
  assert.match(studio,/data-video-director-audience-controls/);
  assert.doesNotMatch(studio,/data-video-goal-audience-selector/,"no disconnected second audience switch");
- assert.match(director,/const audienceBar=/);
- assert.match(director,/data-auto-video-audience=\{mode\}/);
- assert.match(director,/aria-pressed=\{videoAudience===mode\}/);
- assert.match(director,/createPortal\(audienceBar,audienceTarget\)/);
+ assert.doesNotMatch(director,/const audienceBar=/);
+ assert.doesNotMatch(director,/data-auto-video-audience=\{mode\}/);
+ assert.match(director,/quickScope=videoAudience==="self"\?"life":"work"/);
+ assert.match(director,/changeVideoAudience\(scope==="life"\?"self":"others"\)/);
  assert.match(studio,/onClick=\{continueToIdeas\}/);
  assert.match(director,/data-video-request-design className=\{css\.designRequest\}/);
  assert.match(director,/onClick=\{designFromRequest\}/);

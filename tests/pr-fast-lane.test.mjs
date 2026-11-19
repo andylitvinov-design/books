@@ -1098,6 +1098,28 @@ test('five other specialists delegate TypeScript/build while Public Journey sing
 });
 
 
+test('Practice visual Ready PR reuses Core compiler and skips duplicate FFmpeg and npm installations',()=>{
+  const source=workflow('practice-visual-browser.yml');
+  assert.match(source,/runs-on: .*ubuntu-slim.*ubuntu-latest/,'source PR should use the tiny runner');
+  for(const marker of [
+    'Load original checksum-verified FFmpeg for npm ci',
+    'Install existing project dependencies',
+    'Install SHA-verified FFmpeg into package after npm ci',
+  ]) assert.ok(source.includes('- name: '+marker+"\n        if: github.event_name != 'pull_request'\n"),
+    marker+': duplicate download was not gated to the post-merge run');
+  for(const marker of [
+    'node --check scripts/compare-ui-screenshots.mjs',
+    'node --test tests/compare-ui-screenshots.test.mjs',
+    'npx --no-install eslint scripts/verify-practice-visual-browser.mjs',
+    'npx --no-install tsc --noEmit --pretty false',
+    'Full TypeScript delegated to required Core release-ready',
+    'Render and verify real Practice page at 320, 354, 390 and 430 pixels',
+  ]) assert.ok(source.includes(marker),'lost unit/type/browser contract: '+marker);
+  assert.match(source,/^  pull_request:/m,'real owned Practice changes must retain source PR QA');
+  assert.match(source,/^  push:/m,'real browser and FFmpeg proof must remain on protected push');
+  assert.doesNotMatch(source,/continue-on-error:\s*true/);
+});
+
 test('Practice visual PR does not repeat Google-auth browser or old Chromium/WebKit overlays', () => {
   const source = workflow('practice-visual-browser.yml');
   const core = workflow('hh-pr-core-release.yml');

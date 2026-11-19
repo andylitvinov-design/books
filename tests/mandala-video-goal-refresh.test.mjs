@@ -49,3 +49,15 @@ test("Continue is hidden only in unfinished self quiz, never after switching to 
   assert.match(director, /const resetAudienceStory=\(\)=>\{\s+setGoalQuizStep\(1\)/);
   assert.match(studio, /data-video-continue-scenarios[\s\S]*?onClick=\{continueToIdeas\}/);
 });
+
+test("Life/Work keeps recipient flow, but the obsolete audience switch cannot return",()=>{
+  const webkit = readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs", import.meta.url), "utf8");
+  assert.match(director,/data-video-quick-scope=\{scope\}/);
+  assert.match(director,/changeVideoAudience\(scope==="life"\?"self":"others"\)/);
+  assert.match(webkit,/\[data-video-quick-scope="work"\]/);
+  assert.match(webkit,/\[data-auto-video-audience\]'\)\)\.toHaveCount\(0\)/);
+  assert.match(webkit,/await work\.tap\(\)/);
+  assert.match(webkit,/data-video-recipient-catalog/);
+  assert.match(webkit,/data-video-recipient-audio-transcribe/);
+  assert.match(css,/\[data-video-goal-quiz-audience="self"\]/);
+});

@@ -53,3 +53,22 @@ test("Create Video routes to protected workflow without starting export or credi
  assert.match(studio,/onCreate=\{openReadyForGeneration\}/);
  assert.match(routeCss,/data-video-goal-create-cta/);
 });
+
+test("one audience selector, real video format state and speech-to-goal dictation",()=>{
+ assert.match(director,/quickScope=videoAudience==="self"\?"life":"work"/);
+ assert.match(director,/changeVideoAudience\(scope==="life"\?"self":"others"\)/);
+ assert.doesNotMatch(director,/data-auto-video-audience/);
+ assert.match(director,/data-video-prompt-aspect/);
+ assert.match(director,/data-video-request-aspect=\{format\}/);
+ assert.match(director,/onAspectChange\?\.\(format\)/);
+ assert.match(director,/videoAudience==="others"&&format!=="portrait"/);
+ assert.match(director,/startDeviceVoiceCapture\(locale\)/);
+ assert.match(director,/data-video-request-microphone/);
+ assert.match(director,/onClick=\{togglePromptDictation\}/);
+ assert.match(director,/applyRequestDraft\(next\)/);
+ assert.match(director,/promptDictationGeneration\.current\+=1/);
+ assert.match(director,/data-video-prompt-dictation-status/);
+ assert.match(routeCss,/grid-template-columns:32px 34px/);
+ assert.match(routeCss,/max-height:880px/);
+ assert.match(directorCss,/\.formatMenuList/);
+});

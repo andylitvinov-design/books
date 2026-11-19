@@ -506,7 +506,7 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
     "approved wish and Match button precede goal, category, topic chips and the original next-stage action");
   assert.match(studio,/data-video-wish-above-goals/);
   assert.match(studio,/data-video-director-audience-controls/);
-  assert.match(read("components/mandala-auto-video-director.tsx"),/data-auto-video-audience=\{mode\}/);
+  assert.match(read("components/mandala-auto-video-director.tsx"),/changeVideoAudience\(scope==="life"\?"self":"others"\)/);
   assert.doesNotMatch(studio,/data-video-goal-audience-option/);
   assert.match(css,/data-video-scenario-open="false"[\s\S]*?data-auto-video-director\]\{display:none!important\}/);
   assert.match(studio,/data-video-director-topic-controls/);
