@@ -434,8 +434,10 @@ export async function verify(api,ctx,files,options={}) {
   const queuedGrace = Math.min(maxWait, boundedMs(options.queuedGraceMs ?? 10*60_000, 40*60_000));
   // A completed workflow's jobs API may lag; read only missing/pending job data.
   const jobGrace = Math.min(maxWait, boundedMs(options.jobGraceMs ?? 45_000, 90_000));
-  // Reduce read-only GitHub API pressure while many exact-HEAD jobs are queued.
-  const pollMs = boundedMs(options.pollMs ?? 30_000, 30_000, 100);
+  // Poll non-final queued/running specialists every 60s instead of every 30s:
+  // halve redundant GitHub HEAD-index reads while preserving all required checks.
+  // Missing-workflow discovery and the final-running fast lane remain responsive.
+  const pollMs = boundedMs(options.pollMs ?? 60_000, 60_000, 100);
   const now = options.now ?? Date.now;
   const sleep = options.sleep ?? delay;
   const pinnedChangeRows = Array.isArray(files.changedRows) && files.changedRows.length > 0;
