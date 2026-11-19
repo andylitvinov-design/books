@@ -197,7 +197,25 @@ async function verifyWorkspaceHydration(browser,locale){
         // unrelated stock frames depict the six authored physical events.
         await expect(automaticStoryboard).toHaveAttribute("data-storyboard-action-proof","editorial_unverified");
         await expect(automaticStoryboard).toHaveAttribute("data-storyboard-media-ready","false");
-        await expect(cards.locator('img')).toHaveCount(0);
+        // Six genuine, rights-reviewed photographs are visual references, not
+        // proof that the filmed physical actions have been verified for export.
+        const referenceCount=Number(await automaticStoryboard.getAttribute("data-storyboard-reference-count"));
+        assert.equal(referenceCount,storyboardShotCount,
+          "every authored 30-second scene must retain its own photographic reference");
+        await expect(automaticStoryboard).toHaveAttribute("data-storyboard-graphics-mode",
+          "licensed-photographic-references");
+        await expect(automaticStoryboard).toHaveAttribute("data-storyboard-reference-status",
+          "editorial_photo_reference_not_action_verified");
+        const referencePhotos=cards.locator('img[data-storyboard-reference-photo]');
+        await expect(referencePhotos).toHaveCount(referenceCount);
+        for(let i=0;i<referenceCount;i++){
+          const photo=referencePhotos.nth(i);
+          assert.ok((await photo.getAttribute("src"))?.startsWith("/"),
+            "each editorial reference must use a trusted first-party photograph");
+          assert.ok((await photo.getAttribute("alt"))?.trim(),
+            "each editorial reference must name the illustrated subject");
+        }
+        await expect(automaticStoryboard.locator('[data-video-auto-storyboard-apply]')).toHaveCount(0);
       }
       await expect(automaticStoryboard.locator('[data-video-auto-storyboard-list]')).toBeVisible();
       await expect(cards.first()).toContainText(

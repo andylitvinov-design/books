@@ -1,0 +1,1536 @@
+{
+  "schemaVersion": "hh-mytube-researched-video-sources-v1",
+  "researchedOn": "2026-11-19",
+  "evidenceLevel": "official_individual_video_page_metadata_not_physical_footage",
+  "publicationPolicy": "RESEARCH_ONLY_NO_DIRECT_RENDER_NO_BULK_DOWNLOAD",
+  "licenseReference": "https://www.pexels.com/license/",
+  "sourcePages": [
+    {
+      "id": "pexels-video-34730359",
+      "sourcePage": "https://www.pexels.com/video/counting-money-and-managing-budget-indoors-34730359/",
+      "categoryId": "goals-money",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 7,
+      "visualTags": [
+        "money",
+        "budget",
+        "financial-planning",
+        "hands",
+        "accounting",
+        "desk"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-7683259",
+      "sourcePage": "https://www.pexels.com/video/woman-working-in-a-call-center-7683259/",
+      "categoryId": "goals-money",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 30,
+      "visualTags": [
+        "person",
+        "woman",
+        "office",
+        "work",
+        "phone",
+        "notes",
+        "focus"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-6781905",
+      "sourcePage": "https://www.pexels.com/video/women-working-in-the-office-6781905/",
+      "categoryId": "goals-money",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 12,
+      "visualTags": [
+        "women",
+        "collaboration",
+        "work",
+        "laptop",
+        "team"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-12910143",
+      "sourcePage": "https://www.pexels.com/video/woman-at-work-12910143/",
+      "categoryId": "goals-money",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 10,
+      "visualTags": [
+        "woman",
+        "work",
+        "desk",
+        "laptop",
+        "paper",
+        "professional"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-6931572",
+      "sourcePage": "https://www.pexels.com/video/woman-working-on-her-laptop-and-writing-notes-6931572/",
+      "categoryId": "goals-money",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 20,
+      "visualTags": [
+        "woman",
+        "work",
+        "laptop",
+        "notes",
+        "planning"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-7963130",
+      "sourcePage": "https://www.pexels.com/video/group-working-at-office-7963130/",
+      "categoryId": "goals-money",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 10,
+      "visualTags": [
+        "team",
+        "office",
+        "collaboration",
+        "work"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-12909756",
+      "sourcePage": "https://www.pexels.com/video/woman-working-in-home-office-12909756/",
+      "categoryId": "goals-money",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 10,
+      "visualTags": [
+        "woman",
+        "work",
+        "home",
+        "laptop",
+        "notes"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-6930457",
+      "sourcePage": "https://www.pexels.com/video/men-working-at-an-office-6930457/",
+      "categoryId": "goals-money",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 14,
+      "visualTags": [
+        "people",
+        "team",
+        "work",
+        "office"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-8439812",
+      "sourcePage": "https://www.pexels.com/video/a-woman-writing-while-on-her-cellphone-8439812/",
+      "categoryId": "goals-money",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 21,
+      "visualTags": [
+        "woman",
+        "phone",
+        "notes",
+        "work",
+        "planning"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-6100412",
+      "sourcePage": "https://www.pexels.com/video/man-and-woman-talking-6100412/",
+      "categoryId": "goals-money",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 28,
+      "visualTags": [
+        "people",
+        "work",
+        "talking",
+        "documents",
+        "discussion"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-8631873",
+      "sourcePage": "https://www.pexels.com/video/a-man-and-woman-talking-while-looking-at-the-phone-8631873/",
+      "categoryId": "goals-money",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 10,
+      "visualTags": [
+        "people",
+        "talking",
+        "work",
+        "phone",
+        "collaboration"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-7279006",
+      "sourcePage": "https://www.pexels.com/video/man-using-cellphone-while-talking-to-a-woman-at-the-office-7279006/",
+      "categoryId": "goals-money",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 16,
+      "visualTags": [
+        "people",
+        "work",
+        "phone",
+        "office",
+        "discussion"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-9034543",
+      "sourcePage": "https://www.pexels.com/video/a-woman-talking-to-a-coworker-9034543/",
+      "categoryId": "goals-money",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 8,
+      "visualTags": [
+        "work",
+        "team",
+        "discussion",
+        "feedback"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-5536123",
+      "sourcePage": "https://www.pexels.com/video/a-person-using-her-laptop-while-another-person-writing-down-notes-5536123/",
+      "categoryId": "goals-money",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 10,
+      "visualTags": [
+        "people",
+        "laptop",
+        "notes",
+        "planning",
+        "collaboration"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-6177734",
+      "sourcePage": "https://www.pexels.com/video/hands-writing-in-notebook-6177734/",
+      "categoryId": "goals-money",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 16,
+      "visualTags": [
+        "hands",
+        "notebook",
+        "writing",
+        "planning",
+        "reflection"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-3205677",
+      "sourcePage": "https://www.pexels.com/video/woman-talking-over-the-phone-inside-the-office-3205677/",
+      "categoryId": "goals-money",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 11,
+      "visualTags": [
+        "woman",
+        "work",
+        "phone",
+        "office",
+        "communication"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-7413804",
+      "sourcePage": "https://www.pexels.com/video/woman-talking-while-her-coworkers-listening-7413804/",
+      "categoryId": "goals-money",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 7,
+      "visualTags": [
+        "work",
+        "people",
+        "talking",
+        "leadership",
+        "team"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-8631870",
+      "sourcePage": "https://www.pexels.com/video/a-man-and-woman-talking-inside-the-office-8631870/",
+      "categoryId": "goals-money",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 10,
+      "visualTags": [
+        "work",
+        "people",
+        "office",
+        "team",
+        "discussion"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-6794227",
+      "sourcePage": "https://www.pexels.com/video/a-man-is-sitting-in-front-of-a-laptop-with-a-stock-market-chart-6794227/",
+      "categoryId": "goals-money",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 11,
+      "visualTags": [
+        "man",
+        "finance",
+        "laptop",
+        "investing",
+        "anxiety",
+        "decision"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-8731583",
+      "sourcePage": "https://www.pexels.com/video/person-writing-on-notebook-8731583/",
+      "categoryId": "goals-money",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 15,
+      "visualTags": [
+        "writing",
+        "notebook",
+        "planning",
+        "reflection"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-7583640",
+      "sourcePage": "https://www.pexels.com/video/a-person-writing-while-using-notebook-7583640/",
+      "categoryId": "goals-money",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 18,
+      "visualTags": [
+        "notebook",
+        "writing",
+        "planning",
+        "notes"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-9365173",
+      "sourcePage": "https://www.pexels.com/video/a-man-talking-to-a-woman-at-the-conference-room-while-other-people-are-listening-and-clapping-their-hands-9365173/",
+      "categoryId": "goals-money",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 20,
+      "visualTags": [
+        "people",
+        "conference",
+        "leadership",
+        "talking",
+        "team"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-4624340",
+      "sourcePage": "https://www.pexels.com/video/man-and-woman-talking-in-office-4624340/",
+      "categoryId": "goals-money",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 17,
+      "visualTags": [
+        "people",
+        "office",
+        "work",
+        "discussion"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-4624082",
+      "sourcePage": "https://www.pexels.com/video/an-asian-woman-listening-to-her-colleague-at-work-4624082/",
+      "categoryId": "goals-money",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 15,
+      "visualTags": [
+        "people",
+        "office",
+        "listening",
+        "team"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-7981369",
+      "sourcePage": "https://www.pexels.com/video/couple-talking-while-looking-at-each-other-7981369/",
+      "categoryId": "love-relationships",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 10,
+      "visualTags": [
+        "couple",
+        "love",
+        "talking",
+        "smiling",
+        "connection"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-6570551",
+      "sourcePage": "https://www.pexels.com/video/couple-talking-6570551/",
+      "categoryId": "love-relationships",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 18,
+      "visualTags": [
+        "couple",
+        "tenderness",
+        "home",
+        "connection",
+        "talking"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-7382726",
+      "sourcePage": "https://www.pexels.com/video/couple-talking-to-each-other-7382726/",
+      "categoryId": "love-relationships",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 10,
+      "visualTags": [
+        "couple",
+        "conversation",
+        "bench",
+        "outdoors"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-8296587",
+      "sourcePage": "https://www.pexels.com/video/couple-talking-8296587/",
+      "categoryId": "love-relationships",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 18,
+      "visualTags": [
+        "couple",
+        "hug",
+        "connection",
+        "outdoors",
+        "affection"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-9128007",
+      "sourcePage": "https://www.pexels.com/video/couple-looking-to-each-other-while-talking-9128007/",
+      "categoryId": "love-relationships",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 15,
+      "visualTags": [
+        "couple",
+        "talking",
+        "outdoors",
+        "closeness"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-6670760",
+      "sourcePage": "https://www.pexels.com/video/couple-talking-together-6670760/",
+      "categoryId": "love-relationships",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 11,
+      "visualTags": [
+        "couple",
+        "breakup",
+        "relationship-conflict",
+        "conversation"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-8555710",
+      "sourcePage": "https://www.pexels.com/video/couple-talking-with-a-marriage-counselor-8555710/",
+      "categoryId": "love-relationships",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 10,
+      "visualTags": [
+        "couple",
+        "therapy",
+        "counseling",
+        "talking",
+        "repair"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-8133089",
+      "sourcePage": "https://www.pexels.com/video/couple-talking-together-8133089/",
+      "categoryId": "love-relationships",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 16,
+      "visualTags": [
+        "couple",
+        "disability",
+        "support",
+        "talking",
+        "window"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-6690020",
+      "sourcePage": "https://www.pexels.com/video/a-sad-woman-being-comforted-by-her-friend-6690020/",
+      "categoryId": "love-relationships",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 11,
+      "visualTags": [
+        "friends",
+        "comfort",
+        "support",
+        "sadness",
+        "connection"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-5683857",
+      "sourcePage": "https://www.pexels.com/video/people-holding-hands-while-talking-5683857/",
+      "categoryId": "love-relationships",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 14,
+      "visualTags": [
+        "hands",
+        "talking",
+        "support",
+        "relationship",
+        "connection"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-5940526",
+      "sourcePage": "https://www.pexels.com/video/a-woman-talking-while-a-man-is-listening-5940526/",
+      "categoryId": "love-relationships",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 13,
+      "visualTags": [
+        "couple",
+        "listening",
+        "talking",
+        "communication"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-5183204",
+      "sourcePage": "https://www.pexels.com/video/couple-hugging-each-other-while-talking-and-smiling-5183204/",
+      "categoryId": "love-relationships",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 11,
+      "visualTags": [
+        "couple",
+        "hug",
+        "talking",
+        "smiling",
+        "affection"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-13324081",
+      "sourcePage": "https://www.pexels.com/video/back-view-of-a-couple-hugging-and-talking-13324081/",
+      "categoryId": "love-relationships",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 10,
+      "visualTags": [
+        "couple",
+        "hug",
+        "talking",
+        "closeness"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-6785823",
+      "sourcePage": "https://www.pexels.com/video/lovely-couple-holding-each-other-s-hands-while-talking-to-each-other-6785823/",
+      "categoryId": "love-relationships",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 14,
+      "visualTags": [
+        "couple",
+        "hands",
+        "talking",
+        "relationship"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-6785714",
+      "sourcePage": "https://www.pexels.com/video/lovely-couple-holding-each-other-s-hands-while-talking-to-each-other-6785714/",
+      "categoryId": "love-relationships",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 24,
+      "visualTags": [
+        "couple",
+        "hands",
+        "talking",
+        "relationship"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-8049190",
+      "sourcePage": "https://www.pexels.com/video/a-couple-hugging-each-other-8049190/",
+      "categoryId": "love-relationships",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 13,
+      "visualTags": [
+        "couple",
+        "hug",
+        "reconciliation",
+        "closeness"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-6689665",
+      "sourcePage": "https://www.pexels.com/video/a-sad-woman-looking-at-pictures-6689665/",
+      "categoryId": "love-relationships",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 15,
+      "visualTags": [
+        "woman",
+        "memories",
+        "sadness",
+        "reflection",
+        "breakup"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-8230180",
+      "sourcePage": "https://www.pexels.com/video/a-couple-hugging-each-other-8230180/",
+      "categoryId": "love-relationships",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 31,
+      "visualTags": [
+        "couple",
+        "hug",
+        "affection",
+        "connection"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-4332492",
+      "sourcePage": "https://www.pexels.com/video/a-couple-talking-while-sitting-down-4332492/",
+      "categoryId": "love-relationships",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 16,
+      "visualTags": [
+        "couple",
+        "talking",
+        "home",
+        "coffee",
+        "connection"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-4701366",
+      "sourcePage": "https://www.pexels.com/video/men-couple-talking-to-each-other-happily-4701366/",
+      "categoryId": "love-relationships",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 11,
+      "visualTags": [
+        "couple",
+        "men",
+        "love",
+        "joy",
+        "conversation"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-8775775",
+      "sourcePage": "https://www.pexels.com/video/family-talking-together-8775775/",
+      "categoryId": "love-relationships",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 13,
+      "visualTags": [
+        "family",
+        "talking",
+        "dinner",
+        "connection"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-8296417",
+      "sourcePage": "https://www.pexels.com/video/a-couple-talking-while-drinking-water-8296417/",
+      "categoryId": "love-relationships",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 19,
+      "visualTags": [
+        "couple",
+        "talking",
+        "cafe",
+        "sunlight"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-8296657",
+      "sourcePage": "https://www.pexels.com/video/a-couple-talking-while-sitting-on-the-sand-8296657/",
+      "categoryId": "love-relationships",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 23,
+      "visualTags": [
+        "couple",
+        "talking",
+        "sand",
+        "outdoors"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-6149779",
+      "sourcePage": "https://www.pexels.com/video/family-talking-together-6149779/",
+      "categoryId": "love-relationships",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 9,
+      "visualTags": [
+        "family",
+        "talking",
+        "outdoors",
+        "connection"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-6688004",
+      "sourcePage": "https://www.pexels.com/video/woman-doing-yoga-at-home-6688004/",
+      "categoryId": "energy-confidence",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 10,
+      "visualTags": [
+        "woman",
+        "yoga",
+        "home",
+        "morning",
+        "calm",
+        "breathing"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-9034622",
+      "sourcePage": "https://www.pexels.com/video/a-woman-meditating-9034622/",
+      "categoryId": "energy-confidence",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 12,
+      "visualTags": [
+        "woman",
+        "meditation",
+        "outdoors",
+        "calm",
+        "focus"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-6830907",
+      "sourcePage": "https://www.pexels.com/video/a-woman-meditating-6830907/",
+      "categoryId": "energy-confidence",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 16,
+      "visualTags": [
+        "woman",
+        "meditation",
+        "lotus",
+        "indoors",
+        "mindfulness"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-5704915",
+      "sourcePage": "https://www.pexels.com/video/a-woman-meditating-5704915/",
+      "categoryId": "energy-confidence",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 17,
+      "visualTags": [
+        "woman",
+        "meditation",
+        "home",
+        "rest",
+        "calm"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-7590431",
+      "sourcePage": "https://www.pexels.com/video/woman-meditating-7590431/",
+      "categoryId": "energy-confidence",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 5,
+      "visualTags": [
+        "woman",
+        "meditation",
+        "balcony",
+        "urban",
+        "calm"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-8959184",
+      "sourcePage": "https://www.pexels.com/video/a-woman-meditating-with-her-hands-together-and-bowing-her-head-down-8959184/",
+      "categoryId": "energy-confidence",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 20,
+      "visualTags": [
+        "woman",
+        "meditation",
+        "sunrise",
+        "nature",
+        "grounding"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-6634675",
+      "sourcePage": "https://www.pexels.com/video/a-video-of-a-woman-meditating-6634675/",
+      "categoryId": "energy-confidence",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 9,
+      "visualTags": [
+        "woman",
+        "meditation",
+        "lotus",
+        "relaxation"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-9034627",
+      "sourcePage": "https://www.pexels.com/video/a-woman-meditating-while-doing-yoga-9034627/",
+      "categoryId": "energy-confidence",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 10,
+      "visualTags": [
+        "woman",
+        "yoga",
+        "meditation",
+        "outdoors",
+        "calm"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-6893205",
+      "sourcePage": "https://www.pexels.com/video/woman-meditating-on-her-bed-6893205/",
+      "categoryId": "energy-confidence",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 29,
+      "visualTags": [
+        "woman",
+        "meditation",
+        "bedroom",
+        "rest",
+        "mindfulness"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-6808125",
+      "sourcePage": "https://www.pexels.com/video/woman-meditating-while-sit-on-a-bench-6808125/",
+      "categoryId": "energy-confidence",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 12,
+      "visualTags": [
+        "woman",
+        "meditation",
+        "bench",
+        "outdoors",
+        "serenity"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-13261590",
+      "sourcePage": "https://www.pexels.com/video/walking-in-forest-during-sunny-day-13261590/",
+      "categoryId": "energy-confidence",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 37,
+      "visualTags": [
+        "forest",
+        "walking",
+        "sunlight",
+        "journey",
+        "renewal"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-13754477",
+      "sourcePage": "https://www.pexels.com/video/walking-in-forest-in-fall-13754477/",
+      "categoryId": "energy-confidence",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 33,
+      "visualTags": [
+        "forest",
+        "walking",
+        "autumn",
+        "grounding"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-37052386",
+      "sourcePage": "https://www.pexels.com/video/sunlight-through-spring-tree-canopy-37052386/",
+      "categoryId": "energy-confidence",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 8,
+      "visualTags": [
+        "sunlight",
+        "trees",
+        "leaves",
+        "hope",
+        "renewal"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-35649912",
+      "sourcePage": "https://www.pexels.com/video/sunlight-filtering-through-forest-trees-35649912/",
+      "categoryId": "energy-confidence",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 30,
+      "visualTags": [
+        "sunlight",
+        "forest",
+        "trees",
+        "calm",
+        "restoration"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-40360814",
+      "sourcePage": "https://www.pexels.com/video/sunlight-filtering-through-forest-trees-40360814/",
+      "categoryId": "energy-confidence",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 42,
+      "visualTags": [
+        "sunlight",
+        "forest",
+        "trees",
+        "calm",
+        "restoration"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-36824093",
+      "sourcePage": "https://www.pexels.com/video/serene-waterfall-in-tranquil-forest-landscape-36824093/",
+      "categoryId": "energy-confidence",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 54,
+      "visualTags": [
+        "water",
+        "waterfall",
+        "forest",
+        "relaxation",
+        "nature"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-4534441",
+      "sourcePage": "https://www.pexels.com/video/woman-meditating-near-the-stream-4534441/",
+      "categoryId": "energy-confidence",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 49,
+      "visualTags": [
+        "woman",
+        "meditation",
+        "forest",
+        "stream",
+        "calm"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-37832523",
+      "sourcePage": "https://www.pexels.com/video/serene-forest-meditation-in-the-outdoors-37832523/",
+      "categoryId": "energy-confidence",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 11,
+      "visualTags": [
+        "man",
+        "meditation",
+        "forest",
+        "rest",
+        "breathing"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-40866398",
+      "sourcePage": "https://www.pexels.com/video/family-walking-on-beach-at-sunrise-40866398/",
+      "categoryId": "energy-confidence",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 12,
+      "visualTags": [
+        "family",
+        "walking",
+        "beach",
+        "sunrise",
+        "hope"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-7741200",
+      "sourcePage": "https://www.pexels.com/video/a-flowing-river-in-the-middle-of-the-forest-7741200/",
+      "categoryId": "energy-confidence",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 13,
+      "visualTags": [
+        "river",
+        "forest",
+        "water",
+        "calm",
+        "flow"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-34364617",
+      "sourcePage": "https://www.pexels.com/video/serene-waterfall-in-lush-forest-setting-34364617/",
+      "categoryId": "energy-confidence",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 8,
+      "visualTags": [
+        "forest",
+        "waterfall",
+        "nature",
+        "calm"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-33105917",
+      "sourcePage": "https://www.pexels.com/video/peaceful-forest-stream-with-waterfall-33105917/",
+      "categoryId": "energy-confidence",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 60,
+      "visualTags": [
+        "forest",
+        "waterfall",
+        "river",
+        "relaxation"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-32992145",
+      "sourcePage": "https://www.pexels.com/video/serene-waterfall-with-flowing-stream-in-forest-32992145/",
+      "categoryId": "energy-confidence",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 59,
+      "visualTags": [
+        "forest",
+        "water",
+        "stream",
+        "relaxation"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-35381656",
+      "sourcePage": "https://www.pexels.com/video/tranquil-forest-stream-with-waterfall-35381656/",
+      "categoryId": "energy-confidence",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 18,
+      "visualTags": [
+        "forest",
+        "stream",
+        "waterfall",
+        "calm"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-33886656",
+      "sourcePage": "https://www.pexels.com/video/serene-forest-river-scene-in-daylight-33886656/",
+      "categoryId": "energy-confidence",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 61,
+      "visualTags": [
+        "forest",
+        "river",
+        "nature",
+        "calm"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-33300515",
+      "sourcePage": "https://www.pexels.com/video/serene-waterfall-in-lush-green-forest-33300515/",
+      "categoryId": "energy-confidence",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 6,
+      "visualTags": [
+        "waterfall",
+        "forest",
+        "water",
+        "nature"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-40183959",
+      "sourcePage": "https://www.pexels.com/video/peaceful-waterfall-in-tranquil-forest-setting-40183959/",
+      "categoryId": "energy-confidence",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 10,
+      "visualTags": [
+        "waterfall",
+        "forest",
+        "relaxation"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-17259121",
+      "sourcePage": "https://www.pexels.com/video/a-river-flowing-through-a-forest-with-rocks-17259121/",
+      "categoryId": "energy-confidence",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 5,
+      "visualTags": [
+        "river",
+        "rocks",
+        "forest",
+        "water"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-11514998",
+      "sourcePage": "https://www.pexels.com/video/sun-shining-through-forest-trees-on-a-misty-morning-11514998/",
+      "categoryId": "energy-confidence",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 54,
+      "visualTags": [
+        "forest",
+        "mist",
+        "sunlight",
+        "hope"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-27519712",
+      "sourcePage": "https://www.pexels.com/video/the-sun-rises-over-a-lake-with-trees-in-the-foreground-27519712/",
+      "categoryId": "energy-confidence",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 8,
+      "visualTags": [
+        "sunrise",
+        "lake",
+        "trees",
+        "hope",
+        "calm"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-8721785",
+      "sourcePage": "https://www.pexels.com/video/anxious-woman-leaning-against-the-wall-8721785/",
+      "categoryId": "stress-anxiety",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 16,
+      "visualTags": [
+        "woman",
+        "anxiety",
+        "wall",
+        "stress",
+        "emotion"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-7279025",
+      "sourcePage": "https://www.pexels.com/video/woman-wearing-hoodie-being-anxious-7279025/",
+      "categoryId": "stress-anxiety",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 26,
+      "visualTags": [
+        "woman",
+        "anxiety",
+        "distress",
+        "dark",
+        "emotion"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-6382077",
+      "sourcePage": "https://www.pexels.com/video/sad-woman-touching-her-head-6382077/",
+      "categoryId": "stress-anxiety",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 10,
+      "visualTags": [
+        "woman",
+        "stress",
+        "sadness",
+        "head",
+        "emotion"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-7214648",
+      "sourcePage": "https://www.pexels.com/video/a-sad-woman-lying-in-the-couch-7214648/",
+      "categoryId": "stress-anxiety",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 9,
+      "visualTags": [
+        "woman",
+        "sofa",
+        "low-mood",
+        "fatigue",
+        "rest"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-8057862",
+      "sourcePage": "https://www.pexels.com/video/sad-woman-sitting-on-the-sofa-8057862/",
+      "categoryId": "stress-anxiety",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 8,
+      "visualTags": [
+        "woman",
+        "sofa",
+        "sadness",
+        "reflection"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-7214645",
+      "sourcePage": "https://www.pexels.com/video/a-sad-woman-eating-noodles-7214645/",
+      "categoryId": "stress-anxiety",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 8,
+      "visualTags": [
+        "woman",
+        "food",
+        "loneliness",
+        "sadness"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-6689313",
+      "sourcePage": "https://www.pexels.com/video/sad-woman-listening-to-music-while-lying-down-on-the-couch-6689313/",
+      "categoryId": "stress-anxiety",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 13,
+      "visualTags": [
+        "woman",
+        "music",
+        "sofa",
+        "low-mood",
+        "rest"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-8057894",
+      "sourcePage": "https://www.pexels.com/video/an-elderly-woman-feeling-sad-8057894/",
+      "categoryId": "stress-anxiety",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 5,
+      "visualTags": [
+        "woman",
+        "elderly",
+        "grief",
+        "sadness"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-6689788",
+      "sourcePage": "https://www.pexels.com/video/a-woman-s-sad-face-6689788/",
+      "categoryId": "stress-anxiety",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 15,
+      "visualTags": [
+        "woman",
+        "sadness",
+        "face",
+        "emotion",
+        "reflection"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-8477463",
+      "sourcePage": "https://www.pexels.com/video/a-woman-with-a-sad-face-8477463/",
+      "categoryId": "stress-anxiety",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 10,
+      "visualTags": [
+        "woman",
+        "reflection",
+        "face",
+        "emotion"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-7640086",
+      "sourcePage": "https://www.pexels.com/video/stress-at-work-7640086/",
+      "categoryId": "stress-anxiety",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 19,
+      "visualTags": [
+        "work",
+        "stress",
+        "discussion",
+        "conflict",
+        "colleagues"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-8632784",
+      "sourcePage": "https://www.pexels.com/video/exhausted-employees-discussing-in-front-of-computer-8632784/",
+      "categoryId": "stress-anxiety",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 10,
+      "visualTags": [
+        "team",
+        "exhaustion",
+        "office",
+        "stress",
+        "support"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-8102319",
+      "sourcePage": "https://www.pexels.com/video/a-woman-throwing-documents-in-the-air-8102319/",
+      "categoryId": "stress-anxiety",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 17,
+      "visualTags": [
+        "woman",
+        "office",
+        "release",
+        "documents",
+        "stress"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-8456820",
+      "sourcePage": "https://www.pexels.com/video/close-up-video-of-a-woman-meditating-8456820/",
+      "categoryId": "stress-anxiety",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 11,
+      "visualTags": [
+        "woman",
+        "meditation",
+        "calm",
+        "grounding",
+        "recovery"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-7414844",
+      "sourcePage": "https://www.pexels.com/video/woman-meditating-with-incense-7414844/",
+      "categoryId": "stress-anxiety",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 14,
+      "visualTags": [
+        "woman",
+        "meditation",
+        "ritual",
+        "calm",
+        "restoration"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-6945023",
+      "sourcePage": "https://www.pexels.com/video/a-woman-meditating-at-home-6945023/",
+      "categoryId": "stress-anxiety",
+      "orientationClaim": "portrait",
+      "durationClaimSeconds": 16,
+      "visualTags": [
+        "woman",
+        "meditation",
+        "calm",
+        "home",
+        "restoration"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-4962729",
+      "sourcePage": "https://www.pexels.com/video/stressed-woman-trying-to-relax-on-a-couch-4962729/",
+      "categoryId": "stress-anxiety",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 15,
+      "visualTags": [
+        "woman",
+        "stress",
+        "sofa",
+        "rest",
+        "reflection"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-4363278",
+      "sourcePage": "https://www.pexels.com/video/woman-massaging-her-head-feeling-so-stressed-4363278/",
+      "categoryId": "stress-anxiety",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 16,
+      "visualTags": [
+        "woman",
+        "stress",
+        "head",
+        "work",
+        "home"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-4872864",
+      "sourcePage": "https://www.pexels.com/video/a-man-throwing-a-crumpled-paper-4872864/",
+      "categoryId": "stress-anxiety",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 14,
+      "visualTags": [
+        "man",
+        "stress",
+        "paper",
+        "study",
+        "work"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-4587753",
+      "sourcePage": "https://www.pexels.com/video/an-emotional-man-putting-his-hands-on-his-head-4587753/",
+      "categoryId": "stress-anxiety",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 11,
+      "visualTags": [
+        "man",
+        "stress",
+        "head",
+        "emotion"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-5544711",
+      "sourcePage": "https://www.pexels.com/video/stressed-man-sitting-outside-5544711/",
+      "categoryId": "stress-anxiety",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 10,
+      "visualTags": [
+        "man",
+        "stress",
+        "outdoors",
+        "reflection"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-7320152",
+      "sourcePage": "https://www.pexels.com/video/elderly-man-leaning-on-a-desk-looking-stressed-7320152/",
+      "categoryId": "stress-anxiety",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 6,
+      "visualTags": [
+        "man",
+        "elderly",
+        "stress",
+        "desk",
+        "emotion"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-5544519",
+      "sourcePage": "https://www.pexels.com/video/stressed-man-squeezing-a-baseball-cap-5544519/",
+      "categoryId": "stress-anxiety",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 9,
+      "visualTags": [
+        "man",
+        "anxiety",
+        "stress",
+        "hands",
+        "emotion"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-7792453",
+      "sourcePage": "https://www.pexels.com/video/man-is-shouting-while-working-7792453/",
+      "categoryId": "stress-anxiety",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 14,
+      "visualTags": [
+        "man",
+        "stress",
+        "laptop",
+        "work",
+        "frustration"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-6909985",
+      "sourcePage": "https://www.pexels.com/video/a-sad-young-woman-inside-the-car-6909985/",
+      "categoryId": "stress-anxiety",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 16,
+      "visualTags": [
+        "woman",
+        "sadness",
+        "car",
+        "reflection"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    },
+    {
+      "id": "pexels-video-7640724",
+      "sourcePage": "https://www.pexels.com/video/a-woman-listening-to-music-while-her-coworkers-are-stressed-over-something-7640724/",
+      "categoryId": "stress-anxiety",
+      "orientationClaim": "landscape",
+      "durationClaimSeconds": 30,
+      "visualTags": [
+        "office",
+        "people",
+        "work",
+        "stress",
+        "conflict"
+      ],
+      "reviewStatus": "source_page_only_not_renderable"
+    }
+  ]
+}
