@@ -345,11 +345,19 @@ async function verifyWorkspaceHydration(browser,locale){
     const goalTab=page.locator('[data-video-quick-control="video"]');
     await goalTab.click();
     await expect(goalTab).toHaveAttribute("aria-pressed","true");
-    const others=page.locator('[data-auto-video-audience="others"]');
-    await expect(page.locator('[data-auto-video-audience]')).toHaveCount(2);
+    // Life / Work is the actual Quick Start switch; the old header is retired.
+    // Use real Goal quiz Back taps instead of manipulating component state.
+    const quizBack=page.locator('[data-video-goal-quiz-back]');
+    for(let step=0;step<3 && await quizBack.count();step++)await quizBack.click();
+    const scopes=page.locator('[data-video-quick-scope]');
+    await expect(scopes).toHaveCount(2);
+    await expect(page.locator('[data-auto-video-audience]')).toHaveCount(0);
     await expect(page.locator('[data-video-goal-audience-option]')).toHaveCount(0);
-    await others.click();
-    await expect(others).toHaveAttribute("aria-pressed","true");
+    const workScope=page.locator('[data-video-quick-scope="work"]');
+    await expect(workScope).toBeVisible();
+    await expect(workScope).toHaveText(locale==="ru"?"Работа":locale==="es"?"Trabajo":"Work");
+    await workScope.click();
+    await expect(workScope).toHaveAttribute("aria-pressed","true");
     const recipientCatalog=page.locator('[data-video-recipient-catalog]');
     await expect(recipientCatalog).toBeVisible();
     await expect(recipientCatalog).toHaveAttribute("data-video-recipient-aspect","portrait");
