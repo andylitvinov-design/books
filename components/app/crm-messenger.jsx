@@ -34,7 +34,7 @@ const copy={
     channels:'Canales',customers:'Mensajes de clientes',waiting:'Esperando respuesta',sendError:'No se envió el mensaje.',
     loadThreads:'Más conversaciones',loadMessages:'Mensajes anteriores',historyError:'No se pudo cargar el historial. Inténtalo de nuevo.'},
 }
-const names={telegram:'Telegram',whatsapp:'WhatsApp',instagram:'Instagram · @tao.ideas',messenger:'Facebook Messenger'}
+const names={telegram:'Telegram · bot',telegram_business:'Telegram · @holistichouse',whatsapp:'WhatsApp',instagram:'Instagram · @tao.ideas',messenger:'Facebook Messenger'}
 const verifiedGoogleLabel={en:'Verified Google account',ru:'Google-аккаунт подтверждён',es:'Cuenta Google verificada'}
 const setupText={
   en:{
@@ -368,7 +368,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
         }))
         // Portraits remain behind the existing authenticated CRM photo proxy.
         const portrait=[...(result.messages||[])].reverse().find(m=>m.photo&&m.photoPurpose==='portrait')
-        if(portrait&&result.threads?.some(thread=>thread.id===id&&thread.channel==='telegram'))
+        if(portrait&&result.threads?.some(thread=>thread.id===id&&['telegram','telegram_business'].includes(thread.transport||thread.channel)))
           onPortraitFound?.({threadId:id,messageId:portrait.id})
         setError('')
       }
@@ -535,7 +535,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
   const unread=threads.filter(item=>item.unreadCount>0).length
   const waitingReply=threads.filter(item=>item.needsReply).length
   const visibleThreads=threads.filter(item=>
-    (channelFilter==='all'||item.channel===channelFilter)
+    (channelFilter==='all'||(item.transport||item.channel)===channelFilter)
     &&(!unreadOnly||item.unreadCount>0)
     &&(!needsReplyOnly||item.needsReply)
     &&(!search.trim()||item.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))
@@ -703,7 +703,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
           className={active===thread.id?styles.threadActive:styles.thread} onClick={()=>selectThread(thread.id)}>
           <span className={styles.avatar} aria-hidden="true">{thread.name?.slice(0,1).toUpperCase()||'?'}</span>
           <span className={styles.threadInfo}><strong>{thread.name}</strong>
-            <small>{names[thread.channel]} · {thread.lifecycle}{thread.linkedGoogleAccount?' · '+verifiedGoogleLabel[lang]:''}</small>
+            <small>{names[thread.transport||thread.channel]} · {thread.lifecycle}{thread.linkedGoogleAccount?' · '+verifiedGoogleLabel[lang]:''}</small>
             {thread.needsReply&&<small className={styles.replyIndicator}>
               {lang==='ru'?'Нужно ответить':lang==='es'?'Responder':'Needs reply'}</small>}
           </span>
@@ -718,14 +718,14 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
         {!selected?<p className={styles.empty}>{t.select}</p>:showContactCard&&!conversationOnly?
           <MessagesContactCard key={accountId+':'+selected.id} accountId={accountId} locale={lang}
             item={{key:'crm:'+selected.id,kind:'crm',id:selected.id,contactId:selected.contactId,
-              name:selected.name,source:names[selected.channel]}} onBack={()=>setShowContactCard(false)}/>:<>
+              name:selected.name,source:names[selected.transport||selected.channel]}} onBack={()=>setShowContactCard(false)}/>:<>
           {(!conversationOnly||selected.unreadCount>0)&&<div className={styles.chatHeader}>
             {compact&&!conversationOnly&&<button type="button" className={styles.backButton} onClick={backToList}
               aria-label={lang==='ru'?'К списку переписок':lang==='es'?'Volver a conversaciones':'Back to conversations'}>
               <ArrowLeft size={19} aria-hidden="true"/></button>}
             {!conversationOnly&&<div className={styles.chatIdentity}>
               <strong>{selected.name}</strong>
-              <span>{names[selected.channel]} · {selected.reply.ok?(lang==='ru'?'Ответ доступен':lang==='es'?'Respuesta disponible':'Reply available'):replyReason(selected.reply.reason,lang)}</span>
+              <span>{names[selected.transport||selected.channel]} · {selected.reply.ok?(lang==='ru'?'Ответ доступен':lang==='es'?'Respuesta disponible':'Reply available'):replyReason(selected.reply.reason,lang)}</span>
             </div>}
             {selected.unreadCount>0&&<button disabled={busy} type="button"
               className={styles.plainButton} aria-label={t.read} title={t.read}
