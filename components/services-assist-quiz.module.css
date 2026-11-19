@@ -101,7 +101,7 @@
 @media (min-width:390px) and (max-width:760px){
  .hero{min-height:94px;margin-bottom:5px;padding-block:10px 8px}
  .form{min-height:207px;padding-block:10px 12px}
- .categories{margin-top:10px}
+ .categories{margin-top:6px}
  .categoryHeader{margin-bottom:6px}
  .category{min-height:112px}
  .categoryMedia{height:60px}
