@@ -277,6 +277,9 @@ test('PR event backstop runs in the original Watchdog job without new cron',()=>
  const job=yaml.split('  conflict-event-handoff:')[1]?.split('  completion-wait:')[0];
  assert.ok(job);assert.match(job,/HH_PR_EVENT_WATCHDOG_LIVENESS/);
  assert.match(job,/wakeStaleWatchdog/);
+ assert.match(job,/result\.outcome==='CONFLICT_QUEUE_HINT_VERIFIED'/);
+ assert.match(job,/result\.labelAdded===true/,
+  'only a first verified DIRTY hint can wake a stale scheduled controller');
  assert.match(job,/github.event_name == 'pull_request_target'/);
  assert.doesNotMatch(job,/^\s*schedule:/m);
 });

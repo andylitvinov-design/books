@@ -709,7 +709,9 @@ test('PR-target event consolidation keeps protected conflict, Ready stage, sourc
  assert.match(conflict,/HH_CONFLICT_EVENT_HINT/);
  assert.match(conflict,/HH_PR_DIRECTION_EVENT_SEED/);
  assert.match(conflict,/HH_PR_EVENT_WATCHDOG_LIVENESS/);
- assert.match(conflict,/HH_PR_EVENT_CI_DAYTIME_SIGNAL/);
+ assert.match(conflict,/result\.labelAdded===true/);
+ assert.doesNotMatch(conflict,/HH_PR_EVENT_CI_DAYTIME_SIGNAL/,
+   'shared monitor writes remain in the scheduled Watchdog');
  assert.match(prune,/github.event.action == 'synchronize'/);
  assert.match(prune,/node scripts\/ci-prune-stale-runs\.mjs/);
  const enable=native.split('  enable:\n')[1]?.split('\n  failed-core-handoff:\n')[0];

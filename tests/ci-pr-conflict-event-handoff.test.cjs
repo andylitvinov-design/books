@@ -89,6 +89,8 @@ test('single event workflow never falls into full Watchdog inventory scan',()=>{
  assert.doesNotMatch(eventJob,/group: hh-control-tower-single-writer/,
    'PR-local hint must not consume the shared Watchdog source-writer queue');
  assert.match(eventJob,/run\(\{github,core,context,dryRun:false,queueOnly:true\}\)/);
+ assert.match(eventJob,/result\.labelAdded===true/);
+ assert.doesNotMatch(eventJob,/publishCiSignalOnly/);
  assert.match(watchdog,/group: hh-control-tower-single-writer/,
    'real Watchdog/Control Tower still preserves its global writer lease');
  assert.match(native,/ci-pr-conflict-event-handoff\.cjs/);
