@@ -36,3 +36,34 @@ test('signed local-only photo FFmpeg argument vector, short and long modes',()=>
  assert.throws(()=>args(1800001),/PHOTO_PLAN_INVALID/);
  assert.throws(()=>compileDotStoryPhotoArgs({photoFiles:['https://evil.test/a.jpg'],durationMs:30000}),/PHOTO_PLAN_INVALID/);
 });
+
+
+test('portrait output selects distinct, independently sourced approved portrait photos',()=>{
+ const plot=resolveTelegramStoryPlot('morning-energy-s1-p6');
+ const photos=selectDotStoryPhotos(plot,catalog,stock,'portrait');
+ assert.deepEqual(photos.map(x=>x.id),[
+  'sun-warm-ocean-dawn-portrait','sun-leaves-canopy-portrait',
+  'sun-golden-aspen-portrait','sun-autumn-hills-portrait']);
+ assert.ok(photos.every(x=>x.orientation==='portrait'));
+ const sources=photos.flatMap(x=>catalog.scenes.find(s=>s.id===x.id).originMasterKeys);
+ assert.equal(new Set(sources).size,sources.length);
+});
+
+test('physical FFmpeg planner preserves both 9:16 portrait and 16:9 landscape dimensions',()=>{
+ const paths=[0,1,2,3].map(i=>'/tmp/hh-dot-story-12345/photo-'+i+'.jpg');
+ const args=(targetAspect,durationMs,photoOrientations)=>compileDotStoryPhotoArgs({
+  photoFiles:paths,audioFile:'/tmp/hh-dot-story-12345/soundtrack.m4a',
+  outputFile:'/tmp/hh-dot-story-12345/result.mp4',targetAspect,
+  photoOrientations,durationMs});
+ const portrait=args('portrait',30000,['portrait','landscape','portrait','landscape']);
+ assert.equal(portrait.renderQuality,'photo_portrait_720x1280_12fps');
+ assert.match(portrait.args.join(' '),/720x1280/);
+ assert.match(portrait.args.join(' '),/boxblur=10:1/);
+ assert.match(portrait.args.join(' '),/overlay=/);
+ const landscape=args('landscape',30000,['landscape','portrait','landscape','portrait']);
+ assert.equal(landscape.renderQuality,'photo_cinematic_1280x720_12fps');
+ assert.match(landscape.args.join(' '),/1280x720/);
+ assert.equal(args('portrait',240000,[]).renderQuality,'photo_portrait_compact_360x640_2fps');
+ assert.throws(()=>args('square',30000,[]),/VIDEO_STORY_PHOTO_PLAN_INVALID/);
+ assert.throws(()=>args('portrait',30000,['bogus']),/VIDEO_STORY_PHOTO_PLAN_INVALID/);
+});
