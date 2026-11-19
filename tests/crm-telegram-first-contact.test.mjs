@@ -110,3 +110,15 @@ test('Business lead capture stays behind a narrowly scoped private definer',()=>
  assert.match(sql,/app\.crm_opportunities/i)
  assert.match(sql,/app\.crm_activity/i)
 })
+
+test('Business owner lookup uses only the granted private Telegram resolver',()=>{
+ const businessHandler=capture.slice(capture.indexOf('export async function captureTelegramBusinessLead'))
+ assert.match(businessHandler,/assertHolisticBusinessConnection/)
+ assert.match(businessHandler,/telegramBotBusinessId\(env\)/)
+ assert.match(businessHandler,/businessHash\('telegram',botId,config\)/)
+ assert.match(businessHandler,/select owner_id from app_private\.crm_msg_resolve/)
+ assert.doesNotMatch(businessHandler,/join app\.accounts|from app\.practitioners/)
+ // The private definer still verifies the resolved owner against PRACTITIONER_ID.
+ const migration=readFileSync(new URL('../supabase/migrations/20261119014500_hh_tg_business_lead_capture_v1.sql',import.meta.url),'utf8')
+ assert.match(migration,/p\.id=p_practitioner_id AND p\.trusted_auth_user_id=p_owner_id/)
+})
