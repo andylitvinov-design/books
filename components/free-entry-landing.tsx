@@ -9,7 +9,8 @@ import { TelegramDiagnosticEntry } from "@/components/telegram-diagnostic-entry"
 import { FreeSituationReviewForm } from "@/components/free-situation-review-form";
 import { SiteVideoPlayer } from "@/components/site-video-player";
 import { getServiceVideoMedia } from "@/data/service-video-library";
-import { PersonalTestimonials, locallyArchivedVideoPosterIds, testimonialVideos } from "@/components/personal-testimonials";
+import { locallyArchivedVideoPosterIds, testimonialVideos } from "@/components/personal-testimonials";
+import { LazyPersonalTestimonials } from "@/components/lazy-personal-testimonials";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./free-entry-landing.module.css";
 
@@ -296,11 +297,11 @@ situation: {
         { title: "Un paso posible", text: "Recibe observaciones escritas para reflexionar." },
       ],
       processTitle: "Así empezamos",
-      processLead: "Basta con una pregunta para empezar, sin llamadas.",
+      processLead: "Una pregunta basta para empezar, sin cita o videollamada. Te responderé por escrito.",
       steps: [
         { title: "Elige tu tema", text: "Abre Telegram o WhatsApp y envíame un mensaje breve." },
         { title: "Deja tu contacto", text: "Te haré una o dos preguntas para entender tu situación." },
-        { title: "Acuerda un envío seguro", text: "Tras dar tu consentimiento, Telegram puede pedir un dibujo; es opcional. Envía expedientes médicos, pruebas y datos sensibles solo por el formulario protegido." },
+        { title: "Acuerda un envío seguro", text: "Tras dar tu consentimiento, Telegram puede pedir una foto y un dibujo opcionales. Envía expedientes médicos, pruebas y datos sensibles solo por el formulario protegido." },
       ],
       startTitle: "¿Qué deseas explorar?",
       startLead: "Elige el tema y deja tu teléfono, sin datos personales por chat.",
@@ -626,10 +627,11 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
                 </div>
                 <div className={styles.reviewProcessPhoto}><Image src={images.process} alt={t.processAlt} fill sizes="(max-width: 720px) 100vw, 40vw" /></div>
               </section>
-              <details className={styles.reviewStories} data-review-stories>
-                <summary>{situationFirstScreen[locale].reviews}<ArrowRight size={18} aria-hidden="true" /></summary>
-                <PersonalTestimonials locale={locale} variant="all" sameAudioOnly />
-              </details>
+              <LazyPersonalTestimonials
+                locale={locale}
+                summary={situationFirstScreen[locale].reviews}
+                className={styles.reviewStories}
+              />
             </>
           } enableWizard={process.env.HH_FREE_EXPRESS_V2_ENABLED === "true"}>
             <div className={styles.coachingLink}>
