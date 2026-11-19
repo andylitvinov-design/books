@@ -735,6 +735,12 @@ try{
  };
  const openProject=async(id)=>{
    await resetViaMore();
+   // The six legacy projects are intentionally inside a collapsed accessible
+   // “More ways Ali can help” disclosure on the conversation-first landing.
+   // Test the real disclosure, rather than waiting for a hidden button.
+   const tools=chat.locator("details[data-hh-alchemist-tools]");
+   await tools.waitFor({state:"visible",timeout:15000});
+   if(await tools.evaluate(node=>!node.open))await tools.locator("summary").click();
    await chat.locator('[data-hh-ai-project="'+id+'"]').waitFor({state:"visible",timeout:15000});
    await chat.locator('[data-hh-ai-project="'+id+'"]').click();
    // Sessions has a goal-first two-step intake; other projects use one-step choices.
