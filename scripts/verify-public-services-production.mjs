@@ -253,10 +253,10 @@ try {
       { timeout: 30000, message: 'Mobile Services catalogue must hydrate before interactions' },
     ).toBe(true);
     const panelIds = [
-      "reiki", "browse", "reading", "consultation", "services", "video", "courses",
+      "reiki", "browse", "reading", "consultation", "services", "business", "video", "courses",
       "coach", "magical", "homeopathy", "about", "testimonials", "mytube", "directory",
     ];
-    const servicePanelIds = new Set(panelIds.slice(0, 10));
+    const servicePanelIds = new Set(panelIds.slice(0, 11));
     await expect(catalog.locator("[data-services-unified-panel]")).toHaveCount(panelIds.length);
     for (const id of panelIds) {
       const panel = catalog.locator('[data-services-unified-panel="' + id + '"]');
