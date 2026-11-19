@@ -79,11 +79,11 @@ const copy = {
 situation: {
       eyebrow: "FREE PERSONAL REVIEW · WITH ANDREY",
       title: "Tell me what's on your mind.",
-      lead: "Maybe there's a decision you keep putting off, a conversation that goes nowhere, or a feeling you can't quite explain. Tell me about one thing that's troubling you. I'm Andrey. I'll read your question myself and send you a short written response. There's no charge.",
+      lead: "A difficult decision, a relationship, or a situation that keeps repeating? Tell me about one question. I'll read it myself and reply in writing, free of charge.",
       value: "One question. A personal written reply. No fee, no call.",
       bullets: ["Tell me what's happening.", "I'll look at what may be getting in the way.", "We'll see where you might begin."],
       outcomeTitle: "What you'll hear back from me",
-      outcomeLead: "I won't pretend I can understand your whole life from a few lines. But I can take a careful look at the question you bring.",
+      outcomeLead: "We can start with one question. Here's what I'll look for.",
       outcomes: [
         { title: "What stands out", text: "I'll try to put my finger on the part of your story that needs the most attention." },
         { title: "What else may be going on", text: "I'll share any patterns or overlooked details that seem worth considering." },
@@ -182,11 +182,11 @@ situation: {
 situation: {
       eyebrow: "БЕСПЛАТНЫЙ ЛИЧНЫЙ РАЗБОР · С АНДРЕЕМ",
       title: "Давайте разберём ваш вопрос.",
-      lead: "Бывает, что решение никак не приходит, разговоры ходят по кругу или просто не хватает сил. Расскажите мне об одном вопросе, который сейчас вас волнует. Я Андрей. Лично прочитаю ваше обращение и отвечу письменно. Это бесплатно.",
+      lead: "Не получается принять решение? Снова повторяется трудная ситуация? Расскажите мне об одном вопросе. Я сам прочитаю ваше сообщение и отвечу письменно — бесплатно.",
       value: "Один вопрос. Мой письменный ответ. Без оплаты и созвона.",
       bullets: ["Расскажите, что происходит.", "Я посмотрю, что может мешать.", "Попробуем найти, с чего начать."],
       outcomeTitle: "Что я напишу вам в ответ",
-      outcomeLead: "По нескольким строкам нельзя узнать всю жизнь человека. Но можно внимательно посмотреть на то, с чем он пришёл.",
+      outcomeLead: "Я внимательно прочитаю вашу историю и поделюсь тем, что замечу.",
       outcomes: [
         { title: "На что стоит обратить внимание", text: "Попробую выделить самое важное в вашем рассказе." },
         { title: "Что может оставаться незамеченным", text: "Поделюсь своими наблюдениями о привычных реакциях, связях и возможных причинах затруднения." },
@@ -284,23 +284,23 @@ situation: {
     },
     situation: {
       eyebrow: "REVISIÓN PERSONAL EXPRÉS · CON ANDREY",
-      title: "Revisión personal exprés gratuita con Andrey.",
-      lead: "Una sola revisión escrita personal sobre tu situación o tu energía y bienestar. Exploramos recursos y un próximo paso, sin diagnóstico médico.",
+      title: "Cuéntame qué te preocupa.",
+      lead: "¿Tienes una decisión difícil o una situación que se repite? Cuéntame una pregunta concreta. La leeré yo mismo y te responderé por escrito, gratis.",
       value: "Revisión personal escrita · gratis · sin llamada.",
       bullets: ["Define tu pregunta.", "Observa recursos y dificultades.", "Explora un posible próximo paso."],
       outcomeTitle: "Comprende mejor tu pregunta",
-      outcomeLead: "Una mirada personal y no otro test genérico.",
+      outcomeLead: "Leeré tu mensaje y te compartiré lo que observe.",
       outcomes: [
         { title: "Tu pregunta central", text: "Distingue lo principal de los detalles secundarios." },
         { title: "Una nueva perspectiva", text: "Explora conexiones, retos y recursos." },
         { title: "Un paso posible", text: "Recibe observaciones escritas para reflexionar." },
       ],
-      processTitle: "Personal, sencillo y privado",
-      processLead: "La primera revisión escrita es gratuita, sin cita o videollamada.",
+      processTitle: "Así empezamos",
+      processLead: "Basta con una pregunta para empezar, sin llamadas.",
       steps: [
-        { title: "Elige tu tema", text: "Al final selecciona situación o energía y bienestar." },
-        { title: "Deja tu contacto", text: "Tu teléfono y el consentimiento para una respuesta por mensajería." },
-        { title: "Acuerda un envío seguro", text: "Tras dar tu consentimiento, Telegram puede pedir una foto normal y un dibujo opcionales. Envía expedientes médicos, pruebas y datos sensibles solo por el formulario protegido; WhatsApp es contacto manual." },
+        { title: "Elige tu tema", text: "Abre Telegram o WhatsApp y envíame un mensaje breve." },
+        { title: "Deja tu contacto", text: "Te haré una o dos preguntas para entender tu situación." },
+        { title: "Acuerda un envío seguro", text: "Si hace falta un dibujo, acordaremos cómo compartirlo en privado. Envía expedientes médicos, pruebas y datos sensibles solo por el formulario protegido." },
       ],
       startTitle: "¿Qué deseas explorar?",
       startLead: "Elige el tema y deja tu teléfono, sin datos personales por chat.",
@@ -379,9 +379,9 @@ const freeTestDirectCopy = {
 } as const;
 
 const situationFirstScreen = {
-  en: { lead: "I’m Andrey. Tell me what’s troubling you — I’ll read your question myself and send a written reply, free of charge.", reviews: "More client videos · 12 recordings" },
-  ru: { lead: "Меня зовут Андрей. Расскажите, что вас волнует — я прочитаю ваш вопрос и бесплатно отвечу письменно.", reviews: "Другие видеоотзывы клиентов · 12 записей" },
-  es: { lead: "Tu pregunta · otra perspectiva · un paso más.", reviews: "Todos los testimonios · 12 vídeos" },
+  en: { lead: "I’m Andrey. Tell me what’s troubling you — I’ll read your question myself and send a written reply, free of charge.", reviews: "More client videos · English audio" },
+  ru: { lead: "Меня зовут Андрей. Расскажите, что вас волнует — я прочитаю ваш вопрос и бесплатно отвечу письменно.", reviews: "Ещё отзывы клиентов · на русском" },
+  es: { lead: "Soy Andrey. Cuéntame qué te preocupa. Te responderé personalmente por escrito.", reviews: "Más testimonios · audio original en inglés" },
 } as const;
 
 const situationVideoStory = {
@@ -413,8 +413,8 @@ ru: {
   },
   es: {
     eyebrow: "VÍDEO · CONOCE A ANDREY",
-    title: "¿En qué consiste la revisión personal exprés?",
-    lead: "Analizo personalmente una pregunta que quieras compartir: una situación, el trabajo, las relaciones o tu bienestar cotidiano. A partir de una breve descripción, exploramos el reto central, los recursos y un posible siguiente paso.",
+    title: "Cómo trabajo con una pregunta personal",
+    lead: "Primero leo lo que me cuentas. A veces importa una decisión pendiente; otras, una situación que se repite.",
     takeaway: "Recibirás observaciones personales por escrito, no una prueba automática, una cita ni un diagnóstico médico.",
     recording: "Este vídeo existente presenta mi enfoque de alquimia psíquica. Es una introducción general, no un vídeo específico sobre la revisión exprés gratuita.",
     audio: "Presentación de Andrey · audio en español",
@@ -447,7 +447,7 @@ ru: {
   },
   es: {
     label: "MÉTODO PERSONAL", title: "Una revisión adaptada a tu pregunta",
-    lead: "Escucho tu consulta y utilizo herramientas reflexivas cuando ayudan. El tema cambia las preguntas, no el servicio.",
+    lead: "Primero quiero entender qué te pasa. Después decido qué preguntas pueden ayudarte.",
     items: [
       { title: "Cuando se trata de una situación", text: "Exploramos la meta, los obstáculos y los recursos. Un dibujo YO–META–PROBLEMA o una constelación simbólica puede ayudar." },
       { title: "Cuando se trata de energía y salud", text: "Reflexionamos sobre bienestar y recursos; Wu Xing (Cinco Elementos) es un mapa simbólico, nunca un diagnóstico ni tratamiento." },
@@ -544,10 +544,11 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
               <p className={styles.reviewIntroAudio}>{situationVideoStory[locale].audio}</p>
               <p className={styles.reviewIntroSourceNote}>{situationVideoStory[locale].recording}</p>
             </div>
+            <div className={styles.reviewContact}>
+              {kind === "situation" ? <TelegramDiagnosticEntry locale={locale} /> : null}
+            </div>
           </section>
         ) : null}
-
-        {kind === "situation" ? <TelegramDiagnosticEntry locale={locale} /> : null}
 
         {kind === "situation" ? (
           <PersonalExpressEnquiry locale={locale} intro={
@@ -593,7 +594,8 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
                   <h2 id="free-review-stories-title">{situationVideoStory[locale].storiesTitle}</h2>
                   <p>{situationVideoStory[locale].storiesLead}</p>
                 </header>
-                <div className={styles.reviewPreviewGrid}>
+                <p className={styles.reviewSwipeHint}>{locale === "ru" ? "Листайте видеоотзывы →" : locale === "es" ? "Desliza para ver más vídeos →" : "Swipe for more reviews →"}</p>
+                <div className={styles.reviewPreviewGrid} role="region" aria-label={situationVideoStory[locale].storiesTitle} tabIndex={0}>
                   {featuredReviewVideos.map((item) => (
                     <article className={styles.reviewPreviewCard} key={item.id} data-testimonial-video-id={item.id}>
                       <p className={styles.reviewAudioLabel}>
@@ -626,7 +628,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
               </section>
               <details className={styles.reviewStories} data-review-stories>
                 <summary>{situationFirstScreen[locale].reviews}<ArrowRight size={18} aria-hidden="true" /></summary>
-                <PersonalTestimonials locale={locale} variant="all" />
+                <PersonalTestimonials locale={locale} variant="all" sameAudioOnly />
               </details>
             </>
           } enableWizard={process.env.HH_FREE_EXPRESS_V2_ENABLED === "true"}>
