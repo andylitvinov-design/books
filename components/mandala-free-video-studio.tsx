@@ -6094,7 +6094,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   };
   // Express: source-backed storyboard + licensed music or exact user audio
   // + actual protected local encoder, all initiated by ONE Create gesture.
-  const generateExpressFromCurrent=()=>{
+  const generateExpressFromCurrent=(expressGoalText?:string)=>{
     if(!studioHydrated||recording||preparing||preparingRef.current||
        jobRef.current||webCodecJobRef.current||sttBusy||micRecording)return false;
     if(creditCatalog===null||creditCatalog.blocked||creditSession==="checking"||
@@ -6128,7 +6128,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     const measured=original?(importedAudioSeconds??voiceTranscript?.durationSeconds??
       (attachedAudio?.kind==="file"?attachedAudio.speechSeconds:null)??null):null;
     const recipe=planExpressVideo({
-      locale,goal:wish,theme,selectedTopicId:selectedConceptTopic?.topicId||null,
+      locale,goal:expressGoalText?.trim()||wish,theme,
+      // An explicit Just make it prompt outranks a stale topic from old Ideas edits.
+      selectedTopicId:expressGoalText?.trim()?null:selectedConceptTopic?.topicId||null,
       personalization:confirmedFilmPersonalization,transcript:voiceTranscript,
       hasAudio:Boolean(original),audioDurationSeconds:measured
     });
@@ -7087,7 +7089,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       data-video-recipient-express-create
       disabled={!studioHydrated||recording||preparing||micRecording||sttBusy||
         !audioRights||!(importedAudioSeconds||voiceTranscript?.durationSeconds)}
-      onClick={generateExpressFromCurrent}>
+      onClick={()=>generateExpressFromCurrent()}>
       <Film size={19}/>{locale==="ru"?"Создать видео с моим аудио · 1 клик":
         locale==="es"?"Crear vídeo con mi audio · 1 clic":
           "Create video with my audio · 1 click"}
@@ -8461,6 +8463,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           onApply={(presetId,seconds,edit,options)=>
             applyAutoFilm(presetId,seconds,edit,aspect,options?.keepGoalFlow)}
           onCreate={openReadyForGeneration}
+          onGenerateExpress={generateExpressFromCurrent}
+          expressFeedback={notice}
           canCreate={canStartSelectedFilm} rendering={recording||preparing}
           createFeedback={preparing||exportUnavailable?notice:""}/>
       <nav className={videoStyles.quickPracticeShortcuts} data-video-practice-shortcuts

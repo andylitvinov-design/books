@@ -500,3 +500,26 @@ test("new prompt and profile choice invalidate every prior MyTube plot selection
  for(const setter of ["setSelectedScenarioId(","setSelectedPlotId(","setTimelineEdits("])
    assert.ok(field.includes(setter),"new request invalidates stale storyboard");
 });
+
+
+test("Just make it generates from the typed goal in one gesture without the guided quiz",()=>{
+ const handler=director.slice(director.indexOf("const designFromRequest="),director.indexOf("const analyzedPath="));
+ assert.match(handler,/if\(quickFlow==="instant"\)\{[\s\S]*?onGenerateExpress\(videoAudience==="others"\?goal:requestDraft\.trim\(\)\);/);
+ assert.doesNotMatch(handler,/quickFlow==="instant"&&goalQuizComplete/,
+   "Express must not be blocked by an incomplete guided quiz");
+ assert.match(director,/data-video-express-feedback/,
+   "preflight errors must be visible at the composer instead of silently failing");
+ assert.match(studio,/onGenerateExpress=\{generateExpressFromCurrent\}/,
+   "the Goal action must invoke the real existing Express encoder, not merely open Ready");
+ assert.match(studio,/const generateExpressFromCurrent=\(expressGoalText\?:string\)=>\{/);
+ assert.match(studio,/onClick=\{\(\)=>generateExpressFromCurrent\(\)\}/,
+   "other Express entry points must not pass React click events as a goal string");
+ assert.match(studio,/goal:expressGoalText\?\.trim\(\)\|\|wish,theme,/,
+   "the most recent wish, rather than an old studio closure, drives the concept");
+ assert.match(studio,/selectedTopicId:expressGoalText\?\.trim\(\)\?null:selectedConceptTopic\?\.topicId\|\|null/,
+   "old manually selected topics cannot override the new express prompt");
+ assert.match(studio,/const started=expressRenderRef\.current\(\)/,
+   "Express must call the original real renderer once from the trusted click");
+ assert.match(studio,/onCreate=\{openReadyForGeneration\}/,
+   "the existing separate guided/manual Create workflow remains intact");
+});

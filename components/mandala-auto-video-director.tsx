@@ -64,6 +64,7 @@ type Props={
   onCategoryChange?:(theme:VideoTheme)=>void;
   onAspectChange?:(value:"landscape"|"portrait"|"square")=>void;
   onContinue?:()=>void;onClarify?:()=>void;helpOpen?:boolean;
+  onGenerateExpress:(goal:string)=>boolean;expressFeedback?:string;
   goalContinueRef?:{current:(()=>boolean)|null};
   onShowAll?:()=>void;
   onInvalidate?:()=>void;
@@ -183,7 +184,7 @@ const themeLabels={
 
 export function MandalaAutoVideoDirector({
  locale,goal,theme,aspect,presets,scenes,disabled,activePresetId,clipLabel,
- audioAttached=false,audioTrackLabel="",audioTrackId=null,onPickAudio,onOpenAudio,recipientAudioPanel,audioStoryboardReady=false,onAudioToMontage,onAudioSelectionChange,onGoalChange,onPickPhoto,onOpenPro,onConceptTopicChange,onGoalQuizChange,onCategoryChange,onAspectChange,onContinue,goalContinueRef,onClarify,helpOpen=false,onShowAll,onInvalidate,onApply,onCreate,canCreate=false,rendering=false,createFeedback=""
+ audioAttached=false,audioTrackLabel="",audioTrackId=null,onPickAudio,onOpenAudio,recipientAudioPanel,audioStoryboardReady=false,onAudioToMontage,onAudioSelectionChange,onGoalChange,onPickPhoto,onOpenPro,onConceptTopicChange,onGoalQuizChange,onCategoryChange,onAspectChange,onContinue,goalContinueRef,onClarify,helpOpen=false,onGenerateExpress,expressFeedback="",onShowAll,onInvalidate,onApply,onCreate,canCreate=false,rendering=false,createFeedback=""
 }:Props){
  const t=copy[locale];
  // A licensed four-shot sample is visible before any click; no recording begins automatically.
@@ -202,6 +203,7 @@ export function MandalaAutoVideoDirector({
  const requestDraft=requestDrafts[videoAudience];
  const [quickScope,setQuickScope]=useState<"life"|"work">("life");
  const [quickFlow,setQuickFlow]=useState<"guide"|"instant">("guide");
+ const [expressAttempted,setExpressAttempted]=useState(false);
  const setRequestDraft=(next:string)=>setRequestDrafts(previous=>({...previous,[videoAudience]:next}));
  const [recipientKindId,setRecipientKindId]=useState<string>("");
  const [recipientAudioMode,setRecipientAudioMode]=useState(false);
@@ -636,6 +638,7 @@ export function MandalaAutoVideoDirector({
  };
  const changeVideoAudience=(mode:"self"|"others")=>{
    if(disabled||mode===videoAudience)return;
+   setExpressAttempted(false);
    const kind=getRecipientVideoKind(recipientKindId);
    const selectedSelfTheme=videoGoalCategories.find(item=>item.id===selectedCategoryId)?.theme||theme;
    const nextTheme=(mode==="others"?(kind?.theme||selectedSelfTheme):selectedSelfTheme) as VideoTheme;
@@ -858,7 +861,13 @@ export function MandalaAutoVideoDirector({
  // canonical category/topic UI and the same verified four-shot film renderer.
  const designFromRequest=()=>{
   if(disabled||!requestDraft.trim())return;
-  if(quickFlow==="instant"&&goalQuizComplete){onCreate?.();return;}
+  if(quickFlow==="instant"){
+   // Express must not require the three-step Guide me quiz or a second Ready click.
+   // One trusted tap runs the existing licensed scene/audio/credit-protected renderer.
+   setExpressAttempted(true);
+   onGenerateExpress(videoAudience==="others"?goal:requestDraft.trim());
+   return;
+  }
   setGoalQuizStep(1);setGoalCategoryAnswered(false);
   if(videoAudience==="others"){
    if(recipientAudioMode)return;
@@ -929,6 +938,7 @@ export function MandalaAutoVideoDirector({
      onKeyDown={event=>{if(event.key==="Enter"&&(event.ctrlKey||event.metaKey)){event.preventDefault();designFromRequest();}}}
      onChange={event=>{
        const text=event.currentTarget.value;
+       setExpressAttempted(false);
        const fallback=selectedTaxonomyTopic?.topic.label[locale]||
          taxonomySubcategories.find(row=>row.id===selectedSubcategoryId)?.label||"";
        const nextGoal=videoAudience==="others"
@@ -965,8 +975,8 @@ export function MandalaAutoVideoDirector({
     <details className={css.composerMenu} data-video-prompt-flow>
      <summary>{quickFlow==="guide"?"Guide me":"Just make it"}⌄</summary>
      <div className={css.composerMenuList}>
-      <button type="button" onClick={e=>{setQuickFlow("guide");e.currentTarget.closest("details")?.removeAttribute("open");}}>Guide me</button>
-      <button type="button" onClick={e=>{setQuickFlow("instant");e.currentTarget.closest("details")?.removeAttribute("open");}}>Just make it</button>
+      <button type="button" onClick={e=>{setQuickFlow("guide");setExpressAttempted(false);e.currentTarget.closest("details")?.removeAttribute("open");}}>Guide me</button>
+      <button type="button" onClick={e=>{setQuickFlow("instant");setExpressAttempted(false);e.currentTarget.closest("details")?.removeAttribute("open");}}>Just make it</button>
      </div>
     </details>
     <button type="button" className={css.toolbarIcon} data-video-request-microphone disabled={disabled||!onOpenAudio}
@@ -976,6 +986,8 @@ export function MandalaAutoVideoDirector({
       <Play size={19} fill="currentColor"/></button>
    </div>
   </div>
+  {quickFlow==="instant"&&expressAttempted&&expressFeedback?<p className={css.notice}
+    data-video-express-feedback role="status" aria-live="polite">{expressFeedback}</p>:null}
   {videoAudience==="self"&&goalQuizStep===1?<div className={css.quickIntentRow} data-video-quick-intents role="group" aria-label="Quick wishes">
    {([
     ["calm",locale==="ru"?"Меньше тревоги":locale==="es"?"Menos ansiedad":"Less anxiety",locale==="ru"?"Хочу больше спокойствия":locale==="es"?"Quiero más calma":"I want more calm"],
@@ -983,7 +995,7 @@ export function MandalaAutoVideoDirector({
     ["strength",locale==="ru"?"Внутренняя сила":locale==="es"?"Fuerza interior":"Inner strength",locale==="ru"?"Хочу быть увереннее":locale==="es"?"Quiero más confianza":"I want inner confidence"]
    ] as const).map(([id,label,wishText])=><button type="button" key={id} data-video-quick-intent={id}
      disabled={disabled} aria-pressed={requestDraft===wishText} onClick={()=>{
-      setRequestDraft(wishText);onGoalChange(wishText);onInvalidate?.();
+      setExpressAttempted(false);setRequestDraft(wishText);onGoalChange(wishText);onInvalidate?.();
       setPromptDesignedFor(null);setPromptClassification(null);
       setProposalContext({goal:wishText,theme});setProposal(recommendAutoVideo({goal:wishText,locale,fallbackTheme:theme,presets,scenes}));
      }}>{label}</button>)}
