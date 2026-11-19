@@ -24,6 +24,7 @@ import {planAudioVisualStoryboard} from "@/lib/mandala/audio-visual-storyboard.m
 import {suggestVideoConcept} from "@/lib/mandala/auto-video-concept.mjs";
 import {createPreviewGainGroup} from "@/lib/mandala/preview-volume";
 import type {PreviewGainGroup} from "@/lib/mandala/preview-volume";
+import {planExpressVideo} from "@/lib/mandala/express-video-director.mjs";
 import {deriveAudioVideoConcept} from "@/lib/mandala/audio-concept-director.mjs";
 import {consumeVoiceStudioHandoff} from "@/lib/mandala/voice-studio-handoff.mjs";
 import {requestConsentedTimedTranscript} from "@/lib/mandala/consented-audio-stt";
@@ -2432,6 +2433,24 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const audioInputRef = useRef<HTMLInputElement>(null);
   const [uploadedAudio,setUploadedAudio] = useState<{file:File;url:string}|null>(null);
   const [importedAudioSeconds,setImportedAudioSeconds]=useState<number|null>(null);
+  // Read a local uploaded audio's duration; no transcription, upload or play.
+  useEffect(()=>{
+    if(!uploadedAudio)return;
+    let mounted=true;
+    const probe=new Audio();
+    const onMetadata=()=>{
+      if(mounted&&Number.isFinite(probe.duration)&&probe.duration>0)
+        setImportedAudioSeconds(probe.duration);
+    };
+    probe.preload="metadata";
+    probe.addEventListener("loadedmetadata",onMetadata);
+    probe.src=uploadedAudio.url;probe.load();
+    return()=>{
+      mounted=false;
+      probe.removeEventListener("loadedmetadata",onMetadata);
+      probe.removeAttribute("src");probe.load();
+    };
+  },[uploadedAudio?.url]);
   const messengerAudioHandoffRef=useRef<{locale:PublicLocale;promise:ReturnType<typeof consumeMessengerAudio>}|null>(null);
   const uploadedAudioRef = useRef<{file:File;url:string}|null>(null);
   const verifiedLibraryAudioFileRef=useRef<File|null>(null);
@@ -5740,6 +5759,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     return true;
   };
 
+  // flushSync commits the recipe on the same trusted user gesture. This ref
+  // replaces stale React closures before the existing real MP4 writer starts.
+  const expressRenderRef=useRef<()=>boolean>(()=>false);
+  expressRenderRef.current=startFromHero;
   // This is a local, non-persistent preview. A click also unlocks muted
   // same-origin footage on iOS before React's paint effect starts.
   const openAffirmationPreview = () => {
@@ -6068,14 +6091,127 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       });
     }));
   };
-  // Apply the selected Goal scenes, then open Ready without rendering.
-  const generateFromGoal=()=>{
-    if(!goalQuizReady||!studioHydrated||recording||preparing)return false;
-    let goalValid=true;
-    flushSync(()=>{goalValid=goalContinueRef.current?.()!==false;});
-    if(!goalValid)return false;
-    return openReadyForGeneration();
+  // Express: source-backed storyboard + licensed music or exact user audio
+  // + actual protected local encoder, all initiated by ONE Create gesture.
+  const generateExpressFromCurrent=()=>{
+    if(!studioHydrated||recording||preparing||preparingRef.current||
+       jobRef.current||webCodecJobRef.current||sttBusy||micRecording)return false;
+    if(creditCatalog===null||creditCatalog.blocked||creditSession==="checking"||
+       creditSession==="unavailable"){
+      setNotice(locale==="ru"?"Экспорт пока не готов: проверяем доступ и кредиты.":
+        locale==="es"?"La exportación aún no está disponible.":
+          "Export eligibility and credits are not yet available.");
+      return false;
+    }
+    if(creditCatalog.chargeRequired&&creditSession==="guest"&&guestFirstVideoUsed){
+      setNotice(locale==="ru"?"Первое бесплатное видео уже использовано. Для нового войдите в аккаунт.":
+        locale==="es"?"Tu primer vídeo gratuito ya se utilizó. Inicia sesión.":
+          "Your free first video has been used. Sign in to create another.");
+      setActiveWorkspace("pro");return false;
+    }
+    if(photoPending||phrasePending||narrationInvalid||hypnoAudioBusy){
+      setNotice(locale==="ru"?"Завершите подготовку фото и подтвердите изменения голоса.":
+        locale==="es"?"Completa la foto y confirma las modificaciones de voz.":
+          "Finish photo preparation and approve pending voice edits.");
+      return false;
+    }
+    if(photoUrl&&!backgroundOnly&&!photoConsent){
+      setNotice(supportUi.heroConsent);return false;
+    }
+    const original=uploadedAudio||(attachedAudio?.kind==="file"?
+      {file:attachedAudio.file,url:attachedAudio.id}:null);
+    if(original&&!audioRights){
+      setNotice(ui.audioRightsHelp);
+      setActiveWorkspace("editor");setMontagePanel("audio");return false;
+    }
+    const measured=original?(importedAudioSeconds??voiceTranscript?.durationSeconds??
+      (attachedAudio?.kind==="file"?attachedAudio.speechSeconds:null)??null):null;
+    const recipe=planExpressVideo({
+      locale,goal:wish,theme,selectedTopicId:selectedConceptTopic?.topicId||null,
+      personalization:confirmedFilmPersonalization,transcript:voiceTranscript,
+      hasAudio:Boolean(original),audioDurationSeconds:measured
+    });
+    if(!recipe.canRender){
+      setNotice(recipe.reason==="AUDIO_DURATION_UNKNOWN"
+        ?(locale==="ru"?"Подготавливаем сведения о длительности аудио.":
+          locale==="es"?"Leyendo la duración del audio.":"Reading audio duration.")
+        :recipe.reason==="AUDIO_OVER_59_SECONDS"
+        ?(locale==="ru"?"Аудио длиннее 59 секунд. Экспресс не обрезает медитацию; используйте длинный редактор.":
+          locale==="es"?"Audio de más de 59 s. Exprés no recorta tu grabación.":
+            "Audio is longer than 59 seconds. Express never truncates it.")
+        :(locale==="ru"?"Не хватает подходящих проверенных кадров или музыки. Откройте ручной монтаж.":
+          locale==="es"?"No hay suficientes recursos autorizados. Usa el montaje manual.":
+            "No complete rights-reviewed footage and music match. Use manual montage."));
+      return false;
+    }
+    const nextTheme=recipe.theme as VideoTheme;
+    const preset=FREE_FILM_PRESETS.find(item=>item.theme===nextTheme);
+    if(!preset){setNotice(ui.videoUnavailable);return false;}
+    let plan:CinematicStoryboard;
+    try{
+      plan=compileFreeFilmPreset(preset,locale,recipe.durationSeconds,"portrait",{
+        clipIds:recipe.clipIds,durationSecondsByStage:recipe.durationSecondsByStage,
+        captionTexts:recipe.captionTexts,excludedMotifs:recipe.excludedMotifs
+      });
+    }catch{
+      setNotice(locale==="ru"?"Кадры не прошли проверку формата и источников. Экспорт не начат.":
+        locale==="es"?"Escenas no validadas; no se inició la exportación.":
+          "Footage failed its real source and timeline checks; no export started.");
+      return false;
+    }
+    const speech=Boolean(original)&&Boolean(voiceTranscript?.text||
+      recipientAudioSelected||(attachedAudio?.kind==="file"&&attachedAudio.narration));
+    const selected=!original&&attachedAudio?.kind==="preset"&&
+      curatedAudioTracks.some(track=>track.id===attachedAudio.id)?
+      attachedAudio.id:recipe.musicId;
+    const musicTrack=!original&&selected?selected as PresetId:null;
+    const voiceBed=speech&&recipe.musicId&&
+      MYTUBE_REVIEWED_MUSIC_BEDS.includes(recipe.musicId)?
+      recipe.musicId as `curated-${string}`:null;
+    stopSoundPreview();stopMovieSound();
+    // Updating React and invoking the current callback happen synchronously
+    // within the same Safari tap. No intermediate Match Footage / Ready click.
+    flushSync(()=>{
+      setStudioMode("pump");setActiveWorkspace("ready");
+      setReadyGenerationPending(true);
+      setPracticeType("video");
+      setPracticeLevels(current=>({...current,video:"basic"}));
+      setCreationMode("catalog");setFreeVideoPlan(null);
+      setActiveFreeFilmPreset(preset.id);
+      setCinematicPlan(plan);setTimelineTextClips(null);
+      setTheme(nextTheme);setVideoCategory(nextTheme);
+      if(nextTheme==="money")setMoneyScene(preset.clips[0] as MoneySceneId);
+      else{setMoneyScene(null);setOtherScene(otherVideoScenes[nextTheme][0].id);}
+      setAspect("portrait");setDuration(recipe.durationSeconds);
+      setQuality("hd");setActiveMontageStyleId(null);
+      setSpeed(original?"slow":"dynamic");setBrightness("soft");
+      if(!photoUrl||!photoConsent)setBackgroundOnly(true);
+      setAudioStartSeconds(0);setAudioAuto(false);setMusicWarning("");
+      setCaptionMode("none");
+      setAffirmations(current=>({...current,enabled:false,selected:[]}));
+      if(original){
+        setMusic("none");setSoundVolume(100);
+        setAttachedAudio({kind:"file",file:original.file,id:original.url,nonLoop:true});
+        setMusicBed(voiceBed?{id:voiceBed,volumePercent:15,fadeSeconds:1}:
+          {id:"none",volumePercent:30,fadeSeconds:1});
+      }else{
+        setMusic(musicTrack||"none");setSoundVolume(75);
+        setAttachedAudio(musicTrack?{kind:"preset",id:musicTrack}:null);
+        setMusicBed({id:"none",volumePercent:30,fadeSeconds:1});
+      }
+      setPreviewSeekSeconds(0);setPreviewPlayhead(0);
+      setPreviewPlaying(false);setIntroPlaying(false);
+    });
+    const started=expressRenderRef.current();
+    if(!started){
+      setReadyGenerationPending(false);
+      setNotice(locale==="ru"?"Создание не началось: проверьте ограничения аудио, кадров и кредитов.":
+        locale==="es"?"No se inició: verifica audio, escenas y créditos.":
+          "Video did not start. Check audio, footage and credit eligibility.");
+    }
+    return started;
   };
+  const generateFromGoal=()=>generateExpressFromCurrent();
 
   const openVideoScenarioStep = () => {
     setIntroPlaying(false);setIntroDismissed(true);
@@ -6939,6 +7075,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>:null}
       </div>
     </div>
+    {uploadedAudio?<button type="button" className={videoStyles.quickGenerate}
+      data-video-recipient-express-create
+      disabled={!studioHydrated||recording||preparing||micRecording||sttBusy||
+        !audioRights||!(importedAudioSeconds||voiceTranscript?.durationSeconds)}
+      onClick={generateExpressFromCurrent}>
+      <Film size={19}/>{locale==="ru"?"Создать видео с моим аудио · 1 клик":
+        locale==="es"?"Crear vídeo con mi audio · 1 clic":
+          "Create video with my audio · 1 click"}
+    </button>:null}
+    {uploadedAudio&&!voiceTranscript?<small data-video-recipient-express-source-note>
+      {locale==="ru"?"Без расшифровки видеоряд следует описанию, а не неизвестным словам записи. Оригинальный звук сохраняется без повторов.":
+        locale==="es"?"Sin transcripción, las escenas siguen el tema, no las palabras desconocidas; audio original sin bucles.":
+          "Without transcription, scenes follow your topic rather than unrecognized words; audio is never looped."}
+    </small>:null}
     {musicWarning?<p role="status">{musicWarning}</p>:null}
     <button type="button" className={videoStyles.recipientAudioNext} data-video-recipient-audio-next
       disabled={!audioPlanApplied||!voiceVisualPlan?.canExport||!audioRights} onClick={goRecipientAudioToMontage}>
@@ -7266,9 +7416,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </div>
           <div className={videoStyles.stageActionPair} data-video-stage-actions="goal" data-video-request-after-topic>
             <button type="button" className={videoStyles.quickGenerate} data-video-stage-generate="goal"
-              disabled={!goalQuizReady||!studioHydrated||recording||preparing} onClick={generateFromGoal}>
+              disabled={(!goalQuizReady&&!wish.trim()&&!uploadedAudio)||!studioHydrated||recording||preparing}
+              onClick={generateFromGoal} data-video-express-create>
               <Play size={20} fill="currentColor" aria-hidden="true"/>
               {locale==="ru"?"Создать видео":locale==="es"?"Generar vídeo":"Generate video"}
+              <small>{locale==="ru"?"Экспресс · 1 клик":locale==="es"?"Exprés · 1 clic":"Express · 1 click"}</small>
               {creditCatalog?.chargeRequired && creditCatalog.ready ?
                 <small>{creditSession==="guest"&&!guestFirstVideoUsed
                   ?locale==="ru"?"Первое бесплатно":locale==="es"?"Primero gratis":"First free"
