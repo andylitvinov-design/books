@@ -4,6 +4,10 @@ import {readFileSync} from "node:fs";
 import catalog from "../data/video-catalog/scene-taxonomy.json" with {type:"json"};
 import original from "../data/video-catalog/original-motion-scenes-v1.json" with {type:"json"};
 import {suggestVideoConcept} from "../lib/mandala/auto-video-concept.mjs";
+import {STORY_PHOTO_BY_ID,isTrustedStoryPhoto,MYTUBE_SCENARIO_PHOTO_COVERAGE}
+ from "../lib/mandala/story-photo-library.mjs";
+import {storyboardPhotoReferences,STORYBOARD_REFERENCE_STATUS}
+ from "../lib/mandala/storyboard-photo-references.mjs";
 import {
   planReviewedFilmedStory,isReviewedFilmedStoryScene,isReviewedFilmedStorySequence
 } from "../lib/mandala/reviewed-filmed-story.mjs";
@@ -121,4 +125,51 @@ test("love as an Ideas topic still produces six filmed story cards",()=>{
  assert.equal(plan.ok,true);
  assert.equal(plan.shots.length,6);
  assert.ok(plan.shots.every(s=>byId.get(s.sceneId)?.media==="licensed_mp4"));
+});
+
+test("all 256 canonical film scenarios display six distinct real photographic references, not six schematic placeholders",()=>{
+ const scenarios=Object.keys(MYTUBE_SCENARIO_PHOTO_COVERAGE);
+ assert.equal(scenarios.length,256);
+ for(const scenarioId of scenarios){
+  const categoryId=MYTUBE_SCENARIO_PHOTO_COVERAGE[scenarioId].categoryId;
+  const photos=storyboardPhotoReferences({scenarioId,categoryId,shotCount:6});
+  assert.equal(photos.length,6,scenarioId);
+  assert.ok(photos.every(photo=>photo&&isTrustedStoryPhoto(photo)),scenarioId);
+  assert.equal(new Set(photos.map(photo=>photo.id)).size,6,scenarioId);
+  assert.ok(photos.every(photo=>photo.src==="/api/video/story-photo/"+photo.id),
+    "only the same-origin licensed photo proxy is allowed");
+ }
+});
+
+test("Making Room for Love has six DIFFERENT action-near photographs, still explicitly unverified for MP4",()=>{
+ const photos=storyboardPhotoReferences({
+  scenarioId:"ready-relationship-s1",categoryId:"love-relationships",shotCount:6
+ });
+ assert.deepEqual(photos.map(photo=>photo?.id),[
+  "pexels-36113252","pexels-13410205","pexels-7747182",
+  "pexels-40043387","pexels-37713503","pexels-17123438"
+ ]);
+ assert.ok(photos.every(photo=>STORY_PHOTO_BY_ID.get(photo.id)===photo));
+ assert.equal(STORYBOARD_REFERENCE_STATUS,"editorial_photo_reference_not_action_verified");
+ assert.match(tab,/getMyTubeScenarioPhotos|storyboardPhotoReferences/);
+ assert.match(tab,/data-storyboard-reference-only/);
+ assert.match(tab,/data-storyboard-reference-photo/);
+ assert.match(tab,/data-storyboard-reference-status/);
+ assert.match(tab,/data-storyboard-reference-count/);
+ assert.match(tab,/data-story-media-kind=\{photo\?"photo":shot\?"video":reference\?"reference":"missing"\}/);
+ assert.match(tab,/data-storyboard-media-ready=\{manualFiveReady\|\|eligible\}/,
+  "photo reference is NOT the licence, matched action or permission to generate MP4");
+ assert.match(tab,/v3RequiresActionProof/);
+ assert.doesNotMatch(tab,/onApply\(references|onApply\(storyboardPhotoReferences/,
+  "reference photos must never silently be handed off to renderer");
+});
+
+test("preview references fail closed on unknown scenario/categories and people exclusion",()=>{
+ assert.deepEqual(storyboardPhotoReferences({scenarioId:"unknown",categoryId:"unknown",shotCount:6}),
+  [null,null,null,null,null,null]);
+ assert.deepEqual(storyboardPhotoReferences({shotCount:99}),[]);
+ const withoutPeople=storyboardPhotoReferences({scenarioId:"ready-relationship-s1",
+  categoryId:"love-relationships",shotCount:6,avoidImagery:["no people"]});
+ assert.ok(withoutPeople.every(photo=>!photo||!photo.tags.some(tag=>
+  /^(?:people|person|man|woman|women|men|couple|friend|hands|family|crowd|child|walking)$/.test(tag))));
 });
