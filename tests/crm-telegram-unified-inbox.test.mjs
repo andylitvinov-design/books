@@ -67,3 +67,11 @@ test('confirmed Business order reuses original CRM peer rather than duplicating 
  assert.match(service,/origin:'telegram_business'/)
  assert.doesNotMatch(service,/scope:'crm-tg-business-peer'/)
 })
+
+test('transient history persistence still replies and retries the signed update',()=>{
+ assert.match(handler,/HH_TG_CONSENTED_HISTORY_UNAVAILABLE/)
+ assert.match(handler,/botLeadCapturePendingRetry=true/)
+ assert.match(handler,/if\(businessLead\?\.unavailable\)/)
+ assert.match(handler,/if\(stop\.blocked\|\|stop\.justStopped\)/)
+ assert.match(handler,/TELEGRAM_CRM_STOP_UNCONFIRMED/)
+})

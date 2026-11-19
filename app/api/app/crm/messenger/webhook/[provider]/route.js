@@ -19,6 +19,7 @@ import { receiveOwnerTelegramVideoCrmFallback } from '@/lib/practitioners/owner-
 import {processTelegramBusinessConversation} from '@/lib/crm/telegram-business-service'
 import {captureTelegramBotLead,captureTelegramBusinessLead,captureTelegramBotConsentedMessage,suppressTelegramBusinessLead} from '@/lib/crm/telegram-lead-capture'
 import {captureTelegramLeadBestEffort} from '@/lib/crm/telegram-lead-capture-policy.mjs'
+import {captureWhatsAppFirstContact,recordWhatsAppInboundReceipt} from '@/lib/crm/whatsapp-lead-capture'
 import {telegramBusinessMessageFromUpdate} from '@/lib/assist/telegram-business-request.mjs'
 import {parseHiTelegramRating} from '@/lib/holistic-support/hi-learning-policy.mjs'
 import {insertHiLearningQuality} from '@/lib/holistic-support/hi-learning-store'
@@ -98,13 +99,18 @@ export async function POST(request,{params}){
     if(provider==='telegram'){
       const stop=await gateTelegramBusinessSecretaryOptOut(body,config)
       if(stop.blocked||stop.justStopped){
-        try{await suppressTelegramBusinessLead(body,config)}
-        catch{console.error('HH_TG_BUSINESS_CRM_STOP_UNCONFIRMED')}
+        try{
+          const suppressed=await suppressTelegramBusinessLead(body,config)
+          if(suppressed!==true)throw new AppError('TELEGRAM_CRM_STOP_UNCONFIRMED',503)
+        }catch{
+          console.error('HH_TG_BUSINESS_CRM_STOP_UNCONFIRMED')
+          throw new AppError('TELEGRAM_CRM_STOP_UNCONFIRMED',503)
+        }
         if(stop.blocked)return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
       }
     }
     // A first verified Business contact becomes an unqualified CRM lead before
-    // optional service/FAQ dialogue; no unconsented message body is stored.
+    // optional service/FAQ dialogue; encrypted CRM history is owner-only.
     const businessLead=provider==='telegram'
       ?await captureTelegramLeadBestEffort(
         ()=>captureTelegramBusinessLead(body,config),
@@ -159,6 +165,7 @@ export async function POST(request,{params}){
             console.error('HH_TG_BUSINESS_REPLY_NOT_CONFIRMED')
           }
         }
+        if(businessLead?.unavailable)throw new AppError('TELEGRAM_CRM_CONTACT_UNCONFIRMED',503)
         return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
       }
       // After the existing consent/format/STOP workflow, respond to explicit
@@ -182,6 +189,7 @@ export async function POST(request,{params}){
             console.error('HH_TG_SECRETARY_REPLY_NOT_CONFIRMED')
           }
         }
+        if(businessLead?.unavailable)throw new AppError('TELEGRAM_CRM_CONTACT_UNCONFIRMED',503)
         return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
       }
       // Unknown first customer message should not disappear into a silent chat.
@@ -197,6 +205,7 @@ export async function POST(request,{params}){
             to:businessLead.chatId,text})
         }catch{console.error('HH_TG_BUSINESS_FIRST_REPLY_NOT_CONFIRMED')}
       }
+      if(businessLead?.unavailable)throw new AppError('TELEGRAM_CRM_CONTACT_UNCONFIRMED',503)
     }
 
     const updates=normalizeMessengerUpdates(provider,body)
@@ -213,13 +222,34 @@ export async function POST(request,{params}){
     }
     for(const event of updates){
       if(provider==='whatsapp'){
+        let waCaptureSuppressed=false
+        // The same signed Meta message must first create a CRM contact and
+        // replyable thread even when the client has not chosen a service or
+        // consented to AI diagnostics. Never store unconsented message text.
+        if(event.type==='incoming'){
+          try{
+            const first=await captureWhatsAppFirstContact(event,config)
+            waCaptureSuppressed=first.suppressed===true
+          }catch{
+            console.error('HH_CRM_WA_FIRST_CONTACT_UNAVAILABLE')
+            throw new AppError('WHATSAPP_CRM_CONTACT_UNCONFIRMED',503)
+          }
+        }
         const proof=await processWhatsAppAccountLink(event,config)
-        if(proof.handled||!channelTransportReady('whatsapp'))continue
+        if(proof.handled||!channelTransportReady('whatsapp')){
+          if(proof.handled&&event.type==='incoming'&&!waCaptureSuppressed)
+            await recordWhatsAppInboundReceipt(event,config)
+          continue
+        }
         if(event.type==='incoming'){
           // Reuse the verified public Secretary catalogue, not a second AI
           // provider. Never intercept consent, STOP or an active private intake.
           const secretary=await processWhatsAppSecretary(event,config)
           if(secretary.handled){
+            // Each accepted WhatsApp update is reflected in the operator CRM,
+            // but outside explicit intake only a neutral receipt is retained.
+            if(!waCaptureSuppressed)
+              await recordWhatsAppInboundReceipt(event,config)
             if(secretary.reply){
               try{
                 await consumeRate(config,{op:'hh-wa-secretary-chat',
@@ -253,6 +283,11 @@ export async function POST(request,{params}){
                 ?'Aún no puedo confirmar la solicitud. Envía /retry_request.'
                 :'I cannot confirm your request yet. Send /retry_request.'
           }
+          // If intake stored an explicitly consented message, the original
+          // provider event already exists and this idempotent receipt is a no-op.
+          // Otherwise retain a neutral touchpoint, never personal text/media.
+          if(!waCaptureSuppressed)
+            await recordWhatsAppInboundReceipt(event,config)
           if(intake.handled&&intake.reply){
             // Consent/CRM state are committed before one reply attempt.
             // Uncertain provider outcomes must not automatically repeat.
@@ -260,7 +295,8 @@ export async function POST(request,{params}){
               to:intake.to,text:intake.reply,keyboard:intake.keyboard,locale:intake.locale
             })}catch{console.error('HH_CRM_WA_PROMPT_SEND_UNCONFIRMED')}
           }
-          // No contact is created from an unconsented generic message.
+          // Every verified, connected inbound has a contact and at least
+          // a neutral message receipt, independent of the chosen scenario.
           continue
         }
       }
@@ -285,7 +321,13 @@ export async function POST(request,{params}){
         }
         const companion=await processTelegramCompanion(event,config)
         if(companion.handled){
-          if(!event.callbackId)await captureTelegramBotConsentedMessage(event,config)
+          if(!event.callbackId){
+            try{await captureTelegramBotConsentedMessage(event,config)}
+            catch{
+              console.error('HH_TG_CONSENTED_HISTORY_UNAVAILABLE')
+              botLeadCapturePendingRetry=true
+            }
+          }
           // Client-initiated bootstrap of native Telegram Menu. Never do this
           // for callbacks, diagnostic deep links, media, STOP or owner video.
           // The signed webhook + committed Companion session are already
@@ -340,7 +382,13 @@ export async function POST(request,{params}){
         // for explicitly started or already active V3 diagnostic sessions.
         const aiIntake=await processTelegramAiV3(diagnosticEvent,config)
         if(aiIntake.handled){
-          if(!event.callbackId)await captureTelegramBotConsentedMessage(event,config)
+          if(!event.callbackId){
+            try{await captureTelegramBotConsentedMessage(event,config)}
+            catch{
+              console.error('HH_TG_CONSENTED_HISTORY_UNAVAILABLE')
+              botLeadCapturePendingRetry=true
+            }
+          }
           if(aiIntake.serviceFinalize){
             try{
               const finished=await finalizeTelegramV3Service(config,aiIntake.serviceFinalize)
@@ -445,7 +493,13 @@ export async function POST(request,{params}){
         }
         const intake=await processTelegramDiagnostic(diagnosticEvent,config)
         if(intake.handled){
-          if(!event.callbackId)await captureTelegramBotConsentedMessage(event,config)
+          if(!event.callbackId){
+            try{await captureTelegramBotConsentedMessage(event,config)}
+            catch{
+              console.error('HH_TG_CONSENTED_HISTORY_UNAVAILABLE')
+              botLeadCapturePendingRetry=true
+            }
+          }
           if(event.callbackId){
             // Acknowledge only after the encrypted stage transition commits.
             try{await acknowledgeTelegramInlineCallback({

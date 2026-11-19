@@ -34,7 +34,7 @@ function normalizer(){
  vm.runInContext(safe+normal,context,{timeout:1000});
  return context;
 }
-async function routeRun({source=candidate,payload=callback(),diagnostic='off',companion='off',provider='telegram',authorized=true,leadFailure=false,syncFailure=false}={}){
+async function routeRun({source=candidate,payload=callback(),diagnostic='off',companion='off',provider='telegram',authorized=true,leadFailure=false,historyFailure=false,syncFailure=false}={}){
  const context=normalizer(),calls={ingest:0,ack:0,send:0,ensure:0,intake:0,aiV3:0,companion:0,companionSend:0,waProof:0,waIntake:0,waSend:0,botCapture:0,businessCapture:0};
  class Response{constructor(body,{status=200}={}){this.body=body;this.status=status}static json(body,opts){return new Response(body,opts)}}
  Object.assign(context,{Buffer,NextResponse:Response,MESSENGER_CHANNELS:['telegram','whatsapp'],PRIVATE_HEADERS:{},console:{error:()=>{}},captureTelegramLeadBestEffort,getAppConfig:()=>({}),verifyMessengerWebhook:()=>authorized,verifyMessengerChallenge:()=>null,
@@ -53,8 +53,10 @@ async function routeRun({source=candidate,payload=callback(),diagnostic='off',co
    // Mock the new, owner-scoped lead persistence boundary without real DB writes.
    captureTelegramBusinessLead:async()=>{calls.businessCapture++;if(leadFailure)throw new Error('synthetic role 42501');return {created:false}},
    captureTelegramBotLead:async()=>{calls.botCapture++;if(leadFailure)throw new Error('synthetic role 42501');return {created:false}},
-   captureTelegramBotConsentedMessage:async()=>false,
-   suppressTelegramBusinessLead:async()=>false,
+   captureTelegramBotConsentedMessage:async()=>{if(historyFailure)throw new Error('synthetic history outage');return false},
+   suppressTelegramBusinessLead:async()=>true,
+   captureWhatsAppFirstContact:async()=>({handled:false,created:false}),
+   recordWhatsAppInboundReceipt:async()=>({recorded:false}),
    // WhatsApp locale marker helper belongs to the production normalizer, not this VM.
    whatsappExpressReviewLocale:()=>null,
    processTelegramCompanion:async()=>{calls.companion++;return companion==='handled'?{handled:true,to:'123456789',locale:'ru',text:'test companion welcome',markup:null}:{handled:false}},
@@ -167,13 +169,23 @@ test('signed Companion welcome remains replyable when first-contact CRM is unava
  assert.equal(result.calls.ingest,0);
 });
 
-test('signed Business message survives optional lead-capture denial without a fake CRM receipt',async()=>{
+test('signed Business messages retry missing CRM receipts without inventing a lead',async()=>{
  const payload={update_id:115,business_message:{business_connection_id:'test-connection',
     message_id:12,date:1,chat:{id:123456789,type:'private'},
     from:{id:123456789,is_bot:false},text:'Hello, service enquiry'}};
  const result=await routeRun({payload,leadFailure:true});
- assert.equal(result.response.status,200);
+ assert.equal(result.response.status,503);
  assert.equal(result.calls.businessCapture,1);
  assert.equal(result.calls.botCapture,0);
  assert.equal(result.calls.ingest,0);
+});
+
+test('a failed consented history append retries without silencing a protected client reply',async()=>{
+ const payload={update_id:119,message:{message_id:29,date:1,
+   chat:{id:123456789,type:'private'},
+   from:{first_name:'Fictional',is_bot:false},text:'I want to continue'}};
+ const result=await routeRun({payload,diagnostic:'handled',historyFailure:true});
+ assert.equal(result.response.status,503);
+ assert.equal(result.calls.intake,1);
+ assert.equal(result.calls.send,1);
 });
