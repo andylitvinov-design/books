@@ -2485,6 +2485,65 @@ test('unrelated protected public product advances do not invalidate a long-runni
     /PRODUCTION_BASE_CHANGED/);
 });
 
+test('unrelated scoped production APIs cannot block an unchanged passing CRM PR', async () => {
+  const live = 'c'.repeat(40);
+  const candidate = ['lib/crm/lead-service.mjs', 'app/api/app/crm/route.js'];
+  const target = [
+    'app/api/video/montage/route.ts',
+    'lib/shamanica/sources.mjs',
+    'components/business-team-analysis.tsx',
+  ];
+  const compare = (names, override = {}) => ({
+    status: 'ahead', ahead_by: 1, behind_by: 0, total_commits: 1,
+    base_commit: {sha: BASE}, merge_base_commit: {sha: BASE},
+    commits: [{sha: live}],
+    files: names.map(filename => ({filename, status: 'modified'})),
+    ...override,
+  });
+  assert.equal(safeDisjointPublicSourceAdvance(compare(target), BASE, live, candidate), true,
+    'separate API/features must not force another Core or Specialist wave');
+  for (const path of [
+    candidate[0], 'lib/crm/another-file.mjs',
+    'components/ali-persona.tsx', 'app/api/telegram/route.js',
+    'lib/video/auth-token.mjs', 'lib/shared/video-state.mjs',
+    'app/api/video/voice/route.ts', 'components/ui/video-panel.tsx',
+    'app/[locale]/page.tsx', 'package-lock.json',
+    '.github/workflows/hh-pr-core-release.yml',
+  ]) {
+    assert.equal(safeDisjointPublicSourceAdvance(compare([path]), BASE, live, candidate), false,
+      'overlap, shared source or cross-feature dependency must still block: ' + path);
+  }
+  for (const override of [
+    {status: 'diverged'}, {behind_by: 1}, {commits: []},
+    {total_commits: 2}, {files: []},
+    {files: [{filename: target[0], status: 'renamed', previous_filename: 'old.ts'}]},
+    {files: [{filename: target[0], status: 'removed'}]},
+    {files: [{filename: target[0], status: 'modified'}, {filename: target[0], status: 'modified'}]},
+  ]) {
+    assert.equal(safeDisjointPublicSourceAdvance(compare(target, override), BASE, live, candidate), false,
+      'incomplete or unsafe GitHub comparison cannot waive a gate');
+  }
+  const sources = {
+    base: new Map([[path, yaml]]), current: new Map([[path, yaml]]),
+    changedRows: candidate.map(filename => ({filename, status: 'M'})),
+  };
+  const api = {
+    pr: async () => ({...pr(), base: {...pr().base, sha: live}, mergeable: true}),
+    target: async () => live,
+    compare: async () => compare(target),
+    runs: async () => [run()],
+    jobs: async () => [{name: 'test', status: 'completed', conclusion: 'success'}],
+  };
+  const ctx = {repo, number: 27, head: SHA, base: BASE};
+  assert.deepEqual((await verify(api, ctx, sources, {maxWaitMs: 0})).expected, [path]);
+  await assert.rejects(() => verify({...api, compare: async () =>
+    compare(['app/api/telegram/route.js'])}, ctx, sources, {maxWaitMs: 0}),
+  /PRODUCTION_BASE_CHANGED/);
+  await assert.rejects(() => verify({...api, pr: async () => ({
+    ...pr(), base: {...pr().base, sha: live}, mergeable: false, mergeable_state: 'dirty',
+  })}, ctx, sources, {maxWaitMs: 0}), /MERGE_CONFLICT/);
+});
+
 test('stale protected BASE with disjoint public image advance reuses green Specialist after candidate deletion',async()=>{
  const current='c'.repeat(40);
  const source={base:new Map([[path,yaml]]),current:new Map([[path,yaml]]),
