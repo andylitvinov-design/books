@@ -96,7 +96,7 @@ import {rankPersonalMusic} from "@/lib/mandala/music-match.mjs";
 import { getGoalTreeAudioChoices } from "@/lib/mandala/goal-tree-audio-playlists.mjs";
 import {curatedAudioTracks,recommendCuratedAudio,curatedAudioMatchesCategory,inferVideoAudioCategory} from "@/lib/mandala/curated-audio-recommendations.mjs";
 import type { MoneySceneId } from "@/lib/mandala/money-flow-effects";
-import { orderRecordingMimes, proceduralMp4Route, selectWebCodecsForRecording, shouldAutoRecoverSafariPlayback } from "@/lib/mandala/recording-codecs.mjs";
+import { isAppleMobileDevice, orderRecordingMimes, proceduralMp4Route, selectWebCodecsForRecording, shouldAutoRecoverSafariPlayback } from "@/lib/mandala/recording-codecs.mjs";
 import { prepareFourFilmSources } from "@/lib/mandala/free-film-source-loader.mjs";
 import {verifiedCategorySource,verifiedSceneAspect,canonicalSourceMasterKey} from "@/lib/mandala/category-video-storyboard.mjs";
 import {STORY_PHOTO_BY_ID,isTrustedStoryPhoto,getMyTubeScenarioPhotos,MYTUBE_SCENARIO_PHOTO_COVERAGE} from "@/lib/mandala/story-photo-library.mjs";
@@ -4942,6 +4942,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   }
   function handleNativeVideoPlaybackFailure(video:HTMLVideoElement){
     if(!result)return;
+    // The previous Result verifier must not reject Ready's current Blob if
+    // its decoder finishes unloading during the workspace handoff.
+    if(activeWorkspace==="ready"&&video===resultVideoRef.current)return;
     // Two native players can observe the same failing Blob. A stale event
     // must not corrupt a newer successful movie or trigger a second retry.
     if(video.currentSrc&&video.currentSrc!==result.url)return;
@@ -7042,6 +7045,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   );
   // Visiting Ready alone is not proof of a verified exported movie.
   const readyResultVerified=Boolean(!readyGenerationPending&&result&&result.mode!=="catalog"&&playbackStatus==="ready"&&creditConfirmed);
+  const iphoneLocalPlayback=typeof navigator!=="undefined"&&
+    isAppleMobileDevice(navigator.userAgent,navigator.maxTouchPoints);
+  // The native MP4 writer is an alternate encoder; do not retry the same
+  // Safari WebCodecs path or select WebM that this iPhone cannot play.
+  const nativeIphoneMp4Available=recordingMimes(Boolean(attachedAudio)||musicBed.id!=="none",false,true)
+    .some(mime=>mime.startsWith("video/mp4;codecs=")&&mime.includes("avc1."));
   // The only workspace tab rail stays in the same place above the ONE player
   // for every mode; portal relocation previously changed geometry and focus.
   return (
@@ -7684,7 +7693,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       {activeWorkspace==="ready"?<MandalaVideoReady
         courseFlow={readyCourseFlow} locale={locale} theme={theme} wish={wish} focus={meditationFocus} aspect={aspect}
         video={!readyGenerationPending&&playbackStatus!=="failed"&&result&&result.mode!=="catalog"?{
-          url:result.url,extension:result.extension,bytes:result.bytes,duration
+          url:result.url,extension:result.extension,bytes:result.bytes,duration,blob:result.blob
         }:null}
         verified={Boolean(!readyGenerationPending&&result&&result.mode!=="catalog"&&playbackStatus==="ready"&&creditConfirmed)}
         checking={Boolean(!readyGenerationPending&&result&&playbackStatus==="checking")}
@@ -7692,11 +7701,19 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         progressQuestionnaire={renderCheckIn("ready-assessment-heading")}
         generationNotice={notice}
         exportFailed={Boolean(exportUnavailable||playbackStatus==="failed")}
-        canRetryExport={Boolean(canGenerate&&!creditOpRef.current&&!recording&&!preparing)}
+        canRetryExport={Boolean(canGenerate&&!creditOpRef.current&&!recording&&!preparing&&
+          (!iphoneLocalPlayback||nativeIphoneMp4Available))}
+        nativeIphoneMp4Retry={iphoneLocalPlayback&&nativeIphoneMp4Available}
         onRetryExport={()=>{
           // A new local attempt reserves a new idempotent hold only after the
           // rejected one has been released. Never publish a catalog substitute.
           if(creditOpRef.current)return;
+          if(iphoneLocalPlayback){
+            // Same licensed frames and selected AAC, original native Safari
+            // MediaRecorder instead of another rejected WebCodecs/WebM job.
+            if(nativeIphoneMp4Available)void createVideo(false,true);
+            return;
+          }
           const webm=recordingMimes(Boolean(attachedAudio),true)
             .some(mime=>mime.startsWith("video/webm"));
           if(result?.extension==="mp4"&&webm)void createVideo(true);
@@ -8330,7 +8347,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 ?"Este es un MP4 original del catálogo, no tu montaje personalizado. Usa un navegador compatible con la grabación Canvas para generar la versión ajustada."
                 :"This is an existing catalog MP4, not your custom montage. Use a browser with Canvas recording to export your selected settings."}
             </p>:null}
-            <video ref={resultVideoRef} key={result.url} src={result.url} controls playsInline preload="auto"
+            {activeWorkspace!=="ready"?<video ref={resultVideoRef} key={result.url} src={result.url} controls playsInline preload="auto"
               onPlay={()=>setVideoEffectStarted(true)}
               onEnded={()=>{setVideoEffectEnded(true);
                 window.requestAnimationFrame(()=>document.getElementById("video-effect-journey")
@@ -8339,7 +8356,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               onLoadedData={event=>confirmVideoPlayback(event.currentTarget)}
               onCanPlay={event=>confirmVideoPlayback(event.currentTarget)}
               onPlaying={event=>confirmVideoPlayback(event.currentTarget)}
-              onError={event=>handleNativeVideoPlaybackFailure(event.currentTarget)}/>
+              onError={event=>handleNativeVideoPlaybackFailure(event.currentTarget)}/>:null}
             {playbackStatus!=="failed"&&result.mode!=="catalog"&&creditCatalog?.chargeRequired&&creditSession!=="signed_in"
               ?<div className={videoStyles.guestPreviewActions} data-video-guest-preview-actions>
                 <button type="button" data-video-guest-play onClick={()=>{
