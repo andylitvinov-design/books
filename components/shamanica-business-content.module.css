@@ -116,7 +116,7 @@
  .root .feature h2{font-size:clamp(18.5px,4.7vw,21px)}
  .root .feature p{white-space:nowrap;text-overflow:ellipsis;overflow:hidden;max-width:64%}
  .root .services>h2{font-size:clamp(21px,5.75vw,26px);margin-bottom:5px}
- .root .serviceCard{height:clamp(63px,8dvh,72px)}
+ .root .serviceCard{height:clamp(61px,7.45dvh,68px)}
 }
 @media(max-width:759px) and (max-height:800px){
  .root .heroCopy h1{font-size:clamp(24px,6.55vw,28px)}
