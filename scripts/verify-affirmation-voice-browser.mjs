@@ -908,7 +908,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(compactVoicePanel.locator('[data-video-affirmation-voice-card^="fish-"]')).toHaveCount(4);
       await expect(compactVoicePanel.locator('[data-video-affirmation-voice-card="fish-igor"]')).toBeVisible();
       if(engine==="webkit")await meditationRole.tap(); else await meditationRole.click();
-      await expect(compactVoicePanel.locator('[data-video-affirmation-voice-card^="fish-"]')).toHaveCount(2);
+      // The approved meditation cast contains three EN and three RU candidates.
+      // All six must remain discoverable, while unlicensed voices stay disabled.
+      await expect(compactVoicePanel.locator('[data-video-affirmation-voice-card^="fish-"]')).toHaveCount(6);
+      for(const id of ['fish-selene','fish-calm-meditation','fish-e1','fish-zorya','fish-sasha','fish-m4'])
+        await expect(compactVoicePanel.locator('[data-video-affirmation-voice-card="'+id+'"]')).toHaveCount(1);
       await expect(compactVoicePanel.locator('[data-video-affirmation-voice-card="fish-selene"]')).toBeVisible();
       await expect(compactVoicePanel.locator('[data-video-affirmation-voice-card="fish-calm-meditation"]')).toBeDisabled();
       await expect(compactVoicePanel.locator('[data-voice-fish-status]')).toBeVisible();
