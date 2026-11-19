@@ -191,3 +191,18 @@ test("mobile browser acceptance taps the entire focus card and validates the nat
   assert.match(script, /"changing the selected focus never fabricates a CRM lead"/);
   assert.match(css, /\.choice\{[^}]*min-height:94px/);
 });
+
+
+test("free-review closing messenger buttons stay compact without losing either action", () => {
+  const entry = read("components/telegram-diagnostic-entry.tsx");
+  const entryCss = read("components/telegram-diagnostic-entry.module.css");
+  assert.match(landing, /className=\{styles\.reviewContact\}/);
+  assert.match(landing, /<TelegramDiagnosticEntry locale=\{locale\} \/>/);
+  assert.match(entryCss, /:global\(\[data-personal-express-enquiry\]\) \.entry/);
+  assert.match(entryCss, /:global\(\[data-personal-express-enquiry\]\) \.content p/);
+  assert.match(entryCss, /:global\(\[data-personal-express-enquiry\]\) \.channels/);
+  for (const channel of ["telegram", "whatsapp-manual"]) {
+    assert.ok(entry.includes('data-express-review-channel="' + channel + '"'));
+  }
+  assert.match(entryCss, /@media \(max-width: 580px\)/);
+});
