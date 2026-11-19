@@ -1,4 +1,4 @@
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance, safeScopedDisjointProductionAdvance } from '../lib/ci/production-base-impact.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -6,12 +6,41 @@ import {
   TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns, concurrencyOnlyAdvisory, selfTriggerRemovalAdvisory, isConcurrencyAdvisoryRun,
   inspectJobs, trustedConditionalJobs, trustedRequiredJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
-import { verify, githubReader, optionalMandalaMacosSkip, optionalProfileWriterSkip, revalidateAfterTrustedPolicyAdvance, verifiedOptionalOwnerSelectorMigration, trustedAdditiveActionlint } from '../scripts/ci-specialist-aggregate.mjs';
+import { verify, githubReader, optionalMandalaMacosSkip, optionalProfileWriterSkip, revalidateAfterTrustedPolicyAdvance, verifiedOptionalOwnerSelectorMigration, trustedAdditiveActionlint, requiresCurrentProductionBase } from '../scripts/ci-specialist-aggregate.mjs';
 // Run the focused dependency state/timeout regressions inside the existing
 // Core CI-policy test step; no new hosted workflow or required status.
 import './ci-specialist-wait.test.mjs';
 
 const repo='andylitvinov-design/books', SHA='a'.repeat(40), BASE='b'.repeat(40);
+
+test('public-only Services QA verifier does not cause false production-base strictness',()=>{
+  const publicSource=[
+    'app/[locale]/services/page.tsx',
+    'components/services-support-uniform.module.css',
+    'components/services-unified-catalog.tsx',
+    'scripts/verify-public-services-production.mjs',
+    'tests/services-three-visible-options.test.mjs',
+  ];
+  assert.equal(requiresCurrentProductionBase(publicSource),false,
+    'read-only public browser verifier must not turn safe catalogue work into sensitive code');
+  // The optional test script cannot waive ANY actual sensitive source, even
+  // in a mixed public catalogue PR. Release and data controls still fail closed.
+  for(const sensitive of [
+    'app/api/billing/checkout/route.ts',
+    'app/api/service-enquiries/route.ts',
+    'lib/practitioners/booking.js',
+    'components/app/client-private.jsx',
+    'tests/privacy-consent.test.mjs',
+    '.github/workflows/hh-pr-core-release.yml',
+    'scripts/ci-specialist-aggregate.mjs',
+    'package.json',
+    'supabase/migrations/001.sql',
+  ]) assert.equal(requiresCurrentProductionBase([...publicSource,sensitive]),true,
+    'protected source still requires a current production base: '+sensitive);
+  assert.equal(requiresCurrentProductionBase([]),true);
+});
+
+
 const pr=()=>({number:27,state:'open',draft:false,head:{sha:SHA,ref:'feat/test',repo:{full_name:repo}},base:{sha:BASE,ref:TARGET,repo:{full_name:repo}}});
 const path='.github/workflows/messenger.yml';
 const yaml="on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths:\n      - 'lib/crm/**'\n      - '!lib/crm/private/**'\n      - 'lib/crm/private/approved.mjs'\n  push:\n    branches: [main]\npermissions:\n  contents: read\njobs:\n  test:\n    runs-on: ubuntu-24.04\n";
@@ -2887,4 +2916,69 @@ test('Specialist still requires genuine exact-HEAD jobs across isolated domain T
   await assert.rejects(()=>verify({...api,compare:async()=>({...diff,files:[
     {filename:'tests/crm-telegram-cabinet-entry.test.mjs',status:'modified'}]})},
     ctx,sources,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);
+});
+
+
+test('PR #5093 media MP4 survives fully verified unrelated Ali CRM production advance', () => {
+  const live = 'c'.repeat(40);
+  const candidate = [
+    'components/mandala-automatic-storyboard.tsx',
+    'components/mandala-free-video-studio.tsx',
+    'components/mandala-video-mobile.module.css',
+    'lib/mandala/recording-codecs.d.mts',
+    'lib/mandala/recording-codecs.mjs',
+    'lib/mandala/webcodecs-mp4-export.ts',
+    'scripts/benchmarking/first-video-live-export.mjs',
+    'scripts/benchmarking/real-guest-video-file.mjs',
+    'scripts/verify-affirmation-voice-browser.mjs',
+    'tests/mandala-webcodecs-mp4.test.mjs',
+    'tests/video-director-chat-live-acceptance.test.mjs',
+  ];
+  const target = [
+    'app/api/app/crm/messenger/webhook/[provider]/route.js',
+    'components/app/messenger-ai-landing.tsx',
+    'components/home-dialogue-entry.tsx',
+    'lib/assist/ali-free-diagnostic-library.mjs',
+    'lib/assist/ali-free-diagnostic-reactions.mjs',
+    'lib/assist/ali-free-diagnostic.mjs',
+    'lib/assist/ali-guided-intake.mjs',
+    'lib/assist/ali-service-secretary.mjs',
+    'lib/assist/secretary-modes.mjs',
+    'lib/crm/telegram-ai-diagnostic-v3-service.js',
+    'lib/crm/telegram-ai-diagnostic-v3.mjs',
+    'lib/crm/telegram-business-inbox.js',
+    'lib/holistic-support/ali-personas.mjs',
+    'lib/holistic-support/conversation-intelligence.mjs',
+    'tests/ali-free-diagnostic.test.mjs',
+    'tests/crm-telegram-business-inbox-route.test.mjs',
+    'tests/telegram-delivery-status.test.mjs',
+    'tests/wave-assistant-topic-context.test.mjs',
+  ];
+  const diff = (files=target, override={}) => ({
+    status:'ahead',ahead_by:2,behind_by:0,total_commits:2,
+    base_commit:{sha:BASE},merge_base_commit:{sha:BASE},
+    commits:[{sha:'d'.repeat(40)},{sha:live}],
+    files:files.map(filename=>({filename,status:'modified'})),
+    ...override,
+  });
+  const check = (value, paths=candidate) => safeScopedDisjointProductionAdvance(value,BASE,live,paths);
+  assert.equal(check(diff()),true,'separate Ali/CRM and media domains must reuse successful checks');
+  for (const critical of [
+    candidate[1], 'components/mandala-export-dialog.tsx',
+    'lib/mandala/another-media-source.mjs',
+    '.github/workflows/hh-pr-core-release.yml', 'lib/ci/specialist-aggregate.mjs',
+    'package-lock.json', 'next.config.ts', 'components/ui/player.tsx',
+    'app/[locale]/layout.tsx', 'app/[locale]/about/layout.tsx',
+    'app/api/holistic-support/voice/route.js', 'lib/shared/codec-settings.mjs',
+    'scripts/unknown-deployment.mjs',
+  ]) assert.equal(check(diff([critical])),false,critical);
+  assert.equal(check(diff(['app/api/telegram/route.js']),['lib/crm/lead-service.mjs']),false,
+    'unrelated file names within the same actual CRM domain must remain blocked');
+  for (const broken of [
+    {status:'diverged'},{behind_by:1},{commits:[]},
+    {total_commits:3},{files:[]},
+    {files:[{filename:target[0],status:'deleted'}]},
+    {files:[{filename:target[0],status:'renamed',previous_filename:'old.js'}]},
+    {files:[{filename:target[0],status:'modified'},{filename:target[0],status:'modified'}]},
+  ]) assert.equal(check({...diff(),...broken}),false,'never accept unverified base change');
 });
