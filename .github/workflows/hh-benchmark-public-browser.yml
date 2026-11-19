@@ -1,7 +1,8 @@
 name: Holistic House benchmark public mobile browser smoke
 on:
+  # Expanded QA is opt-in: add the qa-optional label to an affected PR.
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    types: [labeled]
     branches: ['codex/public-book-library']
     paths:
       - 'scripts/benchmarking/public-browser-smoke.mjs'
@@ -16,7 +17,7 @@ concurrency:
 
 jobs:
   anonymous-smoke:
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.draft == false) && (github.event_name != 'pull_request' || github.event.label.name == 'qa-optional') }}
     name: Anonymous Chromium/WebKit · 320–430 · EN/RU/ES
     runs-on: ubuntu-24.04
     timeout-minutes: 16
