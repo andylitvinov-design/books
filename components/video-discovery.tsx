@@ -2,12 +2,14 @@
 
 import {Bookmark, RotateCcw, Search, SlidersHorizontal, Sparkles} from "lucide-react";
 import {useEffect, useMemo, useState} from "react";
+import Link from "next/link";
 import {rankDiscoveryVideos, VIDEO_GOALS} from "@/lib/video-discovery/ranker.mjs";
 import {VIDEO_LIFE_AREAS,VIDEO_CONTENT_TYPES,VIDEO_DIRECTIONS,VIDEO_TRADITIONS,lifeAreasForIntent} from "@/lib/video-discovery/taxonomy.mjs";
 import {LibraryFeed, type LibraryFeedItem} from "@/components/library-feed";
 import type {PublicLocale} from "@/lib/public-locales";
 import {listMyTubeCategories,listMyTubeSubcategories,listMyTubeTopics,listMyTubeScenarios,getMyTubeTopic} from "@/lib/mandala/mytube-content-taxonomy.mjs";
 import {listMyTubeScenarioMotifs,listMyTubeStyles,videoMatchesMyTubeVisualFilter} from "@/lib/mandala/mytube-creative-choices.mjs";
+import {getMyTubeScenarioPhotos} from "@/lib/mandala/story-photo-library.mjs";
 import {matchesMyTubeShelf,sortMyTubeCourseLessons,sortMyTubeMasterPresentations} from "@/lib/video-discovery/mytube-shelves.mjs";
 import {MyTubeCoursePlaylists} from "@/components/mytube-course-playlists";
 import {MyTubeYoutubeContinuation} from "@/components/mytube-youtube-continuation";
@@ -115,6 +117,7 @@ export function VideoDiscovery({locale,videos,variant="library",subtitle}:{local
   const mytubeSubcategories=mytubeCategoryId==="all"?[]:listMyTubeSubcategories(mytubeCategoryId,locale);
   const mytubeTopics=mytubeCategoryId==="all"||mytubeSubcategoryId==="all"?[]:listMyTubeTopics(mytubeCategoryId,mytubeSubcategoryId,locale);
   const mytubeScenarios=mytubeTopicId==="all"?[]:listMyTubeScenarios(mytubeTopicId,locale);
+  const mytubeScenarioPhotos=mytubeScenarioId==="all"?[]:getMyTubeScenarioPhotos(mytubeScenarioId);
   const mytubeMotifs=mytubeScenarioId==="all"?[]:listMyTubeScenarioMotifs(mytubeScenarioId,locale);
   const mytubeStyles=mytubeScenarioId==="all"?[]:listMyTubeStyles(locale);
   const motifCoverage=Object.fromEntries(mytubeMotifs.map(motif=>[
@@ -417,6 +420,34 @@ export function VideoDiscovery({locale,videos,variant="library",subtitle}:{local
               onClick={()=>{setMyTubeScenarioId(item.id);setMyTubeMotifId("all");setMyTubeStyleId("all");}}>{item.label}</button>)}
           </div>
         </>:null}
+        {variant==="mytube"&&mytubeScenarioId!=="all"&&mytubeScenarioPhotos.length===6?(
+          <section data-mytube-scenario-photos aria-label={locale==="ru"?"Шесть фотографий к сценарию":locale==="es"?"Seis fotos para la historia":"Six photos for this story"}
+            style={{margin:"16px 0",padding:14,border:"1px solid #E9DFD1",borderRadius:20,background:"#FFFCF7"}}>
+            <strong style={{display:"block",fontSize:18,color:"#143D3A"}}>
+              {locale==="ru"?"6 фотографий для выбранного сюжета":locale==="es"?"6 fotos para la historia seleccionada":"6 photos for the selected story"}
+            </strong>
+            <p style={{margin:"6px 0 12px",fontSize:14,color:"#5D6A71"}}>
+              {locale==="ru"?"Реальные фотографии, подобранные по четырём этапам сюжета. Перед монтажом проверяется загрузка каждого изображения.":locale==="es"?"Fotos reales ordenadas por cuatro escenas. Cada imagen se comprueba antes de crear el vídeo.":"Real photographs matched to four story beats. Each image is checked again before rendering."}
+            </p>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,minmax(0,1fr))",gap:8}}>
+              {mytubeScenarioPhotos.map((photo,index)=>
+                <div key={photo.id} style={{minWidth:0}}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={photo.src} alt={photo.labels[locale]} loading="lazy" decoding="async"
+                    width={320} height={480}
+                    style={{display:"block",width:"100%",height:"auto",aspectRatio:"2 / 3",objectFit:"cover",borderRadius:12,background:"#F5ECDC"}}/>
+                  <small style={{display:"block",fontSize:12,lineHeight:1.35,paddingTop:4,color:"#5D6A71"}}>
+                    {index+1}. {photo.labels[locale]}
+                  </small>
+                </div>)}
+            </div>
+            <Link data-mytube-use-scenario-photos prefetch={false}
+              href={"/"+locale+"/holistic-support/mandala?photoScenario="+encodeURIComponent(mytubeScenarioId)}
+              style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:52,marginTop:14,padding:"10px 14px",background:"#067A67",borderRadius:14,color:"white",fontWeight:700,textDecoration:"none",textAlign:"center"}}>
+              {locale==="ru"?"Создать видео из этих 6 фото":locale==="es"?"Crear vídeo con estas 6 fotos":"Create a video from these 6 photos"}
+            </Link>
+          </section>
+        ):null}
         {mytubeScenarioId!=="all"&&mytubeMotifs.length===5?<div data-mytube-visual-filter-extension>
           <div className={styles.groupHeading}><strong>{locale==="ru"?"Мотив — центральный образ":locale==="es"?"Motivo — imagen central":"Motif — central image"}</strong></div>
           <div className={styles.goals} data-mytube-motifs role="group"
