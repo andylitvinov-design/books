@@ -4,20 +4,6 @@ import { canonicalRedirectTarget, privateMigrationBridge } from './lib/canonical
 import { refreshAdminAuth } from './lib/app/admin-auth-refresh'
 import { personalVideoStorageCsp } from './lib/app/personal-video-storage-csp.mjs'
 import { instantHomeLocale } from './lib/instant-home-policy.mjs'
-function privatePath(pathname: string) {
-  const decoded = (() => { try { return decodeURIComponent(pathname) } catch { return pathname } })().replace(/\/+/g, '/')
-  return /^\/(en|ru|es)\/client(?:\/|$)/.test(decoded)
-    || /^\/(ru|en)\/report(?:\/|$)/.test(decoded)
-    || /^\/(ru|en)\/prescriptions\//.test(decoded)
-    || /^\/(ru|en|es)\/app(?:\/|$)/.test(decoded)
-    || /^\/api\/app(?:\/|$)/.test(decoded)
-    || decoded.startsWith('/api/client')
-    || decoded.startsWith('/api/prescriptions/')
-    || decoded.startsWith('/api/prescription-access')
-    || decoded.startsWith('/api/admin/')
-    || /^\/admin(?:\/|$)/.test(decoded)
-    || decoded.startsWith('/document-preview/')
-}
 // Exact standalone public HTML documents intentionally use only same-origin JS.
 // Next's nonce/strict-dynamic React CSP is not suitable for these static files.
 // Keep private/app/API CSP unchanged; never apply this policy to user content.
@@ -35,6 +21,20 @@ const INSTANT_PUBLIC_HOME_CSP = [
   "form-action 'self'",
   "frame-ancestors 'none'",
 ].join('; ')
+function privatePath(pathname: string) {
+  const decoded = (() => { try { return decodeURIComponent(pathname) } catch { return pathname } })().replace(/\/+/g, '/')
+  return /^\/(en|ru|es)\/client(?:\/|$)/.test(decoded)
+    || /^\/(ru|en)\/report(?:\/|$)/.test(decoded)
+    || /^\/(ru|en)\/prescriptions\//.test(decoded)
+    || /^\/(ru|en|es)\/app(?:\/|$)/.test(decoded)
+    || /^\/api\/app(?:\/|$)/.test(decoded)
+    || decoded.startsWith('/api/client')
+    || decoded.startsWith('/api/prescriptions/')
+    || decoded.startsWith('/api/prescription-access')
+    || decoded.startsWith('/api/admin/')
+    || /^\/admin(?:\/|$)/.test(decoded)
+    || decoded.startsWith('/document-preview/')
+}
 export async function middleware(request: NextRequest) {
   const redirectTarget = canonicalRedirectTarget(request.url, request.method)
   if (redirectTarget) return NextResponse.redirect(redirectTarget, 308)
