@@ -158,8 +158,8 @@ for (const engine of [chromium,webkit]){
             label+": four needs including business support");
           const review=root.locator("[data-home-free-review]");
           assert.equal(await review.count(),1,label+": one primary free review entry");
-          assert.equal(await review.getAttribute("href"),"/"+locale+"/services/free-situation-review",
-            label+": real localized free review route");
+          assert.equal(await review.getAttribute("href"),"/"+locale+"/explore/business",
+            label+": real localized business review route");
           const reviewBox=await review.boundingBox();
           const focusBox=await root.locator("[data-home-focus-grid]").boundingBox();
           assert.ok(reviewBox&&focusBox&&reviewBox.y+reviewBox.height<=focusBox.y,
@@ -171,6 +171,8 @@ for (const engine of [chromium,webkit]){
             label+": four topics above the Ali composer");
           await personal.click();
           assert.equal(await root.getAttribute("data-home-mode"),"self");
+          assert.equal(await review.getAttribute("href"),"/"+locale+"/services/free-situation-review",
+            label+": personal mode restores real free review route");
           const hero=root.locator("[data-home-dialogue-hero]");
           const heroRect=await hero.boundingBox();
           assert.ok(heroRect&&heroRect.y<600,label+": dialogue takes the first viewport");

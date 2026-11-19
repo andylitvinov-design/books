@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowRight, ArrowUp, BriefcaseBusiness, ChevronDown, HeartHandshake, Mic, Route, Sparkles, Leaf, Heart, TrendingUp, X, CheckCircle2 } from "lucide-react";
+import { ArrowRight, ArrowUp, BriefcaseBusiness, ChevronDown, HeartHandshake, Mic, Route, Sparkles, Leaf, Heart, TrendingUp, Target, UsersRound, BatteryCharging, X, CheckCircle2 } from "lucide-react";
 import { SiteNavigation } from "@/components/site-navigation";
 import { stageHomeAliHandoff } from "@/lib/home-ali-handoff.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -36,14 +36,19 @@ const COPY = {
     speechPrivacy:"Диктовка может использовать службу распознавания браузера.",
     transferError:"Не удалось передать запрос. Попробуйте ещё раз или откройте AI/Chat.",
     transferPrivacy:"Сообщение передаётся в чат Али. Начать можно без регистрации.",
-    freeReviewTitle:"Разобраться в своей ситуации", freeReviewDetail:"Бесплатный личный разбор",
-    sessionCta:"Записаться на сессию · от €50", sessionDetail:"Работа с образами и расстановки · Торонто и онлайн",
+    freeReviewTitle:"Разобраться в своей ситуации", freeReviewDetail:"Бесплатный личный разбор", businessReviewTitle:"Разобраться в задаче бизнеса", businessReviewDetail:"Бесплатный письменный бизнес-разбор", sessionCta:"Записаться на сессию · от €50", sessionDetail:"Работа с образами и расстановки · Торонто и онлайн",
     focusTitle:"Что важно для вас сегодня?",
     focusHints:[
-      {id:"stress",label:"Энергия и снятие стресса",detail:"Меньше тревоги, больше сил",prompt:"Мне нужна помощь со стрессом и энергией. Хочу спокойно понять, с чего начать."},
-      {id:"love",label:"Любовь и уверенность",detail:"Отношения и самооценка",prompt:"Хочу разобраться в отношениях или уверенности в себе. Помоги выбрать первый шаг."},
-      {id:"money",label:"Деньги и развитие",detail:"Цели, работа, личный рост",prompt:"Хочу разобраться с целями, деньгами и личным развитием. С чего мне начать?"},
-      {id:"business",label:"Поддержка бизнеса",detail:"Стратегия, команда, развитие",prompt:"Мне нужна бизнес-поддержка: стратегия, команда или рост. Помоги разобраться в задаче."},
+      {id:"stress",label:"Стресс и энергия",detail:"Тревога, усталость, восстановление",topic:"stress_energy",need:"stress_tension"},
+      {id:"love",label:"Любовь и отношения",detail:"Близость, семья, конфликты",topic:"relationships_esteem",need:"relationship_couple"},
+      {id:"confidence",label:"Уверенность и развитие",detail:"Самооценка, новые возможности",topic:"relationships_esteem",need:"esteem_confidence"},
+      {id:"money",label:"Деньги и жизненный путь",detail:"Доход, работа, направление",topic:"money_growth",need:"growth_income"},
+    ],
+    businessHints:[
+      {id:"business_clients",label:"Клиенты и доход",detail:"Клиентов мало или доход не растёт",topic:"business_support",need:"business_clients"},
+      {id:"business_strategy",label:"Стратегия и решения",detail:"Непонятно, куда двигаться дальше",topic:"business_support",need:"business_strategy"},
+      {id:"business_team",label:"Команда и партнёры",detail:"Сложности с командой или партнёрами",topic:"business_support",need:"business_team"},
+      {id:"business_burnout",label:"Стресс и выгорание",detail:"Всё держится на мне, сил не хватает",topic:"business_support",need:"business_burnout"},
     ],
     path:"Продолжить мой путь", pathDetail:"Мои практики, обучение и прогресс", benefits:["Личный взгляд","Практические шаги","Следующие возможности"], more:"Ещё возможности",
   },
@@ -60,14 +65,19 @@ const COPY = {
     speechPrivacy:"Dictation may use your browser's speech service.",
     transferError:"Couldn't pass your message to Ali. Try again or open AI/Chat.",
     transferPrivacy:"Your message goes to Ali’s chat. You can start without signing in.",
-    freeReviewTitle:"Understand my situation", freeReviewDetail:"Get a free personal review",
-    sessionCta:"Request a session · from €50", sessionDetail:"Guided imagery & systemic constellations · Toronto and online",
+    freeReviewTitle:"Understand my situation", freeReviewDetail:"Get a free personal review", businessReviewTitle:"Understand my business", businessReviewDetail:"Free written business review", sessionCta:"Request a session · from €50", sessionDetail:"Guided imagery & systemic constellations · Toronto and online",
     focusTitle:"What do you need today?",
     focusHints:[
-      {id:"stress",label:"Energy & Stress Release",detail:"Calm stress and restore balance",prompt:"I'd like help with stress and low energy. Can we work out a gentle first step?"},
-      {id:"love",label:"Love & Confidence",detail:"Relationships and self-esteem",prompt:"I'd like to understand my relationships or self-confidence better. Where should I begin?"},
-      {id:"money",label:"Money & Growth",detail:"Goals, work and direction",prompt:"I'd like help with money, goals and personal growth. Can we explore my next step?"},
-      {id:"business",label:"Business Support",detail:"Work, strategy and growth",prompt:"I need business support with strategy, team or growth. Help me clarify the issue."},
+      {id:"stress",label:"Stress & Energy",detail:"Stress, fatigue, recovery",topic:"stress_energy",need:"stress_tension"},
+      {id:"love",label:"Love & Relationships",detail:"Close relationships and conflict",topic:"relationships_esteem",need:"relationship_couple"},
+      {id:"confidence",label:"Confidence & Growth",detail:"Self-esteem and personal development",topic:"relationships_esteem",need:"esteem_confidence"},
+      {id:"money",label:"Money & Direction",detail:"Income, work and life direction",topic:"money_growth",need:"growth_income"},
+    ],
+    businessHints:[
+      {id:"business_clients",label:"Clients & Revenue",detail:"Not enough clients or stagnant income",topic:"business_support",need:"business_clients"},
+      {id:"business_strategy",label:"Strategy & Decisions",detail:"Unsure where to take the business",topic:"business_support",need:"business_strategy"},
+      {id:"business_team",label:"Team & Partners",detail:"Conflicts, leadership or delegation",topic:"business_support",need:"business_team"},
+      {id:"business_burnout",label:"Stress & Burnout",detail:"Too much responsibility, not enough energy",topic:"business_support",need:"business_burnout"},
     ],
     path:"Continue my path", pathDetail:"My practices, learning and progress", benefits:["Personal insights","Practical steps","Next best options"], more:"More ways to explore",
   },
@@ -84,19 +94,25 @@ const COPY = {
     speechPrivacy:"El dictado puede usar el servicio de voz del navegador.",
     transferError:"No pudimos pasar el mensaje a Ali. Inténtalo de nuevo o abre IA/Chat.",
     transferPrivacy:"Tu mensaje llega al chat de Ali. Puedes empezar sin registrarte.",
-    freeReviewTitle:"Comprender mi situación", freeReviewDetail:"Recibir una revisión personal gratuita",
-    sessionCta:"Solicitar una sesión · desde €50", sessionDetail:"Trabajo con imágenes y constelaciones · Toronto y online",
+    freeReviewTitle:"Comprender mi situación", freeReviewDetail:"Recibir una revisión personal gratuita", businessReviewTitle:"Comprender mi negocio", businessReviewDetail:"Revisión empresarial gratuita por escrito", sessionCta:"Solicitar una sesión · desde €50", sessionDetail:"Trabajo con imágenes y constelaciones · Toronto y online",
     focusTitle:"¿Qué necesitas hoy?",
     focusHints:[
-      {id:"stress",label:"Energía y alivio del estrés",detail:"Más calma y vitalidad",prompt:"Necesito apoyo para manejar el estrés y recuperar energía. ¿Por dónde empezar?"},
-      {id:"love",label:"Amor y confianza",detail:"Relaciones y autoestima",prompt:"Quiero entender mejor mis relaciones o mi confianza personal. ¿Cuál es el primer paso?"},
-      {id:"money",label:"Dinero y crecimiento",detail:"Metas, trabajo y rumbo",prompt:"Quiero mejorar mis metas, trabajo y crecimiento personal. ¿Por dónde empezar?"},
-      {id:"business",label:"Apoyo empresarial",detail:"Estrategia, equipo y progreso",prompt:"Necesito apoyo para mi negocio: estrategia, equipo o crecimiento. Ayúdame a aclararlo."},
+      {id:"stress",label:"Estrés y energía",detail:"Tensión, cansancio y recuperación",topic:"stress_energy",need:"stress_tension"},
+      {id:"love",label:"Amor y relaciones",detail:"Pareja, familia y conflictos",topic:"relationships_esteem",need:"relationship_couple"},
+      {id:"confidence",label:"Confianza y desarrollo",detail:"Autoestima y nuevas posibilidades",topic:"relationships_esteem",need:"esteem_confidence"},
+      {id:"money",label:"Dinero y rumbo",detail:"Ingresos, trabajo y propósito",topic:"money_growth",need:"growth_income"},
+    ],
+    businessHints:[
+      {id:"business_clients",label:"Clientes e ingresos",detail:"Faltan clientes o los ingresos no crecen",topic:"business_support",need:"business_clients"},
+      {id:"business_strategy",label:"Estrategia y decisiones",detail:"No sé hacia dónde avanzar",topic:"business_support",need:"business_strategy"},
+      {id:"business_team",label:"Equipo y socios",detail:"Conflictos, liderazgo o delegación",topic:"business_support",need:"business_team"},
+      {id:"business_burnout",label:"Estrés y agotamiento",detail:"Demasiada carga y poca energía",topic:"business_support",need:"business_burnout"},
     ],
     path:"Continuar mi camino", pathDetail:"Mis prácticas, aprendizaje y progreso", benefits:["Ideas personales","Pasos prácticos","Próximas opciones"], more:"Más posibilidades",
   },
 } as const;
-const FOCUS_ICONS = [Leaf, Heart, TrendingUp, BriefcaseBusiness] as const;
+const FOCUS_ICONS = [Leaf, Heart, Sparkles, TrendingUp] as const;
+const BUSINESS_ICONS = [TrendingUp, Target, UsersRound, BatteryCharging] as const;
 
 export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
   const router=useRouter();
@@ -114,7 +130,19 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
     return ()=>{speechRef.current?.abort();speechRef.current=null};
   },[]);
   const chatPath="/"+locale+"/app/messages?section=ai";
-  const hints=t.focusHints;
+  const hints=mode==="business"?t.businessHints:t.focusHints;
+  const hintIcons=mode==="business"?BUSINESS_ICONS:FOCUS_ICONS;
+
+  function startTopicJourney(topic:string,need:string) {
+    // Preserve direct Ali first-tap recommendations in personal mode.
+    // Business mode uses only public category IDs to enter the Support wizard.
+    if(mode==="self"){
+      const intent=topic==="stress_energy"?"stress":topic==="money_growth"?"money":"love";
+      router.push(chatPath+"&intent="+intent);
+      return;
+    }
+    router.push("/"+locale+"/services?topic="+encodeURIComponent(topic)+"&need="+encodeURIComponent(need));
+  }
 
   function startConversationWith(value:string, selectedMode:Mode=mode) {
     const prompt=value.trim();
@@ -193,22 +221,22 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
           <span><strong>{t.sessionCta}</strong><small>{t.sessionDetail}</small></span>
           <ArrowRight size={19} aria-hidden="true"/>
         </Link>
-        <Link href={"/"+locale+"/services/free-situation-review"} prefetch={false}
+        <Link href={mode==="business"?"/"+locale+"/explore/business":"/"+locale+"/services/free-situation-review"} prefetch={false}
           className={styles.reviewCta} data-home-free-review>
           <span className={styles.reviewCtaIcon}><Sparkles size={27} aria-hidden="true"/></span>
           <span className={styles.reviewCtaText}>
-            <strong>{t.freeReviewTitle}</strong>
-            <small>{t.freeReviewDetail}</small>
+            <strong>{mode==="business"?t.businessReviewTitle:t.freeReviewTitle}</strong>
+            <small>{mode==="business"?t.businessReviewDetail:t.freeReviewDetail}</small>
           </span>
           <ArrowRight size={23} className={styles.reviewCtaArrow} aria-hidden="true"/>
         </Link>
         <div className={styles.focusGrid} role="group" aria-label={t.focusTitle} data-home-focus-grid>
           {hints.map((hint,index)=>{
-            const Icon=FOCUS_ICONS[index];
+            const Icon=hintIcons[index];
             return <button type="button" key={hint.id} className={styles.focusCard}
               data-home-intent-option={hint.id}
-              aria-label={hint.label+" · "+hint.detail+" · "+t.send}
-              onClick={()=>router.push(chatPath+"&intent="+hint.id)}>
+              aria-label={hint.label+" · "+hint.detail}
+              onClick={()=>startTopicJourney(hint.topic,hint.need)}>
               <Icon className={styles.focusIcon} size={29} aria-hidden="true"/>
               <span className={styles.focusCopy}><strong>{hint.label}</strong></span>
               <ArrowRight className={styles.focusArrow} size={19} aria-hidden="true"/>

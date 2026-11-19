@@ -119,7 +119,9 @@ test("Home topic opens contextual offers and typed requests retain Ali retry",()
  const home=read("components/home-dialogue-entry.tsx");
  const chat=read("components/holistic-agent-chat.tsx");
  const hub=read("components/app/messages-orders-clients.jsx");
- assert.match(home,/onClick=\{\(\)=>router\.push\(chatPath\+"&intent="\+hint\.id\)\}/);
+ assert.match(home,/onClick=\{\(\)=>startTopicJourney\(hint\.topic,hint\.need\)\}/);
+ assert.match(home,/router\.push\(chatPath\+"&intent="\+intent\)/);
+ assert.match(home,/encodeURIComponent\(need\)/);
  assert.match(home,/startConversationWith\(draft\)/);
  assert.match(chat,/homeHandoffPhase==="queued"/);
  assert.match(chat,/homeHandoffPhase==="retry"/);
@@ -135,9 +137,9 @@ test("approved scenic Home shows four clear choices above the wide Ali composer 
  const entry=read("components/home-dialogue-entry.tsx");
  const css=read("components/home-dialogue-entry.module.css");
  const deferred=read("components/home-deferred-content.tsx");
- for(const phrase of ["Energy & Stress Release","Love & Confidence","Money & Growth","Business Support","Holistic House","What do you need today?","Энергия и снятие стресса","Apoyo empresarial"])
+ for(const phrase of ["Stress & Energy","Love & Relationships","Confidence & Growth","Money & Direction","Clients & Revenue","Strategy & Decisions","Team & Partners","Stress & Burnout","Holistic House","What do you need today?","Клиенты и доход","Estrés y agotamiento"])
    assert.ok(entry.includes(phrase),phrase);
- for(const id of ["stress","love","money","business"])assert.ok(entry.includes('id:"'+id+'"'),id);
+ for(const id of ["stress","love","confidence","money","business_clients","business_strategy","business_team","business_burnout"])assert.ok(entry.includes('id:"'+id+'"'),id);
  assert.match(entry,/data-home-free-review/);
  assert.match(entry,/freeReviewTitle:"Understand my situation"/);
  assert.match(entry,/freeReviewDetail:"Get a free personal review"/);

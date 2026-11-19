@@ -1,9 +1,10 @@
 "use client";
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { ArrowRight, Menu, Sparkles } from 'lucide-react';
-import { CartNavLink } from '@/components/commerce/cart-nav-link';
+
 import { SiteSearch } from '@/components/site-search';
 import { compactNavigationIcons } from './compact-navigation-icons';
 import type { Locale } from '@/data/remedies';
@@ -11,8 +12,15 @@ import { localePath, saveUiLocale } from '@/lib/ui-locale';
 import { hasSpanishCounterpart, publicCounterpart, savePublicLocale, type PublicLocale } from '@/lib/public-locales';
 import { activeCompactNavigationId, activeNavigationId, getCompactNavigation, getSiteNavigation, navigationCopy } from '@/lib/site-navigation-model';
 import { useNavigationLocale } from './use-navigation-locale';
-import { HomePersonalSpaceNavEntry } from './home-personal-space';
-import { HeaderCreditProfile } from './header-credit-profile';
+
+
+
+// These three controls are not rendered in the Home's compact header.
+// Keep SSR for the full navigation elsewhere while avoiding their dependency
+// trees in the critical Home JavaScript bundle.
+const CartNavLink = dynamic(() => import('@/components/commerce/cart-nav-link').then(m => m.CartNavLink));
+const HomePersonalSpaceNavEntry = dynamic(() => import('./home-personal-space').then(m => m.HomePersonalSpaceNavEntry));
+const HeaderCreditProfile = dynamic(() => import('./header-credit-profile').then(m => m.HeaderCreditProfile));
 
 type Props = { locale?: PublicLocale; onLocaleChange?: (locale: Locale) => void; compact?: boolean };
 

@@ -19,12 +19,12 @@ import styles from "./services-assist-quiz.module.css";
 type QuestionKey = "topic" | "need" | "mode" | "budget";
 type QuizTopic = "stress_energy" | "relationships_esteem" | "money_growth" | "business_support";
 type Focus = "stress" | "relationships" | "energy" | "work" | "health" | "growth";
-type Category = "therapy" | "homeopathy" | "constellations" | "business" | "tests" | "learning";
+type Category = "therapy" | "homeopathy" | "constellations" | "practice" | "study" | "videos" | "business";
 type Choice = readonly [string, string];
 type QuizQuestion = { title: string; options: readonly Choice[] };
 type QuizCopy = {
   title: string; lead: string; button: string; all: string; other: string; privacy: string;
-  empty: string; section: string; step: string; profile: string; summary: string; shamanica: string;
+  empty: string; section: string; step: string; profile: string; summary: string;
   questions: Record<Exclude<QuestionKey, "need">, QuizQuestion>;
   needs: Record<QuizTopic, QuizQuestion>;
   businessMode: QuizQuestion;
@@ -40,7 +40,7 @@ const needFocus: Record<string, Focus> = {
   relationship_couple:"relationships", relationship_family:"relationships",
   esteem_confidence:"growth", relationship_boundaries:"relationships",
   growth_income:"growth", growth_career:"growth", growth_ideas:"growth", growth_direction:"growth",
-  business_strategy:"work", business_clients:"work", business_team:"work", business_change:"work",
+  business_strategy:"work", business_clients:"work", business_team:"work", business_change:"work", business_burnout:"work",
 };
 const copy: Record<PublicLocale, QuizCopy> = {
   "ru": {
@@ -49,7 +49,6 @@ const copy: Record<PublicLocale, QuizCopy> = {
     "button": "Посмотреть рекомендации",
     "all": "Все услуги",
     "other": "Предпочитаете диалог с Ali?",
-    "shamanica": "Шаманика · энергетические и магические практики",
     "privacy": "Ответы остаются в браузере. Мы не сохраняем их и не отправляем ИИ или в CRM.",
     "empty": "Под выбранные условия подтверждённых вариантов пока нет. Измените формат или бюджет.",
     "section": "Направления поддержки",
@@ -203,6 +202,10 @@ const copy: Record<PublicLocale, QuizCopy> = {
           [
             "business_change",
             "Рост или перемены"
+          ],
+          [
+            "business_burnout",
+            "Стресс и выгорание"
           ]
         ]
       }
@@ -229,12 +232,13 @@ const copy: Record<PublicLocale, QuizCopy> = {
       ]
     },
     "categories": {
-      "therapy": "Терапия\nи коучинг",
-      "homeopathy": "Гомеопатия\nи средства",
-      "constellations": "Отношения\nи расстановки",
-      "business": "Бизнес\nи карьера",
-      "tests": "Тесты\nи самопомощь",
-      "learning": "Курсы, видео\nи медитации"
+      "therapy": "Психотерапия\nи поддержка",
+      "homeopathy": "Гомеопатия\nи ремедии",
+      "constellations": "Расстановки\nи отношения",
+      "practice": "Практики\nи энергия",
+      "study": "Курсы\nи обучение",
+      "videos": "Видео\nи медитации",
+      "business": "Деньги и бизнес"
     }
   },
   "en": {
@@ -243,7 +247,6 @@ const copy: Record<PublicLocale, QuizCopy> = {
     "button": "See recommendations",
     "all": "All services",
     "other": "Prefer to chat with Ali?",
-    "shamanica": "Shamanica · energy & symbolic practices",
     "privacy": "Answers stay in your browser. They are not stored or sent to AI or CRM.",
     "empty": "No verified options match your choices yet. Try another format or budget.",
     "section": "Areas of support",
@@ -397,6 +400,10 @@ const copy: Record<PublicLocale, QuizCopy> = {
           [
             "business_change",
             "Growth or transition"
+          ],
+          [
+            "business_burnout",
+            "Stress and burnout"
           ]
         ]
       }
@@ -423,12 +430,13 @@ const copy: Record<PublicLocale, QuizCopy> = {
       ]
     },
     "categories": {
-      "therapy": "Therapy\n& coaching",
+      "therapy": "Psychotherapy\n& support",
       "homeopathy": "Homeopathy\n& remedies",
-      "constellations": "Relationships\n& constellations",
-      "business": "Business\n& career",
-      "tests": "Tests\n& self-help",
-      "learning": "Courses, videos\n& meditations"
+      "constellations": "Constellations\n& relationships",
+      "practice": "Practices\n& energy",
+      "study": "Courses\n& learning",
+      "videos": "Videos\n& meditations",
+      "business": "Money & business"
     }
   },
   "es": {
@@ -437,7 +445,6 @@ const copy: Record<PublicLocale, QuizCopy> = {
     "button": "Ver recomendaciones",
     "all": "Todos los servicios",
     "other": "¿Prefieres hablar con Ali?",
-    "shamanica": "Shamanica · energía y prácticas simbólicas",
     "privacy": "Las respuestas quedan en tu navegador. No se guardan ni se envían a IA o CRM.",
     "empty": "No hay opciones verificadas para esos criterios. Cambia formato o presupuesto.",
     "section": "Áreas de apoyo",
@@ -591,6 +598,10 @@ const copy: Record<PublicLocale, QuizCopy> = {
           [
             "business_change",
             "Crecer o cambiar"
+          ],
+          [
+            "business_burnout",
+            "Estrés y agotamiento"
           ]
         ]
       }
@@ -617,12 +628,13 @@ const copy: Record<PublicLocale, QuizCopy> = {
       ]
     },
     "categories": {
-      "therapy": "Terapia\ny coaching",
+      "therapy": "Psicoterapia\ny apoyo",
       "homeopathy": "Homeopatía\ny remedios",
-      "constellations": "Relaciones\ny constelaciones",
-      "business": "Negocios\ny carrera",
-      "tests": "Tests\ny autoayuda",
-      "learning": "Cursos, vídeos\ny meditación"
+      "constellations": "Constelaciones\ny relaciones",
+      "practice": "Prácticas\ny energía",
+      "study": "Cursos\ny formación",
+      "videos": "Vídeos\ny meditación",
+      "business": "Dinero y negocios"
     }
   }
 };
@@ -636,22 +648,30 @@ const needIcons: Record<string, LucideIcon> = {
   stress_tension:Flower2, energy_fatigue:BatteryCharging, stress_overload:HeartPulse, health_wellbeing:Leaf,
   relationship_couple:HeartHandshake, relationship_family:UsersRound, esteem_confidence:Compass, relationship_boundaries:HandHeart,
   growth_income:Wallet, growth_career:BriefcaseBusiness, growth_ideas:BookOpen, growth_direction:Compass,
-  business_strategy:Compass, business_clients:UsersRound, business_team:HeartHandshake, business_change:BriefcaseBusiness,
+  business_strategy:Compass, business_clients:UsersRound, business_team:HeartHandshake, business_change:BriefcaseBusiness, business_burnout:BatteryCharging,
 };
 
-const categories: readonly { key: Category; image: string; Icon: LucideIcon }[] = [
+const categories: readonly { key: Exclude<Category, "business">; image: string; Icon: LucideIcon }[] = [
   { key: "therapy", image: "/images/holistic-house/messenger-zen-stones.svg", Icon: Flower2 },
   { key: "homeopathy", image: "/images/holistic-house/distance-homeopathy.webp", Icon: HandHeart },
   { key: "constellations", image: "/images/holistic-house/homepage-constellations.svg", Icon: HeartHandshake },
-  { key: "business", image: "/images/holistic-house/andy-about.png", Icon: BriefcaseBusiness },
-  { key: "tests", image: "/images/holistic-house/course-start-heron.webp", Icon: Compass },
-  { key: "learning", image: "/images/holistic-house/assist-video-botanical.svg", Icon: MonitorPlay },
+  { key: "practice", image: "/images/holistic-house/reiki-practitioner-sunrise.webp", Icon: Leaf },
+  { key: "study", image: "/images/holistic-house/books-library.webp", Icon: GraduationCap },
+  { key: "videos", image: "/images/holistic-house/assist-video-botanical.svg", Icon: MonitorPlay },
 ];
 
-export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
+export function ServicesAssistQuiz({ locale, initialTopic, initialNeed }: { locale: PublicLocale; initialTopic?: string; initialNeed?: string }) {
   const t = copy[locale];
-  const [answers, setAnswers] = useState<Partial<Record<QuestionKey, string>>>({});
-  const [step, setStep] = useState(0);
+  // Whitelist public option IDs before opening the next quiz question.
+  const topicFromUrl = t.questions.topic.options.some(([id]) => id === initialTopic)
+    ? initialTopic as QuizTopic : undefined;
+  const needFromUrl = topicFromUrl && t.needs[topicFromUrl].options.some(([id]) => id === initialNeed)
+    ? initialNeed : undefined;
+  const [answers, setAnswers] = useState<Partial<Record<QuestionKey, string>>>(() => ({
+    ...(topicFromUrl ? {topic: topicFromUrl} : {}),
+    ...(needFromUrl ? {need: needFromUrl} : {}),
+  }));
+  const [step, setStep] = useState(topicFromUrl ? 1 : 0);
   const [submitted, setSubmitted] = useState(false);
   const questionHeading = useRef<HTMLSpanElement>(null);
   const currentKey = questionKeys[step];
@@ -791,8 +811,8 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
           </a>)}
       </div>
       <div className={styles.categoryExtras}>
-        <Link href={"/" + locale + "/shamanica"} prefetch={false}
-          data-services-shamanica-link><Leaf size={15} aria-hidden="true" /> {t.shamanica}</Link>
+        <a href={"#" + serviceGroupAnchor(servicesCategoryTargets.business)}
+          data-services-business-link data-services-quiz-target={servicesCategoryTargets.business}><BriefcaseBusiness size={15} aria-hidden="true" /> {t.categories.business}</a>
         <Link href={"/" + locale + "/services?assist=chat"} prefetch={false}>{t.other}</Link>
       </div>
     </section>

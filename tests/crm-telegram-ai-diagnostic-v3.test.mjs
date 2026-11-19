@@ -166,7 +166,7 @@ test('Consent is explained once; follow-up nudges do not repeat the privacy wall
   assert.ok(service.includes("if(start&&active&&row?.stage==='consent')"));
   assert.ok(service.includes("const purposeReady=general?chatAllowed:serviceAllowed;"));
   assert.ok(service.includes("if(!agrees||!purposeReady)"),"explicit consent and runtime readiness are both mandatory");
-  assert.ok(service.includes("serviceCopy&&ctx.mode!==SECRETARY_MODES.PSYCHOLOGIST?serviceAllowed:allowed"));
+  assert.ok(service.includes("const allowed=v3CanStart(env),chatAllowed=v3CanChat(env),serviceAllowed=v3ServiceIntakeReady(env);"));
   assert.ok(service.includes("const reminder=general?(chatAllowed?chat.nudge:copy.notReady):"));
   assert.ok(service.includes("(purposeReady?(serviceCopy?serviceCopy.welcomeNudge:copy.nudge):copy.notReady)"));
   assert.ok(service.includes("purposeReady?v3ButtonsFor(lang,general?'chat_consent':"));
@@ -258,9 +258,9 @@ test('Wave local chat remains consent-gated and is independent of any model key'
   assert.equal(v3ServiceIntakeReady({...local,HH_CRM_TG_AI_V3_SCHEMA_READY:'false'}),false);
   assert.equal(v3ServiceIntakeReady({...local,HH_CRM_TG_AI_V3_ENABLED:'false'}),false);
   assert.equal(v3ServiceIntakeReady({...local,VERCEL_ENV:'preview'}),false);
-  assert.match(service,/serviceCopy&&ctx\.mode!==SECRETARY_MODES\.PSYCHOLOGIST\?serviceAllowed:allowed/);
+  assert.match(service,/v3ServiceIntakeReady\(env\)/);
   assert.match(service,/if\(!row.ai_consent_at\|\|!/);
-  assert.match(service,/serviceCopy&&ctx\.mode!==SECRETARY_MODES\.PSYCHOLOGIST\?serviceAllowed:allowed/);
+  assert.match(service,/v3ServiceIntakeReady\(env\)/);
   assert.match(service,/waveTelegramLocalReply\(\{locale:prior.locale,turns\}\)/);
   assert.match(service,/wave_telegram_inference/);
 });

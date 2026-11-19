@@ -127,14 +127,14 @@ try {
     await expect(quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice]')).toHaveCount(4);
     await expect(quiz.locator("[data-services-quiz-category]")).toHaveCount(6);
     await expect(quiz.locator("[data-services-quiz-category] img")).toHaveCount(6);
-    await expect(quiz.locator("[data-services-shamanica-link]"))
-      .toHaveAttribute("href", "/"+locale+"/shamanica");
+    await expect(quiz.locator("[data-services-business-link]"))
+      .toHaveAttribute("href", "#service-group-services");
     assert.equal(await page.locator("[data-hh-unified-dock]").count(), 1,
       "Keep the real site dock; never add a second mock dock");
     // The approved screenshot is 390px wide. At smaller widths content may
     // scroll, but no controls may disappear sideways or behind a fixed rail.
     const firstScreen = await page.evaluate(() => {
-      const last = document.querySelector('[data-services-quiz-category="learning"]');
+      const last = document.querySelector('[data-services-quiz-category="videos"]');
       const dock = document.querySelector("[data-hh-unified-dock]");
       if (!last || !dock) return null;
       return {
@@ -166,7 +166,7 @@ try {
     // Six photographic first-screen categories stay on /services and expose exactly three matching options.
     const quickTargets = {
       therapy: "consultation", homeopathy: "homeopathy", constellations: "services",
-      business: "business", tests: "browse", learning: "courses",
+      practice: "reiki", study: "courses", videos: "video",
     };
     for (const [category, group] of Object.entries(quickTargets)) {
       const card = quiz.locator('[data-services-quiz-category="' + category + '"]');
@@ -180,12 +180,16 @@ try {
       await expect(target.locator(':scope > [data-services-three-visible] > [data-service-variant]')).toHaveCount(3);
       await expect(target.locator(':scope > [data-services-three-visible] > [data-service-variant]').first()).toBeVisible();
     }
-    await expect(quiz.locator("[data-services-shamanica-link]")).toHaveAttribute("href", "/" + locale + "/shamanica");
-    await expect(quiz.locator('[data-services-quiz-category="business"]')).toHaveAttribute("href", "#service-group-business");
+    await expect(quiz.locator("[data-services-business-link]")).toHaveAttribute("href", "#service-group-services");
+    await quiz.locator("[data-services-business-link]").click();
+    assert.equal(new URL(page.url()).pathname, "/" + locale + "/services", "Business category must stay on Services");
+    assert.equal(new URL(page.url()).hash, "#service-group-services");
     // Business has its own topic, need and start-format branching.
     await quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice="business_support"]').click();
     await expect(quiz).toHaveAttribute("data-services-quiz-step", "2");
-    await expect(quiz.locator('[data-services-quiz-question="need"] [data-services-quiz-choice]')).toHaveCount(4);
+    await expect(quiz.locator('[data-services-quiz-question="need"] [data-services-quiz-choice]')).toHaveCount(5);
+    await expect(quiz.locator('[data-services-quiz-question="need"] [data-services-quiz-choice="business_burnout"]')).toBeVisible();
+    await expect(quiz.locator('[data-services-quiz-question="need"] [data-services-quiz-choice="business_change"]')).toBeVisible();
     await quiz.locator('[data-services-quiz-question="need"] [data-services-quiz-choice="business_strategy"]').click();
     await expect(quiz).toHaveAttribute("data-services-quiz-step", "3");
     await quiz.locator('[data-services-quiz-question="mode"] [data-services-quiz-choice="consultation"]').click();
@@ -246,10 +250,10 @@ try {
       { timeout: 30000, message: 'Mobile Services catalogue must hydrate before interactions' },
     ).toBe(true);
     const panelIds = [
-      "reiki", "browse", "reading", "consultation", "services", "business", "video", "courses",
+      "reiki", "browse", "reading", "consultation", "services", "video", "courses",
       "coach", "magical", "homeopathy", "about", "testimonials", "mytube", "directory",
     ];
-    const servicePanelIds = new Set(panelIds.slice(0, 11));
+    const servicePanelIds = new Set(panelIds.slice(0, 10));
     await expect(catalog.locator("[data-services-unified-panel]")).toHaveCount(panelIds.length);
     for (const id of panelIds) {
       const panel = catalog.locator('[data-services-unified-panel="' + id + '"]');
@@ -730,21 +734,22 @@ try {
         await visible(free.locator('a[href="/' + locale + '/services/dao-health-profile"]').first());
         await visible(free.locator('a[href="/' + locale + '/courses/antistress"]'));
         assert.equal(await page.locator("h1#services-conversion-title").count(), 1);
-        // Eleven groups with three published options apiece, including the
-        // distinct Business category in EN, RU and ES. Keep ordering identical.
+        // The approved public Services page has 10 compact groups and 30
+        // immediately visible options. The former conversion hero now lives
+        // inside the Browse panel AFTER the first six service groups.
         const visibleVariants=page.locator('[data-services-unified-catalog] [data-services-three-visible]');
-        await expect(visibleVariants).toHaveCount(11);
-        await expect(visibleVariants.locator('[data-service-variant]')).toHaveCount(33);
+        await expect(visibleVariants).toHaveCount(10);
+        await expect(visibleVariants.locator('[data-service-variant]')).toHaveCount(30);
         const actualGroups=await visibleVariants.evaluateAll(nodes=>
           nodes.map(node=>({id:node.getAttribute("data-services-three-visible"),
             declared:node.getAttribute("data-services-offer-count"),
             visible:node.getClientRects().length>0,
             options:node.querySelectorAll("[data-service-variant]").length})));
         assert.deepEqual(actualGroups.map(x=>x.id),
-          ["consultation","homeopathy","services","business","reiki","courses","video","browse","reading","coach","magical"],
+          ["consultation","homeopathy","services","reiki","courses","video","browse","reading","coach","magical"],
           "The first six category targets must remain visible in their approved order");
         assert.ok(actualGroups.every(x=>x.declared==="3"&&x.visible&&x.options===3),
-          "Each of the eleven service panels displays all three choices without opening an accordion");
+          "Each of the ten service panels displays all three choices without opening an accordion");
         assert.equal(await page.evaluate(() => {
           const selectors = ["#consultation","#free-insights","#solutions","#services-conversion-title",
             "[data-services-meet]",'[data-personal-testimonials="services"]',
