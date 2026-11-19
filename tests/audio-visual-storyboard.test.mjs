@@ -153,3 +153,32 @@ test("approved 4-shot footage is never replaced by a selected style preview",()=
  assert.match(source,/const frame=freeFilmVideoAt\(time,true\)/);
  assert.match(source,/if\(usingFreeFilmCompilation&&!frame\)return false/);
 });
+
+test("speech storyboard globally assigns unique physical masters, keeping missed visual cues reviewable",()=>{
+ const speech=normalizeTimedTranscript({duration:10,segments:[
+  {start:0,end:2.5,text:"Море"},{start:2.5,end:5,text:"Лес"},
+  {start:5,end:7.5,text:"Солнце"},{start:7.5,end:10,text:"Горы"}
+ ]});
+ const first=planAudioVisualStoryboard({transcript:speech,scenes:localCatalog,
+  aspect:"landscape",theme:"health"});
+ const second=planAudioVisualStoryboard({transcript:speech,scenes:localCatalog,
+  aspect:"landscape",theme:"health"});
+ assert.equal(first.canExport,true,first.status);
+ assert.ok(["global_distinct_sources","verified_greedy_fallback"].includes(first.matchingMode));
+ assert.deepEqual(first.edit.clipIds,second.edit.clipIds);
+ assert.equal(new Set(first.edit.clipIds).size,first.shots.length);
+ assert.ok(first.shots.every(s=>Array.isArray(s.matchedConcepts)&&typeof s.needsReview==="boolean"));
+ assert.equal(first.needsReview,first.shots.some(shot=>shot.needsReview));
+});
+
+test("segment midpoint assigns speech to one scene without duplicating adjacent phrases",()=>{
+ const speech=normalizeTimedTranscript({duration:9.6,segments:[
+  {start:0,end:2.4,text:"sea"},{start:2.4,end:4.8,text:"forest"},
+  {start:4.8,end:7.2,text:"sun"},{start:7.2,end:9.6,text:"mountain"}
+ ]});
+ const plan=planAudioVisualStoryboard({transcript:speech,scenes:localCatalog,
+  aspect:"landscape",theme:"health"});
+ assert.equal(plan.canExport,true,plan.status);
+ assert.deepEqual(plan.shots.map(shot=>shot.spokenText),
+  ["sea","forest","sun","mountain"]);
+});

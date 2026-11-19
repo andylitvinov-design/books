@@ -603,7 +603,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
-          personaId,settings,locale:responseLocale,consent:true,message,
+          personaId,settings,locale:responseLocale,consent:true,message,voiceTurn:voiceTurn===true,
           elapsedSeconds:sessionClockStarted?Math.floor(activeSessionSeconds):0,
           sessionContext:coachEphemeralContext(turns,coachTurnWindow(turns,10),responseLocale,message),
           semanticHints:semanticHintsRef.current,

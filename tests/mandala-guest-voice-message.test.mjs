@@ -137,13 +137,15 @@ test("Ideas Personalization and Concept retain a single opt-in Voice/My Voice We
  assert.equal((studio.match(/<MandalaAffirmationVoice locale/g)||[]).length,1);
  const modes=browser.indexOf('const ideasModes=phrases.locator("[data-video-ideas-tabs]")');
  const personal=browser.indexOf('const personalTab=ideasModes.locator',modes);
- const concept=browser.indexOf('await conceptTab.click()',personal);
+ const quiz=browser.indexOf('const nextQuiz=personalQuiz.locator',personal);
+ const fourth=browser.indexOf('toHaveAttribute("data-video-personalization-step","4")',quiz);
+ const concept=browser.indexOf('await expect(conceptTab).toHaveAttribute("aria-pressed","true")',fourth);
  const back=browser.indexOf('await personalTab.click()',concept);
  const disclosure=browser.indexOf('await advancedText.click()',back);
  const voice=browser.indexOf('await voiceModeButton.click()',disclosure);
  const my=browser.indexOf('await myVoiceModeButton.click()',voice);
  const consent=browser.indexOf('await narrationConsent.tap()',my);
- assert.ok(modes>=0&&personal>modes&&concept>personal&&back>concept&&
+ assert.ok(modes>=0&&personal>modes&&quiz>personal&&fourth>quiz&&concept>fourth&&back>concept&&
    disclosure>back&&voice>disclosure&&my>voice&&consent>my,
    "actual user opens Personalization and the protected voice editor before consenting");
  assert.match(browser,/data-video-affirmation-transcript-review/);

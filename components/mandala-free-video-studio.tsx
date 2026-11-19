@@ -2564,7 +2564,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [musicMvReport,setMusicMvReport]=useState<{bpm:number|null;confidence:number;status:string}|null>(null);
   const [musicMvCreative,setMusicMvCreative]=useState<{
     shape:string;energy:readonly number[];
-    directions:readonly {id:string;title:string;mainIdea:string;storyPitch:string}[];
+    directions:readonly {id:string;title:string;mainIdea:string;storyPitch:string;
+      shotPlan:readonly {number:number;startSeconds:number;endSeconds:number;visualAction:string;
+        acousticStage:string;relativeEnergy:number;cameraTempo:string;sourceStatus:string;
+        sourceVerified:boolean}[]}[];
     selected:string;
   }|null>(null);
   useEffect(()=>{setMusicMvReport(null);setMusicMvCreative(null);},
@@ -9124,9 +9127,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   <strong>{item.title}</strong><small>{item.mainIdea}</small>
                 </button>)}
               </div>
-              <small>{locale==="ru"?"Выбранный сюжет появится в раскадровке ниже. Проверьте и примените реальные кадры.":locale==="es"?
-                "La idea elegida aparece en el guion visual. Revisa las escenas antes de aplicarlas.":
-                "The chosen idea updates the storyboard. Review real shots before applying."}</small>
+              {musicMvCreative.directions.find(item=>item.id===musicMvCreative.selected)?.shotPlan?.length?
+                <ol data-video-music-six-shot-plan style={{display:"grid",gap:5,paddingLeft:22}}>
+                  {musicMvCreative.directions.find(item=>item.id===musicMvCreative.selected)!.shotPlan.map(shot=>
+                    <li key={shot.number} data-video-music-shot={shot.number}>
+                      <small>{shot.startSeconds.toFixed(1)}–{shot.endSeconds.toFixed(1)}s · {shot.visualAction}</small>
+                    </li>)}
+                </ol>:null}
+              <small>{locale==="ru"?
+                "Шесть сцен — творческий план по динамике музыки. Реальные фото и MP4 ниже проверяются отдельно; пока они не подтверждены как точное изображение этих действий.":
+                locale==="es"?
+                "Seis escenas editoriales siguen la energía musical. Las fotos y los MP4 se verifican por separado; aún no se confirma cada acción.":
+                "The six shots follow measured musical energy. Actual photos and MP4s are checked separately; no literal scene match is claimed."}</small>
             </div>:null}
             <MandalaAutomaticStoryboard
               locale={locale} goal={wish} theme={theme} durationSeconds={duration}

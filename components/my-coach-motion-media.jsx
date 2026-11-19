@@ -1,7 +1,8 @@
 'use client'
 import {useEffect,useRef,useState} from 'react'
 import {PUBLIC_COACH_PERSONA_IDS} from '@/lib/coaching/persona-registry.mjs'
-import {coachVisualClip,normalizeCoachVisualScene} from '@/lib/coaching/coach-visual-cues.mjs'
+import {normalizeCoachVisualScene} from '@/lib/coaching/coach-visual-cues.mjs'
+import {coachNaturalTake,coachNaturalVideoPath} from '@/lib/coaching/coach-natural-motion.mjs'
 import styles from './my-coach-motion-media.module.css'
 
 // Only the original four have MP4 loops. Merlin and Harry use their own still art;
@@ -23,9 +24,10 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   const state=PHASES.has(phase)?phase:'idle'
   const fallbackScene=state==='greeting'?'welcome':state==='listening'?'attentive':'calm'
   const visualScene=state==='speaking'?normalizeCoachVisualScene(scene,'explain'):fallbackScene
-  const clip=coachVisualClip(state,visualScene)
+  const clip=coachNaturalTake(state,visualScene)
   const poster=supported?(personaId==='harry'?MEDIA_ROOT+'harry-still.svg':MEDIA_ROOT+personaId+'-still.webp'):null
-  const src=supported&&hasVideo?MEDIA_ROOT+personaId+'-'+clip+'.mp4':null
+  // Never fall back to the old morphed MP4s; missing files use still poster.
+  const src=supported&&hasVideo?coachNaturalVideoPath(personaId,state,visualScene):null
 
   useEffect(()=>{
     const preference=window.matchMedia?.('(prefers-reduced-motion: reduce)')
@@ -70,6 +72,7 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   return <span ref={containerRef} className={[styles.media,className].filter(Boolean).join(' ')}
     data-coach-motion-media={personaId} data-coach-motion-context={context}
     data-coach-motion-state={state} data-coach-motion-clip={hasVideo?clip:'still'}
+    data-coach-natural-performance={hasVideo?'v1':'still'}
     data-coach-motion-scene={visualScene} data-coach-motion-ready={videoReady?'true':'false'}
     aria-hidden="true">
     <img src={poster} className={styles.poster} alt="" draggable={false} loading="lazy" decoding="async" />
