@@ -6,7 +6,7 @@ import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { AppError, onlyKeys } from '@/lib/assessments/contracts'
 import { createCrmRepository, crmEnabled } from '@/lib/crm/repository'
 import { MESSENGER_CHANNELS } from '@/lib/crm/messenger-policy'
-import { verifyMessengerBusiness, ensureTelegramWebhook, sendOneMessengerMessage, inspectTelegramBotIdentity } from '@/lib/crm/messenger-provider'
+import { verifyMessengerBusiness, ensureTelegramWebhook, sendOneMessengerMessage, sendHolisticBusinessRequestReply, inspectTelegramBotIdentity } from '@/lib/crm/messenger-provider'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
@@ -105,9 +105,16 @@ async function handle(request){
           }else{
             let status='unknown',providerId=null,failure=null
             try{
-              const accepted=await sendOneMessengerMessage({channel:reservation.channel,to:reservation.to,text:reservation.text,
-                approvedPilotGuest:dispatch.approvedPilotGuest===true,
-                approvedPublicDiagnostic:dispatch.approvedPublicDiagnostic===true})
+              const accepted=dispatch.channel==='telegram_business'
+                ?await (async()=>{
+                  const target=await repo.withOwner(actor,store=>
+                    store.telegramBusinessReplyTarget(reservation.id))
+                  return sendHolisticBusinessRequestReply({
+                    connectionId:target.connectionId,to:target.to,text:reservation.text})
+                })()
+                :await sendOneMessengerMessage({channel:reservation.channel,to:reservation.to,text:reservation.text,
+                  approvedPilotGuest:dispatch.approvedPilotGuest===true,
+                  approvedPublicDiagnostic:dispatch.approvedPublicDiagnostic===true})
               status=accepted.status
               providerId=accepted.providerId
             }catch(e){

@@ -4,6 +4,7 @@ import test from 'node:test';
 import './assist-telegram-business-request.test.mjs';
 import './telegram-secretary-business.test.mjs';
 import './crm-telegram-first-contact.test.mjs';
+import './crm-telegram-unified-inbox.test.mjs';
 import vm from 'node:vm';
 import {parseTelegramHomeCallback} from '../lib/crm/telegram-companion-menu.mjs';
 import {captureTelegramLeadBestEffort} from '../lib/crm/telegram-lead-capture-policy.mjs';
@@ -52,6 +53,8 @@ async function routeRun({source=candidate,payload=callback(),diagnostic='off',co
    // Mock the new, owner-scoped lead persistence boundary without real DB writes.
    captureTelegramBusinessLead:async()=>{calls.businessCapture++;if(leadFailure)throw new Error('synthetic role 42501');return {created:false}},
    captureTelegramBotLead:async()=>{calls.botCapture++;if(leadFailure)throw new Error('synthetic role 42501');return {created:false}},
+   captureTelegramBotConsentedMessage:async()=>false,
+   suppressTelegramBusinessLead:async()=>false,
    // WhatsApp locale marker helper belongs to the production normalizer, not this VM.
    whatsappExpressReviewLocale:()=>null,
    processTelegramCompanion:async()=>{calls.companion++;return companion==='handled'?{handled:true,to:'123456789',locale:'ru',text:'test companion welcome',markup:null}:{handled:false}},

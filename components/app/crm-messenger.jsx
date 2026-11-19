@@ -34,7 +34,7 @@ const copy={
     channels:'Canales',customers:'Mensajes de clientes',waiting:'Esperando respuesta',sendError:'No se envió el mensaje.',
     loadThreads:'Más conversaciones',loadMessages:'Mensajes anteriores',historyError:'No se pudo cargar el historial. Inténtalo de nuevo.'},
 }
-const names={telegram:'Telegram',whatsapp:'WhatsApp',instagram:'Instagram · @tao.ideas',messenger:'Facebook Messenger'}
+const names={telegram:'Telegram · bot',telegram_business:'Telegram · @holistichouse',whatsapp:'WhatsApp',instagram:'Instagram · @tao.ideas',messenger:'Facebook Messenger'}
 const verifiedGoogleLabel={en:'Verified Google account',ru:'Google-аккаунт подтверждён',es:'Cuenta Google verificada'}
 const setupText={
   en:{
@@ -291,7 +291,21 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
     })
     return ()=>ctrl.abort()
   },[accountId,load,initialThreadId,initialThreadSequence,onThreadsLoaded])
-  // One read on returning from Telegram, no background poll or paid service.
+  // Only when the owner has this Messages page visible; no site-wide cron,
+  // browser notification permission, or third-party realtime service.
+  useEffect(()=>{
+    if(!accountId)return
+    let timer=null,stopped=false
+    const check=()=>{
+      if(stopped)return
+      if(document.visibilityState==='visible'&&navigator.onLine!==false)
+        void refresh(activeRef.current)
+      timer=window.setTimeout(check,60000)
+    }
+    timer=window.setTimeout(check,60000)
+    return()=>{stopped=true;window.clearTimeout(timer)}
+  },[accountId,load])
+  // Read immediately when returning from Telegram.
   useEffect(()=>{
     if(!accountId)return
     const onVisible=()=>{
@@ -356,7 +370,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
         }))
         // Portraits remain behind the existing authenticated CRM photo proxy.
         const portrait=[...(result.messages||[])].reverse().find(m=>m.photo&&m.photoPurpose==='portrait')
-        if(portrait&&result.threads?.some(thread=>thread.id===id&&thread.channel==='telegram'))
+        if(portrait&&result.threads?.some(thread=>thread.id===id&&['telegram','telegram_business'].includes(thread.channel)))
           onPortraitFound?.({threadId:id,messageId:portrait.id})
         setError('')
       }

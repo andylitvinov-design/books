@@ -17,7 +17,7 @@ import {finalizeTelegramV3Service,notifyOwnerTelegramV3Service} from '@/lib/crm/
 import {shouldBootstrapTelegramNativeMenu} from '@/lib/crm/telegram-companion-native-commands.mjs'
 import { receiveOwnerTelegramVideoCrmFallback } from '@/lib/practitioners/owner-telegram-video-crm-fallback'
 import {processTelegramBusinessConversation} from '@/lib/crm/telegram-business-service'
-import {captureTelegramBotLead,captureTelegramBusinessLead} from '@/lib/crm/telegram-lead-capture'
+import {captureTelegramBotLead,captureTelegramBusinessLead,captureTelegramBotConsentedMessage,suppressTelegramBusinessLead} from '@/lib/crm/telegram-lead-capture'
 import {captureTelegramLeadBestEffort} from '@/lib/crm/telegram-lead-capture-policy.mjs'
 import {telegramBusinessMessageFromUpdate} from '@/lib/assist/telegram-business-request.mjs'
 import {parseHiTelegramRating} from '@/lib/holistic-support/hi-learning-policy.mjs'
@@ -97,7 +97,11 @@ export async function POST(request,{params}){
     // have never ordered. This signed update is not a CRM lead.
     if(provider==='telegram'){
       const stop=await gateTelegramBusinessSecretaryOptOut(body,config)
-      if(stop.blocked)return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
+      if(stop.blocked||stop.justStopped){
+        try{await suppressTelegramBusinessLead(body,config)}
+        catch{console.error('HH_TG_BUSINESS_CRM_STOP_UNCONFIRMED')}
+        if(stop.blocked)return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
+      }
     }
     // A first verified Business contact becomes an unqualified CRM lead before
     // optional service/FAQ dialogue; no unconsented message body is stored.
@@ -281,6 +285,7 @@ export async function POST(request,{params}){
         }
         const companion=await processTelegramCompanion(event,config)
         if(companion.handled){
+          if(!event.callbackId)await captureTelegramBotConsentedMessage(event,config)
           // Client-initiated bootstrap of native Telegram Menu. Never do this
           // for callbacks, diagnostic deep links, media, STOP or owner video.
           // The signed webhook + committed Companion session are already
@@ -335,6 +340,7 @@ export async function POST(request,{params}){
         // for explicitly started or already active V3 diagnostic sessions.
         const aiIntake=await processTelegramAiV3(diagnosticEvent,config)
         if(aiIntake.handled){
+          if(!event.callbackId)await captureTelegramBotConsentedMessage(event,config)
           if(aiIntake.serviceFinalize){
             try{
               const finished=await finalizeTelegramV3Service(config,aiIntake.serviceFinalize)
@@ -439,6 +445,7 @@ export async function POST(request,{params}){
         }
         const intake=await processTelegramDiagnostic(diagnosticEvent,config)
         if(intake.handled){
+          if(!event.callbackId)await captureTelegramBotConsentedMessage(event,config)
           if(event.callbackId){
             // Acknowledge only after the encrypted stage transition commits.
             try{await acknowledgeTelegramInlineCallback({
