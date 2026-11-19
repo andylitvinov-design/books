@@ -5274,6 +5274,8 @@
 .studio .therapyHeroPlayback{position:absolute;inset:0;z-index:3;opacity:0;pointer-events:none;background:#061b19;transition:opacity .16s ease}
 .studio .therapyHeroPlayback[data-playing="true"]{opacity:1;pointer-events:auto}
 .studio .therapyHeroVideo{display:block;width:100%;height:100%;object-fit:contain;background:#061b19}
+/* English iframe fills the frame; app actions live in the adjacent rail. */
+.studio .therapyHeroYoutube{display:block;width:100%;height:100%;border:0;background:#061b19}
 .studio .therapyHeroFallbackFrame{position:absolute;inset:0;z-index:2;display:block;width:100%;height:100%;border:0;background:#061b19}
 .studio .therapyHeroRecovery{position:absolute;z-index:3;top:5px;left:5px;display:flex;gap:4px;max-width:calc(100% - 100px)}
 .studio .therapyHeroRecovery button,.studio .therapyHeroRecovery a{display:inline-flex;align-items:center;justify-content:center;min-height:35px;max-width:110px;padding:4px 6px;border:1px solid #fff9;border-radius:8px;background:#123e35e8;color:#fff;font:750 clamp(9px,2.4vw,11px)/1.15 Arial,Helvetica,sans-serif;text-align:center;text-decoration:none;cursor:pointer}
