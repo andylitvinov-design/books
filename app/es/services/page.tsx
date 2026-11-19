@@ -11,6 +11,7 @@ import { ServicesExplorerProvider } from "@/components/services-explorer-state";
 import { ServicesCompactCatalog, ServicesCompactPanel, ServicesHomeopathyLinks } from "@/components/services-unified-catalog";
 import { ServicesVideoGenerationCard } from "@/components/services-video-generation-card";
 import { ServicesCoursesShelf } from "@/components/services-courses-shelf";
+import { BusinessServiceBrowser } from "@/components/business-service-browser";
 import { ServicesCoachTherapistMobile } from "@/components/services-coach-therapist-mobile";
 import compactStyles from "@/components/services-unified-catalog.module.css";
 import uniformStyles from "@/components/services-support-uniform.module.css";
@@ -43,18 +44,19 @@ export default async function SpanishServicesPage({ searchParams }: { searchPara
           <ServicesPersonalConsultationMobile locale="es" />
         </div>
         <ServicesCompactCatalog locale="es">
-          <ServicesCompactPanel id="reiki"><AssistReikiSession locale="es" /></ServicesCompactPanel>
-          <ServicesCompactPanel id="browse"><ServicesConversionHero locale="es" /></ServicesCompactPanel>
-          <ServicesCompactPanel id="reading"><SpiritualReadingEntry locale="es" /></ServicesCompactPanel>
           <ServicesCompactPanel id="consultation">
             <PublicConsultationCta locale="es" id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
           </ServicesCompactPanel>
+          <ServicesCompactPanel id="homeopathy"><ServicesHomeopathyLinks locale="es" /></ServicesCompactPanel>
           <ServicesCompactPanel id="services"><ServicesStudioOffers locale="es" splitExtras /></ServicesCompactPanel>
-          <ServicesCompactPanel id="video"><ServicesVideoGenerationCard locale="es" /></ServicesCompactPanel>
+          <ServicesCompactPanel id="business"><BusinessServiceBrowser locale="es" /></ServicesCompactPanel>
+          <ServicesCompactPanel id="reiki"><AssistReikiSession locale="es" /></ServicesCompactPanel>
           <ServicesCompactPanel id="courses"><ServicesCoursesShelf locale="es" /></ServicesCompactPanel>
+          <ServicesCompactPanel id="video"><ServicesVideoGenerationCard locale="es" /></ServicesCompactPanel>
+          <ServicesCompactPanel id="browse"><ServicesConversionHero locale="es" /></ServicesCompactPanel>
+          <ServicesCompactPanel id="reading"><SpiritualReadingEntry locale="es" /></ServicesCompactPanel>
           <ServicesCompactPanel id="coach"><ServicesCoachTherapistMobile locale="es" /></ServicesCompactPanel>
           <ServicesCompactPanel id="magical"><ServicesMagicalHelpMobile locale="es" /></ServicesCompactPanel>
-          <ServicesCompactPanel id="homeopathy"><ServicesHomeopathyLinks locale="es" /></ServicesCompactPanel>
           <ServicesCompactPanel id="about"><ServicesIntroMedia locale="es" /></ServicesCompactPanel>
           <ServicesCompactPanel id="testimonials"><PersonalTestimonials locale="es" variant="services" /></ServicesCompactPanel>
           <ServicesCompactPanel id="mytube"><ServicesMethodVideos locale="es" /></ServicesCompactPanel>

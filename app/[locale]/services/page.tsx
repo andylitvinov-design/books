@@ -13,6 +13,7 @@ import { ServicesExplorerProvider } from "@/components/services-explorer-state";
 import { ServicesCompactCatalog, ServicesCompactPanel, ServicesHomeopathyLinks } from "@/components/services-unified-catalog";
 import { ServicesVideoGenerationCard } from "@/components/services-video-generation-card";
 import { ServicesCoursesShelf } from "@/components/services-courses-shelf";
+import { BusinessServiceBrowser } from "@/components/business-service-browser";
 import { ServicesCoachTherapistMobile } from "@/components/services-coach-therapist-mobile";
 import compactStyles from "@/components/services-unified-catalog.module.css";
 import uniformStyles from "@/components/services-support-uniform.module.css";
@@ -105,6 +106,7 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
           </ServicesCompactPanel>
           <ServicesCompactPanel id="homeopathy"><ServicesHomeopathyLinks locale={locale} /></ServicesCompactPanel>
           <ServicesCompactPanel id="services"><ServicesStudioOffers locale={locale} splitExtras /></ServicesCompactPanel>
+          <ServicesCompactPanel id="business"><BusinessServiceBrowser locale={locale} /></ServicesCompactPanel>
           <ServicesCompactPanel id="reiki"><AssistReikiSession locale={locale} /></ServicesCompactPanel>
           <ServicesCompactPanel id="courses"><ServicesCoursesShelf locale={locale} /></ServicesCompactPanel>
           <ServicesCompactPanel id="video"><ServicesVideoGenerationCard locale={locale} /></ServicesCompactPanel>
