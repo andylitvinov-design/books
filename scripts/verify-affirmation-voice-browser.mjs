@@ -401,7 +401,14 @@ async function verifyWorkspaceHydration(browser,locale){
     const birthday=page.locator('[data-auto-video-recipient-occasion="birthday"]');
     await birthday.click();
     await expect(birthday).toHaveAttribute("aria-pressed","true");
-    await continueToIdeas.click();
+    // Recipient mode hides the legacy footer. Test the actual, visible Goal CTA
+    // that calls the same guarded continueToIdeas handler without bypassing it.
+    await expect(studio).toHaveAttribute("data-active-workspace","video");
+    await expect(continueToIdeas).toBeHidden();
+    const recipientCreate=page.locator('[data-video-goal-create-cta]');
+    await expect(recipientCreate).toBeVisible({timeout:15000});
+    await expect(recipientCreate).toBeEnabled();
+    await recipientCreate.click();
     await expect(ideas).toHaveAttribute("aria-pressed","true");
     await expect(studio).toHaveAttribute("data-active-workspace","phrases");
     // These are the actual source-backed montage title inputs; source edits
