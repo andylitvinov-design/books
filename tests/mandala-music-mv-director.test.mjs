@@ -47,3 +47,24 @@ test("same video renderer, music picker and rights safeguards",()=>{
   assert.ok(studio.includes(v),v);
  }
 });
+
+test("music-only proposals create distinct six-shot acoustic storyboards, not invented lyrics",()=>{
+ const shape=analyzeMusicShape([sample([.04,.12,.5,.03],30)],8000,30);
+ for(const locale of ["ru","en","es"]){
+  const directions=suggestMusicVideoDirections({shape,goal:"",locale});
+  assert.equal(directions.length,3);
+  assert.ok(directions.every(x=>x.source==="music_structure_only_editorial"));
+  assert.equal(new Set(directions.map(x=>x.shotPlan[0].visualAction)).size,3);
+  for(const direction of directions){
+   const shots=direction.shotPlan;
+   assert.equal(shots.length,6);
+   assert.deepEqual(shots.map(s=>s.startSeconds),[0,5,10,15,20,25]);
+   assert.deepEqual(shots.map(s=>s.endSeconds),[5,10,15,20,25,30]);
+   assert.ok(shots.every(s=>s.sourceVerified===false&&
+    s.sourceStatus==="editorial_unverified"&&s.visualAction));
+   assert.equal(new Set(shots.map(s=>s.visualAction)).size,6);
+  }
+ }
+ assert.match(studio,/data-video-music-six-shot-plan/);
+ assert.match(studio,/data-video-music-shot=\{shot.number\}/);
+});

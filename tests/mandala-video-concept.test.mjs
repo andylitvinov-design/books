@@ -224,3 +224,26 @@ test("Video Studio mandatory gate: 256 film scenes × 3 languages, exactly 2 per
   }
  }
 });
+
+test("explicit RU/EN/ES needs select a story archetype without inventing an outcome",()=>{
+ const examples=[
+  ["ru","Мне тревожно и нужна спокойная опора","shelter","stress-anxiety"],
+  ["en","I want closeness and trust","integration","love-relationships"],
+  ["es","Busco claridad y sentido en mi vida","reframe","goals-money"],
+  ["en","I want a new start and clear action","journey","goals-money"]
+ ];
+ for(const [locale,goal,archetype] of examples){
+  const base=suggestVideoConcept({locale,goal,theme:"goals"});
+  assert.equal(base.requestIntentArchetype,archetype,goal);
+  assert.equal(listMyTubeScenarios(base.topicId,locale)
+   .find(s=>s.id===base.scenarioId)?.archetype,archetype);
+  assert.equal(videoConceptIsValid(base),true);
+  const choices=getVideoCreativeDirections(base,locale);
+  if(choices.length===2){
+   if(choices.every(x=>typeof x.genre==="string"))
+    assert.equal(choices[0].genre,archetype,
+     "Without confirmed personal answers, match an explicit story cue first");
+   assert.ok(choices.every(x=>x.storyboard.length===6&&x.sourceVerified!==true));
+  }
+ }
+});
