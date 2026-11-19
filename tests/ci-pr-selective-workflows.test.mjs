@@ -55,7 +55,10 @@ test('ten-to-one noncritical PR budget retains Core and source security', () => 
   assert.equal(onDemandQa.length, 9, 'nine noncritical PR workloads must be deferred');
   for (const name of onDemandQa) {
     const yaml=source(name);
-    assert.equal(trigger(name),null,name + ': noncritical PR fanout re-enabled');
+    assert.deepEqual(trigger(name)?.types,['labeled'],name + ': opt-in event route changed');
+    assert.equal(matchesTrigger(trigger(name), ['package.json','components/holistic-house-home.tsx'], TARGET), false,
+      name + ': optional QA must not block ordinary PRs');
+    assert.match(yaml,/github\.event\.label\.name == 'qa-optional'/,name + ': explicit opt-in guard missing');
     assert.match(yaml,/^  workflow_dispatch:\s*$/m,name + ': on-demand QA unavailable');
     assert.doesNotMatch(yaml,/continue-on-error:\s*true/,name + ': genuine failures must remain visible');
   }

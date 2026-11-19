@@ -625,8 +625,9 @@ test('production workflow directory can be parsed without silently ignoring unkn
     assert.equal(names.length,97,'Only the named visual service workflow uses the 97th slot');
     assert.ok(names.includes('hh-visual-service-landings.yml'),'The 97th workflow must be visual service acceptance');
     const visual=readFileSync('.github/workflows/hh-visual-service-landings.yml','utf8');
-    assert.match(visual,/^  workflow_dispatch:/m,'Optional visual acceptance is manually triggered');
-    assert.doesNotMatch(visual,/^  pull_request:/m,'Optional visual acceptance must not multiply PR jobs');
+    assert.match(visual,/^  workflow_dispatch:/m,'Optional visual acceptance retains manual dispatch');
+    assert.match(visual,/^  pull_request:\s*\n    types: \[labeled\]/m,'Optional visual QA needs an explicit PR label');
+    assert.match(visual,/github\.event\.label\.name == 'qa-optional'/,'Visual QA must verify its opt-in label');
     assert.match(visual,/permissions:\s*\n\s*contents: read/,'Visual acceptance has read-only repository permissions');
     assert.match(visual,/persist-credentials: false/,'Checkout must not retain credentials');
     assert.match(visual,/npm ci --include=dev --no-audit --no-fund/,'Visual acceptance uses the lockfile');
