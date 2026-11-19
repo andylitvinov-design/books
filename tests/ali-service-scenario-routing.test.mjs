@@ -75,6 +75,6 @@ test('STOP, safety, mode consent, bad payload, mid-intake FAQs, generic unchange
 test('site private bot wins when ready regardless of independent human Business automation',()=>{
  const api=readFileSync(new URL('../app/api/public/telegram-service-entry/route.js',import.meta.url),'utf8');
  assert.doesNotMatch(api,/if\(env\.HH_CRM_TG_CHAT_AUTOMATION_ENABLED!=='true'/);
- for(const required of ["env.HH_CRM_TG_AI_V3_SCHEMA_READY==='true'","channelTransportReady('telegram',env)","v3ServiceIntakeReady(env)","let target=manual"])
+ for(const required of ["env.HH_CRM_TG_AI_V3_SCHEMA_READY==='true'","channelTransportReady('telegram',env)","v3ServiceIntakeReady(env)","return NextResponse.redirect(entry.href"])
   assert.ok(api.includes(required),required);
 });

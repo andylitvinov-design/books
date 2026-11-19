@@ -1,4 +1,4 @@
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance } from '../lib/ci/production-base-impact.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -2698,4 +2698,64 @@ test('newly protected policy cannot waive unsafe mixed drift or changed PR head'
     }),
   }),/PR_HEAD_CHANGED/);
   assert.equal(calls,1,'source HEAD errors never retry');
+});
+
+test('real #5031: independent Telegram CRM TEST-only production promotion keeps Mandala Core green',async()=>{
+  const live='c'.repeat(40);
+  const delta={status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:BASE},merge_base_commit:{sha:BASE},
+    commits:[{sha:live}],files:[{filename:'tests/crm-telegram-cabinet-entry.test.mjs',status:'modified'}]};
+  const mandala=[
+    'components/mandala-auto-video-director.tsx',
+    'components/mandala-video-personalization.tsx',
+    'scripts/verify-affirmation-voice-browser.mjs',
+    'tests/mandala-video-goal-mobile-hierarchy.test.mjs',
+  ];
+  assert.equal(safeIndependentDomainTestAdvance(delta,BASE,live,mandala),true,
+    'unrelated CRM test does not change video-editor runtime or its existing required checks');
+  assert.equal(safeIndependentDomainTestAdvance(delta,BASE,live,[
+    'lib/crm/messenger-provider.js',
+    'tests/crm-telegram-companion-photo-fallback.test.mjs',
+  ]),false,'#5071 touched CRM/Telegram and must not reuse stale CRM test results');
+  for(const [label,row] of [
+    ['candidate overlap',['tests/crm-telegram-cabinet-entry.test.mjs']],
+    ['shared runtime',['lib/shared/formatters.js']],
+    ['same target domain',['lib/crm/telegram-lead-capture.js']],
+  ]) assert.equal(safeIndependentDomainTestAdvance(delta,BASE,live,row),false,label);
+  for(const path of [
+    'tests/ci-specialist-aggregate.test.mjs',
+    'tests/required-gate-policy.test.mjs',
+    'tests/auth-cabinet.test.mjs',
+    'tests/crm-telegram-privacy.test.mjs',
+    'app/api/auth/route.js',
+    'supabase/migrations/20261119000.sql',
+  ]) assert.equal(safeIndependentDomainTestAdvance({...delta,files:[
+    {filename:path,status:'modified'}]},BASE,live,mandala),false,path);
+  assert.equal(safeIndependentDomainTestAdvance({...delta,status:'diverged'},BASE,live,mandala),false);
+  assert.equal(safeIndependentDomainTestAdvance({...delta,commits:[]},BASE,live,mandala),false);
+  assert.equal(safeIndependentDomainTestAdvance({...delta,files:[
+    {filename:'tests/crm-telegram-cabinet-entry.test.mjs',status:'removed'}
+  ]},BASE,live,mandala),false);
+  assert.equal(safeIndependentDomainTestAdvance({...delta,files:[
+    {filename:'tests/crm-telegram-cabinet-entry.test.mjs',status:'modified'},
+    {filename:'tests/crm-telegram-cabinet-entry.test.mjs',status:'modified'},
+  ]},BASE,live,mandala),false);
+});
+test('Specialist still requires genuine exact-HEAD jobs across isolated domain TEST-only target moves',async()=>{
+  const live='c'.repeat(40);
+  const changedRows=[{filename:'lib/crm/a.js',status:'M'}];
+  const sources={base:new Map([[path,yaml]]),current:new Map([[path,yaml]]),changedRows};
+  const diff={status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:BASE},merge_base_commit:{sha:BASE},
+    commits:[{sha:live}],files:[{filename:'tests/mandala-auto-video-director-ui.test.mjs',status:'modified'}]};
+  const api={pr:async()=>({...pr(),mergeable:true,base:{...pr().base,sha:live}}),
+    target:async()=>live,compare:async()=>diff,
+    runs:async()=>[run()],jobs:async()=>[{name:'test',status:'completed',conclusion:'success'}]};
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  assert.deepEqual((await verify(api,ctx,sources,{maxWaitMs:0})).expected,[path]);
+  await assert.rejects(()=>verify({...api,runs:async()=>[run({conclusion:'failure'})]},
+    ctx,sources,{maxWaitMs:0}),/SPECIALIST_FAILED/);
+  await assert.rejects(()=>verify({...api,compare:async()=>({...diff,files:[
+    {filename:'tests/crm-telegram-cabinet-entry.test.mjs',status:'modified'}]})},
+    ctx,sources,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);
 });

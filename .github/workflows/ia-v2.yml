@@ -45,6 +45,10 @@ on:
       # Public Ali greeting and support quiz: focused conversation owner; private Messenger/auth changes keep full tests.
       - '!components/app/messenger-ai-landing.*'
       - '!components/app/messenger-support-quiz.*'
+      # Cosmetic-only Profile CSS: Core + App R1 test the responsive design.
+      # Changes to actual Profile JSX, private auth, CRM, security and schema
+      # still launch IA; mixed PRs remain fully protected.
+      - '!components/app/profile-space-dashboard.module.css'
   workflow_dispatch:
 permissions:
   contents: read
