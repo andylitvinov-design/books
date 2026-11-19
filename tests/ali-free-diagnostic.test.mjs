@@ -27,6 +27,8 @@ test('a separate free mode exists on the existing RU/EN/ES review link',()=>{
    assert.equal(welcome,FREE_DIAGNOSTIC_LIBRARY[locale].intro,
      'Telegram welcome must match the provider-validated canonical copy');
    assert.match(welcome,/\bAli\b/u);
+   assert.match(welcome,locale==='ru'?/личных вопросов.*согласны/iu:
+     locale==='es'?/preguntas personales/iu:/personal questions/iu);
    assert.doesNotMatch(welcome,/\bWave\b/u);
    assert.ok(welcome.length<155,locale+' first screen must be warm and brief');
    assert.doesNotMatch(welcome,/\/stop|not a medical|diagnos|OpenRouter|medical records|no envíes|документы|не диагноз/i);
