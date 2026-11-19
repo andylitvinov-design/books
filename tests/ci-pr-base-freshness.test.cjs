@@ -266,7 +266,8 @@ test('trusted production-base policy is loaded from the same pinned SHA and miss
    'INDEPENDENT_PUBLIC_PRESENTATION_REVALIDATED',
    'DISJOINT_PUBLIC_SOURCE_REVALIDATED',
    'TRUSTED_POLICY_BASE_REVALIDATED',
-   'INDEPENDENT_QA_BASE_REVALIDATED'])
+   'INDEPENDENT_QA_BASE_REVALIDATED',
+   'INDEPENDENT_DOMAIN_TEST_BASE_REVALIDATED'])
    assert.ok(workflow.includes('freshness.reason==="'+signal+'"'));
 });
 
@@ -484,4 +485,49 @@ test('native AutoMerge accepts only production-proven isolated browser QA base a
  }
  proof={...diff(file),status:'diverged'};
  assert.equal((await assessBaseFreshness(options)).reason,'SENSITIVE_COMPARE_UNSAFE');
+});
+
+test('native merge shares protected cross-domain TEST-only exception only after actual Core success',async()=>{
+  const changes=['tests/crm-telegram-cabinet-entry.test.mjs'];
+  const compare=paths=>({status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:old},merge_base_commit:{sha:old},commits:[{sha:head}],
+    files:paths.map(filename=>({filename,status:'modified'}))});
+  let diff=compare(changes),verified=0;
+  const github=api('components/mandala-auto-video-director.tsx');
+  github.rest.repos.compareCommits=async()=>({data:diff});
+  const policy={
+    safeDocumentationAdvance:()=>false,
+    safeIndependentCiMaintenanceAdvance:()=>false,
+    verifiedIndependentPublicRasterAdvance:()=>false,
+    safeIndependentPublicPresentationAdvance:()=>false,
+    safeDisjointPublicSourceAdvance:()=>false,
+    safeTrustedPolicyAdvance:()=>false,
+    safeIndependentQaAdvance:()=>false,
+    safeIndependentDomainTestAdvance:(d,base,latest,candidate)=>{
+      verified++;
+      return d.status==='ahead'&&d.base_commit?.sha===old&&
+        d.merge_base_commit?.sha===old&&d.commits?.at(-1)?.sha===head&&
+        base===old&&latest===head&&
+        candidate.length===1&&candidate[0]==='components/mandala-auto-video-director.tsx'&&
+        d.files.length===1&&d.files[0].filename===changes[0]&&
+        d.files[0].status==='modified';
+    },
+  };
+  const args={github,owner:'o',repo:'r',
+    pr:{...pr,mergeable:true},verifiedRunBase:old,
+    decideRoute:()=> 'FULL',baseAdvancePolicy:policy};
+  const approved=await assessBaseFreshness(args);
+  assert.equal(approved.ok,true);
+  assert.equal(approved.reason,'INDEPENDENT_DOMAIN_TEST_BASE_REVALIDATED');
+  assert.equal(verified,1);
+  for(const mergeable of [null,false])
+    assert.equal((await assessBaseFreshness({...args,pr:{...pr,mergeable}})).reason,
+      'SENSITIVE_COMPARE_UNSAFE','native merge never guesses conflict freedom');
+  assert.equal((await assessBaseFreshness({...args,baseAdvancePolicy:{
+    ...policy,safeIndependentDomainTestAdvance:undefined}})).reason,
+    'SENSITIVE_COMPARE_UNSAFE','production without helper stays strict');
+  diff=compare(['tests/ci-specialist-aggregate.test.mjs']);
+  assert.equal((await assessBaseFreshness(args)).reason,'SENSITIVE_COMPARE_UNSAFE');
+  diff=compare(changes);diff.status='diverged';
+  assert.equal((await assessBaseFreshness(args)).reason,'SENSITIVE_COMPARE_UNSAFE');
 });
