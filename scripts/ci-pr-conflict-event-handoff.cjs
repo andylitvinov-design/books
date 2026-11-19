@@ -68,7 +68,7 @@ function currentDirty(pr,eventPr){
   pr.head?.ref===eventPr.head.ref&&
   pr.mergeable===false&&pr.mergeable_state==='dirty');
 }
-async function run({github,core,context,dryRun=false,dispatchRun=null,readPr=null}={}){
+async function run({github,core,context,dryRun=false,dispatchRun=null,readPr=null,queueOnly=false}={}){
  const result={schema:'HH_CONFLICT_EVENT_HANDOFF_V1',outcome:'UNVERIFIED_EVENT',
   prNumber:null,headSha:null,labelAdded:false,dispatchAccepted:0,
   manualConflictHandoffs:0,reason:null,blockingLabel:null,
@@ -126,6 +126,18 @@ async function run({github,core,context,dryRun=false,dispatchRun=null,readPr=nul
      !(pr.labels||[]).some(label=>label.name===CONFLICT)){
    result.outcome='CONFLICT_LABEL_READBACK_UNVERIFIED';return result;
   }
+ }
+ // The unprivileged PR-local event job may only produce a verified hint.
+ // An actual manual handoff still belongs exclusively to the already
+ // serialized Watchdog/Control Tower, with full leases, budgets and receipts.
+ // This keeps a stuck/conflicted PR out of unrelated PRs' writer slots.
+ // The hint was either verified already or verified by an exact-HEAD re-read
+ // after the only label write above.
+ if(queueOnly){
+  result.outcome='CONFLICT_QUEUE_HINT_VERIFIED';
+  result.reason='SERIALIZED_WATCHDOG_HANDOFF_PENDING';
+  result.nextAction='EXISTING_WATCHDOG_CONFLICT_TRIAGE';
+  return result;
  }
  const dispatch=dispatchRun||require('./ci-pr-queue-dispatcher.cjs').run;
  try{

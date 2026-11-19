@@ -83,7 +83,14 @@ test('single event workflow never falls into full Watchdog inventory scan',()=>{
  assert.match(native,/  conflict-event-handoff:/);
  assert.doesNotMatch(watchdog,/^  pull_request_target:/m,'only one trusted PR-target workflow starts');
  assert.doesNotMatch(watchdog,/^  conflict-event-handoff:/m);
- assert.match(native,/group: hh-control-tower-single-writer/);
+ const eventJob=native.split('  conflict-event-handoff:\n')[1]?.split('\n  prune-head:')[0];
+ assert.ok(eventJob,'the single native conflict-event job must exist');
+ assert.match(eventJob,/group: hh-conflict-event-pr-\$\{\{ github\.event\.pull_request\.number \|\| github\.run_id \}\}/);
+ assert.doesNotMatch(eventJob,/group: hh-control-tower-single-writer/,
+   'PR-local hint must not consume the shared Watchdog source-writer queue');
+ assert.match(eventJob,/run\(\{github,core,context,dryRun:false,queueOnly:true\}\)/);
+ assert.match(watchdog,/group: hh-control-tower-single-writer/,
+   'real Watchdog/Control Tower still preserves its global writer lease');
  assert.match(native,/ci-pr-conflict-event-handoff\.cjs/);
 });
 
@@ -191,6 +198,45 @@ test('explicit hard holds report precise reason and never pass into a source or 
   assert.equal(r.blockingLabel,label);
   assert.equal(r.reason,reason);
   assert.equal(r.nextAction,'REVIEW_EXPLICIT_HOLD_OR_SOURCE_OWNER');
+  assert.equal(writes,0);assert.equal(dispatches,0);
+ }
+});
+
+// PR-local event handling must never run the shared source/CI dispatcher.
+// Verified conflict hints are only durable metadata for the existing
+// serialized Watchdog, which retains all owner/lease/source safety checks.
+test('PR-scoped dirty event verifies hint but never dispatches common writer',async()=>{
+ let current=source(),writes=0,reads=0,dispatched=0;
+ const github={rest:{pulls:{get:async()=>{reads++;return {data:current};}},
+  issues:{addLabels:async args=>{
+   writes++;assert.deepEqual(args.labels,['hh:conflict-repair-needed']);
+   current=source(['hh:conflict-repair-needed']);return {data:{}};
+  }}}};
+ const first=await run({github,core,context:event(),queueOnly:true,
+  dispatchRun:async()=>{dispatched++;throw Error('shared writer must not run');}});
+ assert.equal(first.outcome,'CONFLICT_QUEUE_HINT_VERIFIED');
+ assert.equal(first.reason,'SERIALIZED_WATCHDOG_HANDOFF_PENDING');
+ assert.equal(first.mergeAuthorized,false);
+ assert.equal(first.sourceCommitVerified,false);
+ assert.equal(writes,1);assert.equal(reads,2);assert.equal(dispatched,0);
+ const next=await run({github,core,context:event(),queueOnly:true,
+  dispatchRun:async()=>{dispatched++;throw Error('duplicate shared dispatch');}});
+ assert.equal(next.outcome,'CONFLICT_QUEUE_HINT_VERIFIED');
+ assert.equal(writes,1,'one durable hint for repeated exact-HEAD events');
+ assert.equal(dispatched,0);
+});
+test('PR-local event never labels stale HEAD, unverified mergeability or held PR',async()=>{
+ for(const candidate of [
+  source([],{mergeable:null,mergeable_state:'unknown'}),
+  source([],{head:{...source().head,sha:'e'.repeat(40)}}),
+  source(['hh:hold']),source(['hh:blocked'])
+ ]){
+  let writes=0,dispatches=0;
+  const github={rest:{pulls:{get:async()=>({data:candidate})},
+   issues:{addLabels:async()=>{writes++;}}}};
+  const result=await run({github,core,context:event(),queueOnly:true,
+   dispatchRun:async()=>{dispatches++;}});
+  assert.notEqual(result.outcome,'CONFLICT_QUEUE_HINT_VERIFIED');
   assert.equal(writes,0);assert.equal(dispatches,0);
  }
 });
