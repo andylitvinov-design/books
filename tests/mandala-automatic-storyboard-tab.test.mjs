@@ -157,7 +157,7 @@ test("Making Room for Love has six DIFFERENT action-near photographs, still expl
  assert.match(tab,/data-storyboard-reference-status/);
  assert.match(tab,/data-storyboard-reference-count/);
  assert.match(tab,/data-story-media-kind=\{photo\?"photo":shot\?"video":reference\?"reference":"missing"\}/);
- assert.match(tab,/data-storyboard-media-ready=\{manualFiveReady\|\|eligible\}/,
+ assert.match(tab,/data-storyboard-media-ready=\{manualFiveReady\|\|eligible\|\|photoAdaptationApplied\}/,
   "photo reference is NOT the licence, matched action or permission to generate MP4");
  assert.match(tab,/v3RequiresActionProof/);
  assert.doesNotMatch(tab,/onApply\(references|onApply\(storyboardPhotoReferences/,
@@ -172,4 +172,41 @@ test("preview references fail closed on unknown scenario/categories and people e
   categoryId:"love-relationships",shotCount:6,avoidImagery:["no people"]});
  assert.ok(withoutPeople.every(photo=>!photo||!photo.tags.some(tag=>
   /^(?:people|person|man|woman|women|men|couple|friend|hands|family|crowd|child|walking)$/.test(tag))));
+});
+
+
+test("real photograph reference remains separate from opt-in six-photo rendering authorization",()=>{
+ // A photo-reference label is not an exported MP4.
+ assert.match(tab,/storyboardPhotoReferences\(\{/);
+ assert.match(tab,/data-storyboard-reference-only/);
+ assert.match(tab,/data-storyboard-photo-reference-label/);
+ assert.match(tab,/onPhotoLoaded/);
+ assert.match(tab,/naturalWidth>=600&&img\.naturalHeight>=600/);
+ assert.match(tab,/onPhotoUnavailable/);
+ assert.match(tab,/const referencesDecoded=hasSixPhotoReferences/);
+ assert.match(tab,/const photoAdaptationApplied=Boolean\(hasSixPhotoReferences/);
+ assert.match(tab,/data-storyboard-apply-reference-photos/);
+ assert.match(tab,/disabled=\{disabled\|\|!referencesDecoded\}/);
+ assert.match(tab,/if\(!referencesDecoded\|\|references\.some\(photo=>!photo\|\|!isTrustedStoryPhoto\(photo\)\)\)return/);
+ assert.match(tab,/sourceMasterKey:photo!\.id/);
+ assert.match(tab,/startMs:index\*5000/);
+ assert.match(tab,/durationMs:5000,sourceDurationMs:5000/);
+ assert.match(tab,/depictedEventVerified:false as const/);
+ assert.match(tab,/if\(onApply\(photoShots,concept,storyKey/);
+ assert.match(tab,/data-storyboard-user-selected-photo-interpretation/);
+ assert.match(tab,/user_approved_symbolic_photo_montage/);
+ assert.match(tab,/data-reviewed-filmed-only=\{!proposalHasPhotos&&!photoAdaptationApplied\}/);
+ assert.match(tab,/\(!hasSixPhotoReferences\|\|photoAdaptationApplied\|\|eligible\)/);
+ assert.doesNotMatch(tab,/setAppliedStoryKey\(/,
+  "Story only proposes, while the existing trusted Studio onApply saves user intent");
+ // No automatic conversion on mount, no fabricated render or extra charge:
+ const photoFlow=tab.slice(tab.indexOf("data-storyboard-apply-reference-photos"),
+   tab.indexOf("data-storyboard-user-selected-photo-interpretation"));
+ assert.ok(photoFlow.includes("onClick={() =>")||photoFlow.includes("onClick={()=>"));
+ assert.doesNotMatch(photoFlow,/videoCreditRequest|fetch\(|navigator\.sendBeacon|window\.location=/);
+ for(const id of storyboardPhotoReferences({
+  scenarioId:"ready-relationship-s1",categoryId:"love-relationships",shotCount:6
+ }).map(photo=>photo.id)){
+  assert.ok(STORY_PHOTO_BY_ID.has(id),"only existing source-page-reviewed Pexels used");
+ }
 });

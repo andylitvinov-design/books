@@ -124,7 +124,7 @@ test("silent WebKit exports H.264 even without AudioEncoder, never fakes voice A
 test("Safari failure exposes a safe code and an explicit lighter same-renderer retry",()=>{
   assert.match(studio,/const \[webkitRecoveryReason,setWebkitRecoveryReason\] = useState<string\|null>\(null\)/);
   assert.match(studio,/setWebkitRecoveryReason\(null\)/);
-  assert.match(studio,/const safariRetryScale=useWebCodecsMp4&&\(safeWebkitRetry\|\|isApplePhone\)/);
+  assert.match(studio,/const safariRetryScale=\(isApplePhone\|\|\(useWebCodecsMp4&&safeWebkitRetry\)\)/);
   assert.match(studio,/540\/\(quality==="fullhd"\?1080:720\)/);
   assert.match(studio,/data-video-webkit-safe-retry/);
   assert.match(studio,/onClick=\{\(\)=>void createVideo\(false,false,true\)\}/);
@@ -492,7 +492,7 @@ test("physical iPhone gets one 540p H264/AAC encode, never auto-unplayable WebM"
   assert.equal(shouldAutoRecoverSafariPlayback({safariWebKit:true,format:"mp4",errorCode:4,
     nativeWebm:true,userAgent:iphone}),false);
   assert.match(studio,/const isApplePhone=\/iPhone\|iPad\|iPod\/i.test\(ua\)/);
-  assert.match(studio,/safariRetryScale=useWebCodecsMp4&&\(safeWebkitRetry\|\|isApplePhone\)/);
+  assert.match(studio,/safariRetryScale=\(isApplePhone\|\|\(useWebCodecsMp4&&safeWebkitRetry\)\)/);
   assert.match(studio,/if\(!safariWebKit\|\|isApplePhone\|\|safeWebkitRetry\|\|!recoverable/);
   assert.match(studio,/userAgent:ua,maxTouchPoints:navigator.maxTouchPoints/);
   assert.match(helper,/avc1\.42001f/);
@@ -500,4 +500,31 @@ test("physical iPhone gets one 540p H264/AAC encode, never auto-unplayable WebM"
   assert.match(helper,/const h264=baselineSupported\|\|await canEncodeVideo\("avc",videoConfig\)/);
   assert.match(studio,/creditValidRef\.current=Boolean\(creditOpRef\.current\)/);
   assert.match(studio,/if\(creditOpRef\.current&&!creditValidRef\.current\)/);
+});
+
+test("real iPhone prefers native playable MP4 and uses WebCodecs only as an explicit alternate",async()=>{
+  const {selectWebCodecsForRecording:select}=await import("../lib/mandala/recording-codecs.mjs");
+  const phone="Mozilla/5.0 (iPhone; CPU iPhone OS 26_6 like Mac OS X) AppleWebKit/605.1.15";
+  const ipad="Mozilla/5.0 (Macintosh; Intel Mac OS X) AppleWebKit/605.1.15 Safari/605.1.15";
+  const safari={hasWebCodecs:true,safariWebKit:true,procedural:true,proceduralRoute:"native"};
+  assert.equal(select({...safari,nativeMp4Available:true,userAgent:phone}),false,
+    "native AVC/AAC source is the FIRST, single iPhone encoder");
+  assert.equal(select({...safari,nativeMp4Available:false,userAgent:phone}),true,
+    "missing native MP4 retains the existing WebCodecs path");
+  assert.equal(select({...safari,nativeMp4Available:true,userAgent:phone,forceWebCodecs:true}),true,
+    "a user explicitly chooses the different fallback encoder, never an automatic duplicate");
+  assert.equal(select({...safari,nativeMp4Available:true,userAgent:ipad,maxTouchPoints:5}),false);
+  assert.equal(select({...safari,nativeMp4Available:true,userAgent:ipad,maxTouchPoints:0}),true,
+    "desktop macOS WebKit keeps its existing real-media CI path");
+  assert.equal(select({...safari,nativeMp4Available:true,userAgent:phone,preferWebm:true}),false,
+    "iPhone WebM is never an automatic escape hatch");
+  assert.match(studio,/MediaRecorder\.isTypeSupported\("video\/mp4"\)/);
+  assert.match(studio,/nativeMp4Available:nativeAppleMp4Available/);
+  assert.match(studio,/lastExportEngineRef\.current=useWebCodecsMp4\?"webcodecs":"native"/);
+  assert.match(studio,/const framesPerSecond=isApplePhone\?8/);
+  assert.match(studio,/videoBitsPerSecond:isApplePhone\?1_400_000/);
+  assert.match(studio,/mime===explicitAvcMime\|\|\(nativeAppleMp4Available&&mime==="video\/mp4"\)/);
+  assert.match(studio,/if\(iphoneWebCodecsFallbackAvailable\)void createVideo\(false,false,true,true\)/);
+  assert.match(studio,/if\(creditOpRef\.current\)return/);
+  assert.match(studio,/if\(held&&creditValidRef\.current\)await releaseCredit\(held\)/);
 });
