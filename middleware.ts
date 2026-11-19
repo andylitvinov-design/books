@@ -18,9 +18,41 @@ function privatePath(pathname: string) {
     || /^\/admin(?:\/|$)/.test(decoded)
     || decoded.startsWith('/document-preview/')
 }
+// Exact standalone public HTML documents intentionally use only same-origin JS.
+// Next's nonce/strict-dynamic React CSP is not suitable for these static files.
+// Keep private/app/API CSP unchanged; never apply this policy to user content.
+const INSTANT_PUBLIC_HOME_CSP = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self'",
+  "img-src 'self' data:",
+  "connect-src 'self'",
+  "font-src 'self'",
+  "media-src 'self'",
+  "frame-src 'none'",
+  "object-src 'none'",
+  "base-uri 'none'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join('; ')
 export async function middleware(request: NextRequest) {
   const redirectTarget = canonicalRedirectTarget(request.url, request.method)
   if (redirectTarget) return NextResponse.redirect(redirectTarget, 308)
+  // Rewritten public HTML can traverse middleware a second time via the
+  // /instant-home/... destination. It must not inherit the React-only nonce
+  // + strict-dynamic policy, which blocks its trusted external fast.js.
+  // Restrict this exception to exactly two published static HTML documents.
+  if (/^\/instant-home\/(?:en|ru)\.html$/.test(request.nextUrl.pathname)
+      && ['GET', 'HEAD'].includes(request.method)) {
+    const staticResponse = NextResponse.next()
+    staticResponse.headers.set('Content-Security-Policy', INSTANT_PUBLIC_HOME_CSP)
+    staticResponse.headers.set('Cache-Control', 'public, max-age=0, s-maxage=3600, stale-while-revalidate=120')
+    staticResponse.headers.set('X-Content-Type-Options', 'nosniff')
+    staticResponse.headers.set('X-Frame-Options', 'DENY')
+    staticResponse.headers.set('X-Robots-Tag', 'noindex, follow')
+    staticResponse.headers.set('X-HH-Public-Static-Csp', '1')
+    return staticResponse
+  }
   // The first interactive Home must not wait for Next.js server rendering,
   // global CSS or hydration. Only a full GET/HEAD document gets the static,
   // CDN-cacheable, fully functional public EN/RU entry. Next RSC, previews,
@@ -37,20 +69,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/' + requested, request.url), 307)
     // Keep anonymous static CSP consistent between the document rewrite
     // request and response, so first-party fast.js works in production.
-    const fastCsp = [
-      "default-src 'self'",
-      "script-src 'self'",
-      "style-src 'self'",
-      "img-src 'self' data:",
-      "connect-src 'self'",
-      "font-src 'self'",
-      "media-src 'self'",
-      "frame-src 'none'",
-      "object-src 'none'",
-      "base-uri 'none'",
-      "form-action 'self'",
-      "frame-ancestors 'none'",
-    ].join('; ')
+    const fastCsp = INSTANT_PUBLIC_HOME_CSP
     const fastRequestHeaders = new Headers(request.headers)
     fastRequestHeaders.set('Content-Security-Policy', fastCsp)
     const response = NextResponse.rewrite(new URL('/instant-home/' + fastLocale + '.html', request.url), {
