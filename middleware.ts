@@ -49,7 +49,9 @@ export async function middleware(request: NextRequest) {
     staticResponse.headers.set('Cache-Control', 'public, max-age=0, s-maxage=3600, stale-while-revalidate=120')
     staticResponse.headers.set('X-Content-Type-Options', 'nosniff')
     staticResponse.headers.set('X-Frame-Options', 'DENY')
-    staticResponse.headers.set('X-Robots-Tag', 'noindex, follow')
+    // The rewritten origin / and /ru are canonical public pages:
+    // do not send noindex from this internal HTML destination.
+    staticResponse.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
     staticResponse.headers.set('X-HH-Public-Static-Csp', '1')
     return staticResponse
   }

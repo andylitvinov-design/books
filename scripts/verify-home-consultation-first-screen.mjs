@@ -46,6 +46,13 @@ for (const engine of [chromium,webkit]){
           // Direct EN/RU HTML is intentionally CDN-first: verify the real
           // browser-visible static controls, not the obsolete React header.
           if (locale !== "es") {
+            // A rewrite must not accidentally deindex the canonical public
+            // Home by inheriting headers from its internal static document.
+            assert.doesNotMatch(response.headers()["x-robots-tag"]||"",/noindex/i,
+              label+": canonical Home must remain indexable");
+            const documentCsp=response.headers()["content-security-policy"]||"";
+            assert.match(documentCsp,/script-src 'self'/,label+": first-party fast JS allowed");
+            assert.doesNotMatch(documentCsp,/nonce-|strict-dynamic/,label+": static Home must not get private CSP");
             const fast=page.locator('body[data-fast-home="'+locale+'"]');
             await fast.waitFor({state:"attached",timeout:20000});
             try {
