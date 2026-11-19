@@ -238,9 +238,9 @@ test('production hook is consent-first, never uses external LLM or silent CRM ha
  assert.match(handler,/if\(action==='send'\)/);
  assert.match(handler,/ai_review_consent_at=now\(\)/);
  assert.match(handler,/return promptResult/);
- assert.match(handler,/const purposeReady=general\?chatAllowed:serviceAllowed/);
- assert.match(handler,/ctx\.conversationKind==='general'\?chatAllowed:serviceAllowed/);
- assert.match(handler,/prior\.ctx\.conversationKind==='general'\?v3CanChat\(env\):v3ServiceIntakeReady\(env\)/);
+ assert.match(handler,/const purposeReady=general\|\|ctx\.mode===FREE_DIAGNOSTIC_MODE\|\|/);
+ assert.match(handler,/ctx\.conversationKind==='general'\|\|ctx\.mode===FREE_DIAGNOSTIC_MODE/);
+ assert.match(handler,/prior\.ctx\.conversationKind==='general'\|\|prior\.ctx\.mode===FREE_DIAGNOSTIC_MODE/);
  assert.match(handler,/wavePsychologistNativeTurn/);
  assert.doesNotMatch(planner,/\bfetch\s*\(|\baxios\s*\(|\bingestMessengerEventInTransaction\s*\(/);
  const local={VERCEL_ENV:'production',HH_CRM_TG_AI_V3_SCHEMA_READY:'true',

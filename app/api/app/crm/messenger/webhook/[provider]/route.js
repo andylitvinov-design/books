@@ -19,6 +19,7 @@ import {shouldBootstrapTelegramNativeMenu} from '@/lib/crm/telegram-companion-na
 import { receiveOwnerTelegramVideoCrmFallback } from '@/lib/practitioners/owner-telegram-video-crm-fallback'
 import {processTelegramBusinessConversation} from '@/lib/crm/telegram-business-service'
 import {captureTelegramBotLead,captureTelegramBusinessLead} from '@/lib/crm/telegram-lead-capture'
+import {captureTelegramBusinessInbox,telegramBotHumanTakeover} from '@/lib/crm/telegram-business-inbox'
 import {captureTelegramLeadBestEffort} from '@/lib/crm/telegram-lead-capture-policy.mjs'
 import {captureWhatsAppFirstContact,recordWhatsAppInboundReceipt} from '@/lib/crm/whatsapp-lead-capture'
 import {telegramBusinessMessageFromUpdate} from '@/lib/assist/telegram-business-request.mjs'
@@ -107,6 +108,13 @@ export async function POST(request,{params}){
       ?await captureTelegramLeadBestEffort(
         ()=>captureTelegramBusinessLead(body,config),
         ()=>console.error('HH_TG_BUSINESS_LEAD_CAPTURE_UNAVAILABLE')):null
+    // The signed Business connection gets its own private thread in the same
+    // CRM inbox; before owner handoff only neutral metadata is saved.
+    if(provider==='telegram'){
+      const inbox=await captureTelegramBusinessInbox(body,config,businessLead)
+      // A confirmed human reply takes precedence over AI service/FAQ scripts.
+      if(inbox.humanActive)return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
+    }
     // Separate signed Business-chat service intake: only public service-code
     // messages and explicit short replies, never ordinary personal text or
     // diagnostic/Companion updates. Confirmation persists before acknowledgement.
@@ -307,6 +315,16 @@ export async function POST(request,{params}){
             console.error('HH_TG_BOT_LEAD_CAPTURE_UNAVAILABLE')
             botLeadCapturePendingRetry=true
           }
+        }
+        // After the owner manually replies in CRM, keep later client messages
+        // encrypted in the same inbox and do NOT let AI interrupt the human.
+        // STOP and explicit bot/menu restarts remain serviced normally.
+        if(event.type==='incoming'&&!event.callbackId&&!event.stop&&
+          !/^(?:стоп|stop|остановить|parar|detener)$/i.test(String(event.rawText||'').trim())&&
+          !/^\/(?:ai|start)(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(String(event.rawText||'').trim())&&
+          await telegramBotHumanTakeover(event,config)){
+          await ingestMessengerUpdate('telegram',event,config)
+          continue
         }
         const companion=await processTelegramCompanion(event,config)
         if(companion.handled){
