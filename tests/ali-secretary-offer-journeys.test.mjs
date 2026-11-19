@@ -16,9 +16,10 @@ const source=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const countQuestions=x=>(x.match(/[?？]/gu)||[]).length;
 const locales=['ru','en','es'];
 
-test('every one of the 35 signed offer links has a unique contextual RU EN ES journey',()=>{
+test('every published offer has a unique contextual RU EN ES journey',()=>{
  const ids=Object.keys(TELEGRAM_SERVICE_OPTIONS);
- assert.equal(ids.length,35);
+ assert.equal(ids.length,37);
+ assert.equal(ids.filter(id=>TELEGRAM_SERVICE_OPTIONS[id].channels?.includes('telegram_business')).length,2);
  assert.deepEqual(Object.keys(ALI_SECRETARY_OFFER_JOURNEYS).sort(),ids.sort());
  for(const [id,{service,titles}] of Object.entries(TELEGRAM_SERVICE_OPTIONS)){
   const meta=ALI_SECRETARY_OFFER_JOURNEYS[id];
@@ -34,7 +35,9 @@ test('every one of the 35 signed offer links has a unique contextual RU EN ES jo
    const url=new URL(j.url);
    assert.equal(url.origin,'https://holistichouse.vercel.app');
    assert.ok(url.pathname.startsWith('/'+(id==='courses_practitioner'?'en':locale)+'/'));
-   assert.equal(v3ServiceStart('/start hhitem_'+id+'_'+locale).offerId,id);
+   const start=v3ServiceStart('/start hhitem_'+id+'_'+locale);
+   if(TELEGRAM_SERVICE_OPTIONS[id].channels?.includes('telegram_business'))assert.equal(start,null);
+   else assert.equal(start.offerId,id);
    const scenario=aliServiceScenario(service,locale,id);
    assert.equal(scenario.title,titles[locale]);
    assert.equal(scenario.questions.goal,j.questions[0]);
