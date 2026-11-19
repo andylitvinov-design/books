@@ -340,3 +340,36 @@ test('signed CRM and Commander isolated postmerge changes cannot restart whole r
   assert.match(push,/'lib\/documents\/report-progress\.js'/);
   assert.match(workflow,/^  pull_request:/m,'real PR report validation retained');
 });
+
+test('cosmetic Profile-only CSS skips heavy private IA but preserves real Core/App R1 and private-code coverage',()=>{
+ const ia=readFileSync(new URL('../.github/workflows/ia-v2.yml',import.meta.url),'utf8');
+ const app=readFileSync(new URL('../.github/workflows/hh-app-r1.yml',import.meta.url),'utf8');
+ const core=readFileSync(new URL('../.github/workflows/hh-pr-core-release.yml',import.meta.url),'utf8');
+ const iaTrigger=parsePrTrigger(ia,'.github/workflows/ia-v2.yml');
+ const appTrigger=parsePrTrigger(app,'.github/workflows/hh-app-r1.yml');
+ const css='components/app/profile-space-dashboard.module.css';
+ const cosmetic=[css,'components/home-dialogue-entry.module.css',
+  'components/sitewide-ihelp.module.css','tests/home-profile-iphone-viewport.test.mjs'];
+ assert.equal(matchesTrigger(iaTrigger,[css],TARGET),false,
+  'pure visual Profile CSS must not launch private IA/Redis/Postgres/1000+ tests');
+ assert.equal(matchesTrigger(iaTrigger,cosmetic,TARGET),false,
+  'original #5000 Home/Profile-only visual scope remains under Core + App R1');
+ assert.equal(matchesTrigger(appTrigger,[css],TARGET),true,
+  'App R1 retains the actual profile source/visual regression gate');
+ assert.match(core,/^  pull_request:\s*$/m);
+ assert.match(core,/^    branches: \['codex\/public-book-library'\]$/m);
+ for(const protectedPath of [
+   'components/app/profile-space-dashboard.jsx',
+   'components/app/profile-space-dashboard.tsx',
+   'components/app/crm-manager.jsx',
+   'app/api/app/client/report/route.js',
+   'app/api/auth/callback/route.js',
+   'lib/security/private-session.mjs',
+   'supabase/migrations/20261119_policy.sql',
+ ]) assert.equal(matchesTrigger(iaTrigger,[protectedPath],TARGET),true,
+   'private code must still trigger IA: '+protectedPath);
+ assert.equal(matchesTrigger(iaTrigger,[css,'components/app/crm-manager.jsx'],TARGET),true,
+  'mixed styling and private code must not bypass IA');
+ assert.equal(matchesTrigger(iaTrigger,['.github/workflows/ia-v2.yml'],TARGET),true,
+  'changes to the IA workflow itself must still execute its real tests');
+});
