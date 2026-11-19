@@ -598,3 +598,11 @@
   .root .languageCompact{width:48px}
 }
 @media(prefers-reduced-motion:reduce){.root .languageOptions button{transition:none}}
+
+/* Owner-approved Ali branding is scoped to AI; Orders/Chats/News retain their headers. */
+.root[data-section="ai"] .head h1{font-size:clamp(17px,4.6vw,22px);line-height:1.1;letter-spacing:-.025em}
+.root[data-section="ai"] .head p{font-size:10px;line-height:1.25;color:#706960}
+@media(max-width:355px){
+ .root[data-section="ai"] .head h1{font-size:16px}
+ .root[data-section="ai"] .head p{font-size:9px}
+}
