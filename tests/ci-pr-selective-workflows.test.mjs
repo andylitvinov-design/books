@@ -340,3 +340,36 @@ test('signed CRM and Commander isolated postmerge changes cannot restart whole r
   assert.match(push,/'lib\/documents\/report-progress\.js'/);
   assert.match(workflow,/^  pull_request:/m,'real PR report validation retained');
 });
+
+test('single cosmetic Profile CSS does not start heavyweight IA; Core and App R1 retain ownership',()=>{
+ const iaSource=readFileSync(new URL('../.github/workflows/ia-v2.yml',import.meta.url),'utf8');
+ const appSource=readFileSync(new URL('../.github/workflows/hh-app-r1.yml',import.meta.url),'utf8');
+ const iaTrigger=parsePrTrigger(iaSource,'.github/workflows/ia-v2.yml');
+ const appTrigger=parsePrTrigger(appSource,'.github/workflows/hh-app-r1.yml');
+ const css='components/app/profile-space-dashboard.module.css';
+ const cosmetic=[css,'components/home-dialogue-entry.module.css',
+   'components/sitewide-ihelp.module.css','tests/home-profile-iphone-viewport.test.mjs'];
+ assert.equal(matchesTrigger(iaTrigger,[css],TARGET),false,
+   'do not run 1000+ IA backend tests for a single decorative CSS module');
+ assert.equal(matchesTrigger(iaTrigger,cosmetic,TARGET),false,
+   'PR #5000 exact four-file styling scope stays on Core + App R1');
+ assert.equal(matchesTrigger(appTrigger,[css],TARGET),true,
+   'App R1 remains responsible for user profile checks');
+ for(const sensitive of [
+   'components/app/profile-space-dashboard.jsx',
+   'components/app/crm-manager.jsx',
+   'app/api/auth/route.js',
+   'lib/security/private-session.mjs',
+   'supabase/migrations/20261119_owner_policy.sql',
+ ]) assert.equal(matchesTrigger(iaTrigger,[sensitive],TARGET),true,
+   'private auth, app source, schema and security must still trigger IA: '+sensitive);
+ assert.equal(matchesTrigger(iaTrigger,[css,'components/app/crm-manager.jsx'],TARGET),true,
+   'mixed CSS plus private source must not evade IA');
+ const page=readFileSync(new URL('../components/services-three-visible-options.tsx',import.meta.url),'utf8');
+ const courses=page.split('  courses: [')[1]?.split('  coach: [')[0];
+ assert.ok(courses,'site Courses group must exist');
+ assert.match(courses,/id:"practitioner", name:\["Бесплатный курс практикующего Рейки","Free Reiki Practitioner Course","Curso gratuito de Reiki"\]/);
+ assert.match(courses,/path:"academy\/principles-of-energywork\/learn"/);
+ assert.ok(!courses.includes('id:"personal-video"'),
+   'Video Studio already has its own service grouping; keep Courses about actual learning');
+});

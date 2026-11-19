@@ -107,9 +107,9 @@ const groups: Record<ThreeGroup, readonly Option[]> = {
     { id:"meditations", name:["Медитации и практики","Meditations & practices","Meditaciones y prácticas"],
       description:["Аудио и видео для осознанной самоподдержки.","Listen to guided practices for everyday self-support.","Prácticas guiadas de apoyo personal."],
       path:"meditations", photo:"/images/holistic-house/assist-video-meditation.webp", price:"free" },
-    { id:"personal-video", name:["Персональное видео","Personal video","Vídeo personal"],
-      description:["Создайте видео с выбранной темой в существующей студии.","Explore a personal video on your chosen theme in the existing studio.","Crea un vídeo personal sobre un tema elegido."],
-      path:"video-studio", photo:"/images/holistic-house/assist-video-intention.webp", price:"quote" },
+    { id:"practitioner", name:["Бесплатный курс практикующего Рейки","Free Reiki Practitioner Course","Curso gratuito de Reiki"],
+      description:["Бесплатное интерактивное обучение с практиками и личной инициацией по запросу.","Free interactive lessons and practices, with personal initiation upon request.","Lecciones y prácticas interactivas gratis, con iniciación personal previa solicitud."],
+      path:"academy/principles-of-energywork/learn", photo:"/images/holistic-house/reiki-practitioner-sunrise.webp", price:"free" },
   ],
   coach: [
     { id:"diagnostic", name:["Бесплатная коучинг-анкета","Free coaching intake","Formulario gratuito de coaching"],

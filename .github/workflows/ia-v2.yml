@@ -45,6 +45,10 @@ on:
       # Public Ali greeting and support quiz: focused conversation owner; private Messenger/auth changes keep full tests.
       - '!components/app/messenger-ai-landing.*'
       - '!components/app/messenger-support-quiz.*'
+      # Only a cosmetic scoped Profile CSS module: Core and App R1 own its
+      # responsive/visual checks. Avoid full IA/Redis/Postgres/1000+ tests
+      # on Home/Profile styling while private TSX/auth/API stay fully gated.
+      - '!components/app/profile-space-dashboard.module.css'
   workflow_dispatch:
 permissions:
   contents: read
