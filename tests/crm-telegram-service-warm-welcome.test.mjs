@@ -68,9 +68,8 @@ test('service welcome photo is limited to first signed consent message and uses 
  const sender=source('lib/crm/messenger-provider.js');
  assert.match(v3,/if\(freeStart\)return \{\.\.\.greeting,freeWelcomePhoto:true\}/);
  assert.match(v3,/const welcomePhotoKey=aliWelcomePhotoKey\(\{/);
- assert.match(v3,/service:serviceStart\?\.service\|\|null/);
- assert.match(v3,/offerId:serviceStart\?\.offerId\|\|null/);
- assert.match(v3,/if\(!canReply\)return greeting;/);
+ assert.match(v3,/service:serviceEntry\?\.service\|\|null/);
+ assert.match(v3,/if\(!canReply\)return greeting/);
  assert.equal(aliWelcomePhotoKey({service:'homeopathy'}),'homeopathy');
  assert.match(aliWelcomePhotoUrl('homeopathy'),/^https:\/\/holistichouse\.vercel\.app\/images\/holistic-house\//);
  assert.equal(aliWelcomePhotoUrl('https://untrusted.example/image.jpg'),null);
@@ -91,15 +90,17 @@ test('service welcome photo is limited to first signed consent message and uses 
  assert.match(sender,/telegramInlineMarkup\(keyboard,locale\)/);
  assert.match(v3,/if\(row\.stage==='consent'\)/);
  assert.equal(v3Action({inlineAction:'v3:agree'}),'agree');
- // Current single explicit consent starts the local dialogue; the legacy action remains accepted.
- assert.match(v3,/const emergency=v3ChatPreConsentSafetyReply\(raw,lang\)/);
+ // Current single explicit consent enters Ali's local dialogue directly.
+ // A legacy second-stage consent button is accepted only for existing sessions.
  assert.match(v3,/const agrees=general\?action==='chatagree':/);
  assert.match(v3,/serviceCopy\?\(action==='agree'\|\|action==='serviceagree'/);
  assert.match(v3,/!event\.inlineAction&&isExplicitYes\(raw\)/);
- // A confirmed service always uses the service-intake readiness gate; only general chat may use chat readiness.
- assert.match(v3,/const purposeReady=general\?chatAllowed:serviceAllowed;/);
- assert.match(v3,/if\(!agrees\|\|!purposeReady\)/);
- assert.match(v3,/serviceCopy\?'consent':ctx.mode===FREE_DIAGNOSTIC_MODE/);
+ // The signed CRM/Secretary purpose router must retain these consent and privacy gates.
+ assert.ok(v3.includes("const emergency=v3ChatPreConsentSafetyReply(raw,lang)"));
+ assert.ok(v3.includes("const purposeReady=general||ctx.mode===FREE_DIAGNOSTIC_MODE||"));
+ assert.ok(v3.includes("(ctx.supportSelection&&ctx.conversationKind!=='general')?chatAllowed:serviceAllowed;"));
+ assert.ok(v3.includes("if(!agrees||!purposeReady)"));
+ assert.ok(v3.includes("serviceCopy?'consent':ctx.mode===FREE_DIAGNOSTIC_MODE"));
  assert.match(v3,/if\(!agrees\|\|!purposeReady\)/);
  assert.match(v3,/stage='interview',locale=\$3,ai_consent_at=now\(\)/);
  assert.match(v3,/serviceCopy\?\.first/);
