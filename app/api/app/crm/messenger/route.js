@@ -69,6 +69,9 @@ async function handle(request){
       }else if(action==='note'){
         onlyKeys(payload,['threadId','noteId','text'])
         data=await repo.withOwner(actor,store=>store.addMessengerNote(payload))
+      }else if(action==='set_human_takeover'){
+        onlyKeys(payload,['threadId','enabled'])
+        data=await repo.withOwner(actor,store=>store.setMessengerHumanTakeover(payload))
       }else if(action==='set_stage'){
         onlyKeys(payload,['threadId','lifecycle','expectedRevision'])
         data=await repo.withOwner(actor,async store=>{
