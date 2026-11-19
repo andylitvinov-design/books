@@ -91,6 +91,7 @@ test('Home and existing Messenger share persona and natural greeting, not separa
  assert.match(home,/data-home-ali-persona=\{persona.id\}/)
  assert.match(home,/data-home-ali-greeting-play/)
  assert.match(home,/playAliPersonaAudio\(persona.id,locale/)
+ assert.match(home,/prepareAliNaturalVoice\(\)/)
  assert.match(home,/AliPersonaPicker open=\{personaOpen\}/)
  assert.match(home,/stageHomeAliHandoff\(window.sessionStorage/)
  assert.match(homeCss,/\.guideAudio\{/)
