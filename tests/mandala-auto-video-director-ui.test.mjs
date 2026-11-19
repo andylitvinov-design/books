@@ -500,3 +500,26 @@ test("new prompt and profile choice invalidate every prior MyTube plot selection
  for(const setter of ["setSelectedScenarioId(","setSelectedPlotId(","setTimelineEdits("])
    assert.ok(field.includes(setter),"new request invalidates stale storyboard");
 });
+
+test("Just make it sends a typed wish straight to the existing rights-checked Express renderer",()=>{
+ const handler=director.slice(director.indexOf("const designFromRequest="),director.indexOf("const analyzedPath="));
+ assert.match(handler,/if\(quickFlow==="instant"\)\{onInstantCreate\?\.\(\);return;\}/);
+ assert.doesNotMatch(handler,/quickFlow==="instant"&&goalQuizComplete/,
+   "an optional three-step quiz must not gate one-click generation");
+ assert.doesNotMatch(handler,/if\(quickFlow==="instant"\)\{onCreate/,
+   "the old handler opened Ready instead of starting a video");
+ assert.match(director,/onInstantCreate\?:\(\)=>boolean/);
+ assert.match(studio,/onInstantCreate=\{generateFromGoal\}/,
+   "instant mode and the existing Generate video action use the same handler");
+ assert.match(studio,/const generateFromGoal=\(\)=>generateExpressFromCurrent\(\)/);
+ assert.match(studio,/planExpressVideo\(\{/);
+ assert.match(studio,/compileFreeFilmPreset\(preset,locale,recipe\.durationSeconds,"portrait"/);
+ assert.match(studio,/const started=expressRenderRef\.current\(\)/);
+ assert.match(studio,/expressRenderRef\.current=startFromHero/);
+ assert.match(studio,/onCreate=\{openReadyForGeneration\}/,
+   "guided creation remains distinct from the instant trusted-gesture export");
+ assert.match(director,/onConceptTopicChange\?\.\(null\)/,
+   "new wishes invalidate an older canonical topic");
+ assert.match(director,/data-video-request-flow=\{quickFlow\}/);
+ assert.match(director,/Create video automatically/);
+});
