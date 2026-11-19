@@ -286,6 +286,20 @@ jobs:
                   if(ghost)report.jobless409={
                     code:ghost.code,run_id:ghost.run_id,pr:ghost.pr};
                   core.info('HH_QUEUE_ORPHAN_RECONCILE '+JSON.stringify(receipt));
+                  // GitHub can report old 'in_progress' workflow shells even
+                  // though ALL their jobs finished two weeks ago. In the
+                  // existing Watchdog runner, delete at most two whose
+                  // uniquely verified source PR is ALREADY MERGED, with all
+                  // jobs terminal >1h and actual age >14d+1h. Never touch
+                  // current Core, Specialist, push/deploy, or source HEAD.
+                  // This is a GitHub Actions API clean-up, not another CI wave.
+                  const {run:pruneTerminalGhosts}=require(
+                    process.env.GITHUB_WORKSPACE+
+                    '/scripts/ci-pr-terminal-ghost-prune.cjs');
+                  const shells=await pruneTerminalGhosts({github,context,core,
+                    observedQueued:report.queuedActions,
+                    observedRemaining:report.apiRemaining});
+                  core.info('HH_TERMINAL_PR_GHOST_RECONCILE '+JSON.stringify(shells));
                 }
               }catch(error){
                 core.warning('HH_QUEUE_ORPHAN_RECONCILE_UNAVAILABLE '+
