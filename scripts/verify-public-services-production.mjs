@@ -128,7 +128,7 @@ try {
     await expect(quiz.locator("[data-services-quiz-category]")).toHaveCount(6);
     await expect(quiz.locator("[data-services-quiz-category] img")).toHaveCount(6);
     await expect(quiz.locator("[data-services-business-link]"))
-      .toHaveAttribute("href", "#service-group-services");
+      .toHaveAttribute("href", "#service-group-business");
     assert.equal(await page.locator("[data-hh-unified-dock]").count(), 1,
       "Keep the real site dock; never add a second mock dock");
     // The approved screenshot is 390px wide. At smaller widths content may
@@ -180,10 +180,11 @@ try {
       await expect(target.locator(':scope > [data-services-three-visible] > [data-service-variant]')).toHaveCount(3);
       await expect(target.locator(':scope > [data-services-three-visible] > [data-service-variant]').first()).toBeVisible();
     }
-    await expect(quiz.locator("[data-services-business-link]")).toHaveAttribute("href", "#service-group-services");
+    await expect(quiz.locator("[data-services-business-link]")).toHaveAttribute("href", "#service-group-business");
     await quiz.locator("[data-services-business-link]").click();
     assert.equal(new URL(page.url()).pathname, "/" + locale + "/services", "Business category must stay on Services");
-    assert.equal(new URL(page.url()).hash, "#service-group-services");
+    assert.equal(new URL(page.url()).hash, "#service-group-business");
+    await visible(page.locator("#service-group-business"));
     // Business has its own topic, need and start-format branching.
     await quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice="business_support"]').click();
     await expect(quiz).toHaveAttribute("data-services-quiz-step", "2");

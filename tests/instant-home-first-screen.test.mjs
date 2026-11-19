@@ -83,6 +83,9 @@ test('middleware preserves protected CSP and source App Router RSC path',()=>{
  assert.match(middleware,/NextResponse\.rewrite\(new URL\('\/instant-home\/'/);
  assert.ok(middleware.indexOf('if (fastLocale)') < middleware.indexOf('const authCookieChanges = await refreshAdminAuth(request)'));
  assert.match(middleware,/script-src 'self'/);
+ assert.match(middleware,/fastRequestHeaders\.set\('Content-Security-Policy', fastCsp\)/);
+ assert.ok(middleware.includes('request: { headers: fastRequestHeaders }'));
+ assert.match(middleware,/response\.headers\.set\('Content-Security-Policy', fastCsp\)/);
  assert.match(middleware,/frame-ancestors 'none'/);
  assert.match(middleware,/nonce-\$\{nonce\}/);
  assert.match(middleware,/privatePath\(request\.nextUrl\.pathname\)/);

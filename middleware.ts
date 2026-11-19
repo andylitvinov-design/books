@@ -35,9 +35,9 @@ export async function middleware(request: NextRequest) {
     const requested = request.nextUrl.searchParams.get('lang')
     if (request.nextUrl.pathname === '/' && (requested === 'ru' || requested === 'es'))
       return NextResponse.redirect(new URL('/' + requested, request.url), 307)
-    const response = NextResponse.rewrite(new URL('/instant-home/' + fastLocale + '.html', request.url))
-    response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=3600, stale-while-revalidate=120')
-    response.headers.set('Content-Security-Policy', [
+    // Keep anonymous static CSP consistent between the document rewrite
+    // request and response, so first-party fast.js works in production.
+    const fastCsp = [
       "default-src 'self'",
       "script-src 'self'",
       "style-src 'self'",
@@ -50,7 +50,14 @@ export async function middleware(request: NextRequest) {
       "base-uri 'none'",
       "form-action 'self'",
       "frame-ancestors 'none'",
-    ].join('; '))
+    ].join('; ')
+    const fastRequestHeaders = new Headers(request.headers)
+    fastRequestHeaders.set('Content-Security-Policy', fastCsp)
+    const response = NextResponse.rewrite(new URL('/instant-home/' + fastLocale + '.html', request.url), {
+      request: { headers: fastRequestHeaders },
+    })
+    response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=3600, stale-while-revalidate=120')
+    response.headers.set('Content-Security-Policy', fastCsp)
     response.headers.set('X-Content-Type-Options', 'nosniff')
     response.headers.set('X-Frame-Options', 'DENY')
     response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')

@@ -29,6 +29,9 @@ for (const engine of [chromium,webkit]){
         const label=engine.name()+":"+locale+":"+width;
         const scriptEvents=[];
         page.on("pageerror",error=>scriptEvents.push("pageerror:"+error.message.slice(0,240)));
+        page.on("console",message=>{
+          if(message.type()==="error")scriptEvents.push("console:"+message.text().slice(0,360));
+        });
         page.on("requestfailed",request=>{
           if(request.url().includes("/instant-home/fast.js"))
             scriptEvents.push("script-request-failed:"+String(request.failure()?.errorText).slice(0,160));
@@ -56,7 +59,9 @@ for (const engine of [chromium,webkit]){
                 composer:Boolean(document.getElementById("ali-form")),
                 input:Boolean(document.getElementById("ali-message")),
               }));
+              const servedCsp=response?.headers()["content-security-policy"]||"missing";
               throw Error(label+": CDN Home JS did not initialize; asset="+(asset?.status()??"unavailable")+
+                " csp="+servedCsp.slice(0,900)+
                 " document="+JSON.stringify(state)+" events="+JSON.stringify(scriptEvents)+
                 " original="+error.message.slice(0,160));
             }

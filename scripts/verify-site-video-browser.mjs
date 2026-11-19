@@ -102,7 +102,9 @@ try {
   page.on('pageerror', error => pageErrors.push({ message: error.message,
     url: page.url(), stack: String(error.stack || '').slice(0, 1800) }))
   async function navigate(target) {
-    const options = { waitUntil: live ? 'domcontentloaded' : 'load', timeout: 60000 }
+    // The route and player assertions establish readiness without waiting
+    // for every third-party load event during isolated development.
+    const options = { waitUntil: 'domcontentloaded', timeout: 60000 }
     const destination = new URL(target, origin)
     const previous = new URL(page.url())
     // Multiple placements can share one Services path and differ by #anchor.
@@ -110,9 +112,18 @@ try {
     // does not request fresh publication data and can recurse through popstate.
     const sameDocument = previous.origin === destination.origin &&
       previous.pathname === destination.pathname && previous.search === destination.search
-    let response = sameDocument
-      ? await page.reload(options)
-      : await page.goto(destination.href, options)
+    let response
+    try {
+      response = sameDocument
+        ? await page.reload(options)
+        : await page.goto(destination.href, options)
+    } catch (error) {
+      // An isolated Next DEV stream can abort a navigation during a concurrent
+      // transition. Retry the SAME route only once, never on LIVE.
+      if (live || !String(error?.message).includes('net::ERR_ABORTED')) throw error
+      console.warn('Transient isolated DEV navigation abort on '+target+'; retrying once')
+      response = await page.goto(destination.href, options)
+    }
     if (!response) response = await page.reload(options)
     // Next 15 isolated DEV can briefly lack clientReferenceManifest during
     // FIRST dynamic compilation. One identical-document retry must return 200;
