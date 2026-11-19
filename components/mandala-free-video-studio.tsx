@@ -13,6 +13,8 @@ import originalMotionLibrary from "@/data/video-catalog/original-motion-scenes-v
 import extraFreeFilmPresets from "@/data/video-catalog/free-film-presets-v2.json";
 import { MandalaHypnoCompact } from "./mandala-hypno-compact";
 import { MandalaVideoIdeas } from "./mandala-video-ideas";
+import { MandalaVideoIdeaGoal } from "./mandala-video-idea-goal";
+import {composeVideoIdeaGoalIntent,getVideoIdeaGoal,type VideoIdeaGoalId} from "@/lib/mandala/video-idea-goals.mjs";
 import {MandalaVideoPersonalization,DEFAULT_VIDEO_GOAL_PROFILE,summarizeVideoGoalProfile,type VideoGoalProfile} from "./mandala-video-personalization";
 import { HeaderCreditProfile } from "./header-credit-profile";
 import { MandalaVideoConcept, type ApprovedVideoConcept } from "./mandala-video-concept";
@@ -2064,12 +2066,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [activeWorkspace,setActiveWorkspace] = useState<StudioWorkspace>("video");
   const [proCatalogKind,setProCatalogKind]=useState<StoryAddonKind>("character");
   const [ideasVoiceAdvancedOpen,setIdeasVoiceAdvancedOpen] = useState(false);
-  const [ideasSubtab,setIdeasSubtab] = useState<"personalization"|"concept">("personalization");
+  const [ideasSubtab,setIdeasSubtab] = useState<"personalization"|"goal"|"concept">("personalization");
   const [ideasVoiceMode,setIdeasVoiceMode] = useState<"voice"|"my-voice">("voice");
   const [ideasProfile,setIdeasProfile] = useState<VideoGoalProfile>(DEFAULT_VIDEO_GOAL_PROFILE);
   // Do not misread initial preselected chips as answers until the visitor
   // actually confirms the Personalization step.
   const [ideasProfileConfirmed,setIdeasProfileConfirmed] = useState(false);
+  const [ideasGoalId,setIdeasGoalId] = useState<VideoIdeaGoalId|null>(null);
   const [basicPanelTab,setBasicPanelTab] = useState<"style"|"photo"|"voice"|"music">("style");
   const [showAdvancedVideo,setShowAdvancedVideo] = useState(false);
   const [montageStyleSettingsOpen,setMontageStyleSettingsOpen] = useState(false);
@@ -3143,15 +3146,23 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     ()=>ideasProfileConfirmed?summarizeVideoGoalProfile(ideasProfile,locale):null,
     [ideasProfileConfirmed,ideasProfile,locale]
   );
+  // Explicit Ideas goal determines a canonical editorial topic and outcome.
+  // Preserve the original request and confirmed Personalization answers.
+  const chosenIdeaGoal=getVideoIdeaGoal(ideasGoalId);
+  const conceptGoalText=composeVideoIdeaGoalIntent(wish,locale,ideasGoalId);
+  const conceptTopic=chosenIdeaGoal?{
+    categoryId:chosenIdeaGoal.categoryId,subcategoryId:chosenIdeaGoal.subcategoryId,
+    topicId:chosenIdeaGoal.topicId,brief:chosenIdeaGoal.copy[locale].intent
+  }:selectedConceptTopic;
   const sharedFilmBrief=useMemo(()=>suggestVideoConcept({
-    locale,goal:wish,theme,styleIndex:quickStyleIndex,
+    locale,goal:conceptGoalText,theme,styleIndex:quickStyleIndex,
     phrases:filmPhraseSignature?filmPhraseSignature.split("\u001f"):[],
     speechTranscript:voiceTranscript,personalization:confirmedFilmPersonalization,
-    selectedTopicId:selectedConceptTopic?.topicId||null,
-    creativeBrief:selectedConceptTopic?.brief||null
+    selectedTopicId:conceptTopic?.topicId||null,
+    creativeBrief:conceptTopic?.brief||null
   }) as unknown as ApprovedVideoConcept,[
-    locale,wish,theme,quickStyleIndex,filmPhraseSignature,voiceTranscript,
-    confirmedFilmPersonalization,selectedConceptTopic?.topicId,selectedConceptTopic?.brief
+    locale,conceptGoalText,theme,quickStyleIndex,filmPhraseSignature,voiceTranscript,
+    confirmedFilmPersonalization,conceptTopic?.topicId,conceptTopic?.brief
   ]);
   const activeFilmDirectionId=chosenFilm?.intentSignature===sharedFilmBrief.signature
     ?chosenFilm.directionId:null;
@@ -8106,12 +8117,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
       <section className={videoStyles.quickPhraseSection} data-workspace-section="phrases" data-video-quick-phrases aria-label={workspaceCopy[locale].phrases.title} data-ideas-subtab={ideasSubtab} data-ideas-active-tab={ideasSubtab}>
         <div className={videoStyles.ideasSubtabs} data-video-ideas-tabs role="group"
-          aria-label={locale==="ru"?"Идеи: персонализация и концепция":
-            locale==="es"?"Ideas: personalización y concepto":"Ideas: personalization and concept"}>
+          aria-label={locale==="ru"?"Идеи: персонализация, цель и концепция":
+            locale==="es"?"Ideas: personalización, objetivo y concepto":"Ideas: personalization, goal and concept"}>
           <button type="button" data-video-ideas-tab="personalization" aria-pressed={ideasSubtab==="personalization"}
             onClick={()=>setIdeasSubtab("personalization")}>
             <Heart size={19} aria-hidden="true"/>
             {locale==="ru"?"Персонализация":locale==="es"?"Personalización":"Personalization"}
+          </button>
+          <button type="button" data-video-ideas-tab="goal" aria-pressed={ideasSubtab==="goal"}
+            onClick={()=>setIdeasSubtab("goal")}>
+            <Target size={20} aria-hidden="true"/>
+            {locale==="ru"?"Цель":locale==="es"?"Objetivo":"Goal"}
           </button>
           <button type="button" data-video-ideas-tab="concept" aria-pressed={ideasSubtab==="concept"}
             onClick={()=>setIdeasSubtab("concept")}>
@@ -8138,7 +8154,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <MandalaVideoPersonalization locale={locale} value={ideasProfile}
             onChange={setIdeasProfile} disabled={recording||preparing}
             onBack={()=>setActiveWorkspace("video")}
-            onContinue={()=>{setIdeasProfileConfirmed(true);setIdeasSubtab("concept");}}/>
+            onContinue={()=>{setIdeasProfileConfirmed(true);setIdeasSubtab("goal");}}/>
           <p className={videoStyles.montageMovedNote}>{locale==="ru"?"Выбор фраз — в Монтаже → Текст.":locale==="es"?"Las frases están en Montaje → Texto.":"Choose phrases in Montage → Text."}</p>
           <button type="button" className={videoStyles.montageStepNext} data-video-ideas-open-montage-text
             disabled={recording||preparing} onClick={goToMontageFromIdeas}>
@@ -8175,9 +8191,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </details>
           </div>
         </div>
+        <div className={videoStyles.ideasGoalPane} id="video-ideas-goal-panel"
+          data-video-ideas-goal-panel hidden={ideasSubtab!=="goal"}>
+          <MandalaVideoIdeaGoal locale={locale} selectedId={ideasGoalId}
+            onSelect={id=>{
+              if(id===ideasGoalId)return;
+              setIdeasGoalId(id);
+              setApprovedVideoConcept(null);setDraftVideoConcept(null);
+              setChosenFilm(null);setAppliedStoryKey(null);
+            }}
+            disabled={recording||preparing} onContinue={()=>setIdeasSubtab("concept")}/>
+        </div>
         <div className={videoStyles.ideasConceptPane} id="video-ideas-concept-panel"
           data-video-ideas-concept-panel hidden={ideasSubtab!=="concept"}>
-          <MandalaVideoConcept locale={locale} goal={wish} theme={theme} selectedTopic={selectedConceptTopic}
+          <MandalaVideoConcept locale={locale} goal={conceptGoalText} theme={theme} selectedTopic={conceptTopic}
             suggestedConcept={sharedFilmBrief} selectedDirectionId={activeFilmDirectionId}
             profile={ideasProfileConfirmed?ideasProfile:null} durationSeconds={duration}
             speechTranscript={voiceTranscript} approvedConcept={approvedVideoConcept}
@@ -8205,7 +8232,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               setApprovedVideoConcept(null);
               setAppliedStoryKey(null);
             }}
-            onOpenGoal={()=>{setActiveWorkspace("video");}}
+            onOpenGoal={()=>{setIdeasSubtab("goal");}}
             onOpenStyle={()=>{setActiveWorkspace("editor");setMontagePanel("effects");}}
             onApprove={approved=>{
               setApprovedVideoConcept(approved);
@@ -9151,11 +9178,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 "The chosen idea updates the storyboard. Review real shots before applying."}</small>
             </div>:null}
             <MandalaAutomaticStoryboard
-              locale={locale} goal={wish} theme={theme} durationSeconds={duration}
+              locale={locale} goal={conceptGoalText} theme={theme} durationSeconds={duration}
               suggestedConcept={sharedFilmBrief} selectedDirectionId={activeFilmDirectionId}
               aspect={aspect} styleIndex={quickStyleIndex} pace={speed}
               personalization={confirmedFilmPersonalization}
-              selectedTopic={selectedConceptTopic}
+              selectedTopic={conceptTopic}
               appliedStoryKey={appliedStoryKey} phrases={affirmationLines}
               fiveSceneShots={cinematicPlan?.version===FREE_FILM_PLAN_VERSION?
                 cinematicPlan.shots.map(shot=>({

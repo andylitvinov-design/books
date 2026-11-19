@@ -233,7 +233,7 @@ test("compact Ideas preserves one opt-in advanced phrase and voice editor",()=>{
  assert.match(section,/data-video-ideas-recording-open=\{ideasVoiceAdvancedOpen\?"true":"false"\}/);
  assert.match(section,/hidden=\{activeWorkspace!=="phrases"\|\|ideasSubtab!=="personalization"\}/);
  assert.match(section,/aria-hidden=\{activeWorkspace!=="phrases"\|\|ideasSubtab!=="personalization"\}/);
- assert.equal((section.match(/data-video-ideas-tab="/g)||[]).length,2);
+ assert.equal((section.match(/data-video-ideas-tab="/g)||[]).length,3);
  assert.equal((section.match(/<MandalaVideoConcept /g)||[]).length,1);
  assert.match(section,/data-video-ideas-advanced-voice open=\{ideasVoiceAdvancedOpen\}/);
  assert.equal((studio.match(/<MandalaHypnoCompact /g)||[]).length,1);
