@@ -332,9 +332,13 @@ async function verifyWorkspaceHydration(browser,locale){
     const goalTab=page.locator('[data-video-quick-control="video"]');
     await goalTab.click();
     await expect(goalTab).toHaveAttribute("aria-pressed","true");
-    const others=page.locator('[data-video-quick-scope="work"]');
     const goalQuiz=page.locator('[data-video-goal-quiz-audience]');
+    // Returning from Ideas preserves the completed Self quiz at step 3.
+    // Use the actual Back buttons to restore the visible Life/Work picker.
+    const backGoal=page.locator('[data-video-goal-quiz-back]');
+    for(let step=0;step<2&&await backGoal.count();step++)await backGoal.click();
     await expect(page.locator('[data-video-quick-scope]')).toHaveCount(2);
+    const others=page.locator('[data-video-quick-scope="work"]');
     await expect(page.locator('[data-video-goal-audience-option]')).toHaveCount(0);
     await others.click();
     await expect(goalQuiz).toHaveAttribute("data-video-goal-quiz-audience","others");
