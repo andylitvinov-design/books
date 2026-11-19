@@ -177,7 +177,10 @@ async function verifiedGhostRepairCapacity(gh,owner,repo,p,now=Date.now()){
   ]);
   const completeCapacity=([q,a,wq,wa])=>{
    const Q=q?.data?.total_count,A=a?.data?.total_count,active=a?.data?.workflow_runs;
-   return Number.isSafeInteger(Q)&&Q>100&&Q<=250&&
+   // GitHub's un-cancellable jobless queue can block Repair at 72 runs,
+   // WELL BEFORE it reaches the historical 100+ ghost proof gate.
+   // Full live worker/job/ancestry verification below remains mandatory.
+   return Number.isSafeInteger(Q)&&Q>=LIMIT.maxRepairQueuedRuns&&Q<=250&&
     Number.isSafeInteger(A)&&A>=0&&A<=GHOST_ACTIVE_INVENTORY_LIMIT&&
     Array.isArray(active)&&active.length===A&&
     Array.isArray(wq?.data?.workflow_runs)&&wq.data.total_count===0&&
@@ -377,13 +380,23 @@ async function snapshot(github,owner,repo,now=Date.now(),rotationRunId=null){
       safeToDispatch:false,
       ghostQueueCandidates:qCount>100?staleMergedQueueSamples(queued,now,rotationRunId):[]};
   }
-  // When even the total count is saturated, do not waste API quota reading
-  // runner jobs or accidentally treat an incomplete list as a free slot.
-  if((Math.max(aCount,active.length)>=LIMIT.maxActiveRuns&&
-     !(aCount===LIMIT.maxActiveRuns&&active.length===aCount&&
-       qCount===queued.length&&active.some(run=>possibleTerminalOverhang(run,now))))||
-     Math.max(qCount,queued.length)>=LIMIT.maxRepairQueuedRuns){
-    return {known:false,reason:'RUN_CAPACITY_SATURATED',activeRuns:aCount,queuedRuns:qCount};
+  // Saturation at 72-100 queued Actions used to hide the existing
+  // strictly-proven jobless merged-PR rescue, which only received hints
+  // when >100. Reuse this ALREADY FETCHED complete queued page: at most
+  // three read-only candidate hints, never a capacity or green-CI claim.
+  // The trusted dispatcher independently proves merged PR, ancestry,
+  // zero jobs, full active-job inventory and no Repair Worker before
+  // allowing ONE ordinary Repair slot. Unknown/partial remains blocked.
+  const activeSaturated=Math.max(aCount,active.length)>=LIMIT.maxActiveRuns&&
+    !(aCount===LIMIT.maxActiveRuns&&active.length===aCount&&
+      qCount===queued.length&&active.some(run=>possibleTerminalOverhang(run,now)));
+  const queuedSaturated=Math.max(qCount,queued.length)>=LIMIT.maxRepairQueuedRuns;
+  if(activeSaturated||queuedSaturated){
+    return {known:false,reason:'RUN_CAPACITY_SATURATED',activeRuns:aCount,queuedRuns:qCount,
+      saturatedBy:queuedSaturated?'QUEUED':'ACTIVE',
+      inventoryConfidence:'COUNT_SATURATED_WITH_BOUNDED_GHOST_HINTS',
+      ghostQueueCandidates:queuedSaturated&&qCount===queued.length?
+        staleMergedQueueSamples(queued,now,rotationRunId):[]};
   }
   if(aCount===active.length&&qCount===queued.length)break;
   if(attempt>=1){

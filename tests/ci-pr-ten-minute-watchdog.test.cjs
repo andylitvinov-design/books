@@ -2464,3 +2464,101 @@ test('old queued Actions page two receives a bounded independent sweep',async()=
  assert.equal(first.status,'NO_PROVEN_STALE_RUN');
  assert.equal(second.status,'NO_PROVEN_STALE_RUN');
 });
+
+test('72-100 GitHub queued runs surface bounded ghost proof without admitting workers',async()=>{
+ const {snapshot,staleMergedQueueSamples,admission,LIMIT}=
+   require('../scripts/ci-pr-capacity.cjs');
+ const now=Date.parse('2026-11-19T17:00:00Z');
+ const queued=Array.from({length:95},(_,i)=>({
+  id:720000+i,event:'pull_request',status:'queued',run_attempt:1,
+  head_branch:'old-merged-'+i,head_sha:'a'.repeat(40),
+  repository:{full_name:'andylitvinov-design/books'},
+  head_repository:{full_name:'andylitvinov-design/books'},
+  pull_requests:[],created_at:new Date(now-8*86400000).toISOString()
+ }));
+ let jobReads=0,listingReads=0;
+ const gh={rest:{actions:{
+  listWorkflowRunsForRepo:async({status,per_page})=>{
+   assert.equal(per_page,100);
+   listingReads++;
+   return {data:{total_count:status==='queued'?95:0,
+     workflow_runs:status==='queued'?queued:[]}};
+  },
+  listJobsForWorkflowRun:async()=>{jobReads++;throw Error('no live job should be requested');}
+ }}};
+ const capacity=await snapshot(gh,'andylitvinov-design','books',now,42);
+ assert.equal(capacity.reason,'RUN_CAPACITY_SATURATED');
+ assert.equal(capacity.known,false);
+ assert.equal(capacity.queuedRuns,95);
+ assert.equal(capacity.saturatedBy,'QUEUED');
+ assert.equal(capacity.ghostQueueCandidates.length,3);
+ assert.deepEqual(capacity.ghostQueueCandidates,
+   staleMergedQueueSamples(queued,now,42));
+ assert.equal(listingReads,2,'reuse the two already fetched inventory pages');
+ assert.equal(jobReads,0,'no extra runner checks just to find ghost hints');
+ assert.notEqual(admission('repair',capacity),'ADMIT');
+ assert.notEqual(admission('ci',capacity),'ADMIT');
+ assert.equal(LIMIT.maxRepairQueuedRuns,72);
+ const unknown=await snapshot({rest:{actions:{
+  listWorkflowRunsForRepo:async({status})=>({data:{
+    total_count:status==='queued'?95:0,
+    workflow_runs:status==='queued'?queued.slice(0,90):[]}})
+ }}},'andylitvinov-design','books',now);
+ assert.equal(unknown.known,false);
+ assert.deepEqual(unknown.ghostQueueCandidates,[],
+   'an incomplete queued page cannot authorize even a candidate hint');
+});
+
+test('verified jobless merged ghost at 95 queued allows one Repair, never CI or unsafe state',async()=>{
+ const {verifiedGhostRepairCapacity,admission,LIMIT,STALE_MERGED_REPAIR_MODE}=
+   require('../scripts/ci-pr-capacity.cjs');
+ const now=Date.parse('2026-11-19T17:00:00Z');
+ const full='andylitvinov-design/books',sha='a'.repeat(40),head='b'.repeat(40);
+ const created=new Date(now-8*86400000).toISOString();
+ const merged=new Date(now-7*86400000).toISOString();
+ const run={id:720555,status:'queued',event:'pull_request',run_attempt:1,
+   repository:{full_name:full},head_repository:{full_name:full},
+   head_branch:'closed-feature',head_sha:sha,created_at:created,
+   pull_requests:[]};
+ const pr={number:4370,state:'closed',merged:true,merged_at:merged,
+   base:{ref:'codex/public-book-library',repo:{full_name:full}},
+   head:{ref:'closed-feature',sha:head,repo:{full_name:full}}};
+ let q=95,worker=0,goodJobs=true;
+ const gh={rest:{
+  actions:{
+   getWorkflowRun:async()=>({data:run}),
+   listJobsForWorkflowRun:async()=>({data:{total_count:goodJobs?0:1,
+     jobs:goodJobs?[]:[{id:1,status:'queued'}]}}),
+   listWorkflowRunsForRepo:async({status})=>({data:{
+     total_count:status==='queued'?q:0,
+     workflow_runs:status==='queued'?[run]:[]}}),
+   listWorkflowRuns:async()=>({data:{total_count:worker,
+     workflow_runs:worker?[{...run,status:'in_progress'}]:[]}})
+  },
+  pulls:{get:async()=>({data:pr})},
+  repos:{compareCommits:async()=>({data:{
+    status:'ahead',base_commit:{sha},merge_base_commit:{sha}
+  }})}
+ }};
+ const proof={run_id:run.id,pr:pr.number,head_sha:sha,
+   head_branch:run.head_branch,created_at:created,
+   code:'MERGED_JOBLESS_QUEUE_READONLY'};
+ const verified=await verifiedGhostRepairCapacity(gh,'andylitvinov-design',
+   'books',proof,now);
+ assert.equal(verified.known,true);
+ assert.equal(verified.inventoryConfidence,'GHOST_STALE_MERGED_ONE_REPAIR');
+ assert.equal(verified.ghostProofRunId,run.id);
+ assert.equal(admission('repair',verified),'ADMIT');
+ assert.notEqual(admission('ci',verified),'ADMIT',
+   'a ghost hint never grants unverified bootstrap or a release bypass');
+ assert.notEqual(admission('conflict',verified),'ADMIT');
+ worker=1;
+ assert.equal((await verifiedGhostRepairCapacity(gh,'andylitvinov-design',
+   'books',proof,now)).known,false,'live Repair Worker blocks another');
+ worker=0;q=LIMIT.maxRepairQueuedRuns-1;
+ assert.equal((await verifiedGhostRepairCapacity(gh,'andylitvinov-design',
+   'books',proof,now)).known,false,'normal queue must not enter ghost lane');
+ q=95;goodJobs=false;
+ assert.equal((await verifiedGhostRepairCapacity(gh,'andylitvinov-design',
+   'books',proof,now)).known,false,'real queued job cannot be ignored');
+});
