@@ -21,9 +21,9 @@ test('One owner can have separately scoped Telegram Bot and Business entries',()
 })
 
 test('Unverified Business routes never send a Bot-identity reply',()=>{
- assert.match(store,/enabled:r\.enabled&&r\.account_kind==='primary'&&channelTransportReady\(r\.channel\)/)
- assert.match(store,/enabled:thread\.enabled&&thread\.account_kind==='primary'&&channelTransportReady\(thread\.channel\)/)
- assert.match(store,/enabled:row\.enabled&&row\.account_kind==='primary'&&channelTransportReady\(row\.channel\)/)
+ assert.match(store,/enabled:r\.enabled&&r\.account_kind==='primary'&&crmReplyTransportReady\(replyChannel\)/)
+ assert.match(store,/enabled:thread\.enabled&&thread\.account_kind==='primary'&&crmReplyTransportReady\(replyChannel\)/)
+ assert.match(store,/enabled:row\.enabled&&row\.account_kind==='primary'&&crmReplyTransportReady\(replyChannel\)/)
  assert.match(webhook,/app_private\.crm_msg_ingest/)
  assert.doesNotMatch(migration,/GRANT\s+(?:ALL|INSERT|SELECT|UPDATE)/i)
  assert.doesNotMatch(migration,/UPDATE app\.crm_msg_accounts SET|DELETE FROM app\.crm_msg_accounts/i)
