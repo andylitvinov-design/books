@@ -296,11 +296,11 @@ situation: {
         { title: "Un paso posible", text: "Recibe observaciones escritas para reflexionar." },
       ],
       processTitle: "Así empezamos",
-      processLead: "Basta con una pregunta para empezar, sin llamadas.",
+      processLead: "Una pregunta basta para empezar, sin cita o videollamada. Te responderé por escrito.",
       steps: [
         { title: "Elige tu tema", text: "Abre Telegram o WhatsApp y envíame un mensaje breve." },
         { title: "Deja tu contacto", text: "Te haré una o dos preguntas para entender tu situación." },
-        { title: "Acuerda un envío seguro", text: "Si hace falta un dibujo, acordaremos cómo compartirlo en privado. Envía expedientes médicos, pruebas y datos sensibles solo por el formulario protegido." },
+        { title: "Acuerda un envío seguro", text: "Tras dar tu consentimiento, Telegram puede pedir una foto y un dibujo opcionales. Envía expedientes médicos, pruebas y datos sensibles solo por el formulario protegido." },
       ],
       startTitle: "¿Qué deseas explorar?",
       startLead: "Elige el tema y deja tu teléfono, sin datos personales por chat.",
