@@ -48,7 +48,7 @@ test('a registered specialist can remain queued beyond three minutes and must su
     },
   };
   const sleep = async ms => {
-    assert.ok(ms > 0 && ms <= 30_000, 'bounded polling');
+    assert.ok(ms > 0 && ms <= 60_000, 'bounded polling');
     elapsed += ms;
   };
   const result = await verify(api, ctx, sources, { now: () => elapsed, sleep });
@@ -57,6 +57,34 @@ test('a registered specialist can remain queued beyond three minutes and must su
   assert.ok(polls > 5);
   assert.equal(jobsRead, 1);
   assert.equal(result.executed.length, 1);
+});
+
+test('default hh-merge-check halves redundant multi-specialist polling without skipping exact-head jobs', async () => {
+  const second = '.github/workflows/video-qa.yml';
+  const files = { base: new Map([[path,yaml],[second,yaml]]),
+    current: new Map([[path,yaml],[second,yaml]]),
+    changedRows: [{filename:'lib/crm/a.js',status:'M'}] };
+  const a = run('in_progress',null);
+  const b = {...a,id:152,path:second};
+  let elapsed = 0, reads = 0, jobs = 0;
+  const api = {
+    pr: async () => pr,
+    target: async () => base,
+    runs: async () => {
+      reads++;
+      return elapsed >= 240_000
+        ? [{...a,status:'completed',conclusion:'success'},
+          {...b,status:'completed',conclusion:'success'}]
+        : [a,b];
+    },
+    jobs: async () => { jobs++; return [{name:'test',status:'completed',conclusion:'success'}]; },
+  };
+  const result = await verify(api,ctx,files,{maxWaitMs:10*60_000,now:()=>elapsed,
+    sleep:async ms=>{assert.ok(ms>0&&ms<=60_000);elapsed+=ms;}});
+  assert.equal(elapsed,240_000);
+  assert.equal(reads,5,'five indexed HEAD reads vs nine at the old 30-second cadence');
+  assert.equal(jobs,2,'both actual specialist jobs are still independently checked');
+  assert.equal(result.executed.length,2);
 });
 
 test('an explicitly extended queue budget permits a proven 20-minute hosted runner wait', async () => {
@@ -79,13 +107,13 @@ test('an explicitly extended queue budget permits a proven 20-minute hosted runn
     queuedGraceMs: 25*60_000,
     now: () => elapsed,
     sleep: async ms => {
-      assert.ok(ms > 0 && ms <= 30_000);
+      assert.ok(ms > 0 && ms <= 60_000);
       elapsed += ms;
     },
   });
   assert.ok(elapsed >= 20 * 60_000, 'queue alone is never passing CI');
   assert.ok(elapsed < 35 * 60_000, 'completion stays within global budget');
-  assert.ok(polls > 30);
+  assert.equal(polls, 21, 'one read per minute over 20 minutes, not 41 reads every 30 seconds');
   assert.equal(readJobs, 1);
   assert.equal(result.executed.length, 1);
 });
@@ -100,10 +128,10 @@ test('unresolved queued dependency stops at the shorter ten-minute default, not 
   };
   await assert.rejects(() => verify(api, ctx, sources, {
     now: () => elapsed,
-    sleep: async ms => { assert.ok(ms > 0 && ms <= 30_000); elapsed += ms; },
+    sleep: async ms => { assert.ok(ms > 0 && ms <= 60_000); elapsed += ms; },
   }), /SPECIALIST_MISSING_OR_PENDING:NOT_STARTED/);
   assert.equal(elapsed, 10 * 60_000, 'default queue budget is shorter than running timeout');
-  assert.ok(reads > 10, 'checks are polled, never silently waived');
+  assert.equal(reads, 11, 'one read per minute over ten minutes; never waive queued CI');
   assert.equal(diagnoseAggregateError(
     new Error('SPECIALIST_MISSING_OR_PENDING:NOT_STARTED:'+JSON.stringify({queued:[path+':queued']}))
   ).category, 'RUNNER_QUEUE');
@@ -118,7 +146,7 @@ test('registered queue still fails closed after a bounded startup budget', async
     jobs: async () => { throw Error('unstarted specialist cannot supply successful jobs'); },
   };
   const sleep = async ms => {
-    assert.ok(ms > 0 && ms <= 30_000, 'bounded polling');
+    assert.ok(ms > 0 && ms <= 60_000, 'bounded polling');
     elapsed += ms;
   };
   await assert.rejects(
