@@ -267,6 +267,36 @@ jobs:
             // confuse them with the mandatory Core + Specialist release gate.
             // Do not modify branches or mark checks green; GitHub still enforces
             // current effective protection, unresolved discussions and merge method.
+            // Carry the immutable successful job evidence into the immediate
+            // freshness step instead of requesting the identical jobs page
+            // again. The receiver binds it to the still-completed run_attempt.
+            // Only the Core ancestry step is needed for the rare missing-PR-
+            // association recovery; no arbitrary job text enters the output.
+            const namedEvidence = ["core-lint-types-build", "hh-merge-check"].map(name => {
+              const matches = jobs.filter(j => j.name === name);
+              if (matches.length !== 1) return null;
+              const job = matches[0];
+              return {
+                id: job.id, run_id: job.run_id, name: job.name,
+                status: job.status, conclusion: job.conclusion,
+                steps: name === "core-lint-types-build" && Array.isArray(job.steps)
+                  ? job.steps.filter(step =>
+                    step.name === "Verify bounded shallow scope ancestry before PR routing")
+                    .map(step => ({name:step.name,status:step.status,conclusion:step.conclusion}))
+                  : [],
+              };
+            });
+            if (!Number.isSafeInteger(coreRun.run_attempt) ||
+                coreRun.run_attempt < 1 ||
+                namedEvidence.some(j => !j || !Number.isSafeInteger(j.id) ||
+                  j.id < 1 || j.run_id !== coreRun.id ||
+                  j.status !== "completed" || j.conclusion !== "success")) {
+              log("SKIP invalid same-run required Core proof");
+              return;
+            }
+            core.setOutput("core_evidence", JSON.stringify({
+              run_id: coreRun.id, run_attempt: coreRun.run_attempt, jobs: namedEvidence
+            }));
             core.setOutput("eligible", "true");
             core.setOutput("pr", String(number));
             core.setOutput("core_run", String(coreRun.id));
@@ -281,6 +311,7 @@ jobs:
         uses: actions/github-script@v7
         env:
           HH_BASE_PROOF_TOKEN: ${{ github.token }}
+          HH_CORE_EVIDENCE: ${{ steps.ready.outputs.core_evidence }}
         with:
           github-token: ${{ github.token }}
           script: |
@@ -297,14 +328,32 @@ jobs:
                pr.mergeable_state==="dirty"){
               core.info("CI_AUTO_MERGE: PR changed before base verification");return;
             }
+            // The earlier trusted step already obtained and checked the
+            // exact run's complete jobs page. Bind its minimal receipt to a
+            // STILL SUCCESSFUL identical run attempt; retries/new HEADs cannot
+            // reuse a prior attempt's green jobs. Any missing proof HOLDs.
+            let proof;
+            try { proof=JSON.parse(process.env.HH_CORE_EVIDENCE || "null"); }
+            catch { core.info("CI_AUTO_MERGE: malformed Core evidence"); return; }
+            if(proof?.run_id!==runId||!Number.isSafeInteger(proof.run_attempt)||
+               proof.run_attempt<1||!Array.isArray(proof.jobs)||
+               proof.jobs.length!==2)return;
             const run=(await github.rest.actions.getWorkflowRun({owner,repo,run_id:runId})).data;
-            const page=(await github.rest.actions.listJobsForWorkflowRun({
-              owner,repo,run_id:runId,per_page:100,filter:"latest"
-            })).data;
-            if(!Number.isSafeInteger(page.total_count)||page.total_count>100||
-               !Array.isArray(page.jobs)||page.jobs.length!==page.total_count)return;
+            if(run?.id!==runId||run.run_attempt!==proof.run_attempt||
+               run.status!=="completed"||run.conclusion!=="success"||
+               run.name!=="HH PR core release gate"||
+               String(run.path||"").split("@")[0]!==".github/workflows/hh-pr-core-release.yml"||
+               run.event!=="pull_request"||run.head_branch!==pr.head.ref||
+               run.repository?.full_name!==fullRepo||
+               run.head_repository?.full_name!==fullRepo){
+              core.info("CI_AUTO_MERGE: Core run changed since job proof");
+              return;
+            }
+            const jobs=proof.jobs;
+            if(jobs.some(j=>j.run_id!==runId||!Number.isSafeInteger(j.id)||j.id<1))
+              return;
             const passed=name=>{
-              const match=page.jobs.filter(j=>j.name===name);
+              const match=jobs.filter(j=>j.name===name);
               return match.length===1&&match[0].status==="completed"&&match[0].conclusion==="success";
             };
             if(!passed("core-lint-types-build")||!passed("hh-merge-check")){
@@ -348,7 +397,7 @@ jobs:
                       observedRunBase=policy.coreRunBase(run,pr,fullRepo,run.check_suite_id);
                       if(!observedRunBase){
                         observedRunBase=await baseLog.recoverTestedBase({
-                          github,owner,repo,pr,run,jobs:page.jobs,rows,
+                          github,owner,repo,pr,run,jobs,rows,
                           token:process.env.HH_BASE_PROOF_TOKEN
                         });
                       }

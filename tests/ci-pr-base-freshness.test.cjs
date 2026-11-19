@@ -569,3 +569,20 @@ test('native AutoMerge reuses mixed independent production checks only with prot
     ...policy,safeComposedIndependentAdvance:()=>false,
   }})).reason,'SENSITIVE_COMPARE_UNSAFE');
 });
+
+test('native AutoMerge reads completed Core jobs once per event and pins that evidence to run attempt', () => {
+  const yaml=require('node:fs').readFileSync(
+    '.github/workflows/hh-native-auto-merge.yml','utf8');
+  const enable=yaml.split('\n  enable:\n')[1]?.split('\n  failed-core-handoff:\n')[0];
+  assert.ok(enable, 'trusted native enable job must exist');
+  assert.equal((enable.match(/listJobsForWorkflowRun/g)||[]).length,1,
+    'only one exact-run Core job listing, not one on both adjacent steps');
+  assert.match(enable,/core\.setOutput\("core_evidence", JSON\.stringify\(/);
+  assert.match(enable,/HH_CORE_EVIDENCE: \$\{\{ steps\.ready\.outputs\.core_evidence \}\}/);
+  assert.match(enable,/run\.run_attempt!==proof\.run_attempt/);
+  assert.match(enable,/run\.status!=="completed"\|\|run\.conclusion!=="success"/);
+  assert.match(enable,/j\.run_id!==runId/);
+  assert.match(enable,/run,jobs,rows,/,
+    'log base fallback gets the single verified exact-Core job proof');
+  assert.match(enable,/if\(!passed\("core-lint-types-build"\)\|\|!passed\("hh-merge-check"\)\)/);
+});
