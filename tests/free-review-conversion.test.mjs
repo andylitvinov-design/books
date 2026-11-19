@@ -68,7 +68,7 @@ test("free landings explain benefits before closing with one short capture", () 
 test("all three locales explain real service advantages without health claims or invented diagnoses", () => {
   for (const phrase of [
     "Understand your starting point", "Лучше поймите себя", "Conoce mejor tu punto de partida",
-    "Tell me what's on your mind.", "Давайте разберём ваш вопрос.", "Revisión personal exprés gratuita con Andrey.",
+    "Tell me what's on your mind.", "Давайте разберём ваш вопрос.", "Cuéntame qué te preocupa.",
     "Discover what gives you strength.", "Узнайте, что даёт вам внутреннюю опору.",
     "Descubre qué te da fuerza.", "A symbolic guide for reflection — not a medical test.",
     "Символическая модель для самоисследования, а не медицинский тест.",
@@ -78,7 +78,7 @@ test("all three locales explain real service advantages without health claims or
     "diagnose or treat health conditions", "не диагностируют и не лечат заболевания",
   ]) assert.ok(landing.includes(phrase), "Missing benefit/safety: " + phrase);
   for (const phrase of ["Tell me what's on your mind.", "Давайте разберём ваш вопрос.",
-    "Revisión personal exprés gratuita con Andrey.", "Five Elements", "Пять элементов", "Cinco Elementos"]) {
+    "Cuéntame qué te preocupa.", "Five Elements", "Пять элементов", "Cinco Elementos"]) {
     assert.ok(landing.includes(phrase) || situationPage.includes(phrase) || daoPage.includes(phrase), phrase);
   }
   assert.doesNotMatch(landing + capture, /guaranteed cure|лечим все|100% success|medical diagnosis provided/i);
@@ -131,11 +131,17 @@ test("mobile layout offers one meaning per screen, authentic images, and accessi
   assert.match(landing, /"\/images\/holistic-house\/andy-about\.png"/);
   assert.match(landing, /"\/images\/holistic-house\/course-start-heron\.webp"/);
   assert.match(landing, /"\/academy\/reiki-yggdrasil\/source\/eastern-tradition\.png"/);
-  assert.match(landing, /<PersonalTestimonials locale=\{locale\} variant="all" \/>/);
+  assert.match(landing, /<LazyPersonalTestimonials\s+locale=\{locale\}/);
+  assert.doesNotMatch(landing, /<PersonalTestimonials locale=\{locale\} variant="all"/);
+  const lazyArchive = read("components/lazy-personal-testimonials.tsx");
+  assert.match(lazyArchive, /dynamic\(/);
+  assert.match(lazyArchive, /ssr: false/);
+  assert.match(lazyArchive, /openedOnce \? <PersonalTestimonials locale=\{locale\} variant="all" sameAudioOnly \/>/);
   assert.match(landing, /<PersonalExpressEnquiry locale=\{locale\} intro=\{/);
   assert.doesNotMatch(landing, /<FreeDiagnosisOffers/);
   assert.match(read("components/personal-express-enquiry.tsx"), /data-personal-express-enquiry/);
-  assert.match(landing, /data-review-stories/);
+  assert.match(lazyArchive, /data-review-stories/);
+  assert.match(lazyArchive, /onToggle=/);
   assert.match(css, /\.reviewBenefitsList/);
   assert.match(css, /\.reviewProcess/);
   assert.match(css, /\.reviewApproach/);
@@ -190,4 +196,19 @@ test("mobile browser acceptance taps the entire focus card and validates the nat
   assert.match(script, /"focus change never creates hidden consent or unverified web submission"/);
   assert.match(script, /"changing the selected focus never fabricates a CRM lead"/);
   assert.match(css, /\.choice\{[^}]*min-height:94px/);
+});
+
+
+test("free-review closing messenger buttons stay compact without losing either action", () => {
+  const entry = read("components/telegram-diagnostic-entry.tsx");
+  const entryCss = read("components/telegram-diagnostic-entry.module.css");
+  assert.match(landing, /className=\{styles\.reviewContact\}/);
+  assert.match(landing, /<TelegramDiagnosticEntry locale=\{locale\} \/>/);
+  assert.match(entryCss, /:global\(\[data-personal-express-enquiry\]\) \.entry/);
+  assert.match(entryCss, /:global\(\[data-personal-express-enquiry\]\) \.content p/);
+  assert.match(entryCss, /:global\(\[data-personal-express-enquiry\]\) \.channels/);
+  for (const channel of ["telegram", "whatsapp-manual"]) {
+    assert.ok(entry.includes('data-express-review-channel="' + channel + '"'));
+  }
+  assert.match(entryCss, /@media \(max-width: 580px\)/);
 });

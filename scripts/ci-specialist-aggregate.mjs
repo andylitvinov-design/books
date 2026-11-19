@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, REVALIDATABLE_CI_POLICY_FILES } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance, REVALIDATABLE_CI_POLICY_FILES } from '../lib/ci/production-base-impact.mjs';
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
@@ -527,9 +527,16 @@ export async function verify(api,ctx,files,options={}) {
       const independentQa = pinnedChangeRows &&
         live.mergeable !== false && live.mergeable_state !== 'dirty' &&
         safeIndependentQaAdvance(diff, ctx.base, liveBaseSha, changed);
+      // Target-only unit tests of another domain do not invalidate source QA.
+      // The current exact-HEAD Core and all actually required specialists are
+      // still mandatory; native ARM independently verifies GitHub mergeability.
+      const independentDomainTest = pinnedChangeRows &&
+        live.mergeable !== false && live.mergeable_state !== 'dirty' &&
+        safeIndependentDomainTestAdvance(diff, ctx.base, liveBaseSha, changed);
       if (!documentationOnly && !independentlyRevalidated &&
           !isolatedCiPolicy && !unrelatedCiMaintenance && !inertPublicImages &&
-          !independentPresentation && !disjointPublicSource && !independentQa) {
+          !independentPresentation && !disjointPublicSource && !independentQa &&
+          !independentDomainTest) {
         throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
       }
       if (disjointPublicSource) {
@@ -538,6 +545,9 @@ export async function verify(api,ctx,files,options={}) {
       }
       if (independentQa) {
         console.log('CI_BASE_ADVANCE_REUSED: independent browser-only QA advance; exact-HEAD Core remains valid');
+      }
+      if (independentDomainTest) {
+        console.log('CI_BASE_ADVANCE_REUSED: isolated unrelated domain test advance; preserve exact-HEAD checks');
       }
       if (independentPresentation) {
         approvedPresentationBases.add(liveBaseSha);

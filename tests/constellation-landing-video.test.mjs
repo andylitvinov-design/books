@@ -67,7 +67,10 @@ test("personal free review has portrait-led hero, a separate locale-matched expl
   assert.match(free, /"Introduction by Andrey · English"/);
   assert.match(free, /href=\{kind === "situation" \? "#request-free-review"/);
   assert.match(free, /<PersonalExpressEnquiry locale=\{locale\} intro=\{/);
-  assert.match(free, /<PersonalTestimonials locale=\{locale\} variant="all" \/>/);
+  assert.match(free, /<LazyPersonalTestimonials\s+locale=\{locale\}/);
+  const lazyArchive = read("components/lazy-personal-testimonials.tsx");
+  assert.match(lazyArchive, /openedOnce \? <PersonalTestimonials locale=\{locale\} variant="all" sameAudioOnly \/>/);
+  assert.match(lazyArchive, /data-review-stories/);
   assert.doesNotMatch(free, /data-featured-constellations-video|siteVideoWatchUrl/);
   assert.match(css, /\.situationHero \.heroVisual/);
   assert.match(css, /\.reviewIntro/);
