@@ -125,6 +125,12 @@ test("WebKit filmed-story acceptance follows the visible Goal CTA, never a hidde
  assert.match(helper,/next\.waitFor\(\{state:'attached'/,
   "hidden lower Continue is only read for real three-step readiness");
  assert.doesNotMatch(helper,/next\.waitFor\(\{state:'visible'/);
+ assert.match(helper,/progress\.waitFor\(\{state:'attached'/,
+  "WebKit must not require a CSS-hidden mobile progress badge");
+ assert.doesNotMatch(helper,/progress\.innerText\(\)/,
+  "hidden text is not a user-facing quiz failure");
+ assert.match(helper,/meter\?\.textContent\?\.replace/,
+  "actual three-choice quiz state must remain verified");
  assert.match(helper,/action\.disabled===disabled/,
   "the quiz still verifies each actual step and no bypass");
  for(const [file,source] of [["original-motion",original],["five-scene",scenes]]){
