@@ -2133,7 +2133,7 @@ test('direct/manual PM, dry-run, completion, unrelated triggers and foreign refs
 });
 
 
-test('GitHub queued cancellation 409 with zero jobs caps attempts at four and records support receipts',async()=>{
+test('GitHub 409 queued jobless zombies cap failed cancellations at two per sweep',async()=>{
  const f=cleanupFixture();
  const first=f.run;
  let sent=0;
@@ -2146,12 +2146,13 @@ test('GitHub queued cancellation 409 with zero jobs caps attempts at four and re
   const err=Error('GitHub cancellation conflict');err.status=409;throw err;};
  const report=await mergedCleanup.runCleanup({github:f.github,context:f.context,
   observedQueued:139,observedRemaining:4700,now:Date.parse('2026-11-12T18:00:00Z')});
- assert.equal(sent,4,'at most four 409 attempts per sweep; never burn 30+ API requests');
- assert.equal(report.cancel_attempts,4);
- assert.equal(report.eligible,4);
+ assert.equal(sent,2,'two failed 409 attempts per sweep; do not monopolize the shared writer');
+ assert.equal(report.cancel_attempts,2);
+ assert.equal(report.eligible,2);
  assert.equal(report.status,'GITHUB_409_SUPPORT_TRIAGE');
  assert.deepEqual(report.cancel_accepted,[]);
- assert.equal(report.non_cancelable.length,4);
+ assert.equal(report.non_cancelable.length,2);
+ assert.equal(mergedCleanup.MAX_JOBLESS_409,2);
  assert.ok(report.non_cancelable.every(x=>x.code==='QUEUED_WITH_ZERO_JOBS_CANCEL_409'));
  assert.ok(report.non_cancelable.every(x=>x.url.startsWith('https://github.com/andylitvinov-design/books/actions/runs/')));
 });
@@ -2561,4 +2562,26 @@ test('verified jobless merged ghost at 95 queued allows one Repair, never CI or 
  q=95;goodJobs=false;
  assert.equal((await verifiedGhostRepairCapacity(gh,'andylitvinov-design',
    'books',proof,now)).known,false,'real queued job cannot be ignored');
+});
+
+test('ghost cleanup rotates distant queued clusters rather than repeated neighbors',()=>{
+ const {cleanupRotationStart}=require('../scripts/ci-pr-merged-queue-cleanup.cjs');
+ const size=100,bucket=Math.floor(NOW/600_000)*600_000;
+ const starts=Array.from({length:4},(_,i)=>cleanupRotationStart(size,bucket+i*600_000));
+ const unique=new Set(starts);
+ assert.equal(unique.size,4);
+ for(const a of starts.slice(1))assert.ok(Math.min(a,size-a)>=15,
+   'each tick probes a distant queue region');
+ const covered=new Set(Array.from({length:size},(_,i)=>
+   cleanupRotationStart(size,bucket+i*600_000)));
+ assert.equal(covered.size,size,'coprime stride must never starve an offset');
+ for(const n of [37,93,95]){
+  const observed=new Set(Array.from({length:n},(_,i)=>
+    cleanupRotationStart(n,bucket+i*600_000)));
+  assert.equal(observed.size,n,'complete bounded rotation for '+n);
+ }
+ assert.equal(cleanupRotationStart(0,NOW),0);
+ assert.equal(cleanupRotationStart(101,NOW),0);
+ assert.equal(cleanupRotationStart(95,-1),0);
+ assert.equal(cleanupRotationStart(95,Infinity),0);
 });
