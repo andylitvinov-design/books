@@ -401,6 +401,11 @@ async function verifyWorkspaceHydration(browser,locale){
     const birthday=page.locator('[data-auto-video-recipient-occasion="birthday"]');
     await birthday.click();
     await expect(birthday).toHaveAttribute("aria-pressed","true");
+    // Recipient choices can move the shared director's focus. Return via the
+    // real visible Goal rail before using its in-panel Continue button.
+    await goalTab.click();
+    await expect(studio).toHaveAttribute("data-active-workspace","video");
+    await expect(continueToIdeas).toBeVisible({timeout:15000});
     await continueToIdeas.click();
     await expect(ideas).toHaveAttribute("aria-pressed","true");
     await expect(studio).toHaveAttribute("data-active-workspace","phrases");
