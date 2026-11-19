@@ -66,7 +66,7 @@ test("iHelp has permissions-only voice settings, never a voice-type dropdown",()
  const chat=read("../components/holistic-agent-chat.tsx");
  const controls=read("../components/voice-companion-controls.tsx");
  assert.match(dialog,/<HolisticAgentChat locale=\{locale\} compact messengerView pageHelp=\{context\}/);
- assert.match(chat,/privacyOnly=\{Boolean\(pageHelp\)\}/);
+ assert.match(chat,/privacyOnly=\{Boolean\(pageHelp\)\|\|messengerView\}/);
  assert.match(chat,/pageHelp\?voice\.t\.settings/);
  const a=controls.indexOf("if(privacyOnly)return");
  const b=controls.indexOf("const controlStyle=",a);
@@ -90,7 +90,7 @@ test("iHelp compact fallback speaker never shows a voice-type dropdown",()=>{
  assert.match(toolbar,/data-hh-speech-control/);
  assert.doesNotMatch(toolbar,/<details|voiceDetails|voiceSelector|>Aa</);
  assert.match(chat,/messengerView&&<EmotionalAvatar[\s\S]*?iconOnly/);
- assert.match(chat,/privacyOnly=\{Boolean\(pageHelp\)\}/);
+ assert.match(chat,/privacyOnly=\{Boolean\(pageHelp\)\|\|messengerView\}/);
 });
 
 test("topic taps fill an unsent draft, never auto-send or read private DOM",()=>{

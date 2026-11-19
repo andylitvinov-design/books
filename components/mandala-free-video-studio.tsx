@@ -1823,7 +1823,7 @@ const quickVideoCopy = {
  * only on-device Free is enabled; no unverified wallet or paid entitlement. */
 const approvedMobileCopy = {
   ru: {
-    introTitle:"Создать персональное видео",
+    introTitle:"Создайте своё видеопутешествие",
     intro:"Персональное видео для поддержки энергии, мотивации и уверенности. Выберите цель, образы и звук.",
     disclosure:"Краткие кадры и гипноаффирмации — экспериментальные приёмы, их влияние на убеждения не доказано.",
     benefits:["На основе ваших целей","Личные установки","Аффирмации по выбору","Природные образы и звуки"],
@@ -1838,7 +1838,7 @@ const approvedMobileCopy = {
     affirmations:"Аффирмации",photo:"Моё фото",voice:"Голос",music:"Музыка",extra:"5. Дополнительные параметры",
   },
   en: {
-    introTitle:"Create your personal video",
+    introTitle:"Create Your Video Therapy",
     intro:"Support for energy, motivation and confidence with personal imagery and optional affirmations. Choose your goal, visuals and sound.",
     disclosure:"Brief frames and hypnoaffirmations are experimental; effects on beliefs are not proven.",
     benefits:["Based on your goals","Personal intentions","Optional affirmations","Nature visuals and sound"],
@@ -7373,7 +7373,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             {/* Existing first-party portrait is a still. This Play button controls
                 the ONE actual MP4 preview below; no duplicate player or autoplay. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/holistic-house/support-reference-avatar.webp" alt="" aria-hidden="true"/>
+            <img src="/images/holistic-house/support-mock-hero.webp" alt="" aria-hidden="true"/>
             <button type="button" className={videoStyles.quickHeaderPlay}
               data-video-quick-hero-play aria-label={approved.previewPlay}
               disabled={recording||preparing}
@@ -7413,7 +7413,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <div data-video-director-audience-controls/>
             <Link href={"/"+locale+"/client/tests"} prefetch={false}>{quick.myGoals}<ArrowRight size={16} aria-hidden="true"/></Link>
           </div>
-          <div data-video-goal-quiz-optional data-video-wish-above-goals>
+          <div data-video-goal-quiz-optional data-video-wish-above-goals data-video-warm-composer>
             <h4><Sparkles size={19} aria-hidden="true"/>{locale==="ru"?"Ваше пожелание (необязательно)":
               locale==="es"?"Tu deseo (opcional)":"Your wish (optional)"}</h4>
             <div className={videoStyles.quickRequestHost} data-video-request-prompt/>
@@ -7426,6 +7426,25 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <h4 data-video-goal-quiz-optional className={videoStyles.quickGoalLabel}>{locale==="ru"?"Выберите цель видео":
             locale==="es"?"Elige el objetivo":"Choose your video goal"}</h4>
           <div className={videoStyles.quickGoalHost} data-video-director-goal-controls/>
+          <button type="button" data-video-goal-create-cta
+            disabled={!studioHydrated||recording||preparing}
+            onClick={()=>{
+              // CTA never runs encoder or charges. Keep the native taxonomy
+              // steps and advance only via existing Ideas/Ready actions.
+              if(goalQuizReady){continueToIdeas();return;}
+              if(goalQuizState.audience==="self"&&goalQuizState.step===2){
+                document.querySelector<HTMLButtonElement>("[data-auto-video-subcategories] button")?.focus();return;
+              }
+              if(goalQuizState.audience==="self"&&goalQuizState.step===3){
+                document.querySelector<HTMLButtonElement>("[data-video-goal-topic-chips] button")?.focus();return;
+              }
+              if(wish.trim()){
+                document.querySelector<HTMLButtonElement>("[data-video-request-design]")?.click();return;
+              }
+              document.querySelector<HTMLTextAreaElement>("[data-auto-video-input]")?.focus();
+            }}><Sparkles size={21} aria-hidden="true"/>
+            {locale==="ru"?"Создать видео":locale==="es"?"Crear vídeo":"Create Video"}
+          </button>
           <details data-video-goal-quiz-optional ref={quickThemeAdvancedRef} className={videoStyles.quickThemeAdvanced} data-video-theme-advanced open={activeWorkspace==="effects"||undefined}>
             <summary>{locale==="ru"?"Все темы и образы":locale==="es"?"Más temas e imágenes":"More topics and imagery"}</summary>
           <div className={videoStyles.quickThemeRail} role="group" aria-label={quick.theme}>
@@ -8445,6 +8464,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             if(previewPlaying)startMovieSound({kind:"preset",id:chosenId},soundVolume);
           }}
           onGoalChange={next=>{setWish(next.slice(0,800));setSuggestion("");setCinematicPlan(null);}}
+          onPickPhoto={()=>onPickPhoto()}
+          onOpenPro={()=>activateQuickWorkspace("pro")}
           onConceptTopicChange={setSelectedConceptTopic}
           onCategoryChange={next=>{setQuickStyleIndex(0);selectCategory(next);}}
           onAspectChange={next=>{

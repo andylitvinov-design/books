@@ -12,8 +12,9 @@ import { verifyMessengerWebhook,verifyMessengerChallenge,normalizeMessengerUpdat
 import { sendTelegramDiagnosticPrompt, sendWhatsAppDiagnosticPrompt, ensureTelegramInlineWebhookUpdates, acknowledgeTelegramInlineCallback, sendTelegramCompanionMessage, sendHolisticBusinessRequestReply, sendHolisticBusinessWelcomePhoto } from '@/lib/crm/messenger-provider'
 import { telegramPresentationOnStart } from '@/lib/crm/telegram-presentation.mjs'
 import {processTelegramCompanion} from '@/lib/crm/telegram-companion-service'
-import {processTelegramAiV3,finishTelegramAiV3,finishTelegramWaveVoiceV3,bindTelegramWaveVoiceOffer,deliverTelegramWaveVoiceV3} from '@/lib/crm/telegram-ai-diagnostic-v3-service'
+import {processTelegramAiV3,finishTelegramAiV3,finishTelegramFreePackagePhoto,finishTelegramWaveVoiceV3,bindTelegramWaveVoiceOffer,deliverTelegramWaveVoiceV3} from '@/lib/crm/telegram-ai-diagnostic-v3-service'
 import {finalizeTelegramV3Service,notifyOwnerTelegramV3Service} from '@/lib/crm/telegram-v3-service-finalizer'
+import {notifyOwnerAliFreePackage} from '@/lib/crm/telegram-free-package-owner-notice'
 import {shouldBootstrapTelegramNativeMenu} from '@/lib/crm/telegram-companion-native-commands.mjs'
 import { receiveOwnerTelegramVideoCrmFallback } from '@/lib/practitioners/owner-telegram-video-crm-fallback'
 import {processTelegramBusinessConversation} from '@/lib/crm/telegram-business-service'
@@ -406,6 +407,26 @@ export async function POST(request,{params}){
               console.error('HH_CRM_TG_V3_PROMPT_SEND_FAILED',evidence)
             }
           }
+          if(aiIntake.ownerProgress)after(async()=>{
+            try{await notifyOwnerAliFreePackage(config,aiIntake.ownerProgress)}
+            catch{console.error('HH_ALI_FREE_STAGE_NOTICE_UNCONFIRMED')}
+          })
+          if(aiIntake.photoVerify)after(async()=>{
+            try{
+              const ready=await finishTelegramFreePackagePhoto(config,aiIntake.photoVerify)
+              if(ready?.reply){
+                try{
+                  await sendTelegramDiagnosticPrompt({
+                    to:ready.to,text:ready.reply,keyboard:ready.keyboard,
+                    locale:ready.locale,approvedPilotGuest:ready.approvedPilotGuest})
+                }catch{console.error('HH_ALI_FREE_PHOTO_ACK_UNCONFIRMED')}
+              }
+              if(ready?.ownerProgress){
+                try{await notifyOwnerAliFreePackage(config,ready.ownerProgress)}
+                catch{console.error('HH_ALI_FREE_PHOTO_OWNER_NOTICE_UNCONFIRMED')}
+              }
+            }catch{console.error('HH_ALI_FREE_PHOTO_PROCESS_UNCONFIRMED')}
+          })
           if(aiIntake.generate)after(async()=>{
             try{
               const ready=aiIntake.generate.voiceNote
@@ -421,6 +442,10 @@ export async function POST(request,{params}){
                   to:ready.to,text:ready.reply,keyboard:ready.keyboard,
                   locale:ready.locale,approvedPilotGuest:ready.approvedPilotGuest,
                 })
+              }
+              if(ready?.ownerProgress){
+                try{await notifyOwnerAliFreePackage(config,ready.ownerProgress)}
+                catch{console.error('HH_ALI_FREE_ANSWER_OWNER_NOTICE_UNCONFIRMED')}
               }
             }catch{
               // Never log client text, credentials, model prompt or Telegram IDs.
