@@ -49,7 +49,7 @@ test("personal express diagnosis unfolds inside the same landing, without a moda
   assert.match(enquiry, /role="region" aria-label=\{t\.title\}/);
   assert.match(enquiry, /window\.location\.hash === "#request-free-review"/);
   assert.match(enquiry, /document\.addEventListener\("click", openFromAnchor\)/);
-  assert.match(enquiry, /if \(expanded\) closeDisclosure\(\); else setExpanded\(true\)/);
+  assert.match(enquiry, /if \(expandedRef\.current\) closeDisclosure\(\); else openDisclosure\(\)/);
   assert.match(enquiry, /window\.history\.replaceState\(window\.history\.state/);
   assert.match(enquiry, /window\.location\.hash === "#request-free-review"/);
   assert.match(enquiry, /useEffect\(\(\) => \{/);
@@ -81,7 +81,10 @@ test("personal express diagnosis unfolds inside the same landing, without a moda
   // target in Safari; native form radio and consent remain unchanged.
   assert.match(enquiryCss, /touch-action:manipulation/);
   assert.match(enquiryCss, /@media\(prefers-reduced-motion:reduce\)/);
-  assert.doesNotMatch(enquiry, /role="dialog"|aria-modal|style\.overflow|fetch\(|booking_confirmed|payment_received/);
+  // Looking up an active nested modal for Escape does not render a modal.
+  // This page must still have no modal JSX, body lock, or implicit submission.
+  assert.doesNotMatch(enquiry, /<(?:dialog|section|div)\b[^>]*(?:role="dialog"|aria-modal)/);
+  assert.doesNotMatch(enquiry, /style\.overflow|fetch\(|booking_confirmed|payment_received/);
   assert.doesNotMatch(enquiryCss, /position:fixed|\.scrim/);
 });
 
