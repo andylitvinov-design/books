@@ -166,6 +166,7 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
   } : privatePaths
   const current = active === 'view' ? 'today' : active === 'results' ? 'reports' : active
   const settingsMode = current === 'settings'
+  const stateBrand = current === 'today' || current === 'state'
   const s = SETTINGS_HUB_COPY[selected]
   // Switch real locale routes while retaining the current profile section.
   // Language navigation works for visitors; only account actions require sign-in.
@@ -185,10 +186,10 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
   return <section className={styles.hub} data-profile-hub-tabs data-profile-active={current}>
     <header className={styles.heading}>
       <div className={styles.headingTitle}>
-        {current === 'today' && <span className={styles.brandMark} aria-hidden="true" />}
-        <h2 aria-label={settingsMode ? s.pageTitle : current === 'today' ? 'Holistic House' : t.title}>
-          <span className={styles.titleFull}>{settingsMode ? s.pageTitle : current === 'today' ? 'Holistic House' : t.title}</span>
-          <span className={styles.titleCompact}>{settingsMode ? (selected === 'ru' ? 'Профиль' : selected === 'es' ? 'Perfil' : 'Profile') : current === 'today' ? 'Holistic House' : 'My Space'}</span>
+        {stateBrand && <span className={styles.brandMark} aria-hidden="true" />}
+        <h2 aria-label={settingsMode ? s.pageTitle : stateBrand ? 'Holistic House' : t.title}>
+          <span className={styles.titleFull}>{settingsMode ? s.pageTitle : stateBrand ? 'Holistic House' : t.title}</span>
+          <span className={styles.titleCompact}>{settingsMode ? (selected === 'ru' ? 'Профиль' : selected === 'es' ? 'Perfil' : 'Profile') : stateBrand ? 'Holistic House' : 'My Space'}</span>
         </h2>
       </div>
       <div className={styles.profileHeadingActions}>
@@ -203,13 +204,17 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
                 data-profile-language={language}>{language.toUpperCase()}</Link>)}
           </div>
         </details>
-        {!settingsMode && current !== 'today' && <ProfileModeSwitch locale={selected} active="live" />}
+        {!settingsMode && current !== 'today' && current !== 'state' && <ProfileModeSwitch locale={selected} active="live" />}
         <div className={styles.headingNav} data-profile-chrome-navigation>
           <SiteNavigation locale={selected} compact />
         </div>
       </div>
     </header>
-    {current !== 'today' && <nav className={settingsMode ? styles.settingsTabs : styles.tabs} aria-label={settingsMode ? s.menu : COPY[selected].navigation}>
+    {current === 'state' && <nav className="hh-psi-profile-mode" aria-label={selected === 'ru' ? 'Жизнь или работа' : 'Life or work'}>
+      <Link href={root + '/monitoring'} prefetch={false} aria-current="page" data-profile-state-life><Heart size={22} aria-hidden="true" />{selected === 'ru' ? 'Моё состояние' : selected === 'es' ? 'Mi estado' : 'My State'}</Link>
+      <Link href={'/' + selected + '/practice'} prefetch={false} data-profile-state-work><UserRound size={22} aria-hidden="true" />{selected === 'ru' ? 'Моя работа' : selected === 'es' ? 'Mi trabajo' : 'My Work'}</Link>
+    </nav>}
+    {current !== 'today' && current !== 'state' && <nav className={settingsMode ? styles.settingsTabs : styles.tabs} aria-label={settingsMode ? s.menu : COPY[selected].navigation}>
       {settingsMode ? [
         { id: 'create', href: '/' + selected + '/personality-profiles' },
         { id: 'view', href: paths.today },
@@ -226,7 +231,7 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
           <span className={styles.resultBadge} aria-label={resultCount + ' ' + COPY[selected].count}>{resultCount}</span>}
       </InstantCabinetLink>)}
     </nav>}
-    {current !== 'today' && !settingsMode && <div className={styles.myPageSubnav} data-profile-my-page-placement="below-tabs">
+    {current !== 'today' && current !== 'state' && !settingsMode && <div className={styles.myPageSubnav} data-profile-my-page-placement="below-tabs">
       <Link href={'/' + selected + '/my-page'} prefetch={false} className={styles.myPageLink} data-profile-my-page>
         <UserRound size={15} aria-hidden="true" />
         {selected==='ru'?'Моя страница':selected==='es'?'Mi página':'My Page'}
@@ -269,11 +274,7 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
         <p className={styles.packageFinePrint}>{s.note}</p>
       </div>
     </section>}
-    {current === 'state' && <nav className={styles.stateLinks} aria-label={selected === 'ru' ? 'Тесты и результаты' : selected === 'es' ? 'Tests y resultados' : 'Tests and results'}>
-      <InstantCabinetLink href={paths.tests} prefetch={false}><ClipboardList size={17} aria-hidden="true" />{selected === 'ru' ? 'Пройти тест' : selected === 'es' ? 'Hacer un test' : 'Take a Test'}</InstantCabinetLink>
-      <InstantCabinetLink href={root + '/portfolio'} prefetch={false}><Activity size={17} aria-hidden="true" />{selected === 'ru' ? 'Мои результаты' : selected === 'es' ? 'Mis resultados' : 'My Results'}</InstantCabinetLink>
-    </nav>}
-    {current !== 'today' && current !== 'create' && current !== 'reports' && !settingsMode && !publicEntry && <div className={styles.sectionIntro}>
+    {current !== 'today' && current !== 'state' && current !== 'create' && current !== 'reports' && !settingsMode && !publicEntry && <div className={styles.sectionIntro}>
       <h1>{t.tabs[current] || t.title}</h1><p>{t.details[current] || t.privacy}</p>
     </div>}
     {current === 'create' && <p className={styles.hint}>{COPY[selected].creationHint}</p>}
