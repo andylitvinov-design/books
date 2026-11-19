@@ -907,3 +907,36 @@
  .recipientFormatBody{padding-right:24px;column-gap:5px}
  .recipientFormatSelected{right:6px;width:22px;height:22px}
 }
+
+/* Owner-approved 19 Nov beige Codex composer. No second editor or renderer. */
+.composerSurface{position:relative;box-sizing:border-box;min-width:0;border:1px solid #e9dfd1;border-radius:23px;background:#fffcf7;padding:9px;box-shadow:0 4px 17px #63442d14}
+.topicInput textarea{display:block;box-sizing:border-box;width:100%;min-width:0;min-height:132px;max-height:270px;border:0;border-radius:15px;background:transparent;padding:11px 13px;resize:vertical;color:#143d3a;font:500 16px/1.4 system-ui,-apple-system,sans-serif}
+.topicInput textarea::placeholder{color:#797b76}
+.topicInput textarea:focus-visible{outline:3px solid #176e6e;outline-offset:-2px}
+.composerToolbar{display:grid;grid-template-columns:41px minmax(54px,.8fr) minmax(82px,1.3fr) 41px 44px;gap:3px;align-items:center;min-width:0}
+.composerIcon{display:grid;place-items:center;width:40px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;color:#1b5645;cursor:pointer}
+.composerIcon:disabled{opacity:.45;cursor:not-allowed}
+.composerMenu{position:relative;min-width:0;color:#1c4a3c;font:650 14px/1.2 system-ui,-apple-system,sans-serif}
+.composerMenu>summary{display:flex;align-items:center;justify-content:center;gap:4px;min-height:44px;padding:5px 0;list-style:none;cursor:pointer;text-underline-offset:3px}
+.composerMenu>summary::-webkit-details-marker{display:none}
+.composerMenu>summary svg{flex:none}
+.composerMenu>summary span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:underline}
+.composerMenuPanel{position:absolute;z-index:30;bottom:calc(100% + 5px);left:0;min-width:max(170px,100%);max-width:min(260px,86vw);padding:6px;border:1px solid #e8ddce;border-radius:14px;background:#fffcf7;box-shadow:0 12px 25px #422d1926}
+.composerMenu:nth-of-type(3) .composerMenuPanel{left:auto;right:0}
+.composerMenuPanel button{display:block;width:100%;min-height:44px;padding:8px;text-align:left;background:transparent;border:0;border-radius:8px;color:#1b5342;font:650 13px/1.2 system-ui,-apple-system,sans-serif;cursor:pointer}
+.composerMenuPanel button:focus-visible,.composerMenuPanel button:hover{background:#f5ecdc}
+.composerMenuPanel button[aria-current="true"]{background:#e6f6f1;color:#08765f}
+.composerMenuPanel button:disabled{opacity:.4;cursor:not-allowed}
+.requestSuggestions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;min-width:0}
+.requestSuggestions button{display:flex;align-items:center;justify-content:center;gap:5px;min-height:44px;min-width:0;border:1px solid #e9dfd1;border-radius:999px;background:#fffaf3;padding:6px 4px;color:#68513a;font:650 12px/1.15 system-ui,-apple-system,sans-serif;cursor:pointer}
+.requestSuggestions button svg{flex:none}
+.requestSuggestions button[aria-pressed="true"]{background:#e6f6f1;border-color:#267652;color:#164d3d}
+.quickStartHeader{display:flex;align-items:center;justify-content:space-between;gap:7px;min-width:0}
+.quickStartHeader h3{margin:0;color:#143d3a;font:750 clamp(21px,5.7vw,27px)/1.15 Georgia,serif}
+.quickStartHeader>div{display:flex;gap:3px;padding:3px;border:1px solid #eadfcd;border-radius:999px;background:#f6ecdd}
+.quickStartHeader button{min-height:39px;min-width:58px;padding:6px 8px;border:0;border-radius:999px;background:transparent;color:#25483b;font:750 13px/1.2 system-ui,-apple-system,sans-serif;cursor:pointer}
+.quickStartHeader button[aria-pressed="true"]{background:#267652;color:white}
+.composerIcon:focus-visible,.composerMenu>summary:focus-visible,.designRequest:focus-visible,.requestSuggestions button:focus-visible,.quickStartHeader button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+@media(max-width:430px){.composerSurface{padding:8px 6px}.composerToolbar{grid-template-columns:35px minmax(47px,.8fr) minmax(73px,1.3fr) 36px 40px;gap:2px}.composerMenu{font-size:clamp(11px,3.4vw,14px)}.composerMenu>summary{gap:3px}.composerIcon{width:35px}.requestSuggestions button{font-size:clamp(10px,2.8vw,12px)}}
+@media(max-width:355px){.composerMenu>summary svg:first-child{display:none}.quickStartHeader h3{font-size:19px}.quickStartHeader button{min-width:50px;padding-inline:6px}}
+@media(prefers-reduced-motion:reduce){.composerSurface *,.composerMenu *{transition:none}}
