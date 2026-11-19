@@ -318,11 +318,15 @@ export async function POST(request,{params}){
           }
           continue
         }
-        const diagnosticEvent=companion.supportStart
-          ?{...event,rawText:companion.supportStart,inlineAction:null}
-          :companion.reviewRequested
-            ?{...event,rawText:'/start hhreview_'+companion.reviewLocale,inlineAction:null}
-            :event
+        const diagnosticEvent=companion.assistantStart
+          ?{...event,rawText:companion.assistantStart,inlineAction:null}
+          :companion.businessStart
+            ?{...event,rawText:companion.businessStart,inlineAction:null}
+            :companion.supportStart
+              ?{...event,rawText:companion.supportStart,inlineAction:null}
+              :companion.reviewRequested
+                ?{...event,rawText:'/start hhreview_'+companion.reviewLocale,inlineAction:null}
+                :event
         // The V3 interviewer reuses this signed CRM bot and takes priority ONLY
         // for explicitly started or already active V3 diagnostic sessions.
         const aiIntake=await processTelegramAiV3(diagnosticEvent,config)
@@ -408,6 +412,27 @@ export async function POST(request,{params}){
           })}catch{console.error('HH_CRM_TG_SUPPORT_FALLBACK_NOT_CONFIRMED')}
           continue
         }
+        // A selected Menu journey must not disappear into generic CRM handling.
+        // If V3 is unavailable, only verified first-party links are offered.
+        if(companion.assistantStart||companion.businessStart){
+          const lang=companion.assistantLocale||companion.businessLocale||'en'
+          const isBusiness=Boolean(companion.businessStart)
+          if(event.callbackId){
+            try{await acknowledgeTelegramInlineCallback({
+              callbackId:event.callbackId,to:event.userId,
+              messageId:event.callbackMessageId})}catch{}
+          }
+          const text=isBusiness
+            ?(lang==='ru'?'💼 Бизнес-услуги доступны здесь: ':'💼 Business consulting is here: ')+
+              'https://holistichouse.vercel.app/'+lang+'/services/business-consulting'
+            :(lang==='ru'?'💬 Диалог с Ali сейчас недоступен в Telegram. Откройте чат на сайте: ':
+              '💬 Ali chat is temporarily unavailable in Telegram. Open it on the website: ')+
+              'https://holistichouse.vercel.app/'+lang+'/app/messages?section=ai'
+          try{await sendTelegramCompanionMessage({
+            to:String(event.userId),text,locale:lang,
+          })}catch{console.error('HH_CRM_TG_MENU_HANDOFF_FALLBACK_UNCONFIRMED')}
+          continue
+        }
         const intake=await processTelegramDiagnostic(diagnosticEvent,config)
         if(intake.handled){
           if(event.callbackId){
@@ -430,6 +455,21 @@ export async function POST(request,{params}){
               console.error('HH_CRM_TG_PROMPT_SEND_FAILED',evidence)
             }
           }
+          continue
+        }
+        if(companion.reviewRequested){
+          if(event.callbackId){
+            try{await acknowledgeTelegramInlineCallback({
+              callbackId:event.callbackId,to:event.userId,
+              messageId:event.callbackMessageId})}catch{}
+          }
+          const lang=companion.reviewLocale||'en'
+          try{await sendTelegramCompanionMessage({
+            to:String(event.userId),locale:lang,
+            text:(lang==='ru'?'🧭 Бесплатная диагностика доступна здесь: ':
+              '🧭 Free personal review is available here: ')+
+              'https://holistichouse.vercel.app/'+lang+'/services/free-situation-review',
+          })}catch{console.error('HH_CRM_TG_DIAGNOSTIC_FALLBACK_UNCONFIRMED')}
           continue
         }
         // Diagnostic buttons must never fall through to ordinary CRM ingestion.
