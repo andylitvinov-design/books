@@ -256,7 +256,9 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
   const publicHeaderWidths = engine === 'webkit' && process.env.GITHUB_EVENT_NAME === 'pull_request'
     ? prWebkitHeaderWidths : fullHeaderWidths
   for (const locale of locales) {
-    for (const [surface, path] of [['home', locale === 'es' ? '/es' : '/?lang=' + locale], ['energy', '/' + locale + '/explore/energy'], ['love', '/' + locale + '/explore/love'], ['business', '/' + locale + '/explore/business'], ['library', '/' + locale + '/library']]) {
+    // IA's React navigation matrix targets the explicit full Home; the separate CDN-first
+    // first-screen browser gate tests the anonymous fast HTML/JS, so neither path is waived.
+    for (const [surface, path] of [['home', locale === 'es' ? '/es' : locale === 'ru' ? '/ru?full=1' : '/?full=1'], ['energy', '/' + locale + '/explore/energy'], ['love', '/' + locale + '/explore/love'], ['business', '/' + locale + '/explore/business'], ['library', '/' + locale + '/library']]) {
       for (const width of publicHeaderWidths) {
         const label = engine + '/' + locale + '/' + surface + '/' + width
         diagnostic.phase(label)
