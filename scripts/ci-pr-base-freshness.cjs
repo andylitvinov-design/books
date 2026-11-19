@@ -157,9 +157,17 @@ async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase,classif
     // The same HEAD's successful mandatory CI must already be present.
     const composedIndependent=pr.mergeable===true&&
       approved('safeComposedIndependentAdvance');
+    // The controlling policy is loaded exclusively from the CURRENT
+    // protected production SHA. Mirror Specialist's verified scoped and
+    // mixed-delta approvals; the default branch NEVER invents a waiver.
+    const scopedIndependent=pr.mergeable===true&&
+      approved('safeScopedDisjointProductionAdvance');
+    const mixedIndependent=pr.mergeable===true&&
+      approved('safeMixedProtectedAdvance');
     if(!detachedCi&&!independentRaster&&!documentationOnly&&!independentMaintenance&&
        !independentPresentation&&!disjointPublicSource&&!trustedPolicyAdvance&&
-       !independentQaAdvance&&!independentDomainTest&&!composedIndependent)
+       !independentQaAdvance&&!independentDomainTest&&!composedIndependent&&
+       !scopedIndependent&&!mixedIndependent)
       return fail('SENSITIVE_COMPARE_UNSAFE');
     revalidatedReason=detachedCi?'ISOLATED_CI_PUBLIC_MEDIA_REVALIDATED':
       independentRaster?'INDEPENDENT_PUBLIC_RASTER_REVALIDATED':
@@ -170,6 +178,8 @@ async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase,classif
       trustedPolicyAdvance?'TRUSTED_POLICY_BASE_REVALIDATED':
       independentQaAdvance?'INDEPENDENT_QA_BASE_REVALIDATED':
       independentDomainTest?'INDEPENDENT_DOMAIN_TEST_BASE_REVALIDATED':
+      // Existing native workflow already pins this documented mixed result
+      // to the exact protected SHA before activating AutoMerge.
       'MIXED_INDEPENDENT_BASE_REVALIDATED';
    }
   }
@@ -271,6 +281,12 @@ async function loadTrustedClassifier(workspace){
  // continues to HOLD. Never use this control branch's own implementation.
  if(typeof impact.safeComposedIndependentAdvance==='function')
    names.push('safeComposedIndependentAdvance');
+ // These helpers are strictly optional for safe staggered rollout. Neither
+ // the default branch nor an open PR can define their behavior.
+ if(typeof impact.safeScopedDisjointProductionAdvance==='function')
+   names.push('safeScopedDisjointProductionAdvance');
+ if(typeof impact.safeMixedProtectedAdvance==='function')
+   names.push('safeMixedProtectedAdvance');
  const baseAdvancePolicy=Object.fromEntries(names.map(name=>[name,impact[name]]));
  return {classifierBase,decideRoute:mod.decideRoute,baseAdvancePolicy};
 }
