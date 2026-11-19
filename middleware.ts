@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server'
 import { canonicalRedirectTarget, privateMigrationBridge } from './lib/canonical-redirect'
 import { refreshAdminAuth } from './lib/app/admin-auth-refresh'
 import { personalVideoStorageCsp } from './lib/app/personal-video-storage-csp.mjs'
+import { instantHomeLocale } from './lib/instant-home-policy.mjs'
 function privatePath(pathname: string) {
   const decoded = (() => { try { return decodeURIComponent(pathname) } catch { return pathname } })().replace(/\/+/g, '/')
   return /^\/(en|ru|es)\/client(?:\/|$)/.test(decoded)
@@ -20,6 +21,41 @@ function privatePath(pathname: string) {
 export async function middleware(request: NextRequest) {
   const redirectTarget = canonicalRedirectTarget(request.url, request.method)
   if (redirectTarget) return NextResponse.redirect(redirectTarget, 308)
+  // The first interactive Home must not wait for Next.js server rendering,
+  // global CSS or hydration. Only a full GET/HEAD document gets the static,
+  // CDN-cacheable, fully functional public EN/RU entry. Next RSC, previews,
+  // admin, private and every other route continue through the original flow.
+  const fastLocale = instantHomeLocale({
+    pathname: request.nextUrl.pathname,
+    method: request.method,
+    headers: request.headers,
+    searchParams: request.nextUrl.searchParams,
+  })
+  if (fastLocale) {
+    const requested = request.nextUrl.searchParams.get('lang')
+    if (request.nextUrl.pathname === '/' && (requested === 'ru' || requested === 'es'))
+      return NextResponse.redirect(new URL('/' + requested, request.url), 307)
+    const response = NextResponse.rewrite(new URL('/instant-home/' + fastLocale + '.html', request.url))
+    response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=3600, stale-while-revalidate=120')
+    response.headers.set('Content-Security-Policy', [
+      "default-src 'self'",
+      "script-src 'self'",
+      "style-src 'self'",
+      "img-src 'self' data:",
+      "connect-src 'self'",
+      "font-src 'self'",
+      "media-src 'self'",
+      "frame-src 'none'",
+      "object-src 'none'",
+      "base-uri 'none'",
+      "form-action 'self'",
+      "frame-ancestors 'none'",
+    ].join('; '))
+    response.headers.set('X-Content-Type-Options', 'nosniff')
+    response.headers.set('X-Frame-Options', 'DENY')
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+    return response
+  }
   // Plain My Practice entry is the new, public practitioner dashboard. Do this
   // before streaming the old Account layout: an in-page redirect can return
   // HTTP 200 + delayed meta refresh and reveal the old personal login on iOS.

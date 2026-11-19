@@ -585,7 +585,15 @@ try {
   const errors = []
   page.on('pageerror', error => errors.push(error.message))
   if (!messengerOnly) {
-  assert.equal((await go(page, '/')).status(), 200)
+  // The CDN-first anonymous Home must serve a real HTML document directly from
+  // the isolated Next production server. Keep this fatal: a broken rewrite must
+  // not be masked by the full React fallback.
+  const fastDocument = await page.request.get('http://127.0.0.1:3203/', { timeout: 30000 });
+  assert.equal(fastDocument.status(), 200, 'CDN-first EN Home must return HTTP 200');
+  assert.match(await fastDocument.text(), /<body data-fast-home="en">/, 'Fast Home must have interactive HTML');
+  // IA's security/navigation matrix checks the original full Next seven-slot
+  // dock over the TLS origin. This route is intentional, not a CDN fallback.
+  assert.equal((await go(page, '/?full=1')).status(), 200)
   assert.equal(await page.locator('html').getAttribute('lang'), 'en')
   for (const locale of ['en', 'ru', 'es']) {
     for (const width of [320, 360, 390, 430, 768, 1280]) {

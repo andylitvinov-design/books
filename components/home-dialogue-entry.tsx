@@ -37,6 +37,7 @@ const COPY = {
     transferError:"Не удалось передать запрос. Попробуйте ещё раз или откройте AI/Chat.",
     transferPrivacy:"Сообщение передаётся в чат Али. Начать можно без регистрации.",
     freeReviewTitle:"Разобраться в своей ситуации", freeReviewDetail:"Бесплатный личный разбор",
+    sessionCta:"Записаться на сессию · от €50", sessionDetail:"Работа с образами и расстановки · Торонто и онлайн",
     focusTitle:"Что важно для вас сегодня?",
     focusHints:[
       {id:"stress",label:"Энергия и снятие стресса",detail:"Меньше тревоги, больше сил",prompt:"Мне нужна помощь со стрессом и энергией. Хочу спокойно понять, с чего начать."},
@@ -60,6 +61,7 @@ const COPY = {
     transferError:"Couldn't pass your message to Ali. Try again or open AI/Chat.",
     transferPrivacy:"Your message goes to Ali’s chat. You can start without signing in.",
     freeReviewTitle:"Understand my situation", freeReviewDetail:"Get a free personal review",
+    sessionCta:"Request a session · from €50", sessionDetail:"Guided imagery & systemic constellations · Toronto and online",
     focusTitle:"What do you need today?",
     focusHints:[
       {id:"stress",label:"Energy & Stress Release",detail:"Calm stress and restore balance",prompt:"I'd like help with stress and low energy. Can we work out a gentle first step?"},
@@ -83,6 +85,7 @@ const COPY = {
     transferError:"No pudimos pasar el mensaje a Ali. Inténtalo de nuevo o abre IA/Chat.",
     transferPrivacy:"Tu mensaje llega al chat de Ali. Puedes empezar sin registrarte.",
     freeReviewTitle:"Comprender mi situación", freeReviewDetail:"Recibir una revisión personal gratuita",
+    sessionCta:"Solicitar una sesión · desde €50", sessionDetail:"Trabajo con imágenes y constelaciones · Toronto y online",
     focusTitle:"¿Qué necesitas hoy?",
     focusHints:[
       {id:"stress",label:"Energía y alivio del estrés",detail:"Más calma y vitalidad",prompt:"Necesito apoyo para manejar el estrés y recuperar energía. ¿Por dónde empezar?"},
@@ -185,6 +188,11 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
         <div className={styles.kicker}><Sparkles size={18} aria-hidden="true"/> HOLISTIC HOUSE</div>
         <h2>{t.title}</h2>
         <p className={styles.subtitle}>{mode==="business"?t.businessSubtitle:t.subtitle}</p>
+        <Link href={"/"+locale+"/services/free-consultation"} prefetch={false}
+          className={styles.sessionCta} data-home-request-session>
+          <span><strong>{t.sessionCta}</strong><small>{t.sessionDetail}</small></span>
+          <ArrowRight size={19} aria-hidden="true"/>
+        </Link>
         <Link href={"/"+locale+"/services/free-situation-review"} prefetch={false}
           className={styles.reviewCta} data-home-free-review>
           <span className={styles.reviewCtaIcon}><Sparkles size={27} aria-hidden="true"/></span>
@@ -200,7 +208,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
             return <button type="button" key={hint.id} className={styles.focusCard}
               data-home-intent-option={hint.id}
               aria-label={hint.label+" · "+hint.detail+" · "+t.send}
-              onClick={()=>startConversationWith(hint.prompt,hint.id==="business"?"business":mode)}>
+              onClick={()=>router.push(chatPath+"&intent="+hint.id)}>
               <Icon className={styles.focusIcon} size={29} aria-hidden="true"/>
               <span className={styles.focusCopy}><strong>{hint.label}</strong></span>
               <ArrowRight className={styles.focusArrow} size={19} aria-hidden="true"/>

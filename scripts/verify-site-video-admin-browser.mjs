@@ -97,8 +97,22 @@ async function navigate(target){
 // Keep first-paint fast; the real user must deliberately open discovery
 // before the source-backed testimonial videos are expected in the DOM.
 async function revealHomeTestimonials() {
-  const discovery=page.locator('[data-home-deferred-sections]');
+  let discovery=page.locator('[data-home-deferred-sections]');
   await discovery.scrollIntoViewIfNeeded();
+  if (await page.locator('body[data-fast-home]').count()) {
+    // The fast CDN Home shows a real working first screen without bundling the
+    // heavy video catalogue. Choosing its explicit Full Home link restores the
+    // ORIGINAL React-backed testimonial/media flow. Verify both stages, not a
+    // mocked catalogue or a mere placeholder with matching selectors.
+    const invitation=discovery.locator('[data-home-discover-more]');
+    await invitation.locator('summary').click();
+    const fullLink=invitation.locator('[data-home-full-experience]');
+    await expect(fullLink).toBeVisible();
+    await fullLink.click();
+    await expect(page.locator('body[data-fast-home]')).toHaveCount(0);
+    discovery=page.locator('[data-home-deferred-sections]');
+    await discovery.scrollIntoViewIfNeeded();
+  }
   const disclosure=discovery.locator('[data-home-discover-more]');
   await disclosure.waitFor({state:'visible',timeout:30000});
   await disclosure.locator('summary').click();

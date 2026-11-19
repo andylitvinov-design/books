@@ -175,6 +175,18 @@ try {
   let russianPresentationVerified = false
   for (const home of ['/', '/ru']) {
     await navigate(home)
+    // The new first paint is intentionally static. A real visitor can open
+    // the source-backed full Home and still play the original presentation.
+    // Verify the real opt-in link and navigation; do not fabricate media.
+    if (!live && await page.locator('body[data-fast-home]').count()) {
+      const discover = page.locator('[data-home-deferred-sections] [data-home-discover-more]')
+      await expect(discover).toHaveCount(1)
+      await discover.locator('summary').click()
+      const full = discover.locator('[data-home-full-experience]')
+      await expect(full).toHaveAttribute('href', home === '/ru' ? '/ru?full=1' : '/?full=1')
+      await full.click()
+      await expect(page.locator('body[data-fast-home]')).toHaveCount(0)
+    }
     // The withdrawn 2026-10-01 intro remains retired; this is a different
     // owner-approved 2026-10-30 presentation, not an old HeyGen fallback.
     await expect(page.locator('[data-video-slot="home-intro"]')).toHaveCount(0)
