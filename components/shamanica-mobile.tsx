@@ -24,7 +24,7 @@ const images={
 } as const;
 const copy={
 ru:{
- subtitle:"Древние практики, Рейки и магические инструменты для энергии, поддержки и развития.",
+ subtitle:"Рейки, магия и древние практики для энергии и развития.",
  start:"Начать путь",pick:"Подобрать для меня",self:"Для себя",work:"Для бизнеса",help:"iHelp",
  quiz:["Что вы хотите получить сейчас?","Какой способ вам ближе?","С чего хотите начать?"],
  goals:["Энергия и защита","Гармония в отношениях","Деньги","Личностное развитие"],
@@ -38,7 +38,7 @@ ru:{
  learning:["Обучение","Шаманизм, Рейки, магия и мистерии — от основ до посвящений"]},
  step:"Шаг",of:"из",back:"Назад",search:"Поиск",menu:"Меню"},
 en:{
- subtitle:"Traditional practices, Reiki and symbolic tools for energy, support and growth.",
+ subtitle:"Reiki and traditional practices for energy, support and growth.",
  start:"Start my path",pick:"Find my path",self:"For myself",work:"For business",help:"iHelp",
  quiz:["What would you like to gain?","Which approach suits you?","How would you like to start?"],
  goals:["Energy & protection","Harmony in relationships","Money & prosperity","Personal growth"],
@@ -52,7 +52,7 @@ en:{
  learning:["Learning","Shamanism, Reiki, magic and mysteries — from basics to initiation"]},
  step:"Step",of:"of",back:"Back",search:"Search",menu:"Menu"},
 es:{
- subtitle:"Prácticas tradicionales, Reiki y herramientas simbólicas de apoyo y crecimiento.",
+ subtitle:"Reiki y prácticas tradicionales para la energía y el crecimiento.",
  start:"Iniciar camino",pick:"Encontrar mi camino",self:"Para mí",work:"Negocios",help:"iHelp",
  quiz:["¿Qué deseas conseguir ahora?","¿Qué método prefieres?","¿Cómo quieres empezar?"],
  goals:["Energía y protección","Armonía en relaciones","Dinero y prosperidad","Desarrollo personal"],
@@ -81,7 +81,7 @@ export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;au
  const choices=step===0?goals.map((id,i)=>({id,label:t.goals[i]}))
   :step===1?methods.map((id,i)=>({id,label:t.methods[i]}))
   :starts.map((id,i)=>({id,label:t.starts[i]}));
- return <main className={styles.page} lang={locale} data-shamanica-mobile>
+ return <main className={styles.page} lang={locale} data-shamanica-mobile data-shamanica-audience={business?"business":"self"}>
   <div className={styles.container}>
    <header className={styles.header}>
     <Link className={styles.brand} href={locale==="en"?"/":"/"+locale} prefetch={false}><Leaf size={33} strokeWidth={1.8} aria-hidden="true"/><span>Holistic House</span></Link>

@@ -975,7 +975,7 @@
  }
  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
   [data-video-request-card] [data-video-request-toolbar]{
-  display:grid!important;grid-template-columns:36px minmax(0,.85fr) minmax(0,1.15fr) 36px 44px!important;
+  display:grid!important;grid-template-columns:32px 34px minmax(0,.85fr) minmax(0,1.15fr) 36px 44px!important;
   gap:3px!important;align-items:center!important;
  }
  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
@@ -1035,7 +1035,7 @@
 @media(max-width:359px){
  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
   [data-video-request-card] [data-video-request-toolbar]{
-  grid-template-columns:29px minmax(0,.8fr) minmax(0,1.2fr) 33px 40px!important;gap:2px!important;
+  grid-template-columns:29px 31px minmax(0,.8fr) minmax(0,1.2fr) 32px 40px!important;gap:2px!important;
  }
  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
   [data-video-request-card] [data-video-request-design]{width:40px!important;min-width:40px!important}
@@ -1055,4 +1055,21 @@
   [data-video-request-card] [data-video-request-design] > svg:last-child{
   display:block!important;width:19px!important;height:19px!important;
  }
+}
+
+/* The old audience title row is empty after Life/Work takes its one real handler.
+   Keep four picture-led cards instead of optional three intention shortcut pills. */
+@media(max-width:759px){
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
+ [data-video-quick-section="1"][data-video-goal-quiz-step="1"] > div:first-child{display:none!important}
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
+ [data-video-quick-section="1"] [data-auto-video-goal-panel] > [role="group"] > button{min-height:74px!important;padding:5px!important}
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
+ [data-video-quick-section="1"] [data-video-goal-art]{height:65px!important}
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
+ [data-video-quick-section="1"] [data-auto-video-goal-panel] [data-video-quick-start]{margin:1px 0!important}
+}
+@media(max-width:759px) and (max-height:880px){
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
+ [data-video-quick-intents]{display:none!important}
 }
