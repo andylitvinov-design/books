@@ -1,0 +1,8 @@
+# Video Studio desktop sequence, 2026-11-19
+Source: owner's 7 desktop screenshots of the existing Holistic House Video Studio, route `/{en,ru,es}/holistic-support/mandala` in video mode. Keep the canonical editor and Canvas/MP4 pipeline; no second page, provider, or paid generation.
+
+Desktop ≥760px: Goal/category → four inline Topic choices → Format/quality → Styles → native preview/media → Ideas/Personalization → visible Supporting phrases (include toggle, up to five choices, optional existing detailed editor) → Concept → Montage and Ready. Move actual DOM blocks instead of visual-only CSS order to preserve keyboard traversal. The initial Ideas entry proposes local editorial phrases only once; user's disable/selection persists. Explicit phrase choice wins over automatic storyboard captions but not handwritten timeline and custom captions. Voice remains opt-in and separately approved. EN/RU/ES labels; consistent 1040px cards.
+
+Mobile layout and wizard at 320, 354, 390, 430px must remain unchanged. Preserve rights/credits/signed media, preview and export semantics.
+
+CI acceptance: targeted `node --test tests/mandala-video-desktop-flow.test.mjs`, existing goal/phrase/storyboard tests, ESLint, TS, Next build; desktop Chromium + WebKit viewport 760/980/1440 EN/RU/ES; preview and exported MP4 supporting phrase fidelity. Release only through protected GitHub merge and existing hourly Vercel. Verify actual LIVE alias, SHA and functionality after release. Concurrent #5100 Goal and #5133 Audio modify the same studio, #5126 owns mobile personalization: reconcile without weakening branch protection or publishing conflicts.
