@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {
   TELEGRAM_AI_DIAGNOSTIC_V3,V3_LABELS,V3_COPY,V3_BUTTONS,v3StartLocale,
-  v3CanStart,v3CanChat,v3ModelKey,v3Context,v3ButtonsFor,v3IsStop,v3Action,v3CanCallModel,v3DailyReplyCount,v3WantsGeneralChat,V3_CHAT_COPY,v3ChatPreConsentSafetyReply,
+  v3CanStart,v3CanChat,v3ServiceIntakeReady,v3ModelKey,v3Context,v3ButtonsFor,v3IsStop,v3Action,v3CanCallModel,v3DailyReplyCount,v3WantsGeneralChat,V3_CHAT_COPY,v3ChatPreConsentSafetyReply,
 } from '../lib/crm/telegram-ai-diagnostic-v3.mjs';
 import {v3Generate,v3ModelMessages} from '../lib/crm/telegram-ai-diagnostic-v3-model.mjs';
 import {waveTelegramLocalReply} from '../lib/crm/telegram-wave-local-reply.mjs';
@@ -164,8 +164,8 @@ test('Consent is explained once; follow-up nudges do not repeat the privacy wall
   }
   const service=source('lib/crm/telegram-ai-diagnostic-v3-service.js');
   assert.ok(service.includes("if(start&&active&&row?.stage==='consent')"));
-  assert.ok(service.includes("const purposeReady=general||ctx.mode===FREE_DIAGNOSTIC_MODE?chatAllowed:"));
-  assert.ok(service.includes("serviceCopy&&ctx.mode!==SECRETARY_MODES.PSYCHOLOGIST?serviceAllowed:allowed"));
+  assert.ok(service.includes("const purposeReady=general?chatAllowed:serviceAllowed;"));
+  assert.ok(service.includes("if(!agrees||!purposeReady)"));
   assert.ok(service.includes("const reminder=general?(chatAllowed?chat.nudge:copy.notReady):"));
   assert.ok(service.includes("(purposeReady?(serviceCopy?serviceCopy.welcomeNudge:copy.nudge):copy.notReady)"));
   assert.ok(service.includes("purposeReady?v3ButtonsFor(lang,general?'chat_consent':"));
@@ -249,12 +249,20 @@ test('Wave local chat remains consent-gated and is independent of any model key'
   assert.equal(v3CanChat({...local,HH_CRM_TG_AI_V3_ENABLED:'false'}),false);
   assert.equal(v3CanChat({...local,HH_CRM_TG_AI_V3_SCHEMA_READY:'false'}),false);
   assert.equal(v3CanChat({...local,VERCEL_ENV:'preview'}),false);
+  // The native, consent-gated Secretary / service intake never requires a
+  // model key or a paid/free inference quota. General AI chat retains its
+  // own stricter quota+consent admission.
+  assert.equal(v3ServiceIntakeReady(local),true);
+  assert.equal(v3ServiceIntakeReady({...local,HH_CRM_TG_AI_V3_FREE_TIER_CONFIRMED:'false'}),true);
+  assert.equal(v3CanChat({...local,HH_CRM_TG_AI_V3_FREE_TIER_CONFIRMED:'false'}),false);
+  assert.equal(v3ServiceIntakeReady({...local,HH_CRM_TG_AI_V3_ENABLED:'false'}),false);
+  assert.equal(v3ServiceIntakeReady({...local,VERCEL_ENV:'preview'}),false);
   const service=source('lib/crm/telegram-ai-diagnostic-v3-service.js');
   assert.match(service,/const generalStart=chatAllowed/);
-  assert.match(service,/purposeReady=general\|\|ctx\.mode===FREE_DIAGNOSTIC_MODE\?chatAllowed:/);
-  assert.match(service,/serviceCopy&&ctx\.mode!==SECRETARY_MODES\.PSYCHOLOGIST\?serviceAllowed:allowed/);
+  assert.match(service,/purposeReady=general\?chatAllowed:serviceAllowed/);
+  assert.match(service,/const purposeReady=general\?chatAllowed:serviceAllowed/);
   assert.match(service,/if\(!row.ai_consent_at\|\|!/);
-  assert.match(service,/serviceCopy&&ctx\.mode!==SECRETARY_MODES\.PSYCHOLOGIST\?serviceAllowed:allowed/);
+  assert.match(service,/const purposeReady=general\?chatAllowed:serviceAllowed/);
   assert.match(service,/waveTelegramLocalReply\(\{locale:prior.locale,turns\}\)/);
   assert.match(service,/wave_telegram_inference/);
 });
