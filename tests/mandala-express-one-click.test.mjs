@@ -62,6 +62,8 @@ test("meditation preserves one original non-looping recording with an approved q
 });
 test("privacy, exclusions and one-click production contract",()=>{
  const source=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+ const director=readFileSync(new URL("../components/mandala-auto-video-director.tsx",import.meta.url),"utf8");
+ const browser=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
  const photos=readFileSync(new URL("../lib/mandala/story-photo-library.mjs",import.meta.url),"utf8");
  assert.match(source,/planExpressVideo\(/);
  assert.match(source,/data-video-express-create/);
@@ -79,6 +81,20 @@ test("privacy, exclusions and one-click production contract",()=>{
   source.indexOf("const generateFromGoal=",source.indexOf("const generateExpressFromCurrent=")));
  assert.ok(express.length>1000);
  assert.doesNotMatch(express,/setTimeout\(/,"one click must not be deferred beyond Safari user activation");
+ assert.match(express,/setAspect\("portrait"\)/,"Express always writes 9:16 even after prior format settings");
+ assert.match(director,/data-video-prompt-flow/);
+ assert.match(director,/onInstantCreate\?\.\(\);return;/,
+  "Just make it invokes the existing one-click Express entry point directly");
+ assert.match(browser,/data-video-request-design\]\[data-video-request-flow="instant"\]/,
+  "real browser acceptance taps the visible Just make it Generate control");
+ assert.doesNotMatch(browser,/data-video-continue-scenarios/,
+  "the export acceptance cannot pass by clicking a hidden legacy Continue control");
+ assert.match(browser,/EXPRESS_VIDEO_MUST_BE_30_SECONDS/);
+ assert.match(browser,/EXPRESS_VIDEO_MUST_USE_H264/);
+ assert.match(browser,/EXPRESS_AUDIO_MUST_USE_AAC/);
+ assert.match(browser,/expressGenerateClicks=1/);
+ assert.match(browser,/expressSceneSourceIds/);
+ assert.match(browser,/EXPRESS_CANONICAL_SCENE_ORDER_OR_IDENTITY_MISMATCH/);
  const denied=planExpressVideo({goal:"No ocean, without water",theme:"life"});
  assert.ok(denied.reason==="SCENARIO_IMAGERY_EXCLUDED"||denied.canRender);
 });

@@ -5,6 +5,8 @@ import {v3Generate} from '../lib/crm/telegram-ai-diagnostic-v3-model.mjs';
 import {V3_CHAT_COPY,v3CanChat,v3CanStart,v3ServiceStart} from '../lib/crm/telegram-ai-diagnostic-v3.mjs';
 import {TELEGRAM_SERVICE_OPTIONS} from '../lib/assist/telegram-service-options.mjs';
 import {aliGuidedIntakeTurn} from '../lib/assist/ali-guided-intake.mjs';
+const botOffers=Object.fromEntries(Object.entries(TELEGRAM_SERVICE_OPTIONS)
+ .filter(([,offer])=>!offer.channels||offer.channels.includes('telegram_bot')));
 const env={VERCEL_ENV:'production',HH_CRM_TG_AI_V3_SCHEMA_READY:'true',
  HH_CRM_TG_AI_V3_ENABLED:'true',HH_CRM_TG_AI_V3_FREE_TIER_CONFIRMED:'true',
  HH_CRM_TG_AI_V3_SHARED_KEY_APPROVED:'true',
@@ -36,9 +38,9 @@ test('24 realistic RU/EN/ES native Telegram chat turns use no OpenRouter and sta
  }
  assert.equal(networkCalls,0);
 });
-test('all 30 published service entries preserve the right service and localized label',()=>{
- assert.equal(Object.keys(TELEGRAM_SERVICE_OPTIONS).length,30);
- for(const [id,offer] of Object.entries(TELEGRAM_SERVICE_OPTIONS)){
+test('all Telegram Bot service entries preserve the right service and localized label',()=>{
+ assert.equal(Object.keys(botOffers).length,35);
+ for(const [id,offer] of Object.entries(botOffers)){
   for(const locale of ['ru','en','es']){
    const event=v3ServiceStart('/start hhitem_'+id+'_'+locale);
    assert.deepEqual(event,{service:offer.service,locale,offerId:id});

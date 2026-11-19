@@ -13,9 +13,14 @@ cost and consent gates remain OFF unless separately configured. Fish interim lib
 voices may be shared between personas; no film, actor, celebrity or dub voice is copied.
 No new paid model, voice vendor, database, CI workflow or Vercel project is created.
 
-Merlin's first-party still comes from #4748. Harry has a newly authored original
-illustration, without an actor photo. Neither claims to have an MP4 clip until one
-has actually been generated, licensed and tested.
+Merlin's first-party still comes from #4748 and remains static. At the owner's
+19 November request Harry now uses the owner-supplied portrait, cropped to 3:4,
+with a silent six-second H.264 MP4 loop and WebP fallback stored in the existing
+first-party My Coach media folder. The old SVG remains as an unused rollback
+asset. This loop has subtle idle movement and blinks; it is not lip-synced to
+speech and is not a live video call. Reduced-motion users receive the still.
+No paid rendering, new voice, model or consent flag was enabled. Actual signed-in
+iPhone playback still needs separate QA.
 
 **Rights review:** Harry Potter is an existing protected fictional character and
 associated marks/visual identifiers may require commercial permission. Source
