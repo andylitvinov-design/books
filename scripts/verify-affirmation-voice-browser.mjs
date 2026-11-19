@@ -1518,6 +1518,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         // The verified film can auto-open Ready and hide legacy Result actions.
         const readyView=page.locator("[data-video-ready]");
         const readyVideo=readyView.locator("video");
+        const readyPlay=readyView.locator("[data-ready-play-verify]");
         phase(engine,"waiting-for-export");
         try {
           // An iPhone/WebKit MP4 can require a physical Play gesture before
@@ -1526,7 +1527,17 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           let verificationTapped=false;
           const verifyPlayback=page.locator("[data-video-verify-playback]");
           await expect.poll(async()=>{
-            if(await output.isVisible()||await guestPreview.isVisible()||await readyVideo.isVisible())return true;
+            if(await output.isVisible()||await guestPreview.isVisible()||
+              await readyView.getAttribute("data-ready-state")==="complete")return true;
+            if(!verificationTapped&&await readyVideo.isVisible()&&await readyPlay.isVisible()){
+              try{
+                await readyPlay.click({timeout:2000});
+                verificationTapped=true;
+              }catch(error){
+                if(await readyView.getAttribute("data-ready-state")==="complete")return true;
+                if(await readyPlay.isVisible())throw error;
+              }
+            }
             if(!verificationTapped&&await verifyPlayback.isVisible()){
               try{
                 await verifyPlayback.click({timeout:2000});
@@ -1539,9 +1550,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
                 if(await verifyPlayback.isVisible())throw error;
               }
             }
-            return await output.isVisible()||await guestPreview.isVisible()||await readyVideo.isVisible();
+            return await output.isVisible()||await guestPreview.isVisible()||
+              await readyView.getAttribute("data-ready-state")==="complete";
           },{timeout:45000,intervals:[250,500,1000]}).toBe(true);
-          if(!await guestPreview.isVisible()&&!await readyVideo.isVisible())
+          if(!await guestPreview.isVisible()&&
+            await readyView.getAttribute("data-ready-state")!=="complete")
             await output.waitFor({state:"visible",timeout:45000});
         } catch (error) {
           phase(engine,"download-control-timed-out");
@@ -1577,6 +1590,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           // The actual verified export was promoted to the approved Ready tab.
           // Legacy Result is deliberately CSS-hidden in Ready; never click it.
           await expect(readyView).toHaveAttribute("data-ready-view","home");
+          await expect(page.locator("[data-mandala-video-preview]")).toHaveCount(1);
+          await expect(readyVideo).toHaveAttribute("data-ready-native-player","true");
           await expect(page.locator("[data-video-result]"))
             .toHaveAttribute("data-video-result-mode","rendered");
           await expect(output).toBeHidden();

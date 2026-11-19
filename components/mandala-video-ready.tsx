@@ -14,9 +14,10 @@ import {buildPersonalImageryCourse} from "@/lib/mandala/personal-guided-course.m
 import {appFetch} from "@/lib/app/client-fetch";
 import css from "./mandala-video-ready.module.css";
 import {ReadyGenerationCheckIn} from "./mandala-video-ready-checkin";
+import {isAppleMobileDevice} from "@/lib/mandala/recording-codecs.mjs";
 import {MandalaTherapyWalletDialog} from "./mandala-therapy-wallet-dialog";
 
-type VideoFile={url:string;extension:"mp4"|"webm";bytes:number;duration:number};
+type VideoFile={url:string;extension:"mp4"|"webm";bytes:number;duration:number;blob?:Blob};
 type View="home"|"login";
 type Offer="meditation"|"ritual"|"journey";
 type CourseText={number:number;title:string;motif:string;script:string};
@@ -24,7 +25,7 @@ type Props={
   locale:PublicLocale;theme:VideoTheme;wish:string;focus:GuidedMeditationFocus;aspect:"portrait"|"landscape"|"square";
   video:VideoFile|null;verified:boolean;checking:boolean;rendering:boolean;renderProgress:number;
   progressQuestionnaire:ReactNode;generationNotice:string;signedIn:boolean;
-  exportFailed:boolean;canRetryExport:boolean;onRetryExport:()=>void;
+  exportFailed:boolean;canRetryExport:boolean;onRetryExport:()=>void;nativeIphoneMp4Retry?:boolean;
   onPlaybackError:(player:HTMLVideoElement)=>void;
   loginUnavailable:boolean;disabled:boolean;meditationEditor:ReactNode;
   onOpenDelivery:()=>void;onRefreshLogin:()=>void;onOpenCourse:()=>void;onOpenTherapy:(format:"single"|"course")=>void;onReturnToPro:()=>void;
@@ -176,7 +177,7 @@ const courseActionCopy={
 
 export function MandalaVideoReady({
   locale,theme,wish,focus,aspect,video,verified,checking,rendering,renderProgress,
-  generationNotice,exportFailed,canRetryExport,onRetryExport,onPlaybackError,
+  generationNotice,exportFailed,canRetryExport,onRetryExport,onPlaybackError,nativeIphoneMp4Retry=false,
   signedIn,loginUnavailable,disabled,
   meditationEditor,onOpenDelivery,onRefreshLogin,onOpenCourse,onOpenTherapy,onReturnToPro,
   onGenerateBasicVideo,onStartNewVideo,onVerifyPlayback,onSaveDirect,
@@ -191,6 +192,53 @@ export function MandalaVideoReady({
   const [videoGenerationNotice,setVideoGenerationNotice]=useState("");
   const [checkinEngaged,setCheckinEngaged]=useState(false);
   const [checkinDismissed,setCheckinDismissed]=useState(false);
+  // Exactly ONE decodable video is mounted in Ready. iPhone Safari supports
+  // direct Blob srcObject, avoiding a second blob: URL decoder and unnecessary
+  // Range/memory pressure. The exported bytes stay on this device.
+  const readyPlayerRef=useRef<HTMLVideoElement|null>(null);
+  const readySourceModeRef=useRef<"safari-blob"|"object-url">("object-url");
+  const readyUrlRecoveryRef=useRef<string|null>(null);
+  useEffect(()=>{
+    const player=readyPlayerRef.current;
+    if(!video||!player)return;
+    readyUrlRecoveryRef.current=null;
+    let attached=false;
+    if(typeof navigator!=="undefined"&&video.blob?.type==="video/mp4"&&
+      isAppleMobileDevice(navigator.userAgent,navigator.maxTouchPoints)){
+      try{
+        player.srcObject=video.blob;
+        attached=true;
+      }catch{/* Safari can still use the original local Blob URL. */}
+    }
+    readySourceModeRef.current=attached?"safari-blob":"object-url";
+    player.dataset.readyMediaTransport=attached?"blob-srcobject":"blob-url";
+    if(!attached){player.src=video.url;player.load();}
+    return ()=>{
+      player.pause();
+      if(attached&&player.srcObject===video.blob){
+        try{player.srcObject=null;}catch{/* Unmount still releases the player. */}
+      }
+    };
+  },[video?.url,video?.blob]);
+  const handleReadyPlaybackError=(player:HTMLVideoElement)=>{
+    if(!video)return;
+    // The same encoded MP4 gets ONE alternate Safari transport, not a
+    // second movie generation, held credit, upload or WebM export.
+    if(readySourceModeRef.current==="safari-blob"&&
+      readyUrlRecoveryRef.current!==video.url){
+      readyUrlRecoveryRef.current=video.url;
+      readySourceModeRef.current="object-url";
+      try{
+        player.srcObject=null;
+        player.src=video.url;
+        player.dataset.readyMediaTransport="blob-url";
+        player.load();
+        return;
+      }catch{/* The existing native error handler will release held credit. */}
+    }
+    onPlaybackError(player);
+  };
+
   useEffect(()=>{if(basicFreeAvailable)setVideoGenerationNotice("");},[basicFreeAvailable]);
   // Three continuation offers expand within Ready; the login dialog is independent.
   const [activeOffer,setActiveOffer]=useState<Offer|null>(null);
@@ -363,10 +411,11 @@ export function MandalaVideoReady({
   const pendingStatus=rendering?t.generating:checking?t.verifying:t.notReady;
   const header=<div className={css.selectedVideo} data-aspect={aspect}
     data-video-file={video?"true":undefined}>
-    {video?<video key={video.url} src={video.url} playsInline controls preload="auto"
+    {video?<video key={video.url} ref={readyPlayerRef} playsInline controls preload="auto"
+      data-mandala-video-preview data-ready-native-player="true"
       onLoadedData={event=>onVerifyPlayback(event.currentTarget)}
       onCanPlay={event=>onVerifyPlayback(event.currentTarget)}
-      onError={event=>onPlaybackError(event.currentTarget)}
+      onError={event=>handleReadyPlaybackError(event.currentTarget)}
       aria-label={completed?t.ready:t.verifying}/>:
     /* Approved first-party example, never labelled an exported personal movie. */
     <div className={css.example}>
@@ -392,10 +441,22 @@ export function MandalaVideoReady({
         <strong>{t.failed}</strong>
         <p>{generationNotice||t.failed}</p>
         {canRetryExport?<button type="button" onClick={onRetryExport}
-          data-ready-retry-compatible>{t.retryCompatible}<ArrowRight size={17} aria-hidden="true"/></button>:null}
+          data-ready-retry-compatible>{nativeIphoneMp4Retry?
+            (locale==="ru"?"Повторить через Safari MP4":locale==="es"?"Reintentar con MP4 nativo de Safari":"Retry with native Safari MP4"):
+            t.retryCompatible}<ArrowRight size={17} aria-hidden="true"/></button>:null}
       </div>:null}
       {header}
-      {!completed&&!waiting&&!courseFlow?<button type="button" className={css.primary}
+      {checking&&video&&!rendering?<button type="button" data-ready-play-verify
+        className={css.secondary} onClick={()=>{
+          const player=readyPlayerRef.current;
+          if(!player||player.error)return;
+          void player.play().then(()=>onVerifyPlayback(player))
+            .catch(()=>{/* Native onError handles unsupported media. */});
+        }}>
+        <Play size={16} aria-hidden="true"/>
+        {locale==="ru"?"Воспроизвести и проверить":locale==="es"?"Reproducir y comprobar":"Play & verify video"}
+      </button>:null}
+      {!completed&&!waiting&&!exportFailed&&!courseFlow?<button type="button" className={css.primary}
         disabled={disabled||checking} onClick={generateSelectedVideo} data-ready-generate>
         <Play size={19} aria-hidden="true"/>{t.videoGenerate}<ArrowRight size={18} aria-hidden="true"/>
       </button>:null}
