@@ -2208,6 +2208,68 @@ test('independent production CI maintenance keeps already-green sensitive PRs on
   assert.equal(safeIndependentCiMaintenanceAdvance(good,BASE,live,['tests/pr-fast-lane.test.mjs']),false);
 });
 
+
+test('optional workflow selector narrowing reuses verified exact-HEAD checks, never overlapping source or weakened jobs', () => {
+  const live='f'.repeat(40);
+  const candidate=['components/mandala-automatic-storyboard.tsx',
+    'lib/mandala/recording-codecs.mjs'];
+  const trigger=(filename,{removed=[],excluded=[],comments=[]}={})=>{
+    const edits=[
+      ...removed.map(path=>"-      - '"+path+"'"),
+      ...excluded.map(path=>"+      - '"+path+"'"),
+      ...comments.map(note=>'+      # '+note),
+    ];
+    return {filename,status:'modified',additions:excluded.length+comments.length,
+      deletions:removed.length,changes:edits.length,
+      patch:"@@ -4,8 +4,8 @@ on:\n    paths:\n"+edits.join('\n')};
+  };
+  const selectors=[
+    trigger('.github/workflows/holistic-house-pdf-graphics.yml',{removed:['package.json']}),
+    trigger('.github/workflows/maya-reader-bundle.yml',{removed:['next.config.ts']}),
+    trigger('.github/workflows/practice-visual-browser.yml',{
+      removed:['app/api/app/*/route.js','.github/workflows/practice-visual-browser.yml'],
+      comments:['Practice API owner remains independent']}),
+    trigger('.github/workflows/tantra-pdf-source-qa.yml',{removed:['next.config.ts']}),
+    trigger('.github/workflows/tantra-testimonials.yml',{removed:['middleware.ts']}),
+    trigger('.github/workflows/visual-to-code-skill.yml',{removed:['AGENTS.md']}),
+    trigger('.github/workflows/hh-profile-axis-matching.yml',{
+      excluded:['!app/api/app/practice/**']}),
+    {filename:'tests/ci-pr-selective-workflows.test.mjs',status:'modified'},
+  ];
+  const comparison=rows=>({
+    status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:BASE},merge_base_commit:{sha:BASE},
+    commits:[{sha:live}],files:rows,
+  });
+  assert.equal(safeIndependentCiMaintenanceAdvance(comparison(selectors),BASE,live,candidate),true,
+    'a protected, independently tested selector-only CI narrowing must not discard green jobs');
+  const path='.github/workflows/practice-visual-browser.yml';
+  const old=selectors.find(row=>row.filename===path);
+  for (const [name,bad] of [
+    ['added positive source owner',{...trigger(path,{excluded:['!app/api/auth/**']}),patch:"@@ -1,2 +1,3 @@ on:\n+      - 'app/api/auth/**'"}],
+    ['removed exclusion',trigger(path,{removed:['!app/api/app/direct-messages/**']})],
+    ['modified step',{...old,patch:"@@ -1,3 +1,3 @@\n-      - run: npm test\n+      - run: true",additions:1,deletions:1,changes:2}],
+    ['incomplete patch',{...old,deletions:old.deletions+1,changes:old.changes+1}],
+    ['no patch',{...old,patch:null}],
+    ['renamed source',{...old,previous_filename:'other.yml'}],
+    ['file removed',{...old,status:'removed'}],
+  ]) {
+    assert.equal(safeIndependentCiMaintenanceAdvance(comparison([bad]),BASE,live,candidate),
+      false,name+' cannot waive required freshness');
+  }
+  assert.equal(safeIndependentCiMaintenanceAdvance(comparison([
+    ...selectors,{filename:'components/mandala-free-video-studio.tsx',status:'modified'}
+  ]),BASE,live,[...candidate,'components/mandala-free-video-studio.tsx']),false,
+  'real same-file video overlap must remain a BASE_ADVANCED blocker');
+  assert.equal(safeIndependentCiMaintenanceAdvance(comparison(selectors),BASE,live,
+    ['lib/ci/specialist-aggregate.mjs']),false,'a candidate policy rewrite requires new trusted-base verification');
+  assert.equal(safeIndependentCiMaintenanceAdvance({...comparison(selectors),
+    commits:[]},BASE,live,candidate),false,'a truncated ancestor proof never authorizes reuse');
+  assert.equal(safeIndependentCiMaintenanceAdvance({...comparison(selectors),
+    files:[...selectors,{...selectors[0]}]},BASE,live,candidate),false,'duplicate target paths are not proof');
+});
+
+
 test('base movement during Specialist preserves exact-HEAD results only for proven disjoint CI delta', async () => {
   const live='c'.repeat(40);
   const comparison=filename=>({
