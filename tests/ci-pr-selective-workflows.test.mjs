@@ -58,6 +58,49 @@ test('second-wave optional QA never gates ordinary PRs while preserving true exe
 });
 
  
+test('shared Site Video player has one canonical owner rather than unrelated Free Review and TTFB gates',()=>{
+  const player='components/site-video-player.tsx';
+  assert.equal(matchesTrigger(trigger('site-video-browser.yml'),[player],TARGET),true);
+  for (const name of ['hh-free-review-live-mobile.yml','hh-public-performance-audit.yml'])
+    assert.equal(matchesTrigger(trigger(name),[player],TARGET),false,
+      name+': player-only edits must not trigger unrelated expensive acceptance');
+  for(const [name,own] of [
+    ['hh-free-review-live-mobile.yml','components/consultation-choice-capture.tsx'],
+    ['hh-public-performance-audit.yml','components/holistic-house-home.tsx'],
+    ['site-video-browser.yml','components/site-video-manager.tsx'],
+    ['site-video-browser.yml','app/api/app/site-video/movie/route.js'],
+    ['site-video-browser.yml','app/[locale]/about/page.tsx'],
+    ['site-video-browser.yml','app/es/about/page.tsx'],
+    ['site-video-browser.yml','app/page.tsx'],
+  ]) assert.equal(matchesTrigger(trigger(name),[own],TARGET),true,
+    name+': actual owner source must still receive full real QA '+own);
+});
+
+test('ten unrelated service/reader/API paths never launch redundant Site Video browser',()=>{
+  const unrelated=[
+    'app/[locale]/services/alchemy-of-soul/page.tsx',
+    'app/[locale]/services/business/page.tsx',
+    'app/es/services/page.tsx',
+    'app/es/services/alchemy-of-soul/page.tsx',
+    'app/[locale]/books/page.tsx',
+    'app/[locale]/books/maya-tradition/page.tsx',
+    'app/es/books/page.tsx',
+    'app/es/courses/page.tsx',
+    'app/[locale]/homeopathy/page.tsx',
+    'app/api/app/unrelated/route.js',
+  ];
+  assert.equal(unrelated.length,10);
+  const site=trigger('site-video-browser.yml');
+  for(const path of unrelated)
+    assert.equal(matchesTrigger(site,[path],TARGET),false,
+      'unrelated change still triggers Site Video: '+path);
+  assert.equal(matchesTrigger(trigger('hh-public-services-production.yml'),
+    ['app/[locale]/services/alchemy-of-soul/page.tsx'],TARGET),true,
+    'actual Public Services consent/order specialist must remain a gate');
+  assert.equal(matchesTrigger(trigger('hh-pr-core-release.yml'),unrelated,TARGET),true,
+    'required exact HEAD Core must remain active on every functional source PR');
+});
+
 test('CI scope noise: unrelated shared files do not launch visual/media/SEO specialists', () => {
   const ignored = [
     ['practice-visual-browser.yml','AGENTS.md'],
