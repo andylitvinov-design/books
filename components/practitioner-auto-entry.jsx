@@ -33,6 +33,7 @@ const ADMIN_DESTINATIONS = Object.freeze({
   growth: '/admin/growth-studio',
   seo: '/admin/seo',
   acquisition: '/admin/acquisition',
+  youtube: '/admin/youtube-upload',
   youtubeConnect: '/api/admin/telegram-video/youtube/start',
   youtubeConnectEn: '/api/admin/telegram-video/youtube/start?target=en',
 })
