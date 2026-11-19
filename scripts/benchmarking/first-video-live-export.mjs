@@ -171,11 +171,16 @@ try {
   // Use the real visitor actions; do not bypass hydration, rights, or editor.
   row.phase='goals-three-native-quiz-answers';
   await completeThreeStepGoalsQuiz(page,{engine});
+  // The recipient-mode Goal screen hides the legacy footer Continue control.
+  // Use whichever real, visible CTA is rendered after the three quiz answers.
+  const goalCreate=page.locator('[data-video-goal-create-cta]');
   const continueToIdeas=page.locator('[data-video-continue-scenarios]');
-  await continueToIdeas.waitFor({state:'visible',timeout:40000});
+  const ideasCta=await goalCreate.isVisible()?goalCreate:continueToIdeas;
+  await ideasCta.waitFor({state:'visible',timeout:40000});
+  await expect(ideasCta).toBeEnabled();
   row.phase='goals-to-ideas-native-tap';
-  if(engine==='webkit')await continueToIdeas.tap();
-  else await continueToIdeas.click();
+  if(engine==='webkit')await ideasCta.tap();
+  else await ideasCta.click();
   const ideas=page.locator('[data-video-quick-control="phrases"]');
   assert.equal(await ideas.getAttribute('aria-pressed'),'true','GOALS_MUST_OPEN_IDEAS');
   const editorTab=page.locator('[data-video-quick-control="editor"]');
