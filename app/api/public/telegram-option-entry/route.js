@@ -24,11 +24,11 @@ export async function GET(request){
      /bot$/i.test(url.pathname)&&url.searchParams.get('start')==='hhreview_'+offer.locale)
    return NextResponse.redirect(url.origin+url.pathname+'?start=hhitem_'+offer.id+'_'+offer.locale,{status:307,headers})
  }
- // The bot is not public-ready; retain an honest manual first-party enquiry.
- // No unknown provider, private message, payment or user data in this URL.
- const prefix=offer.locale==='ru'?'Здравствуйте! Меня интересует «':
-   offer.locale==='es'?'Hola. Me interesa «':'Hello! I am interested in “'
- const suffix=offer.locale==='ru'?'». Подскажите, как оформить запрос.':
-   offer.locale==='es'?'». ¿Cómo puedo solicitarlo?':'”. How can I request this service?'
- return NextResponse.redirect('https://t.me/holistichouse?text='+encodeURIComponent(prefix+offer.title+suffix),{status:307,headers})
+ // Do not quietly leave the selected Wave-bot journey for a different chat.
+ // No enquiry was sent; the same bot entry can be retried after availability returns.
+ const message=offer.locale==='ru'?'Ali временно недоступен. Повторите запрос позже. Заявка не отправлена.':
+   offer.locale==='es'?'Ali no está disponible ahora. Inténtalo más tarde. No se envió ninguna solicitud.':
+   'Ali is temporarily unavailable. Please try again later. No request was submitted.'
+ return new NextResponse(message,{status:503,headers:{...headers,
+   'Content-Type':'text/plain; charset=utf-8','Retry-After':'60'}})
 }
