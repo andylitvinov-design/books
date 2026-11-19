@@ -438,3 +438,10 @@
     padding:0 10px 10px!important;gap:8px!important;margin:0!important;
   }
 }
+
+/* Hidden is an accessibility and rendering contract, even when older shared
+   Services CSS uses display:block!important inside optional detail panels.
+   Only the visitor-opened panel may reveal those legacy inner modules. */
+@media(max-width:760px){
+ .page :global([data-services-unified-panel] > [role="region"][hidden]){display:none!important}
+}
