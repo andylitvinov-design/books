@@ -211,6 +211,7 @@ try {
     await expect(rankedQuiz.locator('[data-services-priority-category]')).toHaveCount(2);
     const businessPriority = rankedQuiz.locator('[data-services-priority-category="business"]');
     await expect(businessPriority).toHaveCount(1);
+    await expect(businessPriority).toHaveAttribute("data-priority-offer-count", "3");
     await expect(businessPriority.locator('[data-services-three-visible] [data-service-variant]')).toHaveCount(3);
     if (width === 390) {
       await quiz.locator('[data-quiz-dot="1"]').click();
