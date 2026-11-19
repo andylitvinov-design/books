@@ -114,7 +114,9 @@ test('the one-shot LIVE free-AI diagnostic uses only synthetic consented text',(
  assert.ok(start>0&&end>start,'optional diagnostic has its own bounded step');
  const diagnostic=workflow.slice(start,end);
  assert.match(workflow,/probe_free_ai:/);
- assert.match(diagnostic,/github\.event\.action == 'opened'/);
+ assert.match(diagnostic,/github\.event_name == 'workflow_dispatch' && inputs\.probe_free_ai/);
+ assert.doesNotMatch(diagnostic,/github\.event\.action == 'opened'/,
+  'optional free-AI diagnostic never consumes requests on ordinary PRs');
  assert.match(diagnostic,/node --input-type=module/);
  assert.match(diagnostic,/VIDEO_CHAT_FREE_AI_LIVE_/);
  assert.match(diagnostic,/denied\.response\.status===400/);
