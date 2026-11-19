@@ -200,7 +200,9 @@ try {
     await submitQuiz.click();
     await visible(page.locator("[data-services-quiz-results]"));
     await visible(quiz.locator("[data-services-quiz-summary]"));
-    await expect(page.locator('[data-services-quiz-results] [data-assist-best-card="business"]')).toHaveCount(1);
+    const businessGroup = page.locator('[data-services-quiz-results] [data-services-priority-category="business"]');
+    await expect(businessGroup).toHaveCount(1);
+    await expect(businessGroup).toHaveAttribute("data-priority-offer-count", "3");
     if (width === 390) {
       await quiz.locator('[data-quiz-dot="1"]').click();
       await quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice="money_growth"]').click();
@@ -211,7 +213,7 @@ try {
       await quiz.locator('[data-services-quiz-question="budget"] [data-services-quiz-choice="flexible"]').click();
       await submitQuiz.click();
       await visible(page.locator("[data-services-quiz-results]"));
-      await expect(page.locator('[data-services-quiz-results] [data-assist-best-card="business"]')).toHaveCount(0);
+      await expect(page.locator('[data-services-quiz-results] [data-services-priority-category="business"]')).toHaveCount(0);
     }
     await assertViewport(page, locale + "/services/quiz/" + width);
     // The original locally-scoped Ali messenger remains reachable by an

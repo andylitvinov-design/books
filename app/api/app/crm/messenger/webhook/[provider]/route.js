@@ -19,13 +19,15 @@ import {shouldBootstrapTelegramNativeMenu} from '@/lib/crm/telegram-companion-na
 import { receiveOwnerTelegramVideoCrmFallback } from '@/lib/practitioners/owner-telegram-video-crm-fallback'
 import {processTelegramBusinessConversation} from '@/lib/crm/telegram-business-service'
 import {captureTelegramBotLead,captureTelegramBusinessLead} from '@/lib/crm/telegram-lead-capture'
-import {captureTelegramBusinessInbox,telegramBotHumanTakeover} from '@/lib/crm/telegram-business-inbox'
+import {captureTelegramBusinessInbox,setTelegramBusinessReplyState,telegramBotHumanTakeover} from '@/lib/crm/telegram-business-inbox'
+import {telegramBusinessReplyFailure,telegramBusinessReplyCrmState} from '@/lib/crm/telegram-delivery-status.mjs'
 import {captureTelegramLeadBestEffort} from '@/lib/crm/telegram-lead-capture-policy.mjs'
 import {captureWhatsAppFirstContact,recordWhatsAppInboundReceipt} from '@/lib/crm/whatsapp-lead-capture'
 import {telegramBusinessMessageFromUpdate} from '@/lib/assist/telegram-business-request.mjs'
 import {parseHiTelegramRating} from '@/lib/holistic-support/hi-learning-policy.mjs'
 import {insertHiLearningQuality} from '@/lib/holistic-support/hi-learning-store'
 import {processTelegramBusinessSecretary,gateTelegramBusinessSecretaryOptOut} from '@/lib/crm/telegram-secretary-service'
+
 import {notifyConfirmedTelegramBusinessOwner} from '@/lib/crm/telegram-business-owner-notice'
 import {processWhatsAppSecretary} from '@/lib/crm/whatsapp-secretary-service'
 import {finalizeWhatsAppService,notifyOwnerWhatsAppService} from '@/lib/crm/whatsapp-service-finalizer'
@@ -110,10 +112,11 @@ export async function POST(request,{params}){
         ()=>console.error('HH_TG_BUSINESS_LEAD_CAPTURE_UNAVAILABLE')):null
     // The signed Business connection gets its own private thread in the same
     // CRM inbox; before owner handoff only neutral metadata is saved.
+    let telegramBusinessInbox=null
     if(provider==='telegram'){
-      const inbox=await captureTelegramBusinessInbox(body,config,businessLead)
+      telegramBusinessInbox=await captureTelegramBusinessInbox(body,config,businessLead)
       // A confirmed human reply takes precedence over AI service/FAQ scripts.
-      if(inbox.humanActive)return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
+      if(telegramBusinessInbox.humanActive)return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
     }
     // Separate signed Business-chat service intake: only public service-code
     // messages and explicit short replies, never ordinary personal text or
@@ -134,6 +137,7 @@ export async function POST(request,{params}){
           }
         })
         if(business.reply){
+          let providerAccepted=false
           try{
             await consumeRate(config,{op:'hh-tg-business-intent-message',
               connectionId:business.connectionId,chatId:business.to,
@@ -146,9 +150,11 @@ export async function POST(request,{params}){
             }else{
               await consumeRate(config,{op:'hh-tg-business-intent-chat',
                 connectionId:business.connectionId,chatId:business.to},
-                business.serviceKey==='ai_secretary'?16:3,86400)
+                business.serviceKey==='ai_secretary'?16:
+                  business.serviceKey==='personal_review'?8:3,86400)
             }
             await consumeRate(config,{op:'hh-tg-business-intent-global'},100,86400)
+            await setTelegramBusinessReplyState(config,telegramBusinessInbox,'send_pending',business)
             // The first client-authored service enquiry shows the fixed avatar
             // as its own Telegram message before any reply, never as a caption.
             // Unknown photo acceptance cannot block the actual service dialogue
@@ -160,11 +166,25 @@ export async function POST(request,{params}){
             }
             await sendHolisticBusinessRequestReply({connectionId:business.connectionId,
               to:business.to,text:business.reply,buttons:business.buttons||[]})
-          }catch{
-            // Provider acceptance is not delivery; never re-send blindly.
-            console.error('HH_TG_BUSINESS_REPLY_NOT_CONFIRMED')
+            providerAccepted=true
+          }catch(error){
+            // Keep the inbound item actionable in Messages. Unknown outcomes
+            // remain non-retryable so a slow Telegram response cannot duplicate.
+            const failure=telegramBusinessReplyFailure(error)
+            const state=telegramBusinessReplyCrmState(failure)
+            try{await setTelegramBusinessReplyState(config,telegramBusinessInbox,state,business)}
+            catch{console.error('HH_TG_BUSINESS_REPLY_STATE_UNAVAILABLE')}
+            console.error('HH_TG_BUSINESS_REPLY_FAILED:'+failure)
           }
-        }
+          if(providerAccepted)try{await setTelegramBusinessReplyState(config,telegramBusinessInbox,'provider_accepted',business)}
+            catch{console.error('HH_TG_BUSINESS_REPLY_STATE_UNAVAILABLE')}
+        }else if(business.failure){
+          const state=telegramBusinessReplyCrmState(business.failure)
+          try{await setTelegramBusinessReplyState(config,telegramBusinessInbox,state,business)}
+          catch{console.error('HH_TG_BUSINESS_REPLY_STATE_UNAVAILABLE')}
+          console.error('HH_TG_BUSINESS_REPLY_FAILED:'+business.failure)
+        }else try{await setTelegramBusinessReplyState(config,telegramBusinessInbox,'processed',business)}
+          catch{console.error('HH_TG_BUSINESS_REPLY_STATE_UNAVAILABLE')}
         return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
       }
       // After the existing consent/format/STOP workflow, respond to explicit
