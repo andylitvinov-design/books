@@ -1830,7 +1830,7 @@ test('BASE-owned Mandala WebKit list accepts 25-32 strict literal routes, never 
   assert.ok(guard,'trusted macOS job has a single literal branch guard');
   const extra=n=>Array.from({length:n},(_,i)=>
     "startsWith(github.head_ref, 'fix/ci-webkit-budget-probe-"+i+"-')");
-  const extended=n=>original.replace(guard,guard.replace(/\) \}\}$/,
+  const extended=n=>n===0?original:original.replace(guard,guard.replace(/\) \}\}$/,
     ' || '+extra(n).join(' || ')+') }}'));
   const safe=['components/holistic-support-goal-filter.tsx'];
   const out='feat/support-confidence-harmony-goal-filter-20261102';
