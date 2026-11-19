@@ -18,7 +18,7 @@ const parse=s=>{const t=Date.parse(s||'');return Number.isFinite(t)?t:null;};
 function expiredTerminalShell(run,now){
  const p=RECLAIMABLE.get(run?.name);
  const created=parse(run?.created_at),updated=parse(run?.updated_at);
- return Number.isFinite(now)&&p&&run&&
+ return Boolean(Number.isFinite(now)&&p&&run&&
   Number.isSafeInteger(run.id)&&run.id>0&&run.status==='in_progress'&&
   run.conclusion===null&&run.run_attempt===1&&
   run.event===p.event&&String(run.path||'').split('@')[0]===p.path&&
@@ -28,7 +28,7 @@ function expiredTerminalShell(run,now){
   SHA.test(run.head_sha||'')&&
   Array.isArray(run.pull_requests)&&run.pull_requests.length<=1&&
   created!==null&&updated!==null&&updated>=created&&
-  created<=now-DELETE_AFTER&&updated<=now-FINISH_GRACE;
+  created<=now-DELETE_AFTER&&updated<=now-FINISH_GRACE);
 }
 function linkedMergedPR(run,pr,now){
  if(!expiredTerminalShell(run,now)||!pr||pr.state!=='closed'||
