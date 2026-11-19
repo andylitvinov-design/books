@@ -143,13 +143,27 @@ test('signed /start retries on CRM failure; optional inline sync never blocks a 
   // A failed first-contact commit must be retried by Telegram, not acknowledged.
   assert.equal(result.response.status,flags.leadFailure?503:200);
   assert.equal(result.calls.botCapture,1);
-  assert.equal(result.calls.aiV3,flags.leadFailure?0:1);
-  assert.equal(result.calls.intake,flags.leadFailure?0:1);
-  assert.equal(result.calls.send,flags.leadFailure?0:1);
+  // Even a temporarily unavailable CRM first-contact receipt may not
+  // silence the protected dialogue. Telegram 503 retries ONLY the missing
+  // receipt; session-level update idempotency owns duplicate prompt safety.
+  assert.equal(result.calls.aiV3,1);
+  assert.equal(result.calls.intake,1);
+  assert.equal(result.calls.send,1);
   assert.equal(result.calls.ensure,1);
   assert.equal(result.calls.ingest,0);
  }
 });
+test('signed Companion welcome remains replyable when first-contact CRM is unavailable',async()=>{
+ const payload={update_id:116,message:{message_id:11,date:1,chat:{id:123456789,type:'private'},
+   from:{first_name:'Fictional',is_bot:false},text:'/start'}};
+ const result=await routeRun({payload,companion:'handled',leadFailure:true});
+ assert.equal(result.response.status,503,'Telegram must retry the missing first-contact receipt');
+ assert.equal(result.calls.botCapture,1);
+ assert.equal(result.calls.companionSend,1,'visitor still receives the welcome');
+ assert.equal(result.calls.aiV3,0);
+ assert.equal(result.calls.ingest,0);
+});
+
 test('signed Business message survives optional lead-capture denial without a fake CRM receipt',async()=>{
  const payload={update_id:115,business_message:{business_connection_id:'test-connection',
     message_id:12,date:1,chat:{id:123456789,type:'private'},

@@ -196,6 +196,10 @@ export async function POST(request,{params}){
     }
 
     const updates=normalizeMessengerUpdates(provider,body)
+    // Never silence a valid client reply because the independent, encrypted
+    // first-contact CRM receipt has a temporary persistence failure. Preserve
+    // Telegram's retry by returning 503 AFTER normal dialogue processing.
+    let botLeadCapturePendingRetry=false
     // A previously registered bot may subscribe to 'message' only. Upgrade
     // the SAME already-owned signed webhook before its next inline prompt.
     // Never replace a foreign webhook or drop Telegram's pending updates.
@@ -272,7 +276,7 @@ export async function POST(request,{params}){
           try{await captureTelegramBotLead(event,config)}
           catch{
             console.error('HH_TG_BOT_LEAD_CAPTURE_UNAVAILABLE')
-            throw new AppError('TELEGRAM_CRM_CONTACT_UNCONFIRMED',503)
+            botLeadCapturePendingRetry=true
           }
         }
         const companion=await processTelegramCompanion(event,config)
@@ -479,6 +483,10 @@ export async function POST(request,{params}){
       }
       await ingestMessengerUpdate(provider,event,config)
     }
+    // If the contact write failed, Telegram retries this signed update. The
+    // committed Companion/V3 stages and provider event hashes prevent a
+    // duplicate bot response; a later attempt can still create the CRM lead.
+    if(botLeadCapturePendingRetry)throw new AppError('TELEGRAM_CRM_CONTACT_UNCONFIRMED',503)
     return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
   }catch(error){
     const safe=safeError(error)
