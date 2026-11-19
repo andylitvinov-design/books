@@ -9,17 +9,17 @@ import css from './ali-persona-picker.module.css'
 
 const COPY={
  en:{heading:'Choose your AI guide',intro:'Choose the personality you feel most comfortable with. The same intelligence, different voice and style.',
-  choose:'Choose',listen:'Listen',stop:'Stop',close:'Close persona selector',history:'Previous chats',
+  choose:'Choose',listen:'Listen',loading:'Loading…',retry:'Try audio again',stop:'Stop',close:'Close persona selector',history:'Previous chats',
   note:'These are fictional AI presenters, not human therapists. Changing your guide does not change your chat history.',
   description:{alex:'Warm and attentive. Helps you understand the bigger picture.',max:'Direct and energetic. Focuses on choices and the next step.',
     mira:'Kind and patient. Offers calm support and space to reflect.',sofia:'Thoughtful and composed. Helps you explore meanings and priorities.'}},
  ru:{heading:'Выберите своего ведущего',intro:'С кем вам комфортнее общаться? Интеллект один, но голос и манера общения разные.',
-  choose:'Выбрать',listen:'Послушать',stop:'Стоп',close:'Закрыть выбор ведущего',history:'Прошлые чаты',
+  choose:'Выбрать',listen:'Послушать',loading:'Загрузка…',retry:'Повторить аудио',stop:'Стоп',close:'Закрыть выбор ведущего',history:'Прошлые чаты',
   note:'Это образы ИИ, а не реальные терапевты. При смене ведущего история переписки сохраняется.',
   description:{alex:'Тёплый и внимательный. Помогает увидеть ситуацию целиком.',max:'Энергичный и конкретный. Помогает перейти к действию.',
     mira:'Бережная и терпеливая. Создаёт пространство для спокойного разговора.',sofia:'Вдумчивая и спокойная. Помогает разобраться в смыслах и приоритетах.'}},
  es:{heading:'Elige tu guía de IA',intro:'Elige con quién te sientas mejor. La misma inteligencia, con otra voz y estilo.',
-  choose:'Elegir',listen:'Escuchar',stop:'Detener',close:'Cerrar selector',history:'Chats anteriores',
+  choose:'Elegir',listen:'Escuchar',loading:'Cargando…',retry:'Reintentar audio',stop:'Detener',close:'Cerrar selector',history:'Chats anteriores',
   note:'Estos guías son personajes de IA, no terapeutas reales. Tus chats se conservan al cambiar de guía.',
   description:{alex:'Cálido y atento. Ayuda a comprender toda la situación.',max:'Directo y enérgico. Se enfoca en decisiones y próximos pasos.',
     mira:'Amable y paciente. Ofrece apoyo y espacio para reflexionar.',sofia:'Serena y reflexiva. Ayuda a explorar prioridades y sentido.'}},
@@ -31,6 +31,8 @@ export default function AliPersonaPicker({open,onClose,locale='en'}){
  const {id,select}=useAliPersona()
  const [candidate,setCandidate]=useState(id)
  const [playing,setPlaying]=useState(null)
+ const [audioPhase,setAudioPhase]=useState('idle')
+ const [audioFailed,setAudioFailed]=useState(null)
  const [mounted,setMounted]=useState(false)
  const dialogRef=useRef(null)
  useEffect(()=>setMounted(true),[])
@@ -58,8 +60,13 @@ export default function AliPersonaPicker({open,onClose,locale='en'}){
   }
  },[open,id,onClose])
  const toggleSample=personaId=>{
-  if(playing===personaId){stopAliPersonaAudio();setPlaying(null);return}
-  playAliPersonaAudio(personaId,locale,isPlaying=>setPlaying(isPlaying?personaId:null))
+  if(playing===personaId){stopAliPersonaAudio();setPlaying(null);setAudioPhase('idle');return}
+  setAudioFailed(null)
+  playAliPersonaAudio(personaId,locale,(isPlaying,phase)=>{
+   setPlaying(isPlaying?personaId:null)
+   setAudioPhase(isPlaying?phase:'idle')
+   if(!isPlaying&&phase==='error')setAudioFailed(personaId)
+  })
  }
  const selected=ALI_PERSONAS.find(p=>p.id===candidate)||ALI_PERSONAS[0]
  if(!mounted||!open)return null
@@ -93,13 +100,14 @@ export default function AliPersonaPicker({open,onClose,locale='en'}){
         </span>
       </button>
       <button type="button" className={css.listen} data-ali-voice-preview={persona.id}
-       aria-label={(playing===persona.id?t.stop:t.listen)+' · '+persona.name[locale]}
+       aria-label={(playing===persona.id?(audioPhase==='loading'?t.loading:t.stop):audioFailed===persona.id?t.retry:t.listen)+' · '+persona.name[locale]}
+       aria-busy={playing===persona.id&&audioPhase==='loading'}
        aria-pressed={playing===persona.id} onClick={()=>toggleSample(persona.id)}>
        <span className={css.playCircle}>
         {playing===persona.id?<Pause size={15} fill="currentColor" aria-hidden="true"/>:
           <Play size={15} fill="currentColor" aria-hidden="true"/>}
        </span>
-       <span>{playing===persona.id?t.stop:t.listen}</span>
+       <span>{playing===persona.id?(audioPhase==='loading'?t.loading:t.stop):audioFailed===persona.id?t.retry:t.listen}</span>
        <span className={css.waveform} aria-hidden="true">
         {BARS.map((height,index)=><i key={index} style={{height}}/>)}
        </span>

@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, BookOpen } from "lucide-react";
 import { ServicesCardActions } from "@/components/services-card-actions";
+import { ServicesThreeVisibleOptions } from "@/components/services-three-visible-options";
 import type { PublicLocale } from "@/lib/public-locales";
 import type { AssistPreferences } from "@/lib/assist/service-match.mjs";
 import { assistPriceLabel } from "@/lib/assist/service-match.mjs";
@@ -25,6 +26,29 @@ const products:Record<ProductId,Product> = {
   mandala:{path:"holistic-support/mandala",image:"/academy/reiki-yggdrasil/source/eastern-tradition.png"},
   mytube:{path:"mytube",image:"/images/holistic-house/assist-video-botanical.svg"},
 };
+type QuizCategory = "browse" | "consultation" | "services" | "business" | "courses" | "reiki" | "magical";
+const groupForProduct:Record<ProductId, QuizCategory> = {
+  review:"browse", therapy:"consultation", constellation:"services", business:"business",
+  opora:"courses", reiki:"reiki", mandala:"magical", mytube:"courses",
+};
+const groupFallback:Record<Exclude<Focus,null>, readonly QuizCategory[]> = {
+  stress:["consultation","courses","browse"], relationships:["services","consultation","browse"],
+  energy:["reiki","courses","browse"], health:["browse","consultation","services"],
+  work:["business","browse","services"], growth:["consultation","courses","browse"],
+  general:["browse","consultation","courses"],
+};
+const groupLabels:Record<PublicLocale,Record<QuizCategory,string>> = {
+  ru:{browse:"Тесты и бесплатный разбор",consultation:"Личная поддержка",services:"Отношения и расстановки",business:"Бизнес-анализ и решения",courses:"Курсы и практики",reiki:"Энергетическая поддержка",magical:"Мандалы и ритуалы"},
+  en:{browse:"Tests & free review",consultation:"Personal support",services:"Relationships & constellations",business:"Business insights & decisions",courses:"Courses & practices",reiki:"Energy support",magical:"Mandalas & rituals"},
+  es:{browse:"Pruebas y revisión gratis",consultation:"Apoyo personal",services:"Relaciones y constelaciones",business:"Análisis y decisiones de negocio",courses:"Cursos y prácticas",reiki:"Apoyo energético",magical:"Mandalas y rituales"},
+};
+const groupRankLabel:Record<PublicLocale,string> = {ru:"Приоритет",en:"Priority",es:"Prioridad"};
+const groupPriceNote:Record<PublicLocale,string> = {
+  ru:"Смотрите стоимость у каждой услуги. Варианты с ценой по запросу требуют отдельного подтверждения.",
+  en:"Check each offer's price. Request-based prices must be confirmed individually.",
+  es:"Comprueba el precio de cada servicio. Los precios a consultar requieren confirmación.",
+};
+
 const copy = {
   ru:{
     heading:"Предложения под ваш запрос",
@@ -80,10 +104,11 @@ const copy = {
 } as const;
 
 export function AssistTopRecommendations({
-  locale,focus,preferences={},priorityIds=[],matchingIds,allowedIds,noMatchLabel,
+  locale,focus,preferences={},priorityIds=[],matchingIds,allowedIds,noMatchLabel,categoryGroups=false,
 }:{
   locale:PublicLocale;focus:Focus;preferences?:AssistPreferences;
   priorityIds?:readonly string[];matchingIds?:readonly string[];allowedIds?:readonly string[];noMatchLabel?:string;
+  categoryGroups?:boolean;
 }){
   const t=copy[locale];
   // Keep budget/mode/channel hard filters authoritative even if the same
@@ -94,6 +119,38 @@ export function AssistTopRecommendations({
     Object.hasOwn(products,id)&&eligible.includes(id as ProductId));
   const productIds:readonly ProductId[]=matchingIds?.length===0?[]:
     [...new Set([...prioritized,...eligible])].slice(0,3);
+  // The quiz presents TWO ranked service categories, each containing the same
+  // three concrete, priced request cards as the public Services catalogue.
+  // Other contexts retain the original three individual recommendations.
+  if (categoryGroups && productIds.length) {
+    const focusKey=focus??"general";
+    const rankedGroups = [...new Set([
+      ...productIds.map(id=>groupForProduct[id]),
+      ...groupFallback[focusKey],
+    ])].slice(0,2);
+    return <section className={styles.root} id="assist-recommendations" tabIndex={-1}
+      data-assist-best-three data-assist-grouped-results aria-labelledby="assist-best-three-title">
+      <header className={styles.header}>
+        <h2 id="assist-best-three-title">{t.heading}</h2>
+        <p>{t.detail}</p>
+      </header>
+      <div className={styles.groupList} data-services-quiz-priority-groups>
+        {rankedGroups.map((id,index)=><section key={id} className={styles.groupBlock}
+          data-services-priority-category={id} data-priority-rank={index+1} data-priority-offer-count="3">
+          <header className={styles.groupHeading}>
+            <span>{groupRankLabel[locale]} {index+1} / {rankedGroups.length}</span>
+            <h3>{groupLabels[locale][id]}</h3>
+          </header>
+          <ServicesThreeVisibleOptions id={id} locale={locale}/>
+        </section>)}
+      </div>
+      <p className={styles.groupPriceNote}>{groupPriceNote[locale]}</p>
+      <Link className={styles.all} href={"/"+locale+"/services/catalog#service-listings"} prefetch={false}>
+        <BookOpen size={19} aria-hidden="true"/>{t.more}<ArrowRight size={17} aria-hidden="true"/>
+      </Link>
+      <p className={styles.note}>{t.note}</p>
+    </section>;
+  }
   return <section className={styles.root} id="assist-recommendations" tabIndex={-1} data-assist-best-three aria-labelledby="assist-best-three-title">
     <header className={styles.header}>
       <h2 id="assist-best-three-title">{t.heading}</h2>
