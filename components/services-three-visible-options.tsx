@@ -204,12 +204,11 @@ export function ServicesThreeVisibleOptions({id,locale}:{id:ThreeGroup;locale:Pu
         <ServicesCardActions locale={locale} title={title} description={description}
           href={href} request={description} option={price}
           trackingId={id+"-"+offer.id}
-            // Only fixed registry offers have signed Telegram bot codes.
-            // Shamanica-specific offers use the per-service human enquiry draft
-            // instead of an unknown bot code (which would return HTTP 404).
-            telegramUrl={id.startsWith("shamanica-") ? undefined : (
-              telegramServiceOptionDirectBotUrl(id+"_"+offer.id,locale)
-              ||"/api/public/telegram-option-entry?offer="+id+"_"+offer.id+"&locale="+locale)}
+            // Use signed Telegram URLs only for registered offers. Shamanica
+            // extras fall back to a human messenger draft with the exact title.
+            telegramUrl={telegramServiceOptionDirectBotUrl(id+"_"+offer.id,locale)
+              || (id.startsWith("shamanica-") ? undefined :
+                "/api/public/telegram-option-entry?offer="+id+"_"+offer.id+"&locale="+locale)}
             className={styles.actions} />
       </article>;
     })}
