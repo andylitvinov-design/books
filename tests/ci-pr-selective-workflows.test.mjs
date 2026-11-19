@@ -36,6 +36,48 @@ const legacyTrigger = 'tests/ci-pr-selective-workflows.test.mjs';
 const source = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 const trigger = name => parsePrTrigger(source(name), name);
 
+ 
+test('CI scope noise: unrelated shared files do not launch visual/media/SEO specialists', () => {
+  const ignored = [
+    ['practice-visual-browser.yml','AGENTS.md'],
+    ['practice-visual-browser.yml','app/api/app/unrelated/route.js'],
+    ['tantra-testimonials.yml','middleware.ts'],
+    ['tantra-testimonials.yml','components/csp-navigation-boundary.tsx'],
+    ['tantra-testimonials.yml','lib/csp-prehydration.js'],
+    ['maya-reader-bundle.yml','next.config.ts'],
+    ['tantra-pdf-source-qa.yml','next.config.ts'],
+    ['visual-to-code-skill.yml','AGENTS.md'],
+    ['holistic-house-pdf-graphics.yml','package.json'],
+    ['hh-profile-axis-matching.yml','app/api/app/practice/editor/route.js']
+  ];
+  for(const [name,file] of ignored)
+    assert.equal(matchesTrigger(trigger(name),[file],TARGET),false,name+': unrelated '+file+' started a domain CI suite');
+  const required = [
+    ['practice-visual-browser.yml','app/api/app/practice/service/route.js'],
+    ['practice-visual-browser.yml','app/api/app/[...path]/route.js'],
+    ['tantra-testimonials.yml','components/tantra-video-testimonials.tsx'],
+    ['maya-reader-bundle.yml','app/books/maya-tradition/page.tsx'],
+    ['tantra-pdf-source-qa.yml','lib/academy/reiki-guide-pdf.js'],
+    ['visual-to-code-skill.yml','scripts/compare-ui-screenshots.mjs'],
+    ['holistic-house-pdf-graphics.yml','lib/prescriptions/pdf.js'],
+    ['hh-profile-axis-matching.yml','lib/holistic-support/axis-offer-matcher.mjs'],
+    ['hh-profile-axis-matching.yml','app/api/app/[...path]/route.js'],
+    ['hh-public-services-production.yml','components/public-consultation-cta.tsx'],
+    ['release-reaudit.yml','next.config.ts'],
+    ['release-reaudit.yml','middleware.ts'],
+    ['hh-public-performance-audit.yml','scripts/measure-hh-public-ttfb.mjs'],
+    ['hh-public-services-production.yml','scripts/measure-hh-public-ttfb.mjs'],
+    ['hh-pr-core-release.yml','package.json']
+  ];
+  for(const [name,file] of required)
+    assert.equal(matchesTrigger(trigger(name),[file],TARGET),true,name+': lost real domain/security owner for '+file);
+  for(const [name,own,unrelated] of [
+    ['practice-visual-browser.yml','app/api/app/practice/service/route.js','app/api/app/unrelated/route.js'],
+    ['tantra-testimonials.yml','components/tantra-video-testimonials.tsx','middleware.ts'],
+    ['hh-profile-axis-matching.yml','lib/holistic-support/axis-offer-matcher.mjs','app/api/app/practice/editor/route.js']
+  ]) assert.equal(matchesTrigger(trigger(name),[unrelated,own],TARGET),true,name+': mixed PR must retain own real QA');
+});
+
 // Owner-approved PR budget: retain one low-cost public performance owner,
 // defer nine noncritical/duplicative domain matrices to explicit dispatch or
 // existing protected production pushes. Core, security, money, CRM and private
