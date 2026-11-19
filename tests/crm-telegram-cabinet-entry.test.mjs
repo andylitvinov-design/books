@@ -16,7 +16,9 @@ test('RU/EN/ES Cabinet entry uses one fixed tokenless website URL',()=>{
   assert.deepEqual(inline,{inline_keyboard:[[{text:lang==='ru'?'🏠 Открыть мой кабинет':lang==='en'?'🏠 Open my Cabinet':'🏠 Abrir mi espacio',url:'https://holistichouse.vercel.app/'+lang+'/app'}]]})
   assert.ok(!/token=|code=|chat_id=|auth_key=/.test(inline.inline_keyboard[0][0].url))
   assert.ok(companionMessage(lang,'cabinet').length>100)
-  assert.ok(telegramCompanionNativeCommands(lang).some(item=>item.command==='cabinet'))
+  // The legacy /cabinet deep command remains valid, but the owner's native Menu is eight concise choices.
+  assert.deepEqual(telegramCompanionNativeCommands(lang).map(item=>item.command),
+    ['support','business','study','diagnostic','profile','video','coach','assistant'])
  }
 })
 
