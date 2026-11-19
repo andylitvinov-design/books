@@ -2315,7 +2315,7 @@ test('seven unrelated optional workflow selector narrowings cannot invalidate gr
     ['.github/workflows/hh-profile-axis-matching.yml']),false,'same-file overlap is never reusable');
   const ctx={repo,number:27,head:SHA,base:BASE};
   const sources={base:new Map([[path,yaml]]),current:new Map([[path,yaml]]),
-    changedRows:[{filename:candidate[0],status:'M'}]};
+    changedRows:[{filename:'lib/crm/a.js',status:'M'}]};
   const api={
     pr:async()=>({...pr(),base:{...pr().base,sha:live},mergeable:true}),
     target:async()=>live,
