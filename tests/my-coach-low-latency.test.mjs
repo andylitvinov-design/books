@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {myCoachFishVoice,MIRA_RU_FISH_VOICE_CANDIDATE} from '../lib/coaching/my-coach-fish-voice.mjs'
+import {myCoachFishVoice,OWNER_FISH_RU_CAST} from '../lib/coaching/my-coach-fish-voice.mjs'
 
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
@@ -39,12 +39,15 @@ test('per-turn profiling records timing only, never words, audio, or extra calls
  assert.doesNotMatch(loop,/sendBeacon|console\.log\(text|navigator\.sendBeacon/)
 })
 
-test('Russian Mira voice is independently rights-gated, never confused with English Sarah',()=>{
- const env={HH_MY_COACH_MIRA_RU_VOICE_RIGHTS_APPROVED:'true'}
- assert.equal(myCoachFishVoice('mira','ru',env),MIRA_RU_FISH_VOICE_CANDIDATE)
- assert.equal(myCoachFishVoice('mira','en',env),myCoachFishVoice('mira','en',{}))
- assert.notEqual(myCoachFishVoice('mira','ru',env),myCoachFishVoice('mira','en',env))
- assert.equal(myCoachFishVoice('mira','ru',{}),myCoachFishVoice('mira','en',{}))
+test('Russian Mira never activates obsolete candidate; exact owner identity must be verified',()=>{
+ const oldEnv={HH_MY_COACH_MIRA_RU_VOICE_RIGHTS_APPROVED:'true'}
+ assert.equal(myCoachFishVoice('mira','ru',oldEnv),myCoachFishVoice('mira','ru',{}))
+ const gated={HH_MY_COACH_FISH_RU_CAST_RIGHTS_APPROVED:'true'}
+ assert.equal(myCoachFishVoice('mira','ru',gated),null)
+ assert.equal(myCoachFishVoice('mira','en',gated),myCoachFishVoice('mira','en',{}))
+ assert.equal(myCoachFishVoice('max','ru',gated),OWNER_FISH_RU_CAST.max)
+ assert.equal(myCoachFishVoice('mira','ru',{}),null,
+   'no licensed native RU cast must never fall back to English Sarah')
 })
 
 

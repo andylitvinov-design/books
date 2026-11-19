@@ -97,8 +97,8 @@ test('approved Fish voices are grouped exactly as owner-selected coaching/medita
  assert.deepEqual(FISH_PUBLIC_VOICES.filter(v=>v.purpose==='coaching').map(v=>v.id),
   ['fish-igor','fish-ekaterina','fish-sarah','fish-jordan']);
  assert.deepEqual(FISH_PUBLIC_VOICES.filter(v=>v.purpose==='meditation').map(v=>v.id),
-  ['fish-selene','fish-calm-meditation']);
- assert.equal(FISH_PUBLIC_VOICES.filter(v=>v.language==='ru'&&v.purpose==='meditation').length,0);
+  ['fish-selene','fish-calm-meditation','fish-e1','fish-zorya','fish-sasha','fish-m4']);
+ assert.equal(FISH_PUBLIC_VOICES.filter(v=>v.language==='ru'&&v.purpose==='meditation').length,3);
  assert.equal(approvedFishReference('fish-igor'), '55ece81d65564775ab448bab3b525599');
  assert.equal(approvedFishReference('fish-ekaterina'), '6d23d3209d6849e0b24ddae6f734afe9');
  assert.equal(approvedFishReference('fish-sarah'), '933563129e564b19a115bedd57b7406a');
@@ -135,8 +135,8 @@ test('purpose filter lives in the original Therapy phrase screen; no new pages',
  const css=readFileSync(new URL('../components/mandala-affirmation-voice.module.css',import.meta.url),'utf8');
  const route=readFileSync(new URL('../app/api/holistic-support/voice/route.js',import.meta.url),'utf8');
  for(const marker of ['data-fish-voice-purpose','data-fish-purpose={purpose}',
-  'fishPurpose','Fish (6)','FISH_PUBLIC_VOICES.filter(v=>v.purpose===fishPurpose)',
-  'Boolean(v.requiresProviderLicense)','provider:"fish",mode:"sample"',
+  'fishPurpose','Fish (10)','FISH_PUBLIC_VOICES.filter(v=>v.purpose===fishPurpose)',
+  'Boolean(v.requiresProviderLicense&&!fishLicensedIds.includes(v.id))','provider:"fish",mode:"sample"',
   'provider:"fish",mode:"affirmations"'])assert.ok(source.includes(marker),marker);
  assert.ok(css.includes('scroll-snap-type:x proximity'));
  assert.ok(route.includes('approvedFishReference(validated.voiceId,process.env)'));
