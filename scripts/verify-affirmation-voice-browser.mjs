@@ -808,7 +808,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const conceptTab=ideasModes.locator('[data-video-ideas-tab="concept"]');
       await expect(personalTab).toHaveAttribute("aria-pressed","true");
       await expect(phrases.locator("[data-video-ideas-personalization-panel]")).toBeVisible();
-      await expect(phrases.locator("[data-personalization-kind]")).toHaveCount(3);
+      await expect(phrases.locator("[data-personalization-kind]")).toHaveCount(5);
       const preferredName=locale==="ru"?"Андрей":locale==="es"?"Andrés":"Andy";
       const personalClosing=locale==="ru"?"Андрей, я в тебя верю":
         locale==="es"?"Andrés, creo en ti":"Andy, I believe in you";
@@ -818,20 +818,75 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","1");
       await expect(phrases.locator('[data-personalization-kind="current"]')).toBeVisible();
       await expect(phrases.locator('[data-personalization-kind="desired"]')).toBeHidden();
-      await nextQuiz.click();
+      // One word, one tap, next screen. No Continue button on choice steps.
+      await expect(nextQuiz).toHaveCount(0);
+      await personalQuiz.locator('[data-video-personalization-choice="current-tension"]').click();
       await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","2");
       await expect(phrases.locator('[data-personalization-kind="desired"]')).toBeVisible();
-      await nextQuiz.click();
+      await expect(personalQuiz.locator('[data-video-personalization-choice="current-tension"]'))
+        .toHaveAttribute("aria-pressed","true");
+      await expect(nextQuiz).toHaveCount(0);
+      await personalQuiz.locator('[data-video-personalization-choice="desired-safe"]').click();
       await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","3");
       await expect(phrases.locator('[data-personalization-kind="strength"]')).toBeVisible();
-      await nextQuiz.click();
+      await expect(nextQuiz).toHaveCount(0);
+      const personalAxes=personalQuiz.locator("[data-video-personalization-axis]");
+      await personalAxes.first().click();
       await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","4");
+      const currentEnergy=personalQuiz.locator('[data-video-personalization-energy-options="current"]');
+      const desiredEnergy=personalQuiz.locator('[data-video-personalization-energy-options="desired"]');
+      await expect(currentEnergy).toBeVisible();
+      await expect(currentEnergy.locator("button")).toHaveCount(10);
+      await expect(nextQuiz).toHaveCount(0);
+      // All ten numerical choices must be accessible without scrolling horizontally on iPhone.
+      for(const width of [320,354,390,430]){
+        await page.setViewportSize({width,height:840});
+        const geometry=await currentEnergy.evaluate(grid=>{
+          const rect=grid.getBoundingClientRect();
+          const buttons=[...grid.querySelectorAll("button")].map(button=>button.getBoundingClientRect());
+          return {count:buttons.length,minWidth:Math.min(...buttons.map(b=>b.width)),
+            minHeight:Math.min(...buttons.map(b=>b.height)),
+            rightMost:Math.max(...buttons.map(b=>b.right)),gridRight:rect.right};
+        });
+        assert.equal(geometry.count,10,"Ten score buttons "+width);
+        assert.ok(geometry.minWidth>=44&&geometry.minHeight>=44,"Energy touch targets "+width+" "+JSON.stringify(geometry));
+        assert.ok(geometry.rightMost<=geometry.gridRight+2,"Energy grid fits iPhone "+width+" "+JSON.stringify(geometry));
+      }
+      await page.setViewportSize({width:390,height:840});
+      await currentEnergy.locator('[data-video-personalization-energy="3"]').click();
+      await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","5");
+      await expect(currentEnergy.locator('[data-video-personalization-energy="3"]'))
+        .toHaveAttribute("aria-pressed","true");
+      await expect(desiredEnergy).toBeVisible();
+      await expect(desiredEnergy.locator("button")).toHaveCount(10);
+      await expect(nextQuiz).toHaveCount(0);
+      await desiredEnergy.locator('[data-video-personalization-desired-level="8"]').click();
+      await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","6");
       const firstNameInput=phrases.locator("[data-video-personalization-name]");
       await expect(firstNameInput).toBeVisible();
       await firstNameInput.fill(preferredName);
       await backQuiz.click();
+      await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","5");
+      await expect(desiredEnergy.locator('[data-video-personalization-desired-level="8"]'))
+        .toHaveAttribute("aria-pressed","true");
+      await desiredEnergy.locator('[data-video-personalization-desired-level="9"]').click();
+      await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","6");
+      await backQuiz.click();
+      await backQuiz.click();
+      await backQuiz.click();
       await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","3");
-      await nextQuiz.click();
+      await personalAxes.nth(1).click();
+      await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","4");
+      await expect(personalAxes.first()).toHaveAttribute("aria-pressed","false");
+      await expect(personalAxes.nth(1)).toHaveAttribute("aria-pressed","true");
+      await expect(currentEnergy.locator('[data-video-personalization-energy="3"]'))
+        .toHaveAttribute("aria-pressed","true");
+      await currentEnergy.locator('[data-video-personalization-energy="4"]').click();
+      await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","5");
+      await expect(desiredEnergy.locator('[data-video-personalization-desired-level="9"]'))
+        .toHaveAttribute("aria-pressed","true");
+      await desiredEnergy.locator('[data-video-personalization-desired-level="9"]').click();
+      await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","6");
       await expect(firstNameInput).toHaveValue(preferredName);
       await nextQuiz.click();
       await expect(conceptTab).toHaveAttribute("aria-pressed","true");
