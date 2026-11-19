@@ -165,6 +165,8 @@ test('Consent is explained once; follow-up nudges do not repeat the privacy wall
   const service=source('lib/crm/telegram-ai-diagnostic-v3-service.js');
   assert.ok(service.includes("if(start&&active&&row?.stage==='consent')"));
   assert.ok(service.includes("const purposeReady=general?chatAllowed:serviceAllowed;"));
+  assert.ok(service.includes("const agrees=general?action==='chatagree':"));
+  assert.ok(service.includes("if(!row.ai_consent_at||!(ctx.conversationKind==='general'?chatAllowed:serviceAllowed))"));
   assert.ok(service.includes("if(!agrees||!purposeReady)"),"explicit consent and runtime readiness are both mandatory");
   assert.ok(service.includes("if(serviceCopy&&ctx.mode!==SECRETARY_MODES.PSYCHOLOGIST&&"),
     "native Secretary route remains isolated from psychologist mode");
@@ -254,6 +256,9 @@ test('Wave local chat remains consent-gated and is independent of any model key'
   const service=source('lib/crm/telegram-ai-diagnostic-v3-service.js');
   assert.match(service,/const generalStart=chatAllowed/);
   assert.match(service,/purposeReady=general\?chatAllowed:serviceAllowed/);
+  assert.match(service,/const purposeReady=general\?chatAllowed:serviceAllowed;/);
+  assert.match(service,/serviceCopy\?\(action==='agree'\|\|action==='serviceagree'/);
+  assert.match(service,/ctx\.conversationKind==='general'\?chatAllowed:serviceAllowed/);
   assert.match(service,/if\(!row\.ai_consent_at\|\|!\(ctx\.conversationKind==='general'\?chatAllowed:serviceAllowed\)\)/);
   assert.equal(v3ServiceIntakeReady({...local,HH_CRM_TG_AI_V3_FREE_TIER_CONFIRMED:'false'}),true);
   assert.equal(v3ServiceIntakeReady({...local,HH_CRM_TG_AI_V3_SCHEMA_READY:'false'}),false);
