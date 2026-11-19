@@ -2707,6 +2707,7 @@ test('terminal PR ghost cleanup stays within existing protected Watchdog, not ne
  const src=fs.readFileSync('scripts/ci-pr-terminal-ghost-prune.cjs','utf8');
  assert.match(wf,/HH_TERMINAL_PR_GHOST_RECONCILE/);
  assert.match(wf,/if\(trustedContext\(context\)\)/);
- assert.match(wf,/Number\(report\\.queuedActions\\)>40/);
+ assert.ok(wf.includes('Number(report.queuedActions)>40'));
+
  assert.doesNotMatch(src,/createWorkflowDispatch|updateBranch|createPullRequest|reRunWorkflow|forceCancelWorkflowRun/);
 });
