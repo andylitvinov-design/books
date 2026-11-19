@@ -4,26 +4,43 @@ import {readFileSync} from 'node:fs'
 import {TELEGRAM_SERVICE_OPTIONS,telegramServiceOption,telegramServiceOptionStart,telegramServiceOptionRequestUrl,telegramServiceOptionDirectBotUrl} from '../lib/assist/telegram-service-options.mjs'
 import {v3ServiceStart,v3ServiceTitle,v3Context,v3ServiceCopy} from '../lib/crm/telegram-ai-diagnostic-v3.mjs'
 const src=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
-test('all 30 published Services offers preserve exact RU/EN/ES titles in the signed bot',()=>{
- assert.equal(Object.keys(TELEGRAM_SERVICE_OPTIONS).length,30)
- const catalogue=src('components/services-three-visible-options.tsx')
+test('all 33 published Services offers use exact signed Telegram RU/EN/ES titles; two historic course links still work',()=>{
+ const catalogue=src('components/services-three-visible-options.tsx');
+ const groups=[...catalogue.matchAll(/^  ([a-z]+): \[/gm)];
+ const published=new Map();
+ for(let i=0;i<groups.length;i++){
+  const group=groups[i][1];
+  const section=catalogue.slice(groups[i].index,groups[i+1]?.index??catalogue.indexOf('\n};',groups[i].index));
+  for(const match of section.matchAll(/\{\s*id:"([^"]+)", name:\["([^"]+)","([^"]+)","([^"]+)"\]/g)){
+   const id=group+'_'+match[1];
+   assert.equal(published.has(id),false,'duplicate published offer '+id);
+   published.set(id,{ru:match[2],en:match[3],es:match[4]});
+  }
+ }
+ assert.equal(published.size,33,'published eleven groups each have three real offers');
+ assert.equal(Object.keys(TELEGRAM_SERVICE_OPTIONS).length,35,'two older course links remain valid');
+ assert.deepEqual(Object.keys(TELEGRAM_SERVICE_OPTIONS).filter(id=>!published.has(id)).sort(),
+  ['courses_practitioner','courses_yggdrasil']);
+ for(const [id,titles] of published){
+  assert.ok(Object.hasOwn(TELEGRAM_SERVICE_OPTIONS,id),'missing signed Telegram offer '+id);
+  for(const locale of ['ru','en','es'])
+   assert.equal(TELEGRAM_SERVICE_OPTIONS[id].titles[locale],titles[locale],id+':'+locale);
+ }
  for(const [id,row] of Object.entries(TELEGRAM_SERVICE_OPTIONS)){
-  const [group,option]=id.split('_')
-  assert.ok(catalogue.includes('id:"'+option+'", name:'),id)
   for(const locale of ['ru','en','es']){
-   const offer=telegramServiceOption(id,locale)
-   assert.equal(offer.title,row.titles[locale])
-   assert.equal(offer.service,row.service)
-   const deep='/start hhitem_'+id+'_'+locale
-   assert.deepEqual(telegramServiceOptionStart(deep),{service:row.service,locale,offerId:id})
-   assert.deepEqual(v3ServiceStart(deep),{service:row.service,locale,offerId:id})
-   assert.equal(v3ServiceTitle(row.service,locale,id),offer.title)
-   assert.equal(v3ServiceCopy(locale,row.service,id).title,offer.title)
+   const offer=telegramServiceOption(id,locale);
+   assert.equal(offer.title,row.titles[locale]);
+   assert.equal(offer.service,row.service);
+   const deep='/start hhitem_'+id+'_'+locale;
+   assert.deepEqual(telegramServiceOptionStart(deep),{service:row.service,locale,offerId:id});
+   assert.deepEqual(v3ServiceStart(deep),{service:row.service,locale,offerId:id});
+   assert.equal(v3ServiceTitle(row.service,locale,id),offer.title);
+   assert.equal(v3ServiceCopy(locale,row.service,id).title,offer.title);
    assert.equal(telegramServiceOptionRequestUrl(id,locale),
-    '/api/public/telegram-option-entry?offer='+id+'&locale='+locale)
+    '/api/public/telegram-option-entry?offer='+id+'&locale='+locale);
    assert.equal(telegramServiceOptionDirectBotUrl(id,locale),
-    'https://t.me/holistichouse_bot?start=hhitem_'+id+'_'+locale)
-   assert.ok(deep.length<64)
+    'https://t.me/holistichouse_bot?start=hhitem_'+id+'_'+locale);
+   assert.ok(deep.length<64);
   }
  }
 })
