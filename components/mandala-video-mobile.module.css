@@ -5756,3 +5756,84 @@
  justify-content:flex-start;gap:6px}
 .studio[data-active-workspace="editor"][data-montage-panel="concept"] .storyAutoCard[data-storyboard-expanded="true"] .storyAutoAction{
  white-space:normal;overflow:visible;text-overflow:clip;line-height:1.4}
+
+/* Sequential desktop Video Studio. No mobile layout changes. */
+.desktopStepLabel{display:none}
+.mobileStepLabel{display:contents}
+.desktopPhraseStep{display:none}
+@media(min-width:760px){
+  .desktopStepLabel{display:inline}
+  .mobileStepLabel{display:none}
+  .studio .quickBuilder{width:100%;max-width:1040px;margin-inline:auto;gap:16px}
+  .studio .quickBuilder>section,.studio .quickBuilder>header,
+  .studio .quickBuilder>nav,.studio .quickBuilder>details{
+    width:100%;min-width:0;box-sizing:border-box}
+  .studio .quickBuilder>.quickSection,.studio .quickBuilder>.quickPhraseSection,
+  .studio .quickBuilder>.quickMusicSection{padding:20px 24px;border-radius:21px}
+  .studio .quickBuilder>.quickSection .quickSectionHeading h3{font-size:20px;line-height:1.3}
+  .studio .quickBuilder [data-video-goal-topic-chips]{
+    display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;
+    width:100%;min-width:0;margin:8px 0 12px}
+  .studio .quickBuilder [data-video-goal-topic-chips] button{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    min-width:0;min-height:52px;padding:12px 15px;font-size:15px;
+    line-height:1.32;text-align:left;white-space:normal;overflow-wrap:anywhere;
+    border:1px solid #d8e7dd;border-radius:13px;background:#fffefa;color:#1d4d42}
+  .studio .quickBuilder [data-video-goal-topic-chips] button[aria-pressed="true"]{
+    background:#e7f7ed;border-color:#079b70;box-shadow:0 0 0 1px #079b7033}
+  .studio .quickBuilder [data-video-optional-topic-field]{
+    display:flex;align-items:center;gap:12px;max-width:510px;min-height:48px;
+    margin:10px 0 2px;font-size:13px;color:#547265}
+  .studio .quickBuilder [data-video-optional-topic-field] select{
+    min-height:44px;min-width:0;max-width:300px;
+    border-radius:12px;border:1px solid #d2dfd4;background:#fffefa;
+    font-size:14px;padding:8px 12px}
+  .studio .quickBuilder .quickStyles{
+    display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
+    gap:11px;overflow:visible;min-width:0}
+  .studio .quickBuilder .quickStyles button{min-width:0}
+  .studio .quickBuilder .quickStyles button img{
+    width:100%;aspect-ratio:1.12;object-fit:cover}
+  .studio .desktopPhraseStep{
+    display:grid;gap:16px;width:100%;min-width:0;margin:16px 0 10px;
+    padding:23px 24px;border:1px solid #d8e9df;border-radius:21px;
+    background:linear-gradient(145deg,#fbfffa,#f4f9f3);
+    scroll-margin-top:86px}
+  .studio .desktopPhraseHead{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
+  .studio .desktopPhraseHead>div{min-width:0;flex:1}
+  .studio .desktopPhraseHead h3{display:flex;align-items:center;gap:9px;
+    font:750 21px/1.3 Arial,Helvetica,sans-serif;color:#14513f}
+  .studio .desktopPhraseHead p{margin:7px 0 0;color:#536c62;
+    font:400 14px/1.5 Arial,Helvetica,sans-serif}
+  .studio .desktopPhraseEnable{display:flex;align-items:center;gap:9px;
+    flex:none;min-height:44px;padding:9px 12px;border:1px solid #c9dfd1;
+    border-radius:12px;background:#fff;color:#16634e;
+    font:700 13px/1.3 Arial,Helvetica,sans-serif;cursor:pointer}
+  .studio .desktopPhraseEnable input{width:18px;height:18px;accent-color:#078566}
+  .studio .desktopPhraseChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .studio .desktopPhraseChoices button{display:flex;align-items:center;gap:11px;
+    min-width:0;min-height:54px;padding:11px 14px;border:1px solid #d7e5da;
+    border-radius:13px;background:#fffefa;color:#1b5040;text-align:left;
+    font:650 15px/1.35 Arial,Helvetica,sans-serif;overflow-wrap:anywhere}
+  .studio .desktopPhraseChoices button>svg{flex:none;color:transparent;
+    border:1px solid #accbbc;border-radius:50%;padding:2px;box-sizing:content-box}
+  .studio .desktopPhraseChoices button[aria-pressed="true"]{
+    border-color:#0b9870;background:#e5f7ec;box-shadow:0 0 0 1px #0b987022}
+  .studio .desktopPhraseChoices button[aria-pressed="true"]>svg{
+    background:#087c60;color:#fff;border-color:#087c60}
+  .studio .desktopPhraseActions{display:flex;align-items:center;
+    justify-content:flex-end;flex-wrap:wrap;gap:10px;padding-top:5px}
+  .studio .desktopPhraseActions>span{margin-right:auto;color:#547365;font-size:13px}
+  .studio .desktopPhraseActions button{display:inline-flex;align-items:center;
+    justify-content:center;gap:8px;min-height:45px;padding:9px 16px;
+    border-radius:12px;border:1px solid #c9dfd4;background:#fffefa;
+    color:#136b51;font-weight:750}
+  .studio .desktopPhraseActions button[data-video-desktop-phrase-next]{
+    border-color:#087c60;background:#087c60;color:#fff}
+  .studio [data-video-ideas-personalization-panel] .montageMovedNote,
+  .studio [data-video-ideas-personalization-panel] .montageStepNext{display:none}
+}
+@media(min-width:760px) and (max-width:980px){
+  .studio .quickBuilder .quickStyles{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .studio .desktopPhraseChoices{grid-template-columns:minmax(0,1fr)}
+}
