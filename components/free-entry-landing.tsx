@@ -286,7 +286,7 @@ situation: {
       eyebrow: "REVISIÓN PERSONAL EXPRÉS · CON ANDREY",
       title: "Cuéntame qué te preocupa.",
       lead: "¿Tienes una decisión difícil o una situación que se repite? Cuéntame una pregunta concreta. La leeré yo mismo y te responderé por escrito, gratis.",
-      value: "Revisión personal escrita · gratis · sin llamada.",
+      value: "Revisión personal escrita · gratis · sin cita o videollamada.",
       bullets: ["Define tu pregunta.", "Observa recursos y dificultades.", "Explora un posible próximo paso."],
       outcomeTitle: "Comprende mejor tu pregunta",
       outcomeLead: "Leeré tu mensaje y te compartiré lo que observe.",
@@ -300,7 +300,7 @@ situation: {
       steps: [
         { title: "Elige tu tema", text: "Abre Telegram o WhatsApp y envíame un mensaje breve." },
         { title: "Deja tu contacto", text: "Te haré una o dos preguntas para entender tu situación." },
-        { title: "Acuerda un envío seguro", text: "Si hace falta un dibujo, acordaremos cómo compartirlo en privado. Envía expedientes médicos, pruebas y datos sensibles solo por el formulario protegido." },
+        { title: "Acuerda un envío seguro", text: "Tras dar tu consentimiento, Telegram puede pedir un dibujo; es opcional. Envía expedientes médicos, pruebas y datos sensibles solo por el formulario protegido." },
       ],
       startTitle: "¿Qué deseas explorar?",
       startLead: "Elige el tema y deja tu teléfono, sin datos personales por chat.",

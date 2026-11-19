@@ -193,10 +193,18 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
               iframes: element.querySelectorAll("iframe").length,
             };
           });
-          assert.equal(reviewGeometry.ids.length, 12, "all twelve authentic testimonials remain");
-          assert.equal(new Set(reviewGeometry.ids).size, 12, "no duplicated testimonials");
-          assert.equal(reviewGeometry.ids[0], locale === "ru" ? "m9RfDgK76PU" : "Dk0LBmOivQo",
-            "primary locale audio first");
+          // The compact diagnostic landing intentionally keeps originals in
+          // the matching audio language (six RU for RU, six EN for EN/ES),
+          // unlike the full bilingual archive elsewhere on the site.
+          const expectedReviewIds = locale === "ru"
+            ? ["m9RfDgK76PU", "MIVLm1GUTtM", "ttQxUHopaUM",
+               "VABgpmn4ZYA", "muOnIHllI7E", "5oj0BIbLT4w"]
+            : ["Dk0LBmOivQo", "aUJde6A-9p0", "fE6sD1zr1Js",
+               "itjo2_z2NGk", "4NrryHcEF1A", "hYwRNMxIMjc"];
+          assert.equal(reviewGeometry.ids.length, 6, "all six matching-audio testimonials remain");
+          assert.equal(new Set(reviewGeometry.ids).size, 6, "no duplicated testimonials");
+          assert.deepEqual(reviewGeometry.ids, expectedReviewIds,
+            "testimonials retain original source IDs and correct language order");
           assert.equal(reviewGeometry.direction, "column", "vertical mobile reviews");
           assert.ok(reviewGeometry.boxes.every((r,i) => i === 0 || r.top >= reviewGeometry.boxes[i-1].bottom - 2),
             "testimonials vertically aligned");
@@ -300,6 +308,14 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
             "changing the selected focus never fabricates a CRM lead");
           if(await details.count())await details.locator(':scope > summary').focus();
           await page.keyboard.press("Escape");
+          // React state can commit after the keypress resolves at 320px.
+          // Wait for the REAL collapsed DOM, never accept an unclosed panel.
+          await page.waitForFunction(() => {
+            const button = document.querySelector("[data-express-reveal]");
+            const panel = document.querySelector("[data-express-inline-disclosure]");
+            return button?.getAttribute("aria-expanded") === "false" &&
+              panel instanceof HTMLElement && panel.hidden;
+          }, null, { timeout: 4000 });
           assert.equal(await reveal.getAttribute("aria-expanded"), "false", "Escape folds the form");
           assert.equal(new URL(page.url()).hash, "", "closing clears the stale review anchor");
           assert.equal(await disclosure.isVisible(), false);
