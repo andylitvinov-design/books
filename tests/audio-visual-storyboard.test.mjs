@@ -68,7 +68,7 @@ test("provider never transcribes without explicit free-project approval",()=>{
  assert.match(helper,/fetch\("\/api\/holistic-support\/audio-storyboard"/);
  assert.match(helper,/method:"POST",cache:"no-store",credentials:"same-origin"/);
  assert.match(helper,/form.append\("consent","yes"\)/);
- assert.match(source,/requestConsentedTimedTranscript\(entry.file,locale,true,controller.signal\)/);
+ assert.match(source,/requestConsentedTimedTranscript\(\s*entry.file,spokenAudioLanguage,true,controller.signal\)/);
  assert.doesNotMatch(source,/\bfetch\s*\(|\bFormData\b/);
 });
 
