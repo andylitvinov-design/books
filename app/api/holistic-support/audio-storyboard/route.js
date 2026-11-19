@@ -9,6 +9,7 @@ import {getAppConfig,requireSameOrigin} from "@/lib/app/config";
 import {consumeRate} from "@/lib/app/database";
 import {PRIVATE_HEADERS,safeError} from "@/lib/app/http";
 import {normalizeTimedTranscript} from "@/lib/mandala/audio-visual-storyboard.mjs";
+import {isSpeechTranscriptLanguageMismatch} from "@/lib/mandala/audio-speech-language.mjs";
 
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
@@ -67,6 +68,9 @@ export async function POST(request){
     const result=await provider.json();
     const transcript=normalizeTimedTranscript(result);
     if(!transcript)throw new AppError("AUDIO_STT_TIMECODES_UNAVAILABLE",502);
+    // Never display a likely English transcription of detected Russian speech.
+    if(isSpeechTranscriptLanguageMismatch({requested:language,detected:result.language,text:transcript.text}))
+      throw new AppError("AUDIO_STT_LANGUAGE_MISMATCH",422);
     return NextResponse.json({version:"hh-audio-stt-v1",
       transcript,provider:"groq_free_confirmed",charged:false,
       mediaGenerated:false,locallyStored:false},{headers:PRIVATE_HEADERS});

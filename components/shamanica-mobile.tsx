@@ -7,6 +7,7 @@ import {ArrowRight, BookOpen, BriefcaseBusiness, ChevronDown, Coins, GraduationC
 import type {PublicLocale} from "@/lib/public-locales";
 import {shamanicaServiceHref} from "@/lib/shamanica-recommendations.mjs";
 import styles from "./shamanica-mobile.module.css";
+import { ShamanicaBusinessContent } from "./shamanica-business-content";
 
 type Goal="energy"|"relationships"|"money"|"growth";
 type Method="remedies"|"artifacts"|"energy"|"rituals"|"learning";
@@ -65,7 +66,8 @@ es:{
  learning:["Aprendizaje","Chamanismo, Reiki, magia y misterios — desde lo básico"]},
  step:"Paso",of:"de",back:"Volver",search:"Buscar",menu:"Menú"}
 } as const;
-export function ShamanicaMobile({locale}:{locale:PublicLocale}){
+export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;audience?:"self"|"business"}){
+ const business=audience==="business";
  const router=useRouter(),t=copy[locale];
  const [step,setStep]=useState(0);
  const [goal,setGoal]=useState<Goal>("energy");
@@ -86,21 +88,22 @@ export function ShamanicaMobile({locale}:{locale:PublicLocale}){
     <div className={styles.tools}>
      <label className={styles.lang}>
       <span className={styles.srOnly}>Language</span>
-      <select aria-label="Language" value={locale} onChange={e=>router.push("/"+e.target.value+"/shamanica")}>
+      <select aria-label="Language" value={locale} onChange={e=>router.push("/"+e.target.value+"/shamanica"+(business?"/business":""))}>
        <option value="en">EN</option><option value="ru">RU</option><option value="es">ES</option>
       </select><ChevronDown size={15} aria-hidden="true"/>
      </label>
      <Link className={styles.iconButton} href={"/"+locale+"/explore"} aria-label={t.search} prefetch={false}><Search size={22}/></Link>
      <details className={styles.menu}><summary className={styles.iconButton} aria-label={t.menu}><Menu size={22}/></summary>
-      <nav className={styles.menuPop}><Link href={locale==="en"?"/":"/"+locale}>{t.self}</Link><Link href={"/"+locale+"/services"}>{t.work}</Link><Link href={"/"+locale+"/academy"}>{t.services.learning[0]}</Link></nav>
+      <nav className={styles.menuPop}><Link href={locale==="en"?"/":"/"+locale}>{t.self}</Link><Link href={"/"+locale+"/shamanica/business"}>{t.work}</Link><Link href={"/"+locale+"/academy"}>{t.services.learning[0]}</Link></nav>
      </details>
     </div>
    </header>
    <nav className={styles.audiences} aria-label="Audience">
-    <Link className={styles.audienceActive} aria-current="page" href={"/"+locale+"/shamanica"}><Heart size={18}/>{t.self}</Link>
-    <Link href={"/"+locale+"/services/business-consulting"}><BriefcaseBusiness size={18}/>{t.work}</Link>
+    <Link className={!business?styles.audienceActive:undefined} aria-current={!business?"page":undefined} href={"/"+locale+"/shamanica"}><Heart size={18}/>{t.self}</Link>
+    <Link className={business?styles.audienceActive:undefined} aria-current={business?"page":undefined} href={"/"+locale+"/shamanica/business"}><BriefcaseBusiness size={18}/>{t.work}</Link>
     <Link href={"/"+locale+"/holistic-support/mobile"}><Sparkles size={18}/>{t.help}</Link>
    </nav>
+   {business?<ShamanicaBusinessContent locale={locale}/>:<>
    <section className={styles.hero} aria-labelledby="shamanica-hero-title">
     <Image src="/images/holistic-house/hero-olive-incense.webp" fill priority alt="" sizes="(max-width:640px) 100vw, 920px" className={styles.heroImg}/>
     <div className={styles.heroText}><span className={styles.eyebrow}>HOLISTIC HOUSE</span><h1 id="shamanica-hero-title">{locale==="ru"?"Шаманика":"Shamanica"}</h1><p>{t.subtitle}</p></div>
@@ -129,6 +132,7 @@ export function ShamanicaMobile({locale}:{locale:PublicLocale}){
       <span className={styles.serviceArrow} aria-hidden="true"><ArrowRight size={20}/></span>
     </Link>})}</div>
    </section>
+   </>}
   </div>
  </main>;
 }

@@ -74,14 +74,16 @@ async function verify(engine, locale, width) {
       label+": one original seven-destination navigation");
     assert.equal(await page.locator('.mobile-bottom-navigation:visible').count(),0,
       label+": no duplicate legacy mobile navigation");
-    const study=dock.locator('[data-unified-dock-item="practice"]');
-    await study.waitFor({state:"visible",timeout:15000});
-    assert.equal((await study.innerText()).trim(),copy[locale].tab,
+    // Production's approved sixth dock item is Shamanica, not retired Study.
+    // Check its real localized label, accessible name and public destination.
+    const shamanica=dock.locator('[data-unified-dock-item="practice"]');
+    await shamanica.waitFor({state:"visible",timeout:15000});
+    assert.equal((await shamanica.innerText()).trim(),copy[locale].tab,
       label+": current Shamanica destination has correct translation");
-    assert.equal(await study.getAttribute("aria-label"),copy[locale].accessible);
-    assert.equal(await study.getAttribute("href"),"/"+locale+"/shamanica",
-      label+": current Shamanica destination opens existing public practice");
-    const navTarget = await study.boundingBox();
+    assert.equal(await shamanica.getAttribute("aria-label"),copy[locale].accessible);
+    assert.equal(await shamanica.getAttribute("href"),"/"+locale+"/shamanica",
+      label+": current Shamanica destination opens the existing public Shamanica route");
+    const navTarget = await shamanica.boundingBox();
     assert.ok(navTarget && navTarget.height >= 44 && navTarget.width >= 44,
       label + ": Shamanica action remains finger-sized");
     assert.equal(await unifiedDock.locator("[data-unified-dock-item]").count(), 7,

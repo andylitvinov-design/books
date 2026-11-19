@@ -55,7 +55,7 @@ test('signed webhook, STOP gate, CRM commit and subsequent AI reply remain in or
     capture.indexOf('export async function captureTelegramBusinessLead'))
   assert.doesNotMatch(botCapture,/insert into app\.crm_contacts|insert into app\.crm_opportunities/)
   assert.doesNotMatch(botCapture,/body:event\.body|body:event\.rawText/)
-  assert.match(capture,/app\.crm_opportunities/)
+  assert.match(capture,/crm_tg_business_lead_capture_v1/)
   assert.doesNotMatch(capture,/marketing_opt_in_at|crm_consent_ledger|sendOneMessengerMessage/)
   assert.match(capture,/replyConsent:null,marketingConsent:false/)
 })
@@ -90,3 +90,35 @@ test('first-contact bot failures trigger Telegram retry; Business best-effort st
    route.indexOf('processTelegramCompanion(event,config)'));
  assert.match(route,/processTelegramAiV3\(diagnosticEvent,config\)/);
 });
+
+// The signed Business webhook must never directly gain broad CRM table privileges.
+test('Business lead capture stays behind a narrowly scoped private definer',()=>{
+ const sql=readFileSync(new URL('../supabase/migrations/20261119014500_hh_tg_business_lead_capture_v1.sql',import.meta.url),'utf8')
+ const businessCapture=capture.slice(capture.indexOf('async function ensureUnqualifiedLead'),
+   capture.indexOf('function localeForBusiness'))
+ assert.match(businessCapture,/crm_tg_business_lead_capture_v1/)
+ assert.doesNotMatch(businessCapture,/db\.query\(['"]select id,suppressed from app\.crm_contacts/)
+ assert.doesNotMatch(businessCapture,/insert into app\.crm_contacts|insert into app\.crm_opportunities/)
+ assert.match(sql,/SECURITY DEFINER SET search_path TO ''/i)
+ assert.match(sql,/REVOKE ALL ON FUNCTION app_private\.crm_tg_business_lead_capture_v1/i)
+ assert.match(sql,/GRANT EXECUTE ON FUNCTION app_private\.crm_tg_business_lead_capture_v1[\s\S]*TO hh_app_inbox/i)
+ assert.doesNotMatch(sql,/GRANT\s+(?:SELECT|INSERT|UPDATE|ALL)\s+ON\s+app\.crm_contacts\s+TO\s+hh_app_inbox/i)
+ assert.match(sql,/v_suppressed/i)
+ assert.match(sql,/SELECT c\.id,c\.suppressed INTO v_contact,v_suppressed/i)
+ assert.match(sql,/pg_advisory_xact_lock/i)
+ assert.match(sql,/ON CONFLICT \(owner_id,email_hash\) DO NOTHING/i)
+ assert.match(sql,/app\.crm_opportunities/i)
+ assert.match(sql,/app\.crm_activity/i)
+})
+
+test('Business owner lookup uses only the granted private Telegram resolver',()=>{
+ const businessHandler=capture.slice(capture.indexOf('export async function captureTelegramBusinessLead'))
+ assert.match(businessHandler,/assertHolisticBusinessConnection/)
+ assert.match(businessHandler,/telegramBotBusinessId\(env\)/)
+ assert.match(businessHandler,/businessHash\('telegram',botId,config\)/)
+ assert.match(businessHandler,/select owner_id from app_private\.crm_msg_resolve/)
+ assert.doesNotMatch(businessHandler,/join app\.accounts|from app\.practitioners/)
+ // The private definer still verifies the resolved owner against PRACTITIONER_ID.
+ const migration=readFileSync(new URL('../supabase/migrations/20261119014500_hh_tg_business_lead_capture_v1.sql',import.meta.url),'utf8')
+ assert.match(migration,/p\.id=p_practitioner_id AND p\.trusted_auth_user_id=p_owner_id/)
+})

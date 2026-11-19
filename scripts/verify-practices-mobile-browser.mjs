@@ -61,8 +61,10 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]].filt
           "state mode must present six large choice cards");
         const state=course.locator('[data-guided-focus-state="calm"]');
         await state.click();
-        assert.equal(await state.getAttribute("aria-pressed"),"true");
-        assert.equal(await primary.isEnabled(),true);
+        // Pointer completion can precede React's real state commit in Safari.
+        // Poll the actual UI rather than retrying/forcing another click.
+        await expect(state).toHaveAttribute("aria-pressed","true",{timeout:15000});
+        await expect(primary).toBeEnabled({timeout:15000});
         await primary.click();
         const result=course.locator("[data-guided-meditation-result]");
         await result.waitFor({state:"visible"});
@@ -70,6 +72,7 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]].filt
         assert.equal(await personal.count(),1,"personal meditation reuses one existing editor");
         await personal.locator("[data-guided-open-personal-meditation]").click();
         const existingEditor=page.locator("[data-video-therapy-meditation-audio]");
+        await expect(existingEditor).toHaveAttribute("open","",{timeout:15000});
         assert.equal(await existingEditor.getAttribute("open"),"",
           "personal meditation CTA opens the existing editor");
         await existingEditor.evaluate(el=>{el.open=false;});
@@ -78,7 +81,8 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]].filt
         const moments=practice.locator("[data-guided-ritual-moment]");
         assert.equal(await moments.count(),4,"four ritual moment cards");
         await practice.locator('[data-guided-ritual-moment="evening"]').click();
-        assert.equal(await practice.locator('[data-guided-ritual-moment="evening"]').getAttribute("aria-pressed"),"true");
+        await expect(practice.locator('[data-guided-ritual-moment="evening"]'))
+          .toHaveAttribute("aria-pressed","true",{timeout:15000});
         await practice.locator("[data-guided-create-ritual]").click();
         assert.ok((await practice.locator("ol").innerText()).length>20,
           "ritual button shows generated meaningful steps");
@@ -87,13 +91,14 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]].filt
         const names=[];
         for(let i=0;i<3;i++){
           await kinds.nth(i).click();
-          assert.equal(await kinds.nth(i).getAttribute("aria-pressed"),"true");
+          await expect(kinds.nth(i)).toHaveAttribute("aria-pressed","true",{timeout:15000});
           names.push(await practice.locator("h5").innerText());
         }
         assert.equal(new Set(names).size,3,"ritual, exercise and practice need distinct real content");
         const prior=await practice.locator("ol").innerText();
         await practice.locator("button").last().click();
-        assert.notEqual(await practice.locator("ol").innerText(),prior,"changing variant must update practice");
+        await expect.poll(()=>practice.locator("ol").innerText(),{timeout:15000})
+          .not.toBe(prior);
         await course.locator("[data-guided-add-meditation]").click();
         const audio=page.locator("[data-video-therapy-meditation-audio]");
         await audio.locator("[data-meditation-script]").waitFor({state:"visible",timeout:20000});
@@ -125,7 +130,7 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]].filt
         assert.equal(await audio.getAttribute("open"),null,"skip closes the existing audio editor");
         assert.equal(await skipButton.getAttribute("aria-pressed"),"true");
         await programmeButton.click();
-        assert.equal(await course.locator("[data-guided-session]").count(),8);
+        await expect(course.locator("[data-guided-session]")).toHaveCount(8,{timeout:15000});
         assert.equal(await course.locator("[data-guided-free-video]").count(),1);
         const messengerOnly=course.locator("[data-messenger-only-contact]");
         const order=course.locator("[data-meditation-course-order]");
@@ -270,11 +275,13 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]].filt
           "main mobile tap targets >=44px: "+JSON.stringify(geometry));
         const vector=course.getByRole("button",{name:LABELS[locale].vector,exact:true});
         await vector.click();
+        await expect(course.locator("[data-guided-focus-vector]")).toHaveCount(6,{timeout:15000});
         assert.equal(await course.locator("[data-guided-focus-vector]").count(),6,
           "vector mode must present six direction cards, not two empty fields");
         const vectorChoice=course.locator('[data-guided-focus-vector="energy"]');
         await vectorChoice.click();
-        assert.equal(await vectorChoice.getAttribute("aria-pressed"),"true");
+        await expect(vectorChoice).toHaveAttribute("aria-pressed","true",{timeout:15000});
+        await expect(primary).toBeEnabled({timeout:15000});
         assert.equal(await primary.isEnabled(),true,
           "a selected direction alone is sufficient; the context note is optional");
         const difficulty=course.locator("[data-video-key-difficulty]");
@@ -287,8 +294,10 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]].filt
         assert.ok((await result.innerText()).includes(LABELS[locale].vectorGoal),
           "generated meditation must use the selected goal card");
         await programmeButton.click();
-        assert.equal(await course.locator("[data-guided-session]").count(),8);
+        await expect(course.locator("[data-guided-session]")).toHaveCount(8,{timeout:15000});
         await course.locator('[data-guided-focus-vector="money"]').click();
+        await expect(result).toHaveCount(0,{timeout:15000});
+        await expect(course.locator("[data-guided-session]")).toHaveCount(0,{timeout:15000});
         assert.equal(await result.count(),0,"changing direction invalidates previously generated meditation");
         assert.equal(await course.locator("[data-guided-session]").count(),0,
           "edited goal invalidates the old eight-session outline");
