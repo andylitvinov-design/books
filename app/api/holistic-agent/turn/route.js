@@ -18,6 +18,7 @@ import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.
 import { progressConversationTurn,progressDialogueReply } from "@/lib/holistic-support/dialogue-progression.mjs";
 import { nativeSecretaryTurn } from "@/lib/holistic-support/native-secretary.mjs";
 import { waveNativeTurn,WAVE_NATIVE_ROUTER_VERSION } from "@/lib/holistic-support/wave-native-router.mjs";
+import {planDialogueDirectorTurn,publicDialogueDirectorState} from "@/lib/holistic-support/dialogue-director.mjs";
 import { resolveComplaintTurn } from "@/lib/holistic-support/complaint-mind.mjs";
 import { reviewPracticeBoundary } from "@/lib/holistic-support/practice-boundary.mjs";
 import { consultServiceQuestion, resolveConsultantSuggestion } from "@/lib/assist/consultant-mind.mjs";
@@ -142,7 +143,7 @@ function inputOf(body) {
       (!["a","b","helpful","not_helpful"].includes(body.judgmentChoice) ||
         !body.judgmentContext)))
     throw new AppError("INVALID_AGENT_INPUT",400);
-  if (!Array.isArray(body.history) || body.history.length > 6 ||
+  if (!Array.isArray(body.history) || body.history.length > (body.mode==="rules"?12:6) ||
     body.history.some(row => !row || !["user","assistant"].includes(row.role) ||
       typeof row.text !== "string" || row.text.length > 4000 ||
       Object.keys(row).some(key => !["role","text"].includes(key))))
@@ -194,6 +195,17 @@ export async function POST(request) {
     const recentUnsafe = body.history.some(turn => turn.role==="user" &&
       preflight(turn.text,body.locale).status!=="clear");
     if (recentUnsafe && safety.status==="clear") safety.status="human_review";
+    // Read-only plan after authentication, safety and throttling; never a permission.
+    const dialogueDirector=body.mode==="rules"&&safety.status==="clear"&&!recentUnsafe&&
+      body.judgmentContext==null&&body.judgmentChoice==null&&
+      body.usePrivateProfile!==true&&body.usePrivateHistory!==true&&
+      body.useAgentMemory!==true&&body.preferredFormat==null&&
+      (!body.chosenAxes||body.chosenAxes.length===0)
+      ?planDialogueDirectorTurn({message:body.message,locale:body.locale,
+        history:body.history,
+        roleHint:routeMindRole({message:body.message,locale:body.locale,
+          history:body.history,selectedGoal:body.selectedGoal}).role,
+        psychologistConsent:false,selectedService:false,safety}):null;
     // Verify signed continuations before reading optional state or producing an
     // early answer. Judgment is evaluated once for this exact safe turn.
     const judgmentEligible=body.mode==="rules"&&safety.status==="clear"&&!recentUnsafe;
@@ -226,6 +238,9 @@ export async function POST(request) {
     const wavePlan=planWaveMagicTurn({message:body.message,locale:body.locale,
       history:body.history,selectedGoal:body.selectedGoal,safety,channel:"web"});
     const finish=async (data,{pendingAdviceConfirmation=false}={})=>{
+      // Exposes only phase and explicit-evidence flags, never a client transcript.
+      if(dialogueDirector&&data?.status!=="safety_handoff")
+        data={...data,dialogueDirector:publicDialogueDirectorState(dialogueDirector)};
       // Server already verified catalogue provenance; do not invent options.
       if(Array.isArray(data.suggestions)){
         const two=data.suggestions.slice(0,2);
@@ -391,7 +406,8 @@ export async function POST(request) {
       body.usePrivateProfile!==true && body.usePrivateHistory!==true &&
       body.useAgentMemory!==true && body.preferredFormat==null &&
       (!body.chosenAxes||body.chosenAxes.length===0)
-      ?waveNativeTurn({message:body.message,locale:body.locale,history:body.history}):null;
+      ?waveNativeTurn({message:body.message,locale:body.locale,history:body.history,
+        selectedChoiceId:nativeFrame?.state?.selectedChoiceId??null}):null;
     if(waveReply)return await finish({
       status:"clarify",reply:waveReply.reply,modelUsed:false,
       source:WAVE_NATIVE_ROUTER_VERSION,
@@ -454,15 +470,18 @@ export async function POST(request) {
       ["rules","owned"].includes(body.mode)
       ? consultServiceQuestion({message:body.message,locale:body.locale,history:body.history})
       : null;
+    // Show at most two published relevant options in ordinary chat.
+    const consultantChoices=Array.isArray(consultation?.suggestions)?
+      consultation.suggestions.slice(0,2):[];
     if(consultation)return await finish({
       status:consultation.status,reply:consultation.reply,
       mindRole:["choose","quality","compare"].includes(consultation.intent)?"sales":"consultant",
       modelUsed:false,source:"consultant-rules",
-      memorySaved:false,userAuthorized:true,suggestions:consultation.suggestions,
+      memorySaved:false,userAuthorized:true,suggestions:consultantChoices,
       usedSavedTestEvidence:false,usedSavedVideoHistory:false,
       browserModelAllowed:false,
       decision:{status:consultation.status,message:consultation.reply,
-        question:null,suggestions:consultation.suggestions},
+        question:null,suggestions:consultantChoices},
     });
     if(nativeFrame&&!judgmentPriority&&body.judgmentContext==null&&body.judgmentChoice==null&&
        stateEvent.type==='ask_price'&&(nativeFrame.state.goal||nativeFrame.state.goalStatement)){
