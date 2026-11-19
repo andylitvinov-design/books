@@ -214,3 +214,24 @@ test("free-review closing messenger buttons stay compact without losing either a
   }
   assert.match(entryCss, /@media \(max-width: 580px\)/);
 });
+
+test("free review has six native, photo-led FAQs at the very end in EN, RU and ES", () => {
+  const anchor = landing.indexOf('data-free-review-faq');
+  const enquiry = landing.indexOf('</PersonalExpressEnquiry>');
+  assert.ok(anchor > enquiry, "FAQ comes after the working request form");
+  assert.match(landing, /id="free-review-faq" data-free-review-faq/);
+  assert.match(landing, /<Image src=\{images\.process\} alt=\{t\.processAlt\} fill/);
+  assert.match(landing, /\{t\.faq\.map\(\(\[question, answer\]\) => \(/);
+  assert.match(landing, /<details key=\{question\} className=\{styles\.reviewFaqItem\}>/);
+  assert.match(landing, /<summary><span>\{question\}<\/span>/);
+  assert.match(landing, /href="#request-free-review"/);
+  for (const localeQuestion of [
+    "How do I begin?", "Как начать?", "¿Cómo empiezo?",
+    "What about my privacy?", "Что с конфиденциальностью?", "¿Qué ocurre con mis datos privados?",
+  ]) assert.ok(landing.includes(localeQuestion), localeQuestion);
+  assert.match(css, /\.reviewFaqItem>summary\{/);
+  assert.match(css, /\.reviewFaqItem>summary:focus-visible/);
+  assert.match(css, /\.reviewFaqItem\[open\]/);
+  assert.match(css, /\.reviewFaqPhoto/);
+  assert.match(css, /@media\(max-width:720px\)/);
+});

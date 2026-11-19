@@ -147,8 +147,10 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           const radios = enquiry.locator('input[name="express-review-focus"]');
           assert.equal(await radios.count(), 2, "exactly two request focuses");
           assert.equal(await enquiry.locator('input[name="express-review-focus"]:checked').count(), 1, "a single selected focus");
-          assert.equal(await enquiry.locator('[data-messenger-only-contact]').count(),1,
-            "one customer-initiated messenger handoff; no email-only capture");
+          // The secure messenger handoff is intentionally lazy-mounted only after
+          // this optional inline form is opened; the first screen has no form.
+          assert.equal(await enquiry.locator('[data-messenger-only-contact]').count(), 0,
+            "no unrequested messenger or contact form is mounted on first paint");
 
           const reviews = main.locator("[data-featured-free-review-testimonials]");
           await reviews.waitFor({ state: "visible" });
@@ -204,6 +206,40 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
             await cards.last().screenshot({path: output + "/" + name + "-review-12.png",
               animations:"disabled", timeout:20000});
           }
+          // The FAQ is the final block after the enquiry. All six native
+          // disclosures are available without JS or a second navigation.
+          const faq = main.locator("[data-free-review-faq]");
+          await faq.waitFor({ state: "visible" });
+          const items = faq.locator("details");
+          assert.equal(await items.count(), 6, "all six localized questions appear at the bottom");
+          assert.equal(await faq.locator("img").count(), 1, "the FAQ has its own real photo");
+          assert.ok((await faq.locator("h2").innerText()).trim().length > 12,
+            "localized FAQ heading is visible");
+          const firstQuestion = items.first();
+          assert.equal(await firstQuestion.evaluate(el => el.open), false,
+            "FAQ questions start closed, not an intrusive pop-up");
+          const faqTrigger = firstQuestion.locator("summary");
+          const triggerBox = await faqTrigger.boundingBox();
+          assert.ok(triggerBox && triggerBox.height >= 44 && triggerBox.width <= width,
+            "native FAQ row remains a full-width, tappable phone control");
+          await faqTrigger.click();
+          assert.equal(await firstQuestion.evaluate(el => el.open), true,
+            "tap expands one answer in-place");
+          assert.ok((await firstQuestion.locator("p").innerText()).trim().length > 25,
+            "expanded answer contains meaningful, localized guidance");
+          await faqTrigger.click();
+          assert.equal(await firstQuestion.evaluate(el => el.open), false,
+            "second tap collapses the answer");
+          const faqOrder = await main.evaluate(root => {
+            const enquiry = root.querySelector("[data-personal-express-enquiry]");
+            const faq = root.querySelector("[data-free-review-faq]");
+            return !!(enquiry && faq && (enquiry.compareDocumentPosition(faq) & Node.DOCUMENT_POSITION_FOLLOWING));
+          });
+          assert.ok(faqOrder, "FAQ belongs at the bottom, after the enquiry");
+          assert.ok(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 2,
+            "FAQ remains inside iPhone width");
+          record.faq = 6;
+
           const play = video.locator("button.site-video-play");
           await play.waitFor({ state: "visible" });
           await play.click({ timeout: 15000 });
@@ -253,6 +289,7 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
             "no modal after clicking the hero CTA");
           const widget=enquiry.locator('[data-messenger-only-contact]');
           await widget.waitFor({state:"visible",timeout:15000});
+          assert.equal(await widget.count(), 1, "exactly one opted-in messenger handoff after opening the form");
           const details=widget.locator('details');
           if(await details.count()&&await details.getAttribute('open')===null)
             await details.locator(':scope > summary').click();

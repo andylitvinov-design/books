@@ -101,9 +101,12 @@ situation: {
       cta: "Ask for my free review", secondary: "What happens next",
       photoAlt: "Andrey Litvinov", outcomeAlt: "Lighthouse on the coast", processAlt: "Calm, sunlit room",
       faq: [
-        ["Is it really free?", "Yes. I'll look at one question and respond in writing. A live session is separate, and there's no obligation to book one."],
-        ["Will I need to draw anything?", "Not always. For some situations I may suggest a simple drawing with three parts: ME, MY GOAL and MY PROBLEM. We'll agree how to share it privately."],
-        ["Is this a health assessment?", "No. We can talk about how you've been feeling, but I don't diagnose or treat medical conditions through this review. Please see a qualified healthcare professional for medical concerns."],
+        ["Is it really free?", "Yes. I'll look at one question and send you a personal written reply. A live session is separate, and there's no obligation to book one."],
+        ["How do I begin?", "Choose Telegram or WhatsApp and send me a short message. Opening the chat alone doesn't send your question."],
+        ["What will I get back?", "I'll share what stands out to me and suggest one small place to start. It's a personal reflection, not an automatic test."],
+        ["Will I need to draw anything?", "Sometimes I suggest a simple ME–GOAL–PROBLEM drawing and a few questions. I'll explain the steps if they're useful for your situation."],
+        ["What about my privacy?", "Please don't send medical records or other sensitive documents in a messenger chat. We can arrange a protected questionnaire if needed."],
+        ["Is this a medical diagnosis or a free call?", "Neither. It's a free written review, not diagnosis or treatment. A live consultation is optional and separate."],
       ],
     },
     dao: {
@@ -204,9 +207,12 @@ situation: {
       cta: "Получить бесплатный разбор", secondary: "Как это устроено",
       photoAlt: "Андрей Литвинов", outcomeAlt: "Маяк на побережье", processAlt: "Спокойная комната с утренним светом",
       faq: [
-        ["Это действительно бесплатно?", "Да. Я лично рассмотрю один вопрос и напишу ответ. Живая сессия — отдельная услуга, записываться на неё необязательно."],
-        ["Нужно ли что-то рисовать?", "Не всегда. Иногда я предлагаю простой рисунок «Я — Цель — Проблема». Если он пригодится, объясню, как передать его приватно."],
-        ["Это диагностика здоровья?", "Нет. Можно обсудить своё состояние и переживания, но такой разбор не заменяет консультацию врача и не служит для постановки диагноза или лечения."],
+        ["Это действительно бесплатно?", "Да. Я лично рассмотрю один вопрос и отвечу письменно. Живая сессия — отдельная услуга, записываться на неё необязательно."],
+        ["Как начать?", "Выберите Telegram или WhatsApp и отправьте короткое сообщение. Сам переход по ссылке ещё ничего не отправляет."],
+        ["Что я получу в ответ?", "Поделюсь тем, что заметил в вашей ситуации, и предложу один небольшой шаг. Это личный разбор, а не автоматический тест."],
+        ["Нужно ли рисовать?", "Иногда прошу ответить на несколько вопросов и сделать рисунок «Я — Цель — Проблема». Если он нужен, объясню, как его передать."],
+        ["Что с конфиденциальностью?", "Медицинские документы и другие чувствительные сведения не присылайте в мессенджер. При необходимости договоримся о защищённой анкете."],
+        ["Это медицинская диагностика или бесплатный созвон?", "Нет. Я отвечаю письменно, не ставлю диагнозов и не назначаю лечение. Живая консультация — отдельно, только по желанию."],
       ],
     },
     dao: {
@@ -307,9 +313,12 @@ situation: {
       cta: "Solicitar revisión exprés gratis", secondary: "Cómo funciona",
       photoAlt: "Andrey Litvinov", outcomeAlt: "Faro junto al mar", processAlt: "Espacio tranquilo con luz matinal",
       faq: [
-        ["¿Qué incluye?", "Una primera revisión personal escrita tras acordar el intercambio seguro. Una consulta en directo es opcional y aparte."],
-        ["¿Tengo que dibujar?", "Para una situación puedo proponer YO–META–PROBLEMA. Para bienestar se utilizan otras preguntas reflexivas."],
-        ["¿Es un diagnóstico médico?", "No. Es una reflexión simbólica, no diagnostica ni trata enfermedades. Consulta a profesionales sanitarios."],
+        ["¿De verdad es gratis?", "Sí. Leeré tu pregunta personalmente y te responderé por escrito. Una sesión en directo es aparte y opcional."],
+        ["¿Cómo empiezo?", "Elige Telegram o WhatsApp y envíame un mensaje breve. Abrir el enlace no envía nada por sí solo."],
+        ["¿Qué recibiré?", "Te compartiré lo que observe y te sugeriré un primer paso. Es una reflexión personal, no un test automático."],
+        ["¿Tengo que hacer un dibujo?", "A veces propongo unas preguntas y un dibujo YO–META–PROBLEMA. Si hace falta, te explicaré cómo compartirlo."],
+        ["¿Qué ocurre con mis datos privados?", "No envíes informes médicos ni otros documentos sensibles por chat. Si hace falta, acordaremos un formulario protegido."],
+        ["¿Es un diagnóstico médico o una videollamada gratis?", "No. Es una respuesta escrita, no un diagnóstico ni tratamiento. Una consulta en directo se reserva por separado."],
       ],
     },
     dao: {
@@ -507,7 +516,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
     poster: "/images/holistic-house/video-posters/psychic-alchemy-es-v1.webp",
   } : getServiceVideoMedia("overview", locale);
   // All twelve genuine source recordings appear once, page-language titles first.
-  // Keep original audio and poster identity, without dubbing or autoplay.
+  // Keep original audio and poster identity; playback starts only after a user's tap.
   const originalLanguageReviews = locale === "ru"
     ? [testimonialVideos.ru[4], ...testimonialVideos.ru.slice(0, 4), testimonialVideos.ru[5]]
     : testimonialVideos[locale];
@@ -669,6 +678,36 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
               <FreeSituationReviewForm locale={locale} />
             </details>
           </PersonalExpressEnquiry>
+        ) : null}
+
+
+        {kind === "situation" ? (
+          <section className={styles.reviewFaq} id="free-review-faq" data-free-review-faq
+            aria-labelledby="free-review-faq-heading">
+            <header className={styles.reviewFaqHeader}>
+              <div className={styles.reviewFaqIntro}>
+                <p className={styles.sectionLabel}>{locale === "ru" ? "ВОПРОСЫ И ОТВЕТЫ" : locale === "es" ? "PREGUNTAS FRECUENTES" : "YOUR QUESTIONS"}</p>
+                <h2 id="free-review-faq-heading">{locale === "ru" ? "Остались вопросы?" : locale === "es" ? "¿Tienes alguna duda?" : "A few things you may be wondering"}</h2>
+                <p>{locale === "ru" ? "Коротко о бесплатном разборе — до того, как вы напишете." :
+                  locale === "es" ? "Lo esencial antes de enviarme tu pregunta." :
+                  "A few simple answers before you write to me."}</p>
+              </div>
+              <div className={styles.reviewFaqPhoto}>
+                <Image src={images.process} alt={t.processAlt} fill sizes="(max-width: 720px) 100vw, 260px" />
+              </div>
+            </header>
+            <div className={styles.reviewFaqList}>
+              {t.faq.map(([question, answer]) => (
+                <details key={question} className={styles.reviewFaqItem}>
+                  <summary><span>{question}</span><span className={styles.reviewFaqPlus} aria-hidden="true">+</span></summary>
+                  <p>{answer}</p>
+                </details>
+              ))}
+            </div>
+            <a className={styles.reviewFaqCta} href="#request-free-review">
+              {t.cta}<ArrowRight size={18} aria-hidden="true" />
+            </a>
+          </section>
         ) : null}
 
         {kind !== "situation" ? <section className={[styles.scene, styles.outcomeScene, kind === "dao" ? styles.daoOutcomeScene : ""].filter(Boolean).join(" ")} id="what-you-get" aria-labelledby="free-outcomes-title">
