@@ -176,6 +176,19 @@ try {
   // Require real, visible controls and native browser taps; never use the
   // hidden legacy Continue control or mutate application state from the test.
   row.phase='goal-visible-express-request';
+  const aspectMenu=page.locator('[data-video-prompt-aspect]');
+  await aspectMenu.locator(':scope > summary').click();
+  const landscape=page.locator('[data-video-request-aspect="landscape"]');
+  await landscape.waitFor({state:'visible',timeout:10000});
+  if(engine==='webkit')await landscape.tap();
+  else await landscape.click();
+  await expect(landscape).toHaveAttribute('aria-pressed','true');
+  await aspectMenu.locator(':scope > summary').click();
+  const portrait=page.locator('[data-video-request-aspect="portrait"]');
+  await portrait.waitFor({state:'visible',timeout:10000});
+  if(engine==='webkit')await portrait.tap();
+  else await portrait.click();
+  await expect(portrait).toHaveAttribute('aria-pressed','true');
   const request=page.locator('[data-auto-video-input]');
   await request.waitFor({state:'visible',timeout:40000});
   await request.fill(EXPRESS_GOAL);
@@ -197,6 +210,8 @@ try {
   await page.waitForFunction(() =>
     document.querySelector('[data-mandala-free-video]')
       ?.getAttribute('data-active-workspace')==='ready',undefined,{timeout:15000});
+  await expect(page.locator('[data-video-ready] [data-aspect]'))
+    .toHaveAttribute('data-aspect','portrait');
   // Guests watch the original encoded movie in Ready; protected Save is login-gated.
   // Read the real test-owned Blob without fake sign-in, download or provider calls.
   const captured=await readRealGuestVideo(page,{timeout:80000});

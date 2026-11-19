@@ -87,6 +87,9 @@ test("privacy, exclusions and one-click production contract",()=>{
   "Just make it invokes the existing one-click Express entry point directly");
  assert.match(browser,/data-video-request-design\]\[data-video-request-flow="instant"\]/,
   "real browser acceptance taps the visible Just make it Generate control");
+ assert.match(browser,/data-video-request-aspect="landscape"/);
+ assert.match(browser,/data-video-request-aspect="portrait"/);
+ assert.match(browser,/toHaveAttribute\('data-aspect','portrait'\)/);
  assert.doesNotMatch(browser,/data-video-continue-scenarios/,
   "the export acceptance cannot pass by clicking a hidden legacy Continue control");
  assert.match(browser,/EXPRESS_VIDEO_MUST_BE_30_SECONDS/);
