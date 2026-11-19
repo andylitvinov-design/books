@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {fishConfig,fishLanguages,validateFishRequest,FISH_MODEL,FISH_FREE_END} from '../lib/mandala/voice-studio-fish.mjs';
-import {requestFishWav} from '../lib/mandala/voice-studio-fish-provider.mjs';
+import {fishConfig,fishLanguages,validateFishRequest,FISH_MODEL,FISH_FREE_END,FISH_PUBLIC_VOICES} from '../lib/mandala/voice-studio-fish.mjs';
+import {requestFishWav,approvedFishReference} from '../lib/mandala/voice-studio-fish-provider.mjs';
 const env={
  HH_VOICE_STUDIO_FISH_ENABLED:'true',HH_VOICE_STUDIO_FISH_FREE_TIER_CONFIRMED:'true',
  HH_VOICE_STUDIO_FISH_FREE_DATA_APPROVED:'true',HH_VOICE_STUDIO_FISH_VOICE_RIGHTS_APPROVED:'true',
@@ -76,4 +76,69 @@ test('Existing auth/rate/consent, browser-only audio mix, and video attachment s
  for(const marker of ['data-voice-provider="fish"','fishLanguages','mixVoiceWithNature',
   'onAudioReady','data-voice-studio-generate'])assert.ok(ui.includes(marker),marker);
  assert.doesNotMatch(ui,/HH_COACHING_FISH_API_KEY|api\.fish\.audio\/v1\/tts/u);
+});
+
+test('Fish in Therapy Voice accepts explicitly consented affirmations without a paid fallback',()=>{
+ const phrase={provider:'fish',mode:'affirmations',voiceId:'fish-en',language:'en',text:'I feel calm.',consent:true};
+ assert.deepEqual(validateFishRequest(phrase),{provider:'fish',mode:'affirmations',voiceId:'fish-en',language:'en',text:'I feel calm.'});
+ assert.throws(()=>validateFishRequest({...phrase,consent:false}));
+ assert.throws(()=>validateFishRequest({...phrase,voiceId:'fish-ru'}));
+ assert.throws(()=>validateFishRequest({...phrase,text:'x'.repeat(651)}));
+ const ui=readFileSync(new URL('../components/mandala-affirmation-voice.tsx',import.meta.url),'utf8');
+ for(const q of ['FISH_PUBLIC_VOICES.filter(v=>v.purpose===fishPurpose).map(v=><div','data-video-affirmation-voice-card={v.id}',
+  'data-video-affirmation-voice-preview={v.id}','fishAvailableLanguages.includes(v.language)',
+  'provider:"fish",mode:"sample"','provider:"fish",mode:"affirmations"',
+  'voiceGender==="fish"?f.consent','onAttach({file,speechFile',
+  'reply.headers.get("X-HH-Voice-Provider")==="fish"'])assert.ok(ui.includes(q),q);
+ assert.doesNotMatch(ui,/api\.fish\.audio\/v1\/tts|HH_COACHING_FISH_API_KEY/);
+});
+
+test('approved Fish voices are grouped exactly as owner-selected coaching/meditation',()=>{
+ assert.deepEqual(FISH_PUBLIC_VOICES.filter(v=>v.purpose==='coaching').map(v=>v.id),
+  ['fish-igor','fish-ekaterina','fish-sarah','fish-jordan']);
+ assert.deepEqual(FISH_PUBLIC_VOICES.filter(v=>v.purpose==='meditation').map(v=>v.id),
+  ['fish-selene','fish-calm-meditation']);
+ assert.equal(FISH_PUBLIC_VOICES.filter(v=>v.language==='ru'&&v.purpose==='meditation').length,0);
+ assert.equal(approvedFishReference('fish-igor'), '55ece81d65564775ab448bab3b525599');
+ assert.equal(approvedFishReference('fish-ekaterina'), '6d23d3209d6849e0b24ddae6f734afe9');
+ assert.equal(approvedFishReference('fish-sarah'), '933563129e564b19a115bedd57b7406a');
+ assert.equal(approvedFishReference('fish-jordan'), '79d0bd3e4e5444b18f7b6d89b5927bf1');
+ assert.equal(approvedFishReference('fish-selene'), 'b347db033a6549378b48d00acb0d06cd');
+ // Legacy RU reference pointed to English Adrian: never use it for a Russian voice.
+ assert.notEqual(approvedFishReference('fish-ru'), env.HH_COACHING_FISH_VOICE_RU_ID);
+ assert.equal(approvedFishReference('fish-ru'),approvedFishReference('fish-igor'));
+ assert.equal(approvedFishReference('fish-calm-meditation'),null,
+  'third-party voice needs a verified provider commercial license');
+ assert.equal(approvedFishReference('fish-calm-meditation',{
+  HH_VOICE_STUDIO_FISH_CALM_COMMERCIAL_LICENSE_APPROVED:'true'}),'14c13e72d4644b0dbd2f147df20f6d80');
+});
+test('real Fish voice select binds the exact public reference ID, free-only and without retry',async()=>{
+ const input=validateFishRequest({provider:'fish',mode:'sample',voiceId:'fish-igor',language:'ru'});
+ const vendor={...fishConfig(env,'ru',date),referenceId:approvedFishReference(input.voiceId)};
+ let called=0;
+ const data=await requestFishWav({vendor,input,fetchImpl:async(url,options)=>{
+  called++;
+  assert.equal(options.headers.model,'s2.1-pro-free');
+  assert.equal(JSON.parse(options.body).reference_id,'55ece81d65564775ab448bab3b525599');
+  return new Response(wav(),{headers:{'Content-Type':'audio/wav'}});
+ }});
+ assert.equal(called,1);
+ assert.equal(data.toString('ascii',0,4),'RIFF');
+ await assert.rejects(requestFishWav({vendor:{...vendor,referenceId:env.HH_COACHING_FISH_VOICE_RU_ID},
+   input,fetchImpl:async()=>{throw Error('SHOULD_NOT_CONTACT_VENDOR');}}),/FISH_INVALID_REQUEST/);
+ const calm=validateFishRequest({provider:'fish',mode:'sample',voiceId:'fish-calm-meditation',language:'en'});
+ await assert.rejects(requestFishWav({vendor:{...vendor,referenceId:'14c13e72d4644b0dbd2f147df20f6d80'},
+   input:calm,fetchImpl:async()=>{throw Error('NO_LICENSE');}}),/FISH_INVALID_REQUEST/);
+});
+test('purpose filter lives in the original Therapy phrase screen; no new pages',()=>{
+ const source=readFileSync(new URL('../components/mandala-affirmation-voice.tsx',import.meta.url),'utf8');
+ const css=readFileSync(new URL('../components/mandala-affirmation-voice.module.css',import.meta.url),'utf8');
+ const route=readFileSync(new URL('../app/api/holistic-support/voice/route.js',import.meta.url),'utf8');
+ for(const marker of ['data-fish-voice-purpose','data-fish-purpose={purpose}',
+  'fishPurpose','Fish (6)','FISH_PUBLIC_VOICES.filter(v=>v.purpose===fishPurpose)',
+  'Boolean(v.requiresProviderLicense)','provider:"fish",mode:"sample"',
+  'provider:"fish",mode:"affirmations"'])assert.ok(source.includes(marker),marker);
+ assert.ok(css.includes('scroll-snap-type:x proximity'));
+ assert.ok(route.includes('approvedFishReference(validated.voiceId,process.env)'));
+ assert.ok(route.includes('FISH_VOICE_LICENSE_REQUIRED'));
 });

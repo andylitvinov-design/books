@@ -22,7 +22,7 @@ test("audio on Goal reuses consented STT, original speech, verified shot matcher
   "data-video-recipient-audio-transcript",
   "data-video-recipient-audio-transcribe","data-video-recipient-audio-plan","data-video-recipient-audio-concept",
   "data-video-recipient-audio-next"])assert.ok(s.includes(data),data);
- assert.match(s,/requestConsentedTimedTranscript\(entry.file,locale,true/);
+ assert.match(s,/requestConsentedTimedTranscript\(\s*entry.file,spokenAudioLanguage,true/);
  assert.match(s,/planAudioVisualStoryboard\(\{/);
  assert.match(s,/audioStoryboardReady=\{audioPlanApplied&&Boolean\(voiceVisualPlan\?\.canExport\)&&audioRights\}/);
  assert.match(s,/setAttachedAudio\(\{kind:"file",file:entry.file,id:entry.url,nonLoop:true\}\)/);
