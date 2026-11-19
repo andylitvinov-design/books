@@ -55,7 +55,12 @@ test('signed webhook, STOP gate, CRM commit and subsequent AI reply remain in or
     capture.indexOf('export async function captureTelegramBusinessLead'))
   assert.doesNotMatch(botCapture,/insert into app\.crm_contacts|insert into app\.crm_opportunities/)
   assert.doesNotMatch(botCapture,/body:event\.body|body:event\.rawText/)
-  assert.match(capture,/app\.crm_opportunities/)
+  assert.match(capture,/crm_tg_business_lead_capture_v1/)
+  const scoped=capture.slice(capture.indexOf('async function ensureUnqualifiedLead'),
+    capture.indexOf('function localeForBusiness'))
+  assert.doesNotMatch(scoped,/from app\.crm_contacts|insert into app\.crm_contacts|app\.crm_opportunities/)
+  assert.match(scoped,/replyConsent:null,marketingConsent:false/)
+  assert.match(scoped,/TELEGRAM_CRM_CONTACT_UNCONFIRMED/)
   assert.doesNotMatch(capture,/marketing_opt_in_at|crm_consent_ledger|sendOneMessengerMessage/)
   assert.match(capture,/replyConsent:null,marketingConsent:false/)
 })

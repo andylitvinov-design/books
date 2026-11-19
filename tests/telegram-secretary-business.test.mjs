@@ -268,7 +268,10 @@ test('free-review website always opens the verified HUMAN Telegram account, rega
  assert.match(source,/telegramExpressReviewHandoff/);
  assert.match(view,/data-telegram-route="human-business"/);
  assert.doesNotMatch(view,/\/api\/public\/telegram-diagnostic|setTelegramUrl|telegramUnavailable|Telegram is not available right now|hhreview_/);
- assert.match(view,/Opening a link doesn't send a request or register it in CRM/);
- assert.match(view,/Переход по ссылке не отправляет сообщение и не создаёт заявку в CRM/);
+ assert.match(view,/The link opens a chat, but doesn't send a message/);
+ assert.match(view,/Ссылка открывает чат, но ничего не отправляет/);
+ assert.match(view,/El enlace abre el chat, pero no envía nada/);
+ assert.match(view,/<small>\{t\.note\}<\/small>/);
+ assert.match(view,/Tap Send there/);
  assert.doesNotMatch(view,/HH_CRM_MSG_TELEGRAM_TOKEN|https?:\/\/openrouter\.ai/i);
 });
