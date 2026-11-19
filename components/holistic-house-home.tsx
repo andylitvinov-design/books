@@ -65,7 +65,7 @@ export function HolisticHouseHome({ locale = "en" }: HolisticHouseHomeProps) {
           <p className="service-home-kicker">{text.aboutKicker}</p>
           <h2 id="service-home-about-title">Andrey Litvinov</h2>
           <p>{text.aboutIntro}</p>
-          <AcquisitionEventLink href={entry.practitioner.href} event="practitioner_view" prefetch={false}>
+          <AcquisitionEventLink href={entry.practitioner.href} event="practitioner_view" nativeNavigation prefetch={false}>
             {text.aboutAction}<span aria-hidden="true">→</span>
           </AcquisitionEventLink>
         </div>

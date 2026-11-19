@@ -3,6 +3,24 @@ import type { NextRequest } from 'next/server'
 import { canonicalRedirectTarget, privateMigrationBridge } from './lib/canonical-redirect'
 import { refreshAdminAuth } from './lib/app/admin-auth-refresh'
 import { personalVideoStorageCsp } from './lib/app/personal-video-storage-csp.mjs'
+import { instantHomeLocale } from './lib/instant-home-policy.mjs'
+// Exact standalone public HTML documents intentionally use only same-origin JS.
+// Next's nonce/strict-dynamic React CSP is not suitable for these static files.
+// Keep private/app/API CSP unchanged; never apply this policy to user content.
+const INSTANT_PUBLIC_HOME_CSP = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self'",
+  "img-src 'self' data:",
+  "connect-src 'self'",
+  "font-src 'self'",
+  "media-src 'self'",
+  "frame-src 'none'",
+  "object-src 'none'",
+  "base-uri 'none'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join('; ')
 function privatePath(pathname: string) {
   const decoded = (() => { try { return decodeURIComponent(pathname) } catch { return pathname } })().replace(/\/+/g, '/')
   return /^\/(en|ru|es)\/client(?:\/|$)/.test(decoded)
@@ -20,6 +38,52 @@ function privatePath(pathname: string) {
 export async function middleware(request: NextRequest) {
   const redirectTarget = canonicalRedirectTarget(request.url, request.method)
   if (redirectTarget) return NextResponse.redirect(redirectTarget, 308)
+  // Rewritten public HTML can traverse middleware a second time via the
+  // /instant-home/... destination. It must not inherit the React-only nonce
+  // + strict-dynamic policy, which blocks its trusted external fast.js.
+  // Restrict this exception to exactly two published static HTML documents.
+  if (/^\/instant-home\/(?:en|ru)\.html$/.test(request.nextUrl.pathname)
+      && ['GET', 'HEAD'].includes(request.method)) {
+    const staticResponse = NextResponse.next()
+    staticResponse.headers.set('Content-Security-Policy', INSTANT_PUBLIC_HOME_CSP)
+    staticResponse.headers.set('Cache-Control', 'public, max-age=0, s-maxage=3600, stale-while-revalidate=120')
+    staticResponse.headers.set('X-Content-Type-Options', 'nosniff')
+    staticResponse.headers.set('X-Frame-Options', 'DENY')
+    // The rewritten origin / and /ru are canonical public pages:
+    // do not send noindex from this internal HTML destination.
+    staticResponse.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+    staticResponse.headers.set('X-HH-Public-Static-Csp', '1')
+    return staticResponse
+  }
+  // The first interactive Home must not wait for Next.js server rendering,
+  // global CSS or hydration. Only a full GET/HEAD document gets the static,
+  // CDN-cacheable, fully functional public EN/RU entry. Next RSC, previews,
+  // admin, private and every other route continue through the original flow.
+  const fastLocale = instantHomeLocale({
+    pathname: request.nextUrl.pathname,
+    method: request.method,
+    headers: request.headers,
+    searchParams: request.nextUrl.searchParams,
+  })
+  if (fastLocale) {
+    const requested = request.nextUrl.searchParams.get('lang')
+    if (request.nextUrl.pathname === '/' && (requested === 'ru' || requested === 'es'))
+      return NextResponse.redirect(new URL('/' + requested, request.url), 307)
+    // Keep anonymous static CSP consistent between the document rewrite
+    // request and response, so first-party fast.js works in production.
+    const fastCsp = INSTANT_PUBLIC_HOME_CSP
+    const fastRequestHeaders = new Headers(request.headers)
+    fastRequestHeaders.set('Content-Security-Policy', fastCsp)
+    const response = NextResponse.rewrite(new URL('/instant-home/' + fastLocale + '.html', request.url), {
+      request: { headers: fastRequestHeaders },
+    })
+    response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=3600, stale-while-revalidate=120')
+    response.headers.set('Content-Security-Policy', fastCsp)
+    response.headers.set('X-Content-Type-Options', 'nosniff')
+    response.headers.set('X-Frame-Options', 'DENY')
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+    return response
+  }
   // Plain My Practice entry is the new, public practitioner dashboard. Do this
   // before streaming the old Account layout: an in-page redirect can return
   // HTTP 200 + delayed meta refresh and reveal the old personal login on iOS.

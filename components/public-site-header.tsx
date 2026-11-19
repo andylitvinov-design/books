@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SiteNavigation } from "@/components/site-navigation";
+import { SiteNavigationCspSafe } from "@/components/site-navigation-csp-safe";
 import type { PublicLocale } from "@/lib/public-locales";
 const copy = {
   ru: { home: "Holistic House — главная", subtitle: "восстановление · практика · поддержка" },
@@ -9,5 +9,5 @@ const copy = {
 // showAssessmentStrip remains an accepted legacy prop, but the obsolete promo banner is retired sitewide.
 export function PublicSiteHeader({ locale }: { locale: PublicLocale; showAssessmentStrip?: boolean }) {
   const text = copy[locale];
-  return <header className="house-header house-header--services section-site-header"><Link className="house-wordmark" href={locale === "es" ? "/es" : "/"} aria-label={text.home}>Holistic House<span>{text.subtitle}</span></Link><SiteNavigation locale={locale} /></header>;
+  return <header className="house-header house-header--services section-site-header"><Link className="house-wordmark" href={locale === "es" ? "/es" : "/"} aria-label={text.home}>Holistic House<span>{text.subtitle}</span></Link><SiteNavigationCspSafe locale={locale} /></header>;
 }

@@ -1,0 +1,18 @@
+.root{display:grid;gap:13px;box-sizing:border-box;width:100%;min-width:0;padding:10px 8px 18px;overflow-wrap:anywhere}
+.assistant{min-width:0;padding:17px 15px;border-radius:19px;background:#f5faf5;border:1px solid #d9e9db;color:#184536;box-shadow:0 3px 12px #244b3512}
+.eyebrow{display:flex;align-items:center;gap:7px;font:750 11px/1.4 system-ui,sans-serif;color:#16765e;letter-spacing:.02em}
+.assistant h2{margin:8px 0 7px;color:#164939;font:750 clamp(21px,5.2vw,28px)/1.1 Georgia,serif}
+.assistant p{margin:0 0 12px;font:500 14px/1.45 system-ui,sans-serif}
+.assistant h3,.offers h3{margin:0 0 9px;color:#1b4d3a;font:750 14px/1.3 system-ui,sans-serif}
+.questions{display:grid;gap:7px}
+.questions button{display:flex;align-items:center;gap:8px;width:100%;min-width:0;min-height:45px;padding:9px 10px;background:#fff;border:1px solid #d1e5d6;border-radius:12px;color:#18513e;text-align:left;font:650 13px/1.35 system-ui,sans-serif;cursor:pointer}
+.questions button span{flex:1;min-width:0}.questions button svg{flex:none}
+.questions button:disabled{opacity:.6;cursor:wait}
+.offers{min-width:0;padding:0 4px}
+.offerGrid{display:grid;gap:7px}
+.offer{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;min-height:58px;padding:10px 12px;border:1px solid #e6decf;border-radius:13px;background:#fffdf6;color:#174b38;text-decoration:none}
+.offer span{min-width:0;display:grid;gap:3px}.offer strong{font:750 13px/1.2 system-ui,sans-serif}.offer small{font:500 11px/1.25 system-ui,sans-serif;color:#687b70}
+.offer svg{flex:none}
+.questions button:focus-visible,.offer:focus-visible{outline:3px solid #168f71;outline-offset:2px}
+@media(max-width:360px){.root{padding:6px 4px 14px}.assistant{padding:13px 11px}.assistant h2{font-size:21px}.assistant p{font-size:13px}}
+@media(min-width:760px){.root{max-width:760px;margin:0 auto}.questions{grid-template-columns:repeat(3,minmax(0,1fr))}.questions button{min-height:75px}.offerGrid{grid-template-columns:repeat(3,minmax(0,1fr))}.offer{align-items:flex-start;min-height:95px}}
