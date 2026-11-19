@@ -105,6 +105,9 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
           </ServicesCompactPanel>
           <ServicesCompactPanel id="homeopathy"><ServicesHomeopathyLinks locale={locale} /></ServicesCompactPanel>
           <ServicesCompactPanel id="services"><ServicesStudioOffers locale={locale} splitExtras /></ServicesCompactPanel>
+          <ServicesCompactPanel id="business">
+            <p>{locale==="ru"?"Бизнес-разбор, стратегия и вопросы команды — выберите подходящий формат.":locale==="es"?"Revisión empresarial, estrategia y trabajo en equipo: elige el formato adecuado.":"Business review, strategy and team support — choose the right format."}</p>
+          </ServicesCompactPanel>
           <ServicesCompactPanel id="reiki"><AssistReikiSession locale={locale} /></ServicesCompactPanel>
           <ServicesCompactPanel id="courses"><ServicesCoursesShelf locale={locale} /></ServicesCompactPanel>
           <ServicesCompactPanel id="video"><ServicesVideoGenerationCard locale={locale} /></ServicesCompactPanel>

@@ -118,6 +118,7 @@ export function SiteVideoManager({ initialRecords, initialLocale, storageReady, 
   // Unsaved edits survive switching between placements and languages in this editor.
   const [edits, setEdits] = useState<Record<string, FormValues>>({});
   const [pending, setPending] = useState(false);
+  const [interactive, setInteractive] = useState(false);
   const [notice, setNotice] = useState<{ key: string; kind: "draft" | "publish" | "hide" | "refreshed" | "error"; error?: string } | null>(null);
   const text = copy[uiLocale];
   const slot = SITE_VIDEO_SLOTS.find(item => item.id === slotId)!;
@@ -144,6 +145,7 @@ export function SiteVideoManager({ initialRecords, initialLocale, storageReady, 
     // readUiLocale comes from JS and TypeScript cannot infer its union type.
     // Validate the value before committing it to the typed editor state.
     setUiLocale(readUiLocale(document.cookie) === "ru" ? "ru" : "en");
+    setInteractive(true);
     return () => window.removeEventListener("holistic-house-ui-locale", onLocale);
   }, []);
 
@@ -209,13 +211,14 @@ export function SiteVideoManager({ initialRecords, initialLocale, storageReady, 
     : visibleNotice?.kind === "refreshed" ? text.refreshed : "";
 
   return (
-    <section className="site-video-manager" lang={uiLocale} aria-label={text.overview}>
+    <section className="site-video-manager" lang={uiLocale} aria-label={text.overview}
+      data-video-manager-interactive={interactive ? "true" : "false"}>
       {!storageReady && <p className="site-video-admin-notice site-video-admin-notice--error" role="alert">{text.unavailable}</p>}
       <div className="site-video-manager-toolbar">
         <div>
           <span className="site-video-field-label" id="video-language-label"><Globe2 size={16} aria-hidden="true" />{text.language}</span>
           <div className="site-video-language-picker" role="group" aria-labelledby="video-language-label">
-            {(["en", "ru", "es"] as const).map(language => <button key={language} type="button" aria-pressed={locale === language} disabled={pending} onClick={() => { setLocale(language); if (language === "es") { setSlotId("about-intro"); setEntityId(""); } setNotice(null); }}>{text[language]}<span>{language.toUpperCase()}</span></button>)}
+            {(["en", "ru", "es"] as const).map(language => <button key={language} type="button" aria-pressed={locale === language} disabled={pending || !interactive} onClick={() => { setLocale(language); if (language === "es") { setSlotId("about-intro"); setEntityId(""); } setNotice(null); }}>{text[language]}<span>{language.toUpperCase()}</span></button>)}
           </div>
         </div>
         <p className="site-video-readiness"><strong>{publishedCount}</strong> {text.available}<span> · {draftCount} {text.draftCount}</span>{missingYouTubeCount > 0 && <span data-youtube-missing-count> · {missingYouTubeCount} {text.youtubePending}</span>}</p>

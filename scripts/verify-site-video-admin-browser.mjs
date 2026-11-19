@@ -211,13 +211,12 @@ try{
       await target.goto(`${origin}/admin/videos`)
       // Prove that the editor has hydrated before exercising the separately
       // hydrated header's EN/RU event; an SSR-only click is not an E2E action.
-      const videoLanguage = target.locator('.site-video-language-picker button')
-      // One real click must work after the video editor's React hydration.
-      await expect.poll(
-        () => videoLanguage.nth(1).evaluate(element =>
-          Object.keys(element).some(key => key.startsWith('__reactFiber$'))),
-        { timeout: 30000, message: 'Video language selector must hydrate before first click' },
-      ).toBe(true)
+      const manager = target.locator('.site-video-manager')
+      // The editor deliberately disables its language controls until its own
+      // hydration effect is mounted. Assert this real user-visible readiness.
+      await expect(manager).toHaveAttribute('data-video-manager-interactive', 'true', { timeout: 30000 })
+      const videoLanguage = manager.locator('.site-video-language-picker button')
+      await expect(videoLanguage.nth(1)).toBeEnabled()
       await videoLanguage.nth(1).click()
       await expect(videoLanguage.nth(1)).toHaveAttribute('aria-pressed', 'true')
       await videoLanguage.nth(0).click()

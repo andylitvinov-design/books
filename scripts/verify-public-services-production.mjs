@@ -184,7 +184,9 @@ try {
     await quiz.locator("[data-services-business-link]").click();
     assert.equal(new URL(page.url()).pathname, "/" + locale + "/services", "Business category must stay on Services");
     assert.equal(new URL(page.url()).hash, "#service-group-business");
-    await visible(page.locator("#service-group-business"));
+    const businessPanel = page.locator("#service-group-business");
+    await visible(businessPanel);
+    await expect(businessPanel.locator(':scope > [data-services-three-visible] > [data-service-variant]')).toHaveCount(3);
     // Business has its own topic, need and start-format branching.
     await quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice="business_support"]').click();
     await expect(quiz).toHaveAttribute("data-services-quiz-step", "2");
