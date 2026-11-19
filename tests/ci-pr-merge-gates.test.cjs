@@ -81,7 +81,12 @@ test('Core event refreshes a moving protected classifier and tolerates unknown m
    mergeable:null,mergeable_state:'unknown'};
  const github={rest:{
    pulls:{get:async()=>({data:pr})},
-   actions:{getWorkflowRun:async()=>({data:{id:99}}),
+   actions:{getWorkflowRun:async()=>({data:{
+     id:99,run_attempt:1,status:'completed',conclusion:'success',
+     name:'HH PR core release gate',event:'pull_request',
+     path:'.github/workflows/hh-pr-core-release.yml',head_branch:'feature',
+     repository:{full_name:'o/r'},head_repository:{full_name:'o/r'}
+   }}),
      listJobsForWorkflowRun:async()=>({data:{total_count:2,jobs:[
        {name:'hh-merge-check',status:'completed',conclusion:'success'},
        {name:'core-lint-types-build',status:'completed',conclusion:'success'}]}})},
@@ -112,7 +117,12 @@ test('Core event refreshes a moving protected classifier and tolerates unknown m
  };
  await vm.runInNewContext('(async()=>{\n'+script+'\n})()',{
    context:{repo:{owner:'o',repo:'r'}},github,
-   process:{env:{GITHUB_WORKSPACE:'/work'}},require:fakeRequire,
+   process:{env:{GITHUB_WORKSPACE:'/work',HH_CORE_EVIDENCE:JSON.stringify({
+     run_id:99,run_attempt:1,jobs:[
+       {id:1,run_id:99,name:'core-lint-types-build',status:'completed',conclusion:'success',steps:[]},
+       {id:2,run_id:99,name:'hh-merge-check',status:'completed',conclusion:'success',steps:[]}
+     ]
+   })}},require:fakeRequire,
    core:{setOutput:(key,value)=>outputs[key]=value,info:x=>messages.push(x),warning:x=>messages.push(x)}
  });
  assert.equal(outputs.eligible,'true','two safe production advances cannot drop green Core');
@@ -148,15 +158,15 @@ test('unassociated successful Core resolves one PR only when exact trusted run H
   const pr={number:4303,state:'open',draft:false,base:{ref:'codex/public-book-library',sha:base},
    head:{ref:'codex/reasoning-mind-20261110',sha:HEAD,repo:{full_name:REPO}},mergeable:true,mergeable_state:'clean'};
   const run={id:42922287638,event:'pull_request',name,path,head_branch:pr.head.ref,head_sha:sha,
-   pull_requests:[],status:'completed',conclusion:'success',created_at:'2026-11-10T23:18:42Z',
+   pull_requests:[],status:'completed',conclusion:'success',run_attempt:1,created_at:'2026-11-10T23:18:42Z',
    repository:{full_name:REPO},head_repository:{full_name:repo}};
   const outputs={},logs=[];
   const github={rest:{
    pulls:{list:async()=>({data:branchCount===1?[pr]:[pr,{...pr,number:4304}]}),get:async()=>({data:pr})},
    actions:{listWorkflowRuns:async()=>({data:{workflow_runs:[run],total_count:1}}),
     listJobsForWorkflowRun:async()=>({data:{total_count:2,jobs:[
-     {name:'hh-merge-check',status:'completed',conclusion:'success'},
-     {name:'hh-specialist',status:'completed',conclusion:'success'}]}})},
+     {id:1,run_id:42922287638,name:'hh-merge-check',status:'completed',conclusion:'success'},
+     {id:2,run_id:42922287638,name:'core-lint-types-build',status:'completed',conclusion:'success',steps:[]}]}})},
    repos:{getBranch:async()=>({data:{protected:true,
     protection:{required_status_checks:{contexts:['hh-merge-check']}}}})}
   }};
