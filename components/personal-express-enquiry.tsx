@@ -1,18 +1,29 @@
 "use client";
 
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { CheckCircle2, ChevronDown, HeartPulse, MessageCircle, ShieldCheck, X } from "lucide-react";
 
-import { ContactChannelChooser } from "@/components/contact-channel-chooser";
+
 import {websiteMessengerOnlyUi} from "@/lib/crm/website-messenger-only.mjs";
 import { TelegramDiagnosticEntry } from "@/components/telegram-diagnostic-entry";
-import { FreeExpressWizard } from "@/components/free-express-wizard";
+
 import {EXPRESS_GOOGLE_CLAIM_PENDING_KEY,validExpressGoogleClaimIntent} from "@/lib/practitioners/free-express-google-claim.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import styles from "./personal-express-enquiry.module.css";
+
+// Heavy form modules are deferred until the visitor opens the request.
+const ContactChannelChooser = dynamic(
+  () => import("@/components/contact-channel-chooser").then((module) => module.ContactChannelChooser),
+  { ssr: false },
+);
+const FreeExpressWizard = dynamic(
+  () => import("@/components/free-express-wizard").then((module) => module.FreeExpressWizard),
+  { ssr: false },
+);
 
 type Focus = "situation" | "energy";
 const copy = {
@@ -89,6 +100,11 @@ export function PersonalExpressEnquiry({
   const expandedRef = useRef(false);
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => { setHydrated(true); }, []);
+  // When the visitor folds the panel, retain any entered answers.
+  const [disclosureOpenedOnce, setDisclosureOpenedOnce] = useState(false);
+  useEffect(() => {
+    if (expanded) setDisclosureOpenedOnce(true);
+  }, [expanded]);
   const revealRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const openDisclosure = useCallback(() => {
@@ -221,12 +237,12 @@ export function PersonalExpressEnquiry({
               : locale === "es" ? "Primero registramos tu solicitud; después puedes añadir tus respuestas e imágenes de forma privada."
               : "First register your request, then optionally add answers and private images.")
             : t.step}</p>
-          {publicWizard ? <FreeExpressWizard locale={locale} focus={focus} serviceTitle={t.service}
+          {disclosureOpenedOnce ? (publicWizard ? <FreeExpressWizard locale={locale} focus={focus} serviceTitle={t.service}
             onSaved={() => setFocusLocked(true)} onRestoredFocus={setFocus} />
           : <ContactChannelChooser key={focus} locale={locale}
             whatsappUrl={whatsappUrl} compactPhone stayAfterSave resetKey={focus}
             allowSecureExpressClaim publicServiceTitle={t.service}
-            publicTopic={"Express review focus: " + t.areas[focus].tag} />}
+            publicTopic={"Express review focus: " + t.areas[focus].tag} />) : null}
           {!publicWizard && <>
             <p className={styles.privacy}><ShieldCheck size={16} aria-hidden="true" />{t.privacy}</p>
             <p className={styles.note}>{t.note}</p>
