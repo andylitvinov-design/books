@@ -41,25 +41,33 @@ test('all published options, in RU/EN/ES, receive exactly their selected title i
   assert.ok(greeting.intro.length<260,deep);
  }
 });
-test('warm service dialogue takes at most two substantive replies and preserves the visitor words',()=>{
+test('selected service dialogue asks only booking logistics; price is a factual interruption',()=>{
  for(const locale of ['ru','en','es']){
-  const p=aliGuidedIntakeTurn({locale,serviceRequest:'coaching',
-    message:'I want clarity about my work'});
-  assert.equal(p.stage,'challenge');
-  assert.equal(countQuestions(p.reply),1);
-  assert.ok(p.reply.length<145);
+  const first=aliGuidedIntakeTurn({locale,serviceRequest:'coaching',message:'yes'});
+  assert.equal(first.stage,'challenge');
+  assert.equal(countQuestions(first.reply),1);
+  assert.ok(first.reply.length<145);
+  const when=aliGuidedIntakeTurn({locale,serviceRequest:'coaching',
+    stage:first.stage,slots:first.slots,message:'tomorrow afternoon'});
+  assert.equal(when.stage,'situation');
+  assert.equal(countQuestions(when.reply),1);
   const done=aliGuidedIntakeTurn({locale,serviceRequest:'coaching',
-    stage:p.stage,slots:p.slots,message:'I keep changing directions'});
+    stage:when.stage,slots:when.slots,message:'online'});
   assert.equal(done.stage,'ready');
   assert.equal(countQuestions(done.reply),0);
-  assert.ok(done.reply.length<240);
-  const summary=aliGuidedIntakeSummary({locale,slots:done.slots});
-  assert.ok(summary.includes('I want clarity about my work'));
-  assert.ok(summary.includes('I keep changing directions'));
+  const summary=aliGuidedIntakeSummary({locale,serviceRequest:'coaching',slots:done.slots});
+  assert.match(summary,/tomorrow afternoon/);
+  assert.match(summary,/online/);
+  assert.doesNotMatch(summary,/problem|difficulty|psychological state|diagnosis/i);
   const faq=aliGuidedIntakeTurn({locale,serviceRequest:'coaching',stage:'challenge',
-    slots:p.slots,message:locale==='ru'?'Сколько стоит?':locale==='es'?'¿Cuánto cuesta?':'How much does it cost?'});
+    slots:first.slots,message:locale==='ru'?'Сколько стоит?':locale==='es'?'¿Cuánto cuesta?':'How much does it cost?'});
   assert.equal(faq.stage,'challenge');
   assert.equal(countQuestions(faq.reply),0);
+  const personal=aliGuidedIntakeTurn({locale,serviceRequest:'coaching',
+    stage:'challenge',slots:first.slots,message:'I feel anxiety about my relationship'});
+  assert.equal(personal.stage,'challenge');
+  assert.equal(personal.slots.challenge,undefined);
+  assert.doesNotMatch(personal.reply,/relationship situation|what feels most|qué situación|какую ситуацию/i);
  }
  assert.equal(aliIntakeStageFromTurns([{role:'user',text:'I want clarity'},
   {role:'user',text:'I feel stuck'}],true),'ready');

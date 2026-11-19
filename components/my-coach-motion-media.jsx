@@ -4,8 +4,8 @@ import {PUBLIC_COACH_PERSONA_IDS} from '@/lib/coaching/persona-registry.mjs'
 import {coachVisualClip,normalizeCoachVisualScene} from '@/lib/coaching/coach-visual-cues.mjs'
 import styles from './my-coach-motion-media.module.css'
 
-// Merlin remains static. Harry uses a single verified, silent six-second MP4 loop;
-// do not request scene-specific Harry MP4 clips that do not exist.
+// Merlin remains static. Harry has independent silent calm and listening video loops;
+// speaking never claims lip synchronization.
 const VIDEO_PERSONAS=new Set(['mira','max','sofia','alex','harry'])
 const PHASES=new Set(['greeting','idle','listening','speaking'])
 const MEDIA_ROOT='/images/holistic-house/my-coach-motion/'
@@ -25,7 +25,8 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   const visualScene=state==='speaking'?normalizeCoachVisualScene(scene,'explain'):fallbackScene
   const clip=coachVisualClip(state,visualScene)
   const poster=supported?MEDIA_ROOT+personaId+'-still.webp':null
-  const src=supported&&hasVideo?(personaId==='harry'?MEDIA_ROOT+'harry-calm.mp4':MEDIA_ROOT+personaId+'-'+clip+'.mp4'):null
+  const harryClip=state==='listening'?'attentive':'calm'
+  const src=supported&&hasVideo?(personaId==='harry'?MEDIA_ROOT+'harry-'+harryClip+'.mp4':MEDIA_ROOT+personaId+'-'+clip+'.mp4'):null
 
   useEffect(()=>{
     const preference=window.matchMedia?.('(prefers-reduced-motion: reduce)')
@@ -69,11 +70,11 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   if(!supported)return null
   return <span ref={containerRef} className={[styles.media,className].filter(Boolean).join(' ')}
     data-coach-motion-media={personaId} data-coach-motion-context={context}
-    data-coach-motion-state={state} data-coach-motion-clip={hasVideo?(personaId==='harry'?'calm':clip):'still'}
+    data-coach-motion-state={state} data-coach-motion-clip={hasVideo?(personaId==='harry'?harryClip:clip):'still'}
     data-coach-motion-scene={visualScene} data-coach-motion-ready={videoReady?'true':'false'}
     aria-hidden="true">
     <img src={poster} className={styles.poster} alt="" draggable={false} loading="lazy" decoding="async" />
-    {shouldPlay&&<video ref={videoRef} className={styles.video}
+    {shouldPlay&&<video key={src} ref={videoRef} className={styles.video}
       src={src} poster={poster} muted loop playsInline autoPlay preload="metadata"
       controls={false} disablePictureInPicture
       onPlaying={()=>setVideoReady(true)} onError={()=>setVideoReady(false)} />}
