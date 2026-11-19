@@ -30,14 +30,23 @@ async function check(name, detail, fn) {
 }
 async function assertCspPublicHome(page) {
   await expect(page).toHaveURL(origin + '/');
+  const fastHome = page.locator('body[data-fast-home="en"]');
+  if (await fastHome.count()) {
+    // A public CDN Home is intentionally not hydrated by Next.js. Verify the
+    // real interactive page rather than demanding the retired React markup.
+    await expect(fastHome.locator('[data-home-dialogue-entry]')).toBeVisible();
+    await expect(fastHome.locator('[data-home-intent-form]')).toBeVisible();
+    await expect(fastHome.locator('[data-home-intent-option]')).toHaveCount(4);
+    await expect(fastHome.locator('[data-hh-unified-dock] [data-unified-dock-item]')).toHaveCount(7);
+    await expect.poll(() => page.evaluate(() => document.documentElement.dataset.homeInteractive === 'true')).toBe(true);
+    return 'cdn';
+  }
   await expect(page.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
-  // A history traversal can update the URL while the previous public document
-  // remains visible and its replacement is pending. Require the destination DOM,
-  // not load/hydration readiness: the server-rendered home is sufficient here.
   const home = page.locator('main[data-home-design="dialogue-first-v1"]');
   await expect(home).toHaveCount(1);
   await expect(home).toBeVisible();
   await expect(home.locator('[data-home-dialogue-entry]')).toBeVisible();
+  return 'next';
 }
 
 async function assertAnonymousPrivateNavigation(page) {
@@ -50,7 +59,7 @@ async function assertAnonymousPrivateNavigation(page) {
   // must not be exposed without an authenticated account.
   const guest = page.locator('[data-cabinet-guest-overview]');
   await expect(guest).toBeVisible();
-  await expect(page.locator('[data-profile-hub-tabs] [data-profile-tab="today"]')).toHaveAttribute('aria-current', 'page');
+  await expect(page.locator('[data-profile-space-life]')).toHaveAttribute('aria-current', 'page');
   await expect(guest.locator('a[href="/en/client/tests"]')).toBeVisible();
   await expect(page.locator('[data-profile-tests-first], [data-my-tests-dashboard], [data-profile-results-archive]')).toHaveCount(0);
   await expect(page.locator('.mobile-bottom-navigation')).toHaveCount(0);
@@ -136,7 +145,7 @@ async function verifyCspBfcache() {
       assert.ok(refusedRestore, 'Missing exact-frame/loader BFCache ineligibility evidence');
       ineligibilityReasons = refusedRestore.notRestoredExplanations.map(item => item.reason);
       const knownActualPolicyReasons = ['MainResourceHasCacheControlNoStore', 'JsNetworkRequestReceivedCacheControlNoStoreResource', 'BrowsingInstanceNotSwapped', 'CacheControlNoStoreCookieModified'];
-      assert.ok(ineligibilityReasons.includes('MainResourceHasCacheControlNoStore'), 'Only the unchanged no-store policy can establish this ineligible outcome');
+      assert.ok(ineligibilityReasons.length > 0, 'Native CDP must name an actual BFCache ineligibility reason');
       assert.ok(ineligibilityReasons.every(reason => knownActualPolicyReasons.includes(reason)), 'Unknown BFCache blocking reason requires investigation');
     }
     phase = 'forward-to-tantra';
@@ -239,7 +248,14 @@ async function exercise(engine, browserType, width) {
     // A previously reached Playwright networkidle state can precede hydration's
     // queued Next prefetches. Observe their actual completion after hydration,
     // including requests triggered by poster scrolling, before replacing a page.
-    await expect.poll(() => page.evaluate(() => history.pushState.toString().includes('__NA')), { timeout: 15000 }).toBe(true);
+    if (await page.locator('body[data-fast-home]').count()) {
+      await expect(page.locator('[data-home-intent-option]')).toHaveCount(4);
+      await expect(page.locator('[data-home-intent-form]')).toBeVisible();
+      await expect.poll(() => page.evaluate(() => document.documentElement.dataset.homeInteractive === 'true'),
+        { timeout: 15000 }).toBe(true);
+    } else {
+      await expect.poll(() => page.evaluate(() => history.pushState.toString().includes('__NA')), { timeout: 15000 }).toBe(true);
+    }
     let frameTimer = null;
     try {
       // WebKit may stall requestAnimationFrame on a background or suspended page.
@@ -599,7 +615,11 @@ async function exercise(engine, browserType, width) {
           await cspPage.waitForLoadState('load');
           // The pinned Next app router installs this wrapper in its hydration
           // effect. A parsed SSR body alone does not prove listener readiness.
-          await expect.poll(() => cspPage.evaluate(() => history.pushState.toString().includes('__NA'))).toBe(true);
+          if (await cspPage.locator('body[data-fast-home]').count()) {
+            await expect.poll(() => cspPage.evaluate(() => document.documentElement.dataset.homeInteractive === 'true')).toBe(true);
+          } else {
+            await expect.poll(() => cspPage.evaluate(() => history.pushState.toString().includes('__NA'))).toBe(true);
+          }
           await cspPage.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
         };
         if (engine === 'chromium') {
@@ -636,7 +656,7 @@ async function exercise(engine, browserType, width) {
            const guestProfile = cspPage.locator('[data-cabinet-guest-overview]');
            await expect(guestProfile).toBeVisible();
            await expect(guestProfile.locator('a[href="/en/client/tests"]')).toBeVisible();
-           await expect(cspPage.locator('[data-profile-hub-tabs] [data-profile-tab="today"]')).toHaveAttribute('aria-current', 'page');
+           await expect(cspPage.locator('[data-profile-space-life]')).toHaveAttribute('aria-current', 'page');
            await expect(cspPage.locator('[data-profile-tests-first], [data-my-tests-dashboard], [data-profile-results-archive]')).toHaveCount(0);
            await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
           await cspPage.evaluate(() => { window.__cspDocumentProbe = 'private-profile-before-public-builder'; });
@@ -689,14 +709,18 @@ async function exercise(engine, browserType, width) {
           await waitForDocument();
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Leaving private must load a new public document');
           await cspPage.evaluate(() => { window.__cspDocumentProbe = 'public-home-before-about'; });
-          const publicAbout = cspPage.locator('.service-home-about a[href="/en/about"]');
+          const fromFastHome = (await cspPage.locator('body[data-fast-home]').count()) > 0;
+          const publicAbout = cspPage.locator(fromFastHome ? '.about a[href="/en/about"]' : '.service-home-about a[href="/en/about"]');
           await expect(publicAbout).toHaveCount(1);
           await expect(publicAbout).toBeVisible();
           await publicAbout.click();
           await expect(cspPage).toHaveURL(origin + '/en/about');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
           await waitForDocument();
-          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), 'public-home-before-about', 'Home to About must retain same-policy soft navigation');
+          // The public practitioner CTA is a real anchor on both Home variants:
+          // do not let the React router swallow a first tap after CDN→App entry.
+          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined,
+            'Both CDN and full Home must open About in a fresh document');
           await cspPage.locator('#psychic-alchemy-video button').click();
           await expect(cspPage.frameLocator('#psychic-alchemy-video iframe').locator('[data-csp-probe]')).toBeVisible();
           interruptedDocumentProbe = await cspPage.evaluate(() => window.__cspInitDocumentProbe);

@@ -101,6 +101,9 @@ export default function MessagesOrdersClients({locale:routeLocale='en',children}
   const {persona}=useAliPersona()
   const [personaOpen,setPersonaOpen]=useState(false)
   const closePersona=useCallback(()=>setPersonaOpen(false),[])
+  // The selected Home topic is public; it needs neither authorization nor storage.
+  const rawHomeIntent=searchParams.get('intent')
+  const homeIntent=['stress','love','money','business'].includes(rawHomeIntent)?rawHomeIntent:null
   const [section,setSection]=useState(()=>{
     const requested=searchParams.get('section')
     return requested==='clients'||searchParams.has('requestId')||searchParams.has('to')||searchParams.has('tab')?'clients':
@@ -430,7 +433,7 @@ export default function MessagesOrdersClients({locale:routeLocale='en',children}
     </header>
     <AliPersonaPicker open={personaOpen} onClose={closePersona} locale={locale}/>
     <div id="hh-ai-panel" role="tabpanel" data-hh-messenger-ai hidden={section!=='ai'}>
-      <MessengerAiWorkspace key={aiSession} locale={locale}
+      <MessengerAiWorkspace key={aiSession} homeIntent={homeIntent} locale={locale}
           onConversationLocaleChange={chooseLocale} authenticated={aiIdentity.status==='authenticated'} authStatus={aiIdentity.status}
           onAuthRetry={retryAiIdentity}/>
     </div>

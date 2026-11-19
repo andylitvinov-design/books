@@ -196,3 +196,11 @@
   .guideIdentity small{font-size:9px}
   .guideAudio{width:38px;height:40px}
 }
+
+/* Direct enquiry from the public Home remains visible and keyboard accessible. */
+.sessionCta{box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:48px;padding:10px 14px;border:1px solid #d3e5da;border-radius:14px;background:#163c35df;color:#fff;text-decoration:none}
+.sessionCta strong{display:block;font:800 16px/1.25 system-ui,sans-serif}
+.sessionCta small{display:block;margin-top:3px;color:#e2f4ea;font:500 12px/1.3 system-ui,sans-serif}
+.sessionCta svg{flex:none}
+.sessionCta:focus-visible{outline:3px solid #00a47c;outline-offset:3px}
+@media(max-width:430px){.sessionCta{min-height:46px;padding:8px 12px}.sessionCta strong{font-size:15px}.sessionCta small{font-size:11px}}

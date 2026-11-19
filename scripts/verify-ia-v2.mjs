@@ -256,7 +256,9 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
   const publicHeaderWidths = engine === 'webkit' && process.env.GITHUB_EVENT_NAME === 'pull_request'
     ? prWebkitHeaderWidths : fullHeaderWidths
   for (const locale of locales) {
-    for (const [surface, path] of [['home', locale === 'es' ? '/es' : '/?lang=' + locale], ['energy', '/' + locale + '/explore/energy'], ['love', '/' + locale + '/explore/love'], ['business', '/' + locale + '/explore/business'], ['library', '/' + locale + '/library']]) {
+    // IA's React navigation matrix targets the explicit full Home; the separate CDN-first
+    // first-screen browser gate tests the anonymous fast HTML/JS, so neither path is waived.
+    for (const [surface, path] of [['home', locale === 'es' ? '/es' : locale === 'ru' ? '/ru?full=1' : '/?full=1'], ['energy', '/' + locale + '/explore/energy'], ['love', '/' + locale + '/explore/love'], ['business', '/' + locale + '/explore/business'], ['library', '/' + locale + '/library']]) {
       for (const width of publicHeaderWidths) {
         const label = engine + '/' + locale + '/' + surface + '/' + width
         diagnostic.phase(label)
@@ -585,7 +587,15 @@ try {
   const errors = []
   page.on('pageerror', error => errors.push(error.message))
   if (!messengerOnly) {
-  assert.equal((await go(page, '/')).status(), 200)
+  // The CDN-first anonymous Home must serve a real HTML document directly from
+  // the isolated Next production server. Keep this fatal: a broken rewrite must
+  // not be masked by the full React fallback.
+  const fastDocument = await page.request.get('http://127.0.0.1:3203/', { timeout: 30000 });
+  assert.equal(fastDocument.status(), 200, 'CDN-first EN Home must return HTTP 200');
+  assert.match(await fastDocument.text(), /<body data-fast-home="en">/, 'Fast Home must have interactive HTML');
+  // IA's security/navigation matrix checks the original full Next seven-slot
+  // dock over the TLS origin. This route is intentional, not a CDN fallback.
+  assert.equal((await go(page, '/?full=1')).status(), 200)
   assert.equal(await page.locator('html').getAttribute('lang'), 'en')
   for (const locale of ['en', 'ru', 'es']) {
     for (const width of [320, 360, 390, 430, 768, 1280]) {

@@ -63,7 +63,14 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 jobs:
   browser:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    # Pin official Chromium and WebKit, preserving all browser assertions.
+    # No unreliable 180-package apt cold install.
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+    defaults:
+      run:
+        shell: bash
     # Full Chromium + WebKit, mobile + desktop CSP/reader acceptance exceeded
     # the previous 20m job cap after a real Next build on PR #3113.
     # Preserve all assertions and browsers; allow them to finish fail-closed.
@@ -85,10 +92,18 @@ jobs:
       - name: Install isolated browser tools
         id: browser_tools
         run: |
-          if [ -f /etc/apt/apt-mirrors.txt ]; then printf '%s\n' 'https://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null; fi
-          npm install --prefix /tmp/reaudit-tools --no-package-lock --ignore-scripts @playwright/test@1.63.0
+          set -euo pipefail
+          npm install --prefix /tmp/reaudit-tools --no-package-lock --ignore-scripts --no-audit --no-fund @playwright/test@1.63.0
           ln -s /tmp/reaudit-tools/node_modules/@playwright node_modules/@playwright
-          /tmp/reaudit-tools/node_modules/.bin/playwright install --with-deps chromium webkit
+          [[ "${PLAYWRIGHT_BROWSERS_PATH:-}" == "/ms-playwright" ]] || { echo "::error::Pinned browser cache not mounted"; exit 1; }
+          node --input-type=module <<'NODE'
+          import {chromium,webkit} from '/tmp/reaudit-tools/node_modules/playwright/index.mjs';
+          for(const [name,engine] of [['chromium',chromium],['webkit',webkit]]){
+            const browser=await engine.launch({headless:true});
+            await browser.close();
+            console.log('Pinned browser ready:',name);
+          }
+          NODE
       - name: Build exact proposed release
         run: npm run build
         env:

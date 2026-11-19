@@ -57,20 +57,26 @@ export async function verifyHistoryProvenance({ browser, origin, evidencePath })
   const snapshot = () => page.evaluate(() => ({ document: window.__historyProofDocument,
     key: window.navigation?.currentEntry?.key ?? null, owned: window.__hhOwnsHistoryEntry?.() ?? null,
     pathname: location.pathname, hash: location.hash }));
+  // Preserve real Next.js history verification on the explicit full Home route.
+  const homePath = '/?full=1';
   const ready = async path => {
     await expect(page).toHaveURL(origin + path);
-    if (path === "/") await expect(page.locator('main[data-home-design="dialogue-first-v1"] [data-home-dialogue-entry]')).toBeVisible();
+    if (path === homePath) await expect(page.locator('main[data-home-design="dialogue-first-v1"] [data-home-dialogue-entry]')).toBeVisible();
     else await expect(page.locator("#psychic-alchemy-video")).toBeVisible();
     await expect.poll(() => page.evaluate(() => history.pushState.toString().includes('__NA'))).toBe(true);
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   };
   try {
-    await page.goto(origin + '/', { waitUntil: 'networkidle' });
-    await ready('/'); result.home = await snapshot();
-    await page.locator('.service-home-about a[href="/en/about"]').click();
+    await page.goto(origin + homePath, { waitUntil: 'networkidle' });
+    await ready(homePath); result.home = await snapshot();
+    // Keep a true same-document React route for the native-history contract:
+    // the visible header About link is a Next Link; the practitioner CTA below
+    // uses a native anchor to avoid a first-tap loss across CDN documents.
+    await page.locator('[data-home-dialogue-entry] .site-main-menu-trigger').click();
+    await page.locator('[data-home-dialogue-entry] .site-main-menu-more [data-nav-item="about"]').click();
     await ready('/en/about'); result.about = await snapshot();
     for (let i = 0; i < 2; i++) {
-      await page.goBack({ waitUntil: 'domcontentloaded' }); await ready('/'); result.repeated.push(await snapshot());
+      await page.goBack({ waitUntil: 'domcontentloaded' }); await ready(homePath); result.repeated.push(await snapshot());
       await page.goForward({ waitUntil: 'domcontentloaded' }); await ready('/en/about'); result.repeated.push(await snapshot());
     }
     // Use a real browser anchor click, not pushState, to exercise hash navigation.
@@ -85,8 +91,8 @@ export async function verifyHistoryProvenance({ browser, origin, evidencePath })
     await page.goBack({ waitUntil: 'domcontentloaded' }); await ready('/en/about'); result.hashes.push(await snapshot());
     await page.goForward({ waitUntil: 'domcontentloaded' }); await ready('/en/about#hh-provenance-hash'); result.hashes.push(await snapshot());
     await page.goBack({ waitUntil: 'domcontentloaded' }); await ready('/en/about');
-    await page.goBack({ waitUntil: 'domcontentloaded' }); await ready('/');
-    await page.reload({ waitUntil: 'networkidle' }); await ready('/'); result.reloadedHome = await snapshot();
+    await page.goBack({ waitUntil: 'domcontentloaded' }); await ready(homePath);
+    await page.reload({ waitUntil: 'networkidle' }); await ready(homePath); result.reloadedHome = await snapshot();
     await page.goForward({ waitUntil: 'domcontentloaded' }); await ready('/en/about');
     await expect.poll(async () => (await snapshot()).document).not.toBe(result.reloadedHome.document);
     await page.waitForLoadState('networkidle'); await ready('/en/about');
