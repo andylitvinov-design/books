@@ -61,3 +61,32 @@ test('never pads the second option and only explicit goal requests open Coach',(
  assert.equal(planWaveMagicTurn({message:'I am anxious',locale:'en',safety:gate}).mode,'secretary');
  assert.equal(planWaveMagicTurn({message:'Help me work on my goal',locale:'en',safety:gate}).mode,'coach');
 });
+
+test('naturally phrased direct booking is recognized in RU/EN/ES without synthetic approval',()=>{
+ for(const [locale,message] of [
+  ['ru','Можно сразу записаться?'],
+  ['en','Can I book a session?'],
+  ['es','¿Puedo reservar una consulta?'],
+ ]){
+  const plan=planWaveMagicTurn({message,locale,channel:'telegram',safety:gate,
+   verifiedSelection:{serverVerified:true,id:'service:two'}});
+  assert.equal(plan.intent,'booking',message);
+  assert.equal(plan.nextAction,'verified_booking_intake');
+  assert.equal(plan.handoff.maySubmit,false);
+  assert.equal(plan.recommendations.length,0);
+ }
+});
+test('verified practices, koans and specialists remain eligible recommendations',()=>{
+ const options=[
+  {id:'practice:calm',kind:'practice',title:'Gentle exercise',href:'/en/practices/calm'},
+  {id:'koan:reflect',kind:'koan',title:'Reflection',href:'/en/koans/reflection'},
+  {id:'specialist:andrey',kind:'specialist',title:'Human support',href:'/en/services'},
+ ];
+ const plan=planWaveMagicTurn({message:'What can I try?',locale:'en',safety:gate,
+  verifiedRecommendations:options,channel:'telegram'});
+ assert.equal(plan.intent,'options');
+ assert.deepEqual(plan.recommendations.map(x=>x.id),['practice:calm','koan:reflect']);
+ const chosen=planWaveMagicTurn({message:'What do you offer?',locale:'en',safety:gate,
+  verifiedRecommendations:[options[2]]});
+ assert.deepEqual(chosen.recommendations.map(x=>x.id),['specialist:andrey']);
+});
