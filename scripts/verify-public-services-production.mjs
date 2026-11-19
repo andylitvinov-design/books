@@ -737,22 +737,22 @@ try {
         await visible(free.locator('a[href="/' + locale + '/services/dao-health-profile"]').first());
         await visible(free.locator('a[href="/' + locale + '/courses/antistress"]'));
         assert.equal(await page.locator("h1#services-conversion-title").count(), 1);
-        // The approved public Services page has 10 compact groups and 30
+        // The approved public Services page has 11 compact groups and 33
         // immediately visible options. The former conversion hero now lives
         // inside the Browse panel AFTER the first six service groups.
         const visibleVariants=page.locator('[data-services-unified-catalog] [data-services-three-visible]');
-        await expect(visibleVariants).toHaveCount(10);
-        await expect(visibleVariants.locator('[data-service-variant]')).toHaveCount(30);
+        await expect(visibleVariants).toHaveCount(11);
+        await expect(visibleVariants.locator('[data-service-variant]')).toHaveCount(33);
         const actualGroups=await visibleVariants.evaluateAll(nodes=>
           nodes.map(node=>({id:node.getAttribute("data-services-three-visible"),
             declared:node.getAttribute("data-services-offer-count"),
             visible:node.getClientRects().length>0,
             options:node.querySelectorAll("[data-service-variant]").length})));
         assert.deepEqual(actualGroups.map(x=>x.id),
-          ["consultation","homeopathy","services","reiki","courses","video","browse","reading","coach","magical"],
-          "The first six category targets must remain visible in their approved order");
+          ["consultation","homeopathy","services","business","reiki","courses","video","browse","reading","coach","magical"],
+          "The first seven category targets must remain visible in their approved order");
         assert.ok(actualGroups.every(x=>x.declared==="3"&&x.visible&&x.options===3),
-          "Each of the ten service panels displays all three choices without opening an accordion");
+          "Each of the eleven service panels displays all three choices without opening an accordion");
         assert.equal(await page.evaluate(() => {
           const selectors = ["#consultation","#free-insights","#solutions","#services-conversion-title",
             "[data-services-meet]",'[data-personal-testimonials="services"]',
