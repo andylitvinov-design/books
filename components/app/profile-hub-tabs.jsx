@@ -11,6 +11,7 @@ import { coverageForFocus } from '@/lib/assessments/test-explorer'
 import { TestExplorerVisual } from './test-explorer-visual'
 import styles from './profile-hub-tabs.module.css'
 import { ProfileSpaceDashboard } from './profile-space-dashboard'
+import { CourseSpaceIntro } from './course-space-intro'
 
 const COPY = {
   ru: {
@@ -141,7 +142,7 @@ const SETTINGS_HUB_COPY = {
     name: 'Nombre', timeZone: 'Zona horaria', language: 'Idioma', expand: 'Abrir ajustes',
     top: { create: 'Crear', view: 'Ver', results: 'Resultados', settings: 'Ajustes' } },
 }
-export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = null, account = null, publicEntry = false }) {
+export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = null, account = null, publicEntry = false, courseLanding = false }) {
   const selected = COPY[locale] ? locale : 'en'
   const t = STUDIO_COPY[selected]
   // Existing protected Cabinet uses EN fallback for ES; do not introduce a new account.
@@ -166,6 +167,8 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
   } : privatePaths
   const current = active === 'view' ? 'today' : active === 'results' ? 'reports' : active
   const settingsMode = current === 'settings'
+  const isCourseLanding = current === 'courses' && courseLanding
+  const simplifiedSpace = current === 'today' || isCourseLanding
   const s = SETTINGS_HUB_COPY[selected]
   // Switch real locale routes while retaining the current profile section.
   // Language navigation works for visitors; only account actions require sign-in.
@@ -185,10 +188,10 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
   return <section className={styles.hub} data-profile-hub-tabs data-profile-active={current}>
     <header className={styles.heading}>
       <div className={styles.headingTitle}>
-        {current === 'today' && <span className={styles.brandMark} aria-hidden="true" />}
-        <h2 aria-label={settingsMode ? s.pageTitle : current === 'today' ? 'Holistic House' : t.title}>
-          <span className={styles.titleFull}>{settingsMode ? s.pageTitle : current === 'today' ? 'Holistic House' : t.title}</span>
-          <span className={styles.titleCompact}>{settingsMode ? (selected === 'ru' ? 'Профиль' : selected === 'es' ? 'Perfil' : 'Profile') : current === 'today' ? 'Holistic House' : 'My Space'}</span>
+        {simplifiedSpace && <span className={styles.brandMark} aria-hidden="true" />}
+        <h2 aria-label={settingsMode ? s.pageTitle : simplifiedSpace ? 'Holistic House' : t.title}>
+          <span className={styles.titleFull}>{settingsMode ? s.pageTitle : simplifiedSpace ? 'Holistic House' : t.title}</span>
+          <span className={styles.titleCompact}>{settingsMode ? (selected === 'ru' ? 'Профиль' : selected === 'es' ? 'Perfil' : 'Profile') : simplifiedSpace ? 'Holistic House' : 'My Space'}</span>
         </h2>
       </div>
       <div className={styles.profileHeadingActions}>
@@ -203,13 +206,13 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
                 data-profile-language={language}>{language.toUpperCase()}</Link>)}
           </div>
         </details>
-        {!settingsMode && current !== 'today' && <ProfileModeSwitch locale={selected} active="live" />}
+        {!settingsMode && !simplifiedSpace && <ProfileModeSwitch locale={selected} active="live" />}
         <div className={styles.headingNav} data-profile-chrome-navigation>
           <SiteNavigation locale={selected} compact />
         </div>
       </div>
     </header>
-    {current !== 'today' && <nav className={settingsMode ? styles.settingsTabs : styles.tabs} aria-label={settingsMode ? s.menu : COPY[selected].navigation}>
+    {!simplifiedSpace && <nav className={settingsMode ? styles.settingsTabs : styles.tabs} aria-label={settingsMode ? s.menu : COPY[selected].navigation}>
       {settingsMode ? [
         { id: 'create', href: '/' + selected + '/personality-profiles' },
         { id: 'view', href: paths.today },
@@ -226,7 +229,7 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
           <span className={styles.resultBadge} aria-label={resultCount + ' ' + COPY[selected].count}>{resultCount}</span>}
       </InstantCabinetLink>)}
     </nav>}
-    {current !== 'today' && !settingsMode && <div className={styles.myPageSubnav} data-profile-my-page-placement="below-tabs">
+    {!simplifiedSpace && !settingsMode && <div className={styles.myPageSubnav} data-profile-my-page-placement="below-tabs">
       <Link href={'/' + selected + '/my-page'} prefetch={false} className={styles.myPageLink} data-profile-my-page>
         <UserRound size={15} aria-hidden="true" />
         {selected==='ru'?'Моя страница':selected==='es'?'Mi página':'My Page'}
@@ -237,6 +240,7 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
       </Link>
     </div>}
     {current === 'today' && <ProfileSpaceDashboard locale={selected} root={root} resultCount={resultCount} />}
+     {isCourseLanding && <CourseSpaceIntro locale={selected} root={root} />}
     {settingsMode && <nav className={styles.settingsQuickActions} data-profile-settings-actions aria-label={s.menu}>
       <a href="#hh-settings-account">{s.detail}</a>
       <a href="#hh-settings-messengers">{s.messenger}</a>
@@ -273,7 +277,7 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
       <InstantCabinetLink href={paths.tests} prefetch={false}><ClipboardList size={17} aria-hidden="true" />{selected === 'ru' ? 'Пройти тест' : selected === 'es' ? 'Hacer un test' : 'Take a Test'}</InstantCabinetLink>
       <InstantCabinetLink href={root + '/portfolio'} prefetch={false}><Activity size={17} aria-hidden="true" />{selected === 'ru' ? 'Мои результаты' : selected === 'es' ? 'Mis resultados' : 'My Results'}</InstantCabinetLink>
     </nav>}
-    {current !== 'today' && current !== 'create' && current !== 'reports' && !settingsMode && !publicEntry && <div className={styles.sectionIntro}>
+    {!simplifiedSpace && current !== 'create' && current !== 'reports' && !settingsMode && !publicEntry && <div className={styles.sectionIntro}>
       <h1>{t.tabs[current] || t.title}</h1><p>{t.details[current] || t.privacy}</p>
     </div>}
     {current === 'create' && <p className={styles.hint}>{COPY[selected].creationHint}</p>}
