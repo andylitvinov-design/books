@@ -800,7 +800,7 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
     {submitted ? <div className={styles.results} tabIndex={-1} data-services-quiz-results>
       <p className={styles.summary} data-services-quiz-summary><strong>{t.summary}:</strong> {summary}</p>
       <AssistTopRecommendations locale={locale} focus={focus} preferences={preferences}
-        matchingIds={matchingIds} allowedIds={matchingIds} noMatchLabel={t.empty} />
+        matchingIds={matchingIds} allowedIds={matchingIds} categoryGroups noMatchLabel={t.empty} />
     </div> : null}
     <p className={styles.privacy}>{t.privacy}</p>
   </section>;
