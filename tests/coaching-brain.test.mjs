@@ -13,6 +13,9 @@ import {understandCoachingTurn,coachingTurnPrompt} from '../lib/personal-coachin
 // Run the same Director v2 method/persona regression contracts in both
 // focused coaching verification and the existing production prebuild suite.
 import './coach-session-director.test.mjs'
+// One-Play interruption and short voice-turn regressions run in the existing
+// protected coaching release suite; no new CI jobs or package manifest edits.
+import './my-coach-barge-in.test.mjs'
 import './my-coach-session-progress.test.mjs'
 // Reuse this existing trusted coaching prebuild gate; changing package.json
 // would trigger unrelated expensive CI fan-out.

@@ -680,12 +680,22 @@
 }
 
 /* Only shown inside the conversation after an actual answer. No tracking until tapped. */
-.hiLearningRating{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:7px 0;color:#5d7485;font-size:12px}
-.hiLearningRating button{border:1px solid #cbd8df;border-radius:8px;background:transparent;color:inherit;font:inherit;padding:5px 9px;cursor:pointer}
-.hiLearningRating button{min-height:44px}
+.hiLearningRating{
+  display:inline-flex;align-items:center;justify-content:flex-start;
+  max-width:100%;width:max-content;min-height:32px;gap:3px;margin:2px 0 3px;
+  padding:1px 0;color:#798c83;font:500 11px/1.2 system-ui,sans-serif;
+  flex-wrap:nowrap;white-space:nowrap
+}
+.hiLearningRating>span{margin-inline-end:3px;font-size:11px}
+.hiLearningRating button{
+  display:grid;place-items:center;flex:none;width:32px;height:32px;min-width:32px;min-height:32px;
+  margin:0;padding:0;border:1px solid #e3eae6;border-radius:10px;
+  background:#fffefa;color:#7b9187;cursor:pointer
+}
 .hiLearningRating button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
-.hiLearningRating button:disabled{opacity:.55;cursor:default}
-.hiLearningRating button:hover:not(:disabled){background:#edf5f7}
+.hiLearningRating button:disabled{opacity:.5;cursor:default}
+.hiLearningRating button:hover:not(:disabled){background:#edf8f1;color:#156b56}
+.hiLearningRating small{margin-inline-start:4px;color:#657e70;font-size:11px}
 
 /* Non-sensitive goal context from the user's three-step support quiz. */
 .supportContext{display:flex;align-items:center;justify-content:space-between;gap:9px;
@@ -694,3 +704,22 @@
 .supportContext button{flex:none;min-height:36px;padding:7px 11px;border:1px solid #afd9bf;
  border-radius:12px;background:#edf8f1;color:#166648;cursor:pointer;font:700 12px system-ui,sans-serif}
 .supportContext button:focus-visible{outline:3px solid #168b71;outline-offset:2px}
+
+
+/* Messenger mic opens a temporary, locally playable voice-note tray above
+   the one-line composer. No extra fixed bar or vertical jump on iPhone. */
+.root[data-compact][data-chat-skin="messenger"] .form{
+  position:relative;z-index:5;
+}
+.root[data-compact][data-chat-skin="messenger"] .form .actions{
+  position:relative;
+}
+.root[data-compact][data-chat-skin="messenger"] .thread .voiceNoteMessage{
+  display:flex;flex-direction:column;align-items:stretch;gap:6px;
+  max-width:min(250px,68vw);min-width:0;
+}
+.voiceNoteMessage audio{display:block;width:100%;max-width:100%;min-width:0;height:39px;color-scheme:light}
+.voiceNoteMessage details{font:500 12px/1.4 system-ui,sans-serif;min-width:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.voiceNoteMessage details>summary{cursor:pointer;list-style:disclosure-closed;color:#476f60}
+.voiceNoteMessage details[open]>summary{margin-bottom:5px}
+.voiceNoteMessage details:focus-visible{outline:2px solid #16886e;outline-offset:2px}

@@ -839,7 +839,55 @@ try {
         await assertViewport(page, locale + "/services#consultation");
         const consultation = page.locator("[data-assist-personal-consultation]");
         await consultation.scrollIntoViewIfNeeded();
+        // Three closed cards plus the styled heading must form one readable
+        // compact screen; price badges are in the upper right and controls
+        // directly under the copy, not across the bottom of the photo.
+        const compact = await consultation.evaluate(section => {
+          const head = section.querySelector("header");
+          const cards = [...section.querySelectorAll("[data-consultation-choice]")];
+          const rect = element => element?.getBoundingClientRect();
+          return {
+            headingHeight: rect(head)?.height ?? 0,
+            cards: cards.map(card => {
+              const photo = rect(card.querySelector("[data-support-uniform-photo]"));
+              const controls = rect(card.querySelector("[data-service-card-controls]"));
+              const price = rect(card.querySelector("[data-support-uniform-price]"));
+              const tile = rect(card);
+              const buttons = [...card.querySelectorAll("[data-service-card-controls] button")];
+              return { height:tile.height, photoLeft:photo.left, photoRight:photo.right,
+                controlsLeft:controls.left, controlsRight:controls.right, priceTop:price.top,
+                top:tile.top, buttons:buttons.map(button => rect(button).height) };
+            }),
+          };
+        });
+        assert.equal(compact.cards.length, 3, "Personal consultation shows exactly three offer cards");
+        assert.ok(compact.headingHeight <= 75, "Consultation heading must be compact: " + locale);
+        assert.ok(compact.cards.every(card => card.height <= 177),
+          "Every collapsed consultation card must be compact: " + locale + " " + JSON.stringify(compact.cards));
+        assert.ok(compact.cards.reduce((sum, card) => sum + card.height, compact.headingHeight + 28) <= 550,
+          "Heading + three cards must fit one phone view, before opening any detail: " + locale);
+        for (const card of compact.cards) {
+          assert.ok(card.controlsLeft >= card.photoRight - 3,
+            "Details and Order must remain to the RIGHT of the picture: " + locale);
+          assert.ok(card.buttons.length === 2 && card.buttons.every(h => h >= 43),
+            "Both service buttons remain comfortable to tap: " + locale);
+        }
         await consultation.screenshot({ path: output + "/services-" + locale + "-compact-consultation-390.png" });
+        const firstCard = consultation.locator('[data-consultation-choice="free"]');
+        const originalPhoto = await firstCard.locator("[data-support-uniform-photo]").boundingBox();
+        await firstCard.locator("[data-service-card-controls] button").last().click();
+        const messengerRow = firstCard.locator("[data-service-card-order]");
+        await visible(messengerRow);
+        await visible(messengerRow.locator('[data-messenger-only-channel="whatsapp"]'));
+        await visible(messengerRow.locator('[data-messenger-only-channel="telegram"]'));
+        const expandedCard = await firstCard.boundingBox();
+        const expandedRow = await messengerRow.boundingBox();
+        const remainingPhoto = await firstCard.locator("[data-support-uniform-photo]").boundingBox();
+        assert.ok(expandedCard && expandedRow && originalPhoto && remainingPhoto &&
+          expandedRow.width >= expandedCard.width - 23 &&
+          Math.abs(originalPhoto.width - remainingPhoto.width) <= 2,
+          "Opening Order keeps picture visible and both messenger buttons under the WHOLE card: " + locale);
+        await firstCard.locator("[data-service-card-controls] button").last().click();
       }
       // Category slider and Online/Toronto choice: real client interactions,
       // never registering a lead, sending messages or initiating payment.
