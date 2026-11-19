@@ -19,6 +19,11 @@ async function execute(body,{valid=false,useRealJudgment=false,nativeEnabled=fal
   createRequestAuth:()=>({verified:async()=>{calls.push('actor');return {id:'synthetic'}},apply:x=>x}),
   createAppRepository:()=>({ensureAccount:async()=>calls.push('account')}),consumeRate:async()=>calls.push('rate'),
   PRIVATE_HEADERS:{},readBody:async()=>body,safeError:e=>({code:e.code||e.message,status:e.status||500}),
+  // The Director is a read-only progress hint; mock it so signed Judgment and
+  // state-machine security tests continue to exercise their real priority.
+  planDialogueDirectorTurn:()=>null,
+  publicDialogueDirectorState:()=>null,
+  routeMindRole:()=>({role:'secretary'}),
   detectConversationLocale:(_,locale)=>locale,interpretSupportUtterance:()=>({kind:'none'}),nativeDialogueEventFromUtterance,understandConversationTurn,
   resolveWisdomRequest:async()=>null,ruleConversationReply,nativeSecretaryTurn,resolveComplaintTurn,progressConversationTurn,progressDialogueReply,
   consultServiceQuestion:()=>{calls.push('consultant');return consultation},
