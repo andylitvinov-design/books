@@ -531,3 +531,41 @@ test('native merge shares protected cross-domain TEST-only exception only after 
   diff=compare(changes);diff.status='diverged';
   assert.equal((await assessBaseFreshness(args)).reason,'SENSITIVE_COMPARE_UNSAFE');
 });
+
+// A mixed docs+raster protected promotion cannot invalidate previously green
+// exact-source checks when the *current protected production* classifier
+// explicitly proves every row safe. A controller-only or null-mergeability
+// shortcut is forbidden throughout the two-branch rollout.
+test('native AutoMerge reuses mixed independent production checks only with protected proof', async () => {
+  const github=api('lib/billing/stripe-provider.js');
+  const compare={status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:old},merge_base_commit:{sha:old},
+    commits:[{sha:head}],files:[
+      {filename:'docs/help/getting-started.md',status:'modified'},
+      {filename:'public/images/home/portrait.webp',status:'modified'},
+    ]};
+  github.rest.repos.compareCommits=async()=>({data:compare});
+  const policy={
+    safeDocumentationAdvance:()=>false,
+    safeIndependentCiMaintenanceAdvance:()=>false,
+    verifiedIndependentPublicRasterAdvance:()=>false,
+    safeComposedIndependentAdvance:(observed,from,to,paths)=>{
+      assert.strictEqual(observed,compare);
+      assert.equal(from,old);assert.equal(to,head);
+      assert.deepEqual(paths,['lib/billing/stripe-provider.js']);
+      return true;
+    },
+  };
+  const options={github,owner:'o',repo:'r',pr:{...pr,mergeable:true},
+    verifiedRunBase:old};
+  assert.equal((await assessBaseFreshness(options)).reason,'SENSITIVE_COMPARE_UNSAFE',
+    'a helper absent from protected production NEVER changes merge policy');
+  assert.equal((await assessBaseFreshness({...options,baseAdvancePolicy:policy})).reason,
+    'MIXED_INDEPENDENT_BASE_REVALIDATED');
+  assert.equal((await assessBaseFreshness({...options,pr:{...pr,mergeable:null},
+    baseAdvancePolicy:policy})).reason,'SENSITIVE_COMPARE_UNSAFE',
+    'native merge must have affirmative GitHub mergeability');
+  assert.equal((await assessBaseFreshness({...options,baseAdvancePolicy:{
+    ...policy,safeComposedIndependentAdvance:()=>false,
+  }})).reason,'SENSITIVE_COMPARE_UNSAFE');
+});

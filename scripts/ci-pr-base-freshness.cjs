@@ -151,9 +151,15 @@ async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase,classif
     // unconfirmed mergeability or synthetic/missing required Core jobs.
     const independentDomainTest=pr.mergeable===true&&
       approved('safeIndependentDomainTestAdvance');
+    // NEVER invent a control-plane exception: use the optional function
+    // loaded from this exact protected production commit. It validates
+    // every changed row and the complete Compare, not a union of names.
+    // The same HEAD's successful mandatory CI must already be present.
+    const composedIndependent=pr.mergeable===true&&
+      approved('safeComposedIndependentAdvance');
     if(!detachedCi&&!independentRaster&&!documentationOnly&&!independentMaintenance&&
        !independentPresentation&&!disjointPublicSource&&!trustedPolicyAdvance&&
-       !independentQaAdvance&&!independentDomainTest)
+       !independentQaAdvance&&!independentDomainTest&&!composedIndependent)
       return fail('SENSITIVE_COMPARE_UNSAFE');
     revalidatedReason=detachedCi?'ISOLATED_CI_PUBLIC_MEDIA_REVALIDATED':
       independentRaster?'INDEPENDENT_PUBLIC_RASTER_REVALIDATED':
@@ -163,7 +169,8 @@ async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase,classif
       disjointPublicSource?'DISJOINT_PUBLIC_SOURCE_REVALIDATED':
       trustedPolicyAdvance?'TRUSTED_POLICY_BASE_REVALIDATED':
       independentQaAdvance?'INDEPENDENT_QA_BASE_REVALIDATED':
-      'INDEPENDENT_DOMAIN_TEST_BASE_REVALIDATED';
+      independentDomainTest?'INDEPENDENT_DOMAIN_TEST_BASE_REVALIDATED':
+      'MIXED_INDEPENDENT_BASE_REVALIDATED';
    }
   }
   const finalBranch=(await github.rest.repos.getBranch({owner,repo,branch:'codex/public-book-library'})).data;
@@ -260,6 +267,10 @@ async function loadTrustedClassifier(workspace){
  // domain-test exemption. Only load exact current protected SHA.
  if(typeof impact.safeIndependentDomainTestAdvance==='function')
    names.push('safeIndependentDomainTestAdvance');
+ // Two-branch rollout: old production without the reviewed mixed proof
+ // continues to HOLD. Never use this control branch's own implementation.
+ if(typeof impact.safeComposedIndependentAdvance==='function')
+   names.push('safeComposedIndependentAdvance');
  const baseAdvancePolicy=Object.fromEntries(names.map(name=>[name,impact[name]]));
  return {classifierBase,decideRoute:mod.decideRoute,baseAdvancePolicy};
 }
