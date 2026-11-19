@@ -4,10 +4,6 @@ on:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
-      - '.agents/skills/visual-to-code-pro/**'
-      - '.codex/config.toml'
-      - '.vscode/mcp.json'
-      - 'AGENTS.md'
       - 'app/*/practice/page.jsx'
       - 'components/practice-showcase.jsx'
       - 'components/practice-showcase.module.css'
@@ -15,10 +11,8 @@ on:
       - 'components/app/practice-inner-navigation.jsx'
       - 'app/api/app/practice/**'
       - 'app/api/app/\[...path\]/route.js'
-      # The exact dispatcher is cross-domain. Node's BASE-trusted glob reader
-      # does not match GitHub's escaped Next route, so also use this narrowly
-      # bounded one-segment route with explicit Messenger exclusions.
-      - 'app/api/app/*/route.js'
+      # Practice visuals keep explicit Practice APIs and the real shared dispatcher.
+      # Generic sibling app API routes belong to the private App/IA owners.
       - '!app/api/app/direct-messages/**'
       - '!app/api/app/practitioner-client-messages/**'
       - '!app/api/app/notification-channels/**'
@@ -40,16 +34,13 @@ on:
       - 'components/app/practice-inner-navigation.jsx'
       - 'app/api/app/practice/**'
       - 'app/api/app/\[...path\]/route.js'
-      # The exact dispatcher is cross-domain. Node's BASE-trusted glob reader
-      # does not match GitHub's escaped Next route, so also use this narrowly
-      # bounded one-segment route with explicit Messenger exclusions.
-      - 'app/api/app/*/route.js'
+      # Practice visuals keep explicit Practice APIs and the real shared dispatcher.
+      # Generic sibling app API routes belong to the private App/IA owners.
       - '!app/api/app/direct-messages/**'
       - '!app/api/app/practitioner-client-messages/**'
       - '!app/api/app/notification-channels/**'
       - 'scripts/verify-practice-visual-browser.mjs'
       - 'scripts/compare-ui-screenshots.mjs'
-      - '.github/workflows/practice-visual-browser.yml'
 concurrency:
   group: hh-practice-visual-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
