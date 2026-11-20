@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {spawnSync} from 'node:child_process'
-import {coachNaturalTake,coachNaturalVideoPath} from '../lib/coaching/coach-natural-motion.mjs'
+import {coachNaturalTake,coachNaturalVideoPath,coachNaturalFilename} from '../lib/coaching/coach-natural-motion.mjs'
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
 test('all four coaches have two unique real MP4 take routes; speaking follows meaning',()=>{
@@ -16,6 +16,21 @@ test('all four coaches have two unique real MP4 take routes; speaking follows me
  assert.equal(coachNaturalVideoPath('harry'),null)
  assert.equal(coachNaturalVideoPath('unknown'),null)
  assert.equal(coachNaturalTake('idle','empathy'),'calm')
+})
+test('build filenames and every browser media path use the exact same asset',()=>{
+ const build=source('scripts/prepare-my-coach-natural-mp4.mjs')
+ assert.match(build,/coachNaturalFilename\(persona,take\)/)
+ assert.doesNotMatch(build,/name\+'-natural-v1\\.mp4'/)
+ for(const personaId of ['mira','sofia','max','alex']){
+  for(const take of ['calm','attentive']){
+   const expected=personaId+'-natural-'+take+'-v1.mp4'
+   const actual=coachNaturalFilename(personaId,take)
+   assert.equal(actual,expected)
+   assert.equal(coachNaturalVideoPath(personaId,take==='attentive'?'listening':'idle').split('/').at(-1),expected)
+  }
+ }
+ assert.equal(coachNaturalFilename('harry','calm'),null)
+ assert.equal(coachNaturalFilename('mira','unknown'),null)
 })
 test('mounted player uses only natural owner-generated MP4, never the rejected face-warp loops',()=>{
  const player=source('components/my-coach-motion-media.jsx')

@@ -7,6 +7,7 @@ import {access,mkdir,readFile,writeFile,rename,rm} from 'node:fs/promises'
 import {constants} from 'node:fs'
 import {dirname,join,resolve} from 'node:path'
 import {fileURLToPath} from 'node:url'
+import {coachNaturalFilename} from '../lib/coaching/coach-natural-motion.mjs'
 
 const production=process.env.VERCEL_ENV==='production'||
   process.env.HH_COACH_NATURAL_BUILD==='1'
@@ -42,7 +43,10 @@ if(!production){
       bytes.includes(Buffer.from('avc1'))&&!bytes.includes(Buffer.from('soun'))
   }
   async function prepare(name,id){
-    const file=resolve(root,name+'-natural-v1.mp4')
+    const [persona,take]=name.split('-')
+    const filename=coachNaturalFilename(persona,take)
+    if(!filename)throw Error('Invalid natural coach output filename')
+    const file=resolve(root,filename)
     const input=file+'.source.mp4',out=file+'.new.mp4'
     try{
       try{if(valid(await readFile(file)))return {name,bytes:0,ok:true}}catch{}
