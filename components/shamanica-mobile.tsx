@@ -35,9 +35,9 @@ ru:{
  starts:["Попробовать бесплатно","Личная поддержка","Выбрать инструмент","Пройти курс"],
  servicesTitle:"Ключевые услуги",services:{
  remedies:["Подбор препаратов","Гомеопатия и подбор"],
- artifacts:["Артефакты, предметы и места силы","Талисманы и места силы"],
- energy:["Энергетическая подкачка","Личные Рейки-сеансы"],
- rituals:["Ритуалы, мандалы и талисманы","Для качеств и целей"],
+ artifacts:["Артефакты и места силы","Талисманы и места силы"],
+ energy:["Энергоподдержка","Личные Рейки-сеансы"],
+ rituals:["Ритуалы и талисманы","Для качеств и целей"],
  learning:["Обучение","Шаманизм, Рейки и магия"],
  free:["Практики Рейки","Бесплатное обучение"]},
  step:"Шаг",of:"из",back:"Назад",search:"Поиск",menu:"Меню"},
@@ -50,9 +50,9 @@ en:{
  starts:["Try something free","One-to-one support","Choose a symbolic tool","Take a course"],
  servicesTitle:"Key services",services:{
  remedies:["Remedy guidance","Homeopathy advice"],
- artifacts:["Artefacts & power places","Talismans & sites"],
+ artifacts:["Artefacts & places","Talismans & power places"],
  energy:["Energy support","Reiki sessions"],
- rituals:["Rituals, mandalas & talismans","For your intentions"],
+ rituals:["Rituals & talismans","Mandalas & intentions"],
  learning:["Learning","Shamanism, Reiki & magic"],
  free:["Free Reiki practice","Introductory course"]},
  step:"Step",of:"of",back:"Back",search:"Search",menu:"Menu"},
@@ -65,9 +65,9 @@ es:{
  starts:["Probar gratis","Apoyo personal","Elegir herramienta","Hacer un curso"],
  servicesTitle:"Servicios principales",services:{
  remedies:["Orientación sobre remedios","Homeopatía personal"],
- artifacts:["Objetos y lugares de poder","Talismanes y lugares de poder"],
+ artifacts:["Objetos y lugares","Talismanes y lugares de poder"],
  energy:["Apoyo energético","Sesiones personales de Reiki"],
- rituals:["Rituales, mandalas y talismanes","Para tus objetivos"],
+ rituals:["Rituales y talismanes","Mandalas para tus objetivos"],
  learning:["Aprendizaje","Chamanismo, Reiki y magia"],
  free:["Reiki gratis","Curso introductorio"]},
  step:"Paso",of:"de",back:"Volver",search:"Buscar",menu:"Menú"}
