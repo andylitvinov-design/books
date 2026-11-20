@@ -253,8 +253,12 @@ test('stuck Safari recovery cue does not start a deaf recognizer or silently con
   assert.equal(session.cues,1)
   assert.equal(session.voices[0].started,false,'a cancelled cue must not count as recovery')
   session.flushDelay(4000)
-  assert.equal(session.phases.at(-1),'idle')
-  assert.equal(session.voices[0].aborted,true)
+  assert.equal(session.phases.at(-1),'ready','stuck cue must not terminate the one-Play session')
+  assert.equal(session.voices[0].started,false,'never start a deaf recognizer after a failed cue')
+  assert.equal(session.voices[0].aborted,false,'do not abort the never-started WebKit recognizer')
+  assert.equal(session.voices[0].onend,null,'detach unstarted Safari callbacks')
+  session.ref.current.stop()
+  assert.equal(session.phases.at(-1),'idle','only End actually closes the session')
 })
 
 test('iPhone fallback selects Safari audio/mp4 and refuses unsupported recording',()=>{

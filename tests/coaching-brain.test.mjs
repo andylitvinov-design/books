@@ -20,6 +20,8 @@ import './my-coach-dictation.test.mjs'
 import './my-coach-five-turn-flow.test.mjs'
 import './my-coach-low-latency.test.mjs'
 import './my-coach-webcodecs-stream.test.mjs'
+import './my-coach-barge-in.test.mjs'
+import './my-coach-duplex-barge.test.mjs'
 
 const uuid='e620286d-62ac-4efb-87e3-e58baa2c71b5'
 const req=(overrides={})=>({sessionId:uuid,locale:'en',consent:true,

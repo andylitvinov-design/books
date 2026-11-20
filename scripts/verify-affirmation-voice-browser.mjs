@@ -817,7 +817,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await page.locator('[data-video-quick-control="phrases"]').click();
       const phrases=page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]');
       await phrases.waitFor({state:"visible"});
-      // Ideas has two tabs. Voice and My Voice are visible opt-in submodes.
+      // Ideas has three tabs. Voice and My Voice remain visible opt-in submodes.
       const ideasModes=phrases.locator("[data-video-ideas-tabs]");
       await expect(ideasModes).toBeVisible();
       const personalTab=ideasModes.locator('[data-video-ideas-tab="personalization"]');
@@ -850,6 +850,21 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await nextQuiz.click();
       await expect(firstNameInput).toHaveValue(preferredName);
       await nextQuiz.click();
+      const goalTab=ideasModes.locator('[data-video-ideas-tab="goal"]');
+      await expect(goalTab).toHaveAttribute("aria-pressed","true");
+      const goalPane=phrases.locator("[data-video-ideas-goal-panel]");
+      await expect(goalPane).toBeVisible();
+      const goalCards=goalPane.locator("[data-video-ideas-goal-choice]");
+      await expect(goalCards).toHaveCount(3);
+      const chooseScenario=goalPane.locator("[data-video-ideas-goal-next]");
+      await expect(chooseScenario).toBeDisabled();
+      await goalPane.locator("[data-video-ideas-more-goals]").click();
+      await expect(goalPane.locator('[data-video-ideas-goal-page="2"]')).toBeVisible();
+      await goalPane.locator("[data-video-ideas-goals-prev]").click();
+      await expect(goalPane.locator('[data-video-ideas-goal-page="1"]')).toBeVisible();
+      await goalCards.nth(1).click();
+      await expect(goalCards.nth(1)).toHaveAttribute("aria-pressed","true");
+      await chooseScenario.click();
       await expect(conceptTab).toHaveAttribute("aria-pressed","true");
       await expect(phrases.locator("[data-video-ideas-concept-panel]")).toBeVisible();
       await personalTab.click();

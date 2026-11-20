@@ -359,7 +359,8 @@ test('My Coach has private default TTS, no stale transcription, and tap-to-recov
   assert.doesNotMatch(ui,/replayCoachReplyOnDevice|new Utterance\(spokenText/)
 
   assert.ok(media.includes('onBlocked'))
-  assert.ok(media.includes('return {cancel,resume,run,audio}'))
+  assert.ok(media.includes('return {cancel,resume,run,audio,setVolume}'))
+ assert.ok(media.includes('const setVolume=volume=>'),'voice interruption must mute speaker only')
   assert.ok(ui.includes('trainingUseConsent:true'))
   assert.doesNotMatch(loop,/api\.fish\.audio|texttospeech\.googleapis\.com/)
 })

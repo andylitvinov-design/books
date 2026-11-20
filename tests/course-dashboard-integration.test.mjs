@@ -56,7 +56,10 @@ test('other possible course directions stay visible at the free active-course li
   assert.equal(options.flatMap(nodes).filter(node => node.type === 'button').length, 0,
     'a full account can see other directions but cannot bypass the active-course quota')
   h.render({ ...props, canAddCourse: true }); await h.settle()
-  nodes(h.tree).filter(node => node.props?.['data-course-option'])[0].props.children[2].props.onClick()
+  const firstAvailableOption = nodes(h.tree).find(node => node.props?.['data-course-option'] === 'business_focus')
+  const chooseButton = firstAvailableOption && nodes(firstAvailableOption).find(node => node.type === 'button')
+  assert.ok(chooseButton, 'the available recommended course exposes an explicit choice action')
+  chooseButton.props.onClick()
   assert.equal(newCourseRequests, 1, 'an available option opens the existing catalog flow')
   h.unmount()
 })

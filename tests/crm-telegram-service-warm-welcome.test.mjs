@@ -106,6 +106,12 @@ test('service welcome photo is limited to first signed consent message and uses 
  assert.match(v3,/const agrees=general\?action==='chatagree':/);
  assert.match(v3,/serviceCopy\?\(action==='agree'\|\|action==='serviceagree'/);
  assert.match(v3,/!event\.inlineAction&&isExplicitYes\(raw\)/);
+ // The signed CRM/Secretary purpose router must retain these consent and privacy gates.
+ assert.ok(v3.includes("const emergency=v3ChatPreConsentSafetyReply(raw,lang)"));
+ assert.ok(v3.includes("const purposeReady=general||ctx.mode===FREE_DIAGNOSTIC_MODE||"));
+ assert.ok(v3.includes("(ctx.supportSelection&&ctx.conversationKind!=='general')?chatAllowed:serviceAllowed;"));
+ assert.ok(v3.includes("if(!agrees||!purposeReady)"));
+ assert.ok(v3.includes("serviceCopy?'consent':ctx.mode===FREE_DIAGNOSTIC_MODE"));
  assert.match(v3,/if\(!agrees\|\|!purposeReady\)/);
  assert.match(v3,/stage='interview',locale=\$3,ai_consent_at=now\(\)/);
  assert.match(v3,/serviceCopy\?\.first/);

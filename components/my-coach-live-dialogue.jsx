@@ -9,6 +9,7 @@ import {coachTimeboxState} from '@/lib/coaching/session-timebox.mjs'
 import {coachingBrainSafety,coachingBrainBoundary,coachingBrainStageDecision,offlineCoachingBrainReply,selectCoachingBrainMethod} from '@/lib/personal-coaching/coaching-brain.mjs'
 import {classifyWisdomRequest} from '@/lib/coaching/wisdom-retrieval.mjs'
 import {coachTurnWindow} from '@/lib/coaching/coach-turn-window.mjs'
+import {coachAudibleTurns,markLatestCoachReplyInterrupted} from '@/lib/coaching/coach-audible-history.mjs'
 import {coachEphemeralContext} from '@/lib/coaching/coach-ephemeral-context.mjs'
 import {coachModelProbeRetryAllowed} from '@/lib/coaching/coach-model-recovery.mjs'
 import {coachGoalTurn} from '@/lib/coaching/goal-turn.mjs'
@@ -166,6 +167,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const conversationLang=['en','ru','es'].includes(speechLocale)?speechLocale:lang
   const [showCaptions,setShowCaptions]=useState(false)
   const [turns,setTurns]=useState([])
+  const turnsRef=useRef(turns)
+  turnsRef.current=turns
+  const turnRequestRef=useRef(0)
   const [sessionClockStarted,setSessionClockStarted]=useState(false)
   const [introComplete,setIntroComplete]=useState(false)
   const [activeSessionSeconds,setActiveSessionSeconds]=useState(0)
@@ -511,6 +515,16 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       modelProbeRef.current.inFlight=false
     }
   }
+  function markCoachSpeechInterrupted(spokenText){
+    // Do not mark an earlier fully heard answer when an intro is interrupted.
+    turnsRef.current=markLatestCoachReplyInterrupted(turnsRef.current,spokenText)
+    setTurns(previous=>markLatestCoachReplyInterrupted(previous,spokenText))
+  }
+  function cancelPendingCoachTurn(){
+    turnRequestRef.current+=1
+    const active=pending.current
+    if(active){pending.current=null;active.abort();setBusy(false)}
+  }
   async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null}={}){
     let message=String(raw||'').trim()
     // Manual recognizer locale is authoritative for a spoken turn; never
@@ -520,18 +534,22 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         ?speechLocale:detectedSpeechLocale(message,lang)
     // Tapping the mic affirms the inline disclosure. Typed turns keep their
     // separate checkbox. Never contact a model if consent is absent.
-    if(!message||busy||paused)return
+    if(!message||paused||(!voiceTurn&&busy))return null
+    // Confirmed human speech supersedes pending inference, rather than being dropped.
+    if(voiceTurn&&pending.current)cancelPendingCoachTurn()
+    const requestId=++turnRequestRef.current
+    const conversationTurns=coachAudibleTurns(turnsRef.current)
     setSessionClockStarted(true);setIntroComplete(true)
     // Explicit quote requests use only the already-authenticated first-party
     // Wisdom Library. They do not require a free model or contact OpenRouter.
     const wisdomRequested=Boolean(classifyWisdomRequest({
-      locale:lang,message,turns:turns.map(({role,content})=>({role,content})),
+      locale:lang,message,turns:conversationTurns.map(({role,content})=>({role,content})),
     }))
     // The user sees the authored goal in the resulting transcript. No hidden
     // additional model input: only one explicit Send / consented mic turn.
     const goalTurn=coachGoalTurn({
       message,goal:selectedGoal,lastSharedGoal:lastSharedGoalRef.current,
-      locale:responseLocale,turns,skip:wisdomRequested,
+      locale:responseLocale,turns:conversationTurns,skip:wisdomRequested,
     })
     message=goalTurn.message
     // Current client correction/new topic invalidates hints from the old focus.
@@ -548,11 +566,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     // Client safety and explicit stop always win over a synthetic retry.
     // The local guard sends no client text to a provider and cannot wait for it.
     const currentInput={locale:responseLocale,message,
-      turns:turns.map(({role,content})=>({role,content}))}
+      turns:conversationTurns.map(({role,content})=>({role,content}))}
     const localInterruption=readiness.status!=='verified'
       ?(coachingBrainSafety(currentInput)||coachingBrainBoundary(currentInput)):null
     const needsVerifiedModel=readiness.status!=='verified'&&!wisdomRequested&&!localInterruption
     const modelReady=!needsVerifiedModel||await retryCoachModelAfterOutage()
+    if(turnRequestRef.current!==requestId)return null
     if(localInterruption||authRequired||(!modelReady&&!wisdomRequested)){
       // Guests and temporarily unavailable AI still get private local coaching;
       // microphone recognition must not wait for model readiness.
@@ -603,18 +622,18 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
-          personaId,settings,locale:responseLocale,consent:true,message,
+          personaId,settings,locale:responseLocale,consent:true,message,voiceTurn:voiceTurn===true,
           elapsedSeconds:sessionClockStarted?Math.floor(activeSessionSeconds):0,
-          sessionContext:coachEphemeralContext(turns,coachTurnWindow(turns,10),responseLocale,message),
+          sessionContext:coachEphemeralContext(conversationTurns,coachTurnWindow(conversationTurns,10),responseLocale,message),
           semanticHints:semanticHintsRef.current,
-          turns:coachTurnWindow(turns,10)
+          turns:coachTurnWindow(conversationTurns,10)
             .map(({role,content})=>({role,content})), // Preserve the latest client-stated active goal, not a greeting.
         }),
       })
       if(response.status===401){setAuthRequired(true);return}
       const result=await response.json().catch(()=>null)
       if(!response.ok||!result?.mode||result.personaId!==personaId)throw Error('COACH_REPLY_UNAVAILABLE')
-      if(controller.signal.aborted)return
+      if(controller.signal.aborted||turnRequestRef.current!==requestId)return null
       const answer=assistantText(result)
       if(!answer||answer.length>900)throw Error('COACH_REPLY_UNAVAILABLE')
       if(result.mode==='ai'&&result.semanticEvidence&&
@@ -652,7 +671,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(result.mode==='ai'&&result.planSuggestion)setEditablePlan(result.planSuggestion)
       return {reply:answer,mode:result.mode,locale:responseLocale}
     }catch{
-      if(!controller.signal.aborted)setError(t.error)
+      if(!controller.signal.aborted&&turnRequestRef.current===requestId)setError(t.error)
       return null
     }finally{
       if(pending.current===controller){pending.current=null;setBusy(false)}
@@ -742,7 +761,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             introduction={introduction} onSessionStart={()=>setCloudAgreed(true)}
             cloudAvailable={cloudAvailable} cloudAgreed={cloudAgreed} cloudProvider={cloudProvider} personaId={personaId} enabled={true}
             canStart={!busy&&!paused&&!replaying} onTurn={(text,spoken)=>sendMessage(text,{voiceTurn:true,utteranceLocale:spoken?.locale})}
-            onCancelTurn={()=>pending.current?.abort()} onVoiceStateChange={setVoiceState}
+            onCancelTurn={cancelPendingCoachTurn} onCoachInterrupted={markCoachSpeechInterrupted} onVoiceStateChange={setVoiceState}
             onMicLevel={level=>{
               const wave=micWaveRef.current
               if(!wave)return

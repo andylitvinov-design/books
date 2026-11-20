@@ -379,7 +379,8 @@ test("WebKit traverses Ideas Personalization and Concept before consented Voice/
    opened>back&&voice>opened&&my>voice&&record>my&&tap>record&&
    phrase>tap&&consent>phrase,"real WebKit route must use visible controls before TTS consent");
  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
- assert.equal((studio.match(/data-video-ideas-tab="/g)||[]).length,2);
+ assert.equal((studio.match(/data-video-ideas-tab="/g)||[]).length,3);
+ assert.match(studio,/data-video-ideas-goal-panel hidden=\{ideasSubtab!=="goal"\}/);
  assert.match(studio,/data-video-ideas-recording-open=\{ideasVoiceAdvancedOpen\?"true":"false"\}/);
  assert.match(studio,/data-video-ideas-voice-mode="my-voice"/);
  assert.doesNotMatch(browser,/await advancedVoice\.locator\(":scope > summary"\)\.click\(\)/);
