@@ -1458,7 +1458,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         event.currentTarget.value="";
       }}/>
   </label>:null;
-  const resetControl=<button type="button" data-hh-ai-reset-conversation onClick={resetConversation}>{t.reset}</button>;
+  const resetControl=<button type="button" onClick={resetConversation}>{t.reset}</button>;
   const voiceControls=voiceEnabled?<VoiceCompanionControls voice={voice} locale={locale}
     privacyOnly={Boolean(pageHelp)||messengerView}
     greeting={pageHelp?.greeting??starter.welcome}
