@@ -6,7 +6,7 @@ export type PersonalizedVideoGoal={
  scenarioStrategy:VideoGoalStrategy; secondaryScenarioStrategy:VideoGoalStrategy;
  photo:string; topicId:string|null; categoryId:string|null; subcategoryId:string|null;
  meaningAxisId:string; currentId:string|null; desiredId:string|null;
- ordinal:number; measurement:"enjoyment_rating"|"support_rating"|"goal_progress_rating";
+ ordinal:number; voicePerson:"first"|"second"|"none"; measurement:"enjoyment_rating"|"support_rating"|"goal_progress_rating";
  copy:Partial<Record<VideoGoalLocale,{title:string;detail:string;intent:string}>>;
 };
 export type VideoGoalOptions={
@@ -19,7 +19,7 @@ export declare const VIDEO_GOAL_TYPES:readonly VideoGoalType[];
 export declare function buildPersonalVideoGoalOptions(input?:{
  locale?:VideoGoalLocale;wish?:string;theme?:string;
  selectedTopic?:{topicId?:string|null}|null;
- profile?:{current?:string[];desired?:string[];axes?:string[];energy?:number;desiredLevel?:number}|null;
+ profile?:{current?:string[];desired?:string[];axes?:string[];supportNeed?:string;energy?:number;desiredLevel?:number}|null;
  profileConfirmed?:boolean;
 }):VideoGoalOptions;
 export declare function composePersonalVideoGoalIntent(
@@ -28,5 +28,5 @@ export declare function composePersonalVideoGoalIntent(
 export declare function goalScenarioPlan(selected:PersonalizedVideoGoal|null|undefined,contextKey:string):{
  id:string;type:VideoGoalType;mechanismId:string;
  scenarioStrategy:VideoGoalStrategy;secondaryScenarioStrategy:VideoGoalStrategy;
- meaningAxisId:string;topicId:string|null;contextKey:string
+ meaningAxisId:string;topicId:string|null;voicePerson:"first"|"second"|"none";contextKey:string
 }|null;

@@ -97,3 +97,15 @@
  .choiceScroll{gap:5px;height:101px}.choice{min-height:47px;font-size:12px}
  .axisGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+
+/* Purpose-specific supportive question: readable two-column choices on iPhone. */
+.card[data-personalization-kind="support"]:before{
+ background-image:linear-gradient(90deg,#fffcf7 3%,#fffcf7ae 40%,#ffffff14 100%),
+ linear-gradient(0deg,#fffcf7 0%,transparent 65%),
+ url("/videos/holistic-house/film-collection-v2/calm-sea.jpg")
+}
+.card[data-personalization-kind="support"] .axisGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.card[data-personalization-kind="support"] .axisGrid button{
+ min-height:56px;padding:9px 10px;font-size:clamp(13px,3.6vw,16px);line-height:1.2
+}
