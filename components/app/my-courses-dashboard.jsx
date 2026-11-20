@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, BookOpenCheck, Check, ChevronDown, Crown, HeartHandshake, Leaf, LockKeyhole, Plus, Sparkles, Star, X } from 'lucide-react'
+import { ArrowRight, BookOpenCheck, Check, ChevronDown, Crown, HeartHandshake, Leaf, LockKeyhole, Play, Plus, Sparkles, Star, X } from 'lucide-react'
 import { GROWTH_GOALS, COURSE_TOPICS } from '@/lib/inner-growth/course-model'
 import { COURSE_PLANS } from '@/lib/inner-growth/course-plans'
 import { canStartCheckout, PURCHASABLE_PLAN_KEYS } from '@/lib/billing/public-plan'
@@ -102,8 +102,11 @@ function CourseTile({course,locale,t,hero=false,onOpen,onClose,onMakePrimary,bus
         <span style={{width:progress+'%'}}/>
       </div>
       <div className={styles.tileActions}>
-        <button className={styles.primaryButton} type="button" disabled={busy} onClick={()=>onOpen(course)}>
-          {course.stage===4?t.today:t.setup}<ArrowRight size={16} aria-hidden="true"/>
+        <button className={hero ? styles.coursePlayButton : styles.primaryButton} type="button"
+          disabled={busy} data-course-open-action onClick={()=>onOpen(course)}
+          aria-label={hero ? (course.stage===4?t.today:t.setup) : undefined}>
+          <span className={hero ? styles.srOnly : undefined}>{course.stage===4?t.today:t.setup}</span>
+          {hero ? <Play size={20} fill="currentColor" aria-hidden="true"/> : <ArrowRight size={16} aria-hidden="true"/>}
         </button>
         {!hero&&!course.isPrimary&&!finished&&<button type="button" className={styles.linkButton}
           disabled={busy||!canManageCourses} onClick={()=>onMakePrimary(course)}>{t.primaryAction}</button>}
@@ -192,6 +195,21 @@ export default function MyCoursesDashboard({
           </span>
         </article>)}
       </div>
+    </section>
+    <section className={styles.bonusSection} aria-label={locale==='ru'?'Бонусный курс Практик Рейки':'Free Reiki Practitioner bonus course'}>
+      <Link className={styles.bonusCard} data-reiki-practitioner-bonus
+        href={'/' + (locale==='ru'?'ru':'en') + '/academy/principles-of-energywork/learn'} prefetch={false}>
+        <span className={styles.bonusPhoto} aria-hidden="true">
+          <img src="/academy/reiki-yggdrasil/source/program-overview.jpg"
+            width={176} height={140} alt="" loading="lazy" decoding="async"/>
+        </span>
+        <span className={styles.bonusBody}>
+          <small className={styles.bonusEyebrow}>{locale==='ru'?'БОНУС · БЕСПЛАТНО':'BONUS · FREE'}</small>
+          <strong>{locale==='ru'?'Практик Рейки':'Reiki Practitioner'}</strong>
+          <small>{locale==='ru'?'Бесплатные уроки и практики. Инициация отдельно.':'Free lessons and practices. Initiation is separate.'}</small>
+        </span>
+        <span className={styles.bonusArrow} aria-hidden="true"><ArrowRight size={20}/></span>
+      </Link>
     </section>
     <details className={styles.moreFree}>
       <summary>{locale==='ru'?'Все бесплатные программы':'More free programmes'}</summary>

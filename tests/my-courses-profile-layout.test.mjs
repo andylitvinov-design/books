@@ -47,3 +47,40 @@ test('The source-backed course progress and account actions remain intact', () =
   assert.match(css, /\.recommendGrid\{/)
   assert.doesNotMatch(courses, /data-course-quick-tile/)
 })
+
+const shellCss = src('app/[locale]/app/[[...path]]/workspace.css')
+const hubCss = src('components/app/profile-hub-tabs.module.css')
+const profileCss = src('components/app/profile-space-dashboard.module.css')
+
+test('Saved course index is top-flush and preserves the one-row profile header at phone widths', () => {
+  assert.match(workspace, /courseLanding \? 'hh-app hh-app--course-index' : 'hh-app'/)
+  assert.match(shellCss, /\.hh-app\.hh-app--course-index\{padding-top:0\}/)
+  assert.match(hub, /data-profile-course-index=\{isCourseLanding \? 'true' : undefined\}/)
+  assert.match(hubCss, /\.hub\[data-profile-course-index="true"\] \.headingTitle\{/)
+  assert.match(hubCss, /display:flex;flex:1 1 auto;align-items:center/)
+  assert.match(profileCss, /\.dashboard\[data-profile-course-landing\] \.mode \.life\{color:#fff!important\}/)
+  assert.match(profileCss, /\.dashboard\[data-profile-course-landing\] \.pathText strong\{color:#103f35!important\}/)
+})
+
+test('Started-course compact action retains exact saved progress and existing close-confirmation behavior', () => {
+  assert.match(courses, /data-course-open-action onClick=\{\(\)=>onOpen\(course\)\}/)
+  assert.match(courses, /hero \? <Play size=\{20\} fill="currentColor"/)
+  assert.match(courses, /data-course-close-cross/)
+  assert.match(courses, /aria-valuenow=\{completed\}/)
+  assert.match(css, /\.dashboard \.mainCard \.coursePhoto\{min-height:112px\}/)
+  assert.match(css, /\.dashboard \.mainCard \.tileRemoveButton\{/)
+  assert.match(css, /\.dashboard \.recommendPhoto\{height:66px;min-height:0;aspect-ratio:auto\}/)
+})
+
+test('Free Reiki Practitioner bonus is visible below the recommendations and routes to the existing Academy', () => {
+  assert.match(courses, /data-reiki-practitioner-bonus/)
+  assert.match(courses, /\/academy\/principles-of-energywork\/learn/)
+  assert.match(courses, /Практик Рейки/)
+  assert.match(courses, /Reiki Practitioner/)
+  assert.match(courses, /Инициация отдельно/)
+  assert.match(courses, /BONUS · FREE/)
+  assert.ok(courses.indexOf('data-reiki-practitioner-bonus') > courses.indexOf('data-course-options'))
+  assert.ok(courses.indexOf('data-reiki-practitioner-bonus') < courses.indexOf('styles.moreFree'))
+  assert.match(css, /\.bonusCard\{/)
+  assert.match(courses, /CabinetFreeCourseBanners locale=\{locale\}/)
+})
