@@ -248,9 +248,10 @@ test("hydrated Studio gates the first local MP4 test before its first real user 
  const benchmark=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
  assert.match(studio,/data-video-studio-hydrated=\{studioHydrated\?"true":"false"\}/);
  assert.match(studio,/useEffect\(\(\)=>setStudioHydrated\(true\),\[\]\)/);
- assert.ok(benchmark.indexOf("data-video-studio-hydrated")<benchmark.indexOf("data-video-first-video-advanced"),
-   "hydration must complete before the first direct free-video disclosure");
- assert.match(benchmark,/LICENSED_SCENE_ORDER_MISMATCH/);
+ assert.ok(benchmark.indexOf("data-video-studio-hydrated")<benchmark.indexOf("[data-auto-video-input]"),
+   "hydration must complete before the first real Goal input and Express action");
+ assert.match(benchmark,/EXPRESS_TEST_RECIPE_NOT_SIX_SCENES/);
+ assert.match(benchmark,/EXPRESS_CANONICAL_SCENE_ORDER_OR_IDENTITY_MISMATCH/);
 });
 
 test("owner 03 Nov: compact tabs, real scenario updates and moved settings",()=>{
@@ -355,11 +356,10 @@ test("Ideas → Montage cancels stale scroll on a genuine quick-tab action",()=>
   assert.ok(navAt>=0);
   assert.match(studio.slice(navAt,navAt+270),/quickNavTokenRef\.current\+\+/);
   const browser=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
-  assert.match(browser,/MONTAGE_TAB_MUST_ACTIVATE/);
-  assert.match(browser,/data-video-montage-tab="effects"/);
-  assert.match(browser,/MONTAGE_MUST_START_WITH_STYLE/);
-  assert.match(browser,/GUEST_APPROVAL_MUST_SURVIVE_TAB_NAVIGATION/);
-  assert.match(browser,/CONCEPT_TEXT_TOOLS_DID_NOT_OPEN/);
+  assert.match(browser,/getByRole\('button',\{name:'Just make it'\}\)/);
+  assert.match(browser,/expressGenerateClicks=1/);
+  assert.match(browser,/EXPRESS_VIDEO_MUST_BE_30_SECONDS/);
+  assert.doesNotMatch(browser,/data-video-continue-scenarios/);
 });
 
 // Owner-approved UX: direct export and advancing to effects are independent.

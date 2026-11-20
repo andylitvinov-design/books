@@ -124,7 +124,7 @@ test("silent WebKit exports H.264 even without AudioEncoder, never fakes voice A
 test("Safari failure exposes a safe code and an explicit lighter same-renderer retry",()=>{
   assert.match(studio,/const \[webkitRecoveryReason,setWebkitRecoveryReason\] = useState<string\|null>\(null\)/);
   assert.match(studio,/setWebkitRecoveryReason\(null\)/);
-  assert.match(studio,/const safariRetryScale=useWebCodecsMp4&&\(safeWebkitRetry\|\|isApplePhone\)/);
+  assert.match(studio,/const safariRetryScale=\(isApplePhone\|\|\(useWebCodecsMp4&&safeWebkitRetry\)\)/);
   assert.match(studio,/540\/\(quality==="fullhd"\?1080:720\)/);
   assert.match(studio,/data-video-webkit-safe-retry/);
   assert.match(studio,/onClick=\{\(\)=>void createVideo\(false,false,true\)\}/);
@@ -226,29 +226,21 @@ test("physical voice WebKit checks real Settings and Audio, exclusive Hypno tabs
  assert.match(browser,/await expect\(audioGroup\)\.toBeVisible\(\)/);
  assert.doesNotMatch(browser,/data-video-montage-settings|data-video-basic-tab=|data-video-audio-length="/);
  assert.match(browser,/encoded-audio-verified/);
- // Preserve the real first guest movie flow on the current tabbed Montage.
+ // The required browser export must exercise the real Goal → Just make it
+ // Express route, then inspect the actual encoded 30-second H.264/AAC file.
  const firstVideo=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
- assert.match(firstVideo,/const montageStyle=page\.locator\('\[data-video-montage-tab="effects"\]'\)/);
- assert.match(firstVideo,/await montageStyle\.click\(\)/);
- assert.match(firstVideo,/await page\.locator\('\[data-video-ideas-tab="concept"\]'\)\.click\(\)/,
-   "visitor can review the preserved Concept through the visible Ideas tab");
- assert.match(firstVideo,/const concept=page\.locator\('\[data-video-ideas-concept-panel\]'\)/);
- assert.match(firstVideo,/await concept\.waitFor\(\{state:'visible',timeout:15000\}\)/,
-   "the actual Concept panel is visible before explicit guest approval");
- // The current visitor path verifies native guest Approve is enabled before
- // using the platform-specific real tap/click. Preserve all three checks.
- assert.match(firstVideo,/const conceptApprove=concept\.locator\('\[data-video-concept-approve\]'\)/,
-   "the button belongs to the reviewed Ideas Concept");
- assert.match(firstVideo,/await conceptApprove\.isEnabled\(\)/,
-   "a guest can genuinely approve their preview, not just see an inert control");
- assert.match(firstVideo,/else await conceptApprove\.click\(\)/,
-   "guest explicitly approves Concept before timeline editing");
- assert.match(firstVideo,/const textTools=page\.locator\('\[data-video-concept-text-tools\]'\)/,
-   "original timeline is reachable through the Concept disclosure");
- assert.match(firstVideo,/await addVideo\.click\(\)/,
-   "real source picker must remain accessible after Concept approval");
+ assert.match(firstVideo,/data-video-request-design\]\[data-video-request-flow="instant"\]/);
+ assert.match(firstVideo,/await instant\.tap\(\)/,
+   "WebKit physically taps the visible Just make it option");
+ assert.match(firstVideo,/await generate\.tap\(\)/,
+   "WebKit physically taps the visible one-click Express Generate control");
+ assert.doesNotMatch(firstVideo,/data-video-continue-scenarios/,
+   "required export does not depend on a hidden legacy Continue button");
+ assert.match(firstVideo,/EXPRESS_VIDEO_MUST_BE_30_SECONDS/);
+ assert.match(firstVideo,/EXPRESS_VIDEO_MUST_USE_H264/);
+ assert.match(firstVideo,/EXPRESS_AUDIO_MUST_USE_AAC/);
+ assert.match(firstVideo,/EXPRESS_SCENE_NOT_MOVING/);
  assert.match(firstVideo,/readRealGuestVideo\(page,\{timeout:80000\}\)/);
- assert.match(firstVideo,/FOUR_DISTINCT_SOURCES_REQUIRED/);
  assert.match(browser,/assert\.ok\(pcm\.stdout\.some\(value=>value!==0\)/);
 });
 
@@ -495,7 +487,7 @@ test("physical iPhone gets one 540p H264/AAC encode, never auto-unplayable WebM"
   assert.equal(shouldAutoRecoverSafariPlayback({safariWebKit:true,format:"mp4",errorCode:4,
     nativeWebm:true,userAgent:iphone}),false);
   assert.match(studio,/const isApplePhone=\/iPhone\|iPad\|iPod\/i.test\(ua\)/);
-  assert.match(studio,/safariRetryScale=useWebCodecsMp4&&\(safeWebkitRetry\|\|isApplePhone\)/);
+  assert.match(studio,/safariRetryScale=\(isApplePhone\|\|\(useWebCodecsMp4&&safeWebkitRetry\)\)/);
   assert.match(studio,/if\(!safariWebKit\|\|isApplePhone\|\|safeWebkitRetry\|\|!recoverable/);
   assert.match(studio,/userAgent:ua,maxTouchPoints:navigator.maxTouchPoints/);
   assert.match(helper,/avc1\.42001f/);
@@ -503,4 +495,31 @@ test("physical iPhone gets one 540p H264/AAC encode, never auto-unplayable WebM"
   assert.match(helper,/const h264=baselineSupported\|\|await canEncodeVideo\("avc",videoConfig\)/);
   assert.match(studio,/creditValidRef\.current=Boolean\(creditOpRef\.current\)/);
   assert.match(studio,/if\(creditOpRef\.current&&!creditValidRef\.current\)/);
+});
+
+test("real iPhone prefers native playable MP4 and uses WebCodecs only as an explicit alternate",async()=>{
+  const {selectWebCodecsForRecording:select}=await import("../lib/mandala/recording-codecs.mjs");
+  const phone="Mozilla/5.0 (iPhone; CPU iPhone OS 26_6 like Mac OS X) AppleWebKit/605.1.15";
+  const ipad="Mozilla/5.0 (Macintosh; Intel Mac OS X) AppleWebKit/605.1.15 Safari/605.1.15";
+  const safari={hasWebCodecs:true,safariWebKit:true,procedural:true,proceduralRoute:"native"};
+  assert.equal(select({...safari,nativeMp4Available:true,userAgent:phone}),false,
+    "native AVC/AAC source is the FIRST, single iPhone encoder");
+  assert.equal(select({...safari,nativeMp4Available:false,userAgent:phone}),true,
+    "missing native MP4 retains the existing WebCodecs path");
+  assert.equal(select({...safari,nativeMp4Available:true,userAgent:phone,forceWebCodecs:true}),true,
+    "a user explicitly chooses the different fallback encoder, never an automatic duplicate");
+  assert.equal(select({...safari,nativeMp4Available:true,userAgent:ipad,maxTouchPoints:5}),false);
+  assert.equal(select({...safari,nativeMp4Available:true,userAgent:ipad,maxTouchPoints:0}),true,
+    "desktop macOS WebKit keeps its existing real-media CI path");
+  assert.equal(select({...safari,nativeMp4Available:true,userAgent:phone,preferWebm:true}),false,
+    "iPhone WebM is never an automatic escape hatch");
+  assert.match(studio,/MediaRecorder\.isTypeSupported\("video\/mp4"\)/);
+  assert.match(studio,/nativeMp4Available:nativeAppleMp4Available/);
+  assert.match(studio,/lastExportEngineRef\.current=useWebCodecsMp4\?"webcodecs":"native"/);
+  assert.match(studio,/const framesPerSecond=isApplePhone\?8/);
+  assert.match(studio,/videoBitsPerSecond:isApplePhone\?1_400_000/);
+  assert.match(studio,/mime===explicitAvcMime\|\|\(nativeAppleMp4Available&&mime==="video\/mp4"\)/);
+  assert.match(studio,/if\(iphoneWebCodecsFallbackAvailable\)void createVideo\(false,false,true,true\)/);
+  assert.match(studio,/if\(creditOpRef\.current\)return/);
+  assert.match(studio,/if\(held&&creditValidRef\.current\)await releaseCredit\(held\)/);
 });

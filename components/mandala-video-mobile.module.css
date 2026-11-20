@@ -5775,3 +5775,18 @@
  .studio[data-active-workspace="phrases"] .ideasSubtabs button svg{display:none!important}
  .studio[data-active-workspace="phrases"] .ideasSubtabs button{font-size:clamp(11px,3.45vw,15px)!important}
 }
+
+/* Explicit 9:16 / 16:9 choice for a user-approved SIX-PHOTO montage.
+   Keep the existing 66px Story scene cards unchanged on small iPhones. */
+.storyPhotoAspectChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;margin:5px 0 9px;min-width:0}
+.storyPhotoAspectChoices>button{min-height:42px;min-width:0;border:1px solid #cbded4;
+  border-radius:12px;background:#fdfbf6;color:#285747;
+  font:650 13px/1.2 Arial,Helvetica,sans-serif;cursor:pointer;padding:7px 5px}
+.storyPhotoAspectChoices>button[aria-pressed="true"]{background:#e5f4ed;
+  border-color:#118268;color:#075f49;box-shadow:inset 0 0 0 1px #118268}
+.storyPhotoAspectChoices>button:focus-visible{outline:3px solid #118268;
+  outline-offset:2px}
+.storyPhotoAspectChoices>button:disabled{opacity:.5;cursor:default}
+@media(max-width:350px){.storyPhotoAspectChoices{gap:5px}
+ .storyPhotoAspectChoices>button{font-size:12px;padding-inline:3px}}
