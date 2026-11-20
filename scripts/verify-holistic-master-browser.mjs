@@ -14,11 +14,11 @@ if (!/^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(origin))
 const output = "artifacts/holistic-support-mobile";
 await mkdir(output, {recursive: true});
 const copy = {
-  en: { title: "Holistic Support", tab: "Shamanica", accessible: "Shamanica",
+  en: { title: "Holistic Support", tab: "Shamanic", accessible: "Shamanic",
     question: "How can I find clarity this week?", intention: "I want calm before an important decision." },
-  ru: { title: "Холистическая поддержка", tab: "Шаманика", accessible: "Шаманика",
+  ru: { title: "Холистическая поддержка", tab: "Шаманик", accessible: "Шаманик",
     question: "Как прояснить мой выбор на этой неделе?", intention: "Хочу больше спокойствия перед важным решением." },
-  es: { title: "Apoyo holístico", tab: "Shamanica", accessible: "Shamanica",
+  es: { title: "Apoyo holístico", tab: "Shamanic", accessible: "Shamanic",
     question: "¿Cómo aclarar mi situación esta semana?", intention: "Quiero calma antes de una decisión importante." },
 };
 const evidence = [];
