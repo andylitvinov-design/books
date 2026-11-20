@@ -168,3 +168,19 @@ test('price question about named service retains verified page hint but does not
    assert.doesNotMatch(r.reply,/booked|reserved|забронировал|reservado/i);
  }
 });
+
+test('asking what a service is does not imply choosing or booking it',()=>{
+ for(const [locale,text,id] of [
+  ['ru','Что такое системные расстановки?','constellations'],
+  ['en','What is guided imagery therapy?','imagery'],
+  ['es','¿Qué es una constelación familiar?','constellations'],
+  ['ru','Есть ли у вас бизнес-консультация?','business'],
+  ['en','Do you offer a free written review?','free-review'],
+ ]){
+   const r=sessionSecretaryMessage(text,locale);
+   assert.equal(r.kind,'information',text);
+   assert.equal(r.serviceId,id,text);
+   assert.doesNotMatch(r.reply,/вы выбрали|you selected|has elegido/i);
+   assert.match(r.reply,/страниц|published|página/i);
+ }
+});
