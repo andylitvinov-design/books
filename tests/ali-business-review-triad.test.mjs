@@ -6,7 +6,10 @@ import {aliBusinessReviewConsent,aliBusinessReviewAnswer,aliBusinessReviewSummar
 import {telegramBusinessConversationReply} from '../lib/assist/telegram-business-request.mjs';
 const source=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('an explicit yes is needed before any sensitive fact is accepted',()=>{
- for(const word of ['да','yes','sí','Подтвердить'])assert.equal(aliBusinessReviewConsent(word),'yes');
+ for(const word of ['да','yes','sí','да, начнём'])assert.equal(aliBusinessReviewConsent(word),'yes');
+ // Confirmation of an order is not consent to personal interview questions.
+ for(const word of ['Подтвердить','Confirm','Confirmar','отправить запрос'])
+   assert.equal(aliBusinessReviewConsent(word),null,word);
  for(const word of ['нет','no thanks','ahora no'])assert.equal(aliBusinessReviewConsent(word),'no');
  assert.equal(aliBusinessReviewConsent('My family is complicated'),null);
  assert.equal(aliBusinessReviewValidated({version:1,consented:false,answers:{goal:'Important'}}),null);
