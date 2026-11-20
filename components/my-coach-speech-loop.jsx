@@ -41,7 +41,7 @@ const words={
     iosCue:'Sí.',iosPreparing:'Restableciendo el reconocimiento del iPhone…',iosAwaitSpeech:'Micrófono iniciado; esperando tu voz…',iosSilent:'Safari en iPhone dejó de entregar voz. Puedes escribir o cerrar completamente Safari y volver a abrirlo para restablecer el audio.',iosCueFailed:'Safari no pudo restablecer el reconocimiento. Escribe o reinicia Safari antes de volver a tocar el micrófono.',iosAwaitEnd:'Texto listo. Esperando el final de Safari…',audioHearing:'Voz detectada…',audioTranscribing:'Transcribiendo tu voz…',audioQuiet:'Micrófono activo · esperando tu voz.',audioNoSignal:'Sin señal de audio. Reintenta con Mic o escribe.',deviceFallback:'Voz temporal del dispositivo: voz natural no disponible.',audioUnavailable:'El reconocimiento está temporalmente no disponible. Puedes escribir.'},
 }
 
-const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speechLocale='auto',initialDraft='',enabled=false,canStart=true,cloudAvailable=false,cloudAgreed=false,cloudProvider=null,personaId='mira',introduction='',onSessionStart,onTurn,onCancelTurn,onVoiceStateChange,onVoiceLevel,onMicLevel,onRequestConsent,onTranscript,onDraft},ref){
+const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speechLocale='auto',initialDraft='',enabled=false,canStart=true,cloudAvailable=false,cloudAgreed=false,cloudProvider=null,personaId='mira',introduction='',onSessionStart,onTurn,onCancelTurn,onCoachInterrupted,onVoiceStateChange,onVoiceLevel,onMicLevel,onRequestConsent,onTranscript,onDraft},ref){
   const lang=words[locale]?locale:'en',t=words[lang]
   const [phase,setPhase]=useState('idle')
   const [notice,setNotice]=useState('')
@@ -80,7 +80,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   // If Safari's reset cue jams, keep the same session and avoid repeating it.
   const iosCueBrokenRef=useRef(false)
   const generationRef=useRef(0)
-  const turnRef=useRef(onTurn),cancelRef=useRef(onCancelTurn),stopRef=useRef(null),sessionStartRef=useRef(onSessionStart)
+  const turnRef=useRef(onTurn),cancelRef=useRef(onCancelTurn),interruptedRef=useRef(onCoachInterrupted),stopRef=useRef(null),sessionStartRef=useRef(onSessionStart)
   const voiceStateRef=useRef(onVoiceStateChange),levelRef=useRef(onVoiceLevel)
   const micLevelRef=useRef(onMicLevel)
   const beatRef=useRef(0)
@@ -95,6 +95,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   turnRef.current=onTurn
   sessionStartRef.current=onSessionStart
   cancelRef.current=onCancelTurn
+  interruptedRef.current=onCoachInterrupted
   voiceStateRef.current=onVoiceStateChange
   levelRef.current=onVoiceLevel
   micLevelRef.current=onMicLevel
@@ -196,7 +197,9 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   }
   function interruptCoachToListen(){
     if(!activeRef.current)return
-    const computing=phaseRef.current==='thinking'
+    const interruptedPhase=phaseRef.current
+    if(['loading','speaking'].includes(interruptedPhase))interruptedRef.current?.(lastSpokenCoachRef.current)
+    const computing=interruptedPhase==='thinking'
     if(computing){
       // Aborting the old model reply must never allow it to start speaking
       // after the client's next utterance has already begun.
@@ -207,7 +210,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     // Safari 27's native SpeechRecognition is unreliable; reuse the already
     // captured mic. Desktop has working browser ASR: do not burn one of the
     // shared, limited Whisper uploads on an ordinary manual interruption.
-    if(ios27NeedsSpeechRecovery(window.navigator)&&
+    if(!computing&&ios27NeedsSpeechRecovery(window.navigator)&&
        recordedTurnRef.current?.continueAfterCoach?.()){
       changePhase('listening');setNotice('')
       return
@@ -225,7 +228,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
        microphonePermissionStateRef.current==='denied')return
     const begin=()=>{
       if(!activeRef.current||generationRef.current!==generation||
-         phaseRef.current!=='speaking'||recordedTurnRef.current)return
+         !['thinking','loading','speaking'].includes(phaseRef.current)||recordedTurnRef.current)return
       const selected=chooseDictationLanguage({locale:lang,selection:speechLocaleRef.current,
         browserLanguages:window.navigator.languages?.length?window.navigator.languages:[window.navigator.language],
         lastTranscript:lastHeardRef.current})
@@ -233,27 +236,36 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       recognizedLanguageRef.current=selected
       const transcriptionLocale=selected.slice(0,2)
       draftAtStartRef.current=coachDraftWithoutUncertainSpeech(currentDraftRef.current,uncertainSpeechDraftRef.current)
-      let interrupted=false
+      let interrupted=false,monitorGeneration=generation
       const monitor=startCoachRecordedTurn({
         locale:transcriptionLocale,environment:window,
         audioContext:audioContextRef.current,monitorPlayback:true,
         onLevel:value=>{if(activeRef.current&&generationRef.current===generation)micLevelRef.current?.(value)},
         onState:state=>{
-          if(!activeRef.current||generationRef.current!==generation)return
+          if(!activeRef.current||generationRef.current!==monitorGeneration)return
           if(state==='transcribing'){changePhase('thinking');setNotice(t.audioTranscribing)}
           else if(state==='hearing'){setNotice(t.audioHearing)}
         },
         onCandidate:()=>{if(phaseRef.current==='speaking')duckCoachVolume()},
         onCandidateExpired:()=>{if(phaseRef.current==='speaking')restoreCoachVolume()},
         onSpeechDetected:()=>{
-          if(!activeRef.current||generationRef.current!==generation)return
+          if(!activeRef.current||generationRef.current!==monitorGeneration)return
           interrupted=true
+          const interruptedPhase=phaseRef.current
+          if(interruptedPhase==='thinking'){
+            // Transfer this same microphone capture into the next AI turn.
+            monitorGeneration=generationRef.current+1
+            generationRef.current=monitorGeneration
+            cancelRef.current?.()
+          }else if(['loading','speaking'].includes(interruptedPhase)){
+            interruptedRef.current?.(lastSpokenCoachRef.current)
+          }
           cancelOutgoingCoachSpeech()
           changePhase('listening')
           setNotice(t.audioHearing)
         },
         onResult:value=>{
-          if(!activeRef.current||generationRef.current!==generation)return
+          if(!activeRef.current||generationRef.current!==monitorGeneration)return
           recordedTurnRef.current=null
           if(interrupted&&isCoachBargeEcho(value,lastSpokenCoachRef.current)){
             // A false interruption must not create a duplicate model request.
@@ -266,10 +278,10 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
           void deliver(appendSpokenAnswer(draftAtStartRef.current,value,1200))
         },
         onFailure:code=>{
-          if(!activeRef.current||generationRef.current!==generation)return
+          if(!activeRef.current||generationRef.current!==monitorGeneration)return
           recordedTurnRef.current=null
           // A monitor failure must NEVER cut off the existing coach audio.
-          if(!interrupted&&phaseRef.current==='speaking')return
+          if(!interrupted)return // Monitoring errors never abort current inference or speech.
           if(['STT_UNAVAILABLE','MIC_CAPTURE'].includes(code))
             recordedSttUnavailableRef.current=true
           startListening()
@@ -336,6 +348,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       // Play is the single deliberate gesture that starts coach audio followed
       // by browser recognition. No recording, upload or second mic tap.
       primeMicrophonePermission()
+      beginVoiceBargeMonitor(generationRef.current)
       void speakCoachReply({reply:String(introduction||'').slice(0,900),mode:'intro'},'',generationRef.current,naturalVoice)
       return true
     },
@@ -790,6 +803,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     hasRecognizedRef.current=true
     setNotice('') // Clear the old user transcript before coach speech.
     changePhase('thinking')
+    beginVoiceBargeMonitor(generation) // Listen even while AI and TTS are pending.
     const modelStartedAt=typeof performance!=='undefined'?performance.now():null
     let result
     try{
@@ -812,7 +826,13 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       currentDraftRef.current=text
       draftRef.current?.(text)
       transcriptRef.current?.('')
-      startListening()
+      if(ios27NeedsSpeechRecovery(window.navigator)&&
+         recordedTurnRef.current?.continueAfterCoach?.())changePhase('listening')
+      else{
+        recordedTurnRef.current?.cancel()
+        recordedTurnRef.current=null
+        startListening()
+      }
       setNotice(t.failed)
       return
     }
@@ -1063,6 +1083,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       primedAudioRef.current=audioContextRef.current?null:primeCoachingAudioGesture()
       changePhase('loading')
       primeMicrophonePermission()
+      beginVoiceBargeMonitor(generationRef.current)
       void speakCoachReply({reply:String(introduction||'').slice(0,900),mode:'intro'},'',generationRef.current,true)
       return
     }
