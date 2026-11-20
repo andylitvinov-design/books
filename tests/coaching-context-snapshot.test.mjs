@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import {execFileSync} from 'node:child_process'
 import {projectCoachContextSnapshot as buildCoachContextSnapshot} from '../lib/personal-coaching/client-context.mjs'
 
 const plan={
@@ -41,4 +42,15 @@ test('does not send sensitive Life Plan text even when its source session has co
  const snapshot=buildCoachContextSnapshot({plan:sensitive})
  assert.equal(snapshot.items.some(item=>/trauma/i.test(item.text)),false)
  assert.ok(snapshot.excludedReasonCodes.includes('SENSITIVE_ITEM_EXCLUDED'))
+})
+
+test('external model loader cannot project a Life Plan using legacy consent',()=>{
+  const moduleUrl=new URL('../lib/app/coaching-context-snapshot.js',import.meta.url)
+  const result=JSON.parse(execFileSync(process.execPath,['--conditions=react-server','--input-type=module','-e',
+    `import {loadCoachContextSnapshot} from ${JSON.stringify(moduleUrl.href)};
+     console.log(JSON.stringify(await loadCoachContextSnapshot({
+       plan:${JSON.stringify(plan)},actor:{id:'owner'},config:{},provider:'groq'
+     })));`],{encoding:'utf8'}))
+  assert.deepEqual(result.items,[])
+  assert.deepEqual(result.excludedReasonCodes,['PROVIDER_SCOPED_CONSENT_REQUIRED'])
 })
