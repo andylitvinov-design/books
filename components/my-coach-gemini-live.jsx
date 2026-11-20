@@ -321,6 +321,13 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     try{
       r.stream=await microphone
       if(r.ended){for(const track of r.stream.getTracks())track.stop();return}
+      // Safari can revoke the microphone when a call takes over, privacy is
+      // changed, or iOS suspends media. Do not leave a silent "Listening" UI.
+      for(const track of r.stream.getAudioTracks()){
+        track.addEventListener('ended',()=>{
+          if(!r.ended){notify(t.mic);stop()}
+        },{once:true})
+      }
       await installCapture(r)
       if(r.ended)return
       const token=await getToken(r)
