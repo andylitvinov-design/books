@@ -14,8 +14,13 @@ test("existing hero artwork is preloaded at high priority", () => {
   assert.ok(css.includes('url("' + image + '")'));
   assert.ok(hero.includes('data-home-dialogue-entry'));
 });
-test("unapproved alternative static design is opt-in only", () => {
-  assert.match(read("middleware.ts"), /process\.env\.HH_ENABLE_INSTANT_HOME === 'true' \? instantHomeLocale/);
+test("existing live CDN-first EN/RU homepage remains enabled", () => {
+  assert.match(read("middleware.ts"), /const fastLocale = instantHomeLocale\(/);
+  for (const locale of ["en","ru"]) {
+    const html=read("public/instant-home/"+locale+".html");
+    assert.match(html, /<style data-home-critical-css>/);
+    assert.doesNotMatch(html, /<link[^>]+rel="stylesheet"/);
+  }
 });
 test("below-the-fold resources remain deferred", () => {
   assert.match(read("components/holistic-house-home.tsx"), /loading="lazy"/);

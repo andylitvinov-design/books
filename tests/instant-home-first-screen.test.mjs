@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {readFileSync,statSync} from 'node:fs';
+import {createHash} from 'node:crypto';
 import {instantHomeLocale} from '../lib/instant-home-policy.mjs';
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
@@ -45,13 +46,19 @@ test('EN/RU are complete first-screen documents without the Next CSS/JS chain',(
   assert.match(html,new RegExp(locale==='ru' ? '/ru\\?full=1' : '/\\?full=1'));
   assert.equal((html.match(/data-home-intent-option=/g)||[]).length,4);
   assert.match(html,/href="\/es"/);
-  assert.match(html,/\/instant-home\/fast\.css/);
+  assert.match(html,/<style data-home-critical-css>/);
+  assert.ok(html.includes('<style data-home-critical-css>'+read('public/instant-home/fast.css')+'</style>'));
+  assert.doesNotMatch(html,/<link[^>]*rel="stylesheet"/);
   assert.match(html,/\/instant-home\/fast\.js/);
   assert.doesNotMatch(html,/_next\/|https?:\/\/fonts\.|<iframe|autoplay|data:text\/html/);
-  assert.ok(statSync(new URL('../public/instant-home/'+locale+'.html',import.meta.url)).size<16000);
+  assert.ok(statSync(new URL('../public/instant-home/'+locale+'.html',import.meta.url)).size<24000);
  }
  const css=read('public/instant-home/fast.css');
  const js=read('public/instant-home/fast.js');
+ const integrity="sha256-"+createHash('sha256').update(css).digest('base64');
+ assert.ok(read('middleware.ts').includes("'"+integrity+"'"));
+ assert.doesNotMatch(read('middleware.ts'),/style-src 'self' 'unsafe-inline'/);
+ assert.match(read('middleware.ts'),/const fastLocale = instantHomeLocale\(/);
  assert.ok(Buffer.byteLength(css)<11000);
  assert.ok(Buffer.byteLength(js)<5000);
  assert.doesNotThrow(()=>new Function(js));
