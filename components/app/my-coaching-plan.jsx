@@ -265,6 +265,7 @@ export default function MyCoachingPlan({accountId,locale='en'}){
      {(protocol.turns||[]).map((turn,index)=><div className={styles.reportSection} key={index}>
       <b>{turn.role==='user'?({en:'You',ru:'Вы',es:'Tú'}[lang]):protocolCopy[lang].coach}</b>
       <p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{turn.content}</p>
+      {turn.interrupted===true&&<small>{lang==='ru'?'Ответ перебит (мог быть услышан не полностью)':lang==='es'?'Respuesta interrumpida':'Reply interrupted; may not have been fully heard'}</small>}
      </div>)}
     </details>
     <div className={styles.importPanel}>
