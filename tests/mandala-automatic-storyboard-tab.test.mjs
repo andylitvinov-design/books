@@ -229,3 +229,15 @@ test("six selected, actual decoded JPEGs may use original MP4 renderer in 9:16 o
  assert.doesNotMatch(tab,/onApply\(references,/);
  assert.match(tab,/depictedEventVerified:false as const/);
 });
+
+test("six photo references require explicit approval before quality navigation",()=>{
+ assert.match(tab,/const photoApprovalRequired=hasSixPhotoReferences&&durationSeconds===30&&!photoAdaptationApplied/);
+ assert.match(tab,/data-storyboard-photo-approval-required/);
+ assert.match(tab,/if\(photoApprovalRequired\)\{onChooseQuality\(false\);return;\}/);
+ const quality=studio.slice(studio.indexOf("onChooseQuality={sourceReady=>"),studio.indexOf("onOpenIdeas={()=>",studio.indexOf("onChooseQuality={sourceReady=>")));
+ assert.match(quality,/if\(!sourceReady\)\{/);
+ assert.match(quality,/data-storyboard-apply-reference-photos/);
+ const next=studio.slice(studio.indexOf("const continueMontageOrGenerate="),studio.indexOf("const continueToIdeas =",studio.indexOf("const continueMontageOrGenerate=")));
+ assert.match(next,/data-storyboard-media-ready/);
+ assert.match(next,/setMontagePanel\("promo"\)/);
+});

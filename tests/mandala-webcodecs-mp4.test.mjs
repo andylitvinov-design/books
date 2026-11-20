@@ -523,3 +523,17 @@ test("real iPhone prefers native playable MP4 and uses WebCodecs only as an expl
   assert.match(studio,/if\(creditOpRef\.current\)return/);
   assert.match(studio,/if\(held&&creditValidRef\.current\)await releaseCredit\(held\)/);
 });
+
+test("Safari native MP4 completion is bounded after 97% and releases failed holds",()=>{
+ assert.match(studio,/finalizeTimeout\?: number/);
+ assert.match(studio,/job\.finalizeTimeout=window\.setTimeout\(/);
+ assert.match(studio,/\(duration\+25\)\*1000/);
+ assert.match(studio,/if\(job\.finalizeTimeout!==undefined\)window\.clearTimeout\(job\.finalizeTimeout\)/);
+ assert.match(studio,/HH_SAFARI_MP4_FINALIZATION_TIMEOUT/);
+ assert.match(studio,/recorder\.ondataavailable=null;recorder\.onerror=null;recorder\.onstop=null/);
+ assert.match(studio,/setRecording\(false\);setReadyGenerationPending\(false\)/);
+ assert.match(studio,/setProgress\(0\);setPlaybackStatus\("failed"\);setExportUnavailable\(true\)/);
+ assert.match(studio,/withLocalMediaDeadline\(\s*verifyNativeSafariMp4Tracks\(blob,Boolean\(job\.musicSession\)\),15000\)/);
+ assert.match(studio,/withLocalMediaDeadline\(encoded\.slice\(0,12\)\.arrayBuffer\(\),12000\)/);
+ assert.match(studio,/if\(now-start>=duration\*1000\)/);
+});

@@ -180,6 +180,9 @@ export function MandalaAutomaticStoryboard({
     aspect:aspect as "portrait"|"landscape"|"square"})||
    isReviewedStoryWithPhotosSequence({shots:appliedShots,scenes,
     aspect:aspect as "portrait"|"landscape"|"square"})));
+ // A photo reference is not an export source until all six images are
+ // explicitly accepted; no prior background may replace the chosen story.
+ const photoApprovalRequired=hasSixPhotoReferences&&durationSeconds===30&&!photoAdaptationApplied;
  const replacingGraphics=Boolean(appliedShots?.length&&!applied);
  const sceneCatalog=new Map(scenes.filter((scene):scene is {id:string}=>Boolean(
    scene&&typeof scene==="object"&&"id" in scene&&typeof scene.id==="string"))
@@ -377,6 +380,11 @@ export function MandalaAutomaticStoryboard({
         {format==="portrait"?"9:16 · Vertical":"16:9 · Horizontal"}
       </button>)}
    </div>:null}
+  {photoApprovalRequired?<p role="status" data-storyboard-photo-approval-required>
+    {locale==="ru"?"Это фото-референсы, а не кадры экспорта. Нажмите «Использовать эти 6 фото в видео», чтобы получить именно этот сюжет.":
+     locale==="es"?"Estas son fotos de referencia. Pulsa «Usar estas 6 fotos en el vídeo» para exportar estas escenas.":
+     "These are photo references, not export frames. Choose «Use these 6 photos in my video» to export this exact story."}
+   </p>:null}
   {hasSixPhotoReferences&&!photoAdaptationApplied&&durationSeconds===30&&
    !scriptNeedsReview&&scriptSceneAlignment.aligned&&!choice.selectionMissing?
    <button type="button" className={styles.storyAutoApply}
@@ -410,6 +418,7 @@ export function MandalaAutomaticStoryboard({
     data-video-story-select-quality
     data-video-auto-storyboard-apply={!manualFiveReady&&!applied&&eligible?true:undefined}
     disabled={disabled} onClick={()=>{
+      if(photoApprovalRequired){onChooseQuality(false);return;}
       // Only attach approved local footage. No render, charge or paid API call.
       // The optional, strictly verified scene application may fail closed
       // (missing matching footage). Quality selection is navigation, not

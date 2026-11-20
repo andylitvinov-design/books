@@ -171,6 +171,7 @@ type Job = {
   stream: MediaStream;
   animation: number;
   timeout: number;
+  finalizeTimeout?: number;
   cancelled: boolean;
   musicSession: AmbientSession | null;
 };
@@ -4414,6 +4415,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         }
       };
       recorder.onstop = async () => {
+        if(job.finalizeTimeout!==undefined)window.clearTimeout(job.finalizeTimeout);
         // Do not stop the source or the audio session before the recorder has
         // dispatched its final dataavailable event.
         job.stream.getTracks().forEach(track => track.stop());
@@ -4436,7 +4438,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         // match the encoded stream; never label a bogus MP4/WebM as complete.
         let isMp4=false, isWebm=false;
         try {
-          const header=new Uint8Array(await encoded.slice(0,12).arrayBuffer());
+          const header=new Uint8Array(await withLocalMediaDeadline(encoded.slice(0,12).arrayBuffer(),12000));
           isMp4=header.length>=8&&header[4]===0x66&&header[5]===0x74&&header[6]===0x79&&header[7]===0x70;
           isWebm=header.length>=4&&header[0]===0x1a&&header[1]===0x45&&header[2]===0xdf&&header[3]===0xa3;
         } catch { /* Treat unreadable header as invalid media. */ }
@@ -4460,7 +4462,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         if(isApplePhone&&isMp4){
           try{
             const {verifyNativeSafariMp4Tracks}=await import("@/lib/mandala/webcodecs-mp4-export");
-            await verifyNativeSafariMp4Tracks(blob,Boolean(job.musicSession));
+            await withLocalMediaDeadline(
+              verifyNativeSafariMp4Tracks(blob,Boolean(job.musicSession)),15000);
           }catch{
             if(creditOpRef.current)void releaseCredit(creditOpRef.current);
             setPlaybackStatus("failed");setExportUnavailable(true);
@@ -4495,6 +4498,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       let stockGapSince = 0;
       const animate = (now: number) => {
         if (jobRef.current !== job || job.recorder.state !== "recording") return;
+        if(now-start>=duration*1000){
+          try{stopJob(job,false);}catch{/* Finalization deadline owns failure. */}
+          return;
+        }
         if (now - lastFrame >= 1000 / framesPerSecond) {
           if (now-start >= (duration-.8)*1000) job.musicSession?.fadeOut();
           const frameTime=Math.min(duration,(now-start)/1000);
@@ -4525,7 +4532,31 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         job.animation = requestAnimationFrame(animate);
       };
       job.animation = requestAnimationFrame(animate);
-      job.timeout = window.setTimeout(() => stopJob(job, false), duration * 1000);
+      job.timeout = window.setTimeout(()=>{
+        if(jobRef.current!==job)return;
+        try{stopJob(job,false);}catch{/* Finalization deadline owns failure. */}
+      },duration*1000);
+      // iPhone may reach 97-99% but never receive MediaRecorder.onstop.
+      // One original encoder and one reserved operation; fail closed on timeout.
+      job.finalizeTimeout=window.setTimeout(()=>{
+        if(jobRef.current!==job)return;
+        job.cancelled=true;
+        window.cancelAnimationFrame(job.animation);
+        window.clearTimeout(job.timeout);
+        recorder.ondataavailable=null;recorder.onerror=null;recorder.onstop=null;
+        try{if(recorder.state!=="inactive")recorder.stop();}catch{/* WebKit recorder wedged. */}
+        job.stream.getTracks().forEach(track=>track.stop());
+        job.musicSession?.close();
+        jobRef.current=null;
+        if(creditOpRef.current)void releaseCredit(creditOpRef.current);
+        if(!aliveRef.current)return;
+        console.warn("HH_SAFARI_MP4_FINALIZATION_TIMEOUT");
+        setRecording(false);setReadyGenerationPending(false);
+        setProgress(0);setPlaybackStatus("failed");setExportUnavailable(true);
+        setNotice(locale==="ru"?"Safari не завершил MP4. Резерв кредитов освобождается; повторите другим кодировщиком.":
+          locale==="es"?"Safari no finalizó el MP4. Se está liberando la reserva; reintenta con otro codificador.":
+          "Safari did not finalize this MP4. Reserved credits are being released; retry with the alternate encoder.");
+      },(duration+25)*1000);
       setRecording(true);
       setNotice(t.creating);
     } catch {
@@ -6118,6 +6149,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     }else if(montagePanel==="text"||montagePanel==="settings"){
       setMontagePanel("concept");
     }else if(montagePanel==="concept"){
+      const story=document.querySelector<HTMLElement>("[data-video-auto-storyboard]");
+      if(story?.getAttribute("data-storyboard-media-ready")==="false"){
+        setNotice(locale==="ru"?"Сначала подтвердите нужные шесть фото в «Сюжете» — референсы пока не входят в видео.":
+          locale==="es"?"Confirma las seis fotos del guion antes de exportar.":
+          "Approve the six storyboard photos before export; references are not video frames.");
+        document.querySelector("[data-storyboard-apply-reference-photos]")
+          ?.scrollIntoView({behavior:"smooth",block:"center"});
+        return;
+      }
       setMontagePanel("promo");
     }else{
       return;
@@ -9290,6 +9330,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 return false;
               }}
               onChooseQuality={sourceReady=>{
+                // Selecting Quality must not render a previous unrelated movie.
+                if(!sourceReady){
+                  setNotice(locale==="ru"?"Нажмите «Использовать эти 6 фото в видео». Иначе они останутся референсами.":
+                    locale==="es"?"Pulsa «Usar estas 6 fotos en el vídeo» primero.":
+                    "Choose «Use these 6 photos in my video» before continuing.");
+                  document.querySelector("[data-storyboard-apply-reference-photos]")
+                    ?.scrollIntoView({behavior:"smooth",block:"center"});
+                  return;
+                }
                 // Selecting a video type is navigation, not source approval,
                 // a media licence, a render or a credit transaction.
                 flushSync(()=>{
