@@ -172,15 +172,29 @@ for (const engine of [chromium,webkit]){
           assert.equal(await review.count(),1,label+": one primary free review entry");
           assert.equal(await review.getAttribute("href"),"/"+locale+"/explore/business",
             label+": real localized business review route");
-          const reviewBox=await review.boundingBox();
-          const focusBox=await root.locator("[data-home-focus-grid]").boundingBox();
-          assert.ok(reviewBox&&focusBox&&reviewBox.y+reviewBox.height<=focusBox.y,
-            label+": free review appears above all four needs");
           assert.equal(await root.locator("[data-home-focus-grid]").count(),1,label+": grouped choices");
-          const cards=await root.locator("[data-home-focus-grid]").boundingBox();
-          const composer=await root.locator("[data-home-intent-composer]").boundingBox();
-          assert.ok(cards&&composer&&cards.y+cards.height<=composer.y,
-            label+": four topics above the Ali composer");
+          // The approved photo-led Home displays Ali's composer first, four
+          // topic choices next, and the free-review/support cards below.
+          // Older dialogue-first Home used a different order. Keep the real
+          // 320px non-overlap invariant, not a stale DOM/visual-order contract.
+          const layout=await root.evaluate(node=>{
+            const select=selector=>{
+              const element=node.querySelector(selector);
+              if(!element)return null;
+              const rect=element.getBoundingClientRect();
+              return {top:rect.top,bottom:rect.bottom};
+            };
+            return {
+              review:select("[data-home-free-review]"),
+              cards:select("[data-home-focus-grid]"),
+              composer:select("[data-home-intent-composer]"),
+            };
+          });
+          const separated=(a,b)=>a&&b&&(a.bottom<=b.top+1||b.bottom<=a.top+1);
+          assert.ok(separated(layout.review,layout.cards),
+            label+": free review and four topics must not overlap "+JSON.stringify(layout));
+          assert.ok(separated(layout.cards,layout.composer),
+            label+": four topics and Ali composer must not overlap "+JSON.stringify(layout));
           await personal.click();
           assert.equal(await root.getAttribute("data-home-mode"),"self");
           assert.equal(await review.getAttribute("href"),"/"+locale+"/services/free-situation-review",

@@ -324,17 +324,33 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
             if(!review||!topics)return null
             const reviewBox=review.getBoundingClientRect()
             const topicsBox=topics.getBoundingClientRect()
-            return {before:Boolean(review.compareDocumentPosition(topics)&Node.DOCUMENT_POSITION_FOLLOWING),
-              reviewBottom:reviewBox.bottom,topicsTop:topicsBox.top}
+            const reviewFirst=Boolean(review.compareDocumentPosition(topics)&Node.DOCUMENT_POSITION_FOLLOWING)
+            return {reviewFirst,reviewTop:reviewBox.top,reviewBottom:reviewBox.bottom,
+              topicsTop:topicsBox.top,topicsBottom:topicsBox.bottom}
           })
-          assert.ok(homeLayout?.before&&homeLayout.reviewBottom<=homeLayout.topicsTop+1,
-            label+': free review above four topic choices '+JSON.stringify(homeLayout))
+          // Approved dialogue-first Home moved the two action cards BELOW the
+          // topic choices; older Home put Free Review above them. Both orders
+          // are safe only when the real mobile hit targets do not overlap.
+          const separated=homeLayout&&(homeLayout.reviewFirst
+            ?homeLayout.reviewBottom<=homeLayout.topicsTop+1
+            :homeLayout.topicsBottom<=homeLayout.reviewTop+1)
+          assert.ok(separated,
+            label+': free review and four topic choices must not overlap '+JSON.stringify(homeLayout))
           await expect(entry.locator('[data-home-intent-option]')).toHaveCount(4)
           await expect(input).toBeVisible()
-          await expect(send).toBeDisabled()
+          // Both approved composer variants are valid: legacy requires input,
+          // while the new one-screen Home has an explicit "Start free chat"
+          // submit button that opens Ali even when the composer is empty.
+          const directChatStart=(await send.locator('span').count())>0
+          if(directChatStart){
+            await expect(send).toBeEnabled()
+            await expect(send).toHaveAttribute('type','submit')
+          }else await expect(send).toBeDisabled()
           await input.fill(locale==='ru'?'Хочу создать курс':locale==='es'?'Quiero crear un curso':'I want to create a course')
           await expect(send).toBeEnabled()
           await input.fill('')
+          if(directChatStart)await expect(send).toBeEnabled()
+          else await expect(send).toBeDisabled()
           await expect(page.locator('[data-home-deferred-sections]')).toHaveCount(1)
           const hero=entry.locator('[data-home-dialogue-hero]')
           const rect=await hero.boundingBox()
