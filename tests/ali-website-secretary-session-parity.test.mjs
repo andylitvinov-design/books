@@ -151,7 +151,7 @@ test('web Sessions uses signed-page links only and stays separate from psycholog
  for(const locale of locales){
    const c=sessionSecretaryCopy(locale);
    assert.match(c.price,/price|стоимост|precios/i);
-   assert.match(c.selection,/no se ha|пока|nothing has/i);
+   assert.match(c.selection,/no se ha|a[uú]n no hay|пока|nothing has/i);
  }
 });
 
