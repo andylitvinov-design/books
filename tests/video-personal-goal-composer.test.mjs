@@ -101,3 +101,20 @@ test("One persisted Ideas Goal and one existing Concept/Storyboard, with 3+2 vis
  for(const op of ["fetch(","navigator.sendBeacon(","localStorage.setItem("])
   assert.ok(!ui.includes(op),op+" must not transmit the psychology quiz");
 });
+
+test("curated anxiety and relationship stories also honor the selected mechanism",()=>{
+ const anxiety=[
+  {id:"anxiety-platform"},{id:"anxiety-quiet"},{id:"anxiety-lamp"}
+ ];
+ assert.equal(rankFilmOptions(anxiety,{goalPlan:{
+  scenarioStrategy:"shelter",secondaryScenarioStrategy:"integration"}})[0].id,
+  "anxiety-quiet");
+ assert.equal(rankFilmOptions(anxiety,{goalPlan:{
+  scenarioStrategy:"journey",secondaryScenarioStrategy:"shelter"}})[0].id,
+  "anxiety-platform");
+ const relationship=[{id:"space"},{id:"real"},{id:"crossing"}];
+ assert.equal(rankFilmOptions(relationship,{goalPlan:{
+  scenarioStrategy:"reframe",secondaryScenarioStrategy:"integration"}})[0].id,"real");
+ assert.equal(rankFilmOptions(relationship,{goalPlan:{
+  scenarioStrategy:"integration",secondaryScenarioStrategy:"journey"}})[0].id,"space");
+});
