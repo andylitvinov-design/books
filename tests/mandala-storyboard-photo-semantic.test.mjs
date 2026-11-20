@@ -74,3 +74,46 @@ test("Studio passes actual selected action guides, selected aspect and preserves
  assert.match(source,/data-storyboard-apply-reference-photos/);
  assert.match(source,/data-storyboard-reference-only/);
 });
+
+const localizedCrossing={
+ ru:[
+  "Одинокий путник идёт через туманный лес на рассвете.",
+  "Мост над рекой; человек на дальнем берегу сохраняет дистанцию.",
+  "Сумка остаётся на земле; один памятный предмет отправляется в карман.",
+  "Крупно: нога ступает на мост и делает ещё один шаг.",
+  "На другом берегу спокойно ждут, не зовут и не требуют.",
+  "Свет озаряет дорожку за мостом; встречу зритель ещё не видит."
+ ],
+ es:[
+  "Una persona camina por un sendero con niebla al amanecer.",
+  "Un puente cruza el río; otra persona espera lejos, sin acercarse.",
+  "La bolsa se queda en el suelo y un recuerdo pasa al bolsillo.",
+  "Un pie se posa sobre el puente y da otro paso.",
+  "La figura del otro lado espera sin presionar.",
+  "La luz alcanza el camino del otro lado antes del encuentro."
+ ]
+};
+test("RU/ES authored Crossing keeps all six scene-action matches in both formats",()=>{
+ for(const [locale,actions] of Object.entries(localizedCrossing)){
+  const guides=crossing.map((beat,i)=>({...beat,visual:actions[i]}));
+  for(const aspect of ["portrait","landscape"]){
+   const photos=storyboardPhotoReferences(option(aspect,guides));
+   assert.equal(photos.length,6,locale+" "+aspect);
+   assert.ok(photos.every(Boolean),locale+" "+aspect+" missing scene "+
+    photos.findIndex(p=>!p));
+   assert.equal(new Set(photos.map(p=>p.id)).size,6,locale+" "+aspect);
+   assert.ok(photos.every((p,i)=>scoreScenePhoto(p,guides[i],{
+    scenarioId:"ready-relationship-s2",aspect})!==null),locale+" "+aspect);
+  }
+ }
+});
+test("Russian distance is not a station; bridge behind final path is context",()=>{
+ const cues=sceneVisualCues({visual:"Человек сохраняет дистанцию на другом берегу.",keywords:["person"]});
+ assert.ok(!cues.includes("station"),"дистанцию must not produce станция");
+ assert.ok(!sceneVisualCues({visual:"Свет на дорожке за мостом",
+  keywords:["sunlight","path"]}).includes("bridge"));
+ assert.ok(sceneVisualCues({visual:"Человек на станции ждёт поезд.",
+  keywords:[]}).includes("station"),"genuine station must still match");
+ assert.ok(sceneVisualCues({visual:"Человек ступает на мост.",
+  keywords:[]}).includes("bridge"),"genuine bridge action stays strict");
+});
