@@ -53,6 +53,10 @@ test('live Business processor encrypts each fact and only shares it at final app
  const service=source('lib/crm/telegram-business-service.js');
  const parser=source('lib/assist/telegram-business-request.mjs');
  assert.match(service,/reviewedAnswers\(old,config\)/);
+ assert.ok(service.indexOf("if(boundary?.kind==='safety')") <
+   service.indexOf('const answer=action?null:aliBusinessReviewAnswer'),
+   'safety must win before all diagnostic slot recording');
+ assert.match(service,/composeTelegramSecretaryAnswer\(boundary,\[\]\)/);
  assert.match(service,/set stage=\$3,intake_answers_ciphertext=\$4,last_update_id=\$5/);
  assert.match(service,/if\(intent.service==='personal_review'\)\{/);
  assert.match(service,/aliBusinessReviewSummary\(intent.locale,progress.answers\)/);
