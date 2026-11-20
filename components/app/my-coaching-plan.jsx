@@ -4,7 +4,8 @@ import {useCallback,useEffect,useMemo,useState} from 'react'
 import Link from 'next/link'
 import {useSearchParams} from 'next/navigation'
 import {appFetch} from '@/lib/app/client-fetch'
-import {Check,ChevronDown,ClipboardList,Compass,Download,LoaderCircle,Plus,RefreshCw,Save,Sparkles,Target} from 'lucide-react'
+import {ArrowRight,BarChart3,Check,CheckCircle2,ChevronDown,ChevronRight,ClipboardList,Compass,Heart,HeartPulse,Leaf,LoaderCircle,MapPin,Mountain,Plus,Save,Sparkles,Sun,Target,TrendingUp,Trophy,Users,Wallet} from 'lucide-react'
+import {PRIMARY_GOAL_AREAS,orderedCoachingAreas,summarizeCoachingProgress} from '@/lib/app/coaching-plan-summary.mjs'
 import styles from './my-coaching-plan.module.css'
 
 const copy={
@@ -70,6 +71,52 @@ const copy={
  },
 }
 
+
+const uiCopy={
+ en:{eyebrow:'MY PLAN',overviewTitle:'My progress at a glance',details:'View details',hideDetails:'Hide details',
+  completion:'Goals completed',unmeasured:'Not measured yet',inProgress:'In progress',completed:'Completed',
+  goalAreas:'My goal areas',addGoal:'Add goal',chooseArea:'Choose a life area',
+  moreAreas:'All life areas',lessAreas:'Show main areas',singular:'goal',plural:'goals',
+  areasWithGoals:'Areas with goals',acceptedActions:'Accepted actions',
+  noProgress:'No saved goals yet. Start a coaching session, or describe your desired result in a life area.',
+  editHint:'Describe what you want to change. Tracked goals and action plans can also be created in a coaching session.'},
+ ru:{eyebrow:'МОЙ ПЛАН',overviewTitle:'Мой прогресс',details:'Подробнее',hideDetails:'Скрыть',
+  completion:'Достигнутые цели',unmeasured:'Пока не измерено',inProgress:'В процессе',completed:'Завершено',
+  goalAreas:'Сферы моих целей',addGoal:'Добавить цель',chooseArea:'Выберите сферу жизни',
+  moreAreas:'Все сферы жизни',lessAreas:'Основные сферы',singular:'цель',plural:'целей',
+  areasWithGoals:'Сферы с целями',acceptedActions:'Принятые действия',
+  noProgress:'Пока нет сохранённых целей. Начните коуч-сессию или опишите желаемый результат в сфере жизни.',
+  editHint:'Опишите, что хотите изменить. Отслеживаемые цели и планы действий также создаются на коуч-сессии.'},
+ es:{eyebrow:'MI PLAN',overviewTitle:'Mi progreso de un vistazo',details:'Ver detalles',hideDetails:'Ocultar',
+  completion:'Metas completadas',unmeasured:'Aún sin medir',inProgress:'En progreso',completed:'Completadas',
+  goalAreas:'Áreas de mis metas',addGoal:'Añadir meta',chooseArea:'Elige un área de vida',
+  moreAreas:'Todas las áreas',lessAreas:'Áreas principales',singular:'meta',plural:'metas',
+  areasWithGoals:'Áreas con metas',acceptedActions:'Acciones aceptadas',
+  noProgress:'Aún no hay metas guardadas. Inicia una sesión o describe tu resultado deseado en un área.',
+  editHint:'Describe lo que quieres cambiar. Las metas con seguimiento también se crean en una sesión.'},
+}
+const areaIcons={body_health:HeartPulse,emotional_wellbeing:Heart,relationships:Users,career_business:TrendingUp,
+ meaning_purpose:Compass,finance:Wallet,personal_growth:Leaf,lifestyle:Sun}
+const areaNames={
+ en:{career_business:'Work & Growth',meaning_purpose:'Meaning & Life Purpose'},
+ ru:{career_business:'Работа и рост',meaning_purpose:'Смысл и предназначение'},
+ es:{career_business:'Trabajo y desarrollo',meaning_purpose:'Sentido y propósito'},
+}
+const areaSubtitles={
+ en:{body_health:'Energy, wellbeing, vitality',emotional_wellbeing:'Emotions, stress, inner balance',
+  relationships:'Love, family, communication',career_business:'Career, work, realization',
+  meaning_purpose:'Direction, values, contribution',finance:'Money and stability',
+  personal_growth:'Learning and inner growth',lifestyle:'Habits and life balance'},
+ ru:{body_health:'Энергия, самочувствие, здоровье',emotional_wellbeing:'Чувства, стресс, равновесие',
+  relationships:'Любовь, семья, общение',career_business:'Карьера, работа, реализация',
+  meaning_purpose:'Ценности, смысл, вклад',finance:'Деньги и устойчивость',
+  personal_growth:'Обучение и развитие',lifestyle:'Привычки и баланс жизни'},
+ es:{body_health:'Energía, bienestar, vitalidad',emotional_wellbeing:'Emociones, estrés, equilibrio',
+  relationships:'Amor, familia, comunicación',career_business:'Carrera, trabajo, realización',
+  meaning_purpose:'Dirección, valores, contribución',finance:'Dinero y estabilidad',
+  personal_growth:'Aprendizaje y crecimiento',lifestyle:'Hábitos y equilibrio vital'},
+}
+
 function formatDate(value,locale){
  if(!value||!Number.isFinite(Date.parse(value)))return ''
  try{return new Intl.DateTimeFormat(locale==='ru'?'ru-RU':locale==='es'?'es-ES':'en-CA',{day:'numeric',month:'short',year:'numeric'}).format(new Date(value))}catch{return ''}
@@ -84,12 +131,13 @@ function domainState(area){
 }
 
 export default function MyCoachingPlan({accountId,locale='en'}){
- const lang=copy[locale]?locale:'en',t=copy[lang]
+ const lang=copy[locale]?locale:'en',t={...copy[lang],...uiCopy[lang]}
  const searchParams=useSearchParams()
  const [tab,setTab]=useState(searchParams?.get('tab')==='reports'?'reports':'plan'),[plan,setPlan]=useState(null),[reports,setReports]=useState([])
  const [drafts,setDrafts]=useState({}),[selections,setSelections]=useState({}),[areas,setAreas]=useState({}),[planConsents,setPlanConsents]=useState({})
  const [loading,setLoading]=useState(true),[error,setError]=useState(''),[saving,setSaving]=useState(''),[importing,setImporting]=useState('')
  const [notice,setNotice]=useState(''),[reportError,setReportError]=useState(''),[revoking,setRevoking]=useState(''),[contextError,setContextError]=useState(''),[deleting,setDeleting]=useState(''),[deleteError,setDeleteError]=useState('')
+ const [expandedArea,setExpandedArea]=useState(''),[showAllAreas,setShowAllAreas]=useState(false),[areaPicker,setAreaPicker]=useState(false),[showProgressDetails,setShowProgressDetails]=useState(false)
  const load=useCallback(async()=>{
   if(!accountId)return
   setLoading(true);setError('');setReportError('')
@@ -165,9 +213,13 @@ export default function MyCoachingPlan({accountId,locale='en'}){
  ]
  if(loading)return <section className={styles.root} aria-live="polite"><div className={styles.loading}><LoaderCircle className={styles.spin}/>{t.loading}</div></section>
  const domains=plan?.domains||[]
+ const progress=summarizeCoachingProgress(domains)
+ const visibleAreas=orderedCoachingAreas(domains,showAllAreas)
+ const toggleArea=key=>{setExpandedArea(value=>value===key?'':key);setAreaPicker(false)}
+ const openArea=key=>{if(!PRIMARY_GOAL_AREAS.includes(key))setShowAllAreas(true);setExpandedArea(key);setAreaPicker(false)}
  return <main className={styles.root} data-my-coaching-plan>
   <header className={styles.header}>
-   <div className={styles.eyebrow}><Compass size={15}/><span>HOLISTIC HOUSE</span></div>
+   <div className={styles.eyebrow}><Sparkles size={20}/><span>{t.eyebrow}</span></div>
    <h1>{t.title}</h1><p>{t.subtitle}</p>
    <div className={styles.tabs} role="tablist" aria-label={t.title}>
     <button type="button" role="tab" aria-selected={tab==='plan'} className={tab==='plan'?styles.tabActive:styles.tab} onClick={()=>setTab('plan')}><Target size={16}/>{t.plan}</button>
@@ -178,48 +230,94 @@ export default function MyCoachingPlan({accountId,locale='en'}){
   {notice&&<div className={styles.notice} role="status">{notice}</div>}
   {deleteError&&<div className={styles.error} role="alert">{deleteError}</div>}
   {tab==='plan'&&<>
-   {!!plan?.contextPermissions?.length&&<section className={styles.domainCard} aria-label={t.contextTitle}>
-    <h2>{t.contextTitle}</h2><p>{t.contextInfo}</p>
-    {contextError&&<p role="alert">{contextError}</p>}
-    {plan.contextPermissions.map((permission,index)=><div key={permission.sessionId}>
-     <span>{t.contextSession} {index+1} · {formatDate(permission.completedAt,lang)}</span>{' '}
-     <button type="button" className={styles.saveButton} aria-label={`${t.revokeContext}: ${t.contextSession} ${index+1}`} disabled={!!revoking} onClick={()=>revokeContext(permission.sessionId)}>{revoking===permission.sessionId?t.revokingContext:t.revokeContext}</button>
-    </div>)}
+   <section className={styles.sectionHead}><h2>{t.overviewTitle}</h2>
+    <button type="button" className={styles.smallPill} aria-expanded={showProgressDetails}
+     onClick={()=>setShowProgressDetails(value=>!value)}><BarChart3 size={19}/>{showProgressDetails?t.hideDetails:t.details}<ArrowRight size={17}/></button>
+   </section>
+   <section className={styles.progressCard} aria-label={t.overviewTitle} data-goal-progress>
+    <div className={styles.gauge} aria-label={t.completion+': '+(progress.completionPercent===null?t.unmeasured:progress.completionPercent+'%')}>
+     <svg viewBox="0 0 200 112" aria-hidden="true"><path d="M20 100 A80 80 0 0 1 180 100" pathLength="100" fill="none" stroke="#daece2" strokeWidth="19" strokeLinecap="round"/>
+      {progress.completionPercent!==null&&<path d="M20 100 A80 80 0 0 1 180 100" pathLength="100" fill="none" stroke="#05a078"
+       strokeWidth="19" strokeLinecap="round" strokeDasharray={progress.completionPercent+' 100'}/>}</svg>
+     <strong>{progress.completionPercent===null?'—':progress.completionPercent+'%'}</strong><small>{t.completion}</small>
+    </div>
+    <div className={styles.metrics}>
+     <div><span><Target size={22}/></span><b>{progress.totalGoals}</b><small>{t.goals}</small></div>
+     <div><span><CheckCircle2 size={22}/></span><b>{progress.inProgressGoals}</b><small>{t.inProgress}</small></div>
+     <div><span><Trophy size={22}/></span><b>{progress.completedGoals}</b><small>{t.completed}</small></div>
+    </div>
+   </section>
+   {showProgressDetails&&<div className={styles.progressDetails} role="status">
+    <span>{t.areasWithGoals}: <b>{progress.areasWithGoals} / {domains.length}</b></span>
+    <span>{t.acceptedActions}: <b>{progress.acceptedActions}</b></span>
+    {progress.completionPercent===null&&<p>{t.noProgress}</p>}
+   </div>}
+   <section className={styles.sectionHead}><h2>{t.goalAreas}</h2>
+    <button type="button" className={styles.smallPill} aria-expanded={areaPicker}
+     onClick={()=>setAreaPicker(value=>!value)}><Plus size={21}/>{t.addGoal}</button></section>
+   {areaPicker&&<section className={styles.areaPicker} aria-label={t.chooseArea}>
+    <p>{t.chooseArea}</p><div>{domains.map(area=><button type="button" key={area.areaKey}
+     onClick={()=>openArea(area.areaKey)}>{areaNames[lang]?.[area.areaKey]||area.label}<ArrowRight size={15}/></button>)}</div>
    </section>}
-   {!plan?.plan&&<section className={styles.empty}>
-    <div className={styles.emptyIcon}><Sparkles size={24}/></div>
-    <h2>{t.emptyTitle}</h2><p>{t.empty}</p>
-    <Link href={'/'+lang+'/app/coaching'} className={styles.primaryLink}>{t.start}</Link>
-   </section>}
-   <section className={styles.domainGrid} aria-label={t.plan}>
-    {domains.map(area=>{
+   <section className={styles.domainGrid} data-goal-areas aria-label={t.goalAreas}>
+    {visibleAreas.map(area=>{
+     const Icon=areaIcons[area.areaKey]||Target
      const draft=drafts[area.areaKey]||domainState(area)
      const dirty=draft.currentState!==(area.currentState||'')||draft.desiredState!==(area.desiredState||'')||
       draft.obstacles!==(area.obstacles||'')||draft.selfRating!==(area.selfRating===null||area.selfRating===undefined?'':String(area.selfRating))
-     const isBusy=saving==='area:'+area.areaKey
-     return <article className={styles.domainCard} key={area.areaKey} data-life-plan-area={area.areaKey}>
-      <div className={styles.domainHeading}><div><span className={styles.areaDot}/><h2>{area.label}</h2></div><span className={styles.revision}>v{area.revision||0}</span></div>
-      <label>{t.current}<textarea rows={2} maxLength={1200} value={draft.currentState} onChange={e=>change(area.areaKey,'currentState',e.target.value)} /></label>
-      <label>{t.desired}<textarea rows={2} maxLength={1200} value={draft.desiredState} onChange={e=>change(area.areaKey,'desiredState',e.target.value)} /></label>
-      <label>{t.obstacles}<textarea rows={2} maxLength={1200} value={draft.obstacles} onChange={e=>change(area.areaKey,'obstacles',e.target.value)} /></label>
-      <label>{t.rating}<select value={draft.selfRating} onChange={e=>change(area.areaKey,'selfRating',e.target.value)}>
-       <option value="">{t.noRating}</option>{Array.from({length:11},(_,i)=><option value={String(i)} key={i}>{i}/10</option>)}
-      </select></label>
-      <button type="button" className={styles.saveButton} disabled={!dirty||isBusy} onClick={()=>saveArea(area)}>
-       {isBusy?<LoaderCircle className={styles.spin} size={16}/>:<Save size={16}/>} {isBusy?t.saving:t.save}
+     const busy=saving==='area:'+area.areaKey, expanded=expandedArea===area.areaKey, count=area.goals?.length||0
+     return <article className={styles.domainCard} key={area.areaKey} data-life-plan-area={area.areaKey} data-goal-expanded={expanded}>
+      <button type="button" className={styles.areaSummary} aria-expanded={expanded}
+       aria-controls={'hh-area-'+area.areaKey} onClick={()=>toggleArea(area.areaKey)}>
+       <span className={styles.areaArt} data-goal-art={area.areaKey} aria-hidden="true"/>
+       <span className={styles.areaIcon}><Icon size={24} aria-hidden="true"/></span>
+       <span className={styles.areaCopy}><strong>{areaNames[lang]?.[area.areaKey]||area.label}</strong>
+        <small>{areaSubtitles[lang]?.[area.areaKey]||''}</small></span>
+       <span className={styles.goalBadge}>{count} {count===1?t.singular:t.plural}</span>
+       <ChevronRight className={styles.areaArrow} size={22} aria-hidden="true"/>
       </button>
-      <div className={styles.goalList}>
-       <strong>{t.goals} · {area.goals?.length||0}</strong>
-       {!area.goals?.length&&<p>{t.noGoals}</p>}
-       {(area.goals||[]).map(goal=><div className={styles.goal} key={goal.id}>
-        <b>{goal.title}</b>{goal.desiredOutcome&&<p>{goal.desiredOutcome}</p>}
-        <span>{goal.status}</span>
-        {(goal.actions||[]).map(action=><div className={styles.action} key={action.id}><Check size={13}/>{action.description}<small>{action.status}</small><button type="button" disabled={!!deleting} aria-label={`${t.deleteAction}: ${action.description}`} onClick={()=>deleteAction(action)}>{deleting===action.id?t.deletingAction:t.deleteAction}</button></div>)}
-       </div>)}
-      </div>
+      {expanded&&<div id={'hh-area-'+area.areaKey} className={styles.areaEditor}>
+       <p className={styles.editHint}>{t.editHint}</p>
+       <label className={styles.fieldRow}><span><MapPin size={17}/>{t.current}</span>
+        <textarea rows={2} maxLength={1200} value={draft.currentState} onChange={e=>change(area.areaKey,'currentState',e.target.value)}/></label>
+       <label className={styles.fieldRow}><span><Target size={17}/>{t.desired}</span>
+        <textarea rows={2} maxLength={1200} value={draft.desiredState} onChange={e=>change(area.areaKey,'desiredState',e.target.value)}/></label>
+       <label className={styles.fieldRow}><span><Mountain size={17}/>{t.obstacles}</span>
+        <textarea rows={2} maxLength={1200} value={draft.obstacles} onChange={e=>change(area.areaKey,'obstacles',e.target.value)}/></label>
+       <label className={styles.fieldRow}><span><BarChart3 size={17}/>{t.rating}</span>
+        <select value={draft.selfRating} onChange={e=>change(area.areaKey,'selfRating',e.target.value)}>
+         <option value="">{t.noRating}</option>{Array.from({length:11},(_,n)=><option key={n} value={String(n)}>{n}/10</option>)}
+        </select></label>
+       <button type="button" className={styles.saveButton} disabled={!dirty||busy} onClick={()=>saveArea(area)}>
+        {busy?<LoaderCircle className={styles.spin} size={17}/>:<Save size={17}/>} {busy?t.saving:t.save}</button>
+       <div className={styles.goalList}><strong>{t.goals} · {count}</strong>
+        {count===0&&<p>{t.noGoals}</p>}
+        {(area.goals||[]).map(goal=><div className={styles.goal} key={goal.id}>
+         <b>{goal.title}</b>{goal.desiredOutcome&&<p>{goal.desiredOutcome}</p>}
+         <span>{goal.status}</span>
+         {(goal.actions||[]).map(action=><div className={styles.action} key={action.id}>
+          <Check size={13}/>{action.description}<small>{action.status}</small>
+          <button type="button" disabled={!!deleting} aria-label={t.deleteAction+': '+action.description}
+           onClick={()=>deleteAction(action)}>{deleting===action.id?t.deletingAction:t.deleteAction}</button>
+         </div>)}
+        </div>)}
+       </div>
+      </div>}
      </article>
     })}
    </section>
+   {domains.length>PRIMARY_GOAL_AREAS.length&&<button type="button" className={styles.moreAreas}
+    aria-expanded={showAllAreas} onClick={()=>{if(showAllAreas&&!PRIMARY_GOAL_AREAS.includes(expandedArea))setExpandedArea('');setShowAllAreas(v=>!v)}}>
+    {showAllAreas?t.lessAreas:t.moreAreas}<ChevronDown size={18}/></button>}
+   <Link href={'/'+lang+'/app/coaching'} className={styles.sessionLink}><Sparkles size={24}/>{t.start}<ArrowRight size={23}/></Link>
+   {!!plan?.contextPermissions?.length&&<details className={styles.permissions}><summary>{t.contextTitle}<ChevronDown size={18}/></summary>
+    <p>{t.contextInfo}</p>{contextError&&<p role="alert">{contextError}</p>}
+    {plan.contextPermissions.map((permission,index)=><div key={permission.sessionId}>
+     <span>{t.contextSession} {index+1} · {formatDate(permission.completedAt,lang)}</span>{' '}
+     <button type="button" className={styles.saveButton} disabled={!!revoking}
+      onClick={()=>revokeContext(permission.sessionId)}>{revoking===permission.sessionId?t.revokingContext:t.revokeContext}</button>
+    </div>)}
+   </details>}
   </>}
   {tab==='reports'&&<section className={styles.reports}>
    {reportError&&<p className={styles.inlineError} role="alert">{t.reportError}</p>}

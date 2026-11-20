@@ -144,14 +144,14 @@ test("approved scenic Home shows four clear choices above the wide Ali composer 
  assert.match(entry,/freeReviewTitle:"Разобраться в своей ситуации"/);
  assert.match(entry,/freeReviewTitle:"Comprender mi situación"/);
  assert.match(entry,/services\/free-situation-review/);
- assert.ok(entry.indexOf("data-home-free-review")<entry.indexOf("data-home-focus-grid"));
- assert.ok(entry.indexOf("data-home-focus-grid")<entry.indexOf("data-home-intent-form"));
+ assert.ok(entry.indexOf("data-home-intent-form")<entry.indexOf("data-home-focus-grid"));
+ assert.ok(entry.indexOf("data-home-intent-form")<entry.indexOf("data-home-focus-grid"));
  assert.match(css,/\.reviewCta\{box-sizing:border-box;display:flex/);
  assert.match(css,/@media\(min-width:356px\) and \(max-width:430px\)/);
  assert.match(css,/\.language summary\{min-width:44px\}/);
  assert.match(css,/\{width:44px;min-width:44px\}/);
  assert.match(entry,/data-home-focus-grid/);
- assert.ok(entry.indexOf('data-home-focus-grid')<entry.indexOf('data-home-intent-form'));
+ assert.ok(entry.indexOf('data-home-focus-grid')<entry.indexOf('data-home-free-review'));
  assert.match(entry,/data-home-continue-path/);
  assert.match(entry,/data-home-send-to-ali/);
  assert.match(css,/\.focusGrid\{display:grid;grid-template-columns:repeat\(2/);
@@ -160,4 +160,40 @@ test("approved scenic Home shows four clear choices above the wide Ali composer 
  assert.doesNotMatch(entry,/<iframe|<video|fetch\(/);
  assert.doesNotMatch(entry,/data-home-service-action/);
  assert.match(deferred,/<MySpaceTopics locale=\{locale\} publicHome\/>/);
+});
+
+test("owner-approved compact first screen keeps persona, full composer, categories and help CTAs",()=>{
+ const home=read("components/home-dialogue-entry.tsx");
+ const styles=read("components/home-dialogue-entry.module.css");
+ for(const label of ["Get Ideas","Diagnostic & Hints","Get Support","Session & Service",
+   "Choose a direction","How it works — in 3 simple steps","Start free chat"]) {
+   assert.ok(home.includes(label),label);
+ }
+ for(const fragment of ["data-home-open-ali-persona","data-home-ali-greeting-play",
+   "data-home-intent-composer","data-home-how-it-works","data-home-request-session"]) {
+   assert.ok(home.includes(fragment),fragment);
+ }
+ assert.ok(home.indexOf("data-home-dialogue-hero")<home.indexOf("data-home-intent-form"));
+ assert.ok(home.indexOf("data-home-intent-form")<home.indexOf("data-home-focus-grid"));
+ assert.ok(home.indexOf("data-home-focus-grid")<home.indexOf("data-home-how-it-works"));
+ assert.ok(home.indexOf("data-home-how-it-works")<home.indexOf("data-home-request-session"));
+ assert.match(styles,/HOME_SCREEN_VISUAL_20261120/);
+ assert.match(styles,/max-height:800px/);
+ assert.match(styles,/\.heroPortrait/);
+ assert.match(styles,/\.focusPhoto/);
+ assert.match(styles,/\.finalActions/);
+ assert.doesNotMatch(home,/<iframe|<video|fetch\(/);
+});
+
+test("mobile correction preserves distinct business help links and prevents clipped hero",()=>{
+ const home=read("components/home-dialogue-entry.tsx");
+ const styles=read("components/home-dialogue-entry.module.css");
+ assert.match(home,/service-group-business/);
+ assert.match(home,/hint.id==="love"\?Heart/);
+ assert.match(home,/hint.id==="money"\?TrendingUp/);
+ assert.match(styles,/MOBILE_HERO_CONTENT_SAFE_20261120/);
+ assert.match(styles,/\.heroStory\{height:auto;min-height:165px/);
+ const before=home.indexOf("data-home-intent-form");
+ const after=home.indexOf("data-home-focus-grid");
+ assert.ok(before>=0&&after>before,"The Ali composer must appear before the topic tiles");
 });
