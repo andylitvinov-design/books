@@ -259,14 +259,15 @@ export function optionalProfileWriterSkip(files, branch) {
 export function requiresCurrentProductionBase(changed) {
   if (!Array.isArray(changed) || changed.length === 0) return true;
   const ordinaryRoots = /^(?:app|components|lib|tests|public|content|data|docs)\//;
-  // This exact Playwright-only QA harness is never imported by Next at runtime.
-  // Its changing selectors should not force a full rebase of an otherwise
-  // ordinary video-editor PR after an unrelated production promotion.
-  const isolatedBrowserHarness = file =>
-    /^scripts\/(?:verify-[a-z0-9.-]+-(?:browser|mobile)|benchmarking\/[a-z0-9.-]+)\.mjs$/i.test(file) &&
-    // Real encoded-media, payments and consent remain strict, regardless
-    // of their file being an isolated browser/benchmark harness.
-    !/(?:^|[\/_.-])(?:audio|codec|consent|encoded|encoder|export|license|payment|provider|recording|recorder|service|services|voice)(?:$|[\/_.-])/i.test(file);
+  // Browser, video and unit acceptance helpers are NOT production runtime.
+  // Their filenames may mention voice, export, codec or chat; that does not
+  // turn an otherwise public PR into a stale-base security change. A real
+  // encoded-file/WebKit Specialist remains mandatory based on changed files.
+  // Keep CI/release, auth, patient/privacy, payment and credential QA strict.
+  const testOnlyAcceptance = file =>
+    (/^tests\/[a-z0-9._/-]+\.test\.(?:mjs|cjs|js|ts|tsx)$/i.test(file) ||
+     /^scripts\/(?:verify-[a-z0-9._/-]+|benchmarking\/[a-z0-9._/-]+)\.mjs$/i.test(file)) &&
+    !/(?:^|[\/_.-])(?:ci|workflow|policy|release|deploy|deployment|vercel|config|admin|api|auth|authorization|account|billing|booking|cabinet|checkout|client|consent|credential|crm|database|identity|login|medical|patient|payment|private|privacy|rls|secret|security|session|storage|supabase|token|wallet)(?:$|[\/_.-])/i.test(file);
   // This exact synthetic PUBLIC Services browser verifier is test-only:
   // it cannot change Next runtime, payment handlers, private data or consent.
   // A mixed PR containing any sensitive source still retains the strict base.
@@ -276,9 +277,9 @@ export function requiresCurrentProductionBase(changed) {
   const sensitiveRoots = /^(?:app\/(?:\[[^/]+\]\/)?api\/|app\/(?:\[[^/]+\]\/)?app\/|components\/app\/|lib\/(?:app|assessments|ia|practitioners)\/|docs\/operations\/|docs\/billing\/|docs\/payments\/)/i;
   return changed.some(file =>
     typeof file !== 'string' ||
-    (!ordinaryRoots.test(file) && !isolatedBrowserHarness(file) && !publicSourceAcceptanceHarness(file)) ||
+    (!ordinaryRoots.test(file) && !testOnlyAcceptance(file) && !publicSourceAcceptanceHarness(file)) ||
     file.split('/').some(segment => segment === '.' || segment === '..' || segment === '') ||
-    sensitiveName.test(file) ||
+    (!testOnlyAcceptance(file) && sensitiveName.test(file)) ||
     sensitiveRoots.test(file)
   );
 }
