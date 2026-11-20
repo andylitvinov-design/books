@@ -17,7 +17,6 @@ export default function MyPageClient({locale='en'}){
  const [status,setStatus]=useState('loading')
  const [data,setData]=useState(null)
  const [profile,setProfile]=useState({handle:'',displayName:'',bio:''})
- const [shared,setShared]=useState({shareTests:false,sharePractices:false,shareVideos:false})
  const [entry,setEntry]=useState('')
  const [editing,setEditing]=useState(null)
  const [busy,setBusy]=useState(false)
@@ -28,7 +27,6 @@ export default function MyPageClient({locale='en'}){
      const next=await appFetch('my-page')
      setData(next)
      setProfile(next.page?{handle:next.page.handle,displayName:next.page.display_name,bio:next.page.bio}:{handle:next.suggested?.handle||'',displayName:next.suggested?.name||'',bio:''})
-     setShared(next.page?{shareTests:next.page.share_tests,sharePractices:next.page.share_practices,shareVideos:next.page.share_videos}:{shareTests:false,sharePractices:false,shareVideos:false})
      setStatus('ready')
    }catch(err){setStatus(err?.code==='SIGN_IN_REQUIRED'?'guest':'error')}
  },[])
@@ -48,7 +46,6 @@ export default function MyPageClient({locale='en'}){
  }
  const page=data?.page
  const link=page?'/' + locale + '/u/' + page.handle:''
- const stats=data?.stats||{}
  const tags=[['tests',t.tests],['practices',t.practices],['videos',t.videos]]
  return <main className={css.page} data-universal-my-page>
   <nav className={css.socialModes} data-profile-mode-switch data-profile-mode-active="live" aria-label={locale==='ru'?'Страницы профиля':locale==='es'?'Páginas del perfil':'Profile pages'}>
