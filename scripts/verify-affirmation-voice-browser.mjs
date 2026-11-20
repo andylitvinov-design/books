@@ -773,8 +773,12 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(page.locator('[data-video-basic-editor]')).toHaveAttribute("data-montage-panel","settings");
       const durationSelect=page.locator('[data-video-montage-preference="duration"]');
       await durationSelect.waitFor({state:"visible",timeout:25000});
-      await durationSelect.selectOption("10");
-      await expect(durationSelect).toHaveValue("10");
+      // Six reviewed, user-approved 5-second photographic scenes form a
+      // 30-second Story. Changing it to 10 seconds invalidates that consent
+      // and correctly fails closed at Ready. Keep the real source duration
+      // while testing the native audible WebKit MP4 encoder.
+      await durationSelect.selectOption("30");
+      await expect(durationSelect).toHaveValue("30");
       const montageAudio=page.locator('[data-video-montage-open-audio]');
       if(engine==="webkit")await montageAudio.tap();
       else await montageAudio.click();
