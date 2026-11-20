@@ -28,7 +28,6 @@ on:
       # only after this successor is BASE-trusted in production.
       - 'capacitor.config.json'
       - 'components/native-**'
-      - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/native-ci.yml'
   push:

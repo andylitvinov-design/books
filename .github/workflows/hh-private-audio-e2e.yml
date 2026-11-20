@@ -44,7 +44,6 @@ on:
       - 'tests/client-session-recorder-auth.test.mjs'
       - 'tests/cabinet-v2-ux.test.mjs'
       - 'tests/prescription-access.test.mjs'
-      - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/hh-private-audio-e2e.yml'
       # Commander signed PR completion is validated by Core and the focused Guard, not this unrelated heavy suite.
@@ -88,7 +87,6 @@ on:
       - 'tests/client-session-recorder-auth.test.mjs'
       - 'tests/cabinet-v2-ux.test.mjs'
       - 'tests/prescription-access.test.mjs'
-      - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/hh-private-audio-e2e.yml'
 concurrency:

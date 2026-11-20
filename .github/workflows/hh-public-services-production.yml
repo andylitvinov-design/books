@@ -113,7 +113,6 @@ on:
       - 'scripts/verify-public-services*.mjs'
       - 'middleware.ts'
       - 'next.config.*'
-      - 'package.json'
       - 'package-lock.json'
       # Director-only art planning and its encoded-video browser test are fully
       # covered by holistic-support-mandala.yml. They do not modify service

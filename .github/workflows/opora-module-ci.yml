@@ -30,7 +30,6 @@ on:
       - '.github/workflows/opora-module-ci.yml'
       - 'scripts/verify-opora-*.mjs'
       - 'middleware.ts'
-      - 'package.json'
       - 'package-lock.json'
   workflow_dispatch:
 permissions:

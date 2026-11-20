@@ -14,7 +14,6 @@ on:
       - 'components/practitioner-cabinet.jsx'
       - 'middleware.ts'
       - 'next.config.ts'
-      - 'package.json'
       - 'package-lock.json'
       - 'tests/live-audio-pilot.test.mjs'
       - 'tests/ci-expensive-draft-ready-policy.test.mjs'
