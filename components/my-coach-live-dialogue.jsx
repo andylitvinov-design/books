@@ -124,6 +124,15 @@ const stageProgressHelp={
   es:'Los pasos cambian cuando tus respuestas sustentan el siguiente paso del método, no por el tiempo ni por lo que diga el coach.'
 }
 
+const semanticStageTitles={
+ en:{contact:'Contact & request',goal:'Goal',reality:'Reality',options:'Possibilities',integration:'Decision & integration'},
+ ru:{contact:'Контакт и запрос',goal:'Цель',reality:'Реальность',options:'Возможности',integration:'Решение и интеграция'},
+ es:{contact:'Contacto y solicitud',goal:'Objetivo',reality:'Realidad',options:'Posibilidades',integration:'Decisión e integración'}
+}
+const coachMethodNames={
+ grow:'GROW',tgrow:'T-GROW',woop:'WOOP',oskar:'OSKAR',
+ solution_focused:'Solution-focused',appreciative_inquiry:'Appreciative inquiry'
+}
 const transcriptUi={
   en:{heading:'Conversation · transcript',listening:'Listening',languageLabel:'Speech and coach voice language',autoLanguage:'Auto · device/context',hint:'Your spoken words will appear here. Or type your reply below.',consentShort:'I agree to send my text to the eligible free AI; browser recognition may process my voice.',details:'Privacy and data processing'},
   ru:{heading:'Диалог · расшифровка',listening:'Слушаю',languageLabel:'Язык расшифровки и голоса коуча',autoLanguage:'Авто · устройство/контекст',hint:'Здесь появятся ваши слова. Можно также написать ответ ниже.',consentShort:'Согласен(на) отправлять текст бесплатной AI-модели; браузер может обрабатывать мой голос.',details:'Приватность и обработка данных'},
@@ -333,18 +342,34 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     ?.sessionProgress
   const progressValid=Number.isInteger(lastRecordedProgress?.index)&&
     lastRecordedProgress.index>=0&&lastRecordedProgress.index<=5
-  // A locally authored offline reply has no server-confirmed evidence. Its
-  // existing semantic stage remains a visibly provisional fallback.
+  const meaningProgress=lastRecordedProgress?.journey
+  const meaningProgressValid=progressValid&&
+    meaningProgress?.source==='director-client-evidence'&&
+    meaningProgress.total===5&&Number.isInteger(meaningProgress.index)&&
+    meaningProgress.index>=0&&meaningProgress.index<5
+  // Old server snapshots stay compatible; locally generated dialogue is
+  // provisional and cannot award confirmed evidence.
   const fallbackStageIndex={
-    goal:0,reality:1,resources:2,options:3,action:4,review:5,safety:0,
-    clarify:0,explore:1,awareness:2,reframe:3,choice:4,planning:5,
-    commitment:5,integration:5
+    goal:0,reality:1,resources:2,options:3,action:4,review:4,safety:0,
+    clarify:0,explore:1,awareness:2,reframe:3,choice:4,planning:4,
+    commitment:4,integration:4
   }
   const provisionalIndex=fallbackStageIndex[latestCoachTurn?.stage]??0
-  const visibleStageIndex=progressValid?lastRecordedProgress.index:provisionalIndex
-  const stageDescription=progressValid
-    ?(methodStepTitles[lang]?.[lastRecordedProgress.stepId]||ui.stages[visibleStageIndex])
-    :ui.stages[visibleStageIndex]
+  const visibleStageTotal=meaningProgressValid?5:progressValid?6:5
+  const visibleStageIndex=meaningProgressValid?meaningProgress.index:
+    progressValid?lastRecordedProgress.index:provisionalIndex
+  const visibleMethodId=lastRecordedProgress?.methodId||
+    ({GROW:'grow',TGROW:'tgrow',WOOP:'woop',OSKAR:'oskar',
+      'Solution-focused':'solution_focused',
+      'Appreciative inquiry':'appreciative_inquiry'})[persona?.methods?.[0]]||'grow'
+  const visibleMethodName=coachMethodNames[visibleMethodId]||'GROW'
+  const stageDescription=meaningProgressValid
+    ?(semanticStageTitles[lang]?.[meaningProgress.stageId]||
+      methodStepTitles[lang]?.[meaningProgress.stageId]||ui.stages[visibleStageIndex])
+    :progressValid
+      ?(methodStepTitles[lang]?.[lastRecordedProgress.stepId]||ui.stages[visibleStageIndex])
+      :semanticStageTitles[lang]?.[
+        ['contact','goal','reality','options','integration'][visibleStageIndex]]
   const goalPrompts={
     en:{stress:'I would like to feel less stressed. Can we explore what is weighing on me?',energy:'I would like to restore my energy. Can we explore what is draining it?',relationships:'I would like to improve an important relationship. Can we explore what matters most?'},
     ru:{stress:'Я хочу снизить стресс. Давайте разберём, что сейчас на меня давит.',energy:'Я хочу восстановить энергию. Давайте посмотрим, что её забирает.',relationships:'Я хочу улучшить важные для меня отношения. Давайте разберёмся, что сейчас важнее всего.'},
@@ -796,13 +821,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         data-coach-stage-source={progressValid?'director-client-evidence':'local-provisional'}
         title={stageProgressHelp[lang]}>
         <div className={styles.sessionProgressText} aria-live="polite">
-          <strong>{ui.step} {visibleStageIndex+1} {ui.of} 6</strong>
+          <strong>{ui.step} {visibleStageIndex+1} {ui.of} {visibleStageTotal} · {visibleMethodName}</strong>
           <span>{stageDescription}</span>
         </div>
         <div className={styles.sessionProgressSegments} role="progressbar" aria-label={ui.stageQuestion}
-          aria-valuemin={1} aria-valuemax={6} aria-valuenow={visibleStageIndex+1}
-          aria-valuetext={ui.step+' '+(visibleStageIndex+1)+' '+ui.of+' 6 · '+stageDescription}>
-          {ui.stages.map((label,index)=><span key={label}
+          aria-valuemin={1} aria-valuemax={visibleStageTotal} aria-valuenow={visibleStageIndex+1}
+          aria-valuetext={ui.step+' '+(visibleStageIndex+1)+' '+ui.of+' '+visibleStageTotal+' · '+stageDescription}>
+          {Array.from({length:visibleStageTotal},(_,index)=><span key={index}
             data-complete={index<visibleStageIndex?'true':undefined}
             data-current={index===visibleStageIndex?'true':undefined}/>)}
         </div>
