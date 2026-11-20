@@ -198,7 +198,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   function interruptCoachToListen(){
     if(!activeRef.current)return
     const interruptedPhase=phaseRef.current
-    if(['loading','speaking'].includes(interruptedPhase))interruptedRef.current?.()
+    if(['loading','speaking'].includes(interruptedPhase))interruptedRef.current?.(lastSpokenCoachRef.current)
     const computing=interruptedPhase==='thinking'
     if(computing){
       // Aborting the old model reply must never allow it to start speaking
@@ -258,7 +258,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
             generationRef.current=monitorGeneration
             cancelRef.current?.()
           }else if(['loading','speaking'].includes(interruptedPhase)){
-            interruptedRef.current?.()
+            interruptedRef.current?.(lastSpokenCoachRef.current)
           }
           cancelOutgoingCoachSpeech()
           changePhase('listening')

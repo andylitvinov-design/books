@@ -515,9 +515,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       modelProbeRef.current.inFlight=false
     }
   }
-  function markCoachSpeechInterrupted(){
-    turnsRef.current=markLatestCoachReplyInterrupted(turnsRef.current)
-    setTurns(previous=>markLatestCoachReplyInterrupted(previous))
+  function markCoachSpeechInterrupted(spokenText){
+    // Do not mark an earlier fully heard answer when an intro is interrupted.
+    turnsRef.current=markLatestCoachReplyInterrupted(turnsRef.current,spokenText)
+    setTurns(previous=>markLatestCoachReplyInterrupted(previous,spokenText))
   }
   function cancelPendingCoachTurn(){
     turnRequestRef.current+=1

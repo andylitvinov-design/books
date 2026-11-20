@@ -14,6 +14,8 @@ test('unheard AI reply remains visible but is excluded from next Director contex
  assert.equal(rows[3].interrupted,undefined)
  assert.equal(next[3].interrupted,true)
  assert.equal(next[3].content,rows[3].content)
+ assert.equal(markLatestCoachReplyInterrupted(rows,'A different audio introduction'),rows)
+ assert.equal(markLatestCoachReplyInterrupted(rows,rows[3].content)[3].interrupted,true)
  assert.deepEqual(coachAudibleTurns(next),rows.slice(0,3))
  assert.equal(markLatestCoachReplyInterrupted(next),next)
  const newer=[...next,{role:'user',content:'Actually, I meant something else'}]
