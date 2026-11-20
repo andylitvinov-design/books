@@ -38,7 +38,7 @@ test('untrusted titles, extra payloads and personal comments do not create cours
  for(const message of [
   templates.en('Reiki Practitioner · premium course'),
   templates.en('Something else'),
-  templates.en('Reiki Practitioner · free course')+'\\nextra',
+  templates.en('Reiki Practitioner · free course')+'\nextra',
   templates.en('Reiki Practitioner · free course')+' /stop',
   '/stop','confirm','yes',null,'x'.repeat(351),
  ])assert.equal(matchTelegramPublishedCourseInterestDraft(message),null)
@@ -53,8 +53,8 @@ test('Business and secretary rate dedupe TTL stays within SQL 86400-second maxim
   const location=webhook.indexOf("op:'"+operation+"'")
   assert.ok(location>=0,operation)
   const call=webhook.slice(location,location+220)
-  assert.match(call,/\\},1,86400\\)/,operation)
-  assert.doesNotMatch(call,/7\\*86400/,operation)
+  assert.match(call,/\},1,86400\)/,operation)
+  assert.doesNotMatch(call,/7\*86400/,operation)
  }
  assert.equal(telegramBusinessReplyFailure({code:'P0001',message:'INVALID_RATE_INPUT'}),
    'persistence_failure')
@@ -62,10 +62,10 @@ test('Business and secretary rate dedupe TTL stays within SQL 86400-second maxim
 })
 test('known course is handled by Secretary before general catalogue or personal intake',()=>{
  const code=readFileSync(new URL('../lib/crm/telegram-secretary-service.js',import.meta.url),'utf8')
- assert.match(code,/matchTelegramPublishedCourseInterestDraft\\(event\\.text\\)/)
- assert.match(code,/telegramPublishedCourseInterestAcknowledgement\\(courseInterest\\)/)
+ assert.match(code,/matchTelegramPublishedCourseInterestDraft\(event\.text\)/)
+ assert.match(code,/telegramPublishedCourseInterestAcknowledgement\(courseInterest\)/)
  assert.ok(code.indexOf('const courseInterest=matchTelegramPublishedCourseInterestDraft')<
    code.indexOf('const query=freeReview||spiritualInterest||courseInterest||classifyTelegramSecretaryQuery'))
- assert.match(code,/secretaryStopped\\(event,config\\)/)
+ assert.match(code,/secretaryStopped\(event,config\)/)
  assert.match(code,/assertHolisticBusinessConnection/)
 })
