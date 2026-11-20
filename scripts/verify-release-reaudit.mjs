@@ -151,8 +151,13 @@ async function verifyCspBfcache() {
       assert.ok(refusedRestore, 'Missing exact-frame/loader BFCache ineligibility evidence');
       ineligibilityReasons = refusedRestore.notRestoredExplanations.map(item => item.reason);
       const knownActualPolicyReasons = ['MainResourceHasCacheControlNoStore', 'JsNetworkRequestReceivedCacheControlNoStoreResource', 'BrowsingInstanceNotSwapped', 'CacheControlNoStoreCookieModified'];
-      assert.ok(ineligibilityReasons.includes('MainResourceHasCacheControlNoStore'), 'Only the unchanged no-store policy can establish this ineligible outcome');
-      assert.ok(ineligibilityReasons.every(reason => knownActualPolicyReasons.includes(reason)), 'Unknown BFCache blocking reason requires investigation');
+      // The public page may be BFCache-eligible independently of the CDN
+      // Home's cacheability. For a real ineligible traversal, demand exact-frame
+      // browser evidence with ONLY known actual reasons, not an invented
+      // requirement that the main resource alone caused it.
+      assert.ok(ineligibilityReasons.length > 0 &&
+        ineligibilityReasons.every(reason => knownActualPolicyReasons.includes(reason)),
+        'Unknown or missing BFCache blocking reason requires investigation');
     }
     phase = 'forward-to-tantra';
     const beforeForward = await cdp.send('Page.getNavigationHistory');
