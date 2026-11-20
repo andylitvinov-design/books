@@ -1,16 +1,20 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowRight, ArrowUp, BriefcaseBusiness, ChevronDown, HeartHandshake, Mic, Route, Sparkles, Leaf, Heart, TrendingUp, X, CheckCircle2, Play, Pause, UsersRound, Plus, Image as ImageIcon, MessageCircle, CalendarDays } from "lucide-react";
 import { SiteNavigation } from "@/components/site-navigation";
-import AliPersonaPicker from "@/components/app/ali-persona-picker";
+
 import {useAliPersona} from "@/components/app/use-ali-persona";
 import {playAliPersonaAudio,stopAliPersonaAudio} from "@/components/app/ali-persona-audio";
 import { stageHomeAliHandoff } from "@/lib/home-ali-handoff.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./home-dialogue-entry.module.css";
+
+// Load the 4-persona selection dialog, its cards and styles only when asked.
+const AliPersonaPicker=dynamic(()=>import("@/components/app/ali-persona-picker"),{ssr:false});
 
 type Mode = "self" | "business";
 type SpeechEvent = { results: ArrayLike<ArrayLike<{ transcript: string }>> };
@@ -158,7 +162,7 @@ const SCREEN_COPY = {
 export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
   const router=useRouter();
   const t=COPY[locale];
-  const {persona,select}=useAliPersona();
+  const {persona,select}=useAliPersona("max");
   // New visitors meet Max as in the approved mobile design. An explicit
   // previous selection is respected across the whole Ali conversation.
   useEffect(()=>{
@@ -336,7 +340,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
         {voiceMessage&&<p className={styles.voiceStatus} role="status">{voiceMessage}</p>}
       </div>
     </div>
-    <AliPersonaPicker open={personaOpen} onClose={closePersona} locale={locale}/>
+    {personaOpen&&<AliPersonaPicker open={personaOpen} onClose={closePersona} locale={locale}/>}
 
     <div className={styles.directionHead}>
       <h3>{screen.direction}</h3>
