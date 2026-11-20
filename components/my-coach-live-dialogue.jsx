@@ -628,7 +628,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     setBusy(true);setError('');setStreamingPreview('')
     const useStreaming=coachEngine==='groq_stream'&&streamingReady&&!wisdomRequested
     try{
-      const response=await fetch(useStreaming?'/api/app/my-coach/stream':'/api/app/my-coach/turn',{
+      const requestOptions={
         method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
@@ -639,7 +639,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           turns:coachTurnWindow(conversationTurns,10)
             .map(({role,content})=>({role,content})), // Preserve the latest client-stated active goal, not a greeting.
         }),
-      })
+      }
+      // The same consented payload and guard apply to both engines: only
+      // the transport changes. Keep literal strict path for signed-in fallback.
+      const response=useStreaming
+        ?await fetch('/api/app/my-coach/stream',requestOptions)
+        :await fetch('/api/app/my-coach/turn',requestOptions)
       if(response.status===401){setAuthRequired(true);return}
       const result=useStreaming?await readCoachTurnStream(response,{
         signal:controller.signal,

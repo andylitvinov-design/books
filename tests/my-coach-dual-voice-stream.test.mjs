@@ -118,6 +118,8 @@ test('Gemini Live never activates without paid privacy, spend, Director and prov
   assert.equal(resolveCoachVoiceEngine('gemini'),'groq')
   assert.equal(resolveCoachVoiceEngine('gemini',{geminiLiveEnabled:true}),'gemini')
   const config=geminiCoachLiveConfig(env)
+  assert.equal(geminiCoachLiveConfig({...env,HH_MY_COACH_GEMINI_MODEL:undefined}).model,
+    'gemini-3.8-live', 'current Google-recommended Live model is the safe default')
   let calls=0
   const issued=await createGeminiCoachEphemeralToken(config,{fetcher:async(url,init)=>{
     calls++
