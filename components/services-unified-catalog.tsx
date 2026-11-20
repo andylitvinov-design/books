@@ -305,7 +305,10 @@ export function ServicesCompactPanel({ id, children }: { id: ServicesPanelId; ch
           display:"none", visibility:"hidden", position:"absolute",
           width:0, height:0, overflow:"hidden", pointerEvents:"none",
         } : undefined}>
-        {children}
+        {/* Avoid mounting the legacy full-size consultation shelf in the compact
+            ten-by-three service catalogue. The explicit #consultation deep link
+            and user-opened Details still reveal the unchanged booking formats. */}
+        {id === "consultation" && !expanded ? null : children}
       </div>
     </article>
   );

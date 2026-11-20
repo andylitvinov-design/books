@@ -118,3 +118,12 @@ test("collapsed legacy panels truly hide while compact category contract remains
   assert.match(read("scripts/verify-public-services-production.mjs"), /Oversized service category/);
   assert.match(read("scripts/verify-public-services-production.mjs"), /Three offers must stack vertically/);
 });
+
+
+test("large legacy consultation mounts only on explicit detail or #consultation deep link", () => {
+  assert.match(catalog, /id === "consultation" && !expanded \? null : children/);
+  const browser = read("scripts/verify-public-services-production.mjs");
+  assert.match(browser, /locator\("\[data-assist-personal-consultation\]"\)\)\.toHaveCount\(0\)/);
+  assert.match(browser, /services#consultation/);
+  assert.match(browser, /await expect\(consultation\)\.toBeVisible\(\)/);
+});

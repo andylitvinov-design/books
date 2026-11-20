@@ -248,7 +248,7 @@ try {
     }
     // The approved 10-category shelf has no duplicate large featured cards.
     // Older diagnostic formats remain accessible inside the consultation disclosure.
-    await expect(page.locator("[data-assist-personal-consultation]")).toBeHidden();
+    await expect(page.locator("[data-assist-personal-consultation]")).toHaveCount(0);
     const catalog = page.locator("[data-services-unified-catalog]");
     await visible(catalog);
     // Browser acceptance must exercise hydrated React handlers, not
@@ -893,6 +893,7 @@ try {
           "Deep link preserves express/paid consultation offers: " + locale);
         await assertViewport(page, locale + "/services#consultation");
         const consultation = page.locator("[data-assist-personal-consultation]");
+        await expect(consultation).toBeVisible();
         await consultation.scrollIntoViewIfNeeded();
         await consultation.screenshot({ path: output + "/services-" + locale + "-compact-consultation-390.png" });
       }
