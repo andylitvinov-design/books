@@ -1,6 +1,7 @@
 'use client'
 import {ArrowRight,BriefcaseBusiness,Film,LockKeyhole,Pencil,PlayCircle,UserRound} from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import PractitionerPresentationVideo from '@/components/practitioner-presentation-video'
 import PractitionerVideoGallery from '@/components/practitioner-video-gallery'
 import styles from './practice-social-profile.module.css'
@@ -27,6 +28,8 @@ export default function PracticeSocialProfile({locale='en',practitioner,services
  const approved=practitioner?.profile||null
  const profile=approved||practitioner?.draftProfile||null
  const name=String(profile?.displayName||'').trim()
+ const path=profile?.photoPath
+ const photo=typeof path==='string'&&(path.startsWith('https://')||(path.startsWith('/')&&!path.startsWith('//')))?path:null
  const description=String(profile?.shortBio||profile?.fullBio||'').trim()
  const published=services.filter(s=>s.status==='published')
  const externalIntro=approved?.videoPresentation?.kind==='external'?approved.videoPresentation:null
@@ -34,7 +37,7 @@ export default function PracticeSocialProfile({locale='en',practitioner,services
  const videos=Array.isArray(approved?.videoMaterials)?approved.videoMaterials:[]
  return <section className={styles.social} data-practitioner-social-profile aria-label={t.heading}>
   <div className={styles.identity}>
-   <div className={styles.avatar} aria-hidden="true">{name?name.slice(0,1).toUpperCase():<UserRound size={32}/>}</div>
+   <div className={styles.avatar} aria-hidden="true">{photo?<Image src={photo} alt="" width={85} height={85} unoptimized/>:name?name.slice(0,1).toUpperCase():<UserRound size={32}/>}</div>
    <div className={styles.about}><span className={styles.eyebrow}><BriefcaseBusiness size={15}/>{t.heading}</span>
     <h2>{name||t.heading}</h2>
     {profile?.professionalTitle?<strong>{profile.professionalTitle}</strong>:null}
