@@ -7,7 +7,7 @@ const id='8afbf841-49a0-46e1-b5c1-124a116efa28'
 const sample=()=>({
   id,personaId:'mira',locale:'ru',
   startedAt:'2026-11-19T20:00:00.000Z',completedAt:'2026-11-19T20:20:00.000Z',
-  durationSeconds:1200,goal:'Разобраться в целях',
+  durationSeconds:1200,goal:'Разобраться в целях',clientSummary:'Мне стало яснее, что нужна поддержка.',clientNextStep:'Обсудить нагрузку с коллегой.',
   turns:[
     {role:'user',content:'Я хочу понять, чего мне не хватает для следующего шага.',secret:'not-for-report'},
     {role:'assistant',content:'Что вам сейчас важнее всего?',mode:'ai',stage:'explore',suggestion:'Возможный шаг: поговорить с коллегой.',reasoning:'hidden reasoning'},
@@ -19,6 +19,8 @@ test('protocol captures every completed visible user/coach exchange in order',()
   const result=normalizeMyCoachProtocol(sample())
   assert.equal(result.turns.length,4)
   assert.equal(result.goal,'Разобраться в целях')
+  assert.equal(result.clientSummary,'Мне стало яснее, что нужна поддержка.')
+  assert.equal(result.clientNextStep,'Обсудить нагрузку с коллегой.')
   assert.deepEqual(result.turns.map(turn=>turn.role),['user','assistant','user','assistant'])
   assert.deepEqual(result.turns.map(turn=>turn.content),sample().turns.map(turn=>turn.content))
   const all=JSON.stringify(result)
@@ -38,6 +40,8 @@ test('Russian/English/Spanish print projections preserve both voices and label s
     assert.match(options.entries[0].reflection,/поговорить с коллегой/)
     assert.match(options.entries[1].answer,/Как вы могли бы об этом попросить/)
     assert.equal(options.actionPlan,'')
+    assert.equal(options.clientReflection,'Мне стало яснее, что нужна поддержка.')
+    assert.equal(options.clientNextStep,'Обсудить нагрузку с коллегой.')
     assert.ok(options.protocolNote)
   }
 })
