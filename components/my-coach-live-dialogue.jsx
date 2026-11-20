@@ -1317,7 +1317,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             <input type="checkbox" checked={contextPaused} onChange={event=>setContextPaused(event.target.checked)}/>
             {lang==='ru'?'Приостановить использование контекста в этой беседе':lang==='es'?'Pausar el uso del contexto en esta conversación':'Pause saved context for this conversation'}
           </label>}
-          <button type="button" disabled={contextSessionLoading||busy} onClick={async()=>{
+          <button type="button" disabled={contextSessionLoading||busy||Boolean(contextSession&&contextSession.expiresAt>Date.now())} onClick={async()=>{
             setContextSessionLoading(true)
             setContextSessionError(false)
             try{
