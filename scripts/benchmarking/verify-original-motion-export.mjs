@@ -34,8 +34,12 @@ try {
   await page.locator('[data-video-studio-hydrated="true"]').waitFor({ timeout: 60000 });
   // Complete all three real Goal selections before the visitor's Ideas CTA.
   await completeThreeStepGoalsQuiz(page,{engine});
-  if(engine==='webkit')await page.locator('[data-video-continue-scenarios]').tap();
-  else await page.locator('[data-video-continue-scenarios]').click();
+  // Native tap the actual first-screen Create Video CTA. The lower historical
+  // Continue button is deliberately hidden on mobile and must never be forced.
+  const advance=page.locator('[data-video-goal-create-cta]');
+  await advance.waitFor({state:'visible',timeout:15000});
+  if(engine==='webkit')await advance.tap();
+  else await advance.click();
   assert.equal(await page.locator('[data-video-quick-control="phrases"]').getAttribute('aria-pressed'),
     'true','GOALS_MUST_OPEN_IDEAS');
   const editor=page.locator('[data-video-quick-control="editor"]');
