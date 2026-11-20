@@ -9326,7 +9326,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   behavior:"smooth",block:"start"
                 });
               }}
-              onApprovalRequiredChange={pending=>{storySourcePendingRef.current=pending;}}
+              onApprovalRequiredChange={pending=>{
+                // Story suggestions are editorial references, not the
+                // visitor's independently selected, verified MP4 montage.
+                // Visiting Story for video settings must not revoke that
+                // explicit four-source choice. A selected Story still needs
+                // positive approval before it can replace any movie.
+                const independentCatalogSource=Boolean(usingFreeFilmCompilation&&freeFilmSourcesListed&&
+                  cinematicPlan?.shots.every(shot=>!STORY_PHOTO_BY_ID.has(shot.sceneId)));
+                if(!pending)storySourcePendingRef.current=false;
+                else if(!independentCatalogSource)storySourcePendingRef.current=true;
+              }}
               onApply={(shots,concept,key,captions,outputAspect="portrait")=>{
                 const preset=aspectFilmPresets.find(option=>option.theme===theme);
                 if(!preset)return false;
@@ -9352,6 +9362,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               onChooseQuality={sourceReady=>{
                 // Selecting Quality must not render a previous unrelated movie.
                 if(!sourceReady){
+                  // A visitor who explicitly selected the pending Story
+                  // must approve those exact photos; never export a previously
+                  // selected unrelated montage as though it were this Story.
+                  storySourcePendingRef.current=true;
                   setNotice(locale==="ru"?"Нажмите «Использовать эти 6 фото в видео». Иначе они останутся референсами.":
                     locale==="es"?"Pulsa «Usar estas 6 fotos en el vídeo» primero.":
                     "Choose «Use these 6 photos in my video» before continuing.");

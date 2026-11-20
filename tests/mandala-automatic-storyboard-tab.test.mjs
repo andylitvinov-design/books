@@ -249,7 +249,13 @@ test("unfinished Story source selection blocks direct Ready export across tab na
  assert.match(tab,/const storyboardSourcesPending=!manualFiveReady&&!eligible&&!photoAdaptationApplied/);
  assert.match(tab,/onApprovalRequiredChange\?\.\(storyboardSourcesPending\)/);
  assert.match(studio,/const storySourcePendingRef=useRef\(false\)/);
- assert.match(studio,/onApprovalRequiredChange=\{pending=>\{storySourcePendingRef\.current=pending;\}\}/);
+ assert.match(studio,/onApprovalRequiredChange=\{pending=>\{/);
+ assert.ok(studio.includes("const independentCatalogSource=Boolean(usingFreeFilmCompilation&&freeFilmSourcesListed&&"),
+   "a separately selected verified 4-MP4 film remains usable after visiting Story settings");
+ assert.ok(studio.includes("cinematicPlan?.shots.every(shot=>!STORY_PHOTO_BY_ID.has(shot.sceneId))"),
+   "unapproved photo Story media cannot masquerade as independent verified footage");
+ assert.match(studio,/else if\(!independentCatalogSource\)storySourcePendingRef\.current=true/);
+ assert.match(studio,/if\(!sourceReady\)\{\s*\/\/ A visitor[\s\S]*?storySourcePendingRef\.current=true;/);
  assert.match(studio,/const createQuickVideo = \(\) => \{\s*if\(storySourcePendingRef\.current\)/);
  assert.match(studio,/const startFromHero=\(\)=>\{\s*if\(storySourcePendingRef\.current\)/);
  assert.match(studio,/storySourcePendingRef\.current=false; \/\/ New explicit Express recipe/);
