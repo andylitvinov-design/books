@@ -545,6 +545,7 @@ jobs:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     outputs:
       media_required: ${{ steps.media_gate.outputs.media_required }}
+      stories_required: ${{ steps.media_gate.outputs.stories_required }}
     runs-on: ubuntu-slim
     timeout-minutes: 7
     permissions:
@@ -603,6 +604,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           if ! git cat-file -e "$tested_base:lib/ci/merge-check-light.mjs" 2>/dev/null; then
             echo 'media_required=true' >> "$GITHUB_OUTPUT"
+            echo 'stories_required=true' >> "$GITHUB_OUTPUT"
             echo 'First rollout: BASE policy unavailable; run WebKit, never self-waive.'
             exit 0
           fi
@@ -611,7 +613,7 @@ jobs:
           import { execFileSync } from 'node:child_process';
           import { appendFileSync } from 'node:fs';
           import { pathToFileURL } from 'node:url';
-          const {requiresRealMediaWebKit}=await import(pathToFileURL(
+          const {requiresRealMediaWebKit,requiresStoriesWebKit}=await import(pathToFileURL(
             process.env.RUNNER_TEMP+'/hh-media-impact-base.mjs').href);
           const raw=execFileSync('git',['diff','--no-renames','--name-status','-z',
             process.env.HH_TESTED_BASE,'HEAD'],{encoding:'utf8',maxBuffer:8*1024*1024});
@@ -622,8 +624,10 @@ jobs:
           for(let i=0;i<parts.length;i+=2)
             changed.push({status:parts[i],filename:parts[i+1]});
           const required=requiresRealMediaWebKit(changed);
+          const stories=requiresStoriesWebKit(changed);
           appendFileSync(process.env.GITHUB_OUTPUT,'media_required='+String(required)+'\n');
-          console.log('TESTED_BASE_MACOS_IMPACT:',required,'files:',changed.length);
+          appendFileSync(process.env.GITHUB_OUTPUT,'stories_required='+String(stories)+'\n');
+          console.log('TESTED_BASE_MACOS_IMPACT:',required,'stories:',stories,'files:',changed.length);
           NODE
   voice-webkit-macos:
     if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && needs.webkit_preflight.outputs.media_required == 'true' }}
@@ -639,6 +643,7 @@ jobs:
       # Test real WebKit native compositor rather than frozen headless media.
       HH_VOICE_E2E_HEADED: '1'
       HH_EXACT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      HH_STORIES_E2E_REQUIRED: ${{ needs.webkit_preflight.outputs.stories_required }}
       # This CI-only PR keeps the consent-only WebKit check and encoded media gate.
       HH_VOICE_SKIP_GUIDED_PRACTICES: ${{ startsWith(github.head_ref, 'codex/mandala-cancel-stale-head-cache-') && '1' || '0' }}
     steps:
@@ -734,7 +739,7 @@ jobs:
             node scripts/benchmarking/verify-original-motion-export.mjs
           # Real five-shot vertical movie, identity and soundtrack gate for Stories PRs.
           # The guard is strict, local-only and cannot invoke paid AI or publisher POST.
-          if [[ "${GITHUB_HEAD_REF:-}" == codex/stories-* || "${GITHUB_HEAD_REF:-}" == codex/video-story-five-cards-quality-last-20261112 ]]; then
+          if [[ "${HH_STORIES_E2E_REQUIRED:-}" == true || "${GITHUB_HEAD_REF:-}" == codex/stories-* || "${GITHUB_HEAD_REF:-}" == codex/video-story-five-cards-quality-last-20261112 ]]; then
             HH_STORIES_E2E_ENGINE=webkit \
               HH_LIVE_VIDEO_PLAYWRIGHT="$RUNNER_TEMP/voice-playwright/node_modules/playwright/index.mjs" \
               node scripts/benchmarking/verify-five-scene-stories-browser.mjs
