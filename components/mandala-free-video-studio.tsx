@@ -7500,7 +7500,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             onExpand={()=>{
               setMirrorAdvanced(true);
               window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
-                document.querySelector("[data-video-director-goal-controls]")?.scrollIntoView({block:"start",behavior:"auto"})));
+                document.getElementById("quick-theme-title")?.scrollIntoView({block:"start",behavior:"auto"})));
             }}/>
         </>:null}
         <header className={videoStyles.quickHeader}>
