@@ -85,7 +85,7 @@ test('private panels shed old Account chrome and retain actual protected compone
  assert.match(account,/!documentReader && !practiceInner && page !== 'portrait' && !courseLanding && <header className="hh-header"/)
  assert.match(account,/page === 'portrait' \? 'hh-app hh-app--profile'/)
  assert.match(account,/data-profile-page-shell=\{page === 'portrait'/)
- assert.match(account,/!documentReader && !practiceInner && page !== 'portrait' && page !== 'runs' && page !== 'settings' && !courseLanding && \(/)
+ assert.match(account,/!documentReader && !practiceInner && page !== 'portrait' && page !== 'runs' && page !== 'settings' && page !== 'my-coaching-plan' && !courseLanding && \(/)
  assert.match(account,/!documentReader && !practiceInner && page !== 'portrait'/)
  assert.match(account,/accountId=\{data\.account\.id\} key=\{data\.account\.id\} showcaseEntry/)
  assert.match(editor,/showcaseEntry=false/)
