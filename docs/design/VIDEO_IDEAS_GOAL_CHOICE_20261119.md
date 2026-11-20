@@ -1,13 +1,43 @@
-# Video Studio Ideas → Goal · approved mobile screenshot · 19 November 2026
+# Video Studio · утверждённый экран Goals · 19 ноября 2026
 
-Correct view: canonical /en/holistic-support/mandala, anonymous Video Studio, Ideas → Goal; Russian and Spanish mirrors. The owner approved the last large-card portrait-screen mockup in ChatGPT, not a new image file. Do not upload private screenshot to public GitHub. Do not replace the independent top-level Goal workspace.
+**Актуальная версия:** Goal Composer v2, см. `docs/design/VIDEO_PERSONAL_GOAL_COMPOSER_V2_20261119.md`.
 
-Visual target: retain Holistic House warm ivory background, forest green and single bottom navigation; keep one existing video Canvas with a compact preview above three subtabs on mobile; display Personalization | Goal | Concept. The Goal stage has a large title, three large photo cards, left image, clear large serif headings, short explanations and circular selection marks. Initial choices Calm & Balance, Love & Openness, Energy & Motivation. More goals and previous/next arrows paginate three sets of three while retaining the selected goal. One wide green Choose scenario button is disabled until deliberate user selection. Photos are existing first-party film-collection-v2 JPGs; no new video renderer/media/provider.
+## Визуальная структура
 
-Behavior: original Goal workspace → Ideas Personalization (4 questions, optional first name) → Ideas Goal (3 visible goals) → Ideas Concept (2 existing creative directions) → Montage/Ready. A confirmed Goal choice is matched to the current 4×4×4 canonical editorial taxonomy and changes selectedTopicId, locale-specific intent and creativeBrief in the existing suggestVideoConcept call. Original request, confirmed Personalization, phrase settings and actual media pipeline are retained. The same shared concept feeds Storyboard. Old approved and chosen directions become stale on goal selection, without erasing existing media or initiating video export, charge, health diagnosis or external transmission.
+Реальная страница `/{ru,en,es}/holistic-support/mandala` → MyVideo → Ideas.
+Сохраняем утверждённый мобильный вид из пользовательского скриншота:
+компактный общий player, тёплый бежевый фон, три вкладки
+`Personalization | Goal | Concept`, три большие фотокарточки
+слева изображение и справа крупный заголовок, кнопка «Выбрать сценарий».
+Скриншот пользователя не публикуется в открытый репозиторий.
+Панель Goal является частью Ideas, не заменяет основную вкладку Goal.
 
-Scope: the existing studio, mobile CSS, personalization CTA, the new small Goal component and local goal mapping, source tests, existing browser QA. No database, API, auth, CRM, delivery or pricing changes.
+## Поведение
 
-Verification targets: node --test tests/mandala-ideas-goal-flow.test.mjs tests/mandala-ideas-personalization-concept.test.mjs; TypeScript, lint, Next build; existing scripts/verify-affirmation-voice-browser.mjs WebKit/Chromium at 320,354,390,430 and desktop, EN/RU/ES. Check rendered same-state mobile screenshot, goal pagination/selection/CTA, actual Concept topic changes, Back retention, iOS Safari. CI and protected merge independently; ordinary Vercel Production only via the existing hourly publisher, independently verify READY, canonical alias and serving SHA. Open related PRs #5126/#5145/#5100 overlap shared Studio/browser and must be reconciled by their owners before marking live.
+- После Personalization → Goal, затем выбранная цель → Concept.
+- Goal Composer создаёт **пять релевантных целей**: три видимых и
+  две дополнительные по ссылке «Ещё 2 цели». Старые девять статических
+  вариантов `Calm & Balance`, `Love & Openness`, `Energy & Motivation`
+  больше не являются источником выбора.
+- Существуют ровно три типа намерений: отдых/развлечение,
+  поддержка/стабилизация, психологическая коррекция/развитие.
+  Нет обязательной квоты по одному варианту каждого типа.
+- Входящие данные: реальный запрос, подтверждённая категориальная тема
+  из 4×4×4, подтверждённые эмоции до/после, смысловая ось, энергия.
+  Данные тестов/OPD не читаются без отдельного разрешения.
+- Один выбранный Goal передаёт `mechanismId`, `scenarioStrategy`,
+  `secondaryScenarioStrategy` в тот же Concept/Storyboard.
+  Тема клиента остаётся неизменной. Цель только меняет выбор
+  редакторского сценарного механизма и смысловую динамику.
+- При изменении темы/ответов пользователь должен выбрать цель заново;
+  старый черновик и одобрение теряют актуальность.
+- Оба сюжета Concept используют подтверждённый 30-секундный формат
+  6 сцен × 5 секунд. Никакого нового рендера, двойного аудио, обхода
+  прав или релизных платежей.
 
-GLOBAL_PR_ONE_PUBLISH_V1: staged_before_open=yes; local_checks=partial; post_open_head_updates=0; extra_waves=none; cost_new_spend=NO_NEW_SERVICES
+## Проверка
+
+`node --test tests/video-personal-goal-composer.test.mjs tests/mandala-ideas-goal-flow.test.mjs`.
+Также текущие проверки Storyboard, выбора фраз, WebKit, Node+TypeScript+lint+build.
+Считать LIVE только после защищённого merge, штатного production-publisher
+и проверки реального отображения на iPhone.
