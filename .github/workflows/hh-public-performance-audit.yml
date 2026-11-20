@@ -102,7 +102,7 @@ jobs:
           done
           if [[ "$ready" != 1 ]]; then tail -60 /tmp/hh-home-local-start.log; exit 1; fi
           node scripts/verify-home-critical-response.mjs http://127.0.0.1:3399 --enforce-inline-react | tee artifacts/home-critical-response.json
-          { echo '## Exact PR Next production homepage CSS'; echo '\`\`\`json'; cat artifacts/home-critical-response.json; echo '\`\`\`'; } >> "$GITHUB_STEP_SUMMARY"
+          { echo '## Exact PR Next production homepage CSS'; echo '```json'; cat artifacts/home-critical-response.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
       - name: Upload measured local first-render response evidence
         if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'perf(home):')
         uses: actions/upload-artifact@v4
