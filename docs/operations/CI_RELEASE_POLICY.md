@@ -203,7 +203,7 @@ The existing production-push cleanup first requests normal cancellation for a pr
 
 ## 19 November 2026 · Remove redundant PR-only CI jobs
 
-- `HH First Video LIVE` and `Messages wellness synthetic browser QA` are PR opt-ins via the `qa-optional` label, not automatic source-only jobs. Manual real LIVE and browser acceptance remain available with `workflow_dispatch`.
+- `HH First Video LIVE` retains a tiny exact-HEAD Node syntax/contract PR check for its acceptance-script changes, required by the immutable production-BASE aggregator; its real encoded-browser LIVE and optional free-AI probe are manual-only via `workflow_dispatch`. `Messages wellness synthetic browser QA` is opt-in via `qa-optional`; manual browser acceptance remains available.
 - Required Mandala now owns the two First Video/Director acceptance scripts plus the Director Chat test and checks syntax for both. Applicable WebKit/media, rights and consent tests remain mandatory; Messages, IA, CRM and Core checks are retained.
 - Library browser workflow no longer rebuilds the entire site for isolated Messages Orders/Clients or Mandala chat component edits; genuine Library source still triggers its real browser acceptance.
 - App R1 source/browser summary uses `ubuntu-slim` with failure propagation unchanged. Protected `hh-merge-check` is not bypassed. Tenfold refers to the desired redundant CI budget, not a claimed measured tenfold reduction in total CI usage.

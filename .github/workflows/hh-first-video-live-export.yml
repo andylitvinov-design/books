@@ -1,7 +1,7 @@
 name: HH First Video LIVE · encoded file acceptance
 on:
   pull_request:
-    types: [labeled]
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: ['codex/public-book-library']
     paths:
       - 'scripts/benchmarking/first-video-live-export.mjs'
@@ -27,10 +27,10 @@ concurrency:
 
 jobs:
   anonymous-encoded-video:
-    if: ${{ github.event_name != 'pull_request' || (github.event.label.name == 'qa-optional' && github.event.pull_request.draft == false) }}
-    # Real PR source and media QA is owned by the required Mandala specialist.
-    # This duplicate source-only PR job is explicit qa-optional only.
-    # Real LIVE checks remain available via manual workflow_dispatch.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    # BASE-trusted merge aggregation requires a real exact-HEAD source job while
+    # this acceptance test is changed. Keep just Node syntax/contracts on PRs;
+    # real LIVE encoded-browser and paid/free-provider probes are manual only.
     # The two LIVE encoded-file smokes remain available on workflow_dispatch.
     runs-on: ubuntu-24.04
     timeout-minutes: 12
