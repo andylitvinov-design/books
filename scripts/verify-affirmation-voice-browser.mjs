@@ -797,7 +797,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         });
         assert.ok(audioLayout&&audioLayout.span<570,
           'AUDIO_COMPACT_FIRST_FOLD_SPAN_'+width+' '+JSON.stringify(audioLayout));
-        assert.ok(audioLayout.tileHeight<=86&&audioLayout.tileHeight>=70,
+        // Owner-approved compact audio *rows* are 54px on narrow iPhones
+        // and 58px on wider phones, never legacy 70–86px video cards.
+        assert.ok(audioLayout.tileHeight>=52&&audioLayout.tileHeight<=64,
           'AUDIO_COMPACT_TRACK_HEIGHT_'+width+' '+JSON.stringify(audioLayout));
         assert.ok(audioLayout.createLeft<audioLayout.nextLeft&&
           Math.abs(audioLayout.createTop-audioLayout.nextTop)<=3&&
