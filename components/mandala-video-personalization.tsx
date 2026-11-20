@@ -1,19 +1,19 @@
 "use client";
-import {useMemo,useRef,useState} from "react";
+import {useRef,useState} from "react";
 import type {Dispatch,SetStateAction} from "react";
-import {ArrowLeft,ArrowRight,Check,Heart,Leaf,Sparkles,Zap} from "lucide-react";
+import {ArrowLeft,ArrowRight,Check,Heart,Sparkles,Zap} from "lucide-react";
 import {listMeaningAxes} from "@/lib/mandala/meaning-emotion/idea-engine.mjs";
 import type {VideoLocale} from "@/lib/mandala/holistic-video-themes";
 import css from "./mandala-video-personalization.module.css";
 
 export type VideoGoalProfile={name?:string;current:string[];desired:string[];axes:string[];energy:number;desiredLevel:number};
 export const DEFAULT_VIDEO_GOAL_PROFILE:VideoGoalProfile={
- name:"",current:["fatigue"],desired:["calm"],axes:["meaning"],energy:4,desiredLevel:6,
+ name:"",current:["fatigue"],desired:["calm"],axes:[],energy:4,desiredLevel:6,
 };
 type Mood="sad"|"calm"|"happy";
-type Axis={id:string;label:string;description:string};
+
 type Choice={id:string;ru:string;en:string;es:string;meaning:string};
-type QuizStep=1|2|3|4|5|6;
+type QuizStep=1|2|3|4|5;
 const energyScores=[1,2,3,4,5,6,7,8,9,10] as const;
 const currentChoices:Choice[]=[
  ["fatigue","Усталость","Tired","Cansancio","fatigue"],
@@ -91,14 +91,14 @@ export function MandalaVideoPersonalization({locale,value,onChange,onBack,onCont
  locale:VideoLocale;value:VideoGoalProfile;onChange:Dispatch<SetStateAction<VideoGoalProfile>>;
  onBack:()=>void;onContinue:()=>void;disabled:boolean;
 }){
- const t=copy[locale],axes=useMemo<Axis[]>(()=>listMeaningAxes(locale),[locale]);
+ const t=copy[locale];
  const [quizStep,setQuizStep]=useState<QuizStep>(1);
  const quizRef=useRef<HTMLDivElement>(null);
  const [currentMood,setCurrentMood]=useState<Mood>("calm");
  const [desiredMood,setDesiredMood]=useState<Mood>("calm");
  // As on the main Goal quiz, one tap commits one answer and opens the next step.
  // Absolute targets prevent rapid taps from accidentally skipping a question.
- const advanceTo=(step:2|3|4|5|6)=>{
+ const advanceTo=(step:2|3|4|5)=>{
   setQuizStep(step);
   quizRef.current?.scrollIntoView({block:"start",behavior:"auto"});
  };
@@ -107,15 +107,10 @@ export function MandalaVideoPersonalization({locale,value,onChange,onBack,onCont
   onChange(old=>({...old,[side]:[id]}));
   advanceTo(side==="current"?2:3);
  };
- const chooseAxis=(id:string)=>{
-  if(disabled)return;
-  onChange(old=>({...old,axes:[id]}));
-  advanceTo(4);
- };
  const chooseEnergy=(field:"energy"|"desiredLevel",score:number)=>{
   if(disabled)return;
   onChange(old=>({...old,[field]:score}));
-  advanceTo(field==="energy"?5:6);
+  advanceTo(field==="energy"?4:5);
  };
  const filter=(side:"current"|"desired",tone:Mood,onTone:(mood:Mood)=>void)=>
   <div className={css.moodFilter} role="group" aria-label={side==="current"?t.now:t.want}>
@@ -150,9 +145,9 @@ export function MandalaVideoPersonalization({locale,value,onChange,onBack,onCont
   <header className={css.intro}><span className={css.step}>{t.step}</span>
    <h2>{t.title}</h2><p>{t.intro}</p></header>
   <div className={css.progress} data-video-personalization-progress role="status" aria-live="polite">
-   <strong>{t.quizStep} {quizStep} / 6</strong>
+   <strong>{t.quizStep} {quizStep} / 5</strong>
    <span className={css.progressDots} aria-hidden="true">
-    {([1,2,3,4,5,6] as const).map(step=><i key={step} data-active={step<=quizStep?"true":"false"}/>)}
+    {([1,2,3,4,5] as const).map(step=><i key={step} data-active={step<=quizStep?"true":"false"}/>)}
    </span>
   </div>
   <section className={css.card} data-personalization-kind="current" hidden={quizStep!==1} aria-labelledby="personalization-now-heading">
@@ -167,19 +162,7 @@ export function MandalaVideoPersonalization({locale,value,onChange,onBack,onCont
    </div>{filter("desired",desiredMood,setDesiredMood)}</div>
    {choices("desired",desiredMood)}<p className={css.scrollHint}>{t.more}</p>
   </section>
-  <section className={css.card} data-personalization-kind="strength" hidden={quizStep!==3} aria-labelledby="personalization-strength-heading">
-   <div className={css.cardHead}><div className={css.cardName}>
-    <Leaf size={25} aria-hidden="true"/><div><h3 id="personalization-strength-heading">{t.strength}</h3><p>{t.axisHint}</p></div>
-   </div></div>
-   <div className={css.axisGrid} role="group" aria-label={t.strength}>
-    {axes.map(axis=><button key={axis.id} type="button" data-video-personalization-axis={axis.id}
-     title={axis.description} aria-pressed={value.axes.includes(axis.id)} disabled={disabled}
-     onClick={()=>chooseAxis(axis.id)}>
-     {value.axes.includes(axis.id)?<Check size={16} aria-hidden="true"/>:null}{axis.label}
-    </button>)}
-   </div>
-  </section>
-  <section className={css.card} data-personalization-kind="energy-current" hidden={quizStep!==4}
+  <section className={css.card} data-personalization-kind="energy-current" hidden={quizStep!==3}
    aria-labelledby="personalization-energy-current-heading">
    <div className={css.cardHead}><div className={css.cardName}>
     <Zap size={25} aria-hidden="true"/><div><h3 id="personalization-energy-current-heading">{t.energy}</h3>
@@ -190,8 +173,11 @@ export function MandalaVideoPersonalization({locale,value,onChange,onBack,onCont
      data-video-personalization-energy={score} disabled={disabled} aria-pressed={value.energy===score}
      onClick={()=>chooseEnergy("energy",score)}>{score}</button>)}
    </div>
+   <div className={css.energyScale} aria-hidden="true"><span/>
+    <div><small>{locale==="ru"?"Очень мало":locale==="es"?"Muy baja":"Very low"}</small><small>{locale==="ru"?"Очень много":locale==="es"?"Muy alta":"Very high"}</small></div>
+   </div>
   </section>
-  <section className={css.card} data-personalization-kind="energy-desired" hidden={quizStep!==5}
+  <section className={css.card} data-personalization-kind="energy-desired" hidden={quizStep!==4}
    aria-labelledby="personalization-energy-desired-heading">
    <div className={css.cardHead}><div className={css.cardName}>
     <Sparkles size={25} aria-hidden="true"/><div><h3 id="personalization-energy-desired-heading">{t.level}</h3>
@@ -203,7 +189,7 @@ export function MandalaVideoPersonalization({locale,value,onChange,onBack,onCont
      onClick={()=>chooseEnergy("desiredLevel",score)}>{score}</button>)}
    </div>
   </section>
-  <section className={css.nameCard} data-video-personalization-name-question hidden={quizStep!==6}>
+  <section className={css.nameCard} data-video-personalization-name-question hidden={quizStep!==5}>
    <label htmlFor="video-personalization-name">{t.nameQuestion}</label>
    <input id="video-personalization-name" data-video-personalization-name type="text"
     name="preferredName" autoComplete="given-name" maxLength={18}
@@ -218,7 +204,7 @@ export function MandalaVideoPersonalization({locale,value,onChange,onBack,onCont
      }}/>
    <p>{t.nameHint}</p>
   </section>
-  {quizStep===6?<button className={css.next} type="button" data-video-personalization-clarify-continue
+  {quizStep===5?<button className={css.next} type="button" data-video-personalization-clarify-continue
    disabled={disabled} onClick={onContinue}>
    <Sparkles size={22} aria-hidden="true"/><span>{t.next}</span><ArrowRight size={22} aria-hidden="true"/>
   </button>:null}

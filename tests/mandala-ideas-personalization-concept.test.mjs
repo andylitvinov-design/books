@@ -38,27 +38,25 @@ test("Ideas has three real substages and the same single Scenario/Concept genera
   assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1);
 });
 
-test("Personalization recovers the approved three-question photo cards for RU EN ES",()=>{
+test("Personalization keeps two one-tap feelings questions and current energy third",()=>{
   for(const label of ["Как я чувствую себя сейчас?","How do I feel now?","¿Cómo me siento ahora?",
     "Как я хотел бы себя чувствовать?","How would I like to feel?","¿Cómo me gustaría sentirme?",
-    "Что я хочу укрепить?","What would I like to strengthen?","¿Qué me gustaría fortalecer?"])
+    "Сколько энергии у меня сейчас?","How much energy do I have now?","¿Cuánta energía tengo ahora?"])
     assert.ok(personal.includes(label),label);
-  for(const kind of ["current","desired","strength"])
+  for(const kind of ["current","desired","energy-current","energy-desired"])
     assert.ok(personal.includes('data-personalization-kind="'+kind+'"'),kind);
-  for(const id of ["energy","desired-level","choice","axis","mood"])
+  assert.doesNotMatch(personal,/data-personalization-kind="strength"/,
+    "the redundant strength question must not precede energy");
+  for(const id of ["energy","desired-level","choice","mood"])
     assert.ok(personal.includes('data-video-personalization-'+id),id);
   assert.match(personal,/onChange\(old=>\(\{\.\.\.old,\[side\]:\[id\]\}\)\)/);
-  assert.match(personal,/onChange\(old=>\(\{\.\.\.old,axes:\[id\]\}\)\)/);
   assert.match(personal,/advanceTo\(side==="current"\?2:3\)/);
-  assert.match(personal,/advanceTo\(4\)/);
   assert.doesNotMatch(personal,/selected\.length>=3|old\.axes\.length>=3|onClick=\{goNext\}/);
-  assert.match(personal,/onContinue/);
-  assert.match(personal,/onBack/);
-  for(const photo of ["morning-dew.jpg","wealth-sunrise.jpg","mountain-air.jpg"]){
+  assert.match(personal,/onContinue/);assert.match(personal,/onBack/);
+  for(const photo of ["morning-dew.jpg","wealth-sunrise.jpg"]){
     assert.ok(css.includes(photo),photo);
     assert.ok(existsSync(new URL("../public/videos/holistic-house/film-collection-v2/"+photo,import.meta.url)),photo);
   }
-  assert.ok(css.includes('data-personalization-kind="strength"'));
   assert.ok(css.includes('@media(max-width:370px)'));
 });
 
@@ -173,30 +171,30 @@ test("Name question stays in browser and personal closing follows the existing v
     "the preferred name never enters the concept/service personalization summary");
 });
 
-test("Personalization has six one-question screens and preserves chosen answers through Back",()=>{
- assert.match(personal,/type QuizStep=1\|2\|3\|4\|5\|6/);
+test("Personalization has five one-question screens, energy third and retained Back state",()=>{
+ assert.match(personal,/type QuizStep=1\|2\|3\|4\|5;/);
  assert.match(personal,/useState<QuizStep>\(1\)/);
  assert.match(personal,/data-video-personalization-step=\{quizStep\}/);
  assert.match(personal,/data-video-personalization-progress/);
- assert.match(personal,/\[1,2,3,4,5,6\] as const/);
- assert.match(personal,/\{quizStep\} \/ 6/);
- for(const stage of [1,2,3,4,5,6])assert.ok(personal.includes('hidden={quizStep!=='+stage+'}'));
- for(const kind of ["current","desired","strength","energy-current","energy-desired"])
+ assert.match(personal,/\[1,2,3,4,5\] as const/);
+ assert.match(personal,/\{quizStep\} \/ 5/);
+ for(const stage of [1,2,3,4,5])assert.ok(personal.includes('hidden={quizStep!=='+stage+'}'));
+ for(const kind of ["current","desired","energy-current","energy-desired"])
    assert.ok(personal.includes('data-personalization-kind="'+kind+'"'),kind);
- assert.ok(personal.indexOf('data-personalization-kind="strength"')<
+ assert.ok(personal.indexOf('data-personalization-kind="desired"')<
    personal.indexOf('data-personalization-kind="energy-current"'));
  assert.ok(personal.indexOf('data-personalization-kind="energy-current"')<
    personal.indexOf('data-personalization-kind="energy-desired"'));
  assert.ok(personal.indexOf('data-personalization-kind="energy-desired"')<
-   personal.indexOf('data-video-personalization-name-question'),"name stays sixth");
- assert.match(personal,/\{quizStep===6\?<button[^\n]+data-video-personalization-clarify-continue/);
+   personal.indexOf('data-video-personalization-name-question'),"name stays last");
+ assert.match(personal,/\{quizStep===5\?<button[^\n]+data-video-personalization-clarify-continue/);
  assert.match(personal,/onClick=\{onContinue\}/);
  assert.doesNotMatch(personal,/forward:"Continue"|forward:"Продолжить"|forward:"Continuar"/);
  assert.match(personal,/if\(quizStep===1\)\{onBack\(\);return;\}/);
  assert.match(personal,/quizRef\.current\?\.scrollIntoView/);
  assert.match(css,/\.card\[hidden\],\.nameCard\[hidden\]\{display:none!important\}/);
  assert.match(personal,/data-video-personalization-name type="text"/);
- for(const word of ["previous","next","quizStep"])assert.ok(personal.includes(word));
+ assert.ok(personal.includes("axes:[]"),"unconfirmed strength axes must not leak into the concept");
 });
 
 test("Energy now and desired energy each require one button from 1 to 10 and auto-advance",()=>{
@@ -209,7 +207,7 @@ test("Energy now and desired energy each require one button from 1 to 10 and aut
  assert.match(personal,/aria-pressed=\{value\.desiredLevel===score\}/);
  assert.match(personal,/onClick=\{\(\)=>chooseEnergy\("energy",score\)\}/);
  assert.match(personal,/onClick=\{\(\)=>chooseEnergy\("desiredLevel",score\)\}/);
- assert.match(personal,/advanceTo\(field==="energy"\?5:6\)/);
+ assert.match(personal,/advanceTo\(field==="energy"\?4:5\)/);
  assert.match(personal,/onChange\(old=>\(\{\.\.\.old,\[field\]:score\}\)\)/);
  assert.doesNotMatch(personal,/type="range"/);
  for(const line of ["Сколько энергии у меня сейчас?","Сколько энергии я хочу иметь?",

@@ -14,6 +14,7 @@ import extraFreeFilmPresets from "@/data/video-catalog/free-film-presets-v2.json
 import { MandalaHypnoCompact } from "./mandala-hypno-compact";
 import { MandalaVideoIdeas } from "./mandala-video-ideas";
 import { MandalaVideoIdeaGoal } from "./mandala-video-idea-goal";
+import {MandalaMagicMirrorTitle,MandalaMagicMirrorGoal} from "./mandala-magic-mirror-goal";
 import {buildPersonalVideoGoalOptions,composePersonalVideoGoalIntent,goalScenarioPlan} from "@/lib/mandala/video-personal-goal-composer.mjs";
 import {MandalaVideoPersonalization,DEFAULT_VIDEO_GOAL_PROFILE,summarizeVideoGoalProfile,type VideoGoalProfile} from "./mandala-video-personalization";
 import { HeaderCreditProfile } from "./header-credit-profile";
@@ -2072,6 +2073,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [phraseCatalogActivated,setPhraseCatalogActivated] = useState(false);
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
   const [activeWorkspace,setActiveWorkspace] = useState<StudioWorkspace>("video");
+  const [mirrorAdvanced,setMirrorAdvanced] = useState(false);
   const [proCatalogKind,setProCatalogKind]=useState<StoryAddonKind>("character");
   const [ideasVoiceAdvancedOpen,setIdeasVoiceAdvancedOpen] = useState(false);
   const [ideasSubtab,setIdeasSubtab] = useState<"personalization"|"goal"|"concept">("personalization");
@@ -7409,6 +7411,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       data-mandala-free-video data-video-studio-mode={studioMode}
       data-ideas-step={activeWorkspace==="phrases"?ideasSubtab:undefined}
       data-video-advanced-open={(showAdvancedVideo||videoScenarioOpen)?"true":"false"}
+      data-hh-mirror-advanced={mirrorAdvanced?"true":"false"}
       data-video-scenario-open={videoScenarioOpen?"true":"false"}
       data-video-studio-hydrated={studioHydrated?"true":"false"}
       data-montage-panel={activeWorkspace==="editor"?montagePanel:undefined}
@@ -7482,6 +7485,24 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </button>)}
       </nav>
         
+        {activeWorkspace==="video"?<>
+          <MandalaMagicMirrorTitle locale={locale}/>
+          <MandalaMagicMirrorGoal locale={locale} wish={wish}
+            disabled={!studioHydrated||recording||preparing}
+            onWishChange={value=>{setWish(value);setSuggestion("");}}
+            onSelectCategory={selectCategory}
+            onContinue={()=>{
+              setIdeasSubtab("personalization");
+              activateQuickWorkspace("phrases");
+              window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+                document.querySelector("[data-video-ideas-tabs]")?.scrollIntoView({block:"start",behavior:"auto"})));
+            }}
+            onExpand={()=>{
+              setMirrorAdvanced(true);
+              window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+                document.querySelector("[data-video-director-goal-controls]")?.scrollIntoView({block:"start",behavior:"auto"})));
+            }}/>
+        </>:null}
         <header className={videoStyles.quickHeader}>
           <div className={videoStyles.quickHeaderText}>
             <h2 id="video-quick-heading">{approved.introTitle}</h2>

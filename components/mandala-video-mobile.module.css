@@ -5906,3 +5906,46 @@
    flex:none!important;width:17px!important;height:17px!important
  }
 }
+
+
+/* Owner-approved Magic Mirror mobile entry: the existing presentation MP4 is
+   the ONE real hero; the overlay is its surrounding UI, never another player.
+   The original detailed goal taxonomy remains behind the user-invoked
+   "More goals" control, with the same original export/consent path. */
+@media(max-width:759px){
+ .studio[data-active-workspace="video"] .quickBuilder>[data-hh-mirror-title]{
+  display:grid!important;order:2!important;margin:4px 0 0!important
+ }
+ .studio[data-active-workspace="video"] .quickBuilder>.previewStage{
+  order:3!important;margin:0!important;padding:0 6px!important
+ }
+ .studio[data-active-workspace="video"] .previewStage .heroWithRail{
+  display:block!important;position:relative;width:100%;padding-bottom:13px
+ }
+ .studio[data-active-workspace="video"] .previewStage .heroWithRail:after{
+  content:"";display:block;position:absolute;bottom:1px;left:-2%;width:104%;height:12px;
+  border-radius:3px 3px 45% 45%;background:linear-gradient(#d6d9da,#aeb4b6 65%,#6e7678);
+  box-shadow:0 3px 6px #5e594627;pointer-events:none
+ }
+ .studio[data-active-workspace="video"] .previewStage .hero{
+  width:100%;aspect-ratio:16/9!important;min-height:0!important;max-height:none!important;
+  border:5px solid #242c2e!important;border-bottom-width:7px!important;
+  border-radius:12px 12px 4px 4px!important;box-shadow:0 6px 17px #312a2335!important
+ }
+ .studio[data-active-workspace="video"] .previewStage .heroRail{
+  display:none!important
+ }
+ .studio[data-active-workspace="video"] .quickBuilder>[data-hh-mirror-goals]{
+  order:4!important;display:grid!important
+ }
+ .studio[data-active-workspace="video"] .quickBuilder>[data-video-quick-section="1"]{order:5!important}
+ .studio[data-active-workspace="video"] .quickBuilder>[data-video-topic-section]{order:6!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder>[data-video-quick-section="1"],
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder>[data-video-topic-section],
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder>[data-auto-video-director]{
+  display:none!important
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="true"] .quickBuilder>[data-auto-video-director]{
+  display:block
+ }
+}

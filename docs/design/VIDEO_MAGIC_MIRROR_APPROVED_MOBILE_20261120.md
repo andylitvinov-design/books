@@ -1,0 +1,18 @@
+# Magic Mirror · approved mobile Goal + Personalization · 2026-11-20
+
+Canonical route: \`/{en,ru,es}/holistic-support/mandala\`, Goal (MyVideo) and Ideas → Personalization.
+Reference: two owner-approved mobile mockups in the 20 November ChatGPT conversation. Do not publish owner screenshots.
+
+## Approved UX
+- ONE real Holistic House introduction player, no new duplicate player or video generation engine. Warm ivory, forest green, small golden spark, laptop-style frame on mobile.
+- Under the video, switch **For Me / For Business**; four natural photo goals in a 2×2 grid; own prompt, keyboard dictation affordance, **Next**.
+- No forced paid render: Next passes the confirmed wish/category into the existing Ideas → Personalization → Goal → Concept; **More goals** reveals the original detailed taxonomy, consent/credit/recipient controls, and existing renderer.
+- Business is a *purpose/goal copy switch*, **not** the "For others" recipient-video mode; never silently create a booking/lead, charge credits, send private profile data or enable new services.
+- Personalization follows 5 distinct screens: current feeling → desired feeling → current energy (1–10) → desired energy (1–10) → optional name. Selecting one chip or number advances immediately; Back preserves values. Remove the formerly third "What would I like to strengthen?" step; no imaginary default focus axis in generated concept.
+- EN/RU/ES, 320 / 354 / 390 / 430 mobile touch targets, readable font, bottom dock unaffected, reduced motion, no autoplay.
+
+## QA / release
+- Focused source acceptance: \`node --test tests/mandala-magic-mirror-mobile.test.mjs tests/mandala-ideas-personalization-concept.test.mjs\`.
+- Existing \`scripts/verify-affirmation-voice-browser.mjs\` covers real five-step flow, numeric buttons and Back, and must run in Chromium/WebKit.
+- Full Core typecheck/lint/Next build and browser overlays on 320–430 px are mandatory prior to protected merge. A source check or screenshot is not proof of working export or live playback.
+- Production only after native protected PR merge, existing hourly publisher, Vercel READY, exact SHA and real phone verification at holistichouse.vercel.app. No manual deployment or new vendor spend.
