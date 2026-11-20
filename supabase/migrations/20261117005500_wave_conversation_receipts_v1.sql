@@ -10,7 +10,8 @@ create table app_private.wave_conversation_receipts (
     (channel in ('telegram','whatsapp','instagram','messenger','site','my_coach')),
   direction text not null check (direction in ('in','out','pair')),
   delivery text not null check (delivery in
-    ('received','draft','queued','accepted','delivered','read','failed','blocked','unknown','stored')),
+    ('received','processed','send_pending','provider_accepted','delivery_unknown',
+     'draft','queued','accepted','delivered','read','failed','blocked','unknown','stored')),
   locale text check (locale is null or locale in ('ru','en','es')),
   route_version text,
   source_at timestamptz not null,
