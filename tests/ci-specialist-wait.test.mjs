@@ -165,13 +165,13 @@ test('loose base reuse is limited to normal public changes; privacy and policy r
     ['components/video-editor.tsx','scripts/verify-video-editor-browser.mjs'],
     ['scripts/benchmarking/video-timing.mjs'],
     ['components/mandala-free-video-studio.tsx','scripts/verify-holistic-mandala-browser.mjs'],
+    ['scripts/verify-affirmation-voice-browser.mjs'],
+    ['scripts/benchmarking/first-video-live-export.mjs'],
   ]) assert.equal(requiresCurrentProductionBase(files), false, files.join(','));
   for (const files of [
     [], ['scripts/ci-specialist-aggregate.mjs'], ['.github/workflows/hh-pr-core-release.yml'],
-    ['scripts/verify-affirmation-voice-browser.mjs'],
     ['package-lock.json'], ['app/api/payment/route.ts'], ['components/app/private-profile.jsx'],
     ['scripts/verify-payment-browser.mjs'], ['scripts/new-auth-guard.mjs'],
-    ['scripts/benchmarking/first-video-live-export.mjs'],
     ['lib/crm/marketing.js'], ['supabase/migrations/001.sql'],
     ['lib/practitioners/direct-messages.js'], ['lib/practitioners/direct-message-policy.mjs'],
     ['lib/app/learning-journey.mjs'], ['lib/ia/encrypted-store.js'],
@@ -553,4 +553,101 @@ test('composed independent BASE advance reuses the same HEAD only with complete 
   assert.equal(safeComposedIndependentAdvance({ ...good, files: [good.files[0]] }, tested, live, candidate), false,
     'single-category proof cannot substitute a complete-list check');
   assert.equal(safeComposedIndependentAdvance(good, tested, live, []), false);
+});
+
+
+test('#5093: protected BASE drift must not trigger auto-sync before required macOS movie test completes',async()=>{
+ const workflow='.github/workflows/holistic-support-mandala.yml';
+ const mediaYaml="on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths:\n      - 'components/mandala-**'\n      - 'scripts/benchmarking/first-video-live-export.mjs'\njobs:\n  voice-webkit-macos:\n    runs-on: macos-15\n";
+ const files={base:new Map([[workflow,mediaYaml]]),
+  current:new Map([[workflow,mediaYaml]]),
+  changedRows:[
+   {filename:'components/mandala-free-video-studio.tsx',status:'M'},
+   {filename:'scripts/benchmarking/first-video-live-export.mjs',status:'M'},
+   // This separate regression deliberately exercises a SENSITIVE source:
+   // ordinary video/QA files now treat unrelated target drift as advisory.
+   {filename:'app/api/holistic-support/voice/route.js',status:'M'},
+  ]};
+ const latest='c'.repeat(40),ctx2={...ctx};
+ const mediaPr={...pr,mergeable:true,mergeable_state:'behind',
+  base:{...pr.base,sha:latest}};
+ const checkedRun=(status,conclusion)=>({...run(status,conclusion),
+  path:workflow,id:981,head_branch:pr.head.ref});
+ let elapsed=0,polls=0,jobReads=0,baseReads=0,compares=0;
+ const api={
+  pr:async()=>mediaPr,target:async()=>{baseReads++;return latest;},
+  compare:async()=>{compares++;return {
+    status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:base},merge_base_commit:{sha:base},
+    commits:[{sha:latest}],
+    files:[{filename:'app/api/auth/route.ts',status:'modified'}]
+  };},
+  runs:async()=>{polls++;return [polls===1?
+    checkedRun('in_progress',null):checkedRun('completed','success')];},
+  jobs:async()=>{jobReads++;return [{name:'voice-webkit-macos',
+    status:'completed',conclusion:'success'}];},
+ };
+ await assert.rejects(()=>verify(api,ctx2,files,{
+  maxWaitMs:120_000,pollMs:100,now:()=>elapsed,
+  sleep:async ms=>{elapsed+=ms;},
+ }),/PRODUCTION_BASE_CHANGED/);
+ assert.equal(polls,2,'the real Mac specialist must finish before BASE is considered stale');
+ assert.equal(jobReads,1,'successful exact-run macOS job evidence is independently read');
+ assert.equal(compares,1,'only final protected BASE comparison can trigger auto-sync');
+ assert.equal(baseReads,1,'no early or periodic stale-base branch update while Mac is active');
+ let redPolls=0,redBaseReads=0;
+ await assert.rejects(()=>verify({...api,
+  target:async()=>{redBaseReads++;return latest;},
+  compare:async()=>{throw Error('a failed Mac must not be masked by BASE drift');},
+  runs:async()=>{redPolls++;return [redPolls===1?
+    checkedRun('in_progress',null):checkedRun('completed','failure')];}
+ },ctx2,files,{maxWaitMs:120_000,pollMs:100,now:()=>elapsed,
+  sleep:async ms=>{elapsed+=ms;},
+ }),/SPECIALIST_FAILED/);
+ assert.equal(redPolls,2,'must retain exact-HEAD failed-media evidence');
+ assert.equal(redBaseReads,0,'never source-sync over a genuine macOS movie failure');
+});
+
+
+test('ordinary 20-file video/MP4 acceptance does not require a moving production BASE',()=>{
+ const files=[
+  'components/mandala-automatic-storyboard.tsx',
+  'components/mandala-free-video-studio.tsx',
+  'components/mandala-video-mobile.module.css',
+  'lib/mandala/recording-codecs.d.mts',
+  'lib/mandala/recording-codecs.mjs',
+  'lib/mandala/webcodecs-mp4-export.ts',
+  'scripts/benchmarking/complete-three-step-goals-quiz.mjs',
+  'scripts/benchmarking/first-video-live-export.mjs',
+  'scripts/benchmarking/real-guest-video-file.mjs',
+  'scripts/benchmarking/verify-five-scene-stories-browser.mjs',
+  'scripts/benchmarking/verify-original-motion-export.mjs',
+  'scripts/verify-affirmation-voice-browser.mjs',
+  'tests/mandala-automatic-storyboard-tab.test.mjs',
+  'tests/mandala-express-one-click.test.mjs',
+  'tests/mandala-free-video.test.mjs',
+  'tests/mandala-native-audio-files.test.mjs',
+  'tests/mandala-video-concept.test.mjs',
+  'tests/mandala-webcodecs-mp4.test.mjs',
+  'tests/mandala-workspace-tabs.test.mjs',
+  'tests/video-director-chat-live-acceptance.test.mjs',
+ ];
+ assert.equal(requiresCurrentProductionBase(files),false,
+   'a public 20-file video editor should preserve exact-HEAD Core/WebKit evidence');
+ for(const sensitive of [
+  'app/api/holistic-support/voice/route.js',
+  'app/api/auth/route.ts',
+  'lib/app/practitioner-access.js',
+  'lib/mandala/private-client-session.mjs',
+  'scripts/ci-specialist-aggregate.mjs',
+  '.github/workflows/hh-pr-core-release.yml',
+  'tests/ci-specialist-aggregate.test.mjs',
+  'tests/privacy-consent.test.mjs',
+  'tests/payment-checkout.test.mjs',
+  'scripts/verify-auth-browser.mjs',
+  'scripts/benchmarking/payment-export.mjs',
+  'package-lock.json',
+ ])assert.equal(requiresCurrentProductionBase([...files,sensitive]),true,
+   'real security, release, privacy or paid source stays current-base strict: '+sensitive);
+ assert.equal(requiresCurrentProductionBase([]),true);
 });
