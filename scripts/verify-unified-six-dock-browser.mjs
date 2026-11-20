@@ -581,9 +581,16 @@ try{
  await alchemistTools.waitFor({state:"visible",timeout:15000});
  assert.equal(await alchemistTools.evaluate(node=>node.open),false,
    "six legacy service cards are tucked away until requested");
+ assert.equal(await chat.locator('[data-hh-alchemist-topic]').count(),4,
+   "first screen presents four large conversational problem starters");
+ const moreTopics=chat.locator('[data-hh-alchemist-more-topics]');
+ await moreTopics.click();
  assert.equal(await chat.locator('[data-hh-alchemist-topic]').count(),8,
-   "eight conversational problem starters are available without opening a catalogue");
- await chat.locator('[data-hh-ai-inline-composer] textarea').waitFor({state:"visible",timeout:15000});
+   "More topics reveals the remaining four conversational suggestions");
+ await moreTopics.click();
+ await chat.locator('[data-hh-ai-chat-composer] textarea').waitFor({state:"visible",timeout:15000});
+ assert.equal(await chat.locator('[data-hh-ai-chat-composer]').count(),1,
+   "first screen owns one real pinned message composer");
  await alchemistTools.locator('summary').click();
  await projectGrid.waitFor({state:"visible",timeout:15000});
  const projects=chat.locator('[data-hh-messenger-six-projects] [data-hh-ai-project]');
@@ -726,9 +733,11 @@ try{
    const more=chat.locator('details[data-hh-ai-more]');
    await more.waitFor({state:"visible",timeout:15000});
    if(await more.evaluate(node=>!node.open)) await more.locator("summary").click();
-   const resetButtons=more.locator("button");
-   await expect.poll(()=>resetButtons.count()).toBe(1);
-   await resetButtons.first().click();
+   // The More menu also contains legitimate voice/psychologist actions.
+   // Require exactly one accessible Reset, not exactly one button total.
+   const resetButtons=more.getByRole("button",{name:"Новый разговор",exact:true});
+   await expect(resetButtons).toHaveCount(1);
+   await resetButtons.click();
    if(await more.evaluate(node=>node.open)) await more.locator("summary").click();
    await chat.locator('[data-hh-ai-landing]').waitFor({state:"visible",timeout:15000});
    await expect.poll(()=>chat.locator('[data-hh-chat-turn="user"]').count()).toBe(0);
@@ -854,6 +863,41 @@ try{
  await page.screenshot({path:folder+"/shamanica-first-screen-ru-390-webkit.png",fullPage:false,animations:"disabled"});
  results.push({journey:"Shamanica one-screen hero + quiz + five services",
    oneScreen,passed:true});
+ // Approved iPhone screenshot is ~353 CSS pixels wide. Verify its larger
+ // headings/descriptions and actual dock clearance, not only CSS literals.
+ const originalShamanicaViewport=page.viewportSize();
+ await page.setViewportSize({width:353,height:768});
+ await page.evaluate(async()=>{
+   window.scrollTo({top:0,behavior:"instant"});
+   await new Promise(done=>requestAnimationFrame(()=>requestAnimationFrame(done)));
+ });
+ const readablePhone=await page.evaluate(()=>{
+   const services=[...document.querySelectorAll("[data-shamanica-service]")];
+   const dock=document.querySelector("[data-hh-unified-dock]");
+   const answers=[...document.querySelectorAll("[data-shamanica-answer]")];
+   const labels=[...document.querySelectorAll("[data-hh-unified-dock] [data-unified-dock-item] span")];
+   const measure=(element)=>element?parseFloat(getComputedStyle(element).fontSize):0;
+   return {
+     width:innerWidth,height:innerHeight,
+     minServiceHeading:Math.min(...services.map(x=>measure(x.querySelector("h3")))),
+     minServiceDescription:Math.min(...services.map(x=>measure(x.querySelector("p")))),
+     minAnswerFont:Math.min(...answers.map(measure)),
+     minDockLabel:Math.min(...labels.map(measure)),
+     lastCardBottom:services.at(-1)?.getBoundingClientRect().bottom,
+     dockTop:dock?.getBoundingClientRect().top,
+     overflowX:document.documentElement.scrollWidth-innerWidth,
+   };
+ });
+ assert.ok(readablePhone.minServiceHeading>=14,"Shamanica service titles need real readable iPhone typography: "+JSON.stringify(readablePhone));
+ assert.ok(readablePhone.minServiceDescription>=11.5,"Shamanica descriptions should no longer be tiny: "+JSON.stringify(readablePhone));
+ assert.ok(readablePhone.minAnswerFont>=14,"Shamanica quiz choices must stay readable: "+JSON.stringify(readablePhone));
+ assert.ok(readablePhone.minDockLabel>=9.6,"Shamanica navigation labels must stay legible: "+JSON.stringify(readablePhone));
+ assert.ok(readablePhone.lastCardBottom<=readablePhone.dockTop-22,
+   "The larger Shamanica typography still fits above the fixed dock: "+JSON.stringify(readablePhone));
+ assert.ok(readablePhone.overflowX<=2,"Shamanica readable mobile layout has no horizontal overflow: "+JSON.stringify(readablePhone));
+ await page.screenshot({path:folder+"/shamanica-readable-353x768-webkit.png",fullPage:false,animations:"disabled"});
+ results.push({journey:"Readable Shamanica typography at 353x768 iPhone",readablePhone,passed:true});
+ if(originalShamanicaViewport)await page.setViewportSize(originalShamanicaViewport);
  assert.equal(await shamanicaHome.locator("[data-shamanica-service]").count(),5,
    "Shamanica displays the five approved service directions");
  const shamanicaQuiz=shamanicaHome.locator("[data-shamanica-quiz]");

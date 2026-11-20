@@ -82,7 +82,9 @@ test('the umbrella homepage can render Russian and English chrome and copy', asy
   assert.match(explore, /Academy & courses/)
   assert.match(page, /locale="en"/)
   assert.match(page, /requested === "ru" \|\| requested === "es"/)
-  assert.match(page, /redirect\(`\/\$\{requested\}`\)/)
+  // Language-only redirects remain canonical; the opt-in full React experience survives /ru.
+  assert.match(page, /requestedFull === "1"/)
+  assert.match(page, /redirect\(/)
   assert.match(russianPage, /locale="ru"/)
   assert.match(russianPage, /locale !== "ru"\) notFound\(\)/)
   assert.match(metadata, /Personal Sessions in Toronto & Online \| Holistic House/)

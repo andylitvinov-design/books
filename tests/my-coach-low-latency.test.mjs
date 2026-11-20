@@ -21,7 +21,7 @@ test('Safari continues to wait for natural recognizer end while other browsers s
  const loop=source('components/my-coach-speech-loop.jsx')
  const result=loop.slice(loop.indexOf('recognition.onresult=event=>{'),loop.indexOf('recognition.onerror=event=>{'))
  assert.match(result,/if\(!ios27\)\{/)
- assert.match(result,/final\?900:1900/)
+ assert.match(result,/final\?500:1900/,'final transcripts settle quickly on reliable browser ASR')
  assert.doesNotMatch(result.slice(result.indexOf('if(ios27&&visible){'),result.indexOf('// Dictation is shown')),/recognition\.abort\(\)|void deliver\(/)
  assert.match(loop,/cue\.volume=0\.2/,'non-muted Safari reset cue must actually play')
  assert.match(loop,/cue\.onend=finishCue/)

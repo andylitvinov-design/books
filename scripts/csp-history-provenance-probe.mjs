@@ -58,14 +58,23 @@ export async function verifyHistoryProvenance({ browser, origin, evidencePath })
     key: window.navigation?.currentEntry?.key ?? null, owned: window.__hhOwnsHistoryEntry?.() ?? null,
     pathname: location.pathname, hash: location.hash }));
   const ready = async path => {
-    await expect(page).toHaveURL(origin + path);
+    // This probe exercises the full Next.js Home while the normal entry is
+    // served as a separate, cacheable CDN document. Never conflate their
+    // navigation ownership or assume the CDN shell has a Next router.
+    await expect(page).toHaveURL(origin + (path === "/" ? "/?full=1" : path));
     if (path === "/") await expect(page.locator('main[data-home-design="dialogue-first-v1"] [data-home-dialogue-entry]')).toBeVisible();
     else await expect(page.locator("#psychic-alchemy-video")).toBeVisible();
     await expect.poll(() => page.evaluate(() => history.pushState.toString().includes('__NA'))).toBe(true);
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   };
   try {
+    // Assert the actual public first paint separately, including its working
+    // lightweight script. This is a full-document boundary, not soft Next nav.
     await page.goto(origin + '/', { waitUntil: 'networkidle' });
+    await expect(page.locator('body[data-fast-home="en"] [data-home-dialogue-entry]')).toBeVisible();
+    await expect(page.locator('body[data-fast-home="en"] [data-home-intent-option]')).toHaveCount(4);
+    await expect.poll(() => page.evaluate(() => document.documentElement.dataset.homeInteractive === 'true')).toBe(true);
+    await page.goto(origin + '/?full=1', { waitUntil: 'networkidle' });
     await ready('/'); result.home = await snapshot();
     await page.locator('.service-home-about a[href="/en/about"]').click();
     await ready('/en/about'); result.about = await snapshot();

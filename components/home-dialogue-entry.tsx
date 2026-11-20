@@ -220,7 +220,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
         </div>
         <h2>{t.title}</h2>
         <p className={styles.subtitle}>{mode==="business"?t.businessSubtitle:t.subtitle}</p>
-        <Link href={"/"+locale+"/services/free-situation-review"} prefetch={false}
+        <Link href={"/"+locale+(mode==="business"?"/explore/business":"/services/free-situation-review")} prefetch={false}
           className={styles.reviewCta} data-home-free-review>
           <span className={styles.reviewCtaIcon}><Sparkles size={27} aria-hidden="true"/></span>
           <span className={styles.reviewCtaText}>
