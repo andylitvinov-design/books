@@ -1,7 +1,7 @@
 'use client'
 import {useEffect,useMemo,useState} from 'react'
 import Link from 'next/link'
-import {ArrowRight,BarChart3,Heart,LockKeyhole,Pencil,Play,Target,UserRound,Video} from 'lucide-react'
+import {ArrowRight,BarChart3,LockKeyhole,Pencil,Play,Target,UserRound,Video} from 'lucide-react'
 import {appFetch,getCabinetBootstrap} from '@/lib/app/client-fetch'
 import {buildProfileAssessmentView} from '@/lib/profile/profile-assessment-view'
 import styles from './profile-personal-summary.module.css'
