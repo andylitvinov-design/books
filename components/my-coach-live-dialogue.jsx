@@ -282,6 +282,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [contextSession,setContextSession]=useState(null)
   const [contextSessionLoading,setContextSessionLoading]=useState(false)
   const [contextSessionError,setContextSessionError]=useState(false)
+  useEffect(()=>{
+    if(!contextSession||contextSession.expired)return
+    const timer=setTimeout(()=>{
+      setContextSession(current=>current===contextSession?{...current,expired:true}:current)
+    },Math.max(0,contextSession.expiresAt-Date.now()))
+    return ()=>clearTimeout(timer)
+  },[contextSession])
   const composerDetailsRef=useRef(null),speechRef=useRef(null)
   const replayControllerRef=useRef(null),replayPlayerRef=useRef(null)
   const micWaveRef=useRef(null)
@@ -1337,7 +1344,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             {({en:'Session context is unavailable.',ru:'Контекст беседы недоступен.',
               es:'El contexto de la conversación no está disponible.'})[lang]}
           </p>}
-          {contextSession&&<MyCoachContext key={contextSession.sessionId}
+          {contextSession?.expired&&<p role="status">
+            {({en:'Session permission expired. Review again to share saved context.',ru:'Разрешение для беседы истекло. Повторите проверку, чтобы поделиться контекстом.',
+              es:'El permiso de esta conversación venció. Revisa el contexto antes de compartirlo de nuevo.'})[lang]}
+          </p>}
+          {contextSession&&!contextSession.expired&&<MyCoachContext key={contextSession.sessionId}
             accountId={contextSession.accountId} locale={lang} domains={contextSession.domains}
             contextSessionToken={contextSession.token}/>}
         <label className={styles.coachEnginePicker} data-coach-engine-choice>
