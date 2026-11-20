@@ -912,6 +912,43 @@ try{
  if(originalShamanicaViewport)await page.setViewportSize(originalShamanicaViewport);
  assert.equal(await shamanicaHome.locator("[data-shamanica-service]").count(),6,
    "Shamanic has five core directions and one free Reiki course");
+ // A category tile must open the concrete Support-style offer list right
+ // away, without requiring any of the three Shamanic quiz answers.
+ const energyEntrance=shamanicaHome.locator('[data-shamanica-service="energy"]');
+ assert.equal(await energyEntrance.getAttribute("href"),"/ru/shamanica/results?category=energy");
+ assert.equal(await shamanicaHome.locator('[data-shamanica-service="free"]').getAttribute("href"),
+   "/ru/academy/principles-of-energywork/learn");
+ await energyEntrance.click();
+ await page.waitForURL(/\\/ru\\/shamanica\\/results\\?category=energy$/,{timeout:45000});
+ const categoryOffers=page.locator('[data-shamanica-category-offers="energy"]');
+ await categoryOffers.waitFor({state:"visible",timeout:30000});
+ assert.equal(await categoryOffers.locator("[data-support-uniform-card]").count(),3);
+ assert.equal(await categoryOffers.locator("[data-service-price]").count(),3);
+ assert.equal(await categoryOffers.locator("[data-support-uniform-photo] img").count(),3);
+ assert.equal(await categoryOffers.locator("[data-service-card-controls]").count(),3);
+ assert.equal(await page.locator("[data-recommended-service]").count(),0,
+   "Clicking a category shows only that category's concrete offers, not quiz priorities");
+ const firstOffer=categoryOffers.locator("[data-support-uniform-card]").first();
+ await firstOffer.locator("[data-service-card-controls] button").first().click();
+ assert.equal(await firstOffer.locator("[data-service-card-details]:visible").count(),1);
+ await firstOffer.locator("[data-service-card-controls] button").nth(1).click();
+ assert.equal(await firstOffer.locator("[data-service-card-order]:visible").count(),1);
+ assert.ok(await firstOffer.locator("[data-messenger-only-channel]").count()>=1,
+   "Order must expose a real messenger handoff");
+ assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth<=2),
+   "Shamanic service list must not overflow mobile width");
+ await page.screenshot({path:folder+"/shamanica-category-energy-390-webkit.png",fullPage:false,animations:"disabled"});
+ for(const lang of ["en","es"]){
+   await page.goto(origin+"/"+lang+"/shamanica/results?category=learning",
+     {waitUntil:"domcontentloaded",timeout:75000});
+   await page.locator('[data-shamanica-category-offers="learning"]').waitFor({state:"visible",timeout:30000});
+   assert.equal(await page.locator("[data-support-uniform-card]").count(),3,
+     "Localized Shamanic category must contain three offers in "+lang);
+ }
+ await page.goto(origin+"/ru/shamanica",{waitUntil:"domcontentloaded",timeout:75000});
+ await shamanicaHome.waitFor({state:"visible",timeout:30000});
+ results.push({journey:"Shamanic category → three live priced offers → Details/Order; EN/ES routes",passed:true});
+
  const shamanicaQuiz=shamanicaHome.locator("[data-shamanica-quiz]");
  await expect(shamanicaQuiz).toHaveAttribute("data-quiz-step","1");
  assert.equal(await shamanicaQuiz.locator("[data-shamanica-answer]").count(),4,
