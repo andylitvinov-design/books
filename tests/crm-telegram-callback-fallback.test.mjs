@@ -4,6 +4,7 @@ import test from 'node:test';
 import './assist-telegram-business-request.test.mjs';
 import './telegram-secretary-business.test.mjs';
 import './crm-telegram-first-contact.test.mjs';
+import './crm-whatsapp-human-takeover.test.mjs';
 import vm from 'node:vm';
 import {parseTelegramHomeCallback} from '../lib/crm/telegram-companion-menu.mjs';
 import {captureTelegramLeadBestEffort} from '../lib/crm/telegram-lead-capture-policy.mjs';
