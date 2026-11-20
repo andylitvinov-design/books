@@ -147,7 +147,7 @@ const ACTIONS=[
   {id:"ask",icon:MessageCircle},
 ] as const;
 
-export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupport,onTopicSelect,onStartAnalysis,composer}:{
+export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupport,onTopicSelect,onStartAnalysis}:{
   locale:PublicLocale;onCreateVideo:()=>void;onPractice:()=>void;onAsk:()=>void;onSupport:()=>void;
   onTopicSelect:(text:string)=>void;onStartAnalysis:()=>void
 }){
