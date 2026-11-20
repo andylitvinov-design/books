@@ -1,5 +1,5 @@
 "use client";
-import {useMemo,useState} from "react";
+import {useEffect,useMemo,useState} from "react";
 import {ArrowRight,Film,Play} from "lucide-react";
 import {suggestVideoConcept} from "@/lib/mandala/auto-video-concept.mjs";
 import {getVideoCreativeDirections,applyVideoCreativeDirection} from "@/lib/mandala/video-creative-directions.mjs";
@@ -32,6 +32,7 @@ type Props={
  onApply:(shots:readonly CategoryStoryboardShot[],concept:ApprovedVideoConcept,key:string,
    captions:string[],outputAspect?:"portrait"|"landscape")=>boolean;
  onChooseQuality:(sourceReady:boolean)=>void;
+ onApprovalRequiredChange?:(pending:boolean)=>void;
  fiveSceneShots?:readonly Shot[]|null;
  onPreview:(second:number)=>void;onOpenIdeas:()=>void;
 };
@@ -98,7 +99,7 @@ const clock=(time:number)=>{
 export function MandalaAutomaticStoryboard({
  locale,goal,theme,durationSeconds,aspect,styleIndex,pace,personalization,appliedStoryKey,selectedTopic=null,
  phrases,transcript,approvedConcept,draftConcept=null,suggestedConcept=null,selectedDirectionId=null,
- scenes,appliedShots,resolveMedia,disabled,onApply,onChooseQuality,fiveSceneShots,onOpenIdeas
+ scenes,appliedShots,resolveMedia,disabled,onApply,onChooseQuality,onApprovalRequiredChange,fiveSceneShots,onOpenIdeas
 }:Props){
  const t=words[locale];
  const [expandedScene,setExpandedScene]=useState<number|null>(null);
@@ -180,6 +181,9 @@ export function MandalaAutomaticStoryboard({
     aspect:aspect as "portrait"|"landscape"|"square"})||
    isReviewedStoryWithPhotosSequence({shots:appliedShots,scenes,
     aspect:aspect as "portrait"|"landscape"|"square"})));
+ // A photo reference is not an export source until all six images are
+ // explicitly accepted; no prior background may replace the chosen story.
+ const photoApprovalRequired=hasSixPhotoReferences&&durationSeconds===30&&!photoAdaptationApplied;
  const replacingGraphics=Boolean(appliedShots?.length&&!applied);
  const sceneCatalog=new Map(scenes.filter((scene):scene is {id:string}=>Boolean(
    scene&&typeof scene==="object"&&"id" in scene&&typeof scene.id==="string"))
@@ -228,6 +232,10 @@ export function MandalaAutomaticStoryboard({
  // A five-cut editor montage is an explicitly separate legacy 20s flow.
  const manualFiveReady=Boolean(!choice.selectionMissing&&!v3RequiresActionProof&&durationSeconds===20&&fiveSceneShots?.length===5&&
   fiveSceneShots.every(shot=>isReviewedFilmedStoryScene(sceneCatalog.get(shot.sceneId),"portrait")));
+ const storyboardSourcesPending=!manualFiveReady&&!eligible&&!photoAdaptationApplied;
+ useEffect(()=>{
+  onApprovalRequiredChange?.(storyboardSourcesPending);
+ },[storyboardSourcesPending,onApprovalRequiredChange]);
  const visibleCount=manualFiveReady?5:guides.scenes.length;
  // Source-reviewed photos remain visible as REFERENCES until a visitor
  // explicitly accepts the illustrative photomontage.
@@ -377,6 +385,11 @@ export function MandalaAutomaticStoryboard({
         {format==="portrait"?"9:16 · Vertical":"16:9 · Horizontal"}
       </button>)}
    </div>:null}
+  {photoApprovalRequired?<p role="status" data-storyboard-photo-approval-required>
+    {locale==="ru"?"Это фото-референсы, а не кадры экспорта. Нажмите «Использовать эти 6 фото в видео», чтобы получить именно этот сюжет.":
+     locale==="es"?"Estas son fotos de referencia. Pulsa «Usar estas 6 fotos en el vídeo» para exportar estas escenas.":
+     "These are photo references, not export frames. Choose «Use these 6 photos in my video» to export this exact story."}
+   </p>:null}
   {hasSixPhotoReferences&&!photoAdaptationApplied&&durationSeconds===30&&
    !scriptNeedsReview&&scriptSceneAlignment.aligned&&!choice.selectionMissing?
    <button type="button" className={styles.storyAutoApply}
@@ -410,6 +423,7 @@ export function MandalaAutomaticStoryboard({
     data-video-story-select-quality
     data-video-auto-storyboard-apply={!manualFiveReady&&!applied&&eligible?true:undefined}
     disabled={disabled} onClick={()=>{
+      if(photoApprovalRequired){onChooseQuality(false);return;}
       // Only attach approved local footage. No render, charge or paid API call.
       // The optional, strictly verified scene application may fail closed
       // (missing matching footage). Quality selection is navigation, not
