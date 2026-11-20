@@ -128,3 +128,20 @@ test('iPhone defaults to already-guarded WebCodecs while 0 disables it',async()=
  w.navigator.userAgent='Desktop Chrome/132';w.navigator.platform='Win32'
  assert.equal(coachingWebCodecsOptIn(w),false)
 })
+
+test('iOS Safari reset cue failure preserves the live coach and offers microphone retry',()=>{
+ const ui=source('components/my-coach-speech-loop.jsx')
+ assert.match(ui,/iosCueBrokenRef\.current=true/)
+ assert.match(ui,/iosCueBrokenRef\.current&&recordedSttUnavailableRef\.current/)
+ assert.match(ui,/recognition\.onstart=null;recognition\.onresult=null/)
+ assert.match(ui,/changePhase\('ready'\);setNotice\(t\.iosCueFailed\)/)
+ assert.doesNotMatch(ui,/silence\(\);changePhase\('idle'\);setNotice\(t\.iosCueFailed\)/)
+ assert.match(ui,/final\?500:1900/)
+})
+test('live voice conversational policy favors direct brief responses without dropping the Director',()=>{
+ const prompt=source('lib/coaching/conversational-persona.mjs')
+ const brain=source('lib/app/coaching-brain.js')
+ assert.match(prompt,/LIVE VOICE: reply with one or two brief spoken sentences/)
+ assert.match(prompt,/input\.voiceTurn===true/)
+ assert.match(brain,/enforceCoachSessionDirective\(parsed,directive\)/)
+})

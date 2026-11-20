@@ -77,6 +77,8 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   const iosResultTimerRef=useRef(null)
   const hasRecognizedRef=useRef(false)
   const iosCueSatisfiedRef=useRef(false)
+  // If Safari's reset cue jams, keep the same session and avoid repeating it.
+  const iosCueBrokenRef=useRef(false)
   const generationRef=useRef(0)
   const turnRef=useRef(onTurn),cancelRef=useRef(onCancelTurn),stopRef=useRef(null),sessionStartRef=useRef(onSessionStart)
   const voiceStateRef=useRef(onVoiceStateChange),levelRef=useRef(onVoiceLevel)
@@ -112,6 +114,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     iosCueTimerRef.current=null
     iosResultTimerRef.current=null
     iosCueSatisfiedRef.current=false
+    iosCueBrokenRef.current=false
     if(retryTimerRef.current)clearTimeout(retryTimerRef.current)
     if(settleTimerRef.current)clearTimeout(settleTimerRef.current)
     retryTimerRef.current=null;settleTimerRef.current=null;retryAttemptsRef.current=0
@@ -408,7 +411,8 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     },
   }))
   useEffect(()=>{
-    setSupported(Boolean(window.SpeechRecognition||window.webkitSpeechRecognition))
+    setSupported(Boolean(window.SpeechRecognition||window.webkitSpeechRecognition||
+      (ios27NeedsSpeechRecovery(window.navigator)&&coachRecordedSupported(window))))
     const onHidden=()=>{if(document.visibilityState==='hidden')stopRef.current?.()}
     document.addEventListener('visibilitychange',onHidden)
     return ()=>{
@@ -469,6 +473,11 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     if(!activeRef.current)return
     const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition
     const ios27=ios27NeedsSpeechRecovery(window.navigator)
+    // One failed reset must never trigger an endless cue/restart cycle.
+    // Manual retry in the ready state re-enables the existing recorded STT path.
+    if(ios27&&iosCueBrokenRef.current&&recordedSttUnavailableRef.current){
+      changePhase('ready');setNotice(t.iosCueFailed);return
+    }
     // Safari/WebKit 27 reports a working SpeechRecognition but emits no text.
     // Use the already-authorized one-Play microphone with short VAD turns.
     if(ios27&&!recordedSttUnavailableRef.current&&coachRecordedSupported(window)){
@@ -619,7 +628,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
             try{recognition.abort()}catch{}
             lastHeardRef.current=heard
             void deliver(appendSpokenAnswer(draftAtStartRef.current,heard,1200))
-          },final?900:1900)
+          },final?500:1900)
         }
       }
     }
@@ -732,7 +741,14 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
         iosCueTimerRef.current=null
         speakingRef.current=false
         if(!activeRef.current||recognitionRef.current!==recognition)return
-        silence();changePhase('idle');setNotice(t.iosCueFailed)
+        // A stuck Safari audio cue is not a request to End the coaching session.
+        // Detach the recognizer that never started, preserve the draft, coach
+        // context and unlocked audio; a manual Mic retry can use recorded STT.
+        iosCueBrokenRef.current=true
+        recognitionRef.current=null
+        recognition.onstart=null;recognition.onresult=null
+        recognition.onerror=null;recognition.onend=null
+        changePhase('ready');setNotice(t.iosCueFailed)
       }
       cue.onend=finishCue
       cue.onerror=failCue
