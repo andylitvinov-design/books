@@ -262,7 +262,7 @@ export async function normalizeNativeSafariMp4ForPlayback(
     const track=await checked.getPrimaryVideoTrack();
     if(!track||await track.getCodec()!=="avc"||!(await track.canDecode()))
       throw new Error("native_mp4_output_unplayable");
-    const first=await track.getFirstTimestampOrNull();
+    const first=await track.getFirstTimestamp();
     const end=await track.computeDuration();
     if(first===null||!Number.isFinite(first)||!Number.isFinite(end)||
        end<expectedSeconds-2||end>expectedSeconds+2||end<=first)
