@@ -4,9 +4,16 @@ import {useCallback,useEffect,useMemo,useState} from 'react'
 import Link from 'next/link'
 import {useSearchParams} from 'next/navigation'
 import {appFetch} from '@/lib/app/client-fetch'
-import {Check,ChevronDown,ClipboardList,Compass,Download,LoaderCircle,Plus,RefreshCw,Save,Sparkles,Target} from 'lucide-react'
+import {Check,ChevronDown,ClipboardList,Compass,Download,Printer,Trash2,LoaderCircle,Plus,RefreshCw,Save,Sparkles,Target} from 'lucide-react'
 import styles from './my-coaching-plan.module.css'
+import {downloadCoachingSessionPdf,openCoachingSessionPdf} from '@/lib/personal-coaching/session-pdf'
+import {myCoachProtocolPdfOptions} from '@/lib/personal-coaching/session-protocol.mjs'
 
+const protocolCopy={
+ en:{title:'My Coach · Session protocol',transcript:'Conversation transcript',print:'Print / open PDF',download:'Download PDF',delete:'Delete protocol',confirm:'Delete this private conversation protocol permanently?',error:'Could not load or delete the saved protocols.',pdfError:'Could not prepare the protocol PDF.',coach:'AI coach'},
+ ru:{title:'Мой коуч · Протокол сессии',transcript:'Диалог с коучем',print:'Распечатать / открыть PDF',download:'Скачать PDF',delete:'Удалить протокол',confirm:'Безвозвратно удалить этот личный протокол диалога?',error:'Не удалось загрузить или удалить протоколы.',pdfError:'Не удалось подготовить PDF протокола.',coach:'ИИ-коуч'},
+ es:{title:'Mi coach · Protocolo',transcript:'Diálogo con el coach',print:'Imprimir / abrir PDF',download:'Descargar PDF',delete:'Eliminar protocolo',confirm:'¿Eliminar permanentemente este protocolo privado?',error:'No se pudieron cargar o borrar los protocolos.',pdfError:'No se pudo preparar el PDF.',coach:'Coach IA'},
+}
 const copy={
  en:{
   title:'My Coaching Plan',subtitle:'Your life areas, decisions and next steps — gathered from your coaching work.',
@@ -87,20 +94,25 @@ export default function MyCoachingPlan({accountId,locale='en'}){
  const lang=copy[locale]?locale:'en',t=copy[lang]
  const searchParams=useSearchParams()
  const [tab,setTab]=useState(searchParams?.get('tab')==='reports'?'reports':'plan'),[plan,setPlan]=useState(null),[reports,setReports]=useState([])
+ const [protocols,setProtocols]=useState([]),[protocolError,setProtocolError]=useState(''),[protocolDeleting,setProtocolDeleting]=useState('')
  const [drafts,setDrafts]=useState({}),[selections,setSelections]=useState({}),[areas,setAreas]=useState({}),[planConsents,setPlanConsents]=useState({})
  const [loading,setLoading]=useState(true),[error,setError]=useState(''),[saving,setSaving]=useState(''),[importing,setImporting]=useState('')
  const [notice,setNotice]=useState(''),[reportError,setReportError]=useState(''),[revoking,setRevoking]=useState(''),[contextError,setContextError]=useState(''),[deleting,setDeleting]=useState(''),[deleteError,setDeleteError]=useState('')
  const load=useCallback(async()=>{
   if(!accountId)return
-  setLoading(true);setError('');setReportError('')
+  setLoading(true);setError('');setReportError('');setProtocolError('')
   try{
-   const [life,reportsResult]=await Promise.all([
+   const [life,reportsResult,protocolResult]=await Promise.all([
     appFetch('coaching-life-plan?locale='+lang,undefined,'GET',{accountId}),
     appFetch('personal-coaching-reports',undefined,'GET',{accountId}).catch(()=>null),
+    fetch('/api/app/my-coach/protocol',{method:'GET',credentials:'same-origin',cache:'no-store',headers:{'x-hh-account-id':accountId}})
+      .then(async response=>response.ok?response.json():null).catch(()=>null),
    ])
    if(!Array.isArray(life?.domains)||life.domains.length!==8)throw new Error('COACHING_PLAN_RESPONSE_INVALID')
    setPlan(life)
    setReports(Array.isArray(reportsResult?.reports)?reportsResult.reports:[])
+   setProtocols(Array.isArray(protocolResult?.protocols)?protocolResult.protocols:[])
+   if(!protocolResult)setProtocolError(protocolCopy[lang].error)
    if(!reportsResult)setReportError('load')
    setDrafts(Object.fromEntries(life.domains.map(area=>[area.areaKey,domainState(area)])))
   }catch(e){setError(e?.code||'load');setReportError(e?.code||'load')}
@@ -149,6 +161,29 @@ export default function MyCoachingPlan({accountId,locale='en'}){
   }catch{setContextError(t.contextError)}
   finally{setRevoking('')}
  }
+ function exportProtocol(protocol,print=false){
+  try{
+   const options=myCoachProtocolPdfOptions(protocol,{locale:lang})
+   if(print)openCoachingSessionPdf(options)
+   else downloadCoachingSessionPdf(options)
+   setProtocolError('')
+  }catch{setProtocolError(protocolCopy[lang].pdfError)}
+ }
+ async function deleteProtocol(protocol){
+  if(!window.confirm(protocolCopy[lang].confirm))return
+  setProtocolDeleting(protocol.id);setProtocolError('')
+  try{
+   const response=await fetch('/api/app/my-coach/protocol',{
+    method:'POST',credentials:'same-origin',cache:'no-store',
+    headers:{'Content-Type':'application/json','x-hh-account-id':accountId},
+    body:JSON.stringify({action:'delete',id:protocol.id,confirmed:true}),
+   })
+   const result=await response.json().catch(()=>null)
+   if(!response.ok||result?.deleted!==true)throw Error('DELETE_UNCONFIRMED')
+   setProtocols(previous=>previous.filter(item=>item.id!==protocol.id))
+  }catch{setProtocolError(protocolCopy[lang].error)}
+  finally{setProtocolDeleting('')}
+ }
  async function deleteAction(action){
   if(!window.confirm(t.confirmDeleteAction))return
   setDeleting(action.id);setDeleteError('');setNotice('')
@@ -171,7 +206,7 @@ export default function MyCoachingPlan({accountId,locale='en'}){
    <h1>{t.title}</h1><p>{t.subtitle}</p>
    <div className={styles.tabs} role="tablist" aria-label={t.title}>
     <button type="button" role="tab" aria-selected={tab==='plan'} className={tab==='plan'?styles.tabActive:styles.tab} onClick={()=>setTab('plan')}><Target size={16}/>{t.plan}</button>
-    <button type="button" role="tab" aria-selected={tab==='reports'} className={tab==='reports'?styles.tabActive:styles.tab} onClick={()=>setTab('reports')}><ClipboardList size={16}/>{t.reports}<span>{reports.length}</span></button>
+    <button type="button" role="tab" aria-selected={tab==='reports'} className={tab==='reports'?styles.tabActive:styles.tab} onClick={()=>setTab('reports')}><ClipboardList size={16}/>{t.reports}<span>{reports.length+protocols.length}</span></button>
    </div>
   </header>
   {error&&<div className={styles.error} role="alert">{t.loadError} <button onClick={load}>{t.retry}</button></div>}
@@ -223,7 +258,24 @@ export default function MyCoachingPlan({accountId,locale='en'}){
   </>}
   {tab==='reports'&&<section className={styles.reports}>
    {reportError&&<p className={styles.inlineError} role="alert">{t.reportError}</p>}
-   {!reports.length&&!reportError&&<div className={styles.empty}><ClipboardList size={24}/><p>{t.reportsEmpty}</p></div>}
+   {protocolError&&<p className={styles.inlineError} role="alert">{protocolError}</p>}
+   {protocols.map(protocol=><article key={protocol.id} className={styles.reportCard} data-my-coach-saved-protocol={protocol.id}>
+    <div className={styles.reportTop}><div><span>{protocolCopy[lang].transcript}</span><h2>{protocolCopy[lang].title} · {protocol.personaId}</h2><small>{formatDate(protocol.completedAt,lang)} · {protocol.turns?.length||0} {lang==='ru'?'реплик':lang==='es'?'turnos':'turns'}</small></div></div>
+    <details className={styles.reportDetails}><summary>{protocolCopy[lang].transcript} <ChevronDown size={16}/></summary>
+     {(protocol.turns||[]).map((turn,index)=><div className={styles.reportSection} key={index}>
+      <b>{turn.role==='user'?({en:'You',ru:'Вы',es:'Tú'}[lang]):protocolCopy[lang].coach}</b>
+      <p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{turn.content}</p>
+     </div>)}
+    </details>
+    <div className={styles.importPanel}>
+     <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
+      <button type="button" className={styles.primaryButton} onClick={()=>exportProtocol(protocol,false)}><Download size={16}/>{protocolCopy[lang].download}</button>
+      <button type="button" className={styles.primaryButton} onClick={()=>exportProtocol(protocol,true)}><Printer size={16}/>{protocolCopy[lang].print}</button>
+      <button type="button" className={styles.primaryButton} disabled={!!protocolDeleting} onClick={()=>deleteProtocol(protocol)}><Trash2 size={16}/>{protocolCopy[lang].delete}</button>
+     </div>
+    </div>
+   </article>)}
+   {!reports.length&&!protocols.length&&!reportError&&!protocolError&&<div className={styles.empty}><ClipboardList size={24}/><p>{t.reportsEmpty}</p></div>}
    {reports.map(record=>{
     const report=record.report||{},accepted=(report.actionCandidates||[]).filter(item=>item.status==='accepted')
     const available=accepted.filter(item=>!importedKeys.has(record.id+'|'+item.candidateId))
