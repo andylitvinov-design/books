@@ -1594,6 +1594,31 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         await page.locator('[data-video-quick-control="ready"]').click();
         await expect(readyGenerate).toBeEnabled({timeout:30000});
         phase(engine,"ready-therapy-one-tap-navigation-verified");
+        // A later Style/Audio edit changes the Story source signature.
+        // Approve the final six decoded photographs AFTER those edits, just
+        // like a real visitor. An old approval must never silently authorize
+        // a changed video, and this step cannot charge or start the encoder.
+        await editorTab.click();
+        await expect(editorTab).toHaveAttribute("aria-pressed","true");
+        await montageStoryTab.click();
+        await expect(montageStoryTab).toHaveAttribute("aria-pressed","true");
+        const finalStoryboard=page.locator('[data-video-auto-storyboard]');
+        await expect(finalStoryboard).toBeVisible();
+        const finalApproval=page.locator('[data-storyboard-apply-reference-photos]');
+        if(await page.locator('[data-storyboard-photo-approval-required]').count()){
+          await expect(finalApproval).toBeVisible({timeout:20000});
+          await expect(finalApproval).toBeEnabled({timeout:30000});
+          await finalApproval.click();
+          phase(engine,"final-six-photo-consent-after-audio-style-edits");
+          await expect(montageProTab).toHaveAttribute("aria-pressed","true");
+        }else{
+          await expect(finalStoryboard).toHaveAttribute("data-storyboard-media-ready","true");
+          await montageProTab.click();
+        }
+        await montageProOffer.locator('[data-video-montage-pro-choice="free"]').click();
+        await expect(page.locator("[data-mandala-free-video]"))
+          .toHaveAttribute("data-active-workspace","ready");
+        await expect(readyGenerate).toBeEnabled({timeout:30000});
         // Capture transient real Ready progress before the trusted Generate tap:
         // a fast local export may unmount the seven-question panel immediately.
         await page.evaluate(()=>{
