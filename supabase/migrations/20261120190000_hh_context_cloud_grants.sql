@@ -8,10 +8,16 @@ create table app_private.context_cloud_grants (
   policy_version text not null check (char_length(policy_version) between 1 and 80),
   category text not null check (category in ('goals', 'actions', 'reports', 'preferences')),
   item_id uuid,
+  source_revision text,
   session_id uuid,
   decision text not null check (decision in ('grant', 'revoke')),
   occurred_at timestamptz not null default statement_timestamp(),
   expires_at timestamptz,
+  check (
+    (item_id is not null and decision = 'grant' and source_revision is not null
+      and char_length(source_revision) between 1 and 128)
+    or ((item_id is null or decision = 'revoke') and source_revision is null)
+  ),
   check (expires_at is null or (decision = 'grant' and expires_at > occurred_at))
 );
 
