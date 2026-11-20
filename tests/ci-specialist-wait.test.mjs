@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggregateError } from '../scripts/ci-specialist-aggregate.mjs';
 import { inspectJobs, trustedRequiredJobs, inspectWorkflowRuns } from '../lib/ci/specialist-aggregate.mjs';
-import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance } from '../lib/ci/production-base-impact.mjs';
 
 const repo = 'andylitvinov-design/books', head = 'a'.repeat(40), base = 'b'.repeat(40);
 const path = '.github/workflows/mobile.yml';
@@ -755,4 +755,56 @@ test('all required specialists finish before BASE_ADVANCED; not only macOS (#519
     changedRows:[{filename:'lib/crm/a.js',status:'M'}]},{maxWaitMs:0}),
     /PRODUCTION_BASE_CHANGED/);
   assert.equal(noSpecialistReads,0,'no required specialist means base is checked early');
+});
+
+test('Light v2 router policy survives independently protected CRM and video base advances',()=>{
+ const base='a'.repeat(40), live='b'.repeat(40);
+ const proposed=['scripts/ci-quick-route.mjs','tests/ci-quick-route.test.mjs',
+   'docs/operations/MERGE_CHECK_LIGHT_V2_20261120.md'];
+ const target=[
+   '.github/workflows/hh-crm-source-check.yml',
+   'app/api/app/crm/messenger/webhook/[provider]/route.js',
+   'lib/crm/telegram-secretary-service.js',
+   'tests/crm-telegram-shamanica-course-intake.test.mjs',
+   'components/mandala-video-idea-goal.tsx',
+   'lib/mandala/video-personal-goal-composer.mjs',
+ ];
+ const diff=(filenames=target,override={})=>({
+   status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+   base_commit:{sha:base},merge_base_commit:{sha:base},
+   commits:[{sha:live}],
+   files:filenames.map(filename=>({filename,status:'modified'})),
+   ...override,
+ });
+ assert.equal(safeIndependentRouterPolicyAdvance(diff(),base,live,proposed),true);
+ assert.equal(safeMixedProtectedAdvance(diff(),base,live,proposed),true,
+   'do not restart unchanged successful Core solely because another protected product PR shipped');
+ for (const path of [
+   'scripts/ci-quick-route.mjs',
+   '.github/workflows/hh-pr-core-release.yml',
+   '.github/workflows/hh-native-auto-merge.yml',
+   '.github/workflows/holistic-support-mandala.yml',
+   'lib/ci/specialist-aggregate.mjs',
+   'tests/ci-heavy-impact.test.mjs',
+   'package-lock.json','next.config.ts',
+   'supabase/migrations/20261120_private.sql',
+   'app/api/auth/login/route.js',
+   'lib/billing/checkout.js',
+   'components/ui/global-nav.tsx',
+ ]) assert.equal(safeIndependentRouterPolicyAdvance(diff([path]),base,live,proposed),false,path);
+ for (const invalid of [
+   {status:'diverged'}, {behind_by:1}, {total_commits:2}, {commits:[]},
+   {merge_base_commit:{sha:'c'.repeat(40)}},
+   {files:[{filename:target[0],status:'renamed',previous_filename:'old.yml'}]},
+   {files:[{filename:target[0],status:'deleted'}]},
+   {files:[{filename:target[0],status:'modified'},{filename:target[0],status:'modified'}]},
+   {files:[]},
+ ]) assert.equal(safeIndependentRouterPolicyAdvance(diff(target,invalid),
+   base,live,proposed),false,'no unverifiable or incomplete production delta');
+ assert.equal(safeIndependentRouterPolicyAdvance(diff(),base,live,
+   [...proposed,'components/mandala-free-video-studio.tsx']),false,
+   'mixed application changes must keep strict production checks');
+ assert.equal(safeIndependentRouterPolicyAdvance(diff(),base,live,
+   ['lib/ci/specialist-aggregate.mjs']),false,
+   'not a general permission to bypass other sensitive CI policy changes');
 });
