@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {PRIMARY_GOAL_AREAS,orderedCoachingAreas,summarizeCoachingProgress} from '../lib/app/coaching-plan-summary.mjs'
+import {isUnifiedMobileDockAppPath} from '../lib/unified-mobile-dock.mjs'
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 test('five approved primary rows and all eight real life domains are available',()=>{
  const keys=['body_health','emotional_wellbeing','relationships','career_business','finance','personal_growth','lifestyle','meaning_purpose']
@@ -27,4 +28,11 @@ test('mobile plan keeps old secure save, reports, revoke and delete paths',()=>{
  assert.match(css,/@media\(max-width:430px\)/)
  assert.doesNotMatch(jsx,/>72%/)
  assert.doesNotMatch(jsx,/MobileBottomNavigation|hh-mobile-app-nav/)
+})
+
+test('goals route gets the existing seven-item shared dock, with no duplicate five-item cabinet dock',()=>{
+ const shell=read('components/app/app-workspace.jsx')
+ for(const lang of ['en','ru','es'])assert.equal(isUnifiedMobileDockAppPath('/'+lang+'/app/my-coaching-plan'),true)
+ assert.match(shell,/page !== 'my-coaching-plan' && <nav className="hh-mobile-app-nav"/)
+ assert.match(shell,/page !== 'my-coaching-plan' && !courseLanding && \(/)
 })
