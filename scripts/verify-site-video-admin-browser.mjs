@@ -274,6 +274,11 @@ try{
           // until the visitor reaches discovery and explicitly expands it.
           // Still verify that the original 12 source videos remain accessible
           // after that interaction; never demand their JS on first paint.
+          // Home is CDN-first by default. Only the deliberate ?full=1
+          // React view hosts the deferred testimonial gallery and its admin
+          // publication evidence; CDN first paint intentionally omits it.
+          if(await page.locator('body[data-fast-home]').count())
+            await navigate('/'+locale+'?full=1');
           await revealHomeTestimonials();
           continue
         }

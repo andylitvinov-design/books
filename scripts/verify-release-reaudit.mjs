@@ -32,6 +32,10 @@ async function assertCspPublicHome(page) {
   await expect(page).toHaveURL(origin + '/');
   // Real direct CDN Home: visible markup alone is not enough. Require the
   // lightweight first-party script to have initialized its controls.
+  // A rapid back-navigation may still be replacing the outgoing document.
+  // Verify the REAL CDN or React Home rather than testing a stale DOM.
+  await expect(page.locator('body[data-fast-home="en"], main[data-home-design="dialogue-first-v1"]'))
+    .toHaveCount(1,{timeout:15000});
   const fast = page.locator('body[data-fast-home="en"]');
   if (await fast.count()) {
     await expect(fast.locator('[data-home-dialogue-entry]')).toBeVisible();
@@ -61,7 +65,7 @@ async function assertAnonymousPrivateNavigation(page) {
   // must not be exposed without an authenticated account.
   const guest = page.locator('[data-cabinet-guest-overview]');
   await expect(guest).toBeVisible();
-  await expect(page.locator('[data-profile-hub-tabs] [data-profile-tab="today"]')).toHaveAttribute('aria-current', 'page');
+  // Guest cabinet has no signed-in Today tabs; protect private data and verify its public tests link below.
   await expect(guest.locator('a[href="/en/client/tests"]')).toBeVisible();
   await expect(page.locator('[data-profile-tests-first], [data-my-tests-dashboard], [data-profile-results-archive]')).toHaveCount(0);
   await expect(page.locator('.mobile-bottom-navigation')).toHaveCount(0);
@@ -657,7 +661,7 @@ async function exercise(engine, browserType, width) {
            const guestProfile = cspPage.locator('[data-cabinet-guest-overview]');
            await expect(guestProfile).toBeVisible();
            await expect(guestProfile.locator('a[href="/en/client/tests"]')).toBeVisible();
-           await expect(cspPage.locator('[data-profile-hub-tabs] [data-profile-tab="today"]')).toHaveAttribute('aria-current', 'page');
+           // Guest cabinet has no signed-in Today tab; the secured boundary and guest link above are the assertions.
            await expect(cspPage.locator('[data-profile-tests-first], [data-my-tests-dashboard], [data-profile-results-archive]')).toHaveCount(0);
            await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
           await cspPage.evaluate(() => { window.__cspDocumentProbe = 'private-profile-before-public-builder'; });
