@@ -744,9 +744,14 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     })
     message=goalTurn.message
     inFlightClientRef.current={requestId,message}
-    // Current client correction/new topic invalidates hints from the old focus.
-    if(['correction','topic_shift'].includes(
-      understandCoachingTurn({locale:responseLocale,message}).act))semanticHintsRef.current=[]
+    // A new focus requires the client to choose which saved topic to use again.
+    const contextFocusChanged=['correction','topic_shift'].includes(
+      understandCoachingTurn({locale:responseLocale,message}).act)
+    if(contextFocusChanged){
+      semanticHintsRef.current=[]
+      setContextTopic('')
+      setContextAssessments(false)
+    }
     const commitGoalTurn=()=>{
       if(goalTurn.goalIncluded)lastSharedGoalRef.current=goalTurn.goal
       if(goalTurn.clearGoal){
@@ -812,7 +817,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     pending.current?.abort()
     pending.current=controller
     setBusy(true);setError('');setStreamingPreview('')
-    const requestedSavedContext=!contextPaused&&Boolean(contextTopic)
+    const requestedSavedContext=!contextFocusChanged&&!contextPaused&&Boolean(contextTopic)
     // A previous reply may quote a saved item whose grant has since changed.
     // Keep it in the local transcript and resolve approved items again server-side.
     const providerHistory=coachProviderHistory(conversationTurns)
