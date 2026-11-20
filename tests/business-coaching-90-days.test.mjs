@@ -172,8 +172,8 @@ test('weekly plan has 12 independent seven-day modules and six integration days'
 test('every learning day requires a concrete distinct bilingual output and review criterion',()=>{
   const ru=new Set(),en=new Set()
   for(let day=1;day<=90;day++){
-    const module=BUSINESS_WEEK_MODULES[Math.ceil(day/7)-1]
-    const result=module.days.find(d=>d.day===day)
+    const weeklyModule=BUSINESS_WEEK_MODULES[Math.ceil(day/7)-1]
+    const result=weeklyModule.days.find(d=>d.day===day)
     assert.ok(result, 'missing day '+day)
     const ruLesson=businessDayResult(day,'ru'),enLesson=businessDayResult(day,'en')
     assert.equal(ruLesson.week,Math.ceil(day/7))
@@ -507,20 +507,21 @@ test('real-world coaching examples are contextual, bilingual, voluntary and cove
   assert.ok(css.includes('.trackExample summary'))
 })
 
-test('business promotion matches the saved course photo-left design at phone widths',()=>{
+test('personal coaching remains an actual course recommendation in the new three-card mobile design',()=>{
   const component=readFileSync(new URL('../components/app/my-courses-dashboard.jsx',import.meta.url),'utf8')
   const css=readFileSync(new URL('../components/app/my-courses-dashboard.module.css',import.meta.url),'utf8')
   assert.match(component,/data-personal-coaching-course-link/)
-  assert.match(component,/className=\{styles\.businessTrackPhoto\}/)
-  assert.match(component,/\/images\/holistic-house\/report-lighthouse-coast\.avif/)
-  assert.match(component,/className=\{styles\.businessTrackAction\}/)
-  assert.match(component,/Start my session/)
-  assert.match(component,/Начать сессию/)
-  assert.match(css,/\.businessTrack\{[\s\S]*?grid-template-columns:clamp\(112px,19vw,162px\) minmax\(0,1fr\)/)
-  assert.match(css,/\.businessTrack\{[\s\S]*?background:linear-gradient\(118deg,#1c4e61,#1a314b\)/)
-  assert.match(css,/\.businessTrackAction\{[\s\S]*?background:#0b9fa8/)
-  assert.match(css,/@media\(max-width:600px\)\{\s*\.businessTrack\{grid-template-columns:102px minmax\(0,1fr\)/)
-  assert.match(css,/@media\(max-width:370px\)\{\s*\.businessTrack\{grid-template-columns:91px minmax\(0,1fr\)/)
+  assert.ok(component.includes("href={'/' + (locale==='ru'?'ru':'en') + '/coaching'}"),
+    'coaching recommendation still opens the existing real coaching route')
+  assert.match(component,/className=\{styles\.recommendCard\} data-personal-coaching-course-link/)
+  assert.match(component,/className=\{styles\.recommendPhoto\}/)
+  assert.match(component,/Personal Coaching Session/)
+  assert.match(component,/Личная коуч-сессия/)
+  assert.match(component,/БЕСПЛАТНО/)
+  assert.match(component,/aria-label=\{t\.explore \+ ': ' \+ preset\.title/)
+  assert.match(css,/\.recommendGrid\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/)
+  assert.match(css,/\.recommendPhoto\{[^\n]+background-image:url\("\/images\/holistic-house\/profile-card-photos\.webp"\)/)
+  assert.match(css,/@media\(max-width:360px\)\{[\s\S]*?\.recommendGrid\{display:flex;/)
 })
 
 test('mobile 90-day lesson shows one purpose at a time without stacked dashboard sections',()=>{

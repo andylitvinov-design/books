@@ -174,11 +174,16 @@ test('My Coach persona dialogue speaks and listens on exactly the consented sess
   // availability. Client messages stay private until the verified-model guard.
   const probeFunction=ui.slice(ui.indexOf('async function retryCoachModelAfterOutage(){'),
     ui.indexOf('async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null}={}){'))
-  const verify="const needsVerifiedModel=readiness.status!=='verified'&&!wisdomRequested&&!localInterruption"
-  const wait="const modelReady=!needsVerifiedModel||await retryCoachModelAfterOutage()"
+  // Gemini checks a dedicated owner gate plus client consent, while Groq
+  // keeps its verified-model probe. Neither sends text when unavailable.
+  const verify="const needsVerifiedModel=!wisdomRequested&&!localInterruption&&"
+  const selector="selectedGeminiEngine?!geminiEngineReady:readiness.status!=='verified'"
+  const wait="const modelReady=!needsVerifiedModel||"
+  const retry="!selectedGeminiEngine&&await retryCoachModelAfterOutage()"
   const offline="if(localInterruption||authRequired||(!modelReady&&!wisdomRequested)){"
   const send="fetch('/api/app/my-coach/turn'"
   assert.ok(sendFunction.indexOf(verify)>=0 &&
+    sendFunction.includes(selector) && sendFunction.includes(retry) &&
     sendFunction.indexOf(verify)<sendFunction.indexOf(wait) &&
     sendFunction.indexOf(wait)<sendFunction.indexOf(offline) &&
     sendFunction.indexOf(offline)<sendFunction.indexOf(send) &&
@@ -293,7 +298,7 @@ test('My Coach Fish TTS remains limited to approved free vendor routes and Play 
     assert.ok(route.includes(marker),marker)
   for(const marker of ['startCoachingMp3Playback','cloudControllerRef.current?.abort()',
     'cloudPlayerRef.current?.cancel()','(naturalVoice||voiceAgreed)&&voiceAvailable',
-    "voiceProvider==='fish_free'?{trainingUseConsent:true}:{}"])
+    "['fish_free','gemini_tts_free'].includes(voiceProvider)?{trainingUseConsent:true}:{}"])
     assert.ok(speech.includes(marker),marker)
   assert.ok(page.includes('voiceProviderDetails'))
   assert.ok(page.includes('onSessionStart={()=>setCloudAgreed(true)}'))
@@ -359,7 +364,8 @@ test('My Coach has private default TTS, no stale transcription, and tap-to-recov
   assert.doesNotMatch(ui,/replayCoachReplyOnDevice|new Utterance\(spokenText/)
 
   assert.ok(media.includes('onBlocked'))
-  assert.ok(media.includes('return {cancel,resume,run,audio}'))
+  assert.ok(media.includes('return {cancel,resume,run,audio,setVolume}'))
+ assert.ok(media.includes('const setVolume=volume=>'),'voice interruption must mute speaker only')
   assert.ok(ui.includes('trainingUseConsent:true'))
   assert.doesNotMatch(loop,/api\.fish\.audio|texttospeech\.googleapis\.com/)
 })
@@ -442,7 +448,9 @@ test('spoken My Coach reply retains the reflection and start introduction',()=>{
  assert.ok(ui.includes('onSessionStart={()=>setCloudAgreed(true)}'))
  assert.ok(loop.includes('(naturalVoice||voiceAgreed)&&voiceAvailable'))
  assert.ok(loop.includes("if(!introStartedRef.current){"))
- assert.ok(ui.includes("const dynamicAllowed=cloudAgreed&&cloudAvailable&&"))
+ assert.ok(ui.includes("const dynamicAllowed=chosenCloudAgreed&&chosenCloudAvailable&&"))
+ assert.ok(ui.includes('const chosenCloudAgreed=geminiVoiceReady||cloudAgreed'))
+ assert.ok(ui.includes('const chosenCloudProvider=geminiVoiceReady?geminiVoiceTier:cloudProvider'))
  assert.ok(ui.includes("const [cloudAgreed,setCloudAgreed]=useState(false)"))
  assert.ok(!ui.includes('naturalVoiceRow'))
  assert.ok(!ui.includes('checked={cloudAgreed}'))

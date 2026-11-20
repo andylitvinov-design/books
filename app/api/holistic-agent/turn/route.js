@@ -15,6 +15,7 @@ import { buildPortraitRecommendations } from "@/lib/profile/portrait-recommendat
 import { AXIS_REFS, publishedAxisOffers } from "@/lib/holistic-support/axis-offer-matcher.mjs";
 import { interpretSupportUtterance, explainUserQuestion } from "@/lib/holistic-support/guide-dialogue.mjs";
 import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
+import { friendConversationReply } from "@/lib/holistic-support/friend-mind.mjs";
 import { progressConversationTurn,progressDialogueReply } from "@/lib/holistic-support/dialogue-progression.mjs";
 import { nativeSecretaryTurn } from "@/lib/holistic-support/native-secretary.mjs";
 import { waveNativeTurn,WAVE_NATIVE_ROUTER_VERSION } from "@/lib/holistic-support/wave-native-router.mjs";
@@ -122,7 +123,7 @@ function validNativeSession(value) {
 function inputOf(body) {
   onlyKeys(body,["locale","message","history","mode","ownedInferenceConsent","selectedGoal",
     "chosenAxes","usePrivateProfile","usePrivateHistory","preferredFormat","feedback","useAgentMemory",
-    "judgmentContext","judgmentChoice","nativeSession"]);
+    "judgmentContext","judgmentChoice","nativeSession","companionMode","companionTone"]);
   if (!LOCALES.has(body.locale) || typeof body.message !== "string" ||
     !body.message.trim() || body.message.length > 3000 ||
     !MODES.has(body.mode) || typeof body.ownedInferenceConsent !== "boolean" ||
@@ -135,6 +136,9 @@ function inputOf(body) {
     (body.preferredFormat !== undefined && body.preferredFormat !== null &&
       !GUIDE_FORMATS.has(body.preferredFormat)) ||
     (body.feedback !== undefined && !validFeedback(body.feedback)) ||
+    (body.companionMode !== undefined && body.companionMode !== null && body.companionMode !== "friend") ||
+    (body.companionTone !== undefined && body.companionTone !== null &&
+      (!["friendly","confiding","tender"].includes(body.companionTone) || body.companionMode !== "friend")) ||
     (body.nativeSession !== undefined && body.nativeSession !== null && !validNativeSession(body.nativeSession)) ||
     (body.judgmentContext !== undefined && body.judgmentContext !== null &&
       (typeof body.judgmentContext !== "string" || body.judgmentContext.length > 1600 ||
@@ -385,6 +389,24 @@ export async function POST(request) {
         suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,browserModelAllowed:false,
         decision:{status:'clarify',message:reply,question:null,suggestions:[]}});
     }
+    // Friend Mind is a selected conversational tone, not an authorization.
+    // All origin, account, rate, safety and signed-choice checks precede it.
+    // Do not read private memory, enter a service funnel, or bypass a real task.
+    const friendTurn=body.mode==="rules" && body.companionMode==="friend" &&
+      safety.status==="clear" && !recentUnsafe &&
+      body.judgmentContext==null && body.judgmentChoice==null &&
+      body.usePrivateProfile!==true && body.usePrivateHistory!==true &&
+      body.useAgentMemory!==true && body.preferredFormat==null &&
+      (!body.chosenAxes || body.chosenAxes.length===0)
+      ? friendConversationReply({message:body.message,locale:body.locale,
+          history:body.history,tone:body.companionTone||"friendly"}) : null;
+    if(friendTurn)return await finish({
+      status:"clarify",reply:friendTurn.reply,modelUsed:false,
+      mindRole:"friend",source:friendTurn.source,memorySaved:false,userAuthorized:true,
+      suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,
+      browserModelAllowed:false,
+      decision:{status:"clarify",message:friendTurn.reply,question:null,suggestions:[]},
+    });
     // Preserve the production complaint path after the same safety and consent
     // gates, while committing any verified state through the common finish path.
     const complaint=safety.status==="clear"&&!recentUnsafe &&

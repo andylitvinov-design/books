@@ -119,3 +119,50 @@
 @media(max-width:370px){.cardControls{gap:3px}.mainCard .cardTop,.smallCard .cardTop{gap:5px}}
 
 
+
+/* My Courses · profile-matched visual index. Functional management stays below. */
+.dashboard{gap:14px;max-width:960px}
+.startedHeading,.recommendHeading{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
+.startedHeading h3,.recommendHeading h3{margin:0;color:#123f36;font:700 clamp(23px,5.9vw,33px)/1.12 Georgia,serif;letter-spacing:-.025em}
+.startedHeading .cap{flex:none;background:#eaf6ec;color:#155b4d;border-color:#cde6d5}
+.recommendHeading a{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:44px;flex:none;padding:7px 11px;border:1px solid #cfe2d7;border-radius:22px;background:#e8f4ec;color:#0b5b49;text-decoration:none;font-size:12px;font-weight:800}
+.recommendGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;min-width:0}
+.recommendCard{position:relative;display:flex;flex-direction:column;min-width:0;overflow:hidden;border:1px solid #ece5da;border-radius:19px;background:#fffdf9;color:#0e3d34;text-decoration:none;box-shadow:0 7px 19px #173d3420}
+.recommendPhoto{display:block;width:100%;aspect-ratio:1.72;min-height:75px;background-image:url("/images/holistic-house/profile-card-photos.webp");background-repeat:no-repeat;background-size:400% 100%;background-position:0% center}
+.recommendCard:nth-child(2) .recommendPhoto{background-position:33.333% center}
+.recommendCard:nth-child(3) .recommendPhoto{background-position:66.667% center}
+.recommendBody{display:flex;flex:1;flex-direction:column;align-items:flex-start;gap:5px;min-width:0;padding:9px 10px 48px;line-height:1.25}
+.recommendTag{display:inline-block;padding:3px 7px;border-radius:12px;background:#e1f4e8;color:#0c5948!important;font-size:10px!important;font-weight:800!important;letter-spacing:.04em}
+.recommendBody strong{font-size:clamp(14px,3.6vw,18px);font-weight:850;line-height:1.17;overflow-wrap:anywhere}
+.recommendBody small:not(.recommendTag){font-size:clamp(10px,2.8vw,13px);color:#3c6052;line-height:1.3;overflow-wrap:break-word}
+.recommendArrow{position:absolute;right:6px;bottom:6px;display:grid;place-items:center;width:40px;height:40px;padding:0!important;border:0!important;border-radius:50%;background:#e0f3e6!important;color:#0b6c54!important;cursor:pointer;text-decoration:none}
+.recommendArrow:disabled{opacity:.45;cursor:not-allowed}
+.recommendCard:focus-visible,.recommendArrow:focus-visible,.recommendHeading a:focus-visible,.moreFree summary:focus-visible{outline:3px solid #067a67;outline-offset:2px}
+.mainCard,.smallCard{background:linear-gradient(122deg,#17453e,#0a574a);border-color:#285d53}
+.mainCard .progressTrack,.smallCard .progressTrack{background:#4b7c70}
+.mainCard .progressTrack span,.smallCard .progressTrack span{background:linear-gradient(90deg,#9ce7a8,#21d58d)}
+.mainCard .primaryButton,.smallCard .primaryButton{background:#008c77!important;border-color:#008c77!important}
+.mainCard .primaryButton:hover,.smallCard .primaryButton:hover{background:#00705e!important;border-color:#00705e!important}
+.moreFree{border:1px solid #e3eadd;background:#fffdf9;border-radius:16px;padding:11px 13px}
+.moreFree summary{min-height:44px;display:flex;align-items:center;cursor:pointer;color:#225c49;font-size:13px;font-weight:800}
+.moreFree[open]{display:grid;gap:9px}
+@media(max-width:430px){
+ .dashboard{gap:12px}
+ .startedHeading h3,.recommendHeading h3{font-size:clamp(22px,6.1vw,27px)}
+ .recommendGrid{gap:7px}
+ .recommendCard{border-radius:15px}
+ .recommendPhoto{min-height:68px}
+ .recommendBody{gap:4px;padding:8px 7px 43px}
+ .recommendBody strong{font-size:clamp(12px,3.4vw,15px)}
+ .recommendBody small:not(.recommendTag){font-size:10px}
+ .recommendTag{font-size:9px!important;padding:2px 5px}
+ .recommendHeading a{font-size:11px;padding:7px 8px}
+ .recommendArrow{width:36px;height:36px}
+}
+@media(max-width:360px){
+ .recommendHeading{align-items:flex-start}
+ .recommendHeading a{min-width:83px;max-width:100px;text-align:center;line-height:1.2}
+ .recommendGrid{display:flex;gap:8px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;padding-bottom:4px}
+ .recommendCard{flex:0 0 145px;scroll-snap-align:start}
+}
+@media(prefers-reduced-motion:reduce){.recommendGrid{scroll-behavior:auto}}

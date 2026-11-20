@@ -78,9 +78,21 @@ export async function GET(request,{params}){
   if(!upstream.ok||!upstream.body||
    (!kind.startsWith('audio/')&&!kind.startsWith('application/octet-stream')))
    throw new AppError('ALI_NATURAL_VOICE_UNAVAILABLE',503)
-  return new NextResponse(upstream.body,{status:200,headers:AUDIO_HEADERS})
+  // WebKit is more reliable with a complete MP3 and Content-Length than with
+  // a chunked streaming response from the voice vendor.
+  const declaredSize=Number(upstream.headers.get('content-length')||0)
+  if(declaredSize>2000000)throw new AppError('ALI_NATURAL_VOICE_UNAVAILABLE',503)
+  const audio=Buffer.from(await upstream.arrayBuffer())
+  if(audio.length<32||audio.length>2000000||
+    !(audio.subarray(0,3).toString()==='ID3'||
+      (audio[0]===255&&(audio[1]&224)===224)))
+   throw new AppError('ALI_NATURAL_VOICE_UNAVAILABLE',503)
+  return new NextResponse(audio,{status:200,headers:{
+   ...AUDIO_HEADERS,'Content-Length':String(audio.length)}})
  }catch(error){
   const safe=safeError(error)
+  // Public fixed-greeting error code only: no secrets or private messages.
+  console.warn('[ali-greeting-audio] synthesis unavailable:',safe.code)
   return NextResponse.json({error:safe.code},{status:safe.status,headers:{
    'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}})
  }

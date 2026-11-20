@@ -69,7 +69,7 @@ const COPY:Record<PublicLocale,QuizCopy>={
     modes:{
       secretary:{title:"Find practical support",description:"A few clarifying questions, suitable services and next steps."},
       coach:{title:"Explore my goal",description:"Talk through the situation and consider one small next step."},
-      talk:{title:"A supportive conversation",description:"Talk things through gently, without pressure or a diagnosis."},
+      talk:{title:"Talk with a friend",description:"A warm, personal conversation at your pace, without pressure or sales."},
     },
   },
   ru:{
@@ -115,7 +115,7 @@ const COPY:Record<PublicLocale,QuizCopy>={
     modes:{
       secretary:{title:"Подобрать поддержку",description:"Короткие уточнения, варианты услуг и следующий шаг."},
       coach:{title:"Разобраться с целью",description:"Обсудить ситуацию и найти один посильный шаг."},
-      talk:{title:"Бережно поговорить",description:"Поддерживающая беседа без давления и диагнозов."},
+      talk:{title:"Друг · просто поговорить",description:"Тёплое, доверительное общение без навязчивых советов и продаж."},
     },
   },
   es:{
@@ -161,7 +161,7 @@ const COPY:Record<PublicLocale,QuizCopy>={
     modes:{
       secretary:{title:"Encontrar apoyo práctico",description:"Preguntas breves, opciones de servicios y siguiente paso."},
       coach:{title:"Explorar mi meta",description:"Aclarar la situación y considerar un pequeño paso."},
-      talk:{title:"Conversación de apoyo",description:"Hablar con calma, sin presión ni diagnósticos."},
+      talk:{title:"Hablar con un amigo",description:"Una charla cálida y personal, sin presión ni ventas."},
     },
   },
 };

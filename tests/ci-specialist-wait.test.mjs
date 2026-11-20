@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggregateError } from '../scripts/ci-specialist-aggregate.mjs';
 import { inspectJobs, trustedRequiredJobs, inspectWorkflowRuns } from '../lib/ci/specialist-aggregate.mjs';
-import { safeComposedIndependentAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance } from '../lib/ci/production-base-impact.mjs';
 
 const repo = 'andylitvinov-design/books', head = 'a'.repeat(40), base = 'b'.repeat(40);
 const path = '.github/workflows/mobile.yml';
@@ -48,7 +48,7 @@ test('a registered specialist can remain queued beyond three minutes and must su
     },
   };
   const sleep = async ms => {
-    assert.ok(ms > 0 && ms <= 30_000, 'bounded polling');
+    assert.ok(ms > 0 && ms <= 60_000, 'bounded polling');
     elapsed += ms;
   };
   const result = await verify(api, ctx, sources, { now: () => elapsed, sleep });
@@ -57,6 +57,34 @@ test('a registered specialist can remain queued beyond three minutes and must su
   assert.ok(polls > 5);
   assert.equal(jobsRead, 1);
   assert.equal(result.executed.length, 1);
+});
+
+test('default hh-merge-check halves redundant multi-specialist polling without skipping exact-head jobs', async () => {
+  const second = '.github/workflows/video-qa.yml';
+  const files = { base: new Map([[path,yaml],[second,yaml]]),
+    current: new Map([[path,yaml],[second,yaml]]),
+    changedRows: [{filename:'lib/crm/a.js',status:'M'}] };
+  const a = run('in_progress',null);
+  const b = {...a,id:152,path:second};
+  let elapsed = 0, reads = 0, jobs = 0;
+  const api = {
+    pr: async () => pr,
+    target: async () => base,
+    runs: async () => {
+      reads++;
+      return elapsed >= 240_000
+        ? [{...a,status:'completed',conclusion:'success'},
+          {...b,status:'completed',conclusion:'success'}]
+        : [a,b];
+    },
+    jobs: async () => { jobs++; return [{name:'test',status:'completed',conclusion:'success'}]; },
+  };
+  const result = await verify(api,ctx,files,{maxWaitMs:10*60_000,now:()=>elapsed,
+    sleep:async ms=>{assert.ok(ms>0&&ms<=60_000);elapsed+=ms;}});
+  assert.equal(elapsed,240_000);
+  assert.equal(reads,5,'five indexed HEAD reads vs nine at the old 30-second cadence');
+  assert.equal(jobs,2,'both actual specialist jobs are still independently checked');
+  assert.equal(result.executed.length,2);
 });
 
 test('an explicitly extended queue budget permits a proven 20-minute hosted runner wait', async () => {
@@ -79,13 +107,13 @@ test('an explicitly extended queue budget permits a proven 20-minute hosted runn
     queuedGraceMs: 25*60_000,
     now: () => elapsed,
     sleep: async ms => {
-      assert.ok(ms > 0 && ms <= 30_000);
+      assert.ok(ms > 0 && ms <= 60_000);
       elapsed += ms;
     },
   });
   assert.ok(elapsed >= 20 * 60_000, 'queue alone is never passing CI');
   assert.ok(elapsed < 35 * 60_000, 'completion stays within global budget');
-  assert.ok(polls > 30);
+  assert.equal(polls, 21, 'one read per minute over 20 minutes, not 41 reads every 30 seconds');
   assert.equal(readJobs, 1);
   assert.equal(result.executed.length, 1);
 });
@@ -100,10 +128,10 @@ test('unresolved queued dependency stops at the shorter ten-minute default, not 
   };
   await assert.rejects(() => verify(api, ctx, sources, {
     now: () => elapsed,
-    sleep: async ms => { assert.ok(ms > 0 && ms <= 30_000); elapsed += ms; },
+    sleep: async ms => { assert.ok(ms > 0 && ms <= 60_000); elapsed += ms; },
   }), /SPECIALIST_MISSING_OR_PENDING:NOT_STARTED/);
   assert.equal(elapsed, 10 * 60_000, 'default queue budget is shorter than running timeout');
-  assert.ok(reads > 10, 'checks are polled, never silently waived');
+  assert.equal(reads, 11, 'one read per minute over ten minutes; never waive queued CI');
   assert.equal(diagnoseAggregateError(
     new Error('SPECIALIST_MISSING_OR_PENDING:NOT_STARTED:'+JSON.stringify({queued:[path+':queued']}))
   ).category, 'RUNNER_QUEUE');
@@ -118,7 +146,7 @@ test('registered queue still fails closed after a bounded startup budget', async
     jobs: async () => { throw Error('unstarted specialist cannot supply successful jobs'); },
   };
   const sleep = async ms => {
-    assert.ok(ms > 0 && ms <= 30_000, 'bounded polling');
+    assert.ok(ms > 0 && ms <= 60_000, 'bounded polling');
     elapsed += ms;
   };
   await assert.rejects(
@@ -137,13 +165,13 @@ test('loose base reuse is limited to normal public changes; privacy and policy r
     ['components/video-editor.tsx','scripts/verify-video-editor-browser.mjs'],
     ['scripts/benchmarking/video-timing.mjs'],
     ['components/mandala-free-video-studio.tsx','scripts/verify-holistic-mandala-browser.mjs'],
+    ['scripts/verify-affirmation-voice-browser.mjs'],
+    ['scripts/benchmarking/first-video-live-export.mjs'],
   ]) assert.equal(requiresCurrentProductionBase(files), false, files.join(','));
   for (const files of [
     [], ['scripts/ci-specialist-aggregate.mjs'], ['.github/workflows/hh-pr-core-release.yml'],
-    ['scripts/verify-affirmation-voice-browser.mjs'],
     ['package-lock.json'], ['app/api/payment/route.ts'], ['components/app/private-profile.jsx'],
     ['scripts/verify-payment-browser.mjs'], ['scripts/new-auth-guard.mjs'],
-    ['scripts/benchmarking/first-video-live-export.mjs'],
     ['lib/crm/marketing.js'], ['supabase/migrations/001.sql'],
     ['lib/practitioners/direct-messages.js'], ['lib/practitioners/direct-message-policy.mjs'],
     ['lib/app/learning-journey.mjs'], ['lib/ia/encrypted-store.js'],
@@ -525,4 +553,167 @@ test('composed independent BASE advance reuses the same HEAD only with complete 
   assert.equal(safeComposedIndependentAdvance({ ...good, files: [good.files[0]] }, tested, live, candidate), false,
     'single-category proof cannot substitute a complete-list check');
   assert.equal(safeComposedIndependentAdvance(good, tested, live, []), false);
+});
+
+
+test('#5093: protected BASE drift must not trigger auto-sync before required macOS movie test completes',async()=>{
+ const workflow='.github/workflows/holistic-support-mandala.yml';
+ const mediaYaml="on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths:\n      - 'components/mandala-**'\n      - 'scripts/benchmarking/first-video-live-export.mjs'\njobs:\n  voice-webkit-macos:\n    runs-on: macos-15\n";
+ const files={base:new Map([[workflow,mediaYaml]]),
+  current:new Map([[workflow,mediaYaml]]),
+  changedRows:[
+   {filename:'components/mandala-free-video-studio.tsx',status:'M'},
+   {filename:'scripts/benchmarking/first-video-live-export.mjs',status:'M'},
+   // This separate regression deliberately exercises a SENSITIVE source:
+   // ordinary video/QA files now treat unrelated target drift as advisory.
+   {filename:'app/api/holistic-support/voice/route.js',status:'M'},
+  ]};
+ const latest='c'.repeat(40),ctx2={...ctx};
+ const mediaPr={...pr,mergeable:true,mergeable_state:'behind',
+  base:{...pr.base,sha:latest}};
+ const checkedRun=(status,conclusion)=>({...run(status,conclusion),
+  path:workflow,id:981,head_branch:pr.head.ref});
+ let elapsed=0,polls=0,jobReads=0,baseReads=0,compares=0;
+ const api={
+  pr:async()=>mediaPr,target:async()=>{baseReads++;return latest;},
+  compare:async()=>{compares++;return {
+    status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:base},merge_base_commit:{sha:base},
+    commits:[{sha:latest}],
+    files:[{filename:'app/api/auth/route.ts',status:'modified'}]
+  };},
+  runs:async()=>{polls++;return [polls===1?
+    checkedRun('in_progress',null):checkedRun('completed','success')];},
+  jobs:async()=>{jobReads++;return [{name:'voice-webkit-macos',
+    status:'completed',conclusion:'success'}];},
+ };
+ await assert.rejects(()=>verify(api,ctx2,files,{
+  maxWaitMs:120_000,pollMs:100,now:()=>elapsed,
+  sleep:async ms=>{elapsed+=ms;},
+ }),/PRODUCTION_BASE_CHANGED/);
+ assert.equal(polls,2,'the real Mac specialist must finish before BASE is considered stale');
+ assert.equal(jobReads,1,'successful exact-run macOS job evidence is independently read');
+ assert.equal(compares,1,'only final protected BASE comparison can trigger auto-sync');
+ assert.equal(baseReads,1,'no early or periodic stale-base branch update while Mac is active');
+ let redPolls=0,redBaseReads=0;
+ await assert.rejects(()=>verify({...api,
+  target:async()=>{redBaseReads++;return latest;},
+  compare:async()=>{throw Error('a failed Mac must not be masked by BASE drift');},
+  runs:async()=>{redPolls++;return [redPolls===1?
+    checkedRun('in_progress',null):checkedRun('completed','failure')];}
+ },ctx2,files,{maxWaitMs:120_000,pollMs:100,now:()=>elapsed,
+  sleep:async ms=>{elapsed+=ms;},
+ }),/SPECIALIST_FAILED/);
+ assert.equal(redPolls,2,'must retain exact-HEAD failed-media evidence');
+ assert.equal(redBaseReads,0,'never source-sync over a genuine macOS movie failure');
+});
+
+
+test('ordinary 20-file video/MP4 acceptance does not require a moving production BASE',()=>{
+ const files=[
+  'components/mandala-automatic-storyboard.tsx',
+  'components/mandala-free-video-studio.tsx',
+  'components/mandala-video-mobile.module.css',
+  'lib/mandala/recording-codecs.d.mts',
+  'lib/mandala/recording-codecs.mjs',
+  'lib/mandala/webcodecs-mp4-export.ts',
+  'scripts/benchmarking/complete-three-step-goals-quiz.mjs',
+  'scripts/benchmarking/first-video-live-export.mjs',
+  'scripts/benchmarking/real-guest-video-file.mjs',
+  'scripts/benchmarking/verify-five-scene-stories-browser.mjs',
+  'scripts/benchmarking/verify-original-motion-export.mjs',
+  'scripts/verify-affirmation-voice-browser.mjs',
+  'tests/mandala-automatic-storyboard-tab.test.mjs',
+  'tests/mandala-express-one-click.test.mjs',
+  'tests/mandala-free-video.test.mjs',
+  'tests/mandala-native-audio-files.test.mjs',
+  'tests/mandala-video-concept.test.mjs',
+  'tests/mandala-webcodecs-mp4.test.mjs',
+  'tests/mandala-workspace-tabs.test.mjs',
+  'tests/video-director-chat-live-acceptance.test.mjs',
+ ];
+ assert.equal(requiresCurrentProductionBase(files),false,
+   'a public 20-file video editor should preserve exact-HEAD Core/WebKit evidence');
+ for(const sensitive of [
+  'app/api/holistic-support/voice/route.js',
+  'app/api/auth/route.ts',
+  'lib/app/practitioner-access.js',
+  'lib/mandala/private-client-session.mjs',
+  'scripts/ci-specialist-aggregate.mjs',
+  '.github/workflows/hh-pr-core-release.yml',
+  'tests/ci-specialist-aggregate.test.mjs',
+  'tests/privacy-consent.test.mjs',
+  'tests/payment-checkout.test.mjs',
+  'scripts/verify-auth-browser.mjs',
+  'scripts/benchmarking/payment-export.mjs',
+  'package-lock.json',
+ ])assert.equal(requiresCurrentProductionBase([...files,sensitive]),true,
+   'real security, release, privacy or paid source stays current-base strict: '+sensitive);
+ assert.equal(requiresCurrentProductionBase([]),true);
+});
+
+
+test('#5160 accepts new independent namespaced source after production moves, never critical changes',async()=>{
+  const live='c'.repeat(40), candidate=[
+    'components/astral-chat-panel.tsx',
+    'lib/astral-dialogue.mjs',
+  ];
+  const rows=[
+    {filename:'components/solstice-signal.tsx',status:'modified'},
+    {filename:'lib/solstice-calendar.mjs',status:'added'},
+  ];
+  const diff=(files=rows,overrides={})=>({
+    status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:base},merge_base_commit:{sha:base},
+    commits:[{sha:live}],files,...overrides,
+  });
+  const safe=(files=rows,paths=candidate,mergeable=true,overrides={})=>
+    safeIsolatedFeatureAdvance(diff(files,overrides),base,live,paths,mergeable);
+  assert.equal(requiresCurrentProductionBase(candidate),true,
+    'a public chat file remains sensitive to unrelated base movement in the old policy');
+  assert.equal(safe(),true,
+    'new independent namespaces should preserve real green exact-HEAD checks');
+  for(const invalid of [
+    'components/astral-card.tsx', // same namespace as candidate
+    'components/lunar-chat-banner.tsx', // same assistant family despite different namespace
+    'components/shared-button.tsx',
+    'components/sitewide-alert.tsx',
+    'lib/security/identity.mjs',
+    'app/api/payments/route.ts',
+    'lib/solstice-client-session.mjs',
+    '.github/workflows/hh-pr-core-release.yml',
+    'lib/ci/production-base-impact.mjs',
+    'package-lock.json',
+    'tests/ci-specialist-wait.test.mjs',
+  ])assert.equal(safe([rows[0],{filename:invalid,status:'modified'}]),false,
+    'same family, common code, private data, CI policy and dependencies must block: '+invalid);
+  for(const blocked of [
+    [{filename:rows[0].filename,status:'deleted'}],
+    [{filename:rows[0].filename,status:'renamed',previous_filename:'components/old.tsx'}],
+    [rows[0],rows[0]],
+  ])assert.equal(safe(blocked),false,'deleted/renamed/duplicate compare files cannot authorize a merge');
+  for(const bad of [
+    {status:'diverged'},{behind_by:1},{commits:[]},
+    {merge_base_commit:{sha:'d'.repeat(40)}},
+    {files:[]},{total_commits:2},{ahead_by:2},
+  ])assert.equal(safe(rows,candidate,true,bad),false,
+    'unverifiable or incomplete protected history is not independently safe');
+  assert.equal(safe(rows,candidate,false),false,'GitHub merge conflict must block');
+  assert.equal(safe(rows,candidate,null),false,'unknown mergeability must not pass');
+  assert.equal(safe(rows,['components/sitewide-alert.tsx']),false,'candidate shared root stays strict');
+  assert.equal(safe(rows,['app/api/auth/route.ts']),false,'candidate critical source stays strict');
+  assert.equal(safe(rows,['components/solstice-navbar.tsx']),false,'same namespace is not independent');
+  const source={base:new Map(),current:new Map(),
+    changedRows:candidate.map(filename=>({filename,status:'M'}))};
+  let compared=0,targetReads=0;
+  const active={...pr,mergeable:true,base:{...pr.base,sha:live}};
+  const api={pr:async()=>active,target:async()=>{targetReads++;return live;},
+    compare:async()=>{compared++;return diff();},
+    runs:async()=>[],jobs:async()=>[]};
+  const verified=await verify(api,ctx,source,{maxWaitMs:0});
+  assert.equal(verified.head,head);
+  assert.equal(compared,1,'one verified source and target comparison, not a new CI wave');
+  assert.ok(targetReads>=1,'actual protected production ref was inspected');
+  await assert.rejects(()=>verify({...api,pr:async()=>({...active,mergeable:false,mergeable_state:'dirty'})},
+    ctx,source,{maxWaitMs:0}),/MERGE_CONFLICT/);
 });

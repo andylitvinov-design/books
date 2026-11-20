@@ -26,12 +26,20 @@ test('live chat acceptance uses only one renderer and actually downloads playabl
  assert.match(qa,/CLIENT_JAVASCRIPT_ERROR_/);
  assert.match(qa,/CHAT_MUST_REUSE_SINGLE_CANVAS/);
 });
-test('legacy prompt-based live benchmark opens its approved advanced disclosure before recording',()=>{
- const legacy=readFileSync(new URL('../scripts/benchmarking/first-video-live-export.mjs',import.meta.url),'utf8');
- assert.match(legacy,/\[data-video-first-video-advanced\]/);
- assert.match(legacy,/advanced\.locator\(':scope > summary'\)\.click\(\)/);
- assert.ok(legacy.indexOf("const advanced=page.locator")<legacy.indexOf("const first = page.locator"));
- assert.match(legacy,/\[data-mandala-video-download\]/);
+test('required Express browser acceptance taps visible Just make it and validates its real movie',()=>{
+ const express=readFileSync(new URL('../scripts/benchmarking/first-video-live-export.mjs',import.meta.url),'utf8');
+ assert.match(express,/\[data-auto-video-input\]/);
+ assert.match(express,/\[data-video-prompt-flow\]/);
+ assert.match(express,/getByRole\('button',\{name:'Just make it'\}\)/);
+ assert.match(express,/data-video-request-design\]\[data-video-request-flow="instant"\]/);
+ assert.match(express,/expressGenerateClicks=1/);
+ assert.match(express,/EXPRESS_TEST_RECIPE_NOT_SIX_SCENES/);
+ assert.match(express,/expressSceneIdentityCorrelations/);
+ assert.match(express,/EXPRESS_CANONICAL_SCENE_ORDER_OR_IDENTITY_MISMATCH/);
+ assert.match(express,/EXPRESS_VIDEO_MUST_BE_30_SECONDS/);
+ assert.match(express,/EXPRESS_SCENE_NOT_MOVING/);
+ assert.doesNotMatch(express,/data-video-continue-scenarios/,
+   'the Express export gate never clicks the hidden legacy Continue action');
 });
 test('cost-bounded existing LIVE video workflow runs the new smoke on real published pages',()=>{
  assert.match(workflow,/scripts\/benchmarking\/video-director-chat-live-acceptance\.mjs/);
@@ -114,7 +122,9 @@ test('the one-shot LIVE free-AI diagnostic uses only synthetic consented text',(
  assert.ok(start>0&&end>start,'optional diagnostic has its own bounded step');
  const diagnostic=workflow.slice(start,end);
  assert.match(workflow,/probe_free_ai:/);
- assert.match(diagnostic,/github\.event\.action == 'opened'/);
+ assert.match(diagnostic,/github\.event_name == 'workflow_dispatch' && inputs\.probe_free_ai/);
+ assert.doesNotMatch(diagnostic,/github\.event\.action == 'opened'/,
+  'optional free-AI diagnostic never consumes requests on ordinary PRs');
  assert.match(diagnostic,/node --input-type=module/);
  assert.match(diagnostic,/VIDEO_CHAT_FREE_AI_LIVE_/);
  assert.match(diagnostic,/denied\.response\.status===400/);
