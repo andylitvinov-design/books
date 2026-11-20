@@ -15,7 +15,8 @@
 .photo[data-goal-photo="growth"]{background-image:url("/videos/holistic-house/film-collection-v2/fern-awakening.jpg")}
 .photo[data-goal-photo="rest"]{background-image:url("/videos/holistic-house/film-collection-v2/mossy-stream.jpg")}
 .photo[data-goal-photo="meaning"]{background-image:url("/videos/holistic-house/film-collection-v2/coastal-freedom.jpg")}
-.wording{display:grid;align-content:center;min-width:0;gap:7px}.title{display:block;color:#103e35;font:800 clamp(20px,5.5vw,29px)/1.08 Georgia,serif;letter-spacing:-.02em;overflow-wrap:break-word}
+.wording{display:grid;align-content:center;min-width:0;gap:7px}
+.kind{display:block;color:#087c64;font:750 11px/1.2 system-ui,sans-serif;letter-spacing:.025em;text-transform:uppercase}.title{display:block;color:#103e35;font:800 clamp(20px,5.5vw,29px)/1.08 Georgia,serif;letter-spacing:-.02em;overflow-wrap:break-word}
 .detail{display:block;color:#565f64;font:500 clamp(14px,3.7vw,17px)/1.32 system-ui,sans-serif;overflow-wrap:break-word}
 .checkbox{display:grid;place-items:center;justify-self:center;align-self:center;width:29px;height:29px;border:2px solid #95aaa1;border-radius:50%;background:#fffcf7;color:#fff}
 .goalCard[aria-pressed="true"] .checkbox{border-color:#087f64;background:#087f64}
