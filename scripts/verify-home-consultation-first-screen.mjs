@@ -71,8 +71,12 @@ for (const engine of [chromium,webkit]){
             label+": real localized free review route");
           const reviewBox=await review.boundingBox();
           const focusBox=await root.locator("[data-home-focus-grid]").boundingBox();
-          assert.ok(reviewBox&&focusBox&&reviewBox.y+reviewBox.height<=focusBox.y,
-            label+": free review appears above all four needs");
+          // The approved Home layout shows the four directions, then How it
+          // works, then the optional free review. Check actual visual order
+          // rather than the retired review-before-directions arrangement.
+          assert.ok(reviewBox&&focusBox&&focusBox.y+focusBox.height<=reviewBox.y+1,
+            label+": four needs appear above the free review " +
+              JSON.stringify({focusBottom:focusBox?.y+focusBox?.height,reviewTop:reviewBox?.y}));
           assert.equal(await root.locator("[data-home-focus-grid]").count(),1,label+": grouped choices");
           const cards=await root.locator("[data-home-focus-grid]").boundingBox();
           const composer=await root.locator("[data-home-intent-composer]").boundingBox();
