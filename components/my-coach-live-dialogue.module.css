@@ -1416,3 +1416,97 @@
 
 /* Production in-session profile keeps the approved compact mobile voice row. */
 .root[data-session-visual-v4] .voiceControls .profileControl{background:#eef8ef;color:#116346;cursor:pointer}
+
+
+/* Owner 2026-11-20: Profile → Language → Back in the original compact
+   session header; mode and Summary replace the under-portrait Profile/End.
+   Keep portrait geometry and existing microphone/transcript intact. */
+.root[data-session-visual-v4] .sessionTopbarActions .topProfileControl{
+  box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;
+  gap:3px;flex:0 0 auto;min-height:42px;padding:5px 7px;
+  border:1px solid #d4e0d5;border-radius:999px;background:#fffdf8;
+  color:#185f4f;font:750 11px/1.1 system-ui;cursor:pointer;
+  box-shadow:0 3px 11px #2c4c3b0d;
+}
+.root[data-session-visual-v4] .sessionTopbarActions .topProfileControl:focus-visible,
+.root[data-session-visual-v4] .voiceControls .modeControl:focus-visible{
+  outline:3px solid #16876b;outline-offset:2px;
+}
+.root[data-session-visual-v4] .sessionTopbarActions .chooseCoach{
+  flex:none;min-height:42px;min-width:0;max-width:none;
+  border-radius:999px;padding:5px 8px;gap:4px;
+}
+.root[data-session-visual-v4] .sessionTopbarActions .chooseCoachFull,
+.root[data-session-visual-v4] .sessionTopbarActions .chooseCoachShort{
+  display:inline;font-size:11px;
+}
+.root[data-session-visual-v4] .sessionTopbarActions .chooseCoachShort{display:none}
+.root[data-session-visual-v4] .voiceControls .modeControl{
+  box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  justify-self:stretch;gap:2px;width:auto;max-width:none;min-height:46px;height:46px;
+  padding:4px 2px;border:1px solid #d6e8da;border-radius:14px;
+  background:#e7f6ed;color:#0c6950;font:800 10px/1.1 system-ui;
+  cursor:pointer;box-shadow:0 3px 10px #2247330c;
+}
+.root[data-session-visual-v4] .voiceControls .modeControl[data-coach-provider=gemini]{
+  background:#e3f5f5;border-color:#a9d9d0;color:#0c6869;
+}
+.root[data-session-visual-v4] .voiceControls .modeControl:disabled{opacity:.48;cursor:not-allowed}
+.modeNotice{box-sizing:border-box;color:#705531;background:#fff9e5;border:1px solid #eee0b4;
+  border-radius:11px;padding:7px 10px;margin:0 1px;font-size:12px;line-height:1.4}
+.modeConsentPanel{box-sizing:border-box;display:grid;gap:8px;padding:11px 12px;
+  border:1px solid #c9e0d7;background:#f3fbf7;border-radius:14px;color:#215c4d;
+  font-size:12px;line-height:1.35}
+.modeConsentPanel label{display:flex;align-items:flex-start;gap:9px}
+.modeConsentPanel label input{width:18px;height:18px;flex:0 0 18px;margin:0;accent-color:#087c60}
+.quickSummaryOverlay{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;
+  box-sizing:border-box;padding:max(18px,env(safe-area-inset-top)) 12px max(18px,env(safe-area-inset-bottom));
+  background:#102a259e;overflow-y:auto}
+.quickSummaryCard{box-sizing:border-box;width:min(100%,520px);max-height:min(90dvh,820px);
+  min-height:0;display:flex;flex-direction:column;gap:10px;padding:18px;
+  border:1px solid #d8e4db;border-radius:24px;background:#fffcf7;color:#1a473c;
+  box-shadow:0 24px 80px #152e2b52}
+.quickSummaryCard h2{font:700 clamp(22px,6vw,29px)/1.2 Georgia,serif;margin:0}
+.quickSummaryCard>p{font-size:13px;line-height:1.4;margin:0}
+.quickSummaryTranscript{min-height:70px;overflow-y:auto;border:1px solid #e4e9df;
+  border-radius:14px;background:#f8faf5;padding:8px 12px}
+.quickSummaryTranscript>div{padding:8px 0;border-bottom:1px solid #e8ebe4}
+.quickSummaryTranscript p{font-size:13px;line-height:1.45;margin:4px 0;overflow-wrap:anywhere}
+.quickSummaryTranscript strong{font-size:12px}
+.quickSummaryTranscript small{color:#81613a}
+.quickSummaryActions{display:flex;flex-wrap:wrap;gap:8px}
+.quickSummaryActions button,.quickSummaryActions a{box-sizing:border-box;display:inline-flex;
+  align-items:center;justify-content:center;gap:5px;min-height:44px;padding:8px 11px;
+  border:1px solid #bfd6c9;border-radius:12px;background:#fff;
+  color:#176550;font:700 13px/1.2 system-ui;text-decoration:none;cursor:pointer}
+.quickSummaryActions button:first-child{background:#08795e;border-color:#08795e;color:#fff}
+.quickSummaryActions button:disabled{opacity:.42;cursor:not-allowed}
+@media(max-width:699px){
+  .root[data-session-visual-v4] .sessionTopbar{gap:4px}
+  .root[data-session-visual-v4] .sessionTopbarActions{gap:4px}
+  .root[data-session-visual-v4] .sessionTopbarActions .topProfileControl{
+    min-width:42px;min-height:42px;padding:4px 5px;font-size:10px
+  }
+  .root[data-session-visual-v4] .sessionTopbarActions .languageControl{min-width:48px}
+  .root[data-session-visual-v4] .voiceControls .modeControl{
+    width:50px;max-width:50px;height:43px;min-height:43px
+  }
+  .root[data-session-visual-v4]:has([data-coach-pro-consent]){
+    height:auto;max-height:none;min-height:var(--hh-coach-visible-height,100dvh);
+    overflow-y:auto;overflow-x:clip;overscroll-behavior-y:contain
+  }
+  .root[data-session-visual-v4]:has([data-coach-pro-consent]) .voiceWorkspace{
+    flex:0 0 auto;max-height:none;min-height:0;overflow:visible
+  }
+  .root[data-session-visual-v4]:has([data-coach-pro-consent]) .conversationPanel{
+    flex:0 0 auto;min-height:210px;max-height:370px;overflow:hidden
+  }
+}
+@media(max-width:355px){
+  .root[data-session-visual-v4] .sessionBrand{font-size:13px;letter-spacing:-.04em}
+  .root[data-session-visual-v4] .sessionTopbarActions .topProfileControl span{display:none}
+  .root[data-session-visual-v4] .sessionTopbarActions .topProfileControl{width:38px;min-width:38px}
+  .root[data-session-visual-v4] .sessionTopbarActions .chooseCoach{padding-inline:5px}
+  .root[data-session-visual-v4] .sessionTopbarActions .chooseCoachFull{font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){.quickSummaryOverlay *{scroll-behavior:auto}}
