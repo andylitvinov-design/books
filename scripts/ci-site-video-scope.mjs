@@ -5,6 +5,7 @@ import {execFileSync} from 'node:child_process';
 import {appendFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {pathToFileURL} from 'node:url';
+import {SHARED_COACH_DISPATCHER, verifiedCoachOnlySharedRouting} from '../lib/ci/coach-only-impact.mjs';
 
 const SAFE_DISPLAY = [
   /^components\/(?:personal-testimonials|home-testimonial-more|public-site-header|site-navigation|mobile-bottom-navigation)\.(?:tsx|jsx|css)$/,
@@ -44,6 +45,14 @@ export function classifyExactSiteVideo(env = process.env, git = execFileSync) {
     for(let i=0;i<rows.length;i+=2){
       if(!rows[i+1])return {full:true,reason:'EMPTY_FILE_NAME'};
       files.push({status:rows[i]==='M'?'modified':rows[i],filename:rows[i+1]});
+    }
+    // Coach-only additions to the shared dispatcher cannot affect the video
+    // editor or owner media routes. This source proof is strict and fail closed.
+    if (files.some(row => row.filename === SHARED_COACH_DISPATCHER)) {
+      const before=String(git('git',['show',base+':'+SHARED_COACH_DISPATCHER],opts));
+      const after=String(git('git',['show','HEAD:'+SHARED_COACH_DISPATCHER],opts));
+      if (verifiedCoachOnlySharedRouting(files,before,after))
+        return {full:false,reason:'EXACT_MY_COACH_ONLY_SHARED_API'};
     }
     const full=needsFullSiteVideoBrowser(files);
     return {full,reason:full?'SENSITIVE_OR_UNCLASSIFIED':'REVIEWED_PUBLIC_DISPLAY_ONLY'};

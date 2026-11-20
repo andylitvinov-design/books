@@ -1,5 +1,6 @@
 import { requireAdminRequest } from "@/lib/prescriptions/admin";
 import { readSearchMetrics, readPublicSitemap, verifiedSeoBaseline as baseline } from "@/lib/seo/admin-dashboard-data.mjs";
+import { readSeomatorSnapshot } from "@/lib/seo/seomator-snapshot.mjs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,7 +16,7 @@ export async function GET(request) {
   });
   const daysRequested = Number(new URL(request.url).searchParams.get("days"));
   const days = [7, 28, 90].includes(daysRequested) ? daysRequested : 28;
-  const [data, sitemap] = await Promise.all([readSearchMetrics(days), readPublicSitemap()]);
+  const [data, sitemap, audit] = await Promise.all([readSearchMetrics(days), readPublicSitemap(), readSeomatorSnapshot()]);
   const actual = data.status === "live";
   const snapshot = !actual && days === 28;
   const clicks = actual ? data.clicks : snapshot ? baseline.search.clicks : null;
@@ -33,6 +34,8 @@ export async function GET(request) {
     ["index","indexed_sitemap_report",baseline.sitemap.indexedReported,"GSC sitemaps archived report",baseline.sitemap.fetchedAt],
     ["audit","http_200",baseline.technical.ok200,"GitHub Actions archived run",baseline.technical.checkedAt],
     ["audit","redirects",baseline.technical.redirects,"GitHub Actions archived run",baseline.technical.checkedAt],
+    ["audit","seomator_score",["live","stale"].includes(audit.status)?audit.score:null,["live","stale"].includes(audit.status)?"SEOmator audited sample":"unavailable",audit.asOf||""],
+    ["audit","seomator_measured_pages",["live","stale"].includes(audit.status)?audit.crawledPages:null,["live","stale"].includes(audit.status)?"SEOmator audited sample":"unavailable",audit.asOf||""],
     ["lighthouse","mobile_performance",baseline.lighthouse.mobile.performance,"Lighthouse archived lab test",baseline.lighthouse.checkedAt],
     ["lighthouse","desktop_performance",baseline.lighthouse.desktop.performance,"Lighthouse archived lab test",baseline.lighthouse.checkedAt],
   ];

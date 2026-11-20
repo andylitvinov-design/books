@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { Check, ChevronDown, Film, RotateCcw, SlidersHorizontal, Sparkles, WandSparkles } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import type { CinematicStoryboard } from "./mandala-cinematic-director";
@@ -8,7 +9,14 @@ import type { VideoTheme } from "@/lib/mandala/holistic-video-themes";
 import { buildFirstVideoDraft } from "@/lib/mandala/first-video-director.mjs";
 import { makeFirstVideoPromptRequest } from "@/lib/mandala/first-video-prompt-contract.mjs";
 import { VIDEO_QUICK_TEMPLATES, getVideoQuickTemplateDraft } from "@/lib/mandala/video-quick-templates.mjs";
+import type {OpenMotionLocalSelection} from "@/lib/mandala/openmotion-reference.mjs";
 import css from "./mandala-first-video-start.module.css";
+
+// Large reference catalog loads only after the visitor opens the gallery.
+const MandalaOpenMotionPicker=dynamic(
+  ()=>import("./mandala-openmotion-picker").then(mod=>mod.MandalaOpenMotionPicker),
+  {ssr:false},
+);
 
 type FilmStyle = "warm" | "nature" | "dream" | "minimal";
 type FilmAspect = "landscape" | "portrait" | "square";
@@ -143,6 +151,8 @@ export function MandalaFirstVideoStart({
   const [prefs, setPrefs] = useState<Preferences>(initial);
   const [selectedFilterKeys,setSelectedFilterKeys]=useState<(keyof Preferences)[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [motionGalleryOpen,setMotionGalleryOpen]=useState(false);
+  const [motionReferenceTitle,setMotionReferenceTitle]=useState("");
   const [variant, setVariant] = useState(0);
   const [promptOverride, setPromptOverride] = useState("");
   const [mode, setMode] = useState<"local" | "manual" | "ai">("local");
@@ -177,7 +187,7 @@ export function MandalaFirstVideoStart({
   function changeWish(value: string) {
     const next = value.slice(0, 800);
     aiRevisionRef.current++; aiAbortRef.current?.abort(); setAiLoading(false);
-    onWishChange(next); setPromptOverride(""); setMode("local"); setAiStatus(""); setVariant(0); setSelectedTemplateId(null);
+    onWishChange(next); setPromptOverride(""); setMode("local"); setAiStatus(""); setVariant(0); setSelectedTemplateId(null); setMotionReferenceTitle("");
     if (next.trim()) apply(next, prefs, "", 0);
   }
   function changePreferences(patch: Partial<Preferences>) {
@@ -207,10 +217,29 @@ export function MandalaFirstVideoStart({
     aiRevisionRef.current++; aiAbortRef.current?.abort();
     setAiLoading(false); setAiStatus("");
     setSelectedTemplateId(choice.id);
+    setMotionReferenceTitle("");
     setPrefs(nextPrefs); setVariant(0); setMode("local"); setPromptOverride("");
     setSelectedFilterKeys(Object.keys(choice.preferences) as (keyof Preferences)[]);
     onWishChange(choice.wish);
     apply(choice.wish, nextPrefs, "", 0);
+  }
+  function applyMotionReference(selection:OpenMotionLocalSelection) {
+    if (disabled || !hydrated || recording || preparing || selection.providerRequired) return;
+    // No imported media or brand elements: use a safe, already approved local
+    // video template. Preserve the visitor's existing goal text, if present.
+    const local=getVideoQuickTemplateDraft(selection.templateId,locale,prefs.avoid);
+    if(!local)return;
+    const nextPrefs:Preferences={...initial,...local.preferences,
+      aspect:selection.aspect,motion:selection.motion,
+      durationSeconds:selection.durationSeconds};
+    const nextWish=wish.trim()?wish:local.wish;
+    aiRevisionRef.current++;aiAbortRef.current?.abort();
+    setAiLoading(false);setAiStatus("");setSelectedTemplateId(null);
+    setMotionReferenceTitle(selection.title);setPrefs(nextPrefs);
+    setVariant(0);setMode("local");setPromptOverride("");
+    setSelectedFilterKeys(Object.keys(nextPrefs) as (keyof Preferences)[]);
+    onWishChange(nextWish);
+    apply(nextWish,nextPrefs,"",0);
   }
   async function enhancePrompt() {
     if (disabled || aiLoading || !aiConsent || wish.trim().length<3) return;
@@ -301,6 +330,20 @@ export function MandalaFirstVideoStart({
             <small>{template.aspect==="portrait"?"9:16":template.aspect==="square"?"1:1":"16:9"} · {template.durationSeconds} s</small>
           </button>)}
       </div>
+
+      <details className={css.disclosure} data-first-video-openmotion-library
+        onToggle={event=>setMotionGalleryOpen(event.currentTarget.open)}>
+        <summary><span><Film size={18} aria-hidden="true"/>
+          <strong>{locale==="ru"?"Ещё видеоидеи · OpenMotion":locale==="es"?"Más ideas de vídeo · OpenMotion":"More video ideas · OpenMotion"}</strong>
+          <small>{locale==="ru"?"Внешние референсы · просмотр по желанию":locale==="es"?"Referencias externas · opcional":"External examples · optional"}</small>
+        </span><ChevronDown size={19} aria-hidden="true"/></summary>
+        {motionGalleryOpen?<MandalaOpenMotionPicker locale={locale} disabled={disabled||preparing||recording}
+          onPick={applyMotionReference}/>:null}
+      </details>
+      {motionReferenceTitle?<p className={css.subtle} role="status" data-openmotion-local-adaptation>
+        {locale==="ru"?"Ритм и формат адаптированы: ":locale==="es"?"Ritmo y formato adaptados: ":"Original local adaptation: "}
+        {motionReferenceTitle}
+      </p>:null}
 
       <div className={css.quickFormat} role="group" aria-label={t.quickResize} data-first-video-quick-aspect-group>
         <small>{t.quickResize}</small>
