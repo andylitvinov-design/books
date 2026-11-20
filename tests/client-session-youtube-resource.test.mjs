@@ -189,7 +189,9 @@ test('session video ordering shares client/guest/Google saved/owner render contr
   assert.match(view,/hasFullReport&&<section id="session-report"/)
   assert.match(view,/topYoutubeResources\.length>0&&<div className=\{styles\.youtubeLessonList\}/)
   assert.match(view,/supplementary=media\.filter\(item=>item\.kind!=='image'&&item\.kind!=='video'/)
-  assert.match(view,/hasHomeopathyRecommendation&&sharedGuideReady/)
+  assert.doesNotMatch(view,/hasHomeopathyRecommendation&&sharedGuideReady/)
+  assert.match(view,/openingMaterials\.map/)
+  assert.match(view,/closingMaterials\.map/)
 })
 
 test('owner selects which YouTube lessons go at report end; older links stay above report',()=>{
