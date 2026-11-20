@@ -21,7 +21,10 @@ const promo=read('components/sitewide-antistress-banner.tsx')
 
 test('first practitioner screen is public in EN/RU/ES, never a Google gate',()=>{
  assert.match(publicPage,/SUPPORTED_LOCALES = \['en', 'ru', 'es'\]/)
- assert.match(publicPage,/return <PracticeShowcase locale=\{locale\} \/>/)
+ assert.match(publicPage,/return <PracticeShowcase locale=\{locale\} presentationStorageOrigin=\{publicPresentationStorageOrigin\(\)\} \/>/)
+ assert.match(publicPage,/export const dynamic = 'force-dynamic'/)
+ assert.match(publicPage,/url\.protocol === 'https:' && !url\.username && !url\.password/)
+ assert.match(publicPage,/!url\.search && !url\.hash \? url\.origin : ''/)
  assert.match(publicPage,/dynamic = 'force-dynamic'/)
  assert.match(publicPage,/revalidate = 0/)
  assert.match(showcase,/data-practice-showcase/)
