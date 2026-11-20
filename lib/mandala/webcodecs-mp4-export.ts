@@ -7,7 +7,7 @@ import {
   Input, BlobSource, MP4, VideoSampleSink, Conversion,
   Output, Quality, canEncodeVideo, canEncodeAudio,
 } from "mediabunny";
-import {presetAudioUrl} from "./local-video-music";
+import {loadFirstPartyPresetAudioBlob} from "./first-party-video-audio";
 import type {AmbientMusic} from "./local-video-music";
 
 const SAMPLE_RATE=48000;
@@ -82,12 +82,7 @@ async function prepareLocalAudio(audio:BrowserMovieAudio,seconds:number):Promise
       // /audio/mandala/scenarios/; legacy presets remain WAV. Reuse exactly
       // the URL selected by the existing native preview and MediaRecorder.
       // Hardcoding *.wav here made all scenario soundtracks fail in Safari.
-      const audioUrl=presetAudioUrl(entry.preset as Exclude<AmbientMusic,"none">);
-      const response=await fetch(audioUrl,{
-        credentials:"same-origin",cache:"force-cache",
-      });
-      if(!response.ok)throw new Error("first_party_audio_unavailable");
-      file=await response.blob();
+      file=await loadFirstPartyPresetAudioBlob(entry.preset as Exclude<AmbientMusic,"none">);
     }else file=entry.file;
     if(file.size<44||file.size>15*1024*1024)throw new Error("audio_size_invalid");
     let decoded=await offline.decodeAudioData(await file.arrayBuffer());
