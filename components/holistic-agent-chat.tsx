@@ -21,6 +21,7 @@ import { reviewPracticeBoundary } from "@/lib/holistic-support/practice-boundary
 import { detectConversationLocale } from "@/lib/holistic-support/conversation-locale.mjs";
 import { planJudgmentTurn } from "@/lib/holistic-support/judgment-mind.mjs";
 import { newNativeSessionTurn, advanceNativeClientSession } from "@/lib/holistic-support/native-dialogue-client-session.mjs";
+import {shouldRetryNativeAgentMode,nativeAgentFallbackPayload} from "@/lib/holistic-support/agent-mode-recovery.mjs";
 import { testOfferFromText } from "@/lib/assessments/conversational-test-protocol.mjs";
 import type { JudgmentPending, JudgmentChoiceId } from "@/lib/holistic-support/judgment-mind.mjs";
 import { publicVideoGoalForMessage } from "@/lib/video-discovery/ranker.mjs";
@@ -1265,10 +1266,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       const stateTurn=authenticated&&mode==="rules"&&supportSelection?.mode!=="talk"&&turnLocale!=="es"&&typeof crypto.randomUUID==="function"
         ?newNativeSessionTurn(nativeSession.current,crypto.randomUUID()):null;
       if(!stateTurn)nativeSession.current=null;
-      const response=await fetch("/api/holistic-agent/turn",{
-        method:"POST",credentials:"same-origin",signal:abort.signal,
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({locale:turnLocale,message:text,mode,history:prior,
+      const payload={locale:turnLocale,message:text,mode,history:prior,
           // Only explicit coaching choice in this first-party quiz sets the goal preference.
           // Safety, price and stop questions still override it server-side.
           selectedGoal:!leaveSupport&&supportSelection?.mode==="coach"
@@ -1285,11 +1283,28 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           judgmentContext:judgmentView?.token||null,
           judgmentChoice,
           ...(stateTurn?{nativeSession:stateTurn}:{}),
-          feedback:{dismissedIds,completedIds}}),
+          feedback:{dismissedIds,completedIds}};
+      const sendAgentTurn=(body:typeof payload)=>fetch("/api/holistic-agent/turn",{
+        method:"POST",credentials:"same-origin",signal:abort.signal,
+        headers:{"Content-Type":"application/json"},body:JSON.stringify(body),
       });
+      let response=await sendAgentTurn(payload);
+      let nativeDowngrade=false;
+      // Optional inference is gated in production. Retry only on the explicit
+      // disabled-mode code, with first-party, same-origin native conversation.
+      if(response.status===503&&mode!=="rules"){
+        const failure=await response.clone().json().catch(()=>null) as {error?:string}|null;
+        if(shouldRetryNativeAgentMode({mode,status:response.status,errorCode:failure?.error})){
+          const fallback=nativeAgentFallbackPayload(payload);
+          if(fallback){
+            response=await sendAgentTurn(fallback as typeof payload);
+            nativeDowngrade=response.ok;
+          }
+        }
+      }
       if(!response.ok){
         if(stateTurn&&(response.status===404||response.status===409))nativeSession.current=null;
-        throw Error(response.status===401?"SIGN_IN_REQUIRED":response.status===503?"MODE_UNAVAILABLE":"CHAT_UNAVAILABLE");
+        throw Error(response.status===401?"SIGN_IN_REQUIRED":response.status===503?"SERVER_UNAVAILABLE":"CHAT_UNAVAILABLE");
       }
       const data=await response.json() as AgentReply;
       if(abort.signal.aborted)return;
@@ -1300,7 +1315,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         nativeSession.current=advanceNativeClientSession(stateTurn,data.nativeSession);
       }
       let reply=data.reply,used=data.source||"none";
-      if(mode==="device"&&data.browserModelAllowed&&!abort.signal.aborted){
+      if(mode==="device"&&!nativeDowngrade&&data.browserModelAllowed&&!abort.signal.aborted){
         try {
           const native=(window as Window & {LanguageModel?:NativeLanguageModel}).LanguageModel;
           const languages=[turnLocale];
@@ -1321,6 +1336,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           } finally {session.destroy?.();}
         } catch {
           setStatus(turnCopy.unavailable);
+          // No on-device LanguageModel in iOS Safari: stop repeated failures.
+          setMode("rules");
         }
       }
       if(abort.signal.aborted)return;
@@ -1339,11 +1356,33 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       const socialRule=used==="rules"?ruleConversationReply({message:text,locale:turnLocale,history:prior}):null;
       const friendlyTurn=data.source==="friend-mind"||Boolean(socialRule&&typeof socialRule.id==="string"&&["conversation_greeting","conversation_small_talk","conversation_chat_invitation"].includes(socialRule.id));
       setSource(friendlyTurn?"":used==="browser"?turnCopy.used:used==="owned"?turnCopy.backend:turnCopy.simple);
+      if(nativeDowngrade){
+        setMode("rules");setAgree(false);
+        setStatus(turnLocale==="ru"
+          ?"Выбранная нейросеть сейчас выключена. Ali продолжает разговор через встроенный интеллект."
+          :turnLocale==="es"
+          ?"Ese modo de IA está desactivado. Ali continúa con su asistente integrado."
+          :"That AI mode is off. Ali is continuing with its built-in assistant.");
+      }
     } catch (error) {
       if(!abort.signal.aborted){
         if(voice.conversing)voice.stopDialogue();
         const reason=error instanceof Error?error.message:"";
-        if(reason==="SIGN_IN_REQUIRED"&&compact&&mode==="rules"){
+        if(reason==="SERVER_UNAVAILABLE"||error instanceof TypeError){
+          // No private reads, model requests, booking or external actions.
+          // Never bypass 401 authentication or 429 rate-limiting responses.
+          nativeSession.current=null;
+          if(mode!=="rules"){setMode("rules");setAgree(false);}
+          const answer=requiresProtectedReply(text,turnLocale)?boundaryReply:guestAnswer(text,prior,turnLocale);
+          setJudgmentView(null);setEvidenceUsed(false);setHistoryUsed(false);
+          setMessages(prev=>[...prev,{role:"assistant" as const,text:answer}].slice(-30));
+          setSource("");
+          setStatus(turnLocale==="ru"
+            ?"Сервер временно недоступен. Это ограниченный ответ без личных данных и внешней нейросети."
+            :turnLocale==="es"
+            ?"El servidor no está disponible. Esta respuesta limitada no utiliza datos privados ni IA externa."
+            :"The server is temporarily unavailable. This limited reply uses no private data or external AI.");
+        }else if(reason==="SIGN_IN_REQUIRED"&&compact&&mode==="rules"){
           // Expired session: answer from public rules; private API stays protected.
           const candidate=planJudgmentTurn({message:text,locale:turnLocale,
             safety:{status:"clear"},history:prior,pending:null});
@@ -1355,7 +1394,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           setSource("");setStatus("");
         }else{
           setNeedsPrivateSignIn(reason==="SIGN_IN_REQUIRED");
-          setStatus(reason==="SIGN_IN_REQUIRED"?turnCopy.signIn:reason==="MODE_UNAVAILABLE"?turnCopy.modeError:turnCopy.error);
+          setStatus(reason==="SIGN_IN_REQUIRED"?turnCopy.signIn:turnCopy.error);
         }
       }
     } finally {
