@@ -20,6 +20,7 @@ import MyCoachSessionStateCard from './my-coach-session-state-card'
 import {startCoachingMp3Playback,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
 import {readCoachTurnStream} from '@/lib/coaching/coach-stream-client.mjs'
+import {coachGeminiVoiceOptions} from '@/lib/coaching/gemini-voice-catalog.mjs'
 import {detectedSpeechLocale} from '@/lib/personal-coaching/my-coach-dictation.mjs'
 import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
 import CoachingAvatar from '@/components/app/coaching-avatar'
@@ -169,6 +170,16 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [speechPreview,setSpeechPreview]=useState('')
   const [streamingPreview,setStreamingPreview]=useState('')
   const [coachEngine,setCoachEngine]=useState('groq_stream')
+  const [geminiCapabilities,setGeminiCapabilities]=useState({
+    gemini_free:false,gemini_paid:false,gemini_tts_free:false,gemini_tts_paid:false,
+  })
+  const [geminiConsent,setGeminiConsent]=useState(false)
+  const [geminiVoiceTier,setGeminiVoiceTier]=useState('existing')
+  const [geminiVoiceConsent,setGeminiVoiceConsent]=useState(false)
+  const [geminiVoiceByLocale,setGeminiVoiceByLocale]=useState(()=>{
+    const first=coachGeminiVoiceOptions(personaId)[0]
+    return {ru:first,en:first,es:first}
+  })
   const [streamingReady,setStreamingReady]=useState(false)
   const [cloudAvailable,setCloudAvailable]=useState(false)
   const [cloudAgreed,setCloudAgreed]=useState(false)
@@ -281,6 +292,21 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     })
     return ()=>controller.abort()
   },[])
+  // This checks local config flags only, never sends a client's words to Google.
+  useEffect(()=>{
+    const controller=new AbortController()
+    fetch('/api/app/my-coach/engines',{
+      credentials:'same-origin',cache:'no-store',signal:controller.signal,
+    }).then(r=>r.ok?r.json():null).then(data=>{
+      if(controller.signal.aborted||data?.schema!=='HH_MY_COACH_ENGINES_V1')return
+      setGeminiCapabilities({
+        gemini_free:data.gemini_free===true,gemini_paid:data.gemini_paid===true,
+        gemini_tts_free:data.gemini_tts_free===true,
+        gemini_tts_paid:data.gemini_tts_paid===true,
+      })
+    }).catch(()=>{})
+    return ()=>controller.abort()
+  },[])
   useEffect(()=>{if(transcriptRef.current)transcriptRef.current.scrollTop=transcriptRef.current.scrollHeight},[turns,speechPreview,streamingPreview])
   useEffect(()=>{
     if(voiceState.phase!=='listening'){
@@ -317,6 +343,16 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   })[conversationLang]:opening)
   const ui=sessionUi[lang]||sessionUi.en
   const voiceGate=voiceGateText[lang]||voiceGateText.en
+  const selectedGeminiEngine=coachEngine==='gemini_free'||coachEngine==='gemini_paid'
+  const geminiEngineReady=selectedGeminiEngine&&geminiCapabilities[coachEngine]===true&&geminiConsent
+  const geminiVoices=coachGeminiVoiceOptions(personaId)
+  const selectedGeminiVoice=geminiVoices.includes(geminiVoiceByLocale[conversationLang])
+    ?geminiVoiceByLocale[conversationLang]:geminiVoices[0]
+  const geminiVoiceReady=geminiVoiceTier!=='existing'&&
+    geminiCapabilities[geminiVoiceTier]===true&&geminiVoiceConsent
+  const chosenCloudProvider=geminiVoiceReady?geminiVoiceTier:cloudProvider
+  const chosenCloudAvailable=geminiVoiceReady||cloudAvailable
+  const chosenCloudAgreed=geminiVoiceReady||cloudAgreed
   const captions=transcriptUi[lang]||transcriptUi.en
   const latestCoachTurn=[...turns].reverse().find(turn=>turn.role==='assistant')
   const latestCoachText=latestCoachTurn?.content||introduction
@@ -393,6 +429,39 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       (!replayAudioContextRef.current||replayAudioContextRef.current.state==='closed'))
       replayAudioContextRef.current=unlockCoachingAudioContext()
   }
+  async function previewGeminiCoachVoice(){
+    if(!geminiVoiceReady||busy||replaying||voiceState.phase!=='idle')return
+    ensureReplayAudioOutput()
+    const controller=new AbortController()
+    replayControllerRef.current?.abort()
+    replayPlayerRef.current?.cancel()
+    replayControllerRef.current=controller
+    setReplaying(true);setPlaybackNotice('')
+    const done=(failed=false)=>{
+      if(replayControllerRef.current!==controller)return
+      replayControllerRef.current=null
+      replayPlayerRef.current?.cancel();replayPlayerRef.current=null
+      setReplaying(false)
+      setVoiceState({phase:'idle',beat:0})
+      if(failed)setPlaybackNotice(voiceGate.naturalUnavailable)
+    }
+    try{
+      const response=await fetch('/api/app/my-coach/voice/synthesize',{
+        method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({provider:geminiVoiceTier,personaId,locale:conversationLang,
+          voiceName:selectedGeminiVoice,preview:true,voiceConsent:true,cloudVoiceConsent:true,
+          ...(geminiVoiceTier==='gemini_tts_free'?{trainingUseConsent:true}:{})}),
+      })
+      if(!response.ok||!response.body||controller.signal.aborted)throw Error('PREVIEW_UNAVAILABLE')
+      replayPlayerRef.current=startCoachingMp3Playback(response,{
+        audioContext:replayAudioContextRef.current,
+        onStart:()=>{if(!controller.signal.aborted)setVoiceState({phase:'speaking',beat:0})},
+        onEnd:()=>done(false),onBlocked:()=>done(true),onError:()=>done(true),
+      })
+    }catch{if(!controller.signal.aborted)done(true)}
+  }
+
   function replayCoachReply(overrideText){
     // Replay is always high-quality remote audio. Never replace it with
     // native speechSynthesis even if Fish or Google fails.
@@ -407,8 +476,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     ensureReplayAudioOutput() // Reuse Web Audio unlocked in this Replay/Send gesture.
     setPlaybackNotice('');setReplayBlocked(false)
     const replayingIntro=typeof overrideText!=='string'&&!latestCoachTurn
-    const dynamicAllowed=cloudAgreed&&cloudAvailable&&
-      ['google_chirp3_hd','fish_free'].includes(cloudProvider)
+    const dynamicAllowed=chosenCloudAgreed&&chosenCloudAvailable&&
+      ['google_chirp3_hd','fish_free','gemini_tts_free','gemini_tts_paid'].includes(chosenCloudProvider)
     if(!replayingIntro&&!dynamicAllowed){
       setPlaybackNotice(voiceGate.naturalUnavailable)
       return
@@ -445,14 +514,16 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       }catch{fail()}
       return
     }
-    const spoken=cloudProvider==='google_chirp3_hd'?
+    const spoken=chosenCloudProvider==='google_chirp3_hd'?
       coachSpokenText(spokenText).text:spokenText.slice(0,900)
     void fetch('/api/app/my-coach/voice/synthesize',{
       method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({provider:cloudProvider,personaId,locale:latestCoachTurn?.locale||detectedSpeechLocale(spoken,conversationLang),text:spoken,
+      body:JSON.stringify({provider:chosenCloudProvider,personaId,
+        locale:latestCoachTurn?.locale||detectedSpeechLocale(spoken,conversationLang),text:spoken,
+        ...(chosenCloudProvider?.startsWith('gemini_tts_')?{voiceName:selectedGeminiVoice}:{}),
         voiceConsent:true,cloudVoiceConsent:true,
-        ...(cloudProvider==='fish_free'?{trainingUseConsent:true}:{})}),
+        ...(['fish_free','gemini_tts_free'].includes(chosenCloudProvider)?{trainingUseConsent:true}:{})}),
     }).then(response=>{
       if(!response.ok||!response.body)throw Error('NATURAL_TTS_UNAVAILABLE')
       if(controller.signal.aborted||replayControllerRef.current!==controller)return
@@ -604,8 +675,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       turns:conversationTurns.map(({role,content})=>({role,content}))}
     const localInterruption=readiness.status!=='verified'
       ?(coachingBrainSafety(currentInput)||coachingBrainBoundary(currentInput)):null
-    const needsVerifiedModel=readiness.status!=='verified'&&!wisdomRequested&&!localInterruption
-    const modelReady=!needsVerifiedModel||await retryCoachModelAfterOutage()
+    const needsVerifiedModel=!wisdomRequested&&!localInterruption&&
+      (selectedGeminiEngine?!geminiEngineReady:readiness.status!=='verified')
+    const modelReady=!needsVerifiedModel||
+      (!selectedGeminiEngine&&await retryCoachModelAfterOutage())
     if(turnRequestRef.current!==requestId)return null
     if(localInterruption||authRequired||(!modelReady&&!wisdomRequested)){
       // Guests and temporarily unavailable AI still get private local coaching;
@@ -659,6 +732,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
           personaId,settings,locale:responseLocale,consent:true,message,voiceTurn:voiceTurn===true,
+          ...(selectedGeminiEngine?{
+            engine:coachEngine,geminiConsent:true,
+            ...(coachEngine==='gemini_free'?{geminiFreeDataConsent:true}:{})
+          }:{}),
           elapsedSeconds:sessionClockStarted?Math.floor(activeSessionSeconds):0,
           sessionContext:coachEphemeralContext(conversationTurns,coachTurnWindow(conversationTurns,10),responseLocale,message),
           semanticHints:semanticHintsRef.current,
@@ -697,7 +774,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           sessionProgress:result.sessionProgress?.source==='director-client-evidence'
             ?result.sessionProgress:null,
           suggestion:result.planSuggestion||'',evidence:result.evidenceQuote||'',
-          inference:result.mode==='ai'&&['groq','openrouter'].includes(result.inference?.provider)&&
+          inference:result.mode==='ai'&&['groq','openrouter','gemini_free','gemini_paid'].includes(result.inference?.provider)&&
             typeof result.inference?.model==='string'&&result.inference.model.length<=128
             ?result.inference:null,
         }]
@@ -805,8 +882,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <div className={styles.voiceCenter} data-voice-active={voiceState.phase!=='idle'?'true':undefined}>
           <MyCoachSpeechLoop ref={speechRef} locale={conversationLang} speechLocale={speechLocale} initialDraft={draft}
             introduction={introduction} onSessionStart={()=>setCloudAgreed(true)}
-            cloudAvailable={cloudAvailable} cloudAgreed={cloudAgreed} cloudProvider={cloudProvider} personaId={personaId} enabled={true}
-            canStart={!busy&&!paused&&!replaying} onTurn={(text,spoken)=>sendMessage(text,{voiceTurn:true,utteranceLocale:spoken?.locale})}
+            cloudAvailable={chosenCloudAvailable} cloudAgreed={chosenCloudAgreed}
+            cloudProvider={chosenCloudProvider} voiceName={selectedGeminiVoice}
+            personaId={personaId} enabled={true}
+            canStart={!busy&&!paused&&!replaying&&(geminiVoiceTier==='existing'||geminiVoiceReady)} onTurn={(text,spoken)=>sendMessage(text,{voiceTurn:true,utteranceLocale:spoken?.locale})}
             onCancelTurn={cancelPendingCoachTurn} onCoachInterrupted={markCoachSpeechInterrupted} onVoiceStateChange={setVoiceState}
             onMicLevel={level=>{
               const wave=micWaveRef.current
@@ -873,7 +952,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             <strong>{turn.role==='user'?t.user:name}
               {turn.role==='assistant'&&turn.inference?.model&&
                 <span className={styles.responseSource} data-coach-answer-source={turn.inference.provider}>
-                  {' · '}{turn.inference.provider==='groq'?'Groq':'OpenRouter'} · {turn.inference.model}
+                  {' · '}{turn.inference.provider==='groq'?'Groq':turn.inference.provider?.startsWith('gemini_')?'Gemini':'OpenRouter'} · {turn.inference.model}
                   {turn.inference.reasoningEffort?' · '+turn.inference.reasoningEffort:''}
                 </span>}
               {turn.role==='assistant'&&turn.mode==='offline'&&
@@ -900,7 +979,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             placeholder={t.placeholder} disabled={busy||authRequired}
             onChange={event=>{setDraft(event.target.value);setError('')}}/>
           <button className={styles.send} type="submit"
-            disabled={busy||!draft.trim()||authRequired}>
+            disabled={busy||!draft.trim()||authRequired||(selectedGeminiEngine&&!geminiEngineReady)}>
             {busy?t.sending:t.send}<ArrowRight size={18} aria-hidden="true"/>
           </button>
         </form>}
@@ -908,12 +987,65 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <details className={styles.sessionMore}><summary>{lang==='ru'?'Дополнительно':lang==='es'?'Más opciones':'More options'}</summary>
         <label className={styles.coachEnginePicker} data-coach-engine-choice>
           <span>{({ru:'Движок диалога',en:'Dialogue engine',es:'Motor de diálogo'})[lang]}</span>
-          <select value={coachEngine} disabled={busy} onChange={event=>setCoachEngine(event.target.value)}>
+          <select value={coachEngine} disabled={busy} onChange={event=>{
+            setCoachEngine(event.target.value);setGeminiConsent(false)
+          }}>
             <option value="groq_stream">{({ru:'Groq · поток',en:'Groq · streaming',es:'Groq · flujo'})[lang]}</option>
             <option value="groq_strict">{({ru:'Groq · стабильный',en:'Groq · validated',es:'Groq · validado'})[lang]}</option>
+            <option value="gemini_free" disabled={!geminiCapabilities.gemini_free}>Gemini · Free</option>
+            <option value="gemini_paid" disabled={!geminiCapabilities.gemini_paid}>Gemini · Paid</option>
             <option value="gemini" disabled>{({ru:'Gemini Live · после проверки',en:'Gemini Live · pending approval',es:'Gemini Live · pendiente'})[lang]}</option>
           </select>
         </label>
+        {selectedGeminiEngine&&<label className={styles.coachEnginePicker} data-gemini-text-consent>
+          <input type="checkbox" checked={geminiConsent} onChange={event=>setGeminiConsent(event.target.checked)}/>
+          <span>{coachEngine==='gemini_free'?({
+            ru:'Согласен(на): бесплатный Gemini может использовать текст для улучшения моделей Google.',
+            en:'I agree: Free Gemini may use conversation text to improve Google models.',
+            es:'Acepto: Gemini gratuito puede usar mis textos para mejorar los modelos.'
+          }[lang]):({
+            ru:'Согласен(на) передавать текст Gemini Paid; Google не использует его для улучшения моделей.',
+            en:'I agree to use Gemini Paid; Google does not use submitted text to improve models.',
+            es:'Acepto Gemini Paid; Google no usa mis textos para mejorar modelos.'
+          }[lang])}</span>
+        </label>}
+        <label className={styles.coachEnginePicker} data-gemini-voice-provider>
+          <span>{({ru:'Голос коуча',en:'Coach voice',es:'Voz del coach'})[lang]}</span>
+          <select value={geminiVoiceTier} disabled={busy||replaying} onChange={event=>{
+            setGeminiVoiceTier(event.target.value);setGeminiVoiceConsent(false)
+          }}>
+            <option value="existing">{({ru:'Текущий голос',en:'Current voice',es:'Voz actual'})[lang]}</option>
+            <option value="gemini_tts_free" disabled={!geminiCapabilities.gemini_tts_free}>Gemini TTS · Free</option>
+            <option value="gemini_tts_paid" disabled={!geminiCapabilities.gemini_tts_paid}>Gemini TTS · Paid</option>
+          </select>
+        </label>
+        {geminiVoiceTier!=='existing'&&<>
+          <label className={styles.coachEnginePicker} data-gemini-voice-name>
+            <span>{conversationLang.toUpperCase()} · {({ru:'Выбор тембра',en:'Choose voice',es:'Elegir voz'})[lang]}</span>
+            <select value={selectedGeminiVoice} disabled={busy||replaying} onChange={event=>
+              setGeminiVoiceByLocale(prev=>({...prev,[conversationLang]:event.target.value}))}>
+              {geminiVoices.map(name=><option value={name} key={name}>{name}</option>)}
+            </select>
+          </label>
+          <label className={styles.coachEnginePicker} data-gemini-voice-consent>
+            <input type="checkbox" checked={geminiVoiceConsent}
+              onChange={event=>setGeminiVoiceConsent(event.target.checked)}/>
+            <span>{geminiVoiceTier==='gemini_tts_free'?({
+              ru:'Согласен(на): бесплатная озвучка Gemini может использовать текст для улучшения моделей.',
+              en:'I agree: Free Gemini speech may use text to improve models.',
+              es:'Acepto: la voz gratuita de Gemini puede usar el texto para mejorar modelos.'
+            }[lang]):({
+              ru:'Согласен(на) на платную озвучку Gemini. Вызовы ограничены бюджетом.',
+              en:'I agree to paid Gemini speech. Usage is rate-limited.',
+              es:'Acepto la voz Gemini de pago. El uso tiene límites.'
+            }[lang])}</span>
+          </label>
+          <button type="button" className={styles.captionMore}
+            disabled={!geminiVoiceReady||busy||replaying||voiceState.phase!=='idle'}
+            onClick={previewGeminiCoachVoice}>{({
+              ru:'▶ Прослушать пример',en:'▶ Preview this voice',es:'▶ Escuchar ejemplo'
+            }[lang])}</button>
+        </>}
         <button type="button" className={styles.captionMore} aria-pressed={showCaptions}
           onClick={()=>setShowCaptions(value=>!value)}>{ui.captions}</button>
         <details className={styles.consentDetails}><summary>{captions.details}</summary>
