@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggregateError } from '../scripts/ci-specialist-aggregate.mjs';
 import { inspectJobs, trustedRequiredJobs, inspectWorkflowRuns } from '../lib/ci/specialist-aggregate.mjs';
-import { safeComposedIndependentAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance } from '../lib/ci/production-base-impact.mjs';
 
 const repo = 'andylitvinov-design/books', head = 'a'.repeat(40), base = 'b'.repeat(40);
 const path = '.github/workflows/mobile.yml';
@@ -650,4 +650,70 @@ test('ordinary 20-file video/MP4 acceptance does not require a moving production
  ])assert.equal(requiresCurrentProductionBase([...files,sensitive]),true,
    'real security, release, privacy or paid source stays current-base strict: '+sensitive);
  assert.equal(requiresCurrentProductionBase([]),true);
+});
+
+
+test('#5160 accepts new independent namespaced source after production moves, never critical changes',async()=>{
+  const live='c'.repeat(40), candidate=[
+    'components/astral-chat-panel.tsx',
+    'lib/astral-dialogue.mjs',
+  ];
+  const rows=[
+    {filename:'components/solstice-signal.tsx',status:'modified'},
+    {filename:'lib/solstice-calendar.mjs',status:'added'},
+  ];
+  const diff=(files=rows,overrides={})=>({
+    status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:base},merge_base_commit:{sha:base},
+    commits:[{sha:live}],files,...overrides,
+  });
+  const safe=(files=rows,paths=candidate,mergeable=true,overrides={})=>
+    safeIsolatedFeatureAdvance(diff(files,overrides),base,live,paths,mergeable);
+  assert.equal(requiresCurrentProductionBase(candidate),true,
+    'a public chat file remains sensitive to unrelated base movement in the old policy');
+  assert.equal(safe(),true,
+    'new independent namespaces should preserve real green exact-HEAD checks');
+  for(const invalid of [
+    'components/astral-card.tsx', // same namespace as candidate
+    'components/lunar-chat-banner.tsx', // same assistant family despite different namespace
+    'components/shared-button.tsx',
+    'components/sitewide-alert.tsx',
+    'lib/security/identity.mjs',
+    'app/api/payments/route.ts',
+    'lib/solstice-client-session.mjs',
+    '.github/workflows/hh-pr-core-release.yml',
+    'lib/ci/production-base-impact.mjs',
+    'package-lock.json',
+    'tests/ci-specialist-wait.test.mjs',
+  ])assert.equal(safe([rows[0],{filename:invalid,status:'modified'}]),false,
+    'same family, common code, private data, CI policy and dependencies must block: '+invalid);
+  for(const blocked of [
+    [{filename:rows[0].filename,status:'deleted'}],
+    [{filename:rows[0].filename,status:'renamed',previous_filename:'components/old.tsx'}],
+    [rows[0],rows[0]],
+  ])assert.equal(safe(blocked),false,'deleted/renamed/duplicate compare files cannot authorize a merge');
+  for(const bad of [
+    {status:'diverged'},{behind_by:1},{commits:[]},
+    {merge_base_commit:{sha:'d'.repeat(40)}},
+    {files:[]},{total_commits:2},{ahead_by:2},
+  ])assert.equal(safe(rows,candidate,true,bad),false,
+    'unverifiable or incomplete protected history is not independently safe');
+  assert.equal(safe(rows,candidate,false),false,'GitHub merge conflict must block');
+  assert.equal(safe(rows,candidate,null),false,'unknown mergeability must not pass');
+  assert.equal(safe(rows,['components/sitewide-alert.tsx']),false,'candidate shared root stays strict');
+  assert.equal(safe(rows,['app/api/auth/route.ts']),false,'candidate critical source stays strict');
+  assert.equal(safe(rows,['components/solstice-navbar.tsx']),false,'same namespace is not independent');
+  const source={base:new Map(),current:new Map(),
+    changedRows:candidate.map(filename=>({filename,status:'M'}))};
+  let compared=0,targetReads=0;
+  const active={...pr,mergeable:true,base:{...pr.base,sha:live}};
+  const api={pr:async()=>active,target:async()=>{targetReads++;return live;},
+    compare:async()=>{compared++;return diff();},
+    runs:async()=>[],jobs:async()=>[]};
+  const verified=await verify(api,ctx,source,{maxWaitMs:0});
+  assert.equal(verified.head,head);
+  assert.equal(compared,1,'one verified source and target comparison, not a new CI wave');
+  assert.ok(targetReads>=1,'actual protected production ref was inspected');
+  await assert.rejects(()=>verify({...api,pr:async()=>({...active,mergeable:false,mergeable_state:'dirty'})},
+    ctx,source,{maxWaitMs:0}),/MERGE_CONFLICT/);
 });

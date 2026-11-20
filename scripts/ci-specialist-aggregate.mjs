@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance, safeComposedIndependentAdvance, safeScopedDisjointProductionAdvance, safeMixedProtectedAdvance, REVALIDATABLE_CI_POLICY_FILES } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance, safeComposedIndependentAdvance, safeScopedDisjointProductionAdvance, safeMixedProtectedAdvance, safeIsolatedFeatureAdvance, REVALIDATABLE_CI_POLICY_FILES } from '../lib/ci/production-base-impact.mjs';
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
@@ -557,11 +557,21 @@ export async function verify(api,ctx,files,options={}) {
       const mixedProtected = pinnedChangeRows &&
         live.mergeable !== false && live.mergeable_state !== 'dirty' &&
         safeMixedProtectedAdvance(diff, ctx.base, liveBaseSha, changed);
+      // A new, independently namespaced public feature must not require a
+      // rebase just because a different protected PR reached production.
+      // This stricter fallback needs GitHub's affirmative mergeability, a
+      // complete ancestry/path diff and rejects shared/critical source.
+      const isolatedFeature = pinnedChangeRows && live.mergeable === true &&
+        safeIsolatedFeatureAdvance(diff, ctx.base, liveBaseSha, changed, live.mergeable);
       if (!documentationOnly && !independentlyRevalidated &&
           !isolatedCiPolicy && !unrelatedCiMaintenance && !inertPublicImages &&
           !independentPresentation && !disjointPublicSource && !independentQa &&
-          !independentDomainTest && !composedIndependent && !scopedDisjoint && !mixedProtected) {
+          !independentDomainTest && !composedIndependent && !scopedDisjoint && !mixedProtected && !isolatedFeature) {
         throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+      }
+      if (isolatedFeature) {
+        approvedDisjointBases.add(liveBaseSha);
+        console.log('CI_BASE_ADVANCE_REUSED: separate unclassified public feature; verified GitHub mergeability and full protected Compare');
       }
       if (mixedProtected) {
         approvedDisjointBases.add(liveBaseSha);
