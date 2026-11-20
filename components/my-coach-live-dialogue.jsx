@@ -661,7 +661,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const active=pending.current
     if(active){pending.current=null;active.abort();setBusy(false)}
   }
-  async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null}={}){
+  async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null,onApprovedPhrase=null}={}){
     let message=String(raw||'').trim()
     // Manual recognizer locale is authoritative for a spoken turn; never
     // re-infer it from potentially mis-scripted browser ASR output.
@@ -781,6 +781,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(response.status===401){setAuthRequired(true);return}
       const result=useStreaming?await readCoachTurnStream(response,{
         signal:controller.signal,
+        onApprovedPhrase:phrase=>{
+          if(voiceTurn&&typeof onApprovedPhrase==='function'&&
+             !controller.signal.aborted&&turnRequestRef.current===requestId)
+            onApprovedPhrase(phrase,responseLocale)
+        },
         onPreview:preview=>{
           if(!controller.signal.aborted&&turnRequestRef.current===requestId)setStreamingPreview(preview)
         },
@@ -822,7 +827,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(result.mode==='safety'||result.mode==='boundary')semanticHintsRef.current=[]
       if(result.mode==='safety'||(result.mode==='boundary'&&result.boundary==='stop'))setPaused(true)
       if(result.mode==='ai'&&result.planSuggestion)setEditablePlan(result.planSuggestion)
-      return {reply:answer,mode:result.mode,locale:responseLocale}
+      return {reply:answer,mode:result.mode,locale:responseLocale,
+        approvedSpokenPrefix:result.approvedSpokenPrefix||''}
     }catch{
       if(!controller.signal.aborted&&turnRequestRef.current===requestId)setError(t.error)
       return null
@@ -915,7 +921,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             cloudAvailable={chosenCloudAvailable} cloudAgreed={chosenCloudAgreed}
             cloudProvider={chosenCloudProvider} voiceName={selectedGeminiVoice}
             personaId={personaId} enabled={true}
-            canStart={!busy&&!paused&&!replaying&&(geminiVoiceTier==='existing'||geminiVoiceReady)} onTurn={(text,spoken)=>sendMessage(text,{voiceTurn:true,utteranceLocale:spoken?.locale})}
+            canStart={!busy&&!paused&&!replaying&&(geminiVoiceTier==='existing'||geminiVoiceReady)} onTurn={(text,spoken)=>sendMessage(text,{voiceTurn:true,utteranceLocale:spoken?.locale,onApprovedPhrase:spoken?.onApprovedPhrase})}
             onCancelTurn={cancelPendingCoachTurn} onCoachInterrupted={markCoachSpeechInterrupted} onVoiceStateChange={setVoiceState}
             onMicLevel={level=>{
               const wave=micWaveRef.current
