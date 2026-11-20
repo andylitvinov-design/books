@@ -178,15 +178,28 @@ for (const engine of [chromium,webkit]){
           assert.equal(await review.count(),1,label+": one primary free review entry");
           assert.equal(await review.getAttribute("href"),"/"+locale+"/explore/business",
             label+": real localized business review route");
-          const reviewBox=await review.boundingBox();
-          const focusBox=await root.locator("[data-home-focus-grid]").boundingBox();
-          assert.ok(reviewBox&&focusBox&&reviewBox.y+reviewBox.height<=focusBox.y,
-            label+": free review appears above all four needs");
+          // Approved React Home may place its Ali composer first and the
+          // free review after the four topics. Guard actual 320px collision,
+          // not the obsolete marketing order or a moving scroll offset.
           assert.equal(await root.locator("[data-home-focus-grid]").count(),1,label+": grouped choices");
-          const cards=await root.locator("[data-home-focus-grid]").boundingBox();
-          const composer=await root.locator("[data-home-intent-composer]").boundingBox();
-          assert.ok(cards&&composer&&cards.y+cards.height<=composer.y,
-            label+": four topics above the Ali composer");
+          const positions=await root.evaluate(node=>{
+            const rect=selector=>{
+              const element=node.querySelector(selector);
+              if(!element)return null;
+              const box=element.getBoundingClientRect();
+              return {top:box.top,bottom:box.bottom};
+            };
+            return {
+              review:rect("[data-home-free-review]"),
+              topics:rect("[data-home-focus-grid]"),
+              composer:rect("[data-home-intent-composer]"),
+            };
+          });
+          const noOverlap=(a,b)=>a&&b&&(a.bottom<=b.top+1||b.bottom<=a.top+1);
+          assert.ok(noOverlap(positions.review,positions.topics),
+            label+": review and topics may not overlap "+JSON.stringify(positions));
+          assert.ok(noOverlap(positions.topics,positions.composer),
+            label+": topics and composer may not overlap "+JSON.stringify(positions));
           await personal.click();
           assert.equal(await root.getAttribute("data-home-mode"),"self");
           assert.equal(await review.getAttribute("href"),"/"+locale+"/services/free-situation-review",
@@ -197,7 +210,9 @@ for (const engine of [chromium,webkit]){
           const input=root.locator("[data-home-intent-composer]");
           const send=root.locator("[data-home-send-to-ali]");
           await input.waitFor({state:"visible"});
-          assert.equal(await send.isDisabled(),true,label+": cannot send an empty prompt");
+          // The owner-approved Start free chat control works even without
+          // prefilled text on the optional full React Home.
+          assert.equal(await send.isEnabled(),true,label+": start free chat is available without a prefilled goal");
           await input.fill(locale==="ru"?"Хочу создать курс":locale==="es"?"Quiero crear un curso":"I want to create a course");
           assert.equal(await send.isEnabled(),true,label+": real editable composer");
           await input.fill("");
