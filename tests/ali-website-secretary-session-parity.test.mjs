@@ -139,6 +139,8 @@ test('web Sessions uses signed-page links only and stays separate from psycholog
  assert.match(ui,/intent\.kind==="service"/);
  assert.match(ui,/option\.id===intent\.serviceId/);
  assert.match(ui,/setSessionOffers\(\[chosen\]\)/);
+ assert.match(ui,/!projectFlow&&sessionOffers\.length>0/);
+ assert.match(ui,/setSessionOffers\(\[corrected\]\)/);
  assert.match(ui,/sessionHasOutcome\(text\)/);
  assert.match(ui,/if\(page\)setPageHelpLink/);
  assert.doesNotMatch(ui,/sessionStep==="goal"&&\(!goal\|\|text\.length<36\)/);
