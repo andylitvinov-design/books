@@ -2,7 +2,7 @@
 
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
-import {ArrowRight,Heart,Home,Keyboard,Leaf,Languages,PhoneOff,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Play,LoaderCircle,Zap} from 'lucide-react'
+import {ArrowRight,Heart,Home,Keyboard,Leaf,Languages,PhoneOff,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Play,LoaderCircle,Zap,Download,Printer,FileText} from 'lucide-react'
 import {getCoachPersona,localCoachText,coachStagePrompt} from '@/lib/coaching/persona-registry.mjs'
 import {getCoachPresentation} from '@/lib/coaching/persona-presentations.mjs'
 import {coachTimeboxState} from '@/lib/coaching/session-timebox.mjs'
@@ -22,6 +22,8 @@ import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coa
 import CoachingAvatar from '@/components/app/coaching-avatar'
 import MyCoachMotionMedia from '@/components/my-coach-motion-media'
 import {selectCoachVisualScene} from '@/lib/coaching/coach-visual-cues.mjs'
+import {downloadCoachingSessionPdf,openCoachingSessionPdf} from '@/lib/personal-coaching/session-pdf'
+import {myCoachProtocolPdfOptions,normalizeMyCoachProtocol} from '@/lib/personal-coaching/session-protocol.mjs'
 
 const copy={
   en:{
@@ -138,6 +140,11 @@ const voiceGateText={
  ru:{title:'Перед голосовым разговором',cancel:'Не сейчас',agree:'Согласен и начать',tapToHear:'Нажмите, чтобы услышать коуча',playbackUnavailable:'В этом браузере не работает озвучивание. Попробуйте Safari или текстовый диалог.',naturalUnavailable:'Качественный голос коуча временно недоступен. Попробуйте ещё раз или напишите сообщение.'},
  es:{title:'Antes de hablar por voz',cancel:'Ahora no',agree:'Aceptar y hablar',tapToHear:'Toca para escuchar al coach',playbackUnavailable:'La reproducción de voz no está disponible aquí. Prueba Safari o escribe.',naturalUnavailable:'La voz natural del coach no está disponible ahora. Vuelve a intentarlo o escribe.'},
 }
+const protocolCopy={
+  en:{title:'Your session protocol',subtitle:'Review and keep a private record of the conversation.',turns:'Recorded exchanges',empty:'No completed conversation turns to include yet.',download:'Download PDF',print:'Print / Open PDF',save:'Save in my private account',saving:'Saving…',saved:'Saved privately to your account',consent:'I agree to save this complete text dialogue in my private Holistic House account. Audio is not stored.',consentRequired:'Tick the box to save your protocol.',error:'Could not save this report. Download the PDF instead or try again.',pdfError:'Could not create the PDF. Your dialogue is still visible in this tab.',close:'Back to coaches',resume:'Continue conversation',privacy:'Only the conversation shown here is exported. AI suggestions are not confirmed decisions. No recording or hidden AI reasoning is included.',unsent:'There is an unfinished message or reply. Finish it before ending the session.',limit:'The dialogue is full. Finish and export the protocol before continuing.'},
+  ru:{title:'Протокол вашей коучинг-сессии',subtitle:'Проверьте диалог и сохраните его для себя.',turns:'Реплики в протоколе',empty:'Пока нет завершённых реплик для протокола.',download:'Скачать PDF',print:'Распечатать / открыть PDF',save:'Сохранить в личном кабинете',saving:'Сохраняем…',saved:'Протокол сохранён в личном кабинете',consent:'Я согласен(на) сохранить весь текст этого диалога в личном кабинете Holistic House. Аудиозапись не сохраняется.',consentRequired:'Для сохранения в кабинете отметьте согласие.',error:'Не удалось сохранить отчёт. Скачайте PDF либо повторите попытку.',pdfError:'Не удалось создать PDF. Диалог остаётся в этой вкладке.',close:'Вернуться к коучам',resume:'Продолжить беседу',privacy:'В протокол попадают только отображённые здесь реплики. Предложения ИИ не считаются подтверждёнными решениями. Аудиозапись и скрытые рассуждения ИИ не включены.',unsent:'Есть незавершённая реплика. Дождитесь окончания ответа, затем завершите сессию.',limit:'Достигнут лимит реплик. Завершите сессию и сохраните протокол.'},
+  es:{title:'Protocolo de tu sesión',subtitle:'Revisa y conserva una copia privada del diálogo.',turns:'Intervenciones guardadas',empty:'Aún no hay intervenciones terminadas.',download:'Descargar PDF',print:'Imprimir / abrir PDF',save:'Guardar en mi cuenta privada',saving:'Guardando…',saved:'Protocolo guardado en tu cuenta',consent:'Acepto guardar el texto completo del diálogo en mi cuenta privada de Holistic House. No se guarda audio.',consentRequired:'Acepta para guardar el protocolo.',error:'No fue posible guardar. Descarga el PDF o vuelve a intentarlo.',pdfError:'No se pudo crear el PDF. Tu diálogo sigue en esta pestaña.',close:'Volver a los coaches',resume:'Continuar hablando',privacy:'Solo se incluye el diálogo visible. Las sugerencias de IA no son decisiones confirmadas. No se incluye audio ni razonamiento oculto.',unsent:'Hay un turno sin terminar. Termínalo antes de cerrar.',limit:'Se alcanzó el límite de turnos. Termina y exporta el protocolo.'}
+}
 const quickTopics=[{id:'stress',icon:Leaf,art:'stones'},{id:'energy',icon:Zap,art:'sunrise'},{id:'relationships',icon:Heart,art:'lotus'}]
 // Stationary without real microphone samples; bars respond only to input RMS.
 const microphoneWaveGains=Object.freeze([.28,.36,.45,.57,.78,.64,.49,.74,.95,1.12,.81,.55,.39,.62,.87,1.05,.88,.68,.53,.72,.9,.59,.44,.33,.26])
@@ -166,6 +173,14 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const conversationLang=['en','ru','es'].includes(speechLocale)?speechLocale:lang
   const [showCaptions,setShowCaptions]=useState(false)
   const [turns,setTurns]=useState([])
+  const [protocolOpen,setProtocolOpen]=useState(false)
+  const [protocolConsent,setProtocolConsent]=useState(false)
+  const [protocolSaving,setProtocolSaving]=useState(false)
+  const [protocolSaved,setProtocolSaved]=useState(false)
+  const [protocolError,setProtocolError]=useState('')
+  const [protocolFinishedAt,setProtocolFinishedAt]=useState(null)
+  const protocolIdRef=useRef(null)
+  const protocolStartedRef=useRef(null)
   const [sessionClockStarted,setSessionClockStarted]=useState(false)
   const [introComplete,setIntroComplete]=useState(false)
   const [activeSessionSeconds,setActiveSessionSeconds]=useState(0)
@@ -213,7 +228,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   useEffect(()=>{
     // Preserve the current exact Play/MP3 and microphone handlers untouched.
     // The voice loop publishes loading on first Play and listening after intro.
-    if(voiceState.phase==='loading'||voiceState.phase==='listening')setSessionClockStarted(true)
+    if(voiceState.phase==='loading'||voiceState.phase==='listening'){
+      if(!protocolStartedRef.current)protocolStartedRef.current=new Date().toISOString()
+      setSessionClockStarted(true)
+    }
     if(voiceState.phase==='listening')setIntroComplete(true)
   },[voiceState.phase])
   useEffect(()=>{
@@ -304,6 +322,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   // voice runner synchronously, keeping Safari's user-activation gesture.
   function startSessionFromPortrait(){
     if(busy||paused||replaying||voiceState.phase!=='idle')return
+    if(!protocolStartedRef.current)protocolStartedRef.current=new Date().toISOString()
     speechRef.current?.startSession?.(introduction,{naturalVoice:true})
   }
   async function rateCoachAnswer(signal){
@@ -520,7 +539,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         ?speechLocale:detectedSpeechLocale(message,lang)
     // Tapping the mic affirms the inline disclosure. Typed turns keep their
     // separate checkbox. Never contact a model if consent is absent.
-    if(!message||busy||paused)return
+    if(!message||busy||paused||protocolOpen)return
+    if(turns.length>=160){setError(protocolCopy[lang].limit);return null}
+    if(!protocolStartedRef.current)protocolStartedRef.current=new Date().toISOString()
     setSessionClockStarted(true);setIntroComplete(true)
     // Explicit quote requests use only the already-authenticated first-party
     // Wisdom Library. They do not require a free model or contact OpenRouter.
@@ -585,7 +606,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           mode,reason:mode==='offline'?(readiness.reason||'model_unavailable'):'',
           stage:offlineReply.stage||semanticStage,
         }]
-        return updated.slice(-96) // In-tab only: retain context throughout a typical 20-minute session
+        return updated.slice(-160) // Complete, bounded in-tab protocol through an 80-exchange session
       })
       if(mode==='safety'||mode==='boundary')semanticHintsRef.current=[]
       if(mode==='safety'||(mode==='boundary'&&interruption?.boundary==='stop'))setPaused(true)
@@ -636,7 +657,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             typeof result.inference?.model==='string'&&result.inference.model.length<=128
             ?result.inference:null,
         }]
-        return updated.slice(-96) // In-tab only: retain context throughout a typical 20-minute session
+        return updated.slice(-160) // Complete, bounded in-tab protocol through an 80-exchange session
       })
       setDraft('')
       setSpeechPreview('')
@@ -658,6 +679,73 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(pending.current===controller){pending.current=null;setBusy(false)}
     }
   }
+  // End is not navigation: stop the microphone, then let the client review and
+  // download a complete local PDF, independently of optional account retention.
+  function endWithProtocol(){
+    if(busy){setError(protocolCopy[lang].unsent);return}
+    speechRef.current?.stop?.()
+    replayControllerRef.current?.abort()
+    replayPlayerRef.current?.cancel()
+    pending.current?.abort()
+    if(!protocolStartedRef.current)protocolStartedRef.current=new Date().toISOString()
+    if(!protocolIdRef.current)protocolIdRef.current=crypto.randomUUID()
+    setProtocolFinishedAt(new Date().toISOString())
+    setProtocolError('')
+    setPaused(true)
+    setProtocolOpen(true)
+  }
+  function resumeFromProtocol(){
+    if(protocolSaved)return // Saved report is immutable; the client may start a new session.
+    setProtocolOpen(false)
+    setProtocolFinishedAt(null)
+    setProtocolConsent(false)
+    setPaused(false)
+  }
+  function currentProtocol(){
+    if(!protocolFinishedAt||!protocolIdRef.current)throw Error('MY_COACH_PROTOCOL_NOT_FINAL')
+    return normalizeMyCoachProtocol({
+      id:protocolIdRef.current,personaId,locale:conversationLang,
+      startedAt:protocolStartedRef.current||protocolFinishedAt,
+      completedAt:protocolFinishedAt,durationSeconds:Math.floor(activeSessionSeconds),
+      goal:selectedGoal,
+      turns:turns.map(row=>({
+        role:row.role,content:row.content,
+        ...(row.role==='assistant'?{
+          ...(['ai','offline','wisdom','safety','boundary'].includes(row.mode)?{mode:row.mode}:{}),
+          ...(typeof row.stage==='string'?{stage:row.stage.slice(0,64)}:{}),
+          ...(typeof row.suggestion==='string'?{suggestion:row.suggestion.slice(0,300)}:{}),
+        }:{}),
+      })),
+    })
+  }
+  function exportProtocol(print=false){
+    try{
+      const options=myCoachProtocolPdfOptions(currentProtocol(),{locale:conversationLang})
+      if(print)openCoachingSessionPdf(options)
+      else downloadCoachingSessionPdf(options)
+      setProtocolError('')
+    }catch{setProtocolError(protocolCopy[lang].pdfError)}
+  }
+  async function saveProtocol(){
+    if(protocolSaving||protocolSaved)return
+    if(!protocolConsent){setProtocolError(protocolCopy[lang].consentRequired);return}
+    let protocol
+    try{protocol=currentProtocol()}catch{setProtocolError(protocolCopy[lang].error);return}
+    setProtocolSaving(true);setProtocolError('')
+    try{
+      const response=await fetch('/api/app/my-coach/protocol',{
+        method:'POST',credentials:'same-origin',cache:'no-store',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'save',consent:true,protocol}),
+      })
+      const result=await response.json().catch(()=>null)
+      if(!response.ok||result?.saved!==true||result.id!==protocol.id)throw Error(result?.error||'SAVE_FAILED')
+      setProtocolSaved(true)
+    }catch{setProtocolError(protocolCopy[lang].error)}
+    finally{setProtocolSaving(false)}
+  }
+  const protocolUi=protocolCopy[lang]
+
   const motionPhase=paused?'idle':voiceState.phase==='speaking'?'speaking':
     voiceState.phase==='listening'?'listening':!introComplete?'greeting':'idle'
   const visualScene=selectCoachVisualScene({phase:motionPhase,text:latestCoachText,stage:currentStage})
@@ -763,9 +851,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         </div>
         <button type="button" className={styles.keyboardControl} onClick={toggleComposer}
           aria-label={ui.type} title={ui.type}><Keyboard size={17} aria-hidden="true"/><span>{ui.keyboardShort}</span></button>
-        <Link className={styles.endControl} href={'/'+lang+'/my-coach'} aria-label={ui.end} title={ui.end}>
+        <button type="button" className={styles.endControl} onClick={endWithProtocol} aria-label={ui.end} title={ui.end} disabled={busy||protocolOpen} data-coach-finish-with-protocol>
           <PhoneOff size={17} aria-hidden="true"/><span>{lang==='ru'?'Конец':lang==='es'?'Salir':'End'}</span>
-        </Link>
+        </button>
       </div>
       <p className={styles.voicePlayNotice} data-coach-voice-consent-one-play>{({
         en:'Play starts voice. On iPhone, short answers may be transcribed by Groq Whisper (no Holistic House audio storage). No extra step.',
@@ -879,6 +967,37 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           </button>)}
         </div>
       </details>}
+    {protocolOpen&&<section className={styles.protocolOverlay} role="dialog" aria-modal="true" aria-label={protocolUi.title} data-my-coach-protocol>
+      <div className={styles.protocolCard}>
+        <div className={styles.protocolHeading}><FileText size={22}/><div><h2>{protocolUi.title}</h2><p>{protocolUi.subtitle}</p></div></div>
+        <p className={styles.protocolCount}>{protocolUi.turns}: {turns.length} · {Math.floor(activeSessionSeconds/60)} min</p>
+        {turns.length===0?<p>{protocolUi.empty}</p>:
+          <div className={styles.protocolReview} aria-label={protocolUi.turns}>
+            {turns.map((turn,index)=><article key={index} className={styles.protocolTurn}>
+              <strong>{turn.role==='user'?({ru:'Вы',en:'You',es:'Tú'}[lang]):name}</strong>
+              <p>{turn.content}</p>
+              {turn.role==='assistant'&&turn.suggestion&&<small>{({ru:'Предложение, не принятое автоматически',en:'Unconfirmed suggestion',es:'Sugerencia sin confirmar'}[lang])}: {turn.suggestion}</small>}
+            </article>)}
+          </div>}
+        <small className={styles.protocolPrivacy}>{protocolUi.privacy}</small>
+        <div className={styles.protocolActions}>
+          <button type="button" disabled={!turns.length||protocolSaving} onClick={()=>exportProtocol(false)}><Download size={16}/>{protocolUi.download}</button>
+          <button type="button" disabled={!turns.length||protocolSaving} onClick={()=>exportProtocol(true)}><Printer size={16}/>{protocolUi.print}</button>
+        </div>
+        <label className={styles.protocolConsent}>
+          <input type="checkbox" checked={protocolConsent} disabled={protocolSaved||protocolSaving} onChange={e=>{setProtocolConsent(e.target.checked);setProtocolError('')}}/>
+          <span>{protocolUi.consent}</span>
+        </label>
+        <button type="button" className={styles.protocolSave} disabled={!turns.length||!protocolConsent||protocolSaved||protocolSaving}
+          onClick={saveProtocol}>{protocolSaving?protocolUi.saving:protocolSaved?protocolUi.saved:protocolUi.save}</button>
+        {protocolSaved&&<p role="status" className={styles.protocolSaved}>{protocolUi.saved} · <Link href={'/'+(lang==='es'?'en':lang)+'/app/my-coaching-plan?tab=reports'}>{lang==='ru'?'Открыть архив':lang==='es'?'Abrir archivo':'Open archive'}</Link></p>}
+        {protocolError&&<p role="alert" className={styles.protocolError}>{protocolError}</p>}
+        <div className={styles.protocolActions}>
+          {!protocolSaved&&<button type="button" onClick={resumeFromProtocol}>{protocolUi.resume}</button>}
+          <Link href={'/'+lang+'/my-coach'}>{protocolUi.close}<ArrowRight size={16}/></Link>
+        </div>
+      </div>
+    </section>}
     <nav className={styles.sessionBottomNav} aria-label={lang==='ru'?'Нижняя навигация':lang==='es'?'Navegación inferior':'Bottom navigation'}>
       <Link href={'/'+lang}><Home size={21} aria-hidden="true"/><span>{ui.home}</span></Link>
       <Link href={'/'+lang+'/my-coach'} aria-current="page"><MessageCircle size={21} aria-hidden="true"/><span>{ui.coaching}</span></Link>
