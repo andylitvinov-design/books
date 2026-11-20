@@ -20,6 +20,8 @@ test("Magic Mirror is one mobile skin over existing owner introduction and local
  assert.equal((studio.match(/<MandalaAutoVideoDirector/g)||[]).length,1);
  assert.match(mobile,/\.studio\[data-active-workspace="video"\] \.previewStage \.heroWithRail:after/);
  assert.match(mobile,/data-hh-mirror-advanced="false"/);
+ assert.match(mobile,/Preserve the two functional Intro \/ My Video actions/);
+ assert.match(mobile,/\.previewStage \.heroRail button\{/);
  assert.match(mirrorCss,/@media\(max-width:359px\)/);
 });
 test("Four photographic goals and own prompt coexist, Life and Business are not recipient uploads",()=>{

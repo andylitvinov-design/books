@@ -75,6 +75,10 @@ async function verifyWorkspaceHydration(browser,locale){
     const mirror=page.locator('[data-hh-mirror-goals]');
     await expect(page.locator('[data-hh-mirror-title]')).toBeVisible();
     await expect(mirror).toBeVisible();
+    // The owner introduction and My Video actions are real, accessible paths,
+    // not decorative controls removed by the Magic Mirror laptop frame.
+    await expect(page.locator('[data-video-intro-info]')).toBeVisible();
+    await expect(page.locator('[data-video-my-film]')).toBeVisible();
     await expect(mirror.locator('[data-hh-mirror-goal-choice]')).toHaveCount(4);
     const business=mirror.locator('[data-hh-mirror-audience="business"]');
     const personal=mirror.locator('[data-hh-mirror-audience="me"]');
