@@ -195,7 +195,7 @@ test('My Coach persona dialogue speaks and listens on exactly the consented sess
   assert.match(ui,/Браузер может отправлять звук поставщику распознавания речи/)
   for(const phrase of ['window.SpeechRecognition||window.webkitSpeechRecognition',
     'recognition.interimResults=true','recognition.lang=chooseDictationLanguage',
-    'void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,1200))','turnRef.current?.(text,{locale:utteranceLocale})','window.SpeechSynthesisUtterance',
+    'void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,1200))','turnRef.current?.(text,{locale:utteranceLocale,','window.SpeechSynthesisUtterance',
     'activeRef.current=false','document.visibilityState===\'hidden\'',
     'recognition.abort()','onCancelTurn','aria-pressed={active&&!ready}'])
     assert.ok(loop.includes(phrase),phrase)
