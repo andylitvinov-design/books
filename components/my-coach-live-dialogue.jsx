@@ -175,6 +175,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [turns,setTurns]=useState([])
   const [protocolOpen,setProtocolOpen]=useState(false)
   const [protocolConsent,setProtocolConsent]=useState(false)
+  const [protocolSummary,setProtocolSummary]=useState('')
+  const [protocolNextStep,setProtocolNextStep]=useState('')
   const [protocolSaving,setProtocolSaving]=useState(false)
   const [protocolSaved,setProtocolSaved]=useState(false)
   const [protocolError,setProtocolError]=useState('')
@@ -682,7 +684,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   // End is not navigation: stop the microphone, then let the client review and
   // download a complete local PDF, independently of optional account retention.
   function endWithProtocol(){
-    if(busy){setError(protocolCopy[lang].unsent);return}
     speechRef.current?.stop?.()
     replayControllerRef.current?.abort()
     replayPlayerRef.current?.cancel()
@@ -707,7 +708,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       id:protocolIdRef.current,personaId,locale:conversationLang,
       startedAt:protocolStartedRef.current||protocolFinishedAt,
       completedAt:protocolFinishedAt,durationSeconds:Math.floor(activeSessionSeconds),
-      goal:selectedGoal,
+      goal:selectedGoal,clientSummary:protocolSummary,clientNextStep:protocolNextStep,
       turns:turns.map(row=>({
         role:row.role,content:row.content,
         ...(row.role==='assistant'?{
@@ -851,7 +852,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         </div>
         <button type="button" className={styles.keyboardControl} onClick={toggleComposer}
           aria-label={ui.type} title={ui.type}><Keyboard size={17} aria-hidden="true"/><span>{ui.keyboardShort}</span></button>
-        <button type="button" className={styles.endControl} onClick={endWithProtocol} aria-label={ui.end} title={ui.end} disabled={busy||protocolOpen} data-coach-finish-with-protocol>
+        <button type="button" className={styles.endControl} onClick={endWithProtocol} aria-label={ui.end} title={ui.end} disabled={protocolOpen} data-coach-finish-with-protocol>
           <PhoneOff size={17} aria-hidden="true"/><span>{lang==='ru'?'Конец':lang==='es'?'Salir':'End'}</span>
         </button>
       </div>
@@ -979,6 +980,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               {turn.role==='assistant'&&turn.suggestion&&<small>{({ru:'Предложение, не принятое автоматически',en:'Unconfirmed suggestion',es:'Sugerencia sin confirmar'}[lang])}: {turn.suggestion}</small>}
             </article>)}
           </div>}
+        <label className={styles.protocolTextLabel}>{{ru:'Мой итог сессии (необязательно)',en:'My takeaway (optional)',es:'Mi conclusión (opcional)'}[lang]}
+          <textarea rows={2} maxLength={1000} value={protocolSummary} disabled={protocolSaved||protocolSaving} onChange={e=>setProtocolSummary(e.target.value)} placeholder={{ru:'Что стало яснее?',en:'What is clearer now?',es:'¿Qué quedó más claro?'}[lang]}/>
+        </label>
+        <label className={styles.protocolTextLabel}>{{ru:'Мой следующий шаг (необязательно)',en:'My next step (optional)',es:'Mi siguiente paso (opcional)'}[lang]}
+          <textarea rows={2} maxLength={500} value={protocolNextStep} disabled={protocolSaved||protocolSaving} onChange={e=>setProtocolNextStep(e.target.value)} placeholder={{ru:'Какой шаг я хочу сделать?',en:'What step would I choose?',es:'¿Qué paso elegiría?'}[lang]}/>
+        </label>
         <small className={styles.protocolPrivacy}>{protocolUi.privacy}</small>
         <div className={styles.protocolActions}>
           <button type="button" disabled={!turns.length||protocolSaving} onClick={()=>exportProtocol(false)}><Download size={16}/>{protocolUi.download}</button>
