@@ -14,29 +14,32 @@ import {validFreeMedia,safeFreeMediaReceipt,acceptedFreeMedia,
 const fakeFile='A_valid_Telegram_file_123456';
 const fakeMessage='tg:1234567:555';
 const photo={fileId:fakeFile,bytes:1024,messageId:fakeMessage};
-test('RU/EN real natural six-stage questionnaire preserves client facts and one question',()=>{
+test('RU/EN three diagnostic questions satisfy the protected CRM gate',()=>{
  const stories={
   ru:['Хочу наладить отношения','Мне трудно сказать о своих чувствах',
-   'Сейчас мы почти не разговариваем','Это влияет на сон и работу',
-   'Пробовал говорить спокойнее','Меня поддерживает близкий друг'],
+   'Сейчас мы почти не разговариваем'],
   en:['I want clarity at work','I worry about making a mistake',
-   'Recently I changed my job','It affects my work and confidence',
-   'I have tried discussing it with colleagues','My friend supports me'],
+   'Recently I changed my job'],
  };
  for(const [locale,answers] of Object.entries(stories)){
   let state={stage:'goal',slots:{},turns:[]};
-  const expected=['challenge','situation','impact','attempts','support','ready'];
+  const expected=['challenge','situation','ready'];
   for(const [i,answer] of answers.entries()){
    const result=aliFreeDiagnosticTurn({...state,message:answer,locale});
    assert.equal(result.stage,expected[i],locale+' stage '+i);
-   assert.ok(result.slots[expected[i-1]||'goal']||i===0,locale);
+   assert.ok(result.slots[['goal','challenge','situation'][i]],locale);
    assert.ok((result.reply.match(/[?？]/g)||[]).length<=1,'one question per message');
    state={stage:result.stage,slots:result.slots,turns:[
      ...state.turns,{role:'user',text:answer},{role:'assistant',text:result.reply}]};
   }
+  assert.equal(freeCoreAnswersReady({intakeSlots:state.slots}),true);
   const summary=aliFreeDiagnosticSummary({locale,slots:state.slots});
   for(const answer of answers)assert.ok(summary.includes(answer.slice(0,15)),answer);
  }
+ const legacy=aliFreeDiagnosticTurn({locale:'en',stage:'impact',
+   slots:{goal:'I want clarity',challenge:'Difficulty',situation:'New job'},
+   message:'It affects my confidence'});
+ assert.equal(legacy.stage,'attempts','legacy optional interviews remain resumable');
 });
 test('three original client facts are required before drawing and handoff',()=>{
  const ctx={intakeSlots:{goal:'I want clarity',situation:'There is pressure'}};
