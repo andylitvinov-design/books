@@ -1583,8 +1583,10 @@ test('Messenger-only PRs skip unrelated specialist workflow dispatch without ski
   ]) assert.equal(present(specialistName), false, 'Messenger must not dispatch ' + specialistName);
   for (const owner of [
     'hh-app-r1','hh-app-browser','ia-v2','hh-crm-source-check',
-    'hh-messenger-mobile-release','hh-messages-wellness-v2','hh-messages-wellness-browser',
+    'hh-messenger-mobile-release','hh-messages-wellness-v2',
   ]) assert.equal(present(owner), true, 'Messenger needs ' + owner);
+  assert.equal(present('hh-messages-wellness-browser'),false,
+    'synthetic browser check is opt-in; genuine Messages/IA/CRM/Core owners remain required');
   const core = parsePrTrigger(all.get(root + 'hh-pr-core-release.yml'));
   assert.ok(matchesTrigger(core, changed), 'Core remains unconditionally required');
 

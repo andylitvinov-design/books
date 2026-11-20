@@ -241,8 +241,8 @@ test('high-impact workflows still run their own domain validation on YAML edits'
 });
 
 
-test('Messages wellness specialists start on Ready after a stacked Draft is retargeted to production', () => {
-  for (const name of ['hh-messages-wellness-browser.yml', 'hh-messages-wellness-v2.yml']) {
+test('mandatory Messages checks start on Ready; source-only visual duplication is on demand', () => {
+  for (const name of ['hh-messages-wellness-v2.yml']) {
     const source = readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
     assert.match(source, /^  pull_request:\n    types: \[opened, reopened, synchronize, ready_for_review\]\n    branches: \[codex\/public-book-library\]/m,
       name + ': Ready must trigger the real independent PR specialist after base retargeting');
@@ -251,6 +251,13 @@ test('Messages wellness specialists start on Ready after a stacked Draft is reta
     assert.doesNotMatch(source, /continue-on-error:\s*true/,
       name + ': Specialist must still fail closed on a true product regression');
   }
+  const visual=source('hh-messages-wellness-browser.yml');
+  const route=trigger('hh-messages-wellness-browser.yml');
+  assert.deepEqual(route.types,['labeled']);
+  assert.equal(matchesTrigger(route,['components/app/messages-simple-inbox.jsx'],TARGET),false);
+  assert.match(visual,/github.event.label.name == 'qa-optional'/);
+  assert.match(visual,/^  workflow_dispatch:/m);
+  assert.match(visual,/node scripts\/verify-messages-wellness-browser\.mjs/);
 });
 
 
@@ -503,4 +510,23 @@ test('cosmetic Profile-only CSS skips heavy private IA but preserves real Core/A
   'mixed styling and private code must not bypass IA');
  assert.equal(matchesTrigger(iaTrigger,['.github/workflows/ia-v2.yml'],TARGET),true,
   'changes to the IA workflow itself must still execute its real tests');
+});
+
+test('First Video automatic PR duplication is retired after mandatory Mandala ownership',()=>{
+  const redundant=trigger('hh-first-video-live-export.yml'),video=source('hh-first-video-live-export.yml');
+  assert.deepEqual(redundant.types,['labeled']);
+  assert.match(video,/github\.event\.label\.name == 'qa-optional'/);
+  assert.match(video,/node --test tests\/video-director-chat-live-acceptance\.test\.mjs/);
+  assert.match(video,/github\.event_name == 'workflow_dispatch' && inputs\.probe_free_ai/);
+  assert.match(video,/^  workflow_dispatch:/m);
+  assert.equal(matchesTrigger(redundant,['scripts/benchmarking/first-video-live-export.mjs'],TARGET),false);
+  assert.equal(matchesTrigger(redundant,['components/mandala-free-video-studio.tsx'],TARGET),false);
+  assert.equal(matchesTrigger(redundant,['tests/video-director-chat-live-acceptance.test.mjs'],TARGET),false);
+  const mandala=trigger('holistic-support-mandala.yml');
+  for(const path of ['scripts/benchmarking/first-video-live-export.mjs','scripts/benchmarking/video-director-chat-live-acceptance.mjs','tests/video-director-chat-live-acceptance.test.mjs'])
+    assert.equal(matchesTrigger(mandala,[path],TARGET),true,path+': no required Mandala source owner');
+  const library=trigger('library-public-feed.yml');
+  for(const path of ['components/app/messages-orders-clients.jsx','components/mandala-video-director-chat.tsx'])
+    assert.equal(matchesTrigger(library,[path],TARGET),false,path+': unrelated library browser');
+  assert.equal(matchesTrigger(library,['components/library-feed.tsx'],TARGET),true);
 });

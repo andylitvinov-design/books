@@ -26,6 +26,10 @@ on:
       - 'tests/mandala-scenario-media-import-contract.test.mjs'
       - 'tests/mandala-scenario-soundtracks.test.mjs'
       - 'scripts/audit-scenario-media.mjs'
+      # Mandatory Mandala owns the real First Video and Director Chat source.
+      - 'scripts/benchmarking/first-video-live-export.mjs'
+      - 'scripts/benchmarking/video-director-chat-live-acceptance.mjs'
+      - 'tests/video-director-chat-live-acceptance.test.mjs'
       - 'scripts/import-scenario-video-batch.mjs'
       - 'scripts/read-live-film-presets.mjs'
       - 'lib/mandala/scenario-soundtracks.mjs'
@@ -574,6 +578,7 @@ jobs:
           set -euo pipefail
           node --check scripts/verify-affirmation-voice-browser.mjs
           node --check scripts/benchmarking/first-video-live-export.mjs
+          node --check scripts/benchmarking/video-director-chat-live-acceptance.mjs
           node --check scripts/benchmarking/verify-original-motion-export.mjs
           node --check scripts/benchmarking/verify-five-scene-stories-browser.mjs
           node --check scripts/verify-practices-mobile-browser.mjs
