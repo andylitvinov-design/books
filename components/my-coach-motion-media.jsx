@@ -4,8 +4,8 @@ import {PUBLIC_COACH_PERSONA_IDS} from '@/lib/coaching/persona-registry.mjs'
 import {coachVisualClip,normalizeCoachVisualScene} from '@/lib/coaching/coach-visual-cues.mjs'
 import styles from './my-coach-motion-media.module.css'
 
-// Merlin remains static. Harry has independent silent calm and listening video loops;
-// speaking never claims lip synchronization.
+// Harry's soft loops are transcoded from the owner's approved 12-frame animation.
+// These are silent decorative clips; speaking does not claim lip synchronization.
 const VIDEO_PERSONAS=new Set(['mira','max','sofia','alex','harry'])
 const PHASES=new Set(['greeting','idle','listening','speaking'])
 const MEDIA_ROOT='/images/holistic-house/my-coach-motion/'
@@ -24,9 +24,9 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   const fallbackScene=state==='greeting'?'welcome':state==='listening'?'attentive':'calm'
   const visualScene=state==='speaking'?normalizeCoachVisualScene(scene,'explain'):fallbackScene
   const clip=coachVisualClip(state,visualScene)
-  const poster=supported?MEDIA_ROOT+personaId+'-still.webp':null
+  const poster=supported?(personaId==='harry'?MEDIA_ROOT+'harry-soft-still.webp':MEDIA_ROOT+personaId+'-still.webp'):null
   const harryClip=state==='listening'?'attentive':'calm'
-  const src=supported&&hasVideo?(personaId==='harry'?MEDIA_ROOT+'harry-'+harryClip+'.mp4':MEDIA_ROOT+personaId+'-'+clip+'.mp4'):null
+  const src=supported&&hasVideo?(personaId==='harry'?MEDIA_ROOT+'harry-soft-'+harryClip+'.mp4':MEDIA_ROOT+personaId+'-'+clip+'.mp4'):null
 
   useEffect(()=>{
     const preference=window.matchMedia?.('(prefers-reduced-motion: reduce)')
