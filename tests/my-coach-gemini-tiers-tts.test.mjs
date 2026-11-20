@@ -21,6 +21,8 @@ test('Gemini Free and Paid are isolated, OFF by default, and owner-gated',()=>{
   assert.equal(geminiCoachTextConfig({},'gemini_free'),null)
   assert.equal(geminiCoachTextConfig(free,'gemini_paid'),null)
   assert.equal(geminiCoachTextConfig(paid,'gemini_free'),null)
+  assert.equal(geminiCoachTextConfig({...free,...paid,HH_GEMINI_PAID_API_KEY:key},'gemini_free'),null)
+  assert.equal(geminiCoachTextConfig({...free,...paid,HH_GEMINI_PAID_API_KEY:key},'gemini_paid'),null)
   for(const name of Object.keys(free)){
     const env={...free};delete env[name]
     if(name!=='HH_MY_COACH_GEMINI_TTS_FREE_ENABLED')
@@ -80,6 +82,8 @@ test('ten personas have four server-allowlisted voice candidates for RU and EN',
 test('free Gemini TTS requires distinct feature consent and uses a fixed public preview',()=>{
   assert.equal(geminiCoachTtsConfig(free,'gemini_tts_paid'),null)
   assert.equal(geminiCoachTtsConfig(paid,'gemini_tts_free'),null)
+  assert.equal(geminiCoachTtsConfig({...free,...paid},'gemini_tts_free'),null)
+  assert.equal(geminiCoachTtsConfig({...free,...paid},'gemini_tts_paid'),null)
   assert.equal(geminiCoachTtsConfig(free,'gemini_tts_free').model,'gemini-3.8-flash-lite-tts')
   const common={provider:'gemini_tts_free',locale:'ru',personaId:'mira',
     voiceName:'Sulafat',preview:true,voiceConsent:true,cloudVoiceConsent:true}
@@ -102,6 +106,7 @@ test('one Gemini TTS request selects exact approved voice and returns real-forma
       assert.equal(url,'https://generativelanguage.googleapis.com/v1beta/interactions')
       const body=JSON.parse(options.body)
       assert.equal(body.model,'gemini-3.8-flash-lite-tts')
+      assert.equal(body.store,false,'no Google interaction storage for private coach speech')
       assert.equal(body.generation_config.speech_config[0].voice,'Sulafat')
       assert.match(body.input[0].content[0].text,/There is a lot/)
       return {ok:true,status:200,json:async()=>({

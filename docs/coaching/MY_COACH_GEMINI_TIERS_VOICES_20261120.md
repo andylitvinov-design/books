@@ -16,7 +16,7 @@ Free tier: HH_GEMINI_FREE_API_KEY, HH_MY_COACH_GEMINI_FREE_ENABLED=true, HH_MY_C
 
 Paid tier: HH_GEMINI_PAID_API_KEY, HH_MY_COACH_GEMINI_PAID_ENABLED=true, HH_MY_COACH_GEMINI_PAID_PRIVACY_APPROVED=true, HH_MY_COACH_GEMINI_SPEND_APPROVED=true. Optional separate TTS: HH_MY_COACH_GEMINI_TTS_PAID_ENABLED=true.
 
-Do not prefix secret variables with NEXT_PUBLIC_. Google Free tier inputs may be used to improve models; Paid does not use inputs for model improvement per official pricing. The customer must explicitly opt in for the chosen tier and, separately, for Gemini TTS. A typed or voice reply never silently switches to another vendor.
+Do not prefix secret variables with NEXT_PUBLIC_. Free and Paid MUST use different keys; server rejects identical key values. TTS uses `store:false` in the Google Interactions API, which otherwise stores requests by default. Google Free tier inputs may be used to improve models; Paid does not use inputs for model improvement per official pricing. The customer must explicitly opt in for the chosen tier and, separately, for Gemini TTS. A typed or voice reply never silently switches to another vendor.
 
 ## Budget and release
 Text retains My Coach 40 calls/account/hour plus global 30 Free / 12 Paid calls/day; per account 16 Free / 6 Paid/day. TTS global 24 Free / 12 Paid/day and per account 12 Free / 6 Paid/day. Preview is not preloaded and consumes one call when clicked. These are CALL caps, not a guaranteed USD billing cap: Google AI Studio/Cloud billing must be separately bounded by the owner. No new Vercel project, cron, database table or deployment is created.
