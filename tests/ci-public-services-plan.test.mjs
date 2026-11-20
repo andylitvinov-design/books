@@ -153,7 +153,10 @@ test('13 current browser owners are unique and the old contact UI duplicate is r
     'generate-soft-ocean-melody.mjs', 'build-public-card-artwork.mjs',
     'build-report-pdf-art.mjs']) assert.ok(source.includes('node scripts/' + prereq));
   verifyPinnedPublicBrowsers(source);
-  assert.match(source, /timeout-minutes: 20/);
+  // Production acceptance PASSED in 1064s on PR #5234, then the original
+  // 20-minute job cap cancelled cleanup/artifact upload. Preserve the full
+  // Chromium/WebKit suite and allow only a 23-minute bounded ceiling.
+  assert.match(source, /timeout-minutes: 23/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
 

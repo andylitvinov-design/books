@@ -207,7 +207,7 @@ jobs:
     defaults:
       run:
         shell: bash
-    timeout-minutes: 20
+    timeout-minutes: 23
     env:
       CI: 'true'
       NODE_ENV: production
