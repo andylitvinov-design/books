@@ -512,16 +512,16 @@ test('cosmetic Profile-only CSS skips heavy private IA but preserves real Core/A
   'changes to the IA workflow itself must still execute its real tests');
 });
 
-test('First Video keeps cheap exact-HEAD source proof while costly visual QA stays on demand',()=>{
+test('First Video automatic PR duplication is retired after mandatory Mandala ownership',()=>{
   const redundant=trigger('hh-first-video-live-export.yml'),video=source('hh-first-video-live-export.yml');
-  assert.deepEqual(redundant.types,['opened','synchronize','reopened','ready_for_review']);
-  assert.match(video,/github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false/);
+  assert.deepEqual(redundant.types,['labeled']);
+  assert.match(video,/github\.event\.label\.name == 'qa-optional'/);
   assert.match(video,/node --test tests\/video-director-chat-live-acceptance\.test\.mjs/);
   assert.match(video,/github\.event_name == 'workflow_dispatch' && inputs\.probe_free_ai/);
   assert.match(video,/^  workflow_dispatch:/m);
-  assert.equal(matchesTrigger(redundant,['scripts/benchmarking/first-video-live-export.mjs'],TARGET),true);
+  assert.equal(matchesTrigger(redundant,['scripts/benchmarking/first-video-live-export.mjs'],TARGET),false);
   assert.equal(matchesTrigger(redundant,['components/mandala-free-video-studio.tsx'],TARGET),false);
-  assert.equal(matchesTrigger(redundant,['tests/video-director-chat-live-acceptance.test.mjs'],TARGET),true);
+  assert.equal(matchesTrigger(redundant,['tests/video-director-chat-live-acceptance.test.mjs'],TARGET),false);
   const mandala=trigger('holistic-support-mandala.yml');
   for(const path of ['scripts/benchmarking/first-video-live-export.mjs','scripts/benchmarking/video-director-chat-live-acceptance.mjs','tests/video-director-chat-live-acceptance.test.mjs'])
     assert.equal(matchesTrigger(mandala,[path],TARGET),true,path+': no required Mandala source owner');
