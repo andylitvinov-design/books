@@ -3125,6 +3125,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const webCodecJobRef = useRef<AbortController|null>(null);
   const compatibilityExportRef=useRef(false);
   const lastExportEngineRef=useRef<"native"|"webcodecs"|"unknown">("unknown");
+  // Retain a failed Safari native encoder only in this mounted editor session.
+  // No browser storage, network persistence or visitor data is necessary.
+  const nativeSafariMp4RejectedRef=useRef(false);
   const firstVideoRequestRef=useRef(false);
   useEffect(()=>{
     if(!result||!firstVideoRequestRef.current)return;
@@ -3914,10 +3917,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     // The alternate WebM retry must not rerun Safari's default MP4 encoder.
     // A visitor selecting native MP4 after a failed WebM must not re-run the
     // original Safari WebCodecs MP4 path. Preserve actual AAC/soundtrack checks.
+    const nativeRejectedOnThisDevice=isApplePhone&&hasWebCodecs&&nativeSafariMp4RejectedRef.current;
     const useWebCodecsMp4=!forceMp4ForRetry&&selectWebCodecsForRecording({
       hasWebCodecs,safariWebKit,procedural,proceduralRoute,preferWebm,
       nativeMp4Available:nativeAppleMp4Available,
-      userAgent:ua,maxTouchPoints:navigator.maxTouchPoints,forceWebCodecs
+      userAgent:ua,maxTouchPoints:navigator.maxTouchPoints,
+      forceWebCodecs:forceWebCodecs||nativeRejectedOnThisDevice
     });
     lastExportEngineRef.current=useWebCodecsMp4?"webcodecs":"native";
     if(procedural&&!safariWebKit&&proceduralRoute==="unsupported"){
@@ -4453,7 +4458,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         if(sourceRef.current!==snapshotKey||!aliveRef.current)return;
         const extension=isWebm?"webm":"mp4";
         const type=isWebm?"video/webm":"video/mp4";
-        const blob=new Blob(chunks,{type});
+        let blob=new Blob(chunks,{type});
         if((isApplePhone&&isWebm)||(!isMp4&&!isWebm)){
           if(creditOpRef.current)void releaseCredit(creditOpRef.current);
           setPlaybackStatus("failed");
@@ -4472,14 +4477,21 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             const {verifyNativeSafariMp4Tracks}=await import("@/lib/mandala/webcodecs-mp4-export");
             await withLocalMediaDeadline(
               verifyNativeSafariMp4Tracks(blob,Boolean(job.musicSession)),15000);
+            // The native MP4 may advertise AVC/AAC while Safari's own player
+            // rejects its fragmented moov/mdat organization (MEDIA_ERR 4).
+            // Repair the existing encoded file, then decode first + late frames;
+            // no second Canvas render or extra credit hold.
+            const {normalizeNativeSafariMp4ForPlayback}=await import("@/lib/mandala/webcodecs-mp4-export");
+            blob=await withLocalMediaDeadline(
+              normalizeNativeSafariMp4ForPlayback(blob,Boolean(job.musicSession),duration),30000);
           }catch{
             if(creditOpRef.current)void releaseCredit(creditOpRef.current);
             setPlaybackStatus("failed");setExportUnavailable(true);
             setNotice(locale==="ru"
-              ?"На этом iPhone не удалось получить MP4 с корректным видео и AAC. Кредиты освобождены."
+              ?"Safari не завершил воспроизводимый MP4. Кредиты не списываются; попробуйте другой кодировщик."
               :locale==="es"
-              ?"Este iPhone no creó un MP4 con vídeo y AAC válidos. Se han liberado los créditos."
-              :"This iPhone did not produce an MP4 with valid video and AAC. Credits are released.");
+              ?"Safari no pudo finalizar un MP4 reproducible. No se cobrarán créditos; prueba el otro codificador."
+              :"Safari could not finalize a playable MP4. Credits will not be charged; try the alternate encoder.");
             return;
           }
           if(sourceRef.current!==snapshotKey||!aliveRef.current)return;
@@ -5090,6 +5102,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     rejectedPlaybackUrlRef.current=result.url;
     const errorCode=video.error?.code||0;
     const ua=typeof navigator==="undefined"?"":navigator.userAgent;
+    if((errorCode===3||errorCode===4)&&lastExportEngineRef.current==="native"&&
+       isAppleMobileDevice(ua,navigator.maxTouchPoints)){
+      // Next EXPLICIT Create may use the alternate encoder; no automatic
+      // second attempt, no private media or prompt data stored.
+      nativeSafariMp4RejectedRef.current=true;
+    }
     const safariWebKit=/AppleWebKit/i.test(ua)&&!/Chrome|Chromium|Edg|OPR/i.test(ua);
     const nativeWebm=recordingMimes(Boolean(attachedAudio),true)
       .some(mime=>mime.startsWith("video/webm"));
