@@ -78,7 +78,39 @@ const REPORTS_PORTRAIT_COPY = {
     caption: 'Los rayos coloreados reflejan únicamente pruebas profesionales verificadas.',
   },
 }
-const REPORTS_SECTOR_ICONS = [Leaf, Mountain, Heart, InfinityIcon]
+const REPORT_METRICS = [
+  { id: 'energy', Icon: Sparkles },
+  { id: 'relationships', Icon: Heart },
+  { id: 'functioning', Icon: Mountain },
+  { id: 'embodiment', Icon: Leaf },
+  { id: 'meaning', Icon: InfinityIcon },
+]
+const REPORTS_DASHBOARD_COPY = {
+  ru: {
+    eyebrow: 'МОИ ОТЧЁТЫ', heroTitle: 'Мои отчёты',
+    heroIntro: 'Результаты тестов, личный анализ и рекомендации для развития и баланса.',
+    heroAction: 'Сформировать отчёт', heroHint: 'Анализ и PDF по сохранённым тестам',
+    firstTestHint: 'Начните с диагностики', overview: 'Обзор моих результатов',
+    measured: 'Измеренные шкалы', scaleNote: 'Показано положение внутри каждой подтверждённой шкалы, а не процент здоровья или общий балл.',
+    noMeasurement: '—', metrics: { energy: 'Энергия', relationships: 'Отношения', functioning: 'Дела и цели', embodiment: 'Тело', meaning: 'Смысл' },
+  },
+  en: {
+    eyebrow: 'MY REPORTS', heroTitle: 'My reports',
+    heroIntro: 'Saved test results, personal analysis and recommendations for growth and balance.',
+    heroAction: 'Create a report', heroHint: 'Analysis and PDF of your saved tests',
+    firstTestHint: 'Start with an assessment', overview: 'My results overview',
+    measured: 'Measured scales', scaleNote: 'Each reading is a position within its own validated scale, not a health percentage or overall score.',
+    noMeasurement: '—', metrics: { energy: 'Energy', relationships: 'Relationships', functioning: 'Work & goals', embodiment: 'Body', meaning: 'Meaning' },
+  },
+  es: {
+    eyebrow: 'MIS INFORMES', heroTitle: 'Mis informes',
+    heroIntro: 'Resultados guardados, análisis personal y recomendaciones para crecer y encontrar equilibrio.',
+    heroAction: 'Crear un informe', heroHint: 'Análisis y PDF de tus pruebas guardadas',
+    firstTestHint: 'Empieza con una evaluación', overview: 'Resumen de mis resultados',
+    measured: 'Escalas medidas', scaleNote: 'Cada lectura muestra una posición dentro de su propia escala validada, no un porcentaje de salud ni una nota global.',
+    noMeasurement: '—', metrics: { energy: 'Energía', relationships: 'Relaciones', functioning: 'Trabajo y metas', embodiment: 'Cuerpo', meaning: 'Sentido' },
+  },
+}
 
 const TABS = [
   { id: 'today', icon: House }, { id: 'state', icon: Activity },
@@ -166,10 +198,11 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
     courses: '/' + selected + '/academy',
   } : privatePaths
   const current = active === 'view' ? 'today' : active === 'results' ? 'reports' : active
-  const settingsMode = current === 'settings'
-  const stateBrand = current === 'today' || current === 'state'
+  const stateBrand = current === 'today' || current === 'state' || current === 'reports'
   const isCourseLanding = current === 'courses' && courseLanding
-  const simplifiedSpace = stateBrand || isCourseLanding
+  const simplifiedSpace = current === 'today' || current === 'state' || isCourseLanding
+  const brandedSpace = stateBrand || isCourseLanding
+  const settingsMode = current === 'settings'
   const s = SETTINGS_HUB_COPY[selected]
   // Switch real locale routes while retaining the current profile section.
   // Language navigation works for visitors; only account actions require sign-in.
@@ -189,10 +222,10 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
   return <section className={styles.hub} data-profile-hub-tabs data-profile-active={current}>
     <header className={styles.heading}>
       <div className={styles.headingTitle}>
-        {simplifiedSpace && <span className={styles.brandMark} aria-hidden="true" />}
-        <h2 aria-label={settingsMode ? s.pageTitle : simplifiedSpace ? 'Holistic House' : t.title}>
-          <span className={styles.titleFull}>{settingsMode ? s.pageTitle : simplifiedSpace ? 'Holistic House' : t.title}</span>
-          <span className={styles.titleCompact}>{settingsMode ? (selected === 'ru' ? 'Профиль' : selected === 'es' ? 'Perfil' : 'Profile') : simplifiedSpace ? 'Holistic House' : 'My Space'}</span>
+        {brandedSpace && <span className={styles.brandMark} aria-hidden="true" />}
+        <h2 aria-label={settingsMode ? s.pageTitle : brandedSpace ? 'Holistic House' : t.title}>
+          <span className={styles.titleFull}>{settingsMode ? s.pageTitle : brandedSpace ? 'Holistic House' : t.title}</span>
+          <span className={styles.titleCompact}>{settingsMode ? (selected === 'ru' ? 'Профиль' : selected === 'es' ? 'Perfil' : 'Profile') : brandedSpace ? 'Holistic House' : 'My Space'}</span>
         </h2>
       </div>
       <div className={styles.profileHeadingActions}>
@@ -207,7 +240,7 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
                 data-profile-language={language}>{language.toUpperCase()}</Link>)}
           </div>
         </details>
-        {!settingsMode && !simplifiedSpace && <ProfileModeSwitch locale={selected} active="live" />}
+        {!settingsMode && !brandedSpace && <ProfileModeSwitch locale={selected} active="live" />}
         <div className={styles.headingNav} data-profile-chrome-navigation>
           <SiteNavigation locale={selected} compact />
         </div>
@@ -234,7 +267,7 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
           <span className={styles.resultBadge} aria-label={resultCount + ' ' + COPY[selected].count}>{resultCount}</span>}
       </InstantCabinetLink>)}
     </nav>}
-    {!simplifiedSpace && !settingsMode && <div className={styles.myPageSubnav} data-profile-my-page-placement="below-tabs">
+    {!simplifiedSpace && current !== 'reports' && !settingsMode && <div className={styles.myPageSubnav} data-profile-my-page-placement="below-tabs">
       <Link href={'/' + selected + '/my-page'} prefetch={false} className={styles.myPageLink} data-profile-my-page>
         <UserRound size={15} aria-hidden="true" />
         {selected==='ru'?'Моя страница':selected==='es'?'Mi página':'My Page'}
@@ -289,81 +322,113 @@ export function ProfileResultsArchive({ locale = 'en', results = [] }) {
   const selected = COPY[locale] ? locale : 'en'
   const t = COPY[selected]
   const p = REPORTS_PORTRAIT_COPY[selected]
+  const d = REPORTS_DASHBOARD_COPY[selected]
   const accountLocale = selected === 'es' ? 'en' : selected
-  // Retain every owner-scoped saved attempt, including retakes and check-ins.
+  // Preserve every saved owner-scoped attempt, including check-ins and retakes.
   const ordered = (Array.isArray(results) ? results : [])
     .filter(item => item && typeof item.id === 'string' && item.id.length > 0)
     .sort((a, b) => (Date.parse(b.measurementAt || '') || 0) - (Date.parse(a.measurementAt || '') || 0))
   const recent = ordered.slice(0, 5)
-  // Only eligible, scored professional measurements can color portrait rays.
-  // A missing score never becomes an invented average, health grade or percentage.
+  // Audited, source-compatible professional scales only. No fabricated or averaged health score.
   const portrait = buildPsychPortrait(ordered.filter(isProfessionalProfileTest))
   const measuredCount = Number.isFinite(portrait?.measuredCount) ? portrait.measuredCount : 0
+  const scaleTotal = Number.isFinite(portrait?.totalCount) && portrait.totalCount > 0 ? portrait.totalCount : 17
   const root = '/' + accountLocale + '/app'
   return <section className={styles.archive} data-profile-results-archive data-saved-result-count={ordered.length}>
-    <header className={styles.archiveHeading}>
-      <div>
-        <h2><ClipboardList size={24} strokeWidth={1.8} aria-hidden="true" />{t.archiveTitle}</h2>
-        <p>{p.intro}</p>
-      </div>
-      <strong className={styles.total} aria-label={ordered.length + ' ' + t.count}>
-        <span>{ordered.length}</span><small>{p.saved}</small>
-      </strong>
+    <header className={styles.reportHero} data-reports-photo-hero>
+      <p className={styles.reportHeroEyebrow}><Sparkles size={19} aria-hidden="true" />{d.eyebrow}</p>
+      <h1>{d.heroTitle}</h1>
+      <p className={styles.reportHeroIntro}>{d.heroIntro}</p>
+      <Link href={ordered.length ? root + '/portfolio#hh-insights-export' : root + '/tests?explore=1&filters=topics'}
+        prefetch={false} className={styles.reportHeroAction} data-report-create-cta>
+        <span className={styles.reportHeroActionIcon}><FileText size={25} aria-hidden="true" /></span>
+        <span className={styles.reportHeroActionCopy}>
+          <strong>{ordered.length ? d.heroAction : p.next}</strong>
+          <small>{ordered.length ? d.heroHint : d.firstTestHint}</small>
+        </span>
+        <span className={styles.reportHeroArrow}><ArrowRight size={24} aria-hidden="true" /></span>
+      </Link>
     </header>
 
+    <div className={styles.reportOverviewHeading}>
+      <h2>{d.overview}</h2>
+      <span className={styles.reportCount} aria-label={ordered.length + ' ' + t.count}>
+        <ClipboardList size={16} aria-hidden="true" />{ordered.length} {p.saved}
+      </span>
+    </div>
     <article className={styles.reportPortrait} data-reports-portrait-hero data-measured-axis-count={measuredCount}>
-      <div className={styles.reportPortraitScene} aria-label={p.sectorsLabel}>
-        <div className={styles.reportPortraitArt} data-profile-head>
-          <TestExplorerVisual compact locale={selected} portrait={portrait} coverage={coverageForFocus([])} />
+      <div className={styles.reportOverviewGrid}>
+        <div className={styles.reportPortraitScene} aria-label={p.sectorsLabel}>
+          <div className={styles.reportPortraitArt} data-profile-head>
+            <TestExplorerVisual compact locale={selected} portrait={portrait} coverage={coverageForFocus([])} />
+          </div>
         </div>
-        <div className={styles.reportPortraitSectors}>
-          {p.sectors.map((area, index) => {
-            const Icon = REPORTS_SECTOR_ICONS[index]
-            return <span key={area} className={styles.reportSectorChip} data-report-sector={index}>
-              <Icon aria-hidden="true" size={23} strokeWidth={1.8} />
-              <strong>{area}</strong>
-            </span>
+        <div className={styles.reportMetrics} aria-label={d.measured}>
+          {REPORT_METRICS.map(({ id, Icon }) => {
+            const measurement = portrait?.axes?.[id] || null
+            const position = measurement?.mode === 'directional' && Number.isFinite(measurement.percent)
+              ? Math.max(0, Math.min(100, measurement.percent)) : null
+            const destination = measurement?.resultId
+              ? root + '/results/' + encodeURIComponent(measurement.resultId)
+                + (measurement.dimensionKey ? '?scale=' + encodeURIComponent(measurement.dimensionKey) : '')
+                + '#hh-assessment-scale-panel'
+              : root + '/tests?explore=1&axis=' + encodeURIComponent(id)
+            return <Link href={destination} prefetch={false} className={styles.reportMetric}
+              key={id} data-report-metric={id} data-report-measured={position !== null}>
+              <span className={styles.reportMetricIcon}><Icon size={20} aria-hidden="true" /></span>
+              <span className={styles.reportMetricName}>{d.metrics[id]}</span>
+              <strong className={styles.reportMetricValue}>{position === null ? d.noMeasurement : position + '/100'}</strong>
+              <span className={styles.reportMetricTrack} aria-hidden="true">
+                <span style={{ width: (position === null ? 0 : position) + '%' }} />
+              </span>
+            </Link>
           })}
         </div>
       </div>
-      <div className={styles.reportPortraitFooter}>
-        <h3>{p.title}</h3>
-        <Link href={root + '/portfolio'} prefetch={false} className={styles.reportPortraitLink}>
-          <Sparkles size={20} aria-hidden="true" />{p.detail}<ArrowRight size={20} aria-hidden="true" />
-        </Link>
-        <p className={styles.reportPortraitCaption}>
-          {measuredCount ? measuredCount + ' ' + p.measured + ' · ' : p.empty + ' · '}{p.caption}
-        </p>
+      <div className={styles.reportMeasuredFooter}>
+        <span>{d.measured}</span>
+        <strong>{measuredCount} / {scaleTotal}</strong>
+        <span className={styles.reportMeasuredTrack} aria-hidden="true">
+          <span style={{ width: (100 * measuredCount / scaleTotal) + '%' }} />
+        </span>
       </div>
+      <p className={styles.reportPortraitCaption}>{d.scaleNote}</p>
     </article>
 
-    {recent.length ? <div className={styles.recent}>
+    {recent.length ? <section className={styles.recent} aria-label={t.recent}>
       <div className={styles.reportRecentHeading}>
-        <h3>{t.recent}</h3>
+        <h2>{t.recent}</h2>
         <Link href={root + '/history'} prefetch={false}>{t.history}<ArrowRight size={16} aria-hidden="true" /></Link>
       </div>
-      <ul>{recent.slice(0, 3).map(item => {
+      <ul>{recent.slice(0, 3).map((item, index) => {
         const when = Date.parse(item.measurementAt || '')
         const date = Number.isFinite(when) ? new Intl.DateTimeFormat(
           selected === 'ru' ? 'ru-RU' : selected === 'es' ? 'es-ES' : 'en-CA',
           { dateStyle: 'medium' }).format(new Date(when)) : ''
         return <li key={item.id}>
-          <Link href={root + '/results/' + encodeURIComponent(item.id)} prefetch={false}>
-            <span className={styles.reportResultIcon}><ClipboardList size={19} aria-hidden="true" /></span>
-            <span className={styles.reportResultTitle}>{assessmentHistoryTitle(item, accountLocale) || item.definitionKey || t.archiveTitle}</span>
-            {date && <time dateTime={item.measurementAt}>{date}</time>}
-            <ArrowRight size={18} className={styles.reportResultArrow} aria-hidden="true" />
+          <Link href={root + '/results/' + encodeURIComponent(item.id)} prefetch={false}
+            className={styles.reportResultCard}>
+            <span className={styles.reportResultPhoto} data-report-card-image={index}>
+              <span className={styles.reportResultIcon}><FileText size={18} aria-hidden="true" /></span>
+            </span>
+            <span className={styles.reportResultBody}>
+              <strong className={styles.reportResultTitle}>{assessmentHistoryTitle(item, accountLocale) || item.definitionKey || t.archiveTitle}</strong>
+              <span className={styles.reportResultMeta}>
+                {date && <time dateTime={item.measurementAt}>{date}</time>}
+                <ArrowRight size={18} className={styles.reportResultArrow} aria-hidden="true" />
+              </span>
+            </span>
           </Link>
         </li>
       })}</ul>
-    </div> : <p className={styles.empty}>{t.empty}</p>}
+    </section> : <p className={styles.empty}>{t.empty}</p>}
 
     <div className={styles.actions}>
       <Link href={root + '/tests?explore=1&filters=topics'} className={styles.reportStartTest} prefetch={false}>
-        <ClipboardList size={19} aria-hidden="true" />{p.next}
+        <ClipboardList size={20} aria-hidden="true" />{p.next}
       </Link>
       <Link href={root + '/tests?filter=completed'} className={styles.reportMyTests} prefetch={false}>
-        <ListChecks size={19} aria-hidden="true" />{t.choose}
+        <ListChecks size={20} aria-hidden="true" />{t.choose}
       </Link>
     </div>
     <p className={styles.privacy}><LockKeyhole size={14} aria-hidden="true" />{t.private}</p>
