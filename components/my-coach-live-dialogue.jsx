@@ -2,7 +2,7 @@
 
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
-import {ArrowRight,Heart,Home,Keyboard,Leaf,Languages,PhoneOff,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Play,LoaderCircle,Zap} from 'lucide-react'
+import {ArrowRight,ChevronDown,Heart,Home,Keyboard,Leaf,Languages,PhoneOff,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Play,LoaderCircle,Zap} from 'lucide-react'
 import {getCoachPersona,localCoachText,coachStagePrompt} from '@/lib/coaching/persona-registry.mjs'
 import {getCoachPresentation} from '@/lib/coaching/persona-presentations.mjs'
 import {coachTimeboxState} from '@/lib/coaching/session-timebox.mjs'
@@ -12,6 +12,7 @@ import {coachTurnWindow} from '@/lib/coaching/coach-turn-window.mjs'
 import {coachAudibleTurns,markLatestCoachReplyInterrupted} from '@/lib/coaching/coach-audible-history.mjs'
 import {coachEphemeralContext} from '@/lib/coaching/coach-ephemeral-context.mjs'
 import {coachModelProbeRetryAllowed} from '@/lib/coaching/coach-model-recovery.mjs'
+import {coachSessionVisibleStageIds} from '@/lib/coaching/coach-session-progress.mjs'
 import {coachGoalTurn} from '@/lib/coaching/goal-turn.mjs'
 import {understandCoachingTurn} from '@/lib/personal-coaching/coaching-turn-understanding.mjs'
 import styles from './my-coach-live-dialogue.module.css'
@@ -429,6 +430,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       ?(methodStepTitles[lang]?.[lastRecordedProgress.stepId]||ui.stages[visibleStageIndex])
       :semanticStageTitles[lang]?.[
         ['contact','goal','reality','options','integration'][visibleStageIndex]]
+  const stageChecklistTitles=coachSessionVisibleStageIds(visibleMethodId,{
+    legacy:progressValid&&!meaningProgressValid
+  }).map((stepId,index)=>semanticStageTitles[lang]?.[stepId]||
+    methodStepTitles[lang]?.[stepId]||ui.stages[index]||stepId)
   const goalPrompts={
     en:{stress:'I would like to feel less stressed. Can we explore what is weighing on me?',energy:'I would like to restore my energy. Can we explore what is draining it?',relationships:'I would like to improve an important relationship. Can we explore what matters most?'},
     ru:{stress:'Я хочу снизить стресс. Давайте разберём, что сейчас на меня давит.',energy:'Я хочу восстановить энергию. Давайте посмотрим, что её забирает.',relationships:'Я хочу улучшить важные для меня отношения. Давайте разберёмся, что сейчас важнее всего.'},
@@ -958,24 +963,30 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         ru:'Play запускает голос. На iPhone короткие ответы могут расшифровываться через Groq Whisper без хранения аудио на Holistic House.',
         es:'Play activa la voz. En iPhone, Groq Whisper puede transcribir respuestas breves; Holistic House no almacena el audio.',
       })[lang]}</p>
-      <section className={styles.sessionProgress} aria-label={ui.stageQuestion}
+      <details className={styles.sessionProgress} data-coach-progress-accordion
+        aria-label={ui.stageQuestion}
         data-coach-stage-index={visibleStageIndex+1}
         data-coach-stage-source={progressValid?'director-client-evidence':'local-provisional'}
         title={stageProgressHelp[lang]}>
-        <div className={styles.sessionProgressText} aria-live="polite">
-          <strong>{ui.step} {visibleStageIndex+1} {ui.of} {visibleStageTotal} · {visibleMethodName}</strong>
-          <span>{stageDescription}</span>
-        </div>
-        <div className={styles.sessionProgressSegments} role="progressbar" aria-label={ui.stageQuestion}
-          aria-valuemin={1} aria-valuemax={visibleStageTotal} aria-valuenow={visibleStageIndex+1}
-          aria-valuetext={ui.step+' '+(visibleStageIndex+1)+' '+ui.of+' '+visibleStageTotal+' · '+stageDescription}>
-          {Array.from({length:visibleStageTotal},(_,index)=><span key={index}
-            data-complete={index<visibleStageIndex?'true':undefined}
-            data-current={index===visibleStageIndex?'true':undefined}/>)}
-        </div>
-      </section>
-      <MyCoachSessionStateCard locale={lang} turns={turns}
-        progress={progressValid?lastRecordedProgress:null} stageLabel={stageDescription}/>
+        <summary className={styles.sessionProgressSummary}>
+          <div className={styles.sessionProgressText} aria-live="polite">
+            <strong>{ui.step} {visibleStageIndex+1} {ui.of} {visibleStageTotal} · {visibleMethodName}</strong>
+            <span>{stageDescription}</span>
+          </div>
+          <div className={styles.sessionProgressSegments} role="progressbar" aria-label={ui.stageQuestion}
+            aria-valuemin={1} aria-valuemax={visibleStageTotal} aria-valuenow={visibleStageIndex+1}
+            aria-valuetext={ui.step+' '+(visibleStageIndex+1)+' '+ui.of+' '+visibleStageTotal+' · '+stageDescription}>
+            {Array.from({length:visibleStageTotal},(_,index)=><span key={index}
+              data-complete={progressValid&&index<visibleStageIndex?'true':undefined}
+              data-current={index===visibleStageIndex?'true':undefined}/>)}
+          </div>
+          <ChevronDown className={styles.sessionProgressChevron} size={20} aria-hidden="true"/>
+        </summary>
+        <MyCoachSessionStateCard locale={lang} turns={turns}
+          progress={progressValid?lastRecordedProgress:null} stageLabel={stageDescription}
+          stageNames={stageChecklistTitles} stageIndex={visibleStageIndex}
+          stageProgressVerified={progressValid}/>
+      </details>
       <details className={styles.voicePrivacyDetails}>
         <summary>{lang==='ru'?'Приватность голоса':lang==='es'?'Privacidad de voz':'Voice privacy'}</summary>
         <p>{geminiVoiceTier==='existing'?voiceProviderDetails[lang]:geminiVoicePrivacyDetails[lang]}</p>
