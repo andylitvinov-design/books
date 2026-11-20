@@ -14,11 +14,17 @@ test('legacy Groq JSON envelope resolves to natural speech, without a second inf
    model.message)
  assert.equal(JSON.parse(coachReviewableStreamReply('I am here to listen.')).message,
    'I am here to listen.')
+ const nested=JSON.stringify({message:json,planSuggestion:'do it',evidenceQuote:'fake'})
+ const normalized=JSON.parse(coachReviewableStreamReply(nested))
+ assert.equal(normalized.message,model.message)
+ assert.equal(normalized.planSuggestion,'')
+ assert.equal(normalized.evidenceQuote,'')
+ assert.deepEqual(normalized.clientEvidence,{kind:'none',quote:''})
 })
-test('malformed JSON and nested protocol responses fail closed',()=>{
+test('malformed JSON and invalid nested protocol responses fail closed',()=>{
  for(const bad of [
   '{ "message": "half"',
-  '{"message":"{\\"message\\":\\"nested\\"}"}',
+  '{"message":"{\\"message\\":{\\"oops\\":true}}"}',
   '{"mode":"ai","message":"Internal policy dump"}',
   '\x60\x60\x60json\n{"message": "unfinished"}',
   '{"choices":[{"delta":{"content":"unsafe"}}]}',
