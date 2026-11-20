@@ -11,6 +11,7 @@ import { coverageForFocus } from '@/lib/assessments/test-explorer'
 import { TestExplorerVisual } from './test-explorer-visual'
 import styles from './profile-hub-tabs.module.css'
 import { ProfileSpaceDashboard } from './profile-space-dashboard'
+import ProfileSettingsLanding from './profile-settings-landing'
 
 const COPY = {
   ru: {
@@ -186,10 +187,10 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
   return <section className={styles.hub} data-profile-hub-tabs data-profile-active={current}>
     <header className={styles.heading}>
       <div className={styles.headingTitle}>
-        {stateBrand && <span className={styles.brandMark} aria-hidden="true" />}
-        <h2 aria-label={settingsMode ? s.pageTitle : stateBrand ? 'Holistic House' : t.title}>
-          <span className={styles.titleFull}>{settingsMode ? s.pageTitle : stateBrand ? 'Holistic House' : t.title}</span>
-          <span className={styles.titleCompact}>{settingsMode ? (selected === 'ru' ? 'Профиль' : selected === 'es' ? 'Perfil' : 'Profile') : stateBrand ? 'Holistic House' : 'My Space'}</span>
+        {(stateBrand || settingsMode) && <span className={styles.brandMark} aria-hidden="true" />}
+        <h2 aria-label={(stateBrand || settingsMode) ? 'Holistic House' : t.title}>
+          <span className={styles.titleFull}>{(stateBrand || settingsMode) ? 'Holistic House' : t.title}</span>
+          <span className={styles.titleCompact}>{(stateBrand || settingsMode) ? 'Holistic House' : 'My Space'}</span>
         </h2>
       </div>
       <div className={styles.profileHeadingActions}>
@@ -214,7 +215,7 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
       <Link href={root + '/monitoring'} prefetch={false} aria-current="page" data-profile-state-life><Heart size={22} aria-hidden="true" />{selected === 'ru' ? 'Моё состояние' : selected === 'es' ? 'Mi estado' : 'My State'}</Link>
       <Link href={'/' + selected + '/practice'} prefetch={false} data-profile-state-work><UserRound size={22} aria-hidden="true" />{selected === 'ru' ? 'Моя работа' : selected === 'es' ? 'Mi trabajo' : 'My Work'}</Link>
     </nav>}
-    {current !== 'today' && current !== 'state' && <nav className={settingsMode ? styles.settingsTabs : styles.tabs} aria-label={settingsMode ? s.menu : COPY[selected].navigation}>
+    {current !== 'today' && current !== 'state' && !settingsMode && <nav className={settingsMode ? styles.settingsTabs : styles.tabs} aria-label={settingsMode ? s.menu : COPY[selected].navigation}>
       {settingsMode ? [
         { id: 'create', href: '/' + selected + '/personality-profiles' },
         { id: 'view', href: paths.today },
@@ -242,38 +243,7 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
       </Link>
     </div>}
     {current === 'today' && <ProfileSpaceDashboard locale={selected} root={root} resultCount={resultCount} />}
-    {settingsMode && <nav className={styles.settingsQuickActions} data-profile-settings-actions aria-label={s.menu}>
-      <a href="#hh-settings-account">{s.detail}</a>
-      <a href="#hh-settings-messengers">{s.messenger}</a>
-      <a href="#hh-settings-plans">{s.plans}</a>
-    </nav>}
-    {settingsMode && <section className={styles.settingsOverview} data-profile-settings-overview aria-label={s.account}>
-      <div className={styles.settingsIdentity} id="hh-settings-overview-account">
-        <div className={styles.settingsCardHeading}>
-          <h3>{s.account}</h3>
-          <a href="#hh-settings-account">{s.change}</a>
-        </div>
-        <div className={styles.accountDetails}>
-          <span><small>{s.name}</small><strong>{account?.displayName || '—'}</strong></span>
-          <span><small>{s.timeZone}</small><strong>{account?.timezone || '—'}</strong></span>
-          <span><small>{s.language}</small><strong>{selected.toUpperCase()}</strong></span>
-        </div>
-      </div>
-      <div className={styles.connectionOverview}>
-        <h3>{s.contacts}</h3>
-        <a href="#hh-settings-messengers">Telegram <span>{s.manage}</span></a>
-        <a href="#hh-settings-messengers">WhatsApp <span>{s.manage}</span></a>
-      </div>
-      <div className={styles.packagesOverview} id="hh-settings-overview-plans">
-        <div className={styles.settingsCardHeading}><h3>{s.membership}</h3><a href="#hh-settings-plans">{s.expand}</a></div>
-        <div className={styles.packagesGrid}>{NEW_PACKAGES.map(item =>
-          <a key={item.key} href="#hh-settings-plans" className={styles.packageCard} data-package={item.key}>
-            <strong>{item.key.charAt(0).toUpperCase() + item.key.slice(1)}</strong>
-            <span>€{item.amount} <small>/ {selected === 'ru' ? 'мес' : selected === 'es' ? 'mes' : 'mo'}</small></span>
-          </a>)}</div>
-        <p className={styles.packageFinePrint}>{s.note}</p>
-      </div>
-    </section>}
+    {settingsMode && <ProfileSettingsLanding locale={selected} root={root} plans={NEW_PACKAGES} />}
     {current !== 'today' && current !== 'state' && current !== 'create' && current !== 'reports' && !settingsMode && !publicEntry && <div className={styles.sectionIntro}>
       <h1>{t.tabs[current] || t.title}</h1><p>{t.details[current] || t.privacy}</p>
     </div>}
