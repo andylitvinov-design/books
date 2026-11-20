@@ -363,7 +363,7 @@ test('Provider-free answers are also directed; speech never chooses the next tec
   assert.match(server,/parseConversationalCoachReply\(reply.text,input,method,stage\)/)
   assert.match(server,/if\(persona&&error\?\.message==='COACHING_BRAIN_RESPONSE_INVALID'\)break/)
   assert.match(server,/enforceCoachSessionDirective\(parsed,directive\)/)
-  assert.match(voice,/result=await turnRef.current\?\.\(text,\{locale:utteranceLocale\}\)/)
+  assert.match(voice,/result=await turnRef.current\?\.\(text,\{locale:utteranceLocale,\s*onApprovedPhrase:/)
   assert.match(voice,/void speakCoachReply\(result,text,generation\)/)
   assert.doesNotMatch(voice,/coachSessionDirective\(|directedCoachOfflineReply\(/)
 })

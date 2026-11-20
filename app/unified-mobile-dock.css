@@ -117,3 +117,9 @@ body:has([data-hh-unified-dock]) [data-video-director-chat-details]{scroll-margi
   letter-spacing:-.38px;
  }
 }
+
+
+/* HOME_APPROVED_MOBILE_BANNER_20261120 — legal global selector, not a CSS Module. */
+@media(max-width:759px){
+ body:has([data-home-dialogue-entry]) [data-sitewide-antistress-banner]{display:none!important}
+}

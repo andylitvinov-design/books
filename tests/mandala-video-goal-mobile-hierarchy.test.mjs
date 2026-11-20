@@ -53,8 +53,9 @@ test("explicit three-step quiz gates Generate and Personalization with back supp
   assert.ok(director.includes('if(videoAudience==="self")return goalQuizComplete;'));
   assert.ok(studio.includes('onGoalQuizChange={setGoalQuizState}'));
   assert.ok(studio.includes('if(!goalQuizReady)return;'));
-  assert.ok(studio.includes('if(!goalQuizReady||!studioHydrated||recording||preparing)return false;'));
-  assert.equal((studio.match(/disabled=\{!goalQuizReady\|\|!studioHydrated\|\|recording\|\|preparing\}/g)||[]).length,2);
+  assert.ok(studio.includes('if((!goalQuizReady&&!wish.trim()&&!uploadedAudio)||!studioHydrated||recording||preparing)return false;'));
+  assert.ok(studio.includes('disabled={(!goalQuizReady&&!wish.trim()&&!uploadedAudio)||!studioHydrated||recording||preparing}'));
+  assert.equal((studio.match(/disabled=\{!goalQuizReady\|\|!studioHydrated\|\|recording\|\|preparing\}/g)||[]).length,1);
   assert.ok(studio.includes('hidden={goalQuizState.audience==="self"&&goalQuizState.step!==3}'));
   assert.ok(layout.includes('[data-video-goal-quiz-topic-stage][hidden]{display:none!important}'));
 });

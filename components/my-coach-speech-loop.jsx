@@ -80,6 +80,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   // If Safari's reset cue jams, keep the same session and avoid repeating it.
   const iosCueBrokenRef=useRef(false)
   const generationRef=useRef(0)
+  const earlySpeechRef=useRef(null) // one authorized early sentence, no second model call
   const turnRef=useRef(onTurn),cancelRef=useRef(onCancelTurn),interruptedRef=useRef(onCoachInterrupted),stopRef=useRef(null),sessionStartRef=useRef(onSessionStart)
   const voiceStateRef=useRef(onVoiceStateChange),levelRef=useRef(onVoiceLevel)
   const micLevelRef=useRef(onMicLevel)
@@ -107,7 +108,40 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     setPhase(next)
     voiceStateRef.current?.({phase:next,beat:beatRef.current})
   }
+  function offerEarlyPhrase(phrase,locale,generation){
+    if(!activeRef.current||generationRef.current!==generation||earlySpeechRef.current||
+       phaseRef.current!=='thinking'||typeof phrase!=='string'||
+       phrase.length<20||phrase.length>220)return
+    const early={generation,prefix:phrase,ended:false,final:null}
+    earlySpeechRef.current=early
+    changePhase('loading')
+    void speakCoachReply({reply:phrase,mode:'ai',locale},'',generation,false,true)
+  }
+  function finishEarlyPhrase(early){
+    if(earlySpeechRef.current!==early||generationRef.current!==early.generation||!early.final)return
+    earlySpeechRef.current=null
+    const rest=String(early.final.reply||'').slice(early.prefix.length).trim()
+    if(rest.length>=4){
+      changePhase('loading')
+      void speakCoachReply({...early.final,reply:rest},'',early.generation,false,false,early.final.reply)
+    }else if(ios27NeedsSpeechRecovery(window.navigator)&&
+             recordedTurnRef.current?.continueAfterCoach?.()){
+      changePhase('listening');setNotice('')
+    }else{
+      recordedTurnRef.current?.cancel()
+      recordedTurnRef.current=null
+      startListening()
+    }
+  }
+  function earlyPhraseEnded(generation){
+    const early=earlySpeechRef.current
+    if(!early||early.generation!==generation||early.ended)return
+    early.ended=true
+    if(early.final)finishEarlyPhrase(early)
+    else changePhase('thinking')
+  }
   function silence(){
+    earlySpeechRef.current=null
     if(speechTimerRef.current)clearTimeout(speechTimerRef.current)
     speechTimerRef.current=null;blockedResumeRef.current=null;utteranceRef.current=null
     if(iosCueTimerRef.current)clearTimeout(iosCueTimerRef.current)
@@ -152,7 +186,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     }
   }
   function stopVoice(){
-    const cancelTurn=phaseRef.current==='thinking'
+    const cancelTurn=phaseRef.current==='thinking'||Boolean(earlySpeechRef.current)
     if(['starting','listening'].includes(phaseRef.current)&&hasCoachSpokenAnswer(heardRef.current)){
       draftRef.current?.(appendSpokenAnswer(draftAtStartRef.current,heardRef.current.trim(),1200))
       setNotice(t.review)
@@ -199,11 +233,11 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     if(!activeRef.current)return
     const interruptedPhase=phaseRef.current
     if(['loading','speaking'].includes(interruptedPhase))interruptedRef.current?.(lastSpokenCoachRef.current)
-    const computing=interruptedPhase==='thinking'
+    const computing=interruptedPhase==='thinking'||Boolean(earlySpeechRef.current)
     if(computing){
-      // Aborting the old model reply must never allow it to start speaking
-      // after the client's next utterance has already begun.
+      // A model stream can remain live even after the first sentence plays.
       generationRef.current+=1
+      earlySpeechRef.current=null
       cancelRef.current?.()
     }
     cancelOutgoingCoachSpeech()
@@ -252,14 +286,14 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
           if(!activeRef.current||generationRef.current!==monitorGeneration)return
           interrupted=true
           const interruptedPhase=phaseRef.current
-          if(interruptedPhase==='thinking'){
-            // Transfer this same microphone capture into the next AI turn.
-            monitorGeneration=generationRef.current+1
-            generationRef.current=monitorGeneration
-            cancelRef.current?.()
-          }else if(['loading','speaking'].includes(interruptedPhase)){
+          // Transfer this live mic capture to the new request epoch, including
+          // interruptions while early voice and model tokens overlap.
+          if(['loading','speaking'].includes(interruptedPhase))
             interruptedRef.current?.(lastSpokenCoachRef.current)
-          }
+          monitorGeneration=generationRef.current+1
+          generationRef.current=monitorGeneration
+          earlySpeechRef.current=null
+          cancelRef.current?.()
           cancelOutgoingCoachSpeech()
           changePhase('listening')
           setNotice(t.audioHearing)
@@ -365,6 +399,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       // Text Send cancels the active microphone/voice without releasing the
       // already-unlocked Safari output. The answer can play automatically.
       generationRef.current+=1
+      earlySpeechRef.current=null
       recordedTurnRef.current?.cancel()
       recordedTurnRef.current=null
       const recognition=recognitionRef.current
@@ -811,7 +846,8 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
         selection:selectionAtRecognitionRef.current,
         recognizedLanguage:recognizedLanguageRef.current,transcript:text,fallback:lang,
       })
-      result=await turnRef.current?.(text,{locale:utteranceLocale})
+      result=await turnRef.current?.(text,{locale:utteranceLocale,
+        onApprovedPhrase:(phrase,locale)=>offerEarlyPhrase(phrase,locale||utteranceLocale,generation)})
     }catch{result=null}
     if(!activeRef.current||generationRef.current!==generation)return
     if(modelStartedAt!==null&&typeof performance!=='undefined'){
@@ -820,6 +856,10 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       catch{/* Metrics must never interrupt an audible coach turn. */}
     }
     if(!result?.reply){
+      if(earlySpeechRef.current?.generation===generation){
+        earlySpeechRef.current=null
+        cancelOutgoingCoachSpeech()
+      }
       // A model outage fails only this turn. Keep the text editable and the
       // one-Play voice session alive, without retrying the model or TTS.
       // Sync the draft ref before Web Speech restarts in this same tick.
@@ -838,13 +878,25 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     }
     heardRef.current=''
     transcriptRef.current?.('')
+    const early=earlySpeechRef.current
+    if(early&&early.generation===generation){
+      if(result.mode==='ai'&&result.approvedSpokenPrefix===early.prefix&&
+         String(result.reply).startsWith(early.prefix)){
+        early.final=result
+        if(early.ended)finishEarlyPhrase(early)
+        return
+      }
+      // Final full-turn veto or provider failure: cancel provisional audio.
+      earlySpeechRef.current=null
+      cancelOutgoingCoachSpeech()
+    }
     changePhase('loading') // Reply is ready; synthesis is pending, not model thinking.
     void speakCoachReply(result,text,generation)
   }
 
-  async function speakCoachReply(result,text,generation,naturalVoice=false){
+  async function speakCoachReply(result,text,generation,naturalVoice=false,earlySegment=false,fullText=''){
     const reply=String(result.reply).slice(0,900)
-    lastSpokenCoachRef.current=reply
+    lastSpokenCoachRef.current=String(fullText||reply).slice(0,900)
     // An audible reply must include the answer/acknowledgement, not only its last question.
     // The Google excerpt only applies to its separately-consented 500-char path.
     const speakable=coachSpokenText(reply).text
@@ -854,6 +906,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     const live=()=>activeRef.current&&generationRef.current===generation
     const afterSpeech=()=>{
       if(!live())return
+      if(earlySegment){earlyPhraseEnded(generation);return}
       if(result.mode==='safety'||result.mode==='boundary'){
         silence();changePhase('idle');return
       }
@@ -890,7 +943,11 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       const fail=()=>{
         if(utteranceRef.current!==voice)return
         clear()
-        if(live()){startListening();setNotice(t.fallback)}
+        if(live()){
+          if(earlySegment)earlyPhraseEnded(generation)
+          else startListening()
+          setNotice(t.fallback)
+        }
       }
       voice.onstart=()=>{
         if(utteranceRef.current!==voice||!live())return
@@ -945,7 +1002,8 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       cloudPlayerRef.current=null
       // Natural Google/Fish stays first; disclose the temporary OS voice.
       if(playDeviceFallback())return
-      startListening()
+      if(earlySegment)earlyPhraseEnded(generation)
+      else startListening()
       setNotice(t.fallback)
     }
 

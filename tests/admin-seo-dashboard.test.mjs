@@ -94,7 +94,7 @@ test("Google credentials remain server-only; no secret or raw API errors in HTML
 test("dashboard shows search, sitemap, Lighthouse and unavailable GA4 separately", () => {
   const page = read("app/admin/seo/page.jsx");
   const css = read("app/admin/seo/seo-dashboard.module.css");
-  for (const text of ["Клики из Google", "Поисковые запросы", "Карта сайта и индексация", "Технический аудит", "Скорость и Lighthouse", "GA4 и конверсии"]) {
+  for (const text of ["Клики из Google", "Поисковые запросы", "Карта сайта и индексация", "Технический аудит", "Скорость и Lighthouse", "Посещаемость и конверсии"]) {
     assert.ok(page.includes(text), text);
   }
   assert.match(page, /sourceDate/);

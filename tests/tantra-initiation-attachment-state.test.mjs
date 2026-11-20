@@ -37,11 +37,11 @@ const dependencies = (name) => {
   throw new Error("Unexpected import: " + name);
 };
 const instantiate = source => {
-  const module = { exports: {} };
+  const sandboxModule = { exports: {} };
   new Function("require", "module", "exports", compile(source))(
-    dependencies, module, module.exports,
+    dependencies, sandboxModule, sandboxModule.exports,
   );
-  return module.exports;
+  return sandboxModule.exports;
 };
 ClientChoice = instantiate(clientSource).TantraInitiationChoice;
 const { TantraInitiationForm, tantraInitiationWhatsAppUrl } = instantiate(serverSource);
@@ -66,22 +66,6 @@ function render(locale, choice = "free") {
 }
 const intents = ["free", "personal", "session", "answers", "feedback"];
 
-function flatten(node) {
-  if (!node || typeof node !== "object") return [];
-  if (Array.isArray(node)) return node.flatMap(flatten);
-  return [node, ...flatten(node.props?.children)];
-}
-function render(locale, choice = "free") {
-  currentChoice = choice;
-  const nodes = flatten(TantraInitiationForm({ locale }));
-  return {
-    nodes,
-    links: nodes.filter(node => node.type === "contact-channel-chooser"),
-    selects: nodes.filter(node => node.type === "select"),
-    options: nodes.filter(node => node.type === "option"),
-    anchors: nodes.filter(node => node.type === "span" && /^apply-/.test(node.props?.id || "")),
-  };
-}
 
 test("EN/RU/ES shows one choice, five deep links and one CRM-first phone handoff", () => {
   for (const locale of ["en", "ru", "es"]) {
