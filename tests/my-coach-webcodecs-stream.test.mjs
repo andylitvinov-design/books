@@ -79,7 +79,9 @@ test('cancel stops scheduled audio nodes, does not generate new audio, and preve
 
 test('original one-Play player gates codec to explicit URL and keeps abortable full-MP3 fallback',()=>{
  const player=readFileSync(new URL('../lib/personal-coaching/streamed-mp3-playback.mjs',import.meta.url),'utf8')
- assert.match(player,/if\(audioContext&&coachingWebCodecsOptIn\(w\)&&response\.body\?\.getReader\)/)
+ assert.match(player,/if\(audioContext&&isMp3SpeechResponse\(response\)&&coachingWebCodecsOptIn\(w\)&&response\.body\?\.getReader\)/)
+ assert.match(player,/const isMp3SpeechResponse=response=>/)
+ assert.match(player,/\.startsWith\('audio\/mpeg'\)/,'WAV must never reach MP3 WebCodecs on iOS')
  assert.match(player,/progressivePlayer\?\.cancel\(\)/)
  assert.match(player,/if\(outcome\?\.fallback&&isActive\(\)\)await playDownloaded\(outcome\.blob\)/)
  assert.equal((player.match(/startProgressiveMp3WebCodecs\(response/g)||[]).length,1)
