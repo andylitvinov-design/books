@@ -537,3 +537,20 @@ test("Safari native MP4 completion is bounded after 97% and releases failed hold
  assert.match(studio,/withLocalMediaDeadline\(encoded\.slice\(0,12\)\.arrayBuffer\(\),12000\)/);
  assert.match(studio,/if\(now-start>=duration\*1000\)/);
 });
+
+test("iPhone native stop is idempotent: do not kill tracks before final MP4 onstop",()=>{
+ assert.match(studio,/stopRequested\?: boolean/);
+ const start=studio.indexOf("function stopJob(job: Job, cancelled: boolean)");
+ const end=studio.indexOf("\n}\n",start);
+ assert.ok(start>0&&end>start,"one original MediaRecorder stop helper");
+ const functionBody=studio.slice(start,end);
+ assert.match(functionBody,/job\.cancelled=job\.cancelled\|\|cancelled/);
+ assert.match(functionBody,/if\(job\.stopRequested\)return;/);
+ assert.match(functionBody,/job\.stopRequested=true;/);
+ assert.ok(functionBody.indexOf("if(job.stopRequested)return;")<
+   functionBody.indexOf("job.recorder.stop()"),
+   "a repeated timeout or frame callback cannot stop input tracks before onstop");
+ assert.match(studio,/recorder\.onstop = async \(\) => \{\s*if\(job\.finalizeTimeout!==undefined\)/);
+ assert.match(studio,/job\.stream\.getTracks\(\)\.forEach\(track=>track\.stop\(\)\);/);
+ assert.match(studio,/job\.finalizeTimeout=window\.setTimeout\(/);
+});

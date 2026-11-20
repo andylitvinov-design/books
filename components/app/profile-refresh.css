@@ -723,3 +723,73 @@
 .hh-domain-labs-link small{display:block;font-size:12px;color:#47746b;line-height:1.5}
 .hh-domain-labs-link svg{flex:none}
 @media(max-width:580px){.hh-domain-labs-link{margin:12px 0;padding:14px}.hh-domain-labs-link strong{font-size:14px}.hh-domain-labs-link small{font-size:11px}}
+
+
+/* Reports-only compact continuation: preserves the real private report/archive
+   and consultation requests, but removes the oversized old empty-screen padding. */
+.hh-app:has([data-reports-photo-hero]) .hh-profile-domains[data-profile-mode="account"] > .hh-domain-report-archive{
+  margin:3px 0 12px;padding:13px;border:1px solid #e9dfd1;
+  border-radius:23px;background:#fffcf7;box-shadow:0 5px 18px #183d320c
+}
+.hh-app:has([data-reports-photo-hero]) .hh-profile-domains[data-profile-mode="account"] .hh-account-report-heading{
+  margin-bottom:9px;gap:9px
+}
+.hh-app:has([data-reports-photo-hero]) .hh-profile-domains[data-profile-mode="account"] .hh-account-report-icon{
+  width:40px;height:40px;flex-basis:40px
+}
+.hh-app:has([data-reports-photo-hero]) .hh-profile-domains[data-profile-mode="account"] .hh-account-report-heading-copy h1{
+  font-size:clamp(25px,5.5vw,32px)!important;color:#143d3a
+}
+.hh-app:has([data-reports-photo-hero]) .hh-profile-domains[data-profile-mode="account"] .hh-account-report-heading-copy p{
+  font-size:12px!important
+}
+.hh-app:has([data-reports-photo-hero]) .hh-profile-domains[data-profile-mode="account"] .hh-account-report-latest{
+  display:flex;flex-direction:row;align-items:center;gap:10px;
+  padding:10px;border:1px solid #e6e3d7;border-radius:17px;
+  background:linear-gradient(105deg,#f2f8ed,#fffcf7)
+}
+.hh-app:has([data-reports-photo-hero]) .hh-profile-domains[data-profile-mode="account"] .hh-account-report-open{
+  flex:none;width:auto;min-width:44px;min-height:44px;margin:0;padding:10px 12px;
+  border-radius:999px;background:#087a67;font-size:12px
+}
+.hh-app:has([data-reports-photo-hero]) .hh-profile-domains[data-profile-mode="account"] .hh-account-report-full{
+  padding-top:9px;margin-top:9px
+}
+.hh-app:has([data-reports-photo-hero]) .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-empty{
+  min-height:0;padding:10px 8px!important;border-radius:14px
+}
+.hh-app:has([data-reports-photo-hero]) .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-empty:before{
+  display:none
+}
+.hh-app:has([data-reports-photo-hero]) .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-empty > svg{
+  width:28px;height:28px;margin-bottom:2px
+}
+.hh-app:has([data-reports-photo-hero]) .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-empty strong{
+  font-size:19px!important
+}
+.hh-app:has([data-reports-photo-hero]) .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-empty p{
+  margin:4px 0!important;font-size:12px!important
+}
+.hh-app:has([data-reports-photo-hero]) .hh-profile-domains[data-profile-mode="account"] .hh-domain-when-empty{
+  margin-top:7px
+}
+.hh-app:has([data-reports-photo-hero]) .hh-profile-domains[data-profile-mode="account"] .hh-domain-appointment-button{
+  min-height:48px;padding:10px;border-radius:14px;background:#087a67;color:white;font-size:13px
+}
+.hh-app:has([data-reports-photo-hero]) .hh-profile-domains[data-profile-mode="account"] .hh-domain-consultation-disclaimer{
+  margin:6px 2px 0!important;font-size:11px
+}
+@media(max-width:430px){
+  .hh-app:has([data-reports-photo-hero]) .hh-profile-domains[data-profile-mode="account"] > .hh-domain-report-archive{
+    padding:10px;border-radius:20px
+  }
+  .hh-app:has([data-reports-photo-hero]) .hh-profile-domains[data-profile-mode="account"] .hh-account-report-heading-copy h1{
+    font-size:25px!important
+  }
+  .hh-app:has([data-reports-photo-hero]) .hh-profile-domains[data-profile-mode="account"] .hh-account-report-latest-copy strong{
+    font-size:14px!important
+  }
+  .hh-app:has([data-reports-photo-hero]) .hh-profile-domains[data-profile-mode="account"] .hh-account-report-open{
+    padding:9px;min-width:44px;font-size:11px
+  }
+}

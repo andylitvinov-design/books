@@ -172,6 +172,7 @@ type Job = {
   animation: number;
   timeout: number;
   finalizeTimeout?: number;
+  stopRequested?: boolean;
   cancelled: boolean;
   musicSession: AmbientSession | null;
 };
@@ -1716,14 +1717,19 @@ function paintStoryMotifs(ctx:CanvasRenderingContext2D,time:number,selection:Sto
 }
 
 function stopJob(job: Job, cancelled: boolean) {
-  job.cancelled = cancelled;
+  // One native stop request: Safari transitions its recorder to "inactive"
+  // BEFORE dispatching its final dataavailable/onstop events. A second stop
+  // must NOT close video/audio tracks while the MP4 muxer is still flushing.
+  job.cancelled=job.cancelled||cancelled;
   window.cancelAnimationFrame(job.animation);
   window.clearTimeout(job.timeout);
+  if(job.stopRequested)return;
+  job.stopRequested=true;
   if (job.recorder.state !== "inactive") {
-    // Safari needs its audio/video tracks alive until the MP4/WebM muxer has
-    // emitted its final dataavailable event. onstop owns final cleanup.
+    // The final dataavailable/onstop callback owns stream and mixer cleanup.
     job.recorder.stop();
   } else {
+    // If already inactive BEFORE our own stop, no recorded stream remains.
     job.stream.getTracks().forEach(track => track.stop());
     job.musicSession?.close();
   }
@@ -6167,15 +6173,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     }else if(montagePanel==="text"||montagePanel==="settings"){
       setMontagePanel("concept");
     }else if(montagePanel==="concept"){
-      const story=document.querySelector<HTMLElement>("[data-video-auto-storyboard]");
-      if(story?.getAttribute("data-storyboard-media-ready")==="false"){
-        setNotice(locale==="ru"?"Сначала подтвердите нужные шесть фото в «Сюжете» — референсы пока не входят в видео.":
-          locale==="es"?"Confirma las seis fotos del guion antes de exportar.":
-          "Approve the six storyboard photos before export; references are not video frames.");
-        document.querySelector("[data-storyboard-apply-reference-photos]")
-          ?.scrollIntoView({behavior:"smooth",block:"center"});
-        return;
-      }
+      // Navigation to Extra does not render or debit credits. Keep it usable:
+      // the same real startFromHero/Ready source guard prevents old-stock export.
       setMontagePanel("promo");
     }else{
       return;

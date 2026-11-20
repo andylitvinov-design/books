@@ -2751,7 +2751,7 @@ function PortfolioPage({ data, locale }) {
 
       {allGroups.length > 0 && <p className="hh-insights-scale-note">{ru ? 'Показатели относятся к отдельным шкалам, а не к проценту здоровья.' : 'Scores reflect individual scales, not an overall health percentage.'}</p>}
       {allGroups.length > 0 && (
-        <details className="hh-insights-export">
+        <details id="hh-insights-export" className="hh-insights-export">
           <summary>{ru ? 'Скачать общий отчёт по всем тестам (PDF)' : 'Download a complete PDF report'}</summary>
           <ClientReportActions data={data} locale={locale} />
         </details>

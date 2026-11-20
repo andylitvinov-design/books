@@ -238,8 +238,10 @@ test("six photo references require explicit approval before quality navigation",
  assert.match(quality,/if\(!sourceReady\)\{/);
  assert.match(quality,/data-storyboard-apply-reference-photos/);
  const next=studio.slice(studio.indexOf("const continueMontageOrGenerate="),studio.indexOf("const continueToIdeas =",studio.indexOf("const continueMontageOrGenerate=")));
- assert.match(next,/data-storyboard-media-ready/);
  assert.match(next,/setMontagePanel\("promo"\)/);
+ assert.doesNotMatch(next,/data-storyboard-media-ready/,
+   "Navigation to Extra must remain available; only the actual encoder is blocked");
+ assert.match(studio,/const startFromHero=\(\)=>\{\s*if\(storySourcePendingRef\.current\)/);
 });
 
 test("unfinished Story source selection blocks direct Ready export across tab navigation",()=>{
