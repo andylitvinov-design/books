@@ -366,9 +366,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     ?geminiVoiceByLocale[conversationLang]:geminiVoices[0]
   const geminiVoiceReady=geminiVoiceTier!=='existing'&&
     geminiCapabilities[geminiVoiceTier]===true&&geminiVoiceConsent
-  const chosenCloudProvider=geminiVoiceReady?geminiVoiceTier:cloudProvider
-  const chosenCloudAvailable=geminiVoiceReady||cloudAvailable
-  const chosenCloudAgreed=geminiVoiceReady||cloudAgreed
+  // A selected Gemini voice is a vendor decision, not a preference hint:
+  // until its separate consent is approved, never fall back to Fish or Chirp.
+  const usingExistingVoice=geminiVoiceTier==='existing'
+  const chosenCloudProvider=usingExistingVoice?cloudProvider:
+    geminiVoiceReady?geminiVoiceTier:null
+  const chosenCloudAvailable=usingExistingVoice?cloudAvailable:geminiVoiceReady
+  const chosenCloudAgreed=usingExistingVoice?cloudAgreed:geminiVoiceReady
   const captions=transcriptUi[lang]||transcriptUi.en
   const latestCoachTurn=[...turns].reverse().find(turn=>turn.role==='assistant')
   const latestCoachText=latestCoachTurn?.content||introduction
