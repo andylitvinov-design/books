@@ -63,9 +63,9 @@ test("Messenger routes technical failures into real bubbles, not manual mode ins
   assert.doesNotMatch(s,/Этот режим пока недоступен\. Выберите «Без нейросети»/);
   assert.match(s,/aliGentleContinuity\(/);
   assert.match(s,/setMessages\(prev=>\[\.\.\.prev,\{role:"assistant" as const,text:answer,provisional:true\}\]/);
-  assert.match(s,/remote\\.status===503/);
-  assert.match(s,/window\\.setTimeout\\(\\(\\)=>network\\.abort\\(\\),12000\\)/);
-  assert.match(s,/window\\.clearTimeout\\(timeout\\)/);
+  assert.match(s,/remote\.status===503/);
+  assert.match(s,/window\.setTimeout\(\(\)=>network\.abort\(\),12000\)/);
+  assert.match(s,/window\.clearTimeout\(timeout\)/);
   assert.match(s,/if\(typeof data\?\.reply!=="string"\|\|!data\.reply\.trim\(\)\)/);
   assert.match(s,/newTurns\.slice\(userIndex\+1\)\.some\(turn=>turn\.role==="assistant"&&turn\.provisional!==true\)/);
 });
