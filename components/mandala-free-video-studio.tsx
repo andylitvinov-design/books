@@ -7570,8 +7570,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               disabled={(!goalQuizReady&&!wish.trim()&&!uploadedAudio)||!studioHydrated||recording||preparing}
               onClick={generateFromGoal} data-video-express-create>
               <Play size={20} fill="currentColor" aria-hidden="true"/>
-              {locale==="ru"?"Создать видео":locale==="es"?"Generar vídeo":"Generate video"}
-              <small>{locale==="ru"?"Экспресс · 1 клик":locale==="es"?"Exprés · 1 clic":"Express · 1 click"}</small>
+              {locale==="ru"?"Экспресс-видео":locale==="es"?"Vídeo exprés":"Express video"}
+              <small>{locale==="ru"?"Быстро · 1 клик":locale==="es"?"Rápido · 1 clic":"Fast · 1 click"}</small>
               {creditCatalog?.chargeRequired && creditCatalog.ready ?
                 <small>{creditSession==="guest"&&!guestFirstVideoUsed
                   ?locale==="ru"?"Первое бесплатно":locale==="es"?"Primero gratis":"First free"
@@ -7581,9 +7581,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <button type="button" className={videoStyles.stageAddButton} data-video-continue-scenarios
               disabled={!goalQuizReady||!studioHydrated||recording||preparing} onClick={continueToIdeas}>
               <Sparkles size={19} aria-hidden="true"/>
-              {locale==="ru"?"Перейти к персонализации":
-                locale==="es"?"Continuar a personalización":"Proceed to personalization"}
-              <ArrowRight size={18} aria-hidden="true"/>
+              {locale==="ru"?"Личный подбор видео":
+                locale==="es"?"Vídeo personal":"Personal video"}
+              <small>{locale==="ru"?"Подбор под вашу цель":
+                locale==="es"?"Selección guiada":"Guided selection"}</small>
             </button>
             {notice?<p className={videoStyles.quickStatus} role="status" aria-live="polite" data-video-stage-status>{notice}</p>:null}
           </div>

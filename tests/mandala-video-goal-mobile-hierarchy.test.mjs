@@ -90,3 +90,21 @@ test("Goal question two keeps the four first-question images and photo-card hier
  assert.match(layout,/img\[data-video-goal-art\]/);
  for(const art of ["stress","love","energy","growth"])assert.ok(director.includes('art:"'+art+'"'));
 });
+
+test("all three Goal questions retain one composer and identical four-photo-card geometry",()=>{
+  assert.match(studio,/data-video-wish-above-goals data-video-warm-composer/);
+  assert.match(director,/data-auto-video-input value=\{requestDraft\}/);
+  assert.match(director,/createPortal\(requestInput,requestTarget\)/);
+  assert.equal((director.match(/data-video-goal-photo-card/g)||[]).length,3);
+  assert.match(director,/visibleQuickTopicIds\.map\(\(id,index\)=>/);
+  assert.match(director,/data-video-goal-topic-art/);
+  assert.match(layout,/Goal 1\/2\/3 photographic parity/);
+  assert.match(layout,/\[data-video-wish-above-goals\]\[data-video-goal-quiz-optional\]/);
+  assert.match(layout,/\[data-video-goal-photo-card\] img\[data-video-goal-art\]/);
+  assert.match(layout,/height:76px!important;max-height:76px!important/);
+  assert.match(layout,/\[data-video-topic-section\]\[data-video-goal-quiz-step="3"\] \[data-video-request-after-topic\]/);
+  assert.match(studio,/Экспресс-видео/);
+  assert.match(studio,/Личный подбор видео/);
+  assert.match(studio,/data-video-express-create/);
+  assert.match(studio,/onClick=\{continueToIdeas\}/);
+});
