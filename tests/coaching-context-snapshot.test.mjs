@@ -35,3 +35,10 @@ test('returns no durable context after consent has been revoked',()=>{
   assert.deepEqual(snapshot.items,[])
   assert.deepEqual(snapshot.excludedReasonCodes,['NO_ACTIVE_CONTEXT_GRANT'])
 })
+
+test('does not send sensitive Life Plan text even when its source session has consent',()=>{
+ const sensitive={...plan,goals:[...plan.goals,{id:'g3',sourceSessionId:'11111111-1111-4111-8111-111111111111',title:'Discuss trauma treatment',status:'active'}]}
+ const snapshot=buildCoachContextSnapshot({plan:sensitive})
+ assert.equal(snapshot.items.some(item=>/trauma/i.test(item.text)),false)
+ assert.ok(snapshot.excludedReasonCodes.includes('SENSITIVE_ITEM_EXCLUDED'))
+})
