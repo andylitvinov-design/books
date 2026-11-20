@@ -1,5 +1,5 @@
 import {NextResponse} from 'next/server'
-import {getAppConfig,requireSameOrigin} from '@/lib/app/config'
+import {getAppConfig,requireSameOrigin,requestOrigin} from '@/lib/app/config'
 import {createRequestAuth} from '@/lib/app/session'
 import {consumeRate} from '@/lib/app/database'
 import {PRIVATE_HEADERS,readBody,safeError} from '@/lib/app/http'
@@ -17,7 +17,8 @@ export async function GET(request){
   let auth
   try{
     const config=getAppConfig()
-    requireSameOrigin(request,config)
+    // GET requests commonly carry no Origin header; validate the serving host.
+    requestOrigin(request,config)
     auth=createRequestAuth(request,config)
     const actor=await auth.verified()
     const provided=request.headers.get('x-hh-account-id')
