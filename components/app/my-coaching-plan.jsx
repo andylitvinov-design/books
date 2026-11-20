@@ -6,12 +6,13 @@ import {useSearchParams} from 'next/navigation'
 import {appFetch} from '@/lib/app/client-fetch'
 import {ArrowRight,BarChart3,Check,CheckCircle2,ChevronDown,ChevronRight,ClipboardList,Compass,Heart,HeartPulse,Leaf,LoaderCircle,MapPin,Mountain,Plus,Save,Sparkles,Sun,Target,TrendingUp,Trophy,Users,Wallet} from 'lucide-react'
 import {PRIMARY_GOAL_AREAS,orderedCoachingAreas,summarizeCoachingProgress} from '@/lib/app/coaching-plan-summary.mjs'
+import {projectCoachContextSnapshot} from '@/lib/personal-coaching/client-context.mjs'
 import styles from './my-coaching-plan.module.css'
 
 const copy={
  en:{
   title:'My Goals & Coaching Reports',subtitle:'Your goals, actions and coaching session reports — all in one private space.',
-  plan:'Goals & actions',reports:'Coaching reports',loading:'Opening your private plan…',retry:'Try again',
+  plan:'Goals & actions',reports:'Coaching reports',context:'My Context',contextIntro:'This is the compact, consented context Ali can use in a future coaching conversation. It never includes raw transcripts or test results.',contextEmpty:'There is no active context permission yet.',contextGoals:'Approved goals',contextActions:'Open actions',loading:'Opening your private plan…',retry:'Try again',
   emptyTitle:'Your plan begins with one conversation',empty:'Complete a coaching session to capture what matters and choose a first step.',
   start:'Start a coaching session',edit:'Edit area',save:'Save changes',saving:'Saving…',saved:'Changes saved',
   current:'Where I am now',desired:'What I want to change',obstacles:'What gets in the way',rating:'My self-rating (optional · 0–10)',
@@ -31,7 +32,7 @@ const copy={
  },
  ru:{
   title:'Мои цели и отчёты коучинга',subtitle:'Ваши цели, действия и отчёты коучинга — в одном личном пространстве.',
-  plan:'Цели и действия',reports:'Отчёты коучинга',loading:'Открываем ваш личный план…',retry:'Повторить',
+  plan:'Цели и действия',reports:'Отчёты коучинга',context:'Мой контекст',contextIntro:'Это краткий согласованный контекст, который Ali может использовать в будущей коуч-беседе. В нём нет сырых расшифровок и результатов тестов.',contextEmpty:'Пока нет активного разрешения на использование контекста.',contextGoals:'Подтверждённые цели',contextActions:'Незавершённые действия',loading:'Открываем ваш личный план…',retry:'Повторить',
   emptyTitle:'Ваш план начинается с одного разговора',empty:'Пройдите коуч-сессию, чтобы определить важное и выбрать первый шаг.',
   start:'Начать коуч-сессию',edit:'Изменить сферу',save:'Сохранить изменения',saving:'Сохраняем…',saved:'Изменения сохранены',
   current:'Где я сейчас',desired:'Что я хочу изменить',obstacles:'Что мне мешает',rating:'Моя самооценка (необязательно · 0–10)',
@@ -51,7 +52,7 @@ const copy={
  },
  es:{
   title:'Mis metas e informes de coaching',subtitle:'Tus metas, acciones e informes de coaching en un espacio privado.',
-  plan:'Metas y acciones',reports:'Informes de coaching',loading:'Abriendo tu plan privado…',retry:'Reintentar',
+  plan:'Metas y acciones',reports:'Informes de coaching',context:'Mi contexto',contextIntro:'Este es el contexto breve y consentido que Ali puede usar en una futura conversación de coaching. Nunca incluye transcripciones sin procesar ni resultados de pruebas.',contextEmpty:'Aún no hay permiso de contexto activo.',contextGoals:'Metas aprobadas',contextActions:'Acciones pendientes',loading:'Abriendo tu plan privado…',retry:'Reintentar',
   emptyTitle:'Tu plan comienza con una conversación',empty:'Completa una sesión de coaching para aclarar lo importante y elegir un primer paso.',
   start:'Iniciar una sesión',edit:'Editar área',save:'Guardar cambios',saving:'Guardando…',saved:'Cambios guardados',
   current:'Dónde estoy ahora',desired:'Qué quiero cambiar',obstacles:'Qué se interpone',rating:'Mi valoración (opcional · 0–10)',
@@ -133,7 +134,8 @@ function domainState(area){
 export default function MyCoachingPlan({accountId,locale='en'}){
  const lang=copy[locale]?locale:'en',t={...copy[lang],...uiCopy[lang]}
  const searchParams=useSearchParams()
- const [tab,setTab]=useState(searchParams?.get('tab')==='reports'?'reports':'plan'),[plan,setPlan]=useState(null),[reports,setReports]=useState([])
+ const requestedTab=searchParams?.get('tab')
+ const [tab,setTab]=useState(['reports','context'].includes(requestedTab)?requestedTab:'plan'),[plan,setPlan]=useState(null),[reports,setReports]=useState([])
  const [drafts,setDrafts]=useState({}),[selections,setSelections]=useState({}),[areas,setAreas]=useState({}),[planConsents,setPlanConsents]=useState({})
  const [loading,setLoading]=useState(true),[error,setError]=useState(''),[saving,setSaving]=useState(''),[importing,setImporting]=useState('')
  const [notice,setNotice]=useState(''),[reportError,setReportError]=useState(''),[revoking,setRevoking]=useState(''),[contextError,setContextError]=useState(''),[deleting,setDeleting]=useState(''),[deleteError,setDeleteError]=useState('')
@@ -156,6 +158,10 @@ export default function MyCoachingPlan({accountId,locale='en'}){
  },[accountId,lang])
  useEffect(()=>{void load()},[load])
  const importedKeys=useMemo(()=>new Set((plan?.actions||[]).filter(item=>item.sourceReportId&&item.sourceActionKey).map(item=>item.sourceReportId+'|'+item.sourceActionKey)),[plan])
+ const contextPreview=useMemo(()=>{
+  const snapshot=projectCoachContextSnapshot({plan})
+  return {goals:snapshot.items.filter(item=>item.kind==='goal'),actions:snapshot.items.filter(item=>item.kind==='action')}
+ },[plan])
  const change=(areaKey,key,value)=>setDrafts(prev=>({...prev,[areaKey]:{...prev[areaKey],[key]:value}}))
  async function saveArea(area){
   const value=drafts[area.areaKey]||domainState(area)
@@ -224,6 +230,7 @@ export default function MyCoachingPlan({accountId,locale='en'}){
    <div className={styles.tabs} role="tablist" aria-label={t.title}>
     <button type="button" role="tab" aria-selected={tab==='plan'} className={tab==='plan'?styles.tabActive:styles.tab} onClick={()=>setTab('plan')}><Target size={16}/>{t.plan}</button>
     <button type="button" role="tab" aria-selected={tab==='reports'} className={tab==='reports'?styles.tabActive:styles.tab} onClick={()=>setTab('reports')}><ClipboardList size={16}/>{t.reports}<span>{reports.length}</span></button>
+    <button type="button" role="tab" aria-selected={tab==='context'} className={tab==='context'?styles.tabActive:styles.tab} onClick={()=>setTab('context')}><Sparkles size={16}/>{t.context}</button>
    </div>
   </header>
   {error&&<div className={styles.error} role="alert">{t.loadError} <button onClick={load}>{t.retry}</button></div>}
@@ -372,6 +379,16 @@ export default function MyCoachingPlan({accountId,locale='en'}){
      </div>
     </article>
    })}
+  </section>}
+  {tab==='context'&&<section className={styles.contextPreview} data-my-context-preview>
+   <h2>{t.context}</h2><p>{t.contextIntro}</p>
+   {!contextPreview.goals.length&&!contextPreview.actions.length&&<div className={styles.empty}><Sparkles size={24}/><p>{t.contextEmpty}</p></div>}
+   {!!contextPreview.goals.length&&<div><h3>{t.contextGoals}</h3><ul>{contextPreview.goals.map(goal=><li key={goal.id}>{goal.title}</li>)}</ul></div>}
+   {!!contextPreview.actions.length&&<div><h3>{t.contextActions}</h3><ul>{contextPreview.actions.map(action=><li key={action.id}>{action.description}</li>)}</ul></div>}
+   {!!plan?.contextPermissions?.length&&<details className={styles.permissions}><summary>{t.contextTitle}<ChevronDown size={18}/></summary>
+    <p>{t.contextInfo}</p>{contextError&&<p role="alert">{contextError}</p>}
+    {plan.contextPermissions.map((permission,index)=><div key={permission.sessionId}><span>{t.contextSession} {index+1} · {formatDate(permission.completedAt,lang)}</span>{' '}<button type="button" className={styles.saveButton} disabled={!!revoking} onClick={()=>revokeContext(permission.sessionId)}>{revoking===permission.sessionId?t.revokingContext:t.revokeContext}</button></div>)}
+   </details>}
   </section>}
  </main>
 }
