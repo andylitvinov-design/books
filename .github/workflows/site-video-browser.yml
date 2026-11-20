@@ -62,6 +62,8 @@ on:
       - 'public/images/holistic-house/video-posters/**'
       - 'scripts/ci-site-video-scope.mjs'
       - 'tests/ci-site-video-scope.test.mjs'
+      - 'lib/ci/coach-only-impact.mjs'
+      - 'tests/ci-coach-only-impact.test.mjs'
       - 'app/**/about/page.tsx'
       - 'tests/psychic-alchemy-intro-video.test.mjs'
       - 'tests/site-video*.mjs'
@@ -192,6 +194,7 @@ jobs:
         run: node --conditions=react-server tests/helpers/app-db-setup.mjs
       - name: Check Spanish translation and affected components
         run: |
+          node --test tests/ci-site-video-scope.test.mjs
           node --test tests/es-about.test.mjs tests/es-public-site.test.mjs tests/about-page.test.mjs tests/native-*.test.mjs
           node --test tests/personal-testimonials.test.mjs tests/personal-testimonials-prefetch.test.mjs tests/home-testimonial-lazy-disclosure.test.mjs tests/about-testimonial-languages.test.mjs
           npx eslint app/es/ data/about-es.ts data/spanish-books.ts components/spanish-*.tsx components/site-navigation.tsx components/public-site-header.tsx components/mobile-bottom-navigation.tsx components/personal-consultation-form.tsx components/client-cabinet-entry.tsx components/home-testimonial-more.tsx components/personal-testimonials.tsx components/about-testimonial-gallery.tsx components/services-studio-extras.tsx app/page.tsx app/layout.tsx app/sitemap.ts middleware.ts lib/public-locales.ts lib/spanish-metadata.ts
