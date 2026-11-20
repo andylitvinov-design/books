@@ -733,9 +733,9 @@ try{
    const more=chat.locator('details[data-hh-ai-more]');
    await more.waitFor({state:"visible",timeout:15000});
    if(await more.evaluate(node=>!node.open)) await more.locator("summary").click();
-   const resetButtons=more.locator("button");
-   await expect.poll(()=>resetButtons.count()).toBe(1);
-   await resetButtons.first().click();
+   const resetButton=more.locator("button[data-hh-ai-reset-conversation]");
+   await expect.poll(()=>resetButton.count()).toBe(1);
+   await resetButton.click();
    if(await more.evaluate(node=>node.open)) await more.locator("summary").click();
    await chat.locator('[data-hh-ai-landing]').waitFor({state:"visible",timeout:15000});
    await expect.poll(()=>chat.locator('[data-hh-chat-turn="user"]').count()).toBe(0);
