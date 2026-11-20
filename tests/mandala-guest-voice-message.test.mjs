@@ -138,8 +138,8 @@ test("Ideas Personalization and Concept retain a single opt-in Voice/My Voice We
  const modes=browser.indexOf('const ideasModes=phrases.locator("[data-video-ideas-tabs]")');
  const personal=browser.indexOf('const personalTab=ideasModes.locator',modes);
  const quiz=browser.indexOf('const nextQuiz=personalQuiz.locator',personal);
- const fourth=browser.indexOf('toHaveAttribute("data-video-personalization-step","4")',quiz);
- const concept=browser.indexOf('await expect(conceptTab).toHaveAttribute("aria-pressed","true")',fourth);
+ const fourth=browser.indexOf('toHaveAttribute("data-video-personalization-step","4"',quiz);
+ const concept=browser.indexOf('await expect(conceptTab).toHaveAttribute("aria-pressed","true"',fourth);
  const back=browser.indexOf('await personalTab.click()',concept);
  const disclosure=browser.indexOf('await advancedText.click()',back);
  const voice=browser.indexOf('await voiceModeButton.click()',disclosure);
