@@ -26,9 +26,9 @@ test("one seven-button dock includes Services and My Coach on existing destinati
 test("shared seven-tab dock has the approved labels in every language",()=>{
  const dock=read("components/unified-mobile-dock.tsx");
  const expected={
-  en:{mytube:"MyTube",video:"MyVideo",coach:"My Coach",ai:"AI/Chat",services:"Support",practice:"Shamanica",profile:"Profile"},
-  ru:{mytube:"MyTube",video:"MyVideo",coach:"Мой коуч",ai:"ИИ/Чат",services:"Поддержка",practice:"Шаманика",profile:"Профиль"},
-  es:{mytube:"MyTube",video:"MyVideo",coach:"Mi coach",ai:"IA/Chat",services:"Apoyo",practice:"Shamanica",profile:"Perfil"}
+  en:{mytube:"MyTube",video:"MyVideo",coach:"My Coach",ai:"AI/Chat",services:"Support",practice:"Shamanic",profile:"Profile"},
+  ru:{mytube:"MyTube",video:"MyVideo",coach:"Мой коуч",ai:"ИИ/Чат",services:"Поддержка",practice:"Шаманик",profile:"Профиль"},
+  es:{mytube:"MyTube",video:"MyVideo",coach:"Mi coach",ai:"IA/Chat",services:"Apoyo",practice:"Shamanic",profile:"Perfil"}
  };
  for(const [locale,names] of Object.entries(expected)){
   const row=dock.split("\n").find(line=>line.trimStart().startsWith(locale+": {"));
