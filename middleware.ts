@@ -43,10 +43,12 @@ export async function middleware(request: NextRequest) {
   }
   // Only anonymous-safe direct HTML Home requests. RSC, client navigation,
   // explicit full React Home and ALL app/account routes bypass this gate.
-  const fastLocale = instantHomeLocale({
+  // The alternative static homepage changes approved copy/layout/controls.
+  // Never silently substitute it for the dialogue-first React homepage.
+  const fastLocale = process.env.HH_ENABLE_INSTANT_HOME === 'true' ? instantHomeLocale({
     pathname:request.nextUrl.pathname,method:request.method,
     headers:request.headers,searchParams:request.nextUrl.searchParams,
-  })
+  }) : null
   if (fastLocale) {
     const requested = request.nextUrl.searchParams.get('lang')
     if (request.nextUrl.pathname === '/' && (requested === 'ru' || requested === 'es'))

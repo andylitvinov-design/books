@@ -166,6 +166,9 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
   }
   return <section className={styles.root} data-home-dialogue-entry data-home-mode={mode}
     data-home-interactive={interactive?"true":"false"} lang={locale}>
+    {/* React 19 hoists resource hints into the SSR head. The original CSS
+        background image otherwise starts ~1.3s after the HTML download. */}
+    <link rel="preload" as="image" href="/images/holistic-house/ideas-pine-reference.webp" fetchPriority="high" />
     <header className={styles.header} data-home-dialogue-header>
       <div className={styles.brand}><span className={styles.brandIcon} aria-hidden="true"><Leaf size={25}/></span><h1>Holistic House</h1></div>
       <div className={styles.headerActions}>
