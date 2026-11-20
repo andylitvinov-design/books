@@ -3,6 +3,7 @@ import {ArrowRight,BriefcaseBusiness,Film,LockKeyhole,Pencil,PlayCircle,UserRoun
 import Image from 'next/image'
 import PractitionerPresentationVideo from '@/components/practitioner-presentation-video'
 import PractitionerVideoGallery from '@/components/practitioner-video-gallery'
+import {publicPresentationUrl} from '@/lib/practitioners/presentation-contract'
 import styles from './practice-social-profile.module.css'
 
 const COPY={
@@ -21,7 +22,7 @@ function priceFor(service,t){
  }
  return t.priceAsk
 }
-export default function PracticeSocialProfile({locale='en',practitioner,services=[],signedIn=false,onAction}){
+export default function PracticeSocialProfile({locale='en',practitioner,services=[],signedIn=false,storageOrigin='',onAction}){
  const language=Object.hasOwn(COPY,locale)?locale:'en',t=COPY[language]
  if(!signedIn)return null
  const approved=practitioner?.profile||null
@@ -33,6 +34,12 @@ export default function PracticeSocialProfile({locale='en',practitioner,services
  const published=services.filter(s=>s.status==='published')
  const externalIntro=approved?.videoPresentation?.kind==='external'?approved.videoPresentation:null
  const uploadedIntro=approved?.videoPresentation?.kind==='upload'
+ let uploadedUrl=''
+ if(uploadedIntro&&storageOrigin){
+  try{uploadedUrl=publicPresentationUrl(approved.videoPresentation,storageOrigin)}
+  catch{uploadedUrl=''}
+ }
+ const playableIntro=externalIntro||(uploadedIntro&&uploadedUrl?approved.videoPresentation:null)
  const videos=Array.isArray(approved?.videoMaterials)?approved.videoMaterials:[]
  return <section className={styles.social} data-practitioner-social-profile aria-label={t.heading}>
   <div className={styles.identity}>
@@ -51,7 +58,7 @@ export default function PracticeSocialProfile({locale='en',practitioner,services
   </div>
   <section className={styles.block} aria-label={t.video}>
    <h3><PlayCircle size={22} aria-hidden="true"/>{t.video}</h3>
-   {externalIntro?<PractitionerPresentationVideo video={externalIntro} locale={language}/>:
+   {playableIntro?<PractitionerPresentationVideo video={playableIntro} locale={language} playbackUrl={uploadedUrl}/>:
     <div className={styles.emptyVideo}><Film size={28} aria-hidden="true"/><p>{uploadedIntro?t.videoUpload:t.videoMissing}</p>
      <button type="button" onClick={()=>onAction('profile')} className={styles.textButton}>{t.edit}<ArrowRight size={16}/></button></div>}
   </section>
