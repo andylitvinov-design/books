@@ -692,6 +692,16 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // authored video footage is unavailable; no charge is triggered.
       if(engine==='webkit')await chooseQuality.tap();
       else await chooseQuality.click();
+      if(!sourceReady){
+        // The revised Story is intentionally fail-closed: quality does not
+        // imply consent to render six illustrative reference photographs.
+        await expect(montageStoryTab).toHaveAttribute('aria-pressed','true');
+        await expect(page.locator('[data-video-basic-editor]'))
+          .toHaveAttribute('data-montage-panel','concept');
+        // Explore Extra through the independent navigation, never by
+        // pretending that unapproved Story frames passed a source check.
+        await montageProTab.click();
+      }
       await expect(montageProTab).toHaveAttribute('aria-pressed','true');
       await expect(page.locator('[data-video-basic-editor]'))
         .toHaveAttribute('data-montage-panel','promo');
