@@ -12,9 +12,9 @@ mkdirSync(folder,{recursive:true});
 const results=[];
 const ids=["mytube","video","coach","ai","services","practice","profile"];
 const labels={
-  en:["MyTube","MyVideo","My Coach","AI/Chat","Support","Shamanica","Profile"],
-  ru:["MyTube","MyVideo","Мой коуч","ИИ/Чат","Поддержка","Шаманика","Профиль"],
-  es:["MyTube","MyVideo","Mi coach","IA/Chat","Apoyo","Shamanica","Perfil"],
+  en:["MyTube","MyVideo","My Coach","AI/Chat","Support","Shamanic","Profile"],
+  ru:["MyTube","MyVideo","Мой коуч","ИИ/Чат","Поддержка","Шаманик","Профиль"],
+  es:["MyTube","MyVideo","Mi coach","IA/Chat","Apoyo","Shamanic","Perfil"],
 };
 
 // The fixed dock belongs to the ROOT shell, not to individual pages. Check
@@ -733,9 +733,11 @@ try{
    const more=chat.locator('details[data-hh-ai-more]');
    await more.waitFor({state:"visible",timeout:15000});
    if(await more.evaluate(node=>!node.open)) await more.locator("summary").click();
-   const resetButtons=more.locator("button");
-   await expect.poll(()=>resetButtons.count()).toBe(1);
-   await resetButtons.first().click();
+   // The More menu also contains legitimate voice/psychologist actions.
+   // Require exactly one accessible Reset, not exactly one button total.
+   const resetButtons=more.getByRole("button",{name:"Новый разговор",exact:true});
+   await expect(resetButtons).toHaveCount(1);
+   await resetButtons.click();
    if(await more.evaluate(node=>node.open)) await more.locator("summary").click();
    await chat.locator('[data-hh-ai-landing]').waitFor({state:"visible",timeout:15000});
    await expect.poll(()=>chat.locator('[data-hh-chat-turn="user"]').count()).toBe(0);
@@ -832,7 +834,7 @@ try{
  const shamanicaHome=page.locator("[data-shamanica-mobile]");
  await shamanicaHome.waitFor({state:"visible",timeout:30000});
  // Owner-approved Shamanica screenshot fits the FIRST iPhone viewport.
- // All five service actions must sit above the single fixed nav and AI orb.
+ // Six real photographic entrances must sit above the fixed nav.
  await page.evaluate(async()=>{
    window.scrollTo({top:0,behavior:"instant"});
    await new Promise(done=>requestAnimationFrame(()=>requestAnimationFrame(done)));
@@ -845,6 +847,13 @@ try{
    return {
      width:innerWidth,height:innerHeight,
      cards:cards.length,quizStep:quiz?.getAttribute("data-quiz-step"),
+     photoAboveHeading:!!cards[0]?.querySelector("img") &&
+       cards[0].querySelector("img").getBoundingClientRect().bottom <=
+       cards[0].querySelector("h3").getBoundingClientRect().top,
+     threeColumns:cards.length===6 &&
+       Math.abs(cards[0].getBoundingClientRect().top-cards[2].getBoundingClientRect().top)<2 &&
+       Math.abs(cards[0].getBoundingClientRect().left-cards[3].getBoundingClientRect().left)<2,
+     sitewidePromo:!!document.querySelector("[data-sitewide-antistress-banner]"),
      heroTop:hero?.getBoundingClientRect().top,
      quizBottom:quiz?.getBoundingClientRect().bottom,
      lastCardBottom:cards.at(-1)?.getBoundingClientRect().bottom,
@@ -852,17 +861,57 @@ try{
      overflowX:document.documentElement.scrollWidth-innerWidth,
    };
  });
- assert.equal(oneScreen.cards,5,"Shamanica has five visible service links");
+ assert.equal(oneScreen.cards,6,"Shamanic has six photographic service entrances");
+ assert.ok(oneScreen.photoAboveHeading&&oneScreen.threeColumns,
+   "Shamanic cards must match Support's 3×2 photo-top layout: "+JSON.stringify(oneScreen));
+ assert.equal(oneScreen.sitewidePromo,false,"Shamanic must not show the redundant promotional ribbon");
  if(oneScreen.width>=360 && oneScreen.height>=740){
    assert.ok(oneScreen.lastCardBottom<=oneScreen.dockTop-26,
-     "Shamanica hero, quiz and five services must fit above the dock on a normal iPhone: "+JSON.stringify(oneScreen));
+     "Shamanic hero, quiz and six photo tiles must fit above the dock on a normal iPhone: "+JSON.stringify(oneScreen));
    assert.ok(oneScreen.overflowX<=2,"Shamanica has no horizontal mobile overflow: "+JSON.stringify(oneScreen));
  }
  await page.screenshot({path:folder+"/shamanica-first-screen-ru-390-webkit.png",fullPage:false,animations:"disabled"});
- results.push({journey:"Shamanica one-screen hero + quiz + five services",
+ results.push({journey:"Shamanic Support-like quiz and photo grid",
    oneScreen,passed:true});
- assert.equal(await shamanicaHome.locator("[data-shamanica-service]").count(),5,
-   "Shamanica displays the five approved service directions");
+ // Approved iPhone screenshot is ~353 CSS pixels wide. Verify its larger
+ // headings/descriptions and actual dock clearance, not only CSS literals.
+ const originalShamanicaViewport=page.viewportSize();
+ await page.setViewportSize({width:353,height:768});
+ await page.evaluate(async()=>{
+   window.scrollTo({top:0,behavior:"instant"});
+   await new Promise(done=>requestAnimationFrame(()=>requestAnimationFrame(done)));
+ });
+ const readablePhone=await page.evaluate(()=>{
+   const services=[...document.querySelectorAll("[data-shamanica-service]")];
+   const dock=document.querySelector("[data-hh-unified-dock]");
+   const answers=[...document.querySelectorAll("[data-shamanica-answer]")];
+   const labels=[...document.querySelectorAll("[data-hh-unified-dock] [data-unified-dock-item] span")];
+   const measure=(element)=>element?parseFloat(getComputedStyle(element).fontSize):0;
+   return {
+     width:innerWidth,height:innerHeight,
+     minServiceHeading:Math.min(...services.map(x=>measure(x.querySelector("h3")))),
+     minPhotoHeight:Math.min(...services.map(x=>x.querySelector("img")?.getBoundingClientRect().height??0)),
+     cardSubtitleHidden:services.every(x=>getComputedStyle(x.querySelector("p")).display==="none"),
+     minAnswerFont:Math.min(...answers.map(measure)),
+     minDockLabel:Math.min(...labels.map(measure)),
+     lastCardBottom:services.at(-1)?.getBoundingClientRect().bottom,
+     dockTop:dock?.getBoundingClientRect().top,
+     overflowX:document.documentElement.scrollWidth-innerWidth,
+   };
+ });
+ assert.ok(readablePhone.minServiceHeading>=13,"Shamanic categories need legible titles: "+JSON.stringify(readablePhone));
+ assert.ok(readablePhone.minPhotoHeight>=50,"Shamanic category photographs must stay visible: "+JSON.stringify(readablePhone));
+ assert.ok(readablePhone.cardSubtitleHidden,"First-screen category tiles are compact as in Support: "+JSON.stringify(readablePhone));
+ assert.ok(readablePhone.minAnswerFont>=13,"Shamanic quiz answers must stay readable: "+JSON.stringify(readablePhone));
+ assert.ok(readablePhone.minDockLabel>=10,"Shamanic dock labels must not be tiny: "+JSON.stringify(readablePhone));
+ assert.ok(readablePhone.lastCardBottom<=readablePhone.dockTop-14,
+   "Shamanic categories must clear the fixed dock: "+JSON.stringify(readablePhone));
+ assert.ok(readablePhone.overflowX<=2,"Shamanic screen has no horizontal overflow: "+JSON.stringify(readablePhone));
+ await page.screenshot({path:folder+"/shamanica-readable-353x768-webkit.png",fullPage:false,animations:"disabled"});
+ results.push({journey:"Readable Shamanica typography at 353x768 iPhone",readablePhone,passed:true});
+ if(originalShamanicaViewport)await page.setViewportSize(originalShamanicaViewport);
+ assert.equal(await shamanicaHome.locator("[data-shamanica-service]").count(),6,
+   "Shamanic has five core directions and one free Reiki course");
  const shamanicaQuiz=shamanicaHome.locator("[data-shamanica-quiz]");
  await expect(shamanicaQuiz).toHaveAttribute("data-quiz-step","1");
  assert.equal(await shamanicaQuiz.locator("[data-shamanica-answer]").count(),4,
@@ -953,7 +1002,7 @@ try{
  await homeDock.locator('[data-unified-dock-item="practice"]').click();
  await page.waitForURL(/\/ru\/shamanica\/?$/,{timeout:45000});
  await page.locator("[data-shamanica-mobile]").waitFor({state:"visible",timeout:30000});
- assert.equal(await page.locator("[data-shamanica-service]").count(),5);
+ assert.equal(await page.locator("[data-shamanica-service]").count(),6);
  await expect(page.locator("[data-shamanica-quiz]")).toHaveAttribute("data-quiz-step","1");
  assert.equal(await page.locator("[data-support-practice-tabs]:visible").count(),0,
    "the approved Shamanica landing does not show the old Support top menu");

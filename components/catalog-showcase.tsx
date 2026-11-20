@@ -1,3 +1,4 @@
+import "@/app/catalog-showcase.css";
 import Image from "next/image";
 import { cardArtworkUrl, hasCardArtwork } from "@/lib/public-card-artwork";
 import Link from "next/link";

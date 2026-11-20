@@ -260,3 +260,31 @@ test("unfinished Story source selection blocks direct Ready export across tab na
  assert.match(studio,/const startFromHero=\(\)=>\{\s*if\(storySourcePendingRef\.current\)/);
  assert.match(studio,/storySourcePendingRef\.current=false; \/\/ New explicit Express recipe/);
 });
+
+test("Story visibly links chosen captions to the six real shots and opens the existing Text editor",()=>{
+ assert.match(tab,/const linkedPhraseCount=guides\.scenes\.filter/);
+ assert.match(tab,/data-storyboard-phrase-summary/);
+ assert.match(tab,/data-storyboard-has-phrase=\{Boolean\(sourcePhrase\)\}/);
+ assert.match(tab,/data-storyboard-scene-phrase data-storyboard-edit-phrase=\{index\+1\}/);
+ assert.match(tab,/onEditPhrase:\(phrase:string\)=>void/);
+ assert.match(tab,/onClick=\{\(\)=>onEditPhrase\(sourcePhrase\)\}/);
+ assert.match(tab,/<Pencil size=\{15\} aria-hidden="true"\/>/);
+ assert.match(studio,/onEditPhrase=\{phrase=>\{/);
+ assert.match(studio,/flushSync\(\(\)=>setMontagePanel\("text"\)\)/);
+ assert.match(studio,/querySelector<HTMLElement>\('\[data-video-montage-text\]'\)/);
+ assert.match(studio,/querySelector<HTMLButtonElement>\('\[data-video-idea-edit-button\]'\)\?\.click\(\)/);
+ assert.match(studio,/querySelector<HTMLInputElement>\('\[data-video-idea-edit\]'\)\?\.focus\(\)/);
+ const textPanel=studio.slice(studio.indexOf('data-video-montage-text hidden='),studio.indexOf('data-video-montage-text-tools'));
+ assert.match(textPanel,/<MandalaVideoIdeas/);
+ assert.match(textPanel,/onChange=\{setAffirmations\}/);
+ assert.match(css,/\.storyAutoPhraseEdit:focus-visible/);
+ assert.match(css,/\.storyAutoCard\[data-storyboard-has-phrase="true"\]/);
+ assert.match(css,/@media\(max-width:350px\)/);
+ const actualEditor=readFileSync(new URL("../components/mandala-video-ideas.tsx",import.meta.url),"utf8");
+ assert.match(actualEditor,/data-video-idea-phrase=\{index\}/);
+ assert.match(actualEditor,/data-video-idea-edit-button=\{index\}/);
+ assert.match(actualEditor,/data-video-idea-edit=\{index\}/);
+ // Opening Text does not render, charge or mutate phrases:
+ const callback=studio.slice(studio.indexOf("onEditPhrase={phrase=>{"),studio.indexOf("onApprovalRequiredChange={pending=>"));
+ assert.doesNotMatch(callback,/fetch\(|videoCreditRequest|createVideo\(|setAffirmations\(/);
+});

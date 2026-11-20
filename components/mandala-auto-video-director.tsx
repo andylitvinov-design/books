@@ -1207,7 +1207,7 @@ export function MandalaAutoVideoDirector({
      {goalQuizStep===1?<div className={css.goalChoices} role="group" aria-label={
        locale==="ru"?"Выберите цель видео":locale==="es"?"Elige tu objetivo":"Choose your video goal"}>
        {videoGoalCategories.map(item=><button type="button" key={item.id}
-         data-auto-video-category={item.id} data-auto-video-category-theme={item.theme}
+         data-auto-video-category={item.id} data-auto-video-category-theme={item.theme} data-video-goal-photo-card
          aria-label={taxonomyCategories.find(category=>category.id===item.id)?.label||item.id}
          aria-pressed={selectedCategoryId===item.id&&goalCategoryAnswered&&!requestNeedsChoice} disabled={disabled}
          onClick={()=>chooseCategory(item.theme,item.id)}>
@@ -1229,7 +1229,7 @@ export function MandalaAutoVideoDirector({
        <div className={css.goalChoices} role="group" data-mytube-subcategories data-video-goal-subcategory-cards
          aria-label={locale==="ru"?"Подкатегории цели":locale==="es"?"Subcategorías":"Goal subcategories"}>
          {taxonomySubcategories.map((item,index)=><button type="button" key={item.id}
-           data-auto-video-subcategory={item.id} aria-pressed={selectedSubcategoryId===item.id}
+           data-auto-video-subcategory={item.id} data-video-goal-photo-card aria-pressed={selectedSubcategoryId===item.id}
            disabled={disabled} title={item.chooseWhen}
            onClick={()=>chooseTaxonomySubcategory(item.id)}>
            {/* Reuse the exact four first-screen visual assets at every Goal question. */}
@@ -1321,14 +1321,17 @@ export function MandalaAutoVideoDirector({
   :<>
   <div data-video-goal-topic-chips role="group"
     aria-label={locale==="ru"?"Темы видео":locale==="es"?"Temas del vídeo":"Video topics"}>
-    {visibleQuickTopicIds.map(id=>{
+    {visibleQuickTopicIds.map((id,index)=>{
       const item=getMyTubeTopic(id);
       if(!item||item.category.id!==selectedCategoryId)return null;
       const fullLabel=item.topic.label[locale];
-      return <button type="button" key={id} data-video-goal-topic={id}
+      return <button type="button" key={id} data-video-goal-topic={id} data-video-goal-photo-card
         aria-pressed={selectedTopicId===id} aria-label={fullLabel} title={fullLabel}
         disabled={disabled} onClick={()=>chooseTaxonomyTopic(id)}>
-        <span>{fullLabel}</span>
+        {/* Same approved first-party photograph layout for all three Goal questions. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img data-video-goal-art data-video-goal-topic-art src={"/images/video-goal-art/"+videoGoalCategories[index].art+".webp"} alt="" loading="lazy"/>
+        <span data-video-goal-topic-label>{fullLabel}</span>
         {selectedTopicId===id?<Check size={15} aria-hidden="true"/>:null}
       </button>;
     })}
