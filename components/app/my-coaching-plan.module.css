@@ -58,3 +58,58 @@
 @media(max-width:360px){.domainHeading h2{font-size:16px}.domainCard,.reportCard{padding:13px}.tab,.tabActive{font-size:12px}}
 
 .planConsent{display:flex;align-items:flex-start;gap:9px;padding:11px;border:1px solid #bbd3c8;border-radius:12px;background:#f1f8f4;color:#426456;font-size:12px;line-height:1.45}.planConsent input{width:17px;height:17px;flex:none;margin:1px 0 0;accent-color:#26765b}.planConsent span{display:block}
+
+
+/* My Goals & Coaching Reports — align the existing real private workflow with
+   the photo-led My Space design; no new endpoint or data store. */
+.root{background:var(--hh-light-canvas,#fbf5e9);color:var(--hh-light-ink,#143d3a);border-radius:24px}
+.header{
+  isolation:isolate;position:relative;display:flex;flex-direction:column;justify-content:flex-end;
+  min-height:240px;margin-bottom:16px;padding:24px 20px 19px;border-radius:26px;
+  background:linear-gradient(102deg,rgba(6,49,45,.91) 0%,rgba(9,66,56,.72) 56%,rgba(30,87,57,.18) 100%),
+    url("/images/holistic-house/reiki-approved-sunrise-v3.webp") center 51%/cover no-repeat;
+  color:#fff;box-shadow:0 9px 24px #173d3430
+}
+.eyebrow{color:#dcf7e9;font-size:12px;letter-spacing:.16em;text-shadow:0 1px 6px #072c25}
+.header h1{
+  margin:12px 0 7px;color:#fff;
+  font:700 clamp(29px,6vw,45px)/1.08 Georgia,serif;
+  letter-spacing:-.035em;text-shadow:0 2px 12px #092f2c80;overflow-wrap:normal
+}
+.header>p{max-width:52ch;color:#fff;font-size:clamp(15px,3.5vw,18px);font-weight:550;line-height:1.4;text-shadow:0 2px 8px #082b2866}
+.tabs{width:100%;max-width:610px;margin-top:20px;padding:5px;border:1px solid #e7ffef85;background:#ebfaf21c;gap:6px}
+.tab,.tabActive{
+  flex:1;min-width:0;min-height:52px;padding:9px 12px;font-size:15px;
+  line-height:1.2;justify-content:center;text-align:center
+}
+.tab{color:#fff;background:#06413747}
+.tabActive{background:#f7fff9;color:#0b5445;box-shadow:0 4px 14px #071e2638}
+.tab span,.tabActive span{background:#deefe5;color:#0b5445;font-size:12px}
+.domainCard,.reportCard{border-color:#e8dfd3;border-radius:21px;background:#fffcf7;box-shadow:0 5px 16px #24403412}
+.domainHeading h2{font-size:clamp(19px,4.8vw,23px);color:#143d3a}
+.domainCard label,.importPanel>label{font-size:14px;color:#385b54}
+.domainCard textarea,.domainCard select,.importPanel select{
+  min-height:44px;font-size:16px;color:#143d3a;background:#fff
+}
+.saveButton{min-height:44px;font-size:14px}
+.primaryLink,.primaryButton{min-height:48px;background:#067a67;font-size:15px}
+.reportTop h2{color:#143d3a;font-size:20px}
+.reportDetails summary{min-height:44px;font-size:15px;align-items:center}
+.reportSection b{font-size:14px}
+.reportSection p{font-size:15px}
+.goal b{font-size:15px}
+@media(max-width:430px){
+  .root{padding:10px 10px 100px}
+  .header{min-height:250px;padding:20px 15px 16px;border-radius:23px}
+  .header h1{font-size:clamp(29px,7.4vw,35px)}
+  .header>p{font-size:15px}
+  .tabs{margin-top:15px}
+  .tab,.tabActive{min-height:52px;font-size:14px;padding:9px 7px}
+  .domainCard,.reportCard{padding:15px}
+}
+@media(max-width:360px){
+  .header{padding:18px 12px 15px;min-height:265px}
+  .header h1{font-size:28px;line-height:1.12}
+  .tab,.tabActive{font-size:13px;gap:5px;padding:8px 5px}
+}
+@media(prefers-reduced-motion:reduce){.root a,.root button{scroll-behavior:auto}}

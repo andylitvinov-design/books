@@ -24,46 +24,46 @@ const images={
 } as const;
 const copy={
 ru:{
- subtitle:"Рейки, магия и древние практики для энергии и развития.",
+ subtitle:"Рейки, магия, энергия и развитие.",
  start:"Начать путь",pick:"Подобрать для меня",self:"Для себя",work:"Для бизнеса",help:"iHelp",
  quiz:["Что вы хотите получить сейчас?","Какой способ вам ближе?","С чего хотите начать?"],
  goals:["Энергия и защита","Гармония в отношениях","Деньги","Личностное развитие"],
  methods:["Подбор препаратов","Артефакты и места силы","Энергетическая подкачка","Ритуалы и мандалы","Обучение"],
  starts:["Попробовать бесплатно","Личная поддержка","Выбрать инструмент","Пройти курс"],
  servicesTitle:"Ключевые услуги",services:{
- remedies:["Подбор препаратов","Гомеопатическая консультация и подбор средств"],
- artifacts:["Артефакты, предметы и места силы","Талисманы, камни и места силы"],
- energy:["Энергетическая подкачка","Персональные Рейки-сеансы и энергетическая поддержка"],
- rituals:["Ритуалы, мандалы и талисманы","Символические практики для ваших качеств и целей"],
- learning:["Обучение","Шаманизм, Рейки, магия и мистерии — от основ до посвящений"]},
+ remedies:["Подбор препаратов","Гомеопатия и подбор"],
+ artifacts:["Артефакты, предметы и места силы","Талисманы и места силы"],
+ energy:["Энергетическая подкачка","Личные Рейки-сеансы"],
+ rituals:["Ритуалы, мандалы и талисманы","Для качеств и целей"],
+ learning:["Обучение","Шаманизм, Рейки и магия"]},
  step:"Шаг",of:"из",back:"Назад",search:"Поиск",menu:"Меню"},
 en:{
- subtitle:"Reiki and traditional practices for energy, support and growth.",
+ subtitle:"Reiki, magic, energy & growth.",
  start:"Start my path",pick:"Find my path",self:"For myself",work:"For business",help:"iHelp",
  quiz:["What would you like to gain?","Which approach suits you?","How would you like to start?"],
  goals:["Energy & protection","Harmony in relationships","Money & prosperity","Personal growth"],
  methods:["Remedy guidance","Artefacts & power places","Energy support","Rituals & mandalas","Learning"],
  starts:["Try something free","One-to-one support","Choose a symbolic tool","Take a course"],
  servicesTitle:"Key services",services:{
- remedies:["Remedy guidance","Homeopathy consultation and selecting remedies"],
- artifacts:["Artefacts & power places","Talismans, stones and meaningful places"],
- energy:["Energy support","Personal Reiki sessions and supportive practices"],
- rituals:["Rituals, mandalas & talismans","Symbolic practices for qualities and intentions"],
- learning:["Learning","Shamanism, Reiki, magic and mysteries — from basics to initiation"]},
+ remedies:["Remedy guidance","Homeopathy advice"],
+ artifacts:["Artefacts & power places","Talismans & sites"],
+ energy:["Energy support","Reiki sessions"],
+ rituals:["Rituals, mandalas & talismans","For your intentions"],
+ learning:["Learning","Shamanism, Reiki & magic"]},
  step:"Step",of:"of",back:"Back",search:"Search",menu:"Menu"},
 es:{
- subtitle:"Reiki y prácticas tradicionales para la energía y el crecimiento.",
+ subtitle:"Reiki, magia, energía y desarrollo.",
  start:"Iniciar camino",pick:"Encontrar mi camino",self:"Para mí",work:"Negocios",help:"iHelp",
  quiz:["¿Qué deseas conseguir ahora?","¿Qué método prefieres?","¿Cómo quieres empezar?"],
  goals:["Energía y protección","Armonía en relaciones","Dinero y prosperidad","Desarrollo personal"],
  methods:["Orientación sobre remedios","Objetos y lugares de poder","Apoyo energético","Rituales y mandalas","Aprendizaje"],
  starts:["Probar gratis","Apoyo personal","Elegir herramienta","Hacer un curso"],
  servicesTitle:"Servicios principales",services:{
- remedies:["Orientación sobre remedios","Consulta homeopática y selección de preparados"],
- artifacts:["Objetos y lugares de poder","Talismanes, piedras y lugares simbólicos"],
+ remedies:["Orientación sobre remedios","Homeopatía personal"],
+ artifacts:["Objetos y lugares de poder","Talismanes y lugares de poder"],
  energy:["Apoyo energético","Sesiones personales de Reiki"],
- rituals:["Rituales, mandalas y talismanes","Prácticas simbólicas para objetivos"],
- learning:["Aprendizaje","Chamanismo, Reiki, magia y misterios — desde lo básico"]},
+ rituals:["Rituales, mandalas y talismanes","Para tus objetivos"],
+ learning:["Aprendizaje","Chamanismo, Reiki y magia"]},
  step:"Paso",of:"de",back:"Volver",search:"Buscar",menu:"Menú"}
 } as const;
 export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;audience?:"self"|"business"}){

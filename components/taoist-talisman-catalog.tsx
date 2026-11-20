@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowRight, ChevronDown } from "lucide-react";
 import { SupportTalismanGallery } from "./support-talisman-gallery";
 import { CatalogStarRating, StarFilter, matchesStarFilter, sortByStars, useCatalogRatings } from "./catalog-star-rating";
 import { TAOIST_TALISMANS } from "@/lib/practitioners/taoist-talismans";
@@ -13,21 +14,21 @@ import styles from "./taoist-talisman-catalog.module.css";
 const copy = {
   en: {
     scroll: "Browse Daoist talismans", price: "Price", quote: "Confirmed by the master",
-    add: "Add to cart", order: "Order", cart: "Your basket", selected: "in basket",
+    details: "Details", priceBadge: "Price on request", order: "Order", cart: "Your basket", selected: "in basket",
     note: "Prices, availability and delivery are agreed with the master before any payment.",
     example: "Photographic illustrations of Daoist-style Fu, not ready-to-ship product photographs. Symbols do not guarantee financial, relational or medical outcomes.",
     best: "Highest rated first", noMatches: "No talismans have this rating yet.", archive: "My private talisman collection", storageError: "Your browser could not save the basket. Please allow temporary site storage.",
   },
   ru: {
     scroll: "Каталог даосских талисманов", price: "Цена", quote: "Уточняется у мастера",
-    add: "В корзину", order: "Заказать", cart: "Корзина", selected: "в корзине",
+    details: "Детали", priceBadge: "Цена по запросу", order: "Заказать", cart: "Корзина", selected: "в корзине",
     note: "Стоимость, изготовление и доставку согласовываем с мастером до оплаты.",
     example: "Фотографии-иллюстрации талисманов в стиле Фу, а не готовые товары. Символы не гарантируют успеха, отношений или исцеления.",
     best: "Сначала с лучшей оценкой", noMatches: "Талисманов с такой оценкой пока нет.", archive: "Моя личная коллекция", storageError: "Не удалось сохранить корзину. Разрешите временное хранение данных сайта.",
   },
   es: {
     scroll: "Explorar talismanes taoístas", price: "Precio", quote: "A confirmar por el maestro",
-    add: "Añadir al carrito", order: "Solicitar", cart: "Tu carrito", selected: "en el carrito",
+    details: "Detalles", priceBadge: "Precio a consultar", order: "Solicitar", cart: "Tu carrito", selected: "en el carrito",
     note: "El maestro confirma el precio, la disponibilidad y el envío antes de cobrar.",
     example: "Fotografías ilustrativas de estilo Fu, no fotos de productos listos para enviar. Los símbolos no garantizan resultados económicos, afectivos o médicos.",
     best: "Mejor valorados primero", noMatches: "Aún no hay talismanes con esa valoración.", archive: "Mi colección privada", storageError: "No se pudo guardar el carrito. Permite el almacenamiento temporal de este sitio.",
@@ -40,6 +41,7 @@ export function TaoistTalismanCatalog({ locale, featuredId, rankedIds }: { local
   const stars = useCatalogRatings("talisman", TAOIST_TALISMANS.map(item => item.id));
   const [minimumStars, setMinimumStars] = useState(0);
   const [sortRated, setSortRated] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   // Use the *existing* illustrated SKUs and cart, just put the relevant
   // symbol first. No purchase is made or customer details transferred.
   const rankedOrder = new Map((rankedIds || []).map((id, index) => [id, index]));
@@ -63,50 +65,63 @@ export function TaoistTalismanCatalog({ locale, featuredId, rankedIds }: { local
   }, []);
 
   const choose = (itemId: string) => {
-    if (cartIds.includes(itemId)) {
-      router.push("/" + locale + "/talismans/cart");
-      return;
-    }
-    if (!saveBrowserTalismanCart([...cartIds, itemId])) {
+    // An Order tap preserves the allowlisted basket and opens its real enquiry.
+    // Prices, stock and payment still require explicit master confirmation.
+    if (!cartIds.includes(itemId) && !saveBrowserTalismanCart([...cartIds, itemId])) {
       setStorageError(true);
       return;
     }
     setStorageError(false);
+    router.push("/" + locale + "/talismans/cart");
   };
 
   return (
     <div className={styles.root} data-taoist-talisman-catalog>
-      <div style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:12,marginBottom:12}}>
+      <div className={styles.filters}>
         <StarFilter locale={locale} minimum={minimumStars} onChange={setMinimumStars} />
-        <label style={{display:"inline-flex",alignItems:"center",gap:6,fontSize:13}}>
+        <label className={styles.sortLabel}>
           <input type="checkbox" checked={sortRated} onChange={event => setSortRated(event.target.checked)} />{t.best}
         </label>
       </div>
       {!visibleTalismans.length && !stars.loading && !stars.unavailable && <p role="status">{t.noMatches}</p>}
       <div className={styles.scroller} role="region" tabIndex={0} aria-label={t.scroll}>
-        {visibleTalismans.map(item => (
-          <article key={item.id} className={styles.card} data-tao-talisman={item.id} data-recommended={item.id === featuredId ? "true" : undefined}>
+        {visibleTalismans.map(item => {
+          const expanded = expandedId === item.id;
+          const detailsId = "tao-talisman-details-" + item.id;
+          return <article key={item.id} className={styles.card}
+            data-tao-talisman={item.id} data-recommended={item.id === featuredId ? "true" : undefined}>
             <div className={styles.photo}>
               <Image src={item.image} fill
                 alt={item[locale].title + " · " + t.example}
-                sizes="(max-width: 430px) 104px, 174px" />
+                sizes="(max-width: 430px) 75px, 86px" />
             </div>
             <div className={styles.details}>
+              <span className={styles.price} data-tao-talisman-price
+                aria-label={t.price + ": " + t.quote}>{t.priceBadge}</span>
               <h3>{item[locale].title}</h3>
-              <CatalogStarRating locale={locale} summary={stars.ratings[item.id]} onRate={value => stars.rate(item.id,value)} unavailable={stars.unavailable} compact />
-              <p className={styles.description}>{item[locale].description}</p>
-              <div className={styles.purchase}>
-                <span className={styles.price}><small>{t.price}</small><strong>{t.quote}</strong></span>
-                <button type="button" className={styles.order}
-                  data-tao-talisman-order={item.id}
-                  aria-pressed={cartIds.includes(item.id)}
-                  onClick={() => choose(item.id)}>
-                  {cartIds.includes(item.id) ? t.order : t.add}<span aria-hidden="true"> →</span>
-                </button>
-              </div>
+              <CatalogStarRating locale={locale} summary={stars.ratings[item.id]}
+                onRate={expanded ? value => stars.rate(item.id, value) : undefined}
+                unavailable={stars.unavailable} compact />
             </div>
-          </article>
-        ))}
+            <div className={styles.actions} role="group" aria-label={item[locale].title}>
+              <button type="button" className={styles.detailsButton}
+                data-tao-talisman-details={item.id}
+                aria-expanded={expanded} aria-controls={detailsId}
+                onClick={() => setExpandedId(current => current === item.id ? null : item.id)}>
+                {t.details}<ChevronDown size={16} aria-hidden="true"/>
+              </button>
+              <button type="button" className={styles.order}
+                data-tao-talisman-order={item.id} onClick={() => choose(item.id)}>
+                {t.order}<ArrowRight size={16} aria-hidden="true"/>
+              </button>
+            </div>
+            <div id={detailsId} className={styles.moreDetails} role="region"
+              aria-label={t.details + ": " + item[locale].title} hidden={!expanded}>
+              <p className={styles.description}>{item[locale].description}</p>
+              <p className={styles.terms}><strong>{t.price}:</strong> {t.quote}. {t.note}</p>
+            </div>
+          </article>;
+        })}
       </div>
       {cartIds.length > 0 && (
         <button type="button" className={styles.cartBanner} onClick={() => router.push("/" + locale + "/talismans/cart")}>

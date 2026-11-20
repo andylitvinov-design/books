@@ -38,5 +38,7 @@ export async function generateMetadata({ params }) {
 export default async function PracticePreviewPage({ params }) {
   const { locale } = await params
   if (!SUPPORTED_LOCALES.includes(locale)) notFound()
-  return <PracticeShowcase locale={locale} presentationStorageOrigin={publicPresentationStorageOrigin()} />
+  const presentationStorageOrigin = publicPresentationStorageOrigin()
+  if (!presentationStorageOrigin) return <PracticeShowcase locale={locale} />
+  return <PracticeShowcase locale={locale} presentationStorageOrigin={presentationStorageOrigin} />
 }
