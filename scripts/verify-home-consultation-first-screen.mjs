@@ -148,7 +148,7 @@ for (const engine of [chromium,webkit]){
           assert.ok(box&&box.x>=-1&&box.x+box.width<=width+1,label+": Home inside viewport");
           const renderResources=await page.evaluate(()=>({
              stylesheets:document.querySelectorAll('link[rel="stylesheet"]').length,
-             cssRequests:performance.getEntriesByType('resource').filter(item=>/\\.css(?:\\?|$)/.test(item.name)).length,
+             cssRequests:performance.getEntriesByType('resource').filter(item=>new URL(item.name).pathname.endsWith('.css')).length,
              heroFetchPriority:document.querySelector('[data-home-dialogue-hero] img')?.getAttribute('fetchpriority')||null,
            }));
            evidence.push({engine:engine.name(),locale,width,mode:"dialogue-first",sevenButtons:7,
