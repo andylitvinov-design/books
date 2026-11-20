@@ -4,10 +4,10 @@
  */
 import {
   AudioBufferSource, BufferTarget, CanvasSource, Mp4OutputFormat,
-  Input, BlobSource, MP4, VideoSampleSink,
+  Input, BlobSource, MP4, VideoSampleSink, Conversion,
   Output, Quality, canEncodeVideo, canEncodeAudio,
 } from "mediabunny";
-import {presetAudioUrl} from "./local-video-music";
+import {loadFirstPartyPresetAudioBlob} from "./first-party-video-audio";
 import type {AmbientMusic} from "./local-video-music";
 
 const SAMPLE_RATE=48000;
@@ -82,12 +82,7 @@ async function prepareLocalAudio(audio:BrowserMovieAudio,seconds:number):Promise
       // /audio/mandala/scenarios/; legacy presets remain WAV. Reuse exactly
       // the URL selected by the existing native preview and MediaRecorder.
       // Hardcoding *.wav here made all scenario soundtracks fail in Safari.
-      const audioUrl=presetAudioUrl(entry.preset as Exclude<AmbientMusic,"none">);
-      const response=await fetch(audioUrl,{
-        credentials:"same-origin",cache:"force-cache",
-      });
-      if(!response.ok)throw new Error("first_party_audio_unavailable");
-      file=await response.blob();
+      file=await loadFirstPartyPresetAudioBlob(entry.preset as Exclude<AmbientMusic,"none">);
     }else file=entry.file;
     if(file.size<44||file.size>15*1024*1024)throw new Error("audio_size_invalid");
     let decoded=await offline.decodeAudioData(await file.arrayBuffer());
@@ -204,6 +199,86 @@ export async function verifyNativeSafariMp4Tracks(blob:Blob,requireAudio:boolean
   }catch{
     throw new Error("native_mp4_invalid_tracks");
   }finally{input.dispose();}
+}
+
+/**
+ * Safari's MediaRecorder can return a fragmented but superficially valid MP4
+ * that its own <video> rejects. Losslessly remux the H.264/AAC packets into a
+ * fast-start MP4 before Ready; if the browser has to reencode incompatible
+ * packet timestamps the same *local* conversion must still retain AVC/AAC.
+ * No second Canvas movie, cloud upload, TTS call or extra credit reservation.
+ */
+export async function normalizeNativeSafariMp4ForPlayback(
+  nativeBlob:Blob,requireAudio:boolean,expectedSeconds:number
+):Promise<Blob>{
+  if(nativeBlob.size<4096||nativeBlob.size>MAX_BYTES||
+     !Number.isFinite(expectedSeconds)||expectedSeconds<3||expectedSeconds>MAX_DURATION)
+    throw new Error("native_mp4_invalid_tracks");
+  const original=new Input({source:new BlobSource(nativeBlob),formats:[MP4]});
+  let normalized:Blob;
+  try{
+    if(!(await original.canRead()))throw new Error("native_mp4_invalid_tracks");
+    const video=await original.getPrimaryVideoTrack();
+    if(!video||await video.getCodec()!=="avc")
+      throw new Error("native_mp4_invalid_tracks");
+    const audio=await original.getPrimaryAudioTrack();
+    if(requireAudio&&(!audio||await audio.getCodec()!=="aac"))
+      throw new Error("native_mp4_invalid_tracks");
+
+    // Fast-start places moov metadata ahead of mdat. Do not rely on the
+    // MediaRecorder's claimed MIME or copy its raw fragmented header to Ready.
+    const target=new BufferTarget();
+    const output=new Output({
+      format:new Mp4OutputFormat({fastStart:"in-memory"}),target,
+    });
+    const conversion=await Conversion.init({
+      input:original,output,tracks:"primary",tags:{},
+      video:{codec:"avc"},audio:{codec:"aac"},
+      copy:{mode:"preferred"},
+    });
+    if(!conversion.isValid||conversion.discardedTracks.length||
+       conversion.utilizedTracks.length<(requireAudio?2:1))
+      throw new Error("native_mp4_remux_unavailable");
+    await conversion.execute();
+    const bytes=target.buffer;
+    if(!bytes||bytes.byteLength<4096||bytes.byteLength>MAX_BYTES)
+      throw new Error("native_mp4_remux_invalid");
+    normalized=new Blob([bytes],{type:"video/mp4"});
+  }catch(error){
+    if(error instanceof Error&&/^native_mp4_/.test(error.message))throw error;
+    throw new Error("native_mp4_remux_failed");
+  }finally{original.dispose();}
+
+  // Track metadata is not proof of a playable movie. Actually decode samples
+  // at the beginning AND near the end, rejecting truncated recordings.
+  const checked=new Input({source:new BlobSource(normalized),formats:[MP4]});
+  try{
+    if(!(await checked.canRead()))throw new Error("native_mp4_output_unplayable");
+    const track=await checked.getPrimaryVideoTrack();
+    if(!track||await track.getCodec()!=="avc"||!(await track.canDecode()))
+      throw new Error("native_mp4_output_unplayable");
+    const first=await track.getFirstTimestamp();
+    const end=await track.computeDuration();
+    if(first===null||!Number.isFinite(first)||!Number.isFinite(end)||
+       end<expectedSeconds-2||end>expectedSeconds+2||end<=first)
+      throw new Error("native_mp4_output_incomplete");
+    const sink=new VideoSampleSink(track);
+    for(const at of [Math.max(0,first+.05),Math.max(0,end-.5)]){
+      const sample=await sink.getSample(at);
+      try{
+        if(!sample||sample.codedWidth<160||sample.codedHeight<160||
+           (at>end*.6&&sample.timestamp<end*.5))
+          throw new Error("native_mp4_output_unplayable");
+      }finally{sample?.close();}
+    }
+    const audio=await checked.getPrimaryAudioTrack();
+    if(requireAudio&&(!audio||await audio.getCodec()!=="aac"))
+      throw new Error("native_mp4_output_missing_aac");
+    return normalized;
+  }catch(error){
+    if(error instanceof Error&&/^native_mp4_/.test(error.message))throw error;
+    throw new Error("native_mp4_output_unplayable");
+  }finally{checked.dispose();}
 }
 
 /** A real H.264/AAC video/audio MP4. Rendering remains on the existing Canvas. */
