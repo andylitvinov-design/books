@@ -1411,7 +1411,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',method
       <div className={styles.ratingCard}>
         <div className={styles.ratingCoachHeader}>
           <img className={styles.ratingCoachPortrait}
-            src={'/images/holistic-house/my-coach-motion/'+personaId+'-still.webp'}
+            src={'/images/holistic-house/my-coach-motion/'+(personaId==='harry'?'harry-soft-still.webp':personaId+'-still.webp')}
             alt="" width={78} height={78}/>
           <div><h2>{ratingUi.title}</h2><strong>{name}</strong><p>{ratingUi.subtitle}</p></div>
         </div>
