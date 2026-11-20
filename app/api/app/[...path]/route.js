@@ -17,6 +17,8 @@ import { listLabReports, saveLabReport, deleteLabReport } from '@/lib/app/lab-re
 import { readBusinessCoaching, saveBusinessCoaching } from '@/lib/app/business-coaching'
 import { readPersonalCoaching, savePersonalCoaching, readTraditionCoaching, saveTraditionCoaching, readTraditionCoachingSummaries } from '@/lib/app/personal-coaching'
 import {personalCoachingBrainTurn,personalCoachingBrainProbe,myCoachGenerativeTurn,myCoachGenerativeStreamTurn,myCoachGenerativeProbe} from '@/lib/app/coaching-brain'
+import {geminiCoachTextConfig} from '@/lib/coaching/gemini-coach-text.mjs'
+import {geminiCoachTtsConfig} from '@/lib/coaching/gemini-coach-tts.mjs'
 import { readCoachingReportDraft } from '@/lib/app/coaching-report-v2'
 import { listCoachingReports, exportCoachingReports, readCoachingReport, saveCoachingReport, deleteCoachingReport } from '@/lib/app/coaching-report-store'
 import { readCoachingLifePlan, updateCoachingLifePlanArea, importCoachingReportActions } from '@/lib/app/coaching-life-plan'
@@ -1018,11 +1020,32 @@ async function handle(request, { params }) {
         'X-Accel-Buffering':'no',
       }})
     }
+    // Metadata-only check: no client transcript, API key or test generation.
+    if (joined === 'my-coach/engines') {
+      if (method !== 'GET') throw new AppError('NOT_FOUND',404)
+      return json({schema:'HH_MY_COACH_ENGINES_V1',
+        gemini_free:Boolean(geminiCoachTextConfig(process.env,'gemini_free')),
+        gemini_paid:Boolean(geminiCoachTextConfig(process.env,'gemini_paid')),
+        gemini_tts_free:Boolean(geminiCoachTtsConfig(process.env,'gemini_tts_free')),
+        gemini_tts_paid:Boolean(geminiCoachTtsConfig(process.env,'gemini_tts_paid')),
+        live:false})
+    }
     if (joined === 'my-coach/turn') {
       if (method !== 'POST') throw new AppError('NOT_FOUND',404)
       await consumeRate(config,{op:'my-coach-generative-turn',actor:actor.id},40,3600)
-      return json(await myCoachGenerativeTurn(await readBody(request,16384),
-        {signal:request.signal,reserveModelCall:reserveCoachingFreeCall,config,actor}))
+      const body=await readBody(request,16384)
+      const geminiMode=['gemini_free','gemini_paid'].includes(body?.engine)?body.engine:null
+      // Per-user + global limits are consumed BEFORE a model request. No
+      // chargeable second provider call or automatic upgrade on error.
+      const reserveGeminiCall=async()=>{
+        await consumeRate(config,{op:'my-coach-'+geminiMode+'-global-day'},
+          geminiMode==='gemini_paid'?12:30,86400)
+        await consumeRate(config,{op:'my-coach-'+geminiMode+'-actor-day',actor:actor.id},
+          geminiMode==='gemini_paid'?6:16,86400)
+      }
+      return json(await myCoachGenerativeTurn(body,
+        {signal:request.signal,reserveModelCall:geminiMode?reserveGeminiCall:reserveCoachingFreeCall,
+          config,actor}))
     }
     // A synthetic preflight proves verified ZDR free-model access before any
     // visitor text can reach a provider. The call is authenticated and bounded.
