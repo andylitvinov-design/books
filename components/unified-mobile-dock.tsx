@@ -14,9 +14,9 @@ const icons = {
   practice: Leaf, coach: UserRound, services: BriefcaseBusiness, profile: UserRound,
 } as const;
 const labels = {
-  ru: { mytube: "MyTube", video: "MyVideo", ai: "ИИ/Чат", practice: "Шаманика", coach: "Мой коуч", services: "Поддержка", profile: "Профиль" },
-  en: { mytube: "MyTube", video: "MyVideo", ai: "AI/Chat", practice: "Shamanica", coach: "My Coach", services: "Support", profile: "Profile" },
-  es: { mytube: "MyTube", video: "MyVideo", ai: "IA/Chat", practice: "Shamanica", coach: "Mi coach", services: "Apoyo", profile: "Perfil" },
+  ru: { mytube: "MyTube", video: "MyVideo", ai: "ИИ/Чат", practice: "Шаманик", coach: "Мой коуч", services: "Поддержка", profile: "Профиль" },
+  en: { mytube: "MyTube", video: "MyVideo", ai: "AI/Chat", practice: "Shamanic", coach: "My Coach", services: "Support", profile: "Profile" },
+  es: { mytube: "MyTube", video: "MyVideo", ai: "IA/Chat", practice: "Shamanic", coach: "Mi coach", services: "Apoyo", profile: "Perfil" },
 } as const;
 
 /** Exactly one screenshot-1 inspired fixed dock on app journeys, for guests and accounts.
