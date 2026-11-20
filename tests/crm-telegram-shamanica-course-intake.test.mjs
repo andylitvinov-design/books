@@ -21,7 +21,7 @@ test('exact Shamanica free Reiki Practitioner enquiry is recognized',()=>{
  assert.match(answer.text,/Ali/)
  assert.match(answer.text,/free Reiki Practitioner course/)
  assert.equal(answer.buttons.length,1)
- assert.equal(answer.buttons[0].url,'https://holistichouse.vercel.app/en/academy/reiki')
+ assert.equal(answer.buttons[0].url,'https://holistichouse.vercel.app/en/academy/principles-of-energywork')
  assert.ok(answer.text.length<600)
 })
 for(const locale of ['en','ru','es']){
@@ -30,7 +30,7 @@ for(const locale of ['en','ru','es']){
   const selected=matchTelegramPublishedCourseInterestDraft(templates[locale](service.title))
   assert.equal(selected?.offerId,'courses_practitioner')
   const answer=telegramPublishedCourseInterestAcknowledgement(selected)
-  assert.equal(answer?.buttons?.[0]?.url,'https://holistichouse.vercel.app/'+locale+'/academy/reiki')
+  assert.equal(answer?.buttons?.[0]?.url,'https://holistichouse.vercel.app/'+locale+'/academy/principles-of-energywork')
   assert.ok(answer?.text.length<=600)
  })
 }
