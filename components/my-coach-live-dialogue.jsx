@@ -20,6 +20,7 @@ import MyCoachSessionStateCard from './my-coach-session-state-card'
 import {startCoachingMp3Playback,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
 import {readCoachTurnStream} from '@/lib/coaching/coach-stream-client.mjs'
+import {coachLooksLikeProtocolText} from '@/lib/coaching/coach-stream-format.mjs'
 import {coachGeminiVoiceOptions} from '@/lib/coaching/gemini-voice-catalog.mjs'
 import {detectedSpeechLocale} from '@/lib/personal-coaching/my-coach-dictation.mjs'
 import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
@@ -174,8 +175,9 @@ const reasons={
   privacy_model_unavailable:'protected',cost_unverified:'cost',
   response_unverified:'failed',model_unavailable:'retry',
 }
-const assistantText=(result)=>result.mode==='ai' && typeof result.message==='string'
-  ? result.message : [result.reflection,result.hypothesis,result.question].filter(Boolean).join('\n\n')
+const assistantText=(result)=>result.mode==='ai'
+  ? typeof result.message==='string'&&!coachLooksLikeProtocolText(result.message)?result.message:''
+  : [result.reflection,result.hypothesis,result.question].filter(Boolean).join('\n\n')
 
 export default function MyCoachLiveDialogue({locale='en',personaId='mira',settings={},onClose,onGuided}){
   const lang=copy[locale]?locale:'en',t=copy[lang]
