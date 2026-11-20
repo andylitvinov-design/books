@@ -4,8 +4,10 @@ import test from 'node:test'
 
 test('approved context reaches one provider and an interrupted voice lookup sends nothing', () => {
   const service = new URL('../lib/app/coaching-brain.js', import.meta.url)
+  const snapshot = new URL('../lib/app/coach-context-snapshot.js', import.meta.url)
   const output = execFileSync(process.execPath, ['--conditions=react-server', '--input-type=module', '-e', `
     import { myCoachGenerativeTurn, myCoachGenerativeStreamTurn } from ${JSON.stringify(service.href)}
+    import { createCoachContextLoader } from ${JSON.stringify(snapshot.href)}
     const calls = []
     const lookups = []
     const body = {
@@ -38,6 +40,12 @@ test('approved context reaches one provider and an interrupted voice lookup send
     } })
     const controlLookups = lookups.splice(0)
     calls.splice(0)
+    const pausedLoader = createCoachContextLoader(null, { id: 'synthetic' }, body, {
+      HH_COACH_CONTEXT_ENABLED: 'true',
+    })
+    await myCoachGenerativeTurn(body, { ...options, loadApprovedContext: pausedLoader })
+    const pausedCalls = calls.splice(0)
+    const pausedLookups = lookups.splice(0)
     const controller = new AbortController()
     const voice = await myCoachGenerativeStreamTurn({ ...body, voiceTurn: true }, {
       ...options, signal: controller.signal,
@@ -52,13 +60,18 @@ test('approved context reaches one provider and an interrupted voice lookup send
     const interruptedLookups = lookups.splice(0)
     const dispatchedVoice = await myCoachGenerativeStreamTurn({ ...body, voiceTurn: true }, options)
     const voiceResponse = await new Response(dispatchedVoice).text()
-    console.log(JSON.stringify({ ...contextRun, controlLookups,
+    console.log(JSON.stringify({ ...contextRun, controlLookups, pausedCalls, pausedLookups,
       interruptedCalls: interruptedCalls.length, interruptedLookups,
       voiceCalls: calls, voiceLookups: lookups, voiceResponse }))
   `], { encoding: 'utf8' })
-  const { calls, lookups, controlLookups, interruptedCalls, interruptedLookups,
+  const { calls, lookups, controlLookups, pausedCalls, pausedLookups, interruptedCalls, interruptedLookups,
     voiceCalls, voiceLookups, voiceResponse } = JSON.parse(output)
   assert.deepEqual(controlLookups, ['groq', 'openrouter'])
+  assert.deepEqual(pausedLookups, [])
+  assert.ok(pausedCalls.some(call => call.messages?.at(-1)?.content.includes('organize my work week')))
+  for (const call of pausedCalls) {
+    assert.ok(!call.messages?.some(message => message.content.includes('Plan Friday in advance')))
+  }
   assert.deepEqual(lookups, ['groq'])
   assert.equal(calls.length, 1)
   assert.equal(calls[0].messages.filter(message => message.content.includes('Plan Friday in advance')).length, 1)
