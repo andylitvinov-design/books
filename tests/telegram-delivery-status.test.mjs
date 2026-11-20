@@ -13,6 +13,7 @@ test('Business reply errors are classified without logging provider payloads or 
   ['CHANNEL_NOT_CONNECTED','business_connection_unavailable','failed'],
   ['ACCOUNT_CHANGED','business_connection_unavailable','failed'],
   ['SUPABASE_UNAVAILABLE','persistence_failure','failed'],
+  ['P0001','persistence_failure','failed'],
   ['anything_else','unknown','delivery_unknown'],
  ];
  for(const [code,category,state] of cases){
@@ -58,4 +59,24 @@ test('generic Secretary and first-contact Business replies track sends and avoid
  assert.doesNotMatch(snippet,/HH_TG_(?:SECRETARY|BUSINESS_FIRST)_REPLY_NOT_CONFIRMED/);
  assert.equal((snippet.match(/sendHolisticBusinessRequestReply\(\{/g)||[]).length,2);
  assert.doesNotMatch(snippet,/setTimeout|setInterval|retry.?send|forceNew/i);
+});
+
+// The SQL rate limiter refuses windows over 86,400 seconds (INVALID_RATE_INPUT).
+// Delivery deduplication must therefore use the durable crm_msg_ingest event
+// receipt rather than only a rate bucket that expires after 24 hours.
+test('Telegram Business FAQ and service replies obey SQL windows and suppress late replays',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const route=readFileSync(new URL('../app/api/app/crm/messenger/webhook/[provider]/route.js',import.meta.url),'utf8');
+ const inbox=readFileSync(new URL('../lib/crm/telegram-business-inbox.js',import.meta.url),'utf8');
+ assert.match(route,/op:'hh-tg-business-intent-message'[\\s\\S]{0,175}\\},1,86400\\)/);
+ assert.match(route,/op:'hh-tg-secretary-reply'[\\s\\S]{0,175}\\},1,86400\\)/);
+ assert.doesNotMatch(route,/\\},1,\\s*7\\s*\\*\\s*86400\\)/);
+ const captured=route.indexOf('telegramBusinessInbox=await captureTelegramBusinessInbox(');
+ const duplicateGuard=route.indexOf('telegramBusinessInbox.matched&&telegramBusinessInbox.recorded!==true');
+ const businessDialogue=route.indexOf('const business=await processTelegramBusinessConversation(');
+ const secretaryDialogue=route.indexOf('const secretary=await processTelegramBusinessSecretary(');
+ assert.ok(captured!==-1&&duplicateGuard>captured&&
+   businessDialogue>duplicateGuard&&secretaryDialogue>businessDialogue);
+ assert.match(inbox,/crm_msg_ingest\\(\\$1,\\$2,\\$3,\\$4,\\$5,\\$6,\\$7,\\$8,\\$9,\\$10,\\$11,\\$12,\\$13,\\$14,\\$15\\)/);
+ assert.equal(telegramBusinessReplyFailure({code:'P0001',message:'opaque private SQL context'}),'persistence_failure');
 });
