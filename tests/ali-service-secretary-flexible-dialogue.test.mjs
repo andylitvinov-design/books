@@ -53,7 +53,7 @@ test('multi-intent first replies finish only a reviewed draft in RU/EN/ES',()=>{
      assert.equal(questions(r.reply),0);
      const draft=summary(c,r);
      assert.ok(draft?.includes('Selected verified service'),text);
-     assert.match(draft,/online/iu);
+     assert.match(draft,c.locale==='ru'?/онлайн/iu:/online/iu);
      assert.doesNotMatch(draft,/booked|confirmed|оплачено|оплата прошла/i);
    }
  }
