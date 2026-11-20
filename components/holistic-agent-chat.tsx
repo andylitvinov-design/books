@@ -1234,7 +1234,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       if(intent.kind!=="continue"&&intent.kind!=="service"){
         // A factual question may name a service without authorizing a
         // booking. Expose its existing public page, keep the unfinished step.
-        if((intent.kind==="price"||intent.kind==="availability")&&intent.serviceId){
+        if((intent.kind==="price"||intent.kind==="availability"||intent.kind==="information")&&intent.serviceId){
           const page=messengerProject(turnLocale,"sessions").options.find(option=>
             option.id===intent.serviceId&&option.kind==="link"&&
             option.href?.startsWith("/")&&!option.href.startsWith("//"));
@@ -1275,10 +1275,10 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           return;
         }
       }
-      if(["stop","no_booking","topic","price","availability","confused","ambiguous"].includes(intent.kind)){
+      if(["stop","no_booking","topic","price","availability","information","confused","ambiguous"].includes(intent.kind)){
         if(["stop","no_booking","topic"].includes(intent.kind)){
           setSessionOffers([]);setPageHelpLink(null);
-        }else if((intent.kind==="price"||intent.kind==="availability")&&intent.serviceId){
+        }else if((intent.kind==="price"||intent.kind==="availability"||intent.kind==="information")&&intent.serviceId){
           const page=messengerProject(turnLocale,"sessions").options.find(option=>
             option.id===intent.serviceId&&option.kind==="link"&&
             option.href?.startsWith("/")&&!option.href.startsWith("//"));
