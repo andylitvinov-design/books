@@ -192,3 +192,22 @@ test('only the approved summary is forwarded to CRM, not unreviewed chat turns',
  assert.doesNotMatch(review,/ctx\.turns\.filter\(x=>x\.role==='user'\)/);
  assert.match(service,/ai_review_consent_at=now\(\)/);
 });
+
+test('booking request with a personal topic continues gently without retaining private text',()=>{
+ for(const [locale,raw] of [
+  ['ru','Хочу записаться на консультацию по отношениям в пятницу онлайн'],
+  ['en','I want to book a consultation about anxiety Friday online'],
+  ['es','Quiero reservar una consulta por ansiedad el viernes online'],
+ ]){
+   const next=aliServiceSecretaryTurn({locale,message:raw,kind:'session'});
+   assert.equal(next.stage,'challenge',locale);
+   assert.equal(next.kind,'clarify',locale);
+   assert.ok(next.slots.goal,locale);
+   assert.ok(next.slots.situation,locale);
+   assert.equal(next.slots.challenge,undefined,locale);
+   assert.doesNotMatch(next.slots.goal,/отношен|anxiety|ansiedad/iu);
+   assert.doesNotMatch(next.reply,/отношен|anxiety|ansiedad/iu);
+   assert.equal(questions(next.reply),1,locale);
+   assert.equal(summary({locale},next),null);
+ }
+});
