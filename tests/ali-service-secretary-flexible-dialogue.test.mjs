@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {aliServiceSecretaryTurn,aliServiceSecretarySummary}
   from '../lib/assist/ali-service-secretary.mjs';
 import {aliGuidedIntakeTurn,aliGuidedIntakeSummary}
@@ -177,4 +178,17 @@ test('privacy, opt-out and vague answers do not overwrite booking information',(
    assert.deepEqual(decline.slots,{});
    assert.equal(summary(c,decline),null);
  }
+});
+
+test('only the approved summary is forwarded to CRM, not unreviewed chat turns',()=>{
+ const service=readFileSync(new URL('../lib/crm/telegram-ai-diagnostic-v3-service.js',
+   import.meta.url),'utf8');
+ const review=service.slice(service.indexOf("if(row.stage==='review_confirm')"),
+   service.indexOf("if(row.stage!=='interview')"));
+ assert.ok(review.length>900);
+ assert.match(review,/if\(action==='send'\)/);
+ assert.match(review,/const notes=\[\];/);
+ assert.match(review,/ctx\.summary\.slice\(0,950\)/);
+ assert.doesNotMatch(review,/ctx\.turns\.filter\(x=>x\.role==='user'\)/);
+ assert.match(service,/ai_review_consent_at=now\(\)/);
 });
