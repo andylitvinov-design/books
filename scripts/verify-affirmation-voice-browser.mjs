@@ -332,11 +332,21 @@ async function verifyWorkspaceHydration(browser,locale){
     const goalTab=page.locator('[data-video-quick-control="video"]');
     await goalTab.click();
     await expect(goalTab).toHaveAttribute("aria-pressed","true");
-    const others=page.locator('[data-auto-video-audience="others"]');
-    await expect(page.locator('[data-auto-video-audience]')).toHaveCount(2);
-    await expect(page.locator('[data-video-goal-audience-option]')).toHaveCount(0);
-    await others.click();
-    await expect(others).toHaveAttribute("aria-pressed","true");
+    // Owner-approved Life/Work is the ONLY public selector; 'Work' preserves
+    // the same recipient-format flow without restoring the retired audience row.
+    await expect(page.locator('[data-auto-video-audience]')).toHaveCount(0);
+    // Returning from Ideas retains the completed Self quiz at step 3. The
+    // Life/Work switch is intentionally present only on step 1, so navigate
+    // back using the real visible controls rather than weakening the check.
+    const backGoal=page.locator('[data-video-goal-quiz-back]');
+    for(let step=0;step<2&&await backGoal.count();step++)await backGoal.click();
+    await expect(page.locator('[data-video-goal-quiz-progress]')).toContainText('1 / 3');
+    const scopes=page.locator('[data-video-quick-scope]');
+    await expect(scopes).toHaveCount(2);
+    const work=page.locator('[data-video-quick-scope="work"]');
+    await expect(work).toBeVisible();
+    await work.tap();
+    await expect(work).toHaveAttribute("aria-pressed","true");
     const recipientCatalog=page.locator('[data-video-recipient-catalog]');
     await expect(recipientCatalog).toBeVisible();
     await expect(recipientCatalog).toHaveAttribute("data-video-recipient-aspect","portrait");
@@ -787,7 +797,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         });
         assert.ok(audioLayout&&audioLayout.span<570,
           'AUDIO_COMPACT_FIRST_FOLD_SPAN_'+width+' '+JSON.stringify(audioLayout));
-        assert.ok(audioLayout.tileHeight<=86&&audioLayout.tileHeight>=70,
+        // Owner-approved compact audio *rows* are 54px on narrow iPhones
+        // and 58px on wider phones, never legacy 70–86px video cards.
+        assert.ok(audioLayout.tileHeight>=52&&audioLayout.tileHeight<=64,
           'AUDIO_COMPACT_TRACK_HEIGHT_'+width+' '+JSON.stringify(audioLayout));
         assert.ok(audioLayout.createLeft<audioLayout.nextLeft&&
           Math.abs(audioLayout.createTop-audioLayout.nextTop)<=3&&

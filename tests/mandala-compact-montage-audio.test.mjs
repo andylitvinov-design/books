@@ -80,7 +80,7 @@ test("physical original-motion WebKit exports selected licensed music without re
   assert.match(browser,/sceneCorrelations:/,"preserve four physical footage comparisons");
 });
 
-test("Audio two-button route never performs premature render and keeps a single-row soundtrack",()=>{
+test("Audio two-button route never renders early and shows a vertical track playlist",()=>{
   const studio=source;
   const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
   const from=studio.indexOf('data-video-stage-actions="montage"');
@@ -90,11 +90,32 @@ test("Audio two-button route never performs premature render and keeps a single-
   assert.match(actions,/onClick=\{openReadyForGeneration\}/);
   assert.doesNotMatch(actions,/onClick=\{createQuickVideo\}/);
   assert.match(studio,/const openReadyForGeneration\s*=/);
-  assert.match(css,/grid-auto-flow:column;grid-auto-columns:clamp\(84px,27vw,112px\)/);
-  assert.match(css,/max-width:100%;overflow-x:auto;overflow-y:hidden/);
-  assert.match(css,/\[data-video-order-bar\] \.quickOrderSummary\{\s*display:none!important/);
+  assert.match(css,/\.studio\[data-montage-panel="audio"\] \.audioCompactGrid\{\s*display:flex;flex-direction:column/);
+  assert.match(css,/overflow-x:hidden;overflow-y:auto/,"vertical scrolling inside music library");
+  assert.match(css,/max-height:clamp\(172px,33dvh,300px\)/);
+  assert.doesNotMatch(css,/grid-auto-flow:column;grid-auto-columns/);
+  assert.match(css,/\.audioCompactWave/);
+  assert.match(css,/\.audioCompactTile\[data-selected="true"\]/);
+  assert.match(css,/\[data-video-order-bar\] \.quickOrderSummary\{display:none!important/);
   assert.match(css,/\[data-video-stage-actions="montage"\]>\.quickGenerate/);
-  assert.match(css,/order:0;min-height:49px;background:#fffcf7!important/);
-  assert.match(css,/order:1;min-height:49px;border:1px solid #087e61!important/);
+  assert.match(css,/order:0;background:#fffcf7!important/);
+  assert.match(css,/order:1;border:1px solid #087e61!important/);
   assert.match(studio,/filteredAudio\.slice\(0,12\)/);
+});
+
+test("Audio is an accessible, slim music list with actual controls, not film posters",()=>{
+  const begin=source.indexOf('{montagePanel==="audio" ? <div className={videoStyles.montageAudioCompact}');
+  const end=source.indexOf('data-video-audio-compact-selected',begin);
+  const audio=source.slice(begin,end);
+  assert.match(audio,/data-video-audio-clip-seconds=\{Math\.min\(duration,30\)\}/);
+  assert.match(audio,/data-video-audio-compact-upload-tile/);
+  assert.match(audio,/className=\{videoStyles\.audioCompactTrackInfo\}/);
+  assert.match(audio,/className=\{videoStyles\.audioCompactWave\}/);
+  assert.match(audio,/className=\{videoStyles\.audioCompactDuration\}/);
+  assert.match(audio,/role="group"/);
+  assert.doesNotMatch(audio,/<img/,"Audio mode must never use film stills as music covers");
+  const featured=readFileSync(new URL("../components/studio-music-picker.jsx",import.meta.url),"utf8");
+  assert.match(featured,/data-video-studio-featured-play/);
+  assert.match(featured,/data-video-audio-compact-track=\{"library:"\+row\.id\}/);
+  assert.doesNotMatch(featured,/<img src=\{poster\}/);
 });
