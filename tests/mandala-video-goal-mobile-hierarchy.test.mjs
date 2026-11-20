@@ -10,7 +10,7 @@ const mobile=layout.slice(layout.indexOf("/* Goal 1: owner mobile correction"));
 
 test("Goal uses Life/Work as only audience switch and collapses the old empty row",()=>{
  assert.match(studio,/data-video-director-audience-controls/);
- assert.match(studio,/1\. Choose your goal/);
+ assert.match(studio,/1\. Choose a category/);
  assert.match(director,/changeVideoAudience\(scope==="life"\?"self":"others"\)/);
  assert.doesNotMatch(director,/createPortal\(audienceBar,audienceTarget\)/);
  assert.match(mobile,/grid-template-columns:minmax\(0,1fr\) auto!important/);
@@ -53,8 +53,9 @@ test("explicit three-step quiz gates Generate and Personalization with back supp
   assert.ok(director.includes('if(videoAudience==="self")return goalQuizComplete;'));
   assert.ok(studio.includes('onGoalQuizChange={setGoalQuizState}'));
   assert.ok(studio.includes('if(!goalQuizReady)return;'));
-  assert.ok(studio.includes('if(!goalQuizReady||!studioHydrated||recording||preparing)return false;'));
-  assert.equal((studio.match(/disabled=\{!goalQuizReady\|\|!studioHydrated\|\|recording\|\|preparing\}/g)||[]).length,2);
+  assert.ok(studio.includes('if((!goalQuizReady&&!wish.trim()&&!uploadedAudio)||!studioHydrated||recording||preparing)return false;'));
+  assert.ok(studio.includes('disabled={(!goalQuizReady&&!wish.trim()&&!uploadedAudio)||!studioHydrated||recording||preparing}'));
+  assert.equal((studio.match(/disabled=\{!goalQuizReady\|\|!studioHydrated\|\|recording\|\|preparing\}/g)||[]).length,1);
   assert.ok(studio.includes('hidden={goalQuizState.audience==="self"&&goalQuizState.step!==3}'));
   assert.ok(layout.includes('[data-video-goal-quiz-topic-stage][hidden]{display:none!important}'));
 });
@@ -89,4 +90,37 @@ test("Goal question two keeps the four first-question images and photo-card hier
  assert.match(layout,/\[data-video-goal-subcategory-cards\] button\[data-auto-video-subcategory\]\[aria-pressed="true"\]/);
  assert.match(layout,/img\[data-video-goal-art\]/);
  for(const art of ["stress","love","energy","growth"])assert.ok(director.includes('art:"'+art+'"'));
+});
+
+test("all three Goal questions retain one composer and identical four-photo-card geometry",()=>{
+  assert.match(studio,/data-video-wish-above-goals data-video-warm-composer/);
+  assert.match(director,/data-auto-video-input value=\{requestDraft\}/);
+  assert.match(director,/createPortal\(requestInput,requestTarget\)/);
+  assert.equal((director.match(/data-video-goal-photo-card/g)||[]).length,3);
+  assert.match(director,/visibleQuickTopicIds\.map\(\(id,index\)=>/);
+  assert.match(director,/data-video-goal-topic-art/);
+  assert.match(layout,/Goal 1\/2\/3 photographic parity/);
+  assert.match(layout,/\[data-video-wish-above-goals\]\[data-video-goal-quiz-optional\]/);
+  assert.match(layout,/\[data-video-goal-photo-card\] img\[data-video-goal-art\]/);
+  assert.match(layout,/height:76px!important;max-height:76px!important/);
+  assert.match(layout,/\[data-video-topic-section\]\[data-video-goal-quiz-step="3"\] \[data-video-request-after-topic\]/);
+  assert.match(studio,/Экспресс-видео/);
+  assert.match(studio,/Личный подбор видео/);
+  assert.match(studio,/data-video-express-create/);
+  assert.match(studio,/onClick=\{continueToIdeas\}/);
+});
+
+test("final parity selectors outrank legacy scoped subcategory and topic sizing",()=>{
+  const parity=layout.slice(layout.indexOf("/* Exact three-view card specificity repair."));
+  assert.ok(parity.length>800);
+  for(const selector of [
+    'button[data-auto-video-category][data-video-goal-photo-card]',
+    'button[data-auto-video-subcategory][data-video-goal-photo-card]',
+    'button[data-video-goal-topic][data-video-goal-photo-card]',
+    'img[data-video-goal-art]',
+    '[data-video-goal-subcategory-label]',
+    '[data-video-goal-topic-label]'
+  ])assert.ok(parity.includes(selector),selector);
+  assert.match(parity,/min-height:76px!important/);
+  assert.match(parity,/height:64px!important/);
 });

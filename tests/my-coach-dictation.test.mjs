@@ -25,7 +25,8 @@ test('explicit spoken locale beats wrong-script ASR and live RU/EN switch does n
    'recognizedLanguageRef.current=recognition.lang',
    'if(heardRef.current.trim())return',
    'restartSilentRecognition(recognition)',
-   'turnRef.current?.(text,{locale:utteranceLocale})'])assert.ok(loop.includes(token),token)
+   'turnRef.current?.(text,{locale:utteranceLocale,'])assert.ok(loop.includes(token),token)
+ assert.ok(loop.includes('onApprovedPhrase:(phrase,locale)=>offerEarlyPhrase'))
  assert.ok(ui.includes('utteranceLocale:spoken?.locale'))
  assert.ok(ui.includes("voiceTurn&&['en','ru','es'].includes(utteranceLocale)"))
  assert.ok(!ui.includes("disabled={voiceState.phase!=='idle'}>"),'the live language selector must never be disabled')

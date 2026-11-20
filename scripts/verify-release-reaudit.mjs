@@ -30,7 +30,9 @@ async function check(name, detail, fn) {
 }
 async function assertCspPublicHome(page) {
   await expect(page).toHaveURL(origin + '/');
-  // Real direct CDN Home: visible markup alone is not enough. Require the
+  // The approved owner reference is the canonical React Home, never legacy CDN HTML.
+  await expect(page.locator('body[data-fast-home]')).toHaveCount(0);
+  // Real Home: visible markup alone is not enough. Require the
   // lightweight first-party script to have initialized its controls.
   // A rapid back-navigation may still be replacing the outgoing document.
   // Verify the REAL CDN or React Home rather than testing a stale DOM.
