@@ -387,23 +387,25 @@ test('completed workflow with an unfinished jobs API never masquerades as a fail
   assert.equal(elapsed, 1500);
 });
 
-test('sensitive pending Specialist stops within one 90s probe after a real production-base change', async () => {
-  let elapsed=0, prReads=0, targetReads=0, workflowReads=0;
+test('sensitive pending specialist keeps its HEAD and fails on genuine runner timeout, not BASE drift', async()=>{
+  let elapsed=0,prReads=0,targetReads=0,workflowReads=0;
   const currentBase='c'.repeat(40);
-  const files={...sources, changedRows:[{filename:'lib/crm/a.js',status:'M'}]};
+  const sourcesPinned={...sources,changedRows:[{filename:'lib/crm/a.js',status:'M'}]};
   const api={
     pr:async()=>{prReads++;return pr;},
     target:async()=>{targetReads++;return elapsed>=60_000?currentBase:base;},
     runs:async()=>{workflowReads++;return [run('in_progress',null)];},
-    jobs:async()=>{throw Error('pending workflow must never count as green');},
+    jobs:async()=>{throw Error('running specialist is not successful job evidence');},
   };
-  await assert.rejects(()=>verify(api,ctx,files,{
-    now:()=>elapsed, sleep:async ms=>{assert.ok(ms>0&&ms<=30_000);elapsed+=ms;},
-    maxWaitMs:35*60_000,pollMs:30_000,
-  }),/PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED/);
-  assert.ok(elapsed>=90_000&&elapsed<=120_000,'stop long before a 35-minute Specialist timeout');
-  assert.ok(prReads>=2&&targetReads>=2,'verify live PR identity and protected target again');
-  assert.ok(workflowReads<=4,'do not poll stale workflows until the long deadline');
+  await assert.rejects(()=>verify(api,ctx,sourcesPinned,{
+    now:()=>elapsed,sleep:async ms=>{assert.ok(ms>0&&ms<=30_000);elapsed+=ms;},
+    maxWaitMs:120_000,pollMs:30_000,
+  }),/SPECIALIST_MISSING_OR_PENDING:RUNNING_TIMEOUT/);
+  assert.ok(elapsed>=120_000&&elapsed<=120_000,
+    'preserve running specialist until its bounded deadline, never issue early base rejection');
+  assert.equal(prReads,1,'read exact-HEAD PR at start; do not rebase midflight');
+  assert.equal(targetReads,0,'no moving-target base check while a real specialist is active');
+  assert.ok(workflowReads>=4&&workflowReads<=6,'bounded polling, no repeated CI dispatch');
 });
 
 test('ordinary public Specialist does not add live-base polling or skip applicable checks',async()=>{
@@ -716,4 +718,41 @@ test('#5160 accepts new independent namespaced source after production moves, ne
   assert.ok(targetReads>=1,'actual protected production ref was inspected');
   await assert.rejects(()=>verify({...api,pr:async()=>({...active,mergeable:false,mergeable_state:'dirty'})},
     ctx,source,{maxWaitMs:0}),/MERGE_CONFLICT/);
+});
+
+test('all required specialists finish before BASE_ADVANCED; not only macOS (#5199/#5208)',async()=>{
+  const drift='c'.repeat(40);
+  const sources={base:new Map([[path,yaml]]),current:new Map([[path,yaml]]),
+    changedRows:[{filename:'lib/crm/a.js',status:'M'}]};
+  const live={...pr,mergeable:true,base:{...pr.base,sha:drift}};
+  const diff={status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:base},merge_base_commit:{sha:base},
+    commits:[{sha:drift}],files:[{filename:'app/api/auth/route.ts',status:'modified'}]};
+  let polls=0,baseReads=0,compares=0,jobReads=0,elapsed=0;
+  const api={pr:async()=>live,target:async()=>{baseReads++;return drift;},
+    compare:async()=>{compares++;return diff;},
+    runs:async()=>[++polls===1?run('in_progress',null):run('completed','success')],
+    jobs:async()=>{jobReads++;return [{name:'test',status:'completed',conclusion:'success'}];}};
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:120_000,pollMs:100,
+    now:()=>elapsed,sleep:async ms=>{elapsed+=ms;}}),/PRODUCTION_BASE_CHANGED/);
+  assert.equal(polls,2,'the actual specialist should finish before base reconciliation');
+  assert.equal(jobReads,1,'read the exact-HEAD completed specialist job');
+  assert.equal(baseReads,1,'only final target comparison, not an early rejection');
+  assert.equal(compares,1,'do not repeatedly compare moving production during CI');
+  let redPolls=0,redBaseReads=0;
+  await assert.rejects(()=>verify({...api,
+    target:async()=>{redBaseReads++;return drift;},
+    compare:async()=>{throw Error('must not hide real failed specialist');},
+    runs:async()=>[++redPolls===1?run('in_progress',null):run('completed','failure')]
+  },ctx,sources,{maxWaitMs:120_000,pollMs:100,
+    now:()=>elapsed,sleep:async ms=>{elapsed+=ms;}}),/SPECIALIST_FAILED/);
+  assert.equal(redPolls,2);
+  assert.equal(redBaseReads,0,'a failed specialist is reported before stale-base recovery');
+  let noSpecialistReads=0;
+  await assert.rejects(()=>verify({...api,
+    runs:async()=>{noSpecialistReads++;return [];}
+  },ctx,{base:new Map(),current:new Map(),
+    changedRows:[{filename:'lib/crm/a.js',status:'M'}]},{maxWaitMs:0}),
+    /PRODUCTION_BASE_CHANGED/);
+  assert.equal(noSpecialistReads,0,'no required specialist means base is checked early');
 });
