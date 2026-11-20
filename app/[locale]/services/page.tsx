@@ -22,7 +22,6 @@ import { SpiritualReadingEntry } from "@/components/services-spiritual-reading";
 import { ServicesIntroMedia, ServicesMethodVideos, ServicesDirectoryInvitation } from "@/components/services-studio-extras";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
-import { CompactLeadCapture } from "@/components/compact-lead-capture";
 import { wisePaymentsEnabled } from "@/lib/commerce/wise-payments";
 import { personalPayPalEnabled } from "@/lib/commerce/paypal-personal";
 import { publicLocales, type PublicLocale } from "@/lib/public-locales";
@@ -119,8 +118,6 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
           <ServicesCompactPanel id="mytube"><ServicesMethodVideos locale={locale} /></ServicesCompactPanel>
           <ServicesCompactPanel id="directory">
             <ServicesDirectoryInvitation locale={locale} />
-            <CompactLeadCapture locale={locale} serviceTitle="Personal service selection with Andrey"
-              title={current.footerTitle} lead={current.footerLead} />
           </ServicesCompactPanel>
         </ServicesCompactCatalog>
       </ServicesExplorerProvider>

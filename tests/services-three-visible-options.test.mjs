@@ -134,6 +134,20 @@ test("the legacy directory is not an extra visible order form until opened", () 
   const browser = read("scripts/verify-public-services-production.mjs");
   assert.match(browser, /locator\("\[data-service-lead-capture\]"\)\)\.toHaveCount\(0\)/);
   assert.match(browser, /locator\('\[data-services-unified-panel="directory"\]'\)/);
-  assert.match(browser, /await visible\(directory\.locator\('\[data-service-lead-capture\]'\)\)/);
+  assert.match(browser, /await expect\(directory\.locator\('\[data-service-lead-capture\]'\)\)\.toHaveCount\(0\)/);
   assert.match(browser, /await visible\(directory\.locator\('\[data-services-directory-invitation\]'\)\)/);
+});
+
+
+test("Spanish and shared Support expose the same ten categories, without duplicate lead capture", () => {
+  const es=read("app/es/services/page.tsx");
+  const expected=["consultation","homeopathy","services","business","browse","courses","video","coach","reiki","reading"];
+  const order = text => [...text.matchAll(/<ServicesCompactPanel id="([^"]+)"/g)].map(m => m[1]).slice(0,10);
+  assert.deepEqual(order(es),expected);
+  assert.deepEqual(order(page),expected);
+  for(const text of [es,page]){
+    assert.doesNotMatch(text, /<CompactLeadCapture/);
+    assert.match(text, /<ServicesDirectoryInvitation/);
+  }
+  assert.match(es, /<ServicesAssistQuiz locale="es" \/>/);
 });

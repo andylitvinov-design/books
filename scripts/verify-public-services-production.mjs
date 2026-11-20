@@ -382,7 +382,7 @@ try {
       const directory = catalog.locator('[data-services-unified-panel="directory"]');
       await directory.locator(':scope > [data-support-uniform-preview]').click();
       await expect(directory).toHaveAttribute("data-expanded", "true");
-      await visible(directory.locator('[data-service-lead-capture]'));
+      await expect(directory.locator('[data-service-lead-capture]')).toHaveCount(0);
       await visible(directory.locator('[data-services-directory-invitation]'));
       await directory.locator(':scope > [data-support-uniform-preview]').click();
       await expect(directory).toHaveAttribute("data-expanded", "false");
