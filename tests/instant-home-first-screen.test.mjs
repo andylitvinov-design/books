@@ -57,7 +57,10 @@ test('EN/RU are complete first-screen documents without the Next CSS/JS chain',(
  const js=read('public/instant-home/fast.js');
  const integrity="sha256-"+createHash('sha256').update(css).digest('base64');
  assert.ok(read('middleware.ts').includes("'"+integrity+"'"));
- assert.doesNotMatch(read('middleware.ts'),/style-src 'self' 'unsafe-inline'/);
+ // Only inspect the strict CDN-first CSP. The unrelated dynamic private/RSC
+ // CSP legitimately has a separate style policy and must remain untouched.
+ const staticCsp=read('middleware.ts').split('function privatePath')[0];
+ assert.doesNotMatch(staticCsp,/style-src 'self' 'unsafe-inline'/);
  assert.match(read('middleware.ts'),/const fastLocale = instantHomeLocale\(/);
  assert.ok(Buffer.byteLength(css)<11000);
  assert.ok(Buffer.byteLength(js)<5000);
