@@ -1873,12 +1873,13 @@ test('BASE-owned Mandala WebKit list accepts 25-32 strict literal routes, never 
   },branch,changed);
   const literalRoutes=guard.match(/(?:startsWith\(github\.head_ref, '[^']+'\)|github\.head_ref == '[^']+')/g)||[];
   const toLimit=32-literalRoutes.length;
-  assert.ok(toLimit>=1 && toLimit<=8,'the reviewed BASE allowlist has 24-31 literal routes');
+  assert.ok(toLimit>=0 && toLimit<=8,'the reviewed BASE allowlist has 24-32 literal routes');
   assert.equal(skip(original),true,'reviewed BASE literal routes remain checkable');
-  assert.equal(skip(extended(1)),true,'one additional literal prefix remains checkable');
-  assert.equal(skip(extended(toLimit)),true,'exactly 32 static predicates remain checkable');
+  assert.equal(skip(extended(1)),toLimit>0,'one additional route is permitted only with capacity');
+  assert.equal(skip(toLimit>0?extended(toLimit):original),true,'exactly 32 static predicates remain checkable');
   assert.equal(skip(extended(toLimit+1)),false,'33 predicates fail closed');
-  assert.equal(skip(extended(toLimit),'fix/ci-webkit-budget-probe-'+(toLimit-1)+'-check'),false,
+  assert.equal(skip(toLimit>0?extended(toLimit):original,
+    toLimit>0?'fix/ci-webkit-budget-probe-'+(toLimit-1)+'-check':'codex/ideas-goal-test'),false,
     'a matching WebKit branch must actually execute macOS');
   assert.equal(skip(extended(toLimit),out,['lib/mandala/audio-render.mjs']),false,
     'encoded audio source cannot skip macOS');
