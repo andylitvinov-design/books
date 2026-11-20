@@ -75,15 +75,18 @@ function exercise(input,workspace,overrides={}){
  assert.ok(handler);
  const js=ts.transpileModule('const startFromHero='+handler.getText(ast)+';startFromHero();',{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
  let active=workspace,queued=workspace,basicTab=null,renders=0,picks=0;const cover={open:false},frames=[],scrolls=[],notices=[];
- const state={recording:false,preparing:false,hypnoAudioBusy:false,photoPending:false,phrasePending:false,narrationInvalid:false,locale:'ru',photoUrl:'blob:synthetic',backgroundOnly:false,photoConsent:false,audioNeedsAttachment:false,uploadedAudio:null,audioRights:false,source:'synthetic',...overrides};
+ const state={recording:false,preparing:false,storySourcePending:false,hypnoAudioBusy:false,photoPending:false,phrasePending:false,narrationInvalid:false,locale:'ru',photoUrl:'blob:synthetic',backgroundOnly:false,photoConsent:false,audioNeedsAttachment:false,uploadedAudio:null,audioRights:false,source:'synthetic',...overrides};
  // Models only the source-defined workspace/display and native-details state,
  // not pixels or a real browser. React state commits at the frame boundary.
  const consent={scrollIntoView:()=>scrolls.push({open:cover.open,workspace:active,
    visible:cover.open&&(active==='video'||active==='editor')})};
- runInNewContext(js,{...state,canGenerate:true,preparingRef:{current:state.preparing},jobRef:{current:null},webCodecJobRef:{current:null},activeWorkspace:workspace,setActiveWorkspace:value=>{queued=value;},
+ runInNewContext(js,{...state,storySourcePendingRef:{current:Boolean(state.storySourcePending)},canGenerate:true,preparingRef:{current:state.preparing},jobRef:{current:null},webCodecJobRef:{current:null},activeWorkspace:workspace,setActiveWorkspace:value=>{queued=value;},
    setBasicPanelTab:value=>{basicTab=value;},setMontagePanel:()=>{},setMontageStyleSettingsOpen:()=>{},setIntroPlaying:()=>{},setNotice:value=>notices.push(value),supportUi:{heroConsent:'Consent required'},audioUi:{needsAttach:'Attach audio'},ui:{audioRightsHelp:'Audio rights required'},onPickPhoto:()=>picks++,createVideo:()=>renders++,window:{requestAnimationFrame:cb=>frames.push(cb)},document:{querySelector:selector=>selector==='[data-video-cover-options]'?cover:selector==='[data-video-photo-consent]'?consent:{scrollIntoView(){}}}},{timeout:1000});
  assert.equal(scrolls.length,0,'scroll must retain two-frame boundary');
  while(frames.length){active=queued;frames.shift()();}
+ // A guarded handler may return before scheduling rAF; React still commits
+ // the queued setState at the end of the event, including denied Ready navigation.
+ active=queued;
  return {workspace:active,basicTab,open:cover.open,scrolls,notices,renders,picks};
 }
 test('one original consent pane is accessible in Video or fifth Montage Photo',()=>{
@@ -233,7 +236,7 @@ test("compact Ideas preserves one opt-in advanced phrase and voice editor",()=>{
  assert.match(section,/data-video-ideas-recording-open=\{ideasVoiceAdvancedOpen\?"true":"false"\}/);
  assert.match(section,/hidden=\{activeWorkspace!=="phrases"\|\|ideasSubtab!=="personalization"\}/);
  assert.match(section,/aria-hidden=\{activeWorkspace!=="phrases"\|\|ideasSubtab!=="personalization"\}/);
- assert.equal((section.match(/data-video-ideas-tab="/g)||[]).length,2);
+ assert.equal((section.match(/data-video-ideas-tab="/g)||[]).length,3);
  assert.equal((section.match(/<MandalaVideoConcept /g)||[]).length,1);
  assert.match(section,/data-video-ideas-advanced-voice open=\{ideasVoiceAdvancedOpen\}/);
  assert.equal((studio.match(/<MandalaHypnoCompact /g)||[]).length,1);
@@ -248,9 +251,10 @@ test("hydrated Studio gates the first local MP4 test before its first real user 
  const benchmark=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
  assert.match(studio,/data-video-studio-hydrated=\{studioHydrated\?"true":"false"\}/);
  assert.match(studio,/useEffect\(\(\)=>setStudioHydrated\(true\),\[\]\)/);
- assert.ok(benchmark.indexOf("data-video-studio-hydrated")<benchmark.indexOf("data-video-first-video-advanced"),
-   "hydration must complete before the first direct free-video disclosure");
- assert.match(benchmark,/LICENSED_SCENE_ORDER_MISMATCH/);
+ assert.ok(benchmark.indexOf("data-video-studio-hydrated")<benchmark.indexOf("[data-auto-video-input]"),
+   "hydration must complete before the first real Goal input and Express action");
+ assert.match(benchmark,/EXPRESS_TEST_RECIPE_NOT_SIX_SCENES/);
+ assert.match(benchmark,/EXPRESS_CANONICAL_SCENE_ORDER_OR_IDENTITY_MISMATCH/);
 });
 
 test("owner 03 Nov: compact tabs, real scenario updates and moved settings",()=>{
@@ -355,11 +359,10 @@ test("Ideas → Montage cancels stale scroll on a genuine quick-tab action",()=>
   assert.ok(navAt>=0);
   assert.match(studio.slice(navAt,navAt+270),/quickNavTokenRef\.current\+\+/);
   const browser=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
-  assert.match(browser,/MONTAGE_TAB_MUST_ACTIVATE/);
-  assert.match(browser,/data-video-montage-tab="effects"/);
-  assert.match(browser,/MONTAGE_MUST_START_WITH_STYLE/);
-  assert.match(browser,/GUEST_APPROVAL_MUST_SURVIVE_TAB_NAVIGATION/);
-  assert.match(browser,/CONCEPT_TEXT_TOOLS_DID_NOT_OPEN/);
+  assert.match(browser,/getByRole\('button',\{name:'Just make it'\}\)/);
+  assert.match(browser,/expressGenerateClicks=1/);
+  assert.match(browser,/EXPRESS_VIDEO_MUST_BE_30_SECONDS/);
+  assert.doesNotMatch(browser,/data-video-continue-scenarios/);
 });
 
 // Owner-approved UX: direct export and advancing to effects are independent.
@@ -391,4 +394,13 @@ test("Goal and Montage preserve creation guards while Text offers guarded video 
  assert.ok(hypno.includes('data-hypno-create'));
  assert.ok(hypno.includes('data-hypno-add-effects'));
  assert.ok(!studio.includes('generateWithoutHypnoEffects'));
+});
+
+test('unapproved six-frame Story stays fail-closed even when Ready is invoked directly',()=>{
+ const result=exercise(source,'ready',{storySourcePending:true,photoConsent:true});
+ assert.equal(result.renders,0,'a previous forest background must not be encoded');
+ assert.equal(result.workspace,'editor','return the user to Story for explicit photo approval');
+ assert.equal(result.open,false);
+ assert.equal(result.notices.length,1);
+ assert.match(result.notices[0],/Сначала примените шесть кадров/);
 });

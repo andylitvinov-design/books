@@ -66,7 +66,11 @@ try{
  assert.equal(response?.status(),200,'STORIES_LOCAL_APP_NOT_200');
  await page.locator('[data-video-studio-hydrated="true"]').waitFor({timeout:60000});
  await completeThreeStepGoalsQuiz(page,{engine:'webkit'});
- await page.locator('[data-video-continue-scenarios]').tap();
+ // The visible first-screen Create CTA is the real post-quiz navigation.
+ // The legacy lower Continue remains hidden; do not force a synthetic click.
+ const advance=page.locator('[data-video-goal-create-cta]');
+ await advance.waitFor({state:'visible',timeout:15000});
+ await advance.tap();
  await page.locator('[data-video-quick-control="editor"]').click();
  const storyTab=page.locator('[data-video-montage-tab="concept"]');
  await storyTab.waitFor({state:'visible',timeout:20000});

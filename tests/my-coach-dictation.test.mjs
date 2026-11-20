@@ -25,7 +25,8 @@ test('explicit spoken locale beats wrong-script ASR and live RU/EN switch does n
    'recognizedLanguageRef.current=recognition.lang',
    'if(heardRef.current.trim())return',
    'restartSilentRecognition(recognition)',
-   'turnRef.current?.(text,{locale:utteranceLocale})'])assert.ok(loop.includes(token),token)
+   'turnRef.current?.(text,{locale:utteranceLocale,'])assert.ok(loop.includes(token),token)
+ assert.ok(loop.includes('onApprovedPhrase:(phrase,locale)=>offerEarlyPhrase'))
  assert.ok(ui.includes('utteranceLocale:spoken?.locale'))
  assert.ok(ui.includes("voiceTurn&&['en','ru','es'].includes(utteranceLocale)"))
  assert.ok(!ui.includes("disabled={voiceState.phase!=='idle'}>"),'the live language selector must never be disabled')
@@ -156,12 +157,13 @@ test('iOS 27 keeps recognized Safari voice sessions alive until natural onend',(
 
 test('hands-free voice uses live consent and never ends on a natural TTS outage',()=>{
   const loop=source('components/my-coach-speech-loop.jsx')
-  assert.ok(loop.includes('voiceConfigRef.current={cloudAgreed,cloudAvailable,cloudProvider}'))
+  assert.ok(loop.includes('voiceConfigRef.current={cloudAgreed,cloudAvailable,cloudProvider,voiceName}'))
   const live=loop.slice(loop.indexOf('async function speakCoachReply('),loop.indexOf('function toggle(){'))
-  assert.match(live,/cloudProvider:voiceProvider}=voiceConfigRef\.current/)
+  assert.match(live,/cloudProvider:voiceProvider,voiceName:selectedVoice}=voiceConfigRef\.current/)
   assert.ok(live.includes('(naturalVoice||voiceAgreed)&&voiceAvailable'))
   for(const marker of ['provider:voiceProvider',"voiceProvider==='google_chirp3_hd'",
-    "voiceProvider==='fish_free'"])assert.ok(live.includes(marker),marker)
+    "['fish_free','gemini_tts_free'].includes(voiceProvider)",
+    'voiceName:selectedVoice'])assert.ok(live.includes(marker),marker)
   const fallback=live.slice(live.indexOf('function showTextOnly(){'),live.indexOf('// Never synthesize'))
   assert.ok(fallback.includes("if(result.mode==='safety'||result.mode==='boundary')"),
     'safety and boundary stops retain their original guard')

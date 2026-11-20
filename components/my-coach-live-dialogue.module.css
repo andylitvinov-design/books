@@ -1233,7 +1233,7 @@
 }
 .root[data-session-visual-v4] .microphoneWave[data-voice-detected='true'] .waveBars i{opacity:.85}
 .root[data-session-visual-v4] .voiceControls[data-coach-inline-voice]{
-  display:grid;grid-template-columns:76px minmax(0,1fr) 64px 64px;
+  display:grid;grid-template-columns:76px minmax(0,1fr) 64px 64px 64px;
   align-items:center;gap:9px;min-width:0;min-height:90px;
   padding:7px 13px;border:1px solid #e0e7db;border-radius:27px;
   background:linear-gradient(120deg,#fffef9,#f8fbf3 50%,#fffdf9);
@@ -1261,6 +1261,7 @@
   font:700 11px/16px system-ui;text-align:left;color:#217960;pointer-events:none;
 }
 .root[data-session-visual-v4] .voiceControls .keyboardControl,
+.root[data-session-visual-v4] .voiceControls .profileControl,
 .root[data-session-visual-v4] .voiceControls .endControl{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   justify-self:stretch;gap:3px;box-sizing:border-box;
@@ -1272,7 +1273,7 @@
 .root[data-session-visual-v4] .voiceControls .endControl{
   border-color:#f0cdc7;background:#fff3f0;color:#bd4c48;
 }
-.root[data-session-visual-v4] .voiceControls :is(.keyboardControl,.endControl):focus-visible{
+.root[data-session-visual-v4] .voiceControls :is(.keyboardControl,.profileControl,.endControl):focus-visible{
   outline:3px solid #08836d;outline-offset:3px;
 }
 @media(max-width:699px){
@@ -1324,7 +1325,7 @@
   .root[data-session-visual-v4] .voiceWorkspace{gap:5px;overflow:hidden}
   .root[data-session-visual-v4] .voiceControls[data-coach-inline-voice]{
     order:0;position:relative;z-index:5;flex:0 0 74px;
-    display:grid;grid-template-columns:62px minmax(0,1fr) 50px 50px;
+    display:grid;grid-template-columns:62px minmax(0,1fr) 50px 50px 50px;
     grid-template-rows:62px;align-items:center;
     box-sizing:border-box;width:100%;max-width:100%;
     height:74px;min-height:74px;max-height:74px;
@@ -1353,6 +1354,7 @@
     font-size:10px;line-height:12px;
   }
   .root[data-session-visual-v4] .voiceControls .keyboardControl,
+  .root[data-session-visual-v4] .voiceControls .profileControl,
   .root[data-session-visual-v4] .voiceControls .endControl{
     width:50px;max-width:50px;min-height:43px;height:43px;
     padding:4px 2px;gap:2px;border-radius:13px;font-size:10px;
@@ -1385,4 +1387,406 @@
 }
 @media(prefers-reduced-motion:reduce){
   .root[data-session-visual-v4] .waveBars i{transition:none}
+}
+
+
+/* Optional provider choice is deliberately tucked into More options to keep
+ * the one-screen mobile voice controls compact. Unavailable Gemini is disabled. */
+.coachEnginePicker{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  width:100%;
+  padding:7px 0;
+  font-size:13px;
+  line-height:1.3;
+}
+.coachEnginePicker select{
+  min-width:0;
+  max-width:66%;
+  padding:7px 10px;
+  border:1px solid rgba(45,70,65,.20);
+  border-radius:10px;
+  background:var(--surface,#fff);
+  color:inherit;
+  font:inherit;
+}
+.coachEnginePicker select:focus-visible{outline:2px solid #147a71;outline-offset:2px}
+
+/* Production in-session profile keeps the approved compact mobile voice row. */
+.root[data-session-visual-v4] .voiceControls .profileControl{background:#eef8ef;color:#116346;cursor:pointer}
+
+
+/* My Coach report / print review: deliberately outside the compressed voice row. */
+.protocolOverlay{
+  position:fixed;inset:0;z-index:9999;
+  overflow-y:auto;overscroll-behavior:contain;
+  background:rgba(12,37,35,.62);
+  padding:calc(16px + env(safe-area-inset-top)) 12px calc(20px + env(safe-area-inset-bottom));
+  display:flex;align-items:flex-start;justify-content:center;
+}
+.protocolCard{
+  width:min(100%,620px);margin:0 auto;
+  border-radius:23px;background:#fffdfa;color:#24433d;
+  padding:clamp(17px,4.5vw,28px);
+  display:flex;flex-direction:column;gap:14px;
+  box-shadow:0 16px 60px #071e2040;font:inherit;
+}
+.protocolHeading{display:flex;align-items:flex-start;gap:12px;color:#175e4c}
+.protocolHeading>svg{flex:none;margin-top:4px}
+.protocolHeading h2{margin:0;font-size:clamp(21px,5.2vw,28px);line-height:1.2}
+.protocolHeading p{margin:5px 0 0;font-size:15px;color:#657771;line-height:1.4}
+.protocolCount{margin:0;color:#4a6359;font-size:14px;font-weight:650}
+.protocolReview{max-height:min(40dvh,350px);overflow-y:auto;border:1px solid #e4e9df;border-radius:15px;background:#fafcf8;padding:12px;display:flex;flex-direction:column;gap:9px}
+.protocolTurn{padding:10px 11px;background:#fff;border:1px solid #e3eae4;border-radius:12px}
+.protocolTurn strong{font-size:13px;color:#28725c}
+.protocolTurn p{margin:5px 0;font-size:15px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
+.protocolTurn small,.protocolPrivacy{font-size:12px;line-height:1.4;color:#587269}
+.protocolActions{display:flex;flex-wrap:wrap;gap:9px}
+.protocolActions>a,.protocolActions>button,.protocolSave{
+  min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  flex:1 1 145px;border:1px solid #b4cbbf;border-radius:12px;
+  padding:10px 12px;background:#eef7f1;color:#20594a;
+  font-size:14px;font-weight:750;text-align:center;text-decoration:none;cursor:pointer;
+}
+.protocolActions>a:focus-visible,.protocolActions>button:focus-visible,.protocolSave:focus-visible{
+  outline:3px solid #3ea67e;outline-offset:2px;
+}
+.protocolActions button:disabled,.protocolSave:disabled{opacity:.56;cursor:not-allowed}
+.protocolConsent{display:flex;align-items:flex-start;gap:11px;padding:11px;background:#f6f7f2;border-radius:13px;font-size:14px;line-height:1.35}
+.protocolConsent input{width:19px;height:19px;flex:none;accent-color:#148365}
+.protocolSave{flex:auto;width:100%;background:#116b54;color:white;border-color:#116b54}
+.protocolSaved{margin:0;color:#167250;font-size:14px}
+.protocolSaved a{color:inherit;text-decoration:underline;font-weight:750}
+.protocolError{margin:0;color:#a42a2a;font-size:14px}
+@media(max-width:380px){.protocolCard{padding:14px;gap:12px}.protocolReview{max-height:34dvh}.protocolActions>a,.protocolActions>button{font-size:13px}}
+
+.protocolTextLabel{display:flex;flex-direction:column;gap:7px;font-size:14px;font-weight:700;color:#28584c}
+.protocolTextLabel textarea{width:100%;min-height:66px;resize:vertical;padding:10px 12px;border:1px solid #cadbd0;border-radius:11px;background:#fff;color:#223d36;font-family:inherit;font-size:15px;line-height:1.4;font-weight:400}
+.protocolTextLabel textarea:focus-visible{outline:3px solid #49a87e;outline-offset:1px}
+
+
+/* Owner-approved key information overlay + half-screen hero, 19 Nov 2026.
+   Never resize the live MP4, fake lips, or replace microphone / transcript logic. */
+.keyInfoToggle{
+  display:inline-flex;align-items:center;justify-content:center;gap:2px;
+  flex:0 0 auto;width:36px;height:34px;min-width:34px;padding:0;
+  border:1px solid #d4e5d8;border-radius:11px;background:#f5fbf5;
+  color:#08765c;cursor:pointer;
+}
+.keyInfoToggle:focus-visible,.keyInfoHeading button:focus-visible{
+  outline:3px solid #08765c;outline-offset:2px;
+}
+.keyInfoSheet{
+  box-sizing:border-box;position:absolute;z-index:8;
+  top:0;left:0;right:0;
+  overflow-y:auto;overscroll-behavior:contain;
+  padding:10px 10px 11px;
+  border:1px solid #d6e6d9;border-radius:20px;
+  background:linear-gradient(135deg,#fffefb 0%,#fcfdf7 100%);
+  box-shadow:0 12px 30px #2044362c;
+  color:#153f34;
+}
+.keyInfoHeading{
+  display:flex;align-items:center;gap:7px;min-height:26px;
+  margin:0 0 7px;color:#09634f;
+}
+.keyInfoHeading strong{
+  flex:1;min-width:0;font-size:15px;line-height:1.2;
+}
+.keyInfoHeading button{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:28px;min-width:28px;height:28px;padding:0;
+  border:0;border-radius:50%;background:#eef7ee;color:#13654f;cursor:pointer;
+}
+.keyInfoGrid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 7px;
+}
+.keyInfoItem{
+  box-sizing:border-box;display:grid;grid-template-columns:19px minmax(0,1fr) 22px;
+  align-items:center;gap:5px;min-width:0;min-height:33px;padding:5px 6px;
+  border:1px solid #e2e9de;border-radius:11px;background:#fbfdf9;
+  font-size:12px;line-height:1.2;font-weight:680;color:#213e35;
+}
+.keyInfoItem>svg{flex:none;color:#058666}
+.keyInfoItem>span:nth-child(2){min-width:0;overflow-wrap:anywhere}
+.keyInfoMark{
+  display:flex;align-items:center;justify-content:center;
+  width:21px;height:21px;border-radius:6px;border:1.5px solid #97a6a1;
+  color:#778883;font:bold 19px/1 system-ui;
+}
+.keyInfoMark[data-status='complete']{
+  background:#159f4f;color:#fff;border-color:#159f4f;font-size:16px;
+}
+.keyInfoMark[data-status='partial']{
+  border-radius:50%;border-color:#47a56b;color:#269a55;background:#e9f7ed;
+}
+.keyInfoMark[data-status='missing']{background:#fff}
+@media(max-width:699px){
+  .root[data-session-visual-v4] .sessionTopbarActions .languageControl{
+    width:62px;min-width:62px;max-width:62px;padding-inline:5px;
+  }
+  .root[data-session-visual-v4] .chooseCoach{
+    min-width:65px;justify-content:center;font-size:12px;
+  }
+  .root[data-session-visual-v4] .voiceControls[data-coach-inline-voice]{
+    grid-template-columns:62px minmax(0,1fr) 50px 67px;
+    gap:5px;
+  }
+  .root[data-session-visual-v4] .voiceControls .endControl{
+    width:67px;max-width:67px;min-width:0;
+    color:#b73338;font-weight:800;font-size:10px;
+    border-color:#efb0b0;background:#fff1ef;
+  }
+  .root[data-session-visual-v4] .sessionHeroCopy{
+    top:16px;bottom:17px;left:15px;width:min(56%,235px);
+    display:flex;flex-direction:column;align-items:flex-start;
+  }
+  .root[data-session-visual-v4] .sessionHeroCopy h1{
+    margin-top:auto;margin-bottom:1px;line-height:1;
+    font-size:clamp(43px,11vw,61px);
+  }
+  .root[data-session-visual-v4] .sessionHeroCopy>small{
+    display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;
+    max-width:206px;font-size:clamp(11px,3vw,13px);line-height:1.2;
+  }
+  .root[data-session-visual-v4] .sessionHeroShade{
+    background:linear-gradient(90deg,#0b3023cc 0%,#0d3c2857 39%,transparent 72%),
+      linear-gradient(0deg,#0b3024a1,transparent 36%);
+  }
+  .root[data-session-visual-v4] .sessionProgressSegments{flex:1 1 auto;min-width:63px}
+  .root[data-session-visual-v4] .keyInfoToggle{flex:0 0 34px}
+  .root[data-session-visual-v4] .conversationPanel{
+    position:relative;isolation:isolate;
+  }
+  .root[data-session-visual-v4] .keyInfoSheet{
+    max-height:calc(100% - 72px);
+    min-height:0;scrollbar-width:thin;
+  }
+  .root[data-session-visual-v4] .keyInfoItem{font-size:11.5px;min-height:32px}
+  .root[data-session-visual-v4]:has(.textComposer textarea:focus) .keyInfoSheet{display:none}
+}
+@media(max-width:699px) and (min-height:691px){
+  .root[data-session-visual-v4]:not(:has(.textComposer textarea:focus)) .sessionHero{
+    height:clamp(320px,47dvh,448px);min-height:0;max-height:none;
+  }
+  .root[data-session-visual-v4][data-coach-showcase='true']:not(:has(.textComposer textarea:focus)) .sessionHero{
+    height:clamp(330px,48dvh,458px);min-height:0;
+  }
+}
+@media(max-width:699px) and (max-height:690px){
+  .root[data-session-visual-v4]:not(:has(.textComposer textarea:focus)) .sessionHero{
+    height:clamp(197px,34dvh,270px);
+  }
+  .root[data-session-visual-v4][data-coach-showcase='true']:not(:has(.textComposer textarea:focus)) .sessionHero{
+    height:clamp(215px,37dvh,290px);
+  }
+}
+@media(max-width:355px){
+  .root[data-session-visual-v4] .keyInfoHeading strong{font-size:13px}
+  .root[data-session-visual-v4] .keyInfoItem{font-size:10px;gap:3px;padding-inline:3px}
+  .root[data-session-visual-v4] .sessionProgressText span{display:none}
+  .root[data-session-visual-v4] .voiceControls[data-coach-inline-voice]{
+    grid-template-columns:58px minmax(0,1fr) 44px 64px;gap:4px;
+  }
+  .root[data-session-visual-v4] .voiceControls .endControl{width:64px;max-width:64px}
+}
+
+/* Client-initiated 5-star coach rating after the separate PDF protocol.
+   Large touch targets, one-screen mobile composition, no artificial face UI. */
+.ratingOverlay{position:fixed;inset:0;z-index:10000;overflow-y:auto;
+  display:flex;align-items:center;justify-content:center;
+  padding:calc(12px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom));
+  background:rgba(11,36,33,.63)}
+.ratingCard{width:min(100%,490px);margin:auto;padding:clamp(16px,4vw,25px);
+  display:flex;flex-direction:column;gap:13px;border:1px solid #d2e4d7;border-radius:24px;
+  background:#fffdfa;color:#24483e;box-shadow:0 14px 55px #0e322f40}
+.ratingCoachHeader{display:flex;align-items:center;gap:13px;min-width:0}
+.ratingCoachPortrait{flex:none;width:78px;height:78px;object-fit:cover;
+  border:3px solid #f8f5eb;border-radius:19px;box-shadow:0 4px 12px #27534223}
+.ratingCoachHeader>div{min-width:0}
+.ratingCoachHeader h2{font-size:clamp(21px,5.5vw,27px);line-height:1.1;margin:0 0 4px;color:#175b4b}
+.ratingCoachHeader strong{font-size:16px;color:#0b775d}
+.ratingCoachHeader p{font-size:13px;line-height:1.3;margin:3px 0 0;color:#60776b}
+.ratingStars{display:flex;align-items:center;justify-content:center;gap:4px}
+.ratingStars button{flex:1;max-width:67px;min-height:60px;padding:2px;
+  border:0;border-radius:13px;background:transparent;color:#c4c7ba;
+  font:46px/1 system-ui;cursor:pointer}
+.ratingStars button[aria-pressed=true],.ratingStars button:has(~ button[aria-pressed=true]){color:#e3a733}
+.ratingStars button:focus-visible,.ratingActions :is(button,a):focus-visible,
+.ratingScale input:focus-visible{outline:3px solid #168568;outline-offset:2px}
+.ratingStars button:disabled{cursor:default}
+.ratingExtra{display:flex;flex-direction:column;gap:12px;padding:14px 13px;
+  background:#f3f9f3;border-radius:16px;border:1px solid #e0ebe1}
+.ratingScale{display:flex;flex-direction:column;gap:6px;font-size:14px;color:#245948}
+.ratingScale>span{display:flex;justify-content:space-between;gap:10px}
+.ratingScale strong{color:#087255}
+.ratingScale input{width:100%;height:27px;accent-color:#168668;cursor:pointer}
+.ratingPrivacy{margin:0;color:#66776e;font-size:12px;line-height:1.35}
+.ratingSaved{margin:0;color:#087555;font-size:14px}
+.ratingError{margin:0;color:#a22a2f;font-size:14px}
+.ratingActions{display:flex;gap:9px}
+.ratingActions>button,.ratingActions>a{display:flex;align-items:center;justify-content:center;
+  flex:1;min-height:49px;padding:10px;border-radius:13px;
+  border:1px solid #b8d1c4;background:#edf7f0;color:#155d4b;
+  font:750 15px/1.2 system-ui;text-decoration:none;text-align:center;cursor:pointer}
+.ratingActions>button{flex:1.5;background:#0e755b;color:white;border-color:#0e755b}
+.ratingActions>button:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:380px){.ratingCoachPortrait{width:64px;height:64px}
+ .ratingCard{gap:10px;padding:13px}.ratingStars button{min-height:51px;font-size:38px}}
+@media(max-height:610px){.ratingOverlay{align-items:flex-start}
+ .ratingCard{gap:8px}.ratingCoachPortrait{width:57px;height:57px}
+ .ratingStars button{min-height:46px;font-size:36px}.ratingExtra{gap:6px;padding:8px}}
+
+
+/* Owner-approved integrated stage disclosure: one full-width card under the
+   voice row. The separate Session State Card header is intentionally gone. */
+.sessionProgress[data-coach-progress-accordion]{
+  box-sizing:border-box;display:block;align-items:initial;
+  width:100%;max-width:100%;min-width:0;margin:0;padding:0;gap:0;
+  border-radius:18px;overflow:hidden;
+}
+.sessionProgressSummary{
+  display:flex;align-items:center;gap:9px;box-sizing:border-box;
+  width:100%;min-height:52px;padding:8px 12px;
+  cursor:pointer;list-style:none;
+}
+.sessionProgressSummary::-webkit-details-marker{display:none}
+.sessionProgressSummary::marker{content:''}
+.sessionProgressSummary .sessionProgressText{
+  display:grid;gap:3px;flex:1 1 auto;min-width:0;
+}
+.sessionProgressSummary .sessionProgressText strong{
+  display:block;min-width:0;font-size:clamp(12px,3.2vw,14px);
+  line-height:1.2;white-space:normal;
+}
+.sessionProgressSummary .sessionProgressText span{
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:clamp(11px,2.9vw,13px);line-height:1.3;
+}
+.sessionProgressSummary .sessionProgressSegments{
+  display:flex;flex:0 0 clamp(72px,22%,110px);
+  min-width:0;gap:4px;
+}
+.sessionProgressChevron{
+  flex:0 0 auto;color:#4d786a;
+  transition:transform .18s ease;
+}
+.sessionProgress[open] .sessionProgressChevron{transform:rotate(180deg)}
+.sessionProgressSummary:focus-visible{
+  outline:3px solid #168467;outline-offset:-4px;border-radius:16px;
+}
+.sessionProgress[open] .sessionProgressSummary{
+  border-bottom:1px solid #e3e9df;
+}
+@media(max-width:699px){
+  .root[data-session-visual-v4] .voiceWorkspace>.sessionProgress[data-coach-progress-accordion]{
+    order:1;display:block;flex:0 0 auto;
+    box-sizing:border-box;width:100%;max-width:100%;
+    min-height:0;max-height:none;margin:0;padding:0;
+    border-radius:17px;
+  }
+  .root[data-session-visual-v4] .sessionProgressSummary{
+    min-height:48px;padding:7px 10px;gap:7px;
+  }
+  .root[data-session-visual-v4] .sessionProgressSummary .sessionProgressSegments{
+    flex-basis:clamp(68px,22%,94px);min-width:0;
+  }
+  /* Expanded protocol belongs to the page flow. Do not clip it inside the
+     fixed one-screen voice layout or compress the approved portrait. */
+  .root[data-session-visual-v4]:has([data-coach-progress-accordion][open]){
+    height:auto;max-height:none;
+    min-height:var(--hh-coach-visible-height,100dvh);
+    overflow-y:auto;overflow-x:clip;
+    overscroll-behavior-y:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+  .root[data-session-visual-v4]:has([data-coach-progress-accordion][open]) .voiceWorkspace{
+    flex:0 0 auto;max-height:none;min-height:0;overflow:visible;
+  }
+  .root[data-session-visual-v4]:has([data-coach-progress-accordion][open]) .conversationPanel{
+    flex:0 0 auto;min-height:clamp(210px,34dvh,330px);
+    max-height:min(48dvh,370px);overflow:hidden;
+  }
+  .root[data-session-visual-v4]:has([data-coach-progress-accordion][open]) .conversationPanel .liveTranscript{
+    min-height:125px;
+  }
+}
+@media(max-width:350px){
+  .sessionProgressSummary{gap:5px;padding-inline:8px}
+  .sessionProgressSummary .sessionProgressSegments{flex-basis:67px}
+}
+@media(prefers-reduced-motion:reduce){
+  .sessionProgressChevron{transition:none}
+}
+
+/* Unified single-screen coach header and mode controls. Existing hero untouched. */
+.root[data-session-visual-v4] .sessionTopbarActions .headerProfileControl{
+  box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:4px;
+  min-width:44px;min-height:43px;padding:5px 8px;border:1px solid #d4e0d5;
+  border-radius:999px;background:#fffdf8;color:#136b55;
+  font:750 11px/1.1 system-ui;cursor:pointer;white-space:nowrap
+}
+.root[data-session-visual-v4] .sessionTopbarActions .headerProfileControl:focus-visible,
+.root[data-session-visual-v4] .voiceControls .experienceModeControl:focus-visible,
+.root[data-session-visual-v4] .experienceConsentPanel button:focus-visible{
+  outline:3px solid #11816b;outline-offset:2px
+}
+.root[data-session-visual-v4] .voiceControls .experienceModeControl{
+  box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:1px;justify-self:stretch;width:auto;max-width:none;height:51px;min-height:44px;
+  padding:3px 2px;border:1px solid #d1e5d9;border-radius:14px;
+  background:#eef8ef;color:#116348;font:750 11px/1 system-ui;cursor:pointer
+}
+.root[data-session-visual-v4] .voiceControls .experienceModeControl small{font:650 9px/1.1 system-ui;opacity:.75}
+.root[data-session-visual-v4] .voiceControls .experienceModeControl[aria-pressed=true]{
+  background:#d9f2e8;border-color:#90ceb3;color:#08614a
+}
+.root[data-session-visual-v4] .voiceControls .experienceModeControl:disabled{opacity:.6;cursor:not-allowed}
+.experienceConsentPanel{
+  box-sizing:border-box;width:100%;display:grid;gap:9px;order:1;
+  margin:0;padding:13px 14px;border:1px solid #c7ded1;border-radius:16px;
+  background:#f8fcf8;color:#1c5243;font:500 13px/1.35 system-ui
+}
+.experienceConsentPanel strong{font-size:15px}
+.experienceConsentPanel p{margin:0}
+.experienceConsentPanel label{display:flex;gap:9px;align-items:flex-start}
+.experienceConsentPanel input{flex:none;width:18px;height:18px;accent-color:#087c61}
+.experienceConsentActions{display:flex;gap:9px;flex-wrap:wrap}
+.experienceConsentActions button{flex:1;min-height:44px;border:1px solid #b7d2c4;border-radius:11px;
+  padding:8px 10px;background:#0c755a;color:#fff;font:750 12px/1.2 system-ui;cursor:pointer}
+.experienceConsentActions button:last-child{background:#fff;color:#255e4d}
+.experienceConsentActions button:disabled{opacity:.4;cursor:not-allowed}
+@media(max-width:699px){
+ .root[data-session-visual-v4] .sessionTopbar{gap:5px;padding-inline:9px}
+ .root[data-session-visual-v4] .sessionTopbarActions{gap:4px}
+ .root[data-session-visual-v4] .sessionTopbarActions .headerProfileControl{
+  width:42px;min-width:42px;height:42px;min-height:42px;padding:3px}
+ .root[data-session-visual-v4] .sessionTopbarActions .headerProfileControl span{display:none}
+ .root[data-session-visual-v4] .sessionTopbarActions .languageControl{min-width:55px;max-width:58px}
+ .root[data-session-visual-v4] .sessionTopbarActions .chooseCoach{
+   width:42px;min-width:42px;max-width:42px;height:42px;min-height:42px;padding:4px}
+ .root[data-session-visual-v4] .sessionTopbarActions .chooseCoach :is(.chooseCoachFull,.chooseCoachShort){display:none}
+ .root[data-session-visual-v4] .voiceControls[data-coach-inline-voice]{
+   grid-template-columns:62px minmax(0,1fr) 50px 50px 50px
+ }
+ .root[data-session-visual-v4] .voiceControls .experienceModeControl{width:50px;max-width:50px;min-height:44px;height:48px}
+ .root[data-session-visual-v4] .voiceWorkspace>.experienceConsentPanel{
+   flex:0 0 auto;max-height:none
+ }
+ .root[data-session-visual-v4]:has([data-coach-experience-consent]){
+   height:auto;max-height:none;min-height:var(--hh-coach-visible-height,100dvh);
+   overflow-y:auto;overflow-x:clip
+ }
+ .root[data-session-visual-v4]:has([data-coach-experience-consent]) .voiceWorkspace{
+   flex:0 0 auto;max-height:none;overflow:visible
+ }
+}
+@media(max-width:355px){
+ .root[data-session-visual-v4] .sessionBrand{font-size:13px;letter-spacing:-.045em;gap:3px}
+ .root[data-session-visual-v4] .sessionBrandMark{width:27px;height:27px}
+ .root[data-session-visual-v4] .sessionTopbarActions .headerProfileControl,
+ .root[data-session-visual-v4] .sessionTopbarActions .chooseCoach{width:37px;min-width:37px;max-width:37px}
+ .root[data-session-visual-v4] .sessionTopbarActions .languageControl{min-width:51px;max-width:51px}
 }

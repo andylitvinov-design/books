@@ -111,13 +111,11 @@ export function playAliPersonaAudio(personaId,locale,onPlaying=()=>{}){
   stopDevice=deviceSpeech(persona,locale,
    ()=>{if(active)onPlaying(true,'playing')},finish)
  }
- const ua=window.navigator?.userAgent||''
- const iOS=/iPad|iPhone|iPod/.test(ua)||
-  (window.navigator?.platform==='MacIntel'&&window.navigator?.maxTouchPoints>1)
  const hasDevice=Boolean(window.speechSynthesis&&window.SpeechSynthesisUtterance)
- // On iPhone, an async cloud error cannot reliably start TTS after Safari's
- // one-tap audio activation expires. Speak directly inside the tap instead.
- if((iOS&&hasDevice)||(naturalStatus!=='available'&&hasDevice)){
+ // On iPhone SpeechSynthesis can claim "started" while producing no sound.
+ // Prefer the real MP3 and call play() synchronously in the user's tap.
+ // A confirmed unavailable backend uses device speech synchronously instead.
+ if(naturalStatus==='unavailable'&&hasDevice){
   startDevice()
   return ()=>{if(current===session)stopAliPersonaAudio()}
  }
@@ -129,14 +127,21 @@ export function playAliPersonaAudio(personaId,locale,onPlaying=()=>{}){
   if(hasDevice)startDevice()
   else finish('error')
  }
- audio=new Audio()
+ // Native HTMLAudioElement respects an iOS user gesture and plays through
+ // iPhone's media audio route, unlike the sometimes silent Web Speech API.
+ try{audio=new Audio()}catch{fallback();return ()=>{if(current===session)stopAliPersonaAudio()}}
  audio.preload='auto'
+ audio.autoplay=false
+ audio.muted=false
+ audio.volume=1
  audio.onplaying=()=>{if(!active)return;clear();onPlaying(true,'playing')}
  audio.onended=()=>finish('ended')
  audio.onerror=fallback
  audio.src='/api/ali/voice/'+encodeURIComponent(locale)+'/'+encodeURIComponent(persona.id)
- // A slow or broken server must never leave the interface permanently busy.
- timer=window.setTimeout(fallback,13500)
- try{void audio.play().catch(fallback)}catch{fallback()}
+ timer=window.setTimeout(fallback,20000)
+ try{
+  const attempt=audio.play()
+  if(attempt&&typeof attempt.catch==='function')void attempt.catch(fallback)
+ }catch{fallback()}
  return ()=>{if(current===session)stopAliPersonaAudio()}
 }

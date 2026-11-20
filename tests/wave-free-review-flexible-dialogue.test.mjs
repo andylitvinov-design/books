@@ -46,7 +46,7 @@ test('explicit corrections update prior data, keep unrelated evidence and do not
     {stage:'challenge',slots});
   assert.equal(p.slots.goal,'улучшить отношения');
   assert.equal(p.slots.challenge,'Много неизвестного');
-  assert.equal(p.stage,'support');
+  assert.equal(p.stage,'situation');
   assert.equal(countQuestions(p.reply),1);
   const goal=turn('Нет, не так. Я хочу лучше понимать себя',
     {stage:'challenge',slots:{goal:'Поменять работу'},locale:'ru'});

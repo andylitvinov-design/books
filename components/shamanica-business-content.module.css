@@ -52,3 +52,102 @@
 @media(max-width:359px){.hero{min-height:274px}.heroCopy h1{max-width:100%;font-size:34px}.heroCopy p{max-width:94%}.heroActions a{font-size:12.5px;padding:8px 6px}.answers{grid-template-columns:1fr}.answer{min-height:56px}.serviceGrid{grid-template-columns:1fr}.serviceCard{min-height:99px}.feature h2,.feature p{max-width:100%}.feature p{padding-bottom:24px}}
 @media(min-width:760px){.hero{min-height:300px;padding:26px}.quiz{padding:20px 23px}.serviceCard{min-height:143px}.feature{padding:20px 24px}}
 @media(prefers-reduced-motion:reduce){.answer{transition:none}}
+
+/* Owner screenshot: calm first-screen business experience, only on phones. */
+@media(max-width:759px){
+ .root .hero{min-height:0;padding:8px 10px 7px;margin:0 -2px 6px;border-radius:20px}
+ .root .heroImage{object-position:50% center;filter:saturate(.78)}
+ .root .hero:before{background:linear-gradient(90deg,#fffaf2fa 0%,#fffaf2f3 38%,#fff9ee77 76%,#fff9ef19)}
+ .root .heroStones{position:absolute;right:-2%;top:10px;z-index:-1;width:clamp(118px,34%,160px);height:auto;opacity:.89;pointer-events:none;filter:saturate(.77);mask-image:linear-gradient(90deg,transparent,#000 28%);-webkit-mask-image:linear-gradient(90deg,transparent,#000 28%)}
+ .root .heroCopy h1{font-size:clamp(26px,7.35vw,34px);line-height:.99;max-width:80%;margin:0 0 5px;letter-spacing:-.6px}
+ .root .heroCopy p{font-size:clamp(11.7px,3.05vw,13.1px);line-height:1.17;max-width:84%;margin:0}
+ .root .heroActions{gap:7px;margin-top:7px}
+ .root .heroActions a{min-height:39px;padding:5px 7px;font-size:clamp(11.6px,3.15vw,14px);line-height:1.08;gap:4px}
+ .root .heroActions svg{width:16px;height:16px}
+ .root .quiz{padding:8px 9px 10px;border-radius:20px;box-shadow:0 2px 9px #39513b15}
+ .root .quizTop{margin-bottom:5px}
+ .root .stepLabel{font-size:12px;padding:4px 10px}
+ .root .progress{gap:5px}
+ .root .progress span{width:15px;height:15px}
+ .root .progress:before{left:7px;right:7px}
+ .root .quizHeading{gap:5px;margin-bottom:7px}
+ .root .quizHeading h2,.root .results h2{font-size:clamp(19px,5.25vw,23px);line-height:1.08;letter-spacing:-.2px}
+ .root .back{width:34px;height:34px}
+ .root .answers{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .root .answer{min-height:44px;padding:5px 7px;gap:6px;border-radius:15px;font-size:clamp(12px,3.25vw,14px);line-height:1.08}
+ .root .answer svg{width:20px;height:20px}
+ .root .results>p{font-size:12px;margin:5px 0 7px}
+ .root .resultLinks{gap:5px}
+ .root .resultLink{min-height:43px;padding:6px 8px}
+ .root .resultLink strong{font-size:13px}
+ .root .restart{padding-top:6px}
+ .root .feature{min-height:0;margin:7px -2px;padding:7px 10px;border-radius:19px;box-shadow:0 2px 9px #344a3215}
+ .root .featureImage{opacity:.5;object-position:70% center}
+ .root .feature:before{background:linear-gradient(90deg,#fffbf6 0%,#fffbf6ed 52%,#fffbf641 100%)}
+ .root .featureBadge{font-size:11px;padding:2px 8px;gap:4px}
+ .root .featureBadge svg{width:13px;height:13px}
+ .root .feature h2{font-size:clamp(19px,5.1vw,24px);line-height:1.02;max-width:69%;margin:4px 0 3px}
+ .root .feature p{font-size:clamp(10.5px,2.75vw,12px);line-height:1.12;max-width:65%;margin:0}
+ .root .featureLink{min-height:36px;bottom:8px;right:8px;padding:6px 12px;font-size:13px}
+ .root .featureLink svg{width:15px;height:15px}
+ .root .services{margin-top:4px}
+ .root .services>h2{font-size:clamp(22px,6.1vw,28px);line-height:1.03;margin:0 0 6px}
+ .root .serviceGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .root .serviceCard{height:clamp(67px,8.7dvh,78px);min-height:0;grid-template-columns:20px minmax(0,1fr);gap:5px;padding:7px;border-radius:15px;box-shadow:0 2px 6px #3a4f4015}
+ .root .serviceImage{opacity:.39;filter:saturate(.69);object-position:75% center}
+ .root .serviceCard:before{background:linear-gradient(90deg,#fffbf8 0%,#fffbf8e8 58%,#fffbf83f 100%)}
+ .root .serviceIcon{width:20px;height:20px}
+ .root .serviceText{gap:3px;padding-right:2px;overflow:hidden}
+ .root .serviceText strong{font-size:clamp(12.8px,3.35vw,15px);line-height:1.04;letter-spacing:-.2px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+ .root .serviceText>span{font-size:clamp(10.4px,2.72vw,12px);line-height:1.1;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;padding-bottom:0}
+ .root .cardArrow{width:13px;height:13px;right:5px;bottom:5px}
+}
+@media(max-width:759px) and (max-height:885px){
+ .root .hero{padding:7px 10px 6px}
+ .root .heroCopy h1{font-size:clamp(25px,7vw,31px);margin-bottom:4px}
+ .root .heroCopy p{font-size:clamp(11.4px,2.95vw,12.5px)}
+ .root .heroActions{margin-top:5px}
+ .root .heroActions a{min-height:36px}
+ .root .quiz{padding:7px 9px 8px}
+ .root .quizTop{margin-bottom:3px}
+ .root .quizHeading{margin-bottom:5px}
+ .root .quizHeading h2,.root .results h2{font-size:clamp(18.5px,5vw,21.5px)}
+ .root .feature{padding:6px 9px;margin:6px -2px}
+ .root .feature h2{font-size:clamp(18.5px,4.7vw,21px)}
+ .root .feature p{white-space:nowrap;text-overflow:ellipsis;overflow:hidden;max-width:64%}
+ .root .services>h2{font-size:clamp(21px,5.75vw,26px);margin-bottom:5px}
+ .root .serviceCard{height:clamp(61px,7.45dvh,68px)}
+}
+@media(max-width:759px) and (max-height:800px){
+ .root .heroCopy h1{font-size:clamp(24px,6.55vw,28px)}
+ .root .heroActions a{min-height:34px}
+ .root .stepLabel{padding:2px 8px}
+ .root .quizHeading h2,.root .results h2{font-size:clamp(18px,4.65vw,20px)}
+ .root .answer{min-height:42px;padding:4px 6px}
+ .root .feature p{display:none}
+ .root .serviceCard{height:58px}
+ .root .serviceText>span{display:none}
+}
+@media(max-width:359px){
+ .root .heroCopy h1,.root .heroCopy p{max-width:88%}
+ .root .heroActions a{font-size:11px}
+ .root .answer{min-height:44px;font-size:12px}
+ .root .feature h2{max-width:73%}
+ .root .serviceGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .root .serviceCard{height:69px}
+ .root .serviceText strong{font-size:12px}
+ .root .serviceText>span{font-size:10px}
+}
+
+/* 390–430px phones around 844px high: preserve all six legible, tappable
+   business services above the fixed site dock without hiding a card or CTA. */
+@media (min-width:390px) and (max-width:600px) and (min-height:801px) and (max-height:885px){
+ .root .hero{margin-bottom:4px}
+ .root .heroActions{margin-top:4px}
+ .root .quiz{padding-bottom:7px}
+ .root .feature{margin:3px -2px}
+ .root .services{margin-top:2px}
+ .root .services>h2{margin-bottom:4px}
+ .root .serviceGrid{gap:5px}
+ .root .serviceCard{height:61px}
+}

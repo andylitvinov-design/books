@@ -14,10 +14,14 @@ import { prepareNaturalDialogue, finishNaturalDialogue } from "@/lib/holistic-su
 import type { PublicLocale } from "@/lib/public-locales";
 import { AXIS_REFS } from "@/lib/holistic-support/axis-offer-matcher.mjs";
 import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
+import { friendConversationReply } from "@/lib/holistic-support/friend-mind.mjs";
+import {wavePsychologistNativeTurn,wavePsychologistNativeSummary,
+  wavePsychologistQuestion} from "@/lib/assist/wave-psychologist-native.mjs";
 import { reviewPracticeBoundary } from "@/lib/holistic-support/practice-boundary.mjs";
 import { detectConversationLocale } from "@/lib/holistic-support/conversation-locale.mjs";
 import { planJudgmentTurn } from "@/lib/holistic-support/judgment-mind.mjs";
 import { newNativeSessionTurn, advanceNativeClientSession } from "@/lib/holistic-support/native-dialogue-client-session.mjs";
+import {shouldRetryNativeAgentMode,nativeAgentFallbackPayload,aliGentleContinuity,aliNeedsVerifiedAction} from "@/lib/holistic-support/agent-mode-recovery.mjs";
 import { testOfferFromText } from "@/lib/assessments/conversational-test-protocol.mjs";
 import type { JudgmentPending, JudgmentChoiceId } from "@/lib/holistic-support/judgment-mind.mjs";
 import { publicVideoGoalForMessage } from "@/lib/video-discovery/ranker.mjs";
@@ -49,7 +53,7 @@ type PublicVideoGoal = "all" | "stress" | "energy" | "relationships" | "work" | 
 type GuidedTrack = "video" | "meditation" | "hint" | null;
 type PreviewFocus = "" | "stress" | "relationships" | "self_worth" | "meaning";
 type Outline = {status:"draft_ready";title:string;lessons:Array<{number:number;title:string;steps:string[];videoReady:false}>;published:false;mediaReady:false};
-type Message = { role: "user" | "assistant"; text: string; variant?:"alternative" };
+type Message = { role: "user" | "assistant"; text: string; variant?:"alternative"; localOnly?:boolean; provisional?:boolean };
 type MessengerVideoDraft = {
   goal:string;categoryId:string|null;topicId:string|null;scenarioId:string|null;
   mytubeCategoryId:string|null;mytubeSubcategoryId:string|null;mytubeTopicId:string|null;
@@ -88,7 +92,7 @@ const copy = {
     placeholder:"Что сейчас для вас важно?",send:"Отправить",cancel:"Остановить",mode:"Способ ответа",
     rules:"Без нейросети",device:"AI на устройстве (может потребоваться загрузка модели)",owned:"AI на нашем сервере (с согласия)",
     consent:"Разрешаю передать моё сообщение и последние реплики этого диалога на собственный защищённый AI-сервер Holistic House.",
-    loading:"Формирую ответ…",error:"Не удалось получить ответ. Попробуйте повторить запрос.",signIn:"Личный режим требует защищённого входа. Нажмите кнопку ниже.",modeError:"Этот режим пока недоступен. Выберите «Без нейросети» в настройках чата.",
+    loading:"Формирую ответ…",error:"Можем продолжить разговор здесь, без спешки.",signIn:"Личный режим требует защищённого входа. Нажмите кнопку ниже.",modeError:"Ali продолжает разговор через встроенный интеллект.",
     unavailable:"Локальная модель в этом браузере или для русского языка недоступна; показан проверенный ответ.",
     source:"Источник ответа",suggestions:"Проверенные варианты",start:"Начните с вопроса. Можно сменить режим в любой момент.",
     option:"Выбрать",reset:"Новый разговор",used:"На устройстве",backend:"Собственный сервер",simple:"Алгоритм",
@@ -112,7 +116,7 @@ const copy = {
     placeholder:"What's on your mind?",send:"Send",cancel:"Stop",mode:"Response mode",
     rules:"Without a language model",device:"On-device AI (may download a model)",owned:"Our AI server (with consent)",
     consent:"I agree to send this message and recent conversation turns to Holistic House's secured, self-hosted AI server.",
-    loading:"Preparing a reply…",error:"Could not get a reply. Please try again.",signIn:"This private mode requires sign-in. Use the Google button below.",modeError:"This response mode is unavailable. Select Without a language model in chat settings.",
+    loading:"Preparing a reply…",error:"We can continue our conversation here.",signIn:"This private mode requires sign-in. Use the Google button below.",modeError:"Ali can continue with its built-in assistant.",
     unavailable:"The on-device language model isn't available for this browser or language; the verified fallback is shown.",
     source:"Reply source",suggestions:"Verified options",start:"Start with a question. You can switch modes any time.",
     option:"Open",reset:"New conversation",used:"On device",backend:"Self-hosted server",simple:"Rules",
@@ -136,7 +140,7 @@ const copy = {
     placeholder:"¿Qué te preocupa ahora?",send:"Enviar",cancel:"Detener",mode:"Tipo de respuesta",
     rules:"Sin modelo de IA",device:"IA en el dispositivo (puede descargar un modelo)",owned:"Nuestro servidor de IA (con permiso)",
     consent:"Acepto enviar este mensaje y los últimos turnos de la conversación al servidor privado de IA de Holistic House.",
-    loading:"Preparando una respuesta…",error:"No se pudo obtener respuesta. Vuelve a intentarlo.",signIn:"Este modo privado requiere acceso. Usa el botón de Google abajo.",modeError:"Este modo no está disponible. Selecciona Sin modelo de IA en los ajustes del chat.",
+    loading:"Preparando una respuesta…",error:"Podemos seguir hablando aquí, sin prisa.",signIn:"Este modo privado requiere acceso. Usa el botón de Google abajo.",modeError:"Ali puede seguir con su asistente integrado.",
     unavailable:"El modelo local no está disponible para este navegador o idioma; se muestra la respuesta segura.",
     source:"Origen",suggestions:"Opciones verificadas",start:"Escribe una pregunta. Puedes cambiar el modo cuando quieras.",
     option:"Abrir",reset:"Nueva conversación",used:"En el dispositivo",backend:"Servidor propio",simple:"Reglas",
@@ -271,6 +275,8 @@ function isCasualGreeting(raw:string):boolean {
 // existing authenticated safety preflight, not the category-choice reducer.
 function requiresProtectedReply(text:string,locale:PublicLocale):boolean {
   if(reviewPracticeBoundary(text,locale))return true;
+  // Match the server preflight before any offline-only response is chosen.
+  if(/(?:боль в груди|не могу дышать|трудно дышать|меня бьют|физическое насилие|chest pain|can(?:not|t) breathe|trouble breathing|domestic violence|dolor en el pecho|no puedo respirar|violencia domestica)/iu.test(text))return true;
   if(/(?:не хочу (?:больше )?жить(?:[.!?]|$)|i do not want to live(?:[.!?]|$)|i dont want to live(?:[.!?]|$)|ya no quiero vivir(?:[.!?]|$)|мне стало хуже|после упражнения хуже|хочу остановиться|мне страшно продолжать|i feel worse|please stop|after the exercise i feel worse|me siento peor|no quiero continuar)/iu.test(text))
     return true;
   for(let i=0;i<text.length;i+=180)
@@ -308,6 +314,14 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     if(Math.abs(voice.rate-persona.voice.rate)>0.015)voice.setRate(persona.voice.rate);
   },[messengerView,voiceEnabled,locale,persona.id,voice.voices,voice.voiceId,voice.rate,voice.setVoiceId,voice.setRate,voice.speechLocale,voice.setSpeechLocale]);
   const [mode,setMode]=useState<Mode>("rules");
+  const [friendTone,setFriendTone]=useState<"friendly"|"confiding"|"tender">("friendly");
+  // Website Secretary Psychologist is a user-invoked, optional local interview,
+  // not a backend role grant. Until a verified send route exists, no private
+  // answers are sent to the agent API or written to chat-history storage.
+  const [psychInterview,setPsychInterview]=useState<"off"|"pending"|"active">("off");
+  const [psychStage,setPsychStage]=useState("situation");
+  const [psychSlots,setPsychSlots]=useState<Record<string,string>>({});
+  const [psychSummaryVisible,setPsychSummaryVisible]=useState(false);
   const [agree,setAgree]=useState(false);
   const [axisRef,setAxisRef]=useState("");
   const [format,setFormat]=useState<""|"video"|"audio"|"test"|"course"|"service">("");
@@ -442,6 +456,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       {role:"user" as const,text:item.user},
       {role:"assistant" as const,text:item.assistant},
     ]).slice(-30);
+    setPsychInterview("off");setPsychStage("situation");setPsychSlots({});
+    setPsychSummaryVisible(false);
     lastSpeechTurn.current=previous[previous.length-1]||null;
     setMessages(previous);setDraft("");setChoices([]);setJudgmentView(null);
     setSessionStep(null);setSessionGoal(null);setSessionOffers([]);
@@ -494,7 +510,9 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     if(!pending||homeHandoffPhase!=="sending")return;
     const newTurns=messages.slice(pending.startIndex);
     const userIndex=newTurns.findIndex(turn=>turn.role==="user");
-    const answered=userIndex>=0&&newTurns.slice(userIndex+1).some(turn=>turn.role==="assistant");
+    // A provisional local reply continues the conversation; it does NOT
+    // prove that the Home service handoff was accepted by the server.
+    const answered=userIndex>=0&&newTurns.slice(userIndex+1).some(turn=>turn.role==="assistant"&&turn.provisional!==true);
     if(answered){
       acknowledgeHomeAliHandoff(window.sessionStorage,pending.payload);
       homeHandoffConsumed.current=true;homeHandoffPending.current=null;
@@ -511,7 +529,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     // Remove only an unpaired user bubble from the failed request.
     setMessages(previous=>{
       const tail=previous.slice(pending.startIndex);
-      return tail.length===1&&tail[0].role==="user"
+      return (tail.length===1&&tail[0].role==="user" ||
+        tail.length===2&&tail[0].role==="user"&&tail[1].role==="assistant"&&tail[1].provisional===true)
         ?previous.slice(0,pending.startIndex):previous;
     });
     homeHandoffPending.current=null;
@@ -655,7 +674,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     const reviewed=ruleConversationReply({message:text,locale:language,history:prior});
     const goal=publicVideoGoalForMessage(text);
     if(goal)setVideoGoal(goal as PublicVideoGoal);
-    if(!reviewed||!reviewed.id){setGuidedTrack(null);return messengerStarter[language].safety;}
+    if(!reviewed||!reviewed.id){setGuidedTrack(null);return aliGentleContinuity({message:text,locale:language,history:prior});}
     if(reviewed.id.startsWith("video")){
       setGuidedTrack("video");setVideoStep("category");videoUndo.current=null;
       setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);
@@ -663,7 +682,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       return messengerVideoQuestion("category",language);
     }
     else if(reviewed.id.startsWith("meditation"))setGuidedTrack("meditation");
-    return reviewed.reply;
+    return typeof reviewed.reply==="string"&&reviewed.reply.trim()?reviewed.reply:
+      aliGentleContinuity({message:text,locale:language,history:prior});
   }
   function answerVideo(value:string,label=value,language:PublicLocale=locale) {
     if(!compact||!videoStep||busy)return;
@@ -731,11 +751,60 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     catch{setStatus(t.error);return false;}
   }
 
+  // The client intentionally starts this dialogue by tapping a labelled
+  // option. No emotion keyword, service order or free text grants consent.
+  function offerPsychologistInterview(){
+    if(busy)return;
+    lastAnswerRef.current=null;alternativeAbortRef.current?.abort();
+    voice.stopDialogue();setMode("rules");setSupportSelection(null);
+    setSupportQuizOpen(false);setEntryOpen(false);setProjectFlow(null);
+    setSessionStep(null);setSessionGoal(null);setSessionOffers([]);
+    setTestChatOpen(false);setVideoStep(null);setContentStep(null);
+    setPsychStage("situation");setPsychSlots({});setPsychSummaryVisible(false);
+    setPsychInterview("pending");setDraft("");setChoices([]);setJudgmentView(null);
+    setStatus("");setSource("");followTail.current=true;setNewBelow(false);
+    const introduction=locale==="ru"
+      ?"Я Ali. Можем бережно прояснить ситуацию в нескольких необязательных вопросах. Это не психотерапия и не диагноз. Ответы останутся в этом окне и не будут переданы мастеру автоматически. Начнём?"
+      :locale==="es"
+        ?"Soy Ali. Podemos aclarar tu situación con preguntas opcionales. No es terapia ni diagnóstico. Tus respuestas quedan en esta conversación y no se enviarán automáticamente al profesional. ¿Empezamos?"
+        :"I'm Ali. We can gently explore your situation with a few optional questions. This is not therapy or a diagnosis. Your answers stay in this window and won't be sent to a practitioner automatically. Shall we begin?";
+    setMessages(prev=>[...prev,{role:"assistant" as const,text:introduction,localOnly:true}].slice(-30));
+  }
+  function consentPsychologistInterview(){
+    if(psychInterview!=="pending"||busy)return;
+    setPsychInterview("active");setPsychStage("situation");setPsychSlots({});
+    setDraft("");setSource("");setStatus("");
+    setMessages(prev=>[...prev,{role:"user" as const,text:locale==="ru"?"Да, начнём":
+      locale==="es"?"Sí, empecemos":"Yes, let's begin",localOnly:true},
+      {role:"assistant" as const,text:wavePsychologistQuestion("situation",locale,[])||
+        (locale==="ru"?"Что для вас сейчас важно?":"What matters most to you now?"),localOnly:true}].slice(-30));
+  }
+  function leavePsychologistInterview(){
+    setPsychInterview("off");setPsychStage("situation");setPsychSlots({});
+    setDraft("");setSource("");setStatus("");setPsychSummaryVisible(false);
+    setMessages(prev=>[...prev,{role:"assistant" as const,text:locale==="ru"
+      ?"Конечно. Останавливаю эту необязательную беседу, ничего специалисту не отправлено."
+      :locale==="es"?"Claro. Terminamos aquí; no se envió nada al profesional."
+        :"Of course. We'll stop here; nothing was sent to a practitioner.",localOnly:true}].slice(-30));
+  }
+  function finishPsychologistInterview(){
+    if(psychInterview!=="active")return;
+    const brief=wavePsychologistNativeSummary({locale,slots:psychSlots});
+    setPsychInterview("off");setPsychStage("situation");setPsychSlots({});
+    setPsychSummaryVisible(Boolean(brief));setDraft("");setSource("");
+    const status=locale==="ru"?"Это ваше предварительное резюме, не диагноз. Оно не было отправлено мастеру."
+      :locale==="es"?"Este resumen no es un diagnóstico y no se ha enviado al profesional."
+        :"This preliminary summary is not a diagnosis and has not been sent to a practitioner.";
+    setMessages(prev=>[...prev,{role:"assistant" as const,
+      text:(brief|| (locale==="ru"?"Пока нет сведений для резюме.":"There is not enough information for a summary."))+
+        "\n\n"+status,localOnly:true}].slice(-30));
+  }
   // A client chooses one of four goals before seeing conversation modes.
   // This is a UI preference, not clinical screening or an authorization token.
   function openSupportQuiz(){
     if(busy)return;
     followTail.current=true;setNewBelow(false);
+    setPsychInterview("off");setPsychSummaryVisible(false);setPsychSlots({});
     setSupportSelection(null);setSupportQuizOpen(true);setEntryOpen(false);
     setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);
     setGuidedTrack(null);setTestChatOpen(false);setGuideLink(null);
@@ -757,18 +826,23 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   }
   function completeSupportQuiz(choice:SupportQuizSelection){
     if(busy)return;
+    setPsychInterview("off");setPsychSlots({});setPsychSummaryVisible(false);
     const prompt=choice.mode==="coach"
       ?(locale==="ru"?"Какое изменение в этой теме было бы для вас самым важным?":
         locale==="es"?"¿Qué cambio te importaría más en este tema?":
           "What change would matter most to you in this area?")
       :choice.mode==="talk"
-        ?(locale==="ru"?"Можем начать с того, что сейчас для вас важнее всего. Что хочется рассказать?":
-          locale==="es"?"Podemos comenzar por lo más importante para ti. ¿Qué te gustaría contar?":
-            "We can start with what matters to you most. What would you like to share?")
+        ?(locale==="ru"?"Можем просто поболтать — о радостях, переживаниях или о чём угодно. Что у тебя на душе?":
+          locale==="es"?"Podemos charlar sin prisas, de lo bueno o lo difícil. ¿Qué tienes en mente?":
+            "We can just chat, about good days or difficult ones. What’s on your mind?")
         :(locale==="ru"?"Вы выбрали тему. Что именно хотели бы получить в первую очередь: информацию, варианты поддержки или помощь с заявкой?":
           locale==="es"?"Ya elegiste un tema. ¿Prefieres información, opciones de apoyo o ayuda para enviar una consulta?":
             "You've chosen a topic. Would you like information, support options, or help with an enquiry first?");
     setSupportQuizOpen(false);setSupportSelection(choice);
+    if(choice.mode==="talk"){setMode("rules");setFriendTone("friendly");
+      // Friend never silently reuses prior test, history or memory opt-ins.
+      setAxisRef("");setUseSavedTests(false);setUseSavedHistory(false);setUseAgentMemory(false);
+    }
     setEntryOpen(false);setFormat("");setProjectFlow(null);
     followTail.current=true;setNewBelow(false);
     setMessages([{role:"user",text:supportSummary(choice,locale)},
@@ -778,6 +852,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   // One clear question per project; choices describe the next step.
   function startProject(id:MessengerProjectId) {
     if(busy)return;
+    setPsychInterview("off");setPsychSlots({});setPsychSummaryVisible(false);
     if(id==="ai-video"){startContent();return;}
     const entry=messengerProject(locale,id);
     followTail.current=true;setNewBelow(false);setEntryOpen(false);
@@ -838,6 +913,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   }
   function startContent(language:PublicLocale=locale,initialText?:string) {
     if(busy)return;
+    setPsychInterview("off");setPsychSlots({});setPsychSummaryVisible(false);
     followTail.current=true;setNewBelow(false);setEntryOpen(false);
     setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setTestFocus(null);
     setContentStep("kind");setContentBrief("");setContentVoice(false);
@@ -894,6 +970,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   }
   function startGuided(kind:"video"|"meditation"|"hint") {
     if(busy)return;
+    setPsychInterview("off");setPsychSlots({});setPsychSummaryVisible(false);
     setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setTestFocus(null);
     setContentStep(null);setContentBrief("");setContentVoice(false);
     followTail.current=true;setNewBelow(false);
@@ -984,6 +1061,9 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   }
   async function sendTurn(rawText:string,judgmentChoice:JudgmentChoiceId|null=null) {
     const text=rawText.trim().slice(0,2000);
+    // A conversational boundary immediately de-escalates the selected tone.
+    if(supportSelection?.mode==="talk" && /без флирта|не флиртуй|без романтики|no flirt|don\u0027t flirt|sin coqueteo|no coquetees|мне (?:1[0-7]|[1-9]) лет|i(?:\u0027m| am) (?:1[0-7]|[1-9]) years old/iu.test(text))
+      setFriendTone("friendly");
     const turnLocale=messengerView&&judgmentChoice===null
       ?detectConversationLocale(text,locale) as PublicLocale:locale;
     if(turnLocale!==locale){setLocale(turnLocale);onConversationLocaleChange?.(turnLocale);}
@@ -993,6 +1073,47 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       (judgmentChoice!==null&&judgmentClickLock.current))return;
     alternativeAbortRef.current?.abort();alternativeAbortRef.current=null;
     lastAnswerRef.current=null;setAlternativeError("");
+    // After a tap and separate explicit Yes, this entire interview runs only
+    // in the browser's temporary memory. It never calls /api/holistic-agent/turn,
+    // external AI, profile memory, or privateTranscript.savePair().
+    if(psychInterview==="pending"&&judgmentChoice===null){
+      if(/^(?:да|давайте|согласен(?:а)?|yes|yes please|sure|sí|si|claro)[.!\s]*$/iu.test(text)){
+        consentPsychologistInterview();return;
+      }
+      if(/^(?:нет|не сейчас|не хочу|stop|no|no thanks|not now|ahora no|no quiero|parar)[.!\s]*$/iu.test(text)){
+        leavePsychologistInterview();return;
+      }
+      setDraft("");setMessages(prev=>[...prev,{role:"assistant" as const,
+        text:turnLocale==="ru"?"Пожалуйста, выберите «Начать» или «Не сейчас».":
+          turnLocale==="es"?"Elige «Empezar» o «Ahora no», por favor.":
+          'Please choose “Begin” or “Not now”.',localOnly:true}].slice(-30));return;
+    }
+    if(psychInterview==="active"&&judgmentChoice===null){
+      setDraft("");setChoices([]);setSource("");setStatus("");
+      followTail.current=true;setNewBelow(false);
+      if(/^(?:\/stop|стоп|остановить|не хочу продолжать|stop|cancel|parar|detener)[.!\s]*$/iu.test(text)){
+        leavePsychologistInterview();return;
+      }
+      if(/^(?:\/finish|завершить|готово|finish|done|terminar|finalizar)[.!\s]*$/iu.test(text)){
+        finishPsychologistInterview();return;
+      }
+      if(requiresProtectedReply(text,turnLocale)){
+        setMessages(prev=>[...prev,{role:"user" as const,text,localOnly:true},
+          {role:"assistant" as const,text:boundaryReply,localOnly:true}].slice(-30));
+        return;
+      }
+      const plan=wavePsychologistNativeTurn({message:text,locale:turnLocale,
+        stage:psychStage,slots:psychSlots,
+        turns:messages.filter(row=>row.localOnly).slice(-28)});
+      if(!plan){
+        setMessages(prev=>[...prev,{role:"assistant" as const,text:boundaryReply,localOnly:true}].slice(-30));
+        return;
+      }
+      setPsychStage(plan.stage);setPsychSlots(plan.slots);
+      setMessages(prev=>[...prev,{role:"user" as const,text,localOnly:true},
+        {role:"assistant" as const,text:plan.reply,localOnly:true}].slice(-30));
+      return;
+    }
     if(judgmentChoice!==null){
       if(authenticated&&!judgmentView?.token)return;
       judgmentClickLock.current=true;
@@ -1031,7 +1152,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         return;
       }
     }
-    if(compact&&isCasualGreeting(text)){
+    if(compact&&isCasualGreeting(text)&&supportSelection?.mode!=="talk"){
       setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setPageHelpLink(null);
       setJudgmentView(null);judgmentClickLock.current=false;
       setContentStep(null);setContentVoice(false);setContentBrief("");
@@ -1109,13 +1230,17 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     // Keep the user's explicit quiz choices present after older chat turns roll out.
     // A fresh topic or stop request must not inherit the old goal.
     const leaveSupport=/^(?:стоп|сменим тему|сменить тему|новая тема|другая тема|stop|cancel|switch topics|new topic|change topic|cambiar de tema|otro tema)[.!?\\s]*$/iu.test(text);
-    if(leaveSupport)setSupportSelection(null);
+    if(leaveSupport){setSupportSelection(null);setFriendTone("friendly");}
     // Preserve five-stage first-contact context without exposing additional
     // history to optional owned/browser inference modes.
     const historyLimit=mode==="rules"?12:6;
+    // The soft psychologist's turns are never reusable general-chat context:
+    // neither the normal server route nor a model-backed follow-up can read
+    // their local-only transcripts, even after Exit or Summary.
+    const shareableTurns=messages.filter(row=>row.localOnly!==true);
     const previousTurns=(!leaveSupport&&supportSelection)
-      ?[{role:"user" as const,text:supportSummary(supportSelection,turnLocale)},...messages.slice(-(historyLimit-1))]
-      :messages.slice(-historyLimit);
+      ?[{role:"user" as const,text:supportSummary(supportSelection,turnLocale)},...shareableTurns.slice(-(historyLimit-1))]
+      :shareableTurns.slice(-historyLimit);
     const prior=previousTurns.map(row=>({
       role:row.role,text:row.role==="user"?row.text:row.text.slice(0,4000),
     })),abort=new AbortController();
@@ -1123,11 +1248,16 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     if(compact&&!authenticated&&mode==="rules"){
       followTail.current=true;setNewBelow(false);setStatus("");setSource("");setChoices([]);
       setNeedsPrivateSignIn(false);setShowVideoSignIn(false);setEntryOpen(false);setDraft("");
-      const candidate=planJudgmentTurn({message:text,locale:turnLocale,
+      // Guest Friend uses the same offline engine as the authenticated route.
+      // The existing sensitive-content boundary and signed choices still win.
+      const friendReply=supportSelection?.mode==="talk"&&judgmentChoice===null &&
+        !requiresProtectedReply(text,turnLocale)
+        ?friendConversationReply({message:text,locale:turnLocale,history:prior,tone:friendTone}):null;
+      const candidate=friendReply?null:planJudgmentTurn({message:text,locale:turnLocale,
         safety:{status:"clear"},history:prior,pending:judgmentView?.pending,choiceId:judgmentChoice});
-      const handled=candidate.status!=="abstain";
+      const handled=candidate!==null&&candidate.status!=="abstain";
       const answer=requiresProtectedReply(text,turnLocale)?boundaryReply:
-        handled?candidate.reply:guestAnswer(text,prior,turnLocale);
+        friendReply?.reply||(handled?candidate!.reply:guestAnswer(text,prior,turnLocale));
       setJudgmentView(requiresProtectedReply(text,turnLocale)?null:
         handled?candidate as JudgmentView:null);
       judgmentClickLock.current=false;
@@ -1139,18 +1269,18 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     controller.current=abort;setBusy(true);setStatus("");setChoices([]);setDraft("");
     setMessages(prev=>[...prev,{role:"user" as const,text}]);
     try {
-      const stateTurn=authenticated&&mode==="rules"&&turnLocale!=="es"&&typeof crypto.randomUUID==="function"
+      const stateTurn=authenticated&&mode==="rules"&&supportSelection?.mode!=="talk"&&turnLocale!=="es"&&typeof crypto.randomUUID==="function"
         ?newNativeSessionTurn(nativeSession.current,crypto.randomUUID()):null;
       if(!stateTurn)nativeSession.current=null;
-      const response=await fetch("/api/holistic-agent/turn",{
-        method:"POST",credentials:"same-origin",signal:abort.signal,
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({locale:turnLocale,message:text,mode,history:prior,
+      const payload={locale:turnLocale,message:text,mode,history:prior,
           // Only explicit coaching choice in this first-party quiz sets the goal preference.
           // Safety, price and stop questions still override it server-side.
           selectedGoal:!leaveSupport&&supportSelection?.mode==="coach"
             ?({stress:"energy",relationships:"relationships",money:"money",business:"goals"} as const)[supportSelection.category]
-            :null,ownedInferenceConsent:mode==="owned"&&agree,
+            :null,
+          companionMode:!leaveSupport&&supportSelection?.mode==="talk"&&mode==="rules"?"friend":null,
+          companionTone:!leaveSupport&&supportSelection?.mode==="talk"&&mode==="rules"?friendTone:null,
+          ownedInferenceConsent:mode==="owned"&&agree,
           chosenAxes:axisRef?[axisRef]:[],
           preferredFormat:format||null,
           usePrivateProfile:useSavedTests&&Boolean(axisRef),
@@ -1159,14 +1289,47 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           judgmentContext:judgmentView?.token||null,
           judgmentChoice,
           ...(stateTurn?{nativeSession:stateTurn}:{}),
-          feedback:{dismissedIds,completedIds}}),
-      });
-      if(!response.ok){
-        if(stateTurn&&(response.status===404||response.status===409))nativeSession.current=null;
-        throw Error(response.status===401?"SIGN_IN_REQUIRED":response.status===503?"MODE_UNAVAILABLE":"CHAT_UNAVAILABLE");
+          feedback:{dismissedIds,completedIds}};
+      const sendAgentTurn=async (body:typeof payload)=>{
+        // Cover BOTH response headers and a stalled JSON body. Manual Stop
+        // remains separate from a timeout, which needs a gentle local reply.
+        const network=new AbortController();
+        const cancel=()=>network.abort();
+        abort.signal.addEventListener("abort",cancel,{once:true});
+        if(abort.signal.aborted)network.abort();
+        const timeout=window.setTimeout(()=>network.abort(),12000);
+        try{
+          const response=await fetch("/api/holistic-agent/turn",{
+            method:"POST",credentials:"same-origin",signal:network.signal,
+            headers:{"Content-Type":"application/json"},body:JSON.stringify(body),
+          });
+          const result=await response.json().catch(()=>null) as
+            (AgentReply&{error?:string})|null;
+          return {ok:response.ok,status:response.status,result};
+        }finally{
+          window.clearTimeout(timeout);
+          abort.signal.removeEventListener("abort",cancel);
+        }
+      };
+      let remote=await sendAgentTurn(payload);
+      let nativeDowngrade=false;
+      // Optional inference is gated in production. Retry only on the explicit
+      // disabled-mode code, with first-party, same-origin native conversation.
+      if(remote.status===503&&mode!=="rules"&&
+          shouldRetryNativeAgentMode({mode,status:remote.status,errorCode:remote.result?.error})){
+        const fallback=nativeAgentFallbackPayload(payload);
+        if(fallback){
+          remote=await sendAgentTurn(fallback as typeof payload);
+          nativeDowngrade=remote.ok;
+        }
       }
-      const data=await response.json() as AgentReply;
+      if(!remote.ok){
+        if(stateTurn&&(remote.status===404||remote.status===409))nativeSession.current=null;
+        throw Error(remote.status===401?"SIGN_IN_REQUIRED":remote.status===503?"SERVER_UNAVAILABLE":"CHAT_UNAVAILABLE");
+      }
+      const data=remote.result;
       if(abort.signal.aborted)return;
+      if(typeof data?.reply!=="string"||!data.reply.trim())throw Error("EMPTY_AGENT_REPLY");
       if(stateTurn){
         // A safety/Judgment turn may intentionally omit the session. Do not
         // reuse state that did not observe that turn on a subsequent request.
@@ -1174,7 +1337,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         nativeSession.current=advanceNativeClientSession(stateTurn,data.nativeSession);
       }
       let reply=data.reply,used=data.source||"none";
-      if(mode==="device"&&data.browserModelAllowed&&!abort.signal.aborted){
+      if(mode==="device"&&!nativeDowngrade&&data.browserModelAllowed&&!abort.signal.aborted){
         try {
           const native=(window as Window & {LanguageModel?:NativeLanguageModel}).LanguageModel;
           const languages=[turnLocale];
@@ -1194,7 +1357,9 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
             if(generated.modelUsed){reply=generated.text;used="browser";}
           } finally {session.destroy?.();}
         } catch {
-          setStatus(turnCopy.unavailable);
+          // The verified server response remains valid without local AI.
+          // Do not place a technical failure alert into the conversation.
+          setMode("rules");setAgree(false);
         }
       }
       if(abort.signal.aborted)return;
@@ -1211,26 +1376,43 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       // Social replies are already AI-labelled: omit the mechanical
       // "source: algorithm" footer only for this small-talk subset.
       const socialRule=used==="rules"?ruleConversationReply({message:text,locale:turnLocale,history:prior}):null;
-      const friendlyTurn=Boolean(socialRule&&typeof socialRule.id==="string"&&["conversation_greeting","conversation_small_talk","conversation_chat_invitation"].includes(socialRule.id));
+      const friendlyTurn=data.source==="friend-mind"||Boolean(socialRule&&typeof socialRule.id==="string"&&["conversation_greeting","conversation_small_talk","conversation_chat_invitation"].includes(socialRule.id));
       setSource(friendlyTurn?"":used==="browser"?turnCopy.used:used==="owned"?turnCopy.backend:turnCopy.simple);
+      if(nativeDowngrade){
+        // A successful native reply is the reply, not a large error alert.
+        setMode("rules");setAgree(false);setStatus("");
+      }
     } catch (error) {
       if(!abort.signal.aborted){
-        if(voice.conversing)voice.stopDialogue();
+        // Every failed turn gets a local, gentle reply. Never retry an auth,
+        // rate-limit or security rejection, or imply a protected action ran.
         const reason=error instanceof Error?error.message:"";
-        if(reason==="SIGN_IN_REQUIRED"&&compact&&mode==="rules"){
-          // Expired session: answer from public rules; private API stays protected.
-          const candidate=planJudgmentTurn({message:text,locale:turnLocale,
-            safety:{status:"clear"},history:prior,pending:null});
-          const answer=requiresProtectedReply(text,turnLocale)?boundaryReply:
-            candidate.status!=="abstain"?candidate.reply:guestAnswer(text,prior,turnLocale);
-          setJudgmentView(!requiresProtectedReply(text,turnLocale)&&candidate.status!=="abstain"?
-            candidate as JudgmentView:null);
-          setMessages(prev=>[...prev,{role:"assistant" as const,text:answer}].slice(-30));
-          setSource("");setStatus("");
-        }else{
-          setNeedsPrivateSignIn(reason==="SIGN_IN_REQUIRED");
-          setStatus(reason==="SIGN_IN_REQUIRED"?turnCopy.signIn:reason==="MODE_UNAVAILABLE"?turnCopy.modeError:turnCopy.error);
-        }
+        nativeSession.current=null;lastAnswerRef.current=null;
+        const needsSignIn=reason==="SIGN_IN_REQUIRED";
+        const protectedQuestion=judgmentChoice!==null||aliNeedsVerifiedAction(text);
+        const unsafe=requiresProtectedReply(text,turnLocale);
+        const companion=!unsafe&&!protectedQuestion&&supportSelection?.mode==="talk"
+          ?friendConversationReply({message:text,locale:turnLocale,history:prior,tone:friendTone}):null;
+        const judgment=!unsafe&&!protectedQuestion&&!companion
+          ?planJudgmentTurn({message:text,locale:turnLocale,
+            safety:{status:"clear"},history:prior,pending:null}):null;
+        const known=!unsafe&&!protectedQuestion&&!companion&&
+          (!judgment||judgment.status==="abstain")
+          ?ruleConversationReply({message:text,locale:turnLocale,history:prior}):null;
+        const answer=unsafe?boundaryReply:
+          judgmentChoice!==null?aliGentleContinuity({message:text,locale:turnLocale,
+            history:prior,actionPending:true}):
+          companion?.reply||(judgment&&judgment.status!=="abstain"?judgment.reply:null)||
+          (known?.id&&!known.id.startsWith("video")&&typeof known.reply==="string"&&known.reply.trim()?known.reply:null)||
+          aliGentleContinuity({message:text,locale:turnLocale,history:prior,requiresSignIn:needsSignIn});
+        setChoices([]);setJudgmentView(null);setEvidenceUsed(false);setHistoryUsed(false);
+        setSource("");setStatus("");
+        if(mode!=="rules"){setMode("rules");setAgree(false);}
+        // Preserve the user-visible exchange but do not store it as a verified
+        // server result. A Home handoff must still require a real server reply.
+        setMessages(prev=>[...prev,{role:"assistant" as const,text:answer,provisional:true}].slice(-30));
+        setNeedsPrivateSignIn(needsSignIn&&Boolean(useSavedTests||useSavedHistory||useAgentMemory||
+          mode==="owned"));
       }
     } finally {
       setBusy(false);controller.current=null;judgmentClickLock.current=false;
@@ -1298,7 +1480,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     event.preventDefault();
     void sendTurn(draft);
   }
-  function resetConversation(){nativeSession.current=null;voice.stopDialogue();lastSpeechTurn.current=null;alternativeAbortRef.current?.abort();alternativeAbortRef.current=null;lastAnswerRef.current=null;setAlternativeBusy(false);controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setSupportQuizOpen(false);setSupportSelection(null);setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setTestFocus(null);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);setRecorderOpen(false);}
+  function resetConversation(){setPsychInterview("off");setPsychStage("situation");setPsychSlots({});setPsychSummaryVisible(false);nativeSession.current=null;voice.stopDialogue();lastSpeechTurn.current=null;alternativeAbortRef.current?.abort();alternativeAbortRef.current=null;lastAnswerRef.current=null;setAlternativeBusy(false);controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setSupportQuizOpen(false);setSupportSelection(null);setFriendTone("friendly");setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setTestFocus(null);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);setRecorderOpen(false);}
 
   useEffect(()=>{
     const startNewConversation=()=>resetConversation();
@@ -1410,7 +1592,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   </article>;
   const showLandingComposer=compact&&messengerView&&!pageHelp&&!messages.length&&!supportQuizOpen;
   const composer=(
-    <form onSubmit={submit} className={styles.form}>
+    <form onSubmit={submit} className={styles.form} data-hh-ai-chat-composer={messengerView||undefined}>
       <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)}
         placeholder={showLandingComposer?(locale==="ru"?"Опиши ситуацию, вопрос или цель…":locale==="es"?"Describe tu situación, pregunta o meta…":"Describe your situation, concern, or goal…"):t.placeholder}
         onFocus={()=>{
@@ -1430,6 +1612,10 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
               <summary>{pageHelp?voice.t.settings:(locale==="ru"?"Настройки голоса":locale==="es"?"Ajustes de voz":"Voice settings")}</summary>
               {voiceControls}
             </details>}
+            {psychInterview==="off"&&<button type="button" data-hh-ali-psychologist-offer
+              onClick={offerPsychologistInterview} disabled={busy}>
+              {locale==="ru"?"Мягко разобраться в проблеме":locale==="es"?"Explorar mi situación":"Explore my situation gently"}
+            </button>}
             {resetControl}
           </div>
         </details>:voiceAttachment}
@@ -1464,6 +1650,10 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     data-chat-skin={messengerView?"messenger":undefined}>
     {!compact&&<><h1>{t.title}</h1><p>{t.disclosure}</p><p>{t.intro}</p></>}
     {!compact&&settings}
+    {!compact&&psychInterview==="off"&&<button type="button"
+      data-hh-ali-psychologist-offer onClick={offerPsychologistInterview}>
+      {locale==="ru"?"Мягко разобраться в ситуации":locale==="es"?"Explorar mi situación":"Explore my situation gently"}
+    </button>}
     {authenticated&&!messengerView&&<HolisticAgentMemoryPanel locale={locale}
       onUse={items=>setUseAgentMemory(items.length>0)}/>}
     {authenticated&&<SecureDialogueHistory history={privateTranscript} locale={locale}/>}
@@ -1482,7 +1672,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         {supportQuizOpen?<MessengerSupportQuiz locale={locale}
           onCancel={()=>setSupportQuizOpen(false)} onFinish={completeSupportQuiz}/>:
           <>
-            <MessengerAiLanding locale={locale} composer={composer} onCreateVideo={()=>startContent()}
+            <MessengerAiLanding locale={locale} onCreateVideo={()=>startContent()}
               onPractice={()=>startGuided("meditation")} onSupport={openSupportQuiz}
               onAsk={()=>composerRef.current?.focus({preventScroll:true})}
               onTopicSelect={text=>{setDraft(text);window.requestAnimationFrame(()=>composerRef.current?.focus({preventScroll:true}));}}
@@ -1490,11 +1680,48 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
             <details className={styles.alchemistTools} data-hh-alchemist-tools>
               <summary>{locale==="ru"?"Другие возможности Ali":locale==="es"?"Más posibilidades de Ali":"More ways Ali can help"}</summary>
               <MessengerSixProjects locale={locale} onSelect={startProject}/>
+              <button type="button" data-hh-ali-psychologist-offer
+                onClick={offerPsychologistInterview} disabled={busy}>
+                {locale==="ru"?"Мягко разобраться в проблеме":locale==="es"?"Explorar mi situación":"Explore my situation gently"}
+              </button>
             </details>
           </>}
       </>}
       {compact&&(!messengerView||pageHelp)&&<p className={styles.assistant} data-hh-ai-welcome>{pageHelp?.greeting??starter.welcome}</p>}
       {!compact&&!messages.length&&<p className={styles.muted}>{t.start}</p>}
+      {compact&&messengerView&&supportSelection?.mode==="talk"&&
+        <label className={styles.mode} data-hh-friend-tone-control>
+          <span>{locale==="ru"?"Друг · тон беседы":locale==="es"?"Amigo · tono":"Friend · conversation tone"}</span>
+          <select data-hh-friend-tone value={friendTone}
+            onChange={event=>setFriendTone(event.target.value as typeof friendTone)}>
+            <option value="friendly">{locale==="ru"?"Дружеский":locale==="es"?"Amistoso":"Friendly"}</option>
+            <option value="confiding">{locale==="ru"?"Доверительный":locale==="es"?"De confianza":"Confiding"}</option>
+            <option value="tender">{locale==="ru"?"Нежный, романтичный":locale==="es"?"Tierno, romántico":"Tender, romantic"}</option>
+          </select>
+          <small>{locale==="ru"?"Без давления и откровенных сексуальных сцен. Настройки истории и приватности — в аккаунте.":
+            locale==="es"?"Sin presión ni escenas sexuales explícitas. Revisa la privacidad y el historial en tu cuenta.":"No pressure or explicit sexual scenes. Review chat history and privacy in your account."}</small>
+        </label>}
+      {psychInterview==="pending"&&<div className={styles.projectOptions}
+        role="group" data-hh-ali-psychologist-consent
+        aria-label={locale==="ru"?"Согласие на предварительную беседу":locale==="es"?"Consentimiento para conversar":"Consent to optional conversation"}>
+        <button type="button" onClick={consentPsychologistInterview} data-hh-ali-psychologist-agree>
+          {locale==="ru"?"Да, начать":locale==="es"?"Sí, empezar":"Yes, begin"}</button>
+        <button type="button" onClick={leavePsychologistInterview} data-hh-ali-psychologist-decline>
+          {locale==="ru"?"Не сейчас":locale==="es"?"Ahora no":"Not now"}</button>
+      </div>}
+      {psychInterview==="active"&&<div className={styles.projectOptions}
+        role="group" data-hh-ali-psychologist-active aria-label="Optional preliminary conversation">
+        <button type="button" onClick={finishPsychologistInterview} data-hh-ali-psychologist-finish>
+          {locale==="ru"?"Закончить и посмотреть резюме":locale==="es"?"Terminar y ver resumen":"Finish and review summary"}</button>
+        <button type="button" onClick={leavePsychologistInterview}>
+          {locale==="ru"?"Остановить":locale==="es"?"Parar":"Stop"}</button>
+      </div>}
+      {psychSummaryVisible&&<a data-hh-ali-psychologist-private-handoff
+        className={styles.testLink} href={"/"+locale+"/services/free-situation-review"}>
+        {locale==="ru"?"Передать запрос специалисту — отдельная защищённая заявка":
+          locale==="es"?"Enviar una solicitud aparte al profesional":
+            "Request practitioner review separately"}
+      </a>}
       {messages.map((m,index)=>messengerView&&m.role==="assistant"?
         <div key={index} className={styles.messageWithAvatar} data-hh-ai-assistant-message>
           <img src={persona.image||"/images/holistic-house/reiki-approved-sunrise-v3.webp"}
@@ -1739,9 +1966,9 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       </p>}
     {compact&&messengerView&&homeHandoffPhase==="retry"&&
       <div className={styles.assistant} role="alert" data-home-handoff-retry>
-        <span>{locale==="ru"?"Ваш запрос сохранён, но ответ не получен.":
-          locale==="es"?"Tu mensaje se conservó, pero no llegó la respuesta.":
-          "Your message was kept, but no reply arrived."}</span>{" "}
+        <span>{locale==="ru"?"Можем продолжить разговор. Для подтверждения исходного запроса потребуется повторная отправка.":
+          locale==="es"?"Podemos seguir hablando. Para confirmar la solicitud original, tendrás que reenviarla.":
+          "We can keep talking. The original request still needs to be resent for confirmation."}</span>{" "}
         <button type="button" onClick={retryHomeAliTurn}>
           {locale==="ru"?"Повторить отправку":locale==="es"?"Reintentar envío":"Retry sending"}
         </button>
@@ -1802,7 +2029,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           {locale==="ru"?"Изменить":locale==="es"?"Cambiar":"Change"}
         </button>
       </div>}
-    {!showLandingComposer&&!supportQuizOpen&&composer}
+    {!supportQuizOpen&&composer}
     {compact&&!contentVoice&&(!messengerView||recorderOpen)&&<MessengerAudioVideo locale={locale}
       initialGoal={videoDraft.goal||""} disabled={busy} autoOpen={messengerView&&recorderOpen}/>}
     {!compact&&<details className={styles.programPanel} data-hh-eight-session-preview>

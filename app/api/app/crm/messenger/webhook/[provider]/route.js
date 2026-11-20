@@ -23,6 +23,7 @@ import {captureTelegramBusinessInbox,setTelegramBusinessReplyState,telegramBotHu
 import {telegramBusinessReplyFailure,telegramBusinessReplyCrmState} from '@/lib/crm/telegram-delivery-status.mjs'
 import {captureTelegramLeadBestEffort} from '@/lib/crm/telegram-lead-capture-policy.mjs'
 import {captureWhatsAppFirstContact,recordWhatsAppInboundReceipt} from '@/lib/crm/whatsapp-lead-capture'
+import {whatsappHumanTakeoverActive} from '@/lib/crm/whatsapp-human-takeover'
 import {telegramBusinessMessageFromUpdate} from '@/lib/assist/telegram-business-request.mjs'
 import {parseHiTelegramRating} from '@/lib/holistic-support/hi-learning-policy.mjs'
 import {insertHiLearningQuality} from '@/lib/holistic-support/hi-learning-store'
@@ -141,7 +142,7 @@ export async function POST(request,{params}){
           try{
             await consumeRate(config,{op:'hh-tg-business-intent-message',
               connectionId:business.connectionId,chatId:business.to,
-              messageId:business.messageId},1,7*86400)
+              messageId:business.messageId},1,86400)
             // Reserve bounded receipt/STOP capacity beyond the 3 dialogue
             // prompts. Abuse still uses event-idempotency and the global cap.
             if(business.terminal){
@@ -196,7 +197,7 @@ export async function POST(request,{params}){
           try{
             await consumeRate(config,{op:'hh-tg-secretary-reply',
               connectionId:secretary.connectionId,chatId:secretary.to,
-              messageId:secretary.messageId},1,7*86400)
+              messageId:secretary.messageId},1,86400)
             await consumeRate(config,{op:'hh-tg-secretary-chat',
               connectionId:secretary.connectionId,chatId:secretary.to},15,86400)
             await consumeRate(config,{op:'hh-tg-secretary-global'},100,86400)
@@ -281,6 +282,14 @@ export async function POST(request,{params}){
           continue
         }
         if(event.type==='incoming'){
+          if(waCaptureSuppressed)continue
+          // When the owner takes this WhatsApp thread, Ali must not speak
+          // over the human. Preserve one neutral CRM receipt for the inbound.
+          // STOP deliberately bypasses the pause and remains suppressible.
+          if(await whatsappHumanTakeoverActive(event,config)){
+            await recordWhatsAppInboundReceipt(event,config)
+            continue
+          }
           // Reuse the verified public Secretary catalogue, not a second AI
           // provider. Never intercept consent, STOP or an active private intake.
           const secretary=await processWhatsAppSecretary(event,config)
@@ -289,7 +298,7 @@ export async function POST(request,{params}){
             // but outside explicit intake only a neutral receipt is retained.
             if(!waCaptureSuppressed)
               await recordWhatsAppInboundReceipt(event,config)
-            if(secretary.reply){
+            if(secretary.reply&&!(await whatsappHumanTakeoverActive(event,config))){
               try{
                 await consumeRate(config,{op:'hh-wa-secretary-chat',
                   peer:operationHash({business:event.accountId,peer:event.userId},config)},12,86400)
@@ -327,7 +336,7 @@ export async function POST(request,{params}){
           // Otherwise retain a neutral touchpoint, never personal text/media.
           if(!waCaptureSuppressed)
             await recordWhatsAppInboundReceipt(event,config)
-          if(intake.handled&&intake.reply){
+          if(intake.handled&&intake.reply&&!(await whatsappHumanTakeoverActive(event,config))){
             // Consent/CRM state are committed before one reply attempt.
             // Uncertain provider outcomes must not automatically repeat.
             try{await sendWhatsAppDiagnosticPrompt({

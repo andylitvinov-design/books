@@ -124,13 +124,14 @@ test("macOS WebKit exercises explicit accessible adult consent and revocation",(
   "no original-tab interaction should depend on restoring focus after another tab");
 });
 
-test("Ideas Personalization and Concept retain a single opt-in Voice/My Voice WebKit path",()=>{
+test("Ideas Personalization, Goal and Concept retain one opt-in Voice/My Voice WebKit path",()=>{
  const studio=read("components/mandala-free-video-studio.tsx");
  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
  assert.match(studio,/data-video-ideas-advanced-voice open=\{ideasVoiceAdvancedOpen\}/);
  assert.match(studio,/hidden=\{activeWorkspace!=="phrases"\|\|ideasSubtab!=="personalization"\}/);
- assert.equal((studio.match(/data-video-ideas-tab="/g)||[]).length,2);
- for(const marker of ['data-video-ideas-tab="personalization"','data-video-ideas-tab="concept"',
+ assert.equal((studio.match(/data-video-ideas-tab="/g)||[]).length,3);
+ assert.match(studio,/data-video-ideas-goal-panel hidden=\{ideasSubtab!=="goal"\}/);
+ for(const marker of ['data-video-ideas-tab="personalization"','data-video-ideas-tab="goal"','data-video-ideas-tab="concept"',
   'data-video-ideas-voice-mode="voice"','data-video-ideas-voice-mode="my-voice"',
   'data-video-phrase-audio-shortcut','data-video-ideas-own-upload'])
   assert.ok(studio.includes(marker),marker);

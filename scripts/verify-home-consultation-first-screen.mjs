@@ -27,9 +27,26 @@ for (const engine of [chromium,webkit]){
           hasTouch:true,reducedMotion:"reduce",
         });
         const label=engine.name()+":"+locale+":"+width;
+        const scriptEvents=[];
+        page.on("pageerror",error=>scriptEvents.push("pageerror:"+error.message.slice(0,240)));
+        page.on("console",message=>{
+          if(message.type()==="error")scriptEvents.push("console:"+message.text().slice(0,360));
+        });
+        page.on("requestfailed",request=>{
+          if(request.url().includes("/instant-home/fast.js"))
+            scriptEvents.push("script-request-failed:"+String(request.failure()?.errorText).slice(0,160));
+        });
+        page.on("response",response=>{
+          if(response.url().includes("/instant-home/fast.js"))
+            scriptEvents.push("script-status:"+response.status());
+        });
         try {
           const response=await page.goto(origin+path,{waitUntil:"domcontentloaded",timeout:60000});
           assert.equal(response?.status(),200,label+": Home HTTP 200");
+          // Canonical EN/RU/ES must show the owner-approved React Home.
+          // The legacy CDN shell is opt-in only and must never pass this default-route QA.
+          assert.equal(await page.locator('body[data-fast-home]').count(),0,
+            label+": approved React Home is the default on all locales");
           const root=page.locator("[data-home-dialogue-entry]");
           await root.waitFor({state:"visible",timeout:30000});
           // React must be hydrated before exercising the actual mode click.
@@ -67,33 +84,42 @@ for (const engine of [chromium,webkit]){
             label+": four needs including business support");
           const review=root.locator("[data-home-free-review]");
           assert.equal(await review.count(),1,label+": one primary free review entry");
-          assert.equal(await review.getAttribute("href"),"/"+locale+"/services/free-situation-review",
-            label+": real localized free review route");
-          const reviewBox=await review.boundingBox();
-          const focusBox=await root.locator("[data-home-focus-grid]").boundingBox();
-          // The approved Home layout shows the four directions, then How it
-          // works, then the optional free review. Check actual visual order
-          // rather than the retired review-before-directions arrangement.
-          assert.ok(reviewBox&&focusBox&&focusBox.y+focusBox.height<=reviewBox.y+1,
-            label+": four needs appear above the free review " +
-              JSON.stringify({focusBottom:focusBox?.y+focusBox?.height,reviewTop:reviewBox?.y}));
+          assert.equal(await review.getAttribute("href"),"/"+locale+"/explore/business",
+            label+": real localized business review route");
+          // The approved 2026 Home is dialogue-first: Ali composer first,
+          // then four directions, three steps, Get Ideas and Get Support.
+          // Measure every block together before mobile keyboard auto-scroll.
+          const layout=await root.evaluate(element=>{
+            const selectors=['[data-home-intent-form]','[data-home-focus-grid]',
+              '[data-home-how-it-works]','[data-home-free-review]',
+              '[data-home-request-session]'];
+            const nodes=selectors.map(selector=>element.querySelector(selector));
+            if(nodes.some(node=>!node))return null;
+            return nodes.map(node=>{const {top,bottom}=node.getBoundingClientRect();return {top,bottom}});
+          });
+          assert.ok(layout&&layout.length===5&&
+            layout[0].bottom<=layout[1].top+1&&
+            layout[1].bottom<=layout[2].top+1&&
+            layout[2].bottom<=layout[3].top+1&&
+            layout[2].bottom<=layout[4].top+1,
+            label+": Ali composer → four directions → three steps → Get Ideas / Get Support "+
+              JSON.stringify(layout));
           assert.equal(await root.locator("[data-home-focus-grid]").count(),1,label+": grouped choices");
-          const cards=await root.locator("[data-home-focus-grid]").boundingBox();
-          const composer=await root.locator("[data-home-intent-composer]").boundingBox();
-          assert.ok(cards&&composer&&cards.y+cards.height<=composer.y,
-            label+": four topics above the Ali composer");
           await personal.click();
           assert.equal(await root.getAttribute("data-home-mode"),"self");
+          assert.equal(await review.getAttribute("href"),"/"+locale+"/services/free-situation-review",
+            label+": personal mode restores real free review route");
           const hero=root.locator("[data-home-dialogue-hero]");
           const heroRect=await hero.boundingBox();
           assert.ok(heroRect&&heroRect.y<600,label+": dialogue takes the first viewport");
           const input=root.locator("[data-home-intent-composer]");
           const send=root.locator("[data-home-send-to-ali]");
           await input.waitFor({state:"visible"});
-          assert.equal(await send.isDisabled(),true,label+": cannot send an empty prompt");
+          assert.equal(await send.isEnabled(),true,label+": free Ali chat starts without a typed goal");
           await input.fill(locale==="ru"?"Хочу создать курс":locale==="es"?"Quiero crear un curso":"I want to create a course");
           assert.equal(await send.isEnabled(),true,label+": real editable composer");
           await input.fill("");
+          assert.equal(await send.isEnabled(),true,label+": free Ali chat remains open after clearing goal");
           const search=header.locator("[data-site-search-trigger]");
           await search.click();
           await header.locator("[data-site-search-panel]").waitFor({state:"visible"});
@@ -120,7 +146,13 @@ for (const engine of [chromium,webkit]){
           assert.ok(overflow<=1,label+": no iPhone horizontal overflow: "+overflow);
           const box=await root.boundingBox();
           assert.ok(box&&box.x>=-1&&box.x+box.width<=width+1,label+": Home inside viewport");
-          evidence.push({engine:engine.name(),locale,width,mode:"dialogue-first",sevenButtons:7,
+          const renderResources=await page.evaluate(()=>({
+             stylesheets:document.querySelectorAll('link[rel="stylesheet"]').length,
+             cssRequests:performance.getEntriesByType('resource').filter(item=>new URL(item.name).pathname.endsWith('.css')).length,
+             heroFetchPriority:document.querySelector('[data-home-dialogue-hero] img')?.getAttribute('fetchpriority')||null,
+           }));
+           evidence.push({engine:engine.name(),locale,width,mode:"dialogue-first",sevenButtons:7,
+             ...renderResources,
             firstScreenStart:Math.round(heroRect.y),heroHeight:Math.round(heroRect.height)});
           if(engine===webkit&&width===390)
             await page.screenshot({path:output+"/home-"+locale+"-webkit-390.png",fullPage:false});

@@ -132,7 +132,7 @@ test("large legacy consultation mounts only on explicit detail or #consultation 
 test("the legacy directory is not an extra visible order form until opened", () => {
   assert.match(catalog, /id === "directory"/);
   const browser = read("scripts/verify-public-services-production.mjs");
-  assert.match(browser, /locator\("\[data-service-lead-capture\]"\)\)\.toHaveCount\(0\)/);
+  assert.ok(browser.includes('[data-services-unified-catalog] [data-service-lead-capture]:visible'));
   assert.match(browser, /locator\('\[data-services-unified-panel="directory"\]'\)/);
   assert.match(browser, /await expect\(directory\.locator\('\[data-service-lead-capture\]'\)\)\.toHaveCount\(0\)/);
   assert.match(browser, /await visible\(directory\.locator\('\[data-services-directory-invitation\]'\)\)/);

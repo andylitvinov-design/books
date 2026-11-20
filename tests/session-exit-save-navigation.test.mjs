@@ -97,7 +97,8 @@ test('homepage language remains on chosen first-party route after Google save',(
   const config=read('next.config.ts')
   assert.equal(config.includes('{ source: "/ru", destination: "/?lang=ru", permanent: true }'),false)
   assert.match(read('app/page.tsx'), /requested === "ru" \|\| requested === "es"/)
-  assert.match(read('app/page.tsx'), /redirect\(`\/\$\{requested\}`\)/)
+  assert.ok(read('app/page.tsx').includes('redirect(`/${requested}${requestedFull === "1" ? "?full=1" : ""}`)'),
+    'language redirect preserves selected locale and explicit full React mode')
   assert.match(read('app/[locale]/page.tsx'), /locale="ru"/)
   assert.equal(safeSessionExitTarget('/ru',origin,current),'/ru')
 })

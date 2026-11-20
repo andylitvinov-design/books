@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance, safeComposedIndependentAdvance, safeScopedDisjointProductionAdvance, safeMixedProtectedAdvance, REVALIDATABLE_CI_POLICY_FILES } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance, safeComposedIndependentAdvance, safeScopedDisjointProductionAdvance, safeMixedProtectedAdvance, safeIsolatedFeatureAdvance, REVALIDATABLE_CI_POLICY_FILES } from '../lib/ci/production-base-impact.mjs';
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
@@ -181,6 +181,10 @@ export function optionalMandalaMacosSkip(files, branch, changed) {
   // The BASE macOS job may acquire exactly one REQUIRED cheap prerequisite.
   // A skipped WebKit job remains neutral only when the BASE branch predicate
   // itself excludes this PR; the preflight cannot alter its guard or steps.
+  // Browser-only acceptance assertions do not change voice or MP4 runtime.
+  // They remain covered by Core and focused Mandala tests; an unchanged
+  // trusted BASE branch predicate decides whether macOS is even scheduled.
+  // Preserve strict macOS enforcement for voice, codec and export source.
   const withRequiredPreflight = baseJob?.replace(
     /^(    if: .+)\n(    runs-on: macos-15)$/m,
     '$1\n    needs: [webkit_preflight]\n$2');
@@ -191,7 +195,7 @@ export function optionalMandalaMacosSkip(files, branch, changed) {
   if (!baseJob || !trustedMacosJob ||
       typeof branch !== 'string' || !branch || !Array.isArray(changed) ||
       changed.some(path => typeof path !== 'string' ||
-        /^(?:app\/api\/holistic-support\/voice\/|lib\/mandala\/(?:voice|wav|affirmation|media-record|video-export|recording|webcodecs|audio|codec|mp4)|components\/mandala-(?:affirmation-voice|cloud-voice)|scripts\/verify-affirmation-voice-browser\.mjs$|scripts\/benchmarking\/first-video-live-export\.mjs$)/.test(path))) return false;
+        /^(?:app\/api\/holistic-support\/voice\/|lib\/mandala\/(?:voice|wav|affirmation|media-record|video-export|recording|webcodecs|audio|codec|mp4)|components\/mandala-(?:affirmation-voice|cloud-voice)|scripts\/benchmarking\/first-video-live-export\.mjs$)/.test(path))) return false;
   const guard = source.match(/^  voice-webkit-macos:\n    if: \$\{\{ (.+) \}\}$/m)?.[1];
   const fixed = "github.event_name == 'pull_request' && github.event.pull_request.draft == false && (";
   if (!guard?.startsWith(fixed) || !guard.endsWith(')')) return false;
@@ -259,14 +263,15 @@ export function optionalProfileWriterSkip(files, branch) {
 export function requiresCurrentProductionBase(changed) {
   if (!Array.isArray(changed) || changed.length === 0) return true;
   const ordinaryRoots = /^(?:app|components|lib|tests|public|content|data|docs)\//;
-  // This exact Playwright-only QA harness is never imported by Next at runtime.
-  // Its changing selectors should not force a full rebase of an otherwise
-  // ordinary video-editor PR after an unrelated production promotion.
-  const isolatedBrowserHarness = file =>
-    /^scripts\/(?:verify-[a-z0-9.-]+-(?:browser|mobile)|benchmarking\/[a-z0-9.-]+)\.mjs$/i.test(file) &&
-    // Real encoded-media, payments and consent remain strict, regardless
-    // of their file being an isolated browser/benchmark harness.
-    !/(?:^|[\/_.-])(?:audio|codec|consent|encoded|encoder|export|license|payment|provider|recording|recorder|service|services|voice)(?:$|[\/_.-])/i.test(file);
+  // Browser, video and unit acceptance helpers are NOT production runtime.
+  // Their filenames may mention voice, export, codec or chat; that does not
+  // turn an otherwise public PR into a stale-base security change. A real
+  // encoded-file/WebKit Specialist remains mandatory based on changed files.
+  // Keep CI/release, auth, patient/privacy, payment and credential QA strict.
+  const testOnlyAcceptance = file =>
+    (/^tests\/[a-z0-9._/-]+\.test\.(?:mjs|cjs|js|ts|tsx)$/i.test(file) ||
+     /^scripts\/(?:verify-[a-z0-9._/-]+|benchmarking\/[a-z0-9._/-]+)\.mjs$/i.test(file)) &&
+    !/(?:^|[\/_.-])(?:ci|workflow|policy|release|deploy|deployment|vercel|config|admin|api|auth|authorization|account|billing|booking|cabinet|checkout|client|consent|credential|crm|database|identity|login|medical|patient|payment|private|privacy|rls|secret|security|session|storage|supabase|token|wallet)(?:$|[\/_.-])/i.test(file);
   // This exact synthetic PUBLIC Services browser verifier is test-only:
   // it cannot change Next runtime, payment handlers, private data or consent.
   // A mixed PR containing any sensitive source still retains the strict base.
@@ -276,9 +281,10 @@ export function requiresCurrentProductionBase(changed) {
   const sensitiveRoots = /^(?:app\/(?:\[[^/]+\]\/)?api\/|app\/(?:\[[^/]+\]\/)?app\/|components\/app\/|lib\/(?:app|assessments|ia|practitioners)\/|docs\/operations\/|docs\/billing\/|docs\/payments\/)/i;
   return changed.some(file =>
     typeof file !== 'string' ||
-    (!ordinaryRoots.test(file) && !isolatedBrowserHarness(file) && !publicSourceAcceptanceHarness(file)) ||
+    (!ordinaryRoots.test(file) && !testOnlyAcceptance(file) && !publicSourceAcceptanceHarness(file)) ||
     file.split('/').some(segment => segment === '.' || segment === '..' || segment === '') ||
-    sensitiveName.test(file) ||
+    (!testOnlyAcceptance(file) && sensitiveName.test(file)) ||
+    /^tests\/(?:ci-|workflow-|required-gate-|pr-fast-lane)/i.test(file) ||
     sensitiveRoots.test(file)
   );
 }
@@ -434,8 +440,10 @@ export async function verify(api,ctx,files,options={}) {
   const queuedGrace = Math.min(maxWait, boundedMs(options.queuedGraceMs ?? 10*60_000, 40*60_000));
   // A completed workflow's jobs API may lag; read only missing/pending job data.
   const jobGrace = Math.min(maxWait, boundedMs(options.jobGraceMs ?? 45_000, 90_000));
-  // Reduce read-only GitHub API pressure while many exact-HEAD jobs are queued.
-  const pollMs = boundedMs(options.pollMs ?? 30_000, 30_000, 100);
+  // Poll non-final queued/running specialists every 60s instead of every 30s:
+  // halve redundant GitHub HEAD-index reads while preserving all required checks.
+  // Missing-workflow discovery and the final-running fast lane remain responsive.
+  const pollMs = boundedMs(options.pollMs ?? 60_000, 60_000, 100);
   const now = options.now ?? Date.now;
   const sleep = options.sleep ?? delay;
   const pinnedChangeRows = Array.isArray(files.changedRows) && files.changedRows.length > 0;
@@ -553,11 +561,21 @@ export async function verify(api,ctx,files,options={}) {
       const mixedProtected = pinnedChangeRows &&
         live.mergeable !== false && live.mergeable_state !== 'dirty' &&
         safeMixedProtectedAdvance(diff, ctx.base, liveBaseSha, changed);
+      // A new, independently namespaced public feature must not require a
+      // rebase just because a different protected PR reached production.
+      // This stricter fallback needs GitHub's affirmative mergeability, a
+      // complete ancestry/path diff and rejects shared/critical source.
+      const isolatedFeature = pinnedChangeRows && live.mergeable === true &&
+        safeIsolatedFeatureAdvance(diff, ctx.base, liveBaseSha, changed, live.mergeable);
       if (!documentationOnly && !independentlyRevalidated &&
           !isolatedCiPolicy && !unrelatedCiMaintenance && !inertPublicImages &&
           !independentPresentation && !disjointPublicSource && !independentQa &&
-          !independentDomainTest && !composedIndependent && !scopedDisjoint && !mixedProtected) {
+          !independentDomainTest && !composedIndependent && !scopedDisjoint && !mixedProtected && !isolatedFeature) {
         throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+      }
+      if (isolatedFeature) {
+        approvedDisjointBases.add(liveBaseSha);
+        console.log('CI_BASE_ADVANCE_REUSED: separate unclassified public feature; verified GitHub mergeability and full protected Compare');
       }
       if (mixedProtected) {
         approvedDisjointBases.add(liveBaseSha);
@@ -597,7 +615,12 @@ export async function verify(api,ctx,files,options={}) {
       approvedBaseChanges.add(liveBaseSha);
     }
   }
-  await verifyCurrentBase(pr);
+  // Postpone potentially stale protected-BASE authorization until the
+  // exact-HEAD macOS Media/MP4 specialist completes. An early BASE_ADVANCED
+  // failure triggers the owner auto-sync which CANCELS the still-running Mac
+  // job; two such loops struck #5093. Required Core and Specialist outcomes
+  // remain mandatory, and the final protected BASE check is unchanged.
+  // For non-media / skipped optional macOS runs, fail fast as before.
   let risk=classifyReleaseRisk(changed);
   const readSource=options.readSource ?? ((rev,path)=>execFileSync('git',['show',rev+':'+path],
     {encoding:'utf8',maxBuffer:1_000_000,stdio:['ignore','pipe','pipe']}));
@@ -640,6 +663,15 @@ export async function verify(api,ctx,files,options={}) {
   const mandala = WORKFLOW_PREFIX + 'holistic-support-mandala.yml';
   if (routed.expected.includes(mandala)) advisoryPaths.delete(mandala);
   const expected=routed.expected.filter(name=>!advisoryPaths.has(name) && !concurrencyAdvisory.has(name) && !selfTriggerAdvisory.has(name));
+  // A moving production SHA is not itself a failing PR. Wait for required
+  // exact-HEAD specialist evidence before considering any base-sync recovery.
+  // Earlier BASE_ADVANCED errors cancelled still-running browser/macOS work;
+  // extend the existing media safeguard to ALL real specialist owners.
+  // No required jobs => check the target immediately. After every real
+  // specialist finishes, the existing final protected base gate still runs.
+  const deferBaseUntilSpecialists = pinnedChangeRows && expected.length > 0;
+  if (!deferBaseUntilSpecialists) await verifyCurrentBase(pr);
+  else console.log('CI_BASE_CHECK_DEFERRED: preserve all required exact-HEAD specialists before production-base reconciliation');
   // BASE/HEAD rules enumerate applicable PR specialists. Only completed/pending
   // PR workflow runs proven non-applicable may be advisory. Same-HEAD push
   // failures and orphan/unassociated runs remain fail-closed: there is no
@@ -660,13 +692,14 @@ export async function verify(api,ctx,files,options={}) {
   const recovered = new Map();
   const probeTimes = new Map();
   const refreshTimes = new Map();
-  // A sensitive exact-base PR can become stale while independent specialists
-  // wait on a GitHub runner. Recheck without scheduling/retrying any workflow.
-  // This bounds wasted polling after a protected production promotion.
+  // For PRs without required specialists, retain the bounded freshness
+  // check. With active specialists, an early BASE_ADVANCED RED would trigger
+  // auto-sync and cancel their exact-HEAD evidence; verify the current target
+  // only after these specialist outcomes are terminal.
   const sensitiveFreshnessInterval = 90_000;
   let nextSensitiveFreshnessCheck = start + sensitiveFreshnessInterval;
   for (;;) {
-    if (requireCurrentBase && now() >= nextSensitiveFreshnessCheck) {
+    if (requireCurrentBase && !deferBaseUntilSpecialists && now() >= nextSensitiveFreshnessCheck) {
       // Fresh PR identity/HEAD and production ref; existing exception logic
       // still admits only exhaustively verified, disjoint BASE advances.
       await verifyCurrentBase(await api.pr(ctx.number));

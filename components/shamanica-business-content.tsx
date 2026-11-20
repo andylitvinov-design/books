@@ -30,7 +30,7 @@ const translations={
   concerns:["Неясна причина проблем","Сложно принять решение","Напряжение в команде","Не хватает ресурсов"],
   starts:["Письменный разбор","Личная консультация","Работа с командой","Другие методы поддержки"],
   featured:"Главная услуга",featureTitle:"Экспресс-диагностика ситуации",
-  featureDesc:"Быстрое прояснение проблемы, ключевых факторов и ближайших решений.",
+  featureDesc:"Ключевые факторы и ближайшие решения.",
   begin:"Начать",servicesTitle:"Ключевые услуги",resultTitle:"Два направления для вашего запроса",
   resultLead:"Подборка основана на ваших ответах. Выберите подходящий вариант.",
   restart:"Изменить ответы",
@@ -54,7 +54,7 @@ const translations={
   concerns:["The causes are unclear","A difficult decision","Team tensions","Not enough resources"],
   starts:["Written review","Personal consultation","Work with the team","Other support methods"],
   featured:"Featured service",featureTitle:"Quick business situation review",
-  featureDesc:"Clarify the challenge, key factors and next steps.",
+  featureDesc:"Key factors and the next steps.",
   begin:"Begin",servicesTitle:"Key services",resultTitle:"Two paths for your situation",
   resultLead:"Selected from your answers. Choose how to begin.",
   restart:"Change answers",
@@ -78,7 +78,7 @@ const translations={
   concerns:["Causas poco claras","Decisión difícil","Tensiones del equipo","Faltan recursos"],
   starts:["Análisis escrito","Consulta personal","Trabajo con el equipo","Otros métodos de apoyo"],
   featured:"Servicio principal",featureTitle:"Diagnóstico rápido de la situación",
-  featureDesc:"Aclara el problema, los factores clave y los próximos pasos.",
+  featureDesc:"Factores clave y próximos pasos.",
   begin:"Empezar",servicesTitle:"Servicios principales",resultTitle:"Dos opciones para tu situación",
   resultLead:"Selección basada en tus respuestas. Elige cómo empezar.",
   restart:"Cambiar respuestas",
@@ -121,7 +121,8 @@ export function ShamanicaBusinessContent({locale}:{locale:PublicLocale}){
  };
  return <div className={styles.root} data-shamanica-business>
   <section className={styles.hero} aria-labelledby="shamanica-business-title">
-   <Image src="/images/holistic-house/hero-olive-incense.webp" alt="" fill priority className={styles.heroImage} sizes="(max-width:640px) 100vw, 920px"/>
+   <Image src="/images/holistic-house/ideas-zen-landscape.svg" alt="" fill priority className={styles.heroImage} sizes="(max-width:640px) 100vw, 920px"/>
+   <Image src="/images/holistic-house/messenger-zen-stones.svg" alt="" width={240} height={156} unoptimized className={styles.heroStones}/>
    <div className={styles.heroCopy}>
     <h1 id="shamanica-business-title">{t.title}</h1>
     <p>{t.subtitle}</p>

@@ -59,6 +59,7 @@ export function SitewideIHelp(){
  const dialog=useRef<HTMLElement>(null);
  const closeButton=useRef<HTMLButtonElement>(null);
  const priorPath=useRef(pathname);
+ const businessShamanica=/^\/(?:ru|en|es)\/shamanica\/business\/?$/.test(pathname);
  // The video studio reports whether its ONE real Director drawer is open.
  // We do not mount a second copy of the video chatbot here.
  useEffect(()=>{
@@ -87,7 +88,7 @@ export function SitewideIHelp(){
      if(event.key==="Escape"){
        event.preventDefault();
        setOpen(false);
-       window.requestAnimationFrame(()=>launcher.current?.focus({preventScroll:true}));
+       window.requestAnimationFrame(()=>restoreHelpFocus());
        return;
      }
      if(event.key!=="Tab")return;
@@ -145,6 +146,16 @@ export function SitewideIHelp(){
    };
  },[open]);
 
+ // The business tab opens the one existing help dialog only on a user tap.
+ useEffect(()=>{
+  const onBusinessHelp=()=>show();
+  window.addEventListener("hh:open-ihelp",onBusinessHelp);
+  return ()=>window.removeEventListener("hh:open-ihelp",onBusinessHelp);
+ },[pathname,locale]);
+ function restoreHelpFocus(){
+  const trigger=document.querySelector<HTMLButtonElement>("[data-shamanica-ihelp-trigger]");
+  (trigger||launcher.current)?.focus({preventScroll:true});
+ }
  function chooseTopic(prompt:string){
    // An explicit chip fills the existing unsent composer; no network call or diagnosis.
    setQuickPrompt(previous=>({revision:(previous?.revision??0)+1,text:prompt}));
@@ -155,7 +166,7 @@ export function SitewideIHelp(){
    // Stop any ongoing browser narration when the user closes iHelp.
    window.dispatchEvent(new Event("hh:voice-companion-stop"));
    setOpen(false);
-   window.requestAnimationFrame(()=>launcher.current?.focus({preventScroll:true}));
+   window.requestAnimationFrame(()=>restoreHelpFocus());
  }
  function show(){
    // Video Studio already has an executable, single-instance AI Video Director.
@@ -198,7 +209,7 @@ export function SitewideIHelp(){
  // This route has its own visible Ali secretary chat; avoid an overlapping iHelp bubble.
  if(/^\/(?:ru|en|es)\/my-coach\/real\/[a-z0-9-]+\/?$/.test(pathname))return null;
  return <>
-   <button type="button" ref={launcher} className={styles.launcher}
+   <button type="button" ref={launcher} className={styles.launcher} hidden={businessShamanica}
      data-hh-ihelp-trigger aria-label={t.open} aria-haspopup="dialog"
      aria-controls={nativeVideoOpen?"hh-ihelp-video-director-dialog":"hh-ihelp-panel"}
      aria-expanded={open||nativeVideoOpen} onClick={show}>

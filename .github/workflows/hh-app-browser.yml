@@ -178,7 +178,7 @@ jobs:
     # A single fail-closed summary avoids two redundant runner allocations.
     needs: browser
     if: ${{ always() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     timeout-minutes: 2
     steps:
       - name: Require every browser and suite

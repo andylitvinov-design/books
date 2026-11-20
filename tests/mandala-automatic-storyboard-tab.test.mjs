@@ -157,7 +157,7 @@ test("Making Room for Love has six DIFFERENT action-near photographs, still expl
  assert.match(tab,/data-storyboard-reference-status/);
  assert.match(tab,/data-storyboard-reference-count/);
  assert.match(tab,/data-story-media-kind=\{photo\?"photo":shot\?"video":reference\?"reference":"missing"\}/);
- assert.match(tab,/data-storyboard-media-ready=\{manualFiveReady\|\|eligible\}/,
+ assert.match(tab,/data-storyboard-media-ready=\{manualFiveReady\|\|eligible\|\|photoAdaptationApplied\}/,
   "photo reference is NOT the licence, matched action or permission to generate MP4");
  assert.match(tab,/v3RequiresActionProof/);
  assert.doesNotMatch(tab,/onApply\(references|onApply\(storyboardPhotoReferences/,
@@ -172,4 +172,119 @@ test("preview references fail closed on unknown scenario/categories and people e
   categoryId:"love-relationships",shotCount:6,avoidImagery:["no people"]});
  assert.ok(withoutPeople.every(photo=>!photo||!photo.tags.some(tag=>
   /^(?:people|person|man|woman|women|men|couple|friend|hands|family|crowd|child|walking)$/.test(tag))));
+});
+
+
+test("real photograph reference remains separate from opt-in six-photo rendering authorization",()=>{
+ // A photo-reference label is not an exported MP4.
+ assert.match(tab,/storyboardPhotoReferences\(\{/);
+ assert.match(tab,/data-storyboard-reference-only/);
+ assert.match(tab,/data-storyboard-photo-reference-label/);
+ assert.match(tab,/onPhotoLoaded/);
+ assert.match(tab,/naturalWidth>=600&&img\.naturalHeight>=600/);
+ assert.match(tab,/onPhotoUnavailable/);
+ assert.match(tab,/const referencesDecoded=hasSixPhotoReferences/);
+ assert.match(tab,/const photoAdaptationApplied=Boolean\(hasSixPhotoReferences/);
+ assert.match(tab,/data-storyboard-apply-reference-photos/);
+ assert.match(tab,/disabled=\{disabled\|\|!referencesDecoded\}/);
+ assert.match(tab,/if\(!referencesDecoded\|\|references\.some\(photo=>!photo\|\|!isTrustedStoryPhoto\(photo\)\)\)return/);
+ assert.match(tab,/sourceMasterKey:photo!\.id/);
+ assert.match(tab,/startMs:index\*5000/);
+ assert.match(tab,/durationMs:5000,sourceDurationMs:5000/);
+ assert.match(tab,/depictedEventVerified:false as const/);
+ assert.match(tab,/if\(onApply\(photoShots,concept,storyKey/);
+ assert.match(tab,/data-storyboard-user-selected-photo-interpretation/);
+ assert.match(tab,/user_approved_symbolic_photo_montage/);
+ assert.match(tab,/data-reviewed-filmed-only=\{!proposalHasPhotos&&!photoAdaptationApplied\}/);
+ assert.match(tab,/\(!hasSixPhotoReferences\|\|photoAdaptationApplied\|\|eligible\)/);
+ assert.doesNotMatch(tab,/setAppliedStoryKey\(/,
+  "Story only proposes, while the existing trusted Studio onApply saves user intent");
+ // No automatic conversion on mount, no fabricated render or extra charge:
+ const photoFlow=tab.slice(tab.indexOf("data-storyboard-apply-reference-photos"),
+   tab.indexOf("data-storyboard-user-selected-photo-interpretation"));
+ assert.ok(photoFlow.includes("onClick={() =>")||photoFlow.includes("onClick={()=>"));
+ assert.doesNotMatch(photoFlow,/videoCreditRequest|fetch\(|navigator\.sendBeacon|window\.location=/);
+ for(const id of storyboardPhotoReferences({
+  scenarioId:"ready-relationship-s1",categoryId:"love-relationships",shotCount:6
+ }).map(photo=>photo.id)){
+  assert.ok(STORY_PHOTO_BY_ID.has(id),"only existing source-page-reviewed Pexels used");
+ }
+});
+
+test("six selected, actual decoded JPEGs may use original MP4 renderer in 9:16 or 16:9 only",()=>{
+ const source=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+ const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
+ assert.match(tab,/data-storyboard-photo-output-aspect/);
+ assert.match(tab,/const \[photoOutputAspect,setPhotoOutputAspect\]=useState<"portrait"\|"landscape">/);
+ assert.match(tab,/onClick=\{\(\)=>setPhotoOutputAspect\(format\)\}/);
+ assert.match(tab,/aspect===photoOutputAspect/);
+ assert.match(tab,/photoOutputAspect\)\)onChooseQuality\(true\)/);
+ assert.match(source,/if\(\(aspect!=="portrait"&&aspect!=="landscape"\)\|\|clipIds.length<4/);
+ assert.match(source,/return photo\? !isTrustedStoryPhoto\(photo\)\|\|/);
+ assert.match(source,/\(aspect!=="portrait"&&aspect!=="landscape"\)/);
+ assert.match(source,/\(aspect==="portrait"\|\|aspect==="landscape"\)&&/);
+ assert.match(source,/applyAutoFilm\(preset.id,duration,edit,outputAspect,true\)/);
+ assert.match(css,/\.storyPhotoAspectChoices\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+ assert.match(css,/\[aria-pressed="true"\]/);
+ assert.doesNotMatch(tab,/onApply\(references,/);
+ assert.match(tab,/depictedEventVerified:false as const/);
+});
+
+test("six photo references require explicit approval before quality navigation",()=>{
+ assert.match(tab,/const photoApprovalRequired=hasSixPhotoReferences&&durationSeconds===30&&!photoAdaptationApplied/);
+ assert.match(tab,/data-storyboard-photo-approval-required/);
+ assert.match(tab,/if\(photoApprovalRequired\)\{onChooseQuality\(false\);return;\}/);
+ const quality=studio.slice(studio.indexOf("onChooseQuality={sourceReady=>"),studio.indexOf("onOpenIdeas={()=>",studio.indexOf("onChooseQuality={sourceReady=>")));
+ assert.match(quality,/if\(!sourceReady\)\{/);
+ assert.match(quality,/data-storyboard-apply-reference-photos/);
+ const next=studio.slice(studio.indexOf("const continueMontageOrGenerate="),studio.indexOf("const continueToIdeas =",studio.indexOf("const continueMontageOrGenerate=")));
+ assert.match(next,/setMontagePanel\("promo"\)/);
+ assert.doesNotMatch(next,/data-storyboard-media-ready/,
+   "Navigation to Extra must remain available; only the actual encoder is blocked");
+ assert.match(studio,/const startFromHero=\(\)=>\{\s*if\(storySourcePendingRef\.current\)/);
+});
+
+test("unfinished Story source selection blocks direct Ready export across tab navigation",()=>{
+ assert.match(tab,/onApprovalRequiredChange\?:\(pending:boolean\)=>void/);
+ assert.match(tab,/const storyboardSourcesPending=!manualFiveReady&&!eligible&&!photoAdaptationApplied/);
+ assert.match(tab,/onApprovalRequiredChange\?\.\(storyboardSourcesPending\)/);
+ assert.match(studio,/const storySourcePendingRef=useRef\(false\)/);
+ assert.match(studio,/onApprovalRequiredChange=\{pending=>\{/);
+ assert.ok(studio.includes("const independentCatalogSource=Boolean(usingFreeFilmCompilation&&freeFilmSourcesListed&&"),
+   "a separately selected verified 4-MP4 film remains usable after visiting Story settings");
+ assert.ok(studio.includes("cinematicPlan?.shots.every(shot=>!STORY_PHOTO_BY_ID.has(shot.sceneId))"),
+   "unapproved photo Story media cannot masquerade as independent verified footage");
+ assert.match(studio,/else if\(!independentCatalogSource\)storySourcePendingRef\.current=true/);
+ assert.match(studio,/if\(!sourceReady\)\{\s*\/\/ A visitor[\s\S]*?storySourcePendingRef\.current=true;/);
+ assert.match(studio,/const createQuickVideo = \(\) => \{\s*if\(storySourcePendingRef\.current\)/);
+ assert.match(studio,/const startFromHero=\(\)=>\{\s*if\(storySourcePendingRef\.current\)/);
+ assert.match(studio,/storySourcePendingRef\.current=false; \/\/ New explicit Express recipe/);
+});
+
+test("Story visibly links chosen captions to the six real shots and opens the existing Text editor",()=>{
+ assert.match(tab,/const linkedPhraseCount=guides\.scenes\.filter/);
+ assert.match(tab,/data-storyboard-phrase-summary/);
+ assert.match(tab,/data-storyboard-has-phrase=\{Boolean\(sourcePhrase\)\}/);
+ assert.match(tab,/data-storyboard-scene-phrase data-storyboard-edit-phrase=\{index\+1\}/);
+ assert.match(tab,/onEditPhrase:\(phrase:string\)=>void/);
+ assert.match(tab,/onClick=\{\(\)=>onEditPhrase\(sourcePhrase\)\}/);
+ assert.match(tab,/<Pencil size=\{15\} aria-hidden="true"\/>/);
+ assert.match(studio,/onEditPhrase=\{phrase=>\{/);
+ assert.match(studio,/flushSync\(\(\)=>setMontagePanel\("text"\)\)/);
+ assert.match(studio,/querySelector<HTMLElement>\('\[data-video-montage-text\]'\)/);
+ assert.match(studio,/querySelector<HTMLButtonElement>\('\[data-video-idea-edit-button\]'\)\?\.click\(\)/);
+ assert.match(studio,/querySelector<HTMLInputElement>\('\[data-video-idea-edit\]'\)\?\.focus\(\)/);
+ const textPanel=studio.slice(studio.indexOf('data-video-montage-text hidden='),studio.indexOf('data-video-montage-text-tools'));
+ assert.match(textPanel,/<MandalaVideoIdeas/);
+ assert.match(textPanel,/onChange=\{setAffirmations\}/);
+ assert.match(css,/\.storyAutoPhraseEdit:focus-visible/);
+ assert.match(css,/\.storyAutoCard\[data-storyboard-has-phrase="true"\]/);
+ assert.match(css,/@media\(max-width:350px\)/);
+ const actualEditor=readFileSync(new URL("../components/mandala-video-ideas.tsx",import.meta.url),"utf8");
+ assert.match(actualEditor,/data-video-idea-phrase=\{index\}/);
+ assert.match(actualEditor,/data-video-idea-edit-button=\{index\}/);
+ assert.match(actualEditor,/data-video-idea-edit=\{index\}/);
+ // Opening Text does not render, charge or mutate phrases:
+ const callback=studio.slice(studio.indexOf("onEditPhrase={phrase=>{"),studio.indexOf("onApprovalRequiredChange={pending=>"));
+ assert.doesNotMatch(callback,/fetch\(|videoCreditRequest|createVideo\(|setAffirmations\(/);
 });
