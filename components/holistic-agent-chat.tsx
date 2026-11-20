@@ -1256,6 +1256,41 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       }
       return;
     }
+    // After the shortlist appears, a correction is still part of the same
+    // Sessions conversation. Do not send a new text to generic chat and lose
+    // the previously chosen topic merely because a list was displayed.
+    if(compact&&judgmentChoice===null&&!projectFlow&&sessionOffers.length>0&&
+      !isContentCreationIntent(text)&&!isVideoCreationIntent(text)&&!requiresProtectedReply(text,turnLocale)){
+      const intent=sessionSecretaryMessage(text,turnLocale);
+      if(intent.kind==="service"){
+        const corrected=messengerProject(turnLocale,"sessions").options.find(option=>
+          option.id===intent.serviceId&&option.kind==="link"&&
+          option.href?.startsWith("/")&&!option.href.startsWith("//"));
+        if(corrected){
+          setSessionOffers([corrected]);setPageHelpLink(null);
+          setDraft("");setChoices([]);setStatus("");
+          followTail.current=true;setNewBelow(false);
+          setMessages(prev=>[...prev,{role:"user" as const,text},
+            {role:"assistant" as const,text:intent.reply}].slice(-30));
+          return;
+        }
+      }
+      if(["stop","no_booking","topic","price","availability","confused","ambiguous"].includes(intent.kind)){
+        if(["stop","no_booking","topic"].includes(intent.kind)){
+          setSessionOffers([]);setPageHelpLink(null);
+        }else if((intent.kind==="price"||intent.kind==="availability")&&intent.serviceId){
+          const page=messengerProject(turnLocale,"sessions").options.find(option=>
+            option.id===intent.serviceId&&option.kind==="link"&&
+            option.href?.startsWith("/")&&!option.href.startsWith("//"));
+          if(page)setPageHelpLink({href:"/"+turnLocale+page.href,label:page.label});
+        }
+        setDraft("");setChoices([]);setStatus("");
+        followTail.current=true;setNewBelow(false);
+        setMessages(prev=>[...prev,{role:"user" as const,text},
+          {role:"assistant" as const,text:intent.reply}].slice(-30));
+        return;
+      }
+    }
     setEntryOpen(false);setContentStep(null);setProjectFlow(null);setPageHelpLink(null);
     setSessionStep(null);setSessionGoal(null);setSessionOffers([]);
     // Keep every user turn intact for server safety preflight (UI max 2,000).
