@@ -231,7 +231,8 @@ test('Video Studio and Hypnocorrection release branches run real browser and mac
   const mac = yaml.match(/voice-webkit-macos:\n\s*if: ([^\n]+)/)?.[1] || '';
   for (const branch of ['fix/video-', 'codex/perf-video-studio-', 'codex/hypno-third-workspace-']) {
     assert.ok(browser.includes(`startsWith(github.head_ref, '${branch}')`), `browser gate: ${branch}`);
-    assert.ok(mac.includes(`startsWith(github.head_ref, '${branch}')`), `macOS gate: ${branch}`);
+    assert.ok(mac.includes("needs.webkit_preflight.outputs.media_required == 'true'"),
+      'macOS uses actual tested media changes, never branch naming: '+branch);
   }
   assert.match(yaml, /node scripts\/verify-holistic-mandala-browser\.mjs/);
   assert.match(yaml, /ffprobe -version/);
