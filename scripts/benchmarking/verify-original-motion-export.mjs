@@ -200,6 +200,20 @@ try {
   await readyGenerate.waitFor({state:'visible',timeout:15000});
   if (engine === 'webkit') await readyGenerate.tap({timeout:30000});
   else await readyGenerate.click({timeout:30000});
+  // Verify the trusted gesture really started the selected Ready export.
+  // Before this guard a rejected Story handoff waited 150s for a Blob that
+  // could never exist. The actual encoder, file, auth and ffprobe checks below
+  // remain mandatory; no simulated media is accepted.
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  const afterGenerate=await page.evaluate(()=>({
+    workspace:document.querySelector('[data-mandala-free-video]')?.getAttribute('data-active-workspace')??null,
+    readyState:document.querySelector('[data-video-ready]')?.getAttribute('data-ready-state')??null,
+    selectedSources:document.querySelectorAll('[data-free-film-source]').length,
+  }));
+  if(afterGenerate.workspace!=='ready'){
+    console.error('HH_ORIGINAL_MOTION_READY_HANDOFF_REJECTED '+JSON.stringify({engine,...afterGenerate}));
+    throw Error('ORIGINAL_MOTION_TRUSTED_GENERATE_LEFT_READY');
+  }
   // Ready creates the actual film; guests cannot use direct Save.
   // Reuse the first-party encoded Blob and prove the login gate instead.
   let captured;
@@ -216,6 +230,8 @@ try {
       const clips=[...document.querySelectorAll('[data-free-film-source]')];
       return {
         resultMode:result?.getAttribute('data-video-result-mode')??null,
+        resultVisible:Boolean(result?.getClientRects().length&&!result?.hidden),
+        workspace:document.querySelector('[data-mandala-free-video]')?.getAttribute('data-active-workspace')??null,
         hasReady:Boolean(ready),readyView:ready?.getAttribute('data-ready-view')??null,
         renderedVideo:original instanceof HTMLVideoElement?{
           readyState:original.readyState,width:original.videoWidth,

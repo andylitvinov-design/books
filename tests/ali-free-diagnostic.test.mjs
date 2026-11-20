@@ -56,8 +56,8 @@ test('three gentle questions lead to review without an interrogation',()=>{
  let stage='goal',slots={},turns=[];
  const answers=['I want a clear path in my career',
    'I struggle with making decisions',
-   'My friend sometimes helps'];
- const progress=['challenge','support','ready'];
+   'Currently I am deciding between two offers'];
+ const progress=['challenge','situation','ready'];
  for(let i=0;i<answers.length;i++){
    const p=turn(answers[i],{stage,slots,turns});
    assert.equal(p.stage,progress[i]);
@@ -92,7 +92,7 @@ test('real first-time client can answer the numbered sample fields in one turn',
  assert.equal(p.slots.goal,'to understand my direction');
  assert.equal(p.slots.challenge,'uncertainty');
  assert.match(p.slots.situation,/negative events/);
- assert.equal(p.stage,'support','optional details are kept but do not trigger six more questions');
+ assert.equal(p.stage,'ready','the third required situation fact completes the short interview');
 });
 test('negative life events are kept as client situation, not a fictional goal',()=>{
  const first=turn('Currently I am going through lots of negative events in my life');
@@ -103,7 +103,7 @@ test('negative life events are kept as client situation, not a fictional goal',(
  const second=turn('I want to know where to go next',{stage:first.stage,slots:first.slots});
  assert.equal(second.stage,'challenge');
  const third=turn('Too many decisions',{stage:second.stage,slots:second.slots});
- assert.equal(third.stage,'support','known situation should not be asked again');
+ assert.equal(third.stage,'ready','known situation should not be asked again');
 });
 test('greetings, first-time uncertainty, referral and vague wording do not fill facts',()=>{
  for(const message of ['Hi','My happening life','I need help','Help please lol',
