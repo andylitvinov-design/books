@@ -1,0 +1,33 @@
+# Dedicated, bounded public-site audit. The existing 601-URL check remains separate.
+# Never crawl private client reports, user content, APIs or admin pages.
+[project]
+name = "holistic-house"
+domains = ["holistichouse.vercel.app"]
+
+[crawler]
+max_pages = 24
+concurrency = 2
+timeout_ms = 15000
+delay_ms = 300
+respect_robots = true
+include = []
+exclude = [
+  "/admin/**", "/api/**", "/document-preview/**",
+  "/en/app/**", "/ru/app/**", "/es/app/**",
+  "/en/client/**", "/ru/client/**", "/es/client/**",
+  "/en/report/**", "/ru/report/**", "/es/report/**",
+  "/en/prescriptions/**", "/ru/prescriptions/**", "/es/prescriptions/**"
+]
+drop_query_prefixes = ["utm_", "gclid", "fbclid"]
+
+# Existing public crawl and Lighthouse checks cover other resources.
+[external_links]
+enabled = false
+
+[ci]
+# Report all technical issues without breaking unrelated production builds.
+fail_under = 0
+
+[output]
+format = "json"
+save = false
