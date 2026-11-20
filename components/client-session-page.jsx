@@ -4,8 +4,6 @@ import { FileDown,FileText,Headphones,LockKeyhole,PlayCircle,Play,AudioLines,Vid
 import { SessionPrescriptionOverview } from './client-session-prescription'
 import { DaoStageDisclosure } from './dao-resource-stage'
 import { PublicSiteHeader } from './public-site-header'
-import { recommendationItemType } from '@/lib/documents/recommendation'
-import { GRANULES_GUIDE_ID, GRANULES_GUIDE_TRANSCRIPT_RU } from '@/lib/clients/shared-education-model'
 import { SaveClientSessionToAccount } from './save-client-session-to-account'
 import { SESSION_SAVE_COPY } from '@/lib/clients/session-save-copy'
 import { SessionExitSaveGuard } from './session-exit-save-guard'
@@ -134,7 +132,27 @@ export function ClientSessionVoiceMessage({session,selector,locale='en',mode='gu
     </div>
   </section>
 }
-export function ClientSessionPage({session,selector,locale='en',mode='guest',reportContent=null,recommendation=null,clientName='',appAvailable=true,savedId=null,sharedGuideReady=false,audioEmbedded=false}) {
+
+/** Render only library assets selected for this report; never expose raw storage URLs. */
+function ReportLibraryMaterial({item,session,selector,mode,locale,savedId,assetBase}) {
+  const ru=locale==='ru'
+  if(item.kind==='youtube')return <SessionYouTubePlayer title={item.title}
+    description={item.description} url={item.url} locale={locale}/>
+  if(item.kind==='image')return <figure className={styles.sessionPhotoCard}>
+    <a href={assetBase+encodeURIComponent(item.id)} target="_blank" rel="noopener noreferrer"
+      aria-label={ru?'Открыть фотографию':'Open full-size photo'}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={assetBase+encodeURIComponent(item.id)} alt={item.title} loading="lazy" decoding="async"/>
+    </a>
+    <figcaption>{item.title}</figcaption>
+    {item.description&&<p>{item.description}</p>}
+  </figure>
+  return <PrivatePlayer
+    item={{assetId:item.id,kind:item.kind,mime:item.mime,title:item.title,role:'library',transcript:''}}
+    session={session} mode={mode} selector={selector} locale={locale} savedId={savedId}/>
+}
+
+export function ClientSessionPage({session,selector,locale='en',mode='guest',reportContent=null,recommendation=null,clientName='',appAvailable=true,savedId=null,audioEmbedded=false}) {
   const ru=locale==='ru'
   const saveCopy=SESSION_SAVE_COPY[locale]||SESSION_SAVE_COPY.en
   const date=new Intl.DateTimeFormat(ru?'ru-RU':'en-CA',{dateStyle:'long',timeZone:'UTC'})
@@ -144,6 +162,11 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
   const practices=Array.isArray(plan.practices)?plan.practices:[]
   const resources=Array.isArray(plan.resources)?plan.resources:[]
   const libraryMaterials=Array.isArray(plan.materials)?plan.materials:[]
+  const trackPlacements=plan.materialPlacements||{}
+  const mediaTrack=item=>['youtube','video','audio'].includes(item.kind)
+  const openingMaterials=libraryMaterials.filter(item=>mediaTrack(item)&&trackPlacements[item.id]==='opening')
+  const closingMaterials=libraryMaterials.filter(item=>mediaTrack(item)&&trackPlacements[item.id]==='closing')
+  const inlineMaterials=libraryMaterials.filter(item=>!mediaTrack(item)||!['opening','closing'].includes(trackPlacements[item.id]))
   const youtubeResources=resources.filter(resource=>resource.kind==='youtube')
   const topYoutubeResources=youtubeResources.filter(resource=>resource.placement!=='materials')
   const materialsYoutubeResources=youtubeResources.filter(resource=>resource.placement==='materials')
@@ -164,8 +187,6 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
   const isGeneralReport=recommendation?.recommendationType==='general'
   const hasRecommendation=Boolean(isGeneralReport||recommendation?.items?.length)
   const recommendedTests=Array.isArray(recommendation?.recommendedTests)?recommendation.recommendedTests:[]
-  const hasHomeopathyRecommendation=hasRecommendation&&recommendation.items.some(item=>
-    recommendationItemType(item,recommendation.recommendationType)==='homeopathy')
   const pdfPath=mode==='owner'?'/admin/api/documents/'+(session.report?.id||'')+'/pdf?locale='+locale:
     mode==='saved'?'/api/app/saved-sessions/'+savedId+'/pdf?locale='+locale:
     mode==='guest'?'/api/client-session-viewer/'+selector+'/pdf?locale='+locale:
@@ -198,6 +219,17 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
       {mode==='owner'&&<span className={styles.privateLabel}>{ru?'Предпросмотр специалиста':'Practitioner preview'}</span>}
     </header>
     {mode==='guest'&&<ClientSessionEngagement selector={selector} locale={locale}/>}
+    {openingMaterials.length>0&&<section id="session-opening-tracks" className={styles.clientSection+' '+styles.reportMaterialsSection}
+      aria-label={ru?'Видео и аудио в начале отчёта':'Opening report tracks'}>
+      <header className={styles.sectionHeader}>
+        <span className={styles.sectionIcon}><PlayCircle size={20} aria-hidden="true"/></span>
+        <div><span className={styles.sectionKicker}>{ru?'В НАЧАЛЕ ОТЧЁТА':'REPORT INTRO'}</span>
+          <h2>{ru?'Выбранные видео и аудио':'Selected video and audio'}</h2></div>
+      </header>
+      <div className={styles.reportLibraryList}>{openingMaterials.map(item=><ReportLibraryMaterial key={item.id}
+        item={item} session={session} mode={mode} selector={selector} locale={locale}
+        savedId={savedId} assetBase={assetBase}/>)}</div>
+    </section>}
     {(videoMedia.length>0||topYoutubeResources.length>0)&&
       <section id="session-video" className={styles.clientSection+' '+styles.videoFirstSection}
         aria-label={ru?'Видео к вашей консультации':'Videos for your consultation'}>
@@ -305,30 +337,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
       {!hasFullReport&&hasRecommendation&&<SessionPrescriptionOverview recommendation={recommendation} locale={locale} part="extra"/>}
     </section>}
 
-    {hasHomeopathyRecommendation&&sharedGuideReady&&
-      <section id="session-granules-guide" className={styles.clientSection+' '+styles.sharedEducationSection}
-        aria-labelledby="session-granules-guide-title">
-        <header className={styles.sectionHeader}>
-          <span className={styles.sectionIcon}><Video size={21}/></span>
-          <div><span className={styles.sectionKicker}>{ru?'ПОЛЕЗНО ПОСЛЕ КОНСУЛЬТАЦИИ':'AFTER YOUR CONSULTATION'}</span>
-            <h2 id="session-granules-guide-title">{ru?'Видео: сколько гранул гомеопатии принимать?':
-              'Video: How many homeopathic pellets?'}</h2></div>
-        </header>
-        <p className={styles.sectionIntro}>{ru?
-          'Короткое общее объяснение от Андрея Литвинова. Ваша индивидуальная схема указана выше в отчёте.':
-          'A short explanation from Andrey Litvinov, in Russian. Your personal instructions are in the report above.'}</p>
-        <div className={styles.mediaList}>
-          <PrivatePlayer item={{
-            assetId:GRANULES_GUIDE_ID,kind:'video',role:'education',
-            title:ru?'Сколько гранул принимать?':'How many pellets? (Russian audio)',
-            transcript:GRANULES_GUIDE_TRANSCRIPT_RU,
-          }} session={session} mode={mode} selector={selector} locale={locale} savedId={savedId}/>
-        </div>
-        <p className={styles.sharedGuideCaution}>{ru?
-          'Сравнения количества гранул в видео — личные наблюдения, а не научно подтверждённая зависимость эффекта от дозы. Не меняйте назначение по этому ролику и следуйте рекомендациям в вашем отчёте.':
-          'The video’s comparisons are personal impressions and do not prove that more pellets have a stronger effect. Do not change your amount based on this video; follow your individual written instructions.'}</p>
-      </section>}
-
+    {/* Homeopathy educational videos are opt-in library choices, never automatic attachments. */}
 
     {(hasFullReport||hasMaterials)&&<section id="session-resources"
       className={styles.clientSection+' '+styles.reportMaterialsSection}
@@ -367,24 +376,10 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
           {item.description&&<small>{item.description}</small>}</div>
         <ExternalLink size={17} aria-hidden="true"/>
       </a>)}
-      {libraryMaterials.length>0&&<div className={styles.reportLibraryList}>
-        {libraryMaterials.map(item=>item.kind==='youtube'
-          ?<SessionYouTubePlayer key={item.id} title={item.title} description={item.description}
-            url={item.url} locale={locale}/>
-          :item.kind==='image'
-            ?<figure className={styles.sessionPhotoCard} key={item.id}>
-              <a href={assetBase+encodeURIComponent(item.id)} target="_blank"
-                rel="noopener noreferrer" aria-label={ru?'Открыть фотографию в полном размере':'Open full-size photo'}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={assetBase+encodeURIComponent(item.id)} alt={item.title}
-                  loading="lazy" decoding="async"/>
-              </a>
-              <figcaption>{item.title}</figcaption>
-              {item.description&&<p>{item.description}</p>}
-            </figure>
-            :<PrivatePlayer key={item.id}
-              item={{assetId:item.id,kind:item.kind,mime:item.mime,title:item.title,role:'library',transcript:''}}
-              session={session} mode={mode} selector={selector} locale={locale} savedId={savedId}/>)}
+      {inlineMaterials.length>0&&<div className={styles.reportLibraryList}>
+        {inlineMaterials.map(item=><ReportLibraryMaterial key={item.id}
+          item={item} session={session} mode={mode} selector={selector} locale={locale}
+          savedId={savedId} assetBase={assetBase}/>)}
       </div>}
       {!hasMaterials&&<p className={styles.reportMaterialsEmpty}>
         {ru?'Дополнительные материалы пока не выбраны.':'No additional materials have been selected yet.'}</p>}
@@ -482,8 +477,9 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
           <h2>{ru?'Скачать полный отчёт':'Keep your full report'}</h2></div>
       </header>
       <div className={styles.reportPanel}>
-        <p>{ru?'Все назначения и дополнительные пояснения сохранены в оригинальном PDF.':
-          'Your original PDF contains the complete recommendations and additional details.'}</p>
+        <p>{ru?(isGeneralReport?'В PDF сохранены анализ и персональные рекомендации.':'Все назначения и дополнительные пояснения сохранены в оригинальном PDF.'):
+          (isGeneralReport?'The original PDF contains the session analysis and personal recommendations.':
+            'Your original PDF contains the complete recommendations and additional details.')}</p>
         <div className={styles.reportPdfActions}>
           <a href={pdfPath+'&preview=1&layout=a4'} data-hh-engagement-action="pdf_preview" className={styles.reportPdfPreviewButton}
             target="_blank" rel="noopener noreferrer">
@@ -496,6 +492,18 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
           </a>
         </div>
       </div>
+    </section>}
+
+    {closingMaterials.length>0&&<section id="session-closing-tracks" className={styles.clientSection+' '+styles.reportMaterialsSection}
+      aria-label={ru?'Видео и аудио в конце отчёта':'Closing report tracks'}>
+      <header className={styles.sectionHeader}>
+        <span className={styles.sectionIcon}><PlayCircle size={20} aria-hidden="true"/></span>
+        <div><span className={styles.sectionKicker}>{ru?'В ЗАВЕРШЕНИЕ':'TO FINISH'}</span>
+          <h2>{ru?'Выбранные видео и аудио':'Selected video and audio'}</h2></div>
+      </header>
+      <div className={styles.reportLibraryList}>{closingMaterials.map(item=><ReportLibraryMaterial key={item.id}
+        item={item} session={session} mode={mode} selector={selector} locale={locale}
+        savedId={savedId} assetBase={assetBase}/>)}</div>
     </section>}
 
     <footer className={styles.clientFooter}>

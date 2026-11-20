@@ -3025,3 +3025,14 @@
     padding: 9px 8px;
   }
 }
+
+/* Existing personal recordings can be detached from a report, without deleting storage. */
+.ownerSelectedMediaRow{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
+  gap:9px;padding:11px 13px;margin:8px 0;border:1px solid #d8e5e1;border-radius:12px;background:#fff}
+.ownerSelectedMediaRow>span{display:grid;gap:3px;min-width:0;flex:1;color:#264b52;font-size:15px}
+.ownerSelectedMediaRow strong{overflow-wrap:anywhere}
+.ownerSelectedMediaRow small{color:#637b7d;font-size:12px}
+.ownerSelectedMediaRow button{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:9px 13px;
+  color:#843e39;background:#fff9f7;border:1px solid #e7c9c2;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer}
+.ownerSelectedMediaRow button:disabled{opacity:.5;cursor:not-allowed}
+.ownerSelectedMediaRow button:focus-visible{outline:3px solid #41968c;outline-offset:2px}

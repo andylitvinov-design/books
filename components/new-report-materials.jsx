@@ -10,6 +10,7 @@ import styles from './client-session.module.css'
 export function NewReportMaterials({ locale = 'en' }) {
   const ru = locale === 'ru'
   const [selectedIds, setSelectedIds] = useState([])
+  const [placements, setPlacements] = useState({})
   return <section id="report-video-materials-editor"
     className={styles.ownerReportMaterials + ' consultation-new-materials'}
     aria-labelledby="new-report-materials-title">
@@ -18,7 +19,7 @@ export function NewReportMaterials({ locale = 'en' }) {
       <div>
         <span className={styles.eyebrow}>{ru ? 'КОНСТРУКТОР ОТЧЁТА' : 'REPORT BUILDER'}</span>
         <h2 id="new-report-materials-title">{ru ? 'Материалы из библиотеки' : 'Materials from library'}</h2>
-        <p>{ru ? 'Выберите видео, фото и материалы для этого отчёта.' : 'Choose reusable videos, photos and resources for this report.'}</p>
+        <p>{ru ? 'Добавляйте и убирайте видео и аудиотреки, выбирайте порядок и место показа.' : 'Add or remove videos and audio tracks. Choose their order and placement.'}</p>
       </div>
       <span className={styles.ownerMaterialsCount}>{ru ? 'Выбрано' : 'Selected'}: {selectedIds.length}</span>
     </div>
@@ -29,7 +30,10 @@ export function NewReportMaterials({ locale = 'en' }) {
     </div>
     <input type="hidden" form="consultation-report-form" name="materialIdsJson"
       value={JSON.stringify(selectedIds)} readOnly />
-    <SessionMaterialPicker locale={locale} selectedIds={selectedIds} onChange={setSelectedIds} />
+    <input type="hidden" form="consultation-report-form" name="materialPlacementsJson"
+      value={JSON.stringify(placements)} readOnly />
+    <SessionMaterialPicker locale={locale} selectedIds={selectedIds} placements={placements}
+      onChange={(ids,nextPlacements)=>{setSelectedIds(ids);setPlacements(nextPlacements)}} />
     <p className="consultation-new-materials-help">
       {ru ? 'Новое общее видео сначала сохраните в библиотеке мастера.' : 'Save a new reusable video to the practitioner library first.'}
       {' '}<a className="consultation-new-materials-link" href="/admin/materials"
