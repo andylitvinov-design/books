@@ -4,7 +4,7 @@ import {forwardRef,useEffect,useImperativeHandle,useRef,useState} from 'react'
 import {Mic,Play,Volume2,Square} from 'lucide-react'
 import styles from './my-coach-speech-loop.module.css'
 import {
-  GeminiLivePcmPlayer,GeminiLivePcmResampler,
+  GeminiLivePcmPlayer,GeminiLivePcmResampler,GeminiLiveBargeGate,
   geminiLiveAudioRms,geminiLiveSocketUrl,geminiLiveSetupMessage,
   geminiLivePcmMessage,geminiLiveTextMessage,readGeminiLiveServerMessage,
   appendGeminiLiveTranscript,
@@ -105,6 +105,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       r.interrupted=true
       // Stop playback instantly, before server VAD/interrupt reaches Safari.
       r.player.stop()
+      r.audioGate.interrupt()
       r.speaking=false
       propsRef.current.onInterrupted?.(r.outputText)
       r.outputText=''
@@ -171,11 +172,13 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(!r.ready)return
     if(frame.interrupted){
       interrupt()
+      r.audioGate.accept(frame) // Gemini acknowledged the cut; flush queued network audio.
       if(r.outputText)commitOutput(r)
       r.interrupted=false
       phaseChange('listening')
       return
     }
+    const allowAudio=r.audioGate.accept(frame)
     if(frame.input||frame.interim){
       const value=frame.input||frame.interim
       r.inputText=appendGeminiLiveTranscript(r.inputText,value)
@@ -188,11 +191,20 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     }
     if(frame.audio?.length){
       if(r.inputText)commitInput(r)
-      r.speaking=true
-      for(const part of frame.audio){
-        try{r.player.append(part)}catch{notify(t.failure)}
+      if(allowAudio){
+        let queued=false
+        for(const part of frame.audio){
+          try{queued=r.player.append(part)||queued}catch{notify(t.failure)}
+        }
+        if(queued){
+          r.speaking=true
+          phaseChange('speaking')
+        }else{
+          // An iOS AudioContext can silently suspend during an async handshake.
+          // Never claim speech was audible when no chunk was scheduled.
+          notify(t.failure);stop();return
+        }
       }
-      phaseChange('speaking')
     }
     if(frame.turnComplete){
       if(r.inputText)commitInput(r)
@@ -347,7 +359,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       speaking:false,interrupted:false,bargeFrames:0,resumeHandle:null,
       reconnects:0,voiceName:p.voiceName,locale:p.locale,personaId:p.personaId,
       settings:p.settings,abort:new AbortController(),timer:null,reconnectTimer:null,
-      resampler:new GeminiLivePcmResampler(context.sampleRate)}
+      resampler:new GeminiLivePcmResampler(context.sampleRate),
+      audioGate:new GeminiLiveBargeGate()}
     r.player=new GeminiLivePcmPlayer(context,{
       onStart:()=>{if(!r.ended)phaseChange('speaking')},
       onEnd:()=>{if(!r.ended){r.speaking=false;phaseChange('listening')}},

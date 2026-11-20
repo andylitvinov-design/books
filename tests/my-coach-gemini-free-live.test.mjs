@@ -5,7 +5,7 @@ import {GEMINI_FREE_LIVE_MODEL,GEMINI_FREE_LIVE_MAX_SECONDS,geminiFreeLiveConfig
  normalizeGeminiFreeLiveStart,geminiFreeLiveSetup,issueGeminiFreeLiveToken,
  geminiFreeLiveCheckpoint} from '../lib/coaching/gemini-live-free.mjs'
 import {GEMINI_LIVE_WEBSOCKET,GEMINI_LIVE_INPUT_RATE,GEMINI_LIVE_OUTPUT_RATE,
- GeminiLivePcmPlayer,GeminiLivePcmResampler,geminiLiveSocketUrl,
+ GeminiLivePcmPlayer,GeminiLivePcmResampler,GeminiLiveBargeGate,geminiLiveSocketUrl,
  geminiLiveSetupMessage,geminiLivePcmMessage,geminiLiveTextMessage,
  base64ToPcmFloats,bytesToBase64,readGeminiLiveServerMessage,
  appendGeminiLiveTranscript} from '../lib/coaching/gemini-live-transport.mjs'
@@ -145,6 +145,24 @@ test('live transcription, goAway, speaker interruption and bounded packet parsin
  assert.equal(appendGeminiLiveTranscript('Добрый','Добрый день'),'Добрый день')
  assert.throws(()=>readGeminiLiveServerMessage('{not JSON'))
 })
+test('local interruption rejects stale PCM even if Google buffers old chunks',()=>{
+ const gate=new GeminiLiveBargeGate()
+ assert.equal(gate.accept({audio:['first']}),true)
+ gate.interrupt()
+ assert.equal(gate.accept({audio:['stale-one']}),false)
+ assert.equal(gate.accept({audio:['stale-two']}),false)
+ assert.equal(gate.accept({interrupted:true,audio:['stale-ack']}),false)
+ assert.equal(gate.accept({audio:['new-turn']}),true)
+ gate.interrupt()
+ assert.equal(gate.accept({audio:['stale-three'],turnComplete:true}),false)
+ assert.equal(gate.accept({audio:['next-after-completion']}),true)
+ const component=load('components/my-coach-gemini-live.jsx')
+ assert.match(component,/r\.audioGate\.interrupt\(\)/)
+ assert.match(component,/const allowAudio=r\.audioGate\.accept\(frame\)/)
+ assert.match(component,/if\(allowAudio\)/)
+ assert.match(component,/if\(queued\)/)
+})
+
 test('24k output stops immediately and is not marked complete after barge-in',()=>{
  let started=0,stopped=0,disconnected=0,ended=0
  const ctx={state:'running',currentTime:0,destination:{},
