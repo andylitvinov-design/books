@@ -333,8 +333,8 @@ async function verifyWorkspaceHydration(browser,locale){
     await goalTab.click();
     await expect(goalTab).toHaveAttribute("aria-pressed","true");
     const goalQuiz=page.locator('[data-video-goal-quiz-audience]');
-    // Returning from Ideas preserves the completed Self quiz at step 3.
-    // Use the actual Back buttons to restore the visible Life/Work picker.
+    // Returning from Ideas keeps the completed Self quiz at step 3. Navigate
+    // back through its real buttons before asserting step-1 Life/Work controls.
     const backGoal=page.locator('[data-video-goal-quiz-back]');
     for(let step=0;step<2&&await backGoal.count();step++)await backGoal.click();
     await expect(page.locator('[data-video-quick-scope]')).toHaveCount(2);
@@ -406,9 +406,13 @@ async function verifyWorkspaceHydration(browser,locale){
     const birthday=page.locator('[data-auto-video-recipient-occasion="birthday"]');
     await birthday.click();
     await expect(birthday).toHaveAttribute("aria-pressed","true");
-    // Recipient mode hides the legacy footer. Test the actual, visible Goal CTA
-    // that calls the same guarded continueToIdeas handler without bypassing it.
+    // Recipient choices can move the shared director's focus. Return via the
+    // real visible Goal rail before using its in-panel Continue button.
+    await goalTab.click();
     await expect(studio).toHaveAttribute("data-active-workspace","video");
+    // For Others, the native compact Goal CTA is the visible navigation entry.
+    // The legacy footer Continue button intentionally stays hidden in that mode.
+    // Exercise the actual clicked handler rather than unveiling hidden controls.
     await expect(continueToIdeas).toBeHidden();
     const recipientCreate=page.locator('[data-video-goal-create-cta]');
     await expect(recipientCreate).toBeVisible({timeout:15000});
@@ -844,9 +848,12 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await backQuiz.click();
       await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","3");
       await nextQuiz.click();
+      await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","4",{timeout:15000});
+      await expect(firstNameInput).toBeVisible();
       await expect(firstNameInput).toHaveValue(preferredName);
+      await expect(nextQuiz).toBeEnabled();
       await nextQuiz.click();
-      await expect(conceptTab).toHaveAttribute("aria-pressed","true");
+      await expect(conceptTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
       await expect(phrases.locator("[data-video-ideas-concept-panel]")).toBeVisible();
       await personalTab.click();
       const advancedText=phrases.locator('[data-video-phrase-audio-shortcut]');

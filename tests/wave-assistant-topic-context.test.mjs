@@ -10,7 +10,7 @@ const history=[
   {role:"user",text:"Поговорим?"},
   {role:"assistant",text:"Конечно, давайте поговорим 🌿 Я слушаю. О чём вам хочется поговорить?"}
 ];
-test("screenshot regression: third turn 'О тебе' gets a Ali answer, not a generic intake question",()=>{
+test("screenshot regression: third turn 'О тебе' gets an Ali answer, not a generic intake question",()=>{
  const parsed=understandConversationTurn({message:"О тебе",locale:"ru",history});
  assert.equal(parsed.act,"small_talk");assert.equal(parsed.evidence,"explicit_assistant_topic");
  assert.match(parsed.replyFallback,/Я Ali/);assert.doesNotMatch(parsed.replyFallback,/сосредоточиться|сначала|проблема|цель/iu);

@@ -14,6 +14,7 @@ test('four portrait choices: two male and two female with distinct preapproved v
  assert.equal(isAliPersonaId('bogus'),false)
  assert.equal(isAliPersonaId('mira'),true)
  assert.equal(ALI_PERSONA_STORAGE_KEY,'hh:ai-chat-persona-v1')
+ assert.equal(getAliPersona('alex').name.ru,'Ali','public RU assistant name is always Latin Ali')
  for(const persona of ALI_PERSONAS){
   assert.ok(existsSync(new URL('../public'+persona.image,import.meta.url)),persona.image)
   for(const locale of ['ru','en','es']){

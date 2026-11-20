@@ -242,7 +242,9 @@ test('Video browser: avoid all unrelated route edits while retaining actual vide
   const trigger = parsePrTrigger(yaml, 'site-video-browser.yml');
   assert.equal(trigger.branches.includes('codex/public-book-library'), true);
   assert.equal(matchesTrigger(trigger, ['app/[locale]/app/page.tsx']), false);
-  assert.equal(matchesTrigger(trigger, ['app/[locale]/services/alchemy-of-soul/page.tsx']), true);
+  assert.equal(matchesTrigger(trigger, ['app/es/services/page.tsx']), false);
+  assert.equal(matchesTrigger(trigger, ['app/api/app/unrelated/route.js']), false);
+  assert.equal(matchesTrigger(trigger, ['app/[locale]/services/alchemy-of-soul/page.tsx']), false);
   assert.equal(matchesTrigger(trigger, ['app/[locale]/about/page.tsx']), true);
   assert.equal(matchesTrigger(trigger, ['components/site-video-player.tsx']), true);
   assert.equal(matchesTrigger(trigger, ['app/page.tsx']), true);
