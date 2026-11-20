@@ -101,3 +101,13 @@ test('in-session mobile controls preserve coach portrait and wire real Basic/Pro
   assert.match(css,/\.modeConsentPanel/)
   assert.match(css,/@media\(max-width:355px\)/)
 })
+
+
+test('Summary preserves a pre-existing safety pause and Free consent never impersonates Paid',()=>{
+  const ui=read('components/my-coach-live-dialogue.jsx')
+  assert.match(ui,/setSummaryWasPaused\(paused\)/)
+  assert.match(ui,/setPaused\(summaryWasPaused\)/)
+  assert.doesNotMatch(ui,/function resumeFromSummary\(\)\{[^}]*setPaused\(false\)/)
+  assert.ok(ui.includes("{coachEngine==='gemini_free'&&(!geminiEngineReady"),'Free-specific disclosure')
+  assert.ok(ui.includes("coachEngine==='gemini_paid'"),'Paid remains separately consent-gated')
+})

@@ -184,6 +184,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [draft,setDraft]=useState('')
   const [coachProfileOpen,setCoachProfileOpen]=useState(false)
   const [summaryOpen,setSummaryOpen]=useState(false)
+  const [summaryWasPaused,setSummaryWasPaused]=useState(false)
   const [summaryInterrupted,setSummaryInterrupted]=useState(false)
   const [summaryError,setSummaryError]=useState('')
   const [modeNotice,setModeNotice]=useState('')
@@ -618,6 +619,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   // available local PDF renderer writes the actual transcript, without a new
   // server route or pretending that an unfinished response was delivered.
   function openSessionSummary(){
+    setSummaryWasPaused(paused) // A safety/boundary stop must survive Resume.
     setSummaryInterrupted(Boolean(pending.current))
     speechRef.current?.stop?.()
     replayControllerRef.current?.abort()
@@ -637,7 +639,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   function resumeFromSummary(){
     setSummaryOpen(false)
     setSummaryInterrupted(false)
-    setPaused(false)
+    setPaused(summaryWasPaused) // Never bypass a protective pause by opening Summary.
   }
   function exportSessionSummary(){
     try{
@@ -1043,7 +1045,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         </button>
       </div>
       {modeNotice&&<p className={styles.modeNotice} role="status" data-coach-mode-notice>{modeNotice}</p>}
-      {selectedGeminiEngine&&(!geminiEngineReady||(geminiVoiceTier==='gemini_tts_free'&&!geminiVoiceReady))&&
+      {coachEngine==='gemini_free'&&(!geminiEngineReady||(geminiVoiceTier==='gemini_tts_free'&&!geminiVoiceReady))&&
         <div className={styles.modeConsentPanel} role="group" data-coach-pro-consent
           aria-label={lang==='ru'?'Разрешения режима Pro':lang==='es'?'Permisos del modo Pro':'Pro mode consent'}>
           <strong>Pro · Gemini Free</strong>
