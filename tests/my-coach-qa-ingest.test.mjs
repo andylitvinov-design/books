@@ -6,6 +6,7 @@ import {MY_COACH_QA_LEDGER_VERSION,MY_COACH_QA_CONSENT_VERSION,
 import {COACH_METHOD_INFORMATION,COACH_INFORMATION_PERSONA_METHODS,
   COACH_INFORMATION_COVERAGE_VERSION} from '../lib/coaching/coach-information-coverage.mjs'
 const id='a1222222-3333-4444-8555-666666666666'
+const verified=rows=>rows.map(row=>({...row,verified_turn_observed:true}))
 const consent={action:'start',sessionId:id,personaId:'mira',locale:'ru',consent:true,
   consentVersion:MY_COACH_QA_CONSENT_VERSION}
 const audit=(personaId='mira',methodId='grow')=>({version:COACH_INFORMATION_COVERAGE_VERSION,
@@ -49,7 +50,7 @@ test('untrusted/partial/reshuffled audit cannot pass as verified server input',(
 
 test('small cohorts hide all sensitive breakdowns',()=>{
   const rows=Array.from({length:19},()=>({persona_id:'mira',method_id:'grow',locale:'en',status:'client_stopped'}))
-  const results=summarizeMyCoachQaCohort(rows)
+  const results=summarizeMyCoachQaCohort(verified(rows))
   assert.equal(results[0].observed,null)
   assert.equal(results[0].suppressed,true)
   assert.equal(results[0].explicitStopPercent,undefined)
@@ -61,7 +62,7 @@ test('unknown exits are not called abandonment, Summary is not success',()=>{
     ...Array.from({length:4},()=>({persona_id:'mira',method_id:'grow',locale:'en',status:'summary_opened'})),
     ...Array.from({length:3},()=>({persona_id:'mira',method_id:'grow',locale:'en',status:'client_stopped'})),
     {persona_id:'mira',method_id:'grow',locale:'en',status:'technical_reported'}]
-  const results=summarizeMyCoachQaCohort(rows)
+  const results=summarizeMyCoachQaCohort(verified(rows))
   assert.equal(results[0].comparisonReady,true)
   assert.equal(results[0].summaryOpenedPercent,20)
   assert.equal(results[0].explicitStopPercent,15)
@@ -76,7 +77,7 @@ test('validated field statuses aggregate as counts without quotations',()=>{
   const fields=distillServerCoachEvidence(audit(),{personaId:'mira',methodId:'grow'})
   const rows=Array.from({length:20},()=>({persona_id:'mira',method_id:'grow',locale:'ru',
     status:'summary_opened',evidence:fields}))
-  const group=summarizeMyCoachQaCohort(rows)[0]
+  const group=summarizeMyCoachQaCohort(verified(rows))[0]
   assert.equal(group.coverageObservedCount,20)
   assert.equal(group.fields.length,6)
   assert.equal(group.fields.every(x=>x.supported===20),true)
@@ -89,8 +90,21 @@ test('algorithm versions stay separate; no comparisons across upgrades',()=>{
     status:'summary_opened',algorithm_version:'director-v4'}))
   const b=Array.from({length:20},()=>({persona_id:'alex',method_id:'tgrow',locale:'en',
     status:'client_stopped',algorithm_version:'director-v5'}))
-  const groups=summarizeMyCoachQaCohort([...a,...b])
+  const groups=summarizeMyCoachQaCohort(verified([...a,...b]))
   assert.equal(groups.length,2)
   assert.deepEqual(groups.map(x=>x.algorithmVersion),['director-v4','director-v5'])
   assert.deepEqual(groups.map(x=>x.summaryOpenedPercent),[100,0])
+})
+
+
+test('fake consented starts without a server turn cannot influence coach comparisons',()=>{
+  const fake=Array.from({length:50},()=>({persona_id:'mira',method_id:'grow',
+    locale:'ru',status:'summary_opened',verified_turn_observed:false}))
+  assert.deepEqual(summarizeMyCoachQaCohort(fake),[])
+  const real=verified(Array.from({length:20},()=>({persona_id:'mira',method_id:'grow',
+    locale:'ru',status:'summary_opened'})))
+  const mixed=summarizeMyCoachQaCohort([...real,...fake])
+  assert.equal(mixed.length,1)
+  assert.equal(mixed[0].observed,20)
+  assert.equal(mixed[0].summaryOpenedPercent,100)
 })

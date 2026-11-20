@@ -53,5 +53,13 @@ test('admin must set transaction-scoped guarded predicate only after auth on pag
   assert.match(repo,/set_config\('hh\.my_coach_qa_admin','owner_verified',true\)/)
   assert.match(repo,/\},\{server:true\}\)/)
   assert.match(repo,/summarizeMyCoachQaCohort\(result.rows\)/)
+  assert.match(repo,/verified_turn_observed=true/)
   assert.match(page,/Качество коучинга/)
+})
+
+test('admin CSS module scopes semantic table selectors under a local class',()=>{
+  assert.match(css,/\.tableScroll table\{/)
+  assert.match(css,/\.tableScroll th,\.tableScroll td\{/)
+  assert.match(css,/\.tableScroll thead th\{/)
+  assert.doesNotMatch(css,/(?:^|})\s*(?:table|thead|tbody|th|td|tr)\s*(?:\{|,)/m)
 })

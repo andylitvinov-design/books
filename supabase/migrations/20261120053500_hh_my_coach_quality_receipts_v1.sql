@@ -17,6 +17,7 @@ create table if not exists app_private.my_coach_qa_sessions (
   evidence jsonb check (evidence is null or
     (jsonb_typeof(evidence)='array' and jsonb_array_length(evidence)=6)),
   evidence_observed_at timestamptz,
+  verified_turn_observed boolean not null default false,
   updated_at timestamptz not null default now(),
   primary key(account_id,session_id),
   check ((status='in_progress' and status_at is null) or

@@ -38,7 +38,13 @@ new LIVE status from the presence of this code.
   RLS + FORCE RLS + no grants to `anon`/`authenticated`/`hh_app_inbox`, with
   account erasure cascade. An owner-only server page needs a separately
   verified admin session to activate its transaction-scoped read predicate.
-- Every group requires >=20 distinct consented records before revealing
+- Consent/start alone NEVER enters evaluation denominators. A record becomes
+  eligible for the owner cohort only after an authenticated server call writes
+  its six-field method audit, marking `verified_turn_observed=true`. This prevents
+  one client from inflating ratings with repeated fabricated Start calls. Sessions
+  stopped before the first verified coaching turn remain outside measured coverage;
+  this limitation must be displayed, not hidden.
+- Every group requires >=20 distinct consented, server-attested records before revealing
   detailed rates. The owner page never shows session IDs, account IDs,
   client words, even as part of the underlying data response.
 
