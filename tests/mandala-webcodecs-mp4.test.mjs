@@ -4,6 +4,7 @@ import test from "node:test";
 import {shouldAutoRecoverSafariPlayback} from "../lib/mandala/recording-codecs.mjs";
 
 const helper=readFileSync(new URL("../lib/mandala/webcodecs-mp4-export.ts",import.meta.url),"utf8");
+const presetLoader=readFileSync(new URL("../lib/mandala/first-party-video-audio.ts",import.meta.url),"utf8");
 const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
 test("Safari MP4 uses browser-local WebCodecs rather than MediaRecorder",()=>{
   assert.match(helper,/new CanvasSource\(canvas,/);
@@ -43,7 +44,7 @@ test("Safari movie retains the real Canvas scene, story, hypno and stage caption
 });
 test("No customer upload, fake video or unbounded output",()=>{
   assert.doesNotMatch(helper,/XMLHttpRequest|navigator\.sendBeacon|\/api\/render/);
-  assert.match(helper,/credentials:"same-origin"/);
+  assert.match(presetLoader,/credentials:"omit"/);
   assert.match(helper,/MAX_DURATION=60/);
   assert.match(helper,/MAX_BYTES=80\*1024\*1024/);
   assert.match(helper,/video_encoder_too_slow/);
@@ -139,12 +140,16 @@ test("Safari WebCodecs loads the SAME scenario and classical MP3 URL as native a
   const music=readFileSync(new URL("../lib/mandala/local-video-music.ts",import.meta.url),"utf8");
   assert.match(music,/isScenarioAudioPreset\(preset\)/);
   assert.match(music,/\/audio\/mandala\/scenarios\/" \+ preset \+ "\.mp3"/);
-  assert.match(helper,/import \{presetAudioUrl\} from "\.\/local-video-music"/);
-  assert.match(helper,/const audioUrl=presetAudioUrl\(entry\.preset as Exclude<AmbientMusic,"none">\)/);
-  assert.match(helper,/fetch\(audioUrl,\{/);
-  assert.doesNotMatch(helper,/fetch\("\/audio\/mandala\/"\+entry\.preset\+"\.wav"/);
-  assert.match(helper,/credentials:"same-origin"/);
-  assert.match(helper,/first_party_audio_unavailable/);
+  assert.match(helper,/import \{loadFirstPartyPresetAudioBlob\} from "\.\/first-party-video-audio"/);
+  assert.match(presetLoader,/const audioUrl=presetAudioUrl\(preset\)/);
+  assert.match(presetLoader,/fetch\(audioUrl,\{/);
+  assert.match(presetLoader,/PACKAGED_SOUNDTRACK\.test\(audioUrl\)/);
+  assert.match(presetLoader,/mode:"same-origin"/);
+  assert.match(presetLoader,/redirect:"error"/);
+  assert.match(helper,/loadFirstPartyPresetAudioBlob\(entry\.preset as Exclude<AmbientMusic,"none">\)/);
+  assert.doesNotMatch(helper,/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon/);
+  assert.match(presetLoader,/credentials:"omit"/);
+  assert.match(presetLoader,/first_party_audio_unavailable/);
   assert.match(studio,/code==="first_party_audio_unavailable"/);
 });
 
@@ -466,7 +471,7 @@ test("Safari accepts longer-than-180s licensed MP3 music and retains only its au
     "non-looped narration must still reject truncation");
   assert.match(helper,/narration_longer_than_video/);
   assert.match(helper,/audio_size_invalid/);
-  assert.match(helper,/first_party_audio_unavailable/);
+  assert.match(presetLoader,/first_party_audio_unavailable/);
   assert.match(helper,/audioSource\.add\(audioBuffer\)/,"AAC remains required for selected music");
 });
 
