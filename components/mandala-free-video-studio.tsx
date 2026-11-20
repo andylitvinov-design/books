@@ -3125,6 +3125,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const webCodecJobRef = useRef<AbortController|null>(null);
   const compatibilityExportRef=useRef(false);
   const lastExportEngineRef=useRef<"native"|"webcodecs"|"unknown">("unknown");
+  // Retain a failed Safari native encoder only in this mounted editor session.
+  // No browser storage, network persistence or visitor data is necessary.
+  const nativeSafariMp4RejectedRef=useRef(false);
   const firstVideoRequestRef=useRef(false);
   useEffect(()=>{
     if(!result||!firstVideoRequestRef.current)return;
@@ -3914,11 +3917,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     // The alternate WebM retry must not rerun Safari's default MP4 encoder.
     // A visitor selecting native MP4 after a failed WebM must not re-run the
     // original Safari WebCodecs MP4 path. Preserve actual AAC/soundtrack checks.
-    let nativeRejectedOnThisDevice=false;
-    if(isApplePhone&&hasWebCodecs){
-      try{nativeRejectedOnThisDevice=window.sessionStorage.getItem("hh_safari_native_mp4_rejected_v1")==="1";}
-      catch{/* Storage disabled: remain on the normal supported renderer. */}
-    }
+    const nativeRejectedOnThisDevice=isApplePhone&&hasWebCodecs&&nativeSafariMp4RejectedRef.current;
     const useWebCodecsMp4=!forceMp4ForRetry&&selectWebCodecsForRecording({
       hasWebCodecs,safariWebKit,procedural,proceduralRoute,preferWebm,
       nativeMp4Available:nativeAppleMp4Available,
@@ -5107,8 +5106,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
        isAppleMobileDevice(ua,navigator.maxTouchPoints)){
       // Next EXPLICIT Create may use the alternate encoder; no automatic
       // second attempt, no private media or prompt data stored.
-      try{window.sessionStorage.setItem("hh_safari_native_mp4_rejected_v1","1");}
-      catch{/* Storage is optional. */}
+      nativeSafariMp4RejectedRef.current=true;
     }
     const safariWebKit=/AppleWebKit/i.test(ua)&&!/Chrome|Chromium|Edg|OPR/i.test(ua);
     const nativeWebm=recordingMimes(Boolean(attachedAudio),true)
