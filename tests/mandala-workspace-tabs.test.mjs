@@ -84,6 +84,9 @@ function exercise(input,workspace,overrides={}){
    setBasicPanelTab:value=>{basicTab=value;},setMontagePanel:()=>{},setMontageStyleSettingsOpen:()=>{},setIntroPlaying:()=>{},setNotice:value=>notices.push(value),supportUi:{heroConsent:'Consent required'},audioUi:{needsAttach:'Attach audio'},ui:{audioRightsHelp:'Audio rights required'},onPickPhoto:()=>picks++,createVideo:()=>renders++,window:{requestAnimationFrame:cb=>frames.push(cb)},document:{querySelector:selector=>selector==='[data-video-cover-options]'?cover:selector==='[data-video-photo-consent]'?consent:{scrollIntoView(){}}}},{timeout:1000});
  assert.equal(scrolls.length,0,'scroll must retain two-frame boundary');
  while(frames.length){active=queued;frames.shift()();}
+ // A guarded handler may return before scheduling rAF; React still commits
+ // the queued setState at the end of the event, including denied Ready navigation.
+ active=queued;
  return {workspace:active,basicTab,open:cover.open,scrolls,notices,renders,picks};
 }
 test('one original consent pane is accessible in Video or fifth Montage Photo',()=>{
