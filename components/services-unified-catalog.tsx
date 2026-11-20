@@ -305,10 +305,12 @@ export function ServicesCompactPanel({ id, children }: { id: ServicesPanelId; ch
           display:"none", visibility:"hidden", position:"absolute",
           width:0, height:0, overflow:"hidden", pointerEvents:"none",
         } : undefined}>
-        {/* Avoid mounting the legacy full-size consultation shelf in the compact
-            ten-by-three service catalogue. The explicit #consultation deep link
-            and user-opened Details still reveal the unchanged booking formats. */}
-        {id === "consultation" && !expanded ? null : children}
+        {/* Old consultation and practitioner enquiry forms are optional.
+            Do not mount them under the compact list until the category is
+            explicitly opened; CSS on the nested form otherwise overrides the
+            collapsed mobile view. Deep links and expanded panels retain
+            their original working actions. */}
+        {(id === "consultation" || id === "directory") && !expanded ? null : children}
       </div>
     </article>
   );

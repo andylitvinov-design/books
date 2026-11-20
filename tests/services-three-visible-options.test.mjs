@@ -121,9 +121,19 @@ test("collapsed legacy panels truly hide while compact category contract remains
 
 
 test("large legacy consultation mounts only on explicit detail or #consultation deep link", () => {
-  assert.match(catalog, /id === "consultation" && !expanded \? null : children/);
+  assert.match(catalog, /\(id === "consultation" \|\| id === "directory"\) && !expanded \? null : children/);
   const browser = read("scripts/verify-public-services-production.mjs");
   assert.match(browser, /locator\("\[data-assist-personal-consultation\]"\)\)\.toHaveCount\(0\)/);
   assert.match(browser, /services#consultation/);
   assert.match(browser, /await expect\(consultation\)\.toBeVisible\(\)/);
+});
+
+
+test("the legacy directory is not an extra visible order form until opened", () => {
+  assert.match(catalog, /id === "directory"/);
+  const browser = read("scripts/verify-public-services-production.mjs");
+  assert.match(browser, /locator\("\[data-service-lead-capture\]"\)\)\.toHaveCount\(0\)/);
+  assert.match(browser, /locator\('\[data-services-unified-panel="directory"\]'\)/);
+  assert.match(browser, /await visible\(directory\.locator\('\[data-service-lead-capture\]'\)\)/);
+  assert.match(browser, /await visible\(directory\.locator\('\[data-services-directory-invitation\]'\)\)/);
 });

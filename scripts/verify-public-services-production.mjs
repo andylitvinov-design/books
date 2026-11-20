@@ -249,6 +249,8 @@ try {
     // The approved 10-category shelf has no duplicate large featured cards.
     // Older diagnostic formats remain accessible inside the consultation disclosure.
     await expect(page.locator("[data-assist-personal-consultation]")).toHaveCount(0);
+    await expect(page.locator("[data-service-lead-capture]")).toHaveCount(0);
+    await expect(page.locator("[data-services-directory-invitation]")).toHaveCount(0);
     const catalog = page.locator("[data-services-unified-catalog]");
     await visible(catalog);
     // Browser acceptance must exercise hydrated React handlers, not
@@ -375,6 +377,16 @@ try {
         await assertViewport(page, locale + "/services/unified/" + id);
       }
       await expect(catalog.locator('[data-services-unified-panel][data-expanded="true"]')).toHaveCount(0);
+      // The legacy directory is voluntary, not a second giant service card.
+      // A real click still restores the previously published contact actions.
+      const directory = catalog.locator('[data-services-unified-panel="directory"]');
+      await directory.locator(':scope > [data-support-uniform-preview]').click();
+      await expect(directory).toHaveAttribute("data-expanded", "true");
+      await visible(directory.locator('[data-service-lead-capture]'));
+      await visible(directory.locator('[data-services-directory-invitation]'));
+      await directory.locator(':scope > [data-support-uniform-preview]').click();
+      await expect(directory).toHaveAttribute("data-expanded", "false");
+      await expect(page.locator('[data-service-lead-capture]')).toHaveCount(0);
       // The real prior flows remain mounted for stable site deep links.
       for (const selector of [
         "[data-assist-reiki-session]", "[data-assist-spiritual-entry]", "[data-assist-video-generation]",
