@@ -108,7 +108,7 @@ test("Concept uses canonical selected filters and numeric energy, while WebKit p
   assert.match(studio,/onConceptTopicChange=\{setSelectedConceptTopic\}/);
   assert.match(studio,/selectedTopic=\{selectedConceptTopic\}/);
   assert.match(concept,/selectedTopicId:selectedTopic\?\.topicId/);
-  assert.match(personal,/energyStart:value\.energy>=1\?value\.energy:null/);
+  assert.match(personal,/energyStart:value\.energy>=1\?value\.energy:undefined/);
   assert.match(engine,/selectedTopicId:explicitTopic\?\.topic\.id/);
   assert.match(semantic,/put\(p,"pace",dynamic\?"dynamic"/);
   const applyStart=ideas.indexOf("const apply=(candidates:string[],indices:number[],outputLocale:VideoLocale=captionLocale)=>");

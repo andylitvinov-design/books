@@ -86,7 +86,7 @@ export function summarizeVideoGoalProfile(value:VideoGoalProfile,locale:VideoLoc
  const focus=value.axes.map(id=>axes.find(c=>c.id===id)?.label).filter(Boolean).join(" · ");
  return {currentState:current,desiredState:desired,focus,
   currentIds:[...value.current],desiredIds:[...value.desired],focusIds:[...value.axes],
-  energyStart:value.energy>=1?value.energy:null,energyTarget:value.desiredLevel>=1?value.desiredLevel:null};
+  energyStart:value.energy>=1?value.energy:undefined,energyTarget:value.desiredLevel>=1?value.desiredLevel:undefined};
 }
 
 
