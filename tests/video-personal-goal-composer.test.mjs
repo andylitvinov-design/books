@@ -58,7 +58,7 @@ test("goal selection preserves the request, only consented quiz context and expl
  const intent=composePersonalVideoGoalIntent("Мой исходный запрос",selected,"ru");
  assert.ok(intent.includes("Мой исходный запрос"));
  assert.ok(intent.includes(selected.copy.ru.title));
- assert.ok(intent.includes("самоуважение")||intent.includes("достоин"));
+ assert.ok(intent.includes("dignity")||intent.includes("самоуважение"));
  const plan=goalScenarioPlan(selected,opts.contextKey);
  assert.equal(plan.id,selected.id);
  assert.equal(plan.topicId,"self-confidence");
