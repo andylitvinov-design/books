@@ -554,3 +554,23 @@ test("iPhone native stop is idempotent: do not kill tracks before final MP4 onst
  assert.match(studio,/job\.stream\.getTracks\(\)\.forEach\(track=>track\.stop\(\)\);/);
  assert.match(studio,/job\.finalizeTimeout=window\.setTimeout\(/);
 });
+
+test("physical iPhone native MP4 is fast-start normalized and genuinely decoded before Ready",()=>{
+  assert.match(helper,/export async function normalizeNativeSafariMp4ForPlayback/);
+  assert.match(helper,/new Mp4OutputFormat\(\{fastStart:"in-memory"\}\)/);
+  assert.match(helper,/const conversion=await Conversion\.init\(/);
+  assert.match(helper,/await conversion\.execute\(\)/);
+  assert.match(helper,/new Blob\(\[bytes\],\{type:"video\/mp4"\}\)/);
+  assert.match(helper,/const sink=new VideoSampleSink\(track\)/);
+  assert.match(helper,/await sink\.getSample\(at\)/);
+  assert.match(helper,/sample\?\.close\(\)/);
+  assert.match(helper,/end<expectedSeconds-2\|\|end>expectedSeconds\+2/);
+  assert.match(helper,/requireAudio&&\(!audio\|\|await audio\.getCodec\(\)!=="aac"\)/);
+  assert.match(studio,/normalizeNativeSafariMp4ForPlayback\(blob,Boolean\(job\.musicSession\),duration\),30000/);
+  assert.match(studio,/blob=await withLocalMediaDeadline\(/);
+  assert.match(studio,/setResult\(\{url:URL\.createObjectURL\(blob\)/);
+  assert.match(studio,/hh_safari_native_mp4_rejected_v1/);
+  assert.match(studio,/forceWebCodecs:forceWebCodecs\|\|nativeRejectedOnThisDevice/);
+  // No automatic second video export, URL upload, or second credit reservation.
+  assert.doesNotMatch(helper,/fetch\(\s*["']\/api\/render|navigator\.sendBeacon/);
+});
