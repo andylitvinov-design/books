@@ -6,13 +6,17 @@ create table app_private.context_cloud_grants (
   role_key text not null check (role_key = 'coach'),
   provider_key text not null check (provider_key in ('groq', 'gemini_free', 'gemini_paid', 'openrouter')),
   policy_version text not null check (char_length(policy_version) between 1 and 80),
-  category text not null check (category in ('goals', 'actions', 'reports', 'preferences')),
+  category text not null check (category in ('goals', 'actions', 'reports', 'preferences', 'test_results')),
   item_id uuid,
+  scale_key text,
   source_revision text,
   session_id uuid,
   decision text not null check (decision in ('grant', 'revoke')),
   occurred_at timestamptz not null default statement_timestamp(),
   expires_at timestamptz,
+  check ((category = 'test_results' and item_id is not null and scale_key is not null
+           and scale_key ~ '^trait[.]ipip50[.][a-z_]{1,40}$')
+         or (category <> 'test_results' and scale_key is null)),
   check (
     (item_id is not null and decision = 'grant' and source_revision is not null
       and char_length(source_revision) between 1 and 128)
