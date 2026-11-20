@@ -19,6 +19,8 @@ import { readPersonalCoaching, savePersonalCoaching, readTraditionCoaching, save
 import {personalCoachingBrainTurn,personalCoachingBrainProbe,myCoachGenerativeTurn,myCoachGenerativeStreamTurn,myCoachGenerativeProbe} from '@/lib/app/coaching-brain'
 import {geminiCoachTextConfig} from '@/lib/coaching/gemini-coach-text.mjs'
 import {geminiCoachTtsConfig} from '@/lib/coaching/gemini-coach-tts.mjs'
+import {getCoachPersona,resolveCoachMethodId} from '@/lib/coaching/persona-registry.mjs'
+import {COACH_SESSION_COOKIE,newCoachSession,openCoachSession,sealCoachSession,advanceCoachSession,COACH_SESSION_TTL_SECONDS} from '@/lib/coaching/session-authority.mjs'
 import { readCoachingReportDraft } from '@/lib/app/coaching-report-v2'
 import { listCoachingReports, exportCoachingReports, readCoachingReport, saveCoachingReport, deleteCoachingReport } from '@/lib/app/coaching-report-store'
 import { readCoachingLifePlan, updateCoachingLifePlanArea, importCoachingReportActions } from '@/lib/app/coaching-life-plan'
@@ -1006,19 +1008,60 @@ async function handle(request, { params }) {
     // The gateway invokes it only when an actual provider request is attempted.
     const reserveCoachingFreeCall=()=>consumeRate(config,
       {op:'coaching-openrouter-shared-daily'},40,86400)
-    // Signed-in, stateless dialogue for the selected My Coach persona. Client
-    // history is not stored; auth, same-origin protection and DB throttles apply.
+    // One auth-bound, HttpOnly session cookie; no transcript, client text or
+    // provider token is stored. The client cannot authorize stage progression.
+    const loadCoachState=body=>{
+      if(!getCoachPersona(body?.personaId))
+        throw new AppError('COACHING_BRAIN_INPUT_INVALID',400)
+      const prior=openCoachSession(request.cookies.get(COACH_SESSION_COOKIE)?.value,
+        config,actor,body.personaId)
+      const state=prior||newCoachSession(actor,body.personaId,Date.now(),body.methodId||null)
+      if(body.methodId!==undefined&&body.methodId!==state.methodId)
+        throw new AppError('COACH_SESSION_METHOD_CONFLICT',409)
+      return state
+    }
+    const withCoachCookie=(response,state)=>{
+      response.cookies.set(COACH_SESSION_COOKIE,sealCoachSession(state,config,actor),{
+        httpOnly:true,secure:!config.test,sameSite:'lax',
+        path:'/api/app/my-coach',maxAge:COACH_SESSION_TTL_SECONDS
+      })
+      return response
+    }
+    if(joined==='my-coach/session'){
+      if(method!=='POST')throw new AppError('NOT_FOUND',404)
+      const body=await readBody(request,512)
+      onlyKeys(body,['personaId','methodId'])
+      const methodId=resolveCoachMethodId(body?.personaId,body?.methodId)
+      if(!getCoachPersona(body?.personaId)||!methodId)
+        throw new AppError('COACHING_BRAIN_INPUT_INVALID',400)
+      await consumeRate(config,{op:'my-coach-session-start',actor:actor.id},12,3600)
+      const prior=openCoachSession(request.cookies.get(COACH_SESSION_COOKIE)?.value,
+        config,actor,body.personaId)
+      const session=prior?.methodId===methodId?prior:newCoachSession(actor,body.personaId,Date.now(),methodId)
+      return withCoachCookie(json({started:true,targetSeconds:1200,methodId}),session)
+    }
     if (joined === 'my-coach/stream') {
       if (method !== 'POST') throw new AppError('NOT_FOUND',404)
+      const body=await readBody(request,16384)
+      const sessionState=loadCoachState(body)
       await consumeRate(config,{op:'my-coach-generative-turn',actor:actor.id},40,3600)
-      const stream=await myCoachGenerativeStreamTurn(await readBody(request,16384),
-        {signal:request.signal,reserveModelCall:reserveCoachingFreeCall,config,actor})
-      return new Response(stream,{status:200,headers:{
+      let progress
+      try{
+        progress=advanceCoachSession(sessionState,{message:body.message,locale:body.locale},Date.now())
+      }catch{throw new AppError('COACHING_BRAIN_INPUT_INVALID',400)}
+      // The strict JSON path and the streaming transport share the same
+      // server-only Director stage; a streamed delta is never stage evidence.
+      const stream=await myCoachGenerativeStreamTurn(body,{
+        signal:request.signal,reserveModelCall:reserveCoachingFreeCall,config,actor,
+        sessionAuthority:{sessionState,progress}
+      })
+      const response=new NextResponse(stream,{status:200,headers:{
         ...PRIVATE_HEADERS,
         'Content-Type':'text/event-stream; charset=utf-8',
         'Cache-Control':'private, no-store, max-age=0',
         'X-Accel-Buffering':'no',
       }})
+      return withCoachCookie(response,progress.session)
     }
     // Metadata-only check: no client transcript, API key or test generation.
     if (joined === 'my-coach/engines') {
@@ -1032,20 +1075,24 @@ async function handle(request, { params }) {
     }
     if (joined === 'my-coach/turn') {
       if (method !== 'POST') throw new AppError('NOT_FOUND',404)
-      await consumeRate(config,{op:'my-coach-generative-turn',actor:actor.id},40,3600)
       const body=await readBody(request,16384)
+      const sessionState=loadCoachState(body)
+      await consumeRate(config,{op:'my-coach-generative-turn',actor:actor.id},40,3600)
       const geminiMode=['gemini_free','gemini_paid'].includes(body?.engine)?body.engine:null
-      // Per-user + global limits are consumed BEFORE a model request. No
-      // chargeable second provider call or automatic upgrade on error.
       const reserveGeminiCall=async()=>{
         await consumeRate(config,{op:'my-coach-'+geminiMode+'-global-day'},
           geminiMode==='gemini_paid'?12:30,86400)
         await consumeRate(config,{op:'my-coach-'+geminiMode+'-actor-day',actor:actor.id},
           geminiMode==='gemini_paid'?6:16,86400)
       }
-      return json(await myCoachGenerativeTurn(body,
-        {signal:request.signal,reserveModelCall:geminiMode?reserveGeminiCall:reserveCoachingFreeCall,
-          config,actor}))
+      const outcome=await myCoachGenerativeTurn(body,{
+        signal:request.signal,
+        reserveModelCall:geminiMode?reserveGeminiCall:reserveCoachingFreeCall,
+        config,actor,sessionState
+      })
+      const {__coachSession,...clientReply}=outcome
+      if(!__coachSession)throw new AppError('COACH_SESSION_STATE_REQUIRED',503)
+      return withCoachCookie(json(clientReply),__coachSession)
     }
     // A synthetic preflight proves verified ZDR free-model access before any
     // visitor text can reach a provider. The call is authenticated and bounded.
