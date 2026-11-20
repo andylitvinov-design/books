@@ -7776,8 +7776,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/images/holistic-house/support-mock-hero.webp" alt="" aria-hidden="true" loading="lazy"/>
         <figcaption>
-          <strong>{locale==="ru"?"Ваше видео — ваша история":locale==="es"?"Tu vídeo, tu historia":"Your video, your story"}</strong>
-          <span>{locale==="ru"?"Начнём с ваших чувств":locale==="es"?"Empecemos por cómo te sientes":"Start with how you feel"}</span>
+          <strong>Magic Mirror</strong>
+          <span>{locale==="ru"?"Видео для вашей цели":locale==="es"?"Un vídeo para tu objetivo":"A video for your goal"}</span>
         </figcaption>
       </figure>
       <div className={videoStyles.heroWithRail} data-video-player-with-controls>
@@ -8294,8 +8294,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
       <section className={videoStyles.quickPhraseSection} data-workspace-section="phrases" data-video-quick-phrases aria-label={workspaceCopy[locale].phrases.title} data-ideas-subtab={ideasSubtab} data-ideas-active-tab={ideasSubtab}>
         <div className={videoStyles.ideasSubtabs} data-video-ideas-tabs role="group"
-          aria-label={locale==="ru"?"Идеи: персонализация, цель и сценарий":
-            locale==="es"?"Ideas: personalización, objetivo y guion":"Ideas: personalization, goal and scenario"}>
+          aria-label={locale==="ru"?"Идеи: цель, персонализация и концепт":
+            locale==="es"?"Ideas: objetivo, personalización y concepto":"Ideas: goal, personalization and concept"}>
           <button type="button" data-video-ideas-tab="goal" aria-pressed={ideasSubtab==="goal"}
             onClick={()=>setIdeasSubtab("goal")}>
             <Target size={20} aria-hidden="true"/>
@@ -8311,6 +8311,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <Brain size={20} aria-hidden="true"/>
             {locale==="ru"?"Концепт":locale==="es"?"Concepto":"Concept"}
           </button>
+        </div>
+        <div className={videoStyles.ideasProgress} data-video-ideas-progress role="status" aria-live="polite">
+          <span>{locale==="ru"?"Шаг":locale==="es"?"Paso":"Step"} {ideasSubtab==="goal"?1:ideasSubtab==="personalization"?2:3} / 3</span>
+          <span className={videoStyles.ideasProgressDots} aria-hidden="true">
+            {(["goal","personalization","concept"] as const).map(step=>
+              <i key={step} data-active={ideasSubtab===step?"true":"false"}/>)}
+          </span>
         </div>
         <div className={videoStyles.quickSectionHeading}>
           <h3 id="quick-phrases-heading"><HandHeart size={19} aria-hidden="true"/>{locale==="ru"?"Мой запрос и тема":locale==="es"?"Mi intención y tema":"My request & topic"}</h3>

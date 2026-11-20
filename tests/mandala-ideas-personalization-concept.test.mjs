@@ -217,10 +217,17 @@ test("All three purposes ask for current energy 1–10 without unnecessary futur
  assert.match(css,/@media\(max-width:370px\)/);
 });
 
-test("Ideas phone view uses one static photo and three real subtabs",()=>{
+test("Ideas phone view keeps one approved scenic photo and accessible Goal-first substages",()=>{
+  assert.match(studio,/<strong>Magic Mirror<\/strong>/);
+  assert.match(studio,/Ideas: goal, personalization and concept/);
+  assert.match(studio,/Ideas: objetivo, personalización y concepto/);
+  assert.match(studio,/Идеи: цель, персонализация и концепт/);
+  assert.match(studio,/data-video-ideas-progress/);
+  assert.ok(studio.indexOf('data-video-ideas-tab="goal"')<studio.indexOf('data-video-ideas-tab="personalization"'));
+  assert.match(mobile,/\.ideasProgressDots i\[data-active="true"\]/);
   assert.match(studio,/data-video-ideas-photo/);
   assert.match(studio,/src="\/images\/holistic-house\/support-mock-hero\.webp"/);
-  for(const label of ["Ваше видео — ваша история","Your video, your story","Tu vídeo, tu historia"])
+  for(const label of ["Видео для вашей цели","A video for your goal","Un vídeo para tu objetivo"])
     assert.ok(studio.includes(label),label);
   assert.match(studio,/data-ideas-step=\{activeWorkspace==="phrases"\?ideasSubtab:undefined\}/);
   assert.match(mobile,/\.previewStage>\.heroWithRail\{display:none!important\}/);
