@@ -517,8 +517,8 @@ test('Core Mandala fast contracts run only as fallback when the BASE/HEAD Specia
     'the broad Mandala unit-test manifest owns all mandala-*.test.mjs files');
   assert.equal(specialistOwns(mandala,mandala,['tests/video-export-contract.test.mjs']),false,
     'a video test outside the owned video-chat and video-owner manifest retains Core fallback coverage');
-  assert.equal(specialistOwns(mandala,mandala,['scripts/benchmarking/first-video-live-export.mjs']),false,
-    'the first-video benchmark keeps the Core fallback unless its specialist path is explicitly added');
+  assert.equal(specialistOwns(mandala,mandala,['scripts/benchmarking/first-video-live-export.mjs']),true,
+    'First Video benchmark is owned by mandatory Mandala specialist acceptance');
 
   const newline = String.fromCharCode(10);
   const narrowed=mandala.replace("      - 'components/mandala-*'"+newline,'');
