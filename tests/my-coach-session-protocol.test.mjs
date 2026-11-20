@@ -194,6 +194,17 @@ test('method-specific report differs between Merlin, Sofia and Harry',()=>{
   const wrong=sample();wrong.personaId='merlin';wrong.methodId='oskar'
   assert.throws(()=>normalizeMyCoachProtocol(wrong),/MY_COACH_PROTOCOL_INVALID/)
 })
+test('PDF exports all six fields for each approved secondary coaching method',()=>{
+ const cases=[
+  ['mira','oskar'],['max','woop'],['sofia','grow'],
+  ['alex','grow'],['merlin','grow'],['harry','woop'],
+ ]
+ for(const [personaId,methodId] of cases){
+  const obj=sample();obj.personaId=personaId;obj.methodId=methodId
+  const overview=myCoachProtocolPdfOptions(obj,{locale:'ru'}).protocolOverview
+  assert.equal(overview.split('\n').length,7,personaId+' '+methodId)
+ }
+})
 test('method overview comes before the dialogue in A4 PDF',()=>{
   const src=readFileSync(new URL('../lib/personal-coaching/session-pdf.js',import.meta.url),'utf8')
   assert.ok(src.indexOf('section(t.information, protocolOverview)')<src.indexOf('paragraph(entryKind ==='))
