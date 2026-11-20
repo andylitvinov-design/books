@@ -51,3 +51,23 @@ test("approved one-viewport mobile layout keeps quiz and all five services above
  assert.match(dockCss,/body:has\(\[data-hh-unified-dock\]\):has\(main\[data-shamanica-audience="self"\]\)/);
  assert.match(dockCss,/white-space:nowrap/);
 });
+
+
+test("readable typography uses the existing one-screen room",()=>{
+ const css=read("components/shamanica-mobile.module.css");
+ const global=read("app/unified-mobile-dock.css");
+ const client=read("components/shamanica-mobile.tsx");
+ assert.match(css,/SHAMANICA_READABLE_MOBILE_20261119/);
+ assert.match(css,/font-size:clamp\(14px,4\.18vw,16px\)/); // service headings
+ assert.match(css,/font-size:clamp\(11\.5px,3\.45vw,13px\)/); // descriptions
+ assert.match(css,/font-size:clamp\(14px,4vw,16px\)/); // quiz answers
+ assert.match(css,/min-height:70px/);
+ assert.match(css,/min-height:52px/);
+ assert.match(css,/height:auto/); // content may expand with text zoom
+ assert.match(css,/max-height:740px/);
+ assert.match(global,/SHAMANICA_READABLE_DOCK_20261119/);
+ assert.match(client,/Homeopathy advice/);
+ assert.match(client,/Талисманы и места силы/);
+ assert.match(client,/Reiki sessions/);
+ assert.match(client,/Chamanismo, Reiki y magia/);
+});
