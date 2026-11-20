@@ -11,5 +11,8 @@ export function storyboardPhotoReferences(options?:{
  categoryId?:string;
  shotCount?:number;
  avoidImagery?:readonly string[];
+ sceneGuides?:readonly {readonly visual?:string;readonly action?:string;
+  readonly title?:string;readonly keywords?:readonly string[]}[]|null;
+ aspect?:"portrait"|"landscape";
 }):readonly (StoryboardReferencePhoto|null)[];
 export const STORYBOARD_REFERENCE_STATUS:"editorial_photo_reference_not_action_verified";

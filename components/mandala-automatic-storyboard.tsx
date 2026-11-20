@@ -146,8 +146,9 @@ export function MandalaAutomaticStoryboard({
  ]);
  const references=useMemo(()=>storyboardPhotoReferences({
   scenarioId:concept.scenarioId||"",categoryId:concept.categoryId||"",
-  shotCount:guides.scenes.length,avoidImagery:concept.avoidImagery||[]
- }),[concept.scenarioId,concept.categoryId,concept.avoidImagery,guides.scenes.length]);
+  shotCount:guides.scenes.length,avoidImagery:concept.avoidImagery||[],
+  sceneGuides:guides.scenes,aspect:photoOutputAspect
+ }),[concept.scenarioId,concept.categoryId,concept.avoidImagery,guides.scenes,photoOutputAspect]);
  const hasSixPhotoReferences=references.length===6&&
    references.every(photo=>photo&&isTrustedStoryPhoto(photo))&&
    new Set(references.map(photo=>photo?.id)).size===6;
