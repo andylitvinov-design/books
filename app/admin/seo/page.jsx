@@ -36,7 +36,7 @@ const copy = {
     valid: "HTTP 200", redirects: "Редиректы", errors: "Ошибки", lab: "Скорость и Lighthouse", labNote: "Последний сохранённый лабораторный замер, не Core Web Vitals реальных посетителей.",
     mobile: "Мобильная", desktop: "Компьютер", lcp: "LCP", cls: "CLS", seoScore: "SEO",
     next: "Рабочие инструменты", issue: "План и задачи SEO", audit: "Аудит 601 URL", lighthouse: "Измерения Lighthouse", sitemapLink: "Живой sitemap",
-    analytics: "GA4 и конверсии", analyticsNote: "Google Analytics 4 пока не подтверждён как источник сайта. Посещения и заявки здесь не подменяются показами Google Search Console.",
+    analytics: "Посещаемость и конверсии", analyticsNote: "Просмотры страниц, входы и источники уже отдельно учитываются собственными анонимными счётчиками: они не являются уникальными посетителями. GA4 пока не подтверждён. Поисковые показы GSC не подменяют посещения.",
     setup: "Для обновления непосредственно из Google добавьте сервисный аккаунт в права Search Console (доступ на чтение) и сохраните его email и приватный ключ только в серверных переменных Vercel: HH_GSC_SERVICE_ACCOUNT_EMAIL и HH_GSC_SERVICE_ACCOUNT_PRIVATE_KEY. Сам ключ никогда не вводится в этой странице и не передаётся в браузер. До подключения показывается проверенный снимок с датой.",
     lastCheck: "Снимок от", trackedNote: "отслеживаемых URL", noindex: "Не относится к приватным кабинетам и результатам тестов.",
   },
@@ -59,7 +59,7 @@ const copy = {
     valid: "HTTP 200", redirects: "Redirects", errors: "Errors", lab: "Speed & Lighthouse", labNote: "Last saved lab run, not real-user Core Web Vitals.",
     mobile: "Mobile", desktop: "Desktop", lcp: "LCP", cls: "CLS", seoScore: "SEO",
     next: "SEO workspace", issue: "SEO plan & issues", audit: "Full sitemap audit", lighthouse: "Lighthouse reports", sitemapLink: "Live sitemap",
-    analytics: "GA4 & conversions", analyticsNote: "Google Analytics 4 access is not verified for this site. Visitor and lead metrics are not substituted with Search Console impressions.",
+    analytics: "Traffic & conversions", analyticsNote: "First-party anonymous counters separately record page views, entrances and sources, not unique visitors. GA4 remains unverified. Search impressions never stand in for website visits.",
     setup: "To enable automatic Google updates, invite a Google service account to your Search Console property with read access. Store its email and private key only in Vercel server environment variables: HH_GSC_SERVICE_ACCOUNT_EMAIL and HH_GSC_SERVICE_ACCOUNT_PRIVATE_KEY. Never enter keys into this page or send them to browsers. Until then, the verified date-stamped snapshot is shown.",
     lastCheck: "Snapshot captured", trackedNote: "tracked pages", noindex: "Private cabinets and individual test results are never included.",
   }
@@ -115,6 +115,7 @@ export default async function AdminSeoDashboard({ searchParams }) {
     <div className={styles.intro}><div><p className={styles.eyebrow}>HOLISTIC HOUSE / SEARCH INTELLIGENCE</p>
       <h2 className={styles.title}>{t.search}</h2><p className={styles.lead}>{t.searchNote}</p></div>
       <div className={styles.buttons}><Link className={styles.button} href={`/${locale}/app/practice?panel=marketing`}>{locale === "ru" ? "← Маркетинг" : "← Marketing"}</Link>
+        <Link className={styles.button} href="/admin/acquisition">{locale === "ru" ? "Посещения и источники" : "Visits & sources"}</Link>
         <Link className={styles.button} href={"/admin/seo/export?days=" + days} prefetch={false}>{t.export} ↓</Link>
         <a className={styles.button + " " + styles.buttonPrimary} href="https://search.google.com/search-console?resource_id=https%3A%2F%2Fholistichouse.vercel.app%2F" target="_blank" rel="noopener noreferrer">{t.google} ↗</a>
       </div></div>
