@@ -107,7 +107,8 @@ test("WebKit export can be cancelled, and microphone speech is not looped",()=>{
 test("silent WebKit exports H.264 even without AudioEncoder, never fakes voice AAC",()=>{
   assert.match(helper,/supportsLocalWebCodecsMp4\(needsAudio=false\)/);
   assert.match(helper,/!needsAudio \|\| \(/);
-  assert.match(helper,/if\(audio\)\{/);
+  assert.match(helper,/const withAudio=Boolean\(audio\|\|audioMaster\)/);
+  assert.match(helper,/if\(withAudio\)\{[\s\S]*?await canEncodeAudio\("aac"/);
   assert.match(helper,/webcodecs_h264_unsupported/);
   assert.match(helper,/webcodecs_aac_unsupported/);
   assert.match(studio,/!attachedAudio \|\| \(typeof AudioEncoder/);
