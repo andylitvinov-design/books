@@ -554,3 +554,53 @@ test('composed independent BASE advance reuses the same HEAD only with complete 
     'single-category proof cannot substitute a complete-list check');
   assert.equal(safeComposedIndependentAdvance(good, tested, live, []), false);
 });
+
+
+test('#5093: protected BASE drift must not trigger auto-sync before required macOS movie test completes',async()=>{
+ const workflow='.github/workflows/holistic-support-mandala.yml';
+ const mediaYaml="on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths:\n      - 'components/mandala-**'\n      - 'scripts/benchmarking/first-video-live-export.mjs'\njobs:\n  voice-webkit-macos:\n    runs-on: macos-15\n";
+ const files={base:new Map([[workflow,mediaYaml]]),
+  current:new Map([[workflow,mediaYaml]]),
+  changedRows:[
+   {filename:'components/mandala-free-video-studio.tsx',status:'M'},
+   {filename:'scripts/benchmarking/first-video-live-export.mjs',status:'M'},
+  ]};
+ const latest='c'.repeat(40),ctx2={...ctx};
+ const mediaPr={...pr,mergeable:true,mergeable_state:'behind',
+  base:{...pr.base,sha:latest}};
+ const checkedRun=(status,conclusion)=>({...run(status,conclusion),
+  path:workflow,id:981,head_branch:pr.head.ref});
+ let elapsed=0,polls=0,jobReads=0,baseReads=0,compares=0;
+ const api={
+  pr:async()=>mediaPr,target:async()=>{baseReads++;return latest;},
+  compare:async()=>{compares++;return {
+    status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:base},merge_base_commit:{sha:base},
+    commits:[{sha:latest}],
+    files:[{filename:'app/api/auth/route.ts',status:'modified'}]
+  };},
+  runs:async()=>{polls++;return [polls===1?
+    checkedRun('in_progress',null):checkedRun('completed','success')];},
+  jobs:async()=>{jobReads++;return [{name:'voice-webkit-macos',
+    status:'completed',conclusion:'success'}];},
+ };
+ await assert.rejects(()=>verify(api,ctx2,files,{
+  maxWaitMs:120_000,pollMs:100,now:()=>elapsed,
+  sleep:async ms=>{elapsed+=ms;},
+ }),/PRODUCTION_BASE_CHANGED/);
+ assert.equal(polls,2,'the real Mac specialist must finish before BASE is considered stale');
+ assert.equal(jobReads,1,'successful exact-run macOS job evidence is independently read');
+ assert.equal(compares,1,'only final protected BASE comparison can trigger auto-sync');
+ assert.equal(baseReads,1,'no early or periodic stale-base branch update while Mac is active');
+ let redPolls=0,redBaseReads=0;
+ await assert.rejects(()=>verify({...api,
+  target:async()=>{redBaseReads++;return latest;},
+  compare:async()=>{throw Error('a failed Mac must not be masked by BASE drift');},
+  runs:async()=>{redPolls++;return [redPolls===1?
+    checkedRun('in_progress',null):checkedRun('completed','failure')];}
+ },ctx2,files,{maxWaitMs:120_000,pollMs:100,now:()=>elapsed,
+  sleep:async ms=>{elapsed+=ms;},
+ }),/SPECIALIST_FAILED/);
+ assert.equal(redPolls,2,'must retain exact-HEAD failed-media evidence');
+ assert.equal(redBaseReads,0,'never source-sync over a genuine macOS movie failure');
+});

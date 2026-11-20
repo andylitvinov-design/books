@@ -599,7 +599,12 @@ export async function verify(api,ctx,files,options={}) {
       approvedBaseChanges.add(liveBaseSha);
     }
   }
-  await verifyCurrentBase(pr);
+  // Postpone potentially stale protected-BASE authorization until the
+  // exact-HEAD macOS Media/MP4 specialist completes. An early BASE_ADVANCED
+  // failure triggers the owner auto-sync which CANCELS the still-running Mac
+  // job; two such loops struck #5093. Required Core and Specialist outcomes
+  // remain mandatory, and the final protected BASE check is unchanged.
+  // For non-media / skipped optional macOS runs, fail fast as before.
   let risk=classifyReleaseRisk(changed);
   const readSource=options.readSource ?? ((rev,path)=>execFileSync('git',['show',rev+':'+path],
     {encoding:'utf8',maxBuffer:1_000_000,stdio:['ignore','pipe','pipe']}));
@@ -642,6 +647,14 @@ export async function verify(api,ctx,files,options={}) {
   const mandala = WORKFLOW_PREFIX + 'holistic-support-mandala.yml';
   if (routed.expected.includes(mandala)) advisoryPaths.delete(mandala);
   const expected=routed.expected.filter(name=>!advisoryPaths.has(name) && !concurrencyAdvisory.has(name) && !selfTriggerAdvisory.has(name));
+  const deferBaseWhileMediaRuns = pinnedChangeRows &&
+    expected.includes(mandala) &&
+    !optionalMandalaMacosSkip(files,pr.head.ref,changed);
+  // Wait for actual media pass/fail before permitting an automatic BASE sync.
+  // This does not grandfather an older validator or approve a stale base:
+  // verifyCurrentBase() is always invoked after all required job proofs.
+  if (!deferBaseWhileMediaRuns) await verifyCurrentBase(pr);
+  else console.log('CI_BASE_CHECK_DEFERRED: preserve required exact-HEAD macOS WebKit run before BASE_ADVANCED recovery');
   // BASE/HEAD rules enumerate applicable PR specialists. Only completed/pending
   // PR workflow runs proven non-applicable may be advisory. Same-HEAD push
   // failures and orphan/unassociated runs remain fail-closed: there is no
@@ -668,7 +681,7 @@ export async function verify(api,ctx,files,options={}) {
   const sensitiveFreshnessInterval = 90_000;
   let nextSensitiveFreshnessCheck = start + sensitiveFreshnessInterval;
   for (;;) {
-    if (requireCurrentBase && now() >= nextSensitiveFreshnessCheck) {
+    if (requireCurrentBase && !deferBaseWhileMediaRuns && now() >= nextSensitiveFreshnessCheck) {
       // Fresh PR identity/HEAD and production ref; existing exception logic
       // still admits only exhaustively verified, disjoint BASE advances.
       await verifyCurrentBase(await api.pr(ctx.number));
