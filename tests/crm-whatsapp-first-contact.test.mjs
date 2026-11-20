@@ -48,7 +48,8 @@ test('verified WhatsApp webhook persists contact before Secretary and consent-fi
   assert.doesNotMatch(service,/insert into app\.crm_contacts|insert into app\.crm_opportunities/)
   assert.doesNotMatch(service,/body:event\.body|body:event\.rawText/)
   assert.doesNotMatch(service,/marketing_opt_in_at|sendOneMessengerMessage/)
-  assert.equal((route.match(/recordWhatsAppInboundReceipt\(event,config\)/g)||[]).length,3)
+  // Three original branches plus the signed, owner-paused manual inbox receipt.
+  assert.equal((route.match(/recordWhatsAppInboundReceipt\(event,config\)/g)||[]).length,4)
   assert.match(route,/waCaptureSuppressed/)
   assert.match(route,/first.suppressed===true/)
 })
