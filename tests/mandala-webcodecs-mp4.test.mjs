@@ -574,7 +574,9 @@ test("physical iPhone native MP4 is fast-start normalized and genuinely decoded 
   assert.match(studio,/normalizeNativeSafariMp4ForPlayback\(blob,Boolean\(job\.musicSession\),duration\),30000/);
   assert.match(studio,/blob=await withLocalMediaDeadline\(/);
   assert.match(studio,/setResult\(\{url:URL\.createObjectURL\(blob\)/);
-  assert.match(studio,/hh_safari_native_mp4_rejected_v1/);
+  assert.match(studio,/const nativeSafariMp4RejectedRef=useRef\(false\)/);
+  assert.match(studio,/nativeSafariMp4RejectedRef\.current=true/);
+  assert.doesNotMatch(studio,/hh_safari_native_mp4_rejected_v1|sessionStorage/);
   assert.match(studio,/forceWebCodecs:forceWebCodecs\|\|nativeRejectedOnThisDevice/);
   // No automatic second video export, URL upload, or second credit reservation.
   assert.doesNotMatch(helper,/fetch\(\s*["']\/api\/render|navigator\.sendBeacon/);
