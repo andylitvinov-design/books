@@ -120,14 +120,19 @@ test("required Hypno three tabs, relocated effects and guided kind remain browse
   assert.match(webkit,/await expect\(briefFrame\)\.toHaveAttribute\("aria-checked","false"\)/);
   assert.match(guided,/await expect\(kind\)\.toHaveAttribute\("aria-pressed","true",\{timeout:15000\}\)/);
   assert.match(guided,/GUIDED_KIND_DID_NOT_COMMIT/);
-  assert.match(exportFlow,/const montageStyle=page\.locator/);
-  // The real first-video browser route uses a checked, native tap/click
-  // locator rather than the retired inline click expression.
-  assert.match(exportFlow,/const conceptApprove=concept\.locator\('\[data-video-concept-approve\]'\)/);
-  assert.match(exportFlow,/await conceptApprove\.isEnabled\(\)/);
-  assert.match(exportFlow,/if\(engine==='webkit'\)await conceptApprove\.tap\(\)/);
-  assert.match(exportFlow,/else await conceptApprove\.click\(\)/);
-  assert.match(exportFlow,/FOUR_DISTINCT_SOURCES_REQUIRED/);
+  // The real Express route starts at Goal and uses visible browser taps,
+  // source identity and six moving photo scenes in the single Canvas renderer.
+  assert.match(exportFlow,/\[data-auto-video-input\]/);
+  assert.match(exportFlow,/getByRole\('button',\{name:'Just make it'\}\)/);
+  assert.match(exportFlow,/data-video-request-design\]\[data-video-request-flow="instant"\]/);
+  assert.match(exportFlow,/if\(engine==='webkit'\)await generate\.tap\(\)/);
+  assert.match(exportFlow,/EXPRESS_VIDEO_MUST_BE_30_SECONDS/);
+  assert.match(exportFlow,/EXPRESS_CANONICAL_PHOTO_NOT_VISIBLE/);
+  assert.match(exportFlow,/EXPRESS_CANONICAL_SCENE_ORDER_OR_IDENTITY_MISMATCH/);
+  assert.match(exportFlow,/EXPRESS_SCENE_NOT_MOVING/);
+  assert.match(exportFlow,/MP4_EXPRESS_VIDEO_MUST_USE_H264/);
+  assert.match(exportFlow,/MP4_EXPRESS_AUDIO_MUST_USE_AAC/);
+  assert.doesNotMatch(exportFlow,/data-video-continue-scenarios/);
 });
 
 test("macOS same-runner heap permits the existing real WebKit movie and voice gate",()=>{
