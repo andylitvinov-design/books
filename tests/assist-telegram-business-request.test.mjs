@@ -159,8 +159,13 @@ test('the actual locked state machine requires initial request, format and disti
     else if(sql.includes("stage='stopped'"))row.stage='stopped';
     else if(sql.includes("stage='cancelled'"))row.stage='cancelled';
     else if(sql.includes("stage='review_understanding'")){
-      row.stage='review_understanding';row.delivery_format=null;
-      row.intake_answers_ciphertext=null;row.consent_at=null;
+      row.stage='review_understanding';
+      // A consented first question retains its encrypted progress. Only
+      // the explicit legacy-reset query removes the old private draft.
+      if(sql.includes("delivery_format=null")){
+        row.delivery_format=null;
+        row.intake_answers_ciphertext=null;row.consent_at=null;
+      }
     }
     else if(sql.includes("stage='confirm'")){
       row.stage='confirm';row.delivery_format=sql.includes("delivery_format='async'")?'async':args[2];
