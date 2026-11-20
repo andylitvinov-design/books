@@ -87,26 +87,38 @@ const REPORT_METRICS = [
 ]
 const REPORTS_DASHBOARD_COPY = {
   ru: {
-    eyebrow: 'МОИ ОТЧЁТЫ', heroTitle: 'Мои отчёты',
-    heroIntro: 'Результаты тестов, личный анализ и рекомендации для развития и баланса.',
+    eyebrow: 'ТЕСТЫ И ПЛАН ТЕРАПИИ', heroTitle: 'Моё психическое здоровье',
+    heroIntro: 'Ваши психологические тесты, личный портрет и рекомендации, полученные от специалиста.',
     heroAction: 'Сформировать отчёт', heroHint: 'Анализ и PDF по сохранённым тестам',
-    firstTestHint: 'Начните с диагностики', overview: 'Обзор моих результатов',
+    firstTestHint: 'Начните с диагностики', overview: 'Мой психологический портрет',
+    shortcutsLabel: 'Тесты и план терапии',
+    testsTitle: 'Мои тесты', testsHint: 'Результаты и повторные измерения',
+    therapyTitle: 'План терапии', therapyHint: 'Отчёты и рекомендации специалиста',
+    therapyNote: 'План терапии не создаётся автоматически из результатов тестов.',
     measured: 'Измеренные шкалы', scaleNote: 'Показано положение внутри каждой подтверждённой шкалы, а не процент здоровья или общий балл.',
     noMeasurement: '—', metrics: { energy: 'Энергия', relationships: 'Отношения', functioning: 'Дела и цели', embodiment: 'Тело', meaning: 'Смысл' },
   },
   en: {
-    eyebrow: 'MY REPORTS', heroTitle: 'My reports',
-    heroIntro: 'Saved test results, personal analysis and recommendations for growth and balance.',
+    eyebrow: 'TESTS & THERAPY PLAN', heroTitle: 'My Psychic Health',
+    heroIntro: 'Your psychological tests, personal portrait and practitioner-shared guidance in one place.',
     heroAction: 'Create a report', heroHint: 'Analysis and PDF of your saved tests',
-    firstTestHint: 'Start with an assessment', overview: 'My results overview',
+    firstTestHint: 'Start with an assessment', overview: 'My psychological portrait',
+    shortcutsLabel: 'Tests and therapy plan',
+    testsTitle: 'My tests', testsHint: 'Saved results and repeat assessments',
+    therapyTitle: 'Therapy plan', therapyHint: 'Practitioner-shared reports and guidance',
+    therapyNote: 'A therapy plan is not automatically generated from test results.',
     measured: 'Measured scales', scaleNote: 'Each reading is a position within its own validated scale, not a health percentage or overall score.',
     noMeasurement: '—', metrics: { energy: 'Energy', relationships: 'Relationships', functioning: 'Work & goals', embodiment: 'Body', meaning: 'Meaning' },
   },
   es: {
-    eyebrow: 'MIS INFORMES', heroTitle: 'Mis informes',
-    heroIntro: 'Resultados guardados, análisis personal y recomendaciones para crecer y encontrar equilibrio.',
+    eyebrow: 'TESTS Y PLAN TERAPÉUTICO', heroTitle: 'Mi salud mental',
+    heroIntro: 'Tus tests psicológicos, perfil personal y orientación compartida por un profesional.',
     heroAction: 'Crear un informe', heroHint: 'Análisis y PDF de tus pruebas guardadas',
-    firstTestHint: 'Empieza con una evaluación', overview: 'Resumen de mis resultados',
+    firstTestHint: 'Empieza con una evaluación', overview: 'Mi perfil psicológico',
+    shortcutsLabel: 'Tests y plan terapéutico',
+    testsTitle: 'Mis tests', testsHint: 'Resultados y mediciones repetidas',
+    therapyTitle: 'Plan terapéutico', therapyHint: 'Informes y recomendaciones profesionales',
+    therapyNote: 'El plan terapéutico no se genera automáticamente a partir de los tests.',
     measured: 'Escalas medidas', scaleNote: 'Cada lectura muestra una posición dentro de su propia escala validada, no un porcentaje de salud ni una nota global.',
     noMeasurement: '—', metrics: { energy: 'Energía', relationships: 'Relaciones', functioning: 'Trabajo y metas', embodiment: 'Cuerpo', meaning: 'Sentido' },
   },
@@ -120,7 +132,7 @@ const TABS = [
 const STUDIO_COPY = {
   en: {
     title: 'My Space', label: 'MY SPACE · PERSONAL GROWTH', settings: 'Settings',
-    tabs: { today: 'Today', tests: 'Tests', state: 'My State', path: 'My Path', courses: 'Courses', reports: 'Reports', sessions: 'Sessions' },
+    tabs: { today: 'Today', tests: 'Tests', state: 'My State', path: 'My Path', courses: 'Courses', reports: 'Psychic Health', sessions: 'Sessions' },
     hero: 'Your path of growth',
     intro: 'Discover yourself, notice changes and choose a meaningful next step — at your own pace.',
     video: 'Scenic introduction to My Space', film: 'Nature film · no narration', route: 'My route',
@@ -130,7 +142,7 @@ const STUDIO_COPY = {
   },
   ru: {
     title: 'Моё пространство', label: 'МОЁ ПРОСТРАНСТВО · ЛИЧНОСТНЫЙ РОСТ', settings: 'Настройки',
-    tabs: { today: 'Сегодня', tests: 'Тесты', state: 'Состояние', path: 'Мой путь', courses: 'Курсы', reports: 'Отчёты', sessions: 'Сессии' },
+    tabs: { today: 'Сегодня', tests: 'Тесты', state: 'Состояние', path: 'Мой путь', courses: 'Курсы', reports: 'Псих. здоровье', sessions: 'Сессии' },
     hero: 'Мой путь развития',
     intro: 'Узнавайте себя, замечайте изменения и выбирайте следующий шаг в своём темпе.',
     video: 'Природное вступление в Моё пространство', film: 'Видео о природе · без озвучивания', route: 'Мой маршрут',
@@ -140,7 +152,7 @@ const STUDIO_COPY = {
   },
   es: {
     title: 'Mi espacio', label: 'MI ESPACIO · CRECIMIENTO PERSONAL', settings: 'Ajustes',
-    tabs: { today: 'Hoy', tests: 'Tests', state: 'Estado', path: 'Mi ruta', courses: 'Cursos', reports: 'Informes', sessions: 'Sesiones' },
+    tabs: { today: 'Hoy', tests: 'Tests', state: 'Estado', path: 'Mi ruta', courses: 'Cursos', reports: 'Salud mental', sessions: 'Sesiones' },
     hero: 'Mi camino de crecimiento',
     intro: 'Conócete, observa tus cambios y elige tu próximo paso a tu ritmo.',
     video: 'Introducción visual de naturaleza a Mi espacio', film: 'Vídeo de naturaleza · sin narración', route: 'Mi ruta',
@@ -348,7 +360,22 @@ export function ProfileResultsArchive({ locale = 'en', results = [] }) {
         </span>
         <span className={styles.reportHeroArrow}><ArrowRight size={24} aria-hidden="true" /></span>
       </Link>
+
     </header>
+
+    <nav className={styles.healthShortcuts} aria-label={d.shortcutsLabel} data-psychic-health-shortcuts>
+      <Link href={root + '/tests?filter=completed'} prefetch={false} data-psychic-health-tests>
+        <ListChecks size={23} aria-hidden="true" />
+        <span><strong>{d.testsTitle}</strong><small>{d.testsHint}</small></span>
+        <ArrowRight size={18} aria-hidden="true" />
+      </Link>
+      <a href="#personal-reports" data-psychic-health-therapy-plan>
+        <FileText size={23} aria-hidden="true" />
+        <span><strong>{d.therapyTitle}</strong><small>{d.therapyHint}</small></span>
+        <ArrowRight size={18} aria-hidden="true" />
+      </a>
+    </nav>
+    <p className={styles.healthNote}><LockKeyhole size={15} aria-hidden="true" />{d.therapyNote}</p>
 
     <div className={styles.reportOverviewHeading}>
       <h2>{d.overview}</h2>
