@@ -24,6 +24,7 @@ import {telegramBusinessReplyFailure,telegramBusinessReplyCrmState} from '@/lib/
 import {captureTelegramLeadBestEffort} from '@/lib/crm/telegram-lead-capture-policy.mjs'
 import {captureWhatsAppFirstContact,recordWhatsAppInboundReceipt} from '@/lib/crm/whatsapp-lead-capture'
 import {whatsappHumanTakeoverActive} from '@/lib/crm/whatsapp-human-takeover'
+import {archiveWhatsAppAliAcceptedReply} from '@/lib/crm/whatsapp-ali-reply-archive'
 import {telegramBusinessMessageFromUpdate} from '@/lib/assist/telegram-business-request.mjs'
 import {parseHiTelegramRating} from '@/lib/holistic-support/hi-learning-policy.mjs'
 import {insertHiLearningQuality} from '@/lib/holistic-support/hi-learning-store'
@@ -303,8 +304,13 @@ export async function POST(request,{params}){
                 await consumeRate(config,{op:'hh-wa-secretary-chat',
                   peer:operationHash({business:event.accountId,peer:event.userId},config)},12,86400)
                 await consumeRate(config,{op:'hh-wa-secretary-global'},100,86400)
-                await sendWhatsAppDiagnosticPrompt({to:secretary.to,text:secretary.reply,
+                const accepted=await sendWhatsAppDiagnosticPrompt({to:secretary.to,text:secretary.reply,
                   locale:secretary.locale})
+                // Provider acceptance is not delivery. Archive only when a
+                // prior private CRM consent exists; no second Meta send.
+                if(accepted?.status==='accepted'&&accepted.providerId)try{
+                  await archiveWhatsAppAliAcceptedReply(event,config,secretary.reply,accepted.providerId)
+                }catch{console.error('HH_CRM_WA_ALI_REPLY_ARCHIVE_UNCONFIRMED')}
               }catch{console.error('HH_CRM_WA_SECRETARY_SEND_UNCONFIRMED')}
             }
             continue
@@ -339,9 +345,14 @@ export async function POST(request,{params}){
           if(intake.handled&&intake.reply&&!(await whatsappHumanTakeoverActive(event,config))){
             // Consent/CRM state are committed before one reply attempt.
             // Uncertain provider outcomes must not automatically repeat.
-            try{await sendWhatsAppDiagnosticPrompt({
-              to:intake.to,text:intake.reply,keyboard:intake.keyboard,locale:intake.locale
-            })}catch{console.error('HH_CRM_WA_PROMPT_SEND_UNCONFIRMED')}
+            try{
+              const accepted=await sendWhatsAppDiagnosticPrompt({
+                to:intake.to,text:intake.reply,keyboard:intake.keyboard,locale:intake.locale
+              })
+              if(accepted?.status==='accepted'&&accepted.providerId)try{
+                await archiveWhatsAppAliAcceptedReply(event,config,intake.reply,accepted.providerId)
+              }catch{console.error('HH_CRM_WA_ALI_REPLY_ARCHIVE_UNCONFIRMED')}
+            }catch{console.error('HH_CRM_WA_PROMPT_SEND_UNCONFIRMED')}
           }
           // Every verified, connected inbound has a contact and at least
           // a neutral message receipt, independent of the chosen scenario.
