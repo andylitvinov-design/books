@@ -82,6 +82,12 @@ test('opt-out, no-booking and factual interruptions are brief and do not advance
   ['ru','не хочу записываться','no_booking'],
   ['en',"I don't want to book",'no_booking'],
   ['es','No quiero reservar','no_booking'],
+  ['ru','привет','greeting'],
+  ['en','hello','greeting'],
+  ['es','hola','greeting'],
+  ['ru','другая тема','topic'],
+  ['en','change topic','topic'],
+  ['es','cambiar de tema','topic'],
   ['ru','Сколько стоит консультация?','price'],
   ['en','How much does it cost?','price'],
   ['es','¿Cuánto cuesta?','price'],
@@ -128,7 +134,8 @@ test('web Sessions uses signed-page links only and stays separate from psycholog
  const ui=readFileSync(new URL('../components/holistic-agent-chat.tsx',import.meta.url),'utf8');
  const api=readFileSync(new URL('../app/api/holistic-agent/turn/route.js',import.meta.url),'utf8');
  assert.match(ui,/sessionSecretaryMessage\(text,turnLocale\)/);
- assert.match(ui,/intent\.kind==="stop"\|\|intent\.kind==="no_booking"/);
+ assert.match(ui,/intent\.kind==="stop"\|\|intent\.kind==="no_booking"\|\|intent\.kind==="topic"/);
+ assert.match(ui,/!\(projectFlow==="sessions"&&sessionStep\)/);
  assert.match(ui,/intent\.kind==="service"/);
  assert.match(ui,/option\.id===intent\.serviceId/);
  assert.match(ui,/setSessionOffers\(\[chosen\]\)/);
