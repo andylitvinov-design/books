@@ -213,7 +213,7 @@ test('Summary preserves pending last utterance, lets user exit and sends method 
   const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
   assert.match(ui,/inFlightClientRef/)
   assert.match(ui,/unanswered:true/)
-  assert.match(ui,/if\(protocolOpen\)return/)
+  assert.match(ui,/if\(protocolOpen\|\|ratingOpen\)return/)
   assert.match(ui,/turn\.unanswered===true/)
   assert.match(ui,/methodId:visibleMethodId/)
 })
