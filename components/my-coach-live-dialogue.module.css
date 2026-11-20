@@ -1389,5 +1389,30 @@
   .root[data-session-visual-v4] .waveBars i{transition:none}
 }
 
-/* The reading profile button shares the approved compact mobile voice row. */
+
+/* Optional provider choice is deliberately tucked into More options to keep
+ * the one-screen mobile voice controls compact. Unavailable Gemini is disabled. */
+.coachEnginePicker{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  width:100%;
+  padding:7px 0;
+  font-size:13px;
+  line-height:1.3;
+}
+.coachEnginePicker select{
+  min-width:0;
+  max-width:66%;
+  padding:7px 10px;
+  border:1px solid rgba(45,70,65,.20);
+  border-radius:10px;
+  background:var(--surface,#fff);
+  color:inherit;
+  font:inherit;
+}
+.coachEnginePicker select:focus-visible{outline:2px solid #147a71;outline-offset:2px}
+
+/* Production in-session profile keeps the approved compact mobile voice row. */
 .root[data-session-visual-v4] .voiceControls .profileControl{background:#eef8ef;color:#116346;cursor:pointer}

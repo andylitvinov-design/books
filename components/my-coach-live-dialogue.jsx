@@ -19,6 +19,8 @@ import MyCoachSpeechLoop from './my-coach-speech-loop'
 import MyCoachSessionStateCard from './my-coach-session-state-card'
 import {startCoachingMp3Playback,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
+import {readCoachTurnStream} from '@/lib/coaching/coach-stream-client.mjs'
+import {coachGeminiVoiceOptions} from '@/lib/coaching/gemini-voice-catalog.mjs'
 import {detectedSpeechLocale} from '@/lib/personal-coaching/my-coach-dictation.mjs'
 import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
 import CoachingAvatar from '@/components/app/coaching-avatar'
@@ -140,6 +142,19 @@ const transcriptUi={
   ru:{heading:'Диалог · расшифровка',listening:'Слушаю',languageLabel:'Язык расшифровки и голоса коуча',autoLanguage:'Авто · устройство/контекст',hint:'Здесь появятся ваши слова. Можно также написать ответ ниже.',consentShort:'Согласен(на) отправлять текст бесплатной AI-модели; браузер может обрабатывать мой голос.',details:'Приватность и обработка данных'},
   es:{heading:'Diálogo · transcripción',listening:'Escuchando',languageLabel:'Idioma de transcripción y voz del coach',autoLanguage:'Auto · dispositivo/contexto',hint:'Aquí aparecerán tus palabras. También puedes escribir abajo.',consentShort:'Acepto enviar mi texto a la IA gratuita; el navegador puede procesar mi voz.',details:'Privacidad y procesamiento'},
 }
+const geminiTextPrivacyDetails={
+  ru:{free:'Вы отдельно соглашаетесь передавать текст этого диалога в Gemini Free. В бесплатном API Google может использовать содержание для улучшения моделей. При отказе текст не отправляется. Без автоматического перехода на платный тариф.',
+    paid:'Текст этого разговора передаётся в Gemini Paid только после вашего согласия. По условиям платного API Google не использует отправленный контент для улучшения моделей. Расходы ограничены на сервере; автоматической смены тарифа нет.'},
+  en:{free:'You separately consent to sending this dialogue text to Gemini Free. Google may use Free API content to improve its models. No content is sent until you consent; no automatic upgrade to Paid.',
+    paid:'This conversation text goes to Gemini Paid only with your consent. Paid API content is not used to improve Google models. Server request caps apply; no automatic tier switch.'},
+  es:{free:'Aceptas enviar este texto a Gemini gratuito. Google puede usar el contenido del nivel gratuito para mejorar sus modelos. Sin consentimiento no se envía el texto ni se cambia al plan de pago.',
+    paid:'Este texto se envía a Gemini de pago solo con tu consentimiento. Google no lo usa para mejorar sus modelos. Hay límites de solicitudes y no se cambia automáticamente de plan.'},
+}
+const geminiVoicePrivacyDetails={
+  ru:'При Play для распознавания микрофона могут использоваться браузер или Groq Whisper. Holistic House не сохраняет запись. Проверенный текст ответа коуча отправляется отдельно в выбранный Gemini TTS для озвучивания; бесплатный режим может использовать данные для улучшения моделей, платный — нет. В запросах к Interactions API отключено сохранение взаимодействий.',
+  en:'On Play, microphone speech may be transcribed by the browser or Groq Whisper; Holistic House does not store the recording. Separately consented validated coach replies go to the chosen Gemini TTS for speech. Free API data may be used to improve models; Paid API data is not. Interactions API storage is disabled.',
+  es:'Al pulsar Play, el navegador o Groq Whisper pueden transcribir el micrófono; Holistic House no guarda la grabación. Las respuestas validadas se envían a Gemini TTS seleccionado con consentimiento. El nivel gratuito puede usar datos para mejorar modelos y el de pago no. El almacenamiento de Interactions está desactivado.',
+}
 const voiceProviderDetails={
   en:'Play starts the conversation. On iPhone Safari, each short spoken answer may be sent to Groq Whisper under the verified free quota to transcribe, without storage by Holistic House. The audio provider has its own privacy policy. Browser speech recognition may process microphone audio. If a natural voice is available, coach-generated text is sent to Google Chirp or Fish Audio; Fish may use the text to train models. Holistic House does not store a microphone recording.',
   ru:'Нажатие Play начинает диалог. На iPhone Safari короткие голосовые ответы могут передаваться в Groq Whisper для расшифровки в пределах подтверждённого бесплатного лимита. Holistic House не сохраняет аудио; у провайдера своя политика конфиденциальности. Браузер может обрабатывать звук микрофона для распознавания речи. При доступности естественного голоса текст коуча передаётся Google Chirp или Fish Audio; Fish может использовать текст для обучения моделей. Holistic House не сохраняет запись микрофона.',
@@ -169,6 +184,19 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [coachProfileOpen,setCoachProfileOpen]=useState(false)
   const coachProfileOpenRef=useRef(false)
   const [speechPreview,setSpeechPreview]=useState('')
+  const [streamingPreview,setStreamingPreview]=useState('')
+  const [coachEngine,setCoachEngine]=useState('groq_stream')
+  const [geminiCapabilities,setGeminiCapabilities]=useState({
+    gemini_free:false,gemini_paid:false,gemini_tts_free:false,gemini_tts_paid:false,
+  })
+  const [geminiConsent,setGeminiConsent]=useState(false)
+  const [geminiVoiceTier,setGeminiVoiceTier]=useState('existing')
+  const [geminiVoiceConsent,setGeminiVoiceConsent]=useState(false)
+  const [geminiVoiceByLocale,setGeminiVoiceByLocale]=useState(()=>{
+    const first=coachGeminiVoiceOptions(personaId)[0]
+    return {ru:first,en:first,es:first}
+  })
+  const [streamingReady,setStreamingReady]=useState(false)
   const [cloudAvailable,setCloudAvailable]=useState(false)
   const [cloudAgreed,setCloudAgreed]=useState(false)
   const [cloudProvider,setCloudProvider]=useState(null)
@@ -270,15 +298,32 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const next={status:result?.status==='verified'?'verified':'unavailable',reason:result?.reason||''}
       if(next.status!=='verified')modelProbeRef.current.lastAttempt=Date.now()
       setReadiness(next)
+      setStreamingReady(result?.status==='verified'&&result?.privacyRouting==='account_zdr_owner_confirmed')
     }).catch(()=>{
       if(!controller.signal.aborted){
         modelProbeRef.current.lastAttempt=Date.now()
         setReadiness({status:'unavailable',reason:'model_unavailable'})
+        setStreamingReady(false)
       }
     })
     return ()=>controller.abort()
   },[])
-  useEffect(()=>{if(transcriptRef.current)transcriptRef.current.scrollTop=transcriptRef.current.scrollHeight},[turns,speechPreview])
+  // This checks local config flags only, never sends a client's words to Google.
+  useEffect(()=>{
+    const controller=new AbortController()
+    fetch('/api/app/my-coach/engines',{
+      credentials:'same-origin',cache:'no-store',signal:controller.signal,
+    }).then(r=>r.ok?r.json():null).then(data=>{
+      if(controller.signal.aborted||data?.schema!=='HH_MY_COACH_ENGINES_V1')return
+      setGeminiCapabilities({
+        gemini_free:data.gemini_free===true,gemini_paid:data.gemini_paid===true,
+        gemini_tts_free:data.gemini_tts_free===true,
+        gemini_tts_paid:data.gemini_tts_paid===true,
+      })
+    }).catch(()=>{})
+    return ()=>controller.abort()
+  },[])
+  useEffect(()=>{if(transcriptRef.current)transcriptRef.current.scrollTop=transcriptRef.current.scrollHeight},[turns,speechPreview,streamingPreview])
   useEffect(()=>{
     if(voiceState.phase!=='listening'){
       micWaveRef.current?.style.setProperty('--coach-mic-level','0')
@@ -314,6 +359,16 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   })[conversationLang]:opening)
   const ui=sessionUi[lang]||sessionUi.en
   const voiceGate=voiceGateText[lang]||voiceGateText.en
+  const selectedGeminiEngine=coachEngine==='gemini_free'||coachEngine==='gemini_paid'
+  const geminiEngineReady=selectedGeminiEngine&&geminiCapabilities[coachEngine]===true&&geminiConsent
+  const geminiVoices=coachGeminiVoiceOptions(personaId)
+  const selectedGeminiVoice=geminiVoices.includes(geminiVoiceByLocale[conversationLang])
+    ?geminiVoiceByLocale[conversationLang]:geminiVoices[0]
+  const geminiVoiceReady=geminiVoiceTier!=='existing'&&
+    geminiCapabilities[geminiVoiceTier]===true&&geminiVoiceConsent
+  const chosenCloudProvider=geminiVoiceReady?geminiVoiceTier:cloudProvider
+  const chosenCloudAvailable=geminiVoiceReady||cloudAvailable
+  const chosenCloudAgreed=geminiVoiceReady||cloudAgreed
   const captions=transcriptUi[lang]||transcriptUi.en
   const latestCoachTurn=[...turns].reverse().find(turn=>turn.role==='assistant')
   const latestCoachText=latestCoachTurn?.content||introduction
@@ -390,6 +445,39 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       (!replayAudioContextRef.current||replayAudioContextRef.current.state==='closed'))
       replayAudioContextRef.current=unlockCoachingAudioContext()
   }
+  async function previewGeminiCoachVoice(){
+    if(!geminiVoiceReady||busy||replaying||voiceState.phase!=='idle')return
+    ensureReplayAudioOutput()
+    const controller=new AbortController()
+    replayControllerRef.current?.abort()
+    replayPlayerRef.current?.cancel()
+    replayControllerRef.current=controller
+    setReplaying(true);setPlaybackNotice('')
+    const done=(failed=false)=>{
+      if(replayControllerRef.current!==controller)return
+      replayControllerRef.current=null
+      replayPlayerRef.current?.cancel();replayPlayerRef.current=null
+      setReplaying(false)
+      setVoiceState({phase:'idle',beat:0})
+      if(failed)setPlaybackNotice(voiceGate.naturalUnavailable)
+    }
+    try{
+      const response=await fetch('/api/app/my-coach/voice/synthesize',{
+        method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({provider:geminiVoiceTier,personaId,locale:conversationLang,
+          voiceName:selectedGeminiVoice,preview:true,voiceConsent:true,cloudVoiceConsent:true,
+          ...(geminiVoiceTier==='gemini_tts_free'?{trainingUseConsent:true}:{})}),
+      })
+      if(!response.ok||!response.body||controller.signal.aborted)throw Error('PREVIEW_UNAVAILABLE')
+      replayPlayerRef.current=startCoachingMp3Playback(response,{
+        audioContext:replayAudioContextRef.current,
+        onStart:()=>{if(!controller.signal.aborted)setVoiceState({phase:'speaking',beat:0})},
+        onEnd:()=>done(false),onBlocked:()=>done(true),onError:()=>done(true),
+      })
+    }catch{if(!controller.signal.aborted)done(true)}
+  }
+
   function replayCoachReply(overrideText){
     // Replay is always high-quality remote audio. Never replace it with
     // native speechSynthesis even if Fish or Google fails.
@@ -404,8 +492,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     ensureReplayAudioOutput() // Reuse Web Audio unlocked in this Replay/Send gesture.
     setPlaybackNotice('');setReplayBlocked(false)
     const replayingIntro=typeof overrideText!=='string'&&!latestCoachTurn
-    const dynamicAllowed=cloudAgreed&&cloudAvailable&&
-      ['google_chirp3_hd','fish_free'].includes(cloudProvider)
+    const dynamicAllowed=chosenCloudAgreed&&chosenCloudAvailable&&
+      ['google_chirp3_hd','fish_free','gemini_tts_free','gemini_tts_paid'].includes(chosenCloudProvider)
     if(!replayingIntro&&!dynamicAllowed){
       setPlaybackNotice(voiceGate.naturalUnavailable)
       return
@@ -442,14 +530,16 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       }catch{fail()}
       return
     }
-    const spoken=cloudProvider==='google_chirp3_hd'?
+    const spoken=chosenCloudProvider==='google_chirp3_hd'?
       coachSpokenText(spokenText).text:spokenText.slice(0,900)
     void fetch('/api/app/my-coach/voice/synthesize',{
       method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({provider:cloudProvider,personaId,locale:latestCoachTurn?.locale||detectedSpeechLocale(spoken,conversationLang),text:spoken,
+      body:JSON.stringify({provider:chosenCloudProvider,personaId,
+        locale:latestCoachTurn?.locale||detectedSpeechLocale(spoken,conversationLang),text:spoken,
+        ...(chosenCloudProvider?.startsWith('gemini_tts_')?{voiceName:selectedGeminiVoice}:{}),
         voiceConsent:true,cloudVoiceConsent:true,
-        ...(cloudProvider==='fish_free'?{trainingUseConsent:true}:{})}),
+        ...(['fish_free','gemini_tts_free'].includes(chosenCloudProvider)?{trainingUseConsent:true}:{})}),
     }).then(response=>{
       if(!response.ok||!response.body)throw Error('NATURAL_TTS_UNAVAILABLE')
       if(controller.signal.aborted||replayControllerRef.current!==controller)return
@@ -498,9 +588,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
 
   function openCoachProfile(){
     coachProfileOpenRef.current=true
-    // A profile is a reading view, not an end-session navigation. Keep all
-    // in-tab messages, model progress and draft intact, but stop microphone
-    // capture and any speech while the dialog is open.
+    // Profile is not End. Keep ephemeral protocol and draft while stopping
+    // microphone, speech and any stale provider response.
     speechRef.current?.stop?.()
     cancelPendingCoachTurn()
     replayControllerRef.current?.abort()
@@ -551,9 +640,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         ?{status:result.status==='verified'?'verified':'unavailable',reason:result.reason||''}
         :{status:'unavailable',reason:'model_unavailable'}
       setReadiness(next)
+      setStreamingReady(next.status==='verified'&&result?.privacyRouting==='account_zdr_owner_confirmed')
       return next.status==='verified'
     }catch{
       setReadiness({status:'unavailable',reason:'model_unavailable'})
+      setStreamingReady(false)
       return false
     }finally{
       modelProbeRef.current.inFlight=false
@@ -565,6 +656,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     setTurns(previous=>markLatestCoachReplyInterrupted(previous,spokenText))
   }
   function cancelPendingCoachTurn(){
+    setStreamingPreview('')
     turnRequestRef.current+=1
     const active=pending.current
     if(active){pending.current=null;active.abort();setBusy(false)}
@@ -613,8 +705,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       turns:conversationTurns.map(({role,content})=>({role,content}))}
     const localInterruption=readiness.status!=='verified'
       ?(coachingBrainSafety(currentInput)||coachingBrainBoundary(currentInput)):null
-    const needsVerifiedModel=readiness.status!=='verified'&&!wisdomRequested&&!localInterruption
-    const modelReady=!needsVerifiedModel||await retryCoachModelAfterOutage()
+    const needsVerifiedModel=!wisdomRequested&&!localInterruption&&
+      (selectedGeminiEngine?!geminiEngineReady:readiness.status!=='verified')
+    const modelReady=!needsVerifiedModel||
+      (!selectedGeminiEngine&&await retryCoachModelAfterOutage())
     if(turnRequestRef.current!==requestId)return null
     if(localInterruption||authRequired||(!modelReady&&!wisdomRequested)){
       // Guests and temporarily unavailable AI still get private local coaching;
@@ -660,22 +754,37 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const controller=new AbortController()
     pending.current?.abort()
     pending.current=controller
-    setBusy(true);setError('')
+    setBusy(true);setError('');setStreamingPreview('')
+    const useStreaming=coachEngine==='groq_stream'&&streamingReady&&!wisdomRequested
     try{
-      const response=await fetch('/api/app/my-coach/turn',{
+      const requestOptions={
         method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
           personaId,settings,locale:responseLocale,consent:true,message,voiceTurn:voiceTurn===true,
+          ...(selectedGeminiEngine?{
+            engine:coachEngine,geminiConsent:true,
+            ...(coachEngine==='gemini_free'?{geminiFreeDataConsent:true}:{})
+          }:{}),
           elapsedSeconds:sessionClockStarted?Math.floor(activeSessionSeconds):0,
           sessionContext:coachEphemeralContext(conversationTurns,coachTurnWindow(conversationTurns,10),responseLocale,message),
           semanticHints:semanticHintsRef.current,
           turns:coachTurnWindow(conversationTurns,10)
             .map(({role,content})=>({role,content})), // Preserve the latest client-stated active goal, not a greeting.
         }),
-      })
+      }
+      // The same consented payload and guard apply to both engines: only
+      // the transport changes. Keep literal strict path for signed-in fallback.
+      const response=useStreaming
+        ?await fetch('/api/app/my-coach/stream',requestOptions)
+        :await fetch('/api/app/my-coach/turn',requestOptions)
       if(response.status===401){setAuthRequired(true);return}
-      const result=await response.json().catch(()=>null)
+      const result=useStreaming?await readCoachTurnStream(response,{
+        signal:controller.signal,
+        onPreview:preview=>{
+          if(!controller.signal.aborted&&turnRequestRef.current===requestId)setStreamingPreview(preview)
+        },
+      }):await response.json().catch(()=>null)
       if(!response.ok||!result?.mode||result.personaId!==personaId)throw Error('COACH_REPLY_UNAVAILABLE')
       if(controller.signal.aborted||turnRequestRef.current!==requestId)return null
       const answer=assistantText(result)
@@ -695,7 +804,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           sessionProgress:result.sessionProgress?.source==='director-client-evidence'
             ?result.sessionProgress:null,
           suggestion:result.planSuggestion||'',evidence:result.evidenceQuote||'',
-          inference:result.mode==='ai'&&['groq','openrouter'].includes(result.inference?.provider)&&
+          inference:result.mode==='ai'&&['groq','openrouter','gemini_free','gemini_paid'].includes(result.inference?.provider)&&
             typeof result.inference?.model==='string'&&result.inference.model.length<=128
             ?result.inference:null,
         }]
@@ -718,7 +827,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(!controller.signal.aborted&&turnRequestRef.current===requestId)setError(t.error)
       return null
     }finally{
-      if(pending.current===controller){pending.current=null;setBusy(false)}
+      if(pending.current===controller){pending.current=null;setBusy(false);setStreamingPreview('')}
     }
   }
   const motionPhase=paused?'idle':voiceState.phase==='speaking'?'speaking':
@@ -803,8 +912,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <div className={styles.voiceCenter} data-voice-active={voiceState.phase!=='idle'?'true':undefined}>
           <MyCoachSpeechLoop ref={speechRef} locale={conversationLang} speechLocale={speechLocale} initialDraft={draft}
             introduction={introduction} onSessionStart={()=>setCloudAgreed(true)}
-            cloudAvailable={cloudAvailable} cloudAgreed={cloudAgreed} cloudProvider={cloudProvider} personaId={personaId} enabled={true}
-            canStart={!busy&&!paused&&!replaying} onTurn={(text,spoken)=>sendMessage(text,{voiceTurn:true,utteranceLocale:spoken?.locale})}
+            cloudAvailable={chosenCloudAvailable} cloudAgreed={chosenCloudAgreed}
+            cloudProvider={chosenCloudProvider} voiceName={selectedGeminiVoice}
+            personaId={personaId} enabled={true}
+            canStart={!busy&&!paused&&!replaying&&(geminiVoiceTier==='existing'||geminiVoiceReady)} onTurn={(text,spoken)=>sendMessage(text,{voiceTurn:true,utteranceLocale:spoken?.locale})}
             onCancelTurn={cancelPendingCoachTurn} onCoachInterrupted={markCoachSpeechInterrupted} onVoiceStateChange={setVoiceState}
             onMicLevel={level=>{
               const wave=micWaveRef.current
@@ -826,7 +937,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         </div>
         <button type="button" className={styles.keyboardControl} onClick={toggleComposer}
           aria-label={ui.type} title={ui.type}><Keyboard size={17} aria-hidden="true"/><span>{ui.keyboardShort}</span></button>
-        <button type="button" className={styles.profileControl} data-coach-profile-open onClick={openCoachProfile} aria-label={lang==='ru'?'Открыть профиль коуча':lang==='es'?'Abrir perfil del coach':'Open coach profile'} title={ui.profile}>
+        <button type="button" className={styles.profileControl} data-coach-profile-open
+          onClick={openCoachProfile}
+          aria-label={lang==='ru'?'Открыть профиль коуча':lang==='es'?'Abrir perfil del coach':'Open coach profile'}
+          title={ui.profile}>
           <UserRound size={17} aria-hidden="true"/><span>{ui.profile}</span>
         </button>
         <Link className={styles.endControl} href={'/'+lang+'/my-coach'} aria-label={ui.end} title={ui.end}>
@@ -858,7 +972,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         progress={progressValid?lastRecordedProgress:null} stageLabel={stageDescription}/>
       <details className={styles.voicePrivacyDetails}>
         <summary>{lang==='ru'?'Приватность голоса':lang==='es'?'Privacidad de voz':'Voice privacy'}</summary>
-        <p>{voiceProviderDetails[lang]}</p>
+        <p>{geminiVoiceTier==='existing'?voiceProviderDetails[lang]:geminiVoicePrivacyDetails[lang]}</p>
       </details>
       {playbackNotice&&<p className={styles.playbackNotice} role="status">{playbackNotice}</p>}
       <div className={styles.conversationPanel}>
@@ -874,13 +988,17 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             <strong>{turn.role==='user'?t.user:name}
               {turn.role==='assistant'&&turn.inference?.model&&
                 <span className={styles.responseSource} data-coach-answer-source={turn.inference.provider}>
-                  {' · '}{turn.inference.provider==='groq'?'Groq':'OpenRouter'} · {turn.inference.model}
+                  {' · '}{turn.inference.provider==='groq'?'Groq':turn.inference.provider?.startsWith('gemini_')?'Gemini':'OpenRouter'} · {turn.inference.model}
                   {turn.inference.reasoningEffort?' · '+turn.inference.reasoningEffort:''}
                 </span>}
               {turn.role==='assistant'&&turn.mode==='offline'&&
                 <span className={styles.responseSource}> · {t.offline}</span>}
             </strong><p>{turn.content}</p>
           </div>)}
+          {streamingPreview&&<div className={styles.transcriptCoach} data-coach-stream-preview aria-live="off">
+            <strong>{name} · {{ru:'Черновик ответа',en:'Draft reply',es:'Borrador de respuesta'}[lang]}</strong>
+            <p>{streamingPreview}</p>
+          </div>}
           {speechPreview&&<div className={styles.transcriptInterim} aria-live="off">
             <strong>{t.user} · {captions.listening}</strong><p>{speechPreview}</p>
           </div>}
@@ -897,16 +1015,77 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             placeholder={t.placeholder} disabled={busy||authRequired}
             onChange={event=>{setDraft(event.target.value);setError('')}}/>
           <button className={styles.send} type="submit"
-            disabled={busy||!draft.trim()||authRequired}>
+            disabled={busy||!draft.trim()||authRequired||(selectedGeminiEngine&&!geminiEngineReady)}>
             {busy?t.sending:t.send}<ArrowRight size={18} aria-hidden="true"/>
           </button>
         </form>}
         {error&&<p className={styles.error} role="alert">{error}</p>}
         <details className={styles.sessionMore}><summary>{lang==='ru'?'Дополнительно':lang==='es'?'Más opciones':'More options'}</summary>
+        <label className={styles.coachEnginePicker} data-coach-engine-choice>
+          <span>{({ru:'Движок диалога',en:'Dialogue engine',es:'Motor de diálogo'})[lang]}</span>
+          <select value={coachEngine} disabled={busy} onChange={event=>{
+            setCoachEngine(event.target.value);setGeminiConsent(false)
+          }}>
+            <option value="groq_stream">{({ru:'Groq · поток',en:'Groq · streaming',es:'Groq · flujo'})[lang]}</option>
+            <option value="groq_strict">{({ru:'Groq · стабильный',en:'Groq · validated',es:'Groq · validado'})[lang]}</option>
+            <option value="gemini_free" disabled={!geminiCapabilities.gemini_free}>Gemini · Free</option>
+            <option value="gemini_paid" disabled={!geminiCapabilities.gemini_paid}>Gemini · Paid</option>
+            <option value="gemini" disabled>{({ru:'Gemini Live · после проверки',en:'Gemini Live · pending approval',es:'Gemini Live · pendiente'})[lang]}</option>
+          </select>
+        </label>
+        {selectedGeminiEngine&&<label className={styles.coachEnginePicker} data-gemini-text-consent>
+          <input type="checkbox" checked={geminiConsent} onChange={event=>setGeminiConsent(event.target.checked)}/>
+          <span>{coachEngine==='gemini_free'?({
+            ru:'Согласен(на): бесплатный Gemini может использовать текст для улучшения моделей Google.',
+            en:'I agree: Free Gemini may use conversation text to improve Google models.',
+            es:'Acepto: Gemini gratuito puede usar mis textos para mejorar los modelos.'
+          }[lang]):({
+            ru:'Согласен(на) передавать текст Gemini Paid; Google не использует его для улучшения моделей.',
+            en:'I agree to use Gemini Paid; Google does not use submitted text to improve models.',
+            es:'Acepto Gemini Paid; Google no usa mis textos para mejorar modelos.'
+          }[lang])}</span>
+        </label>}
+        <label className={styles.coachEnginePicker} data-gemini-voice-provider>
+          <span>{({ru:'Голос коуча',en:'Coach voice',es:'Voz del coach'})[lang]}</span>
+          <select value={geminiVoiceTier} disabled={busy||replaying} onChange={event=>{
+            setGeminiVoiceTier(event.target.value);setGeminiVoiceConsent(false)
+          }}>
+            <option value="existing">{({ru:'Текущий голос',en:'Current voice',es:'Voz actual'})[lang]}</option>
+            <option value="gemini_tts_free" disabled={!geminiCapabilities.gemini_tts_free}>Gemini TTS · Free</option>
+            <option value="gemini_tts_paid" disabled={!geminiCapabilities.gemini_tts_paid}>Gemini TTS · Paid</option>
+          </select>
+        </label>
+        {geminiVoiceTier!=='existing'&&<>
+          <label className={styles.coachEnginePicker} data-gemini-voice-name>
+            <span>{conversationLang.toUpperCase()} · {({ru:'Выбор тембра',en:'Choose voice',es:'Elegir voz'})[lang]}</span>
+            <select value={selectedGeminiVoice} disabled={busy||replaying} onChange={event=>
+              setGeminiVoiceByLocale(prev=>({...prev,[conversationLang]:event.target.value}))}>
+              {geminiVoices.map(name=><option value={name} key={name}>{name}</option>)}
+            </select>
+          </label>
+          <label className={styles.coachEnginePicker} data-gemini-voice-consent>
+            <input type="checkbox" checked={geminiVoiceConsent}
+              onChange={event=>setGeminiVoiceConsent(event.target.checked)}/>
+            <span>{geminiVoiceTier==='gemini_tts_free'?({
+              ru:'Согласен(на): бесплатная озвучка Gemini может использовать текст для улучшения моделей.',
+              en:'I agree: Free Gemini speech may use text to improve models.',
+              es:'Acepto: la voz gratuita de Gemini puede usar el texto para mejorar modelos.'
+            }[lang]):({
+              ru:'Согласен(на) на платную озвучку Gemini. Вызовы ограничены бюджетом.',
+              en:'I agree to paid Gemini speech. Usage is rate-limited.',
+              es:'Acepto la voz Gemini de pago. El uso tiene límites.'
+            }[lang])}</span>
+          </label>
+          <button type="button" className={styles.captionMore}
+            disabled={!geminiVoiceReady||busy||replaying||voiceState.phase!=='idle'}
+            onClick={previewGeminiCoachVoice}>{({
+              ru:'▶ Прослушать пример',en:'▶ Preview this voice',es:'▶ Escuchar ejemplo'
+            }[lang])}</button>
+        </>}
         <button type="button" className={styles.captionMore} aria-pressed={showCaptions}
           onClick={()=>setShowCaptions(value=>!value)}>{ui.captions}</button>
         <details className={styles.consentDetails}><summary>{captions.details}</summary>
-          <p>{t.consent}</p><p className={styles.privacy}><ShieldCheck size={16} aria-hidden="true"/>{t.privacy}</p>
+          <p>{selectedGeminiEngine?geminiTextPrivacyDetails[lang][coachEngine==='gemini_free'?'free':'paid']:t.consent}</p><p className={styles.privacy}><ShieldCheck size={16} aria-hidden="true"/>{t.privacy}</p>
         </details>
         {onGuided&&<button className={styles.guidedFallback} type="button" onClick={onGuided}>
           {ui.guided}<ArrowRight size={16} aria-hidden="true"/>
@@ -955,6 +1134,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       <Link href={'/'+(lang==='es'?'en':lang)+'/app/portrait'}><UserRound size={21} aria-hidden="true"/><span>{ui.profile}</span></Link>
     </nav>
     {coachProfileOpen&&<MyCoachCompactProfile personaId={personaId} locale={conversationLang}
-      methodId={visibleMethodId} onBack={()=>{coachProfileOpenRef.current=false;setCoachProfileOpen(false)}}/>}
+      methodId={visibleMethodId}
+      onBack={()=>{coachProfileOpenRef.current=false;setCoachProfileOpen(false)}}/>}
   </section>
 }
