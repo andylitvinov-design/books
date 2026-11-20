@@ -145,3 +145,128 @@ test('live voice conversational policy favors direct brief responses without dro
  assert.match(prompt,/input\.voiceTurn===true/)
  assert.match(brain,/enforceCoachSessionDirective\(parsed,directive\)/)
 })
+
+test('iPhone silent microphone recovers once locally, never uploads silence or fakes listening',async()=>{
+ let time=0,timer=null,requested=0,stopped=0,uploads=0;
+ const states=[],failures=[],levels=[];
+ class Recorder{
+  static isTypeSupported(type){return type==='audio/mp4'}
+  state='inactive';mimeType='audio/mp4';
+  start(){this.state='recording'}
+  stop(){if(this.state!=='recording')return;this.state='inactive';this.onstop?.()}
+ }
+ class Context{
+  state='running'
+  createMediaStreamSource(){return {connect(){},disconnect(){}}}
+  createAnalyser(){return {fftSize:1024,getByteTimeDomainData(buffer){buffer.fill(128)}}}
+  resume(){return Promise.resolve()}
+  close(){return Promise.resolve()}
+ }
+ const env={
+  navigator:{mediaDevices:{getUserMedia:async()=>{
+   requested++;
+   const track={kind:'audio',muted:requested===1,readyState:'live',stop(){stopped++}}
+   return {getTracks:()=>[track],getAudioTracks:()=>[track]}
+  }}},
+  MediaRecorder:Recorder,AudioContext:Context,
+  fetch:async()=>{uploads++;throw Error('SILENCE_MUST_NOT_UPLOAD')},
+  setInterval(fn){timer=fn;return 1},clearInterval(){timer=null},
+  performance:{now:()=>time},
+ }
+ const capture=startCoachRecordedTurn({locale:'ru',environment:env,
+   onLevel:level=>levels.push(level),onState:state=>states.push(state),
+   onFailure:code=>failures.push(code)})
+ for(let i=0;i<30&&!timer;i++)await new Promise(resolve=>setImmediate(resolve))
+ for(let i=0;i<12;i++){time+=100;timer?.()}
+ for(let i=0;i<30&&(requested<2||!timer);i++)await new Promise(resolve=>setImmediate(resolve))
+ assert.equal(requested,2,'first muted input causes exactly one local reacquisition')
+ assert.equal(typeof timer,'function','new microphone stream has a working sample timer')
+ assert.ok(states.includes('recovering'))
+ for(let i=0;i<60;i++){time+=100;timer?.()}
+ assert.deepEqual(failures,[],
+   'a genuinely quiet but unmuted replacement mic must remain usable')
+ assert.equal(requested,2,'the app must not spin on new microphone permission requests')
+ assert.equal(uploads,0,'no Whisper request for silence or health recovery')
+ capture.cancel()
+ assert.ok(stopped>=2)
+ assert.equal(levels.at(-1),0)
+})
+
+test('ordinary quiet environment remains listening and does not spend a provider request',async()=>{
+ let now=0,tick=null,requested=0,uploads=0,quiet=0,failed=0;
+ class Recorder{
+  static isTypeSupported(type){return type==='audio/mp4'}
+  state='inactive';mimeType='audio/mp4'
+  start(){this.state='recording'}
+  stop(){this.state='inactive';this.onstop?.()}
+ }
+ class Context{
+  state='running'
+  createMediaStreamSource(){return {connect(){},disconnect(){}}}
+  createAnalyser(){return {fftSize:1024,getByteTimeDomainData(b){b.fill(129)}}}
+  resume(){return Promise.resolve()}
+  close(){return Promise.resolve()}
+ }
+ const env={
+  navigator:{mediaDevices:{getUserMedia:async()=>{requested++;
+    const track={kind:'audio',muted:false,readyState:'live',stop(){}}
+    return {getTracks:()=>[track],getAudioTracks:()=>[track]}}}},
+  MediaRecorder:Recorder,AudioContext:Context,
+  fetch:async()=>{uploads++;throw Error('NO_SILENCE_UPLOAD')},
+  setInterval(fn){tick=fn;return 1},clearInterval(){tick=null},
+  performance:{now:()=>now},
+ }
+ const capture=startCoachRecordedTurn({environment:env,
+  onState:state=>{if(state==='quiet')quiet++},onFailure:()=>failed++})
+ for(let i=0;i<30&&!tick;i++)await new Promise(resolve=>setImmediate(resolve))
+ for(let i=0;i<92;i++){now+=100;tick?.()}
+ assert.equal(requested,1,'ambient quiet does not restart the microphone')
+ assert.equal(uploads,0)
+ assert.equal(failed,0)
+ assert.equal(quiet,1,'quiet is a truthful status, not a capture failure')
+ capture.cancel()
+})
+
+test('recorded microphone failure leaves coach in ready with localized retry and no fake Listening',()=>{
+ const speech=source('components/my-coach-speech-loop.jsx');
+ assert.match(speech,/if\(code==='MIC_NO_SIGNAL'\)/);
+ assert.match(speech,/changePhase\('ready'\);setNotice\(t\.audioNoSignal\)/);
+ assert.match(speech,/if\(status==='recovering'\)/);
+})
+
+test('persistently muted iPhone audio track stops after one bounded recovery, no paid STT',async()=>{
+ let clock=0,tick=null,acquires=0,uploads=0;const errors=[];
+ class Recorder{
+  static isTypeSupported(type){return type==='audio/mp4'}
+  state='inactive';mimeType='audio/mp4';
+  start(){this.state='recording'}
+  stop(){if(this.state!=='recording')return;this.state='inactive';this.onstop?.()}
+ }
+ class Context{
+  state='running'
+  createMediaStreamSource(){return {connect(){},disconnect(){}}}
+  createAnalyser(){return {fftSize:1024,getByteTimeDomainData(buf){buf.fill(128)}}}
+  resume(){return Promise.resolve()}
+  close(){return Promise.resolve()}
+ }
+ const environment={
+  navigator:{mediaDevices:{getUserMedia:async()=>{
+   acquires++;
+   const track={kind:'audio',muted:true,readyState:'live',stop(){}}
+   return {getTracks:()=>[track],getAudioTracks:()=>[track]}
+  }}},
+  MediaRecorder:Recorder,AudioContext:Context,
+  setInterval(fn){tick=fn;return 1},clearInterval(){tick=null},
+  performance:{now:()=>clock},
+  fetch:async()=>{uploads++;throw Error('NO_STT_FOR_SILENCE')}
+ }
+ const capture=startCoachRecordedTurn({environment,onFailure:code=>errors.push(code)})
+ for(let i=0;i<30&&!tick;i++)await new Promise(resolve=>setImmediate(resolve))
+ for(let i=0;i<8;i++){clock+=100;tick?.()}
+ for(let i=0;i<30&&(acquires<2||!tick);i++)await new Promise(resolve=>setImmediate(resolve))
+ for(let i=0;i<8;i++){clock+=100;tick?.()}
+ assert.equal(acquires,2)
+ assert.deepEqual(errors,['MIC_NO_SIGNAL'])
+ assert.equal(uploads,0)
+ capture.cancel()
+})
