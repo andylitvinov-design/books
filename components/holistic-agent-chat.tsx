@@ -8,7 +8,8 @@ import {MessengerSupportQuiz, type SupportQuizSelection} from "@/components/app/
 import {MessengerSixProjects,messengerProject} from "@/components/app/messenger-six-projects";
 import { peekHomeAliHandoff, acknowledgeHomeAliHandoff } from "@/lib/home-ali-handoff.mjs";
 import type {HomeAliHandoff} from "@/lib/home-ali-handoff.mjs";
-import {sessionGoalChoices,sessionCopy,sessionGoalForText,sessionOfferIds,sessionOfferDescription} from "@/lib/holistic-support/session-goal-intake.mjs";
+import {sessionGoalChoices,sessionCopy,sessionGoalForText,sessionOfferIds,sessionOfferDescription,
+  sessionSecretaryMessage,sessionHasOutcome} from "@/lib/holistic-support/session-goal-intake.mjs";
 import type {MessengerProjectId,MessengerProjectOption,MessengerTestFocus} from "@/components/app/messenger-six-projects";
 import { prepareNaturalDialogue, finishNaturalDialogue } from "@/lib/holistic-support/natural-dialogue.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -1201,13 +1202,44 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       setJudgmentView(null);
       setVideoStep(null);setGuidedTrack(null);setVideoPendingCategory(null);
     }
-    // Sessions asks for a goal before exposing any service. An unclear first
-    // free-text answer gets one optional outcome question before a shortlist.
+    // Secretary-first Sessions: direct service interest bypasses the optional
+    // goal interview; price/availability questions and refusal never consume
+    // an answer or silently open a practitioner request.
     if(compact&&judgmentChoice===null&&projectFlow==="sessions"&&sessionStep&&
       !isContentCreationIntent(text)&&!isVideoCreationIntent(text)&&!requiresProtectedReply(text,turnLocale)){
+      const intent=sessionSecretaryMessage(text,turnLocale);
+      followTail.current=true;setNewBelow(false);setDraft("");setChoices([]);
+      if(intent.kind==="stop"||intent.kind==="no_booking"){
+        setProjectFlow(null);setSessionStep(null);setSessionGoal(null);
+        setSessionOffers([]);setPageHelpLink(null);setStatus("");
+        setMessages(prev=>[...prev,{role:"user" as const,text},
+          {role:"assistant" as const,text:intent.reply}].slice(-30));
+        return;
+      }
+      if(intent.kind==="service"){
+        // Only the four existing published site paths can be shown. The
+        // destination page owns the actual order, price and consent.
+        const chosen=messengerProject(turnLocale,"sessions").options.find(option=>
+          option.id===intent.serviceId&&option.kind==="link"&&
+          option.href?.startsWith("/")&&!option.href.startsWith("//"));
+        if(chosen){
+          setProjectFlow(null);setSessionStep(null);setSessionGoal(null);
+          setSessionOffers([chosen]);setPageHelpLink(null);setStatus("");
+          setMessages(prev=>[...prev,{role:"user" as const,text},
+            {role:"assistant" as const,text:intent.reply}].slice(-30));
+          return;
+        }
+      }
+      if(intent.kind!=="continue"&&intent.kind!=="service"){
+        // A correction or interruption stays on the same unanswered step.
+        setMessages(prev=>[...prev,{role:"user" as const,text},
+          {role:"assistant" as const,text:intent.reply}].slice(-30));
+        return;
+      }
       const goal=sessionGoal||sessionGoalForText(text);
-      if(sessionStep==="goal"&&(!goal||text.length<36)){
-        followTail.current=true;setNewBelow(false);setDraft("");setChoices([]);
+      // Ask a second question only when a desired result is still absent,
+      // not because the first reply happens to be fewer than 36 characters.
+      if(sessionStep==="goal"&&(!goal||!sessionHasOutcome(text))){
         setSessionGoal(goal);setSessionStep("outcome");
         setMessages(prev=>[...prev,{role:"user" as const,text},
           {role:"assistant" as const,text:sessionCopy(turnLocale).detail}].slice(-30));
