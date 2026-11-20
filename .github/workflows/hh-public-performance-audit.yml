@@ -6,7 +6,6 @@ on:
       - 'scripts/measure-hh-public-ttfb.mjs'
       - 'scripts/hh-public-html-metrics.mjs'
       - 'tests/hh-public-html-metrics.test.mjs'
-      - 'components/site-video-player.tsx'
       - 'components/personal-testimonials.tsx'
       - 'components/home-testimonial-more.tsx'
       - 'components/services-studio-extras.tsx'
