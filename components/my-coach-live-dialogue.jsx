@@ -167,6 +167,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const persona=getCoachPersona(personaId)
   const [draft,setDraft]=useState('')
   const [coachProfileOpen,setCoachProfileOpen]=useState(false)
+  const coachProfileOpenRef=useRef(false)
   const [speechPreview,setSpeechPreview]=useState('')
   const [cloudAvailable,setCloudAvailable]=useState(false)
   const [cloudAgreed,setCloudAgreed]=useState(false)
@@ -215,7 +216,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     let last=window.performance.now()
     const tick=()=>{
       const now=window.performance.now()
-      if(document.visibilityState==='visible'&&!paused&&!coachProfileOpen){
+      if(document.visibilityState==='visible'&&!paused&&!coachProfileOpenRef.current){
         const delta=Math.min(15,Math.max(0,(now-last)/1000))
         setActiveSessionSeconds(seconds=>Math.min(7200,seconds+delta))
       }
@@ -225,7 +226,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const timer=window.setInterval(tick,15000)
     document.addEventListener('visibilitychange',onVisibility)
     return()=>{window.clearInterval(timer);document.removeEventListener('visibilitychange',onVisibility)}
-  },[sessionClockStarted,paused,coachProfileOpen])
+  },[sessionClockStarted,paused])
   useEffect(()=>{
     // Preserve the current exact Play/MP3 and microphone handlers untouched.
     // The voice loop publishes loading on first Play and listening after intro.
@@ -496,6 +497,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   },[])
 
   function openCoachProfile(){
+    coachProfileOpenRef.current=true
     // A profile is a reading view, not an end-session navigation. Keep all
     // in-tab messages, model progress and draft intact, but stop microphone
     // capture and any speech while the dialog is open.
@@ -953,6 +955,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       <Link href={'/'+(lang==='es'?'en':lang)+'/app/portrait'}><UserRound size={21} aria-hidden="true"/><span>{ui.profile}</span></Link>
     </nav>
     {coachProfileOpen&&<MyCoachCompactProfile personaId={personaId} locale={conversationLang}
-      methodId={visibleMethodId} onBack={()=>setCoachProfileOpen(false)}/>}
+      methodId={visibleMethodId} onBack={()=>{coachProfileOpenRef.current=false;setCoachProfileOpen(false)}}/>}
   </section>
 }
