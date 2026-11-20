@@ -177,6 +177,12 @@ const reasons={
 const assistantText=(result)=>result.mode==='ai' && typeof result.message==='string'
   ? result.message : [result.reflection,result.hypothesis,result.question].filter(Boolean).join('\n\n')
 
+const sessionRatingCopy={
+  en:{title:'How was your coach?',subtitle:'Your feedback helps improve future sessions.',character:'Character',intelligence:'Intelligence',impression:'Overall impression',send:'Send rating',sending:'Saving…',saved:'Thank you — your rating was saved privately.',error:'Could not save your rating. You can retry or skip.',skip:'Skip',done:'Done',stars:'Overall rating',privacy:'Only numeric ratings are saved in your private account. No conversation text or audio is sent.'},
+  ru:{title:'Оцените работу коуча',subtitle:'Ваш отзыв помогает улучшать коучинг.',character:'Характер',intelligence:'Интеллект',impression:'Общее впечатление',send:'Отправить оценку',sending:'Сохраняем…',saved:'Спасибо! Ваша оценка сохранена приватно.',error:'Не удалось сохранить оценку. Можно повторить или пропустить.',skip:'Пропустить',done:'Готово',stars:'Оценка коуча',privacy:'В вашем закрытом профиле сохраняются только числовые оценки — без текста разговора и аудио.'},
+  es:{title:'Valora a tu coach',subtitle:'Tu opinión ayuda a mejorar las sesiones.',character:'Carácter',intelligence:'Inteligencia',impression:'Impresión general',send:'Enviar valoración',sending:'Guardando…',saved:'Gracias. Se guardó tu valoración de forma privada.',error:'No se pudo guardar. Puedes reintentar u omitir.',skip:'Omitir',done:'Listo',stars:'Valoración del coach',privacy:'Solo se guardan números en tu cuenta privada; no se envían conversaciones ni audio.'},
+}
+
 export default function MyCoachLiveDialogue({locale='en',personaId='mira',settings={},onClose,onGuided}){
   const lang=copy[locale]?locale:'en',t=copy[lang]
   const persona=getCoachPersona(personaId)
@@ -201,6 +207,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const turnRequestRef=useRef(0)
   const inFlightClientRef=useRef(null) // client message awaiting a genuine coach reply
   const [protocolOpen,setProtocolOpen]=useState(false)
+  const [ratingOpen,setRatingOpen]=useState(false)
+  const [rating,setRating]=useState({stars:0,character:3,intelligence:3,impression:3})
+  const [ratingSaving,setRatingSaving]=useState(false)
+  const [ratingSaved,setRatingSaved]=useState(false)
+  const [ratingError,setRatingError]=useState(false)
   const [protocolConsent,setProtocolConsent]=useState(false)
   const [protocolSummary,setProtocolSummary]=useState('')
   const [protocolNextStep,setProtocolNextStep]=useState('')
@@ -794,7 +805,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   function interceptSessionExit(event){
     // The explicit Close/Back choice from the already-open Summary means
     // leaving without account retention; do not trap the client in a loop.
-    if(protocolOpen)return
+    if(protocolOpen||ratingOpen)return
     if(turnsRef.current.length>0&&!protocolSaved){event.preventDefault();endWithProtocol()}
   }
   function resumeFromProtocol(){
@@ -860,6 +871,33 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     }catch{setProtocolError(protocolCopy[lang].error)}
     finally{setProtocolSaving(false)}
   }
+
+  function closeProtocolToRating(){
+    if(protocolSaving)return
+    setProtocolOpen(false)
+    setRatingError(false)
+    setRatingOpen(true)
+  }
+  async function submitSessionRating(){
+    if(ratingSaving||ratingSaved||rating.stars<1||!protocolIdRef.current)return
+    setRatingSaving(true)
+    setRatingError(false)
+    try{
+      const response=await fetch('/api/app/my-coach/rating',{
+        method:'POST',credentials:'same-origin',cache:'no-store',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({sessionId:protocolIdRef.current,personaId,
+          stars:rating.stars,character:rating.character,
+          intelligence:rating.intelligence,impression:rating.impression}),
+      })
+      const data=await response.json().catch(()=>null)
+      if(!response.ok||data?.saved!==true||
+        data.sessionId!==protocolIdRef.current)throw Error('RATING_NOT_SAVED')
+      setRatingSaved(true)
+    }catch{setRatingError(true)}
+    finally{setRatingSaving(false)}
+  }
+  const ratingUi=sessionRatingCopy[lang]
   const protocolUi=protocolCopy[lang]
 
   const motionPhase=paused?'idle':voiceState.phase==='speaking'?'speaking':
@@ -1158,7 +1196,54 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         {protocolError&&<p role="alert" className={styles.protocolError}>{protocolError}</p>}
         <div className={styles.protocolActions}>
           {!protocolSaved&&!protocolSaveLocked&&<button type="button" onClick={resumeFromProtocol}>{protocolUi.resume}</button>}
-          <Link href={'/'+lang+'/my-coach'} onClick={interceptSessionExit}>{protocolUi.close}<ArrowRight size={16}/></Link>
+          <button type="button" data-coach-close-protocol onClick={closeProtocolToRating} disabled={protocolSaving}>{protocolUi.close}<ArrowRight size={16}/></button>
+        </div>
+      </div>
+    </section>}
+    {ratingOpen&&<section className={styles.ratingOverlay} role="dialog" aria-modal="true"
+      aria-label={ratingUi.title} data-my-coach-rating-modal>
+      <div className={styles.ratingCard}>
+        <div className={styles.ratingCoachHeader}>
+          <img className={styles.ratingCoachPortrait}
+            src={'/images/holistic-house/my-coach-motion/'+personaId+'-still.webp'}
+            alt="" width={78} height={78}/>
+          <div><h2>{ratingUi.title}</h2><strong>{name}</strong><p>{ratingUi.subtitle}</p></div>
+        </div>
+        <div className={styles.ratingStars} role="group" aria-label={ratingUi.stars}>
+          {[1,2,3,4,5].map(value=><button key={value} type="button"
+            aria-label={value+' / 5'} aria-pressed={rating.stars===value}
+            data-rating-star={value} disabled={ratingSaving||ratingSaved}
+            onClick={()=>setRating(v=>({...v,stars:value}))}>★</button>)}
+        </div>
+        {rating.stars>0&&<div className={styles.ratingExtra}>
+          <label className={styles.ratingScale} data-rating-scale="character">
+            <span>{ratingUi.character}<strong>{rating.character}/5</strong></span>
+            <input type="range" min="1" max="5" step="1" value={rating.character}
+              disabled={ratingSaving||ratingSaved}
+              onChange={event=>setRating(v=>({...v,character:Number(event.target.value)}))}/>
+          </label>
+          <label className={styles.ratingScale} data-rating-scale="intelligence">
+            <span>{ratingUi.intelligence}<strong>{rating.intelligence}/5</strong></span>
+            <input type="range" min="1" max="5" step="1" value={rating.intelligence}
+              disabled={ratingSaving||ratingSaved}
+              onChange={event=>setRating(v=>({...v,intelligence:Number(event.target.value)}))}/>
+          </label>
+          <label className={styles.ratingScale} data-rating-scale="impression">
+            <span>{ratingUi.impression}<strong>{rating.impression}/5</strong></span>
+            <input type="range" min="1" max="5" step="1" value={rating.impression}
+              disabled={ratingSaving||ratingSaved}
+              onChange={event=>setRating(v=>({...v,impression:Number(event.target.value)}))}/>
+          </label>
+        </div>}
+        <p className={styles.ratingPrivacy}>{ratingUi.privacy}</p>
+        {ratingSaved&&<p role="status" className={styles.ratingSaved}>{ratingUi.saved}</p>}
+        {ratingError&&<p role="alert" className={styles.ratingError}>{ratingUi.error}</p>}
+        <div className={styles.ratingActions}>
+          {!ratingSaved&&<button type="button" disabled={!rating.stars||ratingSaving}
+            onClick={submitSessionRating}>{ratingSaving?ratingUi.sending:ratingUi.send}</button>}
+          <Link data-coach-rating-skip href={'/'+lang+'/my-coach'}>
+            {ratingSaved?ratingUi.done:ratingUi.skip}
+          </Link>
         </div>
       </div>
     </section>}

@@ -1567,3 +1567,49 @@
   }
   .root[data-session-visual-v4] .voiceControls .endControl{width:64px;max-width:64px}
 }
+
+/* Client-initiated 5-star coach rating after the separate PDF protocol.
+   Large touch targets, one-screen mobile composition, no artificial face UI. */
+.ratingOverlay{position:fixed;inset:0;z-index:10000;overflow-y:auto;
+  display:flex;align-items:center;justify-content:center;
+  padding:calc(12px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom));
+  background:rgba(11,36,33,.63)}
+.ratingCard{width:min(100%,490px);margin:auto;padding:clamp(16px,4vw,25px);
+  display:flex;flex-direction:column;gap:13px;border:1px solid #d2e4d7;border-radius:24px;
+  background:#fffdfa;color:#24483e;box-shadow:0 14px 55px #0e322f40}
+.ratingCoachHeader{display:flex;align-items:center;gap:13px;min-width:0}
+.ratingCoachPortrait{flex:none;width:78px;height:78px;object-fit:cover;
+  border:3px solid #f8f5eb;border-radius:19px;box-shadow:0 4px 12px #27534223}
+.ratingCoachHeader>div{min-width:0}
+.ratingCoachHeader h2{font-size:clamp(21px,5.5vw,27px);line-height:1.1;margin:0 0 4px;color:#175b4b}
+.ratingCoachHeader strong{font-size:16px;color:#0b775d}
+.ratingCoachHeader p{font-size:13px;line-height:1.3;margin:3px 0 0;color:#60776b}
+.ratingStars{display:flex;align-items:center;justify-content:center;gap:4px}
+.ratingStars button{flex:1;max-width:67px;min-height:60px;padding:2px;
+  border:0;border-radius:13px;background:transparent;color:#c4c7ba;
+  font:46px/1 system-ui;cursor:pointer}
+.ratingStars button[aria-pressed=true],.ratingStars button:has(~ button[aria-pressed=true]){color:#e3a733}
+.ratingStars button:focus-visible,.ratingActions :is(button,a):focus-visible,
+.ratingScale input:focus-visible{outline:3px solid #168568;outline-offset:2px}
+.ratingStars button:disabled{cursor:default}
+.ratingExtra{display:flex;flex-direction:column;gap:12px;padding:14px 13px;
+  background:#f3f9f3;border-radius:16px;border:1px solid #e0ebe1}
+.ratingScale{display:flex;flex-direction:column;gap:6px;font-size:14px;color:#245948}
+.ratingScale>span{display:flex;justify-content:space-between;gap:10px}
+.ratingScale strong{color:#087255}
+.ratingScale input{width:100%;height:27px;accent-color:#168668;cursor:pointer}
+.ratingPrivacy{margin:0;color:#66776e;font-size:12px;line-height:1.35}
+.ratingSaved{margin:0;color:#087555;font-size:14px}
+.ratingError{margin:0;color:#a22a2f;font-size:14px}
+.ratingActions{display:flex;gap:9px}
+.ratingActions>button,.ratingActions>a{display:flex;align-items:center;justify-content:center;
+  flex:1;min-height:49px;padding:10px;border-radius:13px;
+  border:1px solid #b8d1c4;background:#edf7f0;color:#155d4b;
+  font:750 15px/1.2 system-ui;text-decoration:none;text-align:center;cursor:pointer}
+.ratingActions>button{flex:1.5;background:#0e755b;color:white;border-color:#0e755b}
+.ratingActions>button:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:380px){.ratingCoachPortrait{width:64px;height:64px}
+ .ratingCard{gap:10px;padding:13px}.ratingStars button{min-height:51px;font-size:38px}}
+@media(max-height:610px){.ratingOverlay{align-items:flex-start}
+ .ratingCard{gap:8px}.ratingCoachPortrait{width:57px;height:57px}
+ .ratingStars button{min-height:46px;font-size:36px}.ratingExtra{gap:6px;padding:8px}}
