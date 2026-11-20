@@ -314,21 +314,22 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
           const input=form.locator('[data-home-intent-composer]')
           const send=form.locator('[data-home-send-to-ali]')
           await expect(entry.locator('[data-home-free-review]')).toHaveAttribute('href','/'+locale+'/services/free-situation-review')
-          // Measure both rectangles in ONE animation frame, BEFORE focusing the
-          // lower textarea. Separate boundingBox calls during mobile keyboard
-          // auto-scroll can use different scroll offsets and produce a false
-          // overlap even when layout order and spacing are correct.
+          // Measure in ONE animation frame, BEFORE focusing the textarea.
+          // Both approved compact Home layouts are allowed: a free review
+          // above OR below the four topics, never visually overlapping them.
           const homeLayout=await entry.evaluate(root=>{
             const review=root.querySelector('[data-home-free-review]')
             const topics=root.querySelector('[data-home-focus-grid]')
             if(!review||!topics)return null
             const reviewBox=review.getBoundingClientRect()
             const topicsBox=topics.getBoundingClientRect()
-            return {before:Boolean(review.compareDocumentPosition(topics)&Node.DOCUMENT_POSITION_FOLLOWING),
-              reviewBottom:reviewBox.bottom,topicsTop:topicsBox.top}
+            return {reviewTop:reviewBox.top,reviewBottom:reviewBox.bottom,
+              topicsTop:topicsBox.top,topicsBottom:topicsBox.bottom}
           })
-          assert.ok(homeLayout?.before&&homeLayout.reviewBottom<=homeLayout.topicsTop+1,
-            label+': free review above four topic choices '+JSON.stringify(homeLayout))
+          assert.ok(homeLayout&&(
+            homeLayout.reviewBottom<=homeLayout.topicsTop+1||
+            homeLayout.topicsBottom<=homeLayout.reviewTop+1),
+            label+': free review and four topic choices stay distinct '+JSON.stringify(homeLayout))
           await expect(entry.locator('[data-home-intent-option]')).toHaveCount(4)
           await expect(input).toBeVisible()
           await expect(send).toBeDisabled()
