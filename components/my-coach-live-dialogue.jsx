@@ -183,6 +183,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [protocolNextStep,setProtocolNextStep]=useState('')
   const [protocolSaving,setProtocolSaving]=useState(false)
   const [protocolSaved,setProtocolSaved]=useState(false)
+  const [protocolSaveLocked,setProtocolSaveLocked]=useState(false)
+  const protocolSaveSnapshotRef=useRef(null)
   const [protocolError,setProtocolError]=useState('')
   const [protocolFinishedAt,setProtocolFinishedAt]=useState(null)
   const protocolIdRef=useRef(null)
@@ -713,8 +715,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     setPaused(true)
     setProtocolOpen(true)
   }
+  function interceptSessionExit(event){
+    // Offer PDF before any navigation discards an unsaved conversation.
+    if(turnsRef.current.length>0&&!protocolSaved){event.preventDefault();endWithProtocol()}
+  }
   function resumeFromProtocol(){
-    if(protocolSaved)return // Saved report is immutable; the client may start a new session.
+    if(protocolSaved||protocolSaveLocked)return // Saved report is immutable; the client may start a new session.
     setProtocolOpen(false)
     setProtocolFinishedAt(null)
     setProtocolConsent(false)
@@ -740,7 +746,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   }
   function exportProtocol(print=false){
     try{
-      const options=myCoachProtocolPdfOptions(currentProtocol(),{locale:conversationLang})
+      const options=myCoachProtocolPdfOptions(protocolSaveSnapshotRef.current||currentProtocol(),{locale:conversationLang})
       if(print)openCoachingSessionPdf(options)
       else downloadCoachingSessionPdf(options)
       setProtocolError('')
@@ -750,7 +756,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(protocolSaving||protocolSaved)return
     if(!protocolConsent){setProtocolError(protocolCopy[lang].consentRequired);return}
     let protocol
-    try{protocol=currentProtocol()}catch{setProtocolError(protocolCopy[lang].error);return}
+    try{
+      protocol=protocolSaveSnapshotRef.current||currentProtocol()
+      protocolSaveSnapshotRef.current=protocol // idempotent retry even after timeout
+      setProtocolSaveLocked(true)
+    }catch{setProtocolError(protocolCopy[lang].error);return}
     setProtocolSaving(true);setProtocolError('')
     try{
       const response=await fetch('/api/app/my-coach/protocol',{
@@ -771,7 +781,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const visualScene=selectCoachVisualScene({phase:motionPhase,text:latestCoachText,stage:currentStage})
   return <section ref={sessionRootRef} className={styles.root} lang={lang} data-my-coach-live-dialogue={personaId} data-my-coach-immersive-session data-session-visual-v2 data-session-visual-v3 data-session-visual-v4 data-coach-session-started={sessionClockStarted?'true':'false'} data-coach-showcase={introComplete?'false':'true'}>
     <header className={styles.sessionTopbar}>
-      <Link className={styles.sessionBrand} href={'/'+lang+'/coaching/sessions'} aria-label="Holistic House">
+      <Link className={styles.sessionBrand} href={'/'+lang+'/coaching/sessions'} onClick={interceptSessionExit} aria-label="Holistic House">
         <span className={styles.sessionBrandMark} aria-hidden="true">✿</span><span>Holistic House</span>
       </Link>
       <div className={styles.sessionTopbarActions}>
@@ -787,7 +797,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             </select>
           </span>
         </label>
-        <Link className={styles.chooseCoach} href={'/'+lang+'/my-coach'} aria-label={ui.choose}>
+        <Link className={styles.chooseCoach} href={'/'+lang+'/my-coach'} onClick={interceptSessionExit} aria-label={ui.choose}>
           <ArrowRight size={16} aria-hidden="true"/>
           <span className={styles.chooseCoachFull}>{ui.choose}</span>
           <span className={styles.chooseCoachShort} aria-hidden="true">{{ru:'Коучи',en:'Coaches',es:'Coaches'}[lang]}</span>
@@ -930,7 +940,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       <details ref={composerDetailsRef} className={styles.textComposer} open>
         <summary>{ui.type}</summary>
         {authRequired?<div className={styles.auth} role="status"><LockKeyhole size={20} aria-hidden="true"/>
-          <span>{t.login}</span><Link href={'/'+lang+'/my-coach'}>{t.loginLink}<ArrowRight size={16}/></Link></div>:null}
+          <span>{t.login}</span><Link href={'/'+lang+'/my-coach'} onClick={interceptSessionExit}>{t.loginLink}<ArrowRight size={16}/></Link></div>:null}
         {!paused&&<form className={styles.composer} onSubmit={send}>
           <label htmlFor="hh-my-coach-live-input">{t.field}</label>
           <textarea ref={composerRef} id="hh-my-coach-live-input" value={draft} maxLength={1200} rows={2}
@@ -948,7 +958,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <details className={styles.consentDetails}><summary>{captions.details}</summary>
           <p>{t.consent}</p><p className={styles.privacy}><ShieldCheck size={16} aria-hidden="true"/>{t.privacy}</p>
         </details>
-        {onGuided&&<button className={styles.guidedFallback} type="button" onClick={onGuided}>
+        {onGuided&&<button className={styles.guidedFallback} type="button" onClick={()=>{
+          if(turnsRef.current.length>0&&!protocolSaved)endWithProtocol();else onGuided()
+        }}>
           {ui.guided}<ArrowRight size={16} aria-hidden="true"/>
         </button>}
         </details>
@@ -1001,10 +1013,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             </article>)}
           </div>}
         <label className={styles.protocolTextLabel}>{{ru:'Мой итог сессии (необязательно)',en:'My takeaway (optional)',es:'Mi conclusión (opcional)'}[lang]}
-          <textarea rows={2} maxLength={1000} value={protocolSummary} disabled={protocolSaved||protocolSaving} onChange={e=>setProtocolSummary(e.target.value)} placeholder={{ru:'Что стало яснее?',en:'What is clearer now?',es:'¿Qué quedó más claro?'}[lang]}/>
+          <textarea rows={2} maxLength={1000} value={protocolSummary} disabled={protocolSaved||protocolSaving||protocolSaveLocked} onChange={e=>setProtocolSummary(e.target.value)} placeholder={{ru:'Что стало яснее?',en:'What is clearer now?',es:'¿Qué quedó más claro?'}[lang]}/>
         </label>
         <label className={styles.protocolTextLabel}>{{ru:'Мой следующий шаг (необязательно)',en:'My next step (optional)',es:'Mi siguiente paso (opcional)'}[lang]}
-          <textarea rows={2} maxLength={500} value={protocolNextStep} disabled={protocolSaved||protocolSaving} onChange={e=>setProtocolNextStep(e.target.value)} placeholder={{ru:'Какой шаг я хочу сделать?',en:'What step would I choose?',es:'¿Qué paso elegiría?'}[lang]}/>
+          <textarea rows={2} maxLength={500} value={protocolNextStep} disabled={protocolSaved||protocolSaving||protocolSaveLocked} onChange={e=>setProtocolNextStep(e.target.value)} placeholder={{ru:'Какой шаг я хочу сделать?',en:'What step would I choose?',es:'¿Qué paso elegiría?'}[lang]}/>
         </label>
         <small className={styles.protocolPrivacy}>{protocolUi.privacy}</small>
         <div className={styles.protocolActions}>
@@ -1020,17 +1032,17 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         {protocolSaved&&<p role="status" className={styles.protocolSaved}>{protocolUi.saved} · <Link href={'/'+(lang==='es'?'en':lang)+'/app/my-coaching-plan?tab=reports'}>{lang==='ru'?'Открыть архив':lang==='es'?'Abrir archivo':'Open archive'}</Link></p>}
         {protocolError&&<p role="alert" className={styles.protocolError}>{protocolError}</p>}
         <div className={styles.protocolActions}>
-          {!protocolSaved&&<button type="button" onClick={resumeFromProtocol}>{protocolUi.resume}</button>}
-          <Link href={'/'+lang+'/my-coach'}>{protocolUi.close}<ArrowRight size={16}/></Link>
+          {!protocolSaved&&!protocolSaveLocked&&<button type="button" onClick={resumeFromProtocol}>{protocolUi.resume}</button>}
+          <Link href={'/'+lang+'/my-coach'} onClick={interceptSessionExit}>{protocolUi.close}<ArrowRight size={16}/></Link>
         </div>
       </div>
     </section>}
     <nav className={styles.sessionBottomNav} aria-label={lang==='ru'?'Нижняя навигация':lang==='es'?'Navegación inferior':'Bottom navigation'}>
-      <Link href={'/'+lang}><Home size={21} aria-hidden="true"/><span>{ui.home}</span></Link>
+      <Link href={'/'+lang} onClick={interceptSessionExit}><Home size={21} aria-hidden="true"/><span>{ui.home}</span></Link>
       <Link href={'/'+lang+'/my-coach'} aria-current="page"><MessageCircle size={21} aria-hidden="true"/><span>{ui.coaching}</span></Link>
-      <Link href={'/'+lang+'/holistic-support/mobile'}><Leaf size={21} aria-hidden="true"/><span>{ui.practice}</span></Link>
-      <Link href={'/'+lang+'/holistic-support/mandala'}><Video size={21} aria-hidden="true"/><span>{ui.video}</span></Link>
-      <Link href={'/'+(lang==='es'?'en':lang)+'/app/portrait'}><UserRound size={21} aria-hidden="true"/><span>{ui.profile}</span></Link>
+      <Link href={'/'+lang+'/holistic-support/mobile'} onClick={interceptSessionExit}><Leaf size={21} aria-hidden="true"/><span>{ui.practice}</span></Link>
+      <Link href={'/'+lang+'/holistic-support/mandala'} onClick={interceptSessionExit}><Video size={21} aria-hidden="true"/><span>{ui.video}</span></Link>
+      <Link href={'/'+(lang==='es'?'en':lang)+'/app/portrait'} onClick={interceptSessionExit}><UserRound size={21} aria-hidden="true"/><span>{ui.profile}</span></Link>
     </nav>
   </section>
 }

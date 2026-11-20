@@ -261,6 +261,8 @@ export default function MyCoachingPlan({accountId,locale='en'}){
    {protocolError&&<p className={styles.inlineError} role="alert">{protocolError}</p>}
    {protocols.map(protocol=><article key={protocol.id} className={styles.reportCard} data-my-coach-saved-protocol={protocol.id}>
     <div className={styles.reportTop}><div><span>{protocolCopy[lang].transcript}</span><h2>{protocolCopy[lang].title} · {protocol.personaId}</h2><small>{formatDate(protocol.completedAt,lang)} · {protocol.turns?.length||0} {lang==='ru'?'реплик':lang==='es'?'turnos':'turns'}</small></div></div>
+    {protocol.clientSummary&&<div className={styles.reportSection}><b>{lang==='ru'?'Мой итог':lang==='es'?'Mi conclusión':'My takeaway'}</b><p>{protocol.clientSummary}</p></div>}
+    {protocol.clientNextStep&&<div className={styles.reportSection}><b>{lang==='ru'?'Мой следующий шаг':lang==='es'?'Mi próximo paso':'My next step'}</b><p>{protocol.clientNextStep}</p></div>}
     <details className={styles.reportDetails}><summary>{protocolCopy[lang].transcript} <ChevronDown size={16}/></summary>
      {(protocol.turns||[]).map((turn,index)=><div className={styles.reportSection} key={index}>
       <b>{turn.role==='user'?({en:'You',ru:'Вы',es:'Tú'}[lang]):protocolCopy[lang].coach}</b>

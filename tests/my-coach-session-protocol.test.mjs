@@ -99,6 +99,8 @@ test('the main voice session ends in a review dialog with PDF actions, not navig
   assert.match(ui,/downloadCoachingSessionPdf/)
   assert.match(ui,/openCoachingSessionPdf/)
   assert.match(ui,/protocolConsent/)
+  assert.match(ui,/protocolSaveSnapshotRef\.current\|\|currentProtocol\(\)/)
+  assert.match(ui,/onClick=\{interceptSessionExit\}/)
   assert.match(archive,/data-my-coach-saved-protocol/)
   assert.match(archive,/deleteProtocol\(protocol\)/)
 })

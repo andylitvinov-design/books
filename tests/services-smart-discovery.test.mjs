@@ -142,10 +142,13 @@ test('Services: optional booking-style search lives in the dedicated directory f
     readFile(new URL('../app/api/marketplace/intent-match/route.ts',import.meta.url),'utf8'),
   ])
   for(const page of [main,es]){
-    assert.ok(page.indexOf('<ServicesStudioOffers')>page.indexOf('<ServicesConversionHero'))
-    assert.ok(page.indexOf('<PersonalTestimonials')>page.indexOf('<ServicesStudioOffers'))
-    assert.ok(page.indexOf('<PublicConsultationCta')>page.indexOf('<ServicesConversionHero'))
-    assert.ok(page.indexOf('<PublicConsultationCta')<page.indexOf('<PersonalTestimonials'))
+    // Current approved Services: consultation then compact offers, browsing,
+    // intro, testimonials and methods; separate directory owns live search.
+    const ordered=['<PublicConsultationCta','<ServicesStudioOffers',
+      '<ServicesConversionHero','<ServicesIntroMedia','<PersonalTestimonials','<ServicesMethodVideos']
+    const positions=ordered.map(tag=>page.indexOf(tag))
+    assert.ok(positions.every(position=>position>=0))
+    assert.ok(positions.every((position,index)=>index===0||position>positions[index-1]))
     assert.match(page,/<ServicesIntroMedia/)
     assert.match(page,/<ServicesMethodVideos/)
     assert.doesNotMatch(page,/<ServicesSmartDiscovery|<ServiceCart/)
