@@ -54,6 +54,14 @@ test('approved context reaches one provider and an interrupted voice lookup send
     })
     const pausedVoiceResponse = await new Response(pausedVoice).text()
     const pausedVoiceCalls = calls.splice(0)
+    const focusChanges = []
+    for (const message of [
+      "Let's change the topic. I want to talk about sleep.",
+      "You misunderstood. I meant something else.",
+    ]) {
+      await myCoachGenerativeTurn({ ...body, message, contextTopic: 'career_business' }, options)
+      focusChanges.push({ message, calls: calls.splice(0), lookups: lookups.splice(0) })
+    }
     const controller = new AbortController()
     const voice = await myCoachGenerativeStreamTurn({ ...body, voiceTurn: true }, {
       ...options, signal: controller.signal,
@@ -68,17 +76,22 @@ test('approved context reaches one provider and an interrupted voice lookup send
     const interruptedLookups = lookups.splice(0)
     const dispatchedVoice = await myCoachGenerativeStreamTurn({ ...body, voiceTurn: true }, options)
     const voiceResponse = await new Response(dispatchedVoice).text()
-    console.log(JSON.stringify({ ...contextRun, controlLookups, pausedCalls, pausedLookups, pausedVoiceCalls, pausedVoiceResponse,
+    console.log(JSON.stringify({ ...contextRun, controlLookups, pausedCalls, pausedLookups, pausedVoiceCalls, pausedVoiceResponse, focusChanges,
       interruptedCalls: interruptedCalls.length, interruptedLookups,
       voiceCalls: calls, voiceLookups: lookups, voiceResponse }))
   `], { encoding: 'utf8' })
-  const { calls, lookups, controlLookups, pausedCalls, pausedLookups, pausedVoiceCalls, pausedVoiceResponse,
+  const { calls, lookups, controlLookups, pausedCalls, pausedLookups, pausedVoiceCalls, pausedVoiceResponse, focusChanges,
     interruptedCalls, interruptedLookups, voiceCalls, voiceLookups, voiceResponse } = JSON.parse(output)
   assert.deepEqual(controlLookups, ['groq', 'openrouter'])
   assert.deepEqual(pausedLookups, [])
   for (const requests of [pausedCalls, pausedVoiceCalls]) {
     assert.ok(requests.some(call => call.messages?.at(-1)?.content.includes('organize my work week')))
     assert.ok(requests.every(call => !call.messages?.some(message => message.content.includes('Plan Friday in advance'))))
+  }
+  for (const change of focusChanges) {
+    assert.deepEqual(change.lookups, [])
+    assert.ok(change.calls.some(call => call.messages?.at(-1)?.content.includes(change.message)))
+    assert.ok(change.calls.every(call => !call.messages?.some(message => message.content.includes('Plan Friday in advance'))))
   }
   assert.match(pausedVoiceResponse, /"type":"result"/)
   assert.deepEqual(lookups, ['groq'])
