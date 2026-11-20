@@ -23,6 +23,7 @@ import {detectedSpeechLocale} from '@/lib/personal-coaching/my-coach-dictation.m
 import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
 import CoachingAvatar from '@/components/app/coaching-avatar'
 import MyCoachMotionMedia from '@/components/my-coach-motion-media'
+import MyCoachCompactProfile from './my-coach-compact-profile'
 import {selectCoachVisualScene} from '@/lib/coaching/coach-visual-cues.mjs'
 
 const copy={
@@ -165,6 +166,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const lang=copy[locale]?locale:'en',t=copy[lang]
   const persona=getCoachPersona(personaId)
   const [draft,setDraft]=useState('')
+  const [coachProfileOpen,setCoachProfileOpen]=useState(false)
   const [speechPreview,setSpeechPreview]=useState('')
   const [cloudAvailable,setCloudAvailable]=useState(false)
   const [cloudAgreed,setCloudAgreed]=useState(false)
@@ -213,7 +215,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     let last=window.performance.now()
     const tick=()=>{
       const now=window.performance.now()
-      if(document.visibilityState==='visible'&&!paused){
+      if(document.visibilityState==='visible'&&!paused&&!coachProfileOpen){
         const delta=Math.min(15,Math.max(0,(now-last)/1000))
         setActiveSessionSeconds(seconds=>Math.min(7200,seconds+delta))
       }
@@ -223,7 +225,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const timer=window.setInterval(tick,15000)
     document.addEventListener('visibilitychange',onVisibility)
     return()=>{window.clearInterval(timer);document.removeEventListener('visibilitychange',onVisibility)}
-  },[sessionClockStarted,paused])
+  },[sessionClockStarted,paused,coachProfileOpen])
   useEffect(()=>{
     // Preserve the current exact Play/MP3 and microphone handlers untouched.
     // The voice loop publishes loading on first Play and listening after intro.
@@ -493,6 +495,20 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     }
   },[])
 
+  function openCoachProfile(){
+    // A profile is a reading view, not an end-session navigation. Keep all
+    // in-tab messages, model progress and draft intact, but stop microphone
+    // capture and any speech while the dialog is open.
+    speechRef.current?.stop?.()
+    cancelPendingCoachTurn()
+    replayControllerRef.current?.abort()
+    replayPlayerRef.current?.cancel()
+    replayControllerRef.current=null
+    replayPlayerRef.current=null
+    setReplaying(false)
+    setVoiceState({phase:'idle',beat:0})
+    setCoachProfileOpen(true)
+  }
   function toggleComposer(){
     const details=composerDetailsRef.current
     if(!details)return
@@ -808,6 +824,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         </div>
         <button type="button" className={styles.keyboardControl} onClick={toggleComposer}
           aria-label={ui.type} title={ui.type}><Keyboard size={17} aria-hidden="true"/><span>{ui.keyboardShort}</span></button>
+        <button type="button" className={styles.profileControl} data-coach-profile-open onClick={openCoachProfile} aria-label={lang==='ru'?'Открыть профиль коуча':lang==='es'?'Abrir perfil del coach':'Open coach profile'} title={ui.profile}>
+          <UserRound size={17} aria-hidden="true"/><span>{ui.profile}</span>
+        </button>
         <Link className={styles.endControl} href={'/'+lang+'/my-coach'} aria-label={ui.end} title={ui.end}>
           <PhoneOff size={17} aria-hidden="true"/><span>{lang==='ru'?'Конец':lang==='es'?'Salir':'End'}</span>
         </Link>
@@ -933,5 +952,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       <Link href={'/'+lang+'/holistic-support/mandala'}><Video size={21} aria-hidden="true"/><span>{ui.video}</span></Link>
       <Link href={'/'+(lang==='es'?'en':lang)+'/app/portrait'}><UserRound size={21} aria-hidden="true"/><span>{ui.profile}</span></Link>
     </nav>
+    {coachProfileOpen&&<MyCoachCompactProfile personaId={personaId} locale={conversationLang}
+      methodId={visibleMethodId} onBack={()=>setCoachProfileOpen(false)}/>}
   </section>
 }
