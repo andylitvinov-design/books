@@ -32,6 +32,9 @@ test('EN/RU/ES are complete first-screen documents without the Next CSS/JS chain
  for(const locale of ['en','ru','es']){
   const html=read('public/instant-home/'+locale+'.html');
   assert.match(html,new RegExp('<html lang="'+locale+'">'));
+  const publicDescription=html.match(/<meta name="description" content="([^"]+)">/)?.[1];
+  assert.ok(publicDescription,locale+': SEO description');
+  assert.ok(html.includes('<meta property="og:description" content="'+publicDescription+'">'),locale+': matching Open Graph description');
   assert.match(html,/data-home-dialogue-entry/);
   assert.match(html,/data-home-intent-form/);
   assert.match(html,/data-home-intent-composer/);
