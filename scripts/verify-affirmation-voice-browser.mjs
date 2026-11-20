@@ -1368,18 +1368,35 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         await page.locator("[data-video-affimations-audio-ready]").waitFor({state:"visible",timeout:30000});
         phase(engine,"voice-wav-ready");
       }catch(error){
-        const status=await page.locator('[data-video-affirmation-voice] [role="status"]').allTextContents();
-        const buttonDisabled=await page.locator("[data-video-generate-affirmation-audio]").isDisabled();
-        const state=await page.evaluate(()=>({
-          gesture:window.__hhVoiceSubmitProbe??null,
-          consented:document.querySelector("[data-video-affirmation-voice-consent]")?.getAttribute("aria-checked")==="true",
-          wordsLength:document.querySelector("[data-video-affirmation-spoken-text]")?.textContent?.trim().length??0,
-          readyNodes:document.querySelectorAll("[data-video-affimations-audio-ready]").length,
-          mountedPanels:document.querySelectorAll("[data-video-affirmation-voice]").length
-        }));
-        throw new Error(engine+" voice failed: "+JSON.stringify({status,buttonDisabled,state,
-          providerModes:payloads.map(item=>item.mode),
-          providerRequests:payloads.length,networkRequests:requests,jsErrors:errors}),{cause:error});
+        // Preserve the original WAV timeout: the TTS button may have been
+        // unmounted, and Playwright's isDisabled() adds an unrelated 25s wait.
+        const status=await page.locator('[data-video-affirmation-voice] [role="status"]')
+          .allTextContents().catch(()=>[]);
+        const state=await page.evaluate(()=>{
+          const editor=document.querySelector("[data-video-affirmation-voice]");
+          const button=document.querySelector("[data-video-generate-affirmation-audio]");
+          return {
+            gesture:window.__hhVoiceSubmitProbe??null,
+            consented:document.querySelector("[data-video-affirmation-voice-consent]")
+              ?.getAttribute("aria-checked")==="true",
+            wordsLength:document.querySelector("[data-video-affirmation-spoken-text]")
+              ?.textContent?.trim().length??0,
+            readyNodes:document.querySelectorAll("[data-video-affimations-audio-ready]").length,
+            mountedPanels:document.querySelectorAll("[data-video-affirmation-voice]").length,
+            buttonCount:document.querySelectorAll("[data-video-generate-affirmation-audio]").length,
+            buttonDisabled:button instanceof HTMLButtonElement?button.disabled:null,
+            phase:editor?.getAttribute("data-video-affirmation-phase")||null,
+            ownVoiceOnly:editor?.getAttribute("data-own-voice-only")||null,
+            voiceModeSelected:document.querySelector('[data-video-ideas-voice-mode="voice"]')
+              ?.getAttribute("aria-pressed")||null,
+            voiceDisclosureOpen:document.querySelector("[data-video-ideas-advanced-voice]")
+              ?.hasAttribute("open")??null
+          };
+        }).catch(()=>({diagnosticsUnavailable:true}));
+        throw new Error(engine+" voice WAV did not become ready: "+
+          JSON.stringify({primaryFailure:error instanceof Error?error.name:"unknown",
+            status,state,providerModes:payloads.map(item=>item.mode),
+            providerRequests:payloads.length,networkRequests:requests,jsErrors:errors}),{cause:error});
       }
       const affirmationRequests=payloads.filter(item=>item.mode==="affirmations");
       assert.equal(affirmationRequests.length,1);
