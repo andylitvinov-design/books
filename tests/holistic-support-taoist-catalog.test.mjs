@@ -7,7 +7,7 @@ const read = p => readFileSync(new URL("../" + p,import.meta.url),"utf8");
 const approved={slug:"remote-energy-support",area_key:"energy_spiritual",
   status:"published",active:true,delivery_format:"online",pricing_mode:"fixed"};
 
-test("Public Holistic Support uses a scrollable, photograph-led shopping basket",()=>{
+test("Public Holistic Support uses compact photographic cards and the existing enquiry basket",()=>{
   const page=read("app/[locale]/holistic-support/page.tsx");
   const widget=read("components/taoist-talisman-catalog.tsx");
   const css=read("components/taoist-talisman-catalog.module.css");
@@ -16,12 +16,12 @@ test("Public Holistic Support uses a scrollable, photograph-led shopping basket"
   assert.match(widget,/data-taoist-talisman-catalog/);
   assert.match(widget,/role="region" tabIndex=\{0\}/);
   assert.match(widget,/data-tao-talisman-order=\{item.id\}/);
-  assert.match(widget,/cartIds\.includes\(item\.id\) \? t\.order : t\.add/);
+  assert.match(widget,/data-tao-talisman-details=\{item.id\}/);
   assert.match(widget,/router\.push\("\/" \+ locale \+ "\/talismans\/cart"\)/);
   assert.match(widget,/archiveOpen && <div/);
   assert.match(widget,/SupportTalismanGallery locale=\{locale\}/);
   assert.match(css,/overflow:auto/);
-  assert.match(css,/grid-template-columns:96px minmax\(0,1fr\)/);
+  assert.match(css,/grid-template-columns:75px minmax\(0,1fr\)/);
   assert.match(css,/max-width:355px/);
   for (const locale of ["en","ru","es"]) {
     assert.match(widget,new RegExp("\\b"+locale+":\\s*\\{"));
@@ -77,4 +77,25 @@ test("Themed wizard remains separate from the dedicated multi-item basket",()=>{
   assert.doesNotMatch(catalog,/hh-support-order-open/);
   assert.match(catalog,/saveBrowserTalismanCart/);
   assert.match(catalog,/TALISMAN_CART_UPDATED_EVENT/);
+});
+
+test("compact Fu cards keep two always-visible actions and a real quote-only basket",()=>{
+ const widget=read("components/taoist-talisman-catalog.tsx");
+ const css=read("components/taoist-talisman-catalog.module.css");
+ for(const label of ['details: "Details"','details: "Детали"','details: "Detalles"',
+   'order: "Order"','order: "Заказать"','order: "Solicitar"',
+   'priceBadge: "Price on request"','priceBadge: "Цена по запросу"','priceBadge: "Precio a consultar"']){
+   assert.ok(widget.includes(label),label);
+ }
+ assert.match(widget,/data-tao-talisman-price/);
+ assert.match(widget,/aria-expanded=\{expanded\} aria-controls=\{detailsId\}/);
+ assert.match(widget,/hidden=\{!expanded\}/);
+ assert.match(widget,/onRate=\{expanded \? value => stars.rate\(item.id, value\) : undefined\}/);
+ assert.match(widget,/saveBrowserTalismanCart\(\[\.\.\.cartIds, itemId\]\)/);
+ assert.match(widget,/router.push\("\/" \+ locale \+ "\/talismans\/cart"\)/);
+ assert.match(css,/\.price\{position:absolute;top:0;right:0/);
+ assert.match(css,/\.actions\{grid-column:1\/-1;grid-row:2;display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+ assert.match(css,/min-height:44px/);
+ assert.match(css,/@media\(max-width:760px\)\{[\s\S]*?\.scroller\{max-height:none;overflow:visible/);
+ assert.match(css,/\.moreDetails\[hidden\]\{display:none!important\}/);
 });
