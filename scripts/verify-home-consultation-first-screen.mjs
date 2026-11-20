@@ -172,15 +172,25 @@ for (const engine of [chromium,webkit]){
           assert.equal(await review.count(),1,label+": one primary free review entry");
           assert.equal(await review.getAttribute("href"),"/"+locale+"/explore/business",
             label+": real localized business review route");
-          const reviewBox=await review.boundingBox();
-          const focusBox=await root.locator("[data-home-focus-grid]").boundingBox();
-          assert.ok(reviewBox&&focusBox&&reviewBox.y+reviewBox.height<=focusBox.y,
-            label+": free review appears above all four needs");
+          // The approved 2026 Home is dialogue-first: Ali composer first,
+          // then four directions, three steps, Get Ideas and Get Support.
+          // Measure every block together before mobile keyboard auto-scroll.
+          const layout=await root.evaluate(element=>{
+            const selectors=['[data-home-intent-form]','[data-home-focus-grid]',
+              '[data-home-how-it-works]','[data-home-free-review]',
+              '[data-home-request-session]'];
+            const nodes=selectors.map(selector=>element.querySelector(selector));
+            if(nodes.some(node=>!node))return null;
+            return nodes.map(node=>{const {top,bottom}=node.getBoundingClientRect();return {top,bottom}});
+          });
+          assert.ok(layout&&layout.length===5&&
+            layout[0].bottom<=layout[1].top+1&&
+            layout[1].bottom<=layout[2].top+1&&
+            layout[2].bottom<=layout[3].top+1&&
+            layout[2].bottom<=layout[4].top+1,
+            label+": Ali composer → four directions → three steps → Get Ideas / Get Support "+
+              JSON.stringify(layout));
           assert.equal(await root.locator("[data-home-focus-grid]").count(),1,label+": grouped choices");
-          const cards=await root.locator("[data-home-focus-grid]").boundingBox();
-          const composer=await root.locator("[data-home-intent-composer]").boundingBox();
-          assert.ok(cards&&composer&&cards.y+cards.height<=composer.y,
-            label+": four topics above the Ali composer");
           await personal.click();
           assert.equal(await root.getAttribute("data-home-mode"),"self");
           assert.equal(await review.getAttribute("href"),"/"+locale+"/services/free-situation-review",
@@ -191,10 +201,11 @@ for (const engine of [chromium,webkit]){
           const input=root.locator("[data-home-intent-composer]");
           const send=root.locator("[data-home-send-to-ali]");
           await input.waitFor({state:"visible"});
-          assert.equal(await send.isDisabled(),true,label+": cannot send an empty prompt");
+          assert.equal(await send.isEnabled(),true,label+": free Ali chat starts without a typed goal");
           await input.fill(locale==="ru"?"Хочу создать курс":locale==="es"?"Quiero crear un curso":"I want to create a course");
           assert.equal(await send.isEnabled(),true,label+": real editable composer");
           await input.fill("");
+          assert.equal(await send.isEnabled(),true,label+": free Ali chat remains open after clearing goal");
           const search=header.locator("[data-site-search-trigger]");
           await search.click();
           await header.locator("[data-site-search-panel]").waitFor({state:"visible"});
