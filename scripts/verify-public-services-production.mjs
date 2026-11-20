@@ -293,6 +293,47 @@ try {
         }
       }
     }
+    if (width === 390) {
+      // Regression for the approved three-horizontal-offers mock: no extra
+      // giant category card or duplicate price/action header.
+      const geometry = await catalog.locator(
+        '[data-services-unified-panel][data-services-has-three="true"]'
+      ).evaluateAll(nodes => nodes.map(node => {
+        const measure = element => {
+          if (!element) return null;
+          const r = element.getBoundingClientRect();
+          return { x:r.x, y:r.y, width:r.width, height:r.height };
+        };
+        const direct = selector => node.querySelector(':scope > ' + selector);
+        const headerPrice = direct('[data-support-uniform-preview]')
+          ?.querySelector(':scope > [data-support-uniform-price]');
+        return {
+          id: node.getAttribute("data-services-unified-panel"),
+          overall: measure(node),
+          heading: measure(direct('[data-support-uniform-preview]')),
+          topActions: getComputedStyle(direct('[data-service-card-actions]')).display,
+          headingPrice: getComputedStyle(headerPrice).display,
+          offers: [...node.querySelectorAll(
+            ':scope > [data-services-three-visible] > [data-service-variant]'
+          )].map(measure),
+        };
+      }));
+      assert.equal(geometry.length, 10);
+      for (const group of geometry) {
+        assert.ok(group.overall.height < 700, "Oversized service category: " + locale + "/" + group.id + " " + group.overall.height);
+        assert.ok(group.heading.height < 120, "Oversized service header: " + locale + "/" + group.id);
+        assert.equal(group.topActions, "none", "Duplicate category action row: " + group.id);
+        assert.equal(group.headingPrice, "none", "Duplicate category price badge: " + group.id);
+        assert.equal(group.offers.length, 3);
+        for (const [i, offer] of group.offers.entries()) {
+          assert.ok(offer.height >= 100 && offer.height < 220,
+            "Offer should be a compact horizontal card: " + group.id + "/" + i + " " + offer.height);
+          assert.ok(offer.x >= -1 && offer.x + offer.width <= width + 1, "Offer overflows viewport: " + group.id);
+          if (i) assert.ok(offer.y >= group.offers[i-1].y + group.offers[i-1].height - 1,
+            "Three offers must stack vertically: " + group.id);
+        }
+      }
+    }
     for (const selector of [
       "[data-assist-spiritual-entry]", "[data-assist-video-generation]",
       "[data-assist-course-shelf]", "[data-assist-magical-help]",

@@ -106,8 +106,15 @@ test("Support keeps its four-question first screen and renders ten compact categ
   assert.ok(page.indexOf("<ServicesMagicalHelpMobile") > page.indexOf('<ServicesCompactPanel id="reading">'),
     "Published legacy formats are preserved for people who open the reading disclosure");
   assert.match(uniform, /data-services-unified-catalog/);
-  assert.match(uniform, /grid-template-columns:83px minmax\(0,1fr\)/);
+  assert.match(uniform, /grid-template-columns:76px minmax\(0,1fr\)/);
   assert.match(uniform, /min-height:44px!important/);
   assert.match(uniform, /@media \(max-width:350px\)/);
   assert.match(uniform, /@media \(min-width:761px\)/);
+});
+
+test("collapsed legacy panels truly hide while compact category contract remains", () => {
+  assert.match(catalog, /visibility:"hidden"/);
+  assert.match(catalog, /position:"absolute"/);
+  assert.match(read("scripts/verify-public-services-production.mjs"), /Oversized service category/);
+  assert.match(read("scripts/verify-public-services-production.mjs"), /Three offers must stack vertically/);
 });

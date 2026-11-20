@@ -301,7 +301,10 @@ export function ServicesCompactPanel({ id, children }: { id: ServicesPanelId; ch
         {expanded ? more[1] : more[0]} <ArrowRight size={16} aria-hidden="true" />
       </button> : null}
       <div id={regionId} className={styles.content} role="region" aria-label={title}
-        hidden={!expanded} style={!expanded ? {display:"none"} : undefined}>
+        hidden={!expanded} style={!expanded ? {
+          display:"none", visibility:"hidden", position:"absolute",
+          width:0, height:0, overflow:"hidden", pointerEvents:"none",
+        } : undefined}>
         {children}
       </div>
     </article>
