@@ -3149,7 +3149,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // The quiz's canonical topic is the subject; a goal is a method/outcome,
   // not a replacement for what the visitor explicitly selected.
   const personalGoalOptions=useMemo(()=>buildPersonalVideoGoalOptions({
-    locale,wish,theme,selectedTopic:selectedConceptTopic,profile:ideasProfile,
+    locale,wish:[wish,selectedConceptTopic?.brief].filter(Boolean).join(". "),theme,
+    selectedTopic:selectedConceptTopic,profile:ideasProfile,
     profileConfirmed:ideasProfileConfirmed
   }),[locale,wish,theme,selectedConceptTopic,ideasProfile,ideasProfileConfirmed]);
   const activeIdeasGoalId=ideasGoalChoice?.contextKey===personalGoalOptions.contextKey?
