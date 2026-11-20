@@ -3,7 +3,7 @@
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import {ArrowRight,Heart,Home,Keyboard,Leaf,Languages,PhoneOff,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Play,LoaderCircle,Zap} from 'lucide-react'
-import {getCoachPersona,localCoachText,coachStagePrompt} from '@/lib/coaching/persona-registry.mjs'
+import {getCoachPersona,localCoachText,coachStagePrompt,resolveCoachMethodId} from '@/lib/coaching/persona-registry.mjs'
 import {getCoachPresentation} from '@/lib/coaching/persona-presentations.mjs'
 import {coachTimeboxState} from '@/lib/coaching/session-timebox.mjs'
 import {coachingBrainSafety,coachingBrainBoundary,coachingBrainStageDecision,offlineCoachingBrainReply,selectCoachingBrainMethod} from '@/lib/personal-coaching/coaching-brain.mjs'
@@ -160,9 +160,10 @@ const reasons={
 const assistantText=(result)=>result.mode==='ai' && typeof result.message==='string'
   ? result.message : [result.reflection,result.hypothesis,result.question].filter(Boolean).join('\n\n')
 
-export default function MyCoachLiveDialogue({locale='en',personaId='mira',settings={},onClose,onGuided}){
+export default function MyCoachLiveDialogue({locale='en',personaId='mira',methodId=null,settings={},onClose,onGuided}){
   const lang=copy[locale]?locale:'en',t=copy[lang]
   const persona=getCoachPersona(personaId)
+  const methodForSession=resolveCoachMethodId(personaId,methodId)||resolveCoachMethodId(personaId)
   const [draft,setDraft]=useState('')
   const [speechPreview,setSpeechPreview]=useState('')
   const [cloudAvailable,setCloudAvailable]=useState(false)
@@ -205,6 +206,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const micWaveRef=useRef(null)
   const sessionRootRef=useRef(null)
   const replayAudioContextRef=useRef(null)
+  const serverSessionStartRef=useRef({personaId:null,methodId:null,promise:null})
   // The 20-minute format counts active foreground seconds, not wall-clock
   // time while Safari is backgrounded. No stored state or forced cutoff.
   useEffect(()=>{
@@ -313,6 +315,25 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const captions=transcriptUi[lang]||transcriptUi.en
   const latestCoachTurn=[...turns].reverse().find(turn=>turn.role==='assistant')
   const latestCoachText=latestCoachTurn?.content||introduction
+  // This is a metadata-only start; Safari audio Play remains synchronous.
+  function requestServerCoachSession(){
+    const prior=serverSessionStartRef.current
+    if(prior.personaId===personaId&&prior.methodId===methodForSession&&prior.promise)
+      return prior.promise
+    const promise=fetch('/api/app/my-coach/session',{
+      method:'POST',credentials:'same-origin',cache:'no-store',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({personaId,methodId:methodForSession}),
+    }).then(response=>({ok:response.ok,status:response.status}))
+      .catch(()=>({ok:false,status:0}))
+    serverSessionStartRef.current={personaId,methodId:methodForSession,promise}
+    // Network and auth failures remain retryable at the next Play/Send.
+    promise.then(result=>{
+      if(!result.ok&&serverSessionStartRef.current.promise===promise)
+        serverSessionStartRef.current={personaId:null,methodId:null,promise:null}
+    })
+    return promise
+  }
   // Hero Play is the main session entry. It invokes the same imperative
   // voice runner synchronously, keeping Safari's user-activation gesture.
   function startSessionFromPortrait(){
@@ -358,7 +379,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const visibleStageTotal=meaningProgressValid?5:progressValid?6:5
   const visibleStageIndex=meaningProgressValid?meaningProgress.index:
     progressValid?lastRecordedProgress.index:provisionalIndex
-  const visibleMethodId=lastRecordedProgress?.methodId||
+  const visibleMethodId=lastRecordedProgress?.methodId||methodForSession||
     ({GROW:'grow',TGROW:'tgrow',WOOP:'woop',OSKAR:'oskar',
       'Solution-focused':'solution_focused',
       'Appreciative inquiry':'appreciative_inquiry'})[persona?.methods?.[0]]||'grow'
@@ -643,11 +664,17 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     pending.current=controller
     setBusy(true);setError('')
     try{
+      const sessionStart=await requestServerCoachSession()
+      if(!sessionStart.ok){
+        if(sessionStart.status===401)setAuthRequired(true)
+        throw Error('COACH_SESSION_START_UNAVAILABLE')
+      }
+      if(controller.signal.aborted||turnRequestRef.current!==requestId)return null
       const response=await fetch('/api/app/my-coach/turn',{
         method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
-          personaId,settings,locale:responseLocale,consent:true,message,voiceTurn:voiceTurn===true,
+          personaId,methodId:methodForSession,settings,locale:responseLocale,consent:true,message,voiceTurn:voiceTurn===true,
           elapsedSeconds:sessionClockStarted?Math.floor(activeSessionSeconds):0,
           sessionContext:coachEphemeralContext(conversationTurns,coachTurnWindow(conversationTurns,10),responseLocale,message),
           semanticHints:semanticHintsRef.current,
@@ -783,7 +810,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       <div className={styles.voiceControls} data-coach-inline-voice>
         <div className={styles.voiceCenter} data-voice-active={voiceState.phase!=='idle'?'true':undefined}>
           <MyCoachSpeechLoop ref={speechRef} locale={conversationLang} speechLocale={speechLocale} initialDraft={draft}
-            introduction={introduction} onSessionStart={()=>setCloudAgreed(true)}
+            introduction={introduction} onSessionStart={()=>{setCloudAgreed(true);requestServerCoachSession()}}
             cloudAvailable={cloudAvailable} cloudAgreed={cloudAgreed} cloudProvider={cloudProvider} personaId={personaId} enabled={true}
             canStart={!busy&&!paused&&!replaying} onTurn={(text,spoken)=>sendMessage(text,{voiceTurn:true,utteranceLocale:spoken?.locale})}
             onCancelTurn={cancelPendingCoachTurn} onCoachInterrupted={markCoachSpeechInterrupted} onVoiceStateChange={setVoiceState}

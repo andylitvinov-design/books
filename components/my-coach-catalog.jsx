@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import { ArrowRight, BookOpen, Heart, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Sparkles, Users, MoreHorizontal, Zap, Leaf, Flower2, Target, ClipboardCheck } from 'lucide-react'
 import {
-  PUBLIC_COACH_PERSONA_IDS, PUBLIC_COACH_PERSONAS, PUBLIC_COACH_TOPICS, coachSessionHref, coachStagePrompt, getCoachPersona,
+  PUBLIC_COACH_PERSONA_IDS, PUBLIC_COACH_PERSONAS, PUBLIC_COACH_TOPICS, coachSessionHref, coachStagePrompt, getCoachPersona,COACH_METHOD_CODES,resolveCoachMethodId,
   localCoachText, normalizeCoachSettings,
 } from '@/lib/coaching/persona-registry.mjs'
 import styles from './my-coach-catalog.module.css'
@@ -277,6 +277,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
   const [favorites, setFavorites] = useState([])
   const [favoritesReady, setFavoritesReady] = useState(false)
   const [selectedId, setSelectedId] = useState('mira')
+  const [selectedMethod,setSelectedMethod]=useState(null)
   const [expandedId, setExpandedId] = useState(null)
   const [directoryMode, setDirectoryMode] = useState('all')
   const [humanExpanded, setHumanExpanded] = useState(false)
@@ -315,9 +316,10 @@ export default function MyCoachCatalog({ locale = 'en' }) {
   const coachModes = directoryMode === 'all' || directoryMode === 'ai' || directoryMode === 'human'
   const selected = getCoachPersona(selectedId) || PUBLIC_COACH_PERSONAS[0]
   const safeSettings = normalizeCoachSettings(selected.id, settings)
+  const safeMethod=resolveCoachMethodId(selected.id,selectedMethod)||resolveCoachMethodId(selected.id)
   const updateSettings = (field, value) => setSettings(previous =>
     normalizeCoachSettings(selected.id, { ...previous, [field]: value }))
-  const startHref = coachSessionHref(lang, selected.id, safeSettings)
+  const startHref = coachSessionHref(lang, selected.id, safeSettings, safeMethod)
   const selectedName = localCoachText(selected.name, lang)
   const followupPreview = coachStagePrompt(selected.id, 'goal', lang, safeSettings)
   // Reuse the website's service-specific, privacy-filtered messenger handoff.
@@ -330,6 +332,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
     setExpandedId(open => open === id ? null : id)
     if (id !== selectedId) {
       setSelectedId(id)
+      setSelectedMethod(null)
       setSettings(normalizeCoachSettings(id))
     }
   }
@@ -409,7 +412,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
             if (!persona) return null
             return <button type="button" key={id} className={heroStyles.railCard}
               aria-pressed={selected.id === id}
-              onClick={() => { setSelectedId(id); setSettings(normalizeCoachSettings(id)) }}>
+              onClick={() => { setSelectedId(id); setSelectedMethod(null); setSettings(normalizeCoachSettings(id)) }}>
               <span className={heroStyles.railPortrait} data-persona={id} aria-hidden="true">
                 <picture>
                   <source media="(prefers-reduced-motion: reduce)" type="image/webp"
@@ -610,6 +613,13 @@ export default function MyCoachCatalog({ locale = 'en' }) {
           <div className={styles.settingsHeading}><SlidersHorizontal size={19} aria-hidden="true" />
             <div><h3>{t.adjust}</h3><p>{t.adjustNote}</p></div></div>
           <div className={styles.settingsGrid}>
+            <label className={styles.selectField} data-coach-method-selector>
+              <strong>{t.method}</strong>
+              <select aria-label={t.method} value={safeMethod}
+                onChange={event=>setSelectedMethod(event.target.value)}>
+                {selected.methods.map(title=><option key={title} value={COACH_METHOD_CODES[title]}>{title}</option>)}
+              </select>
+            </label>
             {['warmth', 'directness'].map(field => <label className={styles.range} key={field}>
               <span><strong>{t[field]}</strong><output>{safeSettings[field]} / 5</output></span>
               <input type="range" min="1" max="5" step="1" value={safeSettings[field]}

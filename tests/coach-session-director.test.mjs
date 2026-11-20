@@ -172,7 +172,7 @@ test('The large photo, avatar style and low-distraction closure remain in the si
   assert.match(ui,/data-coach-session-started=\{sessionClockStarted\?'true':'false'\}/)
   assert.match(ui,/data-coach-showcase=\{introComplete\?'false':'true'\}/)
   assert.match(ui,/if\(voiceState.phase==='listening'\)setIntroComplete\(true\)/)
-  assert.match(ui,/onSessionStart=\{\(\)=>setCloudAgreed\(true\)\}/)
+  assert.match(ui,/onSessionStart=\{\(\)=>\{setCloudAgreed\(true\);requestServerCoachSession\(\)\}\}/)
   assert.match(ui,/if\(voiceState.phase==='loading'\|\|voiceState.phase==='listening'\)setSessionClockStarted\(true\)/)
   assert.match(ui,/elapsedSeconds:sessionClockStarted\?Math\.floor\(activeSessionSeconds\):0/)
   assert.match(ui,/sessionTimebox\.offerWrapUp&&turns\.length>0/)

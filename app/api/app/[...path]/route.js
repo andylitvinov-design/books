@@ -17,6 +17,8 @@ import { listLabReports, saveLabReport, deleteLabReport } from '@/lib/app/lab-re
 import { readBusinessCoaching, saveBusinessCoaching } from '@/lib/app/business-coaching'
 import { readPersonalCoaching, savePersonalCoaching, readTraditionCoaching, saveTraditionCoaching, readTraditionCoachingSummaries } from '@/lib/app/personal-coaching'
 import {personalCoachingBrainTurn,personalCoachingBrainProbe,myCoachGenerativeTurn,myCoachGenerativeProbe} from '@/lib/app/coaching-brain'
+import {getCoachPersona,resolveCoachMethodId} from '@/lib/coaching/persona-registry.mjs'
+import {COACH_SESSION_COOKIE,newCoachSession,openCoachSession,sealCoachSession,COACH_SESSION_TTL_SECONDS} from '@/lib/coaching/session-authority.mjs'
 import { readCoachingReportDraft } from '@/lib/app/coaching-report-v2'
 import { listCoachingReports, exportCoachingReports, readCoachingReport, saveCoachingReport, deleteCoachingReport } from '@/lib/app/coaching-report-store'
 import { readCoachingLifePlan, updateCoachingLifePlanArea, importCoachingReportActions } from '@/lib/app/coaching-life-plan'
@@ -1004,13 +1006,50 @@ async function handle(request, { params }) {
     // The gateway invokes it only when an actual provider request is attempted.
     const reserveCoachingFreeCall=()=>consumeRate(config,
       {op:'coaching-openrouter-shared-daily'},40,86400)
-    // Signed-in, stateless dialogue for the selected My Coach persona. Client
-    // history is not stored; auth, same-origin protection and DB throttles apply.
+    // First Play or typed Send locks the allowlisted method in an account-
+    // bound, HttpOnly AES-GCM cookie. Only boolean milestones are retained.
+    if (joined === 'my-coach/session') {
+      if (method !== 'POST') throw new AppError('NOT_FOUND',404)
+      const body=await readBody(request,512)
+      onlyKeys(body,['personaId','methodId'])
+      const methodId=resolveCoachMethodId(body?.personaId,body?.methodId)
+      if(!getCoachPersona(body?.personaId)||!methodId)
+        throw new AppError('COACHING_BRAIN_INPUT_INVALID',400)
+      await consumeRate(config,{op:'my-coach-session-start',actor:actor.id},12,3600)
+      const previous=openCoachSession(request.cookies.get(COACH_SESSION_COOKIE)?.value,
+        config,actor,body.personaId)
+      const session=previous?.methodId===methodId
+        ?previous:newCoachSession(actor,body.personaId,Date.now(),methodId)
+      const response=json({started:true,targetSeconds:1200,methodId})
+      response.cookies.set(COACH_SESSION_COOKIE,sealCoachSession(session,config,actor),{
+        httpOnly:true,secure:!config.test,sameSite:'lax',
+        path:'/api/app/my-coach',maxAge:COACH_SESSION_TTL_SECONDS
+      })
+      return response
+    }
     if (joined === 'my-coach/turn') {
       if (method !== 'POST') throw new AppError('NOT_FOUND',404)
+      const body=await readBody(request,16384)
+      if(!getCoachPersona(body?.personaId))
+        throw new AppError('COACHING_BRAIN_INPUT_INVALID',400)
       await consumeRate(config,{op:'my-coach-generative-turn',actor:actor.id},40,3600)
-      return json(await myCoachGenerativeTurn(await readBody(request,16384),
-        {signal:request.signal,reserveModelCall:reserveCoachingFreeCall,config,actor}))
+      const session=openCoachSession(request.cookies.get(COACH_SESSION_COOKIE)?.value,
+        config,actor,body.personaId)||newCoachSession(actor,body.personaId)
+      // Browser method is an equality assertion, NOT permission to change it.
+      // When another tab selected a different method reject with 409.
+      if(body.methodId!==undefined&&body.methodId!==session.methodId)
+        throw new AppError('COACH_SESSION_METHOD_CONFLICT',409)
+      const outcome=await myCoachGenerativeTurn(body,{
+        signal:request.signal,reserveModelCall:reserveCoachingFreeCall,
+        config,actor,sessionState:session
+      })
+      const {__coachSession,...clientReply}=outcome
+      const response=json(clientReply)
+      response.cookies.set(COACH_SESSION_COOKIE,sealCoachSession(__coachSession,config,actor),{
+        httpOnly:true,secure:!config.test,sameSite:'lax',
+        path:'/api/app/my-coach',maxAge:COACH_SESSION_TTL_SECONDS
+      })
+      return response
     }
     // A synthetic preflight proves verified ZDR free-model access before any
     // visitor text can reach a provider. The call is authenticated and bounded.
