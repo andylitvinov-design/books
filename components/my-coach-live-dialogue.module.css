@@ -1433,5 +1433,5 @@
 @media(max-width:380px){.protocolCard{padding:14px;gap:12px}.protocolReview{max-height:34dvh}.protocolActions>a,.protocolActions>button{font-size:13px}}
 
 .protocolTextLabel{display:flex;flex-direction:column;gap:7px;font-size:14px;font-weight:700;color:#28584c}
-.protocolTextLabel textarea{width:100%;min-height:66px;resize:vertical;padding:10px 12px;border:1px solid #cadbd0;border-radius:11px;background:#fff;color:#223d36;font:400 15px/1.4 inherit}
+.protocolTextLabel textarea{width:100%;min-height:66px;resize:vertical;padding:10px 12px;border:1px solid #cadbd0;border-radius:11px;background:#fff;color:#223d36;font-family:inherit;font-size:15px;line-height:1.4;font-weight:400}
 .protocolTextLabel textarea:focus-visible{outline:3px solid #49a87e;outline-offset:1px}
