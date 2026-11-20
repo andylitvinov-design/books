@@ -18,6 +18,7 @@ import styles from './my-coach-live-dialogue.module.css'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
 import {startCoachingMp3Playback,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
+import {readCoachTurnStream} from '@/lib/coaching/coach-stream-client.mjs'
 import {detectedSpeechLocale} from '@/lib/personal-coaching/my-coach-dictation.mjs'
 import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
 import CoachingAvatar from '@/components/app/coaching-avatar'
@@ -156,6 +157,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const persona=getCoachPersona(personaId)
   const [draft,setDraft]=useState('')
   const [speechPreview,setSpeechPreview]=useState('')
+  const [streamingPreview,setStreamingPreview]=useState('')
+  const [coachEngine,setCoachEngine]=useState('groq_stream')
+  const [streamingReady,setStreamingReady]=useState(false)
   const [cloudAvailable,setCloudAvailable]=useState(false)
   const [cloudAgreed,setCloudAgreed]=useState(false)
   const [cloudProvider,setCloudProvider]=useState(null)
@@ -257,15 +261,17 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const next={status:result?.status==='verified'?'verified':'unavailable',reason:result?.reason||''}
       if(next.status!=='verified')modelProbeRef.current.lastAttempt=Date.now()
       setReadiness(next)
+      setStreamingReady(result?.status==='verified'&&result?.privacyRouting==='account_zdr_owner_confirmed')
     }).catch(()=>{
       if(!controller.signal.aborted){
         modelProbeRef.current.lastAttempt=Date.now()
         setReadiness({status:'unavailable',reason:'model_unavailable'})
+        setStreamingReady(false)
       }
     })
     return ()=>controller.abort()
   },[])
-  useEffect(()=>{if(transcriptRef.current)transcriptRef.current.scrollTop=transcriptRef.current.scrollHeight},[turns,speechPreview])
+  useEffect(()=>{if(transcriptRef.current)transcriptRef.current.scrollTop=transcriptRef.current.scrollHeight},[turns,speechPreview,streamingPreview])
   useEffect(()=>{
     if(voiceState.phase!=='listening'){
       micWaveRef.current?.style.setProperty('--coach-mic-level','0')
@@ -507,9 +513,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         ?{status:result.status==='verified'?'verified':'unavailable',reason:result.reason||''}
         :{status:'unavailable',reason:'model_unavailable'}
       setReadiness(next)
+      setStreamingReady(next.status==='verified'&&result?.privacyRouting==='account_zdr_owner_confirmed')
       return next.status==='verified'
     }catch{
       setReadiness({status:'unavailable',reason:'model_unavailable'})
+      setStreamingReady(false)
       return false
     }finally{
       modelProbeRef.current.inFlight=false
@@ -521,6 +529,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     setTurns(previous=>markLatestCoachReplyInterrupted(previous,spokenText))
   }
   function cancelPendingCoachTurn(){
+    setStreamingPreview('')
     turnRequestRef.current+=1
     const active=pending.current
     if(active){pending.current=null;active.abort();setBusy(false)}
@@ -616,9 +625,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const controller=new AbortController()
     pending.current?.abort()
     pending.current=controller
-    setBusy(true);setError('')
+    setBusy(true);setError('');setStreamingPreview('')
+    const useStreaming=coachEngine==='groq_stream'&&streamingReady&&!wisdomRequested
     try{
-      const response=await fetch('/api/app/my-coach/turn',{
+      const response=await fetch(useStreaming?'/api/app/my-coach/stream':'/api/app/my-coach/turn',{
         method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
@@ -631,7 +641,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         }),
       })
       if(response.status===401){setAuthRequired(true);return}
-      const result=await response.json().catch(()=>null)
+      const result=useStreaming?await readCoachTurnStream(response,{
+        signal:controller.signal,
+        onPreview:preview=>{
+          if(!controller.signal.aborted&&turnRequestRef.current===requestId)setStreamingPreview(preview)
+        },
+      }):await response.json().catch(()=>null)
       if(!response.ok||!result?.mode||result.personaId!==personaId)throw Error('COACH_REPLY_UNAVAILABLE')
       if(controller.signal.aborted||turnRequestRef.current!==requestId)return null
       const answer=assistantText(result)
@@ -674,7 +689,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(!controller.signal.aborted&&turnRequestRef.current===requestId)setError(t.error)
       return null
     }finally{
-      if(pending.current===controller){pending.current=null;setBusy(false)}
+      if(pending.current===controller){pending.current=null;setBusy(false);setStreamingPreview('')}
     }
   }
   const motionPhase=paused?'idle':voiceState.phase==='speaking'?'speaking':
@@ -832,6 +847,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
                 <span className={styles.responseSource}> · {t.offline}</span>}
             </strong><p>{turn.content}</p>
           </div>)}
+          {streamingPreview&&<div className={styles.transcriptCoach} data-coach-stream-preview aria-live="off">
+            <strong>{name} · {{ru:'Черновик ответа',en:'Draft reply',es:'Borrador de respuesta'}[lang]}</strong>
+            <p>{streamingPreview}</p>
+          </div>}
           {speechPreview&&<div className={styles.transcriptInterim} aria-live="off">
             <strong>{t.user} · {captions.listening}</strong><p>{speechPreview}</p>
           </div>}
@@ -854,6 +873,14 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         </form>}
         {error&&<p className={styles.error} role="alert">{error}</p>}
         <details className={styles.sessionMore}><summary>{lang==='ru'?'Дополнительно':lang==='es'?'Más opciones':'More options'}</summary>
+        <label className={styles.coachEnginePicker} data-coach-engine-choice>
+          <span>{({ru:'Движок диалога',en:'Dialogue engine',es:'Motor de diálogo'})[lang]}</span>
+          <select value={coachEngine} disabled={busy} onChange={event=>setCoachEngine(event.target.value)}>
+            <option value="groq_stream">{({ru:'Groq · поток',en:'Groq · streaming',es:'Groq · flujo'})[lang]}</option>
+            <option value="groq_strict">{({ru:'Groq · стабильный',en:'Groq · validated',es:'Groq · validado'})[lang]}</option>
+            <option value="gemini" disabled>{({ru:'Gemini Live · после проверки',en:'Gemini Live · pending approval',es:'Gemini Live · pendiente'})[lang]}</option>
+          </select>
+        </label>
         <button type="button" className={styles.captionMore} aria-pressed={showCaptions}
           onClick={()=>setShowCaptions(value=>!value)}>{ui.captions}</button>
         <details className={styles.consentDetails}><summary>{captions.details}</summary>
