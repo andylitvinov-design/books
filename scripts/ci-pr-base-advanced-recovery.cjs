@@ -120,6 +120,29 @@ function classifyRecentBaseSyncs(commits,sourceSha,now=Date.now()){
    [recent.length-BASE_SYNC_MAX_RECENT_MERGES]+BASE_SYNC_LOOKBACK_MS+1).toISOString():null};
 }
 
+// Never cancel required exact-HEAD macOS acceptance after early BASE_ADVANCED:
+// owner update-branch used to replace the PR source before WebKit completed.
+async function holdPendingExactMedia(github,{owner,repo,number,head,branch}){
+ if(!Number.isSafeInteger(number)||number<1||!SHA.test(head||'')||
+    typeof branch!=='string'||!branch)return 'MEDIA_ASSOCIATION_UNVERIFIED';
+ let data;
+ try{
+  data=(await github.rest.actions.listWorkflowRuns({owner,repo,
+   workflow_id:'holistic-support-mandala.yml',branch,event:'pull_request',
+   per_page:30})).data;
+ }catch{return 'MEDIA_SPECIALIST_INDEX_UNAVAILABLE';}
+ const runs=data?.workflow_runs;
+ if(!Array.isArray(runs)||runs.length>30)return 'MEDIA_SPECIALIST_INDEX_UNVERIFIED';
+ const exact=runs.filter(r=>r?.event==='pull_request'&&r.head_branch===branch&&
+  (r.head_sha===head||(Array.isArray(r.pull_requests)&&
+    r.pull_requests.some(p=>p.number===number&&p.head?.sha===head&&p.base?.ref===PROD))));
+ if(!exact.length)return null;
+ const latest=exact.sort((a,b)=>Number(b.id||0)-Number(a.id||0))[0];
+ if(latest.status!=='completed')return 'MEDIA_SPECIALIST_STILL_RUNNING';
+ if(latest.conclusion!=='success')return 'MEDIA_SPECIALIST_FAILED_OR_INTERRUPTED';
+ return null;
+}
+
 function sameSource(pr,source,head){
  return pr?.state==='open'&&!pr.draft&&pr.base?.ref===PROD&&
   pr.head?.repo?.full_name===REPO&&pr.head.ref===source&&pr.head.sha===head&&
@@ -294,6 +317,10 @@ async function recoverBaseAdvanced({github,context,hasOwnerToken=false,
   }
   if(!sameSource(pr,e.head_branch,sourceSha))
    return outcome('SKIPPED','PR_SOURCE_CHANGED_DRAFT_HELD_OR_CONFLICT',number);
+  // Do not supersede the media test with a source HEAD mutation.
+  const mediaHold=await holdPendingExactMedia(github,{owner,repo,number,
+   head:sourceSha,branch:e.head_branch});
+  if(mediaHold)return outcome('SKIPPED',mediaHold,number);
   const liveBranch=(await github.rest.repos.getBranch({owner,repo,branch:PROD})).data;
   const live=liveBranch?.commit?.sha,old=testedBase;
   if(liveBranch?.protected!==true||!SHA.test(live||'')||old===live)
@@ -457,5 +484,5 @@ async function recoverBaseAdvanced({github,context,hasOwnerToken=false,
   return outcome('SKIPPED',code?'READ_GITHUB_API_'+code:'BASE_RECOVERY_EVIDENCE_UNAVAILABLE',number);
  }
 }
-module.exports={isTrustedFailure,validatedJobEvidence,isActualBaseAdvancedLog,
+module.exports={holdPendingExactMedia,isTrustedFailure,validatedJobEvidence,isActualBaseAdvancedLog,
  isVerifiedAdvance,verifiedSourceContainsBase,classifyRecentBaseSyncs,sameSource,ownerProtectedUpdate,ownerProtectedReadyRevalidation,recoverBaseAdvanced};

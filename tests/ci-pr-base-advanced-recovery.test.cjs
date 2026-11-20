@@ -45,7 +45,8 @@ function world(options={}){
  const github={
   rest:{
    actions:{
-    listWorkflowRuns:async()=>({data:{workflow_runs:[{
+    listWorkflowRuns:async({workflow_id})=>({data:{workflow_runs:
+     workflow_id==='holistic-support-mandala.yml'?(options.mediaRuns||[]):[{
      id:options.newerCore?101:100,head_sha:options.latestHeadMismatch?'f'.repeat(40):event.head_sha,
      status:'completed',conclusion:'failure',run_attempt:event.run_attempt
     }]}}),
@@ -502,4 +503,49 @@ test('incomplete/unverified BASE history cannot silently authorize another sourc
   assert.equal(res.status,'SKIPPED');assert.equal(w.updated(),0);
   assert.match(res.reason,/BASE_SYNC_HISTORY/);
  }
+});
+
+test('real #5093 pending macOS workflow cannot be cancelled by failed-Core BASE sync',async()=>{
+ const media=(status,conclusion,sha=HEAD)=>({
+  id:901,event:'pull_request',head_branch:'fix/sensitive-crm',
+  head_sha:sha,status,conclusion,pull_requests:[{number:3510,
+   head:{sha,ref:'fix/sensitive-crm'},base:{ref:'codex/public-book-library'}}]
+ });
+ for(const [status,conclusion,reason] of [
+  ['queued',null,'MEDIA_SPECIALIST_STILL_RUNNING'],
+  ['in_progress',null,'MEDIA_SPECIALIST_STILL_RUNNING'],
+  ['completed','failure','MEDIA_SPECIALIST_FAILED_OR_INTERRUPTED'],
+  ['completed','cancelled','MEDIA_SPECIALIST_FAILED_OR_INTERRUPTED'],
+ ]){
+  const w=world({mediaRuns:[media(status,conclusion)]});
+  const result=await run(w);
+  assert.equal(result.status,'SKIPPED');
+  assert.equal(result.reason,reason);
+  assert.equal(w.updated(),0,'macOS evidence cannot be cancelled');
+  assert.equal(w.comments.length,0,'a media hold cannot consume the one owner update');
+ }
+ const successful=world({mediaRuns:[media('completed','success')]});
+ assert.equal((await run(successful)).status,'UPDATED');
+ assert.equal(successful.updated(),1);
+ const old=world({mediaRuns:[media('in_progress',null,'d'.repeat(40))]});
+ assert.equal((await run(old)).status,'UPDATED','prior-source media cannot block current HEAD');
+});
+test('macOS hold reads only trusted exact-source PR workflow evidence',async()=>{
+ const {holdPendingExactMedia}=require('../scripts/ci-pr-base-advanced-recovery.cjs');
+ const args={owner:'andylitvinov-design',repo:'books',number:3510,head:HEAD,branch:'fix/sensitive-crm'};
+ const calls=[];
+ const gh={rest:{actions:{listWorkflowRuns:async request=>{
+  calls.push(request);
+  return {data:{workflow_runs:[{id:7,event:'pull_request',
+   head_sha:HEAD,head_branch:args.branch,status:'in_progress',
+   pull_requests:[{number:3510,head:{sha:HEAD},base:{ref:'codex/public-book-library'}}]
+  }]}};
+ }}}};
+ assert.equal(await holdPendingExactMedia(gh,args),'MEDIA_SPECIALIST_STILL_RUNNING');
+ assert.equal(calls[0].workflow_id,'holistic-support-mandala.yml');
+ assert.equal(calls[0].branch,args.branch);
+ assert.equal(await holdPendingExactMedia({rest:{actions:{
+  listWorkflowRuns:async()=>{throw Error('unavailable');}
+ }}},args),'MEDIA_SPECIALIST_INDEX_UNAVAILABLE');
+ assert.equal(await holdPendingExactMedia(gh,{...args,head:'malformed'}),'MEDIA_ASSOCIATION_UNVERIFIED');
 });
