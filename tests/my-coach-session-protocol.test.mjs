@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {normalizeMyCoachProtocol,myCoachProtocolPdfOptions,MY_COACH_PROTOCOL_MAX_TURNS} from '../lib/personal-coaching/session-protocol.mjs'
+import {coachInformationChecklist,COACH_INFORMATION_KEYS} from '../lib/coaching/coach-information-checklist.mjs'
 
 const id='8afbf841-49a0-46e1-b5c1-124a116efa28'
 const sample=()=>({
@@ -103,4 +104,60 @@ test('the main voice session ends in a review dialog with PDF actions, not navig
   assert.match(ui,/onClick=\{interceptSessionExit\}/)
   assert.match(archive,/data-my-coach-saved-protocol/)
   assert.match(archive,/deleteProtocol\(protocol\)/)
+})
+
+test('checklist reports only client-supplied information in six compact states',()=>{
+  const turns=[
+    {role:'assistant',content:'Your motivation is very strong. You have a complete action plan.'},
+    {role:'user',content:'Я хочу наладить отношения с коллегами и чувствовать себя спокойнее на работе.'},
+    {role:'assistant',content:'I suggest you ask a colleague for help.'},
+    {role:'user',content:'Мне мешает постоянная нехватка времени и страх отказа, поэтому я часто отступаю.'},
+    {role:'user',content:'Для меня важно чувствовать спокойствие и больше уверенности в повседневной жизни.'}
+  ]
+  const rows=coachInformationChecklist(turns)
+  assert.deepEqual(rows.map(row=>row.key),COACH_INFORMATION_KEYS)
+  const lookup=Object.fromEntries(rows.map(row=>[row.key,row]))
+  assert.equal(lookup.goal.status,'complete')
+  assert.equal(lookup.obstacles.status,'complete')
+  assert.equal(lookup.motivation.status,'complete')
+  assert.equal(lookup.situation.status,'complete')
+  assert.equal(lookup.resources.status,'missing')
+  assert.equal(lookup.nextSteps.status,'missing')
+  assert.ok(!JSON.stringify(rows).includes('I suggest'))
+  assert.equal(coachInformationChecklist([],{selectedGoal:'Calm'}).find(x=>x.key==='goal').status,'partial')
+})
+test('a client topic correction resets old checkmarks and partial evidence is not marked complete',()=>{
+  const turns=[
+    {role:'user',content:'I want to change jobs because I am exhausted and it is difficult at work right now.'},
+    {role:'user',content:'Давайте сменим тему. Теперь мне важно понять отношения с ребёнком.'},
+    {role:'user',content:'Я хочу.'}
+  ]
+  const rows=Object.fromEntries(coachInformationChecklist(turns).map(row=>[row.key,row]))
+  assert.equal(rows.goal.status,'partial')
+  assert.equal(rows.obstacles.status,'missing')
+  assert.equal(rows.situation.status,'missing')
+  assert.ok(!JSON.stringify(rows).includes('change jobs'))
+})
+test('owner mobile design keeps voice controls, back and end-call summary while overlaying the transcript',()=>{
+  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+  const css=readFileSync(new URL('../components/my-coach-live-dialogue.module.css',import.meta.url),'utf8')
+  assert.match(ui,/data-coach-key-info-toggle/)
+  assert.match(ui,/data-coach-key-information/)
+  assert.match(ui,/aria-expanded=\{keyInfoOpen\}/)
+  assert.match(ui,/coachInformationChecklist\(turns,\{selectedGoal\}\)/)
+  assert.match(ui,/onClick=\{endWithProtocol\}/)
+  assert.match(ui,/<PhoneOff size=\{19\}/)
+  assert.match(ui,/Summary/)
+  assert.match(ui,/<ArrowLeft size=\{16\}/)
+  assert.match(ui,/data-coach-live-wave/)
+  assert.match(css,/height:clamp\(320px,47dvh,448px\)/)
+  assert.match(css,/\.keyInfoSheet\{[\s\S]*?position:absolute/)
+  assert.match(css,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
+})
+test('PDF prints the provisional key-information map using only the client transcript',()=>{
+  const report=myCoachProtocolPdfOptions(sample(),{locale:'ru'})
+  assert.match(report.protocolNote,/Ключевая информация/)
+  assert.match(report.protocolNote,/Цель \/ результат/)
+  assert.match(report.protocolNote,/Я хочу понять/)
+  assert.doesNotMatch(report.protocolNote,/Возможный шаг: поговорить с коллегой/)
 })
