@@ -1109,7 +1109,10 @@ async function handle(request, { params }) {
       if (method === 'GET') return json(await coachContextConsentOptions(config,actor))
       if (method !== 'POST') throw new AppError('NOT_FOUND',404)
       await consumeRate(config,{op:'coaching-context-consent',actor:actor.id},60,3600)
-      return json(await manageCoachContextConsent(config,actor,await readBody(request,2048)))
+      const body=await readBody(request,2048)
+      if (body?.operation === 'options' && typeof body.contextSessionToken === 'string')
+        return json(await coachContextConsentOptions(config,actor,process.env,body.contextSessionToken))
+      return json(await manageCoachContextConsent(config,actor,body))
     }
     if (path[0] === 'coaching-life-plan') {
       if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
