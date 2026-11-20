@@ -5,8 +5,8 @@ import {startCoachRecordedTurn} from '../lib/personal-coaching/coach-recorded-tu
 import {createCoachBargeGate,isCoachBargeEcho} from '../lib/personal-coaching/coach-barge-in.mjs'
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
-function fakeAudioEnvironment({userAgent='Desktop Chromium'}={}){
- let clock=0,energy=0,tick=null,stopped=0,uploads=0;
+function fakeAudioEnvironment({userAgent='Desktop Chromium',muteFirstCapture=false}={}){
+ let clock=0,energy=0,tick=null,stopped=0,uploads=0,captures=0;
  class Recorder{
   static isTypeSupported(m){return m==='audio/mp4'}
   state='inactive';mimeType='audio/mp4'
@@ -26,7 +26,12 @@ function fakeAudioEnvironment({userAgent='Desktop Chromium'}={}){
   close(){return Promise.resolve()}
  }
  const environment={
-  navigator:{userAgent,mediaDevices:{getUserMedia:async()=>({getTracks:()=>[{stop(){stopped++}}]})}},
+  navigator:{userAgent,mediaDevices:{getUserMedia:async()=>{
+   captures++
+   const track={kind:'audio',muted:muteFirstCapture&&captures===1,
+     readyState:'live',stop(){stopped++}}
+   return {getTracks:()=>[track],getAudioTracks:()=>[track]}
+  }}},
   MediaRecorder:Recorder,AudioContext:Context,File,FormData,Blob,
   fetch:async(url,init)=>{
    assert.equal(url,'/api/holistic-support/audio-storyboard')
@@ -40,7 +45,8 @@ function fakeAudioEnvironment({userAgent='Desktop Chromium'}={}){
   performance:{now:()=>clock},
  }
  return {environment,pulse(rms,ms=100){clock+=ms;energy=rms;tick?.()},get uploading(){return uploads},
-  get stopped(){return stopped},get ticker(){return tick}}
+  get stopped(){return stopped},get ticker(){return tick},
+  get captureRequests(){return captures}}
 }
 
 test('voice monitor ducks then restores after playback echo disappears without any STT request',async()=>{
@@ -282,4 +288,49 @@ test('persistently muted iPhone audio track stops after one bounded recovery, no
  assert.deepEqual(errors,['MIC_NO_SIGNAL'])
  assert.equal(uploads,0)
  capture.cancel()
+})
+
+test('iPhone barge monitor reacquires a muted output track and still interrupts locally',async()=>{
+ const sound=fakeAudioEnvironment({userAgent:'iPhone Safari/27.2',muteFirstCapture:true})
+ const states=[],failures=[],calls=[]
+ const monitor=startCoachRecordedTurn({locale:'ru',environment:sound.environment,
+  monitorPlayback:true,onState:state=>states.push(state),onFailure:code=>failures.push(code),
+  onSpeechDetected:()=>calls.push('interrupt')})
+ for(let i=0;i<30&&!sound.ticker;i++)await new Promise(resolve=>setImmediate(resolve))
+ for(let i=0;i<9;i++)sound.pulse(0)
+ for(let i=0;i<30&&(sound.captureRequests<2||!sound.ticker);i++)
+   await new Promise(resolve=>setImmediate(resolve))
+ assert.equal(sound.captureRequests,2,'WebKit muted monitor is reacquired once')
+ assert.ok(states.includes('recovering'),'user sees a recovery state before unavailable')
+ assert.deepEqual(failures,[],'transient muted monitor is not immediately disabled')
+ for(let i=0;i<4;i++)sound.pulse(.045)
+ assert.deepEqual(calls,['interrupt'])
+ assert.equal(sound.uploading,0,'no model/STT call before user utterance finishes')
+ monitor.cancel()
+})
+
+test('iPhone digitally silent barge monitor reacquires once, without retrying forever',async()=>{
+ const sound=fakeAudioEnvironment({userAgent:'iPhone Safari/27.2'})
+ const failures=[]
+ const monitor=startCoachRecordedTurn({locale:'ru',environment:sound.environment,
+  monitorPlayback:true,onFailure:code=>failures.push(code)})
+ for(let i=0;i<30&&!sound.ticker;i++)await new Promise(resolve=>setImmediate(resolve))
+ for(let i=0;i<46;i++)sound.pulse(0)
+ for(let i=0;i<30&&(sound.captureRequests<2||!sound.ticker);i++)
+   await new Promise(resolve=>setImmediate(resolve))
+ assert.equal(sound.captureRequests,2)
+ for(let i=0;i<80;i++)sound.pulse(0)
+ assert.equal(sound.captureRequests,2,'quiet room must not cause an endless reset loop')
+ assert.deepEqual(failures,[])
+ assert.equal(sound.uploading,0,'no ambient silence is uploaded')
+ monitor.cancel()
+})
+
+test('Safari capture loss must not permanently disable Groq STT or require the cue fallback',()=>{
+ const ui=source('components/my-coach-speech-loop.jsx')
+ assert.match(ui,/if\(code==='MIC_CAPTURE'\)/)
+ assert.match(ui,/const recovery=captureRetryRef\.current/)
+ assert.match(ui,/if\(code==='STT_UNAVAILABLE'\)/)
+ assert.doesNotMatch(ui,/\['STT_UNAVAILABLE','MIC_CAPTURE'\]\.includes\(code\)/)
+ assert.match(ui,/changePhase\('ready'\);setNotice\(t\.captureFailed\)/)
 })
