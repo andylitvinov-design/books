@@ -419,5 +419,5 @@
 /* New public still portraits; intentionally no CSS facial transformation. */
 .heroPortrait[data-persona=merlin]{background-image:url('/images/holistic-house/my-coach-motion/merlin-still.webp')!important;background-size:cover!important;background-position:center 24%!important}
 .railPortrait[data-persona=merlin]{background-image:url('/images/holistic-house/my-coach-motion/merlin-still.webp')!important;background-size:cover!important;background-position:center 24%!important}
-.heroPortrait[data-persona=harry]{background-image:url('/images/holistic-house/my-coach-motion/harry-still.webp')!important;background-size:cover!important;background-position:center 24%!important}
-.railPortrait[data-persona=harry]{background-image:url('/images/holistic-house/my-coach-motion/harry-still.webp')!important;background-size:cover!important;background-position:center 24%!important}
+.heroPortrait[data-persona=harry]{background-image:url('/images/holistic-house/my-coach-motion/harry-soft-still.webp')!important;background-size:cover!important;background-position:center 24%!important}
+.railPortrait[data-persona=harry]{background-image:url('/images/holistic-house/my-coach-motion/harry-soft-still.webp')!important;background-size:cover!important;background-position:center 24%!important}

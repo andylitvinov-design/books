@@ -5,7 +5,7 @@ import {startCoachRecordedTurn} from '../lib/personal-coaching/coach-recorded-tu
 import {createCoachBargeGate,isCoachBargeEcho} from '../lib/personal-coaching/coach-barge-in.mjs'
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
-function fakeAudioEnvironment(){
+function fakeAudioEnvironment({userAgent='Desktop Chromium'}={}){
  let clock=0,energy=0,tick=null,stopped=0,uploads=0;
  class Recorder{
   static isTypeSupported(m){return m==='audio/mp4'}
@@ -26,7 +26,7 @@ function fakeAudioEnvironment(){
   close(){return Promise.resolve()}
  }
  const environment={
-  navigator:{mediaDevices:{getUserMedia:async()=>({getTracks:()=>[{stop(){stopped++}}]})}},
+  navigator:{userAgent,mediaDevices:{getUserMedia:async()=>({getTracks:()=>[{stop(){stopped++}}]})}},
   MediaRecorder:Recorder,AudioContext:Context,File,FormData,Blob,
   fetch:async(url,init)=>{
    assert.equal(url,'/api/holistic-support/audio-storyboard')
@@ -53,6 +53,18 @@ test('voice monitor ducks then restores after playback echo disappears without a
  sound.pulse(0);sound.pulse(0);assert.deepEqual(calls,['duck','restore'])
  assert.equal(sound.uploading,0,'candidate audio never leaves the browser')
  c.cancel();assert.equal(sound.uploading,0);assert.ok(sound.stopped>0)
+})
+test('iPhone low-energy user speech triggers a local interrupt while audio plays',async()=>{
+ const sound=fakeAudioEnvironment({userAgent:'iPhone Safari/27.2'}),calls=[]
+ const monitor=startCoachRecordedTurn({locale:'ru',environment:sound.environment,
+   monitorPlayback:true,onCandidate:()=>calls.push('duck'),
+   onCandidateExpired:()=>calls.push('restore'),
+   onSpeechDetected:()=>calls.push('interrupt'),onFailure:code=>assert.fail(code)})
+ for(let i=0;i<20&&!sound.ticker;i++)await new Promise(r=>setImmediate(r))
+ for(let i=0;i<4;i++)sound.pulse(.023)
+ assert.deepEqual(calls,['duck','interrupt'])
+ assert.equal(sound.uploading,0,'no Whisper request until a human utterance ends')
+ monitor.cancel()
 })
 test('confirmed speech stops coach before recording ends and transcribes once',async()=>{
  const sound=fakeAudioEnvironment(),calls=[]
