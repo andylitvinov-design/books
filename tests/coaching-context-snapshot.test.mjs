@@ -42,3 +42,10 @@ test('does not send sensitive Life Plan text even when its source session has co
  assert.equal(snapshot.items.some(item=>/trauma/i.test(item.text)),false)
  assert.ok(snapshot.excludedReasonCodes.includes('SENSITIVE_ITEM_EXCLUDED'))
 })
+
+test('external model loader cannot project a Life Plan using legacy consent',async()=>{
+  const {loadCoachContextSnapshot}=await import('../lib/app/coaching-context-snapshot.js')
+  const result=await loadCoachContextSnapshot({plan,actor:{id:'owner'},config:{},provider:'groq'})
+  assert.deepEqual(result.items,[])
+  assert.deepEqual(result.excludedReasonCodes,['PROVIDER_SCOPED_CONSENT_REQUIRED'])
+})
