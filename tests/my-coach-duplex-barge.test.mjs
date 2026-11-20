@@ -103,7 +103,7 @@ test('voice loop truly cancels one outgoing stream but preserves the captured cl
  assert.match(codec,/destination\|\|audioContext.destination/)
  assert.doesNotMatch(ui,/new WebSocket|MediaRecorder\(|sendBeacon/)
 })
-test('voice requests are low-effort and conversational but Director guard remains authoritative',()=>{
+test('voice reasoning adapts to complexity while Director guard remains authoritative',()=>{
  const form=source('lib/coaching/generative-persona.mjs')
  const server=source('lib/app/coaching-brain.js')
  const groq=source('lib/coaching/groq-coach-provider.mjs')
@@ -112,7 +112,8 @@ test('voice requests are low-effort and conversational but Director guard remain
  assert.match(form,/voiceTurn:body.voiceTurn===true/)
  assert.match(server,/voiceMode:persona!==null&&input.voiceTurn===true/)
  assert.match(server,/enforceCoachSessionDirective\(parsed,directive\)/)
- assert.match(groq,/if\(probe\|\|voiceMode\)return 'low'/)
+ assert.match(groq,/if\(voiceMode\)\{/)
+ assert.match(groq,/return substantive\|\|\(asksToCompare&&\!declinesComparison\)\?'medium':'low'/)
  assert.match(groq,/response_format:COACH_RESPONSE_FORMAT/)
  assert.doesNotMatch(groq,/stream:true/)
 })
