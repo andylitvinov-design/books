@@ -2,7 +2,7 @@
 
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
-import {ArrowRight,Heart,Home,Keyboard,Leaf,Languages,PhoneOff,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Play,LoaderCircle,Zap,Download,Printer,FileText} from 'lucide-react'
+import {ArrowLeft,ChevronUp,ChevronDown,ClipboardCheck,AlertTriangle,Flag,ArrowRight,Heart,Home,Keyboard,Leaf,Languages,PhoneOff,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Play,LoaderCircle,Zap,Download,Printer,FileText} from 'lucide-react'
 import {getCoachPersona,localCoachText,coachStagePrompt} from '@/lib/coaching/persona-registry.mjs'
 import {getCoachPresentation} from '@/lib/coaching/persona-presentations.mjs'
 import {coachTimeboxState} from '@/lib/coaching/session-timebox.mjs'
@@ -14,6 +14,7 @@ import {coachEphemeralContext} from '@/lib/coaching/coach-ephemeral-context.mjs'
 import {coachModelProbeRetryAllowed} from '@/lib/coaching/coach-model-recovery.mjs'
 import {coachGoalTurn} from '@/lib/coaching/goal-turn.mjs'
 import {understandCoachingTurn} from '@/lib/personal-coaching/coaching-turn-understanding.mjs'
+import {coachInformationChecklist} from '@/lib/coaching/coach-information-checklist.mjs'
 import styles from './my-coach-live-dialogue.module.css'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
 import {startCoachingMp3Playback,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
@@ -141,6 +142,12 @@ const voiceGateText={
  ru:{title:'Перед голосовым разговором',cancel:'Не сейчас',agree:'Согласен и начать',tapToHear:'Нажмите, чтобы услышать коуча',playbackUnavailable:'В этом браузере не работает озвучивание. Попробуйте Safari или текстовый диалог.',naturalUnavailable:'Качественный голос коуча временно недоступен. Попробуйте ещё раз или напишите сообщение.'},
  es:{title:'Antes de hablar por voz',cancel:'Ahora no',agree:'Aceptar y hablar',tapToHear:'Toca para escuchar al coach',playbackUnavailable:'La reproducción de voz no está disponible aquí. Prueba Safari o escribe.',naturalUnavailable:'La voz natural del coach no está disponible ahora. Vuelve a intentarlo o escribe.'},
 }
+const keyInfoCopy={
+  en:{title:'Key Information',show:'Show key information',hide:'Hide key information',finish:'End session and open summary',goal:'Goal / Result',motivation:'Motivation',obstacles:'Obstacles',resources:'Resources',situation:'Current Situation',nextSteps:'Next Steps',complete:'Captured',partial:'Partly clarified',missing:'Not yet clarified'},
+  ru:{title:'Ключевая информация',show:'Показать ключевую информацию',hide:'Скрыть ключевую информацию',finish:'Завершить сессию и открыть резюме',goal:'Цель / Результат',motivation:'Мотивация',obstacles:'Препятствия',resources:'Ресурсы',situation:'Текущая ситуация',nextSteps:'Следующие шаги',complete:'Получено',partial:'Частично',missing:'Не выяснено'},
+  es:{title:'Información clave',show:'Mostrar información clave',hide:'Ocultar información clave',finish:'Finalizar sesión y abrir resumen',goal:'Objetivo / Resultado',motivation:'Motivación',obstacles:'Obstáculos',resources:'Recursos',situation:'Situación actual',nextSteps:'Próximos pasos',complete:'Recogido',partial:'Parcial',missing:'Sin aclarar'}
+}
+const keyInfoIcons={goal:Target,motivation:Heart,obstacles:AlertTriangle,resources:Leaf,situation:UserRound,nextSteps:Flag}
 const protocolCopy={
   en:{title:'Your session protocol',subtitle:'Review and keep a private record of the conversation.',turns:'Recorded exchanges',empty:'No completed conversation turns to include yet.',download:'Download PDF',print:'Print / Open PDF',save:'Save in my private account',saving:'Saving…',saved:'Saved privately to your account',consent:'I agree to save this complete text dialogue in my private Holistic House account. Audio is not stored.',consentRequired:'Tick the box to save your protocol.',error:'Could not save this report. Download the PDF instead or try again.',pdfError:'Could not create the PDF. Your dialogue is still visible in this tab.',close:'Back to coaches',resume:'Continue conversation',privacy:'Only the conversation shown here is exported. AI suggestions are not confirmed decisions. No recording or hidden AI reasoning is included.',unsent:'There is an unfinished message or reply. Finish it before ending the session.',limit:'The dialogue is full. Finish and export the protocol before continuing.'},
   ru:{title:'Протокол вашей коучинг-сессии',subtitle:'Проверьте диалог и сохраните его для себя.',turns:'Реплики в протоколе',empty:'Пока нет завершённых реплик для протокола.',download:'Скачать PDF',print:'Распечатать / открыть PDF',save:'Сохранить в личном кабинете',saving:'Сохраняем…',saved:'Протокол сохранён в личном кабинете',consent:'Я согласен(на) сохранить весь текст этого диалога в личном кабинете Holistic House. Аудиозапись не сохраняется.',consentRequired:'Для сохранения в кабинете отметьте согласие.',error:'Не удалось сохранить отчёт. Скачайте PDF либо повторите попытку.',pdfError:'Не удалось создать PDF. Диалог остаётся в этой вкладке.',close:'Вернуться к коучам',resume:'Продолжить беседу',privacy:'В протокол попадают только отображённые здесь реплики. Предложения ИИ не считаются подтверждёнными решениями. Аудиозапись и скрытые рассуждения ИИ не включены.',unsent:'Есть незавершённая реплика. Дождитесь окончания ответа, затем завершите сессию.',limit:'Достигнут лимит реплик. Завершите сессию и сохраните протокол.'},
@@ -173,6 +180,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   useEffect(()=>{setSpeechLocale(lang)},[lang])
   const conversationLang=['en','ru','es'].includes(speechLocale)?speechLocale:lang
   const [showCaptions,setShowCaptions]=useState(false)
+  const [keyInfoOpen,setKeyInfoOpen]=useState(true)
   const [turns,setTurns]=useState([])
   const turnsRef=useRef(turns)
   turnsRef.current=turns
@@ -367,6 +375,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const stageDescription=progressValid
     ?(methodStepTitles[lang]?.[lastRecordedProgress.stepId]||ui.stages[visibleStageIndex])
     :ui.stages[visibleStageIndex]
+  const keyInfoUi=keyInfoCopy[lang]
+  const keyInfoItems=coachInformationChecklist(turns,{selectedGoal})
   const goalPrompts={
     en:{stress:'I would like to feel less stressed. Can we explore what is weighing on me?',energy:'I would like to restore my energy. Can we explore what is draining it?',relationships:'I would like to improve an important relationship. Can we explore what matters most?'},
     ru:{stress:'Я хочу снизить стресс. Давайте разберём, что сейчас на меня давит.',energy:'Я хочу восстановить энергию. Давайте посмотрим, что её забирает.',relationships:'Я хочу улучшить важные для меня отношения. Давайте разберёмся, что сейчас важнее всего.'},
@@ -797,10 +807,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             </select>
           </span>
         </label>
-        <Link className={styles.chooseCoach} href={'/'+lang+'/my-coach'} onClick={interceptSessionExit} aria-label={ui.choose}>
-          <ArrowRight size={16} aria-hidden="true"/>
-          <span className={styles.chooseCoachFull}>{ui.choose}</span>
-          <span className={styles.chooseCoachShort} aria-hidden="true">{{ru:'Коучи',en:'Coaches',es:'Coaches'}[lang]}</span>
+        <Link className={styles.chooseCoach} href={'/'+lang+'/my-coach'} onClick={interceptSessionExit} aria-label={{ru:'Назад',en:'Back',es:'Volver'}[lang]}>
+          <ArrowLeft size={16} aria-hidden="true"/>
+          <span className={styles.chooseCoachFull}>{{ru:'Назад',en:'Back',es:'Volver'}[lang]}</span>
+          <span className={styles.chooseCoachShort} aria-hidden="true">{{ru:'Назад',en:'Back',es:'Volver'}[lang]}</span>
         </Link>
       </div>
     </header>
@@ -881,8 +891,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         </div>
         <button type="button" className={styles.keyboardControl} onClick={toggleComposer}
           aria-label={ui.type} title={ui.type}><Keyboard size={17} aria-hidden="true"/><span>{ui.keyboardShort}</span></button>
-        <button type="button" className={styles.endControl} onClick={endWithProtocol} aria-label={ui.end} title={ui.end} disabled={protocolOpen} data-coach-finish-with-protocol>
-          <PhoneOff size={17} aria-hidden="true"/><span>{lang==='ru'?'Конец':lang==='es'?'Salir':'End'}</span>
+        <button type="button" className={styles.endControl} onClick={endWithProtocol} aria-label={keyInfoUi.finish} title={keyInfoUi.finish} disabled={protocolOpen} data-coach-finish-with-protocol>
+          <PhoneOff size={19} aria-hidden="true"/><span>{lang==='ru'?'Резюме':lang==='es'?'Resumen':'Summary'}</span>
         </button>
       </div>
       <p className={styles.voicePlayNotice} data-coach-voice-consent-one-play>{({
@@ -905,6 +915,14 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             data-complete={index<visibleStageIndex?'true':undefined}
             data-current={index===visibleStageIndex?'true':undefined}/>)}
         </div>
+        <button type="button" className={styles.keyInfoToggle} data-coach-key-info-toggle
+          aria-controls="coach-key-info" aria-expanded={keyInfoOpen}
+          aria-label={keyInfoOpen?keyInfoUi.hide:keyInfoUi.show}
+          title={keyInfoOpen?keyInfoUi.hide:keyInfoUi.show}
+          onClick={()=>setKeyInfoOpen(open=>!open)}>
+          <ClipboardCheck size={16} aria-hidden="true"/>
+          {keyInfoOpen?<ChevronUp size={14} aria-hidden="true"/>:<ChevronDown size={14} aria-hidden="true"/>}
+        </button>
       </section>
       <details className={styles.voicePrivacyDetails}>
         <summary>{lang==='ru'?'Приватность голоса':lang==='es'?'Privacidad de voz':'Voice privacy'}</summary>
@@ -912,6 +930,29 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       </details>
       {playbackNotice&&<p className={styles.playbackNotice} role="status">{playbackNotice}</p>}
       <div className={styles.conversationPanel}>
+      {keyInfoOpen&&<section className={styles.keyInfoSheet} id="coach-key-info" role="region"
+        aria-label={keyInfoUi.title} data-coach-key-information>
+        <div className={styles.keyInfoHeading}>
+          <ClipboardCheck size={19} aria-hidden="true"/>
+          <strong>{keyInfoUi.title}</strong>
+          <button type="button" aria-label={keyInfoUi.hide} title={keyInfoUi.hide}
+            onClick={()=>setKeyInfoOpen(false)}><ChevronUp size={19} aria-hidden="true"/></button>
+        </div>
+        <div className={styles.keyInfoGrid} role="list">
+          {keyInfoItems.map(entry=>{
+            const Icon=keyInfoIcons[entry.key]
+            return <div className={styles.keyInfoItem} role="listitem" key={entry.key}
+              data-coach-information-key={entry.key} data-coach-information-status={entry.status}
+              aria-label={keyInfoUi[entry.key]+': '+keyInfoUi[entry.status]}>
+              <Icon size={17} aria-hidden="true"/>
+              <span>{keyInfoUi[entry.key]}</span>
+              <span className={styles.keyInfoMark} data-status={entry.status} aria-hidden="true">
+                {entry.status==='complete'?'✓':entry.status==='partial'?'◐':'□'}
+              </span>
+            </div>
+          })}
+        </div>
+      </section>}
       <section className={styles.liveTranscript} aria-label={captions.heading} data-coach-live-transcript>
         <div className={styles.transcriptHeading}><MessageCircle size={15} aria-hidden="true"/>
           <strong>{captions.heading}</strong>
