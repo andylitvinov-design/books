@@ -14,7 +14,7 @@ import extraFreeFilmPresets from "@/data/video-catalog/free-film-presets-v2.json
 import { MandalaHypnoCompact } from "./mandala-hypno-compact";
 import { MandalaVideoIdeas } from "./mandala-video-ideas";
 import { MandalaVideoIdeaGoal } from "./mandala-video-idea-goal";
-import {composeVideoIdeaGoalIntent,getVideoIdeaGoal,type VideoIdeaGoalId} from "@/lib/mandala/video-idea-goals.mjs";
+import {buildPersonalVideoGoalOptions,composePersonalVideoGoalIntent,goalScenarioPlan} from "@/lib/mandala/video-personal-goal-composer.mjs";
 import {MandalaVideoPersonalization,DEFAULT_VIDEO_GOAL_PROFILE,summarizeVideoGoalProfile,type VideoGoalProfile} from "./mandala-video-personalization";
 import { HeaderCreditProfile } from "./header-credit-profile";
 import { MandalaVideoConcept, type ApprovedVideoConcept } from "./mandala-video-concept";
@@ -2072,7 +2072,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // Do not misread initial preselected chips as answers until the visitor
   // actually confirms the Personalization step.
   const [ideasProfileConfirmed,setIdeasProfileConfirmed] = useState(false);
-  const [ideasGoalId,setIdeasGoalId] = useState<VideoIdeaGoalId|null>(null);
+  const [ideasGoalChoice,setIdeasGoalChoice] = useState<{contextKey:string;id:string}|null>(null);
   const [basicPanelTab,setBasicPanelTab] = useState<"style"|"photo"|"voice"|"music">("style");
   const [showAdvancedVideo,setShowAdvancedVideo] = useState(false);
   const [montageStyleSettingsOpen,setMontageStyleSettingsOpen] = useState(false);
@@ -3146,23 +3146,34 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     ()=>ideasProfileConfirmed?summarizeVideoGoalProfile(ideasProfile,locale):null,
     [ideasProfileConfirmed,ideasProfile,locale]
   );
-  // Explicit Ideas goal determines a canonical editorial topic and outcome.
-  // Preserve the original request and confirmed Personalization answers.
-  const chosenIdeaGoal=getVideoIdeaGoal(ideasGoalId);
-  const conceptGoalText=composeVideoIdeaGoalIntent(wish,locale,ideasGoalId);
-  const conceptTopic=chosenIdeaGoal?{
-    categoryId:chosenIdeaGoal.categoryId,subcategoryId:chosenIdeaGoal.subcategoryId,
-    topicId:chosenIdeaGoal.topicId,brief:chosenIdeaGoal.copy[locale].intent
+  // The quiz's canonical topic is the subject; a goal is a method/outcome,
+  // not a replacement for what the visitor explicitly selected.
+  const personalGoalOptions=useMemo(()=>buildPersonalVideoGoalOptions({
+    locale,wish,theme,selectedTopic:selectedConceptTopic,profile:ideasProfile,
+    profileConfirmed:ideasProfileConfirmed
+  }),[locale,wish,theme,selectedConceptTopic,ideasProfile,ideasProfileConfirmed]);
+  const activeIdeasGoalId=ideasGoalChoice?.contextKey===personalGoalOptions.contextKey?
+    ideasGoalChoice.id:null;
+  const chosenIdeaGoal=personalGoalOptions.goals.find(option=>option.id===activeIdeasGoalId)||null;
+  const conceptGoalText=composePersonalVideoGoalIntent(wish,chosenIdeaGoal,locale);
+  const conceptTopic=chosenIdeaGoal?.topicId?{
+    categoryId:chosenIdeaGoal.categoryId!,subcategoryId:chosenIdeaGoal.subcategoryId!,
+    topicId:chosenIdeaGoal.topicId,
+    brief:[selectedConceptTopic?.brief,chosenIdeaGoal.copy[locale]?.intent].filter(Boolean).join(". ").slice(0,800)
   }:selectedConceptTopic;
-  const sharedFilmBrief=useMemo(()=>suggestVideoConcept({
-    locale,goal:conceptGoalText,theme,styleIndex:quickStyleIndex,
-    phrases:filmPhraseSignature?filmPhraseSignature.split("\u001f"):[],
-    speechTranscript:voiceTranscript,personalization:confirmedFilmPersonalization,
-    selectedTopicId:conceptTopic?.topicId||null,
-    creativeBrief:conceptTopic?.brief||null
-  }) as unknown as ApprovedVideoConcept,[
+  const sharedFilmBrief=useMemo(()=>{
+    const baseline=suggestVideoConcept({
+      locale,goal:conceptGoalText,theme,styleIndex:quickStyleIndex,
+      phrases:filmPhraseSignature?filmPhraseSignature.split("\u001f"):[],
+      speechTranscript:voiceTranscript,personalization:confirmedFilmPersonalization,
+      selectedTopicId:conceptTopic?.topicId||null,
+      creativeBrief:conceptTopic?.brief||null
+    }) as unknown as ApprovedVideoConcept;
+    return {...baseline,goalPlan:goalScenarioPlan(chosenIdeaGoal,personalGoalOptions.contextKey)};
+  },[
     locale,conceptGoalText,theme,quickStyleIndex,filmPhraseSignature,voiceTranscript,
-    confirmedFilmPersonalization,conceptTopic?.topicId,conceptTopic?.brief
+    confirmedFilmPersonalization,conceptTopic?.topicId,conceptTopic?.brief,
+    chosenIdeaGoal,personalGoalOptions.contextKey
   ]);
   const activeFilmDirectionId=chosenFilm?.intentSignature===sharedFilmBrief.signature
     ?chosenFilm.directionId:null;
@@ -8193,10 +8204,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
         <div className={videoStyles.ideasGoalPane} id="video-ideas-goal-panel"
           data-video-ideas-goal-panel hidden={ideasSubtab!=="goal"}>
-          <MandalaVideoIdeaGoal locale={locale} selectedId={ideasGoalId}
+          <MandalaVideoIdeaGoal key={personalGoalOptions.contextKey}
+            locale={locale} options={personalGoalOptions} selectedId={activeIdeasGoalId}
             onSelect={id=>{
-              if(id===ideasGoalId)return;
-              setIdeasGoalId(id);
+              if(id===activeIdeasGoalId)return;
+              setIdeasGoalChoice({contextKey:personalGoalOptions.contextKey,id});
               setApprovedVideoConcept(null);setDraftVideoConcept(null);
               setChosenFilm(null);setAppliedStoryKey(null);
             }}
