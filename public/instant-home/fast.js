@@ -1,5 +1,5 @@
 (()=>{"use strict";
-const locale=document.documentElement.lang==="ru"?"ru":"en",form=document.querySelector("#ali-form"),field=document.querySelector("#ali-message"),submit=document.querySelector("#ali-send"),state=document.querySelector("#ali-state"),microphone=document.querySelector("#ali-mic"),buttons=[...document.querySelectorAll("[data-mode]")];
+const locale=["en","ru","es"].includes(document.documentElement.lang)?document.documentElement.lang:"en",form=document.querySelector("#ali-form"),field=document.querySelector("#ali-message"),submit=document.querySelector("#ali-send"),state=document.querySelector("#ali-state"),microphone=document.querySelector("#ali-mic"),buttons=[...document.querySelectorAll("[data-mode]")];
 let mode="self",recognition=null;
 const chat="/"+locale+"/app/messages?section=ai";
 // Maintain the exact public/UI locale preference the React Home previously set.
@@ -14,7 +14,7 @@ function stage(value,selected){
  if(!text||text.length>2000||/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(text))return false;
  try{sessionStorage.setItem("hh:home-ali-handoff:v1",JSON.stringify({v:1,source:"home",text,locale,mode:selected,createdAt:Date.now()}));return true;}catch{return false;}
 }
-function send(text,target,selected){if(!stage(text,selected)){show(locale==="ru"?"Не удалось передать сообщение. Попробуйте снова.":"Could not pass the message. Please try again.");return;}window.location.assign(target||chat);}
+function send(text,target,selected){if(!stage(text,selected)){show(locale==="ru"?"Не удалось передать сообщение. Попробуйте снова.":locale==="es"?"No se pudo enviar el mensaje. Vuelve a intentarlo.":"Could not pass the message. Please try again.");return;}window.location.assign(target||chat);}
 const tiles=[...document.querySelectorAll("[data-home-intent-option]")],review=document.querySelector("[data-home-free-review]");
 function selectMode(value){
  mode=value==="business"?"business":"self";
@@ -36,7 +36,7 @@ buttons.forEach(button=>button.addEventListener("click",()=>selectMode(button.da
 // Topic links use public intent/need URLs; only typed user text is passed privately.
 field.addEventListener("input",()=>{submit.disabled=!field.value.trim();show("");});
 form.addEventListener("submit",e=>{e.preventDefault();send(field.value,chat,mode);});
-microphone.addEventListener("click",()=>{if(recognition){recognition.stop();return;}const Speech=window.SpeechRecognition||window.webkitSpeechRecognition;if(!Speech){show(locale==="ru"?"Используйте микрофон клавиатуры.":"Use your keyboard microphone.");field.focus();return;}const r=new Speech();recognition=r;r.lang=locale==="ru"?"ru-RU":"en-US";r.interimResults=false;r.continuous=false;r.onresult=e=>{const spoken=e.results?.[0]?.[0]?.transcript?.trim()||"";if(spoken){field.value=(field.value?field.value+" ":"")+spoken.slice(0,2000-field.value.length);field.dispatchEvent(new Event("input",{bubbles:true}));}};r.onend=()=>{recognition=null;};r.onerror=()=>{recognition=null;show(locale==="ru"?"Не удалось распознать речь.":"Speech recognition failed.");};try{r.start();show(locale==="ru"?"Слушаю…":"Listening…");}catch{recognition=null;}});
+microphone.addEventListener("click",()=>{if(recognition){recognition.stop();return;}const Speech=window.SpeechRecognition||window.webkitSpeechRecognition;if(!Speech){show(locale==="ru"?"Используйте микрофон клавиатуры.":locale==="es"?"Usa el micrófono del teclado.":"Use your keyboard microphone.");field.focus();return;}const r=new Speech();recognition=r;r.lang=locale==="ru"?"ru-RU":locale==="es"?"es-ES":"en-US";r.interimResults=false;r.continuous=false;r.onresult=e=>{const spoken=e.results?.[0]?.[0]?.transcript?.trim()||"";if(spoken){field.value=(field.value?field.value+" ":"")+spoken.slice(0,2000-field.value.length);field.dispatchEvent(new Event("input",{bubbles:true}));}};r.onend=()=>{recognition=null;};r.onerror=()=>{recognition=null;show(locale==="ru"?"Не удалось распознать речь.":locale==="es"?"No se pudo reconocer la voz.":"Speech recognition failed.");};try{r.start();show(locale==="ru"?"Слушаю…":locale==="es"?"Escuchando…":"Listening…");}catch{recognition=null;}});
 document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelectorAll("header details[open]").forEach(d=>d.open=false);});
 document.documentElement.dataset.homeInteractive="true";
 const register=()=>{"serviceWorker"in navigator&&navigator.serviceWorker.register("/sw.js").catch(()=>{});};

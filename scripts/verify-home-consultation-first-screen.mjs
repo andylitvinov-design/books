@@ -20,13 +20,14 @@ for (const engine of [chromium,webkit]){
       ["en","/",["For myself","For business"]],
       ["ru","/ru",["Для себя","Для бизнеса"]],
       ["es","/es",["Para mí","Para mi negocio"]],
+      ["es","/es?full=1",["Para mí","Para mi negocio"]],
     ]){
       for(const width of [320,390,430]){
         const page=await browser.newPage({
           viewport:{width,height:844},deviceScaleFactor:1,isMobile:true,
           hasTouch:true,reducedMotion:"reduce",
         });
-        const label=engine.name()+":"+locale+":"+width;
+        const label=engine.name()+":"+locale+":"+width+(path.includes("?full=1")?":full":":static");
         const scriptEvents=[];
         page.on("pageerror",error=>scriptEvents.push("pageerror:"+error.message.slice(0,240)));
         page.on("console",message=>{
@@ -45,7 +46,7 @@ for (const engine of [chromium,webkit]){
           assert.equal(response?.status(),200,label+": Home HTTP 200");
           // Direct EN/RU HTML is intentionally CDN-first: verify the real
           // browser-visible static controls, not the obsolete React header.
-          if (locale !== "es") {
+          if (!path.includes("?full=1")) {
             // A rewrite must not accidentally deindex the canonical public
             // Home by inheriting headers from its internal static document.
             assert.doesNotMatch(response.headers()["x-robots-tag"]||"",/noindex/i,
@@ -93,7 +94,7 @@ for (const engine of [chromium,webkit]){
             const tiles=first.locator('[data-home-intent-option]');
             assert.equal(await tiles.count(),4,label+": four contextual choices");
             assert.match(await tiles.first().locator(".label").innerText(),
-              locale==="ru"?/Клиенты/:/Clients/,label+": business choices change");
+              locale==="ru"?/Клиенты/:locale==="es"?/Clientes/:/Clients/,label+": business choices change");
             const review=first.locator('[data-home-free-review]');
             assert.equal(await review.getAttribute("href"),"/"+locale+"/explore/business",
               label+": verified business review");
@@ -104,12 +105,17 @@ for (const engine of [chromium,webkit]){
             const send=first.locator('[data-home-send-to-ali]');
             await input.waitFor({state:"visible"});
             assert.equal(await send.isDisabled(),true);
-            await input.fill(locale==="ru"?"Помогите с работой":"Please help with my work");
+            await input.fill(locale==="ru"?"Помогите с работой":locale==="es"?"Necesito ayuda con el trabajo":"Please help with my work");
             assert.equal(await send.isEnabled(),true,label+": true interactive composer");
             await input.fill("");
             const hero=first.locator('[data-home-dialogue-hero]');
             const heroRect=await hero.boundingBox();
             assert.ok(heroRect&&heroRect.y<600,label+": Hero visible in first viewport");
+            const booking=first.locator("[data-home-request-session]");
+            const bookingRect=await booking.boundingBox();
+            assert.ok(bookingRect&&bookingRect.y>=0&&bookingRect.y+bookingRect.height<=844,
+              label+": session booking visible without scrolling");
+            assert.equal(await booking.getAttribute("href"),"/"+locale+"/services/free-consultation");
             const navigation=fast.locator('header.header details').last();
             await navigation.locator('summary').click();
             assert.equal(await navigation.getAttribute("open"),"");
@@ -226,6 +232,22 @@ for (const engine of [chromium,webkit]){
           if(engine===webkit&&width===390)
             await page.screenshot({path:output+"/home-"+locale+"-webkit-390.png",fullPage:false});
         } finally { await page.close(); }
+      }
+    }
+    if(engine.name()==="chromium") {
+      for(const [locale,path] of [["en","/"],["ru","/ru"],["es","/es"]]) {
+        const desktop=await browser.newPage({viewport:{width:1280,height:800},reducedMotion:"reduce"});
+        try {
+          const response=await desktop.goto(origin+path,{waitUntil:"domcontentloaded",timeout:60000});
+          assert.equal(response?.status(),200,locale+": desktop Home response");
+          await desktop.locator('html[data-home-interactive="true"]').waitFor({state:"attached",timeout:15000});
+          const cta=desktop.locator('[data-home-dialogue-entry] [data-home-request-session]');
+          const rect=await cta.boundingBox();
+          assert.ok(rect&&rect.y>=0&&rect.y+rect.height<=800,
+            locale+": desktop session booking visible without scrolling");
+          assert.equal(await cta.getAttribute("href"),"/"+locale+"/services/free-consultation");
+          evidence.push({engine:"chromium",locale,width:1280,mode:"cdn-desktop",sessionCtaVisible:true});
+        } finally {await desktop.close();}
       }
     }
   } finally { await browser.close(); }
