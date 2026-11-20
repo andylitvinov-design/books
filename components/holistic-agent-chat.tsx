@@ -1146,7 +1146,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         return;
       }
     }
-    if(compact&&isCasualGreeting(text)&&supportSelection?.mode!=="talk"){
+    if(compact&&isCasualGreeting(text)&&supportSelection?.mode!=="talk"&&
+      !(projectFlow==="sessions"&&sessionStep)){
       setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setPageHelpLink(null);
       setJudgmentView(null);judgmentClickLock.current=false;
       setContentStep(null);setContentVoice(false);setContentBrief("");
@@ -1209,7 +1210,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       !isContentCreationIntent(text)&&!isVideoCreationIntent(text)&&!requiresProtectedReply(text,turnLocale)){
       const intent=sessionSecretaryMessage(text,turnLocale);
       followTail.current=true;setNewBelow(false);setDraft("");setChoices([]);
-      if(intent.kind==="stop"||intent.kind==="no_booking"){
+      if(intent.kind==="stop"||intent.kind==="no_booking"||intent.kind==="topic"){
         setProjectFlow(null);setSessionStep(null);setSessionGoal(null);
         setSessionOffers([]);setPageHelpLink(null);setStatus("");
         setMessages(prev=>[...prev,{role:"user" as const,text},
