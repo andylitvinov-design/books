@@ -71,3 +71,18 @@ test("readable typography uses the existing one-screen room",()=>{
  assert.match(client,/Reiki sessions/);
  assert.match(client,/Chamanismo, Reiki y magia/);
 });
+
+
+test("353px mobile WebKit fit repair preserves readable typography while reclaiming spacing",()=>{
+ const css=read("components/shamanica-mobile.module.css");
+ const client=read("components/shamanica-mobile.tsx");
+ const browser=read("scripts/verify-unified-six-dock-browser.mjs");
+ assert.match(css,/SHAMANICA_READABLE_FIT_REPAIR_20261120/);
+ assert.match(css,/height:clamp\(113px,14\.7dvh,125px\)/);
+ assert.match(css,/\.page\[data-shamanica-audience="self"\] \.answer \{\s*min-height:44px/);
+ assert.match(css,/\.page\[data-shamanica-audience="self"\] \.serviceGrid \{\s*gap:4px/);
+ assert.match(css,/font-size:clamp\(14px,4\.18vw,16px\)/);
+ assert.match(css,/font-size:clamp\(11\.5px,3\.45vw,13px\)/);
+ for(const text of ["Рейки, магия, энергия и развитие.","Reiki, magic, energy & growth.","Reiki, magia, energía y desarrollo."])assert.ok(client.includes(text));
+ assert.match(browser,/readablePhone\.lastCardBottom<=readablePhone\.dockTop-22/);
+});

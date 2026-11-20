@@ -431,3 +431,52 @@
  .page[data-shamanica-audience="self"] .serviceBody h3 {font-size:13px}
  .page[data-shamanica-audience="self"] .serviceBody p {font-size:11px}
 }
+
+
+/* SHAMANICA_READABLE_FIT_REPAIR_20261120
+   Verified WebKit 353x768: service bottom 692.5 vs fixed dock top 684.
+   Recover >31px in whitespace/hero rather than shrinking approved
+   readable service/quiz/dock fonts. Recheck exact rectangles in CI. */
+@media (max-width:600px) {
+ .page[data-shamanica-audience="self"] .header {
+  margin-bottom:1px;
+ }
+ .page[data-shamanica-audience="self"] .audiences {
+  margin-bottom:2px;
+ }
+ .page[data-shamanica-audience="self"] .hero {
+  height:clamp(113px,14.7dvh,125px);
+  padding:5px 10px 6px;
+ }
+ .page[data-shamanica-audience="self"] .quiz {
+  padding:6px 9px 7px;
+ }
+ .page[data-shamanica-audience="self"] .quizTop {
+  margin-bottom:2px;
+ }
+ .page[data-shamanica-audience="self"] .quizTitleRow {
+  margin-bottom:3px;
+ }
+ .page[data-shamanica-audience="self"] .answers {
+  gap:5px;
+ }
+ .page[data-shamanica-audience="self"] .answer {
+  min-height:44px;
+ }
+ .page[data-shamanica-audience="self"] .services {
+  margin-top:2px;
+ }
+ .page[data-shamanica-audience="self"] .sectionTitle {
+  margin-bottom:3px;
+ }
+ .page[data-shamanica-audience="self"] .serviceGrid {
+  gap:4px;
+ }
+}
+/* At 320px or enlarged system text, permit natural height rather than
+   cropping the hero or sacrificing service headings/touch targets. */
+@media(max-width:350px){
+ .page[data-shamanica-audience="self"] .hero{
+  height:auto;min-height:126px;
+ }
+}

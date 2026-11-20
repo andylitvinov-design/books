@@ -24,7 +24,7 @@ const images={
 } as const;
 const copy={
 ru:{
- subtitle:"Рейки, магия и древние практики для энергии и развития.",
+ subtitle:"Рейки, магия, энергия и развитие.",
  start:"Начать путь",pick:"Подобрать для меня",self:"Для себя",work:"Для бизнеса",help:"iHelp",
  quiz:["Что вы хотите получить сейчас?","Какой способ вам ближе?","С чего хотите начать?"],
  goals:["Энергия и защита","Гармония в отношениях","Деньги","Личностное развитие"],
@@ -38,7 +38,7 @@ ru:{
  learning:["Обучение","Шаманизм, Рейки и магия"]},
  step:"Шаг",of:"из",back:"Назад",search:"Поиск",menu:"Меню"},
 en:{
- subtitle:"Reiki and traditional practices for energy, support and growth.",
+ subtitle:"Reiki, magic, energy & growth.",
  start:"Start my path",pick:"Find my path",self:"For myself",work:"For business",help:"iHelp",
  quiz:["What would you like to gain?","Which approach suits you?","How would you like to start?"],
  goals:["Energy & protection","Harmony in relationships","Money & prosperity","Personal growth"],
@@ -52,7 +52,7 @@ en:{
  learning:["Learning","Shamanism, Reiki & magic"]},
  step:"Step",of:"of",back:"Back",search:"Search",menu:"Menu"},
 es:{
- subtitle:"Reiki y prácticas tradicionales para la energía y el crecimiento.",
+ subtitle:"Reiki, magia, energía y desarrollo.",
  start:"Iniciar camino",pick:"Encontrar mi camino",self:"Para mí",work:"Negocios",help:"iHelp",
  quiz:["¿Qué deseas conseguir ahora?","¿Qué método prefieres?","¿Cómo quieres empezar?"],
  goals:["Energía y protección","Armonía en relaciones","Dinero y prosperidad","Desarrollo personal"],
