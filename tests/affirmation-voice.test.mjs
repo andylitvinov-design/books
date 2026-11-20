@@ -502,7 +502,7 @@ test("WebKit release follows fifth Montage advanced settings, Audio, and voice d
  assert.match(source,/await openMontageSettingsViaQuality\(page\)/);
  assert.match(source,/data-montage-panel","settings"/);
  assert.match(source,/const durationSelect=page\.locator\('\[data-video-montage-preference="duration"\]'\)/);
- assert.match(source,/await durationSelect\.selectOption\("10"\)/);
+ assert.match(source,/await durationSelect\.selectOption\("30"\)/);
  assert.match(source,/await expect\(page\.locator\('\[data-video-montage-audio\]'\)\)\.toBeVisible\(\)/);
  assert.match(source,/const voicePanel=page\.locator\("\[data-video-voice-studio\]"\)/);
  assert.match(source,/const voiceSummary=voicePanel\.locator\(\":scope > summary\"\)/);

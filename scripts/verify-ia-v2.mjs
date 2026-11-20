@@ -256,7 +256,7 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
   const publicHeaderWidths = engine === 'webkit' && process.env.GITHUB_EVENT_NAME === 'pull_request'
     ? prWebkitHeaderWidths : fullHeaderWidths
   for (const locale of locales) {
-    for (const [surface, path] of [['home', locale === 'es' ? '/es' : '/?lang=' + locale], ['energy', '/' + locale + '/explore/energy'], ['love', '/' + locale + '/explore/love'], ['business', '/' + locale + '/explore/business'], ['library', '/' + locale + '/library']]) {
+    for (const [surface, path] of [['home', locale === 'es' ? '/es' : '/?full=1&lang=' + locale], ['energy', '/' + locale + '/explore/energy'], ['love', '/' + locale + '/explore/love'], ['business', '/' + locale + '/explore/business'], ['library', '/' + locale + '/library']]) {
       for (const width of publicHeaderWidths) {
         const label = engine + '/' + locale + '/' + surface + '/' + width
         diagnostic.phase(label)
@@ -585,7 +585,9 @@ try {
   const errors = []
   page.on('pageerror', error => errors.push(error.message))
   if (!messengerOnly) {
-  assert.equal((await go(page, '/')).status(), 200)
+  // The private IA suite verifies the existing full React app. The CDN-first
+  // anonymous Home is covered by a separate Chromium/WebKit first-screen QA.
+  assert.equal((await go(page, '/?full=1')).status(), 200)
   assert.equal(await page.locator('html').getAttribute('lang'), 'en')
   for (const locale of ['en', 'ru', 'es']) {
     for (const width of [320, 360, 390, 430, 768, 1280]) {

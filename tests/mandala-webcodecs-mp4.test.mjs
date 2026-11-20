@@ -204,7 +204,7 @@ test("hydration progresses Goals → Ideas through a real tap without hidden leg
 test("physical voice WebKit checks real Settings and Audio, exclusive Hypno tabs and Voice",()=>{
  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
  const settings=browser.indexOf('await openMontageSettingsViaQuality(page);');
- const selectDuration=browser.indexOf('await durationSelect.selectOption("10")',settings);
+ const selectDuration=browser.indexOf('await durationSelect.selectOption("30")',settings);
  const openAudio=browser.indexOf('await montageAudio.click()',selectDuration);
  const phrases=browser.indexOf("const phrases=page.locator",openAudio);
  const reenter=browser.indexOf('await montageAudioAfterExport.click()',phrases);
@@ -522,4 +522,35 @@ test("real iPhone prefers native playable MP4 and uses WebCodecs only as an expl
   assert.match(studio,/if\(iphoneWebCodecsFallbackAvailable\)void createVideo\(false,false,true,true\)/);
   assert.match(studio,/if\(creditOpRef\.current\)return/);
   assert.match(studio,/if\(held&&creditValidRef\.current\)await releaseCredit\(held\)/);
+});
+
+test("Safari native MP4 completion is bounded after 97% and releases failed holds",()=>{
+ assert.match(studio,/finalizeTimeout\?: number/);
+ assert.match(studio,/job\.finalizeTimeout=window\.setTimeout\(/);
+ assert.match(studio,/\(duration\+25\)\*1000/);
+ assert.match(studio,/if\(job\.finalizeTimeout!==undefined\)window\.clearTimeout\(job\.finalizeTimeout\)/);
+ assert.match(studio,/HH_SAFARI_MP4_FINALIZATION_TIMEOUT/);
+ assert.match(studio,/recorder\.ondataavailable=null;recorder\.onerror=null;recorder\.onstop=null/);
+ assert.match(studio,/setRecording\(false\);setReadyGenerationPending\(false\)/);
+ assert.match(studio,/setProgress\(0\);setPlaybackStatus\("failed"\);setExportUnavailable\(true\)/);
+ assert.match(studio,/withLocalMediaDeadline\(\s*verifyNativeSafariMp4Tracks\(blob,Boolean\(job\.musicSession\)\),15000\)/);
+ assert.match(studio,/withLocalMediaDeadline\(encoded\.slice\(0,12\)\.arrayBuffer\(\),12000\)/);
+ assert.match(studio,/if\(now-start>=duration\*1000\)/);
+});
+
+test("iPhone native stop is idempotent: do not kill tracks before final MP4 onstop",()=>{
+ assert.match(studio,/stopRequested\?: boolean/);
+ const start=studio.indexOf("function stopJob(job: Job, cancelled: boolean)");
+ const end=studio.indexOf("\n}\n",start);
+ assert.ok(start>0&&end>start,"one original MediaRecorder stop helper");
+ const functionBody=studio.slice(start,end);
+ assert.match(functionBody,/job\.cancelled=job\.cancelled\|\|cancelled/);
+ assert.match(functionBody,/if\(job\.stopRequested\)return;/);
+ assert.match(functionBody,/job\.stopRequested=true;/);
+ assert.ok(functionBody.indexOf("if(job.stopRequested)return;")<
+   functionBody.indexOf("job.recorder.stop()"),
+   "a repeated timeout or frame callback cannot stop input tracks before onstop");
+ assert.match(studio,/recorder\.onstop = async \(\) => \{\s*if\(job\.finalizeTimeout!==undefined\)/);
+ assert.match(studio,/job\.stream\.getTracks\(\)\.forEach\(track=>track\.stop\(\)\);/);
+ assert.match(studio,/job\.finalizeTimeout=window\.setTimeout\(/);
 });

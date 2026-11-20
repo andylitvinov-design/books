@@ -213,7 +213,8 @@ test('procedural native recorder cannot silently downgrade H264/AAC to generic M
   assert.match(client,/MediaRecorder\.isTypeSupported\(explicitAvcMime\)/);
   assert.match(client,/recordingMimes\(Boolean\(musicSession\),false,true\)\.filter\(mime=>\s*mime===explicitAvcMime\|\|\(nativeAppleMp4Available&&mime==="video\/mp4"\)\)/);
   assert.match(client,/if\(isApplePhone&&isMp4\)\{/);
-  assert.match(client,/await verifyNativeSafariMp4Tracks\(blob,Boolean\(job\.musicSession\)\)/);
+  assert.match(client,/await withLocalMediaDeadline\(\s*verifyNativeSafariMp4Tracks\(blob,Boolean\(job\.musicSession\)\),15000\)/,
+    "native MP4 AVC/AAC track validation remains mandatory and is bounded on iPhone");
   const verifier=read("lib/mandala/webcodecs-mp4-export.ts");
   assert.match(verifier,/export async function verifyNativeSafariMp4Tracks/);
   assert.match(verifier,/const audio=await input\.getPrimaryAudioTrack\(\)/);

@@ -177,7 +177,8 @@ test('Fish natural voice accepts the exact live/replay persona payload but no ex
   const dialog=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
   const route=readFileSync(new URL('../app/api/app/my-coach/voice/synthesize/route.js',import.meta.url),'utf8')
   assert.match(speech,/body:JSON\.stringify\(\{provider:voiceProvider,locale:replyLocale,personaId,/)
-  assert.match(dialog,/body:JSON\.stringify\(\{provider:cloudProvider,personaId,/)
+  assert.match(dialog,/body:JSON\.stringify\(\{provider:chosenCloudProvider,personaId,/)
+  assert.match(dialog,/const chosenCloudProvider=geminiVoiceReady\?geminiVoiceTier:cloudProvider/)
   assert.match(route,/const \{provider:_,\.\.\.fishRaw\}=raw/)
   assert.match(route,/normalizeMyCoachFishRequest\(fishRaw\)/)
   const normal={locale:'ru',text:'Какой следующий шаг сейчас поможет?',voiceConsent:true,
@@ -236,7 +237,7 @@ test('Play starts the authored natural voice once, without recording or extra ch
   assert.ok(voice.includes('sessionStartRef.current?.()'))
   assert.ok(voice.includes('<Play size={19}'))
   assert.ok(voice.includes('(naturalVoice||voiceAgreed)&&voiceAvailable'))
-  assert.ok(voice.includes('voiceConfigRef.current={cloudAgreed,cloudAvailable,cloudProvider}'))
+  assert.ok(voice.includes('voiceConfigRef.current={cloudAgreed,cloudAvailable,cloudProvider,voiceName}'))
   assert.ok(voice.includes('trainingUseConsent:true'))
   assert.ok(voice.includes('cloudVoiceConsent:true'))
   assert.ok(voice.includes('introPlayerRef.current=startDirectCoachIntroAudio'))
