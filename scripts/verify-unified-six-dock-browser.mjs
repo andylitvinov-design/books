@@ -726,9 +726,11 @@ try{
    const more=chat.locator('details[data-hh-ai-more]');
    await more.waitFor({state:"visible",timeout:15000});
    if(await more.evaluate(node=>!node.open)) await more.locator("summary").click();
-   const resetButtons=more.locator("button");
-   await expect.poll(()=>resetButtons.count()).toBe(1);
-   await resetButtons.first().click();
+   // The More menu also contains legitimate voice/psychologist actions.
+   // Require exactly one accessible Reset, not exactly one button total.
+   const resetButtons=more.getByRole("button",{name:"Новый разговор",exact:true});
+   await expect(resetButtons).toHaveCount(1);
+   await resetButtons.click();
    if(await more.evaluate(node=>node.open)) await more.locator("summary").click();
    await chat.locator('[data-hh-ai-landing]').waitFor({state:"visible",timeout:15000});
    await expect.poll(()=>chat.locator('[data-hh-chat-turn="user"]').count()).toBe(0);
