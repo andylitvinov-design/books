@@ -41,7 +41,7 @@ test('interruption watches thinking, waiting and speaking; no busy-guard drops t
  assert.match(s,/monitorGeneration=generationRef\.current\+1/)
  assert.match(s,/cancelRef\.current\?\.\(\)/)
  assert.match(d,/onCoachInterrupted=\{markCoachSpeechInterrupted\}/)
- assert.match(d,/if\(!message\|\|paused\|\|\(!voiceTurn&&busy\)\)return null/)
+ assert.match(d,/if\(!message\|\|paused\|\|protocolOpen\|\|\(!voiceTurn&&busy\)\)return null/)
  assert.match(d,/turnRequestRef\.current!==requestId/)
 })
 test('spoken reasoning uses low for greetings, medium for substantive, same provider',()=>{
