@@ -69,3 +69,22 @@ test('known course is handled by Secretary before general catalogue or personal 
  assert.match(code,/secretaryStopped\(event,config\)/)
  assert.match(code,/assertHolisticBusinessConnection/)
 })
+
+test('Telegram Business URL validator accepts the chosen course and rejects arbitrary paths',()=>{
+ const provider=readFileSync(new URL('../lib/crm/messenger-provider.js',import.meta.url),'utf8')
+ const gate=provider.split('\\n').find(line=>line.includes('principles-of-energywork')&&line.includes('.test(url.pathname)'))
+ assert.ok(gate,'Telegram Business URL allowlist must explicitly contain this first-party course')
+ const from=gate.indexOf('!/')
+ const to=gate.indexOf('/.test(url.pathname)')
+ assert.ok(from>=0&&to>from,'source-bounded URL validation regex')
+ const allowed=new RegExp(gate.slice(from+2,to))
+ for(const locale of ['en','ru','es'])
+  assert.equal(allowed.test('/'+locale+'/academy/principles-of-energywork'),true,locale)
+ for(const path of [
+  '/en/academy/principles-of-energywork/private',
+  '/en/academy/random',
+  '/en/academy/principles-of-energywork?chat_id=123',
+  '/es/academy/principles-of-energywork/unknown',
+  '/en/admin',
+ ])assert.equal(allowed.test(path),false,path)
+})
