@@ -57,3 +57,14 @@ test('coverage is owner-only, partial, version-unattributed and does not claim d
   assert.match(page,/Принято провайдером не означает доставлено/i);
   assert.match(page,/Для содержательного анализа диалогов необходимо отдельное явное согласие/);
 });
+
+test('receipt index accepts every current CRM status, including send lifecycle states',()=>{
+ const accepted=['received','processed','send_pending','provider_accepted',
+   'delivery_unknown','draft','queued','accepted','delivered','read',
+   'failed','blocked','unknown','stored'];
+ const deliveryCheck=migration.match(/delivery text not null check \(delivery in\s*\(([^)]+)\)\)/i);
+ assert.ok(deliveryCheck,'receipt status constraint must exist');
+ const statuses=new Set([...deliveryCheck[1].matchAll(/'([a-z_]+)'/g)].map(m=>m[1]));
+ for(const status of accepted)assert.ok(statuses.has(status),'missing CRM status '+status);
+ assert.match(migration,/after insert or update of status on app\.crm_msg_items/i);
+});
