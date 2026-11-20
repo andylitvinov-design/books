@@ -4434,77 +4434,86 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         job.stream.getTracks().forEach(track => track.stop());
         job.musicSession?.close();
         if (jobRef.current !== job || !aliveRef.current) return;
-        jobRef.current=null;
-        setRecording(false);
-        if(job.cancelled){
-          if(creditOpRef.current)void releaseCredit(creditOpRef.current);
-          return;
-        }
-        setProgress(100);
-        const rawType=recorder.mimeType || mimeType;
-        const encoded = new Blob(chunks,{type:rawType});
-        if(!encoded.size){
-          if(creditOpRef.current)void releaseCredit(creditOpRef.current);
-          setNotice(t.failed);setExportUnavailable(true);return;
-        }
-        // Check actual container bytes. iOS can report a MIME that does not
-        // match the encoded stream; never label a bogus MP4/WebM as complete.
-        let isMp4=false, isWebm=false;
         try {
-          const header=new Uint8Array(await withLocalMediaDeadline(encoded.slice(0,12).arrayBuffer(),12000));
-          isMp4=header.length>=8&&header[4]===0x66&&header[5]===0x74&&header[6]===0x79&&header[7]===0x70;
-          isWebm=header.length>=4&&header[0]===0x1a&&header[1]===0x45&&header[2]===0xdf&&header[3]===0xa3;
-        } catch { /* Treat unreadable header as invalid media. */ }
-        if(sourceRef.current!==snapshotKey||!aliveRef.current)return;
-        const extension=isWebm?"webm":"mp4";
-        const type=isWebm?"video/webm":"video/mp4";
-        let blob=new Blob(chunks,{type});
-        if((isApplePhone&&isWebm)||(!isMp4&&!isWebm)){
-          if(creditOpRef.current)void releaseCredit(creditOpRef.current);
-          setPlaybackStatus("failed");
-          setNotice(locale==="ru"
-            ?"Safari не завершил запись видео: в файле нет корректного заголовка MP4/WebM. Выберите другой формат."
-            :locale==="es"
-            ?"Safari no finalizó la grabación: el archivo no tiene una cabecera MP4/WebM válida."
-            :"Safari did not finalize recording: the file has no valid MP4/WebM header.");
-          return;
-        }
-        // Native generic MP4 can report support but omit AAC or use a
-        // different video codec. Inspect the finalized LOCAL file before any
-        // account credit can be completed or the player offered as Ready.
-        if(isApplePhone&&isMp4){
-          try{
-            const {verifyNativeSafariMp4Tracks}=await import("@/lib/mandala/webcodecs-mp4-export");
-            await withLocalMediaDeadline(
-              verifyNativeSafariMp4Tracks(blob,Boolean(job.musicSession)),15000);
-            // The native MP4 may advertise AVC/AAC while Safari's own player
-            // rejects its fragmented moov/mdat organization (MEDIA_ERR 4).
-            // Repair the existing encoded file, then decode first + late frames;
-            // no second Canvas render or extra credit hold.
-            const {normalizeNativeSafariMp4ForPlayback}=await import("@/lib/mandala/webcodecs-mp4-export");
-            blob=await withLocalMediaDeadline(
-              normalizeNativeSafariMp4ForPlayback(blob,Boolean(job.musicSession),duration),30000);
-          }catch{
-            if(creditOpRef.current)void releaseCredit(creditOpRef.current);
-            setPlaybackStatus("failed");setExportUnavailable(true);
+          if(job.cancelled||jobRef.current!==job||sourceRef.current!==snapshotKey||!aliveRef.current)return;
+          setProgress(99);
+          const rawType=recorder.mimeType || mimeType;
+          const encoded = new Blob(chunks,{type:rawType});
+          if(!encoded.size){
+            if(isApplePhone)nativeSafariMp4RejectedRef.current=true;
+            setNotice(t.failed);setExportUnavailable(true);return;
+          }
+          // Check actual container bytes. iOS can report a MIME that does not
+          // match the encoded stream; never label a bogus MP4/WebM as complete.
+          let isMp4=false, isWebm=false;
+          try {
+            const header=new Uint8Array(await withLocalMediaDeadline(encoded.slice(0,12).arrayBuffer(),12000));
+            isMp4=header.length>=8&&header[4]===0x66&&header[5]===0x74&&header[6]===0x79&&header[7]===0x70;
+            isWebm=header.length>=4&&header[0]===0x1a&&header[1]===0x45&&header[2]===0xdf&&header[3]===0xa3;
+          } catch { /* Treat unreadable header as invalid media. */ }
+          if(job.cancelled||jobRef.current!==job||sourceRef.current!==snapshotKey||!aliveRef.current)return;
+          const extension=isWebm?"webm":"mp4";
+          const type=isWebm?"video/webm":"video/mp4";
+          let blob=new Blob(chunks,{type});
+          if((isApplePhone&&isWebm)||(!isMp4&&!isWebm)){
+            if(isApplePhone)nativeSafariMp4RejectedRef.current=true;
+            setPlaybackStatus("failed");
             setNotice(locale==="ru"
-              ?"Safari не завершил воспроизводимый MP4. Кредиты не списываются; попробуйте другой кодировщик."
+              ?"Safari не завершил запись видео: в файле нет корректного заголовка MP4/WebM. Выберите другой формат."
               :locale==="es"
-              ?"Safari no pudo finalizar un MP4 reproducible. No se cobrarán créditos; prueba el otro codificador."
-              :"Safari could not finalize a playable MP4. Credits will not be charged; try the alternate encoder.");
+              ?"Safari no finalizó la grabación: el archivo no tiene una cabecera MP4/WebM válida."
+              :"Safari did not finalize recording: the file has no valid MP4/WebM header.");
             return;
           }
-          if(sourceRef.current!==snapshotKey||!aliveRef.current)return;
+          // Native generic MP4 can report support but omit AAC or use a
+          // different video codec. Inspect the finalized LOCAL file before any
+          // account credit can be completed or the player offered as Ready.
+          if(isApplePhone&&isMp4){
+            try{
+              const {verifyNativeSafariMp4Tracks}=await import("@/lib/mandala/webcodecs-mp4-export");
+              await withLocalMediaDeadline(
+                verifyNativeSafariMp4Tracks(blob,Boolean(job.musicSession)),15000);
+              // The native MP4 may advertise AVC/AAC while Safari's own player
+              // rejects its fragmented moov/mdat organization (MEDIA_ERR 4).
+              // Repair the existing encoded file, then decode first + late frames;
+              // no second Canvas render or extra credit hold.
+              const {normalizeNativeSafariMp4ForPlayback}=await import("@/lib/mandala/webcodecs-mp4-export");
+              blob=await withLocalMediaDeadline(
+                normalizeNativeSafariMp4ForPlayback(blob,Boolean(job.musicSession),duration),30000);
+            }catch{
+              if(job.cancelled||jobRef.current!==job||sourceRef.current!==snapshotKey||!aliveRef.current)return;
+              nativeSafariMp4RejectedRef.current=true;
+              setPlaybackStatus("failed");setExportUnavailable(true);
+              setNotice(locale==="ru"
+                ?"Safari не завершил воспроизводимый MP4. Кредиты не списываются; попробуйте другой кодировщик."
+                :locale==="es"
+                ?"Safari no pudo finalizar un MP4 reproducible. No se cobrarán créditos; prueba el otro codificador."
+                :"Safari could not finalize a playable MP4. Credits will not be charged; try the alternate encoder.");
+              return;
+            }
+            if(job.cancelled||jobRef.current!==job||sourceRef.current!==snapshotKey||!aliveRef.current)return;
+          }
+          setProgress(100);
+          creditValidRef.current=Boolean(creditOpRef.current);
+          setResult({url:URL.createObjectURL(blob),extension,bytes:blob.size,blob,mime:type,
+            brandVariant:exportBrandVariant});
+          setPlaybackStatus("checking");
+          setNotice(locale==="ru"
+            ?"Проверяем готовое "+extension.toUpperCase()+". При необходимости нажмите ▶."
+            :locale==="es"
+            ?"Verificando "+extension.toUpperCase()+". Si es necesario, pulsa ▶."
+            :"Verifying "+extension.toUpperCase()+". Tap ▶ in the player if needed.");
+        } finally {
+          chunks.length=0;
+          if(jobRef.current===job){
+            jobRef.current=null;
+            if(creditOpRef.current&&!creditValidRef.current)void releaseCredit(creditOpRef.current);
+            if(aliveRef.current){
+              setRecording(false);
+              setReadyGenerationPending(false);
+            }
+          }
         }
-        creditValidRef.current=Boolean(creditOpRef.current);
-        setResult({url:URL.createObjectURL(blob),extension,bytes:blob.size,blob,mime:type,
-          brandVariant:exportBrandVariant});
-        setPlaybackStatus("checking");
-        setNotice(locale==="ru"
-          ?"Проверяем готовое "+extension.toUpperCase()+". При необходимости нажмите ▶."
-          :locale==="es"
-          ?"Verificando "+extension.toUpperCase()+". Si es necesario, pulsa ▶."
-          :"Verifying "+extension.toUpperCase()+". Tap ▶ in the player if needed.");
       };
 
       // This user-triggered browser recorder never contacts a backend.
@@ -4591,7 +4600,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       if(creditOpRef.current&&!jobRef.current&&!webCodecJobRef.current&&
         !creditValidRef.current)void releaseCredit(creditOpRef.current);
       preparingRef.current=false;
-      if(aliveRef.current)setPreparing(false);
+      if(aliveRef.current){
+        setPreparing(false);
+        if(!jobRef.current&&!webCodecJobRef.current)setReadyGenerationPending(false);
+      }
       musicSession?.close();
     }
   }
