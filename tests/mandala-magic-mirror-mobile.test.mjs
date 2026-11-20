@@ -32,6 +32,15 @@ test("Four photographic goals and own prompt coexist, Life and Business are not 
  assert.match(mirror,/onContinue\(\)/);
  assert.match(mirror,/data-hh-mirror-more-goals/);
  assert.match(studio,/setIdeasSubtab\("personalization"\)/);
+ assert.match(studio,/setMirrorDetailedWish\(wish\)/);
+ assert.match(studio,/setVideoScenarioOpen\(true\)/);
+ assert.match(studio,/mirrorDetailedWish=\{mirrorDetailedWish\}/);
+ const director=read("components/mandala-auto-video-director.tsx");
+ assert.match(director,/mirrorDetailedWish\?:string\|null/);
+ assert.match(director,/setRequestDrafts\(previous=>previous\.self===mirrorDetailedWish/);
+ assert.match(mirror,/clearAutoPrompt\(\);setSelectedId\(item\.id\)/);
+ assert.doesNotMatch(studio,/\{activeWorkspace==="video"\?<></,
+   "returning from Ideas must not reset the selected photo or audience");
  assert.match(studio,/activateQuickWorkspace\("phrases"\)/);
  assert.doesNotMatch(mirror,/fetch\(|localStorage|navigator\.sendBeacon|createQuickVideo\(/);
 });

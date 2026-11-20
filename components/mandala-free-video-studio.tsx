@@ -2074,6 +2074,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
   const [activeWorkspace,setActiveWorkspace] = useState<StudioWorkspace>("video");
   const [mirrorAdvanced,setMirrorAdvanced] = useState(false);
+  const [mirrorDetailedWish,setMirrorDetailedWish]=useState<string|null>(null);
   const [proCatalogKind,setProCatalogKind]=useState<StoryAddonKind>("character");
   const [ideasVoiceAdvancedOpen,setIdeasVoiceAdvancedOpen] = useState(false);
   const [ideasSubtab,setIdeasSubtab] = useState<"personalization"|"goal"|"concept">("personalization");
@@ -7485,8 +7486,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </button>)}
       </nav>
         
-        {activeWorkspace==="video"?<>
-          <MandalaMagicMirrorTitle locale={locale}/>
+        {/* Keep the Magic Mirror mounted across Goal → Ideas → Back so its
+            selected photo and purpose never reset while the user navigates. */}
+        <MandalaMagicMirrorTitle locale={locale}/>
           <MandalaMagicMirrorGoal locale={locale} wish={wish}
             disabled={!studioHydrated||recording||preparing}
             onWishChange={value=>{setWish(value);setSuggestion("");}}
@@ -7499,10 +7501,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             }}
             onExpand={()=>{
               setMirrorAdvanced(true);
+              setMirrorDetailedWish(wish);
+              setVideoScenarioOpen(true);
               window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
                 document.getElementById("quick-theme-title")?.scrollIntoView({block:"start",behavior:"auto"})));
             }}/>
-        </>:null}
         <header className={videoStyles.quickHeader}>
           <div className={videoStyles.quickHeaderText}>
             <h2 id="video-quick-heading">{approved.introTitle}</h2>
@@ -8600,6 +8603,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       </section> : null}
         <MandalaAutoVideoDirector
           goalContinueRef={goalContinueRef}
+          mirrorDetailedWish={mirrorDetailedWish}
           onGoalQuizChange={setGoalQuizState}
           recipientAudioPanel={recipientAudioPanel}
           audioStoryboardReady={audioPlanApplied&&Boolean(voiceVisualPlan?.canExport)&&audioRights}

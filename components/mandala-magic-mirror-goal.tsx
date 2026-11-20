@@ -63,12 +63,20 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
 }){
  const [scope,setScope]=useState<Scope>("me");
  const [selectedId,setSelectedId]=useState("energy");
+ const [autoPrompt,setAutoPrompt]=useState<string|null>(null);
  const inputRef=useRef<HTMLTextAreaElement>(null);
  const t=labels[locale];
  const available=choices[scope];
  const selected=available.find(item=>item.id===selectedId)??available[0];
+ // The visitor's own prose always wins; auto-filled copy should follow a changed
+ // photographic goal instead of surviving as an unrelated stale wish.
+ const clearAutoPrompt=()=>{
+  if(autoPrompt&&wish===autoPrompt)onWishChange("");
+  setAutoPrompt(null);
+ };
  const switchScope=(next:Scope)=>{
   if(disabled||next===scope)return;
+  clearAutoPrompt();
   setScope(next);
   setSelectedId(choices[next][0].id);
   onSelectCategory(choices[next][0].theme);
@@ -76,7 +84,7 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
  const next=()=>{
   if(disabled)return;
   onSelectCategory(selected.theme);
-  if(!wish.trim())onWishChange(selected.request[locale]);
+  if(!wish.trim()){setAutoPrompt(selected.request[locale]);onWishChange(selected.request[locale]);}
   onContinue();
  };
  return <section className={css.goals} data-hh-mirror-goals data-hh-mirror-mode={scope}
@@ -96,7 +104,7 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
    {available.map(item=><button type="button" key={item.id} className={css.card}
     data-hh-mirror-goal-choice={item.id} disabled={disabled}
     aria-pressed={selectedId===item.id} onClick={()=>{
-     setSelectedId(item.id);onSelectCategory(item.theme);
+     clearAutoPrompt();setSelectedId(item.id);onSelectCategory(item.theme);
     }}>
     <img src={"/videos/holistic-house/film-collection-v2/"+item.image}
      alt="" aria-hidden="true" loading="lazy"/>
@@ -111,7 +119,7 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
    <Sparkles size={19} aria-hidden="true"/>
    <textarea id="hh-mirror-own-wish" ref={inputRef}
     data-hh-mirror-wish rows={2} maxLength={500} disabled={disabled}
-    value={wish} onChange={event=>onWishChange(event.currentTarget.value)}
+    value={wish} onChange={event=>{setAutoPrompt(null);onWishChange(event.currentTarget.value);}}
     placeholder={t.placeholder}/>
    <span className={css.microphone} title={t.dictation}><Mic size={23} aria-hidden="true"/></span>
   </div>

@@ -70,13 +70,44 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(handoffPanel).toBeVisible({timeout:15000});
     await handoffPanel.evaluate(element=>{element.open=false;});
     await expect(handoffPanel).toBeHidden();
-    // The approved Goal redesign deliberately gates Personalization behind
-    // three explicit selections; hydration alone must NEVER unlock this CTA.
+    // The new photo-led entry lets visitors describe a goal without duplicating
+    // the native renderer. This click path must be real on iPhone WebKit.
+    const mirror=page.locator('[data-hh-mirror-goals]');
+    await expect(page.locator('[data-hh-mirror-title]')).toBeVisible();
+    await expect(mirror).toBeVisible();
+    await expect(mirror.locator('[data-hh-mirror-goal-choice]')).toHaveCount(4);
+    const business=mirror.locator('[data-hh-mirror-audience="business"]');
+    const personal=mirror.locator('[data-hh-mirror-audience="me"]');
+    await business.click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-mode","business");
+    await expect(mirror.locator('[data-hh-mirror-goal-choice="growth"]')).toBeVisible();
+    await personal.click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-mode","me");
+    const loveChoice=mirror.locator('[data-hh-mirror-goal-choice="love"]');
+    await loveChoice.click();
+    await expect(loveChoice).toHaveAttribute("aria-pressed","true");
+    const customWish=locale==="ru"?"Хочу больше взаимопонимания":locale==="es"
+      ?"Quiero tener más comprensión mutua":"I want more mutual understanding";
+    await mirror.locator('[data-hh-mirror-wish]').fill(customWish);
+    await mirror.locator('[data-hh-mirror-next]').click();
+    await expect(studio).toHaveAttribute("data-active-workspace","phrases");
+    await expect(page.locator('[data-video-ideas-personalization-panel]')).toBeVisible();
+    await page.locator('[data-video-quick-control="video"]').click();
+    await expect(mirror.locator('[data-hh-mirror-wish]')).toHaveValue(customWish);
+    await expect(mirror.locator('[data-hh-mirror-goal-choice="love"]'))
+      .toHaveAttribute("aria-pressed","true");
+    await mirror.locator('[data-hh-mirror-more-goals]').click();
+    await expect(studio).toHaveAttribute("data-hh-mirror-advanced","true");
+    await expect(studio).toHaveAttribute("data-video-scenario-open","true");
+    await expect(page.locator('[data-auto-video-input]')).toHaveValue(customWish);
+    // The approved canonical detailed Goal wizard still deliberately gates its
+    // own CTA behind three explicit category/subcategory/topic selections.
     await expect(continueToIdeas).toBeDisabled();
     const quizProgress=page.locator('[data-video-goal-quiz-progress]');
     await expect(quizProgress).toContainText('1 / 3');
     const categories=page.locator('[data-auto-video-category]');
     await expect(categories).toHaveCount(4);
+    await expect(categories.first()).toBeVisible();
     await categories.first().click();
     await expect(quizProgress).toContainText('2 / 3');
     await expect(continueToIdeas).toBeDisabled();
