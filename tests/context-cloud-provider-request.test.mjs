@@ -46,6 +46,14 @@ test('approved context reaches one provider and an interrupted voice lookup send
     await myCoachGenerativeTurn(body, { ...options, loadApprovedContext: pausedLoader })
     const pausedCalls = calls.splice(0)
     const pausedLookups = lookups.splice(0)
+    const pausedVoiceBody = { ...body, voiceTurn: true }
+    const pausedVoice = await myCoachGenerativeStreamTurn(pausedVoiceBody, {
+      ...options, loadApprovedContext: createCoachContextLoader(null, { id: 'synthetic' }, pausedVoiceBody, {
+        HH_COACH_CONTEXT_ENABLED: 'true',
+      }),
+    })
+    const pausedVoiceResponse = await new Response(pausedVoice).text()
+    const pausedVoiceCalls = calls.splice(0)
     const controller = new AbortController()
     const voice = await myCoachGenerativeStreamTurn({ ...body, voiceTurn: true }, {
       ...options, signal: controller.signal,
@@ -60,18 +68,19 @@ test('approved context reaches one provider and an interrupted voice lookup send
     const interruptedLookups = lookups.splice(0)
     const dispatchedVoice = await myCoachGenerativeStreamTurn({ ...body, voiceTurn: true }, options)
     const voiceResponse = await new Response(dispatchedVoice).text()
-    console.log(JSON.stringify({ ...contextRun, controlLookups, pausedCalls, pausedLookups,
+    console.log(JSON.stringify({ ...contextRun, controlLookups, pausedCalls, pausedLookups, pausedVoiceCalls, pausedVoiceResponse,
       interruptedCalls: interruptedCalls.length, interruptedLookups,
       voiceCalls: calls, voiceLookups: lookups, voiceResponse }))
   `], { encoding: 'utf8' })
-  const { calls, lookups, controlLookups, pausedCalls, pausedLookups, interruptedCalls, interruptedLookups,
-    voiceCalls, voiceLookups, voiceResponse } = JSON.parse(output)
+  const { calls, lookups, controlLookups, pausedCalls, pausedLookups, pausedVoiceCalls, pausedVoiceResponse,
+    interruptedCalls, interruptedLookups, voiceCalls, voiceLookups, voiceResponse } = JSON.parse(output)
   assert.deepEqual(controlLookups, ['groq', 'openrouter'])
   assert.deepEqual(pausedLookups, [])
-  assert.ok(pausedCalls.some(call => call.messages?.at(-1)?.content.includes('organize my work week')))
-  for (const call of pausedCalls) {
-    assert.ok(!call.messages?.some(message => message.content.includes('Plan Friday in advance')))
+  for (const requests of [pausedCalls, pausedVoiceCalls]) {
+    assert.ok(requests.some(call => call.messages?.at(-1)?.content.includes('organize my work week')))
+    assert.ok(requests.every(call => !call.messages?.some(message => message.content.includes('Plan Friday in advance'))))
   }
+  assert.match(pausedVoiceResponse, /"type":"result"/)
   assert.deepEqual(lookups, ['groq'])
   assert.equal(calls.length, 1)
   assert.equal(calls[0].messages.filter(message => message.content.includes('Plan Friday in advance')).length, 1)
