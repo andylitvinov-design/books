@@ -72,7 +72,7 @@ test('known course is handled by Secretary before general catalogue or personal 
 
 test('Telegram Business URL validator accepts the chosen course and rejects arbitrary paths',()=>{
  const provider=readFileSync(new URL('../lib/crm/messenger-provider.js',import.meta.url),'utf8')
- const gate=provider.split('\\n').find(line=>line.includes('principles-of-energywork')&&line.includes('.test(url.pathname)'))
+ const gate=provider.split('\n').find(line=>line.includes('principles-of-energywork')&&line.includes('.test(url.pathname)'))
  assert.ok(gate,'Telegram Business URL allowlist must explicitly contain this first-party course')
  const from=gate.indexOf('!/')
  const to=gate.indexOf('/.test(url.pathname)')
