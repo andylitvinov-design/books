@@ -728,3 +728,35 @@
   height:99px;min-height:99px;padding-bottom:51px
  }
 }
+
+
+/* WhatsApp-like first turn and ongoing bubbles; large readable type on iPhone.
+   Composer is one real form and stays above the fixed six-icon dock. */
+.root[data-compact][data-chat-skin="messenger"]>.thread{
+ background-color:#faf5eb;
+ background-image:radial-gradient(circle at 11px 13px,#c9d3c240 1px,transparent 1.5px),
+ radial-gradient(circle at 44px 50px,#d5caba35 1.25px,transparent 2px);
+ background-size:61px 67px;
+}
+.root[data-compact][data-chat-skin="messenger"] .thread>.user{
+ background:#dff6d9;color:#193e33;border-radius:17px 17px 5px 17px;
+ border:1px solid #c9e7c6;box-shadow:0 2px 8px #284b2e13
+}
+.root[data-compact][data-chat-skin="messenger"] .thread .assistant{
+ background:#fffefa;color:#213c34;border-radius:17px 17px 17px 5px;
+ border:1px solid #e9e5db;box-shadow:0 2px 8px #4c49261b
+}
+.root[data-compact][data-chat-skin="messenger"] .thread :is(.assistant,.user){
+ font-size:17px;line-height:1.48;padding:12px 14px
+}
+.root[data-compact][data-chat-skin="messenger"]>.form{
+ border-color:#d6e5db;border-radius:30px;background:#fffefa;
+ box-shadow:0 3px 13px #2f63421a
+}
+.root[data-compact][data-chat-skin="messenger"]>.form textarea{
+ font-size:17px;line-height:1.35
+}
+@media(max-width:390px){
+ .root[data-compact][data-chat-skin="messenger"] .thread :is(.assistant,.user){font-size:16px}
+ .root[data-compact][data-chat-skin="messenger"]>.form textarea{font-size:16px}
+}
