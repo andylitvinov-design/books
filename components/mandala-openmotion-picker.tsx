@@ -7,16 +7,20 @@ import {
   listOpenMotionReferences,planOpenMotionReferenceSelection,
   type OpenMotionLocalSelection,
 } from "@/lib/mandala/openmotion-reference.mjs";
+import {createPresetMotionGuideV3,listPresetMotionGuides} from "@/lib/mandala/openmotion-preset-guide.mjs";
 import css from "./mandala-openmotion-picker.module.css";
 
 type Props={
   locale:PublicLocale;
   disabled:boolean;
   onPick:(selection:OpenMotionLocalSelection)=>void;
+  exportReady:boolean;
+  onExport:(id:string,aspect:"portrait"|"landscape")=>void;
 };
 
 const words={
   en:{
+    templates:"Holistic House templates",downloadGuide:"Download Motion.md",renderPreset:"Render template MP4",
     title:"OpenMotion ideas",intro:"Explore external video references, then make your own original film using Holistic House's free scenes and editor.",
     caution:"These are video references, not licensed footage or guaranteed editable templates. Local results adapt the rhythm and format, not the original brand visuals.",
     search:"Find a video style",searchHint:"Search title, movement or creator",
@@ -26,6 +30,7 @@ const words={
     external:"External video — original rights holder",source:"Original source",count:"public reference entries",approx:"Local adaptation",
   },
   ru:{
+    templates:"Шаблоны Holistic House",downloadGuide:"Скачать Motion.md",renderPreset:"Собрать шаблон в MP4",
     title:"Идеи OpenMotion",intro:"Посмотрите внешние видеореференсы и создайте собственный ролик из наших бесплатных сцен в редакторе Holistic House.",
     caution:"Это примеры движения, а не лицензированные исходники и не обязательно редактируемые проекты. Локальное видео повторяет общий ритм и формат, а не чужой бренд.",
     search:"Найти стиль видео",searchHint:"Название, анимация или автор",
@@ -35,6 +40,7 @@ const words={
     external:"Внешнее видео — права у автора",source:"Источник",count:"видеореференсов",approx:"Локальная адаптация",
   },
   es:{
+    templates:"Plantillas de Holistic House",downloadGuide:"Descargar Motion.md",renderPreset:"Crear MP4 de la plantilla",
     title:"Ideas OpenMotion",intro:"Explora vídeos externos y crea tu propia película con escenas originales en el editor gratuito de Holistic House.",
     caution:"Son referencias, no material con licencia para reutilizar ni proyectos editables garantizados. La versión local adapta el ritmo y el formato, no la marca.",
     search:"Buscar estilo de vídeo",searchHint:"Título, movimiento o creador",
@@ -45,12 +51,18 @@ const words={
   },
 } as const;
 
-export function MandalaOpenMotionPicker({locale,disabled,onPick}:Props){
+export function MandalaOpenMotionPicker({locale,disabled,onPick,exportReady,onExport}:Props){
   const t=words[locale];
   const [query,setQuery]=useState("");
   const [collection,setCollection]=useState("all");
   const [page,setPage]=useState(0);
   const [selected,setSelected]=useState<string|null>(null);
+  const [presetId,setPresetId]=useState("");
+  const presets=useMemo(()=>listPresetMotionGuides(locale),[locale]);
+  const selectedPreset=presets.find(preset=>preset.id===presetId);
+  const guideHref=useMemo(()=>presetId
+    ?"data:text/markdown;charset=utf-8,"+encodeURIComponent(createPresetMotionGuideV3(presetId,locale))
+    :null,[presetId,locale]);
   const perPage=12;
   const {items,total}=useMemo(
     ()=>listOpenMotionReferences({query,collection,offset:page*perPage,limit:perPage}),
@@ -107,6 +119,21 @@ export function MandalaOpenMotionPicker({locale,disabled,onPick}:Props){
       <button type="button" disabled={page+1>=pages}
         onClick={()=>setPage(i=>Math.min(pages-1,i+1))}>{t.next}</button>
     </div>
+    <label className={css.searchLabel}>
+      {t.templates}
+      <select className={css.search} value={presetId} disabled={disabled}
+        onChange={event=>setPresetId(event.currentTarget.value)}>
+        <option value="" disabled>—</option>
+        {presets.map(preset=><option key={preset.id} value={preset.id}>{preset.label}</option>)}
+      </select>
+    </label>
+    {guideHref&&selectedPreset&&!disabled?<div className={css.actions}>
+      <button type="button" data-openmotion-render-preset disabled={!exportReady}
+        onClick={()=>onExport(selectedPreset.id,selectedPreset.aspect)}>{t.renderPreset}</button>
+      <a data-openmotion-download-guide href={guideHref} download={presetId+".Motion.md"}>
+        {t.downloadGuide}
+      </a>
+    </div>:null}
     <p className={css.footer}>{t.guide}: <a target="_blank" rel="noopener noreferrer"
       href="https://github.com/nexu-io/openmotion/tree/main/library/templates/catalog">
       {t.guideLink}</a> · {t.approx}</p>

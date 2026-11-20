@@ -29,7 +29,7 @@ export type BrowserMovieOptions={
   allowProceduralBrowser?:boolean;
   seconds:number;
   frameRate:number;
-  renderFrame:(seconds:number)=>boolean;
+  renderFrame:(seconds:number)=>boolean|Promise<boolean>;
   audio?:BrowserMovieAudio;
   shouldContinue:()=>boolean;
   onProgress?:(percent:number)=>void;
@@ -46,7 +46,7 @@ export function supportsLocalWebCodecsMp4(needsAudio=false):boolean {
     supportsProceduralWebCodecsMp4(needsAudio);
 }
 
-function supportsProceduralWebCodecsMp4(needsAudio=false):boolean {
+export function supportsProceduralWebCodecsMp4(needsAudio=false):boolean {
   return typeof VideoEncoder!=="undefined"&&
     typeof VideoEncoder.isConfigSupported==="function"&&
     typeof VideoFrame!=="undefined"&&
@@ -381,7 +381,7 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
         throw new Error("video_encoder_timeline_drift");
       const frameWorkStartedAt=performance.now();
       const decoderHoldBeforeFrame=decoderHoldMs;
-      let decodedRealFrame=renderFrame(time);
+      let decodedRealFrame=await renderFrame(time);
       if(!decodedRealFrame){
         const waitStarted=performance.now();
         do{
@@ -389,7 +389,7 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
           if(performance.now()-waitStarted>=maxFrameDecoderWaitMs ||
              decoderHoldMs+performance.now()-waitStarted>=maxTotalDecoderWaitMs)break;
           await new Promise<void>(resolve=>setTimeout(resolve,40));
-          decodedRealFrame=renderFrame(time);
+          decodedRealFrame=await renderFrame(time);
         }while(!decodedRealFrame);
         decoderHoldMs+=performance.now()-waitStarted;
         if(!decodedRealFrame)throw new Error("licensed_scene_frame_unavailable");
