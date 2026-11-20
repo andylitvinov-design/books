@@ -338,10 +338,19 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
             label+': free review and four topic choices must not overlap '+JSON.stringify(homeLayout))
           await expect(entry.locator('[data-home-intent-option]')).toHaveCount(4)
           await expect(input).toBeVisible()
-          await expect(send).toBeDisabled()
+          // Both approved composer variants are valid: legacy requires input,
+          // while the new one-screen Home has an explicit "Start free chat"
+          // submit button that opens Ali even when the composer is empty.
+          const directChatStart=(await send.locator('span').count())>0
+          if(directChatStart){
+            await expect(send).toBeEnabled()
+            await expect(send).toHaveAttribute('type','submit')
+          }else await expect(send).toBeDisabled()
           await input.fill(locale==='ru'?'Хочу создать курс':locale==='es'?'Quiero crear un curso':'I want to create a course')
           await expect(send).toBeEnabled()
           await input.fill('')
+          if(directChatStart)await expect(send).toBeEnabled()
+          else await expect(send).toBeDisabled()
           await expect(page.locator('[data-home-deferred-sections]')).toHaveCount(1)
           const hero=entry.locator('[data-home-dialogue-hero]')
           const rect=await hero.boundingBox()
