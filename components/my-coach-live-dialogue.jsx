@@ -142,6 +142,19 @@ const transcriptUi={
   ru:{heading:'Диалог · расшифровка',listening:'Слушаю',languageLabel:'Язык расшифровки и голоса коуча',autoLanguage:'Авто · устройство/контекст',hint:'Здесь появятся ваши слова. Можно также написать ответ ниже.',consentShort:'Согласен(на) отправлять текст бесплатной AI-модели; браузер может обрабатывать мой голос.',details:'Приватность и обработка данных'},
   es:{heading:'Diálogo · transcripción',listening:'Escuchando',languageLabel:'Idioma de transcripción y voz del coach',autoLanguage:'Auto · dispositivo/contexto',hint:'Aquí aparecerán tus palabras. También puedes escribir abajo.',consentShort:'Acepto enviar mi texto a la IA gratuita; el navegador puede procesar mi voz.',details:'Privacidad y procesamiento'},
 }
+const geminiTextPrivacyDetails={
+  ru:{free:'Вы отдельно соглашаетесь передавать текст этого диалога в Gemini Free. В бесплатном API Google может использовать содержание для улучшения моделей. При отказе текст не отправляется. Без автоматического перехода на платный тариф.',
+    paid:'Текст этого разговора передаётся в Gemini Paid только после вашего согласия. По условиям платного API Google не использует отправленный контент для улучшения моделей. Расходы ограничены на сервере; автоматической смены тарифа нет.'},
+  en:{free:'You separately consent to sending this dialogue text to Gemini Free. Google may use Free API content to improve its models. No content is sent until you consent; no automatic upgrade to Paid.',
+    paid:'This conversation text goes to Gemini Paid only with your consent. Paid API content is not used to improve Google models. Server request caps apply; no automatic tier switch.'},
+  es:{free:'Aceptas enviar este texto a Gemini gratuito. Google puede usar el contenido del nivel gratuito para mejorar sus modelos. Sin consentimiento no se envía el texto ni se cambia al plan de pago.',
+    paid:'Este texto se envía a Gemini de pago solo con tu consentimiento. Google no lo usa para mejorar sus modelos. Hay límites de solicitudes y no se cambia automáticamente de plan.'},
+}
+const geminiVoicePrivacyDetails={
+  ru:'При Play для распознавания микрофона могут использоваться браузер или Groq Whisper. Holistic House не сохраняет запись. Проверенный текст ответа коуча отправляется отдельно в выбранный Gemini TTS для озвучивания; бесплатный режим может использовать данные для улучшения моделей, платный — нет. В запросах к Interactions API отключено сохранение взаимодействий.',
+  en:'On Play, microphone speech may be transcribed by the browser or Groq Whisper; Holistic House does not store the recording. Separately consented validated coach replies go to the chosen Gemini TTS for speech. Free API data may be used to improve models; Paid API data is not. Interactions API storage is disabled.',
+  es:'Al pulsar Play, el navegador o Groq Whisper pueden transcribir el micrófono; Holistic House no guarda la grabación. Las respuestas validadas se envían a Gemini TTS seleccionado con consentimiento. El nivel gratuito puede usar datos para mejorar modelos y el de pago no. El almacenamiento de Interactions está desactivado.',
+}
 const voiceProviderDetails={
   en:'Play starts the conversation. On iPhone Safari, each short spoken answer may be sent to Groq Whisper under the verified free quota to transcribe, without storage by Holistic House. The audio provider has its own privacy policy. Browser speech recognition may process microphone audio. If a natural voice is available, coach-generated text is sent to Google Chirp or Fish Audio; Fish may use the text to train models. Holistic House does not store a microphone recording.',
   ru:'Нажатие Play начинает диалог. На iPhone Safari короткие голосовые ответы могут передаваться в Groq Whisper для расшифровки в пределах подтверждённого бесплатного лимита. Holistic House не сохраняет аудио; у провайдера своя политика конфиденциальности. Браузер может обрабатывать звук микрофона для распознавания речи. При доступности естественного голоса текст коуча передаётся Google Chirp или Fish Audio; Fish может использовать текст для обучения моделей. Holistic House не сохраняет запись микрофона.',
@@ -959,7 +972,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         progress={progressValid?lastRecordedProgress:null} stageLabel={stageDescription}/>
       <details className={styles.voicePrivacyDetails}>
         <summary>{lang==='ru'?'Приватность голоса':lang==='es'?'Privacidad de voz':'Voice privacy'}</summary>
-        <p>{voiceProviderDetails[lang]}</p>
+        <p>{geminiVoiceTier==='existing'?voiceProviderDetails[lang]:geminiVoicePrivacyDetails[lang]}</p>
       </details>
       {playbackNotice&&<p className={styles.playbackNotice} role="status">{playbackNotice}</p>}
       <div className={styles.conversationPanel}>
@@ -1072,7 +1085,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <button type="button" className={styles.captionMore} aria-pressed={showCaptions}
           onClick={()=>setShowCaptions(value=>!value)}>{ui.captions}</button>
         <details className={styles.consentDetails}><summary>{captions.details}</summary>
-          <p>{t.consent}</p><p className={styles.privacy}><ShieldCheck size={16} aria-hidden="true"/>{t.privacy}</p>
+          <p>{selectedGeminiEngine?geminiTextPrivacyDetails[lang][coachEngine==='gemini_free'?'free':'paid']:t.consent}</p><p className={styles.privacy}><ShieldCheck size={16} aria-hidden="true"/>{t.privacy}</p>
         </details>
         {onGuided&&<button className={styles.guidedFallback} type="button" onClick={onGuided}>
           {ui.guided}<ArrowRight size={16} aria-hidden="true"/>

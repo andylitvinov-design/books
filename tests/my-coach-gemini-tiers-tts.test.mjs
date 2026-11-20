@@ -131,6 +131,8 @@ test('runtime wiring keeps server Director, quotas, WAV player and Gemini Live o
   assert.match(tts,/consumeRate\(config/)
   assert.match(tts,/audio\/wav/)
   assert.match(ui,/geminiVoiceByLocale/)
+  assert.match(ui,/geminiTextPrivacyDetails/)
+  assert.match(ui,/geminiVoicePrivacyDetails/)
   assert.match(ui,/data-gemini-voice-consent/)
   assert.match(ui,/previewGeminiCoachVoice/)
   assert.match(ui,/value="gemini" disabled/)
