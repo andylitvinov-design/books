@@ -996,6 +996,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             {turns.map((turn,index)=><article key={index} className={styles.protocolTurn}>
               <strong>{turn.role==='user'?({ru:'Вы',en:'You',es:'Tú'}[lang]):name}</strong>
               <p>{turn.content}</p>
+              {turn.role==='assistant'&&turn.interrupted===true&&<small>{lang==='ru'?'Ответ коуча перебит':lang==='es'?'Respuesta interrumpida':'Coach reply interrupted'}</small>}
               {turn.role==='assistant'&&turn.suggestion&&<small>{({ru:'Предложение, не принятое автоматически',en:'Unconfirmed suggestion',es:'Sugerencia sin confirmar'}[lang])}: {turn.suggestion}</small>}
             </article>)}
           </div>}
