@@ -319,38 +319,37 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
           // auto-scroll can use different scroll offsets and produce a false
           // overlap even when layout order and spacing are correct.
           const homeLayout=await entry.evaluate(root=>{
-            const review=root.querySelector('[data-home-free-review]')
             const topics=root.querySelector('[data-home-focus-grid]')
-            if(!review||!topics)return null
-            const reviewBox=review.getBoundingClientRect()
+            const how=root.querySelector('[data-home-how-it-works]')
+            const review=root.querySelector('[data-home-free-review]')
+            const support=root.querySelector('[data-home-request-session]')
+            if(!topics||!how||!review||!support)return null
             const topicsBox=topics.getBoundingClientRect()
-            const reviewFirst=Boolean(review.compareDocumentPosition(topics)&Node.DOCUMENT_POSITION_FOLLOWING)
-            return {reviewFirst,reviewTop:reviewBox.top,reviewBottom:reviewBox.bottom,
-              topicsTop:topicsBox.top,topicsBottom:topicsBox.bottom}
+            const howBox=how.getBoundingClientRect()
+            const reviewBox=review.getBoundingClientRect()
+            return {
+              topicsBeforeHow:Boolean(topics.compareDocumentPosition(how)&Node.DOCUMENT_POSITION_FOLLOWING),
+              howBeforeReview:Boolean(how.compareDocumentPosition(review)&Node.DOCUMENT_POSITION_FOLLOWING),
+              reviewBeforeSupport:Boolean(review.compareDocumentPosition(support)&Node.DOCUMENT_POSITION_FOLLOWING),
+              topicsBottom:topicsBox.bottom,howTop:howBox.top,
+              howBottom:howBox.bottom,reviewTop:reviewBox.top,
+            }
           })
-          // Approved dialogue-first Home moved the two action cards BELOW the
-          // topic choices; older Home put Free Review above them. Both orders
-          // are safe only when the real mobile hit targets do not overlap.
-          const separated=homeLayout&&(homeLayout.reviewFirst
-            ?homeLayout.reviewBottom<=homeLayout.topicsTop+1
-            :homeLayout.topicsBottom<=homeLayout.reviewTop+1)
-          assert.ok(separated,
-            label+': free review and four topic choices must not overlap '+JSON.stringify(homeLayout))
+          // Owner-approved dialogue-first Home order: four directions, 3 steps,
+          // then Get Ideas / Get Support side by side. Do not restore the old
+          // free-review-before-topics marketing order or weaken geometry checks.
+          assert.ok(homeLayout?.topicsBeforeHow&&homeLayout.howBeforeReview&&homeLayout.reviewBeforeSupport&&
+            homeLayout.topicsBottom<=homeLayout.howTop+1&&homeLayout.howBottom<=homeLayout.reviewTop+1,
+            label+': four directions → 3 steps → Get Ideas / Get Support '+JSON.stringify(homeLayout))
           await expect(entry.locator('[data-home-intent-option]')).toHaveCount(4)
           await expect(input).toBeVisible()
-          // Both approved composer variants are valid: legacy requires input,
-          // while the new one-screen Home has an explicit "Start free chat"
-          // submit button that opens Ali even when the composer is empty.
-          const directChatStart=(await send.locator('span').count())>0
-          if(directChatStart){
-            await expect(send).toBeEnabled()
-            await expect(send).toHaveAttribute('type','submit')
-          }else await expect(send).toBeDisabled()
+          // Approved free-chat entry opens Ali even without a prefilled wish.
+          // Users may also describe their goal first; neither action is blocked.
+          await expect(send).toBeEnabled()
           await input.fill(locale==='ru'?'Хочу создать курс':locale==='es'?'Quiero crear un curso':'I want to create a course')
           await expect(send).toBeEnabled()
           await input.fill('')
-          if(directChatStart)await expect(send).toBeEnabled()
-          else await expect(send).toBeDisabled()
+          await expect(send).toBeEnabled()
           await expect(page.locator('[data-home-deferred-sections]')).toHaveCount(1)
           const hero=entry.locator('[data-home-dialogue-hero]')
           const rect=await hero.boundingBox()

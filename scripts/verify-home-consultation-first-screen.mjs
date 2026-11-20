@@ -205,7 +205,7 @@ for (const engine of [chromium,webkit]){
           const input=root.locator("[data-home-intent-composer]");
           const send=root.locator("[data-home-send-to-ali]");
           await input.waitFor({state:"visible"});
-          assert.equal(await send.isDisabled(),true,label+": cannot send an empty prompt");
+          // ES Next.js Home has a separate Start free chat action even without a typed wish.\n          // CDN-first EN/RU checks above retain the existing empty-input contract.\n          assert.equal(await send.isEnabled(),true,label+": Start free chat works without a prefilled goal");
           await input.fill(locale==="ru"?"Хочу создать курс":locale==="es"?"Quiero crear un curso":"I want to create a course");
           assert.equal(await send.isEnabled(),true,label+": real editable composer");
           await input.fill("");
