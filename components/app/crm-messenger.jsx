@@ -775,7 +775,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
               (lang==='ru'?'Общение заблокировано':lang==='es'?'Contacto bloqueado':'Contact blocked'):
               w.overview}</span>}
           </div>}
-          {selected.channel==='telegram'&&<div className={styles.contactActions}
+          {['telegram','whatsapp'].includes(selected.channel)&&<div className={styles.contactActions}
             aria-label={lang==='ru'?'Управление беседой':lang==='es'?'Control de conversación':'Conversation control'}>
             <button type="button" className={styles.profileAction}
               disabled={busy||threadLoading}

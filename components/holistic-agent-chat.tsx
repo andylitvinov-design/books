@@ -1427,7 +1427,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   </article>;
   const showLandingComposer=compact&&messengerView&&!pageHelp&&!messages.length&&!supportQuizOpen;
   const composer=(
-    <form onSubmit={submit} className={styles.form}>
+    <form onSubmit={submit} className={styles.form} data-hh-ai-chat-composer={messengerView||undefined}>
       <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)}
         placeholder={showLandingComposer?(locale==="ru"?"Опиши ситуацию, вопрос или цель…":locale==="es"?"Describe tu situación, pregunta o meta…":"Describe your situation, concern, or goal…"):t.placeholder}
         onFocus={()=>{
@@ -1499,7 +1499,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         {supportQuizOpen?<MessengerSupportQuiz locale={locale}
           onCancel={()=>setSupportQuizOpen(false)} onFinish={completeSupportQuiz}/>:
           <>
-            <MessengerAiLanding locale={locale} composer={composer} onCreateVideo={()=>startContent()}
+            <MessengerAiLanding locale={locale} onCreateVideo={()=>startContent()}
               onPractice={()=>startGuided("meditation")} onSupport={openSupportQuiz}
               onAsk={()=>composerRef.current?.focus({preventScroll:true})}
               onTopicSelect={text=>{setDraft(text);window.requestAnimationFrame(()=>composerRef.current?.focus({preventScroll:true}));}}
@@ -1831,7 +1831,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           {locale==="ru"?"Изменить":locale==="es"?"Cambiar":"Change"}
         </button>
       </div>}
-    {!showLandingComposer&&!supportQuizOpen&&composer}
+    {!supportQuizOpen&&composer}
     {compact&&!contentVoice&&(!messengerView||recorderOpen)&&<MessengerAudioVideo locale={locale}
       initialGoal={videoDraft.goal||""} disabled={busy} autoOpen={messengerView&&recorderOpen}/>}
     {!compact&&<details className={styles.programPanel} data-hh-eight-session-preview>
