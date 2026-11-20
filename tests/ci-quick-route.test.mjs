@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { deflateSync } from 'node:zlib';
 import { readFileSync } from 'node:fs';
-import { decideRoute, parseChangedRows, validateImage } from '../scripts/ci-quick-route.mjs';
+import { decideRoute, parseChangedRows, validateImage, lightPublicStyleOnly } from '../scripts/ci-quick-route.mjs';
 
 const image = (filename,status='M')=>({filename,status});
 const trusted=filenames=>filenames.every(x=>x.startsWith('public/'))?'FAST':'STRICT';
@@ -112,6 +112,20 @@ test('exact four-file Mobile Dock routes only to DOCK; every scope extension fai
   assert.match(workflow,/ASSETS\|TEXT\|DOCK\|CORE\|FULL/);
   assert.match(workflow,/Mobile Dock Core geometry and iPhone keyboard contracts/);
   assert.match(workflow,/steps\.specialist_route\.outputs\.route == 'DOCK'/);
+});
+
+test('Light v2 preserves Core build for isolated public CSS and avoids lexical FULL blocks',()=>{
+  const css=[row('components/profile-coaching-card.module.css'),
+    row('components/mandala-video-personalization.module.css')];
+  assert.equal(lightPublicStyleOnly(css),true);
+  assert.equal(decideRoute(css,trusted,()=>{}),'CORE');
+  assert.equal(decideRoute(css,trusted,()=>{},{light:false}),'FULL');
+  for(const path of [
+    'components/consent-banner.module.css','components/auth-login.module.css',
+    'components/mandala-video-mobile.module.css','app/[locale]/app/portrait.module.css'
+  ]) assert.equal(lightPublicStyleOnly([row(path)]),false,path);
+  assert.equal(lightPublicStyleOnly([row('components/profile-coaching-card.module.css','A')]),false);
+  assert.equal(lightPublicStyleOnly([...css,row('lib/auth/session.js')]),false);
 });
 
 test('real Mandala playback/export source requires FULL independent specialist gate',()=>{

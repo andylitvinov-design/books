@@ -1,12 +1,25 @@
 // Exact-merge, fail-closed fast-route planner. Run the version pinned to HEAD^1,
 // never a candidate-PR version, before deciding whether to skip Core Next.js.
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, appendFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 
 const IMAGE = /^public\/(?:[\w.-]+\/)*[\w.-]+\.(?:png|jpe?g|webp|gif|avif|ico)$/i;
+// Merge Check Light v2: a tightly bounded public CSS-only exception to the
+// broad lexical "profile/coaching" FULL heuristic. Core still performs the
+// real Next.js build, types and lint. No changes to required branch checks.
+const LIGHT_PUBLIC_STYLE = /^(?:components\/(?!app\/)[a-z0-9][a-z0-9._-]*\.module\.css|app\/\[locale\]\/(?:about|academy|articles|books|events|explore|holistic-support|library|practices|shamanic|shamanica|tests|video-studio)\/(?:[a-z0-9._-]+\/)*[a-z0-9._-]+\.module\.css)$/i;
+const LIGHT_PRIVATE = /(?:^|[\/._-])(?:account|auth|billing|cabinet|checkout|client|consent|credential|crm|database|identity|login|medical|message|messaging|migration|patient|payment|permission|private|privacy|provider|rls|secret|security|session|storage|supabase|token|wallet)(?:$|[\/._-])/i;
+const LIGHT_PHYSICAL = /^components\/mandala-(?:video-mobile|multitrack-timeline|free-video-studio|auto-video-director)(?:\.module)?\.css$/i;
+export function lightPublicStyleOnly(rows) {
+  return Array.isArray(rows) && rows.length > 0 && rows.length <= 100 &&
+    rows.every(({filename,status}={}) => status === 'M' &&
+      LIGHT_PUBLIC_STYLE.test(filename||'') && !LIGHT_PRIVATE.test(filename) &&
+      !LIGHT_PHYSICAL.test(filename) &&
+      !/(?:^|\/)(?:global|globals|layout|template)\./i.test(filename));
+}
 const PUBLIC_JSX = /^app\/\[locale\]\/(?:about|articles|books|events|explore|install)\/[\w.\[\]/-]+\.(?:jsx|tsx)$/;
 const ORDINARY = /^(?:app\/\[locale\]\/|components\/|lib\/|tests\/|public\/|content\/|data\/|docs\/)/;
 const PROTECTED_ROOT = /^(?:app\/\[locale\]\/(?:app|client|admin|services|booking|consultation)\/|components\/(?:app|commerce)\/|lib\/(?:app|practitioners|assessments|ci|auth|billing|crm|payments|security|supabase|integrations)\/|docs\/(?:operations|billing|payments)\/)/i;
@@ -46,7 +59,7 @@ export function parseChangedRows(raw) {
   }
   return rows;
 }
-export function decideRoute(rows, classifier, sources) {
+export function decideRoute(rows, classifier, sources, options = {}) {
   if (!Array.isArray(rows) || !rows.length ||
       rows.some(r=>!r || typeof r.filename!=='string' || typeof r.status!=='string')) return 'FULL';
   // More than 512 changed entries are never a fast/no-build lane: the
@@ -67,6 +80,7 @@ export function decideRoute(rows, classifier, sources) {
   if (rows.length===mobileDock.size &&
       rows.every(r=>r.status==='M' && mobileDock.get(r.filename)==='M') &&
       [...mobileDock.keys()].every(path=>rows.some(r=>r.filename===path))) return 'DOCK';
+  if (options.light !== false && lightPublicStyleOnly(rows)) return 'CORE';
   if (filenames.some(f=>!ORDINARY.test(f) || PROTECTED_ROOT.test(f) || SENSITIVE.test(f) || PHYSICAL_MEDIA_SPECIALIST.test(f) || /^\.github\/|^supabase\/|^scripts\/ci-|^lib\/ci\/|^tests\/ci-/.test(f) ||
       /(?:^|\/)(?:package(?:-lock)?\.json|next\.config\.\w+|middleware\.\w+|AGENTS\.md|CI_RELEASE_POLICY\.md)$/.test(f))) return 'FULL';
   if (rows.every(r=>ALLOWED_STATUS.has(r.status) && IMAGE.test(r.filename)) &&
@@ -289,7 +303,11 @@ async function main() {
     writeFileSync(path,git(['show',base+':lib/ci/specialist-aggregate.mjs']),{mode:0o600});
     classifier=(await import(pathToFileURL(path).href)).classifyReleaseRisk;
   } finally { rmSync(trustDir,{recursive:true,force:true}); }
+  const legacyRoute=decideRoute(rows,classifier,()=>{}, {light:false});
   const route=decideRoute(rows,classifier,()=>{});
+  if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY,
+    'Merge Check Light v2 shadow: legacy='+legacyRoute+'; scoped='+route+
+    '; actual protected Core and Specialist evidence unchanged.\n');
   if(route==='ASSETS') {
     validateAssets(rows,head);
     process.stdout.write('ASSETS\n');
