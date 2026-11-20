@@ -6,6 +6,7 @@ import {useSearchParams} from 'next/navigation'
 import {appFetch} from '@/lib/app/client-fetch'
 import {ArrowRight,BarChart3,Check,CheckCircle2,ChevronDown,ChevronRight,ClipboardList,Compass,Heart,HeartPulse,Leaf,LoaderCircle,MapPin,Mountain,Plus,Save,Sparkles,Sun,Target,TrendingUp,Trophy,Users,Wallet} from 'lucide-react'
 import {PRIMARY_GOAL_AREAS,orderedCoachingAreas,summarizeCoachingProgress} from '@/lib/app/coaching-plan-summary.mjs'
+import {projectCoachContextSnapshot} from '@/lib/personal-coaching/client-context.mjs'
 import styles from './my-coaching-plan.module.css'
 
 const copy={
@@ -158,12 +159,8 @@ export default function MyCoachingPlan({accountId,locale='en'}){
  useEffect(()=>{void load()},[load])
  const importedKeys=useMemo(()=>new Set((plan?.actions||[]).filter(item=>item.sourceReportId&&item.sourceActionKey).map(item=>item.sourceReportId+'|'+item.sourceActionKey)),[plan])
  const contextPreview=useMemo(()=>{
-  const grants=new Set((plan?.contextPermissions||[]).map(item=>item.sessionId))
-  if(!grants.size)return {goals:[],actions:[]}
-  return {
-   goals:(plan?.goals||[]).filter(item=>grants.has(item.sourceSessionId)&&['active','in_progress','paused'].includes(item.status)),
-   actions:(plan?.actions||[]).filter(item=>grants.has(item.sourceSessionId)&&['not_started','planned','in_progress','paused'].includes(item.status)),
-  }
+  const snapshot=projectCoachContextSnapshot({plan})
+  return {goals:snapshot.items.filter(item=>item.kind==='goal'),actions:snapshot.items.filter(item=>item.kind==='action')}
  },[plan])
  const change=(areaKey,key,value)=>setDrafts(prev=>({...prev,[areaKey]:{...prev[areaKey],[key]:value}}))
  async function saveArea(area){
