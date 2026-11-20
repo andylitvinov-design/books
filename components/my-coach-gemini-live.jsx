@@ -189,7 +189,6 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(frame.audio?.length){
       if(r.inputText)commitInput(r)
       r.speaking=true
-      r.player?.appendMany?.(frame.audio)
       for(const part of frame.audio){
         try{r.player.append(part)}catch{notify(t.failure)}
       }
