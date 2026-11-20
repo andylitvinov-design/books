@@ -62,6 +62,8 @@ test("meditation preserves one original non-looping recording with an approved q
 });
 test("privacy, exclusions and one-click production contract",()=>{
  const source=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+ const director=readFileSync(new URL("../components/mandala-auto-video-director.tsx",import.meta.url),"utf8");
+ const browser=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
  const photos=readFileSync(new URL("../lib/mandala/story-photo-library.mjs",import.meta.url),"utf8");
  assert.match(source,/planExpressVideo\(/);
  assert.match(source,/data-video-express-create/);
@@ -79,6 +81,66 @@ test("privacy, exclusions and one-click production contract",()=>{
   source.indexOf("const generateFromGoal=",source.indexOf("const generateExpressFromCurrent=")));
  assert.ok(express.length>1000);
  assert.doesNotMatch(express,/setTimeout\(/,"one click must not be deferred beyond Safari user activation");
+ assert.match(express,/setAspect\("portrait"\)/,"Express always writes 9:16 even after prior format settings");
+ assert.match(director,/data-video-prompt-flow/);
+ assert.match(director,/onInstantCreate\?\.\(\);return;/,
+  "Just make it invokes the existing one-click Express entry point directly");
+ assert.match(browser,/data-video-request-design\]\[data-video-request-flow="instant"\]/,
+  "real browser acceptance taps the visible Just make it Generate control");
+ assert.match(browser,/data-video-request-aspect="landscape"/);
+ assert.match(browser,/data-video-request-aspect="portrait"/);
+ assert.match(browser,/toHaveAttribute\('data-aspect','portrait'\)/);
+ assert.doesNotMatch(browser,/data-video-continue-scenarios/,
+  "the export acceptance cannot pass by clicking a hidden legacy Continue control");
+ assert.match(browser,/EXPRESS_VIDEO_MUST_BE_30_SECONDS/);
+ assert.match(browser,/MP4_EXPRESS_VIDEO_MUST_USE_H264/);
+ assert.match(browser,/MP4_EXPRESS_AUDIO_MUST_USE_AAC/);
+ assert.match(browser,/SAFARI_EXPRESS_EXPORT_MUST_BE_MP4/);
+ assert.match(browser,/expressGenerateClicks=1/);
+ assert.match(browser,/expressSceneSourceIds/);
+ assert.match(browser,/EXPRESS_CANONICAL_SCENE_ORDER_OR_IDENTITY_MISMATCH/);
  const denied=planExpressVideo({goal:"No ocean, without water",theme:"life"});
  assert.ok(denied.reason==="SCENARIO_IMAGERY_EXCLUDED"||denied.canRender);
+});
+
+test("Express guest-local generation only requires a verified session when credits are charged",()=>{
+ const source=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+ const from=source.indexOf("const generateExpressFromCurrent=");
+ const to=source.indexOf("const generateFromGoal=",from);
+ assert.ok(from>0&&to>from,"real Express click handler must exist");
+ const handler=source.slice(from,to);
+ assert.match(handler,/creditCatalog===null\|\|creditCatalog\.blocked\|\|/);
+ assert.match(handler,/\(creditCatalog\.chargeRequired&&\(creditSession==="checking"\|\|/);
+ assert.match(handler,/creditSession==="unavailable"\)\)/);
+ assert.match(handler,/if\(creditCatalog\.chargeRequired&&creditSession==="guest"&&guestFirstVideoUsed\)/);
+ assert.match(handler,/flushSync\(\(\)=>\{/);
+});
+
+
+test("WebKit filmed-story acceptance follows the visible Goal CTA, never a hidden legacy Continue",()=>{
+ const read=path=>readFileSync(new URL("../scripts/benchmarking/"+path,import.meta.url),"utf8");
+ const helper=read("complete-three-step-goals-quiz.mjs");
+ const original=read("verify-original-motion-export.mjs");
+ const scenes=read("verify-five-scene-stories-browser.mjs");
+ assert.match(helper,/next\.waitFor\(\{state:'attached'/,
+  "hidden lower Continue is only read for real three-step readiness");
+ assert.doesNotMatch(helper,/next\.waitFor\(\{state:'visible'/);
+ assert.match(helper,/progress\.waitFor\(\{state:'attached'/,
+  "WebKit must not require a CSS-hidden mobile progress badge");
+ assert.doesNotMatch(helper,/progress\.innerText\(\)/,
+  "hidden text is not a user-facing quiz failure");
+ assert.match(helper,/meter\?\.textContent\?\.replace/,
+  "actual three-choice quiz state must remain verified");
+ assert.match(helper,/action\.disabled===disabled/,
+  "the quiz still verifies each actual step and no bypass");
+ for(const [file,source] of [["original-motion",original],["five-scene",scenes]]){
+  assert.match(source,/\[data-video-goal-create-cta\]/,
+   file+" must tap the actual visible first-screen CTA");
+  assert.doesNotMatch(source,/\[data-video-continue-scenarios\]'\)\.(?:tap|click)\(/,
+   file+" may never tap an intentionally hidden old control");
+ }
+ assert.match(original,/GOALS_MUST_OPEN_IDEAS/,
+  "original-motion still verifies actual Ideas navigation");
+ assert.match(scenes,/STORIES_FINAL_H264_MP4_REQUIRED/,
+  "five-scene export must still verify real H264 MP4");
 });

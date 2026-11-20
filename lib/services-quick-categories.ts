@@ -2,10 +2,16 @@
  * Legacy aliases remain for pre-existing links; Shamanica is a separate route.
  */
 export const servicesCategoryTargets = {
-  therapy: "consultation",
-  homeopathy: "homeopathy",
-  constellations: "services",
+  // The first screen is a six-choice gateway. All targets are already published.
+  diagnostics: "consultation",
   business: "business",
+  homeopathy: "homeopathy",
+  coaching: "coach",
+  psychotherapy: "services",
+  video: "video",
+  // Below-the-fold/legacy options remain compatible; their panels belong to other PRs.
+  therapy: "consultation",
+  constellations: "services",
   tests: "browse",
   learning: "courses",
   practice: "reiki",

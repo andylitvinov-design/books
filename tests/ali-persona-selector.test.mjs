@@ -14,6 +14,7 @@ test('four portrait choices: two male and two female with distinct preapproved v
  assert.equal(isAliPersonaId('bogus'),false)
  assert.equal(isAliPersonaId('mira'),true)
  assert.equal(ALI_PERSONA_STORAGE_KEY,'hh:ai-chat-persona-v1')
+ assert.equal(getAliPersona('alex').name.ru,'Ali','public RU assistant name is always Latin Ali')
  for(const persona of ALI_PERSONAS){
   assert.ok(existsSync(new URL('../public'+persona.image,import.meta.url)),persona.image)
   for(const locale of ['ru','en','es']){
@@ -132,10 +133,22 @@ test('mobile AI guide picker keeps all four cards compact and voice states truth
  assert.match(audio,/utterance\.onstart=/)
  assert.match(audio,/speech\.speaking\|\|speech\.pending/)
  assert.match(audio,/audio\.onplaying=/)
- assert.match(audio,/iOS&&hasDevice/)
+ assert.doesNotMatch(audio,/iOS&&hasDevice/)
  assert.match(audio,/onPlaying\(false,result\)/)
  assert.match(audio,/onFinish\('error'\)/)
  assert.match(audio,/method:'HEAD'/)
- assert.match(audio,/timer=window\.setTimeout\(fallback,13500\)/)
+ assert.match(audio,/timer=window\.setTimeout\(fallback,20000\)/)
  assert.doesNotMatch(audio,/audio\.play\(\)\s*;\s*speech\.speak/)
+});
+
+test('iPhone always prefers a real audible MP3 in the original user tap',()=>{
+ const audio=source('components/app/ali-persona-audio.js')
+ const route=source('app/api/ali/voice/[locale]/[persona]/route.js')
+ assert.match(audio,/audio\.muted=false/)
+ assert.match(audio,/audio\.volume=1/)
+ assert.match(audio,/const attempt=audio\.play\(\)/)
+ assert.match(audio,/naturalStatus==='unavailable'&&hasDevice/)
+ assert.match(audio,/audio\.onplaying=\(\)=>/)
+ assert.match(route,/Buffer\.from\(await upstream\.arrayBuffer\(\)\)/)
+ assert.match(route,/'Content-Length':String\(audio.length\)/)
 });

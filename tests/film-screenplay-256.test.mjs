@@ -66,7 +66,9 @@ test("the screenshot's four motivation films are individually directed, not rela
  assert.deepEqual(film256EditorialOverrideIds,[
   "motivation-drive-s1","motivation-drive-s2","motivation-drive-s3","motivation-drive-s4",
   "money-blocks-s1","money-blocks-s2","money-blocks-s3","money-blocks-s4",
-  "couple-conflict-s1","couple-conflict-s2","couple-conflict-s3","couple-conflict-s4"
+  "couple-conflict-s1","couple-conflict-s2","couple-conflict-s3","couple-conflict-s4",
+  "self-acceptance-s1","self-acceptance-s2","self-acceptance-s3","self-acceptance-s4",
+  "low-self-esteem-s1","low-self-esteem-s2","low-self-esteem-s3","low-self-esteem-s4"
  ]);
  for(const locale of locales){
   const films=listCompleteFilmScreenplays("motivation-drive",locale);

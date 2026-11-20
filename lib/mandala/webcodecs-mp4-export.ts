@@ -183,6 +183,29 @@ async function verifyDecodableMp4Export(
   }
 }
 
+/**
+ * Inspect a native Safari MediaRecorder MP4 before handing it to Ready.
+ * Generic video/mp4 support is only a capability hint; it does not prove
+ * that the actual file contains H.264 and the user-selected AAC track.
+ * This only reads the finished local Blob; it never re-encodes or uploads.
+ */
+export async function verifyNativeSafariMp4Tracks(blob:Blob,requireAudio:boolean):Promise<void>{
+  const input=new Input({source:new BlobSource(blob),formats:[MP4]});
+  try{
+    if(!(await input.canRead()))throw new Error("native_mp4_invalid_tracks");
+    const video=await input.getPrimaryVideoTrack();
+    if(!video||await video.getCodec()!=="avc")
+      throw new Error("native_mp4_invalid_tracks");
+    if(requireAudio){
+      const audio=await input.getPrimaryAudioTrack();
+      if(!audio||await audio.getCodec()!=="aac")
+        throw new Error("native_mp4_invalid_tracks");
+    }
+  }catch{
+    throw new Error("native_mp4_invalid_tracks");
+  }finally{input.dispose();}
+}
+
 /** A real H.264/AAC video/audio MP4. Rendering remains on the existing Canvas. */
 export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promise<Blob>{
   const {canvas,seconds,frameRate,renderFrame,audio,shouldContinue,onProgress}=options;

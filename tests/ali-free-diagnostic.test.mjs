@@ -24,6 +24,12 @@ test('a separate free mode exists on the existing RU/EN/ES review link',()=>{
    assert.equal(v3FreeDiagnosticStart('/start hhdiagnostic_'+locale).locale,locale);
    assert.equal(v3StartLocale('/start hhdiagnostic_'+locale),locale);
    const welcome=aliFreeDiagnosticIntro(locale);
+   assert.equal(welcome,FREE_DIAGNOSTIC_LIBRARY[locale].intro,
+     'Telegram welcome must match the provider-validated canonical copy');
+   assert.match(welcome,/\bAli\b/u);
+   assert.match(welcome,locale==='ru'?/личных вопросов.*согласны/iu:
+     locale==='es'?/preguntas personales/iu:/personal questions/iu);
+   assert.doesNotMatch(welcome,/\bWave\b/u);
    assert.ok(welcome.length<155,locale+' first screen must be warm and brief');
    assert.doesNotMatch(welcome,/\/stop|not a medical|diagnos|OpenRouter|medical records|no envíes|документы|не диагноз/i);
    assert.ok(FREE_DIAGNOSTIC_LIBRARY[locale].questions.goal.length>=3);
@@ -34,6 +40,18 @@ test('a separate free mode exists on the existing RU/EN/ES review link',()=>{
  assert.equal(v3FreeDiagnosticStart('/start hhreview_en?client_private=1'),null);
  assert.equal(v3FreeDiagnosticStart('I need a diagnostic'),null);
 });
+test('client-facing identity and booking replies never use internal Wave naming',()=>{
+ for(const [locale,message] of [['ru','Ты бот?'],['en','Are you a bot?'],['es','¿Eres un bot?']]){
+  const result=aliFreeDiagnosticTurn({message,locale,stage:'goal'});
+  assert.match(result.reply,/\bAli\b/u,locale);
+  assert.doesNotMatch(result.reply,/\bWave\b/u,locale);
+ }
+ for(const [locale,message] of [['ru','Как записаться?'],['en','Can I book a session?'],['es','Quiero reservar una sesión']]){
+  const result=aliFreeDiagnosticTurn({message,locale,stage:'goal'});
+  assert.doesNotMatch(result.reply,/\bWave\b/u,locale);
+ }
+});
+
 test('three gentle questions lead to review without an interrogation',()=>{
  let stage='goal',slots={},turns=[];
  const answers=['I want a clear path in my career',
