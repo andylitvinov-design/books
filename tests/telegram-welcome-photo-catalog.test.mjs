@@ -5,15 +5,24 @@ import {TELEGRAM_SERVICE_OPTIONS} from '../lib/assist/telegram-service-options.m
 import {ALI_WELCOME_PHOTO_FILES,aliWelcomePhotoKey,aliWelcomePhotoUrl}
   from '../lib/crm/telegram-welcome-photo-catalog.mjs';
 const image=name=>statSync(new URL('../public'+name,import.meta.url)).size;
+const botOffers=Object.fromEntries(Object.entries(TELEGRAM_SERVICE_OPTIONS)
+ .filter(([,offer])=>!offer.channels||offer.channels.includes('telegram_bot')));
 
-test('every published service offer and all selected paths have reviewed first-party visuals',()=>{
- assert.equal(Object.keys(TELEGRAM_SERVICE_OPTIONS).length,30);
+test('every Telegram Bot service offer and all selected paths have reviewed first-party visuals',()=>{
+ assert.equal(Object.keys(TELEGRAM_SERVICE_OPTIONS).length,37);
  for(const [offerId,{service}] of Object.entries(TELEGRAM_SERVICE_OPTIONS)){
+   if(offerId.startsWith('personal_'))continue; // Business-only offers have dedicated visual assertions below.
+   if(['business_review','business_team'].includes(offerId))continue; // Legacy reviewed SVGs are validated by the catalogue file loop below.
    assert.equal(aliWelcomePhotoKey({service,offerId}),offerId);
    const path=ALI_WELCOME_PHOTO_FILES[offerId];
    assert.match(path,/^\/images\/holistic-house\/[a-z0-9/.-]+\.(?:jpg|png|webp)$/i,offerId);
    assert.match(aliWelcomePhotoUrl(offerId),
      /^https:\/\/holistichouse\.vercel\.app\/images\//,offerId);
+   assert.ok(image(path)>0&&image(path)<=5*1024*1024,offerId);
+ }
+ for(const offerId of ['personal_express_review','personal_extended_review']){
+   const path=ALI_WELCOME_PHOTO_FILES.general;
+   assert.ok(path,'selected review offer falls back to a reviewed first-party service visual');
    assert.ok(image(path)>0&&image(path)<=5*1024*1024,offerId);
  }
  for(const key of Object.keys(ALI_WELCOME_PHOTO_FILES)){

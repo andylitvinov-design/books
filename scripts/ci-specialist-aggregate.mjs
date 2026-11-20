@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance, safeComposedIndependentAdvance, REVALIDATABLE_CI_POLICY_FILES } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance, safeComposedIndependentAdvance, safeScopedDisjointProductionAdvance, safeMixedProtectedAdvance, REVALIDATABLE_CI_POLICY_FILES } from '../lib/ci/production-base-impact.mjs';
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
@@ -267,11 +267,16 @@ export function requiresCurrentProductionBase(changed) {
     // Real encoded-media, payments and consent remain strict, regardless
     // of their file being an isolated browser/benchmark harness.
     !/(?:^|[\/_.-])(?:audio|codec|consent|encoded|encoder|export|license|payment|provider|recording|recorder|service|services|voice)(?:$|[\/_.-])/i.test(file);
+  // This exact synthetic PUBLIC Services browser verifier is test-only:
+  // it cannot change Next runtime, payment handlers, private data or consent.
+  // A mixed PR containing any sensitive source still retains the strict base.
+  const publicSourceAcceptanceHarness = file =>
+    file === 'scripts/verify-public-services-production.mjs';
   const sensitiveName = /(?:^|[\/_.-])(?:account|admin|api|auth|billing|booking|cabinet|chat|checkout|client|consent|conversation|credential|crm|database|health|identity|inbox|login|medical|message|messages|messaging|migration|patient|payment|private|privacy|profile|rls|secret|security|session|storage|supabase|token|wallet)(?:$|[\/_.-])/i;
   const sensitiveRoots = /^(?:app\/(?:\[[^/]+\]\/)?api\/|app\/(?:\[[^/]+\]\/)?app\/|components\/app\/|lib\/(?:app|assessments|ia|practitioners)\/|docs\/operations\/|docs\/billing\/|docs\/payments\/)/i;
   return changed.some(file =>
     typeof file !== 'string' ||
-    (!ordinaryRoots.test(file) && !isolatedBrowserHarness(file)) ||
+    (!ordinaryRoots.test(file) && !isolatedBrowserHarness(file) && !publicSourceAcceptanceHarness(file)) ||
     file.split('/').some(segment => segment === '.' || segment === '..' || segment === '') ||
     sensitiveName.test(file) ||
     sensitiveRoots.test(file)
@@ -429,8 +434,10 @@ export async function verify(api,ctx,files,options={}) {
   const queuedGrace = Math.min(maxWait, boundedMs(options.queuedGraceMs ?? 10*60_000, 40*60_000));
   // A completed workflow's jobs API may lag; read only missing/pending job data.
   const jobGrace = Math.min(maxWait, boundedMs(options.jobGraceMs ?? 45_000, 90_000));
-  // Reduce read-only GitHub API pressure while many exact-HEAD jobs are queued.
-  const pollMs = boundedMs(options.pollMs ?? 30_000, 30_000, 100);
+  // Poll non-final queued/running specialists every 60s instead of every 30s:
+  // halve redundant GitHub HEAD-index reads while preserving all required checks.
+  // Missing-workflow discovery and the final-running fast lane remain responsive.
+  const pollMs = boundedMs(options.pollMs ?? 60_000, 60_000, 100);
   const now = options.now ?? Date.now;
   const sleep = options.sleep ?? delay;
   const pinnedChangeRows = Array.isArray(files.changedRows) && files.changedRows.length > 0;
@@ -538,11 +545,29 @@ export async function verify(api,ctx,files,options={}) {
       // result, full ancestry and every row's *existing* trusted risk proof.
       const composedIndependent = pinnedChangeRows && live.mergeable === true &&
         safeComposedIndependentAdvance(diff, ctx.base, liveBaseSha, changed);
+      // A complete proven target advance across different product domains
+      // cannot invalidate green Core/required specialists for unchanged HEAD.
+      const scopedDisjoint = pinnedChangeRows &&
+        live.mergeable !== false && live.mergeable_state !== 'dirty' &&
+        safeScopedDisjointProductionAdvance(diff, ctx.base, liveBaseSha, changed);
+      // General protected mixed-delta reuse, including many small protected
+      // commits while a long-running required specialist was in flight.
+      const mixedProtected = pinnedChangeRows &&
+        live.mergeable !== false && live.mergeable_state !== 'dirty' &&
+        safeMixedProtectedAdvance(diff, ctx.base, liveBaseSha, changed);
       if (!documentationOnly && !independentlyRevalidated &&
           !isolatedCiPolicy && !unrelatedCiMaintenance && !inertPublicImages &&
           !independentPresentation && !disjointPublicSource && !independentQa &&
-          !independentDomainTest && !composedIndependent) {
+          !independentDomainTest && !composedIndependent && !scopedDisjoint && !mixedProtected) {
         throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+      }
+      if (mixedProtected) {
+        approvedDisjointBases.add(liveBaseSha);
+        console.log('CI_BASE_ADVANCE_REUSED: verified independent protected mixed delta; keep unchanged exact-HEAD Core and specialists');
+      }
+      if (scopedDisjoint) {
+        approvedDisjointBases.add(liveBaseSha);
+        console.log('CI_BASE_ADVANCE_REUSED: verified disjoint product domains; preserve green exact-HEAD checks');
       }
       if (composedIndependent) {
         approvedDisjointBases.add(liveBaseSha);

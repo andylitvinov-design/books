@@ -1,4 +1,4 @@
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance, safeScopedDisjointProductionAdvance, safeMixedProtectedAdvance } from '../lib/ci/production-base-impact.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -6,12 +6,41 @@ import {
   TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns, concurrencyOnlyAdvisory, selfTriggerRemovalAdvisory, isConcurrencyAdvisoryRun,
   inspectJobs, trustedConditionalJobs, trustedRequiredJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
-import { verify, githubReader, optionalMandalaMacosSkip, optionalProfileWriterSkip, revalidateAfterTrustedPolicyAdvance, verifiedOptionalOwnerSelectorMigration, trustedAdditiveActionlint } from '../scripts/ci-specialist-aggregate.mjs';
+import { verify, githubReader, optionalMandalaMacosSkip, optionalProfileWriterSkip, revalidateAfterTrustedPolicyAdvance, verifiedOptionalOwnerSelectorMigration, trustedAdditiveActionlint, requiresCurrentProductionBase } from '../scripts/ci-specialist-aggregate.mjs';
 // Run the focused dependency state/timeout regressions inside the existing
 // Core CI-policy test step; no new hosted workflow or required status.
 import './ci-specialist-wait.test.mjs';
 
 const repo='andylitvinov-design/books', SHA='a'.repeat(40), BASE='b'.repeat(40);
+
+test('public-only Services QA verifier does not cause false production-base strictness',()=>{
+  const publicSource=[
+    'app/[locale]/services/page.tsx',
+    'components/services-support-uniform.module.css',
+    'components/services-unified-catalog.tsx',
+    'scripts/verify-public-services-production.mjs',
+    'tests/services-three-visible-options.test.mjs',
+  ];
+  assert.equal(requiresCurrentProductionBase(publicSource),false,
+    'read-only public browser verifier must not turn safe catalogue work into sensitive code');
+  // The optional test script cannot waive ANY actual sensitive source, even
+  // in a mixed public catalogue PR. Release and data controls still fail closed.
+  for(const sensitive of [
+    'app/api/billing/checkout/route.ts',
+    'app/api/service-enquiries/route.ts',
+    'lib/practitioners/booking.js',
+    'components/app/client-private.jsx',
+    'tests/privacy-consent.test.mjs',
+    '.github/workflows/hh-pr-core-release.yml',
+    'scripts/ci-specialist-aggregate.mjs',
+    'package.json',
+    'supabase/migrations/001.sql',
+  ]) assert.equal(requiresCurrentProductionBase([...publicSource,sensitive]),true,
+    'protected source still requires a current production base: '+sensitive);
+  assert.equal(requiresCurrentProductionBase([]),true);
+});
+
+
 const pr=()=>({number:27,state:'open',draft:false,head:{sha:SHA,ref:'feat/test',repo:{full_name:repo}},base:{sha:BASE,ref:TARGET,repo:{full_name:repo}}});
 const path='.github/workflows/messenger.yml';
 const yaml="on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths:\n      - 'lib/crm/**'\n      - '!lib/crm/private/**'\n      - 'lib/crm/private/approved.mjs'\n  push:\n    branches: [main]\npermissions:\n  contents: read\njobs:\n  test:\n    runs-on: ubuntu-24.04\n";
@@ -2881,4 +2910,331 @@ test('Specialist still requires genuine exact-HEAD jobs across isolated domain T
   await assert.rejects(()=>verify({...api,compare:async()=>({...diff,files:[
     {filename:'tests/crm-telegram-cabinet-entry.test.mjs',status:'modified'}]})},
     ctx,sources,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);
+});
+
+
+test('PR #5093 media MP4 survives fully verified unrelated Ali CRM production advance', () => {
+  const live = 'c'.repeat(40);
+  const candidate = [
+    'components/mandala-automatic-storyboard.tsx',
+    'components/mandala-free-video-studio.tsx',
+    'components/mandala-video-mobile.module.css',
+    'lib/mandala/recording-codecs.d.mts',
+    'lib/mandala/recording-codecs.mjs',
+    'lib/mandala/webcodecs-mp4-export.ts',
+    'scripts/benchmarking/first-video-live-export.mjs',
+    'scripts/benchmarking/real-guest-video-file.mjs',
+    'scripts/verify-affirmation-voice-browser.mjs',
+    'tests/mandala-webcodecs-mp4.test.mjs',
+    'tests/video-director-chat-live-acceptance.test.mjs',
+  ];
+  const target = [
+    'app/api/app/crm/messenger/webhook/[provider]/route.js',
+    'components/app/messenger-ai-landing.tsx',
+    'components/home-dialogue-entry.tsx',
+    'lib/assist/ali-free-diagnostic-library.mjs',
+    'lib/assist/ali-free-diagnostic-reactions.mjs',
+    'lib/assist/ali-free-diagnostic.mjs',
+    'lib/assist/ali-guided-intake.mjs',
+    'lib/assist/ali-service-secretary.mjs',
+    'lib/assist/secretary-modes.mjs',
+    'lib/crm/telegram-ai-diagnostic-v3-service.js',
+    'lib/crm/telegram-ai-diagnostic-v3.mjs',
+    'lib/crm/telegram-business-inbox.js',
+    'lib/holistic-support/ali-personas.mjs',
+    'lib/holistic-support/conversation-intelligence.mjs',
+    'tests/ali-free-diagnostic.test.mjs',
+    'tests/crm-telegram-business-inbox-route.test.mjs',
+    'tests/telegram-delivery-status.test.mjs',
+    'tests/wave-assistant-topic-context.test.mjs',
+  ];
+  const diff = (files=target, override={}) => ({
+    status:'ahead',ahead_by:2,behind_by:0,total_commits:2,
+    base_commit:{sha:BASE},merge_base_commit:{sha:BASE},
+    commits:[{sha:'d'.repeat(40)},{sha:live}],
+    files:files.map(filename=>({filename,status:'modified'})),
+    ...override,
+  });
+  const check = (value, paths=candidate) => safeScopedDisjointProductionAdvance(value,BASE,live,paths);
+  assert.equal(check(diff()),true,'separate Ali/CRM and media domains must reuse successful checks');
+  for (const critical of [
+    candidate[1], 'components/mandala-export-dialog.tsx',
+    'lib/mandala/another-media-source.mjs',
+    '.github/workflows/hh-pr-core-release.yml', 'lib/ci/specialist-aggregate.mjs',
+    'package-lock.json', 'next.config.ts', 'components/ui/player.tsx',
+    'app/[locale]/layout.tsx', 'app/[locale]/about/layout.tsx',
+    'app/api/holistic-support/voice/route.js', 'lib/shared/codec-settings.mjs',
+    'scripts/unknown-deployment.mjs',
+  ]) assert.equal(check(diff([critical])),false,critical);
+  assert.equal(check(diff(['app/api/telegram/route.js']),['lib/crm/lead-service.mjs']),false,
+    'unrelated file names within the same actual CRM domain must remain blocked');
+  for (const broken of [
+    {status:'diverged'},{behind_by:1},{commits:[]},
+    {total_commits:3},{files:[]},
+    {files:[{filename:target[0],status:'deleted'}]},
+    {files:[{filename:target[0],status:'renamed',previous_filename:'old.js'}]},
+    {files:[{filename:target[0],status:'modified'},{filename:target[0],status:'modified'}]},
+  ]) assert.equal(check({...diff(),...broken}),false,'never accept unverified base change');
+});
+
+
+test('mixed protected releases reuse green product checks but never security, overlap, CI workflow or dependency changes',async()=>{
+ const live='c'.repeat(40);
+ const candidate=[
+  'components/mandala-free-video-studio.tsx',
+  'lib/mandala/recording-codecs.mjs',
+  'tests/mandala-webcodecs-mp4.test.mjs',
+ ];
+ const accepted=[
+  'components/home-dialogue-entry.tsx',
+  'lib/assist/ali-guided-intake.mjs',
+  'tests/ci-heavy-impact.test.mjs',
+  'tests/ci-pr-selective-workflows.test.mjs',
+  'docs/guides/quiet-progress.md',
+  'public/images/holistic-house/new-shape.webp',
+ ];
+ const compare=(filenames=accepted,other={})=>({
+  status:'ahead',ahead_by:2,behind_by:0,total_commits:2,
+  base_commit:{sha:BASE},merge_base_commit:{sha:BASE},
+  commits:[{sha:'d'.repeat(40)},{sha:live}],
+  files:filenames.map(filename=>({filename,status:'modified'})),
+  ...other,
+ });
+ const check=(delta,paths=candidate)=>safeMixedProtectedAdvance(delta,BASE,live,paths);
+ assert.equal(check(compare()),true,'one mixed independent production promotion must not invalidate #5093');
+ assert.equal(safeScopedDisjointProductionAdvance(compare(['app/api/app/account/profile/route.js']),
+  BASE,live,candidate),false,'legacy scoped route must never allow private profile merely by category');
+ for(const blocked of [
+  'components/mandala-another-player.tsx',
+  'components/mandala-free-video-studio.tsx',
+  'lib/shared/video-settings.mjs',
+  'app/api/auth/route.ts',
+  'app/api/app/account/profile/route.js',
+  'app/api/billing/checkout/route.ts',
+  'lib/security/permission-guard.mjs',
+  'supabase/migrations/002.sql',
+  '.github/workflows/hh-pr-core-release.yml',
+  'package-lock.json',
+  'next.config.ts',
+ ])assert.equal(check(compare([blocked])),false,blocked);
+ assert.equal(check(compare(['tests/ci-heavy-impact.test.mjs']),[
+  'scripts/ci-specialist-aggregate.mjs'
+ ]),false,'CI-policy candidate never waives a newer CI unit test');
+ for(const broken of [
+  {status:'diverged'}, {behind_by:1},{commits:[]},
+  {files:[]},{total_commits:3},
+  {files:[{filename:accepted[0],status:'renamed',previous_filename:'old.tsx'}]},
+  {files:[{filename:accepted[0],status:'removed'}]},
+  {files:[{filename:accepted[0],status:'modified'},{filename:accepted[0],status:'modified'}]},
+  {files:Array.from({length:300},(_,i)=>({filename:'docs/notes/n'+i+'.md',status:'modified'}))},
+ ])assert.equal(check(compare(accepted,broken)),false,'no incomplete/protected-base compare evidence');
+ const deep=compare(accepted,{
+  ahead_by:120,total_commits:120,
+  commits:Array.from({length:100},(_,i)=>({sha:(i+1).toString(16).padStart(40,'0')})),
+ });
+ assert.equal(check(deep),true,'100-commit REST listing cap must not invalidate complete protected-path proof');
+ assert.equal(check({...deep,commits:[]}),false,'no commits cannot be inferred');
+ assert.equal(check({...deep,files:[{filename:accepted[0],status:'modified'},{filename:'lib/security/auth.mjs',status:'modified'}]}),false);
+ const matchingWorkflow=yaml.replace("'lib/crm/**'","'components/mandala-*'");
+ const files={base:new Map([[path,matchingWorkflow]]),current:new Map([[path,matchingWorkflow]]),
+  changedRows:candidate.map(filename=>({filename,status:'M'}))};
+ const api={pr:async()=>({...pr(),base:{...pr().base,sha:live},mergeable:true}),
+  target:async()=>live,compare:async()=>compare(),
+  runs:async()=>[run()],jobs:async()=>[{name:'test',status:'completed',conclusion:'success'}]};
+ assert.deepEqual((await verify(api,{repo,number:27,head:SHA,base:BASE},files,{maxWaitMs:0})).expected,[path],
+  'real Specialist uses mixed policy but still requires completed exact-HEAD jobs');
+ await assert.rejects(()=>verify({...api,jobs:async()=>[{name:'test',status:'completed',conclusion:'failure'}]},
+  {repo,number:27,head:SHA,base:BASE},files,{maxWaitMs:0}),/UNSUCCESSFUL_SPECIALIST_JOB|SPECIALIST_FAILED/,
+  'a failed specialist never passes the mixed-drift rule');
+});
+
+
+test('real #5148 public Services promotion preserves unrelated #5093 media export CI',async()=>{
+ const live='c'.repeat(40);
+ const candidate=[
+  'components/mandala-automatic-storyboard.tsx',
+  'components/mandala-free-video-studio.tsx',
+  'components/mandala-video-mobile.module.css',
+  'lib/mandala/recording-codecs.d.mts',
+  'lib/mandala/recording-codecs.mjs',
+  'lib/mandala/webcodecs-mp4-export.ts',
+  'scripts/benchmarking/first-video-live-export.mjs',
+  'scripts/benchmarking/real-guest-video-file.mjs',
+  'scripts/verify-affirmation-voice-browser.mjs',
+  'tests/mandala-automatic-storyboard-tab.test.mjs',
+  'tests/mandala-express-one-click.test.mjs',
+  'tests/mandala-free-video.test.mjs',
+  'tests/mandala-native-audio-files.test.mjs',
+  'tests/mandala-video-concept.test.mjs',
+  'tests/mandala-webcodecs-mp4.test.mjs',
+  'tests/mandala-workspace-tabs.test.mjs',
+  'tests/video-director-chat-live-acceptance.test.mjs',
+ ];
+ const moved=[
+  'components/services-assist-quiz.module.css',
+  'components/services-assist-quiz.tsx',
+  'lib/services-quick-categories.ts',
+  'public/images/holistic-house/support-first-screen-photos.webp',
+  'scripts/verify-public-services-production.mjs',
+ ];
+ const diff=(names=moved,changes={})=>({
+  status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+  base_commit:{sha:BASE},merge_base_commit:{sha:BASE},
+  commits:[{sha:live}],files:names.map(filename=>({filename,status:'modified'})),
+  ...changes,
+ });
+ const check=(value,paths=candidate)=>
+  safeMixedProtectedAdvance(value,BASE,live,paths);
+ assert.equal(check(diff()),true,
+  'exact #5148 five-file public services delta is disjoint from 17-file #5093 media editor');
+ const failures=[
+  candidate[1], 'components/mandala-montage.tsx',
+  '.github/workflows/hh-pr-core-release.yml',
+  '.github/workflows/site-video-browser.yml', 'package-lock.json',
+  'app/api/services/checkout/route.ts',
+  'lib/services/private-client-profile.mjs',
+  'lib/ci/production-base-impact.mjs',
+ ];
+ for(const file of failures)assert.equal(check(diff([file])),false,
+  'shared media, protected CI, dependencies or private Services must stay blocked: '+file);
+ assert.equal(check(diff(moved,{status:'diverged'})),false);
+ assert.equal(check(diff(moved,{files:[{filename:moved[0],status:'removed'}]})),false);
+ assert.equal(check(diff(moved,{files:[{filename:moved[0],status:'renamed',previous_filename:'components/old.tsx'}]})),false);
+ const workflow='.github/workflows/mandala-media.yml';
+ const yaml="on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths: ['components/mandala-*']\njobs:\n  test:\n    runs-on: ubuntu-24.04\n";
+ const files={base:new Map([[workflow,yaml]]),current:new Map([[workflow,yaml]]),
+  changedRows:candidate.map(filename=>({filename,status:'M'}))};
+ // The safe-drift rule alone never certifies a release: a real green
+ // exact-source Specialist is still needed and failed jobs still block.
+ const api={pr:async()=>({...pr(),mergeable:true,base:{...pr().base,sha:live}}),
+  target:async()=>live,compare:async()=>diff(),
+  runs:async()=>[{...run(),path:workflow}],
+  jobs:async()=>[{name:'test',status:'completed',conclusion:'success'}]};
+ const ctx={repo,number:27,head:SHA,base:BASE};
+ const result=await verify(api,ctx,files,{maxWaitMs:0});
+ assert.ok(Array.isArray(result.executed));
+ await assert.rejects(()=>verify({...api,jobs:async()=>[
+  {name:'test',status:'completed',conclusion:'failure'}]},
+  ctx,files,{maxWaitMs:0}),/UNSUCCESSFUL_SPECIALIST_JOB|SPECIALIST_FAILED/);
+});
+
+
+test('revalidate actual #5148 Services plus CI policy promotion without erasing #5093 green MP4 checks',async()=>{
+ const latest='c'.repeat(40),candidate=[
+  'components/mandala-free-video-studio.tsx',
+  'lib/mandala/recording-codecs.mjs',
+  'scripts/benchmarking/real-guest-video-file.mjs',
+  'tests/video-director-chat-live-acceptance.test.mjs',
+ ];
+ const policy=[
+  'lib/ci/production-base-impact.mjs',
+  'tests/ci-specialist-aggregate.test.mjs',
+ ];
+ const services=[
+  'components/services-assist-quiz.module.css',
+  'components/services-assist-quiz.tsx',
+  'lib/services-quick-categories.ts',
+  'public/images/holistic-house/support-first-screen-photos.webp',
+  'scripts/verify-public-services-production.mjs',
+ ];
+ const diff=(names=[...policy,...services],overrides={})=>({
+  status:'ahead',ahead_by:2,behind_by:0,total_commits:2,
+  base_commit:{sha:BASE},merge_base_commit:{sha:BASE},
+  commits:[{sha:'d'.repeat(40)},{sha:latest}],
+  files:names.map(filename=>({filename,status:'modified'})),
+  ...overrides,
+ });
+ assert.equal(safeTrustedPolicyAdvance(diff(),BASE,latest,candidate),true,
+  'new protected validator must reuse exact-HEAD Core after separate Services and CI merges');
+ let called=false;
+ const rows=candidate.map(filename=>({filename,status:'M'}));
+ const api={target:async()=>latest,compare:async()=>diff()};
+ const result=await revalidateAfterTrustedPolicyAdvance(api,
+  {repo,number:27,head:SHA,base:BASE},{changedRows:rows},{
+   loadPolicy:async()=>({safeTrustedPolicyAdvance,
+    verify:async(_api,ctx,files,options)=>{
+     called=true;assert.equal(ctx.head,SHA);
+     assert.equal(options.trustedPolicyBaseSha,latest);
+     assert.deepEqual(files.changedRows,rows);
+     return {risk:'STRICT',expected:[],executed:[],advisory:{},head:SHA};
+    }}),
+  });
+ assert.equal(called,true,'new protected Specialist must re-evaluate actual exact-head jobs');
+ assert.equal(result.policyRevalidatedAgainst,latest);
+ for(const critical of [
+  candidate[0], 'components/mandala-another-player.tsx',
+  'app/api/auth/route.ts','app/api/services/checkout/route.ts',
+  'lib/services/private-client-profile.mjs',
+  'package-lock.json','.github/workflows/hh-pr-core-release.yml',
+  'lib/ci/required-gate-policy.mjs',
+ ]) assert.equal(safeTrustedPolicyAdvance(diff([...policy,...services,critical]),
+  BASE,latest,candidate),false,'unsafe mixed policy advance: '+critical);
+ assert.equal(safeTrustedPolicyAdvance(diff(services),BASE,latest,candidate),false,
+  'no changed protected policy means this strict revalidation path cannot be used');
+ for(const changed of [
+  {status:'diverged'},{behind_by:1},{commits:[]},
+  {files:[{filename:policy[0],status:'deleted'}]},
+  {files:[{filename:policy[0],status:'modified'},{filename:policy[0],status:'modified'}]},
+ ]) assert.equal(safeTrustedPolicyAdvance(diff(undefined,changed),BASE,latest,candidate),
+  false,'unverified protected policy cannot turn red CI green');
+});
+
+
+test('exact 20-file #5093 video PR accepts independent Services plus protected policy advance',()=>{
+ const latest='c'.repeat(40);
+ const candidate=[
+  'components/mandala-automatic-storyboard.tsx',
+  'components/mandala-free-video-studio.tsx',
+  'components/mandala-video-mobile.module.css',
+  'lib/mandala/recording-codecs.d.mts',
+  'lib/mandala/recording-codecs.mjs',
+  'lib/mandala/webcodecs-mp4-export.ts',
+  'scripts/benchmarking/complete-three-step-goals-quiz.mjs',
+  'scripts/benchmarking/first-video-live-export.mjs',
+  'scripts/benchmarking/real-guest-video-file.mjs',
+  'scripts/benchmarking/verify-five-scene-stories-browser.mjs',
+  'scripts/benchmarking/verify-original-motion-export.mjs',
+  'scripts/verify-affirmation-voice-browser.mjs',
+  'tests/mandala-automatic-storyboard-tab.test.mjs',
+  'tests/mandala-express-one-click.test.mjs',
+  'tests/mandala-free-video.test.mjs',
+  'tests/mandala-native-audio-files.test.mjs',
+  'tests/mandala-video-concept.test.mjs',
+  'tests/mandala-webcodecs-mp4.test.mjs',
+  'tests/mandala-workspace-tabs.test.mjs',
+  'tests/video-director-chat-live-acceptance.test.mjs',
+ ];
+ const safeTarget=[
+  'components/services-assist-quiz.module.css',
+  'components/services-assist-quiz.tsx',
+  'lib/services-quick-categories.ts',
+  'public/images/holistic-house/support-first-screen-photos.webp',
+  'scripts/verify-public-services-production.mjs',
+ ];
+ const policyTarget=['lib/ci/production-base-impact.mjs',
+  'tests/ci-specialist-aggregate.test.mjs'];
+ const diff=(filenames,override={})=>({
+  status:'ahead',ahead_by:3,behind_by:0,total_commits:3,
+  base_commit:{sha:BASE},merge_base_commit:{sha:BASE},
+  commits:[{sha:'d'.repeat(40)},{sha:'e'.repeat(40)},{sha:latest}],
+  files:filenames.map(filename=>({filename,status:'modified'})),...override,
+ });
+ assert.equal(candidate.length,20);
+ assert.equal(safeMixedProtectedAdvance(diff(safeTarget),BASE,latest,candidate),true,
+  'all 20 video + browser acceptance helpers must retain successful exact-HEAD Core');
+ assert.equal(safeTrustedPolicyAdvance(diff([...policyTarget,...safeTarget]),BASE,latest,candidate),true,
+  'protected CI-only policy + public Services should not turn #5093 red');
+ for(const filename of [
+  'scripts/benchmarking/verify-auth-session.mjs',
+  'scripts/benchmarking/verify-payment-checkout.mjs',
+  'components/mandala-another-player.tsx',
+  '.github/workflows/hh-native-auto-merge.yml',
+  'app/api/auth/route.ts',
+ ]) assert.equal(safeTrustedPolicyAdvance(diff([...policyTarget,...safeTarget,filename]),
+  BASE,latest,candidate),false,'must not waive unknown QA, same-video or security: '+filename);
+ assert.equal(safeTrustedPolicyAdvance(diff([...policyTarget,...safeTarget]),
+  BASE,latest,[...candidate,'scripts/benchmarking/verify-unclassified-user-data.mjs']),false,
+  'an unknown additional candidate script cannot inherit unrelated-video safety');
+ assert.equal(safeTrustedPolicyAdvance(diff([...policyTarget,...safeTarget],{status:'diverged'}),
+  BASE,latest,candidate),false);
 });

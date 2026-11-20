@@ -126,7 +126,11 @@ try {
     await expect(quiz.locator("[data-services-quiz-question]")).toHaveCount(1);
     await expect(quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice]')).toHaveCount(4);
     await expect(quiz.locator("[data-services-quiz-category]")).toHaveCount(6);
-    await expect(quiz.locator("[data-services-quiz-category] img")).toHaveCount(6);
+    await expect(quiz.locator("[data-services-card-photo]")).toHaveCount(6);
+    assert.deepEqual(await quiz.locator("[data-services-quiz-category]").evaluateAll(cards =>
+      cards.map(card => card.getAttribute("data-services-quiz-category"))),
+      ["diagnostics", "business", "homeopathy", "coaching", "psychotherapy", "video"],
+      "The six owner-prioritized Support cards must remain in 3×2 order");
     await expect(quiz.locator("[data-services-shamanica-link]"))
       .toHaveAttribute("href", "/"+locale+"/shamanica");
     assert.equal(await page.locator("[data-hh-unified-dock]").count(), 1,
@@ -134,7 +138,7 @@ try {
     // The approved screenshot is 390px wide. At smaller widths content may
     // scroll, but no controls may disappear sideways or behind a fixed rail.
     const firstScreen = await page.evaluate(() => {
-      const last = document.querySelector('[data-services-quiz-category="learning"]');
+      const last = document.querySelector('[data-services-quiz-category="video"]');
       const dock = document.querySelector("[data-hh-unified-dock]");
       if (!last || !dock) return null;
       return {
@@ -165,8 +169,8 @@ try {
     ).toBe(true);
     // Six photographic first-screen categories stay on /services and expose exactly three matching options.
     const quickTargets = {
-      therapy: "consultation", homeopathy: "homeopathy", constellations: "services",
-      business: "business", tests: "browse", learning: "courses",
+      diagnostics: "consultation", business: "business", homeopathy: "homeopathy",
+      coaching: "coach", psychotherapy: "services", video: "video",
     };
     for (const [category, group] of Object.entries(quickTargets)) {
       const card = quiz.locator('[data-services-quiz-category="' + category + '"]');
@@ -181,6 +185,12 @@ try {
       await expect(target.locator(':scope > [data-services-three-visible] > [data-service-variant]').first()).toBeVisible();
     }
     await expect(quiz.locator("[data-services-shamanica-link]")).toHaveAttribute("href", "/" + locale + "/shamanica");
+    await expect(quiz.locator("[data-services-extra-categories]")).toHaveCount(1);
+    const more = quiz.locator("[data-services-extra-categories]");
+    await more.locator("summary").click();
+    await expect(more.locator("nav a")).toHaveCount(4);
+    await expect(more.locator('nav a[href="#service-group-browse"]')).toHaveCount(1);
+    await more.locator("summary").click();
     await expect(quiz.locator('[data-services-quiz-category="business"]')).toHaveAttribute("href", "#service-group-business");
     // Business has its own topic, need and start-format branching.
     await quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice="business_support"]').click();
@@ -202,7 +212,7 @@ try {
     await visible(quiz.locator("[data-services-quiz-summary]"));
     const businessGroup = page.locator('[data-services-quiz-results] [data-services-priority-category="business"]');
     await expect(businessGroup).toHaveCount(1);
-    await expect(businessGroup.locator("[data-services-three-visible-options] [data-service-card]")).toHaveCount(3);
+    await expect(businessGroup).toHaveAttribute("data-priority-offer-count", "3");
     if (width === 390) {
       await quiz.locator('[data-quiz-dot="1"]').click();
       await quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice="money_growth"]').click();
@@ -213,7 +223,7 @@ try {
       await quiz.locator('[data-services-quiz-question="budget"] [data-services-quiz-choice="flexible"]').click();
       await submitQuiz.click();
       await visible(page.locator("[data-services-quiz-results]"));
-      await expect(page.locator('[data-services-quiz-results] [data-assist-best-card="business"]')).toHaveCount(0);
+      await expect(page.locator('[data-services-quiz-results] [data-services-priority-category="business"]')).toHaveCount(0);
     }
     await assertViewport(page, locale + "/services/quiz/" + width);
     // The original locally-scoped Ali messenger remains reachable by an
