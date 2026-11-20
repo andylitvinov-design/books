@@ -256,7 +256,7 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
   const publicHeaderWidths = engine === 'webkit' && process.env.GITHUB_EVENT_NAME === 'pull_request'
     ? prWebkitHeaderWidths : fullHeaderWidths
   for (const locale of locales) {
-    for (const [surface, path] of [['home', locale === 'es' ? '/es' : '/?lang=' + locale], ['energy', '/' + locale + '/explore/energy'], ['love', '/' + locale + '/explore/love'], ['business', '/' + locale + '/explore/business'], ['library', '/' + locale + '/library']]) {
+    for (const [surface, path] of [['home', locale === 'es' ? '/es' : '/?full=1&lang=' + locale], ['energy', '/' + locale + '/explore/energy'], ['love', '/' + locale + '/explore/love'], ['business', '/' + locale + '/explore/business'], ['library', '/' + locale + '/library']]) {
       for (const width of publicHeaderWidths) {
         const label = engine + '/' + locale + '/' + surface + '/' + width
         diagnostic.phase(label)

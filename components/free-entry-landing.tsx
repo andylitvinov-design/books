@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, CheckCircle2, ShieldCheck, Sparkles } from "lucide-react";
 
@@ -560,7 +561,9 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
             {kind === "dao" ? <p className={styles.daoSafety}><ShieldCheck size={15} aria-hidden="true" />{t.value}</p> : null}
           </div>
           <figure className={styles.heroVisual}>
-            <Image src={images.hero} alt={t.photoAlt} fill priority sizes="(max-width: 800px) 100vw, 48vw" />
+            {kind === "situation"
+              ? <StaticPortrait src="/images/holistic-house/andy-about.png" alt={t.photoAlt} fill priority sizes="(max-width: 800px) 100vw, 48vw" />
+              : <Image src={images.hero} alt={t.photoAlt} fill priority sizes="(max-width: 800px) 100vw, 48vw" />}
             {kind !== "dao" ? <figcaption>{t.value}</figcaption> : null}
           </figure>
         </section>
