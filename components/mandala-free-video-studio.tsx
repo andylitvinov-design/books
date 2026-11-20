@@ -9326,6 +9326,29 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   behavior:"smooth",block:"start"
                 });
               }}
+              onEditPhrase={phrase=>{
+                // Keep the original Text workspace as the sole phrase editor.
+                // A changed phrase invalidates the current Story approval through
+                // its existing phraseKey; the visitor must re-approve source photos.
+                flushSync(()=>setMontagePanel("text"));
+                window.requestAnimationFrame(()=>{
+                  const panel=document.querySelector<HTMLElement>('[data-video-montage-text]');
+                  const rows=Array.from(panel?.querySelectorAll<HTMLElement>('[data-video-idea-phrase]')||[]);
+                  const row=rows.find(item=>item.querySelector("span")?.textContent?.trim()===phrase.trim());
+                  if(!row){
+                    panel?.querySelector<HTMLElement>('[data-video-ideas-scroll]')?.scrollIntoView({
+                      behavior:"smooth",block:"center"
+                    });
+                    setNotice(locale==="ru"?"Найдите нужную фразу во вкладке «Текст».":
+                      locale==="es"?"Busca la frase en Texto.":"Find this phrase in Text.");
+                    return;
+                  }
+                  row.scrollIntoView({behavior:"smooth",block:"center"});
+                  row.querySelector<HTMLButtonElement>('[data-video-idea-edit-button]')?.click();
+                  window.requestAnimationFrame(()=>
+                    row.querySelector<HTMLInputElement>('[data-video-idea-edit]')?.focus());
+                });
+              }}
               onApprovalRequiredChange={pending=>{
                 // Story suggestions are editorial references, not the
                 // visitor's independently selected, verified MP4 montage.
