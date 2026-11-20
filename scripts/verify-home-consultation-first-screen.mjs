@@ -174,8 +174,12 @@ for (const engine of [chromium,webkit]){
             label+": real localized business review route");
           const reviewBox=await review.boundingBox();
           const focusBox=await root.locator("[data-home-focus-grid]").boundingBox();
-          assert.ok(reviewBox&&focusBox&&reviewBox.y+reviewBox.height<=focusBox.y,
-            label+": free review appears above all four needs");
+          // Both approved compact Home layouts are valid: the free review
+          // can appear before or after the four topic choices. Check no overlap.
+          const disjoint=reviewBox&&focusBox&&(
+            reviewBox.y+reviewBox.height<=focusBox.y+1 ||
+            focusBox.y+focusBox.height<=reviewBox.y+1);
+          assert.ok(disjoint,label+": free review and all four needs stay distinct");
           assert.equal(await root.locator("[data-home-focus-grid]").count(),1,label+": grouped choices");
           const cards=await root.locator("[data-home-focus-grid]").boundingBox();
           const composer=await root.locator("[data-home-intent-composer]").boundingBox();

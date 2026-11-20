@@ -232,7 +232,8 @@ test("Free help opens the ONE production AI Director without adding a second pla
  assert.match(studio,/onCreate=\{openReadyForGeneration\}/);
  assert.match(studio,/onConfirm=\{\(\{scenario\}\)=>\{/);
  assert.match(studio,/scenario\.readyToExecute/);
- assert.match(studio,/onGoalChange=\{next=>\{setWish\(next\.slice\(0,800\)\)/);
+ assert.match(studio,/onGoalChange=\{next=>\{storySourcePendingRef\.current=false;setWish\(next\.slice\(0,800\)\)/,
+   "new user goal invalidates any previous unapproved storyboard");
 });
 
 test("audio guidance remains actionable from both the compact Video screen and Support Phrases",()=>{
