@@ -95,8 +95,11 @@ test('opt-out, no-booking and factual interruptions are brief and do not advance
   ['en','What do you mean?','confused'],
   ['es','No entiendo','confused'],
   ['ru','Хочу записаться','booking'],
+  ['ru','Хочу консультацию','booking'],
   ['en','I want to book','booking'],
+  ['en','I want a consultation','booking'],
   ['es','Quiero reservar','booking'],
+  ['es','Quiero una consulta','booking'],
  ];
  for(const [locale,text,kind] of cases){
    const r=sessionSecretaryMessage(text,locale);
@@ -118,6 +121,7 @@ test('follow-up questions depend on missing client outcome, not magic word count
  assert.equal(sessionOfferIds('business').length,2);
  assert.ok(sessionOfferIds('relationships').includes('constellations'));
  assert.equal(sessionSecretaryMessage('/stop','ru').kind,'stop');
+ assert.equal(sessionSecretaryMessage('??','en').kind,'confused');
 });
 
 test('web Sessions uses signed-page links only and stays separate from psychologist consent',()=>{
@@ -129,6 +133,7 @@ test('web Sessions uses signed-page links only and stays separate from psycholog
  assert.match(ui,/option\.id===intent\.serviceId/);
  assert.match(ui,/setSessionOffers\(\[chosen\]\)/);
  assert.match(ui,/sessionHasOutcome\(text\)/);
+ assert.match(ui,/if\(page\)setPageHelpLink/);
  assert.doesNotMatch(ui,/sessionStep==="goal"&&\(!goal\|\|text\.length<36\)/);
  assert.match(ui,/option\.href\?\.startsWith\("\/"\)/);
  assert.match(ui,/psychInterview==="pending"/);
@@ -138,5 +143,19 @@ test('web Sessions uses signed-page links only and stays separate from psycholog
    const c=sessionSecretaryCopy(locale);
    assert.match(c.price,/price|стоимост|precios/i);
    assert.match(c.selection,/no se ha|пока|nothing has/i);
+ }
+});
+
+test('price question about named service retains verified page hint but does not select or book',()=>{
+ for(const [locale,text,id] of [
+  ['ru','Сколько стоит системная расстановка?','constellations'],
+  ['en','How much does guided imagery therapy cost?','imagery'],
+  ['es','¿Cuánto cuesta una consulta de negocios?','business'],
+ ]){
+   const r=sessionSecretaryMessage(text,locale);
+   assert.equal(r.kind,'price',text);
+   assert.equal(r.serviceId,id,text);
+   assert.match(r.reply,/карточ|page|página/i);
+   assert.doesNotMatch(r.reply,/booked|reserved|забронировал|reservado/i);
  }
 });
