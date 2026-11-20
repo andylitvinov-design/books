@@ -149,7 +149,11 @@ test("WebKit keeps three Ideas tabs and real opt-in voice while Montage remains 
  const styles=read("components/mandala-video-mobile.module.css");
  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
  assert.match(styles,/\.studio\[data-active-workspace="phrases"\] \.ideasSubtabs\{/);
- assert.match(styles,/\.ideasSubtabs\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)!important/);
+ // Base layout and the workspace-scoped !important override intentionally
+ // live in separate CSS rules; assert the actual rendered contract, not a
+ // single artificial combined selector that the styles never contain.
+ assert.match(styles,/\.ideasSubtabs\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+ assert.match(styles,/\.studio\[data-active-workspace="phrases"\] \.ideasSubtabs\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)!important\}/);
  assert.match(browser,/const ideasModes=phrases\.locator/);
  assert.match(browser,/data-video-ideas-tab="personalization"/);
  assert.match(browser,/data-video-ideas-tab="goal"/);
