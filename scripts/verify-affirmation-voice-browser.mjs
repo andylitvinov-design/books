@@ -128,8 +128,25 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(ideas).toHaveAttribute("aria-pressed","true");
     await expect(studio).toHaveAttribute("data-active-workspace","phrases");
     await expect(page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]')).toBeVisible();
-    // Optional Goal refinement belongs to Ideas/Personalization. It becomes
-    // intentionally hidden on Montage Text, so exercise it BEFORE navigation.
+    // Purpose-first Ideas opens Goal, not Personalization. Select an actual
+    // goal and complete its short, goal-specific quiz before testing the
+    // original optional refinement and Montage text editor.
+    const ideasGoalPane=page.locator('[data-video-ideas-goal-panel]');
+    await expect(ideasGoalPane).toBeVisible();
+    await expect(page.locator('[data-video-ideas-tab="goal"]'))
+      .toHaveAttribute("aria-pressed","true");
+    await expect(page.locator('[data-video-ideas-tab="personalization"]')).toBeDisabled();
+    const goalChoices=ideasGoalPane.locator('[data-video-ideas-goal-choice]');
+    await expect(goalChoices).toHaveCount(3);
+    await ideasGoalPane.locator('[data-video-ideas-goal-choice="rest"]').click();
+    await ideasGoalPane.locator('[data-video-ideas-goal-next]').click();
+    await expect(page.locator('[data-video-ideas-tab="personalization"]'))
+      .toHaveAttribute("aria-pressed","true");
+    await expect(page.locator('[data-video-ideas-personalization-panel]')).toBeVisible();
+    const purposeQuiz=page.locator('[data-video-personalization]');
+    await expect(purposeQuiz).toHaveAttribute("data-video-personalization-goal","leisure");
+    // The original optional refinement is only accessible in Personalization,
+    // not on the Goal tab or the resulting Concept screen.
     const refinement=page.locator('[data-video-ideas-refinement]');
     await expect(refinement.locator(":scope > summary")).toBeVisible();
     // The native details may already be open after the Ideas transition.
@@ -141,6 +158,15 @@ async function verifyWorkspaceHydration(browser,locale){
     await refinement.locator(":scope > summary").click();
     await expect(refinement).toHaveAttribute("open","");
     await expect(page.locator('[data-auto-video-topic-panel]')).toBeVisible();
+    // Complete leisure's three real steps (desired mood, current energy, name)
+    // so subsequent Montage assertions start from a confirmed profile.
+    await purposeQuiz.locator('[data-video-personalization-choice="desired-calm"]').click();
+    await expect(purposeQuiz).toHaveAttribute("data-video-personalization-step","2");
+    await purposeQuiz.locator('[data-video-personalization-energy="5"]').click();
+    await expect(purposeQuiz).toHaveAttribute("data-video-personalization-step","3");
+    await purposeQuiz.locator('[data-video-personalization-clarify-continue]').click();
+    await expect(page.locator('[data-video-ideas-tab="concept"]'))
+      .toHaveAttribute("aria-pressed","true");
     // The legacy extra CTA is intentionally hidden: tap the visible Montage rail.
     await openVisibleMontageText(page,browser.browserType().name());
     await expect(page.locator('[data-video-montage-tab="text"]'))
