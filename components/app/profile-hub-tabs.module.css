@@ -481,3 +481,37 @@
 @media(prefers-reduced-motion:reduce){
   .reportHeroArrow,.reportMetricTrack>span,.reportMeasuredTrack>span{transition:none}
 }
+
+
+/* My Psychic Health — clear separate access to real test history and
+   practitioner-shared material, ahead of the existing measured portrait. */
+.healthShortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0 6px}
+.healthShortcuts>a{
+  display:flex;align-items:center;gap:10px;min-width:0;min-height:84px;
+  padding:12px;border:1px solid #e2ebdf;border-radius:19px;
+  background:#fffcf7;color:#124c40;text-decoration:none;
+  box-shadow:0 5px 15px #1b4c3a14
+}
+.healthShortcuts>a:first-child{background:linear-gradient(125deg,#f8fefa,#e4f7ed)}
+.healthShortcuts>a>svg:first-child{flex:none;color:#08765e}
+.healthShortcuts>a>svg:last-child{flex:none;width:18px;height:18px;color:#08765e;margin-left:auto}
+.healthShortcuts>a>span{display:flex;flex-direction:column;min-width:0;gap:4px}
+.healthShortcuts strong{font:800 clamp(16px,3.9vw,20px)/1.15 system-ui,sans-serif;overflow-wrap:anywhere}
+.healthShortcuts small{font:500 clamp(12px,2.8vw,14px)/1.3 system-ui,sans-serif;color:#44615b;overflow-wrap:anywhere}
+.healthShortcuts>a:focus-visible{outline:3px solid #176e6e;outline-offset:3px}
+.healthNote{display:flex;align-items:flex-start;gap:7px;margin:7px 3px 16px!important;font:500 13px/1.42 system-ui,sans-serif;color:#5d6a71!important}
+.healthNote svg{flex:none;margin-top:1px;color:#067a67}
+@media(max-width:430px){
+  .healthShortcuts{gap:7px;margin-top:9px}
+  .healthShortcuts>a{min-height:95px;padding:10px 8px;gap:7px;border-radius:16px}
+  .healthShortcuts>a>svg:first-child{width:19px;height:19px}
+  .healthShortcuts>a>svg:last-child{display:none}
+  .healthShortcuts strong{font-size:clamp(15px,3.8vw,18px)}
+  .healthShortcuts small{font-size:12px}
+  .healthNote{font-size:12.5px}
+}
+@media(max-width:349px){
+  .healthShortcuts{grid-template-columns:minmax(0,1fr)}
+  .healthShortcuts>a{min-height:67px;padding:10px 12px}
+  .healthShortcuts>a>svg:last-child{display:block}
+}

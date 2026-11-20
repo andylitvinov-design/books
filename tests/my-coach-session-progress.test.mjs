@@ -63,3 +63,39 @@ test('Original six-segment progress is visible and placed between mic and transc
  assert.match(server,/const sessionProgress=directive\?coachSessionProgress\(directive\):null/)
  assert.match(server,/\.\.\.directedCoachOfflineReply\(input,directive,reason\),sessionProgress/)
 })
+
+test('Five semantic meaning stages follow only client evidence, not model words or timers',()=>{
+ const contact=coachSessionProgress(directive('grow','goal'))
+ assert.deepEqual([contact.journey.step,contact.journey.stageId,contact.journey.total],[1,'contact',5])
+ const goal=coachSessionProgress({...directive('grow','goal'),evidence:{topicNamed:true}})
+ assert.deepEqual([goal.journey.step,goal.journey.stageId],[2,'goal'])
+ for(const [id,supported,stage] of [
+   ['reality',['goal'],'reality'],['options',['goal','reality'],'options'],
+   ['way_forward',['goal','reality','options'],'integration'],
+   ['review',['goal','reality','options','way_forward'],'integration']
+ ]){
+   const result=coachSessionProgress({...directive('grow',id,supported),
+     elapsedSeconds:1800,modelMessage:'All stages completed'})
+   assert.equal(result.journey.stageId,stage)
+ }
+ const reset=coachSessionProgress({...directive('grow','goal'),evidence:{goalRestated:false}})
+ assert.equal(reset.journey.index,0)
+})
+test('Alternative methods keep their authentic steps; non-prefix method evidence is rejected',()=>{
+ const woop=coachSessionProgress(directive('woop','internal_obstacle',['wish','outcome']))
+ assert.equal(woop.journey.stageId,'internal_obstacle')
+ assert.equal(woop.journey.step,3)
+ assert.equal(coachSessionProgress(directive('tgrow','topic')).journey.stageId,'contact')
+ assert.equal(coachSessionProgress(directive('grow','options',['goal'])),null)
+ assert.equal(coachSessionProgress(directive('woop','review',['goal','reality'])),null)
+})
+test('Mobile progress uses five meaning stages and is still server-evidence-driven',()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const director=readFileSync(new URL('../lib/coaching/coach-session-director.mjs',import.meta.url),'utf8')
+ assert.match(ui,/meaningProgress.total===5/)
+ assert.match(ui,/aria-valuemax=\{visibleStageTotal\}/)
+ assert.match(ui,/Array.from\(\{length:visibleStageTotal\}/)
+ assert.match(ui,/Решение и интеграция/)
+ assert.match(director,/NOT five required questions/)
+ assert.match(director,/Use ONLY the selected alternative method sequence/)
+})

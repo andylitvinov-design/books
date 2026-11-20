@@ -9,8 +9,8 @@ import styles from './my-coaching-plan.module.css'
 
 const copy={
  en:{
-  title:'My Coaching Plan',subtitle:'Your life areas, decisions and next steps — gathered from your coaching work.',
-  plan:'Life Plan',reports:'Coaching reports',loading:'Opening your private plan…',retry:'Try again',
+  title:'My Goals & Coaching Reports',subtitle:'Your goals, actions and coaching session reports — all in one private space.',
+  plan:'Goals & actions',reports:'Coaching reports',loading:'Opening your private plan…',retry:'Try again',
   emptyTitle:'Your plan begins with one conversation',empty:'Complete a coaching session to capture what matters and choose a first step.',
   start:'Start a coaching session',edit:'Edit area',save:'Save changes',saving:'Saving…',saved:'Changes saved',
   current:'Where I am now',desired:'What I want to change',obstacles:'What gets in the way',rating:'My self-rating (optional · 0–10)',
@@ -29,8 +29,8 @@ const copy={
   notCaptured:'Not captured in this session',unrated:'Not rated by you',overviewFallback:'Session details are unavailable.',actionPlanNote:'Review the confirmed action choices below.',
  },
  ru:{
-  title:'Мой план коучинга',subtitle:'Ваши жизненные сферы, решения и следующие шаги, собранные из коучинговых сессий.',
-  plan:'План жизни',reports:'Отчёты коучинга',loading:'Открываем ваш личный план…',retry:'Повторить',
+  title:'Мои цели и отчёты коучинга',subtitle:'Ваши цели, действия и отчёты коучинга — в одном личном пространстве.',
+  plan:'Цели и действия',reports:'Отчёты коучинга',loading:'Открываем ваш личный план…',retry:'Повторить',
   emptyTitle:'Ваш план начинается с одного разговора',empty:'Пройдите коуч-сессию, чтобы определить важное и выбрать первый шаг.',
   start:'Начать коуч-сессию',edit:'Изменить сферу',save:'Сохранить изменения',saving:'Сохраняем…',saved:'Изменения сохранены',
   current:'Где я сейчас',desired:'Что я хочу изменить',obstacles:'Что мне мешает',rating:'Моя самооценка (необязательно · 0–10)',
@@ -49,8 +49,8 @@ const copy={
   notCaptured:'В этой сессии не зафиксировано',unrated:'Вы не ставили оценку',overviewFallback:'Данные сессии недоступны.',actionPlanNote:'Подтверждённые варианты действий представлены ниже.'
  },
  es:{
-  title:'Mi plan de coaching',subtitle:'Tus áreas de vida, decisiones y próximos pasos reunidos de tus sesiones.',
-  plan:'Plan de vida',reports:'Informes de coaching',loading:'Abriendo tu plan privado…',retry:'Reintentar',
+  title:'Mis metas e informes de coaching',subtitle:'Tus metas, acciones e informes de coaching en un espacio privado.',
+  plan:'Metas y acciones',reports:'Informes de coaching',loading:'Abriendo tu plan privado…',retry:'Reintentar',
   emptyTitle:'Tu plan comienza con una conversación',empty:'Completa una sesión de coaching para aclarar lo importante y elegir un primer paso.',
   start:'Iniciar una sesión',edit:'Editar área',save:'Guardar cambios',saving:'Guardando…',saved:'Cambios guardados',
   current:'Dónde estoy ahora',desired:'Qué quiero cambiar',obstacles:'Qué se interpone',rating:'Mi valoración (opcional · 0–10)',
