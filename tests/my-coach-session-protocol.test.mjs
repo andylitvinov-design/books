@@ -45,6 +45,13 @@ test('Russian/English/Spanish print projections preserve both voices and label s
     assert.ok(options.protocolNote)
   }
 })
+test('interrupted coach replies stay visible but are marked as not necessarily heard',()=>{
+  const sampleSession=sample()
+  sampleSession.turns[1].interrupted=true
+  const normalized=normalizeMyCoachProtocol(sampleSession)
+  assert.equal(normalized.turns[1].interrupted,true)
+  assert.match(myCoachProtocolPdfOptions(normalized,{locale:'ru'}).entries[0].reflection,/перебит/)
+})
 test('no fake confirmed commitment, scores or hidden vendor metadata is copied into the PDF',()=>{
   const options=myCoachProtocolPdfOptions(sample())
   const text=JSON.stringify(options)
