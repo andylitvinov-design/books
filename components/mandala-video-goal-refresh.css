@@ -1178,3 +1178,40 @@
    font-size:12px!important
  }
 }
+
+/* Exact three-view card specificity repair. Earlier scoped !important selectors
+   for subcategory cards were more specific than the shared card rule above. */
+@media(max-width:759px){
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] :is(
+   [data-auto-video-goal-panel] > [role="group"] > button[data-auto-video-category][data-video-goal-photo-card],
+   [data-auto-video-goal-panel] [data-auto-video-subcategories] [data-video-goal-subcategory-cards] button[data-auto-video-subcategory][data-video-goal-photo-card],
+   [data-video-topic-section] [data-video-goal-topic-chips] button[data-video-goal-topic][data-video-goal-photo-card]
+ ){
+   box-sizing:border-box!important;display:grid!important;position:relative!important;
+   grid-template-columns:minmax(46px,38%) minmax(0,1fr)!important;
+   align-items:center!important;gap:7px!important;
+   width:100%!important;min-width:0!important;min-height:76px!important;
+   height:76px!important;max-height:76px!important;
+   padding:5px!important;border:1px solid #e1dfd4!important;
+   border-radius:16px!important;background:#fffcf7!important;text-align:left!important
+ }
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] :is(
+   [data-auto-video-goal-panel] > [role="group"] > button[data-auto-video-category][data-video-goal-photo-card],
+   [data-auto-video-goal-panel] [data-auto-video-subcategories] [data-video-goal-subcategory-cards] button[data-auto-video-subcategory][data-video-goal-photo-card],
+   [data-video-topic-section] [data-video-goal-topic-chips] button[data-video-goal-topic][data-video-goal-photo-card]
+ ) img[data-video-goal-art]{
+   display:block!important;grid-column:1;grid-row:1;
+   width:100%!important;min-width:0!important;height:64px!important;max-height:64px!important;
+   object-fit:cover!important;border-radius:11px!important
+ }
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] :is(
+   [data-auto-video-goal-panel] > [role="group"] > button[data-auto-video-category][data-video-goal-photo-card],
+   [data-auto-video-goal-panel] [data-auto-video-subcategories] [data-video-goal-subcategory-cards] button[data-auto-video-subcategory][data-video-goal-photo-card],
+   [data-video-topic-section] [data-video-goal-topic-chips] button[data-video-goal-topic][data-video-goal-photo-card]
+ ) :is(strong,[data-video-goal-subcategory-label],[data-video-goal-topic-label]){
+   display:block!important;grid-column:2;grid-row:1;min-width:0!important;
+   color:#143d3a!important;font:750 clamp(12px,3.4vw,15px)/1.16 system-ui,sans-serif!important;
+   white-space:normal!important;word-break:normal!important;
+   overflow-wrap:break-word!important;text-align:left!important
+ }
+}

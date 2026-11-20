@@ -108,3 +108,18 @@ test("all three Goal questions retain one composer and identical four-photo-card
   assert.match(studio,/data-video-express-create/);
   assert.match(studio,/onClick=\{continueToIdeas\}/);
 });
+
+test("final parity selectors outrank legacy scoped subcategory and topic sizing",()=>{
+  const parity=layout.slice(layout.indexOf("/* Exact three-view card specificity repair."));
+  assert.ok(parity.length>800);
+  for(const selector of [
+    'button[data-auto-video-category][data-video-goal-photo-card]',
+    'button[data-auto-video-subcategory][data-video-goal-photo-card]',
+    'button[data-video-goal-topic][data-video-goal-photo-card]',
+    'img[data-video-goal-art]',
+    '[data-video-goal-subcategory-label]',
+    '[data-video-goal-topic-label]'
+  ])assert.ok(parity.includes(selector),selector);
+  assert.match(parity,/min-height:76px!important/);
+  assert.match(parity,/height:64px!important/);
+});
