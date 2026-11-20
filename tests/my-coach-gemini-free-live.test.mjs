@@ -83,7 +83,8 @@ test('one-use ephemeral token locks model, voice and Director; secret never retu
   fetcher:async()=>({ok:false,status:429})}),{message:'GEMINI_LIVE_RATE_LIMIT'})
 })
 test('Director never confuses spoken model output with client-agreed stage progress',()=>{
- const v=geminiFreeLiveCheckpoint({...start,message:'Хочу разобраться в проблеме на работе.',
+ const {voiceName,...checkpoint}=start
+ const v=geminiFreeLiveCheckpoint({...checkpoint,message:'Хочу разобраться в проблеме на работе.',
   turns:[],elapsedSeconds:50})
  assert.equal(v.schema,'HH_GEMINI_LIVE_DIRECTOR_V1')
  assert.equal(v.source,'director-client-evidence')
@@ -92,8 +93,8 @@ test('Director never confuses spoken model output with client-agreed stage progr
  assert.equal(typeof v.interventionId,'string')
  assert.equal(typeof v.methodId,'string')
  assert.equal(Object.hasOwn(v,'apiKey'),false)
- assert.throws(()=>geminiFreeLiveCheckpoint({...start,message:''}))
- assert.throws(()=>geminiFreeLiveCheckpoint({...start,message:'Хочу разобраться',voiceConsent:false}))
+ assert.throws(()=>geminiFreeLiveCheckpoint({...checkpoint,message:''}))
+ assert.throws(()=>geminiFreeLiveCheckpoint({...checkpoint,message:'Хочу разобраться',voiceConsent:false}))
 })
 test('direct constrained WebSocket and genuine 16 kHz little-endian audio frames',()=>{
  assert.match(GEMINI_LIVE_WEBSOCKET,/^wss:\/\/generativelanguage.googleapis.com\/ws\//)

@@ -38,8 +38,8 @@ const safeLocale=locale=>['en','ru','es'].includes(locale)?locale:'en'
 function audioTranscription(value){return typeof value==='string'?value.trim().slice(0,1200):''}
 
 // Owns exactly ONE microphone track, ONE short-lived Google WebSocket and
-// ONE unlocked AudioContext. No MediaRecorder, server audio proxy, retrying
-// paid TTS, client-side transcript persistence or unconsented fallback.
+// ONE unlocked AudioContext. No server audio proxy, retrying cloud TTS,
+// client-side transcript persistence or unconsented fallback.
 const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   locale='en',personaId='mira',settings={},voiceName='Puck',enabled=false,
   canStart=true,elapsedSeconds=0,onSessionStart,onVoiceStateChange,
