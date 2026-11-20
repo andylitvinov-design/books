@@ -3,6 +3,7 @@ import {useCallback,useEffect,useState} from 'react'
 import {ALI_DEFAULT_PERSONA_ID,ALI_PERSONA_EVENT,ALI_PERSONA_STORAGE_KEY,
  getAliPersona,isAliPersonaId} from '@/lib/holistic-support/ali-personas.mjs'
 
+/** @param {string} [fallbackId] */
 function savedPersona(fallbackId=ALI_DEFAULT_PERSONA_ID){
  try{const id=window.localStorage.getItem(ALI_PERSONA_STORAGE_KEY)
   return isAliPersonaId(id)?id:fallbackId}catch{return fallbackId}
@@ -13,6 +14,7 @@ export function chooseAliPersona(id){
  window.dispatchEvent(new CustomEvent(ALI_PERSONA_EVENT,{detail:{id}}))
  return true
 }
+/** @param {string} [initialId] */
 export function useAliPersona(initialId=ALI_DEFAULT_PERSONA_ID){
  const [id,setId]=useState(isAliPersonaId(initialId)?initialId:ALI_DEFAULT_PERSONA_ID)
  useEffect(()=>{
