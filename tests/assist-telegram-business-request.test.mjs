@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {HOLISTIC_TELEGRAM_ACCOUNT,telegramServiceRequestDraft,telegramServiceRequestUrl,parseTelegramServiceDraft,parseTelegramPublicServiceRequest,telegramBusinessRequestFromUpdate,isHolisticBusinessConnection,telegramBusinessRequestReply,telegramBusinessMessageFromUpdate,
- telegramBusinessClientChoice,telegramBusinessConversationReply,telegramBusinessServiceTitle,detectTelegramMessageLocale} from '../lib/assist/telegram-business-request.mjs';
+ telegramBusinessClientChoice,telegramBusinessConversationReply,telegramBusinessServiceTitle,detectTelegramMessageLocale,telegramPersonalReviewReplyIntent} from '../lib/assist/telegram-business-request.mjs';
 const get=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('15 real service request drafts are filled into a normal user chat, no /start',()=>{
  assert.equal(HOLISTIC_TELEGRAM_ACCOUNT,'holistichouse');
@@ -167,7 +167,8 @@ test('the actual locked state machine requires initial request, format and disti
    randomUUID:()=> '11111111-1111-4111-8111-111111111111',
    PRACTITIONER_ID:'246aa1a3-a371-5a83-9f4b-cd23ff027a76',
    telegramBusinessClientChoice,telegramBusinessConversationReply,
-   detectTelegramMessageLocale,
+   detectTelegramMessageLocale,telegramPersonalReviewReplyIntent,
+   classifyTelegramSecretaryQuery:()=>null,
    webhookTransaction:async(_config,fn)=>fn(mock),
    Date,Number,String,
  },{codeGeneration:{strings:false,wasm:false}});
@@ -217,22 +218,36 @@ test('the actual locked state machine requires initial request, format and disti
  assert.match(review.reply,/Extended review/);
  const reminder=await context.stage(event('Услугу я ж заказал',32),{},k);
  assert.match(reminder.reply,/Extended review/);
- assert.match(reminder.reply,/Извините/iu);
- assert.equal(row.offer_id,'personal_extended_review');
- const situation=await context.stage(event('The situation is about work.',33),{},k);
- assert.equal(row.stage,'review_outcome');
- assert.match(situation.reply,/helpful outcome/);
- const outcome=await context.stage(event('I want clarity.',34),{},k);
- assert.equal(row.stage,'review_action');
- assert.match(outcome.reply,/Send request/);
- const request=await context.stage(event('Send request',35),{},k);
- assert.equal(row.stage,'confirm');
+ assert.match(reminder.reply,/ещё не передан/iu);
+ assert.equal(row.stage,'review_understanding','acknowledgement keeps selected service and state');
+ const extra=await context.stage(event('I have another question.',33),{},k);
+ assert.equal(row.stage,'review_understanding','free text never becomes personal goal consent');
+ assert.match(extra.reply,/Send request/);
+ const request=await context.stage(event('Send request',34),{},k);
+ assert.equal(row.stage,'confirm','early Send opens confirmation rather than silence');
  assert.equal(row.delivery_format,'async');
  assert.match(request.reply,/Confirm/);
+ assert.equal(request.commit,undefined,'Send request is not final CRM consent');
+ const reentry=await context.stage(event('site request',35,{
+  service:'personal_review',offerId:'personal_extended_review',locale:'en',
+  name:'Extended review',sourcePath:'/en/services'}),{},k);
+ assert.match(reentry.reply,/Confirm/,'same Offer request refreshes preview');
+ assert.equal(row.stage,'confirm');
  const confirmation=await context.stage(event('Confirm',36),{},k);
  assert.equal(row.stage,'committing');
  assert.equal(confirmation.commit.service,'personal_review');
  assert.equal(confirmation.commit.format,'async');
+ row=null;
+ await context.stage(event('site request',41,{
+  service:'personal_review',offerId:'personal_express_review',locale:'en',
+  name:'Express review',sourcePath:'/en/services'}),{},k);
+ assert.equal(row.stage,'review_understanding');
+ const yes=await context.stage(event('yes',42),{},k);
+ assert.equal(yes.commit,undefined,'yes only permits a preview');
+ assert.equal(row.stage,'confirm');
+ const final=await context.stage(event('Confirm',43),{},k);
+ assert.equal(final.commit.service,'personal_review');
+ assert.equal(final.commit.offerId,'personal_express_review');
 });
 test('only explicit confirmed provider session can create an existing encrypted CRM enquiry',()=>{
  const source=get('lib/crm/telegram-business-service.js');
@@ -389,4 +404,16 @@ test('exact published Business Strategy & Archetypal Coaching site request begin
  assert.match(handler,/if\(request&&\(!old\|\|old\.stage==='submitted'/);
  assert.match(handler,/response\(event,request\.locale,request\.service,'format'\)/);
  assert.match(handler,/assertHolisticBusinessConnection/);
+});
+
+test('personal review interest is a preview only and never implies personal questions',()=>{
+ for(const [message,expected] of [
+  ['Услугу я ж заказал','already_selected'],['I already ordered','already_selected'],
+  ['да','proceed'],['yes','proceed'],['sí','proceed'],['хочу заказать','proceed'],
+  ['нет','decline'],['not interested','decline'],['no gracias','decline'],
+  ['I have a question','clarify'],['x'.repeat(801),'clarify']
+ ])assert.equal(telegramPersonalReviewReplyIntent(message),expected,message);
+ assert.equal(telegramBusinessClientChoice('yes'),null);
+ assert.equal(telegramBusinessClientChoice('Send request')?.kind,'submit');
+ assert.equal(telegramBusinessClientChoice('Confirm')?.kind,'confirm');
 });
