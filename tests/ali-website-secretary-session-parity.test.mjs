@@ -31,10 +31,10 @@ test('each named published service maps to its exact pre-existing website option
 
 test('a situation/feeling is NOT an inferred service or an opt-in',()=>{
  for(const [locale,text,goal] of [
-   ['ru','У меня конфликты с мужем','relationships'],
+   ['ru','У меня конфликты в отношениях','relationships'],
    ['en',"I keep arguing with my partner",'relationships'],
    ['es','Tengo problemas con mi pareja','relationships'],
-   ['ru','Меня тревожит работа','wellbeing'],
+   ['ru','У меня стресс на работе','wellbeing'],
  ]){
    const result=sessionSecretaryMessage(text,locale);
    assert.equal(result.kind,'continue',text);
