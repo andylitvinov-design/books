@@ -15,6 +15,10 @@ const mobile=read("components/mandala-video-mobile.module.css");
 const browser=read("scripts/verify-affirmation-voice-browser.mjs");
 
 test("Ideas starts Goal → Personalization → Concept with one existing generator",()=>{
+  const macosWorkflow=read(".github/workflows/holistic-support-mandala.yml");
+  assert.match(macosWorkflow,/voice-webkit-macos:\n    if: [^\n]*startsWith\(github\.head_ref, 'codex\/ideas-goal-'\)/,
+    "existing required macOS WebKit E2E must execute for this branch");
+
   assert.match(studio,/useState<"personalization"\|"goal"\|"concept">\("goal"\)/);
   assert.ok(studio.indexOf('data-video-ideas-tab="goal"')<studio.indexOf('data-video-ideas-tab="personalization"'));
   assert.ok(studio.indexOf('data-video-ideas-tab="personalization"')<studio.indexOf('data-video-ideas-tab="concept"'));
