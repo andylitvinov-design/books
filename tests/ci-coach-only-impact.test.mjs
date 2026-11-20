@@ -38,3 +38,17 @@ test('unproven, renamed, security, payments, services and cross-feature edits re
    assert.equal(verifiedCoachOnlySharedRouting(rows,before,after),false);
  }
 });
+
+test('unguarded shared execution between coach branches always invokes real public/media browser',()=>{
+  for(const inserted of [
+    'config.paymentEnabled=false;',
+    "if (joined === 'services/cart') { return json('bypass'); }",
+    'await disableGlobalAuth();',
+    'const {shared} = globalThis;',
+  ]){
+    const injection=after.replace("    if (joined === 'my-coach/stream')",
+      '    '+inserted+"\n    if (joined === 'my-coach/stream')");
+    assert.equal(verifiedCoachOnlySharedRouting([route],before,injection),false,
+      'shared non-Coach statement cannot be scoped: '+inserted);
+  }
+});
