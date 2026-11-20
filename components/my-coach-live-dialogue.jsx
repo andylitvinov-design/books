@@ -21,6 +21,7 @@ import MyCoachSessionStateCard from './my-coach-session-state-card'
 import {startCoachingMp3Playback,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
 import {readCoachTurnStream} from '@/lib/coaching/coach-stream-client.mjs'
+import {coachLooksLikeProtocolText} from '@/lib/coaching/coach-stream-format.mjs'
 import {coachGeminiVoiceOptions} from '@/lib/coaching/gemini-voice-catalog.mjs'
 import {detectedSpeechLocale} from '@/lib/personal-coaching/my-coach-dictation.mjs'
 import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
@@ -187,8 +188,9 @@ const reasons={
   privacy_model_unavailable:'protected',cost_unverified:'cost',
   response_unverified:'failed',model_unavailable:'retry',
 }
-const assistantText=(result)=>result.mode==='ai' && typeof result.message==='string'
-  ? result.message : [result.reflection,result.hypothesis,result.question].filter(Boolean).join('\n\n')
+const assistantText=(result)=>result.mode==='ai'
+  ? typeof result.message==='string'&&!coachLooksLikeProtocolText(result.message)?result.message:''
+  : [result.reflection,result.hypothesis,result.question].filter(Boolean).join('\n\n')
 
 const sessionRatingCopy={
   en:{title:'How was your coach?',subtitle:'Your feedback helps improve future sessions.',character:'Character',intelligence:'Intelligence',impression:'Overall impression',send:'Send rating',sending:'Saving…',saved:'Thank you — your rating was saved privately.',error:'Could not save your rating. You can retry or skip.',skip:'Skip',done:'Done',stars:'Overall rating',privacy:'Only numeric ratings are saved in your private account. No conversation text or audio is sent.'},
@@ -417,7 +419,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   // Hero Play is the main session entry. It invokes the same imperative
   // voice runner synchronously, keeping Safari's user-activation gesture.
   function startSessionFromPortrait(){
-    if(busy||paused||replaying||voiceState.phase!=='idle')return
+    if(busy||paused||replaying||voiceState.phase!=='idle'||(selectedGeminiEngine&&!geminiEngineReady))return
     if(!protocolStartedRef.current)protocolStartedRef.current=new Date().toISOString()
     speechRef.current?.startSession?.(introduction,{naturalVoice:true})
   }
@@ -710,7 +712,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const active=pending.current
     if(active){pending.current=null;active.abort();setBusy(false)}
   }
-  async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null}={}){
+  async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null,onApprovedPhrase=null}={}){
     let message=String(raw||'').trim()
     // Manual recognizer locale is authoritative for a spoken turn; never
     // re-infer it from potentially mis-scripted browser ASR output.
@@ -833,6 +835,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(response.status===401){setAuthRequired(true);return}
       const result=useStreaming?await readCoachTurnStream(response,{
         signal:controller.signal,
+        onApprovedPhrase:phrase=>{
+          if(voiceTurn&&typeof onApprovedPhrase==='function'&&
+             !controller.signal.aborted&&turnRequestRef.current===requestId)
+            onApprovedPhrase(phrase,responseLocale)
+        },
         onPreview:preview=>{
           if(!controller.signal.aborted&&turnRequestRef.current===requestId)setStreamingPreview(preview)
         },
@@ -875,7 +882,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(result.mode==='safety'||result.mode==='boundary')semanticHintsRef.current=[]
       if(result.mode==='safety'||(result.mode==='boundary'&&result.boundary==='stop'))setPaused(true)
       if(result.mode==='ai'&&result.planSuggestion)setEditablePlan(result.planSuggestion)
-      return {reply:answer,mode:result.mode,locale:responseLocale}
+      return {reply:answer,mode:result.mode,locale:responseLocale,
+        approvedSpokenPrefix:result.approvedSpokenPrefix||''}
     }catch{
       if(!controller.signal.aborted&&turnRequestRef.current===requestId)setError(t.error)
       return null
@@ -1062,7 +1070,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <button type="button" className={styles.heroPlayControl}
           data-coach-hero-play aria-label={lang==='ru'?'Начать голосовую сессию с презентацией коуча':lang==='es'?'Iniciar la sesión y escuchar al coach':'Play coach introduction and start session'}
           title={lang==='ru'?'Начать сессию':lang==='es'?'Iniciar sesión':'Start session'}
-          disabled={voiceState.phase==='loading'||busy||paused||replaying}
+          disabled={voiceState.phase==='loading'||busy||paused||replaying||(selectedGeminiEngine&&!geminiEngineReady)}
           onClick={startSessionFromPortrait}>
           {voiceState.phase==='loading'?<LoaderCircle size={40} aria-hidden="true"/>:
             <Play size={42} fill="currentColor" aria-hidden="true"/>}
@@ -1095,7 +1103,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             cloudAvailable={chosenCloudAvailable} cloudAgreed={chosenCloudAgreed}
             cloudProvider={chosenCloudProvider} voiceName={selectedGeminiVoice}
             personaId={personaId} enabled={true}
-            canStart={!busy&&!paused&&!replaying&&(geminiVoiceTier==='existing'||geminiVoiceReady)} onTurn={(text,spoken)=>sendMessage(text,{voiceTurn:true,utteranceLocale:spoken?.locale})}
+            canStart={!busy&&!paused&&!replaying&&(!selectedGeminiEngine||geminiEngineReady)&&(geminiVoiceTier==='existing'||geminiVoiceReady)} onTurn={(text,spoken)=>sendMessage(text,{voiceTurn:true,utteranceLocale:spoken?.locale,onApprovedPhrase:spoken?.onApprovedPhrase})}
             onCancelTurn={cancelPendingCoachTurn} onCoachInterrupted={markCoachSpeechInterrupted} onVoiceStateChange={setVoiceState}
             onMicLevel={level=>{
               const wave=micWaveRef.current

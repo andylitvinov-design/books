@@ -21,6 +21,7 @@ import { reviewPracticeBoundary } from "@/lib/holistic-support/practice-boundary
 import { detectConversationLocale } from "@/lib/holistic-support/conversation-locale.mjs";
 import { planJudgmentTurn } from "@/lib/holistic-support/judgment-mind.mjs";
 import { newNativeSessionTurn, advanceNativeClientSession } from "@/lib/holistic-support/native-dialogue-client-session.mjs";
+import {shouldRetryNativeAgentMode,nativeAgentFallbackPayload,aliGentleContinuity,aliNeedsVerifiedAction} from "@/lib/holistic-support/agent-mode-recovery.mjs";
 import { testOfferFromText } from "@/lib/assessments/conversational-test-protocol.mjs";
 import type { JudgmentPending, JudgmentChoiceId } from "@/lib/holistic-support/judgment-mind.mjs";
 import { publicVideoGoalForMessage } from "@/lib/video-discovery/ranker.mjs";
@@ -52,7 +53,7 @@ type PublicVideoGoal = "all" | "stress" | "energy" | "relationships" | "work" | 
 type GuidedTrack = "video" | "meditation" | "hint" | null;
 type PreviewFocus = "" | "stress" | "relationships" | "self_worth" | "meaning";
 type Outline = {status:"draft_ready";title:string;lessons:Array<{number:number;title:string;steps:string[];videoReady:false}>;published:false;mediaReady:false};
-type Message = { role: "user" | "assistant"; text: string; variant?:"alternative"; localOnly?:boolean };
+type Message = { role: "user" | "assistant"; text: string; variant?:"alternative"; localOnly?:boolean; provisional?:boolean };
 type MessengerVideoDraft = {
   goal:string;categoryId:string|null;topicId:string|null;scenarioId:string|null;
   mytubeCategoryId:string|null;mytubeSubcategoryId:string|null;mytubeTopicId:string|null;
@@ -91,7 +92,7 @@ const copy = {
     placeholder:"Что сейчас для вас важно?",send:"Отправить",cancel:"Остановить",mode:"Способ ответа",
     rules:"Без нейросети",device:"AI на устройстве (может потребоваться загрузка модели)",owned:"AI на нашем сервере (с согласия)",
     consent:"Разрешаю передать моё сообщение и последние реплики этого диалога на собственный защищённый AI-сервер Holistic House.",
-    loading:"Формирую ответ…",error:"Не удалось получить ответ. Попробуйте повторить запрос.",signIn:"Личный режим требует защищённого входа. Нажмите кнопку ниже.",modeError:"Этот режим пока недоступен. Выберите «Без нейросети» в настройках чата.",
+    loading:"Формирую ответ…",error:"Можем продолжить разговор здесь, без спешки.",signIn:"Личный режим требует защищённого входа. Нажмите кнопку ниже.",modeError:"Ali продолжает разговор через встроенный интеллект.",
     unavailable:"Локальная модель в этом браузере или для русского языка недоступна; показан проверенный ответ.",
     source:"Источник ответа",suggestions:"Проверенные варианты",start:"Начните с вопроса. Можно сменить режим в любой момент.",
     option:"Выбрать",reset:"Новый разговор",used:"На устройстве",backend:"Собственный сервер",simple:"Алгоритм",
@@ -115,7 +116,7 @@ const copy = {
     placeholder:"What's on your mind?",send:"Send",cancel:"Stop",mode:"Response mode",
     rules:"Without a language model",device:"On-device AI (may download a model)",owned:"Our AI server (with consent)",
     consent:"I agree to send this message and recent conversation turns to Holistic House's secured, self-hosted AI server.",
-    loading:"Preparing a reply…",error:"Could not get a reply. Please try again.",signIn:"This private mode requires sign-in. Use the Google button below.",modeError:"This response mode is unavailable. Select Without a language model in chat settings.",
+    loading:"Preparing a reply…",error:"We can continue our conversation here.",signIn:"This private mode requires sign-in. Use the Google button below.",modeError:"Ali can continue with its built-in assistant.",
     unavailable:"The on-device language model isn't available for this browser or language; the verified fallback is shown.",
     source:"Reply source",suggestions:"Verified options",start:"Start with a question. You can switch modes any time.",
     option:"Open",reset:"New conversation",used:"On device",backend:"Self-hosted server",simple:"Rules",
@@ -139,7 +140,7 @@ const copy = {
     placeholder:"¿Qué te preocupa ahora?",send:"Enviar",cancel:"Detener",mode:"Tipo de respuesta",
     rules:"Sin modelo de IA",device:"IA en el dispositivo (puede descargar un modelo)",owned:"Nuestro servidor de IA (con permiso)",
     consent:"Acepto enviar este mensaje y los últimos turnos de la conversación al servidor privado de IA de Holistic House.",
-    loading:"Preparando una respuesta…",error:"No se pudo obtener respuesta. Vuelve a intentarlo.",signIn:"Este modo privado requiere acceso. Usa el botón de Google abajo.",modeError:"Este modo no está disponible. Selecciona Sin modelo de IA en los ajustes del chat.",
+    loading:"Preparando una respuesta…",error:"Podemos seguir hablando aquí, sin prisa.",signIn:"Este modo privado requiere acceso. Usa el botón de Google abajo.",modeError:"Ali puede seguir con su asistente integrado.",
     unavailable:"El modelo local no está disponible para este navegador o idioma; se muestra la respuesta segura.",
     source:"Origen",suggestions:"Opciones verificadas",start:"Escribe una pregunta. Puedes cambiar el modo cuando quieras.",
     option:"Abrir",reset:"Nueva conversación",used:"En el dispositivo",backend:"Servidor propio",simple:"Reglas",
@@ -274,6 +275,8 @@ function isCasualGreeting(raw:string):boolean {
 // existing authenticated safety preflight, not the category-choice reducer.
 function requiresProtectedReply(text:string,locale:PublicLocale):boolean {
   if(reviewPracticeBoundary(text,locale))return true;
+  // Match the server preflight before any offline-only response is chosen.
+  if(/(?:боль в груди|не могу дышать|трудно дышать|меня бьют|физическое насилие|chest pain|can(?:not|t) breathe|trouble breathing|domestic violence|dolor en el pecho|no puedo respirar|violencia domestica)/iu.test(text))return true;
   if(/(?:не хочу (?:больше )?жить(?:[.!?]|$)|i do not want to live(?:[.!?]|$)|i dont want to live(?:[.!?]|$)|ya no quiero vivir(?:[.!?]|$)|мне стало хуже|после упражнения хуже|хочу остановиться|мне страшно продолжать|i feel worse|please stop|after the exercise i feel worse|me siento peor|no quiero continuar)/iu.test(text))
     return true;
   for(let i=0;i<text.length;i+=180)
@@ -507,7 +510,9 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     if(!pending||homeHandoffPhase!=="sending")return;
     const newTurns=messages.slice(pending.startIndex);
     const userIndex=newTurns.findIndex(turn=>turn.role==="user");
-    const answered=userIndex>=0&&newTurns.slice(userIndex+1).some(turn=>turn.role==="assistant");
+    // A provisional local reply continues the conversation; it does NOT
+    // prove that the Home service handoff was accepted by the server.
+    const answered=userIndex>=0&&newTurns.slice(userIndex+1).some(turn=>turn.role==="assistant"&&turn.provisional!==true);
     if(answered){
       acknowledgeHomeAliHandoff(window.sessionStorage,pending.payload);
       homeHandoffConsumed.current=true;homeHandoffPending.current=null;
@@ -524,7 +529,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     // Remove only an unpaired user bubble from the failed request.
     setMessages(previous=>{
       const tail=previous.slice(pending.startIndex);
-      return tail.length===1&&tail[0].role==="user"
+      return (tail.length===1&&tail[0].role==="user" ||
+        tail.length===2&&tail[0].role==="user"&&tail[1].role==="assistant"&&tail[1].provisional===true)
         ?previous.slice(0,pending.startIndex):previous;
     });
     homeHandoffPending.current=null;
@@ -668,7 +674,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     const reviewed=ruleConversationReply({message:text,locale:language,history:prior});
     const goal=publicVideoGoalForMessage(text);
     if(goal)setVideoGoal(goal as PublicVideoGoal);
-    if(!reviewed||!reviewed.id){setGuidedTrack(null);return messengerStarter[language].safety;}
+    if(!reviewed||!reviewed.id){setGuidedTrack(null);return aliGentleContinuity({message:text,locale:language,history:prior});}
     if(reviewed.id.startsWith("video")){
       setGuidedTrack("video");setVideoStep("category");videoUndo.current=null;
       setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);
@@ -676,7 +682,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       return messengerVideoQuestion("category",language);
     }
     else if(reviewed.id.startsWith("meditation"))setGuidedTrack("meditation");
-    return reviewed.reply;
+    return typeof reviewed.reply==="string"&&reviewed.reply.trim()?reviewed.reply:
+      aliGentleContinuity({message:text,locale:language,history:prior});
   }
   function answerVideo(value:string,label=value,language:PublicLocale=locale) {
     if(!compact||!videoStep||busy)return;
@@ -1265,10 +1272,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       const stateTurn=authenticated&&mode==="rules"&&supportSelection?.mode!=="talk"&&turnLocale!=="es"&&typeof crypto.randomUUID==="function"
         ?newNativeSessionTurn(nativeSession.current,crypto.randomUUID()):null;
       if(!stateTurn)nativeSession.current=null;
-      const response=await fetch("/api/holistic-agent/turn",{
-        method:"POST",credentials:"same-origin",signal:abort.signal,
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({locale:turnLocale,message:text,mode,history:prior,
+      const payload={locale:turnLocale,message:text,mode,history:prior,
           // Only explicit coaching choice in this first-party quiz sets the goal preference.
           // Safety, price and stop questions still override it server-side.
           selectedGoal:!leaveSupport&&supportSelection?.mode==="coach"
@@ -1285,14 +1289,47 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           judgmentContext:judgmentView?.token||null,
           judgmentChoice,
           ...(stateTurn?{nativeSession:stateTurn}:{}),
-          feedback:{dismissedIds,completedIds}}),
-      });
-      if(!response.ok){
-        if(stateTurn&&(response.status===404||response.status===409))nativeSession.current=null;
-        throw Error(response.status===401?"SIGN_IN_REQUIRED":response.status===503?"MODE_UNAVAILABLE":"CHAT_UNAVAILABLE");
+          feedback:{dismissedIds,completedIds}};
+      const sendAgentTurn=async (body:typeof payload)=>{
+        // Cover BOTH response headers and a stalled JSON body. Manual Stop
+        // remains separate from a timeout, which needs a gentle local reply.
+        const network=new AbortController();
+        const cancel=()=>network.abort();
+        abort.signal.addEventListener("abort",cancel,{once:true});
+        if(abort.signal.aborted)network.abort();
+        const timeout=window.setTimeout(()=>network.abort(),12000);
+        try{
+          const response=await fetch("/api/holistic-agent/turn",{
+            method:"POST",credentials:"same-origin",signal:network.signal,
+            headers:{"Content-Type":"application/json"},body:JSON.stringify(body),
+          });
+          const result=await response.json().catch(()=>null) as
+            (AgentReply&{error?:string})|null;
+          return {ok:response.ok,status:response.status,result};
+        }finally{
+          window.clearTimeout(timeout);
+          abort.signal.removeEventListener("abort",cancel);
+        }
+      };
+      let remote=await sendAgentTurn(payload);
+      let nativeDowngrade=false;
+      // Optional inference is gated in production. Retry only on the explicit
+      // disabled-mode code, with first-party, same-origin native conversation.
+      if(remote.status===503&&mode!=="rules"&&
+          shouldRetryNativeAgentMode({mode,status:remote.status,errorCode:remote.result?.error})){
+        const fallback=nativeAgentFallbackPayload(payload);
+        if(fallback){
+          remote=await sendAgentTurn(fallback as typeof payload);
+          nativeDowngrade=remote.ok;
+        }
       }
-      const data=await response.json() as AgentReply;
+      if(!remote.ok){
+        if(stateTurn&&(remote.status===404||remote.status===409))nativeSession.current=null;
+        throw Error(remote.status===401?"SIGN_IN_REQUIRED":remote.status===503?"SERVER_UNAVAILABLE":"CHAT_UNAVAILABLE");
+      }
+      const data=remote.result;
       if(abort.signal.aborted)return;
+      if(typeof data?.reply!=="string"||!data.reply.trim())throw Error("EMPTY_AGENT_REPLY");
       if(stateTurn){
         // A safety/Judgment turn may intentionally omit the session. Do not
         // reuse state that did not observe that turn on a subsequent request.
@@ -1300,7 +1337,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         nativeSession.current=advanceNativeClientSession(stateTurn,data.nativeSession);
       }
       let reply=data.reply,used=data.source||"none";
-      if(mode==="device"&&data.browserModelAllowed&&!abort.signal.aborted){
+      if(mode==="device"&&!nativeDowngrade&&data.browserModelAllowed&&!abort.signal.aborted){
         try {
           const native=(window as Window & {LanguageModel?:NativeLanguageModel}).LanguageModel;
           const languages=[turnLocale];
@@ -1320,7 +1357,9 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
             if(generated.modelUsed){reply=generated.text;used="browser";}
           } finally {session.destroy?.();}
         } catch {
-          setStatus(turnCopy.unavailable);
+          // The verified server response remains valid without local AI.
+          // Do not place a technical failure alert into the conversation.
+          setMode("rules");setAgree(false);
         }
       }
       if(abort.signal.aborted)return;
@@ -1339,24 +1378,41 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       const socialRule=used==="rules"?ruleConversationReply({message:text,locale:turnLocale,history:prior}):null;
       const friendlyTurn=data.source==="friend-mind"||Boolean(socialRule&&typeof socialRule.id==="string"&&["conversation_greeting","conversation_small_talk","conversation_chat_invitation"].includes(socialRule.id));
       setSource(friendlyTurn?"":used==="browser"?turnCopy.used:used==="owned"?turnCopy.backend:turnCopy.simple);
+      if(nativeDowngrade){
+        // A successful native reply is the reply, not a large error alert.
+        setMode("rules");setAgree(false);setStatus("");
+      }
     } catch (error) {
       if(!abort.signal.aborted){
-        if(voice.conversing)voice.stopDialogue();
+        // Every failed turn gets a local, gentle reply. Never retry an auth,
+        // rate-limit or security rejection, or imply a protected action ran.
         const reason=error instanceof Error?error.message:"";
-        if(reason==="SIGN_IN_REQUIRED"&&compact&&mode==="rules"){
-          // Expired session: answer from public rules; private API stays protected.
-          const candidate=planJudgmentTurn({message:text,locale:turnLocale,
-            safety:{status:"clear"},history:prior,pending:null});
-          const answer=requiresProtectedReply(text,turnLocale)?boundaryReply:
-            candidate.status!=="abstain"?candidate.reply:guestAnswer(text,prior,turnLocale);
-          setJudgmentView(!requiresProtectedReply(text,turnLocale)&&candidate.status!=="abstain"?
-            candidate as JudgmentView:null);
-          setMessages(prev=>[...prev,{role:"assistant" as const,text:answer}].slice(-30));
-          setSource("");setStatus("");
-        }else{
-          setNeedsPrivateSignIn(reason==="SIGN_IN_REQUIRED");
-          setStatus(reason==="SIGN_IN_REQUIRED"?turnCopy.signIn:reason==="MODE_UNAVAILABLE"?turnCopy.modeError:turnCopy.error);
-        }
+        nativeSession.current=null;lastAnswerRef.current=null;
+        const needsSignIn=reason==="SIGN_IN_REQUIRED";
+        const protectedQuestion=judgmentChoice!==null||aliNeedsVerifiedAction(text);
+        const unsafe=requiresProtectedReply(text,turnLocale);
+        const companion=!unsafe&&!protectedQuestion&&supportSelection?.mode==="talk"
+          ?friendConversationReply({message:text,locale:turnLocale,history:prior,tone:friendTone}):null;
+        const judgment=!unsafe&&!protectedQuestion&&!companion
+          ?planJudgmentTurn({message:text,locale:turnLocale,
+            safety:{status:"clear"},history:prior,pending:null}):null;
+        const known=!unsafe&&!protectedQuestion&&!companion&&
+          (!judgment||judgment.status==="abstain")
+          ?ruleConversationReply({message:text,locale:turnLocale,history:prior}):null;
+        const answer=unsafe?boundaryReply:
+          judgmentChoice!==null?aliGentleContinuity({message:text,locale:turnLocale,
+            history:prior,actionPending:true}):
+          companion?.reply||(judgment&&judgment.status!=="abstain"?judgment.reply:null)||
+          (known?.id&&!known.id.startsWith("video")&&typeof known.reply==="string"&&known.reply.trim()?known.reply:null)||
+          aliGentleContinuity({message:text,locale:turnLocale,history:prior,requiresSignIn:needsSignIn});
+        setChoices([]);setJudgmentView(null);setEvidenceUsed(false);setHistoryUsed(false);
+        setSource("");setStatus("");
+        if(mode!=="rules"){setMode("rules");setAgree(false);}
+        // Preserve the user-visible exchange but do not store it as a verified
+        // server result. A Home handoff must still require a real server reply.
+        setMessages(prev=>[...prev,{role:"assistant" as const,text:answer,provisional:true}].slice(-30));
+        setNeedsPrivateSignIn(needsSignIn&&Boolean(useSavedTests||useSavedHistory||useAgentMemory||
+          mode==="owned"));
       }
     } finally {
       setBusy(false);controller.current=null;judgmentClickLock.current=false;
@@ -1910,9 +1966,9 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       </p>}
     {compact&&messengerView&&homeHandoffPhase==="retry"&&
       <div className={styles.assistant} role="alert" data-home-handoff-retry>
-        <span>{locale==="ru"?"Ваш запрос сохранён, но ответ не получен.":
-          locale==="es"?"Tu mensaje se conservó, pero no llegó la respuesta.":
-          "Your message was kept, but no reply arrived."}</span>{" "}
+        <span>{locale==="ru"?"Можем продолжить разговор. Для подтверждения исходного запроса потребуется повторная отправка.":
+          locale==="es"?"Podemos seguir hablando. Para confirmar la solicitud original, tendrás que reenviarla.":
+          "We can keep talking. The original request still needs to be resent for confirmation."}</span>{" "}
         <button type="button" onClick={retryHomeAliTurn}>
           {locale==="ru"?"Повторить отправку":locale==="es"?"Reintentar envío":"Retry sending"}
         </button>

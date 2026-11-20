@@ -149,6 +149,11 @@
 .metrics small{font:550 clamp(10px,2.6vw,14px)/1.12 system-ui,sans-serif;color:#28473c}
 .progressDetails{display:flex;flex-wrap:wrap;gap:12px;margin:10px 0;padding:11px 13px;border-radius:16px;background:#e6f3e9;font-size:13px}
 .progressDetails p{flex-basis:100%;margin:0}
+.contextPreview{display:grid;gap:13px;margin-top:22px;padding:18px;border:1px solid #d8e7dc;border-radius:23px;background:#fffdf9;box-shadow:0 5px 17px #2a3f3017}
+.contextPreview h2,.contextPreview h3{margin:0;color:#083f35;font-family:Georgia,serif}
+.contextPreview>p{margin:0;color:#31574b;line-height:1.45}
+.contextPreview>div{padding:13px;border-radius:16px;background:#edf6ee}
+.contextPreview ul{display:grid;gap:7px;margin:10px 0 0;padding-left:21px;color:#184a3d}
 .areaPicker{margin:0 0 13px;padding:12px;background:#fffcf6;border:1px solid #d7e6dc;border-radius:20px}
 .areaPicker p{margin:0 0 9px;color:#1d5144;font-weight:700}
 .areaPicker>div{display:flex;flex-wrap:wrap;gap:7px}
