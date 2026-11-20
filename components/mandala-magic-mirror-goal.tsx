@@ -5,37 +5,38 @@ import type {VideoLocale} from "@/lib/mandala/holistic-video-themes";
 import css from "./mandala-magic-mirror-goal.module.css";
 
 type Scope="me"|"business";
-type Theme="energy"|"money"|"relationships"|"goals";
+type Theme="energy"|"money"|"relationships"|"goals"|"health";
+type CategoryId="goals-money"|"love-relationships"|"energy-confidence"|"stress-anxiety";
 type GoalOption={
- id:string;theme:Theme;image:string;
+ id:string;theme:Theme;categoryId:CategoryId;image:string;
  label:Record<VideoLocale,string>;request:Record<VideoLocale,string>;
 };
 const choices:Record<Scope,GoalOption[]>={
  me:[
-  {id:"energy",theme:"energy",image:"sunbeam-flow.jpg",
+  {id:"energy",theme:"energy",categoryId:"energy-confidence",image:"sunbeam-flow.jpg",
    label:{en:"More Energy & Vitality",ru:"Больше энергии и сил",es:"Más energía y vitalidad"},
    request:{en:"I want more energy and vitality in my daily life.",ru:"Хочу больше энергии и жизненных сил каждый день.",es:"Quiero más energía y vitalidad en mi día a día."}},
-  {id:"love",theme:"relationships",image:"wildflower-dance.jpg",
+  {id:"love",theme:"relationships",categoryId:"love-relationships",image:"wildflower-dance.jpg",
    label:{en:"Love & Relationships",ru:"Любовь и отношения",es:"Amor y relaciones"},
    request:{en:"I want to build warm, trusting relationships.",ru:"Хочу развивать тёплые, доверительные отношения.",es:"Quiero construir relaciones cálidas y de confianza."}},
-  {id:"peace",theme:"energy",image:"calm-sea.jpg",
+  {id:"peace",theme:"health",categoryId:"stress-anxiety",image:"calm-sea.jpg",
    label:{en:"Inner Peace & Balance",ru:"Спокойствие и баланс",es:"Paz interior y equilibrio"},
    request:{en:"I want more inner peace and emotional balance.",ru:"Хочу больше внутреннего спокойствия и равновесия.",es:"Quiero más paz interior y equilibrio emocional."}},
-  {id:"abundance",theme:"money",image:"wealth-sunrise.jpg",
+  {id:"abundance",theme:"money",categoryId:"goals-money",image:"wealth-sunrise.jpg",
    label:{en:"Success & Abundance",ru:"Успех и достаток",es:"Éxito y abundancia"},
    request:{en:"I want to feel confident while working toward financial stability.",ru:"Хочу уверенно двигаться к финансовой стабильности.",es:"Quiero avanzar con confianza hacia la estabilidad económica."}},
  ],
  business:[
-  {id:"growth",theme:"money",image:"wealth-sunrise.jpg",
+  {id:"growth",theme:"money",categoryId:"goals-money",image:"wealth-sunrise.jpg",
    label:{en:"Growth & Revenue",ru:"Рост и доход",es:"Crecimiento e ingresos"},
    request:{en:"I want to grow my business with sustainable revenue.",ru:"Хочу развивать бизнес с устойчивым доходом.",es:"Quiero hacer crecer mi negocio con ingresos sostenibles."}},
-  {id:"team",theme:"relationships",image:"wildflower-dance.jpg",
+  {id:"team",theme:"relationships",categoryId:"love-relationships",image:"wildflower-dance.jpg",
    label:{en:"Team & Trust",ru:"Команда и доверие",es:"Equipo y confianza"},
    request:{en:"I want a stronger, more trusting team.",ru:"Хочу укрепить доверие и сотрудничество в команде.",es:"Quiero un equipo más fuerte y unido."}},
-  {id:"focus",theme:"goals",image:"mountain-air.jpg",
+  {id:"focus",theme:"goals",categoryId:"goals-money",image:"mountain-air.jpg",
    label:{en:"Focus & Strategy",ru:"Фокус и стратегия",es:"Enfoque y estrategia"},
    request:{en:"I want clarity and focus for important business decisions.",ru:"Хочу ясности и концентрации при важных бизнес-решениях.",es:"Quiero claridad y enfoque para las decisiones de mi negocio."}},
-  {id:"leadership",theme:"energy",image:"sunbeam-flow.jpg",
+  {id:"leadership",theme:"energy",categoryId:"energy-confidence",image:"sunbeam-flow.jpg",
    label:{en:"Energy & Leadership",ru:"Энергия лидера",es:"Energía y liderazgo"},
    request:{en:"I want steady energy and confidence as a leader.",ru:"Хочу больше устойчивой энергии и уверенности как руководитель.",es:"Quiero energía estable y confianza como líder."}},
  ]
@@ -59,7 +60,7 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
  locale:VideoLocale;wish:string;disabled:boolean;
  onWishChange:(value:string)=>void;
  onSelectCategory:(theme:Theme)=>void;
- onContinue:()=>void;onExpand:()=>void;
+ onContinue:(theme:Theme,categoryId:CategoryId,wish:string)=>void;onExpand:()=>void;
 }){
  const [scope,setScope]=useState<Scope>("me");
  const [selectedId,setSelectedId]=useState("energy");
@@ -83,9 +84,10 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
  };
  const next=()=>{
   if(disabled)return;
-  onSelectCategory(selected.theme);
+  const goalText=wish.trim()||selected.request[locale];
   if(!wish.trim()){setAutoPrompt(selected.request[locale]);onWishChange(selected.request[locale]);}
-  onContinue();
+  // Photos confirm the category only: native topic and purpose still require a choice.
+  onContinue(selected.theme,selected.categoryId,goalText);
  };
  return <section className={css.goals} data-hh-mirror-goals data-hh-mirror-mode={scope}
   aria-label={t.question}>

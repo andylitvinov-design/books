@@ -16,6 +16,7 @@ import { MandalaVideoIdeas } from "./mandala-video-ideas";
 import { MandalaVideoIdeaGoal } from "./mandala-video-idea-goal";
 import {MandalaMagicMirrorTitle,MandalaMagicMirrorGoal} from "./mandala-magic-mirror-goal";
 import {buildPersonalVideoGoalOptions,composePersonalVideoGoalIntent,goalScenarioPlan} from "@/lib/mandala/video-personal-goal-composer.mjs";
+import {suggestVideoGoalPhrases} from "@/lib/mandala/video-goal-idea-phrases.mjs";
 import {MandalaVideoPersonalization,DEFAULT_VIDEO_GOAL_PROFILE,summarizeVideoGoalProfile,type VideoGoalProfile} from "./mandala-video-personalization";
 import { HeaderCreditProfile } from "./header-credit-profile";
 import { MandalaVideoConcept, type ApprovedVideoConcept } from "./mandala-video-concept";
@@ -2060,6 +2061,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // First screen shows the goal and request; film scenarios are the next mobile step.
   const [videoScenarioOpen,setVideoScenarioOpen] = useState(false);
   const goalContinueRef=useRef<(()=>boolean)|null>(null);
+  const mirrorStartRef=useRef<((theme:VideoTheme,categoryId:"goals-money"|"love-relationships"|"energy-confidence"|"stress-anxiety",wish:string)=>void)|null>(null);
   const [goalQuizState,setGoalQuizState]=useState<{
     step:1|2|3;complete:boolean;audience:"self"|"others";
   }>({step:1,complete:false,audience:"self"});
@@ -2073,11 +2075,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [phraseCatalogActivated,setPhraseCatalogActivated] = useState(false);
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
   const [activeWorkspace,setActiveWorkspace] = useState<StudioWorkspace>("video");
-  const [mirrorAdvanced,setMirrorAdvanced] = useState(false);
+  const [mirrorAdvanced,setMirrorAdvanced]=useState(false);
   const [mirrorDetailedWish,setMirrorDetailedWish]=useState<string|null>(null);
   const [proCatalogKind,setProCatalogKind]=useState<StoryAddonKind>("character");
   const [ideasVoiceAdvancedOpen,setIdeasVoiceAdvancedOpen] = useState(false);
-  const [ideasSubtab,setIdeasSubtab] = useState<"personalization"|"goal"|"concept">("personalization");
+  const [ideasSubtab,setIdeasSubtab] = useState<"personalization"|"goal"|"concept">("goal");
   const [ideasVoiceMode,setIdeasVoiceMode] = useState<"voice"|"my-voice">("voice");
   const [ideasProfile,setIdeasProfile] = useState<VideoGoalProfile>(DEFAULT_VIDEO_GOAL_PROFILE);
   // Do not misread initial preselected chips as answers until the visitor
@@ -3174,6 +3176,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const activeIdeasGoalId=ideasGoalChoice?.contextKey===personalGoalOptions.contextKey?
     ideasGoalChoice.id:null;
   const chosenIdeaGoal=personalGoalOptions.goals.find(option=>option.id===activeIdeasGoalId)||null;
+  // Purpose determines the actual selected captions in the shared Canvas/MP4 pipeline.
+  const applyPurposePhrases=(purpose:"leisure"|"support"|"change",supportNeed="",reset=false)=>{
+    const suggestions=suggestVideoGoalPhrases({
+      locale,request:wish,theme,selectedTopicId:selectedConceptTopic?.topicId,
+      goalType:purpose,supportNeed,limit:5
+    });
+    setAffirmations(old=>!reset&&old.ideasDraft?old:{
+      ...old,enabled:purpose!=="leisure",selected:purpose==="leisure"?[]:suggestions.map((_,i)=>i),
+      presetOverride:suggestions,custom:"",ideasDraft:undefined
+    });
+  };
   const conceptGoalText=composePersonalVideoGoalIntent(wish,chosenIdeaGoal,locale);
   const conceptTopic=chosenIdeaGoal?.topicId?{
     categoryId:chosenIdeaGoal.categoryId!,subcategoryId:chosenIdeaGoal.subcategoryId!,
@@ -6231,6 +6244,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     const navigationToken=++quickNavTokenRef.current;
     setVideoScenarioOpen(false);
     setActiveWorkspace("phrases");
+    setIdeasSubtab("goal");
     setStudioMode("pump");
     window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
       if(navigationToken!==quickNavTokenRef.current)return;
@@ -7486,26 +7500,29 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </button>)}
       </nav>
         
-        {/* Keep the Magic Mirror mounted across Goal → Ideas → Back so its
-            selected photo and purpose never reset while the user navigates. */}
+        {/* Mirror stays mounted through Goal -> Ideas -> Back. */}
         <MandalaMagicMirrorTitle locale={locale}/>
-          <MandalaMagicMirrorGoal locale={locale} wish={wish}
-            disabled={!studioHydrated||recording||preparing}
-            onWishChange={value=>{setWish(value);setSuggestion("");}}
-            onSelectCategory={selectCategory}
-            onContinue={()=>{
-              setIdeasSubtab("personalization");
-              activateQuickWorkspace("phrases");
-              window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
-                document.querySelector("[data-video-ideas-tabs]")?.scrollIntoView({block:"start",behavior:"auto"})));
-            }}
-            onExpand={()=>{
-              setMirrorAdvanced(true);
-              setMirrorDetailedWish(wish);
-              setVideoScenarioOpen(true);
-              window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
-                document.getElementById("quick-theme-title")?.scrollIntoView({block:"start",behavior:"auto"})));
-            }}/>
+        <MandalaMagicMirrorGoal locale={locale} wish={wish}
+          disabled={!studioHydrated||recording||preparing}
+          onWishChange={value=>{setWish(value);setSuggestion("");}}
+          onSelectCategory={selectCategory}
+          onContinue={(selectedTheme,categoryId,goalText)=>{
+            // Category -> subcategory -> topic precedes the production's
+            // three purpose goals and goal-specific Personalization.
+            setMirrorAdvanced(true);
+            setMirrorDetailedWish(goalText);
+            setVideoScenarioOpen(true);
+            mirrorStartRef.current?.(selectedTheme,categoryId,goalText);
+            window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+              document.querySelector("[data-auto-video-subcategories]")?.scrollIntoView({block:"start",behavior:"auto"})));
+          }}
+          onExpand={()=>{
+            setMirrorAdvanced(true);
+            setMirrorDetailedWish(wish);
+            setVideoScenarioOpen(true);
+            window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+              document.getElementById("quick-theme-title")?.scrollIntoView({block:"start",behavior:"auto"})));
+          }}/>
         <header className={videoStyles.quickHeader}>
           <div className={videoStyles.quickHeaderText}>
             <h2 id="video-quick-heading">{approved.introTitle}</h2>
@@ -7550,7 +7567,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           data-video-goal-quiz-audience={goalQuizState.audience}
           aria-labelledby="quick-theme-title">
           <div className={videoStyles.quickSectionHeading}>
-            <h3 id="quick-theme-title"><Target size={21} aria-hidden="true"/>{activeWorkspace==="effects"?(locale==="ru"?"1. Цель и состояние":locale==="es"?"1. Objetivo y estado":"1. Goal and state"):(locale==="ru"?"1. Выберите цель":locale==="es"?"1. Elige tu objetivo":"1. Choose your goal")}</h3>
+            <h3 id="quick-theme-title"><Target size={21} aria-hidden="true"/>{activeWorkspace==="effects"?(locale==="ru"?"1. Цель и состояние":locale==="es"?"1. Objetivo y estado":"1. Goal and state"):(locale==="ru"?"1. Выберите категорию":locale==="es"?"1. Elige la categoría":"1. Choose a category")}</h3>
             {/* The ONE real recipient-aware toggle lives in the existing Video Director. */}
             <div data-video-director-audience-controls/>
             <Link href={"/"+locale+"/client/tests"} prefetch={false}>{quick.myGoals}<ArrowRight size={16} aria-hidden="true"/></Link>
@@ -7641,8 +7658,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <button type="button" className={videoStyles.stageAddButton} data-video-continue-scenarios
               disabled={!goalQuizReady||!studioHydrated||recording||preparing} onClick={continueToIdeas}>
               <Sparkles size={19} aria-hidden="true"/>
-              {locale==="ru"?"Перейти к персонализации":
-                locale==="es"?"Continuar a personalización":"Proceed to personalization"}
+              {locale==="ru"?"Перейти к выбору цели":
+                locale==="es"?"Continuar al objetivo":"Proceed to goal selection"}
               <ArrowRight size={18} aria-hidden="true"/>
             </button>
             {notice?<p className={videoStyles.quickStatus} role="status" aria-live="polite" data-video-stage-status>{notice}</p>:null}
@@ -7787,8 +7804,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/images/holistic-house/support-mock-hero.webp" alt="" aria-hidden="true" loading="lazy"/>
         <figcaption>
-          <strong>{locale==="ru"?"Ваше видео — ваша история":locale==="es"?"Tu vídeo, tu historia":"Your video, your story"}</strong>
-          <span>{locale==="ru"?"Начнём с ваших чувств":locale==="es"?"Empecemos por cómo te sientes":"Start with how you feel"}</span>
+          <strong>Magic Mirror</strong>
+          <span>{locale==="ru"?"Видео для вашей цели":locale==="es"?"Un vídeo para tu objetivo":"A video for your goal"}</span>
         </figcaption>
       </figure>
       <div className={videoStyles.heroWithRail} data-video-player-with-controls>
@@ -8305,23 +8322,30 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
       <section className={videoStyles.quickPhraseSection} data-workspace-section="phrases" data-video-quick-phrases aria-label={workspaceCopy[locale].phrases.title} data-ideas-subtab={ideasSubtab} data-ideas-active-tab={ideasSubtab}>
         <div className={videoStyles.ideasSubtabs} data-video-ideas-tabs role="group"
-          aria-label={locale==="ru"?"Идеи: персонализация, цель и сценарий":
-            locale==="es"?"Ideas: personalización, objetivo y guion":"Ideas: personalization, goal and scenario"}>
-          <button type="button" data-video-ideas-tab="personalization" aria-pressed={ideasSubtab==="personalization"}
-            onClick={()=>setIdeasSubtab("personalization")}>
-            <Heart size={19} aria-hidden="true"/>
-            {locale==="ru"?"Персонализация":locale==="es"?"Personalización":"Personalization"}
-          </button>
+          aria-label={locale==="ru"?"Идеи: цель, персонализация и концепт":
+            locale==="es"?"Ideas: objetivo, personalización y concepto":"Ideas: goal, personalization and concept"}>
           <button type="button" data-video-ideas-tab="goal" aria-pressed={ideasSubtab==="goal"}
             onClick={()=>setIdeasSubtab("goal")}>
             <Target size={20} aria-hidden="true"/>
             {locale==="ru"?"Цель":locale==="es"?"Objetivo":"Goal"}
           </button>
-          <button type="button" data-video-ideas-tab="concept" aria-pressed={ideasSubtab==="concept"}
-            onClick={()=>setIdeasSubtab("concept")}>
-            <Brain size={20} aria-hidden="true"/>
-            {locale==="ru"?"Сценарий":locale==="es"?"Guion":"Scenario"}
+          <button type="button" data-video-ideas-tab="personalization" aria-pressed={ideasSubtab==="personalization"}
+            disabled={!chosenIdeaGoal} onClick={()=>setIdeasSubtab("personalization")}>
+            <Heart size={19} aria-hidden="true"/>
+            {locale==="ru"?"Персонализация":locale==="es"?"Personalización":"Personalization"}
           </button>
+          <button type="button" data-video-ideas-tab="concept" aria-pressed={ideasSubtab==="concept"}
+            disabled={!chosenIdeaGoal||!ideasProfileConfirmed} onClick={()=>setIdeasSubtab("concept")}>
+            <Brain size={20} aria-hidden="true"/>
+            {locale==="ru"?"Концепт":locale==="es"?"Concepto":"Concept"}
+          </button>
+        </div>
+        <div className={videoStyles.ideasProgress} data-video-ideas-progress role="status" aria-live="polite">
+          <span>{locale==="ru"?"Шаг":locale==="es"?"Paso":"Step"} {ideasSubtab==="goal"?1:ideasSubtab==="personalization"?2:3} / 3</span>
+          <span className={videoStyles.ideasProgressDots} aria-hidden="true">
+            {(["goal","personalization","concept"] as const).map(step=>
+              <i key={step} data-active={ideasSubtab===step?"true":"false"}/>)}
+          </span>
         </div>
         <div className={videoStyles.quickSectionHeading}>
           <h3 id="quick-phrases-heading"><HandHeart size={19} aria-hidden="true"/>{locale==="ru"?"Мой запрос и тема":locale==="es"?"Mi intención y tema":"My request & topic"}</h3>
@@ -8330,7 +8354,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                // The old native details is now a real accessible button/region.
                // Open Text's visible settings; never synthesize a hidden click
                // or access private test results without another user action.
-               setIdeasSubtab("personalization");
+               setIdeasSubtab(chosenIdeaGoal?"personalization":"goal");
                setIdeasVoiceAdvancedOpen(true);
                window.requestAnimationFrame(()=>document.querySelector<HTMLElement>('[data-video-ideas-advanced-voice]')?.scrollIntoView({block:"nearest",behavior:"smooth"}));
              }}><Sparkles size={15} aria-hidden="true"/>
@@ -8339,10 +8363,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         {/* Personalization questions and local phrases share one renderer; voice stays optional. */}
         <div className={videoStyles.phraseEditorLead} data-video-phrase-editor-first>
           <div id="video-ideas-personalization-panel" data-video-ideas-personalization-panel hidden={ideasSubtab!=="personalization"}>
-          <MandalaVideoPersonalization locale={locale} value={ideasProfile}
+          <MandalaVideoPersonalization key={activeIdeasGoalId||"none"} locale={locale} value={ideasProfile}
+            goalType={chosenIdeaGoal?.type||"leisure"} selectedTopicId={selectedConceptTopic?.topicId}
             onChange={setIdeasProfile} disabled={recording||preparing}
-            onBack={()=>setActiveWorkspace("video")}
-            onContinue={()=>{setIdeasProfileConfirmed(true);setIdeasSubtab("goal");}}/>
+            onBack={()=>setIdeasSubtab("goal")}
+            onContinue={()=>{
+              setIdeasProfileConfirmed(true);
+              if(chosenIdeaGoal)applyPurposePhrases(chosenIdeaGoal.type,ideasProfile.supportNeed||"");
+              setIdeasSubtab("concept");
+            }}/>
           <p className={videoStyles.montageMovedNote}>{locale==="ru"?"Выбор фраз — в Монтаже → Текст.":locale==="es"?"Las frases están en Montaje → Texto.":"Choose phrases in Montage → Text."}</p>
           <button type="button" className={videoStyles.montageStepNext} data-video-ideas-open-montage-text
             disabled={recording||preparing} onClick={goToMontageFromIdeas}>
@@ -8385,11 +8414,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             locale={locale} options={personalGoalOptions} selectedId={activeIdeasGoalId}
             onSelect={id=>{
               if(id===activeIdeasGoalId)return;
+              const next=personalGoalOptions.goals.find(goal=>goal.id===id);
+              if(!next)return;
               setIdeasGoalChoice({contextKey:personalGoalOptions.contextKey,id});
+              setIdeasProfile({...DEFAULT_VIDEO_GOAL_PROFILE});setIdeasProfileConfirmed(false);
+              applyPurposePhrases(next.type,"",true);
               setApprovedVideoConcept(null);setDraftVideoConcept(null);
               setChosenFilm(null);setAppliedStoryKey(null);
             }}
-            disabled={recording||preparing} onContinue={()=>setIdeasSubtab("concept")}/>
+            disabled={recording||preparing} onContinue={()=>setIdeasSubtab("personalization")}/>
         </div>
         <div className={videoStyles.ideasConceptPane} id="video-ideas-concept-panel"
           data-video-ideas-concept-panel hidden={ideasSubtab!=="concept"}>
@@ -8604,6 +8637,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <MandalaAutoVideoDirector
           goalContinueRef={goalContinueRef}
           mirrorDetailedWish={mirrorDetailedWish}
+          mirrorStartRef={mirrorStartRef}
           onGoalQuizChange={setGoalQuizState}
           recipientAudioPanel={recipientAudioPanel}
           audioStoryboardReady={audioPlanApplied&&Boolean(voiceVisualPlan?.canExport)&&audioRights}
@@ -9721,7 +9755,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </div> : null}
           <div className={videoStyles.montagePane} data-video-montage-text hidden={montagePanel!=="text"}>
             <p className={videoStyles.montageMovedNote}>{locale==="ru"?"Выберите, измените или добавьте свои фразы. Они сразу используются в предпросмотре и экспорте.":locale==="es"?"Elige o edita tus frases. Aparecen en la vista previa y el vídeo final.":"Select or edit phrases. Your choices appear in the preview and final video."}</p>
-          <MandalaVideoIdeas locale={locale} theme={theme} requestText={wish} profile={ideasProfile} languagePicker
+          <MandalaVideoIdeas locale={locale} theme={theme} requestText={wish} profile={ideasProfileConfirmed?ideasProfile:undefined} languagePicker
+            goalType={chosenIdeaGoal?.type||null} selectedTopicId={selectedConceptTopic?.topicId||null}
             active={activeWorkspace==="editor"&&montagePanel==="text"} disabled={recording||preparing}
             settings={affirmations}
             generating={recording||preparing} onChange={setAffirmations}

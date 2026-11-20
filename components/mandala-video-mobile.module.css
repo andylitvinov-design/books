@@ -5907,6 +5907,10 @@
  }
 }
 
+/* Magic Mirror Ideas: one discreet 3-step indicator above the preserved adaptive quiz. */
+.ideasProgress{display:flex;align-items:center;justify-content:center;gap:9px;min-height:26px;margin:0 0 7px;color:#61716b;font:700 12px/1.2 Arial,Helvetica,sans-serif}
+.ideasProgressDots{display:flex;align-items:center;gap:5px}.ideasProgressDots i{display:block;width:8px;height:8px;border:1.5px solid #91a49b;border-radius:50%;background:#fffaf4}.ideasProgressDots i[data-active="true"]{background:#007e5f;border-color:#007e5f}
+
 
 /* Owner-approved Magic Mirror mobile entry: the existing presentation MP4 is
    the ONE real hero; the overlay is its surrounding UI, never another player.

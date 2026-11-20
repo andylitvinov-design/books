@@ -99,8 +99,19 @@
 }
 
 
-/* Magic Mirror personalization: one clear question per tap, numeric energy is
-   the THIRD question. Keep all choices large on small iPhones, EN/RU/ES. */
+/* Purpose-specific supportive question: readable two-column choices on iPhone. */
+.card[data-personalization-kind="support"]:before{
+ background-image:linear-gradient(90deg,#fffcf7 3%,#fffcf7ae 40%,#ffffff14 100%),
+ linear-gradient(0deg,#fffcf7 0%,transparent 65%),
+ url("/videos/holistic-house/film-collection-v2/calm-sea.jpg")
+}
+.card[data-personalization-kind="support"] .axisGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.card[data-personalization-kind="support"] .axisGrid button{
+ min-height:56px;padding:9px 10px;font-size:clamp(13px,3.6vw,16px);line-height:1.2
+}
+
+
+/* Magic Mirror: large, warm adaptive personalized questions. */
 .energyScale{display:grid;gap:6px;padding:11px 1px 0}
 .energyScale>span{height:8px;border-radius:999px;background:linear-gradient(90deg,#f5a46d,#f8c65b 35%,#c9e78e 68%,#63ce99)}
 .energyScale>div{display:flex;align-items:center;justify-content:space-between;gap:12px}
@@ -111,18 +122,17 @@
  .wizard .intro p{font-size:clamp(14px,3.6vw,16px)!important;line-height:1.3}
  .wizard .step{font-size:13px}
  .wizard .progress{min-height:45px;font-size:15px}
- .wizard .card{padding:18px 13px 16px;border-radius:24px}
+ .wizard .card{padding:16px 12px 14px;border-radius:23px}
  .wizard .cardName h3{font-size:clamp(22px,5.9vw,28px)!important}
  .wizard .cardName p{font-size:14px}
- .wizard .choiceScroll{height:130px;grid-auto-rows:minmax(56px,auto)}
+ .wizard .choiceScroll{height:128px;grid-auto-rows:minmax(55px,auto)}
  .wizard .choice{min-height:54px;font-size:clamp(13px,3.8vw,16px)}
  .wizard .energyGrid{gap:6px}
  .wizard .energyGrid button{min-height:50px;font-size:clamp(17px,4.9vw,22px)}
 }
 @media(max-width:359px){
- .wizard .card{padding:13px 8px 12px}
- .wizard .choiceScroll{height:121px;grid-auto-rows:minmax(53px,auto)}
- .wizard .choice{min-height:53px;font-size:12.5px}
- .wizard .energyGrid{gap:4px}
- .wizard .energyGrid button{min-height:46px}
+ .wizard .card{padding:12px 8px 11px}
+ .wizard .choiceScroll{height:119px;grid-auto-rows:minmax(52px,auto)}
+ .wizard .choice{min-height:52px;font-size:12.5px}
+ .wizard .energyGrid{gap:4px}.wizard .energyGrid button{min-height:46px}
 }

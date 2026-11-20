@@ -70,51 +70,37 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(handoffPanel).toBeVisible({timeout:15000});
     await handoffPanel.evaluate(element=>{element.open=false;});
     await expect(handoffPanel).toBeHidden();
-    // The new photo-led entry lets visitors describe a goal without duplicating
-    // the native renderer. This click path must be real on iPhone WebKit.
-    const mirror=page.locator('[data-hh-mirror-goals]');
-    await expect(page.locator('[data-hh-mirror-title]')).toBeVisible();
-    await expect(mirror).toBeVisible();
-    // The owner introduction and My Video actions are real, accessible paths,
-    // not decorative controls removed by the Magic Mirror laptop frame.
-    await expect(page.locator('[data-video-intro-info]')).toBeVisible();
-    await expect(page.locator('[data-video-my-film]')).toBeVisible();
-    await expect(mirror.locator('[data-hh-mirror-goal-choice]')).toHaveCount(4);
-    const business=mirror.locator('[data-hh-mirror-audience="business"]');
-    const personal=mirror.locator('[data-hh-mirror-audience="me"]');
-    await business.click();
-    await expect(mirror).toHaveAttribute("data-hh-mirror-mode","business");
-    await expect(mirror.locator('[data-hh-mirror-goal-choice="growth"]')).toBeVisible();
-    await personal.click();
-    await expect(mirror).toHaveAttribute("data-hh-mirror-mode","me");
-    const loveChoice=mirror.locator('[data-hh-mirror-goal-choice="love"]');
-    await loveChoice.click();
-    await expect(loveChoice).toHaveAttribute("aria-pressed","true");
-    const customWish=locale==="ru"?"Хочу больше взаимопонимания":locale==="es"
-      ?"Quiero tener más comprensión mutua":"I want more mutual understanding";
-    await mirror.locator('[data-hh-mirror-wish]').fill(customWish);
-    await mirror.locator('[data-hh-mirror-next]').click();
-    await expect(studio).toHaveAttribute("data-active-workspace","phrases");
-    await expect(page.locator('[data-video-ideas-personalization-panel]')).toBeVisible();
-    await page.locator('[data-video-quick-control="video"]').click();
-    await expect(mirror.locator('[data-hh-mirror-wish]')).toHaveValue(customWish);
-    await expect(mirror.locator('[data-hh-mirror-goal-choice="love"]'))
-      .toHaveAttribute("aria-pressed","true");
-    await mirror.locator('[data-hh-mirror-more-goals]').click();
-    await expect(studio).toHaveAttribute("data-hh-mirror-advanced","true");
-    await expect(studio).toHaveAttribute("data-video-scenario-open","true");
-    await expect(page.locator('[data-auto-video-input]')).toHaveValue(customWish);
-    // The approved canonical detailed Goal wizard still deliberately gates its
-    // own CTA behind three explicit category/subcategory/topic selections.
+    // The approved Goal redesign deliberately gates Personalization behind
+    // three explicit selections; hydration alone must NEVER unlock this CTA.
     await expect(continueToIdeas).toBeDisabled();
     const quizProgress=page.locator('[data-video-goal-quiz-progress]');
     await expect(quizProgress).toContainText('1 / 3');
+    const mirror=page.locator('[data-hh-mirror-goals]');
+    await expect(page.locator('[data-hh-mirror-title]')).toBeVisible();
+    await expect(page.locator('[data-video-intro-info]')).toBeVisible();
+    await expect(page.locator('[data-video-my-film]')).toBeVisible();
+    await expect(mirror).toBeVisible();
+    await expect(mirror.locator('[data-hh-mirror-goal-choice]')).toHaveCount(4);
+    await mirror.locator('[data-hh-mirror-audience="business"]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-mode","business");
+    await expect(mirror.locator('[data-hh-mirror-goal-choice="growth"]')).toBeVisible();
+    await mirror.locator('[data-hh-mirror-audience="me"]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-mode","me");
+    await mirror.locator('[data-hh-mirror-goal-choice="love"]').click();
+    const customWish=locale==="ru"?"Хочу больше взаимопонимания":locale==="es"
+      ?"Quiero tener más comprensión mutua":"I want more mutual understanding";
+    await mirror.locator('[data-hh-mirror-wish]').fill(customWish);
+    await mirror.locator('[data-hh-mirror-more-goals]').click();
+    await expect(studio).toHaveAttribute("data-hh-mirror-advanced","true");
     const categories=page.locator('[data-auto-video-category]');
     await expect(categories).toHaveCount(4);
     await expect(categories.first()).toBeVisible();
-    await categories.first().click();
+    await expect(page.locator('[data-auto-video-input]')).toHaveValue(customWish);
+    await mirror.locator('[data-hh-mirror-next]').click();
+    await expect(studio).toHaveAttribute("data-video-scenario-open","true");
     await expect(quizProgress).toContainText('2 / 3');
     await expect(continueToIdeas).toBeDisabled();
+    await expect(page.locator('[data-auto-video-input]')).toHaveValue(customWish);
     const subcategories=page.locator('[data-auto-video-subcategory]');
     await expect(subcategories).toHaveCount(4);
     const subcategoryArt=page.locator('[data-video-goal-subcategory-cards] [data-video-goal-art]');
@@ -906,20 +892,40 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // Ideas has three tabs. Voice and My Voice remain visible opt-in submodes.
       const ideasModes=phrases.locator("[data-video-ideas-tabs]");
       await expect(ideasModes).toBeVisible();
+      const goalTab=ideasModes.locator('[data-video-ideas-tab="goal"]');
       const personalTab=ideasModes.locator('[data-video-ideas-tab="personalization"]');
       const conceptTab=ideasModes.locator('[data-video-ideas-tab="concept"]');
+      await expect(goalTab).toHaveAttribute("aria-pressed","true");
+      await expect(personalTab).toBeDisabled();
+      await expect(conceptTab).toBeDisabled();
+      const goalPane=phrases.locator("[data-video-ideas-goal-panel]");
+      await expect(goalPane).toBeVisible();
+      const goalCards=goalPane.locator("[data-video-ideas-goal-choice]");
+      await expect(goalCards).toHaveCount(3);
+      await expect(goalCards.nth(0)).toHaveAttribute("data-video-ideas-goal-choice","rest");
+      await expect(goalCards.nth(1)).toHaveAttribute("data-video-ideas-goal-choice","accept");
+      await expect(goalCards.nth(2)).toHaveAttribute("data-video-ideas-goal-choice","reframe");
+      const chooseScenario=goalPane.locator("[data-video-ideas-goal-next]");
+      await expect(chooseScenario).toBeDisabled();
+      // Support requires current feeling, desired feeling, requested support,
+      // current energy and optionally a name, but never a meaning-axis question.
+      await goalCards.nth(1).click();
+      await expect(goalCards.nth(1)).toHaveAttribute("aria-pressed","true");
+      await chooseScenario.click();
       await expect(personalTab).toHaveAttribute("aria-pressed","true");
       await expect(phrases.locator("[data-video-ideas-personalization-panel]")).toBeVisible();
-      await expect(phrases.locator("[data-personalization-kind]")).toHaveCount(4);
+      await expect(phrases.locator("[data-personalization-kind]")).toHaveCount(5);
       const preferredName=locale==="ru"?"Андрей":locale==="es"?"Andrés":"Andy";
       const personalClosing=locale==="ru"?"Андрей, я в тебя верю":
         locale==="es"?"Andrés, creo en ti":"Andy, I believe in you";
       const personalQuiz=phrases.locator("[data-video-personalization]");
       const nextQuiz=personalQuiz.locator("[data-video-personalization-clarify-continue]");
       const backQuiz=personalQuiz.locator("[data-video-personalization-clarify-back]");
+      await expect(personalQuiz).toHaveAttribute("data-video-personalization-goal","support");
       await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","1");
       await expect(phrases.locator('[data-personalization-kind="current"]')).toBeVisible();
       await expect(phrases.locator('[data-personalization-kind="desired"]')).toBeHidden();
+      await expect(phrases.locator('[data-personalization-kind="strength"]')).toBeHidden();
       await expect(nextQuiz).toHaveCount(0);
       await personalQuiz.locator('[data-video-personalization-choice="current-tension"]').click();
       await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","2");
@@ -928,11 +934,15 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         .toHaveAttribute("aria-pressed","true");
       await personalQuiz.locator('[data-video-personalization-choice="desired-safe"]').click();
       await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","3");
-      await expect(phrases.locator('[data-personalization-kind="energy-current"]')).toBeVisible();
-      await expect(nextQuiz).toHaveCount(0);
+      await expect(phrases.locator('[data-personalization-kind="support"]')).toBeVisible();
+      const supportNeeds=personalQuiz.locator('[data-video-personalization-support-need]');
+      await expect(supportNeeds).toHaveCount(6);
+      await personalQuiz.locator('[data-video-personalization-support-need="love"]').click();
+      await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","4");
       const currentEnergy=personalQuiz.locator('[data-video-personalization-energy-options="current"]');
-      const desiredEnergy=personalQuiz.locator('[data-video-personalization-energy-options="desired"]');
+      await expect(currentEnergy).toBeVisible();
       await expect(currentEnergy.locator("button")).toHaveCount(10);
+      // All numerical choices must fit a real narrow iPhone width.
       for(const width of [320,354,390,430]){
         await page.setViewportSize({width,height:840});
         const geometry=await currentEnergy.evaluate(grid=>{
@@ -948,50 +958,18 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       }
       await page.setViewportSize({width:390,height:840});
       await currentEnergy.locator('[data-video-personalization-energy="3"]').click();
-      await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","4");
+      await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","5");
       await expect(currentEnergy.locator('[data-video-personalization-energy="3"]'))
         .toHaveAttribute("aria-pressed","true");
-      await expect(desiredEnergy).toBeVisible();
-      await expect(desiredEnergy.locator("button")).toHaveCount(10);
-      await desiredEnergy.locator('[data-video-personalization-desired-level="8"]').click();
-      await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","5");
       const firstNameInput=phrases.locator("[data-video-personalization-name]");
       await expect(firstNameInput).toBeVisible();
       await firstNameInput.fill(preferredName);
       await backQuiz.click();
       await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","4");
-      await expect(desiredEnergy.locator('[data-video-personalization-desired-level="8"]'))
-        .toHaveAttribute("aria-pressed","true");
-      await desiredEnergy.locator('[data-video-personalization-desired-level="9"]').click();
-      await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","5");
-      await backQuiz.click();
-      await backQuiz.click();
-      await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","3");
-      await currentEnergy.locator('[data-video-personalization-energy="3"]')
-        .toHaveAttribute("aria-pressed","true");
       await currentEnergy.locator('[data-video-personalization-energy="4"]').click();
-      await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","4");
-      await expect(desiredEnergy.locator('[data-video-personalization-desired-level="9"]'))
-        .toHaveAttribute("aria-pressed","true");
-      await desiredEnergy.locator('[data-video-personalization-desired-level="9"]').click();
       await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","5");
       await expect(firstNameInput).toHaveValue(preferredName);
       await nextQuiz.click();
-      const goalTab=ideasModes.locator('[data-video-ideas-tab="goal"]');
-      await expect(goalTab).toHaveAttribute("aria-pressed","true");
-      const goalPane=phrases.locator("[data-video-ideas-goal-panel]");
-      await expect(goalPane).toBeVisible();
-      const goalCards=goalPane.locator("[data-video-ideas-goal-choice]");
-      await expect(goalCards).toHaveCount(3);
-      const chooseScenario=goalPane.locator("[data-video-ideas-goal-next]");
-      await expect(chooseScenario).toBeDisabled();
-      await goalPane.locator("[data-video-ideas-more-goals]").click();
-      await expect(goalPane.locator('[data-video-ideas-goal-page="2"]')).toBeVisible();
-      await goalPane.locator("[data-video-ideas-goals-prev]").click();
-      await expect(goalPane.locator('[data-video-ideas-goal-page="1"]')).toBeVisible();
-      await goalCards.nth(1).click();
-      await expect(goalCards.nth(1)).toHaveAttribute("aria-pressed","true");
-      await chooseScenario.click();
       await expect(conceptTab).toHaveAttribute("aria-pressed","true");
       await expect(phrases.locator("[data-video-ideas-concept-panel]")).toBeVisible();
       await personalTab.click();
