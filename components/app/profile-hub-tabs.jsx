@@ -167,8 +167,9 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
   } : privatePaths
   const current = active === 'view' ? 'today' : active === 'results' ? 'reports' : active
   const settingsMode = current === 'settings'
+  const stateBrand = current === 'today' || current === 'state'
   const isCourseLanding = current === 'courses' && courseLanding
-  const simplifiedSpace = current === 'today' || isCourseLanding
+  const simplifiedSpace = stateBrand || isCourseLanding
   const s = SETTINGS_HUB_COPY[selected]
   // Switch real locale routes while retaining the current profile section.
   // Language navigation works for visitors; only account actions require sign-in.
@@ -212,6 +213,10 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
         </div>
       </div>
     </header>
+    {current === 'state' && <nav className="hh-psi-profile-mode" aria-label={selected === 'ru' ? 'Жизнь или работа' : 'Life or work'}>
+      <Link href={root + '/monitoring'} prefetch={false} aria-current="page" data-profile-state-life><Heart size={22} aria-hidden="true" />{selected === 'ru' ? 'Моё состояние' : selected === 'es' ? 'Mi estado' : 'My State'}</Link>
+      <Link href={'/' + selected + '/practice'} prefetch={false} data-profile-state-work><UserRound size={22} aria-hidden="true" />{selected === 'ru' ? 'Моя работа' : selected === 'es' ? 'Mi trabajo' : 'My Work'}</Link>
+    </nav>}
     {!simplifiedSpace && <nav className={settingsMode ? styles.settingsTabs : styles.tabs} aria-label={settingsMode ? s.menu : COPY[selected].navigation}>
       {settingsMode ? [
         { id: 'create', href: '/' + selected + '/personality-profiles' },
@@ -273,10 +278,6 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
         <p className={styles.packageFinePrint}>{s.note}</p>
       </div>
     </section>}
-    {current === 'state' && <nav className={styles.stateLinks} aria-label={selected === 'ru' ? 'Тесты и результаты' : selected === 'es' ? 'Tests y resultados' : 'Tests and results'}>
-      <InstantCabinetLink href={paths.tests} prefetch={false}><ClipboardList size={17} aria-hidden="true" />{selected === 'ru' ? 'Пройти тест' : selected === 'es' ? 'Hacer un test' : 'Take a Test'}</InstantCabinetLink>
-      <InstantCabinetLink href={root + '/portfolio'} prefetch={false}><Activity size={17} aria-hidden="true" />{selected === 'ru' ? 'Мои результаты' : selected === 'es' ? 'Mis resultados' : 'My Results'}</InstantCabinetLink>
-    </nav>}
     {!simplifiedSpace && current !== 'create' && current !== 'reports' && !settingsMode && !publicEntry && <div className={styles.sectionIntro}>
       <h1>{t.tabs[current] || t.title}</h1><p>{t.details[current] || t.privacy}</p>
     </div>}

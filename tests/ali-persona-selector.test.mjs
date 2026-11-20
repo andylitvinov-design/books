@@ -14,6 +14,7 @@ test('four portrait choices: two male and two female with distinct preapproved v
  assert.equal(isAliPersonaId('bogus'),false)
  assert.equal(isAliPersonaId('mira'),true)
  assert.equal(ALI_PERSONA_STORAGE_KEY,'hh:ai-chat-persona-v1')
+ assert.equal(getAliPersona('alex').name.ru,'Ali','public RU assistant name is always Latin Ali')
  for(const persona of ALI_PERSONAS){
   assert.ok(existsSync(new URL('../public'+persona.image,import.meta.url)),persona.image)
   for(const locale of ['ru','en','es']){
@@ -114,4 +115,28 @@ test('approved location: Persona replaces history in Ali header, never the main 
  assert.match(actions,/Персона/)
  assert.match(css,/button\[data-hh-ali-persona-open\]/)
  assert.match(css,/@media\(max-width:355px\)/)
+});
+
+test('mobile AI guide picker keeps all four cards compact and voice states truthful',()=>{
+ const ui=source('components/app/ali-persona-picker.jsx')
+ const css=source('components/app/ali-persona-picker.module.css')
+ const audio=source('components/app/ali-persona-audio.js')
+ assert.match(css,/@media \(max-width:520px\)/)
+ assert.match(css,/\.choose img\{width:68px;height:72px/)
+ assert.match(css,/\.listen\{width:calc\(100% - 76px\);min-height:42px/)
+ assert.match(css,/max-height:calc\(100dvh/)
+ assert.match(css,/overflow-y:auto/)
+ assert.match(css,/max-height:720px/)
+ assert.match(css,/max-height:590px/)
+ assert.match(ui,/aria-busy=\{playing===persona.id&&audioPhase==='loading'\}/)
+ assert.match(ui,/audioFailed===persona.id\?t.retry:t.listen/)
+ assert.match(audio,/utterance\.onstart=/)
+ assert.match(audio,/speech\.speaking\|\|speech\.pending/)
+ assert.match(audio,/audio\.onplaying=/)
+ assert.match(audio,/iOS&&hasDevice/)
+ assert.match(audio,/onPlaying\(false,result\)/)
+ assert.match(audio,/onFinish\('error'\)/)
+ assert.match(audio,/method:'HEAD'/)
+ assert.match(audio,/timer=window\.setTimeout\(fallback,13500\)/)
+ assert.doesNotMatch(audio,/audio\.play\(\)\s*;\s*speech\.speak/)
 });

@@ -332,11 +332,16 @@ async function verifyWorkspaceHydration(browser,locale){
     const goalTab=page.locator('[data-video-quick-control="video"]');
     await goalTab.click();
     await expect(goalTab).toHaveAttribute("aria-pressed","true");
-    const others=page.locator('[data-auto-video-audience="others"]');
-    await expect(page.locator('[data-auto-video-audience]')).toHaveCount(2);
+    const goalQuiz=page.locator('[data-video-goal-quiz-audience]');
+    // Returning from Ideas keeps the completed Self quiz at step 3. Navigate
+    // back through its real buttons before asserting step-1 Life/Work controls.
+    const backGoal=page.locator('[data-video-goal-quiz-back]');
+    for(let step=0;step<2&&await backGoal.count();step++)await backGoal.click();
+    await expect(page.locator('[data-video-quick-scope]')).toHaveCount(2);
+    const others=page.locator('[data-video-quick-scope="work"]');
     await expect(page.locator('[data-video-goal-audience-option]')).toHaveCount(0);
     await others.click();
-    await expect(others).toHaveAttribute("aria-pressed","true");
+    await expect(goalQuiz).toHaveAttribute("data-video-goal-quiz-audience","others");
     const recipientCatalog=page.locator('[data-video-recipient-catalog]');
     await expect(recipientCatalog).toBeVisible();
     await expect(recipientCatalog).toHaveAttribute("data-video-recipient-aspect","portrait");
@@ -401,7 +406,18 @@ async function verifyWorkspaceHydration(browser,locale){
     const birthday=page.locator('[data-auto-video-recipient-occasion="birthday"]');
     await birthday.click();
     await expect(birthday).toHaveAttribute("aria-pressed","true");
-    await continueToIdeas.click();
+    // Recipient choices can move the shared director's focus. Return via the
+    // real visible Goal rail before using its in-panel Continue button.
+    await goalTab.click();
+    await expect(studio).toHaveAttribute("data-active-workspace","video");
+    // For Others, the native compact Goal CTA is the visible navigation entry.
+    // The legacy footer Continue button intentionally stays hidden in that mode.
+    // Exercise the actual clicked handler rather than unveiling hidden controls.
+    await expect(continueToIdeas).toBeHidden();
+    const recipientCreate=page.locator('[data-video-goal-create-cta]');
+    await expect(recipientCreate).toBeVisible({timeout:15000});
+    await expect(recipientCreate).toBeEnabled();
+    await recipientCreate.click();
     await expect(ideas).toHaveAttribute("aria-pressed","true");
     await expect(studio).toHaveAttribute("data-active-workspace","phrases");
     // These are the actual source-backed montage title inputs; source edits
@@ -801,7 +817,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await page.locator('[data-video-quick-control="phrases"]').click();
       const phrases=page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]');
       await phrases.waitFor({state:"visible"});
-      // Ideas has two tabs. Voice and My Voice are visible opt-in submodes.
+      // Ideas has three tabs. Voice and My Voice remain visible opt-in submodes.
       const ideasModes=phrases.locator("[data-video-ideas-tabs]");
       await expect(ideasModes).toBeVisible();
       const personalTab=ideasModes.locator('[data-video-ideas-tab="personalization"]');
@@ -834,6 +850,21 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await nextQuiz.click();
       await expect(firstNameInput).toHaveValue(preferredName);
       await nextQuiz.click();
+      const goalTab=ideasModes.locator('[data-video-ideas-tab="goal"]');
+      await expect(goalTab).toHaveAttribute("aria-pressed","true");
+      const goalPane=phrases.locator("[data-video-ideas-goal-panel]");
+      await expect(goalPane).toBeVisible();
+      const goalCards=goalPane.locator("[data-video-ideas-goal-choice]");
+      await expect(goalCards).toHaveCount(3);
+      const chooseScenario=goalPane.locator("[data-video-ideas-goal-next]");
+      await expect(chooseScenario).toBeDisabled();
+      await goalPane.locator("[data-video-ideas-more-goals]").click();
+      await expect(goalPane.locator('[data-video-ideas-goal-page="2"]')).toBeVisible();
+      await goalPane.locator("[data-video-ideas-goals-prev]").click();
+      await expect(goalPane.locator('[data-video-ideas-goal-page="1"]')).toBeVisible();
+      await goalCards.nth(1).click();
+      await expect(goalCards.nth(1)).toHaveAttribute("aria-pressed","true");
+      await chooseScenario.click();
       await expect(conceptTab).toHaveAttribute("aria-pressed","true");
       await expect(phrases.locator("[data-video-ideas-concept-panel]")).toBeVisible();
       await personalTab.click();

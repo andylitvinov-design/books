@@ -38,3 +38,23 @@ test("Approved calm mobile layout, localized quiz, service cards and real taps",
  assert.match(css,/@media\(max-width:359px\)/);assert.match(css,/min-height:78px/);assert.match(css,/focus-visible/);
  assert.match(css,/prefers-reduced-motion/);
 });
+
+test("Business mobile fits the approved illustrated screen with one real help trigger",()=>{
+ const ui=read("components/shamanica-business-content.tsx");
+ const compact=read("components/shamanica-business-content.module.css");
+ const shell=read("components/shamanica-mobile.tsx");
+ const shellCss=read("components/shamanica-mobile.module.css");
+ const siteBanner=read("components/sitewide-antistress-banner.tsx");
+ const help=read("components/sitewide-ihelp.tsx");
+ assert.match(ui,/ideas-zen-landscape\.svg/);
+ assert.match(ui,/messenger-zen-stones\.svg/);
+ assert.match(shell,/data-shamanica-business-page/);
+ assert.match(shell,/data-shamanica-ihelp-trigger/);
+ assert.match(siteBanner,/shamanica\\\/business/);
+ assert.match(help,/hh:open-ihelp/);
+ assert.match(help,/hidden=\{businessShamanica\}/);
+ assert.match(shellCss,/--hh-unified-nav-height/);
+ assert.match(compact,/max-height:885px/);
+ assert.match(compact,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+ assert.match(compact,/height:clamp\(63px,8dvh,72px\)/);
+});

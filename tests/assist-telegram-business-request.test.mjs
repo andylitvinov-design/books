@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {HOLISTIC_TELEGRAM_ACCOUNT,telegramServiceRequestDraft,telegramServiceRequestUrl,parseTelegramServiceDraft,parseTelegramPublicServiceRequest,telegramBusinessRequestFromUpdate,isHolisticBusinessConnection,telegramBusinessRequestReply,telegramBusinessMessageFromUpdate,
- telegramBusinessClientChoice,telegramBusinessConversationReply,telegramBusinessServiceTitle} from '../lib/assist/telegram-business-request.mjs';
+ telegramBusinessClientChoice,telegramBusinessConversationReply,telegramBusinessServiceTitle,detectTelegramMessageLocale} from '../lib/assist/telegram-business-request.mjs';
 const get=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('15 real service request drafts are filled into a normal user chat, no /start',()=>{
  assert.equal(HOLISTIC_TELEGRAM_ACCOUNT,'holistichouse');
@@ -137,20 +137,26 @@ test('the actual locked state machine requires initial request, format and disti
    if(sql.startsWith('select * from app_private.crm_tg_business_service_sessions'))
     return {rows:row?[{...row}]:[]};
    if(sql.startsWith('insert into app_private.crm_tg_business_service_sessions')){
-    row={operation_id:args[3],practitioner_id:args[4],service_key:args[5],
-      locale:args[6],telegram_peer_hash:args[2],stage:'format',delivery_format:null,
-      consent_at:null,reference_code:null,last_update_id:args[7]};
+    const review=sql.includes("'personal_review'");
+    row={operation_id:args[3],practitioner_id:args[4],service_key:review?'personal_review':args[5],
+      offer_id:review?args[5]:null,source_path:review?args[6]:null,
+      locale:review?args[7]:args[6],telegram_peer_hash:args[2],
+      stage:review?'review_understanding':'format',delivery_format:null,
+      consent_at:null,reference_code:null,last_update_id:args[review?8:7]};
     return {rows:[]};
    }
    if(sql.startsWith('update app_private.crm_tg_business_service_sessions')){
-    if(sql.includes("stage='stopped'"))row.stage='stopped';
+    if(sql.includes('set stage=$3'))row.stage=args[2];
+    else if(sql.includes("stage='stopped'"))row.stage='stopped';
     else if(sql.includes("stage='cancelled'"))row.stage='cancelled';
     else if(sql.includes("stage='confirm'")){
-      row.stage='confirm';row.delivery_format=args[2];
+      row.stage='confirm';row.delivery_format=sql.includes("delivery_format='async'")?'async':args[2];
     }else if(sql.includes("stage='committing'")){
       row.stage='committing';row.consent_at=new Date().toISOString();
     }
-    row.last_update_id=args[sql.includes('delivery_format=$3')?3:2];
+    row.last_update_id=sql.includes('set stage=$3')?args[3]:
+      sql.includes("delivery_format='async'")?args[2]:
+      args[sql.includes('delivery_format=$3')?3:2];
     return {rows:[],rowCount:1};
    }
    throw new Error('UNRECOGNIZED SQL: '+sql.slice(0,65));
@@ -161,6 +167,7 @@ test('the actual locked state machine requires initial request, format and disti
    randomUUID:()=> '11111111-1111-4111-8111-111111111111',
    PRACTITIONER_ID:'246aa1a3-a371-5a83-9f4b-cd23ff027a76',
    telegramBusinessClientChoice,telegramBusinessConversationReply,
+   detectTelegramMessageLocale,
    webhookTransaction:async(_config,fn)=>fn(mock),
    Date,Number,String,
  },{codeGeneration:{strings:false,wasm:false}});
@@ -199,6 +206,33 @@ test('the actual locked state machine requires initial request, format and disti
  assert.equal(afterStop.commit,undefined);
  assert.equal(row.stage,'stopped');
  assert.equal(recorded.slice(attempts).some(x=>x.sql.startsWith('insert into ')),false);
+
+ row=null;
+ const review=await context.stage(event('site request',31,{
+  service:'personal_review',offerId:'personal_extended_review',locale:'en',
+  name:'Extended review',sourcePath:'/en/services'}),{},k);
+ assert.equal(row.service_key,'personal_review');
+ assert.equal(row.offer_id,'personal_extended_review');
+ assert.equal(row.stage,'review_understanding');
+ assert.match(review.reply,/Extended review/);
+ const reminder=await context.stage(event('Услугу я ж заказал',32),{},k);
+ assert.match(reminder.reply,/Extended review/);
+ assert.match(reminder.reply,/Извините/iu);
+ assert.equal(row.offer_id,'personal_extended_review');
+ const situation=await context.stage(event('The situation is about work.',33),{},k);
+ assert.equal(row.stage,'review_outcome');
+ assert.match(situation.reply,/helpful outcome/);
+ const outcome=await context.stage(event('I want clarity.',34),{},k);
+ assert.equal(row.stage,'review_action');
+ assert.match(outcome.reply,/Send request/);
+ const request=await context.stage(event('Send request',35),{},k);
+ assert.equal(row.stage,'confirm');
+ assert.equal(row.delivery_format,'async');
+ assert.match(request.reply,/Confirm/);
+ const confirmation=await context.stage(event('Confirm',36),{},k);
+ assert.equal(row.stage,'committing');
+ assert.equal(confirmation.commit.service,'personal_review');
+ assert.equal(confirmation.commit.format,'async');
 });
 test('only explicit confirmed provider session can create an existing encrypted CRM enquiry',()=>{
  const source=get('lib/crm/telegram-business-service.js');

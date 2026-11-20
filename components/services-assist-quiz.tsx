@@ -1,13 +1,12 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   ArrowRight, BatteryCharging, BookOpen, BriefcaseBusiness, Check, ChevronDown,
-  CircleHelp, Compass, CreditCard, Flower2, Gift, GraduationCap,
+  Brain, CircleHelp, ClipboardCheck, Compass, CreditCard, Flower2, Gift, GraduationCap,
   HandHeart, HeartHandshake, HeartPulse, Leaf, MessageCircle,
-  MonitorPlay, UserRound, UsersRound, Wallet, type LucideIcon,
+  MonitorPlay, Target, UserRound, UsersRound, Wallet, type LucideIcon,
 } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import type { AssistMode, AssistBudget, AssistPreferences } from "@/lib/assist/service-match.mjs";
@@ -19,12 +18,14 @@ import styles from "./services-assist-quiz.module.css";
 type QuestionKey = "topic" | "need" | "mode" | "budget";
 type QuizTopic = "stress_energy" | "relationships_esteem" | "money_growth" | "business_support";
 type Focus = "stress" | "relationships" | "energy" | "work" | "health" | "growth";
-type Category = "therapy" | "homeopathy" | "constellations" | "business" | "tests" | "learning";
+type Category = "diagnostics" | "business" | "homeopathy" | "coaching" | "psychotherapy" | "video";
+type MoreCategory = "constellations" | "practices" | "courses" | "tests";
 type Choice = readonly [string, string];
 type QuizQuestion = { title: string; options: readonly Choice[] };
 type QuizCopy = {
   title: string; lead: string; button: string; all: string; other: string; privacy: string;
   empty: string; section: string; step: string; profile: string; summary: string; shamanica: string;
+  moreTitle: string; morePreview: string; moreLinks: Record<MoreCategory, string>;
   questions: Record<Exclude<QuestionKey, "need">, QuizQuestion>;
   needs: Record<QuizTopic, QuizQuestion>;
   businessMode: QuizQuestion;
@@ -50,6 +51,9 @@ const copy: Record<PublicLocale, QuizCopy> = {
     "all": "Все услуги",
     "other": "Предпочитаете диалог с Ali?",
     "shamanica": "Шаманика · энергетические и магические практики",
+    "moreTitle": "Другие услуги:",
+    "morePreview": "Расстановки · Практики · Курсы · Тесты",
+    "moreLinks": {"constellations":"Расстановки","practices":"Практики","courses":"Курсы","tests":"Тесты"},
     "privacy": "Ответы остаются в браузере. Мы не сохраняем их и не отправляем ИИ или в CRM.",
     "empty": "Под выбранные условия подтверждённых вариантов пока нет. Измените формат или бюджет.",
     "section": "Направления поддержки",
@@ -229,24 +233,27 @@ const copy: Record<PublicLocale, QuizCopy> = {
       ]
     },
     "categories": {
-      "therapy": "Терапия\nи коучинг",
+      "diagnostics": "Диагностика\nситуации",
+      "business": "Бизнес-\nконсалтинг",
       "homeopathy": "Гомеопатия\nи средства",
-      "constellations": "Отношения\nи расстановки",
-      "business": "Бизнес\nи карьера",
-      "tests": "Тесты\nи самопомощь",
-      "learning": "Курсы, видео\nи медитации"
+      "coaching": "Коучинг\nк цели",
+      "psychotherapy": "Психотерапия\nи поддержка",
+      "video": "Видеотерапия\nи поддержка"
     }
   },
   "en": {
-    "title": "Find your support",
+    "title": "Find Your Support",
     "lead": "4 short questions · Recommendations for your needs",
     "button": "See recommendations",
     "all": "All services",
     "other": "Prefer to chat with Ali?",
     "shamanica": "Shamanica · energy & symbolic practices",
+    "moreTitle": "More options:",
+    "morePreview": "Constellations · Practices · Courses · Tests",
+    "moreLinks": {"constellations":"Constellations","practices":"Practices","courses":"Courses","tests":"Tests"},
     "privacy": "Answers stay in your browser. They are not stored or sent to AI or CRM.",
     "empty": "No verified options match your choices yet. Try another format or budget.",
-    "section": "Areas of support",
+    "section": "Areas of Support",
     "step": "Question",
     "profile": "My profile",
     "summary": "Your needs",
@@ -423,12 +430,12 @@ const copy: Record<PublicLocale, QuizCopy> = {
       ]
     },
     "categories": {
-      "therapy": "Therapy\n& coaching",
-      "homeopathy": "Homeopathy\n& remedies",
-      "constellations": "Relationships\n& constellations",
-      "business": "Business\n& career",
-      "tests": "Tests\n& self-help",
-      "learning": "Courses, videos\n& meditations"
+      "diagnostics": "Situation\nDiagnostics",
+      "business": "Business\nConsulting",
+      "homeopathy": "Homeopathy\n& Remedies",
+      "coaching": "Coaching\nto Your Goal",
+      "psychotherapy": "Psychotherapy\n& Support",
+      "video": "Video Therapy\n& Healing"
     }
   },
   "es": {
@@ -438,6 +445,9 @@ const copy: Record<PublicLocale, QuizCopy> = {
     "all": "Todos los servicios",
     "other": "¿Prefieres hablar con Ali?",
     "shamanica": "Shamanica · energía y prácticas simbólicas",
+    "moreTitle": "Más opciones:",
+    "morePreview": "Constelaciones · Prácticas · Cursos · Tests",
+    "moreLinks": {"constellations":"Constelaciones","practices":"Prácticas","courses":"Cursos","tests":"Tests"},
     "privacy": "Las respuestas quedan en tu navegador. No se guardan ni se envían a IA o CRM.",
     "empty": "No hay opciones verificadas para esos criterios. Cambia formato o presupuesto.",
     "section": "Áreas de apoyo",
@@ -617,12 +627,12 @@ const copy: Record<PublicLocale, QuizCopy> = {
       ]
     },
     "categories": {
-      "therapy": "Terapia\ny coaching",
+      "diagnostics": "Diagnóstico\nde situación",
+      "business": "Consultoría\nde negocios",
       "homeopathy": "Homeopatía\ny remedios",
-      "constellations": "Relaciones\ny constelaciones",
-      "business": "Negocios\ny carrera",
-      "tests": "Tests\ny autoayuda",
-      "learning": "Cursos, vídeos\ny meditación"
+      "coaching": "Coaching\nhacia tu meta",
+      "psychotherapy": "Psicoterapia\ny apoyo",
+      "video": "Videoterapia\ny bienestar"
     }
   }
 };
@@ -639,13 +649,13 @@ const needIcons: Record<string, LucideIcon> = {
   business_strategy:Compass, business_clients:UsersRound, business_team:HeartHandshake, business_change:BriefcaseBusiness,
 };
 
-const categories: readonly { key: Category; image: string; Icon: LucideIcon }[] = [
-  { key: "therapy", image: "/images/holistic-house/messenger-zen-stones.svg", Icon: Flower2 },
-  { key: "homeopathy", image: "/images/holistic-house/distance-homeopathy.webp", Icon: HandHeart },
-  { key: "constellations", image: "/images/holistic-house/homepage-constellations.svg", Icon: HeartHandshake },
-  { key: "business", image: "/images/holistic-house/andy-about.png", Icon: BriefcaseBusiness },
-  { key: "tests", image: "/images/holistic-house/course-start-heron.webp", Icon: Compass },
-  { key: "learning", image: "/images/holistic-house/assist-video-botanical.svg", Icon: MonitorPlay },
+const categories: readonly { key: Category; Icon: LucideIcon }[] = [
+  { key: "diagnostics", Icon: ClipboardCheck },
+  { key: "business", Icon: BriefcaseBusiness },
+  { key: "homeopathy", Icon: HandHeart },
+  { key: "coaching", Icon: Target },
+  { key: "psychotherapy", Icon: Brain },
+  { key: "video", Icon: MonitorPlay },
 ];
 
 export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
@@ -777,19 +787,27 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
         <a href="#services-unified-heading">{t.all}<ArrowRight size={17} aria-hidden="true" /></a>
       </div>
       <div className={styles.categoryGrid}>
-        {categories.map(({key,image,Icon}) =>
+        {categories.map(({key,Icon}) =>
           <a href={"#" + serviceGroupAnchor(servicesCategoryTargets[key])} key={key}
             className={styles.category} data-services-quiz-category={key}
             data-services-quiz-target={servicesCategoryTargets[key]}>
-            <span className={styles.categoryMedia}>
-              <Image src={image} alt="" fill sizes="(max-width: 520px) 32vw, 160px" />
-            </span>
+            <span className={styles.categoryMedia} data-services-card-photo aria-hidden="true" />
             <span className={styles.categoryInfo}>
               <span className={styles.categoryIcon}><Icon size={26} strokeWidth={1.65} aria-hidden="true" /></span>
               <span className={styles.categoryName}>{t.categories[key]}</span>
             </span>
           </a>)}
       </div>
+      <details className={styles.categoryMore} data-services-extra-categories>
+        <summary><strong>{t.moreTitle}</strong><span className={styles.morePreview}>{t.morePreview}</span>
+          <span className={styles.moreArrow}><ArrowRight size={21} aria-hidden="true" /></span></summary>
+        <nav className={styles.moreLinks} aria-label={t.moreTitle}>
+          <a href={"#" + serviceGroupAnchor(servicesCategoryTargets.constellations)}>{t.moreLinks.constellations}</a>
+          <Link href={"/" + locale + "/meditations"} prefetch={false}>{t.moreLinks.practices}</Link>
+          <a href={"#" + serviceGroupAnchor(servicesCategoryTargets.learning)}>{t.moreLinks.courses}</a>
+          <a href={"#" + serviceGroupAnchor(servicesCategoryTargets.tests)}>{t.moreLinks.tests}</a>
+        </nav>
+      </details>
       <div className={styles.categoryExtras}>
         <Link href={"/" + locale + "/shamanica"} prefetch={false}
           data-services-shamanica-link><Leaf size={15} aria-hidden="true" /> {t.shamanica}</Link>
@@ -800,7 +818,7 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
     {submitted ? <div className={styles.results} tabIndex={-1} data-services-quiz-results>
       <p className={styles.summary} data-services-quiz-summary><strong>{t.summary}:</strong> {summary}</p>
       <AssistTopRecommendations locale={locale} focus={focus} preferences={preferences}
-        matchingIds={matchingIds} allowedIds={matchingIds} noMatchLabel={t.empty} />
+        matchingIds={matchingIds} allowedIds={matchingIds} categoryGroups noMatchLabel={t.empty} />
     </div> : null}
     <p className={styles.privacy}>{t.privacy}</p>
   </section>;

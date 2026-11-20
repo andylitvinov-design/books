@@ -6,6 +6,22 @@ export async function installGuestVideoBlobCapture(context){
   await context.addInitScript(()=>{
     const native=URL.createObjectURL;
     const stored=new Map();
+    const encodes={mediaRecorderStarts:0,videoEncoderConfigurations:0};
+    window.__hhTestEncodeStarts=encodes;
+    if(typeof MediaRecorder!="undefined"){
+      const start=MediaRecorder.prototype.start;
+      MediaRecorder.prototype.start=function(...args){
+        encodes.mediaRecorderStarts++;
+        return start.apply(this,args);
+      };
+    }
+    if(typeof VideoEncoder!="undefined"){
+      const configure=VideoEncoder.prototype.configure;
+      VideoEncoder.prototype.configure=function(...args){
+        encodes.videoEncoderConfigurations++;
+        return configure.apply(this,args);
+      };
+    }
     window.__hhTestRecordedVideoBlobs=stored;
     URL.createObjectURL=function(blob){
       const uri=native.call(URL,blob);
@@ -48,6 +64,10 @@ export async function readRealGuestVideo(page,{timeout=120000}={}){
     video instanceof HTMLVideoElement&&video.currentSrc.startsWith('blob:')&&
     video.readyState>=1&&video.videoWidth>0&&video.videoHeight>0&&!video.error),
     {timeout:20000}).toBe(true);
+  const encodeStarts=await page.evaluate(()=>window.__hhTestEncodeStarts);
+  assert.equal((encodeStarts?.mediaRecorderStarts||0)+
+    (encodeStarts?.videoEncoderConfigurations||0),1,
+    'ONE_ENCODER_START_PER_SINGLE_EXPRESS_GENERATE_GESTURE');
   const gate=ready.locator('[data-ready-save-gate]');
   let downloads=0;
   const onDownload=()=>{downloads++;};
