@@ -214,3 +214,19 @@ test('a bare yes or unspecific price inquiry does not manufacture a goal, servic
   }
  }
 });
+
+test('website guest first reply routes exact service and never uses emergency text for an unknown safe question',()=>{
+ const ui=readFileSync(new URL('../components/holistic-agent-chat.tsx',import.meta.url),'utf8');
+ const start=ui.indexOf('function guestAnswer(text:string,prior:Message[]');
+ const stop=ui.indexOf('function answerVideo(',start);
+ assert.ok(start>0&&stop>start);
+ const guest=ui.slice(start,stop);
+ assert.match(guest,/const intent=sessionSecretaryMessage\(text,language\)/);
+ assert.match(guest,/setSessionOffers\(\[verified\]\)/);
+ assert.match(guest,/option\.id===intent\.serviceId/);
+ assert.match(guest,/intent\.reply\|\|\(/);
+ assert.match(guest,/setPageHelpLink\(\{href:"\/"\+language\+verified\.href,label:verified\.label\}\)/);
+ assert.doesNotMatch(guest,/return messengerStarter\[language\]\.safety/);
+ // Safety screening remains ahead of guestAnswer in the visitor route.
+ assert.match(ui,/requiresProtectedReply\(text,turnLocale\)\?boundaryReply/);
+});
