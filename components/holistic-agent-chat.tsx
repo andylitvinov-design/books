@@ -1231,7 +1231,14 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         }
       }
       if(intent.kind!=="continue"&&intent.kind!=="service"){
-        // A correction or interruption stays on the same unanswered step.
+        // A factual question may name a service without authorizing a
+        // booking. Expose its existing public page, keep the unfinished step.
+        if((intent.kind==="price"||intent.kind==="availability")&&intent.serviceId){
+          const page=messengerProject(turnLocale,"sessions").options.find(option=>
+            option.id===intent.serviceId&&option.kind==="link"&&
+            option.href?.startsWith("/")&&!option.href.startsWith("//"));
+          if(page)setPageHelpLink({href:"/"+turnLocale+page.href,label:page.label});
+        }
         setMessages(prev=>[...prev,{role:"user" as const,text},
           {role:"assistant" as const,text:intent.reply}].slice(-30));
         return;
