@@ -27,9 +27,10 @@ concurrency:
 
 jobs:
   anonymous-encoded-video:
-    # PR runs validate current source contracts; never compare unmerged source
-    # to a different, already-published LIVE deployment. Candidate real
-    # Chromium/macOS WebKit media must independently pass Mandala CI.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    # BASE-trusted merge aggregation requires a real exact-HEAD source job while
+    # this acceptance test is changed. Keep just Node syntax/contracts on PRs;
+    # real LIVE encoded-browser and paid/free-provider probes are manual only.
     # The two LIVE encoded-file smokes remain available on workflow_dispatch.
     runs-on: ubuntu-24.04
     timeout-minutes: 12
@@ -46,7 +47,7 @@ jobs:
           node --check scripts/benchmarking/video-director-chat-live-acceptance.mjs
           node --test tests/video-director-chat-live-acceptance.test.mjs
       - name: One-shot free AI synthetic opt-in diagnostic
-        if: (github.event_name == 'pull_request' && github.event.action == 'opened') || (github.event_name == 'workflow_dispatch' && inputs.probe_free_ai)
+        if: github.event_name == 'workflow_dispatch' && inputs.probe_free_ai
         timeout-minutes: 1
         run: |
           node --input-type=module <<'NODE'
@@ -107,7 +108,7 @@ jobs:
           }
           NODE
       - name: Preserve privacy-safe free AI probe result
-        if: always() && ((github.event_name == 'pull_request' && github.event.action == 'opened') || (github.event_name == 'workflow_dispatch' && inputs.probe_free_ai))
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.probe_free_ai
         uses: actions/upload-artifact@v4
         with:
           name: hh-video-chat-free-ai-opt-in-diagnostic
