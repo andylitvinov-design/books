@@ -21,7 +21,12 @@ test('public practice preview supports EN/RU/ES with request-specific CSP nonces
   assert.ok(page.includes("export const dynamic = 'force-dynamic'"))
   assert.ok(page.includes('export const revalidate = 0'))
   assert.ok(!page.includes("export const dynamic = 'force-static'"))
-  assert.ok(page.includes('<PracticeShowcase locale={locale} />'))
+  assert.ok(page.includes('<PracticeShowcase locale={locale} presentationStorageOrigin={publicPresentationStorageOrigin()} />'))
+  // Public presentation playback uses the same approved storage origin as the published master page.
+  // Only a strictly validated HTTPS origin is passed through; no service key or auth token.
+  assert.ok(page.includes("url.protocol === 'https:' && !url.username && !url.password"))
+  assert.ok(page.includes("!url.search && !url.hash ? url.origin : ''"))
+  assert.ok(!page.includes('HH_APP_SUPABASE_SECRET_KEY'))
   assert.ok(page.includes('index: false'))
   assert.ok(rootLayout.includes('const nonce = (await headers()).get("x-nonce")'))
   assert.ok(rootLayout.includes('nonce={nonce}'))
