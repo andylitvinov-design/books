@@ -5790,3 +5790,37 @@
 .storyPhotoAspectChoices>button:disabled{opacity:.5;cursor:default}
 @media(max-width:350px){.storyPhotoAspectChoices{gap:5px}
  .storyPhotoAspectChoices>button{font-size:12px;padding-inline:3px}}
+
+/* Story ↔ Text: chosen affirmations remain visible beside their six-shot actions.
+   Only authored/selected phrases appear; the original screenplay action remains. */
+.storyAutoPhraseSummary{display:block;color:#176e5c;
+ font:700 12px/1.3 Arial,Helvetica,sans-serif}
+.storyAutoPhraseEdit{display:flex;align-items:center;justify-content:space-between;
+ gap:5px;min-width:0;width:100%;min-height:38px;border:1px solid #c6e5d7;
+ border-radius:9px;background:#e6f6f1;padding:5px 7px;
+ color:#18483f;text-align:left;cursor:pointer;
+ font:700 12px/1.24 Arial,Helvetica,sans-serif}
+.storyAutoPhraseEdit .storyAutoPhraseText{display:-webkit-box;
+ -webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;
+ min-width:0;overflow-wrap:anywhere}
+.storyAutoPhraseEdit svg{flex:none}
+.storyAutoPhraseEdit:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.storyAutoPhraseEdit:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:759px){
+ .studio[data-active-workspace="editor"][data-montage-panel="concept"] .storyAutoCard[data-storyboard-has-phrase="true"]{
+   height:auto;min-height:94px}
+ .studio[data-active-workspace="editor"][data-montage-panel="concept"] .storyAutoCard[data-storyboard-has-phrase="true"] .storyAutoPoster{
+   position:relative;height:auto;min-height:94px;align-self:stretch;aspect-ratio:auto}
+ .studio[data-active-workspace="editor"][data-montage-panel="concept"] .storyAutoCard[data-storyboard-has-phrase="true"] .storyAutoPoster>img{
+   position:absolute;inset:0;width:100%;height:100%;min-height:0;object-fit:cover}
+ .studio[data-active-workspace="editor"][data-montage-panel="concept"] .storyAutoCard[data-storyboard-has-phrase="true"] .storyAutoBody{
+   justify-content:center;gap:3px;padding:6px 7px}
+ .studio[data-active-workspace="editor"][data-montage-panel="concept"] .storyAutoCard[data-storyboard-has-phrase="true"][data-storyboard-expanded="false"] [data-storyboard-media-brief],
+ .studio[data-active-workspace="editor"][data-montage-panel="concept"] .storyAutoCard[data-storyboard-has-phrase="true"][data-storyboard-expanded="false"] [data-storyboard-shot-direction],
+ .studio[data-active-workspace="editor"][data-montage-panel="concept"] .storyAutoCard[data-storyboard-has-phrase="true"][data-storyboard-expanded="false"] [data-storyboard-media-title]{
+   display:none}
+}
+@media(max-width:350px){
+ .studio[data-active-workspace="editor"][data-montage-panel="concept"] .storyAutoPhraseEdit{
+   font-size:11px;padding:4px 5px;gap:3px}
+}
