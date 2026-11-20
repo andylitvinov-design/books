@@ -812,6 +812,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     pending.current?.abort()
     pending.current=controller
     setBusy(true);setError('');setStreamingPreview('')
+    const requestedSavedContext=!contextPaused&&Boolean(contextTopic)
+    // A previous reply may quote a saved item whose grant has since changed.
+    // Keep it in the local transcript and resolve approved items again server-side.
+    const providerHistory=conversationTurns.filter(turn=>turn.requestedSavedContext!==true)
+    const providerWindow=coachTurnWindow(providerHistory,10)
     const useStreaming=coachEngine==='groq_stream'&&streamingReady&&!wisdomRequested
     try{
       const requestOptions={
@@ -819,16 +824,16 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
           personaId,settings,locale:responseLocale,consent:true,message,voiceTurn:voiceTurn===true,
-          ...(!contextPaused&&contextTopic?{contextTopic}:{}),
-          ...(!contextPaused&&contextTopic==='personal_growth'&&contextAssessments?{contextAssessments:true}:{}),
+          ...(requestedSavedContext?{contextTopic}:{}),
+          ...(requestedSavedContext&&contextTopic==='personal_growth'&&contextAssessments?{contextAssessments:true}:{}),
           ...(selectedGeminiEngine?{
             engine:coachEngine,geminiConsent:true,
             ...(coachEngine==='gemini_free'?{geminiFreeDataConsent:true}:{})
           }:{}),
           elapsedSeconds:sessionClockStarted?Math.floor(activeSessionSeconds):0,
-          sessionContext:coachEphemeralContext(conversationTurns,coachTurnWindow(conversationTurns,10),responseLocale,message),
+          sessionContext:coachEphemeralContext(providerHistory,providerWindow,responseLocale,message),
           semanticHints:semanticHintsRef.current,
-          turns:coachTurnWindow(conversationTurns,10)
+          turns:providerWindow
             .map(({role,content})=>({role,content})), // Preserve the latest client-stated active goal, not a greeting.
         }),
       }
@@ -864,7 +869,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       setTurns(previous=>{
         const updated=[...previous,{role:'user',content:message},{
           role:'assistant',content:answer,locale:responseLocale,reflection:result.reflection,question:result.question,
-          hypothesis:result.hypothesis||'',mode:result.mode,
+          hypothesis:result.hypothesis||'',mode:result.mode,requestedSavedContext,
           reason:result.offlineReason||'',stage:result.stage||'',
           sessionProgress:result.sessionProgress?.source==='director-client-evidence'
             ?result.sessionProgress:null,
