@@ -78,11 +78,14 @@ test('arbitrary visitor-provided services do not gain a privileged service code'
   request:'Write to the team'})
  assert.doesNotMatch(new URL(url).searchParams.get('text'),/\[HH-REQ:/)
 })
-test('generic WhatsApp six-stage express review is preserved',()=>{
+test('ordinary WhatsApp greeting stays in Secretary, not the free personal questionnaire',()=>{
  const first=whatsappIntakeEvent(null,{rawText:'Hello',locale:'en'})
- assert.equal(first.stage,'consent')
- assert.equal(first.serviceKey,undefined)
- assert.equal(first.body,null)
+ assert.equal(first.handled,false)
+ const query=whatsappSecretaryQuery('Hello','en')
+ assert.equal(query.kind,'welcome')
+ const reply=whatsappSecretaryPublicAnswer(query,[])
+ assert.match(reply.text,/Ali/)
+ assert.doesNotMatch(reply.text,/diagnos|photo|drawing/i)
 })
 test('WhatsApp shares approved Telegram catalogue, not an invented link',()=>{
  const query=whatsappSecretaryQuery('Could you show me a stress course?','en')
