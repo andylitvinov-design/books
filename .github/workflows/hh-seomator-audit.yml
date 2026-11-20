@@ -35,7 +35,7 @@ jobs:
           mkdir -p artifacts
           # No browser render: avoid heavyweight Playwright downloads and Vercel request usage.
           timeout 420 /tmp/hh-seomator/node_modules/.bin/seomator audit https://holistichouse.vercel.app/ \
-            --config scripts/seomator-public.toml --crawl --max-pages 24 \
+            --config scripts/seomator-public.toml --no-cwv --crawl --max-pages 24 \
             --concurrency 2 --timeout 15000 --max-duration 360 \
             --format json --output artifacts/seomator-raw.json --no-save --fail-under 0
           result=$?
