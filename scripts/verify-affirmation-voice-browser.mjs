@@ -749,12 +749,22 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const selectedStyle=page.locator('[data-video-montage-style="3"]');
       const selectedMaster=page.locator("[data-mandala-master-mp4]");
       await expect(selectedStyle).toBeVisible();
-      await expect(selectedMaster).toHaveAttribute("preload","none");
+      const singleVideoMaster=await selectedMaster.count()>0;
+      if(singleVideoMaster)
+        await expect(selectedMaster).toHaveAttribute("preload","none");
+      else
+        await expect(page.locator("[data-free-film-original-masters]")).toHaveCount(1);
+      // Six user-approved photos use the existing compiled multi-shot Canvas,
+      // not the retired single background MP4. Still exercise an actual Style
+      // tap and the same later audible Safari export on this selected source.
       if(engine==="webkit")await selectedStyle.tap();
       else await selectedStyle.click();
       await expect(selectedStyle).toHaveAttribute("aria-pressed","true");
       await expect(page.locator("[data-video-mandala-hero]")).toHaveAttribute("data-video-preview-style","minimal");
-      await expect.poll(()=>selectedMaster.evaluate(video=>video.preload),{timeout:15000}).toBe("auto");
+      if(singleVideoMaster)
+        await expect.poll(()=>selectedMaster.evaluate(video=>video.preload),{timeout:15000}).toBe("auto");
+      else
+        await expect(page.locator("[data-free-film-original-masters]")).toHaveCount(1);
       // Modern Montage shows the voice and music controls only after choosing Audio.
       // Exercise the real visible tab instead of waiting for an unmounted drawer.
       // Current Montage has four compact tabs. Real duration is under Settings
