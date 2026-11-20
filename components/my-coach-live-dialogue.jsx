@@ -16,6 +16,7 @@ import {coachGoalTurn} from '@/lib/coaching/goal-turn.mjs'
 import {understandCoachingTurn} from '@/lib/personal-coaching/coaching-turn-understanding.mjs'
 import styles from './my-coach-live-dialogue.module.css'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
+import MyCoachSessionStateCard from './my-coach-session-state-card'
 import {startCoachingMp3Playback,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
 import {detectedSpeechLocale} from '@/lib/personal-coaching/my-coach-dictation.mjs'
@@ -859,6 +860,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',method
             data-current={index===visibleStageIndex?'true':undefined}/>)}
         </div>
       </section>
+      <MyCoachSessionStateCard locale={lang} turns={turns}
+        progress={progressValid?lastRecordedProgress:null} stageLabel={stageDescription}/>
       <details className={styles.voicePrivacyDetails}>
         <summary>{lang==='ru'?'Приватность голоса':lang==='es'?'Privacidad de voz':'Voice privacy'}</summary>
         <p>{voiceProviderDetails[lang]}</p>
