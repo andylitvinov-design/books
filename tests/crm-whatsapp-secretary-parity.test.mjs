@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {whatsappEnquiryUrl} from '../lib/whatsapp-enquiry.js'
+import {whatsappExpressReviewHandoff} from '../lib/crm/express-review-channel-handoff.mjs'
 import {whatsappIntakeEvent} from '../lib/crm/whatsapp-intake.mjs'
 import {whatsappSecretaryQuery,whatsappSecretaryPublicAnswer} from '../lib/crm/whatsapp-secretary-catalog.mjs'
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
@@ -87,6 +88,56 @@ test('ordinary WhatsApp greeting stays in Secretary, not the free personal quest
  assert.match(reply.text,/Ali/)
  assert.doesNotMatch(reply.text,/diagnos|photo|drawing/i)
 })
+test('website service enquiry retains the actual selected service in all three languages, even before public marker',()=>{
+ const old=process.env.NEXT_PUBLIC_HH_CRM_WA_SERVICE_ENABLED
+ try{
+  delete process.env.NEXT_PUBLIC_HH_CRM_WA_SERVICE_ENABLED
+  const titles={en:'Reiki session',ru:'Сеанс Рейки',es:'Sesión de Reiki'}
+  for(const locale of ['en','ru','es']){
+   const url=whatsappEnquiryUrl({locale,service:titles[locale],
+    request:'I want to enquire about this service.',pagePath:'/'+locale+'/services'})
+   const message=new URL(url).searchParams.get('text')
+   assert.doesNotMatch(message,/\[HH-REQ:/)
+   assert.equal(whatsappSecretaryQuery(message,locale),null)
+   const first=whatsappIntakeEvent(null,{rawText:message,locale})
+   assert.equal(first.stage,'consent')
+   assert.equal(first.serviceKey,'reiki')
+   assert.equal(first.locale,locale)
+   assert.equal(first.body,null)
+   assert.equal(first.consent,false)
+   assert.ok(first.reply.includes(titles[locale]))
+  }
+ }finally{
+  if(old===undefined)delete process.env.NEXT_PUBLIC_HH_CRM_WA_SERVICE_ENABLED
+  else process.env.NEXT_PUBLIC_HH_CRM_WA_SERVICE_ENABLED=old
+ }
+})
+test('only explicit free-review intent enters personal questions and website marker cannot be intercepted',()=>{
+ for(const locale of ['en','ru','es']){
+  const marker=new URL(whatsappExpressReviewHandoff(locale)).searchParams.get('text')
+  assert.equal(whatsappSecretaryQuery(marker,locale),null)
+  assert.equal(whatsappIntakeEvent(null,{rawText:marker,locale}).stage,'consent')
+ }
+ for(const text of ['Hello','Привет','Hola','What is a free review?','Что такое бесплатная диагностика?',
+     'Can you help me with a paid Reiki session?','I want to learn about a course']){
+  assert.equal(whatsappIntakeEvent(null,{rawText:text}).handled,false,text)
+ }
+ for(const [text,locale] of [
+   ['I want a free review','en'],['Хочу бесплатную диагностику','ru'],
+   ['Quiero revisión gratuita','es'],['/free_review','en']]){
+  assert.equal(whatsappIntakeEvent(null,{rawText:text,locale}).stage,'consent',text)
+ }
+ assert.equal(whatsappSecretaryQuery('STOP','en'),null)
+ assert.equal(whatsappSecretaryQuery('HHWA abc','en'),null)
+})
+test('an unknown or tampered structured service does not create a paid intake',()=>{
+ for(const text of ['Service: Reiki session','Holistic House — service enquiry\nService: Unverified therapy\nRequest: Please book',
+      'Holistic House — service enquiry\nService: Reiki session\nRequest: ']){
+  const next=whatsappIntakeEvent(null,{rawText:text,locale:'en'})
+  assert.equal(next.handled,false)
+ }
+})
+
 test('WhatsApp shares approved Telegram catalogue, not an invented link',()=>{
  const query=whatsappSecretaryQuery('Could you show me a stress course?','en')
  assert.ok(query)
