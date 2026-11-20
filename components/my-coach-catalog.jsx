@@ -407,16 +407,19 @@ export default function MyCoachCatalog({ locale = 'en' }) {
           {PUBLIC_COACH_PERSONA_IDS.map(id => {
             const persona = getCoachPersona(id)
             if (!persona) return null
+            const stillImage = id === 'harry'
+              ? '/images/holistic-house/my-coach-motion/harry-soft-still.webp'
+              : `/images/holistic-house/my-coach-motion/${id}-still.webp`
             return <button type="button" key={id} className={heroStyles.railCard}
               aria-pressed={selected.id === id}
               onClick={() => { setSelectedId(id); setSettings(normalizeCoachSettings(id)) }}>
               <span className={heroStyles.railPortrait} data-persona={id} aria-hidden="true">
                 <picture>
                   <source media="(prefers-reduced-motion: reduce)" type="image/webp"
-                    srcSet={`/images/holistic-house/my-coach-motion/${id}-still.webp`} />
+                    srcSet={stillImage} />
                   <img
                     className={heroStyles.railPhoto}
-                    src={`/images/holistic-house/my-coach-motion/${id}-still.webp`}
+                    src={stillImage}
                     alt=""
                     width={288}
                     height={320}
