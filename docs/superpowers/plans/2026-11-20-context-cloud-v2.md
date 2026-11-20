@@ -272,7 +272,7 @@ git add lib/app/context-cloud-store.js lib/clients/assessment-store.js component
 git commit -m "feat: add reviewed Context Cloud sources"
 ```
 
-### Task 7: P2 evaluation and release acceptance
+### Task 7: P2 business-context evaluation and release acceptance
 
 **Files:**
 - Create: `docs/coaching/CONTEXT_CLOUD_V2_PRIVACY_AND_RELEASE.md`
@@ -287,7 +287,7 @@ assert.match(source('docs/coaching/CONTEXT_CLOUD_V2_PRIVACY_AND_RELEASE.md'),/ph
 
 - [ ] **Step 2: Implement release documentation**
 
-Document retention, export/erase, provider-specific notices, human sharing boundary, policy version renewal, P2 measurement criteria and the prohibition on retrieval/Telegram until separate approval.
+Document retention, export/erase, provider-specific notices, human sharing boundary, policy version renewal, P2 measurement criteria and the prohibition on retrieval/Telegram until separate approval. Record the #5236 addendum boundary: business meeting/project data requires a separate workspace grant, stays out of personal coaching, begins Fireflies-first/read-only, and never assumes a Plaud cloud API.
 
 - [ ] **Step 3: Run release suite**
 
@@ -302,8 +302,47 @@ git add docs/coaching/CONTEXT_CLOUD_V2_PRIVACY_AND_RELEASE.md tests/context-clou
 git commit -m "docs: define Context Cloud release gates"
 ```
 
+### Task 8: P2 separate business source contract (only after P1 acceptance)
+
+**Files:**
+- Create: `lib/business-context/source-contract.mjs`
+- Create: `lib/business-context/reconciliation.mjs`
+- Test: `tests/business-context-source-contract.test.mjs`
+- Test: `tests/business-context-isolation.test.mjs`
+
+- [ ] **Step 1: Write failing isolation tests**
+
+```js
+assert.equal(classifyRecord(personalCoachingRecord, tenantAllowlist).domain, 'personal')
+assert.equal(reconcileIssue(ambiguousInsight, openIssues, peopleMap, projectMap).operation, 'no_action')
+assert.equal(await businessStore.readForCoachingActor(clientActor), null)
+```
+
+- [ ] **Step 2: Run them**
+
+Run: `node --test tests/business-context-source-contract.test.mjs tests/business-context-isolation.test.mjs`
+
+Expected: FAIL because the business-context modules are absent.
+
+- [ ] **Step 3: Implement no-mutation contract**
+
+Implement pure validation for tenant/provider/grant revisions and deterministic classification/reconciliation. Treat transcript content as quoted untrusted data. Return only `link_existing`, `propose_create`, `propose_complete` or `no_action`; no implementation in this task may call Linear or an external source provider.
+
+- [ ] **Step 4: Run focused tests**
+
+Run: `node --test tests/business-context-source-contract.test.mjs tests/business-context-isolation.test.mjs`
+
+Expected: PASS.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add lib/business-context/source-contract.mjs lib/business-context/reconciliation.mjs tests/business-context-source-contract.test.mjs tests/business-context-isolation.test.mjs
+git commit -m "feat: add isolated business context contract"
+```
+
 ## Self-review
 
-- P0.A–P0.D and P1 requirements map to Tasks 1–6; P2 is deliberately an evaluation gate in Task 7, not a new provider implementation.
+- P0.A–P0.D and P1 requirements map to Tasks 1–6. Task 7 is the P2 evaluation/release gate; Task 8 covers only the #5236-addendum's isolated, no-provider/no-mutation business contract.
 - The plan has no retrieval provider, duplicate source archive, frontend-owned private context, extra inference request, implicit test import or silent session-memory write.
 - Every task contains an executable test command and a scoped commit boundary.

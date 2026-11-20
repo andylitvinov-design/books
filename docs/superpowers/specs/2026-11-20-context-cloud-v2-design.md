@@ -12,6 +12,10 @@ Context Cloud v2 is a server-owned, account-scoped projection layer over existin
 - Context is appended to the existing text or voice request once. It never changes `CoachSessionDirector`, causes a second inference request, enters TTS unless already present in the approved model response, or persists a model assertion.
 - Raw reports, transcripts, audio, assessment answers, practitioner material, private identifiers and prompt-like source text are excluded. Test scales remain off until a client selects the final result and grants the exact provider/category.
 
+## Separate business-context extension
+
+The #5236 addendum introduces an optional later business/project domain. It is not personal coaching Context Cloud and cannot share grants, rows, identities, prompts or UI. It starts only after P1 with a separate tenant/workspace consent model, Fireflies-first metadata import, read-only Linear reconciliation and review-required proposals. Plaud uses only a supported MCP/CLI/manual import path; there is no claimed unattended Plaud API. No external record, transcript or project proposal can enter Ali coaching context, and no therapy/personal-coaching content can create a Linear issue.
+
 ## Data model
 
 `app_private.context_cloud_items` stores owner-encrypted `display_ciphertext` or structured `value_ciphertext`, category, topic key, status, sensitivity, evidence kind, source type/id/revision/hash, observed/review/expiry timestamps and schema version. It has no raw source copy.
