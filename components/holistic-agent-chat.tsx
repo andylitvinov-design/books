@@ -666,10 +666,32 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   }
 
   function guestAnswer(text:string,prior:Message[],language:PublicLocale=locale):string {
+    // A clear service request needs neither sign-in nor a forced goal quiz.
+    // The only links here are vetted, published existing Sessions options.
+    const intent=sessionSecretaryMessage(text,language);
+    const verified=intent.serviceId?messengerProject(language,"sessions").options.find(option=>
+      option.id===intent.serviceId&&option.kind==="link"&&
+      option.href?.startsWith("/")&&!option.href.startsWith("//")):null;
+    if(intent.kind==="service"&&verified){
+      setSessionOffers([verified]);setPageHelpLink(null);setGuidedTrack(null);
+      return intent.reply;
+    }
     const reviewed=ruleConversationReply({message:text,locale:language,history:prior});
     const goal=publicVideoGoalForMessage(text);
     if(goal)setVideoGoal(goal as PublicVideoGoal);
-    if(!reviewed||!reviewed.id){setGuidedTrack(null);return messengerStarter[language].safety;}
+    if(!reviewed||!reviewed.id){
+      setGuidedTrack(null);
+      if(verified&&(intent.kind==="price"||intent.kind==="availability"||
+        intent.kind==="information"))
+        setPageHelpLink({href:"/"+language+verified.href,label:verified.label});
+      // An unknown *safe* question is not an emergency. Risk questions were
+      // screened by requiresProtectedReply before this offline guest route.
+      return intent.reply||(
+        language==="ru"?"Пока не совсем понял вопрос. Нужна информация об услуге, помощь с записью или просто разговор?":
+        language==="es"?"No entendí del todo. ¿Buscas información, ayuda con una consulta o prefieres hablar?":
+          "I'm not sure I understood. Are you looking for service information, help with a request, or a conversation?"
+      );
+    }
     if(reviewed.id.startsWith("video")){
       setGuidedTrack("video");setVideoStep("category");videoUndo.current=null;
       setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);
