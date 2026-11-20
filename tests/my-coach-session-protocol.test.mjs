@@ -156,8 +156,53 @@ test('owner mobile design keeps voice controls, back and end-call summary while 
 })
 test('PDF prints the provisional key-information map using only the client transcript',()=>{
   const report=myCoachProtocolPdfOptions(sample(),{locale:'ru'})
-  assert.match(report.protocolNote,/Ключевая информация/)
-  assert.match(report.protocolNote,/Цель \/ результат/)
-  assert.match(report.protocolNote,/Я хочу понять/)
-  assert.doesNotMatch(report.protocolNote,/Возможный шаг: поговорить с коллегой/)
+  assert.match(report.protocolOverview,/Информация по методике/)
+  assert.match(report.protocolOverview,/GROW/)
+  assert.match(report.protocolOverview,/Цель \/ результат/)
+  assert.match(report.protocolOverview,/Я хочу понять/)
+  assert.doesNotMatch(report.protocolOverview,/Возможный шаг: поговорить с коллегой/)
+})
+
+test('all 80 completed exchanges retain the original client goal and method evidence',()=>{
+  const obj=sample()
+  obj.turns=Array.from({length:160},(_,i)=>({
+    role:i%2===0?'user':'assistant',
+    content:i===0?'Я хочу разобраться с карьерой и найти спокойную работу с поддержкой коллег.':
+      i%2===0?'Сегодня я рассказываю дополнительную историю.':'Что было дальше?'
+  }))
+  assert.equal(normalizeMyCoachProtocol(obj).turns.length,160)
+  assert.match(coachInformationChecklist(obj.turns).find(x=>x.key==='goal').quote,/разобраться с карьерой/)
+  assert.match(myCoachProtocolPdfOptions(obj,{locale:'ru'}).protocolOverview,/разобраться с карьерой/)
+})
+test('client-only last turn survives in a truthful PDF without a fabricated AI answer',()=>{
+  const obj=sample()
+  obj.turns.push({role:'user',content:'Я ещё хочу сказать, что мне нужен отдых.',unanswered:true})
+  assert.equal(normalizeMyCoachProtocol(obj).turns.at(-1).unanswered,true)
+  const report=myCoachProtocolPdfOptions(obj,{locale:'ru'})
+  assert.equal(report.entries.length,3)
+  assert.match(report.entries.at(-1).question,/нужен отдых/)
+  assert.match(report.entries.at(-1).answer,/Ответ ИИ отсутствует/)
+  const bad=sample();bad.turns.push({role:'user',content:'An unmarked last turn.'})
+  assert.throws(()=>normalizeMyCoachProtocol(bad),/MY_COACH_PROTOCOL_INVALID/)
+})
+test('method-specific report differs between Merlin, Sofia and Harry',()=>{
+  const cases=[['merlin','appreciative_inquiry','удачный опыт'],['sofia','solution_focused','предпочтительное будущее'],['harry','oskar','оценка сейчас']]
+  for(const [personaId,methodId,field] of cases){
+    const obj=sample();obj.personaId=personaId;obj.methodId=methodId
+    assert.match(myCoachProtocolPdfOptions(obj,{locale:'ru'}).protocolOverview.toLowerCase(),new RegExp(field))
+  }
+  const wrong=sample();wrong.personaId='merlin';wrong.methodId='oskar'
+  assert.throws(()=>normalizeMyCoachProtocol(wrong),/MY_COACH_PROTOCOL_INVALID/)
+})
+test('method overview comes before the dialogue in A4 PDF',()=>{
+  const src=readFileSync(new URL('../lib/personal-coaching/session-pdf.js',import.meta.url),'utf8')
+  assert.ok(src.indexOf('section(t.information, protocolOverview)')<src.indexOf('paragraph(entryKind ==='))
+})
+test('Summary preserves pending last utterance, lets user exit and sends method ID',()=>{
+  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+  assert.match(ui,/inFlightClientRef/)
+  assert.match(ui,/unanswered:true/)
+  assert.match(ui,/if\(protocolOpen\)return/)
+  assert.match(ui,/turn\.unanswered===true/)
+  assert.match(ui,/methodId:visibleMethodId/)
 })

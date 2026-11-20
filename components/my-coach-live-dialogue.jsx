@@ -10,11 +10,12 @@ import {coachingBrainSafety,coachingBrainBoundary,coachingBrainStageDecision,off
 import {classifyWisdomRequest} from '@/lib/coaching/wisdom-retrieval.mjs'
 import {coachTurnWindow} from '@/lib/coaching/coach-turn-window.mjs'
 import {coachAudibleTurns,markLatestCoachReplyInterrupted} from '@/lib/coaching/coach-audible-history.mjs'
-import {coachEphemeralContext} from '@/lib/coaching/coach-ephemeral-context.mjs'
+import {coachEphemeralContext,verbatimClientClauses} from '@/lib/coaching/coach-ephemeral-context.mjs'
 import {coachModelProbeRetryAllowed} from '@/lib/coaching/coach-model-recovery.mjs'
 import {coachGoalTurn} from '@/lib/coaching/goal-turn.mjs'
 import {understandCoachingTurn} from '@/lib/personal-coaching/coaching-turn-understanding.mjs'
-import {coachInformationChecklist} from '@/lib/coaching/coach-information-checklist.mjs'
+import {coachInformationChecklist,coachInformationClientTurns} from '@/lib/coaching/coach-information-checklist.mjs'
+import {coachInformationCoverage} from '@/lib/coaching/coach-information-coverage.mjs'
 import styles from './my-coach-live-dialogue.module.css'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
 import MyCoachSessionStateCard from './my-coach-session-state-card'
@@ -24,6 +25,7 @@ import {detectedSpeechLocale} from '@/lib/personal-coaching/my-coach-dictation.m
 import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
 import CoachingAvatar from '@/components/app/coaching-avatar'
 import MyCoachMotionMedia from '@/components/my-coach-motion-media'
+import MyCoachCompactProfile from './my-coach-compact-profile'
 import {selectCoachVisualScene} from '@/lib/coaching/coach-visual-cues.mjs'
 import {downloadCoachingSessionPdf,openCoachingSessionPdf} from '@/lib/personal-coaching/session-pdf'
 import {myCoachProtocolPdfOptions,normalizeMyCoachProtocol} from '@/lib/personal-coaching/session-protocol.mjs'
@@ -179,6 +181,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const lang=copy[locale]?locale:'en',t=copy[lang]
   const persona=getCoachPersona(personaId)
   const [draft,setDraft]=useState('')
+  const [coachProfileOpen,setCoachProfileOpen]=useState(false)
+  const coachProfileOpenRef=useRef(false)
   const [speechPreview,setSpeechPreview]=useState('')
   const [cloudAvailable,setCloudAvailable]=useState(false)
   const [cloudAgreed,setCloudAgreed]=useState(false)
@@ -195,6 +199,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const turnsRef=useRef(turns)
   turnsRef.current=turns
   const turnRequestRef=useRef(0)
+  const inFlightClientRef=useRef(null) // client message awaiting a genuine coach reply
   const [protocolOpen,setProtocolOpen]=useState(false)
   const [protocolConsent,setProtocolConsent]=useState(false)
   const [protocolSummary,setProtocolSummary]=useState('')
@@ -240,7 +245,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     let last=window.performance.now()
     const tick=()=>{
       const now=window.performance.now()
-      if(document.visibilityState==='visible'&&!paused){
+      if(document.visibilityState==='visible'&&!paused&&!coachProfileOpenRef.current){
         const delta=Math.min(15,Math.max(0,(now-last)/1000))
         setActiveSessionSeconds(seconds=>Math.min(7200,seconds+delta))
       }
@@ -402,7 +407,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       :semanticStageTitles[lang]?.[
         ['contact','goal','reality','options','integration'][visibleStageIndex]]
   const keyInfoUi=keyInfoCopy[lang]
-  const keyInfoItems=coachInformationChecklist(turns,{selectedGoal})
+  const keyInfoAudit=coachInformationCoverage({
+    personaId,methodId:visibleMethodId,evidence:{},
+    clientClauses:coachInformationClientTurns(turns).flatMap(verbatimClientClauses)
+  })
+  const keyInfoItems=keyInfoAudit?.fields.map(item=>({
+    key:item.id,label:item.label[lang],status:item.status==='supported'?'complete':item.status
+  }))||coachInformationChecklist(turns,{selectedGoal})
   const goalPrompts={
     en:{stress:'I would like to feel less stressed. Can we explore what is weighing on me?',energy:'I would like to restore my energy. Can we explore what is draining it?',relationships:'I would like to improve an important relationship. Can we explore what matters most?'},
     ru:{stress:'Я хочу снизить стресс. Давайте разберём, что сейчас на меня давит.',energy:'Я хочу восстановить энергию. Давайте посмотрим, что её забирает.',relationships:'Я хочу улучшить важные для меня отношения. Давайте разберёмся, что сейчас важнее всего.'},
@@ -525,6 +536,21 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     }
   },[])
 
+  function openCoachProfile(){
+    coachProfileOpenRef.current=true
+    // A profile is a reading view, not an end-session navigation. Keep all
+    // in-tab messages, model progress and draft intact, but stop microphone
+    // capture and any speech while the dialog is open.
+    speechRef.current?.stop?.()
+    cancelPendingCoachTurn()
+    replayControllerRef.current?.abort()
+    replayPlayerRef.current?.cancel()
+    replayControllerRef.current=null
+    replayPlayerRef.current=null
+    setReplaying(false)
+    setVoiceState({phase:'idle',beat:0})
+    setCoachProfileOpen(true)
+  }
   function toggleComposer(){
     const details=composerDetailsRef.current
     if(!details)return
@@ -612,6 +638,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       locale:responseLocale,turns:conversationTurns,skip:wisdomRequested,
     })
     message=goalTurn.message
+    inFlightClientRef.current={requestId,message}
     // Current client correction/new topic invalidates hints from the old focus.
     if(['correction','topic_shift'].includes(
       understandCoachingTurn({locale:responseLocale,message}).act))semanticHintsRef.current=[]
@@ -666,6 +693,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         }]
         return updated.slice(-160) // Complete, bounded in-tab protocol through an 80-exchange session
       })
+      if(inFlightClientRef.current?.requestId===requestId)inFlightClientRef.current=null
       if(mode==='safety'||mode==='boundary')semanticHintsRef.current=[]
       if(mode==='safety'||(mode==='boundary'&&interruption?.boundary==='stop'))setPaused(true)
       setDraft('')
@@ -703,6 +731,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         semanticHintsRef.current=[...semanticHintsRef.current.filter(h=>
           h.kind!==hint.kind||h.quote!==hint.quote),hint].slice(-3)
       }
+      if(inFlightClientRef.current?.requestId===requestId)inFlightClientRef.current=null
       setTurns(previous=>{
         const updated=[...previous,{role:'user',content:message},{
           role:'assistant',content:answer,locale:responseLocale,reflection:result.reflection,question:result.question,
@@ -740,10 +769,21 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   // End is not navigation: stop the microphone, then let the client review and
   // download a complete local PDF, independently of optional account retention.
   function endWithProtocol(){
+    const inFlight=inFlightClientRef.current
     speechRef.current?.stop?.()
     replayControllerRef.current?.abort()
     replayPlayerRef.current?.cancel()
     cancelPendingCoachTurn()
+    // End may cancel a pending model call. Keep the actual last client words,
+    // explicitly UNANSWERED; never manufacture an assistant message.
+    if(inFlight&&inFlight.requestId===inFlightClientRef.current?.requestId&&
+      turnsRef.current.length<160&&
+      (!turnsRef.current.length||turnsRef.current.at(-1)?.role==='assistant')){
+      const recovered=[...turnsRef.current,{role:'user',content:inFlight.message,unanswered:true}]
+      turnsRef.current=recovered
+      setTurns(recovered)
+    }
+    inFlightClientRef.current=null
     if(!protocolStartedRef.current)protocolStartedRef.current=new Date().toISOString()
     if(!protocolIdRef.current)protocolIdRef.current=crypto.randomUUID()
     setProtocolFinishedAt(new Date().toISOString())
@@ -752,11 +792,20 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     setProtocolOpen(true)
   }
   function interceptSessionExit(event){
-    // Offer PDF before any navigation discards an unsaved conversation.
+    // The explicit Close/Back choice from the already-open Summary means
+    // leaving without account retention; do not trap the client in a loop.
+    if(protocolOpen)return
     if(turnsRef.current.length>0&&!protocolSaved){event.preventDefault();endWithProtocol()}
   }
   function resumeFromProtocol(){
     if(protocolSaved||protocolSaveLocked)return // Saved report is immutable; the client may start a new session.
+    if(turnsRef.current.at(-1)?.unanswered===true){
+      const last=turnsRef.current.at(-1)
+      const recovered=turnsRef.current.slice(0,-1)
+      turnsRef.current=recovered
+      setTurns(recovered)
+      setDraft(previous=>previous.trim()?previous:last.content)
+    }
     setProtocolOpen(false)
     setProtocolFinishedAt(null)
     setProtocolConsent(false)
@@ -765,12 +814,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   function currentProtocol(){
     if(!protocolFinishedAt||!protocolIdRef.current)throw Error('MY_COACH_PROTOCOL_NOT_FINAL')
     return normalizeMyCoachProtocol({
-      id:protocolIdRef.current,personaId,locale:conversationLang,
+      id:protocolIdRef.current,personaId,methodId:visibleMethodId,locale:conversationLang,
       startedAt:protocolStartedRef.current||protocolFinishedAt,
       completedAt:protocolFinishedAt,durationSeconds:Math.floor(activeSessionSeconds),
       goal:selectedGoal,clientSummary:protocolSummary,clientNextStep:protocolNextStep,
       turns:turns.map(row=>({
         role:row.role,content:row.content,
+        ...(row.role==='user'&&row.unanswered===true?{unanswered:true}:{}),
         ...(row.role==='assistant'?{
           ...(['ai','offline','wisdom','safety','boundary'].includes(row.mode)?{mode:row.mode}:{}),
           ...(typeof row.stage==='string'?{stage:row.stage.slice(0,64)}:{}),
@@ -917,6 +967,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         </div>
         <button type="button" className={styles.keyboardControl} onClick={toggleComposer}
           aria-label={ui.type} title={ui.type}><Keyboard size={17} aria-hidden="true"/><span>{ui.keyboardShort}</span></button>
+        <button type="button" className={styles.profileControl} data-coach-profile-open onClick={openCoachProfile} aria-label={lang==='ru'?'Открыть профиль коуча':lang==='es'?'Abrir perfil del coach':'Open coach profile'} title={ui.profile}>
+          <UserRound size={17} aria-hidden="true"/><span>{ui.profile}</span>
+        </button>
         <button type="button" className={styles.endControl} onClick={endWithProtocol} aria-label={keyInfoUi.finish} title={keyInfoUi.finish} disabled={protocolOpen} data-coach-finish-with-protocol>
           <PhoneOff size={19} aria-hidden="true"/><span>{lang==='ru'?'Резюме':lang==='es'?'Resumen':'Summary'}</span>
         </button>
@@ -968,12 +1021,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         </div>
         <div className={styles.keyInfoGrid} role="list">
           {keyInfoItems.map(entry=>{
-            const Icon=keyInfoIcons[entry.key]
+            const Icon=keyInfoIcons[entry.key]||ClipboardCheck
             return <div className={styles.keyInfoItem} role="listitem" key={entry.key}
               data-coach-information-key={entry.key} data-coach-information-status={entry.status}
-              aria-label={keyInfoUi[entry.key]+': '+keyInfoUi[entry.status]}>
+              aria-label={(entry.label||keyInfoUi[entry.key])+': '+keyInfoUi[entry.status]}>
               <Icon size={17} aria-hidden="true"/>
-              <span>{keyInfoUi[entry.key]}</span>
+              <span>{entry.label||keyInfoUi[entry.key]}</span>
               <span className={styles.keyInfoMark} data-status={entry.status} aria-hidden="true">
                 {entry.status==='complete'?'✓':entry.status==='partial'?'◐':'□'}
               </span>
@@ -1077,6 +1130,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             {turns.map((turn,index)=><article key={index} className={styles.protocolTurn}>
               <strong>{turn.role==='user'?({ru:'Вы',en:'You',es:'Tú'}[lang]):name}</strong>
               <p>{turn.content}</p>
+              {turn.role==='user'&&turn.unanswered===true&&<small>{
+                {ru:'Реплика без ответа ИИ',en:'Submitted, no AI reply',es:'Mensaje sin respuesta de IA'}[lang]
+              }</small>}
               {turn.role==='assistant'&&turn.interrupted===true&&<small>{lang==='ru'?'Ответ коуча перебит':lang==='es'?'Respuesta interrumpida':'Coach reply interrupted'}</small>}
               {turn.role==='assistant'&&turn.suggestion&&<small>{({ru:'Предложение, не принятое автоматически',en:'Unconfirmed suggestion',es:'Sugerencia sin confirmar'}[lang])}: {turn.suggestion}</small>}
             </article>)}
@@ -1113,5 +1169,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       <Link href={'/'+lang+'/holistic-support/mandala'} onClick={interceptSessionExit}><Video size={21} aria-hidden="true"/><span>{ui.video}</span></Link>
       <Link href={'/'+(lang==='es'?'en':lang)+'/app/portrait'} onClick={interceptSessionExit}><UserRound size={21} aria-hidden="true"/><span>{ui.profile}</span></Link>
     </nav>
+    {coachProfileOpen&&<MyCoachCompactProfile personaId={personaId} locale={conversationLang}
+      methodId={visibleMethodId} onBack={()=>{coachProfileOpenRef.current=false;setCoachProfileOpen(false)}}/>}
   </section>
 }
