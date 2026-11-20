@@ -659,14 +659,15 @@ export async function verify(api,ctx,files,options={}) {
   const mandala = WORKFLOW_PREFIX + 'holistic-support-mandala.yml';
   if (routed.expected.includes(mandala)) advisoryPaths.delete(mandala);
   const expected=routed.expected.filter(name=>!advisoryPaths.has(name) && !concurrencyAdvisory.has(name) && !selfTriggerAdvisory.has(name));
-  const deferBaseWhileMediaRuns = pinnedChangeRows &&
-    expected.includes(mandala) &&
-    !optionalMandalaMacosSkip(files,pr.head.ref,changed);
-  // Wait for actual media pass/fail before permitting an automatic BASE sync.
-  // This does not grandfather an older validator or approve a stale base:
-  // verifyCurrentBase() is always invoked after all required job proofs.
-  if (!deferBaseWhileMediaRuns) await verifyCurrentBase(pr);
-  else console.log('CI_BASE_CHECK_DEFERRED: preserve required exact-HEAD macOS WebKit run before BASE_ADVANCED recovery');
+  // A moving production SHA is not itself a failing PR. Wait for required
+  // exact-HEAD specialist evidence before considering any base-sync recovery.
+  // Earlier BASE_ADVANCED errors cancelled still-running browser/macOS work;
+  // extend the existing media safeguard to ALL real specialist owners.
+  // No required jobs => check the target immediately. After every real
+  // specialist finishes, the existing final protected base gate still runs.
+  const deferBaseUntilSpecialists = pinnedChangeRows && expected.length > 0;
+  if (!deferBaseUntilSpecialists) await verifyCurrentBase(pr);
+  else console.log('CI_BASE_CHECK_DEFERRED: preserve all required exact-HEAD specialists before production-base reconciliation');
   // BASE/HEAD rules enumerate applicable PR specialists. Only completed/pending
   // PR workflow runs proven non-applicable may be advisory. Same-HEAD push
   // failures and orphan/unassociated runs remain fail-closed: there is no
@@ -687,13 +688,14 @@ export async function verify(api,ctx,files,options={}) {
   const recovered = new Map();
   const probeTimes = new Map();
   const refreshTimes = new Map();
-  // A sensitive exact-base PR can become stale while independent specialists
-  // wait on a GitHub runner. Recheck without scheduling/retrying any workflow.
-  // This bounds wasted polling after a protected production promotion.
+  // For PRs without required specialists, retain the bounded freshness
+  // check. With active specialists, an early BASE_ADVANCED RED would trigger
+  // auto-sync and cancel their exact-HEAD evidence; verify the current target
+  // only after these specialist outcomes are terminal.
   const sensitiveFreshnessInterval = 90_000;
   let nextSensitiveFreshnessCheck = start + sensitiveFreshnessInterval;
   for (;;) {
-    if (requireCurrentBase && !deferBaseWhileMediaRuns && now() >= nextSensitiveFreshnessCheck) {
+    if (requireCurrentBase && !deferBaseUntilSpecialists && now() >= nextSensitiveFreshnessCheck) {
       // Fresh PR identity/HEAD and production ref; existing exception logic
       // still admits only exhaustively verified, disjoint BASE advances.
       await verifyCurrentBase(await api.pr(ctx.number));
