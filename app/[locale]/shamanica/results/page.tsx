@@ -32,7 +32,7 @@ const offerGroups = {
 type ShamanicPriority = keyof typeof offerGroups;
 const translations = {
   ru: {
-    title: "Ваш путь в Шаманик", eyebrow: "ВАША ПЕРСОНАЛЬНАЯ ПОДБОРКА",
+    title: "Ваш путь в Shamanic", eyebrow: "ВАША ПЕРСОНАЛЬНАЯ ПОДБОРКА",
     lead: "Два направления по вашим ответам. В каждом — три конкретные услуги с ценой и возможностью заказа.",
     again: "Изменить ответы", all: "Все услуги Shamanic", priority: "Приоритет",
     items: {
