@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { withCoachContext } from '../lib/coaching/context-cloud-messages.mjs'
+import { allowsCoachContextForAct, withCoachContext } from '../lib/coaching/context-cloud-messages.mjs'
+
+test('topic changes and corrections suppress durable context', () => {
+  for (const act of ['topic_shift', 'correction', 'refusal', 'greeting', 'gratitude', undefined]) {
+    assert.equal(allowsCoachContextForAct(act), false)
+  }
+  assert.equal(allowsCoachContextForAct('answer'), true)
+})
 
 test('approved context is quoted data and cannot supply message roles or metadata', () => {
   const messages = [{ role: 'system', content: 'Policy' }, { role: 'user', content: 'New goal' }]

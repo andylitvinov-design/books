@@ -274,6 +274,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [replayBlocked,setReplayBlocked]=useState(false)
   const [playbackNotice,setPlaybackNotice]=useState('')
   const pending=useRef(null),composerRef=useRef(null),transcriptRef=useRef(null)
+  const [contextTopic,setContextTopic]=useState('')
+  const [contextAssessments,setContextAssessments]=useState(false)
   const composerDetailsRef=useRef(null),speechRef=useRef(null)
   const replayControllerRef=useRef(null),replayPlayerRef=useRef(null)
   const micWaveRef=useRef(null)
@@ -816,6 +818,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
           personaId,settings,locale:responseLocale,consent:true,message,voiceTurn:voiceTurn===true,
+          ...(contextTopic?{contextTopic}:{}),
+          ...(contextTopic==='personal_growth'&&contextAssessments?{contextAssessments:true}:{}),
           ...(selectedGeminiEngine?{
             engine:coachEngine,geminiConsent:true,
             ...(coachEngine==='gemini_free'?{geminiFreeDataConsent:true}:{})
@@ -1260,6 +1264,28 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         </form>}
         {error&&<p className={styles.error} role="alert">{error}</p>}
         <details className={styles.sessionMore}><summary>{lang==='ru'?'Дополнительно':lang==='es'?'Más opciones':'More options'}</summary>
+          <label className={styles.contextTopic}>
+            {lang==='ru'?'Сохранённый контекст для беседы':lang==='es'?'Contexto guardado para esta conversación':'Saved context for this conversation'}
+            <select value={contextTopic} onChange={event=>{
+              setContextTopic(event.target.value);setContextAssessments(false)
+            }}>
+              <option value="">{lang==='ru'?'Выключен':lang==='es'?'Desactivado':'Off'}</option>
+              {[
+                ['body_health','Body & Health','Тело и здоровье','Cuerpo y salud'],
+                ['emotional_wellbeing','Emotional wellbeing','Эмоциональное благополучие','Bienestar emocional'],
+                ['relationships','Relationships','Отношения','Relaciones'],
+                ['career_business','Career & business','Карьера и бизнес','Carrera y negocio'],
+                ['finance','Finances','Финансы','Finanzas'],
+                ['personal_growth','Personal growth','Личностный рост','Crecimiento personal'],
+                ['lifestyle','Lifestyle','Образ жизни','Estilo de vida'],
+                ['meaning_purpose','Meaning & purpose','Смысл и предназначение','Sentido y propósito'],
+              ].map(([key,en,ru,es])=><option key={key} value={key}>{lang==='ru'?ru:lang==='es'?es:en}</option>)}
+            </select>
+          </label>
+          {contextTopic==='personal_growth'&&<label>
+            <input type="checkbox" checked={contextAssessments} onChange={event=>setContextAssessments(event.target.checked)}/>
+            {lang==='ru'?'Использовать одобренные результаты тестов':lang==='es'?'Usar resultados de pruebas autorizados':'Use approved assessment scores'}
+          </label>}
         <label className={styles.coachEnginePicker} data-coach-engine-choice>
           <span>{({ru:'Движок диалога',en:'Dialogue engine',es:'Motor de diálogo'})[lang]}</span>
           <select value={coachEngine} disabled={busy} onChange={event=>{

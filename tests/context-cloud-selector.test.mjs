@@ -38,3 +38,12 @@ test('selector ranking is deterministic and keeps the JSON packet bounded', () =
   assert.ok(Buffer.byteLength(JSON.stringify(packet)) <= 1200)
   assert.deepEqual(packet, selectCoachContext(selected, rows.reverse(), [grant]))
 })
+
+test('a valid assessment grant is insufficient without the current conversation opt-in', () => {
+  const assessment = { ...item, category: 'test_results', sourceKind: 'selected_assessment',
+    scaleKey: 'trait.ipip50.extraversion' }
+  const approval = { ...grant, category: assessment.category, itemId: assessment.id,
+    scaleKey: assessment.scaleKey, sourceRevision: assessment.sourceRevision }
+  assert.deepEqual(selectCoachContext(request, [assessment], [approval]).items, [])
+  assert.equal(selectCoachContext({ ...request, includeAssessments: true }, [assessment], [approval]).items.length, 1)
+})
