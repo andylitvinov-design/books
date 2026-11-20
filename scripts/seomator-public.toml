@@ -20,6 +20,10 @@ exclude = [
 ]
 drop_query_prefixes = ["utm_", "gclid", "fbclid"]
 
+# Existing public crawl and Lighthouse checks cover other resources.
+[external_links]
+enabled = false
+
 [ci]
 # Report all technical issues without breaking unrelated production builds.
 fail_under = 0
