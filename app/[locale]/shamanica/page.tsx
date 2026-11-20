@@ -4,7 +4,7 @@ import { isPublicLocale } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
 import { ShamanicaMobile } from "@/components/shamanica-mobile";
 type Props={params:Promise<{locale:string}>};
-const title={ru:"Шаманика — практики, поддержка и обучение",en:"Shamanica — practices, support & learning",es:"Shamanica — prácticas, apoyo y aprendizaje"} as const;
+const title={ru:"Шаманик — практики, поддержка и обучение",en:"Shamanic — practices, support & learning",es:"Shamanic — prácticas, apoyo y aprendizaje"} as const;
 export async function generateMetadata({params}:Props):Promise<Metadata>{
  const {locale}=await params;
  if(!isPublicLocale(locale))return {title:"Not found",robots:{index:false}};
