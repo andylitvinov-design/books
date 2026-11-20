@@ -314,28 +314,42 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
           const input=form.locator('[data-home-intent-composer]')
           const send=form.locator('[data-home-send-to-ali]')
           await expect(entry.locator('[data-home-free-review]')).toHaveAttribute('href','/'+locale+'/services/free-situation-review')
-          // Measure in ONE animation frame, BEFORE focusing the textarea.
-          // Both approved compact Home layouts are allowed: a free review
-          // above OR below the four topics, never visually overlapping them.
+          // Measure both rectangles in ONE animation frame, BEFORE focusing the
+          // lower textarea. Separate boundingBox calls during mobile keyboard
+          // auto-scroll can use different scroll offsets and produce a false
+          // overlap even when layout order and spacing are correct.
           const homeLayout=await entry.evaluate(root=>{
-            const review=root.querySelector('[data-home-free-review]')
             const topics=root.querySelector('[data-home-focus-grid]')
-            if(!review||!topics)return null
-            const reviewBox=review.getBoundingClientRect()
+            const how=root.querySelector('[data-home-how-it-works]')
+            const review=root.querySelector('[data-home-free-review]')
+            const support=root.querySelector('[data-home-request-session]')
+            if(!topics||!how||!review||!support)return null
             const topicsBox=topics.getBoundingClientRect()
-            return {reviewTop:reviewBox.top,reviewBottom:reviewBox.bottom,
-              topicsTop:topicsBox.top,topicsBottom:topicsBox.bottom}
+            const howBox=how.getBoundingClientRect()
+            const reviewBox=review.getBoundingClientRect()
+            return {
+              topicsBeforeHow:Boolean(topics.compareDocumentPosition(how)&Node.DOCUMENT_POSITION_FOLLOWING),
+              howBeforeReview:Boolean(how.compareDocumentPosition(review)&Node.DOCUMENT_POSITION_FOLLOWING),
+              reviewBeforeSupport:Boolean(review.compareDocumentPosition(support)&Node.DOCUMENT_POSITION_FOLLOWING),
+              topicsBottom:topicsBox.bottom,howTop:howBox.top,
+              howBottom:howBox.bottom,reviewTop:reviewBox.top,
+            }
           })
-          assert.ok(homeLayout&&(
-            homeLayout.reviewBottom<=homeLayout.topicsTop+1||
-            homeLayout.topicsBottom<=homeLayout.reviewTop+1),
-            label+': free review and four topic choices stay distinct '+JSON.stringify(homeLayout))
+          // Owner-approved dialogue-first Home order: four directions, 3 steps,
+          // then Get Ideas / Get Support side by side. Do not restore the old
+          // free-review-before-topics marketing order or weaken geometry checks.
+          assert.ok(homeLayout?.topicsBeforeHow&&homeLayout.howBeforeReview&&homeLayout.reviewBeforeSupport&&
+            homeLayout.topicsBottom<=homeLayout.howTop+1&&homeLayout.howBottom<=homeLayout.reviewTop+1,
+            label+': four directions → 3 steps → Get Ideas / Get Support '+JSON.stringify(homeLayout))
           await expect(entry.locator('[data-home-intent-option]')).toHaveCount(4)
           await expect(input).toBeVisible()
-          await expect(send).toBeDisabled()
+          // Approved free-chat entry opens Ali even without a prefilled wish.
+          // Users may also describe their goal first; neither action is blocked.
+          await expect(send).toBeEnabled()
           await input.fill(locale==='ru'?'Хочу создать курс':locale==='es'?'Quiero crear un curso':'I want to create a course')
           await expect(send).toBeEnabled()
           await input.fill('')
+          await expect(send).toBeEnabled()
           await expect(page.locator('[data-home-deferred-sections]')).toHaveCount(1)
           const hero=entry.locator('[data-home-dialogue-hero]')
           const rect=await hero.boundingBox()
