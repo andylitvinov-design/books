@@ -7390,6 +7390,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       data-video-preview-playing={previewPlaying?"true":undefined}
       data-hh-video-ihelp-open={videoIHelpOpen||undefined}
       data-mandala-free-video data-video-studio-mode={studioMode}
+      data-ideas-step={activeWorkspace==="phrases"?ideasSubtab:undefined}
       data-video-advanced-open={(showAdvancedVideo||videoScenarioOpen)?"true":"false"}
       data-video-scenario-open={videoScenarioOpen?"true":"false"}
       data-video-studio-hydrated={studioHydrated?"true":"false"}
@@ -7738,6 +7739,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </div>
             <span className={videoStyles.previewStageBadge}>{studioMode==="therapy"?"01 — 08":layout.previewCta}</span>
           </div>
+
+      {/* Still photo for the mobile Ideas brief, never a second playback surface.
+          Keep the protected MP4 canvas mounted for the other workspaces. */}
+      <figure className={videoStyles.ideasPhotoHero} data-video-ideas-photo>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/images/holistic-house/support-mock-hero.webp" alt="" aria-hidden="true" loading="lazy"/>
+        <figcaption>
+          <strong>{locale==="ru"?"Ваше видео — ваша история":locale==="es"?"Tu vídeo, tu historia":"Your video, your story"}</strong>
+          <span>{locale==="ru"?"Начнём с ваших чувств":locale==="es"?"Empecemos por cómo te sientes":"Start with how you feel"}</span>
+        </figcaption>
+      </figure>
       <div className={videoStyles.heroWithRail} data-video-player-with-controls>
       <section className={videoStyles.hero} id="video-hero" data-video-mandala-hero
         data-hero-promo={activeWorkspace!=="phrases"&&creationMode!=="generated"&&!cinematicPlan&&!photoUrl&&!previewPlaying&&!recording&&!selectedStyleFilm&&!hypnoLight.enabled?"true":"false"}
@@ -8252,8 +8264,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
       <section className={videoStyles.quickPhraseSection} data-workspace-section="phrases" data-video-quick-phrases aria-label={workspaceCopy[locale].phrases.title} data-ideas-subtab={ideasSubtab} data-ideas-active-tab={ideasSubtab}>
         <div className={videoStyles.ideasSubtabs} data-video-ideas-tabs role="group"
-          aria-label={locale==="ru"?"Идеи: персонализация, цель и концепция":
-            locale==="es"?"Ideas: personalización, objetivo y concepto":"Ideas: personalization, goal and concept"}>
+          aria-label={locale==="ru"?"Идеи: персонализация, цель и сценарий":
+            locale==="es"?"Ideas: personalización, objetivo y guion":"Ideas: personalization, goal and scenario"}>
           <button type="button" data-video-ideas-tab="personalization" aria-pressed={ideasSubtab==="personalization"}
             onClick={()=>setIdeasSubtab("personalization")}>
             <Heart size={19} aria-hidden="true"/>
@@ -8267,7 +8279,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <button type="button" data-video-ideas-tab="concept" aria-pressed={ideasSubtab==="concept"}
             onClick={()=>setIdeasSubtab("concept")}>
             <Brain size={20} aria-hidden="true"/>
-            {locale==="ru"?"Концепция":locale==="es"?"Concepto":"Concept"}
+            {locale==="ru"?"Сценарий":locale==="es"?"Guion":"Scenario"}
           </button>
         </div>
         <div className={videoStyles.quickSectionHeading}>
