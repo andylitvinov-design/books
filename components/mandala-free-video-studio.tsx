@@ -6358,7 +6358,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     }
     return started;
   };
-  const generateFromGoal=()=>generateExpressFromCurrent();
+  const generateFromGoal=()=>{
+    // The click handler mirrors the visible button's eligibility so alternate
+    // callers cannot bypass the completed Goal, typed-wish or uploaded-audio gate.
+    if((!goalQuizReady&&!wish.trim()&&!uploadedAudio)||!studioHydrated||recording||preparing)return false;
+    return generateExpressFromCurrent();
+  };
 
   const openVideoScenarioStep = () => {
     setIntroPlaying(false);setIntroDismissed(true);
