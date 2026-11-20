@@ -14,7 +14,16 @@ const css=read("components/mandala-video-personalization.module.css");
 const mobile=read("components/mandala-video-mobile.module.css");
 const browser=read("scripts/verify-affirmation-voice-browser.mjs");
 
-test("Ideas has three real substages and the same single Scenario/Concept generator",()=>{
+test("Ideas starts Goal → Personalization → Concept with one existing generator",()=>{
+  assert.match(studio,/useState<"personalization"\|"goal"\|"concept">\("goal"\)/);
+  assert.ok(studio.indexOf('data-video-ideas-tab="goal"')<studio.indexOf('data-video-ideas-tab="personalization"'));
+  assert.ok(studio.indexOf('data-video-ideas-tab="personalization"')<studio.indexOf('data-video-ideas-tab="concept"'));
+  assert.match(studio,/onContinue=\{\(\)=>setIdeasSubtab\("personalization"\)\}/);
+  assert.match(studio,/onBack=\{\(\)=>setIdeasSubtab\("goal"\)\}/);
+  assert.match(studio,/selectedTopic:selectedConceptTopic,profile:null/);
+  assert.match(studio,/profileConfirmed:false/);
+  assert.match(studio,/data-video-ideas-progress/);
+  assert.ok(browser.includes("Goal stays selected after the Personalization answers"));
   assert.equal((studio.match(/data-video-ideas-tab="/g)||[]).length,3);
   for(const tab of ["personalization","goal","concept"]){
     assert.ok(studio.includes('data-video-ideas-tab="'+tab+'"'),tab);
@@ -24,7 +33,7 @@ test("Ideas has three real substages and the same single Scenario/Concept genera
     assert.ok(studio.includes(label),label);
   assert.equal((studio.match(/<MandalaVideoPersonalization /g)||[]).length,1);
   assert.equal((studio.match(/<MandalaVideoIdeaGoal /g)||[]).length,1);
-  assert.match(studio,/setIdeasProfileConfirmed\(true\);setIdeasSubtab\("goal"\)/);
+  assert.match(studio,/setIdeasProfileConfirmed\(true\);setIdeasSubtab\("concept"\)/);
   assert.equal((studio.match(/<MandalaVideoConcept /g)||[]).length,1);
   assert.match(studio,/id:"concept",Icon:Film/,
     "Montage retains its own independent video-storyboard destination");
@@ -225,7 +234,7 @@ test("Energy now and desired energy each require one button from 1 to 10 and aut
 test("Ideas phone view uses one static photo and three real subtabs",()=>{
   assert.match(studio,/data-video-ideas-photo/);
   assert.match(studio,/src="\/images\/holistic-house\/support-mock-hero\.webp"/);
-  for(const label of ["Ваше видео — ваша история","Your video, your story","Tu vídeo, tu historia"])
+  for(const label of ["Создайте видео для вашей цели","Create a video for your goal","Crea un vídeo para tu objetivo"])
     assert.ok(studio.includes(label),label);
   assert.match(studio,/data-ideas-step=\{activeWorkspace==="phrases"\?ideasSubtab:undefined\}/);
   assert.match(mobile,/\.previewStage>\.heroWithRail\{display:none!important\}/);
@@ -235,5 +244,5 @@ test("Ideas phone view uses one static photo and three real subtabs",()=>{
   assert.ok(browser.includes("async function openVisibleMontageText(page,engine"));
   assert.ok(browser.includes("real static photo replaces Ideas player"));
   assert.match(css,/@media\(max-width:759px\)/);
-  assert.match(studio,/setIdeasProfileConfirmed\(true\);setIdeasSubtab\("goal"\)/);
+  assert.match(studio,/setIdeasProfileConfirmed\(true\);setIdeasSubtab\("concept"\)/);
 });

@@ -2074,7 +2074,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [activeWorkspace,setActiveWorkspace] = useState<StudioWorkspace>("video");
   const [proCatalogKind,setProCatalogKind]=useState<StoryAddonKind>("character");
   const [ideasVoiceAdvancedOpen,setIdeasVoiceAdvancedOpen] = useState(false);
-  const [ideasSubtab,setIdeasSubtab] = useState<"personalization"|"goal"|"concept">("personalization");
+  const [ideasSubtab,setIdeasSubtab] = useState<"personalization"|"goal"|"concept">("goal");
   const [ideasVoiceMode,setIdeasVoiceMode] = useState<"voice"|"my-voice">("voice");
   const [ideasProfile,setIdeasProfile] = useState<VideoGoalProfile>(DEFAULT_VIDEO_GOAL_PROFILE);
   // Do not misread initial preselected chips as answers until the visitor
@@ -3165,9 +3165,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // not a replacement for what the visitor explicitly selected.
   const personalGoalOptions=useMemo(()=>buildPersonalVideoGoalOptions({
     locale,wish:[wish,selectedConceptTopic?.brief].filter(Boolean).join(". "),theme,
-    selectedTopic:selectedConceptTopic,profile:ideasProfile,
-    profileConfirmed:ideasProfileConfirmed
-  }),[locale,wish,theme,selectedConceptTopic,ideasProfile,ideasProfileConfirmed]);
+    selectedTopic:selectedConceptTopic,profile:null,
+    profileConfirmed:false
+  }),[locale,wish,theme,selectedConceptTopic]);
   const activeIdeasGoalId=ideasGoalChoice?.contextKey===personalGoalOptions.contextKey?
     ideasGoalChoice.id:null;
   const chosenIdeaGoal=personalGoalOptions.goals.find(option=>option.id===activeIdeasGoalId)||null;
@@ -7763,8 +7763,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/images/holistic-house/support-mock-hero.webp" alt="" aria-hidden="true" loading="lazy"/>
         <figcaption>
-          <strong>{locale==="ru"?"Ваше видео — ваша история":locale==="es"?"Tu vídeo, tu historia":"Your video, your story"}</strong>
-          <span>{locale==="ru"?"Начнём с ваших чувств":locale==="es"?"Empecemos por cómo te sientes":"Start with how you feel"}</span>
+          <strong>Magic Mirror</strong>
+          <span>{locale==="ru"?"Создайте видео для вашей цели":locale==="es"?"Crea un vídeo para tu objetivo":"Create a video for your goal"}</span>
         </figcaption>
       </figure>
       <div className={videoStyles.heroWithRail} data-video-player-with-controls>
@@ -8281,23 +8281,30 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
       <section className={videoStyles.quickPhraseSection} data-workspace-section="phrases" data-video-quick-phrases aria-label={workspaceCopy[locale].phrases.title} data-ideas-subtab={ideasSubtab} data-ideas-active-tab={ideasSubtab}>
         <div className={videoStyles.ideasSubtabs} data-video-ideas-tabs role="group"
-          aria-label={locale==="ru"?"Идеи: персонализация, цель и сценарий":
-            locale==="es"?"Ideas: personalización, objetivo y guion":"Ideas: personalization, goal and scenario"}>
-          <button type="button" data-video-ideas-tab="personalization" aria-pressed={ideasSubtab==="personalization"}
-            onClick={()=>setIdeasSubtab("personalization")}>
-            <Heart size={19} aria-hidden="true"/>
-            {locale==="ru"?"Персонализация":locale==="es"?"Personalización":"Personalization"}
-          </button>
+          aria-label={locale==="ru"?"Идеи: цель, персонализация и сценарий":
+            locale==="es"?"Ideas: objetivo, personalización y guion":"Ideas: goal, personalization and scenario"}>
           <button type="button" data-video-ideas-tab="goal" aria-pressed={ideasSubtab==="goal"}
             onClick={()=>setIdeasSubtab("goal")}>
             <Target size={20} aria-hidden="true"/>
             {locale==="ru"?"Цель":locale==="es"?"Objetivo":"Goal"}
+          </button>
+          <button type="button" data-video-ideas-tab="personalization" aria-pressed={ideasSubtab==="personalization"}
+            onClick={()=>setIdeasSubtab("personalization")}>
+            <Heart size={19} aria-hidden="true"/>
+            {locale==="ru"?"Персонализация":locale==="es"?"Personalización":"Personalization"}
           </button>
           <button type="button" data-video-ideas-tab="concept" aria-pressed={ideasSubtab==="concept"}
             onClick={()=>setIdeasSubtab("concept")}>
             <Brain size={20} aria-hidden="true"/>
             {locale==="ru"?"Сценарий":locale==="es"?"Guion":"Scenario"}
           </button>
+        </div>
+        <div className={videoStyles.ideasProgress} data-video-ideas-progress role="status">
+          <span>{locale==="ru"?"Шаг":locale==="es"?"Paso":"Step"} {ideasSubtab==="goal"?1:ideasSubtab==="personalization"?2:3} / 3</span>
+          <span className={videoStyles.ideasProgressDots} aria-hidden="true">
+            {(["goal","personalization","concept"] as const).map(step=>
+              <i key={step} data-active={ideasSubtab===step?"true":"false"}/>)}
+          </span>
         </div>
         <div className={videoStyles.quickSectionHeading}>
           <h3 id="quick-phrases-heading"><HandHeart size={19} aria-hidden="true"/>{locale==="ru"?"Мой запрос и тема":locale==="es"?"Mi intención y tema":"My request & topic"}</h3>
@@ -8317,8 +8324,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <div id="video-ideas-personalization-panel" data-video-ideas-personalization-panel hidden={ideasSubtab!=="personalization"}>
           <MandalaVideoPersonalization locale={locale} value={ideasProfile}
             onChange={setIdeasProfile} disabled={recording||preparing}
-            onBack={()=>setActiveWorkspace("video")}
-            onContinue={()=>{setIdeasProfileConfirmed(true);setIdeasSubtab("goal");}}/>
+            onBack={()=>setIdeasSubtab("goal")}
+            onContinue={()=>{setIdeasProfileConfirmed(true);setIdeasSubtab("concept");}}/>
           <p className={videoStyles.montageMovedNote}>{locale==="ru"?"Выбор фраз — в Монтаже → Текст.":locale==="es"?"Las frases están en Montaje → Texto.":"Choose phrases in Montage → Text."}</p>
           <button type="button" className={videoStyles.montageStepNext} data-video-ideas-open-montage-text
             disabled={recording||preparing} onClick={goToMontageFromIdeas}>
@@ -8365,7 +8372,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               setApprovedVideoConcept(null);setDraftVideoConcept(null);
               setChosenFilm(null);setAppliedStoryKey(null);
             }}
-            disabled={recording||preparing} onContinue={()=>setIdeasSubtab("concept")}/>
+            disabled={recording||preparing} onContinue={()=>setIdeasSubtab("personalization")}/>
         </div>
         <div className={videoStyles.ideasConceptPane} id="video-ideas-concept-panel"
           data-video-ideas-concept-panel hidden={ideasSubtab!=="concept"}>

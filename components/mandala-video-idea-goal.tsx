@@ -1,14 +1,14 @@
 "use client";
 import {useState} from "react";
-import {ArrowRight,Check,ChevronLeft,ChevronRight} from "lucide-react";
+import {ArrowRight,Check} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
 import type {VideoGoalOptions} from "@/lib/mandala/video-personal-goal-composer.mjs";
 import css from "./mandala-video-idea-goal.module.css";
 
 const COPY={
- ru:{kicker:"Идеи · Цель",title:"Выберите вашу цель",intro:"Три подходящих варианта по вашему запросу и ответам.",more:"Ещё 2 цели",back:"К основным целям",prev:"Предыдущие цели",next:"Другие цели",selected:"Ваша цель",continue:"Выбрать сценарий",kinds:{leisure:"Отдых и удовольствие",support:"Поддержка и стабилизация",change:"Психологическое изменение"}},
- en:{kicker:"Ideas · Goal",title:"Choose your goal",intro:"Three options chosen from your request and confirmed answers.",more:"2 more goals",back:"Main goals",prev:"Previous goals",next:"Other goals",selected:"Your goal",continue:"Choose scenario",kinds:{leisure:"Rest & enjoyment",support:"Support & stability",change:"Psychological change"}},
- es:{kicker:"Ideas · Objetivo",title:"Elige tu objetivo",intro:"Tres propuestas según tu petición y respuestas confirmadas.",more:"2 objetivos más",back:"Objetivos principales",prev:"Objetivos anteriores",next:"Otros objetivos",selected:"Tu objetivo",continue:"Elegir escenario",kinds:{leisure:"Descanso y disfrute",support:"Apoyo y estabilidad",change:"Cambio psicológico"}}
+ ru:{kicker:"Идеи · Цель",title:"Выберите вашу цель",intro:"Три подходящих варианта по вашему запросу. Далее — персонализация.",more:"Другие цели...",back:"К основным целям",prev:"Предыдущие цели",next:"Другие цели",selected:"Ваша цель",continue:"Далее",kinds:{leisure:"Отдых и удовольствие",support:"Поддержка и стабилизация",change:"Психологическое изменение"}},
+ en:{kicker:"Ideas · Goal",title:"Choose your goal",intro:"Three options based on your request. Personalize your video next.",more:"More goals...",back:"Main goals",prev:"Previous goals",next:"Other goals",selected:"Your goal",continue:"Next",kinds:{leisure:"Rest & enjoyment",support:"Support & stability",change:"Psychological change"}},
+ es:{kicker:"Ideas · Objetivo",title:"Elige tu objetivo",intro:"Tres propuestas según tu petición. Después personaliza tu vídeo.",more:"Más objetivos...",back:"Objetivos principales",prev:"Objetivos anteriores",next:"Otros objetivos",selected:"Tu objetivo",continue:"Siguiente",kinds:{leisure:"Descanso y disfrute",support:"Apoyo y estabilidad",change:"Cambio psicológico"}}
 } as const;
 export function MandalaVideoIdeaGoal({locale,options,selectedId,onSelect,onContinue,disabled}:{
  locale:PublicLocale;options:VideoGoalOptions;selectedId:string|null;
@@ -42,9 +42,6 @@ export function MandalaVideoIdeaGoal({locale,options,selectedId,onSelect,onConti
   </div>
   <div className={css.more}>
    <button type="button" data-video-ideas-more-goals disabled={disabled} onClick={move}>{page===0?t.more:t.back}</button>
-   <span className={css.pageCount} aria-live="polite">{page+1} / 2</span>
-   <button type="button" data-video-ideas-goals-prev aria-label={t.prev} disabled={disabled} onClick={move}><ChevronLeft size={24} aria-hidden="true"/></button>
-   <button type="button" data-video-ideas-goals-next aria-label={t.next} disabled={disabled} onClick={move}><ChevronRight size={24} aria-hidden="true"/></button>
   </div>
   {selected?<p className={css.selected} data-video-ideas-goal-selected role="status">{t.selected}: <strong>{selected.copy[locale]?.title}</strong></p>:null}
   <button type="button" className={css.continue} data-video-ideas-goal-next
