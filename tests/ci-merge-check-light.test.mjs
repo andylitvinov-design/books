@@ -19,11 +19,18 @@ test('Mac impact: UI-only Ideas, text, CSS and browser assertions skip macOS, re
  assert.equal(requiresRealMediaWebKit(rows(
   'components/mandala-video-idea-goal.tsx',
   'components/mandala-video-personalization.module.css',
-  'lib/mandala/video-personal-goal-composer.mjs',
   'scripts/verify-affirmation-voice-browser.mjs',
   'tests/mandala-ideas-goal-flow.test.mjs'
  )),false);
 });
+test('Mac impact: unknown/semantic video source never gets a filename-only WebKit waiver',()=>{
+ for(const path of ['lib/mandala/video-personal-goal-composer.mjs',
+   'lib/mandala/new-encoded-player.mjs','lib/mandala/unknown-render-source.mjs',
+   'components/mandala-movie-device.tsx','app/api/holistic-support/video/route.js']) {
+   assert.equal(requiresRealMediaWebKit(rows(path)),true,path);
+ }
+});
+
 test('Mac impact: Stories Studio always requests five-scene real WebKit acceptance',()=>{
  for(const path of ['lib/mandala/stories-studio.mjs',
     'components/mandala-stories-characters.tsx',

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import test from "node:test";
 import {shouldAutoRecoverSafariPlayback} from "../lib/mandala/recording-codecs.mjs";
+import {requiresRealMediaWebKit} from "../lib/ci/merge-check-light.mjs";
 
 const helper=readFileSync(new URL("../lib/mandala/webcodecs-mp4-export.ts",import.meta.url),"utf8");
 const presetLoader=readFileSync(new URL("../lib/mandala/first-party-video-audio.ts",import.meta.url),"utf8");
@@ -24,7 +25,11 @@ test("physical-iPhone Ready repair runs the mandatory macOS WebKit video and AAC
   const gate=job.slice(0,job.indexOf("\n    needs:"));
   assert.match(gate,/github\.event_name == 'pull_request'/);
   assert.match(gate,/github\.event\.pull_request\.draft == false/);
-  assert.match(gate,/github\.head_ref == 'fix\/iphone-ready-mp4-export-20261118'/);
+  assert.match(gate,/needs\.webkit_preflight\.outputs\.media_required == 'true'/);
+  assert.equal(requiresRealMediaWebKit([
+    {filename:'lib/mandala/webcodecs-mp4-export.ts',status:'M'},
+    {filename:'components/mandala-free-video-studio.tsx',status:'M'}]),true,
+    'physical iPhone MP4 source still requires real macOS WebKit');
   assert.match(job,/needs: \[webkit_preflight\]/);
   assert.match(job,/runs-on: macos-15/);
   assert.match(job,/Build exact voice release candidate/);
@@ -159,7 +164,9 @@ test("Safari repair branches must reach real macOS WebKit video/audio acceptance
   assert.ok(enabled>=2,"Safari repair must run scoped build + macOS WebKit media tests");
   const job=workflow.split("  voice-webkit-macos:")[1];
   assert.ok(job,"WebKit must remain an independent real-media job");
-  assert.match(job.split("    runs-on:")[0],/startsWith\(github\.head_ref, 'fix\/webkit-'\)/);
+  assert.match(job.split("    runs-on:")[0],/needs\.webkit_preflight\.outputs\.media_required == 'true'/);
+  assert.equal(requiresRealMediaWebKit([{filename:'lib/mandala/webcodecs-mp4-export.ts',status:'M'}]),true,
+    'Safari WebCodecs changes must execute macOS regardless of branch name');
   assert.match(job,/node scripts\/benchmarking\/first-video-live-export\.mjs/);
   assert.match(job,/node scripts\/verify-affirmation-voice-browser\.mjs/);
 });
