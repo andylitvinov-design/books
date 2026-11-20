@@ -198,3 +198,19 @@ test('conservative matching: unrelated free analysis and uncertain modality do n
  }
  assert.equal(sessionSecretaryMessage('What is Reiki?','en').kind,'confused');
 });
+
+test('a bare yes or unspecific price inquiry does not manufacture a goal, service or request',()=>{
+ for(const [locale,affirm,price,avail] of [
+  ['ru','да','Сколько стоит консультация?','Есть ли свободное время завтра?'],
+  ['en','yes','How much does it cost?','Are there appointments available?'],
+  ['es','sí','¿Cuánto cuesta?','¿Hay horarios disponibles?'],
+ ]){
+  assert.equal(sessionSecretaryMessage(affirm,locale).kind,'confused');
+  for(const [text,expected] of [[price,'price'],[avail,'availability']]){
+   const r=sessionSecretaryMessage(text,locale);
+   assert.equal(r.kind,expected);
+   assert.equal(r.serviceId,undefined);
+   assert.equal((r.reply.match(/[?？]/gu)||[]).length,1,locale+' '+text);
+  }
+ }
+});
