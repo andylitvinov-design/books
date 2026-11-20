@@ -142,6 +142,8 @@ jobs:
         run: node --test tests/crm-telegram-owner-pilot-links.test.mjs
       - name: First-person Telegram coaching conversation EN RU ES, old-session preservation and RLS
         run: node --test tests/crm-telegram-natural-conversation-v2.test.mjs tests/crm-telegram-diagnostic.test.mjs tests/coaching-telegram-handoff.test.mjs tests/crm-telegram-webapp-intake.test.mjs tests/crm-telegram-coaching-chunks.test.mjs tests/ali-service-secretary-flexible-dialogue.test.mjs tests/ali-website-secretary-session-parity.test.mjs
+      - name: Incident regression - Telegram Business secretary rate TTL and exact Shamanica Reiki request
+        run: node --test tests/crm-telegram-shamanica-course-intake.test.mjs
       - name: Verify EN/RU/ES free-review Telegram deep links and signed WhatsApp manual locale handoff
         run: node --conditions=react-server --test tests/crm-express-review-language-channels.test.mjs
       - name: Lint localized express review channel entry and strict WhatsApp marker

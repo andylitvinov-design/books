@@ -224,7 +224,7 @@ test('website guest first reply routes exact service and never uses emergency te
  assert.match(guest,/const intent=sessionSecretaryMessage\(text,language\)/);
  assert.match(guest,/setSessionOffers\(\[verified\]\)/);
  assert.match(guest,/option\.id===intent\.serviceId/);
- assert.match(guest,/intent\.reply\|\|\(/);
+ assert.match(guest,/return intent\.reply\|\|aliGentleContinuity\(\{message:text,locale:language,history:prior\}\)/);
  assert.match(guest,/setPageHelpLink\(\{href:"\/"\+language\+verified\.href,label:verified\.label\}\)/);
  assert.doesNotMatch(guest,/return messengerStarter\[language\]\.safety/);
  // Safety screening remains ahead of guestAnswer in the visitor route.

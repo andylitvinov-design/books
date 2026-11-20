@@ -10,7 +10,7 @@ const mobile=layout.slice(layout.indexOf("/* Goal 1: owner mobile correction"));
 
 test("Goal uses Life/Work as only audience switch and collapses the old empty row",()=>{
  assert.match(studio,/data-video-director-audience-controls/);
- assert.match(studio,/1\. Choose your goal/);
+ assert.match(studio,/1\. Choose a category/);
  assert.match(director,/changeVideoAudience\(scope==="life"\?"self":"others"\)/);
  assert.doesNotMatch(director,/createPortal\(audienceBar,audienceTarget\)/);
  assert.match(mobile,/grid-template-columns:minmax\(0,1fr\) auto!important/);
