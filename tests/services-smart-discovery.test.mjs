@@ -142,9 +142,12 @@ test('Services: optional booking-style search lives in the dedicated directory f
     readFile(new URL('../app/api/marketplace/intent-match/route.ts',import.meta.url),'utf8'),
   ])
   for(const page of [main,es]){
-    assert.ok(page.indexOf('<ServicesStudioOffers')>page.indexOf('<ServicesConversionHero'))
-    assert.ok(page.indexOf('<PersonalTestimonials')>page.indexOf('<ServicesStudioOffers'))
-    assert.ok(page.indexOf('<PublicConsultationCta')>page.indexOf('<ServicesConversionHero'))
+    // The current owner-approved compact catalog puts direct consultation
+    // first, studio offers next, directory discovery later and testimonials last.
+    // Keep this structural contract for both EN/RU and Spanish pages.
+    assert.ok(page.indexOf('<PublicConsultationCta')<page.indexOf('<ServicesStudioOffers'))
+    assert.ok(page.indexOf('<ServicesStudioOffers')<page.indexOf('<ServicesConversionHero'))
+    assert.ok(page.indexOf('<PersonalTestimonials')>page.indexOf('<ServicesConversionHero'))
     assert.ok(page.indexOf('<PublicConsultationCta')<page.indexOf('<PersonalTestimonials'))
     assert.match(page,/<ServicesIntroMedia/)
     assert.match(page,/<ServicesMethodVideos/)
