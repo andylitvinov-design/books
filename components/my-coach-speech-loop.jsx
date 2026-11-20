@@ -19,7 +19,7 @@ const words={
     short:'I did not catch that. Tap the microphone to try again.',review:'Voice saved as a draft. Review and send it below.',restart:'Tap the microphone for the next turn.',
     failed:'Coach could not answer. The microphone is listening again; keep talking or edit your text.',
     privacy:'Microphone audio may be processed by your browser’s speech-recognition provider. We do not store recordings. Press Stop at any time.',
-    fallback:'Natural coach voice is unavailable right now. The microphone remains active; keep talking or type.',tapToHear:'Tap to hear the coach',preparing:'Preparing voice…',
+    fallback:'Natural coach voice is unavailable right now. The microphone remains active; keep talking or type.',bargeManual:'Automatic interruption is unavailable. Tap the green microphone to interrupt.',tapToHear:'Tap to hear the coach',preparing:'Preparing voice…',
     iosCue:'Okay.',iosPreparing:'Resetting iPhone speech input…',iosAwaitSpeech:'Microphone started; waiting for speech…',iosSilent:'iPhone Safari stopped sending speech. Use the text field or fully close and reopen Safari to reset its audio service.',iosCueFailed:'Safari could not reset speech input. Use text or restart Safari, then tap the mic again.',iosAwaitEnd:'Text ready. Waiting for Safari to finish…',audioHearing:'Voice detected…',audioTranscribing:'Transcribing your words…',audioQuiet:'Mic on · waiting for your voice.',audioNoSignal:'No mic signal. Tap Mic to retry, or use Text.',deviceFallback:'Device voice: natural coach voice temporarily unavailable.',audioUnavailable:'Speech recognition is temporarily unavailable. You can keep typing.'},
   ru:{start:'Говорить голосом',stop:'Остановить голос',retryMic:'Перезапустить микрофон',listening:'Слушаю…',thinking:'Коуч думает…',speaking:'Говорит…',
     network:'Распознавание браузера недоступно. Ваши слова остаются в поле ответа.',noMicrophone:'Safari не обнаружил микрофон.',captureRetry:'Восстанавливаю микрофон…',captureFailed:'Браузер не смог включить микрофон. Проверьте доступ к микрофону для сайта и нажмите микрофон ещё раз.',language:'Браузер не поддерживает этот язык. Выберите RU или EN.',
@@ -28,7 +28,7 @@ const words={
     short:'Не удалось разобрать фразу. Нажмите микрофон ещё раз.',review:'Слова сохранены в поле ввода. Проверьте и отправьте.',restart:'Нажмите микрофон для следующей реплики.',
     failed:'Коуч пока не смог ответить. Микрофон снова слушает; продолжайте говорить или исправьте текст.',
     privacy:'Браузер может передавать аудио поставщику распознавания речи. Мы не сохраняем записи. Разговор можно остановить в любой момент.',
-    fallback:'Качественный голос коуча сейчас недоступен. Микрофон продолжает слушать; можно говорить или писать.',tapToHear:'Нажмите, чтобы услышать коуча',preparing:'Готовлю голос…',
+    fallback:'Качественный голос коуча сейчас недоступен. Микрофон продолжает слушать; можно говорить или писать.',bargeManual:'Автоперебивание недоступно. Нажмите зелёный микрофон, чтобы остановить коуча.',tapToHear:'Нажмите, чтобы услышать коуча',preparing:'Готовлю голос…',
     iosCue:'Да.',iosPreparing:'Восстанавливаю распознавание iPhone…',iosAwaitSpeech:'Микрофон запущен, жду вашу речь…',iosSilent:'Safari на iPhone перестал передавать речь. Можно написать ответ или полностью закрыть и снова открыть Safari для сброса аудиослужбы.',iosCueFailed:'Safari не восстановил распознавание. Попробуйте текст или перезапустите Safari и снова нажмите микрофон.',iosAwaitEnd:'Текст готов. Ждём завершения Safari…',audioHearing:'Слышу голос…',audioTranscribing:'Расшифровываю ваши слова…',audioQuiet:'Микрофон включён · пока не слышу голос.',audioNoSignal:'Нет сигнала микрофона. Нажмите микрофон или ответьте текстом.',deviceFallback:'Временный голос устройства: естественный голос пока недоступен.',audioUnavailable:'Распознавание временно недоступно. Можно продолжить текстом.'},
   es:{start:'Hablar por voz',stop:'Detener voz',retryMic:'Reiniciar micrófono',listening:'Escuchando…',thinking:'El coach piensa…',speaking:'Hablando…',
     network:'El reconocimiento del navegador no está disponible. El texto dictado sigue abajo.',noMicrophone:'Safari no detectó ningún micrófono.',captureRetry:'Restaurando micrófono…',captureFailed:'Safari no pudo activar el micrófono. Revisa los permisos del sitio y vuelve a tocar el micrófono.',language:'El navegador no reconoce este idioma. Elige EN o RU.',
@@ -37,7 +37,7 @@ const words={
     short:'No entendí la frase. Toca el micrófono otra vez.',review:'Palabras guardadas en el borrador. Revisa y envía abajo.',restart:'Toca el micrófono para continuar.',
     failed:'El coach no pudo responder. El micrófono vuelve a escuchar; sigue hablando o edita el texto.',
     privacy:'El navegador puede enviar audio al proveedor de reconocimiento. No almacenamos grabaciones. Detén la conversación cuando quieras.',
-    fallback:'La voz natural del coach no está disponible. El micrófono sigue activo; puedes hablar o escribir.',tapToHear:'Toca para escuchar al coach',preparing:'Preparando voz…',
+    fallback:'La voz natural del coach no está disponible. El micrófono sigue activo; puedes hablar o escribir.',bargeManual:'La interrupción automática no está disponible. Toca el micrófono verde para interrumpir.',tapToHear:'Toca para escuchar al coach',preparing:'Preparando voz…',
     iosCue:'Sí.',iosPreparing:'Restableciendo el reconocimiento del iPhone…',iosAwaitSpeech:'Micrófono iniciado; esperando tu voz…',iosSilent:'Safari en iPhone dejó de entregar voz. Puedes escribir o cerrar completamente Safari y volver a abrirlo para restablecer el audio.',iosCueFailed:'Safari no pudo restablecer el reconocimiento. Escribe o reinicia Safari antes de volver a tocar el micrófono.',iosAwaitEnd:'Texto listo. Esperando el final de Safari…',audioHearing:'Voz detectada…',audioTranscribing:'Transcribiendo tu voz…',audioQuiet:'Micrófono activo · esperando tu voz.',audioNoSignal:'Sin señal de audio. Reintenta con Mic o escribe.',deviceFallback:'Voz temporal del dispositivo: voz natural no disponible.',audioUnavailable:'El reconocimiento está temporalmente no disponible. Puedes escribir.'},
 }
 
@@ -80,6 +80,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   // If Safari's reset cue jams, keep the same session and avoid repeating it.
   const iosCueBrokenRef=useRef(false)
   const generationRef=useRef(0)
+  const bargeRecoveryRef=useRef({generation:-1,retries:0})
   const earlySpeechRef=useRef(null) // one authorized early sentence, no second model call
   const turnRef=useRef(onTurn),cancelRef=useRef(onCancelTurn),interruptedRef=useRef(onCoachInterrupted),stopRef=useRef(null),sessionStartRef=useRef(onSessionStart)
   const voiceStateRef=useRef(onVoiceStateChange),levelRef=useRef(onVoiceLevel)
@@ -257,6 +258,8 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     // One captured track with browser echoCancellation=true is sampled only
     // locally while the coach speaks. A short duck confirms user voice rather
     // than the loudspeaker echo. Unsupported Safari stays on the manual Mic.
+    if(bargeRecoveryRef.current.generation!==generation)
+      bargeRecoveryRef.current={generation,retries:0}
     if(!activeRef.current||generationRef.current!==generation||
        recordedTurnRef.current||!coachRecordedSupported(window)||
        microphonePermissionStateRef.current==='denied')return
@@ -277,7 +280,8 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
         onLevel:value=>{if(activeRef.current&&generationRef.current===generation)micLevelRef.current?.(value)},
         onState:state=>{
           if(!activeRef.current||generationRef.current!==monitorGeneration)return
-          if(state==='transcribing'){changePhase('thinking');setNotice(t.audioTranscribing)}
+          if(state==='listening')setNotice('')
+          else if(state==='transcribing'){changePhase('thinking');setNotice(t.audioTranscribing)}
           else if(state==='hearing'){setNotice(t.audioHearing)}
         },
         onCandidate:()=>{if(phaseRef.current==='speaking')duckCoachVolume()},
@@ -314,8 +318,23 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
         onFailure:code=>{
           if(!activeRef.current||generationRef.current!==monitorGeneration)return
           recordedTurnRef.current=null
-          // A monitor failure must NEVER cut off the existing coach audio.
-          if(!interrupted)return // Monitoring errors never abort current inference or speech.
+          // Playback continues while the monitor recovers. A dead automatic
+          // monitor must be visible and the green mic still interrupts by tap.
+          if(!interrupted){
+            const recovery=bargeRecoveryRef.current
+            if(['MIC_CAPTURE','MIC_NO_SIGNAL'].includes(code)&&
+               recovery.generation===monitorGeneration&&recovery.retries<1&&
+               ['thinking','loading','speaking'].includes(phaseRef.current)){
+              recovery.retries+=1
+              window.setTimeout(()=>{
+                if(activeRef.current&&generationRef.current===monitorGeneration&&
+                   ['thinking','loading','speaking'].includes(phaseRef.current))
+                  beginVoiceBargeMonitor(monitorGeneration)
+              },350)
+            }else if(['thinking','loading','speaking'].includes(phaseRef.current))
+              setNotice(t.bargeManual)
+            return
+          }
           if(['STT_UNAVAILABLE','MIC_CAPTURE'].includes(code))
             recordedSttUnavailableRef.current=true
           startListening()
