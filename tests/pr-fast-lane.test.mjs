@@ -464,7 +464,12 @@ test('policy-only YAML edits and AGENTS.md do not fan out into seven product acc
       (name === 'opora-module-ci.yml' && s.includes('node --test tests/opora-support-second-screen.test.mjs') &&
         s.includes('node scripts/verify-opora-as56-browser.mjs'));
     assert.ok(focusedSelfCheck || !patterns.includes('.github/workflows/' + name), name + ' must not launch unrelated acceptance for YAML edits');
-    assert.ok(patterns.includes('package.json') && patterns.includes('package-lock.json'), name + ' lost dependency change coverage');
+    assert.ok(patterns.includes('package-lock.json'), name + ' lost dependency lockfile coverage');
+    if (name === 'hh-billing-isolated.yml') {
+      assert.ok(patterns.includes('package.json'), name + ' retains the reviewed monetization-script route');
+    } else {
+      assert.ok(!patterns.includes('package.json'), name + ' must not fan out from a Core-covered package-only script edit');
+    }
     assert.ok(patterns.some(pattern => /^app\/|^components\/|^lib\/|^tests\//.test(pattern)), name + ' lost product source coverage');
   }
 });
