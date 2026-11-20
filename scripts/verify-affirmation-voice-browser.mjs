@@ -332,11 +332,16 @@ async function verifyWorkspaceHydration(browser,locale){
     const goalTab=page.locator('[data-video-quick-control="video"]');
     await goalTab.click();
     await expect(goalTab).toHaveAttribute("aria-pressed","true");
-    const others=page.locator('[data-auto-video-audience="others"]');
-    await expect(page.locator('[data-auto-video-audience]')).toHaveCount(2);
+    // Life / Work owns the sole recipient switch. After returning from
+    // Ideas, navigate back to quiz step 1 before testing Work as a real tap.
+    const backGoal=page.locator('[data-video-goal-quiz-back]');
+    for(let step=0;step<2&&await backGoal.count();step++)await backGoal.click();
+    await expect(page.locator('[data-video-quick-scope]')).toHaveCount(2);
+    const others=page.locator('[data-video-quick-scope="work"]');
     await expect(page.locator('[data-video-goal-audience-option]')).toHaveCount(0);
     await others.click();
     await expect(others).toHaveAttribute("aria-pressed","true");
+    await expect(page.locator('[data-video-goal-quiz-audience="others"]')).toHaveCount(1);
     const recipientCatalog=page.locator('[data-video-recipient-catalog]');
     await expect(recipientCatalog).toBeVisible();
     await expect(recipientCatalog).toHaveAttribute("data-video-recipient-aspect","portrait");
