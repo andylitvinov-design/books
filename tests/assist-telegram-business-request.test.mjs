@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
+import {aliBusinessReviewConsent,aliBusinessReviewAnswer,aliBusinessReviewSummary,aliBusinessReviewValidated} from '../lib/assist/ali-business-review-intake.mjs';
 import {HOLISTIC_TELEGRAM_ACCOUNT,telegramServiceRequestDraft,telegramServiceRequestUrl,parseTelegramServiceDraft,parseTelegramPublicServiceRequest,telegramBusinessRequestFromUpdate,isHolisticBusinessConnection,telegramBusinessRequestReply,telegramBusinessMessageFromUpdate,
  telegramBusinessClientChoice,telegramBusinessConversationReply,telegramBusinessServiceTitle,detectTelegramMessageLocale,telegramPersonalReviewReplyIntent} from '../lib/assist/telegram-business-request.mjs';
 const get=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
@@ -142,19 +143,33 @@ test('the actual locked state machine requires initial request, format and disti
       offer_id:review?args[5]:null,source_path:review?args[6]:null,
       locale:review?args[7]:args[6],telegram_peer_hash:args[2],
       stage:review?'review_understanding':'format',delivery_format:null,
+      intake_answers_ciphertext:null,
       consent_at:null,reference_code:null,last_update_id:args[review?8:7]};
     return {rows:[]};
    }
    if(sql.startsWith('update app_private.crm_tg_business_service_sessions')){
+    if(sql.includes('intake_answers_ciphertext=$3'))
+      row.intake_answers_ciphertext=args[2];
+    if(sql.includes('intake_answers_ciphertext=$4')){
+      row.intake_answers_ciphertext=args[3];
+      if(sql.includes("delivery_format=case when $3='confirm'"))
+        row.delivery_format=args[2]==='confirm'?'async':row.delivery_format;
+    }
     if(sql.includes('set stage=$3'))row.stage=args[2];
     else if(sql.includes("stage='stopped'"))row.stage='stopped';
     else if(sql.includes("stage='cancelled'"))row.stage='cancelled';
+    else if(sql.includes("stage='review_understanding'")){
+      row.stage='review_understanding';row.delivery_format=null;
+      row.intake_answers_ciphertext=null;row.consent_at=null;
+    }
     else if(sql.includes("stage='confirm'")){
       row.stage='confirm';row.delivery_format=sql.includes("delivery_format='async'")?'async':args[2];
     }else if(sql.includes("stage='committing'")){
       row.stage='committing';row.consent_at=new Date().toISOString();
     }
-    row.last_update_id=sql.includes('set stage=$3')?args[3]:
+    row.last_update_id=sql.includes('intake_answers_ciphertext=$4')?args[4]:
+      sql.includes('intake_answers_ciphertext=$3')?args[3]:
+      sql.includes('set stage=$3')?args[3]:
       sql.includes("delivery_format='async'")?args[2]:
       args[sql.includes('delivery_format=$3')?3:2];
     return {rows:[],rowCount:1};
@@ -169,6 +184,11 @@ test('the actual locked state machine requires initial request, format and disti
    telegramBusinessClientChoice,telegramBusinessConversationReply,
    detectTelegramMessageLocale,telegramPersonalReviewReplyIntent,
    classifyTelegramSecretaryQuery:()=>null,
+   aliBusinessReviewConsent,aliBusinessReviewAnswer,aliBusinessReviewSummary,
+   reviewedAnswers:r=>r?.intake_answers_ciphertext
+     ?aliBusinessReviewValidated(JSON.parse(r.intake_answers_ciphertext)):null,
+   reviewContext:()=>({}),
+   seal:payload=>JSON.stringify(payload),
    webhookTransaction:async(_config,fn)=>fn(mock),
    Date,Number,String,
  },{codeGeneration:{strings:false,wasm:false}});
@@ -216,38 +236,50 @@ test('the actual locked state machine requires initial request, format and disti
  assert.equal(row.offer_id,'personal_extended_review');
  assert.equal(row.stage,'review_understanding');
  assert.match(review.reply,/Extended review/);
+
  const reminder=await context.stage(event('Услугу я ж заказал',32),{},k);
  assert.match(reminder.reply,/Extended review/);
- assert.match(reminder.reply,/ещё не передан/iu);
- assert.equal(row.stage,'review_understanding','acknowledgement keeps selected service and state');
- const extra=await context.stage(event('I have another question.',33),{},k);
- assert.equal(row.stage,'review_understanding','free text never becomes personal goal consent');
- assert.match(extra.reply,/Send request/);
- const request=await context.stage(event('Send request',34),{},k);
- assert.equal(row.stage,'confirm','early Send opens confirmation rather than silence');
- assert.equal(row.delivery_format,'async');
- assert.match(request.reply,/Confirm/);
- assert.equal(request.commit,undefined,'Send request is not final CRM consent');
- const reentry=await context.stage(event('site request',35,{
-  service:'personal_review',offerId:'personal_extended_review',locale:'en',
-  name:'Extended review',sourcePath:'/en/services'}),{},k);
- assert.match(reentry.reply,/Confirm/,'same Offer request refreshes preview');
+ assert.match(reminder.reply,/Согласны/iu);
+ assert.equal(row.offer_id,'personal_extended_review');
+ assert.equal(row.intake_answers_ciphertext,null,'personal facts cannot be collected before opt-in');
+ const agree=await context.stage(event('yes',33),{},k);
+ assert.equal(row.stage,'review_understanding');
+ assert.ok(row.intake_answers_ciphertext,'consent establishes protected encrypted intake');
+ assert.match(agree.reply,/clarify/i);
+ const goal=await context.stage(event('I want more clarity about work decisions',34),{},k);
+ assert.equal(row.stage,'review_outcome');
+ assert.match(goal.reply,/difficult/i);
+ const obstacle=await context.stage(event('I struggle to choose the right path',35),{},k);
+ assert.equal(row.stage,'review_action');
+ assert.match(obstacle.reply,/happening/i);
+ const question=await context.stage(event('How much?',36),{},k);
+ assert.equal(row.stage,'review_action','FAQ does not count as current situation');
+ assert.match(question.reply,/happening/i);
+ const situation=await context.stage(event('At present I have two possible jobs',37),{},k);
  assert.equal(row.stage,'confirm');
- const confirmation=await context.stage(event('Confirm',36),{},k);
+ assert.equal(row.delivery_format,'async');
+ assert.match(situation.reply,/Confirm/i);
+ assert.match(situation.reply,/possible jobs/);
+ const approvedFacts=aliBusinessReviewValidated(JSON.parse(row.intake_answers_ciphertext));
+ assert.equal(approvedFacts.answers.goal,'I want more clarity about work decisions');
+ assert.equal(approvedFacts.answers.challenge,'I struggle to choose the right path');
+ assert.equal(approvedFacts.answers.situation,'At present I have two possible jobs');
+ const early=await context.stage(event('Send request',38),{},k);
+ assert.equal(early.commit,undefined,'Send request alone cannot confirm a private review');
+ assert.equal(row.stage,'confirm');
+ const confirmation=await context.stage(event('Confirm',39),{},k);
  assert.equal(row.stage,'committing');
  assert.equal(confirmation.commit.service,'personal_review');
  assert.equal(confirmation.commit.format,'async');
- row=null;
- await context.stage(event('site request',41,{
-  service:'personal_review',offerId:'personal_express_review',locale:'en',
-  name:'Express review',sourcePath:'/en/services'}),{},k);
+ // A confirmed PRE-UPGRADE request without three client facts can no
+ // longer be finalized and the visitor is re-offered consent safely.
+ row.stage='confirm';row.delivery_format='async';
+ row.intake_answers_ciphertext=null;row.consent_at=null;
+ const legacy=await context.stage(event('Confirm',40),{},k);
+ assert.equal(legacy.commit,undefined);
  assert.equal(row.stage,'review_understanding');
- const yes=await context.stage(event('yes',42),{},k);
- assert.equal(yes.commit,undefined,'yes only permits a preview');
- assert.equal(row.stage,'confirm');
- const final=await context.stage(event('Confirm',43),{},k);
- assert.equal(final.commit.service,'personal_review');
- assert.equal(final.commit.offerId,'personal_express_review');
+ assert.equal(row.delivery_format,null);
+ assert.match(legacy.reply,/Extended review/);
 });
 test('only explicit confirmed provider session can create an existing encrypted CRM enquiry',()=>{
  const source=get('lib/crm/telegram-business-service.js');

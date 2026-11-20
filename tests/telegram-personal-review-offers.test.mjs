@@ -39,8 +39,8 @@ test('the extended review continuation acknowledges the selected offer in the cu
     locale:'ru',service:'personal_review',offerId:'personal_extended_review',titleLocale:'en',
   });
   assert.match(ru,/Extended review/);
-  assert.match(ru,/ещё не передан/iu);
-  assert.match(ru,/Передать его/iu);
+  assert.match(ru,/с вашего согласия/iu);
+  assert.match(ru,/три вопроса/iu);
   assert.doesNotMatch(ru,/какую ситуацию|что вы хотите изменить/iu);
   assert.equal((ru.match(/[?？]/gu)||[]).length,1);
 });
@@ -70,7 +70,7 @@ test('Express and Extended are separate Secretary scenarios with published offer
       ?'personal_express_review':'personal_extended_review',titleLocale:'en',
   });
   assert.match(reply,/free written review/i);
-  assert.match(reply,/Shall I forward/i);
+  assert.match(reply,/May I ask three short questions/i);
   assert.doesNotMatch(reply,/what situation|what would you like to change/i);
   const paid=telegramBusinessConversationReply('review_intro',{
     locale:'en',service:'personal_review',offerId:'personal_extended_review',titleLocale:'en'
@@ -81,7 +81,7 @@ test('Express and Extended are separate Secretary scenarios with published offer
     locale:'en',service:'personal_review',offerId:'personal_extended_review',
     titleLocale:'en',format:'async'
   });
-  assert.match(preview,/price to be confirmed/i);
+  assert.match(preview,/time and price|price to be confirmed/i);
   assert.match(preview,/Reply.*Confirm/i);
 });
 
