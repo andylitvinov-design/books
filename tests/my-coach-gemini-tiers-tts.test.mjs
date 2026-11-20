@@ -93,9 +93,19 @@ test('free Gemini TTS requires distinct feature consent and uses a fixed public 
   assert.throws(()=>normalizeGeminiCoachTtsInput({...common,trainingUseConsent:true,
     text:'An injected text'}),{message:'GEMINI_COACH_TTS_INVALID'})
 })
+function makeMonoPcmWav({rate=24000,channels=1}={}){
+  const size=44+80*channels*2,wav=Buffer.alloc(size)
+  wav.write('RIFF',0,'ascii');wav.writeUInt32LE(size-8,4)
+  wav.write('WAVE',8,'ascii');wav.write('fmt ',12,'ascii')
+  wav.writeUInt32LE(16,16);wav.writeUInt16LE(1,20)
+  wav.writeUInt16LE(channels,22);wav.writeUInt32LE(rate,24)
+  wav.writeUInt32LE(rate*channels*2,28)
+  wav.writeUInt16LE(channels*2,32);wav.writeUInt16LE(16,34)
+  wav.write('data',36,'ascii');wav.writeUInt32LE(size-44,40)
+  return wav
+}
 test('one Gemini TTS request selects exact approved voice and returns real-format WAV bytes',async()=>{
-  const wav=Buffer.alloc(128)
-  wav.write('RIFF',0,'ascii');wav.write('WAVE',8,'ascii')
+  const wav=makeMonoPcmWav()
   const input=normalizeGeminiCoachTtsInput({provider:'gemini_tts_free',
     locale:'en',personaId:'mira',voiceName:'Sulafat',preview:true,
     voiceConsent:true,cloudVoiceConsent:true,trainingUseConsent:true})
@@ -116,8 +126,27 @@ test('one Gemini TTS request selects exact approved voice and returns real-forma
     }})
   assert.equal(calls,1)
   assert.equal(audio.toString('ascii',0,4),'RIFF')
-  assert.equal(audio.length,128)
+  assert.equal(audio.length,wav.length)
 })
+test('Gemini TTS rejects malformed RIFF chunks, stereo and non-24kHz PCM',async()=>{
+  const input=normalizeGeminiCoachTtsInput({provider:'gemini_tts_free',
+    locale:'ru',personaId:'mira',voiceName:'Sulafat',preview:true,
+    voiceConsent:true,cloudVoiceConsent:true,trainingUseConsent:true})
+  const wrongSize=makeMonoPcmWav();wrongSize.writeUInt32LE(99999,4)
+  const wrongCodec=makeMonoPcmWav();wrongCodec.writeUInt16LE(3,20)
+  const wrongData=makeMonoPcmWav();wrongData.writeUInt32LE(99999,40)
+  for(const bad of [Buffer.alloc(128),makeMonoPcmWav({rate:16000}),
+    makeMonoPcmWav({channels:2}),wrongSize,wrongCodec,wrongData]){
+    let calls=0
+    await assert.rejects(synthesizeGeminiCoachTts({
+      config:geminiCoachTtsConfig(free,'gemini_tts_free'),input,
+      fetcher:async()=>{calls++;return {ok:true,status:200,json:async()=>({
+        steps:[{type:'model_output',content:[{type:'audio',data:bad.toString('base64')}]}]})}}
+    }),{message:'GEMINI_COACH_TTS_INVALID_AUDIO'})
+    assert.equal(calls,1,'never retry paid/free provider on invalid audio')
+  }
+})
+
 test('runtime wiring keeps server Director, quotas, WAV player and Gemini Live off',()=>{
   const brain=source('lib/app/coaching-brain.js')
   const route=source('app/api/app/[...path]/route.js')
