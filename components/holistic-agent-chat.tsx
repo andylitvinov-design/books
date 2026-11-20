@@ -8,7 +8,8 @@ import {MessengerSupportQuiz, type SupportQuizSelection} from "@/components/app/
 import {MessengerSixProjects,messengerProject} from "@/components/app/messenger-six-projects";
 import { peekHomeAliHandoff, acknowledgeHomeAliHandoff } from "@/lib/home-ali-handoff.mjs";
 import type {HomeAliHandoff} from "@/lib/home-ali-handoff.mjs";
-import {sessionGoalChoices,sessionCopy,sessionGoalForText,sessionOfferIds,sessionOfferDescription} from "@/lib/holistic-support/session-goal-intake.mjs";
+import {sessionGoalChoices,sessionCopy,sessionGoalForText,sessionOfferIds,sessionOfferDescription,
+  sessionSecretaryMessage,sessionHasOutcome} from "@/lib/holistic-support/session-goal-intake.mjs";
 import type {MessengerProjectId,MessengerProjectOption,MessengerTestFocus} from "@/components/app/messenger-six-projects";
 import { prepareNaturalDialogue, finishNaturalDialogue } from "@/lib/holistic-support/natural-dialogue.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -669,10 +670,32 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   }
 
   function guestAnswer(text:string,prior:Message[],language:PublicLocale=locale):string {
+    // A clear service request needs neither sign-in nor a forced goal quiz.
+    // The only links here are vetted, published existing Sessions options.
+    const intent=sessionSecretaryMessage(text,language);
+    const verified=intent.serviceId?messengerProject(language,"sessions").options.find(option=>
+      option.id===intent.serviceId&&option.kind==="link"&&
+      option.href?.startsWith("/")&&!option.href.startsWith("//")):null;
+    if(intent.kind==="service"&&verified){
+      setSessionOffers([verified]);setPageHelpLink(null);setGuidedTrack(null);
+      return intent.reply;
+    }
     const reviewed=ruleConversationReply({message:text,locale:language,history:prior});
     const goal=publicVideoGoalForMessage(text);
     if(goal)setVideoGoal(goal as PublicVideoGoal);
-    if(!reviewed||!reviewed.id){setGuidedTrack(null);return messengerStarter[language].safety;}
+    if(!reviewed||!reviewed.id){
+      setGuidedTrack(null);
+      if(verified&&(intent.kind==="price"||intent.kind==="availability"||
+        intent.kind==="information"))
+        setPageHelpLink({href:"/"+language+verified.href,label:verified.label});
+      // An unknown *safe* question is not an emergency. Risk questions were
+      // screened by requiresProtectedReply before this offline guest route.
+      return intent.reply||(
+        language==="ru"?"Пока не совсем понял вопрос. Нужна информация об услуге, помощь с записью или просто разговор?":
+        language==="es"?"No entendí del todo. ¿Buscas información, ayuda con una consulta o prefieres hablar?":
+          "I'm not sure I understood. Are you looking for service information, help with a request, or a conversation?"
+      );
+    }
     if(reviewed.id.startsWith("video")){
       setGuidedTrack("video");setVideoStep("category");videoUndo.current=null;
       setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);
@@ -1150,7 +1173,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         return;
       }
     }
-    if(compact&&isCasualGreeting(text)&&supportSelection?.mode!=="talk"){
+    if(compact&&isCasualGreeting(text)&&supportSelection?.mode!=="talk"&&
+      !(projectFlow==="sessions"&&sessionStep)){
       setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setPageHelpLink(null);
       setJudgmentView(null);judgmentClickLock.current=false;
       setContentStep(null);setContentVoice(false);setContentBrief("");
@@ -1206,13 +1230,51 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       setJudgmentView(null);
       setVideoStep(null);setGuidedTrack(null);setVideoPendingCategory(null);
     }
-    // Sessions asks for a goal before exposing any service. An unclear first
-    // free-text answer gets one optional outcome question before a shortlist.
+    // Secretary-first Sessions: direct service interest bypasses the optional
+    // goal interview; price/availability questions and refusal never consume
+    // an answer or silently open a practitioner request.
     if(compact&&judgmentChoice===null&&projectFlow==="sessions"&&sessionStep&&
       !isContentCreationIntent(text)&&!isVideoCreationIntent(text)&&!requiresProtectedReply(text,turnLocale)){
+      const intent=sessionSecretaryMessage(text,turnLocale);
+      followTail.current=true;setNewBelow(false);setDraft("");setChoices([]);
+      if(intent.kind==="stop"||intent.kind==="no_booking"||intent.kind==="topic"){
+        setProjectFlow(null);setSessionStep(null);setSessionGoal(null);
+        setSessionOffers([]);setPageHelpLink(null);setStatus("");
+        setMessages(prev=>[...prev,{role:"user" as const,text},
+          {role:"assistant" as const,text:intent.reply}].slice(-30));
+        return;
+      }
+      if(intent.kind==="service"){
+        // Only the four existing published site paths can be shown. The
+        // destination page owns the actual order, price and consent.
+        const chosen=messengerProject(turnLocale,"sessions").options.find(option=>
+          option.id===intent.serviceId&&option.kind==="link"&&
+          option.href?.startsWith("/")&&!option.href.startsWith("//"));
+        if(chosen){
+          setProjectFlow(null);setSessionStep(null);setSessionGoal(null);
+          setSessionOffers([chosen]);setPageHelpLink(null);setStatus("");
+          setMessages(prev=>[...prev,{role:"user" as const,text},
+            {role:"assistant" as const,text:intent.reply}].slice(-30));
+          return;
+        }
+      }
+      if(intent.kind!=="continue"&&intent.kind!=="service"){
+        // A factual question may name a service without authorizing a
+        // booking. Expose its existing public page, keep the unfinished step.
+        if((intent.kind==="price"||intent.kind==="availability"||intent.kind==="information")&&intent.serviceId){
+          const page=messengerProject(turnLocale,"sessions").options.find(option=>
+            option.id===intent.serviceId&&option.kind==="link"&&
+            option.href?.startsWith("/")&&!option.href.startsWith("//"));
+          if(page)setPageHelpLink({href:"/"+turnLocale+page.href,label:page.label});
+        }
+        setMessages(prev=>[...prev,{role:"user" as const,text},
+          {role:"assistant" as const,text:intent.reply}].slice(-30));
+        return;
+      }
       const goal=sessionGoal||sessionGoalForText(text);
-      if(sessionStep==="goal"&&(!goal||text.length<36)){
-        followTail.current=true;setNewBelow(false);setDraft("");setChoices([]);
+      // Ask a second question only when a desired result is still absent,
+      // not because the first reply happens to be fewer than 36 characters.
+      if(sessionStep==="goal"&&(!goal||!sessionHasOutcome(text))){
         setSessionGoal(goal);setSessionStep("outcome");
         setMessages(prev=>[...prev,{role:"user" as const,text},
           {role:"assistant" as const,text:sessionCopy(turnLocale).detail}].slice(-30));
@@ -1220,6 +1282,41 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         finishSessionIntake(text,goal||"personal",turnLocale);
       }
       return;
+    }
+    // After the shortlist appears, a correction is still part of the same
+    // Sessions conversation. Do not send a new text to generic chat and lose
+    // the previously chosen topic merely because a list was displayed.
+    if(compact&&judgmentChoice===null&&!projectFlow&&sessionOffers.length>0&&
+      !isContentCreationIntent(text)&&!isVideoCreationIntent(text)&&!requiresProtectedReply(text,turnLocale)){
+      const intent=sessionSecretaryMessage(text,turnLocale);
+      if(intent.kind==="service"){
+        const corrected=messengerProject(turnLocale,"sessions").options.find(option=>
+          option.id===intent.serviceId&&option.kind==="link"&&
+          option.href?.startsWith("/")&&!option.href.startsWith("//"));
+        if(corrected){
+          setSessionOffers([corrected]);setPageHelpLink(null);
+          setDraft("");setChoices([]);setStatus("");
+          followTail.current=true;setNewBelow(false);
+          setMessages(prev=>[...prev,{role:"user" as const,text},
+            {role:"assistant" as const,text:intent.reply}].slice(-30));
+          return;
+        }
+      }
+      if(["stop","no_booking","topic","price","availability","information","confused","ambiguous"].includes(intent.kind)){
+        if(["stop","no_booking","topic"].includes(intent.kind)){
+          setSessionOffers([]);setPageHelpLink(null);
+        }else if((intent.kind==="price"||intent.kind==="availability"||intent.kind==="information")&&intent.serviceId){
+          const page=messengerProject(turnLocale,"sessions").options.find(option=>
+            option.id===intent.serviceId&&option.kind==="link"&&
+            option.href?.startsWith("/")&&!option.href.startsWith("//"));
+          if(page)setPageHelpLink({href:"/"+turnLocale+page.href,label:page.label});
+        }
+        setDraft("");setChoices([]);setStatus("");
+        followTail.current=true;setNewBelow(false);
+        setMessages(prev=>[...prev,{role:"user" as const,text},
+          {role:"assistant" as const,text:intent.reply}].slice(-30));
+        return;
+      }
     }
     setEntryOpen(false);setContentStep(null);setProjectFlow(null);setPageHelpLink(null);
     setSessionStep(null);setSessionGoal(null);setSessionOffers([]);
