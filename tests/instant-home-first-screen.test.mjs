@@ -99,3 +99,9 @@ test('React full mode survives the Russian language redirect without static fall
  const policy=read('lib/instant-home-policy.mjs');
  assert.match(policy,/searchParams\?\.get\("full"\)==="1"/);
 });
+
+test('IA smoke test keeps full React Home while CDN Home has independent browser checks',()=>{
+ const ia=read('scripts/verify-ia-v2.mjs');
+ assert.match(ia,/go\(page, '\/\?full=1'\)/);
+ assert.match(ia,/locale === 'es' \? '\/es' : '\/\?full=1&lang='/);
+});
