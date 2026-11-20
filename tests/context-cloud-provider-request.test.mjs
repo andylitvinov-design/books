@@ -55,11 +55,15 @@ test('approved context reaches one provider and an interrupted voice lookup send
     const pausedVoiceResponse = await new Response(pausedVoice).text()
     const pausedVoiceCalls = calls.splice(0)
     const focusChanges = []
-    for (const message of [
-      "Let's change the topic. I want to talk about sleep.",
-      "You misunderstood. I meant something else.",
+    for (const [locale, message] of [
+      ['en', "Let's change the topic. I want to talk about sleep."],
+      ['en', 'You misunderstood. I meant something else.'],
+      ['ru', 'Давайте сменим тему. Хочу поговорить о сне.'],
+      ['ru', 'Вы меня не поняли. Я имела в виду другое.'],
+      ['es', 'Cambiemos de tema. Quiero hablar del sueño.'],
+      ['es', 'No me entendiste. Me refiero a otra cosa.'],
     ]) {
-      await myCoachGenerativeTurn({ ...body, message, contextTopic: 'career_business' }, options)
+      await myCoachGenerativeTurn({ ...body, locale, message, contextTopic: 'career_business' }, options)
       focusChanges.push({ message, calls: calls.splice(0), lookups: lookups.splice(0) })
     }
     const controller = new AbortController()
