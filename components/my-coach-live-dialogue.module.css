@@ -1233,7 +1233,7 @@
 }
 .root[data-session-visual-v4] .microphoneWave[data-voice-detected='true'] .waveBars i{opacity:.85}
 .root[data-session-visual-v4] .voiceControls[data-coach-inline-voice]{
-  display:grid;grid-template-columns:76px minmax(0,1fr) 64px 64px;
+  display:grid;grid-template-columns:76px minmax(0,1fr) 64px 64px 64px;
   align-items:center;gap:9px;min-width:0;min-height:90px;
   padding:7px 13px;border:1px solid #e0e7db;border-radius:27px;
   background:linear-gradient(120deg,#fffef9,#f8fbf3 50%,#fffdf9);
@@ -1261,6 +1261,7 @@
   font:700 11px/16px system-ui;text-align:left;color:#217960;pointer-events:none;
 }
 .root[data-session-visual-v4] .voiceControls .keyboardControl,
+.root[data-session-visual-v4] .voiceControls .profileControl,
 .root[data-session-visual-v4] .voiceControls .endControl{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   justify-self:stretch;gap:3px;box-sizing:border-box;
@@ -1272,7 +1273,7 @@
 .root[data-session-visual-v4] .voiceControls .endControl{
   border-color:#f0cdc7;background:#fff3f0;color:#bd4c48;
 }
-.root[data-session-visual-v4] .voiceControls :is(.keyboardControl,.endControl):focus-visible{
+.root[data-session-visual-v4] .voiceControls :is(.keyboardControl,.profileControl,.endControl):focus-visible{
   outline:3px solid #08836d;outline-offset:3px;
 }
 @media(max-width:699px){
@@ -1324,7 +1325,7 @@
   .root[data-session-visual-v4] .voiceWorkspace{gap:5px;overflow:hidden}
   .root[data-session-visual-v4] .voiceControls[data-coach-inline-voice]{
     order:0;position:relative;z-index:5;flex:0 0 74px;
-    display:grid;grid-template-columns:62px minmax(0,1fr) 50px 50px;
+    display:grid;grid-template-columns:62px minmax(0,1fr) 50px 50px 50px;
     grid-template-rows:62px;align-items:center;
     box-sizing:border-box;width:100%;max-width:100%;
     height:74px;min-height:74px;max-height:74px;
@@ -1353,6 +1354,7 @@
     font-size:10px;line-height:12px;
   }
   .root[data-session-visual-v4] .voiceControls .keyboardControl,
+  .root[data-session-visual-v4] .voiceControls .profileControl,
   .root[data-session-visual-v4] .voiceControls .endControl{
     width:50px;max-width:50px;min-height:43px;height:43px;
     padding:4px 2px;gap:2px;border-radius:13px;font-size:10px;
@@ -1411,3 +1413,6 @@
   font:inherit;
 }
 .coachEnginePicker select:focus-visible{outline:2px solid #147a71;outline-offset:2px}
+
+/* Production in-session profile keeps the approved compact mobile voice row. */
+.root[data-session-visual-v4] .voiceControls .profileControl{background:#eef8ef;color:#116346;cursor:pointer}
