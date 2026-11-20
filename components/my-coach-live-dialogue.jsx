@@ -276,6 +276,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const pending=useRef(null),composerRef=useRef(null),transcriptRef=useRef(null)
   const [contextTopic,setContextTopic]=useState('')
   const [contextAssessments,setContextAssessments]=useState(false)
+  const [contextPaused,setContextPaused]=useState(false)
   const composerDetailsRef=useRef(null),speechRef=useRef(null)
   const replayControllerRef=useRef(null),replayPlayerRef=useRef(null)
   const micWaveRef=useRef(null)
@@ -818,8 +819,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
           personaId,settings,locale:responseLocale,consent:true,message,voiceTurn:voiceTurn===true,
-          ...(contextTopic?{contextTopic}:{}),
-          ...(contextTopic==='personal_growth'&&contextAssessments?{contextAssessments:true}:{}),
+          ...(!contextPaused&&contextTopic?{contextTopic}:{}),
+          ...(!contextPaused&&contextTopic==='personal_growth'&&contextAssessments?{contextAssessments:true}:{}),
           ...(selectedGeminiEngine?{
             engine:coachEngine,geminiConsent:true,
             ...(coachEngine==='gemini_free'?{geminiFreeDataConsent:true}:{})
@@ -1285,6 +1286,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           {contextTopic==='personal_growth'&&<label>
             <input type="checkbox" checked={contextAssessments} onChange={event=>setContextAssessments(event.target.checked)}/>
             {lang==='ru'?'Использовать одобренные результаты тестов':lang==='es'?'Usar resultados de pruebas autorizados':'Use approved assessment scores'}
+          </label>}
+          {contextTopic&&<label>
+            <input type="checkbox" checked={contextPaused} onChange={event=>setContextPaused(event.target.checked)}/>
+            {lang==='ru'?'Приостановить использование контекста в этой беседе':lang==='es'?'Pausar el uso del contexto en esta conversación':'Pause saved context for this conversation'}
           </label>}
         <label className={styles.coachEnginePicker} data-coach-engine-choice>
           <span>{({ru:'Движок диалога',en:'Dialogue engine',es:'Motor de diálogo'})[lang]}</span>
