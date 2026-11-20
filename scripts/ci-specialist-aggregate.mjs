@@ -280,6 +280,7 @@ export function requiresCurrentProductionBase(changed) {
     (!ordinaryRoots.test(file) && !testOnlyAcceptance(file) && !publicSourceAcceptanceHarness(file)) ||
     file.split('/').some(segment => segment === '.' || segment === '..' || segment === '') ||
     (!testOnlyAcceptance(file) && sensitiveName.test(file)) ||
+    /^tests\/(?:ci-|workflow-|required-gate-|pr-fast-lane)/i.test(file) ||
     sensitiveRoots.test(file)
   );
 }
