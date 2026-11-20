@@ -2,7 +2,7 @@
 
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
-import {ArrowLeft,ChevronUp,ChevronDown,ClipboardCheck,AlertTriangle,Flag,ArrowRight,Heart,Home,Keyboard,Leaf,Languages,PhoneOff,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Play,LoaderCircle,Zap,Download,Printer,FileText} from 'lucide-react'
+import {ArrowLeft,ChevronDown,ArrowRight,Heart,Home,Keyboard,Leaf,Languages,PhoneOff,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Play,LoaderCircle,Zap,Download,Printer,FileText} from 'lucide-react'
 import {getCoachPersona,localCoachText,coachStagePrompt} from '@/lib/coaching/persona-registry.mjs'
 import {getCoachPresentation} from '@/lib/coaching/persona-presentations.mjs'
 import {coachTimeboxState} from '@/lib/coaching/session-timebox.mjs'
@@ -10,12 +10,11 @@ import {coachingBrainSafety,coachingBrainBoundary,coachingBrainStageDecision,off
 import {classifyWisdomRequest} from '@/lib/coaching/wisdom-retrieval.mjs'
 import {coachTurnWindow} from '@/lib/coaching/coach-turn-window.mjs'
 import {coachAudibleTurns,markLatestCoachReplyInterrupted} from '@/lib/coaching/coach-audible-history.mjs'
-import {coachEphemeralContext,verbatimClientClauses} from '@/lib/coaching/coach-ephemeral-context.mjs'
+import {coachEphemeralContext} from '@/lib/coaching/coach-ephemeral-context.mjs'
 import {coachModelProbeRetryAllowed} from '@/lib/coaching/coach-model-recovery.mjs'
+import {coachSessionVisibleStageIds} from '@/lib/coaching/coach-session-progress.mjs'
 import {coachGoalTurn} from '@/lib/coaching/goal-turn.mjs'
 import {understandCoachingTurn} from '@/lib/personal-coaching/coaching-turn-understanding.mjs'
-import {coachInformationChecklist,coachInformationClientTurns} from '@/lib/coaching/coach-information-checklist.mjs'
-import {coachInformationCoverage} from '@/lib/coaching/coach-information-coverage.mjs'
 import styles from './my-coach-live-dialogue.module.css'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
 import MyCoachSessionStateCard from './my-coach-session-state-card'
@@ -174,7 +173,6 @@ const keyInfoCopy={
   ru:{title:'Ключевая информация',show:'Показать ключевую информацию',hide:'Скрыть ключевую информацию',finish:'Завершить сессию и открыть резюме',goal:'Цель / Результат',motivation:'Мотивация',obstacles:'Препятствия',resources:'Ресурсы',situation:'Текущая ситуация',nextSteps:'Следующие шаги',complete:'Получено',partial:'Частично',missing:'Не выяснено'},
   es:{title:'Información clave',show:'Mostrar información clave',hide:'Ocultar información clave',finish:'Finalizar sesión y abrir resumen',goal:'Objetivo / Resultado',motivation:'Motivación',obstacles:'Obstáculos',resources:'Recursos',situation:'Situación actual',nextSteps:'Próximos pasos',complete:'Recogido',partial:'Parcial',missing:'Sin aclarar'}
 }
-const keyInfoIcons={goal:Target,motivation:Heart,obstacles:AlertTriangle,resources:Leaf,situation:UserRound,nextSteps:Flag}
 const protocolCopy={
   en:{title:'Your session protocol',subtitle:'Review and keep a private record of the conversation.',turns:'Recorded exchanges',empty:'No completed conversation turns to include yet.',download:'Download PDF',print:'Print / Open PDF',save:'Save in my private account',saving:'Saving…',saved:'Saved privately to your account',consent:'I agree to save this complete text dialogue in my private Holistic House account. Audio is not stored.',consentRequired:'Tick the box to save your protocol.',error:'Could not save this report. Download the PDF instead or try again.',pdfError:'Could not create the PDF. Your dialogue is still visible in this tab.',close:'Back to coaches',resume:'Continue conversation',privacy:'Only the conversation shown here is exported. AI suggestions are not confirmed decisions. No recording or hidden AI reasoning is included.',unsent:'There is an unfinished message or reply. Finish it before ending the session.',limit:'The dialogue is full. Finish and export the protocol before continuing.'},
   ru:{title:'Протокол вашей коучинг-сессии',subtitle:'Проверьте диалог и сохраните его для себя.',turns:'Реплики в протоколе',empty:'Пока нет завершённых реплик для протокола.',download:'Скачать PDF',print:'Распечатать / открыть PDF',save:'Сохранить в личном кабинете',saving:'Сохраняем…',saved:'Протокол сохранён в личном кабинете',consent:'Я согласен(на) сохранить весь текст этого диалога в личном кабинете Holistic House. Аудиозапись не сохраняется.',consentRequired:'Для сохранения в кабинете отметьте согласие.',error:'Не удалось сохранить отчёт. Скачайте PDF либо повторите попытку.',pdfError:'Не удалось создать PDF. Диалог остаётся в этой вкладке.',close:'Вернуться к коучам',resume:'Продолжить беседу',privacy:'В протокол попадают только отображённые здесь реплики. Предложения ИИ не считаются подтверждёнными решениями. Аудиозапись и скрытые рассуждения ИИ не включены.',unsent:'Есть незавершённая реплика. Дождитесь окончания ответа, затем завершите сессию.',limit:'Достигнут лимит реплик. Завершите сессию и сохраните протокол.'},
@@ -207,6 +205,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [speechPreview,setSpeechPreview]=useState('')
   const [streamingPreview,setStreamingPreview]=useState('')
   const [coachEngine,setCoachEngine]=useState('groq_stream')
+  const [experienceConsentOpen,setExperienceConsentOpen]=useState(false)
+  const [experienceTextConsent,setExperienceTextConsent]=useState(false)
+  const [experienceTtsConsent,setExperienceTtsConsent]=useState(false)
   const [geminiCapabilities,setGeminiCapabilities]=useState({
     gemini_free:false,gemini_paid:false,gemini_tts_free:false,gemini_tts_paid:false,
   })
@@ -228,7 +229,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   useEffect(()=>{setSpeechLocale(lang)},[lang])
   const conversationLang=['en','ru','es'].includes(speechLocale)?speechLocale:lang
   const [showCaptions,setShowCaptions]=useState(false)
-  const [keyInfoOpen,setKeyInfoOpen]=useState(true)
   const [turns,setTurns]=useState([])
   const turnsRef=useRef(turns)
   turnsRef.current=turns
@@ -472,14 +472,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       ?(methodStepTitles[lang]?.[lastRecordedProgress.stepId]||ui.stages[visibleStageIndex])
       :semanticStageTitles[lang]?.[
         ['contact','goal','reality','options','integration'][visibleStageIndex]]
+  const stageChecklistTitles=coachSessionVisibleStageIds(visibleMethodId,{
+    legacy:progressValid&&!meaningProgressValid
+  }).map((stepId,index)=>semanticStageTitles[lang]?.[stepId]||
+    methodStepTitles[lang]?.[stepId]||ui.stages[index]||stepId)
   const keyInfoUi=keyInfoCopy[lang]
-  const keyInfoAudit=coachInformationCoverage({
-    personaId,methodId:visibleMethodId,evidence:{},
-    clientClauses:coachInformationClientTurns(turns).flatMap(verbatimClientClauses)
-  })
-  const keyInfoItems=keyInfoAudit?.fields.map(item=>({
-    key:item.id,label:item.label[lang],status:item.status==='supported'?'complete':item.status
-  }))||coachInformationChecklist(turns,{selectedGoal})
   const goalPrompts={
     en:{stress:'I would like to feel less stressed. Can we explore what is weighing on me?',energy:'I would like to restore my energy. Can we explore what is draining it?',relationships:'I would like to improve an important relationship. Can we explore what matters most?'},
     ru:{stress:'Я хочу снизить стресс. Давайте разберём, что сейчас на меня давит.',energy:'Я хочу восстановить энергию. Давайте посмотрим, что её забирает.',relationships:'Я хочу улучшить важные для меня отношения. Давайте разберёмся, что сейчас важнее всего.'},
@@ -1018,6 +1015,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <span className={styles.sessionBrandMark} aria-hidden="true">✿</span><span>Holistic House</span>
       </Link>
       <div className={styles.sessionTopbarActions}>
+        <button type="button" className={styles.headerProfileControl} data-coach-profile-open
+          onClick={openCoachProfile} aria-label={lang==='ru'?'Профиль коуча':lang==='es'?'Perfil del coach':'Coach profile'} title={ui.profile}>
+          <UserRound size={18} aria-hidden="true"/><span>{ui.profile}</span>
+        </button>
         <label className={styles.languageControl}
           title={captions.languageLabel+' · '+conversationLang.toUpperCase()} data-coach-language-control>
           <Languages size={16} aria-hidden="true"/>
@@ -1116,76 +1117,96 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         </div>
         <button type="button" className={styles.keyboardControl} onClick={toggleComposer}
           aria-label={ui.type} title={ui.type}><Keyboard size={17} aria-hidden="true"/><span>{ui.keyboardShort}</span></button>
-        <button type="button" className={styles.profileControl} data-coach-profile-open
-          onClick={openCoachProfile}
-          aria-label={lang==='ru'?'Открыть профиль коуча':lang==='es'?'Abrir perfil del coach':'Open coach profile'}
-          title={ui.profile}>
-          <UserRound size={17} aria-hidden="true"/><span>{ui.profile}</span>
+        <button type="button" className={styles.experienceModeControl} data-coach-basic-pro-toggle
+          aria-label={selectedGeminiEngine?(
+            {ru:'Вернуться к Basic · Groq',en:'Switch to Basic · Groq',es:'Cambiar a Basic · Groq'}[lang]):(
+            {ru:'Перейти на Pro · Gemini',en:'Switch to Pro · Gemini',es:'Cambiar a Pro · Gemini'}[lang])}
+          aria-pressed={selectedGeminiEngine}
+          disabled={busy||replaying||paused||protocolOpen||voiceState.phase!=='idle'}
+          onClick={()=>{
+            if(selectedGeminiEngine){
+              setCoachEngine('groq_stream')
+              setGeminiConsent(false)
+              setGeminiVoiceTier('existing')
+              setGeminiVoiceConsent(false)
+              setExperienceConsentOpen(false)
+              return
+            }
+            if(!geminiCapabilities.gemini_free){
+              setPlaybackNotice(({ru:'Gemini Free недоступен. Basic продолжает работать.',en:'Gemini Free is not available. Basic still works.',es:'Gemini gratuito no está disponible. Basic sigue funcionando.'})[lang])
+              return
+            }
+            setExperienceTextConsent(false)
+            setExperienceTtsConsent(false)
+            setExperienceConsentOpen(true)
+            setPlaybackNotice('')
+          }}>
+          <Zap size={17} aria-hidden="true"/>
+          <span>{selectedGeminiEngine?'Pro':'Basic'}</span>
+          <small>{selectedGeminiEngine?'Gemini':'Groq'}</small>
         </button>
         <button type="button" className={styles.endControl} onClick={endWithProtocol} aria-label={keyInfoUi.finish} title={keyInfoUi.finish} disabled={protocolOpen} data-coach-finish-with-protocol>
           <PhoneOff size={19} aria-hidden="true"/><span>{lang==='ru'?'Резюме':lang==='es'?'Resumen':'Summary'}</span>
         </button>
       </div>
+      {experienceConsentOpen&&<div className={styles.experienceConsentPanel} data-coach-experience-consent role="group"
+        aria-label={({ru:'Переключение на Gemini',en:'Switch to Gemini',es:'Cambiar a Gemini'})[lang]}>
+        <strong>Pro · Gemini Free</strong>
+        <p>{({ru:'Это выбор движка, не платная подписка. Google может использовать текст бесплатного API для улучшения моделей. История текущей сессии останется здесь.',en:'This selects the engine, not a paid subscription. Google may use Free API text to improve models. Your current session history stays here.',es:'Es una elección de motor, no una suscripción. Google puede usar el texto de API gratuito para mejorar modelos. Tu historial permanece aquí.'})[lang]}</p>
+        <label><input type="checkbox" checked={experienceTextConsent}
+          onChange={event=>setExperienceTextConsent(event.target.checked)}/>
+          <span>{({ru:'Я согласен(на) отправлять мои следующие сообщения в Gemini Free.',en:'I agree to send my next messages to Gemini Free.',es:'Acepto enviar mis siguientes mensajes a Gemini gratuito.'})[lang]}</span>
+        </label>
+        {geminiCapabilities.gemini_tts_free&&<label><input type="checkbox" checked={experienceTtsConsent}
+          onChange={event=>setExperienceTtsConsent(event.target.checked)}/>
+          <span>{({ru:'Дополнительно согласен(на) на Gemini TTS Free для озвучки. Google может использовать отправленный текст для улучшения моделей.',en:'Also consent to Gemini TTS Free speech. Google may use submitted text to improve models.',es:'También acepto Gemini TTS gratuito. Google puede usar el texto para mejorar modelos.'})[lang]}</span>
+        </label>}
+        <div className={styles.experienceConsentActions}>
+          <button type="button" disabled={!experienceTextConsent} onClick={()=>{
+            setCoachEngine('gemini_free')
+            setGeminiConsent(true)
+            setGeminiVoiceTier(experienceTtsConsent&&geminiCapabilities.gemini_tts_free?'gemini_tts_free':'existing')
+            setGeminiVoiceConsent(experienceTtsConsent&&geminiCapabilities.gemini_tts_free)
+            setExperienceConsentOpen(false)
+          }}>{({ru:'Включить Pro',en:'Enable Pro',es:'Activar Pro'})[lang]}</button>
+          <button type="button" onClick={()=>setExperienceConsentOpen(false)}>{({ru:'Отмена',en:'Cancel',es:'Cancelar'})[lang]}</button>
+        </div>
+      </div>}
       <p className={styles.voicePlayNotice} data-coach-voice-consent-one-play>{({
         en:'Play starts voice. On iPhone, short answers may be transcribed by Groq Whisper (no Holistic House audio storage). No extra step.',
         ru:'Play запускает голос. На iPhone короткие ответы могут расшифровываться через Groq Whisper без хранения аудио на Holistic House.',
         es:'Play activa la voz. En iPhone, Groq Whisper puede transcribir respuestas breves; Holistic House no almacena el audio.',
       })[lang]}</p>
-      <section className={styles.sessionProgress} aria-label={ui.stageQuestion}
+      <details className={styles.sessionProgress} data-coach-progress-accordion
+        aria-label={ui.stageQuestion}
         data-coach-stage-index={visibleStageIndex+1}
         data-coach-stage-source={progressValid?'director-client-evidence':'local-provisional'}
         title={stageProgressHelp[lang]}>
-        <div className={styles.sessionProgressText} aria-live="polite">
-          <strong>{ui.step} {visibleStageIndex+1} {ui.of} {visibleStageTotal} · {visibleMethodName}</strong>
-          <span>{stageDescription}</span>
-        </div>
-        <div className={styles.sessionProgressSegments} role="progressbar" aria-label={ui.stageQuestion}
-          aria-valuemin={1} aria-valuemax={visibleStageTotal} aria-valuenow={visibleStageIndex+1}
-          aria-valuetext={ui.step+' '+(visibleStageIndex+1)+' '+ui.of+' '+visibleStageTotal+' · '+stageDescription}>
-          {Array.from({length:visibleStageTotal},(_,index)=><span key={index}
-            data-complete={index<visibleStageIndex?'true':undefined}
-            data-current={index===visibleStageIndex?'true':undefined}/>)}
-        </div>
-        <button type="button" className={styles.keyInfoToggle} data-coach-key-info-toggle
-          aria-controls="coach-key-info" aria-expanded={keyInfoOpen}
-          aria-label={keyInfoOpen?keyInfoUi.hide:keyInfoUi.show}
-          title={keyInfoOpen?keyInfoUi.hide:keyInfoUi.show}
-          onClick={()=>setKeyInfoOpen(open=>!open)}>
-          <ClipboardCheck size={16} aria-hidden="true"/>
-          {keyInfoOpen?<ChevronUp size={14} aria-hidden="true"/>:<ChevronDown size={14} aria-hidden="true"/>}
-        </button>
-      </section>
-      <MyCoachSessionStateCard locale={lang} turns={turns}
-        progress={progressValid?lastRecordedProgress:null} stageLabel={stageDescription}/>
+        <summary className={styles.sessionProgressSummary}>
+          <div className={styles.sessionProgressText} aria-live="polite">
+            <strong>{ui.step} {visibleStageIndex+1} {ui.of} {visibleStageTotal} · {visibleMethodName}</strong>
+            <span>{stageDescription}</span>
+          </div>
+          <div className={styles.sessionProgressSegments} role="progressbar" aria-label={ui.stageQuestion}
+            aria-valuemin={1} aria-valuemax={visibleStageTotal} aria-valuenow={visibleStageIndex+1}
+            aria-valuetext={ui.step+' '+(visibleStageIndex+1)+' '+ui.of+' '+visibleStageTotal+' · '+stageDescription}>
+            {Array.from({length:visibleStageTotal},(_,index)=><span key={index}
+              data-complete={progressValid&&index<visibleStageIndex?'true':undefined}
+              data-current={index===visibleStageIndex?'true':undefined}/>)}
+          </div>
+          <ChevronDown className={styles.sessionProgressChevron} size={20} aria-hidden="true"/>
+        </summary>
+        <MyCoachSessionStateCard locale={lang} turns={turns}
+          progress={progressValid?lastRecordedProgress:null} stageLabel={stageDescription}
+          stageNames={stageChecklistTitles} stageIndex={visibleStageIndex}
+          stageProgressVerified={progressValid}/>
+      </details>
       <details className={styles.voicePrivacyDetails}>
         <summary>{lang==='ru'?'Приватность голоса':lang==='es'?'Privacidad de voz':'Voice privacy'}</summary>
         <p>{geminiVoiceTier==='existing'?voiceProviderDetails[lang]:geminiVoicePrivacyDetails[lang]}</p>
       </details>
       {playbackNotice&&<p className={styles.playbackNotice} role="status">{playbackNotice}</p>}
       <div className={styles.conversationPanel}>
-      {keyInfoOpen&&<section className={styles.keyInfoSheet} id="coach-key-info" role="region"
-        aria-label={keyInfoUi.title} data-coach-key-information>
-        <div className={styles.keyInfoHeading}>
-          <ClipboardCheck size={19} aria-hidden="true"/>
-          <strong>{keyInfoUi.title}</strong>
-          <button type="button" aria-label={keyInfoUi.hide} title={keyInfoUi.hide}
-            onClick={()=>setKeyInfoOpen(false)}><ChevronUp size={19} aria-hidden="true"/></button>
-        </div>
-        <div className={styles.keyInfoGrid} role="list">
-          {keyInfoItems.map(entry=>{
-            const Icon=keyInfoIcons[entry.key]||ClipboardCheck
-            return <div className={styles.keyInfoItem} role="listitem" key={entry.key}
-              data-coach-information-key={entry.key} data-coach-information-status={entry.status}
-              aria-label={(entry.label||keyInfoUi[entry.key])+': '+keyInfoUi[entry.status]}>
-              <Icon size={17} aria-hidden="true"/>
-              <span>{entry.label||keyInfoUi[entry.key]}</span>
-              <span className={styles.keyInfoMark} data-status={entry.status} aria-hidden="true">
-                {entry.status==='complete'?'✓':entry.status==='partial'?'◐':'□'}
-              </span>
-            </div>
-          })}
-        </div>
-      </section>}
       <section className={styles.liveTranscript} aria-label={captions.heading} data-coach-live-transcript>
         <div className={styles.transcriptHeading}><MessageCircle size={15} aria-hidden="true"/>
           <strong>{captions.heading}</strong>
