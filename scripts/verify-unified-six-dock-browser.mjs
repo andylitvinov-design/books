@@ -581,9 +581,16 @@ try{
  await alchemistTools.waitFor({state:"visible",timeout:15000});
  assert.equal(await alchemistTools.evaluate(node=>node.open),false,
    "six legacy service cards are tucked away until requested");
+ assert.equal(await chat.locator('[data-hh-alchemist-topic]').count(),4,
+   "first screen presents four large conversational problem starters");
+ const moreTopics=chat.locator('[data-hh-alchemist-more-topics]');
+ await moreTopics.click();
  assert.equal(await chat.locator('[data-hh-alchemist-topic]').count(),8,
-   "eight conversational problem starters are available without opening a catalogue");
- await chat.locator('[data-hh-ai-inline-composer] textarea').waitFor({state:"visible",timeout:15000});
+   "More topics reveals the remaining four conversational suggestions");
+ await moreTopics.click();
+ await chat.locator('[data-hh-ai-chat-composer] textarea').waitFor({state:"visible",timeout:15000});
+ assert.equal(await chat.locator('[data-hh-ai-chat-composer]').count(),1,
+   "first screen owns one real pinned message composer");
  await alchemistTools.locator('summary').click();
  await projectGrid.waitFor({state:"visible",timeout:15000});
  const projects=chat.locator('[data-hh-messenger-six-projects] [data-hh-ai-project]');

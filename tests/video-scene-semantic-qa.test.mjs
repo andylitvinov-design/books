@@ -57,6 +57,64 @@ test("storyboard keeps exactly six original visible actions; selected phrases oc
    [...phrases,null,null,null],"no selected Goal means original source order");
 });
 
+test("five chosen supportive phrases match six filmed actions, not list position",()=>{
+ const phrases=[
+  "I welcome love with openness","I deserve mutual care and respect",
+  "I can connect with an open heart","I let trust grow at its own pace",
+  "I welcome kind relationships"
+ ];
+ const shots=[
+  ["The long way home","An exhausted commuter walks home."],
+  ["The second chair","A small table for one now has a second chair."],
+  ["A gentle look back","Hands open a case and touch an old photograph."],
+  ["A place for memories","The case goes onto a shelf, making space in the room."],
+  ["An invitation","A phone lights up with an invitation."],
+  ["The door opens","Morning light touches two chairs as the door opens."]
+ ];
+ const storyboard=shots.map(([title,action],i)=>({
+   title,action,sceneId:"space-s1:scene:"+(i+1),keywords:[],
+   sourceBeatIndex:[0,0,1,2,2,3][i]
+ }));
+ const expected=[null,phrases[1],phrases[3],phrases[2],phrases[4],phrases[0]];
+ const story=buildAlignedStorySceneGuides({
+  locale:"en",goal:"Welcome supportive relationships",phrases,count:6,
+  concept:{goalPlan:{id:"safe-openness",mechanismId:"resourcing"},storyboard}
+ }).scenes;
+ assert.deepEqual(story.map(scene=>scene.sourcePhrase),expected);
+ assert.deepEqual(story.map(scene=>scene.visual),shots.map(shot=>shot[1]),
+  "phrase alignment must never rewrite filmed actions");
+ assert.equal(new Set(story.map(scene=>scene.sourcePhrase).filter(Boolean)).size,5);
+ assert.deepEqual(proposeGoalPhraseSlots(phrases,{
+  goalSelected:true,sceneActions:shots.map(shot=>shot.join(" · "))
+ }),expected);
+ assert.equal(proposeGoalPhraseSlots(phrases,{
+  goalSelected:true,manualPlacements:true,sceneActions:shots.map(shot=>shot.join(" · "))
+ }),null);
+ assert.deepEqual(proposeGoalPhraseSlots(phrases,{
+  goalSelected:true,sceneActions:shots.slice(0,5).map(shot=>shot.join(" · "))
+ }),[...phrases,null],"incomplete shot proof must preserve existing order");
+});
+test("RU and ES matching uses only written cues and preserves user's exact phrases",()=>{
+ const cases=[
+  {phrases:["Я принимаю любовь с открытостью","Я заслуживаю взаимной заботы и уважения",
+   "Я могу соединяться с открытым сердцем","Я позволяю доверию расти постепенно",
+   "Я приветствую добрые отношения"],
+   scenes:["Длинный путь домой","Второй стул","Старые фотографии",
+    "Чемодан убирают на полку","Приглашение на телефон","Дверь открывается"]},
+  {phrases:["Recibo el amor con apertura","Merezco cuidado mutuo y respeto",
+   "Puedo conectar con el corazón abierto","Dejo que la confianza crezca despacio",
+   "Doy la bienvenida a relaciones amables"],
+   scenes:["El largo regreso","Dos sillas","Una foto antigua",
+    "La maleta pasa a un estante","Una invitación por teléfono","La puerta se abre"]}
+ ];
+ for(const item of cases){
+  const slots=proposeGoalPhraseSlots(item.phrases,{
+    goalSelected:true,sceneActions:item.scenes});
+  assert.deepEqual(slots,[null,item.phrases[1],item.phrases[3],
+   item.phrases[2],item.phrases[4],item.phrases[0]]);
+ }
+});
+
 test("visual object evidence is only a metadata hint, never scene or licence verification",()=>{
  assert.equal(SCENE_PHOTO_SEMANTIC_VERSION,"hh-scene-photo-semantic-v1");
  const beat="Two people pull opposite ends of a rope.";

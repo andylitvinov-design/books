@@ -173,13 +173,13 @@ try {
     await expect(block.locator('iframe')).toHaveAttribute('data-video-playback', 'youtube')
   }
   let russianPresentationVerified = false
-  for (const home of ['/', '/ru']) {
+  for (const home of ['/?full=1', '/ru?full=1']) {
     await navigate(home)
     // The withdrawn 2026-10-01 intro remains retired; this is a different
     // owner-approved 2026-10-30 presentation, not an old HeyGen fallback.
     await expect(page.locator('[data-video-slot="home-intro"]')).toHaveCount(0)
     const presentation = page.locator('[data-video-slot="home-presentation"]')
-    if (home === '/ru') {
+    if (home.startsWith('/ru')) {
       // A production-domain check may run before this PR is deployed.
       // Local/preview builds MUST show the approved RU presentation.
       if (!live || await presentation.count()) {
