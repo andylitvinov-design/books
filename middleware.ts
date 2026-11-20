@@ -31,7 +31,7 @@ export async function middleware(request: NextRequest) {
   if (redirectTarget) return NextResponse.redirect(redirectTarget, 308)
   // Rewrites can traverse middleware again at their internal static document.
   // Exempt these two public files only; every private route keeps strict CSP.
-  if (/^\/instant-home\/(?:en|ru)\.html$/.test(request.nextUrl.pathname)
+  if (/^\/instant-home\/(?:en|ru|es)\.html$/.test(request.nextUrl.pathname)
       && ['GET','HEAD'].includes(request.method)) {
     const response = NextResponse.next()
     response.headers.set('Content-Security-Policy', INSTANT_PUBLIC_HOME_CSP)

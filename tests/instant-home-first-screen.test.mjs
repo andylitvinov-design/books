@@ -11,15 +11,16 @@ const choose=(pathname,opts={})=>instantHomeLocale({
  searchParams:new URLSearchParams(opts.search||'')
 });
 
-test('only full EN/RU Home documents get the fast public HTML; ES is manual',()=>{
- for(const path of ['/','/en','/en/','/ru','/ru/'])
-  assert.equal(choose(path),path==='/'||path.startsWith('/en')?'en':'ru');
- for(const path of ['/es','/en/app','/ru/app','/en/client','/api/app','/admin','/ru/about','/en/mytube'])
+test('only direct EN/RU/ES Home documents use fast public HTML',()=>{
+ for(const path of ['/','/en','/en/','/ru','/ru/','/es','/es/'])
+  assert.equal(choose(path),path==='/'||path.startsWith('/en')?'en':path.startsWith('/ru')?'ru':'es');
+ for(const path of ['/en/app','/ru/app','/es/app','/en/client','/es/client','/api/app','/admin','/ru/about','/en/mytube'])
   assert.equal(choose(path),null,path);
  assert.equal(choose('/',{search:'_rsc=abc'}),null);
  assert.equal(choose('/',{search:'full=1'}),null);
   assert.equal(choose('/en',{search:'full=1'}),null);
  assert.equal(choose('/ru',{search:'full=1'}),null);
+ assert.equal(choose('/es',{search:'full=1'}),null);
  assert.equal(choose('/ru',{method:'POST'}),null);
  assert.equal(choose('/',{headers:new Headers({RSC:'1'})}),null);
  assert.equal(choose('/',{headers:new Headers({'Next-Router-State-Tree':'[]'})}),null);
@@ -27,10 +28,13 @@ test('only full EN/RU Home documents get the fast public HTML; ES is manual',()=
  assert.equal(choose('/',{headers:new Headers({Accept:'text/x-component'})}),null);
 });
 
-test('EN/RU are complete first-screen documents without the Next CSS/JS chain',()=>{
- for(const locale of ['en','ru']){
+test('EN/RU/ES are complete first-screen documents without the Next CSS/JS chain',()=>{
+ for(const locale of ['en','ru','es']){
   const html=read('public/instant-home/'+locale+'.html');
   assert.match(html,new RegExp('<html lang="'+locale+'">'));
+  const publicDescription=html.match(/<meta name="description" content="([^"]+)">/)?.[1];
+  assert.ok(publicDescription,locale+': SEO description');
+  assert.ok(html.includes('<meta property="og:description" content="'+publicDescription+'">'),locale+': matching Open Graph description');
   assert.match(html,/data-home-dialogue-entry/);
   assert.match(html,/data-home-intent-form/);
   assert.match(html,/data-home-intent-composer/);
@@ -42,9 +46,14 @@ test('EN/RU are complete first-screen documents without the Next CSS/JS chain',(
   assert.match(html,/data-hh-unified-dock/);
   assert.match(html,/data-home-discover-more/);
   assert.match(html,/data-home-full-experience/);
-  assert.match(html,new RegExp(locale==='ru' ? '/ru\\?full=1' : '/\\?full=1'));
+  assert.match(html,new RegExp(locale==='en' ? '/\\?full=1' : '/'+locale+'\\?full=1'));
   assert.equal((html.match(/data-home-intent-option=/g)||[]).length,4);
   assert.match(html,/href="\/es"/);
+  if(locale==='es'){
+   assert.match(html,/rel="canonical" href="https:\/\/holistichouse\.vercel\.app\/es"/);
+   assert.match(html,/Solicitar una sesión/);
+   assert.match(html,/data-home-request-session href="\/es\/services\/free-consultation"/);
+  }
   assert.match(html,/\/instant-home\/fast\.css/);
   assert.match(html,/\/instant-home\/fast\.js/);
   assert.doesNotMatch(html,/_next\/|https?:\/\/fonts\.|<iframe|autoplay|data:text\/html/);
@@ -58,6 +67,7 @@ test('EN/RU are complete first-screen documents without the Next CSS/JS chain',(
  assert.match(js,/hh:home-ali-handoff:v1/);
  assert.match(js,/sessionStorage\.setItem/);
  assert.match(js,/window\.location\.assign/);
+ assert.match(js,/es-ES/);
  assert.doesNotMatch(js,/location\.search\s*=|URLSearchParams\(.*message|OpenRouter|innerHTML/);
 });
 
@@ -66,7 +76,7 @@ test('instant homepage preserves Ali public topics and business selections',()=>
  const script=read('public/instant-home/fast.js');
  assert.match(script,/selectMode\(button\.dataset\.mode\)/);
  assert.doesNotMatch(script,/querySelectorAll\("\[data-intent\]"\)\.forEach/);
- for(const locale of ['en','ru']){
+ for(const locale of ['en','ru','es']){
   const content=read('public/instant-home/'+locale+'.html');
   for(const intent of ['stress','love','money'])assert.ok(content.includes('/'+locale+'/app/messages?section=ai&amp;intent='+intent));
   for(const need of ['business_clients','business_strategy','business_team','business_burnout'])assert.ok(content.includes('/'+locale+'/services?topic=business_support&amp;need='+need));
@@ -103,5 +113,5 @@ test('React full mode survives the Russian language redirect without static fall
 test('IA smoke test keeps full React Home while CDN Home has independent browser checks',()=>{
  const ia=read('scripts/verify-ia-v2.mjs');
  assert.match(ia,/go\(page, '\/\?full=1'\)/);
- assert.match(ia,/locale === 'es' \? '\/es' : '\/\?full=1&lang='/);
+ assert.match(ia,/locale === 'es' \? '\/es\?full=1' : '\/\?full=1&lang='/);
 });
