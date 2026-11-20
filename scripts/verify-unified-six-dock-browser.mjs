@@ -12,9 +12,9 @@ mkdirSync(folder,{recursive:true});
 const results=[];
 const ids=["mytube","video","coach","ai","services","practice","profile"];
 const labels={
-  en:["MyTube","MyVideo","My Coach","AI/Chat","Support","Shamanica","Profile"],
-  ru:["MyTube","MyVideo","Мой коуч","ИИ/Чат","Поддержка","Шаманика","Профиль"],
-  es:["MyTube","MyVideo","Mi coach","IA/Chat","Apoyo","Shamanica","Perfil"],
+  en:["MyTube","MyVideo","My Coach","AI/Chat","Support","Shamanic","Profile"],
+  ru:["MyTube","MyVideo","Мой коуч","ИИ/Чат","Поддержка","Шаманик","Профиль"],
+  es:["MyTube","MyVideo","Mi coach","IA/Chat","Apoyo","Shamanic","Perfil"],
 };
 
 // The fixed dock belongs to the ROOT shell, not to individual pages. Check
@@ -911,7 +911,7 @@ try{
  results.push({journey:"Readable Shamanica typography at 353x768 iPhone",readablePhone,passed:true});
  if(originalShamanicaViewport)await page.setViewportSize(originalShamanicaViewport);
  assert.equal(await shamanicaHome.locator("[data-shamanica-service]").count(),6,
-   "Shamanica displays the five approved service directions");
+   "Shamanic has five core directions and one free Reiki course");
  const shamanicaQuiz=shamanicaHome.locator("[data-shamanica-quiz]");
  await expect(shamanicaQuiz).toHaveAttribute("data-quiz-step","1");
  assert.equal(await shamanicaQuiz.locator("[data-shamanica-answer]").count(),4,
@@ -1002,7 +1002,7 @@ try{
  await homeDock.locator('[data-unified-dock-item="practice"]').click();
  await page.waitForURL(/\/ru\/shamanica\/?$/,{timeout:45000});
  await page.locator("[data-shamanica-mobile]").waitFor({state:"visible",timeout:30000});
- assert.equal(await page.locator("[data-shamanica-service]").count(),5);
+ assert.equal(await page.locator("[data-shamanica-service]").count(),6);
  await expect(page.locator("[data-shamanica-quiz]")).toHaveAttribute("data-quiz-step","1");
  assert.equal(await page.locator("[data-support-practice-tabs]:visible").count(),0,
    "the approved Shamanica landing does not show the old Support top menu");
