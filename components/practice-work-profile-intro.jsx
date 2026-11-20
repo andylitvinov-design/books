@@ -11,8 +11,8 @@ import styles from './practice-work-profile-intro.module.css'
 
 const POSTER='/videos/holistic-house/film-collection-v3/sun-autumn-hills.jpg'
 const COPY={
-  en:{life:'My Life',work:'My Work',eyebrow:'MY SPACE · PROFESSIONAL',
-    heading:'My Work',lead:'Your practice, clients and creative work — all in one place.',
+  en:{life:'My Page',work:'Practitioner Profile',eyebrow:'MY SPACE · PROFESSIONAL',
+    heading:'Practitioner Profile',lead:'Your practice, clients and creative work — all in one place.',
     services:'My Services',servicesHint:'Manage and publish your offerings',active:'active',
     requests:'Requests',requestsHint:'New enquiries and bookings',
     clients:'My Clients',clientsHint:'People and consultations',
@@ -20,8 +20,8 @@ const COPY={
     materials:'Materials',materialsHint:'Articles, video and audio',
     reports:'Client Reports',reportsHint:'Analyses and recommendations',
     new:'new',watch:'Watch presentation',hide:'Hide presentation',home:'Holistic House home'},
-  ru:{life:'Моя жизнь',work:'Моя работа',eyebrow:'МОЁ ПРОСТРАНСТВО · ПРАКТИКА',
-    heading:'Моя работа',lead:'Практика, клиенты и творчество — в одном пространстве.',
+  ru:{life:'Моя страничка',work:'Профиль мастера',eyebrow:'МОЁ ПРОСТРАНСТВО · ПРАКТИКА',
+    heading:'Профиль мастера',lead:'Практика, клиенты и творчество — в одном пространстве.',
     services:'Мои услуги',servicesHint:'Управлять предложениями',active:'активно',
     requests:'Заявки',requestsHint:'Новые обращения и записи',
     clients:'Мои клиенты',clientsHint:'Истории и консультации',
@@ -29,8 +29,8 @@ const COPY={
     materials:'Материалы',materialsHint:'Статьи, видео и аудио',
     reports:'Отчёты клиентов',reportsHint:'Анализ и рекомендации',
     new:'новых',watch:'Смотреть презентацию',hide:'Скрыть презентацию',home:'Главная Holistic House'},
-  es:{life:'Mi vida',work:'Mi trabajo',eyebrow:'MI ESPACIO · PROFESIONAL',
-    heading:'Mi trabajo',lead:'Tu práctica, clientes y proyectos en un mismo lugar.',
+  es:{life:'Mi página',work:'Perfil profesional',eyebrow:'MI ESPACIO · PROFESIONAL',
+    heading:'Perfil profesional',lead:'Tu práctica, clientes y proyectos en un mismo lugar.',
     services:'Mis servicios',servicesHint:'Gestionar las ofertas',active:'activos',
     requests:'Solicitudes',requestsHint:'Consultas y reservas nuevas',
     clients:'Mis clientes',clientsHint:'Personas y consultas',
@@ -45,7 +45,7 @@ const CARDS=[
   {key:'courseList',label:'courses',hint:'coursesHint',Icon:BookOpen,photo:'/images/holistic-house/books-library.webp'},
   {key:'materials',label:'materials',hint:'materialsHint',Icon:FileText,photo:'/images/holistic-house/assist-video-meditation.webp'}
 ]
-export default function PracticeWorkProfileIntro({locale,onAction,activeCount,requestCount}){
+export default function PracticeWorkProfileIntro({locale,onAction,activeCount,requestCount,children}){
   const language=['ru','es'].includes(locale)?locale:'en'
   const t=COPY[language]
   const lifeLocale=language==='es'?'en':language
@@ -76,7 +76,7 @@ export default function PracticeWorkProfileIntro({locale,onAction,activeCount,re
 
     <nav className={styles.modes} data-profile-mode-switch data-profile-mode-active="work"
       aria-label={language==='ru'?'Режим профиля':language==='es'?'Modo de perfil':'Profile mode'}>
-      <Link href={'/'+lifeLocale+'/app/portrait'} prefetch={false} data-profile-mode="live"
+      <Link href={'/'+lifeLocale+'/my-page'} prefetch={false} data-profile-mode="live"
         className={styles.mode}><Heart size={24} aria-hidden="true"/>{t.life}</Link>
       <Link href={'/'+language+'/practice'} prefetch={false} data-profile-mode="work"
         className={styles.mode+' '+styles.activeMode} aria-current="page">
@@ -102,6 +102,7 @@ export default function PracticeWorkProfileIntro({locale,onAction,activeCount,re
       </button>
     </section>
 
+    {children}
     <div className={styles.workGrid} data-work-primary-grid>
       {CARDS.map(({key,label,hint,Icon,photo})=><button type="button" key={key}
         className={styles.workCard} onClick={()=>onAction(key)} data-work-card={key}>
