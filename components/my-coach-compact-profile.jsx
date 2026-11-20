@@ -1,7 +1,7 @@
 'use client'
 
-import {useEffect,useRef} from 'react'
-import {ArrowLeft,Check,Heart,Layers3,Leaf,Sparkles,Target,UserRound} from 'lucide-react'
+import {useEffect,useRef,useState} from 'react'
+import {ArrowLeft,BookOpen,Check,ChevronDown,ChevronRight,Compass,Flower2,Heart,Lamp,Languages,Layers3,Leaf,Sparkles,Target,UserRound} from 'lucide-react'
 import {getCoachCompactProfile} from '@/lib/coaching/coach-compact-profiles.mjs'
 import styles from './my-coach-compact-profile.module.css'
 
@@ -13,7 +13,9 @@ const copy={
 export default function MyCoachCompactProfile({personaId,locale='en',methodId,onBack}){
   const dialogRef=useRef(null)
   const backRef=useRef(null)
-  const lang=copy[locale]?locale:'en'
+  const [viewLocale,setViewLocale]=useState(locale)
+  useEffect(()=>setViewLocale(locale),[locale])
+  const lang=copy[viewLocale]?viewLocale:'en'
   const t=copy[lang]
   const profile=getCoachCompactProfile(personaId,lang,methodId)
   useEffect(()=>{
@@ -31,7 +33,7 @@ export default function MyCoachCompactProfile({personaId,locale='en',methodId,on
       data-coach-profile-method={profile.methodId}>
       <header className={styles.header}>
         <span className={styles.brand}><span className={styles.mark} aria-hidden="true">✿</span>{t.brand}</span>
-        <span className={styles.language} aria-label={lang.toUpperCase()}>{lang.toUpperCase()}</span>
+        <label className={styles.language}><Languages size={16} aria-hidden="true"/><select aria-label="Profile language" value={lang} onChange={event=>setViewLocale(event.target.value)}><option value="en">EN</option><option value="ru">RU</option><option value="es">ES</option></select><ChevronDown size={13} aria-hidden="true"/></label>
         <button ref={backRef} type="button" className={styles.back} onClick={onBack}>
           <ArrowLeft size={18} aria-hidden="true"/>{t.back}
         </button>
@@ -42,32 +44,39 @@ export default function MyCoachCompactProfile({personaId,locale='en',methodId,on
         <div className={styles.heroShade} aria-hidden="true"/>
         <div className={styles.heroCopy}>
           <span className={styles.eyebrow}><UserRound size={16} aria-hidden="true"/>{t.profile}</span>
-          <h1>{profile.name}</h1><p>{profile.role}</p>
+          <h1>{profile.name}</h1><p>{profile.role}</p><div className={styles.heroTags}>{profile.tags.map((tag,index)=><span key={index}>{index===0?<Leaf size={14}/>:index===1?<Sparkles size={14}/>:<Heart size={14}/>} {tag}</span>)}</div>
         </div>
       </section>
-      <section className={styles.card}>
-        <h2><Heart size={19} aria-hidden="true"/>{t.character}</h2>
-        <p>{profile.character}</p>
+      <section className={[styles.card,styles.characterCard].join(' ')}>
+        <span className={styles.cardIcon}><Heart size={29} strokeWidth={1.8} aria-hidden="true"/></span>
+        <div className={styles.cardBody}><h2>{t.character}</h2><p>{profile.character}</p></div>
+        <ChevronRight className={styles.cardChevron} size={22} aria-hidden="true"/>
       </section>
-      <section className={styles.card}>
-        <h2><Target size={19} aria-hidden="true"/>{t.focus}</h2>
-        <div className={styles.focus}>{profile.focus.map(item=><span key={item}>{item}</span>)}</div>
+      <section className={[styles.card,styles.modelCard].join(' ')}>
+        <span className={styles.cardIcon}><Target size={29} strokeWidth={1.8} aria-hidden="true"/></span>
+        <div className={styles.cardBody}><h2>{t.model}</h2><strong className={styles.model}>{profile.model}</strong>
+          <p className={styles.steps}>{profile.steps.map((step,index)=><span key={index}>{index>0&&<b aria-hidden="true">·</b>}{step}</span>)}</p>
+        </div><ChevronRight className={styles.cardChevron} size={22} aria-hidden="true"/>
       </section>
-      <section className={styles.card}>
-        <h2><Layers3 size={19} aria-hidden="true"/>{t.model}</h2>
-        <strong className={styles.model}>{profile.model}</strong>
-        <p className={styles.steps}>{profile.steps.map((step,index)=>
-          <span key={index}>{index>0&&<b aria-hidden="true">→</b>}{step}</span>)}</p>
+      <section className={[styles.card,styles.focusCard].join(' ')}>
+        <span className={styles.cardIcon}><Layers3 size={29} strokeWidth={1.8} aria-hidden="true"/></span>
+        <div className={styles.cardBody}><h2>{t.focus}</h2>
+          <div className={styles.focus}>{profile.focus.map((item,index)=><span key={index}>{index===0?<Leaf size={14}/>:index===1?<Compass size={14}/>:<Sparkles size={14}/>} {item}</span>)}</div>
+        </div><ChevronRight className={styles.cardChevron} size={22} aria-hidden="true"/>
       </section>
-      <section className={styles.card}>
-        <h2><Sparkles size={19} aria-hidden="true"/>{t.features}</h2>
-        <ul className={styles.features}>
-          {profile.features.map(feature=><li key={feature}><Check size={16} aria-hidden="true"/>{feature}</li>)}
-        </ul>
+      <section className={[styles.card,styles.featuresCard].join(' ')}>
+        <span className={styles.cardIcon}><Sparkles size={29} strokeWidth={1.8} aria-hidden="true"/></span>
+        <div className={[styles.cardBody,styles.featureBody].join(' ')}><h2>{t.features}</h2>
+          <ul className={styles.features}>{profile.features.map(feature=><li key={feature}><Check size={16} aria-hidden="true"/>{feature}</li>)}</ul>
+        </div>
       </section>
-      <blockquote className={styles.quote}>
-        <Leaf size={19} aria-hidden="true"/>
-        <div><p>“{profile.quote}”</p><footer>— {profile.name}</footer></div>
+      <blockquote className={styles.quote} data-quote-persona={personaId}>
+        <span className={styles.quoteArt} aria-hidden="true">
+          {['mira','sofia'].includes(personaId)?<><Flower2 className={styles.quoteMainIcon}/><span className={styles.quoteStones}><i/><i/><i/></span></>:<><Lamp className={styles.quoteMainIcon}/><BookOpen className={styles.quoteBookIcon}/></>}
+        </span>
+        <div className={styles.quoteCopy}><span className={styles.quoteMark} aria-hidden="true">“</span>
+          <p>“{profile.quote}”</p><footer>— {profile.name}</footer>
+        </div>
       </blockquote>
     </main>
   </dialog>
