@@ -41,7 +41,7 @@ const words={
     iosCue:'Sí.',iosPreparing:'Restableciendo el reconocimiento del iPhone…',iosAwaitSpeech:'Micrófono iniciado; esperando tu voz…',iosSilent:'Safari en iPhone dejó de entregar voz. Puedes escribir o cerrar completamente Safari y volver a abrirlo para restablecer el audio.',iosCueFailed:'Safari no pudo restablecer el reconocimiento. Escribe o reinicia Safari antes de volver a tocar el micrófono.',iosAwaitEnd:'Texto listo. Esperando el final de Safari…',audioHearing:'Voz detectada…',audioTranscribing:'Transcribiendo tu voz…',audioQuiet:'Micrófono activo · esperando tu voz.',audioNoSignal:'Sin señal de audio. Reintenta con Mic o escribe.',deviceFallback:'Voz temporal del dispositivo: voz natural no disponible.',audioUnavailable:'El reconocimiento está temporalmente no disponible. Puedes escribir.'},
 }
 
-const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speechLocale='auto',initialDraft='',enabled=false,canStart=true,cloudAvailable=false,cloudAgreed=false,cloudProvider=null,personaId='mira',introduction='',onSessionStart,onTurn,onCancelTurn,onCoachInterrupted,onVoiceStateChange,onVoiceLevel,onMicLevel,onRequestConsent,onTranscript,onDraft},ref){
+const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speechLocale='auto',initialDraft='',enabled=false,canStart=true,cloudAvailable=false,cloudAgreed=false,cloudProvider=null,voiceName=null,personaId='mira',introduction='',onSessionStart,onTurn,onCancelTurn,onCoachInterrupted,onVoiceStateChange,onVoiceLevel,onMicLevel,onRequestConsent,onTranscript,onDraft},ref){
   const lang=words[locale]?locale:'en',t=words[lang]
   const [phase,setPhase]=useState('idle')
   const [notice,setNotice]=useState('')
@@ -52,8 +52,8 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   const retryTimerRef=useRef(null),settleTimerRef=useRef(null),retryAttemptsRef=useRef(0)
   // Web Speech callbacks created on first Play must use fresh provider/consent
   // state on each turn; a closure over Play-time props can silence turn two.
-  const voiceConfigRef=useRef({cloudAgreed,cloudAvailable,cloudProvider})
-  voiceConfigRef.current={cloudAgreed,cloudAvailable,cloudProvider}
+  const voiceConfigRef=useRef({cloudAgreed,cloudAvailable,cloudProvider,voiceName})
+  voiceConfigRef.current={cloudAgreed,cloudAvailable,cloudProvider,voiceName}
   // Read the CURRENT dropdown on every recognizer turn, not the first Play render.
   const speechLocaleRef=useRef(speechLocale)
   speechLocaleRef.current=speechLocale
@@ -982,8 +982,8 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       return
     }
     const {cloudAgreed:voiceAgreed,cloudAvailable:voiceAvailable,
-      cloudProvider:voiceProvider}=voiceConfigRef.current
-    if((naturalVoice||voiceAgreed)&&voiceAvailable&&['google_chirp3_hd','fish_free'].includes(voiceProvider)&&!['safety','boundary'].includes(result.mode)){
+      cloudProvider:voiceProvider,voiceName:selectedVoice}=voiceConfigRef.current
+    if((naturalVoice||voiceAgreed)&&voiceAvailable&&['google_chirp3_hd','fish_free','gemini_tts_free','gemini_tts_paid'].includes(voiceProvider)&&!['safety','boundary'].includes(result.mode)){
       const controller=new AbortController()
       cloudControllerRef.current=controller
       providerUnavailableRef.current=()=>{
@@ -1004,8 +1004,9 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
           headers:{'Content-Type':'application/json'},
           body:JSON.stringify({provider:voiceProvider,locale:replyLocale,personaId,
             text:voiceProvider==='google_chirp3_hd'?speakable:reply,
+            ...(voiceProvider.startsWith('gemini_tts_')?{voiceName:selectedVoice}:{}),
             voiceConsent:true,cloudVoiceConsent:true,
-            ...(voiceProvider==='fish_free'?{trainingUseConsent:true}:{})}),
+            ...(['fish_free','gemini_tts_free'].includes(voiceProvider)?{trainingUseConsent:true}:{})}),
         })
         if(!response.ok||!response.body)throw Error('CLOUD_TTS_UNAVAILABLE')
         if(!live()||controller.signal.aborted)return

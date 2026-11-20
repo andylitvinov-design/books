@@ -683,15 +683,36 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await montageStoryTab.click();
       await expect(montageStoryTab).toHaveAttribute("aria-pressed","true");
       await expect(page.locator('[data-video-auto-storyboard-list]')).toBeVisible({timeout:20000});
-      const sourceReady=await page.locator('[data-video-auto-storyboard]')
+      let sourceReady=await page.locator('[data-video-auto-storyboard]')
         .getAttribute('data-storyboard-media-ready')==='true';
       const chooseQuality=page.locator('[data-video-story-select-quality]');
       await expect(chooseQuality).toBeVisible();
       await expect(chooseQuality).toBeEnabled();
-      // The original Story button must move to the fifth panel even when
-      // authored video footage is unavailable; no charge is triggered.
-      if(engine==='webkit')await chooseQuality.tap();
-      else await chooseQuality.click();
+      // Before an ACTUAL MP4 + voice export, explicitly approve all six
+      // source-checked reference photos as a symbolic photomontage. Merely
+      // choosing Quality is not informed approval and must stay fail-closed.
+      let explicitlyApprovedPhotos=false;
+      const approveSixPhotos=page.locator('[data-storyboard-apply-reference-photos]');
+      if(!sourceReady&&await approveSixPhotos.count()){
+        await expect(approveSixPhotos).toBeEnabled({timeout:30000});
+        await approveSixPhotos.click();
+        await expect(montageProTab).toHaveAttribute('aria-pressed','true',{timeout:15000});
+        sourceReady=true;
+        explicitlyApprovedPhotos=true;
+        phase(engine,'story-six-user-approved-photo-references');
+      }
+      if(!explicitlyApprovedPhotos){
+        if(engine==='webkit')await chooseQuality.tap();
+        else await chooseQuality.click();
+        if(!sourceReady){
+          // Unapproved Story cannot be exported, even by the PRO/Ready path.
+          await expect(montageStoryTab).toHaveAttribute('aria-pressed','true');
+          await expect(page.locator('[data-video-basic-editor]'))
+            .toHaveAttribute('data-montage-panel','concept');
+          // Extra is a separate choice and not proof of photo consent.
+          await montageProTab.click();
+        }
+      }
       await expect(montageProTab).toHaveAttribute('aria-pressed','true');
       await expect(page.locator('[data-video-basic-editor]'))
         .toHaveAttribute('data-montage-panel','promo');
@@ -728,12 +749,22 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const selectedStyle=page.locator('[data-video-montage-style="3"]');
       const selectedMaster=page.locator("[data-mandala-master-mp4]");
       await expect(selectedStyle).toBeVisible();
-      await expect(selectedMaster).toHaveAttribute("preload","none");
+      const singleVideoMaster=await selectedMaster.count()>0;
+      if(singleVideoMaster)
+        await expect(selectedMaster).toHaveAttribute("preload","none");
+      else
+        await expect(page.locator("[data-free-film-original-masters]")).toHaveCount(1);
+      // Six user-approved photos use the existing compiled multi-shot Canvas,
+      // not the retired single background MP4. Still exercise an actual Style
+      // tap and the same later audible Safari export on this selected source.
       if(engine==="webkit")await selectedStyle.tap();
       else await selectedStyle.click();
       await expect(selectedStyle).toHaveAttribute("aria-pressed","true");
       await expect(page.locator("[data-video-mandala-hero]")).toHaveAttribute("data-video-preview-style","minimal");
-      await expect.poll(()=>selectedMaster.evaluate(video=>video.preload),{timeout:15000}).toBe("auto");
+      if(singleVideoMaster)
+        await expect.poll(()=>selectedMaster.evaluate(video=>video.preload),{timeout:15000}).toBe("auto");
+      else
+        await expect(page.locator("[data-free-film-original-masters]")).toHaveCount(1);
       // Modern Montage shows the voice and music controls only after choosing Audio.
       // Exercise the real visible tab instead of waiting for an unmounted drawer.
       // Current Montage has four compact tabs. Real duration is under Settings
@@ -742,8 +773,12 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(page.locator('[data-video-basic-editor]')).toHaveAttribute("data-montage-panel","settings");
       const durationSelect=page.locator('[data-video-montage-preference="duration"]');
       await durationSelect.waitFor({state:"visible",timeout:25000});
-      await durationSelect.selectOption("10");
-      await expect(durationSelect).toHaveValue("10");
+      // Six reviewed, user-approved 5-second photographic scenes form a
+      // 30-second Story. Changing it to 10 seconds invalidates that consent
+      // and correctly fails closed at Ready. Keep the real source duration
+      // while testing the native audible WebKit MP4 encoder.
+      await durationSelect.selectOption("30");
+      await expect(durationSelect).toHaveValue("30");
       const montageAudio=page.locator('[data-video-montage-open-audio]');
       if(engine==="webkit")await montageAudio.tap();
       else await montageAudio.click();
@@ -1563,6 +1598,31 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         await page.locator('[data-video-quick-control="ready"]').click();
         await expect(readyGenerate).toBeEnabled({timeout:30000});
         phase(engine,"ready-therapy-one-tap-navigation-verified");
+        // A later Style/Audio edit changes the Story source signature.
+        // Approve the final six decoded photographs AFTER those edits, just
+        // like a real visitor. An old approval must never silently authorize
+        // a changed video, and this step cannot charge or start the encoder.
+        await editorTab.click();
+        await expect(editorTab).toHaveAttribute("aria-pressed","true");
+        await montageStoryTab.click();
+        await expect(montageStoryTab).toHaveAttribute("aria-pressed","true");
+        const finalStoryboard=page.locator('[data-video-auto-storyboard]');
+        await expect(finalStoryboard).toBeVisible();
+        const finalApproval=page.locator('[data-storyboard-apply-reference-photos]');
+        if(await page.locator('[data-storyboard-photo-approval-required]').count()){
+          await expect(finalApproval).toBeVisible({timeout:20000});
+          await expect(finalApproval).toBeEnabled({timeout:30000});
+          await finalApproval.click();
+          phase(engine,"final-six-photo-consent-after-audio-style-edits");
+          await expect(montageProTab).toHaveAttribute("aria-pressed","true");
+        }else{
+          await expect(finalStoryboard).toHaveAttribute("data-storyboard-media-ready","true");
+          await montageProTab.click();
+        }
+        await montageProOffer.locator('[data-video-montage-pro-choice="free"]').click();
+        await expect(page.locator("[data-mandala-free-video]"))
+          .toHaveAttribute("data-active-workspace","ready");
+        await expect(readyGenerate).toBeEnabled({timeout:30000});
         // Capture transient real Ready progress before the trusted Generate tap:
         // a fast local export may unmount the seven-question panel immediately.
         await page.evaluate(()=>{

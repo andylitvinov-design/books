@@ -593,5 +593,6 @@ test('My Coach local unavailable-model path uses semantic Coach Mind instead of 
  assert.match(ui,/stage:offlineReply\.stage\|\|semanticStage/)
  assert.doesNotMatch(ui,/const userCount=turns\.filter/)
  assert.match(ui,/coachingBrainSafety\(input\)\|\|coachingBrainBoundary\(input\)/)
- assert.match(ui,/readiness\.status!=='verified'&&!wisdomRequested/)
+ assert.match(ui,/selectedGeminiEngine\?!geminiEngineReady:readiness\.status!=='verified'/)
+ assert.match(ui,/!selectedGeminiEngine&&await retryCoachModelAfterOutage\(\)/)
 })

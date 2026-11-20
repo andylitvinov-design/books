@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import {
-  Activity, ArrowRight, BookOpen, BriefcaseBusiness, CalendarDays,
-  FileText, Heart, Route, Settings2, Sparkles, UserRound,
+  ArrowRight, BookOpen, Brain, BriefcaseBusiness, CalendarDays,
+  Heart, Route, Settings2, Sparkles, Target, UserRound,
 } from 'lucide-react'
 import styles from './profile-space-dashboard.module.css'
 
@@ -11,9 +11,9 @@ const TEXT = {
     intro: 'Your wellbeing, progress and personal growth — all in one place.',
     life: 'My Life', work: 'My Work',
     path: 'My Path', pathDetail: 'Continue your journey and next steps.',
-    state: 'My State', stateDetail: 'Tests, wellbeing and dynamics',
+    state: 'My Goals & Coaching Reports', stateDetail: 'Goals, actions & session reports',
     courses: 'My Courses', coursesDetail: 'My learning and progress',
-    reports: 'My Reports', reportsDetail: 'Personal analyses and guidance',
+    reports: 'My Psychic Health', reportsDetail: 'Tests & therapy plan',
     sessions: 'My Sessions', sessionsDetail: 'Saved consultations and history',
     page: 'My Page', pageDetail: 'My profile and info',
     settings: 'Settings', settingsDetail: 'Preferences and account',
@@ -24,9 +24,9 @@ const TEXT = {
     intro: 'Самочувствие, развитие и личные результаты — всё в одном месте.',
     life: 'Моя жизнь', work: 'Моя работа',
     path: 'Мой путь', pathDetail: 'Продолжить развитие и следующие шаги.',
-    state: 'Моё состояние', stateDetail: 'Тесты, самочувствие и динамика',
+    state: 'Мои цели и отчёты коучинга', stateDetail: 'Цели, действия и итоги сессий',
     courses: 'Мои курсы', coursesDetail: 'Обучение и прогресс',
-    reports: 'Мои отчёты', reportsDetail: 'Личный анализ и рекомендации',
+    reports: 'Моё психическое здоровье', reportsDetail: 'Тесты и план терапии',
     sessions: 'Мои сессии', sessionsDetail: 'Сохранённые консультации',
     page: 'Моя страница', pageDetail: 'Профиль и информация',
     settings: 'Настройки', settingsDetail: 'Личные параметры и аккаунт',
@@ -37,9 +37,9 @@ const TEXT = {
     intro: 'Bienestar, progreso y crecimiento personal en un solo lugar.',
     life: 'Mi vida', work: 'Mi trabajo',
     path: 'Mi camino', pathDetail: 'Continúa tu recorrido y próximos pasos.',
-    state: 'Mi estado', stateDetail: 'Tests, bienestar y evolución',
+    state: 'Mis metas e informes de coaching', stateDetail: 'Metas, acciones y sesiones',
     courses: 'Mis cursos', coursesDetail: 'Aprendizaje y progreso',
-    reports: 'Mis informes', reportsDetail: 'Análisis y orientación personal',
+    reports: 'Mi salud mental', reportsDetail: 'Tests y plan terapéutico',
     sessions: 'Mis sesiones', sessionsDetail: 'Consultas guardadas',
     page: 'Mi página', pageDetail: 'Perfil e información',
     settings: 'Ajustes', settingsDetail: 'Preferencias y cuenta',
@@ -51,9 +51,9 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
   const selected = Object.hasOwn(TEXT, locale) ? locale : 'en'
   const t = TEXT[selected]
   const cards = [
-    { id: 'state', icon: Activity, href: root + '/monitoring', title: t.state, detail: t.stateDetail },
+    { id: 'state', icon: Target, href: root + '/my-coaching-plan', title: t.state, detail: t.stateDetail },
     { id: 'courses', icon: BookOpen, href: root + '/course?view=courses', title: t.courses, detail: t.coursesDetail },
-    { id: 'reports', icon: FileText, href: root + '/portrait?space=reports', title: t.reports, detail: t.reportsDetail },
+    { id: 'reports', icon: Brain, href: root + '/portrait?space=reports', title: t.reports, detail: t.reportsDetail },
     { id: 'sessions', icon: CalendarDays, href: root + '/portrait?space=sessions', title: t.sessions, detail: t.sessionsDetail },
   ]
 
@@ -83,7 +83,7 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
           <span className={styles.cardBody}>
             <span className={styles.cardIcon} aria-hidden="true"><Icon size={21}/></span>
             <strong>{title}</strong>
-            {id === 'state' && Number.isInteger(resultCount) && resultCount > 0
+            {id === 'reports' && Number.isInteger(resultCount) && resultCount > 0
               && <span className={styles.count} aria-label={resultCount + ' ' + t.completed}>{resultCount}</span>}
             <small>{detail}</small>
           </span>

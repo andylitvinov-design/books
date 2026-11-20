@@ -1,6 +1,6 @@
 "use client";
-import {useMemo,useState} from "react";
-import {ArrowRight,Film,Play} from "lucide-react";
+import {useEffect,useMemo,useState} from "react";
+import {ArrowRight,Film,Play,Pencil} from "lucide-react";
 import {suggestVideoConcept} from "@/lib/mandala/auto-video-concept.mjs";
 import {getVideoCreativeDirections,applyVideoCreativeDirection} from "@/lib/mandala/video-creative-directions.mjs";
 import {buildAlignedStorySceneGuides} from "@/lib/mandala/storyboard-content-alignment.mjs";
@@ -32,8 +32,10 @@ type Props={
  onApply:(shots:readonly CategoryStoryboardShot[],concept:ApprovedVideoConcept,key:string,
    captions:string[],outputAspect?:"portrait"|"landscape")=>boolean;
  onChooseQuality:(sourceReady:boolean)=>void;
+ onApprovalRequiredChange?:(pending:boolean)=>void;
  fiveSceneShots?:readonly Shot[]|null;
  onPreview:(second:number)=>void;onOpenIdeas:()=>void;
+ onEditPhrase:(phrase:string)=>void;
 };
 const words={
  ru:{source:"Автоматически из «Идей»",scene:"Сцена",visual:"В кадре",preview:"Посмотреть кадр",
@@ -98,7 +100,7 @@ const clock=(time:number)=>{
 export function MandalaAutomaticStoryboard({
  locale,goal,theme,durationSeconds,aspect,styleIndex,pace,personalization,appliedStoryKey,selectedTopic=null,
  phrases,transcript,approvedConcept,draftConcept=null,suggestedConcept=null,selectedDirectionId=null,
- scenes,appliedShots,resolveMedia,disabled,onApply,onChooseQuality,fiveSceneShots,onOpenIdeas
+ scenes,appliedShots,resolveMedia,disabled,onApply,onChooseQuality,onApprovalRequiredChange,fiveSceneShots,onOpenIdeas,onEditPhrase
 }:Props){
  const t=words[locale];
  const [expandedScene,setExpandedScene]=useState<number|null>(null);
@@ -180,6 +182,9 @@ export function MandalaAutomaticStoryboard({
     aspect:aspect as "portrait"|"landscape"|"square"})||
    isReviewedStoryWithPhotosSequence({shots:appliedShots,scenes,
     aspect:aspect as "portrait"|"landscape"|"square"})));
+ // A photo reference is not an export source until all six images are
+ // explicitly accepted; no prior background may replace the chosen story.
+ const photoApprovalRequired=hasSixPhotoReferences&&durationSeconds===30&&!photoAdaptationApplied;
  const replacingGraphics=Boolean(appliedShots?.length&&!applied);
  const sceneCatalog=new Map(scenes.filter((scene):scene is {id:string}=>Boolean(
    scene&&typeof scene==="object"&&"id" in scene&&typeof scene.id==="string"))
@@ -228,9 +233,14 @@ export function MandalaAutomaticStoryboard({
  // A five-cut editor montage is an explicitly separate legacy 20s flow.
  const manualFiveReady=Boolean(!choice.selectionMissing&&!v3RequiresActionProof&&durationSeconds===20&&fiveSceneShots?.length===5&&
   fiveSceneShots.every(shot=>isReviewedFilmedStoryScene(sceneCatalog.get(shot.sceneId),"portrait")));
+ const storyboardSourcesPending=!manualFiveReady&&!eligible&&!photoAdaptationApplied;
+ useEffect(()=>{
+  onApprovalRequiredChange?.(storyboardSourcesPending);
+ },[storyboardSourcesPending,onApprovalRequiredChange]);
  const visibleCount=manualFiveReady?5:guides.scenes.length;
  // Source-reviewed photos remain visible as REFERENCES until a visitor
  // explicitly accepts the illustrative photomontage.
+ const linkedPhraseCount=guides.scenes.filter(beat=>Boolean(beat.sourcePhrase)).length;
  const photoReferenceCount=references.slice(0,visibleCount).filter((photo,index)=>
    Boolean(photo&&!(manualFiveReady?fiveSceneShots?.[index]:
      photoAdaptationApplied?appliedShots?.[index]:shots[index]))).length;
@@ -288,6 +298,11 @@ export function MandalaAutomaticStoryboard({
     {eligible?<small>({proposal.shots.length} {t.clips})</small>:null}
    </p>
    <small className={styles.storyAutoLead}>{lead} · {statusText} · {paceText}</small>
+   {linkedPhraseCount>0?<small className={styles.storyAutoPhraseSummary}
+     data-storyboard-phrase-summary>
+     {locale==="ru"?"Фразы по сценам: ":locale==="es"?"Frases por escena: ":"Phrases in scenes: "}
+     {linkedPhraseCount}/{guides.scenes.length}
+   </small>:null}
   </div>
   <ol className={styles.storyAutoList} data-video-auto-storyboard-list>
    {compactCards.map((item,index)=>{
@@ -303,10 +318,12 @@ export function MandalaAutomaticStoryboard({
       concept.emotionalProgram?.[Math.min(3,guide.stage-1)];
     const generic=/^(?:step|шаг|paso)\s*\d+$/i.test(guide.title);
     const title=generic?(emotion||media?.title||lead):guide.title;
+    const sourcePhrase=guide.sourcePhrase;
     return <li key={index} className={styles.storyAutoCard}
       data-video-story-scene={index+1} data-concept-scene-id={authored?.sceneId||undefined}
       data-video-story-media-matched={Boolean(shot)}
       data-storyboard-expanded={expandedScene===index}
+      data-storyboard-has-phrase={Boolean(sourcePhrase)}
       data-story-media-kind={photo?"photo":shot?"video":reference?"reference":"missing"}
       data-storyboard-reference-only={Boolean(reference&&!shot)}
       data-storyboard-reference-id={reference?.id||undefined}
@@ -331,6 +348,16 @@ export function MandalaAutomaticStoryboard({
       <span className={styles.srOnly}>{t.scene} {index+1}</span>
       <small data-storyboard-scene-time>{clock(from)}–{clock(to)}</small>
       <strong>{title}</strong>
+      {sourcePhrase?<button type="button" className={styles.storyAutoPhraseEdit}
+        data-storyboard-scene-phrase data-storyboard-edit-phrase={index+1}
+        aria-label={(locale==="ru"?"Редактировать установку в сцене ":
+          locale==="es"?"Editar frase de la escena ":"Edit phrase in scene ")+(index+1)+": "+sourcePhrase}
+        title={locale==="ru"?"Редактировать во вкладке Текст":
+          locale==="es"?"Editar en Texto":"Edit in Text"}
+        disabled={disabled} onClick={()=>onEditPhrase(sourcePhrase)}>
+        <span className={styles.storyAutoPhraseText}>{sourcePhrase}</span>
+        <Pencil size={15} aria-hidden="true"/>
+      </button>:null}
       <button type="button" className={styles.storyAutoAction}
         data-storyboard-scene-action aria-expanded={expandedScene===index}
         title={guide.visual}
@@ -377,6 +404,11 @@ export function MandalaAutomaticStoryboard({
         {format==="portrait"?"9:16 · Vertical":"16:9 · Horizontal"}
       </button>)}
    </div>:null}
+  {photoApprovalRequired?<p role="status" data-storyboard-photo-approval-required>
+    {locale==="ru"?"Это фото-референсы, а не кадры экспорта. Нажмите «Использовать эти 6 фото в видео», чтобы получить именно этот сюжет.":
+     locale==="es"?"Estas son fotos de referencia. Pulsa «Usar estas 6 fotos en el vídeo» para exportar estas escenas.":
+     "These are photo references, not export frames. Choose «Use these 6 photos in my video» to export this exact story."}
+   </p>:null}
   {hasSixPhotoReferences&&!photoAdaptationApplied&&durationSeconds===30&&
    !scriptNeedsReview&&scriptSceneAlignment.aligned&&!choice.selectionMissing?
    <button type="button" className={styles.storyAutoApply}
@@ -410,6 +442,7 @@ export function MandalaAutomaticStoryboard({
     data-video-story-select-quality
     data-video-auto-storyboard-apply={!manualFiveReady&&!applied&&eligible?true:undefined}
     disabled={disabled} onClick={()=>{
+      if(photoApprovalRequired){onChooseQuality(false);return;}
       // Only attach approved local footage. No render, charge or paid API call.
       // The optional, strictly verified scene application may fail closed
       // (missing matching footage). Quality selection is navigation, not
