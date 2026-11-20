@@ -41,6 +41,8 @@ test('matching a reference alone NEVER authorizes cross-transport identity',()=>
  assert.match(s,/b\.telegram_peer_hash=\$2/);
  assert.match(s,/b\.reference_code=\$1/);
  assert.match(s,/p\.trusted_auth_user_id=\$3/);
+ assert.match(s,/pg_catalog\.set_config\('hh\.practitioner_id'/);
+ assert.match(s,/String\(PRACTITIONER_ID\)/);
  assert.match(s,/b\.stage='submitted'/);
  assert.match(s,/b\.consent_at is not null/);
  assert.match(s,/ALI_BUSINESS_LINK_CRM_CONFIRM_FAILED/);
@@ -82,6 +84,7 @@ const simulatedVerifiedLink = (eventLog,options={}) => {
  assert.ok(begin>0&&end>begin&&end-begin<5000,'exact protected branch was found');
  const code=service.slice(begin,end);
  const deps={
+  PRACTITIONER_ID:'246aa1a3-a371-5a83-9f4b-cd23ff027a76',
   aliBusinessLinkReference,aliBusinessLinkCopy,
   operationHash:({scope,id})=>{
    assert.equal(scope,'hh-telegram-business-peer');
@@ -101,7 +104,7 @@ const simulatedVerifiedLink = (eventLog,options={}) => {
  const factory=new Function('deps',
   'return async function simulate(input){'+
   ' const {ctx,raw,event,lang,updateId,db,keys,connected,config,current}=input;'+
-  ' const {aliBusinessLinkReference,aliBusinessLinkCopy,operationHash,'+
+  ' const {PRACTITIONER_ID,aliBusinessLinkReference,aliBusinessLinkCopy,operationHash,'+
   ' updateRow,response,ingestMessengerEventInTransaction,encryptContext}=deps;'+
   code+' return {notHandled:true};'+
   '}');
@@ -112,6 +115,12 @@ const linkFixture=async(overrides={})=>{
  const userId=overrides.userId||'1111111';
  const owner=overrides.ownerId||'11111111-1111-4111-8111-111111111111';
  const db={query:async(sql,args=[])=>{
+  if(sql.includes("pg_catalog.set_config('hh.practitioner_id'")){
+   assert.deepEqual(args,['246aa1a3-a371-5a83-9f4b-cd23ff027a76']);
+   log.push({kind:'rls_scope'});return {rows:[{set_config:''}]};
+  }
+  assert.equal(log.some(x=>x.kind==='rls_scope'),true,
+    'scope must precede protected practitioner SELECT');
   assert.match(sql,/b\.reference_code=\$1/);
   assert.match(sql,/b\.telegram_peer_hash=\$2/);
   assert.match(sql,/p\.trusted_auth_user_id=\$3/);
@@ -142,12 +151,12 @@ test('runtime: verified matching Telegram identity makes exactly one neutral CRM
  for(const locale of ['ru','en','es']){
   const {response,log}=await linkFixture({locale});
   assert.match(response.reply,/HH-ABCDEF123456/);
-  assert.deepEqual(log.map(x=>x.kind),['select','receipt','update']);
-  const receipt=log[1];
+  assert.deepEqual(log.map(x=>x.kind),['rls_scope','select','receipt','update']);
+  const receipt=log[2];
   assert.equal(receipt.fileId,null,'a cross-reference cannot fabricate a photo receipt');
   assert.match(receipt.body,/client-authorized cross-channel link/i);
   assert.doesNotMatch(receipt.body,/clinical|diagnos(?:is|tic result)|account ID|private photo/i);
-  assert.equal(log[2].args[0]?.includes('HH-ABCDEF123456'),true,
+  assert.equal(log[3].args[0]?.includes('HH-ABCDEF123456'),true,
     'encrypted V3 allowlist stores the verified reference only');
  }
 });
@@ -170,7 +179,7 @@ test('runtime: a foreign Telegram ID, unmatched Business peer, owner or referenc
 
 test('runtime: approved link replay is idempotent; failed CRM write does not commit context',async()=>{
  const prior=await linkFixture({linkedBusinessReference:'HH-ABCDEF123456'});
- assert.deepEqual(prior.log.map(x=>x.kind),['select','update'],
+ assert.deepEqual(prior.log.map(x=>x.kind),['rls_scope','select','update'],
   'replaying verified command creates no additional CRM event');
  const log=[];
  await assert.rejects(()=>linkFixture({storageOk:false}),/ALI_BUSINESS_LINK_CRM_CONFIRM_FAILED/);
