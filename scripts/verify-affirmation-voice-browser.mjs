@@ -683,24 +683,35 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await montageStoryTab.click();
       await expect(montageStoryTab).toHaveAttribute("aria-pressed","true");
       await expect(page.locator('[data-video-auto-storyboard-list]')).toBeVisible({timeout:20000});
-      const sourceReady=await page.locator('[data-video-auto-storyboard]')
+      let sourceReady=await page.locator('[data-video-auto-storyboard]')
         .getAttribute('data-storyboard-media-ready')==='true';
       const chooseQuality=page.locator('[data-video-story-select-quality]');
       await expect(chooseQuality).toBeVisible();
       await expect(chooseQuality).toBeEnabled();
-      // The original Story button must move to the fifth panel even when
-      // authored video footage is unavailable; no charge is triggered.
-      if(engine==='webkit')await chooseQuality.tap();
-      else await chooseQuality.click();
-      if(!sourceReady){
-        // The revised Story is intentionally fail-closed: quality does not
-        // imply consent to render six illustrative reference photographs.
-        await expect(montageStoryTab).toHaveAttribute('aria-pressed','true');
-        await expect(page.locator('[data-video-basic-editor]'))
-          .toHaveAttribute('data-montage-panel','concept');
-        // Explore Extra through the independent navigation, never by
-        // pretending that unapproved Story frames passed a source check.
-        await montageProTab.click();
+      // Before an ACTUAL MP4 + voice export, explicitly approve all six
+      // source-checked reference photos as a symbolic photomontage. Merely
+      // choosing Quality is not informed approval and must stay fail-closed.
+      let explicitlyApprovedPhotos=false;
+      const approveSixPhotos=page.locator('[data-storyboard-apply-reference-photos]');
+      if(!sourceReady&&await approveSixPhotos.count()){
+        await expect(approveSixPhotos).toBeEnabled({timeout:30000});
+        await approveSixPhotos.click();
+        await expect(montageProTab).toHaveAttribute('aria-pressed','true',{timeout:15000});
+        sourceReady=true;
+        explicitlyApprovedPhotos=true;
+        phase(engine,'story-six-user-approved-photo-references');
+      }
+      if(!explicitlyApprovedPhotos){
+        if(engine==='webkit')await chooseQuality.tap();
+        else await chooseQuality.click();
+        if(!sourceReady){
+          // Unapproved Story cannot be exported, even by the PRO/Ready path.
+          await expect(montageStoryTab).toHaveAttribute('aria-pressed','true');
+          await expect(page.locator('[data-video-basic-editor]'))
+            .toHaveAttribute('data-montage-panel','concept');
+          // Extra is a separate choice and not proof of photo consent.
+          await montageProTab.click();
+        }
       }
       await expect(montageProTab).toHaveAttribute('aria-pressed','true');
       await expect(page.locator('[data-video-basic-editor]'))
