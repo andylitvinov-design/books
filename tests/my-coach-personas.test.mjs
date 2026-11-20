@@ -128,7 +128,7 @@ test('Living Coach keeps static face identity and uses real MP4 playback, never 
   assert.ok(media.includes("const VIDEO_PERSONAS=new Set(['mira','max','sofia','alex','harry'])"))
   assert.ok(media.includes("MEDIA_ROOT+personaId+'-still.webp'"))
   assert.ok(media.includes('coachNaturalVideoPath(personaId,state,visualScene)'))
-  assert.ok(media.includes("MEDIA_ROOT+'harry-'+harryClip+'.mp4'"))
+  assert.ok(media.includes("MEDIA_ROOT+'harry-soft-'+harryClip+'.mp4'"))
   assert.match(media,/data-coach-natural-performance/)
   assert.ok(media.includes('muted loop playsInline autoPlay'))
   assert.ok(media.includes("window.matchMedia?.('(prefers-reduced-motion: reduce)')"))
