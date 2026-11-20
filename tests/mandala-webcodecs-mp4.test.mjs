@@ -365,8 +365,8 @@ test("WebKit traverses Ideas Personalization and Concept before consented Voice/
  const modes=browser.indexOf('const ideasModes=phrases.locator("[data-video-ideas-tabs]")');
  const personal=browser.indexOf('const personalTab=ideasModes.locator',modes);
  const quiz=browser.indexOf('const nextQuiz=personalQuiz.locator',personal);
- const fourth=browser.indexOf('toHaveAttribute("data-video-personalization-step","4")',quiz);
- const concept=browser.indexOf('await expect(conceptTab).toHaveAttribute("aria-pressed","true")',fourth);
+ const fourth=browser.indexOf('toHaveAttribute("data-video-personalization-step","4"',quiz);
+ const concept=browser.indexOf('await expect(conceptTab).toHaveAttribute("aria-pressed","true"',fourth);
  const back=browser.indexOf('await personalTab.click()',concept);
  const opened=browser.indexOf('await advancedText.click()',back);
  const voice=browser.indexOf('await voiceModeButton.click()',opened);
