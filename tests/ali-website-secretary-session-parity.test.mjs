@@ -184,3 +184,17 @@ test('asking what a service is does not imply choosing or booking it',()=>{
    assert.match(r.reply,/страниц|published|página/i);
  }
 });
+
+test('conservative matching: unrelated free analysis and uncertain modality do not become an order',()=>{
+ for(const [locale,text] of [
+  ['ru','Хочу бесплатный анализ SEO'],
+  ['en','Not sure about constellations'],
+  ['ru','Не уверен насчет расстановок'],
+  ['es','No estoy segura de las constelaciones'],
+ ]){
+   const result=sessionSecretaryMessage(text,locale);
+   assert.ok(['continue','confused'].includes(result.kind),text);
+   assert.equal(result.serviceId,undefined,text);
+ }
+ assert.equal(sessionSecretaryMessage('What is Reiki?','en').kind,'confused');
+});
