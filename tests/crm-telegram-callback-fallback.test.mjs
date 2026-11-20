@@ -55,6 +55,7 @@ async function routeRun({source=candidate,payload=callback(),diagnostic='off',co
    captureTelegramBusinessInbox:async()=>({matched:true,recorded:true,humanActive:businessHuman}),
    telegramBotHumanTakeover:async()=>botHuman,
    captureWhatsAppFirstContact:async()=>({handled:false,created:false}),
+   whatsappHumanTakeoverActive:async()=>false,
    recordWhatsAppInboundReceipt:async()=>({recorded:false}),
    // WhatsApp locale marker helper belongs to the production normalizer, not this VM.
    whatsappExpressReviewLocale:()=>null,
