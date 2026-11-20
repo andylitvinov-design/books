@@ -124,26 +124,29 @@ test("macOS WebKit exercises explicit accessible adult consent and revocation",(
   "no original-tab interaction should depend on restoring focus after another tab");
 });
 
-test("Ideas Personalization and Concept retain a single opt-in Voice/My Voice WebKit path",()=>{
+test("Ideas Personalization, Goal and Concept retain one opt-in Voice/My Voice WebKit path",()=>{
  const studio=read("components/mandala-free-video-studio.tsx");
  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
  assert.match(studio,/data-video-ideas-advanced-voice open=\{ideasVoiceAdvancedOpen\}/);
  assert.match(studio,/hidden=\{activeWorkspace!=="phrases"\|\|ideasSubtab!=="personalization"\}/);
- assert.equal((studio.match(/data-video-ideas-tab="/g)||[]).length,2);
- for(const marker of ['data-video-ideas-tab="personalization"','data-video-ideas-tab="concept"',
+ assert.equal((studio.match(/data-video-ideas-tab="/g)||[]).length,3);
+ assert.match(studio,/data-video-ideas-goal-panel hidden=\{ideasSubtab!=="goal"\}/);
+ for(const marker of ['data-video-ideas-tab="personalization"','data-video-ideas-tab="goal"','data-video-ideas-tab="concept"',
   'data-video-ideas-voice-mode="voice"','data-video-ideas-voice-mode="my-voice"',
   'data-video-phrase-audio-shortcut','data-video-ideas-own-upload'])
   assert.ok(studio.includes(marker),marker);
  assert.equal((studio.match(/<MandalaAffirmationVoice locale/g)||[]).length,1);
  const modes=browser.indexOf('const ideasModes=phrases.locator("[data-video-ideas-tabs]")');
  const personal=browser.indexOf('const personalTab=ideasModes.locator',modes);
- const concept=browser.indexOf('await conceptTab.click()',personal);
+ const quiz=browser.indexOf('const nextQuiz=personalQuiz.locator',personal);
+ const fourth=browser.indexOf('toHaveAttribute("data-video-personalization-step","4")',quiz);
+ const concept=browser.indexOf('await expect(conceptTab).toHaveAttribute("aria-pressed","true")',fourth);
  const back=browser.indexOf('await personalTab.click()',concept);
  const disclosure=browser.indexOf('await advancedText.click()',back);
  const voice=browser.indexOf('await voiceModeButton.click()',disclosure);
  const my=browser.indexOf('await myVoiceModeButton.click()',voice);
  const consent=browser.indexOf('await narrationConsent.tap()',my);
- assert.ok(modes>=0&&personal>modes&&concept>personal&&back>concept&&
+ assert.ok(modes>=0&&personal>modes&&quiz>personal&&fourth>quiz&&concept>fourth&&back>concept&&
    disclosure>back&&voice>disclosure&&my>voice&&consent>my,
    "actual user opens Personalization and the protected voice editor before consenting");
  assert.match(browser,/data-video-affirmation-transcript-review/);

@@ -1,7 +1,7 @@
 name: HH First Video LIVE · encoded file acceptance
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [labeled]
     branches: ['codex/public-book-library']
     paths:
       - 'scripts/benchmarking/first-video-live-export.mjs'
@@ -27,9 +27,10 @@ concurrency:
 
 jobs:
   anonymous-encoded-video:
-    # PR runs validate current source contracts; never compare unmerged source
-    # to a different, already-published LIVE deployment. Candidate real
-    # Chromium/macOS WebKit media must independently pass Mandala CI.
+    if: ${{ github.event_name != 'pull_request' || (github.event.label.name == 'qa-optional' && github.event.pull_request.draft == false) }}
+    # After protected #5164, mandatory Mandala owns both video source scripts
+    # and Director Chat tests. This duplicate source-only PR diagnostic is now
+    # opt-in via qa-optional; real LIVE/browser/provider probes remain manual.
     # The two LIVE encoded-file smokes remain available on workflow_dispatch.
     runs-on: ubuntu-24.04
     timeout-minutes: 12
@@ -46,7 +47,7 @@ jobs:
           node --check scripts/benchmarking/video-director-chat-live-acceptance.mjs
           node --test tests/video-director-chat-live-acceptance.test.mjs
       - name: One-shot free AI synthetic opt-in diagnostic
-        if: (github.event_name == 'pull_request' && github.event.action == 'opened') || (github.event_name == 'workflow_dispatch' && inputs.probe_free_ai)
+        if: github.event_name == 'workflow_dispatch' && inputs.probe_free_ai
         timeout-minutes: 1
         run: |
           node --input-type=module <<'NODE'
@@ -107,7 +108,7 @@ jobs:
           }
           NODE
       - name: Preserve privacy-safe free AI probe result
-        if: always() && ((github.event_name == 'pull_request' && github.event.action == 'opened') || (github.event_name == 'workflow_dispatch' && inputs.probe_free_ai))
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.probe_free_ai
         uses: actions/upload-artifact@v4
         with:
           name: hh-video-chat-free-ai-opt-in-diagnostic

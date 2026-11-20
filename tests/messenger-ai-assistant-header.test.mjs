@@ -6,15 +6,18 @@ const hub=read("components/app/messages-orders-clients.jsx");
 const css=read("components/app/messages-orders-clients.module.css");
 const chat=read("components/holistic-agent-chat.tsx");
 const history=read("components/holistic-agent-history.tsx");
-test("AI assistant header is localized and replaces obsolete notification/refresh actions",()=>{
+test("AI Assistant header shows a localized selected guide and a compact persona action",()=>{
   assert.match(hub,/data-hh-ai-assistant-header/);
-  for(const label of ["AI Assistant","ИИ-ассистент","Asistente IA"])assert.ok(hub.includes(label));
-  for(const label of ["Ask · Explore · Learn · Create","Спросить · Исследовать · Учиться · Создавать","Preguntar · Explorar · Aprender · Crear"])assert.ok(hub.includes(label));
-  assert.match(hub,/<History size=\{24\}/);assert.match(hub,/<SquarePen size=\{24\}/);
+  assert.match(hub,/data-hh-ali-active-persona=\{persona.id\}/);
+  for(const label of ["Inner Alchemist","Внутренний алхимик","Alquimista interior"])assert.ok(hub.includes(label));
+  for(const label of ["Understand · Support · Transform","Понимание · Поддержка · Изменения","Comprender · Acompañar · Transformar"])assert.ok(hub.includes(label));
+  assert.match(hub,/data-hh-ali-persona-open/);
+  assert.match(hub,/<UserRound size=\{24\}/);assert.match(hub,/<SquarePen size=\{24\}/);
   assert.doesNotMatch(hub,/<RefreshCw size=\{19\}/);
 });
 test("History opens the existing consented private archive, not a second history store",()=>{
-  assert.match(hub,/hh:messenger-open-history/);assert.match(chat,/hh:messenger-open-history/);
+  assert.match(read("components/app/ali-persona-picker.jsx"),/hh:messenger-open-history/);
+  assert.match(chat,/hh:messenger-open-history/);
   assert.match(chat,/<SecureDialogueHistory history=\{privateTranscript\}/);assert.match(history,/data-hh-secure-chat-history/);assert.match(history,/Separate opt-in|Отдельное разрешение|Consentimiento separado/);
 });
 test("New chat reuses the established reset handler",()=>{
@@ -32,7 +35,7 @@ test("Messenger language switcher lives beside the two enlarged assistant action
   const headerStart=hub.indexOf("data-hh-ai-assistant-header");
   const languageIndex=hub.indexOf("data-hh-messenger-language-switcher");
   assert.ok(headerStart>=0&&languageIndex>headerStart,"language control belongs inside assistant header");
-  assert.ok(languageIndex<hub.indexOf("data-hh-ai-chat-history"),"language is adjacent to history and new chat");
+  assert.ok(languageIndex<hub.indexOf("data-hh-ali-persona-open"),"language is adjacent to persona and new chat");
   assert.ok(hub.indexOf("data-chat-top-tabs")<headerStart,"tabs remain above the compact header");
   assert.doesNotMatch(hub,/styles\.languageBar/);
   assert.doesNotMatch(css,/\.languageBar\s*\{/);

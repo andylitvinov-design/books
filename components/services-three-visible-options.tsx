@@ -7,7 +7,8 @@ import { ServicesCardActions } from "@/components/services-card-actions";
 import { telegramServiceOptionDirectBotUrl } from "@/lib/assist/telegram-service-options.mjs";
 import styles from "./services-three-visible-options.module.css";
 
-type ThreeGroup = Exclude<ServicesPanelId, "about" | "testimonials" | "mytube" | "directory">;
+type CatalogGroup = Exclude<ServicesPanelId, "about" | "testimonials" | "mytube" | "directory">;
+export type ThreeGroup = CatalogGroup | "shamanica-artifacts" | "shamanica-learning";
 type Text3 = readonly [string, string, string]; // RU, EN, ES
 type Price = "free" | "express" | "full" | "from50" | "quote";
 type Option = {
@@ -23,6 +24,28 @@ type Option = {
 // Only previously published first-party destinations and existing offers.
 // A price is shown only when already confirmed for that exact offer/format.
 const groups: Record<ThreeGroup, readonly Option[]> = {
+  "shamanica-artifacts": [
+    { id:"personal", name:["Персональный талисман","Personal talisman","Talismán personal"],
+      description:["Символический предмет для личного намерения; материалы и стоимость уточняются.","A symbolic object for your intention; materials and price are confirmed individually.","Objeto simbólico personal; materiales y precio a confirmar."],
+      path:"holistic-support#talismans", photo:"/academy/reiki-yggdrasil/source/advanced-runes.png", price:"quote" },
+    { id:"fu", name:["Даосский талисман Фу","Daoist Fu talisman","Talismán taoísta Fu"],
+      description:["Выбор символа из опубликованного каталога; мастер подтвердит цену и изготовление.","Explore the published Fu catalogue; a practitioner confirms materials and price.","Explora el catálogo Fu; el maestro confirma materiales y precio."],
+      path:"holistic-support#talismans", photo:"/images/holistic-house/tao-fu-balance.webp", price:"quote" },
+    { id:"mandala", name:["Мандала для личной цели","Mandala for a personal goal","Mandala para una meta personal"],
+      description:["Создание символического изображения для вашей цели; условия по запросу.","Create a symbolic image for reflection on your goal; terms on request.","Imagen simbólica personal para reflexionar sobre una meta; consultar precio."],
+      path:"holistic-support/mandala", photo:"/images/holistic-house/mandala-gold-reference.webp", price:"quote" },
+  ],
+  "shamanica-learning": [
+    { id:"practitioner", name:["Практик Рейки · бесплатный курс","Reiki Practitioner · free course","Practicante de Reiki · curso gratis"],
+      description:["Опубликованный вводный курс с короткими уроками и практиками.","Published introductory course with short lessons and practices.","Curso introductorio publicado con lecciones y prácticas."],
+      path:"academy/principles-of-energywork", photo:"/images/holistic-house/reiki-practitioner-sunrise.webp", price:"free" },
+    { id:"tantra", name:["Тантра Рейки · введение и инициация","Tantra Reiki · introduction & initiation","Tantra Reiki · introducción e iniciación"],
+      description:["Бесплатная вводная практика и информация об инициации первой ступени.","Free introductory practice and information about Level 1 initiation.","Práctica inicial gratis e información sobre iniciación de nivel 1."],
+      path:"academy/reiki/tantra-reiki/free-initiation", photo:"/images/holistic-house/tantra-reiki-yin-yang-cover.svg", price:"free" },
+    { id:"yggdrasil", name:["Рейки Иггдрасиль · базовый курс","Reiki Yggdrasil · basic course","Reiki Yggdrasil · curso básico"],
+      description:["Основная программа; подробности ступеней и стоимость уточняются отдельно.","Explore the basic programme; level details and pricing are confirmed separately.","Programa básico; los niveles y precios se confirman por separado."],
+      path:"academy/reiki/yggdrasil", photo:"/academy/reiki-yggdrasil/source/basic-program.jpg", price:"quote" },
+  ],
   reiki: [
     { id:"remote", name:["Рейки · дистанционная сессия","Reiki · remote session","Reiki · sesión a distancia"],
       description:["Выбор мастера, метода и времени; условия согласовываются до оплаты.","Choose a practitioner, method and preferred time; terms are confirmed before payment.","Elige profesional, método y horario; las condiciones se confirman antes de pagar."],
@@ -78,6 +101,17 @@ const groups: Record<ThreeGroup, readonly Option[]> = {
       description:["Символическая карта деловой ситуации и проверяемые следующие шаги, без обещания результата.","A symbolic business-system map and testable next steps, without guaranteed outcomes.","Mapa simbólico empresarial y próximos pasos comprobables, sin promesas de resultados."],
       path:"services/business-consulting", photo:"/images/holistic-house/andy-about.png", price:"from50" },
   ],
+  business: [
+    { id:"review", name:["Разбор деловой ситуации","Business situation review","Revisión de situación empresarial"],
+      description:["Бесплатный письменный разбор вопроса о работе или бизнесе.","A free written reflection on a work or business question.","Reflexión escrita gratuita sobre trabajo o negocio."],
+      path:"services/free-situation-review", photo:"/images/holistic-house/messenger-zen-stones.svg", price:"free" },
+    { id:"consult", name:["Бизнес-консультация","Business consultation","Consulta empresarial"],
+      description:["Уточнить стратегию, решения и следующий шаг с консультантом.","Clarify strategy, decisions and a practical next step.","Aclarar estrategias, decisiones y próximos pasos."],
+      path:"services/business-consulting", photo:"/images/holistic-house/andy-about.png", price:"quote" },
+    { id:"team", name:["Команды и бизнес-расстановки","Teams & business constellations","Equipos y constelaciones empresariales"],
+      description:["Системный взгляд на роли, партнёрство и взаимодействие в команде.","Explore team roles and partnerships through systemic mapping.","Explorar roles de equipo y asociaciones con mapas sistémicos."],
+      path:"services/business-consulting", photo:"/images/holistic-house/homepage-constellations.svg", price:"quote" },
+  ],
   video: [
     { id:"intention", name:["Видео-настрой","Video intention","Vídeo de intención"],
       description:["Короткая история для осмысления своей цели.","A short visual reflection on your intention.","Reflexión visual breve sobre tu intención."],
@@ -91,14 +125,14 @@ const groups: Record<ThreeGroup, readonly Option[]> = {
   ],
   courses: [
     { id:"opora", name:["ОПОРА · Антистресс","OPORA · Anti-Stress","OPORA · Antiestrés"],
-      description:["Опубликованный курс из 14 коротких занятий.","A published 14-day self-support programme.","Programa publicado de 14 días de apoyo personal."],
+      description:["Опубликованная программа из 14 коротких занятий.","A published 14-day self-support programme.","Programa publicado de 14 días de apoyo personal."],
       path:"courses/antistress", photo:"/images/holistic-house/course-focus-mountain-boy.webp", price:"free" },
-    { id:"practitioner", name:["Бесплатный курс практикующего Рейки","Free Reiki Practitioner Course","Curso gratuito de Reiki"],
-      description:["Пять вводных уроков на английском языке.","Five introductory lessons in English.","Cinco lecciones introductorias en inglés."],
-      path:"academy/principles-of-energywork/learn", photo:"/academy/reiki-yggdrasil/source/program-overview.jpg", price:"free", fixedLocale:"en" },
-    { id:"yggdrasil", name:["Обучение Рейки Иггдрасиль","Reiki Yggdrasil training","Formación Reiki Yggdrasil"],
-      description:["Ступени обучения, практика и вопросы к мастеру.","Learning levels, practices and enquiry with a teacher.","Niveles, prácticas y consulta con un maestro."],
-      path:"academy/reiki/yggdrasil", photo:"/academy/reiki-yggdrasil/source/basic-program.jpg", price:"quote" },
+    { id:"meditations", name:["Медитации и практики","Meditations & practices","Meditaciones y prácticas"],
+      description:["Аудио и видео для осознанной самоподдержки.","Listen to guided practices for everyday self-support.","Prácticas guiadas de apoyo personal."],
+      path:"meditations", photo:"/images/holistic-house/assist-video-meditation.webp", price:"free" },
+    { id:"personal-video", name:["Персональное видео","Personal video","Vídeo personal"],
+      description:["Создайте видео с выбранной темой в существующей студии.","Explore a personal video on your chosen theme in the existing studio.","Crea un vídeo personal sobre un tema elegido."],
+      path:"video-studio", photo:"/images/holistic-house/assist-video-intention.webp", price:"quote" },
   ],
   coach: [
     { id:"diagnostic", name:["Бесплатная коучинг-анкета","Free coaching intake","Formulario gratuito de coaching"],
@@ -144,7 +178,7 @@ const tags: Record<PublicLocale, Record<Price, string>> = {
 const translate = (values:Text3, locale:PublicLocale):string =>
   values[locale==="ru"?0:locale==="en"?1:2];
 
-export function isThreeOptionGroup(id:ServicesPanelId):id is ThreeGroup {
+export function isThreeOptionGroup(id:ServicesPanelId):id is CatalogGroup {
   return Object.prototype.hasOwnProperty.call(groups,id);
 }
 
@@ -169,8 +203,12 @@ export function ServicesThreeVisibleOptions({id,locale}:{id:ThreeGroup;locale:Pu
         </div>
         <ServicesCardActions locale={locale} title={title} description={description}
           href={href} request={description} option={price}
-          trackingId={id+"-"+offer.id} telegramUrl={telegramServiceOptionDirectBotUrl(id+"_"+offer.id,locale)
-            ||"/api/public/telegram-option-entry?offer="+id+"_"+offer.id+"&locale="+locale}
+          trackingId={id+"-"+offer.id}
+            // Use signed Telegram URLs only for registered offers. Shamanica
+            // extras fall back to a human messenger draft with the exact title.
+            telegramUrl={telegramServiceOptionDirectBotUrl(id+"_"+offer.id,locale)
+              || (id.startsWith("shamanica-") ? undefined :
+                "/api/public/telegram-option-entry?offer="+id+"_"+offer.id+"&locale="+locale)}
             className={styles.actions} />
       </article>;
     })}

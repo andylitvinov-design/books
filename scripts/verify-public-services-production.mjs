@@ -110,6 +110,44 @@ try {
     return page;
   };
 
+ // First-screen Shamanica business visual acceptance in this existing CI runner.
+ // The two-column six-card grid must stay above the real, fixed seven-item dock.
+ async function checkCompactBusiness(page,locale,width){
+  await page.goto(origin+"/"+locale+"/shamanica/business",{waitUntil:"domcontentloaded",timeout:75000});
+  const section=page.locator("[data-shamanica-business]");
+  await visible(section);
+  await expect(page.locator("[data-sitewide-antistress-banner]")).toHaveCount(0);
+  await expect(page.locator("[data-hh-ihelp-trigger]:visible")).toHaveCount(0);
+  await expect(page.locator("[data-shamanica-ihelp-trigger]")).toBeVisible();
+  await expect(section.locator("[data-business-service]")).toHaveCount(6);
+  await expect(section.locator("[data-business-service] img")).toHaveCount(6);
+  await expect(page.locator("[data-hh-unified-dock]")).toHaveCount(1);
+  const m=await page.evaluate(()=>{
+   const last=document.querySelector('[data-business-service="remedies"]');
+   const dock=document.querySelector('[data-hh-unified-dock]');
+   if(!last||!dock)return null;
+   return {lastBottom:last.getBoundingClientRect().bottom,
+     dockTop:dock.getBoundingClientRect().top,
+     horizontalOverflow:document.documentElement.scrollWidth-window.innerWidth};
+  });
+  assert.ok(m,"Business compact landmarks missing");
+  assert.ok(m.horizontalOverflow<=2,"Business horizontal overflow "+locale+"/"+width+" "+JSON.stringify(m));
+  if(width>=390)assert.ok(m.lastBottom<=m.dockTop+8,
+    "Six business cards must fit above dock "+locale+"/"+width+" "+JSON.stringify(m));
+  if(locale==="ru"&&width===390)await page.screenshot({path:output+"/shamanica-business-ru-390.png",fullPage:false});
+  await expect.poll(()=>page.evaluate(()=>history.pushState.toString().includes("__NA")),
+    {timeout:30000,message:"Business quiz hydration"}).toBe(true);
+  const quiz=section.locator("[data-business-quiz]");
+  await expect(quiz).toHaveAttribute("data-quiz-step","1");
+  await quiz.locator('[data-business-answer="express"]').click();
+  await expect(quiz).toHaveAttribute("data-quiz-step","2");
+  await quiz.locator('[data-business-answer="unclear"]').click();
+  await expect(quiz).toHaveAttribute("data-quiz-step","3");
+  await quiz.locator('[data-business-answer="free"]').click();
+  await expect(section.locator("[data-business-recommendations]")).toBeVisible();
+  await expect(section.locator("[data-recommended-business-service]")).toHaveCount(2);
+ }
+
   // Mobile Assist keeps issues, questions, answers, and reset in one messenger.
   // The three responsive recommendations are separate small cards BELOW the chat.
   // Preserve all locale/desktop/privacy contracts; never navigate Telegram in CI.
@@ -126,15 +164,19 @@ try {
     await expect(quiz.locator("[data-services-quiz-question]")).toHaveCount(1);
     await expect(quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice]')).toHaveCount(4);
     await expect(quiz.locator("[data-services-quiz-category]")).toHaveCount(6);
-    await expect(quiz.locator("[data-services-quiz-category] img")).toHaveCount(6);
-    await expect(quiz.locator("[data-services-business-link]"))
-      .toHaveAttribute("href", "#service-group-services");
+    await expect(quiz.locator("[data-services-card-photo]")).toHaveCount(6);
+    assert.deepEqual(await quiz.locator("[data-services-quiz-category]").evaluateAll(cards =>
+      cards.map(card => card.getAttribute("data-services-quiz-category"))),
+      ["diagnostics", "business", "homeopathy", "coaching", "psychotherapy", "video"],
+      "The six owner-prioritized Support cards must remain in 3×2 order");
+    await expect(quiz.locator("[data-services-shamanica-link]"))
+      .toHaveAttribute("href", "/"+locale+"/shamanica");
     assert.equal(await page.locator("[data-hh-unified-dock]").count(), 1,
       "Keep the real site dock; never add a second mock dock");
     // The approved screenshot is 390px wide. At smaller widths content may
     // scroll, but no controls may disappear sideways or behind a fixed rail.
     const firstScreen = await page.evaluate(() => {
-      const last = document.querySelector('[data-services-quiz-category="videos"]');
+      const last = document.querySelector('[data-services-quiz-category="video"]');
       const dock = document.querySelector("[data-hh-unified-dock]");
       if (!last || !dock) return null;
       return {
@@ -165,8 +207,8 @@ try {
     ).toBe(true);
     // Six photographic first-screen categories stay on /services and expose exactly three matching options.
     const quickTargets = {
-      therapy: "consultation", homeopathy: "homeopathy", constellations: "services",
-      practice: "reiki", study: "courses", videos: "video",
+      diagnostics: "consultation", business: "business", homeopathy: "homeopathy",
+      coaching: "coach", psychotherapy: "services", video: "video",
     };
     for (const [category, group] of Object.entries(quickTargets)) {
       const card = quiz.locator('[data-services-quiz-category="' + category + '"]');
@@ -180,10 +222,14 @@ try {
       await expect(target.locator(':scope > [data-services-three-visible] > [data-service-variant]')).toHaveCount(3);
       await expect(target.locator(':scope > [data-services-three-visible] > [data-service-variant]').first()).toBeVisible();
     }
-    await expect(quiz.locator("[data-services-business-link]")).toHaveAttribute("href", "#service-group-services");
-    await quiz.locator("[data-services-business-link]").click();
-    assert.equal(new URL(page.url()).pathname, "/" + locale + "/services", "Business category must stay on Services");
-    assert.equal(new URL(page.url()).hash, "#service-group-services");
+    await expect(quiz.locator("[data-services-shamanica-link]")).toHaveAttribute("href", "/" + locale + "/shamanica");
+    await expect(quiz.locator("[data-services-extra-categories]")).toHaveCount(1);
+    const more = quiz.locator("[data-services-extra-categories]");
+    await more.locator("summary").click();
+    await expect(more.locator("nav a")).toHaveCount(4);
+    await expect(more.locator('nav a[href="#service-group-browse"]')).toHaveCount(1);
+    await more.locator("summary").click();
+    await expect(quiz.locator('[data-services-quiz-category="business"]')).toHaveAttribute("href", "#service-group-business");
     // Business has its own topic, need and start-format branching.
     await quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice="business_support"]').click();
     await expect(quiz).toHaveAttribute("data-services-quiz-step", "2");
@@ -202,7 +248,9 @@ try {
     await submitQuiz.click();
     await visible(page.locator("[data-services-quiz-results]"));
     await visible(quiz.locator("[data-services-quiz-summary]"));
-    await expect(page.locator('[data-services-quiz-results] [data-assist-best-card="business"]')).toHaveCount(1);
+    const businessGroup = page.locator('[data-services-quiz-results] [data-services-priority-category="business"]');
+    await expect(businessGroup).toHaveCount(1);
+    await expect(businessGroup).toHaveAttribute("data-priority-offer-count", "3");
     if (width === 390) {
       await quiz.locator('[data-quiz-dot="1"]').click();
       await quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice="money_growth"]').click();
@@ -213,7 +261,7 @@ try {
       await quiz.locator('[data-services-quiz-question="budget"] [data-services-quiz-choice="flexible"]').click();
       await submitQuiz.click();
       await visible(page.locator("[data-services-quiz-results]"));
-      await expect(page.locator('[data-services-quiz-results] [data-assist-best-card="business"]')).toHaveCount(0);
+      await expect(page.locator('[data-services-quiz-results] [data-services-priority-category="business"]')).toHaveCount(0);
     }
     await assertViewport(page, locale + "/services/quiz/" + width);
     // The original locally-scoped Ali messenger remains reachable by an
@@ -248,10 +296,10 @@ try {
       { timeout: 30000, message: 'Mobile Services catalogue must hydrate before interactions' },
     ).toBe(true);
     const panelIds = [
-      "reiki", "browse", "reading", "consultation", "services", "video", "courses",
+      "reiki", "browse", "reading", "consultation", "services", "business", "video", "courses",
       "coach", "magical", "homeopathy", "about", "testimonials", "mytube", "directory",
     ];
-    const servicePanelIds = new Set(panelIds.slice(0, 10));
+    const servicePanelIds = new Set(panelIds.slice(0, 11));
     await expect(catalog.locator("[data-services-unified-panel]")).toHaveCount(panelIds.length);
     for (const id of panelIds) {
       const panel = catalog.locator('[data-services-unified-panel="' + id + '"]');
@@ -732,22 +780,21 @@ try {
         await visible(free.locator('a[href="/' + locale + '/services/dao-health-profile"]').first());
         await visible(free.locator('a[href="/' + locale + '/courses/antistress"]'));
         assert.equal(await page.locator("h1#services-conversion-title").count(), 1);
-        // The approved public Services page has 10 compact groups and 30
-        // immediately visible options. The former conversion hero now lives
-        // inside the Browse panel AFTER the first six service groups.
+        // Eleven groups with three published options apiece, including the
+        // distinct Business category in EN, RU and ES. Keep ordering identical.
         const visibleVariants=page.locator('[data-services-unified-catalog] [data-services-three-visible]');
-        await expect(visibleVariants).toHaveCount(10);
-        await expect(visibleVariants.locator('[data-service-variant]')).toHaveCount(30);
+        await expect(visibleVariants).toHaveCount(11);
+        await expect(visibleVariants.locator('[data-service-variant]')).toHaveCount(33);
         const actualGroups=await visibleVariants.evaluateAll(nodes=>
           nodes.map(node=>({id:node.getAttribute("data-services-three-visible"),
             declared:node.getAttribute("data-services-offer-count"),
             visible:node.getClientRects().length>0,
             options:node.querySelectorAll("[data-service-variant]").length})));
         assert.deepEqual(actualGroups.map(x=>x.id),
-          ["consultation","homeopathy","services","reiki","courses","video","browse","reading","coach","magical"],
+          ["consultation","homeopathy","services","business","reiki","courses","video","browse","reading","coach","magical"],
           "The first six category targets must remain visible in their approved order");
         assert.ok(actualGroups.every(x=>x.declared==="3"&&x.visible&&x.options===3),
-          "Each of the ten service panels displays all three choices without opening an accordion");
+          "Each of the eleven service panels displays all three choices without opening an accordion");
         assert.equal(await page.evaluate(() => {
           const selectors = ["#consultation","#free-insights","#solutions","#services-conversion-title",
             "[data-services-meet]",'[data-personal-testimonials="services"]',
@@ -1342,7 +1389,13 @@ try {
       }
     }
   }
-
+  for(const locale of ["ru","en","es"]){
+    for(const width of [320,390,430]){
+      const page=await createPage(width);
+      try{await checkCompactBusiness(page,locale,width);}
+      finally{await page.close();}
+    }
+  }
   diagnostics.devIssueOverlay = false;
   assert.deepEqual(diagnostics.pageErrors, [], "Unexpected browser page errors");
   // In isolated CI, getAppConfig() is guaranteed to return 503 before any

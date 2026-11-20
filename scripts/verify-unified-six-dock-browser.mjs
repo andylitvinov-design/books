@@ -12,9 +12,9 @@ mkdirSync(folder,{recursive:true});
 const results=[];
 const ids=["mytube","video","coach","ai","services","practice","profile"];
 const labels={
-  en:["MyTube","MyVideo","My Coach","AI/Chat","Support","Study","Profile"],
-  ru:["MyTube","MyVideo","Мой коуч","ИИ/Чат","Поддержка","Обучение","Профиль"],
-  es:["MyTube","MyVideo","Mi coach","IA/Chat","Apoyo","Estudiar","Perfil"],
+  en:["MyTube","MyVideo","My Coach","AI/Chat","Support","Shamanica","Profile"],
+  ru:["MyTube","MyVideo","Мой коуч","ИИ/Чат","Поддержка","Шаманика","Профиль"],
+  es:["MyTube","MyVideo","Mi coach","IA/Chat","Apoyo","Shamanica","Perfil"],
 };
 
 // The fixed dock belongs to the ROOT shell, not to individual pages. Check
@@ -282,7 +282,7 @@ async function inspect(browserType,locale,width){
   if(locale==="ru" || width===390){
     const prefix="/"+locale;
     const routeCases=[
-      ["practice",prefix+"/holistic-support/mobile","practice"],
+      ["practice",prefix+"/shamanica","practice"],
       ["video",prefix+"/holistic-support/mandala","video"],
       ["ai",prefix+"/app/messages?section=ai","ai"],
       ["coach",prefix+"/my-coach","coach"],
@@ -451,7 +451,7 @@ async function inspect(browserType,locale,width){
       ["mytube","/ru/mytube"],
       ["coach","/ru/my-coach"],
       ["services","/ru/services"],
-      ["practice","/ru/holistic-support/mobile"],
+      ["practice","/ru/shamanica"],
     ]){
       await page.locator('[data-unified-dock-item="'+tab+'"]').click();
       await page.waitForURL(url=>url.pathname===path||url.pathname===path+"/",{timeout:45000});
@@ -575,6 +575,16 @@ try{
  await chat.locator('[data-hh-ai-landing]').waitFor({state:"visible",timeout:15000});
  const log=chat.locator('[role="log"]');
  const projectGrid=chat.locator('[data-hh-messenger-six-projects]');
+ // Inner Alchemist begins with an inviting question, not a wall of service cards.
+ // Keep the entire canonical six-project catalogue available after user intent.
+ const alchemistTools=chat.locator('[data-hh-alchemist-tools]');
+ await alchemistTools.waitFor({state:"visible",timeout:15000});
+ assert.equal(await alchemistTools.evaluate(node=>node.open),false,
+   "six legacy service cards are tucked away until requested");
+ assert.equal(await chat.locator('[data-hh-alchemist-topic]').count(),8,
+   "eight conversational problem starters are available without opening a catalogue");
+ await chat.locator('[data-hh-ai-inline-composer] textarea').waitFor({state:"visible",timeout:15000});
+ await alchemistTools.locator('summary').click();
  await projectGrid.waitFor({state:"visible",timeout:15000});
  const projects=chat.locator('[data-hh-messenger-six-projects] [data-hh-ai-project]');
  const six=["hint","test","mytube","sessions","practice","ai-video"];
@@ -725,6 +735,12 @@ try{
  };
  const openProject=async(id)=>{
    await resetViaMore();
+   // The six legacy projects are intentionally inside a collapsed accessible
+   // “More ways Ali can help” disclosure on the conversation-first landing.
+   // Test the real disclosure, rather than waiting for a hidden button.
+   const tools=chat.locator("details[data-hh-alchemist-tools]");
+   await tools.waitFor({state:"visible",timeout:15000});
+   if(await tools.evaluate(node=>!node.open))await tools.locator("summary").click();
    await chat.locator('[data-hh-ai-project="'+id+'"]').waitFor({state:"visible",timeout:15000});
    await chat.locator('[data-hh-ai-project="'+id+'"]').click();
    // Sessions has a goal-first two-step intake; other projects use one-step choices.
@@ -804,8 +820,59 @@ try{
  await page.locator("#hh-clients-panel").waitFor({state:"visible"});
  assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);
  await page.locator("[data-unified-dock-item=practice]").click();
- await page.waitForURL(/\/ru\/holistic-support\/mobile\/?$/,{timeout:30000});
- // Practice offers the approved five-question learning quiz above the three Academy schools.
+ await page.waitForURL(/\/ru\/shamanica\/?$/,{timeout:30000});
+
+ const shamanicaHome=page.locator("[data-shamanica-mobile]");
+ await shamanicaHome.waitFor({state:"visible",timeout:30000});
+ // Owner-approved Shamanica screenshot fits the FIRST iPhone viewport.
+ // All five service actions must sit above the single fixed nav and AI orb.
+ await page.evaluate(async()=>{
+   window.scrollTo({top:0,behavior:"instant"});
+   await new Promise(done=>requestAnimationFrame(()=>requestAnimationFrame(done)));
+ });
+ const oneScreen=await page.evaluate(()=>{
+   const cards=[...document.querySelectorAll("[data-shamanica-service]")];
+   const quiz=document.querySelector("[data-shamanica-quiz]");
+   const dock=document.querySelector("[data-hh-unified-dock]");
+   const hero=document.getElementById("shamanica-hero-title");
+   return {
+     width:innerWidth,height:innerHeight,
+     cards:cards.length,quizStep:quiz?.getAttribute("data-quiz-step"),
+     heroTop:hero?.getBoundingClientRect().top,
+     quizBottom:quiz?.getBoundingClientRect().bottom,
+     lastCardBottom:cards.at(-1)?.getBoundingClientRect().bottom,
+     dockTop:dock?.getBoundingClientRect().top,
+     overflowX:document.documentElement.scrollWidth-innerWidth,
+   };
+ });
+ assert.equal(oneScreen.cards,5,"Shamanica has five visible service links");
+ if(oneScreen.width>=360 && oneScreen.height>=740){
+   assert.ok(oneScreen.lastCardBottom<=oneScreen.dockTop-26,
+     "Shamanica hero, quiz and five services must fit above the dock on a normal iPhone: "+JSON.stringify(oneScreen));
+   assert.ok(oneScreen.overflowX<=2,"Shamanica has no horizontal mobile overflow: "+JSON.stringify(oneScreen));
+ }
+ await page.screenshot({path:folder+"/shamanica-first-screen-ru-390-webkit.png",fullPage:false,animations:"disabled"});
+ results.push({journey:"Shamanica one-screen hero + quiz + five services",
+   oneScreen,passed:true});
+ assert.equal(await shamanicaHome.locator("[data-shamanica-service]").count(),5,
+   "Shamanica displays the five approved service directions");
+ const shamanicaQuiz=shamanicaHome.locator("[data-shamanica-quiz]");
+ await expect(shamanicaQuiz).toHaveAttribute("data-quiz-step","1");
+ assert.equal(await shamanicaQuiz.locator("[data-shamanica-answer]").count(),4,
+   "Shamanica asks the four requested goals in a compact 2-by-2 mobile quiz");
+ await shamanicaQuiz.locator('[data-shamanica-answer="energy"]').click();
+ await expect(shamanicaQuiz).toHaveAttribute("data-quiz-step","2");
+ await shamanicaQuiz.locator('[data-shamanica-answer="learning"]').click();
+ await expect(shamanicaQuiz).toHaveAttribute("data-quiz-step","3");
+ await shamanicaQuiz.locator('[data-shamanica-answer="free"]').click();
+ await page.waitForURL(/\/ru\/shamanica\/results(?:\?|\/$)/,{timeout:45000});
+ await page.locator("[data-shamanica-results]").waitFor({state:"visible",timeout:30000});
+ assert.equal(await page.locator("[data-recommended-service]").count(),2,
+   "Shamanica shows exactly two personal directions on a separate screen");
+ // The previous Academy and its five-question learning quiz remain available
+ // through their explicit legacy address; the new dock no longer targets it.
+ await page.goto(origin+"/ru/holistic-support/mobile",{waitUntil:"domcontentloaded",timeout:75000});
+ // Legacy Study offers the approved five-question learning quiz above the three Academy schools.
  // Verify the first question requires a real choice before advancing.
  const studyEntry=page.locator("[data-holistic-study-academy]");
  await studyEntry.waitFor({state:"visible",timeout:30000});
@@ -846,7 +913,7 @@ try{
  assert.equal(await page.locator("[data-support-practice-tabs] > *").count(),3);
  await page.locator('[data-support-practice-tabs] button').nth(1).click();
  assert.equal(await page.locator('[data-support-practice-tabs] button').nth(1).getAttribute("aria-pressed"),"true");
- results.push({journey:"MyTube → Video → six real iChat choices → one protected transcript → private Orders/Clients → Practice",passed:true});
+ results.push({journey:"MyTube → Video → six real iChat choices → Orders/Clients → Shamanica quiz → published Academy",passed:true});
  // Both Home and Practice now share the original Practice visual dock,
  // with canonical Services and My Coach destinations.
  await page.goto(origin+"/ru",{waitUntil:"domcontentloaded",timeout:75000});
@@ -877,14 +944,15 @@ try{
  assert.equal(await page.locator('[data-unified-dock-item="services"][aria-current="page"]').count(),1);
  assert.equal(await page.locator(".mobile-bottom-navigation:visible").count(),0);
  await homeDock.locator('[data-unified-dock-item="practice"]').click();
- await page.waitForURL(/\/ru\/holistic-support\/mobile\/?$/,{timeout:45000});
- await page.locator("[data-holistic-study-academy]").waitFor({state:"visible",timeout:30000});
- assert.equal(await page.locator("[data-holistic-study-academy] [data-study-academy-course]").count(),8);
+ await page.waitForURL(/\/ru\/shamanica\/?$/,{timeout:45000});
+ await page.locator("[data-shamanica-mobile]").waitFor({state:"visible",timeout:30000});
+ assert.equal(await page.locator("[data-shamanica-service]").count(),5);
+ await expect(page.locator("[data-shamanica-quiz]")).toHaveAttribute("data-quiz-step","1");
  assert.equal(await page.locator("[data-support-practice-tabs]:visible").count(),0,
-   "the approved Study page does not show the retired top menu");
+   "the approved Shamanica landing does not show the old Support top menu");
  assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);
  assert.equal(await page.locator('[data-hh-unified-dock] [data-unified-dock-item]').count(),7);
- results.push({journey:"Holistic House Home → Services → Practice with one seven-tab dock",passed:true});
+ results.push({journey:"Holistic House Home → Services → Shamanica with one seven-tab dock",passed:true});
 
  // Profile unification: both Home and Practice open the existing private hub.
  // The protected CSP transition must remain a full server-authorized reload.
@@ -898,20 +966,27 @@ try{
  // #4301 restored My Space / Today as the canonical Profile landing.
  // A signed-out visitor sees the public Cabinet overview and may deliberately
  // open guest Tests; the old auto-opened Tests-first page is no longer mounted.
- assert.equal(await page.locator('[data-profile-tab="today"][aria-current="page"]').count(),1,
-   "guest Profile opens the current My Space Today tab, not the retired Tests-first view");
+ assert.equal(await page.locator('[data-profile-hub-tabs][data-profile-active="today"]').count(),1,
+   "guest Profile opens the current My Space Today dashboard, not the retired Tests-first view");
+ await page.locator('[data-profile-space-dashboard]').waitFor({state:"visible",timeout:30000});
+ assert.equal(await page.locator('[data-profile-space-life][aria-current="page"]').count(),1,
+   "My Life is the current guest dashboard mode");
  const guestOverview=page.locator('[data-cabinet-guest-overview="true"]');
  await guestOverview.waitFor({state:"visible",timeout:45000});
  const publicTests=guestOverview.locator('a[href="/ru/client/tests"]');
  await publicTests.waitFor({state:"visible",timeout:15000});
  assert.equal(await page.locator('[data-profile-tests-first]').count(),0,
    "retired standalone test-first component must not replace the My Space overview");
- // The same six canonical tabs remain visible, but private tabs are explicit
- // account routes rather than in-page guest anchors.
- assert.deepEqual(await page.locator('[data-profile-hub-tabs] [data-profile-tab]').evaluateAll(
-   links=>links.map(link=>link.dataset.profileTab)),
-   ["today","tests","state","path","courses","reports"],
-   "My Space retains six canonical sections for guest and signed-in users");
+ // Today's approved layout uses the scenic My Space dashboard, not the
+ // retired horizontal tab bar. Assert its exact routes and four real cards.
+ assert.equal(await page.locator('[data-profile-hub-tabs] [data-profile-tab]').count(),0,
+   "Today uses the photographic dashboard instead of duplicate tabs");
+ assert.deepEqual(await page.locator('[data-profile-space-card]').evaluateAll(
+   links=>links.map(link=>link.dataset.profileSpaceCard)),
+   ["state","courses","reports","sessions"],
+   "The four signed-in-capable sections remain visible as honest guest entries");
+ assert.equal(await page.locator('[data-profile-space-path]').getAttribute("href"),"/ru/app/portrait?space=path");
+ assert.equal(await page.locator('[data-profile-space-work]').getAttribute("href"),"/ru/practice");
  assert.equal(await page.locator('[data-hh-unified-dock] [data-unified-dock-item="profile"][aria-current="page"]').count(),1);
  assert.equal(await page.locator('.mobile-bottom-navigation:visible').count(),0);
  // In Profile, every account action is gated on an explicit guest click.
@@ -926,7 +1001,7 @@ try{
  await login.getByRole('button',{name:'Продолжить просмотр'}).click();
  await login.waitFor({state:'hidden',timeout:15000});
  // The mode switch itself never prompts or creates a private account.
- await page.locator('[data-profile-mode="work"]').click();
+ await page.locator('[data-profile-space-work]').click();
  await page.waitForURL(/\/ru\/practice\/?$/,{timeout:45000});
  await page.locator('[data-practice-showcase]').waitFor({state:'visible',timeout:45000});
  results.push({journey:"Public Profile → guest action opens OAuth choice → dismiss → free Life/Work mode switch",passed:true});

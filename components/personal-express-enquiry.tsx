@@ -1,18 +1,29 @@
 "use client";
 
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { CheckCircle2, ChevronDown, HeartPulse, MessageCircle, ShieldCheck, X } from "lucide-react";
 
-import { ContactChannelChooser } from "@/components/contact-channel-chooser";
+
 import {websiteMessengerOnlyUi} from "@/lib/crm/website-messenger-only.mjs";
 import { TelegramDiagnosticEntry } from "@/components/telegram-diagnostic-entry";
-import { FreeExpressWizard } from "@/components/free-express-wizard";
+
 import {EXPRESS_GOOGLE_CLAIM_PENDING_KEY,validExpressGoogleClaimIntent} from "@/lib/practitioners/free-express-google-claim.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import styles from "./personal-express-enquiry.module.css";
+
+// Heavy form modules are deferred until the visitor opens the request.
+const ContactChannelChooser = dynamic(
+  () => import("@/components/contact-channel-chooser").then((module) => module.ContactChannelChooser),
+  { ssr: false },
+);
+const FreeExpressWizard = dynamic(
+  () => import("@/components/free-express-wizard").then((module) => module.FreeExpressWizard),
+  { ssr: false },
+);
 
 type Focus = "situation" | "energy";
 const copy = {
@@ -86,10 +97,20 @@ export function PersonalExpressEnquiry({
   const [focus, setFocus] = useState<Focus>("situation");
   const [focusLocked, setFocusLocked] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const expandedRef = useRef(false);
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => { setHydrated(true); }, []);
+  // When the visitor folds the panel, retain any entered answers.
+  const [disclosureOpenedOnce, setDisclosureOpenedOnce] = useState(false);
+  useEffect(() => {
+    if (expanded) setDisclosureOpenedOnce(true);
+  }, [expanded]);
   const revealRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const openDisclosure = useCallback(() => {
+    expandedRef.current = true;
+    setExpanded(true);
+  }, []);
   const closeDisclosure = useCallback(() => {
     // A delayed hashchange after Escape can re-open the folded form in WebKit.
     // Remove only our form anchor; never clear search params or client identity.
@@ -98,6 +119,7 @@ export function PersonalExpressEnquiry({
       url.hash = "";
       window.history.replaceState(window.history.state, "", url.pathname + url.search);
     }
+    expandedRef.current = false;
     setExpanded(false);
   }, []);
 
@@ -114,11 +136,11 @@ export function PersonalExpressEnquiry({
   // They also open this in-flow section, including repeated clicks on the same hash.
   useEffect(() => {
     const openFromHash = () => {
-      if (window.location.hash === "#request-free-review") setExpanded(true);
+      if (window.location.hash === "#request-free-review") openDisclosure();
     };
     const openFromAnchor = (event: MouseEvent) => {
       if (event.target instanceof Element
-        && event.target.closest('a[href="#request-free-review"]')) setExpanded(true);
+        && event.target.closest('a[href="#request-free-review"]')) openDisclosure();
     };
     openFromHash();
     // Google OAuth uses the existing allowlisted landing route, but must not
@@ -127,14 +149,14 @@ export function PersonalExpressEnquiry({
       try {
         const prior = JSON.parse(window.sessionStorage.getItem("hh-free-express-wizard-resume-v2") || "null");
         if (prior?.locale === locale && /^HH-[A-F0-9]{12}$/.test(prior.referenceCode || ""))
-          setExpanded(true);
+          openDisclosure();
       } catch { /* Unknown browser state is never an authorization source. */ }
     }
     if (!enableWizard) {
       try {
         const intent = JSON.parse(window.sessionStorage.getItem(EXPRESS_GOOGLE_CLAIM_PENDING_KEY) || "null");
         if (validExpressGoogleClaimIntent(intent,locale,window.location.pathname))
-          setExpanded(true);
+          openDisclosure();
       } catch { /* Untrusted browser state cannot link an account. */ }
     }
     window.addEventListener("hashchange", openFromHash);
@@ -143,19 +165,27 @@ export function PersonalExpressEnquiry({
       window.removeEventListener("hashchange", openFromHash);
       document.removeEventListener("click", openFromAnchor);
     };
-  }, [enableWizard, locale]);
+  }, [enableWizard, locale, openDisclosure]);
 
+  // Register once: the Escape listener must not disappear during touch renders.
   useEffect(() => {
-    if (!expanded) return;
     const onEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && panelRef.current?.contains(document.activeElement)) {
-        closeDisclosure();
-        revealRef.current?.focus();
-      }
+      if (event.key !== "Escape" || (!expandedRef.current && panelRef.current?.hidden !== false)) return;
+      // Touching a non-focusable choice can move focus back to <body>,
+      // especially at 320px. The expanded form must still fold on Escape.
+      // Let any active nested modal handle Escape before this disclosure.
+      const activeDialog = document.querySelector('dialog[open], [role="dialog"][aria-modal="true"]');
+      if (activeDialog?.contains(document.activeElement)) return;
+      // Some native summary controls prevent the default Escape action.
+      // Once the review is expanded, close it unless a real modal owns focus.
+      event.preventDefault();
+      closeDisclosure();
+      revealRef.current?.focus();
     };
-    document.addEventListener("keydown", onEscape);
-    return () => document.removeEventListener("keydown", onEscape);
-  }, [expanded, closeDisclosure]);
+    // Capture Escape before a nested summary or focus handler consumes it.
+    window.addEventListener("keydown", onEscape, true);
+    return () => window.removeEventListener("keydown", onEscape, true);
+  }, [closeDisclosure]);
   const publicWizard = enableWizard && !websiteMessengerOnlyUi();
   const whatsappUrl = whatsappEnquiryUrl({
     locale, service: t.service, request: t.request, pagePath: pathname,
@@ -181,7 +211,7 @@ export function PersonalExpressEnquiry({
           <button ref={revealRef} type="button" className={styles.reveal}
             data-express-reveal disabled={!hydrated} aria-expanded={expanded} aria-controls="express-request-form"
             aria-label={expanded ? t.close : t.secureAlternative}
-            onClick={() => { if (expanded) closeDisclosure(); else setExpanded(true); }}>
+            onClick={() => { if (expandedRef.current) closeDisclosure(); else openDisclosure(); }}>
             {expanded ? <X size={19} aria-hidden="true" /> : <ShieldCheck size={17} aria-hidden="true" />}
             <span>{expanded ? t.close : t.secureAlternative}</span>
             <ChevronDown className={styles.revealChevron} size={16} aria-hidden="true" />
@@ -207,12 +237,12 @@ export function PersonalExpressEnquiry({
               : locale === "es" ? "Primero registramos tu solicitud; después puedes añadir tus respuestas e imágenes de forma privada."
               : "First register your request, then optionally add answers and private images.")
             : t.step}</p>
-          {publicWizard ? <FreeExpressWizard locale={locale} focus={focus} serviceTitle={t.service}
+          {disclosureOpenedOnce ? (publicWizard ? <FreeExpressWizard locale={locale} focus={focus} serviceTitle={t.service}
             onSaved={() => setFocusLocked(true)} onRestoredFocus={setFocus} />
           : <ContactChannelChooser key={focus} locale={locale}
             whatsappUrl={whatsappUrl} compactPhone stayAfterSave resetKey={focus}
             allowSecureExpressClaim publicServiceTitle={t.service}
-            publicTopic={"Express review focus: " + t.areas[focus].tag} />}
+            publicTopic={"Express review focus: " + t.areas[focus].tag} />) : null}
           {!publicWizard && <>
             <p className={styles.privacy}><ShieldCheck size={16} aria-hidden="true" />{t.privacy}</p>
             <p className={styles.note}>{t.note}</p>

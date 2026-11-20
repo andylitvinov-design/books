@@ -5,6 +5,7 @@ import styles from './crm-messenger.module.css'
 import CrmTelegramPhoto from './crm-telegram-photo'
 import MessagesContactCard from './messages-contact-card'
 import CrmSalesbotAssist from './crm-salesbot-assist'
+import {TELEGRAM_SERVICE_OPTIONS} from '@/lib/assist/telegram-service-options.mjs'
 const copy={
   en:{title:'Messages',sub:'Telegram, WhatsApp, Instagram & Messenger — one private inbox',all:'All',
     empty:'No conversations yet. Incoming conversations appear after a verified channel is connected and customers message you.',
@@ -34,8 +35,18 @@ const copy={
     channels:'Canales',customers:'Mensajes de clientes',waiting:'Esperando respuesta',sendError:'No se envió el mensaje.',
     loadThreads:'Más conversaciones',loadMessages:'Mensajes anteriores',historyError:'No se pudo cargar el historial. Inténtalo de nuevo.'},
 }
-const names={telegram:'Telegram',whatsapp:'WhatsApp',instagram:'Instagram · @tao.ideas',messenger:'Facebook Messenger'}
+const names={telegram:'Telegram · bot',telegram_business:'Telegram · @holistichouse',whatsapp:'WhatsApp',instagram:'Instagram · @tao.ideas',messenger:'Facebook Messenger'}
 const verifiedGoogleLabel={en:'Verified Google account',ru:'Google-аккаунт подтверждён',es:'Cuenta Google verificada'}
+const serviceStageLabels={
+  review_understanding:{en:'Understanding',ru:'Понимание ситуации',es:'Comprender la situación'},
+  review_outcome:{en:'Desired outcome',ru:'Желаемый результат',es:'Resultado deseado'},
+  review_action:{en:'Next step',ru:'Следующий шаг',es:'Siguiente paso'},
+  confirm:{en:'Awaiting confirmation',ru:'Ожидает подтверждения',es:'Pendiente de confirmación'},
+  submitted:{en:'Enquiry submitted',ru:'Запрос отправлен',es:'Solicitud enviada'},
+  cancelled:{en:'Cancelled',ru:'Отменено',es:'Cancelada'},
+  stopped:{en:'Automation stopped',ru:'Автоответы остановлены',es:'Automatización detenida'},
+  not_started:{en:'Reply unavailable',ru:'Ответ недоступен',es:'Respuesta no disponible'},
+}
 const setupText={
   en:{
     intro:'No channels are connected yet. You can prepare them here without sending a message.',
@@ -95,6 +106,10 @@ const officialPortal={
 
 const messageStatuses={
   received:{en:'Received',ru:'Получено',es:'Recibido'},
+  processed:{en:'Processed',ru:'Обработано',es:'Procesado'},
+  send_pending:{en:'Reply sending',ru:'Ответ отправляется',es:'Enviando respuesta'},
+  provider_accepted:{en:'Reply accepted by Telegram',ru:'Telegram принял ответ',es:'Telegram aceptó la respuesta'},
+  delivery_unknown:{en:'Reply delivery unknown — no auto retry',ru:'Доставка ответа неизвестна — без автоповтора',es:'Entrega desconocida — sin reintento automático'},
   draft:{en:'Draft',ru:'Черновик',es:'Borrador'},
   queued:{en:'Processing',ru:'Обрабатывается',es:'Procesando'},
   accepted:{en:'Accepted by provider',ru:'Принято сервисом',es:'Aceptado por el proveedor'},
@@ -291,7 +306,19 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
     })
     return ()=>ctrl.abort()
   },[accountId,load,initialThreadId,initialThreadSequence,onThreadsLoaded])
-  // One read on returning from Telegram, no background poll or paid service.
+  // No always-on push: refresh an OPEN, VISIBLE owner inbox every 45 seconds.
+  useEffect(()=>{
+    if(!accountId)return
+    const timer=window.setInterval(()=>{
+      if(document.visibilityState!=='visible'||busy||threadLoading)return
+      const now=Date.now()
+      if(now-focusRefreshAt.current<40000)return
+      focusRefreshAt.current=now
+      void refresh(activeRef.current)
+    },45000)
+    return ()=>window.clearInterval(timer)
+  },[accountId,load,busy,threadLoading])
+  // Refresh immediately on focus; never poll while the tab is hidden.
   useEffect(()=>{
     if(!accountId)return
     const onVisible=()=>{
@@ -356,7 +383,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
         }))
         // Portraits remain behind the existing authenticated CRM photo proxy.
         const portrait=[...(result.messages||[])].reverse().find(m=>m.photo&&m.photoPurpose==='portrait')
-        if(portrait&&result.threads?.some(thread=>thread.id===id&&thread.channel==='telegram'))
+        if(portrait&&result.threads?.some(thread=>thread.id===id&&['telegram','telegram_business'].includes(thread.transport||thread.channel)))
           onPortraitFound?.({threadId:id,messageId:portrait.id})
         setError('')
       }
@@ -523,7 +550,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
   const unread=threads.filter(item=>item.unreadCount>0).length
   const waitingReply=threads.filter(item=>item.needsReply).length
   const visibleThreads=threads.filter(item=>
-    (channelFilter==='all'||item.channel===channelFilter)
+    (channelFilter==='all'||(item.transport||item.channel)===channelFilter)
     &&(!unreadOnly||item.unreadCount>0)
     &&(!needsReplyOnly||item.needsReply)
     &&(!search.trim()||item.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))
@@ -691,7 +718,12 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
           className={active===thread.id?styles.threadActive:styles.thread} onClick={()=>selectThread(thread.id)}>
           <span className={styles.avatar} aria-hidden="true">{thread.name?.slice(0,1).toUpperCase()||'?'}</span>
           <span className={styles.threadInfo}><strong>{thread.name}</strong>
-            <small>{names[thread.channel]} · {thread.lifecycle}{thread.linkedGoogleAccount?' · '+verifiedGoogleLabel[lang]:''}</small>
+            <small>{names[thread.transport||thread.channel]} · {thread.lifecycle}{thread.linkedGoogleAccount?' · '+verifiedGoogleLabel[lang]:''}</small>
+            {thread.selectedOfferId&&<small>
+              {TELEGRAM_SERVICE_OPTIONS[thread.selectedOfferId]?.titles?.[lang]||thread.selectedOfferId}
+              {serviceStageLabels[thread.serviceDialogueStage]?.[lang]
+                ?' · '+serviceStageLabels[thread.serviceDialogueStage][lang]:''}
+            </small>}
             {thread.needsReply&&<small className={styles.replyIndicator}>
               {lang==='ru'?'Нужно ответить':lang==='es'?'Responder':'Needs reply'}</small>}
           </span>
@@ -706,14 +738,14 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
         {!selected?<p className={styles.empty}>{t.select}</p>:showContactCard&&!conversationOnly?
           <MessagesContactCard key={accountId+':'+selected.id} accountId={accountId} locale={lang}
             item={{key:'crm:'+selected.id,kind:'crm',id:selected.id,contactId:selected.contactId,
-              name:selected.name,source:names[selected.channel]}} onBack={()=>setShowContactCard(false)}/>:<>
+              name:selected.name,source:names[selected.transport||selected.channel]}} onBack={()=>setShowContactCard(false)}/>:<>
           {(!conversationOnly||selected.unreadCount>0)&&<div className={styles.chatHeader}>
             {compact&&!conversationOnly&&<button type="button" className={styles.backButton} onClick={backToList}
               aria-label={lang==='ru'?'К списку переписок':lang==='es'?'Volver a conversaciones':'Back to conversations'}>
               <ArrowLeft size={19} aria-hidden="true"/></button>}
             {!conversationOnly&&<div className={styles.chatIdentity}>
               <strong>{selected.name}</strong>
-              <span>{names[selected.channel]} · {selected.reply.ok?(lang==='ru'?'Ответ доступен':lang==='es'?'Respuesta disponible':'Reply available'):replyReason(selected.reply.reason,lang)}</span>
+              <span>{names[selected.transport||selected.channel]} · {selected.reply.ok?(lang==='ru'?'Ответ доступен':lang==='es'?'Respuesta disponible':'Reply available'):replyReason(selected.reply.reason,lang)}</span>
             </div>}
             {selected.unreadCount>0&&<button disabled={busy} type="button"
               className={styles.plainButton} aria-label={t.read} title={t.read}
@@ -743,6 +775,22 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
               (lang==='ru'?'Общение заблокировано':lang==='es'?'Contacto bloqueado':'Contact blocked'):
               w.overview}</span>}
           </div>}
+          {selected.channel==='telegram'&&<div className={styles.contactActions}
+            aria-label={lang==='ru'?'Управление беседой':lang==='es'?'Control de conversación':'Conversation control'}>
+            <button type="button" className={styles.profileAction}
+              disabled={busy||threadLoading}
+              aria-pressed={selected.humanTakeover===true}
+              onClick={()=>void action('set_human_takeover',{threadId:selected.id,enabled:!selected.humanTakeover})}>
+              {selected.humanTakeover
+                ?(lang==='ru'?'Вернуть боту':lang==='es'?'Devolver al bot':'Return to bot')
+                :(lang==='ru'?'Отвечаю лично':lang==='es'?'Responder personalmente':'I’ll reply personally')}
+            </button>
+            <small role="status">{selected.humanTakeover
+              ?(lang==='ru'?'Бот приостановлен для этого клиента':lang==='es'?'Bot pausado para este cliente':'Bot paused for this client')
+              :(lang==='ru'?'Бот может продолжать диалог':lang==='es'?'El bot puede continuar':'Bot may continue')}
+              {!selected.historyShared&&' · '+(lang==='ru'?'Клиент должен разрешить передачу следующих сообщений: /share_chat':
+                lang==='es'?'Para compartir mensajes: /share_chat':'To share next messages: /share_chat')}</small>
+          </div>}
           <div className={styles.messages} role="log" aria-live="polite" aria-busy={threadLoading}>
             {threadLoading&&<p className={styles.empty}>{w.loadingThread}</p>}
             {!threadLoading&&data?.nextMessagesCursor&&<button type="button"
@@ -751,6 +799,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
             {!threadLoading&&(data?.messages||[]).map(m=><div key={m.id}
               className={m.direction==='note'?styles.internalNote:m.direction==='out'?styles.outbound:styles.inbound}>
               {m.direction==='note'&&<strong className={styles.noteBadge}>{w.notesBadge}</strong>}
+              {m.sender==='bot'&&<small>{lang==='ru'?'Ответ бота':lang==='es'?'Respuesta del bot':'Bot reply'}</small>}
               {(!m.photo||!photoOnlyMessage.test(String(m.text||'').trim()))&&<p>{m.text}</p>}
               {m.photo&&['telegram','whatsapp'].includes(selected.channel)&&<CrmTelegramPhoto
                 accountId={accountId} threadId={selected.id} messageId={m.id} locale={lang}

@@ -9,23 +9,15 @@ import { parsePrTrigger, matchesTrigger, TARGET } from '../lib/ci/specialist-agg
 // Core, Guard and actionlint still verify CI routing and workflow changes.
 const ownerWorkflows = [
   "admin-seo-dashboard.yml",
-  "dao-iching-library.yml",
-  "hh-benchmark-program.yml",
-  "hh-benchmark-public-browser.yml",
   "hh-energywork-ai.yml",
   "hh-event-referral-contract.yml",
   "hh-growth-studio.yml",
   "hh-home-conversation.yml",
   "hh-ideas-coaching-public.yml",
-  "hh-live-seo-audit.yml",
   "hh-live-audio-ci.yml",
   "hh-public-performance-audit.yml",
   "hh-support-guided-recommendations.yml",
   "holistic-house-native.yml",
-  "hh-sitemap-runtime-assets.yml",
-  "hh-video-feature-lab.yml",
-  "holistic-house-ocean-audio.yml",
-  "mentor-community-acceptance.yml",
   "practice-material-previews.yml",
   "hh-first-video-live-export.yml",
   "hh-direct-video-notes.yml",
@@ -43,6 +35,146 @@ const contractFile = 'docs/operations/CI_OWNER_ROUTE_MIGRATION_20261104.md';
 const legacyTrigger = 'tests/ci-pr-selective-workflows.test.mjs';
 const source = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 const trigger = name => parsePrTrigger(source(name), name);
+
+// Second wave of noncritical QA is explicit opt-in. Real protected Core,
+// actionlint, private, billing and CRM checks remain mandatory.
+const additionalOnDemandQa = ['hh-indexnow.yml','visual-to-code-skill.yml'];
+test('second-wave optional QA never gates ordinary PRs while preserving true executions', () => {
+  for (const name of additionalOnDemandQa) {
+    const yaml = source(name), route = trigger(name);
+    assert.deepEqual(route?.types,['labeled'],name+': source PRs must not auto-dispatch');
+    assert.equal(matchesTrigger(route,['scripts/compare-ui-screenshots.mjs','scripts/submit-indexnow.mjs'],TARGET),
+      false,name+': optional owner must not join required specialist aggregation');
+    assert.match(yaml,/github\.event\.label\.name == 'qa-optional'/,name+': missing explicit opt-in job condition');
+    assert.match(yaml,/^  workflow_dispatch:$/m,name+': missing manual workflow');
+    assert.doesNotMatch(yaml,/continue-on-error:\s*true/,name+': real QA failures still block');
+  }
+  const index=source('hh-indexnow.yml');
+  assert.match(index,/^  push:$/m,'keep published IndexNow push notification');
+  assert.match(index,/node scripts\/submit-indexnow\.mjs --submit/);
+  for (const name of ['hh-pr-core-release.yml','hh-actionlint.yml','hh-crm-source-check.yml',
+    'hh-app-browser.yml','hh-billing-isolated.yml','hh-public-services-production.yml'])
+    assert.ok(trigger(name),name+': lost mandatory security/product PR owner');
+});
+
+ 
+test('shared Site Video player has one canonical owner rather than unrelated Free Review and TTFB gates',()=>{
+  const player='components/site-video-player.tsx';
+  assert.equal(matchesTrigger(trigger('site-video-browser.yml'),[player],TARGET),true);
+  for (const name of ['hh-free-review-live-mobile.yml','hh-public-performance-audit.yml'])
+    assert.equal(matchesTrigger(trigger(name),[player],TARGET),false,
+      name+': player-only edits must not trigger unrelated expensive acceptance');
+  for(const [name,own] of [
+    ['hh-free-review-live-mobile.yml','components/consultation-choice-capture.tsx'],
+    ['hh-public-performance-audit.yml','components/holistic-house-home.tsx'],
+    ['site-video-browser.yml','components/site-video-manager.tsx'],
+    ['site-video-browser.yml','app/api/app/site-video/movie/route.js'],
+    ['site-video-browser.yml','app/[locale]/about/page.tsx'],
+    ['site-video-browser.yml','app/es/about/page.tsx'],
+    ['site-video-browser.yml','app/page.tsx'],
+  ]) assert.equal(matchesTrigger(trigger(name),[own],TARGET),true,
+    name+': actual owner source must still receive full real QA '+own);
+});
+
+test('ten unrelated service/reader/API paths never launch redundant Site Video browser',()=>{
+  const unrelated=[
+    'app/[locale]/services/alchemy-of-soul/page.tsx',
+    'app/[locale]/services/business/page.tsx',
+    'app/es/services/page.tsx',
+    'app/es/services/alchemy-of-soul/page.tsx',
+    'app/[locale]/books/page.tsx',
+    'app/[locale]/books/maya-tradition/page.tsx',
+    'app/es/books/page.tsx',
+    'app/es/courses/page.tsx',
+    'app/[locale]/homeopathy/page.tsx',
+    'app/api/app/unrelated/route.js',
+  ];
+  assert.equal(unrelated.length,10);
+  const site=trigger('site-video-browser.yml');
+  for(const path of unrelated)
+    assert.equal(matchesTrigger(site,[path],TARGET),false,
+      'unrelated change still triggers Site Video: '+path);
+  assert.equal(matchesTrigger(trigger('hh-public-services-production.yml'),
+    ['app/[locale]/services/alchemy-of-soul/page.tsx'],TARGET),true,
+    'actual Public Services consent/order specialist must remain a gate');
+  assert.equal(matchesTrigger(trigger('hh-pr-core-release.yml'),unrelated,TARGET),true,
+    'required exact HEAD Core must remain active on every functional source PR');
+});
+
+test('CI scope noise: unrelated shared files do not launch visual/media/SEO specialists', () => {
+  const ignored = [
+    ['practice-visual-browser.yml','AGENTS.md'],
+    ['practice-visual-browser.yml','app/api/app/unrelated/route.js'],
+    ['tantra-testimonials.yml','middleware.ts'],
+    ['tantra-testimonials.yml','components/csp-navigation-boundary.tsx'],
+    ['tantra-testimonials.yml','lib/csp-prehydration.js'],
+    ['maya-reader-bundle.yml','next.config.ts'],
+    ['tantra-pdf-source-qa.yml','next.config.ts'],
+    ['visual-to-code-skill.yml','AGENTS.md'],
+    ['holistic-house-pdf-graphics.yml','package.json'],
+    ['hh-profile-axis-matching.yml','app/api/app/practice/editor/route.js']
+  ];
+  for(const [name,file] of ignored)
+    assert.equal(matchesTrigger(trigger(name),[file],TARGET),false,name+': unrelated '+file+' started a domain CI suite');
+  const required = [
+    ['practice-visual-browser.yml','app/api/app/practice/service/route.js'],
+    ['practice-visual-browser.yml','app/api/app/[...path]/route.js'],
+    ['tantra-testimonials.yml','components/tantra-video-testimonials.tsx'],
+    ['maya-reader-bundle.yml','app/books/maya-tradition/page.tsx'],
+    ['tantra-pdf-source-qa.yml','lib/academy/reiki-guide-pdf.js'],
+    ['holistic-house-pdf-graphics.yml','lib/prescriptions/pdf.js'],
+    ['hh-profile-axis-matching.yml','lib/holistic-support/axis-offer-matcher.mjs'],
+    ['hh-profile-axis-matching.yml','app/api/app/[...path]/route.js'],
+    ['hh-public-services-production.yml','components/public-consultation-cta.tsx'],
+    ['release-reaudit.yml','next.config.ts'],
+    ['release-reaudit.yml','middleware.ts'],
+    ['hh-public-performance-audit.yml','scripts/measure-hh-public-ttfb.mjs'],
+    ['hh-public-services-production.yml','scripts/measure-hh-public-ttfb.mjs'],
+    ['hh-pr-core-release.yml','package.json']
+  ];
+  for(const [name,file] of required)
+    assert.equal(matchesTrigger(trigger(name),[file],TARGET),true,name+': lost real domain/security owner for '+file);
+  for(const [name,own,unrelated] of [
+    ['practice-visual-browser.yml','app/api/app/practice/service/route.js','app/api/app/unrelated/route.js'],
+    ['tantra-testimonials.yml','components/tantra-video-testimonials.tsx','middleware.ts'],
+    ['hh-profile-axis-matching.yml','lib/holistic-support/axis-offer-matcher.mjs','app/api/app/practice/editor/route.js']
+  ]) assert.equal(matchesTrigger(trigger(name),[unrelated,own],TARGET),true,name+': mixed PR must retain own real QA');
+});
+
+// Owner-approved PR budget: retain one low-cost public performance owner,
+// defer nine noncritical/duplicative domain matrices to explicit dispatch or
+// existing protected production pushes. Core, security, money, CRM and private
+// data owners continue to run their real exact-HEAD checks on every matching PR.
+const onDemandQa = [
+  "dao-iching-library.yml",
+  "hh-benchmark-program.yml",
+  "hh-benchmark-public-browser.yml",
+  "hh-live-seo-audit.yml",
+  "hh-video-feature-lab.yml",
+  "holistic-house-ocean-audio.yml",
+  "hh-sitemap-runtime-assets.yml",
+  "hh-visual-service-landings.yml",
+  "mentor-community-acceptance.yml"
+];
+test('ten-to-one noncritical PR budget retains Core and source security', () => {
+  assert.equal(onDemandQa.length, 9, 'nine noncritical PR workloads must be deferred');
+  for (const name of onDemandQa) {
+    const yaml=source(name);
+    assert.deepEqual(trigger(name)?.types,['labeled'],name + ': opt-in event route changed');
+    assert.equal(matchesTrigger(trigger(name), ['package.json','components/holistic-house-home.tsx'], TARGET), false,
+      name + ': optional QA must not block ordinary PRs');
+    assert.match(yaml,/github\.event\.label\.name == 'qa-optional'/,name + ': explicit opt-in guard missing');
+    assert.match(yaml,/^  workflow_dispatch:\s*$/m,name + ': on-demand QA unavailable');
+    assert.doesNotMatch(yaml,/continue-on-error:\s*true/,name + ': genuine failures must remain visible');
+  }
+  assert.ok(trigger('hh-public-performance-audit.yml')?.paths?.length,
+    'one lightweight public-performance PR owner must remain');
+  for (const name of [
+    'hh-pr-core-release.yml','hh-crm-source-check.yml',
+    'hh-billing-isolated.yml','hh-app-r1.yml',
+    'hh-public-services-production.yml','hh-actionlint.yml',
+  ]) assert.ok(trigger(name),name + ': critical PR owner is missing');
+});
 
 test('optional workflow routes exclude retired shared fan-out triggers and retain owned coverage', () => {
   assert.equal(new Set(ownerWorkflows).size, ownerWorkflows.length);
@@ -83,7 +215,6 @@ test('unrelated library and sitemap edits do not awaken Dao and growth browser o
   assert.equal(matchesTrigger(trigger('visual-to-code-skill.yml'),['app/layout.tsx'],TARGET),false);
   assert.equal(matchesTrigger(trigger('practice-google-browser.yml'),['components/practice-showcase.jsx'],TARGET),false);
   for (const [owner, changed] of [
-    ['dao-iching-library.yml','components/dao-hexagram-card.tsx'],
     ['hh-growth-journey.yml','components/topic-growth-guide.tsx'],
     ['hh-ideas-coaching-public.yml','components/ideas-discovery.tsx'],
     ['hh-kling-video.yml','lib/kling-video.mjs'],
@@ -110,8 +241,8 @@ test('high-impact workflows still run their own domain validation on YAML edits'
 });
 
 
-test('Messages wellness specialists start on Ready after a stacked Draft is retargeted to production', () => {
-  for (const name of ['hh-messages-wellness-browser.yml', 'hh-messages-wellness-v2.yml']) {
+test('mandatory Messages checks start on Ready; source-only visual duplication is on demand', () => {
+  for (const name of ['hh-messages-wellness-v2.yml']) {
     const source = readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
     assert.match(source, /^  pull_request:\n    types: \[opened, reopened, synchronize, ready_for_review\]\n    branches: \[codex\/public-book-library\]/m,
       name + ': Ready must trigger the real independent PR specialist after base retargeting');
@@ -120,6 +251,13 @@ test('Messages wellness specialists start on Ready after a stacked Draft is reta
     assert.doesNotMatch(source, /continue-on-error:\s*true/,
       name + ': Specialist must still fail closed on a true product regression');
   }
+  const visual=source('hh-messages-wellness-browser.yml');
+  const route=trigger('hh-messages-wellness-browser.yml');
+  assert.deepEqual(route.types,['labeled']);
+  assert.equal(matchesTrigger(route,['components/app/messages-simple-inbox.jsx'],TARGET),false);
+  assert.match(visual,/github.event.label.name == 'qa-optional'/);
+  assert.match(visual,/^  workflow_dispatch:/m);
+  assert.match(visual,/node scripts\/verify-messages-wellness-browser\.mjs/);
 });
 
 
@@ -339,4 +477,56 @@ test('signed CRM and Commander isolated postmerge changes cannot restart whole r
   assert.match(push,/'lib\/clients\/session-delivery-service\.js'/);
   assert.match(push,/'lib\/documents\/report-progress\.js'/);
   assert.match(workflow,/^  pull_request:/m,'real PR report validation retained');
+});
+
+test('cosmetic Profile-only CSS skips heavy private IA but preserves real Core/App R1 and private-code coverage',()=>{
+ const ia=readFileSync(new URL('../.github/workflows/ia-v2.yml',import.meta.url),'utf8');
+ const app=readFileSync(new URL('../.github/workflows/hh-app-r1.yml',import.meta.url),'utf8');
+ const core=readFileSync(new URL('../.github/workflows/hh-pr-core-release.yml',import.meta.url),'utf8');
+ const iaTrigger=parsePrTrigger(ia,'.github/workflows/ia-v2.yml');
+ const appTrigger=parsePrTrigger(app,'.github/workflows/hh-app-r1.yml');
+ const css='components/app/profile-space-dashboard.module.css';
+ const cosmetic=[css,'components/home-dialogue-entry.module.css',
+  'components/sitewide-ihelp.module.css','tests/home-profile-iphone-viewport.test.mjs'];
+ assert.equal(matchesTrigger(iaTrigger,[css],TARGET),false,
+  'pure visual Profile CSS must not launch private IA/Redis/Postgres/1000+ tests');
+ assert.equal(matchesTrigger(iaTrigger,cosmetic,TARGET),false,
+  'original #5000 Home/Profile-only visual scope remains under Core + App R1');
+ assert.equal(matchesTrigger(appTrigger,[css],TARGET),true,
+  'App R1 retains the actual profile source/visual regression gate');
+ assert.match(core,/^  pull_request:\s*$/m);
+ assert.match(core,/^    branches: \['codex\/public-book-library'\]$/m);
+ for(const protectedPath of [
+   'components/app/profile-space-dashboard.jsx',
+   'components/app/profile-space-dashboard.tsx',
+   'components/app/crm-manager.jsx',
+   'app/api/app/client/report/route.js',
+   'app/api/auth/callback/route.js',
+   'lib/security/private-session.mjs',
+   'supabase/migrations/20261119_policy.sql',
+ ]) assert.equal(matchesTrigger(iaTrigger,[protectedPath],TARGET),true,
+   'private code must still trigger IA: '+protectedPath);
+ assert.equal(matchesTrigger(iaTrigger,[css,'components/app/crm-manager.jsx'],TARGET),true,
+  'mixed styling and private code must not bypass IA');
+ assert.equal(matchesTrigger(iaTrigger,['.github/workflows/ia-v2.yml'],TARGET),true,
+  'changes to the IA workflow itself must still execute its real tests');
+});
+
+test('First Video automatic PR duplication is retired after mandatory Mandala ownership',()=>{
+  const redundant=trigger('hh-first-video-live-export.yml'),video=source('hh-first-video-live-export.yml');
+  assert.deepEqual(redundant.types,['labeled']);
+  assert.match(video,/github\.event\.label\.name == 'qa-optional'/);
+  assert.match(video,/node --test tests\/video-director-chat-live-acceptance\.test\.mjs/);
+  assert.match(video,/github\.event_name == 'workflow_dispatch' && inputs\.probe_free_ai/);
+  assert.match(video,/^  workflow_dispatch:/m);
+  assert.equal(matchesTrigger(redundant,['scripts/benchmarking/first-video-live-export.mjs'],TARGET),false);
+  assert.equal(matchesTrigger(redundant,['components/mandala-free-video-studio.tsx'],TARGET),false);
+  assert.equal(matchesTrigger(redundant,['tests/video-director-chat-live-acceptance.test.mjs'],TARGET),false);
+  const mandala=trigger('holistic-support-mandala.yml');
+  for(const path of ['scripts/benchmarking/first-video-live-export.mjs','scripts/benchmarking/video-director-chat-live-acceptance.mjs','tests/video-director-chat-live-acceptance.test.mjs'])
+    assert.equal(matchesTrigger(mandala,[path],TARGET),true,path+': no required Mandala source owner');
+  const library=trigger('library-public-feed.yml');
+  for(const path of ['components/app/messages-orders-clients.jsx','components/mandala-video-director-chat.tsx'])
+    assert.equal(matchesTrigger(library,[path],TARGET),false,path+': unrelated library browser');
+  assert.equal(matchesTrigger(library,['components/library-feed.tsx'],TARGET),true);
 });

@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance, safeComposedIndependentAdvance, safeScopedDisjointProductionAdvance, safeMixedProtectedAdvance, REVALIDATABLE_CI_POLICY_FILES } from '../lib/ci/production-base-impact.mjs';
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
@@ -259,21 +259,28 @@ export function optionalProfileWriterSkip(files, branch) {
 export function requiresCurrentProductionBase(changed) {
   if (!Array.isArray(changed) || changed.length === 0) return true;
   const ordinaryRoots = /^(?:app|components|lib|tests|public|content|data|docs)\//;
-  // This exact Playwright-only QA harness is never imported by Next at runtime.
-  // Its changing selectors should not force a full rebase of an otherwise
-  // ordinary video-editor PR after an unrelated production promotion.
-  const isolatedBrowserHarness = file =>
-    /^scripts\/(?:verify-[a-z0-9.-]+-(?:browser|mobile)|benchmarking\/[a-z0-9.-]+)\.mjs$/i.test(file) &&
-    // Real encoded-media, payments and consent remain strict, regardless
-    // of their file being an isolated browser/benchmark harness.
-    !/(?:^|[\/_.-])(?:audio|codec|consent|encoded|encoder|export|license|payment|provider|recording|recorder|service|services|voice)(?:$|[\/_.-])/i.test(file);
+  // Browser, video and unit acceptance helpers are NOT production runtime.
+  // Their filenames may mention voice, export, codec or chat; that does not
+  // turn an otherwise public PR into a stale-base security change. A real
+  // encoded-file/WebKit Specialist remains mandatory based on changed files.
+  // Keep CI/release, auth, patient/privacy, payment and credential QA strict.
+  const testOnlyAcceptance = file =>
+    (/^tests\/[a-z0-9._/-]+\.test\.(?:mjs|cjs|js|ts|tsx)$/i.test(file) ||
+     /^scripts\/(?:verify-[a-z0-9._/-]+|benchmarking\/[a-z0-9._/-]+)\.mjs$/i.test(file)) &&
+    !/(?:^|[\/_.-])(?:ci|workflow|policy|release|deploy|deployment|vercel|config|admin|api|auth|authorization|account|billing|booking|cabinet|checkout|client|consent|credential|crm|database|identity|login|medical|patient|payment|private|privacy|rls|secret|security|session|storage|supabase|token|wallet)(?:$|[\/_.-])/i.test(file);
+  // This exact synthetic PUBLIC Services browser verifier is test-only:
+  // it cannot change Next runtime, payment handlers, private data or consent.
+  // A mixed PR containing any sensitive source still retains the strict base.
+  const publicSourceAcceptanceHarness = file =>
+    file === 'scripts/verify-public-services-production.mjs';
   const sensitiveName = /(?:^|[\/_.-])(?:account|admin|api|auth|billing|booking|cabinet|chat|checkout|client|consent|conversation|credential|crm|database|health|identity|inbox|login|medical|message|messages|messaging|migration|patient|payment|private|privacy|profile|rls|secret|security|session|storage|supabase|token|wallet)(?:$|[\/_.-])/i;
   const sensitiveRoots = /^(?:app\/(?:\[[^/]+\]\/)?api\/|app\/(?:\[[^/]+\]\/)?app\/|components\/app\/|lib\/(?:app|assessments|ia|practitioners)\/|docs\/operations\/|docs\/billing\/|docs\/payments\/)/i;
   return changed.some(file =>
     typeof file !== 'string' ||
-    (!ordinaryRoots.test(file) && !isolatedBrowserHarness(file)) ||
+    (!ordinaryRoots.test(file) && !testOnlyAcceptance(file) && !publicSourceAcceptanceHarness(file)) ||
     file.split('/').some(segment => segment === '.' || segment === '..' || segment === '') ||
-    sensitiveName.test(file) ||
+    (!testOnlyAcceptance(file) && sensitiveName.test(file)) ||
+    /^tests\/(?:ci-|workflow-|required-gate-|pr-fast-lane)/i.test(file) ||
     sensitiveRoots.test(file)
   );
 }
@@ -429,8 +436,10 @@ export async function verify(api,ctx,files,options={}) {
   const queuedGrace = Math.min(maxWait, boundedMs(options.queuedGraceMs ?? 10*60_000, 40*60_000));
   // A completed workflow's jobs API may lag; read only missing/pending job data.
   const jobGrace = Math.min(maxWait, boundedMs(options.jobGraceMs ?? 45_000, 90_000));
-  // Reduce read-only GitHub API pressure while many exact-HEAD jobs are queued.
-  const pollMs = boundedMs(options.pollMs ?? 30_000, 30_000, 100);
+  // Poll non-final queued/running specialists every 60s instead of every 30s:
+  // halve redundant GitHub HEAD-index reads while preserving all required checks.
+  // Missing-workflow discovery and the final-running fast lane remain responsive.
+  const pollMs = boundedMs(options.pollMs ?? 60_000, 60_000, 100);
   const now = options.now ?? Date.now;
   const sleep = options.sleep ?? delay;
   const pinnedChangeRows = Array.isArray(files.changedRows) && files.changedRows.length > 0;
@@ -450,6 +459,7 @@ export async function verify(api,ctx,files,options={}) {
     !verifiedOptionalOwnerSelectorMigration(files,changedRows));
   const approvedBaseChanges = new Set();
   const approvedPresentationBases = new Set();
+  const approvedDisjointBases = new Set();
   async function verifyCurrentBase(live) {
     assertSame(live, ctx, false);
     if (!requireCurrentBase) return;
@@ -464,8 +474,13 @@ export async function verify(api,ctx,files,options={}) {
     if (!pinnedChangeRows || typeof api.compare !== 'function') {
       throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
     }
-    if (approvedPresentationBases.has(liveBaseSha) && live.mergeable !== true)
-      throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+    // GitHub temporarily returns mergeable=null while it recomputes an exact
+    // merge after a production update. That is NOT a confirmed conflict.
+    // Safe-base reuse still requires complete protected Compare proof; the
+    // native merge gate separately requires affirmative mergeable=true.
+    if ((approvedPresentationBases.has(liveBaseSha) || approvedDisjointBases.has(liveBaseSha)) &&
+        (live.mergeable === false || live.mergeable_state === 'dirty'))
+      throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:MERGE_CONFLICT');
     if (!approvedBaseChanges.has(liveBaseSha)) {
       // Only a complete, ancestry-proven, documentation-only target advance
       // may pass. Security, runtime, CI, unknown and incomplete diffs stay blocked.
@@ -496,18 +511,79 @@ export async function verify(api,ctx,files,options={}) {
       // Reuse unchanged source checks if the newer protected BASE contains
       // nothing but independently proven public raster assets. GitHub must
       // report this PR as actually mergeable: no guessed/null conflict state.
-      const inertPublicImages = pinnedChangeRows && live.mergeable === true &&
-        changedRows.every(row => ['A','M','added','modified'].includes(row.status)) &&
+      // A deleted/renamed CANDIDATE file cannot change an unrelated protected
+      // image advance. The complete pinned source path inventory is the proof,
+      // not the candidate's status code. The policy rejects target deletions.
+      const inertPublicImages = pinnedChangeRows &&
+        live.mergeable !== false && live.mergeable_state !== 'dirty' &&
         verifiedIndependentPublicRasterAdvance(diff, ctx.base, liveBaseSha, changed);
       // If a protected PR shipped an independent public page/feature component,
       // its successful tests remain usable for a genuinely disjoint candidate.
       // A positive GitHub mergeable result and complete ancestry proof are required.
-      const independentPresentation = pinnedChangeRows && live.mergeable === true &&
+      const independentPresentation = pinnedChangeRows &&
+        live.mergeable !== false && live.mergeable_state !== 'dirty' &&
         safeIndependentPublicPresentationAdvance(diff, ctx.base, liveBaseSha, changed);
+      // A real protected production promotion may change unrelated public
+      // product files while this PR's Core and specialists are still running.
+      // Do not discard those successful results merely because BASE moved.
+      // Require GitHub's affirmative mergeability and complete source proof.
+      const disjointPublicSource = pinnedChangeRows &&
+        live.mergeable !== false && live.mergeable_state !== 'dirty' &&
+        safeDisjointPublicSourceAdvance(diff, ctx.base, liveBaseSha, changed);
+      // An unrelated public browser verifier is QA evidence, not runtime.
+      // Actual changed workflow/job scope, private tests and failed checks
+      // are still independently enforced above and by native merge rules.
+      const independentQa = pinnedChangeRows &&
+        live.mergeable !== false && live.mergeable_state !== 'dirty' &&
+        safeIndependentQaAdvance(diff, ctx.base, liveBaseSha, changed);
+      // Target-only unit tests of another domain do not invalidate source QA.
+      // The current exact-HEAD Core and all actually required specialists are
+      // still mandatory; native ARM independently verifies GitHub mergeability.
+      const independentDomainTest = pinnedChangeRows &&
+        live.mergeable !== false && live.mergeable_state !== 'dirty' &&
+        safeIndependentDomainTestAdvance(diff, ctx.base, liveBaseSha, changed);
+      // Mixed read-only/docs/public-asset/test promotions need not invalidate
+      // this already tested immutable HEAD. Require an affirmative mergeability
+      // result, full ancestry and every row's *existing* trusted risk proof.
+      const composedIndependent = pinnedChangeRows && live.mergeable === true &&
+        safeComposedIndependentAdvance(diff, ctx.base, liveBaseSha, changed);
+      // A complete proven target advance across different product domains
+      // cannot invalidate green Core/required specialists for unchanged HEAD.
+      const scopedDisjoint = pinnedChangeRows &&
+        live.mergeable !== false && live.mergeable_state !== 'dirty' &&
+        safeScopedDisjointProductionAdvance(diff, ctx.base, liveBaseSha, changed);
+      // General protected mixed-delta reuse, including many small protected
+      // commits while a long-running required specialist was in flight.
+      const mixedProtected = pinnedChangeRows &&
+        live.mergeable !== false && live.mergeable_state !== 'dirty' &&
+        safeMixedProtectedAdvance(diff, ctx.base, liveBaseSha, changed);
       if (!documentationOnly && !independentlyRevalidated &&
           !isolatedCiPolicy && !unrelatedCiMaintenance && !inertPublicImages &&
-          !independentPresentation) {
+          !independentPresentation && !disjointPublicSource && !independentQa &&
+          !independentDomainTest && !composedIndependent && !scopedDisjoint && !mixedProtected) {
         throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+      }
+      if (mixedProtected) {
+        approvedDisjointBases.add(liveBaseSha);
+        console.log('CI_BASE_ADVANCE_REUSED: verified independent protected mixed delta; keep unchanged exact-HEAD Core and specialists');
+      }
+      if (scopedDisjoint) {
+        approvedDisjointBases.add(liveBaseSha);
+        console.log('CI_BASE_ADVANCE_REUSED: verified disjoint product domains; preserve green exact-HEAD checks');
+      }
+      if (composedIndependent) {
+        approvedDisjointBases.add(liveBaseSha);
+        console.log('CI_BASE_ADVANCE_REUSED: all independently validated mixed protected files; preserve green exact-HEAD checks');
+      }
+      if (disjointPublicSource) {
+        approvedDisjointBases.add(liveBaseSha);
+        console.log('CI_BASE_ADVANCE_REUSED: verified disjoint public product source; preserve green exact-HEAD checks');
+      }
+      if (independentQa) {
+        console.log('CI_BASE_ADVANCE_REUSED: independent browser-only QA advance; exact-HEAD Core remains valid');
+      }
+      if (independentDomainTest) {
+        console.log('CI_BASE_ADVANCE_REUSED: isolated unrelated domain test advance; preserve exact-HEAD checks');
       }
       if (independentPresentation) {
         approvedPresentationBases.add(liveBaseSha);
@@ -525,7 +601,12 @@ export async function verify(api,ctx,files,options={}) {
       approvedBaseChanges.add(liveBaseSha);
     }
   }
-  await verifyCurrentBase(pr);
+  // Postpone potentially stale protected-BASE authorization until the
+  // exact-HEAD macOS Media/MP4 specialist completes. An early BASE_ADVANCED
+  // failure triggers the owner auto-sync which CANCELS the still-running Mac
+  // job; two such loops struck #5093. Required Core and Specialist outcomes
+  // remain mandatory, and the final protected BASE check is unchanged.
+  // For non-media / skipped optional macOS runs, fail fast as before.
   let risk=classifyReleaseRisk(changed);
   const readSource=options.readSource ?? ((rev,path)=>execFileSync('git',['show',rev+':'+path],
     {encoding:'utf8',maxBuffer:1_000_000,stdio:['ignore','pipe','pipe']}));
@@ -568,6 +649,14 @@ export async function verify(api,ctx,files,options={}) {
   const mandala = WORKFLOW_PREFIX + 'holistic-support-mandala.yml';
   if (routed.expected.includes(mandala)) advisoryPaths.delete(mandala);
   const expected=routed.expected.filter(name=>!advisoryPaths.has(name) && !concurrencyAdvisory.has(name) && !selfTriggerAdvisory.has(name));
+  const deferBaseWhileMediaRuns = pinnedChangeRows &&
+    expected.includes(mandala) &&
+    !optionalMandalaMacosSkip(files,pr.head.ref,changed);
+  // Wait for actual media pass/fail before permitting an automatic BASE sync.
+  // This does not grandfather an older validator or approve a stale base:
+  // verifyCurrentBase() is always invoked after all required job proofs.
+  if (!deferBaseWhileMediaRuns) await verifyCurrentBase(pr);
+  else console.log('CI_BASE_CHECK_DEFERRED: preserve required exact-HEAD macOS WebKit run before BASE_ADVANCED recovery');
   // BASE/HEAD rules enumerate applicable PR specialists. Only completed/pending
   // PR workflow runs proven non-applicable may be advisory. Same-HEAD push
   // failures and orphan/unassociated runs remain fail-closed: there is no
@@ -594,7 +683,7 @@ export async function verify(api,ctx,files,options={}) {
   const sensitiveFreshnessInterval = 90_000;
   let nextSensitiveFreshnessCheck = start + sensitiveFreshnessInterval;
   for (;;) {
-    if (requireCurrentBase && now() >= nextSensitiveFreshnessCheck) {
+    if (requireCurrentBase && !deferBaseWhileMediaRuns && now() >= nextSensitiveFreshnessCheck) {
       // Fresh PR identity/HEAD and production ref; existing exception logic
       // still admits only exhaustively verified, disjoint BASE advances.
       await verifyCurrentBase(await api.pr(ctx.number));
@@ -832,6 +921,7 @@ function loadProtectedValidator(liveSha) {
     }
     return {
       path: join(dir, 'scripts/ci-specialist-aggregate.mjs'),
+      impactPath: join(dir, 'lib/ci/production-base-impact.mjs'),
       cleanup: () => rmSync(dir, {recursive:true, force:true}),
     };
   } catch (error) {
@@ -842,31 +932,85 @@ function loadProtectedValidator(liveSha) {
 
 export async function revalidateAfterTrustedPolicyAdvance(api, ctx, files, options={}) {
   const blocked = () => Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
-  const target = await api.target();
   const changed = files.changedRows?.flatMap(row => row.previous_filename
     ? [row.filename, row.previous_filename] : [row.filename]);
-  if (!Array.isArray(changed) || !changed.length || changed.some(path => typeof path !== 'string')) throw blocked();
-  const diff = await api.compare(ctx.base, target);
-  if (!safeTrustedPolicyAdvance(diff, ctx.base, target, changed)) throw blocked();
-  // Avoid wasting a policy recheck while production is still moving.
-  if (await api.target() !== target) throw blocked();
+  if (!Array.isArray(changed) || !changed.length ||
+      changed.some(path => typeof path !== 'string')) throw blocked();
+
+  // Always execute policy code from the CURRENT protected production commit,
+  // never the PR source or an untrusted checkpoint. The old immutable policy
+  // can fail to understand a mixed target advance approved by a newer reviewed
+  // policy. Loading the new policy is permitted ONLY if GitHub Compare proves
+  // at least one exact trusted CI validator/test path changed; loading is NOT
+  // permission to PASS. The latest policy must independently approve ALL rows.
   const loader = options.loadPolicy ?? (async sha => {
     const extracted = loadProtectedValidator(sha);
     try {
-      const policyModule = await import(pathToFileURL(extracted.path).href);
-      return {verify:policyModule.verify,cleanup:extracted.cleanup};
+      const [policyModule, impact] = await Promise.all([
+        import(pathToFileURL(extracted.path).href),
+        import(pathToFileURL(extracted.impactPath).href),
+      ]);
+      return {verify:policyModule.verify,
+        safeTrustedPolicyAdvance:impact.safeTrustedPolicyAdvance,
+        cleanup:extracted.cleanup};
     } catch (error) { extracted.cleanup(); throw error; }
   });
-  const policy = await loader(target);
-  try {
-    if (typeof policy?.verify !== 'function') throw Error('TRUSTED_SPECIALIST_POLICY_NOT_EXECUTABLE');
-    const result = await policy.verify(api, ctx, files, {trustedPolicyBaseSha:target});
-    // No second moving-base exception: fail closed and coalesce at next run.
-    if (await api.target() !== target) throw blocked();
-    return {...result, policyRevalidatedAgainst:target};
-  } finally {
-    if (typeof policy?.cleanup === 'function') policy.cleanup();
+  const policyFiles = new Set(REVALIDATABLE_CI_POLICY_FILES);
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const target = await api.target();
+    if (!/^[0-9a-f]{40}$/.test(target || '')) throw blocked();
+    const diff = await api.compare(ctx.base, target);
+    const oldPolicyAccepts = safeTrustedPolicyAdvance(diff, ctx.base, target, changed);
+    const possibleNewPolicy = Array.isArray(diff?.files) && diff.files.some(row =>
+      policyFiles.has(row?.filename) && !changed.includes(row.filename) &&
+      ['added','modified'].includes(row.status) && !row.previous_filename);
+    if (!oldPolicyAccepts && !possibleNewPolicy) throw blocked();
+
+    // Do not fetch a stale validator if another protected merge already won.
+    if (await api.target() !== target) {
+      console.log('CI_BASE_ADVANCE_RETRY: target changed before protected policy load');
+      continue;
+    }
+    const policy = await loader(target);
+    try {
+      if (typeof policy?.verify !== 'function')
+        throw Error('TRUSTED_SPECIALIST_POLICY_NOT_EXECUTABLE');
+      const currentImpact = typeof policy.safeTrustedPolicyAdvance === 'function'
+        ? policy.safeTrustedPolicyAdvance : safeTrustedPolicyAdvance;
+      if (!currentImpact(diff, ctx.base, target, changed)) throw blocked();
+
+      // Target can move while the new validator reviews successful workflows.
+      // Retry only this read-only policy check on a different verified SHA;
+      // never rerun green Core, create commits or waive actual failing jobs.
+      if (await api.target() !== target) {
+        console.log('CI_BASE_ADVANCE_RETRY: target changed before evidence recheck');
+        continue;
+      }
+      let result;
+      try {
+        result = await policy.verify(api, ctx, files,
+          {trustedPolicyBaseSha:target});
+      } catch (error) {
+        if (String(error?.message || error).includes(
+              'PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED') &&
+            await api.target() !== target) {
+          console.log('CI_BASE_ADVANCE_RETRY: protected target moved during evidence recheck');
+          continue;
+        }
+        throw error; // real HEAD conflict, incomplete/failed job or API denial
+      }
+      if (await api.target() !== target) {
+        console.log('CI_BASE_ADVANCE_RETRY: protected target moved after successful recheck');
+        continue;
+      }
+      return {...result, policyRevalidatedAgainst:target,
+        policyRevalidationAttempts:attempt+1};
+    } finally {
+      if (typeof policy?.cleanup === 'function') policy.cleanup();
+    }
   }
+  // Never certify a perpetually moving or unproven target as green.
+  throw blocked();
 }
 
 // Normalize observable symptoms across PRs without claiming identical root causes.

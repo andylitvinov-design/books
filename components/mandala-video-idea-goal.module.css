@@ -1,0 +1,30 @@
+.picker{display:grid;gap:17px;width:100%;min-width:0;max-width:900px;margin:0 auto;padding:8px 0 24px;color:#103e35}
+.picker *{box-sizing:border-box}.intro{padding:0 5px 2px}.kicker{display:block;margin:0 0 8px;color:#078466;font:800 14px/1.25 system-ui,sans-serif}
+.intro h2{margin:0 0 7px!important;color:#123f37;font:800 clamp(29px,7.5vw,40px)/1.07 Georgia,serif!important;letter-spacing:-.03em}
+.intro p{margin:0!important;color:#60646a;font:500 clamp(15px,4vw,19px)/1.35 system-ui,sans-serif}
+.cards{display:grid;gap:13px;min-width:0}
+.goalCard{position:relative;display:grid;grid-template-columns:minmax(90px,31%) minmax(0,1fr) 30px;align-items:center;gap:12px;min-width:0;min-height:137px;width:100%;padding:9px 12px 9px 9px;border:1.5px solid #e5d9cd;border-radius:27px;background:linear-gradient(110deg,#fffdf9,#fff8f0);box-shadow:0 4px 14px #4c322a0b;color:#103f37;text-align:left;cursor:pointer;overflow:hidden}
+.goalCard[aria-pressed="true"]{border:2px solid #07876d;background:linear-gradient(115deg,#f7fcf7,#eaf7f0);box-shadow:0 4px 16px #07876d19}
+.photo{display:block;width:100%;height:100%;min-height:112px;border-radius:21px 9px 9px 21px;background-color:#d6e7dd;background-position:center;background-size:cover}
+.photo[data-goal-photo="calm"]{background-image:url("/videos/holistic-house/film-collection-v2/calm-sea.jpg")}
+.photo[data-goal-photo="love"]{background-image:url("/videos/holistic-house/film-collection-v2/wildflower-dance.jpg")}
+.photo[data-goal-photo="energy"]{background-image:url("/videos/holistic-house/film-collection-v2/sunbeam-flow.jpg")}
+.photo[data-goal-photo="confidence"]{background-image:url("/videos/holistic-house/film-collection-v2/mountain-air.jpg")}
+.photo[data-goal-photo="focus"]{background-image:url("/videos/holistic-house/film-collection-v2/wealth-sunrise.jpg")}
+.photo[data-goal-photo="trust"]{background-image:url("/videos/holistic-house/film-collection-v2/meadow-morning.jpg")}
+.photo[data-goal-photo="growth"]{background-image:url("/videos/holistic-house/film-collection-v2/fern-awakening.jpg")}
+.photo[data-goal-photo="rest"]{background-image:url("/videos/holistic-house/film-collection-v2/mossy-stream.jpg")}
+.photo[data-goal-photo="meaning"]{background-image:url("/videos/holistic-house/film-collection-v2/coastal-freedom.jpg")}
+.wording{display:grid;align-content:center;min-width:0;gap:7px}
+.kind{display:block;color:#087c64;font:750 11px/1.2 system-ui,sans-serif;letter-spacing:.025em;text-transform:uppercase}.title{display:block;color:#103e35;font:800 clamp(20px,5.5vw,29px)/1.08 Georgia,serif;letter-spacing:-.02em;overflow-wrap:break-word}
+.detail{display:block;color:#565f64;font:500 clamp(14px,3.7vw,17px)/1.32 system-ui,sans-serif;overflow-wrap:break-word}
+.checkbox{display:grid;place-items:center;justify-self:center;align-self:center;width:29px;height:29px;border:2px solid #95aaa1;border-radius:50%;background:#fffcf7;color:#fff}
+.goalCard[aria-pressed="true"] .checkbox{border-color:#087f64;background:#087f64}
+.more{display:flex;align-items:center;gap:9px;min-width:0;padding:1px 4px}.more>button:first-child{border:0;background:transparent;padding:8px 2px;min-height:44px;font:750 clamp(16px,4.2vw,20px)/1.25 system-ui,sans-serif;color:#115745;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.pageCount{margin-left:auto;color:#67766d;font:650 13px/1.2 system-ui,sans-serif;white-space:nowrap}
+.more>button:not(:first-child){display:grid;place-items:center;flex:none;width:46px;height:46px;border:1.5px solid #e5d8c8;border-radius:50%;background:#fffaf4;color:#115747;cursor:pointer}
+.selected{margin:-9px 4px -4px!important;color:#527165;font:600 14px/1.3 system-ui,sans-serif}.selected strong{color:#115745}
+.continue{display:flex;align-items:center;justify-content:center;gap:12px;min-height:64px;width:100%;margin:0;padding:13px 17px;border:0;border-radius:999px;background:linear-gradient(115deg,#129b80,#006d54);color:#fff;box-shadow:0 9px 20px #0a795b21;cursor:pointer;font:800 clamp(20px,5.5vw,27px)/1.15 system-ui,sans-serif}
+.continue svg{flex:none}.continue:disabled{opacity:.48;cursor:not-allowed}.picker button:focus-visible{outline:3px solid #c99d4e;outline-offset:3px}
+@media(max-width:359px){.picker{gap:12px}.intro h2{font-size:27px!important}.goalCard{grid-template-columns:minmax(76px,29%) minmax(0,1fr) 24px;gap:8px;padding:7px;min-height:132px;border-radius:22px}.photo{min-height:115px;border-radius:17px 7px 7px 17px}.title{font-size:19px}.detail{font-size:13px}.checkbox{width:24px;height:24px}.checkbox svg{width:17px}.continue{font-size:19px;min-height:58px}.pageCount{font-size:11px}}
+@media(min-width:760px){.picker{gap:20px}.cards{gap:17px}.goalCard{grid-template-columns:190px minmax(0,1fr) 35px;min-height:150px}.title{font-size:30px}.detail{font-size:18px}.photo{min-height:132px}}

@@ -1,4 +1,8 @@
 import test from 'node:test';
+// Include all selected-offer and Support Secretary scenario regressions in the
+// existing protected Telegram CRM suite without adding a separate CI job.
+import './ali-secretary-offer-journeys.test.mjs';
+import './ali-secretary-support-journeys.test.mjs';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
@@ -55,7 +59,8 @@ test('Owner CRM transfer requires existing confirmation path; no early lead',()=
  const code=source('lib/crm/telegram-ai-diagnostic-v3-service.js');
  const ui=source('components/mandatory-messenger-actions.tsx');
  assert.match(code,/serviceStart=v3ServiceStart\(raw\)/);
- assert.match(code,/serviceRequest:serviceStart.service/);
+ assert.match(code,/serviceRequest:serviceEntry.service/);
+ assert.match(code,/serviceEntry=serviceStart\|\|\(!row\?naturalServiceCandidate:null\)/);
  assert.match(code,/if\(action==='send'\)/);
  assert.match(code,/Confirmed service request/);
  assert.match(code,/ingestMessengerEventInTransaction/);
@@ -125,7 +130,9 @@ test('Service cards prefer signed, ready V3 bot regardless of independent Busine
  assert.match(router,/channelTransportReady\('telegram',env\)/);
  assert.match(router,/v3ServiceIntakeReady\(env\)/);
  assert.match(router,/resolveTelegramServiceEntry/);
- assert.match(router,/NextResponse.redirect\(target/);
+ assert.match(router,/NextResponse.redirect\(entry.href/);
+ assert.match(router,/status:503/);
+ assert.doesNotMatch(router,/return NextResponse.redirect\(target/);
  assert.doesNotMatch(ui,/resolveTelegramServiceEntry\(payload,manual,locale\)/);
  for(const lang of locales)for(const service of services){
   const url=telegramServiceRequestUrl(service,lang);
@@ -176,7 +183,7 @@ test('AI secretary product remains in Telegram Business, never unsupported V3 bo
 
 // Exercise the actual route with a sandboxed NextResponse, without real
 // provider calls, client data, Telegram sends or paid model processing.
-test('all 15 public service handoffs use READY bot even with Business automation, or safe human fallback',async()=>{
+test('all 15 public service handoffs use Ali bot or a truthful 503 without switching chats',async()=>{
  const raw=source('app/api/public/telegram-service-entry/route.js');
  const compiled=raw.replace(/^import\s+.*$/gm,'').replace(/^export\s+/gm,'');
  class Reply {
@@ -204,15 +211,17 @@ test('all 15 public service handoffs use READY bot even with Business automation
  const getDisabled=makeGet(disabled),getTransportOff=makeGet({...v3,transportReady:false});
  for(const locale of locales)for(const service of services){
   const url='https://holistichouse.vercel.app/api/public/telegram-service-entry?service='+service+'&locale='+locale;
-  const expectedHuman=telegramServiceRequestUrl(service,locale);
   const expectedBot='https://t.me/holistichouse_bot?start=hhservice_'+service+'_'+locale;
   const redirect=await getV3({url});
   assert.equal(redirect.status,307);
   assert.equal(redirect.location,expectedBot,'ready existing bot must answer');
   assert.equal((await getHuman({url})).location,expectedBot,'ready bot takes service handoff independent of human automation');
-  assert.equal((await getOffline({url})).location,expectedHuman,'unready bot must not be advertised');
-  assert.equal((await getDisabled({url})).location,expectedHuman);
-  assert.equal((await getTransportOff({url})).location,expectedHuman);
+  for(const unavailable of [getOffline,getDisabled,getTransportOff]){
+   const response=await unavailable({url});
+   assert.equal(response.status,503,'unready Ali must not redirect to another chat');
+   assert.match(response.body,/Ali/);
+   assert.doesNotMatch(response.body,/Wave/,'the public fallback uses the approved Ali name');
+  }
   assert.match(redirect.headers['Cache-Control'],/no-store/);
  }
  for(const locale of locales){
@@ -220,7 +229,7 @@ test('all 15 public service handoffs use READY bot even with Business automation
   assert.equal((await getHuman({url})).location,'https://t.me/holistichouse_bot?start=hhservice_business_strategy_'+locale);
   assert.equal((await getV3({url})).location,
    'https://t.me/holistichouse_bot?start=hhservice_business_strategy_'+locale);
-  assert.equal((await getOffline({url})).location,telegramBusinessStrategyRequestUrl(locale));
+  assert.equal((await getOffline({url})).status,503);
  }
  for(const unsafe of [
   '?service=ai_secretary&locale=en',

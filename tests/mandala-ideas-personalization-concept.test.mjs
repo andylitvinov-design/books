@@ -14,15 +14,17 @@ const css=read("components/mandala-video-personalization.module.css");
 const mobile=read("components/mandala-video-mobile.module.css");
 const browser=read("scripts/verify-affirmation-voice-browser.mjs");
 
-test("Ideas has exactly two real substages and the same single Concept generator",()=>{
-  assert.equal((studio.match(/data-video-ideas-tab="/g)||[]).length,2);
-  for(const tab of ["personalization","concept"]){
+test("Ideas has three real substages and the same single Concept generator",()=>{
+  assert.equal((studio.match(/data-video-ideas-tab="/g)||[]).length,3);
+  for(const tab of ["personalization","goal","concept"]){
     assert.ok(studio.includes('data-video-ideas-tab="'+tab+'"'),tab);
     assert.ok(studio.includes('data-video-ideas-'+tab+'-panel'),tab+" panel");
   }
   for(const label of ["Персонализация","Personalization","Personalización","Концепция","Concept","Concepto"])
     assert.ok(studio.includes(label),label);
   assert.equal((studio.match(/<MandalaVideoPersonalization /g)||[]).length,1);
+  assert.equal((studio.match(/<MandalaVideoIdeaGoal /g)||[]).length,1);
+  assert.match(studio,/setIdeasProfileConfirmed\(true\);setIdeasSubtab\("goal"\)/);
   assert.equal((studio.match(/<MandalaVideoConcept /g)||[]).length,1);
   assert.match(studio,/id:"concept",Icon:Film/,
     "Montage retains its own independent video-storyboard destination");
@@ -166,4 +168,20 @@ test("Name question stays in browser and personal closing follows the existing v
     personal.indexOf("export function MandalaVideoPersonalization"));
   assert.ok(!summary.includes("value.name"),
     "the preferred name never enters the concept/service personalization summary");
+});
+
+test("Personalization preserves choices across four photo-first quiz steps, with optional name last",()=>{
+ assert.match(personal,/useState<1\|2\|3\|4>\(1\)/);
+ assert.match(personal,/data-video-personalization-step=\{quizStep\}/);
+ assert.match(personal,/data-video-personalization-progress/);
+ assert.match(personal,/\[1,2,3,4\] as const/);
+ for(const stage of [1,2,3,4])assert.ok(personal.includes('hidden={quizStep!=='+stage+'}'));
+ assert.ok(personal.indexOf('data-video-personalization-name-question')>
+   personal.indexOf('data-personalization-kind="strength"'),"name follows the three questions");
+ assert.match(personal,/if\(quizStep===4\)\{onContinue\(\);return;\}/);
+ assert.match(personal,/if\(quizStep===1\)\{onBack\(\);return;\}/);
+ assert.match(personal,/quizRef\.current\?\.scrollIntoView/);
+ assert.match(css,/\.card\[hidden\],\.nameCard\[hidden\]\{display:none!important\}/);
+ assert.match(personal,/data-video-personalization-name type="text"/);
+ for(const word of ["previous","forward","quizStep"])assert.ok(personal.includes(word));
 });

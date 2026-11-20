@@ -10,6 +10,12 @@ import {parseOwnerVideoUpdate} from '../lib/practitioners/owner-telegram-video-m
 import {inspectStoryPlotCoverage} from '../lib/practitioners/owner-telegram-story-render.mjs';
 import {requiredStoryRightsCredits,storyYoutubeDescription} from '../lib/practitioners/owner-telegram-story-rights.mjs';
 import {listTelegramStoryCategories,listTelegramStorySubcategories,listTelegramStoryTopics,listTelegramStoryScenarios,listTelegramStoryPlots} from '../lib/mandala/telegram-story-plots.mjs';
+// Run first-party-photo and Supabase scene-bound Pexels acceptance under the existing owner video specialist.
+import './dot-story-pexels-photo-selection.test.mjs';
+import './dot-story-v3-scene-photos.test.mjs';
+// Execute the new photo fallback's provenance, First Light and plan tests in the
+// existing owner-video specialist without adding a new CI workflow.
+import './dot-story-photo-fallback.test.mjs';
 
 const rights={kind:'existing_approved_first_party_master'};
 const scenes=Array.from({length:4},(_,i)=>({
@@ -120,7 +126,11 @@ test('storyboard choice preview is honest about editorial coverage and physical 
   const proof=inspectStoryPlotCoverage(plot.id);
   assert.equal(proof.minimumSources,4);
   assert.equal(proof.physicalMediaVerified,false);
-  assert.equal(proof.readyForPlanning,false); // no native 16:9 masters published
+  assert.equal(proof.readyForPlanning,true); // four CC BY first-party stills are available
+  assert.equal(proof.photoCount,4);
+  assert.ok(['licensed_still_photos','licensed_mp4'].includes(proof.plannedSource));
+  if(proof.plannedSource==='licensed_still_photos')
+    assert.equal(proof.mediaFidelity,'symbolic_category_illustration');
   assert.equal(proof.plotId,plot.id);
  }
  const invalid=inspectStoryPlotCoverage('invalid--plot');
@@ -151,15 +161,19 @@ test('CC BY credits contain original page, author, licence, adaptation and survi
 test('actual MyTube topic coverage enables real matched story clips; unbound concepts do not',()=>{
  for(const plot of listTelegramStoryPlots('stress-relief-s1')){
   const result=inspectStoryPlotCoverage(plot.id);
-  assert.equal(result.readyForPlanning,false,plot.id);
-  assert.ok(Number.isInteger(result.candidateCount)&&result.candidateCount>=0&&
-    result.candidateCount<result.minimumSources,"incomplete editorial coverage cannot become a valid montage");
-  assert.equal(result.mediaFidelity,'unverified_editorial_plot');
+  assert.equal(result.readyForPlanning,true,plot.id);
+  assert.equal(result.photoCount,4);
+  assert.ok(Number.isInteger(result.candidateCount)&&result.candidateCount>=0);
+  if(result.candidateCount<result.minimumSources){
+    assert.equal(result.plannedSource,'licensed_still_photos');
+    assert.equal(result.mediaFidelity,'symbolic_category_illustration');
+  }
   assert.equal(result.physicalMediaVerified,false);
  }
  for(const plot of listTelegramStoryPlots('life-purpose-s1')){
   const result=inspectStoryPlotCoverage(plot.id);
-  assert.equal(result.readyForPlanning,false,plot.id);
+  assert.equal(result.readyForPlanning,true,plot.id);
+  assert.equal(result.photoCount,4);
   assert.equal(result.physicalMediaVerified,false);
  }
 });

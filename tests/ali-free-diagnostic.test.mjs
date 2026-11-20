@@ -24,6 +24,12 @@ test('a separate free mode exists on the existing RU/EN/ES review link',()=>{
    assert.equal(v3FreeDiagnosticStart('/start hhdiagnostic_'+locale).locale,locale);
    assert.equal(v3StartLocale('/start hhdiagnostic_'+locale),locale);
    const welcome=aliFreeDiagnosticIntro(locale);
+   assert.equal(welcome,FREE_DIAGNOSTIC_LIBRARY[locale].intro,
+     'Telegram welcome must match the provider-validated canonical copy');
+   assert.match(welcome,/\bAli\b/u);
+   assert.match(welcome,locale==='ru'?/личных вопросов.*согласны/iu:
+     locale==='es'?/preguntas personales/iu:/personal questions/iu);
+   assert.doesNotMatch(welcome,/\bWave\b/u);
    assert.ok(welcome.length<155,locale+' first screen must be warm and brief');
    assert.doesNotMatch(welcome,/\/stop|not a medical|diagnos|OpenRouter|medical records|no envíes|документы|не диагноз/i);
    assert.ok(FREE_DIAGNOSTIC_LIBRARY[locale].questions.goal.length>=3);
@@ -34,6 +40,18 @@ test('a separate free mode exists on the existing RU/EN/ES review link',()=>{
  assert.equal(v3FreeDiagnosticStart('/start hhreview_en?client_private=1'),null);
  assert.equal(v3FreeDiagnosticStart('I need a diagnostic'),null);
 });
+test('client-facing identity and booking replies never use internal Wave naming',()=>{
+ for(const [locale,message] of [['ru','Ты бот?'],['en','Are you a bot?'],['es','¿Eres un bot?']]){
+  const result=aliFreeDiagnosticTurn({message,locale,stage:'goal'});
+  assert.match(result.reply,/\bAli\b/u,locale);
+  assert.doesNotMatch(result.reply,/\bWave\b/u,locale);
+ }
+ for(const [locale,message] of [['ru','Как записаться?'],['en','Can I book a session?'],['es','Quiero reservar una sesión']]){
+  const result=aliFreeDiagnosticTurn({message,locale,stage:'goal'});
+  assert.doesNotMatch(result.reply,/\bWave\b/u,locale);
+ }
+});
+
 test('three gentle questions lead to review without an interrogation',()=>{
  let stage='goal',slots={},turns=[];
  const answers=['I want a clear path in my career',
@@ -143,8 +161,8 @@ test('boundary, explicit stop and severe symptoms do not create a lead',()=>{
 test('skip button belongs only to this consented V3 free mode',()=>{
  for(const locale of ['ru','en','es']){
    const buttons=v3ButtonsFor(locale,'free_interview',1);
-   assert.deepEqual(buttons,[[V3_LABELS[locale].skip,V3_LABELS[locale].finish]]);
-   assert.deepEqual(v3ButtonsFor(locale,'free_interview',0),[[V3_LABELS[locale].skip]]);
+   assert.deepEqual(buttons,[[V3_LABELS[locale].skip,V3_LABELS[locale].finish],[V3_LABELS[locale].book]]);
+   assert.deepEqual(v3ButtonsFor(locale,'free_interview',0),[[V3_LABELS[locale].skip,V3_LABELS[locale].book]]);
    const inline=telegramInlineButtonForText(V3_LABELS[locale].skip,locale);
    assert.equal(inline.callback_data,'hhv3:'+locale+':skip');
    assert.equal(telegramInlineCallbackSelection(inline.callback_data).inlineAction,'v3:skip');
@@ -169,10 +187,11 @@ test('free review has one photo-before-text welcome and an explicit booking choi
  const service=source('lib/crm/telegram-ai-diagnostic-v3-service.js');
  const webhook=source('app/api/app/crm/messenger/webhook/[provider]/route.js');
  const sender=source('lib/crm/messenger-provider.js');
- assert.match(service,/freeStart&&canReply\?\{\.\.\.greeting,freeWelcomePhoto:true\}/);
+ assert.match(service,/if\(freeStart\)return \{\.\.\.greeting,freeWelcomePhoto:true\}/);
  assert.match(service,/!activeServiceConsent&&!activeFreeConsent/);
- assert.match(service,/ctx\.mode===FREE_DIAGNOSTIC_MODE&&action==='book'/);
- assert.match(service,/services\/free-consultation/);
+ assert.match(service,/if\(action==='book'&&\['consent','interview','review_confirm'\]/);
+ assert.doesNotMatch(service,/\+'\/services\/free-consultation'/);
+ assert.doesNotMatch(service,/services\/free-consultation/);
  assert.match(webhook,/freeWelcomePhoto:aiIntake\.freeWelcomePhoto===true/);
  assert.match(sender,/TELEGRAM_FREE_REVIEW_WELCOME_PHOTO/);
  assert.match(sender,/andy-about\.png/);
@@ -184,10 +203,11 @@ test('free review has one photo-before-text welcome and an explicit booking choi
  assert.doesNotMatch(sender,/text\.length>900\|\|!text\.includes\('OpenRouter'\)/);
 });
 
-test('a natural question about booking gets a real public request link, not a warning',()=>{
+test('a natural booking question directs to the Telegram Book button, not an external website',()=>{
  const reply=turn('Can I book a session?',{stage:'challenge',slots:{goal:'Clarity'}});
  assert.equal(reply.stage,'challenge','booking must not fabricate an answered phase');
- assert.match(reply.reply,/https:\/\/holistichouse\.vercel\.app\/en\/services\/free-consultation/);
+ assert.match(reply.reply,/Book with Andrey/);
+ assert.doesNotMatch(reply.reply,/https?:\/\//);
  assert.equal(questions(reply.reply),0,'a booking request should not trigger another interrogation question');
 });
 test('existing compact Telegram menu offers Free Diagnostic as second-level choice',()=>{
@@ -236,10 +256,10 @@ test('production hook is consent-first, never uses external LLM or silent CRM ha
  assert.match(handler,/if\(action==='send'\)/);
  assert.match(handler,/ai_review_consent_at=now\(\)/);
  assert.match(handler,/return promptResult/);
- assert.match(handler,/ctx\.mode===FREE_DIAGNOSTIC_MODE\?chatAllowed:/);
- assert.match(handler,/serviceCopy&&ctx\.mode!==SECRETARY_MODES\.PSYCHOLOGIST\?serviceAllowed:allowed/);
- assert.match(handler,/prior\.ctx\.mode===FREE_DIAGNOSTIC_MODE\)\?v3CanChat\(env\):/);
- assert.match(handler,/prior\.ctx\.mode!==SECRETARY_MODES\.PSYCHOLOGIST\?v3ServiceIntakeReady\(env\):v3CanStart\(env\)/);
+ assert.match(handler,/const purposeReady=general\|\|ctx\.mode===FREE_DIAGNOSTIC_MODE\|\|/);
+ assert.match(handler,/ctx\.conversationKind==='general'\|\|ctx\.mode===FREE_DIAGNOSTIC_MODE/);
+ assert.match(handler,/prior\.ctx\.conversationKind==='general'\|\|prior\.ctx\.mode===FREE_DIAGNOSTIC_MODE/);
+ assert.match(handler,/wavePsychologistNativeTurn/);
  assert.doesNotMatch(planner,/\bfetch\s*\(|\baxios\s*\(|\bingestMessengerEventInTransaction\s*\(/);
  const local={VERCEL_ENV:'production',HH_CRM_TG_AI_V3_SCHEMA_READY:'true',
    HH_CRM_TG_AI_V3_ENABLED:'true',HH_CRM_TG_AI_V3_FREE_TIER_CONFIRMED:'true',

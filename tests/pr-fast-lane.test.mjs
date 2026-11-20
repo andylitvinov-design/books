@@ -658,10 +658,14 @@ test('PR-only cancellation safeguards owner video, SEO and performance audit wit
   ];
   for(const [filename,group,contracts] of specs){
     const s=workflow(filename);
-    assert.match(s,/^  pull_request:/m,filename+' must still validate PR changes');
     if (filename === 'hh-live-seo-audit.yml') {
+      // Retain published SEO coverage, permit extra browser audit only on an explicit label.
+      assert.match(s,/^  pull_request:\s*\n    types: \[labeled\]/m,filename+' must be labeled-only');
+      assert.match(s,/github\.event\.label\.name == 'qa-optional'/,filename+' must verify the opt-in label');
+      assert.match(s,/^  workflow_dispatch:/m,filename+' remains manually runnable');
       assert.match(s,/^  push:/m,filename+' retains independent published SEO audit');
     } else {
+      assert.match(s,/^  pull_request:/m,filename+' must still validate PR changes');
       assert.doesNotMatch(s,/^  push:/m,filename+' must not rerun merged source checks');
     }
     assert.match(s,/^    paths:/m,filename+' must retain relevant path filters');
@@ -1094,6 +1098,28 @@ test('five other specialists delegate TypeScript/build while Public Journey sing
 });
 
 
+test('Practice visual Ready PR reuses Core compiler and skips duplicate FFmpeg and npm installations',()=>{
+  const source=workflow('practice-visual-browser.yml');
+  assert.match(source,/runs-on: .*ubuntu-slim.*ubuntu-latest/,'source PR should use the tiny runner');
+  for(const marker of [
+    'Load original checksum-verified FFmpeg for npm ci',
+    'Install existing project dependencies',
+    'Install SHA-verified FFmpeg into package after npm ci',
+  ]) assert.ok(source.includes('- name: '+marker+"\n        if: github.event_name != 'pull_request'\n"),
+    marker+': duplicate download was not gated to the post-merge run');
+  for(const marker of [
+    'node --check scripts/compare-ui-screenshots.mjs',
+    'node --test tests/compare-ui-screenshots.test.mjs',
+    'npx --no-install eslint scripts/verify-practice-visual-browser.mjs',
+    'npx --no-install tsc --noEmit --pretty false',
+    'Full TypeScript delegated to required Core release-ready',
+    'Render and verify real Practice page at 320, 354, 390 and 430 pixels',
+  ]) assert.ok(source.includes(marker),'lost unit/type/browser contract: '+marker);
+  assert.match(source,/^  pull_request:/m,'real owned Practice changes must retain source PR QA');
+  assert.match(source,/^  push:/m,'real browser and FFmpeg proof must remain on protected push');
+  assert.doesNotMatch(source,/continue-on-error:\s*true/);
+});
+
 test('Practice visual PR does not repeat Google-auth browser or old Chromium/WebKit overlays', () => {
   const source = workflow('practice-visual-browser.yml');
   const core = workflow('hh-pr-core-release.yml');
@@ -1257,7 +1283,7 @@ test('production-base impact analyzer runs CI-only contracts without unrelated N
   assert.ok(source.includes("steps.diff.outputs.ci_only != 'true'"),'CI-only route must not run full Next build');
 });
 
-test('event-driven CI recognizes synthetic merge SHA only through exact PR source and base', async () => {
+test('event-driven CI matches synthetic merges by current HEAD and protected CI, not stale event BASE', async () => {
   const native = workflow('hh-native-auto-merge.yml');
   const begin = native.indexOf('          script: |\n', native.indexOf('  enable:\n'));
   const end = native.indexOf('      - name: Enable native auto-merge for this exact head', begin);
@@ -1370,7 +1396,13 @@ test('event-driven CI recognizes synthetic merge SHA only through exact PR sourc
   }]}]), false, 'old source SHA cannot authorize new HEAD');
   assert.equal(await decide([{...good, pull_requests: [{
     number: 42, head: live.head, base: {ref: live.base.ref, sha: 'c'.repeat(40)}
-  }]}]), false, 'old production base cannot authorize ARM');
+  }]}]), true, 'old production base is not a source change when protected exact-HEAD CI passed');
+  assert.equal(await decide([{...good, pull_requests: [{
+    number: 42, head: live.head, base: {ref: 'unsafe-target', sha: base}
+  }]}]), false, 'wrong production target cannot authorize ARM');
+  assert.equal(await decide([{...good, pull_requests: [{
+    number: 42, head: live.head, base: {ref: live.base.ref, sha: 'not-a-sha'}
+  }]}]), false, 'malformed event base must not authorize ARM');
   assert.equal(await decide([good, specialist], {...live, draft: true}), false, 'Draft does not ARM');
   assert.equal(await decide([good, specialist], {...live, mergeable: false, mergeable_state: 'dirty'}), false,
     'conflicted PR does not ARM');
@@ -1448,12 +1480,12 @@ test('native AutoMerge bounded CI pagination handles 100+ current runs safely',a
   const pr={number:42,state:'open',draft:false,mergeable:true,mergeable_state:'clean',
     base:{ref:'codex/public-book-library',sha:base},
     head:{sha:head,ref:'feature/forty-two',repo:{full_name:full}}};
-  const makeRun=(id,name,workflowId,conclusion='success',associatedHead=head)=>({
+  const makeRun=(id,name,workflowId,conclusion='success',associatedHead=head,associatedBase=base)=>({
     id,name,workflow_id:workflowId,event:'pull_request',head_branch:pr.head.ref,
     head_sha:'f'.repeat(40),path:'.github/workflows/'+(workflowId===1?'hh-pr-core-release.yml':'other.yml')+'@refs/pull/42/merge',
     status:'completed',conclusion,created_at:new Date(1800000000000-id*1000).toISOString(),
     pull_requests:[{number:42,head:{ref:pr.head.ref,sha:associatedHead},
-      base:{ref:pr.base.ref,sha:base}}]
+      base:{ref:pr.base.ref,sha:associatedBase}}]
   });
   const coreRun=makeRun(1,'HH PR core release gate',1);
   const specialist=makeRun(2,'Mandatory focused browser QA',2);
@@ -1489,6 +1521,17 @@ test('native AutoMerge bounded CI pagination handles 100+ current runs safely',a
   const valid=await decide([current,[prior]],[101,101]);
   assert.equal(valid.ok,true,'second page should complete current HEAD evidence');
   assert.deepEqual(valid.calls.map(c=>c.page),[1,2]);
+  const movedBase=makeRun(1,'HH PR core release gate',1,'success',head,'e'.repeat(40));
+  const independentProductionAdvance=await decide(
+    [[movedBase,specialist,...current.slice(2)],[prior]],[101,101]);
+  assert.equal(independentProductionAdvance.ok,true,
+    'a successful exact-HEAD Core and hh-merge-check must not disappear after PR base SHA advances');
+  const changedHead=makeRun(1,'HH PR core release gate',1,'success','e'.repeat(40),'e'.repeat(40));
+  const invalidSource=await decide(
+    [[changedHead,specialist,...current.slice(2)],[prior]],[101,101]);
+  assert.equal(invalidSource.ok,false,
+    'wrong source HEAD cannot qualify even if old production SHA matches');
+
   const failedOptionalRun={...makeRun(199,'HH benchmark public browser',199,'failure'),
     path:'.github/workflows/hh-benchmark-public-browser.yml@refs/pull/42/merge'};
   const failed=await decide([current,[failedOptionalRun,prior]],[102,102]);
