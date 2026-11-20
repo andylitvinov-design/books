@@ -919,7 +919,8 @@ try{
  assert.equal(await shamanicaHome.locator('[data-shamanica-service="free"]').getAttribute("href"),
    "/ru/academy/principles-of-energywork/learn");
  await energyEntrance.click();
- await page.waitForURL(/\\/ru\\/shamanica\\/results\\?category=energy$/,{timeout:45000});
+ await page.waitForURL(url => url.pathname==="/ru/shamanica/results" &&
+   url.searchParams.get("category")==="energy",{timeout:45000});
  const categoryOffers=page.locator('[data-shamanica-category-offers="energy"]');
  await categoryOffers.waitFor({state:"visible",timeout:30000});
  assert.equal(await categoryOffers.locator("[data-support-uniform-card]").count(),3);
