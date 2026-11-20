@@ -1290,29 +1290,44 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           judgmentChoice,
           ...(stateTurn?{nativeSession:stateTurn}:{}),
           feedback:{dismissedIds,completedIds}};
-      const sendAgentTurn=(body:typeof payload)=>fetch("/api/holistic-agent/turn",{
-        method:"POST",credentials:"same-origin",signal:abort.signal,
-        headers:{"Content-Type":"application/json"},body:JSON.stringify(body),
-      });
-      let response=await sendAgentTurn(payload);
+      const sendAgentTurn=async (body:typeof payload)=>{
+        // Cover BOTH response headers and a stalled JSON body. Manual Stop
+        // remains separate from a timeout, which needs a gentle local reply.
+        const network=new AbortController();
+        const cancel=()=>network.abort();
+        abort.signal.addEventListener("abort",cancel,{once:true});
+        if(abort.signal.aborted)network.abort();
+        const timeout=window.setTimeout(()=>network.abort(),12000);
+        try{
+          const response=await fetch("/api/holistic-agent/turn",{
+            method:"POST",credentials:"same-origin",signal:network.signal,
+            headers:{"Content-Type":"application/json"},body:JSON.stringify(body),
+          });
+          const result=await response.json().catch(()=>null) as
+            (AgentReply&{error?:string})|null;
+          return {ok:response.ok,status:response.status,result};
+        }finally{
+          window.clearTimeout(timeout);
+          abort.signal.removeEventListener("abort",cancel);
+        }
+      };
+      let remote=await sendAgentTurn(payload);
       let nativeDowngrade=false;
       // Optional inference is gated in production. Retry only on the explicit
       // disabled-mode code, with first-party, same-origin native conversation.
-      if(response.status===503&&mode!=="rules"){
-        const failure=await response.clone().json().catch(()=>null) as {error?:string}|null;
-        if(shouldRetryNativeAgentMode({mode,status:response.status,errorCode:failure?.error})){
-          const fallback=nativeAgentFallbackPayload(payload);
-          if(fallback){
-            response=await sendAgentTurn(fallback as typeof payload);
-            nativeDowngrade=response.ok;
-          }
+      if(remote.status===503&&mode!=="rules"&&
+          shouldRetryNativeAgentMode({mode,status:remote.status,errorCode:remote.result?.error})){
+        const fallback=nativeAgentFallbackPayload(payload);
+        if(fallback){
+          remote=await sendAgentTurn(fallback as typeof payload);
+          nativeDowngrade=remote.ok;
         }
       }
-      if(!response.ok){
-        if(stateTurn&&(response.status===404||response.status===409))nativeSession.current=null;
-        throw Error(response.status===401?"SIGN_IN_REQUIRED":response.status===503?"SERVER_UNAVAILABLE":"CHAT_UNAVAILABLE");
+      if(!remote.ok){
+        if(stateTurn&&(remote.status===404||remote.status===409))nativeSession.current=null;
+        throw Error(remote.status===401?"SIGN_IN_REQUIRED":remote.status===503?"SERVER_UNAVAILABLE":"CHAT_UNAVAILABLE");
       }
-      const data=await response.json() as AgentReply;
+      const data=remote.result;
       if(abort.signal.aborted)return;
       if(typeof data?.reply!=="string"||!data.reply.trim())throw Error("EMPTY_AGENT_REPLY");
       if(stateTurn){
