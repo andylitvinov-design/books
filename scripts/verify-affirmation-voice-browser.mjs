@@ -1859,14 +1859,24 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
                   else await moreFilms.click();
                 }
               }
-              const total=await filmCatalogue.count();
-              assert.ok(total>0&&total<=100,
-                "An approved catalogue must have bounded visible presets");
-              for(let i=0;i<total&&!chosenId;i++){
-                const option=filmCatalogue.nth(i);
+              const ids=await filmCatalogue.evaluateAll(nodes=>nodes.map(node=>
+                node.getAttribute('data-free-film-preset')).filter(Boolean));
+              assert.ok(ids.length>0&&ids.length<3000&&
+                ids.every(id=>/^[a-z0-9-]+$/.test(id)),
+                "Approved catalogue IDs must remain bounded and immutable");
+              // The expanded licensed library legitimately exceeds 100
+              // entries. Prioritize independently generated approved motion
+              // masters, then stock compilations, but cap physical user taps.
+              // Every candidate still must pass actual source validation.
+              const tried=expanded?[
+                ...ids.filter(id=>id.startsWith("motion-film-")),
+                ...ids.filter(id=>!id.startsWith("motion-film-")),
+              ]:ids;
+              for(const id of tried.slice(0,expanded?45:4)){
+                if(chosenId)break;
+                const option=page.locator(
+                  '[data-free-film-compilation-catalog] [data-free-film-preset="'+id+'"]');
                 if(!await option.isVisible()||!await option.isEnabled())continue;
-                const id=await option.getAttribute('data-free-film-preset');
-                if(!/^[a-z0-9-]+$/.test(id||''))continue;
                 if(engine==="webkit")await option.tap();
                 else await option.click();
                 const selected=page.locator(
