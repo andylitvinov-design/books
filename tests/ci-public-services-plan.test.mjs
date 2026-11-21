@@ -1549,8 +1549,10 @@ test('PR #2969 exactly reviewed 120-scenario audio cannot trigger 13 unrelated p
     'node --test tests/import-reviewed-audio.test.mjs',
     'node --test tests/curated-audio-selection.test.mjs',
     'node --test tests/mandala-video-phrase-catalog.test.mjs',
-    "startsWith(github.head_ref, 'feat/hh-goal-tree-')",
   ])assert.ok(mandala.includes(must),'owning audio specialist missing '+must);
+  // Specialist ownership is path/source based; do not restore the retired
+  // one-off feature-branch prefix exception that the Mandala workflow removed.
+  assert.doesNotMatch(mandala,/startsWith\(github\.head_ref,\s*'feat\/hh-goal-tree-'/);
   for(const path of [
     'app/api/payments/checkout/route.js','app/api/service-enquiries/route.js',
     'middleware.ts','components/commerce/service-cart.tsx',
