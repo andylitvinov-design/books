@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { parsePrTrigger, matchesTrigger } from '../lib/ci/specialist-aggregate.mjs';
+import { parsePrTrigger, matchesTrigger, trustedConditionalJobs } from '../lib/ci/specialist-aggregate.mjs';
 
 const workflow = (name) => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 
@@ -610,4 +610,21 @@ test('public Ali greeting and coach motion do not launch private App or storefro
   assert.match(core,/tests\/ali-persona-selector\.test\.mjs tests\/my-coach-personas\.test\.mjs/);
   assert.match(core,/tests\/coach-greeting-video\.test\.mjs/);
   assert.match(core,/steps\.fast\.outputs\.route != 'ASSETS'/);
+});
+
+
+test('Support Guide PR never books a duplicate syntax-only browser runner',()=>{
+  const source=workflow('hh-support-guided-recommendations.yml');
+  assert.match(source,/^  pull_request:/m,'original product and consent PR triggers remain');
+  assert.match(source,/^  focused-unit-types-build:\n    if:/m,'real domain tests still execute');
+  assert.match(source,/Grounded goal-led conversation and existing recommendation contracts/);
+  assert.match(source,/node --check scripts\/verify-holistic-support-guided-card\.mjs/);
+  assert.match(source,/node --test tests\/holistic-support-conversation-intents\.test\.mjs/);
+  assert.match(source,/^  mobile-browser:\n(?:    #.*\n)*    if: \$\{\{ github\.event_name != 'pull_request' \}\}/m);
+  assert.ok(trustedConditionalJobs(source).includes('mobile-browser'),
+    'trusted BASE verifier must accept skipped manual-only browser job');
+  assert.match(source,/Score-first multi-turn dialog on EN\/RU\/ES/);
+  assert.match(source,/^  push:/m);
+  assert.match(source,/^  workflow_dispatch:/m);
+  assert.doesNotMatch(source,/continue-on-error:\s*true/);
 });
