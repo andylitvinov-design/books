@@ -20,6 +20,7 @@ import MyCoachSpeechLoop from './my-coach-speech-loop'
 import MyCoachGeminiLive from './my-coach-gemini-live'
 import MyCoachSessionStateCard from './my-coach-session-state-card'
 import {startCoachingMp3Playback,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
+import {setCoachIos27AudioSession} from '@/lib/personal-coaching/coach-ios-audio-route.mjs'
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
 import {readCoachTurnStream} from '@/lib/coaching/coach-stream-client.mjs'
 import {coachLooksLikeProtocolText} from '@/lib/coaching/coach-stream-format.mjs'
@@ -520,6 +521,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     setError('')
   }
   function ensureReplayAudioOutput(){
+    setCoachIos27AudioSession(window.navigator,'playback')
     if(shouldUseCoachingWebAudio(window.navigator)&&
       (!replayAudioContextRef.current||replayAudioContextRef.current.state==='closed'))
       replayAudioContextRef.current=unlockCoachingAudioContext()
@@ -538,6 +540,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       replayPlayerRef.current?.cancel();replayPlayerRef.current=null
       setReplaying(false)
       setVoiceState({phase:'idle',beat:0})
+      setCoachIos27AudioSession(window.navigator,'auto')
       if(failed)setPlaybackNotice(voiceGate.naturalUnavailable)
     }
     try{
@@ -586,6 +589,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       replayPlayerRef.current?.cancel();replayPlayerRef.current=null
       setReplayBlocked(false);setReplaying(false)
       setVoiceState({phase:'idle',beat:0})
+      setCoachIos27AudioSession(window.navigator,'auto')
       setPlaybackNotice(voiceGate.naturalUnavailable)
     }
     if(replayingIntro){
@@ -646,6 +650,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       replayControllerRef.current?.abort()
       replayPlayerRef.current?.cancel()
       replayControllerRef.current=null;replayPlayerRef.current=null
+      setCoachIos27AudioSession(window.navigator,'auto')
       const context=replayAudioContextRef.current
       replayAudioContextRef.current=null
       if(context)try{void context.close?.().catch?.(()=>{})}catch{}
