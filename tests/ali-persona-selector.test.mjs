@@ -3,6 +3,10 @@ import assert from 'node:assert/strict'
 import {readFileSync,existsSync} from 'node:fs'
 import {ALI_PERSONAS,ALI_DEFAULT_PERSONA_ID,ALI_PERSONA_STORAGE_KEY,
  getAliPersona,isAliPersonaId,aliPersonaGreeting} from '../lib/holistic-support/ali-personas.mjs'
+import {ALI_GEMINI_GREETING_VOICES,aliGeminiGreetingVoice,
+ synthesizeAliGeminiGreeting} from '../lib/holistic-support/ali-gemini-free-tts.mjs'
+import {geminiCoachTtsConfig} from '../lib/coaching/gemini-coach-tts.mjs'
+import {myCoachFishConfig} from '../lib/coaching/my-coach-fish-voice.mjs'
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
 test('four portrait choices: two male and two female with distinct preapproved voice IDs',()=>{
@@ -137,7 +141,7 @@ test('mobile AI guide picker keeps all four cards compact and voice states truth
  assert.match(audio,/onPlaying\(false,result\)/)
  assert.match(audio,/onFinish\('error'\)/)
  assert.match(audio,/method:'HEAD'/)
- assert.match(audio,/timer=window\.setTimeout\(fallback,20000\)/)
+ assert.match(audio,/timer=window\.setTimeout\(fallback,24000\)/)
  assert.doesNotMatch(audio,/audio\.play\(\)\s*;\s*speech\.speak/)
 });
 
@@ -151,4 +155,65 @@ test('iPhone always prefers a real audible MP3 in the original user tap',()=>{
  assert.match(audio,/audio\.onplaying=\(\)=>/)
  assert.match(route,/Buffer\.from\(await upstream\.arrayBuffer\(\)\)/)
  assert.match(route,/'Content-Length':String\(audio.length\)/)
+});
+
+test('Ali Free Gemini voices preserve the owner-selected RU/EN identities after Fish expiry',async()=>{
+ assert.deepEqual(Object.keys(ALI_GEMINI_GREETING_VOICES).sort(),['alex','max','mira','sofia'])
+ const expected={
+  alex:{ru:'Alnilam',en:'Charon'},
+  max:{ru:'Orus',en:'Orus'},
+  mira:{ru:'Erinome',en:'Gacrux'},
+  sofia:{ru:'Vindemiatrix',en:'Sulafat'}
+ }
+ for(const [persona,voices] of Object.entries(expected)){
+  for(const [locale,voice] of Object.entries(voices)){
+   assert.equal(aliGeminiGreetingVoice(persona,locale),voice)
+  }
+  assert.ok(aliGeminiGreetingVoice(persona,'es'))
+ }
+ assert.equal(aliGeminiGreetingVoice('bogus','en'),null)
+ assert.equal(aliGeminiGreetingVoice('mira','it'),null)
+ const key='AIza'+'q'.repeat(30)
+ const env={HH_GEMINI_FREE_API_KEY:key,HH_MY_COACH_GEMINI_TTS_FREE_ENABLED:'true',
+  HH_MY_COACH_GEMINI_FREE_TIER_CONFIRMED:'true',
+  HH_MY_COACH_GEMINI_FREE_DATA_APPROVED:'true'}
+ const approved=geminiCoachTtsConfig(env,'gemini_tts_free')
+ assert.equal(approved?.model,'gemini-3.8-flash-lite-tts')
+ assert.equal(geminiCoachTtsConfig(env,'gemini_tts_paid'),null)
+ const wav=Buffer.alloc(64)
+ wav.write('RIFF',0);wav.write('WAVE',8)
+ let requestBody
+ const result=await synthesizeAliGeminiGreeting({
+  config:approved,locale:'ru',personaId:'mira',
+  text:aliPersonaGreeting('mira','ru'),
+  fetcher:async(_url,options)=>{
+   requestBody=JSON.parse(options.body)
+   return {ok:true,status:200,json:async()=>({
+    steps:[{type:'model_output',content:[{type:'audio',data:wav.toString('base64')}]}]
+   })}
+  }
+ })
+ assert.equal(result.toString('ascii',0,4),'RIFF')
+ assert.equal(requestBody.store,false)
+ assert.equal(requestBody.generation_config.speech_config[0].voice,'Erinome')
+ await assert.rejects(()=>synthesizeAliGeminiGreeting({
+  config:approved,locale:'ru',personaId:'mira',text:'private user text'
+ }),/ALI_GEMINI_GREETING_INVALID/)
+ assert.equal(myCoachFishConfig({},Date.parse('2026-12-02T00:00:00Z')),null)
+ const route=source('app/api/ali/voice/[locale]/[persona]/route.js')
+ assert.match(route,/geminiCoachTtsConfig\(process\.env,'gemini_tts_free'\)/)
+ assert.match(route,/my-coach-gemini_tts_free-global-day/)
+ assert.match(route,/Content-Type':'audio\/wav'/)
+ assert.match(route,/synthesizeAliGeminiGreeting/)
+ assert.match(route,/geminiFailed\?9000:15000/)
+ assert.doesNotMatch(route,/gemini_tts_paid|s2\.1-pro['"]/)
+});
+
+test('a temporary voice API failure never strands Safari on silent device TTS',()=>{
+ const audio=source('components/app/ali-persona-audio.js')
+ assert.match(audio,/const isIos=\/iPad\|iPhone\|iPod\//)
+ assert.match(audio,/naturalStatus==='unavailable'&&hasDevice&&!isIos/)
+ assert.match(audio,/naturalStatus='unknown'/)
+ assert.match(audio,/if\(hasDevice&&!isIos\)startDevice\(\)/)
+ assert.match(audio,/else finish\('error'\)/)
 });
