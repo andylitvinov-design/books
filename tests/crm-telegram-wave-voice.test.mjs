@@ -19,7 +19,9 @@ test('native private bot voice metadata is forwarded, not fabricated as text',()
  assert.match(parser,/rawText:message\.text \? text : '',voiceNote/);
  const route=source('app/api/app/crm/messenger/webhook/[provider]/route.js');
  assert.match(route,/finishTelegramWaveVoiceV3\(config,aiIntake\.generate\)/);
- assert.match(route,/if\(event\.isTelegramVoice\)continue/);
+ // Consented V3 voice completes before any neutral CRM fallback.
+ assert.match(route,/if\(aiIntake\.generate\.voiceNote\)/);
+ assert.match(route,/const archived=await ingestMessengerUpdate\(provider,event,config\)/);
  assert.match(route,/if\(aiIntake\.generate\.voiceNote\)/);
  assert.match(route,/await deliverTelegramWaveVoiceV3\(config,aiIntake\.generate/);
 });
@@ -153,13 +155,19 @@ test('voice final answer and failure reply cannot outrun committed STOP or voice
  assert.doesNotMatch(route,/if\(ready\?\.reply\)await sendTelegramDiagnosticPrompt/)
 })
 
-test('all native Telegram voice updates, including forwarded invalid audio, bypass generic CRM text ingestion',()=>{
+test('unhandled Telegram voice uses a neutral, rate-limited clarification after deduplicated CRM receipt',()=>{
  const parser=source('lib/crm/messenger-webhook.js')
  const route=source('app/api/app/crm/messenger/webhook/[provider]/route.js')
  assert.match(parser,/const isTelegramVoice=Boolean\(message\.voice\)/)
  assert.match(parser,/voiceNote=isTelegramVoice&&!message\.forward_origin&&!message\.is_automatic_forward/)
  assert.match(parser,/rawText:message\.text \? text : '',voiceNote,isTelegramVoice/)
- assert.match(route,/if\(event\.isTelegramVoice\)continue/)
+ // A signed unhandled voice message can receive a safe clarification,
+ // not a fabricated transcript. The consented V3 branch remains separate.
+ assert.match(route,/const archived=await ingestMessengerUpdate\(provider,event,config\)/)
+ assert.match(route,/const mediaKind=event\.isTelegramVoice\?'voice':/)
+ assert.match(route,/composeTelegramSecretaryClarification\(raw,locale,\{mediaKind\}\)/)
+ assert.match(route,/await consumeRate\(config,\{op:'hh-tg-bot-clarify-chat',to:event\.userId\},12,86400\)/)
+ assert.match(route,/!event\.callbackId&&typeof event\.rawText==='string'/)
  assert.match(route,/await ingestMessengerUpdate\(provider,event,config\)/)
 })
 
