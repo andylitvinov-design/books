@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
+import {requiresRealMediaWebKit} from '../lib/ci/merge-check-light.mjs';
 const source=readFileSync(new URL("../components/meditation-writer-device-voice.tsx",import.meta.url),"utf8");
 const page=readFileSync(new URL("../components/meditation-writer-preview.tsx",import.meta.url),"utf8");
 test("device speech is optional local preview, with stop and no external provider",()=>{
@@ -23,7 +24,16 @@ test("Writer Mandala changes must execute real Linux media and macOS WebKit inst
  }
  const mac=lines.findIndex(line=>line==="  voice-webkit-macos:");
  assert.ok(mac>=0,"real macOS WebKit job missing");
- assert.ok(lines[mac+1]?.includes(required),"macOS job must run, not skip, for a Writer PR");
+ assert.ok(lines[mac+1]?.includes("needs.webkit_preflight.outputs.media_required == 'true'"),
+  "macOS job must use the tested-BASE impact verdict, not a branch prefix");
+ assert.ok(workflow.includes("Classify exact-HEAD media change using immutable tested-BASE impact"),
+  "the required media preflight must use trusted immutable production code");
+ for(const filename of [
+   "components/meditation-writer-device-voice.tsx",
+   "lib/mandala/recording-codecs.mjs",
+   "app/api/holistic-support/voice/route.js",
+ ]) assert.equal(requiresRealMediaWebKit([{filename,status:"M"}]),true,
+   "real Writer/voice/codec source must still require macOS WebKit: "+filename);
  const macBody=lines.slice(mac).join(String.fromCharCode(10));
  for(const entry of ["runs-on: macos-15","node scripts/verify-affirmation-voice-browser.mjs","node scripts/benchmarking/first-video-live-export.mjs"])
   assert.ok(macBody.includes(entry),"missing real Safari-platform media acceptance: "+entry);
