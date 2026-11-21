@@ -123,3 +123,105 @@
 .moreLinks a{display:flex;align-items:center;justify-content:center;min-height:44px;border:1px solid #ccdfd4;border-radius:13px;background:#fffcf7;color:#0a5c43;font:700 13px/1.15 Arial,Helvetica,sans-serif;text-align:center;text-decoration:none}
 .categoryMore:focus-within{border-color:#176e6e}
 @media(max-width:350px){.categoryMore summary{padding-left:9px;gap:5px}.categoryMore summary strong{font-size:10.5px}.morePreview{font-size:10px}}
+
+
+/* Owner-approved Support mobile sunrise, 20 Nov 2026; lower catalog and dock unchanged. */
+.root{width:calc(100% - 20px);max-width:520px;margin:0 auto 24px;background:linear-gradient(180deg,#fff8f3,#fffbf4 65%,#fbf5e9);color:#143d3a}
+.brandBar{padding:5px 8px 4px;min-height:54px}
+.brandActions{gap:6px}
+.languageMenu summary{justify-content:center;min-width:41px;min-height:42px;padding:4px;border-radius:15px;background:#fffaf3;box-shadow:0 3px 9px #45321a14}
+.help,.profile{display:grid;place-items:center;width:42px;height:42px;border:1px solid #eadfd1;border-radius:17px;background:#fffcf7;color:#114b39;box-shadow:0 3px 9px #45321a14;text-decoration:none}
+.hero{isolation:isolate;min-height:0;overflow:visible;margin:0;padding:2px 4px 11px;border:0;border-radius:0;background:transparent;text-align:center}
+.hero::before{inset:-48px -10px -12px;z-index:-2;border-radius:0;background:url("/images/holistic-house/hero-olive-incense.webp") center 52%/cover no-repeat;opacity:.27;filter:blur(3px)}
+.hero::after{inset:-48px -10px -12px;z-index:-1;background:linear-gradient(180deg,#fff8f4be,#fff9f1b5 45%,#fff8f2d0 73%,#fff8f3)}
+.lotusMark{display:block;width:45px;height:39px;margin:0 auto 2px;background:url("/images/holistic-house/assessment-lotus.svg") center/contain no-repeat;filter:sepia(.7) saturate(1.9) hue-rotate(351deg)}
+.hero h1{max-width:100%;margin:0;color:#103b2e;font:700 clamp(29px,8vw,38px)/1.04 Georgia,"Times New Roman",serif;letter-spacing:-.045em;text-align:center;text-wrap:balance}
+.hero .heroTagline{max-width:100%;margin:6px 0 0;color:#143d3a;font:700 clamp(13px,3.55vw,17px)/1.15 Arial,Helvetica,sans-serif}
+.hero .heroLead{max-width:100%;margin:6px 0 0;color:#485b56;font:500 clamp(12px,3.35vw,15px)/1.18 Arial,Helvetica,sans-serif}
+.heroStage{position:relative;display:flex;align-items:center;justify-content:center;min-height:141px;margin:10px -2px 0}
+.laptop{position:relative;z-index:1;width:79%;height:131px;padding:5px;border:3px solid #303c42;border-bottom-width:9px;border-radius:10px 10px 4px 4px;background:#2c353a;box-shadow:0 5px 14px #3c3a3755}
+.laptop::after{content:"";position:absolute;z-index:2;left:-11%;bottom:-18px;width:122%;height:12px;border-radius:2px 2px 50% 50%;background:linear-gradient(180deg,#eeeeed,#888b8d 60%,#f0f0ed);box-shadow:0 4px 7px #3336}
+.laptopScreen{position:absolute;inset:5px 5px 8px;display:block;border-radius:4px 4px 0 0;background:linear-gradient(0deg,#14252d33,transparent 32%),url("/images/holistic-house/reiki-practitioner-sunrise.webp") center 53%/cover no-repeat}
+.playLink{position:absolute;z-index:3;left:50%;top:48%;display:grid;place-items:center;width:57px;height:57px;border:2px solid #fff;border-radius:50%;background:#172e2c69;color:#fff;transform:translate(-50%,-50%);text-decoration:none;box-shadow:0 2px 9px #123d3a33}
+.playLink:active{transform:translate(-50%,-50%) scale(.96)}
+.heroBowl{position:absolute;left:0;bottom:8px;width:16%;height:66px;border-radius:5px 5px 22px 22px;background:linear-gradient(160deg,#f4d69d,#9b5725 40%,#432c1d 87%);box-shadow:0 4px 8px #4b392444}
+.heroBowl::before{content:"";position:absolute;left:0;right:0;top:0;height:9px;border:2px solid #9b6f3e;border-radius:50%;background:#3e2720}
+.heroFlower{position:absolute;right:-2px;bottom:-1px;width:17%;height:66px;background:url("/images/holistic-house/assessment-lotus.svg") center bottom/contain no-repeat;opacity:.8}
+.audienceSwitch{display:grid;grid-template-columns:1fr 1fr;gap:4px;min-height:48px;margin:0 28px 8px;padding:4px;border:1px solid #e1d7cb;border-radius:28px;background:#fffcf8;box-shadow:0 3px 10px #58432a20}
+.audienceSwitch button{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:40px;padding:5px 9px;border:0;border-radius:23px;background:transparent;color:#124536;font:750 clamp(13px,3.75vw,17px)/1.15 Arial,Helvetica,sans-serif;white-space:nowrap;cursor:pointer}
+.audienceSwitch button[aria-pressed="true"]{background:linear-gradient(135deg,#13a778,#006b47);color:#fff;box-shadow:0 3px 8px #176e6e35}
+.form{display:flex;flex-direction:column;gap:0;min-height:0;margin:0;padding:0 2px;border:0;border-radius:0;background:none;box-shadow:none;color:#143d3a}
+.form::after{display:none}
+.progress{display:flex;flex-direction:column-reverse;align-items:center;justify-content:center;gap:1px;margin:0 0 6px;color:#59666d;font:700 14px/1.2 Arial,Helvetica,sans-serif}
+.progressSteps{display:flex;align-items:center;justify-content:center;gap:6px;padding:0}
+.progressSteps::before{display:none}
+.progressDot,.progressDot[aria-current="step"]{display:grid;place-items:center;flex:none;width:24px;height:24px;padding:0;border:0;border-radius:50%;background:transparent;box-shadow:none}
+.progressInner{width:10px;height:10px;border:1.5px solid #a1b0ac;border-radius:50%;background:#fff8f2}
+.progressDot[aria-current="step"] .progressInner{border-color:#00684e;background:#00684e}
+.progressDot[data-complete="true"]:not([aria-current="step"]) .progressInner{border-color:#067a67;background:#e6f6f1}
+.progressDot[data-complete="true"] .progressInner svg{width:9px;height:9px;color:#00684e}
+.question legend{width:100%;max-width:100%;margin:0 0 11px;color:#123b2f;font:700 clamp(24px,6.8vw,33px)/1.08 Georgia,"Times New Roman",serif;letter-spacing:-.035em;text-align:center}
+.questionTitle{max-width:100%;text-align:center}
+.choices{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.choice,.choices[data-question-kind="topic"] .choice{position:relative;display:flex;flex-direction:column;gap:0;min-width:0;min-height:113px;padding:0;overflow:hidden;border:2px solid #fffdf8;border-radius:20px;background:#fffaf1;color:#143d3a;box-shadow:0 4px 10px #705c4126;text-align:left;cursor:pointer}
+.choiceMedia{display:block;flex:none;width:100%;height:50px;background:#edddd1 url("/images/video-goal-art/stress.webp") center/cover no-repeat}
+.choice:nth-child(2) .choiceMedia{background-image:url("/images/video-goal-art/love.webp")}
+.choice:nth-child(3) .choiceMedia{background-image:url("/images/video-goal-art/growth.webp")}
+.choice:nth-child(4) .choiceMedia{background-image:url("/images/holistic-house/reiki-practitioner-sunrise.webp")}
+.choiceContent{display:grid;grid-template-columns:29px minmax(0,1fr);align-items:center;flex:1;gap:7px;min-width:0;width:100%;padding:7px 9px;color:#143d3a;font:750 clamp(13px,3.65vw,16px)/1.18 Arial,Helvetica,sans-serif}
+.choiceContent>svg{flex:none;color:#0a664d}
+.choiceContent>span{min-width:0}
+.choice[aria-pressed="true"]{border-color:#13ae7c;background:#eaf7ed;box-shadow:0 0 0 1px #13ae7c55,0 4px 10px #176e6e22}
+.check{position:absolute;z-index:2;right:7px;top:7px;width:20px;height:20px;padding:3px;border-radius:50%;background:#fff;color:#00684d;box-shadow:0 1px 4px #0002}
+.orDivider{display:flex;align-items:center;justify-content:center;gap:9px;margin:9px 0 7px;color:#899291;font:700 12px/1 Arial,Helvetica,sans-serif}
+.orDivider::before,.orDivider::after{content:"";width:40px;height:1px;background:#afb7b2}
+.goalComposer{display:flex;align-items:center;gap:7px;min-width:0;min-height:51px;padding:0 10px 0 12px;border:1px solid #ebdfd1;border-radius:27px;background:#fffcf7;box-shadow:0 4px 12px #5d48352a}
+.goalComposer>svg{flex:none;color:#cf9a26}
+.goalComposer input{flex:1;min-width:0;width:100%;height:48px;padding:0;border:0;outline:none;background:transparent;color:#143d3a;font:500 16px/1.25 Arial,Helvetica,sans-serif}
+.goalComposer input::placeholder{color:#7b8388;opacity:1}
+.goalComposer:focus-within{outline:3px solid #176e6e;outline-offset:2px}
+.goalComposer button{display:grid;place-items:center;flex:none;width:39px;height:43px;border:0;border-radius:50%;background:transparent;color:#0a634b;cursor:pointer}
+.next,.submit{display:flex;align-items:center;justify-content:center;gap:11px;width:68%;min-width:0;max-width:315px;min-height:50px;margin:10px auto 0;padding:8px 15px;border:1px solid #d0efe0;border-radius:28px;background:linear-gradient(120deg,#0ab179,#006943);box-shadow:0 5px 11px #134f4033;color:#fff;font:800 clamp(18px,5vw,23px)/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
+.next:disabled,.submit:disabled{opacity:.68;cursor:not-allowed}
+.categories{margin:12px 0 0}
+.categoryHeader{margin:0 2px 8px;gap:8px}
+.categoryHeader h2{font-size:clamp(23px,6.5vw,31px);letter-spacing:-.035em}
+.categoryHeader>a{font-size:12px;gap:4px}
+.categoryGrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.category{min-height:123px;border-radius:18px;background:#fff9ee;box-shadow:0 4px 10px #54371c20}
+.categoryMedia{height:69px;border-radius:16px 16px 9px 9px}
+.categoryInfo{padding:17px 6px 8px}
+.categoryIcon{top:-19px;left:7px;width:35px;height:34px;border-radius:12px 12px 4px 4px}
+.categoryIcon svg{width:23px;height:23px}
+.categoryName{font:750 clamp(12px,3.4vw,15px)/1.17 Arial,Helvetica,sans-serif;letter-spacing:-.02em}
+.root :is(button,a,summary):focus-visible{outline:3px solid #176e6e;outline-offset:3px}
+@media(max-width:350px){
+ .root{width:calc(100% - 14px)}
+ .brandBar{padding-inline:1px}
+ .brand strong{font-size:18px}
+ .brand>svg{width:28px}
+ .brandActions{gap:3px}
+ .languageMenu summary{min-width:36px;padding:1px}
+ .help,.profile{width:37px;height:39px}
+ .hero h1{font-size:27px}
+ .hero .heroTagline{font-size:12.5px}
+ .hero .heroLead{font-size:12px}
+ .laptop{height:117px}
+ .heroStage{min-height:127px}
+ .audienceSwitch{margin-inline:10px}
+ .audienceSwitch button{gap:5px;font-size:12.5px}
+ .question legend{font-size:23px}
+ .choice,.choices[data-question-kind="topic"] .choice{min-height:111px}
+ .choiceMedia{height:44px}
+ .choiceContent{grid-template-columns:24px 1fr;gap:5px;padding:7px 6px;font-size:12.5px}
+ .choiceContent>svg{width:23px;height:23px}
+ .categoryGrid{gap:6px}
+ .categoryMedia{height:62px}
+ .categoryName{font-size:11.5px}
+}
+@media(min-width:521px) and (max-width:760px){
+ .heroStage{min-height:196px}
+ .laptop{height:170px}
+ .choiceMedia{height:65px}
+ .choice,.choices[data-question-kind="topic"] .choice{min-height:135px}
+}

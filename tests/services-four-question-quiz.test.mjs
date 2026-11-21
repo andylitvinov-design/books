@@ -42,7 +42,12 @@ test("offer ranking cannot confuse personal money requests with business consult
 });
 test("same-page categories and production browser acceptance remain",()=>{
  assert.match(css,/reiki-approved-sunrise-v3\.webp/);
- assert.match(css,/\.form \{[^}]*linear-gradient\(/);
+ assert.match(css,/Owner-approved Support mobile sunrise/);
+ assert.match(css,/\.form\{[^\n]*background:none;/);
+ assert.match(quiz,/data-services-quiz-goal/);
+ assert.match(quiz,/data-services-quiz-next/);
+ assert.match(quiz,/data-services-audience/);
+ assert.match(quiz,/data-services-hero-play/);
  assert.match(css,/\.categoryGrid \{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
  assert.match(css,/@media\(max-width:350px\)/);
  assert.match(css,/@media\(min-width:761px\)\{\.root\{display:none\}\}/);
