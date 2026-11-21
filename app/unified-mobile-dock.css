@@ -100,7 +100,7 @@ body:has([data-hh-unified-dock]) [data-video-director-chat-details]{scroll-margi
   padding-top:12px;
  }
  body:has(main[data-shamanica-audience="self"]) [data-hh-unified-dock] [data-unified-dock-item] span {
-  font-size:clamp(8.5px,2.45vw,11px);
+  font-size:clamp(10px,3.05vw,12px);
   white-space:nowrap;
   overflow-wrap:normal;
   letter-spacing:-.24px;
@@ -115,5 +115,39 @@ body:has([data-hh-unified-dock]) [data-video-director-chat-details]{scroll-margi
  body:has(main[data-shamanica-audience="self"]) [data-hh-unified-dock] [data-unified-dock-item] span{
   font-size:clamp(9.6px,2.95vw,11.3px);
   letter-spacing:-.38px;
+ }
+}
+
+
+/* HOME_APPROVED_MOBILE_BANNER_20261120 — legal global selector, not a CSS Module. */
+@media(max-width:759px){
+ body:has([data-home-dialogue-entry]) [data-sitewide-antistress-banner]{display:none!important}
+}
+
+
+/* SHAMANIC_LUXURY_LOUNGE_DOCK_20261121: only personal Shamanic page. */
+@media(max-width:759px){
+ body:has(main[data-shamanica-audience="self"]) [data-sitewide-antistress-banner]{
+  display:none!important;
+ }
+ body:has(main[data-shamanica-audience="self"]) [data-hh-unified-dock]{
+  border:1px solid #97763b;border-bottom:0;border-radius:32px 32px 0 0;
+  background:linear-gradient(180deg,#064b33f7 0,#063421fa 70%,#032516 100%);
+  box-shadow:0 -6px 18px #080c0677,inset 0 1px #c9be726b;
+  backdrop-filter:blur(15px);-webkit-backdrop-filter:blur(15px);
+ }
+ body:has(main[data-shamanica-audience="self"]) [data-hh-unified-dock] [data-unified-dock-item]{
+  color:#fff5de;
+ }
+ body:has(main[data-shamanica-audience="self"]) [data-hh-unified-dock] [data-unified-dock-item="practice"][aria-current="page"]{
+  color:#fffadf;background:#456b26af;border-radius:17px;
+ }
+ body:has(main[data-shamanica-audience="self"]) [data-hh-unified-dock] [data-unified-dock-item="ai"] svg{
+  border:2px solid #ffe5a2;
+  background:radial-gradient(circle at 35% 18%,#18d08c 0,#07945e 52%,#055735 100%);
+  box-shadow:0 0 0 3px #e9b95a75,0 0 18px 5px #f5c65a70;
+ }
+ body:has(main[data-shamanica-audience="self"]) [data-hh-unified-dock] [data-unified-dock-item="ai"] span{
+  color:#fff9da;background:#066a45;
  }
 }

@@ -2,8 +2,10 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import test from "node:test";
 import {shouldAutoRecoverSafariPlayback} from "../lib/mandala/recording-codecs.mjs";
+import {requiresRealMediaWebKit} from "../lib/ci/merge-check-light.mjs";
 
 const helper=readFileSync(new URL("../lib/mandala/webcodecs-mp4-export.ts",import.meta.url),"utf8");
+const presetLoader=readFileSync(new URL("../lib/mandala/first-party-video-audio.ts",import.meta.url),"utf8");
 const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
 test("Safari MP4 uses browser-local WebCodecs rather than MediaRecorder",()=>{
   assert.match(helper,/new CanvasSource\(canvas,/);
@@ -23,7 +25,11 @@ test("physical-iPhone Ready repair runs the mandatory macOS WebKit video and AAC
   const gate=job.slice(0,job.indexOf("\n    needs:"));
   assert.match(gate,/github\.event_name == 'pull_request'/);
   assert.match(gate,/github\.event\.pull_request\.draft == false/);
-  assert.match(gate,/github\.head_ref == 'fix\/iphone-ready-mp4-export-20261118'/);
+  assert.match(gate,/needs\.webkit_preflight\.outputs\.media_required == 'true'/);
+  assert.equal(requiresRealMediaWebKit([
+    {filename:'lib/mandala/webcodecs-mp4-export.ts',status:'M'},
+    {filename:'components/mandala-free-video-studio.tsx',status:'M'}]),true,
+    'physical iPhone MP4 source still requires real macOS WebKit');
   assert.match(job,/needs: \[webkit_preflight\]/);
   assert.match(job,/runs-on: macos-15/);
   assert.match(job,/Build exact voice release candidate/);
@@ -43,7 +49,7 @@ test("Safari movie retains the real Canvas scene, story, hypno and stage caption
 });
 test("No customer upload, fake video or unbounded output",()=>{
   assert.doesNotMatch(helper,/XMLHttpRequest|navigator\.sendBeacon|\/api\/render/);
-  assert.match(helper,/credentials:"same-origin"/);
+  assert.match(presetLoader,/credentials:"omit"/);
   assert.match(helper,/MAX_DURATION=60/);
   assert.match(helper,/MAX_BYTES=80\*1024\*1024/);
   assert.match(helper,/video_encoder_too_slow/);
@@ -106,7 +112,8 @@ test("WebKit export can be cancelled, and microphone speech is not looped",()=>{
 test("silent WebKit exports H.264 even without AudioEncoder, never fakes voice AAC",()=>{
   assert.match(helper,/supportsLocalWebCodecsMp4\(needsAudio=false\)/);
   assert.match(helper,/!needsAudio \|\| \(/);
-  assert.match(helper,/if\(audio\)\{/);
+  assert.match(helper,/const withAudio=Boolean\(audio\|\|audioMaster\)/);
+  assert.match(helper,/if\(withAudio\)\{[\s\S]*?await canEncodeAudio\("aac"/);
   assert.match(helper,/webcodecs_h264_unsupported/);
   assert.match(helper,/webcodecs_aac_unsupported/);
   assert.match(studio,/!attachedAudio \|\| \(typeof AudioEncoder/);
@@ -139,12 +146,16 @@ test("Safari WebCodecs loads the SAME scenario and classical MP3 URL as native a
   const music=readFileSync(new URL("../lib/mandala/local-video-music.ts",import.meta.url),"utf8");
   assert.match(music,/isScenarioAudioPreset\(preset\)/);
   assert.match(music,/\/audio\/mandala\/scenarios\/" \+ preset \+ "\.mp3"/);
-  assert.match(helper,/import \{presetAudioUrl\} from "\.\/local-video-music"/);
-  assert.match(helper,/const audioUrl=presetAudioUrl\(entry\.preset as Exclude<AmbientMusic,"none">\)/);
-  assert.match(helper,/fetch\(audioUrl,\{/);
-  assert.doesNotMatch(helper,/fetch\("\/audio\/mandala\/"\+entry\.preset\+"\.wav"/);
-  assert.match(helper,/credentials:"same-origin"/);
-  assert.match(helper,/first_party_audio_unavailable/);
+  assert.match(helper,/import \{loadFirstPartyPresetAudioBlob\} from "\.\/first-party-video-audio"/);
+  assert.match(presetLoader,/const audioUrl=presetAudioUrl\(preset\)/);
+  assert.match(presetLoader,/fetch\(audioUrl,\{/);
+  assert.match(presetLoader,/PACKAGED_SOUNDTRACK\.test\(audioUrl\)/);
+  assert.match(presetLoader,/mode:"same-origin"/);
+  assert.match(presetLoader,/redirect:"error"/);
+  assert.match(helper,/loadFirstPartyPresetAudioBlob\(entry\.preset as Exclude<AmbientMusic,"none">\)/);
+  assert.doesNotMatch(helper,/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon/);
+  assert.match(presetLoader,/credentials:"omit"/);
+  assert.match(presetLoader,/first_party_audio_unavailable/);
   assert.match(studio,/code==="first_party_audio_unavailable"/);
 });
 
@@ -154,7 +165,9 @@ test("Safari repair branches must reach real macOS WebKit video/audio acceptance
   assert.ok(enabled>=2,"Safari repair must run scoped build + macOS WebKit media tests");
   const job=workflow.split("  voice-webkit-macos:")[1];
   assert.ok(job,"WebKit must remain an independent real-media job");
-  assert.match(job.split("    runs-on:")[0],/startsWith\(github\.head_ref, 'fix\/webkit-'\)/);
+  assert.match(job.split("    runs-on:")[0],/needs\.webkit_preflight\.outputs\.media_required == 'true'/);
+  assert.equal(requiresRealMediaWebKit([{filename:'lib/mandala/webcodecs-mp4-export.ts',status:'M'}]),true,
+    'Safari WebCodecs changes must execute macOS regardless of branch name');
   assert.match(job,/node scripts\/benchmarking\/first-video-live-export\.mjs/);
   assert.match(job,/node scripts\/verify-affirmation-voice-browser\.mjs/);
 });
@@ -191,10 +204,14 @@ test("hydration progresses Goals → Ideas through a real tap without hidden leg
   const flow=browser.slice(start,end);
   const hydrate=flow.indexOf('data-video-studio-hydrated","true"');
   const continueTap=flow.indexOf("await continueToIdeas.click()",hydrate);
-  const refinement=flow.indexOf('await refinement.locator(":scope > summary").click()',continueTap);
-  const montage=flow.indexOf("await montage.tap()",refinement);
-  assert.ok(start>=0&&end>start&&hydrate>=0&&continueTap>hydrate&&refinement>continueTap&&montage>refinement,
-    "actual visible Goals tap must reveal Ideas then the user-opened refinement before Montage");
+  const goal=flow.indexOf('const ideasGoalTab=page.locator',continueTap);
+  const cards=flow.indexOf('await expect(goalCards).toHaveCount(3)',goal);
+  const selected=flow.indexOf('await expect(choice).toHaveAttribute("aria-pressed","true")',cards);
+  const next=flow.indexOf('await expect(nextGoal).toBeEnabled()',selected);
+  const personalization=flow.indexOf('data-video-ideas-personalization-panel',next);
+  const montage=flow.indexOf('await openVisibleMontageText(page,browser.browserType().name())',personalization);
+  assert.ok(start>=0&&end>start&&hydrate>=0&&continueTap>hydrate&&goal>continueTap&&cards>goal&&selected>cards&&next>selected&&personalization>next&&montage>personalization,
+    "real Goals tap must lead through selected visible Goal and Personalization to Montage");
   assert.match(flow,/data-video-continue-scenarios/);
   assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
   assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
@@ -360,6 +377,62 @@ test("guest real encoded video must keep Save behind sign-in and preserve physic
 });
 
 
+test("Stories WebKit enters Ideas via visible controls after native Goal quiz",()=>{
+ const source=readFileSync(new URL("../scripts/benchmarking/verify-five-scene-stories-browser.mjs",import.meta.url),"utf8");
+ assert.match(source,/completeThreeStepGoalsQuiz\(page,\{engine:'webkit'\}\)/);
+ assert.match(source,/const visibleNext=await advance\.isVisible\(\)\?advance:page\.locator\('\[data-video-quick-control="phrases"\]'\)/);
+ assert.match(source,/await visibleNext\.tap\(\)/);
+ assert.match(source,/getAttribute\('aria-pressed'\)==='true'/);
+ assert.match(source,/readRealGuestVideo/);
+ assert.doesNotMatch(source,/await advance\.waitFor\(\{state:'visible'|advance\.tap\(\{force:true\}\)/);
+});
+
+test("Stories WebKit requires filmed source selection before Extra, not blocked editorial Quality",()=>{
+ const source=readFileSync(new URL("../scripts/benchmarking/verify-five-scene-stories-browser.mjs",import.meta.url),"utf8");
+ const settings=source.indexOf("const storySettings=page.locator");
+ const open=source.indexOf("await storySettings.tap()",settings);
+ const choose=source.indexOf("await page.locator('[data-video-stories-create]').click()",open);
+ const licensed=source.indexOf("assert.ok(approved.has(id)",choose);
+ const extra=source.indexOf("data-video-stories-to-extra",licensed);
+ const generate=source.indexOf('data-video-montage-pro-choice="free"',extra);
+ assert.ok(settings>=0&&open>settings&&choose>open&&licensed>choose&&extra>licensed&&generate>extra,
+  "must select real reviewed films before Extra and generation");
+ assert.doesNotMatch(source,/await quality\.tap\(\)|\.(?:click|tap)\(\{[^}]*\bforce:\s*true/,
+  "never force the pending Story Quality CTA or synthetic source state");
+ assert.match(source,/readRealGuestVideo/,"real WebKit movie and audio remain mandatory");
+});
+
+test("five-scene Story accepts two real touches: FREE to Ready, then Generate before MP4",()=>{
+ const source=readFileSync(new URL("../scripts/benchmarking/verify-five-scene-stories-browser.mjs",import.meta.url),"utf8");
+ const stages=[
+   "const free=page.locator", "await free.tap({timeout:30000})",
+   "const readyChoice=page.locator", "const readyGenerate=readyChoice.locator",
+   "await readyGenerate.tap({timeout:30000})", "const safeExportState=",
+   "captured=await readRealGuestVideo", "assert.equal(captured.extension,'mp4'",
+   "assert.equal(video.codec_name,'h264'", "assert.equal(audio.codec_name,'aac'",
+ ];
+ let previous=-1;
+ for(const marker of stages){const i=source.indexOf(marker,previous+1);
+  assert.ok(i>previous,"must require real Ready gesture and physically decoded video: "+marker);
+  previous=i;}
+ assert.match(source,/STORIES_READY_GENERATE_MUST_BE_ENABLED/);
+ assert.match(source,/STORIES_READY_MUST_KEEP_ALL_FIVE_LICENSED_SOURCES/);
+ assert.match(source,/STORIES_READY_GENERATE_NOT_STARTED/);
+ assert.doesNotMatch(source,/STORIES_FREE_NATIVE_TAP_NOT_STARTED|\.tap\(\{force:true\}\)/);
+});
+
+test("original-motion WebKit uses native Goal and personalization before actual export",()=>{
+ const script=readFileSync(new URL("../scripts/benchmarking/verify-original-motion-export.mjs",import.meta.url),"utf8");
+ const markers=["await completeThreeStepGoalsQuiz", "const ideasGoal=", "const quiz=", "const conceptPanel=", "const addVideo=", "const readyGenerate", "let captured", "readRealGuestVideo(page,{timeout: 150000})"];
+ let prev=-1;
+ for(const marker of markers){const at=script.indexOf(marker,prev+1);
+  assert.ok(at>prev,"real guest MP4 journey preserves "+marker);prev=at;}
+ assert.match(script,/GOALS_MUST_OPEN_IDEAS/);
+ assert.match(script,/APPROVED_CONCEPT_MUST_PERSIST/);
+ assert.doesNotMatch(script,/\.(?:click|tap)\(\{[^}]*\bforce:\s*true|setIdeasProfileConfirmed\(true\)/,
+  "do not force browser gestures or mutate user consent");
+});
+
 test("WebKit traverses Ideas Personalization and Concept before consented Voice/My Voice",()=>{
  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
  const modes=browser.indexOf('const ideasModes=phrases.locator("[data-video-ideas-tabs]")');
@@ -466,7 +539,7 @@ test("Safari accepts longer-than-180s licensed MP3 music and retains only its au
     "non-looped narration must still reject truncation");
   assert.match(helper,/narration_longer_than_video/);
   assert.match(helper,/audio_size_invalid/);
-  assert.match(helper,/first_party_audio_unavailable/);
+  assert.match(presetLoader,/first_party_audio_unavailable/);
   assert.match(helper,/audioSource\.add\(audioBuffer\)/,"AAC remains required for selected music");
 });
 
@@ -553,4 +626,70 @@ test("iPhone native stop is idempotent: do not kill tracks before final MP4 onst
  assert.match(studio,/recorder\.onstop = async \(\) => \{\s*if\(job\.finalizeTimeout!==undefined\)/);
  assert.match(studio,/job\.stream\.getTracks\(\)\.forEach\(track=>track\.stop\(\)\);/);
  assert.match(studio,/job\.finalizeTimeout=window\.setTimeout\(/);
+});
+
+test("physical iPhone native MP4 is fast-start normalized and genuinely decoded before Ready",()=>{
+  assert.match(helper,/export async function normalizeNativeSafariMp4ForPlayback/);
+  assert.match(helper,/new Mp4OutputFormat\(\{fastStart:"in-memory"\}\)/);
+  assert.match(helper,/const conversion=await Conversion\.init\(/);
+  assert.match(helper,/await conversion\.execute\(\)/);
+  assert.match(helper,/new Blob\(\[bytes\],\{type:"video\/mp4"\}\)/);
+  assert.match(helper,/const sink=new VideoSampleSink\(track\)/);
+  assert.match(helper,/await sink\.getSample\(at\)/);
+  assert.match(helper,/sample\?\.close\(\)/);
+  assert.match(helper,/end<expectedSeconds-2\|\|end>expectedSeconds\+2/);
+  assert.match(helper,/requireAudio&&\(!audio\|\|await audio\.getCodec\(\)!=="aac"\)/);
+  assert.match(studio,/normalizeNativeSafariMp4ForPlayback\(blob,Boolean\(job\.musicSession\),duration\),30000/);
+  assert.match(studio,/blob=await withLocalMediaDeadline\(/);
+  assert.match(studio,/setResult\(\{url:URL\.createObjectURL\(blob\)/);
+  assert.match(studio,/const nativeSafariMp4RejectedRef=useRef\(false\)/);
+  assert.match(studio,/nativeSafariMp4RejectedRef\.current=true/);
+  assert.doesNotMatch(studio,/hh_safari_native_mp4_rejected_v1|sessionStorage/);
+  assert.match(studio,/forceWebCodecs:forceWebCodecs\|\|nativeRejectedOnThisDevice/);
+  // No automatic second video export, URL upload, or second credit reservation.
+  assert.doesNotMatch(helper,/fetch\(\s*["']\/api\/render|navigator\.sendBeacon/);
+});
+
+test("native finalization holds the export slot and discards a cancelled MP4", async () => {
+  const start = studio.indexOf("      recorder.onstop = async () => {");
+  const body = studio.slice(start, studio.indexOf("\n      };", start) + 8)
+    .replaceAll('await import("@/lib/mandala/webcodecs-mp4-export")', "media");
+  const run = new Function("env", `with (env) { ${body} }`);
+  const job = {stream:{getTracks:()=>[]}, musicSession:null, cancelled:false};
+  const jobRef = {current:job};
+  const chunks = [new Blob([Uint8Array.of(0,0,0,12,102,116,121,112,0,0,0,0)])];
+  let settle;
+  let entered;
+  const normalizing = new Promise(resolve => { entered = resolve; });
+  const pending = new Promise(resolve => { settle = resolve; });
+  const released = [];
+  const recording = [];
+  const readyPending = [];
+  const recorder = {mimeType:"video/mp4"};
+  run({
+    recorder, job, jobRef, chunks, Blob, Uint8Array,
+    aliveRef:{current:true}, sourceRef:{current:"source"}, snapshotKey:"source",
+    setProgress:()=>{}, isApplePhone:true, duration:30,
+    withLocalMediaDeadline:promise=>promise,
+    media:{
+      verifyNativeSafariMp4Tracks:async()=>{},
+      normalizeNativeSafariMp4ForPlayback:()=>{ entered(); return pending; }
+    },
+    creditOpRef:{current:"reservation"}, creditValidRef:{current:false},
+    releaseCredit:id=>released.push(id), setRecording:value=>recording.push(value),
+    setReadyGenerationPending:value=>readyPending.push(value),
+    setResult:()=>assert.fail("cancelled export must never publish")
+  });
+  const finished = recorder.onstop();
+  await normalizing;
+  assert.equal(jobRef.current, job);
+  assert.deepEqual(recording, []);
+  job.cancelled = true;
+  settle(new Blob(["normalized"]));
+  await finished;
+  assert.equal(jobRef.current, null);
+  assert.equal(chunks.length, 0);
+  assert.deepEqual(released, ["reservation"]);
+  assert.deepEqual(recording, [false]);
+  assert.deepEqual(readyPending, [false]);
 });

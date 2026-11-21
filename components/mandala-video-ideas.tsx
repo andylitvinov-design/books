@@ -17,6 +17,7 @@ type Cluster={id:string;label:string};
 type Props={
  locale:VideoLocale;theme:VideoTheme;requestText:string;active:boolean;disabled:boolean;settings:AffirmationSettings;
  profile?:VideoGoalProfile; languagePicker?:boolean;
+ goalType?:"leisure"|"support"|"change"|null; selectedTopicId?:string|null;
  generating:boolean;onChange:Dispatch<SetStateAction<AffirmationSettings>>;
  onPendingChange:Dispatch<SetStateAction<boolean>>;onPreview:()=>void;onCreate:()=>void;onGenerate:()=>void;status?:string;
  onRecord:()=>void;onResetPreview:()=>void;
@@ -77,14 +78,14 @@ const allFive=[0,1,2,3,4];
 const scaleValues=["small","medium","large"] as const;
 const cleanPhrase=sanitizeIdeaPhrase;
 
-export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePicker=false,active,disabled,settings,generating,
+export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePicker=false,goalType=null,selectedTopicId=null,active,disabled,settings,generating,
  onChange,onPendingChange,onPreview,onCreate,onGenerate,status,onRecord,onResetPreview}:Props){
  const t=wording[locale];
  const [phraseLocale,setPhraseLocale]=useState<VideoLocale>(()=>settings.ideasDraft?.locale??locale);
  const [languageNotice,setLanguageNotice]=useState("");
  const captionLocale=languagePicker?phraseLocale:(settings.ideasDraft?.locale??locale);
  const languageChoices:VideoLocale[]=locale==="es"?["es","en","ru"]:["en","ru"];
- const goalContext=useMemo(()=>resolveVideoIdeaContext({locale,request:requestText,theme}),[locale,requestText,theme]);
+ const goalContext=useMemo(()=>resolveVideoIdeaContext({locale,request:requestText,theme,selectedTopicId}),[locale,requestText,theme,selectedTopicId]);
  const currentOptions=useMemo<Cluster[]>(()=>listCurrentEmotionClusters(locale),[locale]);
  const desiredOptions=useMemo<Cluster[]>(()=>listDesiredEmotionClusters(locale),[locale]);
  const axes=useMemo<Axis[]>(()=>listMeaningAxes(locale),[locale]);
@@ -95,7 +96,7 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
  const [selectedAxes,setSelectedAxes]=useState<string[]>(()=>goalContext.axisIds);
  const [selectionGoalKey,setSelectionGoalKey]=useState(goalContext.key);
  const [revision,setRevision]=useState(0);
- const [options,setOptions]=useState<string[]>(()=>suggestVideoGoalPhrases({locale,request:requestText,theme,axisIds:goalContext.axisIds,desired:goalContext.desiredId,limit:7}));
+ const [options,setOptions]=useState<string[]>(()=>suggestVideoGoalPhrases({locale,request:requestText,theme,goalType,supportNeed:profile?.supportNeed,selectedTopicId,axisIds:goalContext.axisIds,desired:goalContext.desiredId,limit:7}));
  const [chosen,setChosen]=useState<number[]>(allFive);
  const [editing,setEditing]=useState<number|null>(null);
  const [draft,setDraft]=useState("");
@@ -117,7 +118,7 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
  // Preserve the canonical Goal classifier. Explicit local Personalization
  // answers refine its suggestions without losing Love/relationship relevance.
  const profileKey=JSON.stringify(profile??null);
- const personalClosingPhrase=personalVideoClosingPhrase(captionLocale,profile?.name);
+ const personalClosingPhrase=goalType==="change"||goalType==="leisure"?"":personalVideoClosingPhrase(captionLocale,profile?.name);
  const hasCurrentChoice=Boolean(profile&&
   JSON.stringify(profile.current)!==JSON.stringify(DEFAULT_VIDEO_GOAL_PROFILE.current));
  const hasDesiredChoice=Boolean(profile&&
@@ -136,13 +137,13 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
   ?profile.desiredLevel:stateScore;
  const energyForSuggestions=profile&&profile.energy!==DEFAULT_VIDEO_GOAL_PROFILE.energy
   ?profile.energy:energy;
- const signature=JSON.stringify([goalContext.key,axesForSuggestions,currentForSuggestions,
+ const signature=JSON.stringify([goalContext.key,goalType,axesForSuggestions,currentForSuggestions,
   desiredForSuggestions,strengthForSuggestions,energyForSuggestions,revision,profileKey]);
  const suggested=useMemo(()=>{
   const pool:string[]=[];
   for(let i=0;i<Math.max(currentForSuggestions.length,desiredForSuggestions.length);i++){
    const next=suggestVideoGoalPhrases({
-    locale:captionLocale,request:requestText,theme,axisIds:axesForSuggestions,
+    locale:captionLocale,request:requestText,theme,goalType,supportNeed:profile?.supportNeed,selectedTopicId,axisIds:axesForSuggestions,
     current:currentForSuggestions[i%currentForSuggestions.length],
     desired:desiredForSuggestions[i%desiredForSuggestions.length],
     strength:strengthForSuggestions,energy:energyForSuggestions,
@@ -150,10 +151,10 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
    });
    for(const line of next)if(!pool.includes(line))pool.push(line);
   }
-  return appendPersonalVideoClosingPhrase(pool,captionLocale,profile?.name);
+  return goalType==="change"||goalType==="leisure"?pool:appendPersonalVideoClosingPhrase(pool,captionLocale,profile?.name);
   // Personal answers are represented by their stable serialized values.
   // eslint-disable-next-line react-hooks/exhaustive-deps
- },[captionLocale,requestText,theme,goalContext.key,profileKey,selectionGoalKey,
+ },[captionLocale,requestText,theme,goalType,selectedTopicId,goalContext.key,profileKey,selectionGoalKey,
   selectedAxes,current,desired,stateScore,energy,revision]);
 
  // Keep the edited list in the parent's session state, the same source used by
@@ -247,7 +248,7 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
  const moreOptions=()=>{
   if(options.length>=14)return;
   const candidates=suggestVideoGoalPhrases({
-   locale:captionLocale,request:requestText,theme,axisIds:axesForSuggestions,
+   locale:captionLocale,request:requestText,theme,goalType,supportNeed:profile?.supportNeed,selectedTopicId,axisIds:axesForSuggestions,
    current:currentForSuggestions[0],desired:desiredForSuggestions[0],
    strength:strengthForSuggestions,energy:energyForSuggestions,
    revision:revision+moreClicks,

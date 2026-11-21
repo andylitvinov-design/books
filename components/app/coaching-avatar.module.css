@@ -96,3 +96,6 @@
 .frame .mouthTalk{display:none!important;opacity:0!important}
 .frame .mouthRest{opacity:1!important}
 .frame[data-photo-persona] .livingPortrait{animation:none!important;transform:none!important}
+
+/* Photographic coaches: never show synthetic eye/mouth SVG. */
+.frame[data-photo-persona] .illustration{display:none!important}
