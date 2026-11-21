@@ -1049,7 +1049,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     <div className={styles.sessionScroll} data-coaching-session-scroll>
     <section className={styles.sessionHero} aria-label={name} data-voice-phase={voiceState.phase}>
       <div className={styles.sessionPortrait} data-persona={personaId}
-        data-coach-motion-video={['mira','max','sofia','alex','harry'].includes(personaId)?'true':undefined}
+        data-coach-motion-video={['mira','max','sofia','alex','merlin','harry'].includes(personaId)?'true':undefined}
         role="img" aria-label={name}>
         <MyCoachMotionMedia personaId={personaId} phase={motionPhase} context="session" scene={visualScene} />
       </div>
