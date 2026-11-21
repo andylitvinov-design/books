@@ -42,7 +42,10 @@ test('Business replies remain signed, can_reply verified, STOP suppressed and ra
  assert.match(secretary,/telegramPublishedSpiritualInterestAcknowledgement\(spiritualInterest\)/);
  assert.match(route,/verifyMessengerWebhook\(provider,raw,request.headers\)/);
  assert.match(route,/gateTelegramBusinessSecretaryOptOut\(body,config\)/);
- assert.match(route,/processTelegramBusinessSecretary\(body,config\)/);
+ // The Secretary accepts a bounded clarification ONLY for a previously
+ // verified, recorded, non-suppressed Business CRM contact; never on a new lead.
+ assert.match(route,/processTelegramBusinessSecretary\(body,config,process\.env,\{/);
+ assert.match(route,/allowClarification:telegramBusinessInbox\?\.matched===true&&\s*telegramBusinessInbox\.recorded===true&&\s*businessLead\?\.created===false&&businessLead\?\.suppressed===false/);
  assert.match(route,/hh-tg-secretary-reply/);
  assert.match(route,/sendHolisticBusinessRequestReply/);
 });
