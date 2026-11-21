@@ -227,9 +227,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [speechPreview,setSpeechPreview]=useState('')
   const [streamingPreview,setStreamingPreview]=useState('')
   const [coachEngine,setCoachEngine]=useState('groq_stream')
-  const [experienceConsentOpen,setExperienceConsentOpen]=useState(false)
-  const [experienceTextConsent,setExperienceTextConsent]=useState(false)
-  const [experienceTtsConsent,setExperienceTtsConsent]=useState(false)
   const [geminiCapabilities,setGeminiCapabilities]=useState({
     gemini_free:false,gemini_paid:false,gemini_tts_free:false,gemini_tts_paid:false,
     gemini_live_free:false,
@@ -1239,7 +1236,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               setGeminiConsent(false)
               setGeminiVoiceTier('existing')
               setGeminiVoiceConsent(false)
-              setExperienceConsentOpen(false)
+              
               setPlaybackNotice('')
               return
             }
@@ -1252,7 +1249,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               setGeminiConsent(false)
               setGeminiVoiceTier('existing')
               setGeminiVoiceConsent(false)
-              setExperienceConsentOpen(false)
+              
               setPlaybackNotice('')
               return
             }
@@ -1282,10 +1279,22 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               setPlaybackNotice(({ru:'Gemini Free не готов на сервере. Basic продолжает работать.',en:'Gemini Free is not ready on the server. Basic still works.',es:'Gemini gratuito no está listo en el servidor. Basic sigue activo.'})[lang])
               return
             }
-            setExperienceTextConsent(false)
-            setExperienceTtsConsent(false)
-            setExperienceConsentOpen(true)
-            setPlaybackNotice('')
+            // Pro tap is an informed Free text+TTS choice; no second form.
+            if(voiceState.phase==='speaking'&&latestCoachText)
+              markCoachSpeechInterrupted(latestCoachText)
+            speechRef.current?.stop?.()
+            cancelPendingCoachTurn()
+            const freeTtsReady=status.capabilities.gemini_tts_free===true
+            setCoachEngine('gemini_free')
+            setGeminiConsent(true)
+            setGeminiVoiceTier(freeTtsReady?'gemini_tts_free':'existing')
+            setGeminiVoiceConsent(freeTtsReady)
+            setGeminiLiveConsent(false)
+            setPlaybackNotice(freeTtsReady?'':({
+              ru:'Gemini Free включён; голос Gemini недоступен. Можно выбрать текущий голос.',
+              en:'Gemini Free is on; Gemini voice is unavailable. You can choose the existing voice.',
+              es:'Gemini gratuito activado; su voz no está disponible. Puedes usar la voz anterior.',
+            })[lang])
           }}>
           <Zap size={17} aria-hidden="true"/>
           <span>{selectedGeminiEngine||liveVoiceSelected?'Pro':'Basic'}</span>
@@ -1295,34 +1304,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           <PhoneOff size={19} aria-hidden="true"/><span>{lang==='ru'?'Резюме':lang==='es'?'Resumen':'Summary'}</span>
         </button>
       </div>
-      {experienceConsentOpen&&<div className={styles.experienceConsentPanel} data-coach-experience-consent role="group"
-        aria-label={({ru:'Переключение на Gemini',en:'Switch to Gemini',es:'Cambiar a Gemini'})[lang]}>
-        <strong>Pro · Gemini Free</strong>
-        <p>{({ru:'Это бесплатный Gemini, не платная подписка. Google может использовать текст для улучшения моделей. Чтобы слышать голос Gemini, подтвердите отдельное согласие ниже.',en:'This is Gemini Free, not a paid subscription. Google may use text to improve models. To hear Gemini voices, check the separate voice consent below.',es:'Es Gemini gratuito, no una suscripción. Google puede usar texto para mejorar modelos. Para oír la voz Gemini, marca el consentimiento de voz separado.'})[lang]}</p>
-        <label><input type="checkbox" checked={experienceTextConsent}
-          onChange={event=>setExperienceTextConsent(event.target.checked)}/>
-          <span>{({ru:'Я согласен(на) отправлять мои следующие сообщения в Gemini Free.',en:'I agree to send my next messages to Gemini Free.',es:'Acepto enviar mis siguientes mensajes a Gemini gratuito.'})[lang]}</span>
-        </label>
-        {geminiCapabilities.gemini_tts_free&&<label><input type="checkbox" checked={experienceTtsConsent}
-          onChange={event=>setExperienceTtsConsent(event.target.checked)}/>
-          <span>{({ru:'Дополнительно согласен(на) на Gemini TTS Free для озвучки. Google может использовать отправленный текст для улучшения моделей.',en:'Also consent to Gemini TTS Free speech. Google may use submitted text to improve models.',es:'También acepto Gemini TTS gratuito. Google puede usar el texto para mejorar modelos.'})[lang]}</span>
-        </label>}
-        <div className={styles.experienceConsentActions}>
-          <button type="button" disabled={!experienceTextConsent} onClick={()=>{
-            // Commit the vendor switch only after explicit Google data consent.
-            if(voiceState.phase==='speaking'&&latestCoachText)
-              markCoachSpeechInterrupted(latestCoachText)
-            speechRef.current?.stop?.()
-            cancelPendingCoachTurn()
-            setCoachEngine('gemini_free')
-            setGeminiConsent(true)
-            setGeminiVoiceTier(experienceTtsConsent&&geminiCapabilities.gemini_tts_free?'gemini_tts_free':'existing')
-            setGeminiVoiceConsent(experienceTtsConsent&&geminiCapabilities.gemini_tts_free)
-            setExperienceConsentOpen(false)
-          }}>{({ru:'Включить Pro',en:'Enable Pro',es:'Activar Pro'})[lang]}</button>
-          <button type="button" onClick={()=>setExperienceConsentOpen(false)}>{({ru:'Отмена',en:'Cancel',es:'Cancelar'})[lang]}</button>
-        </div>
-      </div>}
+      {!selectedGeminiEngine&&!liveVoiceSelected&&
+        <p className={styles.voicePlayNotice} data-coach-pro-same-tap-disclosure>{({
+          ru:'Нажатие Pro включает Gemini Free и голос. Текст диалога и озвучки передаётся Google и может использоваться для улучшения моделей. Возврат к Basic — одним нажатием.',
+          en:'Tap Pro to enable Gemini Free text and speech. Dialogue and speech text go to Google, which may use Free data to improve models. Tap Basic to stop.',
+          es:'Pulsa Pro para activar texto y voz de Gemini gratuito. Google puede usar el texto para mejorar modelos. Pulsa Basic para salir.',
+        })[lang]}</p>}
       <p className={styles.voicePlayNotice} data-coach-voice-consent-one-play>{liveVoiceSelected?({
         ru:'Gemini Live: прямой поток RU/EN · можно перебивать коуча голосом или кнопкой. Микрофон передаёт звук Google только после отдельного согласия.',
         en:'Gemini Live: real-time audio · interrupt the coach by speaking or tapping. Your microphone streams to Google only after separate consent.',
@@ -1442,9 +1429,17 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           <select value={coachEngine} disabled={busy} onChange={event=>{
             speechRef.current?.stop?.()
             setCoachEngine(event.target.value)
-            setGeminiConsent(false);setGeminiLiveConsent(false)
+            setGeminiConsent(event.target.value==='gemini_free')
+            setGeminiLiveConsent(false)
             setLiveDirectorProgress(null)
-            if(event.target.value==='gemini_live_free')setGeminiVoiceTier('existing')
+            if(event.target.value==='gemini_free'){
+              const tts=geminiCapabilities.gemini_tts_free===true
+              setGeminiVoiceTier(tts?'gemini_tts_free':'existing')
+              setGeminiVoiceConsent(tts)
+            }else if(event.target.value==='gemini_live_free'||event.target.value.startsWith('groq_')){
+              setGeminiVoiceTier('existing')
+              setGeminiVoiceConsent(false)
+            }
           }}>
             <option value="groq_stream">{({ru:'Groq · поток',en:'Groq · streaming',es:'Groq · flujo'})[lang]}</option>
             <option value="groq_strict">{({ru:'Groq · стабильный',en:'Groq · validated',es:'Groq · validado'})[lang]}</option>
@@ -1454,17 +1449,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             <option value="gemini" disabled>{({ru:'Gemini Live · после проверки',en:'Gemini Live · pending approval',es:'Gemini Live · pendiente'})[lang]}</option>
           </select>
         </label>
-        {selectedGeminiEngine&&<label className={styles.coachEnginePicker} data-gemini-text-consent>
+        {coachEngine==='gemini_paid'&&<label className={styles.coachEnginePicker} data-gemini-text-consent>
           <input type="checkbox" checked={geminiConsent} onChange={event=>setGeminiConsent(event.target.checked)}/>
-          <span>{coachEngine==='gemini_free'?({
-            ru:'Согласен(на): бесплатный Gemini может использовать текст для улучшения моделей Google.',
-            en:'I agree: Free Gemini may use conversation text to improve Google models.',
-            es:'Acepto: Gemini gratuito puede usar mis textos para mejorar los modelos.'
-          }[lang]):({
+          <span>{({
             ru:'Согласен(на) передавать текст Gemini Paid; Google не использует его для улучшения моделей.',
             en:'I agree to use Gemini Paid; Google does not use submitted text to improve models.',
-            es:'Acepto Gemini Paid; Google no usa mis textos para mejorar modelos.'
-          }[lang])}</span>
+            es:'Acepto Gemini Paid; Google no usa mis textos para mejorar modelos.',
+          })[lang]}</span>
         </label>}
         {liveVoiceSelected&&<>
           <label className={styles.coachEnginePicker} data-gemini-live-free-voice>
@@ -1489,7 +1480,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         {!liveVoiceSelected&&<label className={styles.coachEnginePicker} data-gemini-voice-provider>
           <span>{({ru:'Голос коуча',en:'Coach voice',es:'Voz del coach'})[lang]}</span>
           <select value={geminiVoiceTier} disabled={busy||replaying} onChange={event=>{
-            setGeminiVoiceTier(event.target.value);setGeminiVoiceConsent(false)
+            setGeminiVoiceTier(event.target.value);setGeminiVoiceConsent(event.target.value==='gemini_tts_free')
           }}>
             <option value="existing">{({ru:'Текущий голос',en:'Current voice',es:'Voz actual'})[lang]}</option>
             <option value="gemini_tts_free" disabled={!geminiCapabilities.gemini_tts_free}>Gemini TTS · Free</option>
@@ -1504,19 +1495,15 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               {geminiVoices.map(name=><option value={name} key={name}>{name}</option>)}
             </select>
           </label>
-          <label className={styles.coachEnginePicker} data-gemini-voice-consent>
+          {geminiVoiceTier==='gemini_tts_paid'&&<label className={styles.coachEnginePicker} data-gemini-voice-consent>
             <input type="checkbox" checked={geminiVoiceConsent}
               onChange={event=>setGeminiVoiceConsent(event.target.checked)}/>
-            <span>{geminiVoiceTier==='gemini_tts_free'?({
-              ru:'Согласен(на): бесплатная озвучка Gemini может использовать текст для улучшения моделей.',
-              en:'I agree: Free Gemini speech may use text to improve models.',
-              es:'Acepto: la voz gratuita de Gemini puede usar el texto para mejorar modelos.'
-            }[lang]):({
+            <span>{({
               ru:'Согласен(на) на платную озвучку Gemini. Вызовы ограничены бюджетом.',
               en:'I agree to paid Gemini speech. Usage is rate-limited.',
-              es:'Acepto la voz Gemini de pago. El uso tiene límites.'
-            }[lang])}</span>
-          </label>
+              es:'Acepto la voz Gemini de pago. El uso tiene límites.',
+            })[lang]}</span>
+          </label>}
           <button type="button" className={styles.captionMore}
             disabled={!geminiVoiceReady||busy||replaying||voiceState.phase!=='idle'}
             onClick={previewGeminiCoachVoice}>{({
