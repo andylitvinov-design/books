@@ -16,7 +16,7 @@ test("device speech is optional local preview, with stop and no external provide
 test("Writer Mandala changes must execute real Linux media and macOS WebKit instead of skipped gates",()=>{
  const workflow=readFileSync(new URL("../.github/workflows/holistic-support-mandala.yml",import.meta.url),"utf8");
  const lines=workflow.split(String.fromCharCode(10));
- const required="startsWith(github.head_ref, 'feat/meditation-writer-')";
+ const required="steps.impact.outputs.browser == 'true'";
  for(const name of ["Build","Install isolated Chromium and WebKit (no external account)","Ensure ffprobe and ffmpeg for real encoded video/audio verification","Verify all 44 first-party MP4 sources, SHA-256, real codec and frame decode","Public mandala photo, PNG and video browser flow · 320/390/430px"]){
   const index=lines.indexOf("      - name: "+name);
   assert.ok(index>=0, "real media step missing: "+name);
@@ -24,9 +24,10 @@ test("Writer Mandala changes must execute real Linux media and macOS WebKit inst
  }
  const mac=lines.findIndex(line=>line==="  voice-webkit-macos:");
  assert.ok(mac>=0,"real macOS WebKit job missing");
- // The protected preflight now uses exact changed-file impact rather than a branch-name rule.
+ // macOS is now controlled by exact changed-file media impact, not the
+ // historical Meditation Writer branch name. Preserve fail-closed real WebKit.
  assert.ok(lines[mac+1]?.includes("needs.webkit_preflight.outputs.media_required == 'true'"),
-  "macOS WebKit job must require immutable tested-base real media impact");
+   "macOS WebKit must run for a changed-file media-required PR");
  assert.ok(workflow.includes('git show "$tested_base:lib/ci/merge-check-light.mjs"'),
   "real-media impact must be loaded from protected BASE, not candidate PR code");
  assert.equal(requiresRealMediaWebKit([{status:'M',filename:'components/meditation-writer-device-voice.tsx'}]),true,

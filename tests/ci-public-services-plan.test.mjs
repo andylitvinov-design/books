@@ -1556,6 +1556,10 @@ test('PR #2969 exactly reviewed 120-scenario audio cannot trigger 13 unrelated p
     "- 'components/mandala-free-video-studio.tsx'",
     "- 'data/video-catalog/goal-tree-audio-playlists-v1.json'",
   ])assert.ok(mandala.includes(must),'owning audio specialist missing '+must);
+  // Workflow ownership is content-based now. An old one-PR branch name must
+  // not be a substitute for the real audio contracts asserted above.
+  assert.doesNotMatch(mandala,/startsWith\(github\.head_ref, 'feat\/hh-goal-tree-'\)/,
+    'audio owner tests must not rely on a retired branch-specific gate');
   // Protected macOS release ownership follows exact changed source, never branch prefixes.
   assert.ok(mandala.includes("needs.webkit_preflight.outputs.media_required == 'true'"),
     'macOS job must require tested-base real media impact');
