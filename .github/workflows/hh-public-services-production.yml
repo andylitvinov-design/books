@@ -189,6 +189,12 @@ on:
       - '!components/mandala-video-ready.module.css'
       - '!components/mandala-video-effect-journey.module.css'
       - '!components/mandala-therapy-studio.tsx'
+      # OpenMotion is a public, local editor/template picker. Mandala already
+      # owns exact-HEAD source, license, MP4 and mobile browser acceptance.
+      # It never edits booking, payments or service enquiry code. A mixed PR
+      # touching a real checkout/consent/service path still runs this suite.
+      - '!components/mandala-openmotion-picker.tsx'
+      - '!components/mandala-openmotion-picker.module.css'
       # Fixed Ali greeting TTS is not service discovery, consent or checkout.
       # Existing Core checks cover persona and natural greeting contracts;
       # mixed PRs touching actual public services still run the browser suite.
