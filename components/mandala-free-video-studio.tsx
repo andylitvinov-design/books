@@ -3908,7 +3908,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   async function holdVideoExportCredit(catalog:NonNullable<typeof creditCatalog>){
     const guestLocalRender=catalog.chargeRequired&&creditSession==="guest"&&!guestFirstVideoUsed;
     guestRenderRef.current=guestLocalRender;
-    if(guestLocalRender){setCreditConfirmed(true);setCreditRetry(false);}
+    if(!catalog.chargeRequired||guestLocalRender){setCreditConfirmed(true);setCreditRetry(false);}
     // Registered exports retain the exact same account-scoped hold/complete
     // ledger. The first anonymous render is strictly local, no server debit.
     if(catalog.chargeRequired&&!guestLocalRender){
