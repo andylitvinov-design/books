@@ -216,7 +216,7 @@ test('Energywork cancels superseded PR commits only, never manual verification',
 
 
 const dedupWave2 = [
-  ['hh-support-guided-recommendations.yml', ['Typecheck', 'Build'], ['focused-unit-types-build','mobile-browser']],
+  ['hh-support-guided-recommendations.yml', ['Typecheck', 'Build'], ['focused-unit-types-build']],
   ['hh-my-progress-release.yml', ['Typecheck', 'Production build'], ['private-progress']],
   ['hh-messenger-notification-build.yml', ['Next.js production build (no provider keys)'], ['notification-build']],
 ];
@@ -240,6 +240,16 @@ test('wave 2: production Ready uses one shared full build but retains real speci
     assert.match(source,/npm run build/);
     assert.doesNotMatch(source,/continue-on-error:\s*true/);
   }
+});
+test('Support Guide checks browser syntax on PRs and runs browser QA on push or dispatch',()=>{
+  const source=read('hh-support-guided-recommendations.yml');
+  const [focused,browser]=source.split(/^  mobile-browser:\n/m);
+  assert.match(focused,/node --check scripts\/verify-holistic-support-guided-card\.mjs/);
+  assert.match(focused,/^  push:/m);
+  assert.match(focused,/^  workflow_dispatch:/m);
+  assert.match(browser,/^    if: \$\{\{ github\.event_name != 'pull_request' \}\}$/m);
+  assert.match(browser,/playwright install --with-deps chromium webkit/);
+  assert.match(browser,/^          node scripts\/verify-holistic-support-guided-card\.mjs$/m);
 });
 test('wave 2: messenger keeps scoped booking ESLint and runs tsc on non-production/manual',()=>{
   const source=read('hh-messenger-notification-build.yml');
