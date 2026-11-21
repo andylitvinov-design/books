@@ -55,7 +55,6 @@ on:
       - 'supabase/migrations/**'
       - 'middleware.ts'
       - 'next.config.*'
-      - 'package.json'
       - 'package-lock.json'
       - 'scripts/ci-heavy-impact.mjs'
       - '.github/workflows/hh-app-r1.yml'
