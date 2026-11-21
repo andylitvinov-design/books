@@ -1,5 +1,5 @@
-// Explicit owner-authorized cleanup only. Never run this from a cron.
-// Retention is 2 days; current LIVE plus newest 30 READY and newest 10 stay protected.
+// Owner-authorized cost-control cleanup runs from the trusted daily job or manual dispatch.
+// Retention is 2 days; protect current LIVE, newest 10 READY and newest 10 deployments.
 // Fail closed if any project, current aliases or rollback evidence is unclear.
 const TEAM = 'team_OSf690d0nxRHWVMXCElA8i95';
 const PROJECT = 'prj_4jAwcx6lrKyUKZ3R9vgC5xwwyC0b';
@@ -8,6 +8,7 @@ const LIVE_ALIAS = 'holistichouse.vercel.app';
 const ORIGIN = 'https://api.vercel.com';
 const DAY = 86400000;
 export const RETAIN_DAYS = 2;
+export const RETAIN_READY = 10;
 const MAX_DELETE = 35;
 const MAX_PAGES = 5;
 const validId = id => typeof id === 'string' && /^dpl_[A-Za-z0-9]{10,}$/.test(id);
@@ -32,19 +33,19 @@ export function protectedDeploymentIds(recent) {
   let ready = 0;
   for (const d of recent) {
     const id = deploymentId(d);
-    if (d.target === 'production' && state(d) === 'READY' && id && ready < 30) {
+    if (d.target === 'production' && state(d) === 'READY' && id && ready < RETAIN_READY) {
       ids.add(id);
       ready++;
     }
   }
-  if (ready < 30) throw Error('INSUFFICIENT_ROLLBACK_EVIDENCE');
+  if (ready < RETAIN_READY) throw Error('INSUFFICIENT_ROLLBACK_EVIDENCE');
   return ids;
 }
 
 
 // Pure bounded paginator: no API calls, deployment DELETE, or clock dependence.
 // A repeated page, missing timestamp cursor or malformed response never
-// authorizes cleanup. The caller remains responsible for the 30-READY gate.
+// authorizes cleanup. The caller remains responsible for the 10-READY gate.
 export function appendRollbackEvidencePage(response, collected, currentUntil) {
   if (!Array.isArray(response?.deployments) || !response.pagination ||
       !Array.isArray(collected?.recentDeployments) ||
@@ -60,7 +61,7 @@ export function appendRollbackEvidencePage(response, collected, currentUntil) {
     collected.recentDeployments.push(item);
     if (item.target === 'production' && state(item) === 'READY') readyCount++;
   }
-  if (readyCount >= 30 || response.deployments.length === 0)
+  if (readyCount >= RETAIN_READY || response.deployments.length === 0)
     return {done:true, readyCount, nextUntil:null};
   const nextUntil = Number(response.pagination.next);
   if (!Number.isSafeInteger(nextUntil) || nextUntil <= 0 || nextUntil >= currentUntil)
@@ -79,8 +80,9 @@ export function eligibleForDelete(d, {now, liveId, protectedIds, assignedAliases
     return false;
   // The detail.alias field is historical, not proof of a CURRENT assignment.
   // Fail closed unless the dedicated Vercel aliases endpoint confirms zero active aliases.
-  // 2-day cleanup must still retain the last 30 successful READY versions.// Vercel marks historic READY deployments as rollback candidates even after
-  // they fall outside our retention window. Protect the 30 newest READY builds
+  // Two-day cleanup still retains ten successful READY versions.
+  // Vercel marks historic READY deployments as rollback candidates even after
+  // they fall outside our retention window. Protect the 10 newest READY builds
   // in protectedDeploymentIds instead of preventing *all* old READY cleanup.
   if (!Array.isArray(assignedAliases) || assignedAliases.length !== 0
     || d.customEnvironmentId) return false;
@@ -130,7 +132,7 @@ async function main() {
   const recentSeen = new Set();
   let recentUntil = now;
   let readyCount = 0;
-  for (let page = 0; page < MAX_PAGES && readyCount < 30; page++) {
+  for (let page = 0; page < MAX_PAGES && readyCount < RETAIN_READY; page++) {
     const response = await request(token,
       '/v6/deployments?projectId=' + PROJECT + '&target=production&limit=100&until=' + recentUntil);
     const result = appendRollbackEvidencePage(
@@ -142,7 +144,7 @@ async function main() {
     if (result.done) break;
     recentUntil = result.nextUntil;
   }
-  if (readyCount < 30) throw Error('INSUFFICIENT_ROLLBACK_EVIDENCE ready='
+  if (readyCount < RETAIN_READY) throw Error('INSUFFICIENT_ROLLBACK_EVIDENCE ready='
     + readyCount + ' scanned=' + recentDeployments.length);
   const protectedIds = protectedDeploymentIds(recentDeployments);
   const liveId = await verifiedLiveId(token);
@@ -189,7 +191,7 @@ async function main() {
   }
   console.log('HH_VERCEL_PRUNE mode=' + mode + ' scanned=' + scanned
     + ' eligible=' + eligible + ' deleted=' + deleted
-    + ' preserve_ready>=30 age_days=' + RETAIN_DAYS);
+    + ' preserve_ready>=10 age_days=' + RETAIN_DAYS);
   if (mode !== 'apply') console.log('Dry-run only. No deployment deleted.');
 }
 
