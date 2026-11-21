@@ -8,6 +8,9 @@ test("single owner inventory reuses 56 approved site compositions and 684 distin
  assert.equal(r.counts.localCompositions,56);
  assert.equal(r.counts.localProcedural,684);
  assert.equal(r.localScenes.length,740);
+ assert.equal(r.counts.separateCoachMotionFilesObserved,24);
+ assert.equal(r.localScenes.filter(x=>x.media==="original_motion_mp4"&&x.allowedAspects.includes("portrait")).length,684);
+ assert.equal(r.localScenes.filter(x=>x.media==="original_motion_mp4"&&x.allowedAspects.includes("landscape")).length,0);
  assert.equal(new Set(r.localScenes.map(x=>x.id)).size,740);
  assert.equal(new Set(r.localScenes.map(x=>x.video)).size,740);
  for(const x of r.localScenes){
@@ -32,6 +35,8 @@ test("privacy and provenance boundaries remain explicit",()=>{
  const r=buildUnifiedVideoInventory();
  assert.ok(r.explicitlyExcluded.includes("hh-client-private-media"));
  assert.ok(r.explicitlyExcluded.includes("unapproved-video-vault"));
+ assert.ok(r.explicitlyExcluded.includes("public/images/holistic-house/my-coach-motion"));
+ assert.ok(VIDEO_SOURCE_FOLDERS.coachMotion.startsWith("https://github.com/"));
  assert.ok(!r.localScenes.some(x=>x.video.includes("client")||x.video.includes("telegram-slides")));
  assert.ok(Object.values(VIDEO_SOURCE_FOLDERS).every(url=>url.startsWith("https://")));
  assert.ok(!JSON.stringify(r.externalMasters).includes("signedUrl"));
