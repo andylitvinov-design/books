@@ -180,8 +180,15 @@ test('optional workflow routes exclude retired shared fan-out triggers and retai
     assert.ok(routes?.paths?.length, name + ': owner lost product routing');
     assert.equal(routes.paths.includes(contractFile), false,
       name + ': retired migration marker must not dispatch optional owners');
-    assert.equal(routes.paths.includes('.github/workflows/' + name), false,
-      name + ': self-edit must not launch expensive product checks');
+    // Opt-in workflows may list their own YAML for an explicitly labeled
+    // manual QA, but ordinary opened/synchronize PR events must not launch it.
+    if (routes.types?.includes('labeled')) {
+      assert.equal(matchesTrigger(routes, ['.github/workflows/' + name], TARGET), false,
+        name + ': opt-in workflow must not run on ordinary self-edit PRs');
+    } else {
+      assert.equal(routes.paths.includes('.github/workflows/' + name), false,
+        name + ': self-edit must not launch expensive product checks');
+    }
     assert.equal(matchesTrigger(routes, [contractFile], TARGET), false,
       name + ': retired migration marker must never fan out product QA');
     assert.equal(matchesTrigger(routes, [legacyTrigger], TARGET), false,
@@ -538,7 +545,8 @@ test('second-wave visual QA is opt-in or mock-harness-only while protected owner
     const yaml=source(name),policy=trigger(name);
     assert.deepEqual(policy.types,['labeled'],name+': optional QA must not auto-launch on ordinary PR source');
     assert.equal(matchesTrigger(policy,[owned],TARGET),false,name+': must not block every public content PR');
-    assert.ok(policy.paths.includes(owned),name+': retain the opt-in source path');
+    assert.equal(matchesTrigger({...policy,types:null},[owned],TARGET),true,
+      name+': keep exact or glob-matched source path available for opt-in QA');
     assert.match(yaml,/github\.event\.label\.name == 'qa-optional'/,name+': require explicit opt-in label');
     assert.match(yaml,/^  workflow_dispatch:/m,name+': retain manually requested QA');
     assert.match(yaml,/^  push:/m,name+': retain real post-merge production checks');
