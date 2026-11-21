@@ -110,9 +110,10 @@ try {
     return page;
   };
 
- // Shamanica business QA reflects the approved six photographic category shelves,
- // not the retired grid of six direct links. Preserve the quiz, mobile layout
- // and messenger handoff acceptance rather than skipping any browser checks.
+ // Shamanica Business currently has six expandable service shelves beneath
+ // the hero and quiz. Reject stale first-screen-only card assertions: verify
+ // the real six photo-backed categories, their working second level, and
+ // unobstructed fixed seven-item dock on actual narrow mobile viewports.
  async function checkCompactBusiness(page,locale,width){
   await page.goto(origin+"/"+locale+"/shamanica/business",{waitUntil:"domcontentloaded",timeout:75000});
   const section=page.locator("[data-shamanica-business]");
@@ -131,17 +132,24 @@ try {
    if(cards.length!==6||!dock)return null;
    const boxes=cards.map(card=>card.getBoundingClientRect());
    return {
+    firstTop:boxes[0].top,
+    lastBottom:boxes[5].bottom,
+    dockTop:dock.getBoundingClientRect().top,
+    dockBottom:dock.getBoundingClientRect().bottom,
+    viewportHeight:window.innerHeight,
     horizontalOverflow:document.documentElement.scrollWidth-window.innerWidth,
     withinViewport:boxes.every(box=>box.width>30&&box.left>=-2&&box.right<=innerWidth+2),
     firstRowTwoColumns:Math.abs(boxes[0].top-boxes[1].top)<=5&&boxes[1].left>boxes[0].left,
     dockVisible:dock.getBoundingClientRect().height>0
    };
   });
-  assert.ok(m,"Business category shelf landmarks missing");
+  assert.ok(m&&m.lastBottom>m.firstTop,"Business category shelf/dock landmarks missing "+locale+"/"+width);
   assert.ok(m.horizontalOverflow<=2,"Business horizontal overflow "+locale+"/"+width+" "+JSON.stringify(m));
   assert.ok(m.withinViewport,"Business category cards spill horizontally "+locale+"/"+width+" "+JSON.stringify(m));
   if(width>=390)assert.ok(m.firstRowTwoColumns,"Business two-column mobile shelf lost "+locale+"/"+width+" "+JSON.stringify(m));
   assert.ok(m.dockVisible,"Business mobile dock missing "+locale+"/"+width);
+  assert.ok(m.dockTop>=0&&m.dockBottom<=m.viewportHeight+2,
+    "Business fixed dock must remain inside viewport "+locale+"/"+width+" "+JSON.stringify(m));
   if(locale==="ru"&&width===390)await page.screenshot({path:output+"/shamanica-business-ru-390.png",fullPage:false});
   await expect.poll(()=>page.evaluate(()=>history.pushState.toString().includes("__NA")),
    {timeout:30000,message:"Business quiz hydration"}).toBe(true);
@@ -181,12 +189,47 @@ try {
     await expect(quiz.locator("[data-quiz-dot]")).toHaveCount(4);
     await expect(quiz.locator("[data-services-quiz-question]")).toHaveCount(1);
     await expect(quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice]')).toHaveCount(4);
+    const topicCards = quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice]');
+    assert.deepEqual(await topicCards.evaluateAll(cards=>cards.map(card=>card.getAttribute("data-services-quiz-choice"))),
+      ["stress_energy","money_growth","relationships_esteem","business_support"],
+      "Topic cards must follow the owner's left/right column order");
+    if (locale === "en") {
+      await expect(quiz.locator('[data-services-quiz-choice="money_growth"]')).toContainText("Grow money & self esteem");
+      await expect(quiz.locator('[data-services-quiz-choice="relationships_esteem"]')).toContainText("Improve relationships");
+      await expect(quiz.locator('[data-services-quiz-choice="business_support"]')).toContainText("Personal & business growth");
+    }
+
     await expect(quiz.locator("[data-services-quiz-category]")).toHaveCount(6);
     await expect(quiz.locator("[data-services-card-photo]")).toHaveCount(6);
     await expect(quiz.locator("[data-services-audience] button")).toHaveCount(2);
     await expect(quiz.locator("[data-services-quiz-goal]")).toHaveCount(1);
-    await expect(quiz.locator("[data-services-hero-play]")).toHaveAttribute("href", "#meet-andrey");
-    await expect(quiz.locator("[data-services-quiz-next]")).toBeDisabled();
+    await expect(quiz.locator("[data-support-luxe-room]")).toHaveCount(1);
+    await expect(page.locator('main[data-support-luxe="true"]')).toHaveCount(1);
+    await expect(quiz.locator('[data-support-choice-photo]')).toHaveCount(4);
+    const luxuryBackground = await quiz.evaluate(el=>getComputedStyle(el).backgroundImage);
+    assert.ok(luxuryBackground.includes("support-therapy-cabinet.webp"),"Real two-chair therapy room image is painted");
+    const cardPhoto = await quiz.locator('[data-services-quiz-question="topic"] [data-support-choice-photo]').first()
+      .evaluate(el=>getComputedStyle(el).backgroundImage);
+    assert.ok(cardPhoto.includes("support-luxury-choice-photos.webp"),
+      "All four first-step photos must use the approved photo montage");
+    if (width === 390 && locale === "en") {
+      for (const asset of ["support-therapy-cabinet.webp","support-luxury-choice-photos.webp"]) {
+        const response = await page.request.get(origin + "/images/holistic-house/" + asset);
+        assert.equal(response.status(),200,"First-party Support photo must load: " + asset);
+      }
+      const sizes = await quiz.evaluate(el => ({
+        hero:el.querySelector('[data-support-luxe-room]')?.getBoundingClientRect().height,
+        cards:[...el.querySelectorAll('[data-services-quiz-question="topic"] [data-services-quiz-choice]')]
+          .map(card=>card.getBoundingClientRect().height),
+      }));
+      assert.ok(sizes.hero>=85 && sizes.hero<=136,"Room scene proportions: " + JSON.stringify(sizes));
+      assert.ok(sizes.cards.length===4 && sizes.cards.every(height=>height>=88 && height<=132),
+        "Four reference cards must be compact and readable: " + JSON.stringify(sizes));
+    }
+    await expect(quiz.locator("[data-services-hero-play]")).toHaveCount(0);
+    await expect(quiz.locator("[data-services-quiz-next]")).toBeEnabled();
+    await expect(quiz.locator('[data-services-quiz-choice="stress_energy"]')).toHaveAttribute("aria-pressed","true");
+    await quiz.locator("[data-services-quiz-goal]").fill("Calm and clear decisions");
     assert.deepEqual(await quiz.locator("[data-services-quiz-category]").evaluateAll(cards =>
       cards.map(card => card.getAttribute("data-services-quiz-category"))),
       ["diagnostics", "business", "homeopathy", "coaching", "psychotherapy", "video"],
@@ -214,7 +257,7 @@ try {
     assert.ok(firstScreen.lastBottom > 0 && firstScreen.dockTop > 0,
       "Support categories and shared dock must render: " + locale + "/" + width);
     if (locale === "es") await expect(quiz.locator("#services-quiz-title"))
-      .toHaveText("Encontremos tu apoyo");
+      .toHaveText("Coaching, consultoría y apoyo terapéutico");
     await expect(quiz.locator("[data-services-quiz-submit]")).toHaveCount(0);
     if (width === 390) {
       await page.screenshot({ path: output + "/services-" + locale + "-step1-390.png" });
