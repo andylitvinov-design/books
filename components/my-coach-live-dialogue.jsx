@@ -467,17 +467,19 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       'Solution-focused':'solution_focused',
       'Appreciative inquiry':'appreciative_inquiry'})[persona?.methods?.[0]]||'grow'
   const visibleMethodName=coachMethodNames[visibleMethodId]||'GROW'
+  // Use the SAME method-specific names for the header and expanded stage list.
+  // Without a Director milestone, stage remains explicitly provisional;
+  // an alternate method must not show a misleading GROW "Contact" title.
+  const stageChecklistTitles=coachSessionVisibleStageIds(visibleMethodId,{
+    legacy:progressValid&&!meaningProgressValid
+  }).map((stepId,index)=>semanticStageTitles[lang]?.[stepId]||
+    methodStepTitles[lang]?.[stepId]||ui.stages[index]||stepId)
   const stageDescription=meaningProgressValid
     ?(semanticStageTitles[lang]?.[meaningProgress.stageId]||
       methodStepTitles[lang]?.[meaningProgress.stageId]||ui.stages[visibleStageIndex])
     :progressValid
       ?(methodStepTitles[lang]?.[lastRecordedProgress.stepId]||ui.stages[visibleStageIndex])
-      :semanticStageTitles[lang]?.[
-        ['contact','goal','reality','options','integration'][visibleStageIndex]]
-  const stageChecklistTitles=coachSessionVisibleStageIds(visibleMethodId,{
-    legacy:progressValid&&!meaningProgressValid
-  }).map((stepId,index)=>semanticStageTitles[lang]?.[stepId]||
-    methodStepTitles[lang]?.[stepId]||ui.stages[index]||stepId)
+      :stageChecklistTitles[visibleStageIndex]||ui.stages[visibleStageIndex]
   const keyInfoUi=keyInfoCopy[lang]
   const goalPrompts={
     en:{stress:'I would like to feel less stressed. Can we explore what is weighing on me?',energy:'I would like to restore my energy. Can we explore what is draining it?',relationships:'I would like to improve an important relationship. Can we explore what matters most?'},
@@ -1130,8 +1132,15 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             {ru:'Вернуться к Basic · Groq',en:'Switch to Basic · Groq',es:'Cambiar a Basic · Groq'}[lang]):(
             {ru:'Перейти на Pro · Gemini',en:'Switch to Pro · Gemini',es:'Cambiar a Pro · Gemini'}[lang])}
           aria-pressed={selectedGeminiEngine}
-          disabled={busy||replaying||paused||protocolOpen||voiceState.phase!=='idle'}
+          disabled={replaying||paused||protocolOpen}
           onClick={()=>{
+            // Switching is available mid-speech, mid-listening and mid-response.
+            // Stop previous audio and abort its stale model turn before offering
+            // a new vendor choice. Keep the user's transcript/goal untouched.
+            if(voiceState.phase==='speaking'&&latestCoachText)
+              markCoachSpeechInterrupted(latestCoachText)
+            speechRef.current?.stop?.()
+            cancelPendingCoachTurn()
             if(selectedGeminiEngine){
               setCoachEngine('groq_stream')
               setGeminiConsent(false)
@@ -1160,7 +1169,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       {experienceConsentOpen&&<div className={styles.experienceConsentPanel} data-coach-experience-consent role="group"
         aria-label={({ru:'Переключение на Gemini',en:'Switch to Gemini',es:'Cambiar a Gemini'})[lang]}>
         <strong>Pro · Gemini Free</strong>
-        <p>{({ru:'Это выбор движка, не платная подписка. Google может использовать текст бесплатного API для улучшения моделей. История текущей сессии останется здесь.',en:'This selects the engine, not a paid subscription. Google may use Free API text to improve models. Your current session history stays here.',es:'Es una elección de motor, no una suscripción. Google puede usar el texto de API gratuito para mejorar modelos. Tu historial permanece aquí.'})[lang]}</p>
+        <p>{({ru:'Это бесплатный Gemini, не платная подписка. Google может использовать текст для улучшения моделей. Чтобы слышать голос Gemini, подтвердите отдельное согласие ниже.',en:'This is Gemini Free, not a paid subscription. Google may use text to improve models. To hear Gemini voices, check the separate voice consent below.',es:'Es Gemini gratuito, no una suscripción. Google puede usar texto para mejorar modelos. Para oír la voz Gemini, marca el consentimiento de voz separado.'})[lang]}</p>
         <label><input type="checkbox" checked={experienceTextConsent}
           onChange={event=>setExperienceTextConsent(event.target.checked)}/>
           <span>{({ru:'Я согласен(на) отправлять мои следующие сообщения в Gemini Free.',en:'I agree to send my next messages to Gemini Free.',es:'Acepto enviar mis siguientes mensajes a Gemini gratuito.'})[lang]}</span>
