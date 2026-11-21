@@ -105,21 +105,20 @@ test('new live model path requires server-verified identity, throttling, separat
   assert.match(service,/conversationalCoachMessages\(input,persona,method,stage,resistance\)/)
   assert.match(service,/parseConversationalCoachReply\(reply\.text,input,method,stage\)/)
   assert.match(service,/privacyMode:'zdr'/)
-  assert.match(service,/loadCoachContextSnapshot/)
+  assert.match(service,/createCoachContextLoader/)
   assert.match(service,/verifiedFreeReply/)
   assert.match(gateway,/max_price:\{prompt:0,completion:0\}/)
   assert.match(gateway,/OWNED_MODEL_COST_UNVERIFIED/)
 })
 
-test('authorized durable context is quoted as untrusted user data, never a system instruction',()=>{
+test('persona message builder ignores legacy durable context arguments',()=>{
   const {input,persona}=normalizeGenerativeCoachInput(request())
   const messages=conversationalCoachMessages(input,persona,'grow','clarify',{type:'none'}, {
     version:'hh-coach-context-snapshot-v1',items:[{kind:'goal',text:'Protect focused work time',status:'active'}],
     excludedReasonCodes:[],
   })
   assert.equal(messages.at(-1).content,input.message)
-  assert.equal(messages.some(row=>row.role==='system'&&row.content.includes('Protect focused work time')),false)
-  assert.ok(messages.some(row=>row.role==='user'&&row.content.includes('UNTRUSTED authorized client context')))
+  assert.equal(messages.some(row=>row.content.includes('Protect focused work time')),false)
 })
 
 

@@ -26,6 +26,8 @@ import { readBusinessContext, importPlaudBusinessContext, reviewBusinessInsight 
 import { exportCoachingLifePlan } from '@/lib/app/coaching-life-plan'
 import { revokeCoachingPlanContext } from '@/lib/app/coaching-life-plan'
 import { deleteCoachingPlanAction } from '@/lib/app/coaching-life-plan'
+import { coachContextConsentOptions, manageCoachContextConsent } from '@/lib/app/coach-context-snapshot'
+import { reviewedReportMemoryCandidates } from '@/lib/personal-coaching/context-memory-candidates.mjs'
 import {learnerCoachingAudio} from '@/lib/academy/coaching-audio-store'
 import { readPersonalCoachingCatalog } from '@/lib/app/personal-coaching-catalog'
 import { readCoachingIntake, saveCoachingIntake } from '@/lib/app/coaching-intake'
@@ -1088,8 +1090,20 @@ async function handle(request, { params }) {
       if (path.length===1 && method==='GET') return json(await listCoachingReports(config,actor))
       if (path.length===1 && method==='POST') return json(await saveCoachingReport(config,actor,await readBody(request,4096)))
       if (path.length===2 && method==='GET') return json(await readCoachingReport(config,actor,path[1]))
+      if (path.length===3 && path[2]==='memory-candidates' && method==='GET') {
+        await consumeRate(config,{op:'coaching-memory-review',actor:actor.id},60,3600)
+        const {report}=await readCoachingReport(config,actor,path[1])
+        return json({candidates:reviewedReportMemoryCandidates(report)})
+      }
       if (path.length===3 && path[2]==='delete' && method==='POST') return json(await deleteCoachingReport(config,actor,path[1],await readBody(request,1024)))
       throw new AppError('NOT_FOUND',404)
+    }
+    if (joined === 'coaching-context/consent') {
+      if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
+      if (method === 'GET') return json(await coachContextConsentOptions(config,actor))
+      if (method !== 'POST') throw new AppError('NOT_FOUND',404)
+      await consumeRate(config,{op:'coaching-context-consent',actor:actor.id},60,3600)
+      return json(await manageCoachContextConsent(config,actor,await readBody(request,2048)))
     }
     if (path[0] === 'coaching-life-plan') {
       if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
