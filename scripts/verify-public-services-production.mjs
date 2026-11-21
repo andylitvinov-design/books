@@ -163,12 +163,47 @@ try {
     await expect(quiz.locator("[data-quiz-dot]")).toHaveCount(4);
     await expect(quiz.locator("[data-services-quiz-question]")).toHaveCount(1);
     await expect(quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice]')).toHaveCount(4);
+    const topicCards = quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice]');
+    assert.deepEqual(await topicCards.evaluateAll(cards=>cards.map(card=>card.getAttribute("data-services-quiz-choice"))),
+      ["stress_energy","money_growth","relationships_esteem","business_support"],
+      "Topic cards must follow the owner's left/right column order");
+    if (locale === "en") {
+      await expect(quiz.locator('[data-services-quiz-choice="money_growth"]')).toContainText("Grow money & self esteem");
+      await expect(quiz.locator('[data-services-quiz-choice="relationships_esteem"]')).toContainText("Improve relationships");
+      await expect(quiz.locator('[data-services-quiz-choice="business_support"]')).toContainText("Personal & business growth");
+    }
+
     await expect(quiz.locator("[data-services-quiz-category]")).toHaveCount(6);
     await expect(quiz.locator("[data-services-card-photo]")).toHaveCount(6);
     await expect(quiz.locator("[data-services-audience] button")).toHaveCount(2);
     await expect(quiz.locator("[data-services-quiz-goal]")).toHaveCount(1);
-    await expect(quiz.locator("[data-services-hero-play]")).toHaveAttribute("href", "#meet-andrey");
-    await expect(quiz.locator("[data-services-quiz-next]")).toBeDisabled();
+    await expect(quiz.locator("[data-support-luxe-room]")).toHaveCount(1);
+    await expect(page.locator('main[data-support-luxe="true"]')).toHaveCount(1);
+    await expect(quiz.locator('[data-support-choice-photo]')).toHaveCount(4);
+    const luxuryBackground = await quiz.evaluate(el=>getComputedStyle(el).backgroundImage);
+    assert.ok(luxuryBackground.includes("support-therapy-cabinet.webp"),"Real two-chair therapy room image is painted");
+    const cardPhoto = await quiz.locator('[data-services-quiz-question="topic"] [data-support-choice-photo]').first()
+      .evaluate(el=>getComputedStyle(el).backgroundImage);
+    assert.ok(cardPhoto.includes("support-luxury-choice-photos.webp"),
+      "All four first-step photos must use the approved photo montage");
+    if (width === 390 && locale === "en") {
+      for (const asset of ["support-therapy-cabinet.webp","support-luxury-choice-photos.webp"]) {
+        const response = await page.request.get(origin + "/images/holistic-house/" + asset);
+        assert.equal(response.status(),200,"First-party Support photo must load: " + asset);
+      }
+      const sizes = await quiz.evaluate(el => ({
+        hero:el.querySelector('[data-support-luxe-room]')?.getBoundingClientRect().height,
+        cards:[...el.querySelectorAll('[data-services-quiz-question="topic"] [data-services-quiz-choice]')]
+          .map(card=>card.getBoundingClientRect().height),
+      }));
+      assert.ok(sizes.hero>=85 && sizes.hero<=136,"Room scene proportions: " + JSON.stringify(sizes));
+      assert.ok(sizes.cards.length===4 && sizes.cards.every(height=>height>=88 && height<=132),
+        "Four reference cards must be compact and readable: " + JSON.stringify(sizes));
+    }
+    await expect(quiz.locator("[data-services-hero-play]")).toHaveCount(0);
+    await expect(quiz.locator("[data-services-quiz-next]")).toBeEnabled();
+    await expect(quiz.locator('[data-services-quiz-choice="stress_energy"]')).toHaveAttribute("aria-pressed","true");
+    await quiz.locator("[data-services-quiz-goal]").fill("Calm and clear decisions");
     assert.deepEqual(await quiz.locator("[data-services-quiz-category]").evaluateAll(cards =>
       cards.map(card => card.getAttribute("data-services-quiz-category"))),
       ["diagnostics", "business", "homeopathy", "coaching", "psychotherapy", "video"],
@@ -196,7 +231,7 @@ try {
     assert.ok(firstScreen.lastBottom > 0 && firstScreen.dockTop > 0,
       "Support categories and shared dock must render: " + locale + "/" + width);
     if (locale === "es") await expect(quiz.locator("#services-quiz-title"))
-      .toHaveText("Encontremos tu apoyo");
+      .toHaveText("Coaching, consultoría y apoyo terapéutico");
     await expect(quiz.locator("[data-services-quiz-submit]")).toHaveCount(0);
     if (width === 390) {
       await page.screenshot({ path: output + "/services-" + locale + "-step1-390.png" });
