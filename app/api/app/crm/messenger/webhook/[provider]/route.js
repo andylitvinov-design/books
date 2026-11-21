@@ -118,6 +118,11 @@ export async function POST(request,{params}){
       telegramBusinessInbox=await captureTelegramBusinessInbox(body,config,businessLead)
       // A confirmed human reply takes precedence over AI service/FAQ scripts.
       if(telegramBusinessInbox.humanActive)return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
+      // crm_msg_ingest rejects duplicate signed provider events durably, even
+      // after the 24h SQL rate-limit window expires. Never reply a second time
+      // to an old update (or reply before its CRM receipt was persisted).
+      if(telegramBusinessInbox.matched&&telegramBusinessInbox.recorded!==true)
+        return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
     }
     // Separate signed Business-chat service intake: only public service-code
     // messages and explicit short replies, never ordinary personal text or
