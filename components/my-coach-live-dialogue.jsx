@@ -614,7 +614,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       return
     }
     const spoken=chosenCloudProvider==='google_chirp3_hd'?
-      coachSpokenText(spokenText).text:spokenText.slice(0,900)
+      coachSpokenText(spokenText).text:chosenCloudProvider?.startsWith('gemini_tts_')?
+      coachSpokenText(spokenText).text.slice(0,500):spokenText.slice(0,900)
     void fetch('/api/app/my-coach/voice/synthesize',{
       method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
       headers:{'Content-Type':'application/json'},
