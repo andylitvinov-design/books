@@ -908,7 +908,9 @@ test('package and lockfile routing is exact-base scoped, with unknown changes fu
   dependencies.dependencies.next='16.0.0';
   const unsafe=classifyPackageImpact({changed,basePackage:original,currentPackage:JSON.stringify(dependencies)});
   assert.equal(unsafe.mode,'full');
-  assert.deepEqual(expectedWorkflows({base,current,changed,packageImpact:unsafe}),[owner,ocean,opora]);
+  assert.throws(() => expectedWorkflows({base,current,changed,packageImpact:unsafe}),
+    /UNROUTED_PACKAGE_MANIFEST_CHANGE/,
+    'unexpected root manifest changes without the lockfile must not bypass specialists');
   const lockImpact=classifyPackageImpact({changed:['package-lock.json'],basePackage:original,currentPackage:proposed});
   assert.equal(lockImpact.mode,'full');
   assert.deepEqual(expectedWorkflows({base,current,changed:['package-lock.json'],packageImpact:lockImpact}),
@@ -953,10 +955,35 @@ test('pinned parser manifests are CI-scoped but all other dependency changes rem
   ]) {
     const outcome=classifyPackageImpact({changed:unsafe,basePackage:'{}',currentPackage:'{}'});
     assert.equal(outcome.mode,'full','unknown and root dependencies must stay full scope: '+unsafe.join(','));
-    const required=expectedWorkflows({base:source,current:source,changed:unsafe,packageImpact:outcome});
-    assert.ok(required.includes(billing) && required.includes(app) && required.includes(guard),
-      'root/unknown manifest change must retain application specialists');
+    if (unsafe.includes('package-lock.json')) {
+      const required=expectedWorkflows({base:source,current:source,changed:unsafe,packageImpact:outcome});
+      assert.ok(required.includes(billing) && required.includes(app) && required.includes(guard),
+        'root lockfile change must retain all real application specialists');
+    } else {
+      assert.throws(() => expectedWorkflows({base:source,current:source,
+        changed:unsafe,packageImpact:outcome}),/UNROUTED_PACKAGE_MANIFEST_CHANGE/,
+      'unrouted root or nested manifests must fail instead of incorrectly passing CI');
+    }
   }
+});
+
+test('package.json-only dependency changes cannot bypass security owners after static trigger pruning',()=>{
+  const root='.github/workflows/';
+  const billing=root+'hh-billing-isolated.yml',app=root+'hh-app-r1.yml';
+  const paths=['package-lock.json','lib/billing/**'];
+  const workflow=items=>"on:\n  pull_request:\n    paths:\n"+items.map(x=>"      - '"+x+"'\n").join('');
+  const source=new Map([[billing,workflow(['package.json',...paths])],
+    [app,workflow(['package-lock.json','lib/app/**'])]]);
+  const unsafe={mode:'full',reason:'DEPENDENCY_OR_PACKAGE_METADATA_CHANGED',workflows:[]};
+  for(const changed of [['package.json'],['package.json','tests/coach-release.test.mjs'],
+    ['lib/other/package.json'],['lib/other/package-lock.json']]) {
+    assert.throws(()=>expectedWorkflows({base:source,current:source,changed,packageImpact:unsafe}),
+      /UNROUTED_PACKAGE_MANIFEST_CHANGE/,'unowned dependency change must fail closed');
+  }
+  const expected=expectedWorkflows({base:source,current:source,
+    changed:['package.json','package-lock.json'],packageImpact:unsafe});
+  assert.deepEqual(expected,[app,billing].sort(),
+    'full dependency changes WITH root lockfile still require billing and App specialists');
 });
 
 test('Video Studio-only edits run dedicated Mandala real-media acceptance without unrelated Public Services suites',()=>{
