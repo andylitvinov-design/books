@@ -119,24 +119,76 @@ try {
   await expect(page.locator("[data-sitewide-antistress-banner]")).toHaveCount(0);
   await expect(page.locator("[data-hh-ihelp-trigger]:visible")).toHaveCount(0);
   await expect(page.locator("[data-shamanica-ihelp-trigger]")).toBeVisible();
-  await expect(section.locator("[data-business-service]")).toHaveCount(6);
-  await expect(section.locator("[data-business-service] img")).toHaveCount(6);
+  await expect(page.locator('[data-shamanica-audience="business"]')).toHaveCount(1);
   await expect(page.locator("[data-hh-unified-dock]")).toHaveCount(1);
-  const m=await page.evaluate(()=>{
-   const last=document.querySelector('[data-business-service="remedies"]');
-   const dock=document.querySelector('[data-hh-unified-dock]');
-   if(!last||!dock)return null;
-   return {lastBottom:last.getBoundingClientRect().bottom,
-     dockTop:dock.getBoundingClientRect().top,
-     horizontalOverflow:document.documentElement.scrollWidth-window.innerWidth};
+
+  // The approved Shamanica Business cabinet replaced legacy
+  // [data-business-service] tiles with six interactive photo shelves.
+  // Test the ACTUAL hydrated two-level product instead of requiring a
+  // retired six-card first-fold layout or skipping the business acceptance.
+  const cabinet=section.locator("[data-business-cabinet-shelves]");
+  await visible(cabinet);
+  await expect(cabinet).toHaveAttribute("data-expanded","false");
+  const shelves=cabinet.locator("[data-business-shelf]");
+  await expect(shelves).toHaveCount(6);
+  await expect(cabinet.locator("[data-business-shelf] img")).toHaveCount(6);
+  const order=await shelves.evaluateAll(nodes=>
+    nodes.map(node=>node.getAttribute("data-business-shelf")));
+  assert.deepEqual(order,["express","remedies","strategy","artifacts","energy","energywork"],
+    "Business cabinet must preserve the approved six unique categories and two-column order");
+  const geometry=await page.evaluate(()=>{
+    const dock=document.querySelector("[data-hh-unified-dock]");
+    const nodes=Array.from(document.querySelectorAll("[data-business-shelf]"));
+    if(!dock||nodes.length!==6)return null;
+    return {
+      horizontalOverflow:document.documentElement.scrollWidth-window.innerWidth,
+      dockTop:dock.getBoundingClientRect().top,
+      viewportHeight:window.innerHeight,
+      cards:nodes.map(node=>{
+        const r=node.getBoundingClientRect();
+        const img=node.querySelector("img");
+        return {left:r.left,right:r.right,width:r.width,height:r.height,hasSource:!!img?.getAttribute("src")};
+      }),
+    };
   });
-  assert.ok(m,"Business compact landmarks missing");
-  assert.ok(m.horizontalOverflow<=2,"Business horizontal overflow "+locale+"/"+width+" "+JSON.stringify(m));
-  if(width>=390)assert.ok(m.lastBottom<=m.dockTop+8,
-    "Six business cards must fit above dock "+locale+"/"+width+" "+JSON.stringify(m));
-  if(locale==="ru"&&width===390)await page.screenshot({path:output+"/shamanica-business-ru-390.png",fullPage:false});
+  assert.ok(geometry,"Business cabinet/dock landmarks missing "+locale+"/"+width);
+  assert.ok(geometry.horizontalOverflow<=2,
+    "Business cabinet must not overflow horizontally "+locale+"/"+width+" "+JSON.stringify(geometry));
+  assert.ok(geometry.dockTop>=0 && geometry.dockTop<=geometry.viewportHeight+2,
+    "Shared seven-item dock must remain accessible "+locale+"/"+width);
+  for(const [index,card] of geometry.cards.entries()){
+    assert.ok(card.left>=-2&&card.right<=width+2&&card.width>=44&&card.height>=44&&card.hasSource,
+      "Business shelf "+index+" must have a usable photo and accessible touch target "+locale+"/"+width);
+  }
+  // Long category details remain scrollable; do not incorrectly require the
+  // bottom of the full Business journey above the fixed bottom navigation.
+  if(locale==="ru"&&width===390)
+    await page.screenshot({path:output+"/shamanica-business-ru-390.png",fullPage:false});
   await expect.poll(()=>page.evaluate(()=>history.pushState.toString().includes("__NA")),
-    {timeout:30000,message:"Business quiz hydration"}).toBe(true);
+    {timeout:30000,message:"Business cabinet and quiz hydration"}).toBe(true);
+
+  // Opening a category is real React state and must not send a customer enquiry.
+  await cabinet.locator('[data-business-shelf="express"]').click();
+  await expect(cabinet).toHaveAttribute("data-expanded","true");
+  const expressOffers=cabinet.locator('[data-business-second-level="express"] [data-business-subservice]');
+  await expect(expressOffers).toHaveCount(5);
+  const prices=["FREE","45 CAD","75 CAD","200 CAD","300 CAD"];
+  const texts=await expressOffers.allTextContents();
+  prices.forEach((price,index)=>
+    assert.ok(texts[index]?.includes(price),
+      "Express Business Insight price "+price+" must remain visible in "+locale));
+  await expressOffers.nth(1).click();
+  await expect(expressOffers.nth(1)).toHaveAttribute("aria-pressed","true");
+  await expect(cabinet.locator('[data-business-get-details="express"]')).toBeVisible();
+  await cabinet.locator("[data-business-back-to-shelves]").click();
+  await expect(cabinet).toHaveAttribute("data-expanded","false");
+  await expect(shelves).toHaveCount(6);
+  await cabinet.locator('[data-business-shelf="strategy"]').click();
+  await expect(cabinet.locator('[data-business-second-level="strategy"] [data-business-subservice]')).toHaveCount(4);
+  await expect(cabinet.locator('[data-business-get-details="strategy"]')).toBeVisible();
+  await cabinet.locator("[data-business-back-to-shelves]").click();
+  await expect(shelves).toHaveCount(6);
+
   const quiz=section.locator("[data-business-quiz]");
   await expect(quiz).toHaveAttribute("data-quiz-step","1");
   await quiz.locator('[data-business-answer="express"]').click();
