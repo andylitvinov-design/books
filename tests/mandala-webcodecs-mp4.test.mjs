@@ -693,3 +693,23 @@ test("native finalization holds the export slot and discards a cancelled MP4", a
   assert.deepEqual(recording, [false]);
   assert.deepEqual(readyPending, [false]);
 });
+
+test("Safari and local WebCodecs exports decode first/middle/last actual MP4 samples before Ready",()=>{
+  const verify=helper.split("async function verifyDecodableMp4Export(")[1]
+    .split("export async function verifyNativeSafariMp4Tracks")[0];
+  const native=helper.split("export async function normalizeNativeSafariMp4ForPlayback(")[1]
+    .split("/** A real H.264/AAC video/audio MP4.")[0];
+  assert.match(verify,/const checkpoints=\[/);
+  assert.match(verify,/expected\.seconds\/2/);
+  assert.match(verify,/expected\.seconds-\.5/);
+  assert.match(verify,/await sink\.getSample\(at\)/);
+  assert.match(verify,/sample\.codedWidth!==expected\.width/);
+  assert.match(verify,/sample\.timestamp<at-1\.25/);
+  assert.match(verify,/sample\?\.close\(\)/);
+  assert.match(native,/Math\.max\(0,end\/2\)/);
+  assert.match(native,/Math\.max\(0,end-\.5\)/);
+  assert.match(native,/sample\.timestamp<at-1\.25/);
+  assert.match(native,/sample\?\.close\(\)/);
+  assert.match(studio,/playbackStatus==="ready"/,
+    "Ready continues to require actual playback and credit confirmation");
+});
