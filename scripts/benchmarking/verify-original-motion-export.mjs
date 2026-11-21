@@ -34,13 +34,14 @@ try {
   await page.locator('[data-video-studio-hydrated="true"]').waitFor({ timeout: 60000 });
   // Complete all three real Goal selections before the visitor's Ideas CTA.
   await completeThreeStepGoalsQuiz(page,{engine});
-  // Native tap the actual first-screen Create Video CTA. The lower historical
-  // Continue button is deliberately hidden on mobile and must never be forced.
-  const advance=page.locator('[data-video-goal-create-cta]');
-  await advance.waitFor({state:'visible',timeout:15000});
-  if(engine==='webkit')await advance.tap();
-  else await advance.click();
-  assert.equal(await page.locator('[data-video-quick-control="phrases"]').getAttribute('aria-pressed'),
+  const ideasEntry=page.locator('[data-video-quick-control="phrases"]');
+  const openIdeas=page.locator('[data-video-continue-scenarios]');
+  const press=button=>engine==='webkit'?button.tap({timeout:15000}):button.click({timeout:15000});
+  await press(openIdeas);
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-quick-control="phrases"]')
+      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  assert.equal(await ideasEntry.getAttribute('aria-pressed'),
     'true','GOALS_MUST_OPEN_IDEAS');
   const editor=page.locator('[data-video-quick-control="editor"]');
   await editor.click();
@@ -84,7 +85,14 @@ try {
   assert.equal(await page.locator('[data-video-montage-tab="audio"]').getAttribute('aria-pressed'),
     'true','VISIBLE_STYLE_NEXT_MUST_OPEN_AUDIO');
   await page.locator('[data-video-quick-control="phrases"]').click();
-  await page.locator('[data-video-ideas-tab="concept"]').click();
+  // Concept unlocks only after a real Ideas goal and its personalization.
+  const ideasGoal=page.locator('[data-video-ideas-goal-panel]');
+  await press(ideasGoal.locator('[data-video-ideas-goal-choice="rest"]'));
+  await press(ideasGoal.locator('[data-video-ideas-goal-next]'));
+  const quiz=page.locator('[data-video-personalization][data-video-personalization-goal="leisure"]');
+  await press(quiz.locator('[data-personalization-kind="desired"] [data-video-personalization-choice]').first());
+  await press(quiz.locator('[data-video-personalization-energy="3"]'));
+  await press(quiz.locator('[data-video-personalization-clarify-continue]'));
   const conceptPanel=page.locator('[data-video-ideas-concept-panel]');
   await conceptPanel.waitFor({state:'visible',timeout:15000});
   await conceptPanel.locator('[data-video-concept-approve]').click();
