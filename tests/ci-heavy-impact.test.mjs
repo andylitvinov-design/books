@@ -506,11 +506,13 @@ test('App R1 trigger covers all critical routes and preserves mandatory sensitiv
     'lib/app/owner.ts', 'lib/profile/secure-profile.ts',
     'lib/assessments/calculate.ts', 'lib/security/authorization.ts',
     'data/assessments/checkin.json', 'supabase/migrations/20261104_security.sql',
-    'middleware.ts', 'next.config.ts', 'package.json', 'package-lock.json'
+    'middleware.ts', 'next.config.ts', 'package-lock.json'
   ]) {
     assert.equal(matchesTrigger(trigger, [path]), true, path + ' must schedule App R1');
     assert.deepEqual(decideHeavyImpact('app-r1', one(path)), strict, path + ' requires full checks');
   }
+  assert.equal(matchesTrigger(trigger, ['package.json']), false,
+    'a Core-covered package-only script edit must not fan out into App R1');
   for (const path of ['components/profile-compact-design.tsx', 'components/my-course-dashboard.tsx'])
     assert.equal(matchesTrigger(trigger, [path]), true, path + ' must still run the owned scope');
   for (const path of ['docs/unrelated-changelog.md', 'components/telegram-message-list.tsx'])
