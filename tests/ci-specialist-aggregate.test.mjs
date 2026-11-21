@@ -10,6 +10,7 @@ import { verify, githubReader, optionalMandalaMacosSkip, optionalProfileWriterSk
 // Run the focused dependency state/timeout regressions inside the existing
 // Core CI-policy test step; no new hosted workflow or required status.
 import './ci-specialist-wait.test.mjs';
+import './ci-merge-check-light.test.mjs';
 
 const repo='andylitvinov-design/books', SHA='a'.repeat(40), BASE='b'.repeat(40);
 
@@ -1870,110 +1871,50 @@ test('Only BASE-guarded optional Mandala macOS skip is neutral; real failures st
   assert.throws(()=>inspectJobs([{...jobs[0],conclusion:'failure'},jobs[1]],path,['voice-webkit-macos']),/UNSUCCESSFUL_SPECIALIST_JOB/);
 });
 
-test('trusted Mandala WebKit allowlist accepts exact branch entries and the full prefix list',()=>{
-  const path='.github/workflows/holistic-support-mandala.yml';
-  const actual=readFileSync(path,'utf8');
-  const files={base:new Map([[path,actual]]),current:new Map([[path,actual]])};
-  assert.equal(optionalMandalaMacosSkip(files,
-    'feat/support-confidence-harmony-goal-filter-20261102',
-    ['components/holistic-support-goal-filter.tsx']),true);
-  assert.equal(optionalMandalaMacosSkip(files,
-    'codex/professional-growth-templates-20261031',
-    ['components/holistic-support-goal-filter.tsx']),false,
-    'the exact BASE branch remains required to execute WebKit');
-  assert.equal(optionalMandalaMacosSkip(files,
-    'feat/video-studio-project-renderplan-v2-20261102',
-    ['lib/mandala/video-project-v2.mjs']),false,
-    'encoded video work is never excused from WebKit');
+test('dynamic immutable-base WebKit excludes browser-only UI, requires codec and voices',()=>{
+ const name='.github/workflows/holistic-support-mandala.yml';
+ const actual=readFileSync(name,'utf8');
+ const files={base:new Map([[name,actual]]),current:new Map([[name,actual]])};
+ assert.equal(optionalMandalaMacosSkip(files,'codex/ideas-only',
+   ['components/mandala-video-idea-goal.tsx','scripts/verify-affirmation-voice-browser.mjs']),true);
+ assert.equal(optionalMandalaMacosSkip(files,'codex/ideas-only',
+   ['lib/mandala/webcodecs-mp4-export.ts']),false);
+ assert.equal(optionalMandalaMacosSkip(files,'codex/ideas-only',
+   ['app/api/holistic-support/voice/route.js']),false);
 });
-
-test('hh-merge-check accepts intentional Mac skips for #5252/#5253 Ideas UI but never video/voice source',()=>{
-  const path='.github/workflows/holistic-support-mandala.yml';
-  const workflow=readFileSync(path,'utf8');
-  const files={base:new Map([[path,workflow]]),current:new Map([[path,workflow]])};
-  const changes5252=[
-    'components/mandala-free-video-studio.tsx',
-    'components/mandala-video-idea-goal.module.css',
-    'components/mandala-video-idea-goal.tsx',
-    'components/mandala-video-mobile.module.css',
-    'scripts/verify-affirmation-voice-browser.mjs',
-    'tests/mandala-ideas-personalization-concept.test.mjs',
-  ];
-  const changes5253=[
-    'components/mandala-free-video-studio.tsx',
-    'components/mandala-video-idea-goal.tsx',
-    'components/mandala-video-ideas.tsx',
-    'components/mandala-video-personalization.module.css',
-    'components/mandala-video-personalization.tsx',
-    'docs/design/MAGIC_MIRROR_PURPOSE_FIRST_SCENARIO_ALGORITHM_20261120.md',
-    'lib/mandala/video-goal-idea-phrases.mjs',
-    'lib/mandala/video-personal-goal-composer.d.mts',
-    'lib/mandala/video-personal-goal-composer.mjs',
-    'scripts/verify-affirmation-voice-browser.mjs',
-    'tests/mandala-ideas-goal-flow.test.mjs',
-    'tests/mandala-ideas-personalization-concept.test.mjs',
-    'tests/mandala-mobile-video-design.test.mjs',
-    'tests/mandala-video-goal-mobile-hierarchy.test.mjs',
-    'tests/mandala-video-ideas-goal-match.test.mjs',
-  ];
-  for(const [branch,changes] of [
-    ['codex/ideas-goal-first-personalization-20261120',changes5252],
-    ['codex/magic-mirror-goal-first-20261120',changes5253],
-  ]){
-    assert.equal(optionalMandalaMacosSkip(files,branch,changes),true,
-      'a passing Mandala workflow must not fail for its intentionally skipped macOS job');
-    assert.equal(optionalMandalaMacosSkip(files,branch,
-      [...changes,'lib/mandala/webcodecs-mp4-export.ts']),false,
-      'actual encoder and codec changes still demand macOS WebKit');
-    assert.equal(optionalMandalaMacosSkip(files,branch,
-      [...changes,'app/api/holistic-support/voice/route.js']),false,
-      'voice API and consent risk still block macOS waiver');
-    assert.equal(optionalMandalaMacosSkip({
-      ...files,current:new Map([[path,workflow.replace('runs-on: macos-15','runs-on: ubuntu-latest')]]),
-    },branch,changes),false,'the proposed PR cannot weaken the tested-BASE WebKit job');
-  }
-  assert.equal(optionalMandalaMacosSkip(files,'fix/video-new-encoder-20261120',changes5252),false,
-    'the protected WebKit branch guard remains mandatory for video source branches');
+test('real shared video-renderer source always requires macOS irrespective of branch',()=>{
+ const name='.github/workflows/holistic-support-mandala.yml';
+ const yaml=readFileSync(name,'utf8');
+ const files={base:new Map([[name,yaml]]),current:new Map([[name,yaml]])};
+ const ui=['components/mandala-video-personalization.module.css',
+   'scripts/verify-affirmation-voice-browser.mjs'];
+ assert.equal(optionalMandalaMacosSkip(files,'codex/ideas-goal-first-personalization-20261120',ui),true);
+ assert.equal(optionalMandalaMacosSkip(files,'codex/ideas-goal-first-personalization-20261120',
+   [...ui,'components/mandala-free-video-studio.tsx']),false);
+ assert.equal(optionalMandalaMacosSkip(files,'codex/ideas-goal-first-personalization-20261120',
+   [...ui,'lib/mandala/recording-codecs.mjs']),false);
 });
-
-test('BASE-owned Mandala WebKit list accepts 25-32 strict literal routes, never 33 or a changed guard',()=>{
-  const path='.github/workflows/holistic-support-mandala.yml';
-  const original=readFileSync(path,'utf8');
-  const guard=original.match(/^  voice-webkit-macos:\n    if: \$\{\{ (.+) \}\}$/m)?.[0];
-  assert.ok(guard,'trusted macOS job has a single literal branch guard');
-  const extra=n=>Array.from({length:n},(_,i)=>
-    "startsWith(github.head_ref, 'fix/ci-webkit-budget-probe-"+i+"-')");
-  const extended=n=>original.replace(guard,guard.replace(/\) \}\}$/,
-    ' || '+extra(n).join(' || ')+') }}'));
-  const safe=['components/holistic-support-goal-filter.tsx'];
-  const out='feat/support-confidence-harmony-goal-filter-20261102';
-  const skip=(base,branch=out,changed=safe,current=base)=>optionalMandalaMacosSkip({
-    base:new Map([[path,base]]),current:new Map([[path,current]])
-  },branch,changed);
-  const literalRoutes=guard.match(/(?:startsWith\(github\.head_ref, '[^']+'\)|github\.head_ref == '[^']+')/g)||[];
-  const toLimit=32-literalRoutes.length;
-  assert.ok(toLimit>=1 && toLimit<=8,'the reviewed BASE allowlist has 24-31 literal routes');
-  assert.equal(skip(original),true,'reviewed BASE literal routes remain checkable');
-  assert.equal(skip(extended(1)),true,'one additional literal prefix remains checkable');
-  assert.equal(skip(extended(toLimit)),true,'exactly 32 static predicates remain checkable');
-  assert.equal(skip(extended(toLimit+1)),false,'33 predicates fail closed');
-  assert.equal(skip(extended(toLimit),'fix/ci-webkit-budget-probe-'+(toLimit-1)+'-check'),false,
-    'a matching WebKit branch must actually execute macOS');
-  assert.equal(skip(extended(toLimit),out,['lib/mandala/audio-render.mjs']),false,
-    'encoded audio source cannot skip macOS');
-  assert.equal(skip(original,out,safe,extended(1)),false,
-    'PR changing the trusted macOS guard cannot certify its own skip');
-  assert.equal(skip(extended(1).replace(extra(1)[0],'success()')),false,
-    'arbitrary GitHub expressions are not static allowlist predicates');
+test('changed macOS/preflight job cannot self-authorize skipped WebKit',()=>{
+ const path='.github/workflows/holistic-support-mandala.yml';
+ const yaml=readFileSync(path,'utf8');
+ const files={base:new Map([[path,yaml]]),current:new Map([[path,yaml]])};
+ const ui=['components/mandala-video-personalization.module.css'];
+ assert.equal(optionalMandalaMacosSkip(files,'codex/ideas-ui',ui),true);
+ assert.equal(optionalMandalaMacosSkip(files,'codex/ideas-ui',[path]),false);
+ for(const changed of [
+   yaml.replace('runs-on: macos-15','runs-on: ubuntu-24.04'),
+   yaml.replace("media_required == 'true'","media_required == 'false'"),
+   yaml.replace('TESTED_BASE_MACOS_IMPACT:','MUTATED_MACOS_IMPACT:'),
+ ]) assert.equal(optionalMandalaMacosSkip(
+   {...files,current:new Map([[path,changed]])},'codex/ideas-ui',ui),false);
 });
-
 test('VideoProjectV2 source changes require real macOS WebKit acceptance on video feature PRs', () => {
   const path = '.github/workflows/holistic-support-mandala.yml';
   const actual = readFileSync(path, 'utf8');
   const guard = actual.match(/^  voice-webkit-macos:\n    if: \$\{\{ (.+) \}\}$/m)?.[1];
   assert.ok(guard, 'Real macOS WebKit job guard must remain intact');
-  assert.ok(guard.includes("startsWith(github.head_ref, 'feat/video-')"),
-    'Video feature branches must route into genuine macOS encoded movie acceptance');
+  assert.ok(guard.includes("needs.webkit_preflight.outputs.media_required == 'true'"),
+    'Real media source changes must route to macOS independent of branch prefix');
   assert.ok(guard.includes("github.event.pull_request.draft == false"));
   assert.match(actual,/voice-webkit-macos:[\s\S]*?runs-on: macos-15/);
   assert.match(actual,/HH_LIVE_VIDEO_ENGINE=webkit/);
