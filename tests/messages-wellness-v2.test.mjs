@@ -216,7 +216,7 @@ test('Messenger keeps the same header and tab shell across AI, Orders, Clients a
  assert.match(ui,/data-hh-ai-new-chat/);
  assert.doesNotMatch(ui,/<p>\{section==='ai'\?/)
  const header=ui.indexOf('<header className={styles.head} data-hh-ai-assistant-header>')
- const tabs=ui.indexOf('<div className={styles.sections} role="tablist"')
+ const tabs=ui.indexOf('<div id="hh-chat-tabs" className={styles.sections} role="tablist"')
  const orders=ui.indexOf('<div id="hh-orders-panel"')
  assert.ok(tabs!==-1&&header>tabs&&orders>header,'tab switcher appears before shared heading')
  assert.equal(ui.slice(header,tabs).includes('introCard'),false,'no network-dependent banner before tabs')
@@ -233,7 +233,7 @@ test('owner Messenger preserves one chat, Get Support plus six choices and local
  const css=source('components/app/messenger-ai-workspace.module.css')
  const chat=source('components/holistic-agent-chat.tsx')
  const mobile=source('app/[locale]/app/messages/messages-page.css')
- assert.ok(ui.indexOf('<div className={styles.sections} role="tablist"')<
+ assert.ok(ui.indexOf('<div id="hh-chat-tabs" className={styles.sections} role="tablist"')<
    ui.indexOf('<header className={styles.head} data-hh-ai-assistant-header>'))
  assert.match(css,/\.layout\{display:flex;flex-direction:column/)
  assert.match(css,/\.content\{display:flex;flex:1/)
