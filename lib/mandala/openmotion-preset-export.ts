@@ -87,6 +87,10 @@ export async function exportOpenMotionPresetMp4(
   try {
     const blob = await encodeLocalWebCodecsMp4({
       canvas, allowProceduralBrowser:true, seconds:plan.durationMs/1000, frameRate, onProgress,
+      // This renderer uses Mediabunny CanvasSink.canvasesAtTimestamps on trusted
+      // local approved source URLs. Unlike native <video>, source frames are
+      // independently addressable; encode them without wall-clock waiting.
+      sourceFrameClock:"timestamp-decoded",
       shouldContinue:()=>!signal.aborted,
       audioMaster,
       renderFrame:async time=>{

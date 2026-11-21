@@ -453,7 +453,10 @@ test('Mandala Ready executes source contracts; full encoded video/browser availa
   assert.ok(voiceSource.includes('HH_VOICE_SKIP_GUIDED_PRACTICES==="1"'), 'the opt-out is explicit and CI-only');
   assert.ok(source.includes('Restore Next.js build cache') && source.includes('Restore pinned Playwright WebKit browser'));
   const macosGuard=source.match(/^  voice-webkit-macos:\n    if: (.+)$/m)?.[1] || '';
-  assert.ok(macosGuard.includes("startsWith(github.head_ref, 'codex/mandala-cancel-stale-head-cache-')"));
+  assert.ok(macosGuard.includes("needs.webkit_preflight.outputs.media_required == 'true'"),
+    'Mac WebKit is now required by BASE-owned actual media impact, not a historical branch prefix');
+  assert.ok(source.includes('tested_base:lib/ci/merge-check-light.mjs'),
+    'missing BASE classifier must force real WebKit rather than trusting candidate code');
   assert.ok(!browserGate.includes("codex/mandala-cancel-stale-head-cache-"), 'CI-only PR does not trigger Linux product browser matrix');
   assert.match(core, /^  hh-merge-check:/m);
   assert.match(core, /npm run build/);

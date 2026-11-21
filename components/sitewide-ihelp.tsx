@@ -1,10 +1,10 @@
 "use client";
 
-import {useEffect,useRef,useState} from "react";
+import {lazy,Suspense,useEffect,useRef,useState} from "react";
 import {usePathname} from "next/navigation";
 import Link from "next/link";
 import {MessageCircleQuestion, X} from "lucide-react";
-import dynamic from "next/dynamic";
+
 import type {HolisticAgentQuickPrompt} from "@/components/holistic-agent-chat";
 import {IHelpTopics, IHelpWelcome} from "@/components/ihelp-welcome";
 import {pageHelpFromRoute} from "@/lib/ihelp/page-context.mjs";
@@ -14,9 +14,10 @@ import styles from "./sitewide-ihelp.module.css";
 
 // The heavyweight AI conversation is only needed after an explicit iHelp tap.
 // Preserve the one real chat instance, privacy gates and all conversation state.
-const HolisticAgentChat = dynamic(
-  () => import("@/components/holistic-agent-chat").then(module => module.HolisticAgentChat),
-  { ssr: false },
+// React.lazy keeps the hidden chat CSS, test catalogue and media widgets out
+// of the initial Home route manifest. The chat is mounted only after a tap.
+const HolisticAgentChat = lazy(
+  () => import("@/components/holistic-agent-chat").then(module => ({default:module.HolisticAgentChat})),
 );
 
 const UI={
@@ -229,7 +230,7 @@ export function SitewideIHelp(){
        </header>
        <IHelpWelcome locale={locale} section={context.section}/>
        <div className={styles.chat}>
-         <HolisticAgentChat locale={locale} compact messengerView pageHelp={context} quickPrompt={quickPrompt}/>
+         <Suspense fallback={null}><HolisticAgentChat locale={locale} compact messengerView pageHelp={context} quickPrompt={quickPrompt}/></Suspense>
        </div>
        <IHelpTopics locale={locale} onSelect={chooseTopic}/>
        <nav className={styles.bottomNav} aria-label={
