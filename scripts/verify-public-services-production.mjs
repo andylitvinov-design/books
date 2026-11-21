@@ -279,14 +279,16 @@ try {
       "#consultation", "[data-services-studio-free]", "[data-services-studio-card]",
       "[data-services-studio-paid] > header", "[data-services-studio-paid] > div:last-child",
       "[data-services-meet]", '[data-personal-testimonials="services"]',
-      "#method-videos", "[data-services-directory-invitation]", "[data-service-lead-capture]"
+      "#method-videos", "[data-services-directory-invitation]"
     ];
     for (const selector of legacyPhoneSelectors) {
       await expect(page.locator(selector + ":visible")).toHaveCount(0);
     }
-    // The approved lower page is a compact, one-panel-at-a-time catalogue.
-    // The original messenger and the three real consultation cards stay visible.
-    await visible(page.locator("[data-assist-personal-consultation]"));
+    // The approved 10-category shelf has no duplicate large featured cards.
+    // Older diagnostic formats remain accessible inside the consultation disclosure.
+    await expect(page.locator("[data-assist-personal-consultation]")).toHaveCount(0);
+    await expect(page.locator("[data-services-unified-catalog] [data-service-lead-capture]:visible")).toHaveCount(0);
+    await expect(page.locator("[data-services-directory-invitation]")).toHaveCount(0);
     const catalog = page.locator("[data-services-unified-catalog]");
     await visible(catalog);
     // Browser acceptance must exercise hydrated React handlers, not
@@ -296,10 +298,10 @@ try {
       { timeout: 30000, message: 'Mobile Services catalogue must hydrate before interactions' },
     ).toBe(true);
     const panelIds = [
-      "reiki", "browse", "reading", "consultation", "services", "business", "video", "courses",
-      "coach", "magical", "homeopathy", "about", "testimonials", "mytube", "directory",
+      "consultation", "homeopathy", "services", "business", "browse", "courses",
+      "video", "coach", "reiki", "reading", "about", "testimonials", "mytube", "directory",
     ];
-    const servicePanelIds = new Set(panelIds.slice(0, 11));
+    const servicePanelIds = new Set(panelIds.slice(0, 10));
     await expect(catalog.locator("[data-services-unified-panel]")).toHaveCount(panelIds.length);
     for (const id of panelIds) {
       const panel = catalog.locator('[data-services-unified-panel="' + id + '"]');
@@ -328,6 +330,47 @@ try {
           const bounds = await control.boundingBox();
           assert.ok(bounds && bounds.height >= 44 && bounds.x >= -1 && bounds.x + bounds.width <= width + 1,
             "Every variant action must fit the phone: " + locale + "/" + width + "/" + id);
+        }
+      }
+    }
+    if (width === 390) {
+      // Regression for the approved three-horizontal-offers mock: no extra
+      // giant category card or duplicate price/action header.
+      const geometry = await catalog.locator(
+        '[data-services-unified-panel][data-services-has-three="true"]'
+      ).evaluateAll(nodes => nodes.map(node => {
+        const measure = element => {
+          if (!element) return null;
+          const r = element.getBoundingClientRect();
+          return { x:r.x, y:r.y, width:r.width, height:r.height };
+        };
+        const direct = selector => node.querySelector(':scope > ' + selector);
+        const headerPrice = direct('[data-support-uniform-preview]')
+          ?.querySelector(':scope > [data-support-uniform-price]');
+        return {
+          id: node.getAttribute("data-services-unified-panel"),
+          overall: measure(node),
+          heading: measure(direct('[data-support-uniform-preview]')),
+          topActions: getComputedStyle(direct('[data-service-card-actions]')).display,
+          headingPrice: getComputedStyle(headerPrice).display,
+          offers: [...node.querySelectorAll(
+            ':scope > [data-services-three-visible] > [data-service-variant]'
+          )].map(measure),
+        };
+      }));
+      assert.equal(geometry.length, 10);
+      for (const group of geometry) {
+        assert.ok(group.overall.height < 700, "Oversized service category: " + locale + "/" + group.id + " " + group.overall.height);
+        assert.ok(group.heading.height < 120, "Oversized service header: " + locale + "/" + group.id);
+        assert.equal(group.topActions, "none", "Duplicate category action row: " + group.id);
+        assert.equal(group.headingPrice, "none", "Duplicate category price badge: " + group.id);
+        assert.equal(group.offers.length, 3);
+        for (const [i, offer] of group.offers.entries()) {
+          assert.ok(offer.height >= 100 && offer.height < 220,
+            "Offer should be a compact horizontal card: " + group.id + "/" + i + " " + offer.height);
+          assert.ok(offer.x >= -1 && offer.x + offer.width <= width + 1, "Offer overflows viewport: " + group.id);
+          if (i) assert.ok(offer.y >= group.offers[i-1].y + group.offers[i-1].height - 1,
+            "Three offers must stack vertically: " + group.id);
         }
       }
     }
@@ -372,6 +415,16 @@ try {
         await assertViewport(page, locale + "/services/unified/" + id);
       }
       await expect(catalog.locator('[data-services-unified-panel][data-expanded="true"]')).toHaveCount(0);
+      // The legacy directory is voluntary, not a second giant service card.
+      // A real click still restores the previously published contact actions.
+      const directory = catalog.locator('[data-services-unified-panel="directory"]');
+      await directory.locator(':scope > [data-support-uniform-preview]').click();
+      await expect(directory).toHaveAttribute("data-expanded", "true");
+      await expect(directory.locator('[data-service-lead-capture]')).toHaveCount(0);
+      await visible(directory.locator('[data-services-directory-invitation]'));
+      await directory.locator(':scope > [data-support-uniform-preview]').click();
+      await expect(directory).toHaveAttribute("data-expanded", "false");
+      await expect(page.locator('[data-services-unified-catalog] [data-service-lead-capture]:visible')).toHaveCount(0);
       // The real prior flows remain mounted for stable site deep links.
       for (const selector of [
         "[data-assist-reiki-session]", "[data-assist-spiritual-entry]", "[data-assist-video-generation]",
@@ -780,21 +833,21 @@ try {
         await visible(free.locator('a[href="/' + locale + '/services/dao-health-profile"]').first());
         await visible(free.locator('a[href="/' + locale + '/courses/antistress"]'));
         assert.equal(await page.locator("h1#services-conversion-title").count(), 1);
-        // Eleven groups with three published options apiece, including the
-        // distinct Business category in EN, RU and ES. Keep ordering identical.
+        // Ten main categories with three real offers each; esoteric extras
+        // stay inside the voluntary Spiritual Reading disclosure / Shamanica.
         const visibleVariants=page.locator('[data-services-unified-catalog] [data-services-three-visible]');
-        await expect(visibleVariants).toHaveCount(11);
-        await expect(visibleVariants.locator('[data-service-variant]')).toHaveCount(33);
+        await expect(visibleVariants).toHaveCount(10);
+        await expect(visibleVariants.locator('[data-service-variant]')).toHaveCount(30);
         const actualGroups=await visibleVariants.evaluateAll(nodes=>
           nodes.map(node=>({id:node.getAttribute("data-services-three-visible"),
             declared:node.getAttribute("data-services-offer-count"),
             visible:node.getClientRects().length>0,
             options:node.querySelectorAll("[data-service-variant]").length})));
         assert.deepEqual(actualGroups.map(x=>x.id),
-          ["consultation","homeopathy","services","business","reiki","courses","video","browse","reading","coach","magical"],
+          ["consultation","homeopathy","services","business","browse","courses","video","coach","reiki","reading"],
           "The first six category targets must remain visible in their approved order");
         assert.ok(actualGroups.every(x=>x.declared==="3"&&x.visible&&x.options===3),
-          "Each of the eleven service panels displays all three choices without opening an accordion");
+          "Each of the ten service panels displays all three choices without opening an accordion");
         assert.equal(await page.evaluate(() => {
           const selectors = ["#consultation","#free-insights","#solutions","#services-conversion-title",
             "[data-services-meet]",'[data-personal-testimonials="services"]',
@@ -815,7 +868,9 @@ try {
         await expect(paid.locator("h2#services-personal-title")).toBeHidden();
         await expect(paid.locator("[data-services-studio-card]:visible")).toHaveCount(0);
         await expect(page.locator('[data-services-unified-panel="video"] [data-assist-video-generation]')).toBeHidden();
-        await visible(page.locator('[data-services-unified-panel="video"] [data-service-card-actions] button').first());
+        // Legacy panel-level actions are hidden by the approved three-offer layout.
+        // Require a real visible action within the first of the three video offers.
+        await visible(page.locator('[data-services-unified-panel="video"] > [data-services-three-visible] > [data-service-variant] [data-service-card-actions] button').first());
         assert.equal(await page.locator("#find-your-service").count(), 0);
       }
       await assertNoDevIssueOverlay(page, locale + "/services/" + width);
@@ -888,6 +943,7 @@ try {
           "Deep link preserves express/paid consultation offers: " + locale);
         await assertViewport(page, locale + "/services#consultation");
         const consultation = page.locator("[data-assist-personal-consultation]");
+        await expect(consultation).toBeVisible();
         await consultation.scrollIntoViewIfNeeded();
         await consultation.screenshot({ path: output + "/services-" + locale + "-compact-consultation-390.png" });
       }

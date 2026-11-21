@@ -145,19 +145,13 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(page.locator('[data-video-ideas-personalization-panel]')).toBeVisible();
     const purposeQuiz=page.locator('[data-video-personalization]');
     await expect(purposeQuiz).toHaveAttribute("data-video-personalization-goal","leisure");
-    // The original optional refinement is only accessible in Personalization,
-    // not on the Goal tab or the resulting Concept screen.
+    // Approved purpose-first Personalization replaces the old auxiliary
+    // topic-refinement disclosure. Verify the legacy panel is not interactive,
+    // then exercise actual mood, energy and next-step selections below.
     const refinement=page.locator('[data-video-ideas-refinement]');
-    await expect(refinement.locator(":scope > summary")).toBeVisible();
-    // The native details may already be open after the Ideas transition.
-    // Exercise a genuine close/open toggle instead of assuming initial state.
-    if(await refinement.evaluate(node=>node.open)){
-      await refinement.locator(":scope > summary").click();
-      await expect(refinement).not.toHaveAttribute("open","");
-    }
-    await refinement.locator(":scope > summary").click();
-    await expect(refinement).toHaveAttribute("open","");
-    await expect(page.locator('[data-auto-video-topic-panel]')).toBeVisible();
+    await expect(refinement).toHaveCount(1);
+    await expect(refinement.locator(":scope > summary")).toBeHidden();
+    await expect(purposeQuiz).toBeVisible();
     // Complete leisure's three real steps (desired mood, current energy, name)
     // so subsequent Montage assertions start from a confirmed profile.
     await purposeQuiz.locator('[data-video-personalization-choice="desired-calm"]').click();
