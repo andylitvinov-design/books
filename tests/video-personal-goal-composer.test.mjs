@@ -17,17 +17,19 @@ test("three goal families are the complete, distinct top-level structure",()=>{
   const rest=buildPersonalVideoGoalOptions({...base,locale,
    wish:locale==="ru"?"Хочу отдохнуть":locale==="es"?"Quiero descansar":"I want to rest and relax"});
   assert.equal(rest.mode,"leisure");
-  assert.equal(rest.goals.length,5);
-  assert.ok(rest.goals.every(g=>g.type==="leisure"));
-  assert.equal(new Set(rest.goals.map(g=>g.id)).size,5);
+  assert.deepEqual(rest.goals.map(g=>g.id),["rest","accept","reframe"]);
+  assert.deepEqual(rest.goals.map(g=>g.type),["leisure","support","change"]);
+  assert.equal(new Set(rest.goals.map(g=>g.id)).size,3);
   const support=buildPersonalVideoGoalOptions({...base,locale,
    wish:locale==="ru"?"Нужна поддержка при тревоге":locale==="es"?"Necesito apoyo con ansiedad":"I need support with anxiety"});
   assert.equal(support.mode,"support");
-  assert.equal(support.goals.slice(0,3).filter(g=>g.type==="support").length,3);
+  assert.deepEqual(support.goals.map(g=>g.id),["rest","accept","reframe"]);
+  assert.equal(support.goals.find(g=>g.id==="accept")?.type,"support");
   const change=buildPersonalVideoGoalOptions({...base,locale,
    wish:locale==="ru"?"Преодолеть страх осуждения":locale==="es"?"Superar la fobia":"Overcome a phobia"});
   assert.equal(change.mode,"change");
-  assert.equal(change.goals.slice(0,3).filter(g=>g.type==="change").length,3);
+  assert.deepEqual(change.goals.map(g=>g.id),["rest","accept","reframe"]);
+  assert.equal(change.goals.find(g=>g.id==="reframe")?.type,"change");
   for(const offer of [...rest.goals,...support.goals,...change.goals]){
    assert.ok(offer.copy[locale].title.length>=8);
    assert.ok(offer.copy[locale].intent.length>offer.copy[locale].title.length);
@@ -46,15 +48,18 @@ test("unconfirmed default chips and sensitive profile never become diagnosed fac
  assert.equal(unconfirmed.profileUsed,false);
  assert.ok(unconfirmed.goals.every(g=>!g.copy.en.intent.includes("self-critical")));
  const confirmed=buildPersonalVideoGoalOptions({...input,profileConfirmed:true});
- assert.notEqual(confirmed.contextKey,unconfirmed.contextKey);
+ assert.equal(confirmed.contextKey,unconfirmed.contextKey,
+   "confirmed personal answers may enrich the concept but never deselect the goal");
  assert.equal(confirmed.profileUsed,true);
- assert.ok(unconfirmed.goals.every(g=>g.type==="leisure"),
-  "An explicit rest/entertainment wish cannot be reclassified as therapy");
+ assert.equal(unconfirmed.mode,"leisure",
+  "An explicit rest/entertainment wish must not be classified as therapy");
+ assert.deepEqual(unconfirmed.goals.map(g=>g.type),["leisure","support","change"]);
 });
 test("goal selection preserves the request, only consented quiz context and explicit purpose",()=>{
  const opts=buildPersonalVideoGoalOptions({...base,locale:"ru",
   wish:"Преодолеть страх осуждения"});
- const selected=opts.goals[0];
+ const selected=opts.goals.find(g=>g.id==="reframe");
+ assert.ok(selected,"the purpose whose concept includes the confirmed meaning axis exists");
  const intent=composePersonalVideoGoalIntent("Мой исходный запрос",selected,"ru");
  assert.ok(intent.includes("Мой исходный запрос"));
  assert.ok(intent.includes(selected.copy.ru.title));
@@ -83,7 +88,7 @@ test("selected goal's story mechanism changes which ACTUAL film roles are recomm
  assert.ok(resting[0].matchFactors.includes("selected_goal_mechanism"));
 });
 
-test("One persisted Ideas Goal and one existing Concept/Storyboard, with 3+2 visible choice",()=>{
+test("One persisted Ideas Goal and one existing Concept/Storyboard, exactly three fixed purposes",()=>{
  const studio=source("components/mandala-free-video-studio.tsx");
  const ui=source("components/mandala-video-idea-goal.tsx");
  const ranker=source("lib/mandala/film-personalization-ranker.mjs");
@@ -94,9 +99,11 @@ test("One persisted Ideas Goal and one existing Concept/Storyboard, with 3+2 vis
  assert.match(studio,/key=\{personalGoalOptions\.contextKey\}/);
  assert.match(studio,/setIdeasSubtab\("goal"\)/);
  assert.match(studio,/setIdeasSubtab\("concept"\)/);
- assert.match(ui,/options\.goals\.slice\(0,3\)/);
- assert.match(ui,/options\.goals\.slice\(3,5\)/);
- assert.match(ui,/data-video-ideas-more-goals/);
+ assert.match(ui,/const visible=options\.goals/);
+ assert.doesNotMatch(ui,/data-video-ideas-more-goals|data-video-ideas-goals-prev|data-video-ideas-goals-next/);
+ assert.match(studio,/locale,wish,theme,\s*selectedTopic:selectedConceptTopic/);
+ assert.doesNotMatch(studio,/wish:\[wish,selectedConceptTopic\?\.brief\]/,
+   "late director brief must not change chosen Goal identity");
  assert.match(ranker,/selected_goal_mechanism/);
  for(const op of ["fetch(","navigator.sendBeacon(","localStorage.setItem("])
   assert.ok(!ui.includes(op),op+" must not transmit the psychology quiz");
