@@ -479,3 +479,257 @@
 @media(prefers-reduced-motion:reduce){
  .page[data-shamanica-audience="self"] .serviceCard{transition:none}
 }
+
+/* SHAMANIC_UNIFIED_HD_ONE_SCREEN_20261121
+   Same scenic cabinet for Me and Business, six actionable photo cards, no
+   compressed 2 KB miniatures, no device chrome baked into images.
+   The dock height is measured by UnifiedMobileDock, including iOS safe area. */
+.page[data-shamanica-mobile] {
+  --ink:#fff0d4;
+  color:#fff0d4;
+  background:
+    radial-gradient(ellipse at 50% 4%,#78502e66,transparent 61%),
+    linear-gradient(95deg,#170a08 0%,#28170f 17%,#1d100a 50%,#322015 84%,#180a07);
+}
+.page[data-shamanica-mobile] .container{
+  display:flex;flex-direction:column;isolation:isolate;
+  width:min(100%,490px);margin:0 auto;
+  padding:5px 10px calc(var(--hh-unified-nav-height,94px) + 5px);
+  box-shadow:inset 5px 0 14px #0b070577,inset -5px 0 14px #0b070577;
+  background:linear-gradient(90deg,#12080566,transparent 13%,transparent 87%,#12080577);
+}
+.page[data-shamanica-mobile] .header{
+  order:0;flex:none;min-height:42px;height:42px;
+  display:flex;align-items:center;justify-content:space-between;
+  margin:0 0 1px;gap:5px;z-index:3;
+}
+.page[data-shamanica-mobile] .brand{color:#fff4dc;gap:5px}
+.page[data-shamanica-mobile] .brand>svg{width:27px;height:27px;color:#fff0d9}
+.page[data-shamanica-mobile] .brand span{
+  font:700 clamp(18px,5vw,24px)/1 Georgia,serif;letter-spacing:-.5px;white-space:normal;
+}
+.page[data-shamanica-mobile] .brandSub{
+  display:block;margin-top:3px;font:600 9px/1.12 Georgia,serif;
+  letter-spacing:2.3px;color:#f7e3bd;
+}
+.page[data-shamanica-mobile] .tools{gap:5px}
+.page[data-shamanica-mobile] .tools .iconButton,
+.page[data-shamanica-mobile] .menu{display:none}
+.page[data-shamanica-mobile] .lang,
+.page[data-shamanica-mobile] .helpButton,
+.page[data-shamanica-mobile] .profileButton{
+  display:grid;place-items:center;
+  flex:none;min-width:34px;width:auto;height:35px;padding:0 6px;
+  border:1px solid #d5b37b;border-radius:999px;
+  color:#fff5dd;background:#24140d9e;
+  box-shadow:0 2px 7px #12060080,inset 0 1px 2px #f9d39744;
+  cursor:pointer;text-decoration:none;
+}
+.page[data-shamanica-mobile] .lang{display:flex;gap:2px;padding:0 7px}
+.page[data-shamanica-mobile] .lang select{font-size:12px;color:#fff0d8}
+.page[data-shamanica-mobile] .hero{
+  order:1;flex:none;position:relative;isolation:isolate;
+  height:clamp(155px,24dvh,226px);min-height:0;max-height:none;
+  margin:0 -3px 1px;padding:0 3px;text-align:center;
+  overflow:hidden;border:0;border-radius:0;background:transparent;box-shadow:none;
+}
+.page[data-shamanica-mobile] .hero:before{
+  content:"";position:absolute;z-index:-1;inset:auto 0 0;
+  height:clamp(110px,16dvh,158px);
+  background:
+    linear-gradient(180deg,#1e110966,transparent 24%,transparent 75%,#1b0d0773 100%),
+    url("/images/holistic-house/shamanic-lounge-hd.avif") center bottom/cover no-repeat;
+  pointer-events:none;
+}
+.page[data-shamanica-mobile] .mirrorIntro{position:relative;z-index:1;padding-top:0}
+.page[data-shamanica-mobile] .mirrorSymbol{
+  display:flex;align-items:center;justify-content:center;gap:2px;
+  height:38px;color:#f2bb64;filter:drop-shadow(0 1px 4px #df9f3a66);
+}
+.page[data-shamanica-mobile] .mirrorSymbol img{
+  display:block;width:67px;height:37px;object-fit:contain;
+  mix-blend-mode:screen;filter:contrast(1.09) saturate(1.1);
+}
+.page[data-shamanica-mobile] .moonLeft,
+.page[data-shamanica-mobile] .moonRight{
+  font:700 30px/1 Georgia,serif;color:#f6be65;text-shadow:0 0 6px #b97620;
+}
+.page[data-shamanica-mobile] .hero h1{
+  margin:1px auto 4px;max-width:100%;
+  color:#ffeccd;
+  font:700 clamp(26px,7.6vw,35px)/.96 Georgia,serif;
+  letter-spacing:-.035em;text-shadow:0 2px 6px #120702;
+}
+.page[data-shamanica-mobile] .hero h1 span{display:block;white-space:normal}
+.page[data-shamanica-mobile] .mirrorTagline{
+  margin:4px auto 0!important;max-width:97%;
+  font:italic 500 clamp(11.3px,3.15vw,14px)/1.17 Georgia,serif;
+  color:#fff0d8;text-shadow:0 1px 5px #130a02;
+}
+.page[data-shamanica-mobile] .audiences{
+  order:2;flex:none;display:grid;grid-template-columns:1fr 1fr;
+  width:min(91%,440px);height:42px;min-height:42px;
+  padding:2px;gap:0;margin:0 auto 8px;
+  border:1px solid #f2ce8b;border-radius:999px;
+  background:linear-gradient(110deg,#fff2d0,#f3d9a9);
+  box-shadow:0 2px 10px #0c06059a;
+}
+.page[data-shamanica-mobile] .audiences>a{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  min-height:36px;padding:2px 6px;
+  font:700 clamp(12.6px,3.5vw,17px)/1.07 Georgia,serif;
+  border:0;border-radius:99px;background:transparent;color:#153c2b;box-shadow:none;
+}
+.page[data-shamanica-mobile] .audiences>a svg{width:19px;height:19px;flex:none}
+.page[data-shamanica-mobile] .audiences .audienceActive{
+  background:linear-gradient(180deg,#087750,#00462f);
+  color:#fff5dc;box-shadow:0 1px 5px #043d2ca6,inset 0 1px #b9ead6a3;
+}
+.page[data-shamanica-mobile] .audiences>a:last-child,
+.page[data-shamanica-mobile] .audiences>button{display:none}
+.page[data-shamanica-mobile] .services{
+  order:3;position:relative;width:100%;margin:0;padding:0;
+  border:0;border-radius:0;background:transparent;box-shadow:none;
+}
+.page[data-shamanica-mobile] .sectionTitle{
+  position:absolute!important;width:1px;height:1px;margin:-1px;padding:0;
+  overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;
+}
+.page[data-shamanica-mobile] .serviceGrid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-auto-rows:clamp(72px,10.8dvh,99px);
+  column-gap:8px;row-gap:8px;background:transparent;
+}
+.page[data-shamanica-mobile] .serviceCard,
+.page[data-shamanica-mobile] .serviceCard:nth-child(n+4),
+.page[data-shamanica-mobile] .serviceCard:last-child{
+  display:block;position:relative;grid-column:auto;
+  width:100%;height:100%;min-height:0;min-width:0;
+  overflow:hidden;padding:0;margin:0;
+  border:2px solid #ecc176;border-radius:17px;background:#2d1c11;color:#113524;
+  box-shadow:0 2px 8px #0d0506a3;cursor:pointer;text-decoration:none;text-align:left;
+  transition:transform .16s ease,filter .16s ease;
+}
+.page[data-shamanica-mobile] .serviceCard:after{display:none}
+.page[data-shamanica-mobile] .servicePhoto,
+.page[data-shamanica-mobile] [data-shamanica-service] .servicePhoto{
+  display:block;position:absolute;top:0;left:0;
+  width:100%;height:64%;
+  border:0;border-radius:0;clip-path:none;
+  -webkit-mask-image:none;mask-image:none;box-shadow:none;filter:none;transform:none;
+  background-image:url("/images/holistic-house/shamanic-cards-personal-hd.avif");
+  background-size:200% 300%;background-repeat:no-repeat;
+}
+.page[data-shamanica-mobile] [data-shamanica-service="guidance"] .servicePhoto{background-position:0% 0%}
+.page[data-shamanica-mobile] [data-shamanica-service="rituals"] .servicePhoto{background-position:100% 0%}
+.page[data-shamanica-mobile] [data-shamanica-service="remedies"] .servicePhoto{background-position:0% 50%}
+.page[data-shamanica-mobile] [data-shamanica-service="mysteries"] .servicePhoto{background-position:100% 50%}
+.page[data-shamanica-mobile] [data-shamanica-service="energy"] .servicePhoto{background-position:0% 100%}
+.page[data-shamanica-mobile] [data-shamanica-service="academy"] .servicePhoto{background-position:100% 100%}
+.page[data-shamanica-mobile] .serviceBody{
+  position:absolute;z-index:1;left:0;bottom:0;
+  display:grid;grid-template-columns:clamp(22px,5.3vw,30px) minmax(0,1fr);
+  align-items:center;gap:5px;justify-content:stretch;
+  width:100%;height:53%;min-height:42px;margin:0;padding:3px 7px;
+  border:0;border-radius:13px 13px 15px 15px;
+  background:linear-gradient(112deg,#fff5dc,#f7d9a7 85%,#fce6bb);
+  box-shadow:inset 0 1px 5px #fffcf290,0 -2px 6px #2a13097a;
+}
+.page[data-shamanica-mobile] .serviceBody svg{
+  width:clamp(22px,5.3vw,29px);height:clamp(22px,5.3vw,29px);
+  color:#0c432f;stroke-width:1.7;
+}
+.page[data-shamanica-mobile] .serviceBody strong{
+  display:block;min-width:0;max-width:100%;margin:0;
+  color:#183023;
+  font:700 clamp(12.2px,3.46vw,17px)/1.03 Georgia,serif;
+  hyphens:none;overflow-wrap:normal;word-break:normal;
+}
+.page[data-shamanica-mobile] .serviceBody>span{
+  position:absolute!important;width:1px!important;height:1px!important;
+  overflow:hidden!important;clip:rect(0,0,0,0)!important;
+  white-space:nowrap!important;
+}
+.page[data-shamanica-mobile] .toolsDrawer{
+  order:4;width:100%;margin:6px 0 0;border:1px solid #a47e47;
+  border-radius:13px;background:#1b100c9c;
+}
+.page[data-shamanica-mobile] .toolsDrawer>summary{
+  min-height:40px;padding:5px 8px;font:700 13px/1.1 Georgia,serif;
+  color:#f7dfb7;
+}
+.page[data-shamanica-mobile] .subcategoryPanel{
+  width:100%;max-height:clamp(230px,44dvh,370px);
+  overflow-y:auto;overscroll-behavior:contain;
+  padding:9px;border:1px solid #b88c4f;border-radius:18px;
+  background:linear-gradient(135deg,#3b2415,#1c100c);
+  box-shadow:inset 0 1px #cfaa6780;
+}
+.page[data-shamanica-mobile] .subcategoryBack,
+.page[data-shamanica-mobile] .subcategoryAll{
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  width:100%;min-height:39px;padding:7px 9px;border:1px solid #e2bb79;
+  border-radius:13px;background:#f3dda9;color:#123d30;
+  font:700 13px/1.1 Georgia,serif;text-decoration:none;cursor:pointer;
+}
+.page[data-shamanica-mobile] .subcategoryPanel h3{
+  margin:8px 0 3px;color:#ffeed3;
+  font:700 clamp(17px,4.65vw,22px)/1.06 Georgia,serif;text-align:center;
+}
+.page[data-shamanica-mobile] .subcategoryPanel p{
+  margin:0 0 9px;color:#e9d7b8;font:500 12px/1.2 system-ui,sans-serif;text-align:center;
+}
+.page[data-shamanica-mobile] .subcategoryGrid{display:grid;gap:6px;margin:0 0 8px}
+.page[data-shamanica-mobile] .subcategoryLink{
+  display:flex;align-items:center;gap:8px;min-width:0;min-height:47px;
+  padding:6px 8px;border:1px solid #d8b574;border-radius:12px;
+  background:linear-gradient(100deg,#fff3d4,#edd19f);color:#153d31;
+  text-decoration:none;
+}
+.page[data-shamanica-mobile] .subcategoryLink strong{flex:1;min-width:0;font:700 clamp(13px,3.5vw,16px)/1.1 Georgia,serif}
+.page[data-shamanica-mobile] .subcategoryCount{
+  display:grid;place-items:center;flex:none;width:24px;height:24px;
+  border-radius:50%;background:#dec18a;color:#4a3118;font-weight:800;font-size:12px;
+}
+.page[data-shamanica-mobile] .subcategoryLink>svg{flex:none}
+.page[data-shamanica-mobile] :is(.serviceCard,.subcategoryBack,.subcategoryAll,.subcategoryLink):focus-visible{outline:3px solid #f9dc94;outline-offset:2px}
+.page[data-shamanica-expanded="true"] .hero{height:clamp(140px,19dvh,172px)}
+.page[data-shamanica-expanded="true"] .hero:before{height:clamp(91px,13dvh,113px)}
+@media(max-width:354px){
+ .page[data-shamanica-mobile] .container{padding-inline:6px}
+ .page[data-shamanica-mobile] .header{height:39px;min-height:39px}
+ .page[data-shamanica-mobile] .brand span{font-size:17px}
+ .page[data-shamanica-mobile] .brand>svg{width:24px;height:24px}
+ .page[data-shamanica-mobile] .tools{gap:3px}
+ .page[data-shamanica-mobile] .lang,
+ .page[data-shamanica-mobile] .helpButton,
+ .page[data-shamanica-mobile] .profileButton{min-width:32px;height:32px}
+ .page[data-shamanica-mobile] .hero{height:clamp(146px,23dvh,183px)}
+ .page[data-shamanica-mobile] .hero:before{height:clamp(90px,16dvh,120px)}
+ .page[data-shamanica-mobile] .hero h1{font-size:clamp(22.5px,7.25vw,27px)}
+ .page[data-shamanica-mobile] .mirrorTagline{font-size:11px}
+ .page[data-shamanica-mobile] .audiences{height:39px;min-height:39px;margin-bottom:6px}
+ .page[data-shamanica-mobile] .audiences>a{min-height:33px;font-size:12.4px}
+ .page[data-shamanica-mobile] .serviceGrid{grid-auto-rows:clamp(68px,10.55dvh,85px);gap:6px}
+ .page[data-shamanica-mobile] .serviceBody{padding:3px 5px;gap:4px;grid-template-columns:21px minmax(0,1fr)}
+ .page[data-shamanica-mobile] .serviceBody strong{font-size:clamp(11.3px,3.73vw,13px)}
+ .page[data-shamanica-mobile] .serviceBody svg{width:21px;height:21px}
+}
+@media(max-width:759px) and (max-height:690px){
+ .page[data-shamanica-mobile] .hero{height:143px}
+ .page[data-shamanica-mobile] .hero:before{height:96px}
+ .page[data-shamanica-mobile] .serviceGrid{grid-auto-rows:68px}
+ .page[data-shamanica-mobile] .toolsDrawer{margin-top:3px}
+ .page[data-shamanica-mobile] .toolsDrawer>summary{min-height:35px}
+}
+@media(min-width:760px){
+ .page[data-shamanica-mobile] .container{width:min(100%,660px);padding:12px 14px 30px}
+ .page[data-shamanica-mobile] .hero{height:270px}
+ .page[data-shamanica-mobile] .hero:before{height:190px}
+ .page[data-shamanica-mobile] .serviceGrid{grid-auto-rows:138px;gap:12px}
+ .page[data-shamanica-mobile] .serviceBody{min-height:62px}
+ .page[data-shamanica-mobile] .serviceBody strong{font-size:21px}
+}
+@media(prefers-reduced-motion:reduce){
+ .page[data-shamanica-mobile] .serviceCard{transition:none}
+}

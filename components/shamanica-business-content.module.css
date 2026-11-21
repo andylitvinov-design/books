@@ -201,3 +201,140 @@
 .root .getDetailsButton{width:100%;min-height:54px!important;border:2px solid #eec782!important;border-radius:30px!important;background:linear-gradient(125deg,#059968,#00593f)!important;color:#fff4d9!important;box-shadow:0 3px 12px #09050159!important;text-align:center;font:800 clamp(15px,4.2vw,18px)/1.2 Georgia,serif!important}
 .root .contactNote{color:#f3e3c4;font-size:12px;line-height:1.35;margin:9px 3px 1px}
 @media(max-width:359px){.root .offerChoice{padding:8px 6px;gap:6px}.root .offerPrice{font-size:11.5px;max-width:65px}.root .offerText strong{font-size:13px}.root .offerText small{font-size:11.5px}}
+
+
+/* SHAMANIC_BUSINESS_SHARED_CABINET_HD_20261121
+   Business uses the SAME Shamanic lounge hero, switch, compact image cards,
+   typographic scale and dock. Clicking a category reveals existing offers. */
+@media(max-width:759px){
+ .root[data-shamanica-business]{
+  order:3;display:flex;flex-direction:column;
+  min-width:0;margin:0;padding:0;color:#ffecd1;background:transparent;
+ }
+ .root .services{
+  order:1;position:relative;width:100%;
+  margin:0;padding:0;border:0;border-radius:0;
+  background:transparent;box-shadow:none;
+ }
+ .root .services[data-expanded="false"]>h2{
+  position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;
+ }
+ .root .serviceGrid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-auto-rows:clamp(72px,10.8dvh,99px);
+  gap:8px;max-width:none;width:100%;margin:0;
+ }
+ .root .serviceCard{
+  display:block;grid-column:auto;position:relative;
+  width:100%;height:100%;min-height:0;min-width:0;
+  padding:0;margin:0;overflow:hidden;
+  border:2px solid #ecc176;border-radius:17px;
+  background:#2d1c11;color:#113524;
+  box-shadow:0 2px 8px #0d0506a3;cursor:pointer;text-align:left;
+ }
+ .root .serviceCard:before{display:none}
+ .root .serviceImage{
+  display:block;position:absolute;z-index:0;
+  top:0;left:0;width:100%;height:64%;
+  opacity:1;filter:none;transform:none;border:0;
+  background-image:url("/images/holistic-house/shamanic-cards-business-hd.avif");
+  background-size:200% 300%;background-repeat:no-repeat;
+ }
+ .root [data-business-shelf="express"] .serviceImage{background-position:0% 0%}
+ .root [data-business-shelf="remedies"] .serviceImage{background-position:100% 0%}
+ .root [data-business-shelf="strategy"] .serviceImage{background-position:0% 50%}
+ .root [data-business-shelf="artifacts"] .serviceImage{background-position:100% 50%}
+ .root [data-business-shelf="energy"] .serviceImage{background-position:0% 100%}
+ .root [data-business-shelf="energywork"] .serviceImage{background-position:100% 100%}
+ .root .serviceText{
+  position:absolute;z-index:1;left:0;bottom:0;
+  display:grid;grid-template-columns:clamp(22px,5.3vw,30px) minmax(0,1fr);
+  align-items:center;gap:5px;justify-content:stretch;
+  width:100%;height:53%;min-height:42px;margin:0;padding:3px 7px;
+  border:0;border-radius:13px 13px 15px 15px;
+  background:linear-gradient(112deg,#fff5dc,#f7d9a7 85%,#fce6bb);
+  box-shadow:inset 0 1px 5px #fffcf290,0 -2px 6px #2a13097a;
+ }
+ .root .serviceIcon{
+  position:static;align-self:center;flex:none;
+  width:clamp(22px,5.3vw,29px);height:clamp(22px,5.3vw,29px);
+  color:#0c432f;stroke-width:1.7;
+ }
+ .root .serviceText strong{
+  display:block;min-width:0;max-width:100%;margin:0;
+  color:#183023;font:700 clamp(11.7px,3.39vw,17px)/1.02 Georgia,serif;
+  hyphens:none;word-break:normal;overflow-wrap:normal;white-space:normal;
+  -webkit-line-clamp:unset;
+ }
+ .root .serviceText .cardArrow{display:none}
+ .root .services[data-expanded="true"]{
+  max-height:clamp(245px,44dvh,372px);
+  overflow-y:auto;overscroll-behavior:contain;
+  padding:8px;border:1px solid #b88c4f;border-radius:18px;
+  background:linear-gradient(135deg,#3b2415,#1c100c);
+  box-shadow:inset 0 1px #cfaa6780;
+ }
+ .root .services[data-expanded="true"]>h2{
+  margin:8px 0 6px;text-align:center;
+  font:700 clamp(17px,4.6vw,22px)/1.05 Georgia,serif;color:#fff0d4;
+ }
+ .root .shelfBack{
+  position:sticky;top:0;z-index:4;width:100%;min-height:39px;
+  border:1px solid #e2bb79;border-radius:13px;
+  background:#f3dda9;color:#123d30;font:700 13px/1.1 Georgia,serif;
+ }
+ .root .focusLead{
+  margin:5px 0 9px;color:#e9d7b8;
+  font:500 12px/1.2 system-ui,sans-serif;text-align:center;
+ }
+ .root .secondGrid,.root .offerChoices{gap:6px}
+ .root .secondCard{min-height:49px;padding:6px 8px}
+ .root .offerChoice{min-height:55px;padding:6px 8px}
+ .root .offerText strong{font-size:clamp(12.5px,3.4vw,16px)}
+ .root .offerText small{font-size:11px}
+ .root .offerPrice{font-size:12px;min-width:57px;max-width:72px}
+ .root .detailsWrap{margin-top:9px}
+ .root .getDetailsButton{min-height:44px!important}
+ .root .quizDrawer{
+  order:2;width:100%;margin:6px 0 0;padding:0;
+  border:1px solid #a47e47;border-radius:13px;background:#1b100c9c;
+ }
+ .root .quizDrawer>summary{
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  min-height:40px;padding:5px 9px;list-style:none;
+  color:#f7dfb7;font:700 13px/1.1 Georgia,serif;cursor:pointer;
+ }
+ .root .quizDrawer>summary::-webkit-details-marker{display:none}
+ .root .quizDrawer[open]>summary svg{transform:rotate(90deg)}
+ .root .quizDrawer .quiz{
+  margin:0;padding:10px 9px 12px;border:0;border-top:1px solid #d4ad6a;
+  border-radius:0;background:#fff7e6;
+ }
+ .root .quizDrawer .quizHeading h2{color:#194231}
+ .root .quizDrawer .answer{min-height:48px}
+ .root :is(.serviceCard,.shelfBack,.secondCard,.offerChoice,.quizDrawer>summary):focus-visible{
+  outline:3px solid #ffdc91;outline-offset:2px;
+ }
+}
+@media(max-width:354px){
+ .root .serviceGrid{grid-auto-rows:clamp(68px,10.55dvh,85px);gap:6px}
+ .root .serviceText{padding:3px 5px;gap:4px;grid-template-columns:21px minmax(0,1fr)}
+ .root .serviceText strong{font-size:clamp(11.1px,3.68vw,12.8px)}
+ .root .serviceIcon{width:21px;height:21px}
+}
+@media(max-width:759px) and (max-height:690px){
+ .root .serviceGrid{grid-auto-rows:68px}
+ .root .quizDrawer{margin-top:3px}
+ .root .quizDrawer>summary{min-height:35px}
+}
+@media(min-width:760px){
+ .root[data-shamanica-business]{order:3;width:100%;max-width:630px;margin:0 auto}
+ .root .hero,.root .feature{display:none}
+ .root .services{order:1}
+ .root .quizDrawer{order:2;margin-top:15px;color:#173f32}
+ .root .quizDrawer>summary{
+  display:flex;align-items:center;gap:7px;min-height:47px;cursor:pointer;
+  padding:9px;color:#f9e6c1;
+ }
+}
