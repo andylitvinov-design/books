@@ -176,19 +176,41 @@ try {
   // Require real, visible controls and native browser taps; never use the
   // hidden legacy Continue control or mutate application state from the test.
   row.phase='goal-visible-express-request';
+  // On the approved mobile Magic Mirror, all detailed tools remain behind
+  // the visible More goals disclosure. Open it with a genuine user gesture
+  // before the existing aspect/instant controls; never force-click hidden
+  // legacy controls, bypass the renderer, or create a second test-only path.
+  const mirrorMore=page.locator('[data-hh-mirror-more-goals]');
+  if(await mirrorMore.count() && await mirrorMore.isVisible()){
+    if(engine==='webkit')await mirrorMore.tap();
+    else await mirrorMore.click();
+    await expect(page.locator('[data-mandala-free-video]'))
+      .toHaveAttribute('data-hh-mirror-advanced','true');
+    await expect(page.locator('[data-mandala-free-video]'))
+      .toHaveAttribute('data-video-scenario-open','true');
+  }
   const aspectMenu=page.locator('[data-video-prompt-aspect]');
-  await aspectMenu.locator(':scope > summary').click();
-  const landscape=page.locator('[data-video-request-aspect="landscape"]');
-  await landscape.waitFor({state:'visible',timeout:10000});
-  if(engine==='webkit')await landscape.tap();
-  else await landscape.click();
-  await expect(landscape).toHaveAttribute('aria-pressed','true');
-  await aspectMenu.locator(':scope > summary').click();
-  const portrait=page.locator('[data-video-request-aspect="portrait"]');
-  await portrait.waitFor({state:'visible',timeout:10000});
-  if(engine==='webkit')await portrait.tap();
-  else await portrait.click();
-  await expect(portrait).toHaveAttribute('aria-pressed','true');
+  const aspectSummary=aspectMenu.locator(':scope > summary');
+  await expect(aspectSummary).toBeVisible({timeout:15000});
+  // Selecting an aspect closes the native <details>. A WebKit React update
+  // may leave it open on the next render, so blindly clicking the summary
+  // again sometimes CLOSES the menu and hides the second choice.
+  // Inspect the real native state before each trusted user gesture.
+  const selectAspect=async format=>{
+    if(!await aspectMenu.evaluate(node=>node.open)){
+      if(engine==='webkit')await aspectSummary.tap();
+      else await aspectSummary.click();
+    }
+    await expect.poll(()=>aspectMenu.evaluate(node=>node.open),
+      {timeout:15000}).toBe(true);
+    const choice=aspectMenu.locator(`[data-video-request-aspect="${format}"]`);
+    await expect(choice).toBeVisible({timeout:10000});
+    if(engine==='webkit')await choice.tap();
+    else await choice.click();
+    await expect(choice).toHaveAttribute('aria-pressed','true');
+  };
+  await selectAspect('landscape');
+  await selectAspect('portrait');
   const request=page.locator('[data-auto-video-input]');
   await request.waitFor({state:'visible',timeout:40000});
   await request.fill(EXPRESS_GOAL);

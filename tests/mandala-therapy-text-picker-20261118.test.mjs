@@ -109,7 +109,7 @@ test("Native browser verifies real encoded speech before Therapy can revoke its 
  const encoded=webkit.indexOf('phase(engine,"encoded-audio-verified")');
  const later=webkit.indexOf('phase(engine,"therapy-approved-short-text-to-voice")');
  assert.ok(generation>0&&encoded>generation&&later>encoded);
- assert.match(webkit,/READY_CHECKIN_RENDER_NOT_OBSERVED/);
+ assert.match(webkit,/READY_CHECKIN_REAL_EXPORT_NOT_STARTED/);
  assert.match(webkit,/data-ready-sequential-checkin/);
  assert.match(webkit,/const audioTrack=streams.find/);
  assert.match(webkit,/pcm\.stdout\.some/);

@@ -12,7 +12,7 @@ import taxonomy from "@/data/video-catalog/mytube-content-taxonomy-4x4x4-v2.json
 import videoResearch from "@/data/video-catalog/pexels-video-research-20261119.json";
 import {auditResearchedVideoCandidates,researchVideoLinksForOwner} from "@/lib/video-library/researched-video-candidates.mjs";
 import AdminVideoLibraryClips from "@/components/admin-video-library-clips";
-import sceneCatalog from "@/data/video-catalog/scene-taxonomy.json";
+import {buildUnifiedVideoInventory,VIDEO_SOURCE_FOLDERS} from "@/lib/video-library/unified-video-inventory.mjs";
 import styles from "./video-library.module.css";
 
 export const dynamic="force-dynamic";
@@ -35,6 +35,7 @@ export default async function VideoLibraryCoveragePage({searchParams}:Props){
  const requested=(await searchParams).aspect;
  const aspect=requested==="landscape"||requested==="square"?requested:"portrait";
  const report=auditVideoSiteCoverage({aspect});
+ const inventory=buildUnifiedVideoInventory();
  const liveVault=await getOwnerVaultRegistrySnapshot();
  const labels=new Map(taxonomy.categories.map(category=>[category.id,category.label[locale]] as const));
  const topicNames=new Map(taxonomy.categories.flatMap(category=>
@@ -80,11 +81,49 @@ export default async function VideoLibraryCoveragePage({searchParams}:Props){
    </div>
    <p className={styles.disclaimer}>{t.limit} {t.unbound} {t.unknown}</p>
    <p className={styles.subtle}>{liveVault.observedAt?t.dbChecked+": "+liveVault.observedAt:t.dbUnknown}. {t.r2Unverified}.</p>
-   <AdminVideoLibraryClips locale={locale}
-     scenes={sceneCatalog.scenes.filter(scene=>scene.media==="licensed_mp4"&&scene.status==="approved")
-       .map(scene=>({id:scene.id,theme:scene.theme,collection:scene.collection,
-         label:scene.label,poster:scene.poster,video:scene.video,
-         allowedAspects:scene.allowedAspects}))}/>
+   <section className={styles.section} id="unified-video-inventory" aria-labelledby="unified-video-inventory-title">
+    <h2 id="unified-video-inventory-title">{locale==="ru"?"Где хранятся наши видео":locale==="es"?"Dónde están nuestros vídeos":"Where our videos are stored"}</h2>
+    <p className={styles.subtle}>{locale==="ru"?
+      "Единый указатель без копирования файлов: 56 монтажных видеокомпозиций и 684 процедурные анимации уже есть в каталоге генератора. Анимации — не реальные видеосъёмки. Внешние записи ниже — ссылки, не подтверждение воспроизведения или публикации.":
+      locale==="es"?"Índice sin copiar archivos: 56 composiciones y 684 animaciones procedimentales. Las animaciones no son filmaciones. Los enlaces externos no prueban reproducción ni publicación.":
+      "One index without copying media: 56 video compositions and 684 procedural animations already share the generator manifests. Animations are not camera footage. External records below are references, not verified playback or publication."}
+    </p>
+    <div className={styles.siteRows}>
+     <div className={styles.siteRow}><strong>Google Drive · {inventory.counts.driveListedMasters}</strong>
+      <span>{locale==="ru"?"Архивные MP4-мастера":locale==="es"?"Másteres MP4 archivados":"Archived MP4 masters"}</span>
+      <a href={VIDEO_SOURCE_FOLDERS.masters} target="_blank" rel="noopener noreferrer">{locale==="ru"?"Открыть архив":"Open archive"}</a></div>
+     <div className={styles.siteRow}><strong>HeyGen · {inventory.counts.heygenApprovedEnglishMasters}</strong>
+      <span>{locale==="ru"?"Утверждённые английские оригиналы; перенос на YouTube не подтверждён":"Approved English masters; YouTube transfer not verified"}</span>
+      <Link href="/admin/youtube-upload">{locale==="ru"?"Проверить публикации":"Check uploads"}</Link></div>
+     <div className={styles.siteRow}><strong>GitHub · {inventory.counts.separateCoachMotionFilesObserved}</strong>
+      <span>{locale==="ru"?"Анимации коучей; отдельно от генератора персональных фильмов":"Coach animations; separate from personal video generation"}</span>
+      <a href={VIDEO_SOURCE_FOLDERS.coachMotion} target="_blank" rel="noopener noreferrer">{locale==="ru"?"Папка исходников":"Source directory"}</a></div>
+     <div className={styles.siteRow}><strong>MyTube · 42 MP4 / AI Videos · 45 MP4</strong>
+      <span>{locale==="ru"?"42 исходных MP4 перенесены в AI Videos (в папке 45 MP4 всего, сверено 21.11.2026)":locale==="es"?"42 MP4 trasladados a AI Videos; 45 archivos en total (21/11/2026)":"42 source MP4 moved into AI Videos (45 MP4 total, checked 2026-11-21)"}</span>
+      <a href={VIDEO_SOURCE_FOLDERS.scenes} target="_blank" rel="noopener noreferrer">{locale==="ru"?"Открыть исходники":"Open sources"}</a></div>
+     <div className={styles.siteRow}><strong>Video Vault</strong>
+      <span>{locale==="ru"?"Приватный QA и неподтверждённые к публикации исходники":"Private QA and unreleased footage"}</span>
+      <a href={VIDEO_SOURCE_FOLDERS.vaultReview} target="_blank" rel="noopener noreferrer">{locale==="ru"?"Реестр проверки":"Review register"}</a></div>
+    </div>
+    <details className={styles.category}>
+     <summary><span className={styles.categoryName}>{locale==="ru"?"Отдельные исходники и мастера в Drive / HeyGen":locale==="es"?"Fuentes y másteres de Drive / HeyGen":"Individual Drive / HeyGen master references"}</span>
+      <span className={styles.categoryCount}>{inventory.externalMasters.length}</span></summary>
+     <p className={styles.subtle}>{locale==="ru"?"Ссылки не используются автоматически в генераторе, пока не подтверждены права, формат и воспроизведение. Для приватных записей отдельный доступ.":"These links are never auto-imported into the generator without media, rights and playback QA."}</p>
+     <div className={styles.topicList}>
+      {inventory.externalMasters.map(item=><div className={styles.topicRow} key={item.id}>
+       <a href={item.url} target="_blank" rel="noopener noreferrer">{item.title}</a>
+       <span className={styles.topicCount}>{item.provider}</span>
+       <small className={styles.topicState}>{item.kind==="archived_master"?
+        (locale==="ru"?"MP4 найден в архиве · просмотр не проверен":"Drive master listed · playback not rechecked"):
+        (locale==="ru"?"Готовый мастер HeyGen · YouTube не подтверждён":"HeyGen master · YouTube upload unverified")}</small>
+      </div>)}
+     </div>
+    </details>
+    <p className={styles.subtle}>{locale==="ru"?
+      "Приватные клиентские видео и черновики Telegram не входят в этот публичный каталог и не передаются в генератор. Данные Drive/HeyGen — сверка от 21.11.2026, не автоматическая синхронизация.":
+      "Private client and Telegram draft videos are excluded from the public generator. Drive/HeyGen references were reconciled on 2026-11-21, not live synced."}</p>
+   </section>
+   <AdminVideoLibraryClips locale={locale} scenes={inventory.localScenes}/>
    <section className={styles.section} aria-labelledby="video-source-research-heading">
     <h2 id="video-source-research-heading">{locale==="ru"?"Новые источники видео":locale==="es"?"Nuevas fuentes de vídeo":"New video source leads"} · {videoSourcing.sourcePageCount}</h2>
     <p className={styles.subtle}>{locale==="ru"

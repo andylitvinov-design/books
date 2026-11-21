@@ -263,10 +263,13 @@ test("original-motion studio selection and retiming both honor actual source dur
   assert.match(studio,/verified\.map\(scene=>scene\?\.durationSeconds\?\?NaN\)/);
   assert.match(studio,/allocateSourceBoundedFilmTimeline\(seconds,ids,/);
   assert.match(studio,/verifiedSources\.map\(scene=>scene\?\.durationSeconds\?\?NaN\)/);
-  // The source guard now normalizes Error.message before offering a verified
-  // portrait fallback; never allow a failed physical source to be rendered.
-  assert.match(studio,/reason==="UNVERIFIED_FOOTAGE_ASPECT_DURATION_OR_REUSE"/);
-  assert.match(studio,/formatUnavailable=outputAspect!=="portrait"&&/);
+  // A portrait recovery control is offered ONLY when a real licensed
+  // compilation successfully validates ALL source clips in that aspect.
+  // The presence of an Error.message alone cannot authorize this fallback.
+  assert.match(studio,/const portraitVerified=outputAspect!=="portrait"&&/);
+  assert.match(studio,/compileFreeFilmPreset\(preset,locale,seconds,"portrait",edit\)/);
+  assert.match(studio,/if\(portraitVerified\)\{/);
+  assert.match(studio,/catch\{return false;\}/);
   assert.match(studio,/setPortraitRetry\(\{presetId,seconds,edit\}\)/);
   assert.match(studio,/validateMontageClips\(\[\.\.\.clipIds\],FREE_FILM_CATALOG/);
   assert.match(studio,/verifiedSceneAspect\(scene,aspect\)/);

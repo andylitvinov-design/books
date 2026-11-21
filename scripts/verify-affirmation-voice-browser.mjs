@@ -75,11 +75,32 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(continueToIdeas).toBeDisabled();
     const quizProgress=page.locator('[data-video-goal-quiz-progress]');
     await expect(quizProgress).toContainText('1 / 3');
+    const mirror=page.locator('[data-hh-mirror-goals]');
+    await expect(page.locator('[data-hh-mirror-title]')).toBeVisible();
+    await expect(page.locator('[data-video-intro-info]')).toBeVisible();
+    await expect(page.locator('[data-video-my-film]')).toBeVisible();
+    await expect(mirror).toBeVisible();
+    await expect(mirror.locator('[data-hh-mirror-goal-choice]')).toHaveCount(4);
+    await mirror.locator('[data-hh-mirror-audience="business"]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-mode","business");
+    await expect(mirror.locator('[data-hh-mirror-goal-choice="growth"]')).toBeVisible();
+    await mirror.locator('[data-hh-mirror-audience="me"]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-mode","me");
+    await mirror.locator('[data-hh-mirror-goal-choice="love"]').click();
+    const customWish=locale==="ru"?"Хочу больше взаимопонимания":locale==="es"
+      ?"Quiero tener más comprensión mutua":"I want more mutual understanding";
+    await mirror.locator('[data-hh-mirror-wish]').fill(customWish);
+    await mirror.locator('[data-hh-mirror-more-goals]').click();
+    await expect(studio).toHaveAttribute("data-hh-mirror-advanced","true");
     const categories=page.locator('[data-auto-video-category]');
     await expect(categories).toHaveCount(4);
-    await categories.first().click();
+    await expect(categories.first()).toBeVisible();
+    await expect(page.locator('[data-auto-video-input]')).toHaveValue(customWish);
+    await mirror.locator('[data-hh-mirror-next]').click();
+    await expect(studio).toHaveAttribute("data-video-scenario-open","true");
     await expect(quizProgress).toContainText('2 / 3');
     await expect(continueToIdeas).toBeDisabled();
+    await expect(page.locator('[data-auto-video-input]')).toHaveValue(customWish);
     const subcategories=page.locator('[data-auto-video-subcategory]');
     await expect(subcategories).toHaveCount(4);
     const subcategoryArt=page.locator('[data-video-goal-subcategory-cards] [data-video-goal-art]');
@@ -107,30 +128,60 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(ideas).toHaveAttribute("aria-pressed","true");
     await expect(studio).toHaveAttribute("data-active-workspace","phrases");
     await expect(page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]')).toBeVisible();
-    // The currently released Magic Mirror starts Ideas on the Goal tab.
-    // The old optional refinement disclosure is intentionally not visible
-    // until personalization. Test the user's real goal action rather than
-    // force-open an obsolete hidden control or skip that decision.
-    const ideasGoalTab=page.locator('[data-video-ideas-tab="goal"]');
-    const goalPane=page.locator('[data-video-ideas-goal-panel]');
-    await expect(ideasGoalTab).toHaveAttribute("aria-pressed","true");
-    await expect(goalPane).toBeVisible();
-    const goalCards=goalPane.locator('[data-video-ideas-goal-choice]');
-    await expect(goalCards).toHaveCount(3);
-    const nextGoal=goalPane.locator('[data-video-ideas-goal-next]');
-    await expect(nextGoal).toBeDisabled();
-    const choice=goalCards.nth(1); // actual support selection, no synthetic React state
-    if(browser.browserType().name()==="webkit")await choice.tap();
-    else await choice.click();
-    await expect(choice).toHaveAttribute("aria-pressed","true");
-    await expect(nextGoal).toBeEnabled();
-    if(browser.browserType().name()==="webkit")await nextGoal.tap();
-    else await nextGoal.click();
+    // Purpose-first Ideas opens Goal, not Personalization. Select an actual
+    // goal and complete its short, goal-specific quiz before testing the
+    // original optional refinement and Montage text editor.
+    const ideasGoalPane=page.locator('[data-video-ideas-goal-panel]');
+    await expect(ideasGoalPane).toBeVisible();
+    await expect(page.locator('[data-video-ideas-tab="goal"]'))
+      .toHaveAttribute("aria-pressed","true");
+    await expect(page.locator('[data-video-ideas-tab="personalization"]')).toBeDisabled();
+    const goalChoices=ideasGoalPane.locator('[data-video-ideas-goal-choice]');
+    await expect(goalChoices).toHaveCount(3);
+    await ideasGoalPane.locator('[data-video-ideas-goal-choice="rest"]').click();
+    await ideasGoalPane.locator('[data-video-ideas-goal-next]').click();
     await expect(page.locator('[data-video-ideas-tab="personalization"]'))
       .toHaveAttribute("aria-pressed","true");
-    await expect(page.locator('[data-video-ideas-personalization-panel]'))
-      .toBeVisible();
-    // The existing visible Montage rail remains available for voice/text QA.
+    await expect(page.locator('[data-video-ideas-personalization-panel]')).toBeVisible();
+    const purposeQuiz=page.locator('[data-video-personalization]');
+    await expect(purposeQuiz).toHaveAttribute("data-video-personalization-goal","leisure");
+    // Goal-first Personalization permits an optional expanded topic disclosure
+    // only AFTER the real Goal selection; it must never replace the five
+    // goal-scoped answers or appear as a mandatory extra step.
+    const refinement=page.locator('[data-video-ideas-refinement]');
+    await expect(refinement).toHaveCount(1);
+    await expect(refinement.locator(":scope > summary")).toBeVisible();
+    await expect(purposeQuiz).toBeVisible();
+    // Complete leisure's three real steps (desired mood, current energy, name)
+    // so subsequent Montage assertions start from a confirmed profile.
+    await purposeQuiz.locator('[data-video-personalization-choice="desired-calm"]').click();
+    await expect(purposeQuiz).toHaveAttribute("data-video-personalization-step","2");
+    await purposeQuiz.locator('[data-video-personalization-energy="5"]').click();
+    await expect(purposeQuiz).toHaveAttribute("data-video-personalization-step","3");
+    // The user's chosen goal must survive every answer, not just the initial
+    // category handoff. A late director brief must not invalidate its identity.
+    const preservedGoal=ideasGoalPane.locator('[data-video-ideas-goal-choice="rest"]');
+    await expect(preservedGoal).toHaveAttribute("aria-pressed","true");
+    const finishPersonalization=purposeQuiz.locator('[data-video-personalization-clarify-continue]');
+    await expect(finishPersonalization).toBeVisible();
+    await expect(finishPersonalization).toBeEnabled();
+    await finishPersonalization.tap();
+    try{
+      await expect(page.locator('[data-video-ideas-tab="concept"]'))
+        .toHaveAttribute("aria-pressed","true",{timeout:12000});
+      await expect(page.locator('[data-video-ideas-tab="concept"]')).toBeEnabled();
+    }catch(error){
+      // Structural browser-only diagnostics: never log the private wish,
+      // emotional answers, preferred name or media contents.
+      const structural=await page.evaluate(()=>({
+        stage:document.querySelector('[data-video-quick-phrases]')?.getAttribute('data-ideas-subtab')||null,
+        selectedGoal:document.querySelector('[data-video-ideas-goal-choice="rest"][aria-pressed="true"]')!==null,
+        quizStep:document.querySelector('[data-video-personalization]')?.getAttribute('data-video-personalization-step')||null,
+        conceptDisabled:document.querySelector('[data-video-ideas-tab="concept"]')?.hasAttribute('disabled')??null,
+      })).catch(()=>({diagnosticsUnavailable:true}));
+      throw new Error("WEBKIT_GOAL_TO_CONCEPT_FAILED "+JSON.stringify(structural),{cause:error});
+    }
+    // The legacy extra CTA is intentionally hidden: tap the visible Montage rail.
     await openVisibleMontageText(page,browser.browserType().name());
     await expect(page.locator('[data-video-montage-tab="text"]'))
       .toHaveAttribute("aria-pressed","true");
@@ -223,17 +274,32 @@ async function verifyWorkspaceHydration(browser,locale){
         // unrelated stock frames depict the six authored physical events.
         await expect(automaticStoryboard).toHaveAttribute("data-storyboard-action-proof","editorial_unverified");
         await expect(automaticStoryboard).toHaveAttribute("data-storyboard-media-ready","false");
-        // Six genuine, rights-reviewed photographs are visual references, not
-        // proof that the filmed physical actions have been verified for export.
+        // Authored scene references must match the actual action. Missing
+        // matches show an honest Footage needed sketch, never an unrelated photo.
         const referenceCount=Number(await automaticStoryboard.getAttribute("data-storyboard-reference-count"));
-        assert.equal(referenceCount,storyboardShotCount,
-          "every authored 30-second scene must retain its own photographic reference");
+        assert.ok(Number.isSafeInteger(referenceCount)&&referenceCount>=0&&
+          referenceCount<=storyboardShotCount,
+          "reference count must be bounded by the number of authored scenes");
         await expect(automaticStoryboard).toHaveAttribute("data-storyboard-graphics-mode",
-          "licensed-photographic-references");
-        await expect(automaticStoryboard).toHaveAttribute("data-storyboard-reference-status",
-          "editorial_photo_reference_not_action_verified");
+          referenceCount?"licensed-photographic-references":"screenplay-scene-sketch");
+        assert.equal(await automaticStoryboard.getAttribute("data-storyboard-reference-status"),
+          referenceCount?"editorial_photo_reference_not_action_verified":null);
         const referencePhotos=cards.locator('img[data-storyboard-reference-photo]');
         await expect(referencePhotos).toHaveCount(referenceCount);
+        const kinds=await cards.evaluateAll(nodes=>nodes.map(node=>
+          node.getAttribute("data-story-media-kind")));
+        assert.equal(kinds.filter(kind=>kind==="reference").length,referenceCount,
+          "reference images must belong to distinct authored scenes");
+        assert.ok(kinds.every(kind=>["reference","missing","video","photo"].includes(kind)),
+          "every authored scene must display a recognized honest media state");
+        for(let i=0;i<storyboardShotCount;i++){
+          if(kinds[i]==="missing"){
+            await expect(cards.nth(i).locator('[data-video-story-media-missing="true"]'))
+              .toHaveCount(1);
+            await expect(cards.nth(i).locator('img[data-storyboard-reference-photo]'))
+              .toHaveCount(0);
+          }
+        }
         for(let i=0;i<referenceCount;i++){
           const photo=referencePhotos.nth(i);
           assert.ok((await photo.getAttribute("src"))?.startsWith("/"),
@@ -268,10 +334,29 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(montageStyle).toHaveAttribute("aria-pressed","true");
     const ideasTop=page.locator('[data-video-quick-control="phrases"]');
     await ideasTop.tap();
+    // Returning from Montage preserves the last selected Ideas panel
+    // (Concept), not a fabricated Goal reset. The chosen goal and confirmed
+    // Personalization still remain accessible with real taps.
+    const ideasGoalTab=page.locator('[data-video-ideas-tab="goal"]');
     const ideasConceptTab=page.locator('[data-video-ideas-tab="concept"]');
     const ideasPersonalTab=page.locator('[data-video-ideas-tab="personalization"]');
-    await expect(ideasPersonalTab).toHaveAttribute("aria-pressed","true");
+    await expect(ideasConceptTab).toHaveAttribute("aria-pressed","true");
+    await expect(ideasGoalTab).toBeEnabled();
+    await expect(ideasPersonalTab).toBeEnabled();
+    await ideasGoalTab.tap();
+    await expect(ideasGoalTab).toHaveAttribute("aria-pressed","true");
+    await expect(page.locator('[data-video-ideas-goal-selected]')).toBeVisible();
+    // The previous leisure profile has been confirmed; only changing the goal
+    // should reset confirmation and temporarily lock Concept. Exercise an
+    // actual visitor switch to emotional support, not a synthetic reset.
+    await expect(ideasConceptTab).toBeEnabled();
+    const supportGoal=page.locator('[data-video-ideas-goal-choice="accept"]');
+    await expect(supportGoal).toBeVisible();
+    await supportGoal.tap();
+    await expect(supportGoal).toHaveAttribute("aria-pressed","true");
     await expect(ideasConceptTab).toBeDisabled();
+    await page.locator('[data-video-ideas-goal-next]').tap();
+    await expect(ideasPersonalTab).toHaveAttribute("aria-pressed","true");
     // Support must complete each real required question before Concept unlocks.
     // Never force-tap a disabled tab or substitute synthetic React state.
     const supportQuiz=page.locator('[data-video-personalization][data-video-personalization-goal="support"]');
@@ -1705,7 +1790,110 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           phase(engine,"final-six-photo-consent-after-audio-style-edits");
           await expect(montageProTab).toHaveAttribute("aria-pressed","true");
         }else{
-          await expect(finalStoryboard).toHaveAttribute("data-storyboard-media-ready","true");
+          // An authored screenplay may have no action-matching licensed photos.
+          // The editor must NOT claim media is ready or auto-approve unrelated
+          // pictures. This Story integrity check is independent of the genuine
+          // local MP4 encoder exercised below through the existing Free path.
+          const count=Number(await finalStoryboard.getAttribute("data-storyboard-reference-count"));
+          assert.ok(Number.isInteger(count)&&count>=0&&count<=6,
+            "Storyboard reference count must be finite and bounded");
+          if(count<6){
+            await expect(finalStoryboard).toHaveAttribute("data-storyboard-media-ready","false");
+            await expect(finalStoryboard).toHaveAttribute("data-storyboard-action-proof","editorial_unverified");
+            await expect(finalStoryboard.locator('[data-story-media-kind="missing"]'))
+              .toHaveCount(6-count);
+            await expect(finalStoryboard.locator('[data-storyboard-apply-reference-photos]'))
+              .toHaveCount(0);
+            // A no-match Story is explicitly blocked: no simulated reference
+            // consent and no claim that its six physical actions were filmed.
+            phase(engine,"story-action-media-missing-fail-closed");
+            // No substitute photograph is passed off as a filmed screenplay.
+            // The visitor may instead intentionally choose a DIFFERENT,
+            // already licensed local compilation. Its actual decoded movie,
+            // consented voice, and credits still face every native WebKit gate.
+            await page.locator('[data-video-quick-control="video"]').click();
+            const filmCatalogue=page.locator(
+              '[data-free-film-compilation-catalog] [data-free-film-preset]');
+            if(!await filmCatalogue.first().isVisible()){
+              const moreGoals=page.locator('[data-hh-mirror-more-goals]');
+              await expect(moreGoals).toBeVisible({timeout:15000});
+              if(engine==="webkit")await moreGoals.tap();
+              else await moreGoals.click();
+            }
+            await expect(filmCatalogue.first()).toBeVisible({timeout:15000});
+            // Some approved masters cannot fill the visitor's current
+            // duration/aspect. A visible tile may legitimately reject that
+            // combination. Try the actual catalogue selections (including
+            // its explicit All control), but require one genuinely validated
+            // set of distinct, licensed physical source frames. No fake
+            // pressed state, no unlicensed replacement, no waived WebKit.
+            const portraitRetry=page.locator('[data-video-portrait-retry]');
+            let chosenId=null;
+            for(let expanded=0;expanded<2&&!chosenId;expanded++){
+              if(expanded){
+                const moreFilms=page.locator('[data-free-film-more]');
+                await expect(moreFilms).toBeVisible({timeout:15000});
+                if(await moreFilms.getAttribute('aria-expanded')!=='true'){
+                  if(engine==="webkit")await moreFilms.tap();
+                  else await moreFilms.click();
+                }
+              }
+              const ids=await filmCatalogue.evaluateAll(nodes=>nodes.map(node=>
+                node.getAttribute('data-free-film-preset')).filter(Boolean));
+              assert.ok(ids.length>0&&ids.length<3000&&
+                ids.every(id=>/^[a-z0-9-]+$/.test(id)),
+                "Approved catalogue IDs must remain bounded and immutable");
+              // The expanded licensed library legitimately exceeds 100
+              // entries. Prioritize independently generated approved motion
+              // masters, then stock compilations, but cap physical user taps.
+              // Every candidate still must pass actual source validation.
+              const tried=expanded?[
+                ...ids.filter(id=>id.startsWith("motion-film-")),
+                ...ids.filter(id=>!id.startsWith("motion-film-")),
+              ]:ids;
+              for(const id of tried.slice(0,expanded?45:4)){
+                if(chosenId)break;
+                const option=page.locator(
+                  '[data-free-film-compilation-catalog] [data-free-film-preset="'+id+'"]');
+                if(!await option.isVisible()||!await option.isEnabled())continue;
+                if(engine==="webkit")await option.tap();
+                else await option.click();
+                const selected=page.locator(
+                  '[data-free-film-compilation-catalog] [data-free-film-preset="'+id+'"]');
+                // Wait for the React selection or its authentic approved
+                // portrait-only fallback. Neither outcome is manufactured.
+                try{
+                  await expect.poll(async()=>(
+                    await selected.getAttribute('aria-pressed')==='true'||
+                    await portraitRetry.isVisible()),
+                    {timeout:1500,intervals:[100,250,500]}).toBe(true);
+                }catch{}
+                if(await selected.getAttribute('aria-pressed')==='true'){
+                  chosenId=id;break;
+                }
+                if(await portraitRetry.isVisible()&&await portraitRetry.isEnabled()){
+                  if(engine==="webkit")await portraitRetry.tap();
+                  else await portraitRetry.click();
+                  if(await selected.getAttribute('aria-pressed')==='true'){
+                    chosenId=id;
+                    phase(engine,"explicit-reviewed-portrait-masters-selected");
+                  }
+                }
+              }
+            }
+            assert.ok(chosenId,
+              "No licensed first-party film could be selected at available verified aspect/duration; fail closed");
+            const chosenFilm=page.locator(
+              '[data-free-film-compilation-catalog] [data-free-film-preset="'+chosenId+'"]');
+            await expect(chosenFilm).toHaveAttribute('aria-pressed','true',{timeout:15000});
+            await expect(page.locator('[data-free-film-readiness]')).toBeVisible();
+            phase(engine,"explicit-reviewed-film-compilation-selected");
+            await page.locator('[data-video-quick-control="editor"]').click();
+            await expect(page.locator('[data-mandala-free-video]'))
+              .toHaveAttribute('data-active-workspace','editor');
+          }else{
+            await expect(finalStoryboard).toHaveAttribute("data-storyboard-media-ready","true");
+          }
           await montageProTab.click();
         }
         await montageProOffer.locator('[data-video-montage-pro-choice="free"]').click();
@@ -1736,25 +1924,25 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         await readyGenerate.click();
         phase(engine,"ready-free-render-requested");
         try{
-        await expect.poll(()=>page.evaluate(()=>
-          Boolean(window.__hhReadyInlineCheckInEvidence?.progress&&
-            window.__hhReadyInlineCheckInEvidence?.step)),
-          {timeout:20000,intervals:[100,250,500]}).toBe(true);
+          await expect.poll(()=>page.evaluate(()=>
+            Boolean(window.__hhReadyInlineCheckInEvidence?.progress&&
+              window.__hhReadyInlineCheckInEvidence?.step)),
+            {timeout:20000,intervals:[100,250,500]}).toBe(true);
         }catch(error){
-          // Emit bounded UI state to identify a real missing render, but keep
-          // the 7-question + physical video+audio acceptance fail-closed.
+          // Report only bounded structural state, not private speech or media.
           const gate=await page.evaluate(()=>({
+            workspace:document.querySelector('[data-mandala-free-video]')?.getAttribute('data-active-workspace')||null,
             readyPhase:document.querySelector('[data-ready-status]')?.getAttribute('data-ready-status-phase')||null,
-            readyState:document.querySelector('[data-video-ready]')?.getAttribute('data-ready-state')||null,
-            generating:Boolean(document.querySelector('[data-ready-generating]')),
-            checkin:Boolean(document.querySelector('[data-ready-sequential-checkin]')),
-            observed:window.__hhReadyInlineCheckInEvidence||null,
-            tierNotice:document.querySelector('[data-ready-video-tier-notice]')?.textContent?.trim()||null,
             exportFailed:Boolean(document.querySelector('[data-ready-export-failed]')),
             narrationStale:Boolean(document.querySelector('[data-video-narration-stale]')),
-            activeWorkspace:document.querySelector('[data-mandala-free-video]')?.getAttribute('data-active-workspace')||null
+            readyState:document.querySelector('[data-video-ready]')?.getAttribute('data-ready-state')||null,
+            generating:Boolean(document.querySelector('[data-ready-generating]')),
+            firstVideoApproval:document.querySelector('[data-video-auto-storyboard]')?.getAttribute('data-storyboard-media-ready')||null,
+            hasSelectedFilm:Boolean(document.querySelector('[data-free-film-preset][aria-pressed="true"]')),
+            hasCheckin:Boolean(document.querySelector('[data-ready-sequential-checkin]')),
+            observed:window.__hhReadyInlineCheckInEvidence||null
           }));
-          throw new Error("READY_CHECKIN_RENDER_NOT_OBSERVED "+JSON.stringify(gate),{cause:error});
+          throw new Error("READY_CHECKIN_REAL_EXPORT_NOT_STARTED "+JSON.stringify(gate),{cause:error});
         }
         const observation=await page.evaluate(()=>{
           window.__hhReadyCheckInObserver?.disconnect();
