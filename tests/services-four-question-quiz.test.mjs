@@ -92,3 +92,21 @@ test("same-page categories and production browser acceptance remain",()=>{
  assert.doesNotMatch(browser,/data-services-more-topics/);
  assert.match(read("app/es/services/page.tsx"),/<ServicesAssistQuiz locale="es"\s*\/>/);
 });
+
+test("ten Support directions are visible and empty quiz results offer useful actions",()=>{
+  const c=read("components/services-assist-quiz.tsx");
+  const styles=read("components/services-assist-quiz.module.css");
+  const recommendations=read("components/assist-top-recommendations.tsx");
+  for(const key of ["constellations","practices","courses","tests"]){
+    assert.ok(c.includes('key: "'+key+'"'),key+" must have a visible card");
+    assert.ok(styles.includes('data-services-quiz-category="'+key+'"'),key+" must use its own photograph");
+  }
+  assert.match(c,/data-services-extra-categories/);
+  assert.match(c,/categoryGridMore/);
+  assert.doesNotMatch(c,/<details className=\{styles\.categoryMore\}/);
+  assert.match(c,/data-services-quiz-summary/);
+  assert.match(c,/onAdjustFilters/);
+  assert.match(recommendations,/data-support-empty-result/);
+  assert.match(recommendations,/services\/free-situation-review/);
+  assert.match(recommendations,/styles\.disclosure/);
+});

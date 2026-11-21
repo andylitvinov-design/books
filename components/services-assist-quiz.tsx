@@ -55,7 +55,7 @@ const copy: Record<PublicLocale, QuizCopy> = {
     "morePreview": "Расстановки · Практики · Курсы · Тесты",
     "moreLinks": {"constellations":"Расстановки","practices":"Практики","courses":"Курсы","tests":"Тесты"},
     "privacy": "Ответы остаются в браузере. Мы не сохраняем их и не отправляем ИИ или в CRM.",
-    "empty": "Под выбранные условия подтверждённых вариантов пока нет. Измените формат или бюджет.",
+    "empty": "Нет предложения одновременно под ваш формат и бюджет. Попробуйте изменить выбор.",
     "section": "Направления поддержки",
     "step": "Вопрос",
     "profile": "Личный кабинет",
@@ -252,7 +252,7 @@ const copy: Record<PublicLocale, QuizCopy> = {
     "morePreview": "Constellations · Practices · Courses · Tests",
     "moreLinks": {"constellations":"Constellations","practices":"Practices","courses":"Courses","tests":"Tests"},
     "privacy": "Answers stay in your browser. They are not stored or sent to AI or CRM.",
-    "empty": "No verified options match your choices yet. Try another format or budget.",
+    "empty": "No published offer matches both your format and budget. You can change your choices.",
     "section": "Areas of Support",
     "step": "Question",
     "profile": "My profile",
@@ -449,7 +449,7 @@ const copy: Record<PublicLocale, QuizCopy> = {
     "morePreview": "Constelaciones · Prácticas · Cursos · Tests",
     "moreLinks": {"constellations":"Constelaciones","practices":"Prácticas","courses":"Cursos","tests":"Tests"},
     "privacy": "Las respuestas quedan en tu navegador. No se guardan ni se envían a IA o CRM.",
-    "empty": "No hay opciones verificadas para esos criterios. Cambia formato o presupuesto.",
+    "empty": "No hay una oferta publicada que cumpla el formato y presupuesto. Puedes cambiar tu elección.",
     "section": "Áreas de apoyo",
     "step": "Pregunta",
     "profile": "Mi perfil",
@@ -657,6 +657,16 @@ const categories: readonly { key: Category; Icon: LucideIcon }[] = [
   { key: "psychotherapy", Icon: Brain },
   { key: "video", Icon: MonitorPlay },
 ];
+// Always show the four additional directions. They target the existing
+// three-offer sections on this page rather than hiding in a disclosure.
+const additionalCategories: readonly {
+  key: MoreCategory; Icon: LucideIcon; target: "constellations" | "practice" | "learning" | "tests";
+}[] = [
+  { key: "constellations", Icon: UsersRound, target: "constellations" },
+  { key: "practices", Icon: Leaf, target: "practice" },
+  { key: "courses", Icon: GraduationCap, target: "learning" },
+  { key: "tests", Icon: ClipboardCheck, target: "tests" },
+];
 
 const supportVisualCopy: Record<PublicLocale, {
  heading:string; tagline:string; prompt:string; audience:string; forMe:string; forBusiness:string;
@@ -853,16 +863,18 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
             </span>
           </a>)}
       </div>
-      <details className={styles.categoryMore} data-services-extra-categories>
-        <summary><strong>{t.moreTitle}</strong><span className={styles.morePreview}>{t.morePreview}</span>
-          <span className={styles.moreArrow}><ArrowRight size={21} aria-hidden="true" /></span></summary>
-        <nav className={styles.moreLinks} aria-label={t.moreTitle}>
-          <a href={"#" + serviceGroupAnchor(servicesCategoryTargets.constellations)}>{t.moreLinks.constellations}</a>
-          <Link href={"/" + locale + "/meditations"} prefetch={false}>{t.moreLinks.practices}</Link>
-          <a href={"#" + serviceGroupAnchor(servicesCategoryTargets.learning)}>{t.moreLinks.courses}</a>
-          <a href={"#" + serviceGroupAnchor(servicesCategoryTargets.tests)}>{t.moreLinks.tests}</a>
-        </nav>
-      </details>
+      <nav className={styles.categoryGridMore} data-services-extra-categories aria-label={t.moreTitle}>
+        {additionalCategories.map(({key,Icon,target}) =>
+          <a href={"#" + serviceGroupAnchor(servicesCategoryTargets[target])} key={key}
+            className={styles.category + " " + styles.categorySecondary}
+            data-services-quiz-category={key} data-services-quiz-target={servicesCategoryTargets[target]}>
+            <span className={styles.categoryMedia} data-services-card-photo aria-hidden="true" />
+            <span className={styles.categoryInfo}>
+              <span className={styles.categoryIcon}><Icon size={24} strokeWidth={1.65} aria-hidden="true" /></span>
+              <span className={styles.categoryName}>{t.moreLinks[key]}</span>
+            </span>
+          </a>)}
+      </nav>
       <div className={styles.categoryExtras}>
         <Link href={"/" + locale + "/shamanica"} prefetch={false}
           data-services-shamanica-link><Leaf size={15} aria-hidden="true" /> {t.shamanica}</Link>
@@ -871,9 +883,20 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
     </section>
 
     {submitted ? <div className={styles.results} tabIndex={-1} data-services-quiz-results>
-      <p className={styles.summary} data-services-quiz-summary><strong>{t.summary}:</strong> {summary}{goal.trim() ? <> · {goal.trim()}</> : null}</p>
+      <details className={styles.summary} data-services-quiz-summary>
+        <summary><strong>{t.summary}</strong>
+          <span>{t.questions.topic.options.find(([value]) => value === answers.topic)?.[1]}</span>
+          <ChevronDown size={17} aria-hidden="true" /></summary>
+        <p>{summary}{goal.trim() ? <> · {goal.trim()}</> : null}</p>
+      </details>
       <AssistTopRecommendations locale={locale} focus={focus} preferences={preferences}
-        matchingIds={matchingIds} allowedIds={matchingIds} categoryGroups noMatchLabel={t.empty} />
+        matchingIds={matchingIds} allowedIds={matchingIds} categoryGroups noMatchLabel={t.empty}
+        onAdjustFilters={() => {
+          setSubmitted(false);
+          setStep(2);
+          requestAnimationFrame(() =>
+            document.querySelector<HTMLElement>("[data-services-quiz-form]")?.scrollIntoView({ block: "start", behavior: "smooth" }));
+        }} />
     </div> : null}
     <p className={styles.privacy}>{t.privacy}</p>
   </section>;
