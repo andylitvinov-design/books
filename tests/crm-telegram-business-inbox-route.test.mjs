@@ -84,3 +84,37 @@ test('Business CRM manual replies require fresh customer contact',()=>{
  assert.equal(canReply({...args,lastInboundAt:null}).reason,'CUSTOMER_MUST_START');
  assert.equal(canReply({...args,channel:'not_a_channel',lastInboundAt:new Date(now-1000).toISOString()}).reason,'INVALID_CHANNEL');
 });
+
+
+const {composeTelegramSecretaryClarification}=await import('../lib/crm/telegram-secretary-offers.mjs')
+test('Ali answers second unclassified Business message without private probing',()=>{
+ for(const [message,locale] of [['What','en'],['Что?','ru'],['¿Qué?','es']]){
+   const planned=composeTelegramSecretaryClarification(message,locale)
+   assert.equal(planned?.handled,true)
+   assert.equal(planned?.kind,'clarify')
+   assert.equal(planned?.modelUsed,false)
+   assert.equal(planned?.buttons?.length,0)
+   assert.equal((planned.text.match(/[?¿？]/gu)||[]).length<=2,true)
+   assert.doesNotMatch(planned.text,/symptom|trauma|family history|личн(?:ые|ых) вопрос|травм|síntoma/iu)
+ }
+ for(const message of ['', '/stop', '/start', 'thanks', 'Спасибо!', 'ok',
+   '[HH-REQ:homeopathy:en]', '👍', 'x'.repeat(801)])
+   assert.equal(composeTelegramSecretaryClarification(message,'en'),null)
+})
+test('Second-message reply requires signed unsuppressed Business CRM, excludes STOP/human/replay',()=>{
+ const secretary=read('lib/crm/telegram-secretary-service.js')
+ assert.match(hook,/telegramBusinessInbox\?\.matched===true/)
+ assert.match(hook,/telegramBusinessInbox\.recorded===true/)
+ assert.match(hook,/businessLead\?\.created===false&&businessLead\?\.suppressed===false/)
+ assert.match(hook,/hh-tg-secretary-clarify-chat/)
+ assert.ok(hook.indexOf('gateTelegramBusinessSecretaryOptOut(body,config)')<
+   hook.indexOf('allowClarification:'))
+ assert.ok(hook.indexOf('telegramBusinessInbox.humanActive')<
+   hook.indexOf('allowClarification:'))
+ assert.ok(hook.indexOf('telegramBusinessInbox.recorded!==true')<
+   hook.indexOf('allowClarification:'))
+ assert.match(secretary,/if\(!query&&allowClarification!==true\)return \{handled:false\}/)
+ assert.match(secretary,/composeTelegramSecretaryClarification\(event\.text,locale\)/)
+ assert.match(secretary,/secretaryStopped\(event,config\)/)
+ assert.match(secretary,/assertHolisticBusinessConnection/)
+})
