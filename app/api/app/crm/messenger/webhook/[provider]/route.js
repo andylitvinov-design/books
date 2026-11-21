@@ -29,6 +29,7 @@ import {telegramBusinessMessageFromUpdate} from '@/lib/assist/telegram-business-
 import {parseHiTelegramRating} from '@/lib/holistic-support/hi-learning-policy.mjs'
 import {insertHiLearningQuality} from '@/lib/holistic-support/hi-learning-store'
 import {processTelegramBusinessSecretary,gateTelegramBusinessSecretaryOptOut} from '@/lib/crm/telegram-secretary-service'
+import {composeTelegramSecretaryClarification} from '@/lib/crm/telegram-secretary-offers.mjs'
 
 import {notifyConfirmedTelegramBusinessOwner} from '@/lib/crm/telegram-business-owner-notice'
 import {processWhatsAppSecretary} from '@/lib/crm/whatsapp-secretary-service'
@@ -201,7 +202,7 @@ export async function POST(request,{params}){
         // one-time welcome. New contacts still use the original greeting.
         allowClarification:telegramBusinessInbox?.matched===true&&
           telegramBusinessInbox.recorded===true&&
-          businessLead?.created===false&&businessLead?.suppressed===false,
+          businessLead?.created!==true&&businessLead?.suppressed!==true,
       })
       if(secretary.handled){
         if(secretary.reply){
@@ -216,7 +217,7 @@ export async function POST(request,{params}){
             // Bounded generic clarifications prevent an endless echo loop.
             if(secretary.kind==='clarify')
               await consumeRate(config,{op:'hh-tg-secretary-clarify-chat',
-                connectionId:secretary.connectionId,chatId:secretary.to},5,86400)
+                connectionId:secretary.connectionId,chatId:secretary.to},12,86400)
             // Telemetry failures do not silence otherwise permitted messages.
             try{await setTelegramBusinessReplyState(config,telegramBusinessInbox,'send_pending')}
             catch{console.error('HH_TG_SECRETARY_REPLY_STATE_UNAVAILABLE')}
@@ -629,7 +630,30 @@ export async function POST(request,{params}){
         // Never turn untranscribed private audio into a fake text CRM lead.
         if(event.isTelegramVoice)continue
       }
-      await ingestMessengerUpdate(provider,event,config)
+      const archived=await ingestMessengerUpdate(provider,event,config)
+      // After explicit menu, V3 interview, consented diagnostics and human
+      // takeover, a newly archived ordinary Telegram Bot message must not
+      // disappear without a clarifying question. CRM's event ledger prevents
+      // provider replay from causing a second reply.
+      if(provider==='telegram'&&event?.type==='incoming'&&archived===true&&
+         !event.callbackId&&!event.photoFileId&&!event.isTelegramVoice&&
+         typeof event.rawText==='string'&&!event.rawText.trim().startsWith('/')){
+        const raw=event.rawText
+        const locale=/[а-яё]/iu.test(raw)?'ru':
+          /[¡¿áéíóúñ]|\b(?:hola|gracias|qué|que|cómo|dónde)\b/iu.test(raw)?'es':
+          event.language?.startsWith('ru')?'ru':event.language?.startsWith('es')?'es':'en'
+        const clarified=composeTelegramSecretaryClarification(raw,locale)
+        if(clarified?.text)try{
+          await consumeRate(config,{op:'hh-tg-bot-clarify-chat',to:event.userId},12,86400)
+          await consumeRate(config,{op:'hh-tg-bot-clarify-global'},100,86400)
+          await sendTelegramDiagnosticPrompt({
+            to:String(event.userId),text:clarified.text,locale,
+          })
+        }catch{
+          // Never retry unknown Telegram acceptance and risk duplicates.
+          console.error('HH_TG_BOT_CLARIFY_SEND_UNCONFIRMED')
+        }
+      }
     }
     // If the contact write failed, Telegram retries this signed update. The
     // committed Companion/V3 stages and provider event hashes prevent a
