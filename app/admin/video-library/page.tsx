@@ -98,8 +98,8 @@ export default async function VideoLibraryCoveragePage({searchParams}:Props){
      <div className={styles.siteRow}><strong>GitHub · {inventory.counts.separateCoachMotionFilesObserved}</strong>
       <span>{locale==="ru"?"Анимации коучей; отдельно от генератора персональных фильмов":"Coach animations; separate from personal video generation"}</span>
       <a href={VIDEO_SOURCE_FOLDERS.coachMotion} target="_blank" rel="noopener noreferrer">{locale==="ru"?"Папка исходников":"Source directory"}</a></div>
-     <div className={styles.siteRow}><strong>MyTube · 42 MP4</strong>
-      <span>{locale==="ru"?"Копии отдельных исходных сцен в Drive":"Scene source copies in Drive"}</span>
+     <div className={styles.siteRow}><strong>MyTube · 42 MP4 / AI Videos · 45 MP4</strong>
+      <span>{locale==="ru"?"42 исходных MP4 перенесены в AI Videos (в папке 45 MP4 всего, сверено 21.11.2026)":locale==="es"?"42 MP4 trasladados a AI Videos; 45 archivos en total (21/11/2026)":"42 source MP4 moved into AI Videos (45 MP4 total, checked 2026-11-21)"}</span>
       <a href={VIDEO_SOURCE_FOLDERS.scenes} target="_blank" rel="noopener noreferrer">{locale==="ru"?"Открыть исходники":"Open sources"}</a></div>
      <div className={styles.siteRow}><strong>Video Vault</strong>
       <span>{locale==="ru"?"Приватный QA и неподтверждённые к публикации исходники":"Private QA and unreleased footage"}</span>
