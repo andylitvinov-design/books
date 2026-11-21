@@ -2,7 +2,7 @@
 
 import {useEffect,useMemo,useState} from "react";
 import type {PublicLocale} from "@/lib/public-locales";
-import standardMotionFilms from "@/data/video-catalog/standard-motion-films-v1.json";
+import {PublishedStandardMotionFilm, getPublishedStandardMotionFilm} from "./published-standard-motion-film";
 import {
   OPENMOTION_REFERENCE_COLLECTIONS,OPENMOTION_REFERENCE_COUNT,OPENMOTION_GUIDE_COUNT,
   listOpenMotionReferences,planOpenMotionReferenceSelection,
@@ -29,7 +29,6 @@ const words={
     sceneSearch:"Catalog scenes for Motion.md",
     importGuide:"Import Motion.md",importedRender:"Render imported MP4",importError:"The Motion.md guide or its assets are unsupported.",
     templates:"Holistic House templates",downloadGuide:"Download Motion.md",renderPreset:"Render template MP4",
-    publishedFilm:"Ready filmed Anti-stress video",publishedNote:"Fixed 30-second film with English captions. No phone render, personalization or credit hold.",downloadPublished:"Download finished MP4",
     title:"OpenMotion ideas",intro:"Explore external video references, then make your own original film using Holistic House's free scenes and editor.",
     caution:"These are video references, not licensed footage or guaranteed editable templates. Local results adapt the rhythm and format, not the original brand visuals.",
     search:"Find a video style",searchHint:"Search title, movement or creator",
@@ -44,7 +43,6 @@ const words={
     sceneSearch:"Каталожные сцены для Motion.md",
     importGuide:"Загрузить Motion.md",importedRender:"Собрать загруженный MP4",importError:"Формат Motion.md или исходники не поддерживаются.",
     templates:"Шаблоны Holistic House",downloadGuide:"Скачать Motion.md",renderPreset:"Собрать шаблон в MP4",
-    publishedFilm:"Готовый видеофильм «Антистресс»",publishedNote:"30 секунд, английские титры. Без генерации на телефоне, персонализации и списания кредитов.",downloadPublished:"Скачать готовый MP4",
     title:"Идеи OpenMotion",intro:"Посмотрите внешние видеореференсы и создайте собственный ролик из наших бесплатных сцен в редакторе Holistic House.",
     caution:"Это примеры движения, а не лицензированные исходники и не обязательно редактируемые проекты. Локальное видео повторяет общий ритм и формат, а не чужой бренд.",
     search:"Найти стиль видео",searchHint:"Название, анимация или автор",
@@ -59,7 +57,6 @@ const words={
     sceneSearch:"Escenas del catálogo para Motion.md",
     importGuide:"Importar Motion.md",importedRender:"Crear MP4 importado",importError:"La guía Motion.md o sus recursos no son compatibles.",
     templates:"Plantillas de Holistic House",downloadGuide:"Descargar Motion.md",renderPreset:"Crear MP4 de la plantilla",
-    publishedFilm:"Vídeo Antiestrés terminado",publishedNote:"Película de 30 s con subtítulos en inglés. Sin exportación móvil, personalización ni créditos.",downloadPublished:"Descargar MP4 listo",
     title:"Ideas OpenMotion",intro:"Explora vídeos externos y crea tu propia película con escenas originales en el editor gratuito de Holistic House.",
     caution:"Son referencias, no material con licencia para reutilizar ni proyectos editables garantizados. La versión local adapta el ritmo y el formato, no la marca.",
     search:"Buscar estilo de vídeo",searchHint:"Título, movimiento o creador",
@@ -98,7 +95,7 @@ export function MandalaOpenMotionPicker({locale,disabled,onPick,exportReady,onEx
   const activeClip=imported?.clips.find(clip=>clip.id===replaceClipId);
   const presets=useMemo(()=>listPresetMotionGuides(locale),[locale]);
   const selectedPreset=presets.find(preset=>preset.id===presetId);
-  const publishedMaster=standardMotionFilms.films.find(film=>film.id===presetId)?.publishedMaster;
+  const publishedMaster=getPublishedStandardMotionFilm(presetId);
   const scenes=useMemo(()=>sceneSearchOpen
     ?searchMotionGuideScenes(sceneQuery,locale,imported?.aspect??selectedPreset?.aspect??"portrait")
     :[],[sceneSearchOpen,sceneQuery,locale,imported?.aspect,selectedPreset?.aspect]);
@@ -169,17 +166,7 @@ export function MandalaOpenMotionPicker({locale,disabled,onPick,exportReady,onEx
         {presets.map(preset=><option key={preset.id} value={preset.id}>{preset.label}</option>)}
       </select>
     </label>
-    {publishedMaster?<div className={css.publishedMaster} data-openmotion-standard-master>
-      <strong>{t.publishedFilm}</strong>
-      <video controls playsInline preload="metadata"
-        src={publishedMaster.path}
-        poster="/videos/holistic-house/film-collection-v2/mountain-air.jpg"
-        aria-label={t.publishedFilm}/>
-      <p>{t.publishedNote}</p>
-      <a href={publishedMaster.path} download="anti-stress-30s-en.mp4">
-        {t.downloadPublished}
-      </a>
-    </div>:null}
+    {publishedMaster?<PublishedStandardMotionFilm locale={locale} master={publishedMaster}/>:null}
     {guideHref&&selectedPreset&&!disabled?<div className={css.actions}>
       <button type="button" data-openmotion-render-preset disabled={!exportReady}
         onClick={()=>onExport(selectedPreset.id,selectedPreset.aspect)}>{t.renderPreset}</button>

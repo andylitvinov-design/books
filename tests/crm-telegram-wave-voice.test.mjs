@@ -23,7 +23,6 @@ test('native private bot voice metadata is forwarded, not fabricated as text',()
  assert.match(route,/const archived=await ingestMessengerUpdate\(provider,event,config\)/);
  assert.match(route,/const mediaKind=event\.isTelegramVoice\?'voice':/);
  assert.match(route,/if\(aiIntake\.generate\.voiceNote\)/);
- assert.match(route,/if\(aiIntake\.generate\.voiceNote\)/);
  assert.match(route,/await deliverTelegramWaveVoiceV3\(config,aiIntake\.generate/);
 });
 test('voice input metadata and external free-provider authorization are bounded',()=>{
@@ -162,6 +161,9 @@ test('native Telegram voice updates retain neutral receipts before optional sign
  assert.match(parser,/const isTelegramVoice=Boolean\(message\.voice\)/)
  assert.match(parser,/voiceNote=isTelegramVoice&&!message\.forward_origin&&!message\.is_automatic_forward/)
  assert.match(parser,/rawText:message\.text \? text : '',voiceNote,isTelegramVoice/)
+ // Guard forwarded or empty voice against fabricated text and implicit consent.
+ assert.match(parser,/const text=safeString\(message\.text\|\|'\[Non-text message\]',1200\)/)
+ assert.match(parser,/text:safeString\(event\.body,1200\)\|\|'\[Non-text message\]'/)
  assert.match(parser,/body:start\?'Started conversation':text/)
  assert.match(route,/const archived=await ingestMessengerUpdate\(provider,event,config\)/)
  assert.match(route,/if\(provider==='telegram'&&event\?\.type==='incoming'&&archived===true&&/)

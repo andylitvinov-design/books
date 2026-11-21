@@ -6106,6 +6106,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // One active request controls the fragment and scroll; no delayed scroll
   // from the previous tab can steal the next pointer's click target.
   const quickNavTokenRef=useRef(0);
+  // iPhone Safari can suppress click/pointerup when a panel shifts under a
+  // real touch. Only a stationary touchend can recover that lost navigation.
+  const quickNavTouchStartRef=useRef<{id:StudioWorkspace;x:number;y:number}|null>(null);
   const [quickNavTarget,setQuickNavTarget]=useState("");
 
   // Keep existing anchors working with the new single-editor navigation.
@@ -6246,13 +6249,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   };
 
 
-  // Existing Settings menu → same editor and Ready. The customer never receives
-  // a fake Express MP4 while our offline FFmpeg masters are absent.
-  const expressUnavailable=locale==="ru"
-    ?"Express пока недоступен: проверенных готовых MP4 нет. FFmpeg Fast Assembly работает офлайн. Выберите Personal или OpenMotion."
-    :locale==="es"
-    ?"Express aún no está disponible: no hay MP4 terminados verificados. FFmpeg Fast Assembly es sin conexión. Elige Personal u OpenMotion."
-    :"Express is not available yet: no finished verified MP4 masters exist. FFmpeg Fast Assembly is offline-only. Choose Personal or OpenMotion.";
+  // Express is a separate playback path. It never enters the Personal encoder.
+  const expressUnavailable=locale==="en"?"":locale==="ru"
+    ?"Готовый Express MP4 на русском пока недоступен."
+    :"Todavía no hay un MP4 Express terminado en español.";
   const openExistingMotionPicker=()=>{
     setActiveWorkspace("video");setStudioMode("pump");setIntroPlaying(false);
     setFirstVideoAdvancedActivated(true);setFirstVideoAdvancedOpen(true);
@@ -7683,6 +7683,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <Camera size={17} aria-hidden="true"/>
             <span>{locale==="ru"?"Фото":locale==="es"?"Foto":"Photo"}</span>
           </Link>
+          <button type="button" className={videoStyles.quickBrandPhoto}
+            data-video-settings-trigger aria-controls="mandala-support-settings"
+            aria-label={locale==="ru"?"Режим создания видео":locale==="es"?"Modo de creación de vídeo":"Video creation mode"}
+            disabled={!studioHydrated}
+            onClick={()=>window.dispatchEvent(new Event("hh:video-settings-toggle"))}>
+            <SlidersHorizontal size={17} aria-hidden="true"/>
+          </button>
           <HeaderCreditProfile locale={locale} />
         </nav>
         {creditCatalog?.chargeRequired?<p className={videoStyles.quickHint}
@@ -7713,6 +7720,21 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           aria-controls="video-workspace-panel" disabled={!studioHydrated||recording||preparing}
           // WebKit may drop click after an expanded Ideas details portal shifts
           // during release; pointer-up commits the same real selected tab.
+          onTouchStart={event=>{
+            const touch=event.touches.item(0);
+            quickNavTouchStartRef.current=touch?{id:item.id,x:touch.clientX,y:touch.clientY}:null;
+          }}
+          onTouchEnd={event=>{
+            const start=quickNavTouchStartRef.current;
+            quickNavTouchStartRef.current=null;
+            const touch=event.changedTouches.item(0);
+            // A scroll/swipe is not a tab selection; do not prevent default.
+            if(start?.id===item.id&&touch&&
+               Math.abs(touch.clientX-start.x)<=12&&
+               Math.abs(touch.clientY-start.y)<=12&&
+               activeWorkspace!==item.id)activateQuickWorkspace(item.id);
+          }}
+          onTouchCancel={()=>{quickNavTouchStartRef.current=null;}}
           onPointerUp={()=>{if(activeWorkspace!==item.id)activateQuickWorkspace(item.id);}}
           onClick={()=>activateQuickWorkspace(item.id)}><item.Icon size={18} aria-hidden="true"/>
           <span className={videoStyles.quickNavFull}>{workspaceCopy[locale][item.id].tab}</span>
