@@ -40,6 +40,8 @@ type Props = {
   renderOptions: {quality:"hd"|"fullhd";brightness:"soft"|"bright";audioVolumePercent:number};
   onWishChange: (value: string) => void;
   onApply: (draft: Draft, prefs: Pick<Preferences, "motion" | "music" | "caption">) => void;
+  motionExportReady:boolean;
+  onExportMotionPreset:(id:string,aspect:"portrait"|"landscape"|"square",markdown?:string)=>void;
   onCreate: () => void; onCancel: () => void;
 };
 
@@ -141,7 +143,7 @@ const l10n = {
 
 export function MandalaFirstVideoStart({
   locale, wish, disabled, preparing, recording, progress, resultReady, ready,
-  renderOptions, onWishChange, onApply, onCreate, onCancel,
+  renderOptions, onWishChange, onApply, motionExportReady, onExportMotionPreset, onCreate, onCancel,
 }: Props) {
   const t = l10n[locale];
   // Server-rendered inputs are not interactive until React hydration has
@@ -338,7 +340,7 @@ export function MandalaFirstVideoStart({
           <small>{locale==="ru"?"Внешние референсы · просмотр по желанию":locale==="es"?"Referencias externas · opcional":"External examples · optional"}</small>
         </span><ChevronDown size={19} aria-hidden="true"/></summary>
         {motionGalleryOpen?<MandalaOpenMotionPicker locale={locale} disabled={disabled||preparing||recording}
-          onPick={applyMotionReference}/>:null}
+          onPick={applyMotionReference} onExport={onExportMotionPreset} exportReady={motionExportReady}/>:null}
       </details>
       {motionReferenceTitle?<p className={css.subtle} role="status" data-openmotion-local-adaptation>
         {locale==="ru"?"Ритм и формат адаптированы: ":locale==="es"?"Ritmo y formato adaptados: ":"Original local adaptation: "}
