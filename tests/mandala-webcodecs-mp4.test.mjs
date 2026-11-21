@@ -196,10 +196,14 @@ test("hydration progresses Goals → Ideas through a real tap without hidden leg
   const flow=browser.slice(start,end);
   const hydrate=flow.indexOf('data-video-studio-hydrated","true"');
   const continueTap=flow.indexOf("await continueToIdeas.click()",hydrate);
-  const refinement=flow.indexOf('await refinement.locator(":scope > summary").click()',continueTap);
-  const montage=flow.indexOf("await montage.tap()",refinement);
-  assert.ok(start>=0&&end>start&&hydrate>=0&&continueTap>hydrate&&refinement>continueTap&&montage>refinement,
-    "actual visible Goals tap must reveal Ideas then the user-opened refinement before Montage");
+  const goal=flow.indexOf('const ideasGoalTab=page.locator',continueTap);
+  const cards=flow.indexOf('await expect(goalCards).toHaveCount(3)',goal);
+  const selected=flow.indexOf('await expect(choice).toHaveAttribute("aria-pressed","true")',cards);
+  const next=flow.indexOf('await expect(nextGoal).toBeEnabled()',selected);
+  const personalization=flow.indexOf('data-video-ideas-personalization-panel',next);
+  const montage=flow.indexOf('await openVisibleMontageText(page,browser.browserType().name())',personalization);
+  assert.ok(start>=0&&end>start&&hydrate>=0&&continueTap>hydrate&&goal>continueTap&&cards>goal&&selected>cards&&next>selected&&personalization>next&&montage>personalization,
+    "real Goals tap must lead through selected visible Goal and Personalization to Montage");
   assert.match(flow,/data-video-continue-scenarios/);
   assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
   assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
