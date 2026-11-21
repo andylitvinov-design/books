@@ -65,6 +65,8 @@ test('WhatsApp unknown messages clarify; consented diagnostic and STOP keep prec
  assert.match(route,/if\(waCaptureSuppressed\)continue/);
  assert.match(route,/whatsappHumanTakeoverActive\(event,config\)/);
  assert.match(route,/recordWhatsAppInboundReceipt\(event,config\)/);
+ assert.match(read('lib/crm/whatsapp-secretary-service.js'),
+  /query.kind!=='safety'&&query.kind!=='welcome'&&query.kind!=='clarify_unknown'/);
 });
 test('Telegram bot fallback follows durable CRM receipt and excludes duplicate/media',()=>{
  const index=route.lastIndexOf('const archived=await ingestMessengerUpdate(provider,event,config)');

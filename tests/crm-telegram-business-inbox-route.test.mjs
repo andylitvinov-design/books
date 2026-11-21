@@ -105,7 +105,7 @@ test('Second-message reply requires signed unsuppressed Business CRM, excludes S
  const secretary=read('lib/crm/telegram-secretary-service.js')
  assert.match(hook,/telegramBusinessInbox\?\.matched===true/)
  assert.match(hook,/telegramBusinessInbox\.recorded===true/)
- assert.match(hook,/businessLead\?\.created===false&&businessLead\?\.suppressed===false/)
+ assert.match(hook,/businessLead\?\.created!==true&&businessLead\?\.suppressed!==true/)
  assert.match(hook,/hh-tg-secretary-clarify-chat/)
  assert.ok(hook.indexOf('gateTelegramBusinessSecretaryOptOut(body,config)')<
    hook.indexOf('allowClarification:'))
