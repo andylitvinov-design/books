@@ -387,6 +387,21 @@ test("Stories WebKit enters Ideas via visible controls after native Goal quiz",(
  assert.doesNotMatch(source,/await advance\.waitFor\(\{state:'visible'|advance\.tap\(\{force:true\}\)/);
 });
 
+test("Stories WebKit requires filmed source selection before Extra, not blocked editorial Quality",()=>{
+ const source=readFileSync(new URL("../scripts/benchmarking/verify-five-scene-stories-browser.mjs",import.meta.url),"utf8");
+ const settings=source.indexOf("const storySettings=page.locator");
+ const open=source.indexOf("await storySettings.tap()",settings);
+ const choose=source.indexOf("await page.locator('[data-video-stories-create]').click()",open);
+ const licensed=source.indexOf("assert.ok(approved.has(id)",choose);
+ const extra=source.indexOf("data-video-stories-to-extra",licensed);
+ const generate=source.indexOf('data-video-montage-pro-choice="free"',extra);
+ assert.ok(settings>=0&&open>settings&&choose>open&&licensed>choose&&extra>licensed&&generate>extra,
+  "must select real reviewed films before Extra and generation");
+ assert.doesNotMatch(source,/await quality\.tap\(\)|force:\s*true/,
+  "never force the pending Story Quality CTA or synthetic source state");
+ assert.match(source,/readRealGuestVideo/,"real WebKit movie and audio remain mandatory");
+});
+
 test("original-motion WebKit uses native Goal and personalization before actual export",()=>{
  const script=readFileSync(new URL("../scripts/benchmarking/verify-original-motion-export.mjs",import.meta.url),"utf8");
  const markers=["await completeThreeStepGoalsQuiz", "const ideasGoal=", "const quiz=", "const conceptPanel=", "const addVideo=", "const readyGenerate", "let captured", "readRealGuestVideo(page,{timeout: 150000})"];

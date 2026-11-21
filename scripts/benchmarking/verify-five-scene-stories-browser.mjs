@@ -80,39 +80,15 @@ try{
  await storyTab.waitFor({state:'visible',timeout:20000});
  await storyTab.click();
  await page.locator('[data-video-montage-concept]').waitFor({state:'visible'});
- // Verify the approved one-screen Story CTA really selects fifth Montage.
- const quality=page.locator('[data-video-story-select-quality]');
- // A real mobile WebKit touch must commit both the selected tab and its panel.
- // A click returning before React commits is not evidence of navigation.
- await quality.tap();
+ // A pending editorial storyboard cannot approve source rights via Quality.
+ // Open actual Story video settings and choose five independently verified
+ // filmed sources before visiting Extra. Do not force the blocked Quality CTA.
  const montageTab=page.locator('[data-video-montage-tab="promo"]');
- try{
-   await page.waitForFunction(()=>{
-     const tab=document.querySelector('[data-video-montage-tab="promo"]');
-     const panel=document.querySelector('[data-video-basic-editor]');
-     return tab?.getAttribute('aria-pressed')==='true' &&
-       panel?.getAttribute('data-montage-panel')==='promo';
-   },undefined,{timeout:15000});
- }catch(error){
-   // Safe structural telemetry only: no client text, media, URL or health data.
-   const state=await page.evaluate(()=>({
-     workspace:document.querySelector('[data-mandala-free-video]')?.getAttribute('data-active-workspace')||null,
-     panel:document.querySelector('[data-video-basic-editor]')?.getAttribute('data-montage-panel')||null,
-     activeTab:document.querySelector('[data-video-montage-tab][aria-pressed="true"]')?.getAttribute('data-video-montage-tab')||null,
-     qualityButtonVisible:Boolean(document.querySelector('[data-video-story-select-quality]')),
-     mediaUnready:Boolean(document.querySelector('[data-video-story-missing-relevant-media]'))
-   })).catch(()=>({status:'DOM_DIAGNOSTIC_UNAVAILABLE'}));
-   console.error('STORY_MONTAGE_TRANSITION_STATE '+JSON.stringify(state));
-   throw error;
- }
- assert.equal(await montageTab.getAttribute('aria-pressed'),'true',
-   'STORY_QUALITY_MUST_OPEN_MONTAGE');
- assert.equal(await page.locator('[data-video-basic-editor]').getAttribute('data-montage-panel'),
-   'promo','STORY_QUALITY_PANEL_MUST_COMMIT');
- // Story quality still enters the fifth Extra offer; detailed scene editing
- // has intentionally moved to Story > Video settings, not beneath Extra cards.
- await storyTab.click();
- await page.locator('[data-video-story-open-settings]').click();
+ const storySettings=page.locator('[data-video-story-open-settings]');
+ await storySettings.waitFor({state:'visible',timeout:15000});
+ await storySettings.tap();
+ await page.waitForFunction(()=>document.querySelector('[data-video-basic-editor]')
+   ?.getAttribute('data-montage-panel')==='settings',undefined,{timeout:15000});
  const advanced=page.locator('[data-video-stories-advanced]');
  await advanced.waitFor({state:'visible',timeout:20000});
  await advanced.locator(':scope > summary').click();
