@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance, safeComposedIndependentAdvance, safeScopedDisjointProductionAdvance, safeMixedProtectedAdvance, safeIsolatedFeatureAdvance, REVALIDATABLE_CI_POLICY_FILES } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance, safeComposedIndependentAdvance, safeScopedDisjointProductionAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeIsolatedFeatureAdvance, REVALIDATABLE_CI_POLICY_FILES } from '../lib/ci/production-base-impact.mjs';
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
@@ -181,6 +181,10 @@ export function optionalMandalaMacosSkip(files, branch, changed) {
   // The BASE macOS job may acquire exactly one REQUIRED cheap prerequisite.
   // A skipped WebKit job remains neutral only when the BASE branch predicate
   // itself excludes this PR; the preflight cannot alter its guard or steps.
+  // Browser-only acceptance assertions do not change voice or MP4 runtime.
+  // They remain covered by Core and focused Mandala tests; an unchanged
+  // trusted BASE branch predicate decides whether macOS is even scheduled.
+  // Preserve strict macOS enforcement for voice, codec and export source.
   const withRequiredPreflight = baseJob?.replace(
     /^(    if: .+)\n(    runs-on: macos-15)$/m,
     '$1\n    needs: [webkit_preflight]\n$2');
@@ -191,7 +195,7 @@ export function optionalMandalaMacosSkip(files, branch, changed) {
   if (!baseJob || !trustedMacosJob ||
       typeof branch !== 'string' || !branch || !Array.isArray(changed) ||
       changed.some(path => typeof path !== 'string' ||
-        /^(?:app\/api\/holistic-support\/voice\/|lib\/mandala\/(?:voice|wav|affirmation|media-record|video-export|recording|webcodecs|audio|codec|mp4)|components\/mandala-(?:affirmation-voice|cloud-voice)|scripts\/verify-affirmation-voice-browser\.mjs$|scripts\/benchmarking\/first-video-live-export\.mjs$)/.test(path))) return false;
+        /^(?:app\/api\/holistic-support\/voice\/|lib\/mandala\/(?:voice|wav|affirmation|media-record|video-export|recording|webcodecs|audio|codec|mp4)|components\/mandala-(?:affirmation-voice|cloud-voice)|scripts\/benchmarking\/first-video-live-export\.mjs$)/.test(path))) return false;
   const guard = source.match(/^  voice-webkit-macos:\n    if: \$\{\{ (.+) \}\}$/m)?.[1];
   const fixed = "github.event_name == 'pull_request' && github.event.pull_request.draft == false && (";
   if (!guard?.startsWith(fixed) || !guard.endsWith(')')) return false;
@@ -557,6 +561,12 @@ export async function verify(api,ctx,files,options={}) {
       const mixedProtected = pinnedChangeRows &&
         live.mergeable !== false && live.mergeable_state !== 'dirty' &&
         safeMixedProtectedAdvance(diff, ctx.base, liveBaseSha, changed);
+      // A tested, detached CI Specialist-only PR remains reusable when
+      // unrelated protected product source (no workflow/config/security)
+      // advanced. The native merge still needs real green checks and
+      // GitHub's affirmative mergeability for this exact HEAD.
+      const detachedCi = pinnedChangeRows && live.mergeable === true &&
+        safeDetachedCiSourceAdvance(diff,ctx.base,liveBaseSha,changed);
       // A new, independently namespaced public feature must not require a
       // rebase just because a different protected PR reached production.
       // This stricter fallback needs GitHub's affirmative mergeability, a
@@ -566,8 +576,12 @@ export async function verify(api,ctx,files,options={}) {
       if (!documentationOnly && !independentlyRevalidated &&
           !isolatedCiPolicy && !unrelatedCiMaintenance && !inertPublicImages &&
           !independentPresentation && !disjointPublicSource && !independentQa &&
-          !independentDomainTest && !composedIndependent && !scopedDisjoint && !mixedProtected && !isolatedFeature) {
+          !independentDomainTest && !composedIndependent && !scopedDisjoint && !mixedProtected && !detachedCi && !isolatedFeature) {
         throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+      }
+      if(detachedCi) {
+        approvedDisjointBases.add(liveBaseSha);
+        console.log('CI_BASE_ADVANCE_REUSED: independent protected product source; retain green detached Specialist CI');
       }
       if (isolatedFeature) {
         approvedDisjointBases.add(liveBaseSha);
@@ -679,7 +693,11 @@ export async function verify(api,ctx,files,options={}) {
   const start = now();
   const deadline = start + maxWait;
   const missingDeadline = start + missingGrace;
-  const queuedDeadline = start + queuedGrace;
+  // Measure the ten-minute idle-runner grace only while no other required
+  // Specialist is genuinely executing. Concurrent real browser/IA work must
+  // not turn an unrelated queued sibling into an artificial failed PR.
+  // Both scenarios retain the same fixed overall maxWait deadline.
+  let queuedWithoutRunningSince = null;
   let state, fastDiagnostics=[];
   let incompleteSince = null;
   // Only the single last running Specialist can use the shorter cadence;
@@ -820,6 +838,14 @@ export async function verify(api,ctx,files,options={}) {
     // A registered but queued/requested/waiting workflow is not an executing
     // test. Give the GitHub runner queue a separate bounded startup window.
     const notStarted = state.queued;
+    // A queued action is not a failure while another *actual* required run
+    // occupies a runner. Allow the bounded solo queue budget after that run
+    // completes; reset on a new in-progress sibling, but never extend maxWait.
+    // GitHub's immutable exact-HEAD run evidence still must finish green.
+    if (!notStarted.length || state.running.length) queuedWithoutRunningSince = null;
+    else if (queuedWithoutRunningSince === null) queuedWithoutRunningSince = timestamp;
+    const queuedDeadline = queuedWithoutRunningSince === null
+      ? Infinity : Math.min(deadline, queuedWithoutRunningSince + queuedGrace);
     if (notStarted.length && timestamp >= queuedDeadline) {
       throw Error('SPECIALIST_MISSING_OR_PENDING:NOT_STARTED:' +
         JSON.stringify({queued:notStarted,running:state.running}));

@@ -514,7 +514,10 @@ test("Just make it sends a typed wish straight to the existing rights-checked Ex
  assert.match(director,/onInstantCreate\?:\(\)=>boolean/);
  assert.match(studio,/onInstantCreate=\{generateFromGoal\}/,
    "instant mode and the existing Generate video action use the same handler");
- assert.match(studio,/const generateFromGoal=\(\)=>generateExpressFromCurrent\(\)/);
+ assert.ok(studio.includes("const generateFromGoal=()=>{"));
+ assert.ok(studio.includes('if((!goalQuizReady&&!wish.trim()&&!uploadedAudio)||!studioHydrated||recording||preparing)return false;'),
+  "the shared instant handler blocks empty or busy calls while preserving typed-wish export");
+ assert.ok(studio.includes("return generateExpressFromCurrent();"));
  assert.match(studio,/planExpressVideo\(\{/);
  assert.match(studio,/compileFreeFilmPreset\(preset,locale,recipe\.durationSeconds,"portrait"/);
  assert.match(studio,/const started=expressRenderRef\.current\(\)/);

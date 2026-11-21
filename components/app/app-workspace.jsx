@@ -776,7 +776,7 @@ export default function AppWorkspace({ locale, path = [] }) {
           </div>
         </details>
       </header>}
-      {!documentReader && !practiceInner && page !== 'portrait' && page !== 'runs' && page !== 'settings' && !courseLanding && (
+      {!documentReader && !practiceInner && page !== 'portrait' && page !== 'runs' && page !== 'settings' && page !== 'my-coaching-plan' && !courseLanding && (
         <nav className="hh-nav" aria-label={c.account}>
           {nav.map(({ id, label, href }) => (
             <InstantCabinetLink key={id} href={href} prefetch={false}
@@ -1004,7 +1004,7 @@ export default function AppWorkspace({ locale, path = [] }) {
         <p>{c.nonDiagnostic}</p>
         <a href={`/${locale}/client`}>{c.legacy}</a>
       </footer>}
-      {!documentReader && !practiceInner && page !== 'runs' && <nav className="hh-mobile-app-nav" aria-label={locale === 'ru' ? 'Быстрая навигация' : 'Quick navigation'}>
+      {!documentReader && !practiceInner && page !== 'runs' && page !== 'my-coaching-plan' && <nav className="hh-mobile-app-nav" aria-label={locale === 'ru' ? 'Быстрая навигация' : 'Quick navigation'}>
         <Link href={locale === 'ru' ? '/ru' : locale === 'es' ? '/es' : '/'} prefetch={false}
           className="hh-mobile-app-nav-home"
           aria-label={locale === 'ru' ? 'На главную страницу Holistic House' : 'Go to Holistic House homepage'}

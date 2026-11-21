@@ -23,7 +23,8 @@ test('first screen shows six owner-requested projects with explanatory subtitles
    assert.ok(projects.includes('id:"'+id+'"'),id)
    assert.ok(projectCss.includes('data-hh-ai-project="'+id+'"'),id)
  }
- assert.match(agent,/messengerView&&!pageHelp&&!messages\.length&&<>/)
+ assert.match(agent,/messengerView&&!pageHelp&&!messages\.length&&!homeHandoffPreview&&<>/)
+ assert.match(agent,/data-home-handoff-user-preview/)
  assert.match(agent,/<MessengerSixProjects locale=\{locale\} onSelect=\{startProject\}\/>/)
  assert.match(agentCss,/data-hh-messenger-six-projects/)
  assert.match(projectCss,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
@@ -52,7 +53,7 @@ test('each direction keeps a single-question dialogue and routes to existing fir
  assert.match(agent,/entry\.question/)
  assert.match(agent,/setProjectFlow\(null\)/)
  assert.match(agent,/composerRef\.current\?\.focus/)
- assert.match(agent,/<form onSubmit=\{submit\} className=\{styles\.form\} data-hh-ai-chat-composer=\{messengerView\|\|undefined\}>/,
+ assert.match(agent,/<form onSubmit=\{submit\} className=\{styles\.form\} data-hh-ai-chat-composer=\{messengerView\|\|undefined\}\s+data-landing-composer=\{showLandingComposer\|\|undefined\}>/,
    'the same working submit form is pinned as the live Messenger composer')
  assert.match(agent,/if\(id==="ai-video"\)\{startContent\(\);return;\}/)
  for(const path of ['app/[locale]/mytube/page.tsx','app/[locale]/tests/page.tsx',

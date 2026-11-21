@@ -34,7 +34,6 @@ on:
       - 'supabase/migrations/**'
       - 'middleware.ts'
       - 'next.config.*'
-      - 'package.json'
       - 'package-lock.json'
       # Commander signed PR completion is validated by Core and the focused Guard, not this unrelated heavy suite.
       - '!app/api/app/commander/**'

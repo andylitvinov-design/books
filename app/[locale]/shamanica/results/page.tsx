@@ -11,9 +11,10 @@ import priorityStyles from "@/components/shamanica-results-services.module.css";
 
 type Props = {
   params: Promise<{locale:string}>;
-  searchParams: Promise<{goal?:string;method?:string;start?:string}>;
+  searchParams: Promise<{goal?:string;method?:string;start?:string;category?:string|string[]}>;
 };
 const photos = {
+  guidance: "/images/holistic-house/mandala-gold-reference.webp",
   remedies: "/images/holistic-house/distance-homeopathy.webp",
   artifacts: "/images/holistic-house/tao-fu-balance.webp",
   energy: "/images/holistic-house/reiki-approved-sunrise-v3.webp",
@@ -23,19 +24,21 @@ const photos = {
 // A single, published three-card service component is shared with Services.
 // Categories set the priority; individual offers inside them can be ordered.
 const offerGroups = {
+  guidance: "reading",
   remedies: "homeopathy",
   artifacts: "shamanica-artifacts",
   energy: "reiki",
   rituals: "magical",
   learning: "shamanica-learning",
 } as const;
-type ShamanicaPriority = keyof typeof offerGroups;
+type ShamanicPriority = keyof typeof offerGroups;
 const translations = {
   ru: {
-    title: "Ваш путь в Шаманике", eyebrow: "ВАША ПЕРСОНАЛЬНАЯ ПОДБОРКА",
+    title: "Ваш путь в Shamanic", eyebrow: "ВАША ПЕРСОНАЛЬНАЯ ПОДБОРКА",
     lead: "Два направления по вашим ответам. В каждом — три конкретные услуги с ценой и возможностью заказа.",
-    again: "Изменить ответы", all: "Все услуги Шаманики", priority: "Приоритет",
+    again: "Изменить ответы", back: "К направлениям", categoryEyebrow: "ШАМАНИК · УСЛУГИ", categoryLead: "Выберите услугу · Детали или заказ", categoryNav: "Категории услуг", all: "Все услуги Shamanic", priority: "Приоритет",
     items: {
+      guidance: ["Получить подсказку", "И-Цзин, Таро и символическое чтение для размышления над вопросом."],
       remedies: ["Подбор препаратов", "Бесплатный разбор, экспресс или полная личная сессия."],
       artifacts: ["Артефакты и места силы", "Талисманы, символические предметы и личные намерения."],
       energy: ["Энергетическая поддержка", "Сеансы Рейки и варианты личной практики."],
@@ -44,10 +47,11 @@ const translations = {
     },
   },
   en: {
-    title: "Your Shamanica path", eyebrow: "YOUR PERSONAL SELECTION",
+    title: "Your Shamanic path", eyebrow: "YOUR PERSONAL SELECTION",
     lead: "Two priorities based on your answers. Each includes three real offers with prices and request options.",
-    again: "Change answers", all: "All Shamanica services", priority: "Priority",
+    again: "Change answers", back: "All categories", categoryEyebrow: "SHAMANIC · SERVICES", categoryLead: "Choose a service · Details or Order", categoryNav: "Service categories", all: "All Shamanic services", priority: "Priority",
     items: {
+      guidance: ["Get Guidance", "I Ching, Tarot and symbolic readings for reflection on your question."],
       remedies: ["Remedy guidance", "Written review, express or full personal session."],
       artifacts: ["Artefacts & power places", "Talismans, symbolic objects and personal intentions."],
       energy: ["Energy support", "Reiki sessions and individual practice options."],
@@ -56,10 +60,11 @@ const translations = {
     },
   },
   es: {
-    title: "Tu camino en Shamanica", eyebrow: "SELECCIÓN PERSONAL",
+    title: "Tu camino en Shamanic", eyebrow: "SELECCIÓN PERSONAL",
     lead: "Dos prioridades según tus respuestas. Cada una ofrece tres servicios reales con precio y solicitud.",
-    again: "Cambiar respuestas", all: "Todos los servicios", priority: "Prioridad",
+    again: "Cambiar respuestas", back: "Todas las categorías", categoryEyebrow: "SHAMANIC · SERVICIOS", categoryLead: "Elige un servicio · Detalles o solicitar", categoryNav: "Categorías de servicios", all: "Todos los servicios", priority: "Prioridad",
     items: {
+      guidance: ["Recibir orientación", "I Ching, Tarot y lecturas simbólicas para reflexionar."],
       remedies: ["Orientación sobre remedios", "Revisión escrita, sesión exprés o completa."],
       artifacts: ["Objetos y lugares de poder", "Talismanes, objetos simbólicos e intenciones."],
       energy: ["Apoyo energético", "Sesiones de Reiki y opciones de práctica."],
@@ -70,25 +75,55 @@ const translations = {
 } as const;
 
 export const metadata: Metadata = {
-  title: "Shamanica — personal path | Holistic House",
+  title: "Shamanic — personal path | Holistic House",
   robots: { index:false, follow:true },
 };
 
-export default async function ShamanicaResults({params,searchParams}:Props) {
+export default async function ShamanicResults({params,searchParams}:Props) {
   const {locale} = await params;
   if (!isPublicLocale(locale)) notFound();
   const args = await searchParams;
-  const priorities = shamanicaRecommendations(args) as ShamanicaPriority[];
+  const categories = Object.keys(offerGroups) as ShamanicPriority[];
+  const selectedCategory = typeof args.category === "string" && Object.prototype.hasOwnProperty.call(offerGroups,args.category)
+    ? args.category as ShamanicPriority : null;
+  if (args.category !== undefined && !selectedCategory) notFound();
+  // The quiz still selects two ranked groups; a direct category click shows
+  // only that category's existing three real Services offers.
+  const priorities = shamanicaRecommendations(args) as ShamanicPriority[];
   const t = translations[locale];
-  return <main lang={locale} className={styles.resultsPage} data-shamanica-results>
+  const orderedCategories = selectedCategory
+    ? [selectedCategory,...categories.filter(id=>id!==selectedCategory)] : categories;
+  return <main lang={locale}
+    className={selectedCategory ? styles.resultsPage+" "+priorityStyles.categoryPage : styles.resultsPage}
+    data-shamanica-results data-shamanica-category={selectedCategory || undefined}>
     <div className={styles.resultsShell}>
-      <Link href={"/"+locale+"/shamanica"} className={styles.backLink}>
-        <ArrowLeft size={19} aria-hidden="true"/>{t.again}
+      <Link href={"/"+locale+"/shamanica#shamanica-services-title"} className={styles.backLink}
+        data-shamanica-category-back={selectedCategory ? "true" : undefined}>
+        <ArrowLeft size={19} aria-hidden="true"/>{selectedCategory ? t.back : t.again}
       </Link>
-      <span className={styles.resultsEyebrow}><Sparkles size={18} aria-hidden="true"/>{t.eyebrow}</span>
-      <h1>{t.title}</h1>
-      <p className={styles.resultsLead}>{t.lead}</p>
-      <div className={styles.resultCards} data-shamanica-priority-groups>
+      <span className={styles.resultsEyebrow} data-shamanica-results-eyebrow><Sparkles size={18} aria-hidden="true"/>
+        {selectedCategory ? t.categoryEyebrow : t.eyebrow}
+      </span>
+      <h1 data-shamanica-results-title>{selectedCategory ? t.items[selectedCategory][0] : t.title}</h1>
+      <p className={styles.resultsLead} data-shamanica-results-lead>
+        {selectedCategory ? t.categoryLead : t.lead}
+      </p>
+      {selectedCategory ? <>
+        <nav className={priorityStyles.categoryTabs} aria-label={t.categoryNav}
+          data-shamanica-category-nav>
+          {orderedCategories.map(id => <Link key={id} prefetch={false}
+            href={"/"+locale+"/shamanica/results?category="+id}
+            className={id === selectedCategory ? priorityStyles.categoryTabActive : undefined}
+            aria-current={id === selectedCategory ? "page" : undefined}>
+            {t.items[id][0]}
+          </Link>)}
+        </nav>
+        <section className={priorityStyles.categoryOffers}
+          data-shamanica-category-offers={selectedCategory}
+          aria-label={t.items[selectedCategory][0]}>
+          <ServicesThreeVisibleOptions locale={locale} id={offerGroups[selectedCategory]}/>
+        </section>
+      </> : <div className={styles.resultCards} data-shamanica-priority-groups>
         {priorities.map((id,index) => <section key={id}
           className={priorityStyles.priorityGroup} data-recommended-service={id}
           data-shamanica-priority={index+1} data-priority-offer-count="3">
@@ -104,7 +139,7 @@ export default async function ShamanicaResults({params,searchParams}:Props) {
           </header>
           <ServicesThreeVisibleOptions locale={locale} id={offerGroups[id]}/>
         </section>)}
-      </div>
+      </div>}
       <Link href={"/"+locale+"/shamanica#shamanica-services-title"} className={styles.allServices}>
         {t.all}<ArrowRight size={18} aria-hidden="true"/>
       </Link>

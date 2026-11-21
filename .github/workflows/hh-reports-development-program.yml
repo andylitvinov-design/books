@@ -19,7 +19,6 @@ on:
       - 'components/app/goal-profile-panel.jsx'
       - 'components/app/goal-profile-panel.module.css'
       - 'lib/profile/portrait-test-suggestions.js'
-      - 'package.json'
       - 'lib/clients/session-delivery-service.js'
       - 'lib/documents/report-progress.js'
       - 'components/prescription-document.jsx'

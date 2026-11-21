@@ -343,10 +343,13 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
             label+': four directions → 3 steps → Get Ideas / Get Support '+JSON.stringify(homeLayout))
           await expect(entry.locator('[data-home-intent-option]')).toHaveCount(4)
           await expect(input).toBeVisible()
+          // Approved free-chat entry opens Ali even without a prefilled wish.
+          // Users may also describe their goal first; neither action is blocked.
           await expect(send).toBeEnabled()
           await input.fill(locale==='ru'?'Хочу создать курс':locale==='es'?'Quiero crear un curso':'I want to create a course')
           await expect(send).toBeEnabled()
           await input.fill('')
+          await expect(send).toBeEnabled()
           await expect(page.locator('[data-home-deferred-sections]')).toHaveCount(1)
           const hero=entry.locator('[data-home-dialogue-hero]')
           const rect=await hero.boundingBox()

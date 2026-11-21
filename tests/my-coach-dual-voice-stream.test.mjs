@@ -145,7 +145,7 @@ test('existing My Coach strict/director path and voice barge remain intact',()=>
   const ui=source('components/my-coach-live-dialogue.jsx')
   const voice=source('components/my-coach-speech-loop.jsx')
   assert.match(brain,/enforceCoachSessionDirective\(reviewed,directive\)/)
-  assert.match(brain,/parseConversationalCoachReply\(JSON.stringify/)
+  assert.match(brain,/coachReviewableStreamReply\(reply.text\)/)
   assert.match(brain,/coachingBrainSafety\(input\)\|\|coachingBrainBoundary/)
   assert.match(route,/joined === 'my-coach\/stream'/)
   assert.match(route,/joined === 'my-coach\/turn'/)

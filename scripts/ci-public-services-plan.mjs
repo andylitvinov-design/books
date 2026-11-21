@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
 import { matchesTrigger, parsePrTrigger } from '../lib/ci/specialist-aggregate.mjs';
+import { SHARED_COACH_DISPATCHER, verifiedCoachOnlySharedRouting } from '../lib/ci/coach-only-impact.mjs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -880,6 +881,19 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
       return full('UNREVIEWED_IHELP_PHOTO_3843_DELTA');
     }
 
+    // Exact-HEAD and immutable tested-BASE sources must agree outside the
+    // signed-in My Coach branch. Public Services needs no duplicate browser/
+    // storefront Next build for an independently owned Coach-only edit.
+    if (rows.some((value,i) => i % 2 === 1 && value === SHARED_COACH_DISPATCHER)) {
+      const coachRows=[];
+      for(let i=0;i<rows.length;i+=2)
+        coachRows.push({status:rows[i],filename:rows[i+1]});
+      const before=String(git('git',['show',diffBase+':'+SHARED_COACH_DISPATCHER],options));
+      const after=String(git('git',['show','HEAD:'+SHARED_COACH_DISPATCHER],options));
+      if (verifiedCoachOnlySharedRouting(coachRows,before,after))
+        return {mode:'contracts',reason:'EXACT_MY_COACH_ONLY_SHARED_API',
+          build:false,browser:false,metrics:false,cases:'none'};
+    }
     const practitionerMediaPlan = planPrivatePractitionerMediaRows(rows);
     if(practitionerMediaPlan)return practitionerMediaPlan;
     // A change confined to EXISTING public unit-test files cannot modify the

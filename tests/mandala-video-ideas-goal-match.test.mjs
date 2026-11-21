@@ -83,7 +83,7 @@ test("Changing the goal invalidates automatic drafts without destroying manual e
 
 test("One shared Montage Text editor receives the actual Goal request and keeps original render path",()=>{
  assert.match(studio,/<MandalaVideoIdeas locale=\{locale\} theme=\{theme\} requestText=\{wish\}/);
- assert.match(ideas,/resolveVideoIdeaContext\(\{locale,request:requestText,theme\}\)/);
+ assert.match(ideas,/resolveVideoIdeaContext\(\{locale,request:requestText,theme,selectedTopicId\}\)/);
  assert.match(ideas,/data-video-ideas-goal-category=\{goalContext.categoryId\|\|"neutral"\}/);
  assert.match(ideas,/const signature=JSON.stringify\(\[goalContext.key,/);
  assert.match(ideas,/onChange\(old=>\(\{\.\.\.old,\.\.\.initial.settingsPatch,ideasDraft:initial.editor,/);

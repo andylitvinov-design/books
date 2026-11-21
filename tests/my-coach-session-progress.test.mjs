@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {coachSessionProgress,COACH_SESSION_PROGRESS_VERSION} from '../lib/coaching/coach-session-progress.mjs'
+import {coachSessionProgress,coachSessionVisibleStageIds,COACH_SESSION_PROGRESS_VERSION} from '../lib/coaching/coach-session-progress.mjs'
 
 const directive=(methodId,stepId,supportedStages=[],ready=false,missing=['not-confirmed'])=>({
  methodId,methodStepId:methodId+':'+stepId,supportedStages,
@@ -59,7 +59,12 @@ test('Original six-segment progress is visible and placed between mic and transc
  assert.match(ui,/sessionProgress:result\.sessionProgress/)
  assert.ok(ui.indexOf('data-coach-stage-index')>ui.indexOf('className={styles.voiceControls}'))
  assert.ok(ui.indexOf('data-coach-stage-index')<ui.indexOf('className={styles.voicePrivacyDetails}'))
- assert.match(css,/data-session-visual-v4\] \.voiceWorkspace>\.sessionProgress\{[\s\S]*?display:flex/)
+ assert.ok(css.includes('.root[data-session-visual-v4] .voiceWorkspace>.sessionProgress[data-coach-progress-accordion]'))
+ assert.ok(ui.includes('<details className={styles.sessionProgress} data-coach-progress-accordion'))
+ assert.ok(ui.includes('<summary className={styles.sessionProgressSummary}>'))
+ assert.ok(ui.indexOf('<MyCoachSessionStateCard')>ui.indexOf('<summary className={styles.sessionProgressSummary}>'))
+ assert.ok(ui.indexOf('<MyCoachSessionStateCard')<ui.indexOf('className={styles.voicePrivacyDetails}'))
+ assert.equal(ui.match(/<MyCoachSessionStateCard/g)?.length,1)
  assert.match(server,/const sessionProgress=directive\?coachSessionProgress\(directive\):null/)
  assert.match(server,/\.\.\.directedCoachOfflineReply\(input,directive,reason\),sessionProgress/)
 })
@@ -98,4 +103,37 @@ test('Mobile progress uses five meaning stages and is still server-evidence-driv
  assert.match(ui,/Решение и интеграция/)
  assert.match(director,/NOT five required questions/)
  assert.match(director,/Use ONLY the selected alternative method sequence/)
+})
+
+test('provisional step header matches the actual method checklist (not GROW for every persona)',()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const titles=coachSessionVisibleStageIds('appreciative_inquiry')
+ const harry=coachSessionVisibleStageIds('oskar')
+ assert.equal(titles[0],'discover')
+ assert.equal(harry[0],'outcome')
+ assert.ok(ui.indexOf('const stageChecklistTitles=')<ui.indexOf('const stageDescription='))
+ assert.match(ui,/:stageChecklistTitles\[visibleStageIndex\]\|\|ui\.stages\[visibleStageIndex\]/)
+ assert.ok(!ui.includes("['contact','goal','reality','options','integration'][visibleStageIndex]"))
+})
+
+test('one expanded checklist uses method-authentic stages and no false checkmarks',()=>{
+ assert.deepEqual(coachSessionVisibleStageIds('grow'),['contact','goal','reality','options','integration'])
+ assert.deepEqual(coachSessionVisibleStageIds('tgrow'),['contact','goal','reality','options','integration'])
+ assert.deepEqual(coachSessionVisibleStageIds('woop'),['wish','outcome','internal_obstacle','if_then','review'])
+ assert.deepEqual(coachSessionVisibleStageIds('oskar'),['outcome','scaling','know_how','affirm_action','review'])
+ assert.deepEqual(coachSessionVisibleStageIds('solution_focused'),['preferred_future','exceptions','strengths','experiment','review'])
+ assert.deepEqual(coachSessionVisibleStageIds('appreciative_inquiry'),['discover','dream','design','deliver','review'])
+ assert.equal(coachSessionVisibleStageIds('tgrow',{legacy:true}).length,6)
+ assert.equal(coachSessionVisibleStageIds('grow',{legacy:true})[5],'complete')
+ assert.ok(Object.isFrozen(coachSessionVisibleStageIds('grow')))
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const card=readFileSync(new URL('../components/my-coach-session-state-card.jsx',import.meta.url),'utf8')
+ const css=readFileSync(new URL('../components/my-coach-live-dialogue.module.css',import.meta.url),'utf8')
+ assert.ok(ui.includes('data-complete={progressValid&&index<visibleStageIndex'))
+ assert.match(card,/data-coach-stage-checklist/)
+ assert.match(card,/const verified=stageProgressVerified&&card.stageVerifiedByDirector/)
+ assert.ok(card.includes("data-client-evidence={mentioned?'mentioned':'missing'}"))
+ assert.ok(card.includes('ReadOnlyCheckbox checked={done}'))
+ assert.ok(css.includes('.root[data-session-visual-v4]:has([data-coach-progress-accordion][open])'))
+ assert.ok(!card.includes('return <details'))
 })
