@@ -151,3 +151,35 @@ body:has([data-hh-unified-dock]) [data-video-director-chat-details]{scroll-margi
   color:#fff9da;background:#066a45;
  }
 }
+
+/* SUPPORT_LUXURY_DOCK_20261121: dark emerald/gold only on the approved
+   mobile Support intake, not on the optional Ali chat or other pages. */
+@media(max-width:759px){
+ body:has(main[data-support-luxe="true"]){background:#1a1009!important}
+ main[data-support-luxe="true"]{background:#1a1009!important;overflow-x:clip}
+ main[data-support-luxe="true"] > .house-header--services{display:none!important}
+ body:has(main[data-support-luxe="true"]) [data-hh-unified-dock]{
+  border:1px solid #e2bf76a6;border-bottom:0;
+  background:linear-gradient(180deg,#0b3926ed,#03291dec)!important;
+  box-shadow:0 -6px 22px #0703029e,inset 0 1px 0 #f9df984d;
+  -webkit-backdrop-filter:blur(15px);backdrop-filter:blur(15px)
+ }
+ body:has(main[data-support-luxe="true"]) [data-hh-unified-dock] [data-unified-dock-item]{
+  color:#fff0ce;white-space:normal
+ }
+ body:has(main[data-support-luxe="true"]) [data-hh-unified-dock] [data-unified-dock-item][aria-current="page"]:not([data-unified-dock-item="ai"]){
+  color:#fff2cd;background:linear-gradient(#276a42,#0c462e);
+  box-shadow:inset 0 1px 0 #b9df8844
+ }
+ body:has(main[data-support-luxe="true"]) [data-hh-unified-dock] [data-unified-dock-item="ai"] svg{
+  border-color:#f9cf83;background:linear-gradient(160deg,#14b87b,#02674d);
+  box-shadow:inset 0 1px 6px #c2f8c444,0 4px 15px #051f17,
+    0 0 0 3px #d3aa6fa8
+ }
+ body:has(main[data-support-luxe="true"]) [data-hh-unified-dock] [data-unified-dock-item="ai"] span{
+  background:linear-gradient(#087d57,#044e3b);color:#fff0d4
+ }
+ body:has(main[data-support-luxe="true"]) [data-hh-unified-dock] [data-unified-dock-item] span{
+  font-size:clamp(10px,2.6vw,12px)
+ }
+}

@@ -276,14 +276,24 @@
 
 /* Approved homepage-like opening, scoped strictly to the first AI/Chat turn. */
 .root[data-hh-ai-landing]{gap:12px;padding:3px 3px 16px}
-.root .audience{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
-.root .audience button{display:flex;align-items:center;justify-content:center;gap:8px;
-  min-width:0;min-height:44px;padding:8px 9px;border:1px solid #ded9cc;
-  border-radius:999px;background:#fffcf7;color:#1e4a3d;
-  font:750 clamp(12px,3.6vw,16px)/1.2 system-ui,sans-serif;cursor:pointer}
-.root .audience button[aria-pressed="true"]{color:#fff;border-color:#087c62;
+.root .chatShortcuts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;
+  min-width:0;align-items:stretch}
+.root .chatShortcut{box-sizing:border-box;display:flex;align-items:center;justify-content:center;
+  gap:5px;min-width:0;min-height:49px;padding:8px 5px;border:1px solid #ded9cc;
+  border-radius:999px;background:#fffcf7;color:#1e4a3d;text-align:center;
+  text-decoration:none;font:760 clamp(10px,2.95vw,13px)/1.14 system-ui,sans-serif;
+  box-shadow:0 3px 8px #314b3410}
+.root .chatShortcut svg{width:17px;height:17px;flex:none}
+.root .chatShortcut span{min-width:0;overflow-wrap:normal}
+.root .chatShortcut[aria-current="page"]{color:#fff;border-color:#087c62;
   background:linear-gradient(110deg,#0caa86,#046c54);box-shadow:0 4px 12px #06755a24}
-.root .audience button:focus-visible{outline:3px solid #168b71;outline-offset:2px}
+.root .chatShortcut:focus-visible{outline:3px solid #168b71;outline-offset:2px}
+@media(max-width:360px){
+  .root .chatShortcuts{gap:4px}
+  .root .chatShortcut{flex-direction:column;gap:2px;min-height:53px;padding:6px 2px;
+    border-radius:17px;font-size:10px;line-height:1.1}
+  .root .chatShortcut svg{height:16px;width:16px}
+}
 .root .welcomeRow{position:relative;display:block;min-height:204px;border:1px solid #d1decf;
   border-radius:24px;overflow:hidden;isolation:isolate;
   background:linear-gradient(105deg,#07533c 0%,#086443 60%,#b8ab8e 100%);

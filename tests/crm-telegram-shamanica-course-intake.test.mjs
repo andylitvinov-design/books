@@ -64,8 +64,15 @@ test('known course is handled by Secretary before general catalogue or personal 
  const code=readFileSync(new URL('../lib/crm/telegram-secretary-service.js',import.meta.url),'utf8')
  assert.match(code,/matchTelegramPublishedCourseInterestDraft\(event\.text\)/)
  assert.match(code,/telegramPublishedCourseInterestAcknowledgement\(courseInterest\)/)
- assert.ok(code.indexOf('const courseInterest=matchTelegramPublishedCourseInterestDraft')<
-   code.indexOf('const query=freeReview||spiritualInterest||courseInterest||classifyTelegramSecretaryQuery'))
+ // Known signed course requests must be matched before the catalogue and
+ // before the generic non-silent fallback. Long untrusted text is deliberately
+ // excluded from service classification, never treated as a course request.
+ const courseMatch='const courseInterest=matchTelegramPublishedCourseInterestDraft(event.text)';
+ const queryStart='const query=event.longText?null:freeReview||spiritualInterest||courseInterest||classifyTelegramSecretaryQuery';
+ assert.ok(code.indexOf(courseMatch)>=0&&code.indexOf(queryStart)>code.indexOf(courseMatch),
+   'Known free-course draft is classified before the public catalogue');
+ assert.match(code,/query\.kind==='course_interest'\s*\?telegramPublishedCourseInterestAcknowledgement\(courseInterest\)/);
+ assert.match(code,/if\(!query&&allowClarification!==true\)return \{handled:false\}/);
  assert.match(code,/secretaryStopped\(event,config\)/)
  assert.match(code,/assertHolisticBusinessConnection/)
 })

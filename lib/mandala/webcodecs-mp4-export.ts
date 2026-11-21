@@ -34,6 +34,9 @@ export type BrowserMovieOptions={
   audioMaster?:AudioBuffer;
   shouldContinue:()=>boolean;
   onProgress?:(percent:number)=>void;
+  // Only for independently decoded, timestamp-addressable first-party frames.
+  // Native <video> playback is time-dependent and MUST keep real-time pacing.
+  sourceFrameClock?:"native-playback"|"timestamp-decoded";
 };
 
 /** A silent Safari MP4 requires only the video encoder; an AAC movie
@@ -294,6 +297,12 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
     canvas.width<160||canvas.height<160||canvas.width*canvas.height>1920*1080)
     throw new Error("invalid_video_dimensions_or_timing");
   if(!shouldContinue())throw new Error("export_cancelled");
+  const timestampDecoded=options.sourceFrameClock==="timestamp-decoded";
+  if(options.sourceFrameClock!==undefined&&options.sourceFrameClock!=="native-playback"&&
+     options.sourceFrameClock!=="timestamp-decoded")
+    throw new Error("video_frame_clock_invalid");
+  if(timestampDecoded&&!options.allowProceduralBrowser)
+    throw new Error("timestamp_frame_clock_requires_verified_source");
   // Preflight BOTH actual codecs before waiting for the entire film. A failed
   // AAC codec must never produce a silent substitute for selected speech.
   // Probe with Mediabunny's own encoding configuration, not a fixed
@@ -348,8 +357,10 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
     const audioTask=audioBuffer&&audioSource
       ?audioSource.add(audioBuffer).catch(error=>{audioFailure=error;}).finally(()=>audioSource?.close())
       :Promise.resolve();
-    // Pace native first-party video playback while encoding the same drawn
-    // Canvas frames, stage captions, phrases and actual source scenes.
+    // Native HTMLVideoElement playback MUST pace with real elapsed time.
+    // An approved timestamp-decoded CanvasSink has independent source frames:
+    // do not artificially stall each exact PTS until the movie's wall time.
+    // Both modes still encode/verify the same audio, captions and real frames.
     const frames=Math.ceil(seconds*frameRate);
     const startedAt=performance.now();
     // An actual native WebKit video decoder can temporarily withhold the
@@ -369,7 +380,8 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
     const maxEncoderPresentationLagMs=3000;
     for(let i=0;i<frames;i++){
       if(!shouldContinue())throw new Error("export_cancelled");
-      const remaining=startedAt+decoderHoldMs+encoderHoldMs+(i*1000/frameRate)-performance.now();
+      const remaining=timestampDecoded?0:
+        startedAt+decoderHoldMs+encoderHoldMs+(i*1000/frameRate)-performance.now();
       if(remaining>0)await new Promise<void>(resolve=>setTimeout(resolve,remaining));
       // MP4 presentation timestamps remain exact even when a native decoder
       // briefly buffers at the original four-scene shot boundary.
@@ -378,7 +390,8 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
       // encode calls. Those milliseconds are already included in the pacing
       // clock above, so exclude them here too. The whole-export deadline
       // below still bounds cumulative work; original PTS/frames stay exact.
-      if(performance.now()-startedAt > time*1000+decoderHoldMs+encoderHoldMs+maxEncoderPresentationLagMs)
+      if(!timestampDecoded&&
+         performance.now()-startedAt > time*1000+decoderHoldMs+encoderHoldMs+maxEncoderPresentationLagMs)
         throw new Error("video_encoder_timeline_drift");
       const frameWorkStartedAt=performance.now();
       const decoderHoldBeforeFrame=decoderHoldMs;

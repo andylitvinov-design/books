@@ -11,7 +11,17 @@ test("Support branding and four always visible paths remain on the existing Serv
  assert.match(page,/query\?\.assist==="chat"\s*\?\s*<ServicesAssistMobile/);
  assert.match(quiz,/S U P P O R T/);
  for(const label of ['services: "Support"','services: "Поддержка"','services: "Apoyo"'])assert.ok(dock.includes(label));
- for(const label of ["Ease stress & restore energy","Improve relationships & esteem","Get money & self-growth ideas","Get business support","Поддержка бизнеса","Apoyo para mi negocio"])assert.ok(quiz.includes(label));
+ for(const label of ["Ease stress & restore energy","Grow money & self esteem","Improve relationships","Personal & business growth","Личностный рост и развитие бизнеса","Crecimiento personal y empresarial"])assert.ok(quiz.includes(label));
+ const wanted=["stress_energy","money_growth","relationships_esteem","business_support"];
+ for(const label of ["С чем вам нужна поддержка?","What do you need help with?","¿En qué necesitas apoyo?"]){
+   const start=quiz.indexOf('"title": "'+label+'"');
+   const end=quiz.indexOf('"mode": {',start);
+   assert.ok(start>=0 && end>start,"Topic block present for "+label);
+   const ids=[...quiz.slice(start,end).matchAll(/^\s+"(stress_energy|money_growth|relationships_esteem|business_support)",?\s*$/gm)].map(x=>x[1]);
+   assert.deepEqual(ids,wanted,"Two-column row-major order in "+label);
+ }
+ assert.match(css,/\.choices\[data-question-kind="topic"\] \.choice:nth-child\(2\) \.choiceMedia\{background-position:0 100%\}/);
+ assert.match(css,/\.choices\[data-question-kind="topic"\] \.choice:nth-child\(3\) \.choiceMedia\{background-position:100% 0\}/);
  assert.match(quiz,/const questionKeys = \["topic", "need", "mode", "budget"\]/);
  assert.match(quiz,/data-services-quiz-questions="4"/);
  assert.match(quiz,/data-services-quiz-step=\{step \+ 1\}/);
@@ -47,11 +57,35 @@ test("same-page categories and production browser acceptance remain",()=>{
  assert.match(quiz,/data-services-quiz-goal/);
  assert.match(quiz,/data-services-quiz-next/);
  assert.match(quiz,/data-services-audience/);
- assert.match(quiz,/data-services-hero-play/);
+ assert.match(quiz,/data-support-luxe-room/);
+ assert.match(quiz,/data-support-choice-photo/);
+ assert.match(css,/SUPPORT_THERAPY_CABINET_V2_20261121/);
+ assert.match(css,/support-therapy-cabinet\.webp/);
+ assert.match(css,/OWNER_APPROVED_CABINET_PROPORTIONS_20261121/);
+ assert.match(css,/support-luxury-choice-photos\.webp/);
+ const photo = readFileSync(new URL("../public/images/holistic-house/support-therapy-cabinet.webp",import.meta.url));
+ const sprite = readFileSync(new URL("../public/images/holistic-house/support-luxury-choice-photos.webp",import.meta.url));
+ assert.ok(photo.length>=12000,"Therapy room should not be the older 200px placeholder");
+ assert.ok(sprite.length>=4000,"Four reference card photos must be real first-party artwork");
+ assert.equal(photo.toString("ascii",0,4),"RIFF");
+ assert.equal(sprite.toString("ascii",0,4),"RIFF");
+ const themedDock=read("app/unified-mobile-dock.css");
+ assert.match(themedDock,/SUPPORT_LUXURY_DOCK_20261121/);
+ assert.match(themedDock,/main\[data-support-luxe="true"\]/);
+ assert.match(quiz,/Coaching, Consulting & Therapy Support/);
+ assert.match(quiz,/Choose the right method & master/);
+ assert.match(quiz,/Answer 4 questions:/);
+ assert.match(quiz,/topic:"stress_energy"/);
+ assert.doesNotMatch(quiz,/data-services-hero-play/);
+ const en=read("app/[locale]/services/page.tsx"),es=read("app/es/services/page.tsx");
+ assert.match(en,/data-support-luxe/); assert.match(es,/data-support-luxe/);
  assert.match(css,/\.categoryGrid \{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
  assert.match(css,/@media\(max-width:350px\)/);
  assert.match(css,/@media\(min-width:761px\)\{\.root\{display:none\}\}/);
- assert.equal((quiz.match(/key: "(therapy|homeopathy|constellations|practice|study|videos)", image:/g)||[]).length,6);
+ const ownedOrder=["diagnostics","business","homeopathy","coaching","psychotherapy","video"];
+ for(const category of ownedOrder) assert.ok(quiz.includes('key: "'+category+'"'),category);
+ for(let index=1;index<=6;index++)
+   assert.ok(css.includes(".category:nth-child("+index+") .categoryMedia"),"Missing photographic category "+index);
  assert.match(quiz,/serviceGroupAnchor\(servicesCategoryTargets\[key\]\)/);
  const browser=read("scripts/verify-public-services-production.mjs");
  for(const needle of ['data-services-quiz-choice="business_support"','data-services-quiz-choice="business_strategy"','data-services-quiz-choice="consultation"','data-services-quiz-choice="money_growth"','data-services-quiz-summary','data-services-quiz-results','assist=chat'])assert.ok(browser.includes(needle),needle);

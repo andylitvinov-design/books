@@ -91,7 +91,7 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
   if (query?.catalog === "1") redirect("/" + locale + "/services/catalog#service-listings");
   const current = copy[locale];
   return (
-    <main className={"services-shell services-shell--studio " + assistStyles.assistPage + " " + compactStyles.page + " " + uniformStyles.page} lang={locale}>
+    <main data-support-luxe={query?.assist === "chat" ? undefined : "true"} className={"services-shell services-shell--studio " + assistStyles.assistPage + " " + compactStyles.page + " " + uniformStyles.page} lang={locale}>
       <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
       <ServicesExplorerProvider>
         {/* Four-question public entry; the original Ali dialogue stays available on explicit request. */}

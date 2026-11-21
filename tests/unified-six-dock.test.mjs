@@ -4,6 +4,7 @@ import {readFileSync} from "node:fs";
 import {UNIFIED_DOCK_IDS,isUnifiedMobileDockHomePath,isUnifiedMobileDockAppPath,isUnifiedMobileDockEditorialPath,isUnifiedMobileDockPath,unifiedMobileDockActive,unifiedMobileDockHref} from "../lib/unified-mobile-dock.mjs";
 import {buildPublishedVideoIndex} from "../lib/video-discovery/catalog.mjs";
 import {rankDiscoveryVideos} from "../lib/video-discovery/ranker.mjs";
+import {requiresRealMediaWebKit} from "../lib/ci/merge-check-light.mjs";
 
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 test("one seven-button dock includes Services and My Coach on existing destinations",()=>{
@@ -232,11 +233,17 @@ test("MyTube projects ONLY published public Academy/Library sources; never fabri
  assert.equal(rankDiscoveryVideos(rows,{area:"business"}).length,0);
 });
 
-test("MyTube unified branch triggers real macOS WebKit, without hiding specialist failures",()=>{
+test("MyTube unified dock media changes require BASE-trusted WebKit without hiding specialist failures",()=>{
  const workflow=read(".github/workflows/holistic-support-mandala.yml");
  const guard=workflow.split("  voice-webkit-macos:")[1]?.split("    runs-on:")[0]||"";
+ const preflight=workflow.split("  webkit_preflight:")[1]?.split("  voice-webkit-macos:")[0]||"";
  assert.match(guard,/github.event.pull_request.draft == false/);
- assert.match(guard,/startsWith\(github.head_ref, 'feat\/mytube-unified-six-bottom-'\)/);
+ assert.match(guard,/needs\.webkit_preflight\.outputs\.media_required == 'true'/);
+ assert.match(guard,/needs: \[webkit_preflight\]/);
+ assert.match(preflight,/git show "\$tested_base:lib\/ci\/merge-check-light\.mjs"/);
+ assert.match(preflight,/requiresRealMediaWebKit\(changed\)/);
+ assert.equal(requiresRealMediaWebKit([{status:"M",filename:"components/unified-mobile-dock.tsx"}]),true);
+ assert.equal(requiresRealMediaWebKit([{status:"M",filename:"tests/unified-six-dock.test.mjs"}]),false);
  assert.doesNotMatch(guard,/if:\s*\$\{\{\s*always\(\)/);
  assert.match(workflow,/runs-on: macos-15/);
  assert.match(workflow,/HH_VOICE_E2E_ENGINE: webkit/);
