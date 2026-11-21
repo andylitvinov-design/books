@@ -160,7 +160,7 @@ test("voice browser opens Ideas and applies six visible Montage styles with deco
  const start=source.indexOf("async function verifyWorkspaceHydration");
  const end=source.indexOf("// Real guest route browser acceptance",start);
  const flow=source.slice(start,end);
- const click=flow.indexOf("await continueToIdeas.click()");
+ const click=flow.indexOf("await mirror.locator('[data-hh-mirror-next]').click();");
  const ideas=flow.indexOf('data-active-workspace","phrases"',click);
  const goal=flow.indexOf('const ideasGoalPane=page.locator',ideas);
  const choices=flow.indexOf('await expect(goalChoices).toHaveCount(3)',goal);

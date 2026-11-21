@@ -5991,7 +5991,7 @@
   background:linear-gradient(175deg,#fff9f1 0%,#f9f2e5 80%,#fbf7ef 100%)
  }
  .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
-  .quickBuilder>:not(.quickBrandBar):not([data-hh-mirror-title]):not(.previewStage):not([data-hh-mirror-goals]){
+  .quickBuilder>:not(.quickBrandBar):not([data-hh-mirror-title]):not(.previewStage):not([data-hh-mirror-goals]):not([data-video-director-chat-details][open]){
   display:none!important
  }
  .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder>.quickBrandBar{

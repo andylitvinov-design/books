@@ -203,7 +203,7 @@ test("hydration progresses Goals → Ideas through a real tap without hidden leg
   const end=browser.indexOf("// Real guest route browser acceptance",start);
   const flow=browser.slice(start,end);
   const hydrate=flow.indexOf('data-video-studio-hydrated","true"');
-  const continueTap=flow.indexOf("await continueToIdeas.click()",hydrate);
+  const continueTap=flow.indexOf("await mirror.locator('[data-hh-mirror-next]').click()",hydrate);
   const goal=flow.indexOf('const ideasGoalPane=page.locator',continueTap);
   const chosen=flow.indexOf('data-video-ideas-goal-choice="rest"',goal);
   const next=flow.indexOf('data-video-ideas-goal-next',chosen);
