@@ -5,7 +5,7 @@ import {useRouter} from "next/navigation";
 import {useState} from "react";
 import {ArrowRight, BookOpen, BriefcaseBusiness, ChevronDown, Coins, GraduationCap, Heart, Leaf, Menu, Search, Shield, Sparkles, Sprout, Sun, TrendingUp, UserRound, WandSparkles, Zap} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
-import {shamanicaServiceHref} from "@/lib/shamanica-recommendations.mjs";
+import {shamanicaCategoryHref} from "@/lib/shamanica-recommendations.mjs";
 import styles from "./shamanica-mobile.module.css";
 import { ShamanicaBusinessContent } from "./shamanica-business-content";
 
@@ -132,7 +132,7 @@ export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;au
    </section>
    <section className={styles.services} aria-labelledby="shamanica-services-title">
     <div className={styles.servicesHeading}><h2 className={styles.sectionTitle} id="shamanica-services-title">{t.servicesTitle}</h2><Link href={"/"+locale+"/shamanica/business"} prefetch={false} className={styles.businessLink}>{t.work}<ArrowRight size={17} aria-hidden="true"/></Link></div>
-    <div className={styles.serviceGrid}>{serviceCards.map(id=>{const Icon=icons[id];return <Link key={id} href={id==="free"?"/"+locale+"/academy/principles-of-energywork/learn":shamanicaServiceHref(locale,id)} prefetch={false} className={styles.serviceCard} data-shamanica-service={id}>
+    <div className={styles.serviceGrid}>{serviceCards.map(id=>{const Icon=icons[id];return <Link key={id} href={id==="free"?"/"+locale+"/academy/principles-of-energywork/learn":shamanicaCategoryHref(locale,id)} prefetch={false} className={styles.serviceCard} data-shamanica-service={id}>
       <div className={styles.servicePhoto}><Image src={images[id]} alt="" fill sizes="(max-width:600px) 33vw, 300px"/></div>
       <span className={styles.serviceIcon}><Icon size={21} strokeWidth={1.8}/></span>
       <div className={styles.serviceBody}><h3>{t.services[id][0]}</h3><p>{t.services[id][1]}</p></div>
