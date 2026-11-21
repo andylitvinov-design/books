@@ -39,6 +39,8 @@ on:
       - 'components/home-deferred-content.tsx'
       - 'tests/home-css-isolation.test.mjs'
       - 'scripts/measure-home-css-network.mjs'
+      - 'scripts/report-home-mobile-compare.mjs'
+      - 'tests/home-mobile-compare.test.mjs'
   workflow_dispatch:
 permissions:
   contents: read
@@ -51,7 +53,7 @@ jobs:
   measure-public:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false || startsWith(github.event.pull_request.title, 'perf(home):') }}
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
@@ -60,7 +62,7 @@ jobs:
         with:
           node-version: 22
       - name: Check first-screen CSS isolation and hero preloads
-        run: node --test tests/home-css-isolation.test.mjs
+        run: node --test tests/home-css-isolation.test.mjs tests/home-mobile-compare.test.mjs
       - name: Validate targeted safety and booking contracts
         run: node --test tests/holistic-house-image-quota.test.mjs tests/hh-public-html-metrics.test.mjs tests/holistic-house-speed-and-cta.test.mjs tests/holistic-house-home-streaming.test.mjs tests/home-carousel-first-screen-cta.test.mjs tests/home-rsc-on-demand.test.mjs tests/public-consultation-cta-design.test.mjs tests/consultation-capture-choice.test.mjs tests/personal-testimonials.test.mjs
       - name: Stage checksum-verified FFmpeg before npm lifecycle
@@ -95,6 +97,49 @@ jobs:
           done
           node scripts/measure-home-css-network.mjs http://127.0.0.1:3399 | tee /tmp/hh-home-css-metrics.json
           { echo '## Homepage network first paint (uncompressed)'; echo '```json'; cat /tmp/hh-home-css-metrics.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Compare LIVE vs current PR on mobile slow 4G, Lighthouse v13.6 two runs
+        if: ${{ github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'perf(home):') }}
+        timeout-minutes: 24
+        shell: bash
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/home-perf
+          PORT=3399 HOSTNAME=127.0.0.1 npm start >/tmp/hh-home-lh-server.log 2>&1 &
+          app_pid=$!
+          trap 'kill "$app_pid" 2>/dev/null || true' EXIT
+          ready=false
+          for attempt in {1..35}; do
+            if curl -fsS -o /dev/null http://127.0.0.1:3399/; then ready=true; break; fi
+            printf 'Lighthouse local server readiness attempt %s\n' "$attempt"
+            sleep 1
+          done
+          if [[ "$ready" != true ]]; then tail -60 /tmp/hh-home-lh-server.log; exit 1; fi
+          for pass in 1 2; do
+            for lang in en ru es; do
+              path="/"
+              if [[ "$lang" != en ]]; then path="/$lang"; fi
+              for candidate in before after; do
+                origin="https://holistichouse.vercel.app"
+                if [[ "$candidate" == after ]]; then origin="http://127.0.0.1:3399"; fi
+                echo "Lighthouse 13.6: $candidate $lang pass=$pass (mobile simulated slow 4G)"
+                timeout 135s npx --yes lighthouse@13.6.0 "$origin$path" \
+                  --quiet --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
+                  --only-categories=performance --throttling-method=simulate \
+                  --output=json --output-path="artifacts/home-perf/$candidate-$lang-$pass.json"
+              done
+            done
+          done
+          node scripts/report-home-mobile-compare.mjs artifacts/home-perf
+      - name: Save matched slow-4G evidence for first-screen release review
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'perf(home):')
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-home-lighthouse-${{ github.run_id }}
+          path: artifacts/home-perf/*.json
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Measure public TTFB and HTML/RSC size (no login, no private routes)
         # PR runs validate source only; the live production alias is not that PR.
         # Explicit manual audits check actual hourly LIVE rather than the stale alias after merge.
