@@ -299,15 +299,18 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(montageStyle).toHaveAttribute("aria-pressed","true");
     const ideasTop=page.locator('[data-video-quick-control="phrases"]');
     await ideasTop.tap();
-    // Returning to Ideas deliberately opens Goal again. Previously confirmed
-    // Personalization remains accessible and the validated Concept stays available.
+    // Returning from Montage preserves the last selected Ideas panel
+    // (Concept), not a fabricated Goal reset. The chosen goal and confirmed
+    // Personalization still remain accessible with real taps.
     const ideasGoalTab=page.locator('[data-video-ideas-tab="goal"]');
     const ideasConceptTab=page.locator('[data-video-ideas-tab="concept"]');
     const ideasPersonalTab=page.locator('[data-video-ideas-tab="personalization"]');
+    await expect(ideasConceptTab).toHaveAttribute("aria-pressed","true");
+    await expect(ideasGoalTab).toBeEnabled();
+    await expect(ideasPersonalTab).toBeEnabled();
+    await ideasGoalTab.tap();
     await expect(ideasGoalTab).toHaveAttribute("aria-pressed","true");
     await expect(page.locator('[data-video-ideas-goal-selected]')).toBeVisible();
-    await expect(ideasPersonalTab).toBeEnabled();
-    await expect(ideasConceptTab).toBeEnabled();
     await ideasConceptTab.tap();
     const concept=page.locator("[data-video-ideas-concept-panel]");
     await expect(concept).toBeVisible();
