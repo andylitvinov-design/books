@@ -148,7 +148,7 @@ try {
   await shelves.locator('[data-business-shelf="express"]').click();
   await expect(shelves).toHaveAttribute("data-expanded","true");
   // Express defines four routed subservices in businessShelves; preserve that real UI contract.
-  await expect(shelves.locator('[data-business-second-level="express"] [data-business-subservice]')).toHaveCount(4);
+  await expect(shelves.locator('[data-business-second-level="express"] [data-business-subservice]')).toHaveCount(5);
   await shelves.locator("[data-business-back-to-shelves]").click();
   await expect(shelves).toHaveAttribute("data-expanded","false");
   await expect(shelves.locator("[data-business-shelf]")).toHaveCount(6);
