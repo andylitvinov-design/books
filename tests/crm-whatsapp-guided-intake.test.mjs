@@ -30,7 +30,8 @@ test('WhatsApp stays off without Meta credentials and never reuses Telegram pilo
 })
 test('WhatsApp six-stage intake never transfers private diagnostic text before consent',()=>{
   const input=(rawText,extra={})=>({rawText,locale:'ru',...extra})
-  const first=whatsappIntakeEvent(null,input('Привет'))
+  const websiteReview=new URL(whatsappExpressReviewHandoff('ru')).searchParams.get('text')
+  const first=whatsappIntakeEvent(null,input(websiteReview))
   assert.equal(first.stage,'consent')
   assert.equal(first.body,null)
   assert.equal(first.consent,false)

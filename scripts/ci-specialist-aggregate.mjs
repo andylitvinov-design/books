@@ -693,7 +693,11 @@ export async function verify(api,ctx,files,options={}) {
   const start = now();
   const deadline = start + maxWait;
   const missingDeadline = start + missingGrace;
-  const queuedDeadline = start + queuedGrace;
+  // Measure the ten-minute idle-runner grace only while no other required
+  // Specialist is genuinely executing. Concurrent real browser/IA work must
+  // not turn an unrelated queued sibling into an artificial failed PR.
+  // Both scenarios retain the same fixed overall maxWait deadline.
+  let queuedWithoutRunningSince = null;
   let state, fastDiagnostics=[];
   let incompleteSince = null;
   // Only the single last running Specialist can use the shorter cadence;
@@ -834,6 +838,14 @@ export async function verify(api,ctx,files,options={}) {
     // A registered but queued/requested/waiting workflow is not an executing
     // test. Give the GitHub runner queue a separate bounded startup window.
     const notStarted = state.queued;
+    // A queued action is not a failure while another *actual* required run
+    // occupies a runner. Allow the bounded solo queue budget after that run
+    // completes; reset on a new in-progress sibling, but never extend maxWait.
+    // GitHub's immutable exact-HEAD run evidence still must finish green.
+    if (!notStarted.length || state.running.length) queuedWithoutRunningSince = null;
+    else if (queuedWithoutRunningSince === null) queuedWithoutRunningSince = timestamp;
+    const queuedDeadline = queuedWithoutRunningSince === null
+      ? Infinity : Math.min(deadline, queuedWithoutRunningSince + queuedGrace);
     if (notStarted.length && timestamp >= queuedDeadline) {
       throw Error('SPECIALIST_MISSING_OR_PENDING:NOT_STARTED:' +
         JSON.stringify({queued:notStarted,running:state.running}));
