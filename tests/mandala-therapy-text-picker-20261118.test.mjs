@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {test} from "node:test";
 import {buildShortMeditationOptions} from "../lib/mandala/short-meditation-options.mjs";
+import {requiresRealMediaWebKit} from "../lib/ci/merge-check-light.mjs";
 const source=p=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
 test("Two complete local 30-second meditation choices in EN RU ES; no remote generation",()=>{
  for(const locale of ["en","ru","es"]){
@@ -75,14 +76,31 @@ test("Selected canonical scenario feeds two RU options and the original approved
  assert.match(chosen.options[1].text,/Свои ценности на горизонте/);
 });
 
-test("Therapy A/B requires the existing real macOS WebKit media acceptance",()=>{
+test("Therapy A/B remains gated by BASE-classified real macOS WebKit media acceptance",()=>{
  const workflow=source(".github/workflows/holistic-support-mandala.yml");
  const start=workflow.indexOf("  voice-webkit-macos:");
- assert.ok(start>=0,"Existing WebKit job is retained");
- const job=workflow.slice(start,start+2800);
- assert.match(job,/startsWith\(github\.head_ref, 'feat\/therapy-'\)/);
+ const preflight=workflow.slice(workflow.indexOf("  webkit_preflight:"),start);
+ assert.ok(start>=0&&preflight.length>0,"Existing preflight and macOS job are retained");
+ assert.match(preflight,/requiresRealMediaWebKit\(changed\)/);
+ assert.match(preflight,/media_required/);
+ const job=workflow.slice(start,start+3000);
+ assert.match(job,/needs\.webkit_preflight\.outputs\.media_required == 'true'/);
  assert.match(job,/runs-on: macos-15/);
  assert.match(job,/needs: \[webkit_preflight\]/);
+ assert.doesNotMatch(job,/startsWith\(github\.head_ref, 'feat\/therapy-'\)/,
+  "actual media changes, not the branch prefix, must require WebKit");
+ assert.equal(requiresRealMediaWebKit([
+  {filename:"components/mandala-free-video-studio.tsx",status:"modified"},
+  {filename:"components/mandala-therapy-studio.tsx",status:"modified"}
+ ]),true,"the real Therapy component delta must trigger macOS media QA");
+ assert.equal(requiresRealMediaWebKit([
+  {filename:"docs/design/THERAPY_STUDIO_TEXT_PICKER_APPROVED_20261118.md",status:"modified"}
+ ]),false,"documentation-only changes cannot falsely require an encoder");
+ for(const command of [
+  "node scripts/verify-affirmation-voice-browser.mjs",
+  "node scripts/benchmarking/first-video-live-export.mjs",
+  "node scripts/benchmarking/verify-original-motion-export.mjs"
+ ])assert.ok(workflow.includes(command),"retained real media evidence: "+command);
 });
 
 test("Native browser verifies real encoded speech before Therapy can revoke its attachment",()=>{
