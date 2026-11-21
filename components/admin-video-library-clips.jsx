@@ -85,6 +85,7 @@ export default function AdminVideoLibraryClips({locale='ru',scenes=[]}){
  const [items,setItems]=useState([]),[files,setFiles]=useState([]);
  const [category,setCategory]=useState('energy-confidence'),[tags,setTags]=useState('');
  const [filter,setFilter]=useState('all'),[aspect,setAspect]=useState('all');
+ const [search,setSearch]=useState(''),[mediaKind,setMediaKind]=useState('all'),[visible,setVisible]=useState(24);
  const [preview,setPreview]=useState(null),[busy,setBusy]=useState(false);
  const [notice,setNotice]=useState(''),[error,setError]=useState('');
  const [review,setReview]=useState({});const mounted=useRef(true);
@@ -140,37 +141,51 @@ export default function AdminVideoLibraryClips({locale='ru',scenes=[]}){
    if(preview?.id===item.id)setPreview(null);await load();
   }catch{setError(t.error)}finally{setBusy(false)}
  }
- const available=useMemo(()=>scenes.filter(s=>{
-  if(filter!=='all'&&sourceCategory[s.theme]!==filter)return false;
-  return aspect==='all'||(s.allowedAspects||[]).includes(aspect);
- }),[scenes,filter,aspect]);
+ const available=useMemo(()=>{
+  const needle=search.trim().toLocaleLowerCase().slice(0,70);
+  return scenes.filter(s=>{
+   if(filter!=='all'&&sourceCategory[s.theme]!==filter)return false;
+   if(aspect!=='all'&&!(s.allowedAspects||[]).includes(aspect))return false;
+   if(mediaKind==='filmed'&&s.media!=='licensed_mp4')return false;
+   if(mediaKind==='motion'&&s.media!=='original_motion_mp4')return false;
+   return !needle||[s.id,s.collection,s.theme,s.label?.[locale],...(s.tags||[])]
+    .some(value=>String(value||'').toLocaleLowerCase().includes(needle));
+  });
+ },[scenes,filter,aspect,mediaKind,search,locale]);
+ const pageItems=available.slice(0,visible);
  const chooseReview=(id,field,value)=>setReview(prev=>({...prev,[id]:{...prev[id],[field]:value}}));
  return <div data-admin-video-usable-library style={{display:'grid',gap:20,minWidth:0}}>
   <details style={box} data-admin-video-playable>
    <summary style={{cursor:'pointer',fontWeight:750,fontSize:17,padding:'4px 0'}}>{t.title} · {available.length}</summary>
    <p>{t.hint}</p>
    <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:14}}>
-    <label>{t.category} <select style={control} value={filter} onChange={e=>setFilter(e.target.value)}>
+    <label>{locale==="ru"?"Поиск":locale==="es"?"Buscar":"Search"} <input type="search" style={control} value={search} maxLength={70} placeholder={locale==="ru"?"Название, тема или ID":locale==="es"?"Nombre, tema o ID":"Name, topic or ID"} onChange={e=>{setSearch(e.target.value);setVisible(24)}}/></label>
+    <label>{locale==="ru"?"Тип видео":locale==="es"?"Tipo":"Video type"} <select style={control} value={mediaKind} onChange={e=>{setMediaKind(e.target.value);setVisible(24)}}>
+     <option value="all">{t.all}</option><option value="filmed">{locale==="ru"?"Видео / композиции":"Video / compositions"}</option><option value="motion">{locale==="ru"?"Анимации (не съёмка)":"Animations (not filmed)"}</option>
+    </select></label>
+    <label>{t.category} <select style={control} value={filter} onChange={e=>{setFilter(e.target.value);setVisible(24)}}>
      <option value="all">{t.all}</option>
      {OWNER_VIDEO_CATEGORIES.map(x=><option key={x} value={x}>{t.labels[x]}</option>)}
     </select></label>
-    <label>{t.aspect} <select style={control} value={aspect} onChange={e=>setAspect(e.target.value)}>
+    <label>{t.aspect} <select style={control} value={aspect} onChange={e=>{setAspect(e.target.value);setVisible(24)}}>
      <option value="all">{t.all}</option><option value="portrait">{t.portrait} 9:16</option><option value="landscape">{t.landscape} 16:9</option>
     </select></label>
    </div>
    <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,165px),1fr))',gap:10}}>
-    {available.map(scene=><article key={scene.id} style={{...box,padding:8}}>
+    {pageItems.map(scene=><article key={scene.id} style={{...box,padding:8}}>
      {preview?.id===scene.id&&preview.type==='built-in'?<video key={scene.id} src={scene.video} poster={scene.poster}
        style={{width:'100%',aspectRatio:'9/12',objectFit:'contain',borderRadius:10,background:'#111'}} controls playsInline preload="metadata"/>
-      :<img src={scene.poster} alt="" loading="lazy" style={{display:'block',width:'100%',aspectRatio:'9/12',objectFit:'cover',borderRadius:10,background:'#e9ede8'}}/>}
+      :scene.poster?<img src={scene.poster} alt="" loading="lazy" style={{display:'block',width:'100%',aspectRatio:'9/12',objectFit:'cover',borderRadius:10,background:'#e9ede8'}}/>:
+       <div style={{display:'grid',placeItems:'center',width:'100%',aspectRatio:'9/12',borderRadius:10,background:'#e9ede8'}} aria-hidden="true">▶</div>}
      <strong style={{display:'block',margin:'6px 0',fontSize:13}}>{scene.label?.[locale]||scene.id}</strong>
-     <small>{scene.allowedAspects?.join(' / ')} · {scene.collection}</small>
+     <small>{scene.allowedAspects?.join(' / ')} · {scene.collection} · {scene.media==='original_motion_mp4'?(locale==='ru'?'Анимация': 'Animation'):(locale==='ru'?'Видеокомпозиция':'Video composition')}</small>
      <button type="button" style={{...btn,width:'100%',marginTop:6}}
       onClick={()=>setPreview(p=>p?.id===scene.id?null:{id:scene.id,type:'built-in'})}>
       {preview?.id===scene.id?t.close:t.preview}</button>
     </article>)}
    </div>
    {!available.length?<p>{t.none}</p>:null}
+   {available.length>visible?<button type="button" style={btn} onClick={()=>setVisible(v=>Math.min(v+24,available.length))}>{locale==='ru'?'Показать ещё 24':locale==='es'?'Mostrar 24 más':'Show 24 more'} ({visible}/{available.length})</button>:null}
    <p><Link href={studio(locale)} style={{...btn,display:'inline-block',textDecoration:'none'}}>{t.open}</Link></p>
   </details>
   <section id="owner-video-upload" style={box} data-admin-video-upload>

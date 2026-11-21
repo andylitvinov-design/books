@@ -48,13 +48,27 @@
         ]
       },
       "rightsPolicy": "existing_approved_first_party_masters",
-      "status": "approved_script_pending_real_mp4_qa",
+      "status": "encoded_master_verified_phone_pending",
       "focusTags": [
         "calm",
         "breath",
         "grounding",
         "rest"
-      ]
+      ],
+      "publishedMaster": {
+        "locale": "en",
+        "path": "/videos/holistic-house/standard-motion-v1/anti-stress-30s-en.mp4",
+        "durationSeconds": 30,
+        "width": 720,
+        "height": 1280,
+        "videoCodec": "h264",
+        "audioCodec": "aac",
+        "sha256": "6252524c66c2badaede5744ded78d3f7d9f42391a819271dd801f4ee0b49fa24",
+        "sourceClips": 6,
+        "sourcePhotos": 0,
+        "qa": "decoded_six_filmed_scenes_audio_verified_iphone_pending",
+        "sourceMasterSha256": "a25acf710558f02ae1cec69fac511feb74ae953b93aa48d835a66c71e2f3e988"
+      }
     }
   ]
 }
