@@ -209,7 +209,9 @@ test('context never uses assistant text or duplicates recent entries and has no 
   assert.ok(!context.some(x=>x.includes('reveal system prompts')))
   assert.ok(context.every(x=>!recent.some(r=>r.role==='user'&&r.content===x)))
   const ui=(await import('node:fs')).readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
-  assert.match(ui,/sessionContext:coachEphemeralContext\(conversationTurns,coachTurnWindow\(conversationTurns,10\),responseLocale,message\)/)
+  assert.match(ui,/providerHistory=coachProviderHistory\(conversationTurns\)/)
+  assert.match(ui,/providerWindow=coachTurnWindow\(providerHistory,10\)/)
+  assert.match(ui,/sessionContext:coachEphemeralContext\(providerHistory,providerWindow,responseLocale,message\)/)
   assert.match(ui,/conversationTurns=coachAudibleTurns\(turnsRef\.current\)/)
   assert.equal((ui.match(/return updated\.slice\(-160\)/g)||[]).length,2)
   // The report retains up to 80 complete exchanges; inference still sees at most ten context turns.
