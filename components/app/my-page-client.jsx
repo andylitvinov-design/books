@@ -4,6 +4,7 @@ import Link from 'next/link'
 import {appFetch} from '@/lib/app/client-fetch'
 import css from './my-page.module.css'
 import ProfilePersonalSummary from './profile-personal-summary'
+import MyLivePhotos from './my-live-photos'
 
 const C={
 en:{title:'My Page',lead:'Your personal space to share videos, achievements and diary notes.',back:'Profile',login:'Continue with Google',guest:'Sign in to create your personal page. You decide what becomes public.',retry:'Try again',loading:'Loading your page…',error:'The action was not completed. Your private data stays private.',saved:'Changes saved.',name:'Public name',handle:'Page address',bio:'About me',saveProfile:'Save page details',publishPage:'Publish my page',unpublish:'Make page private',open:'Open public page',privacy:'A new page and every entry stay private until you publish them yourself.',stats:'My verified activity',tests:'Completed tests',practices:'Completed practices',videos:'Saved videos',shareStats:'Choose the counts visitors may see',shareTests:'Show test count',sharePractices:'Show practice count',shareVideos:'Show saved-video count',saveStats:'Save shared statistics',milestone:'Add achievement',videoTitle:'My videos',noVideos:'No completed videos saved in My Videos yet.',library:'Open My Videos',addVideo:'Add to page privately',feed:'My diary and achievements',write:'Write something about your day…',post:'Save diary entry privately',noPosts:'There are no diary entries yet.',public:'Public',private:'Private',show:'Publish',hide:'Hide',remove:'Delete',edit:'Edit',saveEdit:'Save edit privately',cancel:'Cancel',achievement:'Achievement',video:'Video',postType:'Diary',signingIn:'Connecting to Google…',handleHelp:'3–30 lowercase Latin letters, numbers or hyphens. Changing it changes your page link.'},
@@ -61,6 +62,7 @@ export default function MyPageClient({locale='en'}){
    <ProfilePersonalSummary locale={locale} profile={profile} data={data} busy={busy}
        onEdit={()=>setEditingProfile(true)}
        onAddVideo={video=>void perform({action:'addVideo',videoId:video.id,title:video.theme+' · '+video.duration_seconds+'s'})}/>
+   <MyLivePhotos locale={locale}/>
    {editingProfile?<>
    <section className={css.card} aria-label={t.title}>
     <div className={css.row}><h2>{t.title}</h2>

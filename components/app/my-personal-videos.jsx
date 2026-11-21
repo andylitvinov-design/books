@@ -5,6 +5,7 @@ import {appFetch} from '@/lib/app/client-fetch'
 import {savePrivateMp4} from '@/lib/mandala/signed-private-video-upload.mjs'
 import PersonalVideoMessengerPanel from './personal-video-messenger-panel'
 import SupportPhotoCabinet from '@/components/app/support-photo-cabinet'
+import MyLivePhotos from '@/components/app/my-live-photos'
 
 const COPY={
   en:{title:'My Videos',subtitle:'Your private saved videos, separate from the public video editor.',new:'Create free video',myPage:'Publish on My Page',
@@ -145,6 +146,7 @@ export default function MyPersonalVideos({accountId,locale='en'}){
       </div>
     </div>
     <SupportPhotoCabinet locale={locale} />
+    <MyLivePhotos locale={locale} />
     {status==='disabled'&&<p role="status">{t.disabled}</p>}
     {status==='error'&&<p role="alert">{t.error}</p>}
     {status==='ready'&&<>
