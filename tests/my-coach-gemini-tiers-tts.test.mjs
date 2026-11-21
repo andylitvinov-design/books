@@ -117,9 +117,9 @@ test('one Gemini TTS request selects exact approved voice and returns real-forma
       const body=JSON.parse(options.body)
       assert.equal(body.model,'gemini-3.8-flash-lite-tts')
       assert.equal(body.store,false,'no Google interaction storage for private coach speech')
-      assert.equal(body.generation_config.speech_config[0].voice,'Sulafat')
-      assert.equal(body.generation_config.speech_config[0].language,'en-US')
-      assert.equal(body.generation_config.max_output_tokens,1250)
+      assert.deepEqual(body.response_format,{type:'audio',mime_type:'audio/wav',sample_rate:24000})
+      assert.deepEqual(body.generation_config,{speech_config:[{voice:'Sulafat'}]},
+        'undocumented language/max_output_tokens must not break Google Free TTS')
       assert.match(body.input[0].content[0].text,/There is a lot/)
       return {ok:true,status:200,json:async()=>({
         steps:[{type:'model_output',content:[{type:'audio',data:wav.toString('base64')}]}]})}
