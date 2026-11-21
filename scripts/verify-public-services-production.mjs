@@ -126,7 +126,7 @@ try {
   await expect(cards).toHaveCount(6);
   await expect(cards.locator("img")).toHaveCount(6);
   for(const id of ["express","remedies","strategy","artifacts","energy","energywork"])
-   await expect(cards.locator('[data-business-shelf="'+id+'"]')).toHaveCount(1);
+   await expect(shelves.locator('[data-business-shelf="'+id+'"]')).toHaveCount(1);
   await expect(page.locator("[data-hh-unified-dock]")).toHaveCount(1);
   const m=await page.evaluate(()=>{
    const last=document.querySelector('[data-business-shelf="energywork"]');
@@ -154,7 +154,7 @@ try {
   await expect(section.locator("[data-recommended-business-service]")).toHaveCount(2);
   // Real two-level catalogue: Express has five priced formats and Strategy
   // has four distinct reviews. The contact controls must remain present.
-  await cards.locator('[data-business-shelf="express"]').click();
+  await shelves.locator('[data-business-shelf="express"]').click();
   await expect(shelves).toHaveAttribute("data-expanded","true");
   await expect(shelves.locator('[data-business-second-level="express"] [data-business-subservice]')).toHaveCount(5);
   for(const price of ["FREE","45 CAD","75 CAD","200 CAD","300 CAD"])
@@ -162,7 +162,7 @@ try {
   await expect(shelves.locator('[data-business-get-details="express"]')).toBeVisible();
   await shelves.locator("[data-business-back-to-shelves]").click();
   await expect(cards).toHaveCount(6);
-  await cards.locator('[data-business-shelf="strategy"]').click();
+  await shelves.locator('[data-business-shelf="strategy"]').click();
   await expect(shelves.locator('[data-business-second-level="strategy"] [data-business-subservice]')).toHaveCount(4);
   await expect(shelves.locator('[data-business-get-details="strategy"]')).toBeVisible();
  }
