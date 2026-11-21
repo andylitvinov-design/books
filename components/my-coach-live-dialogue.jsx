@@ -480,17 +480,18 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       'Solution-focused':'solution_focused',
       'Appreciative inquiry':'appreciative_inquiry'})[persona?.methods?.[0]]||'grow'
   const visibleMethodName=coachMethodNames[visibleMethodId]||'GROW'
-  const stageDescription=meaningProgressValid
-    ?(semanticStageTitles[lang]?.[meaningProgress.stageId]||
-      methodStepTitles[lang]?.[meaningProgress.stageId]||ui.stages[visibleStageIndex])
-    :progressValid
-      ?(methodStepTitles[lang]?.[lastRecordedProgress.stepId]||ui.stages[visibleStageIndex])
-      :semanticStageTitles[lang]?.[
-        ['contact','goal','reality','options','integration'][visibleStageIndex]]
   const stageChecklistTitles=coachSessionVisibleStageIds(visibleMethodId,{
     legacy:progressValid&&!meaningProgressValid
   }).map((stepId,index)=>semanticStageTitles[lang]?.[stepId]||
     methodStepTitles[lang]?.[stepId]||ui.stages[index]||stepId)
+  const stageDescription=meaningProgressValid
+    ?(semanticStageTitles[lang]?.[meaningProgress.stageId]||
+      methodStepTitles[lang]?.[meaningProgress.stageId]||
+      stageChecklistTitles[visibleStageIndex]||ui.stages[visibleStageIndex])
+    :progressValid
+      ?(methodStepTitles[lang]?.[lastRecordedProgress.stepId]||
+        stageChecklistTitles[visibleStageIndex]||ui.stages[visibleStageIndex])
+      :stageChecklistTitles[visibleStageIndex]||ui.stages[visibleStageIndex]
   const keyInfoUi=keyInfoCopy[lang]
   const goalPrompts={
     en:{stress:'I would like to feel less stressed. Can we explore what is weighing on me?',energy:'I would like to restore my energy. Can we explore what is draining it?',relationships:'I would like to improve an important relationship. Can we explore what matters most?'},

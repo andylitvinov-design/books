@@ -68,13 +68,13 @@ test('failed or overlong Gemini output fails closed without a retry',async()=>{
   await assert.rejects(verifiedGeminiCoachingReply(geminiCoachTextConfig(free,'gemini_free'),
     {messages},async()=>({status:429,ok:false})),{message:'GEMINI_COACH_RATE_LIMIT'})
 })
-test('ten personas have four server-allowlisted voice candidates for RU and EN',()=>{
-  const ids=['mira','max','sofia','alex','merlin','harry','lea','noah','iris','ray']
-  assert.deepEqual(Object.keys(GEMINI_COACH_VOICE_OPTIONS).sort(),[...ids].sort())
-  for(const id of ids){
+test('ten personas retain approved, distinct server-allowlisted RU/EN voice candidates',()=>{
+  const counts={mira:6,max:5,sofia:6,alex:4,merlin:6,harry:4,lea:4,noah:4,iris:4,ray:4}
+  assert.deepEqual(Object.keys(GEMINI_COACH_VOICE_OPTIONS).sort(),Object.keys(counts).sort())
+  for(const [id,count] of Object.entries(counts)){
     const opts=coachGeminiVoiceOptions(id)
-    assert.equal(opts.length,4)
-    assert.equal(new Set(opts).size,4)
+    assert.equal(opts.length,count)
+    assert.equal(new Set(opts).size,count)
     assert.ok(opts.every(name=>allowedGeminiCoachVoice(id,name)))
     assert.equal(allowedGeminiCoachVoice(id,'malicious-id'),false)
   }
