@@ -212,7 +212,13 @@ test('source wiring requires own Free consent, mic stop, WSS CSP and automated r
  assert.match(live,/trainingUseConsent:true/)
  assert.doesNotMatch(live,/MediaRecorder|localStorage|sessionStorage|x-goog-api-key|HH_GEMINI_FREE_API_KEY/)
  assert.match(worklet,/registerProcessor\('holistic-gemini-live-capture'/)
- assert.match(pkg.scripts['test:coaching:release'],/my-coach-gemini-free-live\.test\.mjs/)
+ assert.match(pkg.scripts['test:coaching:release'],/coaching-gemini-live-release\.test\.mjs/)
+ const releaseRunner=load('tests/coaching-gemini-live-release.test.mjs')
+ for(const suite of ['my-coach-gemini-free-live','my-coach-gemini-tiers-tts',
+   'my-coach-gemini-approved-voices','my-coach-webcodecs-stream']){
+   assert.ok(releaseRunner.includes("import './"+suite+".test.mjs'"),
+     'the registered coaching runner must import '+suite)
+ }
 })
 
 test('2026 AQ. authorization key can request one-use native Live token without Paid key',async()=>{
