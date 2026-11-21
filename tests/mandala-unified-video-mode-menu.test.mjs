@@ -49,3 +49,18 @@ test("Express uses the verified locale-matched master rather than personal previ
  assert.match(player,/existing_approved_first_party_masters/);
  assert.match(player,/master\?\.sha256/);
 });
+
+test("native iPhone Montage tab survives lost Safari click without hijacking scroll",()=>{
+ const nav=studio.split("<nav className={videoStyles.quickVideoNav}")[1]?.split("</nav>")[0]||"";
+ assert.match(nav,/onTouchStart=\{event=>/);
+ assert.match(nav,/onTouchEnd=\{event=>/);
+ assert.match(nav,/onTouchCancel=\{\(\)=>/);
+ assert.match(nav,/Math\.abs\(touch\.clientX-start\.x\)<=12/);
+ assert.match(nav,/Math\.abs\(touch\.clientY-start\.y\)<=12/);
+ assert.match(nav,/activeWorkspace!==item\.id\)activateQuickWorkspace\(item\.id\)/);
+ assert.match(nav,/onClick=\{\(\)=>activateQuickWorkspace\(item\.id\)\}/);
+ assert.doesNotMatch(nav,/preventDefault\(\)/);
+ const webkit=read("scripts/verify-affirmation-voice-browser.mjs");
+ assert.match(webkit,/await montage\.tap\(\)/);
+ assert.match(webkit,/WEBKIT_MONTAGE_SINGLE_TAP_NOT_COMMITTED/);
+});

@@ -6105,6 +6105,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // One active request controls the fragment and scroll; no delayed scroll
   // from the previous tab can steal the next pointer's click target.
   const quickNavTokenRef=useRef(0);
+  // iPhone Safari can suppress click/pointerup when a panel shifts under a
+  // real touch. Only a stationary touchend can recover that lost navigation.
+  const quickNavTouchStartRef=useRef<{id:StudioWorkspace;x:number;y:number}|null>(null);
   const [quickNavTarget,setQuickNavTarget]=useState("");
 
   // Keep existing anchors working with the new single-editor navigation.
@@ -7716,6 +7719,21 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           aria-controls="video-workspace-panel" disabled={!studioHydrated||recording||preparing}
           // WebKit may drop click after an expanded Ideas details portal shifts
           // during release; pointer-up commits the same real selected tab.
+          onTouchStart={event=>{
+            const touch=event.touches.item(0);
+            quickNavTouchStartRef.current=touch?{id:item.id,x:touch.clientX,y:touch.clientY}:null;
+          }}
+          onTouchEnd={event=>{
+            const start=quickNavTouchStartRef.current;
+            quickNavTouchStartRef.current=null;
+            const touch=event.changedTouches.item(0);
+            // A scroll/swipe is not a tab selection; do not prevent default.
+            if(start?.id===item.id&&touch&&
+               Math.abs(touch.clientX-start.x)<=12&&
+               Math.abs(touch.clientY-start.y)<=12&&
+               activeWorkspace!==item.id)activateQuickWorkspace(item.id);
+          }}
+          onTouchCancel={()=>{quickNavTouchStartRef.current=null;}}
           onPointerUp={()=>{if(activeWorkspace!==item.id)activateQuickWorkspace(item.id);}}
           onClick={()=>activateQuickWorkspace(item.id)}><item.Icon size={18} aria-hidden="true"/>
           <span className={videoStyles.quickNavFull}>{workspaceCopy[locale][item.id].tab}</span>
