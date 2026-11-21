@@ -1,6 +1,6 @@
 "use client";
 
-import {useMemo,useState} from "react";
+import {useEffect,useMemo,useState} from "react";
 import type {PublicLocale} from "@/lib/public-locales";
 import {
   OPENMOTION_REFERENCE_COLLECTIONS,OPENMOTION_REFERENCE_COUNT,OPENMOTION_GUIDE_COUNT,
@@ -75,6 +75,11 @@ export function MandalaOpenMotionPicker({locale,disabled,onPick,exportReady,onEx
   const [page,setPage]=useState(0);
   const [selected,setSelected]=useState<string|null>(null);
   const [presetId,setPresetId]=useState("");
+  // Opt-in deep link to this reusable public template; never read client data.
+  useEffect(()=>{
+    if (new URLSearchParams(window.location.search).get("motionPreset")==="anti-stress-30s")
+      setPresetId("anti-stress-30s");
+  },[]);
   const [imported,setImported]=useState<EditableGuide|null>(null);
   const [previousGuide,setPreviousGuide]=useState<EditableGuide|null>(null);
   const [replaceClipId,setReplaceClipId]=useState("");
