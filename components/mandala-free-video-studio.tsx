@@ -5556,6 +5556,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(!preset){setNotice(ui.videoUnavailable);return false;}
     try{
       const plan=compileFreeFilmPreset(preset,locale,seconds,outputAspect,edit);
+      // Do not keep a stale portrait-retry action after a verified selection.
+      setPortraitRetry(null);
       storySourcePendingRef.current=false;
       resetEditorHistory();setPortraitRetry(null);
       setCreationMode("catalog");setActiveFreeFilmPreset(preset.id);
@@ -5591,11 +5593,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       return true;
     }catch(error){
       const reason=error instanceof Error?error.message:"";
-      const formatUnavailable=outputAspect!=="portrait"&&(
-        reason==="invalid_free_film_replacement"||
-        reason.includes("INITIAL_SOURCES_NOT_VERIFIED")||
-        reason==="UNVERIFIED_FOOTAGE_ASPECT_DURATION_OR_REUSE");
-      if(formatUnavailable){
+      // The original four masters for Morning Energy and other reviewed
+      // compilations may be physical 9:16 only. Any landscape compile failure
+      // (including approved auto-fill's INITIAL_SOURCES_NOT_VERIFIED) may offer
+      // 9:16 ONLY if that complete edit actually passes the exact same
+      // approved-clip, aspect, duration and distinct-source validation.
+      // An unverified Story/photo or insufficient portrait catalogue stays
+      // blocked, and no MP4 is ever marked completed by this format hint.
+      const portraitVerified=outputAspect!=="portrait"&&(()=>{
+        try{
+          compileFreeFilmPreset(preset,locale,seconds,"portrait",edit);
+          return true;
+        }catch{return false;}
+      })();
+      if(portraitVerified){
         setPortraitRetry({presetId,seconds,edit});
         setNotice(locale==="ru"
           ?"Исходные MP4 этого сюжета вертикальные. Выберите «Создать в 9:16» — видео будет собрано из проверенных сцен."
