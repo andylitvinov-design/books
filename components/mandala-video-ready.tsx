@@ -24,6 +24,9 @@ type CourseText={number:number;title:string;motif:string;script:string};
 type Props={
   locale:PublicLocale;theme:VideoTheme;wish:string;focus:GuidedMeditationFocus;aspect:"portrait"|"landscape"|"square";
   video:VideoFile|null;verified:boolean;checking:boolean;rendering:boolean;renderProgress:number;
+  previewSourceCanvasRef?:{readonly current:HTMLCanvasElement|null};
+  previewAvailable:boolean;previewPlaying:boolean;previewDurationSeconds:number;previewPositionSeconds:number;
+  onPreviewToggle:()=>void;onPreviewSeek:(seconds:number)=>void;
   progressQuestionnaire:ReactNode;generationNotice:string;signedIn:boolean;
   exportFailed:boolean;canRetryExport:boolean;onRetryExport:()=>void;nativeIphoneMp4Retry?:boolean;
   onPlaybackError:(player:HTMLVideoElement)=>void;onCancelExport?:()=>void;
@@ -177,6 +180,8 @@ const courseActionCopy={
 
 export function MandalaVideoReady({
   locale,theme,wish,focus,aspect,video,verified,checking,rendering,renderProgress,
+  previewSourceCanvasRef,previewAvailable,previewPlaying,previewDurationSeconds,previewPositionSeconds,
+  onPreviewToggle,onPreviewSeek,
   generationNotice,exportFailed,canRetryExport,onRetryExport,onPlaybackError,onCancelExport,nativeIphoneMp4Retry=false,
   signedIn,loginUnavailable,disabled,
   meditationEditor,onOpenDelivery,onRefreshLogin,onOpenCourse,onOpenTherapy,onReturnToPro,
@@ -198,6 +203,28 @@ export function MandalaVideoReady({
   const readyPlayerRef=useRef<HTMLVideoElement|null>(null);
   const readySourceModeRef=useRef<"safari-blob"|"object-url">("object-url");
   const readyUrlRecoveryRef=useRef<string|null>(null);
+  const sequencePreviewRef=useRef<HTMLCanvasElement|null>(null);
+  // Mirror the one existing Studio painter. No encode, upload or credit hold.
+  useEffect(()=>{
+    if(video||!previewAvailable)return;
+    let animation=0,last=0;
+    const paint=(now:number)=>{
+      if(now-last>=1000/15&&!document.hidden){
+        const source=previewSourceCanvasRef?.current,target=sequencePreviewRef.current;
+        if(source&&target&&source.width>0&&source.height>0){
+          if(target.width!==source.width||target.height!==source.height){
+            target.width=source.width;target.height=source.height;
+          }
+          try{target.getContext("2d",{alpha:false})?.drawImage(source,0,0);}
+          catch{/* Unavailable source cannot count as exported video. */}
+        }
+        last=now;
+      }
+      animation=window.requestAnimationFrame(paint);
+    };
+    animation=window.requestAnimationFrame(paint);
+    return()=>window.cancelAnimationFrame(animation);
+  },[video,previewAvailable,previewSourceCanvasRef]);
   useEffect(()=>{
     const player=readyPlayerRef.current;
     if(!video||!player)return;
@@ -408,15 +435,23 @@ export function MandalaVideoReady({
   const completed=Boolean(verified&&video);
   const videoTime=video?`${Math.floor(video.duration/60)}:${String(Math.round(video.duration%60)).padStart(2,"0")}`:"0:00";
   const waiting=rendering||checking;
-  const pendingStatus=rendering?t.generating:checking?t.verifying:t.notReady;
+  const pendingStatus=rendering?t.generating:checking?t.verifying:
+    previewAvailable
+      ?(locale==="ru"?"Предпросмотр готов · MP4 ещё не создан":
+        locale==="es"?"Vista previa lista · MP4 sin crear":"Preview ready · MP4 not created yet")
+      :t.notReady;
   const header=<div className={css.selectedVideo} data-aspect={aspect}
-    data-video-file={video?"true":undefined}>
+    data-video-file={video?"true":undefined}
+    data-personal-preview={!video&&previewAvailable?"true":undefined}>
     {video?<video key={video.url} ref={readyPlayerRef} playsInline controls preload="auto"
       data-mandala-video-preview data-ready-native-player="true"
       onLoadedData={event=>onVerifyPlayback(event.currentTarget)}
       onCanPlay={event=>onVerifyPlayback(event.currentTarget)}
       onError={event=>handleReadyPlaybackError(event.currentTarget)}
       aria-label={completed?t.ready:t.verifying}/>:
+    previewAvailable?<canvas ref={sequencePreviewRef} data-ready-sequence-canvas
+      aria-label={locale==="ru"?"Персональный предпросмотр, не готовый MP4":
+        locale==="es"?"Vista previa personalizada, no es un MP4":"Personal preview, not an exported MP4"}/>:
     /* Approved first-party example, never labelled an exported personal movie. */
     <div className={css.example}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -450,6 +485,25 @@ export function MandalaVideoReady({
             t.retryCompatible}<ArrowRight size={17} aria-hidden="true"/></button>:null}
       </div>:null}
       {header}
+      {!video&&previewAvailable?<div className={css.sequenceControls} data-ready-sequence-controls>
+        <p>{locale==="ru"?"Ваши сцены и текст · предпросмотр без экспорта":
+          locale==="es"?"Tus escenas y textos · vista previa sin exportar":
+          "Your scenes and captions · preview without exporting"}</p>
+        <button type="button" onClick={onPreviewToggle}
+          disabled={disabled||waiting} data-ready-sequence-play aria-pressed={previewPlaying}>
+          {previewPlaying?(locale==="ru"?"Пауза":locale==="es"?"Pausa":"Pause"):
+            locale==="ru"?"Смотреть персональную историю":
+              locale==="es"?"Reproducir mi historia":"Play my personal story"}
+        </button>
+        <input type="range" min={0} max={Math.max(1,previewDurationSeconds)}
+          step={0.5} value={Math.min(previewDurationSeconds,previewPositionSeconds)}
+          aria-label={locale==="ru"?"Позиция предпросмотра":
+            locale==="es"?"Posición de vista previa":"Preview position"}
+          disabled={disabled||waiting}
+          onChange={event=>onPreviewSeek(Number(event.currentTarget.value))}
+          data-ready-sequence-seek/>
+        <small>{Math.floor(previewPositionSeconds)} / {Math.floor(previewDurationSeconds)} s · Preview ≠ MP4</small>
+      </div>:null}
       {checking&&video&&!rendering?<button type="button" data-ready-play-verify
         className={css.secondary} onClick={()=>{
           const player=readyPlayerRef.current;
