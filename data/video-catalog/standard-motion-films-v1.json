@@ -1,0 +1,60 @@
+{
+  "version": "hh-standard-motion-films-v1",
+  "count": 1,
+  "films": [
+    {
+      "id": "anti-stress-30s",
+      "theme": "health",
+      "category": "stress-anxiety",
+      "label": {
+        "en": "Anti-stress · A Gentle Pause",
+        "ru": "Антистресс · Мягкая пауза",
+        "es": "Antiestrés · Una pausa suave"
+      },
+      "clips": [
+        "mountain-air",
+        "mossy-stream",
+        "sea-breeze",
+        "morning-dew",
+        "fern-awakening",
+        "meadow-morning"
+      ],
+      "ambience": "breeze",
+      "durationMs": 30000,
+      "captions": {
+        "en": [
+          "You can slow down for a moment.",
+          "Notice the gentle rhythm of water.",
+          "Breathe in softly, without effort.",
+          "Let your exhale be unhurried.",
+          "Give yourself room to soften.",
+          "Choose one small, steady step."
+        ],
+        "ru": [
+          "Сейчас можно немного замедлиться.",
+          "Заметьте спокойный ритм воды.",
+          "Вдохните мягко, без усилий.",
+          "Пусть выдох будет неспешным.",
+          "Позвольте себе больше простора.",
+          "Выберите один небольшой шаг."
+        ],
+        "es": [
+          "Puedes bajar el ritmo un momento.",
+          "Observa el suave ritmo del agua.",
+          "Inhala suavemente, sin esfuerzo.",
+          "Deja que la exhalación sea lenta.",
+          "Permítete un poco más de espacio.",
+          "Elige un paso pequeño y sereno."
+        ]
+      },
+      "rightsPolicy": "existing_approved_first_party_masters",
+      "status": "approved_script_pending_real_mp4_qa",
+      "focusTags": [
+        "calm",
+        "breath",
+        "grounding",
+        "rest"
+      ]
+    }
+  ]
+}
