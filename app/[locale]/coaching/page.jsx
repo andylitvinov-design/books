@@ -1,3 +1,4 @@
+import {HolisticHouseBrand} from '@/components/holistic-house-brand';
 import Link from "next/link";
 import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
@@ -107,10 +108,7 @@ function Header({ locale }) {
   const t = copy(locale);
   return (
     <header className={styles.topbar}>
-      <Link className={styles.brand} href={"/" + locale} aria-label="Holistic House">
-        <Image src="/icons/holistic-house-teal.svg" alt="" width={66} height={46} priority />
-        <span>Holistic House<sup>®</sup></span>
-      </Link>
+      <HolisticHouseBrand locale={locale} section={locale==='ru'?'КОУЧИНГ':locale==='es'?'COACHING':'COACHING'} />
       <div className={styles.headerActions}>
         <Link className={styles.headerIcon} href="#coach-finder" aria-label={t.find} title={t.find}>
           <Heart size={23} strokeWidth={1.8} aria-hidden="true" />

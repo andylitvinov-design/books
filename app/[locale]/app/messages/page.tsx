@@ -1,3 +1,4 @@
+import {HolisticHouseBrand} from '@/components/holistic-house-brand'
 import type {Metadata} from 'next'
 import Link from 'next/link'
 import {notFound} from 'next/navigation'
@@ -23,7 +24,7 @@ export default async function MemberMessages({params,searchParams}:{
   void query
   return <main className="hh-app hh-messages-page" lang={locale}>
     <header className="hh-header">
-      <Link href={'/'+locale+'/masters'} className="hh-brand">Holistic House<span>Messages</span></Link>
+      <HolisticHouseBrand locale={locale} section={locale==='ru'?'СООБЩЕНИЯ':locale==='es'?'MENSAJES':'MESSAGES'} />
       <Link href={'/'+(locale==='es'?'en':locale)+'/app/portrait'} prefetch={false}>
         {locale==='ru'?'Мой кабинет':locale==='es'?'Mi cuenta':'My account'}
       </Link>

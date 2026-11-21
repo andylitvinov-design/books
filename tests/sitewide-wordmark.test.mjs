@@ -20,6 +20,11 @@ test("all six primary sections reuse one clickable Holistic House brand", () => 
     "components/app/app-workspace.jsx",
     "components/public-site-header.tsx",
     "components/holistic-support-mobile.tsx",
+    "components/practice-work-profile-intro.jsx",
+    "app/[locale]/mytube/page.tsx",
+    "app/[locale]/app/messages/page.tsx",
+    "components/app/my-page-client.jsx",
+    "app/[locale]/coaching/page.jsx",
   ]) assert.match(read(path), /<HolisticHouseBrand\s+locale=/, path);
 });
 
@@ -30,4 +35,15 @@ test("former Support/Cabinet wordmarks no longer intercept home navigation", () 
   assert.doesNotMatch(video, /className=\{videoStyles\.quickBrandBack\}/);
   assert.doesNotMatch(cabinet, /<Link href=\{root\} prefetch=\{false\} className="hh-brand">/);
   assert.doesNotMatch(home, /<div className=\{styles\.brand\}>\s*<span className=\{styles\.brandIcon\}/);
+});
+
+test("secondary page brands preserve working routes without using Support or Masters as home", () => {
+  const messages = read("app/[locale]/app/messages/page.tsx");
+  const tube = read("app/[locale]/mytube/page.tsx");
+  const work = read("components/practice-work-profile-intro.jsx");
+  const brand = read("components/holistic-house-brand.tsx");
+  assert.doesNotMatch(messages, /className="hh-brand">Holistic House/);
+  assert.doesNotMatch(tube, /className=\{styles\.brand\} aria-label="MyTube"/);
+  assert.match(work, /workHomeMarker/);
+  assert.match(brand, /data-work-home-link=\{workHomeMarker/);
 });

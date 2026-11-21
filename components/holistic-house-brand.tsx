@@ -6,11 +6,12 @@ export type HolisticHouseBrandLocale = "ru" | "en" | "es";
 
 /** Shamanic-inspired shared wordmark: both the leaf and name return home. */
 export function HolisticHouseBrand({
-  locale, section, heading = false,
+  locale, section, heading = false, workHomeMarker = false,
 }: {
   locale: HolisticHouseBrandLocale;
   section?: string;
   heading?: boolean;
+  workHomeMarker?: boolean;
 }) {
   const href = locale === "en" ? "/" : `/${locale}`;
   const homeLabel = {
@@ -28,6 +29,7 @@ export function HolisticHouseBrand({
     title={homeLabel}
     prefetch={false}
     data-hh-site-brand={locale}
+    data-work-home-link={workHomeMarker ? "" : undefined}
   >
     <Leaf className={styles.icon} size={32} strokeWidth={1.8} aria-hidden="true" />
     <span className={styles.copy}>{title}

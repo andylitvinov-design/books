@@ -37,3 +37,7 @@
   .content{padding:12px 10px 35px}
   .subline{margin:0 3px 10px;font-size:12px}
 }
+
+/* Consistent site identity without abandoning MyTube's dark discovery canvas. */
+.homeBrand{display:flex;align-items:center;flex:0 1 auto;min-width:0;padding:5px 9px;border-radius:14px;background:#fffaf3;color:#07473b}
+@media(max-width:360px){.homeBrand{padding:3px 5px}.topbar{padding-inline:6px;gap:2px}}
