@@ -70,176 +70,412 @@
 
 
 
-/* SHAMANIC_SUPPORT_PARITY_20261120
-   Match Support's ivory/photo hero, green guided quiz and 3x2 photographic
-   categories. The business variant, existing answer handlers and desktop
-   page remain untouched. Keep cards and quiz scrollable on very short phones. */
-.brandSub{display:block;margin-top:4px;color:#52665a;font:700 9px/1.1 Arial,Helvetica,sans-serif;letter-spacing:.29em}
-.profileButton,.heroMobileName,.heroLead{display:none}
-.heroDesktopName{display:inline}
-.servicesHeading{position:relative}
-.businessLink{display:none}
-@media(max-width:600px){
- .page[data-shamanica-audience="self"]{
-  color:#143d33;background:#fbf5e9;font-family:Arial,Helvetica,sans-serif;overflow-x:clip;
- }
- .page[data-shamanica-audience="self"] .container{
-  box-sizing:border-box;width:min(100%,520px);padding:5px 10px calc(var(--hh-unified-nav-height,94px) + 24px);
- }
- .page[data-shamanica-audience="self"] .header{
-  min-height:44px;margin:0 2px 6px;gap:7px;
- }
- .page[data-shamanica-audience="self"] .brand{gap:7px}
- .page[data-shamanica-audience="self"] .brand>svg{width:32px;height:32px;color:#0b6947}
- .page[data-shamanica-audience="self"] .brand span{
-  font:500 clamp(21px,5.8vw,27px)/1 Georgia,"Times New Roman",serif;letter-spacing:-.03em;
- }
- .page[data-shamanica-audience="self"] .brandSub{
-  display:block;margin-top:4px;color:#52665a;font:700 9px/1.08 Arial,Helvetica,sans-serif;letter-spacing:.29em;
- }
- .page[data-shamanica-audience="self"] .tools{gap:7px}
- .page[data-shamanica-audience="self"] .lang{
-  border:0;background:transparent;box-shadow:none;border-radius:0;min-width:42px;height:44px;padding:0 2px;
- }
- .page[data-shamanica-audience="self"] .lang select{font-size:15px}
- .page[data-shamanica-audience="self"] .tools .iconButton,
- .page[data-shamanica-audience="self"] .menu,
- .page[data-shamanica-audience="self"] .audiences{display:none}
- .page[data-shamanica-audience="self"] .profileButton{
-  display:grid;place-items:center;flex:none;width:43px;height:43px;border:1px solid #d9d0bf;
-  border-radius:50%;background:#fff9f2;color:#123d32;text-decoration:none;box-shadow:0 2px 8px #3a51341c;
- }
- .page[data-shamanica-audience="self"] .hero{
-  display:block;height:93px;min-height:93px;max-height:none;margin:0 0 6px;
-  padding:11px 13px;border-radius:16px;background:#f4ead8;
- }
- .page[data-shamanica-audience="self"] .heroImg{object-position:77% 49%}
- .page[data-shamanica-audience="self"] .hero::before{
-  background:linear-gradient(90deg,#fbf6e9 0%,#fbf4eaf5 43%,#fbf4eac7 69%,#fff4d200 100%);
- }
- .page[data-shamanica-audience="self"] .heroText{max-width:100%}
- .page[data-shamanica-audience="self"] .eyebrow,
- .page[data-shamanica-audience="self"] .heroDesktopName,
- .page[data-shamanica-audience="self"] .heroSubtitle,
- .page[data-shamanica-audience="self"] .heroActions{display:none}
- .page[data-shamanica-audience="self"] .heroMobileName{display:block}
- .page[data-shamanica-audience="self"] .hero h1{
-  max-width:94%;margin:0;color:#103e2d;
-  font:700 clamp(27px,7.7vw,38px)/1.03 Georgia,"Times New Roman",serif;
-  letter-spacing:-.035em;
- }
- .page[data-shamanica-audience="self"] .heroLead{
-  display:block;max-width:96%;margin:8px 0 0;color:#374740;
-  font:500 clamp(11.5px,3.2vw,13.5px)/1.2 Arial,Helvetica,sans-serif;
- }
- .page[data-shamanica-audience="self"] .quiz{
-  position:relative;isolation:isolate;min-height:211px;margin:0;padding:9px 10px 10px;
-  border:2px solid #f6f5df;border-radius:28px;
-  background:radial-gradient(ellipse at 108% 104%,#8fc645 0%,#278d51 35%,transparent 61%),
-   linear-gradient(128deg,#0e9069 0%,#046143 51%,#00513a 100%);
-  box-shadow:0 10px 24px #1d3a2340,0 3px 9px #355c3222;color:#fff;
- }
- .page[data-shamanica-audience="self"] .quiz::after{
-  position:absolute;z-index:-1;content:"";inset:4px 0 0 auto;width:41%;opacity:.14;pointer-events:none;
-  background:url("/images/holistic-house/homepage-botanical.svg") center/cover no-repeat;
- }
- .page[data-shamanica-audience="self"] .quizTop{
-  display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 4px 7px;
- }
- .page[data-shamanica-audience="self"] .stepLabel{
-  padding:0;border-radius:0;background:transparent;color:#f4fff1;
-  font:650 13px/1.15 Arial,Helvetica,sans-serif;
- }
- .page[data-shamanica-audience="self"] .progress{gap:11px}
- .page[data-shamanica-audience="self"] .progress::before{background:#b9e0be}
- .page[data-shamanica-audience="self"] .progress>span{
-  width:24px;height:24px;border:2px solid #b0ddbd;background:#0a7653;
- }
- .page[data-shamanica-audience="self"] .progress .progressOn{
-  background:#fff9e9;border-color:#fff9e9;
- }
- .page[data-shamanica-audience="self"] .quizTitleRow{gap:6px;margin:0 0 7px}
- .page[data-shamanica-audience="self"] .quiz h2{
-  margin:0;color:#fff;font:750 clamp(21px,5.7vw,27px)/1.08 Arial,Helvetica,sans-serif;
-  letter-spacing:-.028em;
- }
- .page[data-shamanica-audience="self"] .quizBack{
-  width:32px;height:32px;min-width:32px;border:2px solid #daf4dd;
-  background:#f8f8e9;color:#075a40;font-size:24px;
- }
- .page[data-shamanica-audience="self"] .answers{
-  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;
- }
- .page[data-shamanica-audience="self"] .answer{
-  display:flex;align-items:center;gap:7px;min-height:59px;height:auto;padding:7px 8px;
-  border:2px solid #fffef5;border-radius:18px;
-  background:linear-gradient(132deg,#fffdfa,#fdf4e5);
-  color:#123a2f;box-shadow:0 4px 6px #01291f22;text-align:left;
-  font:750 clamp(12.5px,3.75vw,15px)/1.16 Arial,Helvetica,sans-serif;
- }
- .page[data-shamanica-audience="self"] .answer svg{
-  flex:none;width:26px;height:26px;color:#08623f;
- }
- .page[data-shamanica-audience="self"] .answer span{overflow-wrap:break-word}
- .page[data-shamanica-audience="self"] .services{margin-top:6px}
- .page[data-shamanica-audience="self"] .servicesHeading{
-  display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 3px 5px;
- }
- .page[data-shamanica-audience="self"] .sectionTitle{
-  margin:0;text-align:left;font:700 clamp(23px,6.6vw,30px)/1.08 Georgia,"Times New Roman",serif;
-  letter-spacing:-.025em;
- }
- .page[data-shamanica-audience="self"] .sectionTitle::after{display:none}
- .page[data-shamanica-audience="self"] .businessLink{
-  display:flex;align-items:center;gap:4px;min-height:32px;flex:none;
-  text-decoration:none;white-space:nowrap;color:#087355;font:750 12px/1.1 Arial,Helvetica,sans-serif;
- }
+
+/* SHAMANIC_ALCHEMIST_SIX_SHELVES_20261121 — genuine mobile links on physical
+   wooden shelves; business/results and global 7-tab dock remain untouched. */
+.brandSub{display:block;margin-top:3px;color:#d9c6a3;font:650 9px/1.2 Arial,sans-serif;letter-spacing:.03em}
+.helpButton,.profileButton{display:none}
+.page[data-shamanica-audience="self"]{
+ --ink:#ffefd5;color:#ffefd5;
+ background:radial-gradient(ellipse at 50% 2%,#aa73384a,transparent 57%),
+ repeating-linear-gradient(90deg,#1c100b 0,#2b1b12 31px,#3b2518 68px,#20120d 109px);
+}
+.page[data-shamanica-audience="self"] .container{
+ position:relative;isolation:isolate;display:flex;flex-direction:column;
+ width:min(100%,640px);margin:auto;padding:7px 9px calc(var(--hh-unified-nav-height,94px) + env(safe-area-inset-bottom) + 18px);
+ background:linear-gradient(90deg,#0c07069c,#4c2c191b 10%,transparent 25%,transparent 75%,#26130850 92%,#110a069c);
+ box-shadow:inset 9px 0 15px #0d0607a6,inset -9px 0 15px #0d0607a6;
+}
+.page[data-shamanica-audience="self"] .header{order:0;min-height:43px;margin:0 0 3px;gap:3px;z-index:2}
+.page[data-shamanica-audience="self"] .brand{color:#fff4dc;gap:6px}
+.page[data-shamanica-audience="self"] .brand span{font:700 clamp(18px,5vw,24px)/.99 Georgia,serif;white-space:normal}
+.page[data-shamanica-audience="self"] .brand>svg{width:26px;height:26px;color:#f5efd8}
+.page[data-shamanica-audience="self"] .tools{gap:4px}
+.page[data-shamanica-audience="self"] .tools .iconButton,.page[data-shamanica-audience="self"] .menu{display:none}
+.page[data-shamanica-audience="self"] .lang{
+ min-width:42px;height:37px;padding:0 5px;background:#f9ecd1;border:1px solid #c4a16e;color:#18392e;border-radius:12px}
+.page[data-shamanica-audience="self"] .lang select{font-size:12px}
+.page[data-shamanica-audience="self"] .helpButton,.page[data-shamanica-audience="self"] .profileButton{
+ display:grid;place-items:center;flex:none;width:37px;height:37px;border:1px solid #bca275;
+ border-radius:12px;background:linear-gradient(#fdf0d3,#efdeb9);color:#113e32;
+ box-shadow:0 3px 9px #160b0680;cursor:pointer;text-decoration:none;
+}
+.page[data-shamanica-audience="self"] .hero{
+ order:1;position:relative;isolation:isolate;overflow:hidden;
+ min-height:135px;margin:0 1px 4px;padding:9px 6px 7px;
+ text-align:center;background:
+ linear-gradient(180deg,#1c110c79,#120b09a3 25%,#1a0f0b22 64%,#1d100abf),
+ url("/videos/holistic-house/film-collection-v3/sun-autumn-hills.jpg") center 55%/cover;
+ border:6px ridge #805431;border-bottom-width:1px;border-radius:90px 90px 8px 8px;
+ box-shadow:inset 0 6px 24px #1309099c,0 3px 8px #0c0606a6;
+}
+.page[data-shamanica-audience="self"] .hero:before{
+ content:"";position:absolute;inset:0;z-index:-1;
+ background:radial-gradient(ellipse at 50% 74%,transparent 5%,#1b100ba8 96%);pointer-events:none}
+.page[data-shamanica-audience="self"] .mirrorIntro{position:relative;z-index:1}
+.page[data-shamanica-audience="self"] .mirrorSymbol{
+ display:flex;align-items:center;justify-content:center;gap:2px;
+ color:#ffcb6c;height:27px;filter:drop-shadow(0 2px 5px #3c1909)}
+.page[data-shamanica-audience="self"] .hero h1{
+ color:#fff0cb;text-shadow:0 2px 8px #0e0604e3;margin:0 auto 3px;
+ font:700 clamp(27px,7.1vw,41px)/.97 Georgia,serif;letter-spacing:-.035em}
+.page[data-shamanica-audience="self"] .hero h1 span{display:block;white-space:normal}
+.page[data-shamanica-audience="self"] .mirrorTagline{
+ margin:5px auto 0!important;color:#fff0d5;text-shadow:0 2px 6px #150803;
+ font:650 clamp(11px,3.3vw,15px)/1.2 Georgia,serif}
+.page[data-shamanica-audience="self"] .audiences{
+ order:2;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ width:min(96%,470px);min-height:42px;margin:1px auto 8px;padding:3px;gap:3px;
+ border:1px solid #aa8854;border-radius:40px;background:#f5e6c8;box-shadow:0 4px 12px #1008058c}
+.page[data-shamanica-audience="self"] .audiences>a:last-child{display:none}
+.page[data-shamanica-audience="self"] .audiences>a{
+ display:flex;align-items:center;justify-content:center;gap:6px;
+ min-height:36px;min-width:0;padding:5px 9px;border:0;border-radius:30px;
+ background:transparent;box-shadow:none;color:#133e31;text-decoration:none;
+ text-align:center;font:750 clamp(12px,3.55vw,17px)/1.1 Arial,sans-serif}
+.page[data-shamanica-audience="self"] .audiences>a svg{width:18px;flex:none}
+.page[data-shamanica-audience="self"] .audiences .audienceActive{
+ background:linear-gradient(#009871,#004d3d);color:#fff;
+ box-shadow:inset 0 1px #c4f0d69c,0 3px 5px #135a4794}
+.page[data-shamanica-audience="self"] .services{
+ order:3;position:relative;width:100%;margin:0;padding:2px 4px 7px;
+ border:7px ridge #674021;border-bottom-width:13px;border-radius:9px;
+ background:linear-gradient(90deg,#160d08d6,transparent 11%,transparent 90%,#190d06df),
+ repeating-linear-gradient(90deg,#2a190f,#382318 35px,#4c3020 65px,#29190f 87px);
+ box-shadow:inset 0 0 24px #110602cb,0 9px 17px #10070191}
+.page[data-shamanica-audience="self"] .sectionTitle{
+ position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;
+ overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.page[data-shamanica-audience="self"] .serviceGrid{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ grid-auto-rows:151px;column-gap:4px;row-gap:0;
+ background:repeating-linear-gradient(to bottom,
+ transparent 0 135px,#100703 135px 137px,#ac7441 137px 143px,#573317 143px 151px)}
+.page[data-shamanica-audience="self"] .serviceCard,
+.page[data-shamanica-audience="self"] .serviceCard:nth-child(n+4),
+.page[data-shamanica-audience="self"] .serviceCard:last-child{
+ display:flex;position:relative;flex-direction:column;justify-content:flex-end;
+ grid-column:auto;min-width:0;width:100%;height:151px;min-height:151px;
+ padding:4px 3px 13px;overflow:visible;border:0;border-radius:3px;
+ background:radial-gradient(ellipse at 52% 35%,#c18a4936,transparent 68%),
+ linear-gradient(90deg,#12090576,transparent 16%,transparent 85%,#130a0777);
+ color:#122f26;text-align:center;text-decoration:none;box-shadow:none;
+ transition:filter .2s ease,transform .2s ease}
+.page[data-shamanica-audience="self"] .serviceCard:after{
+ content:"";position:absolute;bottom:3px;left:-3px;right:-3px;height:7px;
+ background:linear-gradient(#a16d3d,#2a160e 55%,#59331c);
+ box-shadow:0 3px 4px #0e060385;pointer-events:none}
+.page[data-shamanica-audience="self"] .servicePhoto{
+ position:absolute;top:3px;left:13%;width:74%;height:90px;
+ overflow:hidden;border:2px solid #aa78449e;border-radius:42% 42% 22% 22%;
+ box-shadow:inset 0 0 18px #f4d49a55,0 5px 11px #100601a9,0 0 9px #efbe6c3f;
+ -webkit-mask-image:radial-gradient(ellipse 87% 83% at 50% 54%,#000 59%,transparent 98%);
+ mask-image:radial-gradient(ellipse 87% 83% at 50% 54%,#000 59%,transparent 98%)}
+.page[data-shamanica-audience="self"] .servicePhoto img{
+ object-fit:cover;object-position:center;filter:saturate(1.2) sepia(.13)}
+.page[data-shamanica-audience="self"] [data-shamanica-service="remedies"] .servicePhoto{
+ left:23%;width:54%;border:3px solid #eed9aa;border-radius:29% 29% 14% 14%;
+ box-shadow:0 0 8px #fce2bb9f,inset 0 0 13px #fff9f0a2,0 5px 10px #100601}
+.page[data-shamanica-audience="self"] [data-shamanica-service="guidance"] .servicePhoto{
+ left:17%;width:66%;border-radius:50%;clip-path:circle(48% at 50% 50%);
+ border-color:#e3b85a;filter:drop-shadow(0 0 6px #fed678)}
+.page[data-shamanica-audience="self"] [data-shamanica-service="mysteries"] .servicePhoto{
+ left:14%;width:72%;filter:sepia(.25);border-radius:40% 40% 12% 12%}
+.page[data-shamanica-audience="self"] [data-shamanica-service="rituals"] .servicePhoto{
+ left:17%;width:66%;border-radius:42% 42% 50% 50%;border-color:#daaa61;filter:saturate(1.25)}
+.page[data-shamanica-audience="self"] [data-shamanica-service="energy"] .servicePhoto{
+ left:15%;width:70%;border-radius:45% 45% 20% 20%;filter:drop-shadow(0 0 7px #cc8cff)}
+.page[data-shamanica-audience="self"] [data-shamanica-service="academy"] .servicePhoto{
+ left:15%;width:70%;border-radius:9px 18px 9px 6px;transform:rotate(-3deg)}
+.page[data-shamanica-audience="self"] .serviceBody{
+ display:flex;position:relative;z-index:1;flex-direction:column;align-items:center;justify-content:center;
+ width:100%;min-height:58px;margin:0;padding:4px 4px 5px;
+ border:2px ridge #d9a45e;border-radius:12px;
+ background:linear-gradient(130deg,#fff0ca,#f0d3a0 65%,#dcb57d);
+ box-shadow:inset 0 1px #fffdeb,0 3px 7px #170904bf}
+.page[data-shamanica-audience="self"] .serviceBody strong{
+ margin:0;color:#122e25;font:760 clamp(14px,3.9vw,19px)/1.03 Georgia,serif;
+ overflow-wrap:normal;hyphens:auto}
+.page[data-shamanica-audience="self"] .serviceBody>span{
+ margin-top:3px;color:#2d3525;font:550 clamp(10px,2.64vw,12px)/1.04 Georgia,serif}
+.page[data-shamanica-audience="self"] .serviceCard:hover,
+.page[data-shamanica-audience="self"] .serviceCard:focus-visible{
+ filter:drop-shadow(0 0 7px #f3cd7b);transform:translateY(-1px)}
+.page[data-shamanica-audience="self"] .toolsDrawer{
+ order:4;width:100%;margin:11px auto 0;color:#fbe9c9;
+ border:1px solid #a97940;border-radius:16px;background:#201209db}
+.page[data-shamanica-audience="self"] .toolsDrawer>summary{
+ display:flex;align-items:center;justify-content:center;gap:8px;
+ min-height:46px;padding:8px 10px;cursor:pointer;list-style:none;
+ color:#ffe6b6;font:750 14px/1.2 Arial,sans-serif}
+.page[data-shamanica-audience="self"] .toolsDrawer>summary::-webkit-details-marker{display:none}
+.page[data-shamanica-audience="self"] .quiz{
+ width:100%;margin:0;padding:11px 12px 14px;border:0;border-top:1px solid #9b734f;
+ border-radius:0;background:#0b4b39;color:#fff;box-shadow:none}
+.page[data-shamanica-audience="self"] .quizTop{display:flex;align-items:center;justify-content:space-between}
+.page[data-shamanica-audience="self"] .quiz h2{color:white;font:700 clamp(23px,5vw,28px)/1.12 Georgia,serif}
+.page[data-shamanica-audience="self"] .stepLabel{font:700 13px/1.1 Arial,sans-serif;background:#f5e5bd;color:#0c513e}
+.page[data-shamanica-audience="self"] .answer{min-height:96px;font-size:clamp(13px,3.2vw,16px)}
+.page[data-shamanica-audience="self"] .answerPhoto{
+ display:block;position:relative;width:100%;height:62px;
+ overflow:hidden;border-radius:9px;background:#d9c8aa}
+.page[data-shamanica-audience="self"] .answerPhoto img{object-fit:cover}
+.page[data-shamanica-audience="self"] .answerText{display:flex;align-items:center;gap:7px;font-weight:700}
+.page[data-shamanica-audience="self"] .answerSelected{border:2px solid #15c88e;box-shadow:0 0 0 2px #f2db94}
+.page[data-shamanica-audience="self"] .requestField{
+ display:flex;align-items:center;gap:8px;padding:0 8px;margin-top:6px;
+ border-radius:16px;background:#fff6e5;color:#123f31}
+.page[data-shamanica-audience="self"] .requestField input{
+ flex:1;width:100%;min-width:0;min-height:43px;border:0;background:transparent;
+ color:#183d33;font-size:14px}
+.page[data-shamanica-audience="self"] .requestField button{
+ display:grid;place-items:center;width:40px;min-height:43px;border:0;background:transparent;color:#095b47}
+.page[data-shamanica-audience="self"] .inputHint{font-size:11px;line-height:1.25;color:#d9dfd1}
+.page[data-shamanica-audience="self"] .nextButton{
+ min-height:47px;display:flex;justify-content:center;align-items:center;gap:12px;
+ width:76%;margin:12px auto 0;border-radius:32px;border:1px solid #e4c994;
+ background:linear-gradient(120deg,#0fa679,#00634d);color:white;font-size:18px}
+.page[data-shamanica-audience="self"] .videoRoom{padding:12px;border-top:1px solid #86613e}
+.page[data-shamanica-audience="self"] .mirrorScreen{
+ position:relative;overflow:hidden;width:min(100%,410px);aspect-ratio:16/7;
+ margin:auto;border:5px ridge #b5894d;border-radius:24px;background:#18110c}
+.page[data-shamanica-audience="self"] .mirrorVideo{width:100%;height:100%;object-fit:cover}
+.page[data-shamanica-audience="self"] .mirrorPlay{
+ position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+ display:grid;place-items:center;width:47px;height:47px;border:2px solid #fff6d5;
+ border-radius:50%;background:#064f3bba;color:#fff;cursor:pointer}
+.page[data-shamanica-audience="self"] :is(a,button,summary,select,input):focus-visible{
+ outline:3px solid #f8cc6d;outline-offset:3px}
+@media(max-width:390px){
+ .page[data-shamanica-audience="self"] .container{padding-inline:7px}
+ .page[data-shamanica-audience="self"] .hero{min-height:124px;padding:6px 4px}
+ .page[data-shamanica-audience="self"] .hero h1{font-size:clamp(25px,7.3vw,32px)}
  .page[data-shamanica-audience="self"] .serviceGrid{
-  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;
- }
+ grid-auto-rows:145px;background:repeating-linear-gradient(to bottom,
+ transparent 0 129px,#100703 129px 132px,#ac7441 132px 138px,#573317 138px 145px)}
  .page[data-shamanica-audience="self"] .serviceCard,
  .page[data-shamanica-audience="self"] .serviceCard:nth-child(n+4),
- .page[data-shamanica-audience="self"] .serviceCard:last-child{
-  display:flex;flex-direction:column;grid-column:span 1;min-width:0;min-height:112px;height:auto;
-  border:1px solid #e6d8c8;border-radius:19px;overflow:hidden;isolation:isolate;
-  background:#fff8ef;color:#142f27;box-shadow:0 4px 9px #6a4b2e1a;
- }
- .page[data-shamanica-audience="self"] .servicePhoto,
- .page[data-shamanica-audience="self"] .serviceCard:last-child .servicePhoto{
-  position:relative;inset:auto;width:100%;height:54px;flex:none;z-index:0;opacity:1;
-  border-radius:18px 18px 16px 16px;overflow:hidden;
- }
- .page[data-shamanica-audience="self"] .servicePhoto img{object-fit:cover;object-position:center}
- .page[data-shamanica-audience="self"] .serviceCard::after{display:none}
- .page[data-shamanica-audience="self"] .serviceIcon{
-  position:absolute;top:39px;left:8px;z-index:2;display:grid;place-items:center;
-  width:38px;height:36px;border-radius:13px 13px 4px 4px;
-  background:#fff9eeef;color:#075f41;box-shadow:0 -2px 6px #352b1c14;
- }
- .page[data-shamanica-audience="self"] .serviceIcon svg{width:22px;height:22px}
- .page[data-shamanica-audience="self"] .serviceBody,
- .page[data-shamanica-audience="self"] .serviceCard:last-child .serviceBody{
-  display:block;position:relative;z-index:1;flex:1;width:100%;min-width:0;
-  padding:15px 7px 6px;
- }
- .page[data-shamanica-audience="self"] .serviceBody h3,
- .page[data-shamanica-audience="self"] .serviceCard:last-child .serviceBody h3{
-  margin:0;color:#142f27;
-  font:750 clamp(13px,3.8vw,15px)/1.13 Arial,Helvetica,sans-serif;letter-spacing:-.02em;
-  overflow-wrap:break-word;
- }
- .page[data-shamanica-audience="self"] .serviceBody p,
- .page[data-shamanica-audience="self"] .serviceCard:last-child .serviceBody p,
- .page[data-shamanica-audience="self"] .serviceArrow{display:none}
- .page[data-shamanica-audience="self"] :is(.answer,.serviceCard,.profileButton,.businessLink):focus-visible{
-  outline:3px solid #f7c75b;outline-offset:2px;
- }
+ .page[data-shamanica-audience="self"] .serviceCard:last-child{min-height:145px;height:145px}
+ .page[data-shamanica-audience="self"] .servicePhoto{height:83px}
+ .page[data-shamanica-audience="self"] .serviceBody{min-height:58px;padding:4px 2px}
+ .page[data-shamanica-audience="self"] .serviceBody strong{font-size:clamp(13px,3.8vw,16px)}
+ .page[data-shamanica-audience="self"] .serviceBody>span{font-size:clamp(9.6px,2.65vw,11px)}
 }
-@media(max-width:350px){
- .page[data-shamanica-audience="self"] .brand span{font-size:20px}
- .page[data-shamanica-audience="self"] .hero{height:96px;min-height:96px}
- .page[data-shamanica-audience="self"] .hero h1{font-size:27px}
- .page[data-shamanica-audience="self"] .quiz h2{font-size:21px}
- .page[data-shamanica-audience="self"] .answer{font-size:12.5px;min-height:61px}
- .page[data-shamanica-audience="self"] .serviceBody h3{font-size:12px}
+@media(max-width:335px){
+ .page[data-shamanica-audience="self"] .serviceBody strong{font-size:13px}
+ .page[data-shamanica-audience="self"] .serviceBody>span{font-size:9.5px}
+ .page[data-shamanica-audience="self"] .tools{gap:2px}
+ .page[data-shamanica-audience="self"] .brand span{font-size:17px}
+}
+@media(min-width:760px){
+ .page[data-shamanica-audience="self"] .serviceGrid{
+ grid-auto-rows:192px;background:repeating-linear-gradient(to bottom,
+ transparent 0 175px,#100703 175px 179px,#ac7441 179px 184px,#573317 184px 192px)}
+ .page[data-shamanica-audience="self"] .serviceCard,
+ .page[data-shamanica-audience="self"] .serviceCard:nth-child(n+4),
+ .page[data-shamanica-audience="self"] .serviceCard:last-child{height:192px;min-height:192px}
+ .page[data-shamanica-audience="self"] .servicePhoto{height:123px}
+ .page[data-shamanica-audience="self"] .serviceBody strong{font-size:20px}
+ .page[data-shamanica-audience="self"] .serviceBody>span{font-size:13px}
+}
+@media(prefers-reduced-motion:reduce){.page[data-shamanica-audience="self"] .serviceCard{transition:none}}
+
+/* Keep the optional 3-step quiz accessible and legible when opened.
+   These mobile-first controls are distinct from the default shelf view. */
+.page[data-shamanica-audience="self"] .answer{
+ display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;
+ gap:6px;padding:6px;border-radius:15px;background:#fff5e4;color:#153f32;
+}
+.page[data-shamanica-audience="self"] .answer:last-child:nth-child(odd){grid-column:1/-1}
+.page[data-shamanica-audience="self"] .answerText{width:100%;min-height:26px;gap:6px}
+.page[data-shamanica-audience="self"] .answerText>span{flex:1;line-height:1.13}
+.page[data-shamanica-audience="self"] .answerText svg{width:21px;height:21px;flex:none}
+.page[data-shamanica-audience="self"] .orSeparator{color:#d8d1b5}
+.page[data-shamanica-audience="self"] .requestField input::placeholder{color:#757670}
+.page[data-shamanica-audience="self"] .progress .progressOn{border-color:#14b685;background:#14b685}
+
+
+/* SHAMANIC_LUXURY_LOUNGE_APPROVED_20261121: owner-approved EN screenshot.
+   Only the guest/personal first screen; business/results/quiz behavior remains.
+   Photographs are small WebP crops of the owner's approved generated image.
+   Status bar and phone bezel belong to iOS, not the website. */
+.page[data-shamanica-audience="self"]{
+  --ink:#fcebd0;
+  background:
+    radial-gradient(ellipse at 50% 11%,#68412199 0,transparent 56%),
+    radial-gradient(ellipse at 0 50%,#9b5c1a39 0,transparent 48%),
+    linear-gradient(110deg,#1b0e08 0%,#302014 18%,#170d07 52%,#392113 83%,#190d08);
+}
+.page[data-shamanica-audience="self"] .container{
+  width:min(100%,510px);padding:8px 12px calc(var(--hh-unified-nav-height,94px) + env(safe-area-inset-bottom) + 18px);
+  background:
+    radial-gradient(ellipse at 50% 25%,#9b5a1c33,transparent 45%),
+    linear-gradient(90deg,#170a0694,transparent 16%,transparent 84%,#130903ac);
+  box-shadow:inset 5px 0 16px #1308038c,inset -5px 0 16px #1308039e;
+}
+.page[data-shamanica-audience="self"] .header{
+  order:0;min-height:47px;margin:0 0 1px;align-items:center;gap:5px;
+}
+.page[data-shamanica-audience="self"] .brand span{
+  font:700 clamp(18px,5.35vw,25px)/1.04 Georgia,serif;white-space:normal;letter-spacing:-.4px;
+}
+.page[data-shamanica-audience="self"] .brandSub{
+  font:600 clamp(8px,2.5vw,11px)/1.1 Georgia,serif;letter-spacing:2.5px;color:#f9e6c0;margin-top:3px;
+}
+.page[data-shamanica-audience="self"] .brand>svg{width:30px;height:30px;color:#fff4e0}
+.page[data-shamanica-audience="self"] .tools{gap:5px}
+.page[data-shamanica-audience="self"] .lang,
+.page[data-shamanica-audience="self"] .helpButton,
+.page[data-shamanica-audience="self"] .profileButton{
+  width:auto;min-width:37px;height:37px;border:1px solid #e4bb78;border-radius:50px;
+  background:#21130d85;color:#fff2d7;box-shadow:inset 0 1px 3px #fcdfbb66,0 1px 8px #0005;
+}
+.page[data-shamanica-audience="self"] .lang{padding:0 8px}
+.page[data-shamanica-audience="self"] .lang select{font-size:12px;color:#ffedce}
+.page[data-shamanica-audience="self"] .hero{
+  order:1;min-height:292px;height:292px;
+  margin:0 -3px 2px;padding:0 4px;
+  overflow:hidden;isolation:isolate;text-align:center;
+  border:0;border-radius:0;box-shadow:none;background:transparent;
+}
+.page[data-shamanica-audience="self"] .hero:before{
+  content:"";position:absolute;inset:auto -4px 0;z-index:-1;
+  height:177px;pointer-events:none;
+  background:
+    linear-gradient(180deg,#221207 0,rgba(32,17,9,.05) 27%,rgba(20,10,5,.1) 70%,#1d110ac9 100%),
+    url("/images/holistic-house/shamanic-approved-room.webp") center bottom/100% 100% no-repeat;
+}
+.page[data-shamanica-audience="self"] .mirrorIntro{z-index:1;position:relative;padding-top:0}
+.page[data-shamanica-audience="self"] .mirrorSymbol{
+  display:flex;height:47px;align-items:center;justify-content:center;gap:4px;
+  line-height:1;color:#f5bc63;filter:drop-shadow(0 0 7px #e2ac5980);
+}
+.page[data-shamanica-audience="self"] .mirrorSymbol img{
+  display:block;width:66px;height:43px;object-fit:cover;
+  mix-blend-mode:screen;
+}
+.page[data-shamanica-audience="self"] .moonLeft,
+.page[data-shamanica-audience="self"] .moonRight{
+  font:700 36px/1 Georgia,serif;text-shadow:0 0 8px #dca449;
+}
+.page[data-shamanica-audience="self"] .hero h1{
+  max-width:100%;margin:0 auto 5px;color:#fff0cf;
+  font:700 clamp(26px,7.8vw,42px)/.98 Georgia,serif;
+  letter-spacing:-.035em;text-shadow:0 3px 8px #100602;
+}
+.page[data-shamanica-audience="self"] .hero h1 span{display:block;white-space:normal}
+.page[data-shamanica-audience="self"] .mirrorTagline{
+  margin:7px auto 0!important;max-width:97%;
+  font:italic 500 clamp(12px,3.45vw,17px)/1.18 Georgia,serif;color:#fff0d7;
+  text-shadow:0 2px 7px #0b0602;
+}
+.page[data-shamanica-audience="self"] .audiences{
+  order:2;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  width:min(82%,430px);min-height:46px;gap:0;margin:0 auto 15px;padding:2px;
+  border:1.5px solid #efd49a;border-radius:60px;
+  background:linear-gradient(100deg,#fff4d6,#f6dfac);
+  box-shadow:0 3px 14px #0c0608a0;
+}
+.page[data-shamanica-audience="self"] .audiences>a{
+  font:700 clamp(13px,3.8vw,17px)/1.1 Georgia,serif;gap:8px;
+  min-height:40px;border-radius:50px;
+}
+.page[data-shamanica-audience="self"] .audiences>a svg{width:21px;height:21px}
+.page[data-shamanica-audience="self"] .audiences .audienceActive{
+  background:linear-gradient(180deg,#087a55,#004329);color:#fff9e9;
+  box-shadow:inset 0 1px 3px #c2fbca88,0 0 7px #0c8e5b88;
+}
+.page[data-shamanica-audience="self"] .services{
+  order:3;position:relative;width:100%;margin:0;padding:0;
+  border:0;border-radius:0;box-shadow:none;background:transparent;
+}
+.page[data-shamanica-audience="self"] .serviceGrid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-auto-rows:101px;gap:11px 10px;background:transparent;
+}
+.page[data-shamanica-audience="self"] .serviceCard,
+.page[data-shamanica-audience="self"] .serviceCard:nth-child(n+4),
+.page[data-shamanica-audience="self"] .serviceCard:last-child{
+  display:block;grid-column:auto;position:relative;
+  width:100%;height:101px;min-height:101px;min-width:0;
+  overflow:hidden;padding:0;
+  border:2px solid #edbd71;border-radius:20px;
+  background:#352011;color:#0d3528;
+  box-shadow:0 5px 9px #10060099,inset 0 1px #fff2c4;
+  text-align:left;transition:filter .16s ease,transform .16s ease;
+}
+.page[data-shamanica-audience="self"] .serviceCard:after{display:none}
+.page[data-shamanica-audience="self"] .servicePhoto,
+.page[data-shamanica-audience="self"] [data-shamanica-service] .servicePhoto{
+  display:block;position:absolute;left:0;top:0;width:100%;height:66%;
+  border:0;border-radius:0;clip-path:none;overflow:hidden;box-shadow:none;
+  -webkit-mask-image:none;mask-image:none;filter:none;transform:none;
+}
+.page[data-shamanica-audience="self"] .servicePhoto img{
+  width:100%;height:100%;object-fit:cover;object-position:center;
+  filter:saturate(1.08) contrast(1.07);
+}
+.page[data-shamanica-audience="self"] .serviceBody{
+  position:absolute;z-index:1;bottom:0;left:0;width:100%;min-height:49px;height:53%;
+  display:grid;grid-template-columns:30px minmax(0,1fr);column-gap:5px;
+  align-items:center;justify-content:initial;margin:0;padding:4px 7px;
+  border:0;border-radius:16px 16px 17px 17px;
+  background:linear-gradient(115deg,#fff4d6,#f9dba6 82%,#ffefbf);
+  box-shadow:inset 0 2px 7px #fff9ef91,0 -2px 7px #1a0c0763;
+}
+.page[data-shamanica-audience="self"] .serviceBody svg{
+  color:#073f2d;width:26px;height:26px;stroke-width:1.7;
+}
+.page[data-shamanica-audience="self"] .serviceBody strong{
+  min-width:0;margin:0;color:#142e24;
+  font:700 clamp(13px,3.75vw,17px)/1.03 Georgia,serif;
+  hyphens:auto;overflow-wrap:normal;
+}
+.page[data-shamanica-audience="self"] .serviceBody>span{
+  position:absolute!important;width:1px!important;height:1px!important;
+  padding:0!important;margin:-1px!important;overflow:hidden!important;
+  clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important;
+}
+.page[data-shamanica-audience="self"] .toolsDrawer{
+  order:4;width:100%;margin:18px 0 0;
+  border:1px solid #a57737;border-radius:17px;background:#24140ccf;
+}
+.page[data-shamanica-audience="self"] .toolsDrawer>summary{
+  min-height:45px;color:#f8dcac;font:700 14px/1.2 Georgia,serif;
+}
+.page[data-shamanica-audience="self"] .serviceCard:focus-visible{
+  outline:3px solid #ffe8a3;outline-offset:3px;
+}
+@media(max-width:354px){
+ .page[data-shamanica-audience="self"] .container{padding-inline:7px}
+ .page[data-shamanica-audience="self"] .hero{min-height:250px;height:250px}
+ .page[data-shamanica-audience="self"] .hero:before{height:151px}
+ .page[data-shamanica-audience="self"] .hero h1{font-size:clamp(25px,7.7vw,29px)}
+ .page[data-shamanica-audience="self"] .audiences{width:90%;margin-bottom:11px}
+ .page[data-shamanica-audience="self"] .serviceGrid{grid-auto-rows:96px;gap:9px 7px}
+ .page[data-shamanica-audience="self"] .serviceCard,
+ .page[data-shamanica-audience="self"] .serviceCard:nth-child(n+4),
+ .page[data-shamanica-audience="self"] .serviceCard:last-child{height:96px;min-height:96px}
+ .page[data-shamanica-audience="self"] .serviceBody{min-height:49px;grid-template-columns:23px minmax(0,1fr);column-gap:4px;padding:4px 5px}
+ .page[data-shamanica-audience="self"] .serviceBody svg{width:22px;height:22px}
+ .page[data-shamanica-audience="self"] .serviceBody strong{font-size:clamp(11.8px,3.9vw,13.2px)}
+ .page[data-shamanica-audience="self"] .tools{gap:3px}
+ .page[data-shamanica-audience="self"] .brand span{font-size:18px}
+ .page[data-shamanica-audience="self"] .lang,
+ .page[data-shamanica-audience="self"] .helpButton,
+ .page[data-shamanica-audience="self"] .profileButton{min-width:34px;height:34px}
+}
+@media(min-width:760px){
+ .page[data-shamanica-audience="self"] .container{width:min(100%,640px)}
+ .page[data-shamanica-audience="self"] .hero{height:324px;min-height:324px}
+ .page[data-shamanica-audience="self"] .hero:before{height:207px}
+ .page[data-shamanica-audience="self"] .serviceGrid{grid-auto-rows:132px;gap:14px 13px}
+ .page[data-shamanica-audience="self"] .serviceCard,
+ .page[data-shamanica-audience="self"] .serviceCard:nth-child(n+4),
+ .page[data-shamanica-audience="self"] .serviceCard:last-child{height:132px;min-height:132px}
+ .page[data-shamanica-audience="self"] .serviceBody strong{font-size:21px}
+ .page[data-shamanica-audience="self"] .serviceBody{grid-template-columns:40px 1fr;min-height:63px}
+}
+@media(prefers-reduced-motion:reduce){
+ .page[data-shamanica-audience="self"] .serviceCard{transition:none}
 }

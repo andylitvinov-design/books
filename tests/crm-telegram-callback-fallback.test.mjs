@@ -20,8 +20,14 @@ const sources={
 };
 const candidate=sources.route;
 // Counterfactual baseline preserves the historically demonstrated missing guard.
-const guard="        // Diagnostic buttons must never fall through to ordinary CRM ingestion.\n        if(event.callbackId)continue\n";
+// Guard identity is the executable event-discard statement, not a prose
+// comment that changed when the safe non-text clarification path was added.
+// Preserve exactly one guard before generic CRM ingestion, and test the
+// counterfactual unguarded route without bypassing current signed handlers.
+const guard="        if(event.callbackId)continue\n";
 assert.equal(candidate.split(guard).length,2,'expected exactly one unhandled callback guard');
+assert.ok(candidate.indexOf(guard)<candidate.lastIndexOf('ingestMessengerUpdate(provider,event,config)'),
+  'a signed callback is blocked before generic CRM capture');
 const baseline=candidate.replace(guard,'');
 const forbidden=()=>{throw new Error('REAL_OPERATION_FORBIDDEN')};
 const callback=(data='hhv2:ru:yes',id='fixture_callback_1234')=>({update_id:12,callback_query:{id,data,from:{id:123456789,is_bot:false,first_name:'Fictional',language_code:'ru'},message:{message_id:77,chat:{id:123456789,type:'private'},from:{is_bot:true}}}});
