@@ -125,7 +125,9 @@ test('Living Coach keeps static face identity and uses real MP4 playback, never 
   assert.ok(avatar.includes('MyCoachMotionMedia personaId={photoId}'))
   assert.match(css,/\.livingPortraitMouth\{display:none!important\}/)
   assert.match(css,/\.frame \.head,\.frame \.eyes,\.frame \.mouthTalk,\.frame \.halo\{animation:none!important/)
-  assert.ok(media.includes("const VIDEO_PERSONAS=new Set(['mira','max','sofia','alex','harry'])"))
+  assert.ok(media.includes("const VIDEO_PERSONAS=new Set(['mira','max','sofia','alex','merlin','harry'])"))
+  assert.ok(media.includes("MEDIA_ROOT+personaId+'-greeting-real-v1.mp4'"),
+    'Merlin and Harry use pre-rendered greeting videos rather than synthesized facial movement')
   assert.ok(media.includes("MEDIA_ROOT+personaId+'-still.webp'"))
   assert.ok(media.includes('coachNaturalVideoPath(personaId,state,visualScene)'))
   assert.ok(media.includes("MEDIA_ROOT+'harry-soft-'+harryClip+'.mp4'"))
@@ -180,7 +182,7 @@ test('Fish natural voice accepts the exact live/replay persona payload but no ex
   const route=readFileSync(new URL('../app/api/app/my-coach/voice/synthesize/route.js',import.meta.url),'utf8')
   assert.match(speech,/body:JSON\.stringify\(\{provider:voiceProvider,locale:replyLocale,personaId,/)
   assert.match(dialog,/body:JSON\.stringify\(\{provider:chosenCloudProvider,personaId,/)
-  assert.match(dialog,/const chosenCloudProvider=geminiVoiceReady\?geminiVoiceTier:cloudProvider/)
+  assert.match(dialog,/const chosenCloudProvider=usingExistingVoice\?cloudProvider:\s*geminiVoiceReady\?geminiVoiceTier:null/)
   assert.match(route,/const \{provider:_,\.\.\.fishRaw\}=raw/)
   assert.match(route,/normalizeMyCoachFishRequest\(fishRaw\)/)
   const normal={locale:'ru',text:'Какой следующий шаг сейчас поможет?',voiceConsent:true,

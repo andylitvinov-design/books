@@ -132,17 +132,24 @@ try {
    if(cards.length!==6||!dock)return null;
    const boxes=cards.map(card=>card.getBoundingClientRect());
    return {
+    firstTop:boxes[0].top,
+    lastBottom:boxes[5].bottom,
+    dockTop:dock.getBoundingClientRect().top,
+    dockBottom:dock.getBoundingClientRect().bottom,
+    viewportHeight:window.innerHeight,
     horizontalOverflow:document.documentElement.scrollWidth-window.innerWidth,
     withinViewport:boxes.every(box=>box.width>30&&box.left>=-2&&box.right<=innerWidth+2),
     firstRowTwoColumns:Math.abs(boxes[0].top-boxes[1].top)<=5&&boxes[1].left>boxes[0].left,
     dockVisible:dock.getBoundingClientRect().height>0
    };
   });
-  assert.ok(m,"Business category shelf landmarks missing");
+  assert.ok(m&&m.lastBottom>m.firstTop,"Business category shelf/dock landmarks missing "+locale+"/"+width);
   assert.ok(m.horizontalOverflow<=2,"Business horizontal overflow "+locale+"/"+width+" "+JSON.stringify(m));
   assert.ok(m.withinViewport,"Business category cards spill horizontally "+locale+"/"+width+" "+JSON.stringify(m));
   if(width>=390)assert.ok(m.firstRowTwoColumns,"Business two-column mobile shelf lost "+locale+"/"+width+" "+JSON.stringify(m));
   assert.ok(m.dockVisible,"Business mobile dock missing "+locale+"/"+width);
+  assert.ok(m.dockTop>=0&&m.dockBottom<=m.viewportHeight+2,
+    "Business fixed dock must remain inside viewport "+locale+"/"+width+" "+JSON.stringify(m));
   if(locale==="ru"&&width===390)await page.screenshot({path:output+"/shamanica-business-ru-390.png",fullPage:false});
   await expect.poll(()=>page.evaluate(()=>history.pushState.toString().includes("__NA")),
    {timeout:30000,message:"Business quiz hydration"}).toBe(true);
