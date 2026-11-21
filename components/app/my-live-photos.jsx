@@ -19,6 +19,13 @@ const COPY = {
     limit: 'Максимум 3 живых фото. Новый заказ требует явного подтверждения.',
     studio: 'Создать ролик', private: 'Материалы приватны, публикация не выполняется автоматически.',
     choose: 'Выберите JPG, PNG, WebP или HEIC до 3 МБ.',
+    firstFree: 'Первая AI-анимация — бесплатно, один раз на аккаунт.',
+    paid: 'Бесплатная генерация уже использована. Следующие: €2,50 за анимацию.',
+    invoice: 'Запросить инструкцию по оплате · €2,50',
+    pendingPayment: 'Заказ ожидает подтверждения оплаты.',
+    verifiedPayment: 'Оплата подтверждена — можно оживить фото.',
+    paymentUnavailable: 'Приём новых оплачиваемых генераций пока не включён.',
+    orderId: 'Номер заказа', paymentHelp: 'Передайте номер заказа владельцу через Telegram; не отправляйте конфиденциальные платёжные данные через сайт.',
   },
   en: {
     title: 'My Materials · Live Photos', intro: 'Animate once, save the MP4 and reuse it in future videos.',
@@ -36,6 +43,13 @@ const COPY = {
     limit: 'Up to 3 live photos. Every new render requires your confirmation.',
     studio: 'Create a video', private: 'Private by default. Nothing is published automatically.',
     choose: 'Choose a JPG, PNG, WebP or HEIC image up to 3 MB.',
+    firstFree: 'Your first AI animation is free, once per account.',
+    paid: 'Your free animation has been used. Additional animations cost €2.50 each.',
+    invoice: 'Request payment instructions · €2.50',
+    pendingPayment: 'Your payment request awaits manual verification.',
+    verifiedPayment: 'Payment confirmed — you can animate a photo.',
+    paymentUnavailable: 'Additional paid animations are not accepting orders yet.',
+    orderId: 'Order reference', paymentHelp: 'Send your order reference to the owner via Telegram. Do not share sensitive payment data on this site.',
   },
   es: {
     title: 'Mis materiales · Fotos vivas', intro: 'Anima una foto una vez y reutiliza el MP4 en futuros vídeos.',
@@ -53,6 +67,13 @@ const COPY = {
     limit: 'Máximo 3 fotos vivas. Cada nueva generación requiere confirmación.',
     studio: 'Crear un vídeo', private: 'Privado por defecto. No se publica automáticamente.',
     choose: 'Selecciona JPG, PNG, WebP o HEIC de hasta 3 MB.',
+    firstFree: 'La primera animación AI es gratis, una vez por cuenta.',
+    paid: 'Ya usaste la animación gratuita. Las siguientes cuestan €2,50.',
+    invoice: 'Solicitar instrucciones de pago · €2,50',
+    pendingPayment: 'Tu pedido está pendiente de confirmación del pago.',
+    verifiedPayment: 'Pago confirmado — puedes animar otra foto.',
+    paymentUnavailable: 'Las animaciones de pago aún no aceptan pedidos.',
+    orderId: 'Número del pedido', paymentHelp: 'Envía el número al propietario por Telegram. No compartas datos de pago sensibles en este sitio.',
   },
 };
 const styles = {
@@ -64,6 +85,7 @@ export default function MyLivePhotos({ locale = 'en' }) {
   const t = COPY[locale] || COPY.en;
   const [items, setItems] = useState([]);
   const [enabled, setEnabled] = useState(false);
+  const [billing, setBilling] = useState(null);
   const [state, setState] = useState('loading');
   const [file, setFile] = useState(null);
   const [motion, setMotion] = useState('smile');
@@ -74,12 +96,13 @@ export default function MyLivePhotos({ locale = 'en' }) {
   const [error, setError] = useState('');
   const [opened, setOpened] = useState(null);
   const requestId = useRef(null);
+  const paymentRequestId = useRef(null);
   const mounted = useRef(true);
   const refresh = useCallback(async () => {
     const res = await fetch('/api/app/live-photos', { credentials: 'same-origin', cache: 'no-store' });
     if (!res.ok) throw Error('LIBRARY_UNAVAILABLE');
     const data = await res.json();
-    if (mounted.current) { setItems(data.items || []); setEnabled(data.creationEnabled === true); setState('ready'); }
+    if (mounted.current) { setItems(data.items || []); setBilling(data.billing || null); setEnabled(data.creationEnabled === true); setState('ready'); }
     return data;
   }, []);
   useEffect(() => {
@@ -102,8 +125,10 @@ export default function MyLivePhotos({ locale = 'en' }) {
     }, 20000);
     return () => { cancelled = true; clearInterval(timer); };
   }, [active, items, refresh]);
+  const nextPaidOrder = billing?.orders?.find(order => order.status === 'verified') || null;
+  const mayCreate = Boolean(billing?.freeRemaining || nextPaidOrder);
   async function create() {
-    if (!enabled || busy || !file || !consent || file.size > 3000000) return;
+    if (!enabled || !mayCreate || busy || !file || !consent || file.size > 3000000) return;
     setBusy(true); setError('');
     if (!requestId.current) requestId.current = crypto.randomUUID();
     const body = new FormData();
@@ -114,6 +139,7 @@ export default function MyLivePhotos({ locale = 'en' }) {
     body.set('consentAi', 'true');
     body.set('consentSubject', 'true');
     body.set('requestId', requestId.current);
+    if (!billing.freeRemaining && nextPaidOrder) body.set('paidOrderId', nextPaidOrder.id);
     try {
       const result = await fetch('/api/app/live-photos', {
         method: 'POST', credentials: 'same-origin', cache: 'no-store', body,
@@ -124,6 +150,22 @@ export default function MyLivePhotos({ locale = 'en' }) {
       setConsent(false); setFile(null);
       await refresh();
     } catch { setError(t.error); await refresh().catch(() => {}); }
+    finally { setBusy(false); }
+  }
+  async function requestPayment() {
+    if (busy || !billing?.paidOrdersEnabled) return;
+    setBusy(true); setError('');
+    if (!paymentRequestId.current) paymentRequestId.current = crypto.randomUUID();
+    try {
+      const res = await fetch('/api/app/live-photos/orders', {
+        method: 'POST', credentials: 'same-origin', cache: 'no-store',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId: paymentRequestId.current }),
+      });
+      if (!res.ok) throw Error('PAYMENT_REQUEST_FAILED');
+      paymentRequestId.current = null;
+      await refresh();
+    } catch { setError(t.error); }
     finally { setBusy(false); }
   }
   async function preview(id) {
@@ -155,7 +197,23 @@ export default function MyLivePhotos({ locale = 'en' }) {
     {state === 'loading' ? <p role="status">{t.loading}</p> : null}
     {state === 'error' ? <button type="button" style={styles.button} onClick={() => void refresh()}>{t.retry}</button> : null}
     {state === 'ready' && !enabled ? <p role="status">{t.disabled}</p> : null}
-    {enabled ? <div style={{ display: 'grid', gap: 11, marginBottom: 12 }}>
+    {state === 'ready' ? <div style={{ display: 'grid', gap: 6, marginBottom: 12 }}>
+      <strong>{billing?.freeRemaining ? t.firstFree : t.paid}</strong>
+      {!billing?.freeRemaining && !nextPaidOrder && billing?.paidOrdersEnabled &&
+        !billing?.orders?.some(order => order.status === 'requested') ?
+        <button type="button" style={styles.button} disabled={busy} onClick={() => void requestPayment()}>{t.invoice}</button> : null}
+      {!billing?.freeRemaining && !nextPaidOrder && !billing?.paidOrdersEnabled ?
+        <p>{t.paymentUnavailable}</p> : null}
+      {billing?.orders?.filter(order => ['requested','verified'].includes(order.status)).map(order =>
+        <div key={order.id} style={{ fontSize: 13, border: '1px solid #d5e7e3', borderRadius: 10, padding: 10 }}>
+          <strong>{order.status === 'verified' ? t.verifiedPayment : t.pendingPayment}</strong>
+          <p style={{ margin: '6px 0' }}>{t.orderId}: <code>{order.id}</code></p>
+          {order.status === 'requested' && billing?.paymentContact ?
+            <p style={{ margin: '6px 0' }}>{t.paymentHelp} <a href={billing.paymentContact}
+              target="_blank" rel="noopener noreferrer">Telegram</a></p> : null}
+        </div>)}
+    </div> : null}
+    {enabled && mayCreate ? <div style={{ display: 'grid', gap: 11, marginBottom: 12 }}>
       <label style={{ display: 'grid', gap: 4, fontSize: 14 }}>{t.new}
         <input type="file" style={styles.field} disabled={busy} accept="image/jpeg,image/png,image/webp,image/heic,image/heif" onChange={event => {
           setFile(event.target.files?.[0] || null); setConsent(false); setError(''); requestId.current = null;
@@ -184,7 +242,7 @@ export default function MyLivePhotos({ locale = 'en' }) {
         <span>{t.consent}</span>
       </label>
       <button type="button" style={styles.button}
-        disabled={busy || !file || file.size > 3000000 || !consent || items.filter(i => !['failed','deleted'].includes(i.status)).length >= 3}
+        disabled={busy || !mayCreate || !file || file.size > 3000000 || !consent || items.filter(i => !['failed','deleted'].includes(i.status)).length >= 3}
         onClick={() => void create()}>{busy ? t.progress : t.create}</button>
       <small>{t.limit}</small>
     </div> : null}

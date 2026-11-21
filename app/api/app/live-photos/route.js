@@ -11,6 +11,31 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const maxDuration = 60;
 
+async function readBoundedForm(request) {
+  const limit = 4_000_000;
+  const reader = request.body?.getReader();
+  if (!reader) throw new AppError('INVALID_LIVE_PHOTO_FORM', 400);
+  let received = 0;
+  const chunks = [];
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      received += value.byteLength;
+      if (received > limit) {
+        await reader.cancel().catch(() => {});
+        throw new AppError('PAYLOAD_TOO_LARGE', 413);
+      }
+      chunks.push(Buffer.from(value));
+    }
+  } finally { reader.releaseLock(); }
+  const copy = new Request(request.url, {
+    method: 'POST', headers: request.headers, body: Buffer.concat(chunks),
+  });
+  try { return await copy.formData(); }
+  catch { throw new AppError('INVALID_LIVE_PHOTO_FORM', 400); }
+}
+
 async function handle(request, write) {
   let auth;
   try {
@@ -30,7 +55,7 @@ async function handle(request, write) {
         throw new AppError('MULTIPART_REQUIRED', 415);
       if (Number(request.headers.get('content-length') || 0) > 4_000_000)
         throw new AppError('PAYLOAD_TOO_LARGE', 413);
-      value = await startClientLivePhoto(config, actor, await request.formData());
+      value = await startClientLivePhoto(config, actor, await readBoundedForm(request));
     } else value = await listClientLivePhotos(config, actor);
     return auth.apply(NextResponse.json(value, { headers: PRIVATE_HEADERS }));
   } catch (error) {
