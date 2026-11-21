@@ -35,6 +35,8 @@ on:
       - 'app/layout.tsx'
       - 'components/home-dialogue-entry.tsx'
       - 'components/sitewide-lead-capture-deferred.tsx'
+      - 'components/home-deferred-sections.tsx'
+      - 'components/home-deferred-content.tsx'
       - 'tests/home-css-isolation.test.mjs'
       - 'scripts/measure-home-css-network.mjs'
   workflow_dispatch:

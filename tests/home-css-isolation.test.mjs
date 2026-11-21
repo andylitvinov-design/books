@@ -35,3 +35,13 @@ test("experimental global CSS inlining cannot silently bring back multi-megabyte
   const config=read("next.config.ts");
   assert.doesNotMatch(config, /inlineCss\s*:\s*true/);
 });
+
+test("hidden Home catalogs use observer/disclosure-triggered React.lazy with no initial CSS", () => {
+  const observer=read("components/home-deferred-sections.tsx");
+  const content=read("components/home-deferred-content.tsx");
+  assert.match(observer, /IntersectionObserver/);
+  assert.match(observer, /const HomeDeferredContent = lazy\(/);
+  assert.match(observer, /visible\?<Suspense fallback=\{null\}>/);
+  assert.match(content, /const HomeExpandedCatalog = lazy\(/);
+  assert.match(content, /expanded\?<Suspense fallback=\{null\}>/);
+});
