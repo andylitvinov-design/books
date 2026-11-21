@@ -2686,6 +2686,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   });
   const [creditConfirmed,setCreditConfirmed]=useState(true);
   const [creditRetry,setCreditRetry]=useState(false);
+  const [creditReleaseState,setCreditReleaseState]=useState<"idle"|"pending"|"retry">("idle");
+  const creditReleasingRef=useRef(false);
   const creditOpRef=useRef<string|null>(null);
   const creditValidRef=useRef(false);
   const creditCompletingRef=useRef(false);
@@ -3443,7 +3445,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       // Release the old operation before another export: never debit for an
       // MP4 that the native player rejected, or race the duplicate hold guard.
       void (async()=>{
-        if(held&&creditValidRef.current)await releaseCredit(held);
+        if(held&&creditValidRef.current&&!(await releaseCredit(held)))return;
         if(recoverAsWebm&&aliveRef.current&&sourceRef.current===signature)
           setPendingCompatibleRetry(signature);
       })();
@@ -3877,11 +3879,33 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     return postVideoCreditAction(action,body);
   }
   async function releaseCredit(operationId:string){
-    try{await videoCreditRequest("release",{operationId});}
-    catch{/* Thirty-minute server expiration also releases abandoned reservations. */}
-    if(creditOpRef.current===operationId){
-      creditOpRef.current=null;creditValidRef.current=false;
-      if(aliveRef.current){setCreditConfirmed(false);setCreditRetry(false);}
+    const tracked=creditOpRef.current===operationId;
+    if(tracked){
+      if(creditReleasingRef.current||creditCompletingRef.current)return false;
+      creditReleasingRef.current=true;
+      creditValidRef.current=false;
+      if(aliveRef.current)setCreditReleaseState("pending");
+    }
+    try{
+      const response=await videoCreditRequest("release",{operationId});
+      if(response.operationId!==operationId||response.status!=="released")return false;
+      if(creditOpRef.current===operationId){
+        creditOpRef.current=null;
+        if(aliveRef.current){
+          setCreditBalance(response.balance?.balanceCredits??null);
+          setCreditConfirmed(false);
+          setCreditRetry(false);
+          setCreditReleaseState("idle");
+        }
+      }
+      return true;
+    }catch{
+      return false;
+    }finally{
+      if(tracked){
+        creditReleasingRef.current=false;
+        if(aliveRef.current&&creditOpRef.current===operationId)setCreditReleaseState("retry");
+      }
     }
   }
   async function confirmCredit(){
@@ -7628,6 +7652,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
 
 
+
       <section className={videoStyles.quickBuilder} data-video-quick-builder
         aria-labelledby="video-quick-heading">
         <nav className={videoStyles.quickBrandBar} data-video-hypno-scroll-start aria-label="Holistic House">
@@ -8317,6 +8342,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           :workspaceCopy[locale][activeWorkspace].desc}</p>
       </header> : <span id="video-workspace-panel" className={videoStyles.srOnly}/>}
       
+      {creditReleaseState!=="idle"?<div data-video-credit-release>
+        <p role="status">{creditReleaseState==="pending"
+          ?(locale==="ru"?"Освобождаем резерв кредитов…":locale==="es"?"Liberando la reserva de créditos…":"Releasing reserved credits…")
+          :(locale==="ru"?"Не удалось подтвердить освобождение резерва. Повторите перед экспортом."
+            :locale==="es"?"No se pudo confirmar la liberación de la reserva. Reinténtalo antes de exportar."
+            :"Could not confirm release of reserved credits. Retry before exporting.")}</p>
+        {creditReleaseState==="retry"?<button type="button" onClick={()=>{
+          const operationId=creditOpRef.current;
+          if(operationId)void releaseCredit(operationId);
+        }}>{locale==="ru"?"Повторить освобождение резерва"
+          :locale==="es"?"Reintentar liberación":"Retry credit release"}</button>:null}
+      </div>:null}
       {activeWorkspace==="ready"?<MandalaVideoReady
         courseFlow={readyCourseFlow} exportMode={videoExportMode} locale={locale} theme={theme} wish={wish} focus={meditationFocus} aspect={aspect}
         video={!readyGenerationPending&&playbackStatus!=="failed"&&result&&result.mode!=="catalog"?{
