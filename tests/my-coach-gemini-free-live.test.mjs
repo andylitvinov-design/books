@@ -104,6 +104,9 @@ test('direct constrained WebSocket and genuine 16 kHz little-endian audio frames
  assert.throws(()=>geminiLiveSocketUrl(''))
  const setup=geminiLiveSetupMessage(GEMINI_FREE_LIVE_MODEL,'Sulafat')
  assert.equal(setup.setup.model,'models/'+GEMINI_FREE_LIVE_MODEL)
+ assert.deepEqual(setup.setup.generationConfig.responseModalities,['AUDIO'])
+ assert.equal(Object.hasOwn(setup.setup,'responseModalities'),false,
+  'raw Gemini WebSocket must use BidiGenerateContentSetup generationConfig')
  assert.equal(setup.setup.generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName,
   'Sulafat','initial WebSocket setup must actually apply the voice')
  assert.throws(()=>geminiLiveSetupMessage('gemini-3.8-live','Sulafat'))
