@@ -322,10 +322,21 @@ async function inspect(browserType,locale,width){
       return link&&Object.keys(link).some(k=>k.startsWith("__reactProps$"));
     },null,{timeout:20000});
     await ideaButton.click();
+    // The approved Magic Mirror sequence is Goal → Personalization → Concept.
+    // Test the REAL visitor's choice instead of assuming the retired
+    // Personalization-first interface, especially on 320px iPhone Safari.
+    const goalTab=page.locator('[data-video-ideas-tab="goal"]');
+    await expect(goalTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
+    const goalPicker=page.locator('[data-video-ideas-goal-picker]');
+    await goalPicker.waitFor({state:"visible",timeout:30000});
+    const goalChoice=goalPicker.locator('[data-video-ideas-goal-choice]').first();
+    await goalChoice.click();
+    await expect(goalChoice).toHaveAttribute("aria-pressed","true",{timeout:15000});
+    const goalNext=goalPicker.locator('[data-video-ideas-goal-next]');
+    await expect(goalNext).toBeEnabled();
+    await goalNext.click();
     const personalizationTab=page.locator('[data-video-ideas-tab="personalization"]');
-    await personalizationTab.waitFor({state:"visible",timeout:30000});
-    assert.equal(await personalizationTab.getAttribute("aria-pressed"),"true",
-      id+" Ideas opens on the current Personalization tab");
+    await expect(personalizationTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
     // Advanced voice is hidden by design until the visitor opens its visible
     // audio-guidance shortcut. Do not bypass the UI or force hidden controls.
     const voiceShortcut=page.locator('[data-video-phrase-audio-shortcut]');
