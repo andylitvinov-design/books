@@ -66,6 +66,27 @@ test("photo -> exactly two visible taxonomy choices -> Goal; Next auto-classifie
  assert.match(browser,/data-hh-mirror-next/);
 });
 
+test("Work has four one-tap formats with distinct photos, EN/RU/ES and output framing",async()=>{
+ const formats=["insta-reels","video-about-me","service-presentation","client-video-offer"];
+ const captions=["Insta Reels","Video About Me","Service Presentation","Client Video Offer"];
+ for(let i=0;i<4;i++){
+  assert.ok(mirror.includes('id:"'+formats[i]+'"'));
+  assert.ok(mirror.includes('en:"'+captions[i]+'"'));
+ }
+ assert.match(mirror,/if\(scope==="business"\)\{/);
+ assert.match(mirror,/scope==="business"\?item\.label\?\.\[locale\]/);
+ assert.match(mirror,/referrerPolicy=\{scope==="business"\?"no-referrer":undefined\}/);
+ assert.equal((mirror.match(/https:\/\/images\.unsplash\.com\/photo-/g)||[]).length,4);
+ assert.match(read("middleware.ts"),/publicMandalaLocalImages \? ' https:\/\/images\.unsplash\.com' : ''/);
+ assert.match(director,/path\.scope==="business"&&path\.workFormat/);
+ assert.match(director,/workAspect=path\.workFormat==="insta-reels"/);
+ assert.match(browser,/data-hh-mirror-goal-choice="insta-reels"/);
+ const {getMyTubeTopic}=await import("../lib/mandala/mytube-content-taxonomy.mjs");
+ const rows=[...mirror.matchAll(/\{id:"(insta-reels|video-about-me|service-presentation|client-video-offer)",theme:"[^"]+",categoryId:"([^"]+)",image:"[^"]+",defaultTopicId:"([^"]+)"/g)];
+ assert.equal(rows.length,4);
+ for(const [,id,category,topic] of rows)assert.equal(getMyTubeTopic(topic)?.category.id,category,id);
+});
+
 test("typed wishes map locally only to canonical taxonomy IDs",async()=>{
  const {classifyMyTubeRequest}=await import("../lib/mandala/mytube-prompt-classifier.mjs");
  const {getMyTubeTopic,listMyTubeSubcategories,listMyTubeTopics}=

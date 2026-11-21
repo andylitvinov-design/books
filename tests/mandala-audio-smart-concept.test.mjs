@@ -75,7 +75,7 @@ test("English presentation and Spanish meditation get different purpose and styl
  });
  assert.equal(presentation.semanticPurpose,"presentation");
  assert.equal(presentation.semanticAudience,"client");
- assert.equal(presentation.categoryId,"goals-money");
+ assert.equal(presentation.categoryId,"energy-confidence"); // business growth belongs to Personal & Business Growth
  assert.equal(meditation.semanticPurpose,"practice");
  assert.equal(meditation.styleId,"meditative");
  assert.equal(meditation.parameters.method.value,"meditation");

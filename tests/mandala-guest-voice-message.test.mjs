@@ -63,7 +63,7 @@ test("macOS WebKit hydration follows visible Goals → Ideas → Montage without
  const last=browser.indexOf("// Real guest route browser acceptance",first);
  const flow=browser.slice(first,last);
  const click=flow.indexOf("await mirror.locator('[data-hh-mirror-next]').click()");
- const ideas=flow.indexOf('toHaveAttribute("data-active-workspace","phrases")',click);
+ const ideas=flow.indexOf('toHaveAttribute("data-active-workspace","phrases",{timeout:15000})',click);
  const goalPanel=flow.indexOf('data-video-ideas-goal-panel',ideas);
  const chooseCandidates=[
    flow.indexOf('await choice.tap()',goalPanel),

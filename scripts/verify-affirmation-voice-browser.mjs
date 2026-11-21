@@ -90,7 +90,30 @@ async function verifyWorkspaceHydration(browser,locale){
       .toContainText(approvedAxisLabels[index]);
     await mirror.locator('[data-hh-mirror-audience="business"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","business");
-    await expect(mirror.locator('[data-hh-mirror-goal-choice="growth"]')).toBeVisible();
+    const workCards=mirror.locator('[data-hh-mirror-goal-choice]');
+    const workLabels={
+      en:["Insta Reels","Video About Me","Service Presentation","Client Video Offer"],
+      ru:["Insta Reels","Видео обо мне","Презентация услуги","Видео-предложение клиенту"],
+      es:["Insta Reels","Vídeo sobre mí","Presentación del servicio","Oferta en vídeo para clientes"]
+    }[locale];
+    await expect(workCards).toHaveCount(4);
+    for(let i=0;i<4;i++)await expect(workCards.nth(i)).toContainText(workLabels[i]);
+    for(const width of [320,390,430]){
+      await page.setViewportSize({width,height:840});
+      for(const image of await workCards.locator('img').all()){
+        await image.scrollIntoViewIfNeeded();
+        await expect.poll(()=>image.evaluate(img=>img.complete&&img.naturalWidth>0),
+          {message:"Work photo loads at "+width,timeout:12000}).toBe(true);
+      }
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),
+        false,"Work cards do not overflow at "+width);
+    }
+    await page.setViewportSize({width:390,height:840});
+    await mirror.locator('[data-hh-mirror-goal-choice="insta-reels"]').click();
+    await expect(studio).toHaveAttribute("data-active-workspace","phrases",{timeout:15000});
+    await expect(page.locator('[data-video-ideas-goal-panel]')).toBeVisible();
+    await page.locator('[data-video-quick-control="video"]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-step","1");
     await mirror.locator('[data-hh-mirror-audience="present"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","present");
     await expect(mirror.locator('[data-hh-mirror-goal-choice="stress"]')).toBeVisible();

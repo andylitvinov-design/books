@@ -800,6 +800,11 @@ export function MandalaAutoVideoDirector({
     if(videoAudience==="others"&&aspect!==selfAspectRef.current)
       onAspectChange?.(selfAspectRef.current);
    }
+   // Reuse the existing Director; Work selects an output framing, not a therapy topic.
+   if(path.scope==="business"&&path.workFormat){
+    const workAspect=path.workFormat==="insta-reels"||path.workFormat==="client-video-offer"?"portrait":"landscape";
+    if(aspect!==workAspect)onAspectChange?.(workAspect);
+   }
    setRecipientAudioMode(false);onAudioSelectionChange?.(false);
    setRequestDrafts(previous=>({
     ...previous,self:goalText,
