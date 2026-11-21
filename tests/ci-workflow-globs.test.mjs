@@ -649,3 +649,44 @@ test('OpenMotion picker is checked by Mandala alone; public booking stays protec
     }
   }
 });
+
+
+test('client Live Photo APIs do not fan out into unrelated coaching, course, Practice, interpretation or session-audio specialists', () => {
+  const target = 'codex/public-book-library';
+  const photoApi = [
+    'app/api/app/live-photos/route.js',
+    'app/api/app/live-photos/orders/route.js',
+    'app/api/app/live-photos/[id]/route.js',
+  ];
+  const unrelated = [
+    'hh-profile-axis-matching.yml',
+    'hh-private-audio-e2e.yml',
+    'practice-google-browser.yml',
+    'hh-personal-coaching-session.yml',
+    'hh-course-presets.yml',
+    'practice-visual-services.yml',
+    'hh-interpretation-database.yml',
+  ];
+  for (const name of unrelated) {
+    const src = workflow(name);
+    const trigger = parsePrTrigger(src, '.github/workflows/' + name);
+    assert.ok(src.includes("      - '!app/api/app/live-photos/**'"), name + ' must explicitly exclude standalone Live Photo API routes');
+    for (const file of photoApi) assert.equal(matchesTrigger(trigger, [file], target), false,
+      name + ' must not schedule unrelated specialist CI for ' + file);
+    // Global dispatcher edits remain cross-domain: these jobs are still required.
+    assert.equal(matchesTrigger(trigger, ['app/api/app/[...path]/route.js'], target), true,
+      name + ' must still validate the shared private dispatcher');
+  }
+  // Never waive the actual private-data, authorization and schema owners.
+  for (const name of ['hh-app-r1.yml', 'hh-app-browser.yml', 'ia-v2.yml']) {
+    const trigger = parsePrTrigger(workflow(name), '.github/workflows/' + name);
+    for (const file of photoApi) assert.equal(matchesTrigger(trigger, [file], target), true,
+      name + ' must retain the Live Photo private API gate');
+    assert.equal(matchesTrigger(trigger,
+      ['supabase/migrations/20261121221900_hh_client_live_photo_first_free_paid_v1.sql'], target), true,
+      name + ' must retain Live Photo schema/RLS impact');
+  }
+  // Billing still owns the changed pricing/schema footprint; no payment gates removed.
+  assert.equal(matchesTrigger(parsePrTrigger(workflow('hh-billing-isolated.yml')),
+    ['supabase/migrations/20261121221900_hh_client_live_photo_first_free_paid_v1.sql'], target), true);
+});
