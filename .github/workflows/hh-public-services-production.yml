@@ -189,6 +189,10 @@ on:
       - '!components/mandala-video-ready.module.css'
       - '!components/mandala-video-effect-journey.module.css'
       - '!components/mandala-therapy-studio.tsx'
+      # Fixed Ali greeting TTS is not service discovery, consent or checkout.
+      # Existing Core checks cover persona and natural greeting contracts;
+      # mixed PRs touching actual public services still run the browser suite.
+      - '!lib/holistic-support/ali-gemini-free-tts.mjs'
 permissions:
   contents: read
   pull-requests: read
