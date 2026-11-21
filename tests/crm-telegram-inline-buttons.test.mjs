@@ -243,7 +243,7 @@ test('Ali introduces the exact linked service with 3 public info choices before 
     assert.match(info,/https:\/\/holistichouse\.vercel\.app/);
     const master=telegramServiceMenuAnswer({...choice,action:'masterinfo'});
     assert.match(master,/24/);
-    assert.match(master,new RegExp('/'+lang+'/about'));
+    assert.match(master,new RegExp('/'+(lang==='es'?'en':lang)+'/about'));
     const booking=telegramServiceMenuAnswer({...choice,action:'servicebooking'});
     assert.doesNotMatch(booking,/appointment confirmed|payment made/i);
     const permission=telegramServiceMenuAnswer({...choice,action:'servicebegin'});
