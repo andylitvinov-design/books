@@ -29,12 +29,12 @@ const offerGroups = {
   rituals: "magical",
   learning: "shamanica-learning",
 } as const;
-type ShamanicaPriority = keyof typeof offerGroups;
+type ShamanicPriority = keyof typeof offerGroups;
 const translations = {
   ru: {
-    title: "Ваш путь в Шаманике", eyebrow: "ВАША ПЕРСОНАЛЬНАЯ ПОДБОРКА",
+    title: "Ваш путь в Shamanic", eyebrow: "ВАША ПЕРСОНАЛЬНАЯ ПОДБОРКА",
     lead: "Два направления по вашим ответам. В каждом — три конкретные услуги с ценой и возможностью заказа.",
-    again: "Изменить ответы", all: "Все услуги Шаманики", priority: "Приоритет",
+    again: "Изменить ответы", all: "Все услуги Shamanic", priority: "Приоритет",
     items: {
       remedies: ["Подбор препаратов", "Бесплатный разбор, экспресс или полная личная сессия."],
       artifacts: ["Артефакты и места силы", "Талисманы, символические предметы и личные намерения."],
@@ -44,9 +44,9 @@ const translations = {
     },
   },
   en: {
-    title: "Your Shamanica path", eyebrow: "YOUR PERSONAL SELECTION",
+    title: "Your Shamanic path", eyebrow: "YOUR PERSONAL SELECTION",
     lead: "Two priorities based on your answers. Each includes three real offers with prices and request options.",
-    again: "Change answers", all: "All Shamanica services", priority: "Priority",
+    again: "Change answers", all: "All Shamanic services", priority: "Priority",
     items: {
       remedies: ["Remedy guidance", "Written review, express or full personal session."],
       artifacts: ["Artefacts & power places", "Talismans, symbolic objects and personal intentions."],
@@ -56,7 +56,7 @@ const translations = {
     },
   },
   es: {
-    title: "Tu camino en Shamanica", eyebrow: "SELECCIÓN PERSONAL",
+    title: "Tu camino en Shamanic", eyebrow: "SELECCIÓN PERSONAL",
     lead: "Dos prioridades según tus respuestas. Cada una ofrece tres servicios reales con precio y solicitud.",
     again: "Cambiar respuestas", all: "Todos los servicios", priority: "Prioridad",
     items: {
@@ -70,15 +70,15 @@ const translations = {
 } as const;
 
 export const metadata: Metadata = {
-  title: "Shamanica — personal path | Holistic House",
+  title: "Shamanic — personal path | Holistic House",
   robots: { index:false, follow:true },
 };
 
-export default async function ShamanicaResults({params,searchParams}:Props) {
+export default async function ShamanicResults({params,searchParams}:Props) {
   const {locale} = await params;
   if (!isPublicLocale(locale)) notFound();
   const args = await searchParams;
-  const priorities = shamanicaRecommendations(args) as ShamanicaPriority[];
+  const priorities = shamanicaRecommendations(args) as ShamanicPriority[];
   const t = translations[locale];
   return <main lang={locale} className={styles.resultsPage} data-shamanica-results>
     <div className={styles.resultsShell}>
