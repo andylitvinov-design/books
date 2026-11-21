@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { matchesGlob } from 'node:path';
 import { parsePrTrigger } from '../lib/ci/specialist-aggregate.mjs';
+import { requiresRealMediaWebKit } from '../lib/ci/merge-check-light.mjs';
 import test from 'node:test';
 import { approvedTelegramPresentation } from '../lib/crm/telegram-presentation.mjs';
 import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines, isTrustedMandalaOwnerPath, isTrustedCoreCiOwnerPath, verifiedCriticalPublicCases, REVIEWED_VOICE_2629_DELTA, REVIEWED_PHRASES_3006_DELTA , exactReleaseProofAddition, EXACT_RELEASE_PROOF_BLOBS, planPrivatePractitionerMediaRows, PRIVATE_PRACTITIONER_MEDIA_OWNERS, PRIVATE_PRACTITIONER_MEDIA_REVIEWED_ADDITIONS } from '../scripts/ci-public-services-plan.mjs';
@@ -1549,8 +1550,13 @@ test('PR #2969 exactly reviewed 120-scenario audio cannot trigger 13 unrelated p
     'node --test tests/import-reviewed-audio.test.mjs',
     'node --test tests/curated-audio-selection.test.mjs',
     'node --test tests/mandala-video-phrase-catalog.test.mjs',
-    "startsWith(github.head_ref, 'feat/hh-goal-tree-')",
+    "needs.webkit_preflight.outputs.media_required == 'true'",
   ])assert.ok(mandala.includes(must),'owning audio specialist missing '+must);
+  assert.equal(requiresRealMediaWebKit([{
+    filename:'lib/mandala/local-video-music.ts',status:'M'
+  }]),true,'real audio source still requires the BASE-owned macOS WebKit owner');
+  assert.ok(mandala.includes('Classify exact-HEAD media change using immutable tested-BASE impact'),
+    'branch-name routing may be replaced only by the trusted exact-merge media classifier');
   for(const path of [
     'app/api/payments/checkout/route.js','app/api/service-enquiries/route.js',
     'middleware.ts','components/commerce/service-cart.tsx',
