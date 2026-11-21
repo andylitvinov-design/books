@@ -461,7 +461,10 @@ async function verifyWorkspaceHydration(browser,locale){
     const goalTab=page.locator('[data-video-quick-control="video"]');
     await goalTab.click();
     await expect(goalTab).toHaveAttribute("aria-pressed","true");
-    const goalQuiz=page.locator('[data-video-goal-quiz-audience]');
+    // Both real Goal sections expose this audience attribute. Verify each
+    // semantic section independently; an unscoped locator matches two nodes.
+    const goalQuiz=page.locator('[data-video-quick-section="1"][data-video-goal-quiz-audience]');
+    const topicQuiz=page.locator('[data-video-topic-section="true"][data-video-goal-quiz-audience]');
     // Returning from Ideas keeps the completed Self quiz at step 3. Navigate
     // back through its real buttons before asserting step-1 Life/Work controls.
     const backGoal=page.locator('[data-video-goal-quiz-back]');
@@ -474,6 +477,7 @@ async function verifyWorkspaceHydration(browser,locale){
     await work.tap();
     await expect(work).toHaveAttribute("aria-pressed","true");
     await expect(goalQuiz).toHaveAttribute("data-video-goal-quiz-audience","others");
+    await expect(topicQuiz).toHaveAttribute("data-video-goal-quiz-audience","others");
     const recipientCatalog=page.locator('[data-video-recipient-catalog]');
     await expect(recipientCatalog).toBeVisible();
     await expect(recipientCatalog).toHaveAttribute("data-video-recipient-aspect","portrait");

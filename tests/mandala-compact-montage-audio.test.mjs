@@ -119,3 +119,13 @@ test("Audio is an accessible, slim music list with actual controls, not film pos
   assert.match(featured,/data-video-audio-compact-track=\{"library:"\+row\.id\}/);
   assert.doesNotMatch(featured,/<img src=\{poster\}/);
 });
+
+test("WebKit audience checks scope two real Goal sections instead of ambiguous global locator",()=>{
+  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+  assert.match(browser,/const goalQuiz=page\.locator\('\[data-video-quick-section="1"\]\[data-video-goal-quiz-audience\]'\)/);
+  assert.match(browser,/const topicQuiz=page\.locator\('\[data-video-topic-section="true"\]\[data-video-goal-quiz-audience\]'\)/);
+  assert.match(browser,/await expect\(goalQuiz\)\.toHaveAttribute\("data-video-goal-quiz-audience","others"\)/);
+  assert.match(browser,/await expect\(topicQuiz\)\.toHaveAttribute\("data-video-goal-quiz-audience","others"\)/);
+  assert.doesNotMatch(browser,/const goalQuiz=page\.locator\('\[data-video-goal-quiz-audience\]'\)/);
+  assert.match(browser,/await work\.tap\(\)/,"real touch selection stays required");
+});
