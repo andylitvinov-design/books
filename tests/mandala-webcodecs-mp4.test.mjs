@@ -381,8 +381,8 @@ test("original-motion WebKit uses real Change Goal and all Personalization steps
   "const ideasGoalChoice=","const goalNext=","const personalization=",
   "const currentChoice=","const desiredChoice=","const meaningChoice=",
   "const energyChoice=","const profileContinue=","const conceptTab=",
-  "const conceptPanel=","const addVideo=","const readyGenerate=",
-  "const captured",
+  "const conceptPanel=","const addVideo=","const readyGenerate",
+  "let captured",
  ];
  let previous=-1;
  for(const milestone of milestones){
