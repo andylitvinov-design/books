@@ -97,3 +97,17 @@ test("Every Shamanic category entrance opens three priced service cards without 
  assert.match(offers,/data-service-price/);
  assert.match(offers,/ServicesCardActions/);
 });
+
+test("Direct Shamanic category is a compact three-offer phone screen with full Details/Order preserved",()=>{
+ const css=read("components/shamanica-results-services.module.css");
+ const page=read("app/[locale]/shamanica/results/page.tsx");
+ assert.match(css,/SHAMANIC_CATEGORY_ONE_SCREEN_20261120/);
+ assert.match(css,/\.categoryPage\[data-shamanica-category\]/);
+ assert.match(css,/grid-template-columns:clamp\(70px,21vw,82px\) minmax\(0,1fr\)/);
+ assert.match(css,/data-service-card-controls/);
+ assert.match(css,/-webkit-line-clamp:2/);
+ assert.match(css,/grid-row:3/);
+ assert.match(page,/data-shamanica-results-title/);
+ assert.match(page,/orderedCategories\.map\(id =>/);
+ assert.match(page,/data-shamanica-priority-groups/);
+});
