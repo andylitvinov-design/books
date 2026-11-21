@@ -664,10 +664,10 @@ test('iOS 27 output routing yields the receiver to the speaker, restores mic, an
  assert.match(loop,/ios27NeedsSpeechRecovery\(window\.navigator\)\|\|/)
  assert.match(loop,/if\(!ios27NeedsSpeechRecovery\(window\.navigator\)\)primeMicrophonePermission\(\)/)
  assert.match(loop,/setCoachIos27AudioSession\(window\.navigator,'playback'\)/)
- assert.match(loop,/setCoachIos27AudioSession\\(window\\.navigator,'auto'\\)/)
- assert.match(loop,/voiceProvider.startsWith\\('gemini_tts_'\\)\\?\\(speakable\\|\\|reply\\)\\.slice\\(0,500\\)/)
+ assert.match(loop,/setCoachIos27AudioSession\(window\.navigator,'auto'\)/)
+ assert.match(loop,/voiceProvider\.startsWith\('gemini_tts_'\)\?\(speakable\|\|reply\)\.slice\(0,500\)/)
  const page=source('components/my-coach-live-dialogue.jsx')
- assert.match(page,/coachSpokenText\\(spokenText\\)\\.text\\.slice\\(0,500\\)/)
+ assert.match(page,/coachSpokenText\(spokenText\)\.text\.slice\(0,500\)/)
 })
 test('AI coach never claims to run on unverified OpenAI GPT-4',async()=>{
  const {coachClaimsUnverifiedModelIdentity}=await import('../lib/coaching/conversational-persona.mjs')
