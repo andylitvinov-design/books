@@ -107,20 +107,31 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(ideas).toHaveAttribute("aria-pressed","true");
     await expect(studio).toHaveAttribute("data-active-workspace","phrases");
     await expect(page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]')).toBeVisible();
-    // Optional Goal refinement belongs to Ideas/Personalization. It becomes
-    // intentionally hidden on Montage Text, so exercise it BEFORE navigation.
-    const refinement=page.locator('[data-video-ideas-refinement]');
-    await expect(refinement.locator(":scope > summary")).toBeVisible();
-    // The native details may already be open after the Ideas transition.
-    // Exercise a genuine close/open toggle instead of assuming initial state.
-    if(await refinement.evaluate(node=>node.open)){
-      await refinement.locator(":scope > summary").click();
-      await expect(refinement).not.toHaveAttribute("open","");
-    }
-    await refinement.locator(":scope > summary").click();
-    await expect(refinement).toHaveAttribute("open","");
-    await expect(page.locator('[data-auto-video-topic-panel]')).toBeVisible();
-    // The legacy extra CTA is intentionally hidden: tap the visible Montage rail.
+    // The currently released Magic Mirror starts Ideas on the Goal tab.
+    // The old optional refinement disclosure is intentionally not visible
+    // until personalization. Test the user's real goal action rather than
+    // force-open an obsolete hidden control or skip that decision.
+    const goalTab=page.locator('[data-video-ideas-tab="goal"]');
+    const goalPane=page.locator('[data-video-ideas-goal-panel]');
+    await expect(goalTab).toHaveAttribute("aria-pressed","true");
+    await expect(goalPane).toBeVisible();
+    const goalCards=goalPane.locator('[data-video-ideas-goal-choice]');
+    await expect(goalCards).toHaveCount(3);
+    const nextGoal=goalPane.locator('[data-video-ideas-goal-next]');
+    await expect(nextGoal).toBeDisabled();
+    const choice=goalCards.nth(1); // actual support selection, no synthetic React state
+    if(browser.browserType().name()==="webkit")await choice.tap();
+    else await choice.click();
+    await expect(choice).toHaveAttribute("aria-pressed","true");
+    await expect(nextGoal).toBeEnabled();
+    if(browser.browserType().name()==="webkit")await nextGoal.tap();
+    else await nextGoal.click();
+    await expect(page.locator('[data-video-ideas-tab="personalization"]'))
+      .toHaveAttribute("aria-pressed","true");
+    await expect(page.locator('[data-video-ideas-personalization-panel]'))
+      .toBeVisible();
+    // The existing visible Montage rail remains available for voice/text QA.
+
     await openVisibleMontageText(page,browser.browserType().name());
     await expect(page.locator('[data-video-montage-tab="text"]'))
       .toHaveAttribute("aria-pressed","true");
