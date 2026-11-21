@@ -24,7 +24,7 @@ export default async function MemberMessages({params,searchParams}:{
   void query
   return <main className="hh-app hh-messages-page" lang={locale}>
     <header className="hh-header">
-      <HolisticHouseBrand locale={locale} section={locale==='ru'?'СООБЩЕНИЯ':locale==='es'?'MENSAJES':'MESSAGES'} />
+      <HolisticHouseBrand locale={locale as 'en' | 'ru' | 'es'} section={locale==='ru'?'СООБЩЕНИЯ':locale==='es'?'MENSAJES':'MESSAGES'} />
       <Link href={'/'+(locale==='es'?'en':locale)+'/app/portrait'} prefetch={false}>
         {locale==='ru'?'Мой кабинет':locale==='es'?'Mi cuenta':'My account'}
       </Link>
