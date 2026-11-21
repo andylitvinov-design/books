@@ -629,7 +629,11 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
               // fallback; never misclassify a temporary Safari mic loss.
               recordedSttUnavailableRef.current=true
               retryAttemptsRef.current=0
-              if(Recognition){startListening();setNotice(t.captureRetry)}
+              // Safari 27 may advertise Web Speech without emitting words.
+              // A failed Whisper request must not present that deaf fallback as
+              // "Listening"; the user can retry Mic or write a text answer.
+              if(ios27){changePhase('ready');setNotice(t.audioUnavailable)}
+              else if(Recognition){startListening();setNotice(t.captureRetry)}
               else{changePhase('ready');setNotice(t.audioUnavailable)}
               return
             }
