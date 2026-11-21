@@ -108,12 +108,19 @@ test('subsequent private Telegram Business messages are accepted but forwarded/o
  const follow=fixture();follow.business_message.text='Подтвердить';
  assert.equal(telegramBusinessMessageFromUpdate(follow)?.request,null);
  assert.equal(telegramBusinessMessageFromUpdate(follow)?.text,'Подтвердить');
+ const long=fixture();long.business_message.text='x'.repeat(801);
+ const large=telegramBusinessMessageFromUpdate(long);
+ assert.equal(large?.longText,true);
+ assert.equal(large?.text.length,800);
+ assert.equal(large?.request,null);
+ const media=fixture();delete media.business_message.text;
+ media.business_message.sticker={file_id:'fixture'};
+ assert.equal(telegramBusinessMessageFromUpdate(media)?.mediaKind,'sticker');
  for(const change of [
    v=>{v.business_message.forward_origin={type:'user'}},
    v=>{v.business_message.sender_business_bot={id:77}},
    v=>{v.business_message.chat.type='group'},
    v=>{v.business_message.from.id=999},
-   v=>{v.business_message.text='x'.repeat(801)},
    v=>{v.business_message.date=0},
    v=>{v.update_id=0.4},
  ]){
