@@ -111,9 +111,9 @@ async function verifyWorkspaceHydration(browser,locale){
     // The old optional refinement disclosure is intentionally not visible
     // until personalization. Test the user's real goal action rather than
     // force-open an obsolete hidden control or skip that decision.
-    const goalTab=page.locator('[data-video-ideas-tab="goal"]');
+    const ideasGoalTab=page.locator('[data-video-ideas-tab="goal"]');
     const goalPane=page.locator('[data-video-ideas-goal-panel]');
-    await expect(goalTab).toHaveAttribute("aria-pressed","true");
+    await expect(ideasGoalTab).toHaveAttribute("aria-pressed","true");
     await expect(goalPane).toBeVisible();
     const goalCards=goalPane.locator('[data-video-ideas-goal-choice]');
     await expect(goalCards).toHaveCount(3);
