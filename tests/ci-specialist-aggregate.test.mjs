@@ -3369,3 +3369,43 @@ test('exact 20-file #5093 video PR accepts independent Services plus protected p
  assert.equal(safeTrustedPolicyAdvance(diff([...policyTarget,...safeTarget],{status:'diverged'}),
   BASE,latest,candidate),false);
 });
+
+
+test('prebuild add-only test registration does not schedule unrelated package specialists', () => {
+  const old = {scripts: {
+    'test:academy:release':'node --test tests/academy-intro.test.mjs tests/academy-lessons.test.mjs',
+    prebuild:'node scripts/prepare.mjs && npm run test:academy:release && node scripts/make-art.mjs',
+  }, dependencies: {next:'15.0.0'}};
+  const next=structuredClone(old), testFile='tests/academy-voice-guide.test.mjs';
+  next.scripts['test:academy:release'] =
+    'node --test ' + testFile + ' ' + old.scripts['test:academy:release'].slice('node --test '.length);
+  const paths=['package.json',testFile,'components/academy-reader.tsx'];
+  const classify=(proposal=next,files=paths)=>classifyPackageImpact({
+    changed:files,basePackage:JSON.stringify(old),currentPackage:JSON.stringify(proposal),
+  });
+  assert.deepEqual(classify(),{mode:'core',reason:'ADDITIVE_PREBUILD_TEST',workflows:[]});
+  const unrelated='.github/workflows/hh-live-audio-ci.yml';
+  const owned='.github/workflows/hh-energywork-ai.yml';
+  const yaml=items=>"on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths:\n"+
+    items.map(p=>"      - '"+p+"'\n").join('');
+  const sources=new Map([
+    [unrelated,yaml(['package.json','app/api/live-audio/**'])],
+    [owned,yaml(['package.json','components/academy-**'])],
+  ]);
+  assert.deepEqual(expectedWorkflows({base:sources,current:sources,changed:paths,
+    packageImpact:classify()}),[owned]);
+  const noPrebuild=structuredClone(next);
+  noPrebuild.scripts.prebuild='node scripts/prepare.mjs';
+  assert.equal(classify(noPrebuild).mode,'full');
+  const injection=structuredClone(next);
+  injection.scripts['test:academy:release']+=' && echo skipped';
+  assert.equal(classify(injection).mode,'full');
+  const replacement=structuredClone(next);
+  replacement.scripts['test:academy:release'] =
+    replacement.scripts['test:academy:release'].replace('tests/academy-lessons.test.mjs','tests/new.test.mjs');
+  assert.equal(classify(replacement).mode,'full');
+  assert.equal(classify(next,paths.concat('package-lock.json')).mode,'full');
+  const deps=structuredClone(next);
+  deps.dependencies.next='16.0.0';
+  assert.equal(classify(deps).mode,'full');
+});
