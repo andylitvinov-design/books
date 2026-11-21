@@ -133,7 +133,7 @@ const MandalaPersonalMeditation = dynamic(() => import("./mandala-personal-medit
 const MandalaCloudVoiceStudio = dynamic(() => import("./mandala-cloud-voice-studio").then(module => module.MandalaCloudVoiceStudio));
 const MandalaPhraseCatalog = dynamic(() => import("./mandala-phrase-catalog").then(module => module.MandalaPhraseCatalog));
 const MandalaMultiTrackTimeline = dynamic(() => import("./mandala-multitrack-timeline").then(module => module.MandalaMultiTrackTimeline));
-const VideoPhotoLibrary = dynamic<{locale: PublicLocale; onSelectPhoto?: (photo: File)=>void;
+const VideoPhotoLibrary = dynamic<{locale: PublicLocale; onSelectPhoto: (photo: File)=>void;
   disabled?: boolean; compact?: boolean}>(()=>import("./app/video-photo-library").then(module=>module.default));
 
 type Effect = "glow" | "energy" | "prosperity" | "temple";
