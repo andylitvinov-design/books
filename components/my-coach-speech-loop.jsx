@@ -81,6 +81,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   const iosCueBrokenRef=useRef(false)
   const generationRef=useRef(0)
   const bargeRecoveryRef=useRef({generation:-1,retries:0})
+  const captureRetryRef=useRef({generation:-1,retries:0})
   const earlySpeechRef=useRef(null) // one authorized early sentence, no second model call
   const turnRef=useRef(onTurn),cancelRef=useRef(onCancelTurn),interruptedRef=useRef(onCoachInterrupted),stopRef=useRef(null),sessionStartRef=useRef(onSessionStart)
   const voiceStateRef=useRef(onVoiceStateChange),levelRef=useRef(onVoiceLevel)
@@ -156,6 +157,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     retryTimerRef.current=null;settleTimerRef.current=null;retryAttemptsRef.current=0
     captureFailureRef.current=false
     recordedSttUnavailableRef.current=false
+    captureRetryRef.current={generation:-1,retries:0}
     uncertainSpeechDraftRef.current=null
     providerUnavailableRef.current=null
     cloudControllerRef.current?.abort()
@@ -283,6 +285,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
           if(state==='listening')setNotice('')
           else if(state==='transcribing'){changePhase('thinking');setNotice(t.audioTranscribing)}
           else if(state==='hearing'){setNotice(t.audioHearing)}
+          else if(state==='recovering'){setNotice(t.captureRetry)}
         },
         onCandidate:()=>{if(phaseRef.current==='speaking')duckCoachVolume()},
         onCandidateExpired:()=>{if(phaseRef.current==='speaking')restoreCoachVolume()},
@@ -335,10 +338,16 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
               setNotice(t.bargeManual)
             return
           }
-          if(['STT_UNAVAILABLE','MIC_CAPTURE'].includes(code))
-            recordedSttUnavailableRef.current=true
+          // A transient WebKit capture failure is not a Whisper outage.
+          // Re-arm fresh recorded capture instead of permanently falling back
+          // to Safari's unreliable native SpeechRecognition.
+          if(code==='STT_UNAVAILABLE')recordedSttUnavailableRef.current=true
+          if(code==='MIC_PERMISSION'||code==='MIC_MISSING'){
+            changePhase('ready');setNotice(code==='MIC_PERMISSION'?t.blocked:t.noMicrophone)
+            return
+          }
           startListening()
-          setNotice(t.audioUnavailable)
+          setNotice(code==='MIC_CAPTURE'||code==='MIC_NO_SIGNAL'?t.captureRetry:t.audioUnavailable)
         },
       })
       if(monitor)recordedTurnRef.current=monitor
@@ -579,6 +588,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
           onResult:value=>{
             if(!activeRef.current||generationRef.current!==generation)return
             recordedTurnRef.current=null
+            captureRetryRef.current={generation:-1,retries:0}
             if(!hasCoachSpokenAnswer(value)){startListening();return}
             lastHeardRef.current=value
             heardRef.current=value
@@ -592,9 +602,31 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
               // Retain the coaching session, never display a deaf mic as Listening.
               changePhase('ready');setNotice(t.audioNoSignal);return
             }
-            if(['STT_UNAVAILABLE','MIC_CAPTURE'].includes(code)){
-              // Avoid repeating the video-wide paid-capable STT request;
-              // reuse the browser recognizer and the original Play activation.
+            if(code==='MIC_CAPTURE'){
+              // The microphone track/AudioContext failed, NOT the speech
+              // provider. Recover one microphone capture in place, without
+              // disabling the Groq Whisper path or charging an extra model.
+              const recovery=captureRetryRef.current
+              if(recovery.generation!==generation){
+                recovery.generation=generation;recovery.retries=0
+              }
+              if(recovery.retries>=1){
+                changePhase('ready');setNotice(t.captureFailed)
+                return
+              }
+              recovery.retries+=1
+              changePhase('starting');setNotice(t.captureRetry)
+              if(retryTimerRef.current)clearTimeout(retryTimerRef.current)
+              retryTimerRef.current=setTimeout(()=>{
+                retryTimerRef.current=null
+                if(activeRef.current&&generationRef.current===generation&&
+                   phaseRef.current==='starting')startListening()
+              },650)
+              return
+            }
+            if(code==='STT_UNAVAILABLE'){
+              // Only a verified STT/provider failure invokes the browser
+              // fallback; never misclassify a temporary Safari mic loss.
               recordedSttUnavailableRef.current=true
               retryAttemptsRef.current=0
               if(Recognition){startListening();setNotice(t.captureRetry)}
@@ -1139,6 +1171,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     }
     if(phaseRef.current==='ready'){
       retryAttemptsRef.current=0
+      captureRetryRef.current={generation:-1,retries:0}
       recordedSttUnavailableRef.current=false
       startListening()
       return
