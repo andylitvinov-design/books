@@ -4,9 +4,10 @@ import {useCallback,useEffect,useMemo,useState} from 'react'
 import Link from 'next/link'
 import {useSearchParams} from 'next/navigation'
 import {appFetch} from '@/lib/app/client-fetch'
+import MyCoachContext from './my-coach-context'
+import CoachMemoryReview from './coach-memory-review'
 import {ArrowRight,BarChart3,Check,CheckCircle2,ChevronDown,ChevronRight,ClipboardList,Compass,Download,Heart,HeartPulse,Leaf,LoaderCircle,MapPin,Mountain,Plus,Printer,RefreshCw,Save,Sparkles,Sun,Target,Trash2,TrendingUp,Trophy,Users,Wallet} from 'lucide-react'
 import {PRIMARY_GOAL_AREAS,orderedCoachingAreas,summarizeCoachingProgress} from '@/lib/app/coaching-plan-summary.mjs'
-import {projectCoachContextSnapshot} from '@/lib/personal-coaching/client-context.mjs'
 import styles from './my-coaching-plan.module.css'
 import {downloadCoachingSessionPdf,openCoachingSessionPdf} from '@/lib/personal-coaching/session-pdf'
 import {myCoachProtocolPdfOptions} from '@/lib/personal-coaching/session-protocol.mjs'
@@ -170,10 +171,6 @@ export default function MyCoachingPlan({accountId,locale='en'}){
  },[accountId,lang])
  useEffect(()=>{void load()},[load])
  const importedKeys=useMemo(()=>new Set((plan?.actions||[]).filter(item=>item.sourceReportId&&item.sourceActionKey).map(item=>item.sourceReportId+'|'+item.sourceActionKey)),[plan])
- const contextPreview=useMemo(()=>{
-  const snapshot=projectCoachContextSnapshot({plan})
-  return {goals:snapshot.items.filter(item=>item.kind==='goal'),actions:snapshot.items.filter(item=>item.kind==='action')}
- },[plan])
  const change=(areaKey,key,value)=>setDrafts(prev=>({...prev,[areaKey]:{...prev[areaKey],[key]:value}}))
  async function saveArea(area){
   const value=drafts[area.areaKey]||domainState(area)
@@ -265,12 +262,13 @@ export default function MyCoachingPlan({accountId,locale='en'}){
    <div className={styles.tabs} role="tablist" aria-label={t.title}>
     <button type="button" role="tab" aria-selected={tab==='plan'} className={tab==='plan'?styles.tabActive:styles.tab} onClick={()=>setTab('plan')}><Target size={16}/>{t.plan}</button>
     <button type="button" role="tab" aria-selected={tab==='reports'} className={tab==='reports'?styles.tabActive:styles.tab} onClick={()=>setTab('reports')}><ClipboardList size={16}/>{t.reports}<span>{reports.length+protocols.length}</span></button>
-     <button type="button" role="tab" aria-selected={tab==='context'} className={tab==='context'?styles.tabActive:styles.tab} onClick={()=>setTab('context')}><Sparkles size={16}/>{t.context}</button>
+    <button type="button" role="tab" id="coach-context-tab" aria-controls={tab==='context'?'coach-context-panel':undefined} aria-selected={tab==='context'} className={tab==='context'?styles.tabActive:styles.tab} onClick={()=>setTab('context')}><Sparkles size={16}/>{t.context}</button>
    </div>
   </header>
   {error&&<div className={styles.error} role="alert">{t.loadError} <button onClick={load}>{t.retry}</button></div>}
   {notice&&<div className={styles.notice} role="status">{notice}</div>}
   {deleteError&&<div className={styles.error} role="alert">{deleteError}</div>}
+  {tab==='context'&&<MyCoachContext key={accountId} accountId={accountId} locale={lang} domains={domains}/>}
   {tab==='plan'&&<>
    <section className={styles.sectionHead}><h2>{t.overviewTitle}</h2>
     <button type="button" className={styles.smallPill} aria-expanded={showProgressDetails}
@@ -431,19 +429,17 @@ export default function MyCoachingPlan({accountId,locale='en'}){
        {importing===record.id?<LoaderCircle className={styles.spin} size={16}/>:<Plus size={16}/>} {importing===record.id?t.adding:t.add}
       </button>
       {reportError&&<p className={styles.inlineError} role="alert">{t.importError}</p>}
+      {!!accepted.length&&<CoachMemoryReview key={accountId+':'+record.id} accountId={accountId}
+        reportId={record.id} areaKey={areas[record.id]||'career_business'} locale={lang}
+        importedKeys={importedKeys} onSaved={load}/>}
      </div>
     </article>
    })}
   </section>}
-  {tab==='context'&&<section className={styles.contextPreview} data-my-context-preview>
-   <h2>{t.context}</h2><p>{t.contextIntro}</p>
-   {!contextPreview.goals.length&&!contextPreview.actions.length&&<div className={styles.empty}><Sparkles size={24}/><p>{t.contextEmpty}</p></div>}
-   {!!contextPreview.goals.length&&<div><h3>{t.contextGoals}</h3><ul>{contextPreview.goals.map(goal=><li key={goal.id}>{goal.title}</li>)}</ul></div>}
-   {!!contextPreview.actions.length&&<div><h3>{t.contextActions}</h3><ul>{contextPreview.actions.map(action=><li key={action.id}>{action.description}</li>)}</ul></div>}
-   {!!plan?.contextPermissions?.length&&<details className={styles.permissions}><summary>{t.contextTitle}<ChevronDown size={18}/></summary>
+  {tab==='context'&&!!plan?.contextPermissions?.length&&
+   <details className={styles.permissions}><summary>{t.contextTitle}<ChevronDown size={18}/></summary>
     <p>{t.contextInfo}</p>{contextError&&<p role="alert">{contextError}</p>}
     {plan.contextPermissions.map((permission,index)=><div key={permission.sessionId}><span>{t.contextSession} {index+1} · {formatDate(permission.completedAt,lang)}</span>{' '}<button type="button" className={styles.saveButton} disabled={!!revoking} onClick={()=>revokeContext(permission.sessionId)}>{revoking===permission.sessionId?t.revokingContext:t.revokeContext}</button></div>)}
    </details>}
-  </section>}
  </main>
 }

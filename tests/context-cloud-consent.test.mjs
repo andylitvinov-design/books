@@ -1,6 +1,16 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { hasCoachContextGrant } from '../lib/coaching/context-cloud-consent.mjs'
+import { hasCoachContextGrant, matchesCoachContextReview } from '../lib/coaching/context-cloud-consent.mjs'
+
+test('confirmation applies only to the same item, topic, source revision and provider policy', () => {
+  const item = { itemId: 'goal', category: 'goals', topicKey: 'finance', sourceRevision: '2' }
+  const approval = { ...item, confirmed: true, policyVersion: 'v2' }
+  assert.equal(matchesCoachContextReview(approval, item, 'v2'), true)
+  for (const mismatch of [{ confirmed: false }, { itemId: 'other' }, { category: 'actions' },
+    { topicKey: 'relationships' }, { sourceRevision: '1' }, { policyVersion: 'v1' }]) {
+    assert.equal(matchesCoachContextReview({ ...approval, ...mismatch }, item, 'v2'), false)
+  }
+})
 
 const request = {
   accountId: 'owner', provider: 'groq', policyVersion: 'v2', role: 'coach',
@@ -10,6 +20,15 @@ const grant = {
   ...request, purpose: 'coaching', decision: 'grant', revision: 1,
   occurredAt: 50, expiresAt: null,
 }
+
+test('assessment consent requires an exact result and scale and respects withdrawal', () => {
+  const scope = { ...request, category: 'test_results', scaleKey: 'trait.ipip50.extraversion' }
+  const permission = { ...grant, ...scope }
+  assert.equal(hasCoachContextGrant(scope, [permission]), true)
+  assert.equal(hasCoachContextGrant({ ...scope, scaleKey: 'trait.ipip50.openness' }, [permission]), false)
+  assert.equal(hasCoachContextGrant(scope, [{ ...permission, itemId: null }]), false)
+  assert.equal(hasCoachContextGrant(scope, [permission, { ...permission, decision: 'revoke', revision: 2 }]), false)
+})
 
 test('consent requires an explicit matching owner, role, provider, item, session and policy', () => {
   assert.equal(hasCoachContextGrant(request, []), false)
@@ -24,6 +43,14 @@ test('consent requires an explicit matching owner, role, provider, item, session
 test('a category grant cannot override a revision mismatch on an existing item grant', () => {
   const categoryGrant = { ...grant, itemId: null, sourceRevision: null, revision: 2 }
   assert.equal(hasCoachContextGrant({ ...request, sourceRevision: '3' }, [grant, categoryGrant]), false)
+})
+
+test('deleting or replacing a report invalidates consent for its derived goal', () => {
+  const reportGrant = { ...grant, sourceRevision: '2:report:original:1' }
+  assert.equal(hasCoachContextGrant({ ...request, sourceRevision: reportGrant.sourceRevision }, [reportGrant]), true)
+  for (const sourceRevision of ['2', '2:report:replacement:1', '2:report:original:2']) {
+    assert.equal(hasCoachContextGrant({ ...request, sourceRevision }, [reportGrant]), false)
+  }
 })
 
 test('category withdrawal, expiration and policy changes never revive older grants', () => {
