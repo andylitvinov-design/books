@@ -110,8 +110,11 @@ try {
     return page;
   };
 
- // First-screen Shamanica business visual acceptance in this existing CI runner.
- // The two-column six-card grid must stay above the real, fixed seven-item dock.
+ // Current approved Shamanica Business page: six photo shelves in a
+ // two-column mobile grid, plus a separate three-step diagnostic quiz.
+ // The former [data-business-service] cards and "all six above dock"
+ // assertion were removed when the owner approved this detailed layout.
+ // Assert the actual interactive UI instead of disabling browser coverage.
  async function checkCompactBusiness(page,locale,width){
   await page.goto(origin+"/"+locale+"/shamanica/business",{waitUntil:"domcontentloaded",timeout:75000});
   const section=page.locator("[data-shamanica-business]");
@@ -119,24 +122,51 @@ try {
   await expect(page.locator("[data-sitewide-antistress-banner]")).toHaveCount(0);
   await expect(page.locator("[data-hh-ihelp-trigger]:visible")).toHaveCount(0);
   await expect(page.locator("[data-shamanica-ihelp-trigger]")).toBeVisible();
-  await expect(section.locator("[data-business-service]")).toHaveCount(6);
-  await expect(section.locator("[data-business-service] img")).toHaveCount(6);
+  const shelves=section.locator("[data-business-shelf]");
+  await expect(shelves).toHaveCount(6);
+  await expect(shelves.locator("img")).toHaveCount(6);
+  assert.deepEqual(await shelves.evaluateAll(cards=>cards.map(card=>card.dataset.businessShelf)),
+   ["express","remedies","strategy","artifacts","energy","energywork"],
+   "Owner-approved six business directions and order must remain intact");
   await expect(page.locator("[data-hh-unified-dock]")).toHaveCount(1);
-  const m=await page.evaluate(()=>{
-   const last=document.querySelector('[data-business-service="remedies"]');
-   const dock=document.querySelector('[data-hh-unified-dock]');
-   if(!last||!dock)return null;
-   return {lastBottom:last.getBoundingClientRect().bottom,
-     dockTop:dock.getBoundingClientRect().top,
-     horizontalOverflow:document.documentElement.scrollWidth-window.innerWidth};
-  });
-  assert.ok(m,"Business compact landmarks missing");
-  assert.ok(m.horizontalOverflow<=2,"Business horizontal overflow "+locale+"/"+width+" "+JSON.stringify(m));
-  if(width>=390)assert.ok(m.lastBottom<=m.dockTop+8,
-    "Six business cards must fit above dock "+locale+"/"+width+" "+JSON.stringify(m));
-  if(locale==="ru"&&width===390)await page.screenshot({path:output+"/shamanica-business-ru-390.png",fullPage:false});
   await expect.poll(()=>page.evaluate(()=>history.pushState.toString().includes("__NA")),
-    {timeout:30000,message:"Business quiz hydration"}).toBe(true);
+   {timeout:30000,message:"Business quiz hydration"}).toBe(true);
+  const m=await page.evaluate(()=>{
+   const cards=[...document.querySelectorAll("[data-business-shelf]")].map(el=>{
+    const rect=el.getBoundingClientRect();
+    return {x:rect.x,y:rect.y,right:rect.right,width:rect.width};
+   });
+   const dock=document.querySelector("[data-hh-unified-dock]");
+   return {cards,dock:!!dock,horizontalOverflow:document.documentElement.scrollWidth-window.innerWidth};
+  });
+  assert.equal(m.cards.length,6,"Business photo shelf landmarks missing");
+  assert.ok(m.dock,"Unified mobile dock missing");
+  assert.ok(m.horizontalOverflow<=2,
+   "Business horizontal overflow "+locale+"/"+width+" "+JSON.stringify(m));
+  for(let i=0;i<6;i+=2){
+   assert.ok(m.cards[i].x<m.cards[i+1].x && Math.abs(m.cards[i].y-m.cards[i+1].y)<=3,
+    "Business shelves must form two aligned columns "+locale+"/"+width+" "+JSON.stringify(m));
+  }
+  for(const name of ["express","remedies","strategy","artifacts","energy","energywork"])
+   await expect(section.locator('[data-business-shelf="'+name+'"]')).toBeVisible();
+  if(locale==="ru"&&width===390)
+   await page.screenshot({path:output+"/shamanica-business-ru-390.png",fullPage:false});
+  // The real second level must function on mobile and preserve price/CTA choices.
+  await section.locator('[data-business-shelf="express"]').click();
+  const express=section.locator('[data-business-second-level="express"]');
+  await expect(express.locator("[data-business-subservice]")).toHaveCount(5);
+  assert.deepEqual(await express.locator("[data-business-subservice]").allTextContents()
+   .then(rows=>rows.map(row=>row.match(/(?:FREE|45 CAD|75 CAD|200 CAD|300 CAD)/)?.[0]||null)),
+   ["FREE","45 CAD","75 CAD","200 CAD","300 CAD"]);
+  await expect(section.locator('[data-business-get-details="express"]')).toBeVisible();
+  await section.locator("[data-business-back-to-shelves]").click();
+  await expect(shelves).toHaveCount(6);
+  await section.locator('[data-business-shelf="strategy"]').click();
+  await expect(section.locator('[data-business-second-level="strategy"] [data-business-subservice]')).toHaveCount(4);
+  await expect(section.locator('[data-business-get-details="strategy"]')).toBeVisible();
+  await section.locator("[data-business-back-to-shelves]").click();
+  await expect(shelves).toHaveCount(6);
+  // Quiz still collects the client's three answers and shows two clear paths.
   const quiz=section.locator("[data-business-quiz]");
   await expect(quiz).toHaveAttribute("data-quiz-step","1");
   await quiz.locator('[data-business-answer="express"]').click();
