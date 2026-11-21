@@ -1,0 +1,1 @@
+The My Coach voice dropdown resolves its default from `approvedGeminiVoice(personaId,conversationLang)` when RU/EN. Optional explicit user auditions are stored in client component memory keyed by `${personaId}:${locale}`; switching coach or language never leaks the prior coach's voice. ES retains the existing catalog default. No API spend/feature toggles altered.
