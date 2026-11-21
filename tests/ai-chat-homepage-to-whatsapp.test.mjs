@@ -5,9 +5,18 @@ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 test('approved opening has one live composer and selected voice',()=>{
  const intro=read('components/app/messenger-ai-landing.tsx')
  const agent=read('components/holistic-agent-chat.tsx')
- for(const selector of ['data-hh-ai-audience','data-hh-ali-first-message','data-hh-ai-inline-composer',
+ for(const selector of ['data-hh-ai-chat-shortcuts','data-hh-ali-first-message','data-hh-ai-inline-composer',
   'data-hh-alchemist-topics','data-hh-alchemist-journey','data-hh-ai-persona-voice-play'])
   assert.ok(intro.includes(selector),selector)
+ for(const [id,path] of [
+  ['ai','/app/messages?section=ai'],['page','/app/portrait'],
+  ['orders','/app/messages?section=orders'],['clients','/app/messages?section=clients']
+ ]) {
+   assert.ok(intro.includes('data-hh-chat-shortcut="'+id+'"'),id)
+   assert.ok(intro.includes(path),path)
+ }
+ for(const name of ['My page','My orders','My clients','"ИИ"','"IA"']) assert.ok(intro.includes(name),name)
+ assert.doesNotMatch(intro,/data-hh-ai-audience|setAudience\(/)
  assert.match(intro,/TOPICS\.slice\(0,4\)/)
  assert.match(intro,/onTopicSelect\(topic\.prompt\)/)
  assert.match(intro,/playAliPersonaAudio\(persona\.id,locale/)
