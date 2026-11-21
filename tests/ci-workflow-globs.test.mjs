@@ -316,12 +316,12 @@ test('IA and Mandala browsers allocate expensive runners only after cheap exact-
   const macosGuard = mandala.match(/^  voice-webkit-macos:\n    if: (.+)$/m)?.[1];
   assert.equal(preflightGuard, "${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}",
     'preflight must execute on every Ready Mandala PR; a new skipped job cannot be waived by the old BASE specialist contract');
-  assert.ok(macosGuard?.includes("startsWith(github.head_ref, 'feat/video-')"),
-    'macOS WebKit must retain original video release guard');
-  assert.ok(macosGuard?.includes("startsWith(github.head_ref, 'feat/voice-timed-storyboard-')"),
-    'the consented voice storyboard must run existing macOS WebKit MP4/AAC release acceptance');
-  assert.ok(macosGuard?.includes("startsWith(github.head_ref, 'fix/recipient-speech-')"),
-    'one-tap spoken audio montage must execute protected macOS WebKit before merge');
+  assert.ok(macosGuard?.includes("needs.webkit_preflight.outputs.media_required == 'true'"),
+    'WebKit must use tested-BASE media impact rather than historical branch names');
+  assert.ok(mandala.includes('stories_required: ${{ steps.media_gate.outputs.stories_required }}'),
+    'Stories changes must request real five-scene WebKit');
+  assert.ok(mandala.includes('HH_STORIES_E2E_REQUIRED: ${{ needs.webkit_preflight.outputs.stories_required }}'),
+    'macOS Stories evidence must consume the protected impact result');
   assert.match(mandala, /^  voice-webkit-macos:\n    if: .+\n    needs: \[webkit_preflight\]\n    runs-on: macos-15/m);
   for (const source of [ia, mandala]) {
     assert.match(source, /node scripts\/ci-pr-readiness\.mjs/);
@@ -551,7 +551,8 @@ test('Stories Studio PR must execute real WebKit and four-format acceptance, nev
   assert.match(s, /'tests\/stories-studio-\*\.test\.mjs'/);
   assert.match(s, /node --test tests\/stories-studio-contract\.test\.mjs tests\/stories-studio-ui\.test\.mjs/);
   const webkit=s.slice(s.indexOf('  voice-webkit-macos:'),s.indexOf('    needs: [webkit_preflight]',s.indexOf('  voice-webkit-macos:')));
-  assert.match(webkit, /startsWith\(github\.head_ref, 'codex\/stories-'\)/);
+  assert.match(webkit, /needs\.webkit_preflight\.outputs\.media_required == 'true'/);
+  assert.match(s, /stories_required: \$\{\{ steps\.media_gate\.outputs\.stories_required \}\}/);
   const linux=s.slice(s.indexOf('      - name: Build\n'),s.indexOf('  webkit_preflight:'));
   assert.match(linux, /startsWith\(github\.head_ref, 'codex\/stories-'\)/);
 });
@@ -561,7 +562,8 @@ test('Stories physical five-scene MP4 is mandatory in the macOS WebKit release p
   const s=workflow('holistic-support-mandala.yml');
   assert.match(s,/scripts\/benchmarking\/verify-five-scene-stories-browser\.mjs/);
   const mac=s.slice(s.indexOf('  voice-webkit-macos:'));
-  assert.match(mac,/if \[\[ "\$\{GITHUB_HEAD_REF:-\}" == codex\/stories-\* \|\| "\$\{GITHUB_HEAD_REF:-\}" == codex\/video-story-five-cards-quality-last-20261112 \]\]/);
+  assert.match(mac,/HH_STORIES_E2E_REQUIRED/);
+  assert.match(mac,/if \[\[ "\$\{HH_STORIES_E2E_REQUIRED:-\}" == true \|\|/);
   assert.match(mac,/HH_STORIES_E2E_ENGINE=webkit/);
   assert.match(mac,/node scripts\/benchmarking\/verify-five-scene-stories-browser\.mjs/);
   assert.match(mac,/artifacts\/benchmarking\/five-scene-stories-webkit\.json/);
