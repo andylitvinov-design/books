@@ -67,7 +67,7 @@ test("macOS WebKit hydration follows visible Goals → Ideas → Montage without
  const goalPanel=flow.indexOf('data-video-ideas-goal-panel',ideas);
  const chooseCandidates=[
    flow.indexOf('await choice.tap()',goalPanel),
-   flow.indexOf("await ideasGoalPane.locator('[data-video-ideas-goal-choice=\\\"rest\\\"]').click()",goalPanel)
+   flow.indexOf("await ideasGoalPane.locator('[data-video-ideas-goal-choice=\"rest\"]').click()",goalPanel)
  ].filter(index=>index>=0);
  const choose=chooseCandidates.length?Math.min(...chooseCandidates):-1;
  const nextCandidates=[
