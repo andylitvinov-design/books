@@ -53,7 +53,7 @@ jobs:
   measure-public:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false || startsWith(github.event.pull_request.title, 'perf(home):') }}
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 55
     steps:
       - uses: actions/checkout@v4
         with:
@@ -97,25 +97,56 @@ jobs:
           done
           node scripts/measure-home-css-network.mjs http://127.0.0.1:3399 | tee /tmp/hh-home-css-metrics.json
           { echo '## Homepage network first paint (uncompressed)'; echo '```json'; cat /tmp/hh-home-css-metrics.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
-      - name: Compare LIVE vs current PR on mobile slow 4G, Lighthouse v13.6 two runs
+      - name: Build exact protected PR BASE in isolated local worktree for fair Lighthouse comparison
         if: ${{ github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'perf(home):') }}
-        timeout-minutes: 24
+        timeout-minutes: 16
+        shell: bash
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          NEXT_TELEMETRY_DISABLED: '1'
+        run: |
+          set -euo pipefail
+          [[ "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          git fetch --no-tags --depth=1 origin "$PR_BASE_SHA"
+          baseline_dir="$RUNNER_TEMP/hh-home-baseline"
+          git worktree add --detach "$baseline_dir" "$PR_BASE_SHA"
+          # Reuse EXACT same pinned dependencies, no extra package installs,
+          # env secrets, Vercel builds or external publishing. Fail closed if
+          # baseline lockfile differs.
+          cmp package-lock.json "$baseline_dir/package-lock.json"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$baseline_dir/node_modules"
+          (cd "$baseline_dir" && npm run build)
+      - name: Compare protected BASE vs current PR on same local transport (mobile Lighthouse 13.6)
+        if: ${{ github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'perf(home):') }}
+        timeout-minutes: 27
         shell: bash
         env:
           NEXT_TELEMETRY_DISABLED: '1'
         run: |
           set -euo pipefail
           mkdir -p artifacts/home-perf
+          # Both versions are now Next production builds on the SAME runner,
+          # same http/1.1, same uncompressed response headers, same Chrome.
+          # The previous LIVE-CDN-vs-local comparison mixed HTTP/2 and HTTP/1.1.
+          baseline_dir="$RUNNER_TEMP/hh-home-baseline"
+          [[ -d "$baseline_dir/.next" ]] || { echo 'Exact BASE build missing'; exit 1; }
+          PORT=3398 HOSTNAME=127.0.0.1 npm start --prefix "$baseline_dir" >/tmp/hh-home-base-server.log 2>&1 &
+          baseline_pid=$!
           PORT=3399 HOSTNAME=127.0.0.1 npm start >/tmp/hh-home-lh-server.log 2>&1 &
           app_pid=$!
-          trap 'kill "$app_pid" 2>/dev/null || true' EXIT
-          ready=false
-          for attempt in {1..35}; do
-            if curl -fsS -o /dev/null http://127.0.0.1:3399/; then ready=true; break; fi
-            printf 'Lighthouse local server readiness attempt %s\n' "$attempt"
-            sleep 1
+          trap 'kill "$app_pid" "$baseline_pid" 2>/dev/null || true' EXIT
+          for target in 3398 3399; do
+            ready=false
+            for attempt in {1..35}; do
+              if curl -fsS -o /dev/null "http://127.0.0.1:$target/"; then ready=true; break; fi
+              printf 'Lighthouse port %s readiness attempt %s\n' "$target" "$attempt"
+              sleep 1
+            done
+            if [[ "$ready" != true ]]; then
+              tail -60 /tmp/hh-home-base-server.log /tmp/hh-home-lh-server.log
+              exit 1
+            fi
           done
-          if [[ "$ready" != true ]]; then tail -60 /tmp/hh-home-lh-server.log; exit 1; fi
           # Github's system Chrome can exit before chrome-launcher discovers the
           # dynamic debugging port. Validate CDP up front, before 12 audit runs.
           check_chrome() {
@@ -157,7 +188,7 @@ jobs:
               path="/"
               if [[ "$lang" != en ]]; then path="/$lang"; fi
               for candidate in before after; do
-                origin="https://holistichouse.vercel.app"
+                origin="http://127.0.0.1:3398"
                 if [[ "$candidate" == after ]]; then origin="http://127.0.0.1:3399"; fi
                 echo "Lighthouse 13.6: $candidate $lang pass=$pass (mobile simulated slow 4G)"
                 timeout 135s npx --yes lighthouse@13.6.0 "$origin$path" \

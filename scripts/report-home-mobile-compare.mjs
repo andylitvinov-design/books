@@ -81,7 +81,7 @@ async function main() {
       summary: summarizePair(results.before, results.after) };
   }
   const output = {
-    measuredAt: new Date().toISOString(), method: "Lighthouse 13.6 mobile simulated slow 4G, two consecutive runs per URL and build",
+    measuredAt: new Date().toISOString(), method: "Lighthouse 13.6 simulated slow-4G mobile, two runs on local Next production builds using identical HTTP/1.1 transport, same runner and Chrome",
     caveat: "ObservedLoadEventMs is NOT a simulated slow-4G full-page-load metric; full load <5s needs a separate real 4G browser observation.",
     pages,
   };
@@ -97,7 +97,7 @@ async function main() {
     table.push("| " + locale + " | " + text("performance") + " | " + text("fcpMs") + " | " +
       text("lcpMs") + " | " + text("cls") + " | " + target + " |");
   }
-  table.push("", "**Measured on the same GitHub runner with equal Lighthouse mobile simulated 4G configuration.**",
+  table.push("", "**Measured with BASE and candidate both local Next production builds over identical HTTP/1.1 on the same GitHub runner using the same Lighthouse mobile simulated 4G configuration.**",
     "This is not CrUX real-user data. No comparable actual slow-4G window.onload was measured; do not report a made-up full-load value.",
     "No paid Vercel previews, synthetic forms, payments or private routes were used.");
   console.log(table.join("\n"));
