@@ -947,6 +947,14 @@ try{
  assert.equal(await firstOffer.locator("[data-service-card-order]:visible").count(),1);
  assert.ok(await firstOffer.locator("[data-messenger-only-channel]").count()>=1,
    "Order must expose a real messenger handoff");
+ // The 320px first-fold acceptance measures the compact, *collapsed* list.
+ // First prove the real Order panel and messenger handoff, then close it using
+ // the same accessible user control; do not fake visibility or change styles.
+ await firstOffer.locator("[data-service-card-controls] button").nth(1).click();
+ assert.equal(await firstOffer.locator('[data-service-card-controls] button').nth(1).getAttribute("aria-expanded"),"false",
+   "Order control must collapse back to the one-screen service cards");
+ assert.equal(await firstOffer.locator("[data-service-card-order]:visible").count(),0,
+   "Expanded Order panel must close before compact first-fold acceptance");
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth<=2),
    "Shamanic service list must not overflow mobile width");
  // The 3 compact offers AND their category heading must fit above the fixed
