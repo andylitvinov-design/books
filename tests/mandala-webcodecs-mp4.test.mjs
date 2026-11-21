@@ -342,7 +342,7 @@ test("real Safari MEDIA_ERR_SRC_NOT_SUPPORTED gets exactly one on-device WebM re
   assert.match(studio,/const autoWebmRetryForRef=useRef<string\|null>\(null\)/);
   assert.match(studio,/autoWebmRetryForRef\.current=signature/);
   assert.match(studio,/autoWebmRetryUrlRef\.current=result\.url/);
-  assert.match(studio,/if\(held&&creditValidRef\.current\)await releaseCredit\(held\)/);
+  assert.match(studio,/if\(held&&creditValidRef\.current&&!\(await releaseCredit\(held\)\)\)return;/);
   assert.match(studio,/setPendingCompatibleRetry\(signature\)/);
   assert.match(studio,/void createVideo\(true\)/);
   assert.match(studio,/HH_SAFARI_FINAL_PLAYBACK:/);
@@ -594,7 +594,7 @@ test("real iPhone prefers native playable MP4 and uses WebCodecs only as an expl
   assert.match(studio,/mime===explicitAvcMime\|\|\(nativeAppleMp4Available&&mime==="video\/mp4"\)/);
   assert.match(studio,/if\(iphoneWebCodecsFallbackAvailable\)void createVideo\(false,false,true,true\)/);
   assert.match(studio,/if\(creditOpRef\.current\)return/);
-  assert.match(studio,/if\(held&&creditValidRef\.current\)await releaseCredit\(held\)/);
+  assert.match(studio,/if\(held&&creditValidRef\.current&&!\(await releaseCredit\(held\)\)\)return;/);
 });
 
 test("Safari native MP4 completion is bounded after 97% and releases failed holds",()=>{
