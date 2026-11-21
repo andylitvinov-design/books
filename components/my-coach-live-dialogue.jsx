@@ -9,7 +9,7 @@ import {coachTimeboxState} from '@/lib/coaching/session-timebox.mjs'
 import {coachingBrainSafety,coachingBrainBoundary,coachingBrainStageDecision,offlineCoachingBrainReply,selectCoachingBrainMethod} from '@/lib/personal-coaching/coaching-brain.mjs'
 import {classifyWisdomRequest} from '@/lib/coaching/wisdom-retrieval.mjs'
 import {coachTurnWindow} from '@/lib/coaching/coach-turn-window.mjs'
-import {coachAudibleTurns,markLatestCoachReplyInterrupted} from '@/lib/coaching/coach-audible-history.mjs'
+import {coachAudibleTurns,coachProviderHistory,markLatestCoachReplyInterrupted} from '@/lib/coaching/coach-audible-history.mjs'
 import {coachEphemeralContext} from '@/lib/coaching/coach-ephemeral-context.mjs'
 import {coachModelProbeRetryAllowed} from '@/lib/coaching/coach-model-recovery.mjs'
 import {coachSessionVisibleStageIds} from '@/lib/coaching/coach-session-progress.mjs'
@@ -276,6 +276,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [replayBlocked,setReplayBlocked]=useState(false)
   const [playbackNotice,setPlaybackNotice]=useState('')
   const pending=useRef(null),composerRef=useRef(null),transcriptRef=useRef(null)
+  const [contextTopic,setContextTopic]=useState('')
+  const [contextAssessments,setContextAssessments]=useState(false)
+  const [contextPaused,setContextPaused]=useState(false)
   const composerDetailsRef=useRef(null),speechRef=useRef(null)
   const replayControllerRef=useRef(null),replayPlayerRef=useRef(null)
   const micWaveRef=useRef(null)
@@ -785,9 +788,14 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     })
     message=goalTurn.message
     inFlightClientRef.current={requestId,message}
-    // Current client correction/new topic invalidates hints from the old focus.
-    if(['correction','topic_shift'].includes(
-      understandCoachingTurn({locale:responseLocale,message}).act))semanticHintsRef.current=[]
+    // A new focus requires the client to choose which saved topic to use again.
+    const contextFocusChanged=['correction','topic_shift'].includes(
+      understandCoachingTurn({locale:responseLocale,message}).act)
+    if(contextFocusChanged){
+      semanticHintsRef.current=[]
+      setContextTopic('')
+      setContextAssessments(false)
+    }
     const commitGoalTurn=()=>{
       if(goalTurn.goalIncluded)lastSharedGoalRef.current=goalTurn.goal
       if(goalTurn.clearGoal){
@@ -853,6 +861,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     pending.current?.abort()
     pending.current=controller
     setBusy(true);setError('');setStreamingPreview('')
+    const requestedSavedContext=!contextFocusChanged&&!contextPaused&&Boolean(contextTopic)
+    // A previous reply may quote a saved item whose grant has since changed.
+    // Keep it in the local transcript and resolve approved items again server-side.
+    const providerHistory=coachProviderHistory(conversationTurns)
+    const providerWindow=coachTurnWindow(providerHistory,10)
     const useStreaming=coachEngine==='groq_stream'&&streamingReady&&!wisdomRequested
     try{
       const requestOptions={
@@ -860,14 +873,16 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
           personaId,settings,locale:responseLocale,consent:true,message,voiceTurn:voiceTurn===true,
+          ...(requestedSavedContext?{contextTopic}:{}),
+          ...(requestedSavedContext&&contextTopic==='personal_growth'&&contextAssessments?{contextAssessments:true}:{}),
           ...(selectedGeminiEngine?{
             engine:coachEngine,geminiConsent:true,
             ...(coachEngine==='gemini_free'?{geminiFreeDataConsent:true}:{})
           }:{}),
           elapsedSeconds:sessionClockStarted?Math.floor(activeSessionSeconds):0,
-          sessionContext:coachEphemeralContext(conversationTurns,coachTurnWindow(conversationTurns,10),responseLocale,message),
+          sessionContext:coachEphemeralContext(providerHistory,providerWindow,responseLocale,message),
           semanticHints:semanticHintsRef.current,
-          turns:coachTurnWindow(conversationTurns,10)
+          turns:providerWindow
             .map(({role,content})=>({role,content})), // Preserve the latest client-stated active goal, not a greeting.
         }),
       }
@@ -903,7 +918,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       setTurns(previous=>{
         const updated=[...previous,{role:'user',content:message},{
           role:'assistant',content:answer,locale:responseLocale,reflection:result.reflection,question:result.question,
-          hypothesis:result.hypothesis||'',mode:result.mode,
+          hypothesis:result.hypothesis||'',mode:result.mode,requestedSavedContext,
           reason:result.offlineReason||'',stage:result.stage||'',
           sessionProgress:result.sessionProgress?.source==='director-client-evidence'
             ?result.sessionProgress:null,
@@ -1339,6 +1354,32 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         </form>}
         {error&&<p className={styles.error} role="alert">{error}</p>}
         <details className={styles.sessionMore}><summary>{lang==='ru'?'Дополнительно':lang==='es'?'Más opciones':'More options'}</summary>
+          <label className={styles.contextTopic}>
+            {lang==='ru'?'Сохранённый контекст для беседы':lang==='es'?'Contexto guardado para esta conversación':'Saved context for this conversation'}
+            <select value={contextTopic} onChange={event=>{
+              setContextTopic(event.target.value);setContextAssessments(false)
+            }}>
+              <option value="">{lang==='ru'?'Выключен':lang==='es'?'Desactivado':'Off'}</option>
+              {[
+                ['body_health','Body & Health','Тело и здоровье','Cuerpo y salud'],
+                ['emotional_wellbeing','Emotional wellbeing','Эмоциональное благополучие','Bienestar emocional'],
+                ['relationships','Relationships','Отношения','Relaciones'],
+                ['career_business','Career & business','Карьера и бизнес','Carrera y negocio'],
+                ['finance','Finances','Финансы','Finanzas'],
+                ['personal_growth','Personal growth','Личностный рост','Crecimiento personal'],
+                ['lifestyle','Lifestyle','Образ жизни','Estilo de vida'],
+                ['meaning_purpose','Meaning & purpose','Смысл и предназначение','Sentido y propósito'],
+              ].map(([key,en,ru,es])=><option key={key} value={key}>{lang==='ru'?ru:lang==='es'?es:en}</option>)}
+            </select>
+          </label>
+          {contextTopic==='personal_growth'&&<label>
+            <input type="checkbox" checked={contextAssessments} onChange={event=>setContextAssessments(event.target.checked)}/>
+            {lang==='ru'?'Использовать одобренные результаты тестов':lang==='es'?'Usar resultados de pruebas autorizados':'Use approved assessment scores'}
+          </label>}
+          {contextTopic&&<label>
+            <input type="checkbox" checked={contextPaused} onChange={event=>setContextPaused(event.target.checked)}/>
+            {lang==='ru'?'Приостановить использование контекста в этой беседе':lang==='es'?'Pausar el uso del contexto en esta conversación':'Pause saved context for this conversation'}
+          </label>}
         <label className={styles.coachEnginePicker} data-coach-engine-choice>
           <span>{({ru:'Движок диалога',en:'Dialogue engine',es:'Motor de diálogo'})[lang]}</span>
           <select value={coachEngine} disabled={busy} onChange={event=>{
