@@ -49,7 +49,7 @@ jobs:
   measure-public:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false || startsWith(github.event.pull_request.title, 'perf(home):') }}
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with:
@@ -61,10 +61,20 @@ jobs:
         run: node --test tests/home-css-isolation.test.mjs
       - name: Validate targeted safety and booking contracts
         run: node --test tests/holistic-house-image-quota.test.mjs tests/hh-public-html-metrics.test.mjs tests/holistic-house-speed-and-cta.test.mjs tests/holistic-house-home-streaming.test.mjs tests/home-carousel-first-screen-cta.test.mjs tests/home-rsc-on-demand.test.mjs tests/public-consultation-cta-design.test.mjs tests/consultation-capture-choice.test.mjs tests/personal-testimonials.test.mjs
+      - name: Stage checksum-verified FFmpeg before npm lifecycle
+        if: ${{ github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'perf(home):') }}
+        uses: ./.github/actions/ci-ffmpeg-static
+      - name: Install exact lockfile dependencies
+        if: ${{ github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'perf(home):') }}
+        run: npm ci --no-audit --no-fund
+      - name: Materialize checksum-verified FFmpeg after npm install
+        if: ${{ github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'perf(home):') }}
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
       - name: Check full production build of Draft performance PR
         if: ${{ github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'perf(home):') }}
         run: |
-          npm ci --no-audit --no-fund
           npm run build
         env:
           NEXT_TELEMETRY_DISABLED: '1'
