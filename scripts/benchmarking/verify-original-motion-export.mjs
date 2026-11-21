@@ -34,13 +34,26 @@ try {
   await page.locator('[data-video-studio-hydrated="true"]').waitFor({ timeout: 60000 });
   // Complete all three real Goal selections before the visitor's Ideas CTA.
   await completeThreeStepGoalsQuiz(page,{engine});
-  // Native tap the actual first-screen Create Video CTA. The lower historical
-  // Continue button is deliberately hidden on mobile and must never be forced.
+  // The last native Goal selection may automatically enter Ideas. If the
+  // approved first-screen Create CTA remains visible, one real visitor tap
+  // enters Ideas instead. Never force a hidden legacy control.
+  const ideasEntry=page.locator('[data-video-quick-control="phrases"]');
   const advance=page.locator('[data-video-goal-create-cta]');
-  await advance.waitFor({state:'visible',timeout:15000});
-  if(engine==='webkit')await advance.tap();
-  else await advance.click();
-  assert.equal(await page.locator('[data-video-quick-control="phrases"]').getAttribute('aria-pressed'),
+  await page.waitForFunction(()=>{
+    const ideas=document.querySelector('[data-video-quick-control="phrases"]');
+    const cta=document.querySelector('[data-video-goal-create-cta]');
+    return ideas?.getAttribute('aria-pressed')==='true' ||
+      (cta instanceof HTMLButtonElement && !cta.disabled && cta.getClientRects().length>0);
+  },undefined,{timeout:15000});
+  if(await ideasEntry.getAttribute('aria-pressed')!=='true'){
+    await advance.waitFor({state:'visible',timeout:15000});
+    if(engine==='webkit')await advance.tap();
+    else await advance.click();
+  }
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-quick-control="phrases"]')
+      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  assert.equal(await ideasEntry.getAttribute('aria-pressed'),
     'true','GOALS_MUST_OPEN_IDEAS');
   const editor=page.locator('[data-video-quick-control="editor"]');
   await editor.click();
