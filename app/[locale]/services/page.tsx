@@ -22,7 +22,6 @@ import { SpiritualReadingEntry } from "@/components/services-spiritual-reading";
 import { ServicesIntroMedia, ServicesMethodVideos, ServicesDirectoryInvitation } from "@/components/services-studio-extras";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
-import { CompactLeadCapture } from "@/components/compact-lead-capture";
 import { wisePaymentsEnabled } from "@/lib/commerce/wise-payments";
 import { personalPayPalEnabled } from "@/lib/commerce/paypal-personal";
 import { publicLocales, type PublicLocale } from "@/lib/public-locales";
@@ -97,30 +96,28 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
       <ServicesExplorerProvider>
         {/* Four-question public entry; the original Ali dialogue stays available on explicit request. */}
         {query?.assist==="chat" ? <ServicesAssistMobile locale={locale} /> : <ServicesAssistQuiz locale={locale} />}
-        <div className={compactStyles.featured} data-services-featured>
-          <ServicesPersonalConsultationMobile locale={locale} />
-        </div>
         <ServicesCompactCatalog locale={locale}>
           <ServicesCompactPanel id="consultation">
+            <ServicesPersonalConsultationMobile locale={locale} />
             <PublicConsultationCta locale={locale} id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
           </ServicesCompactPanel>
           <ServicesCompactPanel id="homeopathy"><ServicesHomeopathyLinks locale={locale} /></ServicesCompactPanel>
           <ServicesCompactPanel id="services"><ServicesStudioOffers locale={locale} splitExtras /></ServicesCompactPanel>
           <ServicesCompactPanel id="business"><BusinessServiceBrowser locale={locale} /></ServicesCompactPanel>
-          <ServicesCompactPanel id="reiki"><AssistReikiSession locale={locale} /></ServicesCompactPanel>
+          <ServicesCompactPanel id="browse"><ServicesConversionHero locale={locale} /></ServicesCompactPanel>
           <ServicesCompactPanel id="courses"><ServicesCoursesShelf locale={locale} /></ServicesCompactPanel>
           <ServicesCompactPanel id="video"><ServicesVideoGenerationCard locale={locale} /></ServicesCompactPanel>
-          <ServicesCompactPanel id="browse"><ServicesConversionHero locale={locale} /></ServicesCompactPanel>
-          <ServicesCompactPanel id="reading"><SpiritualReadingEntry locale={locale} /></ServicesCompactPanel>
           <ServicesCompactPanel id="coach"><ServicesCoachTherapistMobile locale={locale} /></ServicesCompactPanel>
-          <ServicesCompactPanel id="magical"><ServicesMagicalHelpMobile locale={locale} /></ServicesCompactPanel>
+          <ServicesCompactPanel id="reiki"><AssistReikiSession locale={locale} /></ServicesCompactPanel>
+          <ServicesCompactPanel id="reading">
+            <SpiritualReadingEntry locale={locale} />
+            <ServicesMagicalHelpMobile locale={locale} />
+          </ServicesCompactPanel>
           <ServicesCompactPanel id="about"><ServicesIntroMedia locale={locale} /></ServicesCompactPanel>
           <ServicesCompactPanel id="testimonials"><PersonalTestimonials locale={locale} variant="services" /></ServicesCompactPanel>
           <ServicesCompactPanel id="mytube"><ServicesMethodVideos locale={locale} /></ServicesCompactPanel>
           <ServicesCompactPanel id="directory">
             <ServicesDirectoryInvitation locale={locale} />
-            <CompactLeadCapture locale={locale} serviceTitle="Personal service selection with Andrey"
-              title={current.footerTitle} lead={current.footerLead} />
           </ServicesCompactPanel>
         </ServicesCompactCatalog>
       </ServicesExplorerProvider>
