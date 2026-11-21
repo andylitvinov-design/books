@@ -104,7 +104,7 @@ test("paid cinematic story never triggers Veo and the owner-only gate remains ex
 
 test('real five-scene WebKit acceptance uses original UI, local-only requests, distinct MP4 frames and audible H264/AAC',()=>{
  const script=readFileSync(new URL('../scripts/benchmarking/verify-five-scene-stories-browser.mjs',import.meta.url),'utf8');
- for(const marker of ['data-video-story-select-quality','data-video-stories-advanced',
+ for(const marker of ['data-video-story-open-settings','data-video-stories-advanced',
   'data-video-stories-format','data-video-stories-create','data-video-stories-scene-list',
   'data-video-montage-pro-choice="free"','readRealGuestVideo','ffprobe','STORIES_H264_REQUIRED',
   'STORIES_AAC_REQUIRED','STORIES_AUDIO_SILENT','STORIES_SCENE_FRAME_MISMATCH_',
@@ -112,6 +112,10 @@ test('real five-scene WebKit acceptance uses original UI, local-only requests, d
    assert.ok(script.includes(marker),marker);
  assert.match(script,/\['GET','HEAD'\]\.includes\(request\.method\(\)\)/);
  assert.match(script,/url\.origin===origin/);
+ assert.match(script,/await storySettings\.tap\(\)/,
+  'visitor must select real filmed sources in Story settings before Extra');
+ assert.doesNotMatch(script,/await quality\.tap\(\)/,
+  'pending editorial references must not unlock Quality prematurely');
  assert.doesNotMatch(script,/method:\s*['"]POST|api\/instagram|api\/payment/);
 });
 

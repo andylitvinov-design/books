@@ -8164,6 +8164,26 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         verified={Boolean(!readyGenerationPending&&result&&result.mode!=="catalog"&&playbackStatus==="ready"&&creditConfirmed)}
         checking={Boolean(!readyGenerationPending&&result&&playbackStatus==="checking")}
         rendering={recording||preparing} renderProgress={progress}
+        previewSourceCanvasRef={canvasRef}
+        previewAvailable={Boolean(cinematicPlan?.shots?.length&&
+          (!usingFreeFilmCompilation||(freeFilmReady&&freeFilmSourcesListed)))}
+        previewPlaying={previewPlaying} previewDurationSeconds={duration}
+        previewPositionSeconds={previewPlaying?previewPlayhead:previewSeekSeconds}
+        onPreviewToggle={()=>{
+          if(previewPlaying){stopMovieSound();setPreviewPlaying(false);return;}
+          if(recording||preparing)return;
+          const from=previewSeekSeconds>=duration?0:previewSeekSeconds;
+          if(from===0&&previewSeekSeconds>=duration){
+            setPreviewSeekSeconds(0);setPreviewPlayhead(0);
+          }
+          startMovieSound(attachedAudio,soundVolume,from);
+          setPreviewPlaying(true);
+        }}
+        onPreviewSeek={seconds=>{
+          stopMovieSound();setPreviewPlaying(false);
+          setPreviewSeekSeconds(seconds);setPreviewPlayhead(seconds);
+          setPreviewFrameRevision(value=>value+1);
+        }}
         progressQuestionnaire={renderCheckIn("ready-assessment-heading")}
         generationNotice={notice}
         exportFailed={Boolean(exportUnavailable||playbackStatus==="failed")}

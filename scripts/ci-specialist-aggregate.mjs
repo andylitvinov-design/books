@@ -8,8 +8,9 @@ import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance, safeComposedIndependentAdvance, safeScopedDisjointProductionAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeIsolatedFeatureAdvance, REVALIDATABLE_CI_POLICY_FILES } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance, safeComposedIndependentAdvance, safeScopedDisjointProductionAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, REVALIDATABLE_CI_POLICY_FILES } from '../lib/ci/production-base-impact.mjs';
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
+import { requiresRealMediaWebKit } from '../lib/ci/merge-check-light.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
   inspectWorkflowRuns, inspectJobs, trustedConditionalJobs, trustedRequiredJobs, trustedConditionallyInapplicableJobs, validateParameters, classifyReleaseRisk, concurrencyOnlyAdvisory, selfTriggerRemovalAdvisory, isConcurrencyAdvisoryRun,
@@ -197,6 +198,20 @@ export function optionalMandalaMacosSkip(files, branch, changed) {
       changed.some(path => typeof path !== 'string' ||
         /^(?:app\/api\/holistic-support\/voice\/|lib\/mandala\/(?:voice|wav|affirmation|media-record|video-export|recording|webcodecs|audio|codec|mp4)|components\/mandala-(?:affirmation-voice|cloud-voice)|scripts\/benchmarking\/first-video-live-export\.mjs$)/.test(path))) return false;
   const guard = source.match(/^  voice-webkit-macos:\n    if: \$\{\{ (.+) \}\}$/m)?.[1];
+  const sourceGuard = "github.event_name == 'pull_request' && github.event.pull_request.draft == false && needs.webkit_preflight.outputs.media_required == 'true'";
+  if(guard===sourceGuard) {
+    // The required macOS decision is derived only from TESTED BASE. Any PR
+    // that alters the preflight, the workflow or physical media cannot waive.
+    const preflight=yaml=>{
+      if(typeof yaml!=='string')return null;
+      const start=yaml.indexOf('\n  webkit_preflight:\n');
+      const end=yaml.indexOf('\n  voice-webkit-macos:\n');
+      return start>=0&&end>start?yaml.slice(start,end):null;
+    };
+    return !changed.includes(name) && preflight(source)!==null &&
+      preflight(source)===preflight(candidate) &&
+      !requiresRealMediaWebKit(changed.map(filename=>({filename,status:'M'})));
+  }
   const fixed = "github.event_name == 'pull_request' && github.event.pull_request.draft == false && (";
   if (!guard?.startsWith(fixed) || !guard.endsWith(')')) return false;
   const predicates = guard.slice(fixed.length, -1).split(' || ');
@@ -573,11 +588,21 @@ export async function verify(api,ctx,files,options={}) {
       // complete ancestry/path diff and rejects shared/critical source.
       const isolatedFeature = pinnedChangeRows && live.mergeable === true &&
         safeIsolatedFeatureAdvance(diff, ctx.base, liveBaseSha, changed, live.mergeable);
+      // Protected public route leaves cannot invalidate a completed private
+      // API/coach suite. Shared UI, auth, CRM, SQL, CI and deps remain strict.
+      const unrelatedPublicLeaves = pinnedChangeRows && live.mergeable === true &&
+        changedRows.every(row => !row.previous_filename &&
+          ['M','A','modified','added'].includes(row.status)) &&
+        safeUnrelatedPublicLeafAdvance(diff, ctx.base, liveBaseSha, changed);
       if (!documentationOnly && !independentlyRevalidated &&
           !isolatedCiPolicy && !unrelatedCiMaintenance && !inertPublicImages &&
           !independentPresentation && !disjointPublicSource && !independentQa &&
-          !independentDomainTest && !composedIndependent && !scopedDisjoint && !mixedProtected && !detachedCi && !isolatedFeature) {
+          !independentDomainTest && !composedIndependent && !scopedDisjoint && !mixedProtected && !detachedCi && !isolatedFeature && !unrelatedPublicLeaves) {
         throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+      }
+      if (unrelatedPublicLeaves) {
+        approvedDisjointBases.add(liveBaseSha);
+        console.log('CI_BASE_ADVANCE_REUSED: protected production changed only independent public leaves; exact-HEAD checks retained');
       }
       if(detachedCi) {
         approvedDisjointBases.add(liveBaseSha);
@@ -944,6 +969,7 @@ const TRUSTED_VALIDATOR_FILES = Object.freeze([
   'lib/ci/specialist-aggregate.mjs',
   'lib/ci/fast-static-ui-text.mjs',
   'lib/ci/production-base-impact.mjs',
+  'lib/ci/merge-check-light.mjs',
 ]);
 function loadProtectedValidator(liveSha) {
   const dir = mkdtempSync(join(tmpdir(), 'hh-specialist-policy-recheck-'));

@@ -7,7 +7,7 @@ import {
   ArrowRight, BatteryCharging, BookOpen, BriefcaseBusiness, Check, ChevronDown,
   Brain, CircleHelp, ClipboardCheck, Compass, CreditCard, Flower2, Gift, GraduationCap,
   HandHeart, HeartHandshake, HeartPulse, Leaf, MessageCircle,
-  Mic, MonitorPlay, Play, Sparkles, Target, UserRound, UsersRound, Wallet, type LucideIcon,
+  ChevronRight, Mic, MonitorPlay, Sparkles, Target, UserRound, UsersRound, Wallet, type LucideIcon,
 } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import type { AssistMode, AssistBudget, AssistPreferences } from "@/lib/assist/service-match.mjs";
@@ -70,16 +70,16 @@ const copy: Record<PublicLocale, QuizCopy> = {
             "Снять стресс и вернуть энергию"
           ],
           [
-            "relationships_esteem",
-            "Отношения и самооценка"
+            "money_growth",
+            "Деньги и уверенность в себе"
           ],
           [
-            "money_growth",
-            "Деньги и идеи личного роста"
+            "relationships_esteem",
+            "Улучшить отношения"
           ],
           [
             "business_support",
-            "Поддержка бизнеса"
+            "Личностный рост и развитие бизнеса"
           ]
         ]
       },
@@ -267,16 +267,16 @@ const copy: Record<PublicLocale, QuizCopy> = {
             "Ease stress & restore energy"
           ],
           [
-            "relationships_esteem",
-            "Improve relationships & esteem"
+            "money_growth",
+            "Grow money & self esteem"
           ],
           [
-            "money_growth",
-            "Get money & self-growth ideas"
+            "relationships_esteem",
+            "Improve relationships"
           ],
           [
             "business_support",
-            "Get business support"
+            "Personal & business growth"
           ]
         ]
       },
@@ -461,19 +461,19 @@ const copy: Record<PublicLocale, QuizCopy> = {
         "options": [
           [
             "stress_energy",
-            "Reducir estrés y recuperar energía"
-          ],
-          [
-            "relationships_esteem",
-            "Relaciones y autoestima"
+            "Aliviar el estrés y recuperar energía"
           ],
           [
             "money_growth",
-            "Ideas de ingresos y crecimiento"
+            "Mejorar ingresos y autoestima"
+          ],
+          [
+            "relationships_esteem",
+            "Mejorar relaciones"
           ],
           [
             "business_support",
-            "Apoyo para mi negocio"
+            "Crecimiento personal y empresarial"
           ]
         ]
       },
@@ -659,17 +659,35 @@ const categories: readonly { key: Category; Icon: LucideIcon }[] = [
   { key: "video", Icon: MonitorPlay },
 ];
 
-const supportVisualCopy: Record<PublicLocale, {tagline:string; audience:string; forMe:string; forBusiness:string; watchVideo:string; goal:string; dictation:string; next:string; or:string; of:string; help:string}> = {
- ru:{tagline:"Терапия · Коучинг · Консалтинг · Поддержка",audience:"Для кого нужна поддержка",forMe:"Для себя",forBusiness:"Для бизнеса",watchVideo:"К вводному видео",goal:"Опишите вашу цель или ситуацию…",dictation:"Открыть поле для диктовки с клавиатуры",next:"Далее",or:"ИЛИ",of:"из",help:"Спросить Ali"},
- en:{tagline:"Therapy · Coaching · Consulting · Healing",audience:"Who needs support",forMe:"For Me",forBusiness:"For Business",watchVideo:"Go to introduction video",goal:"Describe your goal or situation…",dictation:"Focus field for keyboard dictation",next:"Next",or:"OR",of:"of",help:"Ask Ali"},
- es:{tagline:"Terapia · Coaching · Consultoría · Bienestar",audience:"Para quién es el apoyo",forMe:"Para mí",forBusiness:"Para mi negocio",watchVideo:"Ir al vídeo de presentación",goal:"Describe tu meta o situación…",dictation:"Abrir campo para dictar con el teclado",next:"Siguiente",or:"O",of:"de",help:"Preguntar a Ali"}
+const supportVisualCopy: Record<PublicLocale, {
+ heading:string; tagline:string; prompt:string; audience:string; forMe:string; forBusiness:string;
+ goal:string; dictation:string; next:string; or:string; of:string; help:string;
+}> = {
+ ru:{heading:"Коучинг, консалтинг и психотерапевтическая поддержка",
+ tagline:"Выберите подходящий метод и мастера.",
+ prompt:"Ответьте на 4 вопроса:",audience:"Кому нужна поддержка",
+ forMe:"Для себя",forBusiness:"Для бизнеса",
+ goal:"Опишите вашу цель или ситуацию…",dictation:"Открыть поле для диктовки с клавиатуры",
+ next:"Далее",or:"ИЛИ",of:"из",help:"Спросить Ali"},
+ en:{heading:"Coaching, Consulting & Therapy Support",
+ tagline:"Choose the right method & master.",
+ prompt:"Answer 4 questions:",audience:"Who needs support",
+ forMe:"For Me",forBusiness:"For Business",
+ goal:"Describe your goal or situation…",dictation:"Focus field for keyboard dictation",
+ next:"Next",or:"OR",of:"of",help:"Ask Ali"},
+ es:{heading:"Coaching, consultoría y apoyo terapéutico",
+ tagline:"Elige el método y profesional adecuados.",
+ prompt:"Responde 4 preguntas:",audience:"Para quién es el apoyo",
+ forMe:"Para mí",forBusiness:"Para mi negocio",
+ goal:"Describe tu meta o situación…",dictation:"Abrir campo para dictar con el teclado",
+ next:"Siguiente",or:"O",of:"de",help:"Preguntar a Ali"}
 };
 export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
   const v = supportVisualCopy[locale];
   const [goal,setGoal]=useState("");
   const goalFieldRef=useRef<HTMLInputElement>(null);
-  const [answers, setAnswers] = useState<Partial<Record<QuestionKey, string>>>({});
+  const [answers, setAnswers] = useState<Partial<Record<QuestionKey, string>>>({topic:"stress_energy"});
   const [step, setStep] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const questionHeading = useRef<HTMLSpanElement>(null);
@@ -751,19 +769,10 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
 
     <header className={styles.hero}>
       <span className={styles.lotusMark} aria-hidden="true" />
-      <h1 id="services-quiz-title">{t.title}</h1>
+      <h1 id="services-quiz-title">{v.heading}</h1>
       <p className={styles.heroTagline}>{v.tagline}</p>
-      <p className={styles.heroLead}>{t.lead}</p>
-      <div className={styles.heroStage}>
-        <span className={styles.heroBowl} aria-hidden="true" />
-        <div className={styles.laptop}>
-          <span className={styles.laptopScreen} aria-hidden="true" />
-          <a className={styles.playLink} href="#meet-andrey" data-services-hero-play aria-label={v.watchVideo}>
-            <Play size={28} fill="currentColor" aria-hidden="true" />
-          </a>
-        </div>
-        <span className={styles.heroFlower} aria-hidden="true" />
-      </div>
+      <p className={styles.heroPrompt}>{v.prompt}</p>
+      <div className={styles.heroStage} data-support-luxe-room aria-hidden="true" />
     </header>
     <div className={styles.audienceSwitch} data-services-audience role="group" aria-label={v.audience}>
       <button type="button" aria-pressed={topic !== "business_support"} onClick={() => {
@@ -797,8 +806,11 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
             return <button type="button" className={styles.choice} key={value}
               data-services-quiz-choice={value} aria-pressed={selected}
               onClick={() => selectOption(currentKey, value)}>
-              <span className={styles.choiceMedia} aria-hidden="true" />
-              <span className={styles.choiceContent}><Icon size={26} strokeWidth={1.7} aria-hidden="true" /><span>{label}</span></span>
+              <span className={styles.choiceMedia} data-support-choice-photo aria-hidden="true" />
+              <span className={styles.choiceContent}>
+                <Icon size={25} strokeWidth={1.7} aria-hidden="true" /><span>{label}</span>
+                <ChevronRight className={styles.choiceChevron} size={18} aria-hidden="true" />
+              </span>
               {selected ? <Check className={styles.check} size={16} strokeWidth={3} aria-hidden="true" /> : null}
             </button>;
           })}
