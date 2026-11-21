@@ -110,8 +110,9 @@ try {
     return page;
   };
 
- // First-screen Shamanica business visual acceptance in this existing CI runner.
- // The two-column six-card grid must stay above the real, fixed seven-item dock.
+ // Shamanica business QA reflects the approved six photographic category shelves,
+ // not the retired grid of six direct links. Preserve the quiz, mobile layout
+ // and messenger handoff acceptance rather than skipping any browser checks.
  async function checkCompactBusiness(page,locale,width){
   await page.goto(origin+"/"+locale+"/shamanica/business",{waitUntil:"domcontentloaded",timeout:75000});
   const section=page.locator("[data-shamanica-business]");
@@ -119,24 +120,41 @@ try {
   await expect(page.locator("[data-sitewide-antistress-banner]")).toHaveCount(0);
   await expect(page.locator("[data-hh-ihelp-trigger]:visible")).toHaveCount(0);
   await expect(page.locator("[data-shamanica-ihelp-trigger]")).toBeVisible();
-  await expect(section.locator("[data-business-service]")).toHaveCount(6);
-  await expect(section.locator("[data-business-service] img")).toHaveCount(6);
+  const shelves=section.locator("[data-business-cabinet-shelves]");
+  await expect(shelves).toHaveAttribute("data-expanded","false");
+  await expect(shelves.locator("[data-business-shelf]")).toHaveCount(6);
+  await expect(shelves.locator("[data-business-shelf] img")).toHaveCount(6);
   await expect(page.locator("[data-hh-unified-dock]")).toHaveCount(1);
   const m=await page.evaluate(()=>{
-   const last=document.querySelector('[data-business-service="remedies"]');
-   const dock=document.querySelector('[data-hh-unified-dock]');
-   if(!last||!dock)return null;
-   return {lastBottom:last.getBoundingClientRect().bottom,
-     dockTop:dock.getBoundingClientRect().top,
-     horizontalOverflow:document.documentElement.scrollWidth-window.innerWidth};
+   const cards=[...document.querySelectorAll("[data-business-shelf]")];
+   const dock=document.querySelector("[data-hh-unified-dock]");
+   if(cards.length!==6||!dock)return null;
+   const boxes=cards.map(card=>card.getBoundingClientRect());
+   return {
+    horizontalOverflow:document.documentElement.scrollWidth-window.innerWidth,
+    withinViewport:boxes.every(box=>box.width>30&&box.left>=-2&&box.right<=innerWidth+2),
+    firstRowTwoColumns:Math.abs(boxes[0].top-boxes[1].top)<=5&&boxes[1].left>boxes[0].left,
+    dockVisible:dock.getBoundingClientRect().height>0
+   };
   });
-  assert.ok(m,"Business compact landmarks missing");
+  assert.ok(m,"Business category shelf landmarks missing");
   assert.ok(m.horizontalOverflow<=2,"Business horizontal overflow "+locale+"/"+width+" "+JSON.stringify(m));
-  if(width>=390)assert.ok(m.lastBottom<=m.dockTop+8,
-    "Six business cards must fit above dock "+locale+"/"+width+" "+JSON.stringify(m));
+  assert.ok(m.withinViewport,"Business category cards spill horizontally "+locale+"/"+width+" "+JSON.stringify(m));
+  if(width>=390)assert.ok(m.firstRowTwoColumns,"Business two-column mobile shelf lost "+locale+"/"+width+" "+JSON.stringify(m));
+  assert.ok(m.dockVisible,"Business mobile dock missing "+locale+"/"+width);
   if(locale==="ru"&&width===390)await page.screenshot({path:output+"/shamanica-business-ru-390.png",fullPage:false});
   await expect.poll(()=>page.evaluate(()=>history.pushState.toString().includes("__NA")),
-    {timeout:30000,message:"Business quiz hydration"}).toBe(true);
+   {timeout:30000,message:"Business quiz hydration"}).toBe(true);
+  await shelves.locator('[data-business-shelf="express"]').click();
+  await expect(shelves).toHaveAttribute("data-expanded","true");
+  await expect(shelves.locator('[data-business-second-level="express"] [data-business-subservice]')).toHaveCount(5);
+  await expect(shelves.locator('[data-business-get-details="express"]')).toHaveCount(1);
+  await shelves.locator("[data-business-back-to-shelves]").click();
+  await expect(shelves).toHaveAttribute("data-expanded","false");
+  await shelves.locator('[data-business-shelf="strategy"]').click();
+  await expect(shelves.locator('[data-business-second-level="strategy"] [data-business-subservice]')).toHaveCount(4);
+  await expect(shelves.locator('[data-business-get-details="strategy"]')).toHaveCount(1);
+  await shelves.locator("[data-business-back-to-shelves]").click();
   const quiz=section.locator("[data-business-quiz]");
   await expect(quiz).toHaveAttribute("data-quiz-step","1");
   await quiz.locator('[data-business-answer="express"]').click();
