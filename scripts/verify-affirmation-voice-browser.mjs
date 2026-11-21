@@ -1775,7 +1775,12 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         const firstImage=await readyCheckin.locator("img").getAttribute("src");
         assert.ok(firstTone&&firstImage?.startsWith("/videos/holistic-house/"),
           "Ready must show a real first-party picture and named question");
-        await readyCheckin.locator('[data-ready-checkin-score="5"]').click();
+        // The mobile WebKit lane represents a touch user. Tap the real 0–10
+        // button (not a synthetic DOM event or forced click), then require
+        // the actual second image/question before accepting this video run.
+        const firstScore=readyCheckin.locator('[data-ready-checkin-score="5"]');
+        if(engine==="webkit")await firstScore.tap({timeout:15000});
+        else await firstScore.click({timeout:15000});
         await expect(readyCheckin).not.toHaveAttribute("data-checkin-tone",firstTone,{timeout:5000});
         await expect(readyCheckin.locator("img")).not.toHaveAttribute("src",firstImage,{timeout:5000});
         await expect(readyCheckin).toContainText("2 / 7");
