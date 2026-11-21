@@ -844,9 +844,8 @@ try{
 
  const shamanicaHome=page.locator("[data-shamanica-mobile]");
  await shamanicaHome.waitFor({state:"visible",timeout:30000});
- // The approved Magic Mirror-inspired Shamanic page is intentionally
- // scrollable: scenic media and four photo-led choices precede the unchanged
- // six real category entrances. Preserve the fixed dock and real links.
+ // The approved first viewport is a six-object alchemist cabinet; the
+ // unchanged three-step quiz and film open only when the user expands details.
  await page.evaluate(async()=>{
   window.scrollTo({top:0,behavior:"instant"});
   await new Promise(done=>requestAnimationFrame(()=>requestAnimationFrame(done)));
@@ -871,8 +870,9 @@ try{
  assert.equal(mirrorScreen.promo,false,"Shamanic must not show the redundant promo ribbon");
  assert.ok(mirrorScreen.overflowX<=2,"Shamanic must not scroll horizontally: "+JSON.stringify(mirrorScreen));
  await page.screenshot({path:folder+"/shamanica-first-screen-ru-390-webkit.png",fullPage:false,animations:"disabled"});
- results.push({journey:"Shamanic Magic Mirror-inspired landing",mirrorScreen,passed:true});
+ results.push({journey:"Shamanic six-shelf alchemist first screen",mirrorScreen,passed:true});
  const originalShamanicaViewport=page.viewportSize();
+ await shamanicaHome.locator("[data-shamanica-extras] > summary").click();
  await page.setViewportSize({width:353,height:768});
  await page.evaluate(async()=>{
   window.scrollTo({top:0,behavior:"instant"});
@@ -886,7 +886,7 @@ try{
   return {
    minAnswerFont:Math.min(...answers.map(measure)),
    minAnswerPhoto:Math.min(...answers.map(x=>x.querySelector("img")?.getBoundingClientRect().height??0)),
-   minServiceHeading:Math.min(...services.map(x=>measure(x.querySelector("h3")))),
+   minServiceHeading:Math.min(...services.map(x=>measure(x.querySelector("strong")))),
    minDockLabel:Math.min(...labels.map(measure)),
    overflowX:document.documentElement.scrollWidth-innerWidth
   };
@@ -908,13 +908,15 @@ try{
  results.push({journey:"Shamanic readable photo quiz with explicit Next and back",readablePhone,passed:true});
  if(originalShamanicaViewport)await page.setViewportSize(originalShamanicaViewport);
  assert.equal(await shamanicaHome.locator("[data-shamanica-service]").count(),6,
-   "Shamanic has five core directions and one free Reiki course");
+   "Shamanic has exactly six approved functional shelves");
  // A category tile must open the concrete Support-style offer list right
  // away, without requiring any of the three Shamanic quiz answers.
  const energyEntrance=shamanicaHome.locator('[data-shamanica-service="energy"]');
  assert.equal(await energyEntrance.getAttribute("href"),"/ru/shamanica/results?category=energy");
- assert.equal(await shamanicaHome.locator('[data-shamanica-service="free"]').getAttribute("href"),
-   "/ru/academy/principles-of-energywork/learn");
+ assert.equal(await shamanicaHome.locator('[data-shamanica-service="academy"]').getAttribute("href"),
+   "/ru/shamanica/results?category=learning");
+ assert.equal(await shamanicaHome.locator('[data-shamanica-service="guidance"]').getAttribute("href"),
+   "/ru/shamanica/results?category=guidance");
  await energyEntrance.click();
  await page.waitForURL(url => url.pathname==="/ru/shamanica/results" &&
    url.searchParams.get("category")==="energy",{timeout:45000});
@@ -998,6 +1000,7 @@ try{
  await shamanicaHome.waitFor({state:"visible",timeout:30000});
  results.push({journey:"Shamanic category → three live priced offers → Details/Order; EN/ES routes",passed:true});
 
+ await shamanicaHome.locator("[data-shamanica-extras] > summary").click();
  const shamanicaQuiz=shamanicaHome.locator("[data-shamanica-quiz]");
  await expect(shamanicaQuiz).toHaveAttribute("data-quiz-step","1");
  assert.equal(await shamanicaQuiz.locator("[data-shamanica-answer]").count(),4,

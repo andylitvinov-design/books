@@ -26,42 +26,43 @@ test("Quiz always selects exactly two distinct known directions",()=>{
  assert.deepEqual(shamanicaRecommendations({goal:"money",method:"artifacts",start:"object"}),["artifacts","rituals"]);
  assert.equal(shamanicaRecommendations({goal:"growth",method:"unsure",start:"free"})[0],"learning");
 });
-test("Magic Mirror-inspired personal landing preserves readable 3-step interaction",()=>{
+test("Owner-approved mobile cabinet keeps quiz, video and six authentic shelf objects",()=>{
  const css=read("components/shamanica-mobile.module.css");
  const client=read("components/shamanica-mobile.tsx");
- assert.match(css,/SHAMANIC_MIRROR_REFERENCE_20261120/);
- assert.match(css,/\.mirrorLaptop/);
- assert.match(css,/\.mirrorScreen/);
- assert.match(css,/\.mirrorPlay/);
- assert.match(css,/\.answerPhoto/);
- assert.match(css,/\.answerSelected/);
- assert.match(css,/\.page\[data-shamanica-audience="self"\] \.audiences/);
+ assert.match(css,/SHAMANIC_ALCHEMIST_SIX_SHELVES_20261121/);
  assert.match(css,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  assert.match(css,/safe-area-inset-bottom/);
  assert.match(css,/focus-visible/);
  assert.match(css,/prefers-reduced-motion/);
+ assert.match(client,/data-shamanica-extras/);
+ assert.match(client,/data-shamanica-quiz/);
  assert.match(client,/data-shamanica-next/);
  assert.match(client,/aria-pressed=\{chosen===id\}/);
- assert.match(client,/onClick=\{\(\)=>choose\(id\)\}/);
  assert.match(client,/videoRef\.current\?\.play\(\)/);
  assert.match(client,/film-collection-v3\/sun-autumn-hills\.mp4/);
  assert.match(client,/maxLength=\{280\}/);
  assert.match(client,/new URLSearchParams\(\{goal,method,start:startChoice\}\)/);
- assert.doesNotMatch(client,/new URLSearchParams\(\{goal,method,start:choice\}\)/);
 });
 
-test("Six photographic entrances include the existing free Reiki course",()=>{
+test("Six approved readable real links replace nine old shelf items",()=>{
  const client=read("components/shamanica-mobile.tsx");
- assert.match(client,/serviceCards=\[\.\.\.methods,"free"\] as const/);
- assert.match(client,/serviceCards\.map\(id=>/);
- assert.match(client,/academy\/principles-of-energywork\/learn/);
+ const css=read("components/shamanica-mobile.module.css");
+ assert.match(client,/shelfCatalog\.map\(/);
+ for(const id of ["remedies","guidance","mysteries","rituals","energy","academy"])
+  assert.match(client,new RegExp('id:"'+id+'"'));
+ for(const title of ["Remedies for Mind & Heart","Get Guidance",
+   "Mysteries & Initiations","Rituals & Artifacts",
+   "Reiki & Energy Support","Shamanic & Reiki Academy"])
+  assert.ok(client.includes(title),title);
  assert.match(client,/data-shamanica-service=\{id\}/);
- assert.match(client,/businessLink/);
+ assert.match(client,/data-shamanica-cabinet-shelves/);
+ assert.doesNotMatch(client,/shelfExtras/);
+ assert.match(client,/academy\/mysteries/);
+ assert.match(client,/shamanicaCategoryHref\(locale,category\)/);
+ assert.match(css,/\.serviceBody strong/);
  assert.match(client,/data-shamanica-audience=\{business\?"business":"self"\}/);
- // A card now selects with visible aria-pressed state; Next advances the three-step quiz.
- assert.match(client,/onClick=\{\(\)=>choose\(id\)\}/);
- assert.match(client,/data-shamanica-next/);
- assert.match(client,/router\.push\("\/"\+locale\+"\/shamanica\/results\?"/);
+ assert.equal(shamanicaCategoryHref("en","guidance"),"/en/shamanica/results?category=guidance");
+ assert.equal(shamanicaCategoryHref("ru","learning"),"/ru/shamanica/results?category=learning");
 });
 
 test("Shamanic branding and navigation are consistent without changing shared route slugs",()=>{
@@ -92,8 +93,8 @@ test("Every Shamanic category entrance opens three priced service cards without 
   assert.equal(shamanicaCategoryHref(locale,category),`/${locale}/shamanica/results?category=${category}`);
  }
  assert.equal(shamanicaCategoryHref("ru","invalid"),"/ru/shamanica");
- assert.match(client,/shamanicaCategoryHref\(locale,id\)/);
- assert.match(client,/id==="free"\?"\/"\+locale\+"\/academy\/principles-of-energywork\/learn"/);
+ assert.match(client,/shamanicaCategoryHref\(locale,category\)/);
+ assert.match(client,/academy\/mysteries/);
  assert.match(results,/data-shamanica-category-offers=\{selectedCategory\}/);
  assert.match(results,/data-shamanica-category-nav/);
  assert.match(results,/Object\.prototype\.hasOwnProperty\.call\(offerGroups,args\.category\)/);
@@ -120,20 +121,12 @@ test("Direct Shamanic category is a compact three-offer phone screen with full D
  assert.match(page,/data-shamanica-priority-groups/);
 });
 
-test("Alchemist cabinet displays nine real clickable shelf objects, not a static screenshot",()=>{
- const client=read("components/shamanica-mobile.tsx");
- const css=read("components/shamanica-mobile.module.css");
- assert.match(client,/data-shamanica-cabinet-shelves/);
- assert.match(client,/shelfExtras\.map\(/);
- assert.match(client,/data-shamanica-shelf-quick-link=\{category\}/);
- assert.match(client,/href=\{shamanicaCategoryHref\(locale,category\)\}/);
- assert.match(client,/Alchemist’s Cabinet/);
- assert.match(client,/Кабинет алхимика/);
- assert.match(css,/ALCHEMIST_SHELF_REFERENCE_20261120/);
- assert.match(css,/\.serviceGrid/);
- assert.match(css,/\.servicePhoto/);
- assert.match(css,/ridge #765032/);
- assert.match(css,/prefers-reduced-motion/);
- assert.match(client,/data-shamanica-answer=\{id\}/);
- assert.match(client,/aria-pressed=\{chosen===id\}/);
+test("Get Guidance is the real three-offer symbolic reading catalogue",()=>{
+ const page=read("app/[locale]/shamanica/results/page.tsx");
+ const offers=read("components/services-three-visible-options.tsx");
+ assert.match(page,/guidance: "reading"/);
+ assert.match(page,/guidance: \["Get Guidance"/);
+ assert.match(offers,/reading: \[/);
+ assert.match(offers,/Tarot · personal reading/);
+ assert.deepEqual(SHAMANICA_SERVICES,["remedies","artifacts","energy","rituals","learning"]);
 });

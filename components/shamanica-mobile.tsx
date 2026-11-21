@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {useRef, useState} from "react";
-import {ArrowRight, BookOpen, BriefcaseBusiness, ChevronDown, CircleHelp, Coins, Flame, GraduationCap, Heart, Leaf, Menu, Mic, Play, Search, Shield, Sparkles, Sprout, Sun, TrendingUp, UserRound, WandSparkles, Zap} from "lucide-react";
+import {ArrowRight, BookOpen, BriefcaseBusiness, ChevronDown, CircleHelp, Coins, GraduationCap, Heart, Leaf, Menu, Mic, Play, Search, Shield, Sparkles, Sprout, Sun, TrendingUp, UserRound, WandSparkles, Zap} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
 import {shamanicaCategoryHref} from "@/lib/shamanica-recommendations.mjs";
 import styles from "./shamanica-mobile.module.css";
@@ -14,24 +14,21 @@ type Method="remedies"|"artifacts"|"energy"|"rituals"|"learning";
 const goals=["energy","relationships","money","growth"] as const;
 const methods=["remedies","artifacts","energy","rituals","learning"] as const;
 // Existing free Reiki course is an additional real entry, not a new paid offering.
-const serviceCards=[...methods,"free"] as const;
 const starts=["free","personal","object","course"] as const;
 const icons={energy:Zap,relationships:Heart,money:Coins,growth:TrendingUp,remedies:Sprout,artifacts:Shield,rituals:WandSparkles,learning:GraduationCap,free:Sparkles,personal:Heart,object:Shield,course:BookOpen};
-const images={
- remedies:"/images/holistic-house/distance-homeopathy.webp",
- artifacts:"/images/holistic-house/tao-fu-balance.webp",
- energy:"/images/holistic-house/reiki-approved-sunrise-v3.webp",
- rituals:"/images/holistic-house/mandala-gold-reference.webp",
- learning:"/images/holistic-house/books-library.webp",
- free:"/images/holistic-house/reiki-practitioner-sunrise.webp",
-} as const;
-// Three additional doors point to existing, published category-offer routes.
-// They introduce no new products, prices, bookings or checkout flows.
-const shelfExtras=[
- {id:"cleansing",category:"rituals",image:images.rituals,labels:{ru:"Очищение и защита",en:"Cleansing & protection",es:"Limpieza y protección"}},
- {id:"places",category:"artifacts",image:images.artifacts,labels:{ru:"Места силы и путешествия",en:"Power places & journeys",es:"Lugares de poder y viajes"}},
- {id:"soul",category:"energy",image:images.energy,labels:{ru:"Исцеление души",en:"Soul healing & guidance",es:"Sanación y guía interior"}}
+const shelfCatalog=[
+ {id:"remedies",category:"remedies",image:"/images/holistic-house/distance-homeopathy.webp",title:{en:"Remedies for Mind & Heart",ru:"Средства для ума и сердца",es:"Remedios para mente y corazón"},subtitle:{en:"Clarity, calm, focus & emotional balance",ru:"Ясность, спокойствие и баланс эмоций",es:"Claridad, calma y equilibrio emocional"}},
+ {id:"guidance",category:"guidance",image:"/images/holistic-house/mandala-gold-reference.webp",title:{en:"Get Guidance",ru:"Получить подсказку",es:"Recibir orientación"},subtitle:{en:"Consciousness, charisma & inner power",ru:"Осознанность, харизма и внутренняя сила",es:"Conciencia, carisma y fuerza interior"}},
+ {id:"mysteries",category:"mysteries",image:"/academy/reiki-yggdrasil/source/temple-studies.png",title:{en:"Mysteries & Initiations",ru:"Мистерии и инициации",es:"Misterios e iniciaciones"},subtitle:{en:"Confidence, attraction & inner strength",ru:"Уверенность, привлекательность, сила",es:"Confianza, atractivo y fuerza interior"}},
+ {id:"rituals",category:"artifacts",image:"/images/holistic-house/hero-olive-incense.webp",title:{en:"Rituals & Artifacts",ru:"Ритуалы и артефакты",es:"Rituales y artefactos"},subtitle:{en:"Sacred rituals, symbolic tools & change",ru:"Ритуалы, символы и новые начинания",es:"Rituales, símbolos y nuevos comienzos"}},
+ {id:"energy",category:"energy",image:"/images/holistic-house/reiki-approved-sunrise-v3.webp",title:{en:"Reiki & Energy Support",ru:"Рейки и энергоподдержка",es:"Reiki y apoyo energético"},subtitle:{en:"Energy, protection & inner harmony",ru:"Энергия, защита и внутренняя гармония",es:"Energía, protección y armonía interior"}},
+ {id:"academy",category:"learning",image:"/images/holistic-house/books-library.webp",title:{en:"Shamanic & Reiki Academy",ru:"Академия шаманизма и Рейки",es:"Academia de chamanismo y Reiki"},subtitle:{en:"Courses, practices, initiations & programs",ru:"Курсы, практики, посвящения",es:"Cursos, prácticas e iniciaciones"}}
 ] as const;
+const cabinetCopy={
+ en:{subtitle:"Tools for mind, heart, power & life.",open:"Find the right practice · 3 questions",shelves:"Explore the alchemist's shelves"},
+ ru:{subtitle:"Инструменты для ума, сердца, силы и жизни.",open:"Подобрать практику · 3 вопроса",shelves:"Полки кабинета алхимика"},
+ es:{subtitle:"Herramientas para mente, corazón, fuerza y vida.",open:"Encuentra una práctica · 3 preguntas",shelves:"Estantes del alquimista"}
+} as const;
 const copy={
 ru:{
  subtitle:"Рейки, магия, энергия и развитие.",heroLead:"3 коротких вопроса · Практики Рейки, магии и развития",
@@ -187,29 +184,24 @@ export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;au
    {business?<ShamanicaBusinessContent locale={locale}/>:<>
    <section className={styles.hero} aria-labelledby="shamanica-hero-title">
     <div className={styles.mirrorIntro}>
-     <span className={styles.mirrorSymbol} aria-hidden="true"><Sun size={23} strokeWidth={1.45}/><Sparkles size={15}/></span>
-     <h1 id="shamanica-hero-title">{locale==="ru"?"Кабинет алхимика":locale==="es"?"Gabinete del alquimista":"Alchemist’s Cabinet"}</h1>
-     <p className={styles.mirrorTagline}>{mirror.tagline}</p>
-     <p className={styles.mirrorLead}>{mirror.intro}</p>
-    </div>
-    <div className={styles.mirrorLaptop}>
-     <div className={styles.mirrorScreen}>
-      <video ref={videoRef} className={styles.mirrorVideo}
-       poster="/videos/holistic-house/film-collection-v3/sun-autumn-hills.jpg"
-       src="/videos/holistic-house/film-collection-v3/sun-autumn-hills.mp4"
-       preload="none" playsInline controls={videoPlaying} onEnded={()=>setVideoPlaying(false)}
-       aria-label={mirror.play}/>
-      {!videoPlaying&&<>
-       <span className={styles.mirrorDrum} aria-hidden="true"><Sun size={38} strokeWidth={1.1}/></span>
-       <span className={styles.mirrorFire} aria-hidden="true"><Flame size={27} strokeWidth={1.4}/></span>
-       <button type="button" className={styles.mirrorPlay} onClick={playIntro} aria-label={mirror.play}>
-        <Play size={30} fill="currentColor" strokeWidth={1.1} aria-hidden="true"/>
-       </button>
-      </>}
-     </div>
-     <div className={styles.mirrorBase} aria-hidden="true"/>
+     <span className={styles.mirrorSymbol} aria-hidden="true"><Sun size={27} strokeWidth={1.4}/><Sparkles size={14}/></span>
+     <h1 id="shamanica-hero-title">{locale==="ru"?"Шаманик":"Shamanic"}
+      <span>{locale==="ru"?"Кабинет алхимика":locale==="es"?"Gabinete del alquimista":"Alchemist’s Cabinet"}</span>
+     </h1>
+     <p className={styles.mirrorTagline}>{cabinetCopy[locale].subtitle}</p>
     </div>
    </section>
+   <section className={styles.services} data-shamanica-cabinet-shelves aria-labelledby="shamanica-services-title">
+    <h2 id="shamanica-services-title" className={styles.sectionTitle}>{cabinetCopy[locale].shelves}</h2>
+    <div className={styles.serviceGrid}>{shelfCatalog.map(({id,category,image,title,subtitle})=><Link key={id}
+      href={id==="mysteries"?"/"+locale+"/academy/mysteries":shamanicaCategoryHref(locale,category)}
+      prefetch={false} className={styles.serviceCard} data-shamanica-service={id}>
+      <span className={styles.servicePhoto}><Image src={image} alt="" fill sizes="(max-width:600px) 47vw, 260px"/></span>
+      <span className={styles.serviceBody}><strong>{title[locale]}</strong><span>{subtitle[locale]}</span></span>
+    </Link>)}</div>
+   </section>
+   <details className={styles.toolsDrawer} data-shamanica-extras>
+    <summary><Sparkles size={18} aria-hidden="true"/>{cabinetCopy[locale].open}<ChevronDown size={18} aria-hidden="true"/></summary>
    <section id="shamanica-quiz" className={styles.quiz} data-shamanica-quiz data-quiz-step={step+1} aria-labelledby="shamanica-quiz-question">
     <div className={styles.quizTop}>
      <span className={styles.stepLabel}>{t.step} {step+1} {t.of} 3</span>
@@ -245,22 +237,16 @@ export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;au
      {mirror.next}<ArrowRight size={24} aria-hidden="true"/>
     </button>
    </section>
-   <section className={styles.services} data-shamanica-cabinet-shelves aria-labelledby="shamanica-services-title">
-    <div className={styles.servicesHeading}><h2 className={styles.sectionTitle} id="shamanica-services-title">{t.servicesTitle}</h2><Link href={"/"+locale+"/shamanica/business"} prefetch={false} className={styles.businessLink}>{t.work}<ArrowRight size={17} aria-hidden="true"/></Link></div>
-    <div className={styles.serviceGrid}>{serviceCards.map(id=>{const Icon=icons[id];return <Link key={id} href={id==="free"?"/"+locale+"/academy/principles-of-energywork/learn":shamanicaCategoryHref(locale,id)} prefetch={false} className={styles.serviceCard} data-shamanica-service={id}>
-      <div className={styles.servicePhoto}><Image src={images[id]} alt="" fill sizes="(max-width:600px) 33vw, 300px"/></div>
-      <span className={styles.serviceIcon}><Icon size={21} strokeWidth={1.8}/></span>
-      <div className={styles.serviceBody}><h3>{t.services[id][0]}</h3><p>{t.services[id][1]}</p></div>
-      <span className={styles.serviceArrow} aria-hidden="true"><ArrowRight size={20}/></span>
-    </Link>})}
-    {shelfExtras.map(({id,category,image,labels})=><Link key={id} href={shamanicaCategoryHref(locale,category)}
-     prefetch={false} className={styles.serviceCard+" "+styles.shelfExtra} data-shamanica-service={id}
-     data-shamanica-shelf-quick-link={category}>
-      <div className={styles.servicePhoto}><Image src={image} alt="" fill sizes="(max-width:600px) 33vw, 240px"/></div>
-      <div className={styles.serviceBody}><h3>{labels[locale]}</h3></div>
-      <span className={styles.serviceArrow} aria-hidden="true"><ArrowRight size={20}/></span>
-    </Link>)}</div>
-   </section>
+    <section className={styles.videoRoom} aria-label={mirror.play}>
+     <div className={styles.mirrorScreen}>
+      <video ref={videoRef} className={styles.mirrorVideo} poster="/videos/holistic-house/film-collection-v3/sun-autumn-hills.jpg" src="/videos/holistic-house/film-collection-v3/sun-autumn-hills.mp4"
+       preload="none" playsInline controls={videoPlaying} onEnded={()=>setVideoPlaying(false)} aria-label={mirror.play}/>
+      {!videoPlaying&&<button type="button" className={styles.mirrorPlay} onClick={playIntro} aria-label={mirror.play}>
+       <Play size={25} fill="currentColor" strokeWidth={1.2} aria-hidden="true"/>
+      </button>}
+     </div>
+    </section>
+   </details>
    </>}
   </div>
  </main>;
