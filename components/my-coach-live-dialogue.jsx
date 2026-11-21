@@ -22,7 +22,7 @@ import {startCoachingMp3Playback,unlockCoachingAudioContext,shouldUseCoachingWeb
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
 import {readCoachTurnStream} from '@/lib/coaching/coach-stream-client.mjs'
 import {coachLooksLikeProtocolText} from '@/lib/coaching/coach-stream-format.mjs'
-import {coachGeminiVoiceOptions} from '@/lib/coaching/gemini-voice-catalog.mjs'
+import {coachGeminiVoiceOptions,approvedGeminiVoice} from '@/lib/coaching/gemini-voice-catalog.mjs'
 import {detectedSpeechLocale} from '@/lib/personal-coaching/my-coach-dictation.mjs'
 import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
 import CoachingAvatar from '@/components/app/coaching-avatar'
@@ -216,10 +216,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [geminiConsent,setGeminiConsent]=useState(false)
   const [geminiVoiceTier,setGeminiVoiceTier]=useState('existing')
   const [geminiVoiceConsent,setGeminiVoiceConsent]=useState(false)
-  const [geminiVoiceByLocale,setGeminiVoiceByLocale]=useState(()=>{
-    const first=coachGeminiVoiceOptions(personaId)[0]
-    return {ru:first,en:first,es:first}
-  })
+  // Explicit client overrides are scoped to both persona and language.
+  // Otherwise default to the owner's approved RU/EN identity.
+  const [geminiVoiceByLocale,setGeminiVoiceByLocale]=useState({})
   const [streamingReady,setStreamingReady]=useState(false)
   const [cloudAvailable,setCloudAvailable]=useState(false)
   const [cloudAgreed,setCloudAgreed]=useState(false)
@@ -406,8 +405,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const selectedGeminiEngine=coachEngine==='gemini_free'||coachEngine==='gemini_paid'
   const geminiEngineReady=selectedGeminiEngine&&geminiCapabilities[coachEngine]===true&&geminiConsent
   const geminiVoices=coachGeminiVoiceOptions(personaId)
-  const selectedGeminiVoice=geminiVoices.includes(geminiVoiceByLocale[conversationLang])
-    ?geminiVoiceByLocale[conversationLang]:geminiVoices[0]
+  const voiceSelectionKey=personaId+':'+conversationLang
+  const ownerApprovedGeminiVoice=approvedGeminiVoice(personaId,conversationLang)
+  const selectedGeminiVoice=geminiVoices.includes(geminiVoiceByLocale[voiceSelectionKey])
+    ?geminiVoiceByLocale[voiceSelectionKey]
+    :geminiVoices.includes(ownerApprovedGeminiVoice)?ownerApprovedGeminiVoice:geminiVoices[0]
   const geminiVoiceReady=geminiVoiceTier!=='existing'&&
     geminiCapabilities[geminiVoiceTier]===true&&geminiVoiceConsent
   const chosenCloudProvider=geminiVoiceReady?geminiVoiceTier:cloudProvider
@@ -1298,7 +1300,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           <label className={styles.coachEnginePicker} data-gemini-voice-name>
             <span>{conversationLang.toUpperCase()} · {({ru:'Выбор тембра',en:'Choose voice',es:'Elegir voz'})[lang]}</span>
             <select value={selectedGeminiVoice} disabled={busy||replaying} onChange={event=>
-              setGeminiVoiceByLocale(prev=>({...prev,[conversationLang]:event.target.value}))}>
+              setGeminiVoiceByLocale(prev=>({...prev,[voiceSelectionKey]:event.target.value}))}>
               {geminiVoices.map(name=><option value={name} key={name}>{name}</option>)}
             </select>
           </label>
