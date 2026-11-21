@@ -593,6 +593,26 @@ test("Fast Assembly rejects unlicensed sources and dangerous subtitle paths",()=
   assert.throws(()=>buildFfmpegArgs(plan,{clips:clips.map(x=>x.file),
     subtitles:"/tmp/unsafe:captions.srt"},"/tmp/final.mp4"));
 });
+test("Narration-only requires Fast mode, keeps AAC, and checks length before render",()=>{
+  const clips=Array.from({length:6},(_,i)=>({file:"s"+i+".mp4",seconds:5,rightsConfirmed:true}));
+  const input={version:"hh-assembly-1",locale:"en",aspect:"portrait",
+    audioMode:"narration",clips,
+    narration:{file:"narration.wav",rightsConfirmed:true}};
+  assert.throws(()=>validateAssemblyInput(input),
+    "the legacy assembler does not mux narration-only and must reject it up front");
+  assert.deepEqual(validateAssemblyInput({...input,fast:true}),{seconds:30,clips:6});
+  const args=buildFfmpegArgs({...input,fast:true},
+    {clips:clips.map(c=>"/tmp/"+c.file),narration:"/tmp/narration.wav"},
+    "/tmp/voice-film.mp4");
+  assert.equal(args[args.indexOf("-c:a")+1],"aac");
+  assert.ok(args.includes("[aout]"),"narration maps to the single output AAC stream");
+  const assembler=readFileSync(new URL("../scripts/cinematic-video-assemble.mjs",import.meta.url),"utf8");
+  const beforeEncode=assembler.slice(assembler.indexOf("if(input.narration){"),
+    assembler.indexOf("const out=inside("));
+  assert.match(beforeEncode,/narrationProbe\.seconds>check\.seconds\+0\.25/);
+  assert.match(beforeEncode,/fast_narration_longer_than_video/);
+  assert.doesNotMatch(beforeEncode,/runner\('ffmpeg'/);
+});
 test("Ready uses existing Canvas for personal preview, not a fake exported file",()=>{
   assert.match(ready,/data-ready-sequence-canvas/);
   assert.match(ready,/data-ready-sequence-play/);

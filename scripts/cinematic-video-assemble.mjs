@@ -24,7 +24,7 @@ export function validateAssemblyInput(input){
      !['silent','licensed_music','narration_with_music','narration'].includes(input.audioMode))fail();
   if(input.fast!==undefined&&typeof input.fast!=='boolean')fail();
   if(input.fast&&input.clips.length>6)fail();
-  if(input.audioMode==='narration'&&(!input.narration||input.narration.rightsConfirmed!==true))fail();
+  if(input.audioMode==='narration'&&(!input.fast||!input.narration||input.narration.rightsConfirmed!==true))fail();
   if(input.audioMode==='licensed_music'&&(!input.music||input.music.rightsConfirmed!==true))fail();
   if(input.audioMode==='narration_with_music'&&(!input.narration||
     input.narration.rightsConfirmed!==true||!input.music||
@@ -175,7 +175,12 @@ export async function assembleCinematicVideo(manifestFile,outputFile,{runner=exe
   }
   if(input.narration){
     files.narration=await safeSource(root,input.narration.file,['.wav','.mp3','.m4a','.aac']);
-    if(!probe(files.narration).hasAudio)fail();
+    const narrationProbe=probe(files.narration);
+    if(!narrationProbe.hasAudio||!Number.isFinite(narrationProbe.seconds))fail();
+    // Never silently truncate a personal voice in the Fast path. Reject
+    // during preflight, before running an expensive FFmpeg video encode.
+    if(input.fast===true&&narrationProbe.seconds>check.seconds+0.25)
+      throw Error('fast_narration_longer_than_video');
   }
   if(input.subtitles)files.subtitles=await safeSource(root,input.subtitles.file,['.srt']);
   const out=inside(root,resolve(root,outputFile));
