@@ -151,3 +151,14 @@ test("Spanish and shared Support expose the same ten categories, without duplica
   }
   assert.match(es, /<ServicesAssistQuiz locale="es" \/>/);
 });
+
+test("mobile 10×3 Support card rail uses symmetric safe margins, not a short right edge", () => {
+  const uniform=read("components/services-support-uniform.module.css");
+  assert.match(uniform,/width:calc\(100% - 8px\)!important/);
+  assert.doesNotMatch(uniform,/width:calc\(100% - 32px\)!important/);
+  assert.match(uniform,/max-width:none!important/);
+  const browser=read("scripts/verify-public-services-production.mjs");
+  assert.match(browser,/Compact service cards must reach phone right margin/);
+  assert.match(browser,/Math\.abs\(bounds\.left - rightMargin\) <= 3/);
+  assert.match(browser,/services-" \+ locale \+ "-three-horizontal-offers-390\.png/);
+});
