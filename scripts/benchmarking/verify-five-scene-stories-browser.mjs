@@ -164,9 +164,18 @@ try{
    window.__hhFiveSceneResultTrace=trace;
    check();
  });
- // Use a trusted native iPhone-style touch. Desktop click may not unlock
- // the Safari video/audio decoder within the original user gesture.
+ // The Extra FREE card navigates to Ready; it does NOT start recording.
+ // Require the real visitor's second Generate gesture, as in the existing
+ // original-motion acceptance. Never synthesize a click or start media via DOM.
  await free.tap({timeout:30000});
+ const readyChoice=page.locator('[data-video-ready][data-ready-state="choose"]');
+ await readyChoice.waitFor({state:'visible',timeout:15000});
+ const readyGenerate=readyChoice.locator('[data-ready-generate]');
+ await readyGenerate.waitFor({state:'visible',timeout:15000});
+ assert.equal(await readyGenerate.isEnabled(),true,'STORIES_READY_GENERATE_MUST_BE_ENABLED');
+ assert.equal(await page.locator('[data-free-film-source]').count(),5,
+   'STORIES_READY_MUST_KEEP_ALL_FIVE_LICENSED_SOURCES');
+ await readyGenerate.tap({timeout:30000});
  const safeExportState=()=>page.evaluate(()=>{
    const studio=document.querySelector('[data-mandala-free-video]');
    const masters=[...document.querySelectorAll('[data-free-film-source]')];
@@ -179,17 +188,19 @@ try{
      progressVisible:Boolean(document.querySelector('[data-video-effect-overlay],[data-video-effect-reopen]')),
      renderResult:Boolean(document.querySelector('[data-mandala-video-preview]')),
      renderTrace:window.__hhFiveSceneResultTrace||null,
+     readyState:document.querySelector('[data-video-ready]')?.getAttribute('data-ready-state')||null,
+     readyGeneratePresent:Boolean(document.querySelector('[data-ready-generate]')),
      createDisabled:Boolean(document.querySelector('[data-video-montage-pro-choice="free"]')?.disabled),
    };
  });
- // A genuine accepted Create gesture enters existing renderer progress or
- // yields a Ready media result. Fail early on a missing native event.
+ // Only a genuine accepted Ready Generate gesture enters the renderer or
+ // yields a physical MP4 result. Fail early on a missing native event.
  try{
    await page.waitForFunction(()=>Boolean(
      document.querySelector('[data-video-effect-overlay],[data-video-effect-reopen],[data-mandala-video-preview]')),
      undefined,{timeout:20000});
  }catch(error){
-   console.error('STORIES_FREE_NATIVE_TAP_NOT_STARTED '+JSON.stringify(await safeExportState()));
+   console.error('STORIES_READY_GENERATE_NOT_STARTED '+JSON.stringify(await safeExportState()));
    throw error;
  }
  let captured;

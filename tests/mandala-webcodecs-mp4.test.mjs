@@ -402,6 +402,25 @@ test("Stories WebKit requires filmed source selection before Extra, not blocked 
  assert.match(source,/readRealGuestVideo/,"real WebKit movie and audio remain mandatory");
 });
 
+test("five-scene Story accepts two real touches: FREE to Ready, then Generate before MP4",()=>{
+ const source=readFileSync(new URL("../scripts/benchmarking/verify-five-scene-stories-browser.mjs",import.meta.url),"utf8");
+ const stages=[
+   "const free=page.locator", "await free.tap({timeout:30000})",
+   "const readyChoice=page.locator", "const readyGenerate=readyChoice.locator",
+   "await readyGenerate.tap({timeout:30000})", "const safeExportState=",
+   "captured=await readRealGuestVideo", "assert.equal(captured.extension,'mp4'",
+   "assert.equal(video.codec_name,'h264'", "assert.equal(audio.codec_name,'aac'",
+ ];
+ let previous=-1;
+ for(const marker of stages){const i=source.indexOf(marker,previous+1);
+  assert.ok(i>previous,"must require real Ready gesture and physically decoded video: "+marker);
+  previous=i;}
+ assert.match(source,/STORIES_READY_GENERATE_MUST_BE_ENABLED/);
+ assert.match(source,/STORIES_READY_MUST_KEEP_ALL_FIVE_LICENSED_SOURCES/);
+ assert.match(source,/STORIES_READY_GENERATE_NOT_STARTED/);
+ assert.doesNotMatch(source,/STORIES_FREE_NATIVE_TAP_NOT_STARTED|\.tap\(\{force:true\}\)/);
+});
+
 test("original-motion WebKit uses native Goal and personalization before actual export",()=>{
  const script=readFileSync(new URL("../scripts/benchmarking/verify-original-motion-export.mjs",import.meta.url),"utf8");
  const markers=["await completeThreeStepGoalsQuiz", "const ideasGoal=", "const quiz=", "const conceptPanel=", "const addVideo=", "const readyGenerate", "let captured", "readRealGuestVideo(page,{timeout: 150000})"];
