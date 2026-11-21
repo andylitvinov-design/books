@@ -7,6 +7,9 @@ on:
       - 'scripts/benchmarking/first-video-live-export.mjs'
       - 'scripts/benchmarking/video-director-chat-live-acceptance.mjs'
       - 'tests/video-director-chat-live-acceptance.test.mjs'
+      - 'scripts/benchmarking/render-standard-antistress-master.mjs'
+      - 'tests/render-standard-antistress-master.test.mjs'
+      - '.github/workflows/hh-first-video-live-export.yml'
   workflow_dispatch:
     inputs:
       probe_free_ai:
@@ -115,6 +118,28 @@ jobs:
           path: artifacts/benchmarking/video-chat-free-ai-probe.json
           retention-days: 2
           if-no-files-found: warn
+      - name: Build real filmed Anti-stress master from six approved MP4s (one opt-in run)
+        if: github.event_name == 'pull_request' && github.event.label.name == 'qa-optional' && github.event.pull_request.head.repo.full_name == github.repository
+        timeout-minutes: 6
+        run: |
+          set -euo pipefail
+          # Standard public-repo Ubuntu runner; no Vercel, Mac, paid provider or private user data.
+          command -v ffmpeg
+          command -v ffprobe
+          node --check scripts/benchmarking/render-standard-antistress-master.mjs
+          node --test tests/render-standard-antistress-master.test.mjs
+          node scripts/benchmarking/render-standard-antistress-master.mjs en
+      - name: Short-lived filmed MP4 + source/codec/frame/audio evidence
+        if: github.event_name == 'pull_request' && github.event.label.name == 'qa-optional' && github.event.pull_request.head.repo.full_name == github.repository
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-antistress-six-filmed-mp4
+          path: |
+            artifacts/standard-motion/anti-stress-30s-en.mp4
+            artifacts/standard-motion/anti-stress-30s-en-qa.json
+            artifacts/standard-motion/anti-stress-30s-en-contact.jpg
+          retention-days: 1
+          if-no-files-found: error
       - name: PR scope summary — candidate media verified in Mandala CI
         if: github.event_name == 'pull_request'
         run: echo 'PR source contracts passed. Pre-merge LIVE browser checks intentionally not run; exact-HEAD encoded media is owned by the required Mandala specialist.' >> "$GITHUB_STEP_SUMMARY"
