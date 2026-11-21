@@ -34,13 +34,14 @@ try {
   await page.locator('[data-video-studio-hydrated="true"]').waitFor({ timeout: 60000 });
   // Complete all three real Goal selections before the visitor's Ideas CTA.
   await completeThreeStepGoalsQuiz(page,{engine});
-  // Native tap the actual first-screen Create Video CTA. The lower historical
-  // Continue button is deliberately hidden on mobile and must never be forced.
-  const advance=page.locator('[data-video-goal-create-cta]');
-  await advance.waitFor({state:'visible',timeout:15000});
-  if(engine==='webkit')await advance.tap();
-  else await advance.click();
-  assert.equal(await page.locator('[data-video-quick-control="phrases"]').getAttribute('aria-pressed'),
+  const ideasEntry=page.locator('[data-video-quick-control="phrases"]');
+  const openIdeas=page.locator('[data-video-continue-scenarios]');
+  const press=button=>engine==='webkit'?button.tap({timeout:15000}):button.click({timeout:15000});
+  await press(openIdeas);
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-quick-control="phrases"]')
+      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  assert.equal(await ideasEntry.getAttribute('aria-pressed'),
     'true','GOALS_MUST_OPEN_IDEAS');
   const editor=page.locator('[data-video-quick-control="editor"]');
   await editor.click();
@@ -84,7 +85,14 @@ try {
   assert.equal(await page.locator('[data-video-montage-tab="audio"]').getAttribute('aria-pressed'),
     'true','VISIBLE_STYLE_NEXT_MUST_OPEN_AUDIO');
   await page.locator('[data-video-quick-control="phrases"]').click();
-  await page.locator('[data-video-ideas-tab="concept"]').click();
+  // Concept unlocks only after a real Ideas goal and its personalization.
+  const ideasGoal=page.locator('[data-video-ideas-goal-panel]');
+  await press(ideasGoal.locator('[data-video-ideas-goal-choice="rest"]'));
+  await press(ideasGoal.locator('[data-video-ideas-goal-next]'));
+  const quiz=page.locator('[data-video-personalization][data-video-personalization-goal="leisure"]');
+  await press(quiz.locator('[data-personalization-kind="desired"] [data-video-personalization-choice]').first());
+  await press(quiz.locator('[data-video-personalization-energy="3"]'));
+  await press(quiz.locator('[data-video-personalization-clarify-continue]'));
   const conceptPanel=page.locator('[data-video-ideas-concept-panel]');
   await conceptPanel.waitFor({state:'visible',timeout:15000});
   await conceptPanel.locator('[data-video-concept-approve]').click();
@@ -200,6 +208,20 @@ try {
   await readyGenerate.waitFor({state:'visible',timeout:15000});
   if (engine === 'webkit') await readyGenerate.tap({timeout:30000});
   else await readyGenerate.click({timeout:30000});
+  // Verify the trusted gesture really started the selected Ready export.
+  // Before this guard a rejected Story handoff waited 150s for a Blob that
+  // could never exist. The actual encoder, file, auth and ffprobe checks below
+  // remain mandatory; no simulated media is accepted.
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  const afterGenerate=await page.evaluate(()=>({
+    workspace:document.querySelector('[data-mandala-free-video]')?.getAttribute('data-active-workspace')??null,
+    readyState:document.querySelector('[data-video-ready]')?.getAttribute('data-ready-state')??null,
+    selectedSources:document.querySelectorAll('[data-free-film-source]').length,
+  }));
+  if(afterGenerate.workspace!=='ready'){
+    console.error('HH_ORIGINAL_MOTION_READY_HANDOFF_REJECTED '+JSON.stringify({engine,...afterGenerate}));
+    throw Error('ORIGINAL_MOTION_TRUSTED_GENERATE_LEFT_READY');
+  }
   // Ready creates the actual film; guests cannot use direct Save.
   // Reuse the first-party encoded Blob and prove the login gate instead.
   let captured;
@@ -216,6 +238,8 @@ try {
       const clips=[...document.querySelectorAll('[data-free-film-source]')];
       return {
         resultMode:result?.getAttribute('data-video-result-mode')??null,
+        resultVisible:Boolean(result?.getClientRects().length&&!result?.hidden),
+        workspace:document.querySelector('[data-mandala-free-video]')?.getAttribute('data-active-workspace')??null,
         hasReady:Boolean(ready),readyView:ready?.getAttribute('data-ready-view')??null,
         renderedVideo:original instanceof HTMLVideoElement?{
           readyState:original.readyState,width:original.videoWidth,

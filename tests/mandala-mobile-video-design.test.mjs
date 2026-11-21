@@ -497,7 +497,7 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
   const orderEnd=studio.indexOf(";",orderStart);
   assert.deepEqual([...studio.slice(orderStart,orderEnd).matchAll(/"(energy|health|relationships|money|goals|life)"/g)]
     .map(match=>match[1]),topics,"approved topic order");
-  assert.match(studio,/locale==="ru"\?"1\. Выберите цель":locale==="es"\?"1\. Elige tu objetivo":"1\. Choose your goal"/);
+  assert.match(studio,/locale==="ru"\?"1\. Выберите категорию":locale==="es"\?"1\. Elige la categoría":"1\. Choose a category"/);
   const goal=studio.indexOf("data-video-director-goal-controls");
   const topic=studio.indexOf("data-video-director-topic-controls");
   const prompt=studio.indexOf("data-video-request-prompt");

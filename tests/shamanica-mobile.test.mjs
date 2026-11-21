@@ -1,9 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {SHAMANICA_GOALS,SHAMANICA_SERVICES,shamanicaRecommendations,shamanicaServiceHref} from "../lib/shamanica-recommendations.mjs";
+import {SHAMANICA_GOALS,SHAMANICA_SERVICES,shamanicaRecommendations,shamanicaServiceHref,shamanicaCategoryHref} from "../lib/shamanica-recommendations.mjs";
 const read=p=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
-test("Shamanica replaces Study destination and preserves real catalog",()=>{
+test("Shamanic retains original five recommendation directions",()=>{
  const p=read("app/[locale]/shamanica/page.tsx"),client=read("components/shamanica-mobile.tsx"),results=read("app/[locale]/shamanica/results/page.tsx");
  assert.match(p,/ShamanicaMobile/);assert.match(client,/data-shamanica-quiz/);assert.match(client,/data-shamanica-service/);
  for(const text of ["Энергия и защита","Гармония в отношениях","Деньги","Личностное развитие"])assert.ok(client.includes(text));
@@ -26,28 +26,88 @@ test("Quiz always selects exactly two distinct known directions",()=>{
  assert.deepEqual(shamanicaRecommendations({goal:"money",method:"artifacts",start:"object"}),["artifacts","rituals"]);
  assert.equal(shamanicaRecommendations({goal:"growth",method:"unsure",start:"free"})[0],"learning");
 });
-test("Large mobile targets, focus and reduced motion",()=>{
+test("Support-inspired first screen uses the same visual grammar as Support",()=>{
  const css=read("components/shamanica-mobile.module.css");
- assert.match(css,/min-height:81px/);assert.match(css,/@media\(max-width:560px\)/);
- assert.match(css,/focus-visible/);assert.match(css,/safe-area-inset-bottom/);assert.match(css,/prefers-reduced-motion/);
+ const client=read("components/shamanica-mobile.tsx");
+ assert.match(css,/SHAMANIC_SUPPORT_PARITY_20261120/);
+ assert.match(css,/background:radial-gradient\(ellipse at 108% 104%/);
+ assert.match(css,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+ assert.match(css,/\.page\[data-shamanica-audience="self"\] \.servicePhoto/);
+ assert.match(css,/\.page\[data-shamanica-audience="self"\] \.answer/);
+ assert.match(css,/min-height:59px/);
+ assert.match(css,/safe-area-inset-bottom/);
+ assert.match(css,/focus-visible/);
+ assert.match(css,/prefers-reduced-motion/);
+ assert.doesNotMatch(css,/SHAMANICA_READABLE_MOBILE_20261119/);
+ assert.match(client,/className=\{styles\.heroMobileName\}/);
+ assert.match(client,/className=\{styles\.heroLead\}/);
 });
 
-test("approved one-viewport mobile layout keeps quiz and all five services above the dock",()=>{
- const css=read("components/shamanica-mobile.module.css");
- const dockCss=read("app/unified-mobile-dock.css");
+test("Six photographic entrances include the existing free Reiki course",()=>{
  const client=read("components/shamanica-mobile.tsx");
+ assert.match(client,/serviceCards=\[\.\.\.methods,"free"\] as const/);
+ assert.match(client,/serviceCards\.map\(id=>/);
+ assert.match(client,/academy\/principles-of-energywork\/learn/);
+ assert.match(client,/data-shamanica-service=\{id\}/);
+ assert.match(client,/businessLink/);
  assert.match(client,/data-shamanica-audience=\{business\?"business":"self"\}/);
- assert.match(css,/SHAMANICA_ONE_SCREEN_20261119/);
- assert.match(css,/@media \(max-width:600px\)/);
- assert.match(css,/\.page\[data-shamanica-audience="self"\] \.hero/);
- assert.match(css,/\.page\[data-shamanica-audience="self"\] \.quiz/);
- assert.match(css,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
- assert.match(css,/\.serviceCard:last-child \{/);
- assert.match(css,/inset:0 0 0 auto/); // image overlays, not a tall banner
- assert.match(css,/min-height:61px/);
- assert.match(css,/min-height:44px/); // quiz taps remain accessible
- assert.match(css,/@media \(max-width:600px\) and \(max-height:760px\)/);
+ // Answers remain one-tap controls that advance through three steps.
+ assert.match(client,/onClick=\{\(\)=>select\(id\)\}/);
+ assert.match(client,/router\.push\("\/"\+locale\+"\/shamanica\/results\?"/);
+});
+
+test("Shamanic branding and navigation are consistent without changing shared route slugs",()=>{
+ const dock=read("components/unified-mobile-dock.tsx");
+ const banner=read("components/sitewide-antistress-banner.tsx");
+ const meta=read("app/[locale]/shamanica/page.tsx");
+ const results=read("app/[locale]/shamanica/results/page.tsx");
+ const services=read("components/services-assist-quiz.tsx");
+ const dockCss=read("app/unified-mobile-dock.css");
+ assert.match(dock,/practice: "Шаманик"/);
+ assert.match(dock,/practice: "Shamanic"/);
+ assert.doesNotMatch(dock,/practice: "Shamanica"/);
+ assert.match(banner,/shamanica\(\?:\\\/business\)\?/);
+ assert.match(meta,/Shamanic — practices/);
+ assert.match(meta,/canonical:"\/"\+locale\+"\/shamanica"/);
+ assert.match(results,/Your Shamanic path/);
+ assert.match(services,/Shamanic · energy/);
  assert.match(dockCss,/SHAMANICA_ONE_SCREEN_DOCK_20261119/);
- assert.match(dockCss,/body:has\(\[data-hh-unified-dock\]\):has\(main\[data-shamanica-audience="self"\]\)/);
- assert.match(dockCss,/white-space:nowrap/);
+ assert.match(dockCss,/font-size:clamp\(10px,3\.05vw,12px\)/);
+});
+
+test("Every Shamanic category entrance opens three priced service cards without the quiz",()=>{
+ const client=read("components/shamanica-mobile.tsx");
+ const results=read("app/[locale]/shamanica/results/page.tsx");
+ const css=read("components/shamanica-results-services.module.css");
+ const offers=read("components/services-three-visible-options.tsx");
+ for(const locale of ["ru","en","es"])for(const category of SHAMANICA_SERVICES){
+  assert.equal(shamanicaCategoryHref(locale,category),`/${locale}/shamanica/results?category=${category}`);
+ }
+ assert.equal(shamanicaCategoryHref("ru","invalid"),"/ru/shamanica");
+ assert.match(client,/shamanicaCategoryHref\(locale,id\)/);
+ assert.match(client,/id==="free"\?"\/"\+locale\+"\/academy\/principles-of-energywork\/learn"/);
+ assert.match(results,/data-shamanica-category-offers=\{selectedCategory\}/);
+ assert.match(results,/data-shamanica-category-nav/);
+ assert.match(results,/Object\.prototype\.hasOwnProperty\.call\(offerGroups,args\.category\)/);
+ assert.match(results,/ServicesThreeVisibleOptions locale=\{locale\} id=\{offerGroups\[selectedCategory\]\}/);
+ assert.match(results,/shamanicaRecommendations\(args\)/);
+ assert.match(css,/CATEGORY_SERVICES_SUPPORT_PARITY_20261120/);
+ assert.match(css,/data-support-uniform-photo/);
+ assert.match(css,/data-service-card-controls/);
+ assert.match(offers,/data-service-price/);
+ assert.match(offers,/ServicesCardActions/);
+});
+
+test("Direct Shamanic category is a compact three-offer phone screen with full Details/Order preserved",()=>{
+ const css=read("components/shamanica-results-services.module.css");
+ const page=read("app/[locale]/shamanica/results/page.tsx");
+ assert.match(css,/SHAMANIC_CATEGORY_ONE_SCREEN_20261120/);
+ assert.match(css,/\.categoryPage\[data-shamanica-category\]/);
+ assert.match(css,/grid-template-columns:clamp\(70px,21vw,82px\) minmax\(0,1fr\)/);
+ assert.match(css,/data-service-card-controls/);
+ assert.match(css,/-webkit-line-clamp:2/);
+ assert.match(css,/grid-row:3/);
+ assert.match(page,/data-shamanica-results-title/);
+ assert.match(page,/orderedCategories\.map\(id =>/);
+ assert.match(page,/data-shamanica-priority-groups/);
 });

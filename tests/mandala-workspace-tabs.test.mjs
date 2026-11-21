@@ -75,15 +75,18 @@ function exercise(input,workspace,overrides={}){
  assert.ok(handler);
  const js=ts.transpileModule('const startFromHero='+handler.getText(ast)+';startFromHero();',{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
  let active=workspace,queued=workspace,basicTab=null,renders=0,picks=0;const cover={open:false},frames=[],scrolls=[],notices=[];
- const state={recording:false,preparing:false,hypnoAudioBusy:false,photoPending:false,phrasePending:false,narrationInvalid:false,locale:'ru',photoUrl:'blob:synthetic',backgroundOnly:false,photoConsent:false,audioNeedsAttachment:false,uploadedAudio:null,audioRights:false,source:'synthetic',...overrides};
+ const state={recording:false,preparing:false,storySourcePending:false,hypnoAudioBusy:false,photoPending:false,phrasePending:false,narrationInvalid:false,locale:'ru',photoUrl:'blob:synthetic',backgroundOnly:false,photoConsent:false,audioNeedsAttachment:false,uploadedAudio:null,audioRights:false,source:'synthetic',...overrides};
  // Models only the source-defined workspace/display and native-details state,
  // not pixels or a real browser. React state commits at the frame boundary.
  const consent={scrollIntoView:()=>scrolls.push({open:cover.open,workspace:active,
    visible:cover.open&&(active==='video'||active==='editor')})};
- runInNewContext(js,{...state,canGenerate:true,preparingRef:{current:state.preparing},jobRef:{current:null},webCodecJobRef:{current:null},activeWorkspace:workspace,setActiveWorkspace:value=>{queued=value;},
+ runInNewContext(js,{...state,storySourcePendingRef:{current:Boolean(state.storySourcePending)},canGenerate:true,preparingRef:{current:state.preparing},jobRef:{current:null},webCodecJobRef:{current:null},activeWorkspace:workspace,setActiveWorkspace:value=>{queued=value;},
    setBasicPanelTab:value=>{basicTab=value;},setMontagePanel:()=>{},setMontageStyleSettingsOpen:()=>{},setIntroPlaying:()=>{},setNotice:value=>notices.push(value),supportUi:{heroConsent:'Consent required'},audioUi:{needsAttach:'Attach audio'},ui:{audioRightsHelp:'Audio rights required'},onPickPhoto:()=>picks++,createVideo:()=>renders++,window:{requestAnimationFrame:cb=>frames.push(cb)},document:{querySelector:selector=>selector==='[data-video-cover-options]'?cover:selector==='[data-video-photo-consent]'?consent:{scrollIntoView(){}}}},{timeout:1000});
  assert.equal(scrolls.length,0,'scroll must retain two-frame boundary');
  while(frames.length){active=queued;frames.shift()();}
+ // A guarded handler may return before scheduling rAF; React still commits
+ // the queued setState at the end of the event, including denied Ready navigation.
+ active=queued;
  return {workspace:active,basicTab,open:cover.open,scrolls,notices,renders,picks};
 }
 test('one original consent pane is accessible in Video or fifth Montage Photo',()=>{
@@ -391,4 +394,13 @@ test("Goal and Montage preserve creation guards while Text offers guarded video 
  assert.ok(hypno.includes('data-hypno-create'));
  assert.ok(hypno.includes('data-hypno-add-effects'));
  assert.ok(!studio.includes('generateWithoutHypnoEffects'));
+});
+
+test('unapproved six-frame Story stays fail-closed even when Ready is invoked directly',()=>{
+ const result=exercise(source,'ready',{storySourcePending:true,photoConsent:true});
+ assert.equal(result.renders,0,'a previous forest background must not be encoded');
+ assert.equal(result.workspace,'editor','return the user to Story for explicit photo approval');
+ assert.equal(result.open,false);
+ assert.equal(result.notices.length,1);
+ assert.match(result.notices[0],/Сначала примените шесть кадров/);
 });

@@ -1073,3 +1073,145 @@
  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
  [data-video-quick-intents]{display:none!important}
 }
+
+/* Goal 1/2/3 photographic parity · approved 20 Nov 2026.
+   One working composer; original real handlers, limits and billing unchanged. */
+@media(max-width:759px){
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
+ [data-video-quick-section="1"][data-video-goal-quiz-audience="self"]:is([data-video-goal-quiz-step="2"],[data-video-goal-quiz-step="3"])
+ [data-video-wish-above-goals][data-video-goal-quiz-optional]{display:block!important}
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
+ [data-video-quick-section="1"][data-video-goal-quiz-audience="self"]:is([data-video-goal-quiz-step="2"],[data-video-goal-quiz-step="3"])
+ > div:first-child,
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
+ [data-video-quick-section="1"][data-video-goal-quiz-audience="self"]:is([data-video-goal-quiz-step="2"],[data-video-goal-quiz-step="3"])
+ [data-video-goal-create-cta]{display:none!important}
+
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
+ [data-video-request-card]{min-height:133px!important}
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
+ [data-video-request-card] textarea[data-auto-video-input]{height:71px!important;min-height:71px!important}
+
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
+ [data-auto-video-goal-panel] [data-auto-video-subcategories]{
+   margin:2px 0 0!important;padding:0 2px!important;
+   border:0!important;background:transparent!important;box-shadow:none!important;gap:7px!important
+ }
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
+ [data-video-topic-section][data-video-goal-quiz-step="3"]{
+   background:transparent!important;border:0!important;box-shadow:none!important;
+   padding:0 5px!important;margin-top:2px!important
+ }
+ /* The four image-backed topic choices are the one main question in step 3. */
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
+ [data-video-topic-section][data-video-goal-quiz-step="3"] [data-video-optional-topic-field]{display:none!important}
+
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
+ [data-video-quick-section="1"] [data-auto-video-goal-panel] > [role="group"],
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
+ [data-video-goal-subcategory-cards][data-mytube-subcategories],
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
+ [data-video-goal-topic-chips]{
+   display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+   gap:8px!important;min-width:0!important;overflow:visible!important
+ }
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
+ [data-video-goal-photo-card]{
+   box-sizing:border-box!important;position:relative!important;
+   display:grid!important;grid-template-columns:minmax(46px,38%) minmax(0,1fr)!important;
+   align-items:center!important;gap:7px!important;width:100%!important;min-width:0!important;
+   min-height:76px!important;height:76px!important;max-height:76px!important;
+   padding:5px!important;border:1px solid #e1dfd4!important;
+   border-radius:16px!important;background:#fffcf7!important;
+   text-align:left!important;box-shadow:0 3px 12px #3545300e!important
+ }
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
+ [data-video-goal-photo-card] img[data-video-goal-art]{
+   display:block!important;grid-column:1;grid-row:1;width:100%!important;
+   height:64px!important;max-height:64px!important;min-width:0!important;
+   object-fit:cover!important;border-radius:11px!important
+ }
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
+ [data-video-goal-photo-card] :is(strong,[data-video-goal-subcategory-label],[data-video-goal-topic-label]){
+   display:block!important;grid-column:2;grid-row:1;min-width:0!important;
+   color:#143d3a!important;font:750 clamp(12px,3.4vw,15px)/1.16 system-ui,sans-serif!important;
+   white-space:normal!important;word-break:normal!important;overflow-wrap:break-word!important;
+   hyphens:auto!important;text-align:left!important
+ }
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
+ [data-video-goal-photo-card] [class*="categoryIcon"]{display:none!important}
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
+ [data-video-goal-photo-card][aria-pressed="true"]{
+   border:2px solid #087f69!important;background:#e6f6f1!important
+ }
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
+ [data-video-goal-photo-card]:focus-visible{outline:3px solid #176e6e!important;outline-offset:2px!important}
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
+ [data-video-goal-topic-chips] [data-video-goal-photo-card] > svg{
+   position:absolute;right:7px;top:7px;width:16px;height:16px;color:#087f69
+ }
+ /* Only the completed topic step enables the two actual next actions. */
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
+ [data-video-topic-section][data-video-goal-quiz-step="2"] [data-video-request-after-topic]{display:none!important}
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
+ [data-video-topic-section][data-video-goal-quiz-step="3"] [data-video-request-after-topic]{
+   margin:6px 0 0!important;gap:8px!important
+ }
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
+ [data-video-topic-section][data-video-goal-quiz-step="3"] [data-video-request-after-topic] > button{
+   min-height:66px!important;height:auto!important;padding:7px 5px!important;
+   border-radius:16px!important;font-size:clamp(12px,3.5vw,16px)!important;
+   line-height:1.15!important
+ }
+}
+@media(max-width:759px) and (max-height:900px){
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
+ header[class*="quickHeader"]{min-height:158px!important}
+}
+@media(max-width:359px){
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
+ [data-video-goal-photo-card]{
+   grid-template-columns:minmax(40px,36%) minmax(0,1fr)!important;gap:5px!important
+ }
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
+ [data-video-goal-photo-card] :is(strong,[data-video-goal-subcategory-label],[data-video-goal-topic-label]){
+   font-size:12px!important
+ }
+}
+
+/* Exact three-view card specificity repair. Earlier scoped !important selectors
+   for subcategory cards were more specific than the shared card rule above. */
+@media(max-width:759px){
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] :is(
+   [data-auto-video-goal-panel] > [role="group"] > button[data-auto-video-category][data-video-goal-photo-card],
+   [data-auto-video-goal-panel] [data-auto-video-subcategories] [data-video-goal-subcategory-cards] button[data-auto-video-subcategory][data-video-goal-photo-card],
+   [data-video-topic-section] [data-video-goal-topic-chips] button[data-video-goal-topic][data-video-goal-photo-card]
+ ){
+   box-sizing:border-box!important;display:grid!important;position:relative!important;
+   grid-template-columns:minmax(46px,38%) minmax(0,1fr)!important;
+   align-items:center!important;gap:7px!important;
+   width:100%!important;min-width:0!important;min-height:76px!important;
+   height:76px!important;max-height:76px!important;
+   padding:5px!important;border:1px solid #e1dfd4!important;
+   border-radius:16px!important;background:#fffcf7!important;text-align:left!important
+ }
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] :is(
+   [data-auto-video-goal-panel] > [role="group"] > button[data-auto-video-category][data-video-goal-photo-card],
+   [data-auto-video-goal-panel] [data-auto-video-subcategories] [data-video-goal-subcategory-cards] button[data-auto-video-subcategory][data-video-goal-photo-card],
+   [data-video-topic-section] [data-video-goal-topic-chips] button[data-video-goal-topic][data-video-goal-photo-card]
+ ) img[data-video-goal-art]{
+   display:block!important;grid-column:1;grid-row:1;
+   width:100%!important;min-width:0!important;height:64px!important;max-height:64px!important;
+   object-fit:cover!important;border-radius:11px!important
+ }
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] :is(
+   [data-auto-video-goal-panel] > [role="group"] > button[data-auto-video-category][data-video-goal-photo-card],
+   [data-auto-video-goal-panel] [data-auto-video-subcategories] [data-video-goal-subcategory-cards] button[data-auto-video-subcategory][data-video-goal-photo-card],
+   [data-video-topic-section] [data-video-goal-topic-chips] button[data-video-goal-topic][data-video-goal-photo-card]
+ ) :is(strong,[data-video-goal-subcategory-label],[data-video-goal-topic-label]){
+   display:block!important;grid-column:2;grid-row:1;min-width:0!important;
+   color:#143d3a!important;font:750 clamp(12px,3.4vw,15px)/1.16 system-ui,sans-serif!important;
+   white-space:normal!important;word-break:normal!important;
+   overflow-wrap:break-word!important;text-align:left!important
+ }
+}

@@ -7,7 +7,7 @@ import { instantHomeLocale } from './lib/instant-home-policy.mjs'
 
 // Separate static-only CSP. Never weaken Next's nonce policy on private/API/RSC.
 const INSTANT_PUBLIC_HOME_CSP = [
-  "default-src 'self'", "script-src 'self'", "style-src 'self' 'sha256-s4to07qvKV3xQlXqQO7RJ2fkjsH+LWUN6ccvjsIrxqU='",
+  "default-src 'self'", "script-src 'self'", "style-src 'self'",
   "img-src 'self' data:", "connect-src 'self'", "font-src 'self'",
   "media-src 'self'", "frame-src 'none'", "object-src 'none'",
   "base-uri 'none'", "form-action 'self'", "frame-ancestors 'none'",
@@ -43,12 +43,17 @@ export async function middleware(request: NextRequest) {
   }
   // Only anonymous-safe direct HTML Home requests. RSC, client navigation,
   // explicit full React Home and ALL app/account routes bypass this gate.
-  // Preserve the EXISTING LIVE EN/RU CDN-first route. It uses exactly the
-  // currently published static document and does not load Next's global CSS.
-  const fastLocale = instantHomeLocale({
-    pathname:request.nextUrl.pathname,method:request.method,
-    headers:request.headers,searchParams:request.nextUrl.searchParams,
-  })
+  // OWNER-APPROVED_HOME_RESTORE_20261120: PR #5214 shipped the new React UI,
+  // but the legacy CDN HTML was still rewriting the public EN/RU home by default.
+  // Keep one canonical home view across EN/RU/ES. An explicit *new*, verified
+  // legacy opt-in is required for performance experiments; never silently
+  // replace the approved persona hero, wide Ali composer and mobile cards.
+  const fastLocale = process.env.HH_ENABLE_LEGACY_INSTANT_HOME === 'true'
+    ? instantHomeLocale({
+        pathname:request.nextUrl.pathname,method:request.method,
+        headers:request.headers,searchParams:request.nextUrl.searchParams,
+      })
+    : null
   if (fastLocale) {
     const requested = request.nextUrl.searchParams.get('lang')
     if (request.nextUrl.pathname === '/' && (requested === 'ru' || requested === 'es'))

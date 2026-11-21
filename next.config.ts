@@ -38,9 +38,6 @@ const liveAudioHostSources = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  // Remove the external stylesheet waterfall for SSR first paint.
-  // Preserve the complete cascade; benchmark the extra inlined HTML bytes.
-  experimental: { inlineCss: true },
   // ffmpeg-static uses __dirname to locate its downloaded native executable.
   // Keep the package external to Next webpack so its binary path remains valid.
   serverExternalPackages: ["ffmpeg-static"],

@@ -1199,14 +1199,17 @@ test('base advances fail closed while matching tested checkout retains HEAD chec
   api.target = async () => BASE;
   api.pr = async () => currentPr();
   assert.deepEqual((await verify(api, ctx, sources, { maxWaitMs: 0 })).expected, [path]);
-  // Detect a real target move during Specialist aggregation, not stale PR metadata.
+  // The final target read must be definitive; don't invent a future target
+  // movement from another speculative read while a real specialist is green.
   let targetReads = 0;
-  api.target = async () => (++targetReads === 1 ? BASE : advanced);
+  api.target = async () => { targetReads++; return BASE; };
   api.compare = async () => ({ status:'diverged' });
   api.pr = async () => currentPr();
-  await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }),
-    /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/, 'production target may not advance unsafely during aggregation');
+  assert.deepEqual((await verify(api, ctx, sources, { maxWaitMs: 0 })).expected,[path]);
+  assert.equal(targetReads,1,'complete specialist evidence precedes one final target scan');
   api.target = async () => advanced;
+  await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }),
+    /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/, 'unsafe production target remains blocking at final review');
   const legacySources = { base: sources.base, current: sources.current };
   await assert.rejects(() => verify(api, ctx, legacySources, { maxWaitMs: 0 }), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
   api.pr = async () => ({ ...currentPr(), head: { ...currentPr().head, sha: 'd'.repeat(40) } });
@@ -1801,7 +1804,8 @@ test('Only BASE-guarded optional Mandala macOS skip is neutral; real failures st
   assert.equal(optionalMandalaMacosSkip(files,'codex/perf-video-studio-lazy-panels-20261101',ui),true);
   assert.equal(optionalMandalaMacosSkip(files,'codex/hypno-third-workspace-owner-v2-20261101',ui),true);
   assert.equal(optionalMandalaMacosSkip(files,'fix/video-studio-restore-approved-mobile-20261101',ui),false);
-  assert.equal(optionalMandalaMacosSkip(files,'codex/perf-video-studio-lazy-panels-20261101',['scripts/verify-affirmation-voice-browser.mjs']),false);
+  assert.equal(optionalMandalaMacosSkip(files,'codex/perf-video-studio-lazy-panels-20261101',['scripts/verify-affirmation-voice-browser.mjs']),true,
+    'read-only browser verifier changes cannot turn branch-excluded WebKit into a phantom required job');
   // A route/glob-only Mandala change is NOT a change to the BASE macOS job.
   const updatedPaths = workflow.replace("paths: ['components/mandala-*']",
     "paths: ['components/mandala-*', 'tests/video-chat-*.test.mjs']");
@@ -1852,6 +1856,55 @@ test('trusted Mandala WebKit allowlist accepts exact branch entries and the full
     'feat/video-studio-project-renderplan-v2-20261102',
     ['lib/mandala/video-project-v2.mjs']),false,
     'encoded video work is never excused from WebKit');
+});
+
+test('hh-merge-check accepts intentional Mac skips for #5252/#5253 Ideas UI but never video/voice source',()=>{
+  const path='.github/workflows/holistic-support-mandala.yml';
+  const workflow=readFileSync(path,'utf8');
+  const files={base:new Map([[path,workflow]]),current:new Map([[path,workflow]])};
+  const changes5252=[
+    'components/mandala-free-video-studio.tsx',
+    'components/mandala-video-idea-goal.module.css',
+    'components/mandala-video-idea-goal.tsx',
+    'components/mandala-video-mobile.module.css',
+    'scripts/verify-affirmation-voice-browser.mjs',
+    'tests/mandala-ideas-personalization-concept.test.mjs',
+  ];
+  const changes5253=[
+    'components/mandala-free-video-studio.tsx',
+    'components/mandala-video-idea-goal.tsx',
+    'components/mandala-video-ideas.tsx',
+    'components/mandala-video-personalization.module.css',
+    'components/mandala-video-personalization.tsx',
+    'docs/design/MAGIC_MIRROR_PURPOSE_FIRST_SCENARIO_ALGORITHM_20261120.md',
+    'lib/mandala/video-goal-idea-phrases.mjs',
+    'lib/mandala/video-personal-goal-composer.d.mts',
+    'lib/mandala/video-personal-goal-composer.mjs',
+    'scripts/verify-affirmation-voice-browser.mjs',
+    'tests/mandala-ideas-goal-flow.test.mjs',
+    'tests/mandala-ideas-personalization-concept.test.mjs',
+    'tests/mandala-mobile-video-design.test.mjs',
+    'tests/mandala-video-goal-mobile-hierarchy.test.mjs',
+    'tests/mandala-video-ideas-goal-match.test.mjs',
+  ];
+  for(const [branch,changes] of [
+    ['codex/ideas-goal-first-personalization-20261120',changes5252],
+    ['codex/magic-mirror-goal-first-20261120',changes5253],
+  ]){
+    assert.equal(optionalMandalaMacosSkip(files,branch,changes),true,
+      'a passing Mandala workflow must not fail for its intentionally skipped macOS job');
+    assert.equal(optionalMandalaMacosSkip(files,branch,
+      [...changes,'lib/mandala/webcodecs-mp4-export.ts']),false,
+      'actual encoder and codec changes still demand macOS WebKit');
+    assert.equal(optionalMandalaMacosSkip(files,branch,
+      [...changes,'app/api/holistic-support/voice/route.js']),false,
+      'voice API and consent risk still block macOS waiver');
+    assert.equal(optionalMandalaMacosSkip({
+      ...files,current:new Map([[path,workflow.replace('runs-on: macos-15','runs-on: ubuntu-latest')]]),
+    },branch,changes),false,'the proposed PR cannot weaken the tested-BASE WebKit job');
+  }
+  assert.equal(optionalMandalaMacosSkip(files,'fix/video-new-encoder-20261120',changes5252),false,
+    'the protected WebKit branch guard remains mandatory for video source branches');
 });
 
 test('BASE-owned Mandala WebKit list accepts 25-32 strict literal routes, never 33 or a changed guard',()=>{
@@ -2027,8 +2080,11 @@ test('Mandala accepts only an exact required-preflight dependency before optiona
   assert.equal(run(candidate,'fix/video-release-20261103'),false,
     'original BASE-required WebKit must execute on matching video branch');
   assert.equal(run(candidate,'codex/ci-cheap-browser-preflight-20261103',
-    ['scripts/verify-affirmation-voice-browser.mjs']),false,
-    'a relevant voice or encoded media change must still require WebKit');
+    ['scripts/verify-affirmation-voice-browser.mjs']),true,
+    'browser assertions do not force branch-excluded macOS');
+  assert.equal(run(candidate,'codex/ci-cheap-browser-preflight-20261103',
+    ['lib/mandala/webcodecs-mp4-export.ts']),false,
+    'real encoded movie source changes still require WebKit');
   const invalid=[
     candidate.replace('needs: [webkit_preflight]', 'needs: [other_job]'),
     candidate.replace('    needs: [webkit_preflight]\n','    needs: [webkit_preflight, other_job]\n'),
@@ -2311,7 +2367,7 @@ test('base movement during Specialist preserves exact-HEAD results only for prov
   let liveReads=0;
   const api={
     pr:async()=>pr(),
-    target:async()=>(++liveReads===1?BASE:live),
+    target:async()=>{liveReads++;return live;},
     compare:async()=>comparison('tests/pr-fast-lane.test.mjs'),
     runs:async()=>[run()],
     jobs:async()=>[{name:'test',status:'completed',conclusion:'success'}],
@@ -2321,7 +2377,7 @@ test('base movement during Specialist preserves exact-HEAD results only for prov
   const ctx={repo,number:27,head:SHA,base:BASE};
   const good=await verify(api,ctx,files,{maxWaitMs:0});
   assert.deepEqual(good.expected,[path]);
-  assert.ok(liveReads>=2,'base drift must be inspected after real Specialist jobs');
+  assert.equal(liveReads,1,'verified disjoint production drift is reviewed once after real Specialist jobs');
   api.target=async()=>live;
   api.compare=async()=>comparison('.github/workflows/hh-pr-core-release.yml');
   await assert.rejects(()=>verify(api,ctx,files,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);

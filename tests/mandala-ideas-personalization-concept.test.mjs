@@ -14,17 +14,18 @@ const css=read("components/mandala-video-personalization.module.css");
 const mobile=read("components/mandala-video-mobile.module.css");
 const browser=read("scripts/verify-affirmation-voice-browser.mjs");
 
-test("Ideas has three real substages and the same single Concept generator",()=>{
+test("Ideas has three real substages and the same single Scenario/Concept generator",()=>{
   assert.equal((studio.match(/data-video-ideas-tab="/g)||[]).length,3);
   for(const tab of ["personalization","goal","concept"]){
     assert.ok(studio.includes('data-video-ideas-tab="'+tab+'"'),tab);
     assert.ok(studio.includes('data-video-ideas-'+tab+'-panel'),tab+" panel");
   }
-  for(const label of ["Персонализация","Personalization","Personalización","Концепция","Concept","Concepto"])
+  for(const label of ["Персонализация","Personalization","Personalización","Цель","Goal","Objetivo","Сценарий","Scenario","Guion"])
     assert.ok(studio.includes(label),label);
   assert.equal((studio.match(/<MandalaVideoPersonalization /g)||[]).length,1);
   assert.equal((studio.match(/<MandalaVideoIdeaGoal /g)||[]).length,1);
-  assert.match(studio,/setIdeasProfileConfirmed\(true\);setIdeasSubtab\("goal"\)/);
+  assert.match(studio,/setIdeasProfileConfirmed\(true\)/);
+  assert.match(studio,/setIdeasSubtab\("concept"\)/);
   assert.equal((studio.match(/<MandalaVideoConcept /g)||[]).length,1);
   assert.match(studio,/id:"concept",Icon:Film/,
     "Montage retains its own independent video-storyboard destination");
@@ -45,10 +46,13 @@ test("Personalization recovers the approved three-question photo cards for RU EN
     assert.ok(personal.includes(label),label);
   for(const kind of ["current","desired","strength"])
     assert.ok(personal.includes('data-personalization-kind="'+kind+'"'),kind);
-  for(const id of ["energy","desired-level","choice","axis","mood"])
+  for(const id of ["energy","choice","axis","mood","support-need"])
     assert.ok(personal.includes('data-video-personalization-'+id),id);
-  assert.match(personal,/selected.length>=3/);
-  assert.match(personal,/old.axes.length>=3/);
+  assert.match(personal,/onChange\(old=>\(\{\.\.\.old,\[side\]:\[id\]\}\)\)/);
+  assert.match(personal,/onChange\(old=>\(\{\.\.\.old,axes:\[id\]\}\)\)/);
+  assert.match(personal,/move\(1\)/);
+  assert.match(personal,/chooseSupport\(need\.id\)/);
+  assert.doesNotMatch(personal,/selected\.length>=3|old\.axes\.length>=3|onClick=\{goNext\}/);
   assert.match(personal,/onContinue/);
   assert.match(personal,/onBack/);
   for(const photo of ["morning-dew.jpg","wealth-sunrise.jpg","mountain-air.jpg"]){
@@ -60,7 +64,7 @@ test("Personalization recovers the approved three-question photo cards for RU EN
 });
 
 test("Changing personal answers recomputes the original localized phrase editor without uploading data",()=>{
-  assert.match(studio,/profile=\{ideasProfile\}/);
+  assert.match(studio,/profile=\{ideasProfileConfirmed\?ideasProfile:undefined\}/);
   assert.match(studio,/onChange=\{setIdeasProfile\}/);
   assert.match(ideas,/profileKey=JSON\.stringify\(profile\?\?null\)/);
   assert.match(ideas,/profile\?\.current\?\.length\?profile\.current\.map\(goalCurrentMeaningId\)/);
@@ -104,7 +108,7 @@ test("Concept uses canonical selected filters and numeric energy, while WebKit p
   assert.match(studio,/onConceptTopicChange=\{setSelectedConceptTopic\}/);
   assert.match(studio,/selectedTopic=\{selectedConceptTopic\}/);
   assert.match(concept,/selectedTopicId:selectedTopic\?\.topicId/);
-  assert.match(personal,/energyStart:value\.energy,energyTarget:value\.desiredLevel/);
+  assert.match(personal,/energyStart:value\.energy>=1\?value\.energy:undefined/);
   assert.match(engine,/selectedTopicId:explicitTopic\?\.topic\.id/);
   assert.match(semantic,/put\(p,"pace",dynamic\?"dynamic"/);
   const applyStart=ideas.indexOf("const apply=(candidates:string[],indices:number[],outputLocale:VideoLocale=captionLocale)=>");
@@ -144,12 +148,12 @@ test("Preferred name appears in last suggested AND fifth selected video phrase i
 });
 
 test("Name question stays in browser and personal closing follows the existing video projection",()=>{
-  assert.match(personal,/name:"",current:\["fatigue"\]/);
+  assert.match(personal,/name:"",current:\[\],desired:\[\],axes:\[\]/);
   assert.match(personal,/data-video-personalization-name-question/);
   assert.match(personal,/data-video-personalization-name type="text"/);
   for(const line of ["Как вас зовут?","What is your name?","¿Cómo te llamas?"])
     assert.ok(personal.includes(line),line);
-  assert.match(ideas,/personalClosingPhrase=personalVideoClosingPhrase\(captionLocale,profile\?\.name\)/);
+  assert.match(ideas,/personalClosingPhrase=goalType==="change"\|\|goalType==="leisure"\?"":personalVideoClosingPhrase/);
   assert.match(ideas,/appendPersonalVideoClosingPhrase\(pool,captionLocale,profile\?\.name\)/);
   assert.match(ideas,/initialChosen=personalClosingPhrase\?/);
   assert.match(personal,/const name=event\.currentTarget\.value;/);
@@ -170,18 +174,69 @@ test("Name question stays in browser and personal closing follows the existing v
     "the preferred name never enters the concept/service personalization summary");
 });
 
-test("Personalization preserves choices across four photo-first quiz steps, with optional name last",()=>{
- assert.match(personal,/useState<1\|2\|3\|4>\(1\)/);
+
+test("Purpose controls a shorter one-question-at-a-time flow and Back keeps answers",()=>{
+ assert.match(personal,/personalizationStagesForGoal=\(goalType:GoalPurpose\)/);
+ assert.match(personal,/goalType==="leisure"/);
+ assert.match(personal,/\["desired","energy","name"\]/);
+ assert.match(personal,/\["current","desired","support","energy","name"\]/);
+ assert.match(personal,/\["current","desired","meaning","energy","name"\]/);
+ assert.match(personal,/data-video-personalization-goal=\{goalType\}/);
  assert.match(personal,/data-video-personalization-step=\{quizStep\}/);
  assert.match(personal,/data-video-personalization-progress/);
- assert.match(personal,/\[1,2,3,4\] as const/);
- for(const stage of [1,2,3,4])assert.ok(personal.includes('hidden={quizStep!=='+stage+'}'));
- assert.ok(personal.indexOf('data-video-personalization-name-question')>
-   personal.indexOf('data-personalization-kind="strength"'),"name follows the three questions");
- assert.match(personal,/if\(quizStep===4\)\{onContinue\(\);return;\}/);
+ assert.match(personal,/\{quizStep\} \/ \{stages\.length\}/);
+ for(const kind of ["current","desired","support","strength","energy-current"])
+   assert.ok(personal.includes('data-personalization-kind="'+kind+'"'),kind);
+ assert.ok(personal.includes('hidden={stage!=="meaning"}'));
+ assert.ok(personal.includes('hidden={stage!=="support"}'));
+ assert.ok(personal.includes('hidden={stage!=="energy"}'));
+ assert.ok(personal.includes('hidden={stage!=="name"}'));
  assert.match(personal,/if\(quizStep===1\)\{onBack\(\);return;\}/);
  assert.match(personal,/quizRef\.current\?\.scrollIntoView/);
- assert.match(css,/\.card\[hidden\],\.nameCard\[hidden\]\{display:none!important\}/);
  assert.match(personal,/data-video-personalization-name type="text"/);
- for(const word of ["previous","forward","quizStep"])assert.ok(personal.includes(word));
+ assert.match(css,/\.card\[hidden\],\.nameCard\[hidden\]\{display:none!important\}/);
+ assert.match(browser,/data-video-personalization-support-need="love"/);
+});
+
+
+test("All three purposes ask for current energy 1–10 without unnecessary future-energy slider",()=>{
+ assert.match(personal,/const energyScores=\[1,2,3,4,5,6,7,8,9,10\] as const/);
+ assert.match(personal,/data-video-personalization-energy-options="current"/);
+ assert.doesNotMatch(personal,/data-video-personalization-energy-options="desired"/);
+ assert.match(personal,/data-video-personalization-energy=\{score\}/);
+ assert.match(personal,/aria-pressed=\{value\.energy===score\}/);
+ assert.match(personal,/onClick=\{\(\)=>chooseEnergy\(score\)\}/);
+ assert.match(personal,/onChange\(old=>\(\{\.\.\.old,energy:score\}\)\)/);
+ assert.doesNotMatch(personal,/type="range"/);
+ for(const line of ["Сколько энергии у меня сейчас?",
+  "How much energy do I have now?","¿Cuánta energía tengo ahora?"])
+  assert.ok(personal.includes(line),line);
+ assert.match(css,/\.energyGrid\{display:grid;grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
+ assert.match(css,/\.energyGrid button\{[^}]*min-height:54px/);
+ assert.match(css,/\.energyGrid button\[aria-pressed="true"\]/);
+ assert.match(css,/@media\(max-width:370px\)/);
+});
+
+test("Ideas phone view keeps one approved scenic photo and accessible Goal-first substages",()=>{
+  assert.match(studio,/<strong>Magic Mirror<\/strong>/);
+  assert.match(studio,/Ideas: goal, personalization and concept/);
+  assert.match(studio,/Ideas: objetivo, personalización y concepto/);
+  assert.match(studio,/Идеи: цель, персонализация и концепт/);
+  assert.match(studio,/data-video-ideas-progress/);
+  assert.ok(studio.indexOf('data-video-ideas-tab="goal"')<studio.indexOf('data-video-ideas-tab="personalization"'));
+  assert.match(mobile,/\.ideasProgressDots i\[data-active="true"\]/);
+  assert.match(studio,/data-video-ideas-photo/);
+  assert.match(studio,/src="\/images\/holistic-house\/support-mock-hero\.webp"/);
+  for(const label of ["Видео для вашей цели","A video for your goal","Un vídeo para tu objetivo"])
+    assert.ok(studio.includes(label),label);
+  assert.match(studio,/data-ideas-step=\{activeWorkspace==="phrases"\?ideasSubtab:undefined\}/);
+  assert.match(mobile,/\.previewStage>\.heroWithRail\{display:none!important\}/);
+  assert.match(mobile,/\.previewStage>\.ideasPhotoHero\{/);
+  assert.ok(mobile.includes('data-ideas-step="personalization"] [data-video-ideas-open-montage-text]'));
+  assert.ok(mobile.includes('data-ideas-step="personalization"] [data-video-phrase-audio-shortcut]{'));
+  assert.ok(browser.includes("async function openVisibleMontageText(page,engine"));
+  assert.ok(browser.includes("real static photo replaces Ideas player"));
+  assert.match(css,/@media\(max-width:759px\)/);
+  assert.match(studio,/setIdeasProfileConfirmed\(true\)/);
+  assert.match(studio,/setIdeasSubtab\("concept"\)/);
 });

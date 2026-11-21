@@ -144,14 +144,14 @@ test("approved scenic Home shows four clear choices above the wide Ali composer 
  assert.match(entry,/freeReviewTitle:"Разобраться в своей ситуации"/);
  assert.match(entry,/freeReviewTitle:"Comprender mi situación"/);
  assert.match(entry,/services\/free-situation-review/);
- assert.ok(entry.indexOf("data-home-free-review")<entry.indexOf("data-home-focus-grid"));
- assert.ok(entry.indexOf("data-home-focus-grid")<entry.indexOf("data-home-intent-form"));
+ assert.ok(entry.indexOf("data-home-intent-form")<entry.indexOf("data-home-focus-grid"));
+ assert.ok(entry.indexOf("data-home-intent-form")<entry.indexOf("data-home-focus-grid"));
  assert.match(css,/\.reviewCta\{box-sizing:border-box;display:flex/);
  assert.match(css,/@media\(min-width:356px\) and \(max-width:430px\)/);
  assert.match(css,/\.language summary\{min-width:44px\}/);
  assert.match(css,/\{width:44px;min-width:44px\}/);
  assert.match(entry,/data-home-focus-grid/);
- assert.ok(entry.indexOf('data-home-focus-grid')<entry.indexOf('data-home-intent-form'));
+ assert.ok(entry.indexOf('data-home-focus-grid')<entry.indexOf('data-home-free-review'));
  assert.match(entry,/data-home-continue-path/);
  assert.match(entry,/data-home-send-to-ali/);
  assert.match(css,/\.focusGrid\{display:grid;grid-template-columns:repeat\(2/);
@@ -160,4 +160,79 @@ test("approved scenic Home shows four clear choices above the wide Ali composer 
  assert.doesNotMatch(entry,/<iframe|<video|fetch\(/);
  assert.doesNotMatch(entry,/data-home-service-action/);
  assert.match(deferred,/<MySpaceTopics locale=\{locale\} publicHome\/>/);
+});
+
+test("owner-approved compact first screen keeps persona, full composer, categories and help CTAs",()=>{
+ const home=read("components/home-dialogue-entry.tsx");
+ const styles=read("components/home-dialogue-entry.module.css");
+ for(const label of ["Get Ideas","Diagnostic & Hints","Get Support","Session & Service",
+   "Choose a direction","How it works — in 3 simple steps","Start free chat"]) {
+   assert.ok(home.includes(label),label);
+ }
+ for(const fragment of ["data-home-open-ali-persona","data-home-ali-greeting-play",
+   "data-home-intent-composer","data-home-how-it-works","data-home-request-session"]) {
+   assert.ok(home.includes(fragment),fragment);
+ }
+ assert.ok(home.indexOf("data-home-dialogue-hero")<home.indexOf("data-home-intent-form"));
+ assert.ok(home.indexOf("data-home-intent-form")<home.indexOf("data-home-focus-grid"));
+ assert.ok(home.indexOf("data-home-focus-grid")<home.indexOf("data-home-how-it-works"));
+ assert.ok(home.indexOf("data-home-how-it-works")<home.indexOf("data-home-request-session"));
+ assert.match(styles,/HOME_SCREEN_VISUAL_20261120/);
+ assert.match(styles,/max-height:800px/);
+ assert.match(styles,/\.heroPortrait/);
+ assert.match(styles,/\.focusPhoto/);
+ assert.match(styles,/\.finalActions/);
+ assert.doesNotMatch(home,/<iframe|<video|fetch\(/);
+});
+
+test("mobile correction preserves distinct business help links and prevents clipped hero",()=>{
+ const home=read("components/home-dialogue-entry.tsx");
+ const styles=read("components/home-dialogue-entry.module.css");
+ assert.match(home,/service-group-business/);
+ assert.match(home,/hint.id==="love"\?Heart/);
+ assert.match(home,/hint.id==="money"\?TrendingUp/);
+ assert.match(styles,/MOBILE_HERO_CONTENT_SAFE_20261120/);
+ assert.match(styles,/\.heroStory\{height:auto;min-height:165px/);
+ const before=home.indexOf("data-home-intent-form");
+ const after=home.indexOf("data-home-focus-grid");
+ assert.ok(before>=0&&after>before,"The Ali composer must appear before the topic tiles");
+});
+
+test("approved Max hero paints without eager Persona dialog bundle and unrelated catalog CSS",()=>{
+ const home=read("components/home-dialogue-entry.tsx");
+ const hook=read("components/app/use-ali-persona.js");
+ const root=read("app/layout.tsx");
+ const catalog=read("components/catalog-showcase.tsx");
+ assert.ok(home.includes('import dynamic from "next/dynamic"'));
+ assert.ok(home.includes('dynamic(()=>import("@/components/app/ali-persona-picker")'));
+ assert.ok(home.includes('{personaOpen&&<AliPersonaPicker open={personaOpen}'));
+ assert.ok(home.includes('useAliPersona("max")'));
+ assert.ok(hook.includes('export function useAliPersona(initialId=ALI_DEFAULT_PERSONA_ID)'));
+ assert.ok(root.includes('import "./holistic-light-tokens.css"'));
+ assert.ok(!root.includes('import "./catalog-showcase.css"'));
+ assert.ok(catalog.includes('import "@/app/catalog-showcase.css"'));
+});
+
+test("full approved React Home preloads its existing tiny CSS hero scene without replacing it with the legacy static shell",()=>{
+ const entry=read("components/home-dialogue-entry.tsx");
+ const css=read("components/home-dialogue-entry.module.css");
+ const middleware=read("middleware.ts");
+ const root=read("app/page.tsx");
+ const es=read("app/es/page.tsx");
+ const locale=read("app/[locale]/page.tsx");
+ const hint='<link rel="preload" as="image" href="/images/holistic-house/ideas-pine-reference.webp" fetchPriority="high" />';
+ assert.equal(entry.split(hint).length-1,1,"one shared high-priority hint for EN/RU/ES");
+ assert.match(css,/ideas-pine-reference\\.webp/);
+ assert.match(entry,/data-home-dialogue-hero/);
+ assert.match(entry,/data-home-open-ali-persona/);
+ assert.match(entry,/data-home-focus-grid/);
+ assert.match(entry,/data-home-intent-composer/);
+ assert.match(entry,/data-home-how-it-works/);
+ assert.match(entry,/data-home-request-session/);
+ assert.match(root,/<HolisticHouseHome locale="en"/);
+ assert.match(es,/<HomeDialogueEntry locale="es"/);
+ assert.match(locale,/<HolisticHouseHome locale=/);
+ assert.match(middleware,/HH_ENABLE_LEGACY_INSTANT_HOME/);
+ assert.match(middleware,/process\\.env\\.HH_ENABLE_LEGACY_INSTANT_HOME === 'true'/);
+ assert.doesNotMatch(middleware,/^\\s*const fastLocale = instantHomeLocale\\(/m);
 });

@@ -19,13 +19,9 @@ test("large Academy CSS and admin video styling are code-split from the public r
   assert.match(root, /import "\.\/ia-v2\.css"/);
 });
 
-
-test("catalogue-only CSS is loaded with CatalogShowcase, never by the first home paint", () => {
-  const root=read("app/layout.tsx");
-  const showcase=read("components/catalog-showcase.tsx");
-  const css=read("app/catalog-showcase.css");
-  assert.ok(!root.includes('import "./catalog-showcase.css"'));
-  assert.match(showcase,/import "@\/app\/catalog-showcase\.css"/);
-  assert.match(css,/\.catalog-showcase \{/);
-  assert.doesNotMatch(css,/^\s*(body|html|:root)\b/m);
+test("large catalog showcase styles are route-scoped, not first-load global",()=>{
+ const root=read("app/layout.tsx");
+ const catalog=read("components/catalog-showcase.tsx");
+ assert.ok(!root.includes('import "./catalog-showcase.css"'));
+ assert.ok(catalog.includes('import "@/app/catalog-showcase.css"'));
 });

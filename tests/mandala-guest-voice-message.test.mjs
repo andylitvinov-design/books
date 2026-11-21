@@ -64,12 +64,14 @@ test("macOS WebKit hydration follows visible Goals → Ideas → Montage without
  const flow=browser.slice(first,last);
  const click=flow.indexOf("await continueToIdeas.click()");
  const ideas=flow.indexOf('toHaveAttribute("data-active-workspace","phrases")',click);
- const refinement=flow.indexOf('const refinement=page.locator',ideas);
- const open=flow.indexOf('await refinement.locator(":scope > summary").click()',refinement);
- const verify=flow.indexOf('await expect(refinement).toHaveAttribute("open","")',open);
- const montage=flow.indexOf("await montage.tap()",verify);
- assert.ok(first>=0&&last>first&&click>=0&&ideas>click&&refinement>ideas&&open>refinement&&verify>open&&montage>verify,
-   "one real visitor click reaches Ideas, native topic disclosure, then Montage");
+ const goal=flow.indexOf('const ideasGoalTab=page.locator',ideas);
+ const cards=flow.indexOf('await expect(goalCards).toHaveCount(3)',goal);
+ const selected=flow.indexOf('await expect(choice).toHaveAttribute("aria-pressed","true")',cards);
+ const next=flow.indexOf('await expect(nextGoal).toBeEnabled()',selected);
+ const personalization=flow.indexOf('data-video-ideas-personalization-panel',next);
+ const montage=flow.indexOf('await openVisibleMontageText(page,browser.browserType().name())',personalization);
+ assert.ok(first>=0&&last>first&&click>=0&&ideas>click&&goal>ideas&&cards>goal&&selected>cards&&next>selected&&personalization>next&&montage>personalization,
+   "one real visitor click reaches Ideas Goal, selects a visible choice, enters Personalization, then opens Montage");
  assert.match(flow,/data-video-continue-scenarios/);
  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
  assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);

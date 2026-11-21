@@ -32,14 +32,6 @@ on:
       - 'components/public-consultation-cta.tsx'
       - 'app/[locale]/services/page.tsx'
       - 'next.config.ts'
-      - 'middleware.ts'
-      - 'public/instant-home/en.html'
-      - 'public/instant-home/ru.html'
-      - 'public/instant-home/fast.css'
-      - 'scripts/verify-home-critical-response.mjs'
-      - 'tests/home-critical-response.test.mjs'
-      - 'tests/home-critical-render-path.test.mjs'
-      - 'tests/instant-home-first-screen.test.mjs'
   workflow_dispatch:
 permissions:
   contents: read
@@ -50,11 +42,9 @@ concurrency:
 
 jobs:
   measure-public:
-    # Performance-only Draft PRs still need local HTML/build evidence, without
-    # arming the native production auto-merge or creating Vercel previews.
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false || startsWith(github.event.pull_request.title, 'perf(home):') }}
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -62,55 +52,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Verify exact home CSS, CSP hash and response-check logic
-        run: node --test tests/home-critical-response.test.mjs tests/home-critical-render-path.test.mjs tests/instant-home-first-screen.test.mjs
       - name: Validate targeted safety and booking contracts
         run: node --test tests/holistic-house-image-quota.test.mjs tests/hh-public-html-metrics.test.mjs tests/holistic-house-speed-and-cta.test.mjs tests/holistic-house-home-streaming.test.mjs tests/home-carousel-first-screen-cta.test.mjs tests/home-rsc-on-demand.test.mjs tests/public-consultation-cta-design.test.mjs tests/consultation-capture-choice.test.mjs tests/personal-testimonials.test.mjs
-      # Draft PR performance acceptance intentionally uses GitHub Actions only.
-      # The Vercel Pro project does not create a preview build for this branch.
-      - name: Stage checksum-verified FFmpeg for the existing prebuild
-        if: ${{ github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'perf(home):') }}
-        uses: ./.github/actions/ci-ffmpeg-static
-      - name: Install project build dependencies
-        if: ${{ github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'perf(home):') }}
-        run: npm ci --no-audit --no-fund
-      - name: Materialize staged FFmpeg
-        if: ${{ github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'perf(home):') }}
-        uses: ./.github/actions/ci-ffmpeg-static
-        with:
-          stage: materialize
-      - name: Build the exact-head production Next UI and inline CSS
-        if: ${{ github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'perf(home):') }}
-        env:
-          NEXT_TELEMETRY_DISABLED: '1'
-        run: npm run build
-      - name: Inspect all five server-rendered homepage responses locally
-        if: ${{ github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'perf(home):') }}
-        env:
-          NEXT_TELEMETRY_DISABLED: '1'
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p artifacts
-          PORT=3399 HOSTNAME=127.0.0.1 npm run start > /tmp/hh-home-local-start.log 2>&1 &
-          app_pid=$!
-          trap 'kill "$app_pid" 2>/dev/null || true' EXIT
-          ready=0
-          for attempt in {1..35}; do
-            if curl -fsS -o /dev/null http://127.0.0.1:3399/; then ready=1; break; fi
-            sleep 1
-          done
-          if [[ "$ready" != 1 ]]; then tail -60 /tmp/hh-home-local-start.log; exit 1; fi
-          node scripts/verify-home-critical-response.mjs http://127.0.0.1:3399 --enforce-inline-react | tee artifacts/home-critical-response.json
-          { echo '## Exact PR Next production homepage CSS'; echo '```json'; cat artifacts/home-critical-response.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
-      - name: Upload measured local first-render response evidence
-        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'perf(home):')
-        uses: actions/upload-artifact@v4
-        with:
-          name: hh-home-critical-${{ github.run_id }}
-          path: artifacts/home-critical-response.json
-          if-no-files-found: ignore
-          retention-days: 7
       - name: Measure public TTFB and HTML/RSC size (no login, no private routes)
         # PR runs validate source only; the live production alias is not that PR.
         # Explicit manual audits check actual hourly LIVE rather than the stale alias after merge.
