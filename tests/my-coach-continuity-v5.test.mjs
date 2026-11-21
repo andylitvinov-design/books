@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {markLatestCoachReplyInterrupted,coachAudibleTurns} from '../lib/coaching/coach-audible-history.mjs'
+import {markLatestCoachReplyInterrupted,coachAudibleTurns,coachProviderHistory} from '../lib/coaching/coach-audible-history.mjs'
 import {coachTurnWindow} from '../lib/coaching/coach-turn-window.mjs'
 import {coachGroqReasoningEffort} from '../lib/coaching/groq-coach-provider.mjs'
 const source=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
@@ -22,6 +22,18 @@ test('unheard AI reply remains visible but is excluded from next Director contex
  assert.equal(markLatestCoachReplyInterrupted(newer),newer)
  assert.equal(coachTurnWindow(coachAudibleTurns(next),10).length,3)
 })
+test('saved-context replies stay visible and stay out of later provider history',()=>{
+ const client={role:'user',content:'I want to get organized'}
+ const ordinary={role:'assistant',content:'What has worked before?'}
+ const contextual={role:'assistant',content:'Try the saved Friday plan.',requestedSavedContext:true}
+ const rows=[client,ordinary,contextual]
+ assert.deepEqual(coachProviderHistory(coachAudibleTurns(rows)),[client,ordinary])
+ assert.equal(rows.at(-1),contextual)
+ const interrupted=markLatestCoachReplyInterrupted(rows,contextual.content)
+ assert.equal(interrupted.at(-1).requestedSavedContext,true)
+ assert.equal(interrupted.at(-1).content,contextual.content)
+ assert.deepEqual(coachProviderHistory(coachAudibleTurns(interrupted)),[client,ordinary])
+})
 test('interruption watches thinking, waiting and speaking; no busy-guard drops the next voice',()=>{
  const s=source('components/my-coach-speech-loop.jsx'),d=source('components/my-coach-live-dialogue.jsx')
  assert.match(s,/beginVoiceBargeMonitor\(generation\) \/\/ Listen even while AI/)
@@ -29,7 +41,7 @@ test('interruption watches thinking, waiting and speaking; no busy-guard drops t
  assert.match(s,/monitorGeneration=generationRef\.current\+1/)
  assert.match(s,/cancelRef\.current\?\.\(\)/)
  assert.match(d,/onCoachInterrupted=\{markCoachSpeechInterrupted\}/)
- assert.match(d,/if\(!message\|\|paused\|\|\(!voiceTurn&&busy\)\)return null/)
+ assert.match(d,/if\(!message\|\|paused\|\|protocolOpen\|\|\(!voiceTurn&&busy\)\)return null/)
  assert.match(d,/turnRequestRef\.current!==requestId/)
 })
 test('spoken reasoning uses low for greetings, medium for substantive, same provider',()=>{

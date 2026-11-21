@@ -131,7 +131,6 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(page.locator('[data-video-ideas-personalization-panel]'))
       .toBeVisible();
     // The existing visible Montage rail remains available for voice/text QA.
-
     await openVisibleMontageText(page,browser.browserType().name());
     await expect(page.locator('[data-video-montage-tab="text"]'))
       .toHaveAttribute("aria-pressed","true");
@@ -273,8 +272,8 @@ async function verifyWorkspaceHydration(browser,locale){
     const ideasPersonalTab=page.locator('[data-video-ideas-tab="personalization"]');
     await expect(ideasPersonalTab).toHaveAttribute("aria-pressed","true");
     await expect(ideasConceptTab).toBeDisabled();
-    // Support cannot reach Concept before real consented personalization.
-    // Follow the actual five steps, not a forced click on a disabled tab.
+    // Support must complete each real required question before Concept unlocks.
+    // Never force-tap a disabled tab or substitute synthetic React state.
     const supportQuiz=page.locator('[data-video-personalization][data-video-personalization-goal="support"]');
     await expect(supportQuiz).toBeVisible();
     const currentFeeling=supportQuiz.locator('[data-personalization-kind="current"] [data-video-personalization-choice]').first();
@@ -900,10 +899,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // Ideas has three tabs. Voice and My Voice remain visible opt-in submodes.
       const ideasModes=phrases.locator("[data-video-ideas-tabs]");
       await expect(ideasModes).toBeVisible();
-      const ideasGoalTab=ideasModes.locator('[data-video-ideas-tab="goal"]');
+      const goalTab=ideasModes.locator('[data-video-ideas-tab="goal"]');
       const personalTab=ideasModes.locator('[data-video-ideas-tab="personalization"]');
       const conceptTab=ideasModes.locator('[data-video-ideas-tab="concept"]');
-      await expect(ideasGoalTab).toHaveAttribute("aria-pressed","true");
+      await expect(goalTab).toHaveAttribute("aria-pressed","true");
       await expect(personalTab).toBeDisabled();
       await expect(conceptTab).toBeDisabled();
       const goalPane=phrases.locator("[data-video-ideas-goal-panel]");

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggregateError } from '../scripts/ci-specialist-aggregate.mjs';
 import { inspectJobs, trustedRequiredJobs, inspectWorkflowRuns } from '../lib/ci/specialist-aggregate.mjs';
-import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance } from '../lib/ci/production-base-impact.mjs';
 
 const repo = 'andylitvinov-design/books', head = 'a'.repeat(40), base = 'b'.repeat(40);
 const path = '.github/workflows/mobile.yml';
@@ -85,6 +85,51 @@ test('default hh-merge-check halves redundant multi-specialist polling without s
   assert.equal(reads,5,'five indexed HEAD reads vs nine at the old 30-second cadence');
   assert.equal(jobs,2,'both actual specialist jobs are still independently checked');
   assert.equal(result.executed.length,2);
+});
+
+test('running required sibling does not falsely exhaust queue grace while another Specialist awaits a runner',async()=>{
+  const second='.github/workflows/video-qa.yml';
+  const files={base:new Map([[path,yaml],[second,yaml]]),
+    current:new Map([[path,yaml],[second,yaml]]),
+    changedRows:[{filename:'lib/crm/a.js',status:'M'}]};
+  const queued=run('queued',null);
+  const active={...queued,id:152,path:second};
+  let elapsed=0,reads=0,jobs=0;
+  const api={
+    pr:async()=>pr,target:async()=>base,
+    runs:async()=>{
+      reads++;
+      const first=elapsed<15*60_000?queued:
+        {...queued,status:elapsed<16*60_000?'in_progress':'completed',
+          conclusion:elapsed<16*60_000?null:'success'};
+      const sibling=elapsed<12*60_000?
+        {...active,status:'in_progress',conclusion:null}:
+        {...active,status:'completed',conclusion:'success'};
+      return [first,sibling];
+    },
+    jobs:async()=>{jobs++;return [{name:'test',status:'completed',conclusion:'success'}];},
+  };
+  const accepted=await verify(api,ctx,files,{maxWaitMs:25*60_000,
+    now:()=>elapsed,sleep:async ms=>{assert.ok(ms>0&&ms<=60_000);elapsed+=ms;}});
+  assert.equal(elapsed,16*60_000,'still waits for actual completed proof');
+  assert.equal(accepted.executed.length,2,'no skipped Specialist evidence');
+  assert.equal(jobs,2);
+  assert.ok(reads<30,'no extra burst polling');
+});
+
+test('required queued plus running siblings still time out globally, never count as PASS',async()=>{
+  const second='.github/workflows/video-qa.yml';
+  const files={base:new Map([[path,yaml],[second,yaml]]),
+    current:new Map([[path,yaml],[second,yaml]]),
+    changedRows:[{filename:'lib/crm/a.js',status:'M'}]};
+  const queued=run('queued',null),running={...queued,id:152,path:second,status:'in_progress'};
+  let elapsed=0;
+  const api={pr:async()=>pr,target:async()=>base,runs:async()=>[queued,running],
+    jobs:async()=>{throw Error('never accept queued or running as green');}};
+  await assert.rejects(()=>verify(api,ctx,files,{maxWaitMs:12*60_000,
+    now:()=>elapsed,sleep:async ms=>{assert.ok(ms>0&&ms<=60_000);elapsed+=ms;}}),
+    /SPECIALIST_MISSING_OR_PENDING:RUNNING_TIMEOUT/);
+  assert.equal(elapsed,12*60_000,'global deadline still caps all queue/sibling waits');
 });
 
 test('an explicitly extended queue budget permits a proven 20-minute hosted runner wait', async () => {
@@ -718,6 +763,83 @@ test('#5160 accepts new independent namespaced source after production moves, ne
   assert.ok(targetReads>=1,'actual protected production ref was inspected');
   await assert.rejects(()=>verify({...api,pr:async()=>({...active,mergeable:false,mergeable_state:'dirty'})},
     ctx,source,{maxWaitMs:0}),/MERGE_CONFLICT/);
+});
+
+test('independent owner CI test addition does not invalidate an unrelated protected release',async()=>{
+  const latest='c'.repeat(40);
+  const owner={filename:'.github/workflows/hh-crm-source-check.yml',
+    status:'modified',additions:2,deletions:0,changes:2,
+    patch:"@@ -142,6 +142,8 @@ jobs:\n+      - name: Incident regression - Telegram Business and Shamanica requests\n+        run: node --test tests/crm-telegram-shamanica-course-intake.test.mjs\n"};
+  const target=[owner,
+    {filename:'app/api/app/crm/messenger/webhook/[provider]/route.js',status:'modified'},
+    {filename:'lib/crm/telegram-secretary-service.js',status:'modified'},
+    {filename:'tests/crm-telegram-shamanica-course-intake.test.mjs',status:'added'}];
+  const diff=(files=target,extra={})=>({status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:base},merge_base_commit:{sha:base},
+    commits:[{sha:latest}],files,...extra});
+  const media=['components/mandala-video-mobile.module.css','tests/mandala-free-video.test.mjs'];
+  assert.equal(safeMixedProtectedAdvance(diff(),base,latest,media),true);
+  assert.equal(safeMixedProtectedAdvance(diff(),base,latest,
+    ['components/ali-secretary-widget.tsx']),false,'the same assistant family must never skip its owner');
+  for(const changed of [
+    {...owner,patch:owner.patch.replace('node --test','npm run')},
+    {...owner,patch:owner.patch.replace('tests/crm-','tests/ci-')},
+    {...owner,additions:3,changes:3},
+    {...owner,deletions:1,changes:3},
+    {filename:'.github/workflows/hh-pr-core-release.yml',status:'modified'},
+    {filename:'package-lock.json',status:'modified'},
+    {filename:'lib/ci/production-base-impact.mjs',status:'modified'},
+    {filename:'app/api/auth/route.ts',status:'modified'},
+  ])assert.equal(safeMixedProtectedAdvance(diff([changed]),base,latest,media),false,
+    'never waive altered gates, shared dependencies, auth or shell: '+changed.filename);
+  for(const bad of [{status:'diverged'},{behind_by:1},{commits:[]},
+    {files:[owner,owner]},{files:[]},{files:[{...owner,status:'renamed'}]}])
+    assert.equal(safeMixedProtectedAdvance(diff(target,bad),base,latest,media),false);
+  const shamanica=['components/shamanica-profile-card.tsx'];
+  assert.equal(requiresCurrentProductionBase(shamanica),true);
+  const api={pr:async()=>({...pr,mergeable:true,base:{...pr.base,sha:latest}}),
+    target:async()=>latest,compare:async()=>diff(),runs:async()=>[],jobs:async()=>[]};
+  assert.equal((await verify(api,ctx,{base:new Map(),current:new Map(),
+    changedRows:shamanica.map(filename=>({filename,status:'M'}))},{maxWaitMs:0})).head,head);
+});
+
+test('detached CI specialist policy reuses only unrelated protected product source',async()=>{
+  const latest='c'.repeat(40);
+  const candidate=['lib/ci/production-base-impact.mjs','tests/ci-specialist-wait.test.mjs'];
+  const target=[
+    {filename:'components/mandala-video-idea-goal.tsx',status:'modified'},
+    {filename:'components/shamanica-mobile.tsx',status:'modified'},
+    {filename:'lib/crm/telegram-secretary-service.js',status:'modified'},
+    {filename:'tests/crm-telegram-shamanica-course-intake.test.mjs',status:'added'},
+  ];
+  const diff=(files=target,extra={})=>({status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:base},merge_base_commit:{sha:base},
+    commits:[{sha:latest}],files,...extra});
+  assert.equal(safeDetachedCiSourceAdvance(diff(),base,latest,candidate),true);
+  for(const blocked of [
+    '.github/workflows/hh-crm-source-check.yml',
+    '.github/workflows/hh-pr-core-release.yml','lib/ci/specialist-aggregate.mjs',
+    'components/shared/nav.tsx','app/api/auth/route.ts','lib/security/permissions.mjs',
+    'package-lock.json','supabase/migrations/seed.sql',
+  ])assert.equal(safeDetachedCiSourceAdvance(diff([
+    ...target,{filename:blocked,status:'modified'}]),base,latest,candidate),false,blocked);
+  for(const unsafeCandidate of [
+    ['tests/ci-specialist-wait.test.mjs'],
+    [...candidate,'.github/workflows/hh-pr-core-release.yml'],
+    [...candidate,'components/mandala-free-video-studio.tsx'],
+  ])assert.equal(safeDetachedCiSourceAdvance(diff(),base,latest,unsafeCandidate),false);
+  for(const invalid of [
+    {status:'diverged'},{commits:[]},{behind_by:1},{files:[]},
+    {files:[target[0],target[0]]},{files:[{...target[0],status:'deleted'}]},
+  ])assert.equal(safeDetachedCiSourceAdvance(diff(target,invalid),base,latest,candidate),false);
+  const active={...pr,mergeable:true,base:{...pr.base,sha:latest}};
+  const api={pr:async()=>active,target:async()=>latest,compare:async()=>diff(),
+    runs:async()=>[],jobs:async()=>[]};
+  assert.equal((await verify(api,ctx,{base:new Map(),current:new Map(),
+    changedRows:candidate.map(filename=>({filename,status:'M'}))},{maxWaitMs:0})).head,head);
+  await assert.rejects(()=>verify({...api,pr:async()=>({...active,mergeable:false,mergeable_state:'dirty'})},ctx,
+    {base:new Map(),current:new Map(),changedRows:candidate.map(filename=>({filename,status:'M'}))},
+    {maxWaitMs:0}),/MERGE_CONFLICT/);
 });
 
 test('all required specialists finish before BASE_ADVANCED; not only macOS (#5199/#5208)',async()=>{

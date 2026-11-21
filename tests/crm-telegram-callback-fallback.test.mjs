@@ -5,6 +5,7 @@ import './assist-telegram-business-request.test.mjs';
 import './telegram-secretary-business.test.mjs';
 import './crm-telegram-first-contact.test.mjs';
 import './crm-whatsapp-human-takeover.test.mjs';
+import './crm-whatsapp-ali-replies.test.mjs';
 import vm from 'node:vm';
 import {parseTelegramHomeCallback} from '../lib/crm/telegram-companion-menu.mjs';
 import {captureTelegramLeadBestEffort} from '../lib/crm/telegram-lead-capture-policy.mjs';
@@ -58,6 +59,7 @@ async function routeRun({source=candidate,payload=callback(),diagnostic='off',co
    captureWhatsAppFirstContact:async()=>({handled:false,created:false}),
    whatsappHumanTakeoverActive:async()=>false,
    recordWhatsAppInboundReceipt:async()=>({recorded:false}),
+   archiveWhatsAppAliAcceptedReply:async()=>false,
    // WhatsApp locale marker helper belongs to the production normalizer, not this VM.
    whatsappExpressReviewLocale:()=>null,
    processTelegramCompanion:async()=>{calls.companion++;return companion==='handled'?{handled:true,to:'123456789',locale:'ru',text:'test companion welcome',markup:null}:{handled:false}},

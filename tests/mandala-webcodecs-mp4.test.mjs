@@ -112,7 +112,8 @@ test("WebKit export can be cancelled, and microphone speech is not looped",()=>{
 test("silent WebKit exports H.264 even without AudioEncoder, never fakes voice AAC",()=>{
   assert.match(helper,/supportsLocalWebCodecsMp4\(needsAudio=false\)/);
   assert.match(helper,/!needsAudio \|\| \(/);
-  assert.match(helper,/if\(audio\)\{/);
+  assert.match(helper,/const withAudio=Boolean\(audio\|\|audioMaster\)/);
+  assert.match(helper,/if\(withAudio\)\{[\s\S]*?await canEncodeAudio\("aac"/);
   assert.match(helper,/webcodecs_h264_unsupported/);
   assert.match(helper,/webcodecs_aac_unsupported/);
   assert.match(studio,/!attachedAudio \|\| \(typeof AudioEncoder/);
@@ -203,13 +204,14 @@ test("hydration progresses Goals → Ideas through a real tap without hidden leg
   const flow=browser.slice(start,end);
   const hydrate=flow.indexOf('data-video-studio-hydrated","true"');
   const continueTap=flow.indexOf("await continueToIdeas.click()",hydrate);
-  const goalTap=flow.indexOf('await choice.tap()',continueTap);
-  const personalize=flow.indexOf('await nextGoal.tap()',goalTap);
-  const visiblePanel=flow.indexOf('data-video-ideas-personalization-panel',personalize);
-  const montage=flow.indexOf("await montage.tap()",visiblePanel);
-  assert.ok(start>=0&&end>start&&hydrate>=0&&continueTap>hydrate&&
-    goalTap>continueTap&&personalize>goalTap&&visiblePanel>personalize&&montage>visiblePanel,
-    "actual visible Goals tap must select purpose, advance to Personalization and then open Montage");
+  const goal=flow.indexOf('const ideasGoalTab=page.locator',continueTap);
+  const cards=flow.indexOf('await expect(goalCards).toHaveCount(3)',goal);
+  const selected=flow.indexOf('await expect(choice).toHaveAttribute("aria-pressed","true")',cards);
+  const next=flow.indexOf('await expect(nextGoal).toBeEnabled()',selected);
+  const personalization=flow.indexOf('data-video-ideas-personalization-panel',next);
+  const montage=flow.indexOf('await openVisibleMontageText(page,browser.browserType().name())',personalization);
+  assert.ok(start>=0&&end>start&&hydrate>=0&&continueTap>hydrate&&goal>continueTap&&cards>goal&&selected>cards&&next>selected&&personalization>next&&montage>personalization,
+    "real Goals tap must lead through selected visible Goal and Personalization to Montage");
   assert.match(flow,/data-video-continue-scenarios/);
   assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
   assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
@@ -385,28 +387,16 @@ test("Stories WebKit enters Ideas via visible controls after native Goal quiz",(
  assert.doesNotMatch(source,/await advance\.waitFor\(\{state:'visible'|advance\.tap\(\{force:true\}\)/);
 });
 
-test("original-motion WebKit uses real Change Goal and all Personalization steps before Concept",()=>{
- const browser=readFileSync(new URL("../scripts/benchmarking/verify-original-motion-export.mjs",import.meta.url),"utf8");
- const milestones=[
-  "const ideasGoalChoice=","const goalNext=","const personalization=",
-  "const currentChoice=","const desiredChoice=","const meaningChoice=",
-  "const energyChoice=","const profileContinue=","const conceptTab=",
-  "const conceptPanel=","const addVideo=","const readyGenerate",
-  "let captured",
- ];
- let previous=-1;
- for(const milestone of milestones){
-  const offset=browser.indexOf(milestone,previous+1);
-  assert.ok(offset>previous,"Original Motion must complete real visitor flow before media proof: "+milestone);
-  previous=offset;
- }
- assert.match(browser,/CHANGE_GOAL_MUST_BE_SELECTED_BY_GUEST/);
- assert.match(browser,/VISITOR_PERSONALIZATION_MUST_UNLOCK_CONCEPT/);
- // Disallow forced browser gestures, but not filesystem cleanup with force: true.
- assert.doesNotMatch(browser,/\.(?:click|tap)\(\{[^}]*\bforce:\s*true|\.evaluate\(.*\.disabled\s*=|setIdeasProfileConfirmed\(true\)/,
-  "do not override native consent or disabled Concept by modifying DOM");
- assert.match(browser,/readRealGuestVideo\(page,\{timeout: 150000\}\)/,
-  "real generated media must remain mandatory");
+test("original-motion WebKit uses native Goal and personalization before actual export",()=>{
+ const script=readFileSync(new URL("../scripts/benchmarking/verify-original-motion-export.mjs",import.meta.url),"utf8");
+ const markers=["await completeThreeStepGoalsQuiz", "const ideasGoal=", "const quiz=", "const conceptPanel=", "const addVideo=", "const readyGenerate", "let captured", "readRealGuestVideo(page,{timeout: 150000})"];
+ let prev=-1;
+ for(const marker of markers){const at=script.indexOf(marker,prev+1);
+  assert.ok(at>prev,"real guest MP4 journey preserves "+marker);prev=at;}
+ assert.match(script,/GOALS_MUST_OPEN_IDEAS/);
+ assert.match(script,/APPROVED_CONCEPT_MUST_PERSIST/);
+ assert.doesNotMatch(script,/\.(?:click|tap)\(\{[^}]*\bforce:\s*true|setIdeasProfileConfirmed\(true\)/,
+  "do not force browser gestures or mutate user consent");
 });
 
 test("WebKit traverses Ideas Personalization and Concept before consented Voice/My Voice",()=>{

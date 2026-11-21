@@ -162,20 +162,20 @@ test("voice browser opens Ideas and applies six visible Montage styles with deco
  const flow=source.slice(start,end);
  const click=flow.indexOf("await continueToIdeas.click()");
  const ideas=flow.indexOf('data-active-workspace","phrases"',click);
- const goal=flow.indexOf("const ideasGoalTab=page.locator",ideas);
- const visible=flow.indexOf("await expect(goalPane).toBeVisible()",goal);
- const choices=flow.indexOf("await expect(goalCards).toHaveCount(3)",visible);
+ const goalTab=flow.indexOf('const ideasGoalTab=page.locator',ideas);
+ const goalPane=flow.indexOf('const goalPane=page.locator',goalTab);
+ const choices=flow.indexOf('await expect(goalCards).toHaveCount(3)',goalPane);
  const selectedGoal=flow.indexOf('await expect(choice).toHaveAttribute("aria-pressed","true")',choices);
- const advanced=flow.indexOf('await nextGoal.tap()',selectedGoal);
- const personalized=flow.indexOf('data-video-ideas-personalization-panel',advanced);
- const montage=flow.indexOf('await montage.tap()',personalized);
+ const nextGoal=flow.indexOf('await expect(nextGoal).toBeEnabled()',selectedGoal);
+ const personalization=flow.indexOf('data-video-ideas-personalization-panel',nextGoal);
+ const montage=flow.indexOf('await openVisibleMontageText(page,browser.browserType().name())',personalization);
  const style=flow.indexOf('const styles=page.locator("[data-video-montage-style]")',montage);
  const six=flow.indexOf('await expect(styles).toHaveCount(6)',style);
  const selected=flow.indexOf('await minimal.tap()',six);
  const reflected=flow.indexOf('data-video-preview-style","minimal"',selected);
  const decoded=flow.indexOf('video.readyState>=2&&video.videoWidth>0',reflected);
- assert.ok(start>=0&&end>start&&click>=0&&ideas>click&&goal>ideas&&visible>goal&&choices>visible&&selectedGoal>choices&&advanced>selectedGoal&&personalized>advanced&&montage>personalized&&style>montage&&six>style&&selected>six&&reflected>selected&&decoded>reflected,
-   "real visitor must choose Goal, enter Personalization, use six Montage styles and decode MP4");
+ assert.ok(start>=0&&end>start&&click>=0&&ideas>click&&goalTab>ideas&&goalPane>goalTab&&choices>goalPane&&selectedGoal>choices&&nextGoal>selectedGoal&&personalization>nextGoal&&montage>personalization&&style>montage&&six>style&&selected>six&&reflected>selected&&decoded>reflected,
+   "real visitor must choose a visible Goal, enter Personalization, select one of six Montage styles and decode an MP4");
  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
  assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
  assert.match(source,/voiceOptions\.locator\(":scope > summary"\)\.tap\(\)[\s\S]*?data-video-affirmation-bed/);
