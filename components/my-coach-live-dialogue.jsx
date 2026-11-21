@@ -1282,7 +1282,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             // Pro tap is an informed Free text+TTS choice; no second form.
             if(voiceState.phase==='speaking'&&latestCoachText)
               markCoachSpeechInterrupted(latestCoachText)
-            speechRef.current?.stop?.()
+            // If Basic already listens, keep its unlocked iPhone audio session
+            // and restart the microphone for the next Gemini turn — no second Play.
+            const continued=speechRef.current?.pauseForTypedTurn?.()===true
+            if(!continued)speechRef.current?.stop?.()
             cancelPendingCoachTurn()
             const freeTtsReady=status.capabilities.gemini_tts_free===true
             setCoachEngine('gemini_free')
@@ -1290,6 +1293,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             setGeminiVoiceTier(freeTtsReady?'gemini_tts_free':'existing')
             setGeminiVoiceConsent(freeTtsReady)
             setGeminiLiveConsent(false)
+            if(continued)speechRef.current?.resumeAfterTypedFailure?.()
             setPlaybackNotice(freeTtsReady?'':({
               ru:'Gemini Free включён; голос Gemini недоступен. Можно выбрать текущий голос.',
               en:'Gemini Free is on; Gemini voice is unavailable. You can choose the existing voice.',
