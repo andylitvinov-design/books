@@ -34,3 +34,11 @@ test("each category presents four real clickable second-level choices in all loc
  assert.match(source,/t\.subservices\[shelfIndex\]\[index\]/);
  assert.match(styles,/\.root \.secondCard/);
 });
+
+test("energy and ritual choices use relevant existing support routes, not unrelated business consulting",()=>{
+ assert.match(source,/id==="remote-energy"/);
+ assert.match(source,/services\/remote-energy-support/);
+ assert.match(source,/id==="ritual"/);
+ assert.match(source,/holistic-support\/mandala/);
+ assert.match(source,/href=\{businessDetailHref\(locale,target\)\}/);
+});

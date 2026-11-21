@@ -15,9 +15,14 @@ const businessShelves=[
  {id:"remedies",target:"remedies",Icon:Sprout,image:"/images/holistic-house/distance-homeopathy.webp",routes:["remedies","remedies","remedies","remedies"]},
  {id:"strategy",target:"analysis",Icon:TrendingUp,image:"/images/holistic-house/books-library.webp",routes:["analysis","support","team","leader"]},
  {id:"artifacts",target:"artifacts",Icon:Gem,image:"/images/holistic-house/tao-fu-balance.webp",routes:["artifacts","artifacts","artifacts","artifacts"]},
- {id:"energy",target:"support",Icon:Target,image:"/images/holistic-house/reiki-approved-sunrise-v3.webp",routes:["leader","team","support","support"]},
- {id:"energywork",target:"team",Icon:Users,image:"/images/holistic-house/homepage-constellations.svg",routes:["team","leader","artifacts","team"]}
+ {id:"energy",target:"support",Icon:Target,image:"/images/holistic-house/reiki-approved-sunrise-v3.webp",routes:["remote-energy","remote-energy","artifacts","remote-energy"]},
+ {id:"energywork",target:"team",Icon:Users,image:"/images/holistic-house/homepage-constellations.svg",routes:["team","remote-energy","ritual","team"]}
 ] as const;
+const businessDetailHref=(locale:PublicLocale,id:string)=>{
+ if(id==="remote-energy")return "/"+locale+"/services/remote-energy-support";
+ if(id==="ritual")return "/"+locale+"/holistic-support/mandala";
+ return shamanicaBusinessHref(locale,id);
+};
 type ShelfId=(typeof businessShelves)[number]["id"];
 const translations={
  ru:{
@@ -195,7 +200,7 @@ export function ShamanicaBusinessContent({locale}:{locale:PublicLocale}){
     <button type="button" className={styles.shelfBack} onClick={()=>setSelectedShelf(null)} data-business-back-to-shelves><ArrowLeft size={18} aria-hidden="true"/>{t.backToShelves}</button>
     <p className={styles.focusLead}>{t.chooseFocus}</p>
     <div className={styles.secondGrid} data-business-second-level={activeShelf.id}>
-     {activeShelf.routes.map((target,index)=><Link key={activeShelf.id+"-"+index} href={shamanicaBusinessHref(locale,target)} prefetch={false} className={styles.secondCard} data-business-subservice={activeShelf.id+"-"+index}>
+     {activeShelf.routes.map((target,index)=><Link key={activeShelf.id+"-"+index} href={businessDetailHref(locale,target)} prefetch={false} className={styles.secondCard} data-business-subservice={activeShelf.id+"-"+index}>
       <span className={styles.secondNumber}>{index+1}</span><strong>{t.subservices[shelfIndex][index]}</strong>
       <span className={styles.detailLabel}>{t.details}</span><ArrowRight size={16} aria-hidden="true"/>
      </Link>)}
