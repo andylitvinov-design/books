@@ -1122,7 +1122,8 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
           method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
           headers:{'Content-Type':'application/json'},
           body:JSON.stringify({provider:voiceProvider,locale:replyLocale,personaId,
-            text:voiceProvider==='google_chirp3_hd'?speakable:reply,
+            text:voiceProvider==='google_chirp3_hd'?speakable:
+               voiceProvider.startsWith('gemini_tts_')?(speakable||reply).slice(0,500):reply,
             ...(voiceProvider.startsWith('gemini_tts_')?{voiceName:selectedVoice}:{}),
             voiceConsent:true,cloudVoiceConsent:true,
             ...(['fish_free','gemini_tts_free'].includes(voiceProvider)?{trainingUseConsent:true}:{})}),
