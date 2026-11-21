@@ -196,6 +196,24 @@ test('Ali Free Gemini voices preserve the owner-selected RU/EN identities after 
  assert.equal(result.toString('ascii',0,4),'RIFF')
  assert.equal(requestBody.store,false)
  assert.equal(requestBody.generation_config.speech_config[0].voice,'Erinome')
+ // A new AI Studio Free Authorization key has AQ. prefix, not AIza.
+ // The public fixed-greeting helper must accept it even before #5234 merges.
+ const authKey='AQ.'+'q'.repeat(50)
+ const auth=await synthesizeAliGeminiGreeting({
+  config:{...approved,apiKey:authKey},locale:'ru',personaId:'mira',
+  text:aliPersonaGreeting('mira','ru'),
+  fetcher:async(_url,options)=>{
+   assert.equal(options.headers['x-goog-api-key'],authKey)
+   return {ok:true,status:200,json:async()=>({
+    steps:[{type:'model_output',content:[{type:'audio',data:wav.toString('base64')}]}]
+   })}
+  }
+ })
+ assert.equal(auth.toString('ascii',0,4),'RIFF')
+ await assert.rejects(()=>synthesizeAliGeminiGreeting({
+  config:{...approved,apiKey:'AQ.'+'q'.repeat(49)},locale:'ru',personaId:'mira',
+  text:aliPersonaGreeting('mira','ru')
+ }),/ALI_GEMINI_GREETING_INVALID/)
  await assert.rejects(()=>synthesizeAliGeminiGreeting({
   config:approved,locale:'ru',personaId:'mira',text:'private user text'
  }),/ALI_GEMINI_GREETING_INVALID/)
