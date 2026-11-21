@@ -7,7 +7,7 @@ const COPY = {
     title: 'Мои материалы · Живые фото', intro: 'Оживите фотографию один раз и храните MP4 для будущих видеороликов.',
     new: 'Добавить фотографию', subject: 'На фотографии', self: 'Я', other: 'Близкий человек',
     consent: 'У меня есть право на фото и разрешение изображённого человека на AI-анимацию и обработку в HeyGen.',
-    motion: 'Как оживить', smile: 'Мягкая улыбка', blink: 'Моргание', turn: 'Поворот головы', wave: 'Махнуть рукой',
+    motion: 'Как оживить', smile: 'Мягкая улыбка', greeting: 'Приветствие', wave: 'Помахать рукой', blink: 'Моргание', turn: 'Поворот головы',
     format: 'Формат', portrait: '9:16 · вертикальный', landscape: '16:9 · горизонтальный',
     create: 'Оживить через HeyGen', progress: 'HeyGen создаёт анимацию. Готовый файл сам появится здесь.',
     disabled: 'AI-анимация пока не подключена к сайту. Уже сохранённые материалы остаются доступны.',
@@ -19,12 +19,13 @@ const COPY = {
     limit: 'Максимум 3 живых фото. Новый заказ требует явного подтверждения.',
     studio: 'Создать ролик', private: 'Материалы приватны, публикация не выполняется автоматически.',
     choose: 'Выберите JPG, PNG, WebP или HEIC до 3 МБ.',
+    waveTip: 'Для взмаха на фото должны быть видны кисть и предплечье. Иначе возможна только улыбка.',
   },
   en: {
     title: 'My Materials · Live Photos', intro: 'Animate once, save the MP4 and reuse it in future videos.',
     new: 'Add a photograph', subject: 'Person in the photo', self: 'Me', other: 'A loved one',
     consent: 'I have rights to this photo and the depicted person’s permission for AI animation and processing by HeyGen.',
-    motion: 'Movement', smile: 'Gentle smile', blink: 'Blink', turn: 'Head turn', wave: 'Small wave',
+    motion: 'Movement', smile: 'Gentle smile', greeting: 'Friendly greeting', wave: 'Small wave', blink: 'Blink', turn: 'Head turn',
     format: 'Format', portrait: '9:16 · portrait', landscape: '16:9 · landscape',
     create: 'Animate with HeyGen', progress: 'HeyGen is animating. Your finished clip will appear here automatically.',
     disabled: 'AI animation is not connected to this site yet. Existing saved materials remain available.',
@@ -36,12 +37,13 @@ const COPY = {
     limit: 'Up to 3 live photos. Every new render requires your confirmation.',
     studio: 'Create a video', private: 'Private by default. Nothing is published automatically.',
     choose: 'Choose a JPG, PNG, WebP or HEIC image up to 3 MB.',
+    waveTip: 'For a natural wave, the photo should show the hand and forearm. Otherwise the clip may only smile.',
   },
   es: {
     title: 'Mis materiales · Fotos vivas', intro: 'Anima una foto una vez y reutiliza el MP4 en futuros vídeos.',
     new: 'Añadir fotografía', subject: 'Persona en la foto', self: 'Yo', other: 'Un ser querido',
     consent: 'Tengo derecho a usar la imagen y permiso de la persona para animación y procesamiento con HeyGen.',
-    motion: 'Movimiento', smile: 'Sonrisa suave', blink: 'Parpadeo', turn: 'Girar la cabeza', wave: 'Saludar con la mano',
+    motion: 'Movimiento', smile: 'Sonrisa suave', greeting: 'Saludo amable', wave: 'Saludar con la mano', blink: 'Parpadeo', turn: 'Girar la cabeza',
     format: 'Formato', portrait: '9:16 · vertical', landscape: '16:9 · horizontal',
     create: 'Animar con HeyGen', progress: 'HeyGen está animando. El vídeo aparecerá aquí automáticamente.',
     disabled: 'La animación AI aún no está conectada. Los materiales existentes siguen disponibles.',
@@ -53,6 +55,7 @@ const COPY = {
     limit: 'Máximo 3 fotos vivas. Cada nueva generación requiere confirmación.',
     studio: 'Crear un vídeo', private: 'Privado por defecto. No se publica automáticamente.',
     choose: 'Selecciona JPG, PNG, WebP o HEIC de hasta 3 MB.',
+    waveTip: 'Para el saludo, la foto debe mostrar la mano y el antebrazo. Si no, el vídeo quizá solo sonría.',
   },
 };
 const styles = {
@@ -165,8 +168,9 @@ export default function MyLivePhotos({ locale = 'en' }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 9 }}>
         <label style={{ fontSize: 13 }}>{t.motion}
           <select style={styles.field} value={motion} disabled={busy} onChange={e => { setMotion(e.target.value); requestId.current = null; }}>
-            {['smile', 'blink', 'turn', 'wave'].map(key => <option value={key} key={key}>{t[key]}</option>)}
+            {['smile', 'greeting', 'wave', 'blink', 'turn'].map(key => <option value={key} key={key}>{t[key]}</option>)}
           </select>
+          {motion === 'wave' ? <small style={{ display: 'block', marginTop: 4, lineHeight: 1.35 }}>{t.waveTip}</small> : null}
         </label>
         <label style={{ fontSize: 13 }}>{t.format}
           <select style={styles.field} value={orientation} disabled={busy} onChange={e => { setOrientation(e.target.value); requestId.current = null; }}>

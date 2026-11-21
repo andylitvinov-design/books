@@ -2,6 +2,14 @@
 
 **Implementation status:** source PR only. No client image has been sent to HeyGen, no API key supplied, no paid job initiated. Production remains gated OFF until the owner independently approves an API pilot and an actual end-to-end trial succeeds.
 
+## Natural portrait prompts (owner decision · 21 Nov 2026)
+
+Reusable server-only presets live in `lib/app/live-photo-heygen.mjs`. The approach matches the quality of the first-party coach takes described in `docs/coaching/MY_COACH_NATURAL_MP4_20261118.md`: a five-second silent natural gesture, camera fixed, consistent face and background, no artificial face deformation or speech. AI identity fidelity and hands still require human preview QA.
+
+Three primary buttons are exposed in EN/RU/ES: **Smile** (gradual warm smile and natural blink), **Greeting** (warm eye contact, one slight friendly nod and a smile, no talking), **Wave** (one gentle hand wave, only if hand and forearm already appear in the photograph). Wave warns about unsuitable crops and instructs the generator not to hallucinate arms; **Blink** and **Turn** remain compatible secondary options.
+
+The previously applied Supabase motion CHECK is updated by the new **forward-only** migration `20261121230500_hh_client_live_photo_greeting_v1.sql`. The original applied migration and account RLS are untouched. HeyGen **REST API** billing, opt-in, idempotency, current 5s/768p limit, storage privacy and feature flags remain unchanged. No new render is authorized; the Creator app subscription and website API charges are separate. Insertion into the Studio timeline remains dependent on a later protected integration.
+
 ## Workflow
 1. Signed-in Google client opens My Page → My Materials → Live Photos (also accessible from My Videos).
 2. Select one JPEG/PNG/WebP/HEIC photo (up to 3 MB), movement, and portrait/landscape. Explicitly confirm rights and subject permission for external AI processing.

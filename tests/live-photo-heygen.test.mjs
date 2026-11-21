@@ -18,7 +18,7 @@ test('HeyGen calls are off without two owner gates and a private provider key', 
     HH_LIVE_PHOTOS_SPEND_APPROVED: 'true', HH_LIVE_PHOTO_HEYGEN_API_KEY: key }), true);
 });
 test('fixed cost and motion: 5 seconds, 768p, no arbitrary prompt or data', () => {
-  assert.deepEqual(LIVE_PHOTO_MOTIONS, ['smile', 'blink', 'turn', 'wave']);
+  assert.deepEqual(LIVE_PHOTO_MOTIONS, ['smile', 'greeting', 'wave', 'blink', 'turn']);
   for (const motion of LIVE_PHOTO_MOTIONS) {
     const body = buildHeyGenLivePhotoBody('e0f7f5bdc42a4c61b0747c1bbd75cbb6', motion);
     assert.equal(body.model, 'heygen-video-1');
@@ -30,6 +30,29 @@ test('fixed cost and motion: 5 seconds, 768p, no arbitrary prompt or data', () =
   }
   assert.throws(() => buildLivePhotoPrompt('talk like my therapist'), /INVALID_LIVE_PHOTO_MOTION/);
   assert.throws(() => buildHeyGenLivePhotoBody('https://evil.example/a.jpg', 'smile'));
+});
+test('natural portrait prompts preserve identity and restrict motion in all locales', () => {
+  const smile = buildLivePhotoPrompt('smile');
+  const greeting = buildLivePhotoPrompt('greeting');
+  const wave = buildLivePhotoPrompt('wave');
+  assert.match(smile, /gentle warm smile/i);
+  assert.match(greeting, /one small friendly greeting nod/i);
+  assert.match(wave, /hand and forearm already visible/i);
+  assert.match(wave, /never invent an arm or hand/i);
+  for (const prompt of [smile, greeting, wave]) {
+    assert.match(prompt, /exact identity/i);
+    assert.match(prompt, /fixed camera/i);
+    assert.match(prompt, /no talking/i);
+    assert.match(prompt, /no artificial face warping/i);
+  }
+  const ui = readFileSync('components/app/my-live-photos.jsx', 'utf8');
+  assert.match(ui, /greeting: 'Приветствие'/);
+  assert.match(ui, /greeting: 'Friendly greeting'/);
+  assert.match(ui, /greeting: 'Saludo amable'/);
+  assert.match(ui, /motion === 'wave'/);
+  const migration = readFileSync('supabase/migrations/20261121230500_hh_client_live_photo_greeting_v1.sql', 'utf8');
+  assert.match(migration, /'greeting'/);
+  assert.match(migration, /client_live_photos_v1_motion_check/);
 });
 test('private video archive rejects SSRF destinations and disguised credentials', () => {
   for (const bad of [

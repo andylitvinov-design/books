@@ -23,6 +23,7 @@ test('native private bot voice metadata is forwarded, not fabricated as text',()
  assert.match(route,/const archived=await ingestMessengerUpdate\(provider,event,config\)/);
  assert.match(route,/const mediaKind=event\.isTelegramVoice\?'voice':/);
  assert.match(route,/if\(aiIntake\.generate\.voiceNote\)/);
+ assert.match(route,/if\(aiIntake\.generate\.voiceNote\)/);
  assert.match(route,/await deliverTelegramWaveVoiceV3\(config,aiIntake\.generate/);
 });
 test('voice input metadata and external free-provider authorization are bounded',()=>{
@@ -166,6 +167,8 @@ test('native Telegram voice updates retain neutral receipts before optional sign
  assert.match(route,/if\(provider==='telegram'&&event\?\.type==='incoming'&&archived===true&&/)
  assert.match(route,/const mediaKind=event\.isTelegramVoice\?'voice':/)
  assert.match(route,/composeTelegramSecretaryClarification\(raw,locale,\{mediaKind\}\)/)
+ assert.match(route,/await consumeRate\(config,\{op:'hh-tg-bot-clarify-chat',to:event\.userId\},12,86400\)/)
+ assert.match(route,/!event\.callbackId&&typeof event\.rawText==='string'/)
  assert.match(route,/await ingestMessengerUpdate\(provider,event,config\)/)
 })
 
