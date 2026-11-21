@@ -112,3 +112,15 @@
 @media(max-width:410px){.mediaPicker{padding:12px}
   .mediaGallery{grid-template-columns:repeat(2,minmax(0,1fr))}
   .mediaOption img,.mediaActive img{height:92px}}
+
+/* Gift intent quiz: one choice at a time, 4 x 4 emotional messages + style. */
+.quizProgress{display:flex;gap:7px;margin:-7px 0 13px}
+.quizDot,.quizCurrent{display:block;flex:1;height:5px;border-radius:99px;background:#eadfd9}
+.quizCurrent{background:#067a67}
+.quizSummary{font-size:15px;line-height:1.5;color:#315b50;border-radius:14px;
+  border:1px solid #e7dbcf;background:#fff9f2;padding:11px 13px;margin:0 0 12px}
+@media(max-width:430px){
+  [data-video-gift-quiz] .option,[data-video-gift-quiz] .selected{
+    min-height:63px;padding:10px 11px;font-size:15px;line-height:1.25
+  }
+}

@@ -7,6 +7,7 @@ import {
  suggestVideoGiftText,validateVideoGiftDraft,videoGiftStage
 } from "../lib/mandala/video-gift-contract.mjs";
 
+import {VIDEO_GIFT_EMOTIONS,VIDEO_GIFT_STYLES,getGiftEmotionMessage,suggestGiftEmotionText} from "../lib/mandala/video-gift-emotions.mjs";
 const file=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 const valid={
  locale:"ru",occasion:"birthday",recipient:"София",
@@ -92,4 +93,51 @@ test("paid jobs are private, RLS-owned, fail-closed and idempotent",()=>{
  assert.match(migration,/guardian_consent/);
  assert.match(migration,/mode='free' AND status='draft'/);
  assert.doesNotMatch(migration,/CREATE\s+POLICY\s+\S+\s+FOR\s+ALL\s+TO\s+anon/i);
+});
+
+test("Gift has four unique emotional categories, four messages each and four styles in EN/RU/ES",()=>{
+ assert.equal(VIDEO_GIFT_EMOTIONS.length,4);
+ assert.deepEqual(VIDEO_GIFT_EMOTIONS.map(x=>x.id),[
+  "miss-you","thank-you","support-motivation","congratulations"
+ ]);
+ assert.equal(VIDEO_GIFT_STYLES.length,4);
+ const all=VIDEO_GIFT_EMOTIONS.flatMap(cat=>cat.messages.map(message=>[cat,message]));
+ assert.equal(all.length,16);
+ assert.equal(new Set(all.map(([,m])=>m.id)).size,16);
+ for(const [cat,message] of all){
+  assert.equal(getGiftEmotionMessage(cat.id,message.id)?.id,message.id);
+  for(const locale of ["en","ru","es"]){
+   assert.ok(cat.label[locale]);
+   assert.ok(message.label[locale]);
+   const copy=suggestGiftEmotionText(locale,cat.id,message.id);
+   assert.ok(copy.message.length>40&&copy.message.length<=500);
+   assert.ok(copy.finalWish.length>3&&copy.finalWish.length<=140);
+  }
+ }
+ for(const locale of ["en","ru","es"]){
+  assert.equal(new Set(all.map(([c,m])=>suggestGiftEmotionText(locale,c.id,m.id).message)).size,16);
+ }
+ assert.throws(()=>suggestGiftEmotionText("ru","miss-you","happy-birthday"),/invalid_gift_emotion/);
+});
+test("Gift emotion identity is preserved in the manifest and mismatched selections fail closed",()=>{
+ const selected={...valid,occasion:"support",giftCategoryId:"support-motivation",
+   giftMessageId:"youre-not-alone",giftStyleId:"gentle"};
+ const manifest=validateVideoGiftDraft(selected);
+ assert.equal(manifest.giftCategoryId,"support-motivation");
+ assert.equal(manifest.giftMessageId,"youre-not-alone");
+ assert.equal(manifest.giftStyleId,"gentle");
+ assert.throws(()=>validateVideoGiftDraft({...selected,giftMessageId:"happy-birthday"}),/invalid_gift_emotion_choice/);
+ assert.throws(()=>validateVideoGiftDraft({...selected,giftStyleId:"missing"}),/invalid_gift_emotion_choice/);
+ assert.throws(()=>validateVideoGiftDraft({...selected,occasion:"birthday"}),/invalid_gift_emotion_choice/);
+});
+test("Gift wizard shows category, message and style before recipient and photo",()=>{
+ const source=file("components/mandala-video-gift.tsx");
+ assert.match(source,/data-video-gift-quiz="category"/);
+ assert.match(source,/data-video-gift-quiz="message"/);
+ assert.match(source,/data-video-gift-quiz="style"/);
+ assert.match(source,/chooseGiftCategory\(choice\.id\)/);
+ assert.match(source,/chooseGiftMessage\(choice\.id\)/);
+ assert.match(source,/chooseGiftStyle\(choice\.id\)/);
+ assert.match(source,/if\(step===0&&!recipient\.trim\(\)\)/);
+ assert.doesNotMatch(source,/OCCASIONS\.map/);
 });

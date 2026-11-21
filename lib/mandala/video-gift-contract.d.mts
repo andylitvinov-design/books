@@ -1,3 +1,4 @@
+import type {GiftEmotionCategoryId,GiftEmotionMessageId,GiftEmotionStyleId} from "./video-gift-emotions.mjs";
 export type VideoGiftLocale="ru"|"en"|"es";
 export type VideoGiftOccasion="birthday"|"love"|"thanks"|"support"|"anniversary"|"custom";
 export type VideoGiftMotion="zoom"|"pan"|"float"|"smile"|"blink"|"turn"|"wave";
@@ -7,6 +8,7 @@ export type VideoGiftSoundtrack="none"|"forest"|"breeze"|"crystal"|"voice";
 export type VideoGiftSubject="self"|"other"|"minor";
 export type VideoGiftDraft={
   locale:VideoGiftLocale;occasion:VideoGiftOccasion;recipient:string;
+  giftCategoryId?:GiftEmotionCategoryId;giftMessageId?:GiftEmotionMessageId;giftStyleId?:GiftEmotionStyleId;
   sourceOwner:VideoGiftSubject;rightsConfirmed:boolean;
   subjectConsent:boolean;guardianConsent:boolean;
   motion:VideoGiftMotion;palette:VideoGiftPalette;aspect:VideoGiftAspect;

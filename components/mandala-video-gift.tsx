@@ -5,9 +5,12 @@ import {ArrowLeft,ArrowRight,Check,Download,Play,Pause,Share2,Video,Save,LockKey
 import {appFetch} from "@/lib/app/client-fetch";
 import {savePrivateMp4} from "@/lib/mandala/signed-private-video-upload.mjs";
 import {prepareBrowserPhoto,SUPPORT_PHOTO_ACCEPT} from "@/lib/mandala/prepare-browser-photo";
-import {VIDEO_GIFT_DURATION,VIDEO_GIFT_OCCASIONS,VIDEO_GIFT_FREE_MOTIONS,
+import {VIDEO_GIFT_DURATION,VIDEO_GIFT_FREE_MOTIONS,
   VIDEO_GIFT_AI_MOTIONS,VIDEO_GIFT_PALETTES,
-  suggestVideoGiftText,validateVideoGiftDraft} from "@/lib/mandala/video-gift-contract.mjs";
+  validateVideoGiftDraft} from "@/lib/mandala/video-gift-contract.mjs";
+import {VIDEO_GIFT_EMOTIONS,VIDEO_GIFT_STYLES,getGiftEmotionCategory,getGiftEmotionMessage,
+ getGiftEmotionStyle,suggestGiftEmotionText} from "@/lib/mandala/video-gift-emotions.mjs";
+import type {GiftEmotionCategoryId,GiftEmotionMessageId,GiftEmotionStyleId} from "@/lib/mandala/video-gift-emotions.mjs";
 import type {VideoGiftOccasion,VideoGiftMotion,VideoGiftAspect,VideoGiftPalette,
   VideoGiftSubject,VideoGiftManifest} from "@/lib/mandala/video-gift-contract.mjs";
 import {VIDEO_GIFT_SIZES,paintVideoGiftFrame,exportVideoGiftMp4} from "@/lib/mandala/video-gift-browser";
@@ -19,9 +22,9 @@ import styles from "./mandala-video-gift.module.css";
 const COPY={
   ru:{
     title:"Живая открытка",eyebrow:"PERSONAL VIDEO GIFT",tagline:"Подарок из любимой фотографии — бесплатно, прямо на вашем устройстве.",
-    steps:["Повод","Фотография","Движение","Пожелание","Музыка","Готово"],
+    steps:["Послание","Фотография","Движение","Пожелание","Музыка","Готово"],
     prev:"Назад",next:"Далее",formats:"Формат",portrait:"9:16 · вертикальный",landscape:"16:9 · горизонтальный",
-    occasions:["День рождения","Любовь","Спасибо","Поддержка","Годовщина","Своя тема"],
+    quizPrompts:["Что хочешь передать?","Какое послание?","Какое настроение?","Кому этот подарок?"],
     recipient:"Имя получателя",recipientHint:"Имя на первой заставке",sampleName:"Дорогой человек",
     upload:"Выбрать фотографию",photoPrivate:"Фотография остаётся на телефоне. В GitHub и публичное хранилище она не загружается.",
     source:"Кто изображён на фото?",self:"Я",other:"Другой взрослый",minor:"Несовершеннолетний",
@@ -49,9 +52,9 @@ const COPY={
   },
   en:{
     title:"Personal Video Gift",eyebrow:"LIVING GREETING CARD",tagline:"A special gift from a favourite photo — free and created on your device.",
-    steps:["Occasion","Photo","Motion","Message","Music","Create"],
+    steps:["Message","Photo","Motion","Words","Music","Create"],
     prev:"Back",next:"Next",formats:"Format",portrait:"9:16 · portrait",landscape:"16:9 · landscape",
-    occasions:["Birthday","Love","Thank you","Support","Anniversary","My own theme"],
+    quizPrompts:["What do you want to say?","Choose your message","Choose an emotional style","Who is this gift for?"],
     recipient:"Recipient's name",recipientHint:"Displayed in the opening title",sampleName:"Someone special",
     upload:"Choose photo",photoPrivate:"Your photo stays on your device. It is never uploaded to public storage or GitHub.",
     source:"Who is in the photo?",self:"Me",other:"Another adult",minor:"A child",
@@ -79,9 +82,9 @@ const COPY={
   },
   es:{
     title:"Tarjeta de vídeo personal",eyebrow:"TARJETA VIVA",tagline:"Un regalo de una foto especial — gratis y creado en tu dispositivo.",
-    steps:["Motivo","Foto","Movimiento","Mensaje","Música","Crear"],
+    steps:["Mensaje","Foto","Movimiento","Texto","Música","Crear"],
     prev:"Atrás",next:"Siguiente",formats:"Formato",portrait:"9:16 · vertical",landscape:"16:9 · horizontal",
-    occasions:["Cumpleaños","Amor","Gracias","Apoyo","Aniversario","Tema propio"],
+    quizPrompts:["¿Qué quieres transmitir?","Elige tu mensaje","Elige el estilo emocional","¿Para quién es el regalo?"],
     recipient:"Nombre del destinatario",recipientHint:"Se muestra al principio",sampleName:"Alguien especial",
     upload:"Elegir fotografía",photoPrivate:"Tu foto permanece en tu dispositivo; nunca se sube a GitHub ni a carpetas públicas.",
     source:"¿Quién aparece en la foto?",self:"Yo",other:"Otra persona adulta",minor:"Menor de edad",
@@ -108,17 +111,20 @@ const COPY={
     noAi:"Sin IA externa, cargos ni suscripciones obligatorias.",length:"25 segundos · H.264 MP4 · AAC con sonido",
   }
 } as const;
-const OCCASIONS=VIDEO_GIFT_OCCASIONS;
 const PALETTES=VIDEO_GIFT_PALETTES;
 const SOUND_IDS=["none","forest","breeze","crystal","voice"] as const;
 type Locale="ru"|"en"|"es";
 
 export function MandalaVideoGift({locale}:{locale:Locale}){
   const t=COPY[locale];
-  const starter=suggestVideoGiftText(locale,"birthday");
+  const starter=suggestGiftEmotionText(locale,"miss-you","thinking-of-you");
   const [step,setStep]=useState(0);
-  const [occasion,setOccasion]=useState<VideoGiftOccasion>("birthday");
-  const [visualGroup,setVisualGroup]=useState<GiftVisualGroup>(defaultGiftVisualGroup("birthday"));
+  const [giftQuizStage,setGiftQuizStage]=useState(0);
+  const [giftCategoryId,setGiftCategoryId]=useState<GiftEmotionCategoryId>("miss-you");
+  const [giftMessageId,setGiftMessageId]=useState<GiftEmotionMessageId>("thinking-of-you");
+  const [giftStyleId,setGiftStyleId]=useState<GiftEmotionStyleId>("warm");
+  const [occasion,setOccasion]=useState<VideoGiftOccasion>("love");
+  const [visualGroup,setVisualGroup]=useState<GiftVisualGroup>(defaultGiftVisualGroup("love"));
   const [sceneId,setSceneId]=useState<string|null>(null);
   const scenePreviewRef=useRef<HTMLVideoElement|null>(null);
   const [recipient,setRecipient]=useState("");
@@ -155,11 +161,13 @@ export function MandalaVideoGift({locale}:{locale:Locale}){
     group:visualGroup,occasion,aspect
   }),[visualGroup,occasion,aspect]);
   const selectedScene=sceneId==="none"?null:(groupScenes.find(x=>x.id===sceneId)||groupScenes[0]||null);
+  const selectedGiftCategory=getGiftEmotionCategory(giftCategoryId);
+  const selectedGiftMessage=getGiftEmotionMessage(giftCategoryId,giftMessageId);
   const manifest=useMemo<VideoGiftManifest|null>(()=>{
-    try{return validateVideoGiftDraft({locale,occasion,recipient,sourceOwner,
+    try{return validateVideoGiftDraft({locale,occasion,giftCategoryId,giftMessageId,giftStyleId,recipient,sourceOwner,
       rightsConfirmed,subjectConsent,guardianConsent,motion,palette,aspect,
       requestMusic:soundtrack,message,finalWish});}catch{return null;}
-  },[locale,occasion,recipient,sourceOwner,rightsConfirmed,subjectConsent,
+  },[locale,occasion,giftCategoryId,giftMessageId,giftStyleId,recipient,sourceOwner,rightsConfirmed,subjectConsent,
     guardianConsent,motion,palette,aspect,soundtrack,message,finalWish]);
   useEffect(()=>()=>{if(photoUrlRef.current)URL.revokeObjectURL(photoUrlRef.current);
     if(resultUrlRef.current)URL.revokeObjectURL(resultUrlRef.current);
@@ -192,13 +200,35 @@ export function MandalaVideoGift({locale}:{locale:Locale}){
     setSaved(false);setCloudConsent(false);setResult(null);saveSessionRef.current=null;
     if(resultUrlRef.current){URL.revokeObjectURL(resultUrlRef.current);resultUrlRef.current=null;}
   };
-  const chooseOccasion=(value:VideoGiftOccasion)=>{
-    setOccasion(value);
-    setVisualGroup(defaultGiftVisualGroup(value));
-    setSceneId(null);
-    const next=suggestVideoGiftText(locale,value);
-    setMessage(next.message);setFinalWish(next.finalWish);
+  const chooseGiftCategory=(id:GiftEmotionCategoryId)=>{
+    const choice=getGiftEmotionCategory(id);
+    if(!choice)return;
+    const first=choice.messages[0];
+    const preset=getGiftEmotionStyle(choice.defaultStyle);
+    setGiftCategoryId(choice.id);setGiftMessageId(first.id);setGiftStyleId(choice.defaultStyle);
+    setOccasion(first.occasion);setVisualGroup(defaultGiftVisualGroup(first.occasion));setSceneId(null);
+    if(preset){setPalette(preset.palette);setMotion(preset.motion);setSoundtrack(preset.soundtrack);}
+    const suggestion=suggestGiftEmotionText(locale,choice.id,first.id);
+    setMessage(suggestion.message);setFinalWish(suggestion.finalWish);setGiftQuizStage(1);
     invalidateResult();
+  };
+  const chooseGiftMessage=(id:GiftEmotionMessageId)=>{
+    const choice=getGiftEmotionMessage(giftCategoryId,id);
+    if(!choice)return;
+    setGiftMessageId(choice.id);setOccasion(choice.occasion);
+    setVisualGroup(defaultGiftVisualGroup(choice.occasion));setSceneId(null);
+    const suggestion=suggestGiftEmotionText(locale,giftCategoryId,choice.id);
+    setMessage(suggestion.message);setFinalWish(suggestion.finalWish);setGiftQuizStage(2);
+    invalidateResult();
+  };
+  const chooseGiftStyle=(id:GiftEmotionStyleId)=>{
+    const choice=getGiftEmotionStyle(id);
+    if(!choice)return;
+    setGiftStyleId(choice.id);setPalette(choice.palette);setMotion(choice.motion);
+    setSoundtrack(choice.soundtrack);
+    const hasScenes=listGiftApprovedScenes({group:choice.group,occasion,aspect}).length>0;
+    setVisualGroup(hasScenes?choice.group:defaultGiftVisualGroup(occasion));
+    setSceneId(null);setGiftQuizStage(3);invalidateResult();
   };
   async function choosePhoto(file:File|null){
     if(!file)return;
@@ -224,6 +254,15 @@ export function MandalaVideoGift({locale}:{locale:Locale}){
   function changeStep(delta:number){
     if(working||saving)return;
     setNotice("");
+    if(step===0&&delta<0&&giftQuizStage>0){
+      setGiftQuizStage(current=>current-1);setPlaying(false);return;
+    }
+    if(step===0&&delta>0&&giftQuizStage<3){
+      if(giftQuizStage===0)chooseGiftCategory(giftCategoryId);
+      else if(giftQuizStage===1)chooseGiftMessage(giftMessageId);
+      else chooseGiftStyle(giftStyleId);
+      return;
+    }
     if(delta>0){
       if(step===0&&!recipient.trim()){setNotice(t.finish);return;}
       if(step===1){
@@ -234,7 +273,8 @@ export function MandalaVideoGift({locale}:{locale:Locale}){
       if(step===3&&(!message.trim()||!finalWish.trim())){setNotice(t.finish);return;}
       if(step===4&&soundtrack==="voice"&&(!voice||!voiceRights)){setNotice(t.finish);return;}
     }
-    setPlaying(false);setStep(value=>Math.max(0,Math.min(5,value+delta)));
+    setPlaying(false);if(delta<0&&step===1)setGiftQuizStage(3);
+    setStep(value=>Math.max(0,Math.min(5,value+delta)));
   }
   async function create(){
     if(working||saving)return;
@@ -293,23 +333,52 @@ export function MandalaVideoGift({locale}:{locale:Locale}){
         disabled={working||saving||index>step}
         className={step===index?styles.activeStep:styles.pastStep}
         aria-current={step===index?"step":undefined}
-        onClick={()=>{setPlaying(false);setStep(index);setNotice("");}}
+        onClick={()=>{setPlaying(false);if(index===0&&step>0)setGiftQuizStage(3);setStep(index);setNotice("");}}
         data-video-gift-step={index+1}><span>{index<step?<Check size={15}/>:index+1}</span>{name}</button>)}
     </nav>
     <div className={styles.panel}>
       {step===0&&<>
-        <h2>{t.steps[0]}</h2>
-        <div className={styles.options}>
-          {OCCASIONS.map((id,index)=><button type="button" key={id}
-            className={occasion===id?styles.selected:styles.option}
-            aria-pressed={occasion===id} onClick={()=>chooseOccasion(id)}>
-            {t.occasions[index]}{occasion===id&&<Check size={17}/>}</button>)}
+        <h2>{t.quizPrompts[giftQuizStage]}</h2>
+        <div className={styles.quizProgress} aria-label={t.steps[0]}>
+          {[0,1,2,3].map(index=><span key={index}
+            aria-current={giftQuizStage===index?"step":undefined}
+            className={giftQuizStage===index?styles.quizCurrent:styles.quizDot}/>)}
         </div>
-        <label className={styles.field}>{t.recipient}
-          <input value={recipient} maxLength={64} placeholder={t.sampleName}
-            onChange={e=>{setRecipient(e.target.value);invalidateResult();}}/>
-          <small>{t.recipientHint}</small>
-        </label>
+        {giftQuizStage===0&&<div className={styles.options} data-video-gift-quiz="category">
+          {VIDEO_GIFT_EMOTIONS.map(choice=><button type="button" key={choice.id}
+            data-video-gift-category={choice.id}
+            className={giftCategoryId===choice.id?styles.selected:styles.option}
+            aria-pressed={giftCategoryId===choice.id}
+            onClick={()=>chooseGiftCategory(choice.id)}>
+            {choice.label[locale]}{giftCategoryId===choice.id&&<Check size={17}/>}</button>)}
+        </div>}
+        {giftQuizStage===1&&<div className={styles.options} data-video-gift-quiz="message">
+          {selectedGiftCategory?.messages.map(choice=><button type="button" key={choice.id}
+            data-video-gift-message={choice.id}
+            className={giftMessageId===choice.id?styles.selected:styles.option}
+            aria-pressed={giftMessageId===choice.id}
+            onClick={()=>chooseGiftMessage(choice.id)}>
+            {choice.label[locale]}{giftMessageId===choice.id&&<Check size={17}/>}</button>)}
+        </div>}
+        {giftQuizStage===2&&<div className={styles.options} data-video-gift-quiz="style">
+          {VIDEO_GIFT_STYLES.map(choice=><button type="button" key={choice.id}
+            data-video-gift-style={choice.id}
+            className={giftStyleId===choice.id?styles.selected:styles.option}
+            aria-pressed={giftStyleId===choice.id}
+            onClick={()=>chooseGiftStyle(choice.id)}>
+            {choice.label[locale]}{giftStyleId===choice.id&&<Check size={17}/>}</button>)}
+        </div>}
+        {giftQuizStage===3&&<>
+          <p className={styles.quizSummary}>
+            {selectedGiftCategory?.label[locale]} · {selectedGiftMessage?.label[locale]} ·
+            {" "}{getGiftEmotionStyle(giftStyleId)?.label[locale]}
+          </p>
+          <label className={styles.field}>{t.recipient}
+            <input value={recipient} maxLength={64} placeholder={t.sampleName}
+              onChange={e=>{setRecipient(e.target.value);invalidateResult();}}/>
+            <small>{t.recipientHint}</small>
+          </label>
+        </>}
       </>}
       {step===1&&<>
         <h2>{t.steps[1]}</h2>
@@ -392,7 +461,7 @@ export function MandalaVideoGift({locale}:{locale:Locale}){
             onChange={e=>{setFinalWish(e.target.value);invalidateResult();}}/>
         </label>
         <button type="button" className={styles.secondary} onClick={()=>{
-          const suggestion=suggestVideoGiftText(locale,occasion);
+          const suggestion=suggestGiftEmotionText(locale,giftCategoryId,giftMessageId);
           setMessage(suggestion.message);setFinalWish(suggestion.finalWish);invalidateResult();
         }}>{t.suggest}</button><p className={styles.hint}>{t.editable}</p>
       </>}
@@ -460,7 +529,7 @@ export function MandalaVideoGift({locale}:{locale:Locale}){
       </>}
       {notice&&<p className={styles.notice} role="alert">{notice}</p>}
       {step<5&&<footer className={styles.footer}>
-        {step>0&&<button type="button" onClick={()=>changeStep(-1)}
+        {(step>0||giftQuizStage>0)&&<button type="button" onClick={()=>changeStep(-1)}
           className={styles.secondary}><ArrowLeft size={17}/>{t.prev}</button>}
         <button type="button" className={styles.primary} disabled={photoBusy}
           onClick={()=>changeStep(1)}>{t.next}<ArrowRight size={18}/></button>

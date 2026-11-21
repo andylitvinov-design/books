@@ -32,3 +32,17 @@ Existing /{locale}/video-studio?mode=gift redirects to the same page.
 
 ## Lifecycle
 Job rows have a 14-day expiry; future paid source JPEG/5s fragment retention and provider deletion require an existing trusted cleanup worker and documented policy before activation. Existing My Videos finished masters retain their established explicit owner-delete rights; do not silently expire older user videos without prior consent.
+
+
+## Gift emotional message quiz · owner-approved 21 Nov 2026
+- Separate Gift taxonomy, not a replacement for MyTube For Me / For Work goals:
+  1. Miss You → Thinking of You / Sending You a Hug / You're Amazing / You're in My Heart
+  2. Thank You → For My Family / For Your Support / From the Heart / You Mean So Much
+  3. Support & Motivation → You're Not Alone / This Too Shall Pass / Better Days Ahead / I Believe in You
+  4. Congratulations → Happy Birthday / Happy Holidays / I'm Proud of You / You Deserve It
+- Gift entry (once this PR passes protected checks and merges): `/{en,ru,es}/holistic-support/mandala?mode=gift`.
+- First existing step becomes an inline four-stage quiz: emotional category → one of four messages → emotional style (Gentle / Warm / Joyful / Inspiring) → recipient name. Each selection automatically advances one question. Back returns through the same stages; Next uses the selected deterministic default and never calls AI.
+- The 16 local, distinct EN/RU/ES scripts are fully editable on the Message screen. Style presets update existing motion, palette, soundtrack and licensed local footage-group preference; photo rights, subject/guardian consent, signed video storage and Safari MP4 verification remain untouched.
+- Legacy `occasion` survives only as a backend/media compatibility mapping; validated manifest also carries giftCategoryId, giftMessageId, giftStyleId. No new schema, paid API, credit write, photo transfer or automatic HeyGen render is authorized by the quiz.
+- Keep PR #5334 out of production until its overlapping Gift writer/DB contracts are reconciled and one canonical Gift implementation is chosen; do not merge both. `For Me`/`For Work` 4×4×4 and in-flight PR #5341 must not be rewritten as Gift taxonomy.
+- After protected merge + existing hourly production release, independently verify the canonical alias SHA and guest EN/RU/ES @320/390/430 card→message→style→recipient→photo/consent→message→audio→valid MP4. Paid HeyGen, one-free-living-photo and 500 XP charges require separate cost, consent and real-provider acceptance, not simulated here.
