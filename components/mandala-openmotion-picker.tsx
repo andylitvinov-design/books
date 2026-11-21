@@ -7,7 +7,7 @@ import {
   listOpenMotionReferences,planOpenMotionReferenceSelection,
   type OpenMotionLocalSelection,
 } from "@/lib/mandala/openmotion-reference.mjs";
-import {createPresetMotionGuideV3,importCatalogMotionGuideV3,listPresetMotionGuides,moveMotionGuideScene,replaceMotionGuideScene,searchMotionGuideScenes} from "@/lib/mandala/openmotion-preset-guide.mjs";
+import {createPresetMotionGuideV3,importCatalogMotionGuideV3,listPresetMotionGuides,moveMotionGuideScene,replaceMotionGuideScene,searchMotionGuideScenes,getPublishedStandardMotionMaster} from "@/lib/mandala/openmotion-preset-guide.mjs";
 import css from "./mandala-openmotion-picker.module.css";
 
 type EditableGuide={markdown:string;aspect:"portrait"|"landscape"|"square";
@@ -23,6 +23,7 @@ type Props={
 
 const words={
   en:{
+    standardPlay:"Play finished standard MP4",standardDownload:"Download fixed MP4",standardNotice:"Verified English 30s film, not personalized. Physical iPhone save test pending.",standardPending:"Standard file is published in English only; local export remains available in your language.",
     editPreset:"Edit in Studio",replaceScene:"Scene to replace",undoScene:"Undo scene edit",
     earlier:"Move earlier",later:"Move later",
     sceneSearch:"Catalog scenes for Motion.md",
@@ -37,6 +38,7 @@ const words={
     external:"External video — original rights holder",source:"Original source",count:"public reference entries",approx:"Local adaptation",
   },
   ru:{
+    standardPlay:"Посмотреть готовый MP4",standardDownload:"Скачать стандартный MP4",standardNotice:"Готовый английский фильм 30 с без персонализации. Проверка iPhone ещё ожидается.",standardPending:"Готовый стандартный MP4 пока на английском; русская сборка доступна локально.",
     editPreset:"Редактировать в Studio",replaceScene:"Сцена для замены",undoScene:"Отменить правку сцены",
     earlier:"Сдвинуть раньше",later:"Сдвинуть позже",
     sceneSearch:"Каталожные сцены для Motion.md",
@@ -51,6 +53,7 @@ const words={
     external:"Внешнее видео — права у автора",source:"Источник",count:"видеореференсов",approx:"Локальная адаптация",
   },
   es:{
+    standardPlay:"Ver película MP4 estándar",standardDownload:"Descargar MP4 estándar",standardNotice:"Película fija en inglés verificada; no personalizada. Pendiente la prueba física del iPhone.",standardPending:"MP4 estándar publicado solo en inglés; puedes crear el vídeo localmente en español.",
     editPreset:"Editar en Studio",replaceScene:"Escena que se reemplazará",undoScene:"Deshacer edición de escena",
     earlier:"Mover antes",later:"Mover después",
     sceneSearch:"Escenas del catálogo para Motion.md",
@@ -94,6 +97,7 @@ export function MandalaOpenMotionPicker({locale,disabled,onPick,exportReady,onEx
   const activeClip=imported?.clips.find(clip=>clip.id===replaceClipId);
   const presets=useMemo(()=>listPresetMotionGuides(locale),[locale]);
   const selectedPreset=presets.find(preset=>preset.id===presetId);
+  const publishedMaster=useMemo(()=>getPublishedStandardMotionMaster(presetId,locale),[presetId,locale]);
   const scenes=useMemo(()=>sceneSearchOpen
     ?searchMotionGuideScenes(sceneQuery,locale,imported?.aspect??selectedPreset?.aspect??"portrait")
     :[],[sceneSearchOpen,sceneQuery,locale,imported?.aspect,selectedPreset?.aspect]);
@@ -177,6 +181,14 @@ export function MandalaOpenMotionPicker({locale,disabled,onPick,exportReady,onEx
         {t.downloadGuide}
       </a>
     </div>:null}
+    {publishedMaster&&!disabled?<div className={css.actions} data-openmotion-published-standard-master>
+      <a data-openmotion-play-standard href={publishedMaster.path} target="_blank" rel="noopener noreferrer">
+        {t.standardPlay}</a>
+      <a data-openmotion-download-standard href={publishedMaster.path}
+        download={presetId+"-"+locale+".mp4"}>{t.standardDownload}</a>
+      <p className={css.notice}>{t.standardNotice}</p>
+    </div>:null}
+    {selectedPreset?.id==="anti-stress-30s"&&!publishedMaster?<p role="status" className={css.notice}>{t.standardPending}</p>:null}
     <div className={css.actions}>
       <label>
         {t.importGuide}

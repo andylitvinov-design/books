@@ -54,7 +54,26 @@
         "breath",
         "grounding",
         "rest"
-      ]
+      ],
+      "publishedMasters": {
+        "en": {
+          "path": "/videos/holistic-house/standard-v1/anti-stress-30s-en.mp4",
+          "sha256": "9b4fff58cd3538108a3ce38ff8927a881ba6f3994909f2133f929db3f829ebf4",
+          "bytes": 2013279,
+          "durationMs": 30016,
+          "width": 720,
+          "height": 1280,
+          "fps": 24,
+          "videoCodec": "h264",
+          "audioCodec": "aac",
+          "sourceCount": 6,
+          "photosUsed": 0,
+          "captionsBurned": true,
+          "sourceMasterSha256": "a25acf710558f02ae1cec69fac511feb74ae953b93aa48d835a66c71e2f3e988",
+          "status": "verified_codec_sources_caption_audio",
+          "physicalIphoneAcceptance": "pending"
+        }
+      }
     }
   ]
 }
