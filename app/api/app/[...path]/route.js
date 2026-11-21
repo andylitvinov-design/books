@@ -22,9 +22,11 @@ import {geminiCoachTtsConfig} from '@/lib/coaching/gemini-coach-tts.mjs'
 import { readCoachingReportDraft } from '@/lib/app/coaching-report-v2'
 import { listCoachingReports, exportCoachingReports, readCoachingReport, saveCoachingReport, deleteCoachingReport } from '@/lib/app/coaching-report-store'
 import { readCoachingLifePlan, updateCoachingLifePlanArea, importCoachingReportActions } from '@/lib/app/coaching-life-plan'
+import { readBusinessContext, importPlaudBusinessContext, reviewBusinessInsight } from '@/lib/app/business-context-store'
 import { exportCoachingLifePlan } from '@/lib/app/coaching-life-plan'
 import { revokeCoachingPlanContext } from '@/lib/app/coaching-life-plan'
 import { deleteCoachingPlanAction } from '@/lib/app/coaching-life-plan'
+import { issueCoachContextSession } from '@/lib/app/coach-context-session'
 import { coachContextConsentOptions, manageCoachContextConsent } from '@/lib/app/coach-context-snapshot'
 import { reviewedReportMemoryCandidates } from '@/lib/personal-coaching/context-memory-candidates.mjs'
 import {learnerCoachingAudio} from '@/lib/academy/coaching-audio-store'
@@ -1097,12 +1099,21 @@ async function handle(request, { params }) {
       if (path.length===3 && path[2]==='delete' && method==='POST') return json(await deleteCoachingReport(config,actor,path[1],await readBody(request,1024)))
       throw new AppError('NOT_FOUND',404)
     }
+    if (joined === 'coaching-context/session') {
+      if (method !== 'POST') throw new AppError('NOT_FOUND',404)
+      if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
+      await consumeRate(config,{op:'coaching-context-session',actor:actor.id},30,3600)
+      return json(issueCoachContextSession(config,actor))
+    }
     if (joined === 'coaching-context/consent') {
       if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
       if (method === 'GET') return json(await coachContextConsentOptions(config,actor))
       if (method !== 'POST') throw new AppError('NOT_FOUND',404)
       await consumeRate(config,{op:'coaching-context-consent',actor:actor.id},60,3600)
-      return json(await manageCoachContextConsent(config,actor,await readBody(request,2048)))
+      const body=await readBody(request,2048)
+      if (body?.operation === 'options' && typeof body.contextSessionToken === 'string')
+        return json(await coachContextConsentOptions(config,actor,process.env,body.contextSessionToken))
+      return json(await manageCoachContextConsent(config,actor,body))
     }
     if (path[0] === 'coaching-life-plan') {
       if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
@@ -1122,6 +1133,13 @@ async function handle(request, { params }) {
       if (path.length===4 && path[1]==='actions' && path[3]==='delete' && method==='POST') {
         return json(await deleteCoachingPlanAction(config,actor,path[2],await readBody(request,1024)))
       }
+      throw new AppError('NOT_FOUND',404)
+    }
+    if (path[0] === 'business-context') {
+      if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
+      if (path.length===1 && method==='GET') return json(await readBusinessContext(config,actor))
+      if (path.length===2 && path[1]==='plaud-import' && method==='POST') return json(await importPlaudBusinessContext(config,actor,await readBody(request,131072)));
+      if (path.length===2 && path[1]==='review' && method==='POST') return json(await reviewBusinessInsight(config,actor,await readBody(request,1024)));
       throw new AppError('NOT_FOUND',404)
     }
     if (joined === 'tradition-coaching-summary') {

@@ -17,7 +17,7 @@ const grantCopy = {
   es: ['Permisos guardados', 'Elemento ausente del plan', 'Revoca un permiso para ver más.'],
 }
 
-export default function MyCoachContext({ accountId, locale, domains }) {
+export default function MyCoachContext({ accountId, locale, domains, contextSessionToken }) {
   const [providerLabel, itemLabel, reviewLabel, allowLabel, revokeLabel, saved, error,
     disclosure, loading, empty] = copy[locale] || copy.en
   const [providers, setProviders] = useState(null)
@@ -45,7 +45,10 @@ export default function MyCoachContext({ accountId, locale, domains }) {
 
   useEffect(() => {
     let active = true
-    appFetch(path, undefined, 'GET', { accountId }).then(result => {
+    const options = contextSessionToken
+      ? appFetch(path, { operation: 'options', contextSessionToken }, 'POST', { accountId })
+      : appFetch(path, undefined, 'GET', { accountId })
+    options.then(result => {
       if (active) {
         setProviders(result.providers)
         setAssessmentChoices(result.assessmentChoices || [])
@@ -53,7 +56,7 @@ export default function MyCoachContext({ accountId, locale, domains }) {
       }
     }).catch(() => { if (active) setStatus(error) })
     return () => { active = false }
-  }, [accountId, error, refresh])
+  }, [accountId, contextSessionToken, error, refresh])
 
   async function submit(operation, target = item && { ...item, provider }) {
     if (!target?.provider || busy) return
@@ -61,7 +64,7 @@ export default function MyCoachContext({ accountId, locale, domains }) {
     setStatus('')
     const { category, topicKey, itemId, scaleKey, provider: recipient } = target
     try {
-      const result = await appFetch(path, { operation, provider: recipient, itemId, category, topicKey, scaleKey,
+      const result = await appFetch(path, { operation, provider: recipient, itemId, category, topicKey, scaleKey, contextSessionToken,
         ...(operation === 'grant' && { confirmed: true, sourceRevision: preview.item.sourceRevision,
           policyVersion: preview.policyVersion, reviewToken: preview.reviewToken }),
       }, 'POST', { accountId })
@@ -78,7 +81,8 @@ export default function MyCoachContext({ accountId, locale, domains }) {
     }
   }
 
-  return <section id="coach-context-panel" role="tabpanel" aria-labelledby="coach-context-tab"
+  return <section id="coach-context-panel" role={contextSessionToken ? undefined : 'tabpanel'}
+    aria-labelledby={contextSessionToken ? undefined : 'coach-context-tab'}
     className={styles.contextPanel} aria-busy={busy}>
     <fieldset disabled={busy}>
       <label>{providerLabel} <select value={provider} onChange={event => {
