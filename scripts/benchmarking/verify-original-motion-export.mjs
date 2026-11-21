@@ -88,7 +88,47 @@ try {
   assert.equal(await page.locator('[data-video-montage-tab="audio"]').getAttribute('aria-pressed'),
     'true','VISIBLE_STYLE_NEXT_MUST_OPEN_AUDIO');
   await page.locator('[data-video-quick-control="phrases"]').click();
-  await page.locator('[data-video-ideas-tab="concept"]').click();
+  // Modern Ideas requires a visitor-selected goal AND their completed
+  // personalization before the Concept tab is enabled. The old benchmark
+  // clicked a disabled Concept and failed despite genuine MP4/WebKit PASS.
+  // Exercise the actual visible controls, never force or fabricate UI state.
+  const touch=async element=>{
+    if(engine==='webkit')await element.tap();
+    else await element.click();
+  };
+  const ideasGoalTab=page.locator('[data-video-ideas-tab="goal"]');
+  await touch(ideasGoalTab);
+  const ideasGoalChoice=page.locator('[data-video-ideas-goal-choice][data-video-ideas-goal-type="change"]').first();
+  await ideasGoalChoice.waitFor({state:'visible',timeout:15000});
+  await touch(ideasGoalChoice);
+  assert.equal(await ideasGoalChoice.getAttribute('aria-pressed'),'true',
+    'CHANGE_GOAL_MUST_BE_SELECTED_BY_GUEST');
+  const goalNext=page.locator('[data-video-ideas-goal-next]');
+  await goalNext.waitFor({state:'visible',timeout:15000});
+  await touch(goalNext);
+  const personalization=page.locator('[data-video-personalization][data-video-personalization-goal="change"]');
+  await personalization.waitFor({state:'visible',timeout:15000});
+  const currentChoice=personalization.locator('[data-personalization-kind="current"] [data-video-personalization-choice]').first();
+  await currentChoice.waitFor({state:'visible',timeout:15000});
+  await touch(currentChoice);
+  const desiredChoice=personalization.locator('[data-personalization-kind="desired"] [data-video-personalization-choice]').first();
+  await desiredChoice.waitFor({state:'visible',timeout:15000});
+  await touch(desiredChoice);
+  const meaningChoice=personalization.locator('[data-video-personalization-axis]').first();
+  await meaningChoice.waitFor({state:'visible',timeout:15000});
+  await touch(meaningChoice);
+  const energyChoice=personalization.locator('[data-video-personalization-energy="4"]');
+  await energyChoice.waitFor({state:'visible',timeout:15000});
+  await touch(energyChoice);
+  const profileContinue=personalization.locator('[data-video-personalization-clarify-continue]');
+  await profileContinue.waitFor({state:'visible',timeout:15000});
+  await touch(profileContinue);
+  const conceptTab=page.locator('[data-video-ideas-tab="concept"]');
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-ideas-tab="concept"]')
+      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  assert.equal(await conceptTab.isEnabled(),true,
+    'VISITOR_PERSONALIZATION_MUST_UNLOCK_CONCEPT');
   const conceptPanel=page.locator('[data-video-ideas-concept-panel]');
   await conceptPanel.waitFor({state:'visible',timeout:15000});
   await conceptPanel.locator('[data-video-concept-approve]').click();

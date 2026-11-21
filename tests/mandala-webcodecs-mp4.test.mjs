@@ -375,6 +375,29 @@ test("guest real encoded video must keep Save behind sign-in and preserve physic
 });
 
 
+test("original-motion WebKit uses real Change Goal and all Personalization steps before Concept",()=>{
+ const browser=readFileSync(new URL("../scripts/benchmarking/verify-original-motion-export.mjs",import.meta.url),"utf8");
+ const milestones=[
+  "const ideasGoalChoice=","const goalNext=","const personalization=",
+  "const currentChoice=","const desiredChoice=","const meaningChoice=",
+  "const energyChoice=","const profileContinue=","const conceptTab=",
+  "const conceptPanel=","const addVideo=","const readyGenerate=",
+  "const captured",
+ ];
+ let previous=-1;
+ for(const milestone of milestones){
+  const offset=browser.indexOf(milestone,previous+1);
+  assert.ok(offset>previous,"Original Motion must complete real visitor flow before media proof: "+milestone);
+  previous=offset;
+ }
+ assert.match(browser,/CHANGE_GOAL_MUST_BE_SELECTED_BY_GUEST/);
+ assert.match(browser,/VISITOR_PERSONALIZATION_MUST_UNLOCK_CONCEPT/);
+ assert.doesNotMatch(browser,/force:\s*true|\.evaluate\(.*\.disabled\s*=|setIdeasProfileConfirmed\(true\)/,
+  "do not override native consent or disabled Concept by modifying DOM");
+ assert.match(browser,/readRealGuestVideo\(page,\{timeout: 150000\}\)/,
+  "real generated media must remain mandatory");
+});
+
 test("WebKit traverses Ideas Personalization and Concept before consented Voice/My Voice",()=>{
  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
  const modes=browser.indexOf('const ideasModes=phrases.locator("[data-video-ideas-tabs]")');
