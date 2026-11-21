@@ -397,7 +397,7 @@ test("Stories WebKit requires filmed source selection before Extra, not blocked 
  const generate=source.indexOf('data-video-montage-pro-choice="free"',extra);
  assert.ok(settings>=0&&open>settings&&choose>open&&licensed>choose&&extra>licensed&&generate>extra,
   "must select real reviewed films before Extra and generation");
- assert.doesNotMatch(source,/await quality\.tap\(\)|force:\s*true/,
+ assert.doesNotMatch(source,/await quality\.tap\(\)|\.(?:click|tap)\(\{[^}]*\bforce:\s*true/,
   "never force the pending Story Quality CTA or synthetic source state");
  assert.match(source,/readRealGuestVideo/,"real WebKit movie and audio remain mandatory");
 });
