@@ -110,8 +110,9 @@ try {
     return page;
   };
 
- // First-screen Shamanica business visual acceptance in this existing CI runner.
- // The two-column six-card grid must stay above the real, fixed seven-item dock.
+ // Approved Shamanica Business cabinet now has SIX expandable photo shelves
+ // after the hero, 3-step quiz and featured section (not an old all-on-fold
+ // six-service grid). Keep real mobile interactions and privacy assertions.
  async function checkCompactBusiness(page,locale,width){
   await page.goto(origin+"/"+locale+"/shamanica/business",{waitUntil:"domcontentloaded",timeout:75000});
   const section=page.locator("[data-shamanica-business]");
@@ -119,24 +120,35 @@ try {
   await expect(page.locator("[data-sitewide-antistress-banner]")).toHaveCount(0);
   await expect(page.locator("[data-hh-ihelp-trigger]:visible")).toHaveCount(0);
   await expect(page.locator("[data-shamanica-ihelp-trigger]")).toBeVisible();
-  await expect(section.locator("[data-business-service]")).toHaveCount(6);
-  await expect(section.locator("[data-business-service] img")).toHaveCount(6);
+  const shelves=section.locator("[data-business-cabinet-shelves]");
+  const cards=shelves.locator("[data-business-shelf]");
+  await expect(cards).toHaveCount(6);
+  await expect(cards.locator("img")).toHaveCount(6);
+  assert.deepEqual(await cards.evaluateAll(nodes=>nodes.map(node=>node.dataset.businessShelf)),
+    ["express","remedies","strategy","artifacts","energy","energywork"],
+    "Business shelves must preserve the six owner-approved categories");
   await expect(page.locator("[data-hh-unified-dock]")).toHaveCount(1);
-  const m=await page.evaluate(()=>{
-   const last=document.querySelector('[data-business-service="remedies"]');
-   const dock=document.querySelector('[data-hh-unified-dock]');
-   if(!last||!dock)return null;
-   return {lastBottom:last.getBoundingClientRect().bottom,
-     dockTop:dock.getBoundingClientRect().top,
-     horizontalOverflow:document.documentElement.scrollWidth-window.innerWidth};
-  });
-  assert.ok(m,"Business compact landmarks missing");
-  assert.ok(m.horizontalOverflow<=2,"Business horizontal overflow "+locale+"/"+width+" "+JSON.stringify(m));
-  if(width>=390)assert.ok(m.lastBottom<=m.dockTop+8,
-    "Six business cards must fit above dock "+locale+"/"+width+" "+JSON.stringify(m));
+  const horizontalOverflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
+  assert.ok(horizontalOverflow<=2,"Business horizontal overflow "+locale+"/"+width+" "+horizontalOverflow);
   if(locale==="ru"&&width===390)await page.screenshot({path:output+"/shamanica-business-ru-390.png",fullPage:false});
   await expect.poll(()=>page.evaluate(()=>history.pushState.toString().includes("__NA")),
     {timeout:30000,message:"Business quiz hydration"}).toBe(true);
+  if(width===390){
+   await shelves.locator('[data-business-shelf="express"]').click();
+   const express=shelves.locator('[data-business-second-level="express"]');
+   await expect(express.locator("[data-business-subservice]")).toHaveCount(5);
+   await expect(shelves.locator('[data-business-get-details="express"]')).toBeVisible();
+   await express.locator('[data-business-subservice="express-1"]').click();
+   await expect(express.locator('[data-business-subservice="express-1"]')).toHaveAttribute("aria-pressed","true");
+   if(locale==="en")assert.match(await express.innerText(),/FREE[\s\S]*45 CAD[\s\S]*75 CAD[\s\S]*200 CAD[\s\S]*300 CAD/);
+   await shelves.locator("[data-business-back-to-shelves]").click();
+   await expect(cards).toHaveCount(6);
+   await shelves.locator('[data-business-shelf="strategy"]').click();
+   await expect(shelves.locator('[data-business-second-level="strategy"] [data-business-subservice]')).toHaveCount(4);
+   await expect(shelves.locator('[data-business-get-details="strategy"]')).toBeVisible();
+   await shelves.locator("[data-business-back-to-shelves]").click();
+   await expect(cards).toHaveCount(6);
+  }
   const quiz=section.locator("[data-business-quiz]");
   await expect(quiz).toHaveAttribute("data-quiz-step","1");
   await quiz.locator('[data-business-answer="express"]').click();
