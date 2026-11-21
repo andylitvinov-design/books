@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import test from "node:test";
 import {shouldAutoRecoverSafariPlayback} from "../lib/mandala/recording-codecs.mjs";
+import {requiresRealMediaWebKit} from "../lib/ci/merge-check-light.mjs";
 
 const helper=readFileSync(new URL("../lib/mandala/webcodecs-mp4-export.ts",import.meta.url),"utf8");
 const presetLoader=readFileSync(new URL("../lib/mandala/first-party-video-audio.ts",import.meta.url),"utf8");
@@ -24,7 +25,11 @@ test("physical-iPhone Ready repair runs the mandatory macOS WebKit video and AAC
   const gate=job.slice(0,job.indexOf("\n    needs:"));
   assert.match(gate,/github\.event_name == 'pull_request'/);
   assert.match(gate,/github\.event\.pull_request\.draft == false/);
-  assert.match(gate,/github\.head_ref == 'fix\/iphone-ready-mp4-export-20261118'/);
+  assert.match(gate,/needs\.webkit_preflight\.outputs\.media_required == 'true'/);
+  assert.equal(requiresRealMediaWebKit([
+    {filename:'lib/mandala/webcodecs-mp4-export.ts',status:'M'},
+    {filename:'components/mandala-free-video-studio.tsx',status:'M'}]),true,
+    'physical iPhone MP4 source still requires real macOS WebKit');
   assert.match(job,/needs: \[webkit_preflight\]/);
   assert.match(job,/runs-on: macos-15/);
   assert.match(job,/Build exact voice release candidate/);
@@ -160,7 +165,9 @@ test("Safari repair branches must reach real macOS WebKit video/audio acceptance
   assert.ok(enabled>=2,"Safari repair must run scoped build + macOS WebKit media tests");
   const job=workflow.split("  voice-webkit-macos:")[1];
   assert.ok(job,"WebKit must remain an independent real-media job");
-  assert.match(job.split("    runs-on:")[0],/startsWith\(github\.head_ref, 'fix\/webkit-'\)/);
+  assert.match(job.split("    runs-on:")[0],/needs\.webkit_preflight\.outputs\.media_required == 'true'/);
+  assert.equal(requiresRealMediaWebKit([{filename:'lib/mandala/webcodecs-mp4-export.ts',status:'M'}]),true,
+    'Safari WebCodecs changes must execute macOS regardless of branch name');
   assert.match(job,/node scripts\/benchmarking\/first-video-live-export\.mjs/);
   assert.match(job,/node scripts\/verify-affirmation-voice-browser\.mjs/);
 });
@@ -369,6 +376,62 @@ test("guest real encoded video must keep Save behind sign-in and preserve physic
  assert.doesNotMatch(browser,/force:true|setCreditSession\("signed_in"\)/);
 });
 
+
+test("Stories WebKit enters Ideas via visible controls after native Goal quiz",()=>{
+ const source=readFileSync(new URL("../scripts/benchmarking/verify-five-scene-stories-browser.mjs",import.meta.url),"utf8");
+ assert.match(source,/completeThreeStepGoalsQuiz\(page,\{engine:'webkit'\}\)/);
+ assert.match(source,/const visibleNext=await advance\.isVisible\(\)\?advance:page\.locator\('\[data-video-quick-control="phrases"\]'\)/);
+ assert.match(source,/await visibleNext\.tap\(\)/);
+ assert.match(source,/getAttribute\('aria-pressed'\)==='true'/);
+ assert.match(source,/readRealGuestVideo/);
+ assert.doesNotMatch(source,/await advance\.waitFor\(\{state:'visible'|advance\.tap\(\{force:true\}\)/);
+});
+
+test("Stories WebKit requires filmed source selection before Extra, not blocked editorial Quality",()=>{
+ const source=readFileSync(new URL("../scripts/benchmarking/verify-five-scene-stories-browser.mjs",import.meta.url),"utf8");
+ const settings=source.indexOf("const storySettings=page.locator");
+ const open=source.indexOf("await storySettings.tap()",settings);
+ const choose=source.indexOf("await page.locator('[data-video-stories-create]').click()",open);
+ const licensed=source.indexOf("assert.ok(approved.has(id)",choose);
+ const extra=source.indexOf("data-video-stories-to-extra",licensed);
+ const generate=source.indexOf('data-video-montage-pro-choice="free"',extra);
+ assert.ok(settings>=0&&open>settings&&choose>open&&licensed>choose&&extra>licensed&&generate>extra,
+  "must select real reviewed films before Extra and generation");
+ assert.doesNotMatch(source,/await quality\.tap\(\)|\.(?:click|tap)\(\{[^}]*\bforce:\s*true/,
+  "never force the pending Story Quality CTA or synthetic source state");
+ assert.match(source,/readRealGuestVideo/,"real WebKit movie and audio remain mandatory");
+});
+
+test("five-scene Story accepts two real touches: FREE to Ready, then Generate before MP4",()=>{
+ const source=readFileSync(new URL("../scripts/benchmarking/verify-five-scene-stories-browser.mjs",import.meta.url),"utf8");
+ const stages=[
+   "const free=page.locator", "await free.tap({timeout:30000})",
+   "const readyChoice=page.locator", "const readyGenerate=readyChoice.locator",
+   "await readyGenerate.tap({timeout:30000})", "const safeExportState=",
+   "captured=await readRealGuestVideo", "assert.equal(captured.extension,'mp4'",
+   "assert.equal(video.codec_name,'h264'", "assert.equal(audio.codec_name,'aac'",
+ ];
+ let previous=-1;
+ for(const marker of stages){const i=source.indexOf(marker,previous+1);
+  assert.ok(i>previous,"must require real Ready gesture and physically decoded video: "+marker);
+  previous=i;}
+ assert.match(source,/STORIES_READY_GENERATE_MUST_BE_ENABLED/);
+ assert.match(source,/STORIES_READY_MUST_KEEP_ALL_FIVE_LICENSED_SOURCES/);
+ assert.match(source,/STORIES_READY_GENERATE_NOT_STARTED/);
+ assert.doesNotMatch(source,/STORIES_FREE_NATIVE_TAP_NOT_STARTED|\.tap\(\{force:true\}\)/);
+});
+
+test("original-motion WebKit uses native Goal and personalization before actual export",()=>{
+ const script=readFileSync(new URL("../scripts/benchmarking/verify-original-motion-export.mjs",import.meta.url),"utf8");
+ const markers=["await completeThreeStepGoalsQuiz", "const ideasGoal=", "const quiz=", "const conceptPanel=", "const addVideo=", "const readyGenerate", "let captured", "readRealGuestVideo(page,{timeout: 150000})"];
+ let prev=-1;
+ for(const marker of markers){const at=script.indexOf(marker,prev+1);
+  assert.ok(at>prev,"real guest MP4 journey preserves "+marker);prev=at;}
+ assert.match(script,/GOALS_MUST_OPEN_IDEAS/);
+ assert.match(script,/APPROVED_CONCEPT_MUST_PERSIST/);
+ assert.doesNotMatch(script,/\.(?:click|tap)\(\{[^}]*\bforce:\s*true|setIdeasProfileConfirmed\(true\)/,
+  "do not force browser gestures or mutate user consent");
+});
 
 test("WebKit traverses Ideas Personalization and Concept before consented Voice/My Voice",()=>{
  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
