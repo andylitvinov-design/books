@@ -119,11 +119,17 @@ try {
   await expect(page.locator("[data-sitewide-antistress-banner]")).toHaveCount(0);
   await expect(page.locator("[data-hh-ihelp-trigger]:visible")).toHaveCount(0);
   await expect(page.locator("[data-shamanica-ihelp-trigger]")).toBeVisible();
-  await expect(section.locator("[data-business-service]")).toHaveCount(6);
-  await expect(section.locator("[data-business-service] img")).toHaveCount(6);
+  // The approved six business categories are interactive shelf buttons, not
+  // legacy `data-business-service` links. Validate the real design and drill-down.
+  const shelves=section.locator("[data-business-cabinet-shelves]");
+  const cards=shelves.locator("[data-business-shelf]");
+  await expect(cards).toHaveCount(6);
+  await expect(cards.locator("img")).toHaveCount(6);
+  for(const id of ["express","remedies","strategy","artifacts","energy","energywork"])
+   await expect(cards.locator('[data-business-shelf="'+id+'"]')).toHaveCount(1);
   await expect(page.locator("[data-hh-unified-dock]")).toHaveCount(1);
   const m=await page.evaluate(()=>{
-   const last=document.querySelector('[data-business-service="remedies"]');
+   const last=document.querySelector('[data-business-shelf="energywork"]');
    const dock=document.querySelector('[data-hh-unified-dock]');
    if(!last||!dock)return null;
    return {lastBottom:last.getBoundingClientRect().bottom,
@@ -133,7 +139,7 @@ try {
   assert.ok(m,"Business compact landmarks missing");
   assert.ok(m.horizontalOverflow<=2,"Business horizontal overflow "+locale+"/"+width+" "+JSON.stringify(m));
   if(width>=390)assert.ok(m.lastBottom<=m.dockTop+8,
-    "Six business cards must fit above dock "+locale+"/"+width+" "+JSON.stringify(m));
+    "Six business categories must fit above dock "+locale+"/"+width+" "+JSON.stringify(m));
   if(locale==="ru"&&width===390)await page.screenshot({path:output+"/shamanica-business-ru-390.png",fullPage:false});
   await expect.poll(()=>page.evaluate(()=>history.pushState.toString().includes("__NA")),
     {timeout:30000,message:"Business quiz hydration"}).toBe(true);
@@ -146,6 +152,19 @@ try {
   await quiz.locator('[data-business-answer="free"]').click();
   await expect(section.locator("[data-business-recommendations]")).toBeVisible();
   await expect(section.locator("[data-recommended-business-service]")).toHaveCount(2);
+  // Real two-level catalogue: Express has five priced formats and Strategy
+  // has four distinct reviews. The contact controls must remain present.
+  await cards.locator('[data-business-shelf="express"]').click();
+  await expect(shelves).toHaveAttribute("data-expanded","true");
+  await expect(shelves.locator('[data-business-second-level="express"] [data-business-subservice]')).toHaveCount(5);
+  for(const price of ["FREE","45 CAD","75 CAD","200 CAD","300 CAD"])
+   await expect(shelves.locator('[data-business-second-level="express"]')).toContainText(price);
+  await expect(shelves.locator('[data-business-get-details="express"]')).toBeVisible();
+  await shelves.locator("[data-business-back-to-shelves]").click();
+  await expect(cards).toHaveCount(6);
+  await cards.locator('[data-business-shelf="strategy"]').click();
+  await expect(shelves.locator('[data-business-second-level="strategy"] [data-business-subservice]')).toHaveCount(4);
+  await expect(shelves.locator('[data-business-get-details="strategy"]')).toBeVisible();
  }
 
   // Mobile Assist keeps issues, questions, answers, and reset in one messenger.
