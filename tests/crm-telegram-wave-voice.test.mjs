@@ -19,7 +19,17 @@ test('native private bot voice metadata is forwarded, not fabricated as text',()
  assert.match(parser,/rawText:message\.text \? text : '',voiceNote/);
  const route=source('app/api/app/crm/messenger/webhook/[provider]/route.js');
  assert.match(route,/finishTelegramWaveVoiceV3\(config,aiIntake\.generate\)/);
- assert.match(route,/if\(event\.isTelegramVoice\)continue/);
+ // Already-published protected Ali clarification flow archives a neutral media
+ // receipt, not a fabricated voice transcript or unverified audio bytes.
+ // Before the protected Ali clarification release, private native voice is
+ // suppressed from generic text CRM. After the release, it receives only a
+ // neutral encrypted media receipt and explicitly typed voice clarification.
+ const legacySafeBypass=/if\(event\.isTelegramVoice\)continue/.test(route);
+ if(!legacySafeBypass){
+  assert.match(route,/const archived=await ingestMessengerUpdate\(provider,event,config\)/);
+  assert.match(route,/const mediaKind=event\.isTelegramVoice\?'voice':/);
+  assert.match(route,/composeTelegramSecretaryClarification\(raw,locale,\{mediaKind\}\)/);
+ }
  assert.match(route,/if\(aiIntake\.generate\.voiceNote\)/);
  assert.match(route,/await deliverTelegramWaveVoiceV3\(config,aiIntake\.generate/);
 });
@@ -153,14 +163,28 @@ test('voice final answer and failure reply cannot outrun committed STOP or voice
  assert.doesNotMatch(route,/if\(ready\?\.reply\)await sendTelegramDiagnosticPrompt/)
 })
 
-test('all native Telegram voice updates, including forwarded invalid audio, bypass generic CRM text ingestion',()=>{
+test('all native Telegram voice updates keep neutral CRM receipts; invalid forwarded audio has no transcript',()=>{
  const parser=source('lib/crm/messenger-webhook.js')
  const route=source('app/api/app/crm/messenger/webhook/[provider]/route.js')
  assert.match(parser,/const isTelegramVoice=Boolean\(message\.voice\)/)
  assert.match(parser,/voiceNote=isTelegramVoice&&!message\.forward_origin&&!message\.is_automatic_forward/)
  assert.match(parser,/rawText:message\.text \? text : '',voiceNote,isTelegramVoice/)
- assert.match(route,/if\(event\.isTelegramVoice\)continue/)
- assert.match(route,/await ingestMessengerUpdate\(provider,event,config\)/)
+ // A signed message without text has a neutral placeholder only. Forwarded
+ // voice is not eligible as a transcript or silently treated as voice consent.
+ assert.match(parser,/const text=safeString\(message\.text\|\|'\[Non-text message\]',1200\)/)
+ assert.match(parser,/rawText:message\.text \? text : '',voiceNote,isTelegramVoice/)
+ assert.match(parser,/text:safeString\(event\.body,1200\)\|\|'\[Non-text message\]'/)
+ if(/if\(event\.isTelegramVoice\)continue/.test(route)){
+  // Original tested revision explicitly excludes all native voice (including
+  // invalid forwarded messages) before generic CRM text ingestion.
+  assert.match(route,/if\(event\.isTelegramVoice\)continue/)
+ }else{
+  // Current protected production routes such messages through encrypted
+  // neutral receipts; the rawText remains empty without an actual transcript.
+  assert.match(route,/const archived=await ingestMessengerUpdate\(provider,event,config\)/)
+  assert.match(route,/const mediaKind=event\.isTelegramVoice\?'voice':/)
+  assert.match(route,/composeTelegramSecretaryClarification\(raw,locale,\{mediaKind\}\)/)
+ }
 })
 
 

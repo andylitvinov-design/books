@@ -346,6 +346,38 @@ test('Safari MP3 autoplay denial is recoverable on one tap without another synth
   player.cancel();assert.equal(revokes,1)
 })
 
+
+test('Gemini WAV never enters WebCodecs MP3 on iPhone, even when fast voice is enabled',async()=>{
+  const {startCoachingMp3Playback}=await import('../lib/personal-coaching/streamed-mp3-playback.mjs')
+  let reads=0,downloads=0,decodes=0,audible=0,htmlPlays=0
+  const audioContext={
+    state:'running',destination:{},currentTime:0,
+    decodeAudioData:async()=>{decodes++;return {sampleRate:24000,getChannelData:()=>new Float32Array(8)}},
+    createBufferSource:()=>({connect(){},disconnect(){},stop(){},start(){audible++}}),
+  }
+  class FakeAudio{
+    play(){htmlPlays++;throw Error('WAV must play through unlocked Web Audio')}
+    pause(){} removeAttribute(){} load(){}
+  }
+  const environment={
+    Audio:FakeAudio,AudioDecoder:class{},EncodedAudioChunk:class{},location:{search:'?coachStream=1'},
+    URL:{createObjectURL(){throw Error('No HTML blob URL for decoded WAV')},revokeObjectURL(){}},
+  }
+  const response={
+    headers:{get:()=> 'audio/wav'},
+    get body(){reads++;throw Error('WAV must never go to WebCodecs or MSE')},
+    blob:async()=>{downloads++;return new Blob(['synthetic WAV bytes'],{type:'audio/wav'})},
+  }
+  const player=startCoachingMp3Playback(response,{environment,audioContext})
+  await player.run
+  assert.equal(reads,0,'WAV must not even inspect the MP3 stream body')
+  assert.equal(downloads,1,'single authorized synthesis response')
+  assert.equal(decodes,1)
+  assert.equal(audible,1)
+  assert.equal(htmlPlays,0)
+  player.cancel()
+})
+
 test('My Coach has private default TTS, no stale transcription, and tap-to-recover',()=>{
   const loop=source('components/my-coach-speech-loop.jsx')
   const ui=source('components/my-coach-live-dialogue.jsx')
@@ -449,8 +481,11 @@ test('spoken My Coach reply retains the reflection and start introduction',()=>{
  assert.ok(loop.includes('(naturalVoice||voiceAgreed)&&voiceAvailable'))
  assert.ok(loop.includes("if(!introStartedRef.current){"))
  assert.ok(ui.includes("const dynamicAllowed=chosenCloudAgreed&&chosenCloudAvailable&&"))
- assert.ok(ui.includes('const chosenCloudAgreed=geminiVoiceReady||cloudAgreed'))
- assert.ok(ui.includes('const chosenCloudProvider=geminiVoiceReady?geminiVoiceTier:cloudProvider'))
+ assert.ok(ui.includes("const usingExistingVoice=geminiVoiceTier==='existing'"))
+ assert.ok(ui.includes('const chosenCloudAgreed=usingExistingVoice?cloudAgreed:geminiVoiceReady'))
+ assert.ok(ui.includes('const chosenCloudProvider=usingExistingVoice?cloudProvider:'))
+ assert.ok(ui.includes('geminiVoiceReady?geminiVoiceTier:null'))
+ assert.ok(ui.includes('const chosenCloudAvailable=usingExistingVoice?cloudAvailable:geminiVoiceReady'))
  assert.ok(ui.includes("const [cloudAgreed,setCloudAgreed]=useState(false)"))
  assert.ok(!ui.includes('naturalVoiceRow'))
  assert.ok(!ui.includes('checked={cloudAgreed}'))
