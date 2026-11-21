@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { parsePrTrigger, matchesTrigger } from '../lib/ci/specialist-aggregate.mjs';
+import { parsePrTrigger, matchesTrigger, trustedConditionalJobs } from '../lib/ci/specialist-aggregate.mjs';
 
 const workflow = (name) => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 
@@ -610,4 +610,65 @@ test('public Ali greeting and coach motion do not launch private App or storefro
   assert.match(core,/tests\/ali-persona-selector\.test\.mjs tests\/my-coach-personas\.test\.mjs/);
   assert.match(core,/tests\/coach-greeting-video\.test\.mjs/);
   assert.match(core,/steps\.fast\.outputs\.route != 'ASSETS'/);
+});
+
+
+test('Support Guide PR never books a duplicate syntax-only browser runner',()=>{
+  const source=workflow('hh-support-guided-recommendations.yml');
+  assert.match(source,/^  pull_request:/m,'original product and consent PR triggers remain');
+  assert.match(source,/^  focused-unit-types-build:\n    if:/m,'real domain tests still execute');
+  assert.match(source,/Grounded goal-led conversation and existing recommendation contracts/);
+  assert.match(source,/node --check scripts\/verify-holistic-support-guided-card\.mjs/);
+  assert.match(source,/node --test tests\/holistic-support-conversation-intents\.test\.mjs/);
+  assert.match(source,/^  mobile-browser:\n(?:    #.*\n)*    if: \$\{\{ github\.event_name != 'pull_request' \}\}/m);
+  assert.ok(trustedConditionalJobs(source).includes('mobile-browser'),
+    'trusted BASE verifier must accept skipped manual-only browser job');
+  assert.match(source,/Score-first multi-turn dialog on EN\/RU\/ES/);
+  assert.match(source,/^  push:/m);
+  assert.match(source,/^  workflow_dispatch:/m);
+  assert.doesNotMatch(source,/continue-on-error:\s*true/);
+});
+
+test('OpenMotion picker is checked by Mandala alone; public booking stays protected',()=>{
+  const target='codex/public-book-library';
+  const service=parsePrTrigger(workflow('hh-public-services-production.yml'),'services');
+  const studio=parsePrTrigger(workflow('holistic-support-mandala.yml'),'mandala');
+  const core=parsePrTrigger(workflow('hh-pr-core-release.yml'),'core');
+  for(const file of ['components/mandala-openmotion-picker.tsx',
+    'components/mandala-openmotion-picker.module.css']){
+    assert.equal(matchesTrigger(service,[file],target),false,
+      'standalone OpenMotion library must not launch service/checkout browser matrix: '+file);
+    assert.equal(matchesTrigger(studio,[file],target),true,
+      'mandatory real Studio media, license and browser owner must retain: '+file);
+    assert.equal(matchesTrigger(core,[file],target),true,
+      'mandatory Core must retain changed source');
+    for(const risk of ['components/consultation-choice-capture.tsx',
+      'components/contact-channel-chooser.tsx','app/api/payments/checkout/route.js']){
+      assert.equal(matchesTrigger(service,[file,risk],target),true,
+        'mixed PR with booking, consent or payment changes must retain full Public Services QA');
+    }
+  }
+});
+
+test('Home first-click PR source tests use one runner; full browsers remain after merge',()=>{
+  const s=workflow('home-locale-switch.yml');
+  const core=s.slice(s.indexOf('  core-methods:'),s.indexOf('  first-click:'));
+  for(const contract of ['tests/home-locale-menu-state.test.mjs',
+    'tests/navigation-cabinet.test.mjs','tests/page-video-release.test.mjs']){
+    assert.ok(core.includes(contract),'homepage source regressions must run in the single PR job: '+contract);
+  }
+  assert.ok(core.includes('components/site-navigation.tsx'),
+    'first-click navigation lint must remain in normal PR CI');
+  assert.match(s,/^  first-click:\n(?:    #.*\n)*    if: \$\{\{ github\.event_name != 'pull_request' \}\}/m,
+    'second runner cannot be scheduled for normal PRs');
+  assert.ok(trustedConditionalJobs(s).includes('first-click'),
+    'BASE-trusted specialist validator must recognize the post-merge-only job');
+  assert.equal(matchesTrigger(parsePrTrigger(s,'home-locale-switch.yml'),
+    ['components/holistic-house-home.tsx'],'codex/public-book-library'),true,
+    'real homepage product changes must still enter this specialist');
+  assert.match(s,/^  push:/m);
+  assert.match(s,/^  workflow_dispatch:/m);
+  assert.match(s,/Delayed navigation cannot discard the first play click/);
+  assert.match(s,/node scripts\/verify-home-locale-switch\.mjs --live/);
+  assert.doesNotMatch(s,/continue-on-error:\s*true/);
 });

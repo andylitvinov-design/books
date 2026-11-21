@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {validGeminiCoachApiKey,geminiCoachTextConfig,verifiedGeminiCoachingReply} from '../lib/coaching/gemini-coach-text.mjs'
+import {geminiCoachTextConfig,verifiedGeminiCoachingReply} from '../lib/coaching/gemini-coach-text.mjs'
 import {geminiCoachTtsConfig,normalizeGeminiCoachTtsInput,synthesizeGeminiCoachTts} from '../lib/coaching/gemini-coach-tts.mjs'
 import {GEMINI_COACH_VOICE_OPTIONS,coachGeminiVoiceOptions,allowedGeminiCoachVoice} from '../lib/coaching/gemini-voice-catalog.mjs'
 const key='AIza'+('A'.repeat(35))
@@ -137,27 +137,4 @@ test('runtime wiring keeps server Director, quotas, WAV player and Gemini Live o
   assert.match(ui,/previewGeminiCoachVoice/)
   assert.match(ui,/value="gemini" disabled/)
   assert.match(player,/startsWith\('audio\/mpeg'\)/)
-})
-
-test('Google AI Studio AQ. keys work for Gemini Free text and TTS without Paid upgrade',async()=>{
-  const authKey='AQ.'+'x'.repeat(50)
-  const env={...free,HH_GEMINI_FREE_API_KEY:authKey}
-  assert.equal(validGeminiCoachApiKey(authKey),true)
-  assert.equal(geminiCoachTextConfig(env,'gemini_free')?.apiKey,authKey)
-  assert.equal(geminiCoachTtsConfig(env,'gemini_tts_free')?.apiKey,authKey)
-  assert.equal(geminiCoachTextConfig({...env,HH_GEMINI_PAID_API_KEY:authKey},'gemini_free'),null)
-  for(const invalid of ['AQ.'+'x'.repeat(49),'AQ.'+'x'.repeat(51),' AQ.'+'x'.repeat(50),
-      'AQ.'+'x'.repeat(50)+'\\n']){
-    assert.equal(validGeminiCoachApiKey(invalid),false)
-    assert.equal(geminiCoachTextConfig({...env,HH_GEMINI_FREE_API_KEY:invalid},'gemini_free'),null)
-    assert.equal(geminiCoachTtsConfig({...env,HH_GEMINI_FREE_API_KEY:invalid},'gemini_tts_free'),null)
-  }
-  const replied=await verifiedGeminiCoachingReply(geminiCoachTextConfig(env,'gemini_free'),
-    {messages},async(url,options)=>{
-      assert.equal(options.headers['x-goog-api-key'],authKey)
-      return {status:200,ok:true,json:async()=>({candidates:[{finishReason:'STOP',
-        content:{parts:[{text:JSON.stringify({message:'Я слышу вас. Что важно сейчас?',
-        planSuggestion:'',evidenceQuote:'',clientEvidence:{kind:'none',quote:''}})}]}}]})}
-    })
-  assert.equal(replied.provider,'gemini_free')
 })

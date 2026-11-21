@@ -2075,6 +2075,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [phraseCatalogActivated,setPhraseCatalogActivated] = useState(false);
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
   const [activeWorkspace,setActiveWorkspace] = useState<StudioWorkspace>("video");
+  // The one site-menu selection controls the existing Personal/OpenMotion/Ready paths.
+  const [videoExportMode,setVideoExportMode]=useState<"personal"|"openmotion"|"express">("personal");
   const [mirrorAdvanced,setMirrorAdvanced]=useState(false);
   const [mirrorDetailedWish,setMirrorDetailedWish]=useState<string|null>(null);
   const [proCatalogKind,setProCatalogKind]=useState<StoryAddonKind>("character");
@@ -2684,6 +2686,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   });
   const [creditConfirmed,setCreditConfirmed]=useState(true);
   const [creditRetry,setCreditRetry]=useState(false);
+  const [creditReleaseState,setCreditReleaseState]=useState<"idle"|"pending"|"retry">("idle");
+  const creditReleasingRef=useRef(false);
   const creditOpRef=useRef<string|null>(null);
   const creditValidRef=useRef(false);
   const creditCompletingRef=useRef(false);
@@ -3441,7 +3445,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       // Release the old operation before another export: never debit for an
       // MP4 that the native player rejected, or race the duplicate hold guard.
       void (async()=>{
-        if(held&&creditValidRef.current)await releaseCredit(held);
+        if(held&&creditValidRef.current&&!(await releaseCredit(held)))return;
         if(recoverAsWebm&&aliveRef.current&&sourceRef.current===signature)
           setPendingCompatibleRetry(signature);
       })();
@@ -3875,11 +3879,33 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     return postVideoCreditAction(action,body);
   }
   async function releaseCredit(operationId:string){
-    try{await videoCreditRequest("release",{operationId});}
-    catch{/* Thirty-minute server expiration also releases abandoned reservations. */}
-    if(creditOpRef.current===operationId){
-      creditOpRef.current=null;creditValidRef.current=false;
-      if(aliveRef.current){setCreditConfirmed(false);setCreditRetry(false);}
+    const tracked=creditOpRef.current===operationId;
+    if(tracked){
+      if(creditReleasingRef.current||creditCompletingRef.current)return false;
+      creditReleasingRef.current=true;
+      creditValidRef.current=false;
+      if(aliveRef.current)setCreditReleaseState("pending");
+    }
+    try{
+      const response=await videoCreditRequest("release",{operationId});
+      if(response.operationId!==operationId||response.status!=="released")return false;
+      if(creditOpRef.current===operationId){
+        creditOpRef.current=null;
+        if(aliveRef.current){
+          setCreditBalance(response.balance?.balanceCredits??null);
+          setCreditConfirmed(false);
+          setCreditRetry(false);
+          setCreditReleaseState("idle");
+        }
+      }
+      return true;
+    }catch{
+      return false;
+    }finally{
+      if(tracked){
+        creditReleasingRef.current=false;
+        if(aliveRef.current&&creditOpRef.current===operationId)setCreditReleaseState("retry");
+      }
     }
   }
   async function confirmCredit(){
@@ -3956,6 +3982,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       return;
     }
     stopSoundPreview();stopMovieSound();
+    setVideoExportMode("openmotion");
+    window.dispatchEvent(new CustomEvent("hh:video-export-mode-active",{detail:{mode:"openmotion"}}));
     preparingRef.current=true;
     flushSync(()=>{
       setAspect(outputAspect);
@@ -4010,6 +4038,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   }
 
   async function createVideo(preferWebm = false, forceMp4ForRetry = false, safeWebkitRetry = false, forceWebCodecs = false) {
+    // Never silently replace an OpenMotion or finished Express request with
+    // the legacy Safari encoder. A mode switch is not a credit hold.
+    if(videoExportMode!=="personal"){
+      setNotice(locale==="ru"?"Смените режим на Personal или выберите шаблон OpenMotion.":
+        locale==="es"?"Cambia a Personal o elige una plantilla OpenMotion.":
+        "Switch to Personal or choose an OpenMotion template.");
+      return;
+    }
     if (!canGenerate || !source || jobRef.current || webCodecJobRef.current || preparingRef.current) return;
     motionPresetRetryRef.current=null;
     stopSoundPreview();
@@ -6208,10 +6244,82 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     }));
   };
 
+
+  // Existing Settings menu → same editor and Ready. The customer never receives
+  // a fake Express MP4 while our offline FFmpeg masters are absent.
+  const expressUnavailable=locale==="ru"
+    ?"Express пока недоступен: проверенных готовых MP4 нет. FFmpeg Fast Assembly работает офлайн. Выберите Personal или OpenMotion."
+    :locale==="es"
+    ?"Express aún no está disponible: no hay MP4 terminados verificados. FFmpeg Fast Assembly es sin conexión. Elige Personal u OpenMotion."
+    :"Express is not available yet: no finished verified MP4 masters exist. FFmpeg Fast Assembly is offline-only. Choose Personal or OpenMotion.";
+  const openExistingMotionPicker=()=>{
+    setActiveWorkspace("video");setStudioMode("pump");setIntroPlaying(false);
+    setFirstVideoAdvancedActivated(true);setFirstVideoAdvancedOpen(true);
+    setShowAdvancedVideo(true);setVideoScenarioOpen(true);
+    window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
+      const advanced=document.querySelector<HTMLDetailsElement>("[data-video-first-video-advanced]");
+      if(advanced)advanced.open=true;
+      const picker=document.querySelector<HTMLDetailsElement>("[data-first-video-openmotion-library]");
+      if(picker){picker.open=true;picker.scrollIntoView({block:"start",behavior:"auto"});}
+      else advanced?.scrollIntoView({block:"start",behavior:"auto"});
+    }));
+  };
+  const selectVideoExportMode=(mode:"personal"|"openmotion"|"express")=>{
+    if(!studioHydrated||recording||preparing||preparingRef.current||
+       jobRef.current||webCodecJobRef.current||creditOpRef.current)return false;
+    if(videoExportMode!==mode){
+      // Keep the user's project/scenes/audio; discard only prior file/verification
+      // so Ready cannot misattribute a completed video to a different engine.
+      setResult(null);setPlaybackStatus("checking");setExportUnavailable(false);
+      setCreditConfirmed(false);setPendingCompatibleRetry(null);
+      setReadyGenerationPending(false);setPreviewPlaying(false);stopMovieSound();
+      motionPresetRetryRef.current=null;
+    }
+    setVideoExportMode(mode);
+    const url=new URL(window.location.href);
+    url.searchParams.set("videoMode",mode);
+    window.history.replaceState(window.history.state,"",url.pathname+url.search+url.hash);
+    window.dispatchEvent(new CustomEvent("hh:video-export-mode-active",{detail:{mode}}));
+    if(mode==="openmotion"){
+      setNotice(locale==="ru"?"Выберите проверенный шаблон OpenMotion ниже. MP4 создаётся отдельно.":
+        locale==="es"?"Elige una plantilla verificada abajo. El MP4 se exporta después.":
+        "Choose a verified OpenMotion template below; export creates the MP4.");
+      openExistingMotionPicker();
+    }else if(mode==="personal"){
+      setNotice("");setActiveWorkspace("editor");setStudioMode("pump");
+      setMontagePanel("effects");
+    }else{
+      setActiveWorkspace("ready");setReadyGenerationPending(false);
+      setNotice(expressUnavailable);
+    }
+    return true;
+  };
+  useEffect(()=>{
+    const request=(event:Event)=>{
+      const detail=(event as CustomEvent<{mode?:string;accepted?:boolean}>).detail;
+      if(!detail||!["personal","openmotion","express"].includes(detail.mode||""))return;
+      detail.accepted=selectVideoExportMode(detail.mode as "personal"|"openmotion"|"express");
+    };
+    window.addEventListener("hh:video-export-mode-change",request);
+    return()=>window.removeEventListener("hh:video-export-mode-change",request);
+  });
+  useEffect(()=>{
+    if(!studioHydrated)return;
+    const search=new URLSearchParams(window.location.search);
+    const mode=search.get("videoMode")||(search.has("motionPreset")?"openmotion":null);
+    if(mode==="openmotion"||mode==="express")selectVideoExportMode(mode);
+    // Query is an initial route intent. Later changes come from the site menu.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[studioHydrated]);
   // Goal and Montage Generate only open Ready. This action starts no encoder,
   // check-in or credit transaction; the separate Ready Generate click does.
   const openReadyForGeneration = () => {
     if(!studioHydrated||recording||preparing||preparingRef.current||jobRef.current||webCodecJobRef.current)return false;
+    if(videoExportMode==="openmotion"){openExistingMotionPicker();return false;}
+    if(videoExportMode==="express"){
+      setActiveWorkspace("ready");setReadyGenerationPending(false);
+      setNotice(expressUnavailable);return false;
+    }
     ++quickNavTokenRef.current;
     stopSoundPreview();stopMovieSound();
     setIntroPlaying(false);setPreviewPlaying(false);setNotice("");
@@ -6224,6 +6332,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   };
 
   const createQuickVideo = () => {
+    if(videoExportMode!=="personal"){
+      if(videoExportMode==="openmotion")openExistingMotionPicker();
+      else setNotice(expressUnavailable);
+      return false;
+    }
     if(storySourcePendingRef.current){
       setNotice(locale==="ru"?"Сначала выберите «Использовать эти 6 фото в видео» в разделе «Сюжет».":
         locale==="es"?"Primero selecciona «Usar estas 6 fotos en el vídeo» en Guion.":
@@ -6340,6 +6453,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // Express: source-backed storyboard + licensed music or exact user audio
   // + actual protected local encoder, all initiated by ONE Create gesture.
   const generateExpressFromCurrent=()=>{
+    // Existing one-click "Express from my audio" is still a PERSONAL local
+    // encode; it must not masquerade as a finished Express master.
+    if(videoExportMode!=="personal"){
+      if(videoExportMode==="openmotion")openExistingMotionPicker();
+      else setNotice(expressUnavailable);
+      return false;
+    }
     if(!studioHydrated||recording||preparing||preparingRef.current||
        jobRef.current||webCodecJobRef.current||sttBusy||micRecording)return false;
     if(creditCatalog===null||creditCatalog.blocked||
@@ -7521,7 +7641,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     <section className={videoStyles.studio} data-active-workspace={activeWorkspace||undefined} id="free-personal-video"
       data-video-preview-playing={previewPlaying?"true":undefined}
       data-hh-video-ihelp-open={videoIHelpOpen||undefined}
-      data-mandala-free-video data-video-studio-mode={studioMode}
+      data-mandala-free-video data-video-studio-mode={studioMode} data-video-export-mode={videoExportMode}
       data-ideas-step={activeWorkspace==="phrases"?ideasSubtab:undefined}
       data-video-advanced-open={(showAdvancedVideo||videoScenarioOpen)?"true":"false"}
       data-hh-mirror-advanced={mirrorAdvanced?"true":"false"}
@@ -7529,6 +7649,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       data-video-studio-hydrated={studioHydrated?"true":"false"}
       data-montage-panel={activeWorkspace==="editor"?montagePanel:undefined}
       lang={locale} aria-label={ui.title}>
+
 
 
 
@@ -8221,8 +8342,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           :workspaceCopy[locale][activeWorkspace].desc}</p>
       </header> : <span id="video-workspace-panel" className={videoStyles.srOnly}/>}
       
+      {creditReleaseState!=="idle"?<div data-video-credit-release>
+        <p role="status">{creditReleaseState==="pending"
+          ?(locale==="ru"?"Освобождаем резерв кредитов…":locale==="es"?"Liberando la reserva de créditos…":"Releasing reserved credits…")
+          :(locale==="ru"?"Не удалось подтвердить освобождение резерва. Повторите перед экспортом."
+            :locale==="es"?"No se pudo confirmar la liberación de la reserva. Reinténtalo antes de exportar."
+            :"Could not confirm release of reserved credits. Retry before exporting.")}</p>
+        {creditReleaseState==="retry"?<button type="button" onClick={()=>{
+          const operationId=creditOpRef.current;
+          if(operationId)void releaseCredit(operationId);
+        }}>{locale==="ru"?"Повторить освобождение резерва"
+          :locale==="es"?"Reintentar liberación":"Retry credit release"}</button>:null}
+      </div>:null}
       {activeWorkspace==="ready"?<MandalaVideoReady
-        courseFlow={readyCourseFlow} locale={locale} theme={theme} wish={wish} focus={meditationFocus} aspect={aspect}
+        courseFlow={readyCourseFlow} exportMode={videoExportMode} locale={locale} theme={theme} wish={wish} focus={meditationFocus} aspect={aspect}
         video={!readyGenerationPending&&playbackStatus!=="failed"&&result&&result.mode!=="catalog"?{
           url:result.url,extension:result.extension,bytes:result.bytes,duration:result.durationSeconds??duration,blob:result.blob
         }:null}
@@ -8289,11 +8422,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         basicCreditCost={basicVideoAccess.chargeCredits}
         onVerifyPlayback={confirmVideoPlayback}
         onStartNewVideo={()=>{
+          if(videoExportMode==="openmotion"){openExistingMotionPicker();return;}
           activateQuickWorkspace("video");
           window.requestAnimationFrame(()=>document.getElementById("free-personal-video")
             ?.scrollIntoView({behavior:"auto",block:"start"}));
         }}
         onGenerateBasicVideo={()=>{
+          if(videoExportMode!=="personal"){
+            if(videoExportMode==="openmotion")openExistingMotionPicker();
+            else setNotice(expressUnavailable);
+            return false;
+          }
           // Never substitute a credit-charged or paid render for the FREE offer.
           // Normalize the existing choice without forcing the visitor out of Ready.
           if(!freeVideoSelected){

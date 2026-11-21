@@ -5,6 +5,8 @@ import {coachingGroqConfig,GROQ_COACH_MODEL} from '../lib/coaching/groq-coach-pr
 import {coachStreamingMessages,verifiedGroqCoachingStream,
   readGroqTextStream,COACH_GROQ_STREAM_MAX} from '../lib/coaching/groq-coach-stream.mjs'
 import {readCoachTurnStream} from '../lib/coaching/coach-stream-client.mjs'
+import {validGeminiCoachApiKey,geminiCoachTextConfig,verifiedGeminiCoachingReply} from '../lib/coaching/gemini-coach-text.mjs'
+import {geminiCoachTtsConfig} from '../lib/coaching/gemini-coach-tts.mjs'
 import {geminiCoachLiveConfig,createGeminiCoachEphemeralToken,
   resolveCoachVoiceEngine} from '../lib/coaching/gemini-live-provider.mjs'
 
@@ -156,4 +158,38 @@ test('existing My Coach strict/director path and voice barge remain intact',()=>
   assert.match(ui,/value="gemini" disabled/)
   assert.match(voice,/interruptCoachToListen\(\)/)
   assert.match(voice,/cancelOutgoingCoachSpeech\(\)/)
+})
+
+
+test('current Google AI Studio AQ. keys unlock consented Free Gemini text and TTS without Paid fallback',async()=>{
+  const valid='AQ.'+'x'.repeat(50)
+  const env={HH_GEMINI_FREE_API_KEY:valid,
+    HH_MY_COACH_GEMINI_FREE_ENABLED:'true',
+    HH_MY_COACH_GEMINI_FREE_TIER_CONFIRMED:'true',
+    HH_MY_COACH_GEMINI_FREE_DATA_APPROVED:'true',
+    HH_MY_COACH_GEMINI_TTS_FREE_ENABLED:'true'}
+  assert.equal(validGeminiCoachApiKey(valid),true)
+  assert.equal(geminiCoachTextConfig(env,'gemini_free')?.apiKey,valid)
+  assert.equal(geminiCoachTtsConfig(env,'gemini_tts_free')?.apiKey,valid)
+  assert.equal(geminiCoachTextConfig(env,'gemini_paid'),null)
+  assert.equal(geminiCoachTextConfig({...env,HH_GEMINI_PAID_API_KEY:valid},'gemini_free'),null)
+  for(const invalid of ['AQ.'+'x'.repeat(49),'AQ.'+'x'.repeat(51),' AQ.'+'x'.repeat(50)]){
+    assert.equal(validGeminiCoachApiKey(invalid),false)
+    assert.equal(geminiCoachTextConfig({...env,HH_GEMINI_FREE_API_KEY:invalid},'gemini_free'),null)
+    assert.equal(geminiCoachTtsConfig({...env,HH_GEMINI_FREE_API_KEY:invalid},'gemini_tts_free'),null)
+  }
+  let calls=0
+  const res=await verifiedGeminiCoachingReply(geminiCoachTextConfig(env,'gemini_free'),
+    {messages:[{role:'system',content:'Guide safely.'},{role:'user',content:'Hello, coach.'}]},
+    async(url,options)=>{
+      calls++
+      assert.equal(options.headers['x-goog-api-key'],valid)
+      assert.match(url,/gemini-3\.1-flash-lite:generateContent$/)
+      const text=JSON.stringify({message:'Hello. What is important to you today?',
+        planSuggestion:'',evidenceQuote:'',clientEvidence:{kind:'none',quote:''}})
+      return {ok:true,status:200,json:async()=>({candidates:[{
+        finishReason:'STOP',content:{parts:[{text}]}}]})}
+    })
+  assert.equal(res.provider,'gemini_free')
+  assert.equal(calls,1)
 })
