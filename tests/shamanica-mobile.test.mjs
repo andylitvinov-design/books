@@ -26,21 +26,28 @@ test("Quiz always selects exactly two distinct known directions",()=>{
  assert.deepEqual(shamanicaRecommendations({goal:"money",method:"artifacts",start:"object"}),["artifacts","rituals"]);
  assert.equal(shamanicaRecommendations({goal:"growth",method:"unsure",start:"free"})[0],"learning");
 });
-test("Support-inspired first screen uses the same visual grammar as Support",()=>{
+test("Magic Mirror-inspired personal landing preserves readable 3-step interaction",()=>{
  const css=read("components/shamanica-mobile.module.css");
  const client=read("components/shamanica-mobile.tsx");
- assert.match(css,/SHAMANIC_SUPPORT_PARITY_20261120/);
- assert.match(css,/background:radial-gradient\(ellipse at 108% 104%/);
- assert.match(css,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
- assert.match(css,/\.page\[data-shamanica-audience="self"\] \.servicePhoto/);
- assert.match(css,/\.page\[data-shamanica-audience="self"\] \.answer/);
- assert.match(css,/min-height:59px/);
+ assert.match(css,/SHAMANIC_MIRROR_REFERENCE_20261120/);
+ assert.match(css,/\.mirrorLaptop/);
+ assert.match(css,/\.mirrorScreen/);
+ assert.match(css,/\.mirrorPlay/);
+ assert.match(css,/\.answerPhoto/);
+ assert.match(css,/\.answerSelected/);
+ assert.match(css,/\.page\[data-shamanica-audience="self"\] \.audiences/);
+ assert.match(css,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  assert.match(css,/safe-area-inset-bottom/);
  assert.match(css,/focus-visible/);
  assert.match(css,/prefers-reduced-motion/);
- assert.doesNotMatch(css,/SHAMANICA_READABLE_MOBILE_20261119/);
- assert.match(client,/className=\{styles\.heroMobileName\}/);
- assert.match(client,/className=\{styles\.heroLead\}/);
+ assert.match(client,/data-shamanica-next/);
+ assert.match(client,/aria-pressed=\{chosen===id\}/);
+ assert.match(client,/onClick=\{\(\)=>choose\(id\)\}/);
+ assert.match(client,/videoRef\.current\?\.play\(\)/);
+ assert.match(client,/film-collection-v3\/sun-autumn-hills\.mp4/);
+ assert.match(client,/maxLength=\{280\}/);
+ assert.match(client,/new URLSearchParams\(\{goal,method,start:startChoice\}\)/);
+ assert.doesNotMatch(client,/new URLSearchParams\(\{goal,method,start:choice\}\)/);
 });
 
 test("Six photographic entrances include the existing free Reiki course",()=>{
@@ -51,8 +58,9 @@ test("Six photographic entrances include the existing free Reiki course",()=>{
  assert.match(client,/data-shamanica-service=\{id\}/);
  assert.match(client,/businessLink/);
  assert.match(client,/data-shamanica-audience=\{business\?"business":"self"\}/);
- // Answers remain one-tap controls that advance through three steps.
- assert.match(client,/onClick=\{\(\)=>select\(id\)\}/);
+ // A card now selects with visible aria-pressed state; Next advances the three-step quiz.
+ assert.match(client,/onClick=\{\(\)=>choose\(id\)\}/);
+ assert.match(client,/data-shamanica-next/);
  assert.match(client,/router\.push\("\/"\+locale\+"\/shamanica\/results\?"/);
 });
 

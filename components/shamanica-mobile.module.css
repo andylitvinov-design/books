@@ -70,176 +70,238 @@
 
 
 
-/* SHAMANIC_SUPPORT_PARITY_20261120
-   Match Support's ivory/photo hero, green guided quiz and 3x2 photographic
-   categories. The business variant, existing answer handlers and desktop
-   page remain untouched. Keep cards and quiz scrollable on very short phones. */
-.brandSub{display:block;margin-top:4px;color:#52665a;font:700 9px/1.1 Arial,Helvetica,sans-serif;letter-spacing:.29em}
-.profileButton,.heroMobileName,.heroLead{display:none}
-.heroDesktopName{display:inline}
+/* SHAMANIC_MIRROR_REFERENCE_20261120
+   Owner-approved Magic Mirror visual family; personal Shamanic only.
+   Preserve existing business page, five categories + free Reiki, original
+   three-question ranking engine, protected routes, and global seven-tab dock. */
+.brandSub{display:block;margin-top:4px;color:#52665a;font:700 9px/1.1 Arial,Helvetica,sans-serif;letter-spacing:.14em}
+.profileButton,.helpButton{display:none}
 .servicesHeading{position:relative}
 .businessLink{display:none}
+.page[data-shamanica-audience="self"]{
+ color:#113f32;background:
+ radial-gradient(ellipse at 20% 16%,#fffdf9 0%,#fff4ed 53%,transparent 75%),
+ linear-gradient(180deg,#fbf5e9 0%,#fff8f3 55%,#fbf5e9 100%);
+}
+.page[data-shamanica-audience="self"] .container{
+ display:flex;flex-direction:column;width:min(100%,920px);
+ padding:12px 16px calc(var(--hh-unified-nav-height,94px) + env(safe-area-inset-bottom) + 34px);
+}
+.page[data-shamanica-audience="self"] .header{order:0;min-width:0;min-height:54px;margin:0 0 7px;gap:8px}
+.page[data-shamanica-audience="self"] .brand{min-width:0;gap:7px}
+.page[data-shamanica-audience="self"] .brand span{white-space:normal;font:700 clamp(21px,3.1vw,29px)/1 Georgia,serif;letter-spacing:-.03em}
+.page[data-shamanica-audience="self"] .brand>svg{width:32px;height:32px;flex:none}
+.page[data-shamanica-audience="self"] .tools{gap:7px;flex:none}
+.page[data-shamanica-audience="self"] .tools .iconButton,
+.page[data-shamanica-audience="self"] .menu{display:none}
+.page[data-shamanica-audience="self"] .helpButton,
+.page[data-shamanica-audience="self"] .profileButton{
+ display:grid;place-items:center;width:43px;height:43px;flex:none;
+ border:1px solid #e9ded1;border-radius:16px;background:#fffcf8;
+ color:#0a5843;box-shadow:0 4px 12px #4a3b3020;cursor:pointer;text-decoration:none;
+}
+.page[data-shamanica-audience="self"] .lang{min-height:43px;border-radius:15px;background:#fffcf8}
+.page[data-shamanica-audience="self"] .hero{
+ order:1;height:auto;min-height:0;max-height:none;overflow:visible;isolation:auto;
+ margin:0;padding:2px 0 0;border:0;border-radius:0;background:transparent;text-align:center;
+}
+.page[data-shamanica-audience="self"] .hero::before{content:none}
+.mirrorIntro{max-width:700px;margin:0 auto}
+.mirrorSymbol{display:flex;align-items:center;justify-content:center;gap:0;
+ height:32px;color:#c89323}
+.mirrorSymbol svg:last-child{margin-left:-5px;margin-top:-9px}
+.page[data-shamanica-audience="self"] .hero h1{
+ margin:5px 0 5px;color:#0c4134;font:700 clamp(40px,6.8vw,60px)/1 Georgia,serif;
+ font-style:normal;letter-spacing:-.045em;
+}
+.mirrorTagline{margin:0 auto 6px!important;color:#104534;
+ font:750 clamp(16px,3.6vw,27px)/1.14 Arial,Helvetica,sans-serif}
+.mirrorLead{max-width:590px!important;margin:0 auto!important;color:#374942;
+ font:400 clamp(14px,2.5vw,18px)/1.4 Arial,Helvetica,sans-serif}
+.mirrorLaptop{width:min(100%,660px);margin:18px auto 0}
+.mirrorScreen{
+ position:relative;overflow:hidden;width:100%;aspect-ratio:16/8.6;
+ border:9px solid #171b1f;border-bottom-width:12px;border-radius:13px 13px 5px 5px;
+ background:#181d1f;box-shadow:0 5px 15px #33403322;
+}
+.mirrorScreen::after{position:absolute;content:"";top:2px;left:50%;width:3px;height:3px;
+ border-radius:50%;background:#394448;pointer-events:none}
+.mirrorVideo{display:block;width:100%;height:100%;object-fit:cover;background:#35504a}
+.mirrorDrum{
+ position:absolute;left:5%;top:12%;display:grid;place-items:center;
+ width:35%;max-width:185px;aspect-ratio:1;border:8px solid #765330;border-radius:50%;
+ background:radial-gradient(circle at 50% 45%,#d5b27e 0%,#b4834e 58%,#674124 100%);
+ box-shadow:0 2px 12px #2a261fa3,inset 0 0 0 4px #c99758,inset 0 0 0 6px #6e4929;
+ color:#69502d;pointer-events:none;opacity:.91;
+}
+.mirrorDrum svg{width:45%;height:45%}
+.mirrorFire{position:absolute;right:23%;bottom:12%;color:#ffd38a;filter:drop-shadow(0 1px 8px #ef8a30)}
+.mirrorPlay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+ display:grid;place-items:center;width:64px;height:64px;padding:0 0 0 4px;
+ border:3px solid #fffcf8;border-radius:50%;background:#173e2f63;
+ color:white;box-shadow:0 3px 14px #0006;cursor:pointer}
+.mirrorPlay:hover{background:#164e3eb8}
+.mirrorBase{position:relative;height:19px;margin:0 -4%;border-radius:3px 3px 48% 48%;
+ background:linear-gradient(180deg,#a7a8a8,#d9d8d5 38%,#898d8d 74%,#c0c1bd 100%);
+ box-shadow:0 7px 12px #4c403024}
+.mirrorBase::before{position:absolute;content:"";left:36%;right:36%;top:0;height:6px;
+ border-radius:0 0 12px 12px;background:#919596}
+.page[data-shamanica-audience="self"] .audiences{
+ display:grid;order:2;grid-template-columns:repeat(2,minmax(0,1fr));
+ width:min(88%,490px);margin:20px auto 10px;padding:4px;
+ border:1px solid #e8ddcf;border-radius:40px;background:#fffcf9;
+ box-shadow:0 4px 13px #4e3e3025;gap:3px;
+}
+.page[data-shamanica-audience="self"] .audiences>a:last-child{display:none}
+.page[data-shamanica-audience="self"] .audiences a{
+ min-height:45px;gap:7px;padding:8px 10px;border:0;border-radius:38px;
+ background:transparent;box-shadow:none;color:#0a4539;font-size:clamp(13px,2.8vw,17px);
+}
+.page[data-shamanica-audience="self"] .audiences a.audienceActive{
+ color:#fff;background:linear-gradient(125deg,#0da477,#005d46);
+ box-shadow:inset 0 1px #ffffff70,0 3px 8px #08604432;
+}
+.page[data-shamanica-audience="self"] .quiz{
+ order:3;min-height:0;width:min(100%,660px);margin:0 auto;padding:0;
+ border:0;border-radius:0;background:transparent;box-shadow:none;color:#113f32;
+}
+.page[data-shamanica-audience="self"] .quiz::after{display:none}
+.page[data-shamanica-audience="self"] .quizTop{
+ display:flex;flex-direction:column-reverse;align-items:center;justify-content:center;
+ gap:6px;margin:2px 0 10px;
+}
+.page[data-shamanica-audience="self"] .stepLabel{
+ padding:0;background:none;color:#64716d;border-radius:0;
+ font:700 13px/1.2 Arial,Helvetica,sans-serif;
+}
+.page[data-shamanica-audience="self"] .progress{gap:12px}
+.page[data-shamanica-audience="self"] .progress::before{display:none}
+.page[data-shamanica-audience="self"] .progress>span{
+ width:12px;height:12px;border:2px solid #a9b7af;border-radius:50%;background:transparent;
+}
+.page[data-shamanica-audience="self"] .progress .progressOn{border-color:#086a51;background:#086a51}
+.page[data-shamanica-audience="self"] .quizTitleRow{justify-content:center;position:relative;margin:0 0 12px}
+.page[data-shamanica-audience="self"] .quiz h2{
+ margin:0;color:#113f32;text-align:center;
+ font:700 clamp(27px,4.8vw,35px)/1.12 Georgia,serif;letter-spacing:-.032em;
+}
+.page[data-shamanica-audience="self"] .quizBack{
+ position:absolute;left:0;top:0;display:grid;place-items:center;width:37px;height:37px;
+ border:1px solid #d7e5d8;border-radius:50%;background:#fffaf2;color:#00684f;
+}
+.page[data-shamanica-audience="self"] .answers{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;max-width:620px;margin:0 auto;
+}
+.page[data-shamanica-audience="self"] .answer{
+ display:flex;flex-direction:column;gap:0;min-width:0;min-height:120px;height:auto;overflow:hidden;
+ padding:0;border:2px solid #fff9f2;border-radius:20px;background:#fffcf8;
+ box-shadow:0 4px 11px #413d302a;color:#103b31;text-align:left;
+ font:750 clamp(14px,2.5vw,18px)/1.17 Arial,Helvetica,sans-serif;
+}
+.page[data-shamanica-audience="self"] .answer:last-child:nth-child(odd){grid-column:1/-1}
+.page[data-shamanica-audience="self"] .answerSelected{
+ border-color:#00a776;box-shadow:0 0 0 1px #80e6c1,0 4px 13px #076b5733;
+}
+.answerPhoto{position:relative;display:block;width:100%;height:85px;flex:none;overflow:hidden;background:#e9e5d8}
+.answerPhoto img{object-fit:cover;object-position:center}
+.answerText{display:flex;align-items:center;gap:9px;width:100%;min-height:51px;padding:9px 12px}
+.answerText svg{flex:none;color:#0a5c48}
+.answerText>span{overflow-wrap:normal;hyphens:auto}
+.orSeparator{display:flex;align-items:center;gap:11px;justify-content:center;margin:12px auto 8px;
+ color:#9e9b91;font:800 12px/1.2 Arial,Helvetica,sans-serif;letter-spacing:.12em}
+.orSeparator::before,.orSeparator::after{content:"";width:34px;height:1px;background:#c0b9ae}
+.requestField{display:flex;align-items:center;gap:10px;min-height:52px;padding:0 14px;
+ border:1px solid #f2e6db;border-radius:19px;background:#fffcf8;
+ box-shadow:0 4px 11px #4d463029}
+.requestField>svg{flex:none;color:#c89222}
+.requestField input{width:100%;min-width:0;min-height:50px;border:0;outline:0;background:transparent;
+ color:#183b31;font:500 15px/1.2 Arial,Helvetica,sans-serif}
+.requestField input::placeholder{color:#858681;opacity:1}
+.requestField:focus-within{outline:2px solid #13856a;outline-offset:1px}
+.requestField button{display:grid;place-items:center;flex:none;width:42px;height:44px;
+ border:0;background:transparent;color:#075a48;cursor:pointer}
+.inputHint{margin:6px 4px 0;color:#68766d;font:400 12px/1.25 Arial,Helvetica,sans-serif;text-align:center}
+.nextButton{display:flex;align-items:center;justify-content:center;gap:16px;
+ width:min(76%,360px);min-height:55px;margin:15px auto 0;padding:9px 24px;
+ border:0;border-radius:40px;background:linear-gradient(120deg,#079d75,#005b44);
+ box-shadow:0 4px 11px #04694a30;color:white;cursor:pointer;
+ font:800 clamp(19px,3.8vw,25px)/1 Arial,Helvetica,sans-serif}
+.nextButton:hover{filter:brightness(1.06)}
+.page[data-shamanica-audience="self"] .services{order:4;margin-top:27px}
+.page[data-shamanica-audience="self"] .servicesHeading{
+ display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;
+}
+.page[data-shamanica-audience="self"] .sectionTitle{
+ margin:0;text-align:left;color:#103f31;font:700 clamp(25px,4vw,36px)/1.1 Georgia,serif;
+}
+.page[data-shamanica-audience="self"] .sectionTitle::after{display:none}
+.page[data-shamanica-audience="self"] .businessLink{display:flex;align-items:center;gap:5px;
+ flex:none;color:#077357;font:750 clamp(12px,2.3vw,15px)/1.1 Arial,Helvetica,sans-serif;text-decoration:none}
+.page[data-shamanica-audience="self"] .serviceGrid{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;
+}
+.page[data-shamanica-audience="self"] .serviceCard,
+.page[data-shamanica-audience="self"] .serviceCard:nth-child(n+4){
+ display:flex;flex-direction:column;grid-column:span 1;min-width:0;min-height:150px;height:auto;
+ border:1px solid #eadfd3;border-radius:19px;overflow:hidden;background:#fffcf8;
+ box-shadow:0 4px 11px #413b3020;
+}
+.page[data-shamanica-audience="self"] .servicePhoto{position:relative;height:77px;flex:none}
+.page[data-shamanica-audience="self"] .serviceIcon{
+ position:absolute;top:59px;left:8px;width:34px;height:34px;border-radius:13px;background:#fffaf3;
+ color:#075f45;box-shadow:0 2px 7px #0002;
+}
+.page[data-shamanica-audience="self"] .serviceBody{padding:21px 9px 10px}
+.page[data-shamanica-audience="self"] .serviceBody h3{
+ margin:0;color:#103a30;font:800 clamp(14px,2.35vw,18px)/1.15 Arial,Helvetica,sans-serif;
+}
+.page[data-shamanica-audience="self"] .serviceBody p,
+.page[data-shamanica-audience="self"] .serviceArrow{display:none}
+.page[data-shamanica-audience="self"] :is(.answer,.nextButton,.mirrorPlay,.helpButton,.profileButton,.serviceCard,.requestField button,.audiences a):focus-visible{
+ outline:3px solid #d3a532;outline-offset:3px;
+}
 @media(max-width:600px){
- .page[data-shamanica-audience="self"]{
-  color:#143d33;background:#fbf5e9;font-family:Arial,Helvetica,sans-serif;overflow-x:clip;
- }
  .page[data-shamanica-audience="self"] .container{
-  box-sizing:border-box;width:min(100%,520px);padding:5px 10px calc(var(--hh-unified-nav-height,94px) + 24px);
+  width:min(100%,520px);padding:7px 12px calc(var(--hh-unified-nav-height,94px) + env(safe-area-inset-bottom) + 25px);
  }
- .page[data-shamanica-audience="self"] .header{
-  min-height:44px;margin:0 2px 6px;gap:7px;
- }
- .page[data-shamanica-audience="self"] .brand{gap:7px}
- .page[data-shamanica-audience="self"] .brand>svg{width:32px;height:32px;color:#0b6947}
- .page[data-shamanica-audience="self"] .brand span{
-  font:500 clamp(21px,5.8vw,27px)/1 Georgia,"Times New Roman",serif;letter-spacing:-.03em;
- }
- .page[data-shamanica-audience="self"] .brandSub{
-  display:block;margin-top:4px;color:#52665a;font:700 9px/1.08 Arial,Helvetica,sans-serif;letter-spacing:.29em;
- }
- .page[data-shamanica-audience="self"] .tools{gap:7px}
- .page[data-shamanica-audience="self"] .lang{
-  border:0;background:transparent;box-shadow:none;border-radius:0;min-width:42px;height:44px;padding:0 2px;
- }
- .page[data-shamanica-audience="self"] .lang select{font-size:15px}
- .page[data-shamanica-audience="self"] .tools .iconButton,
- .page[data-shamanica-audience="self"] .menu,
- .page[data-shamanica-audience="self"] .audiences{display:none}
- .page[data-shamanica-audience="self"] .profileButton{
-  display:grid;place-items:center;flex:none;width:43px;height:43px;border:1px solid #d9d0bf;
-  border-radius:50%;background:#fff9f2;color:#123d32;text-decoration:none;box-shadow:0 2px 8px #3a51341c;
- }
- .page[data-shamanica-audience="self"] .hero{
-  display:block;height:93px;min-height:93px;max-height:none;margin:0 0 6px;
-  padding:11px 13px;border-radius:16px;background:#f4ead8;
- }
- .page[data-shamanica-audience="self"] .heroImg{object-position:77% 49%}
- .page[data-shamanica-audience="self"] .hero::before{
-  background:linear-gradient(90deg,#fbf6e9 0%,#fbf4eaf5 43%,#fbf4eac7 69%,#fff4d200 100%);
- }
- .page[data-shamanica-audience="self"] .heroText{max-width:100%}
- .page[data-shamanica-audience="self"] .eyebrow,
- .page[data-shamanica-audience="self"] .heroDesktopName,
- .page[data-shamanica-audience="self"] .heroSubtitle,
- .page[data-shamanica-audience="self"] .heroActions{display:none}
- .page[data-shamanica-audience="self"] .heroMobileName{display:block}
- .page[data-shamanica-audience="self"] .hero h1{
-  max-width:94%;margin:0;color:#103e2d;
-  font:700 clamp(27px,7.7vw,38px)/1.03 Georgia,"Times New Roman",serif;
-  letter-spacing:-.035em;
- }
- .page[data-shamanica-audience="self"] .heroLead{
-  display:block;max-width:96%;margin:8px 0 0;color:#374740;
-  font:500 clamp(11.5px,3.2vw,13.5px)/1.2 Arial,Helvetica,sans-serif;
- }
- .page[data-shamanica-audience="self"] .quiz{
-  position:relative;isolation:isolate;min-height:211px;margin:0;padding:9px 10px 10px;
-  border:2px solid #f6f5df;border-radius:28px;
-  background:radial-gradient(ellipse at 108% 104%,#8fc645 0%,#278d51 35%,transparent 61%),
-   linear-gradient(128deg,#0e9069 0%,#046143 51%,#00513a 100%);
-  box-shadow:0 10px 24px #1d3a2340,0 3px 9px #355c3222;color:#fff;
- }
- .page[data-shamanica-audience="self"] .quiz::after{
-  position:absolute;z-index:-1;content:"";inset:4px 0 0 auto;width:41%;opacity:.14;pointer-events:none;
-  background:url("/images/holistic-house/homepage-botanical.svg") center/cover no-repeat;
- }
- .page[data-shamanica-audience="self"] .quizTop{
-  display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 4px 7px;
- }
- .page[data-shamanica-audience="self"] .stepLabel{
-  padding:0;border-radius:0;background:transparent;color:#f4fff1;
-  font:650 13px/1.15 Arial,Helvetica,sans-serif;
- }
- .page[data-shamanica-audience="self"] .progress{gap:11px}
- .page[data-shamanica-audience="self"] .progress::before{background:#b9e0be}
- .page[data-shamanica-audience="self"] .progress>span{
-  width:24px;height:24px;border:2px solid #b0ddbd;background:#0a7653;
- }
- .page[data-shamanica-audience="self"] .progress .progressOn{
-  background:#fff9e9;border-color:#fff9e9;
- }
- .page[data-shamanica-audience="self"] .quizTitleRow{gap:6px;margin:0 0 7px}
- .page[data-shamanica-audience="self"] .quiz h2{
-  margin:0;color:#fff;font:750 clamp(21px,5.7vw,27px)/1.08 Arial,Helvetica,sans-serif;
-  letter-spacing:-.028em;
- }
- .page[data-shamanica-audience="self"] .quizBack{
-  width:32px;height:32px;min-width:32px;border:2px solid #daf4dd;
-  background:#f8f8e9;color:#075a40;font-size:24px;
- }
- .page[data-shamanica-audience="self"] .answers{
-  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;
- }
- .page[data-shamanica-audience="self"] .answer{
-  display:flex;align-items:center;gap:7px;min-height:59px;height:auto;padding:7px 8px;
-  border:2px solid #fffef5;border-radius:18px;
-  background:linear-gradient(132deg,#fffdfa,#fdf4e5);
-  color:#123a2f;box-shadow:0 4px 6px #01291f22;text-align:left;
-  font:750 clamp(12.5px,3.75vw,15px)/1.16 Arial,Helvetica,sans-serif;
- }
- .page[data-shamanica-audience="self"] .answer svg{
-  flex:none;width:26px;height:26px;color:#08623f;
- }
- .page[data-shamanica-audience="self"] .answer span{overflow-wrap:break-word}
- .page[data-shamanica-audience="self"] .services{margin-top:6px}
- .page[data-shamanica-audience="self"] .servicesHeading{
-  display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 3px 5px;
- }
- .page[data-shamanica-audience="self"] .sectionTitle{
-  margin:0;text-align:left;font:700 clamp(23px,6.6vw,30px)/1.08 Georgia,"Times New Roman",serif;
-  letter-spacing:-.025em;
- }
- .page[data-shamanica-audience="self"] .sectionTitle::after{display:none}
- .page[data-shamanica-audience="self"] .businessLink{
-  display:flex;align-items:center;gap:4px;min-height:32px;flex:none;
-  text-decoration:none;white-space:nowrap;color:#087355;font:750 12px/1.1 Arial,Helvetica,sans-serif;
- }
- .page[data-shamanica-audience="self"] .serviceGrid{
-  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;
- }
- .page[data-shamanica-audience="self"] .serviceCard,
- .page[data-shamanica-audience="self"] .serviceCard:nth-child(n+4),
- .page[data-shamanica-audience="self"] .serviceCard:last-child{
-  display:flex;flex-direction:column;grid-column:span 1;min-width:0;min-height:112px;height:auto;
-  border:1px solid #e6d8c8;border-radius:19px;overflow:hidden;isolation:isolate;
-  background:#fff8ef;color:#142f27;box-shadow:0 4px 9px #6a4b2e1a;
- }
- .page[data-shamanica-audience="self"] .servicePhoto,
- .page[data-shamanica-audience="self"] .serviceCard:last-child .servicePhoto{
-  position:relative;inset:auto;width:100%;height:54px;flex:none;z-index:0;opacity:1;
-  border-radius:18px 18px 16px 16px;overflow:hidden;
- }
- .page[data-shamanica-audience="self"] .servicePhoto img{object-fit:cover;object-position:center}
- .page[data-shamanica-audience="self"] .serviceCard::after{display:none}
- .page[data-shamanica-audience="self"] .serviceIcon{
-  position:absolute;top:39px;left:8px;z-index:2;display:grid;place-items:center;
-  width:38px;height:36px;border-radius:13px 13px 4px 4px;
-  background:#fff9eeef;color:#075f41;box-shadow:0 -2px 6px #352b1c14;
- }
- .page[data-shamanica-audience="self"] .serviceIcon svg{width:22px;height:22px}
- .page[data-shamanica-audience="self"] .serviceBody,
- .page[data-shamanica-audience="self"] .serviceCard:last-child .serviceBody{
-  display:block;position:relative;z-index:1;flex:1;width:100%;min-width:0;
-  padding:15px 7px 6px;
- }
- .page[data-shamanica-audience="self"] .serviceBody h3,
- .page[data-shamanica-audience="self"] .serviceCard:last-child .serviceBody h3{
-  margin:0;color:#142f27;
-  font:750 clamp(13px,3.8vw,15px)/1.13 Arial,Helvetica,sans-serif;letter-spacing:-.02em;
-  overflow-wrap:break-word;
- }
- .page[data-shamanica-audience="self"] .serviceBody p,
- .page[data-shamanica-audience="self"] .serviceCard:last-child .serviceBody p,
- .page[data-shamanica-audience="self"] .serviceArrow{display:none}
- .page[data-shamanica-audience="self"] :is(.answer,.serviceCard,.profileButton,.businessLink):focus-visible{
-  outline:3px solid #f7c75b;outline-offset:2px;
- }
+ .page[data-shamanica-audience="self"] .header{min-height:44px;margin:0 0 5px}
+ .page[data-shamanica-audience="self"] .brand span{font-size:clamp(18px,5.2vw,24px)}
+ .page[data-shamanica-audience="self"] .brand>svg{width:27px;height:27px}
+ .page[data-shamanica-audience="self"] .tools{gap:4px}
+ .page[data-shamanica-audience="self"] .lang{min-width:35px;min-height:40px;height:40px;padding:0 5px}
+ .page[data-shamanica-audience="self"] .lang select{font-size:12px}
+ .page[data-shamanica-audience="self"] .helpButton,
+ .page[data-shamanica-audience="self"] .profileButton{width:40px;height:40px;border-radius:14px}
+ .page[data-shamanica-audience="self"] .hero h1{font-size:clamp(38px,10.8vw,49px)}
+ .mirrorSymbol{height:25px}
+ .mirrorTagline{font-size:clamp(17px,4.7vw,21px)}
+ .mirrorLead{font-size:clamp(13px,3.65vw,16px);line-height:1.31}
+ .mirrorLaptop{margin-top:13px}
+ .mirrorScreen{border-width:6px;border-bottom-width:8px;border-radius:10px 10px 4px 4px}
+ .mirrorBase{height:13px}
+ .mirrorPlay{width:52px;height:52px}
+ .mirrorPlay svg{width:24px}
+ .mirrorDrum{border-width:5px}
+ .page[data-shamanica-audience="self"] .audiences{width:92%;margin:15px auto 10px}
+ .page[data-shamanica-audience="self"] .audiences a{min-height:43px;font-size:clamp(13px,3.75vw,16px)}
+ .page[data-shamanica-audience="self"] .quizTop{margin:1px 0 8px}
+ .page[data-shamanica-audience="self"] .quiz h2{font-size:clamp(25px,6.5vw,31px)}
+ .page[data-shamanica-audience="self"] .answers{gap:8px}
+ .page[data-shamanica-audience="self"] .answer{min-height:114px;border-radius:17px;
+  font-size:clamp(13px,3.65vw,16px)}
+ .answerPhoto{height:65px}
+ .answerText{min-height:50px;padding:8px 9px;gap:7px}
+ .answerText svg{width:23px;height:23px}
+ .page[data-shamanica-audience="self"] .serviceGrid{gap:8px}
+ .page[data-shamanica-audience="self"] .serviceBody h3{font-size:clamp(13px,3.7vw,16px)}
 }
 @media(max-width:350px){
- .page[data-shamanica-audience="self"] .brand span{font-size:20px}
- .page[data-shamanica-audience="self"] .hero{height:96px;min-height:96px}
- .page[data-shamanica-audience="self"] .hero h1{font-size:27px}
- .page[data-shamanica-audience="self"] .quiz h2{font-size:21px}
- .page[data-shamanica-audience="self"] .answer{font-size:12.5px;min-height:61px}
- .page[data-shamanica-audience="self"] .serviceBody h3{font-size:12px}
+ .page[data-shamanica-audience="self"] .brand span{font-size:17px}
+ .page[data-shamanica-audience="self"] .brand>svg{width:24px;height:24px}
+ .page[data-shamanica-audience="self"] .tools{gap:2px}
+ .page[data-shamanica-audience="self"] .hero h1{font-size:36px}
+ .page[data-shamanica-audience="self"] .quiz h2{font-size:24px}
+ .page[data-shamanica-audience="self"] .answer{font-size:12.5px}
+ .page[data-shamanica-audience="self"] .serviceGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+@media(prefers-reduced-motion:reduce){.page[data-shamanica-audience="self"] .answer{transition:none}}

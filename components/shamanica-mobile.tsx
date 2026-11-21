@@ -2,8 +2,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
-import {useState} from "react";
-import {ArrowRight, BookOpen, BriefcaseBusiness, ChevronDown, Coins, GraduationCap, Heart, Leaf, Menu, Search, Shield, Sparkles, Sprout, Sun, TrendingUp, UserRound, WandSparkles, Zap} from "lucide-react";
+import {useRef, useState} from "react";
+import {ArrowRight, BookOpen, BriefcaseBusiness, ChevronDown, CircleHelp, Coins, Flame, GraduationCap, Heart, Leaf, Menu, Mic, Play, Search, Shield, Sparkles, Sprout, Sun, TrendingUp, UserRound, WandSparkles, Zap} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
 import {shamanicaCategoryHref} from "@/lib/shamanica-recommendations.mjs";
 import styles from "./shamanica-mobile.module.css";
@@ -29,7 +29,7 @@ const copy={
 ru:{
  subtitle:"Рейки, магия, энергия и развитие.",heroLead:"3 коротких вопроса · Практики Рейки, магии и развития",
  start:"Начать путь",pick:"Подобрать для меня",self:"Для себя",work:"Для бизнеса",help:"iHelp",
- quiz:["Что вы хотите получить сейчас?","Какой способ вам ближе?","С чего хотите начать?"],
+ quiz:["Что вам сейчас необходимо?","Какой способ вам ближе?","С чего хотите начать?"],
  goals:["Энергия и защита","Гармония в отношениях","Деньги","Личностное развитие"],
  methods:["Подбор препаратов","Артефакты и места силы","Энергетическая подкачка","Ритуалы и мандалы","Обучение"],
  starts:["Попробовать бесплатно","Личная поддержка","Выбрать инструмент","Пройти курс"],
@@ -44,7 +44,7 @@ ru:{
 en:{
  subtitle:"Reiki, magic, energy & growth.",heroLead:"3 short questions · Reiki, magic & growth",
  start:"Start my path",pick:"Find my path",self:"For myself",work:"For business",help:"iHelp",
- quiz:["What would you like to gain?","Which approach suits you?","How would you like to start?"],
+ quiz:["What do you need right now?","Which approach suits you?","How would you like to start?"],
  goals:["Energy & protection","Harmony in relationships","Money & prosperity","Personal growth"],
  methods:["Remedy guidance","Artefacts & power places","Energy support","Rituals & mandalas","Learning"],
  starts:["Try something free","One-to-one support","Choose a symbolic tool","Take a course"],
@@ -59,7 +59,7 @@ en:{
 es:{
  subtitle:"Reiki, magia, energía y desarrollo.",heroLead:"3 preguntas · Reiki, magia y desarrollo",
  start:"Iniciar camino",pick:"Encontrar mi camino",self:"Para mí",work:"Negocios",help:"iHelp",
- quiz:["¿Qué deseas conseguir ahora?","¿Qué método prefieres?","¿Cómo quieres empezar?"],
+ quiz:["¿Qué necesitas ahora?","¿Qué método prefieres?","¿Cómo quieres empezar?"],
  goals:["Energía y protección","Armonía en relaciones","Dinero y prosperidad","Desarrollo personal"],
  methods:["Orientación sobre remedios","Objetos y lugares de poder","Apoyo energético","Rituales y mandalas","Aprendizaje"],
  starts:["Probar gratis","Apoyo personal","Elegir herramienta","Hacer un curso"],
@@ -72,21 +72,87 @@ es:{
  free:["Reiki gratis","Curso introductorio"]},
  step:"Paso",of:"de",back:"Volver",search:"Buscar",menu:"Menú"}
 } as const;
+
+const mirrorCopy={
+ ru:{
+  tagline:"Ритуалы · Исцеление · Сакральные путешествия",
+  intro:"Подберите шаманскую практику, ритуал или путешествие под свою цель, состояние или жизненную ситуацию.",
+  play:"Посмотреть короткое видео о природе",or:"ИЛИ",next:"Далее",
+  placeholder:"Опишите вашу цель или ситуацию…",dictate:"Открыть клавиатуру для диктовки",
+  hint:"Необязательно. Текст остаётся на странице, рекомендации строятся по выбранному направлению."
+ },
+ en:{
+  tagline:"Rituals · Healing · Sacred Journeys",
+  intro:"Find the right shamanic practice, ritual or journey for your current goal, state or life situation.",
+  play:"Play a short nature video",or:"OR",next:"Next",
+  placeholder:"Describe your goal or situation…",dictate:"Open keyboard for dictation",
+  hint:"Optional. Your text stays on this page; recommendations follow your selected path."
+ },
+ es:{
+  tagline:"Rituales · Sanación · Viajes sagrados",
+  intro:"Encuentra una práctica chamánica, ritual o viaje acorde con tu objetivo o situación actual.",
+  play:"Reproducir un vídeo breve de naturaleza",or:"O",next:"Siguiente",
+  placeholder:"Describe tu objetivo o situación…",dictate:"Abrir teclado para dictar",
+  hint:"Opcional. El texto permanece en esta página; las recomendaciones siguen la opción elegida."
+ }
+} as const;
+const quizPhotos={
+ energy:"/images/holistic-house/reiki-practitioner-sunrise.webp",
+ relationships:"/videos/holistic-house/film-collection-v3/heart-flow.jpg",
+ money:"/videos/holistic-house/money-films-v1/abundance-tree.jpg",
+ growth:"/videos/holistic-house/film-collection-v3/forest-renewal.jpg",
+ remedies:"/images/holistic-house/distance-homeopathy.webp",
+ artifacts:"/images/holistic-house/tao-fu-balance.webp",
+ rituals:"/images/holistic-house/mandala-gold-reference.webp",
+ learning:"/images/holistic-house/books-library.webp",
+ free:"/images/holistic-house/reiki-practitioner-sunrise.webp",
+ personal:"/images/holistic-house/reiki-approved-sunrise-v3.webp",
+ object:"/images/holistic-house/tao-fu-balance.webp",
+ course:"/images/holistic-house/books-library.webp"
+} as const;
+
 export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;audience?:"self"|"business"}){
  const business=audience==="business";
  const router=useRouter(),t=copy[locale];
  const [step,setStep]=useState(0);
  const [goal,setGoal]=useState<Goal>("energy");
  const [method,setMethod]=useState<Method>("energy");
- const select=(choice:string)=>{
-  if(step===0){setGoal(choice as Goal);setStep(1);return;}
-  if(step===1){setMethod(choice as Method);setStep(2);return;}
-  const qs=new URLSearchParams({goal,method,start:choice});
+ const [startChoice,setStartChoice]=useState<(typeof starts)[number]>("personal");
+ const [intention,setIntention]=useState("");
+ const [videoPlaying,setVideoPlaying]=useState(false);
+ const inputRef=useRef<HTMLInputElement|null>(null);
+ const videoRef=useRef<HTMLVideoElement|null>(null);
+ const mirror=mirrorCopy[locale];
+ const choose=(choice:string)=>{
+  if(step===0)setGoal(choice as Goal);
+  else if(step===1)setMethod(choice as Method);
+  else setStartChoice(choice as (typeof starts)[number]);
+ };
+ // Optional words help select an existing focus locally; private free text
+ // is never sent in a URL, analytics event or external provider request.
+ const describe=(value:string)=>{
+  setIntention(value);
+  const words=value.toLowerCase();
+  if(/love|relation|family|partner|любов|отнош|семь|партн|amor|relaci|famil/.test(words))setGoal("relationships");
+  else if(/money|financ|business|career|денег|деньг|финанс|бизнес|работ|dinero|negocio|econom/.test(words))setGoal("money");
+  else if(/learn|grow|develop|meaning|разв|обуч|путь|crecim|aprend|desarroll/.test(words))setGoal("growth");
+  else if(/energy|protect|healing|health|энерг|защит|сил|здоров|energ|protec|salud/.test(words))setGoal("energy");
+ };
+ const advance=()=>{
+  if(step<2){setStep(value=>value+1);return;}
+  const qs=new URLSearchParams({goal,method,start:startChoice});
   router.push("/"+locale+"/shamanica/results?"+qs.toString());
+ };
+ const playIntro=()=>{
+  setVideoPlaying(true);
+  // Playback starts only in a user gesture. Safari's native controls remain
+  // available if playback requires a second tap.
+  void videoRef.current?.play().catch(()=>{});
  };
  const choices=step===0?goals.map((id,i)=>({id,label:t.goals[i]}))
   :step===1?methods.map((id,i)=>({id,label:t.methods[i]}))
   :starts.map((id,i)=>({id,label:t.starts[i]}));
+ const chosen=step===0?goal:step===1?method:startChoice;
  return <main className={styles.page} lang={locale} data-shamanica-mobile data-shamanica-audience={business?"business":"self"} data-shamanica-business-page={business?"true":undefined}>
   <div className={styles.container}>
    <header className={styles.header}>
@@ -99,6 +165,7 @@ export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;au
       </select><ChevronDown size={15} aria-hidden="true"/>
      </label>
      <Link className={styles.iconButton} href={"/"+locale+"/explore"} aria-label={t.search} prefetch={false}><Search size={22}/></Link>
+     {!business&&<button type="button" className={styles.helpButton} aria-label={t.help} onClick={()=>window.dispatchEvent(new Event("hh:open-ihelp"))}><CircleHelp size={22} aria-hidden="true"/></button>}
      {!business&&<Link className={styles.profileButton} href={"/"+(locale==="es"?"en":locale)+"/app/portrait"} aria-label={locale==="ru"?"Профиль":locale==="es"?"Perfil":"Profile"} prefetch={false}><UserRound size={23}/></Link>}
      <details className={styles.menu}><summary className={styles.iconButton} aria-label={t.menu}><Menu size={22}/></summary>
       <nav className={styles.menuPop}><Link href={locale==="en"?"/":"/"+locale}>{t.self}</Link><Link href={"/"+locale+"/shamanica/business"}>{t.work}</Link><Link href={"/"+locale+"/academy"}>{t.services.learning[0]}</Link><Link href={"/"+locale+"/explore"}>{t.search}</Link></nav>
@@ -112,23 +179,64 @@ export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;au
    </nav>
    {business?<ShamanicaBusinessContent locale={locale}/>:<>
    <section className={styles.hero} aria-labelledby="shamanica-hero-title">
-    <Image src="/images/holistic-house/hero-olive-incense.webp" fill priority alt="" sizes="(max-width:640px) 100vw, 920px" className={styles.heroImg}/>
-    <div className={styles.heroText}><span className={styles.eyebrow}>HOLISTIC HOUSE</span><h1 id="shamanica-hero-title"><span className={styles.heroDesktopName}>{locale==="ru"?"Шаманик":"Shamanic"}</span><span className={styles.heroMobileName}>{locale==="ru"?"Найдите свой путь":locale==="es"?"Encuentra tu camino":"Find Your Path"}</span></h1><p className={styles.heroSubtitle}>{t.subtitle}</p><p className={styles.heroLead}>{t.heroLead}</p></div>
-    <div className={styles.heroActions}>
-     <a href="#shamanica-quiz" className={styles.primary}>{t.start}<ArrowRight size={19}/></a>
-     <a href="#shamanica-quiz" className={styles.secondary}><Sparkles size={19}/>{t.pick}</a>
+    <div className={styles.mirrorIntro}>
+     <span className={styles.mirrorSymbol} aria-hidden="true"><Sun size={23} strokeWidth={1.45}/><Sparkles size={15}/></span>
+     <h1 id="shamanica-hero-title">{locale==="ru"?"Шаманик":"Shamanic"}</h1>
+     <p className={styles.mirrorTagline}>{mirror.tagline}</p>
+     <p className={styles.mirrorLead}>{mirror.intro}</p>
+    </div>
+    <div className={styles.mirrorLaptop}>
+     <div className={styles.mirrorScreen}>
+      <video ref={videoRef} className={styles.mirrorVideo}
+       poster="/videos/holistic-house/film-collection-v3/sun-autumn-hills.jpg"
+       src="/videos/holistic-house/film-collection-v3/sun-autumn-hills.mp4"
+       preload="none" playsInline controls={videoPlaying} onEnded={()=>setVideoPlaying(false)}
+       aria-label={mirror.play}/>
+      {!videoPlaying&&<>
+       <span className={styles.mirrorDrum} aria-hidden="true"><Sun size={38} strokeWidth={1.1}/></span>
+       <span className={styles.mirrorFire} aria-hidden="true"><Flame size={27} strokeWidth={1.4}/></span>
+       <button type="button" className={styles.mirrorPlay} onClick={playIntro} aria-label={mirror.play}>
+        <Play size={30} fill="currentColor" strokeWidth={1.1} aria-hidden="true"/>
+       </button>
+      </>}
+     </div>
+     <div className={styles.mirrorBase} aria-hidden="true"/>
     </div>
    </section>
    <section id="shamanica-quiz" className={styles.quiz} data-shamanica-quiz data-quiz-step={step+1} aria-labelledby="shamanica-quiz-question">
-    <div className={styles.quizTop}><span className={styles.stepLabel}>{t.step} {step+1} {t.of} 3</span>
-     <span className={styles.progress} aria-label={t.step+" "+(step+1)+" / 3"}>{[0,1,2].map(i=><span key={i} className={i<=step?styles.progressOn:""}/>)}</span>
+    <div className={styles.quizTop}>
+     <span className={styles.stepLabel}>{t.step} {step+1} {t.of} 3</span>
+     <span className={styles.progress} aria-label={t.step+" "+(step+1)+" / 3"}>
+      {[0,1,2].map(i=><span key={i} className={i<=step?styles.progressOn:""}/>)}
+     </span>
     </div>
-    <div className={styles.quizTitleRow}>{step>0?<button className={styles.quizBack} type="button" onClick={()=>setStep(v=>v-1)} aria-label={t.back}>‹</button>:null}
-     <h2 id="shamanica-quiz-question" aria-live="polite">{t.quiz[step]}</h2></div>
+    <div className={styles.quizTitleRow}>
+     {step>0&&<button className={styles.quizBack} type="button" onClick={()=>setStep(value=>Math.max(0,value-1))} aria-label={t.back}>‹</button>}
+     <h2 id="shamanica-quiz-question" aria-live="polite">{t.quiz[step]}</h2>
+    </div>
     <div className={styles.answers} role="group" aria-label={t.quiz[step]}>
-     {choices.map(({id,label})=>{const Icon=icons[id as keyof typeof icons];return <button type="button" key={id} onClick={()=>select(id)} data-shamanica-answer={id}
-       className={styles.answer+" "+(styles[("answer_"+id) as keyof typeof styles]||"")}><Icon size={26} strokeWidth={1.9} aria-hidden="true"/><span>{label}</span></button>})}
+     {choices.map(({id,label})=>{
+      const Icon=icons[id as keyof typeof icons];
+      return <button type="button" key={id} onClick={()=>choose(id)} data-shamanica-answer={id} aria-pressed={chosen===id}
+       className={styles.answer+" "+(chosen===id?styles.answerSelected:"")}>
+       <span className={styles.answerPhoto}><Image src={quizPhotos[id as keyof typeof quizPhotos]} alt="" fill sizes="(max-width:640px) 45vw, 240px"/></span>
+       <span className={styles.answerText}><Icon size={24} strokeWidth={1.8} aria-hidden="true"/><span>{label}</span></span>
+      </button>;
+     })}
     </div>
+    {step===0&&<>
+     <div className={styles.orSeparator}><span>{mirror.or}</span></div>
+     <div className={styles.requestField}>
+      <Sparkles size={21} aria-hidden="true"/>
+      <input ref={inputRef} type="text" value={intention} onChange={event=>describe(event.target.value)}
+       maxLength={280} placeholder={mirror.placeholder} aria-label={mirror.placeholder}/>
+      <button type="button" onClick={()=>inputRef.current?.focus()} aria-label={mirror.dictate}><Mic size={23}/></button>
+     </div>
+     <p className={styles.inputHint}>{mirror.hint}</p>
+    </>}
+    <button type="button" className={styles.nextButton} data-shamanica-next onClick={advance}>
+     {mirror.next}<ArrowRight size={24} aria-hidden="true"/>
+    </button>
    </section>
    <section className={styles.services} aria-labelledby="shamanica-services-title">
     <div className={styles.servicesHeading}><h2 className={styles.sectionTitle} id="shamanica-services-title">{t.servicesTitle}</h2><Link href={"/"+locale+"/shamanica/business"} prefetch={false} className={styles.businessLink}>{t.work}<ArrowRight size={17} aria-hidden="true"/></Link></div>
