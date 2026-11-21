@@ -225,3 +225,222 @@
  .choiceMedia{height:65px}
  .choice,.choices[data-question-kind="topic"] .choice{min-height:135px}
 }
+
+
+/* SUPPORT_THERAPY_CABINET_V2_20261121: owner-approved two-chair luxury room.
+   Real input, quiz buttons and category links remain interactive. */
+@media(max-width:760px){
+ .root{
+  position:relative;isolation:isolate;width:100%;max-width:520px;margin:0 auto 24px;
+  min-width:0;padding:8px 12px 23px;color:#fff2d7;background-color:#1a1009;
+  background-image:
+   linear-gradient(180deg,rgba(13,8,4,.24),rgba(16,8,4,.13) 34%,rgba(22,11,5,.43) 60%,#1a1009 98%),
+   url("/images/holistic-house/support-therapy-cabinet.webp");
+  background-size:100% 870px,100% auto;background-position:top center;background-repeat:no-repeat;
+  overflow:visible
+ }
+ .brandBar{min-height:54px;padding:4px 0 7px;gap:5px}
+ .brand{gap:5px;min-width:0;color:#fff4da}
+ .brand>svg{width:32px;height:37px;color:#f8eac8}
+ .brand strong{font:700 clamp(19px,5.2vw,25px)/1.08 Georgia,serif;letter-spacing:-.045em;color:#fff2d5}
+ .brand small{margin-top:2px;color:#efc98d;font-size:9px;letter-spacing:.3em}
+ .brandActions{gap:5px}
+ .languageMenu summary,.help,.profile{
+  display:flex;align-items:center;justify-content:center;min-width:40px;width:auto;
+  min-height:42px;height:42px;padding:0 6px;border:1px solid #b79a6a7c;
+  border-radius:18px;background:#382719bc;color:#fff2da;box-shadow:0 2px 8px #08040275
+ }
+ .languageMenu summary{font-size:13px}
+ .languageOptions{background:#fff2d9;border-color:#d7b987}
+ .languageOptions a{color:#234632}
+ .hero{min-height:0;margin:0;padding:0 0 2px;background:transparent;overflow:visible;text-align:center}
+ .hero::before,.hero::after{display:none}
+ .lotusMark{
+  width:54px;height:38px;margin:3px auto 2px;
+  background:url("/images/holistic-house/assessment-lotus.svg") center/contain no-repeat;
+  filter:sepia(1) saturate(5) hue-rotate(347deg) brightness(1.3)
+ }
+ .hero h1{
+  max-width:100%;margin:0 auto;color:#fff0cd;
+  font:700 clamp(25px,7.2vw,38px)/1.02 Georgia,"Times New Roman",serif;
+  text-align:center;letter-spacing:-.04em;text-wrap:balance;text-shadow:0 2px 10px #030201a9
+ }
+ .hero .heroTagline{
+  max-width:100%;margin:10px auto 0;color:#fae6c4;
+  font:italic 500 clamp(14px,3.7vw,18px)/1.18 Georgia,serif;text-shadow:0 2px 7px #050201
+ }
+ .heroPrompt{
+  display:inline-flex;align-items:center;justify-content:center;max-width:95%;
+  min-height:30px;margin:12px auto 0;padding:5px 22px;border:1px solid #eac172;
+  border-radius:99px;background:linear-gradient(#ffe6a1,#e5ab4e);color:#2c1a08;
+  font:700 clamp(14px,3.7vw,18px)/1 Georgia,serif;box-shadow:0 2px 10px #03020190
+ }
+ .heroStage{display:block;min-height:clamp(149px,40vw,205px);margin:0;padding:0}
+ .audienceSwitch{
+  max-width:435px;min-height:49px;margin:0 auto 8px;padding:3px;gap:3px;
+  border:1px solid #e5c38a;border-radius:99px;
+  background:linear-gradient(135deg,#fff6e3,#f9e7c6);box-shadow:0 3px 12px #0009
+ }
+ .audienceSwitch button{
+  min-height:42px;gap:6px;border-radius:99px;color:#183b2d;
+  font:700 clamp(13px,3.6vw,17px)/1.12 Georgia,serif
+ }
+ .audienceSwitch button[aria-pressed="true"]{
+  color:#fff5de;background:linear-gradient(140deg,#088662,#00543b);
+  box-shadow:inset 0 1px 0 #97dec16b,0 3px 8px #06281fc4
+ }
+ .form{padding:0 2px;margin:0;gap:0;min-height:0;background:none;box-shadow:none;color:#fff3d6}
+ .form::after{display:none}
+ .progress{flex-direction:column-reverse;gap:3px;margin:0 0 8px;color:#fff1d5;font:650 14px/1.1 Georgia,serif}
+ .progressSteps{gap:9px}
+ .progressDot,.progressDot[aria-current="step"]{width:26px;height:26px;background:transparent}
+ .progressInner{width:11px;height:11px;border:1.5px solid #cdbfa8;background:#362619bc}
+ .progressDot[aria-current="step"] .progressInner{border-color:#a0f3c0;background:#04d18b;box-shadow:0 0 8px #02d98f9c}
+ .question legend{
+  margin:0 0 10px;color:#fff2d4;
+  font:700 clamp(24px,6.65vw,34px)/1.08 Georgia,"Times New Roman",serif;
+  letter-spacing:-.04em;text-align:center;text-shadow:0 2px 9px #000e
+ }
+ .questionTitle{max-width:100%}
+ .choices{gap:9px}
+ .choice,.choices[data-question-kind="topic"] .choice{
+  min-height:120px;padding:0;gap:0;
+  border:1.5px solid #d2a25a;border-radius:19px;
+  overflow:hidden;background:#fff0d0;color:#143a2d;
+  box-shadow:0 4px 14px #050301c9
+ }
+ .choiceMedia{height:57px;min-height:57px;background-position:center;background-size:cover}
+ .choiceContent{
+  min-height:60px;display:grid;align-items:center;grid-template-columns:25px minmax(0,1fr) 15px;
+  gap:5px;width:100%;min-width:0;padding:7px 7px 8px;
+  background:linear-gradient(#fff4d9,#f4d9a8);color:#183b2d;
+  font:700 clamp(13px,3.63vw,17px)/1.1 Georgia,"Times New Roman",serif;letter-spacing:-.025em
+ }
+ .choiceContent>svg{flex:none;width:23px;height:23px;color:#0e593f}
+ .choiceContent>span{min-width:0;overflow-wrap:break-word}
+ .choiceChevron{justify-self:end;width:16px!important;height:16px!important}
+ .choice[aria-pressed="true"]{
+  border-color:#03ce8b;box-shadow:0 0 0 2px #08c788,0 0 16px #08e5a47a
+ }
+ .check{z-index:3;right:5px;top:5px;color:#0b6245;background:#fff7dd}
+ .orDivider{gap:10px;margin:10px 0 8px;color:#f5d698;font:700 13px/1 Georgia,serif}
+ .orDivider::before,.orDivider::after{width:42px;background:#c8a06b}
+ .goalComposer{
+  min-height:52px;padding:0 8px 0 12px;gap:6px;
+  border:1px solid #e5c38a;border-radius:29px;
+  background:linear-gradient(#fff5df,#fbe5ba);box-shadow:0 4px 12px #0009
+ }
+ .goalComposer>svg{color:#e99e14}
+ .goalComposer input{height:50px;color:#243b33;font:500 clamp(14px,3.7vw,17px)/1.2 Arial,sans-serif}
+ .goalComposer input::placeholder{color:#706d65}
+ .goalComposer button{width:40px;height:44px;color:#0d5b3d}
+ .next,.submit{
+  width:76%;max-width:355px;min-height:52px;margin:12px auto 0;padding:8px 15px;
+  border:1.5px solid #d8b77e;border-radius:99px;
+  color:#fff0c9;background:linear-gradient(#0aa16d,#00563d 83%);
+  box-shadow:inset 0 1px 0 #a1f2cb52,0 4px 12px #0009;
+  font:700 clamp(19px,5.2vw,26px)/1.1 Georgia,serif
+ }
+ .next:disabled,.submit:disabled{opacity:.6}
+ .categories{margin:24px 0 0;padding-top:13px;border-top:1px solid #a981536b}
+ .categoryHeader h2{color:#f7e5c1;text-shadow:0 1px 4px #000;font-size:clamp(24px,6.1vw,31px)}
+ .categoryHeader>a{color:#f5d19c}
+ .category{background:#fff3dc;border-color:#d6ae71;box-shadow:0 4px 14px #0008}
+ .categoryName{color:#204433}
+ .categoryIcon{background:#fff2d2;color:#0d6547}
+ .categoryMore{background:#fdf0d7;color:#174734;border-color:#bc9865}
+ .categoryExtras a{color:#efd09b}
+ .privacy{color:#d0bea2;font-size:12px;line-height:1.4}
+ .summary{background:#fef0d3;color:#204432;font-size:14px}
+ .results{color:#173d34;background:#fff8e9;border-radius:18px}
+ .root :is(button,a,summary):focus-visible{outline:3px solid #f1cf83;outline-offset:2px}
+}
+@media(max-width:350px){
+ .root{padding-inline:8px}
+ .brand strong{font-size:18px}
+ .brandActions{gap:2px}
+ .languageMenu summary,.help,.profile{min-width:35px;min-height:39px;height:39px;padding:0 4px;border-radius:13px}
+ .hero h1{font-size:25px}
+ .hero .heroTagline{font-size:13px}
+ .heroStage{min-height:135px}
+ .audienceSwitch button{font-size:12px}
+ .question legend{font-size:23px}
+ .choices{gap:6px}
+ .choice,.choices[data-question-kind="topic"] .choice{min-height:113px}
+ .choiceMedia{height:49px;min-height:49px}
+ .choiceContent{grid-template-columns:20px minmax(0,1fr) 13px;gap:3px;font-size:12.2px;padding:6px 5px}
+ .choiceContent>svg{width:20px;height:20px}
+}
+@media(min-width:521px) and (max-width:760px){
+ .heroStage{min-height:225px}
+ .choiceMedia{height:70px;min-height:70px}
+ .choice,.choices[data-question-kind="topic"] .choice{min-height:140px}
+}
+
+
+/* OWNER_APPROVED_CABINET_PROPORTIONS_20261121
+   Reference: 850x1850 approved mobile composition, interpreted for 390px CSS.
+   Small-screen hierarchy: wordmark ~46, title ~57, visible room ~105,
+   audience ~46, progress + question ~68, 2x2 cards ~197, composer ~48,
+   CTA ~50. The original mobile dock, service IDs and methods survive. */
+@media (max-width:760px) {
+ .root{
+  background-image:
+   linear-gradient(180deg,rgba(13,8,4,.10) 0%,rgba(16,8,4,.12) 34%,rgba(22,11,5,.41) 57%,#1a1009 96%),
+   url("/images/holistic-house/support-therapy-cabinet.webp");
+  background-size:100% 760px,100% auto;
+  background-position:center top,center -28px;
+  background-repeat:no-repeat
+ }
+ .brandBar{min-height:45px;padding:2px 0 4px}
+ .brand>svg{width:30px;height:33px}
+ .brand strong{font-size:clamp(18px,5.05vw,24px)}
+ .brand small{font-size:8.5px;letter-spacing:.26em}
+ .languageMenu summary,.help,.profile{
+  min-width:38px;min-height:38px;height:38px;border-radius:15px
+ }
+ .lotusMark{width:47px;height:32px;margin:0 auto 0}
+ .hero h1{font-size:clamp(24px,7.12vw,31px);line-height:1.015;letter-spacing:-.042em}
+ .hero .heroTagline{margin:7px auto 0;font-size:clamp(13px,3.6vw,16px);line-height:1.13}
+ .heroPrompt{min-height:28px;margin:9px auto 0;padding:4px 19px;font-size:clamp(13px,3.5vw,16px)}
+ .heroStage{min-height:clamp(99px,27vw,126px)}
+ .audienceSwitch{min-height:47px;margin:0 auto 5px}
+ .audienceSwitch button{min-height:40px}
+ .progress{margin-bottom:5px;gap:0;font-size:13px}
+ .progressSteps{gap:7px}
+ .progressDot,.progressDot[aria-current="step"]{width:23px;height:23px}
+ .question legend{margin-bottom:7px;font-size:clamp(23px,6.5vw,30px);line-height:1.06}
+ .choices{gap:7px}
+ .choice,.choices[data-question-kind="topic"] .choice{
+  min-height:98px;border-radius:17px
+ }
+ .choiceMedia{height:45px;min-height:45px}
+ .choices[data-question-kind="topic"] .choiceMedia{
+  background-image:url("/images/holistic-house/support-luxury-choice-photos.webp");
+  background-size:200% 200%;background-repeat:no-repeat
+ }
+ .choices[data-question-kind="topic"] .choice:nth-child(1) .choiceMedia{background-position:0 0}
+ .choices[data-question-kind="topic"] .choice:nth-child(2) .choiceMedia{background-position:0 100%}
+ .choices[data-question-kind="topic"] .choice:nth-child(3) .choiceMedia{background-position:100% 0}
+ .choices[data-question-kind="topic"] .choice:nth-child(4) .choiceMedia{background-position:100% 100%}
+ .choiceContent{min-height:50px;gap:4px;padding:5px 7px 6px;
+  font-size:clamp(12.5px,3.5vw,15px);line-height:1.09}
+ .orDivider{margin:7px 0 5px}
+ .goalComposer{min-height:48px}
+ .goalComposer input{height:46px;font-size:clamp(13.5px,3.65vw,16px)}
+ .next,.submit{min-height:50px;margin-top:9px;font-size:clamp(19px,5.1vw,24px)}
+ .categories{margin-top:25px}
+}
+@media(max-width:350px){
+ .heroStage{min-height:91px}
+ .brandBar{min-height:42px}
+ .choice,.choices[data-question-kind="topic"] .choice{min-height:95px}
+ .choiceMedia{height:42px;min-height:42px}
+ .choiceContent{min-height:51px;grid-template-columns:20px minmax(0,1fr) 11px;
+  font-size:12px;gap:3px;padding:5px 5px}
+}
+@media(min-width:521px) and (max-width:760px){
+ .heroStage{min-height:146px}
+ .choiceMedia{height:60px;min-height:60px}
+ .choice,.choices[data-question-kind="topic"] .choice{min-height:118px}
+}

@@ -5,7 +5,7 @@ import Link from "next/link";
 import {BookOpen, CalendarDays, ClipboardCheck, Clapperboard, Flower2,
   HandHeart, MessageCircle, Play, X, ChevronDown} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
-import {Heart,Sun,Compass,BriefcaseBusiness,Sprout,SearchCheck,Lightbulb,Flag,ArrowRight,Sparkles} from "lucide-react";
+import {Heart,Sun,Compass,BriefcaseBusiness,Sprout,SearchCheck,Lightbulb,Flag,ArrowRight,Sparkles,UserRound,ShoppingBag,UsersRound} from "lucide-react";
 import css from "./messenger-ai-landing.module.css";
 import {useAliPersona} from "./use-ali-persona";
 import {playAliPersonaAudio,stopAliPersonaAudio,prepareAliNaturalVoice} from "./ali-persona-audio";
@@ -156,7 +156,6 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupp
   const {persona}=useAliPersona();
   const [speaking,setSpeaking]=useState(false);
   const [moreTopics,setMoreTopics]=useState(false);
-  const [audience,setAudience]=useState<"self"|"business">("self");
   useEffect(()=>{void prepareAliNaturalVoice();return ()=>stopAliPersonaAudio();},[]);
   const playGreeting=()=>{
     if(speaking){stopAliPersonaAudio();setSpeaking(false);return;}
@@ -226,19 +225,29 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupp
 
   return <section className={css.root} data-hh-ai-landing aria-label={welcomeTitle}
     data-hh-chat-opening="true">
-    <div className={css.audience} role="group" data-hh-ai-audience
-      aria-label={locale==="ru"?"Кому нужна поддержка":locale==="es"?"Para quién":"Choose your focus"}>
-      <button type="button" aria-pressed={audience==="self"}
-        onClick={()=>{setAudience("self");if(audience!=="self")onTopicSelect("");}}>
-        <Heart size={19} aria-hidden="true"/>
-        {locale==="ru"?"Для себя":locale==="es"?"Para mí":"For myself"}
-      </button>
-      <button type="button" aria-pressed={audience==="business"}
-        onClick={()=>{setAudience("business");onTopicSelect(inner.topics.business.prompt);}}>
-        <BriefcaseBusiness size={19} aria-hidden="true"/>
-        {locale==="ru"?"Для бизнеса":locale==="es"?"Para negocios":"For business"}
-      </button>
-    </div>
+    <nav className={css.chatShortcuts} data-hh-ai-chat-shortcuts
+      aria-label={locale==="ru"?"Разделы AI чата":locale==="es"?"Secciones del chat":"Chat sections"}>
+      <Link className={css.chatShortcut} data-hh-chat-shortcut="ai" aria-current="page"
+        href={`/${locale}/app/messages?section=ai`}>
+        <Sparkles size={18} aria-hidden="true"/>
+        <span>{locale==="ru"?"ИИ":locale==="es"?"IA":"AI"}</span>
+      </Link>
+      <Link className={css.chatShortcut} data-hh-chat-shortcut="page"
+        href={`/${locale}/app/portrait`}>
+        <UserRound size={18} aria-hidden="true"/>
+        <span>{locale==="ru"?"Моя страница":locale==="es"?"Mi página":"My page"}</span>
+      </Link>
+      <Link className={css.chatShortcut} data-hh-chat-shortcut="orders"
+        href={`/${locale}/app/messages?section=orders`}>
+        <ShoppingBag size={18} aria-hidden="true"/>
+        <span>{locale==="ru"?"Мои заказы":locale==="es"?"Mis pedidos":"My orders"}</span>
+      </Link>
+      <Link className={css.chatShortcut} data-hh-chat-shortcut="clients"
+        href={`/${locale}/app/messages?section=clients`}>
+        <UsersRound size={18} aria-hidden="true"/>
+        <span>{locale==="ru"?"Мои клиенты":locale==="es"?"Mis clientes":"My clients"}</span>
+      </Link>
+    </nav>
     <div className={css.welcomeRow} data-hh-ali-first-message data-hh-ali-hero-persona={persona.id}>
       <img className={css.welcomePortrait} src={persona.image} alt="" width={330} height={250}
         loading="eager" fetchPriority="high"/>
