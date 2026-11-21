@@ -78,9 +78,30 @@ try {
   await styleTab.click();
   const styleNext=page.locator('[data-video-montage-effects] [data-video-montage-next="audio"]');
   await styleNext.waitFor({state:'visible',timeout:20000});
-  await styleNext.click();
-  await page.waitForFunction(()=>document.querySelector('[data-video-montage-tab="audio"]')
-    ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  // Use the genuine iPhone touch path: a fast compatibility click can land
+  // on the newly revealed footer after Style unmounts during pointer-up.
+  if(engine==='webkit')await styleNext.tap();
+  else await styleNext.click();
+  try {
+    await page.waitForFunction(()=>{
+      const editor=document.querySelector('[data-video-basic-editor]');
+      const audioTab=document.querySelector('[data-video-montage-tab="audio"]');
+      const audioPane=document.querySelector('[data-video-montage-audio]');
+      return editor?.getAttribute('data-montage-panel')==='audio' &&
+        audioTab?.getAttribute('aria-pressed')==='true' &&
+        Boolean(audioPane?.getClientRects().length);
+    },undefined,{timeout:15000});
+  } catch(error) {
+    // Only safe UI state; no prompts, customer inputs, audio or credentials.
+    const state=await page.evaluate(()=>({
+      activePanel:document.querySelector('[data-video-basic-editor]')?.getAttribute('data-montage-panel')??null,
+      audioPressed:document.querySelector('[data-video-montage-tab="audio"]')?.getAttribute('aria-pressed')??null,
+      audioVisible:Boolean(document.querySelector('[data-video-montage-audio]')?.getClientRects().length),
+      footerTarget:document.querySelector('[data-video-stage-actions="montage"] [data-video-montage-next]')?.getAttribute('data-video-montage-next')??null,
+    })).catch(()=>({diagnosticsUnavailable:true}));
+    console.error('HH_ORIGINAL_MOTION_STYLE_TO_AUDIO_FAILURE '+JSON.stringify({engine,state}));
+    throw error;
+  }
   assert.equal(await page.locator('[data-video-montage-tab="audio"]').getAttribute('aria-pressed'),
     'true','VISIBLE_STYLE_NEXT_MUST_OPEN_AUDIO');
   await page.locator('[data-video-quick-control="phrases"]').click();

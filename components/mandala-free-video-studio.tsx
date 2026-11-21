@@ -8480,6 +8480,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <section className={videoStyles.quickPhraseSection} data-workspace-section="effects"
         data-video-effects-panel aria-label={workspaceCopy[locale].effects.title}>
         {activeWorkspace==="effects" ? <MandalaTherapyStudio locale={locale} initialFormat={therapyInitialFormat}
+          theme={theme} wish={wish} focus={meditationFocus} scenarioId={approvedVideoConcept?.scenarioId ?? null}
+          onNarrationReady={attachMeditationNarration}
+          onNarrationInvalidated={()=>setAttachedAudio(current=>current?.kind==="file"&&current.nonLoop?null:current)}
           disabled={recording||preparing||hypnoAudioBusy}
           editor={isCourse=><MandalaPersonalMeditation key={isCourse?"course":"single"}
             coursePreview={isCourse} compactTherapy approvedVideoConcept={approvedVideoConcept}
@@ -9918,12 +9921,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </fieldset>
             <button type="button" className={videoStyles.montageStepNext}
               data-video-montage-next="audio" disabled={recording||preparing}
+              // The panel unmounts on touch. Defer until the pointer+compatibility
+              // click complete and guard the underlying footer from ghost taps.
               onPointerUp={event=>{
-                if(event.pointerType==="touch"&&montagePanel==="effects"){
-                  setMontagePanel("audio");setBasicPanelTab("music");
-                }
+                if(event.pointerType==="touch")openMontageAudioFromSettings();
               }}
-              onClick={()=>{setMontagePanel("audio");setBasicPanelTab("music");}}>
+              onClick={openMontageAudioFromSettings}>
               <Music2 size={19} aria-hidden="true"/>
               <span>{locale==="ru"?"Далее · Аудио":
                 locale==="es"?"Siguiente · Audio":"Next · Audio"}</span>

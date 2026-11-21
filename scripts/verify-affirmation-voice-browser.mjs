@@ -1659,27 +1659,6 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           "Ready Generate must sit directly beneath the video");
         await expect(readyGenerate).toBeEnabled({timeout:30000});
         phase(engine,"montage-free-navigated-ready");
-        // Real mobile click contract: the two Ready cards switch to sixth
-        // Therapy workspace and select its format, with no Ready expansion.
-        await page.locator("[data-ready-meditation]").click();
-        await expect(page.locator("[data-mandala-free-video]"))
-          .toHaveAttribute("data-active-workspace","effects");
-        await expect(page.locator("[data-therapy-studio]"))
-          .toHaveAttribute("data-therapy-course","false");
-        await expect(page.locator('[data-therapy-subtab="meditation"]'))
-          .toHaveAttribute("aria-selected","true");
-        await expect(page.locator("[data-ready-offer-panel]")).toHaveCount(0);
-        await page.locator('[data-video-quick-control="ready"]').click();
-        await page.locator("[data-ready-journey]").click();
-        await expect(page.locator("[data-mandala-free-video]"))
-          .toHaveAttribute("data-active-workspace","effects");
-        await expect(page.locator("[data-therapy-studio]"))
-          .toHaveAttribute("data-therapy-course","true");
-        await expect(page.locator("[data-therapy-script-host]")).toBeVisible();
-        await expect(page.locator("[data-ready-offer-panel]")).toHaveCount(0);
-        await page.locator('[data-video-quick-control="ready"]').click();
-        await expect(readyGenerate).toBeEnabled({timeout:30000});
-        phase(engine,"ready-therapy-one-tap-navigation-verified");
         // A later Style/Audio edit changes the Story source signature.
         // Approve the final six decoded photographs AFTER those edits, just
         // like a real visitor. An old approval must never silently authorize
@@ -1728,10 +1707,27 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         });
         await readyGenerate.click();
         phase(engine,"ready-free-render-requested");
+        try{
         await expect.poll(()=>page.evaluate(()=>
           Boolean(window.__hhReadyInlineCheckInEvidence?.progress&&
             window.__hhReadyInlineCheckInEvidence?.step)),
           {timeout:20000,intervals:[100,250,500]}).toBe(true);
+        }catch(error){
+          // Emit bounded UI state to identify a real missing render, but keep
+          // the 7-question + physical video+audio acceptance fail-closed.
+          const gate=await page.evaluate(()=>({
+            readyPhase:document.querySelector('[data-ready-status]')?.getAttribute('data-ready-status-phase')||null,
+            readyState:document.querySelector('[data-video-ready]')?.getAttribute('data-ready-state')||null,
+            generating:Boolean(document.querySelector('[data-ready-generating]')),
+            checkin:Boolean(document.querySelector('[data-ready-sequential-checkin]')),
+            observed:window.__hhReadyInlineCheckInEvidence||null,
+            tierNotice:document.querySelector('[data-ready-video-tier-notice]')?.textContent?.trim()||null,
+            exportFailed:Boolean(document.querySelector('[data-ready-export-failed]')),
+            narrationStale:Boolean(document.querySelector('[data-video-narration-stale]')),
+            activeWorkspace:document.querySelector('[data-mandala-free-video]')?.getAttribute('data-active-workspace')||null
+          }));
+          throw new Error("READY_CHECKIN_RENDER_NOT_OBSERVED "+JSON.stringify(gate),{cause:error});
+        }
         const observation=await page.evaluate(()=>{
           window.__hhReadyCheckInObserver?.disconnect();
           return window.__hhReadyInlineCheckInEvidence;
@@ -2136,6 +2132,50 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       assert.ok(typed,engine+" guest short text reached TTS API");
       assert.equal(typed.text,customText);
       assert.equal(typed.consent,true);
+      // Once the voice has been encoded and the stale-phrase gate has been
+      // verified, a new Therapy meditation may intentionally revoke that WAV.
+      // Do this LAST so a new text cannot silently invalidate an in-flight MP4.
+      // The consented-voice test left the visitor in Therapy. Return by an
+      // actual visible Ready tab click before testing its next-step cards;
+      // never synthesize a Ready state or weaken native MP4/audio assertions.
+      await page.locator('[data-video-quick-control="ready"]').click();
+      await expect(page.locator('[data-mandala-free-video]'))
+        .toHaveAttribute("data-active-workspace","ready");
+      await expect(page.locator("[data-ready-meditation]")).toBeVisible();
+        // Real mobile click contract: the two Ready cards switch to sixth
+        // Therapy workspace and select its format, with no Ready expansion.
+        await page.locator("[data-ready-meditation]").click();
+        await expect(page.locator("[data-mandala-free-video]"))
+          .toHaveAttribute("data-active-workspace","effects");
+        await expect(page.locator("[data-therapy-studio]"))
+          .toHaveAttribute("data-therapy-course","false");
+        await expect(page.locator('[data-therapy-subtab="meditation"]'))
+          .toHaveAttribute("aria-selected","true");
+        await expect(page.locator("[data-ready-offer-panel]")).toHaveCount(0);
+        // Owner-approved Therapy: switch the actual short texts, then approve one
+        // to the original consent-gated Voice flow; no 2-format switch or video.
+        await expect(page.locator("[data-therapy-format-switch]")).toHaveCount(0);
+        await expect(page.locator("[data-therapy-subtab]")).toHaveCount(4);
+        await expect(page.locator('[data-therapy-text-option="a"]')).toHaveAttribute("aria-selected","true");
+        const therapyTextA=await page.locator("[data-therapy-full-script]").innerText();
+        await page.locator('[data-therapy-text-option="b"]').click();
+        const therapyTextB=await page.locator("[data-therapy-full-script]").innerText();
+        assert.notEqual(therapyTextA,therapyTextB,"A/B must switch the complete text");
+        await expect(page.locator('[data-therapy-approve-text]')).toBeEnabled();
+        await page.locator('[data-therapy-approve-text]').click();
+        await expect(page.locator('[data-therapy-subtab="voice"]')).toHaveAttribute("aria-selected","true");
+        await expect(page.locator('[data-therapy-approved-voice]')).toBeVisible();
+        phase(engine,"therapy-approved-short-text-to-voice");
+        await page.locator('[data-video-quick-control="ready"]').click();
+        await page.locator("[data-ready-journey]").click();
+        await expect(page.locator("[data-mandala-free-video]"))
+          .toHaveAttribute("data-active-workspace","effects");
+        await expect(page.locator("[data-therapy-studio]"))
+          .toHaveAttribute("data-therapy-course","true");
+        await expect(page.locator("[data-therapy-script-host]")).toBeVisible();
+        await expect(page.locator("[data-ready-offer-panel]")).toHaveCount(0);
+        await page.locator('[data-video-quick-control="ready"]').click();
+        phase(engine,"ready-therapy-one-tap-navigation-verified");
       assert.deepEqual(errors,[],engine+" should not log client exceptions");
       phase(engine,"all-assertions-passed");
       process.stdout.write("PASS "+engine+" "+locale+" mocked TTS + locally encoded video/audio + nature WAV attachment + stale guard\n");
