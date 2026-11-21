@@ -295,14 +295,15 @@ test("Safari deferred MP4 decoding requires a real user Play gesture, not a fals
   assert.match(e2e,/await output\.waitFor\(\{state:"visible",timeout:45000\}\)/);
 });
 
-test("Safari MP4 finalized bytes require real tracks and a decoded first frame",()=>{
+test("Safari MP4 finalized bytes require real tracks and decodable beginning, middle and end",()=>{
   for(const marker of [
     "new Input({","new BlobSource(new Blob([bytes]",
     "formats:[MP4]","await input.canRead()",
     "input.getPrimaryVideoTrack()","track.getDurationFromMetadata()",
     "input.getPrimaryAudioTrack()","track.canDecode()",
-    "new VideoSampleSink(track)","sink.getSample(await track.getFirstTimestamp())",
-    "frame.close()","input.dispose()","await output.getMimeType()",
+    "new VideoSampleSink(track)","const first=await track.getFirstTimestamp()",
+    "Math.max(0,first+.05)","Math.max(0,expected.seconds/2)","Math.max(0,expected.seconds-.5)",
+    "for(const at of checkpoints)","sink.getSample(at)","sample?.close()","input.dispose()","await output.getMimeType()",
     "verifyDecodableMp4Export(bytes,{",
   ])assert.ok(helper.includes(marker),marker);
   assert.match(helper,/document.createElement\("video"\).canPlayType\(expected.mime\)/);
