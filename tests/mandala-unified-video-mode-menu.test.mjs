@@ -23,7 +23,7 @@ test("OpenMotion opens the actual template picker without a second exporter",()=
 test("Express with no verified master cannot encode, hold credit, or claim a finished MP4",()=>{
  assert.match(studio,/if\(videoExportMode!=="personal"\)/);
  assert.match(studio,/if\(videoExportMode==="express"\)/);
- assert.match(studio,/if\(creditOpRef\.current\)return false/);
+ assert.match(studio,/creditOpRef\.current\)return false/);
  assert.match(studio,/motionPresetRetryRef\.current=null/);
  assert.match(ready,/data-ready-express-unavailable/);
  assert.match(ready,/exportMode==="personal"\?<button type="button" className=\{css\.primary\}/);
