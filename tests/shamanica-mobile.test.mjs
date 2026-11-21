@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {SHAMANICA_GOALS,SHAMANICA_SERVICES,shamanicaRecommendations,shamanicaServiceHref} from "../lib/shamanica-recommendations.mjs";
+import {SHAMANICA_GOALS,SHAMANICA_SERVICES,shamanicaRecommendations,shamanicaServiceHref,shamanicaCategoryHref} from "../lib/shamanica-recommendations.mjs";
 const read=p=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
 test("Shamanic retains original five recommendation directions",()=>{
  const p=read("app/[locale]/shamanica/page.tsx"),client=read("components/shamanica-mobile.tsx"),results=read("app/[locale]/shamanica/results/page.tsx");
@@ -73,4 +73,27 @@ test("Shamanic branding and navigation are consistent without changing shared ro
  assert.match(services,/Shamanic · energy/);
  assert.match(dockCss,/SHAMANICA_ONE_SCREEN_DOCK_20261119/);
  assert.match(dockCss,/font-size:clamp\(10px,3\.05vw,12px\)/);
+});
+
+test("Every Shamanic category entrance opens three priced service cards without the quiz",()=>{
+ const client=read("components/shamanica-mobile.tsx");
+ const results=read("app/[locale]/shamanica/results/page.tsx");
+ const css=read("components/shamanica-results-services.module.css");
+ const offers=read("components/services-three-visible-options.tsx");
+ for(const locale of ["ru","en","es"])for(const category of SHAMANICA_SERVICES){
+  assert.equal(shamanicaCategoryHref(locale,category),`/${locale}/shamanica/results?category=${category}`);
+ }
+ assert.equal(shamanicaCategoryHref("ru","invalid"),"/ru/shamanica");
+ assert.match(client,/shamanicaCategoryHref\(locale,id\)/);
+ assert.match(client,/id==="free"\?"\/"\+locale\+"\/academy\/principles-of-energywork\/learn"/);
+ assert.match(results,/data-shamanica-category-offers=\{selectedCategory\}/);
+ assert.match(results,/data-shamanica-category-nav/);
+ assert.match(results,/Object\.prototype\.hasOwnProperty\.call\(offerGroups,args\.category\)/);
+ assert.match(results,/ServicesThreeVisibleOptions locale=\{locale\} id=\{offerGroups\[selectedCategory\]\}/);
+ assert.match(results,/shamanicaRecommendations\(args\)/);
+ assert.match(css,/CATEGORY_SERVICES_SUPPORT_PARITY_20261120/);
+ assert.match(css,/data-support-uniform-photo/);
+ assert.match(css,/data-service-card-controls/);
+ assert.match(offers,/data-service-price/);
+ assert.match(offers,/ServicesCardActions/);
 });

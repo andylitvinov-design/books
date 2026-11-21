@@ -43,3 +43,15 @@ test("Services quiz uses the same three-offer category blocks without changing o
   assert.match(grouped,/ServicesThreeVisibleOptions id=\{id\} locale=\{locale\}/);
   assert.match(grouped,/\.filter\(id=>!allowedIds\|\|allowedIds\.includes\(id\)\)/);
 });
+
+test("Category entry has a single direct three-offer list while quiz still has two priorities",()=>{
+  const page=read("app/[locale]/shamanica/results/page.tsx");
+  const client=read("components/shamanica-mobile.tsx");
+  assert.match(page,/selectedCategory \? <>/);
+  assert.match(page,/data-shamanica-category-offers=\{selectedCategory\}/);
+  assert.match(page,/data-shamanica-priority-groups/);
+  assert.match(page,/data-priority-offer-count="3"/);
+  assert.match(client,/shamanicaCategoryHref\(locale,id\)/);
+  for(const group of ["homeopathy","shamanica-artifacts","reiki","magical","shamanica-learning"])
+    assert.ok(page.includes('"'+group+'"'),group);
+});
