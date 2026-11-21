@@ -5,7 +5,7 @@ import {startCoachRecordedTurn} from '../lib/personal-coaching/coach-recorded-tu
 import {createCoachBargeGate,isCoachBargeEcho} from '../lib/personal-coaching/coach-barge-in.mjs'
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
-function fakeAudioEnvironment({userAgent='Desktop Chromium',muteFirstCapture=false}={}){
+function fakeAudioEnvironment({userAgent='Desktop Chromium',muteFirstCapture=false,recordedBytes=2000,transcribedText='Я хочу уточнить вашу мысль'}={}){
  let clock=0,energy=0,tick=null,stopped=0,uploads=0,captures=0;
  class Recorder{
   static isTypeSupported(m){return m==='audio/mp4'}
@@ -14,7 +14,7 @@ function fakeAudioEnvironment({userAgent='Desktop Chromium',muteFirstCapture=fal
   stop(){
    if(this.state!=='recording')return
    this.state='inactive'
-   this.ondataavailable?.({data:new Blob([new Uint8Array(2000)])})
+   this.ondataavailable?.({data:new Blob([new Uint8Array(recordedBytes)])})
    this.onstop?.()
   }
  }
@@ -38,7 +38,7 @@ function fakeAudioEnvironment({userAgent='Desktop Chromium',muteFirstCapture=fal
    assert.equal(init.method,'POST')
    assert.equal(init.body.get('locale'),'ru')
    uploads++
-   return {ok:true,json:async()=>({transcript:{text:'Я хочу уточнить вашу мысль'}})}
+   return {ok:true,json:async()=>({transcript:{text:transcribedText}})}
   },
   setInterval(fn){tick=fn;return 1},
   clearInterval(){tick=null},
@@ -333,4 +333,32 @@ test('Safari capture loss must not permanently disable Groq STT or require the c
  assert.match(ui,/if\(code==='STT_UNAVAILABLE'\)/)
  assert.doesNotMatch(ui,/\['STT_UNAVAILABLE','MIC_CAPTURE'\]\.includes\(code\)/)
  assert.match(ui,/changePhase\('ready'\);setNotice\(t\.captureFailed\)/)
+})
+ 
+test('locally truncated iPhone recording reports capture loss instead of disabling Whisper',async()=>{
+ const sound=fakeAudioEnvironment({userAgent:'iPhone Safari/27.2',recordedBytes:100})
+ const failures=[]
+ const recorder=startCoachRecordedTurn({locale:'ru',environment:sound.environment,
+  onFailure:code=>failures.push(code)})
+ for(let i=0;i<30&&!sound.ticker;i++)await new Promise(resolve=>setImmediate(resolve))
+ for(let i=0;i<3;i++)sound.pulse(.11)
+ for(let i=0;i<14;i++)sound.pulse(0)
+ for(let i=0;i<30&&!failures.length;i++)await new Promise(resolve=>setImmediate(resolve))
+ assert.deepEqual(failures,['MIC_CAPTURE'])
+ assert.equal(sound.uploading,0,'incomplete local audio must never reach the provider')
+ recorder.cancel()
+})
+
+test('empty but successful STT response is not classified as provider outage',async()=>{
+ const sound=fakeAudioEnvironment({userAgent:'iPhone Safari/27.2',transcribedText:''})
+ const failures=[]
+ const recorder=startCoachRecordedTurn({locale:'ru',environment:sound.environment,
+  onFailure:code=>failures.push(code)})
+ for(let i=0;i<30&&!sound.ticker;i++)await new Promise(resolve=>setImmediate(resolve))
+ for(let i=0;i<3;i++)sound.pulse(.11)
+ for(let i=0;i<14;i++)sound.pulse(0)
+ for(let i=0;i<30&&!failures.length;i++)await new Promise(resolve=>setImmediate(resolve))
+ assert.deepEqual(failures,['MIC_NO_SIGNAL'])
+ assert.equal(sound.uploading,1,'one real spoken phrase is sent once, without retries')
+ recorder.cancel()
 })
