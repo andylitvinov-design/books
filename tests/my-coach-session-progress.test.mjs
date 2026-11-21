@@ -105,6 +105,17 @@ test('Mobile progress uses five meaning stages and is still server-evidence-driv
  assert.match(director,/Use ONLY the selected alternative method sequence/)
 })
 
+test('provisional step header matches the actual method checklist (not GROW for every persona)',()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const titles=coachSessionVisibleStageIds('appreciative_inquiry')
+ const harry=coachSessionVisibleStageIds('oskar')
+ assert.equal(titles[0],'discover')
+ assert.equal(harry[0],'outcome')
+ assert.ok(ui.indexOf('const stageChecklistTitles=')<ui.indexOf('const stageDescription='))
+ assert.match(ui,/:stageChecklistTitles\[visibleStageIndex\]\|\|ui\.stages\[visibleStageIndex\]/)
+ assert.ok(!ui.includes("['contact','goal','reality','options','integration'][visibleStageIndex]"))
+})
+
 test('one expanded checklist uses method-authentic stages and no false checkmarks',()=>{
  assert.deepEqual(coachSessionVisibleStageIds('grow'),['contact','goal','reality','options','integration'])
  assert.deepEqual(coachSessionVisibleStageIds('tgrow'),['contact','goal','reality','options','integration'])
