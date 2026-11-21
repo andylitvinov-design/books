@@ -7,7 +7,7 @@ test("Shamanic uses high-definition first-party illustrations instead of tiny pr
  const assets=[
   ["shamanic-cards-personal-hd.avif",20572],
   ["shamanic-cards-business-hd.avif",21541],
-  ["shamanic-lounge-hd.avif",34462],
+  ["shamanic-lounge-hd.avif",30943],
   ["shamanic-sun-hd.avif",5867],
  ];
  for(const [name,size] of assets){
