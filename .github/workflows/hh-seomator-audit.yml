@@ -101,17 +101,17 @@ jobs:
         run: |
           set -euo pipefail
           test -s artifacts/seo-audit.json
-    - name: Publish latest tiny JSON as public GitHub Release asset
-      env:
-        GH_TOKEN: ${{ github.token }}
-      shell: bash
-      run: |
-        set -euo pipefail
-        if ! gh release view hh-seomator-history --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-          gh release create hh-seomator-history \
-            --repo "$GITHUB_REPOSITORY" --target codex/public-book-library \
-            --title "Holistic House SEO audit history" --latest=false \
-            --notes "Public technical SEO sampling only. No Search Console credentials, client data or paid integrations."
-        fi
-        gh release upload hh-seomator-history artifacts/seo-audit.json \
-          --repo "$GITHUB_REPOSITORY" --clobber
+      - name: Publish latest tiny JSON as public GitHub Release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! gh release view hh-seomator-history --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create hh-seomator-history \
+              --repo "$GITHUB_REPOSITORY" --target codex/public-book-library \
+              --title "Holistic House SEO audit history" --latest=false \
+              --notes "Public technical SEO sampling only. No Search Console credentials, client data or paid integrations."
+          fi
+          gh release upload hh-seomator-history artifacts/seo-audit.json \
+            --repo "$GITHUB_REPOSITORY" --clobber
