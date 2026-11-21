@@ -1549,11 +1549,16 @@ test('PR #2969 exactly reviewed 120-scenario audio cannot trigger 13 unrelated p
     'node --test tests/import-reviewed-audio.test.mjs',
     'node --test tests/curated-audio-selection.test.mjs',
     'node --test tests/mandala-video-phrase-catalog.test.mjs',
-    // The trusted Mandala owner uses reviewed impact and Ready status, not
-    // a legacy branch-prefix gate. Keep the real audio contracts mandatory.
+    // Preserve reviewed Mandala owner conditions even after removing old
+    // branch-specific macOS predicates. The real impact gate remains active.
     "if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}",
     'run: node scripts/ci-heavy-impact.mjs mandala',
     "if: steps.policy.outputs.policy_only != 'true'",
+    // The Mandala specialist now triggers on reviewed media paths for any PR,
+    // rather than on a historical branch-name allowlist. Both the changed
+    // source path and the actual 120-scenario manifest must route to it.
+    "- 'components/mandala-free-video-studio.tsx'",
+    "- 'data/video-catalog/goal-tree-audio-playlists-v1.json'",
   ])assert.ok(mandala.includes(must),'owning audio specialist missing '+must);
   for(const path of [
     'app/api/payments/checkout/route.js','app/api/service-enquiries/route.js',
