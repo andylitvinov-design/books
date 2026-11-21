@@ -42,7 +42,11 @@ test('Business replies remain signed, can_reply verified, STOP suppressed and ra
  assert.match(secretary,/telegramPublishedSpiritualInterestAcknowledgement\(spiritualInterest\)/);
  assert.match(route,/verifyMessengerWebhook\(provider,raw,request.headers\)/);
  assert.match(route,/gateTelegramBusinessSecretaryOptOut\(body,config\)/);
- assert.match(route,/processTelegramBusinessSecretary\(body,config\)/);
+ assert.match(route,/processTelegramBusinessSecretary\(body,config,process\.env,\{/);
+ assert.match(route,/allowClarification:telegramBusinessInbox\?\.matched===true&&/);
+ assert.match(route,/telegramBusinessInbox\.recorded===true&&/);
+ assert.match(route,/businessLead\?\.suppressed===false/);
+ assert.match(route,/hh-tg-secretary-chat/);
  assert.match(route,/hh-tg-secretary-reply/);
  assert.match(route,/sendHolisticBusinessRequestReply/);
 });
