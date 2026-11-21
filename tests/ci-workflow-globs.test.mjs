@@ -628,3 +628,24 @@ test('Support Guide PR never books a duplicate syntax-only browser runner',()=>{
   assert.match(source,/^  workflow_dispatch:/m);
   assert.doesNotMatch(source,/continue-on-error:\s*true/);
 });
+
+test('OpenMotion picker is checked by Mandala alone; public booking stays protected',()=>{
+  const target='codex/public-book-library';
+  const service=parsePrTrigger(workflow('hh-public-services-production.yml'),'services');
+  const studio=parsePrTrigger(workflow('holistic-support-mandala.yml'),'mandala');
+  const core=parsePrTrigger(workflow('hh-pr-core-release.yml'),'core');
+  for(const file of ['components/mandala-openmotion-picker.tsx',
+    'components/mandala-openmotion-picker.module.css']){
+    assert.equal(matchesTrigger(service,[file],target),false,
+      'standalone OpenMotion library must not launch service/checkout browser matrix: '+file);
+    assert.equal(matchesTrigger(studio,[file],target),true,
+      'mandatory real Studio media, license and browser owner must retain: '+file);
+    assert.equal(matchesTrigger(core,[file],target),true,
+      'mandatory Core must retain changed source');
+    for(const risk of ['components/consultation-choice-capture.tsx',
+      'components/contact-channel-chooser.tsx','app/api/payments/checkout/route.js']){
+      assert.equal(matchesTrigger(service,[file,risk],target),true,
+        'mixed PR with booking, consent or payment changes must retain full Public Services QA');
+    }
+  }
+});
