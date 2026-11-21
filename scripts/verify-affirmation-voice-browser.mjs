@@ -882,10 +882,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // Ideas has three tabs. Voice and My Voice remain visible opt-in submodes.
       const ideasModes=phrases.locator("[data-video-ideas-tabs]");
       await expect(ideasModes).toBeVisible();
-      const goalTab=ideasModes.locator('[data-video-ideas-tab="goal"]');
+      const ideasGoalTab=ideasModes.locator('[data-video-ideas-tab="goal"]');
       const personalTab=ideasModes.locator('[data-video-ideas-tab="personalization"]');
       const conceptTab=ideasModes.locator('[data-video-ideas-tab="concept"]');
-      await expect(goalTab).toHaveAttribute("aria-pressed","true");
+      await expect(ideasGoalTab).toHaveAttribute("aria-pressed","true");
       await expect(personalTab).toBeDisabled();
       await expect(conceptTab).toBeDisabled();
       const goalPane=phrases.locator("[data-video-ideas-goal-panel]");
