@@ -1741,7 +1741,26 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           phase(engine,"final-six-photo-consent-after-audio-style-edits");
           await expect(montageProTab).toHaveAttribute("aria-pressed","true");
         }else{
-          await expect(finalStoryboard).toHaveAttribute("data-storyboard-media-ready","true");
+          // An authored screenplay may have no action-matching licensed photos.
+          // The editor must NOT claim media is ready or auto-approve unrelated
+          // pictures. This Story integrity check is independent of the genuine
+          // local MP4 encoder exercised below through the existing Free path.
+          const count=Number(await finalStoryboard.getAttribute("data-storyboard-reference-count"));
+          assert.ok(Number.isInteger(count)&&count>=0&&count<=6,
+            "Storyboard reference count must be finite and bounded");
+          if(count<6){
+            await expect(finalStoryboard).toHaveAttribute("data-storyboard-media-ready","false");
+            await expect(finalStoryboard).toHaveAttribute("data-storyboard-action-proof","editorial_unverified");
+            await expect(finalStoryboard.locator('[data-story-media-kind="missing"]'))
+              .toHaveCount(6-count);
+            await expect(finalStoryboard.locator('[data-storyboard-apply-reference-photos]'))
+              .toHaveCount(0);
+            // A no-match Story is explicitly blocked: no simulated reference
+            // consent and no claim that its six physical actions were filmed.
+            phase(engine,"story-action-media-missing-fail-closed");
+          }else{
+            await expect(finalStoryboard).toHaveAttribute("data-storyboard-media-ready","true");
+          }
           await montageProTab.click();
         }
         await montageProOffer.locator('[data-video-montage-pro-choice="free"]').click();
