@@ -254,17 +254,32 @@ async function verifyWorkspaceHydration(browser,locale){
         // unrelated stock frames depict the six authored physical events.
         await expect(automaticStoryboard).toHaveAttribute("data-storyboard-action-proof","editorial_unverified");
         await expect(automaticStoryboard).toHaveAttribute("data-storyboard-media-ready","false");
-        // Six genuine, rights-reviewed photographs are visual references, not
-        // proof that the filmed physical actions have been verified for export.
+        // Authored scene references must match the actual action. Missing
+        // matches show an honest Footage needed sketch, never an unrelated photo.
         const referenceCount=Number(await automaticStoryboard.getAttribute("data-storyboard-reference-count"));
-        assert.equal(referenceCount,storyboardShotCount,
-          "every authored 30-second scene must retain its own photographic reference");
+        assert.ok(Number.isSafeInteger(referenceCount)&&referenceCount>=0&&
+          referenceCount<=storyboardShotCount,
+          "reference count must be bounded by the number of authored scenes");
         await expect(automaticStoryboard).toHaveAttribute("data-storyboard-graphics-mode",
-          "licensed-photographic-references");
-        await expect(automaticStoryboard).toHaveAttribute("data-storyboard-reference-status",
-          "editorial_photo_reference_not_action_verified");
+          referenceCount?"licensed-photographic-references":"screenplay-scene-sketch");
+        assert.equal(await automaticStoryboard.getAttribute("data-storyboard-reference-status"),
+          referenceCount?"editorial_photo_reference_not_action_verified":null);
         const referencePhotos=cards.locator('img[data-storyboard-reference-photo]');
         await expect(referencePhotos).toHaveCount(referenceCount);
+        const kinds=await cards.evaluateAll(nodes=>nodes.map(node=>
+          node.getAttribute("data-story-media-kind")));
+        assert.equal(kinds.filter(kind=>kind==="reference").length,referenceCount,
+          "reference images must belong to distinct authored scenes");
+        assert.ok(kinds.every(kind=>["reference","missing","video","photo"].includes(kind)),
+          "every authored scene must display a recognized honest media state");
+        for(let i=0;i<storyboardShotCount;i++){
+          if(kinds[i]==="missing"){
+            await expect(cards.nth(i).locator('[data-video-story-media-missing="true"]'))
+              .toHaveCount(1);
+            await expect(cards.nth(i).locator('img[data-storyboard-reference-photo]'))
+              .toHaveCount(0);
+          }
+        }
         for(let i=0;i<referenceCount;i++){
           const photo=referencePhotos.nth(i);
           assert.ok((await photo.getAttribute("src"))?.startsWith("/"),
@@ -1776,7 +1791,26 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           phase(engine,"final-six-photo-consent-after-audio-style-edits");
           await expect(montageProTab).toHaveAttribute("aria-pressed","true");
         }else{
-          await expect(finalStoryboard).toHaveAttribute("data-storyboard-media-ready","true");
+          // An authored screenplay may have no action-matching licensed photos.
+          // The editor must NOT claim media is ready or auto-approve unrelated
+          // pictures. This Story integrity check is independent of the genuine
+          // local MP4 encoder exercised below through the existing Free path.
+          const count=Number(await finalStoryboard.getAttribute("data-storyboard-reference-count"));
+          assert.ok(Number.isInteger(count)&&count>=0&&count<=6,
+            "Storyboard reference count must be finite and bounded");
+          if(count<6){
+            await expect(finalStoryboard).toHaveAttribute("data-storyboard-media-ready","false");
+            await expect(finalStoryboard).toHaveAttribute("data-storyboard-action-proof","editorial_unverified");
+            await expect(finalStoryboard.locator('[data-story-media-kind="missing"]'))
+              .toHaveCount(6-count);
+            await expect(finalStoryboard.locator('[data-storyboard-apply-reference-photos]'))
+              .toHaveCount(0);
+            // A no-match Story is explicitly blocked: no simulated reference
+            // consent and no claim that its six physical actions were filmed.
+            phase(engine,"story-action-media-missing-fail-closed");
+          }else{
+            await expect(finalStoryboard).toHaveAttribute("data-storyboard-media-ready","true");
+          }
           await montageProTab.click();
         }
         await montageProOffer.locator('[data-video-montage-pro-choice="free"]').click();
