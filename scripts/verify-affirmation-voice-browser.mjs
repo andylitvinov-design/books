@@ -1808,6 +1808,29 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
             // A no-match Story is explicitly blocked: no simulated reference
             // consent and no claim that its six physical actions were filmed.
             phase(engine,"story-action-media-missing-fail-closed");
+            // No substitute photograph is passed off as a filmed screenplay.
+            // The visitor may instead intentionally choose a DIFFERENT,
+            // already licensed local compilation. Its actual decoded movie,
+            // consented voice, and credits still face every native WebKit gate.
+            await page.locator('[data-video-quick-control="video"]').click();
+            const reviewedPreset=page.locator(
+              '[data-free-film-compilation-catalog] [data-free-film-preset]').first();
+            if(!await reviewedPreset.isVisible()){
+              const moreGoals=page.locator('[data-hh-mirror-more-goals]');
+              await expect(moreGoals).toBeVisible({timeout:15000});
+              if(engine==="webkit")await moreGoals.tap();
+              else await moreGoals.click();
+            }
+            await expect(reviewedPreset).toBeVisible({timeout:15000});
+            await expect(reviewedPreset).toBeEnabled();
+            if(engine==="webkit")await reviewedPreset.tap();
+            else await reviewedPreset.click();
+            await expect(reviewedPreset).toHaveAttribute('aria-pressed','true',{timeout:15000});
+            await expect(page.locator('[data-free-film-readiness]')).toBeVisible();
+            phase(engine,"explicit-reviewed-film-compilation-selected");
+            await page.locator('[data-video-quick-control="editor"]').click();
+            await expect(page.locator('[data-mandala-free-video]'))
+              .toHaveAttribute('data-active-workspace','editor');
           }else{
             await expect(finalStoryboard).toHaveAttribute("data-storyboard-media-ready","true");
           }
@@ -1840,10 +1863,24 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         });
         await readyGenerate.click();
         phase(engine,"ready-free-render-requested");
-        await expect.poll(()=>page.evaluate(()=>
-          Boolean(window.__hhReadyInlineCheckInEvidence?.progress&&
-            window.__hhReadyInlineCheckInEvidence?.step)),
-          {timeout:20000,intervals:[100,250,500]}).toBe(true);
+        try{
+          await expect.poll(()=>page.evaluate(()=>
+            Boolean(window.__hhReadyInlineCheckInEvidence?.progress&&
+              window.__hhReadyInlineCheckInEvidence?.step)),
+            {timeout:20000,intervals:[100,250,500]}).toBe(true);
+        }catch(error){
+          // Report only bounded structural state, not private speech or media.
+          const gate=await page.evaluate(()=>({
+            workspace:document.querySelector('[data-mandala-free-video]')?.getAttribute('data-active-workspace')||null,
+            readyState:document.querySelector('[data-video-ready]')?.getAttribute('data-ready-state')||null,
+            generating:Boolean(document.querySelector('[data-ready-generating]')),
+            firstVideoApproval:document.querySelector('[data-video-auto-storyboard]')?.getAttribute('data-storyboard-media-ready')||null,
+            hasSelectedFilm:Boolean(document.querySelector('[data-free-film-preset][aria-pressed="true"]')),
+            hasCheckin:Boolean(document.querySelector('[data-ready-sequential-checkin]')),
+            observed:window.__hhReadyInlineCheckInEvidence||null
+          }));
+          throw new Error("READY_CHECKIN_REAL_EXPORT_NOT_STARTED "+JSON.stringify(gate),{cause:error});
+        }
         const observation=await page.evaluate(()=>{
           window.__hhReadyCheckInObserver?.disconnect();
           return window.__hhReadyInlineCheckInEvidence;

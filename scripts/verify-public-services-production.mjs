@@ -110,8 +110,9 @@ try {
     return page;
   };
 
- // First-screen Shamanica business visual acceptance in this existing CI runner.
- // The two-column six-card grid must stay above the real, fixed seven-item dock.
+ // Shamanica Business: the approved six photo-led SHELVES now open
+ // subservices within one page, rather than six retired direct links.
+ // Exercise actual visible click/back, quiz and independent shared dock.
  async function checkCompactBusiness(page,locale,width){
   await page.goto(origin+"/"+locale+"/shamanica/business",{waitUntil:"domcontentloaded",timeout:75000});
   const section=page.locator("[data-shamanica-business]");
@@ -119,24 +120,40 @@ try {
   await expect(page.locator("[data-sitewide-antistress-banner]")).toHaveCount(0);
   await expect(page.locator("[data-hh-ihelp-trigger]:visible")).toHaveCount(0);
   await expect(page.locator("[data-shamanica-ihelp-trigger]")).toBeVisible();
-  await expect(section.locator("[data-business-service]")).toHaveCount(6);
-  await expect(section.locator("[data-business-service] img")).toHaveCount(6);
+  const shelves=section.locator("[data-business-shelf]");
+  await expect(shelves).toHaveCount(6);
+  await expect(shelves.locator("img")).toHaveCount(6);
+  assert.deepEqual(await shelves.evaluateAll(items=>items.map(item=>item.getAttribute("data-business-shelf"))),
+    ["express","remedies","strategy","artifacts","energy","energywork"],
+    "Six approved Business shelf IDs and order must remain stable");
   await expect(page.locator("[data-hh-unified-dock]")).toHaveCount(1);
-  const m=await page.evaluate(()=>{
-   const last=document.querySelector('[data-business-service="remedies"]');
+  const geometry=await page.evaluate(()=>{
+   const final=document.querySelector('[data-business-shelf="energywork"]');
    const dock=document.querySelector('[data-hh-unified-dock]');
-   if(!last||!dock)return null;
-   return {lastBottom:last.getBoundingClientRect().bottom,
-     dockTop:dock.getBoundingClientRect().top,
+   if(!final||!dock)return null;
+   return {lastWidth:final.getBoundingClientRect().width,
+     dockVisible:dock.getBoundingClientRect().height>0,
      horizontalOverflow:document.documentElement.scrollWidth-window.innerWidth};
   });
-  assert.ok(m,"Business compact landmarks missing");
-  assert.ok(m.horizontalOverflow<=2,"Business horizontal overflow "+locale+"/"+width+" "+JSON.stringify(m));
-  if(width>=390)assert.ok(m.lastBottom<=m.dockTop+8,
-    "Six business cards must fit above dock "+locale+"/"+width+" "+JSON.stringify(m));
+  assert.ok(geometry&&geometry.lastWidth>=80&&geometry.dockVisible,
+    "Six real business tiles and site dock must render: "+locale+"/"+width);
+  assert.ok(geometry.horizontalOverflow<=2,
+    "Business horizontal overflow "+locale+"/"+width+" "+JSON.stringify(geometry));
+  // The shelves intentionally follow the quiz and feature below the first
+  // screen. Do not demand that the final shelf sits above a fixed phone dock.
   if(locale==="ru"&&width===390)await page.screenshot({path:output+"/shamanica-business-ru-390.png",fullPage:false});
   await expect.poll(()=>page.evaluate(()=>history.pushState.toString().includes("__NA")),
     {timeout:30000,message:"Business quiz hydration"}).toBe(true);
+  const firstShelf=section.locator('[data-business-shelf="express"]');
+  await expect(firstShelf).toBeEnabled();
+  await firstShelf.click();
+  await expect(section.locator('[data-business-cabinet-shelves]')).toHaveAttribute("data-expanded","true");
+  await expect(section.locator('[data-business-second-level="express"]')).toBeVisible();
+  await expect(section.locator('[data-business-subservice^="express-"]')).toHaveCount(5);
+  await expect(section.locator('[data-business-get-details="express"]')).toBeVisible();
+  await section.locator("[data-business-back-to-shelves]").click();
+  await expect(section.locator('[data-business-cabinet-shelves]')).toHaveAttribute("data-expanded","false");
+  await expect(shelves).toHaveCount(6);
   const quiz=section.locator("[data-business-quiz]");
   await expect(quiz).toHaveAttribute("data-quiz-step","1");
   await quiz.locator('[data-business-answer="express"]').click();
@@ -165,6 +182,10 @@ try {
     await expect(quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice]')).toHaveCount(4);
     await expect(quiz.locator("[data-services-quiz-category]")).toHaveCount(6);
     await expect(quiz.locator("[data-services-card-photo]")).toHaveCount(6);
+    await expect(quiz.locator("[data-services-audience] button")).toHaveCount(2);
+    await expect(quiz.locator("[data-services-quiz-goal]")).toHaveCount(1);
+    await expect(quiz.locator("[data-services-hero-play]")).toHaveAttribute("href", "#meet-andrey");
+    await expect(quiz.locator("[data-services-quiz-next]")).toBeDisabled();
     assert.deepEqual(await quiz.locator("[data-services-quiz-category]").evaluateAll(cards =>
       cards.map(card => card.getAttribute("data-services-quiz-category"))),
       ["diagnostics", "business", "homeopathy", "coaching", "psychotherapy", "video"],
@@ -187,9 +208,10 @@ try {
     });
     assert.ok(firstScreen && firstScreen.width <= firstScreen.viewport + 1,
       "Services screenshot UI must not overflow horizontally: " + locale + "/" + width);
-    if (width >= 390) assert.ok(firstScreen.lastBottom <= firstScreen.dockTop + 12,
-      "At 390+ the six image cards should fit above the site dock: " +
-        locale + "/" + width + " " + JSON.stringify(firstScreen));
+    // The approved photo-led layout intentionally continues below the fold.
+    // All six category links remain accessible by scrolling.
+    assert.ok(firstScreen.lastBottom > 0 && firstScreen.dockTop > 0,
+      "Support categories and shared dock must render: " + locale + "/" + width);
     if (locale === "es") await expect(quiz.locator("#services-quiz-title"))
       .toHaveText("Encontremos tu apoyo");
     await expect(quiz.locator("[data-services-quiz-submit]")).toHaveCount(0);
@@ -232,11 +254,14 @@ try {
     await expect(quiz.locator('[data-services-quiz-category="business"]')).toHaveAttribute("href", "#service-group-business");
     // Business has its own topic, need and start-format branching.
     await quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice="business_support"]').click();
+    await quiz.locator("[data-services-quiz-next]").click();
     await expect(quiz).toHaveAttribute("data-services-quiz-step", "2");
     await expect(quiz.locator('[data-services-quiz-question="need"] [data-services-quiz-choice]')).toHaveCount(4);
     await quiz.locator('[data-services-quiz-question="need"] [data-services-quiz-choice="business_strategy"]').click();
+    await quiz.locator("[data-services-quiz-next]").click();
     await expect(quiz).toHaveAttribute("data-services-quiz-step", "3");
     await quiz.locator('[data-services-quiz-question="mode"] [data-services-quiz-choice="consultation"]').click();
+    await quiz.locator("[data-services-quiz-next]").click();
     await expect(quiz).toHaveAttribute("data-services-quiz-step", "4");
     const submitQuiz = quiz.locator("[data-services-quiz-submit]");
     await expect(submitQuiz).toBeDisabled();
@@ -245,6 +270,7 @@ try {
     await quiz.locator('[data-quiz-dot="3"]').click();
     await expect(quiz).toHaveAttribute("data-services-quiz-step", "3");
     await quiz.locator('[data-services-quiz-choice="consultation"]').click();
+    await quiz.locator("[data-services-quiz-next]").click();
     await submitQuiz.click();
     await visible(page.locator("[data-services-quiz-results]"));
     await visible(quiz.locator("[data-services-quiz-summary]"));
@@ -254,10 +280,13 @@ try {
     if (width === 390) {
       await quiz.locator('[data-quiz-dot="1"]').click();
       await quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice="money_growth"]').click();
+    await quiz.locator("[data-services-quiz-next]").click();
       await expect(quiz).toHaveAttribute("data-services-quiz-step", "2");
       await expect(quiz.locator('[data-quiz-dot="4"]')).toBeDisabled();
       await quiz.locator('[data-services-quiz-question="need"] [data-services-quiz-choice="growth_ideas"]').click();
+    await quiz.locator("[data-services-quiz-next]").click();
       await quiz.locator('[data-services-quiz-question="mode"] [data-services-quiz-choice="any"]').click();
+    await quiz.locator("[data-services-quiz-next]").click();
       await quiz.locator('[data-services-quiz-question="budget"] [data-services-quiz-choice="flexible"]').click();
       await submitQuiz.click();
       await visible(page.locator("[data-services-quiz-results]"));
@@ -291,6 +320,30 @@ try {
     await expect(page.locator("[data-services-directory-invitation]")).toHaveCount(0);
     const catalog = page.locator("[data-services-unified-catalog]");
     await visible(catalog);
+    // Owner screenshot: on a phone, every one of the 30 cards must span the
+    // available content all the way to the right safe margin (not end early).
+    // Do not change the first-screen quiz to satisfy this lower-page contract.
+    const offerBounds = await catalog.locator(
+      '[data-services-three-visible] > [data-service-variant]'
+    ).evaluateAll(nodes => nodes.map(node => {
+      const bounds = node.getBoundingClientRect();
+      return {left: bounds.left, right: bounds.right, width: bounds.width, viewport: innerWidth};
+    }));
+    assert.equal(offerBounds.length, 30, "Ten Support directions publish three horizontal offers each");
+    for (const [index, bounds] of offerBounds.entries()) {
+      const rightMargin = bounds.viewport - bounds.right;
+      assert.ok(bounds.left >= 9 && bounds.left <= 26 &&
+        rightMargin >= 9 && rightMargin <= 26 &&
+        Math.abs(bounds.left - rightMargin) <= 3 &&
+        bounds.width >= bounds.viewport - 52,
+        "Compact service cards must reach phone right margin: " +
+          locale + "/" + width + "/" + index + " " + JSON.stringify(bounds));
+    }
+    if (width === 390) {
+      await catalog.locator('[data-services-unified-panel="consultation"]').screenshot({
+        path: output + "/services-" + locale + "-three-horizontal-offers-390.png",
+      });
+    }
     // Browser acceptance must exercise hydrated React handlers, not
     // accidentally tap static SSR buttons before Next router readiness.
     await expect.poll(

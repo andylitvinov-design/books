@@ -9550,8 +9550,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 // positive approval before it can replace any movie.
                 const independentCatalogSource=Boolean(usingFreeFilmCompilation&&freeFilmSourcesListed&&
                   cinematicPlan?.shots.every(shot=>!STORY_PHOTO_BY_ID.has(shot.sceneId)));
-                if(!pending)storySourcePendingRef.current=false;
-                else if(!independentCatalogSource)storySourcePendingRef.current=true;
+                // A fresh, explicitly chosen approved MP4 catalogue montage
+                // is independent of an unverified editorial Story reference.
+                // Clear stale Story-only blocks; never authorize missing footage.
+                storySourcePendingRef.current=Boolean(pending&&!independentCatalogSource);
               }}
               onApply={(shots,concept,key,captions,outputAspect="portrait")=>{
                 const preset=aspectFilmPresets.find(option=>option.theme===theme);

@@ -760,3 +760,61 @@
  .root[data-compact][data-chat-skin="messenger"] .thread :is(.assistant,.user){font-size:16px}
  .root[data-compact][data-chat-skin="messenger"]>.form textarea{font-size:16px}
 }
+
+/* A single real message form: first inside the hero flow, then docked below
+   the ongoing WhatsApp-like conversation after the first user message. */
+.root[data-compact][data-chat-skin="messenger"]:not([data-has-messages="true"])>.thread{
+  background:#faf6ef;background-image:none}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form{
+  position:relative;box-sizing:border-box;display:flex;flex-direction:column;gap:9px;
+  width:100%;min-width:0;min-height:143px;margin:0;padding:13px;
+  border:1px solid #d2e9db;border-radius:25px;background:#fffefa;
+  box-shadow:0 6px 18px #215c3c16}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form textarea{
+  box-sizing:border-box;display:block;flex:1 0 auto;width:100%;min-width:0;
+  height:108px;min-height:108px;max-height:160px;padding:3px 5px 59px;
+  border:0;background:transparent;box-shadow:none;resize:none;border-radius:15px;
+  font:520 17px/1.42 system-ui,sans-serif;color:#214439}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form textarea::placeholder{
+  color:#89918c;opacity:1}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions{
+  position:absolute;left:13px;right:13px;bottom:10px;display:flex;justify-content:flex-end;
+  flex-wrap:nowrap;align-items:center;gap:6px;min-width:0}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions>button,
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions>.composerMore>summary{
+  box-sizing:border-box;flex:none;display:grid;place-items:center;width:42px;min-width:42px;
+  height:44px;min-height:44px;border:1px solid #e1e8df;border-radius:14px;
+  background:#fffcf7;color:#096e57;padding:7px;cursor:pointer}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions button[type="submit"]{
+  display:flex;align-items:center;justify-content:center;gap:9px;flex:1 1 135px;
+  width:auto;min-width:126px;height:45px;min-height:45px;
+  padding:8px 12px;border:1px solid #008d6c;border-radius:999px;
+  background:linear-gradient(110deg,#06a986,#007553);color:#fff;
+  font:780 clamp(12px,3.55vw,15px)/1.1 system-ui,sans-serif;
+  box-shadow:0 3px 12px #05846320;white-space:nowrap}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions button[type="submit"]:disabled{
+  opacity:.72;cursor:not-allowed}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form:focus-within textarea{
+  outline:none}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form:focus-within{
+  outline:2px solid #168b71;outline-offset:1px}
+.root[data-compact][data-chat-skin="messenger"][data-has-messages="true"]>.thread{
+  background-color:#f6f6ed;background-image:radial-gradient(circle at 9px 14px,#d6dcc94b 1px,transparent 1.5px),
+  radial-gradient(circle at 42px 46px,#d4dacc42 1px,transparent 1.5px);background-size:66px 66px;
+  gap:8px;padding:10px 8px 14px}
+.root[data-compact][data-chat-skin="messenger"][data-has-messages="true"]>.form{
+  min-height:56px;max-width:100%;margin:0 4px 5px;padding:5px 6px;
+  border-radius:28px;box-shadow:0 4px 15px #20503815}
+.root[data-compact][data-chat-skin="messenger"][data-has-messages="true"]>.form textarea{
+  height:44px;min-height:44px;max-height:90px;font-size:16px}
+.root[data-compact][data-chat-skin="messenger"][data-has-messages="true"]>.thread>.user{
+  background:#ddf3d6;color:#153d30;border-color:#bfe0b8}
+.root[data-compact][data-chat-skin="messenger"][data-has-messages="true"]>.thread .assistant{
+  background:#fffefa;color:#203e33;border-color:#e4e2d8}
+@media(max-width:360px){
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form{padding:10px}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions{left:10px;right:10px;gap:3px}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions>button,
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions>.composerMore>summary{width:39px;min-width:39px}
+ .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form .actions button[type="submit"]{min-width:119px;font-size:12px}
+}
