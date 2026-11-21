@@ -34,7 +34,7 @@ const translations = {
   ru: {
     title: "Ваш путь в Shamanic", eyebrow: "ВАША ПЕРСОНАЛЬНАЯ ПОДБОРКА",
     lead: "Два направления по вашим ответам. В каждом — три конкретные услуги с ценой и возможностью заказа.",
-    again: "Изменить ответы", back: "К направлениям", categoryEyebrow: "ШАМАНИК · УСЛУГИ", categoryLead: "Выберите услугу: сравните условия, посмотрите детали и отправьте заявку.", categoryNav: "Категории услуг", all: "Все услуги Shamanic", priority: "Приоритет",
+    again: "Изменить ответы", back: "К направлениям", categoryEyebrow: "ШАМАНИК · УСЛУГИ", categoryLead: "Выберите услугу · Детали или заказ", categoryNav: "Категории услуг", all: "Все услуги Shamanic", priority: "Приоритет",
     items: {
       remedies: ["Подбор препаратов", "Бесплатный разбор, экспресс или полная личная сессия."],
       artifacts: ["Артефакты и места силы", "Талисманы, символические предметы и личные намерения."],
@@ -46,7 +46,7 @@ const translations = {
   en: {
     title: "Your Shamanic path", eyebrow: "YOUR PERSONAL SELECTION",
     lead: "Two priorities based on your answers. Each includes three real offers with prices and request options.",
-    again: "Change answers", back: "All categories", categoryEyebrow: "SHAMANIC · SERVICES", categoryLead: "Choose a service, review its details and price, or send an enquiry.", categoryNav: "Service categories", all: "All Shamanic services", priority: "Priority",
+    again: "Change answers", back: "All categories", categoryEyebrow: "SHAMANIC · SERVICES", categoryLead: "Choose a service · Details or Order", categoryNav: "Service categories", all: "All Shamanic services", priority: "Priority",
     items: {
       remedies: ["Remedy guidance", "Written review, express or full personal session."],
       artifacts: ["Artefacts & power places", "Talismans, symbolic objects and personal intentions."],
@@ -58,7 +58,7 @@ const translations = {
   es: {
     title: "Tu camino en Shamanic", eyebrow: "SELECCIÓN PERSONAL",
     lead: "Dos prioridades según tus respuestas. Cada una ofrece tres servicios reales con precio y solicitud.",
-    again: "Cambiar respuestas", back: "Todas las categorías", categoryEyebrow: "SHAMANIC · SERVICIOS", categoryLead: "Elige un servicio, consulta detalles y precios o envía tu solicitud.", categoryNav: "Categorías de servicios", all: "Todos los servicios", priority: "Prioridad",
+    again: "Cambiar respuestas", back: "Todas las categorías", categoryEyebrow: "SHAMANIC · SERVICIOS", categoryLead: "Elige un servicio · Detalles o solicitar", categoryNav: "Categorías de servicios", all: "Todos los servicios", priority: "Prioridad",
     items: {
       remedies: ["Orientación sobre remedios", "Revisión escrita, sesión exprés o completa."],
       artifacts: ["Objetos y lugares de poder", "Talismanes, objetos simbólicos e intenciones."],
@@ -86,6 +86,8 @@ export default async function ShamanicResults({params,searchParams}:Props) {
   // only that category's existing three real Services offers.
   const priorities = shamanicaRecommendations(args) as ShamanicPriority[];
   const t = translations[locale];
+  const orderedCategories = selectedCategory
+    ? [selectedCategory,...categories.filter(id=>id!==selectedCategory)] : categories;
   return <main lang={locale}
     className={selectedCategory ? styles.resultsPage+" "+priorityStyles.categoryPage : styles.resultsPage}
     data-shamanica-results data-shamanica-category={selectedCategory || undefined}>
@@ -94,17 +96,17 @@ export default async function ShamanicResults({params,searchParams}:Props) {
         data-shamanica-category-back={selectedCategory ? "true" : undefined}>
         <ArrowLeft size={19} aria-hidden="true"/>{selectedCategory ? t.back : t.again}
       </Link>
-      <span className={styles.resultsEyebrow}><Sparkles size={18} aria-hidden="true"/>
+      <span className={styles.resultsEyebrow} data-shamanica-results-eyebrow><Sparkles size={18} aria-hidden="true"/>
         {selectedCategory ? t.categoryEyebrow : t.eyebrow}
       </span>
-      <h1>{selectedCategory ? t.items[selectedCategory][0] : t.title}</h1>
+      <h1 data-shamanica-results-title>{selectedCategory ? t.items[selectedCategory][0] : t.title}</h1>
       <p className={styles.resultsLead} data-shamanica-results-lead>
         {selectedCategory ? t.categoryLead : t.lead}
       </p>
       {selectedCategory ? <>
         <nav className={priorityStyles.categoryTabs} aria-label={t.categoryNav}
           data-shamanica-category-nav>
-          {categories.map(id => <Link key={id} prefetch={false}
+          {orderedCategories.map(id => <Link key={id} prefetch={false}
             href={"/"+locale+"/shamanica/results?category="+id}
             className={id === selectedCategory ? priorityStyles.categoryTabActive : undefined}
             aria-current={id === selectedCategory ? "page" : undefined}>

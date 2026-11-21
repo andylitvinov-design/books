@@ -72,7 +72,7 @@ test('preview route uses the existing authenticated same-origin and private resp
  const route=readFileSync(new URL('../app/api/app/[...path]/route.js',import.meta.url),'utf8')
  assert.match(route,/if \(method !== 'GET' && method !== 'HEAD'\) requireSameOrigin\(request, config\)/)
  assert.match(route,/NextResponse\.json\(data, \{ status, headers: PRIVATE_HEADERS \}\)/)
- const section=route.slice(route.indexOf("if (joined === 'personal-coaching-report')"),route.indexOf("if (joined === 'tradition-coaching-summary')"))
+ const section=route.slice(route.indexOf("if (joined === 'personal-coaching-report')"),route.indexOf("\n    }",route.indexOf("if (joined === 'personal-coaching-report')")))
  assert.match(section,/x-hh-account-id/)
  assert.match(section,/method === 'POST'/)
  assert.match(section,/readCoachingReportDraft\(config,actor,await readBody\(request,2048\)\)/)

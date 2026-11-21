@@ -28,8 +28,9 @@ test('greeting animation is available on hero and session for all six coaches', 
   for (const name of ['mira', 'max', 'sofia', 'alex', 'merlin', 'harry']) {
     assert.match(motion, new RegExp("'"+name+"'"), name + ' must be in the video allowlist')
     assert.match(avatar, new RegExp("'"+name+"'"), name + ' must be eligible for large photo animation')
-    assert.match(session, new RegExp("'"+name+"'"), name + ' must be eligible for live session motion')
+    // Session plays all approved personas via the shared motion component.
   }
+  assert.ok(session.includes('MyCoachMotionMedia personaId={personaId}'), 'live session uses the six-persona motion player')
   for (const name of ['merlin', 'harry']) {
     assert.ok(motion.includes(name+'-greeting-real-v1.mp4') || motion.includes("personaId+'-greeting-real-v1.mp4'"))
   }
