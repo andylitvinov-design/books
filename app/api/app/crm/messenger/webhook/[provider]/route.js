@@ -196,7 +196,13 @@ export async function POST(request,{params}){
       }
       // After the existing consent/format/STOP workflow, respond to explicit
       // product lookup questions using only reviewed first-party sources.
-      const secretary=await processTelegramBusinessSecretary(body,config)
+      const secretary=await processTelegramBusinessSecretary(body,config,process.env,{
+        // A verified, non-suppressed existing CRM contact replied after Ali's
+        // one-time welcome. New contacts still use the original greeting.
+        allowClarification:telegramBusinessInbox?.matched===true&&
+          telegramBusinessInbox.recorded===true&&
+          businessLead?.created===false&&businessLead?.suppressed===false,
+      })
       if(secretary.handled){
         if(secretary.reply){
           let providerAccepted=false
@@ -207,6 +213,10 @@ export async function POST(request,{params}){
             await consumeRate(config,{op:'hh-tg-secretary-chat',
               connectionId:secretary.connectionId,chatId:secretary.to},15,86400)
             await consumeRate(config,{op:'hh-tg-secretary-global'},100,86400)
+            // Bounded generic clarifications prevent an endless echo loop.
+            if(secretary.kind==='clarify')
+              await consumeRate(config,{op:'hh-tg-secretary-clarify-chat',
+                connectionId:secretary.connectionId,chatId:secretary.to},5,86400)
             // Telemetry failures do not silence otherwise permitted messages.
             try{await setTelegramBusinessReplyState(config,telegramBusinessInbox,'send_pending')}
             catch{console.error('HH_TG_SECRETARY_REPLY_STATE_UNAVAILABLE')}

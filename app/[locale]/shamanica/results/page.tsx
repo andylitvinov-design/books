@@ -14,6 +14,7 @@ type Props = {
   searchParams: Promise<{goal?:string;method?:string;start?:string;category?:string|string[]}>;
 };
 const photos = {
+  guidance: "/images/holistic-house/mandala-gold-reference.webp",
   remedies: "/images/holistic-house/distance-homeopathy.webp",
   artifacts: "/images/holistic-house/tao-fu-balance.webp",
   energy: "/images/holistic-house/reiki-approved-sunrise-v3.webp",
@@ -23,6 +24,7 @@ const photos = {
 // A single, published three-card service component is shared with Services.
 // Categories set the priority; individual offers inside them can be ordered.
 const offerGroups = {
+  guidance: "reading",
   remedies: "homeopathy",
   artifacts: "shamanica-artifacts",
   energy: "reiki",
@@ -36,6 +38,7 @@ const translations = {
     lead: "Два направления по вашим ответам. В каждом — три конкретные услуги с ценой и возможностью заказа.",
     again: "Изменить ответы", back: "К направлениям", categoryEyebrow: "ШАМАНИК · УСЛУГИ", categoryLead: "Выберите услугу · Детали или заказ", categoryNav: "Категории услуг", all: "Все услуги Shamanic", priority: "Приоритет",
     items: {
+      guidance: ["Получить подсказку", "И-Цзин, Таро и символическое чтение для размышления над вопросом."],
       remedies: ["Подбор препаратов", "Бесплатный разбор, экспресс или полная личная сессия."],
       artifacts: ["Артефакты и места силы", "Талисманы, символические предметы и личные намерения."],
       energy: ["Энергетическая поддержка", "Сеансы Рейки и варианты личной практики."],
@@ -48,6 +51,7 @@ const translations = {
     lead: "Two priorities based on your answers. Each includes three real offers with prices and request options.",
     again: "Change answers", back: "All categories", categoryEyebrow: "SHAMANIC · SERVICES", categoryLead: "Choose a service · Details or Order", categoryNav: "Service categories", all: "All Shamanic services", priority: "Priority",
     items: {
+      guidance: ["Get Guidance", "I Ching, Tarot and symbolic readings for reflection on your question."],
       remedies: ["Remedy guidance", "Written review, express or full personal session."],
       artifacts: ["Artefacts & power places", "Talismans, symbolic objects and personal intentions."],
       energy: ["Energy support", "Reiki sessions and individual practice options."],
@@ -60,6 +64,7 @@ const translations = {
     lead: "Dos prioridades según tus respuestas. Cada una ofrece tres servicios reales con precio y solicitud.",
     again: "Cambiar respuestas", back: "Todas las categorías", categoryEyebrow: "SHAMANIC · SERVICIOS", categoryLead: "Elige un servicio · Detalles o solicitar", categoryNav: "Categorías de servicios", all: "Todos los servicios", priority: "Prioridad",
     items: {
+      guidance: ["Recibir orientación", "I Ching, Tarot y lecturas simbólicas para reflexionar."],
       remedies: ["Orientación sobre remedios", "Revisión escrita, sesión exprés o completa."],
       artifacts: ["Objetos y lugares de poder", "Talismanes, objetos simbólicos e intenciones."],
       energy: ["Apoyo energético", "Sesiones de Reiki y opciones de práctica."],
