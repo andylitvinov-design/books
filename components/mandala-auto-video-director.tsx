@@ -29,6 +29,7 @@ import {montageReplacementOptions,validateMontageClips} from "@/lib/mandala/vide
 import {recommendPromptShotPlan} from "@/lib/mandala/prompt-shot-director.mjs";
 import {recommendCuratedAudio} from "@/lib/mandala/curated-audio-recommendations.mjs";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
+import type {MirrorResolution} from "./mandala-magic-mirror-goal";
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./mandala-auto-video-director.module.css";
 
@@ -68,6 +69,7 @@ type Props={
   goalContinueRef?:{current:(()=>boolean)|null};
   mirrorDetailedWish?:string|null;
   mirrorStartRef?:{current:((theme:VideoTheme,categoryId:CanonicalCategoryId,goalText:string)=>void)|null};
+  mirrorResolveRef?:{current:((path:MirrorResolution)=>boolean)|null};
   onShowAll?:()=>void;
   onInvalidate?:()=>void;
   onApply:(presetId:string,durationSeconds:10|15|20|30|60,
@@ -186,7 +188,7 @@ const themeLabels={
 
 export function MandalaAutoVideoDirector({
  locale,goal,theme,aspect,presets,scenes,disabled,activePresetId,clipLabel,
- audioAttached=false,audioTrackLabel="",audioTrackId=null,onPickAudio,onOpenAudio,recipientAudioPanel,audioStoryboardReady=false,onAudioToMontage,onAudioSelectionChange,onGoalChange,onPickPhoto,onOpenPro,onConceptTopicChange,onGoalQuizChange,onCategoryChange,onAspectChange,onContinue,goalContinueRef,mirrorDetailedWish=null,mirrorStartRef,onClarify,helpOpen=false,onShowAll,onInvalidate,onApply,onCreate,onInstantCreate,canCreate=false,rendering=false,createFeedback=""
+ audioAttached=false,audioTrackLabel="",audioTrackId=null,onPickAudio,onOpenAudio,recipientAudioPanel,audioStoryboardReady=false,onAudioToMontage,onAudioSelectionChange,onGoalChange,onPickPhoto,onOpenPro,onConceptTopicChange,onGoalQuizChange,onCategoryChange,onAspectChange,onContinue,goalContinueRef,mirrorDetailedWish=null,mirrorStartRef,mirrorResolveRef,onClarify,helpOpen=false,onShowAll,onInvalidate,onApply,onCreate,onInstantCreate,canCreate=false,rendering=false,createFeedback=""
 }:Props){
  const t=copy[locale];
  // A licensed four-shot sample is visible before any click; no recording begins automatically.
@@ -769,6 +771,64 @@ export function MandalaAutoVideoDirector({
    setProposal(recommended);
    setTimelineEdits(timelineForTopic(topicId,null,recommended));
  };
+ // The approved mobile Mirror owns only the visible three questions.
+ // Commit their real category/subcategory/topic to this ONE existing Director,
+ // not to a parallel saved profile or invented scenario.
+ useEffect(()=>{
+  if(!mirrorResolveRef)return;
+  const resolve=(path:MirrorResolution):boolean=>{
+   if(disabled)return false;
+   const found=getMyTubeTopic(path.topicId);
+   if(!found||found.category.id!==path.categoryId||
+     found.subcategory.id!==path.subcategoryId)return false;
+   const goalText=path.wish.trim().slice(0,500)||found.topic.label[locale];
+   const nextTheme=(legacyThemeForSubcategory[path.subcategoryId]||path.theme) as VideoTheme;
+   if(path.scope==="present"){
+    // Gifts remain subject to the existing recipient-format, source and
+    // rights checks. This selection is NOT a generated or deliverable gift.
+    const greeting=path.goalChoiceId==="birthday"||path.goalChoiceId==="anniversary";
+    const kindId=greeting?"greeting":"gift";
+    const occasionId=path.goalChoiceId==="birthday"?"birthday":
+      path.goalChoiceId==="anniversary"?"anniversary":
+      path.goalChoiceId==="support"?"support":"gratitude";
+    if(!getRecipientVideoKind(kindId)||!listRecipientVideoOccasions(kindId,locale)
+      .some(item=>item.id===occasionId))return false;
+    if(videoAudience==="self")selfAspectRef.current=aspect;
+    setVideoAudience("others");
+    setRecipientKindId(kindId);setRecipientOccasionId(occasionId);
+    if(aspect!=="portrait")onAspectChange?.("portrait");
+   }else{
+    setVideoAudience("self");setRecipientKindId("");setRecipientOccasionId("");
+    if(videoAudience==="others"&&aspect!==selfAspectRef.current)
+      onAspectChange?.(selfAspectRef.current);
+   }
+   setRecipientAudioMode(false);onAudioSelectionChange?.(false);
+   setRequestDrafts(previous=>({
+    ...previous,self:goalText,
+    ...(path.scope==="present"?{others:goalText}:{})
+   }));
+   setRequestNeedsChoice(false);setPromptDesignedFor(null);setPromptClassification(null);
+   setCategoryManuallySelected(true);
+   setGoalQuizStep(3);setGoalCategoryAnswered(true);setSubcategoriesOpen(true);
+   setSelectedCategoryId(path.categoryId);
+   setSelectedSubcategoryId(path.subcategoryId);
+   setSelectedTopicId(path.topicId);
+   setSelectedGoalId(null);setSelectedGoalIds([]);
+   setSelectedMeaningAxisId("");setSelectedScenarioId("");setSelectedPlotId("");
+   setSymbolicPlotFallback(false);setSelectedMotifId("");setSelectedStyleId("");
+   setMeaningHandoff(null);setIncludeMeaningCaption(false);
+   setOverrideId(null);setSeconds(null);setTimelineEdits(null);
+   setConfirmedTimelineKey(null);setRecipientContinueError("");
+   onInvalidate?.();onCategoryChange?.(nextTheme);onGoalChange(goalText);
+   setProposalContext({goal:goalText,theme:nextTheme});
+   setProposal(recommendAutoVideo({goal:goalText,locale,fallbackTheme:nextTheme,
+     preferredTheme:nextTheme,presets,scenes}));
+   return true;
+  };
+  mirrorResolveRef.current=resolve;
+  return ()=>{if(mirrorResolveRef.current===resolve)mirrorResolveRef.current=null;};
+ },[mirrorResolveRef,disabled,locale,videoAudience,aspect,presets,scenes,
+   onAspectChange,onAudioSelectionChange,onInvalidate,onCategoryChange,onGoalChange]);
  const chooseMeaningAxis=(id:string)=>{
    if(!taxonomyMeanings.some(x=>x.id===id)||id===selectedMeaningAxisId)return;
    onInvalidate?.();setSelectedMeaningAxisId(id);

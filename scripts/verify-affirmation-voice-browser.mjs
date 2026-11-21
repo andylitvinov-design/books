@@ -66,9 +66,8 @@ async function verifyWorkspaceHydration(browser,locale){
     // compact Goals disclosure; the non-handoff UI remains closed/hidden.
     const handoffPanel=page.locator('[data-video-director-chat-details][data-workspace-section="video"]');
     await expect(handoffPanel).toBeHidden();
-    await handoffPanel.evaluate(element=>{element.open=true;});
-    await expect(handoffPanel).toBeVisible({timeout:15000});
-    await handoffPanel.evaluate(element=>{element.open=false;});
+    // Compact Mirror must not expose an unrelated Director Chat disclosure
+    // before a visitor deliberately enters the advanced editor.
     await expect(handoffPanel).toBeHidden();
     // The approved Goal redesign deliberately gates Personalization behind
     // three explicit selections; hydration alone must NEVER unlock this CTA.
@@ -77,58 +76,63 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(quizProgress).toContainText('1 / 3');
     const mirror=page.locator('[data-hh-mirror-goals]');
     await expect(page.locator('[data-hh-mirror-title]')).toBeVisible();
-    await expect(page.locator('[data-video-intro-info]')).toBeVisible();
-    await expect(page.locator('[data-video-my-film]')).toBeVisible();
+    await expect(page.locator('[data-video-intro-info]')).toBeHidden();
+    await expect(page.locator('[data-video-my-film]')).toBeHidden();
     await expect(mirror).toBeVisible();
+    await expect(mirror).toHaveAttribute('data-hh-mirror-step','1');
     await expect(mirror.locator('[data-hh-mirror-goal-choice]')).toHaveCount(4);
     await mirror.locator('[data-hh-mirror-audience="business"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","business");
     await expect(mirror.locator('[data-hh-mirror-goal-choice="growth"]')).toBeVisible();
+    await mirror.locator('[data-hh-mirror-audience="present"]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-mode","present");
+    await expect(mirror.locator('[data-hh-mirror-goal-choice="birthday"]')).toBeVisible();
     await mirror.locator('[data-hh-mirror-audience="me"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","me");
-    await mirror.locator('[data-hh-mirror-goal-choice="love"]').click();
+    // One-line Next is a real local taxonomy selection and jumps directly
+    // to Goal. No advanced sections, extra copy or paid provider request.
     const customWish=locale==="ru"?"Хочу больше взаимопонимания":locale==="es"
       ?"Quiero tener más comprensión mutua":"I want more mutual understanding";
     await mirror.locator('[data-hh-mirror-wish]').fill(customWish);
-    await mirror.locator('[data-hh-mirror-more-goals]').click();
-    await expect(studio).toHaveAttribute("data-hh-mirror-advanced","true");
-    const categories=page.locator('[data-auto-video-category]');
-    await expect(categories).toHaveCount(4);
-    await expect(categories.first()).toBeVisible();
-    await expect(page.locator('[data-auto-video-input]')).toHaveValue(customWish);
     await mirror.locator('[data-hh-mirror-next]').click();
-    await expect(studio).toHaveAttribute("data-video-scenario-open","true");
-    await expect(quizProgress).toContainText('2 / 3');
-    await expect(continueToIdeas).toBeDisabled();
-    await expect(page.locator('[data-auto-video-input]')).toHaveValue(customWish);
-    const subcategories=page.locator('[data-auto-video-subcategory]');
-    await expect(subcategories).toHaveCount(4);
-    const subcategoryArt=page.locator('[data-video-goal-subcategory-cards] [data-video-goal-art]');
-    await expect(subcategoryArt).toHaveCount(4);
+    await expect(studio).toHaveAttribute("data-active-workspace","phrases",{timeout:15000});
+    await expect(page.locator('[data-video-ideas-goal-panel]')).toBeVisible();
+    await expect(page.locator('[data-video-ideas-tab="goal"]')).toHaveAttribute("aria-pressed","true");
+    // Return to the genuine Goal tab to exercise the second path:
+    // one selected photograph -> exactly two short choices -> Goal.
+    await page.locator('[data-video-quick-control="video"]').click();
+    await expect(studio).toHaveAttribute("data-active-workspace","video");
+    await expect(studio).toHaveAttribute("data-hh-mirror-advanced","false");
+    await mirror.locator('[data-hh-mirror-goal-choice="love"]').click();
+    await expect(mirror).toHaveAttribute('data-hh-mirror-step','2');
+    const subs=mirror.locator('[data-hh-mirror-subcategory]');
+    await expect(subs).toHaveCount(4);
     for(const width of [320,354,390,430]){
       await page.setViewportSize({width,height:840});
-      for(const photo of await subcategoryArt.all()){
-        await photo.scrollIntoViewIfNeeded();
-        await expect.poll(()=>photo.evaluate(img=>img.complete&&img.naturalWidth>0),
-          {message:"Goal 2 photo loads at "+width}).toBe(true);
+      for(const image of await subs.locator('img').all()){
+        await image.scrollIntoViewIfNeeded();
+        await expect.poll(()=>image.evaluate(img=>img.complete&&img.naturalWidth>0),
+          {message:"Mirror quiz image loads at "+width}).toBe(true);
       }
-      const overflows=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1);
-      assert.equal(overflows,false,"Goal step 2 fits "+width);
+      const metrics=await page.evaluate(()=>({
+        overflow:document.documentElement.scrollWidth>window.innerWidth+1,
+        controls:[...document.querySelectorAll('[data-hh-mirror-subcategory]')]
+          .map(node=>node.getBoundingClientRect().width)
+      }));
+      assert.equal(metrics.overflow,false,"Mirror quiz no horizontal overflow at "+width);
+      assert.ok(metrics.controls.every(value=>value>=125),
+        "Mirror quiz cards remain large enough for "+width);
     }
     await page.setViewportSize({width:390,height:840});
-    await subcategories.first().click();
-    await expect(quizProgress).toContainText('3 / 3');
-    await expect(continueToIdeas).toBeDisabled();
-    const topics=page.locator('[data-video-goal-topic]');
-    await expect(topics).toHaveCount(4);
-    await topics.first().click();
-    await expect(continueToIdeas).toBeEnabled();
-    await continueToIdeas.click();
+    await subs.first().click();
+    await expect(mirror).toHaveAttribute('data-hh-mirror-step','3');
+    await expect(mirror.locator('[data-hh-mirror-topic]')).toHaveCount(4);
+    await mirror.locator('[data-hh-mirror-topic]').first().click();
+    await expect(studio).toHaveAttribute("data-active-workspace","phrases",{timeout:15000});
     const ideas=page.locator('[data-video-quick-control="phrases"]');
     await expect(ideas).toHaveAttribute("aria-pressed","true");
-    await expect(studio).toHaveAttribute("data-active-workspace","phrases");
     await expect(page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]')).toBeVisible();
-    // Purpose-first Ideas opens Goal, not Personalization. Select an actual
+        // Purpose-first Ideas opens Goal, not Personalization. Select an actual
     // goal and complete its short, goal-specific quiz before testing the
     // original optional refinement and Montage text editor.
     const ideasGoalPane=page.locator('[data-video-ideas-goal-panel]');

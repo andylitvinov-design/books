@@ -24,26 +24,68 @@ test("approved Magic Mirror is a mobile skin over one authentic video player and
  assert.match(mirrorCss,/@media\(max-width:359px\)/);
 });
 
-test("photographic cards and typed own wish enter original 4x4x4 category → topic, not Ideas directly",()=>{
- for(const label of ["For Me","For Business","Для себя","Для бизнеса","Para mí","Para mi negocio"])
+test("the approved mobile Mirror contains only three scopes, a compact input Next and four choices",()=>{
+ for(const label of ["For Me","For Work","Present","Для работы","Подарок","Para el trabajo","Regalo"])
   assert.ok(mirror.includes(label),label);
- assert.equal((mirror.match(/categoryId:"(goals-money|love-relationships|energy-confidence|stress-anxiety)"/g)||[]).length,8);
+ assert.equal((mirror.match(/categoryId:"(goals-money|love-relationships|energy-confidence|stress-anxiety)"/g)||[]).length,12);
+ assert.match(mirror,/data-hh-mirror-audience=\{item\}/);
  assert.match(mirror,/data-hh-mirror-wish/);
- assert.match(mirror,/onContinue\(selected\.theme,selected\.categoryId,goalText\)/);
- assert.match(mirror,/clearAutoPrompt\(\);setSelectedId\(item\.id\)/);
- assert.match(studio,/mirrorStartRef\.current\?\.\(selectedTheme,categoryId,goalText\)/);
- assert.match(studio,/setVideoScenarioOpen\(true\)/);
- assert.match(studio,/mirrorDetailedWish=\{mirrorDetailedWish\}/);
- assert.match(studio,/mirrorStartRef=\{mirrorStartRef\}/);
- assert.match(director,/mirrorStartRef\?:\{current:/);
- assert.match(director,/chooseCategory\(nextTheme,categoryId,confirmedWish\)/);
- assert.match(director,/setGoalCategoryAnswered\(true\);setGoalQuizStep\(2\)/);
- assert.match(director,/setRequestDrafts\(previous=>previous\.self===mirrorDetailedWish/);
+ assert.match(mirror,/data-hh-mirror-goal-choice=\{item\.id\}/);
+ assert.match(mirror,/data-hh-mirror-next/);
+ assert.ok(mirror.indexOf("data-hh-mirror-next")<mirror.indexOf("data-hh-mirror-goal-choice"),
+  "Next belongs beside the wish field ABOVE all four cards");
+ assert.match(mirrorCss,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+ assert.match(mirrorCss,/\.entry\{display:grid;grid-template-columns:minmax\(0,1fr\) auto/);
+ assert.match(mobile,/Magic Mirror v3/);
+ assert.match(mobile,/quickBuilder>:not\(\.quickBrandBar\):not\(\[data-hh-mirror-title\]\):not\(\.previewStage\):not\(\[data-hh-mirror-goals\]\)/);
+ assert.match(mobile,/max-height:740px/);
  assert.doesNotMatch(mirror,/fetch\(|localStorage|navigator\.sendBeacon|createQuickVideo\(/);
- assert.match(browser,/data-hh-mirror-more-goals/);
- assert.match(browser,/data-hh-mirror-next/);
- assert.match(browser,/data-video-goal-quiz-progress/);
 });
+
+test("photo -> exactly two visible taxonomy choices -> Goal; Next auto-classifies and skips them",()=>{
+ assert.match(mirror,/onClick=\{\(\)=>\{setSelectedId\(item\.id\);setSubcategoryId\(""\);/);
+ assert.match(mirror,/onSelectCategory\(item\.theme\);changeStep\(2\)/);
+ assert.match(mirror,/data-hh-mirror-subcategory=\{item\.id\}/);
+ assert.match(mirror,/setSubcategoryId\(item\.id\);changeStep\(3\)/);
+ assert.match(mirror,/data-hh-mirror-topic=\{item\.id\}/);
+ assert.match(mirror,/listMyTubeSubcategories/);
+ assert.match(mirror,/listMyTubeTopics/);
+ assert.match(mirror,/classifyMyTubeRequest\(wish,locale\)/);
+ assert.match(mirror,/finish\(categoryId,subId,topicId,goalText\)/);
+ assert.match(studio,/mirrorResolveRef\.current\?\.\(path\)/);
+ assert.match(studio,/setIdeasSubtab\("goal"\);setActiveWorkspace\("phrases"\)/);
+ assert.match(studio,/setMirrorAdvanced\(false\);setVideoScenarioOpen\(false\)/);
+ assert.match(director,/mirrorResolveRef\.current=resolve/);
+ assert.match(director,/found\.category\.id!==path\.categoryId/);
+ assert.match(director,/found\.subcategory\.id!==path\.subcategoryId/);
+ assert.match(director,/setSelectedTopicId\(path\.topicId\)/);
+ assert.match(director,/path\.scope==="present"/);
+ assert.match(director,/setRecipientKindId\(kindId\)/);
+ assert.match(browser,/data-hh-mirror-subcategory/);
+ assert.match(browser,/data-hh-mirror-topic/);
+ assert.match(browser,/data-hh-mirror-next/);
+});
+
+test("typed wishes map locally only to canonical taxonomy IDs",async()=>{
+ const {classifyMyTubeRequest}=await import("../lib/mandala/mytube-prompt-classifier.mjs");
+ const {getMyTubeTopic,listMyTubeSubcategories,listMyTubeTopics}=
+  await import("../lib/mandala/mytube-content-taxonomy.mjs");
+ for(const [input,lang] of [["I want more energy","en"],["Хочу меньше тревоги","ru"],["Quiero más confianza","es"]]){
+  const resolved=classifyMyTubeRequest(input,lang);
+  assert.ok(resolved?.categoryId&&resolved?.subcategoryId&&resolved?.topicId,input);
+  const found=getMyTubeTopic(resolved.topicId);
+  assert.equal(found?.category.id,resolved.categoryId);
+  assert.equal(found?.subcategory.id,resolved.subcategoryId);
+ }
+ for(const locale of ["en","ru","es"]){
+  for(const category of ["goals-money","love-relationships","energy-confidence","stress-anxiety"]){
+   const subs=listMyTubeSubcategories(category,locale);
+   assert.equal(subs.length,4);
+   assert.ok(subs.every(s=>listMyTubeTopics(category,s.id,locale).length===4));
+  }
+ }
+});
+
 test("preserve protected purpose-first Goal and adaptive Personalization to Concept",()=>{
  assert.match(studio,/useState<"personalization"\|"goal"\|"concept">\("goal"\)/);
  assert.match(studio,/disabled=\{!chosenIdeaGoal\} onClick=\{\(\)=>setIdeasSubtab\("personalization"\)\}/);
