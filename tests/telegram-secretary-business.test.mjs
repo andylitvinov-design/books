@@ -98,7 +98,8 @@ test('same existing signed business webhook and no direct unconsented model or b
  const pending=f('lib/crm/telegram-business-service.js');
  assert.match(route,/verifyMessengerWebhook\(provider,raw,request.headers\)/);
  assert.match(route,/processTelegramBusinessConversation\(body,config\)/);
- assert.match(route,/processTelegramBusinessSecretary\(body,config\)/);
+ assert.match(route,/processTelegramBusinessSecretary\(body,config,process\.env,\{/);
+ assert.match(route,/allowClarification:telegramBusinessInbox\?\.matched===true/);
  assert.match(route,/hh-tg-secretary-reply/);
  assert.match(server,/HH_CRM_TG_CHAT_AUTOMATION_ENABLED!=='true'/);
  assert.match(server,/assertHolisticBusinessConnection/);
@@ -161,7 +162,7 @@ test('STOP before Business intake, exact signed ingress and RLS not weakened',()
  const sql=f('supabase/migrations/20261113232313_hh_crm_tg_business_secretary_optouts_v1.sql');
  const stop=route.indexOf('gateTelegramBusinessSecretaryOptOut(body,config)');
  const orders=route.indexOf('processTelegramBusinessConversation(body,config)');
- const rec=route.indexOf('processTelegramBusinessSecretary(body,config)');
+ const rec=route.indexOf('processTelegramBusinessSecretary(body,config,process.env,{');
  assert.ok(stop>0&&orders>stop&&rec>orders);
  assert.match(route,/verifyMessengerWebhook\(provider,raw,request.headers\)/);
  assert.match(sender,/holistichouse\.vercel\.app/);
@@ -202,7 +203,7 @@ test('customer Free personal express review draft is acknowledged in the human B
  assert.match(handler,/secretaryStopped\(event,config\)/);
  assert.match(route,/gateTelegramBusinessSecretaryOptOut\(body,config\)/);
  assert.match(route,/hh-tg-secretary-reply/);
- const i=handler.indexOf("if(query.kind!=='safety'&&query.kind!=='free_review')");
+ const i=handler.indexOf("if(query&&query.kind!=='safety'&&query.kind!=='free_review')");
  assert.ok(i>handler.indexOf('assertHolisticBusinessConnection'));
  assert.doesNotMatch(handler,/sendMarketing|sendBroadcast/);
 });
