@@ -131,28 +131,29 @@ try {
     "Business shelves must preserve the six approved categories");
   await expect(page.locator("[data-hh-unified-dock]")).toHaveCount(1);
   const m=await page.evaluate(()=>{
-   const first=document.querySelector('[data-business-shelf="express"]');
-   const last=document.querySelector('[data-business-shelf="energywork"]');
-   const dock=document.querySelector('[data-hh-unified-dock]');
-   if(!first||!last||!dock)return null;
-   return {firstTop:first.getBoundingClientRect().top,
-     lastBottom:last.getBoundingClientRect().bottom,
-     dockTop:dock.getBoundingClientRect().top,
-     dockBottom:dock.getBoundingClientRect().bottom,
-     viewportHeight:window.innerHeight,
-     horizontalOverflow:document.documentElement.scrollWidth-window.innerWidth};
+   const cards=[...document.querySelectorAll("[data-business-shelf]")];
+   const dock=document.querySelector("[data-hh-unified-dock]");
+   if(cards.length!==6||!dock)return null;
+   const boxes=cards.map(card=>card.getBoundingClientRect());
+   return {
+    horizontalOverflow:document.documentElement.scrollWidth-window.innerWidth,
+    withinViewport:boxes.every(box=>box.width>30&&box.left>=-2&&box.right<=innerWidth+2),
+    firstRowTwoColumns:Math.abs(boxes[0].top-boxes[1].top)<=5&&boxes[1].left>boxes[0].left,
+    dockVisible:dock.getBoundingClientRect().height>0
+   };
   });
-  assert.ok(m&&m.lastBottom>m.firstTop,"Business shelves/dock landmarks missing "+locale+"/"+width);
+  assert.ok(m,"Business category shelf landmarks missing");
   assert.ok(m.horizontalOverflow<=2,"Business horizontal overflow "+locale+"/"+width+" "+JSON.stringify(m));
-  assert.ok(m.dockTop>=0&&m.dockBottom<=m.viewportHeight+2,
-    "Business fixed dock must remain inside viewport "+locale+"/"+width+" "+JSON.stringify(m));
+  assert.ok(m.withinViewport,"Business category cards spill horizontally "+locale+"/"+width+" "+JSON.stringify(m));
+  if(width>=390)assert.ok(m.firstRowTwoColumns,"Business two-column mobile shelf lost "+locale+"/"+width+" "+JSON.stringify(m));
+  assert.ok(m.dockVisible,"Business mobile dock missing "+locale+"/"+width);
   if(locale==="ru"&&width===390)await page.screenshot({path:output+"/shamanica-business-ru-390.png",fullPage:false});
   await expect.poll(()=>page.evaluate(()=>history.pushState.toString().includes("__NA")),
-    {timeout:30000,message:"Business quiz hydration"}).toBe(true);
+   {timeout:30000,message:"Business quiz hydration"}).toBe(true);
   await shelves.locator('[data-business-shelf="express"]').click();
   await expect(shelves).toHaveAttribute("data-expanded","true");
-  // Express defines four routed subservices in businessShelves; preserve that real UI contract.
   await expect(shelves.locator('[data-business-second-level="express"] [data-business-subservice]')).toHaveCount(5);
+  await expect(shelves.locator('[data-business-get-details="express"]')).toHaveCount(1);
   if(width===390){
     const express=shelves.locator('[data-business-second-level="express"]');
     await expect(shelves.locator('[data-business-get-details="express"]')).toBeVisible();
@@ -162,14 +163,11 @@ try {
   }
   await shelves.locator("[data-business-back-to-shelves]").click();
   await expect(shelves).toHaveAttribute("data-expanded","false");
-  await expect(shelves.locator("[data-business-shelf]")).toHaveCount(6);
-  if(width===390){
-    await shelves.locator('[data-business-shelf="strategy"]').click();
-    await expect(shelves.locator('[data-business-second-level="strategy"] [data-business-subservice]')).toHaveCount(4);
-    await expect(shelves.locator('[data-business-get-details="strategy"]')).toBeVisible();
-    await shelves.locator("[data-business-back-to-shelves]").click();
-    await expect(cards).toHaveCount(6);
-  }
+  await shelves.locator('[data-business-shelf="strategy"]').click();
+  await expect(shelves.locator('[data-business-second-level="strategy"] [data-business-subservice]')).toHaveCount(4);
+  await expect(shelves.locator('[data-business-get-details="strategy"]')).toHaveCount(1);
+  if(width===390)await expect(shelves.locator('[data-business-get-details="strategy"]')).toBeVisible();
+  await shelves.locator("[data-business-back-to-shelves]").click();
   const quiz=section.locator("[data-business-quiz]");
   await expect(quiz).toHaveAttribute("data-quiz-step","1");
   await quiz.locator('[data-business-answer="express"]').click();

@@ -1549,8 +1549,7 @@ test('PR #2969 exactly reviewed 120-scenario audio cannot trigger 13 unrelated p
     'node --test tests/import-reviewed-audio.test.mjs',
     'node --test tests/curated-audio-selection.test.mjs',
     'node --test tests/mandala-video-phrase-catalog.test.mjs',
-    // Preserve reviewed Mandala owner conditions even after removing old
-    // branch-specific macOS predicates. The real impact gate remains active.
+    // Preserve reviewed Mandala owner guards alongside source-based dispatch.
     "if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}",
     'run: node scripts/ci-heavy-impact.mjs mandala',
     "if: steps.policy.outputs.policy_only != 'true'",
@@ -1560,6 +1559,10 @@ test('PR #2969 exactly reviewed 120-scenario audio cannot trigger 13 unrelated p
     "- 'components/mandala-free-video-studio.tsx'",
     "- 'data/video-catalog/goal-tree-audio-playlists-v1.json'",
   ])assert.ok(mandala.includes(must),'owning audio specialist missing '+must);
+  // Workflow ownership is content-based now. An old one-PR branch name must
+  // not be a substitute for the real audio contracts asserted above.
+  assert.doesNotMatch(mandala,/startsWith\(github\.head_ref, 'feat\/hh-goal-tree-'\)/,
+    'audio owner tests must not rely on a retired branch-specific gate');
   for(const path of [
     'app/api/payments/checkout/route.js','app/api/service-enquiries/route.js',
     'middleware.ts','components/commerce/service-cart.tsx',
