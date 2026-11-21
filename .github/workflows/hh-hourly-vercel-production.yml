@@ -156,7 +156,7 @@ jobs:
   cleanup:
     # Daily bounded cleanup uses the already validated owner cleanup code.
     # Dedicated daily cron NEVER activates the publish job or a paid Vercel build.
-    # Preserve LIVE, active aliases, and at least 30 READY rollback deployments.
+    # Preserve LIVE, active aliases, ten READY rollbacks, and ten newest deployments.
     if: >-
       (github.event_name == 'workflow_dispatch' && inputs.cleanup_mode != 'off') ||
       (github.event_name == 'schedule' && github.event.schedule == '11 05 * * *')
