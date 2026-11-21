@@ -9,7 +9,6 @@ on:
       - 'tests/video-director-chat-live-acceptance.test.mjs'
       - 'scripts/benchmarking/render-standard-antistress-master.mjs'
       - 'tests/render-standard-antistress-master.test.mjs'
-      - '.github/workflows/hh-first-video-live-export.yml'
   workflow_dispatch:
     inputs:
       probe_free_ai:
