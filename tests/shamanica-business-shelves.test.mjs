@@ -14,9 +14,9 @@ test("business shelf grid keeps exact owner order without changing For Me",()=>{
  assert.ok(positions.every(i=>i>0));
  assert.ok(positions.every((p,i)=>i===0||p>positions[i-1]));
  assert.match(source,/businessShelves\.map/);
- assert.match(source,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+ assert.match(styles,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  assert.match(source,/data-business-shelf=\{id\}/);
- assert.match(source,/SHAMANIC_BUSINESS_SIX_SHELVES_20261121/);
+ assert.match(styles,/SHAMANIC_BUSINESS_SIX_SHELVES_20261121/);
  assert.doesNotMatch(source,/data-shamanica-cabinet-shelves/);
 });
 test("each category presents four real clickable second-level choices in all locales",()=>{
