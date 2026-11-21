@@ -24,7 +24,7 @@ export default function CoachingAvatar({locale='en',avatarId='warm',onAvatarChan
 
  // This component never requests microphone permission or starts speech.
  // An optional, already-authorized playback MediaStream can drive real RMS.
- const hasMotionVideo=Boolean(photoId)&&['mira','max','sofia','alex','harry'].includes(photoId)
+ const hasMotionVideo=Boolean(photoId)&&['mira','max','sofia','alex','merlin','harry'].includes(photoId)
  const posterPath=photoId?'/images/holistic-house/my-coach-motion/'+(photoId==='harry'?'harry-soft-still.webp':photoId+'-still.webp'):null
 
  return <div className={styles.frame} data-coach-avatar="true" data-photo-motion="static" data-avatar-size={size==='large'?'large':'compact'} data-phase={state}

@@ -342,7 +342,7 @@ test("real Safari MEDIA_ERR_SRC_NOT_SUPPORTED gets exactly one on-device WebM re
   assert.match(studio,/const autoWebmRetryForRef=useRef<string\|null>\(null\)/);
   assert.match(studio,/autoWebmRetryForRef\.current=signature/);
   assert.match(studio,/autoWebmRetryUrlRef\.current=result\.url/);
-  assert.match(studio,/if\(held&&creditValidRef\.current\)await releaseCredit\(held\)/);
+  assert.match(studio,/if\(held&&creditValidRef\.current&&!\(await releaseCredit\(held\)\)\)return;/);
   assert.match(studio,/setPendingCompatibleRetry\(signature\)/);
   assert.match(studio,/void createVideo\(true\)/);
   assert.match(studio,/HH_SAFARI_FINAL_PLAYBACK:/);
@@ -594,7 +594,7 @@ test("real iPhone prefers native playable MP4 and uses WebCodecs only as an expl
   assert.match(studio,/mime===explicitAvcMime\|\|\(nativeAppleMp4Available&&mime==="video\/mp4"\)/);
   assert.match(studio,/if\(iphoneWebCodecsFallbackAvailable\)void createVideo\(false,false,true,true\)/);
   assert.match(studio,/if\(creditOpRef\.current\)return/);
-  assert.match(studio,/if\(held&&creditValidRef\.current\)await releaseCredit\(held\)/);
+  assert.match(studio,/if\(held&&creditValidRef\.current&&!\(await releaseCredit\(held\)\)\)return;/);
 });
 
 test("Safari native MP4 completion is bounded after 97% and releases failed holds",()=>{
@@ -692,4 +692,24 @@ test("native finalization holds the export slot and discards a cancelled MP4", a
   assert.deepEqual(released, ["reservation"]);
   assert.deepEqual(recording, [false]);
   assert.deepEqual(readyPending, [false]);
+});
+
+test("Safari and local WebCodecs exports decode first/middle/last actual MP4 samples before Ready",()=>{
+  const verify=helper.split("async function verifyDecodableMp4Export(")[1]
+    .split("export async function verifyNativeSafariMp4Tracks")[0];
+  const native=helper.split("export async function normalizeNativeSafariMp4ForPlayback(")[1]
+    .split("/** A real H.264/AAC video/audio MP4.")[0];
+  assert.match(verify,/const checkpoints=\[/);
+  assert.match(verify,/expected\.seconds\/2/);
+  assert.match(verify,/expected\.seconds-\.5/);
+  assert.match(verify,/await sink\.getSample\(at\)/);
+  assert.match(verify,/sample\.codedWidth!==expected\.width/);
+  assert.match(verify,/sample\.timestamp<at-1\.25/);
+  assert.match(verify,/sample\?\.close\(\)/);
+  assert.match(native,/Math\.max\(0,end\/2\)/);
+  assert.match(native,/Math\.max\(0,end-\.5\)/);
+  assert.match(native,/sample\.timestamp<at-1\.25/);
+  assert.match(native,/sample\?\.close\(\)/);
+  assert.match(studio,/playbackStatus==="ready"/,
+    "Ready continues to require actual playback and credit confirmation");
 });
