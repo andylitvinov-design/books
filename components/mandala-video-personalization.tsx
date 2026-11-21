@@ -264,6 +264,10 @@ export function MandalaVideoPersonalization({locale,value,onChange,onBack,onCont
      data-video-personalization-energy={score} disabled={disabled} aria-pressed={value.energy===score}
      onClick={()=>chooseEnergy(score)}>{score}</button>)}
    </div>
+   <div className={css.energyScale} aria-hidden="true"><span/>
+    <div><small>{locale==="ru"?"Очень мало":locale==="es"?"Muy baja":"Very low"}</small>
+    <small>{locale==="ru"?"Очень много":locale==="es"?"Muy alta":"Very high"}</small></div>
+   </div>
   </section>
   <section className={css.nameCard} data-video-personalization-name-question hidden={stage!=="name"}>
    <label htmlFor="video-personalization-name">{t.nameQuestion}</label>
