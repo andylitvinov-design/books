@@ -120,7 +120,6 @@ test('public-service browser CI verifies real pinned engines without an apt cold
   assert.match(src, /for \(const \[name, engine\] of engines\) \{/);
   assert.match(src, /await engine\.launch\(\{ headless: true, timeout: 15000 \}\)/);
   assert.doesNotMatch(src, /playwright install --with-deps/);
-  // Gemini Live consent and duplex checks extend this reviewed browser suite to 23m.
   assert.match(src, /^    timeout-minutes: 23$/m);
   assert.match(src, /Production build and public browser acceptance/);
   assert.match(src, /verify-public-services-production\.mjs/);

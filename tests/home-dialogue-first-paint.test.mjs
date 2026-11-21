@@ -197,3 +197,18 @@ test("mobile correction preserves distinct business help links and prevents clip
  const after=home.indexOf("data-home-focus-grid");
  assert.ok(before>=0&&after>before,"The Ali composer must appear before the topic tiles");
 });
+
+test("approved Max hero paints without eager Persona dialog bundle and unrelated catalog CSS",()=>{
+ const home=read("components/home-dialogue-entry.tsx");
+ const hook=read("components/app/use-ali-persona.js");
+ const root=read("app/layout.tsx");
+ const catalog=read("components/catalog-showcase.tsx");
+ assert.ok(home.includes('import dynamic from "next/dynamic"'));
+ assert.ok(home.includes('dynamic(()=>import("@/components/app/ali-persona-picker")'));
+ assert.ok(home.includes('{personaOpen&&<AliPersonaPicker open={personaOpen}'));
+ assert.ok(home.includes('useAliPersona("max")'));
+ assert.ok(hook.includes('export function useAliPersona(initialId=ALI_DEFAULT_PERSONA_ID)'));
+ assert.ok(root.includes('import "./holistic-light-tokens.css"'));
+ assert.ok(!root.includes('import "./catalog-showcase.css"'));
+ assert.ok(catalog.includes('import "@/app/catalog-showcase.css"'));
+});

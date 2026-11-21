@@ -581,3 +581,47 @@ test("physical iPhone native MP4 is fast-start normalized and genuinely decoded 
   // No automatic second video export, URL upload, or second credit reservation.
   assert.doesNotMatch(helper,/fetch\(\s*["']\/api\/render|navigator\.sendBeacon/);
 });
+
+test("native finalization holds the export slot and discards a cancelled MP4", async () => {
+  const start = studio.indexOf("      recorder.onstop = async () => {");
+  const body = studio.slice(start, studio.indexOf("\n      };", start) + 8)
+    .replaceAll('await import("@/lib/mandala/webcodecs-mp4-export")', "media");
+  const run = new Function("env", `with (env) { ${body} }`);
+  const job = {stream:{getTracks:()=>[]}, musicSession:null, cancelled:false};
+  const jobRef = {current:job};
+  const chunks = [new Blob([Uint8Array.of(0,0,0,12,102,116,121,112,0,0,0,0)])];
+  let settle;
+  let entered;
+  const normalizing = new Promise(resolve => { entered = resolve; });
+  const pending = new Promise(resolve => { settle = resolve; });
+  const released = [];
+  const recording = [];
+  const readyPending = [];
+  const recorder = {mimeType:"video/mp4"};
+  run({
+    recorder, job, jobRef, chunks, Blob, Uint8Array,
+    aliveRef:{current:true}, sourceRef:{current:"source"}, snapshotKey:"source",
+    setProgress:()=>{}, isApplePhone:true, duration:30,
+    withLocalMediaDeadline:promise=>promise,
+    media:{
+      verifyNativeSafariMp4Tracks:async()=>{},
+      normalizeNativeSafariMp4ForPlayback:()=>{ entered(); return pending; }
+    },
+    creditOpRef:{current:"reservation"}, creditValidRef:{current:false},
+    releaseCredit:id=>released.push(id), setRecording:value=>recording.push(value),
+    setReadyGenerationPending:value=>readyPending.push(value),
+    setResult:()=>assert.fail("cancelled export must never publish")
+  });
+  const finished = recorder.onstop();
+  await normalizing;
+  assert.equal(jobRef.current, job);
+  assert.deepEqual(recording, []);
+  job.cancelled = true;
+  settle(new Blob(["normalized"]));
+  await finished;
+  assert.equal(jobRef.current, null);
+  assert.equal(chunks.length, 0);
+  assert.deepEqual(released, ["reservation"]);
+  assert.deepEqual(recording, [false]);
+  assert.deepEqual(readyPending, [false]);
+});

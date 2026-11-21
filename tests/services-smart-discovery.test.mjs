@@ -142,13 +142,22 @@ test('Services: optional booking-style search lives in the dedicated directory f
     readFile(new URL('../app/api/marketplace/intent-match/route.ts',import.meta.url),'utf8'),
   ])
   for(const page of [main,es]){
-    // The current owner-approved compact catalog puts direct consultation
-    // first, studio offers next, directory discovery later and testimonials last.
-    // Keep this structural contract for both EN/RU and Spanish pages.
-    assert.ok(page.indexOf('<PublicConsultationCta')<page.indexOf('<ServicesStudioOffers'))
-    assert.ok(page.indexOf('<ServicesStudioOffers')<page.indexOf('<ServicesConversionHero'))
-    assert.ok(page.indexOf('<PersonalTestimonials')>page.indexOf('<ServicesConversionHero'))
-    assert.ok(page.indexOf('<PublicConsultationCta')<page.indexOf('<PersonalTestimonials'))
+    // The approved Services experience now uses a compact panel catalogue:
+    // consultation first; service choices precede browse, testimonials and directory.
+    const panels=['consultation','homeopathy','services','business','reiki','courses',
+      'video','browse','reading','coach','magical','about','testimonials','mytube','directory']
+    const positions=panels.map(id=>page.indexOf('<ServicesCompactPanel id="'+id+'">'))
+    assert.ok(positions.every(position=>position>=0),'every approved panel must exist')
+    assert.ok(positions.every((position,index)=>index===0||position>positions[index-1]),
+      'compact Services panels must preserve their reviewed order in EN/RU/ES')
+    const panel=(id)=>{
+      const start=page.indexOf('<ServicesCompactPanel id="'+id+'">')
+      return page.slice(start,page.indexOf('</ServicesCompactPanel>',start))
+    }
+    assert.match(panel('consultation'),/<PublicConsultationCta/)
+    assert.match(panel('services'),/<ServicesStudioOffers/)
+    assert.match(panel('browse'),/<ServicesConversionHero/)
+    assert.match(panel('testimonials'),/<PersonalTestimonials/)
     assert.match(page,/<ServicesIntroMedia/)
     assert.match(page,/<ServicesMethodVideos/)
     assert.doesNotMatch(page,/<ServicesSmartDiscovery|<ServiceCart/)

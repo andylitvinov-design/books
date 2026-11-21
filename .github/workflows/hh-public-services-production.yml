@@ -207,6 +207,9 @@ jobs:
     defaults:
       run:
         shell: bash
+    # Full verified browser acceptance has exceeded 20m only in post-PASS
+    # artifact/cache cleanup; preserve coverage and avoid false CANCELLED.
+    # 23m is a hard ceiling, not extra test work or a new deployment.
     timeout-minutes: 23
     env:
       CI: 'true'

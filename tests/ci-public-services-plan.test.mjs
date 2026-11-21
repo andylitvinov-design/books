@@ -153,9 +153,6 @@ test('13 current browser owners are unique and the old contact UI duplicate is r
     'generate-soft-ocean-melody.mjs', 'build-public-card-artwork.mjs',
     'build-report-pdf-art.mjs']) assert.ok(source.includes('node scripts/' + prereq));
   verifyPinnedPublicBrowsers(source);
-  // Production acceptance PASSED in 1064s on PR #5234, then the original
-  // 20-minute job cap cancelled cleanup/artifact upload. Preserve the full
-  // Chromium/WebKit suite and allow only a 23-minute bounded ceiling.
   assert.match(source, /timeout-minutes: 23/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
@@ -1767,4 +1764,29 @@ test('Practice SSR is owned by exact practitioner browser workflows, not the unr
   for(const path of ['components/consultation-choice-capture.tsx',
     'components/commerce/service-cart.tsx','app/api/service-enquiries/route.ts'])
     assert.equal(covers(pub,path),true,path+' must still have Public Services coverage');
+});
+
+
+test('Coach-only shared App dispatcher keeps Public Services source contracts but not unrelated full browser',()=>{
+  const base='b'.repeat(40),head='a'.repeat(40),merge='c'.repeat(40),z=String.fromCharCode(0);
+  const before="import {myCoachGenerativeTurn} from '@/lib/app/coaching-brain'\nconst globalAuth = true;\n    // Signed-in, stateless dialogue for the selected My Coach persona. Client\n    if (joined === 'my-coach/turn') { return json(myCoachGenerativeTurn()); }\n    // A synthetic preflight proves verified ZDR free-model access before any\nconst billingGuard = true;\n";
+  const after="import {myCoachGenerativeTurn,myCoachGenerativeStreamTurn} from '@/lib/app/coaching-brain'\nconst globalAuth = true;\n    // Signed-in, stateless dialogue for the selected My Coach persona. Client\n    if (joined === 'my-coach/stream') { return new Response('stream'); }\n    if (joined === 'my-coach/turn') { return json(myCoachGenerativeTurn()); }\n    // A synthetic preflight proves verified ZDR free-model access before any\nconst billingGuard = true;\n";
+  const env={GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head,
+    GITHUB_REF:'refs/pull/9999/merge',GITHUB_SHA:merge};
+  const git=(_bin,args)=>{
+    if(args[0]==='rev-parse')return ({HEAD:merge,'HEAD^1':base,'HEAD^2':head})[args[1]]+'\n';
+    if(args[0]==='merge-base')return '';
+    if(args[0]==='diff')return 'M'+z+'app/api/app/[...path]/route.js'+z+'A'+z+'lib/coaching/gemini-voice-catalog.mjs'+z;
+    if(args[0]==='show')return args[1].startsWith(base+':')?before:after;
+    throw Error('unexpected git command');
+  };
+  assert.deepEqual(planPublicServicesEvent(env,git),{mode:'contracts',reason:'EXACT_MY_COACH_ONLY_SHARED_API',
+    build:false,browser:false,metrics:false,cases:'none'});
+  const unsafe=(_bin,args)=>args[0]==='show'&&args[1].startsWith('HEAD:')
+    ? after.replace('const billingGuard = true;','const billingGuard = false;') : git(_bin,args);
+  assert.equal(planPublicServicesEvent(env,unsafe).mode,'full',
+    'changed shared billing or auth source cannot bypass Public Services browser');
+  const notPure=(_bin,args)=>args[0]==='diff'
+    ? 'M'+z+'app/api/app/[...path]/route.js'+z+'M'+z+'app/api/payments/route.js'+z : git(_bin,args);
+  assert.equal(planPublicServicesEvent(env,notPure).mode,'full','mixed payments always require real browser acceptance');
 });
