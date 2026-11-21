@@ -34,7 +34,7 @@ export default async function SpanishServicesPage({ searchParams }: { searchPara
   const query = await searchParams;
   if (query?.catalog === "1") redirect("/es/services/catalog#service-listings");
   return (
-    <main className={"services-shell services-shell--studio " + assistStyles.assistPage + " " + compactStyles.page + " " + uniformStyles.page} lang="es">
+    <main data-support-luxe={query?.assist === "chat" ? undefined : "true"} className={"services-shell services-shell--studio " + assistStyles.assistPage + " " + compactStyles.page + " " + uniformStyles.page} lang="es">
       <PublicSiteHeader locale="es" showAssessmentStrip={false} />
       <ServicesExplorerProvider>
         {/* Scenic four-step quiz by default; retain Ali when the guest explicitly chooses chat. */}

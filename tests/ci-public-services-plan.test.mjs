@@ -1549,6 +1549,11 @@ test('PR #2969 exactly reviewed 120-scenario audio cannot trigger 13 unrelated p
     'node --test tests/import-reviewed-audio.test.mjs',
     'node --test tests/curated-audio-selection.test.mjs',
     'node --test tests/mandala-video-phrase-catalog.test.mjs',
+    // The Mandala specialist now triggers on reviewed media paths for any PR,
+    // rather than on a historical branch-name allowlist. Both the changed
+    // source path and the actual 120-scenario manifest must route to it.
+    "- 'components/mandala-free-video-studio.tsx'",
+    "- 'data/video-catalog/goal-tree-audio-playlists-v1.json'",
   ])assert.ok(mandala.includes(must),'owning audio specialist missing '+must);
   // Workflow ownership is content-based now. An old one-PR branch name must
   // not be a substitute for the real audio contracts asserted above.
