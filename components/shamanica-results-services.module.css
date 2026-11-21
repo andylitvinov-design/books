@@ -62,11 +62,11 @@
   letter-spacing:-.025em;
  }
  .categoryPage :global([data-shamanica-results-lead]){
-  margin:0 0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  margin:0 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   font:500 clamp(11.5px,3.3vw,13px)/1.2 Arial,Helvetica,sans-serif;
  }
  .categoryPage .categoryTabs{
-  gap:6px;padding:0 1px 7px;scrollbar-width:none;scroll-snap-type:x proximity;
+  gap:6px;padding:0 1px 3px;scrollbar-width:none;scroll-snap-type:x proximity;
  }
  .categoryPage .categoryTabs a{
   min-height:32px;padding:5px 10px;border-radius:20px;
