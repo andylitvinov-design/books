@@ -625,24 +625,24 @@ export async function POST(request,{params}){
           })}catch{console.error('HH_CRM_TG_DIAGNOSTIC_FALLBACK_UNCONFIRMED')}
           continue
         }
-        // Diagnostic buttons must never fall through to ordinary CRM ingestion.
+        // Diagnostic buttons cannot become generic CRM events. Non-text
+        // unhandled voice/photo/sticker stays a NEUTRAL receipt, never a
+        // fabricated transcript or an implicit photo/diagnostic consent.
         if(event.callbackId)continue
-        // Never turn untranscribed private audio into a fake text CRM lead.
-        if(event.isTelegramVoice)continue
       }
       const archived=await ingestMessengerUpdate(provider,event,config)
-      // After explicit menu, V3 interview, consented diagnostics and human
-      // takeover, a newly archived ordinary Telegram Bot message must not
-      // disappear without a clarifying question. CRM's event ledger prevents
-      // provider replay from causing a second reply.
+      // After Companion, V3, legacy interview and human takeover had their
+      // chance, reply to EACH newly archived signed Bot turn. CRM replay
+      // receipts prevent duplicates across retries and serverless instances.
       if(provider==='telegram'&&event?.type==='incoming'&&archived===true&&
-         !event.callbackId&&!event.photoFileId&&!event.isTelegramVoice&&
-         typeof event.rawText==='string'&&!event.rawText.trim().startsWith('/')){
+         !event.callbackId&&typeof event.rawText==='string'){
         const raw=event.rawText
         const locale=/[а-яё]/iu.test(raw)?'ru':
           /[¡¿áéíóúñ]|\b(?:hola|gracias|qué|que|cómo|dónde)\b/iu.test(raw)?'es':
           event.language?.startsWith('ru')?'ru':event.language?.startsWith('es')?'es':'en'
-        const clarified=composeTelegramSecretaryClarification(raw,locale)
+        const mediaKind=event.isTelegramVoice?'voice':
+          event.photoFileId?'photo':!raw?'media':null
+        const clarified=composeTelegramSecretaryClarification(raw,locale,{mediaKind})
         if(clarified?.text)try{
           await consumeRate(config,{op:'hh-tg-bot-clarify-chat',to:event.userId},12,86400)
           await consumeRate(config,{op:'hh-tg-bot-clarify-global'},100,86400)

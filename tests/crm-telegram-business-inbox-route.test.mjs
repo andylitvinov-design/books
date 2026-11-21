@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import './ali-secretary-unclassified-turns.test.mjs'
 import {readFileSync} from 'node:fs'
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const inbox=read('lib/crm/telegram-business-inbox.js')
@@ -97,9 +98,11 @@ test('Ali answers second unclassified Business message without private probing',
    assert.equal((planned.text.match(/[?¿？]/gu)||[]).length<=2,true)
    assert.doesNotMatch(planned.text,/symptom|trauma|family history|личн(?:ые|ых) вопрос|травм|síntoma/iu)
  }
- for(const message of ['', '/stop', '/start', 'thanks', 'Спасибо!', 'ok',
-   '[HH-REQ:homeopathy:en]', '👍', 'x'.repeat(801)])
+ for(const message of ['', '/stop', '/unsubscribe', 'HHWA secure-link'])
    assert.equal(composeTelegramSecretaryClarification(message,'en'),null)
+ for(const message of ['/start','/unknown','thanks','Спасибо!','ok',
+   '[HH-REQ:homeopathy:en]','👍','!','x'.repeat(801)])
+   assert.equal(composeTelegramSecretaryClarification(message,'en')?.handled,true)
 })
 test('Second-message reply requires signed unsuppressed Business CRM, excludes STOP/human/replay',()=>{
  const secretary=read('lib/crm/telegram-secretary-service.js')
@@ -114,7 +117,7 @@ test('Second-message reply requires signed unsuppressed Business CRM, excludes S
  assert.ok(hook.indexOf('telegramBusinessInbox.recorded!==true')<
    hook.indexOf('allowClarification:'))
  assert.match(secretary,/if\(!query&&allowClarification!==true\)return \{handled:false\}/)
- assert.match(secretary,/composeTelegramSecretaryClarification\(event\.text,locale\)/)
+ assert.match(secretary,/composeTelegramSecretaryClarification\(event\.text,locale/)
  assert.match(secretary,/secretaryStopped\(event,config\)/)
  assert.match(secretary,/assertHolisticBusinessConnection/)
 })
