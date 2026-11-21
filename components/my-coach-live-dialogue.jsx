@@ -1188,13 +1188,20 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <button type="button" className={styles.keyboardControl} onClick={toggleComposer}
           aria-label={ui.type} title={ui.type}><Keyboard size={17} aria-hidden="true"/><span>{ui.keyboardShort}</span></button>
         <button type="button" className={styles.experienceModeControl} data-coach-basic-pro-toggle
-          aria-label={selectedGeminiEngine?(
+          aria-label={(selectedGeminiEngine||liveVoiceSelected)?(
             {ru:'Вернуться к Basic · Groq',en:'Switch to Basic · Groq',es:'Cambiar a Basic · Groq'}[lang]):(
             {ru:'Перейти на Pro · Gemini',en:'Switch to Pro · Gemini',es:'Cambiar a Pro · Gemini'}[lang])}
-          aria-pressed={selectedGeminiEngine}
-          disabled={busy||replaying||paused||protocolOpen||voiceState.phase!=='idle'}
+          aria-pressed={selectedGeminiEngine||liveVoiceSelected}
+          disabled={replaying||paused||protocolOpen}
           onClick={()=>{
-            if(selectedGeminiEngine){
+            // Gemini text/TTS and native Live share the explicit vendor switch:
+            // no stale audio/model output from the previous provider may enter.
+            if(voiceState.phase==='speaking'&&latestCoachText)
+              markCoachSpeechInterrupted(latestCoachText)
+            speechRef.current?.stop?.()
+            cancelPendingCoachTurn()
+            if(selectedGeminiEngine||liveVoiceSelected){
+              setGeminiLiveConsent(false)
               setCoachEngine('groq_stream')
               setGeminiConsent(false)
               setGeminiVoiceTier('existing')
@@ -1212,8 +1219,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             setPlaybackNotice('')
           }}>
           <Zap size={17} aria-hidden="true"/>
-          <span>{selectedGeminiEngine?'Pro':'Basic'}</span>
-          <small>{selectedGeminiEngine?'Gemini':'Groq'}</small>
+          <span>{selectedGeminiEngine||liveVoiceSelected?'Pro':'Basic'}</span>
+          <small>{selectedGeminiEngine||liveVoiceSelected?'Gemini':'Groq'}</small>
         </button>
         <button type="button" className={styles.endControl} onClick={endWithProtocol} aria-label={keyInfoUi.finish} title={keyInfoUi.finish} disabled={protocolOpen} data-coach-finish-with-protocol>
           <PhoneOff size={19} aria-hidden="true"/><span>{lang==='ru'?'Резюме':lang==='es'?'Resumen':'Summary'}</span>
@@ -1222,7 +1229,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       {experienceConsentOpen&&<div className={styles.experienceConsentPanel} data-coach-experience-consent role="group"
         aria-label={({ru:'Переключение на Gemini',en:'Switch to Gemini',es:'Cambiar a Gemini'})[lang]}>
         <strong>Pro · Gemini Free</strong>
-        <p>{({ru:'Это выбор движка, не платная подписка. Google может использовать текст бесплатного API для улучшения моделей. История текущей сессии останется здесь.',en:'This selects the engine, not a paid subscription. Google may use Free API text to improve models. Your current session history stays here.',es:'Es una elección de motor, no una suscripción. Google puede usar el texto de API gratuito para mejorar modelos. Tu historial permanece aquí.'})[lang]}</p>
+        <p>{({ru:'Это бесплатный Gemini, не платная подписка. Google может использовать текст для улучшения моделей. Чтобы слышать голос Gemini, подтвердите отдельное согласие ниже.',en:'This is Gemini Free, not a paid subscription. Google may use text to improve models. To hear Gemini voices, check the separate voice consent below.',es:'Es Gemini gratuito, no una suscripción. Google puede usar texto para mejorar modelos. Para oír la voz Gemini, marca el consentimiento de voz separado.'})[lang]}</p>
         <label><input type="checkbox" checked={experienceTextConsent}
           onChange={event=>setExperienceTextConsent(event.target.checked)}/>
           <span>{({ru:'Я согласен(на) отправлять мои следующие сообщения в Gemini Free.',en:'I agree to send my next messages to Gemini Free.',es:'Acepto enviar mis siguientes mensajes a Gemini gratuito.'})[lang]}</span>
