@@ -17,13 +17,14 @@ const methods=["remedies","artifacts","energy","rituals","learning"] as const;
 const starts=["free","personal","object","course"] as const;
 const icons={energy:Zap,relationships:Heart,money:Coins,growth:TrendingUp,remedies:Sprout,artifacts:Shield,rituals:WandSparkles,learning:GraduationCap,free:Sparkles,personal:Heart,object:Shield,course:BookOpen};
 const shelfCatalog=[
- {id:"remedies",category:"remedies",image:"/images/holistic-house/distance-homeopathy.webp",title:{en:"Remedies for Mind & Heart",ru:"Средства для ума и сердца",es:"Remedios para mente y corazón"},subtitle:{en:"Clarity, calm, focus & emotional balance",ru:"Ясность, спокойствие и баланс эмоций",es:"Claridad, calma y equilibrio emocional"}},
- {id:"guidance",category:"guidance",image:"/images/holistic-house/mandala-gold-reference.webp",title:{en:"Get Guidance",ru:"Получить подсказку",es:"Recibir orientación"},subtitle:{en:"Consciousness, charisma & inner power",ru:"Осознанность, харизма и внутренняя сила",es:"Conciencia, carisma y fuerza interior"}},
- {id:"mysteries",category:"mysteries",image:"/academy/reiki-yggdrasil/source/temple-studies.png",title:{en:"Mysteries & Initiations",ru:"Мистерии и инициации",es:"Misterios e iniciaciones"},subtitle:{en:"Confidence, attraction & inner strength",ru:"Уверенность, привлекательность, сила",es:"Confianza, atractivo y fuerza interior"}},
- {id:"rituals",category:"artifacts",image:"/images/holistic-house/hero-olive-incense.webp",title:{en:"Rituals & Artifacts",ru:"Ритуалы и артефакты",es:"Rituales y artefactos"},subtitle:{en:"Sacred rituals, symbolic tools & change",ru:"Ритуалы, символы и новые начинания",es:"Rituales, símbolos y nuevos comienzos"}},
- {id:"energy",category:"energy",image:"/images/holistic-house/reiki-approved-sunrise-v3.webp",title:{en:"Reiki & Energy Support",ru:"Рейки и энергоподдержка",es:"Reiki y apoyo energético"},subtitle:{en:"Energy, protection & inner harmony",ru:"Энергия, защита и внутренняя гармония",es:"Energía, protección y armonía interior"}},
- {id:"academy",category:"learning",image:"/images/holistic-house/books-library.webp",title:{en:"Shamanic & Reiki Academy",ru:"Академия шаманизма и Рейки",es:"Academia de chamanismo y Reiki"},subtitle:{en:"Courses, practices, initiations & programs",ru:"Курсы, практики, посвящения",es:"Cursos, prácticas e iniciaciones"}}
+ {id:"guidance",category:"guidance",image:"/images/holistic-house/shamanic-approved-hints.webp",title:{en:"Get Hints & Ideas",ru:"Подсказки и идеи",es:"Ideas y orientación"},subtitle:{en:"Fresh perspectives and guidance",ru:"Новые идеи и ориентиры",es:"Nuevas perspectivas y guía"}},
+ {id:"rituals",category:"artifacts",image:"/images/holistic-house/shamanic-approved-rituals.webp",title:{en:"Rituals & Artifacts",ru:"Ритуалы и артефакты",es:"Rituales y artefactos"},subtitle:{en:"Sacred rituals, symbolic tools & change",ru:"Ритуалы и символические инструменты",es:"Rituales y herramientas simbólicas"}},
+ {id:"remedies",category:"remedies",image:"/images/holistic-house/shamanic-approved-remedies.webp",title:{en:"Remedies for Heart & Mind",ru:"Средства для сердца и ума",es:"Remedios para corazón y mente"},subtitle:{en:"Clarity, calm, focus & emotional balance",ru:"Ясность, спокойствие и баланс",es:"Claridad, calma y equilibrio"}},
+ {id:"mysteries",category:"mysteries",image:"/images/holistic-house/shamanic-approved-mysteries.webp",title:{en:"Mysteries & Initiations",ru:"Мистерии и инициации",es:"Misterios e iniciaciones"},subtitle:{en:"Confidence, attraction & inner strength",ru:"Уверенность и внутренняя сила",es:"Confianza y fuerza interior"}},
+ {id:"energy",category:"energy",image:"/images/holistic-house/shamanic-approved-reiki.webp",title:{en:"Reiki & Energy Support",ru:"Рейки и энергоподдержка",es:"Reiki y apoyo energético"},subtitle:{en:"Energy, protection & inner harmony",ru:"Энергия, защита и гармония",es:"Energía y armonía interior"}},
+ {id:"academy",category:"learning",image:"/images/holistic-house/shamanic-approved-academy.webp",title:{en:"Shamanic & Reiki Academy",ru:"Академия шаманизма и Рейки",es:"Academia de chamanismo y Reiki"},subtitle:{en:"Courses, practices, initiations & programs",ru:"Курсы, практики, посвящения",es:"Cursos, prácticas e iniciaciones"}}
 ] as const;
+const shelfIcons={guidance:Sparkles,rituals:WandSparkles,remedies:Sprout,mysteries:BookOpen,energy:Heart,academy:GraduationCap} as const;
 const cabinetCopy={
  en:{subtitle:"Tools for mind, heart, power & life.",open:"Find the right practice · 3 questions",shelves:"Explore the alchemist's shelves"},
  ru:{subtitle:"Инструменты для ума, сердца, силы и жизни.",open:"Подобрать практику · 3 вопроса",shelves:"Полки кабинета алхимика"},
@@ -184,7 +185,7 @@ export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;au
    {business?<ShamanicaBusinessContent locale={locale}/>:<>
    <section className={styles.hero} aria-labelledby="shamanica-hero-title">
     <div className={styles.mirrorIntro}>
-     <span className={styles.mirrorSymbol} aria-hidden="true"><Sun size={27} strokeWidth={1.4}/><Sparkles size={14}/></span>
+     <span className={styles.mirrorSymbol} aria-hidden="true"><span className={styles.moonLeft}>☾</span><Image src="/images/holistic-house/shamanic-approved-sun.webp" width={66} height={48} alt="" unoptimized/><span className={styles.moonRight}>☽</span></span>
      <h1 id="shamanica-hero-title">{locale==="ru"?"Шаманик":"Shamanic"}
       <span>{locale==="ru"?"Кабинет алхимика":locale==="es"?"Gabinete del alquimista":"Alchemist’s Cabinet"}</span>
      </h1>
@@ -193,12 +194,15 @@ export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;au
    </section>
    <section className={styles.services} data-shamanica-cabinet-shelves aria-labelledby="shamanica-services-title">
     <h2 id="shamanica-services-title" className={styles.sectionTitle}>{cabinetCopy[locale].shelves}</h2>
-    <div className={styles.serviceGrid}>{shelfCatalog.map(({id,category,image,title,subtitle})=><Link key={id}
+    <div className={styles.serviceGrid}>{shelfCatalog.map(({id,category,image,title,subtitle})=>{
+     const Icon=shelfIcons[id];
+     return <Link key={id}
       href={id==="mysteries"?"/"+locale+"/academy/mysteries":shamanicaCategoryHref(locale,category)}
       prefetch={false} className={styles.serviceCard} data-shamanica-service={id}>
-      <span className={styles.servicePhoto}><Image src={image} alt="" fill sizes="(max-width:600px) 47vw, 260px"/></span>
-      <span className={styles.serviceBody}><strong>{title[locale]}</strong><span>{subtitle[locale]}</span></span>
-    </Link>)}</div>
+      <span className={styles.servicePhoto}><Image src={image} alt="" fill sizes="(max-width:600px) 48vw, 240px" unoptimized/></span>
+      <span className={styles.serviceBody}><Icon aria-hidden="true" size={27} strokeWidth={1.8}/><strong>{title[locale]}</strong><span>{subtitle[locale]}</span></span>
+     </Link>;
+    })}</div>
    </section>
    <details className={styles.toolsDrawer} data-shamanica-extras>
     <summary><Sparkles size={18} aria-hidden="true"/>{cabinetCopy[locale].open}<ChevronDown size={18} aria-hidden="true"/></summary>

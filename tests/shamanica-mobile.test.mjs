@@ -50,7 +50,7 @@ test("Six approved readable real links replace nine old shelf items",()=>{
  assert.match(client,/shelfCatalog\.map\(/);
  for(const id of ["remedies","guidance","mysteries","rituals","energy","academy"])
   assert.match(client,new RegExp('id:"'+id+'"'));
- for(const title of ["Remedies for Mind & Heart","Get Guidance",
+ for(const title of ["Get Hints & Ideas","Remedies for Heart & Mind",
    "Mysteries & Initiations","Rituals & Artifacts",
    "Reiki & Energy Support","Shamanic & Reiki Academy"])
   assert.ok(client.includes(title),title);
@@ -129,4 +129,30 @@ test("Get Guidance is the real three-offer symbolic reading catalogue",()=>{
  assert.match(offers,/reading: \[/);
  assert.match(offers,/Tarot · personal reading/);
  assert.deepEqual(SHAMANICA_SERVICES,["remedies","artifacts","energy","rituals","learning"]);
+});
+
+test("Approved Shamanic lounge is six correctly ordered, distinct photo actions with existing routes",()=>{
+ const client=read("components/shamanica-mobile.tsx");
+ const css=read("components/shamanica-mobile.module.css");
+ const dock=read("app/unified-mobile-dock.css");
+ const expected=["guidance","rituals","remedies","mysteries","energy","academy"];
+ const markers=expected.map(id=>client.indexOf('id:"'+id+'"'));
+ assert.ok(markers.every(pos=>pos>0), "all six offerings exist");
+ assert.deepEqual([...markers].sort((a,b)=>a-b),markers,"row-major visual order matches approved screen");
+ assert.match(client,/Get Hints & Ideas/);
+ assert.match(client,/Remedies for Heart & Mind/);
+ for(const [i,id] of expected.entries()){
+  const imageName=i===4?"reiki":id==="guidance"?"hints":id;
+  assert.match(client,new RegExp("shamanic-approved-"+imageName+"\\.webp"),id);
+  assert.match(client,new RegExp('data-shamanica-service=\\{id\\}'));
+ }
+ for(const file of ["shamanic-approved-sun.webp","shamanic-approved-room.webp"])assert.match(client+css,new RegExp(file.replace(".","\\.")));
+ assert.match(css,/SHAMANIC_LUXURY_LOUNGE_APPROVED_20261121/);
+ assert.match(css,/grid-auto-rows:101px/);
+ assert.match(css,/\.serviceBody svg/);
+ assert.match(css,/prefers-reduced-motion:reduce/);
+ assert.match(dock,/SHAMANIC_LUXURY_LOUNGE_DOCK_20261121/);
+ assert.match(dock,/data-unified-dock-item="practice"/);
+ assert.match(client,/shamanicaCategoryHref\(locale,category\)/);
+ assert.match(client,/data-shamanica-extras/);
 });
