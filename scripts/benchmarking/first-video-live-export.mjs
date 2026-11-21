@@ -245,6 +245,11 @@ try {
   assert.equal(video.width, 720, 'WRONG_PORTRAIT_WIDTH');
   assert.equal(video.height, 1280, 'WRONG_PORTRAIT_HEIGHT');
   const seconds = Number(probe.format?.duration || video.duration || 0);
+  row.probedTiming = {
+    containerDurationSeconds: Number(probe.format?.duration) || null,
+    videoDurationSeconds: Number(video.duration) || null,
+    audioDurationSeconds: Number(audio.duration) || null,
+  };
   assert.ok(seconds >= 29 && seconds <= 32, 'EXPRESS_VIDEO_MUST_BE_30_SECONDS');
   const energy = rmsPcm(mediaFile);
   Object.assign(row, {recordedBlobVerified: true, encodedBytes: bytes.length,
