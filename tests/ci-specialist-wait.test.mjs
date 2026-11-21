@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggregateError } from '../scripts/ci-specialist-aggregate.mjs';
 import { inspectJobs, trustedRequiredJobs, inspectWorkflowRuns } from '../lib/ci/specialist-aggregate.mjs';
-import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance } from '../lib/ci/production-base-impact.mjs';
 
 const repo = 'andylitvinov-design/books', head = 'a'.repeat(40), base = 'b'.repeat(40);
 const path = '.github/workflows/mobile.yml';
@@ -929,4 +929,45 @@ test('Light v2 router policy survives independently protected CRM and video base
  assert.equal(safeIndependentRouterPolicyAdvance(diff(),base,live,
    ['lib/ci/specialist-aggregate.mjs']),false,
    'not a general permission to bypass other sensitive CI policy changes');
+});
+
+
+test('unrelated public page-only protected advances do not invalidate a private exact-HEAD suite', () => {
+  const old = 'c'.repeat(40), newer = 'd'.repeat(40);
+  const candidate = ['app/api/app/ali-greeting/route.ts'];
+  const delta = files => ({
+    status: 'ahead', ahead_by: 1, behind_by: 0, total_commits: 1,
+    base_commit: {sha:old}, merge_base_commit: {sha:old},
+    commits: [{sha:newer}],
+    files: files.map(filename => ({filename,status:'modified'})),
+  });
+  const publicOnly = delta([
+    'app/[locale]/shamanica/results/page.tsx',
+    'app/[locale]/practice/page.jsx',
+    'public/images/holistic-house/shamanic-approved-room.webp',
+    'docs/design/SHAMANIC_APPROVED.md',
+  ]);
+  assert.equal(safeUnrelatedPublicLeafAdvance(publicOnly,old,newer,candidate),true);
+  for (const path of [
+    'app/api/app/crm/messenger/route.js',
+    'app/[locale]/app/messages/page.tsx',
+    'app/[locale]/ali-greeting/page.tsx',
+    'app/unified-mobile-dock.css',
+    'app/[locale]/layout.tsx',
+    'components/shared/site-nav.tsx',
+    'lib/shared/authorization.ts',
+    'components/app/messages-orders-clients.jsx',
+    'lib/ci/specialist-aggregate.mjs',
+    '.github/workflows/ia-v2.yml',
+    'package.json',
+    'supabase/migrations/20261121120000_crm.sql',
+  ]) {
+    assert.equal(safeUnrelatedPublicLeafAdvance(delta([path]),old,newer,candidate),false,path);
+  }
+  assert.equal(safeUnrelatedPublicLeafAdvance(delta([candidate[0]]),old,newer,candidate),false);
+  assert.equal(safeUnrelatedPublicLeafAdvance({...publicOnly,status:'diverged'},old,newer,candidate),false);
+  assert.equal(safeUnrelatedPublicLeafAdvance({...publicOnly,commits:[]},old,newer,candidate),false);
+  assert.equal(safeUnrelatedPublicLeafAdvance({...publicOnly,files:[
+    {...publicOnly.files[0],status:'renamed',previous_filename:'app/old/page.tsx'}]},old,newer,candidate),false);
+  assert.equal(safeUnrelatedPublicLeafAdvance(publicOnly,old,newer,['package.json']),false);
 });
