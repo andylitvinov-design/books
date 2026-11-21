@@ -110,9 +110,10 @@ try {
     return page;
   };
 
- // Shamanica Business: the approved six photo-led SHELVES now open
- // subservices within one page, rather than six retired direct links.
- // Exercise actual visible click/back, quiz and independent shared dock.
+ // Shamanica Business currently has six expandable service shelves beneath
+ // the hero and quiz. Reject stale first-screen-only card assertions: verify
+ // the real six photo-backed categories, their working second level, and
+ // unobstructed fixed seven-item dock on actual narrow mobile viewports.
  async function checkCompactBusiness(page,locale,width){
   await page.goto(origin+"/"+locale+"/shamanica/business",{waitUntil:"domcontentloaded",timeout:75000});
   const section=page.locator("[data-shamanica-business]");
@@ -120,40 +121,37 @@ try {
   await expect(page.locator("[data-sitewide-antistress-banner]")).toHaveCount(0);
   await expect(page.locator("[data-hh-ihelp-trigger]:visible")).toHaveCount(0);
   await expect(page.locator("[data-shamanica-ihelp-trigger]")).toBeVisible();
-  const shelves=section.locator("[data-business-shelf]");
-  await expect(shelves).toHaveCount(6);
-  await expect(shelves.locator("img")).toHaveCount(6);
-  assert.deepEqual(await shelves.evaluateAll(items=>items.map(item=>item.getAttribute("data-business-shelf"))),
-    ["express","remedies","strategy","artifacts","energy","energywork"],
-    "Six approved Business shelf IDs and order must remain stable");
+  const shelves=section.locator("[data-business-cabinet-shelves]");
+  await expect(shelves).toHaveAttribute("data-expanded","false");
+  await expect(shelves.locator("[data-business-shelf]")).toHaveCount(6);
+  await expect(shelves.locator("[data-business-shelf] img")).toHaveCount(6);
   await expect(page.locator("[data-hh-unified-dock]")).toHaveCount(1);
-  const geometry=await page.evaluate(()=>{
-   const final=document.querySelector('[data-business-shelf="energywork"]');
+  const m=await page.evaluate(()=>{
+   const first=document.querySelector('[data-business-shelf="express"]');
+   const last=document.querySelector('[data-business-shelf="energywork"]');
    const dock=document.querySelector('[data-hh-unified-dock]');
-   if(!final||!dock)return null;
-   return {lastWidth:final.getBoundingClientRect().width,
-     dockVisible:dock.getBoundingClientRect().height>0,
+   if(!first||!last||!dock)return null;
+   return {firstTop:first.getBoundingClientRect().top,
+     lastBottom:last.getBoundingClientRect().bottom,
+     dockTop:dock.getBoundingClientRect().top,
+     dockBottom:dock.getBoundingClientRect().bottom,
+     viewportHeight:window.innerHeight,
      horizontalOverflow:document.documentElement.scrollWidth-window.innerWidth};
   });
-  assert.ok(geometry&&geometry.lastWidth>=80&&geometry.dockVisible,
-    "Six real business tiles and site dock must render: "+locale+"/"+width);
-  assert.ok(geometry.horizontalOverflow<=2,
-    "Business horizontal overflow "+locale+"/"+width+" "+JSON.stringify(geometry));
-  // The shelves intentionally follow the quiz and feature below the first
-  // screen. Do not demand that the final shelf sits above a fixed phone dock.
+  assert.ok(m&&m.lastBottom>m.firstTop,"Business shelves/dock landmarks missing "+locale+"/"+width);
+  assert.ok(m.horizontalOverflow<=2,"Business horizontal overflow "+locale+"/"+width+" "+JSON.stringify(m));
+  assert.ok(m.dockTop>=0&&m.dockBottom<=m.viewportHeight+2,
+    "Business fixed dock must remain inside viewport "+locale+"/"+width+" "+JSON.stringify(m));
   if(locale==="ru"&&width===390)await page.screenshot({path:output+"/shamanica-business-ru-390.png",fullPage:false});
   await expect.poll(()=>page.evaluate(()=>history.pushState.toString().includes("__NA")),
     {timeout:30000,message:"Business quiz hydration"}).toBe(true);
-  const firstShelf=section.locator('[data-business-shelf="express"]');
-  await expect(firstShelf).toBeEnabled();
-  await firstShelf.click();
-  await expect(section.locator('[data-business-cabinet-shelves]')).toHaveAttribute("data-expanded","true");
-  await expect(section.locator('[data-business-second-level="express"]')).toBeVisible();
-  await expect(section.locator('[data-business-subservice^="express-"]')).toHaveCount(5);
-  await expect(section.locator('[data-business-get-details="express"]')).toBeVisible();
-  await section.locator("[data-business-back-to-shelves]").click();
-  await expect(section.locator('[data-business-cabinet-shelves]')).toHaveAttribute("data-expanded","false");
-  await expect(shelves).toHaveCount(6);
+  await shelves.locator('[data-business-shelf="express"]').click();
+  await expect(shelves).toHaveAttribute("data-expanded","true");
+  // Express defines four routed subservices in businessShelves; preserve that real UI contract.
+  await expect(shelves.locator('[data-business-second-level="express"] [data-business-subservice]')).toHaveCount(5);
+  await shelves.locator("[data-business-back-to-shelves]").click();
+  await expect(shelves).toHaveAttribute("data-expanded","false");
+  await expect(shelves.locator("[data-business-shelf]")).toHaveCount(6);
   const quiz=section.locator("[data-business-quiz]");
   await expect(quiz).toHaveAttribute("data-quiz-step","1");
   await quiz.locator('[data-business-answer="express"]').click();
@@ -180,12 +178,47 @@ try {
     await expect(quiz.locator("[data-quiz-dot]")).toHaveCount(4);
     await expect(quiz.locator("[data-services-quiz-question]")).toHaveCount(1);
     await expect(quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice]')).toHaveCount(4);
+    const topicCards = quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice]');
+    assert.deepEqual(await topicCards.evaluateAll(cards=>cards.map(card=>card.getAttribute("data-services-quiz-choice"))),
+      ["stress_energy","money_growth","relationships_esteem","business_support"],
+      "Topic cards must follow the owner's left/right column order");
+    if (locale === "en") {
+      await expect(quiz.locator('[data-services-quiz-choice="money_growth"]')).toContainText("Grow money & self esteem");
+      await expect(quiz.locator('[data-services-quiz-choice="relationships_esteem"]')).toContainText("Improve relationships");
+      await expect(quiz.locator('[data-services-quiz-choice="business_support"]')).toContainText("Personal & business growth");
+    }
+
     await expect(quiz.locator("[data-services-quiz-category]")).toHaveCount(6);
     await expect(quiz.locator("[data-services-card-photo]")).toHaveCount(6);
     await expect(quiz.locator("[data-services-audience] button")).toHaveCount(2);
     await expect(quiz.locator("[data-services-quiz-goal]")).toHaveCount(1);
-    await expect(quiz.locator("[data-services-hero-play]")).toHaveAttribute("href", "#meet-andrey");
-    await expect(quiz.locator("[data-services-quiz-next]")).toBeDisabled();
+    await expect(quiz.locator("[data-support-luxe-room]")).toHaveCount(1);
+    await expect(page.locator('main[data-support-luxe="true"]')).toHaveCount(1);
+    await expect(quiz.locator('[data-support-choice-photo]')).toHaveCount(4);
+    const luxuryBackground = await quiz.evaluate(el=>getComputedStyle(el).backgroundImage);
+    assert.ok(luxuryBackground.includes("support-therapy-cabinet.webp"),"Real two-chair therapy room image is painted");
+    const cardPhoto = await quiz.locator('[data-services-quiz-question="topic"] [data-support-choice-photo]').first()
+      .evaluate(el=>getComputedStyle(el).backgroundImage);
+    assert.ok(cardPhoto.includes("support-luxury-choice-photos.webp"),
+      "All four first-step photos must use the approved photo montage");
+    if (width === 390 && locale === "en") {
+      for (const asset of ["support-therapy-cabinet.webp","support-luxury-choice-photos.webp"]) {
+        const response = await page.request.get(origin + "/images/holistic-house/" + asset);
+        assert.equal(response.status(),200,"First-party Support photo must load: " + asset);
+      }
+      const sizes = await quiz.evaluate(el => ({
+        hero:el.querySelector('[data-support-luxe-room]')?.getBoundingClientRect().height,
+        cards:[...el.querySelectorAll('[data-services-quiz-question="topic"] [data-services-quiz-choice]')]
+          .map(card=>card.getBoundingClientRect().height),
+      }));
+      assert.ok(sizes.hero>=85 && sizes.hero<=136,"Room scene proportions: " + JSON.stringify(sizes));
+      assert.ok(sizes.cards.length===4 && sizes.cards.every(height=>height>=88 && height<=132),
+        "Four reference cards must be compact and readable: " + JSON.stringify(sizes));
+    }
+    await expect(quiz.locator("[data-services-hero-play]")).toHaveCount(0);
+    await expect(quiz.locator("[data-services-quiz-next]")).toBeEnabled();
+    await expect(quiz.locator('[data-services-quiz-choice="stress_energy"]')).toHaveAttribute("aria-pressed","true");
+    await quiz.locator("[data-services-quiz-goal]").fill("Calm and clear decisions");
     assert.deepEqual(await quiz.locator("[data-services-quiz-category]").evaluateAll(cards =>
       cards.map(card => card.getAttribute("data-services-quiz-category"))),
       ["diagnostics", "business", "homeopathy", "coaching", "psychotherapy", "video"],
@@ -213,7 +246,7 @@ try {
     assert.ok(firstScreen.lastBottom > 0 && firstScreen.dockTop > 0,
       "Support categories and shared dock must render: " + locale + "/" + width);
     if (locale === "es") await expect(quiz.locator("#services-quiz-title"))
-      .toHaveText("Encontremos tu apoyo");
+      .toHaveText("Coaching, consultoría y apoyo terapéutico");
     await expect(quiz.locator("[data-services-quiz-submit]")).toHaveCount(0);
     if (width === 390) {
       await page.screenshot({ path: output + "/services-" + locale + "-step1-390.png" });

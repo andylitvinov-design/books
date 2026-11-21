@@ -7158,13 +7158,27 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   );
 
   const goRecipientAudioToMontage=()=>{
-    const entry=uploadedAudioRef.current;
+    // iPhone WebKit can retain the confirmed File in React state while a
+    // separate recording cleanup clears only the ref. Recover from the actual
+    // local File during this explicit gesture, never from external storage.
+    let entry=uploadedAudioRef.current;
+    if(!entry&&uploadedAudio&&audioRights&&isSupportedLocalAudio(uploadedAudio.file)){
+      entry={file:uploadedAudio.file,url:URL.createObjectURL(uploadedAudio.file)};
+      uploadedAudioRef.current=entry;setUploadedAudio(entry);
+    }
     if(!entry||!voiceTranscript||!audioRights||
-      sttBusy||recording||preparing||micRecording)return;
-    // One explicit action matches source-verified footage and opens the Story
-    // editor without waiting for React state to update. No render or charge.
-    const ready=(audioPlanApplied&&Boolean(voiceVisualPlan?.canExport))||
-      applyTranscriptVideo(voiceTranscript);
+      sttBusy||recording||preparing||micRecording){
+      setSttError(locale==="ru"?"Аудиозапись изменилась. Прикрепите её снова и подтвердите права.":
+        locale==="es"?"El audio cambió. Vuelve a adjuntarlo y confirma tus derechos.":
+        "The audio changed. Reattach your file and confirm your rights.");
+      return;
+    }
+    // Navigation follows a valid user click even if automatic matching fails.
+    // A failed/throwing licensed-footage planner must never strand the editor
+    // or claim that missing action footage was filmed.
+    setActiveWorkspace("editor");setMontagePanel("concept");
+    let ready=audioPlanApplied&&Boolean(voiceVisualPlan?.canExport);
+    if(!ready)try{ready=applyTranscriptVideo(voiceTranscript);}catch{ready=false;}
     if(!ready){
       goRecipientAudioToManualMontage();
       return;
