@@ -949,7 +949,50 @@ try{
    "Order must expose a real messenger handoff");
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth<=2),
    "Shamanic service list must not overflow mobile width");
- await page.screenshot({path:folder+"/shamanica-category-energy-390-webkit.png",fullPage:false,animations:"disabled"});
+ // The 3 compact offers AND their category heading must fit above the fixed
+ // dock in the collapsed state on a normal iPhone (including the owner 353px).
+ const originalCategoryViewport=page.viewportSize();
+ for(const width of [320,353,390,430]){
+   await page.setViewportSize({width,height:768});
+   await page.evaluate(async()=>{
+     window.scrollTo({top:0,behavior:"instant"});
+     await new Promise(done=>requestAnimationFrame(()=>requestAnimationFrame(done)));
+   });
+   const geometry=await page.evaluate(()=>{
+     const boxes=[...document.querySelectorAll('[data-shamanica-category-offers="energy"] [data-support-uniform-card]')];
+     const nav=document.querySelector("[data-hh-unified-dock]");
+     const title=document.querySelector("[data-shamanica-results-title]");
+     const tabs=document.querySelector("[data-shamanica-category-nav]");
+     const inside=(child,parent)=>{
+       const a=child?.getBoundingClientRect(),b=parent?.getBoundingClientRect();
+       return !!a&&!!b&&a.left>=b.left-2&&a.right<=b.right+2&&a.top>=b.top-2&&a.bottom<=b.bottom+2;
+     };
+     return {
+       titleTop:title?.getBoundingClientRect().top,
+       tabsBottom:tabs?.getBoundingClientRect().bottom,
+       dockTop:nav?.getBoundingClientRect().top,
+       overflowX:document.documentElement.scrollWidth-innerWidth,
+       cards:boxes.map(el=>({
+         top:el.getBoundingClientRect().top,bottom:el.getBoundingClientRect().bottom,
+         buttonsInside:inside(el.querySelector("[data-service-card-controls]"),el),
+         photoInside:inside(el.querySelector("[data-support-uniform-photo]"),el),
+         priceInside:inside(el.querySelector("[data-service-price]"),el)
+       }))
+     };
+   });
+   assert.equal(geometry.cards.length,3,"Category always contains three real services");
+   assert.ok(geometry.cards.every(c=>c.buttonsInside&&c.photoInside&&c.priceInside),
+     "Compact Shamanic controls/photos/prices must remain inside their own cards: "+
+       width+" "+JSON.stringify(geometry));
+   assert.ok(geometry.titleTop>=-1 && geometry.cards[2].bottom<=geometry.dockTop-4,
+     "Shamanic category header + all three cards must clear fixed dock at "+width+
+     "x768: "+JSON.stringify(geometry));
+   assert.ok(geometry.overflowX<=2,
+     "Shamanic category has no page overflow at "+width+": "+JSON.stringify(geometry));
+   await page.screenshot({path:folder+"/shamanica-category-energy-"+width+"-webkit.png",
+     fullPage:false,animations:"disabled"});
+ }
+ if(originalCategoryViewport)await page.setViewportSize(originalCategoryViewport);
  for(const lang of ["en","es"]){
    await page.goto(origin+"/"+lang+"/shamanica/results?category=learning",
      {waitUntil:"domcontentloaded",timeout:75000});
