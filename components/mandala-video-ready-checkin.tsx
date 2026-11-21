@@ -17,6 +17,9 @@ export function ReadyGenerationCheckIn({locale,onFirstAnswer,onDismiss}:Props){
   const copy=READY_CHECKIN_COPY[locale];
   const [progress,setProgress]=useState<CheckInState>(()=>initialReadyCheckIn());
   const headingRef=useRef<HTMLHeadingElement|null>(null);
+  // A shifting progress/photo panel can consume Safari's final click. Keep a
+  // single guarded touch/pointer selection so one real tap = one answer.
+  const scoreTapRef=useRef<{value:number;x:number;y:number;handled:boolean;moved:boolean}|null>(null);
   const {index,answers}=progress;
   const finished=index>=READY_CHECKIN_MEDIA.length;
   const current=READY_CHECKIN_MEDIA[index];
@@ -27,6 +30,17 @@ export function ReadyGenerationCheckIn({locale,onFirstAnswer,onDismiss}:Props){
     if(finished)return;
     setProgress(previous=>scoreReadyCheckIn(previous,value));
     onFirstAnswer();
+  }
+  function beginScoreTap(value:number,x:number,y:number){
+    scoreTapRef.current={value,x,y,handled:false,moved:false};
+  }
+  function endScoreTap(value:number,x:number,y:number){
+    const tap=scoreTapRef.current;
+    if(!tap||tap.value!==value||tap.handled)return;
+    // A swipe across the eleven scores must not select an accidental answer.
+    if(Math.hypot(x-tap.x,y-tap.y)>12){tap.moved=true;return;}
+    tap.handled=true;
+    answer(value);
   }
   return <section className={css.readyCheckIn} data-ready-sequential-checkin
     data-checkin-tone={current?.id||"complete"} aria-label={copy.title}>
@@ -50,7 +64,31 @@ export function ReadyGenerationCheckIn({locale,onFirstAnswer,onDismiss}:Props){
       <p className={css.checkinGuidance}>{copy.guidance}</p>
       <div className={css.checkinNumbers} role="group" aria-labelledby="ready-checkin-question">
         {SCORES.map(value=><button key={value} type="button" data-ready-checkin-score={value}
-          aria-label={value+" "+copy.score} onClick={()=>answer(value)}>{value}</button>)}
+          aria-label={value+" "+copy.score}
+          onPointerDown={event=>{
+            if(event.isPrimary)beginScoreTap(value,event.clientX,event.clientY);
+          }}
+          onTouchStart={event=>{
+            const touch=event.touches.item(0);
+            if(touch)beginScoreTap(value,touch.clientX,touch.clientY);
+          }}
+          onPointerUp={event=>{
+            if(event.isPrimary)endScoreTap(value,event.clientX,event.clientY);
+          }}
+          onTouchEnd={event=>{
+            const touch=event.changedTouches.item(0);
+            if(touch)endScoreTap(value,touch.clientX,touch.clientY);
+          }}
+          onPointerCancel={()=>{scoreTapRef.current=null;}}
+          onTouchCancel={()=>{scoreTapRef.current=null;}}
+          onClick={event=>{
+            const tap=scoreTapRef.current;
+            scoreTapRef.current=null;
+            // Pointerup/touchend already scored this tap. Do not skip a
+            // question on the synthesized click; keyboard clicks still work.
+            if(event.detail>0&&tap?.value===value&&(tap.handled||tap.moved))return;
+            answer(value);
+          }}>{value}</button>)}
       </div>
       <div className={css.checkinEnds}><span>0 · {copy.low}</span>
         <span>10 · {copy.high}</span></div>
