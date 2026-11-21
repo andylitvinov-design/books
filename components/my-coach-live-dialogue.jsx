@@ -188,6 +188,24 @@ const reasons={
   privacy_model_unavailable:'protected',cost_unverified:'cost',
   response_unverified:'failed',model_unavailable:'retry',
 }
+// Metadata-only read: never send a session transcript or microphone audio.
+async function readGeminiEngineStatus(signal){
+  try{
+    const response=await fetch('/api/app/my-coach/engines',{
+      credentials:'same-origin',cache:'no-store',signal,
+    })
+    if(response.status===401)return {kind:'login'}
+    if(!response.ok)return {kind:'unavailable'}
+    const data=await response.json().catch(()=>null)
+    if(data?.schema!=='HH_MY_COACH_ENGINES_V1')return {kind:'unavailable'}
+    return {kind:'ok',capabilities:{
+      gemini_free:data.gemini_free===true,gemini_paid:data.gemini_paid===true,
+      gemini_tts_free:data.gemini_tts_free===true,
+      gemini_tts_paid:data.gemini_tts_paid===true,
+    }}
+  }catch{return {kind:'unavailable'}}
+}
+
 const assistantText=(result)=>result.mode==='ai'
   ? typeof result.message==='string'&&!coachLooksLikeProtocolText(result.message)?result.message:''
   : [result.reflection,result.hypothesis,result.question].filter(Boolean).join('\n\n')
@@ -213,6 +231,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [geminiCapabilities,setGeminiCapabilities]=useState({
     gemini_free:false,gemini_paid:false,gemini_tts_free:false,gemini_tts_paid:false,
   })
+  const geminiAvailabilityInFlightRef=useRef(false)
   const [geminiConsent,setGeminiConsent]=useState(false)
   const [geminiVoiceTier,setGeminiVoiceTier]=useState('existing')
   const [geminiVoiceConsent,setGeminiVoiceConsent]=useState(false)
@@ -355,19 +374,15 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     })
     return ()=>controller.abort()
   },[])
-  // This checks local config flags only, never sends a client's words to Google.
+  // Config probe is metadata-only; an initial network/auth error can be
+  // retried from Basic → Pro rather than permanently hiding a valid Free tier.
   useEffect(()=>{
     const controller=new AbortController()
-    fetch('/api/app/my-coach/engines',{
-      credentials:'same-origin',cache:'no-store',signal:controller.signal,
-    }).then(r=>r.ok?r.json():null).then(data=>{
-      if(controller.signal.aborted||data?.schema!=='HH_MY_COACH_ENGINES_V1')return
-      setGeminiCapabilities({
-        gemini_free:data.gemini_free===true,gemini_paid:data.gemini_paid===true,
-        gemini_tts_free:data.gemini_tts_free===true,
-        gemini_tts_paid:data.gemini_tts_paid===true,
-      })
-    }).catch(()=>{})
+    void readGeminiEngineStatus(controller.signal).then(status=>{
+      if(controller.signal.aborted)return
+      if(status.kind==='ok')setGeminiCapabilities(status.capabilities)
+      else if(status.kind==='login')setAuthRequired(true)
+    })
     return ()=>controller.abort()
   },[])
   useEffect(()=>{if(transcriptRef.current)transcriptRef.current.scrollTop=transcriptRef.current.scrollHeight},[turns,speechPreview,streamingPreview])
@@ -1148,24 +1163,46 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             {ru:'Перейти на Pro · Gemini',en:'Switch to Pro · Gemini',es:'Cambiar a Pro · Gemini'}[lang])}
           aria-pressed={selectedGeminiEngine}
           disabled={replaying||paused||protocolOpen}
-          onClick={()=>{
-            // Switching is available mid-speech, mid-listening and mid-response.
-            // Stop previous audio and abort its stale model turn before offering
-            // a new vendor choice. Keep the user's transcript/goal untouched.
-            if(voiceState.phase==='speaking'&&latestCoachText)
-              markCoachSpeechInterrupted(latestCoachText)
-            speechRef.current?.stop?.()
-            cancelPendingCoachTurn()
+          onClick={async ()=>{
+            // Leaving Pro immediately cancels its in-flight model/audio, but
+            // simply opening Pro must NEVER silence a healthy Basic microphone.
             if(selectedGeminiEngine){
+              if(voiceState.phase==='speaking'&&latestCoachText)
+                markCoachSpeechInterrupted(latestCoachText)
+              speechRef.current?.stop?.()
+              cancelPendingCoachTurn()
               setCoachEngine('groq_stream')
               setGeminiConsent(false)
               setGeminiVoiceTier('existing')
               setGeminiVoiceConsent(false)
               setExperienceConsentOpen(false)
+              setPlaybackNotice('')
               return
             }
-            if(!geminiCapabilities.gemini_free){
-              setPlaybackNotice(({ru:'Gemini Free недоступен. Basic продолжает работать.',en:'Gemini Free is not available. Basic still works.',es:'Gemini gratuito no está disponible. Basic sigue funcionando.'})[lang])
+            if(geminiAvailabilityInFlightRef.current)return
+            geminiAvailabilityInFlightRef.current=true
+            setPlaybackNotice(({ru:'Проверяю Gemini Free…',en:'Checking Gemini Free…',es:'Verificando Gemini gratuito…'})[lang])
+            const checkController=new AbortController()
+            const deadline=setTimeout(()=>checkController.abort(),8000)
+            let status
+            try{status=await readGeminiEngineStatus(checkController.signal)}
+            catch{status={kind:'unavailable'}}
+            finally{
+              clearTimeout(deadline)
+              geminiAvailabilityInFlightRef.current=false
+            }
+            if(status.kind==='login'){
+              setAuthRequired(true)
+              setPlaybackNotice(({ru:'Для Gemini Free сначала войдите в Holistic House.',en:'Sign in to Holistic House to use Gemini Free.',es:'Inicia sesión para usar Gemini gratuito.'})[lang])
+              return
+            }
+            if(status.kind!=='ok'){
+              setPlaybackNotice(({ru:'Не удалось проверить Gemini Free. Нажмите Pro ещё раз — Basic работает.',en:'Could not check Gemini Free. Tap Pro to retry; Basic still works.',es:'No se pudo verificar Gemini. Reintenta Pro; Basic sigue activo.'})[lang])
+              return
+            }
+            setGeminiCapabilities(status.capabilities)
+            if(!status.capabilities.gemini_free){
+              setPlaybackNotice(({ru:'Gemini Free не готов на сервере. Basic продолжает работать.',en:'Gemini Free is not ready on the server. Basic still works.',es:'Gemini gratuito no está listo en el servidor. Basic sigue activo.'})[lang])
               return
             }
             setExperienceTextConsent(false)
@@ -1195,6 +1232,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         </label>}
         <div className={styles.experienceConsentActions}>
           <button type="button" disabled={!experienceTextConsent} onClick={()=>{
+            // Commit the vendor switch only after explicit Google data consent.
+            if(voiceState.phase==='speaking'&&latestCoachText)
+              markCoachSpeechInterrupted(latestCoachText)
+            speechRef.current?.stop?.()
+            cancelPendingCoachTurn()
             setCoachEngine('gemini_free')
             setGeminiConsent(true)
             setGeminiVoiceTier(experienceTtsConsent&&geminiCapabilities.gemini_tts_free?'gemini_tts_free':'existing')
