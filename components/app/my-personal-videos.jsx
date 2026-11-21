@@ -57,7 +57,7 @@ async function verifyMp4(file){
       video.onerror=()=>{clearTimeout(timer);reject(new Error('INVALID_VIDEO'))}
       video.src=url
     })
-    const matched=[10,15,20,30,60].find(x=>Math.abs(x-duration)<=1.25)
+    const matched=[10,15,20,25,30,60].find(x=>Math.abs(x-duration)<=1.25)
     if(!matched)throw new Error('INVALID_DURATION')
     return matched
   } finally {URL.revokeObjectURL(url)}
@@ -142,6 +142,7 @@ export default function MyPersonalVideos({accountId,locale='en'}){
       <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
         <Link href={'/'+locale+'/my-page'} prefetch={false} data-my-videos-publish-page>{t.myPage}</Link>
         <Link href={'/'+locale+'/holistic-support/mandala'} prefetch={false}>{t.new}</Link>
+        <Link href={'/'+locale+'/holistic-support/mandala?mode=gift'} prefetch={false}>{locale==='ru'?'Живая открытка':locale==='es'?'Tarjeta animada':'Personal Video Gift'}</Link>
       </div>
     </div>
     <SupportPhotoCabinet locale={locale} />
@@ -173,7 +174,9 @@ export default function MyPersonalVideos({accountId,locale='en'}){
       {!list.length&&<p>{t.empty}</p>}
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(230px,1fr))',gap:12,marginTop:14}}>
         {list.map(video=><article key={video.id} style={{padding:12,border:'1px solid #d1dfd6',borderRadius:14,background:'#faf8f2'}}>
-          <strong>{t.themes[video.theme]||video.theme}</strong>
+          <strong>{video.sceneId==='personal-video-gift'?(
+            locale==='ru'?'Живая открытка':locale==='es'?'Tarjeta animada':'Personal Video Gift'
+          ):(t.themes[video.theme]||video.theme)}</strong>
           <p>{formats[video.aspect]} · {video.duration} s · {Math.round(video.bytes/1024)} KB · {t.states[video.status]||video.status}</p>
           <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
             <button type="button" disabled={busy||video.status!=='ready'} onClick={()=>void view(video.id)}>{t.play}</button>

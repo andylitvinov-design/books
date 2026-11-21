@@ -122,3 +122,6 @@
   .stage{box-shadow:0 12px 32px #40322025}
 }
 @media(prefers-reduced-motion:reduce){.stage,.field,.slot{transition:none!important;animation:none!important}}
+
+/* Four integrated Video Studio modes: avoid clipped navigation on iPhone. */
+@media(max-width:560px){.modeNav{flex-wrap:wrap}.modeNav a{flex:1 1 calc(50% - 8px);min-width:0;padding:8px}}

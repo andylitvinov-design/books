@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { toPublishedProfessionalSource } from "@/lib/mandala/professional-public-source.mjs";
@@ -8,6 +9,7 @@ import { getAppConfig } from "@/lib/app/config";
 import { MandalaMeditationClient } from "@/components/mandala-meditation-client";
 import { MeditationWriterPreview } from "@/components/meditation-writer-preview";
 import { HolisticSupportMandalaDock } from "@/components/holistic-support-mandala-dock";
+const MandalaPersonalVideoGift = dynamic(() => import("@/components/mandala-personal-video-gift").then(module => module.MandalaPersonalVideoGift));
 import { MentalicaPhotoMandala } from "@/components/mentalica-photo-mandala";
 import photoStyles from "@/components/mentalica-photo-mandala.module.css";
 import { PublicSiteHeader } from "@/components/public-site-header";
@@ -75,23 +77,28 @@ export default async function MandalaMeditationPage({ params, searchParams }: Pr
   }
   const professionalMode = query?.pro === "1" || Boolean(professionalSource);
   const photoMode = query?.mode === "photo";
+  const giftMode = query?.mode === "gift";
   return (
     <main className={styles.page} lang={locale} data-mandala-meditation-page
-      data-mandala-mode={photoMode ? "photo" : "video"}>
+      data-mandala-mode={photoMode ? "photo" : giftMode ? "gift" : "video"}>
       <div className={styles.siteHeaderWrap}><PublicSiteHeader locale={locale} /></div>
 
       <nav className={photoStyles.modeNav} aria-label={locale === "ru" ? "Режим мандалы" : locale === "es" ? "Modo mandala" : "Mandala mode"} data-mentalica-studio-mode>
-        <Link href={"/"+locale+"/holistic-support/mandala"} prefetch={false} aria-current={!photoMode ? "page" : undefined}>
+        <Link href={"/"+locale+"/holistic-support/mandala"} prefetch={false} aria-current={!photoMode && !giftMode ? "page" : undefined}>
           {locale === "ru" ? "Видео" : locale === "es" ? "Vídeo" : "Video"}
         </Link>
         <Link href={"/"+locale+"/holistic-support/mandala?mode=photo"} prefetch={false} aria-current={photoMode ? "page" : undefined}>
           {locale === "ru" ? "Фотомандалы" : locale === "es" ? "Mandalas de fotos" : "Photo mandalas"}
         </Link>
+        <Link href={"/"+locale+"/holistic-support/mandala?mode=gift"} prefetch={false} aria-current={giftMode ? "page" : undefined}>
+          {locale === "ru" ? "Живая открытка" : locale === "es" ? "Tarjeta animada" : "Video Gift"}
+        </Link>
         <Link href={"/"+locale+"/holistic-support/voice-message"} prefetch={false}>
           {locale === "ru" ? "Голос близкого" : locale === "es" ? "Voz cercana" : "Loved voice"}
         </Link>
       </nav>
-      {photoMode ? <MentalicaPhotoMandala locale={locale} /> :
+      {photoMode ? <MentalicaPhotoMandala locale={locale} /> : giftMode ?
+        <MandalaPersonalVideoGift locale={locale} /> :
         <MandalaMeditationClient locale={locale} videos={freeMeditationVideos(locale)}
           professionalSource={professionalSource} professionalMode={professionalMode} />}
       {process.env.HH_MEDITATION_WRITER_BRIEF_ENABLED === "true" &&
