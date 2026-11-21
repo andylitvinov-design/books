@@ -392,7 +392,8 @@ test("original-motion WebKit uses real Change Goal and all Personalization steps
  }
  assert.match(browser,/CHANGE_GOAL_MUST_BE_SELECTED_BY_GUEST/);
  assert.match(browser,/VISITOR_PERSONALIZATION_MUST_UNLOCK_CONCEPT/);
- assert.doesNotMatch(browser,/force:\s*true|\.evaluate\(.*\.disabled\s*=|setIdeasProfileConfirmed\(true\)/,
+ // Disallow forced browser gestures, but not filesystem cleanup with force: true.
+ assert.doesNotMatch(browser,/\.(?:click|tap)\(\{[^}]*\bforce:\s*true|\.evaluate\(.*\.disabled\s*=|setIdeasProfileConfirmed\(true\)/,
   "do not override native consent or disabled Concept by modifying DOM");
  assert.match(browser,/readRealGuestVideo\(page,\{timeout: 150000\}\)/,
   "real generated media must remain mandatory");
