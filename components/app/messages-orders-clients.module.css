@@ -653,3 +653,56 @@
  .root[data-section="ai"] .head h1{font-size:16px}
  .root[data-section="ai"] .head p{font-size:9px}
 }
+
+/* Homepage-style brand is shown on first AI/Chat open, then the active persona
+   and slim WhatsApp-style header. Four existing tabs remain in a real menu. */
+.root .chatSiteBrand{display:none;text-decoration:none}
+.root .chatTabsToggle{display:none}
+@media(max-width:760px){
+ .root[data-section="ai"] .sections{display:none;grid-template-columns:repeat(4,minmax(0,1fr))}
+ .root[data-section="ai"] .sections[data-chat-tabs-open="true"]{display:grid;margin:0 0 7px}
+ .root[data-section="ai"] .head{flex:none;display:flex;align-items:center;gap:7px;
+   height:65px;min-height:65px;max-height:65px;margin:0 0 5px;
+   padding:5px 6px;border:0;border-radius:0;box-shadow:none;background:transparent}
+ .root[data-section="ai"] .chatSiteBrand{display:flex;align-items:center;gap:6px;
+   flex:1;min-width:0;overflow:hidden;color:#0e4437}
+ .root[data-section="ai"] .chatSiteBrand>svg{flex:none;color:#008e70;width:27px;height:27px}
+ .root[data-section="ai"] .chatSiteBrand>span{min-width:0;display:flex;flex-direction:column;
+   font:700 clamp(17px,5vw,22px)/1 Georgia,serif;letter-spacing:-.025em;white-space:nowrap}
+ .root[data-section="ai"] .chatSiteBrand small{margin-top:4px;color:#265447;
+   font:610 clamp(8px,2.55vw,11px)/1.15 system-ui,sans-serif;letter-spacing:0}
+ .root[data-section="ai"] .presenterIdentity{display:none}
+ .root[data-section="ai"] .headerActions{gap:4px;flex:none}
+ .root[data-section="ai"] .headerActions>button{min-width:40px;width:40px;height:42px;
+   border:1px solid #e3ded4;border-radius:13px;background:#fffdfa;color:#175342}
+ .root[data-section="ai"] .headerActions>button[data-hh-ali-persona-open]{
+   min-width:48px;width:48px;height:43px;border-radius:13px}
+ .root[data-section="ai"] .chatTabsToggle{display:grid;place-items:center}
+ .root[data-section="ai"] .chatTabsToggle[aria-expanded="true"]{
+   background:#e6f4ed;border-color:#89bda6}
+ .root[data-section="ai"] .headerActions>button[data-hh-ai-new-chat]{display:none}
+ .root[data-section="ai"]:has([data-has-messages="true"]) .chatSiteBrand{display:none}
+ .root[data-section="ai"]:has([data-has-messages="true"]) .presenterIdentity{display:flex}
+ .root[data-section="ai"]:has([data-has-messages="true"]) .headerActions>button[data-hh-ai-new-chat]{display:grid}
+ .root[data-section="ai"]:has([data-has-messages="true"]) .head{
+   height:53px;min-height:53px;max-height:53px;margin-bottom:2px;padding:3px 4px;
+   border-bottom:1px solid #ebe2d7}
+ .root[data-section="ai"]:has([data-has-messages="true"]) .presenterIdentity h1{
+   font:790 clamp(14px,4vw,18px)/1.13 system-ui,sans-serif}
+ .root[data-section="ai"]:has([data-has-messages="true"]) .presenterIdentity p{font-size:10px}
+ .root[data-section="ai"]:has([data-has-messages="true"]) .presenterIdentity img{
+   height:38px;width:38px;border-radius:50%}
+ .root[data-section="ai"][data-chat-editing="true"]:has([data-has-messages="true"]) .head{
+   height:48px;min-height:48px;max-height:48px}
+}
+@media(max-width:365px){
+ .root[data-section="ai"] .head{padding:3px 2px;gap:3px}
+ .root[data-section="ai"] .chatSiteBrand{gap:4px}
+ .root[data-section="ai"] .chatSiteBrand>svg{height:24px;width:24px}
+ .root[data-section="ai"] .chatSiteBrand>span{font-size:16px}
+ .root[data-section="ai"] .chatSiteBrand small{font-size:8px}
+ .root[data-section="ai"] .headerActions>button{height:40px;width:36px;min-width:36px}
+ .root[data-section="ai"] .headerActions>button[data-hh-ali-persona-open]{width:40px;min-width:40px}
+ .root[data-section="ai"] .languageCompact{height:40px;width:45px}
+ .root[data-section="ai"]:has([data-has-messages="true"]) .presenterIdentity p{display:none}
+}
