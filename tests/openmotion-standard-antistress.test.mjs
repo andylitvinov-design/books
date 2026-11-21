@@ -91,8 +91,11 @@ test("approved film has one real lightweight H264/AAC public master, no still-ph
  assert.match(m.path,/^\/videos\/holistic-house\/standard-motion-v1\/anti-stress-30s-en\.mp4$/);
  assert.ok(statSync(join(root,"public",m.path)).size>2000000);
  const picker=readFileSync(join(root,"components/mandala-openmotion-picker.tsx"),"utf8");
- assert.match(picker,/data-openmotion-standard-master/);
- assert.match(picker,/preload="metadata"/);
- assert.match(picker,/src=\{publishedMaster\.path\}/);
- assert.doesNotMatch(picker,/<video[^>]*autoPlay/);
+ assert.match(picker,/<PublishedStandardMotionFilm/);
+ const player=readFileSync(join(root,"components/published-standard-motion-film.tsx"),"utf8");
+ assert.match(player,/data-openmotion-standard-master/);
+ assert.match(player,/preload="metadata"/);
+ assert.match(player,/src=\{master\.path\}/);
+ assert.match(player,/href=\{master\.path\} download/);
+ assert.doesNotMatch(player,/<video[^>]*autoPlay/);
 });
