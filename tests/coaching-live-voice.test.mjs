@@ -594,3 +594,29 @@ test('Web Audio unlock is used only for WebKit phones; desktop retains streaming
   assert.ok(loop.includes('shouldUseCoachingWebAudio(window.navigator)?unlockCoachingAudioContext():null'))
   assert.ok(page.includes('shouldUseCoachingWebAudio(window.navigator)&&'))
 });
+
+
+test('Basic/Pro vendor toggle works during a live conversation with independent Gemini consents',()=>{
+ const ui=source('components/my-coach-live-dialogue.jsx')
+ const start=ui.indexOf('data-coach-basic-pro-toggle')
+ assert.ok(start>0)
+ const toggle=ui.slice(start,ui.indexOf('data-coach-experience-consent',start))
+ assert.match(toggle,/disabled=\{replaying\|\|paused\|\|protocolOpen\}/)
+ assert.match(toggle,/speechRef\.current\?\.stop\?\.\(\)/)
+ assert.match(toggle,/cancelPendingCoachTurn\(\)/)
+ assert.match(ui,/setCoachEngine\('gemini_free'\)/)
+ assert.match(ui,/setGeminiVoiceTier\(experienceTtsConsent&&geminiCapabilities\.gemini_tts_free\?'gemini_tts_free':'existing'\)/)
+ assert.match(ui,/disabled=\{!experienceTextConsent\}/)
+ assert.match(ui,/data-coach-experience-consent/)
+})
+test('AI coach never claims to run on unverified OpenAI GPT-4',async()=>{
+ const {coachClaimsUnverifiedModelIdentity}=await import('../lib/coaching/conversational-persona.mjs')
+ for(const claim of ["I run on OpenAI’s GPT-4, tuned for fast coaching.",
+ "I'm powered by OpenAI GPT-4.", "My model is Gemini.", "I'm ChatGPT.",
+ "Я работаю на OpenAI GPT-4."]){
+  assert.equal(coachClaimsUnverifiedModelIdentity(claim),true,claim)
+ }
+ for(const safe of ["I'm Max, your AI coach.", "The next small step is your choice."]){
+  assert.equal(coachClaimsUnverifiedModelIdentity(safe),false,safe)
+ }
+})

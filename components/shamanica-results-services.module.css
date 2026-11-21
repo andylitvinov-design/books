@@ -11,3 +11,127 @@
 .priorityGroup :global([data-support-uniform-card]){background:#fffefd}
 @media(min-width:761px){.priorityHeader{grid-template-columns:90px minmax(0,1fr)}.priorityImage{width:90px;height:90px}.priorityIntro p{font-size:14px}}
 @media(max-width:350px){.priorityHeader{grid-template-columns:65px minmax(0,1fr);gap:9px;padding-inline:7px}.priorityImage{width:65px;height:68px}.priorityIntro h2{font-size:18px}.priorityIntro p{font-size:11px}}
+
+/* CATEGORY_SERVICES_SUPPORT_PARITY_20261120
+   Selecting one Shamanic category opens the existing real three-offer
+   catalogue in the photo-left, priced, Details / Order Support language.
+   Scoped exclusively to ?category=; quiz result groups stay unchanged. */
+.categoryPage{background:#fbf5e9}
+.categoryPage h1{font-size:clamp(29px,7.2vw,43px);line-height:1.08;margin:7px 0 7px}
+.categoryPage :global([data-shamanica-category-back]){min-height:44px;margin:2px 0 10px}
+.categoryPage :global([data-shamanica-results-lead]){margin:0 0 13px;font-size:clamp(14px,3.8vw,17px);line-height:1.38}
+.categoryTabs{display:flex;align-items:center;gap:8px;min-width:0;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;scroll-snap-type:x proximity;padding:2px 1px 12px}
+.categoryTabs::-webkit-scrollbar{display:none}
+.categoryTabs a{display:inline-flex;align-items:center;justify-content:center;flex:none;min-height:44px;padding:9px 15px;border:1px solid #16806c;border-radius:999px;background:#fffcf7;color:#075d50;text-decoration:none;font:700 14px/1.18 Arial,Helvetica,sans-serif;scroll-snap-align:start;white-space:nowrap}
+.categoryTabs .categoryTabActive{background:#087b63;color:white;border-color:#087b63}
+.categoryTabs a:focus-visible{outline:3px solid #0b8065;outline-offset:2px}
+.categoryOffers{min-width:0}
+.categoryOffers :global([data-services-three-visible]){padding:0;gap:11px}
+.categoryOffers :global([data-support-uniform-card]){grid-template-columns:minmax(84px,30%) minmax(0,1fr);grid-template-rows:minmax(87px,auto) auto auto;column-gap:10px;row-gap:7px;align-items:start;min-height:151px;padding:9px;border:1px solid #e8ddd1;border-radius:21px;background:#fffcf8;box-shadow:0 4px 14px #213e3218}
+.categoryOffers :global([data-support-uniform-photo]){grid-column:1;grid-row:1/3;width:100%;height:100%;min-height:132px;border-radius:15px}
+.categoryOffers :global([data-support-uniform-copy]){grid-column:2;grid-row:1;padding-top:28px}
+.categoryOffers :global([data-support-uniform-copy] h3){font-size:clamp(15px,4.4vw,20px);line-height:1.15}
+.categoryOffers :global([data-support-uniform-copy] p){font-size:clamp(12px,3.4vw,15px);line-height:1.32}
+.categoryOffers :global([data-support-uniform-price]){min-height:25px;font-size:clamp(11px,2.9vw,13px)}
+.categoryOffers :global([data-service-card-actions]){display:contents}
+.categoryOffers :global([data-service-card-controls]){grid-column:2;grid-row:2;min-width:0;gap:6px}
+.categoryOffers :global([data-service-card-controls] button){min-height:44px;padding:6px 4px}
+.categoryOffers :global([data-service-card-details]),.categoryOffers :global([data-service-card-order]){grid-column:1/-1;grid-row:3;margin-top:0;min-width:0}
+@media(max-width:350px){.categoryOffers :global([data-support-uniform-card]){grid-template-columns:80px minmax(0,1fr);gap:7px;padding:7px}.categoryTabs a{padding-inline:11px;font-size:13px}.categoryOffers :global([data-service-card-controls]){gap:4px}.categoryOffers :global([data-service-card-controls] button){font-size:12px}}
+
+/* SHAMANIC_CATEGORY_ONE_SCREEN_20261120
+   Only direct ?category= service lists. The quiz results, canonical Support
+   catalogue, business page and the global iPhone dock are not restyled.
+   A collapsed card shows a concise preview; Details exposes full text. */
+@media(max-width:600px){
+ .categoryPage[data-shamanica-category]{
+  padding:7px 10px calc(var(--hh-unified-nav-height,94px) + env(safe-area-inset-bottom) + 16px);
+ }
+ .categoryPage :global([data-shamanica-category-back]){
+  min-height:31px;margin:0 0 3px;gap:5px;
+  font:750 13px/1.2 Arial,Helvetica,sans-serif;
+ }
+ .categoryPage :global([data-shamanica-category-back] svg){width:16px;height:16px}
+ .categoryPage :global([data-shamanica-results-eyebrow]){
+  gap:5px;font:800 10px/1.15 Arial,Helvetica,sans-serif;letter-spacing:.08em;
+ }
+ .categoryPage :global([data-shamanica-results-eyebrow] svg){width:14px;height:14px}
+ .categoryPage :global([data-shamanica-results-title]){
+  margin:3px 0 3px;
+  font:700 clamp(23px,6.7vw,29px)/1.06 Georgia,"Times New Roman",serif;
+  letter-spacing:-.025em;
+ }
+ .categoryPage :global([data-shamanica-results-lead]){
+  margin:0 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font:500 clamp(11.5px,3.3vw,13px)/1.2 Arial,Helvetica,sans-serif;
+ }
+ .categoryPage .categoryTabs{
+  gap:6px;padding:0 1px 3px;scrollbar-width:none;scroll-snap-type:x proximity;
+ }
+ .categoryPage .categoryTabs a{
+  min-height:32px;padding:5px 10px;border-radius:20px;
+  font:700 clamp(11px,3.2vw,12px)/1.15 Arial,Helvetica,sans-serif;
+ }
+ .categoryPage .categoryOffers :global([data-services-three-visible]){gap:7px;padding:0}
+ .categoryPage .categoryOffers :global([data-support-uniform-card]){
+  display:grid;grid-template-columns:clamp(70px,21vw,82px) minmax(0,1fr);
+  grid-template-rows:minmax(0,auto) 40px;column-gap:9px;row-gap:3px;
+  min-height:0;padding:7px;overflow:hidden;
+  border-radius:17px;border-color:#e8dfd4;background:#fffcf8;
+  box-shadow:0 3px 10px #3b382a13;
+ }
+ .categoryPage .categoryOffers :global([data-support-uniform-photo]){
+  grid-column:1;grid-row:1/3;align-self:stretch;width:100%;height:100%;
+  min-height:0;border-radius:12px;
+ }
+ .categoryPage .categoryOffers :global([data-support-uniform-copy]){
+  grid-column:2;grid-row:1;min-width:0;padding:23px 0 0;
+ }
+ .categoryPage .categoryOffers :global([data-support-uniform-price]){
+  top:0;right:0;min-height:21px;max-width:100%;padding:2px 7px;
+  border-radius:999px;font:750 10.5px/1.15 Arial,Helvetica,sans-serif;
+ }
+ .categoryPage .categoryOffers :global([data-support-uniform-copy] h3){
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+  overflow:hidden;margin:0 0 3px;color:#17374b;
+  font:750 clamp(14px,3.9vw,16px)/1.12 Arial,Helvetica,sans-serif;
+ }
+ .categoryPage .categoryOffers :global([data-support-uniform-copy] p){
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+  overflow:hidden;margin:0;color:#52605b;
+  font:450 clamp(11.5px,3.25vw,12.5px)/1.19 Arial,Helvetica,sans-serif;
+ }
+ .categoryPage .categoryOffers :global([data-service-card-controls]){
+  display:grid;grid-column:2;grid-row:2;min-width:0;
+  grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:5px;
+ }
+ .categoryPage .categoryOffers :global([data-service-card-controls] button){
+  min-width:0;min-height:40px;height:40px;max-height:40px;padding:4px 3px;
+  border-radius:10px;gap:3px;font:750 clamp(11px,3.4vw,13px)/1.15 Arial,Helvetica,sans-serif;
+ }
+ .categoryPage .categoryOffers :global([data-service-card-controls] button:first-child){
+  padding-left:0;justify-content:flex-start;border:0;background:transparent;
+  color:#08715d;text-decoration:underline;text-underline-offset:3px;
+ }
+ .categoryPage .categoryOffers :global([data-service-card-controls] button:last-child){
+  color:#fff;border-color:#08715d;background:linear-gradient(135deg,#11947d,#006751);
+ }
+ .categoryPage .categoryOffers :global([data-service-card-controls] svg){
+  flex:none;width:14px;height:14px;
+ }
+ .categoryPage .categoryOffers :global([data-service-card-details]),
+ .categoryPage .categoryOffers :global([data-service-card-order]){
+  grid-column:1/-1;grid-row:3;margin:2px 0 0;min-width:0;
+ }
+ .categoryPage .categoryOffers :global([data-support-uniform-card]:focus-within){
+  border-color:#0b8069;
+ }
+}
+@media(max-width:350px){
+ .categoryPage .categoryOffers :global([data-support-uniform-card]){
+  grid-template-columns:67px minmax(0,1fr);column-gap:7px;row-gap:2px;padding:6px;
+ }
+ .categoryPage .categoryOffers :global([data-service-card-controls] button){
+  min-height:38px;height:38px;max-height:38px;
+ }
+}
