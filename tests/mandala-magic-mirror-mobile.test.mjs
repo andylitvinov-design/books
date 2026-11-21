@@ -117,3 +117,16 @@ test("visible Free Film catalogue owns the guarded portrait-only recovery, not h
  assert.match(mobile,/\[data-video-quick-start\]\{display:none\}/,
    "the hidden legacy group must not contain the recovery CTA");
 });
+
+test("Next uses a relevant canonical default for every approved card, never arbitrary first topic",async()=>{
+ const {getMyTubeTopic}=await import("../lib/mandala/mytube-content-taxonomy.mjs");
+ const choices=[...mirror.matchAll(/\{id:"([^"]+)",theme:"[^"]+",categoryId:"([^"]+)",image:"[^"]+",defaultTopicId:"([^"]+)"/g)];
+ assert.equal(choices.length,12,"four cards in each of three tabs");
+ for(const [,card,category,topicId] of choices){
+  const found=getMyTubeTopic(topicId);
+  assert.ok(found,"default topic exists for "+card);
+  assert.equal(found.category.id,category,"default topic stays in selected category for "+card);
+ }
+ assert.match(mirror,/const curated=getMyTubeTopic\(selected\.defaultTopicId\)/);
+ assert.doesNotMatch(mirror,/const fallbackSub=subcategories\[0\]/);
+});

@@ -15,49 +15,49 @@ export type MirrorResolution={
  theme:Theme;wish:string;goalChoiceId:string;
 };
 type GoalOption={
- id:string;theme:Theme;categoryId:MirrorCategory;image:string;
+ id:string;theme:Theme;categoryId:MirrorCategory;image:string;defaultTopicId:string;
  label:Record<VideoLocale,string>;request:Record<VideoLocale,string>;
 };
 const choices:Record<MirrorScope,GoalOption[]>={
  me:[
-  {id:"energy",theme:"energy",categoryId:"energy-confidence",image:"sunbeam-flow.jpg",
+  {id:"energy",theme:"energy",categoryId:"energy-confidence",image:"sunbeam-flow.jpg",defaultTopicId:"low-energy",
    label:{en:"More Energy & Vitality",ru:"Больше энергии и сил",es:"Más energía y vitalidad"},
    request:{en:"I want more energy and vitality.",ru:"Хочу больше энергии и жизненных сил.",es:"Quiero más energía y vitalidad."}},
-  {id:"love",theme:"relationships",categoryId:"love-relationships",image:"wildflower-dance.jpg",
+  {id:"love",theme:"relationships",categoryId:"love-relationships",image:"wildflower-dance.jpg",defaultTopicId:"emotional-intimacy",
    label:{en:"Love & Relationships",ru:"Любовь и отношения",es:"Amor y relaciones"},
    request:{en:"I want warm, trusting relationships.",ru:"Хочу тёплых и доверительных отношений.",es:"Quiero relaciones cálidas y de confianza."}},
-  {id:"peace",theme:"health",categoryId:"stress-anxiety",image:"calm-sea.jpg",
+  {id:"peace",theme:"health",categoryId:"stress-anxiety",image:"calm-sea.jpg",defaultTopicId:"stress-relief",
    label:{en:"Inner Peace & Balance",ru:"Спокойствие и баланс",es:"Paz interior y equilibrio"},
    request:{en:"I want more calm and balance.",ru:"Хочу больше спокойствия и равновесия.",es:"Quiero más calma y equilibrio."}},
-  {id:"abundance",theme:"money",categoryId:"goals-money",image:"wealth-sunrise.jpg",
+  {id:"abundance",theme:"money",categoryId:"goals-money",image:"wealth-sunrise.jpg",defaultTopicId:"financial-stability",
    label:{en:"Success & Abundance",ru:"Успех и достаток",es:"Éxito y abundancia"},
    request:{en:"I want more stability and success.",ru:"Хочу больше устойчивости и успеха.",es:"Quiero más estabilidad y éxito."}},
  ],
  business:[
-  {id:"growth",theme:"money",categoryId:"goals-money",image:"wealth-sunrise.jpg",
+  {id:"growth",theme:"money",categoryId:"goals-money",image:"wealth-sunrise.jpg",defaultTopicId:"entrepreneurship",
    label:{en:"Growth & Revenue",ru:"Рост и доход",es:"Crecimiento e ingresos"},
    request:{en:"I want sustainable business growth.",ru:"Хочу устойчивого роста бизнеса.",es:"Quiero un crecimiento empresarial sostenible."}},
-  {id:"team",theme:"relationships",categoryId:"love-relationships",image:"wildflower-dance.jpg",
+  {id:"team",theme:"relationships",categoryId:"love-relationships",image:"wildflower-dance.jpg",defaultTopicId:"rebuilding-trust",
    label:{en:"Team & Trust",ru:"Команда и доверие",es:"Equipo y confianza"},
    request:{en:"I want more trust in my team.",ru:"Хочу больше доверия в команде.",es:"Quiero más confianza en mi equipo."}},
-  {id:"focus",theme:"goals",categoryId:"goals-money",image:"mountain-air.jpg",
+  {id:"focus",theme:"goals",categoryId:"goals-money",image:"mountain-air.jpg",defaultTopicId:"goal-setting",
    label:{en:"Focus & Strategy",ru:"Фокус и стратегия",es:"Enfoque y estrategia"},
    request:{en:"I want clarity in my work decisions.",ru:"Хочу ясности в рабочих решениях.",es:"Quiero claridad al decidir en mi trabajo."}},
-  {id:"leadership",theme:"energy",categoryId:"energy-confidence",image:"sunbeam-flow.jpg",
+  {id:"leadership",theme:"energy",categoryId:"energy-confidence",image:"sunbeam-flow.jpg",defaultTopicId:"self-confidence",
    label:{en:"Energy & Leadership",ru:"Энергия лидера",es:"Energía y liderazgo"},
    request:{en:"I want energy and confidence as a leader.",ru:"Хочу энергии и уверенности как лидер.",es:"Quiero energía y confianza como líder."}},
  ],
  present:[
-  {id:"birthday",theme:"energy",categoryId:"energy-confidence",image:"sunbeam-flow.jpg",
+  {id:"birthday",theme:"energy",categoryId:"energy-confidence",image:"sunbeam-flow.jpg",defaultTopicId:"morning-energy",
    label:{en:"Birthday & Joy",ru:"День рождения",es:"Cumpleaños y alegría"},
    request:{en:"I want to celebrate a special birthday.",ru:"Хочу подарить тёплое поздравление с днём рождения.",es:"Quiero celebrar un cumpleaños especial."}},
-  {id:"gratitude",theme:"relationships",categoryId:"love-relationships",image:"wildflower-dance.jpg",
+  {id:"gratitude",theme:"relationships",categoryId:"love-relationships",image:"wildflower-dance.jpg",defaultTopicId:"emotional-intimacy",
    label:{en:"Love & Gratitude",ru:"Любовь и благодарность",es:"Amor y gratitud"},
    request:{en:"I want to express love and gratitude.",ru:"Хочу выразить любовь и благодарность.",es:"Quiero expresar amor y gratitud."}},
-  {id:"support",theme:"health",categoryId:"stress-anxiety",image:"calm-sea.jpg",
+  {id:"support",theme:"health",categoryId:"stress-anxiety",image:"calm-sea.jpg",defaultTopicId:"stress-relief",
    label:{en:"Care & Support",ru:"Забота и поддержка",es:"Cariño y apoyo"},
    request:{en:"I want to encourage someone I care about.",ru:"Хочу поддержать близкого человека.",es:"Quiero apoyar a alguien querido."}},
-  {id:"anniversary",theme:"goals",categoryId:"goals-money",image:"wealth-sunrise.jpg",
+  {id:"anniversary",theme:"goals",categoryId:"goals-money",image:"wealth-sunrise.jpg",defaultTopicId:"goal-setting",
    label:{en:"Anniversary & Wishes",ru:"Годовщина и пожелания",es:"Aniversario y deseos"},
    request:{en:"I want to celebrate an anniversary.",ru:"Хочу поздравить с годовщиной.",es:"Quiero celebrar un aniversario."}},
  ],
@@ -135,14 +135,17 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
   // An ambiguous request uses the visibly selected card as a reversible default.
   const classified=wish.trim()?classifyMyTubeRequest(wish,locale):null;
   const match=classified?.topicId?getMyTubeTopic(classified.topicId):null;
-  const fallbackSub=subcategories[0];
-  const fallbackTopic=fallbackSub&&listMyTubeTopics(selected.categoryId,fallbackSub.id,locale)[0];
+  const curated=getMyTubeTopic(selected.defaultTopicId);
   const valid=match&&match.category.id===classified?.categoryId&&
    match.subcategory.id===classified?.subcategoryId;
-  const categoryId=(valid?match.category.id:selected.categoryId) as MirrorCategory;
-  const subId=valid?match.subcategory.id:fallbackSub?.id;
-  const topicId=valid?match.topic.id:fallbackTopic?.id;
-  if(!subId||!topicId){setBlocked(true);return;}
+  // Explicitly approved category-specific defaults, never array[0] from an
+  // unrelated subcategory. A typed wish can select another canonical topic.
+  const inferred=valid?match:curated;
+  if(!inferred||!["goals-money","love-relationships","energy-confidence","stress-anxiety"]
+    .includes(inferred.category.id)){setBlocked(true);return;}
+  const categoryId=inferred.category.id as MirrorCategory;
+  const subId=inferred.subcategory.id;
+  const topicId=inferred.topic.id;
   finish(categoryId,subId,topicId,goalText);
  };
  return <section className={css.goals} data-hh-mirror-goals data-hh-mirror-mode={scope}
