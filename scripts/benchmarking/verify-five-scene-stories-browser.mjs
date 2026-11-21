@@ -66,11 +66,15 @@ try{
  assert.equal(response?.status(),200,'STORIES_LOCAL_APP_NOT_200');
  await page.locator('[data-video-studio-hydrated="true"]').waitFor({timeout:60000});
  await completeThreeStepGoalsQuiz(page,{engine:'webkit'});
- // The visible first-screen Create CTA is the real post-quiz navigation.
- // The legacy lower Continue remains hidden; do not force a synthetic click.
+ // The legacy Create CTA may collapse after the third real Goal tap.
+ // Use the visible Ideas rail without force-clicking hidden elements or skipping
+ // the native three-choice quiz. The real media/consent checks remain below.
  const advance=page.locator('[data-video-goal-create-cta]');
- await advance.waitFor({state:'visible',timeout:15000});
- await advance.tap();
+ const visibleNext=await advance.isVisible()?advance:page.locator('[data-video-quick-control="phrases"]');
+ await visibleNext.waitFor({state:'visible',timeout:15000});
+ await visibleNext.tap();
+ await page.waitForFunction(()=>document.querySelector('[data-video-quick-control="phrases"]')
+   ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
  await page.locator('[data-video-quick-control="editor"]').click();
  const storyTab=page.locator('[data-video-montage-tab="concept"]');
  await storyTab.waitFor({state:'visible',timeout:20000});

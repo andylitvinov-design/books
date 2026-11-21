@@ -375,6 +375,16 @@ test("guest real encoded video must keep Save behind sign-in and preserve physic
 });
 
 
+test("Stories WebKit enters Ideas via visible controls after native Goal quiz",()=>{
+ const source=readFileSync(new URL("../scripts/benchmarking/verify-five-scene-stories-browser.mjs",import.meta.url),"utf8");
+ assert.match(source,/completeThreeStepGoalsQuiz\(page,\{engine:'webkit'\}\)/);
+ assert.match(source,/const visibleNext=await advance\.isVisible\(\)\?advance:page\.locator\('\[data-video-quick-control="phrases"\]'\)/);
+ assert.match(source,/await visibleNext\.tap\(\)/);
+ assert.match(source,/getAttribute\('aria-pressed'\)==='true'/);
+ assert.match(source,/readRealGuestVideo/);
+ assert.doesNotMatch(source,/await advance\.waitFor\(\{state:'visible'|advance\.tap\(\{force:true\}\)/);
+});
+
 test("original-motion WebKit uses real Change Goal and all Personalization steps before Concept",()=>{
  const browser=readFileSync(new URL("../scripts/benchmarking/verify-original-motion-export.mjs",import.meta.url),"utf8");
  const milestones=[
