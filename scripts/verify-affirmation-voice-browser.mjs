@@ -145,12 +145,12 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(page.locator('[data-video-ideas-personalization-panel]')).toBeVisible();
     const purposeQuiz=page.locator('[data-video-personalization]');
     await expect(purposeQuiz).toHaveAttribute("data-video-personalization-goal","leisure");
-    // Approved purpose-first Personalization replaces the old auxiliary
-    // topic-refinement disclosure. Verify the legacy panel is not interactive,
-    // then exercise actual mood, energy and next-step selections below.
+    // Goal-first Personalization permits an optional expanded topic disclosure
+    // only AFTER the real Goal selection; it must never replace the five
+    // goal-scoped answers or appear as a mandatory extra step.
     const refinement=page.locator('[data-video-ideas-refinement]');
     await expect(refinement).toHaveCount(1);
-    await expect(refinement.locator(":scope > summary")).toBeHidden();
+    await expect(refinement.locator(":scope > summary")).toBeVisible();
     await expect(purposeQuiz).toBeVisible();
     // Complete leisure's three real steps (desired mood, current energy, name)
     // so subsequent Montage assertions start from a confirmed profile.
