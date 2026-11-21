@@ -148,17 +148,15 @@ const copy={
 } as const;
 // First-screen categories and photographic art follow the canonical Telegram hierarchy.
 const videoGoalCategories=[
- {id:"goals-money",theme:"money",Icon:Sprout,art:"growth"},
- {id:"love-relationships",theme:"relationships",Icon:Heart,art:"love"},
- {id:"energy-confidence",theme:"energy",Icon:Zap,art:"energy"},
  {id:"stress-anxiety",theme:"health",Icon:Leaf,art:"stress"},
+ {id:"love-relationships",theme:"relationships",Icon:Heart,art:"love"},
+ {id:"goals-money",theme:"money",Icon:Sprout,art:"growth"},
+ {id:"energy-confidence",theme:"life",Icon:Zap,art:"energy"},
 ] as const;
 type CanonicalCategoryId=(typeof videoGoalCategories)[number]["id"];
-// All buttons are canonical 4×4×4 taxonomy topics, not decorative tags.
-const goalTopicIds:Record<CanonicalCategoryId,readonly string[]>={"energy-confidence":["calm-presence","self-confidence","self-acceptance","healthy-habits","body-awareness","breathing-practices","motivation-drive","recovery-after-load","morning-energy"],"stress-anxiety":["stress-relief","constant-anxiety","anxiety-no-reason","work-stress","burnout","low-mood","inner-child","apathy","emotional-emptiness"],"love-relationships":["emotional-intimacy","couple-communication","find-love","ready-relationship","family-relationships","rebuilding-trust","choosing-partner","breakup-recovery","fear-intimacy"],"goals-money":["personal-growth","life-transitions","goal-setting","financial-stability","self-discipline","career-growth","income-growth","business-decisions","life-purpose"]};
 const initialCategoryForTheme:Record<VideoTheme,CanonicalCategoryId>={
- energy:"energy-confidence",money:"goals-money",relationships:"love-relationships",
- goals:"goals-money",life:"goals-money",health:"stress-anxiety",
+ energy:"stress-anxiety",money:"goals-money",relationships:"love-relationships",
+ goals:"goals-money",life:"energy-confidence",health:"stress-anxiety",
 };
 const popularTopicIds=["confidence","connection","fresh-start","stability","calm","vitality"] as const;
 const popularTopicCopy={
@@ -786,11 +784,11 @@ export function MandalaAutoVideoDirector({
    if(path.scope==="present"){
     // Gifts remain subject to the existing recipient-format, source and
     // rights checks. This selection is NOT a generated or deliverable gift.
-    const greeting=path.goalChoiceId==="birthday"||path.goalChoiceId==="anniversary";
-    const kindId=greeting?"greeting":"gift";
-    const occasionId=path.goalChoiceId==="birthday"?"birthday":
-      path.goalChoiceId==="anniversary"?"anniversary":
-      path.goalChoiceId==="support"?"support":"gratitude";
+    const birthday=/birthday|день\s+рождени|cumplea/iu.test(path.wish);
+    const anniversary=/anniversary|годовщин|aniversario/iu.test(path.wish);
+    const kindId=birthday||anniversary?"greeting":"gift";
+    const occasionId=birthday?"birthday":anniversary?"anniversary":
+      path.goalChoiceId==="stress"?"support":"gratitude";
     if(!getRecipientVideoKind(kindId)||!listRecipientVideoOccasions(kindId,locale)
       .some(item=>item.id===occasionId))return false;
     if(videoAudience==="self")selfAspectRef.current=aspect;

@@ -81,12 +81,19 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(mirror).toBeVisible();
     await expect(mirror).toHaveAttribute('data-hh-mirror-step','1');
     await expect(mirror.locator('[data-hh-mirror-goal-choice]')).toHaveCount(4);
+    const approvedAxisLabels={
+      en:["Ease Stress & Restore Energy","Improve Love & Relationships","Money, Success & Self-Esteem","Personal & Business Growth"],
+      ru:["Снизить стресс и восстановить энергию","Улучшить любовь и отношения","Деньги, успех и самооценка","Личностный и бизнес-рост"],
+      es:["Aliviar el estrés y recuperar energía","Mejorar el amor y las relaciones","Dinero, éxito y autoestima","Crecimiento personal y empresarial"]
+    }[locale];
+    for(let index=0;index<4;index++)await expect(mirror.locator('[data-hh-mirror-goal-choice]').nth(index))
+      .toContainText(approvedAxisLabels[index]);
     await mirror.locator('[data-hh-mirror-audience="business"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","business");
     await expect(mirror.locator('[data-hh-mirror-goal-choice="growth"]')).toBeVisible();
     await mirror.locator('[data-hh-mirror-audience="present"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","present");
-    await expect(mirror.locator('[data-hh-mirror-goal-choice="birthday"]')).toBeVisible();
+    await expect(mirror.locator('[data-hh-mirror-goal-choice="stress"]')).toBeVisible();
     await mirror.locator('[data-hh-mirror-audience="me"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","me");
     // One-line Next is a real local taxonomy selection and jumps directly

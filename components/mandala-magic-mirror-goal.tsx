@@ -3,7 +3,7 @@
 import {useRef,useState} from "react";
 import {ArrowLeft,ArrowRight,Briefcase,Check,Ellipsis,Gift,Mic,Sparkles,UserRound} from "lucide-react";
 import type {VideoLocale} from "@/lib/mandala/holistic-video-themes";
-import {listMyTubeSubcategories,listMyTubeTopics,getMyTubeTopic} from "@/lib/mandala/mytube-content-taxonomy.mjs";
+import {listMyTubeCategories,listMyTubeSubcategories,listMyTubeTopics,getMyTubeTopic} from "@/lib/mandala/mytube-content-taxonomy.mjs";
 import {classifyMyTubeRequest} from "@/lib/mandala/mytube-prompt-classifier.mjs";
 import css from "./mandala-magic-mirror-goal.module.css";
 
@@ -16,71 +16,59 @@ export type MirrorResolution={
 };
 type GoalOption={
  id:string;theme:Theme;categoryId:MirrorCategory;image:string;defaultTopicId:string;
- label:Record<VideoLocale,string>;request:Record<VideoLocale,string>;
+ request:Record<VideoLocale,string>;
 };
 const choices:Record<MirrorScope,GoalOption[]>={
  me:[
-  {id:"energy",theme:"energy",categoryId:"energy-confidence",image:"sunbeam-flow.jpg",defaultTopicId:"low-energy",
-   label:{en:"More Energy & Vitality",ru:"Больше энергии и сил",es:"Más energía y vitalidad"},
-   request:{en:"I want more energy and vitality.",ru:"Хочу больше энергии и жизненных сил.",es:"Quiero más energía y vitalidad."}},
+  {id:"stress",theme:"health",categoryId:"stress-anxiety",image:"calm-sea.jpg",defaultTopicId:"low-energy",
+   request:{en:"I want to release stress and restore my energy.",ru:"Хочу снизить стресс и восстановить энергию.",es:"Quiero aliviar el estrés y recuperar energía."}},
   {id:"love",theme:"relationships",categoryId:"love-relationships",image:"wildflower-dance.jpg",defaultTopicId:"emotional-intimacy",
-   label:{en:"Love & Relationships",ru:"Любовь и отношения",es:"Amor y relaciones"},
-   request:{en:"I want warm, trusting relationships.",ru:"Хочу тёплых и доверительных отношений.",es:"Quiero relaciones cálidas y de confianza."}},
-  {id:"peace",theme:"health",categoryId:"stress-anxiety",image:"calm-sea.jpg",defaultTopicId:"stress-relief",
-   label:{en:"Inner Peace & Balance",ru:"Спокойствие и баланс",es:"Paz interior y equilibrio"},
-   request:{en:"I want more calm and balance.",ru:"Хочу больше спокойствия и равновесия.",es:"Quiero más calma y equilibrio."}},
-  {id:"abundance",theme:"money",categoryId:"goals-money",image:"wealth-sunrise.jpg",defaultTopicId:"financial-stability",
-   label:{en:"Success & Abundance",ru:"Успех и достаток",es:"Éxito y abundancia"},
-   request:{en:"I want more stability and success.",ru:"Хочу больше устойчивости и успеха.",es:"Quiero más estabilidad y éxito."}},
+   request:{en:"I want loving, trusting relationships.",ru:"Хочу тёплых и доверительных отношений.",es:"Quiero relaciones amorosas y de confianza."}},
+  {id:"money",theme:"money",categoryId:"goals-money",image:"wealth-sunrise.jpg",defaultTopicId:"financial-stability",
+   request:{en:"I want greater confidence and financial stability.",ru:"Хочу уверенности и финансовой устойчивости.",es:"Quiero más confianza y estabilidad financiera."}},
+  {id:"growth",theme:"goals",categoryId:"energy-confidence",image:"mountain-air.jpg",defaultTopicId:"personal-growth",
+   request:{en:"I want personal growth and a clearer direction.",ru:"Хочу личностного развития и ясного направления.",es:"Quiero crecer personalmente y tener una dirección clara."}},
  ],
  business:[
-  {id:"growth",theme:"money",categoryId:"goals-money",image:"wealth-sunrise.jpg",defaultTopicId:"entrepreneurship",
-   label:{en:"Growth & Revenue",ru:"Рост и доход",es:"Crecimiento e ingresos"},
-   request:{en:"I want sustainable business growth.",ru:"Хочу устойчивого роста бизнеса.",es:"Quiero un crecimiento empresarial sostenible."}},
-  {id:"team",theme:"relationships",categoryId:"love-relationships",image:"wildflower-dance.jpg",defaultTopicId:"rebuilding-trust",
-   label:{en:"Team & Trust",ru:"Команда и доверие",es:"Equipo y confianza"},
-   request:{en:"I want more trust in my team.",ru:"Хочу больше доверия в команде.",es:"Quiero más confianza en mi equipo."}},
-  {id:"focus",theme:"goals",categoryId:"goals-money",image:"mountain-air.jpg",defaultTopicId:"goal-setting",
-   label:{en:"Focus & Strategy",ru:"Фокус и стратегия",es:"Enfoque y estrategia"},
-   request:{en:"I want clarity in my work decisions.",ru:"Хочу ясности в рабочих решениях.",es:"Quiero claridad al decidir en mi trabajo."}},
-  {id:"leadership",theme:"energy",categoryId:"energy-confidence",image:"sunbeam-flow.jpg",defaultTopicId:"self-confidence",
-   label:{en:"Energy & Leadership",ru:"Энергия лидера",es:"Energía y liderazgo"},
-   request:{en:"I want energy and confidence as a leader.",ru:"Хочу энергии и уверенности как лидер.",es:"Quiero energía y confianza como líder."}},
+  {id:"stress",theme:"health",categoryId:"stress-anxiety",image:"calm-sea.jpg",defaultTopicId:"work-stress",
+   request:{en:"I want less work stress and more energy.",ru:"Хочу меньше рабочего стресса и больше энергии.",es:"Quiero menos estrés laboral y más energía."}},
+  {id:"love",theme:"relationships",categoryId:"love-relationships",image:"wildflower-dance.jpg",defaultTopicId:"rebuilding-trust",
+   request:{en:"I want trust and supportive relationships at work.",ru:"Хочу больше доверия и поддержки в работе.",es:"Quiero más confianza y apoyo en el trabajo."}},
+  {id:"money",theme:"money",categoryId:"goals-money",image:"wealth-sunrise.jpg",defaultTopicId:"income-growth",
+   request:{en:"I want stable income and lasting success.",ru:"Хочу устойчивого дохода и успеха.",es:"Quiero ingresos estables y éxito duradero."}},
+  {id:"growth",theme:"goals",categoryId:"energy-confidence",image:"mountain-air.jpg",defaultTopicId:"entrepreneurship",
+   request:{en:"I want to develop my business sustainably.",ru:"Хочу устойчиво развивать свой бизнес.",es:"Quiero desarrollar mi negocio de manera sostenible."}},
  ],
  present:[
-  {id:"birthday",theme:"energy",categoryId:"energy-confidence",image:"sunbeam-flow.jpg",defaultTopicId:"morning-energy",
-   label:{en:"Birthday & Joy",ru:"День рождения",es:"Cumpleaños y alegría"},
-   request:{en:"I want to celebrate a special birthday.",ru:"Хочу подарить тёплое поздравление с днём рождения.",es:"Quiero celebrar un cumpleaños especial."}},
-  {id:"gratitude",theme:"relationships",categoryId:"love-relationships",image:"wildflower-dance.jpg",defaultTopicId:"emotional-intimacy",
-   label:{en:"Love & Gratitude",ru:"Любовь и благодарность",es:"Amor y gratitud"},
+  {id:"stress",theme:"health",categoryId:"stress-anxiety",image:"calm-sea.jpg",defaultTopicId:"recovery-after-load",
+   request:{en:"I want to offer rest and support to someone I care about.",ru:"Хочу подарить отдых и поддержку близкому человеку.",es:"Quiero regalar descanso y apoyo a alguien querido."}},
+  {id:"love",theme:"relationships",categoryId:"love-relationships",image:"wildflower-dance.jpg",defaultTopicId:"emotional-intimacy",
    request:{en:"I want to express love and gratitude.",ru:"Хочу выразить любовь и благодарность.",es:"Quiero expresar amor y gratitud."}},
-  {id:"support",theme:"health",categoryId:"stress-anxiety",image:"calm-sea.jpg",defaultTopicId:"stress-relief",
-   label:{en:"Care & Support",ru:"Забота и поддержка",es:"Cariño y apoyo"},
-   request:{en:"I want to encourage someone I care about.",ru:"Хочу поддержать близкого человека.",es:"Quiero apoyar a alguien querido."}},
-  {id:"anniversary",theme:"goals",categoryId:"goals-money",image:"wealth-sunrise.jpg",defaultTopicId:"goal-setting",
-   label:{en:"Anniversary & Wishes",ru:"Годовщина и пожелания",es:"Aniversario y deseos"},
-   request:{en:"I want to celebrate an anniversary.",ru:"Хочу поздравить с годовщиной.",es:"Quiero celebrar un aniversario."}},
+  {id:"money",theme:"money",categoryId:"goals-money",image:"wealth-sunrise.jpg",defaultTopicId:"self-confidence",
+   request:{en:"I want to encourage someone's confidence and success.",ru:"Хочу поддержать уверенность и успех близкого.",es:"Quiero animar la confianza y el éxito de alguien."}},
+  {id:"growth",theme:"goals",categoryId:"energy-confidence",image:"mountain-air.jpg",defaultTopicId:"life-transitions",
+   request:{en:"I want to celebrate a new chapter and personal growth.",ru:"Хочу поздравить с новым этапом и развитием.",es:"Quiero celebrar una nueva etapa y el crecimiento personal."}},
  ],
 };
 const categoryTheme:Record<MirrorCategory,Theme>={
  "goals-money":"money","love-relationships":"relationships",
- "energy-confidence":"energy","stress-anxiety":"health",
+ "energy-confidence":"goals","stress-anxiety":"health",
 };
 const labels={
  en:{subtitle:"Create Your Transformative Video",hint:"A few choices for a video shaped around your wish.",
   question:"What is your main goal now?",me:"For Me",business:"For Work",present:"Present",
   placeholder:"Describe your goal or wish…",alternative:"Or choose what matters now",
-  sub:"What matters most?",topic:"Choose a closer focus",next:"Next",back:"Back",
+  sub:"Choose a subcategory",topic:"Choose a topic",next:"Next",back:"Back",
   advanced:"Advanced choices",dictation:"Use your phone keyboard microphone to dictate"},
  ru:{subtitle:"Создайте своё видео перемен",hint:"Несколько ответов — и видео под ваше желание.",
   question:"Какая у вас сейчас главная цель?",me:"Для себя",business:"Для работы",present:"Подарок",
   placeholder:"Опишите цель или желание…",alternative:"Или выберите то, что актуально",
-  sub:"Что для вас важнее?",topic:"Уточните направление",next:"Далее",back:"Назад",
+  sub:"Выберите подкатегорию",topic:"Выберите тему",next:"Далее",back:"Назад",
   advanced:"Расширенные настройки",dictation:"Для диктовки используйте микрофон клавиатуры"},
  es:{subtitle:"Crea tu vídeo de transformación",hint:"Unas elecciones para un vídeo sobre tu deseo.",
   question:"¿Cuál es tu objetivo principal?",me:"Para mí",business:"Para el trabajo",present:"Regalo",
   placeholder:"Describe tu objetivo o deseo…",alternative:"O elige lo que importa ahora",
-  sub:"¿Qué es lo más importante?",topic:"Elige un enfoque",next:"Siguiente",back:"Atrás",
+  sub:"Elige una subcategoría",topic:"Elige un tema",next:"Siguiente",back:"Atrás",
   advanced:"Opciones avanzadas",dictation:"Usa el micrófono del teclado para dictar"},
 } as const;
 
@@ -102,12 +90,13 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
  onComplete:(value:MirrorResolution)=>boolean|void;onExpand:()=>void;
 }){
  const [scope,setScope]=useState<MirrorScope>("me");
- const [selectedId,setSelectedId]=useState("energy");
+ const [selectedId,setSelectedId]=useState("stress");
  const [step,setStep]=useState<1|2|3>(1);
  const [subcategoryId,setSubcategoryId]=useState("");
  const [blocked,setBlocked]=useState(false);
  const inputRef=useRef<HTMLTextAreaElement>(null);
  const t=labels[locale],available=choices[scope];
+ const categoryLabels=listMyTubeCategories(locale);
  const selected=available.find(item=>item.id===selectedId)??available[0];
  const subcategories=listMyTubeSubcategories(selected.categoryId,locale);
  const topics=subcategoryId?listMyTubeTopics(selected.categoryId,subcategoryId,locale):[];
@@ -162,7 +151,9 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
   <div className={css.progress} aria-label={(locale==="ru"?"Шаг ":locale==="es"?"Paso ":"Step ")+step+" / 5"}>
    <span className={css.dots} aria-hidden="true">{[1,2,3,4,5].map(index=>
     <i key={index} data-active={index<=step?"true":"false"}/>)}</span>
-   <span>{locale==="ru"?"Шаг ":locale==="es"?"Paso ":"Step "}{step} {locale==="ru"?"из":locale==="es"?"de":"of"} 5</span>
+   <span data-hh-mirror-stage-label>{step===1?(locale==="ru"?"Категория":locale==="es"?"Categoría":"Category"):
+    step===2?(locale==="ru"?"Подкатегория":locale==="es"?"Subcategoría":"Subcategory"):
+    (locale==="ru"?"Тема":locale==="es"?"Tema":"Topic")} · {step}/3</span>
   </div>
   {step>1?<button type="button" className={css.back} data-hh-mirror-back
     disabled={disabled} onClick={()=>changeStep(step===3?2:1)}>
@@ -196,7 +187,7 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
        onSelectCategory(item.theme);changeStep(2);}}>
       <img src={"/videos/holistic-house/film-collection-v2/"+item.image}
        alt="" aria-hidden="true" loading="lazy"/>
-      <span className={css.cardLabel}>{item.label[locale]}</span>
+      <span className={css.cardLabel}>{categoryLabels.find(category=>category.id===item.categoryId)?.label||item.id}</span>
       {selectedId===item.id?<Check className={css.check} size={18} aria-hidden="true"/>:null}
     </button>)}
    </div>

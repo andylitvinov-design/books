@@ -62,7 +62,7 @@ test("macOS WebKit hydration follows visible Goals → Ideas → Montage without
  const first=browser.indexOf("async function verifyWorkspaceHydration");
  const last=browser.indexOf("// Real guest route browser acceptance",first);
  const flow=browser.slice(first,last);
- const click=flow.indexOf("await continueToIdeas.click()");
+ const click=flow.indexOf("await mirror.locator('[data-hh-mirror-next]').click()");
  const ideas=flow.indexOf('toHaveAttribute("data-active-workspace","phrases")',click);
  const goalPanel=flow.indexOf('data-video-ideas-goal-panel',ideas);
  const chooseCandidates=[

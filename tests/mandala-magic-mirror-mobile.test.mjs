@@ -122,6 +122,12 @@ test("Next uses a relevant canonical default for every approved card, never arbi
  const {getMyTubeTopic}=await import("../lib/mandala/mytube-content-taxonomy.mjs");
  const choices=[...mirror.matchAll(/\{id:"([^"]+)",theme:"[^"]+",categoryId:"([^"]+)",image:"[^"]+",defaultTopicId:"([^"]+)"/g)];
  assert.equal(choices.length,12,"four cards in each of three tabs");
+ assert.deepEqual(choices.slice(0,4).map(([,id,category])=>category),
+  ["stress-anxiety","love-relationships","goals-money","energy-confidence"],
+  "first-screen axis order must match the canonical MyTube and Telegram taxonomy");
+ assert.match(mirror,/categoryLabels\.find\(category=>category\.id===item\.categoryId\)\?\.label/,
+  "visible cards use real localized canonical category names");
+
  for(const [,card,category,topicId] of choices){
   const found=getMyTubeTopic(topicId);
   assert.ok(found,"default topic exists for "+card);
