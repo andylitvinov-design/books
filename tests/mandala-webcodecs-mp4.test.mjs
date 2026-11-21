@@ -204,14 +204,14 @@ test("hydration progresses Goals → Ideas through a real tap without hidden leg
   const flow=browser.slice(start,end);
   const hydrate=flow.indexOf('data-video-studio-hydrated","true"');
   const continueTap=flow.indexOf("await continueToIdeas.click()",hydrate);
-  const goal=flow.indexOf('const ideasGoalTab=page.locator',continueTap);
-  const cards=flow.indexOf('await expect(goalCards).toHaveCount(3)',goal);
-  const selected=flow.indexOf('await expect(choice).toHaveAttribute("aria-pressed","true")',cards);
-  const next=flow.indexOf('await expect(nextGoal).toBeEnabled()',selected);
-  const personalization=flow.indexOf('data-video-ideas-personalization-panel',next);
-  const montage=flow.indexOf('await openVisibleMontageText(page,browser.browserType().name())',personalization);
-  assert.ok(start>=0&&end>start&&hydrate>=0&&continueTap>hydrate&&goal>continueTap&&cards>goal&&selected>cards&&next>selected&&personalization>next&&montage>personalization,
-    "real Goals tap must lead through selected visible Goal and Personalization to Montage");
+  const goal=flow.indexOf('const ideasGoalPane=page.locator',continueTap);
+  const chosen=flow.indexOf('data-video-ideas-goal-choice="rest"',goal);
+  const next=flow.indexOf('data-video-ideas-goal-next',chosen);
+  const personalization=flow.indexOf('data-video-personalization-goal',next);
+  const energy=flow.indexOf('data-video-personalization-energy="5"',personalization);
+  const montage=flow.indexOf("await montage.tap()",energy);
+  assert.ok(start>=0&&end>start&&hydrate>=0&&continueTap>hydrate&&goal>continueTap&&chosen>goal&&next>chosen&&personalization>next&&energy>personalization&&montage>energy,
+    "real visitor selects leisure Goal, mood and energy before entering Montage");
   assert.match(flow,/data-video-continue-scenarios/);
   assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
   assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
@@ -342,7 +342,7 @@ test("real Safari MEDIA_ERR_SRC_NOT_SUPPORTED gets exactly one on-device WebM re
   assert.match(studio,/const autoWebmRetryForRef=useRef<string\|null>\(null\)/);
   assert.match(studio,/autoWebmRetryForRef\.current=signature/);
   assert.match(studio,/autoWebmRetryUrlRef\.current=result\.url/);
-  assert.match(studio,/if\(held&&creditValidRef\.current\)await releaseCredit\(held\)/);
+  assert.match(studio,/if\(held&&creditValidRef\.current&&!\(await releaseCredit\(held\)\)\)return;/);
   assert.match(studio,/setPendingCompatibleRetry\(signature\)/);
   assert.match(studio,/void createVideo\(true\)/);
   assert.match(studio,/HH_SAFARI_FINAL_PLAYBACK:/);
@@ -594,7 +594,7 @@ test("real iPhone prefers native playable MP4 and uses WebCodecs only as an expl
   assert.match(studio,/mime===explicitAvcMime\|\|\(nativeAppleMp4Available&&mime==="video\/mp4"\)/);
   assert.match(studio,/if\(iphoneWebCodecsFallbackAvailable\)void createVideo\(false,false,true,true\)/);
   assert.match(studio,/if\(creditOpRef\.current\)return/);
-  assert.match(studio,/if\(held&&creditValidRef\.current\)await releaseCredit\(held\)/);
+  assert.match(studio,/if\(held&&creditValidRef\.current&&!\(await releaseCredit\(held\)\)\)return;/);
 });
 
 test("Safari native MP4 completion is bounded after 97% and releases failed holds",()=>{
