@@ -30,6 +30,8 @@ export type BrowserMovieOptions={
   seconds:number;
   frameRate:number;
   renderFrame:(seconds:number)=>boolean|Promise<boolean>;
+  /** Only for a verified timestamp decoder; never for live HTMLVideoElement playback. */
+  frameSourceMode?:"live"|"timestamp";
   audio?:BrowserMovieAudio;
   audioMaster?:AudioBuffer;
   shouldContinue:()=>boolean;
@@ -285,6 +287,9 @@ export async function normalizeNativeSafariMp4ForPlayback(
 /** A real H.264/AAC video/audio MP4. Rendering remains on the existing Canvas. */
 export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promise<Blob>{
   const {canvas,seconds,frameRate,renderFrame,audio,audioMaster,shouldContinue,onProgress}=options;
+  if(options.frameSourceMode!==undefined&&options.frameSourceMode!=="live"&&
+     options.frameSourceMode!=="timestamp")throw new Error("invalid_video_frame_mode");
+  const timestampFrames=options.frameSourceMode==="timestamp";
   const withAudio=Boolean(audio||audioMaster);
   if(!(supportsLocalWebCodecsMp4(withAudio)||
     (options.allowProceduralBrowser&&supportsProceduralWebCodecsMp4(withAudio))))
@@ -369,7 +374,10 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
     const maxEncoderPresentationLagMs=3000;
     for(let i=0;i<frames;i++){
       if(!shouldContinue())throw new Error("export_cancelled");
-      const remaining=startedAt+decoderHoldMs+encoderHoldMs+(i*1000/frameRate)-performance.now();
+      // Only timestamp-based source decoders may encode without waiting for playback.
+      // Live HTMLVideoElement sources must keep the original paced clock.
+      const remaining=timestampFrames?0:
+        startedAt+decoderHoldMs+encoderHoldMs+(i*1000/frameRate)-performance.now();
       if(remaining>0)await new Promise<void>(resolve=>setTimeout(resolve,remaining));
       // MP4 presentation timestamps remain exact even when a native decoder
       // briefly buffers at the original four-scene shot boundary.
@@ -378,7 +386,8 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
       // encode calls. Those milliseconds are already included in the pacing
       // clock above, so exclude them here too. The whole-export deadline
       // below still bounds cumulative work; original PTS/frames stay exact.
-      if(performance.now()-startedAt > time*1000+decoderHoldMs+encoderHoldMs+maxEncoderPresentationLagMs)
+      if(!timestampFrames&&
+         performance.now()-startedAt > time*1000+decoderHoldMs+encoderHoldMs+maxEncoderPresentationLagMs)
         throw new Error("video_encoder_timeline_drift");
       const frameWorkStartedAt=performance.now();
       const decoderHoldBeforeFrame=decoderHoldMs;

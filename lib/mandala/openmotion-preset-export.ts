@@ -87,6 +87,8 @@ export async function exportOpenMotionPresetMp4(
   try {
     const blob = await encodeLocalWebCodecsMp4({
       canvas, allowProceduralBrowser:true, seconds:plan.durationMs/1000, frameRate, onProgress,
+      // CanvasSink consumes exact source PTS; do not wait for real-time playback.
+      frameSourceMode:"timestamp",
       shouldContinue:()=>!signal.aborted,
       audioMaster,
       renderFrame:async time=>{
