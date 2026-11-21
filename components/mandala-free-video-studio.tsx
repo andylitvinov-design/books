@@ -9348,6 +9348,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </button>;
           })}
         </div>
+        {portraitRetry&&!recording&&!preparing?
+          <button type="button" data-video-portrait-retry
+            className={videoStyles.audioDirectLink}
+            onClick={()=>applyAutoFilm(portraitRetry.presetId,portraitRetry.seconds,
+              portraitRetry.edit,"portrait")}>
+            {locale==="ru"?"Создать в 9:16":locale==="es"?"Crear en 9:16":"Create in 9:16"}
+          </button>:null}
         {usingFreeFilmCompilation ? <p role="status" data-free-film-readiness>
           {freeFilmReady
             ? (locale==="ru"?"Четыре видео готовы. Нажмите «Создать видео».":
@@ -11042,13 +11049,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       {!source?<p role="status" className={videoStyles.warning}>{t.imagePending}</p>:null}
       {notice?<p role="status" className={videoStyles.notice} aria-live="polite"
         data-video-export-unavailable={exportUnavailable?"true":undefined}>{notice}</p>:null}
-      {portraitRetry&&!recording&&!preparing?
-        <button type="button" data-video-portrait-retry
-          className={videoStyles.audioDirectLink}
-          onClick={()=>applyAutoFilm(portraitRetry.presetId,portraitRetry.seconds,
-            portraitRetry.edit,"portrait")}>
-          {locale==="ru"?"Создать в 9:16":locale==="es"?"Crear en 9:16":"Create in 9:16"}
-        </button>:null}
+      
       {exportUnavailable && !result && originalFallbackMp4 ?
         <div className={videoStyles.warning} data-video-original-fallback role="note">
           <p>{locale==="ru"
