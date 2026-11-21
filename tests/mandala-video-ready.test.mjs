@@ -1,4 +1,5 @@
 import test from "node:test";
+import {buildFfmpegArgs,validateAssemblyInput} from "../scripts/cinematic-video-assemble.mjs";
 import assert from "node:assert/strict";
 import {personalVideoStorageCsp} from "../lib/app/personal-video-storage-csp.mjs";
 import {readFileSync} from "node:fs";
@@ -554,4 +555,52 @@ test("iPhone Ready verifies one visible exported MP4 and retries its transport w
     "one clear retry CTA rather than another identical Generate action when MP4 failed");
   assert.match(studio,/if\(creditOpRef\.current\)return/);
   assert.match(studio,/playbackStatus==="ready"&&creditConfirmed/);
+});
+
+// Fast Assembly inherits the existing six-shot plan and source rights.
+test("Fast Assembly compiles 6 x 5s, visible RU captions and one AAC mix",()=>{
+  const clips=Array.from({length:6},(_,i)=>({file:"s"+i+".mp4",seconds:5,rightsConfirmed:true}));
+  const plan={version:"hh-assembly-1",locale:"ru",aspect:"portrait",fast:true,
+    audioMode:"narration_with_music",clips,
+    narration:{file:"voice.wav",rightsConfirmed:true},
+    music:{file:"music.mp3",rightsConfirmed:true},
+    subtitles:{file:"captions.srt",rightsConfirmed:true}};
+  assert.deepEqual(validateAssemblyInput(plan),{seconds:30,clips:6});
+  const args=buildFfmpegArgs(plan,{clips:clips.map((_,i)=>"/tmp/s"+i+".mp4"),
+    narration:"/tmp/voice.wav",music:"/tmp/music.mp3",
+    subtitles:"/tmp/captions.srt"},"/tmp/final.mp4");
+  const graph=args[args.indexOf("-filter_complex")+1];
+  assert.equal((graph.match(/setpts=PTS-STARTPTS,scale=/g)||[]).length,6);
+  assert.match(graph,/concat=n=6:v=1:a=0\[vbase\]/);
+  assert.match(graph,/subtitles=filename='\/tmp\/captions\.srt'/);
+  assert.match(graph,/\[voice\]\[bed\]amix=/);
+  assert.doesNotMatch(graph,/boxblur|fade=t|force_original_aspect_ratio=increase/);
+  assert.equal(args[args.indexOf("-preset")+1],"veryfast");
+  assert.equal(args[args.indexOf("-crf")+1],"24");
+  assert.equal(args[args.indexOf("-r")+1],"24");
+  assert.equal(args[args.indexOf("-c:a")+1],"aac");
+  assert.equal(args.filter(x=>x==="[aout]").length,1);
+  assert.equal(args[args.indexOf("-t")+1],"30");
+  assert.ok(args.includes("+faststart"));
+});
+test("Fast Assembly rejects unlicensed sources and dangerous subtitle paths",()=>{
+  const clips=Array.from({length:6},(_,i)=>({file:"s"+i+".mp4",seconds:5,rightsConfirmed:true}));
+  const plan={version:"hh-assembly-1",locale:"en",aspect:"landscape",fast:true,
+    audioMode:"silent",clips,subtitles:{file:"captions.srt",rightsConfirmed:true}};
+  assert.throws(()=>validateAssemblyInput({...plan,clips:[...clips,...clips]}));
+  assert.throws(()=>validateAssemblyInput({...plan,
+    clips:clips.map((clip,i)=>i===3?{...clip,rightsConfirmed:false}:clip)}));
+  assert.throws(()=>buildFfmpegArgs(plan,{clips:clips.map(x=>x.file),
+    subtitles:"/tmp/unsafe:captions.srt"},"/tmp/final.mp4"));
+});
+test("Ready uses existing Canvas for personal preview, not a fake exported file",()=>{
+  assert.match(ready,/data-ready-sequence-canvas/);
+  assert.match(ready,/data-ready-sequence-play/);
+  assert.match(ready,/data-ready-sequence-seek/);
+  assert.match(ready,/previewSourceCanvasRef\?\.current/);
+  assert.match(studio,/previewSourceCanvasRef=\{canvasRef\}/);
+  assert.match(studio,/previewAvailable=\{Boolean\(cinematicPlan/);
+  assert.match(ready,/if\(video\|\|!previewAvailable\)return/);
+  assert.match(ready,/Preview ≠ MP4/);
+  assert.match(ready,/if\(!verified\|\|!video\|\|disabled\)return/);
 });
