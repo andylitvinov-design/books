@@ -119,11 +119,11 @@ try {
   await expect(page.locator("[data-sitewide-antistress-banner]")).toHaveCount(0);
   await expect(page.locator("[data-hh-ihelp-trigger]:visible")).toHaveCount(0);
   await expect(page.locator("[data-shamanica-ihelp-trigger]")).toBeVisible();
-  await expect(section.locator("[data-business-service]")).toHaveCount(6);
-  await expect(section.locator("[data-business-service] img")).toHaveCount(6);
+  await expect(section.locator("[data-business-shelf]")).toHaveCount(6);
+  await expect(section.locator("[data-business-shelf] img")).toHaveCount(6);
   await expect(page.locator("[data-hh-unified-dock]")).toHaveCount(1);
   const m=await page.evaluate(()=>{
-   const last=document.querySelector('[data-business-service="remedies"]');
+   const last=document.querySelector('[data-business-shelf="remedies"]');
    const dock=document.querySelector('[data-hh-unified-dock]');
    if(!last||!dock)return null;
    return {lastBottom:last.getBoundingClientRect().bottom,
