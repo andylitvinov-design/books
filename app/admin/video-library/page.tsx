@@ -94,7 +94,7 @@ export default async function VideoLibraryCoveragePage({searchParams}:Props){
       <a href={VIDEO_SOURCE_FOLDERS.masters} target="_blank" rel="noopener noreferrer">{locale==="ru"?"Открыть архив":"Open archive"}</a></div>
      <div className={styles.siteRow}><strong>HeyGen · {inventory.counts.heygenApprovedEnglishMasters}</strong>
       <span>{locale==="ru"?"Утверждённые английские оригиналы; перенос на YouTube не подтверждён":"Approved English masters; YouTube transfer not verified"}</span>
-      <a href="/admin/youtube-upload">{locale==="ru"?"Проверить публикации":"Check uploads"}</a></div>
+      <Link href="/admin/youtube-upload">{locale==="ru"?"Проверить публикации":"Check uploads"}</Link></div>
      <div className={styles.siteRow}><strong>GitHub · {inventory.counts.separateCoachMotionFilesObserved}</strong>
       <span>{locale==="ru"?"Анимации коучей; отдельно от генератора персональных фильмов":"Coach animations; separate from personal video generation"}</span>
       <a href={VIDEO_SOURCE_FOLDERS.coachMotion} target="_blank" rel="noopener noreferrer">{locale==="ru"?"Папка исходников":"Source directory"}</a></div>
