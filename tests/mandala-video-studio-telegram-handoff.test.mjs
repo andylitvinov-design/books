@@ -9,7 +9,11 @@ const publicPage=readFileSync(new URL("../app/[locale]/holistic-support/mandala/
 test("Telegram video-studio URL is guest-safe and reuses the single EN/RU/ES public editor",()=>{
   assert.match(route,/isPublicLocale\(locale\)/);
   assert.match(route,/notFound\(\)/);
-  assert.match(route,/redirect\(`\/\$\{locale\}\/holistic-support\/mandala`\)/);
+  // Both legacy Telegram handoffs and an explicitly selected Gift path reuse
+  // the one public Video Studio, without forwarding arbitrary query strings.
+  assert.match(route,/const mode=query\?\.mode==="gift"\?"\?mode=gift":""/);
+  assert.match(route,/redirect\(`\/\$\{locale\}\/holistic-support\/mandala\$\{mode\}`\)/);
+  assert.doesNotMatch(route,/redirect\([^)]*query\?\.mode[^)]*\)/);
   assert.doesNotMatch(route,/fetch\(|localStorage|supabase|service_role|sendMessage/i);
   assert.match(publicPage,/MandalaMeditationClient/);
 });
