@@ -204,14 +204,14 @@ test("hydration progresses Goals → Ideas through a real tap without hidden leg
   const flow=browser.slice(start,end);
   const hydrate=flow.indexOf('data-video-studio-hydrated","true"');
   const continueTap=flow.indexOf("await continueToIdeas.click()",hydrate);
-  const goal=flow.indexOf('const ideasGoalTab=page.locator',continueTap);
-  const cards=flow.indexOf('await expect(goalCards).toHaveCount(3)',goal);
-  const selected=flow.indexOf('await expect(choice).toHaveAttribute("aria-pressed","true")',cards);
-  const next=flow.indexOf('await expect(nextGoal).toBeEnabled()',selected);
-  const personalization=flow.indexOf('data-video-ideas-personalization-panel',next);
-  const montage=flow.indexOf('await openVisibleMontageText(page,browser.browserType().name())',personalization);
-  assert.ok(start>=0&&end>start&&hydrate>=0&&continueTap>hydrate&&goal>continueTap&&cards>goal&&selected>cards&&next>selected&&personalization>next&&montage>personalization,
-    "real Goals tap must lead through selected visible Goal and Personalization to Montage");
+  const goal=flow.indexOf('const ideasGoalPane=page.locator',continueTap);
+  const chosen=flow.indexOf('data-video-ideas-goal-choice="rest"',goal);
+  const next=flow.indexOf('data-video-ideas-goal-next',chosen);
+  const personalization=flow.indexOf('data-video-personalization-goal',next);
+  const energy=flow.indexOf('data-video-personalization-energy="5"',personalization);
+  const montage=flow.indexOf("await montage.tap()",energy);
+  assert.ok(start>=0&&end>start&&hydrate>=0&&continueTap>hydrate&&goal>continueTap&&chosen>goal&&next>chosen&&personalization>next&&energy>personalization&&montage>energy,
+    "real visitor selects leisure Goal, mood and energy before entering Montage");
   assert.match(flow,/data-video-continue-scenarios/);
   assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
   assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
