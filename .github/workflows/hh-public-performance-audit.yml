@@ -88,8 +88,9 @@ jobs:
           PORT=3399 HOSTNAME=127.0.0.1 npm start >/tmp/hh-home-css.log 2>&1 &
           pid=$!
           trap 'kill "$pid" 2>/dev/null || true' EXIT
-          for n in {1..35}; do
+          for attempt in {1..35}; do
             if curl -fsS -o /dev/null http://127.0.0.1:3399/; then break; fi
+            printf 'Home response readiness attempt %s\n' "$attempt"
             sleep 1
           done
           node scripts/measure-home-css-network.mjs http://127.0.0.1:3399 | tee /tmp/hh-home-css-metrics.json
