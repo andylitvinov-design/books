@@ -1549,8 +1549,26 @@ test('PR #2969 exactly reviewed 120-scenario audio cannot trigger 13 unrelated p
     'node --test tests/import-reviewed-audio.test.mjs',
     'node --test tests/curated-audio-selection.test.mjs',
     'node --test tests/mandala-video-phrase-catalog.test.mjs',
-    "startsWith(github.head_ref, 'feat/hh-goal-tree-')",
   ])assert.ok(mandala.includes(must),'owning audio specialist missing '+must);
+  // Audio/WebKit specialist ownership moved from historical branch-name
+  // allowlists to tested-BASE content-impact classification in #5259.
+  const legacyAudioGate="startsWith(github.head_ref, 'feat/hh-goal-tree-')";
+  if(!mandala.includes(legacyAudioGate)){
+    for(const required of [
+      "needs.webkit_preflight.outputs.media_required == 'true'",
+      'needs: [webkit_preflight]',
+      'test "$(git rev-parse HEAD^2)" = "$HH_EVENT_HEAD_SHA"',
+      'test "$(git rev-parse HEAD)" = "$GITHUB_SHA"',
+      'git show "$tested_base:lib/ci/merge-check-light.mjs"',
+      'requiresRealMediaWebKit(changed)',
+    ])assert.ok(mandala.includes(required),'BASE-owned Mandala WebKit protection missing '+required);
+    const impact=readFileSync(new URL('../lib/ci/merge-check-light.mjs',import.meta.url),'utf8');
+    for(const required of [
+      'mandala-(?:free-video-studio',
+      '!NON_MEDIA_ONLY.test(row.filename)',
+      'return true;',
+    ])assert.ok(impact.includes(required),'immutable media-impact safety missing '+required);
+  }
   for(const path of [
     'app/api/payments/checkout/route.js','app/api/service-enquiries/route.js',
     'middleware.ts','components/commerce/service-cart.tsx',
