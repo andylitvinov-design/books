@@ -1,0 +1,49 @@
+name: HH Cinematic Real Footage Wave 2 — one-time quality screening
+on:
+  push:
+    branches: [codex/cinematic-hd-footage-wave2-20261105]
+    paths:
+      - '.github/workflows/hh-cinematic-hd-wave2-one-time.yml'
+permissions:
+  contents: read
+concurrency:
+  group: hh-cinematic-wave2-one-shot
+  cancel-in-progress: false
+jobs:
+  review-25-sources:
+    if: github.ref == 'refs/heads/codex/cinematic-hd-footage-wave2-20261105'
+    runs-on: ubuntu-latest
+    timeout-minutes: 58
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install free system ffmpeg and ffprobe if missing
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+          ffprobe -hide_banner -version | head -1
+      - name: Read-only video source manifest, allowlist, and build-script syntax
+        run: |
+          node --check scripts/review-dareful-cinematic-wave2-20261105.mjs
+          node -e "const f=require('./data/video-catalog/dareful-cinematic-hd-candidates-wave2-20261105.json'); if(f.sourceCount!==25||f.approvedForPublication!==false||f.sources.length!==25)process.exit(1)"
+      - name: Build only private technically measured 5-second moving HD drafts
+        run: node scripts/review-dareful-cinematic-wave2-20261105.mjs
+      - name: Upload source-audited portrait and landscape MP4 and contact sheets (NO public/ changes)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-cinematic-hd-wave2-editorial-review-20261105
+          path: |
+            artifacts/cinematic-dareful-wave2-20261105/*.mp4
+            artifacts/cinematic-dareful-wave2-20261105/*.jpg
+            artifacts/cinematic-dareful-wave2-20261105/report.json
+            artifacts/cinematic-dareful-wave2-20261105/README.md
+          retention-days: 5
+          compression-level: 6
+          if-no-files-found: warn
