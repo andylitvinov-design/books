@@ -1597,7 +1597,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   </article>;
   const showLandingComposer=compact&&messengerView&&!pageHelp&&!messages.length&&!homeHandoffPreview&&!supportQuizOpen;
   const composer=(
-    <form onSubmit={submit} className={styles.form} data-hh-ai-chat-composer={messengerView||undefined}>
+    <form onSubmit={submit} className={styles.form} data-hh-ai-chat-composer={messengerView||undefined}
+      data-landing-composer={showLandingComposer||undefined}>
       <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)}
         placeholder={showLandingComposer?(locale==="ru"?"Опиши ситуацию, вопрос или цель…":locale==="es"?"Describe tu situación, pregunta o meta…":"Describe your situation, concern, or goal…"):t.placeholder}
         onFocus={()=>{
@@ -1643,7 +1644,9 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           companionVoice={voiceEnabled?voice:undefined}/>}
         {!messengerView&&resetControl}
         <button type="submit" disabled={busy||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"||!draft.trim()||(mode==="owned"&&!agree&&!(compact&&(testChatOpen||testOfferFromText(draft))))}
-          aria-label={messengerView?(busy?t.loading:t.send):undefined}>{messengerView?<Send size={20} aria-hidden="true"/>:busy?t.loading:t.send}</button>
+          aria-label={messengerView?(busy?t.loading:t.send):undefined}>{messengerView?<><Send size={20} aria-hidden="true"/>
+          {showLandingComposer&&<span>{locale==="ru"?"Начать бесплатный чат":
+            locale==="es"?"Empezar chat gratis":"Start free chat"}</span>}</>:busy?t.loading:t.send}</button>
         {busy&&<button type="button" onClick={()=>{voice.stopDialogue();controller.current?.abort();}}
           aria-label={messengerView?t.cancel:undefined}>{messengerView?<X size={19} aria-hidden="true"/>:t.cancel}</button>}
       </div>
@@ -1677,7 +1680,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         {supportQuizOpen?<MessengerSupportQuiz locale={locale}
           onCancel={()=>setSupportQuizOpen(false)} onFinish={completeSupportQuiz}/>:
           <>
-            <MessengerAiLanding locale={locale} onCreateVideo={()=>startContent()}
+            <MessengerAiLanding locale={locale} composer={composer} onCreateVideo={()=>startContent()}
               onPractice={()=>startGuided("meditation")} onSupport={openSupportQuiz}
               onAsk={()=>composerRef.current?.focus({preventScroll:true})}
               onTopicSelect={text=>{setDraft(text);window.requestAnimationFrame(()=>composerRef.current?.focus({preventScroll:true}));}}
@@ -2038,7 +2041,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           {locale==="ru"?"Изменить":locale==="es"?"Cambiar":"Change"}
         </button>
       </div>}
-    {!supportQuizOpen&&composer}
+    {!supportQuizOpen&&!showLandingComposer&&composer}
     {compact&&!contentVoice&&(!messengerView||recorderOpen)&&<MessengerAudioVideo locale={locale}
       initialGoal={videoDraft.goal||""} disabled={busy} autoOpen={messengerView&&recorderOpen}/>}
     {!compact&&<details className={styles.programPanel} data-hh-eight-session-preview>
