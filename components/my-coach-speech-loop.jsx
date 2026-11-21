@@ -1222,7 +1222,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     {active&&!notice&&<span className={styles.status} role="status" data-coach-voice-status>
       {ready?(blockedResumeRef.current?t.tapToHear:t.retryMic):phase==='loading'?t.preparing:phase==='starting'||phase==='listening'?t.listening:phase==='thinking'?t.thinking:t.speaking}
     </span>}
-    {notice&&<p className={styles.note} role="status" data-coach-voice-status title={notice}>{notice}</p>
+    {notice&&<p className={styles.note} role="status" data-coach-voice-status title={notice}>{notice}</p>}
   </div>
 })
 
