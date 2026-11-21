@@ -214,3 +214,22 @@ test('source wiring requires own Free consent, mic stop, WSS CSP and automated r
  assert.match(worklet,/registerProcessor\('holistic-gemini-live-capture'/)
  assert.match(pkg.scripts['test:coaching:release'],/my-coach-gemini-free-live\.test\.mjs/)
 })
+
+test('2026 AQ. authorization key can request one-use native Live token without Paid key',async()=>{
+  const authKey='AQ.'+'x'.repeat(50)
+  const current={...free,HH_GEMINI_FREE_API_KEY:authKey}
+  const config=geminiFreeLiveConfig(current)
+  assert.equal(config?.apiKey,authKey)
+  let issued=0
+  const result=await issueGeminiFreeLiveToken(config,normalizeGeminiFreeLiveStart(start),{
+    fetcher:async(url,options)=>{
+      issued++
+      assert.equal(options.headers['x-goog-api-key'],authKey)
+      assert.equal(url,'https://generativelanguage.googleapis.com/v1beta/auth_tokens')
+      return {ok:true,status:200,json:async()=>({name:'auth_tokens/mock-aq-one-use'})}
+    }
+  })
+  assert.equal(issued,1)
+  assert.equal(result.schema,'HH_GEMINI_LIVE_FREE_TOKEN_V1')
+  assert.ok(!JSON.stringify(result).includes(authKey))
+})

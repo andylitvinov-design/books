@@ -173,3 +173,14 @@ test('runtime wiring keeps server Director, quotas, WAV player and Gemini Live o
   assert.match(ui,/value="gemini" disabled/)
   assert.match(player,/startsWith\('audio\/mpeg'\)/)
 })
+
+test('current Google AI Studio AQ. auth keys pass Free text and TTS config without Paid escalation',()=>{
+  const authKey='AQ.'+'x'.repeat(50)
+  const provided={...free,HH_GEMINI_FREE_API_KEY:authKey}
+  assert.equal(geminiCoachTextConfig(provided,'gemini_free')?.apiKey,authKey)
+  assert.equal(geminiCoachTtsConfig(provided,'gemini_tts_free')?.apiKey,authKey)
+  assert.equal(geminiCoachTextConfig({...provided,HH_GEMINI_PAID_API_KEY:authKey},'gemini_free'),null)
+  assert.equal(geminiCoachTextConfig({...provided,HH_GEMINI_FREE_API_KEY:'AQ.'+'x'.repeat(49)},'gemini_free'),null)
+  assert.equal(geminiCoachTtsConfig({...provided,HH_GEMINI_FREE_API_KEY:'AQ.'+'x'.repeat(51)},'gemini_tts_free'),null)
+  assert.equal(geminiCoachTtsConfig({...provided,HH_GEMINI_FREE_API_KEY:' AQ.'+'x'.repeat(50)},'gemini_tts_free'),null)
+})
