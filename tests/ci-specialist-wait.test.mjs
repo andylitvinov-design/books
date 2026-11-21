@@ -87,6 +87,51 @@ test('default hh-merge-check halves redundant multi-specialist polling without s
   assert.equal(result.executed.length,2);
 });
 
+test('running required sibling does not falsely exhaust queue grace while another Specialist awaits a runner',async()=>{
+  const second='.github/workflows/video-qa.yml';
+  const files={base:new Map([[path,yaml],[second,yaml]]),
+    current:new Map([[path,yaml],[second,yaml]]),
+    changedRows:[{filename:'lib/crm/a.js',status:'M'}]};
+  const queued=run('queued',null);
+  const active={...queued,id:152,path:second};
+  let elapsed=0,reads=0,jobs=0;
+  const api={
+    pr:async()=>pr,target:async()=>base,
+    runs:async()=>{
+      reads++;
+      const first=elapsed<15*60_000?queued:
+        {...queued,status:elapsed<16*60_000?'in_progress':'completed',
+          conclusion:elapsed<16*60_000?null:'success'};
+      const sibling=elapsed<12*60_000?
+        {...active,status:'in_progress',conclusion:null}:
+        {...active,status:'completed',conclusion:'success'};
+      return [first,sibling];
+    },
+    jobs:async()=>{jobs++;return [{name:'test',status:'completed',conclusion:'success'}];},
+  };
+  const accepted=await verify(api,ctx,files,{maxWaitMs:25*60_000,
+    now:()=>elapsed,sleep:async ms=>{assert.ok(ms>0&&ms<=60_000);elapsed+=ms;}});
+  assert.equal(elapsed,16*60_000,'still waits for actual completed proof');
+  assert.equal(accepted.executed.length,2,'no skipped Specialist evidence');
+  assert.equal(jobs,2);
+  assert.ok(reads<30,'no extra burst polling');
+});
+
+test('required queued plus running siblings still time out globally, never count as PASS',async()=>{
+  const second='.github/workflows/video-qa.yml';
+  const files={base:new Map([[path,yaml],[second,yaml]]),
+    current:new Map([[path,yaml],[second,yaml]]),
+    changedRows:[{filename:'lib/crm/a.js',status:'M'}]};
+  const queued=run('queued',null),running={...queued,id:152,path:second,status:'in_progress'};
+  let elapsed=0;
+  const api={pr:async()=>pr,target:async()=>base,runs:async()=>[queued,running],
+    jobs:async()=>{throw Error('never accept queued or running as green');}};
+  await assert.rejects(()=>verify(api,ctx,files,{maxWaitMs:12*60_000,
+    now:()=>elapsed,sleep:async ms=>{assert.ok(ms>0&&ms<=60_000);elapsed+=ms;}}),
+    /SPECIALIST_MISSING_OR_PENDING:RUNNING_TIMEOUT/);
+  assert.equal(elapsed,12*60_000,'global deadline still caps all queue/sibling waits');
+});
+
 test('an explicitly extended queue budget permits a proven 20-minute hosted runner wait', async () => {
   let elapsed = 0, polls = 0, readJobs = 0;
   const api = {
