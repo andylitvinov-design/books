@@ -176,7 +176,21 @@ try {
   // Require real, visible controls and native browser taps; never use the
   // hidden legacy Continue control or mutate application state from the test.
   row.phase='goal-visible-express-request';
+  // On the approved mobile Magic Mirror, all detailed tools remain behind
+  // the visible More goals disclosure. Open it with a genuine user gesture
+  // before the existing aspect/instant controls; never force-click hidden
+  // legacy controls, bypass the renderer, or create a second test-only path.
+  const mirrorMore=page.locator('[data-hh-mirror-more-goals]');
+  if(await mirrorMore.count() && await mirrorMore.isVisible()){
+    if(engine==='webkit')await mirrorMore.tap();
+    else await mirrorMore.click();
+    await expect(page.locator('[data-mandala-free-video]'))
+      .toHaveAttribute('data-hh-mirror-advanced','true');
+    await expect(page.locator('[data-mandala-free-video]'))
+      .toHaveAttribute('data-video-scenario-open','true');
+  }
   const aspectMenu=page.locator('[data-video-prompt-aspect]');
+  await expect(aspectMenu.locator(':scope > summary')).toBeVisible({timeout:15000});
   await aspectMenu.locator(':scope > summary').click();
   const landscape=page.locator('[data-video-request-aspect="landscape"]');
   await landscape.waitFor({state:'visible',timeout:10000});

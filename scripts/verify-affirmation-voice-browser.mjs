@@ -75,11 +75,32 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(continueToIdeas).toBeDisabled();
     const quizProgress=page.locator('[data-video-goal-quiz-progress]');
     await expect(quizProgress).toContainText('1 / 3');
+    const mirror=page.locator('[data-hh-mirror-goals]');
+    await expect(page.locator('[data-hh-mirror-title]')).toBeVisible();
+    await expect(page.locator('[data-video-intro-info]')).toBeVisible();
+    await expect(page.locator('[data-video-my-film]')).toBeVisible();
+    await expect(mirror).toBeVisible();
+    await expect(mirror.locator('[data-hh-mirror-goal-choice]')).toHaveCount(4);
+    await mirror.locator('[data-hh-mirror-audience="business"]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-mode","business");
+    await expect(mirror.locator('[data-hh-mirror-goal-choice="growth"]')).toBeVisible();
+    await mirror.locator('[data-hh-mirror-audience="me"]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-mode","me");
+    await mirror.locator('[data-hh-mirror-goal-choice="love"]').click();
+    const customWish=locale==="ru"?"Хочу больше взаимопонимания":locale==="es"
+      ?"Quiero tener más comprensión mutua":"I want more mutual understanding";
+    await mirror.locator('[data-hh-mirror-wish]').fill(customWish);
+    await mirror.locator('[data-hh-mirror-more-goals]').click();
+    await expect(studio).toHaveAttribute("data-hh-mirror-advanced","true");
     const categories=page.locator('[data-auto-video-category]');
     await expect(categories).toHaveCount(4);
-    await categories.first().click();
+    await expect(categories.first()).toBeVisible();
+    await expect(page.locator('[data-auto-video-input]')).toHaveValue(customWish);
+    await mirror.locator('[data-hh-mirror-next]').click();
+    await expect(studio).toHaveAttribute("data-video-scenario-open","true");
     await expect(quizProgress).toContainText('2 / 3');
     await expect(continueToIdeas).toBeDisabled();
+    await expect(page.locator('[data-auto-video-input]')).toHaveValue(customWish);
     const subcategories=page.locator('[data-auto-video-subcategory]');
     await expect(subcategories).toHaveCount(4);
     const subcategoryArt=page.locator('[data-video-goal-subcategory-cards] [data-video-goal-art]');
@@ -107,30 +128,40 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(ideas).toHaveAttribute("aria-pressed","true");
     await expect(studio).toHaveAttribute("data-active-workspace","phrases");
     await expect(page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]')).toBeVisible();
-    // The currently released Magic Mirror starts Ideas on the Goal tab.
-    // The old optional refinement disclosure is intentionally not visible
-    // until personalization. Test the user's real goal action rather than
-    // force-open an obsolete hidden control or skip that decision.
-    const ideasGoalTab=page.locator('[data-video-ideas-tab="goal"]');
-    const goalPane=page.locator('[data-video-ideas-goal-panel]');
-    await expect(ideasGoalTab).toHaveAttribute("aria-pressed","true");
-    await expect(goalPane).toBeVisible();
-    const goalCards=goalPane.locator('[data-video-ideas-goal-choice]');
-    await expect(goalCards).toHaveCount(3);
-    const nextGoal=goalPane.locator('[data-video-ideas-goal-next]');
-    await expect(nextGoal).toBeDisabled();
-    const choice=goalCards.nth(1); // actual support selection, no synthetic React state
-    if(browser.browserType().name()==="webkit")await choice.tap();
-    else await choice.click();
-    await expect(choice).toHaveAttribute("aria-pressed","true");
-    await expect(nextGoal).toBeEnabled();
-    if(browser.browserType().name()==="webkit")await nextGoal.tap();
-    else await nextGoal.click();
+    // Purpose-first Ideas opens Goal, not Personalization. Select an actual
+    // goal and complete its short, goal-specific quiz before testing the
+    // original optional refinement and Montage text editor.
+    const ideasGoalPane=page.locator('[data-video-ideas-goal-panel]');
+    await expect(ideasGoalPane).toBeVisible();
+    await expect(page.locator('[data-video-ideas-tab="goal"]'))
+      .toHaveAttribute("aria-pressed","true");
+    await expect(page.locator('[data-video-ideas-tab="personalization"]')).toBeDisabled();
+    const goalChoices=ideasGoalPane.locator('[data-video-ideas-goal-choice]');
+    await expect(goalChoices).toHaveCount(3);
+    await ideasGoalPane.locator('[data-video-ideas-goal-choice="rest"]').click();
+    await ideasGoalPane.locator('[data-video-ideas-goal-next]').click();
     await expect(page.locator('[data-video-ideas-tab="personalization"]'))
       .toHaveAttribute("aria-pressed","true");
-    await expect(page.locator('[data-video-ideas-personalization-panel]'))
-      .toBeVisible();
-    // The existing visible Montage rail remains available for voice/text QA.
+    await expect(page.locator('[data-video-ideas-personalization-panel]')).toBeVisible();
+    const purposeQuiz=page.locator('[data-video-personalization]');
+    await expect(purposeQuiz).toHaveAttribute("data-video-personalization-goal","leisure");
+    // Goal-first Personalization permits an optional expanded topic disclosure
+    // only AFTER the real Goal selection; it must never replace the five
+    // goal-scoped answers or appear as a mandatory extra step.
+    const refinement=page.locator('[data-video-ideas-refinement]');
+    await expect(refinement).toHaveCount(1);
+    await expect(refinement.locator(":scope > summary")).toBeVisible();
+    await expect(purposeQuiz).toBeVisible();
+    // Complete leisure's three real steps (desired mood, current energy, name)
+    // so subsequent Montage assertions start from a confirmed profile.
+    await purposeQuiz.locator('[data-video-personalization-choice="desired-calm"]').click();
+    await expect(purposeQuiz).toHaveAttribute("data-video-personalization-step","2");
+    await purposeQuiz.locator('[data-video-personalization-energy="5"]').click();
+    await expect(purposeQuiz).toHaveAttribute("data-video-personalization-step","3");
+    await purposeQuiz.locator('[data-video-personalization-clarify-continue]').click();
+    await expect(page.locator('[data-video-ideas-tab="concept"]'))
+      .toHaveAttribute("aria-pressed","true");
+    // The legacy extra CTA is intentionally hidden: tap the visible Montage rail.
     await openVisibleMontageText(page,browser.browserType().name());
     await expect(page.locator('[data-video-montage-tab="text"]'))
       .toHaveAttribute("aria-pressed","true");
@@ -268,10 +299,29 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(montageStyle).toHaveAttribute("aria-pressed","true");
     const ideasTop=page.locator('[data-video-quick-control="phrases"]');
     await ideasTop.tap();
+    // Returning from Montage preserves the last selected Ideas panel
+    // (Concept), not a fabricated Goal reset. The chosen goal and confirmed
+    // Personalization still remain accessible with real taps.
+    const ideasGoalTab=page.locator('[data-video-ideas-tab="goal"]');
     const ideasConceptTab=page.locator('[data-video-ideas-tab="concept"]');
     const ideasPersonalTab=page.locator('[data-video-ideas-tab="personalization"]');
-    await expect(ideasPersonalTab).toHaveAttribute("aria-pressed","true");
+    await expect(ideasConceptTab).toHaveAttribute("aria-pressed","true");
+    await expect(ideasGoalTab).toBeEnabled();
+    await expect(ideasPersonalTab).toBeEnabled();
+    await ideasGoalTab.tap();
+    await expect(ideasGoalTab).toHaveAttribute("aria-pressed","true");
+    await expect(page.locator('[data-video-ideas-goal-selected]')).toBeVisible();
+    // The previous leisure profile has been confirmed; only changing the goal
+    // should reset confirmation and temporarily lock Concept. Exercise an
+    // actual visitor switch to emotional support, not a synthetic reset.
+    await expect(ideasConceptTab).toBeEnabled();
+    const supportGoal=page.locator('[data-video-ideas-goal-choice="accept"]');
+    await expect(supportGoal).toBeVisible();
+    await supportGoal.tap();
+    await expect(supportGoal).toHaveAttribute("aria-pressed","true");
     await expect(ideasConceptTab).toBeDisabled();
+    await page.locator('[data-video-ideas-goal-next]').tap();
+    await expect(ideasPersonalTab).toHaveAttribute("aria-pressed","true");
     // Support must complete each real required question before Concept unlocks.
     // Never force-tap a disabled tab or substitute synthetic React state.
     const supportQuiz=page.locator('[data-video-personalization][data-video-personalization-goal="support"]');
