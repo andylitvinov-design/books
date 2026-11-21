@@ -34,7 +34,7 @@ type Props={
   onOpenDelivery:()=>void;onRefreshLogin:()=>void;onOpenCourse:()=>void;onOpenTherapy:(format:"single"|"course")=>void;onReturnToPro:()=>void;
   onGenerateBasicVideo:()=>boolean;onStartNewVideo:()=>void;onVerifyPlayback:(player:HTMLVideoElement)=>void;
   onSaveDirect:()=>void;onSendTelegramDirect:()=>void;onShareWhatsApp:(consentApproved?:boolean)=>void;
-  saveStatus:VideoDeliveryStatus;basicFreeAvailable:boolean;
+  saveStatus:VideoDeliveryStatus;exportMode?:"personal"|"openmotion"|"express";basicFreeAvailable:boolean;
   basicFreeIssue:"checking"|"unavailable"|"guest_used"|"insufficient"|null;basicCreditCost:number;courseFlow?:boolean;
 };
 const COPY={
@@ -187,7 +187,7 @@ export function MandalaVideoReady({
   meditationEditor,onOpenDelivery,onRefreshLogin,onOpenCourse,onOpenTherapy,onReturnToPro,
   onGenerateBasicVideo,onStartNewVideo,onVerifyPlayback,onSaveDirect,
   onSendTelegramDirect,onShareWhatsApp,saveStatus,
-  basicFreeAvailable,basicFreeIssue,basicCreditCost,courseFlow=false
+  basicFreeAvailable,basicFreeIssue,basicCreditCost,courseFlow=false,exportMode="personal"
 }:Props){
   const t=COPY[locale];
   const courseActions=courseActionCopy[locale];
@@ -514,11 +514,22 @@ export function MandalaVideoReady({
         <Play size={16} aria-hidden="true"/>
         {locale==="ru"?"Воспроизвести и проверить":locale==="es"?"Reproducir y comprobar":"Play & verify video"}
       </button>:null}
-      {!completed&&!waiting&&!exportFailed&&!courseFlow?<button type="button" className={css.primary}
+      {!completed&&!waiting&&exportMode==="openmotion"?<button type="button" className={css.secondary}
+        data-ready-open-motion-picker onClick={onStartNewVideo}>
+        {locale==="ru"?"Выбрать шаблон OpenMotion":locale==="es"?"Elegir plantilla OpenMotion":"Choose OpenMotion template"}
+        <ArrowRight size={17} aria-hidden="true"/>
+      </button>:null}
+      {!completed&&!waiting&&exportMode==="express"?<p className={css.note}
+        role="status" data-ready-express-unavailable>
+        {locale==="ru"?"Проверенных готовых Express MP4 пока нет. FFmpeg работает только офлайн.":
+          locale==="es"?"Aún no hay MP4 Express verificados. FFmpeg funciona solo sin conexión.":
+          "No finished verified Express MP4 is available. FFmpeg is offline-only."}
+      </p>:null}
+      {!completed&&!waiting&&!exportFailed&&!courseFlow&&exportMode==="personal"?<button type="button" className={css.primary}
         disabled={disabled||checking} onClick={generateSelectedVideo} data-ready-generate>
         <Play size={19} aria-hidden="true"/>{t.videoGenerate}<ArrowRight size={18} aria-hidden="true"/>
       </button>:null}
-      {courseFlow&&!waiting?<div className={css.courseChoices} data-ready-course-choices>
+      {courseFlow&&!waiting&&exportMode==="personal"?<div className={css.courseChoices} data-ready-course-choices>
         <button type="button" className={css.courseFree} data-ready-course-free
           disabled={disabled||checking} onClick={generateSelectedVideo}>
           <Play size={19} aria-hidden="true"/>{courseActions.free}</button>
