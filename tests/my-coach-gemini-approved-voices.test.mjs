@@ -48,4 +48,5 @@ test('the running My Coach session defaults to approved voices with persona-scop
   assert.match(source,/voiceSelectionKey=personaId\+':'\+conversationLang/)
   assert.match(source,/geminiVoiceByLocale\[voiceSelectionKey\]/)
   assert.match(source,/\[voiceSelectionKey\]:event\.target\.value/)
+  assert.doesNotMatch(source,/\[conversationLang\]:event\.target\.value/)
 })

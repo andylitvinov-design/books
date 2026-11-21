@@ -1372,7 +1372,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             <span>{({ru:'Голос живого коуча',en:'Live coach voice',es:'Voz del coach en vivo'})[lang]}</span>
             <select value={selectedGeminiVoice} disabled={voiceState.phase!=='idle'}
               onChange={event=>{setGeminiVoiceByLocale(prev=>({...prev,
-                [conversationLang]:event.target.value}));setGeminiLiveConsent(false)}}>
+                [voiceSelectionKey]:event.target.value}));setGeminiLiveConsent(false)}}>
               {geminiVoices.map(v=><option value={v} key={v}>{v}</option>)}
             </select>
           </label>
