@@ -76,8 +76,11 @@ test("Work has four one-tap formats with distinct photos, EN/RU/ES and output fr
  assert.match(mirror,/if\(scope==="business"\)\{/);
  assert.match(mirror,/scope==="business"\?item\.label\?\.\[locale\]/);
  assert.match(mirror,/referrerPolicy=\{scope==="business"\?"no-referrer":undefined\}/);
- assert.equal((mirror.match(/https:\/\/images\.unsplash\.com\/photo-/g)||[]).length,4);
- assert.match(read("middleware.ts"),/publicMandalaLocalImages \? ' https:\/\/images\.unsplash\.com' : ''/);
+ const localWorkPhotos=[...mirror.matchAll(/image:"(\/videos\/holistic-house\/film-collection-v3\/[^"]+\.jpg)"/g)];
+  assert.equal(localWorkPhotos.length,4);
+  assert.equal(new Set(localWorkPhotos.map(match=>match[1])).size,4);
+  assert.match(mirror,/item\.image\.startsWith\("\/"\)\?item\.image/);
+ assert.doesNotMatch(read("middleware.ts"),/https:\/\/images\.unsplash\.com/);
  assert.match(director,/path\.scope==="business"&&path\.workFormat/);
  assert.match(director,/workAspect=path\.workFormat==="insta-reels"/);
  assert.match(browser,/data-hh-mirror-goal-choice="insta-reels"/);

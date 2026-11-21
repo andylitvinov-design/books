@@ -32,17 +32,17 @@ const choices:Record<MirrorScope,GoalOption[]>={
  ],
  business:[
   // Work is one level of four concrete formats, not the 4×4×4 wellness taxonomy.
-  // Distinct editorial photos: Unsplash License; no user photo or tracking pixels.
-  {id:"insta-reels",theme:"goals",categoryId:"energy-confidence",image:"https://images.unsplash.com/photo-1781606989289-c0b535eac348?auto=format&fit=crop&w=720&h=420&q=80",defaultTopicId:"entrepreneurship",workFormat:"insta-reels",
+  // Four distinct approved first-party film stills: no external image request or tracking.
+  {id:"insta-reels",theme:"goals",categoryId:"energy-confidence",image:"/videos/holistic-house/film-collection-v3/sun-leaves-canopy.jpg",defaultTopicId:"entrepreneurship",workFormat:"insta-reels",
    label:{en:"Insta Reels",ru:"Insta Reels",es:"Insta Reels"},
    request:{en:"Create an Instagram Reel about my work with captions and a clear call to action.",ru:"Создать Instagram Reels о моей работе с титрами и призывом к действию.",es:"Crear un Reel de Instagram sobre mi trabajo con subtítulos y una llamada a la acción."}},
-  {id:"video-about-me",theme:"goals",categoryId:"energy-confidence",image:"https://images.unsplash.com/photo-1758876202789-7f1388c96e01?auto=format&fit=crop&w=720&h=420&q=80",defaultTopicId:"personal-growth",workFormat:"video-about-me",
+  {id:"video-about-me",theme:"goals",categoryId:"energy-confidence",image:"/videos/holistic-house/film-collection-v3/sun-autumn-hills.jpg",defaultTopicId:"personal-growth",workFormat:"video-about-me",
    label:{en:"Video About Me",ru:"Видео обо мне",es:"Vídeo sobre mí"},
    request:{en:"Create a video about me, my expertise and why clients can trust my work.",ru:"Создать видеовизитку обо мне, моём опыте и о том, почему мне можно доверять.",es:"Crear un vídeo sobre mí, mi experiencia y por qué pueden confiar en mi trabajo."}},
-  {id:"service-presentation",theme:"goals",categoryId:"energy-confidence",image:"https://images.unsplash.com/photo-1760624189524-ee4f0a1a3749?auto=format&fit=crop&w=720&h=420&q=80",defaultTopicId:"entrepreneurship",workFormat:"service-presentation",
+  {id:"service-presentation",theme:"goals",categoryId:"energy-confidence",image:"/videos/holistic-house/film-collection-v3/sun-golden-aspen.jpg",defaultTopicId:"entrepreneurship",workFormat:"service-presentation",
    label:{en:"Service Presentation",ru:"Презентация услуги",es:"Presentación del servicio"},
    request:{en:"Create a video presenting my service, how it works and the next step.",ru:"Создать видеопрезентацию моей услуги: как она работает и как начать.",es:"Crear una presentación de mi servicio, cómo funciona y cómo empezar."}},
-  {id:"client-video-offer",theme:"money",categoryId:"goals-money",image:"https://images.unsplash.com/photo-1765020553734-2c050ddb9494?auto=format&fit=crop&w=720&h=420&q=80",defaultTopicId:"income-growth",workFormat:"client-video-offer",
+  {id:"client-video-offer",theme:"money",categoryId:"goals-money",image:"/videos/holistic-house/film-collection-v3/sun-warm-ocean-dawn.jpg",defaultTopicId:"income-growth",workFormat:"client-video-offer",
    label:{en:"Client Video Offer",ru:"Видео-предложение клиенту",es:"Oferta en vídeo para clientes"},
    request:{en:"Create a personal video offer to a client, with clear value and a respectful next step.",ru:"Создать персональное видео-предложение клиенту с пользой и деликатным следующим шагом.",es:"Crear una oferta personal en vídeo para un cliente, con valor claro y un siguiente paso respetuoso."}},
  ],
@@ -214,7 +214,7 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
         finish(match.category.id as MirrorCategory,match.subcategory.id,match.topic.id,
          wish.trim()||item.request[locale],item.workFormat);
        }else changeStep(2);}}>
-      <img src={item.image.startsWith("https://")?item.image:
+      <img src={item.image.startsWith("/")?item.image:
         "/videos/holistic-house/film-collection-v2/"+item.image}
        alt="" aria-hidden="true" loading="lazy" decoding="async"
        referrerPolicy={scope==="business"?"no-referrer":undefined}/>
