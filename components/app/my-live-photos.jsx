@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 const COPY = {
   ru: {
-    title: 'Мои материалы · Живые фото', intro: 'Оживите фотографию один раз и храните MP4 для будущих видеороликов.',
+    title: 'Мои AI-аватары', intro: 'Приватные 5-секундные анимации фотографий для будущих видеороликов.',
     new: 'Добавить фотографию', subject: 'На фотографии', self: 'Я', other: 'Близкий человек',
     consent: 'У меня есть право на фото и разрешение изображённого человека на AI-анимацию и обработку в HeyGen.',
     motion: 'Как оживить', smile: 'Мягкая улыбка', greeting: 'Приветствие', wave: 'Помахать рукой', blink: 'Моргание', turn: 'Поворот головы',
@@ -22,7 +22,7 @@ const COPY = {
     waveTip: 'Для взмаха на фото должны быть видны кисть и предплечье. Иначе возможна только улыбка.',
   },
   en: {
-    title: 'My Materials · Live Photos', intro: 'Animate once, save the MP4 and reuse it in future videos.',
+    title: 'My AI Avatars', intro: 'Private 5-second photo animations you can reuse in future videos.',
     new: 'Add a photograph', subject: 'Person in the photo', self: 'Me', other: 'A loved one',
     consent: 'I have rights to this photo and the depicted person’s permission for AI animation and processing by HeyGen.',
     motion: 'Movement', smile: 'Gentle smile', greeting: 'Friendly greeting', wave: 'Small wave', blink: 'Blink', turn: 'Head turn',
@@ -40,7 +40,7 @@ const COPY = {
     waveTip: 'For a natural wave, the photo should show the hand and forearm. Otherwise the clip may only smile.',
   },
   es: {
-    title: 'Mis materiales · Fotos vivas', intro: 'Anima una foto una vez y reutiliza el MP4 en futuros vídeos.',
+    title: 'Mis avatares IA', intro: 'Animaciones privadas de fotos de 5 segundos para futuros vídeos.',
     new: 'Añadir fotografía', subject: 'Persona en la foto', self: 'Yo', other: 'Un ser querido',
     consent: 'Tengo derecho a usar la imagen y permiso de la persona para animación y procesamiento con HeyGen.',
     motion: 'Movimiento', smile: 'Sonrisa suave', greeting: 'Saludo amable', wave: 'Saludar con la mano', blink: 'Parpadeo', turn: 'Girar la cabeza',

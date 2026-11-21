@@ -38,3 +38,14 @@ The previously applied Supabase motion CHECK is updated by the new **forward-onl
 7. If the provider asset-upload contract differs from /v3/assets multipart, update it based on a real response, not guessed success. This API step cannot be validated without the site-level REST key.
 
 **No new storage buckets, cron jobs, video renderers, public grants, emergency deployments, or automatic charges.**
+
+## Unified three-tab My Materials library · owner decision, issue #5350
+
+The authenticated /{en,ru,es}/app/videos page is a **single My Materials cabinet** with three true views:
+1. `?tab=avatars` — **My AI Avatars**: real generated five-second photo-motion MP4s from this existing consent-gated MyLivePhotos archive. These are NOT prebuilt coach Digital Twins or finished personalized videos. Provider and XP billing gates remain OFF.
+2. `?tab=videos` (also default legacy `/app/videos`) — **My Videos**: existing completed H.264 MP4s with private save/replay/download/delete and messenger sharing. Gift entries join after separate PR #5335.
+3. `?tab=photos` — **My Photos**: the existing private personal portrait, plus the reusable eight-photo gallery after independent PR #5339 merges. No photo in this tab automatically transfers to HeyGen or a public library.
+
+My Page links into `/app/videos?tab=avatars` instead of mounting a duplicate live-photo generator. Each view mounts its existing component only when selected, keeping storage/auth/RLS/consent/account isolation independent. Query parameters are bookmarkable and the interface supports keyboard arrows/Home/End, EN/RU/ES, and mobile 320–430px.
+
+**Source-only ≠ LIVE:** protect exact-HEAD Core/Specialist/`hh-merge-check`, merge safely, publish only through existing hourly GitHub workflow, verify canonical production SHA and signed-in iPhone E2E separately. XP charges and HeyGen Direct API credentials require independent authorization and completion of #5345/#5348; these tabs do not activate AI spending or an avatar timeline compositor.
