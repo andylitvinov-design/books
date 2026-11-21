@@ -1,4 +1,5 @@
 'use client'
+import {HolisticHouseBrand} from '@/components/holistic-house-brand'
 import {useCallback,useEffect,useState} from 'react'
 import Link from 'next/link'
 import {appFetch} from '@/lib/app/client-fetch'
@@ -51,7 +52,7 @@ export default function MyPageClient({locale='en'}){
  return <main className={css.page} data-universal-my-page>
   <div className={css.top}><Link href={'/'+cabinetLocale+'/app/portrait'} prefetch={false}>‹ {t.back}</Link>
    <Link href={'/'+locale+'/practice'} prefetch={false}>Work</Link></div>
-  <p className={css.kicker}>HOLISTIC HOUSE · LIFE & WORK</p><h1>{t.title}</h1><p>{t.lead}</p>
+  <HolisticHouseBrand locale={locale} section={locale==='ru'?'МОЯ СТРАНИЦА':locale==='es'?'MI PÁGINA':'MY PAGE'} /><h1>{t.title}</h1><p>{t.lead}</p>
   {status==='loading'?<p role="status">{t.loading}</p>:null}
   {status==='error'?<section className={css.card}><p className={css.error}>{t.error}</p><button className={css.secondary} onClick={()=>void load()}>{t.retry}</button></section>:null}
   {status==='guest'?<section className={css.card}><p>{t.guest}</p>

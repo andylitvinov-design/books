@@ -1,0 +1,9 @@
+/* Canonical Holistic House identity, matched to the approved Shamanic screen. */
+.brand { display:inline-flex;align-items:center;flex:0 1 auto;gap:7px;min-width:0;max-width:100%;box-sizing:border-box;text-decoration:none;color:#07473b }
+.icon { display:block;flex:none;width:32px;height:32px;color:#0b6947 }
+.copy { display:flex;flex-direction:column;min-width:0 }
+.brand .name { display:block;margin:0;padding:0;font:500 clamp(21px,5.8vw,27px)/1 Georgia,"Times New Roman",serif;letter-spacing:-.03em;white-space:nowrap;color:#07473b }
+.section { display:block;margin-top:4px;color:#52665a;font:700 9px/1.08 Arial,Helvetica,sans-serif;letter-spacing:.27em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100% }
+.brand:focus-visible { outline:3px solid #078266;outline-offset:4px;border-radius:5px }
+@media(max-width:360px){ .brand{gap:5px}.icon{width:27px;height:27px}.brand .name{font-size:19px}.section{font-size:8px;letter-spacing:.22em} }
+@media(max-width:330px){ .icon{width:25px;height:25px}.brand .name{font-size:18px} }

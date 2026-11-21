@@ -1,4 +1,5 @@
 'use client'
+import { HolisticHouseBrand } from './holistic-house-brand'
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
@@ -338,10 +339,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
   return <main className={styles.root} data-my-coach-catalog lang={lang}>
     <div className={styles.frame}>
       <header className={[styles.brandHeader, heroStyles.stickyHeader].join(' ')}>
-        <Link href={'/' + lang} className={styles.brand} aria-label="Holistic House">
-          <span className={styles.brandMark} aria-hidden="true" />
-          <span>Holistic House<sup>®</sup></span>
-        </Link>
+        <HolisticHouseBrand locale={lang} />
         <nav className={[styles.brandActions, heroStyles.brandControls].join(' ')} aria-label={hw.nav}>
           <label className={heroStyles.localePill}>
             <span aria-hidden="true">◎</span>
