@@ -8,6 +8,21 @@ export async function completeThreeStepGoalsQuiz(page,{
   engine='chromium',categorySelector='[data-auto-video-category]'
 }={}){
   assert.ok(['chromium','webkit'].includes(engine),'GOAL_QUIZ_INVALID_BROWSER');
+  // The approved Magic Mirror is the initial one-screen choice on mobile.
+  // The full original 3-step taxonomy is intentionally collapsed until a
+  // real visitor taps More goals. Never force-click the hidden legacy CTA.
+  const collapsedMirror=page.locator(
+    '[data-mandala-free-video][data-hh-mirror-advanced="false"] [data-hh-mirror-goals]'
+  );
+  if(await collapsedMirror.isVisible()){
+    const moreGoals=collapsedMirror.locator('[data-hh-mirror-more-goals]');
+    await moreGoals.waitFor({state:'visible',timeout:15000});
+    if(engine==='webkit')await moreGoals.tap();
+    else await moreGoals.click();
+    await page.waitForFunction(()=>
+      document.querySelector('[data-mandala-free-video]')
+        ?.getAttribute('data-hh-mirror-advanced')==='true',undefined,{timeout:15000});
+  }
   const progress=page.locator('[data-video-goal-quiz-progress]');
   const next=page.locator('[data-video-continue-scenarios]');
   // The compact mobile flow may visually hide the progress caption while
