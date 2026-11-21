@@ -907,7 +907,6 @@ try{
  await page.screenshot({path:folder+"/shamanica-readable-353x768-webkit.png",fullPage:false,animations:"disabled"});
  results.push({journey:"Shamanic readable photo quiz with explicit Next and back",readablePhone,passed:true});
  if(originalShamanicaViewport)await page.setViewportSize(originalShamanicaViewport);
- if(originalShamanicaViewport)await page.setViewportSize(originalShamanicaViewport);
  assert.equal(await shamanicaHome.locator("[data-shamanica-service]").count(),6,
    "Shamanic has five core directions and one free Reiki course");
  // A category tile must open the concrete Support-style offer list right
@@ -1004,10 +1003,17 @@ try{
  assert.equal(await shamanicaQuiz.locator("[data-shamanica-answer]").count(),4,
    "Shamanica asks the four requested goals in a compact 2-by-2 mobile quiz");
  await shamanicaQuiz.locator('[data-shamanica-answer="energy"]').click();
+ await expect(shamanicaQuiz).toHaveAttribute("data-quiz-step","1");
+ await expect(shamanicaQuiz.locator('[data-shamanica-answer="energy"]')).toHaveAttribute("aria-pressed","true");
+ await shamanicaQuiz.locator("[data-shamanica-next]").click();
  await expect(shamanicaQuiz).toHaveAttribute("data-quiz-step","2");
  await shamanicaQuiz.locator('[data-shamanica-answer="learning"]').click();
+ await expect(shamanicaQuiz.locator('[data-shamanica-answer="learning"]')).toHaveAttribute("aria-pressed","true");
+ await shamanicaQuiz.locator("[data-shamanica-next]").click();
  await expect(shamanicaQuiz).toHaveAttribute("data-quiz-step","3");
  await shamanicaQuiz.locator('[data-shamanica-answer="free"]').click();
+ await expect(shamanicaQuiz.locator('[data-shamanica-answer="free"]')).toHaveAttribute("aria-pressed","true");
+ await shamanicaQuiz.locator("[data-shamanica-next]").click();
  await page.waitForURL(/\/ru\/shamanica\/results(?:\?|\/$)/,{timeout:45000});
  await page.locator("[data-shamanica-results]").waitFor({state:"visible",timeout:30000});
  assert.equal(await page.locator("[data-recommended-service]").count(),2,
