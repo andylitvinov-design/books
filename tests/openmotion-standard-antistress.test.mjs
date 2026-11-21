@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {readFileSync} from "node:fs";
+import {readFileSync,statSync} from "node:fs";
 import {fileURLToPath} from "node:url";
 import {dirname,join} from "node:path";
 import {createPresetMotionGuideV3,createPresetMotionProjectV3,listPresetMotionGuides} from "../lib/mandala/openmotion-preset-guide.mjs";
@@ -74,4 +74,25 @@ test("public link only opts into the existing OpenMotion picker, never auto-rend
   assert.match(picker,/motionPreset/);
   assert.match(picker,/setPresetId\("anti-stress-30s"\)/);
   assert.doesNotMatch(picker,/exportOpenMotionPresetMp4\("anti-stress-30s"/);
+});
+
+test("approved film has one real lightweight H264/AAC public master, no still-photo replacement",()=>{
+ const f=standards.films[0],m=f.publishedMaster;
+ assert.equal(f.status,"encoded_master_verified_phone_pending");
+ assert.equal(m.locale,"en");
+ assert.equal(m.durationSeconds,30);
+ assert.equal(m.width,720);
+ assert.equal(m.height,1280);
+ assert.equal(m.videoCodec,"h264");
+ assert.equal(m.audioCodec,"aac");
+ assert.equal(m.sourceClips,6);
+ assert.equal(m.sourcePhotos,0);
+ assert.match(m.sha256,/^[0-9a-f]{64}$/);
+ assert.match(m.path,/^\/videos\/holistic-house\/standard-motion-v1\/anti-stress-30s-en\.mp4$/);
+ assert.ok(statSync(join(root,"public",m.path)).size>2000000);
+ const picker=readFileSync(join(root,"components/mandala-openmotion-picker.tsx"),"utf8");
+ assert.match(picker,/data-openmotion-standard-master/);
+ assert.match(picker,/preload="metadata"/);
+ assert.match(picker,/src=\{publishedMaster\.path\}/);
+ assert.doesNotMatch(picker,/<video[^>]*autoPlay/);
 });
