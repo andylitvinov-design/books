@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import {readFileSync} from 'node:fs'
 import {
   APPROVED_GEMINI_VOICES,
   approvedGeminiVoice,
@@ -39,4 +40,12 @@ test('unapproved personas and locales never receive a made-up fallback voice',()
   assert.equal(approvedGeminiVoice('mira','EN'),null)
   assert.equal(approvedGeminiVoice('mira',undefined),null)
   assert.equal(allowedGeminiCoachVoice('unknown','Erinome'),false)
+})
+
+test('the running My Coach session defaults to approved voices with persona-scoped overrides',()=>{
+  const source=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+  assert.match(source,/approvedGeminiVoice\(personaId,conversationLang\)/)
+  assert.match(source,/voiceSelectionKey=personaId\+':'\+conversationLang/)
+  assert.match(source,/geminiVoiceByLocale\[voiceSelectionKey\]/)
+  assert.match(source,/\[voiceSelectionKey\]:event\.target\.value/)
 })
