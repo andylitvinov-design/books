@@ -158,9 +158,29 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(purposeQuiz).toHaveAttribute("data-video-personalization-step","2");
     await purposeQuiz.locator('[data-video-personalization-energy="5"]').click();
     await expect(purposeQuiz).toHaveAttribute("data-video-personalization-step","3");
-    await purposeQuiz.locator('[data-video-personalization-clarify-continue]').click();
-    await expect(page.locator('[data-video-ideas-tab="concept"]'))
-      .toHaveAttribute("aria-pressed","true");
+    // The user's chosen goal must survive every answer, not just the initial
+    // category handoff. A late director brief must not invalidate its identity.
+    const preservedGoal=ideasGoalPane.locator('[data-video-ideas-goal-choice="rest"]');
+    await expect(preservedGoal).toHaveAttribute("aria-pressed","true");
+    const finishPersonalization=purposeQuiz.locator('[data-video-personalization-clarify-continue]');
+    await expect(finishPersonalization).toBeVisible();
+    await expect(finishPersonalization).toBeEnabled();
+    await finishPersonalization.tap();
+    try{
+      await expect(page.locator('[data-video-ideas-tab="concept"]'))
+        .toHaveAttribute("aria-pressed","true",{timeout:12000});
+      await expect(page.locator('[data-video-ideas-tab="concept"]')).toBeEnabled();
+    }catch(error){
+      // Structural browser-only diagnostics: never log the private wish,
+      // emotional answers, preferred name or media contents.
+      const structural=await page.evaluate(()=>({
+        stage:document.querySelector('[data-video-quick-phrases]')?.getAttribute('data-ideas-subtab')||null,
+        selectedGoal:document.querySelector('[data-video-ideas-goal-choice="rest"][aria-pressed="true"]')!==null,
+        quizStep:document.querySelector('[data-video-personalization]')?.getAttribute('data-video-personalization-step')||null,
+        conceptDisabled:document.querySelector('[data-video-ideas-tab="concept"]')?.hasAttribute('disabled')??null,
+      })).catch(()=>({diagnosticsUnavailable:true}));
+      throw new Error("WEBKIT_GOAL_TO_CONCEPT_FAILED "+JSON.stringify(structural),{cause:error});
+    }
     // The legacy extra CTA is intentionally hidden: tap the visible Montage rail.
     await openVisibleMontageText(page,browser.browserType().name());
     await expect(page.locator('[data-video-montage-tab="text"]'))
