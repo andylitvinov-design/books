@@ -124,8 +124,14 @@ jobs:
         run: |
           set -euo pipefail
           # Standard public-repo Ubuntu runner; no Vercel, Mac, paid provider or private user data.
-          command -v ffmpeg
-          command -v ffprobe
+          # This pinned Ubuntu runner does not preinstall the FFmpeg CLI.
+          # Same standard apt source/bootstrap already used in owner-video CI.
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq --no-install-recommends ffmpeg
+          fi
+          ffmpeg -version | head -n 1
+          ffprobe -version | head -n 1
           node --check scripts/benchmarking/render-standard-antistress-master.mjs
           node --test tests/render-standard-antistress-master.test.mjs
           node scripts/benchmarking/render-standard-antistress-master.mjs en
