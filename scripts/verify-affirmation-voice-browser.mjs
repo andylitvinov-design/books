@@ -1843,9 +1843,30 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
             }
             await expect(reviewedPreset).toBeVisible({timeout:15000});
             await expect(reviewedPreset).toBeEnabled();
+            const reviewedPresetId=await reviewedPreset.getAttribute('data-free-film-preset');
+            assert.match(reviewedPresetId||'',/^[a-z0-9-]+$/,
+              "Reviewed film must have an immutable first-party preset id");
             if(engine==="webkit")await reviewedPreset.tap();
             else await reviewedPreset.click();
-            await expect(reviewedPreset).toHaveAttribute('aria-pressed','true',{timeout:15000});
+            const chosenFilm=page.locator(
+              '[data-free-film-compilation-catalog] [data-free-film-preset="'+reviewedPresetId+'"]');
+            // Catalogue validation is allowed to refuse landscape when its
+            // rights-verified masters exist only in portrait. Use the ACTUAL
+            // explicit 9:16 recovery button, never force aria-pressed or
+            // grant Story approval for unverified screenplay footage.
+            const portraitRetry=page.locator('[data-video-portrait-retry]');
+            await expect.poll(async()=>(
+              await chosenFilm.getAttribute('aria-pressed')==='true'||
+              await portraitRetry.isVisible()),
+              {timeout:15000,intervals:[100,250,500]}).toBe(true);
+            if(await chosenFilm.getAttribute('aria-pressed')!=='true'){
+              await expect(portraitRetry).toBeVisible();
+              await expect(portraitRetry).toBeEnabled();
+              if(engine==="webkit")await portraitRetry.tap();
+              else await portraitRetry.click();
+              phase(engine,"explicit-reviewed-portrait-masters-selected");
+            }
+            await expect(chosenFilm).toHaveAttribute('aria-pressed','true',{timeout:15000});
             await expect(page.locator('[data-free-film-readiness]')).toBeVisible();
             phase(engine,"explicit-reviewed-film-compilation-selected");
             await page.locator('[data-video-quick-control="editor"]').click();
