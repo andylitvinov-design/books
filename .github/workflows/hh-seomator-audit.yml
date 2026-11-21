@@ -7,13 +7,14 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: hh-seomator-history-publish
   cancel-in-progress: false
 
 jobs:
+  # Third-party CLI runs in a read-only job; release writing is isolated.
   public-technical-audit:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -81,17 +82,36 @@ jobs:
             artifacts/seo-audit.json
           if-no-files-found: warn
           retention-days: 14
-      - name: Publish latest tiny JSON as public GitHub Release asset
-        env:
-          GH_TOKEN: ${{ github.token }}
+
+  publish-snapshot:
+    needs: public-technical-audit
+    if: ${{ needs.public-technical-audit.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Download only the validated audit artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: hh-seomator-${{ github.run_id }}
+          path: artifacts
+      - name: Verify the expected public-only snapshot exists
         shell: bash
         run: |
           set -euo pipefail
-          if ! gh release view hh-seomator-history --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release create hh-seomator-history \
-              --repo "$GITHUB_REPOSITORY" --target codex/public-book-library \
-              --title "Holistic House SEO audit history" --latest=false \
-              --notes "Public technical SEO sampling only. No Search Console credentials, client data or paid integrations."
-          fi
-          gh release upload hh-seomator-history artifacts/seo-audit.json \
-            --repo "$GITHUB_REPOSITORY" --clobber
+          test -s artifacts/seo-audit.json
+    - name: Publish latest tiny JSON as public GitHub Release asset
+      env:
+        GH_TOKEN: ${{ github.token }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        if ! gh release view hh-seomator-history --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+          gh release create hh-seomator-history \
+            --repo "$GITHUB_REPOSITORY" --target codex/public-book-library \
+            --title "Holistic House SEO audit history" --latest=false \
+            --notes "Public technical SEO sampling only. No Search Console credentials, client data or paid integrations."
+        fi
+        gh release upload hh-seomator-history artifacts/seo-audit.json \
+          --repo "$GITHUB_REPOSITORY" --clobber
