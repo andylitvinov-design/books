@@ -37,6 +37,14 @@ test('local psychologist dialogue never sends personal interview answers to prov
  assert.match(s,/localOnly:true/);
  assert.match(s,/turns:messages\.filter\(row=>row\.localOnly\)\.slice\(-28\)/);
  assert.match(s,/data-hh-ali-psychologist-private-handoff/);
+ assert.match(s,/data-hh-ali-psychologist-copy/);
+ assert.match(s,/const \[psychFinalSummary,setPsychFinalSummary\]/);
+ assert.match(s,/const \[psychCopyStatus,setPsychCopyStatus\]/);
+ assert.match(s,/navigator\.clipboard\.writeText\(psychFinalSummary\)/);
+ assert.match(s,/setPsychFinalSummary\(brief\|\|null\)/);
+ // The explicit user click only invokes the browser clipboard.
+ assert.match(s,/onClick=\{\(\)=>\{\s*if\(!psychFinalSummary\)return;/);
+ assert.doesNotMatch(s,/encodeURIComponent\(psychFinalSummary\)|\?summary=/);
  assert.match(s,/href=\{"\/"\+locale\+"\/services\/free-situation-review"\}/);
 });
 test('source stage and consent actions are available across guest and member chat',()=>{
