@@ -567,9 +567,20 @@ try{
  results.push({journey:"Owner iHelp screenshot → visible composer and category chips at 320/390/430 → real Director choices",passed:true});
  await page.locator('[data-unified-dock-item="ai"]').click();
  await page.waitForURL(/\/ru\/app\/messages\?section=ai/,{timeout:30000});
- await page.locator("[data-chat-top-tabs]").waitFor({state:"visible",timeout:30000});
- assert.equal(await page.locator("[data-chat-top-tabs] > *").count(),4,
-   "Messenger rail now has AI, Orders, Clients and News");
+ // The mobile Ali sections live in the real expandable menu, not an always-visible rail.
+ const messengerTabs=page.locator("[data-chat-top-tabs]");
+ const messengerMenu=page.locator("[data-hh-ai-chat-menu]");
+ await messengerMenu.waitFor({state:"visible",timeout:30000});
+ assert.equal(await messengerMenu.getAttribute("aria-expanded"),"false",
+   "Mobile AI menu starts collapsed to leave room for the conversation");
+ assert.equal(await messengerTabs.isVisible(),false,
+   "Mobile AI tabs are hidden until the user opens the menu");
+ await messengerMenu.click();
+ await messengerTabs.waitFor({state:"visible",timeout:30000});
+ assert.equal(await messengerMenu.getAttribute("aria-expanded"),"true",
+   "Mobile AI menu expands on the real tap");
+ assert.equal(await messengerTabs.locator("button").count(),4,
+   "Messenger menu retains the AI, Orders, Clients and News tabs");
  const news=page.locator('[data-chat-top-tabs] button[aria-controls="hh-news-panel"]');
  assert.equal(await news.count(),1,"News tab is visible and uniquely addressable");
  await news.click();
