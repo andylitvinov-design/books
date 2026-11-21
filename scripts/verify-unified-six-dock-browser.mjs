@@ -322,10 +322,21 @@ async function inspect(browserType,locale,width){
       return link&&Object.keys(link).some(k=>k.startsWith("__reactProps$"));
     },null,{timeout:20000});
     await ideaButton.click();
+    // The approved Magic Mirror sequence is Goal → Personalization → Concept.
+    // Test the REAL visitor's choice instead of assuming the retired
+    // Personalization-first interface, especially on 320px iPhone Safari.
+    const goalTab=page.locator('[data-video-ideas-tab="goal"]');
+    await expect(goalTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
+    const goalPicker=page.locator('[data-video-ideas-goal-picker]');
+    await goalPicker.waitFor({state:"visible",timeout:30000});
+    const goalChoice=goalPicker.locator('[data-video-ideas-goal-choice]').first();
+    await goalChoice.click();
+    await expect(goalChoice).toHaveAttribute("aria-pressed","true",{timeout:15000});
+    const goalNext=goalPicker.locator('[data-video-ideas-goal-next]');
+    await expect(goalNext).toBeEnabled();
+    await goalNext.click();
     const personalizationTab=page.locator('[data-video-ideas-tab="personalization"]');
-    await personalizationTab.waitFor({state:"visible",timeout:30000});
-    assert.equal(await personalizationTab.getAttribute("aria-pressed"),"true",
-      id+" Ideas opens on the current Personalization tab");
+    await expect(personalizationTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
     // Advanced voice is hidden by design until the visitor opens its visible
     // audio-guidance shortcut. Do not bypass the UI or force hidden controls.
     const voiceShortcut=page.locator('[data-video-phrase-audio-shortcut]');
@@ -912,6 +923,95 @@ try{
  if(originalShamanicaViewport)await page.setViewportSize(originalShamanicaViewport);
  assert.equal(await shamanicaHome.locator("[data-shamanica-service]").count(),6,
    "Shamanic has five core directions and one free Reiki course");
+ // A category tile must open the concrete Support-style offer list right
+ // away, without requiring any of the three Shamanic quiz answers.
+ const energyEntrance=shamanicaHome.locator('[data-shamanica-service="energy"]');
+ assert.equal(await energyEntrance.getAttribute("href"),"/ru/shamanica/results?category=energy");
+ assert.equal(await shamanicaHome.locator('[data-shamanica-service="free"]').getAttribute("href"),
+   "/ru/academy/principles-of-energywork/learn");
+ await energyEntrance.click();
+ await page.waitForURL(url => url.pathname==="/ru/shamanica/results" &&
+   url.searchParams.get("category")==="energy",{timeout:45000});
+ const categoryOffers=page.locator('[data-shamanica-category-offers="energy"]');
+ await categoryOffers.waitFor({state:"visible",timeout:30000});
+ assert.equal(await categoryOffers.locator("[data-support-uniform-card]").count(),3);
+ assert.equal(await categoryOffers.locator("[data-service-price]").count(),3);
+ assert.equal(await categoryOffers.locator("[data-support-uniform-photo] img").count(),3);
+ assert.equal(await categoryOffers.locator("[data-service-card-controls]").count(),3);
+ assert.equal(await page.locator("[data-recommended-service]").count(),0,
+   "Clicking a category shows only that category's concrete offers, not quiz priorities");
+ const firstOffer=categoryOffers.locator("[data-support-uniform-card]").first();
+ await firstOffer.locator("[data-service-card-controls] button").first().click();
+ assert.equal(await firstOffer.locator("[data-service-card-details]:visible").count(),1);
+ await firstOffer.locator("[data-service-card-controls] button").nth(1).click();
+ assert.equal(await firstOffer.locator("[data-service-card-order]:visible").count(),1);
+ assert.ok(await firstOffer.locator("[data-messenger-only-channel]").count()>=1,
+   "Order must expose a real messenger handoff");
+ // The 320px first-fold acceptance measures the compact, *collapsed* list.
+ // First prove the real Order panel and messenger handoff, then close it using
+ // the same accessible user control; do not fake visibility or change styles.
+ await firstOffer.locator("[data-service-card-controls] button").nth(1).click();
+ assert.equal(await firstOffer.locator('[data-service-card-controls] button').nth(1).getAttribute("aria-expanded"),"false",
+   "Order control must collapse back to the one-screen service cards");
+ assert.equal(await firstOffer.locator("[data-service-card-order]:visible").count(),0,
+   "Expanded Order panel must close before compact first-fold acceptance");
+ assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth<=2),
+   "Shamanic service list must not overflow mobile width");
+ // The 3 compact offers AND their category heading must fit above the fixed
+ // dock in the collapsed state on a normal iPhone (including the owner 353px).
+ const originalCategoryViewport=page.viewportSize();
+ for(const width of [320,353,390,430]){
+   await page.setViewportSize({width,height:768});
+   await page.evaluate(async()=>{
+     window.scrollTo({top:0,behavior:"instant"});
+     await new Promise(done=>requestAnimationFrame(()=>requestAnimationFrame(done)));
+   });
+   const geometry=await page.evaluate(()=>{
+     const boxes=[...document.querySelectorAll('[data-shamanica-category-offers="energy"] [data-support-uniform-card]')];
+     const nav=document.querySelector("[data-hh-unified-dock]");
+     const title=document.querySelector("[data-shamanica-results-title]");
+     const tabs=document.querySelector("[data-shamanica-category-nav]");
+     const inside=(child,parent)=>{
+       const a=child?.getBoundingClientRect(),b=parent?.getBoundingClientRect();
+       return !!a&&!!b&&a.left>=b.left-2&&a.right<=b.right+2&&a.top>=b.top-2&&a.bottom<=b.bottom+2;
+     };
+     return {
+       titleTop:title?.getBoundingClientRect().top,
+       tabsBottom:tabs?.getBoundingClientRect().bottom,
+       dockTop:nav?.getBoundingClientRect().top,
+       overflowX:document.documentElement.scrollWidth-innerWidth,
+       cards:boxes.map(el=>({
+         top:el.getBoundingClientRect().top,bottom:el.getBoundingClientRect().bottom,
+         buttonsInside:inside(el.querySelector("[data-service-card-controls]"),el),
+         photoInside:inside(el.querySelector("[data-support-uniform-photo]"),el),
+         priceInside:inside(el.querySelector("[data-service-price]"),el)
+       }))
+     };
+   });
+   assert.equal(geometry.cards.length,3,"Category always contains three real services");
+   assert.ok(geometry.cards.every(c=>c.buttonsInside&&c.photoInside&&c.priceInside),
+     "Compact Shamanic controls/photos/prices must remain inside their own cards: "+
+       width+" "+JSON.stringify(geometry));
+   assert.ok(geometry.titleTop>=-1 && geometry.cards[2].bottom<=geometry.dockTop-4,
+     "Shamanic category header + all three cards must clear fixed dock at "+width+
+     "x768: "+JSON.stringify(geometry));
+   assert.ok(geometry.overflowX<=2,
+     "Shamanic category has no page overflow at "+width+": "+JSON.stringify(geometry));
+   await page.screenshot({path:folder+"/shamanica-category-energy-"+width+"-webkit.png",
+     fullPage:false,animations:"disabled"});
+ }
+ if(originalCategoryViewport)await page.setViewportSize(originalCategoryViewport);
+ for(const lang of ["en","es"]){
+   await page.goto(origin+"/"+lang+"/shamanica/results?category=learning",
+     {waitUntil:"domcontentloaded",timeout:75000});
+   await page.locator('[data-shamanica-category-offers="learning"]').waitFor({state:"visible",timeout:30000});
+   assert.equal(await page.locator("[data-support-uniform-card]").count(),3,
+     "Localized Shamanic category must contain three offers in "+lang);
+ }
+ await page.goto(origin+"/ru/shamanica",{waitUntil:"domcontentloaded",timeout:75000});
+ await shamanicaHome.waitFor({state:"visible",timeout:30000});
+ results.push({journey:"Shamanic category → three live priced offers → Details/Order; EN/ES routes",passed:true});
+
  const shamanicaQuiz=shamanicaHome.locator("[data-shamanica-quiz]");
  await expect(shamanicaQuiz).toHaveAttribute("data-quiz-step","1");
  assert.equal(await shamanicaQuiz.locator("[data-shamanica-answer]").count(),4,

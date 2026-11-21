@@ -36,17 +36,12 @@ export async function readRealGuestVideo(page,{timeout=120000}={}){
   const readyPlayer=ready.locator('video');
   const result=page.locator('[data-video-result]');
   const renderedPlayer=ready.locator('video[data-mandala-video-preview]');
-  let verificationTapped=false,guestTapped=false;
+  let verificationTapped=false;
   await expect.poll(async()=>{
     const verify=ready.locator('[data-ready-play-verify]');
     if(!verificationTapped&&await verify.isVisible()){
       try{await verify.click({timeout:2000});verificationTapped=true;}
-      catch(error){if(await verify.isVisible())throw error;}
-    }
-    const guestPlay=page.locator('[data-video-guest-play]');
-    if(!guestTapped&&await guestPlay.isVisible()){
-      try{await guestPlay.click({timeout:2000});guestTapped=true;}
-      catch(error){if(await guestPlay.isVisible())throw error;}
+      catch(error){if(error.name!=='TimeoutError')throw error;return false;}
     }
     return readyPlayer.isVisible();
   },{timeout,intervals:[250,500,1000]}).toBe(true);

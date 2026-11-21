@@ -9,7 +9,7 @@ import {coachTimeboxState} from '@/lib/coaching/session-timebox.mjs'
 import {coachingBrainSafety,coachingBrainBoundary,coachingBrainStageDecision,offlineCoachingBrainReply,selectCoachingBrainMethod} from '@/lib/personal-coaching/coaching-brain.mjs'
 import {classifyWisdomRequest} from '@/lib/coaching/wisdom-retrieval.mjs'
 import {coachTurnWindow} from '@/lib/coaching/coach-turn-window.mjs'
-import {coachAudibleTurns,markLatestCoachReplyInterrupted} from '@/lib/coaching/coach-audible-history.mjs'
+import {coachAudibleTurns,coachProviderHistory,markLatestCoachReplyInterrupted} from '@/lib/coaching/coach-audible-history.mjs'
 import {coachEphemeralContext} from '@/lib/coaching/coach-ephemeral-context.mjs'
 import {coachModelProbeRetryAllowed} from '@/lib/coaching/coach-model-recovery.mjs'
 import {coachSessionVisibleStageIds} from '@/lib/coaching/coach-session-progress.mjs'
@@ -274,6 +274,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [replayBlocked,setReplayBlocked]=useState(false)
   const [playbackNotice,setPlaybackNotice]=useState('')
   const pending=useRef(null),composerRef=useRef(null),transcriptRef=useRef(null)
+  const [contextTopic,setContextTopic]=useState('')
+  const [contextAssessments,setContextAssessments]=useState(false)
+  const [contextPaused,setContextPaused]=useState(false)
   const composerDetailsRef=useRef(null),speechRef=useRef(null)
   const replayControllerRef=useRef(null),replayPlayerRef=useRef(null)
   const micWaveRef=useRef(null)
@@ -467,17 +470,19 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       'Solution-focused':'solution_focused',
       'Appreciative inquiry':'appreciative_inquiry'})[persona?.methods?.[0]]||'grow'
   const visibleMethodName=coachMethodNames[visibleMethodId]||'GROW'
+  // Use the SAME method-specific names for the header and expanded stage list.
+  // Without a Director milestone, stage remains explicitly provisional;
+  // an alternate method must not show a misleading GROW "Contact" title.
+  const stageChecklistTitles=coachSessionVisibleStageIds(visibleMethodId,{
+    legacy:progressValid&&!meaningProgressValid
+  }).map((stepId,index)=>semanticStageTitles[lang]?.[stepId]||
+    methodStepTitles[lang]?.[stepId]||ui.stages[index]||stepId)
   const stageDescription=meaningProgressValid
     ?(semanticStageTitles[lang]?.[meaningProgress.stageId]||
       methodStepTitles[lang]?.[meaningProgress.stageId]||ui.stages[visibleStageIndex])
     :progressValid
       ?(methodStepTitles[lang]?.[lastRecordedProgress.stepId]||ui.stages[visibleStageIndex])
-      :semanticStageTitles[lang]?.[
-        ['contact','goal','reality','options','integration'][visibleStageIndex]]
-  const stageChecklistTitles=coachSessionVisibleStageIds(visibleMethodId,{
-    legacy:progressValid&&!meaningProgressValid
-  }).map((stepId,index)=>semanticStageTitles[lang]?.[stepId]||
-    methodStepTitles[lang]?.[stepId]||ui.stages[index]||stepId)
+      :stageChecklistTitles[visibleStageIndex]||ui.stages[visibleStageIndex]
   const keyInfoUi=keyInfoCopy[lang]
   const goalPrompts={
     en:{stress:'I would like to feel less stressed. Can we explore what is weighing on me?',energy:'I would like to restore my energy. Can we explore what is draining it?',relationships:'I would like to improve an important relationship. Can we explore what matters most?'},
@@ -741,9 +746,14 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     })
     message=goalTurn.message
     inFlightClientRef.current={requestId,message}
-    // Current client correction/new topic invalidates hints from the old focus.
-    if(['correction','topic_shift'].includes(
-      understandCoachingTurn({locale:responseLocale,message}).act))semanticHintsRef.current=[]
+    // A new focus requires the client to choose which saved topic to use again.
+    const contextFocusChanged=['correction','topic_shift'].includes(
+      understandCoachingTurn({locale:responseLocale,message}).act)
+    if(contextFocusChanged){
+      semanticHintsRef.current=[]
+      setContextTopic('')
+      setContextAssessments(false)
+    }
     const commitGoalTurn=()=>{
       if(goalTurn.goalIncluded)lastSharedGoalRef.current=goalTurn.goal
       if(goalTurn.clearGoal){
@@ -809,6 +819,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     pending.current?.abort()
     pending.current=controller
     setBusy(true);setError('');setStreamingPreview('')
+    const requestedSavedContext=!contextFocusChanged&&!contextPaused&&Boolean(contextTopic)
+    // A previous reply may quote a saved item whose grant has since changed.
+    // Keep it in the local transcript and resolve approved items again server-side.
+    const providerHistory=coachProviderHistory(conversationTurns)
+    const providerWindow=coachTurnWindow(providerHistory,10)
     const useStreaming=coachEngine==='groq_stream'&&streamingReady&&!wisdomRequested
     try{
       const requestOptions={
@@ -816,14 +831,16 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
           personaId,settings,locale:responseLocale,consent:true,message,voiceTurn:voiceTurn===true,
+          ...(requestedSavedContext?{contextTopic}:{}),
+          ...(requestedSavedContext&&contextTopic==='personal_growth'&&contextAssessments?{contextAssessments:true}:{}),
           ...(selectedGeminiEngine?{
             engine:coachEngine,geminiConsent:true,
             ...(coachEngine==='gemini_free'?{geminiFreeDataConsent:true}:{})
           }:{}),
           elapsedSeconds:sessionClockStarted?Math.floor(activeSessionSeconds):0,
-          sessionContext:coachEphemeralContext(conversationTurns,coachTurnWindow(conversationTurns,10),responseLocale,message),
+          sessionContext:coachEphemeralContext(providerHistory,providerWindow,responseLocale,message),
           semanticHints:semanticHintsRef.current,
-          turns:coachTurnWindow(conversationTurns,10)
+          turns:providerWindow
             .map(({role,content})=>({role,content})), // Preserve the latest client-stated active goal, not a greeting.
         }),
       }
@@ -859,7 +876,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       setTurns(previous=>{
         const updated=[...previous,{role:'user',content:message},{
           role:'assistant',content:answer,locale:responseLocale,reflection:result.reflection,question:result.question,
-          hypothesis:result.hypothesis||'',mode:result.mode,
+          hypothesis:result.hypothesis||'',mode:result.mode,requestedSavedContext,
           reason:result.offlineReason||'',stage:result.stage||'',
           sessionProgress:result.sessionProgress?.source==='director-client-evidence'
             ?result.sessionProgress:null,
@@ -1130,8 +1147,15 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             {ru:'Вернуться к Basic · Groq',en:'Switch to Basic · Groq',es:'Cambiar a Basic · Groq'}[lang]):(
             {ru:'Перейти на Pro · Gemini',en:'Switch to Pro · Gemini',es:'Cambiar a Pro · Gemini'}[lang])}
           aria-pressed={selectedGeminiEngine}
-          disabled={busy||replaying||paused||protocolOpen||voiceState.phase!=='idle'}
+          disabled={replaying||paused||protocolOpen}
           onClick={()=>{
+            // Switching is available mid-speech, mid-listening and mid-response.
+            // Stop previous audio and abort its stale model turn before offering
+            // a new vendor choice. Keep the user's transcript/goal untouched.
+            if(voiceState.phase==='speaking'&&latestCoachText)
+              markCoachSpeechInterrupted(latestCoachText)
+            speechRef.current?.stop?.()
+            cancelPendingCoachTurn()
             if(selectedGeminiEngine){
               setCoachEngine('groq_stream')
               setGeminiConsent(false)
@@ -1160,7 +1184,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       {experienceConsentOpen&&<div className={styles.experienceConsentPanel} data-coach-experience-consent role="group"
         aria-label={({ru:'Переключение на Gemini',en:'Switch to Gemini',es:'Cambiar a Gemini'})[lang]}>
         <strong>Pro · Gemini Free</strong>
-        <p>{({ru:'Это выбор движка, не платная подписка. Google может использовать текст бесплатного API для улучшения моделей. История текущей сессии останется здесь.',en:'This selects the engine, not a paid subscription. Google may use Free API text to improve models. Your current session history stays here.',es:'Es una elección de motor, no una suscripción. Google puede usar el texto de API gratuito para mejorar modelos. Tu historial permanece aquí.'})[lang]}</p>
+        <p>{({ru:'Это бесплатный Gemini, не платная подписка. Google может использовать текст для улучшения моделей. Чтобы слышать голос Gemini, подтвердите отдельное согласие ниже.',en:'This is Gemini Free, not a paid subscription. Google may use text to improve models. To hear Gemini voices, check the separate voice consent below.',es:'Es Gemini gratuito, no una suscripción. Google puede usar texto para mejorar modelos. Para oír la voz Gemini, marca el consentimiento de voz separado.'})[lang]}</p>
         <label><input type="checkbox" checked={experienceTextConsent}
           onChange={event=>setExperienceTextConsent(event.target.checked)}/>
           <span>{({ru:'Я согласен(на) отправлять мои следующие сообщения в Gemini Free.',en:'I agree to send my next messages to Gemini Free.',es:'Acepto enviar mis siguientes mensajes a Gemini gratuito.'})[lang]}</span>
@@ -1260,6 +1284,32 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         </form>}
         {error&&<p className={styles.error} role="alert">{error}</p>}
         <details className={styles.sessionMore}><summary>{lang==='ru'?'Дополнительно':lang==='es'?'Más opciones':'More options'}</summary>
+          <label className={styles.contextTopic}>
+            {lang==='ru'?'Сохранённый контекст для беседы':lang==='es'?'Contexto guardado para esta conversación':'Saved context for this conversation'}
+            <select value={contextTopic} onChange={event=>{
+              setContextTopic(event.target.value);setContextAssessments(false)
+            }}>
+              <option value="">{lang==='ru'?'Выключен':lang==='es'?'Desactivado':'Off'}</option>
+              {[
+                ['body_health','Body & Health','Тело и здоровье','Cuerpo y salud'],
+                ['emotional_wellbeing','Emotional wellbeing','Эмоциональное благополучие','Bienestar emocional'],
+                ['relationships','Relationships','Отношения','Relaciones'],
+                ['career_business','Career & business','Карьера и бизнес','Carrera y negocio'],
+                ['finance','Finances','Финансы','Finanzas'],
+                ['personal_growth','Personal growth','Личностный рост','Crecimiento personal'],
+                ['lifestyle','Lifestyle','Образ жизни','Estilo de vida'],
+                ['meaning_purpose','Meaning & purpose','Смысл и предназначение','Sentido y propósito'],
+              ].map(([key,en,ru,es])=><option key={key} value={key}>{lang==='ru'?ru:lang==='es'?es:en}</option>)}
+            </select>
+          </label>
+          {contextTopic==='personal_growth'&&<label>
+            <input type="checkbox" checked={contextAssessments} onChange={event=>setContextAssessments(event.target.checked)}/>
+            {lang==='ru'?'Использовать одобренные результаты тестов':lang==='es'?'Usar resultados de pruebas autorizados':'Use approved assessment scores'}
+          </label>}
+          {contextTopic&&<label>
+            <input type="checkbox" checked={contextPaused} onChange={event=>setContextPaused(event.target.checked)}/>
+            {lang==='ru'?'Приостановить использование контекста в этой беседе':lang==='es'?'Pausar el uso del contexto en esta conversación':'Pause saved context for this conversation'}
+          </label>}
         <label className={styles.coachEnginePicker} data-coach-engine-choice>
           <span>{({ru:'Движок диалога',en:'Dialogue engine',es:'Motor de diálogo'})[lang]}</span>
           <select value={coachEngine} disabled={busy} onChange={event=>{
