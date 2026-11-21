@@ -311,7 +311,17 @@ async function verifyWorkspaceHydration(browser,locale){
     await ideasGoalTab.tap();
     await expect(ideasGoalTab).toHaveAttribute("aria-pressed","true");
     await expect(page.locator('[data-video-ideas-goal-selected]')).toBeVisible();
+    // The previous leisure profile has been confirmed; only changing the goal
+    // should reset confirmation and temporarily lock Concept. Exercise an
+    // actual visitor switch to emotional support, not a synthetic reset.
+    await expect(ideasConceptTab).toBeEnabled();
+    const supportGoal=page.locator('[data-video-ideas-goal-choice="accept"]');
+    await expect(supportGoal).toBeVisible();
+    await supportGoal.tap();
+    await expect(supportGoal).toHaveAttribute("aria-pressed","true");
     await expect(ideasConceptTab).toBeDisabled();
+    await page.locator('[data-video-ideas-goal-next]').tap();
+    await expect(ideasPersonalTab).toHaveAttribute("aria-pressed","true");
     // Support must complete each real required question before Concept unlocks.
     // Never force-tap a disabled tab or substitute synthetic React state.
     const supportQuiz=page.locator('[data-video-personalization][data-video-personalization-goal="support"]');
