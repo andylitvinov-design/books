@@ -291,6 +291,30 @@ try {
     await expect(page.locator("[data-services-directory-invitation]")).toHaveCount(0);
     const catalog = page.locator("[data-services-unified-catalog]");
     await visible(catalog);
+    // Owner screenshot: on a phone, every one of the 30 cards must span the
+    // available content all the way to the right safe margin (not end early).
+    // Do not change the first-screen quiz to satisfy this lower-page contract.
+    const offerBounds = await catalog.locator(
+      '[data-services-three-visible] > [data-service-variant]'
+    ).evaluateAll(nodes => nodes.map(node => {
+      const bounds = node.getBoundingClientRect();
+      return {left: bounds.left, right: bounds.right, width: bounds.width, viewport: innerWidth};
+    }));
+    assert.equal(offerBounds.length, 30, "Ten Support directions publish three horizontal offers each");
+    for (const [index, bounds] of offerBounds.entries()) {
+      const rightMargin = bounds.viewport - bounds.right;
+      assert.ok(bounds.left >= 9 && bounds.left <= 26 &&
+        rightMargin >= 9 && rightMargin <= 26 &&
+        Math.abs(bounds.left - rightMargin) <= 3 &&
+        bounds.width >= bounds.viewport - 52,
+        "Compact service cards must reach phone right margin: " +
+          locale + "/" + width + "/" + index + " " + JSON.stringify(bounds));
+    }
+    if (width === 390) {
+      await catalog.locator('[data-services-unified-panel="consultation"]').screenshot({
+        path: output + "/services-" + locale + "-three-horizontal-offers-390.png",
+      });
+    }
     // Browser acceptance must exercise hydrated React handlers, not
     // accidentally tap static SSR buttons before Next router readiness.
     await expect.poll(
