@@ -908,7 +908,9 @@ test('package and lockfile routing is exact-base scoped, with unknown changes fu
   dependencies.dependencies.next='16.0.0';
   const unsafe=classifyPackageImpact({changed,basePackage:original,currentPackage:JSON.stringify(dependencies)});
   assert.equal(unsafe.mode,'full');
-  assert.deepEqual(expectedWorkflows({base,current,changed,packageImpact:unsafe}),[owner,ocean,opora]);
+  assert.throws(() => expectedWorkflows({base,current,changed,packageImpact:unsafe}),
+    /UNROUTED_PACKAGE_MANIFEST_CHANGE/,
+    'unexpected root manifest changes without the lockfile must not bypass specialists');
   const lockImpact=classifyPackageImpact({changed:['package-lock.json'],basePackage:original,currentPackage:proposed});
   assert.equal(lockImpact.mode,'full');
   assert.deepEqual(expectedWorkflows({base,current,changed:['package-lock.json'],packageImpact:lockImpact}),
@@ -953,10 +955,35 @@ test('pinned parser manifests are CI-scoped but all other dependency changes rem
   ]) {
     const outcome=classifyPackageImpact({changed:unsafe,basePackage:'{}',currentPackage:'{}'});
     assert.equal(outcome.mode,'full','unknown and root dependencies must stay full scope: '+unsafe.join(','));
-    const required=expectedWorkflows({base:source,current:source,changed:unsafe,packageImpact:outcome});
-    assert.ok(required.includes(billing) && required.includes(app) && required.includes(guard),
-      'root/unknown manifest change must retain application specialists');
+    if (unsafe.includes('package-lock.json')) {
+      const required=expectedWorkflows({base:source,current:source,changed:unsafe,packageImpact:outcome});
+      assert.ok(required.includes(billing) && required.includes(app) && required.includes(guard),
+        'root lockfile change must retain all real application specialists');
+    } else {
+      assert.throws(() => expectedWorkflows({base:source,current:source,
+        changed:unsafe,packageImpact:outcome}),/UNROUTED_PACKAGE_MANIFEST_CHANGE/,
+      'unrouted root or nested manifests must fail instead of incorrectly passing CI');
+    }
   }
+});
+
+test('package.json-only dependency changes cannot bypass security owners after static trigger pruning',()=>{
+  const root='.github/workflows/';
+  const billing=root+'hh-billing-isolated.yml',app=root+'hh-app-r1.yml';
+  const paths=['package-lock.json','lib/billing/**'];
+  const workflow=items=>"on:\n  pull_request:\n    paths:\n"+items.map(x=>"      - '"+x+"'\n").join('');
+  const source=new Map([[billing,workflow(['package.json',...paths])],
+    [app,workflow(['package-lock.json','lib/app/**'])]]);
+  const unsafe={mode:'full',reason:'DEPENDENCY_OR_PACKAGE_METADATA_CHANGED',workflows:[]};
+  for(const changed of [['package.json'],['package.json','tests/coach-release.test.mjs'],
+    ['lib/other/package.json'],['lib/other/package-lock.json']]) {
+    assert.throws(()=>expectedWorkflows({base:source,current:source,changed,packageImpact:unsafe}),
+      /UNROUTED_PACKAGE_MANIFEST_CHANGE/,'unowned dependency change must fail closed');
+  }
+  const expected=expectedWorkflows({base:source,current:source,
+    changed:['package.json','package-lock.json'],packageImpact:unsafe});
+  assert.deepEqual(expected,[app,billing].sort(),
+    'full dependency changes WITH root lockfile still require billing and App specialists');
 });
 
 test('Video Studio-only edits run dedicated Mandala real-media acceptance without unrelated Public Services suites',()=>{
@@ -1478,13 +1505,15 @@ test('Native installer successor claims old native triggers before retiring dupl
   assert.equal(APPROVED_SPECIALIST_REPLACEMENTS[old], replacement);
   const source=readFileSync(replacement,'utf8');
   for(const required of ["'capacitor.config.json'","'components/native-**'",
-    "'package.json'","'package-lock.json'","'.github/workflows/native-ci.yml'",
+    "'package-lock.json'","'.github/workflows/native-ci.yml'",
     'node --test tests/holistic-house-native-build.test.mjs',
     'npm run native:check',
     'tests/native-private-message-push.test.mjs',
     'workflow_dispatch:',"branches: ['codex/public-book-library']"]) {
     assert.ok(source.includes(required), 'native successor missing coverage '+required);
   }
+  assert.doesNotMatch(source,/^\s*-\s*['"]?package\.json['"]?\s*$/m,
+    'Core covers the proved additive coaching-test manifest route; native CI must not fan out from package-only edits');
   assert.ok(source.includes("  native-current-contracts:"), 'source contracts owner missing');
   assert.match(source, /^  android-test-installer:/m);
   assert.match(source, /^  ios-simulator:/m);
@@ -2451,7 +2480,7 @@ test('additive coaching build registration drops unrelated specialists', () => {
   const workflow = patterns => "on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths:\n" +
     patterns.map(pattern => "      - '" + pattern + "'\n").join('');
   const sources = new Map([
-    [app, workflow(['package.json', 'lib/app/**'])],
+    [app, workflow(['lib/app/**'])],
     [coach, workflow(['tests/coaching-live-voice.test.mjs', 'lib/personal-coaching/**'])],
     [audio, workflow(['package.json', 'app/api/live-audio/**'])],
     [ia, workflow(['package.json', 'lib/security/**'])],
@@ -2476,19 +2505,14 @@ test('additive coaching build registration drops unrelated specialists', () => {
   });
   const impact = classify();
   assert.deepEqual(impact, {
-    mode: 'scoped', reason: 'ADDITIVE_COACHING_BUILD_TEST', workflows: [app],
+    mode: 'core', reason: 'ADDITIVE_COACHING_BUILD_TEST', workflows: [],
   });
   const before = expectedWorkflows({base:sources, current:sources, changed});
   const after = expectedWorkflows({base:sources, current:sources, changed,
     packageImpact:impact});
-  assert.equal(before.length, 6, 'package changes previously triggered six independent suites');
-  assert.deepEqual(after, [app, coach],
-    'retain App and coaching owners but not unrelated billing, audio, IA and OPORA owners');
-  assert.ok(after.length * 2 <= before.length, 'more than halve the routed suites');
-  const missingOwner = new Map(sources);
-  missingOwner.delete(app);
-  assert.throws(() => expectedWorkflows({base:missingOwner, current:sources, changed,
-    packageImpact:impact}), /PACKAGE_ROUTE_OWNER_UNAVAILABLE/);
+  assert.equal(before.length, 5, 'static package paths previously fanned out to four unrelated suites');
+  assert.deepEqual(after, [coach],
+    'exact Core owns the registered build test while the coaching owner remains protected');
   assert.equal(classify(proposed, changed.filter(path => path !== added)).mode, 'full');
   assert.equal(classify(proposed, [...changed, 'package-lock.json']).mode, 'full');
   const mutate = (change) => {
@@ -2508,6 +2532,55 @@ test('additive coaching build registration drops unrelated specialists', () => {
   const proposedNoBuild = structuredClone(proposed);
   proposedNoBuild.scripts.prebuild = 'echo skip';
   assert.equal(classify(proposedNoBuild, changed, noBuild).mode, 'full');
+});
+
+test('additive coaching build registration is covered by exact Core without a generic package specialist', () => {
+  const original = {
+    scripts: {
+      'test:coaching:release': 'node --test tests/coaching-life-plan.test.mjs',
+      prebuild: 'node --check scripts/source-check.mjs && npm run test:coaching:release',
+    },
+    dependencies: { next: '15.0.0' },
+  };
+  const proposed = structuredClone(original);
+  const added = 'tests/coaching-voice-safety.test.mjs';
+  proposed.scripts['test:coaching:release'] =
+    'node --test ' + added + ' ' + original.scripts['test:coaching:release'].slice('node --test '.length);
+
+  assert.deepEqual(classifyPackageImpact({
+    changed: ['package.json', added],
+    basePackage: JSON.stringify(original),
+    currentPackage: JSON.stringify(proposed),
+  }), {
+    mode: 'core', reason: 'ADDITIVE_COACHING_BUILD_TEST', workflows: [],
+  });
+
+  const packageSpecialists = [
+    'hh-app-browser.yml', 'hh-app-r1.yml', 'hh-course-presets.yml',
+    'hh-interpretation-database.yml', 'hh-live-audio-ci.yml',
+    'hh-private-audio-e2e.yml', 'hh-public-services-production.yml',
+    'hh-reports-development-program.yml', 'holistic-house-native.yml',
+    'holistic-house-ocean-audio.yml', 'ia-v2.yml', 'opora-module-ci.yml',
+  ];
+  for (const name of packageSpecialists) {
+    const yaml = readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
+    assert.doesNotMatch(yaml, /^\s*-\s*['"]?package\.json['"]?\s*$/m,
+      name + ': package-only script registration is protected by Core, not this unrelated specialist');
+  }
+  const lockfileSpecialists = [
+    'hh-app-browser.yml', 'hh-app-r1.yml', 'hh-interpretation-database.yml',
+    'hh-live-audio-ci.yml', 'hh-private-audio-e2e.yml',
+    'hh-public-services-production.yml', 'holistic-house-native.yml', 'ia-v2.yml',
+    'opora-module-ci.yml',
+  ];
+  for (const name of lockfileSpecialists) {
+    const yaml = readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
+    assert.match(yaml, /^\s*-\s*['"]?package-lock\.json['"]?\s*$/m,
+      name + ': lockfile changes must continue to invoke dependency-sensitive specialist coverage');
+  }
+  const billing = readFileSync(new URL('../.github/workflows/hh-billing-isolated.yml', import.meta.url), 'utf8');
+  assert.match(billing, /^\s*-\s*['"]?package\.json['"]?\s*$/m,
+    'the explicitly reviewed test:monetization route retains isolated billing coverage');
 });
 
 test('disjoint, protected public presentation advances retain successful sensitive PR evidence', async () => {

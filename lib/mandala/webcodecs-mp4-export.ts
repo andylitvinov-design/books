@@ -29,8 +29,9 @@ export type BrowserMovieOptions={
   allowProceduralBrowser?:boolean;
   seconds:number;
   frameRate:number;
-  renderFrame:(seconds:number)=>boolean;
+  renderFrame:(seconds:number)=>boolean|Promise<boolean>;
   audio?:BrowserMovieAudio;
+  audioMaster?:AudioBuffer;
   shouldContinue:()=>boolean;
   onProgress?:(percent:number)=>void;
 };
@@ -46,7 +47,7 @@ export function supportsLocalWebCodecsMp4(needsAudio=false):boolean {
     supportsProceduralWebCodecsMp4(needsAudio);
 }
 
-function supportsProceduralWebCodecsMp4(needsAudio=false):boolean {
+export function supportsProceduralWebCodecsMp4(needsAudio=false):boolean {
   return typeof VideoEncoder!=="undefined"&&
     typeof VideoEncoder.isConfigSupported==="function"&&
     typeof VideoFrame!=="undefined"&&
@@ -283,9 +284,10 @@ export async function normalizeNativeSafariMp4ForPlayback(
 
 /** A real H.264/AAC video/audio MP4. Rendering remains on the existing Canvas. */
 export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promise<Blob>{
-  const {canvas,seconds,frameRate,renderFrame,audio,shouldContinue,onProgress}=options;
-  if(!(supportsLocalWebCodecsMp4(Boolean(audio))||
-    (options.allowProceduralBrowser&&supportsProceduralWebCodecsMp4(Boolean(audio)))))
+  const {canvas,seconds,frameRate,renderFrame,audio,audioMaster,shouldContinue,onProgress}=options;
+  const withAudio=Boolean(audio||audioMaster);
+  if(!(supportsLocalWebCodecsMp4(withAudio)||
+    (options.allowProceduralBrowser&&supportsProceduralWebCodecsMp4(withAudio))))
     throw new Error("webcodecs_not_supported");
   if(!Number.isFinite(seconds)||seconds<3||seconds>MAX_DURATION||
     !Number.isFinite(frameRate)||frameRate<6||frameRate>25||
@@ -314,7 +316,7 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
   // An unavailable baseline profile falls back to a preflighted AVC encoder,
   // not a second expensive movie render.
   const selectedAvcCodec=baselineSupported?mobileCompatAvcCodec:undefined;
-  if(audio){
+  if(withAudio){
     const aac=await canEncodeAudio("aac",{
       sampleRate:SAMPLE_RATE,numberOfChannels:2,
       quality:new Quality({bitrate:128000}),
@@ -334,10 +336,9 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
   });
   output.addVideoTrack(videoSource);
   let audioSource:AudioBufferSource|undefined;
-  let audioBuffer:AudioBuffer|undefined;
   try{
-    if(audio){
-      audioBuffer=await prepareLocalAudio(audio,seconds);
+    const audioBuffer=audioMaster??(audio?await prepareLocalAudio(audio,seconds):undefined);
+    if(audioBuffer){
       if(!shouldContinue())throw new Error("export_cancelled");
       audioSource=new AudioBufferSource({codec:"aac",quality:new Quality({bitrate:128000})});
       output.addAudioTrack(audioSource);
@@ -381,7 +382,7 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
         throw new Error("video_encoder_timeline_drift");
       const frameWorkStartedAt=performance.now();
       const decoderHoldBeforeFrame=decoderHoldMs;
-      let decodedRealFrame=renderFrame(time);
+      let decodedRealFrame=await renderFrame(time);
       if(!decodedRealFrame){
         const waitStarted=performance.now();
         do{
@@ -389,7 +390,7 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
           if(performance.now()-waitStarted>=maxFrameDecoderWaitMs ||
              decoderHoldMs+performance.now()-waitStarted>=maxTotalDecoderWaitMs)break;
           await new Promise<void>(resolve=>setTimeout(resolve,40));
-          decodedRealFrame=renderFrame(time);
+          decodedRealFrame=await renderFrame(time);
         }while(!decodedRealFrame);
         decoderHoldMs+=performance.now()-waitStarted;
         if(!decodedRealFrame)throw new Error("licensed_scene_frame_unavailable");
@@ -418,7 +419,7 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
       throw new Error("video_output_not_mp4");
     await verifyDecodableMp4Export(bytes,{
       width:canvas.width,height:canvas.height,seconds,
-      withAudio:Boolean(audio),mime:await output.getMimeType(),
+      withAudio,mime:await output.getMimeType(),
     });
     if(!shouldContinue())throw new Error("export_cancelled");
     onProgress?.(100);

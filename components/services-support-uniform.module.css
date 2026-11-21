@@ -147,8 +147,12 @@
    Keep expanded Details / messenger choices full-width underneath each offer. */
 @media (max-width:760px) {
   .page :global([data-services-unified-catalog]) {
-    width:calc(100% - 32px)!important;
-    margin-top:5px;
+    /* The shell already reserves 16px at each phone edge. Do not subtract
+       another 32px inside the narrower catalogue and leave a blank right rail. */
+    box-sizing:border-box!important;
+    width:calc(100% - 8px)!important;
+    max-width:none!important;
+    margin:5px auto 18px!important;
   }
   .page :global([data-services-unified-catalog] > header) {
     margin:0 2px 4px;
@@ -161,10 +165,15 @@
     display:none;
   }
   .page :global([data-services-unified-catalog] > div) {
+    width:100%!important;
+    min-width:0!important;
     gap:15px!important;
   }
   .page :global([data-services-unified-catalog] [data-services-unified-panel][data-services-has-three="true"]) {
     display:block!important;
+    box-sizing:border-box!important;
+    width:100%!important;
+    min-width:0!important;
     min-height:0!important;
     margin:0!important;
     padding:0!important;
@@ -245,6 +254,8 @@
     min-width:0!important;
   }
   .page :global([data-services-unified-catalog] [data-services-three-visible] > [data-support-uniform-card]) {
+    box-sizing:border-box!important;
+    width:100%!important;
     position:relative!important;
     display:grid!important;
     grid-template-columns:76px minmax(0,1fr)!important;

@@ -26,7 +26,7 @@ type Props={
   video:VideoFile|null;verified:boolean;checking:boolean;rendering:boolean;renderProgress:number;
   progressQuestionnaire:ReactNode;generationNotice:string;signedIn:boolean;
   exportFailed:boolean;canRetryExport:boolean;onRetryExport:()=>void;nativeIphoneMp4Retry?:boolean;
-  onPlaybackError:(player:HTMLVideoElement)=>void;
+  onPlaybackError:(player:HTMLVideoElement)=>void;onCancelExport?:()=>void;
   loginUnavailable:boolean;disabled:boolean;meditationEditor:ReactNode;
   onOpenDelivery:()=>void;onRefreshLogin:()=>void;onOpenCourse:()=>void;onOpenTherapy:(format:"single"|"course")=>void;onReturnToPro:()=>void;
   onGenerateBasicVideo:()=>boolean;onStartNewVideo:()=>void;onVerifyPlayback:(player:HTMLVideoElement)=>void;
@@ -177,7 +177,7 @@ const courseActionCopy={
 
 export function MandalaVideoReady({
   locale,theme,wish,focus,aspect,video,verified,checking,rendering,renderProgress,
-  generationNotice,exportFailed,canRetryExport,onRetryExport,onPlaybackError,nativeIphoneMp4Retry=false,
+  generationNotice,exportFailed,canRetryExport,onRetryExport,onPlaybackError,onCancelExport,nativeIphoneMp4Retry=false,
   signedIn,loginUnavailable,disabled,
   meditationEditor,onOpenDelivery,onRefreshLogin,onOpenCourse,onOpenTherapy,onReturnToPro,
   onGenerateBasicVideo,onStartNewVideo,onVerifyPlayback,onSaveDirect,
@@ -436,6 +436,10 @@ export function MandalaVideoReady({
         {completed?<span className={css.readyTime}><Clock3 size={15} aria-hidden="true"/>{videoTime}</span>:
           rendering?<span className={css.readyTime} aria-hidden="true">{Math.round(Math.max(0,Math.min(100,renderProgress)))}%</span>:null}
       </p>
+      {rendering&&onCancelExport?<button type="button" className={css.secondary}
+        data-ready-cancel-export onClick={onCancelExport}>
+        {locale==="ru"?"Отменить экспорт":locale==="es"?"Cancelar exportación":"Cancel export"}
+      </button>:null}
       {exportFailed&&!waiting&&!completed?<div className={css.exportFailure}
         role="alert" data-ready-export-failed>
         <strong>{t.failed}</strong>
