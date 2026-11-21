@@ -8,6 +8,17 @@
 .tab{color:var(--hh-muted,#74828e);background:transparent}
 .tabActive{color:var(--hh-text,#202936);background:white;box-shadow:0 2px 8px #10202c12}
 .tab span{font-size:11px;border-radius:99px;background:#e8eeee;padding:2px 7px}
+.tabs:has(#coach-context-tab){grid-template-columns:repeat(3,minmax(0,1fr))}
+.tabs:has(#coach-context-tab) button{min-width:0;overflow-wrap:anywhere}
+.contextPanel{margin-top:18px;color:var(--hh-text,#202936);overflow-wrap:anywhere}
+.contextPanel fieldset{display:grid;gap:12px;min-width:0;margin:0;padding:0;border:0}
+.contextPanel label{display:grid;gap:5px;min-width:0}
+.contextPanel select,.contextPanel button{min-height:44px;max-width:100%;font:inherit;border:1px solid #b3c8c0;border-radius:10px;padding:8px 11px;background:#f7fff9;color:#073f34}
+.contextPanel select{width:100%;min-width:0}
+.contextPanel select:focus-visible,.contextPanel button:focus-visible{outline:2px solid #07614b;outline-offset:3px}
+.contextPanel button:disabled{opacity:.55}
+.contextControls{display:flex;flex-wrap:wrap;gap:8px}
+.contextPanel blockquote{margin:8px 0 12px;padding-inline-start:12px;border-inline-start:3px solid #77a996}
 .loading{min-height:45vh;display:flex;align-items:center;justify-content:center;gap:10px;color:var(--hh-muted,#74828e);font-weight:650}
 .spin{animation:hh-coach-spin 1s linear infinite}
 @keyframes hh-coach-spin{to{transform:rotate(360deg)}}
