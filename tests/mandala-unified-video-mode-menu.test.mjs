@@ -32,3 +32,20 @@ test("Express with no verified master cannot encode, hold credit, or claim a fin
  assert.match(studio,/holdVideoExportCredit/);
  assert.doesNotMatch(studio,/ffmpeg-static|child_process|ffmpeg\.wasm/);
 });
+
+test("the visible Studio header opens the single Settings menu even when the legacy docks are hidden",()=>{
+ assert.match(studio,/data-video-settings-trigger aria-controls="mandala-support-settings"/);
+ assert.match(studio,/dispatchEvent\(new Event\("hh:video-settings-toggle"\)\)/);
+ assert.match(dock,/addEventListener\("hh:video-settings-toggle",toggleSettings\)/);
+ assert.match(dock,/Template \(OpenMotion\)/);
+});
+test("Express uses the verified locale-matched master rather than personal preview or credit copy",()=>{
+ assert.match(ready,/getPublishedStandardMotionFilm\("anti-stress-30s",locale\)/);
+ assert.match(ready,/data-ready-express-standard><PublishedStandardMotionFilm/);
+ assert.match(ready,/exportMode!=="express"\?header:null/);
+ assert.match(ready,/exportMode==="personal"&&!completed&&basicFreeAvailable&&basicCreditCost/);
+ const player=read("components/published-standard-motion-film.tsx");
+ assert.match(player,/locale&&master.locale!==locale/);
+ assert.match(player,/existing_approved_first_party_masters/);
+ assert.match(player,/master\?\.sha256/);
+});

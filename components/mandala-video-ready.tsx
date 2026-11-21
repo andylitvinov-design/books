@@ -1,5 +1,6 @@
 "use client";
 
+import {PublishedStandardMotionFilm, getPublishedStandardMotionFilm} from "./published-standard-motion-film";
 import {useCallback,useEffect,useMemo,useRef,useState} from "react";
 import type {ReactNode} from "react";
 import Link from "next/link";
@@ -191,6 +192,7 @@ export function MandalaVideoReady({
 }:Props){
   const t=COPY[locale];
   const courseActions=courseActionCopy[locale];
+  const expressMaster=exportMode==="express"?getPublishedStandardMotionFilm("anti-stress-30s",locale):undefined;
   const [view,setView]=useState<View>("home");
   const [walletOpen,setWalletOpen]=useState(false);
   const closeWallet=useCallback(()=>setWalletOpen(false),[]);
@@ -206,7 +208,7 @@ export function MandalaVideoReady({
   const sequencePreviewRef=useRef<HTMLCanvasElement|null>(null);
   // Mirror the one existing Studio painter. No encode, upload or credit hold.
   useEffect(()=>{
-    if(video||!previewAvailable)return;
+    if(video||!previewAvailable||exportMode==="express")return;
     let animation=0,last=0;
     const paint=(now:number)=>{
       if(now-last>=1000/15&&!document.hidden){
@@ -224,7 +226,7 @@ export function MandalaVideoReady({
     };
     animation=window.requestAnimationFrame(paint);
     return()=>window.cancelAnimationFrame(animation);
-  },[video,previewAvailable,previewSourceCanvasRef]);
+  },[video,previewAvailable,previewSourceCanvasRef,exportMode]);
   useEffect(()=>{
     const player=readyPlayerRef.current;
     if(!video||!player)return;
@@ -467,7 +469,7 @@ export function MandalaVideoReady({
       <p className={css.readyStatus} role="status" data-ready-status
         data-ready-status-phase={completed?"complete":rendering?"rendering":checking?"verifying":"idle"}>
         {completed?<CheckCircle2 size={19} aria-hidden="true"/>:<Clock3 size={19} aria-hidden="true"/>}
-        <strong>{completed?t.ready:pendingStatus}</strong>
+        <strong>{exportMode==="express"?"Express":completed?t.ready:pendingStatus}</strong>
         {completed?<span className={css.readyTime}><Clock3 size={15} aria-hidden="true"/>{videoTime}</span>:
           rendering?<span className={css.readyTime} aria-hidden="true">{Math.round(Math.max(0,Math.min(100,renderProgress)))}%</span>:null}
       </p>
@@ -484,8 +486,8 @@ export function MandalaVideoReady({
             (locale==="ru"?"Повторить через Safari MP4":locale==="es"?"Reintentar con MP4 nativo de Safari":"Retry with native Safari MP4"):
             t.retryCompatible}<ArrowRight size={17} aria-hidden="true"/></button>:null}
       </div>:null}
-      {header}
-      {!video&&previewAvailable?<div className={css.sequenceControls} data-ready-sequence-controls>
+      {exportMode!=="express"?header:null}
+      {exportMode!=="express"&&!video&&previewAvailable?<div className={css.sequenceControls} data-ready-sequence-controls>
         <p>{locale==="ru"?"Ваши сцены и текст · предпросмотр без экспорта":
           locale==="es"?"Tus escenas y textos · vista previa sin exportar":
           "Your scenes and captions · preview without exporting"}</p>
@@ -519,12 +521,13 @@ export function MandalaVideoReady({
         {locale==="ru"?"Выбрать шаблон OpenMotion":locale==="es"?"Elegir plantilla OpenMotion":"Choose OpenMotion template"}
         <ArrowRight size={17} aria-hidden="true"/>
       </button>:null}
-      {!completed&&!waiting&&exportMode==="express"?<p className={css.note}
-        role="status" data-ready-express-unavailable>
-        {locale==="ru"?"Проверенных готовых Express MP4 пока нет. FFmpeg работает только офлайн.":
-          locale==="es"?"Aún no hay MP4 Express verificados. FFmpeg funciona solo sin conexión.":
-          "No finished verified Express MP4 is available. FFmpeg is offline-only."}
-      </p>:null}
+      {!completed&&!waiting&&exportMode==="express"?expressMaster?
+        <div data-ready-express-standard><PublishedStandardMotionFilm locale={locale} master={expressMaster}/></div>:
+        <p className={css.note} role="status" data-ready-express-unavailable>
+          {locale==="ru"?"Готовый Express MP4 на русском пока недоступен.":
+            locale==="es"?"Todavía no hay un MP4 Express terminado en español.":
+            "No finished verified Express MP4 is available."}
+        </p>:null}
       {!completed&&!waiting&&!exportFailed&&!courseFlow&&exportMode==="personal"?<button type="button" className={css.primary}
         disabled={disabled||checking} onClick={generateSelectedVideo} data-ready-generate>
         <Play size={19} aria-hidden="true"/>{t.videoGenerate}<ArrowRight size={18} aria-hidden="true"/>
@@ -538,7 +541,7 @@ export function MandalaVideoReady({
           <BookOpen size={19} aria-hidden="true"/>{courseActions.paid}</button>
         <p>{courseActions.note}</p>
       </div>:null}
-      {!completed&&basicFreeAvailable&&basicCreditCost>0&&!waiting?
+      {exportMode==="personal"&&!completed&&basicFreeAvailable&&basicCreditCost>0&&!waiting?
         <p className={css.note} data-ready-video-credit-cost>
           <ShieldCheck size={17} aria-hidden="true"/>{basicCreditCost} {t.videoIncludedCredit}
         </p>:null}
