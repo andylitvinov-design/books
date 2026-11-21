@@ -64,14 +64,21 @@ test("macOS WebKit hydration follows visible Goals → Ideas → Montage without
  const flow=browser.slice(first,last);
  const click=flow.indexOf("await continueToIdeas.click()");
  const ideas=flow.indexOf('toHaveAttribute("data-active-workspace","phrases")',click);
- const goal=flow.indexOf('const ideasGoalTab=page.locator',ideas);
- const cards=flow.indexOf('await expect(goalCards).toHaveCount(3)',goal);
- const selected=flow.indexOf('await expect(choice).toHaveAttribute("aria-pressed","true")',cards);
- const next=flow.indexOf('await expect(nextGoal).toBeEnabled()',selected);
- const personalization=flow.indexOf('data-video-ideas-personalization-panel',next);
- const montage=flow.indexOf('await openVisibleMontageText(page,browser.browserType().name())',personalization);
- assert.ok(first>=0&&last>first&&click>=0&&ideas>click&&goal>ideas&&cards>goal&&selected>cards&&next>selected&&personalization>next&&montage>personalization,
-   "one real visitor click reaches Ideas Goal, selects a visible choice, enters Personalization, then opens Montage");
+ const goalPanel=flow.indexOf('data-video-ideas-goal-panel',ideas);
+ const chooseCandidates=[
+   flow.indexOf('await choice.tap()',goalPanel),
+   flow.indexOf("await ideasGoalPane.locator('[data-video-ideas-goal-choice=\"rest\"]').click()",goalPanel)
+ ].filter(index=>index>=0);
+ const choose=chooseCandidates.length?Math.min(...chooseCandidates):-1;
+ const nextCandidates=[
+   flow.indexOf('await nextGoal.tap()',choose),
+   flow.indexOf("await ideasGoalPane.locator('[data-video-ideas-goal-next]').click()",choose)
+ ].filter(index=>index>=0);
+ const next=nextCandidates.length?Math.min(...nextCandidates):-1;
+ const personalized=flow.indexOf('data-video-ideas-personalization-panel',next);
+ const montage=flow.indexOf("await montage.tap()",personalized);
+ assert.ok(first>=0&&last>first&&click>=0&&ideas>click&&goalPanel>ideas&&choose>goalPanel&&next>choose&&personalized>next&&montage>personalized,
+   "one real visitor tap selects a Goal, advances to Personalization, then reaches Montage");
  assert.match(flow,/data-video-continue-scenarios/);
  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
  assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);

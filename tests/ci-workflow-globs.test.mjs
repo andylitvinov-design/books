@@ -584,3 +584,30 @@ test('Axis private planner trigger accepts catch-all routes without GitHub chara
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
 
+
+test('public Ali greeting and coach motion do not launch private App or storefront matrices',()=>{
+  const target='codex/public-book-library';
+  const media=['components/app/ali-persona-audio.js','components/app/coaching-avatar.jsx'];
+  for(const name of ['hh-app-r1.yml','hh-app-browser.yml']){
+    const trigger=parsePrTrigger(workflow(name),name);
+    for(const path of media){
+      assert.equal(matchesTrigger(trigger,[path],target),false,name+' must not claim public media: '+path);
+      assert.equal(matchesTrigger(trigger,[path,'components/app/crm-manager.jsx'],target),true,
+        name+' must preserve private App QA on mixed PRs');
+    }
+    assert.equal(matchesTrigger(trigger,['components/app/client-contact-phone.jsx'],target),true,
+      name+' must preserve private client/identity coverage');
+  }
+  const store=parsePrTrigger(workflow('hh-public-services-production.yml'),'public-services');
+  assert.equal(matchesTrigger(store,['lib/holistic-support/ali-gemini-free-tts.mjs'],target),false);
+  assert.equal(matchesTrigger(store,['lib/holistic-support/ali-gemini-free-tts.mjs',
+    'components/consultation-choice-capture.tsx'],target),true,
+    'mixed voice+booking still needs full public-service acceptance');
+  assert.equal(matchesTrigger(store,['app/api/payments/checkout/route.js'],target),true,
+    'payment and consent safety must remain protected');
+  const core=workflow('hh-pr-core-release.yml');
+  assert.match(core,/Public Ali greeting \+ coach motion release contracts/);
+  assert.match(core,/tests\/ali-persona-selector\.test\.mjs tests\/my-coach-personas\.test\.mjs/);
+  assert.match(core,/tests\/coach-greeting-video\.test\.mjs/);
+  assert.match(core,/steps\.fast\.outputs\.route != 'ASSETS'/);
+});
