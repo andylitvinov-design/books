@@ -271,7 +271,25 @@ async function verifyWorkspaceHydration(browser,locale){
     const ideasConceptTab=page.locator('[data-video-ideas-tab="concept"]');
     const ideasPersonalTab=page.locator('[data-video-ideas-tab="personalization"]');
     await expect(ideasPersonalTab).toHaveAttribute("aria-pressed","true");
-    await ideasConceptTab.tap();
+    await expect(ideasConceptTab).toBeDisabled();
+    // Support must complete each real required question before Concept unlocks.
+    // Never force-tap a disabled tab or substitute synthetic React state.
+    const supportQuiz=page.locator('[data-video-personalization][data-video-personalization-goal="support"]');
+    await expect(supportQuiz).toBeVisible();
+    const currentFeeling=supportQuiz.locator('[data-personalization-kind="current"] [data-video-personalization-choice]').first();
+    await expect(currentFeeling).toBeVisible();
+    await currentFeeling.tap();
+    await expect(supportQuiz).toHaveAttribute("data-video-personalization-step","2");
+    const desiredFeeling=supportQuiz.locator('[data-personalization-kind="desired"] [data-video-personalization-choice]').first();
+    await expect(desiredFeeling).toBeVisible();
+    await desiredFeeling.tap();
+    await expect(supportQuiz).toHaveAttribute("data-video-personalization-step","3");
+    await supportQuiz.locator('[data-video-personalization-support-need]').first().tap();
+    await expect(supportQuiz).toHaveAttribute("data-video-personalization-step","4");
+    await supportQuiz.locator('[data-video-personalization-energy="5"]').tap();
+    await expect(supportQuiz).toHaveAttribute("data-video-personalization-step","5");
+    await supportQuiz.locator('[data-video-personalization-clarify-continue]').tap();
+    await expect(ideasConceptTab).toHaveAttribute("aria-pressed","true");
     const concept=page.locator("[data-video-ideas-concept-panel]");
     await expect(concept).toBeVisible();
     // Concept Intelligence: two personalized, touch-operable film choices,
