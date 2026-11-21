@@ -22,7 +22,8 @@ export function summarizeLighthouse(lhr) {
   assert.ok(typeof perf === "number" && Number.isFinite(perf), "No valid Lighthouse performance score");
   const details = audits.metrics?.details?.items?.[0] ?? {};
   const observedLoad = details.observedLoad;
-  const getValue = id => number(id) === null ? null : +number(id).toFixed(1);
+  // CLS is unitless and its 0.1 good threshold needs more precision than ms.
+  const getValue = id => number(id) === null ? null : +number(id).toFixed(id === "cumulative-layout-shift" ? 4 : 1);
   return {
     version: lhr.lighthouseVersion,
     requestedUrl: lhr.requestedUrl,
