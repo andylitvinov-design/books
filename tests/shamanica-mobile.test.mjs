@@ -119,3 +119,21 @@ test("Direct Shamanic category is a compact three-offer phone screen with full D
  assert.match(page,/orderedCategories\.map\(id =>/);
  assert.match(page,/data-shamanica-priority-groups/);
 });
+
+test("Alchemist cabinet displays nine real clickable shelf objects, not a static screenshot",()=>{
+ const client=read("components/shamanica-mobile.tsx");
+ const css=read("components/shamanica-mobile.module.css");
+ assert.match(client,/data-shamanica-cabinet-shelves/);
+ assert.match(client,/shelfExtras\.map\(/);
+ assert.match(client,/data-shamanica-shelf-quick-link=\{category\}/);
+ assert.match(client,/href=\{shamanicaCategoryHref\(locale,category\)\}/);
+ assert.match(client,/Alchemist’s Cabinet/);
+ assert.match(client,/Кабинет алхимика/);
+ assert.match(css,/ALCHEMIST_SHELF_REFERENCE_20261120/);
+ assert.match(css,/\.serviceGrid/);
+ assert.match(css,/\.servicePhoto/);
+ assert.match(css,/ridge #765032/);
+ assert.match(css,/prefers-reduced-motion/);
+ assert.match(client,/data-shamanica-answer=\{id\}/);
+ assert.match(client,/aria-pressed=\{chosen===id\}/);
+});

@@ -25,6 +25,13 @@ const images={
  learning:"/images/holistic-house/books-library.webp",
  free:"/images/holistic-house/reiki-practitioner-sunrise.webp",
 } as const;
+// Three additional doors point to existing, published category-offer routes.
+// They introduce no new products, prices, bookings or checkout flows.
+const shelfExtras=[
+ {id:"cleansing",category:"rituals",image:images.rituals,labels:{ru:"Очищение и защита",en:"Cleansing & protection",es:"Limpieza y protección"}},
+ {id:"places",category:"artifacts",image:images.artifacts,labels:{ru:"Места силы и путешествия",en:"Power places & journeys",es:"Lugares de poder y viajes"}},
+ {id:"soul",category:"energy",image:images.energy,labels:{ru:"Исцеление души",en:"Soul healing & guidance",es:"Sanación y guía interior"}}
+] as const;
 const copy={
 ru:{
  subtitle:"Рейки, магия, энергия и развитие.",heroLead:"3 коротких вопроса · Практики Рейки, магии и развития",
@@ -181,7 +188,7 @@ export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;au
    <section className={styles.hero} aria-labelledby="shamanica-hero-title">
     <div className={styles.mirrorIntro}>
      <span className={styles.mirrorSymbol} aria-hidden="true"><Sun size={23} strokeWidth={1.45}/><Sparkles size={15}/></span>
-     <h1 id="shamanica-hero-title">{locale==="ru"?"Шаманик":"Shamanic"}</h1>
+     <h1 id="shamanica-hero-title">{locale==="ru"?"Кабинет алхимика":locale==="es"?"Gabinete del alquimista":"Alchemist’s Cabinet"}</h1>
      <p className={styles.mirrorTagline}>{mirror.tagline}</p>
      <p className={styles.mirrorLead}>{mirror.intro}</p>
     </div>
@@ -238,14 +245,21 @@ export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;au
      {mirror.next}<ArrowRight size={24} aria-hidden="true"/>
     </button>
    </section>
-   <section className={styles.services} aria-labelledby="shamanica-services-title">
+   <section className={styles.services} data-shamanica-cabinet-shelves aria-labelledby="shamanica-services-title">
     <div className={styles.servicesHeading}><h2 className={styles.sectionTitle} id="shamanica-services-title">{t.servicesTitle}</h2><Link href={"/"+locale+"/shamanica/business"} prefetch={false} className={styles.businessLink}>{t.work}<ArrowRight size={17} aria-hidden="true"/></Link></div>
     <div className={styles.serviceGrid}>{serviceCards.map(id=>{const Icon=icons[id];return <Link key={id} href={id==="free"?"/"+locale+"/academy/principles-of-energywork/learn":shamanicaCategoryHref(locale,id)} prefetch={false} className={styles.serviceCard} data-shamanica-service={id}>
       <div className={styles.servicePhoto}><Image src={images[id]} alt="" fill sizes="(max-width:600px) 33vw, 300px"/></div>
       <span className={styles.serviceIcon}><Icon size={21} strokeWidth={1.8}/></span>
       <div className={styles.serviceBody}><h3>{t.services[id][0]}</h3><p>{t.services[id][1]}</p></div>
       <span className={styles.serviceArrow} aria-hidden="true"><ArrowRight size={20}/></span>
-    </Link>})}</div>
+    </Link>})}
+    {shelfExtras.map(({id,category,image,labels})=><Link key={id} href={shamanicaCategoryHref(locale,category)}
+     prefetch={false} className={styles.serviceCard+" "+styles.shelfExtra} data-shamanica-service={id}
+     data-shamanica-shelf-quick-link={category}>
+      <div className={styles.servicePhoto}><Image src={image} alt="" fill sizes="(max-width:600px) 33vw, 240px"/></div>
+      <div className={styles.serviceBody}><h3>{labels[locale]}</h3></div>
+      <span className={styles.serviceArrow} aria-hidden="true"><ArrowRight size={20}/></span>
+    </Link>)}</div>
    </section>
    </>}
   </div>
