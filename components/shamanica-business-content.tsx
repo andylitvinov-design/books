@@ -10,15 +10,20 @@ import styles from "./shamanica-business-content.module.css";
 const goalChoices=[{id:"express",Icon:Search},{id:"analysis",Icon:TrendingUp},{id:"team",Icon:Users},{id:"leader",Icon:UserRound}] as const;
 const concernChoices=[{id:"unclear",Icon:Search},{id:"decision",Icon:Compass},{id:"conflict",Icon:Users},{id:"resources",Icon:Sprout}] as const;
 const startChoices=[{id:"free",Icon:ClipboardCheck},{id:"consultation",Icon:UserRound},{id:"team",Icon:Users},{id:"tools",Icon:Gem}] as const;
-const serviceIcons={analysis:TrendingUp,support:ClipboardCheck,team:Users,leader:UserRound,artifacts:Gem,remedies:Sprout} as const;
-const serviceImages={
- analysis:"/images/holistic-house/report-lighthouse-coast.webp",
- support:"/images/holistic-house/books-library.webp",
- team:"/images/holistic-house/homepage-constellations.svg",
- leader:"/images/holistic-house/course-focus-mountain-boy.webp",
- artifacts:"/images/holistic-house/tao-fu-balance.webp",
- remedies:"/images/holistic-house/distance-homeopathy.webp"
-} as const;
+const businessShelves=[
+ {id:"express",target:"express",Icon:Search,image:"/images/holistic-house/report-lighthouse-coast.webp",routes:["express","support","analysis","analysis"]},
+ {id:"remedies",target:"remedies",Icon:Sprout,image:"/images/holistic-house/distance-homeopathy.webp",routes:["remedies","remedies","remedies","remedies"]},
+ {id:"strategy",target:"analysis",Icon:TrendingUp,image:"/images/holistic-house/books-library.webp",routes:["analysis","support","team","leader"]},
+ {id:"artifacts",target:"artifacts",Icon:Gem,image:"/images/holistic-house/tao-fu-balance.webp",routes:["artifacts","artifacts","artifacts","artifacts"]},
+ {id:"energy",target:"support",Icon:Target,image:"/images/holistic-house/reiki-approved-sunrise-v3.webp",routes:["remote-energy","remote-energy","artifacts","remote-energy"]},
+ {id:"energywork",target:"team",Icon:Users,image:"/images/holistic-house/homepage-constellations.svg",routes:["team","remote-energy","ritual","team"]}
+] as const;
+const businessDetailHref=(locale:PublicLocale,id:string)=>{
+ if(id==="remote-energy")return "/"+locale+"/services/remote-energy-support";
+ if(id==="ritual")return "/"+locale+"/holistic-support/mandala";
+ return shamanicaBusinessHref(locale,id);
+};
+type ShelfId=(typeof businessShelves)[number]["id"];
 const translations={
  ru:{
   title:"Бизнес-анализ и поддержка",
@@ -35,6 +40,12 @@ const translations={
   resultLead:"Подборка основана на ваших ответах. Выберите подходящий вариант.",
   restart:"Изменить ответы",
   express:["Экспресс-диагностика","Начните с письменного разбора вашей бизнес-ситуации."],
+  shelves:["Экспресс-бизнес-инсайт","Средства для ясности и лидерства","Стратегия и бизнес-анализ","Артефакты для поддержки целей","Энергоподдержка бизнеса","Энергопрактики в бизнесе"],
+  subservices:[["Экспресс-анализ ситуации","Помощь в принятии решения","Поиск скрытых препятствий","Оценка новой возможности"],["Ясность и концентрация","Уверенность и лидерство","Стресс и эмоциональный баланс","Индивидуальный подбор средств"],["Глубинный бизнес-анализ","Стратегия роста и доходов","Анализ команды и партнёров","Дорожная карта бизнеса"],["Персональный бизнес-талисман","Мандала для концентрации","Символ успеха и процветания","Индивидуальный ритуальный артефакт"],["Восстановительные практики руководителя","Баланс и поддержка команды","Гармонизация рабочего пространства","Дистанционная энергоподдержка"],["Расстановка о деньгах и ценности","Активация лидерских качеств","Ритуал запуска проекта","Согласование команды и партнёрства"]],
+  chooseFocus:"Выберите конкретное направление",
+  backToShelves:"Все 6 направлений",
+  details:"Подробнее",
+  categoryHint:"Ссылки ведут к ближайшим существующим услугам. Формат и стоимость уточняются на странице услуги.",
   services:[
    ["Бизнес-анализ","Расширенный разбор ситуации, факторов и направлений роста."],
    ["Аналитическая поддержка","Сопровождение решений и регулярный разбор бизнеса."],
@@ -59,6 +70,12 @@ const translations={
   resultLead:"Selected from your answers. Choose how to begin.",
   restart:"Change answers",
   express:["Quick situation review","Start with a written review of your business situation."],
+  shelves:["Express Business Insight","Remedies for Clarity & Leadership","Strategy & Business Analyses","Artefacts for Goal Support","Business Energy Support","Energywork in Business"],
+  subservices:[["Express Situation Scan","Decision Insight","Hidden Obstacles","Opportunity Check"],["Clarity & Focus","Confidence & Leadership","Stress & Emotional Balance","Personal Remedy Selection"],["Deep Business Analysis","Growth & Money Strategy","Team & Partnership Analysis","Business Roadmap"],["Personal Business Talisman","Mandala for Focus","Success & Prosperity Symbol","Custom Ritual Artifact"],["Executive Energy Recovery","Team Energy Balance","Business Space Harmony","Remote Energy Support"],["Money & Value Constellation","Leadership Activation","Business Launch Ritual","Partnership & Team Alignment"]],
+  chooseFocus:"Choose a specific focus",
+  backToShelves:"All 6 categories",
+  details:"Details",
+  categoryHint:"Links open the closest existing service pages. Format and price are confirmed on the service page.",
   services:[
    ["Business analysis","A fuller look at your situation, factors and growth paths."],
    ["Analytical support","Ongoing reviews and support for business decisions."],
@@ -83,6 +100,12 @@ const translations={
   resultLead:"Selección basada en tus respuestas. Elige cómo empezar.",
   restart:"Cambiar respuestas",
   express:["Diagnóstico rápido","Comienza con un análisis escrito de tu situación empresarial."],
+  shelves:["Diagnóstico empresarial exprés","Remedios para claridad y liderazgo","Estrategia y análisis empresarial","Artefactos para apoyar objetivos","Apoyo energético empresarial","Trabajo energético para negocios"],
+  subservices:[["Diagnóstico rápido de la situación","Orientación para decidir","Obstáculos ocultos","Evaluación de oportunidades"],["Claridad y concentración","Confianza y liderazgo","Estrés y equilibrio emocional","Selección individual de remedios"],["Análisis empresarial profundo","Estrategia de crecimiento y dinero","Análisis de equipo y socios","Hoja de ruta empresarial"],["Talismán empresarial personal","Mandala para concentrarse","Símbolo de éxito y prosperidad","Artefacto ritual personalizado"],["Recuperación energética del líder","Equilibrio energético del equipo","Armonía del espacio de trabajo","Apoyo energético a distancia"],["Constelación de dinero y valor","Activación del liderazgo","Ritual de lanzamiento","Alineación de socios y equipos"]],
+  chooseFocus:"Elige un área específica",
+  backToShelves:"Las 6 categorías",
+  details:"Detalles",
+  categoryHint:"Los enlaces abren los servicios existentes más cercanos. El formato y el precio se confirman allí.",
   services:[
    ["Análisis empresarial","Revisión de la situación, los factores y el crecimiento."],
    ["Apoyo analítico","Acompañamiento y revisión continua de decisiones."],
@@ -106,6 +129,9 @@ export function ShamanicaBusinessContent({locale}:{locale:PublicLocale}){
  const [concern,setConcern]=useState<Concern>("unclear");
  const [start,setStart]=useState<Start>("free");
  const [finished,setFinished]=useState(false);
+ const [selectedShelf,setSelectedShelf]=useState<ShelfId|null>(null);
+ const activeShelf=businessShelves.find(item=>item.id===selectedShelf);
+ const shelfIndex=businessShelves.findIndex(item=>item.id===selectedShelf);
  const current=step===0?goalChoices:step===1?concernChoices:startChoices;
  const labels=step===0?t.goals:step===1?t.concerns:t.starts;
  const choose=(id:string)=>{
@@ -168,20 +194,24 @@ export function ShamanicaBusinessContent({locale}:{locale:PublicLocale}){
    </div>
    <Link className={styles.featureLink} href={shamanicaBusinessHref(locale,"express")} prefetch={false}>{t.begin}<ArrowRight size={19} aria-hidden="true"/></Link>
   </section>
-  <section className={styles.services} aria-labelledby="business-services-heading">
-   <h2 id="business-services-heading">{t.servicesTitle}</h2>
-   <div className={styles.serviceGrid}>
-    {BUSINESS_SERVICES.map((id,index)=>{
-     const Icon=serviceIcons[id as keyof typeof serviceIcons];
-     const details=t.services[index];
-     return <Link className={styles.serviceCard} href={shamanicaBusinessHref(locale,id)} prefetch={false} key={id} data-business-service={id}>
-      <Image src={serviceImages[id as keyof typeof serviceImages]} fill alt="" className={styles.serviceImage} sizes="(max-width:359px) 100vw, (max-width:760px) 50vw, 360px"/>
-      <Icon size={27} className={styles.serviceIcon} strokeWidth={1.5} aria-hidden="true"/>
-      <span className={styles.serviceText}><strong>{details[0]}</strong><span>{details[1]}</span></span>
-      <ArrowRight size={17} className={styles.cardArrow} aria-hidden="true"/>
-     </Link>;
-    })}
-   </div>
+  <section className={styles.services} data-business-cabinet-shelves data-expanded={activeShelf?"true":"false"} aria-labelledby="business-services-heading">
+   <h2 id="business-services-heading">{activeShelf?t.shelves[shelfIndex]:t.servicesTitle}</h2>
+   {activeShelf?<>
+    <button type="button" className={styles.shelfBack} onClick={()=>setSelectedShelf(null)} data-business-back-to-shelves><ArrowLeft size={18} aria-hidden="true"/>{t.backToShelves}</button>
+    <p className={styles.focusLead}>{t.chooseFocus}</p>
+    <div className={styles.secondGrid} data-business-second-level={activeShelf.id}>
+     {activeShelf.routes.map((target,index)=><Link key={activeShelf.id+"-"+index} href={businessDetailHref(locale,target)} prefetch={false} className={styles.secondCard} data-business-subservice={activeShelf.id+"-"+index}>
+      <span className={styles.secondNumber}>{index+1}</span><strong>{t.subservices[shelfIndex][index]}</strong>
+      <span className={styles.detailLabel}>{t.details}</span><ArrowRight size={16} aria-hidden="true"/>
+     </Link>)}
+    </div>
+    <p className={styles.catalogHint}>{t.categoryHint}</p>
+   </>:<div className={styles.serviceGrid}>
+    {businessShelves.map(({id,Icon,image},index)=><button className={styles.serviceCard} type="button" key={id} onClick={()=>setSelectedShelf(id)} data-business-shelf={id} aria-label={t.shelves[index]}>
+     <Image src={image} fill alt="" className={styles.serviceImage} sizes="(max-width:760px) 48vw, 300px"/>
+     <span className={styles.serviceText}><Icon size={25} className={styles.serviceIcon} strokeWidth={1.6} aria-hidden="true"/><strong>{t.shelves[index]}</strong><ArrowRight size={16} className={styles.cardArrow} aria-hidden="true"/></span>
+    </button>)}
+   </div>}
   </section>
  </div>;
 }
