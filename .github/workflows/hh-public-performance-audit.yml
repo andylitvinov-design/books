@@ -32,6 +32,11 @@ on:
       - 'components/public-consultation-cta.tsx'
       - 'app/[locale]/services/page.tsx'
       - 'next.config.ts'
+      - 'app/layout.tsx'
+      - 'components/home-dialogue-entry.tsx'
+      - 'components/sitewide-lead-capture-deferred.tsx'
+      - 'tests/home-css-isolation.test.mjs'
+      - 'scripts/measure-home-css-network.mjs'
   workflow_dispatch:
 permissions:
   contents: read
@@ -42,7 +47,7 @@ concurrency:
 
 jobs:
   measure-public:
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false || startsWith(github.event.pull_request.title, 'perf(home):') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -52,8 +57,31 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Check first-screen CSS isolation and hero preloads
+        run: node --test tests/home-css-isolation.test.mjs
       - name: Validate targeted safety and booking contracts
         run: node --test tests/holistic-house-image-quota.test.mjs tests/hh-public-html-metrics.test.mjs tests/holistic-house-speed-and-cta.test.mjs tests/holistic-house-home-streaming.test.mjs tests/home-carousel-first-screen-cta.test.mjs tests/home-rsc-on-demand.test.mjs tests/public-consultation-cta-design.test.mjs tests/consultation-capture-choice.test.mjs tests/personal-testimonials.test.mjs
+      - name: Check full production build of Draft performance PR
+        if: ${{ github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'perf(home):') }}
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+      - name: Measure stylesheet requests and document payloads on the exact PR build
+        if: ${{ github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'perf(home):') }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          PORT=3399 HOSTNAME=127.0.0.1 npm start >/tmp/hh-home-css.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true' EXIT
+          for n in {1..35}; do
+            if curl -fsS -o /dev/null http://127.0.0.1:3399/; then break; fi
+            sleep 1
+          done
+          node scripts/measure-home-css-network.mjs http://127.0.0.1:3399 | tee /tmp/hh-home-css-metrics.json
+          { echo '## Homepage network first paint (uncompressed)'; echo '```json'; cat /tmp/hh-home-css-metrics.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
       - name: Measure public TTFB and HTML/RSC size (no login, no private routes)
         # PR runs validate source only; the live production alias is not that PR.
         # Explicit manual audits check actual hourly LIVE rather than the stale alias after merge.

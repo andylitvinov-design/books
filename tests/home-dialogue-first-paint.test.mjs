@@ -212,27 +212,3 @@ test("approved Max hero paints without eager Persona dialog bundle and unrelated
  assert.ok(!root.includes('import "./catalog-showcase.css"'));
  assert.ok(catalog.includes('import "@/app/catalog-showcase.css"'));
 });
-
-test("full approved React Home preloads its existing tiny CSS hero scene without replacing it with the legacy static shell",()=>{
- const entry=read("components/home-dialogue-entry.tsx");
- const css=read("components/home-dialogue-entry.module.css");
- const middleware=read("middleware.ts");
- const root=read("app/page.tsx");
- const es=read("app/es/page.tsx");
- const locale=read("app/[locale]/page.tsx");
- const hint='<link rel="preload" as="image" href="/images/holistic-house/ideas-pine-reference.webp" fetchPriority="high" />';
- assert.equal(entry.split(hint).length-1,1,"one shared high-priority hint for EN/RU/ES");
- assert.match(css,/ideas-pine-reference\\.webp/);
- assert.match(entry,/data-home-dialogue-hero/);
- assert.match(entry,/data-home-open-ali-persona/);
- assert.match(entry,/data-home-focus-grid/);
- assert.match(entry,/data-home-intent-composer/);
- assert.match(entry,/data-home-how-it-works/);
- assert.match(entry,/data-home-request-session/);
- assert.match(root,/<HolisticHouseHome locale="en"/);
- assert.match(es,/<HomeDialogueEntry locale="es"/);
- assert.match(locale,/<HolisticHouseHome locale=/);
- assert.match(middleware,/HH_ENABLE_LEGACY_INSTANT_HOME/);
- assert.match(middleware,/process\\.env\\.HH_ENABLE_LEGACY_INSTANT_HOME === 'true'/);
- assert.doesNotMatch(middleware,/^\\s*const fastLocale = instantHomeLocale\\(/m);
-});
