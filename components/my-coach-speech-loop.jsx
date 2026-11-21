@@ -8,6 +8,7 @@ import {startCoachRecordedTurn,coachRecordedSupported} from '@/lib/personal-coac
 import {coachVoiceFragmentNeedsReview,coachDraftWithoutUncertainSpeech} from '@/lib/personal-coaching/coach-voice-turn-quality.mjs'
 import {isCoachBargeEcho} from '@/lib/personal-coaching/coach-barge-in.mjs'
 import {chooseDictationLanguage,coachSpokenTurnLocale,readDictationResults,detectedSpeechLocale,ios27NeedsSpeechRecovery,hasCoachSpokenAnswer} from '@/lib/personal-coaching/my-coach-dictation.mjs'
+import {setCoachIos27AudioSession} from '@/lib/personal-coaching/coach-ios-audio-route.mjs'
 import {startCoachingMp3Playback,primeCoachingAudioGesture,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
 import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
@@ -170,6 +171,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     introPlayerRef.current=null
     const audioContext=audioContextRef.current
     audioContextRef.current=null
+    setCoachIos27AudioSession(window.navigator,'auto')
     if(audioContext)try{void audioContext.close?.().catch?.(()=>{})}catch{}
     primedAudioRef.current=null
     activeRef.current=false
@@ -263,6 +265,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     if(bargeRecoveryRef.current.generation!==generation)
       bargeRecoveryRef.current={generation,retries:0}
     if(!activeRef.current||generationRef.current!==generation||
+       ios27NeedsSpeechRecovery(window.navigator)||
        recordedTurnRef.current||!coachRecordedSupported(window)||
        microphonePermissionStateRef.current==='denied')return
     const begin=()=>{
@@ -404,12 +407,13 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       introStartedRef.current=true
       generationRef.current+=1
       // Unlock browser audio before any asynchronous model/TTS request.
+      setCoachIos27AudioSession(window.navigator,'playback')
       audioContextRef.current=shouldUseCoachingWebAudio(window.navigator)?unlockCoachingAudioContext():null
       primedAudioRef.current=audioContextRef.current?null:primeCoachingAudioGesture()
       changePhase('loading')
       // Play is the single deliberate gesture that starts coach audio followed
       // by browser recognition. No recording, upload or second mic tap.
-      primeMicrophonePermission()
+      if(!ios27NeedsSpeechRecovery(window.navigator))primeMicrophonePermission()
       beginVoiceBargeMonitor(generationRef.current)
       void speakCoachReply({reply:String(introduction||'').slice(0,900),mode:'intro'},'',generationRef.current,naturalVoice)
       return true
@@ -546,6 +550,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   }
 
   function startListening(){
+    setCoachIos27AudioSession(window.navigator,'auto')
     if(!activeRef.current)return
     const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition
     const ios27=ios27NeedsSpeechRecovery(window.navigator)
@@ -950,6 +955,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   }
 
   async function speakCoachReply(result,text,generation,naturalVoice=false,earlySegment=false,fullText=''){
+    setCoachIos27AudioSession(window.navigator,'playback')
     const reply=String(result.reply).slice(0,900)
     lastSpokenCoachRef.current=String(fullText||reply).slice(0,900)
     // An audible reply must include the answer/acknowledgement, not only its last question.
@@ -1194,10 +1200,11 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       activeRef.current=true
       introStartedRef.current=true
       generationRef.current+=1
+      setCoachIos27AudioSession(window.navigator,'playback')
       audioContextRef.current=shouldUseCoachingWebAudio(window.navigator)?unlockCoachingAudioContext():null
       primedAudioRef.current=audioContextRef.current?null:primeCoachingAudioGesture()
       changePhase('loading')
-      primeMicrophonePermission()
+      if(!ios27NeedsSpeechRecovery(window.navigator))primeMicrophonePermission()
       beginVoiceBargeMonitor(generationRef.current)
       void speakCoachReply({reply:String(introduction||'').slice(0,900),mode:'intro'},'',generationRef.current,true)
       return
