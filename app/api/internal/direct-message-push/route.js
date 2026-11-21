@@ -10,7 +10,7 @@ export const runtime='nodejs'
 export const preferredRegion='yul1'
 export const dynamic='force-dynamic'
 export const revalidate=0
-export const maxDuration=45
+export const maxDuration=300
 
 // Existing five-minute Vercel cron; no additional paid schedules.
 // When expressly enabled, CC claims one unique ten-minute slot and at most one
@@ -28,6 +28,20 @@ export async function GET(request){
         const cc=await commandCenterTick({config,transaction})
         if(cc.status==='unconfirmed')console.error('HH_CC_TICK_UNCONFIRMED')
       }catch{console.error('HH_CC_TICK_UNAVAILABLE')}
+    }
+    // Optional AI video recovery shares this already scheduled, authenticated
+    // five-minute invocation. Both bot identity and separate owner-approved
+    // render budget are required; command-center and ordinary push stay intact.
+    if(process.env.VERCEL_ENV==='production' &&
+       process.env.HH_AI_TELEGRAM_QUEUE_ENABLED==='true' &&
+       process.env.HH_AI_TELEGRAM_RENDER_BUDGET_APPROVED==='true'){
+      try{
+        const {aiVideoBotIdentityReady}=await import('@/lib/app/telegram-ai-account-boundary')
+        if(aiVideoBotIdentityReady()){
+          const {runTelegramAiQueues}=await import('@/lib/app/telegram-ai-worker')
+          await runTelegramAiQueues(config,{messages:2,videos:1,deliveries:2})
+        }
+      }catch{console.error('HH_AI_VIDEO_EXISTING_CRON_RECOVERY_FAILED')}
     }
     return NextResponse.json(pushed,{headers:PRIVATE_HEADERS})
   }catch{

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RemoteEnergySupportBooking, type EnergySupportMaster, type SupportRequestKind } from "@/components/remote-energy-support-booking";
 import type { PublicLocale } from "@/lib/public-locales";
 import { matchesHolisticEuroBudget, matchesHolisticGoal } from "@/lib/practitioners/holistic-search-budgets.js";
@@ -84,6 +84,9 @@ export function HolisticInlineSupportOrder({ locale, kind, initialGoal, initialT
   const [consultations, setConsultations] = useState<ConsultationOffer[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  // Invalidate in-flight directory fetches at the user click, before React effects flush.
+  // An older request must not reintroduce stale cards during the next search.
+  const requestEpoch = useRef(0);
   const t = copy[locale];
 
   useEffect(() => { setChoice(kind); setSearched(Boolean(initialTalismanId)); }, [kind, initialTalismanId]);
@@ -92,6 +95,7 @@ export function HolisticInlineSupportOrder({ locale, kind, initialGoal, initialT
   useEffect(() => {
     if (!searched) return;
     const controller = new AbortController();
+    const epoch = ++requestEpoch.current;
     setFailed(false);
     setMasters(null);
     setConsultations(null);
@@ -104,13 +108,15 @@ export function HolisticInlineSupportOrder({ locale, kind, initialGoal, initialT
         if (!data || typeof data !== "object") throw new Error("INVALID_DIRECTORY");
         if (choice === "consultation") {
           if (!("consultations" in data) || !Array.isArray(data.consultations)) throw new Error("INVALID_DIRECTORY");
-          if (!controller.signal.aborted) setConsultations(data.consultations as ConsultationOffer[]);
+          if (!controller.signal.aborted && epoch === requestEpoch.current)
+            setConsultations(data.consultations as ConsultationOffer[]);
         } else {
           if (!("masters" in data) || !Array.isArray(data.masters)) throw new Error("INVALID_DIRECTORY");
-          if (!controller.signal.aborted) setMasters(data.masters as EnergySupportMaster[]);
+          if (!controller.signal.aborted && epoch === requestEpoch.current)
+            setMasters(data.masters as EnergySupportMaster[]);
         }
       }).catch(() => {
-        if (!controller.signal.aborted) setFailed(true);
+        if (!controller.signal.aborted && epoch === requestEpoch.current) setFailed(true);
       });
     return () => controller.abort();
   }, [locale, searched, choice, attempt]);
@@ -164,6 +170,7 @@ export function HolisticInlineSupportOrder({ locale, kind, initialGoal, initialT
             // request effect clears old results. Reset in this same user event.
             // Every explicit Search is a fresh directory request, including
             // a second click with unchanged filters; never show stale offers.
+            requestEpoch.current++;
             setMasters(null); setConsultations(null);
             setAttempt(current => current + 1);
             setSearched(true);

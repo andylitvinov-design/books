@@ -170,6 +170,7 @@ const nextConfig: NextConfig = {
     // Owner-private Dot /audio → /video uses its existing signed webhook.
     // The same pinned FFmpeg binary must be available in this function too.
     "/api/app/notification-channels/telegram/webhook": ["./node_modules/ffmpeg-static/ffmpeg"],
+    "/api/internal/telegram-ai-work": ["./node_modules/ffmpeg-static/ffmpeg"],
     "/api/holistic-support/talismans": [
       "./node_modules/@img/sharp-linux-x64/**/*",
       "./node_modules/@img/sharp-libvips-linux-x64/**/*",
