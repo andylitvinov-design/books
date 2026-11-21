@@ -844,7 +844,17 @@ try{
  await page.setViewportSize({width:390,height:844});
  results.push({journey:"Sessions goal-first → keyboard viewport → full AI reply visible",passed:true});
 
- await page.locator("[data-chat-top-tabs]").waitFor({state:"visible",timeout:30000});
+ // After the goal-first Sessions exchange, Ali's mobile sections remain
+ // a deliberate disclosure. Expand them with a real user tap before Orders.
+ await messengerMenu.waitFor({state:"visible",timeout:30000});
+ if(!(await messengerTabs.isVisible())){
+   assert.equal(await messengerMenu.getAttribute("aria-expanded"),"false",
+     "Ali menu must report collapsed state after the Sessions conversation");
+   await messengerMenu.click();
+ }
+ await messengerTabs.waitFor({state:"visible",timeout:30000});
+ assert.equal(await messengerMenu.getAttribute("aria-expanded"),"true",
+   "Orders and Clients stay behind the mobile menu until expanded");
  await page.locator('[data-chat-top-tabs] button[aria-controls="hh-orders-panel"]').click();
  await page.locator("#hh-orders-panel").waitFor({state:"visible"});
  await page.locator('[data-chat-top-tabs] button[aria-controls="hh-clients-panel"]').click();
