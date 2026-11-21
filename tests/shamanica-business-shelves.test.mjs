@@ -8,8 +8,8 @@ const styles=readFileSync(new URL("../components/shamanica-business-content.modu
 test("business shelf grid keeps exact owner order without changing For Me",()=>{
  const ownerTitles=[
   "Express Business Insight","Remedies for Clarity & Leadership",
-  "Strategy & Business Analyses","Artefacts for Goal Support",
-  "Business Energy Support","Energywork in Business"];
+  "Strategic Business Analyses","Artefacts for Goal Support",
+  "Business Energy Support","Academy of Business Energywork"];
  const positions=ownerTitles.map(title=>source.indexOf('"'+title+'"'));
  assert.ok(positions.every(i=>i>0));
  assert.ok(positions.every((p,i)=>i===0||p>positions[i-1]));
