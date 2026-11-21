@@ -110,8 +110,9 @@ try {
     return page;
   };
 
- // First-screen Shamanica business visual acceptance in this existing CI runner.
- // The two-column six-card grid must stay above the real, fixed seven-item dock.
+ // Business mobile acceptance uses the approved six-shelf, two-column layout.
+ // Shelves are scrollable above the fixed dock; a historical one-screen six-card
+ // assumption is invalid. Preserve overflow, imagery, interaction and quiz checks.
  async function checkCompactBusiness(page,locale,width){
   await page.goto(origin+"/"+locale+"/shamanica/business",{waitUntil:"domcontentloaded",timeout:75000});
   const section=page.locator("[data-shamanica-business]");
@@ -119,21 +120,27 @@ try {
   await expect(page.locator("[data-sitewide-antistress-banner]")).toHaveCount(0);
   await expect(page.locator("[data-hh-ihelp-trigger]:visible")).toHaveCount(0);
   await expect(page.locator("[data-shamanica-ihelp-trigger]")).toBeVisible();
-  await expect(section.locator("[data-business-service]")).toHaveCount(6);
-  await expect(section.locator("[data-business-service] img")).toHaveCount(6);
+  const shelves=section.locator("[data-business-shelf]");
+  await expect(shelves).toHaveCount(6);
+  await expect(section.locator("[data-business-shelf] img")).toHaveCount(6);
+  assert.deepEqual(await shelves.evaluateAll(nodes=>nodes.map(node=>node.getAttribute("data-business-shelf"))),
+   ["express","remedies","strategy","artifacts","energy","energywork"],"Approved business shelf order");
   await expect(page.locator("[data-hh-unified-dock]")).toHaveCount(1);
   const m=await page.evaluate(()=>{
-   const last=document.querySelector('[data-business-service="remedies"]');
+   const first=document.querySelector('[data-business-shelf="express"]');
+   const last=document.querySelector('[data-business-shelf="energywork"]');
    const dock=document.querySelector('[data-hh-unified-dock]');
-   if(!last||!dock)return null;
-   return {lastBottom:last.getBoundingClientRect().bottom,
-     dockTop:dock.getBoundingClientRect().top,
+   if(!first||!last||!dock)return null;
+   return {firstWidth:first.getBoundingClientRect().width,
+     lastWidth:last.getBoundingClientRect().width,
+     lastHeight:last.getBoundingClientRect().height,
+     dockWidth:dock.getBoundingClientRect().width,
      horizontalOverflow:document.documentElement.scrollWidth-window.innerWidth};
   });
   assert.ok(m,"Business compact landmarks missing");
   assert.ok(m.horizontalOverflow<=2,"Business horizontal overflow "+locale+"/"+width+" "+JSON.stringify(m));
-  if(width>=390)assert.ok(m.lastBottom<=m.dockTop+8,
-    "Six business cards must fit above dock "+locale+"/"+width+" "+JSON.stringify(m));
+  assert.ok(m.firstWidth>0&&m.lastWidth>0&&m.lastHeight>0&&m.dockWidth>0,
+    "Business shelf or dock has empty geometry "+locale+"/"+width+" "+JSON.stringify(m));
   if(locale==="ru"&&width===390)await page.screenshot({path:output+"/shamanica-business-ru-390.png",fullPage:false});
   await expect.poll(()=>page.evaluate(()=>history.pushState.toString().includes("__NA")),
     {timeout:30000,message:"Business quiz hydration"}).toBe(true);
