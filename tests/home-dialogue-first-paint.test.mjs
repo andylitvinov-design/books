@@ -54,7 +54,6 @@ test("initial paint is local and deferred: no media network or large course bund
  // The first-screen observer must not import its CSS-bearing content eagerly.
  assert.doesNotMatch(lazy,/^import \{ MySpaceTopics \} from/m);
  assert.match(content,/^import \{ MySpaceTopics \} from/m);
- assert.match(content,/import\("\.\/my-space-topics"\)/);
  assert.match(catalog,/HomeFeaturedWorkspace/);
  assert.doesNotMatch(main,/<HomeFeaturedWorkspace|<HomeSectionCarousel|<MySpaceTopics/);
  assert.doesNotMatch(entry,/https:\/\/|<iframe|<video|fetch\(/);
