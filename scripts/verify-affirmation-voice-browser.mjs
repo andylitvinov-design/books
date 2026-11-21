@@ -107,20 +107,30 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(ideas).toHaveAttribute("aria-pressed","true");
     await expect(studio).toHaveAttribute("data-active-workspace","phrases");
     await expect(page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]')).toBeVisible();
-    // Optional Goal refinement belongs to Ideas/Personalization. It becomes
-    // intentionally hidden on Montage Text, so exercise it BEFORE navigation.
-    const refinement=page.locator('[data-video-ideas-refinement]');
-    await expect(refinement.locator(":scope > summary")).toBeVisible();
-    // The native details may already be open after the Ideas transition.
-    // Exercise a genuine close/open toggle instead of assuming initial state.
-    if(await refinement.evaluate(node=>node.open)){
-      await refinement.locator(":scope > summary").click();
-      await expect(refinement).not.toHaveAttribute("open","");
-    }
-    await refinement.locator(":scope > summary").click();
-    await expect(refinement).toHaveAttribute("open","");
-    await expect(page.locator('[data-auto-video-topic-panel]')).toBeVisible();
-    // The legacy extra CTA is intentionally hidden: tap the visible Montage rail.
+    // The currently released Magic Mirror starts Ideas on the Goal tab.
+    // The old optional refinement disclosure is intentionally not visible
+    // until personalization. Test the user's real goal action rather than
+    // force-open an obsolete hidden control or skip that decision.
+    const ideasGoalTab=page.locator('[data-video-ideas-tab="goal"]');
+    const goalPane=page.locator('[data-video-ideas-goal-panel]');
+    await expect(ideasGoalTab).toHaveAttribute("aria-pressed","true");
+    await expect(goalPane).toBeVisible();
+    const goalCards=goalPane.locator('[data-video-ideas-goal-choice]');
+    await expect(goalCards).toHaveCount(3);
+    const nextGoal=goalPane.locator('[data-video-ideas-goal-next]');
+    await expect(nextGoal).toBeDisabled();
+    const choice=goalCards.nth(1); // actual support selection, no synthetic React state
+    if(browser.browserType().name()==="webkit")await choice.tap();
+    else await choice.click();
+    await expect(choice).toHaveAttribute("aria-pressed","true");
+    await expect(nextGoal).toBeEnabled();
+    if(browser.browserType().name()==="webkit")await nextGoal.tap();
+    else await nextGoal.click();
+    await expect(page.locator('[data-video-ideas-tab="personalization"]'))
+      .toHaveAttribute("aria-pressed","true");
+    await expect(page.locator('[data-video-ideas-personalization-panel]'))
+      .toBeVisible();
+    // The existing visible Montage rail remains available for voice/text QA.
     await openVisibleMontageText(page,browser.browserType().name());
     await expect(page.locator('[data-video-montage-tab="text"]'))
       .toHaveAttribute("aria-pressed","true");
@@ -213,17 +223,32 @@ async function verifyWorkspaceHydration(browser,locale){
         // unrelated stock frames depict the six authored physical events.
         await expect(automaticStoryboard).toHaveAttribute("data-storyboard-action-proof","editorial_unverified");
         await expect(automaticStoryboard).toHaveAttribute("data-storyboard-media-ready","false");
-        // Six genuine, rights-reviewed photographs are visual references, not
-        // proof that the filmed physical actions have been verified for export.
+        // Authored scene references must match the actual action. Missing
+        // matches show an honest Footage needed sketch, never an unrelated photo.
         const referenceCount=Number(await automaticStoryboard.getAttribute("data-storyboard-reference-count"));
-        assert.equal(referenceCount,storyboardShotCount,
-          "every authored 30-second scene must retain its own photographic reference");
+        assert.ok(Number.isSafeInteger(referenceCount)&&referenceCount>=0&&
+          referenceCount<=storyboardShotCount,
+          "reference count must be bounded by the number of authored scenes");
         await expect(automaticStoryboard).toHaveAttribute("data-storyboard-graphics-mode",
-          "licensed-photographic-references");
-        await expect(automaticStoryboard).toHaveAttribute("data-storyboard-reference-status",
-          "editorial_photo_reference_not_action_verified");
+          referenceCount?"licensed-photographic-references":"screenplay-scene-sketch");
+        assert.equal(await automaticStoryboard.getAttribute("data-storyboard-reference-status"),
+          referenceCount?"editorial_photo_reference_not_action_verified":null);
         const referencePhotos=cards.locator('img[data-storyboard-reference-photo]');
         await expect(referencePhotos).toHaveCount(referenceCount);
+        const kinds=await cards.evaluateAll(nodes=>nodes.map(node=>
+          node.getAttribute("data-story-media-kind")));
+        assert.equal(kinds.filter(kind=>kind==="reference").length,referenceCount,
+          "reference images must belong to distinct authored scenes");
+        assert.ok(kinds.every(kind=>["reference","missing","video","photo"].includes(kind)),
+          "every authored scene must display a recognized honest media state");
+        for(let i=0;i<storyboardShotCount;i++){
+          if(kinds[i]==="missing"){
+            await expect(cards.nth(i).locator('[data-video-story-media-missing="true"]'))
+              .toHaveCount(1);
+            await expect(cards.nth(i).locator('img[data-storyboard-reference-photo]'))
+              .toHaveCount(0);
+          }
+        }
         for(let i=0;i<referenceCount;i++){
           const photo=referencePhotos.nth(i);
           assert.ok((await photo.getAttribute("src"))?.startsWith("/"),
@@ -261,7 +286,25 @@ async function verifyWorkspaceHydration(browser,locale){
     const ideasConceptTab=page.locator('[data-video-ideas-tab="concept"]');
     const ideasPersonalTab=page.locator('[data-video-ideas-tab="personalization"]');
     await expect(ideasPersonalTab).toHaveAttribute("aria-pressed","true");
-    await ideasConceptTab.tap();
+    await expect(ideasConceptTab).toBeDisabled();
+    // The approved support path requires real choices before Concept.
+    // Keep the storyboard's real WebKit/media checks instead of forcing a disabled tab.
+    const supportQuiz=page.locator('[data-video-personalization][data-video-personalization-goal="support"]');
+    await expect(supportQuiz).toBeVisible();
+    const currentFeeling=supportQuiz.locator('[data-personalization-kind="current"] [data-video-personalization-choice]').first();
+    await expect(currentFeeling).toBeVisible();
+    await currentFeeling.tap();
+    await expect(supportQuiz).toHaveAttribute("data-video-personalization-step","2");
+    const desiredFeeling=supportQuiz.locator('[data-personalization-kind="desired"] [data-video-personalization-choice]').first();
+    await expect(desiredFeeling).toBeVisible();
+    await desiredFeeling.tap();
+    await expect(supportQuiz).toHaveAttribute("data-video-personalization-step","3");
+    await supportQuiz.locator('[data-video-personalization-support-need]').first().tap();
+    await expect(supportQuiz).toHaveAttribute("data-video-personalization-step","4");
+    await supportQuiz.locator('[data-video-personalization-energy="5"]').tap();
+    await expect(supportQuiz).toHaveAttribute("data-video-personalization-step","5");
+    await supportQuiz.locator('[data-video-personalization-clarify-continue]').tap();
+    await expect(ideasConceptTab).toHaveAttribute("aria-pressed","true");
     const concept=page.locator("[data-video-ideas-concept-panel]");
     await expect(concept).toBeVisible();
     // Concept Intelligence: two personalized, touch-operable film choices,
@@ -1698,7 +1741,26 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           phase(engine,"final-six-photo-consent-after-audio-style-edits");
           await expect(montageProTab).toHaveAttribute("aria-pressed","true");
         }else{
-          await expect(finalStoryboard).toHaveAttribute("data-storyboard-media-ready","true");
+          // An authored screenplay may have no action-matching licensed photos.
+          // The editor must NOT claim media is ready or auto-approve unrelated
+          // pictures. This Story integrity check is independent of the genuine
+          // local MP4 encoder exercised below through the existing Free path.
+          const count=Number(await finalStoryboard.getAttribute("data-storyboard-reference-count"));
+          assert.ok(Number.isInteger(count)&&count>=0&&count<=6,
+            "Storyboard reference count must be finite and bounded");
+          if(count<6){
+            await expect(finalStoryboard).toHaveAttribute("data-storyboard-media-ready","false");
+            await expect(finalStoryboard).toHaveAttribute("data-storyboard-action-proof","editorial_unverified");
+            await expect(finalStoryboard.locator('[data-story-media-kind="missing"]'))
+              .toHaveCount(6-count);
+            await expect(finalStoryboard.locator('[data-storyboard-apply-reference-photos]'))
+              .toHaveCount(0);
+            // A no-match Story is explicitly blocked: no simulated reference
+            // consent and no claim that its six physical actions were filmed.
+            phase(engine,"story-action-media-missing-fail-closed");
+          }else{
+            await expect(finalStoryboard).toHaveAttribute("data-storyboard-media-ready","true");
+          }
           await montageProTab.click();
         }
         await montageProOffer.locator('[data-video-montage-pro-choice="free"]').click();
