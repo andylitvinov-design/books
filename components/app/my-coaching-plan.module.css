@@ -8,6 +8,17 @@
 .tab{color:var(--hh-muted,#74828e);background:transparent}
 .tabActive{color:var(--hh-text,#202936);background:white;box-shadow:0 2px 8px #10202c12}
 .tab span{font-size:11px;border-radius:99px;background:#e8eeee;padding:2px 7px}
+.tabs:has(#coach-context-tab){grid-template-columns:repeat(3,minmax(0,1fr))}
+.tabs:has(#coach-context-tab) button{min-width:0;overflow-wrap:anywhere}
+.contextPanel{margin-top:18px;color:var(--hh-text,#202936);overflow-wrap:anywhere}
+.contextPanel fieldset{display:grid;gap:12px;min-width:0;margin:0;padding:0;border:0}
+.contextPanel label{display:grid;gap:5px;min-width:0}
+.contextPanel select,.contextPanel button{min-height:44px;max-width:100%;font:inherit;border:1px solid #b3c8c0;border-radius:10px;padding:8px 11px;background:#f7fff9;color:#073f34}
+.contextPanel select{width:100%;min-width:0}
+.contextPanel select:focus-visible,.contextPanel button:focus-visible{outline:2px solid #07614b;outline-offset:3px}
+.contextPanel button:disabled{opacity:.55}
+.contextControls{display:flex;flex-wrap:wrap;gap:8px}
+.contextPanel blockquote{margin:8px 0 12px;padding-inline-start:12px;border-inline-start:3px solid #77a996}
 .loading{min-height:45vh;display:flex;align-items:center;justify-content:center;gap:10px;color:var(--hh-muted,#74828e);font-weight:650}
 .spin{animation:hh-coach-spin 1s linear infinite}
 @keyframes hh-coach-spin{to{transform:rotate(360deg)}}
@@ -58,3 +69,180 @@
 @media(max-width:360px){.domainHeading h2{font-size:16px}.domainCard,.reportCard{padding:13px}.tab,.tabActive{font-size:12px}}
 
 .planConsent{display:flex;align-items:flex-start;gap:9px;padding:11px;border:1px solid #bbd3c8;border-radius:12px;background:#f1f8f4;color:#426456;font-size:12px;line-height:1.45}.planConsent input{width:17px;height:17px;flex:none;margin:1px 0 0;accent-color:#26765b}.planConsent span{display:block}
+
+
+/* My Goals & Coaching Reports — align the existing real private workflow with
+   the photo-led My Space design; no new endpoint or data store. */
+.root{background:var(--hh-light-canvas,#fbf5e9);color:var(--hh-light-ink,#143d3a);border-radius:24px}
+.header{
+  isolation:isolate;position:relative;display:flex;flex-direction:column;justify-content:flex-end;
+  min-height:240px;margin-bottom:16px;padding:24px 20px 19px;border-radius:26px;
+  background:linear-gradient(102deg,rgba(6,49,45,.91) 0%,rgba(9,66,56,.72) 56%,rgba(30,87,57,.18) 100%),
+    url("/images/holistic-house/reiki-approved-sunrise-v3.webp") center 51%/cover no-repeat;
+  color:#fff;box-shadow:0 9px 24px #173d3430
+}
+.eyebrow{color:#dcf7e9;font-size:12px;letter-spacing:.16em;text-shadow:0 1px 6px #072c25}
+.header h1{
+  margin:12px 0 7px;color:#fff;
+  font:700 clamp(29px,6vw,45px)/1.08 Georgia,serif;
+  letter-spacing:-.035em;text-shadow:0 2px 12px #092f2c80;overflow-wrap:normal
+}
+.header>p{max-width:52ch;color:#fff;font-size:clamp(15px,3.5vw,18px);font-weight:550;line-height:1.4;text-shadow:0 2px 8px #082b2866}
+.tabs{width:100%;max-width:610px;margin-top:20px;padding:5px;border:1px solid #e7ffef85;background:#ebfaf21c;gap:6px}
+.tab,.tabActive{
+  flex:1;min-width:0;min-height:52px;padding:9px 12px;font-size:15px;
+  line-height:1.2;justify-content:center;text-align:center
+}
+.tab{color:#fff;background:#06413747}
+.tabActive{background:#f7fff9;color:#0b5445;box-shadow:0 4px 14px #071e2638}
+.tab span,.tabActive span{background:#deefe5;color:#0b5445;font-size:12px}
+.domainCard,.reportCard{border-color:#e8dfd3;border-radius:21px;background:#fffcf7;box-shadow:0 5px 16px #24403412}
+.domainHeading h2{font-size:clamp(19px,4.8vw,23px);color:#143d3a}
+.domainCard label,.importPanel>label{font-size:14px;color:#385b54}
+.domainCard textarea,.domainCard select,.importPanel select{
+  min-height:44px;font-size:16px;color:#143d3a;background:#fff
+}
+.saveButton{min-height:44px;font-size:14px}
+.primaryLink,.primaryButton{min-height:48px;background:#067a67;font-size:15px}
+.reportTop h2{color:#143d3a;font-size:20px}
+.reportDetails summary{min-height:44px;font-size:15px;align-items:center}
+.reportSection b{font-size:14px}
+.reportSection p{font-size:15px}
+.goal b{font-size:15px}
+@media(max-width:430px){
+  .root{padding:10px 10px 100px}
+  .header{min-height:250px;padding:20px 15px 16px;border-radius:23px}
+  .header h1{font-size:clamp(29px,7.4vw,35px)}
+  .header>p{font-size:15px}
+  .tabs{margin-top:15px}
+  .tab,.tabActive{min-height:52px;font-size:14px;padding:9px 7px}
+  .domainCard,.reportCard{padding:15px}
+}
+@media(max-width:360px){
+  .header{padding:18px 12px 15px;min-height:265px}
+  .header h1{font-size:28px;line-height:1.12}
+  .tab,.tabActive{font-size:13px;gap:5px;padding:8px 5px}
+}
+@media(prefers-reduced-motion:reduce){.root a,.root button{scroll-behavior:auto}}
+
+
+/* Owner-approved My Goals mobile design: data is real, five primary rows + three optional. */
+.root{max-width:890px;background:#fbf5ec;color:#083e34;padding:10px 12px 118px}
+.header{min-height:310px;justify-content:flex-start;padding:22px 22px 17px;border-radius:26px;overflow:hidden;
+ background-image:linear-gradient(94deg,#073b37ed,#0a4d3d9a 53%,#164e3430),
+ url("/images/holistic-house/reiki-approved-sunrise-v3.webp");background-position:center,center 51%}
+.eyebrow{font-size:12px;letter-spacing:.19em;color:white}
+.header h1{max-width:90%;color:white;font:700 clamp(34px,6.3vw,53px)/1.07 Georgia,serif}
+.header>p{max-width:38ch;color:white;font-size:clamp(15px,3.2vw,18px);line-height:1.35;font-weight:600}
+.tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-width:none;margin-top:auto;padding:17px 0 0;
+ width:100%;gap:9px;background:transparent;border:0}
+.tab,.tabActive{min-height:54px;justify-content:center;gap:9px;border-radius:999px;border:1px solid #fffef4;
+ background:#fffdf8;color:#073f34;font-size:clamp(13px,3vw,17px);font-weight:800}
+.tab{background:#fffaf2e8;color:#073f34}
+.tabActive{background:#e7f5e9;color:#07614b}
+.tab span,.tabActive span{background:#daeedf;border-radius:20px;padding:3px 8px}
+.sectionHead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:25px 2px 13px}
+.sectionHead h2{margin:0;font:700 clamp(25px,5.5vw,33px)/1.1 Georgia,serif;letter-spacing:-.03em;color:#083f35}
+.smallPill{display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:none;min-height:40px;
+ padding:8px 13px;border:1px solid #e7dfd4;border-radius:999px;background:#fffdf9;
+ box-shadow:0 4px 13px #24423320;color:#0a5442;font:800 clamp(12px,2.8vw,15px)/1 system-ui,sans-serif;cursor:pointer}
+.progressCard{display:flex;align-items:center;min-height:142px;padding:13px 14px;border:1px solid #e7ded3;
+ border-radius:25px;background:#fffdf9;box-shadow:0 5px 17px #2a3f3017}
+.gauge{position:relative;display:flex;flex:0 0 35%;max-width:230px;min-height:116px;
+ flex-direction:column;justify-content:flex-end;align-items:center;padding:0 12px 5px 0;border-right:1px solid #dbe2dc}
+.gauge svg{position:absolute;top:0;left:0;width:calc(100% - 12px);height:102px}
+.gauge strong{position:relative;z-index:1;font:800 clamp(25px,6vw,35px)/1 system-ui,sans-serif;color:#073d32}
+.gauge small{position:relative;z-index:1;text-align:center;font:500 clamp(10px,2.4vw,14px)/1.1 system-ui,sans-serif}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));flex:1;min-width:0;padding-left:14px;gap:4px}
+.metrics>div{display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center}
+.metrics>div>span{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:#e1f2e5;color:#0b664d}
+.metrics b{font:800 clamp(22px,5vw,31px)/1 system-ui,sans-serif;color:#063e32}
+.metrics small{font:550 clamp(10px,2.6vw,14px)/1.12 system-ui,sans-serif;color:#28473c}
+.progressDetails{display:flex;flex-wrap:wrap;gap:12px;margin:10px 0;padding:11px 13px;border-radius:16px;background:#e6f3e9;font-size:13px}
+.progressDetails p{flex-basis:100%;margin:0}
+.contextPreview{display:grid;gap:13px;margin-top:22px;padding:18px;border:1px solid #d8e7dc;border-radius:23px;background:#fffdf9;box-shadow:0 5px 17px #2a3f3017}
+.contextPreview h2,.contextPreview h3{margin:0;color:#083f35;font-family:Georgia,serif}
+.contextPreview>p{margin:0;color:#31574b;line-height:1.45}
+.contextPreview>div{padding:13px;border-radius:16px;background:#edf6ee}
+.contextPreview ul{display:grid;gap:7px;margin:10px 0 0;padding-left:21px;color:#184a3d}
+.areaPicker{margin:0 0 13px;padding:12px;background:#fffcf6;border:1px solid #d7e6dc;border-radius:20px}
+.areaPicker p{margin:0 0 9px;color:#1d5144;font-weight:700}
+.areaPicker>div{display:flex;flex-wrap:wrap;gap:7px}
+.areaPicker button{display:inline-flex;align-items:center;gap:7px;min-height:39px;border:1px solid #cce4d4;
+ border-radius:15px;background:#eaf5ec;color:#07543e;padding:7px 10px;font:700 13px system-ui,sans-serif;cursor:pointer}
+.domainGrid{display:grid;grid-template-columns:minmax(0,1fr);gap:9px}
+.domainCard{min-width:0;padding:0;overflow:hidden;border-radius:22px;border:1px solid #e8ddd1;
+ background:#fffefa;box-shadow:0 4px 12px #263e301c}
+.areaSummary{display:flex;align-items:center;gap:10px;min-height:83px;width:100%;border:0;background:none;
+ color:#0b4035;text-align:left;font:inherit;padding:3px 12px 3px 3px;cursor:pointer}
+.areaSummary[aria-expanded="true"]{background:linear-gradient(90deg,#e4f3e7,#fffefa)}
+.areaArt{display:block;flex:0 0 20%;max-width:135px;min-width:79px;min-height:80px;align-self:stretch;
+ border-radius:19px;background:url("/images/holistic-house/support-first-screen-photos.webp") 0% center / 400% 100% no-repeat}
+.areaArt[data-goal-art="emotional_wellbeing"]{background-position:33.333% center}
+.areaArt[data-goal-art="relationships"],.areaArt[data-goal-art="lifestyle"]{background-position:100% center}
+.areaArt[data-goal-art="career_business"],.areaArt[data-goal-art="finance"],.areaArt[data-goal-art="personal_growth"]{background-position:66.667% center}
+.areaArt[data-goal-art="meaning_purpose"]{background:url("/images/holistic-house/course-journey-landscape.svg") center/cover no-repeat}
+.areaIcon{flex:none;align-self:flex-start;margin-top:16px;color:#047456}
+.areaCopy{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}
+.areaCopy strong{color:#0a3f34;font:700 clamp(16px,3.9vw,23px)/1.1 Georgia,serif}
+.areaCopy small{color:#38544a;font:500 clamp(11px,2.8vw,14px)/1.2 system-ui,sans-serif}
+.goalBadge{flex:none;max-width:85px;padding:7px 9px;border-radius:99px;background:#e3f2e4;color:#17593e;
+ text-align:center;font:800 clamp(10px,2.5vw,12px)/1 system-ui,sans-serif}
+.areaArrow{flex:none;color:#0a513e}
+.areaSummary[aria-expanded="true"] .areaArrow{transform:rotate(90deg)}
+.areaEditor{padding:5px 17px 15px}
+.editHint{margin:0 0 9px;color:#57756b;font-size:12px;line-height:1.4}
+.fieldRow{display:grid!important;grid-template-columns:minmax(110px,38%) minmax(0,1fr);gap:10px;align-items:center;margin:10px 0!important}
+.fieldRow>span{display:flex;align-items:center;gap:7px;color:#295246;font-size:clamp(12px,2.75vw,15px);line-height:1.25;font-weight:750}
+.fieldRow>span svg{flex:none;color:#167e61}
+.areaEditor textarea,.areaEditor select{min-height:46px;width:100%;max-width:100%;padding:9px 11px;border-radius:12px;
+ border:1px solid #d5e2db;background:white;color:#163e32;font-size:16px}
+.areaEditor textarea{min-height:57px;resize:vertical}
+.areaEditor .saveButton{display:flex;align-items:center;justify-content:center;gap:9px;min-width:45%;min-height:46px;
+ margin:13px auto 0;border-radius:99px;border:1px solid #027b59;background:linear-gradient(120deg,#08a97d,#00614a);
+ color:white;font-size:15px}
+.areaEditor .saveButton:disabled{color:#6a8278;background:#e8efe9}
+.moreAreas{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:11px 0;min-height:42px;
+ border:1px solid #d7e7db;border-radius:16px;background:#f2f9f3;color:#145744;font:750 14px system-ui,sans-serif;cursor:pointer}
+.moreAreas[aria-expanded="true"] svg{transform:rotate(180deg)}
+.sessionLink{display:flex;align-items:center;justify-content:center;gap:13px;min-height:62px;margin:22px 0 0;
+ padding:11px 18px;border:2px solid #d6f5e2;border-radius:99px;box-shadow:0 6px 15px #08674538;
+ background:linear-gradient(120deg,#0bb68b,#00674a);color:white;font:800 clamp(16px,4vw,24px)/1.2 system-ui,sans-serif;text-decoration:none}
+.sessionLink svg:last-child{margin-left:auto;flex:none}
+.permissions{margin:17px 0;padding:13px;border:1px solid #dbe8df;border-radius:17px;background:#fffdf8}
+.permissions summary{display:flex;align-items:center;justify-content:space-between;min-height:38px;cursor:pointer;font-weight:700}
+.permissions p,.permissions>div{font-size:13px;line-height:1.4}
+.reports{margin-top:16px}.reportCard{background:#fffcf7;border-color:#e6dcd0}
+@media(max-width:430px){
+ .root{padding:10px 10px 108px;border-radius:0}
+ .header{min-height:290px;padding:17px 15px 14px;border-radius:23px;background-position:center,60% center}
+ .header h1{font-size:clamp(31px,7.4vw,39px);line-height:1.07;max-width:95%}
+ .header>p{font-size:14px;line-height:1.33}
+ .tabs{padding-top:17px;gap:8px}.tab,.tabActive{min-height:49px;padding:8px 6px;gap:6px;font-size:clamp(11px,3.2vw,14px)}
+ .tab svg,.tabActive svg{width:19px;height:19px;flex:none}
+ .sectionHead{gap:7px;margin:23px 2px 12px}.sectionHead h2{font-size:clamp(23px,5.8vw,28px)}
+ .smallPill{gap:4px;min-height:38px;padding:7px 10px;font-size:clamp(11px,2.8vw,13px)}
+ .smallPill svg{width:16px;height:16px}
+ .progressCard{min-height:130px;padding:12px 9px;border-radius:22px}
+ .gauge{flex-basis:34%;min-height:107px;padding-right:7px}.gauge svg{height:95px}
+ .gauge strong{font-size:clamp(23px,6vw,30px)}.gauge small{font-size:10px}
+ .metrics{gap:3px;padding-left:9px}.metrics>div>span{height:32px;width:32px}
+ .metrics>div>span svg{height:20px;width:20px}.metrics b{font-size:clamp(22px,5.5vw,27px)}.metrics small{font-size:10px}
+ .areaSummary{gap:7px;min-height:72px;padding:3px 8px 3px 3px}
+ .areaArt{flex-basis:21%;min-width:65px;min-height:70px;border-radius:17px}
+ .areaIcon{margin-top:12px}.areaIcon svg{height:21px;width:21px}
+ .areaCopy strong{font-size:clamp(15px,4vw,18px)}.areaCopy small{font-size:clamp(10px,2.6vw,12px)}
+ .goalBadge{padding:6px;max-width:61px;font-size:10px}.areaArrow{width:19px;height:19px}
+ .areaEditor{padding:5px 10px 14px}.editHint{font-size:11px}
+ .fieldRow{grid-template-columns:minmax(104px,41%) minmax(0,1fr);gap:6px}
+ .fieldRow>span{gap:5px;font-size:12px}.fieldRow>span svg{width:16px;height:16px}
+ .sessionLink{min-height:55px;padding:9px 13px;gap:9px;font-size:clamp(15px,4.2vw,19px)}
+ .sessionLink svg{width:22px;height:22px}
+}
+@media(max-width:360px){
+ .header{min-height:310px;padding:15px 12px}.header h1{font-size:29px}
+ .tab,.tabActive{font-size:11px}.areaSummary{gap:5px;padding-right:5px}.areaArt{min-width:57px;flex-basis:19%}
+ .areaIcon svg{width:19px;height:19px}.areaCopy strong{font-size:14px}.areaCopy small{font-size:10px}
+ .goalBadge{max-width:52px;font-size:9px;padding:5px 4px}
+ .fieldRow{grid-template-columns:minmax(100px,42%) minmax(0,1fr)}
+}

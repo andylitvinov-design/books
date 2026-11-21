@@ -1,3 +1,4 @@
+import "./mandala-storyboard-photo-semantic.test.mjs";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
@@ -108,7 +109,7 @@ test("cinematic customer video renders real layered motion, portrait and 720/108
   assert.match(studio, /source = backgroundOnly \? BACKGROUND_CLIP : photoUrl \|\| frameUrl \|\| BACKGROUND_CLIP/);
   assert.match(studio, /CinematicSceneThumbnail/);
   assert.match(studio, /const \[moneyScene, setMoneyScene\] = useState<MoneySceneId \| null>\("golden-rain"\)/);
-  assert.match(studio, /videoBitsPerSecond:quality==="fullhd"\?5_000_000:3_000_000/);
+  assert.match(studio, /videoBitsPerSecond:isApplePhone\?1_400_000:quality==="fullhd"\?5_000_000:3_000_000/);
   assert.match(parent, /photoUrl=\{imageUrl\}/);
   assert.match(renderer, /movingCoins\(ctx,scene,t,w,h,false\)/);
   assert.match(renderer, /movingCoins\(ctx,scene,t,w,h,true\)/);

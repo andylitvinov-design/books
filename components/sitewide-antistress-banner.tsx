@@ -86,6 +86,8 @@ const reviewCopy = {
 const isDistractionSensitivePage = (pathname: string) =>
   // My Space replaces the public homepage header and review ribbon on all locales.
   pathname === "/" || /^\/(?:ru|en|es)\/?$/.test(pathname) ||
+  // Shamanic and its business page have their own compact hero and guided quiz.
+  /^\/(?:ru|en|es)\/shamanica(?:\/business)?\/?$/.test(pathname) ||
   // MyTube is a video-first dark destination; no generic review promotion over the feed.
   /^\/(?:ru|en|es)\/mytube\/?$/.test(pathname) ||
   // The Services AI dialogue already handles personal situation review.

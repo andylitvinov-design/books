@@ -120,7 +120,7 @@ test('public-service browser CI verifies real pinned engines without an apt cold
   assert.match(src, /for \(const \[name, engine\] of engines\) \{/);
   assert.match(src, /await engine\.launch\(\{ headless: true, timeout: 15000 \}\)/);
   assert.doesNotMatch(src, /playwright install --with-deps/);
-  assert.match(src, /^    timeout-minutes: 20$/m);
+  assert.match(src, /^    timeout-minutes: 23$/m);
   assert.match(src, /Production build and public browser acceptance/);
   assert.match(src, /verify-public-services-production\.mjs/);
 });
@@ -464,7 +464,12 @@ test('policy-only YAML edits and AGENTS.md do not fan out into seven product acc
       (name === 'opora-module-ci.yml' && s.includes('node --test tests/opora-support-second-screen.test.mjs') &&
         s.includes('node scripts/verify-opora-as56-browser.mjs'));
     assert.ok(focusedSelfCheck || !patterns.includes('.github/workflows/' + name), name + ' must not launch unrelated acceptance for YAML edits');
-    assert.ok(patterns.includes('package.json') && patterns.includes('package-lock.json'), name + ' lost dependency change coverage');
+    assert.ok(patterns.includes('package-lock.json'), name + ' lost dependency lockfile coverage');
+    if (name === 'hh-billing-isolated.yml') {
+      assert.ok(patterns.includes('package.json'), name + ' retains the reviewed monetization-script route');
+    } else {
+      assert.ok(!patterns.includes('package.json'), name + ' must not fan out from a Core-covered package-only script edit');
+    }
     assert.ok(patterns.some(pattern => /^app\/|^components\/|^lib\/|^tests\//.test(pattern)), name + ' lost product source coverage');
   }
 });
@@ -828,9 +833,10 @@ test('Mandala PR retains focused source checks plus protected Voice or manual me
   const macosCondition=macos.match(/^    if: (.+)$/m)?.[1];
   assert.ok(macosCondition?.includes("github.event_name == 'pull_request' && github.event.pull_request.draft == false"),
     'macOS WebKit requires a non-Draft PR');
-  for (const prefix of requiredPrefixes)
-    assert.ok(macosCondition.includes("startsWith(github.head_ref, '"+prefix+"')"),
-      'macOS WebKit may not skip '+prefix);
+  assert.ok(macosCondition.includes("needs.webkit_preflight.outputs.media_required == 'true'"),
+    'WebKit eligibility must be computed from changed files on trusted tested BASE');
+  assert.match(yaml,/media_required: \$\{\{ steps\.media_gate\.outputs\.media_required \}\}/,
+    'preflight must publish real exact-merge impact');
   for (const contract of [
     'runs-on: macos-15', 'HH_VOICE_E2E_ENGINE: webkit',
     "HH_VOICE_E2E_HEADED: '1'", 'node scripts/verify-affirmation-voice-browser.mjs',

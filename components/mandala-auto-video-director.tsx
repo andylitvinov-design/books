@@ -66,6 +66,8 @@ type Props={
   onAspectChange?:(value:"landscape"|"portrait"|"square")=>void;
   onContinue?:()=>void;onClarify?:()=>void;helpOpen?:boolean;
   goalContinueRef?:{current:(()=>boolean)|null};
+  mirrorDetailedWish?:string|null;
+  mirrorStartRef?:{current:((theme:VideoTheme,categoryId:CanonicalCategoryId,goalText:string)=>void)|null};
   onShowAll?:()=>void;
   onInvalidate?:()=>void;
   onApply:(presetId:string,durationSeconds:10|15|20|30|60,
@@ -184,7 +186,7 @@ const themeLabels={
 
 export function MandalaAutoVideoDirector({
  locale,goal,theme,aspect,presets,scenes,disabled,activePresetId,clipLabel,
- audioAttached=false,audioTrackLabel="",audioTrackId=null,onPickAudio,onOpenAudio,recipientAudioPanel,audioStoryboardReady=false,onAudioToMontage,onAudioSelectionChange,onGoalChange,onPickPhoto,onOpenPro,onConceptTopicChange,onGoalQuizChange,onCategoryChange,onAspectChange,onContinue,goalContinueRef,onClarify,helpOpen=false,onShowAll,onInvalidate,onApply,onCreate,onInstantCreate,canCreate=false,rendering=false,createFeedback=""
+ audioAttached=false,audioTrackLabel="",audioTrackId=null,onPickAudio,onOpenAudio,recipientAudioPanel,audioStoryboardReady=false,onAudioToMontage,onAudioSelectionChange,onGoalChange,onPickPhoto,onOpenPro,onConceptTopicChange,onGoalQuizChange,onCategoryChange,onAspectChange,onContinue,goalContinueRef,mirrorDetailedWish=null,mirrorStartRef,onClarify,helpOpen=false,onShowAll,onInvalidate,onApply,onCreate,onInstantCreate,canCreate=false,rendering=false,createFeedback=""
 }:Props){
  const t=copy[locale];
  // A licensed four-shot sample is visible before any click; no recording begins automatically.
@@ -210,6 +212,13 @@ export function MandalaAutoVideoDirector({
  useEffect(()=>()=>{promptDictationGeneration.current+=1;promptDictationRef.current?.session.abort();promptDictationRef.current=null;},[]);
  const [quickFlow,setQuickFlow]=useState<"guide"|"instant">("guide");
  const setRequestDraft=(next:string)=>setRequestDrafts(previous=>({...previous,[videoAudience]:next}));
+ // This is an explicit More goals handoff, not continuous text mirroring.
+ // It updates the ONE existing native director request, not a second draft.
+ useEffect(()=>{
+  if(mirrorDetailedWish===null||videoAudience!=="self")return;
+  setRequestDrafts(previous=>previous.self===mirrorDetailedWish
+    ?previous:{...previous,self:mirrorDetailedWish});
+ },[mirrorDetailedWish,videoAudience]);
  const [recipientKindId,setRecipientKindId]=useState<string>("");
  const [recipientAudioMode,setRecipientAudioMode]=useState(false);
  const [recipientOccasionId,setRecipientOccasionId]=useState<string>("");
@@ -687,14 +696,14 @@ export function MandalaAutoVideoDirector({
    setRecipientAudioMode(true);setRecipientKindId("");setRecipientOccasionId("");
    resetAudienceStory();onInvalidate?.();onAudioSelectionChange?.(true);
  };
- const chooseCategory=(nextTheme:VideoTheme,categoryId:CanonicalCategoryId)=>{
+ const chooseCategory=(nextTheme:VideoTheme,categoryId:CanonicalCategoryId,mirrorWish?:string)=>{
    if(disabled)return;
    setGoalCategoryAnswered(true);setGoalQuizStep(2);
    setRequestNeedsChoice(false);
    setPromptDesignedFor(null);setPromptClassification(null);
    if(disabled)return;
    setCategoryManuallySelected(true);
-   const nextGoal=requestDraft.trim();
+   const nextGoal=mirrorWish??requestDraft.trim();
    onInvalidate?.();onCategoryChange?.(nextTheme);
    if(nextGoal!==goal)onGoalChange(nextGoal);
    setSelectedCategoryId(categoryId);setSubcategoriesOpen(true);
@@ -705,6 +714,24 @@ export function MandalaAutoVideoDirector({
    setProposal(recommendAutoVideo({goal:nextGoal,locale,fallbackTheme:nextTheme,
      preferredTheme:nextTheme,presets,scenes}));
  };
+ // Mirror reuses the original 4x4x4 native wizard. No automatic topic
+ // confirmation, no recipient delivery, second player or paid render.
+ useEffect(()=>{
+  if(!mirrorStartRef)return;
+  const begin=(nextTheme:VideoTheme,categoryId:CanonicalCategoryId,goalText:string)=>{
+   if(disabled)return;
+   const confirmedWish=goalText.trim().slice(0,500);
+   if(videoAudience==="others"){
+    setVideoAudience("self");setRecipientAudioMode(false);onAudioSelectionChange?.(false);
+    if(aspect!==selfAspectRef.current)onAspectChange?.(selfAspectRef.current);
+    resetAudienceStory();
+   }
+   setRequestDrafts(previous=>({...previous,self:confirmedWish}));
+   chooseCategory(nextTheme,categoryId,confirmedWish);
+  };
+  mirrorStartRef.current=begin;
+  return ()=>{if(mirrorStartRef.current===begin)mirrorStartRef.current=null;};
+ },[mirrorStartRef,disabled,videoAudience,aspect,resetAudienceStory,chooseCategory,onAspectChange,onAudioSelectionChange]);
  const chooseTaxonomySubcategory=(subcategoryId:string)=>{
    setRequestNeedsChoice(false);
    setPromptDesignedFor(null);setPromptClassification(null);
@@ -1207,7 +1234,7 @@ export function MandalaAutoVideoDirector({
      {goalQuizStep===1?<div className={css.goalChoices} role="group" aria-label={
        locale==="ru"?"Выберите цель видео":locale==="es"?"Elige tu objetivo":"Choose your video goal"}>
        {videoGoalCategories.map(item=><button type="button" key={item.id}
-         data-auto-video-category={item.id} data-auto-video-category-theme={item.theme}
+         data-auto-video-category={item.id} data-auto-video-category-theme={item.theme} data-video-goal-photo-card
          aria-label={taxonomyCategories.find(category=>category.id===item.id)?.label||item.id}
          aria-pressed={selectedCategoryId===item.id&&goalCategoryAnswered&&!requestNeedsChoice} disabled={disabled}
          onClick={()=>chooseCategory(item.theme,item.id)}>
@@ -1229,7 +1256,7 @@ export function MandalaAutoVideoDirector({
        <div className={css.goalChoices} role="group" data-mytube-subcategories data-video-goal-subcategory-cards
          aria-label={locale==="ru"?"Подкатегории цели":locale==="es"?"Subcategorías":"Goal subcategories"}>
          {taxonomySubcategories.map((item,index)=><button type="button" key={item.id}
-           data-auto-video-subcategory={item.id} aria-pressed={selectedSubcategoryId===item.id}
+           data-auto-video-subcategory={item.id} data-video-goal-photo-card aria-pressed={selectedSubcategoryId===item.id}
            disabled={disabled} title={item.chooseWhen}
            onClick={()=>chooseTaxonomySubcategory(item.id)}>
            {/* Reuse the exact four first-screen visual assets at every Goal question. */}
@@ -1321,14 +1348,17 @@ export function MandalaAutoVideoDirector({
   :<>
   <div data-video-goal-topic-chips role="group"
     aria-label={locale==="ru"?"Темы видео":locale==="es"?"Temas del vídeo":"Video topics"}>
-    {visibleQuickTopicIds.map(id=>{
+    {visibleQuickTopicIds.map((id,index)=>{
       const item=getMyTubeTopic(id);
       if(!item||item.category.id!==selectedCategoryId)return null;
       const fullLabel=item.topic.label[locale];
-      return <button type="button" key={id} data-video-goal-topic={id}
+      return <button type="button" key={id} data-video-goal-topic={id} data-video-goal-photo-card
         aria-pressed={selectedTopicId===id} aria-label={fullLabel} title={fullLabel}
         disabled={disabled} onClick={()=>chooseTaxonomyTopic(id)}>
-        <span>{fullLabel}</span>
+        {/* Same approved first-party photograph layout for all three Goal questions. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img data-video-goal-art data-video-goal-topic-art src={"/images/video-goal-art/"+videoGoalCategories[index].art+".webp"} alt="" loading="lazy"/>
+        <span data-video-goal-topic-label>{fullLabel}</span>
         {selectedTopicId===id?<Check size={15} aria-hidden="true"/>:null}
       </button>;
     })}

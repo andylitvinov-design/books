@@ -22,7 +22,7 @@ test("Goal cards are readable and preserve the original director controls", () =
   assert.match(css, /min-height:46px!important/);
   assert.match(studio, /data-video-director-goal-controls/);
   assert.match(director, /data-auto-video-category=\{item\.id\}/);
-  assert.match(director, /aria-pressed=\{selectedCategoryId===item\.id\}/);
+  assert.match(director, /aria-pressed=\{selectedCategoryId===item\.id&&goalCategoryAnswered&&!requestNeedsChoice\}/);
 });
 
 test("Mobile tabs retain six working workspaces; the one video player remains intact", () => {

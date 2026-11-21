@@ -3,6 +3,15 @@ import type { NextRequest } from 'next/server'
 import { canonicalRedirectTarget, privateMigrationBridge } from './lib/canonical-redirect'
 import { refreshAdminAuth } from './lib/app/admin-auth-refresh'
 import { personalVideoStorageCsp } from './lib/app/personal-video-storage-csp.mjs'
+import { instantHomeLocale } from './lib/instant-home-policy.mjs'
+
+// Separate static-only CSP. Never weaken Next's nonce policy on private/API/RSC.
+const INSTANT_PUBLIC_HOME_CSP = [
+  "default-src 'self'", "script-src 'self'", "style-src 'self'",
+  "img-src 'self' data:", "connect-src 'self'", "font-src 'self'",
+  "media-src 'self'", "frame-src 'none'", "object-src 'none'",
+  "base-uri 'none'", "form-action 'self'", "frame-ancestors 'none'",
+].join('; ')
 function privatePath(pathname: string) {
   const decoded = (() => { try { return decodeURIComponent(pathname) } catch { return pathname } })().replace(/\/+/g, '/')
   return /^\/(en|ru|es)\/client(?:\/|$)/.test(decoded)
@@ -20,6 +29,49 @@ function privatePath(pathname: string) {
 export async function middleware(request: NextRequest) {
   const redirectTarget = canonicalRedirectTarget(request.url, request.method)
   if (redirectTarget) return NextResponse.redirect(redirectTarget, 308)
+  // Rewrites can traverse middleware again at their internal static document.
+  // Exempt these two public files only; every private route keeps strict CSP.
+  if (/^\/instant-home\/(?:en|ru)\.html$/.test(request.nextUrl.pathname)
+      && ['GET','HEAD'].includes(request.method)) {
+    const response = NextResponse.next()
+    response.headers.set('Content-Security-Policy', INSTANT_PUBLIC_HOME_CSP)
+    response.headers.set('Cache-Control','public, max-age=0, s-maxage=3600, stale-while-revalidate=120')
+    response.headers.set('X-Content-Type-Options','nosniff')
+    response.headers.set('X-Frame-Options','DENY')
+    response.headers.set('Referrer-Policy','strict-origin-when-cross-origin')
+    return response
+  }
+  // Only anonymous-safe direct HTML Home requests. RSC, client navigation,
+  // explicit full React Home and ALL app/account routes bypass this gate.
+  // OWNER-APPROVED_HOME_RESTORE_20261120: PR #5214 shipped the new React UI,
+  // but the legacy CDN HTML was still rewriting the public EN/RU home by default.
+  // Keep one canonical home view across EN/RU/ES. An explicit *new*, verified
+  // legacy opt-in is required for performance experiments; never silently
+  // replace the approved persona hero, wide Ali composer and mobile cards.
+  const fastLocale = process.env.HH_ENABLE_LEGACY_INSTANT_HOME === 'true'
+    ? instantHomeLocale({
+        pathname:request.nextUrl.pathname,method:request.method,
+        headers:request.headers,searchParams:request.nextUrl.searchParams,
+      })
+    : null
+  if (fastLocale) {
+    const requested = request.nextUrl.searchParams.get('lang')
+    if (request.nextUrl.pathname === '/' && (requested === 'ru' || requested === 'es'))
+      return NextResponse.redirect(new URL('/' + requested, request.url),307)
+    const fastCsp = INSTANT_PUBLIC_HOME_CSP
+    const fastRequestHeaders = new Headers(request.headers)
+    fastRequestHeaders.set('Content-Security-Policy', fastCsp)
+    const response = NextResponse.rewrite(new URL('/instant-home/' + fastLocale + '.html',request.url),{
+      request: { headers: fastRequestHeaders },
+    })
+    response.headers.set('Content-Security-Policy', fastCsp)
+    response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=3600, stale-while-revalidate=120')
+    response.headers.set('Vary','RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Url, Accept')
+    response.headers.set('X-Content-Type-Options','nosniff')
+    response.headers.set('X-Frame-Options','DENY')
+    response.headers.set('Referrer-Policy','strict-origin-when-cross-origin')
+    return response
+  }
   // Plain My Practice entry is the new, public practitioner dashboard. Do this
   // before streaming the old Account layout: an in-page redirect can return
   // HTTP 200 + delayed meta refresh and reveal the old personal login on iOS.

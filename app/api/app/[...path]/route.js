@@ -16,13 +16,18 @@ import { readLearningJourney } from '@/lib/app/learning-journey-repository'
 import { listLabReports, saveLabReport, deleteLabReport } from '@/lib/app/lab-reports'
 import { readBusinessCoaching, saveBusinessCoaching } from '@/lib/app/business-coaching'
 import { readPersonalCoaching, savePersonalCoaching, readTraditionCoaching, saveTraditionCoaching, readTraditionCoachingSummaries } from '@/lib/app/personal-coaching'
-import {personalCoachingBrainTurn,personalCoachingBrainProbe,myCoachGenerativeTurn,myCoachGenerativeProbe} from '@/lib/app/coaching-brain'
+import {personalCoachingBrainTurn,personalCoachingBrainProbe,myCoachGenerativeTurn,myCoachGenerativeStreamTurn,myCoachGenerativeProbe} from '@/lib/app/coaching-brain'
+import {geminiCoachTextConfig} from '@/lib/coaching/gemini-coach-text.mjs'
+import {geminiCoachTtsConfig} from '@/lib/coaching/gemini-coach-tts.mjs'
 import { readCoachingReportDraft } from '@/lib/app/coaching-report-v2'
 import { listCoachingReports, exportCoachingReports, readCoachingReport, saveCoachingReport, deleteCoachingReport } from '@/lib/app/coaching-report-store'
 import { readCoachingLifePlan, updateCoachingLifePlanArea, importCoachingReportActions } from '@/lib/app/coaching-life-plan'
+import { readBusinessContext, importPlaudBusinessContext, reviewBusinessInsight } from '@/lib/app/business-context-store'
 import { exportCoachingLifePlan } from '@/lib/app/coaching-life-plan'
 import { revokeCoachingPlanContext } from '@/lib/app/coaching-life-plan'
 import { deleteCoachingPlanAction } from '@/lib/app/coaching-life-plan'
+import { coachContextConsentOptions, manageCoachContextConsent } from '@/lib/app/coach-context-snapshot'
+import { reviewedReportMemoryCandidates } from '@/lib/personal-coaching/context-memory-candidates.mjs'
 import {learnerCoachingAudio} from '@/lib/academy/coaching-audio-store'
 import { readPersonalCoachingCatalog } from '@/lib/app/personal-coaching-catalog'
 import { readCoachingIntake, saveCoachingIntake } from '@/lib/app/coaching-intake'
@@ -1006,11 +1011,44 @@ async function handle(request, { params }) {
       {op:'coaching-openrouter-shared-daily'},40,86400)
     // Signed-in, stateless dialogue for the selected My Coach persona. Client
     // history is not stored; auth, same-origin protection and DB throttles apply.
+    if (joined === 'my-coach/stream') {
+      if (method !== 'POST') throw new AppError('NOT_FOUND',404)
+      await consumeRate(config,{op:'my-coach-generative-turn',actor:actor.id},40,3600)
+      const stream=await myCoachGenerativeStreamTurn(await readBody(request,16384),
+        {signal:request.signal,reserveModelCall:reserveCoachingFreeCall,config,actor})
+      return new Response(stream,{status:200,headers:{
+        ...PRIVATE_HEADERS,
+        'Content-Type':'text/event-stream; charset=utf-8',
+        'Cache-Control':'private, no-store, max-age=0',
+        'X-Accel-Buffering':'no',
+      }})
+    }
+    // Metadata-only check: no client transcript, API key or test generation.
+    if (joined === 'my-coach/engines') {
+      if (method !== 'GET') throw new AppError('NOT_FOUND',404)
+      return json({schema:'HH_MY_COACH_ENGINES_V1',
+        gemini_free:Boolean(geminiCoachTextConfig(process.env,'gemini_free')),
+        gemini_paid:Boolean(geminiCoachTextConfig(process.env,'gemini_paid')),
+        gemini_tts_free:Boolean(geminiCoachTtsConfig(process.env,'gemini_tts_free')),
+        gemini_tts_paid:Boolean(geminiCoachTtsConfig(process.env,'gemini_tts_paid')),
+        live:false})
+    }
     if (joined === 'my-coach/turn') {
       if (method !== 'POST') throw new AppError('NOT_FOUND',404)
       await consumeRate(config,{op:'my-coach-generative-turn',actor:actor.id},40,3600)
-      return json(await myCoachGenerativeTurn(await readBody(request,16384),
-        {signal:request.signal,reserveModelCall:reserveCoachingFreeCall,config,actor}))
+      const body=await readBody(request,16384)
+      const geminiMode=['gemini_free','gemini_paid'].includes(body?.engine)?body.engine:null
+      // Per-user + global limits are consumed BEFORE a model request. No
+      // chargeable second provider call or automatic upgrade on error.
+      const reserveGeminiCall=async()=>{
+        await consumeRate(config,{op:'my-coach-'+geminiMode+'-global-day'},
+          geminiMode==='gemini_paid'?12:30,86400)
+        await consumeRate(config,{op:'my-coach-'+geminiMode+'-actor-day',actor:actor.id},
+          geminiMode==='gemini_paid'?6:16,86400)
+      }
+      return json(await myCoachGenerativeTurn(body,
+        {signal:request.signal,reserveModelCall:geminiMode?reserveGeminiCall:reserveCoachingFreeCall,
+          config,actor}))
     }
     // A synthetic preflight proves verified ZDR free-model access before any
     // visitor text can reach a provider. The call is authenticated and bounded.
@@ -1052,8 +1090,20 @@ async function handle(request, { params }) {
       if (path.length===1 && method==='GET') return json(await listCoachingReports(config,actor))
       if (path.length===1 && method==='POST') return json(await saveCoachingReport(config,actor,await readBody(request,4096)))
       if (path.length===2 && method==='GET') return json(await readCoachingReport(config,actor,path[1]))
+      if (path.length===3 && path[2]==='memory-candidates' && method==='GET') {
+        await consumeRate(config,{op:'coaching-memory-review',actor:actor.id},60,3600)
+        const {report}=await readCoachingReport(config,actor,path[1])
+        return json({candidates:reviewedReportMemoryCandidates(report)})
+      }
       if (path.length===3 && path[2]==='delete' && method==='POST') return json(await deleteCoachingReport(config,actor,path[1],await readBody(request,1024)))
       throw new AppError('NOT_FOUND',404)
+    }
+    if (joined === 'coaching-context/consent') {
+      if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
+      if (method === 'GET') return json(await coachContextConsentOptions(config,actor))
+      if (method !== 'POST') throw new AppError('NOT_FOUND',404)
+      await consumeRate(config,{op:'coaching-context-consent',actor:actor.id},60,3600)
+      return json(await manageCoachContextConsent(config,actor,await readBody(request,2048)))
     }
     if (path[0] === 'coaching-life-plan') {
       if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
@@ -1073,6 +1123,13 @@ async function handle(request, { params }) {
       if (path.length===4 && path[1]==='actions' && path[3]==='delete' && method==='POST') {
         return json(await deleteCoachingPlanAction(config,actor,path[2],await readBody(request,1024)))
       }
+      throw new AppError('NOT_FOUND',404)
+    }
+    if (path[0] === 'business-context') {
+      if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
+      if (path.length===1 && method==='GET') return json(await readBusinessContext(config,actor))
+      if (path.length===2 && path[1]==='plaud-import' && method==='POST') return json(await importPlaudBusinessContext(config,actor,await readBody(request,131072)));
+      if (path.length===2 && path[1]==='review' && method==='POST') return json(await reviewBusinessInsight(config,actor,await readBody(request,1024)));
       throw new AppError('NOT_FOUND',404)
     }
     if (joined === 'tradition-coaching-summary') {

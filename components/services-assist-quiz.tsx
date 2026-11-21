@@ -6,7 +6,7 @@ import {
   ArrowRight, BatteryCharging, BookOpen, BriefcaseBusiness, Check, ChevronDown,
   Brain, CircleHelp, ClipboardCheck, Compass, CreditCard, Flower2, Gift, GraduationCap,
   HandHeart, HeartHandshake, HeartPulse, Leaf, MessageCircle,
-  MonitorPlay, Target, UserRound, UsersRound, Wallet, type LucideIcon,
+  ChevronRight, Mic, MonitorPlay, Sparkles, Target, UserRound, UsersRound, Wallet, type LucideIcon,
 } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import type { AssistMode, AssistBudget, AssistPreferences } from "@/lib/assist/service-match.mjs";
@@ -50,7 +50,7 @@ const copy: Record<PublicLocale, QuizCopy> = {
     "button": "Посмотреть рекомендации",
     "all": "Все услуги",
     "other": "Предпочитаете диалог с Ali?",
-    "shamanica": "Шаманика · энергетические и магические практики",
+    "shamanica": "Шаманик · энергетические и магические практики",
     "moreTitle": "Другие услуги:",
     "morePreview": "Расстановки · Практики · Курсы · Тесты",
     "moreLinks": {"constellations":"Расстановки","practices":"Практики","courses":"Курсы","tests":"Тесты"},
@@ -69,16 +69,16 @@ const copy: Record<PublicLocale, QuizCopy> = {
             "Снять стресс и вернуть энергию"
           ],
           [
-            "relationships_esteem",
-            "Отношения и самооценка"
+            "money_growth",
+            "Деньги и уверенность в себе"
           ],
           [
-            "money_growth",
-            "Деньги и идеи личного роста"
+            "relationships_esteem",
+            "Улучшить отношения"
           ],
           [
             "business_support",
-            "Поддержка бизнеса"
+            "Личностный рост и развитие бизнеса"
           ]
         ]
       },
@@ -247,7 +247,7 @@ const copy: Record<PublicLocale, QuizCopy> = {
     "button": "See recommendations",
     "all": "All services",
     "other": "Prefer to chat with Ali?",
-    "shamanica": "Shamanica · energy & symbolic practices",
+    "shamanica": "Shamanic · energy & symbolic practices",
     "moreTitle": "More options:",
     "morePreview": "Constellations · Practices · Courses · Tests",
     "moreLinks": {"constellations":"Constellations","practices":"Practices","courses":"Courses","tests":"Tests"},
@@ -266,16 +266,16 @@ const copy: Record<PublicLocale, QuizCopy> = {
             "Ease stress & restore energy"
           ],
           [
-            "relationships_esteem",
-            "Improve relationships & esteem"
+            "money_growth",
+            "Grow money & self esteem"
           ],
           [
-            "money_growth",
-            "Get money & self-growth ideas"
+            "relationships_esteem",
+            "Improve relationships"
           ],
           [
             "business_support",
-            "Get business support"
+            "Personal & business growth"
           ]
         ]
       },
@@ -444,7 +444,7 @@ const copy: Record<PublicLocale, QuizCopy> = {
     "button": "Ver recomendaciones",
     "all": "Todos los servicios",
     "other": "¿Prefieres hablar con Ali?",
-    "shamanica": "Shamanica · energía y prácticas simbólicas",
+    "shamanica": "Shamanic · energía y prácticas simbólicas",
     "moreTitle": "Más opciones:",
     "morePreview": "Constelaciones · Prácticas · Cursos · Tests",
     "moreLinks": {"constellations":"Constelaciones","practices":"Prácticas","courses":"Cursos","tests":"Tests"},
@@ -460,19 +460,19 @@ const copy: Record<PublicLocale, QuizCopy> = {
         "options": [
           [
             "stress_energy",
-            "Reducir estrés y recuperar energía"
-          ],
-          [
-            "relationships_esteem",
-            "Relaciones y autoestima"
+            "Aliviar el estrés y recuperar energía"
           ],
           [
             "money_growth",
-            "Ideas de ingresos y crecimiento"
+            "Mejorar ingresos y autoestima"
+          ],
+          [
+            "relationships_esteem",
+            "Mejorar relaciones"
           ],
           [
             "business_support",
-            "Apoyo para mi negocio"
+            "Crecimiento personal y empresarial"
           ]
         ]
       },
@@ -658,9 +658,35 @@ const categories: readonly { key: Category; Icon: LucideIcon }[] = [
   { key: "video", Icon: MonitorPlay },
 ];
 
+const supportVisualCopy: Record<PublicLocale, {
+ heading:string; tagline:string; prompt:string; audience:string; forMe:string; forBusiness:string;
+ goal:string; dictation:string; next:string; or:string; of:string; help:string;
+}> = {
+ ru:{heading:"Коучинг, консалтинг и психотерапевтическая поддержка",
+ tagline:"Выберите подходящий метод и мастера.",
+ prompt:"Ответьте на 4 вопроса:",audience:"Кому нужна поддержка",
+ forMe:"Для себя",forBusiness:"Для бизнеса",
+ goal:"Опишите вашу цель или ситуацию…",dictation:"Открыть поле для диктовки с клавиатуры",
+ next:"Далее",or:"ИЛИ",of:"из",help:"Спросить Ali"},
+ en:{heading:"Coaching, Consulting & Therapy Support",
+ tagline:"Choose the right method & master.",
+ prompt:"Answer 4 questions:",audience:"Who needs support",
+ forMe:"For Me",forBusiness:"For Business",
+ goal:"Describe your goal or situation…",dictation:"Focus field for keyboard dictation",
+ next:"Next",or:"OR",of:"of",help:"Ask Ali"},
+ es:{heading:"Coaching, consultoría y apoyo terapéutico",
+ tagline:"Elige el método y profesional adecuados.",
+ prompt:"Responde 4 preguntas:",audience:"Para quién es el apoyo",
+ forMe:"Para mí",forBusiness:"Para mi negocio",
+ goal:"Describe tu meta o situación…",dictation:"Abrir campo para dictar con el teclado",
+ next:"Siguiente",or:"O",of:"de",help:"Preguntar a Ali"}
+};
 export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
-  const [answers, setAnswers] = useState<Partial<Record<QuestionKey, string>>>({});
+  const v = supportVisualCopy[locale];
+  const [goal,setGoal]=useState("");
+  const goalFieldRef=useRef<HTMLInputElement>(null);
+  const [answers, setAnswers] = useState<Partial<Record<QuestionKey, string>>>({topic:"stress_energy"});
   const [step, setStep] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const questionHeading = useRef<HTMLSpanElement>(null);
@@ -692,10 +718,11 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
   function selectOption(key: QuestionKey, value: string) {
     setAnswers(old => key === "topic" && old.topic !== value ? { topic: value } : { ...old, [key]: value });
     setSubmitted(false);
-    if (step < questionKeys.length - 1) {
-      setStep(index => Math.min(index + 1, questionKeys.length - 1));
-      requestAnimationFrame(() => questionHeading.current?.focus());
-    }
+  }
+  function nextQuestion() {
+    if (!answers[currentKey] || step >= questionKeys.length - 1) return;
+    setStep(index => Math.min(index + 1, questionKeys.length - 1));
+    requestAnimationFrame(() => questionHeading.current?.focus());
   }
   function jumpTo(index: number) {
     if (index > step && !answers[questionKeys[index]]) return;
@@ -725,7 +752,7 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
     data-services-quiz-step={step + 1} data-quiz-route={topic} lang={locale} aria-labelledby="services-quiz-title">
     <div className={styles.brandBar}>
       <Link href={"/" + locale} prefetch={false} className={styles.brand} aria-label="Holistic House">
-        <Flower2 size={40} strokeWidth={1.5} aria-hidden="true" />
+        <Leaf size={38} strokeWidth={1.5} aria-hidden="true" />
         <span><strong>Holistic House</strong><small>S U P P O R T</small></span>
       </Link>
       <div className={styles.brandActions}>
@@ -735,19 +762,32 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
             <Link href={"/" + lang + "/services"} prefetch={false} key={lang} lang={lang}
               aria-current={lang === locale ? "page" : undefined}>{lang.toUpperCase()}</Link>)}</div>
         </details>
+        <Link className={styles.help} href={"/" + locale + "/services?assist=chat"} prefetch={false}
+          aria-label={v.help}><CircleHelp size={22} aria-hidden="true" /></Link>
         <Link className={styles.profile} href={"/" + (locale === "es" ? "en" : locale) + "/app/portrait"}
           prefetch={false} aria-label={t.profile}><UserRound size={22} aria-hidden="true" /></Link>
       </div>
     </div>
 
     <header className={styles.hero}>
-      <h1 id="services-quiz-title">{t.title}</h1>
-      <p>{t.lead}</p>
+      <span className={styles.lotusMark} aria-hidden="true" />
+      <h1 id="services-quiz-title">{v.heading}</h1>
+      <p className={styles.heroTagline}>{v.tagline}</p>
+      <p className={styles.heroPrompt}>{v.prompt}</p>
+      <div className={styles.heroStage} data-support-luxe-room aria-hidden="true" />
     </header>
+    <div className={styles.audienceSwitch} data-services-audience role="group" aria-label={v.audience}>
+      <button type="button" aria-pressed={topic !== "business_support"} onClick={() => {
+        if (topic === "business_support") { setAnswers({}); setStep(0); setSubmitted(false); }
+      }}><UserRound size={23} aria-hidden="true" />{v.forMe}</button>
+      <button type="button" aria-pressed={topic === "business_support"} onClick={() => {
+        setAnswers({topic:"business_support"}); setStep(0); setSubmitted(false);
+      }}><BriefcaseBusiness size={23} aria-hidden="true" />{v.forBusiness}</button>
+    </div>
 
     <form className={styles.form} data-services-quiz-form onSubmit={submit}>
       <div className={styles.progress}>
-        <span>{t.step} {step + 1} / {questionKeys.length}</span>
+        <span>{t.step} {step + 1} {v.of} {questionKeys.length}</span>
         <div className={styles.progressSteps} aria-label={t.step + " " + (step + 1)}>
           {questionKeys.map((key, index) =>
             <button type="button" key={key} className={styles.progressDot} data-quiz-dot={index + 1}
@@ -768,17 +808,32 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
             return <button type="button" className={styles.choice} key={value}
               data-services-quiz-choice={value} aria-pressed={selected}
               onClick={() => selectOption(currentKey, value)}>
-              <Icon size={27} strokeWidth={1.7} aria-hidden="true" />
-              <span>{label}</span>
+              <span className={styles.choiceMedia} data-support-choice-photo aria-hidden="true" />
+              <span className={styles.choiceContent}>
+                <Icon size={25} strokeWidth={1.7} aria-hidden="true" /><span>{label}</span>
+                <ChevronRight className={styles.choiceChevron} size={18} aria-hidden="true" />
+              </span>
               {selected ? <Check className={styles.check} size={16} strokeWidth={3} aria-hidden="true" /> : null}
             </button>;
           })}
         </div>
       </fieldset>
-      {step === questionKeys.length - 1 ? <button type="submit" className={styles.submit}
+      <div className={styles.orDivider}><span>{v.or}</span></div>
+      <div className={styles.goalComposer}>
+        <Sparkles size={24} aria-hidden="true" />
+        <input ref={goalFieldRef} data-services-quiz-goal value={goal} maxLength={300}
+          onChange={event => setGoal(event.target.value)} autoComplete="off"
+          placeholder={v.goal} aria-label={v.goal} />
+        <button type="button" aria-label={v.dictation} title={v.dictation}
+          onClick={() => goalFieldRef.current?.focus()}><Mic size={23} aria-hidden="true" /></button>
+      </div>
+      {step < questionKeys.length - 1 ? <button type="button" className={styles.next}
+        data-services-quiz-next disabled={!answers[currentKey]} onClick={nextQuestion}>
+        {v.next}<ArrowRight size={23} aria-hidden="true" />
+      </button> : <button type="submit" className={styles.submit}
         data-services-quiz-submit disabled={!ready} aria-controls="assist-recommendations">
-        {t.button}<ArrowRight size={19} aria-hidden="true" />
-      </button> : null}
+        {t.button}<ArrowRight size={20} aria-hidden="true" />
+      </button>}
     </form>
 
     <section className={styles.categories} data-services-quick-categories aria-labelledby="services-quiz-categories-title">
@@ -816,7 +871,7 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
     </section>
 
     {submitted ? <div className={styles.results} tabIndex={-1} data-services-quiz-results>
-      <p className={styles.summary} data-services-quiz-summary><strong>{t.summary}:</strong> {summary}</p>
+      <p className={styles.summary} data-services-quiz-summary><strong>{t.summary}:</strong> {summary}{goal.trim() ? <> · {goal.trim()}</> : null}</p>
       <AssistTopRecommendations locale={locale} focus={focus} preferences={preferences}
         matchingIds={matchingIds} allowedIds={matchingIds} categoryGroups noMatchLabel={t.empty} />
     </div> : null}

@@ -11,6 +11,8 @@ import { coverageForFocus } from '@/lib/assessments/test-explorer'
 import { TestExplorerVisual } from './test-explorer-visual'
 import styles from './profile-hub-tabs.module.css'
 import { ProfileSpaceDashboard } from './profile-space-dashboard'
+import { CourseSpaceIntro } from './course-space-intro'
+import ProfileSettingsLanding from './profile-settings-landing'
 
 const COPY = {
   ru: {
@@ -77,7 +79,51 @@ const REPORTS_PORTRAIT_COPY = {
     caption: 'Los rayos coloreados reflejan únicamente pruebas profesionales verificadas.',
   },
 }
-const REPORTS_SECTOR_ICONS = [Leaf, Mountain, Heart, InfinityIcon]
+const REPORT_METRICS = [
+  { id: 'energy', Icon: Sparkles },
+  { id: 'relationships', Icon: Heart },
+  { id: 'functioning', Icon: Mountain },
+  { id: 'embodiment', Icon: Leaf },
+  { id: 'meaning', Icon: InfinityIcon },
+]
+const REPORTS_DASHBOARD_COPY = {
+  ru: {
+    eyebrow: 'ТЕСТЫ И ПЛАН ТЕРАПИИ', heroTitle: 'Моё психическое здоровье',
+    heroIntro: 'Ваши психологические тесты, личный портрет и рекомендации, полученные от специалиста.',
+    heroAction: 'Сформировать отчёт', heroHint: 'Анализ и PDF по сохранённым тестам',
+    firstTestHint: 'Начните с диагностики', overview: 'Мой психологический портрет',
+    shortcutsLabel: 'Тесты и план терапии',
+    testsTitle: 'Мои тесты', testsHint: 'Результаты и повторные измерения',
+    therapyTitle: 'План терапии', therapyHint: 'Отчёты и рекомендации специалиста',
+    therapyNote: 'План терапии не создаётся автоматически из результатов тестов.',
+    measured: 'Измеренные шкалы', scaleNote: 'Показано положение внутри каждой подтверждённой шкалы, а не процент здоровья или общий балл.',
+    noMeasurement: '—', metrics: { energy: 'Энергия', relationships: 'Отношения', functioning: 'Дела и цели', embodiment: 'Тело', meaning: 'Смысл' },
+  },
+  en: {
+    eyebrow: 'TESTS & THERAPY PLAN', heroTitle: 'My Psychic Health',
+    heroIntro: 'Your psychological tests, personal portrait and practitioner-shared guidance in one place.',
+    heroAction: 'Create a report', heroHint: 'Analysis and PDF of your saved tests',
+    firstTestHint: 'Start with an assessment', overview: 'My psychological portrait',
+    shortcutsLabel: 'Tests and therapy plan',
+    testsTitle: 'My tests', testsHint: 'Saved results and repeat assessments',
+    therapyTitle: 'Therapy plan', therapyHint: 'Practitioner-shared reports and guidance',
+    therapyNote: 'A therapy plan is not automatically generated from test results.',
+    measured: 'Measured scales', scaleNote: 'Each reading is a position within its own validated scale, not a health percentage or overall score.',
+    noMeasurement: '—', metrics: { energy: 'Energy', relationships: 'Relationships', functioning: 'Work & goals', embodiment: 'Body', meaning: 'Meaning' },
+  },
+  es: {
+    eyebrow: 'TESTS Y PLAN TERAPÉUTICO', heroTitle: 'Mi salud mental',
+    heroIntro: 'Tus tests psicológicos, perfil personal y orientación compartida por un profesional.',
+    heroAction: 'Crear un informe', heroHint: 'Análisis y PDF de tus pruebas guardadas',
+    firstTestHint: 'Empieza con una evaluación', overview: 'Mi perfil psicológico',
+    shortcutsLabel: 'Tests y plan terapéutico',
+    testsTitle: 'Mis tests', testsHint: 'Resultados y mediciones repetidas',
+    therapyTitle: 'Plan terapéutico', therapyHint: 'Informes y recomendaciones profesionales',
+    therapyNote: 'El plan terapéutico no se genera automáticamente a partir de los tests.',
+    measured: 'Escalas medidas', scaleNote: 'Cada lectura muestra una posición dentro de su propia escala validada, no un porcentaje de salud ni una nota global.',
+    noMeasurement: '—', metrics: { energy: 'Energía', relationships: 'Relaciones', functioning: 'Trabajo y metas', embodiment: 'Cuerpo', meaning: 'Sentido' },
+  },
+}
 
 const TABS = [
   { id: 'today', icon: House }, { id: 'state', icon: Activity },
@@ -87,7 +133,7 @@ const TABS = [
 const STUDIO_COPY = {
   en: {
     title: 'My Space', label: 'MY SPACE · PERSONAL GROWTH', settings: 'Settings',
-    tabs: { today: 'Today', tests: 'Tests', state: 'My State', path: 'My Path', courses: 'Courses', reports: 'Reports', sessions: 'Sessions' },
+    tabs: { today: 'Today', tests: 'Tests', state: 'My State', path: 'My Path', courses: 'Courses', reports: 'Psychic Health', sessions: 'Sessions' },
     hero: 'Your path of growth',
     intro: 'Discover yourself, notice changes and choose a meaningful next step — at your own pace.',
     video: 'Scenic introduction to My Space', film: 'Nature film · no narration', route: 'My route',
@@ -97,7 +143,7 @@ const STUDIO_COPY = {
   },
   ru: {
     title: 'Моё пространство', label: 'МОЁ ПРОСТРАНСТВО · ЛИЧНОСТНЫЙ РОСТ', settings: 'Настройки',
-    tabs: { today: 'Сегодня', tests: 'Тесты', state: 'Состояние', path: 'Мой путь', courses: 'Курсы', reports: 'Отчёты', sessions: 'Сессии' },
+    tabs: { today: 'Сегодня', tests: 'Тесты', state: 'Состояние', path: 'Мой путь', courses: 'Курсы', reports: 'Псих. здоровье', sessions: 'Сессии' },
     hero: 'Мой путь развития',
     intro: 'Узнавайте себя, замечайте изменения и выбирайте следующий шаг в своём темпе.',
     video: 'Природное вступление в Моё пространство', film: 'Видео о природе · без озвучивания', route: 'Мой маршрут',
@@ -107,7 +153,7 @@ const STUDIO_COPY = {
   },
   es: {
     title: 'Mi espacio', label: 'MI ESPACIO · CRECIMIENTO PERSONAL', settings: 'Ajustes',
-    tabs: { today: 'Hoy', tests: 'Tests', state: 'Estado', path: 'Mi ruta', courses: 'Cursos', reports: 'Informes', sessions: 'Sesiones' },
+    tabs: { today: 'Hoy', tests: 'Tests', state: 'Estado', path: 'Mi ruta', courses: 'Cursos', reports: 'Salud mental', sessions: 'Sesiones' },
     hero: 'Mi camino de crecimiento',
     intro: 'Conócete, observa tus cambios y elige tu próximo paso a tu ritmo.',
     video: 'Introducción visual de naturaleza a Mi espacio', film: 'Vídeo de naturaleza · sin narración', route: 'Mi ruta',
@@ -141,7 +187,7 @@ const SETTINGS_HUB_COPY = {
     name: 'Nombre', timeZone: 'Zona horaria', language: 'Idioma', expand: 'Abrir ajustes',
     top: { create: 'Crear', view: 'Ver', results: 'Resultados', settings: 'Ajustes' } },
 }
-export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = null, account = null, publicEntry = false }) {
+export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = null, account = null, publicEntry = false, courseLanding = false }) {
   const selected = COPY[locale] ? locale : 'en'
   const t = STUDIO_COPY[selected]
   // Existing protected Cabinet uses EN fallback for ES; do not introduce a new account.
@@ -165,8 +211,11 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
     courses: '/' + selected + '/academy',
   } : privatePaths
   const current = active === 'view' ? 'today' : active === 'results' ? 'reports' : active
+  const stateBrand = current === 'today' || current === 'state' || current === 'reports'
+  const isCourseLanding = current === 'courses' && courseLanding
+  const simplifiedSpace = current === 'today' || current === 'state' || isCourseLanding
+  const brandedSpace = stateBrand || isCourseLanding
   const settingsMode = current === 'settings'
-  const stateBrand = current === 'today' || current === 'state'
   const s = SETTINGS_HUB_COPY[selected]
   // Switch real locale routes while retaining the current profile section.
   // Language navigation works for visitors; only account actions require sign-in.
@@ -186,10 +235,10 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
   return <section className={styles.hub} data-profile-hub-tabs data-profile-active={current}>
     <header className={styles.heading}>
       <div className={styles.headingTitle}>
-        {stateBrand && <span className={styles.brandMark} aria-hidden="true" />}
-        <h2 aria-label={settingsMode ? s.pageTitle : stateBrand ? 'Holistic House' : t.title}>
-          <span className={styles.titleFull}>{settingsMode ? s.pageTitle : stateBrand ? 'Holistic House' : t.title}</span>
-          <span className={styles.titleCompact}>{settingsMode ? (selected === 'ru' ? 'Профиль' : selected === 'es' ? 'Perfil' : 'Profile') : stateBrand ? 'Holistic House' : 'My Space'}</span>
+        {(brandedSpace || settingsMode) && <span className={styles.brandMark} aria-hidden="true" />}
+        <h2 aria-label={(brandedSpace || settingsMode) ? 'Holistic House' : t.title}>
+          <span className={styles.titleFull}>{(brandedSpace || settingsMode) ? 'Holistic House' : t.title}</span>
+          <span className={styles.titleCompact}>{(brandedSpace || settingsMode) ? 'Holistic House' : 'My Space'}</span>
         </h2>
       </div>
       <div className={styles.profileHeadingActions}>
@@ -204,7 +253,7 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
                 data-profile-language={language}>{language.toUpperCase()}</Link>)}
           </div>
         </details>
-        {!settingsMode && current !== 'today' && current !== 'state' && <ProfileModeSwitch locale={selected} active="live" />}
+        {!settingsMode && !brandedSpace && <ProfileModeSwitch locale={selected} active="live" />}
         <div className={styles.headingNav} data-profile-chrome-navigation>
           <SiteNavigation locale={selected} compact />
         </div>
@@ -214,7 +263,7 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
       <Link href={root + '/monitoring'} prefetch={false} aria-current="page" data-profile-state-life><Heart size={22} aria-hidden="true" />{selected === 'ru' ? 'Моё состояние' : selected === 'es' ? 'Mi estado' : 'My State'}</Link>
       <Link href={'/' + selected + '/practice'} prefetch={false} data-profile-state-work><UserRound size={22} aria-hidden="true" />{selected === 'ru' ? 'Моя работа' : selected === 'es' ? 'Mi trabajo' : 'My Work'}</Link>
     </nav>}
-    {current !== 'today' && current !== 'state' && <nav className={settingsMode ? styles.settingsTabs : styles.tabs} aria-label={settingsMode ? s.menu : COPY[selected].navigation}>
+    {!simplifiedSpace && !settingsMode && <nav className={settingsMode ? styles.settingsTabs : styles.tabs} aria-label={settingsMode ? s.menu : COPY[selected].navigation}>
       {settingsMode ? [
         { id: 'create', href: '/' + selected + '/personality-profiles' },
         { id: 'view', href: paths.today },
@@ -231,7 +280,7 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
           <span className={styles.resultBadge} aria-label={resultCount + ' ' + COPY[selected].count}>{resultCount}</span>}
       </InstantCabinetLink>)}
     </nav>}
-    {current !== 'today' && current !== 'state' && !settingsMode && <div className={styles.myPageSubnav} data-profile-my-page-placement="below-tabs">
+    {!simplifiedSpace && current !== 'reports' && !settingsMode && <div className={styles.myPageSubnav} data-profile-my-page-placement="below-tabs">
       <Link href={'/' + selected + '/my-page'} prefetch={false} className={styles.myPageLink} data-profile-my-page>
         <UserRound size={15} aria-hidden="true" />
         {selected==='ru'?'Моя страница':selected==='es'?'Mi página':'My Page'}
@@ -242,39 +291,9 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
       </Link>
     </div>}
     {current === 'today' && <ProfileSpaceDashboard locale={selected} root={root} resultCount={resultCount} />}
-    {settingsMode && <nav className={styles.settingsQuickActions} data-profile-settings-actions aria-label={s.menu}>
-      <a href="#hh-settings-account">{s.detail}</a>
-      <a href="#hh-settings-messengers">{s.messenger}</a>
-      <a href="#hh-settings-plans">{s.plans}</a>
-    </nav>}
-    {settingsMode && <section className={styles.settingsOverview} data-profile-settings-overview aria-label={s.account}>
-      <div className={styles.settingsIdentity} id="hh-settings-overview-account">
-        <div className={styles.settingsCardHeading}>
-          <h3>{s.account}</h3>
-          <a href="#hh-settings-account">{s.change}</a>
-        </div>
-        <div className={styles.accountDetails}>
-          <span><small>{s.name}</small><strong>{account?.displayName || '—'}</strong></span>
-          <span><small>{s.timeZone}</small><strong>{account?.timezone || '—'}</strong></span>
-          <span><small>{s.language}</small><strong>{selected.toUpperCase()}</strong></span>
-        </div>
-      </div>
-      <div className={styles.connectionOverview}>
-        <h3>{s.contacts}</h3>
-        <a href="#hh-settings-messengers">Telegram <span>{s.manage}</span></a>
-        <a href="#hh-settings-messengers">WhatsApp <span>{s.manage}</span></a>
-      </div>
-      <div className={styles.packagesOverview} id="hh-settings-overview-plans">
-        <div className={styles.settingsCardHeading}><h3>{s.membership}</h3><a href="#hh-settings-plans">{s.expand}</a></div>
-        <div className={styles.packagesGrid}>{NEW_PACKAGES.map(item =>
-          <a key={item.key} href="#hh-settings-plans" className={styles.packageCard} data-package={item.key}>
-            <strong>{item.key.charAt(0).toUpperCase() + item.key.slice(1)}</strong>
-            <span>€{item.amount} <small>/ {selected === 'ru' ? 'мес' : selected === 'es' ? 'mes' : 'mo'}</small></span>
-          </a>)}</div>
-        <p className={styles.packageFinePrint}>{s.note}</p>
-      </div>
-    </section>}
-    {current !== 'today' && current !== 'state' && current !== 'create' && current !== 'reports' && !settingsMode && !publicEntry && <div className={styles.sectionIntro}>
+     {isCourseLanding && <CourseSpaceIntro locale={selected} root={root} />}
+    {settingsMode && <ProfileSettingsLanding locale={selected} root={root} plans={NEW_PACKAGES} />}
+    {!simplifiedSpace && current !== 'create' && current !== 'reports' && !settingsMode && !publicEntry && <div className={styles.sectionIntro}>
       <h1>{t.tabs[current] || t.title}</h1><p>{t.details[current] || t.privacy}</p>
     </div>}
     {current === 'create' && <p className={styles.hint}>{COPY[selected].creationHint}</p>}
@@ -285,81 +304,128 @@ export function ProfileResultsArchive({ locale = 'en', results = [] }) {
   const selected = COPY[locale] ? locale : 'en'
   const t = COPY[selected]
   const p = REPORTS_PORTRAIT_COPY[selected]
+  const d = REPORTS_DASHBOARD_COPY[selected]
   const accountLocale = selected === 'es' ? 'en' : selected
-  // Retain every owner-scoped saved attempt, including retakes and check-ins.
+  // Preserve every saved owner-scoped attempt, including check-ins and retakes.
   const ordered = (Array.isArray(results) ? results : [])
     .filter(item => item && typeof item.id === 'string' && item.id.length > 0)
     .sort((a, b) => (Date.parse(b.measurementAt || '') || 0) - (Date.parse(a.measurementAt || '') || 0))
   const recent = ordered.slice(0, 5)
-  // Only eligible, scored professional measurements can color portrait rays.
-  // A missing score never becomes an invented average, health grade or percentage.
+  // Audited, source-compatible professional scales only. No fabricated or averaged health score.
   const portrait = buildPsychPortrait(ordered.filter(isProfessionalProfileTest))
   const measuredCount = Number.isFinite(portrait?.measuredCount) ? portrait.measuredCount : 0
+  const scaleTotal = Number.isFinite(portrait?.totalCount) && portrait.totalCount > 0 ? portrait.totalCount : 17
   const root = '/' + accountLocale + '/app'
   return <section className={styles.archive} data-profile-results-archive data-saved-result-count={ordered.length}>
-    <header className={styles.archiveHeading}>
-      <div>
-        <h2><ClipboardList size={24} strokeWidth={1.8} aria-hidden="true" />{t.archiveTitle}</h2>
-        <p>{p.intro}</p>
-      </div>
-      <strong className={styles.total} aria-label={ordered.length + ' ' + t.count}>
-        <span>{ordered.length}</span><small>{p.saved}</small>
-      </strong>
+    <header className={styles.reportHero} data-reports-photo-hero>
+      <p className={styles.reportHeroEyebrow}><Sparkles size={19} aria-hidden="true" />{d.eyebrow}</p>
+      <h1>{d.heroTitle}</h1>
+      <p className={styles.reportHeroIntro}>{d.heroIntro}</p>
+      <Link href={ordered.length ? root + '/portfolio#hh-insights-export' : root + '/tests?explore=1&filters=topics'}
+        prefetch={false} className={styles.reportHeroAction} data-report-create-cta>
+        <span className={styles.reportHeroActionIcon}><FileText size={25} aria-hidden="true" /></span>
+        <span className={styles.reportHeroActionCopy}>
+          <strong>{ordered.length ? d.heroAction : p.next}</strong>
+          <small>{ordered.length ? d.heroHint : d.firstTestHint}</small>
+        </span>
+        <span className={styles.reportHeroArrow}><ArrowRight size={24} aria-hidden="true" /></span>
+      </Link>
+
     </header>
 
+    <nav className={styles.healthShortcuts} aria-label={d.shortcutsLabel} data-psychic-health-shortcuts>
+      <Link href={root + '/tests?filter=completed'} prefetch={false} data-psychic-health-tests>
+        <ListChecks size={23} aria-hidden="true" />
+        <span><strong>{d.testsTitle}</strong><small>{d.testsHint}</small></span>
+        <ArrowRight size={18} aria-hidden="true" />
+      </Link>
+      <a href="#personal-reports" data-psychic-health-therapy-plan>
+        <FileText size={23} aria-hidden="true" />
+        <span><strong>{d.therapyTitle}</strong><small>{d.therapyHint}</small></span>
+        <ArrowRight size={18} aria-hidden="true" />
+      </a>
+    </nav>
+    <p className={styles.healthNote}><LockKeyhole size={15} aria-hidden="true" />{d.therapyNote}</p>
+
+    <div className={styles.reportOverviewHeading}>
+      <h2>{d.overview}</h2>
+      <span className={styles.reportCount} aria-label={ordered.length + ' ' + t.count}>
+        <ClipboardList size={16} aria-hidden="true" />{ordered.length} {p.saved}
+      </span>
+    </div>
     <article className={styles.reportPortrait} data-reports-portrait-hero data-measured-axis-count={measuredCount}>
-      <div className={styles.reportPortraitScene} aria-label={p.sectorsLabel}>
-        <div className={styles.reportPortraitArt} data-profile-head>
-          <TestExplorerVisual compact locale={selected} portrait={portrait} coverage={coverageForFocus([])} />
+      <div className={styles.reportOverviewGrid}>
+        <div className={styles.reportPortraitScene} aria-label={p.sectorsLabel}>
+          <div className={styles.reportPortraitArt} data-profile-head>
+            <TestExplorerVisual compact locale={selected} portrait={portrait} coverage={coverageForFocus([])} />
+          </div>
         </div>
-        <div className={styles.reportPortraitSectors}>
-          {p.sectors.map((area, index) => {
-            const Icon = REPORTS_SECTOR_ICONS[index]
-            return <span key={area} className={styles.reportSectorChip} data-report-sector={index}>
-              <Icon aria-hidden="true" size={23} strokeWidth={1.8} />
-              <strong>{area}</strong>
-            </span>
+        <div className={styles.reportMetrics} aria-label={d.measured}>
+          {REPORT_METRICS.map(({ id, Icon }) => {
+            const measurement = portrait?.axes?.[id] || null
+            const position = measurement?.mode === 'directional' && Number.isFinite(measurement.percent)
+              ? Math.max(0, Math.min(100, measurement.percent)) : null
+            const destination = measurement?.resultId
+              ? root + '/results/' + encodeURIComponent(measurement.resultId)
+                + (measurement.dimensionKey ? '?scale=' + encodeURIComponent(measurement.dimensionKey) : '')
+                + '#hh-assessment-scale-panel'
+              : root + '/tests?explore=1&axis=' + encodeURIComponent(id)
+            return <Link href={destination} prefetch={false} className={styles.reportMetric}
+              key={id} data-report-metric={id} data-report-measured={position !== null}>
+              <span className={styles.reportMetricIcon}><Icon size={20} aria-hidden="true" /></span>
+              <span className={styles.reportMetricName}>{d.metrics[id]}</span>
+              <strong className={styles.reportMetricValue}>{position === null ? d.noMeasurement : position + '/100'}</strong>
+              <span className={styles.reportMetricTrack} aria-hidden="true">
+                <span style={{ width: (position === null ? 0 : position) + '%' }} />
+              </span>
+            </Link>
           })}
         </div>
       </div>
-      <div className={styles.reportPortraitFooter}>
-        <h3>{p.title}</h3>
-        <Link href={root + '/portfolio'} prefetch={false} className={styles.reportPortraitLink}>
-          <Sparkles size={20} aria-hidden="true" />{p.detail}<ArrowRight size={20} aria-hidden="true" />
-        </Link>
-        <p className={styles.reportPortraitCaption}>
-          {measuredCount ? measuredCount + ' ' + p.measured + ' · ' : p.empty + ' · '}{p.caption}
-        </p>
+      <div className={styles.reportMeasuredFooter}>
+        <span>{d.measured}</span>
+        <strong>{measuredCount} / {scaleTotal}</strong>
+        <span className={styles.reportMeasuredTrack} aria-hidden="true">
+          <span style={{ width: (100 * measuredCount / scaleTotal) + '%' }} />
+        </span>
       </div>
+      <p className={styles.reportPortraitCaption}>{d.scaleNote}</p>
     </article>
 
-    {recent.length ? <div className={styles.recent}>
+    {recent.length ? <section className={styles.recent} aria-label={t.recent}>
       <div className={styles.reportRecentHeading}>
-        <h3>{t.recent}</h3>
+        <h2>{t.recent}</h2>
         <Link href={root + '/history'} prefetch={false}>{t.history}<ArrowRight size={16} aria-hidden="true" /></Link>
       </div>
-      <ul>{recent.slice(0, 3).map(item => {
+      <ul>{recent.slice(0, 3).map((item, index) => {
         const when = Date.parse(item.measurementAt || '')
         const date = Number.isFinite(when) ? new Intl.DateTimeFormat(
           selected === 'ru' ? 'ru-RU' : selected === 'es' ? 'es-ES' : 'en-CA',
           { dateStyle: 'medium' }).format(new Date(when)) : ''
         return <li key={item.id}>
-          <Link href={root + '/results/' + encodeURIComponent(item.id)} prefetch={false}>
-            <span className={styles.reportResultIcon}><ClipboardList size={19} aria-hidden="true" /></span>
-            <span className={styles.reportResultTitle}>{assessmentHistoryTitle(item, accountLocale) || item.definitionKey || t.archiveTitle}</span>
-            {date && <time dateTime={item.measurementAt}>{date}</time>}
-            <ArrowRight size={18} className={styles.reportResultArrow} aria-hidden="true" />
+          <Link href={root + '/results/' + encodeURIComponent(item.id)} prefetch={false}
+            className={styles.reportResultCard}>
+            <span className={styles.reportResultPhoto} data-report-card-image={index}>
+              <span className={styles.reportResultIcon}><FileText size={18} aria-hidden="true" /></span>
+            </span>
+            <span className={styles.reportResultBody}>
+              <strong className={styles.reportResultTitle}>{assessmentHistoryTitle(item, accountLocale) || item.definitionKey || t.archiveTitle}</strong>
+              <span className={styles.reportResultMeta}>
+                {date && <time dateTime={item.measurementAt}>{date}</time>}
+                <ArrowRight size={18} className={styles.reportResultArrow} aria-hidden="true" />
+              </span>
+            </span>
           </Link>
         </li>
       })}</ul>
-    </div> : <p className={styles.empty}>{t.empty}</p>}
+    </section> : <p className={styles.empty}>{t.empty}</p>}
 
     <div className={styles.actions}>
       <Link href={root + '/tests?explore=1&filters=topics'} className={styles.reportStartTest} prefetch={false}>
-        <ClipboardList size={19} aria-hidden="true" />{p.next}
+        <ClipboardList size={20} aria-hidden="true" />{p.next}
       </Link>
       <Link href={root + '/tests?filter=completed'} className={styles.reportMyTests} prefetch={false}>
-        <ListChecks size={19} aria-hidden="true" />{t.choose}
+        <ListChecks size={20} aria-hidden="true" />{t.choose}
       </Link>
     </div>
     <p className={styles.privacy}><LockKeyhole size={14} aria-hidden="true" />{t.private}</p>

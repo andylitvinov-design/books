@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { parsePrTrigger, matchesTrigger } from '../lib/ci/specialist-aggregate.mjs';
+import { parsePrTrigger, matchesTrigger, trustedConditionalJobs } from '../lib/ci/specialist-aggregate.mjs';
 
 const workflow = (name) => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 
@@ -316,12 +316,12 @@ test('IA and Mandala browsers allocate expensive runners only after cheap exact-
   const macosGuard = mandala.match(/^  voice-webkit-macos:\n    if: (.+)$/m)?.[1];
   assert.equal(preflightGuard, "${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}",
     'preflight must execute on every Ready Mandala PR; a new skipped job cannot be waived by the old BASE specialist contract');
-  assert.ok(macosGuard?.includes("startsWith(github.head_ref, 'feat/video-')"),
-    'macOS WebKit must retain original video release guard');
-  assert.ok(macosGuard?.includes("startsWith(github.head_ref, 'feat/voice-timed-storyboard-')"),
-    'the consented voice storyboard must run existing macOS WebKit MP4/AAC release acceptance');
-  assert.ok(macosGuard?.includes("startsWith(github.head_ref, 'fix/recipient-speech-')"),
-    'one-tap spoken audio montage must execute protected macOS WebKit before merge');
+  assert.ok(macosGuard?.includes("needs.webkit_preflight.outputs.media_required == 'true'"),
+    'WebKit must use tested-BASE media impact rather than historical branch names');
+  assert.ok(mandala.includes('stories_required: ${{ steps.media_gate.outputs.stories_required }}'),
+    'Stories changes must request real five-scene WebKit');
+  assert.ok(mandala.includes('HH_STORIES_E2E_REQUIRED: ${{ needs.webkit_preflight.outputs.stories_required }}'),
+    'macOS Stories evidence must consume the protected impact result');
   assert.match(mandala, /^  voice-webkit-macos:\n    if: .+\n    needs: \[webkit_preflight\]\n    runs-on: macos-15/m);
   for (const source of [ia, mandala]) {
     assert.match(source, /node scripts\/ci-pr-readiness\.mjs/);
@@ -517,8 +517,8 @@ test('Core Mandala fast contracts run only as fallback when the BASE/HEAD Specia
     'the broad Mandala unit-test manifest owns all mandala-*.test.mjs files');
   assert.equal(specialistOwns(mandala,mandala,['tests/video-export-contract.test.mjs']),false,
     'a video test outside the owned video-chat and video-owner manifest retains Core fallback coverage');
-  assert.equal(specialistOwns(mandala,mandala,['scripts/benchmarking/first-video-live-export.mjs']),false,
-    'the first-video benchmark keeps the Core fallback unless its specialist path is explicitly added');
+  assert.equal(specialistOwns(mandala,mandala,['scripts/benchmarking/first-video-live-export.mjs']),true,
+    'First Video benchmark is owned by mandatory Mandala specialist acceptance');
 
   const newline = String.fromCharCode(10);
   const narrowed=mandala.replace("      - 'components/mandala-*'"+newline,'');
@@ -551,7 +551,8 @@ test('Stories Studio PR must execute real WebKit and four-format acceptance, nev
   assert.match(s, /'tests\/stories-studio-\*\.test\.mjs'/);
   assert.match(s, /node --test tests\/stories-studio-contract\.test\.mjs tests\/stories-studio-ui\.test\.mjs/);
   const webkit=s.slice(s.indexOf('  voice-webkit-macos:'),s.indexOf('    needs: [webkit_preflight]',s.indexOf('  voice-webkit-macos:')));
-  assert.match(webkit, /startsWith\(github\.head_ref, 'codex\/stories-'\)/);
+  assert.match(webkit, /needs\.webkit_preflight\.outputs\.media_required == 'true'/);
+  assert.match(s, /stories_required: \$\{\{ steps\.media_gate\.outputs\.stories_required \}\}/);
   const linux=s.slice(s.indexOf('      - name: Build\n'),s.indexOf('  webkit_preflight:'));
   assert.match(linux, /startsWith\(github\.head_ref, 'codex\/stories-'\)/);
 });
@@ -561,7 +562,8 @@ test('Stories physical five-scene MP4 is mandatory in the macOS WebKit release p
   const s=workflow('holistic-support-mandala.yml');
   assert.match(s,/scripts\/benchmarking\/verify-five-scene-stories-browser\.mjs/);
   const mac=s.slice(s.indexOf('  voice-webkit-macos:'));
-  assert.match(mac,/if \[\[ "\$\{GITHUB_HEAD_REF:-\}" == codex\/stories-\* \|\| "\$\{GITHUB_HEAD_REF:-\}" == codex\/video-story-five-cards-quality-last-20261112 \]\]/);
+  assert.match(mac,/HH_STORIES_E2E_REQUIRED/);
+  assert.match(mac,/if \[\[ "\$\{HH_STORIES_E2E_REQUIRED:-\}" == true \|\|/);
   assert.match(mac,/HH_STORIES_E2E_ENGINE=webkit/);
   assert.match(mac,/node scripts\/benchmarking\/verify-five-scene-stories-browser\.mjs/);
   assert.match(mac,/artifacts\/benchmarking\/five-scene-stories-webkit\.json/);
@@ -582,3 +584,47 @@ test('Axis private planner trigger accepts catch-all routes without GitHub chara
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
 
+
+test('public Ali greeting and coach motion do not launch private App or storefront matrices',()=>{
+  const target='codex/public-book-library';
+  const media=['components/app/ali-persona-audio.js','components/app/coaching-avatar.jsx'];
+  for(const name of ['hh-app-r1.yml','hh-app-browser.yml']){
+    const trigger=parsePrTrigger(workflow(name),name);
+    for(const path of media){
+      assert.equal(matchesTrigger(trigger,[path],target),false,name+' must not claim public media: '+path);
+      assert.equal(matchesTrigger(trigger,[path,'components/app/crm-manager.jsx'],target),true,
+        name+' must preserve private App QA on mixed PRs');
+    }
+    assert.equal(matchesTrigger(trigger,['components/app/client-contact-phone.jsx'],target),true,
+      name+' must preserve private client/identity coverage');
+  }
+  const store=parsePrTrigger(workflow('hh-public-services-production.yml'),'public-services');
+  assert.equal(matchesTrigger(store,['lib/holistic-support/ali-gemini-free-tts.mjs'],target),false);
+  assert.equal(matchesTrigger(store,['lib/holistic-support/ali-gemini-free-tts.mjs',
+    'components/consultation-choice-capture.tsx'],target),true,
+    'mixed voice+booking still needs full public-service acceptance');
+  assert.equal(matchesTrigger(store,['app/api/payments/checkout/route.js'],target),true,
+    'payment and consent safety must remain protected');
+  const core=workflow('hh-pr-core-release.yml');
+  assert.match(core,/Public Ali greeting \+ coach motion release contracts/);
+  assert.match(core,/tests\/ali-persona-selector\.test\.mjs tests\/my-coach-personas\.test\.mjs/);
+  assert.match(core,/tests\/coach-greeting-video\.test\.mjs/);
+  assert.match(core,/steps\.fast\.outputs\.route != 'ASSETS'/);
+});
+
+
+test('Support Guide PR never books a duplicate syntax-only browser runner',()=>{
+  const source=workflow('hh-support-guided-recommendations.yml');
+  assert.match(source,/^  pull_request:/m,'original product and consent PR triggers remain');
+  assert.match(source,/^  focused-unit-types-build:\n    if:/m,'real domain tests still execute');
+  assert.match(source,/Grounded goal-led conversation and existing recommendation contracts/);
+  assert.match(source,/node --check scripts\/verify-holistic-support-guided-card\.mjs/);
+  assert.match(source,/node --test tests\/holistic-support-conversation-intents\.test\.mjs/);
+  assert.match(source,/^  mobile-browser:\n(?:    #.*\n)*    if: \$\{\{ github\.event_name != 'pull_request' \}\}/m);
+  assert.ok(trustedConditionalJobs(source).includes('mobile-browser'),
+    'trusted BASE verifier must accept skipped manual-only browser job');
+  assert.match(source,/Score-first multi-turn dialog on EN\/RU\/ES/);
+  assert.match(source,/^  push:/m);
+  assert.match(source,/^  workflow_dispatch:/m);
+  assert.doesNotMatch(source,/continue-on-error:\s*true/);
+});

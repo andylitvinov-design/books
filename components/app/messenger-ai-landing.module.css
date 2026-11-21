@@ -206,3 +206,165 @@
  .analysisButton{min-height:59px}
 }
 @media(prefers-reduced-motion:reduce){.topics button,.analysisButton{transition:none}}
+
+
+/* 19 Nov owner-approved first-open WhatsApp-like Ali conversation.
+   Real send form is pinned OUTSIDE the scroll log; these are editable topic starters. */
+.root[data-hh-ai-landing]{gap:12px;padding:9px 3px 18px;min-width:0}
+.welcomeRow{display:flex;align-items:flex-start;gap:9px;min-width:0}
+.welcomePortrait{flex:none;width:39px;height:39px;border-radius:50%;
+ object-fit:cover;object-position:center 32%;box-shadow:0 3px 10px #1d4f3a24}
+.welcomeBubble{position:relative;display:grid;gap:11px;min-width:0;flex:1;
+ padding:16px 16px 11px;background:#fffefa;color:#173d36;
+ border:1px solid #eee9df;border-radius:19px 19px 19px 5px;
+ box-shadow:0 3px 12px #614d3115}
+.welcomeBubble h2{margin:0;color:#0d4338;letter-spacing:-.025em;
+ font:800 clamp(21px,5.5vw,25px)/1.21 system-ui,-apple-system,sans-serif}
+.welcomeBubble h2 span{display:block}
+.welcomeBubble p{margin:0;color:#35423d;font:510 clamp(16px,4.25vw,18px)/1.47 system-ui,-apple-system,sans-serif}
+.welcomeQuestion{font:780 clamp(17px,4.5vw,19px)/1.34 system-ui,-apple-system,sans-serif;color:#0e453a}
+.welcomeMeta{display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:36px}
+.welcomeMeta time{font:500 12px/1.2 system-ui,sans-serif;color:#8b918b;white-space:nowrap}
+.welcomeListen{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+ min-height:36px;padding:6px 10px;border:1px solid #cfe5d7;border-radius:20px;
+ background:#eff8f2;color:#12644e;font:760 14px/1 system-ui,sans-serif;cursor:pointer}
+.welcomeListen[aria-pressed="true"]{background:#d9f0e4;color:#0f5e4e}
+.root .topics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.root .topics button{display:flex;flex-direction:row;justify-content:flex-start;align-items:center;
+ gap:9px;box-sizing:border-box;min-height:92px;min-width:0;padding:8px;
+ border:1px solid #e8e0d6;border-radius:19px;background:#fffdfa;color:#164a40;
+ text-align:left;box-shadow:0 3px 11px #56463410;
+ font:inherit;cursor:pointer;overflow:hidden}
+.root .topics button:hover{background:#f0faf4;border-color:#93c9ad}
+.root .topics button:active{background:#e5f6ec}
+.root .topics button:focus-visible,.moreTopics:focus-visible,
+.welcomeListen:focus-visible,.introDetails summary:focus-visible{outline:3px solid #108b71;outline-offset:2px}
+.topicIllustration{position:relative;flex:none;display:block;width:67px;height:75px;
+ border-radius:13px;overflow:hidden;background:#e8f4ed}
+.topicIllustration img{display:block;width:100%;height:100%;object-fit:cover}
+.topicIllustration svg{position:absolute;bottom:5px;right:5px;width:20px;height:20px;
+ padding:2px;background:#fffcf5d9;border-radius:8px;color:#0e725e;box-sizing:content-box}
+.root .topics .topicLabel{display:block;min-width:0;overflow-wrap:break-word;
+ font:760 clamp(14px,3.75vw,16px)/1.23 system-ui,-apple-system,sans-serif;
+ letter-spacing:-.015em}
+.moreTopics{justify-self:center;display:flex;align-items:center;justify-content:center;gap:10px;
+ min-height:46px;padding:9px 24px;border:1px solid #d3e4d8;border-radius:26px;
+ background:#f6fbf6;color:#155547;font:710 16px/1.2 system-ui,sans-serif;
+ box-shadow:0 3px 10px #4d624020;cursor:pointer}
+.moreTopics .chevronUp{transform:rotate(180deg)}
+.expandedContent{display:grid;gap:12px;min-width:0}
+.introDetails{min-width:0}
+.introDetails>summary{min-height:44px;display:flex;align-items:center;padding:9px 13px;
+ border:1px solid #ddd6cb;border-radius:14px;background:#fffcf7;
+ color:#15574a;font:700 14px/1.3 system-ui,sans-serif;cursor:pointer}
+.introDetails[open] .hero{margin-top:9px}
+@media(max-width:355px){
+ .root[data-hh-ai-landing]{gap:9px;padding-inline:1px}
+ .welcomeRow{gap:6px}
+ .welcomePortrait{width:32px;height:32px}
+ .welcomeBubble{padding:12px 11px 8px;gap:8px}
+ .welcomeBubble h2{font-size:20px}
+ .welcomeBubble p{font-size:16px}
+ .welcomeQuestion{font-size:17px}
+ .root .topics{gap:6px}
+ .root .topics button{min-height:86px;padding:6px;gap:6px;border-radius:15px}
+ .topicIllustration{width:50px;height:70px}
+ .root .topics .topicLabel{font-size:14px}
+ .moreTopics{font-size:16px}
+}
+@media(prefers-reduced-motion:reduce){.moreTopics .chevronUp{transition:none}}
+
+/* Approved homepage-like opening, scoped strictly to the first AI/Chat turn. */
+.root[data-hh-ai-landing]{gap:12px;padding:3px 3px 16px}
+.root .chatShortcuts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;
+  min-width:0;align-items:stretch}
+.root .chatShortcut{box-sizing:border-box;display:flex;align-items:center;justify-content:center;
+  gap:5px;min-width:0;min-height:49px;padding:8px 5px;border:1px solid #ded9cc;
+  border-radius:999px;background:#fffcf7;color:#1e4a3d;text-align:center;
+  text-decoration:none;font:760 clamp(10px,2.95vw,13px)/1.14 system-ui,sans-serif;
+  box-shadow:0 3px 8px #314b3410}
+.root .chatShortcut svg{width:17px;height:17px;flex:none}
+.root .chatShortcut span{min-width:0;overflow-wrap:normal}
+.root .chatShortcut[aria-current="page"]{color:#fff;border-color:#087c62;
+  background:linear-gradient(110deg,#0caa86,#046c54);box-shadow:0 4px 12px #06755a24}
+.root .chatShortcut:focus-visible{outline:3px solid #168b71;outline-offset:2px}
+@media(max-width:360px){
+  .root .chatShortcuts{gap:4px}
+  .root .chatShortcut{flex-direction:column;gap:2px;min-height:53px;padding:6px 2px;
+    border-radius:17px;font-size:10px;line-height:1.1}
+  .root .chatShortcut svg{height:16px;width:16px}
+}
+.root .welcomeRow{position:relative;display:block;min-height:204px;border:1px solid #d1decf;
+  border-radius:24px;overflow:hidden;isolation:isolate;
+  background:linear-gradient(105deg,#07533c 0%,#086443 60%,#b8ab8e 100%);
+  box-shadow:0 7px 20px #26554322}
+.root .welcomePortrait{position:absolute;inset:0 0 0 auto;width:57%;height:100%;z-index:-1;
+  display:block;border:0;border-radius:0;box-shadow:none;object-fit:cover;object-position:center 23%;
+  -webkit-mask-image:linear-gradient(to right,transparent 0%,#000 39%);
+  mask-image:linear-gradient(to right,transparent 0%,#000 39%)}
+.root .welcomeBubble{position:relative;display:flex;flex-direction:column;align-items:flex-start;
+  justify-content:center;gap:8px;min-height:204px;max-width:61%;box-sizing:border-box;
+  padding:15px 0 16px 15px;border:0;border-radius:0;background:transparent;
+  box-shadow:none;color:#fff;text-shadow:0 1px 5px #092a2460}
+.root .heroLabel{display:inline-flex;align-items:center;gap:6px;letter-spacing:.08em;
+  font:770 11px/1.2 system-ui,sans-serif;color:#f4fff8}
+.root .welcomeBubble h2{font:700 clamp(26px,8.1vw,37px)/1.04 Georgia,serif;
+  color:#fff;letter-spacing:-.04em;margin:0}
+.root .welcomeBubble h2 span{font:800 clamp(14px,4.3vw,19px)/1.18 system-ui,sans-serif;
+  letter-spacing:-.015em;margin-top:6px}
+.root .welcomeBubble p{font:560 clamp(12px,3.35vw,15px)/1.31 system-ui,sans-serif;
+  color:#f4fff8;margin:0;max-width:100%;text-wrap:pretty}
+.root .welcomeMeta{display:flex;justify-content:flex-start;min-height:0;margin-top:4px}
+.root .welcomeListen{display:inline-flex;gap:8px;min-height:40px;padding:8px 17px;
+  border:1.5px solid #fff;border-radius:999px;background:#ffffff13;
+  color:#fff;font:760 14px/1.1 system-ui,sans-serif;cursor:pointer}
+.root .welcomeListen[aria-pressed="true"]{background:#10573b;color:#fff}
+.root .inlineComposer{padding:0;min-width:0;background:transparent;border:0;box-shadow:none}
+.root .topicTitleRow{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.root .topicHeading{min-width:0;margin:0;color:#104636;letter-spacing:-.035em;
+  font:700 clamp(23px,6.7vw,30px)/1.16 Georgia,serif}
+.root .moreTopics{justify-self:auto;flex:none;display:flex;gap:7px;min-height:40px;
+  padding:7px 12px;border:1px solid #dedbd1;border-radius:999px;
+  background:#fffdfa;color:#174e3e;box-shadow:none;
+  font:740 12px/1 system-ui,sans-serif;white-space:nowrap}
+.root .moreTopics svg{flex:none;color:#176955}
+.root .topics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.root .topics button{display:grid;grid-template-columns:63px minmax(0,1fr) 23px;
+  align-items:center;justify-content:initial;gap:7px;min-width:0;min-height:86px;
+  padding:7px;border-radius:20px;border:1px solid #e8dfd3;
+  background:#fffbf3;box-shadow:0 3px 12px #57463112;text-align:left}
+.root .topics button:nth-child(2){background:#fff4f7}
+.root .topics button:nth-child(3){background:#fff9ea}
+.root .topics button:nth-child(4){background:#eef8f4}
+.root .topicIllustration{width:63px;height:70px;border-radius:14px;overflow:hidden}
+.root .topicIllustration img{width:100%;height:100%;object-fit:cover}
+.root .topics .topicLabel{display:flex;flex-direction:column;align-items:flex-start;
+  gap:4px;min-width:0;overflow-wrap:break-word;letter-spacing:-.025em;
+  font:800 clamp(12px,3.5vw,15px)/1.14 system-ui,sans-serif;color:#164c3c}
+.root .topics .topicLabel svg{flex:none;color:#078970}
+.root .topicArrow{display:grid;place-items:center;width:23px;height:23px;
+  border-radius:50%;background:#e8f2eb;color:#135443}
+.root .journey{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;
+  padding:12px 13px;border:1px solid #d2eadc;border-radius:22px;
+  background:linear-gradient(130deg,#f1fff7,#e5f6ee);box-shadow:0 4px 14px #2269490f}
+.root .journeyHeading{margin:0;color:#135140;letter-spacing:-.025em;
+  font:700 clamp(20px,5.7vw,26px)/1.15 Georgia,serif}
+.root .journeySteps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.root .journeySteps>div{display:grid;justify-items:center;align-content:start;gap:5px;
+  padding:3px 5px;text-align:center;min-width:0;color:#195a46}
+.root .journeySteps>div+div{border-left:1px solid #b9dfce}
+.root .journeySteps svg{color:#07947c;width:24px;height:24px}
+.root .journeySteps span{font:750 clamp(10px,2.9vw,12px)/1.24 system-ui,sans-serif;text-wrap:balance}
+@media(max-width:365px){
+ .root .welcomeRow{min-height:192px}
+ .root .welcomeBubble{max-width:64%;min-height:192px;padding-left:11px;gap:6px}
+ .root .welcomeBubble h2{font-size:25px}
+ .root .welcomeBubble h2 span{font-size:14px}
+ .root .welcomeBubble p{font-size:11px}
+ .root .topics button{grid-template-columns:53px minmax(0,1fr) 20px;gap:5px;padding:5px;min-height:78px}
+ .root .topicIllustration{width:53px;height:66px}
+ .root .topics .topicLabel{font-size:11px}
+ .root .topicArrow{width:20px;height:20px}
+ .root .topicHeading{font-size:22px}
+ .root .moreTopics{font-size:11px;min-height:38px;padding:6px 8px}
+}

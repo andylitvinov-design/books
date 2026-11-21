@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import test from "node:test";
+import {requiresRealMediaWebKit} from "../lib/ci/merge-check-light.mjs";
 const source=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
 const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
 test("Montage audio is an owner-approved compact panel, not a second generator",()=>{
@@ -52,12 +53,8 @@ test("Montage Audio shows music only; voice lives in Hypno",()=>{
 
 test("compact Montage Audio runs the existing macOS WebKit and Chromium paths",()=>{
   const workflow=readFileSync(new URL("../.github/workflows/holistic-support-mandala.yml",import.meta.url),"utf8");
-  const eligible="startsWith(github.head_ref, 'codex/montage-audio-')";
-  assert.equal(workflow.split(eligible).length-1,8,
-    "seven existing Linux browser steps and the mandatory macOS runner");
-  const macos=workflow.slice(workflow.indexOf("  voice-webkit-macos:"),
-    workflow.indexOf("    needs: [webkit_preflight]",workflow.indexOf("  voice-webkit-macos:")));
-  assert.match(macos,/codex\/montage-audio-/);
+  assert.equal(requiresRealMediaWebKit(["components/mandala-free-video-studio.tsx"]),true);
+  assert.match(workflow,/requiresRealMediaWebKit\(changed\)/);
   assert.match(workflow,/runs-on: macos-15/);
   assert.match(workflow,/node scripts\/verify-affirmation-voice-browser\.mjs/);
 });
@@ -93,7 +90,10 @@ test("Audio two-button route never renders early and shows a vertical track play
   assert.match(css,/\.studio\[data-montage-panel="audio"\] \.audioCompactGrid\{\s*display:flex;flex-direction:column/);
   assert.match(css,/overflow-x:hidden;overflow-y:auto/,"vertical scrolling inside music library");
   assert.match(css,/max-height:clamp\(172px,33dvh,300px\)/);
-  assert.doesNotMatch(css,/grid-auto-flow:column;grid-auto-columns/);
+  assert.match(css,/@media\(max-width:430px\)\{\s*\.studio\[data-montage-panel="audio"\] \.audioCompactGrid\{max-height:clamp\(160px,29dvh,244px\)\}/);
+  const playlistRules=[...css.matchAll(/\.audioCompactGrid\s*\{([^}]*)\}/g)].map(match=>match[1]);
+  assert.ok(playlistRules.length>0);
+  for(const rule of playlistRules)assert.doesNotMatch(rule,/grid-auto-flow:\s*column/);
   assert.match(css,/\.audioCompactWave/);
   assert.match(css,/\.audioCompactTile\[data-selected="true"\]/);
   assert.match(css,/\[data-video-order-bar\] \.quickOrderSummary\{display:none!important/);

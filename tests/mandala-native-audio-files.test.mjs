@@ -211,7 +211,15 @@ test('procedural export requires real AVC/AAC, supported WebCodecs, or explicitl
 
 test('procedural native recorder cannot silently downgrade H264/AAC to generic MP4',()=>{
   assert.match(client,/MediaRecorder\.isTypeSupported\(explicitAvcMime\)/);
-  assert.match(client,/recordingMimes\(Boolean\(musicSession\),false,true\)\.filter\(mime=>mime===explicitAvcMime\)/);
+  assert.match(client,/recordingMimes\(Boolean\(musicSession\),false,true\)\.filter\(mime=>\s*mime===explicitAvcMime\|\|\(nativeAppleMp4Available&&mime==="video\/mp4"\)\)/);
+  assert.match(client,/if\(isApplePhone&&isMp4\)\{/);
+  assert.match(client,/await withLocalMediaDeadline\(\s*verifyNativeSafariMp4Tracks\(blob,Boolean\(job\.musicSession\)\),15000\)/,
+    "native MP4 AVC/AAC track validation remains mandatory and is bounded on iPhone");
+  const verifier=read("lib/mandala/webcodecs-mp4-export.ts");
+  assert.match(verifier,/export async function verifyNativeSafariMp4Tracks/);
+  assert.match(verifier,/const audio=await input\.getPrimaryAudioTrack\(\)/);
+  assert.match(verifier,/!audio\|\|await audio\.getCodec\(\)!=="aac"/);
+  assert.match(verifier,/!video\|\|await video\.getCodec\(\)!=="avc"/);
   assert.match(client,/recordingMimes\(Boolean\(musicSession\),true\)\.filter\(mime=>mime===explicitWebmMime\)/);
   assert.match(client,/proceduralRoute==="unsupported"/);
   assert.match(client,/allowProceduralBrowser:procedural&&!safariWebKit/);

@@ -40,6 +40,10 @@ export type ApprovedVideoConcept={
     energyStart:number|null;energyTarget:number|null
   }|null;
   psychologicalBrief?:{family:string;[key:string]:unknown};
+  goalPlan?:{id:string;type:"leisure"|"support"|"change";mechanismId:string;
+    scenarioStrategy:"shelter"|"journey"|"reframe"|"integration";
+    secondaryScenarioStrategy:"shelter"|"journey"|"reframe"|"integration";
+    meaningAxisId:string;topicId:string|null;contextKey:string}|null;
   userEditedFields?:string[];
   storyReviewSignature?:string|null;
   conceptScenes?:Array<{id:string;index:number;action:string;narrative:string}>;

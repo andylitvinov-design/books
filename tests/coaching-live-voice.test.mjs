@@ -163,22 +163,27 @@ test('My Coach persona dialogue speaks and listens on exactly the consented sess
   assert.match(ui,/const result=await sendMessage\(draft.trim\(\)\)/)
   assert.ok(ui.includes("if(!spokeInSession&&!['safety','boundary'].includes(result.mode))"),
     'typed turns use the live audio path first; unconsented safety responses never go to the vendor')
-  assert.match(ui,/onTurn=\{\(text,spoken\)=>sendMessage\(text,\{voiceTurn:true,utteranceLocale:spoken\?\.locale\}\)\}/)
+  assert.match(ui,/onTurn=\{\(text,spoken\)=>sendMessage\(text,\{voiceTurn:true,utteranceLocale:spoken\?\.locale,onApprovedPhrase:spoken\?\.onApprovedPhrase\}\)\}/)
   assert.match(ui,/enabled=\{true\}/)
   assert.match(ui,/Local-only authored fallback/)
   assert.match(ui,/coachingBrainSafety\(input\)\|\|coachingBrainBoundary\(input\)/)
   assert.match(ui,/if\(mode==='safety'\|\|\(mode==='boundary'/)
   assert.match(ui,/coachStagePrompt\(personaId,stage,responseLocale,settings\)/)
-  const sendFunction=ui.slice(ui.indexOf('async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null}={}){'))
+  const sendFunction=ui.slice(ui.indexOf('async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null,onApprovedPhrase=null}={}){'))
   // On a new consented turn, a metadata-only model probe may restore verified
   // availability. Client messages stay private until the verified-model guard.
   const probeFunction=ui.slice(ui.indexOf('async function retryCoachModelAfterOutage(){'),
-    ui.indexOf('async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null}={}){'))
-  const verify="const needsVerifiedModel=readiness.status!=='verified'&&!wisdomRequested&&!localInterruption"
-  const wait="const modelReady=!needsVerifiedModel||await retryCoachModelAfterOutage()"
+    ui.indexOf('async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null,onApprovedPhrase=null}={}){'))
+  // Gemini checks a dedicated owner gate plus client consent, while Groq
+  // keeps its verified-model probe. Neither sends text when unavailable.
+  const verify="const needsVerifiedModel=!wisdomRequested&&!localInterruption&&"
+  const selector="selectedGeminiEngine?!geminiEngineReady:readiness.status!=='verified'"
+  const wait="const modelReady=!needsVerifiedModel||"
+  const retry="!selectedGeminiEngine&&await retryCoachModelAfterOutage()"
   const offline="if(localInterruption||authRequired||(!modelReady&&!wisdomRequested)){"
   const send="fetch('/api/app/my-coach/turn'"
   assert.ok(sendFunction.indexOf(verify)>=0 &&
+    sendFunction.includes(selector) && sendFunction.includes(retry) &&
     sendFunction.indexOf(verify)<sendFunction.indexOf(wait) &&
     sendFunction.indexOf(wait)<sendFunction.indexOf(offline) &&
     sendFunction.indexOf(offline)<sendFunction.indexOf(send) &&
@@ -190,7 +195,7 @@ test('My Coach persona dialogue speaks and listens on exactly the consented sess
   assert.match(ui,/Браузер может отправлять звук поставщику распознавания речи/)
   for(const phrase of ['window.SpeechRecognition||window.webkitSpeechRecognition',
     'recognition.interimResults=true','recognition.lang=chooseDictationLanguage',
-    'void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,1200))','turnRef.current?.(text,{locale:utteranceLocale})','window.SpeechSynthesisUtterance',
+    'void deliver(appendSpokenAnswer(draftAtStartRef.current,finished,1200))','turnRef.current?.(text,{locale:utteranceLocale,','window.SpeechSynthesisUtterance',
     'activeRef.current=false','document.visibilityState===\'hidden\'',
     'recognition.abort()','onCancelTurn','aria-pressed={active&&!ready}'])
     assert.ok(loop.includes(phrase),phrase)
@@ -264,7 +269,7 @@ test('approved live-session visual hierarchy keeps a real voice pipeline, readab
     'showCaptions&&','className={styles.captionMore}','data-coach-language-control','onChange={event=>setSpeechLocale(event.target.value)}','setShowCaptions(value=>!value)',
     'className={styles.endControl}','className={styles.liveTranscript}','className={styles.voiceControls}',
     'className={styles.textComposer} open','<details className={styles.quickGoals}>',
-    'onTurn={(text,spoken)=>sendMessage(text,{voiceTurn:true,utteranceLocale:spoken?.locale})}','onTranscript={setSpeechPreview}']) assert.ok(ui.includes(token),token)
+    'onTurn={(text,spoken)=>sendMessage(text,{voiceTurn:true,utteranceLocale:spoken?.locale,onApprovedPhrase:spoken?.onApprovedPhrase})}','onTranscript={setSpeechPreview}']) assert.ok(ui.includes(token),token)
   for(const token of ['.heroSubtitle','.transcriptFeed','.sessionBottomNav{display:none}',
     '.voiceCenter :global([data-my-coach-voice] button)','@media(max-width:350px)',
     '@media(max-width:699px) and (max-height:680px)']) assert.ok(css.includes(token),token)
@@ -293,7 +298,7 @@ test('My Coach Fish TTS remains limited to approved free vendor routes and Play 
     assert.ok(route.includes(marker),marker)
   for(const marker of ['startCoachingMp3Playback','cloudControllerRef.current?.abort()',
     'cloudPlayerRef.current?.cancel()','(naturalVoice||voiceAgreed)&&voiceAvailable',
-    "voiceProvider==='fish_free'?{trainingUseConsent:true}:{}"])
+    "['fish_free','gemini_tts_free'].includes(voiceProvider)?{trainingUseConsent:true}:{}"])
     assert.ok(speech.includes(marker),marker)
   assert.ok(page.includes('voiceProviderDetails'))
   assert.ok(page.includes('onSessionStart={()=>setCloudAgreed(true)}'))
@@ -359,7 +364,8 @@ test('My Coach has private default TTS, no stale transcription, and tap-to-recov
   assert.doesNotMatch(ui,/replayCoachReplyOnDevice|new Utterance\(spokenText/)
 
   assert.ok(media.includes('onBlocked'))
-  assert.ok(media.includes('return {cancel,resume,run,audio}'))
+  assert.ok(media.includes('return {cancel,resume,run,audio,setVolume}'))
+ assert.ok(media.includes('const setVolume=volume=>'),'voice interruption must mute speaker only')
   assert.ok(ui.includes('trainingUseConsent:true'))
   assert.doesNotMatch(loop,/api\.fish\.audio|texttospeech\.googleapis\.com/)
 })
@@ -442,7 +448,9 @@ test('spoken My Coach reply retains the reflection and start introduction',()=>{
  assert.ok(ui.includes('onSessionStart={()=>setCloudAgreed(true)}'))
  assert.ok(loop.includes('(naturalVoice||voiceAgreed)&&voiceAvailable'))
  assert.ok(loop.includes("if(!introStartedRef.current){"))
- assert.ok(ui.includes("const dynamicAllowed=cloudAgreed&&cloudAvailable&&"))
+ assert.ok(ui.includes("const dynamicAllowed=chosenCloudAgreed&&chosenCloudAvailable&&"))
+ assert.ok(ui.includes('const chosenCloudAgreed=geminiVoiceReady||cloudAgreed'))
+ assert.ok(ui.includes('const chosenCloudProvider=geminiVoiceReady?geminiVoiceTier:cloudProvider'))
  assert.ok(ui.includes("const [cloudAgreed,setCloudAgreed]=useState(false)"))
  assert.ok(!ui.includes('naturalVoiceRow'))
  assert.ok(!ui.includes('checked={cloudAgreed}'))
@@ -586,3 +594,29 @@ test('Web Audio unlock is used only for WebKit phones; desktop retains streaming
   assert.ok(loop.includes('shouldUseCoachingWebAudio(window.navigator)?unlockCoachingAudioContext():null'))
   assert.ok(page.includes('shouldUseCoachingWebAudio(window.navigator)&&'))
 });
+
+
+test('Basic/Pro vendor toggle works during a live conversation with independent Gemini consents',()=>{
+ const ui=source('components/my-coach-live-dialogue.jsx')
+ const start=ui.indexOf('data-coach-basic-pro-toggle')
+ assert.ok(start>0)
+ const toggle=ui.slice(start,ui.indexOf('data-coach-experience-consent',start))
+ assert.match(toggle,/disabled=\{replaying\|\|paused\|\|protocolOpen\}/)
+ assert.match(toggle,/speechRef\.current\?\.stop\?\.\(\)/)
+ assert.match(toggle,/cancelPendingCoachTurn\(\)/)
+ assert.match(ui,/setCoachEngine\('gemini_free'\)/)
+ assert.match(ui,/setGeminiVoiceTier\(experienceTtsConsent&&geminiCapabilities\.gemini_tts_free\?'gemini_tts_free':'existing'\)/)
+ assert.match(ui,/disabled=\{!experienceTextConsent\}/)
+ assert.match(ui,/data-coach-experience-consent/)
+})
+test('AI coach never claims to run on unverified OpenAI GPT-4',async()=>{
+ const {coachClaimsUnverifiedModelIdentity}=await import('../lib/coaching/conversational-persona.mjs')
+ for(const claim of ["I run on OpenAI’s GPT-4, tuned for fast coaching.",
+ "I'm powered by OpenAI GPT-4.", "My model is Gemini.", "I'm ChatGPT.",
+ "Я работаю на OpenAI GPT-4."]){
+  assert.equal(coachClaimsUnverifiedModelIdentity(claim),true,claim)
+ }
+ for(const safe of ["I'm Max, your AI coach.", "The next small step is your choice."]){
+  assert.equal(coachClaimsUnverifiedModelIdentity(safe),false,safe)
+ }
+})

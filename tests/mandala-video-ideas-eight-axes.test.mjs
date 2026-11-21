@@ -126,12 +126,13 @@ test("compact Ideas mobile layout has no conflicting Intro/My Film rail and list
 });
 
 const read = path => readFileSync(new URL("../"+path,import.meta.url),"utf8");
-test("Ideas shows Personalization and Concept without cloning Montage or the recorder",()=>{
+test("Ideas shows Personalization, Goal and Concept without cloning Montage or the recorder",()=>{
  const studio=read("components/mandala-free-video-studio.tsx");
- assert.equal((studio.match(/data-video-ideas-tab="/g)||[]).length,2);
- for(const name of ["personalization","concept"])
+ assert.equal((studio.match(/data-video-ideas-tab="/g)||[]).length,3);
+ for(const name of ["personalization","goal","concept"])
   assert.ok(studio.includes('data-video-ideas-tab="'+name+'"'),name);
  assert.match(studio,/data-video-ideas-personalization-panel/);
+ assert.match(studio,/data-video-ideas-goal-panel/);
  assert.match(studio,/data-video-ideas-concept-panel/);
  assert.equal((studio.match(/<MandalaVideoConcept /g)||[]).length,1);
  assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1);
@@ -144,13 +145,18 @@ test("Ideas shows Personalization and Concept without cloning Montage or the rec
  assert.match(recorder,/data-video-ideas-record-voice/);
  assert.match(studio,/chooseAudioFile\(file\)\)setPhraseAudioExpanded\(true\)/);
 });
-test("WebKit keeps two Ideas tabs and real opt-in voice while five Montage tabs remain",()=>{
+test("WebKit keeps three Ideas tabs and real opt-in voice while Montage remains intact",()=>{
  const styles=read("components/mandala-video-mobile.module.css");
  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
  assert.match(styles,/\.studio\[data-active-workspace="phrases"\] \.ideasSubtabs\{/);
- assert.match(styles,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+ // Base layout and the workspace-scoped !important override intentionally
+ // live in separate CSS rules; assert the actual rendered contract, not a
+ // single artificial combined selector that the styles never contain.
+ assert.match(styles,/\.ideasSubtabs\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+ assert.match(styles,/\.studio\[data-active-workspace="phrases"\] \.ideasSubtabs\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)!important\}/);
  assert.match(browser,/const ideasModes=phrases\.locator/);
  assert.match(browser,/data-video-ideas-tab="personalization"/);
+ assert.match(browser,/data-video-ideas-tab="goal"/);
  assert.match(browser,/data-video-ideas-tab="concept"/);
  assert.match(browser,/await advancedText\.click\(\)/);
  assert.match(browser,/await myVoiceModeButton\.click\(\)/);

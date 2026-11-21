@@ -1,9 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {SHAMANICA_GOALS,SHAMANICA_SERVICES,shamanicaRecommendations,shamanicaServiceHref} from "../lib/shamanica-recommendations.mjs";
+import {SHAMANICA_GOALS,SHAMANICA_SERVICES,shamanicaRecommendations,shamanicaServiceHref,shamanicaCategoryHref} from "../lib/shamanica-recommendations.mjs";
 const read=p=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
-test("Shamanica replaces Study destination and preserves real catalog",()=>{
+test("Shamanic retains original five recommendation directions",()=>{
  const p=read("app/[locale]/shamanica/page.tsx"),client=read("components/shamanica-mobile.tsx"),results=read("app/[locale]/shamanica/results/page.tsx");
  assert.match(p,/ShamanicaMobile/);assert.match(client,/data-shamanica-quiz/);assert.match(client,/data-shamanica-service/);
  for(const text of ["Энергия и защита","Гармония в отношениях","Деньги","Личностное развитие"])assert.ok(client.includes(text));
@@ -26,28 +26,133 @@ test("Quiz always selects exactly two distinct known directions",()=>{
  assert.deepEqual(shamanicaRecommendations({goal:"money",method:"artifacts",start:"object"}),["artifacts","rituals"]);
  assert.equal(shamanicaRecommendations({goal:"growth",method:"unsure",start:"free"})[0],"learning");
 });
-test("Large mobile targets, focus and reduced motion",()=>{
+test("Owner-approved mobile cabinet keeps quiz, video and six authentic shelf objects",()=>{
  const css=read("components/shamanica-mobile.module.css");
- assert.match(css,/min-height:81px/);assert.match(css,/@media\(max-width:560px\)/);
- assert.match(css,/focus-visible/);assert.match(css,/safe-area-inset-bottom/);assert.match(css,/prefers-reduced-motion/);
+ const client=read("components/shamanica-mobile.tsx");
+ assert.match(css,/SHAMANIC_ALCHEMIST_SIX_SHELVES_20261121/);
+ assert.match(css,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+ assert.match(css,/safe-area-inset-bottom/);
+ assert.match(css,/focus-visible/);
+ assert.match(css,/prefers-reduced-motion/);
+ assert.match(client,/data-shamanica-extras/);
+ assert.match(client,/data-shamanica-quiz/);
+ assert.match(client,/data-shamanica-next/);
+ assert.match(client,/aria-pressed=\{chosen===id\}/);
+ assert.match(client,/videoRef\.current\?\.play\(\)/);
+ assert.match(client,/film-collection-v3\/sun-autumn-hills\.mp4/);
+ assert.match(client,/maxLength=\{280\}/);
+ assert.match(client,/new URLSearchParams\(\{goal,method,start:startChoice\}\)/);
 });
 
-test("approved one-viewport mobile layout keeps quiz and all five services above the dock",()=>{
- const css=read("components/shamanica-mobile.module.css");
- const dockCss=read("app/unified-mobile-dock.css");
+test("Six approved readable real links replace nine old shelf items",()=>{
  const client=read("components/shamanica-mobile.tsx");
+ const css=read("components/shamanica-mobile.module.css");
+ assert.match(client,/shelfCatalog\.map\(/);
+ for(const id of ["remedies","guidance","mysteries","rituals","energy","academy"])
+  assert.match(client,new RegExp('id:"'+id+'"'));
+ for(const title of ["Get Hints & Ideas","Remedies for Heart & Mind",
+   "Mysteries & Initiations","Rituals & Artifacts",
+   "Reiki & Energy Support","Shamanic & Reiki Academy"])
+  assert.ok(client.includes(title),title);
+ assert.match(client,/data-shamanica-service=\{id\}/);
+ assert.match(client,/data-shamanica-cabinet-shelves/);
+ assert.doesNotMatch(client,/shelfExtras/);
+ assert.match(client,/academy\/mysteries/);
+ assert.match(client,/shamanicaCategoryHref\(locale,category\)/);
+ assert.match(css,/\.serviceBody strong/);
  assert.match(client,/data-shamanica-audience=\{business\?"business":"self"\}/);
- assert.match(css,/SHAMANICA_ONE_SCREEN_20261119/);
- assert.match(css,/@media \(max-width:600px\)/);
- assert.match(css,/\.page\[data-shamanica-audience="self"\] \.hero/);
- assert.match(css,/\.page\[data-shamanica-audience="self"\] \.quiz/);
- assert.match(css,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
- assert.match(css,/\.serviceCard:last-child \{/);
- assert.match(css,/inset:0 0 0 auto/); // image overlays, not a tall banner
- assert.match(css,/min-height:61px/);
- assert.match(css,/min-height:44px/); // quiz taps remain accessible
- assert.match(css,/@media \(max-width:600px\) and \(max-height:760px\)/);
+ assert.equal(shamanicaCategoryHref("en","guidance"),"/en/shamanica/results?category=guidance");
+ assert.equal(shamanicaCategoryHref("ru","learning"),"/ru/shamanica/results?category=learning");
+});
+
+test("Shamanic branding and navigation are consistent without changing shared route slugs",()=>{
+ const dock=read("components/unified-mobile-dock.tsx");
+ const banner=read("components/sitewide-antistress-banner.tsx");
+ const meta=read("app/[locale]/shamanica/page.tsx");
+ const results=read("app/[locale]/shamanica/results/page.tsx");
+ const services=read("components/services-assist-quiz.tsx");
+ const dockCss=read("app/unified-mobile-dock.css");
+ assert.match(dock,/practice: "Шаманик"/);
+ assert.match(dock,/practice: "Shamanic"/);
+ assert.doesNotMatch(dock,/practice: "Shamanica"/);
+ assert.match(banner,/shamanica\(\?:\\\/business\)\?/);
+ assert.match(meta,/Shamanic — practices/);
+ assert.match(meta,/canonical:"\/"\+locale\+"\/shamanica"/);
+ assert.match(results,/Your Shamanic path/);
+ assert.match(services,/Shamanic · energy/);
  assert.match(dockCss,/SHAMANICA_ONE_SCREEN_DOCK_20261119/);
- assert.match(dockCss,/body:has\(\[data-hh-unified-dock\]\):has\(main\[data-shamanica-audience="self"\]\)/);
- assert.match(dockCss,/white-space:nowrap/);
+ assert.match(dockCss,/font-size:clamp\(10px,3\.05vw,12px\)/);
+});
+
+test("Every Shamanic category entrance opens three priced service cards without the quiz",()=>{
+ const client=read("components/shamanica-mobile.tsx");
+ const results=read("app/[locale]/shamanica/results/page.tsx");
+ const css=read("components/shamanica-results-services.module.css");
+ const offers=read("components/services-three-visible-options.tsx");
+ for(const locale of ["ru","en","es"])for(const category of SHAMANICA_SERVICES){
+  assert.equal(shamanicaCategoryHref(locale,category),`/${locale}/shamanica/results?category=${category}`);
+ }
+ assert.equal(shamanicaCategoryHref("ru","invalid"),"/ru/shamanica");
+ assert.match(client,/shamanicaCategoryHref\(locale,category\)/);
+ assert.match(client,/academy\/mysteries/);
+ assert.match(results,/data-shamanica-category-offers=\{selectedCategory\}/);
+ assert.match(results,/data-shamanica-category-nav/);
+ assert.match(results,/Object\.prototype\.hasOwnProperty\.call\(offerGroups,args\.category\)/);
+ assert.match(results,/ServicesThreeVisibleOptions locale=\{locale\} id=\{offerGroups\[selectedCategory\]\}/);
+ assert.match(results,/shamanicaRecommendations\(args\)/);
+ assert.match(css,/CATEGORY_SERVICES_SUPPORT_PARITY_20261120/);
+ assert.match(css,/data-support-uniform-photo/);
+ assert.match(css,/data-service-card-controls/);
+ assert.match(offers,/data-service-price/);
+ assert.match(offers,/ServicesCardActions/);
+});
+
+test("Direct Shamanic category is a compact three-offer phone screen with full Details/Order preserved",()=>{
+ const css=read("components/shamanica-results-services.module.css");
+ const page=read("app/[locale]/shamanica/results/page.tsx");
+ assert.match(css,/SHAMANIC_CATEGORY_ONE_SCREEN_20261120/);
+ assert.match(css,/\.categoryPage\[data-shamanica-category\]/);
+ assert.match(css,/grid-template-columns:clamp\(70px,21vw,82px\) minmax\(0,1fr\)/);
+ assert.match(css,/data-service-card-controls/);
+ assert.match(css,/-webkit-line-clamp:2/);
+ assert.match(css,/grid-row:3/);
+ assert.match(page,/data-shamanica-results-title/);
+ assert.match(page,/orderedCategories\.map\(id =>/);
+ assert.match(page,/data-shamanica-priority-groups/);
+});
+
+test("Get Guidance is the real three-offer symbolic reading catalogue",()=>{
+ const page=read("app/[locale]/shamanica/results/page.tsx");
+ const offers=read("components/services-three-visible-options.tsx");
+ assert.match(page,/guidance: "reading"/);
+ assert.match(page,/guidance: \["Get Guidance"/);
+ assert.match(offers,/reading: \[/);
+ assert.match(offers,/Tarot · personal reading/);
+ assert.deepEqual(SHAMANICA_SERVICES,["remedies","artifacts","energy","rituals","learning"]);
+});
+
+test("Approved Shamanic lounge is six correctly ordered, distinct photo actions with existing routes",()=>{
+ const client=read("components/shamanica-mobile.tsx");
+ const css=read("components/shamanica-mobile.module.css");
+ const dock=read("app/unified-mobile-dock.css");
+ const expected=["guidance","rituals","remedies","mysteries","energy","academy"];
+ const markers=expected.map(id=>client.indexOf('id:"'+id+'"'));
+ assert.ok(markers.every(pos=>pos>0), "all six offerings exist");
+ assert.deepEqual([...markers].sort((a,b)=>a-b),markers,"row-major visual order matches approved screen");
+ assert.match(client,/Get Hints & Ideas/);
+ assert.match(client,/Remedies for Heart & Mind/);
+ for(const [i,id] of expected.entries()){
+  const imageName=i===4?"reiki":id==="guidance"?"hints":id;
+  assert.match(client,new RegExp("shamanic-approved-"+imageName+"\\.webp"),id);
+  assert.match(client,new RegExp('data-shamanica-service=\\{id\\}'));
+ }
+ for(const file of ["shamanic-approved-sun.webp","shamanic-approved-room.webp"])assert.match(client+css,new RegExp(file.replace(".","\\.")));
+ assert.match(css,/SHAMANIC_LUXURY_LOUNGE_APPROVED_20261121/);
+ assert.match(css,/grid-auto-rows:101px/);
+ assert.match(css,/\.serviceBody svg/);
+ assert.match(css,/prefers-reduced-motion:reduce/);
+ assert.match(dock,/SHAMANIC_LUXURY_LOUNGE_DOCK_20261121/);
+ assert.match(dock,/data-unified-dock-item="practice"/);
+ assert.match(client,/shamanicaCategoryHref\(locale,category\)/);
+ assert.match(client,/data-shamanica-extras/);
 });

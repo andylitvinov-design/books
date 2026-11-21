@@ -224,3 +224,6 @@
 @media(max-width:600px){
  :global(body:has([data-home-dialogue-entry])) .launcher{display:none!important}
 }
+
+/* Top business audience tab provides this same help action, so avoid a floating duplicate. */
+.launcher[hidden]{display:none!important}

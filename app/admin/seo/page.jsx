@@ -9,6 +9,7 @@ import { readSearchMetrics, readPublicSitemap, verifiedSeoBaseline as baseline }
 import styles from "./seo-dashboard.module.css";
 import { SeoRecommendations } from "@/components/admin-seo-recommendations";
 import { getSeoRecommendations } from "@/lib/seo/actionable-recommendations.mjs";
+import { readSeomatorSnapshot } from "@/lib/seo/seomator-snapshot.mjs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,7 +36,7 @@ const copy = {
     valid: "HTTP 200", redirects: "Редиректы", errors: "Ошибки", lab: "Скорость и Lighthouse", labNote: "Последний сохранённый лабораторный замер, не Core Web Vitals реальных посетителей.",
     mobile: "Мобильная", desktop: "Компьютер", lcp: "LCP", cls: "CLS", seoScore: "SEO",
     next: "Рабочие инструменты", issue: "План и задачи SEO", audit: "Аудит 601 URL", lighthouse: "Измерения Lighthouse", sitemapLink: "Живой sitemap",
-    analytics: "GA4 и конверсии", analyticsNote: "Google Analytics 4 пока не подтверждён как источник сайта. Посещения и заявки здесь не подменяются показами Google Search Console.",
+    analytics: "Посещаемость и конверсии", analyticsNote: "Просмотры страниц, входы и источники уже отдельно учитываются собственными анонимными счётчиками: они не являются уникальными посетителями. GA4 пока не подтверждён. Поисковые показы GSC не подменяют посещения.",
     setup: "Для обновления непосредственно из Google добавьте сервисный аккаунт в права Search Console (доступ на чтение) и сохраните его email и приватный ключ только в серверных переменных Vercel: HH_GSC_SERVICE_ACCOUNT_EMAIL и HH_GSC_SERVICE_ACCOUNT_PRIVATE_KEY. Сам ключ никогда не вводится в этой странице и не передаётся в браузер. До подключения показывается проверенный снимок с датой.",
     lastCheck: "Снимок от", trackedNote: "отслеживаемых URL", noindex: "Не относится к приватным кабинетам и результатам тестов.",
   },
@@ -58,7 +59,7 @@ const copy = {
     valid: "HTTP 200", redirects: "Redirects", errors: "Errors", lab: "Speed & Lighthouse", labNote: "Last saved lab run, not real-user Core Web Vitals.",
     mobile: "Mobile", desktop: "Desktop", lcp: "LCP", cls: "CLS", seoScore: "SEO",
     next: "SEO workspace", issue: "SEO plan & issues", audit: "Full sitemap audit", lighthouse: "Lighthouse reports", sitemapLink: "Live sitemap",
-    analytics: "GA4 & conversions", analyticsNote: "Google Analytics 4 access is not verified for this site. Visitor and lead metrics are not substituted with Search Console impressions.",
+    analytics: "Traffic & conversions", analyticsNote: "First-party anonymous counters separately record page views, entrances and sources, not unique visitors. GA4 remains unverified. Search impressions never stand in for website visits.",
     setup: "To enable automatic Google updates, invite a Google service account to your Search Console property with read access. Store its email and private key only in Vercel server environment variables: HH_GSC_SERVICE_ACCOUNT_EMAIL and HH_GSC_SERVICE_ACCOUNT_PRIVATE_KEY. Never enter keys into this page or send them to browsers. Until then, the verified date-stamped snapshot is shown.",
     lastCheck: "Snapshot captured", trackedNote: "tracked pages", noindex: "Private cabinets and individual test results are never included.",
   }
@@ -91,7 +92,7 @@ export default async function AdminSeoDashboard({ searchParams }) {
   const t = copy[locale];
   const params = await searchParams;
   const days = [7, 28, 90].includes(Number(params?.days)) ? Number(params.days) : 28;
-  const [search, site] = await Promise.all([readSearchMetrics(days), readPublicSitemap()]);
+  const [search, site, audit] = await Promise.all([readSearchMetrics(days), readPublicSitemap(), readSeomatorSnapshot()]);
   const live = search.status === "live";
   const useSaved = !live && days === 28;
   const summary = live ? search : useSaved ? baseline.search : {};
@@ -114,6 +115,7 @@ export default async function AdminSeoDashboard({ searchParams }) {
     <div className={styles.intro}><div><p className={styles.eyebrow}>HOLISTIC HOUSE / SEARCH INTELLIGENCE</p>
       <h2 className={styles.title}>{t.search}</h2><p className={styles.lead}>{t.searchNote}</p></div>
       <div className={styles.buttons}><Link className={styles.button} href={`/${locale}/app/practice?panel=marketing`}>{locale === "ru" ? "← Маркетинг" : "← Marketing"}</Link>
+        <Link className={styles.button} href="/admin/acquisition">{locale === "ru" ? "Посещения и источники" : "Visits & sources"}</Link>
         <Link className={styles.button} href={"/admin/seo/export?days=" + days} prefetch={false}>{t.export} ↓</Link>
         <a className={styles.button + " " + styles.buttonPrimary} href="https://search.google.com/search-console?resource_id=https%3A%2F%2Fholistichouse.vercel.app%2F" target="_blank" rel="noopener noreferrer">{t.google} ↗</a>
       </div></div>
@@ -129,6 +131,52 @@ export default async function AdminSeoDashboard({ searchParams }) {
       <Metric label={t.position} value={position(summary.position)} foot={summary.position==null?t.noPosition:t.searchNote}/>
     </div>
     <SeoRecommendations recommendationResult={recommendations} locale={locale} />
+    <section className={styles.panel + " " + styles.auditPanel} data-seomator-audit>
+      <div className={styles.panelHeading}><div>
+        <h2>{locale === "ru" ? "Глубокий SEO-аудит" : "Deep SEO audit"}</h2>
+        <p>{locale === "ru" ? "SEOmator: canonical, hreflang, структура, мобильные страницы и AI-поиск. Отдельно от реального трафика Google." : "SEOmator: canonicals, hreflang, structured data, mobile pages and AI search. Separate from real Google traffic."}</p>
+      </div><a className={styles.button} href="https://github.com/andylitvinov-design/books/actions/workflows/hh-seomator-audit.yml" target="_blank" rel="noopener noreferrer">
+        {locale === "ru" ? "Запустить аудит" : "Run audit"} ↗</a></div>
+      {(audit.status === "live" || audit.status === "stale") ? <>
+        <div className={styles.auditOverview}>
+          <div className={styles.auditScore}><strong>{audit.score}<small>/100</small></strong>
+            <span>{audit.status === "stale" ? (locale === "ru" ? "Архивный результат" : "Old result") :
+              (locale === "ru" ? "Оценка SEO" : "SEO audit score")}</span></div>
+          <div className={styles.auditMeta}>
+            <strong>{audit.engine || "SEOmator"}</strong>
+            <p>{locale === "ru" ? "Проверенных страниц" : "Pages measured"}: {number(audit.crawledPages)} · {formatDate(audit.asOf, locale)}</p>
+            <p>{locale === "ru" ? "Это выборочный технический аудит, не рейтинг Google и не данные посещаемости." : "A sampled technical audit, not a Google ranking or visitor count."}</p>
+            {audit.status === "stale" && <p className={styles.auditWarning}>{locale === "ru" ? "Измерение устарело: нужен новый запуск." : "Audit is outdated: run it again."}</p>}
+            <a href={audit.runUrl} target="_blank" rel="noopener noreferrer">{locale === "ru" ? "Отчёт и исходные измерения" : "Report and source measurements"} ↗</a>
+          </div>
+        </div>
+        {!!audit.categories.length && <div className={styles.auditCategories}>{audit.categories.map(category=>
+          <div key={category.id} className={styles.auditCategory}>
+            <span>{category.id.replaceAll("-", " ")}</span><strong>{category.score}/100</strong>
+            <small>{category.fail} {locale === "ru" ? "ошибок" : "failed"} · {category.warn} {locale === "ru" ? "предупр." : "warnings"}</small>
+          </div>)}</div>}
+        {!!audit.history.length && <div className={styles.auditTrends}>
+          <h3>{locale === "ru" ? "История оценок" : "Audit score history"}</h3>
+          <div className={styles.auditHistory} role="img" aria-label={locale === "ru" ? "История SEO-оценки по датам" : "SEO score history by date"}>
+            {audit.history.map((row,i) => <div className={styles.auditHistoryItem} key={row.asOf + "-" + i}
+              title={row.asOf.slice(0,10) + ": " + row.score + "/100"}>
+              <strong>{row.score}</strong><span style={{height: Math.max(4, row.score) + "%"}} />
+              <small>{row.asOf.slice(5,10)}</small>
+            </div>)}</div>
+        </div>}
+        {!!audit.findings.length && <div className={styles.auditFindings}>
+          <h3>{locale === "ru" ? "Что проверить в первую очередь" : "First checks to review"}</h3>
+          <ul>{audit.findings.slice(0,6).map(f=><li key={f.ruleId}>
+            <strong>{f.status === "fail" ? "●" : "○"} {f.title || f.ruleId}</strong>
+            <span>{f.category} · {f.ruleId}</span>
+            {f.explanation && <p>{f.explanation}</p>}
+          </li>)}</ul>
+        </div>}
+      </> : <div className={styles.auditEmpty}>
+        <strong>{locale === "ru" ? "Подтверждённого отчёта SEOmator пока нет" : "No verified SEOmator report yet"}</strong>
+        <p>{locale === "ru" ? "После первого запуска GitHub Actions здесь появятся оценка, категории, список проблем и история. Старые показатели не заменяются предположениями." : "Once the GitHub Actions audit runs, its measured score, categories, issues and history will appear here. No estimated scores are shown."}</p>
+      </div>}
+    </section>
     <div className={styles.two}>
       <section className={styles.panel}><div className={styles.panelHeading}><div><h2>{t.trend}</h2><p>{t.trendNote}</p></div><small className={styles.small}>{live ? t.live : t.saved}</small></div>
         {daily.length ? <><div className={styles.chart} role="img" aria-label={t.trend}>

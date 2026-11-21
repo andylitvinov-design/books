@@ -34,7 +34,6 @@ on:
       - 'tests/assessment-interpretation*.mjs'
       - 'scripts/verify-interpretation*.mjs'
       - 'supabase/migrations/**'
-      - 'package.json'
       - 'package-lock.json'
 permissions:
   contents: read

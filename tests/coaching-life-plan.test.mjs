@@ -7,6 +7,7 @@ import {AppError,onlyKeys,requireUUID} from '../lib/assessments/contracts.js'
 import {seal,openSealed,operationHash} from '../lib/app/crypto.js'
 import {buildCoachingReportV2Draft,validateCoachingReportV2} from '../lib/personal-coaching/report-v2.js'
 import {reviewCoachingReportDraft} from '../lib/personal-coaching/report-review.mjs'
+import {reviewedReportMemoryCandidates} from '../lib/personal-coaching/context-memory-candidates.mjs'
 
 const owner={id:'10000000-0000-4000-8000-000000000001'}
 const reportId='20000000-0000-4000-8000-000000000001'
@@ -74,9 +75,9 @@ function buildService({report=makeReport(),ownerId=owner.id,storageConsent={acce
    state.actions.set(key,row)
    return {rows:[{id:row.id,status:row.status,client_confirmed_at:row.client_confirmed_at}]}
   }
-  if(sql.includes('select id,goal_id,status,client_confirmed_at from app_private.coaching_action_items')){
+  if(sql.includes('select id,goal_id,status,client_confirmed_at,description_ciphertext from app_private.coaching_action_items')){
    const row=state.actions.get(args[2])
-   return {rows:row?[{id:row.id,goal_id:row.goal_id,status:row.status,client_confirmed_at:row.client_confirmed_at}]:[]}
+   return {rows:row?[row]:[]}
   }
   if(sql.includes('insert into app_private.coaching_session_consents')){
    state.consents.push(args);return {rows:[]}
@@ -97,8 +98,8 @@ function buildService({report=makeReport(),ownerId=owner.id,storageConsent={acce
   if(actor.id!==owner.id||id!==reportId)throw new AppError('COACHING_REPORT_NOT_FOUND',404)
   return {report:{id,sessionId,revision:1,report}}
  }
- const factory=runInNewContext('(deps)=>{const {randomUUID,createHash,AppError,onlyKeys,requireUUID,transaction,seal,openSealed,operationHash,readCoachingReport,validateCoachingReportV2}=deps;'+source+';return {readCoachingLifePlan,importCoachingReportActions}}')
- return {service:factory({randomUUID,createHash,AppError,onlyKeys,requireUUID,transaction,seal,openSealed,operationHash,readCoachingReport,validateCoachingReportV2}),state,report}
+ const factory=runInNewContext('(deps)=>{const {randomUUID,createHash,AppError,onlyKeys,requireUUID,transaction,seal,openSealed,operationHash,readCoachingReport,validateCoachingReportV2,reviewedReportMemoryCandidates}=deps;'+source+';return {readCoachingLifePlan,importCoachingReportActions}}')
+ return {service:factory({randomUUID,createHash,AppError,onlyKeys,requireUUID,transaction,seal,openSealed,operationHash,readCoachingReport,validateCoachingReportV2,reviewedReportMemoryCandidates}),state,report}
 }
 
 function buildAreaEditService({existing=false}={}){
@@ -241,6 +242,24 @@ test('report import is retry-safe and does not duplicate goal, action, consent o
  assert.equal(state.changes.length,2)
  assert.equal(state.consents.length,1,'retry does not duplicate the consent event')
  assert.equal(second.planVersion,2)
+})
+
+test('an edited reviewed action is encrypted and only an identical retry is idempotent',async()=>{
+ const {service,state,report}=buildService()
+ const candidateId=report.actionCandidates[0].candidateId
+ const input={reportId,reportRevision:1,areaKey:'career_business',candidateIds:[candidateId],
+  planConsent:true,reviewedActionText:'Compare the two role descriptions on Friday.'}
+ await service.importCoachingReportActions(config,owner,input)
+ const row=state.actions.get(candidateId)
+ assert.equal(row.source_report_id,reportId)
+ assert.equal(openSealed(row.description_ciphertext,{
+  accountId:owner.id,recordId:row.id,field:'coaching.life_plan.action.description',
+ },config),input.reviewedActionText)
+ assert.equal((await service.importCoachingReportActions(config,owner,input)).imported,0)
+ await assert.rejects(()=>service.importCoachingReportActions(config,owner,{
+  ...input,reviewedActionText:'Try a different action.',
+ }),err=>err.code==='COACHING_PLAN_IMPORT_CONFLICT')
+ assert.equal(state.actions.size,1)
 })
 
 test('empty Life Plan reads do not create plan/domain records and still return all eight domains',async()=>{

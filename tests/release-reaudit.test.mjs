@@ -365,7 +365,7 @@ test('release re-audit follows current My Space Today guest Profile and explicit
     "toHaveAttribute('data-csp-class', 'private')",
     "locator('[data-cabinet-guest-overview]')",
     "locator('a[href=\"/en/client/tests\"]')",
-    "locator('[data-profile-hub-tabs] [data-profile-tab=\"today\"]')",
+    // Signed-out visitors must see the guest cabinet, not the authenticated Today tab.
     "locator('[data-profile-tests-first], [data-my-tests-dashboard], [data-profile-results-archive]')).toHaveCount(0)",
     "locator('.mobile-bottom-navigation')).toHaveCount(0)",
     "cspPage.goto(origin + '/en/personality-profiles', { waitUntil: 'domcontentloaded' })",
@@ -374,6 +374,8 @@ test('release re-audit follows current My Space Today guest Profile and explicit
     "locator('[data-profile-direct-tests]').click()",
     "toHaveURL(origin + '/en/client/tests')",
   ]) assert.ok(flow.includes(required), 'Missing My Space/CSP regression: ' + required);
+  assert.ok(!flow.includes("locator('[data-profile-hub-tabs] [data-profile-tab=\"today\"]')"),
+    'Anonymous My Space no longer relies on signed-in Today navigation');
   assert.ok(source.includes("toHaveAttribute('href', '/en/app/portrait')"), 'Private test navigation returns to Profile');
   assert.ok(!source.includes('Public profile discovery must retain same-policy soft navigation'));
 });
