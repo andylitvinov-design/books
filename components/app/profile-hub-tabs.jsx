@@ -232,7 +232,7 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
     if (current === 'sessions') return targetRoot + '/portrait?space=sessions'
     return targetRoot + '/portrait'
   }
-  return <section className={styles.hub} data-profile-hub-tabs data-profile-active={current}>
+  return <section className={styles.hub} data-profile-hub-tabs data-profile-active={current} data-profile-course-index={isCourseLanding ? 'true' : undefined}>
     <header className={styles.heading}>
       <div className={styles.headingTitle}>
         {(brandedSpace || settingsMode) && <span className={styles.brandMark} aria-hidden="true" />}

@@ -171,9 +171,25 @@ async function verifyDecodableMp4Export(
     }
     if(!(await track.canDecode()))throw new Error("video_output_decoder_failed");
     const sink=new VideoSampleSink(track);
-    const frame=await sink.getSample(await track.getFirstTimestamp());
-    if(!frame)throw new Error("video_output_decoder_failed");
-    frame.close();
+    const first=await track.getFirstTimestamp();
+    if(first===null||!Number.isFinite(first))
+      throw new Error("video_output_decoder_failed");
+    // MP4 metadata and one decoded frame do not prove that later shots exist.
+    // Check the beginning, middle and end before credits or download.
+    const checkpoints=[
+      Math.max(0,first+.05),
+      Math.max(0,expected.seconds/2),
+      Math.max(0,expected.seconds-.5),
+    ];
+    for(const at of checkpoints){
+      const sample=await sink.getSample(at);
+      try{
+        if(!sample||sample.codedWidth!==expected.width||
+           sample.codedHeight!==expected.height||
+           !Number.isFinite(sample.timestamp)||sample.timestamp<at-1.25)
+          throw new Error("video_output_decoder_failed");
+      }finally{sample?.close();}
+    }
   }catch(error){
     if(error instanceof Error&&/^video_output_/.test(error.message))throw error;
     throw new Error("video_output_decoder_failed");
@@ -267,11 +283,13 @@ export async function normalizeNativeSafariMp4ForPlayback(
        end<expectedSeconds-2||end>expectedSeconds+2||end<=first)
       throw new Error("native_mp4_output_incomplete");
     const sink=new VideoSampleSink(track);
-    for(const at of [Math.max(0,first+.05),Math.max(0,end-.5)]){
+    // Fragmented Safari files can have intact metadata and first/last samples
+    // but an undecodable middle. Do not advertise such a movie as Ready.
+    for(const at of [Math.max(0,first+.05),Math.max(0,end/2),Math.max(0,end-.5)]){
       const sample=await sink.getSample(at);
       try{
         if(!sample||sample.codedWidth<160||sample.codedHeight<160||
-           (at>end*.6&&sample.timestamp<end*.5))
+           !Number.isFinite(sample.timestamp)||sample.timestamp<at-1.25)
           throw new Error("native_mp4_output_unplayable");
       }finally{sample?.close();}
     }

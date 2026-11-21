@@ -112,19 +112,25 @@ export function playAliPersonaAudio(personaId,locale,onPlaying=()=>{}){
    ()=>{if(active)onPlaying(true,'playing')},finish)
  }
  const hasDevice=Boolean(window.speechSynthesis&&window.SpeechSynthesisUtterance)
- // On iPhone SpeechSynthesis can claim "started" while producing no sound.
- // Prefer the real MP3 and call play() synchronously in the user's tap.
- // A confirmed unavailable backend uses device speech synchronously instead.
- if(naturalStatus==='unavailable'&&hasDevice){
+ const isIos=/iPad|iPhone|iPod/.test(window.navigator?.userAgent||'')||
+  (window.navigator?.platform==='MacIntel'&&window.navigator?.maxTouchPoints>1)
+ // iOS SpeechSynthesis can claim "started" while producing no sound.
+ // Even after a HEAD failure, ALWAYS attempt native media on iPhone so a
+ // later recovered cloud greeting can play from the user's next tap.
+ if(naturalStatus==='unavailable'&&hasDevice&&!isIos){
   startDevice()
   return ()=>{if(current===session)stopAliPersonaAudio()}
  }
  const fallback=()=>{
   if(!active)return
-  naturalStatus='unavailable'
+  // Transient errors must never permanently switch every subsequent Listen
+  // to a potentially silent device voice. Retry the cloud source on next tap.
+  naturalStatus='unknown'
   clear()
   if(audio){audio.onplaying=null;audio.onended=null;audio.onerror=null;audio.pause();audio.removeAttribute('src')}
-  if(hasDevice)startDevice()
+  // After the original iPhone gesture has expired, speechSynthesis can be
+  // silently blocked. Show retry instead of a false "playing" state.
+  if(hasDevice&&!isIos)startDevice()
   else finish('error')
  }
  // Native HTMLAudioElement respects an iOS user gesture and plays through
@@ -138,7 +144,7 @@ export function playAliPersonaAudio(personaId,locale,onPlaying=()=>{}){
  audio.onended=()=>finish('ended')
  audio.onerror=fallback
  audio.src='/api/ali/voice/'+encodeURIComponent(locale)+'/'+encodeURIComponent(persona.id)
- timer=window.setTimeout(fallback,20000)
+ timer=window.setTimeout(fallback,24000)
  try{
   const attempt=audio.play()
   if(attempt&&typeof attempt.catch==='function')void attempt.catch(fallback)
