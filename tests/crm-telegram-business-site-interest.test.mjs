@@ -42,8 +42,8 @@ test('Business replies remain signed, can_reply verified, STOP suppressed and ra
  assert.match(secretary,/telegramPublishedSpiritualInterestAcknowledgement\(spiritualInterest\)/);
  assert.match(route,/verifyMessengerWebhook\(provider,raw,request.headers\)/);
  assert.match(route,/gateTelegramBusinessSecretaryOptOut\(body,config\)/);
- // Production call passes explicit environment and consent-gated options.
  assert.match(route,/processTelegramBusinessSecretary\(body,config,process\.env,\{/);
+ assert.match(route,/allowClarification:telegramBusinessInbox\?\.matched===true&&\s*telegramBusinessInbox\.recorded===true&&\s*businessLead\?\.created!==true&&businessLead\?\.suppressed!==true/);
  assert.match(route,/hh-tg-secretary-reply/);
  assert.match(route,/sendHolisticBusinessRequestReply/);
 });
