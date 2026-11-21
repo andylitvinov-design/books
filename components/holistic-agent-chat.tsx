@@ -8,7 +8,8 @@ import {MessengerSupportQuiz, type SupportQuizSelection} from "@/components/app/
 import {MessengerSixProjects,messengerProject} from "@/components/app/messenger-six-projects";
 import { peekHomeAliHandoff, acknowledgeHomeAliHandoff } from "@/lib/home-ali-handoff.mjs";
 import type {HomeAliHandoff} from "@/lib/home-ali-handoff.mjs";
-import {sessionGoalChoices,sessionCopy,sessionGoalForText,sessionOfferIds,sessionOfferDescription} from "@/lib/holistic-support/session-goal-intake.mjs";
+import {sessionGoalChoices,sessionCopy,sessionGoalForText,sessionOfferIds,sessionOfferDescription,
+  sessionSecretaryMessage,sessionHasOutcome} from "@/lib/holistic-support/session-goal-intake.mjs";
 import type {MessengerProjectId,MessengerProjectOption,MessengerTestFocus} from "@/components/app/messenger-six-projects";
 import { prepareNaturalDialogue, finishNaturalDialogue } from "@/lib/holistic-support/natural-dialogue.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -322,6 +323,10 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const [psychStage,setPsychStage]=useState("situation");
   const [psychSlots,setPsychSlots]=useState<Record<string,string>>({});
   const [psychSummaryVisible,setPsychSummaryVisible]=useState(false);
+  // A reviewed summary remains in this tab. Copying it is a separate
+  // deliberate client gesture and never appends private facts to a URL.
+  const [psychFinalSummary,setPsychFinalSummary]=useState<string|null>(null);
+  const [psychCopyStatus,setPsychCopyStatus]=useState<"idle"|"copied"|"failed">("idle");
   const [agree,setAgree]=useState(false);
   const [axisRef,setAxisRef]=useState("");
   const [format,setFormat]=useState<""|"video"|"audio"|"test"|"course"|"service">("");
@@ -457,7 +462,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       {role:"assistant" as const,text:item.assistant},
     ]).slice(-30);
     setPsychInterview("off");setPsychStage("situation");setPsychSlots({});
-    setPsychSummaryVisible(false);
+    setPsychSummaryVisible(false);setPsychFinalSummary(null);setPsychCopyStatus("idle");
     lastSpeechTurn.current=previous[previous.length-1]||null;
     setMessages(previous);setDraft("");setChoices([]);setJudgmentView(null);
     setSessionStep(null);setSessionGoal(null);setSessionOffers([]);
@@ -671,10 +676,28 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   }
 
   function guestAnswer(text:string,prior:Message[],language:PublicLocale=locale):string {
+    // A clear service request needs neither sign-in nor a forced goal quiz.
+    // The only links here are vetted, published existing Sessions options.
+    const intent=sessionSecretaryMessage(text,language);
+    const verified=intent.serviceId?messengerProject(language,"sessions").options.find(option=>
+      option.id===intent.serviceId&&option.kind==="link"&&
+      option.href?.startsWith("/")&&!option.href.startsWith("//")):null;
+    if(intent.kind==="service"&&verified){
+      setSessionOffers([verified]);setPageHelpLink(null);setGuidedTrack(null);
+      return intent.reply;
+    }
     const reviewed=ruleConversationReply({message:text,locale:language,history:prior});
     const goal=publicVideoGoalForMessage(text);
     if(goal)setVideoGoal(goal as PublicVideoGoal);
-    if(!reviewed||!reviewed.id){setGuidedTrack(null);return aliGentleContinuity({message:text,locale:language,history:prior});}
+    if(!reviewed||!reviewed.id){
+      setGuidedTrack(null);
+      if(verified&&(intent.kind==="price"||intent.kind==="availability"||
+        intent.kind==="information"))
+        setPageHelpLink({href:"/"+language+verified.href,label:verified.label});
+      // An unknown *safe* question is not an emergency. Risk questions were
+      // screened by requiresProtectedReply before this offline guest route.
+      return intent.reply||aliGentleContinuity({message:text,locale:language,history:prior});
+    }
     if(reviewed.id.startsWith("video")){
       setGuidedTrack("video");setVideoStep("category");videoUndo.current=null;
       setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);
@@ -760,7 +783,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     setSupportQuizOpen(false);setEntryOpen(false);setProjectFlow(null);
     setSessionStep(null);setSessionGoal(null);setSessionOffers([]);
     setTestChatOpen(false);setVideoStep(null);setContentStep(null);
-    setPsychStage("situation");setPsychSlots({});setPsychSummaryVisible(false);
+    setPsychStage("situation");setPsychSlots({});setPsychSummaryVisible(false);setPsychFinalSummary(null);setPsychCopyStatus("idle");
     setPsychInterview("pending");setDraft("");setChoices([]);setJudgmentView(null);
     setStatus("");setSource("");followTail.current=true;setNewBelow(false);
     const introduction=locale==="ru"
@@ -781,7 +804,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   }
   function leavePsychologistInterview(){
     setPsychInterview("off");setPsychStage("situation");setPsychSlots({});
-    setDraft("");setSource("");setStatus("");setPsychSummaryVisible(false);
+    setDraft("");setSource("");setStatus("");setPsychSummaryVisible(false);setPsychFinalSummary(null);setPsychCopyStatus("idle");
     setMessages(prev=>[...prev,{role:"assistant" as const,text:locale==="ru"
       ?"Конечно. Останавливаю эту необязательную беседу, ничего специалисту не отправлено."
       :locale==="es"?"Claro. Terminamos aquí; no se envió nada al profesional."
@@ -791,7 +814,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     if(psychInterview!=="active")return;
     const brief=wavePsychologistNativeSummary({locale,slots:psychSlots});
     setPsychInterview("off");setPsychStage("situation");setPsychSlots({});
-    setPsychSummaryVisible(Boolean(brief));setDraft("");setSource("");
+    setPsychSummaryVisible(Boolean(brief));setPsychFinalSummary(brief||null);
+    setPsychCopyStatus("idle");setDraft("");setSource("");
     const status=locale==="ru"?"Это ваше предварительное резюме, не диагноз. Оно не было отправлено мастеру."
       :locale==="es"?"Este resumen no es un diagnóstico y no se ha enviado al profesional."
         :"This preliminary summary is not a diagnosis and has not been sent to a practitioner.";
@@ -804,7 +828,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   function openSupportQuiz(){
     if(busy)return;
     followTail.current=true;setNewBelow(false);
-    setPsychInterview("off");setPsychSummaryVisible(false);setPsychSlots({});
+    setPsychInterview("off");setPsychSummaryVisible(false);setPsychFinalSummary(null);setPsychCopyStatus("idle");setPsychSlots({});
     setSupportSelection(null);setSupportQuizOpen(true);setEntryOpen(false);
     setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);
     setGuidedTrack(null);setTestChatOpen(false);setGuideLink(null);
@@ -826,7 +850,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   }
   function completeSupportQuiz(choice:SupportQuizSelection){
     if(busy)return;
-    setPsychInterview("off");setPsychSlots({});setPsychSummaryVisible(false);
+    setPsychInterview("off");setPsychSlots({});setPsychSummaryVisible(false);setPsychFinalSummary(null);setPsychCopyStatus("idle");
     const prompt=choice.mode==="coach"
       ?(locale==="ru"?"Какое изменение в этой теме было бы для вас самым важным?":
         locale==="es"?"¿Qué cambio te importaría más en este tema?":
@@ -852,7 +876,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   // One clear question per project; choices describe the next step.
   function startProject(id:MessengerProjectId) {
     if(busy)return;
-    setPsychInterview("off");setPsychSlots({});setPsychSummaryVisible(false);
+    setPsychInterview("off");setPsychSlots({});setPsychSummaryVisible(false);setPsychFinalSummary(null);setPsychCopyStatus("idle");
     if(id==="ai-video"){startContent();return;}
     const entry=messengerProject(locale,id);
     followTail.current=true;setNewBelow(false);setEntryOpen(false);
@@ -913,7 +937,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   }
   function startContent(language:PublicLocale=locale,initialText?:string) {
     if(busy)return;
-    setPsychInterview("off");setPsychSlots({});setPsychSummaryVisible(false);
+    setPsychInterview("off");setPsychSlots({});setPsychSummaryVisible(false);setPsychFinalSummary(null);setPsychCopyStatus("idle");
     followTail.current=true;setNewBelow(false);setEntryOpen(false);
     setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setTestFocus(null);
     setContentStep("kind");setContentBrief("");setContentVoice(false);
@@ -970,7 +994,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   }
   function startGuided(kind:"video"|"meditation"|"hint") {
     if(busy)return;
-    setPsychInterview("off");setPsychSlots({});setPsychSummaryVisible(false);
+    setPsychInterview("off");setPsychSlots({});setPsychSummaryVisible(false);setPsychFinalSummary(null);setPsychCopyStatus("idle");
     setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setTestFocus(null);
     setContentStep(null);setContentBrief("");setContentVoice(false);
     followTail.current=true;setNewBelow(false);
@@ -1152,7 +1176,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         return;
       }
     }
-    if(compact&&isCasualGreeting(text)&&supportSelection?.mode!=="talk"){
+    if(compact&&isCasualGreeting(text)&&supportSelection?.mode!=="talk"&&
+      !(projectFlow==="sessions"&&sessionStep)){
       setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setPageHelpLink(null);
       setJudgmentView(null);judgmentClickLock.current=false;
       setContentStep(null);setContentVoice(false);setContentBrief("");
@@ -1208,13 +1233,51 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       setJudgmentView(null);
       setVideoStep(null);setGuidedTrack(null);setVideoPendingCategory(null);
     }
-    // Sessions asks for a goal before exposing any service. An unclear first
-    // free-text answer gets one optional outcome question before a shortlist.
+    // Secretary-first Sessions: direct service interest bypasses the optional
+    // goal interview; price/availability questions and refusal never consume
+    // an answer or silently open a practitioner request.
     if(compact&&judgmentChoice===null&&projectFlow==="sessions"&&sessionStep&&
       !isContentCreationIntent(text)&&!isVideoCreationIntent(text)&&!requiresProtectedReply(text,turnLocale)){
+      const intent=sessionSecretaryMessage(text,turnLocale);
+      followTail.current=true;setNewBelow(false);setDraft("");setChoices([]);
+      if(intent.kind==="stop"||intent.kind==="no_booking"||intent.kind==="topic"){
+        setProjectFlow(null);setSessionStep(null);setSessionGoal(null);
+        setSessionOffers([]);setPageHelpLink(null);setStatus("");
+        setMessages(prev=>[...prev,{role:"user" as const,text},
+          {role:"assistant" as const,text:intent.reply}].slice(-30));
+        return;
+      }
+      if(intent.kind==="service"){
+        // Only the four existing published site paths can be shown. The
+        // destination page owns the actual order, price and consent.
+        const chosen=messengerProject(turnLocale,"sessions").options.find(option=>
+          option.id===intent.serviceId&&option.kind==="link"&&
+          option.href?.startsWith("/")&&!option.href.startsWith("//"));
+        if(chosen){
+          setProjectFlow(null);setSessionStep(null);setSessionGoal(null);
+          setSessionOffers([chosen]);setPageHelpLink(null);setStatus("");
+          setMessages(prev=>[...prev,{role:"user" as const,text},
+            {role:"assistant" as const,text:intent.reply}].slice(-30));
+          return;
+        }
+      }
+      if(intent.kind!=="continue"&&intent.kind!=="service"){
+        // A factual question may name a service without authorizing a
+        // booking. Expose its existing public page, keep the unfinished step.
+        if((intent.kind==="price"||intent.kind==="availability"||intent.kind==="information")&&intent.serviceId){
+          const page=messengerProject(turnLocale,"sessions").options.find(option=>
+            option.id===intent.serviceId&&option.kind==="link"&&
+            option.href?.startsWith("/")&&!option.href.startsWith("//"));
+          if(page)setPageHelpLink({href:"/"+turnLocale+page.href,label:page.label});
+        }
+        setMessages(prev=>[...prev,{role:"user" as const,text},
+          {role:"assistant" as const,text:intent.reply}].slice(-30));
+        return;
+      }
       const goal=sessionGoal||sessionGoalForText(text);
-      if(sessionStep==="goal"&&(!goal||text.length<36)){
-        followTail.current=true;setNewBelow(false);setDraft("");setChoices([]);
+      // Ask a second question only when a desired result is still absent,
+      // not because the first reply happens to be fewer than 36 characters.
+      if(sessionStep==="goal"&&(!goal||!sessionHasOutcome(text))){
         setSessionGoal(goal);setSessionStep("outcome");
         setMessages(prev=>[...prev,{role:"user" as const,text},
           {role:"assistant" as const,text:sessionCopy(turnLocale).detail}].slice(-30));
@@ -1222,6 +1285,41 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         finishSessionIntake(text,goal||"personal",turnLocale);
       }
       return;
+    }
+    // After the shortlist appears, a correction is still part of the same
+    // Sessions conversation. Do not send a new text to generic chat and lose
+    // the previously chosen topic merely because a list was displayed.
+    if(compact&&judgmentChoice===null&&!projectFlow&&sessionOffers.length>0&&
+      !isContentCreationIntent(text)&&!isVideoCreationIntent(text)&&!requiresProtectedReply(text,turnLocale)){
+      const intent=sessionSecretaryMessage(text,turnLocale);
+      if(intent.kind==="service"){
+        const corrected=messengerProject(turnLocale,"sessions").options.find(option=>
+          option.id===intent.serviceId&&option.kind==="link"&&
+          option.href?.startsWith("/")&&!option.href.startsWith("//"));
+        if(corrected){
+          setSessionOffers([corrected]);setPageHelpLink(null);
+          setDraft("");setChoices([]);setStatus("");
+          followTail.current=true;setNewBelow(false);
+          setMessages(prev=>[...prev,{role:"user" as const,text},
+            {role:"assistant" as const,text:intent.reply}].slice(-30));
+          return;
+        }
+      }
+      if(["stop","no_booking","topic","price","availability","information","confused","ambiguous"].includes(intent.kind)){
+        if(["stop","no_booking","topic"].includes(intent.kind)){
+          setSessionOffers([]);setPageHelpLink(null);
+        }else if((intent.kind==="price"||intent.kind==="availability"||intent.kind==="information")&&intent.serviceId){
+          const page=messengerProject(turnLocale,"sessions").options.find(option=>
+            option.id===intent.serviceId&&option.kind==="link"&&
+            option.href?.startsWith("/")&&!option.href.startsWith("//"));
+          if(page)setPageHelpLink({href:"/"+turnLocale+page.href,label:page.label});
+        }
+        setDraft("");setChoices([]);setStatus("");
+        followTail.current=true;setNewBelow(false);
+        setMessages(prev=>[...prev,{role:"user" as const,text},
+          {role:"assistant" as const,text:intent.reply}].slice(-30));
+        return;
+      }
     }
     setEntryOpen(false);setContentStep(null);setProjectFlow(null);setPageHelpLink(null);
     setSessionStep(null);setSessionGoal(null);setSessionOffers([]);
@@ -1480,7 +1578,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     event.preventDefault();
     void sendTurn(draft);
   }
-  function resetConversation(){setPsychInterview("off");setPsychStage("situation");setPsychSlots({});setPsychSummaryVisible(false);nativeSession.current=null;voice.stopDialogue();lastSpeechTurn.current=null;alternativeAbortRef.current?.abort();alternativeAbortRef.current=null;lastAnswerRef.current=null;setAlternativeBusy(false);controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setSupportQuizOpen(false);setSupportSelection(null);setFriendTone("friendly");setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setTestFocus(null);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);setRecorderOpen(false);}
+  function resetConversation(){setPsychInterview("off");setPsychStage("situation");setPsychSlots({});setPsychSummaryVisible(false);setPsychFinalSummary(null);setPsychCopyStatus("idle");nativeSession.current=null;voice.stopDialogue();lastSpeechTurn.current=null;alternativeAbortRef.current?.abort();alternativeAbortRef.current=null;lastAnswerRef.current=null;setAlternativeBusy(false);controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setSupportQuizOpen(false);setSupportSelection(null);setFriendTone("friendly");setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setTestFocus(null);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);setRecorderOpen(false);}
 
   useEffect(()=>{
     const startNewConversation=()=>resetConversation();
@@ -1716,12 +1814,41 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         <button type="button" onClick={leavePsychologistInterview}>
           {locale==="ru"?"Остановить":locale==="es"?"Parar":"Stop"}</button>
       </div>}
-      {psychSummaryVisible&&<a data-hh-ali-psychologist-private-handoff
-        className={styles.testLink} href={"/"+locale+"/services/free-situation-review"}>
-        {locale==="ru"?"Передать запрос специалисту — отдельная защищённая заявка":
-          locale==="es"?"Enviar una solicitud aparte al profesional":
-            "Request practitioner review separately"}
-      </a>}
+      {psychSummaryVisible&&<div className={styles.projectOptions}
+        data-hh-ali-psychologist-handoff role="group"
+        aria-label={locale==="ru"?"Резюме и следующий шаг":
+          locale==="es"?"Resumen y siguiente paso":"Summary and next step"}>
+        <button type="button" data-hh-ali-psychologist-copy
+          disabled={!psychFinalSummary}
+          onClick={()=>{
+            if(!psychFinalSummary)return;
+            if(typeof navigator==="undefined"||!navigator.clipboard?.writeText){
+              setPsychCopyStatus("failed");return;
+            }
+            void navigator.clipboard.writeText(psychFinalSummary).then(
+              ()=>setPsychCopyStatus("copied")).catch(
+              ()=>setPsychCopyStatus("failed"));
+          }}>
+          {locale==="ru"?"Скопировать моё резюме":locale==="es"?
+            "Copiar mi resumen":"Copy my summary"}
+        </button>
+        <a data-hh-ali-psychologist-private-handoff
+          className={styles.testLink} href={"/"+locale+"/services/free-situation-review"}>
+          {locale==="ru"?"Перейти к отдельной защищённой заявке":
+            locale==="es"?"Abrir solicitud privada por separado":
+              "Open separate protected request"}
+        </a>
+        <p>{locale==="ru"?"Резюме не отправлено мастеру. По желанию скопируйте его и вставьте только в защищённую заявку.":
+          locale==="es"?"El resumen no se ha enviado. Si quieres, cópialo y pégalo solo en la solicitud privada.":
+            "Your summary has not been sent. You may copy and paste it into the protected request if you choose."}</p>
+        {psychCopyStatus!=="idle"&&<p role="status" aria-live="polite">
+          {psychCopyStatus==="copied"?
+            (locale==="ru"?"Резюме скопировано.":locale==="es"?"Resumen copiado.":"Summary copied."):
+            (locale==="ru"?"Не удалось скопировать автоматически. Вы можете выделить текст резюме в чате.":
+              locale==="es"?"No se pudo copiar automáticamente. Selecciona el texto del resumen en el chat.":
+                "Automatic copying failed. You can select the summary text directly in the chat.")}
+        </p>}
+      </div>}
       {messages.map((m,index)=>messengerView&&m.role==="assistant"?
         <div key={index} className={styles.messageWithAvatar} data-hh-ai-assistant-message>
           <img src={persona.image||"/images/holistic-house/reiki-approved-sunrise-v3.webp"}
