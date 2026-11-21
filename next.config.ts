@@ -87,6 +87,18 @@ const nextConfig: NextConfig = {
         source: "/images/holistic-house/static-card-media/:path*",
         headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
       },
+      // PUBLIC_HERO_MEDIA_BOUNDED_CACHE_V1: PUBLIC artwork only, no private data.
+      // One-hour browser and one-day CDN reuse; not immutable because file
+      // paths are stable. Rename the asset when publishing an urgent revision.
+      // Never cache HTML, RSC, sessions, reports or API data with these rules.
+      ...[
+        "/images/holistic-house/my-coach-motion/:path*",
+        "/images/holistic-house/ideas-pine-reference.webp",
+        "/images/video-goal-art/:path*",
+      ].map((source) => ({
+        source,
+        headers: [{ key: "Cache-Control", value: "public, max-age=3600, s-maxage=86400, stale-while-revalidate=3600" }],
+      })),
       // Versioned public video artwork is safe to cache; never apply this policy
       // to HTML, sessions, consultations, prescriptions, API or RSC payloads.
       ...["/images/holistic-house/video-posters/:path*", "/images/holistic-house/testimonial-posters/:path*", "/images/reiki-originals/:path*"].map((source) => ({
