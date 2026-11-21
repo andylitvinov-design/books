@@ -5910,3 +5910,9 @@
 /* Magic Mirror Ideas: one discreet 3-step indicator above the preserved adaptive quiz. */
 .ideasProgress{display:flex;align-items:center;justify-content:center;gap:9px;min-height:26px;margin:0 0 7px;color:#61716b;font:700 12px/1.2 Arial,Helvetica,sans-serif}
 .ideasProgressDots{display:flex;align-items:center;gap:5px}.ideasProgressDots i{display:block;width:8px;height:8px;border:1.5px solid #91a49b;border-radius:50%;background:#fffaf4}.ideasProgressDots i[data-active="true"]{background:#007e5f;border-color:#007e5f}
+
+/* Reuse the same visible Shamanic wordmark on every video workspace. */
+@media(max-width:759px){
+ .studio[data-active-workspace] .quickBuilder>.quickBrandBar>:global([data-hh-site-brand]){flex:1 1 auto;min-width:0}
+}
+@media(max-width:360px){.studio[data-active-workspace] .quickBuilder>.quickBrandBar{flex-wrap:wrap}}

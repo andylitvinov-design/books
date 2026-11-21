@@ -1,4 +1,5 @@
 "use client";
+import { HolisticHouseBrand } from "./holistic-house-brand";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
@@ -7432,16 +7433,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <section className={videoStyles.quickBuilder} data-video-quick-builder
         aria-labelledby="video-quick-heading">
         <nav className={videoStyles.quickBrandBar} data-video-hypno-scroll-start aria-label="Holistic House">
-          <Link href={"/"+locale+"/holistic-support/mobile"} prefetch={false} className={videoStyles.quickBrandBack}
-            aria-label={locale==="ru"?"На главную":locale==="es"?"Volver al inicio":"Back to home"}>
-            <Leaf size={29} aria-hidden="true"/>
-          </Link>
-          <span className={videoStyles.quickBrandMobileTitle}>{locale==="ru"?"Видео-мандала":locale==="es"?"Vídeo mandala":"Video mandala"}</span>
-          <span className={videoStyles.quickBrandIdentity}><strong>Holistic House</strong>
-            <small>{locale==="ru"?"Видеостудия · Создание видео":
-              locale==="es"?"Estudio de vídeo · Crear":
-              "Video Studio · Create video"}</small>
-          </span>
+          <HolisticHouseBrand locale={locale} section={locale==="ru"?"ВИДЕОСТУДИЯ":locale==="es"?"ESTUDIO DE VÍDEO":"VIDEO STUDIO"} />
           <button type="button" className={videoStyles.quickBrandIHelp}
             data-video-ihelp-header-trigger data-hh-ihelp-trigger
             aria-label={locale==="ru"?"Открыть iHelp — AI-видеорежиссёр":

@@ -1,4 +1,5 @@
 "use client";
+import { HolisticHouseBrand } from "./holistic-house-brand";
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -253,10 +254,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
   return <section className={styles.root} data-home-dialogue-entry data-home-mode={mode}
     data-home-interactive={interactive?"true":"false"} lang={locale}>
     <header className={styles.header} data-home-dialogue-header>
-      <div className={styles.brand}>
-        <span className={styles.brandIcon} aria-hidden="true"><Leaf size={25}/></span>
-        <span className={styles.brandCopy}><h1>Holistic House</h1><small>{screen.brandTag}</small></span>
-      </div>
+      <HolisticHouseBrand locale={locale} section={screen.brandTag} heading />
       <div className={styles.headerActions}>
         <details className={styles.language} data-home-language-switch>
           <summary aria-label={locale==="ru"?"Выбрать язык":locale==="es"?"Elegir idioma":"Choose language"}>

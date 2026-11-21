@@ -1,4 +1,5 @@
 "use client";
+import { HolisticHouseBrand } from "./holistic-house-brand";
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
@@ -724,10 +725,7 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
   return <section className={styles.root} data-services-quiz data-services-quiz-questions="4"
     data-services-quiz-step={step + 1} data-quiz-route={topic} lang={locale} aria-labelledby="services-quiz-title">
     <div className={styles.brandBar}>
-      <Link href={"/" + locale} prefetch={false} className={styles.brand} aria-label="Holistic House">
-        <Flower2 size={40} strokeWidth={1.5} aria-hidden="true" />
-        <span><strong>Holistic House</strong><small>S U P P O R T</small></span>
-      </Link>
+      <HolisticHouseBrand locale={locale} section="SUPPORT" />
       <div className={styles.brandActions}>
         <details className={styles.languageMenu}>
           <summary aria-label="Language"><span>{locale.toUpperCase()}</span><ChevronDown size={16} aria-hidden="true" /></summary>
