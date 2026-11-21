@@ -1833,39 +1833,69 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
             // already licensed local compilation. Its actual decoded movie,
             // consented voice, and credits still face every native WebKit gate.
             await page.locator('[data-video-quick-control="video"]').click();
-            const reviewedPreset=page.locator(
-              '[data-free-film-compilation-catalog] [data-free-film-preset]').first();
-            if(!await reviewedPreset.isVisible()){
+            const filmCatalogue=page.locator(
+              '[data-free-film-compilation-catalog] [data-free-film-preset]');
+            if(!await filmCatalogue.first().isVisible()){
               const moreGoals=page.locator('[data-hh-mirror-more-goals]');
               await expect(moreGoals).toBeVisible({timeout:15000});
               if(engine==="webkit")await moreGoals.tap();
               else await moreGoals.click();
             }
-            await expect(reviewedPreset).toBeVisible({timeout:15000});
-            await expect(reviewedPreset).toBeEnabled();
-            const reviewedPresetId=await reviewedPreset.getAttribute('data-free-film-preset');
-            assert.match(reviewedPresetId||'',/^[a-z0-9-]+$/,
-              "Reviewed film must have an immutable first-party preset id");
-            if(engine==="webkit")await reviewedPreset.tap();
-            else await reviewedPreset.click();
-            const chosenFilm=page.locator(
-              '[data-free-film-compilation-catalog] [data-free-film-preset="'+reviewedPresetId+'"]');
-            // Catalogue validation is allowed to refuse landscape when its
-            // rights-verified masters exist only in portrait. Use the ACTUAL
-            // explicit 9:16 recovery button, never force aria-pressed or
-            // grant Story approval for unverified screenplay footage.
+            await expect(filmCatalogue.first()).toBeVisible({timeout:15000});
+            // Some approved masters cannot fill the visitor's current
+            // duration/aspect. A visible tile may legitimately reject that
+            // combination. Try the actual catalogue selections (including
+            // its explicit All control), but require one genuinely validated
+            // set of distinct, licensed physical source frames. No fake
+            // pressed state, no unlicensed replacement, no waived WebKit.
             const portraitRetry=page.locator('[data-video-portrait-retry]');
-            await expect.poll(async()=>(
-              await chosenFilm.getAttribute('aria-pressed')==='true'||
-              await portraitRetry.isVisible()),
-              {timeout:15000,intervals:[100,250,500]}).toBe(true);
-            if(await chosenFilm.getAttribute('aria-pressed')!=='true'){
-              await expect(portraitRetry).toBeVisible();
-              await expect(portraitRetry).toBeEnabled();
-              if(engine==="webkit")await portraitRetry.tap();
-              else await portraitRetry.click();
-              phase(engine,"explicit-reviewed-portrait-masters-selected");
+            let chosenId=null;
+            for(let expanded=0;expanded<2&&!chosenId;expanded++){
+              if(expanded){
+                const moreFilms=page.locator('[data-free-film-more]');
+                await expect(moreFilms).toBeVisible({timeout:15000});
+                if(await moreFilms.getAttribute('aria-expanded')!=='true'){
+                  if(engine==="webkit")await moreFilms.tap();
+                  else await moreFilms.click();
+                }
+              }
+              const total=await filmCatalogue.count();
+              assert.ok(total>0&&total<=100,
+                "An approved catalogue must have bounded visible presets");
+              for(let i=0;i<total&&!chosenId;i++){
+                const option=filmCatalogue.nth(i);
+                if(!await option.isVisible()||!await option.isEnabled())continue;
+                const id=await option.getAttribute('data-free-film-preset');
+                if(!/^[a-z0-9-]+$/.test(id||''))continue;
+                if(engine==="webkit")await option.tap();
+                else await option.click();
+                const selected=page.locator(
+                  '[data-free-film-compilation-catalog] [data-free-film-preset="'+id+'"]');
+                // Wait for the React selection or its authentic approved
+                // portrait-only fallback. Neither outcome is manufactured.
+                try{
+                  await expect.poll(async()=>(
+                    await selected.getAttribute('aria-pressed')==='true'||
+                    await portraitRetry.isVisible()),
+                    {timeout:1500,intervals:[100,250,500]}).toBe(true);
+                }catch{}
+                if(await selected.getAttribute('aria-pressed')==='true'){
+                  chosenId=id;break;
+                }
+                if(await portraitRetry.isVisible()&&await portraitRetry.isEnabled()){
+                  if(engine==="webkit")await portraitRetry.tap();
+                  else await portraitRetry.click();
+                  if(await selected.getAttribute('aria-pressed')==='true'){
+                    chosenId=id;
+                    phase(engine,"explicit-reviewed-portrait-masters-selected");
+                  }
+                }
+              }
             }
+            assert.ok(chosenId,
+              "No licensed first-party film could be selected at available verified aspect/duration; fail closed");
+            const chosenFilm=page.locator(
+              '[data-free-film-compilation-catalog] [data-free-film-preset="'+chosenId+'"]');
             await expect(chosenFilm).toHaveAttribute('aria-pressed','true',{timeout:15000});
             await expect(page.locator('[data-free-film-readiness]')).toBeVisible();
             phase(engine,"explicit-reviewed-film-compilation-selected");
