@@ -28,7 +28,7 @@ test("one six-beat Anti-stress standard film reuses six distinct licensed motion
     assert.equal(scene.media,"licensed_mp4");
     assert.equal(scene.rightsReference.kind,"existing_approved_first_party_master");
     assert.ok(scene.allowedAspects.includes("portrait"));
-    assert.match(scene.video,/^\\/videos\\/holistic-house\\/film-collection-v2\\/[a-z-]+\\.mp4$/);
+    assert.match(scene.video,/^\/videos\/holistic-house\/film-collection-v2\/[a-z-]+\.mp4$/);
     const origin=scene.originMasterKeys[0];
     assert.ok(!origins.has(origin),"no repeated physical footage");
     origins.add(origin);
@@ -72,6 +72,6 @@ test("the three localized guides compile into actual 30s six-shot 5s motion, cap
 test("public link only opts into the existing OpenMotion picker, never auto-renders",()=>{
   const picker=readFileSync(join(root,"components/mandala-openmotion-picker.tsx"),"utf8");
   assert.match(picker,/motionPreset/);
-  assert.match(picker,/setPresetId\\("anti-stress-30s"\\)/);
-  assert.doesNotMatch(picker,/exportOpenMotionPresetMp4\\("anti-stress-30s"/);
+  assert.match(picker,/setPresetId\("anti-stress-30s"\)/);
+  assert.doesNotMatch(picker,/exportOpenMotionPresetMp4\("anti-stress-30s"/);
 });
