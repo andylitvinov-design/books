@@ -18,6 +18,8 @@
 .plan{display:block;margin:4px 0 16px;color:#436655;font-size:13px;font-weight:750}
 .plan textarea{display:block;width:100%;margin-top:8px;resize:vertical}
 .composer{display:flex;flex-direction:column;align-items:stretch;gap:9px}
+.contextTopic{display:grid;gap:6px;margin-block:12px;font-size:14px}
+.contextTopic select{min-height:44px;width:100%;min-width:0;font:inherit}
 .composer>label:first-child{font-size:13px;font-weight:800;color:#355b50}
 .composer textarea,.plan textarea{border:1px solid #c9d5ca;border-radius:14px;background:white;padding:13px 15px;color:#29483e;font:inherit;font-size:16px;line-height:1.45}
 .composer textarea:focus-visible,.plan textarea:focus-visible{outline:3px solid #6eb5a0;outline-offset:1px}
