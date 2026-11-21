@@ -11,6 +11,8 @@ import {VIDEO_GIFT_DURATION,VIDEO_GIFT_OCCASIONS,VIDEO_GIFT_FREE_MOTIONS,
 import type {VideoGiftOccasion,VideoGiftMotion,VideoGiftAspect,VideoGiftPalette,
   VideoGiftSubject,VideoGiftManifest} from "@/lib/mandala/video-gift-contract.mjs";
 import {VIDEO_GIFT_SIZES,paintVideoGiftFrame,exportVideoGiftMp4} from "@/lib/mandala/video-gift-browser";
+import {GIFT_VISUAL_GROUPS,listGiftApprovedScenes,defaultGiftVisualGroup} from "@/lib/mandala/video-gift-clip-catalog.mjs";
+import type {GiftVisualGroup} from "@/lib/mandala/video-gift-clip-catalog.mjs";
 import type {GiftSound} from "@/lib/mandala/video-gift-browser";
 import styles from "./mandala-video-gift.module.css";
 
@@ -28,6 +30,7 @@ const COPY={
     guardian:"Получено разрешение родителя или законного представителя несовершеннолетнего.",
     photoError:"Не удалось прочитать фотографию. Выберите другое изображение.",consentError:"Подтвердите необходимые права и разрешения.",
     freeTitle:"Бесплатное движение фотографии",freeMoves:["Плавное приближение","Лёгкая панорама","Мягкое покачивание"],
+    videoGroup:"Фоны и видеофрагменты",chooseGroup:"Выберите группу",videoNote:"Подходящие 5-секундные сцены из нашей медиатеки подгружаются автоматически. Они появятся в готовом MP4 на 14–19-й секунде.",noScene:"Без дополнительного видео",emptyGroup:"Пока нет разрешённых сцен. Выберите другую группу.",clipCredits:"Сцены: Joel Holland / Dareful · CC BY 4.0",
     aiTitle:"Реалистичное оживление · HeyGen, платно",aiMoves:["Улыбка","Моргание","Поворот головы","Помахать рукой"],
     aiUnavailable:"Будет доступно только после проверки цены, разрешений и явного подтверждения оплаты. Бесплатная открытка работает сейчас.",
     palette:"Палитра",palettes:["Тёплый рассвет","Нежная роза","Океан","Лес"],
@@ -57,6 +60,7 @@ const COPY={
     guardian:"A parent or legal guardian has given the necessary permission.",
     photoError:"Could not open this photo. Try another image.",consentError:"Confirm all required permissions.",
     freeTitle:"Free photo movement",freeMoves:["Gentle zoom","Slow panorama","Soft floating motion"],
+    videoGroup:"Video backgrounds and clips",chooseGroup:"Choose a group",videoNote:"Approved 5-second footage loads automatically from our media library, appearing at 14–19 seconds in the final MP4.",noScene:"No extra footage",emptyGroup:"No approved clips in this group yet. Choose another group.",clipCredits:"Footage: Joel Holland / Dareful · CC BY 4.0",
     aiTitle:"Realistic facial animation · paid HeyGen",aiMoves:["Soft smile","Blinking","Head turn","Wave a hand"],
     aiUnavailable:"Available only after verified pricing, permissions and an explicit paid confirmation. Free cards work now.",
     palette:"Palette",palettes:["Sunrise","Soft rose","Ocean","Forest"],
@@ -86,6 +90,7 @@ const COPY={
     guardian:"Un padre, madre o tutor legal ha dado el permiso necesario.",
     photoError:"No pudimos abrir la foto. Prueba otra imagen.",consentError:"Confirma todos los permisos necesarios.",
     freeTitle:"Movimiento de foto gratuito",freeMoves:["Zoom suave","Panorámica lenta","Movimiento flotante"],
+    videoGroup:"Fondos y fragmentos de vídeo",chooseGroup:"Elige un grupo",videoNote:"Los clips autorizados de cinco segundos aparecen automáticamente. Se añadirán a los segundos 14–19 del MP4 final.",noScene:"Sin clip adicional",emptyGroup:"Todavía no hay clips autorizados. Elige otro grupo.",clipCredits:"Vídeo: Joel Holland / Dareful · CC BY 4.0",
     aiTitle:"Animación realista · HeyGen de pago",aiMoves:["Sonrisa suave","Parpadeo","Giro de cabeza","Saludo con la mano"],
     aiUnavailable:"Solo después de verificar precio, permisos y pago confirmado. La tarjeta gratuita funciona ahora.",
     palette:"Paleta",palettes:["Amanecer","Rosa suave","Océano","Bosque"],
@@ -113,6 +118,9 @@ export function MandalaVideoGift({locale}:{locale:Locale}){
   const starter=suggestVideoGiftText(locale,"birthday");
   const [step,setStep]=useState(0);
   const [occasion,setOccasion]=useState<VideoGiftOccasion>("birthday");
+  const [visualGroup,setVisualGroup]=useState<GiftVisualGroup>(defaultGiftVisualGroup("birthday"));
+  const [sceneId,setSceneId]=useState<string|null>(null);
+  const scenePreviewRef=useRef<HTMLVideoElement|null>(null);
   const [recipient,setRecipient]=useState("");
   const [aspect,setAspect]=useState<VideoGiftAspect>("portrait");
   const [sourceOwner,setSourceOwner]=useState<VideoGiftSubject>("self");
@@ -143,6 +151,10 @@ export function MandalaVideoGift({locale}:{locale:Locale}){
   const controllerRef=useRef<AbortController|null>(null);
   const canvasRef=useRef<HTMLCanvasElement|null>(null);
   const previewStart=useRef(0);
+  const groupScenes=useMemo(()=>listGiftApprovedScenes({
+    group:visualGroup,occasion,aspect
+  }),[visualGroup,occasion,aspect]);
+  const selectedScene=sceneId==="none"?null:(groupScenes.find(x=>x.id===sceneId)||groupScenes[0]||null);
   const manifest=useMemo<VideoGiftManifest|null>(()=>{
     try{return validateVideoGiftDraft({locale,occasion,recipient,sourceOwner,
       rightsConfirmed,subjectConsent,guardianConsent,motion,palette,aspect,
@@ -163,18 +175,27 @@ export function MandalaVideoGift({locale}:{locale:Locale}){
     if(playing)previewStart.current=performance.now();
     const render=()=>{
       const seconds=playing?((performance.now()-previewStart.current)/1000)%VIDEO_GIFT_DURATION:0;
-      paintVideoGiftFrame(ctx,photo,manifest,seconds);
+      const video=scenePreviewRef.current;
+      const duringClip=Boolean(selectedScene&&playing&&seconds>=14&&seconds<19);
+      if(video&&duringClip&&video.paused){
+        try{video.currentTime=Math.max(0,seconds-14);}catch{/* Decode readiness is checked below. */}
+        void video.play().catch(()=>{/* Export has stricter decode gate. */});
+      }else if(video&&!duringClip&&!video.paused)video.pause();
+      const decoded=duringClip&&video&&video.readyState>=2?video:null;
+      paintVideoGiftFrame(ctx,photo,manifest,seconds,decoded,selectedScene?.credit??null);
       if(playing)frame=requestAnimationFrame(render);
     };
     render();
-    return()=>cancelAnimationFrame(frame);
-  },[step,photo,manifest,aspect,playing]);
+    return()=>{cancelAnimationFrame(frame);scenePreviewRef.current?.pause();};
+  },[step,photo,manifest,aspect,playing,selectedScene]);
   const invalidateResult=()=>{
     setSaved(false);setCloudConsent(false);setResult(null);saveSessionRef.current=null;
     if(resultUrlRef.current){URL.revokeObjectURL(resultUrlRef.current);resultUrlRef.current=null;}
   };
   const chooseOccasion=(value:VideoGiftOccasion)=>{
     setOccasion(value);
+    setVisualGroup(defaultGiftVisualGroup(value));
+    setSceneId(null);
     const next=suggestVideoGiftText(locale,value);
     setMessage(next.message);setFinalWish(next.finalWish);
     invalidateResult();
@@ -226,6 +247,7 @@ export function MandalaVideoGift({locale}:{locale:Locale}){
     const sound:GiftSound={music:soundtrack==="voice"?"none":soundtrack,voice:soundtrack==="voice"?voice:null};
     try{
       const blob=await exportVideoGiftMp4({image:photo,manifest,sound,
+        sceneId:selectedScene?.id??null,
         signal:controller.signal,onProgress:setProgress});
       if(blob.size<1024||blob.size>12_000_000)throw new Error("gift_mp4_size_invalid");
       const url=URL.createObjectURL(blob);resultUrlRef.current=url;
@@ -323,6 +345,35 @@ export function MandalaVideoGift({locale}:{locale:Locale}){
             {PALETTES.map((id,index)=><option key={id} value={id}>{t.palettes[index]}</option>)}
           </select>
         </label>
+        <section className={styles.mediaPicker} data-video-gift-media-library>
+          <h3>{t.videoGroup}</h3>
+          <label className={styles.field}>{t.chooseGroup}
+            <select data-video-gift-group value={visualGroup}
+              onChange={e=>{
+                setVisualGroup(e.target.value as GiftVisualGroup);
+                setSceneId(null);invalidateResult();
+              }}>
+              {GIFT_VISUAL_GROUPS.map(group=><option key={group.id} value={group.id}>
+                {group.label[locale]} · {listGiftApprovedScenes({group:group.id,occasion,aspect}).length}
+              </option>)}
+            </select>
+          </label>
+          <p className={styles.hint}>{t.videoNote}</p>
+          {groupScenes.length?<div className={styles.mediaGallery} role="group" aria-label={t.videoGroup}>
+            {groupScenes.map(scene=><button type="button" key={scene.id}
+              data-video-gift-scene={scene.id}
+              aria-pressed={selectedScene?.id===scene.id}
+              className={selectedScene?.id===scene.id?styles.mediaActive:styles.mediaOption}
+              onClick={()=>{setSceneId(scene.id);invalidateResult();}}>
+              <img src={scene.poster} alt="" loading="lazy" decoding="async"/>
+              <span>{scene.label[locale]}</span>
+              {selectedScene?.id===scene.id?<Check size={17}/>:null}
+            </button>)}
+          </div>:<p className={styles.hint} role="status">{t.emptyGroup}</p>}
+          <button type="button" className={styles.secondary}
+            onClick={()=>{setSceneId("none");invalidateResult();}}>{t.noScene}</button>
+          <small className={styles.hint}>{t.clipCredits}</small>
+        </section>
         <div className={styles.locked}><h3>{t.aiTitle}</h3><p>{t.aiUnavailable}</p>
           <div className={styles.options}>
             {VIDEO_GIFT_AI_MOTIONS.map((id,index)=><button type="button" key={id}
@@ -372,6 +423,9 @@ export function MandalaVideoGift({locale}:{locale:Locale}){
             {id==="portrait"?t.portrait:t.landscape}</button>)}
         </div>
         {!result&&<div className={styles.previewArea}>
+          {selectedScene?<video ref={scenePreviewRef} src={selectedScene.video}
+            poster={selectedScene.poster} preload="metadata" muted playsInline
+            crossOrigin="anonymous" className={styles.preloadClip} aria-hidden="true"/>:null}
           <canvas ref={canvasRef} aria-label={t.preview}
             className={aspect==="portrait"?styles.portrait:styles.landscape}/>
           <button type="button" className={styles.secondary} disabled={!manifest||!photo||working}
