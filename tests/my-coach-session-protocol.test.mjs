@@ -219,3 +219,15 @@ test('Summary preserves pending last utterance, lets user exit and sends method 
   assert.match(ui,/turn\.unanswered===true/)
   assert.match(ui,/methodId:visibleMethodId/)
 })
+
+test('live coach logo returns to localized Holistic House home; Back keeps coach selector',()=>{
+  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+  const brand=ui.split('<Link className={styles.sessionBrand} ')[1]?.split('>')[0]
+  assert.ok(brand)
+  assert.ok(brand.includes("href={'/'+lang}"))
+  assert.ok(brand.includes('onClick={interceptSessionExit}'))
+  assert.ok(!brand.includes('/coaching/sessions'))
+  const back=ui.split('<Link className={styles.chooseCoach} ')[1]?.split('>')[0]
+  assert.ok(back?.includes("href={'/'+lang+'/my-coach'}"))
+  assert.match(ui,/if\(turnsRef\.current\.length>0&&!protocolSaved\)\{event\.preventDefault\(\);endWithProtocol\(\)\}/)
+})
