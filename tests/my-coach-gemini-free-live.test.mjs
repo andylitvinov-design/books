@@ -45,7 +45,8 @@ test('all ten personas, four locked voices, RU/EN/ES and separate audio-training
   assert.equal(input.policy.personaId,personaId)
   assert.equal(setup.model,'models/'+GEMINI_FREE_LIVE_MODEL)
   assert.equal(setup.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName,voiceName)
-  assert.match(setup.systemInstruction.parts[0].text,/The server owns coaching method/)
+  assert.match(setup.systemInstruction.parts[0].text,/the server owns coaching method/)
+  assert.match(setup.systemInstruction.parts[0].text,/never replace a profile rating or completed profile with a GROW question/)
   assert.equal(setup.responseModalities[0],'AUDIO')
  }
  for(const key of ['consent','voiceConsent','trainingUseConsent']){

@@ -14,7 +14,7 @@ const topics=[
  ['meaning_purpose','Meaning & purpose','Смыслы и цели','Sentido y propósito'],
 ]
 const copy={
- ru:{title:'Память коуча · по вашему разрешению',prior:'Вспомнить моё имя и краткие итоги прошлой сессии',
+ ru:{title:'Память коуча · по вашему разрешению',prior:'Проверить прошлые сессии и вспомнить моё имя и краткие итоги',
    extra:'Google Gemini Free может использовать переданные данные для улучшения моделей. Согласие касается только выбранных сведений, не всего кабинета.',
    other:'Сохранённые сведения передаются выбранному провайдеру только с этим разрешением.',
    loading:'Проверяю сохранённые данные…',found:'Сохранённая сессия найдена',none:'Ранее сохранённых коучинг-сессий нет',
@@ -23,7 +23,7 @@ const copy={
    tests:'Подключить отдельно разрешённые результаты тестов',topic:'Тема сохранённого контекста',
    choose:'Выберите тему',details:'Цели и профиль · после знакомства',approved:'Разрешённые записи',
    empty:'Разрешённых записей по выбранной теме пока нет',share:'Передать просмотренные записи выбранному AI-коучу'},
- en:{title:'Coach memory · only with your permission',prior:'Use my preferred name and short past-session conclusions',
+ en:{title:'Coach memory · only with your permission',prior:'Check for previous coaching sessions and recall my preferred name and brief conclusions',
    extra:'Google Gemini Free may use submitted content to improve its models. This permission covers only the chosen details, not your entire account.',
    other:'Only the selected information may be sent to the chosen model provider with this permission.',
    loading:'Checking saved information…',found:'Saved previous session found',none:'No earlier saved coaching session',
@@ -32,7 +32,7 @@ const copy={
    tests:'Use separately approved test results',topic:'Saved context topic',
    choose:'Choose a topic',details:'Goals and profile · after introductions',approved:'Approved items',
    empty:'No approved items for this topic yet',share:'Share these reviewed items with the selected AI coach'},
- es:{title:'Memoria del coach · solo con tu permiso',prior:'Usar mi nombre y conclusiones breves de sesiones anteriores',
+ es:{title:'Memoria del coach · solo con tu permiso',prior:'Buscar sesiones anteriores y recordar mi nombre y sus conclusiones breves',
    extra:'Gemini Free puede usar los datos enviados para mejorar modelos. Este permiso solo cubre la información elegida, no toda tu cuenta.',
    other:'Solo la información seleccionada puede enviarse al proveedor con tu permiso.',
    loading:'Revisando datos guardados…',found:'Hay una sesión anterior guardada',none:'No hay sesiones de coaching anteriores guardadas',
