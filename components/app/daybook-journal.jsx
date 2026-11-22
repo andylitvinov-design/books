@@ -4,6 +4,7 @@ import Link from 'next/link'
 import {appFetch} from '@/lib/app/client-fetch'
 import {createJournalSaver} from '@/lib/app/daybook-journal-save.mjs'
 import {localJournalDay} from '@/lib/app/daybook-journal-contract.mjs'
+import {collectJournalExport} from '@/lib/app/daybook-journal-export.mjs'
 import styles from './daybook-journal.module.css'
 
 const copy={
@@ -11,12 +12,18 @@ const copy={
  ru:{title:'Коучинговый дневник',home:'Моё пространство',today:'Сегодня',journal:'Дневник',goals:'Цели',growth:'Мой рост',intro:'Личное место для мыслей и добровольной рефлексии.',loading:'Открываем личный дневник…',login:'Войти в кабинет',error:'Не удалось загрузить дневник.',retry:'Повторить',new:'Новая запись',note:'Мысль',morning:'Утренняя рефлексия',evening:'Вечерняя рефлексия',text:'Ваша личная запись',tags:'Теги через запятую',date:'Местная дата',save:'Сохранить',saving:'Сохранение…',saved:'Сохранено и проверено',failed:'Сохранение не подтверждено. Черновик остаётся здесь. Повторите перед редактированием.',empty:'Записей пока нет.',edit:'Изменить',remove:'Удалить навсегда',confirm:'Безвозвратно удалить эту запись?',more:'Загрузить ещё',search:'Поиск по тексту и тегам загруженных записей',cancel:'Удалить черновик',discard:'Удалить несохранённый черновик?',privacy:'Черновик хранится только в памяти страницы и очищается при выходе. Записи не передаются коучу автоматически.',plan:'Открыть мои цели и действия',vectors:'Открыть мои векторы развития',deleteError:'Удаление не подтверждено. Обновите дневник перед повторной попыткой.'},
  es:{title:'Diario de coaching',home:'Mi espacio',today:'Hoy',journal:'Diario',goals:'Objetivos',growth:'Mi crecimiento',intro:'Un espacio privado para tus pensamientos y reflexiones voluntarias.',loading:'Abriendo tu diario privado…',login:'Iniciar sesión en mi espacio',error:'No se pudo cargar el diario.',retry:'Reintentar',new:'Nueva entrada',note:'Un pensamiento',morning:'Reflexión de la mañana',evening:'Reflexión de la noche',text:'Tu entrada privada',tags:'Etiquetas separadas por comas',date:'Fecha local',save:'Guardar',saving:'Guardando…',saved:'Guardado y verificado',failed:'Guardado sin confirmar. El borrador sigue aquí. Reintenta antes de editar.',empty:'Aún no hay entradas.',edit:'Editar',remove:'Eliminar permanentemente',confirm:'¿Eliminar esta entrada permanentemente?',more:'Cargar más',search:'Buscar texto o etiquetas en las entradas cargadas',cancel:'Descartar borrador',discard:'¿Descartar este borrador sin guardar?',privacy:'Los borradores solo permanecen en la memoria de esta página. Salir o cerrar sesión los borra. No se comparten automáticamente con un coach.',plan:'Abrir mis objetivos y acciones',vectors:'Abrir mis vectores de desarrollo',deleteError:'Eliminación sin confirmar. Recarga el diario antes de reintentar.'},
 }
+const exportCopy={
+ en:{download:'Export saved entries (JSON)',all:'Load all entries for search',working:'Reading all saved entries…',failed:'Could not finish. No partial file was downloaded. Try again.',large:'The export exceeds the current 32 MiB browser limit. No partial file was downloaded.',done:'Export file prepared. Unsaved drafts are not included.'},
+ ru:{download:'Экспорт сохранённых записей (JSON)',all:'Загрузить все записи для поиска',working:'Чтение всех сохранённых записей…',failed:'Не удалось завершить. Неполный файл не скачан. Повторите попытку.',large:'Экспорт превышает текущий лимит браузера 32 МиБ. Неполный файл не скачан.',done:'Файл экспорта подготовлен. Несохранённые черновики не включены.'},
+ es:{download:'Exportar entradas guardadas (JSON)',all:'Cargar todas las entradas para buscar',working:'Leyendo todas las entradas guardadas…',failed:'No se pudo completar. No se descargó un archivo parcial. Reintenta.',large:'La exportación supera el límite actual de 32 MiB del navegador. No se descargó un archivo parcial.',done:'Archivo de exportación preparado. No incluye borradores sin guardar.'},
+}
 export default function DaybookJournal({locale}){
  const c=copy[locale],root='/'+locale+'/app'
  const [account,setAccount]=useState(null),[entries,setEntries]=useState([]),[next,setNext]=useState(null)
  const [phase,setPhase]=useState('loading'),[tab,setTab]=useState('today'),[draft,setDraft]=useState(null),[status,setStatus]=useState(''),[query,setQuery]=useState(''),[busy,setBusy]=useState(false)
+ const [exportStatus,setExportStatus]=useState('')
  const epoch=useRef(0),owner=useRef(null),saver=useRef(null),saving=useRef(false)
- function wipe(){epoch.current++;owner.current=null;saver.current?.discard();saver.current=null;setAccount(null);setEntries([]);setDraft(null);setNext(null);setQuery('');setStatus('');setBusy(false);saving.current=false}
+ function wipe(){epoch.current++;owner.current=null;saver.current?.discard();saver.current=null;setAccount(null);setEntries([]);setDraft(null);setNext(null);setQuery('');setStatus('');setExportStatus('');setBusy(false);saving.current=false}
  async function load(){
   wipe();setPhase('loading');const token=epoch.current
   try{
@@ -78,6 +85,20 @@ export default function DaybookJournal({locale}){
   setBusy(true);const token=epoch.current
   try{const result=await appFetch('daybook-journal?before='+encodeURIComponent(next),undefined,'GET',{accountId:account});if(token===epoch.current){setEntries(old=>[...old,...result.entries.filter(item=>!old.some(x=>x.id===item.id))]);setNext(result.nextCursor)}}catch{if(token===epoch.current)setStatus('error')}finally{if(token===epoch.current)setBusy(false)}
  }
+ async function collect(download){
+  if(busy)return
+  setBusy(true);setExportStatus('working');const token=epoch.current
+  try{
+   const data=await collectJournalExport(appFetch,account,()=>token===epoch.current&&owner.current===account)
+   if(token!==epoch.current)return
+   if(download){
+    const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'}))
+    const link=document.createElement('a');link.href=url;link.download='holistic-house-daybook-'+data.exportedAt.slice(0,10)+'.json';link.click()
+    setTimeout(()=>URL.revokeObjectURL(url),1000);setExportStatus('done')
+   }else{setEntries(data.entries);setNext(null);setExportStatus('')}
+  }catch(error){if(token===epoch.current){if(error.status===401||error.code==='ACCOUNT_CHANGED'){wipe();setPhase('signed-out')}else setExportStatus(error.code==='JOURNAL_EXPORT_TOO_LARGE'?'large':'failed')}}
+  finally{if(token===epoch.current)setBusy(false)}
+ }
  const today=localJournalDay(new Date().toISOString(),Intl.DateTimeFormat().resolvedOptions().timeZone)
  const visible=entries.filter(entry=>(tab!=='today'||entry.localDay===today)&&(!query||[entry.text,...entry.tags].join(' ').toLocaleLowerCase(locale).includes(query.toLocaleLowerCase(locale))))
  return <main className={styles.page}>
@@ -95,6 +116,9 @@ export default function DaybookJournal({locale}){
     </section>}
     <p role="status">{c[status]||''}</p>
     <label>{c.search}<input type="search" value={query} onChange={e=>setQuery(e.target.value)}/></label>
+    <button disabled={busy} onClick={()=>void collect(true)}>{exportCopy[locale].download}</button>
+    {next&&<button disabled={busy} onClick={()=>void collect(false)}>{exportCopy[locale].all}</button>}
+    <p role="status">{exportCopy[locale][exportStatus]||''}</p>
     {!visible.length&&<p>{c.empty}</p>}
     {visible.map(entry=><article key={entry.id}><time dateTime={entry.localDay}>{entry.localDay}</time><h2>{c[entry.kind]}</h2><p className={styles.entry}>{entry.text}</p><p>{entry.tags.join(' · ')}</p><button disabled={busy||status==='failed'} onClick={()=>open(entry)}>{c.edit}</button><button disabled={busy||status==='failed'} onClick={()=>void remove(entry)}>{c.remove}</button></article>)}
     {next&&<button disabled={busy} onClick={()=>void more()}>{c.more}</button>}
