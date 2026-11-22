@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import {Mic, Paperclip, Plus, Send, X} from "lucide-react";
 import {MessengerAiLanding} from "@/components/app/messenger-ai-landing";
 import {useAliPersona} from "@/components/app/use-ali-persona";
+import {ALI_GEMINI_FREE_ENDPOINT,aliGeminiRequest,aliGeminiResult} from "@/lib/holistic-support/ali-gemini-consultant.mjs";
 import {MessengerSupportQuiz, type SupportQuizSelection} from "@/components/app/messenger-support-quiz";
 import {MessengerSixProjects,messengerProject} from "@/components/app/messenger-six-projects";
 import { peekHomeAliHandoff, acknowledgeHomeAliHandoff } from "@/lib/home-ali-handoff.mjs";
@@ -315,6 +316,14 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     if(Math.abs(voice.rate-persona.voice.rate)>0.015)voice.setRate(persona.voice.rate);
   },[messengerView,voiceEnabled,locale,persona.id,voice.voices,voice.voiceId,voice.rate,voice.setVoiceId,voice.setRate,voice.speechLocale,voice.setSpeechLocale]);
   const [mode,setMode]=useState<Mode>("rules");
+  // Pro intentionally selects the already budget-gated Gemini FREE API, never Paid.
+  const [proSelected,setProSelected]=useState(false);
+  const [proConsent,setProConsent]=useState(false);
+  const [proDataConsent,setProDataConsent]=useState(false);
+  const [geminiAvailable,setGeminiAvailable]=useState<boolean|null>(null);
+  const [proBusy,setProBusy]=useState(false);
+  const proAbort=useRef<AbortController|null>(null);
+  const proTurns=useRef<Array<{role:"user"|"assistant";content:string}>>([]);
   const [friendTone,setFriendTone]=useState<"friendly"|"confiding"|"tender">("friendly");
   // Website Secretary Psychologist is a user-invoked, optional local interview,
   // not a backend role grant. Until a verified send route exists, no private
@@ -422,6 +431,19 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const controller=useRef<AbortController|null>(null);
   const nativeSession=useRef<{id:string;revision:number}|null>(null);
   useEffect(()=>{nativeSession.current=null;},[authenticated]);
+  // Capability check transmits no client text and makes no model call.
+  useEffect(()=>{
+    if(!messengerView||!proSelected||!authenticated)return;
+    const controller=new AbortController();
+    setGeminiAvailable(null);
+    void fetch("/api/app/my-coach/engines",{credentials:"same-origin",cache:"no-store",signal:controller.signal})
+      .then(async response=>response.ok?response.json():null)
+      .then(value=>{if(!controller.signal.aborted)setGeminiAvailable(
+        value?.schema==="HH_MY_COACH_ENGINES_V1"&&value?.gemini_free===true);})
+      .catch(()=>{if(!controller.signal.aborted)setGeminiAvailable(false);});
+    return ()=>controller.abort();
+  },[messengerView,proSelected,authenticated]);
+  const proReady=proSelected&&proConsent&&proDataConsent&&authenticated&&geminiAvailable===true;
   const composerRef=useRef<HTMLTextAreaElement|null>(null);
   const homeHandoffConsumed=useRef(false);
   const homeHandoffDispatching=useRef(false);
@@ -1579,11 +1601,67 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       if(alternativeAbortRef.current===abort){alternativeAbortRef.current=null;setAlternativeBusy(false);}
     }
   }
+  async function sendProTurn(raw:string){
+    const text=raw.trim();
+    if(!text||busy||proBusy)return;
+    if(!proReady){
+      setStatus(locale==="ru"?"Для Gemini нужны вход и два согласия.":locale==="es"?
+        "Para Gemini se requiere acceso y dos consentimientos.":"Sign in and approve both Gemini consents first.");
+      return;
+    }
+    // Immediate safety guard: protected topics stay with the established safe Ali route.
+    if(requiresProtectedReply(text,locale)){void sendTurn(text);return;}
+    let payload;
+    try{payload=aliGeminiRequest({message:text,locale,personaId:persona.id,
+      turns:proTurns.current.slice(-10),consent:proConsent,freeDataConsent:proDataConsent});}
+    catch{
+      setStatus(locale==="ru"?"Для Gemini используйте сообщение до 1200 знаков.":locale==="es"?
+        "Escribe hasta 1200 caracteres para Gemini.":"Gemini accepts up to 1200 characters per message.");
+      return;
+    }
+    const abort=new AbortController();
+    proAbort.current=abort;setProBusy(true);setSource("");setStatus("");
+    setChoices([]);setJudgmentView(null);setDraft("");followTail.current=true;setNewBelow(false);
+    setMessages(prev=>[...prev,{role:"user" as const,text}].slice(-30));
+    try{
+      const response=await fetch(ALI_GEMINI_FREE_ENDPOINT,{
+        method:"POST",credentials:"same-origin",cache:"no-store",signal:abort.signal,
+        headers:{"Content-Type":"application/json"},body:JSON.stringify(payload),
+      });
+      const result=await response.json().catch(()=>null);
+      if(!response.ok)throw Error("ALI_GEMINI_ROUTE_UNAVAILABLE");
+      const answer=aliGeminiResult(result);
+      if(abort.signal.aborted)return;
+      setMessages(prev=>[...prev,{role:"assistant" as const,text:answer.text}].slice(-30));
+      if(answer.kind==="gemini"){
+        proTurns.current=[...proTurns.current,{role:"user" as const,content:text},
+          {role:"assistant" as const,content:answer.text.slice(0,900)}].slice(-10);
+        setSource("Gemini · Free API");
+      }else{setSource("");}
+    }catch{
+      if(!abort.signal.aborted){
+        // The provider did not answer: no fake Gemini reply and no silent Free fallback.
+        setMessages(prev=>prev.at(-1)?.role==="user"&&prev.at(-1)?.text===text?
+          prev.slice(0,-1):prev);
+        setDraft(text);
+        setStatus(locale==="ru"?"Gemini сейчас недоступен. Текст сохранён — повторите позже или выберите Free.":
+          locale==="es"?"Gemini no está disponible. Conservamos tu texto; inténtalo luego o elige Free.":
+          "Gemini is unavailable. Your text is kept; retry later or choose Free.");
+      }
+    }finally{
+      if(proAbort.current===abort){proAbort.current=null;setProBusy(false);}
+    }
+  }
+  function sendSelectedTurn(raw:string){
+    if(messengerView&&proSelected){void sendProTurn(raw);return;}
+    void sendTurn(raw);
+  }
   function submit(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    void sendTurn(draft);
+    sendSelectedTurn(draft);
   }
-  function resetConversation(){setPsychInterview("off");setPsychStage("situation");setPsychSlots({});setPsychSummaryVisible(false);setPsychFinalSummary(null);setPsychCopyStatus("idle");nativeSession.current=null;voice.stopDialogue();lastSpeechTurn.current=null;alternativeAbortRef.current?.abort();alternativeAbortRef.current=null;lastAnswerRef.current=null;setAlternativeBusy(false);controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setSupportQuizOpen(false);setSupportSelection(null);setFriendTone("friendly");setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setTestFocus(null);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);setRecorderOpen(false);}
+  function resetConversation(){setPsychInterview("off");setPsychStage("situation");setPsychSlots({});setPsychSummaryVisible(false);setPsychFinalSummary(null);setPsychCopyStatus("idle");nativeSession.current=null;voice.stopDialogue();lastSpeechTurn.current=null;alternativeAbortRef.current?.abort();alternativeAbortRef.current=null;lastAnswerRef.current=null;setAlternativeBusy(false);controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setSupportQuizOpen(false);setSupportSelection(null);setFriendTone("friendly");setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setTestFocus(null);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);setRecorderOpen(false);proAbort.current?.abort();proAbort.current=null;proTurns.current=[];
+    setProBusy(false);setProSelected(false);setProConsent(false);setProDataConsent(false);setGeminiAvailable(null);}
 
   useEffect(()=>{
     const startNewConversation=()=>resetConversation();
@@ -1626,7 +1704,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     onConversationTurn={text=>{
       if(busy||mode==="owned"&&!agree){setDraft(text);voice.stopDialogue();return;}
       if(requiresProtectedReply(text,locale))voice.stopDialogue();
-      setDraft(text);void sendTurn(text);
+      setDraft(text);sendSelectedTurn(text);
     }}/>:null;
 
   const settings = (
@@ -1696,7 +1774,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const showLandingComposer=compact&&messengerView&&!pageHelp&&!messages.length&&!homeHandoffPreview&&!supportQuizOpen;
   const composer=(
     <form onSubmit={submit} className={styles.form} data-hh-ai-chat-composer={messengerView||undefined}
-      data-landing-composer={showLandingComposer||undefined}>
+      data-landing-composer={showLandingComposer||undefined}
+      data-gemini-pending={messengerView&&proSelected&&!proReady||undefined}>
       <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)}
         placeholder={showLandingComposer?(locale==="ru"?"Опиши ситуацию, вопрос или цель…":locale==="es"?"Describe tu situación, pregunta o meta…":"Describe your situation, concern, or goal…"):t.placeholder}
         onFocus={()=>{
@@ -1706,54 +1785,95 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           window.requestAnimationFrame(revealFocusedContext);
         }}
         onBlur={()=>{composerFocused.current=false;}}
-        maxLength={contentStep==="brief"?160:2000} rows={compact?1:3} disabled={busy} aria-label={t.placeholder}/>
+        maxLength={contentStep==="brief"?160:2000} rows={compact?1:3} disabled={busy||proBusy} aria-label={t.placeholder}/>
       <div className={styles.actions}>
         {messengerView?<details className={styles.composerMore} data-hh-ai-more>
           <summary aria-label={locale==="ru"?"Дополнительные действия":locale==="es"?"Más acciones":"More actions"}><Plus size={19} aria-hidden="true"/></summary>
           <div className={styles.composerMenu}>
             {voiceAttachment}
             {voiceEnabled&&<details className={styles.voiceSettings} data-hh-voice-settings>
-              <summary>{pageHelp?voice.t.settings:(locale==="ru"?"Настройки голоса":locale==="es"?"Ajustes de voz":"Voice settings")}</summary>
+              <summary>{locale==="ru"?"Настройки голоса":locale==="es"?"Ajustes de voz":"Voice settings"}</summary>
               {voiceControls}
             </details>}
+            <details className={styles.alchemistTools} data-hh-alchemist-tools>
+              <summary>{locale==="ru"?"Другие возможности Ali":locale==="es"?"Más posibilidades de Ali":"More ways Ali can help"}</summary>
+              <MessengerSixProjects locale={locale} onSelect={startProject}/>
+            </details>
             {psychInterview==="off"&&<button type="button" data-hh-ali-psychologist-offer
-              onClick={offerPsychologistInterview} disabled={busy}>
+              onClick={offerPsychologistInterview} disabled={busy||proBusy}>
               {locale==="ru"?"Мягко разобраться в проблеме":locale==="es"?"Explorar mi situación":"Explore my situation gently"}
             </button>}
             {resetControl}
           </div>
         </details>:voiceAttachment}
-        {messengerView&&!pageHelp&&voiceEnabled&&<button type="button"
-          className={styles.recorderToggle} data-hh-conversation-mic
-          onClick={()=>voice.conversing?voice.stopDialogue():voice.startDialogue(text=>{
-            if(busy||(mode==="owned"&&!agree)){setDraft(text);voice.stopDialogue();return;}
-            if(requiresProtectedReply(text,locale))voice.stopDialogue();
-            setDraft(text);void sendTurn(text);
-          })}
-          disabled={!voice.conversing&&(!voice.recognitionSupported||!voice.sttConsent||!voice.supported||!voice.playbackConsent)}
-          aria-pressed={voice.conversing}
-          aria-label={voice.conversing?(locale==="ru"?"Завершить голосовой разговор":locale==="es"?"Terminar conversación":"End voice conversation"):
-            (locale==="ru"?"Начать голосовой разговор":locale==="es"?"Hablar por voz":"Talk by voice")}
-          title={locale==="ru"?"Голосовой разговор":locale==="es"?"Conversación por voz":"Voice conversation"}>
-          <Mic size={20} aria-hidden="true"/>
-        </button>}
-        {messengerView&&<EmotionalAvatar messages={messages} busy={busy}
+        {messengerView&&<div className={styles.freeProSwitch} data-hh-ai-gemini-tier role="group"
+          aria-label={locale==="ru"?"Режим консультации":locale==="es"?"Modo de consulta":"Consultation mode"}>
+          <button type="button" data-hh-ai-tier="free" aria-pressed={!proSelected} disabled={busy||proBusy}
+            onClick={()=>{setProSelected(false);setStatus("");setSource("");}}
+          >Free</button>
+          <button type="button" data-hh-ai-tier="pro" aria-pressed={proSelected} disabled={busy||proBusy}
+            onClick={()=>{setProSelected(true);setStatus("");setSource("");}}
+          >Pro</button>
+        </div>}
+        {messengerView&&!showLandingComposer&&<EmotionalAvatar messages={messages} busy={busy||proBusy}
           status={status} locale={locale} compact={compact} iconOnly personaId={persona.id}
           companionVoice={voiceEnabled?voice:undefined}/>}
         {!messengerView&&resetControl}
-        <button type="submit" disabled={busy||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"||!draft.trim()||(mode==="owned"&&!agree&&!(compact&&(testChatOpen||testOfferFromText(draft))))}
-          aria-label={messengerView?(busy?t.loading:t.send):undefined}>{messengerView?<><Send size={20} aria-hidden="true"/>
-          {showLandingComposer&&<span>{locale==="ru"?"Начать бесплатный чат":
-            locale==="es"?"Empezar chat gratis":"Start free chat"}</span>}</>:busy?t.loading:t.send}</button>
+        <button type="submit" disabled={busy||proBusy||homeHandoffPhase==="queued"||
+          homeHandoffPhase==="sending"||!draft.trim()||
+          (proSelected&&!proReady)||
+          (!proSelected&&mode==="owned"&&!agree&&!(compact&&(testChatOpen||testOfferFromText(draft))))}
+          aria-label={messengerView?(busy||proBusy?t.loading:t.send):undefined}>{messengerView?<><Send size={20} aria-hidden="true"/>
+          {showLandingComposer&&<span>{proSelected?
+            (locale==="ru"?"Начать с Gemini":locale==="es"?"Hablar con Gemini":"Start Gemini chat"):
+            (locale==="ru"?"Начать бесплатный чат":locale==="es"?"Empezar chat gratis":"Start free chat")}</span>}</>:busy?t.loading:t.send}</button>
+        {messengerView&&!pageHelp&&<button type="button"
+          className={styles.recorderToggle} data-hh-conversation-mic
+          onClick={()=>voice.conversing?voice.stopDialogue():voice.startDialogue(text=>{
+            if(busy||proBusy||(proSelected&&!proReady)||(mode==="owned"&&!agree)){
+              setDraft(text);voice.stopDialogue();return;
+            }
+            if(requiresProtectedReply(text,locale))voice.stopDialogue();
+            setDraft(text);sendSelectedTurn(text);
+          })}
+          disabled={!voiceEnabled||(!voice.conversing&&
+            (!voice.recognitionSupported||!voice.sttConsent||!voice.supported||!voice.playbackConsent))}
+          aria-pressed={voice.conversing}
+          aria-label={voice.conversing?(locale==="ru"?"Завершить голосовой разговор":locale==="es"?"Terminar conversación":"End voice conversation"):
+            (locale==="ru"?"Голосовой разговор":locale==="es"?"Conversación por voz":"Voice conversation")}>
+          <Mic size={20} aria-hidden="true"/>
+        </button>}
         {busy&&<button type="button" onClick={()=>{voice.stopDialogue();controller.current?.abort();}}
           aria-label={messengerView?t.cancel:undefined}>{messengerView?<X size={19} aria-hidden="true"/>:t.cancel}</button>}
+        {proBusy&&<button type="button" onClick={()=>{proAbort.current?.abort();setProBusy(false);}}
+          aria-label={messengerView?t.cancel:undefined}><X size={19} aria-hidden="true"/></button>}
       </div>
+      {messengerView&&proSelected&&!proReady&&<div className={styles.geminiConsent} data-hh-ai-gemini-consent role="group"
+        aria-label="Gemini consultant">
+        <strong>{locale==="ru"?"Pro · консультант Gemini (бесплатный API)":locale==="es"?
+          "Pro · consultor Gemini (API gratuito)":"Pro · Gemini consultant (Free API)"}</strong>
+        {!authenticated?<p>{locale==="ru"?"Для Gemini нужен вход в аккаунт.":locale==="es"?
+          "Inicia sesión para usar Gemini.":"Sign in to use Gemini."}{" "}
+          <a href={"/"+locale+"/app/portrait"}>{locale==="ru"?"Войти":locale==="es"?"Entrar":"Sign in"}</a>
+        </p>:geminiAvailable===false?<p>{locale==="ru"?"Gemini не настроен или недоступен. Выберите Free.":locale==="es"?
+          "Gemini no está disponible. Elige Free.":"Gemini is not available. Select Free."}</p>:
+        <><label><input type="checkbox" checked={proConsent} onChange={e=>setProConsent(e.target.checked)}/>
+          {locale==="ru"?"Согласен(на) отправлять мои сообщения Gemini.":locale==="es"?
+            "Acepto enviar mis mensajes a Gemini.":"I agree to send my messages to Gemini."}</label>
+          <label><input type="checkbox" checked={proDataConsent} onChange={e=>setProDataConsent(e.target.checked)}/>
+          {locale==="ru"?"Понимаю, что Google может использовать данные Free API для улучшения моделей.":locale==="es"?
+            "Entiendo que Google puede usar datos de la API gratuita para mejorar modelos.":
+            "I understand Free API content may be used by Google to improve models."}</label>
+          {geminiAvailable===null&&<small>{locale==="ru"?"Проверяем доступность Gemini…":locale==="es"?
+            "Comprobando Gemini…":"Checking Gemini availability…"}</small>}</>}
+      </div>}
     </form>
   );
   return <section className={styles.root} data-hh-agent-preview lang={locale} data-compact={compact||undefined}
     data-video-auth-status={compact?(authenticated?"authenticated":authStatus):undefined}
     data-page-help={pageHelp?"true":undefined} data-has-messages={Boolean(messages.length>0||homeHandoffPreview)||undefined}
-    data-chat-skin={messengerView?"messenger":undefined}>
+    data-chat-skin={messengerView?"messenger":undefined}
+    data-hh-ai-provider={messengerView?(proSelected?"pro":"free"):undefined}>
     {!compact&&<><h1>{t.title}</h1><p>{t.disclosure}</p><p>{t.intro}</p></>}
     {!compact&&settings}
     {!compact&&psychInterview==="off"&&<button type="button"
@@ -1783,14 +1903,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
               onAsk={()=>composerRef.current?.focus({preventScroll:true})}
               onTopicSelect={text=>{setDraft(text);window.requestAnimationFrame(()=>composerRef.current?.focus({preventScroll:true}));}}
               onStartAnalysis={()=>{if(draft.trim()){void sendTurn(draft);}else openSupportQuiz();}}/>
-            <details className={styles.alchemistTools} data-hh-alchemist-tools>
-              <summary>{locale==="ru"?"Другие возможности Ali":locale==="es"?"Más posibilidades de Ali":"More ways Ali can help"}</summary>
-              <MessengerSixProjects locale={locale} onSelect={startProject}/>
-              <button type="button" data-hh-ali-psychologist-offer
-                onClick={offerPsychologistInterview} disabled={busy}>
-                {locale==="ru"?"Мягко разобраться в проблеме":locale==="es"?"Explorar mi situación":"Explore my situation gently"}
-              </button>
-            </details>
+
           </>}
       </>}
       {compact&&messengerView&&homeHandoffPreview&&messages.length===0&&
