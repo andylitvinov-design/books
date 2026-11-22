@@ -15,6 +15,8 @@ import {coachModelProbeRetryAllowed} from '@/lib/coaching/coach-model-recovery.m
 import {coachSessionVisibleStageIds} from '@/lib/coaching/coach-session-progress.mjs'
 import {coachOpeningIntro,coachOpeningProgress,coachOpeningProtocolSnapshot} from '@/lib/coaching/coach-opening-protocol.mjs'
 import {coachOpeningTurn} from '@/lib/coaching/coach-opening-entry.mjs'
+import {COACH_STAGED_MEMORY_SCHEMA,coachStagedMemoryProvider,coachClientPrior,
+  coachPersonalView,coachLiveMemorySections} from '@/lib/coaching/coach-live-staged-memory.mjs'
 import {coachGoalTurn} from '@/lib/coaching/goal-turn.mjs'
 import {understandCoachingTurn} from '@/lib/personal-coaching/coaching-turn-understanding.mjs'
 import styles from './my-coach-live-dialogue.module.css'
@@ -184,6 +186,46 @@ const protocolCopy={
   es:{title:'Protocolo de tu sesión',subtitle:'Revisa y conserva una copia privada del diálogo.',turns:'Intervenciones guardadas',empty:'Aún no hay intervenciones terminadas.',download:'Descargar PDF',print:'Imprimir / abrir PDF',save:'Guardar en mi cuenta privada',saving:'Guardando…',saved:'Protocolo guardado en tu cuenta',consent:'Acepto guardar el texto completo del diálogo en mi cuenta privada de Holistic House. No se guarda audio.',consentRequired:'Acepta para guardar el protocolo.',error:'No fue posible guardar. Descarga el PDF o vuelve a intentarlo.',pdfError:'No se pudo crear el PDF. Tu diálogo sigue en esta pestaña.',close:'Volver a los coaches',resume:'Continuar hablando',privacy:'Solo se incluye el diálogo visible. Las sugerencias de IA no son decisiones confirmadas. No se incluye audio ni razonamiento oculto.',unsent:'Hay un turno sin terminar. Termínalo antes de cerrar.',limit:'Se alcanzó el límite de turnos. Termina y exporta el protocolo.'}
 }
 const quickTopics=[{id:'stress',icon:Leaf,art:'stones'},{id:'energy',icon:Zap,art:'sunrise'},{id:'relationships',icon:Heart,art:'lotus'}]
+const coachContextTopics=[
+  ['body_health','Body & Health','Тело и здоровье','Cuerpo y salud'],
+  ['emotional_wellbeing','Emotional wellbeing','Эмоциональное благополучие','Bienestar emocional'],
+  ['relationships','Relationships','Отношения','Relaciones'],
+  ['career_business','Career & business','Карьера и бизнес','Carrera y negocio'],
+  ['finance','Finances','Финансы','Finanzas'],
+  ['personal_growth','Personal growth','Личностный рост','Crecimiento personal'],
+  ['lifestyle','Lifestyle','Образ жизни','Estilo de vida'],
+  ['meaning_purpose','Meaning & purpose','Смысл и предназначение','Sentido y propósito'],
+]
+const coachMemoryWords={
+  en:{prior:'After accepting the session, use my saved name and reviewed previous-session conclusions. I agree they may be shared with the selected AI provider (Gemini Free may use content for training).',
+    noPrior:'No previously reviewed coaching session was found.',priorTopic:'Previous topic',priorConclusion:'Your earlier conclusion',
+    personal:'After defining my focus, read my approved goals and preferences for this conversation. I can review them before sharing with AI.',
+    personalTopic:'Select a relevant area',share:'Share these selected items with my coach AI',empty:'No provider-approved saved items for this area.',
+    choose:'Select an area to preview approved saved items.',loading:'Checking private account data…',failure:'Private memory is unavailable. Continue without it.',
+    revoked:'Private context changed. Voice stopped so earlier context cannot be reused; press Play to continue.'},
+  ru:{prior:'После согласия на сессию использовать имя и проверенные выводы прошлой встречи. Разрешаю передать их выбранному ИИ (Gemini Free может использовать данные для обучения).',
+    noPrior:'Предыдущих подтверждённых протоколов не найдено.',priorTopic:'Прошлая тема',priorConclusion:'Ваш прошлый вывод',
+    personal:'После определения темы показать одобренные цели и настройки из кабинета. Перед отправкой ИИ я смогу их просмотреть.',
+    personalTopic:'Выберите направление',share:'Передать эти выбранные данные моему ИИ-коучу',empty:'Нет разрешённых для этого ИИ материалов по теме.',
+    choose:'Выберите направление для просмотра разрешённых данных.',loading:'Проверяем личные данные…',failure:'Память сейчас недоступна. Можно продолжить без неё.',
+    revoked:'Контекст изменён. Голос остановлен, чтобы не использовать старые сведения; нажмите Play для продолжения.'},
+  es:{prior:'Tras aceptar la sesión, usar mi nombre y conclusiones revisadas de sesiones anteriores. Permito compartirlas con la IA elegida (Gemini Free puede usar datos para entrenamiento).',
+    noPrior:'No se encontraron sesiones anteriores revisadas.',priorTopic:'Tema anterior',priorConclusion:'Tu conclusión anterior',
+    personal:'Después de elegir el tema, consultar metas y preferencias autorizadas. Las revisaré antes de enviarlas a la IA.',
+    personalTopic:'Elige un área',share:'Compartir estos datos seleccionados con mi coach IA',empty:'No hay elementos autorizados para esta IA y área.',
+    choose:'Elige un área para ver los elementos aprobados.',loading:'Consultando datos privados…',failure:'La memoria privada no está disponible. Puedes continuar sin ella.',
+    revoked:'El contexto cambió. La voz se detuvo para no reutilizar datos antiguos. Pulsa Play para continuar.'},
+}
+async function postStagedCoachMemory(payload,signal){
+  const response=await fetch('/api/app/my-coach/staged-memory',{
+    method:'POST',credentials:'same-origin',cache:'no-store',signal,
+    headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),
+  })
+  const data=response.ok?await response.json().catch(()=>null):null
+  if(!data||data.schema!==COACH_STAGED_MEMORY_SCHEMA||data.stage!==payload.stage)
+    throw Error('MY_COACH_STAGED_MEMORY_UNAVAILABLE')
+  return data
+}
 // Stationary without real microphone samples; bars respond only to input RMS.
 const microphoneWaveGains=Object.freeze([.28,.36,.45,.57,.78,.64,.49,.74,.95,1.12,.81,.55,.39,.62,.87,1.05,.88,.68,.53,.72,.9,.59,.44,.33,.26])
 
@@ -300,8 +342,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [playbackNotice,setPlaybackNotice]=useState('')
   const pending=useRef(null),composerRef=useRef(null),transcriptRef=useRef(null)
   const [allowOpeningPrior,setAllowOpeningPrior]=useState(false)
-  const [openingPrior,setOpeningPrior]=useState(null)
+  const [memoryIdentity,setMemoryIdentity]=useState(null)
   const [openingPriorLoading,setOpeningPriorLoading]=useState(false)
+  const [allowPersonalMemory,setAllowPersonalMemory]=useState(false)
+  const [memoryPersonal,setMemoryPersonal]=useState(null)
+  const [memoryPersonalLoading,setMemoryPersonalLoading]=useState(false)
+  const [sharePersonalMemory,setSharePersonalMemory]=useState(false)
+  const [memoryError,setMemoryError]=useState(false)
   const [contextTopic,setContextTopic]=useState('')
   const [contextAssessments,setContextAssessments]=useState(false)
   const [contextPaused,setContextPaused]=useState(false)
@@ -401,23 +448,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   },[])
   useEffect(()=>{if(transcriptRef.current)transcriptRef.current.scrollTop=transcriptRef.current.scrollHeight},[turns,speechPreview,streamingPreview])
   useEffect(()=>{
-    if(!allowOpeningPrior){setOpeningPrior(null);setOpeningPriorLoading(false);return}
-    const controller=new AbortController()
-    setOpeningPriorLoading(true)
-    // Access encrypted saved sessions only AFTER explicit user opt-in.
-    fetch('/api/app/my-coach/protocol',{credentials:'same-origin',cache:'no-store',
-      signal:controller.signal}).then(response=>response.ok?response.json():null)
-      .then(data=>{
-        if(controller.signal.aborted)return
-        const old=Array.isArray(data?.protocols)?
-          data.protocols.find(item=>item?.opening?.name||item?.goal):null
-        setOpeningPrior(old?{name:String(old.opening?.name||'').slice(0,60),
-          topic:String(old.goal||old.opening?.focus||'').slice(0,140)}:null)
-      }).catch(()=>{if(!controller.signal.aborted)setOpeningPrior(null)})
-      .finally(()=>{if(!controller.signal.aborted)setOpeningPriorLoading(false)})
-    return()=>controller.abort()
-  },[allowOpeningPrior])
-  useEffect(()=>{
     if(voiceState.phase!=='listening'){
       micWaveRef.current?.style.setProperty('--coach-mic-level','0')
       if(micWaveRef.current)micWaveRef.current.dataset.voiceDetected='false'
@@ -448,6 +478,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const ui=sessionUi[lang]||sessionUi.en
   const voiceGate=voiceGateText[lang]||voiceGateText.en
   const liveVoiceSelected=coachEngine==='gemini_live_free'
+  const memoryProvider=coachStagedMemoryProvider(coachEngine)
+  const visibleIdentity=memoryIdentity?.provider===memoryProvider?memoryIdentity.data:null
+  const remembered=coachClientPrior(visibleIdentity)
+  const openingPrior=remembered&&(remembered.name||remembered.topic)?
+    {name:remembered.name,topic:remembered.topic}:null
   // Pressing Play affirmatively consents to live voice use, disclosed beside
   // the control. Availability alone never starts streaming or contacts Google.
   const liveVoiceReady=liveVoiceSelected&&geminiCapabilities.gemini_live_free===true
@@ -528,6 +563,85 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const openingProgress=coachOpeningProgress({turns:openingHistory,locale:conversationLang,
     personaId,allowPrior:allowOpeningPrior,priorSession:openingPrior})
   const openingActive=!openingProgress.completed
+  // Provider switches require fresh explicit consent; a historical checkbox
+  // is not authorization to transmit the same material to another AI service.
+  const previousMemoryEngine=useRef(coachEngine)
+  useEffect(()=>{
+    if(previousMemoryEngine.current===coachEngine)return
+    previousMemoryEngine.current=coachEngine
+    setAllowOpeningPrior(false)
+    setMemoryIdentity(null)
+    setAllowPersonalMemory(false)
+    setMemoryPersonal(null)
+    setSharePersonalMemory(false)
+    setMemoryError(false)
+  },[coachEngine])
+  useEffect(()=>{
+    // Never read a prior-session archive before the visitor says YES.
+    if(!allowOpeningPrior||!openingProgress.lamps.invitation||
+      !sessionClockStarted||paused){
+      setMemoryIdentity(null);setOpeningPriorLoading(false);return
+    }
+    const controller=new AbortController()
+    setOpeningPriorLoading(true);setMemoryError(false)
+    void postStagedCoachMemory({
+      stage:'identity',provider:memoryProvider,
+      consent:{sessionAccepted:true,priorSessions:true,providerSharing:true},
+    },controller.signal).then(data=>{
+      if(!controller.signal.aborted)setMemoryIdentity({provider:memoryProvider,data})
+    }).catch(()=>{
+      if(!controller.signal.aborted){setMemoryIdentity(null);setMemoryError(true)}
+    }).finally(()=>{
+      if(!controller.signal.aborted)setOpeningPriorLoading(false)
+    })
+    return()=>controller.abort()
+  },[allowOpeningPrior,openingProgress.lamps.invitation,sessionClockStarted,paused,memoryProvider])
+  useEffect(()=>{
+    // Step four is the earliest read for profile/goals/tests. The user
+    // separately chooses a topic. Tests stay OFF until expressly selected.
+    if(!allowPersonalMemory||!openingProgress.lamps.focus||!sessionClockStarted||
+       !contextTopic||contextPaused||paused){
+      setMemoryPersonal(null);setMemoryPersonalLoading(false);return
+    }
+    const controller=new AbortController()
+    setMemoryPersonalLoading(true);setMemoryError(false)
+    void (async()=>{
+      let ticket=visibleIdentity?.stageToken
+      if(!ticket){
+        const grant=await postStagedCoachMemory({
+          stage:'identity',provider:memoryProvider,
+          consent:{sessionAccepted:true,priorSessions:false,providerSharing:true},
+        },controller.signal)
+        ticket=grant.stageToken
+      }
+      if(!ticket)throw Error('MY_COACH_MEMORY_STAGE_REQUIRED')
+      const data=await postStagedCoachMemory({
+        stage:'personal',provider:memoryProvider,stageToken:ticket,topicKey:contextTopic,
+        consent:{sessionAccepted:true,providerSharing:true,goals:true,profile:true,
+          assessments:contextAssessments===true},
+      },controller.signal)
+      if(!controller.signal.aborted)setMemoryPersonal({provider:memoryProvider,
+        topicKey:contextTopic,assessments:contextAssessments===true,data})
+    })().catch(()=>{
+      if(!controller.signal.aborted){setMemoryPersonal(null);setMemoryError(true)}
+    }).finally(()=>{
+      if(!controller.signal.aborted)setMemoryPersonalLoading(false)
+    })
+    return()=>controller.abort()
+  },[allowPersonalMemory,openingProgress.lamps.focus,sessionClockStarted,
+    contextTopic,contextAssessments,contextPaused,paused,memoryProvider,visibleIdentity?.stageToken])
+  const visiblePersonal=memoryPersonal?.provider===memoryProvider&&
+    memoryPersonal.topicKey===contextTopic&&
+    memoryPersonal.assessments===(contextAssessments===true)?
+    memoryPersonal.data:null
+  const verifiedPersonal=coachPersonalView(visiblePersonal)
+  const liveMemory=coachLiveMemorySections({
+    identity:visibleIdentity,personal:visiblePersonal,
+    shareIdentity:allowOpeningPrior&&openingProgress.lamps.invitation&&!paused,
+    sharePersonal:allowPersonalMemory&&openingProgress.lamps.focus&&
+      sharePersonalMemory&&Boolean(verifiedPersonal)&&!contextPaused&&!paused,
+  })
+
   // An optional, very soft acknowledgment on the FOUR lit milestones only.
   // The feelings checkbox (step 5) has no sound or lamp by design.
   const previousOpeningLamps=useRef(null)
@@ -833,7 +947,14 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     })
     setSessionClockStarted(true)
     setIntroComplete(true)
-    if(role==='user'){setSpeechPreview('');setDraft('')}
+    if(role==='user'){
+      setSpeechPreview('');setDraft('')
+      if(['correction','topic_shift'].includes(
+        understandCoachingTurn({locale:conversationLang,message:value}).act)){
+        setContextTopic('');setContextAssessments(false)
+        setSharePersonalMemory(false)
+      }
+    }
     else setStreamingPreview('')
   }
   function markCoachSpeechInterrupted(spokenText){
@@ -885,6 +1006,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       semanticHintsRef.current=[]
       setContextTopic('')
       setContextAssessments(false)
+      setSharePersonalMemory(false)
     }
     const commitGoalTurn=()=>{
       if(goalTurn.goalIncluded)lastSharedGoalRef.current=goalTurn.goal
@@ -955,7 +1077,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     pending.current?.abort()
     pending.current=controller
     setBusy(true);setError('');setStreamingPreview('')
-    const requestedSavedContext=!contextFocusChanged&&!contextPaused&&Boolean(contextTopic)
+    const requestedSavedContext=!contextFocusChanged&&!contextPaused&&Boolean(contextTopic)&&
+      sharePersonalMemory&&Boolean(verifiedPersonal)
     // A previous reply may quote a saved item whose grant has since changed.
     // Keep it in the local transcript and resolve approved items again server-side.
     const providerHistory=coachProviderHistory(conversationTurns)
@@ -975,7 +1098,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           }:{}),
           elapsedSeconds:sessionClockStarted?Math.floor(activeSessionSeconds):0,
           openingHistory,
-          ...(allowOpeningPrior&&openingPrior?{openingPrior,allowOpeningPrior:true}:{}),
+          // No forged browser-side prior-session metadata goes into model setup.
           sessionContext:coachEphemeralContext(providerHistory,providerWindow,responseLocale,message),
           semanticHints:semanticHintsRef.current,
           turns:providerWindow
@@ -1051,6 +1174,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   function endWithProtocol(){
     const inFlight=inFlightClientRef.current
     speechRef.current?.stop?.()
+    setAllowOpeningPrior(false);setAllowPersonalMemory(false)
+    setSharePersonalMemory(false)
     replayControllerRef.current?.abort()
     replayPlayerRef.current?.cancel()
     cancelPendingCoachTurn()
@@ -1270,7 +1395,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           {liveVoiceSelected?<MyCoachGeminiLive ref={speechRef}
             locale={conversationLang} personaId={personaId} settings={settings}
             voiceName={selectedGeminiVoice} elapsedSeconds={activeSessionSeconds}
-            openingPrior={openingPrior} allowOpeningPrior={allowOpeningPrior}
+            privateMemoryIdentity={liveMemory.identity} privateMemoryPersonal={liveMemory.personal}
+            onMemoryRevoked={()=>setPlaybackNotice(coachMemoryWords[lang].revoked)}
             enabled={liveVoiceReady} canStart={!busy&&!paused&&!replaying&&liveVoiceReady}
             onSessionStart={()=>{setGeminiLiveConsent(true);setSessionClockStarted(true);setIntroComplete(true)}}
             onVoiceStateChange={setVoiceState}
@@ -1460,15 +1586,61 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           stageNames={stageChecklistTitles} stageIndex={visibleStageIndex}
           stageProgressVerified={progressValid} opening={openingProgress}/>
       </details>}
-      <label className={styles.goalPrivacy} data-coach-prior-session-opt-in>
-        <input type="checkbox" checked={allowOpeningPrior}
-          disabled={openingPriorLoading||sessionClockStarted||turns.length>0}
-          onChange={event=>setAllowOpeningPrior(event.target.checked)}/>
-        {lang==='ru'?' Использовать имя и тему из моей сохранённой прошлой сессии':
-          lang==='es'?' Usar mi nombre y tema de la última sesión guardada':
-          ' Use my saved previous session name and topic'}
-        {openingPriorLoading?' …':''}
-      </label>
+      {sessionHasStarted&&openingProgress.lamps.invitation&&!paused&&<>
+        <label className={styles.goalPrivacy} data-coach-prior-session-opt-in>
+          <input type="checkbox" checked={allowOpeningPrior}
+            onChange={event=>setAllowOpeningPrior(event.target.checked)}/>
+          {coachMemoryWords[lang].prior}
+          {openingPriorLoading?' …':''}
+        </label>
+        {allowOpeningPrior&&!openingPriorLoading&&remembered&&
+          <p className={styles.goalPrivacy} data-coach-previous-summary>
+            {remembered.hasPreviousSession?
+              [remembered.name,remembered.topic?
+                coachMemoryWords[lang].priorTopic+': '+remembered.topic:'',
+                remembered.previous[0]?.clientConclusions?
+                coachMemoryWords[lang].priorConclusion+': '+remembered.previous[0].clientConclusions:''
+              ].filter(Boolean).join(' · '):coachMemoryWords[lang].noPrior}
+          </p>}
+      </>}
+      {sessionHasStarted&&openingProgress.lamps.focus&&!paused&&<>
+        <label className={styles.goalPrivacy} data-coach-goals-memory-opt-in>
+          <input type="checkbox" checked={allowPersonalMemory}
+            onChange={event=>{
+              setAllowPersonalMemory(event.target.checked)
+              setSharePersonalMemory(false)
+            }}/>
+          {coachMemoryWords[lang].personal}
+        </label>
+        {allowPersonalMemory&&<>
+          <label className={styles.contextTopic}>
+            {coachMemoryWords[lang].personalTopic}
+            <select value={contextTopic} onChange={event=>{
+              setContextTopic(event.target.value);setContextAssessments(false)
+              setSharePersonalMemory(false)
+            }}>
+              <option value="">{coachMemoryWords[lang].choose}</option>
+              {coachContextTopics.map(([key,en,ru,es])=>
+                <option key={key} value={key}>{lang==='ru'?ru:lang==='es'?es:en}</option>)}
+            </select>
+          </label>
+          {memoryPersonalLoading&&<p className={styles.goalPrivacy}>{coachMemoryWords[lang].loading}</p>}
+          {verifiedPersonal&&!memoryPersonalLoading&&
+            (verifiedPersonal.items.length?
+              <div className={styles.goalPrivacy} data-coach-personal-memory-preview>
+                {verifiedPersonal.items.map((item,index)=>
+                  <p key={index}>{item.text}</p>)}
+                <label>
+                  <input type="checkbox" checked={sharePersonalMemory}
+                    onChange={event=>setSharePersonalMemory(event.target.checked)}/>
+                  {coachMemoryWords[lang].share}
+                </label>
+              </div>:
+              <p className={styles.goalPrivacy}>{coachMemoryWords[lang].empty}</p>)}
+        </>}
+      </>}
+      {memoryError&&(allowOpeningPrior||allowPersonalMemory)&&
+        <p role="status" className={styles.goalPrivacy}>{coachMemoryWords[lang].failure}</p>}
       <details className={styles.voicePrivacyDetails}>
         <summary>{lang==='ru'?'Приватность голоса':lang==='es'?'Privacidad de voz':'Voice privacy'}</summary>
         <p>{liveVoiceSelected?({
@@ -1528,26 +1700,18 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             {lang==='ru'?'Сохранённый контекст для беседы':lang==='es'?'Contexto guardado para esta conversación':'Saved context for this conversation'}
             <select value={contextTopic} onChange={event=>{
               setContextTopic(event.target.value);setContextAssessments(false)
+              setSharePersonalMemory(false)
             }}>
               <option value="">{lang==='ru'?'Выключен':lang==='es'?'Desactivado':'Off'}</option>
-              {[
-                ['body_health','Body & Health','Тело и здоровье','Cuerpo y salud'],
-                ['emotional_wellbeing','Emotional wellbeing','Эмоциональное благополучие','Bienestar emocional'],
-                ['relationships','Relationships','Отношения','Relaciones'],
-                ['career_business','Career & business','Карьера и бизнес','Carrera y negocio'],
-                ['finance','Finances','Финансы','Finanzas'],
-                ['personal_growth','Personal growth','Личностный рост','Crecimiento personal'],
-                ['lifestyle','Lifestyle','Образ жизни','Estilo de vida'],
-                ['meaning_purpose','Meaning & purpose','Смысл и предназначение','Sentido y propósito'],
-              ].map(([key,en,ru,es])=><option key={key} value={key}>{lang==='ru'?ru:lang==='es'?es:en}</option>)}
+              {coachContextTopics.map(([key,en,ru,es])=><option key={key} value={key}>{lang==='ru'?ru:lang==='es'?es:en}</option>)}
             </select>
           </label>
           {contextTopic==='personal_growth'&&<label>
-            <input type="checkbox" checked={contextAssessments} onChange={event=>setContextAssessments(event.target.checked)}/>
+            <input type="checkbox" checked={contextAssessments} onChange={event=>{setContextAssessments(event.target.checked);setSharePersonalMemory(false)}}/>
             {lang==='ru'?'Использовать одобренные результаты тестов':lang==='es'?'Usar resultados de pruebas autorizados':'Use approved assessment scores'}
           </label>}
           {contextTopic&&<label>
-            <input type="checkbox" checked={contextPaused} onChange={event=>setContextPaused(event.target.checked)}/>
+            <input type="checkbox" checked={contextPaused} onChange={event=>{setContextPaused(event.target.checked);setSharePersonalMemory(false)}}/>
             {lang==='ru'?'Приостановить использование контекста в этой беседе':lang==='es'?'Pausar el uso del contexto en esta conversación':'Pause saved context for this conversation'}
           </label>}
         <label className={styles.coachEnginePicker} data-coach-engine-choice>
