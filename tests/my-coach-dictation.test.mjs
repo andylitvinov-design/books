@@ -346,11 +346,13 @@ test('approved one-row mobile voice: manual language in header, real volume, Tex
  assert.doesNotMatch(row,/replayControl|data-coach-language-control/)
  assert.match(css,/grid-template-columns:62px minmax\(0,1fr\) 50px 50px/)
  assert.match(css,/\.voicePlayNotice\{display:none\}/)
+ assert.match(css,/\.voicePlayNotice\[data-coach-voice-consent-one-play\]\{[\s\S]*?display:block/)
+ assert.match(ui,/data-coach-voice-consent-one-play/)
  assert.match(speech,/micLevelRef.current\?\.\(value\)/)
  assert.match(recorded,/onLevel\(Math.min\(1,Math.max\(0,\(rms-0.012\)\*7\)\)\)/)
 })
 
-test('Gemini Free retry preserves Basic audio until provider readiness, then switches in one informed tap',()=>{
+test('Gemini Free retry preserves Basic audio until readiness and prefers duplex Live over separate text TTS',()=>{
   const ui=source('components/my-coach-live-dialogue.jsx')
   const toggle=ui.slice(ui.indexOf('data-coach-basic-pro-toggle'),
     ui.indexOf('data-coach-pro-same-tap-disclosure'))
@@ -360,8 +362,8 @@ test('Gemini Free retry preserves Basic audio until provider readiness, then swi
   assert.ok(toggle.indexOf('if(selectedGeminiEngine){')<
     toggle.indexOf('if(geminiAvailabilityInFlightRef.current)return'))
   const fromProbe=toggle.indexOf('await readGeminiEngineStatus(checkController.signal)')
-  const checked=toggle.indexOf('if(!status.capabilities.gemini_free)')
-  const selected=toggle.indexOf("setCoachEngine('gemini_free')")
+  const checked=toggle.indexOf('if(!status.capabilities.gemini_live_free&&!status.capabilities.gemini_free)')
+  const selected=toggle.indexOf("setCoachEngine(chooseLive?'gemini_live_free':'gemini_free')")
   assert.ok(fromProbe>0&&checked>fromProbe&&selected>checked)
   const preflight=toggle.slice(toggle.indexOf('if(geminiAvailabilityInFlightRef.current)return'),checked)
   assert.doesNotMatch(preflight,/speechRef\.current\?\.stop\?\.\(\)|cancelPendingCoachTurn\(\)/,
@@ -369,7 +371,8 @@ test('Gemini Free retry preserves Basic audio until provider readiness, then swi
   const enabled=toggle.slice(checked)
   assert.match(enabled,/pauseForTypedTurn\?\.\(\)/)
   assert.match(enabled,/cancelPendingCoachTurn\(\)/)
-  assert.match(enabled,/setGeminiConsent\(true\)/)
+  assert.match(enabled,/setGeminiConsent\(!chooseLive\)/)
+  assert.match(enabled,/const chooseLive=status\.capabilities\.gemini_live_free===true/)
   assert.match(enabled,/setGeminiVoiceConsent\(freeTtsReady\)/)
   assert.match(enabled,/resumeAfterTypedFailure\?\.\(\)/)
   assert.doesNotMatch(ui,/data-coach-experience-consent|experienceTextConsent|experienceTtsConsent/)

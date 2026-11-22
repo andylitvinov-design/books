@@ -1827,3 +1827,9 @@
 @media(min-width:700px){
   .root[data-coach-view-expanded='true'] .sessionHero{height:clamp(420px,65dvh,660px)}
 }
+
+/* The one-Play Gemini Free disclosure must remain readable on a phone. */
+.root[data-session-visual-v4] .voicePlayNotice[data-coach-voice-consent-one-play]{
+  display:block;margin:2px 8px 3px;padding:0;
+  font:500 10px/1.25 system-ui;color:#476255;text-align:center;
+}
