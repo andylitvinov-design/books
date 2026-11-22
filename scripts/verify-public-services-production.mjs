@@ -199,8 +199,8 @@ try {
       await expect(quiz.locator('[data-services-quiz-choice="business_support"]')).toContainText("Personal & business growth");
     }
 
-    await expect(quiz.locator("[data-services-quiz-category]")).toHaveCount(6);
-    await expect(quiz.locator("[data-services-card-photo]")).toHaveCount(6);
+    await expect(quiz.locator("[data-services-quiz-category]")).toHaveCount(10);
+    await expect(quiz.locator("[data-services-card-photo]")).toHaveCount(10);
     await expect(quiz.locator("[data-services-audience] button")).toHaveCount(2);
     await expect(quiz.locator("[data-services-quiz-goal]")).toHaveCount(1);
     await expect(quiz.locator("[data-support-luxe-room]")).toHaveCount(1);
@@ -232,8 +232,9 @@ try {
     await quiz.locator("[data-services-quiz-goal]").fill("Calm and clear decisions");
     assert.deepEqual(await quiz.locator("[data-services-quiz-category]").evaluateAll(cards =>
       cards.map(card => card.getAttribute("data-services-quiz-category"))),
-      ["diagnostics", "business", "homeopathy", "coaching", "psychotherapy", "video"],
-      "The six owner-prioritized Support cards must remain in 3×2 order");
+      ["diagnostics", "business", "homeopathy", "coaching", "psychotherapy", "video",
+       "constellations", "practices", "courses", "tests"],
+      "Keep the six prioritized Support cards and four always-visible follow-up cards in order");
     await expect(quiz.locator("[data-services-shamanica-link]"))
       .toHaveAttribute("href", "/"+locale+"/shamanica");
     assert.equal(await page.locator("[data-hh-unified-dock]").count(), 1,
@@ -289,12 +290,15 @@ try {
       await expect(target.locator(':scope > [data-services-three-visible] > [data-service-variant]').first()).toBeVisible();
     }
     await expect(quiz.locator("[data-services-shamanica-link]")).toHaveAttribute("href", "/" + locale + "/shamanica");
-    await expect(quiz.locator("[data-services-extra-categories]")).toHaveCount(1);
-    const more = quiz.locator("[data-services-extra-categories]");
-    await more.locator("summary").click();
-    await expect(more.locator("nav a")).toHaveCount(4);
-    await expect(more.locator('nav a[href="#service-group-browse"]')).toHaveCount(1);
-    await more.locator("summary").click();
+    const extra = quiz.locator("[data-services-extra-categories]");
+    await expect(extra.locator("a[data-services-quiz-category]")).toHaveCount(4);
+    const extraTargets = { constellations:"services",practices:"reiki",courses:"courses",tests:"browse" };
+    for (const [category, group] of Object.entries(extraTargets)) {
+      const card = extra.locator('[data-services-quiz-category="' + category + '"]');
+      await expect(card).toBeVisible();
+      await expect(card).toHaveAttribute("href","#service-group-"+group);
+      await expect(page.locator("#service-group-"+group)).toHaveCount(1);
+    }
     await expect(quiz.locator('[data-services-quiz-category="business"]')).toHaveAttribute("href", "#service-group-business");
     // Business has its own topic, need and start-format branching.
     await quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice="business_support"]').click();
