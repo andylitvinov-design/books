@@ -14,6 +14,7 @@ import {coachEphemeralContext} from '@/lib/coaching/coach-ephemeral-context.mjs'
 import {coachModelProbeRetryAllowed} from '@/lib/coaching/coach-model-recovery.mjs'
 import {coachSessionVisibleStageIds} from '@/lib/coaching/coach-session-progress.mjs'
 import {coachOpeningIntro,coachOpeningProgress,coachOpeningProtocolSnapshot} from '@/lib/coaching/coach-opening-protocol.mjs'
+import {coachProfileProgress,coachProfileProtocolSnapshot} from '@/lib/coaching/coach-profile-intake.mjs'
 import {coachOpeningTurn} from '@/lib/coaching/coach-opening-entry.mjs'
 import {coachGoalTurn} from '@/lib/coaching/goal-turn.mjs'
 import {understandCoachingTurn} from '@/lib/personal-coaching/coaching-turn-understanding.mjs'
@@ -21,7 +22,6 @@ import styles from './my-coach-live-dialogue.module.css'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
 import MyCoachGeminiLive from './my-coach-gemini-live'
 import MyCoachStagedMemoryControls from './my-coach-staged-memory-controls'
-import {coachLiveMemoryNote,coachLiveMemoryScopes} from '@/lib/coaching/coach-live-memory-note.mjs'
 import MyCoachSessionStateCard from './my-coach-session-state-card'
 import {startCoachingMp3Playback,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 import {setCoachIos27AudioSession,refreshCoachIos27PlaybackRoute} from '@/lib/personal-coaching/coach-ios-audio-route.mjs'
@@ -41,7 +41,7 @@ import {myCoachProtocolPdfOptions,normalizeMyCoachProtocol} from '@/lib/personal
 const copy={
   en:{
     badge:'Generative AI dialogue · when available',title:'Let’s talk',
-    disclosure:'I’m a fictional AI coach, not a therapist. No questionnaires here — just a conversation. You choose the pace and direction.',
+    disclosure:'I’m a fictional AI coach, not a therapist. Choose a goal, a challenge, or an optional short personal profile. You set the pace.',
     consent:'I agree to send this conversation text to GroqCloud GPT-OSS (only after the site verifies the free tier and account-level Zero Data Retention), or a verified free OpenRouter fallback. Nothing is sent until I press Send or start voice mode. Browser speech recognition may send microphone audio to its provider. Do not share passwords or document numbers.',
     field:'Your message',placeholder:'What’s on your mind?…',
     send:'Send',sending:'Thinking…',verifying:'Checking the free model before sending any personal text…',verified:'Free privacy-checked AI is ready.',user:'You',coach:'AI coach',ai:'Model response',wisdom:'Wisdom Library',offline:'Offline coaching question',crisis:'Safety pause',
@@ -56,7 +56,7 @@ const copy={
   },
   ru:{
     badge:'Генеративный AI-диалог · при доступности модели',title:'Давай поговорим',
-    disclosure:'Я AI-персонаж, не психотерапевт. Здесь нет анкеты — просто разговор в вашем темпе, а направление выбираете вы.',
+    disclosure:'Я AI-персонаж, не психотерапевт. Вы сами выбираете: цель, проблема или короткий личный профиль — в комфортном темпе.',
     consent:'Я согласен(на) отправлять текст этого разговора в GroqCloud GPT-OSS (только после проверки бесплатного тарифа и Zero Data Retention для аккаунта) либо в проверенную бесплатную модель OpenRouter. До нажатия «Отправить» или начала голосового режима ничего не передаётся. Браузер может отправлять звук поставщику распознавания речи. Не вводите пароли и номера документов.',
     field:'Ваше сообщение',placeholder:'Что сейчас у вас на уме?…',
     send:'Отправить',sending:'Думаю…',verifying:'Проверяем бесплатную модель без передачи ваших сообщений…',verified:'Бесплатная AI-модель проверена и готова.',user:'Вы',coach:'AI-коуч',ai:'Ответ модели',wisdom:'Библиотека мудрости',offline:'Офлайн-вопрос коуча',crisis:'Пауза для безопасности',
@@ -71,7 +71,7 @@ const copy={
   },
   es:{
     badge:'Diálogo generativo de IA · sujeto a disponibilidad',title:'Hablemos',
-    disclosure:'Soy un personaje ficticio de IA, no terapeuta. Sin cuestionarios: podemos charlar con naturalidad, a tu ritmo.',
+    disclosure:'Soy un coach ficticio de IA, no terapeuta. Puedes explorar una meta, un problema o crear un perfil personal breve, a tu ritmo.',
     consent:'Consiento enviar el texto de este diálogo a GroqCloud GPT-OSS (solo tras verificar el nivel gratuito y Zero Data Retention de la cuenta) o a un modelo gratuito verificado de OpenRouter. No se envía nada hasta pulsar Enviar o iniciar el modo de voz. El navegador puede procesar mi voz. No incluyas contraseñas ni números de documentos.',
     field:'Tu mensaje',placeholder:'¿Qué tienes en mente?…',
     send:'Enviar',sending:'Pensando…',verifying:'Verificando el modelo gratuito sin enviar tus mensajes…',verified:'El modelo gratuito con privacidad verificada está listo.',user:'Tú',coach:'Coach IA',ai:'Respuesta del modelo',wisdom:'Biblioteca de sabiduría',offline:'Pregunta preparada',crisis:'Pausa de seguridad',
@@ -531,6 +531,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const openingProgress=coachOpeningProgress({turns:openingHistory,locale:conversationLang,
     personaId,allowPrior:allowOpeningPrior,priorSession:openingPrior})
   const openingActive=!openingProgress.completed
+  // Personal Profile is a different journey, never an inferred GROW goal.
+  // Client-only utterances after the six-gate handoff own every numeric score.
+  const profileProgress=openingProgress.completed&&openingProgress.answers.focus?.kind==='profile'
+    ?coachProfileProgress({locale:conversationLang,turns:openingHistory.slice(openingProgress.consumedTurns)})
+    :null
+  const profileActive=Boolean(profileProgress)
   const continuityChoice=openingProgress.answers.continuity?.kind||''
   const personalApproved=memoryReady&&openingProgress.checkmarks.name&&
     openingProgress.checkmarks.continuity&&openingProgress.checkmarks.focus&&
@@ -538,19 +544,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const memorySharePrior=memoryReady&&allowOpeningPrior&&continuityChoice==='previous'
   const memoryShareGoals=Boolean(personalApproved&&stagedMemory?.allowGoals&&!contextPaused)
   const memoryShareTests=Boolean(personalApproved&&stagedMemory?.assessmentsAllowed&&!contextPaused)
-  const memoryShareProfile=Boolean(personalApproved&&stagedMemory?.allowProfile&&!contextPaused)
-  const memoryNote=memoryReady&&!contextPaused?coachLiveMemoryNote({
-    prior:stagedMemory?.prior,
-    personal:personalApproved?stagedMemory.personal:null,
-    priorAllowed:allowOpeningPrior,continuity:continuityChoice,
-    goalsAllowed:memoryShareGoals,profileAllowed:memoryShareProfile,
-    assessmentsAllowed:memoryShareTests,topicKey:contextTopic,
-  }):''
-  const memoryScopes=memoryReady&&!contextPaused?coachLiveMemoryScopes({
-    priorAllowed:allowOpeningPrior,continuity:continuityChoice,
-    goalsAllowed:memoryShareGoals,profileAllowed:memoryShareProfile,
-    assessmentsAllowed:memoryShareTests,topicKey:contextTopic,
-  }):[]
   // An optional, very soft acknowledgment on the FOUR lit milestones only.
   // The feelings checkbox (step 5) has no sound or lamp by design.
   const previousOpeningLamps=useRef(null)
@@ -581,10 +574,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     es:['Invitación','Tu nombre','Continuidad','Elegir un enfoque','Cómo te sientes','Comenzar']
   }
   const openingDescription=openingStepNames[lang][Math.min(5,openingProgress.step-1)]
-  const visibleProgressStep=openingActive?openingProgress.step:visibleStageIndex+1
-  const visibleProgressTotal=openingActive?6:visibleStageTotal
+  const visibleProgressStep=openingActive?openingProgress.step:profileActive?profileProgress.step:visibleStageIndex+1
+  const visibleProgressTotal=openingActive?6:profileActive?profileProgress.total:visibleStageTotal
   const visibleProgressName=openingActive?(
-    {ru:'Начало сессии',en:'Session opening',es:'Inicio de sesión'}[lang]):visibleMethodName
+    {ru:'Начало сессии',en:'Session opening',es:'Inicio de sesión'}[lang]):profileActive?(
+    {ru:'Личный профиль',en:'Personal profile',es:'Perfil personal'}[lang]):visibleMethodName
   const stageChecklistTitles=coachSessionVisibleStageIds(visibleMethodId,{
     legacy:progressValid&&!meaningProgressValid
   }).map((stepId,index)=>semanticStageTitles[lang]?.[stepId]||
@@ -597,7 +591,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       ?(methodStepTitles[lang]?.[lastRecordedProgress.stepId]||
         stageChecklistTitles[visibleStageIndex]||ui.stages[visibleStageIndex])
       :stageChecklistTitles[visibleStageIndex]||ui.stages[visibleStageIndex]
-  const visibleProgressDescription=openingActive?openingDescription:stageDescription
+  const visibleProgressDescription=openingActive?openingDescription:profileActive?(profileProgress.completed?({ru:'Профиль заполнен',en:'Profile completed',es:'Perfil completado'}[lang]):profileProgress.axisTitle):stageDescription
   const keyInfoUi=keyInfoCopy[lang]
   const goalPrompts={
     en:{stress:'I would like to feel less stressed. Can we explore what is weighing on me?',energy:'I would like to restore my energy. Can we explore what is draining it?',relationships:'I would like to improve an important relationship. Can we explore what matters most?'},
@@ -899,7 +893,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       locale:responseLocale,turns:conversationTurns,skip:wisdomRequested,
     })
     // A preselected goal cannot rewrite a simple invitation reply like 'yes'.
-    message=openingProgress.completed?goalTurn.message:message
+    const goalEligible=openingProgress.completed&&(!profileProgress||profileProgress.completed)
+    message=goalEligible?goalTurn.message:message
     inFlightClientRef.current={requestId,message}
     // A new focus requires the client to choose which saved topic to use again.
     const contextFocusChanged=['correction','topic_shift'].includes(
@@ -911,6 +906,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       setContextPaused(true)
     }
     const commitGoalTurn=()=>{
+      if(!goalEligible)return
       if(goalTurn.goalIncluded)lastSharedGoalRef.current=goalTurn.goal
       if(goalTurn.clearGoal){
         lastSharedGoalRef.current=''
@@ -1128,6 +1124,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       completedAt:protocolFinishedAt,durationSeconds:Math.floor(activeSessionSeconds),
       goal:selectedGoal,clientSummary:protocolSummary,clientNextStep:protocolNextStep,
       opening:coachOpeningProtocolSnapshot(openingProgress),
+      ...(profileProgress?{profileCheckin:coachProfileProtocolSnapshot(profileProgress)}:{}),
       turns:turns.map(row=>({
         role:row.role,content:row.content,
         ...(row.role==='user'&&row.unanswered===true?{unanswered:true}:{}),
@@ -1209,7 +1206,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     ({ru:'Развернуть видео коуча',en:'Expand coach video',es:'Ampliar el vídeo del coach'})[lang]
   return <section ref={sessionRootRef} className={styles.root} lang={lang} data-my-coach-live-dialogue={personaId} data-my-coach-immersive-session data-session-visual-v2 data-session-visual-v3 data-session-visual-v4 data-coach-view-expanded={viewExpanded?'true':'false'} data-coach-session-started={sessionClockStarted?'true':'false'} data-coach-prestart-profile={sessionHasStarted?'false':'true'} data-coach-showcase={introComplete?'false':'true'}>
     <header className={styles.sessionTopbar}>
-      <Link className={styles.sessionBrand} href={'/'+lang+'/coaching/sessions'} onClick={interceptSessionExit} aria-label="Holistic House">
+      <Link className={styles.sessionBrand} href={'/'+lang} onClick={interceptSessionExit} aria-label="Holistic House">
         <span className={styles.sessionBrandMark} aria-hidden="true">✿</span><span>Holistic House</span>
       </Link>
       <div className={styles.sessionTopbarActions}>
@@ -1300,7 +1297,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             locale={conversationLang} personaId={personaId} settings={settings}
             voiceName={selectedGeminiVoice} elapsedSeconds={activeSessionSeconds}
             openingPrior={openingPrior} allowOpeningPrior={Boolean(openingPrior)&&openingProgress.checkmarks.invitation}
-            memoryNote={memoryNote} memoryScopes={memoryScopes}
             enabled={liveVoiceReady} canStart={!busy&&!paused&&!replaying&&liveVoiceReady}
             onSessionStart={()=>{setGeminiLiveConsent(true);setSessionClockStarted(true);setIntroComplete(true)}}
             onVoiceStateChange={setVoiceState}
@@ -1472,7 +1468,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       {sessionHasStarted&&<details className={styles.sessionProgress} data-coach-progress-accordion
         aria-label={ui.stageQuestion}
         data-coach-stage-index={visibleProgressStep}
-        data-coach-stage-source={openingActive?'client-evidence-opening':progressValid?'director-client-evidence':'local-provisional'}
+        data-coach-stage-source={openingActive?'client-evidence-opening':profileActive?'client-evidence-profile':progressValid?'director-client-evidence':'local-provisional'}
         title={stageProgressHelp[lang]}>
         <summary className={styles.sessionProgressSummary}>
           <div className={styles.sessionProgressText} aria-live="polite">
@@ -1488,6 +1484,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
                 ([2,3].includes(openingProgress.step)&&index===1)||
                 (openingProgress.step===4&&index===2)||
                 (openingProgress.step===6&&index===3)?'true':undefined}/>)):
+              profileActive?Array.from({length:profileProgress.total},(_,index)=><span key={index}
+                data-complete={index<profileProgress.ratings.length?'true':undefined}
+                data-current={index===profileProgress.step-1?'true':undefined}/>):
               Array.from({length:visibleStageTotal},(_,index)=><span key={index}
                 data-complete={progressValid&&index<visibleStageIndex?'true':undefined}
                 data-current={index===visibleStageIndex?'true':undefined}/>)}
@@ -1497,7 +1496,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <MyCoachSessionStateCard locale={lang} turns={turns}
           progress={progressValid?lastRecordedProgress:null} stageLabel={stageDescription}
           stageNames={stageChecklistTitles} stageIndex={visibleStageIndex}
-          stageProgressVerified={progressValid} opening={openingProgress}/>
+          stageProgressVerified={progressValid} opening={openingProgress} profile={profileProgress}/>
       </details>}
       <MyCoachStagedMemoryControls key={memoryProvider} locale={conversationLang} provider={memoryProvider}
         invitationAccepted={openingProgress.checkmarks.invitation&&!openingProgress.declined}

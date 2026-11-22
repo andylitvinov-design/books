@@ -24,12 +24,29 @@ async function revealMirrorAdvanced(page,engine="chromium"){
     if(engine==="webkit")await overflow.tap();
     else await overflow.click();
   }else{
-    // Start at the actual introduction. This navigates only to Topic,
-    // without rendering, sending a request, or charging any XP.
-    const plan=mirror.locator('[data-hh-mirror-plan]');
-    if(await plan.isVisible()){
-      if(engine==="webkit")await plan.tap();
-      else await plan.click();
+    // Real mobile path: Scope → the existing Goal → Format → Topic.
+    // Do not synthesize a hidden Back/Plan click or bypass consent.
+    const screen=()=>mirror.getAttribute("data-hh-mirror-screen");
+    if(await screen()==="landing"){
+      const entry=mirror.locator('[data-hh-mirror-enter="me"]');
+      if(engine==="webkit")await entry.tap();else await entry.click();
+      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","purpose");
+    }
+    if(await screen()==="purpose"){
+      const goal=mirror.locator('[data-hh-mirror-purpose-step]');
+      const rest=goal.locator('[data-video-ideas-goal-choice="rest"]');
+      await expect(rest).toBeVisible();
+      if(engine==="webkit")await rest.tap();else await rest.click();
+      const next=goal.locator('[data-video-ideas-goal-next]');
+      await expect(next).toBeEnabled();
+      if(engine==="webkit")await next.tap();else await next.click();
+      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","format");
+    }
+    if(await screen()==="format"){
+      const format=mirror.locator('[data-hh-mirror-video-format="basic"]');
+      await expect(format).toBeVisible();
+      if(engine==="webkit")await format.tap();else await format.click();
+      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
     }
     const composer=mirror.locator('[data-hh-mirror-composer]');
     for(let step=0;step<3&&!await composer.isVisible();step++){
@@ -126,23 +143,54 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(mirror).toBeVisible();
     await expect(mirror).toHaveAttribute('data-hh-mirror-step','1');
     await expect(mirror).toHaveAttribute("data-hh-mirror-screen","landing");
-    await expect(mirror.locator('[data-hh-mirror-enter]')).toHaveCount(2);
-    await expect(mirror.locator('[data-hh-mirror-video-format]')).toHaveCount(3);
+    await expect(mirror.locator('[data-hh-mirror-enter]')).toHaveCount(3);
+    await expect(mirror.locator('[data-hh-mirror-plan]')).toHaveCount(0);
+    const checkGeometry=async(selector,width)=>{
+      await page.setViewportSize({width,height:840});
+      // Playwright Locator.evaluate passes the root element first; the CSS selector
+      // is the second argument. Passing the element to querySelectorAll fails in WebKit.
+      const geometry=await mirror.evaluate((root,selector)=>{
+        const cards=[...root.querySelectorAll(selector)].map(el=>{
+          const r=el.getBoundingClientRect();return {top:r.top,bottom:r.bottom,width:r.width};
+        });
+        return {cards,scrollWidth:document.documentElement.scrollWidth,viewport:innerHeight};
+      },selector);
+      assert.ok(geometry.cards.length===3&&geometry.cards.every(card=>card.top>=0&&card.width>=275),
+        "three options readable "+width+" "+selector+" "+JSON.stringify(geometry));
+      assert.ok(geometry.cards[2].bottom<geometry.viewport-64,
+        "three options above fixed dock "+width+" "+selector+" "+JSON.stringify(geometry));
+      assert.ok(geometry.scrollWidth<=width+1,"no overflow "+width+" "+selector);
+    };
+    for(const width of [320,354,390,430])await checkGeometry('[data-hh-mirror-enter]',width);
+    await page.setViewportSize({width:390,height:840});
+    await mirror.locator('[data-hh-mirror-enter="me"]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-mode","me");
+    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","purpose");
+    const purpose=mirror.locator('[data-hh-mirror-purpose-step]');
+    await expect(purpose.locator('[data-video-ideas-goal-choice]')).toHaveCount(3);
     for(const width of [320,354,390,430]){
       await page.setViewportSize({width,height:840});
-      for(const item of await mirror.locator('[data-hh-mirror-enter]').all()){
-        await item.scrollIntoViewIfNeeded();
-        await expect(item).toBeVisible();
-        assert.ok(await item.evaluate(node=>node.getBoundingClientRect().width>=275),
-          "Direction stays touch readable at "+width);
-      }
+      const options=purpose.locator('[data-video-ideas-goal-choice]');
+      await expect(options).toHaveCount(3);
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),
-        false,"Magic Mirror landing must not overflow at "+width);
+        false,"Goal page no horizontal overflow at "+width);
+      const bottom=await options.last().evaluate(el=>el.getBoundingClientRect().bottom);
+      assert.ok(bottom<840-112,"Goal cards leave room for Continue above dock "+width);
     }
     await page.setViewportSize({width:390,height:840});
-    await mirror.locator('[data-hh-mirror-video-format="vip"]').click();
-    await expect(mirror.locator('[data-hh-mirror-video-format="vip"]')).toHaveAttribute("aria-pressed","true");
-    await mirror.locator('[data-hh-mirror-enter="me"]').click();
+    await purpose.locator('[data-video-ideas-goal-choice="rest"]').click();
+    await expect(purpose.locator('[data-video-ideas-goal-next]')).toBeEnabled();
+    await purpose.locator('[data-video-ideas-goal-next]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","format");
+    for(const width of [320,354,390,430])await checkGeometry('[data-hh-mirror-video-format]',width);
+    for(const [id,credits] of [["basic","250"],["pro","500"],["vip","2 000"]])
+      await expect(mirror.locator('[data-hh-mirror-video-format="'+id+'"]')).toContainText(credits+" XP");
+    await page.setViewportSize({width:390,height:840});
+    await mirror.locator('[data-hh-mirror-back-format]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","purpose");
+    await expect(purpose.locator('[data-video-ideas-goal-choice="rest"]')).toHaveAttribute("aria-pressed","true");
+    await purpose.locator('[data-video-ideas-goal-next]').click();
+    await mirror.locator('[data-hh-mirror-video-format="pro"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
     await expect(mirror.locator('[data-hh-mirror-composer] textarea')).toBeVisible();
     await expect(page.locator('[data-video-live-stage]')).toBeHidden();
@@ -162,8 +210,31 @@ async function verifyWorkspaceHydration(browser,locale){
     for(let index=0;index<4;index++)await expect(mirror.locator('[data-hh-mirror-goal-choice]').nth(index))
       .toContainText(approvedAxisLabels[index]);
     await mirror.locator('[data-hh-mirror-back-landing]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","format");
+    await mirror.locator('[data-hh-mirror-back-format]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","purpose");
+    await mirror.locator('[data-hh-mirror-back-purpose]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","landing");
     await mirror.locator('[data-hh-mirror-enter="others"]').click();
-    await mirror.locator('[data-hh-mirror-audience="business"]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","purpose");
+    await purpose.locator('[data-video-ideas-goal-choice="accept"]').click();
+    await purpose.locator('[data-video-ideas-goal-next]').click();
+    await mirror.locator('[data-hh-mirror-video-format="basic"]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
+    await expect(mirror).toHaveAttribute("data-hh-mirror-mode","present");
+    await mirror.locator('[data-hh-mirror-back-landing]').click();
+    await mirror.locator('[data-hh-mirror-back-format]').click();
+    await mirror.locator('[data-hh-mirror-back-purpose]').click();
+    await mirror.locator('[data-hh-mirror-enter="work"]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","purpose");
+    await purpose.locator('[data-video-ideas-goal-choice="reframe"]').click();
+    await purpose.locator('[data-video-ideas-goal-next]').click();
+    await mirror.locator('[data-hh-mirror-video-format="vip"]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
+    await expect(mirror).toHaveAttribute("data-hh-mirror-mode","business");
+    await expect(mirror.locator('header').first()).toContainText({
+      en:"Videos for Work",ru:"Видео для работы",es:"Vídeos para el trabajo"
+    }[locale]);
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","business");
     const workCards=mirror.locator('[data-hh-mirror-goal-choice]');
     const workLabels={
@@ -186,14 +257,27 @@ async function verifyWorkspaceHydration(browser,locale){
     await page.setViewportSize({width:390,height:840});
     await mirror.locator('[data-hh-mirror-goal-choice="insta-reels"]').click();
     await expect(studio).toHaveAttribute("data-active-workspace","phrases",{timeout:15000});
+    // The visitor selected VIP (2000 XP), not Pro (500 XP). Preserve that exact tier.
+    await expect(studio).toHaveAttribute("data-hh-mirror-planned-format","vip");
     await expect(page.locator('[data-video-ideas-goal-panel]')).toBeVisible();
+    // The second-screen Goal is preselected in the SAME canonical Ideas Goal.
+    await expect(page.locator('[data-video-ideas-goal-panel] [data-video-ideas-goal-choice="reframe"]'))
+      .toHaveAttribute("aria-pressed","true",{timeout:15000});
     await page.locator('[data-video-quick-control="video"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-step","1");
     await mirror.locator('[data-hh-mirror-audience="present"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","present");
+    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","purpose");
+    await purpose.locator('[data-video-ideas-goal-choice="accept"]').click();
+    await purpose.locator('[data-video-ideas-goal-next]').click();
+    await mirror.locator('[data-hh-mirror-video-format="basic"]').click();
     await expect(mirror.locator('[data-hh-mirror-goal-choice="stress"]')).toBeVisible();
     await mirror.locator('[data-hh-mirror-audience="me"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","me");
+    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","purpose");
+    await purpose.locator('[data-video-ideas-goal-choice="rest"]').click();
+    await purpose.locator('[data-video-ideas-goal-next]').click();
+    await mirror.locator('[data-hh-mirror-video-format="pro"]').click();
     // One-line Next is a real local taxonomy selection and jumps directly
     // to Goal. No advanced sections, extra copy or paid provider request.
     const customWish=locale==="ru"?"Хочу больше взаимопонимания":locale==="es"
@@ -244,10 +328,11 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(ideasGoalPane).toBeVisible();
     await expect(page.locator('[data-video-ideas-tab="goal"]'))
       .toHaveAttribute("aria-pressed","true");
-    await expect(page.locator('[data-video-ideas-tab="personalization"]')).toBeDisabled();
+    await expect(page.locator('[data-video-ideas-tab="personalization"]')).toBeEnabled();
     const goalChoices=ideasGoalPane.locator('[data-video-ideas-goal-choice]');
     await expect(goalChoices).toHaveCount(3);
-    await ideasGoalPane.locator('[data-video-ideas-goal-choice="rest"]').click();
+    await expect(ideasGoalPane.locator('[data-video-ideas-goal-choice="rest"]'))
+      .toHaveAttribute("aria-pressed","true",{timeout:15000});
     await ideasGoalPane.locator('[data-video-ideas-goal-next]').click();
     await expect(page.locator('[data-video-ideas-tab="personalization"]'))
       .toHaveAttribute("aria-pressed","true");
@@ -705,10 +790,8 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(page.locator('[data-video-recipient-audio-concept-preview]')).toBeVisible();
     await expect(page.locator('[data-video-recipient-audio-plan]')).toHaveCount(0);
     await expect(nextWithSpeech).toBeEnabled();
-    // macOS WebKit 26.6 exact-head CI 137225004595: a synthetic .click()
-    // acknowledged the button without committing its editor navigation.
-    // Use the visitor's genuine touch gesture on this mobile WebKit context;
-    // KEEP the strict editor + Concept assertions (never force a hidden tab).
+    // Mobile WebKit must perform the visitor touch gesture on this real
+    // recipient speech CTA; a synthetic click can be acknowledged but lost.
     if(browser.browserType().name()==="webkit")await nextWithSpeech.tap();
     else await nextWithSpeech.click();
     await expect(studio).toHaveAttribute("data-active-workspace","editor");
