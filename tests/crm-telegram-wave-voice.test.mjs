@@ -23,6 +23,7 @@ test('native private bot voice metadata is forwarded, not fabricated as text',()
  assert.match(route,/const archived=await ingestMessengerUpdate\(provider,event,config\)/);
  assert.match(route,/const mediaKind=event\.isTelegramVoice\?'voice':/);
  assert.match(route,/if\(aiIntake\.generate\.voiceNote\)/);
+ assert.match(route,/if\(aiIntake\.generate\.voiceNote\)/);
  assert.match(route,/await deliverTelegramWaveVoiceV3\(config,aiIntake\.generate/);
 });
 test('voice input metadata and external free-provider authorization are bounded',()=>{

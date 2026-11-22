@@ -1,4 +1,5 @@
 'use client'
+import { HolisticHouseBrand } from '@/components/holistic-house-brand'
 import { TraumaFrontMatter, TraumaSectionInstructions } from './trauma-administration'
 import { hasTraumaAdministration, traumaContextReady } from '@/lib/assessments/trauma-administration'
 import { canAutoContinueSave, savedResourcePath } from '@/lib/app/client-handoff'
@@ -745,9 +746,7 @@ export default function AppWorkspace({ locale, path = [] }) {
       context={savedInstallContext ? 'saved' : 'signup'} onDismiss={dismissInstallOffer} />
     <main className={documentReader ? 'hh-app hh-app--document-reader' : practiceInner ? 'hh-app hh-app--practice-inner' : page === 'portrait' ? 'hh-app hh-app--profile' : courseLanding ? 'hh-app hh-app--course-index' : 'hh-app'} data-profile-page-shell={page === 'portrait' ? 'life' : undefined}>
       {!documentReader && !practiceInner && page !== 'portrait' && !courseLanding && <header className="hh-header">
-        <Link href={root} prefetch={false} className="hh-brand">
-          Holistic House<span>{nav.find(item => navIsActive(item.id))?.label || c.account}</span>
-        </Link>
+        <HolisticHouseBrand locale={locale} section={nav.find(item => navIsActive(item.id))?.label || c.account} />
         {(data.practitioner || data.practice) && <Link className="hh-master-header-link" href={'/' + locale + '/practice'} prefetch={false}>{locale === 'ru' ? 'Практика' : 'Practice'}</Link>}
         <details className="hh-account-menu">
           <summary>{data.account.displayName || c.account}</summary>

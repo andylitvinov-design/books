@@ -1,4 +1,5 @@
 "use client";
+import { HolisticHouseBrand } from "./holistic-house-brand";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -804,10 +805,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], learningIt
       data-holistic-study-view={choice === "pump" ? "true" : undefined}>
       <div className={styles.container}>
         <header className={styles.compactAppHeader} data-support-app-header>
-          <Link href={"/" + locale + "/holistic-support/mobile"} prefetch={false} className={styles.compactBrand}>
-            <strong>Holistic House</strong>
-            <span>{t.newUi}</span>
-          </Link>
+          <HolisticHouseBrand locale={locale} section="SUPPORT" />
           <button type="button" className={styles.compactLocale} aria-label={t.settings}
             aria-expanded={settingsOpen} aria-controls="support-mobile-settings"
             onClick={() => setSettingsOpen(open => !open)}>

@@ -504,9 +504,11 @@ try{
  // The approved compact video-first header deliberately hides its older
  // standalone title and shows the branded studio identity instead. Assert
  // the ACTUAL visible mobile design, not a retired screenshot-era label.
- const studioIdentity=videoHeader.locator('[class*="quickBrandIdentity"]');
- assert.equal((await studioIdentity.innerText()).trim(),"Holistic House\nВидеостудия · Создание видео",
-   "Video has the approved compact Holistic House studio identity");
+ const studioIdentity=videoHeader.locator('[data-hh-site-brand="ru"]');
+ assert.equal((await studioIdentity.innerText()).replace(/\s+/g," ").trim(),"Holistic House ВИДЕОСТУДИЯ",
+   "Video has the current clickable Holistic House studio identity");
+ assert.equal(await studioIdentity.getAttribute("href"),"/ru",
+   "the studio brand must return to the localized homepage");
  assert.equal(await videoHeader.locator('[class*="quickBrandMobileTitle"]').isVisible(),false,
    "the retired alternate mobile title stays hidden to avoid double heading");
  assert.equal(await page.locator("[data-mandala-legacy-header]:visible").count(),0,

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { HolisticHouseBrand } from '@/components/holistic-house-brand'
 import { SiteNavigation } from '@/components/site-navigation'
 import InstantCabinetLink from './instant-cabinet-link'
 import { ProfileModeSwitch } from '../master-mode-switch'
@@ -235,11 +236,7 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
   return <section className={styles.hub} data-profile-hub-tabs data-profile-active={current} data-profile-course-index={isCourseLanding ? 'true' : undefined}>
     <header className={styles.heading}>
       <div className={styles.headingTitle}>
-        {(brandedSpace || settingsMode) && <span className={styles.brandMark} aria-hidden="true" />}
-        <h2 aria-label={(brandedSpace || settingsMode) ? 'Holistic House' : t.title}>
-          <span className={styles.titleFull}>{(brandedSpace || settingsMode) ? 'Holistic House' : t.title}</span>
-          <span className={styles.titleCompact}>{(brandedSpace || settingsMode) ? 'Holistic House' : 'My Space'}</span>
-        </h2>
+        <h2><HolisticHouseBrand locale={selected} section={!brandedSpace && !settingsMode ? t.title : undefined} /></h2>
       </div>
       <div className={styles.profileHeadingActions}>
         <details className={styles.languageSwitch} data-profile-language-switch>

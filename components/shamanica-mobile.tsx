@@ -1,4 +1,5 @@
 "use client";
+import { HolisticHouseBrand } from "./holistic-house-brand";
 import Image from "next/image";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
@@ -161,7 +162,7 @@ export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;au
  return <main className={styles.page} lang={locale} data-shamanica-mobile data-shamanica-audience={business?"business":"self"} data-shamanica-business-page={business?"true":undefined}>
   <div className={styles.container}>
    <header className={styles.header}>
-    <Link className={styles.brand} href={locale==="en"?"/":"/"+locale} prefetch={false}><Leaf size={33} strokeWidth={1.8} aria-hidden="true"/><span>Holistic House{!business&&<small className={styles.brandSub}>{locale==="ru"?"ШАМАНИК":"SHAMANIC"}</small>}</span></Link>
+    <HolisticHouseBrand locale={locale} section={locale==="ru"?"ШАМАНИК":"SHAMANIC"} />
     <div className={styles.tools}>
      <label className={styles.lang}>
       <span className={styles.srOnly}>Language</span>

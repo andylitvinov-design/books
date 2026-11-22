@@ -1,5 +1,6 @@
 'use client'
 
+import {HolisticHouseBrand} from './holistic-house-brand'
 import {useState} from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -53,10 +54,7 @@ export default function PracticeWorkProfileIntro({locale,onAction,activeCount,re
   const hasRequests=/^[0-9]+$/.test(String(requestCount))&&Number(requestCount)>0
   return <section className={styles.hub} data-profile-hub-tabs data-profile-work-hub data-profile-active="today">
     <header className={styles.heading} data-practice-workspace-heading>
-      <Link href={'/'+language} prefetch={false} className={styles.brand} data-work-home-link aria-label={t.home}>
-        <Image src="/icons/holistic-house-teal.svg" alt="" width={45} height={45} priority />
-        <span>Holistic House</span>
-      </Link>
+      <HolisticHouseBrand locale={language} section={language==='ru'?'МОЯ РАБОТА':language==='es'?'MI TRABAJO':'MY WORK'} workHomeMarker />
       <div className={styles.profileHeadingActions}>
         <details className={styles.languageSwitch} data-profile-language-switch>
           <summary aria-label={language==='ru'?'Выбрать язык':language==='es'?'Elegir idioma':'Choose language'}>

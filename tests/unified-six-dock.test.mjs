@@ -274,12 +274,18 @@ test("Video Mandala uses a compact, public mobile header and Reiki filters canno
  const supportCss=read("components/holistic-support-mobile.module.css");
  const originalDock=read("components/holistic-support-mandala-dock.tsx");
  const global=read("app/unified-mobile-dock.css");
- assert.ok(studio.includes('href={"/"+locale+"/holistic-support/mobile"} prefetch={false} className={videoStyles.quickBrandBack}'));
- assert.match(studio,/quickBrandMobileTitle/);
+ // The approved shared brand replaces the historical Support-back wordmark.
+ // Navigation still starts within a compact Video Studio header, while the
+ // single accessible site logo always leads to the canonical localized home.
+ assert.match(studio,/<nav className=\{videoStyles\.quickBrandBar\} data-video-hypno-scroll-start/);
+ assert.match(studio,/<HolisticHouseBrand locale=\{locale\} section=/);
+ assert.match(studio,/data-video-ihelp-header-trigger/);
+ assert.match(studioCss,/\.quickBrandBar/);
+ const brand=read("components/holistic-house-brand.tsx");
+ assert.match(brand,/href=\{href\}/);
+ assert.match(brand,/locale === "en" \? "\/" : `\/\$\{locale\}`/);
  for(const translated of ["Видео-мандала","Vídeo mandala","Video mandala"])
   assert.ok(studio.includes(translated),translated);
- assert.match(studioCss,/\.quickBrandMobileTitle\{display:none\}/);
- assert.match(studioCss,/\.studio \.quickBrandMobileTitle\{\s*display:block/);
  assert.doesNotMatch(supportCss,/\.page:has\(\[data-support-reiki-central\]\[data-active-tab="filter"\]\) \.bottomNav\s*\{/);
  assert.match(originalDock,/data-mandala-legacy-header/);
  assert.match(global,/data-mandala-legacy-header/);

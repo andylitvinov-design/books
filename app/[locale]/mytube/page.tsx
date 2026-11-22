@@ -1,6 +1,7 @@
 import type {Metadata, Viewport} from "next";
+import {HolisticHouseBrand} from "@/components/holistic-house-brand";
 import Link from "next/link";
-import {ArrowLeft, BookOpen, Play} from "lucide-react";
+import {ArrowLeft, BookOpen} from "lucide-react";
 import {notFound} from "next/navigation";
 import {VideoDiscovery} from "@/components/video-discovery";
 import {LibraryFeed} from "@/components/library-feed";
@@ -47,10 +48,7 @@ export default async function MyTubePage({params,searchParams}:Props){
         className={styles.back} aria-label={copy.back}>
         <ArrowLeft size={22} aria-hidden="true"/><span>{copy.back}</span>
       </Link>
-      <div className={styles.brand} aria-label="MyTube">
-        <span className={styles.playMark}><Play size={17} fill="currentColor" aria-hidden="true"/></span>
-        <strong>My<span>Tube</span></strong>
-      </div>
+      <div className={styles.homeBrand}><HolisticHouseBrand locale={locale} section="MYTUBE" /></div>
       <Link href={"/"+locale+"/library?view=videos"} prefetch={false}
         className={styles.library} aria-label={copy.library}>
         <BookOpen size={20} aria-hidden="true"/><span>{copy.library}</span>

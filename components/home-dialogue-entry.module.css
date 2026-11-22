@@ -392,3 +392,6 @@
   .guideAudio{height:auto;min-height:34px}
 }
 /* Large primary text stays legible; on short devices, scrolling beats clipping. */
+
+/* Keep the brand and three navigation controls available on narrow phones. */
+@media(max-width:360px){ .header{flex-wrap:nowrap;gap:2px}.headerActions{margin-left:auto;gap:2px} }
