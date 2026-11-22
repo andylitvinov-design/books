@@ -445,7 +445,14 @@ async function inspect(browserType,locale,width){
         id+" "+tab+" active control remains readable");
       assert.ok(palette.width<=palette.viewport+2,id+" "+tab+" no document overflow");
       assert.equal(palette.dockCount,1,id+" "+tab+" one fixed Holistic House dock");
-      await nav.scrollIntoViewIfNeeded();
+      // The approved Video entry intentionally hides the old workspace
+      // rail. Its visible Magic Mirror goal picker, not a hidden nav tab,
+      // is the real iPhone landmark after returning from the editor.
+      if(tab==="video"){
+        await expect(page.locator('[data-hh-mirror-goals]')).toBeVisible();
+      }else{
+        await nav.scrollIntoViewIfNeeded();
+      }
       await page.screenshot({
         path:folder+"/studio-palette-"+tab+"-ru-390-webkit.png",
         fullPage:false,animations:"disabled",
