@@ -99,3 +99,19 @@ test('opening turn stays local and deterministic until client explicitly confirm
   const h=['да','Гарри','goal','нормально','да']
   assert.equal(coachOpeningTurn({message:'хочу обсудить цель',openingHistory:h,locale:'ru'},'harry'),null)
 })
+
+
+test('explicit willingness to try advances despite an initial maybe, in RU EN ES',()=>{
+  for(const [locale,text] of [
+    ['ru','Возможно, давай попробуем'],
+    ['en',"Maybe, let's try"],
+    ['es','Quizá, vamos a probar'],
+  ]){
+    const ready=coachOpeningProgress({turns:[text],locale})
+    assert.equal(ready.lamps.invitation,true,locale)
+    const hesitant=coachOpeningProgress({turns:[{
+      ru:'Возможно',en:'Maybe',es:'Quizá'
+    }[locale]],locale})
+    assert.equal(hesitant.lamps.invitation,false,locale)
+  }
+})
