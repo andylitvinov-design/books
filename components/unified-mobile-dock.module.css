@@ -63,3 +63,33 @@
 }
 @media(min-width:760px){.dock{width:min(92%,850px);border-radius:30px 30px 0 0}.dock[data-hh-editorial-dock="true"]{display:none}}
 @media(prefers-reduced-motion:reduce){.dock,.item{transition:none}}
+
+/* MY_SPACE_CINEMATIC_20261121 — only the Profile landing.
+   Retain original seven links, active state, AI orb and keyboard handling. */
+:global(body:has([data-profile-space-dashboard])) .dock{
+  border:1px solid #d5ad6e;border-bottom:0;
+  border-radius:30px 30px 0 0;
+  background:linear-gradient(180deg,#07523bef,#012d21f9 63%,#012117fa)!important;
+  box-shadow:0 -5px 24px #070704c9,inset 0 1px #f5d58b59;
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+}
+:global(body:has([data-profile-space-dashboard])) .item{
+  color:#fff1d6;
+}
+:global(body:has([data-profile-space-dashboard])) .item[aria-current="page"]:not([data-unified-dock-item="ai"]){
+  color:#fff8dc;background:#347c3b85;
+}
+:global(body:has([data-profile-space-dashboard])) .item[data-unified-dock-item="ai"] svg{
+  border:2px solid #f9db94;
+  background:radial-gradient(circle at 35% 14%,#13c88d,#00754d 60%,#004532);
+  box-shadow:0 0 0 4px #e8ba6482,0 1px 20px 5px #e7bf6766;
+}
+:global(body:has([data-profile-space-dashboard])) .item[data-unified-dock-item="ai"] span{
+  color:#fff7de;background:linear-gradient(#087953,#03482e);
+}
+@media(max-width:430px){
+  :global(body:has([data-profile-space-dashboard])) .dock{min-height:90px;padding-top:12px}
+  :global(body:has([data-profile-space-dashboard])) .item span{
+    font-size:clamp(9.5px,2.65vw,11.5px);overflow-wrap:normal;white-space:nowrap;
+  }
+}

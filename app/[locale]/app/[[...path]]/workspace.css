@@ -1785,3 +1785,28 @@
 @media(max-width:760px){
   .hh-app.hh-app--course-index{padding-top:0}
 }
+
+/* MY_SPACE_CINEMATIC_20261121 — the actual signed-in AND guest portrait
+   dashboard, never the reports editor or the Courses page. Background is
+   one existing optimized local image, with no external script or API. */
+body:has(main.hh-app [data-profile-space-dashboard]){
+  background:#170f09!important;
+}
+main.hh-app:has([data-profile-space-dashboard]){
+  box-sizing:border-box;
+  width:100%;max-width:none;min-height:100dvh;
+  margin:0 auto;padding:10px 13px calc(115px + env(safe-area-inset-bottom));
+  background:
+    linear-gradient(180deg,rgba(25,17,10,.40),rgba(22,14,9,.83)),
+    url("/images/holistic-house/support-therapy-cabinet-hd.webp") center top / cover no-repeat;
+  color:#fff3d9;
+}
+main.hh-app:has([data-profile-space-dashboard]) [data-profile-hub-tabs]{
+  width:min(100%,900px);
+}
+@media(min-width:760px){
+  main.hh-app:has([data-profile-space-dashboard]){padding:20px 24px 140px}
+}
+@media(max-width:354px){
+  main.hh-app:has([data-profile-space-dashboard]){padding:8px 9px calc(115px + env(safe-area-inset-bottom))}
+}
