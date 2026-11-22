@@ -38,6 +38,9 @@ const liveAudioHostSources = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Experimental A/B only. Keep original DOM, React hero, all CSS rules and
+  // cascade order; compare exact BASE vs candidate before any release.
+  experimental: { cssChunking: "strict" },
   // ffmpeg-static uses __dirname to locate its downloaded native executable.
   // Keep the package external to Next webpack so its binary path remains valid.
   serverExternalPackages: ["ffmpeg-static"],
