@@ -6,9 +6,9 @@ import {getCoachCompactProfile} from '@/lib/coaching/coach-compact-profiles.mjs'
 import styles from './my-coach-compact-profile.module.css'
 
 const copy={
-  en:{profile:'Coach Profile',back:'Back',character:'Character',archetype:'Archetype',style:'Style',workStyle:'How I work',focus:'Focus Areas',model:'Coaching Model',features:'Key Features',brand:'Holistic House'},
-  ru:{profile:'Профиль коуча',back:'Назад',character:'Характер',archetype:'Архетип',style:'Стиль',workStyle:'Манера работы',focus:'С чем помогает',model:'Модель коучинга',features:'Особенности',brand:'Holistic House'},
-  es:{profile:'Perfil del coach',back:'Volver',character:'Carácter',archetype:'Arquetipo',style:'Estilo',workStyle:'Cómo trabajo',focus:'Áreas de apoyo',model:'Modelo de coaching',features:'Características',brand:'Holistic House'}
+  en:{profile:'Coach Profile',back:'Back',character:'Character',archetype:'Archetype',style:'Style',workStyle:'How I work',mission:'My mission',signature:'Signature question',focus:'Focus Areas',model:'Coaching Model',features:'Key Features',brand:'Holistic House'},
+  ru:{profile:'Профиль коуча',back:'Назад',character:'Характер',archetype:'Архетип',style:'Стиль',workStyle:'Манера работы',mission:'Моя миссия',signature:'Главный вопрос',focus:'С чем помогает',model:'Модель коучинга',features:'Особенности',brand:'Holistic House'},
+  es:{profile:'Perfil del coach',back:'Volver',character:'Carácter',archetype:'Arquetipo',style:'Estilo',workStyle:'Cómo trabajo',mission:'Mi misión',signature:'Pregunta clave',focus:'Áreas de apoyo',model:'Modelo de coaching',features:'Características',brand:'Holistic House'}
 }
 function CoachProfileSections({profile,personaId,t}){
   return <>
@@ -41,6 +41,10 @@ function CoachProfileSections({profile,personaId,t}){
           <p>{profile.workStyle}</p>
         </div>
       </section>
+      {personaId==='genie'&&<>
+        <section className={[styles.card,styles.workCard].join(' ')}><div className={styles.cardBody}><h2>{t.mission}</h2><p>{profile.mission}</p></div></section>
+        <section className={[styles.card,styles.workCard].join(' ')}><div className={styles.cardBody}><h2>{t.signature}</h2><p>{profile.signatureQuestion}</p></div></section>
+      </>}
     </div>
     <section className={[styles.card,styles.modelCard].join(' ')}>
       <span className={styles.cardIcon}><Target size={29} strokeWidth={1.8} aria-hidden="true"/></span>
@@ -48,6 +52,8 @@ function CoachProfileSections({profile,personaId,t}){
         <h2>{t.model}</h2>
         <strong className={styles.model}>{profile.model}</strong>
         <p className={styles.steps}>{profile.steps.map((step,index)=><span key={index}>{index>0&&<b aria-hidden="true">·</b>}{step}</span>)}</p>
+        {profile.specialty&&<div data-genie-compass-profile><strong className={styles.model}>{profile.specialty}</strong>
+          <p className={styles.steps}>{profile.specialtySteps.map((step,index)=><span key={index}>{index>0&&<b aria-hidden="true">·</b>}{step}</span>)}</p></div>}
       </div>
       <ChevronRight className={styles.cardChevron} size={22} aria-hidden="true"/>
     </section>
@@ -126,7 +132,7 @@ export default function MyCoachCompactProfile({personaId,locale='en',methodId,on
         </button>
       </header>
       <section className={styles.hero} aria-label={profile.name}>
-        <img src={'/images/holistic-house/my-coach-motion/'+personaId+'-still.webp'}
+        <img src={'/images/holistic-house/my-coach-motion/'+(personaId==='genie'?'genie-still.svg':personaId==='harry'?'harry-soft-still.webp':personaId+'-still.webp')}
           alt="" loading="eager" decoding="async"/>
         <div className={styles.heroShade} aria-hidden="true"/>
         <div className={styles.heroCopy}>
