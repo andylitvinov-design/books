@@ -42,8 +42,8 @@ test("Safari movie retains the real Canvas scene, story, hypno and stage caption
     "paintCinematicFrame(ctx,image,effect,time",
     "paintStoryMotifs(ctx,time,appliedStory)",
     "paintHypnoLightOverlay(ctx,time,hypnoLight)",
-    "paintSingleVideoTextOverlay(ctx,time,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips)",
-    "paintStageCaptionOverlay(ctx,time,plan,clips)",
+    "paintSingleVideoTextOverlay(ctx,time,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips,reelModeActive)",
+    "paintStageCaptionOverlay(ctx,time,plan,clips,reelSafe)",
     "if(usingFreeFilmCompilation&&!frame&&!hasStoryboardPhotoAt(time))return false",
   ])assert.ok(studio.includes(marker),marker);
 });
