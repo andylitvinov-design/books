@@ -45,7 +45,8 @@ const copy={
 
 export default function MyCoachStagedMemoryControls({locale='en',provider='gemini_free',
  invitationAccepted=false,identityConfirmed=false,focusConfirmed=false,priorAllowed=false,onPriorAllowed,
- topicKey='',onTopicKey,assessmentsAllowed=false,onAssessmentsAllowed,onMemoryChange}){
+ topicKey='',onTopicKey,assessmentsAllowed=false,onAssessmentsAllowed,onMemoryChange,
+ contextSessionToken,contextRevision=0,children}){
  const lang=copy[locale]?locale:'en',t=copy[lang]
  const [allowGoals,setAllowGoals]=useState(false)
  const [allowProfile,setAllowProfile]=useState(false)
@@ -92,7 +93,7 @@ export default function MyCoachStagedMemoryControls({locale='en',provider='gemin
    void fetch('/api/app/my-coach/staged-memory',{
      method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
      headers:{'Content-Type':'application/json'},body:JSON.stringify({stage:'personal',provider,
-       topicKey,stageToken,consent:{sessionAccepted:true,providerSharing:true,
+       topicKey,stageToken,...(contextSessionToken?{contextSessionToken}:{}),consent:{sessionAccepted:true,providerSharing:true,
          goals:allowGoals,profile:allowProfile,assessments:assessmentsAllowed}}),
    }).then(async response=>{
      if(!response.ok)throw Error('UNAVAILABLE')
@@ -102,7 +103,7 @@ export default function MyCoachStagedMemoryControls({locale='en',provider='gemin
    }).catch(()=>{if(!controller.signal.aborted)setFailed(true)})
      .finally(()=>{if(!controller.signal.aborted)setLoadingPersonal(false)})
    return()=>controller.abort()
- },[identityConfirmed,focusConfirmed,stageToken,provider,topicKey,allowGoals,allowProfile,assessmentsAllowed])
+ },[identityConfirmed,focusConfirmed,stageToken,provider,topicKey,allowGoals,allowProfile,assessmentsAllowed,contextSessionToken,contextRevision])
 
  useEffect(()=>{
    const invalidate=()=>setFocusRevision(value=>value+1)
@@ -135,6 +136,7 @@ export default function MyCoachStagedMemoryControls({locale='en',provider='gemin
    </div>:null}
    {identityConfirmed&&focusConfirmed&&<details className={styles.voicePrivacyDetails} data-coach-memory-personal>
      <summary>{t.details}</summary>
+     {children}
      <label><input type="checkbox" checked={allowGoals} onChange={event=>{setSharePersonal(false);setAllowGoals(event.target.checked)}}/>{' '}{t.goals}</label>
      <label><input type="checkbox" checked={allowProfile} onChange={event=>{setSharePersonal(false);setAllowProfile(event.target.checked)}}/>{' '}{t.profile}</label>
      <label><input type="checkbox" checked={assessmentsAllowed} onChange={event=>{setSharePersonal(false);onAssessmentsAllowed?.(event.target.checked)}}/>{' '}{t.tests}</label>

@@ -31,7 +31,7 @@ export async function GET(request){
     if(request.headers.get('sec-fetch-site')==='cross-site')
       throw new AppError('MY_COACH_INTRO_CROSS_SITE',403)
     const url=new URL(request.url)
-    const match=/^\/api\/coaching\/intro\/(en|ru|es)\/(mira|max|sofia|alex|merlin|harry|lea|noah|iris|ray)\/?$/.exec(url.pathname)
+    const match=/^\/api\/coaching\/intro\/(en|ru|es)\/(mira|max|sofia|alex|merlin|harry|genie|lea|noah|iris|ray)\/?$/.exec(url.pathname)
     if(!match||!['','?v=2'].includes(url.search))throw new AppError('MY_COACH_INTRO_INVALID',400)
     const [,locale,personaId]=match
     const intro=getCoachPresentation(personaId,locale)

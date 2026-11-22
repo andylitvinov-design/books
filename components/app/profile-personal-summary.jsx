@@ -71,6 +71,19 @@ export default function ProfilePersonalSummary({locale='en',profile={},data={},o
        </div>:null}
      {checkin?.values?<p className={styles.hint}>{t.goalNote}</p>:null}
    </section>
+   <section className={styles.card} data-daybook-dual-vector-entry>
+     <header className={styles.heading}><Target size={23} aria-hidden="true"/>
+       <h2>{appLocale==='ru'?'Два вектора развития':appLocale==='es'?'Dos vectores de desarrollo':'Two development vectors'}</h2>
+       <Link href={'/'+appLocale+'/development-vectors'} aria-label="Development vectors"><ArrowRight size={20}/></Link>
+     </header>
+     <p className={styles.goalEmpty}>{appLocale==='ru'
+      ?'Внутреннее: 8 смысловых осей. Внешнее: 8 жизненных сфер. Оцените «сейчас» и «хочу» отдельно.'
+      :appLocale==='es'?'Interior: 8 ejes. Exterior: 8 áreas de vida. Evalúa ahora y deseado.':
+       'Inner: 8 meaning axes. Outer: 8 life areas. Rate now and desired separately.'}</p>
+     <Link className={styles.more} href={'/'+appLocale+'/development-vectors'}>
+       {appLocale==='ru'?'Заполнить самостоятельно или с коучем':appLocale==='es'?'Completar con preguntas guiadas':'Fill in alone or with guided questions'}
+       <ArrowRight size={16}/></Link>
+   </section>
    <section className={styles.card} aria-label={t.tests}>
      <header className={styles.heading}><BarChart3 size={23} aria-hidden="true"/><h2>{t.tests}</h2><Link href={'/'+appLocale+'/app/tests'} aria-label={t.allTests}><ArrowRight size={20}/></Link></header>
      {privateState.loading?<p className={styles.hint} role="status">{t.wait}</p>:

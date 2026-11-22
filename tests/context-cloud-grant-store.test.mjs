@@ -13,7 +13,7 @@ const row = {
 test('account-wide lookup scopes the query and rejects session or account mismatches', async () => {
   const read = rows => readCoachContextGrants({
     async query(_sql, args) {
-      assert.deepEqual(args, [actor.id, 'groq', null, 257])
+      assert.deepEqual(args, [actor.id, 'groq', null, 257, false])
       return { rows }
     },
   }, actor, request)
@@ -24,6 +24,22 @@ test('account-wide lookup scopes the query and rejects session or account mismat
   assert.deepEqual(await read([{ ...row, session_id: 'session' }]), [])
   assert.deepEqual(await read([{ ...row, account_id: 'other' }]), [])
   assert.deepEqual(await read(Array(257).fill(row)), [])
+})
+
+test('conversation lookup excludes account-wide grants and retains account-wide withdrawals', async () => {
+  const db = { async query(sql, args) {
+    assert.match(sql, /session_id is not null or decision = 'revoke'/)
+    assert.deepEqual(args, [actor.id, 'groq', 'session', 257, true])
+    return { rows: [
+      { ...row, decision: 'grant' },
+      { ...row, decision: 'revoke', revision: '43' },
+      { ...row, decision: 'grant', revision: '44', session_id: 'session' },
+    ] }
+  } }
+  const events = await readCoachContextGrants(db, actor, { ...request, accountWideOnly: false, sessionOnly: true })
+  assert.deepEqual(events.map(event => [event.revision, event.sessionId, event.decision]), [
+    [43, null, 'revoke'], [44, 'session', 'grant'],
+  ])
 })
 
 test('grant writes require confirmation and reserve owner revision order before insert', async () => {
