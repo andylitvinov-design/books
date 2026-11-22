@@ -5,6 +5,7 @@ import {readFile} from 'node:fs/promises'
 import pg from 'pg'
 import {createDailyIntentionRepository} from '../lib/app/daybook-daily.js'
 import {createDailyIntentionHandler} from '../lib/app/daybook-daily-handler.mjs'
+import {collectDailyExport} from '../lib/app/daybook-daily-export.mjs'
 import {closeDatabase} from '../lib/app/database.js'
 const url=process.env.HH_DAILY_TEST_DATABASE_URL
 if(!url||process.env.VERCEL||process.env.HH_APP_TEST_RUNTIME!=='isolated')throw new Error('ISOLATED_DATABASE_REQUIRED')
@@ -98,6 +99,17 @@ test('owner export pages include every remaining encrypted daily record without 
  assert.deepEqual([page.intentions[0].localDay,last.intentions[0].localDay].sort(),['2026-11-22','2026-11-23'])
  assert.deepEqual(await repo.list(b,{}),{intentions:[],nextCursor:null})
  await assert.rejects(repo.list(b,{before:page.nextCursor}),{code:'DAYBOOK_CURSOR_UNAVAILABLE'})
+ const handler=createDailyIntentionHandler({getConfig:()=>config,origin:()=>{},sameOrigin:()=>{},auth:()=>({verified:async()=>a,apply:r=>r}),rate:async()=>{},repository:createDailyIntentionRepository})
+ const exported=await collectDailyExport(async(path,body,method,options)=>{
+  assert.equal(options.accountId,a.id);assert.equal(method,'GET')
+  if(path.startsWith('coaching-life-plan'))return {goals:[{id:goal,title:'Current synthetic goal'}],actions:[{id:action,goalId:goal,description:'Current synthetic step'},{id:fresh,goalId:goal,description:'Current second step'}]}
+  const response=await handler(new Request('https://synthetic.test/api/app/'+path.replace('limit=50','limit=1'),{headers:{'x-hh-account-id':a.id}}))
+  assert.equal(response.status,200);return response.json()
+ },a.id,()=>true,'en')
+ assert.equal(exported.intentions.length,2)
+ assert.deepEqual(exported.intentions.map(row=>row.localDay).sort(),['2026-11-22','2026-11-23'])
+ assert.equal(exported.referenceContext.goals[0].title,'Current synthetic goal')
+
 })
 test('revoked sessions cannot read daily records and account erasure removes ciphertext and receipts',async()=>{
  await admin.query('delete from auth.sessions where user_id=$1',[a.id]);await assert.rejects(repo.read(a,initial.id),{code:'SIGN_IN_REQUIRED'})
