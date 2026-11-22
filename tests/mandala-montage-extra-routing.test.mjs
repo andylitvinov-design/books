@@ -36,6 +36,19 @@ test("top and Montage tab order is approved, one photographic Extra",()=>{
 
 });
 
+test("reopening Text after Emotional Support keeps the real editor (touch and click)",()=>{
+ const begin=studio.indexOf("<nav className={videoStyles.montageQuickTools}");
+ const end=studio.indexOf("</nav>",begin);
+ assert.ok(begin>0&&end>begin);
+ const nav=studio.slice(begin,end);
+ assert.equal((nav.match(/if\(item\.id==="text"&&extraTextChoice==="support"\)setMontageTextStage\("edit"\)/g)||[]).length,2,
+   "mobile touch and keyboard/click both keep selected Support in the Text editor");
+ assert.doesNotMatch(nav,/setMontageTextStage\("choice"\)/,
+   "the retired Text mode chooser was removed and must not blank the phrase editor");
+ assert.match(studio,/extraTextChoice==="support"&&montageTextStage==="edit"/);
+ assert.match(browser,/await expect\(page\.locator\('\[data-video-montage-text\] \[data-video-ideas-phrases\]'\)\)\.toBeVisible/);
+});
+
 test("approved Personal Concept is stable on passive phrase-editor navigation",()=>{
  assert.match(studio,/preserveApprovedConcept=\{Boolean\(approvedVideoConcept\)&&personalPhrasesOpen\}/);
  assert.match(ideas,/preserveApprovedConcept\?:boolean/);

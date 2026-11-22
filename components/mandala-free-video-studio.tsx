@@ -9747,11 +9747,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 onPointerUp={event=>{
                   if(event.pointerType!=="touch"||montagePanel===item.id)return;
                   setMontagePanel(item.id==="text"&&extraTextChoice!=="support"?"promo":item.id);
-                  if(item.id==="audio")setBasicPanelTab("music"); if(item.id==="text")setMontageTextStage("choice");
+                  if(item.id==="audio")setBasicPanelTab("music");
+                  if(item.id==="text"&&extraTextChoice==="support")setMontageTextStage("edit");
                 }}
                 onClick={()=>{
                   setMontagePanel(item.id==="text"&&extraTextChoice!=="support"?"promo":item.id);
-                  if(item.id==="audio")setBasicPanelTab("music"); if(item.id==="text")setMontageTextStage("choice");
+                  if(item.id==="audio")setBasicPanelTab("music");
+                  if(item.id==="text"&&extraTextChoice==="support")setMontageTextStage("edit");
                 }}>
                 <item.Icon size={19} aria-hidden="true"/>
                 <span>{({
