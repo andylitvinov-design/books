@@ -234,6 +234,6 @@ const copy = {
   },
 } as const;
 
-export function coreOfferDetailData(locale: PublicLocale, kind: DetailKind) {
+export function coreOfferDetailData<K extends DetailKind>(locale: PublicLocale, kind: K): (typeof copy)[PublicLocale][K] {
   return copy[locale][kind];
 }

@@ -113,6 +113,9 @@ test("free landing's final slide is just the compact form, in all three language
   const pageCss = read("components/free-entry-landing.module.css");
   const main = read("app/[locale]/services/page.tsx");
   const es = read("app/es/services/page.tsx");
+  const root = read("app/layout.tsx");
+  const deferred = read("components/sitewide-lead-capture-deferred.tsx");
+  const capture = read("components/sitewide-lead-capture.tsx");
   assert.match(page, /const finalCopy = \{/);
   assert.match(page, /tests: \{ title:/);
   assert.match(page, /situation: \{ title:/);
@@ -125,10 +128,14 @@ test("free landing's final slide is just the compact form, in all three language
   assert.doesNotMatch(page, /<FreeResourceEnquiry/);
   assert.match(page, /data-optional-written-review/);
   assert.match(pageCss, /\.page\{padding-bottom:0\}/);
-  assert.match(main, /<CompactLeadCapture locale=\{locale\}/);
-  assert.match(es, /<CompactLeadCapture locale="es"/);
-  assert.ok(main.lastIndexOf("<CompactLeadCapture") > main.lastIndexOf("<ServicesDirectoryInvitation"));
-  assert.ok(es.lastIndexOf("<CompactLeadCapture") > es.lastIndexOf("<ServicesDirectoryInvitation"));
+  assert.match(main, /<PublicConsultationCta locale=\{locale\} id="consultation"/);
+  assert.match(es, /<PublicConsultationCta locale="es" id="consultation"/);
+  assert.match(main, /<ServicesDirectoryInvitation locale=\{locale\}/);
+  assert.match(es, /<ServicesDirectoryInvitation locale="es"/);
+  assert.ok(root.indexOf("{children}") < root.indexOf("<SitewideLeadCaptureDeferred"), "the sitewide capture remains after page content");
+  assert.match(deferred, /if \(!classifyPublicLead\(pathname\)\) return null/);
+  assert.match(capture, /<CompactLeadCapture/);
+  for (const locale of ["en", "ru", "es"]) assert.equal(classifyPublicLead('/' + locale + '/services')?.kind, "personal");
 });
 
 
