@@ -1197,7 +1197,12 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       for(const item of await compactVoicePanel.locator('[data-video-affirmation-voice-preview^="fish-"]').all())
         await expect(item).toBeDisabled();
       await expect(compactVoicePanel.locator('[data-video-generate-affirmation-audio]')).toBeDisabled();
-      await compactVoicePanel.locator('[data-video-affirmation-gender="female"]').click();
+      // Touch-emulated WebKit can omit compatibility click; require the
+      // real female voice filter to commit before looking for the Maya card.
+      const femaleTab=compactVoicePanel.locator('[data-video-affirmation-gender="female"]');
+      await expect(femaleTab).toBeVisible();
+      if(engine==="webkit")await femaleTab.tap();else await femaleTab.click();
+      await expect(femaleTab).toHaveAttribute("aria-pressed","true");
       await expect(compactVoicePanel.locator('[data-video-affirmation-voice-card="maya"]')).toBeVisible();
       await myVoiceModeButton.click();
       await expect(myVoiceModeButton).toHaveAttribute("aria-pressed","true");
