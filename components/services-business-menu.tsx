@@ -1,6 +1,5 @@
 "use client";
-import {useState} from "react";
-import {ArrowLeft, ArrowRight, Brain, Check, Compass, Flower2, Lightbulb, Mic} from "lucide-react";
+import {ArrowLeft, ArrowRight, Brain, Check, Compass, Flower2, Lightbulb} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
 import {MandatoryMessengerActions} from "@/components/mandatory-messenger-actions";
 import {whatsappEnquiryUrl} from "@/lib/whatsapp-enquiry";
@@ -13,7 +12,7 @@ const businessTypes=[
  {id:"remedies",Icon:Flower2},
  {id:"hints",Icon:Brain},
 ] as const;
-type BusinessKey=typeof businessTypes[number]["id"];
+export type BusinessKey=typeof businessTypes[number]["id"];
 type Option=readonly [name:string,description:string];
 type Section={title:string;description:string;options:readonly Option[]};
 type MenuCopy={
@@ -24,7 +23,7 @@ type MenuCopy={
 const EXPRESS_PRICES=["FREE","45 CAD","75 CAD / 30 min","200 CAD / 60 min","300 CAD / 2 weeks"] as const;
 const copies:Record<PublicLocale,MenuCopy>={
  en:{
-  title:"How would you like to work?",lead:"Choose a format, then the service. No need to diagnose your business.",
+  title:"How would you like to work?",lead:"Choose a format, then your preferred result.",
   choose:"Choose a service or result",back:"All business formats",goal:"Describe your goal or situation…",optional:"Optional — included only if you open the WhatsApp draft",
   getDetails:"Get details",contactRequest:"Please share details and the next step for this selected business service.",
   contactNote:"WhatsApp opens your selected offer as a draft, not a sent request. Telegram opens Ali when available; tell Ali your specific choice, as the sub-option is not transferred automatically.",
@@ -58,7 +57,7 @@ const copies:Record<PublicLocale,MenuCopy>={
   },
  },
  ru:{
-  title:"Какой формат работы вам подходит?",lead:"Выберите способ поддержки, затем услугу. Не нужно заранее знать причину трудностей.",
+  title:"Какой формат работы вам подходит?",lead:"Выберите формат работы и желаемый результат.",
   choose:"Выберите услугу или результат",back:"Все форматы для бизнеса",goal:"Опишите вашу цель или ситуацию…",optional:"Необязательно — добавляется только в черновик WhatsApp",
   getDetails:"Get details",contactRequest:"Расскажите подробнее об этой бизнес-услуге и следующем шаге.",
   contactNote:"WhatsApp откроет черновик с выбранной услугой — сообщение не отправится само. Telegram откроет Ali при доступности бота; назовите ему подпункт, поскольку он пока не передаётся автоматически.",
@@ -92,7 +91,7 @@ const copies:Record<PublicLocale,MenuCopy>={
   },
  },
  es:{
-  title:"¿Cómo prefieres trabajar?",lead:"Elige un formato y después un servicio. No necesitas conocer la causa del problema.",
+  title:"¿Cómo prefieres trabajar?",lead:"Elige el formato y el resultado que prefieres.",
   choose:"Elige un servicio o resultado",back:"Todos los formatos de negocio",goal:"Describe tu objetivo o situación…",optional:"Opcional — solo se incluye en el borrador de WhatsApp",
   getDetails:"Get details",contactRequest:"Quisiera detalles y el siguiente paso para este servicio empresarial.",
   contactNote:"WhatsApp abre un borrador, no envía nada. Telegram abre Ali cuando está disponible; indica tu subopción porque aún no se transmite automáticamente.",
@@ -126,11 +125,20 @@ const copies:Record<PublicLocale,MenuCopy>={
   },
  },
 };
-export function ServicesBusinessMenu({locale}:{locale:PublicLocale}){
+// When the visitor describes a goal, Next chooses a visible *suggested format*.
+// No order, payment, remote request or unconsented AI processing takes place.
+export function suggestBusinessCategory(text:string):BusinessKey{
+ const t=text.toLowerCase();
+ if(/remed|homeopath|medicine|balance|здоров|гомеоп|средств|ясност|remedio|equilibrio/.test(t))return "remedies";
+ if(/coach|hint|tao|подсказ|коуч|даос|consejo/.test(t))return "hints";
+ if(/strateg|team|growth|plan|operations|process|стратег|команд|рост|план|equipo|estrateg|crecimiento/.test(t))return "strategy";
+ return "express";
+}
+export function ServicesBusinessMenu({locale,goal,category,selectedOption,onCategorySelect,onOptionSelect,revealContacts}:{
+ locale:PublicLocale;goal:string;category:BusinessKey|null;selectedOption:number|null;
+ onCategorySelect:(category:BusinessKey|null)=>void;onOptionSelect:(index:number)=>void;revealContacts:boolean;
+}){
  const t=copies[locale];
- const [category,setCategory]=useState<BusinessKey|null>(null);
- const [selectedOption,setSelectedOption]=useState<number|null>(null);
- const [goal,setGoal]=useState("");
  const section=category?t.sections[category]:null;
  const option=section&&selectedOption!==null?section.options[selectedOption]:null;
  const price=category==="express"&&selectedOption!==null?EXPRESS_PRICES[selectedOption]:null;
@@ -146,7 +154,7 @@ export function ServicesBusinessMenu({locale}:{locale:PublicLocale}){
    <div className={styles.dots} aria-hidden="true"><i data-active="true"/><i data-active={category?"true":"false"}/></div>
   </div>
   {category&&section?<>
-   <button type="button" className={styles.back} data-business-back onClick={()=>{setCategory(null);setSelectedOption(null);setGoal("");}}>
+   <button type="button" className={styles.back} data-business-back onClick={()=>onCategorySelect(null)}>
     <ArrowLeft size={18} aria-hidden="true"/>{t.back}
    </button>
    <h2 className={styles.title}>{section.title}</h2>
@@ -154,31 +162,26 @@ export function ServicesBusinessMenu({locale}:{locale:PublicLocale}){
    <div className={styles.offerList} role="group" aria-label={t.choose} data-business-options={category}>
     {section.options.map(([name,description],index)=><button type="button" key={category+"-"+index}
       className={styles.offer} data-business-offer={category+"-"+index}
-      aria-pressed={selectedOption===index} onClick={()=>setSelectedOption(index)}>
+      aria-pressed={selectedOption===index} onClick={()=>onOptionSelect(index)}>
       <span className={styles.offerText}><strong>{name}</strong><small>{description}</small></span>
       {category==="express"?<span className={styles.price}>{EXPRESS_PRICES[index]}</span>:null}
       {selectedOption===index?<Check size={18} className={styles.checked} aria-hidden="true"/>:null}
     </button>)}
    </div>
    {category==="express"?<p className={styles.priceNote}>{t.priceNote}</p>:null}
-   <div className={styles.goalField}>
-    <label htmlFor="business-optional-goal">{t.goal}</label>
-    <input id="business-optional-goal" maxLength={300} value={goal}
-      placeholder={t.goal} onChange={e=>setGoal(e.target.value)} autoComplete="off"/>
-    <small><Mic size={14} aria-hidden="true"/>{t.optional}</small>
-   </div>
-   <div data-business-get-details key={category+"-"+selectedOption} className={styles.contact}>
-    <MandatoryMessengerActions locale={locale} whatsappUrl={whatsappUrl} telegramUrl={telegramUrl}
-      label={t.getDetails} className={styles.detailsButton} collapsed compact/>
+   {selectedOption!==null ? <div data-business-get-details key={category+"-"+selectedOption} className={styles.contact}>
+    <MandatoryMessengerActions key={category+"-"+selectedOption+"-"+(revealContacts?"open":"closed")}
+      locale={locale} whatsappUrl={whatsappUrl} telegramUrl={telegramUrl}
+      label={t.getDetails} className={styles.detailsButton} collapsed={!revealContacts} compact/>
     <p className={styles.contactNote}>{t.contactNote}</p>
-   </div>
+   </div> : null}
   </>:<>
    <h2 className={styles.title}>{t.title}</h2>
    <p className={styles.lead}>{t.lead}</p>
    <div className={styles.grid} role="group" aria-label={t.title}>
     {businessTypes.map(({id,Icon})=><button key={id} type="button"
       className={styles.card} data-services-business-category={id}
-      onClick={()=>{setCategory(id);setSelectedOption(null);setGoal("");}}>
+      onClick={()=>onCategorySelect(id)}>
       <span className={styles.cardPhoto} data-business-card-photo={id} aria-hidden="true"/>
       <span className={styles.cardLabel}><Icon size={24} strokeWidth={1.65} aria-hidden="true"/>
        <strong>{t.sections[id].title}</strong><ArrowRight size={16} aria-hidden="true"/></span>

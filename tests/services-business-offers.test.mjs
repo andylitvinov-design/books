@@ -38,10 +38,20 @@ test("approved Express CAD menu, Strategic topics and four Hints/Coaching format
 });
 test("Get details is user-triggered with WhatsApp offer draft and existing Telegram Ali bot handoff",()=>{
  assert.match(business,/data-business-get-details/);
- assert.match(business,/collapsed compact/);
+ assert.match(business,/collapsed=\{!revealContacts\} compact/);
  assert.match(business,/label=\{t\.getDetails\}/);
  assert.match(business,/option:optionLabel/);
  assert.match(business,/context:goal\.trim\(\)\|\|undefined/);
  assert.match(business,/telegramServiceRequestUrl\("business",locale\)/);
  assert.doesNotMatch(business,/fetch\(|localStorage|sessionStorage|sendBeacon|\/checkout/);
+});
+
+test("business is two sequential choices, shares goal input, and shows contacts only after a chosen offer",()=>{
+ assert.match(business,/export function suggestBusinessCategory/);
+ assert.match(quiz,/goal=\{goal\}/);
+ assert.match(business,/selectedOption!==null \? <div data-business-get-details/);
+ assert.match(business,/onCategorySelect\(id\)/);
+ assert.match(business,/onOptionSelect\(index\)/);
+ assert.doesNotMatch(business,/id="business-optional-goal"/);
+ assert.match(css,/OWNER_GOAL_FIRST_BUSINESS_20261121/);
 });
