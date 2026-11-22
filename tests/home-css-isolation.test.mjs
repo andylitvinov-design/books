@@ -45,3 +45,13 @@ test("hidden Home catalogs use observer/disclosure-triggered React.lazy with no 
   assert.match(content, /const HomeExpandedCatalog = lazy\(/);
   assert.match(content, /expanded\?<Suspense fallback=\{null\}>/);
 });
+
+test("compact Home navigation excludes full-header cart and credit dependencies", () => {
+  const core = read("components/site-navigation.tsx");
+  const full = read("components/site-navigation-full.tsx");
+  assert.doesNotMatch(core, /from ['"](?:@\/components\/commerce\/cart-nav-link|\.\/header-credit-profile)['"]/);
+  assert.match(full, /from ['"]@\/components\/commerce\/cart-nav-link['"]/);
+  assert.match(full, /from ['"]\.\/header-credit-profile['"]/);
+  assert.match(read("components/home-dialogue-entry.tsx"), /from ['"]@\/components\/site-navigation['"]/);
+  assert.match(read("components/public-site-header.tsx"), /SiteNavigationFull as SiteNavigation/);
+});

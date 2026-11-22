@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SiteNavigation } from "@/components/site-navigation";
+import { SiteNavigationFull as SiteNavigation } from "@/components/site-navigation-full";
 import type { PublicLocale } from "@/lib/public-locales";
 const copy = {
   ru: { home: "Holistic House — главная", subtitle: "восстановление · практика · поддержка" },
