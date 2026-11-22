@@ -374,9 +374,14 @@ test('Gemini Free retry preserves Basic audio until provider readiness, then swi
   assert.match(enabled,/resumeAfterTypedFailure\?\.\(\)/)
   assert.doesNotMatch(ui,/data-coach-experience-consent|experienceTextConsent|experienceTtsConsent/)
 })
-test('iPhone 27 STT outage has an honest retry status instead of silent Web Speech listening',()=>{
+test('iPhone 27 STT outage uses bounded recorded-mic recovery, never silent Web Speech',()=>{
  const loop=source('components/my-coach-speech-loop.jsx')
- const sttFailure=loop.slice(loop.indexOf("if(code==='STT_UNAVAILABLE')"),loop.indexOf('silence();changePhase',loop.indexOf("if(code==='STT_UNAVAILABLE')")))
- assert.match(sttFailure,/if\(ios27\)\{changePhase\('ready'\);setNotice\(t\.audioUnavailable\)\}/)
- assert.ok(sttFailure.indexOf('if(ios27)')<sttFailure.indexOf('else if(Recognition)'))
+ const recovery=loop.slice(loop.indexOf('function recoverRecordedStt('),loop.indexOf('  function startListening(){'))
+ assert.match(loop,/if\(ios27&&coachRecordedSupported\(window\)\)/)
+ assert.match(loop,/\['STT_UNAVAILABLE','STT_RATE_LIMIT','STT_SIGN_IN'\]\.includes\(code\)/)
+ assert.match(recovery,/if\(recovery\.retries>=1\)/)
+ assert.match(recovery,/changePhase\('ready'\)/)
+ assert.match(recovery,/code==='STT_RATE_LIMIT'\?61000:2200/)
+ assert.match(recovery,/phaseRef\.current==='starting'\)startListening\(\)/)
+ assert.doesNotMatch(loop,/recordedSttUnavailableRef/)
 })
