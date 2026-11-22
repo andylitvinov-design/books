@@ -1,6 +1,6 @@
 # Client Live Photos — HeyGen → private My Materials
 
-**Implementation status:** source PR only. No client image has been sent to HeyGen, no API key supplied, no paid job initiated. Production remains gated OFF until the owner independently approves an API pilot and an actual end-to-end trial succeeds.
+**Implementation status:** source PR only. No client image was submitted and no paid provider render was initiated by this PR. A HeyGen REST key *name* is configured as Sensitive on the correct Vercel Production project (read-only metadata verified 22 Nov); its real scopes, access and metered API entitlement remain untested. Production paid generation gates remain OFF until the owner independently approves a capped, consented API pilot and E2E.
 
 ## Natural portrait prompts (owner decision · 21 Nov 2026)
 
@@ -76,3 +76,16 @@ must pass. This code does not prove that an external HeyGen render has occurred.
 
 ## Long-running/uncertain provider reservations
 The existing XP ledger may auto-release ordinary timed-out Basic exports, but not unresolved `live_gift` holds. Live Gift availability accounting includes outstanding 500 XP even when the 30-day nominal expiry has passed. The server-only verified-provider settlement completes or refunds the hold; an ambiguous job remains held for explicit reconciliation, never implicitly retried, credited, or silently completed. Related wallet fix: PR #5348. Disabled production flags remain unchanged.
+
+## P0 privacy: erase provider source as well as private media (source repair · 22 Nov 2026)
+
+A local Supabase bucket deletion alone is **not** proof the photo was erased from HeyGen. The existing owner-only job has a private `provider_asset_id`. After an independently verified terminal HeyGen failure or **after the completed MP4 was archived privately and XP captured**, server attempts `DELETE /v3/assets/{asset_id}` using the **existing server-only REST key**, even when new metered generation has been disabled.
+
+- Successful deletion or provider 404 is idempotent erasure confirmation. Only then is the private provider asset ID cleared in the database.
+- 401/403, 429, timeout, provider outage or DB write failure is **not** reported as erasure. The asset ID remains private for retry. An owner GET on a ready/failed live photo tries again; DELETE erases the local private source/video and retains a `provider_cleanup_pending` record with a visible **Retry HeyGen erasure** action. A repeated DELETE for that exact owned ID is allowed; a completed delete with no outstanding provider ID returns normal not-found.
+- To prevent creation of an untraceable provider portrait, an in-progress `pending/submitting/submitted/finalizing/unknown` job may **not** be deleted until provider state/XP can be reconciled. The old pending-delete shortcut was unsafe during an in-flight HeyGen upload.
+- This source-only repair uses the EXISTING nullable `provider_asset_id` and exact-tenant worker transaction; **no new database table, public bucket, secret, paid provider generation or cron**. Retain owner-only account checks and private media signed URLs.
+- Ambiguous provider asset-upload responses where the provider never returned a valid asset ID still require provider-side reconciliation and cannot be called automatically erased. Provider deletion has to be tested with the actual REST key and an explicitly approved pilot before turning production gates ON.
+- QA: request with new paid flags OFF but key present; valid DELETE, repeat 404, outage 429 retains marker, unauthorized owner B cannot select another's job; reset pending rows and source cleanup on failed/ready/owner delete; physical iPhone and real API receipt. Browser mocks/CI are not proof of provider erasure.
+
+The source repair must pass exact-HEAD Core, App R1, database, IA v2, WebKit, protected `hh-merge-check`, merge only under existing policy and reach hourly Vercel READY/SHA before being called live.

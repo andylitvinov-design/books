@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   LIVE_PHOTO_MOTIONS, buildLivePhotoPrompt, buildHeyGenLivePhotoBody,
-  isLivePhotoCreationEnabled, hasLivePhotoProviderKey, getHeyGenLivePhotoStatus, uploadHeyGenPortrait, submitHeyGenLivePhoto, isAllowedHeyGenDownloadUrl,
+  isLivePhotoCreationEnabled, hasLivePhotoProviderKey, getHeyGenLivePhotoStatus, uploadHeyGenPortrait, submitHeyGenLivePhoto, isAllowedHeyGenDownloadUrl, deleteHeyGenPortrait,
 } from '../lib/app/live-photo-heygen.mjs';
 
 test('HeyGen calls are off without two owner gates and a private provider key', () => {
@@ -178,4 +178,59 @@ test('one live photo costs exactly 500 XP under explicit financial and likeness 
   assert.match(service,/billing_kind,xp_operation_id/);
   assert.match(service,/isLiveGiftXpEnabled/);
   assert.doesNotMatch(ui,/HH_LIVE_PHOTO_HEYGEN_API_KEY/);
+});
+
+test('erase uploaded portrait on terminal result even when paid generation is stopped; 404 is safe retry', async () => {
+  const originalFetch = globalThis.fetch;
+  const originalKey = process.env.HH_LIVE_PHOTO_HEYGEN_API_KEY;
+  const oldEnabled = process.env.HH_LIVE_PHOTOS_ENABLED;
+  const oldSpend = process.env.HH_LIVE_PHOTOS_SPEND_APPROVED;
+  const id = 'e0f7f5bdc42a4c61b0747c1bbd75cbb6';
+  const calls = [];
+  try {
+    process.env.HH_LIVE_PHOTO_HEYGEN_API_KEY = 'test_'.padEnd(32, 'x');
+    delete process.env.HH_LIVE_PHOTOS_ENABLED;
+    delete process.env.HH_LIVE_PHOTOS_SPEND_APPROVED;
+    assert.equal(isLivePhotoCreationEnabled(), false);
+    globalThis.fetch = async (url, opts) => {
+      calls.push({ url: String(url), method: opts.method });
+      assert.equal(url, 'https://api.heygen.com/v3/assets/' + id);
+      assert.equal(opts.method, 'DELETE');
+      assert.equal(opts.headers['x-api-key'], process.env.HH_LIVE_PHOTO_HEYGEN_API_KEY);
+      assert.equal(opts.redirect, 'error');
+      return new Response(null, { status: calls.length === 1 ? 204 : 404 });
+    };
+    assert.equal(await deleteHeyGenPortrait(id), true);
+    assert.equal(await deleteHeyGenPortrait(id), true);
+    assert.equal(calls.length, 2);
+    globalThis.fetch = async () => new Response(null, { status: 202 });
+    await assert.rejects(deleteHeyGenPortrait(id), /HEYGEN_ASSET_DELETE_UNCONFIRMED/);
+    globalThis.fetch = async () => new Response(null, { status: 429 });
+    await assert.rejects(deleteHeyGenPortrait(id), /HEYGEN_ASSET_DELETE_UNCONFIRMED/);
+    await assert.rejects(deleteHeyGenPortrait('https://evil.invalid/face.jpg'), /INVALID_HEYGEN_ASSET/);
+  } finally {
+    globalThis.fetch = originalFetch;
+    for (const [key, value] of [
+      ['HH_LIVE_PHOTO_HEYGEN_API_KEY', originalKey],
+      ['HH_LIVE_PHOTOS_ENABLED', oldEnabled],
+      ['HH_LIVE_PHOTOS_SPEND_APPROVED', oldSpend]
+    ]) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});
+
+test('private erasure never pretends Supabase removal also removed a HeyGen asset', () => {
+  const service = readFileSync('lib/app/live-photo-service.js', 'utf8');
+  const ui = readFileSync('components/app/my-live-photos.jsx', 'utf8');
+  assert.match(service, /deleteHeyGenPortrait/);
+  assert.match(service, /provider_asset_id=null/);
+  assert.match(service, /status in \('ready','failed','deleted'\)/);
+  assert.match(service, /provider_cleanup_pending/);
+  assert.match(service, /providerCleanup/);
+  assert.match(service, /\['pending','submitting','submitted','finalizing','unknown'\]/);
+  assert.match(ui, /retryCleanup/);
+  assert.match(ui, /providerCleanup === 'pending'/);
+  assert.doesNotMatch(service, /console\.log\(.+provider_asset_id/);
 });

@@ -16,6 +16,8 @@ const COPY = {
     pending: 'Обрабатывается', unknown: 'Неопределённый ответ HeyGen — повтор не запускаем автоматически',
     failed: 'Не удалось создать анимацию', ready: 'Готово', preview: 'Смотреть', download: 'Скачать MP4',
     remove: 'Удалить', confirm: 'Удалить живое фото и исходник из личного кабинета?',
+    cleanupPending: 'Видео удалено из кабинета, но удаление исходника из HeyGen ещё не подтверждено. Повторите удаление.',
+    retryCleanup: 'Повторить удаление в HeyGen', confirmCleanup: 'Повторить удаление исходного фото из HeyGen?',
     retry: 'Обновить', error: 'Действие не завершено. Попробуйте позже.',
     limit: 'Максимум 3 живых фото. Новый заказ требует явного подтверждения.',
     studio: 'Создать ролик', private: 'Материалы приватны, публикация не выполняется автоматически.',
@@ -38,6 +40,8 @@ const COPY = {
     pending: 'Processing', unknown: 'HeyGen submission uncertain — no automatic resubmission',
     failed: 'Animation failed', ready: 'Ready', preview: 'Preview', download: 'Download MP4',
     remove: 'Delete', confirm: 'Permanently delete this live photo and its original?',
+    cleanupPending: 'Removed from My House, but HeyGen source erasure is not confirmed. Retry the provider deletion.',
+    retryCleanup: 'Retry HeyGen erasure', confirmCleanup: 'Retry deletion of the source photograph from HeyGen?',
     retry: 'Refresh', error: 'Could not complete the action. Please try later.',
     limit: 'Up to 3 live photos. Every new render requires your confirmation.',
     studio: 'Create a video', private: 'Private by default. Nothing is published automatically.',
@@ -60,6 +64,8 @@ const COPY = {
     pending: 'Procesando', unknown: 'Envío incierto: no se repetirá automáticamente',
     failed: 'No se pudo generar', ready: 'Listo', preview: 'Ver', download: 'Descargar MP4',
     remove: 'Eliminar', confirm: '¿Eliminar esta foto viva y la imagen original?',
+    cleanupPending: 'El vídeo se eliminó de Mi Casa, pero HeyGen aún no confirmó el borrado de la foto de origen. Vuelve a intentarlo.',
+    retryCleanup: 'Reintentar borrado en HeyGen', confirmCleanup: '¿Reintentar borrar la fotografía original en HeyGen?',
     retry: 'Actualizar', error: 'No se completó la acción. Inténtalo más tarde.',
     limit: 'Máximo 3 fotos vivas. Cada nueva generación requiere confirmación.',
     studio: 'Crear un vídeo', private: 'Privado por defecto. No se publica automáticamente.',
@@ -203,15 +209,17 @@ export default function MyLivePhotos({ locale = 'en' }) {
       setOpened({ id, url: value.url });
     } catch { setError(t.error); }
   }
-  async function remove(id) {
-    if (!window.confirm(t.confirm)) return;
+  async function remove(id, retryProvider = false) {
+    if (!window.confirm(retryProvider ? t.confirmCleanup : t.confirm)) return;
     setBusy(true); setError('');
     try {
       const response = await fetch('/api/app/live-photos/' + encodeURIComponent(id), {
         method: 'DELETE', credentials: 'same-origin', cache: 'no-store',
       });
       if (!response.ok) throw Error('DELETE_FAILED');
+      const responseBody = await response.json();
       setOpened(null); await refresh();
+      if (responseBody.providerCleanup === 'pending') setError(t.cleanupPending);
     } catch { setError(t.error); }
     finally { setBusy(false); }
   }
@@ -279,7 +287,7 @@ export default function MyLivePhotos({ locale = 'en' }) {
       </label>
       <button type="button" style={styles.button}
         disabled={busy || !file || file.size > 3000000 || !consent || !xpConsent ||
-          items.filter(i => !['failed','deleted'].includes(i.status)).length >= 3}
+          items.filter(i => !['failed','deleted','provider_cleanup_pending'].includes(i.status)).length >= 3}
         onClick={() => void create()}>{busy ? t.progress : t.create} · 500 XP</button>
       <small>{t.limit}</small>
     </div> : null}
@@ -289,13 +297,15 @@ export default function MyLivePhotos({ locale = 'en' }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         <strong style={{ fontSize: 14 }}>{t[item.motion]} · {item.orientation === 'landscape' ? '16:9' : '9:16'}</strong>
         <small>{item.status === 'ready' ? t.ready : item.status === 'failed' ? t.failed :
+          item.status === 'provider_cleanup_pending' ? t.cleanupPending :
           item.status === 'unknown' ? t.unknown : t.pending}</small>
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 9 }}>
         {item.status === 'ready' ? <button type="button" style={styles.button} onClick={() => void preview(item.id)}>{t.preview}</button> : null}
         <button type="button" style={styles.button} disabled={busy ||
           ['submitting','submitted','finalizing','unknown'].includes(item.status)}
-          onClick={() => void remove(item.id)}>{t.remove}</button>
+          onClick={() => void remove(item.id, item.status === 'provider_cleanup_pending')}>
+          {item.status === 'provider_cleanup_pending' ? t.retryCleanup : t.remove}</button>
       </div>
       {opened?.id === item.id ? <div style={{ marginTop: 10 }}>
         <video controls playsInline preload="metadata" src={opened.url} style={{ width: '100%', maxHeight: 280, borderRadius: 12, background: '#101c1c' }}/>
