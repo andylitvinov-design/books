@@ -509,6 +509,18 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const visibleMethodName=coachMethodNames[visibleMethodId]||'GROW'
   const memoryProvider=coachEngine==='gemini_live_free'||coachEngine==='gemini_free'
     ?'gemini_free':coachEngine==='gemini_paid'?'gemini_paid':'groq'
+  const lastMemoryProviderRef=useRef(memoryProvider)
+  useEffect(()=>{
+    // A prior opt-in to Groq is never automatically an opt-in to Gemini Free,
+    // Paid or any provider with a different data-use policy.
+    if(lastMemoryProviderRef.current===memoryProvider)return
+    lastMemoryProviderRef.current=memoryProvider
+    setAllowOpeningPrior(false)
+    setStagedMemory(null)
+    setContextTopic('')
+    setContextAssessments(false)
+    setContextPaused(true)
+  },[memoryProvider])
   const memoryReady=Boolean(stagedMemory?.stageToken)&&stagedMemory?.provider===memoryProvider
   const openingPrior=memoryReady&&allowOpeningPrior?{
     name:String(stagedMemory?.prior?.preferredName||'').slice(0,60),
@@ -1486,7 +1498,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           stageNames={stageChecklistTitles} stageIndex={visibleStageIndex}
           stageProgressVerified={progressValid} opening={openingProgress}/>
       </details>}
-      <MyCoachStagedMemoryControls locale={conversationLang} provider={memoryProvider}
+      <MyCoachStagedMemoryControls key={memoryProvider} locale={conversationLang} provider={memoryProvider}
         invitationAccepted={openingProgress.checkmarks.invitation&&!openingProgress.declined}
         identityConfirmed={openingProgress.checkmarks.name&&openingProgress.checkmarks.continuity}
         priorAllowed={allowOpeningPrior} onPriorAllowed={value=>{

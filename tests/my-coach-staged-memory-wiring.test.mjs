@@ -61,3 +61,14 @@ test('model adds reviewed protocol as untrusted reference before the final actua
  ]})
  assert.equal(rejected,messages)
 })
+
+test('switching provider invalidates old consent and suppresses old-topic context',()=>{
+ const current=ui()
+ assert.match(current,/lastMemoryProviderRef/)
+ assert.match(current,/setAllowOpeningPrior\(false\)/)
+ assert.match(current,/key=\{memoryProvider\}/)
+ assert.match(current,/setContextPaused\(true\)/)
+ const policy=readFileSync(new URL('../lib/coaching/gemini-live-free.mjs',import.meta.url),'utf8')
+ assert.match(policy,/CLIENT-APPROVED REFERENCE DATA/)
+ assert.match(policy,/A new topic overrides previous memory/)
+})
