@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ArrowUpRight, Layers3, Target } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
+import {INNER_VECTOR_ITEMS,normalizeDevelopmentVectors} from '@/lib/profile/development-vectors.mjs'
 import styles from './profile-space-dashboard.module.css'
 
 // Only explicit, owner-saved ACTIVE goals may be shown as "Current Goal".
@@ -23,18 +24,31 @@ function findCurrentGoal(result) {
 export function ProfileSpaceFocus({ locale='en', root='/en/app', accountId=null }) {
   const lang = Object.hasOwn(COPY,locale) ? locale : 'en'
   const t = COPY[lang]
-  const [state,setState] = useState({accountId:null,goal:''})
+  const [state,setState] = useState({accountId:null,goal:'',axis:''})
   useEffect(()=>{
-    if (!accountId) return undefined // Guest first screen is public, no private fetch.
+    if (!accountId) return undefined // Guests never request private goal or axis data.
     const controller = new AbortController()
-    appFetch('coaching-life-plan?locale='+lang,undefined,'GET',{accountId,signal:controller.signal})
-      .then(result=>{if(!controller.signal.aborted)setState({accountId,goal:findCurrentGoal(result)})})
-      .catch(()=>{if(!controller.signal.aborted)setState({accountId,goal:''})})
-    return ()=>controller.abort()
+    const refresh=()=>Promise.allSettled([
+      appFetch('coaching-life-plan?locale='+lang,undefined,'GET',{accountId,signal:controller.signal}),
+      appFetch('development-goals',undefined,'GET',{accountId,signal:controller.signal})
+    ]).then(([goalResult,axisResult])=>{
+      if (controller.signal.aborted) return
+      const plan=goalResult.status==='fulfilled'?goalResult.value:null
+      const saved=axisResult.status==='fulfilled'
+        ?normalizeDevelopmentVectors(axisResult.value?.goals?.vectors):null
+      const selected=saved?.inner?.focusId
+      const axis=INNER_VECTOR_ITEMS.find(item=>item.id===selected)?.name?.[lang]||''
+      setState({accountId,goal:findCurrentGoal(plan),axis})
+    })
+    void refresh()
+    window.addEventListener('hh:development-vectors-saved',refresh)
+    return ()=>{
+      controller.abort()
+      window.removeEventListener('hh:development-vectors-saved',refresh)
+    }
   },[accountId,lang])
   const goal = accountId && state.accountId===accountId ? state.goal : ''
-  // The eight axis measurements do not themselves designate a chosen focus.
-  // Until the owner explicitly saves a focus axis, display an honest invitation.
+  const axis = accountId && state.accountId===accountId ? state.axis : ''
   return <nav className={styles.focusRow} aria-label={lang==='ru'?'Мои направления':lang==='es'?'Mi enfoque':'My focus'}
     data-profile-space-focus>
     <Link href={root+'/my-coaching-plan'} prefetch={false} className={styles.focusChip} data-profile-current-goal>
@@ -42,9 +56,9 @@ export function ProfileSpaceFocus({ locale='en', root='/en/app', accountId=null 
       <span><small>{t.goal}</small><strong>{goal||t.noGoal}</strong></span>
       <ArrowUpRight size={16} aria-hidden="true"/>
     </Link>
-    <Link href={root+'/portrait?space=path#daybook-axes'} prefetch={false} className={styles.focusChip} data-profile-chosen-axis>
+    <Link href={'/'+lang+'/development-vectors'} prefetch={false} className={styles.focusChip} data-profile-chosen-axis>
       <span className={styles.focusIcon}><Layers3 size={25} aria-hidden="true"/></span>
-      <span><small>{t.axis}</small><strong>{t.noAxis}</strong></span>
+      <span><small>{t.axis}</small><strong>{axis||t.noAxis}</strong></span>
       <ArrowUpRight size={16} aria-hidden="true"/>
     </Link>
   </nav>

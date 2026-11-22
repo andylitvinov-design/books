@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { appFetch } from '@/lib/app/client-fetch'
 import styles from './my-coaching-plan.module.css'
+import MyInnerBalancePreview from './my-inner-balance-preview'
 
 const copy = {
   en: ['Provider', 'Life Plan item', 'Review', 'Allow sharing', 'Revoke', 'Saved', 'Could not update context.', 'Ali may send this text to the selected external provider during coaching.', 'Loading…', 'No saved goals or actions.'],
@@ -85,6 +86,7 @@ export default function MyCoachContext({ accountId, locale, domains, contextSess
   return <section id="coach-context-panel" role={contextSessionToken ? undefined : 'tabpanel'}
     aria-labelledby={contextSessionToken ? undefined : 'coach-context-tab'}
     className={styles.contextPanel} aria-busy={busy}>
+    {!contextSessionToken&&<MyInnerBalancePreview accountId={accountId} locale={locale}/>}
     <fieldset disabled={busy}>
       <label>{providerLabel} <select value={provider} onChange={event => {
         setProvider(event.target.value); setPreview(null)
