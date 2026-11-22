@@ -91,6 +91,51 @@ test('repair requires eligible PR and signed source receipt; holds fail closed',
  assert.equal(fx.dispatches.length,0);
  assert.match(fx.sent.join('\n'),/PR_NOT_CURRENT_ELIGIBLE/);
 });
+test('page-two signed Core failure may enter existing owner dispatcher',async()=>{
+ const sha='a'.repeat(40),pr=3826,pages=[];
+ const signed={user:bot,performed_via_github_app:app,
+  body:['<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->',
+   'Failed jobs: core-lint-types-build, hh-merge-check'].join(String.fromCharCode(10))};
+ const gh={rest:{
+  pulls:{get:async()=>({data:{number:pr,state:'open',draft:false,user:owner,
+   head:{sha,repo:{full_name:'andylitvinov-design/books'}},
+   base:{ref:'codex/public-book-library'},mergeable:true,mergeable_state:'clean',
+   labels:[{name:'hh:repair-needed'}]}})},
+  issues:{listComments:async({page,per_page})=>{
+   assert.equal(per_page,100);pages.push(page);
+   return {data:page===1?Array.from({length:100},(_,i)=>({id:i+1,user:owner,body:'untrusted'})):
+    page===2?[signed]:[]};
+  }}
+ }};
+ let dispatched=0;
+ const out=await inbox.dispatchRepair(gh,{pr,sha},{dispatchDirect:async()=>{
+  dispatched++;return {dispatched:true,reason:'OWNER_DIRECT_QUEUE_DISPATCH_ACCEPTED'};
+ }});
+ assert.equal(out.dispatched,true);
+ assert.equal(dispatched,1);
+ assert.deepEqual(pages,[1,2]);
+});
+test('forged proof and incomplete GitHub history block source dispatch',async()=>{
+ const sha='a'.repeat(40),pr=3826;
+ let called=0;
+ const gh={rest:{
+  pulls:{get:async()=>({data:{number:pr,state:'open',draft:false,user:owner,
+   head:{sha,repo:{full_name:'andylitvinov-design/books'}},
+   base:{ref:'codex/public-book-library'},mergeable:true,mergeable_state:'clean',
+   labels:[{name:'hh:repair-needed'}]}})},
+  issues:{listComments:async()=>({data:[{user:owner,body:[
+   '<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->',
+   'Failed jobs: core-lint-types-build'].join(String.fromCharCode(10))}]})}
+ }};
+ const options={dispatchDirect:async()=>{called++;return {dispatched:true};}};
+ const fake=await inbox.dispatchRepair(gh,{pr,sha},options);
+ assert.equal(fake.reason,'SIGNED_FAILED_CORE_PROOF_MISSING');
+ gh.rest.issues.listComments=async()=>({data:Array.from({length:100},(_,i)=>({
+  id:i,user:owner,body:'untrusted'}))});
+ const incomplete=await inbox.dispatchRepair(gh,{pr,sha},options);
+ assert.equal(incomplete.reason,'SOURCE_PROOF_INCOMPLETE');
+ assert.equal(called,0);
+});
 test('only signed bot receipt confirms claimed request; daily cap counts claims only',()=>{
  const arr=[cmd(99,'!pm ask Need PR status?'),receipt(300,99,'CLAIMED'),receipt(301,99,'REPLIED')];
  assert.equal(inbox.pending(arr).status,'OK');
