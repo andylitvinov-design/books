@@ -89,12 +89,18 @@ test('goal erasure is owner-only, revision checked, retryable and blocks resurre
  await transaction(config,b,db=>assertCoachingGoalNotErased(db,b,input.id))
 })
 test('legacy goal without extended snapshot stays readable and can be explicitly edited',async()=>{
- const input=draft();await repo.save(a,input)
+ const input=draft({targetDate:'2028-02-29'});await repo.save(a,input)
  await admin.query("delete from app_private.coaching_life_plan_changes where account_id=$1 and entity_kind='goal' and entity_id=$2",[a.id,input.id])
  const legacy=await repo.read(a,input.id)
  assert.equal(legacy.goal.title,input.title);assert.equal(legacy.goal.details,null)
+ assert.equal(legacy.goal.targetDate,'2028-02-29')
  const edited=await repo.save(a,{...input,operationId:randomUUID(),revision:1,why:'New owner-authored details'})
  assert.equal(edited.goal.why,'New owner-authored details');assert.equal(edited.goal.revision,2)
+})
+test('canonical deadline drift cannot be reported as the encrypted saved revision',async()=>{
+ const input=draft({targetDate:'2028-02-29'});await repo.save(a,input)
+ await admin.query("update app_private.coaching_goals set target_date='2028-03-01' where id=$1",[input.id])
+ await assert.rejects(repo.read(a,input.id),{code:'PRIVATE_DATA_UNAVAILABLE'})
 })
 test('actual Request handler round-trips create/read/edit/delete through real repository and PostgreSQL',async()=>{
  const handler=actor=>createPersonalGoalHandler({getConfig:()=>config,origin:()=>{},sameOrigin:()=>{},auth:()=>({verified:async()=>actor,apply:r=>r}),rate:async()=>{},repository:createPersonalGoalRepository})
