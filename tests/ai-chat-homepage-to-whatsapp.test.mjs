@@ -6,7 +6,7 @@ test('approved opening has one live composer and selected voice',()=>{
  const intro=read('components/app/messenger-ai-landing.tsx')
  const agent=read('components/holistic-agent-chat.tsx')
  for(const selector of ['data-hh-ai-chat-shortcuts','data-hh-ali-first-message','data-hh-ai-inline-composer',
-  'data-hh-alchemist-topics','data-hh-alchemist-journey','data-hh-ai-persona-voice-play'])
+  'data-hh-alchemist-topics','data-hh-ai-persona-voice-play'])
   assert.ok(intro.includes(selector),selector)
  for(const [id,path] of [
   ['ai','/app/messages?section=ai'],['page','/app/portrait'],
@@ -20,10 +20,10 @@ test('approved opening has one live composer and selected voice',()=>{
  assert.match(intro,/TOPICS\.slice\(0,4\)/)
  assert.match(intro,/onTopicSelect\(topic\.prompt\)/)
  assert.match(intro,/playAliPersonaAudio\(persona\.id,locale/)
- assert.match(agent,/const showLandingComposer=compact&&messengerView&&!pageHelp&&!messages\.length&&!supportQuizOpen/)
+ assert.match(agent,/const showLandingComposer=compact&&messengerView&&!pageHelp&&!messages\.length&&!homeHandoffPreview&&!supportQuizOpen/)
  assert.match(agent,/composer=\{composer\}/)
  assert.match(agent,/\{!supportQuizOpen&&!showLandingComposer&&composer\}/)
- assert.match(agent,/data-has-messages=\{messages\.length>0\|\|undefined\}/)
+ assert.match(agent,/data-has-messages=\{Boolean\(messages\.length>0\|\|homeHandoffPreview\)\|\|undefined\}/)
  assert.match(agent,/Start free chat/)
 })
 test('one user turn removes intro, retains a slim WhatsApp chat and real navigation',()=>{
@@ -31,7 +31,7 @@ test('one user turn removes intro, retains a slim WhatsApp chat and real navigat
  const header=read('components/app/messages-orders-clients.jsx')
  const chatCss=read('components/holistic-agent-chat.module.css')
  const navCss=read('components/app/messages-orders-clients.module.css')
- assert.match(agent,/compact&&messengerView&&!pageHelp&&!messages\.length&&<>/)
+ assert.match(agent,/compact&&messengerView&&!pageHelp&&!messages\.length&&!homeHandoffPreview&&<>/)
  assert.match(agent,/role="log" aria-live="polite"/)
  assert.match(agent,/data-hh-chat-turn=\{m\.role\}/)
  assert.match(chatCss,/\[data-has-messages="true"\]>\.thread/)
