@@ -165,3 +165,17 @@ test('private My Photos can be selected as an Avatar source without implicit Hey
   assert.match(ui, /savedTitle: 'Выбрать из Моих фото'/);
   assert.match(ui, /savedTitle: 'Elegir de Mis fotos'/);
 });
+
+test('one live photo costs exactly 500 XP under explicit financial and likeness consent',()=>{
+  const ui=readFileSync('components/app/my-live-photos.jsx','utf8');
+  const service=readFileSync('lib/app/live-photo-service.js','utf8');
+  assert.match(ui,/body\.set\('consentXp', 'true'\)/);
+  assert.match(ui,/!xpConsent/);
+  assert.match(ui,/500 XP/);
+  assert.match(service,/form\.get\('consentXp'\) !== 'true'/);
+  assert.match(service,/reserveLiveGiftXp\(db, actor\.id, id\)/);
+  assert.match(service,/settleLiveGiftXp\(db, row\.account_id, current\.xp_operation_id/);
+  assert.match(service,/billing_kind,xp_operation_id/);
+  assert.match(service,/isLiveGiftXpEnabled/);
+  assert.doesNotMatch(ui,/HH_LIVE_PHOTO_HEYGEN_API_KEY/);
+});

@@ -52,3 +52,24 @@ My Page links into `/app/videos?tab=avatars` instead of mounting a duplicate liv
 
 ## Reuse the existing private My Photos as an Avatar source
 The My AI Avatars wizard includes an opt-in **Choose from My Photos** drawer. It reads the existing owner-scoped `/api/app/video-photos` gallery (PR #5339) and renews a 120-second signed link for an individual item only when selected. The browser rebuilds a local JPEG File and fills the EXISTING HeyGen photo input, resetting consent, request UUID and previous photo notices. Selection alone does not upload any bytes to HeyGen or authorize a billed render. The backend still requires the original signed-in request, explicit third-party likeness consent and both owner cost gates. This bridge activates once #5339 is protected-merged; until then the drawer fails safely as unavailable rather than inventing an album. No duplicate bucket or photo copy is created by browsing.
+
+## 500 XP server-side Live Gift settlement (forward-only, 22 Nov 2026)
+
+This uses the existing XP v2 wallet #5348 — **no separate wallet or EUR first-free scheme**.
+The client must explicitly approve 500 XP in addition to likeness/third-party consent.
+The server validates that checkbox; only a verified v2 wallet and independent owner
+`HH_LIVE_PHOTOS_XP_BRIDGE_ENABLED=true` gate allow the feature to be advertised.
+
+The Live Photo job and 500 XP `live_gift` hold are inserted in one owner-locked
+database transaction; a new private `xp_operation_id` FK binds the same account
+to its one existing `video_credit_charges` row. On a verified pre-provider or
+provider-terminal failure, release that exact hold. On verified successful MP4
+archive, capture exactly once in the SAME database transaction as `ready`.
+No automatic paid retry on unknown provider responses, and in-flight jobs cannot
+be deleted to evade an outstanding hold. Existing signed media remains reusable
+without new XP or HeyGen generation. All new source requires exact-HEAD CI.
+
+**Do not enable metered service yet.** Additive SQL must be applied and verified,
+#5348 must be protected-merged, explicit API budget and a dedicated site Direct
+API credential are necessary, and a real consented E2E MP4 delivery on iPhone
+must pass. This code does not prove that an external HeyGen render has occurred.

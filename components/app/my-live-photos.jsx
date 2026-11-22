@@ -19,6 +19,9 @@ const COPY = {
     limit: 'Максимум 3 живых фото. Новый заказ требует явного подтверждения.',
     studio: 'Создать ролик', private: 'Материалы приватны, публикация не выполняется автоматически.',
     choose: 'Выберите JPG, PNG, WebP или HEIC до 3 МБ.',
+    price: 'Новое оживление — 500 XP; повторное использование сохранённого MP4 бесплатно.',
+    xpConsent: 'Разрешаю резервировать 500 XP и списать их после сохранения MP4.',
+    lowXp: 'Недостаточно XP: требуется 500 XP.',
      savedTitle: 'Выбрать из Моих фото', savedEmpty: 'Сохранённых фотографий пока нет.', savedUnavailable: 'Галерея фото ещё недоступна.', savedSelected: 'Фото из личного кабинета выбрано. Для HeyGen подтвердите согласие отдельно.', savedPick: 'Выбрать', savedLoading: 'Загружаем Мои фото…',
     waveTip: 'Для взмаха на фото должны быть видны кисть и предплечье. Иначе возможна только улыбка.',
   },
@@ -38,6 +41,9 @@ const COPY = {
     limit: 'Up to 3 live photos. Every new render requires your confirmation.',
     studio: 'Create a video', private: 'Private by default. Nothing is published automatically.',
     choose: 'Choose a JPG, PNG, WebP or HEIC image up to 3 MB.',
+    price: 'One new animation: 500 XP. Reuse your saved clip for free.',
+    xpConsent: 'I approve a 500 XP hold; capture it only after the MP4 is privately saved.',
+    lowXp: 'Insufficient XP: 500 XP is required.',
      savedTitle: 'Choose from My Photos', savedEmpty: 'No photos saved yet.', savedUnavailable: 'Private photo gallery is not available yet.', savedSelected: 'A private photo was selected. Confirm separate HeyGen consent before animating.', savedPick: 'Select photo', savedLoading: 'Loading My Photos…',
     waveTip: 'For a natural wave, the photo should show the hand and forearm. Otherwise the clip may only smile.',
   },
@@ -57,6 +63,9 @@ const COPY = {
     limit: 'Máximo 3 fotos vivas. Cada nueva generación requiere confirmación.',
     studio: 'Crear un vídeo', private: 'Privado por defecto. No se publica automáticamente.',
     choose: 'Selecciona JPG, PNG, WebP o HEIC de hasta 3 MB.',
+    price: 'Nueva animación: 500 XP. Puedes reutilizar el MP4 gratis.',
+    xpConsent: 'Autorizo reservar 500 XP y cobrarlos al guardar el MP4 privado.',
+    lowXp: 'XP insuficientes: se necesitan 500 XP.',
      savedTitle: 'Elegir de Mis fotos', savedEmpty: 'Aún no tienes fotos guardadas.', savedUnavailable: 'La galería privada no está disponible.', savedSelected: 'Foto privada seleccionada. Confirma el permiso separado para HeyGen.', savedPick: 'Elegir foto', savedLoading: 'Cargando Mis fotos…',
     waveTip: 'Para el saludo, la foto debe mostrar la mano y el antebrazo. Si no, el vídeo quizá solo sonría.',
   },
@@ -80,6 +89,7 @@ export default function MyLivePhotos({ locale = 'en' }) {
   const [orientation, setOrientation] = useState('portrait');
   const [subject, setSubject] = useState('self');
   const [consent, setConsent] = useState(false);
+  const [xpConsent, setXpConsent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [opened, setOpened] = useState(null);
@@ -150,13 +160,14 @@ export default function MyLivePhotos({ locale = 'en' }) {
           !['image/jpeg', 'application/octet-stream'].includes(blob.type)) throw Error('INVALID_PHOTO');
       setFile(new File([blob], 'my-private-photo.jpg', { type: 'image/jpeg' }));
       setConsent(false);
+      setXpConsent(false);
       requestId.current = null;
       setPhotoNotice(t.savedSelected);
     } catch { setError(t.error); }
     finally { setSavedPhotoBusy(false); }
   }
   async function create() {
-    if (!enabled || busy || !file || !consent || file.size > 3000000) return;
+    if (!enabled || busy || !file || !consent || !xpConsent || file.size > 3000000) return;
     setBusy(true); setError('');
     if (!requestId.current) requestId.current = crypto.randomUUID();
     const body = new FormData();
@@ -166,6 +177,7 @@ export default function MyLivePhotos({ locale = 'en' }) {
     body.set('subject', subject);
     body.set('consentAi', 'true');
     body.set('consentSubject', 'true');
+    body.set('consentXp', 'true');
     body.set('requestId', requestId.current);
     try {
       const result = await fetch('/api/app/live-photos', {
@@ -174,9 +186,9 @@ export default function MyLivePhotos({ locale = 'en' }) {
       const value = await result.json();
       if (!result.ok || !value.id) throw Error(value.error || 'GENERATION_FAILED');
       requestId.current = null;
-      setConsent(false); setFile(null);
+      setConsent(false); setXpConsent(false); setFile(null);
       await refresh();
-    } catch { setError(t.error); await refresh().catch(() => {}); }
+    } catch (failure) { setError(failure?.message === 'VIDEO_CREDITS_INSUFFICIENT' ? t.lowXp : t.error); await refresh().catch(() => {}); }
     finally { setBusy(false); }
   }
   async function preview(id) {
@@ -211,7 +223,7 @@ export default function MyLivePhotos({ locale = 'en' }) {
     {enabled ? <div style={{ display: 'grid', gap: 11, marginBottom: 12 }}>
       <label style={{ display: 'grid', gap: 4, fontSize: 14 }}>{t.new}
         <input type="file" style={styles.field} disabled={busy} accept="image/jpeg,image/png,image/webp,image/heic,image/heif" onChange={event => {
-          setFile(event.target.files?.[0] || null); setConsent(false); setError(''); setPhotoNotice(''); requestId.current = null;
+          setFile(event.target.files?.[0] || null); setConsent(false); setXpConsent(false); setError(''); setPhotoNotice(''); requestId.current = null;
         }}/>
       </label>
       <details data-live-photo-saved-picker style={{ border: '1px solid #d1e2df', borderRadius: 10, padding: 9 }}
@@ -238,19 +250,19 @@ export default function MyLivePhotos({ locale = 'en' }) {
       {file?.size > 3000000 ? <p role="alert">{t.choose}</p> : null}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 9 }}>
         <label style={{ fontSize: 13 }}>{t.motion}
-          <select style={styles.field} value={motion} disabled={busy} onChange={e => { setMotion(e.target.value); requestId.current = null; }}>
+          <select style={styles.field} value={motion} disabled={busy} onChange={e => { setMotion(e.target.value); setXpConsent(false); requestId.current = null; }}>
             {['smile', 'greeting', 'wave', 'blink', 'turn'].map(key => <option value={key} key={key}>{t[key]}</option>)}
           </select>
           {motion === 'wave' ? <small style={{ display: 'block', marginTop: 4, lineHeight: 1.35 }}>{t.waveTip}</small> : null}
         </label>
         <label style={{ fontSize: 13 }}>{t.format}
-          <select style={styles.field} value={orientation} disabled={busy} onChange={e => { setOrientation(e.target.value); requestId.current = null; }}>
+          <select style={styles.field} value={orientation} disabled={busy} onChange={e => { setOrientation(e.target.value); setXpConsent(false); requestId.current = null; }}>
             <option value="portrait">{t.portrait}</option><option value="landscape">{t.landscape}</option>
           </select>
         </label>
       </div>
       <label style={{ display: 'grid', gap: 4, fontSize: 13 }}>{t.subject}
-        <select style={styles.field} value={subject} disabled={busy} onChange={e => { setSubject(e.target.value); setConsent(false); requestId.current = null; }}>
+        <select style={styles.field} value={subject} disabled={busy} onChange={e => { setSubject(e.target.value); setConsent(false); setXpConsent(false); requestId.current = null; }}>
           <option value="self">{t.self}</option><option value="other">{t.other}</option>
         </select>
       </label>
@@ -258,9 +270,15 @@ export default function MyLivePhotos({ locale = 'en' }) {
         <input type="checkbox" checked={consent} disabled={busy} onChange={e => setConsent(e.target.checked)} />
         <span>{t.consent}</span>
       </label>
+      <p style={{ fontSize: 13, margin: 0 }}>{t.price}</p>
+      <label style={{ display: 'flex', alignItems: 'flex-start', gap: 9, fontSize: 13 }}>
+        <input type="checkbox" checked={xpConsent} disabled={busy} onChange={e => setXpConsent(e.target.checked)}/>
+        <span>{t.xpConsent}</span>
+      </label>
       <button type="button" style={styles.button}
-        disabled={busy || !file || file.size > 3000000 || !consent || items.filter(i => !['failed','deleted'].includes(i.status)).length >= 3}
-        onClick={() => void create()}>{busy ? t.progress : t.create}</button>
+        disabled={busy || !file || file.size > 3000000 || !consent || !xpConsent ||
+          items.filter(i => !['failed','deleted'].includes(i.status)).length >= 3}
+        onClick={() => void create()}>{busy ? t.progress : t.create} · 500 XP</button>
       <small>{t.limit}</small>
     </div> : null}
     {error ? <p role="alert" style={{ color: '#a33d39' }}>{error}</p> : null}
@@ -273,7 +291,9 @@ export default function MyLivePhotos({ locale = 'en' }) {
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 9 }}>
         {item.status === 'ready' ? <button type="button" style={styles.button} onClick={() => void preview(item.id)}>{t.preview}</button> : null}
-        <button type="button" style={styles.button} disabled={busy} onClick={() => void remove(item.id)}>{t.remove}</button>
+        <button type="button" style={styles.button} disabled={busy ||
+          ['submitting','submitted','finalizing','unknown'].includes(item.status)}
+          onClick={() => void remove(item.id)}>{t.remove}</button>
       </div>
       {opened?.id === item.id ? <div style={{ marginTop: 10 }}>
         <video controls playsInline preload="metadata" src={opened.url} style={{ width: '100%', maxHeight: 280, borderRadius: 12, background: '#101c1c' }}/>
