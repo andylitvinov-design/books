@@ -618,10 +618,19 @@ try{
  const projectGrid=chat.locator('[data-hh-messenger-six-projects]');
  // Inner Alchemist begins with an inviting question, not a wall of service cards.
  // Keep the entire canonical six-project catalogue available after user intent.
+ // Ali's real "+" composer action is the parent of the optional tools.
+ // The first screen keeps it collapsed: open it using a real tap, inspect
+ // the secondary disclosure, then collapse it before tapping topic cards.
+ const composerMore=chat.locator('details[data-hh-ai-more]');
+ await composerMore.waitFor({state:"visible",timeout:15000});
+ assert.equal(await composerMore.evaluate(node=>node.open),false,
+   "Ali's additional tools begin collapsed to leave room for the conversation");
+ await composerMore.locator(':scope > summary').click();
  const alchemistTools=chat.locator('[data-hh-alchemist-tools]');
  await alchemistTools.waitFor({state:"visible",timeout:15000});
  assert.equal(await alchemistTools.evaluate(node=>node.open),false,
    "six legacy service cards are tucked away until requested");
+ await composerMore.locator(':scope > summary').click();
  assert.equal(await chat.locator('[data-hh-alchemist-topic]').count(),4,
    "first screen presents four large conversational problem starters");
  const moreTopics=chat.locator('[data-hh-alchemist-more-topics]');
@@ -632,7 +641,8 @@ try{
  await chat.locator('[data-hh-ai-chat-composer] textarea').waitFor({state:"visible",timeout:15000});
  assert.equal(await chat.locator('[data-hh-ai-chat-composer]').count(),1,
    "first screen owns one real pinned message composer");
- await alchemistTools.locator('summary').click();
+ await composerMore.locator(':scope > summary').click();
+ await alchemistTools.locator(':scope > summary').click();
  await projectGrid.waitFor({state:"visible",timeout:15000});
  const projects=chat.locator('[data-hh-messenger-six-projects] [data-hh-ai-project]');
  const six=["hint","test","mytube","sessions","practice","ai-video"];
@@ -652,6 +662,8 @@ try{
  // AI-Video opens the existing in-chat format selector through the approved
  // six-project entry. No generation, payment or external request occurs here.
  await chat.locator('[data-hh-ai-project="ai-video"]').click();
+ if(await composerMore.evaluate(node=>node.open))
+   await composerMore.locator(':scope > summary').click();
  const initialContentKinds=chat.locator('[data-hh-content-step="kind"] [data-hh-content-kind]');
  await initialContentKinds.first().waitFor({state:"visible",timeout:15000});
  assert.deepEqual(await initialContentKinds.evaluateAll(nodes=>nodes.map(node=>
@@ -788,11 +800,15 @@ try{
    // The six legacy projects are intentionally inside a collapsed accessible
    // “More ways Ali can help” disclosure on the conversation-first landing.
    // Test the real disclosure, rather than waiting for a hidden button.
+   const more=chat.locator('details[data-hh-ai-more]');
+   await more.waitFor({state:"visible",timeout:15000});
+   if(await more.evaluate(node=>!node.open))await more.locator(':scope > summary').click();
    const tools=chat.locator("details[data-hh-alchemist-tools]");
    await tools.waitFor({state:"visible",timeout:15000});
-   if(await tools.evaluate(node=>!node.open))await tools.locator("summary").click();
+   if(await tools.evaluate(node=>!node.open))await tools.locator(':scope > summary').click();
    await chat.locator('[data-hh-ai-project="'+id+'"]').waitFor({state:"visible",timeout:15000});
    await chat.locator('[data-hh-ai-project="'+id+'"]').click();
+   if(await more.evaluate(node=>node.open))await more.locator(':scope > summary').click();
    // Sessions has a goal-first two-step intake; other projects use one-step choices.
    const options=id==="sessions"?
      chat.locator("[data-hh-session-goal-options]"):
