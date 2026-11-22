@@ -24,12 +24,12 @@ async function revealMirrorAdvanced(page,engine="chromium"){
     if(engine==="webkit")await overflow.tap();
     else await overflow.click();
   }else{
-    // Start at the actual introduction. This navigates only to Topic,
+    // The first approved video direction opens Topic without charge,
     // without rendering, sending a request, or charging any XP.
-    const plan=mirror.locator('[data-hh-mirror-plan]');
-    if(await plan.isVisible()){
-      if(engine==="webkit")await plan.tap();
-      else await plan.click();
+    const entry=mirror.locator('[data-hh-mirror-enter="me"]');
+    if(await entry.isVisible()){
+      if(engine==="webkit")await entry.tap();
+      else await entry.click();
     }
     const composer=mirror.locator('[data-hh-mirror-composer]');
     for(let step=0;step<3&&!await composer.isVisible();step++){
@@ -126,38 +126,26 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(mirror).toBeVisible();
     await expect(mirror).toHaveAttribute('data-hh-mirror-step','1');
     await expect(mirror).toHaveAttribute("data-hh-mirror-screen","landing");
-    await expect(mirror.locator('[data-hh-mirror-enter]')).toHaveCount(2);
-    await expect(mirror.locator('[data-hh-mirror-video-format]')).toHaveCount(3);
+    await expect(mirror.locator('[data-hh-mirror-enter]')).toHaveCount(3);
+    await expect(mirror.locator('[data-hh-mirror-plan]')).toHaveCount(0);
+    await expect(mirror.locator('[data-hh-mirror-video-format]')).toHaveCount(0);
     for(const width of [320,354,390,430]){
       await page.setViewportSize({width,height:840});
-      if(width>=390){
-        const rect=await mirror.locator('[data-hh-mirror-plan]').evaluate(node=>{
-          const box=node.getBoundingClientRect();return {top:box.top,bottom:box.bottom,viewport:innerHeight};
-        });
-        assert.ok(rect.top>=0&&rect.bottom<rect.viewport-54,
-          "Magic Mirror must fit on one 840px screen above bottom dock "+width+": "+JSON.stringify(rect));
-      }
-      for(const item of await mirror.locator('[data-hh-mirror-enter]').all()){
-        await item.scrollIntoViewIfNeeded();
-        await expect(item).toBeVisible();
-        assert.ok(await item.evaluate(node=>node.getBoundingClientRect().width>=275),
-          "Direction stays touch readable at "+width);
-      }
-      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),
-        false,"Magic Mirror landing must not overflow at "+width);
+      const geometry=await mirror.evaluate(el=>({
+        cards:[...el.querySelectorAll('[data-hh-mirror-enter]')].map(card=>{
+          const r=card.getBoundingClientRect();return {top:r.top,bottom:r.bottom,width:r.width};
+        }),
+        scrollWidth:document.documentElement.scrollWidth,viewport:innerHeight
+      }));
+      assert.ok(geometry.cards.length===3&&geometry.cards.every(r=>r.width>=275&&r.top>=0),
+        "all 3 first-screen cards visible at "+width+": "+JSON.stringify(geometry));
+      assert.ok(geometry.cards[2].bottom<geometry.viewport-64,
+        "3 cards above bottom navigation at "+width+": "+JSON.stringify(geometry));
+      assert.ok(geometry.scrollWidth<=width+1,"no horizontal overflow at "+width);
     }
     await page.setViewportSize({width:390,height:840});
-    await mirror.locator('[data-hh-mirror-video-format="vip"]').click();
-    await expect(mirror.locator('[data-hh-mirror-video-format="vip"]')).toHaveAttribute("aria-pressed","true");
-    await mirror.locator('[data-hh-mirror-enter="me"]').click();
-    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","landing");
-    await expect(mirror.locator('[data-hh-mirror-enter="me"]')).toHaveAttribute("aria-pressed","true");
-    await mirror.locator('[data-hh-mirror-enter="others"]').click();
-    await expect(mirror).toHaveAttribute("data-hh-mirror-mode","present");
-    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","landing");
     await mirror.locator('[data-hh-mirror-enter="me"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","me");
-    await mirror.locator('[data-hh-mirror-plan]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
     await expect(mirror.locator('[data-hh-mirror-composer] textarea')).toBeVisible();
     await expect(page.locator('[data-video-live-stage]')).toBeHidden();
@@ -178,11 +166,11 @@ async function verifyWorkspaceHydration(browser,locale){
       .toContainText(approvedAxisLabels[index]);
     await mirror.locator('[data-hh-mirror-back-landing]').click();
     await mirror.locator('[data-hh-mirror-enter="others"]').click();
-    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","landing");
-    await expect(mirror).toHaveAttribute("data-hh-mirror-mode","present");
-    await mirror.locator('[data-hh-mirror-plan]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
-    await mirror.locator('[data-hh-mirror-audience="business"]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-mode","present");
+    await mirror.locator('[data-hh-mirror-back-landing]').click();
+    await mirror.locator('[data-hh-mirror-enter="work"]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","business");
     const workCards=mirror.locator('[data-hh-mirror-goal-choice]');
     const workLabels={

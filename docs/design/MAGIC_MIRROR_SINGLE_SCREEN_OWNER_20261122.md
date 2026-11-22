@@ -1,7 +1,9 @@
-# Magic Mirror · approved single-screen entrance · 22 November 2026
+# Magic Mirror — три непосредственных пути создания видео · 22 ноября 2026
 
-**View identity:** Existing guest/user `/{en,ru,es}/holistic-support/mandala`, first Video screen (`data-hh-mirror-screen=landing`). Owner's third image is the visual reference; images 1–2 are the previous two-screen layout.
+**Правильная страница:** гостевая и авторизованная `/{en,ru,es}/holistic-support/mandala`, экран `data-hh-mirror-screen=landing`. Утверждённый последний макет: три вертикальные фотографии-карточки, БЕЗ выбора формата или отдельной зелёной кнопки снизу. Нижняя системная навигация сайта сохраняется.
 
-One integrated portrait/sunrise hero; real brand, authenticated XP and profile, gold accent; two small genuine cropped WebP photo artworks (lotus and gift with heart); three format options with real 250/500/1000 XP *planning preferences*; selected green/mint state; one glossy green CTA. Existing seven-icon dock, intro MP4 and Canvas remain—not pasted screenshot, no second renderer. **Destination buttons update scope only and stay on landing. Only Plan & Generate Video navigates to the existing topic composer**, preserving selection and format; Back retains them. No render, provider call or payment for selection. EN/RU/ES and accessible pressed state retained. Mock XP balance is not a real user balance.
+Карточки: **Videos for Myself / Видео для себя / Vídeos para mí** — эмоциональная поддержка и личностный рост; **Videos for Others / Видео для других / Vídeos para otros** — подарки, поздравления, поддержка; **Videos for Work / Видео для работы / Vídeos para el trabajo** — рилзы, презентации, видео об услугах.
 
-Acceptance requires targeted source tests and real browser Chromium/WebKit at 320/354/390/430 px with visible click tests and viewport-fit checks, plus Core, typecheck, build, native protected merge, existing hourly production publisher and verified live canonical SHA. Real Safari/browser bars and true pixel overlay remain distinct evidence; no unverified live claims.
+Каждая карточка — настоящая кликабельная кнопка, непосредственно переходящая к существующему экрану Topic с `scope=me|present|business`. Сохранены сценарии, локализации, квиз, личные данные, приватное медиа, E2E и серверные права на кредиты. Никакого автоматического XP-тарифа на входе, HeyGen-рендера или списания при выборе карточки. Меню форматов остаётся на последующих шагах.
+
+Валидация: Core TypeScript/lint/build + отдельный Chromium/WebKit (320/354/390/430), реальные три перехода, отсутствие скрытого Plan, сохранённый док, screenshot overlay и запрет переполнения. Protected merge → существующий hourly publisher → фактический Vercel READY, обслуживаемый SHA и Safari tap — независимые этапы.

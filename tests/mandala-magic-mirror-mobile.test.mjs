@@ -31,7 +31,8 @@ test("the approved mobile Mirror contains only three scopes, a compact input Nex
  assert.match(mirror,/data-hh-mirror-audience=\{item\}/);
  assert.match(mirror,/data-hh-mirror-enter="me"/);
  assert.match(mirror,/data-hh-mirror-enter="others"/);
- assert.match(mirror,/data-hh-mirror-plan/);
+ assert.match(mirror,/data-hh-mirror-enter="work"/);
+ assert.doesNotMatch(mirror,/data-hh-mirror-plan/);
  assert.match(mirror,/data-hh-mirror-tier-option=\{option.id\}/);
  assert.match(mirror,/data-hh-mirror-ideas-cta/);
  assert.match(mirror,/data-hh-mirror-open-advanced/);
@@ -199,18 +200,19 @@ test("Mirror quiz image URL survives category then subcategory and topic",()=>{
  assert.equal((mirror.match(/<img src=\{"\/videos\/holistic-house\/film-collection-v2\/"\+/g)||[]).length,0);
 });
 
-test("owner 22 Nov: destination stays on landing; green Plan alone advances",()=>{
+test("final three destinations are direct, localized and have no initial hidden charge or Plan",()=>{
  const landing=mirror.slice(mirror.indexOf('if(screen==="landing")'),mirror.indexOf('return <section className={css.goals} data-hh-mirror-screen="topic"'));
- assert.match(landing,/data-hh-mirror-enter="me"[\s\S]*?onClick=\{\(\)=>switchScope\("me"\)\}/);
- assert.match(landing,/data-hh-mirror-enter="others"[\s\S]*?onClick=\{\(\)=>switchScope\("present"\)\}/);
- assert.match(landing,/aria-pressed=\{scope==="me"\}/);
- assert.match(landing,/aria-pressed=\{scope==="present"\}/);
- assert.match(landing,/data-hh-mirror-plan[\s\S]*?onClick=\{enterScreen\}/);
- assert.doesNotMatch(landing,/onClick=\{\(\)=>enterScreen/);
- const entry=mirror.slice(mirror.indexOf('const enterScreen='),mirror.indexOf('const playExistingIntro='));
- assert.match(entry,/setScreen\("topic"\)/);
- assert.doesNotMatch(entry,/switchScope\(/);
- assert.match(mirrorCss,/\.destination\[aria-pressed="true"\]/);
- assert.match(mirrorCss,/\.heroSwoosh/);
- assert.match(mobile,/one-screen hero/);
+ assert.equal((landing.match(/data-hh-mirror-enter="/g)||[]).length,3);
+ for(const [id,next] of [["me","me"],["others","present"],["work","business"]])
+  assert.match(landing,new RegExp('data-hh-mirror-enter="'+id+'"[^]*?onClick=\\{\\(\\)=>enterScreen\\("'+next+'"\\)\\}'));
+ for(const name of ['therapy:"Видео для себя"','therapy:"Videos for Myself"','therapy:"Vídeos para mí"'])
+  assert.ok(mirror.includes(name),name);
+ assert.match(mirror,/const enterScreen=\(next:MirrorScope\)=>/);
+ assert.match(mirror,/if\(next!==scope\)switchScope\(next\)/);
+ assert.match(mirror,/setScreen\("topic"\)/);
+ assert.doesNotMatch(landing,/data-hh-mirror-plan|data-hh-mirror-video-format|formatOptions/);
+ assert.match(mirror,/useState<MirrorVideoFormat\|undefined>\(undefined\)/);
+ assert.match(mirror,/data-hh-mirror-tier-option=\{option.id\}/);
+ assert.match(mirrorCss,/\.goals\.landing \.destinationCards/);
+ assert.match(mobile,/Three-category Magic Mirror/);
 });

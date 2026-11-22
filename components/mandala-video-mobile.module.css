@@ -6172,3 +6172,16 @@
   margin-top:-18px!important;background-size:100% 132px,100% 132px,100% 100%!important
  }
 }
+
+/* Three-category Magic Mirror keeps one existing portrait hero and bottom dock. */
+@media(max-width:759px){
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) .quickBuilder{
+  background-size:100% 192px,100% 192px,100% 100%!important;
+  background-position:top center,top right,center!important
+ }
+}
+@media(max-width:759px) and (max-height:740px){
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) .quickBuilder{
+  background-size:100% 152px,100% 152px,100% 100%!important
+ }
+}

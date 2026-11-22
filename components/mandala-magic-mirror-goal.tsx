@@ -68,7 +68,7 @@ const labels={
   placeholder:"Describe your goal or wish…",alternative:"Or choose what matters now",
   sub:"Choose a subcategory",topic:"Choose a topic",next:"Next",back:"Back",
   advanced:"Advanced choices",dictation:"Use your phone keyboard microphone to dictate",workQuestion:"What video would you like to create?",workPlaceholder:"Describe your video or service…",workAlternative:"Or choose a video format",format:"Format"},
- ru:{subtitle:"Создайте своё видео перемен",hint:"Несколько простых вопросов — и видео для вашей цели или желания.",
+ ru:{subtitle:"Создайте своё ресурсное видео",hint:"Несколько простых вопросов — и видео для вашей цели или желания.",
   question:"Какая у вас сейчас главная цель?",me:"Для себя",business:"Для работы",present:"Подарок",
   placeholder:"Опишите цель или желание…",alternative:"Или выберите то, что актуально",
   sub:"Выберите подкатегорию",topic:"Выберите тему",next:"Далее",back:"Назад",
@@ -94,9 +94,9 @@ export function MandalaMagicMirrorTitle({locale}:{locale:VideoLocale}){
 }
 
 const onboardingCopy={
- en:{therapy:"Video Therapy for Myself",other:"Videos for Others",therapyHint:"Supportive videos, meditations and practices that shift beliefs, restore energy and create change.",otherHint:"Personal gifts, congratulations, thank you, support — and creative videos for Instagram and social media.",formatTitle:"Choose a Creation Format",formatNote:"Format selection is a planning preference. Credits are confirmed before generation.",basic:"Simple Video",pro:"Live Photo",vip:"Cinematographic Video",basicHelp:"Quick & easy video with your message",proHelp:"Turn your photo into a living video with a natural smile and movement",vipHelp:"A cinematic story with music, scenes and special effects",plan:"Plan & Generate Video",back:"Magic Mirror",step:"Step 1 of 3",topic:"Topic",script:"Script & Style",create:"Create",describe:"Describe your situation or goal…",example:"Example: “I feel stressed and need to restore my energy”",ideas:"AI Ideas",guide:"Guide me",guideHelp:"Choose one of four directions below, then a subcategory and topic. Or describe your situation and continue directly.",quiz:"Or choose a topic through a short quiz",next:"Get AI Suggestions & Script",watch:"Watch example video",media:"Open media options",keyboard:"Focus the text field for keyboard dictation"},
- ru:{therapy:"Видеотерапия для себя",other:"Видео для других",therapyHint:"Поддерживающие видео, медитации и практики для вашей ситуации, трудности или цели.",otherHint:"Подарки, поздравления, поддержка близким и видео для Instagram и соцсетей.",formatTitle:"Выберите формат видео",formatNote:"Выбор формата пока задаёт предпочтение. Кредиты подтверждаются перед генерацией.",basic:"Простое видео",pro:"Живое фото",vip:"Кинематографическое видео",basicHelp:"Короткое поддерживающее видео",proHelp:"Оживление фото с разрешения",vipHelp:"История с видеосценами",plan:"Спланировать и создать видео",back:"Magic Mirror",step:"Шаг 1 из 3",topic:"Тема",script:"Сценарий и стиль",create:"Создание",describe:"Опишите ситуацию или цель…",example:"Пример: «Испытываю стресс и хочу восстановить силы»",ideas:"ИИ-идеи",guide:"Помоги мне",guideHelp:"Выберите одно из четырёх направлений, затем подтему и тему. Или опишите запрос и переходите дальше.",quiz:"Или выберите тему через короткий квиз",next:"Предложить тему и сценарий",watch:"Смотреть пример видео",media:"Открыть медианастройки",keyboard:"Открыть клавиатуру для диктовки"},
- es:{therapy:"Videoterapia para mí",other:"Vídeos para otros",therapyHint:"Vídeos de apoyo, meditaciones y prácticas para tu situación, reto u objetivo.",otherHint:"Regalos, felicitaciones, apoyo y vídeos para Instagram y redes sociales.",formatTitle:"Elige un formato de vídeo",formatNote:"El formato es una preferencia de planificación. Los créditos se confirman antes de generar.",basic:"Vídeo sencillo",pro:"Foto animada",vip:"Vídeo cinematográfico",basicHelp:"Vídeo breve de apoyo",proHelp:"Anima tu foto con permiso",vipHelp:"Historia con escenas cinematográficas",plan:"Planificar y generar vídeo",back:"Magic Mirror",step:"Paso 1 de 3",topic:"Tema",script:"Guion y estilo",create:"Crear",describe:"Describe tu situación u objetivo…",example:"Ejemplo: «Me siento estresado y quiero recuperar energía»",ideas:"Ideas de IA",guide:"Guíame",guideHelp:"Elige una de las cuatro categorías, después una subcategoría y un tema, o describe tu objetivo.",quiz:"O elige un tema con un cuestionario corto",next:"Sugerir ideas y guion",watch:"Ver vídeo de ejemplo",media:"Abrir opciones multimedia",keyboard:"Enfocar el campo para dictar"},
+ en:{therapy:"Videos for Myself",other:"Videos for Others",work:"Videos for Work",therapyHint:"Emotional support and personal growth.",otherHint:"Personal gifts, greetings and support for loved ones.",workHint:"Personal Reels, presentations and videos about your services.",formatTitle:"Choose a Creation Format",formatNote:"Format selection is a planning preference. Credits are confirmed before generation.",basic:"Simple Video",pro:"Live Photo",vip:"Cinematographic Video",basicHelp:"Quick & easy video with your message",proHelp:"Turn your photo into a living video with a natural smile and movement",vipHelp:"A cinematic story with music, scenes and special effects",plan:"Plan & Generate Video",back:"Magic Mirror",step:"Step 1 of 3",topic:"Topic",script:"Script & Style",create:"Create",describe:"Describe your situation or goal…",example:"Example: “I feel stressed and need to restore my energy”",ideas:"AI Ideas",guide:"Guide me",guideHelp:"Choose one of four directions below, then a subcategory and topic. Or describe your situation and continue directly.",quiz:"Or choose a topic through a short quiz",next:"Get AI Suggestions & Script",watch:"Watch example video",media:"Open media options",keyboard:"Focus the text field for keyboard dictation"},
+ ru:{therapy:"Видео для себя",other:"Видео для других",work:"Видео для работы",therapyHint:"Эмоциональная поддержка и развитие важных качеств.",otherHint:"Личные подарки, поздравления и поддержка близких.",workHint:"Персональные рилзы, презентации и видео об услугах.",formatTitle:"Выберите формат видео",formatNote:"Выбор формата пока задаёт предпочтение. Кредиты подтверждаются перед генерацией.",basic:"Простое видео",pro:"Живое фото",vip:"Кинематографическое видео",basicHelp:"Короткое поддерживающее видео",proHelp:"Оживление фото с разрешения",vipHelp:"История с видеосценами",plan:"Спланировать и создать видео",back:"Magic Mirror",step:"Шаг 1 из 3",topic:"Тема",script:"Сценарий и стиль",create:"Создание",describe:"Опишите ситуацию или цель…",example:"Пример: «Испытываю стресс и хочу восстановить силы»",ideas:"ИИ-идеи",guide:"Помоги мне",guideHelp:"Выберите одно из четырёх направлений, затем подтему и тему. Или опишите запрос и переходите дальше.",quiz:"Или выберите тему через короткий квиз",next:"Предложить тему и сценарий",watch:"Смотреть пример видео",media:"Открыть медианастройки",keyboard:"Открыть клавиатуру для диктовки"},
+ es:{therapy:"Vídeos para mí",other:"Vídeos para otros",work:"Vídeos para el trabajo",therapyHint:"Apoyo emocional y crecimiento personal.",otherHint:"Regalos personales, felicitaciones y apoyo a tus seres queridos.",workHint:"Reels personales, presentaciones y vídeos sobre tus servicios.",formatTitle:"Elige un formato de vídeo",formatNote:"El formato es una preferencia de planificación. Los créditos se confirman antes de generar.",basic:"Vídeo sencillo",pro:"Foto animada",vip:"Vídeo cinematográfico",basicHelp:"Vídeo breve de apoyo",proHelp:"Anima tu foto con permiso",vipHelp:"Historia con escenas cinematográficas",plan:"Planificar y generar vídeo",back:"Magic Mirror",step:"Paso 1 de 3",topic:"Tema",script:"Guion y estilo",create:"Crear",describe:"Describe tu situación u objetivo…",example:"Ejemplo: «Me siento estresado y quiero recuperar energía»",ideas:"Ideas de IA",guide:"Guíame",guideHelp:"Elige una de las cuatro categorías, después una subcategoría y un tema, o describe tu objetivo.",quiz:"O elige un tema con un cuestionario corto",next:"Sugerir ideas y guion",watch:"Ver vídeo de ejemplo",media:"Abrir opciones multimedia",keyboard:"Enfocar el campo para dictar"},
 } as const;
 export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSelectCategory,
  onStepChange,onScopeChange,onComplete,onExpand}:{
@@ -107,7 +107,7 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
 }){
  const [scope,setScope]=useState<MirrorScope>("me");
  const [screen,setScreen]=useState<"landing"|"topic">("landing");
- const [videoFormat,setVideoFormat]=useState<MirrorVideoFormat>("pro");
+ const [videoFormat,setVideoFormat]=useState<MirrorVideoFormat|undefined>(undefined);
  const [formatMenuOpen,setFormatMenuOpen]=useState(false);
  const [guideOpen,setGuideOpen]=useState(false);
  const [introExpanded,setIntroExpanded]=useState(false);
@@ -137,11 +137,13 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
   onWishChange(scopeWishes[next]||"");
   onScopeChange(next);onSelectCategory(choices[next][0].theme);changeStep(1);
  };
- // Direction selection stays on landing; this is the ONLY transition to Topic.
- const enterScreen=()=>{
+ // The three whole-card buttons, not a separate Plan control, open Topic.
+ const enterScreen=(next:MirrorScope)=>{
   if(disabled)return;
+  if(next!==scope)switchScope(next);
+  else changeStep(1);
   closeExistingIntro();
-  setScreen("topic");setFormatMenuOpen(false);setGuideOpen(false);changeStep(1);
+  setScreen("topic");setFormatMenuOpen(false);setGuideOpen(false);
  };
  const playExistingIntro=()=>{
   // This is a poster button, NOT a second video element. Reuse the real
@@ -202,37 +204,31 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
  };
  if(screen==="landing")return <section className={css.goals+" "+css.landing} data-hh-mirror-goals
   data-hh-mirror-screen="landing" data-hh-mirror-mode={scope} data-hh-mirror-step={1}
-  aria-label={copy.formatTitle}>
-  <div className={css.destinationCards} role="group" aria-label={locale==="ru"?"Для кого видео":locale==="es"?"Destinatario":"Who is this video for?"}>
+  aria-label={locale==="ru"?"Выберите, для кого видео":locale==="es"?"Elige para quién es el vídeo":"Choose who the video is for"}>
+  <div className={css.destinationCards} role="group"
+    aria-label={locale==="ru"?"Три вида видео":locale==="es"?"Tres tipos de vídeo":"Three video categories"}>
    <button type="button" data-hh-mirror-enter="me" className={css.destination}
-    aria-pressed={scope==="me"} disabled={disabled} onClick={()=>switchScope("me")}>
+    disabled={disabled} onClick={()=>enterScreen("me")}>
     <img src="/images/holistic-house/magic-mirror-lotus.webp" alt="" loading="eager" decoding="async"/>
-    <span className={css.destinationCopy}><Flower2 size={26} aria-hidden="true"/><strong>{copy.therapy}</strong><small>{copy.therapyHint}</small></span>
-    <span className={css.destinationArrow}><ArrowRight size={22}/></span>
+    <span className={css.destinationCopy}><Flower2 size={26} aria-hidden="true"/>
+      <strong>{copy.therapy}</strong><small>{copy.therapyHint}</small></span>
+    <span className={css.destinationArrow} aria-hidden="true"><ArrowRight size={24}/></span>
    </button>
    <button type="button" data-hh-mirror-enter="others" className={css.destination}
-    aria-pressed={scope==="present"} disabled={disabled} onClick={()=>switchScope("present")}>
+    disabled={disabled} onClick={()=>enterScreen("present")}>
     <img src="/images/holistic-house/magic-mirror-gift.webp" alt="" loading="eager" decoding="async"/>
-    <span className={css.destinationCopy}><Gift size={26} aria-hidden="true"/><strong>{copy.other}</strong><small>{copy.otherHint}</small></span>
-    <span className={css.destinationArrow}><ArrowRight size={22}/></span>
+    <span className={css.destinationCopy}><Gift size={26} aria-hidden="true"/>
+      <strong>{copy.other}</strong><small>{copy.otherHint}</small></span>
+    <span className={css.destinationArrow} aria-hidden="true"><ArrowRight size={24}/></span>
+   </button>
+   <button type="button" data-hh-mirror-enter="work" className={css.destination}
+    disabled={disabled} onClick={()=>enterScreen("business")}>
+    <img src="/images/holistic-house/magic-mirror-work.svg" alt="" loading="eager" decoding="async"/>
+    <span className={css.destinationCopy}><TrendingUp size={26} aria-hidden="true"/>
+      <strong>{copy.work}</strong><small>{copy.workHint}</small></span>
+    <span className={css.destinationArrow} aria-hidden="true"><ArrowRight size={24}/></span>
    </button>
   </div>
-  <h3 className={css.formatHeading}>{copy.formatTitle}</h3>
-  <div className={css.formatGrid} role="group" aria-label={copy.formatTitle}>
-   {formatOptions.map(option=><button type="button" key={option.id}
-    data-hh-mirror-video-format={option.id} aria-pressed={videoFormat===option.id}
-    disabled={disabled} onClick={()=>setVideoFormat(option.id)} className={css.formatCard}>
-     <option.Icon size={27} aria-hidden="true"/>
-     <strong>{copy[option.id]}</strong>
-     <small>{copy[(option.id+"Help") as "basicHelp"|"proHelp"|"vipHelp"]}</small>
-     <span><Sparkles size={15} aria-hidden="true"/>{option.credits.toLocaleString("en-US").replaceAll(",", " ")} XP</span>
-    </button>)}
-  </div>
-  <p className={css.formatDisclosure}>{copy.formatNote}</p>
-  <button type="button" className={css.primaryAction} data-hh-mirror-plan
-   disabled={disabled} onClick={enterScreen}>
-   <Clapperboard size={23} aria-hidden="true"/>{copy.plan}<ArrowRight size={22} aria-hidden="true"/>
-  </button>
  </section>;
  return <section className={css.goals} data-hh-mirror-screen="topic" data-hh-mirror-goals data-hh-mirror-mode={scope}
   data-hh-mirror-step={step} data-hh-mirror-video-preview={introExpanded?"open":"closed"} aria-label={scope==="business"?t.workQuestion:t.question}>

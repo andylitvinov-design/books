@@ -466,3 +466,58 @@
  .goals[data-hh-mirror-screen="topic"] .therapyHero{min-height:100px}
  .goals[data-hh-mirror-screen="topic"] .exampleVideo{height:74px}
 }
+
+/* Owner-approved 22 Nov final: three large stacked photo-led DIRECT buttons. */
+@media(max-width:759px){
+ .title{min-height:clamp(96px,12dvh,118px)!important;padding:5px 8px 7px!important}
+ .title h2{font-size:clamp(28px,7.7vw,38px)!important}
+ .title strong{max-width:270px;color:#fff7e5!important;font-size:clamp(17px,5.15vw,23px)!important}
+ .goals.landing{margin:0!important;padding:0 2px 4px!important;gap:0!important}
+ .goals.landing .destinationCards{display:grid;grid-template-columns:minmax(0,1fr);gap:clamp(6px,1dvh,11px)}
+ .goals.landing .destination{position:relative;display:grid;grid-template-columns:38% minmax(0,1fr) 34px;
+  align-items:stretch;min-width:0;gap:6px;padding:0 7px 0 0;
+  min-height:clamp(128px,17.4dvh,158px);overflow:hidden;border:2px solid #fffaf4!important;
+  border-radius:24px;background:linear-gradient(110deg,#ecfff6,#f9fff8 68%,#f3fffa);
+  text-align:left;box-shadow:0 4px 13px #604b3830}
+ .goals.landing .destination:first-child{border-color:#18dca1!important;
+  background:linear-gradient(112deg,#e4fff0,#f8fffa 68%,#eafff3);
+  box-shadow:0 0 0 1px #c6ffe8,0 5px 16px #12b88658}
+ .goals.landing .destination:nth-child(2){background:linear-gradient(112deg,#fff5e9,#fffdf8 67%,#ffefd9)}
+ .goals.landing .destination:nth-child(3){background:linear-gradient(112deg,#edfaff,#fdfefa 67%,#e5f7ff)}
+ .goals.landing .destination>img{display:block;width:100%;height:100%;min-height:0;
+  object-fit:cover;object-position:center;border-radius:21px 11px 11px 21px}
+ .goals.landing .destinationCopy{z-index:1;display:flex;flex-direction:column;justify-content:center;
+  align-items:flex-start;gap:clamp(2px,.45dvh,5px);padding:5px 0;min-width:0}
+ .goals.landing .destinationCopy>svg{flex:none;width:clamp(23px,6.7vw,30px);
+  height:clamp(23px,6.7vw,30px);color:#08795a;stroke-width:1.8}
+ .goals.landing .destination:nth-child(2) .destinationCopy>svg{color:#93661e}
+ .goals.landing .destination:nth-child(3) .destinationCopy>svg{color:#0b6b7b}
+ .goals.landing .destinationCopy strong{font:800 clamp(17px,4.6vw,23px)/1.03 Georgia,serif;
+  color:#0b3b31;letter-spacing:-.025em;overflow-wrap:normal}
+ .goals.landing .destinationCopy small{font:550 clamp(11.5px,3.12vw,14px)/1.16 system-ui,sans-serif;color:#374d4d}
+ .goals.landing .destinationArrow{align-self:center;justify-self:center;display:grid;place-items:center;
+  width:34px;height:42px;border-radius:99px;color:#fff;background:linear-gradient(135deg,#05ad79,#006449);
+  box-shadow:0 3px 9px #026f4f40}
+ .goals.landing .destination:nth-child(2) .destinationArrow{background:linear-gradient(135deg,#dca95c,#885b18)}
+ .goals.landing .destination:nth-child(3) .destinationArrow{background:linear-gradient(135deg,#10a8b5,#00687c)}
+ .goals.landing .destinationArrow svg{width:23px;height:23px}
+ .goals.landing .destination:focus-visible{outline:3px solid #087e62;outline-offset:3px}
+}
+@media(max-width:359px){
+ .goals.landing .destination{grid-template-columns:34% minmax(0,1fr) 29px;gap:4px;
+  min-height:clamp(130px,18dvh,152px);padding-right:3px;border-radius:21px}
+ .goals.landing .destinationCopy{gap:2px;padding:3px 0}
+ .goals.landing .destinationCopy>svg{width:21px;height:21px}
+ .goals.landing .destinationCopy strong{font-size:clamp(15px,4.8vw,17px)}
+ .goals.landing .destinationCopy small{font-size:clamp(10.5px,3.32vw,12px)}
+ .goals.landing .destinationArrow{width:29px;height:35px}
+}
+@media(max-width:759px) and (max-height:740px){
+ .title{min-height:79px!important}
+ .title strong{font-size:clamp(16px,4.8vw,19px)!important}
+ .goals.landing .destinationCards{gap:6px}
+ .goals.landing .destination{min-height:116px}
+ .goals.landing .destinationCopy strong{font-size:clamp(15px,4.35vw,19px)}
+ .goals.landing .destinationCopy small{font-size:clamp(11px,2.95vw,12px)}
+ .goals.landing .destinationCopy>svg{width:21px;height:21px}
+}

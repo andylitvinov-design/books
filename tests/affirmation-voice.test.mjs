@@ -223,10 +223,10 @@ test("voice browser opens Montage through visible Magic Mirror Plan and composer
   assert.ok(revealStart>=0&&revealEnd>revealStart,"only visible Mirror actions reveal advanced editor");
   const reveal=source.slice(revealStart,revealEnd);
   for(const action of [
-    '[data-hh-mirror-plan]',
+    '[data-hh-mirror-enter="me"]',
     '[data-hh-mirror-composer]',
     '[data-hh-mirror-open-advanced]',
-    'if(engine==="webkit")await plan.tap()',
+    'if(engine==="webkit")await entry.tap()',
     'if(engine==="webkit")await plus.tap()',
     'await expect(composer).toBeVisible({timeout:15000})',
     'await expect(plus).toBeEnabled()',

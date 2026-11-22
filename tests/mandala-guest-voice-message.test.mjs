@@ -189,7 +189,7 @@ test("macOS WebKit exposes preserved recipient actions through visible Magic Mir
  assert.doesNotMatch(flow,/backGoal\.click\(\{force:true\}\)|backGoal\.evaluate\(/);
  const reveal=browser.slice(browser.indexOf("async function revealMirrorAdvanced"),
   browser.indexOf("async function enterVisibleStudioWorkspace"));
- assert.match(reveal,/data-hh-mirror-plan/);
+ assert.match(reveal,/data-hh-mirror-enter="me"/);
  assert.match(reveal,/data-hh-mirror-composer/);
  assert.match(reveal,/data-hh-mirror-open-advanced/);
  assert.match(reveal,/await expect\(plus\)\.toBeEnabled\(\)/);
