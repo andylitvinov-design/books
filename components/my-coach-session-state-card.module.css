@@ -47,3 +47,9 @@
   .fieldRow dt{gap:5px;grid-template-columns:20px minmax(0,1fr) auto 19px}
   .fieldRow dd{margin-left:25px;font-size:13px}
 }
+
+/* One shared green lamp for steps 2+3; step 5 deliberately has no lamp. */
+.openingLamp{display:inline-block;width:9px;height:9px;margin-left:8px;vertical-align:middle;
+ border-radius:50%;background:#cad6cf;border:1px solid #a7bcb0;box-shadow:0 0 0 2px #fff}
+.openingLamp[data-lit=true]{background:#11a36c;border-color:#0a8658;box-shadow:0 0 0 2px #e2f6e8,0 0 7px #3ec58c}
+.openingValue{display:block;margin-top:2px;color:#477665;font-size:11px;font-weight:500}
