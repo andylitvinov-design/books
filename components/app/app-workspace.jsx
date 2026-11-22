@@ -102,6 +102,7 @@ const PersonalCoaching = dynamic(() => import('@/components/app/personal-coachin
 const TraditionCoaching = dynamic(() => import('@/components/app/tradition-coaching'), { ssr: false })
 const PracticeWorkspace = dynamic(() => import('@/components/app/practice-workspace'))
 const MyPersonalVideos = dynamic(() => import('@/components/app/my-personal-videos'), {ssr:false})
+const OwnerCoachAvatarLibrary = dynamic(() => import('@/components/app/owner-coach-avatar-library'), {ssr:false})
 const MyProgress = dynamic(() => import('@/components/app/my-progress'), {ssr:false})
 const ServiceReviews = dynamic(() => import('@/components/service-reviews').then(module => module.ServiceReviews))
 const RemoteGoalPhoto = dynamic(() => import('@/components/app/remote-goal-photo'))
@@ -862,6 +863,7 @@ export default function AppWorkspace({ locale, path = [] }) {
             accountId={data.account.id} key={data.account.id} showcaseEntry />}
           {page === 'videos' && <VideoCreditsPanel accountId={data.account.id} locale={locale}/>}
           {page === 'videos' && <MyPersonalVideos locale={locale} accountId={data.account.id} key={data.account.id} />}
+           {page === 'videos' && <OwnerCoachAvatarLibrary locale={locale} accountId={data.account.id} key={'coach-avatars:'+data.account.id} />}
           {page === 'monitoring' && (
             <PsiMonitoring
               data={data}
