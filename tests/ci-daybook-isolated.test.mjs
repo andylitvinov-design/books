@@ -16,7 +16,7 @@ test('Daybook acceptance uses four distinct disposable databases behind the exis
 })
 test('Daybook test-only changes retain App R1 unit and database acceptance',()=>{
  const trigger=parsePrTrigger(readFileSync(new URL('../.github/workflows/hh-app-r1.yml',import.meta.url),'utf8'),'hh-app-r1.yml')
- for(const filename of ['tests/daybook-daily-client.test.mjs','tests/daybook-journal-database.integration.mjs','tests/ci-daybook-isolated.test.mjs','scripts/ci-daybook-targets.mjs','scripts/ci-daybook-isolated.mjs']){
+ for(const filename of ['tests/development-vector-wheel.test.mjs','tests/profile-inner-balance-preview.test.mjs','tests/daybook-daily-client.test.mjs','tests/daybook-journal-database.integration.mjs','tests/ci-daybook-isolated.test.mjs','scripts/ci-daybook-targets.mjs','scripts/ci-daybook-isolated.mjs']){
  assert.equal(matchesTrigger(trigger,[filename],'codex/public-book-library'),true,filename)
  const impact=decideHeavyImpact('app-r1',[{filename,status:'modified'}]);assert.equal(impact.database,true,filename);assert.equal(impact.full_app,true,filename)
  }

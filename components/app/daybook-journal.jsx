@@ -12,6 +12,7 @@ import {createGoalWorkspaceMemory} from '@/lib/app/daybook-goal-editor-session.m
 import styles from './daybook-journal.module.css'
 const DaybookPersonalGoals=dynamic(()=>import('./daybook-personal-goals'))
 const DaybookToday=dynamic(()=>import('./daybook-today'))
+const DaybookGrowth=dynamic(()=>import('./my-inner-balance-preview'))
 
 const copy={
  en:{title:'Coaching Daybook',home:'My Space',today:'Today',journal:'Journal',goals:'Goals',growth:'My growth',intro:'A private place for your thoughts and voluntary reflections.',loading:'Opening your private journal…',login:'Sign in to your cabinet',error:'Could not load your journal.',retry:'Try again',new:'New entry',note:'A thought',morning:'Morning reflection',evening:'Evening reflection',text:'Your private entry',tags:'Tags, separated by commas',date:'Local date',save:'Save',saving:'Saving…',saved:'Saved and verified',failed:'Save not confirmed. Your draft remains here. Retry before editing.',empty:'No entries yet.',edit:'Edit',remove:'Delete permanently',confirm:'Permanently delete this entry?',more:'Load more',search:'Search loaded entries by text or tag',cancel:'Discard draft',discard:'Discard this unsaved draft?',privacy:'Drafts stay only in this page’s memory. Leaving or signing out clears them. Nothing is shared with a coach automatically.',plan:'Open my goals and actions',vectors:'Open my development vectors',deleteError:'Deletion not confirmed. Reload your journal before trying again.'},
@@ -136,7 +137,7 @@ export default function DaybookJournal({locale}){
    {tab==='today'&&<button onClick={()=>open(null)} disabled={busy||status==='failed'}>{c.new}</button>}
    {tab==='today'&&<DaybookToday key={account} accountId={account} locale={locale} initialDay={today} memory={todayMemory.current} onSessionLost={sessionLost}/>}
    {(goalsVisited||tab==='goals')&&<div hidden={tab!=='goals'}><DaybookPersonalGoals key={account} accountId={account} locale={locale} onSessionLost={sessionLost} memory={goalMemory.current}/><Link href={root+'/my-coaching-plan'}>{c.plan}</Link></div>}
-   {tab==='goals'?null:tab==='growth'?<section><h2>{c.growth}</h2><Link href={'/'+locale+'/development-vectors'}>{c.vectors}</Link></section>:<>
+   {tab==='goals'?null:tab==='growth'?<section><h2>{c.growth}</h2><DaybookGrowth accountId={account} locale={locale} onSessionLost={sessionLost}/></section>:<>
     {tab!=='today'&&<button onClick={()=>open(null)} disabled={busy||status==='failed'}>{c.new}</button>}
     {draft&&<section><label>{c.note}<select value={draft.kind} disabled={busy||status==='failed'} onChange={e=>change('kind',e.target.value)}>{['note','morning','evening'].map(kind=><option key={kind} value={kind}>{c[kind]}</option>)}</select></label>
      <DaybookGoalContext key={account} accountId={account} locale={locale} selectedId={draft.goalId} disabled={busy||status==='failed'} onChange={goalId=>change('goalId',goalId)} onSessionLost={sessionLost}/>
