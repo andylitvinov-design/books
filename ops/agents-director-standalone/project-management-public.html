@@ -8,11 +8,14 @@
 <link rel="stylesheet" href="/project-management-public.css?v=20261107-task-first-v2">
 <link rel="stylesheet" href="/pr-task-tree.css?v=20261107-comment-v3">
 <link rel="stylesheet" href="/project-management-selection.css">
+<link rel="stylesheet" href="/pr-completion-mobile.css?v=20261122-pr-to-live-v1">
 <link rel="stylesheet" href="/pr-ai-repair-handoff.css?v=20261107-ai-repair-v1">
 <link rel="stylesheet" href="/pm-agent-chat.css">
 <link rel="stylesheet" href="/owner-google-signin.css?v=20261107-v1">
 <script src="/project-management-proof.js" defer></script>
 <script src="/project-management-selection.js" defer></script>
+<script src="/pr-completion-mobile-model.js?v=20261122-pr-to-live-v1" defer></script>
+<script src="/pr-completion-mobile.js?v=20261122-pr-to-live-v1" defer></script>
 <script src="/owner-google-signin.js?v=20261107-v1" defer></script>
 <script src="/pm-agent-chat.js?v=20261107-sso-v1" defer></script>
 <script src="/pr-context-comments.js?v=20261107-comment-v3" defer></script>
@@ -29,9 +32,34 @@
 <main class="pm-page">
 <header class="pm-hero">
 <div class="pm-eyebrow">AGENT COMMANDER · ЗАДАЧИ</div>
-<h1>Задачи и PR</h1>
+<h1>Задачи</h1><p class="pm-pr-hero-sub">PR и подзадачи</p>
 <a class="pm-chat-shortcut" href="/chats.html">Рабочие чаты</a>
 </header>
+<section id="pm-pr-completion" class="pm-pr-live" aria-labelledby="pm-pr-completion-title">
+  <header class="pm-pr-live-head">
+    <span class="pm-pr-live-symbol" aria-hidden="true">▱</span>
+    <div class="pm-pr-live-heading">
+      <h2 id="pm-pr-completion-title">Довести PR до LIVE</h2>
+      <p>Введите номер PR, запустите доведение и следите за статусом.</p>
+    </div>
+    <button id="pm-pr-completion-reload" class="pm-pr-live-reload" type="button" aria-label="Обновить статусы PR">⟳</button>
+  </header>
+  <p id="pm-pr-completion-status" class="pm-pr-live-notice" role="status" aria-live="polite">Проверяю защищённую сессию владельца…</p>
+  <p id="pm-pr-completion-health" class="pm-pr-live-health" role="alert" hidden></p>
+  <div id="pm-pr-completion-list" class="pm-pr-live-list" aria-label="Мои PR на доведении до LIVE"></div>
+  <form id="pm-pr-completion-form" class="pm-pr-live-form" hidden>
+    <label for="pm-pr-number" class="pm-pr-visually-hidden">Номер PR</label>
+    <input id="pm-pr-number" name="prNumber" type="text" inputmode="numeric"
+      pattern="[0-9]*" maxlength="8" autocomplete="off" placeholder="Введите номер PR" aria-label="Введите только номер PR">
+    <button id="pm-pr-submit" class="pm-pr-submit" type="submit" disabled>До LIVE</button>
+  </form>
+  <p class="pm-pr-live-add"><span aria-hidden="true">＋</span> Можно добавить ещё PR</p>
+  <div id="pm-pr-completion-login" class="pm-pr-live-login" hidden>
+    <p>Статусы и запуск доступны только владельцу через Google-вход.</p>
+    <a id="pm-pr-completion-signin" href="/commander-auth.html?next=%2Fproject-management-public.html">Войти через Google</a>
+  </div>
+</section>
+<div class="pm-other-tasks-head"><h2>Остальные задачи</h2><a href="#pm-root">Все задачи ↓</a></div>
 <section class="pm-overview" aria-label="Общая сводка">
 <div><strong id="pm-projects">—</strong><small>Больших проекта</small></div><div><strong id="pm-total">—</strong><small>Подзадачи</small></div>
 <div><strong id="pm-done">—</strong><small>Подтверждено</small></div><div><strong id="pm-blocked">—</strong><small>Блокировано</small></div>
