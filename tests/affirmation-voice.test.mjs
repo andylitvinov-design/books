@@ -161,7 +161,7 @@ test("voice browser opens Ideas and applies six visible Montage styles with deco
  const end=source.indexOf("// Real guest route browser acceptance",start);
  const flow=source.slice(start,end);
  const click=flow.indexOf("await mirror.locator('[data-hh-mirror-next]').click();");
- const ideas=flow.indexOf('data-active-workspace","phrases"',click);
+ const ideas=flow.indexOf("await enterPersonalAfterMontageExtra(page)",click);
  const goal=flow.indexOf('const ideasGoalPane=page.locator',ideas);
  const choices=flow.indexOf('await expect(goalChoices).toHaveCount(3)',goal);
  const goalSelected=flow.indexOf('data-video-ideas-goal-choice="rest"',choices);
@@ -178,6 +178,7 @@ test("voice browser opens Ideas and applies six visible Montage styles with deco
  assert.ok(start>=0&&end>start&&click>=0&&ideas>click&&goal>ideas&&choices>goal&&goalSelected>choices&&next>goalSelected&&personal>next&&mood>personal&&energy>mood&&montage>energy&&style>montage&&six>style&&selected>six&&reflected>selected&&decoded>reflected,
    "real leisure Goal, mood and energy selections precede six Montage styles and decoded MP4");
  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
+  assert.match(source,/async function enterPersonalAfterMontageExtra\(page,engine="chromium"\)/);
  assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
  assert.match(source,/voiceOptions\.locator\(":scope > summary"\)\.tap\(\)[\s\S]*?data-video-affirmation-bed/);
  assert.match(source,/else await voiceOptions\.locator\(":scope > summary"\)\.click\(\)/);

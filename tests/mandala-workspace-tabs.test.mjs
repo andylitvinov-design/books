@@ -9,12 +9,12 @@ test("exactly six real workspaces with all RU EN ES labels",()=>{
  const tabBlock=studio.match(/const workspaceTabs=\[([\s\S]*?)\] as const;/)?.[1];
  assert.ok(tabBlock,"workspace registry");
  const ids=[...tabBlock.matchAll(/id:"([a-z]+)"/g)].map(m=>m[1]);
- assert.deepEqual(ids,["video","phrases","editor","pro","ready","effects"]);
+ assert.deepEqual(ids,["video","editor","phrases","pro","ready","effects"]);
  for(const locale of ["ru","en","es"]){
    assert.match(studio,new RegExp(locale+":[\\s\\S]*?video:\\{tab:"));
    for(const id of ids)assert.match(studio,new RegExp(id+":\\{tab:"));
  }
- assert.match(studio,/phrases:\{tab:"Идеи",title:"Идеи для видео"/);
+ assert.match(studio,/phrases:\{tab:"Personal",title:"Персональное видео"/);
  assert.match(studio,/Therapy Studio/);
  assert.match(studio,/Курс практик/);
  assert.match(studio,/pro:\{tab:"PRO",title:"PRO генерация"/);
@@ -197,7 +197,7 @@ test("video studio lazily loads optional editor workspaces and collapsed tools",
 });
 
 test("final approved six tabs lead to exactly one real workspace each",()=>{
-  const expected=['tab:"Цель"','tab:"Идеи"','tab:"Монтаж"',
+  const expected=['tab:"Цель"','tab:"Монтаж"','tab:"Personal"',
     'tab:"PRO"','tab:"Ready"','tab:"Therapy"'];
   for(const label of expected)assert.ok(studio.includes(label),"missing "+label);
   assert.match(studio,/data-video-quick-control=\{item.id\}/);
@@ -243,7 +243,7 @@ test("compact Ideas preserves one opt-in advanced phrase and voice editor",()=>{
  assert.match(studio,/onPendingChange=\{setPhrasePending\}/);
  assert.match(studio,/onChange=\{setAffirmations\}/);
  assert.match(studio,/onPreview=\{openAffirmationPreview\}/);
- for(const label of ['tab:"Идеи"','tab:"Ideas"'])
+ for(const label of ['phrases:{tab:"Personal"','phrases:"Personal"'])
    assert.ok(studio.includes(label),label);
  assert.match(css,/\.studio\[data-active-workspace="phrases"\] \.phraseEditorLead\{/);
 });
@@ -259,7 +259,7 @@ test("hydrated Studio gates the first local MP4 test before its first real user 
 
 test("owner 03 Nov: compact tabs, real scenario updates and moved settings",()=>{
  const tabs=studio.slice(studio.indexOf("const workspaceTabs=["),studio.indexOf("] as const;",studio.indexOf("const workspaceTabs=[")));
- assert.ok(tabs.indexOf('id:"phrases"')<tabs.indexOf('id:"editor"'),"Ideas is second, Montage third");
+ assert.ok(tabs.indexOf('id:"editor"')<tabs.indexOf('id:"phrases"'),"Montage second, Personal third");
  const nav=studio.slice(studio.indexOf("<nav className={videoStyles.quickVideoNav}"),studio.indexOf("</nav>",studio.indexOf("<nav className={videoStyles.quickVideoNav}")));
  assert.match(nav,/quickNavCompact/,"iPhone labels are genuinely short");
  assert.match(nav,/quickNavFull/,"full labels remain on wider screens");
@@ -352,13 +352,13 @@ test("validated Messenger video handoff visibly opens the original Studio Direct
    "unopened legacy Goals sections remain hidden");
 });
 
-test("Ideas → Montage cancels stale scroll on a genuine quick-tab action",()=>{
-  const at=studio.indexOf("const continueToIdeas = () => {");
+test("Goal → Montage cancels stale scroll on a genuine quick-tab action",()=>{
+  const at=studio.indexOf("const continueToMontage = () => {");
   const until=studio.indexOf("  const openVideoScenarioStep",at);
-  assert.ok(at>=0&&until>at,"one real Continue to Ideas handler");
+  assert.ok(at>=0&&until>at,"one real Continue to Montage handler");
   const handler=studio.slice(at,until);
-  assert.match(handler,/navigationToken=\+\+quickNavTokenRef\.current/);
-  assert.match(handler,/if\(navigationToken!==quickNavTokenRef\.current\)return/);
+  assert.match(handler,/token=\+\+quickNavTokenRef\.current/);
+  assert.match(handler,/if\(token!==quickNavTokenRef\.current\)return/);
   assert.match(handler,/behavior:"instant" as ScrollBehavior/);
   const navAt=studio.indexOf("const activateQuickWorkspace=");
   assert.ok(navAt>=0);

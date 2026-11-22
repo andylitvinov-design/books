@@ -30,7 +30,7 @@ test("one phrase editor supplies Montage Text with selected and manually edited 
  assert.doesNotMatch(cmp,/fetch\(|appFetch\(|localStorage|sessionStorage|navigator\.sendBeacon/);
  assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
  assert.match(studio,/onCreate=\{\(\)=>\{\s*setMontagePanel\("concept"\);setPreviewPlaying\(false\);setNotice\(""\);/);
- assert.match(studio,/const workspaceTabs=\[\s*\{id:"video",Icon:Film\},\s*\{id:"phrases",Icon:Heart\},\s*\{id:"editor",Icon:Scissors\}/);
+ assert.match(studio,/const workspaceTabs=\[\s*\{id:"video",Icon:Film\},\s*\{id:"editor",Icon:Scissors\},\s*\{id:"phrases",Icon:Heart\}/);
 });
 
 test("Ideas shortcut opens the single Montage Text editor without renderer or paid request",()=>{
