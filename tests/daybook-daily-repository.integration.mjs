@@ -4,6 +4,7 @@ import {randomUUID} from 'node:crypto'
 import {readFile} from 'node:fs/promises'
 import pg from 'pg'
 import {createDailyIntentionRepository} from '../lib/app/daybook-daily.js'
+import {createDailyIntentionHandler} from '../lib/app/daybook-daily-handler.mjs'
 import {closeDatabase} from '../lib/app/database.js'
 const url=process.env.HH_DAILY_TEST_DATABASE_URL
 if(!url||process.env.VERCEL||process.env.HH_APP_TEST_RUNTIME!=='isolated')throw new Error('ISOLATED_DATABASE_REQUIRED')
@@ -73,6 +74,30 @@ test('revision-bound delete is retryable, removes payload and prevents delayed s
  assert.equal((await repo.remove(a,removal)).deleted,true);assert.equal((await repo.remove(a,removal)).replayed,true)
  await assert.rejects(repo.read(a,input.id),{code:'NOT_FOUND'});await assert.rejects(repo.save(a,input),{code:'DAYBOOK_INTENTION_DELETED'})
  assert.equal((await repo.byDay(a,input.localDay)).intention,null)
+})
+test('actual Request handler completes owner-scoped daily CRUD through repository and PostgreSQL',async()=>{
+ const handler=actor=>createDailyIntentionHandler({getConfig:()=>config,origin:()=>{},sameOrigin:()=>{},auth:()=>({verified:async()=>actor,apply:r=>r}),rate:async()=>{},repository:createDailyIntentionRepository})
+ const request=(actor,method,body,query='')=>new Request('http://127.0.0.1/api/app/daybook-daily'+query,{method,headers:{'x-hh-account-id':actor.id,'content-type':'application/json'},...(body?{body:JSON.stringify(body)}:{})})
+ const input=draft({localDay:'2026-11-27',actionIds:[]}),run=handler(a)
+ const created=await run(request(a,'POST',input));assert.equal(created.status,200);assert.equal((await created.json()).intention.revision,1)
+ const read=await run(request(a,'GET',null,'?id='+input.id));assert.equal(read.status,200);assert.equal((await read.json()).intention.localDay,input.localDay)
+ assert.equal((await (await run(request(a,'GET',null,'?day='+input.localDay))).json()).intention.id,input.id)
+ assert.equal((await handler(b)(request(b,'GET',null,'?id='+input.id))).status,404)
+ const edit=await run(request(a,'PATCH',{...input,operationId:randomUUID(),revision:1,weeklyGoalId:null}));assert.equal(edit.status,200)
+ assert.equal((await edit.json()).intention.weeklyGoalId,null)
+ const removal={id:input.id,operationId:randomUUID(),revision:2,confirmed:true}
+ assert.equal((await run(request(a,'DELETE',{...removal,revision:1}))).status,409)
+ assert.equal((await run(request(a,'DELETE',removal))).status,200)
+ assert.equal((await run(request(a,'GET',null,'?id='+input.id))).status,404)
+ assert.equal((await (await run(request(a,'GET',null,'?day='+input.localDay))).json()).intention,null)
+})
+test('owner export pages include every remaining encrypted daily record without leaking cursor ownership',async()=>{
+ const page=await repo.list(a,{limit:1});assert.equal(page.intentions.length,1);assert.ok(page.nextCursor)
+ const last=await repo.list(a,{limit:1,before:page.nextCursor});assert.equal(last.intentions.length,1);assert.equal(last.nextCursor,null)
+ assert.notEqual(page.intentions[0].id,last.intentions[0].id)
+ assert.deepEqual([page.intentions[0].localDay,last.intentions[0].localDay].sort(),['2026-11-22','2026-11-23'])
+ assert.deepEqual(await repo.list(b,{}),{intentions:[],nextCursor:null})
+ await assert.rejects(repo.list(b,{before:page.nextCursor}),{code:'DAYBOOK_CURSOR_UNAVAILABLE'})
 })
 test('revoked sessions cannot read daily records and account erasure removes ciphertext and receipts',async()=>{
  await admin.query('delete from auth.sessions where user_id=$1',[a.id]);await assert.rejects(repo.read(a,initial.id),{code:'SIGN_IN_REQUIRED'})
