@@ -2519,6 +2519,16 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
                 error:video.error?.code??null,networkState:video.networkState,
                 preload:video.preload,sourceLoaded:Boolean(video.currentSrc)
               } : null,
+              filmSources:[...document.querySelectorAll("video[data-free-film-source]")].map(clip=>({
+                scene:clip.dataset.freeFilmSource,
+                readyState:clip.readyState,
+                networkState:clip.networkState,
+                width:clip.videoWidth,
+                currentTime:clip.currentTime,
+                seeking:clip.seeking,
+                paused:clip.paused,
+                error:clip.error?.code??null,
+              })),
               resultHidden:result instanceof HTMLElement ? result.hidden : null,
               progress:document.querySelector('[role="progressbar"]')?.getAttribute("aria-valuenow")??null,
               notices:[...document.querySelectorAll('[role="status"],[role="alert"]')].map(x=>x.textContent?.trim()).filter(Boolean).slice(0,8),
