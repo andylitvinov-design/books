@@ -3350,3 +3350,27 @@ test('prebuild add-only test registration does not schedule unrelated package sp
   deps.dependencies.next='16.0.0';
   assert.equal(classify(deps).mode,'full');
 });
+
+test('required hh-merge-check aggregates BASE-trusted specialists for CORE as well as FULL and DOCK',()=>{
+  const file=readFileSync(new URL('../.github/workflows/hh-pr-core-release.yml',import.meta.url),'utf8');
+  const step=file.split('      - name: Validate exact-head risk and required specialist workflows')[1]
+    ?.split('      - name: Confirm one-runner Core and independent specialist release evidence')[0];
+  assert.ok(step,'actual required specialist step must exist inside hh-merge-check');
+  const predicate=step.match(/^\s*if:\s*(.+)$/m)?.[1];
+  assert.ok(predicate,'specialist gate must be conditioned on the real pull_request');
+  assert.match(predicate,/github\.event_name == 'pull_request'/);
+  for(const route of ['CORE','FULL','DOCK'])
+    assert.ok(predicate.includes("steps.specialist_route.outputs.route == '"+route+"'"),
+      route+' must not mark a red or pending specialist as green');
+  for(const waived of ['ASSETS','TEXT'])
+    assert.ok(!predicate.includes("steps.specialist_route.outputs.route == '"+waived+"'"),
+      waived+' must remain within the pre-existing non-runtime fast route');
+  assert.match(step,/git show "\$HH_TRUSTED_BASE_SHA:scripts\/ci-specialist-aggregate\.mjs"/,
+    'the candidate may not self-certify its applicable specialists');
+  assert.match(step,/node "\$RUNNER_TEMP\/hh-ci-trusted\/scripts\/ci-specialist-aggregate\.mjs"/);
+  assert.doesNotMatch(step,/continue-on-error\s*:/);
+  const job=file.split('  hh-merge-check:')[1]?.split('  hh-eslint-repair:')[0];
+  assert.match(job||'',/needs: \[scope\]/);
+  assert.match(job||'',/Fail closed if mandatory Core failed/);
+  assert.match(job||'',/Validate exact-head risk and required specialist workflows/);
+});

@@ -174,6 +174,7 @@ test('Mira Russian voice is locale-specific and never enabled without approved u
  const introRoute=readFileSync(new URL('../app/api/coaching/intro/[locale]/[coach]/route.js',import.meta.url),'utf8')
  assert.ok(privateRoute.includes('myCoachFishVoice(fishRaw.personaId,input.locale)'))
  assert.ok(introRoute.includes('myCoachFishVoice(personaId,locale)'))
+ assert.ok(introRoute.includes('coachOpeningIntro(personaId,locale)'))
 })
 
 test('Fish natural voice accepts the exact live/replay persona payload but no extra fields', () => {
@@ -182,7 +183,7 @@ test('Fish natural voice accepts the exact live/replay persona payload but no ex
   const route=readFileSync(new URL('../app/api/app/my-coach/voice/synthesize/route.js',import.meta.url),'utf8')
   assert.match(speech,/body:JSON\.stringify\(\{provider:voiceProvider,locale:replyLocale,personaId,/)
   assert.match(dialog,/body:JSON\.stringify\(\{provider:chosenCloudProvider,personaId,/)
-  assert.match(dialog,/const chosenCloudProvider=geminiVoiceReady\?geminiVoiceTier:cloudProvider/)
+  assert.match(dialog,/const chosenCloudProvider=usingExistingVoice\?cloudProvider:\s*geminiVoiceReady\?geminiVoiceTier:null/)
   assert.match(route,/const \{provider:_,\.\.\.fishRaw\}=raw/)
   assert.match(route,/normalizeMyCoachFishRequest\(fishRaw\)/)
   const normal={locale:'ru',text:'Какой следующий шаг сейчас поможет?',voiceConsent:true,
@@ -228,7 +229,7 @@ test('PCM analysis remains bounded but cannot deform the photographic face',()=>
 test('Play starts the authored natural voice once, without recording or extra checkbox',()=>{
   const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
   const voice=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
-  assert.ok(ui.includes('getCoachPresentation(personaId,conversationLang)?.text'))
+  assert.ok(ui.includes('coachOpeningIntro(personaId,conversationLang)'))
   assert.ok(ui.includes("const conversationLang=['en','ru','es'].includes(speechLocale)?speechLocale:lang"))
   assert.ok(ui.includes('const [cloudAgreed,setCloudAgreed]=useState(false)'))
   assert.ok(ui.includes('introduction={introduction} onSessionStart={()=>setCloudAgreed(true)}'))
@@ -300,7 +301,7 @@ test('the ten approved presentations flow directly into the same live dialogue',
   const css=readFileSync(new URL('../components/my-coach-live-dialogue.module.css',import.meta.url),'utf8')
   const intro=readFileSync(new URL('../components/my-coach-voice-introduction.jsx',import.meta.url),'utf8')
   const introCss=readFileSync(new URL('../components/my-coach-voice-introduction.module.css',import.meta.url),'utf8')
-  assert.ok(ui.includes('getCoachPresentation(personaId,conversationLang)?.text'))
+  assert.ok(ui.includes('coachOpeningIntro(personaId,conversationLang)'))
   assert.ok(ui.includes('introduction={introduction}'))
   assert.ok(ui.includes('onSessionStart={()=>setCloudAgreed(true)}'))
   assert.ok(ui.includes('replayingIntro'))

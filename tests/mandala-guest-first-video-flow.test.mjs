@@ -5,15 +5,19 @@ import {runInNewContext} from 'node:vm'
 const studio=readFileSync(new URL('../components/mandala-free-video-studio.tsx',import.meta.url),'utf8')
 const credits=readFileSync(new URL('../lib/video-credits/client.mjs',import.meta.url),'utf8')
 
-test('first guest video does not need an account-bound XP hold, but signed-in videos do',()=>{
+test('legacy first guest video remains local, while XP v2 requires signed-in balance',()=>{
   assert.match(credits,/action==='status'&&response\.status===401/)
   assert.match(credits,/body\?\.error==='SIGN_IN_REQUIRED'/)
-  assert.match(studio,/creditSession==="guest"&&!guestFirstVideoUsed/)
+  assert.match(studio,/creditSession==="guest"&&creditCatalog\?\.pricingModel!=="xp-v2"/)
+  assert.match(studio,/guestFirstVideoUsed/)
+  assert.match(studio,/guestFirstVideoUsed:guestFirstVideoUsed\|\|creditCatalog\?\.pricingModel==='xp-v2'/)
   assert.match(studio,/async function holdVideoExportCredit\(catalog:NonNullable<typeof creditCatalog>\)/)
-  assert.match(studio,/const guestLocalRender=catalog\.chargeRequired&&creditSession==="guest"&&!guestFirstVideoUsed/)
+  assert.match(studio,/const guestLocalRender=catalog\.chargeRequired&&catalog\.pricingModel!=="xp-v2"/)
+  assert.match(studio,/guestLocalRender.*!guestFirstVideoUsed/)
+  assert.match(studio,/sku:"basic"/)
   assert.match(studio,/if\(catalog\.chargeRequired&&!guestLocalRender\)\{[\s\S]*?videoCreditRequest\("hold"/)
   assert.match(studio,/await holdVideoExportCredit\(creditCatalog\)/)
-  assert.match(studio,/if\(guestLocalRender\)\{setCreditConfirmed\(true\)/)
+  assert.match(studio,/if\(!catalog\.chargeRequired\|\|guestLocalRender\)\{setCreditConfirmed\(true\);setCreditRetry\(false\)/)
   assert.match(studio,/if\(result&&result\.mode!=="catalog"&&guestRenderRef\.current&&playbackStatus==="ready"\)/)
   assert.match(studio,/setGuestFirstVideoUsed\(true\)/)
   assert.match(studio,/error\.message==="SIGN_IN_REQUIRED"\?"guest":"unavailable"/)

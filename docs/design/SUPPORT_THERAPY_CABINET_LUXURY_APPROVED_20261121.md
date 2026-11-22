@@ -61,3 +61,45 @@
 - Row-major DOM and keyboard order: stress_energy → money_growth → relationships_esteem → business_support.
 - Photo atlas positions adjusted to preserve category imagery: stones top-left, sprout top-right, relationship heart bottom-left and personal/business goal scene bottom-right. All former assets, first-screen geometry, theme and services remain unchanged.
 - EN/RU/ES topic captions updated. The four original choice IDs and existing second-step business/personal matching logic are intentionally retained; this is a presentation/request-label revision, not a new routing taxonomy.
+
+## Final approved frosted entry and hierarchy — owner revision, 21 Nov 2026
+
+Reference source: final owner-approved generated Support mobile mock,
+"роскошная_страница_поддержки_holistic_house.png" (941 × 1672 px).
+The image is a visual specification only and must never be used as flattened
+HTML, a fake screenshot, or a new placeholder page.
+
+- **Ordered composition:** existing Holistic House wordmark and controls →
+  gold lotus, "Coaching, Consulting & Therapy Support", "Choose the right
+  method & master.", "Answer 4 questions:" → visible twin leather armchairs,
+  fireplace and coffee table → **one translucent goal composer, with the
+  editable text and working microphone button; green Next at its right** →
+  **For Me / For Business segmented switch** → four progress dots and question
+  → four photographic answer cards → the original single seven-item mobile dock.
+- The reference's input spans approximately x=36–708 and y=604–699,
+  Next x=716–895 in the 941 px image. The audience switch spans
+  approximately x=100–828, y=723–789; the 2 × 2 card group begins near
+  y=947. These are **reference pixels**, not CSS px or a promise that the
+  whole content fits one 390×844 viewport with real browser chrome.
+- Composer styling: softly translucent warm ivory gradient (~67–77% opacity),
+  15 px backdrop blur with iOS WebKit support, thick cream border, gold edge,
+  genuine readable dark-green input/placeholder, gold sparkle left and a
+  focusable mic button right. A separate emerald pill with gold trim and
+  "Next" arrow is directly adjacent. Do not fake speech recognition: the mic
+  focuses the editable input for device keyboard dictation.
+- Remove the obsolete "OR" label between composer and question. The
+  segmented switch belongs **below** composer and **above** personal quiz,
+  and stays in the same shared flow for For Business.
+- Preserve React state, local goal text, default personal topic, one shared
+  Next callback, four-step personal recommendations, two-step business offer
+  selector, three real Services offers per category, language switch and
+  private account/chat paths. No additional forms, media providers, storage,
+  external image URLs or analytics.
+- Source ownership: components/services-assist-quiz.tsx +
+  components/services-assist-quiz.module.css. Test the DOM order, visible
+  backfiltered composer, Next alignment, 2 × 2 cards, no double nav or
+  overflow, and both audience modes in EN/RU/ES at 320/354/390/430 CSS px.
+  A screenshot-source assertion does not certify pixel-perfect Safari parity.
+- Protected production branch and release policy remain in effect: exact-head
+  CI, specialist acceptance, native auto-merge and a separate canonical LIVE
+  deployment verification. Never request an extra Vercel Production build.

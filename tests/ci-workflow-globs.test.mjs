@@ -650,6 +650,28 @@ test('OpenMotion picker is checked by Mandala alone; public booking stays protec
   }
 });
 
+test('Home first-click PR source tests use one runner; full browsers remain after merge',()=>{
+  const s=workflow('home-locale-switch.yml');
+  const core=s.slice(s.indexOf('  core-methods:'),s.indexOf('  first-click:'));
+  for(const contract of ['tests/home-locale-menu-state.test.mjs',
+    'tests/navigation-cabinet.test.mjs','tests/page-video-release.test.mjs']){
+    assert.ok(core.includes(contract),'homepage source regressions must run in the single PR job: '+contract);
+  }
+  assert.ok(core.includes('components/site-navigation.tsx'),
+    'first-click navigation lint must remain in normal PR CI');
+  assert.match(s,/^  first-click:\n(?:    #.*\n)*    if: \$\{\{ github\.event_name != 'pull_request' \}\}/m,
+    'second runner cannot be scheduled for normal PRs');
+  assert.ok(trustedConditionalJobs(s).includes('first-click'),
+    'BASE-trusted specialist validator must recognize the post-merge-only job');
+  assert.equal(matchesTrigger(parsePrTrigger(s,'home-locale-switch.yml'),
+    ['components/holistic-house-home.tsx'],'codex/public-book-library'),true,
+    'real homepage product changes must still enter this specialist');
+  assert.match(s,/^  push:/m);
+  assert.match(s,/^  workflow_dispatch:/m);
+  assert.match(s,/Delayed navigation cannot discard the first play click/);
+  assert.match(s,/node scripts\/verify-home-locale-switch\.mjs --live/);
+  assert.doesNotMatch(s,/continue-on-error:\s*true/);
+});
 
 test('client Live Photo APIs do not fan out into unrelated coaching, course, Practice, interpretation or session-audio specialists', () => {
   const target = 'codex/public-book-library';

@@ -29,6 +29,7 @@ import {montageReplacementOptions,validateMontageClips} from "@/lib/mandala/vide
 import {recommendPromptShotPlan} from "@/lib/mandala/prompt-shot-director.mjs";
 import {recommendCuratedAudio} from "@/lib/mandala/curated-audio-recommendations.mjs";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
+import type {MirrorResolution} from "./mandala-magic-mirror-goal";
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./mandala-auto-video-director.module.css";
 
@@ -68,6 +69,7 @@ type Props={
   goalContinueRef?:{current:(()=>boolean)|null};
   mirrorDetailedWish?:string|null;
   mirrorStartRef?:{current:((theme:VideoTheme,categoryId:CanonicalCategoryId,goalText:string)=>void)|null};
+  mirrorResolveRef?:{current:((path:MirrorResolution)=>boolean)|null};
   onShowAll?:()=>void;
   onInvalidate?:()=>void;
   onApply:(presetId:string,durationSeconds:10|15|20|30|60,
@@ -146,17 +148,15 @@ const copy={
 } as const;
 // First-screen categories and photographic art follow the canonical Telegram hierarchy.
 const videoGoalCategories=[
- {id:"goals-money",theme:"money",Icon:Sprout,art:"growth"},
- {id:"love-relationships",theme:"relationships",Icon:Heart,art:"love"},
- {id:"energy-confidence",theme:"energy",Icon:Zap,art:"energy"},
  {id:"stress-anxiety",theme:"health",Icon:Leaf,art:"stress"},
+ {id:"love-relationships",theme:"relationships",Icon:Heart,art:"love"},
+ {id:"goals-money",theme:"money",Icon:Sprout,art:"growth"},
+ {id:"energy-confidence",theme:"life",Icon:Zap,art:"energy"},
 ] as const;
 type CanonicalCategoryId=(typeof videoGoalCategories)[number]["id"];
-// All buttons are canonical 4×4×4 taxonomy topics, not decorative tags.
-const goalTopicIds:Record<CanonicalCategoryId,readonly string[]>={"energy-confidence":["calm-presence","self-confidence","self-acceptance","healthy-habits","body-awareness","breathing-practices","motivation-drive","recovery-after-load","morning-energy"],"stress-anxiety":["stress-relief","constant-anxiety","anxiety-no-reason","work-stress","burnout","low-mood","inner-child","apathy","emotional-emptiness"],"love-relationships":["emotional-intimacy","couple-communication","find-love","ready-relationship","family-relationships","rebuilding-trust","choosing-partner","breakup-recovery","fear-intimacy"],"goals-money":["personal-growth","life-transitions","goal-setting","financial-stability","self-discipline","career-growth","income-growth","business-decisions","life-purpose"]};
 const initialCategoryForTheme:Record<VideoTheme,CanonicalCategoryId>={
- energy:"energy-confidence",money:"goals-money",relationships:"love-relationships",
- goals:"goals-money",life:"goals-money",health:"stress-anxiety",
+ energy:"stress-anxiety",money:"goals-money",relationships:"love-relationships",
+ goals:"goals-money",life:"energy-confidence",health:"stress-anxiety",
 };
 const popularTopicIds=["confidence","connection","fresh-start","stability","calm","vitality"] as const;
 const popularTopicCopy={
@@ -186,7 +186,7 @@ const themeLabels={
 
 export function MandalaAutoVideoDirector({
  locale,goal,theme,aspect,presets,scenes,disabled,activePresetId,clipLabel,
- audioAttached=false,audioTrackLabel="",audioTrackId=null,onPickAudio,onOpenAudio,recipientAudioPanel,audioStoryboardReady=false,onAudioToMontage,onAudioSelectionChange,onGoalChange,onPickPhoto,onOpenPro,onConceptTopicChange,onGoalQuizChange,onCategoryChange,onAspectChange,onContinue,goalContinueRef,mirrorDetailedWish=null,mirrorStartRef,onClarify,helpOpen=false,onShowAll,onInvalidate,onApply,onCreate,onInstantCreate,canCreate=false,rendering=false,createFeedback=""
+ audioAttached=false,audioTrackLabel="",audioTrackId=null,onPickAudio,onOpenAudio,recipientAudioPanel,audioStoryboardReady=false,onAudioToMontage,onAudioSelectionChange,onGoalChange,onPickPhoto,onOpenPro,onConceptTopicChange,onGoalQuizChange,onCategoryChange,onAspectChange,onContinue,goalContinueRef,mirrorDetailedWish=null,mirrorStartRef,mirrorResolveRef,onClarify,helpOpen=false,onShowAll,onInvalidate,onApply,onCreate,onInstantCreate,canCreate=false,rendering=false,createFeedback=""
 }:Props){
  const t=copy[locale];
  // A licensed four-shot sample is visible before any click; no recording begins automatically.
@@ -769,6 +769,69 @@ export function MandalaAutoVideoDirector({
    setProposal(recommended);
    setTimelineEdits(timelineForTopic(topicId,null,recommended));
  };
+ // The approved mobile Mirror owns only the visible three questions.
+ // Commit their real category/subcategory/topic to this ONE existing Director,
+ // not to a parallel saved profile or invented scenario.
+ useEffect(()=>{
+  if(!mirrorResolveRef)return;
+  const resolve=(path:MirrorResolution):boolean=>{
+   if(disabled)return false;
+   const found=getMyTubeTopic(path.topicId);
+   if(!found||found.category.id!==path.categoryId||
+     found.subcategory.id!==path.subcategoryId)return false;
+   const goalText=path.wish.trim().slice(0,500)||found.topic.label[locale];
+   const nextTheme=(legacyThemeForSubcategory[path.subcategoryId]||path.theme) as VideoTheme;
+   if(path.scope==="present"){
+    // Gifts remain subject to the existing recipient-format, source and
+    // rights checks. This selection is NOT a generated or deliverable gift.
+    const birthday=/birthday|день\s+рождени|cumplea/iu.test(path.wish);
+    const anniversary=/anniversary|годовщин|aniversario/iu.test(path.wish);
+    const kindId=birthday||anniversary?"greeting":"gift";
+    const occasionId=birthday?"birthday":anniversary?"anniversary":
+      path.goalChoiceId==="stress"?"support":"gratitude";
+    if(!getRecipientVideoKind(kindId)||!listRecipientVideoOccasions(kindId,locale)
+      .some(item=>item.id===occasionId))return false;
+    if(videoAudience==="self")selfAspectRef.current=aspect;
+    setVideoAudience("others");
+    setRecipientKindId(kindId);setRecipientOccasionId(occasionId);
+    if(aspect!=="portrait")onAspectChange?.("portrait");
+   }else{
+    setVideoAudience("self");setRecipientKindId("");setRecipientOccasionId("");
+    if(videoAudience==="others"&&aspect!==selfAspectRef.current)
+      onAspectChange?.(selfAspectRef.current);
+   }
+   // Reuse the existing Director; Work selects an output framing, not a therapy topic.
+   if(path.scope==="business"&&path.workFormat){
+    const workAspect=path.workFormat==="insta-reels"||path.workFormat==="client-video-offer"?"portrait":"landscape";
+    if(aspect!==workAspect)onAspectChange?.(workAspect);
+   }
+   setRecipientAudioMode(false);onAudioSelectionChange?.(false);
+   setRequestDrafts(previous=>({
+    ...previous,self:goalText,
+    ...(path.scope==="present"?{others:goalText}:{})
+   }));
+   setRequestNeedsChoice(false);setPromptDesignedFor(null);setPromptClassification(null);
+   setCategoryManuallySelected(true);
+   setGoalQuizStep(3);setGoalCategoryAnswered(true);setSubcategoriesOpen(true);
+   setSelectedCategoryId(path.categoryId);
+   setSelectedSubcategoryId(path.subcategoryId);
+   setSelectedTopicId(path.topicId);
+   setSelectedGoalId(null);setSelectedGoalIds([]);
+   setSelectedMeaningAxisId("");setSelectedScenarioId("");setSelectedPlotId("");
+   setSymbolicPlotFallback(false);setSelectedMotifId("");setSelectedStyleId("");
+   setMeaningHandoff(null);setIncludeMeaningCaption(false);
+   setOverrideId(null);setSeconds(null);setTimelineEdits(null);
+   setConfirmedTimelineKey(null);setRecipientContinueError("");
+   onInvalidate?.();onCategoryChange?.(nextTheme);onGoalChange(goalText);
+   setProposalContext({goal:goalText,theme:nextTheme});
+   setProposal(recommendAutoVideo({goal:goalText,locale,fallbackTheme:nextTheme,
+     preferredTheme:nextTheme,presets,scenes}));
+   return true;
+  };
+  mirrorResolveRef.current=resolve;
+  return ()=>{if(mirrorResolveRef.current===resolve)mirrorResolveRef.current=null;};
+ },[mirrorResolveRef,disabled,locale,videoAudience,aspect,presets,scenes,
+   onAspectChange,onAudioSelectionChange,onInvalidate,onCategoryChange,onGoalChange]);
  const chooseMeaningAxis=(id:string)=>{
    if(!taxonomyMeanings.some(x=>x.id===id)||id===selectedMeaningAxisId)return;
    onInvalidate?.();setSelectedMeaningAxisId(id);
