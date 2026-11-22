@@ -37,4 +37,3 @@ test("Mobile tabs retain six working workspaces; the one video player remains in
   assert.match(studio, /onClick=\{continueToMontage\}/);
   assert.match(css, /prefers-reduced-motion:reduce/);
 });
-
