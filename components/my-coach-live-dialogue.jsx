@@ -482,7 +482,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const visibleIdentity=memoryIdentity?.provider===memoryProvider?memoryIdentity.data:null
   const remembered=coachClientPrior(visibleIdentity)
   const openingPrior=remembered&&(remembered.name||remembered.topic)?
-    {name:remembered.name,topic:remembered.topic}:null
+    {name:remembered.name,topic:remembered.topic,
+      conclusion:remembered.previous[0]?.clientConclusions||''}:null
   // Pressing Play affirmatively consents to live voice use, disclosed beside
   // the control. Availability alone never starts streaming or contacts Google.
   const liveVoiceReady=liveVoiceSelected&&geminiCapabilities.gemini_live_free===true

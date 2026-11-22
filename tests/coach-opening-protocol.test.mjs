@@ -55,12 +55,15 @@ test('no active session consent is inferred from a visitor asking what the sessi
   assert.equal(response.openingProgress.checkmarks.invitation,false)
 })
 test('returning client: saved name requires confirmation and past-vs-new topic must be chosen',()=>{
-  const opts={allowPrior:true,priorSession:{name:'Андрей',topic:'Работа'}}
+  const opts={allowPrior:true,priorSession:{name:'Андрей',topic:'Работа',
+    conclusion:'Хочу двигаться постепенно'}}
   let p=progress(['да'],opts)
   assert.equal(p.current,'name')
   assert.match(coachOpeningNextReply(p),/Андрей/)
   p=progress(['да','да, верно'],opts)
   assert.equal(p.current,'continuity')
+  assert.match(coachOpeningNextReply(p),/Работа/)
+  assert.match(coachOpeningNextReply(p),/двигаться постепенно/)
   assert.equal(p.lamps.identity,false)
   p=progress(['да','да, верно','Продолжим прошлую','challenge','волнуюсь','да'],opts)
   assert.equal(p.completed,true)
