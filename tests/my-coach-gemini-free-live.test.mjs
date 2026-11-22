@@ -7,7 +7,7 @@ import {GEMINI_FREE_LIVE_MODEL,GEMINI_FREE_LIVE_MAX_SECONDS,geminiFreeLiveConfig
  geminiFreeLiveCheckpoint} from '../lib/coaching/gemini-live-free.mjs'
 import {GEMINI_LIVE_WEBSOCKET,GEMINI_LIVE_INPUT_RATE,GEMINI_LIVE_OUTPUT_RATE,
  GeminiLivePcmPlayer,GeminiLivePcmResampler,GeminiLiveBargeGate,GeminiLiveBargeDetector,geminiLiveSocketUrl,
- geminiLiveSetupMessage,geminiLivePcmMessage,geminiLiveTextMessage,
+ geminiLiveSetupMessage,geminiLivePcmMessage,geminiLiveTextMessage,geminiLiveStartMessage,
  base64ToPcmFloats,bytesToBase64,readGeminiLiveServerMessage,
  appendGeminiLiveTranscript} from '../lib/coaching/gemini-live-transport.mjs'
 import {GEMINI_COACH_VOICE_OPTIONS} from '../lib/coaching/gemini-voice-catalog.mjs'
@@ -192,6 +192,10 @@ test('discarded speaker frames cannot repopulate captions or create a completed 
  const wrapper=runInNewContext(src+'\nhandleAudio',{
   readGeminiLiveServerMessage:frame=>frame,phaseChange:()=>{},deliverReviewedMemory:()=>{},
   appendGeminiLiveTranscript,
+  queueLivePart:(_r,value)=>{pcm.push(value);return 'queued'},
+  finishAudibleTurn:state=>{
+    if(!state.player.playing&&state.outputText){final.push(state.outputText);state.outputText=''}
+  },
   propsRef:{current:{onOutputInterim:value=>interim.push(value)}},
   commitInput:state=>{heardUser.push(state.inputText);state.inputText=''},
   commitOutput:state=>{if(state.outputText)final.push(state.outputText);state.outputText=''},
@@ -371,21 +375,86 @@ test('Free Live widget never forwards a staged memory note and retains normal We
  assert.match(ui,/memoryStageToken:stagedMemory\.stageToken/,
   'non-Live engines retain the existing staged server memory contract')
  const socketCalls=[...live.matchAll(/sendSocket\(r,([^\n]+)/g)].map(match=>match[1].trim())
- assert.deepEqual(socketCalls,['packet){','geminiLivePcmMessage(pcm))','setup)','geminiLiveTextMessage(body)))return false'])
+ assert.equal(socketCalls.filter(value=>value.startsWith('geminiLiveStartMessage()')).length,1)
+ assert.ok(socketCalls.some(value=>value.startsWith('geminiLivePcmMessage(pcm)')))
+ assert.ok(socketCalls.some(value=>value.startsWith('geminiLiveTextMessage(body)')))
+ assert.ok(!socketCalls.some(value=>/memoryNote|contextMessage/.test(value)))
  const src=live.slice(live.indexOf('  function handleAudio('),live.indexOf('  function capture('))
  const phases=[], traffic=[], outputs=[]
- const r={ended:false,ready:false,inputText:'',outputText:'',
+ const r={ended:false,ready:false,introSent:false,sessionStarted:false,inputText:'',outputText:'',
   socket:{send:packet=>traffic.push(packet)},audioGate:{accept:()=>true},player:{playing:false}}
  const wrapper=runInNewContext(src+'\nhandleAudio',{
   readGeminiLiveServerMessage:frame=>frame,phaseChange:phase=>phases.push(phase),
+  finishAudibleTurn:state=>{
+    if(!state.player?.playing){outputs.push('complete');phases.push('listening')}
+  },
+  geminiLiveStartMessage:()=>({clientContent:{turns:[{role:'user',parts:[{text:'APP START'}]}],turnComplete:true}}),
+  setTimeout:()=>1,
   commitOutput:()=>outputs.push('complete'),propsRef:{current:{
+   onSessionStart:()=>{},
    memoryNote:'Synthetic Staged Goal N583',memoryScopes:['goals:career']}},
-  sendSocket:(_runtime,packet)=>traffic.push(packet),
+  sendSocket:(_runtime,packet)=>{traffic.push(packet);return true},
  },{timeout:1000})
  wrapper(r,{setupComplete:true})
  wrapper(r,{turnComplete:true})
  assert.equal(r.ready,true)
- assert.deepEqual(phases,['listening','listening'])
+ assert.deepEqual(phases,['thinking','listening'])
  assert.deepEqual(outputs,['complete'])
- assert.deepEqual(traffic,[])
+ assert.deepEqual(traffic,[{clientContent:{
+   turns:[{role:'user',parts:[{text:'APP START'}]}],turnComplete:true}}])
+})
+
+test('Play emits one marked app cue but never fabricated visitor consent',()=>{
+ const cue=geminiLiveStartMessage()
+ assert.deepEqual(Object.keys(cue),['clientContent'])
+ assert.equal(cue.clientContent.turnComplete,true)
+ assert.equal(cue.clientContent.turns.length,1)
+ const speech=cue.clientContent.turns[0].parts[0].text
+ assert.match(speech,/APPLICATION START EVENT/)
+ assert.match(speech,/NOT HUMAN SPEECH OR CONSENT/)
+ assert.match(speech,/first invitation question/)
+ assert.doesNotMatch(speech,/previous goal|private session|account ID|API key/i)
+ const client=load('components/my-coach-gemini-live.jsx')
+ assert.match(client,/if\(!r\.introSent\)/)
+ assert.match(client,/sendSocket\(r,geminiLiveStartMessage\(\)\)/)
+ assert.match(client,/r\.sessionStarted=true/)
+})
+test('server turnComplete waits for audible PCM tail onended before transcript final',()=>{
+ const client=load('components/my-coach-gemini-live.jsx')
+ const body=client.slice(client.indexOf('  function finishAudibleTurn('),
+   client.indexOf('  function maybeReconnectOnGoAway('))
+ assert.ok(body.includes('r.player?.playing'))
+ const committed=[]
+ const finish=runInNewContext(body+'\nfinishAudibleTurn',{
+   commitOutput:state=>{committed.push({text:state.outputText,interrupted:state.interrupted});state.outputText=''},
+   phaseChange:()=>{},
+   maybeReconnectOnGoAway:()=>{throw Error('unexpected reconnect')},
+ },{timeout:1000})
+ const state={ended:false,modelTurnComplete:true,pendingAudio:[],hadAudio:true,
+   outputWithoutAudio:false,outputText:'Words scheduled but not heard yet',
+   interrupted:false,reconnectSoon:false,player:{playing:true}}
+ finish(state)
+ assert.equal(committed.length,0)
+ state.player.playing=false
+ finish(state)
+ assert.equal(committed.length,1)
+ assert.equal(committed[0].interrupted,false)
+ finish(state)
+ assert.equal(committed.length,1)
+ const neverHeard={...state,modelTurnComplete:true,outputText:'No PCM',
+  hadAudio:false,interrupted:false,player:{playing:false}}
+ finish(neverHeard)
+ assert.equal(committed.at(-1).interrupted,true)
+})
+test('iPhone audio resume and bounded network backpressure are wired',()=>{
+ const live=load('components/my-coach-gemini-live.jsx')
+ const worklet=load('public/audio/my-coach-gemini-live-worklet.js')
+ assert.match(worklet,/Float32Array\(1536\)/)
+ assert.doesNotMatch(worklet,/Float32Array\(2048\)/)
+ assert.match(live,/data-coach-live-resume-audio/)
+ assert.match(live,/r\.context\.resume\?\.\(\)/)
+ assert.match(live,/r\.pendingAudio\.length>=24/)
+ assert.match(live,/r\.backpressureChunks>30/)
+ assert.match(live,/r\.modelTurnComplete=true\s+finishAudibleTurn\(r\)/)
+ assert.match(live,/if\(r\.modelTurnComplete\)finishAudibleTurn\(r\)/)
 })
