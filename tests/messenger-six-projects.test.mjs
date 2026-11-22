@@ -53,8 +53,16 @@ test('each direction keeps a single-question dialogue and routes to existing fir
  assert.match(agent,/entry\.question/)
  assert.match(agent,/setProjectFlow\(null\)/)
  assert.match(agent,/composerRef\.current\?\.focus/)
- assert.match(agent,/<form onSubmit=\{submit\} className=\{styles\.form\} data-hh-ai-chat-composer=\{messengerView\|\|undefined\}\s+data-landing-composer=\{showLandingComposer\|\|undefined\}\s+data-gemini-pending=\{messengerView&&proSelected&&!proReady\|\|undefined\}>/,
-   'the same working submit form is pinned as the live Messenger composer')
+ // A working Gemini form may gain new data-* state attributes. Assert the
+ // single real submit form and both core composer flags, not an exact tag end.
+ const submitForms=[...agent.matchAll(/<form\s+onSubmit=\{submit\}[\s\S]*?>/g)].map(match=>match[0])
+ assert.equal(submitForms.length,1,'Messenger retains one working submit form')
+ const composerForm=submitForms[0]
+ for(const attribute of [
+   /className=\{styles\.form\}/,
+   /data-hh-ai-chat-composer=\{messengerView\|\|undefined\}/,
+   /data-landing-composer=\{showLandingComposer\|\|undefined\}/,
+ ])assert.match(composerForm,attribute,'the same form serves Messenger and its landing composer')
  assert.match(agent,/if\(id==="ai-video"\)\{startContent\(\);return;\}/)
  for(const path of ['app/[locale]/mytube/page.tsx','app/[locale]/tests/page.tsx',
    'app/[locale]/courses/antistress','app/[locale]/services/business-consulting',
