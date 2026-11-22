@@ -493,13 +493,26 @@ async function verifyWorkspaceHydration(browser,locale){
     // real occasion and the original Goal→Ideas action. The ordinary visitor
     // must not need a hidden storyboard Confirm to stage these four captions.
     const goalTab=page.locator('[data-video-quick-control="video"]');
+    // Only a real overflow tap can open the preserved advanced recipient path.
+    const openAdvancedGoal=async()=>{
+      const moreGoals=mirror.locator('[data-hh-mirror-more-goals]');
+      await expect(studio).toHaveAttribute("data-hh-mirror-advanced","false");
+      await expect(moreGoals).toBeVisible();
+      await moreGoals.click();
+      await expect(studio).toHaveAttribute("data-hh-mirror-advanced","true");
+      await expect(page.locator('[data-video-goal-quiz-audience]')).toBeVisible();
+    };
     await goalTab.click();
     await expect(goalTab).toHaveAttribute("aria-pressed","true");
     const goalQuiz=page.locator('[data-video-goal-quiz-audience]');
-    // Returning from Ideas keeps the completed Self quiz at step 3. Navigate
-    // back through its real buttons before asserting step-1 Life/Work controls.
+    // Return from Ideas leaves the completed Self quiz at step 3: reveal
+    // it using the guest-visible advanced control, then back through it.
+    await openAdvancedGoal();
     const backGoal=page.locator('[data-video-goal-quiz-back]');
-    for(let step=0;step<2&&await backGoal.count();step++)await backGoal.click();
+    for(let step=0;step<2;step++){
+      await expect(backGoal).toBeVisible();
+      await backGoal.click();
+    }
     await expect(page.locator('[data-video-quick-scope]')).toHaveCount(2);
     const others=page.locator('[data-video-quick-scope="work"]');
     await expect(page.locator('[data-video-goal-audience-option]')).toHaveCount(0);
@@ -573,6 +586,7 @@ async function verifyWorkspaceHydration(browser,locale){
     // real visible Goal rail before using its in-panel Continue button.
     await goalTab.click();
     await expect(studio).toHaveAttribute("data-active-workspace","video");
+    await openAdvancedGoal();
     // For Others, the native compact Goal CTA is the visible navigation entry.
     // The legacy footer Continue button intentionally stays hidden in that mode.
     // Exercise the actual clicked handler rather than unveiling hidden controls.
@@ -592,6 +606,7 @@ async function verifyWorkspaceHydration(browser,locale){
     // Speech-driven path: one Continue tap, no separate Match Footage gate.
     // The transcription API is intercepted; no provider or paid render is called.
     await page.locator('[data-video-quick-control="video"]').click();
+    await openAdvancedGoal();
     await page.locator('[data-auto-video-recipient-kind="audio_visual"]').click();
     const sampleLines=locale==="ru"
       ?["Солнце светит утром","Дети улыбаются","Все радуются дню","Тёплый свет вокруг"]

@@ -176,3 +176,15 @@ test("guided meditation include/omit commits native narration disclosure after R
  assert.match(studio,/onOmitMeditation=\{\(\)=>\{\s*setCourseMeditationIncluded\(false\);/);
  assert.doesNotMatch(studio,/onAddMeditation=\{script=>\{[\s\S]{0,500}requestAnimationFrame/);
 });
+
+
+test("macOS WebKit exposes preserved recipient actions only after actual Mirror overflow taps",()=>{
+ const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+ const start=browser.indexOf("async function verifyWorkspaceHydration");
+ const end=browser.indexOf("// Real guest route browser acceptance",start);
+ const flow=browser.slice(start,end);
+ assert.match(flow,/const openAdvancedGoal=async\(\)=>\{/);
+ assert.match(flow,/await moreGoals\.click\(\)/);
+ assert.equal((flow.match(/await openAdvancedGoal\(\)/g)||[]).length,3);
+ assert.doesNotMatch(flow,/backGoal\.click\(\{force:true\}\)|backGoal\.evaluate\(/);
+});
