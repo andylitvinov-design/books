@@ -322,15 +322,17 @@ test("WebKit macOS media acceptance is headed, real encoded audio and never a mo
 
 test("post-edit consent reset is checked after entering custom narration text",()=>{
   const panel=source.indexOf('const voicePanel=page.locator("[data-video-voice-studio]")');
-  const studio=source.indexOf('const studio=voicePanel.locator("[data-voice-studio]")',panel);
-  const custom=source.indexOf('await studio.getByRole("button",{name:locale==="ru"?"Мой текст":"My own script",exact:true}).click()',studio);
-  const fill=source.indexOf('await studio.locator("textarea").fill(customText)',custom);
-  const consent=source.indexOf('studio.locator(\'input[type="checkbox"]\')',fill);
+  const mainStudio=source.indexOf('const studio=page.locator("[data-video-studio-hydrated]")');
+  const voiceStudio=source.indexOf('const voiceStudio=voicePanel.locator("[data-voice-studio]")',panel);
+  const custom=source.indexOf('await voiceStudio.getByRole("button",{name:locale==="ru"?"Мой текст":"My own script",exact:true}).click()',voiceStudio);
+  const fill=source.indexOf('await voiceStudio.locator("textarea").fill(customText)',custom);
+  const consent=source.indexOf('voiceStudio.locator(\'input[type="checkbox"]\')',fill);
   const unchecked=source.indexOf('await expect(studioConsent).not.toBeChecked({timeout:10000})',consent);
-  const disabled=source.indexOf('await expect(studio.locator("[data-voice-studio-generate]")).toBeDisabled()',unchecked);
+  const disabled=source.indexOf('await expect(voiceStudio.locator("[data-voice-studio-generate]")).toBeDisabled()',unchecked);
   const grant=source.indexOf('await studioConsent.check()',disabled);
-  assert.ok(panel>=0&&studio>panel&&custom>studio&&fill>custom&&consent>fill&&unchecked>consent&&disabled>unchecked&&grant>disabled,
-    "enter custom text, prove consent starts unchecked and generation is disabled, then explicitly grant consent");
+  assert.ok(mainStudio>=0&&mainStudio<panel&&panel<voiceStudio&&custom>voiceStudio&&fill>custom&&
+    consent>fill&&unchecked>consent&&disabled>unchecked&&grant>disabled,
+    "main Studio is available; custom voice text requires fresh explicit consent");
 });
 
 test("real WebKit export enables inline Hypno whisper and binaural controls before stereo movie recording",()=>{
@@ -530,7 +532,7 @@ test("post-export stale narration refusal reopens mounted Audio and consented Vo
  const safariTap=source.indexOf('if(engine==="webkit")await voiceSummary.tap()',summary);
  const desktopClick=source.indexOf('else await voiceSummary.click()',safariTap);
  const opened=source.indexOf('await expect(voicePanel).toHaveAttribute("open","",{timeout:15000})',desktopClick);
- const mounted=source.indexOf('await studio.waitFor({state:"visible",timeout:25000})',opened);
+ const mounted=source.indexOf('await voiceStudio.waitFor({state:"visible",timeout:25000})',opened);
  assert.ok(start>=0&&audio>start&&tap>audio&&selected>tap&&disabled>selected&&voice>disabled&&
    summary>voice&&safariTap>summary&&desktopClick>safariTap&&opened>desktopClick&&mounted>opened,
    "stale WAV must be blocked before visitor opens real Safari/desktop Voice and mounted editor");
@@ -552,7 +554,7 @@ test("WebKit release follows fifth Montage advanced settings, Audio, and voice d
  assert.match(source,/if\(engine===\"webkit\"\)await voiceSummary\.tap\(\)/);
  assert.match(source,/else await voiceSummary\.click\(\)/);
  assert.match(source,/await expect\(voicePanel\)\.toHaveAttribute\(\"open\",\"\",\{timeout:15000\}\)/);
- assert.match(source,/await studio\.waitFor\(\{state:\"visible\",timeout:25000\}\)/);
+ assert.match(source,/await voiceStudio\.waitFor\(\{state:\"visible\",timeout:25000\}\)/);
  assert.doesNotMatch(source,/data-video-montage-settings|data-video-basic-tab=|data-video-audio-length="/);
 });
 
