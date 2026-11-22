@@ -374,7 +374,7 @@ export function StudioMusicFeatured({locale="en",category="all",disabled=false,
       onClick={()=>void choose(row)}>
       <span className={montageRef.trackMeta}>
         <strong>{short}</strong>
-        <small>{(row.composer?.split(" ").at(-1)||"Classical")+" · "+(row.licenseCode||"PD")+" · 0:30"}</small>
+        <small>{(row.composer?.split(" ").at(-1)||"Classical")+" · "+(row.licenseCode||"PD")+" · ≤0:30"}</small>
       </span>
       <span className={montageRef.trackWave} aria-hidden="true">
         {Array.from({length:13},(_,bar)=><i key={bar}/>)}
