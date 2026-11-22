@@ -194,7 +194,7 @@ export default function MyCoachSessionStateCard({
         <p><Link href={'/'+language+'/app/tests'}>
           {language==='ru'?'Посмотреть доступные тесты':language==='es'?'Ver mis pruebas':'View available tests'}
         </Link></p>
-      </div>
+      </div>}
     </section>}
     {(!opening||opening.completed)&&!profile&&<section className={styles.stageSection} aria-label={t.stages}>
       <h3 className={styles.sectionTitle}><CheckCircle2 size={18} aria-hidden="true"/>{t.stages}</h3>
