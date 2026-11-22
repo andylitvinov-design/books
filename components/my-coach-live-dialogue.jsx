@@ -893,7 +893,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       locale:responseLocale,turns:conversationTurns,skip:wisdomRequested,
     })
     // A preselected goal cannot rewrite a simple invitation reply like 'yes'.
-    message=openingProgress.completed&&!profileActive?goalTurn.message:message
+    const goalEligible=openingProgress.completed&&(!profileProgress||profileProgress.completed)
+    message=goalEligible?goalTurn.message:message
     inFlightClientRef.current={requestId,message}
     // A new focus requires the client to choose which saved topic to use again.
     const contextFocusChanged=['correction','topic_shift'].includes(
@@ -905,6 +906,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       setContextPaused(true)
     }
     const commitGoalTurn=()=>{
+      if(!goalEligible)return
       if(goalTurn.goalIncluded)lastSharedGoalRef.current=goalTurn.goal
       if(goalTurn.clearGoal){
         lastSharedGoalRef.current=''
