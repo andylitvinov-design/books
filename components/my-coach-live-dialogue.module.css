@@ -1833,3 +1833,28 @@
   display:block;margin:2px 8px 3px;padding:0;
   font:500 10px/1.25 system-ui;color:#476255;text-align:center;
 }
+
+/* Before Play, show the complete inline coach profile below the voice controls.
+   Allow the page to scroll on iPhone; after Play retain the approved fixed-height
+   dialogue with stage lamps, privacy notice, and transcript untouched. */
+@media(max-width:699px){
+  .root[data-session-visual-v4][data-coach-prestart-profile='true']{
+    height:auto;max-height:none;
+    min-height:var(--hh-coach-visible-height,100dvh);
+    overflow-x:hidden;overflow-y:auto;
+    overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;
+  }
+  .root[data-session-visual-v4][data-coach-prestart-profile='true'] .voiceWorkspace{
+    flex:0 0 auto;min-height:0;max-height:none;
+    overflow:visible;padding-bottom:calc(14px + env(safe-area-inset-bottom));
+  }
+  .root[data-session-visual-v4][data-coach-prestart-profile='true'] .conversationPanel{
+    flex:0 0 auto;min-height:180px;max-height:none;overflow:visible;
+  }
+  .root[data-session-visual-v4][data-coach-prestart-profile='true'] .conversationPanel .liveTranscript{
+    flex:0 0 auto;min-height:130px;max-height:none;overflow:visible;
+  }
+  .root[data-session-visual-v4][data-coach-prestart-profile='true'] .conversationPanel .transcriptFeed{
+    flex:0 0 auto;min-height:90px;max-height:230px;overflow-y:auto;
+  }
+}
