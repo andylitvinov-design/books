@@ -10,6 +10,8 @@ test('My Space approved order: heading -> real focus -> one Daybook CTA -> exist
  assert.ok(dashboard.indexOf('className={styles.path}')<dashboard.indexOf('className={styles.cards}'))
  assert.match(dashboard,/Coaching Daybook/)
  assert.match(dashboard,/data-profile-space-path/)
+ assert.match(read('components/app/profile-space-dashboard.module.css'), /\.focusChip > span:nth-child\(2\)/)
+ assert.match(read('components/app/profile-space-dashboard.module.css'), /\.focusChip > svg:last-child\{flex:none\}/)
  assert.match(dashboard,/href=\{root \+ '\/portrait\?space=path'\}/)
  assert.match(dashboard,/id: 'state'/)
  assert.match(dashboard,/id: 'sessions'/)
