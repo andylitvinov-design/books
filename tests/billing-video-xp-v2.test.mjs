@@ -73,6 +73,14 @@ test('active account row locks preserve one starter and historical allowance',()
   assert.match(service,/status='completed'/)
   assert.match(service,/status='released'/)
 })
+test('settlement retries read terminal owner charges while holding the account lock',()=>{
+  const service=source('lib/video-credits/service.js')
+  const finish=service.slice(service.indexOf('async finish('))
+  assert.match(finish,/await lockAccount\(db,actor\.id\)[\s\S]*operation_id=\$2'/)
+  assert.doesNotMatch(finish,/operation_id=\$2 for update/)
+  assert.match(finish,/operation_id=\$2 and status='held' returning/)
+})
+
 test('existing studio uses 250-XP server-priced basic hold and no v2 anonymous free export',()=>{
   const studio=source('components/mandala-free-video-studio.tsx')
   const panel=source('components/app/video-credits-panel.jsx')
