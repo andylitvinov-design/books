@@ -76,10 +76,10 @@ try {
   // reachable through Settings → advanced Concept, not a fifth visible tab.
   const styleTab=page.locator('[data-video-montage-tab="effects"]');
   await styleTab.waitFor({state:'visible',timeout:20000});
-  await styleTab.click();
+  await press(styleTab);
   const styleNext=page.locator('[data-video-montage-effects] [data-video-montage-next="audio"]');
   await styleNext.waitFor({state:'visible',timeout:20000});
-  await styleNext.click();
+  await press(styleNext);
   await page.waitForFunction(()=>document.querySelector('[data-video-montage-tab="audio"]')
     ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
   assert.equal(await page.locator('[data-video-montage-tab="audio"]').getAttribute('aria-pressed'),
