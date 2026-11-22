@@ -536,7 +536,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const profileProgress=openingProgress.completed&&openingProgress.answers.focus?.kind==='profile'
     ?coachProfileProgress({locale:conversationLang,turns:openingHistory.slice(openingProgress.consumedTurns)})
     :null
-  const profileActive=Boolean(profileProgress&&!profileProgress.completed)
+  const profileActive=Boolean(profileProgress)
   const continuityChoice=openingProgress.answers.continuity?.kind||''
   const personalApproved=memoryReady&&openingProgress.checkmarks.name&&
     openingProgress.checkmarks.continuity&&openingProgress.checkmarks.focus&&
@@ -591,7 +591,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       ?(methodStepTitles[lang]?.[lastRecordedProgress.stepId]||
         stageChecklistTitles[visibleStageIndex]||ui.stages[visibleStageIndex])
       :stageChecklistTitles[visibleStageIndex]||ui.stages[visibleStageIndex]
-  const visibleProgressDescription=openingActive?openingDescription:profileActive?profileProgress.axisTitle:stageDescription
+  const visibleProgressDescription=openingActive?openingDescription:profileActive?(profileProgress.completed?({ru:'Профиль заполнен',en:'Profile completed',es:'Perfil completado'}[lang]):profileProgress.axisTitle):stageDescription
   const keyInfoUi=keyInfoCopy[lang]
   const goalPrompts={
     en:{stress:'I would like to feel less stressed. Can we explore what is weighing on me?',energy:'I would like to restore my energy. Can we explore what is draining it?',relationships:'I would like to improve an important relationship. Can we explore what matters most?'},

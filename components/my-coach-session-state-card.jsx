@@ -45,6 +45,38 @@ const openingTitles={
 }
 const openingKeys=['invitation','name','continuity','focus','feelings','confirmation']
 const openingLampKey={invitation:'invitation',name:'identity',focus:'focus',confirmation:'confirmation'}
+const radarPoint=(index,value)=>{
+  const angle=-Math.PI/2+index*Math.PI/4
+  return [Number((160+Math.cos(angle)*94*value/10).toFixed(1)),Number((123+Math.sin(angle)*94*value/10).toFixed(1))]
+}
+function ProfileWheel({profile,language}){
+  const rows=COACH_PROFILE_AXES.map((axis,index)=>({axis,index,rating:profile.ratings[index]}))
+  const allRated=rows.every(({rating})=>rating?.kind==='rated')
+  const polygon=key=>rows.map(({index,rating})=>radarPoint(index,rating[key]).join(',')).join(' ')
+  const label={ru:'Колесо смыслов: сейчас и хочу',en:'Meaning wheel: now and desired',es:'Rueda de sentidos: ahora y deseado'}[language]
+  const hint={ru:'Это личные оценки, не психологический тест. Пропущенные оси не дорисовываются.',en:'Personal ratings, not a psychological test. Skipped axes are not imputed.',es:'Valoraciones personales, no una prueba psicológica. No se estiman ejes omitidos.'}[language]
+  return <div data-coach-profile-wheel aria-label={label}>
+    <p><strong>{label}</strong></p>
+    <svg viewBox="0 0 320 246" role="img" aria-label={label}
+      style={{display:'block',width:'100%',maxWidth:340,height:'auto',marginInline:'auto'}}>
+      <title>{label}</title>
+      {[2.5,5,7.5,10].map(level=><polygon key={level}
+        points={Array.from({length:8},(_,index)=>radarPoint(index,level).join(',')).join(' ')}
+        fill="none" stroke="currentColor" strokeOpacity=".16" strokeWidth="1"/>)}
+      {Array.from({length:8},(_,index)=>{const [x,y]=radarPoint(index,10)
+        return <line key={index} x1="160" y1="123" x2={x} y2={y}
+          stroke="currentColor" strokeOpacity=".16"/>})}
+      {allRated&&<polygon points={polygon('desired')} fill="#3A9F7C" fillOpacity=".13" stroke="#3A9F7C" strokeWidth="2"/>}
+      {allRated&&<polygon points={polygon('current')} fill="#478FCC" fillOpacity=".16" stroke="#478FCC" strokeWidth="2"/>}
+      {rows.map(({axis,index,rating})=>rating?.kind==='rated'?<g key={axis.id}>
+        <circle cx={radarPoint(index,rating.current)[0]} cy={radarPoint(index,rating.current)[1]} r="3.5" fill="#478FCC"/>
+        <circle cx={radarPoint(index,rating.desired)[0]} cy={radarPoint(index,rating.desired)[1]} r="3.5" fill="#3A9F7C"/>
+      </g>:null)}
+    </svg>
+    <p style={{fontSize:14}}><span style={{color:'#478FCC'}}>●</span> {language==='ru'?'Сейчас':language==='es'?'Ahora':'Now'}　<span style={{color:'#3A9F7C'}}>●</span> {language==='ru'?'Хочу':language==='es'?'Deseado':'Desired'}</p>
+    <p style={{fontSize:13}}>{hint}</p>
+  </div>
+}
 const methodTitles={
   grow:'GROW',tgrow:'T-GROW',woop:'WOOP',oskar:'OSKAR',
   solution_focused:'Solution-Focused',appreciative_inquiry:'Appreciative Inquiry'
@@ -146,8 +178,9 @@ export default function MyCoachSessionStateCard({
           </li>
         })}
       </ol>
+      {profile.completed&&<ProfileWheel profile={profile} language={language}/>}
     </section>}
-    {(!opening||opening.completed)&&(!profile||profile.completed)&&<section className={styles.stageSection} aria-label={t.stages}>
+    {(!opening||opening.completed)&&!profile&&<section className={styles.stageSection} aria-label={t.stages}>
       <h3 className={styles.sectionTitle}><CheckCircle2 size={18} aria-hidden="true"/>{t.stages}</h3>
       <ol className={styles.stageList} data-coach-stage-checklist>
         {stageNames.map((label,index)=>{

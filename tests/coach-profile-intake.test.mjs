@@ -8,6 +8,8 @@ import {coachOpeningTurn} from '../lib/coaching/coach-opening-entry.mjs'
 test('baseline profile has eight distinct RU/EN/ES self-rating axes',()=>{
  assert.equal(COACH_PROFILE_AXES.length,8)
  assert.equal(new Set(COACH_PROFILE_AXES.map(axis=>axis.id)).size,8)
+ assert.deepEqual(COACH_PROFILE_AXES.map(axis=>axis.id),
+  ['anchor','connection','freedom','agency','love','dignity','self-realization','recognition'])
  for(const axis of COACH_PROFILE_AXES)for(const lang of ['ru','en','es'])
   assert.ok(axis.name[lang]&&axis.detail[lang])
 })
@@ -33,6 +35,8 @@ test('profile progresses one axis at a time, allows skip, and has reviewable del
  assert.equal(p.ratings[2].kind,'skipped')
  assert.equal(p.ratings[6].desired-p.ratings[6].current,8)
  assert.match(coachProfileNextReply(p),/Самореализация 2→10/)
+ assert.equal(p.ratings[0].axis,'anchor')
+ assert.equal(p.ratings[7].axis,'recognition')
  assert.equal(coachProfileProtocolSnapshot(p).ratings.length,8)
 })
 test('new client chooses profile at focus gate without losing six-step consent',()=>{
@@ -50,6 +54,10 @@ test('new client chooses profile at focus gate without losing six-step consent',
  assert.equal(next.stage,'profile')
  assert.equal(next.profileProgress.step,2)
  assert.match(next.message,/Связь/)
+ const completedHistory=[...history,...Array(8).fill('3 8')]
+ const complete=coachOpeningTurn({locale:'ru',openingHistory:completedHistory,message:'Спасибо'},'mira')
+ assert.equal(complete.stage,'profile_complete')
+ assert.match(complete.message,/отдельную коучинговую сессию/)
 })
 test('goal and problem still enter ordinary coaching; profile never advances on assistant words',()=>{
  const base=['да','Анна']

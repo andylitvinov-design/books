@@ -10,7 +10,7 @@ const build=(extra={})=>{
   startedAt:new Date(now-60000).toISOString(),completedAt:new Date(now).toISOString(),
   turns:[{role:'user',content:'3 и 8'},{role:'assistant',content:'Благодарю. Продолжим по следующей сфере.'}],
   profileCheckin:{version:COACH_PROFILE_VERSION,completed:false,
-    ratings:[{axis:'safety',kind:'rated',current:3,desired:8,quote:'3 и 8'}]},
+    ratings:[{axis:'anchor',kind:'rated',current:3,desired:8,quote:'3 и 8'}]},
   ...extra,
  }
 }
@@ -21,11 +21,11 @@ test('client-reviewed profile check-in survives normalizing and PDF export',()=>
 })
 test('forged profile score or absent client quote cannot enter archive',()=>{
  for(const ratings of [
-  [{axis:'safety',kind:'rated',current:-1,desired:8,quote:'3 и 8'}],
-  [{axis:'safety',kind:'rated',current:3,desired:11,quote:'3 и 8'}],
+  [{axis:'anchor',kind:'rated',current:-1,desired:8,quote:'3 и 8'}],
+  [{axis:'anchor',kind:'rated',current:3,desired:11,quote:'3 и 8'}],
   [{axis:'connection',kind:'rated',current:3,desired:8,quote:'3 и 8'}],
-  [{axis:'safety',kind:'rated',current:3,desired:8,quote:'not spoken'}],
-  [{axis:'safety',kind:'skipped',current:3,desired:null,quote:'3 и 8'}],
+  [{axis:'anchor',kind:'rated',current:3,desired:8,quote:'not spoken'}],
+  [{axis:'anchor',kind:'skipped',current:3,desired:null,quote:'3 и 8'}],
  ]){
   assert.throws(()=>normalizeMyCoachProtocol(build({profileCheckin:{
     version:COACH_PROFILE_VERSION,completed:false,ratings
@@ -33,7 +33,7 @@ test('forged profile score or absent client quote cannot enter archive',()=>{
  }
  assert.throws(()=>normalizeMyCoachProtocol(build({profileCheckin:{
   version:COACH_PROFILE_VERSION,completed:true,ratings:[{
-   axis:'safety',kind:'rated',current:3,desired:8,quote:'3 и 8'
+   axis:'anchor',kind:'rated',current:3,desired:8,quote:'3 и 8'
   }]
  }})),/MY_COACH_PROTOCOL_INVALID/)
 })
