@@ -462,27 +462,7 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
    </div>
   </details>
 
-  {languagePicker?<div className={css.stageActions} data-video-stage-actions="ideas" data-video-text-actions>
-   <button type="button" className={css.create} data-video-ideas-preview
-     disabled={disabled} onClick={onPreview}>
-     <Play size={21} aria-hidden="true"/>
-     {locale==="ru"?"Предпросмотр":locale==="es"?"Vista previa":"Preview"}
-   </button>
-   <button type="button" className={css.addEffects} data-video-ideas-create
-     disabled={disabled||selectedCount<5} onClick={onCreate}
-     title={locale==="ru"?"Переход без списания XP":locale==="es"?"Continuar sin cobrar XP":"Continue without charging XP"}>
-     <Sparkles size={21} aria-hidden="true"/>
-     <span>{locale==="ru"?"К созданию видео":locale==="es"?"Continuar a crear":"Continue to Create"}</span>
-     {creationPriceCredits!==null&&Number.isFinite(creationPriceCredits)&&creationPriceCredits>0?
-      <small>{creationPriceCredits} XP</small>:null}
-   </button>
-   <details className={css.quickCreateDisclosure} data-video-text-direct-create>
-    <summary>{locale==="ru"?"Сразу в Готово, без раскадровки":
-      locale==="es"?"Ir a Listo sin guion visual":"Skip storyboard and open Ready"}</summary>
-    <button type="button" data-video-ideas-generate disabled={disabled||generating}
-      onClick={onGenerate}>{locale==="ru"?"Перейти в Готово":locale==="es"?"Ir a Listo":"Go to Ready"}</button>
-   </details>
-  </div>:  <div className={css.stageActions} data-video-stage-actions="ideas">
+  {!languagePicker?<div className={css.stageActions} data-video-stage-actions="ideas">
    <button type="button" className={css.create} data-video-ideas-generate
      disabled={disabled||generating} onClick={onGenerate}>
      {locale==="ru"?"Создать видео":locale==="es"?"Generar vídeo":"Generate Video"}
@@ -491,7 +471,31 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
      disabled={disabled||selectedCount<5} onClick={onCreate}>
      {locale==="ru"?"Раскадровка":locale==="es"?"Guion visual":"Storyboard"}
    </button>
-  </div>}
+  </div>:
+   <div className={css.stageActions} data-video-stage-actions="ideas" data-video-text-actions>
+    <button type="button" className={css.create} data-video-ideas-preview
+      disabled={disabled} onClick={onPreview}>
+      <Play size={21} aria-hidden="true"/>
+      {locale==="ru"?"Предпросмотр":locale==="es"?"Vista previa":"Preview"}
+    </button>
+    <button type="button" className={css.addEffects} data-video-ideas-create
+      disabled={disabled||selectedCount<5} onClick={onCreate}
+      title={locale==="ru"?"Переход без списания XP":
+        locale==="es"?"Continuar sin cobrar XP":"Continue without charging XP"}>
+      <Sparkles size={21} aria-hidden="true"/>
+      <span>{locale==="ru"?"К созданию видео":locale==="es"?"Continuar a crear":"Continue to Create"}</span>
+      {creationPriceCredits!==null&&Number.isFinite(creationPriceCredits)&&creationPriceCredits>0?
+       <small>{creationPriceCredits} XP</small>:null}
+    </button>
+   </div>}
+  {languagePicker?<details className={css.quickCreateDisclosure} data-video-text-direct-create>
+    <summary>{locale==="ru"?"Сразу в Готово, без раскадровки":
+      locale==="es"?"Ir a Listo sin guion visual":"Skip storyboard and open Ready"}</summary>
+    <button type="button" data-video-ideas-generate disabled={disabled||generating}
+      onClick={onGenerate}>
+      {locale==="ru"?"Перейти в Готово":locale==="es"?"Ir a Listo":"Go to Ready"}
+    </button>
+   </details>:null}
  {status?<p className={css.stageStatus} role="status" aria-live="polite">{status}</p>:null}
  <p className={css.privacy}>{t.privacy}</p>
  </section>;
