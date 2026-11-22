@@ -2682,9 +2682,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     presetId:string;seconds:10|15|20|30|60;edit?:FreeFilmCompilationEdit
   }|null>(null);
   // Zero-cash video XP: separate from Growth Points and unmerged paid CAD wallet.
-  const [creditCatalog,setCreditCatalog]=useState<{
+  const [publicCreditCatalog,setPublicCreditCatalog]=useState<{
     chargeRequired:boolean;ready:boolean;blocked:boolean;priceCredits:number;pricingModel?:string
   }|null>(null);
+  const [accountCreditCatalog,setAccountCreditCatalog]=useState<Awaited<ReturnType<typeof fetchVideoCreditStatus>>|null>(null);
+  const creditCatalog=accountCreditCatalog??publicCreditCatalog;
   const [creditBalance,setCreditBalance]=useState<number|null>(null);
   const [creditSession,setCreditSession]=useState<"checking"|"guest"|"signed_in"|"unavailable">("checking");
   const [guestFirstVideoUsed,setGuestFirstVideoUsed]=useState(false);
@@ -2695,10 +2697,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     try{
       const data=await fetchVideoCreditStatus();
       if(epoch!==creditSessionProbe.current)return;
+      setAccountCreditCatalog(data);
       setCreditBalance(data.balanceCredits);
       setCreditSession("signed_in");
     }catch(error){
       if(epoch!==creditSessionProbe.current)return;
+      setAccountCreditCatalog(null);
       setCreditBalance(null);
       // 401 is explicit; an outage, timeout or 500 cannot bypass the XP ledger.
       setCreditSession(error instanceof Error&&error.message==="SIGN_IN_REQUIRED"?"guest":"unavailable");
@@ -2719,12 +2723,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   useEffect(()=>{
     let active=true;
     void fetchVideoCreditCatalog()
-      .then(data=>{if(active)setCreditCatalog(data);})
-      .catch(()=>{if(active)setCreditCatalog({chargeRequired:true,ready:false,blocked:true,priceCredits:10});});
+      .then(data=>{if(active)setPublicCreditCatalog(data);})
+      .catch(()=>{if(active)setPublicCreditCatalog({chargeRequired:true,ready:false,blocked:true,priceCredits:10});});
     return()=>{active=false;};
   },[]);
   useEffect(()=>{
-    if(!creditCatalog?.ready)return;
+    if(!publicCreditCatalog?.ready)return;
     void refreshCreditSession();
     // OAuth runs in a separate tab so the original on-device Blob survives.
     const onFocus=()=>{void refreshCreditSession();};
@@ -2736,7 +2740,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       window.removeEventListener("focus",onFocus);
       document.removeEventListener("visibilitychange",onVisible);
     };
-  },[creditCatalog?.ready,refreshCreditSession]);
+  },[publicCreditCatalog?.ready,refreshCreditSession]);
   const [musicWarning,setMusicWarning] = useState("");
   // Declare before the guest-first useEffect: TS/Next validates this
   // hook state before it is referenced, even when effect runs later.
@@ -3848,15 +3852,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
   // No autoplay: paint a still scene, and animate only while a visitor
   // deliberately chooses preview. Throttle to ~12 fps on mobile Safari.
+  // Create primes and rewinds these same MP4 players. A pending preview image
+  // or animation frame must not seek them while export is preparing.
   useEffect(() => {
-    if (!source || jobRef.current || webCodecJobRef.current || recording) return;
+    if (!source || preparing || preparingRef.current || jobRef.current || webCodecJobRef.current || recording) return;
     let cancelled = false;
     let animation = 0;
     let startedAt = 0;
     let lastFrame = -1000;
     let lastHeadUpdate=0;
     void loadSceneImage(source).then(image => {
-      if (cancelled || jobRef.current || webCodecJobRef.current) return;
+      if (cancelled || preparingRef.current || jobRef.current || webCodecJobRef.current) return;
       if(usingFreeFilmCompilation&&!freeFilmReady&&!styleFilmReady)return;
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -3881,7 +3887,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       const previewFps=window.innerWidth<=600
         ? (previewCores<=2?12:previewCores>=6?24:18):24;
       const draw = (now: number) => {
-        if (cancelled || jobRef.current || webCodecJobRef.current) return;
+        if (cancelled || preparingRef.current || jobRef.current || webCodecJobRef.current) return;
         if (!startedAt) startedAt = now;
         if (now - lastFrame >= 1000 / previewFps && !document.hidden) {
           const elapsed=previewSeekSeconds+(now-startedAt)/1000;
@@ -3910,12 +3916,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     }).catch(() => { /* PNG preparation can be retried in the parent editor. */ });
     return () => { cancelled = true; window.cancelAnimationFrame(animation); };
   }, [source, effect, moneyScene, theme, otherScene, aspect, previewPlaying, previewSeekSeconds,
-    recording, speed, brightness, caption, visibleCaption, singleTextSource, wish, affirmations, hypnoLight, locale, cinematicPlan,
+    recording, preparing, speed, brightness, caption, visibleCaption, singleTextSource, wish, affirmations, hypnoLight, locale, cinematicPlan,
     usingFreeFilmCompilation, freeFilmReady, appliedStory, greetingCharacter, greetingSceneKey, timelineTextClips,stopMovieSound,duration,previewFrameRevision,
     creationMode,currentFreeVideoPlan,activeMontageStyleId,selectedStyleFilm?.src,styleFilmReady,backgroundOnly,photoConsent,photoUrl,activeWorkspace,storyboardPhotoRevision]);
 
-  async function videoCreditRequest(action:"hold"|"complete"|"release",body:Record<string,unknown>){
-    return postVideoCreditAction(action,body);
+  async function videoCreditRequest(action:"hold"|"complete"|"release",body:Record<string,unknown>,accountId?:string){
+    return postVideoCreditAction(action,body,{accountId});
   }
   async function releaseCredit(operationId:string){
     const tracked=creditOpRef.current===operationId;
@@ -3977,7 +3983,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(catalog.chargeRequired&&!guestLocalRender){
       const operationId=crypto.randomUUID();
       try{
-        const hold=await videoCreditRequest("hold",{operationId,...(catalog.pricingModel==="xp-v2"?{sku:"basic"}:{})});
+        const accountId=accountCreditCatalog?.accountId;
+        if(!accountId)throw Error("SIGN_IN_REQUIRED");
+        const hold=await videoCreditRequest("hold",{operationId,...(catalog.pricingModel==="xp-v2"?{sku:"basic"}:{})},accountId);
         if(hold.status!=="held")throw Error("VIDEO_CREDIT_HOLD_INVALID");
         creditOpRef.current=operationId;
         creditValidRef.current=false;
@@ -3991,7 +3999,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         // Idempotency UUID can release a hold even if the POST response was lost.
         void releaseCredit(operationId);
         const reason=error instanceof Error?error.message:"";
-        if(reason==="SIGN_IN_REQUIRED")void refreshCreditSession();
+        if(reason==="SIGN_IN_REQUIRED"||reason==="ACCOUNT_CHANGED")void refreshCreditSession();
         setNotice(reason==="VIDEO_CREDITS_INSUFFICIENT"?
           (locale==="ru"?"Кредитов недостаточно. Следующее пополнение — в новом месяце.":
             locale==="es"?"Créditos insuficientes. Se renovarán el mes próximo.":
