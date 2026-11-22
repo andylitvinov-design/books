@@ -51,6 +51,17 @@ test('signed read only owner video and bounded TTL, no public bucket',()=>{
   assert.match(server,/status='deleted',deleted_at=now\(\)/)
   assert.doesNotMatch(server,/\.getPublicUrl\(/)
 })
+test('private video item routes use shared UUID validation with a uniform not-found response',()=>{
+  assert.match(server,/import \{AppError,requireUUID\} from '\.\.\/assessments\/contracts\.js'/)
+  assert.match(server,/try\{requireUUID\(id\)\}catch\{deny\(\)\}/)
+})
+test('a finalization race reuses only the same owner’s committed ready row',()=>{
+  const finalize=server.split('export async function completePersonalVideoUpload')[1]
+    .split('export async function personalVideoReadUrl')[0]
+  assert.match(finalize,/status='pending' returning \*/)
+  assert.match(finalize,/select \* from app_private\.personal_videos where id=\$1 and account_id=\$2 and status='ready'/)
+  assert.match(finalize,/if\(!committed\)deny\(\)/)
+})
 test('My Videos requests a signed attachment separately from inline playback',()=>{
   assert.match(gallery,/appFetch\('personal-videos\/'\+id\+'\?download=1',undefined,'GET',\{accountId\}\)/)
   assert.match(gallery,/appFetch\('personal-videos\/'\+id,undefined,'GET',\{accountId\}\).*setPlay/)
