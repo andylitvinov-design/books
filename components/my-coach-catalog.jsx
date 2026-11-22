@@ -415,12 +415,12 @@ export default function MyCoachCatalog({ locale = 'en' }) {
             if (!persona) return null
             const stillImage = id === 'harry'
               ? '/images/holistic-house/my-coach-motion/harry-soft-still.webp'
-              : id === 'genie' ? '/images/holistic-house/my-coach-motion/genie-still.svg'
+              : id === 'genie' ? '/images/holistic-house/my-coach-motion/genie-photo.webp'
               : `/images/holistic-house/my-coach-motion/${id}-still.webp`
             return <button type="button" key={id} className={heroStyles.railCard}
               aria-pressed={selected.id === id}
               onClick={() => { setSelectedId(id); setSettings(normalizeCoachSettings(id)) }}>
-              <span className={heroStyles.railPortrait} data-persona={id} aria-hidden="true">
+              <span className={heroStyles.railPortrait} data-persona={id} data-genie-roster-photo={id==='genie'?'webp':undefined} aria-hidden="true">
                 <picture>
                   <source media="(prefers-reduced-motion: reduce)" type="image/webp"
                     srcSet={stillImage} />
