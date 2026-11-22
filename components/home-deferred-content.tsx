@@ -1,12 +1,12 @@
 "use client";
-import dynamic from "next/dynamic";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { MySpaceTopics } from "./my-space-topics";
 import type { PublicLocale } from "@/lib/public-locales";
 
-const HomeExpandedCatalog = dynamic(
-  () => import("./home-expanded-catalog").then(mod => mod.HomeExpandedCatalog),
-  {ssr:false,loading:()=>null}
+// Only import the long-form catalogue when the reader opens its disclosure;
+// no first-screen CSS or JS dependency on its carousels and cards.
+const HomeExpandedCatalog = lazy(
+  () => import("./home-expanded-catalog").then(mod => ({ default: mod.HomeExpandedCatalog }))
 );
 const COPY={
  en:{more:"More ways to explore Holistic House",detail:"Courses, guidance, free starts and resources"},
@@ -24,7 +24,7 @@ export function HomeDeferredContent({locale}:{locale:PublicLocale}){
         {t.more}
         <small style={{display:"block",fontWeight:450,color:"#6e7c70",padding:"5px 0"}}>{t.detail}</small>
       </summary>
-      {expanded?<HomeExpandedCatalog locale={locale}/>:null}
+      {expanded?<Suspense fallback={null}><HomeExpandedCatalog locale={locale}/></Suspense>:null}
     </details>
   </div>;
 }
