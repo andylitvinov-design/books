@@ -669,6 +669,37 @@ test('iOS 27 output routing yields the receiver to the speaker, restores mic, an
  const page=source('components/my-coach-live-dialogue.jsx')
  assert.match(page,/coachSpokenText\(spokenText\)\.text\.slice\(0,500\)/)
 })
+test('Safari iOS 27 silent output recovers by asynchronous ambient to playback cycle without cloud retries',async()=>{
+ const {refreshCoachIos27PlaybackRoute,setCoachIos27AudioSession}=
+   await import('../lib/personal-coaching/coach-ios-audio-route.mjs')
+ const transitions=[]
+ const audioSession={_type:'playback',
+   get type(){return this._type},
+   set type(value){transitions.push(value);this._type=value}}
+ const ios={userAgent:'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 Version/27.2 Mobile/15E148 Safari/604.1',
+   audioSession}
+ const tasks=[]
+ assert.equal(refreshCoachIos27PlaybackRoute(ios,fn=>tasks.push(fn)),true)
+ assert.equal(audioSession.type,'ambient')
+ assert.deepEqual(transitions,['ambient'])
+ assert.equal(tasks.length,1)
+ tasks.shift()()
+ assert.equal(audioSession.type,'playback')
+ assert.deepEqual(transitions,['ambient','playback'])
+ // A stopped or interrupted session must never be reopened by stale work.
+ assert.equal(refreshCoachIos27PlaybackRoute(ios,fn=>tasks.push(fn)),true)
+ assert.equal(setCoachIos27AudioSession(ios,'auto'),true)
+ tasks.shift()()
+ assert.equal(audioSession.type,'auto')
+ const windows={userAgent:'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/131',audioSession:{type:'auto'}}
+ assert.equal(refreshCoachIos27PlaybackRoute(windows,()=>{throw Error('not scheduled')}),false)
+ assert.equal(windows.audioSession.type,'auto')
+ const speech=source('components/my-coach-speech-loop.jsx')
+ const ui=source('components/my-coach-live-dialogue.jsx')
+ assert.match(speech,/refreshCoachIos27PlaybackRoute\(window\.navigator\)/)
+ assert.match(ui,/function ensureReplayAudioOutput\(\)\{\s*refreshCoachIos27PlaybackRoute\(window\.navigator\)/)
+ assert.doesNotMatch(speech,/api\.fish\.audio|https:\/\/generativelanguage\.googleapis\.com/)
+})
 test('AI coach never claims to run on unverified OpenAI GPT-4',async()=>{
  const {coachClaimsUnverifiedModelIdentity}=await import('../lib/coaching/conversational-persona.mjs')
  for(const claim of ["I run on OpenAI’s GPT-4, tuned for fast coaching.",
