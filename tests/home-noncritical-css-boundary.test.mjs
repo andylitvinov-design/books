@@ -4,19 +4,18 @@ import { readFileSync } from "node:fs";
 
 const source = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("Home does not eagerly import unused global ribbon or enquiry CSS", () => {
+test("Home excludes the unused ribbon CSS without changing global enquiry contracts", () => {
   const layout = source("app/layout.tsx");
   assert.match(layout, /SitewideAntistressBannerDeferred initialLocale=\{lang\}/);
   assert.doesNotMatch(layout, /import \{ SitewideAntistressBanner \}/);
-  assert.doesNotMatch(layout, /import "\.\/sitewide-capture\.css"/);
+  assert.match(layout, /import "\.\/sitewide-capture\.css"/);
   const deferred = source("components/sitewide-antistress-banner-deferred.tsx");
   assert.match(deferred, /dynamic\(/);
   assert.match(deferred, /import\("\.\/sitewide-antistress-banner"\)/);
   assert.match(deferred, /pathname === "\/"/);
   assert.match(deferred, /ru\|en\|es/);
   assert.doesNotMatch(deferred, /ssr:\s*false/, "non-Home ribbons must retain SSR");
-  assert.match(source("components/sitewide-lead-capture.tsx"),
-    /import "@\/app\/sitewide-capture\.css"/);
+  assert.doesNotMatch(source("components/sitewide-lead-capture.tsx"), /import "@\\/app\\/sitewide-capture\\.css"/);
   assert.match(source("components/sitewide-lead-capture-deferred.tsx"),
     /classifyPublicLead\(pathname\)/);
 });

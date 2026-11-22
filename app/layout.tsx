@@ -22,6 +22,7 @@ import "./site-videos.css";
 import "./unified-mobile-dock.css";
 import "./reader-responsive.css";
 import "./ia-v2.css";
+import "./sitewide-capture.css";
 import "./public-wide-layout.css";
 
 export const metadata: Metadata = {
