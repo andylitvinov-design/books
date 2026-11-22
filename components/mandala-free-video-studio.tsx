@@ -8000,7 +8000,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </section>
         <section className={videoStyles.quickSection} data-video-topic-section
           data-video-goal-quiz-step={goalQuizState.step}
-          data-video-goal-quiz-audience={goalQuizState.audience}
           data-workspace-section="video" aria-label={
             locale==="ru"?"3. Выберите тему":locale==="es"?"3. Elige el tema":"3. Choose your topic"}>
           <div data-video-goal-quiz-topic-stage
