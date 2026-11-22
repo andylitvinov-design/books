@@ -52,6 +52,11 @@ try {
   await page.locator('[data-video-montage-tab="effects"]').waitFor({state:'visible',timeout:20000});
   // Style is the first visible Montage tab; source selection is an actual tap.
   await page.locator('[data-video-montage-tab="effects"]').click();
+  const moreStyles=page.locator('[data-video-montage-more-styles]');
+  const styleSummary=moreStyles.locator(':scope > summary');
+  await styleSummary.waitFor({state:'visible',timeout:20000});
+  if(await moreStyles.getAttribute('open')===null)await press(styleSummary);
+  assert.notEqual(await moreStyles.getAttribute('open'),null,'MORE_STYLES_MUST_BE_OPEN');
   const selectedStyle=page.locator('[data-video-montage-style="3"]');
   await selectedStyle.waitFor({state:'visible',timeout:20000});
   if(engine==='webkit')await selectedStyle.tap();
