@@ -15,7 +15,7 @@ export default function DaybookGoalContext({accountId,locale,selectedId,onChange
   setPlan(null);setStatus('loading')
   appFetch('coaching-life-plan?locale='+locale,undefined,'GET',{accountId,signal:abort.signal}).then(data=>{if(active){setPlan(data);setStatus('ready')}}).catch(error=>{if(active){if(error.status===401||error.code==='ACCOUNT_CHANGED')onSessionLost();else setStatus('error')}})
   return ()=>{active=false;abort.abort()}
- },[accountId,locale,version])
+ },[accountId,locale,version,onSessionLost])
  const data=journalGoalContext(plan,selectedId)
  return <div>
   {status!=='ready'?<p role="status">{c[status]} {status==='error'&&<button disabled={disabled} onClick={()=>setVersion(v=>v+1)}>{c.retry}</button>}</p>:<>

@@ -1,5 +1,5 @@
 'use client'
-import {useEffect,useRef,useState} from 'react'
+import {useCallback,useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import {appFetch} from '@/lib/app/client-fetch'
 import {createJournalSaver} from '@/lib/app/daybook-journal-save.mjs'
@@ -26,8 +26,10 @@ export default function DaybookJournal({locale}){
  const [exportStatus,setExportStatus]=useState('')
  const epoch=useRef(0),owner=useRef(null),saver=useRef(null),saving=useRef(false)
  const sessionGuard=useRef(null)
- function wipe(){epoch.current++;sessionGuard.current?.dispose();owner.current=null;saver.current?.discard();saver.current=null;setAccount(null);setEntries([]);setDraft(null);setNext(null);setQuery('');setStatus('');setExportStatus('');setBusy(false);saving.current=false}
- async function load(){
+ const invalidate=useCallback(()=>{epoch.current++;saver.current?.discard()},[])
+ const wipe=useCallback(()=>{invalidate();sessionGuard.current?.dispose();owner.current=null;saver.current=null;setAccount(null);setEntries([]);setDraft(null);setNext(null);setQuery('');setStatus('');setExportStatus('');setBusy(false);saving.current=false},[invalidate])
+ const sessionLost=useCallback(()=>{wipe();setPhase('signed-out')},[wipe])
+ const load=useCallback(async()=>{
   wipe();setPhase('loading');const token=epoch.current
   try{
    const boot=await appFetch('bootstrap?view=portrait')
@@ -37,15 +39,15 @@ export default function DaybookJournal({locale}){
    if(token!==epoch.current)return
    owner.current=id;saver.current=createJournalSaver(appFetch,id);setAccount(id);setEntries(result.entries);setNext(result.nextCursor);setPhase('ready')
   }catch(error){if(token===epoch.current)setPhase(error.status===401?'signed-out':'error')}
- }
+ },[wipe])
  useEffect(()=>{
   void load()
   let channel
   try{channel=new BroadcastChannel('hh-app-session');channel.onmessage=e=>{if(e.data==='signed-out'){wipe();setPhase('signed-out')}}}catch{}
   const hide=()=>{wipe();setPhase('loading')},show=e=>{if(e.persisted)void load()}
   window.addEventListener('pagehide',hide);window.addEventListener('pageshow',show)
-  return ()=>{epoch.current++;saver.current?.discard();channel?.close();window.removeEventListener('pagehide',hide);window.removeEventListener('pageshow',show)}
- },[])
+  return ()=>{invalidate();channel?.close();window.removeEventListener('pagehide',hide);window.removeEventListener('pageshow',show)}
+ },[load,wipe,invalidate])
  useEffect(()=>{
   if(!account)return
   const guard=createJournalSessionGuard(appFetch,account,{
@@ -57,7 +59,7 @@ export default function DaybookJournal({locale}){
   const focus=()=>{if(document.visibilityState==='visible')void guard.verify()}
   document.addEventListener('visibilitychange',visibility);window.addEventListener('focus',focus)
   return ()=>{guard.dispose();document.removeEventListener('visibilitychange',visibility);window.removeEventListener('focus',focus)}
- },[account])
+ },[account,wipe])
  function open(entry){
   if(draft&&status!=='saved'&&!window.confirm(c.discard))return
   saver.current?.discard();saver.current=createJournalSaver(appFetch,account)
@@ -65,12 +67,12 @@ export default function DaybookJournal({locale}){
   setDraft(entry?{...entry,tags:[...entry.tags]}:{id:crypto.randomUUID(),revision:0,text:'',tags:[],kind:'note',locale,timezone,localDay:localJournalDay(new Date().toISOString(),timezone),goalId:null})
   setStatus('')
  }
- async function save(){
+ const save=useCallback(async()=>{
   if(saving.current||!draft||phase!=='ready')return
   saving.current=true;setBusy(true);setStatus('saving');const token=epoch.current
   try{
-   const {createdAt,updatedAt,...input}=draft
-   const entry=await saver.current.save({...input,tags:input.tags.filter(tag=>tag.trim())})
+   const input={id:draft.id,revision:draft.revision,text:draft.text,tags:draft.tags.filter(tag=>tag.trim()),kind:draft.kind,locale:draft.locale,timezone:draft.timezone,localDay:draft.localDay,goalId:draft.goalId}
+   const entry=await saver.current.save(input)
    if(token!==epoch.current)return
    setEntries(old=>[entry,...old.filter(item=>item.id!==entry.id)]);setDraft(entry);setStatus('saved')
   }catch(error){
@@ -78,12 +80,12 @@ export default function DaybookJournal({locale}){
    if(error.status===401||error.code==='ACCOUNT_CHANGED'){wipe();setPhase('signed-out')}
    else setStatus('failed')
   }finally{if(token===epoch.current){saving.current=false;setBusy(false)}}
- }
+ },[draft,phase,wipe])
  useEffect(()=>{
   if(!draft?.text.trim()||status!==''||busy||phase!=='ready')return
   const timer=setTimeout(()=>void save(),1200)
   return ()=>clearTimeout(timer)
- },[draft,status,busy,phase])
+ },[draft,status,busy,phase,save])
  function change(field,value){setDraft(old=>({...old,[field]:value}));setStatus('')}
  async function remove(entry){
   if(busy||!window.confirm(c.confirm))return
@@ -123,7 +125,7 @@ export default function DaybookJournal({locale}){
    {tab==='goals'?<section><h2>{c.goals}</h2><Link href={root+'/my-coaching-plan'}>{c.plan}</Link></section>:tab==='growth'?<section><h2>{c.growth}</h2><Link href={'/'+locale+'/development-vectors'}>{c.vectors}</Link></section>:<>
     <button onClick={()=>open(null)} disabled={busy||status==='failed'}>{c.new}</button>
     {draft&&<section><label>{c.note}<select value={draft.kind} disabled={busy||status==='failed'} onChange={e=>change('kind',e.target.value)}>{['note','morning','evening'].map(kind=><option key={kind} value={kind}>{c[kind]}</option>)}</select></label>
-     <DaybookGoalContext key={account} accountId={account} locale={locale} selectedId={draft.goalId} disabled={busy||status==='failed'} onChange={goalId=>change('goalId',goalId)} onSessionLost={()=>{wipe();setPhase('signed-out')}}/>
+     <DaybookGoalContext key={account} accountId={account} locale={locale} selectedId={draft.goalId} disabled={busy||status==='failed'} onChange={goalId=>change('goalId',goalId)} onSessionLost={sessionLost}/>
      <label>{c.text}<textarea rows={7} maxLength={20000} value={draft.text} disabled={busy||status==='failed'} onChange={e=>change('text',e.target.value)}/></label>
      <label>{c.tags}<input value={draft.tags.join(',')} disabled={busy||status==='failed'} onChange={e=>change('tags',e.target.value.split(','))}/></label>
      <label>{c.date}<input type="date" value={draft.localDay} disabled={busy||status==='failed'} onChange={e=>change('localDay',e.target.value)}/></label>
