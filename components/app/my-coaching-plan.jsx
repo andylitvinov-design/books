@@ -5,6 +5,7 @@ import Link from 'next/link'
 import {useSearchParams} from 'next/navigation'
 import {appFetch} from '@/lib/app/client-fetch'
 import MyCoachContext from './my-coach-context'
+import DaybookDailySettings from './daybook-daily-settings'
 import CoachMemoryReview from './coach-memory-review'
 import {ArrowRight,BarChart3,Check,CheckCircle2,ChevronDown,ChevronRight,ClipboardList,Compass,Download,Heart,HeartPulse,Leaf,LoaderCircle,MapPin,Mountain,Plus,Printer,RefreshCw,Save,Sparkles,Sun,Target,Trash2,TrendingUp,Trophy,Users,Wallet} from 'lucide-react'
 import {PRIMARY_GOAL_AREAS,orderedCoachingAreas,summarizeCoachingProgress} from '@/lib/app/coaching-plan-summary.mjs'
@@ -183,6 +184,19 @@ export default function MyCoachingPlan({accountId,locale='en'}){
   finally{if(activeAccountRef.current===accountId&&loadRevision.current===revision)setLoading(false)}
  },[accountId,lang])
  useEffect(()=>{void load()},[load])
+ useEffect(()=>{
+  const wanted=searchParams?.get('goal')
+  if(!wanted||!plan?.domains)return
+  const area=plan.domains.find(item=>item.goals?.some(goal=>goal.id===wanted))
+  if(!area)return
+  setTab('plan');setExpandedArea(area.areaKey)
+  if(!PRIMARY_GOAL_AREAS.includes(area.areaKey))setShowAllAreas(true)
+ },[searchParams,plan])
+ useEffect(()=>{
+  const wanted=searchParams?.get('goal')
+  if(!wanted||!expandedArea)return
+  document.getElementById('goal-'+wanted)?.scrollIntoView({block:'center',behavior:'smooth'})
+ },[searchParams,expandedArea,plan])
  const importedKeys=useMemo(()=>new Set((plan?.actions||[]).filter(item=>item.sourceReportId&&item.sourceActionKey).map(item=>item.sourceReportId+'|'+item.sourceActionKey)),[plan])
  const change=(areaKey,key,value)=>setDrafts(prev=>({...prev,[areaKey]:{...prev[areaKey],[key]:value}}))
  async function saveArea(area){
@@ -314,6 +328,7 @@ export default function MyCoachingPlan({accountId,locale='en'}){
   {deleteError&&<div className={styles.error} role="alert">{deleteError}</div>}
   {tab==='context'&&<MyCoachContext key={accountId} accountId={accountId} locale={lang} domains={domains}/>}
   {tab==='plan'&&<>
+   <DaybookDailySettings accountId={accountId} locale={lang} goals={plan?.goals||[]}/>
    <section className={styles.sectionHead}><h2>{t.overviewTitle}</h2>
     <button type="button" className={styles.smallPill} aria-expanded={showProgressDetails}
      onClick={()=>setShowProgressDetails(value=>!value)}><BarChart3 size={19}/>{showProgressDetails?t.hideDetails:t.details}<ArrowRight size={17}/></button>
@@ -376,7 +391,7 @@ export default function MyCoachingPlan({accountId,locale='en'}){
         {busy?<LoaderCircle className={styles.spin} size={17}/>:<Save size={17}/>} {busy?t.saving:t.save}</button>
        <div className={styles.goalList}><strong>{t.goals} · {count}</strong>
         {count===0&&<p>{t.noGoals}</p>}
-        {(area.goals||[]).map(goal=><div className={styles.goal} key={goal.id}>
+        {(area.goals||[]).map(goal=><div className={styles.goal} key={goal.id} id={'goal-'+goal.id}>
          <b>{goal.title}</b>{goal.desiredOutcome&&<p>{goal.desiredOutcome}</p>}
          <span>{goal.status}</span>
          {(goal.actions||[]).map(action=><div className={styles.action} key={action.id}>
