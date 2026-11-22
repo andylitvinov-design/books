@@ -1,8 +1,27 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { createHash } from "node:crypto";
+import { runInNewContext } from "node:vm";
+import ts from "typescript";
 
 const source = (path) => readFile(new URL("../" + path, import.meta.url), "utf8");
+
+test("training lead capture does not import the video-bearing service component", async () => {
+  const [data, capture] = await Promise.all([
+    source("components/core-offer-data.ts"), source("components/sitewide-lead-capture.tsx"),
+  ]);
+  assert.match(capture, /from ["']@\/components\/core-offer-data["']/);
+  assert.doesNotMatch(capture, /from ["']@\/components\/core-service-detail["']/);
+  assert.doesNotMatch(data, /ServiceVideoShowcase|SiteVideoPlayer|core-service-detail/);
+  const js = ts.transpileModule(data, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
+  const context = { exports: {} };
+  runInNewContext(js, context);
+  const offers = ["en", "ru", "es"].flatMap(locale =>
+    ["dao", "alchemy", "hypnotherapy"].map(kind => context.exports.coreOfferDetailData(locale, kind)));
+  assert.equal(createHash("sha256").update(JSON.stringify(offers)).digest("hex"),
+    "ad0bf472e1f020e5d728980ed8b02eca3bab37638e13c9d9af06d8b385f730ba");
+});
 
 test("public video CSP allows only reviewed origins and scopes native media to Tantra", async () => {
   const middleware = await source("middleware.ts");

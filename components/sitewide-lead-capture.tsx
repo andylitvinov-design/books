@@ -8,7 +8,7 @@ import { useEffect, useId, useState } from "react";
 import { classifyPublicLead, courseTopicForPath, trainingEnquiryUrl } from "@/lib/public-lead-capture";
 import { telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
-import { coreOfferDetailData, type DetailKind } from "@/components/core-service-detail";
+import { coreOfferDetailData, type DetailKind } from "@/components/core-offer-data";
 import { CompactLeadCapture } from "@/components/compact-lead-capture";
 import styles from "./sitewide-lead-capture.module.css";
 
