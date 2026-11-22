@@ -287,7 +287,7 @@ test('toolbar language setting controls transcription, response, persona intro a
  assert.ok(!ui.includes('setDeviceSpeechLocale('))
  assert.ok(!ui.includes('<option value="auto">'))
  assert.ok(ui.includes('locale={conversationLang} speechLocale={speechLocale}'))
- assert.ok(ui.includes('getCoachPresentation(personaId,conversationLang)?.text'))
+ assert.ok(ui.includes('coachOpeningIntro(personaId,conversationLang)'))
  assert.ok(ui.includes('coachIntroAudioPath(personaId,conversationLang)'))
  assert.ok(ui.includes("?utteranceLocale:['en','ru','es'].includes(speechLocale)"))
  assert.ok(ui.includes("role:'assistant',content:answer,locale:responseLocale"))
@@ -346,11 +346,13 @@ test('approved one-row mobile voice: manual language in header, real volume, Tex
  assert.doesNotMatch(row,/replayControl|data-coach-language-control/)
  assert.match(css,/grid-template-columns:62px minmax\(0,1fr\) 50px 50px/)
  assert.match(css,/\.voicePlayNotice\{display:none\}/)
+ assert.match(css,/\.voicePlayNotice\[data-coach-voice-consent-one-play\]\{[\s\S]*?display:block/)
+ assert.match(ui,/data-coach-voice-consent-one-play/)
  assert.match(speech,/micLevelRef.current\?\.\(value\)/)
  assert.match(recorded,/onLevel\(Math.min\(1,Math.max\(0,\(rms-0.012\)\*7\)\)\)/)
 })
 
-test('Gemini Free retry preserves Basic audio until provider readiness, then switches in one informed tap',()=>{
+test('Gemini Free retry preserves Basic audio until readiness and prefers duplex Live over separate text TTS',()=>{
   const ui=source('components/my-coach-live-dialogue.jsx')
   const toggle=ui.slice(ui.indexOf('data-coach-basic-pro-toggle'),
     ui.indexOf('data-coach-pro-same-tap-disclosure'))
@@ -360,8 +362,8 @@ test('Gemini Free retry preserves Basic audio until provider readiness, then swi
   assert.ok(toggle.indexOf('if(selectedGeminiEngine){')<
     toggle.indexOf('if(geminiAvailabilityInFlightRef.current)return'))
   const fromProbe=toggle.indexOf('await readGeminiEngineStatus(checkController.signal)')
-  const checked=toggle.indexOf('if(!status.capabilities.gemini_free)')
-  const selected=toggle.indexOf("setCoachEngine('gemini_free')")
+  const checked=toggle.indexOf('if(!status.capabilities.gemini_live_free&&!status.capabilities.gemini_free)')
+  const selected=toggle.indexOf("setCoachEngine(chooseLive?'gemini_live_free':'gemini_free')")
   assert.ok(fromProbe>0&&checked>fromProbe&&selected>checked)
   const preflight=toggle.slice(toggle.indexOf('if(geminiAvailabilityInFlightRef.current)return'),checked)
   assert.doesNotMatch(preflight,/speechRef\.current\?\.stop\?\.\(\)|cancelPendingCoachTurn\(\)/,
@@ -369,14 +371,20 @@ test('Gemini Free retry preserves Basic audio until provider readiness, then swi
   const enabled=toggle.slice(checked)
   assert.match(enabled,/pauseForTypedTurn\?\.\(\)/)
   assert.match(enabled,/cancelPendingCoachTurn\(\)/)
-  assert.match(enabled,/setGeminiConsent\(true\)/)
+  assert.match(enabled,/setGeminiConsent\(!chooseLive\)/)
+  assert.match(enabled,/const chooseLive=status\.capabilities\.gemini_live_free===true/)
   assert.match(enabled,/setGeminiVoiceConsent\(freeTtsReady\)/)
   assert.match(enabled,/resumeAfterTypedFailure\?\.\(\)/)
   assert.doesNotMatch(ui,/data-coach-experience-consent|experienceTextConsent|experienceTtsConsent/)
 })
-test('iPhone 27 STT outage has an honest retry status instead of silent Web Speech listening',()=>{
+test('iPhone 27 STT outage uses bounded recorded-mic recovery, never silent Web Speech',()=>{
  const loop=source('components/my-coach-speech-loop.jsx')
- const sttFailure=loop.slice(loop.indexOf("if(code==='STT_UNAVAILABLE')"),loop.indexOf('silence();changePhase',loop.indexOf("if(code==='STT_UNAVAILABLE')")))
- assert.match(sttFailure,/if\(ios27\)\{changePhase\('ready'\);setNotice\(t\.audioUnavailable\)\}/)
- assert.ok(sttFailure.indexOf('if(ios27)')<sttFailure.indexOf('else if(Recognition)'))
+ const recovery=loop.slice(loop.indexOf('function recoverRecordedStt('),loop.indexOf('  function startListening(){'))
+ assert.match(loop,/if\(ios27&&coachRecordedSupported\(window\)\)/)
+ assert.match(loop,/\['STT_UNAVAILABLE','STT_RATE_LIMIT','STT_SIGN_IN'\]\.includes\(code\)/)
+ assert.match(recovery,/if\(recovery\.retries>=1\)/)
+ assert.match(recovery,/changePhase\('ready'\)/)
+ assert.match(recovery,/code==='STT_RATE_LIMIT'\?61000:2200/)
+ assert.match(recovery,/phaseRef\.current==='starting'\)startListening\(\)/)
+ assert.doesNotMatch(loop,/recordedSttUnavailableRef/)
 })

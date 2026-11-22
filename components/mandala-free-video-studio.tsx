@@ -14,7 +14,7 @@ import extraFreeFilmPresets from "@/data/video-catalog/free-film-presets-v2.json
 import { MandalaHypnoCompact } from "./mandala-hypno-compact";
 import { MandalaVideoIdeas } from "./mandala-video-ideas";
 import { MandalaVideoIdeaGoal } from "./mandala-video-idea-goal";
-import {MandalaMagicMirrorTitle,MandalaMagicMirrorGoal} from "./mandala-magic-mirror-goal";
+import {MandalaMagicMirrorTitle,MandalaMagicMirrorGoal,type MirrorResolution,type MirrorScope} from "./mandala-magic-mirror-goal";
 import {buildPersonalVideoGoalOptions,composePersonalVideoGoalIntent,goalScenarioPlan} from "@/lib/mandala/video-personal-goal-composer.mjs";
 import {suggestVideoGoalPhrases} from "@/lib/mandala/video-goal-idea-phrases.mjs";
 import {MandalaVideoPersonalization,DEFAULT_VIDEO_GOAL_PROFILE,summarizeVideoGoalProfile,type VideoGoalProfile} from "./mandala-video-personalization";
@@ -133,6 +133,8 @@ const MandalaPersonalMeditation = dynamic(() => import("./mandala-personal-medit
 const MandalaCloudVoiceStudio = dynamic(() => import("./mandala-cloud-voice-studio").then(module => module.MandalaCloudVoiceStudio));
 const MandalaPhraseCatalog = dynamic(() => import("./mandala-phrase-catalog").then(module => module.MandalaPhraseCatalog));
 const MandalaMultiTrackTimeline = dynamic(() => import("./mandala-multitrack-timeline").then(module => module.MandalaMultiTrackTimeline));
+const VideoPhotoLibrary = dynamic<{locale: PublicLocale; onSelectPhoto: (photo: File)=>void;
+  disabled?: boolean; compact?: boolean}>(()=>import("./app/video-photo-library").then(module=>module.default));
 
 type Effect = "glow" | "energy" | "prosperity" | "temple";
 const BACKGROUND_CLIP="local-money-background-only";
@@ -1839,7 +1841,6 @@ const approvedMobileCopy = {
     disclosure:"Краткие кадры и гипноаффирмации — экспериментальные приёмы, их влияние на убеждения не доказано.",
     benefits:["На основе ваших целей","Личные установки","Аффирмации по выбору","Природные образы и звуки"],
     directions:"1. Выберите направление",
-    themes:{energy:"Энергия и тело",money:"Деньги и карьера",relationships:"Любовь и отношения",goals:"Мотивация и уверенность",life:"Смысл и развитие",health:"Спокойствие и баланс"},
     formats:"2. Выберите формат",free:"Бесплатный",freeDetail:"Настоящее локальное видео",freeCount:"Без ограничений",
     smart:"Smart",smartDetail:"Персональные AI-сцены",pro:"Pro",proDetail:"Кинематографические AI-сцены",
     unavailable:"Не подключён",creditsNote:"Smart и Pro откроются после проверенной оплаты и учёта кредитов. Сейчас доступен реальный бесплатный экспорт.",
@@ -1854,7 +1855,6 @@ const approvedMobileCopy = {
     disclosure:"Brief frames and hypnoaffirmations are experimental; effects on beliefs are not proven.",
     benefits:["Based on your goals","Personal intentions","Optional affirmations","Nature visuals and sound"],
     directions:"1. Choose a direction",
-    themes:{energy:"Energy & body",money:"Money & career",relationships:"Love & relationships",goals:"Motivation & confidence",life:"Meaning & growth",health:"Calm & balance"},
     formats:"2. Choose a format",free:"Free",freeDetail:"Real on-device video",freeCount:"Unlimited",
     smart:"Smart",smartDetail:"Personal AI scenes",pro:"Pro",proDetail:"Cinematic AI scenes",
     unavailable:"Not enabled",creditsNote:"Smart and Pro require verified payments and credit entitlements. Real free export works locally now.",
@@ -1869,7 +1869,6 @@ const approvedMobileCopy = {
     disclosure:"Los fotogramas breves y las hipnoafirmaciones son experimentales; no hay pruebas de que cambien las creencias.",
     benefits:["Según tus objetivos","Intenciones personales","Afirmaciones opcionales","Naturaleza y sonidos"],
     directions:"1. Elige la dirección",
-    themes:{energy:"Energía y cuerpo",money:"Dinero y carrera",relationships:"Amor y relaciones",goals:"Motivación y confianza",life:"Sentido y desarrollo",health:"Calma y equilibrio"},
     formats:"2. Elige el formato",free:"Gratis",freeDetail:"Vídeo local real",freeCount:"Ilimitados",
     smart:"Smart",smartDetail:"Escenas IA personales",pro:"Pro",proDetail:"Escenas cinematográficas IA",
     unavailable:"No habilitado",creditsNote:"Smart y Pro requieren pagos y créditos verificados. La exportación gratuita local ya funciona.",
@@ -1998,7 +1997,6 @@ function quickStyleFilmFor(theme:VideoTheme,index:number){
   const film=firstPartyFilmFor(candidate.theme as VideoTheme,candidate.id);
   return film?{...film,sceneId:candidate.id,theme:candidate.theme as VideoTheme}:null;
 }
-const quickThemeOrder: VideoTheme[] = ["energy","health","relationships","money","goals","life"];
 const effectsThemeOrder: VideoTheme[] = ["life","energy","relationships","goals","money","health"];
 const effectsThemeNames: Record<PublicLocale,Record<VideoTheme,string>> = {
   ru:{life:"Спокойствие",energy:"Энергия",relationships:"Отношения",goals:"Цели",money:"Изобилие",health:"Здоровье"},
@@ -2062,6 +2060,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [videoScenarioOpen,setVideoScenarioOpen] = useState(false);
   const goalContinueRef=useRef<(()=>boolean)|null>(null);
   const mirrorStartRef=useRef<((theme:VideoTheme,categoryId:"goals-money"|"love-relationships"|"energy-confidence"|"stress-anxiety",wish:string)=>void)|null>(null);
+  const mirrorResolveRef=useRef<((path:MirrorResolution)=>boolean)|null>(null);
+  const [mirrorStep,setMirrorStep]=useState<1|2|3>(1);
+  const [mirrorScope,setMirrorScope]=useState<MirrorScope>("me");
+  const [mirrorPlannedFormat,setMirrorPlannedFormat]=useState<MirrorResolution["videoFormat"]>(undefined);
+  const [pendingMirrorPurpose,setPendingMirrorPurpose]=useState<{id:string;topicId:string}|null>(null);
   const [goalQuizState,setGoalQuizState]=useState<{
     step:1|2|3;complete:boolean;audience:"self"|"others";
   }>({step:1,complete:false,audience:"self"});
@@ -2659,7 +2662,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   }|null>(null);
   // Zero-cash video XP: separate from Growth Points and unmerged paid CAD wallet.
   const [creditCatalog,setCreditCatalog]=useState<{
-    chargeRequired:boolean;ready:boolean;blocked:boolean;priceCredits:number
+    chargeRequired:boolean;ready:boolean;blocked:boolean;priceCredits:number;pricingModel?:string
   }|null>(null);
   const [creditBalance,setCreditBalance]=useState<number|null>(null);
   const [creditSession,setCreditSession]=useState<"checking"|"guest"|"signed_in"|"unavailable">("checking");
@@ -2682,7 +2685,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   },[]);
   // Preview-only eligibility: the original server ledger still authorizes every debit.
   const basicVideoAccess=readyBasicVideoAccess({
-    catalog:creditCatalog,session:creditSession,balanceCredits:creditBalance,guestFirstVideoUsed
+    catalog:creditCatalog,session:creditSession,balanceCredits:creditBalance,
+    guestFirstVideoUsed:guestFirstVideoUsed||creditCatalog?.pricingModel==='xp-v2'
   });
   const [creditConfirmed,setCreditConfirmed]=useState(true);
   const [creditRetry,setCreditRetry]=useState(false);
@@ -3196,6 +3200,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       presetOverride:suggestions,custom:"",ideasDraft:undefined
     });
   };
+  // Screen 2 is the real canonical Goal. Once Director verifies the chosen
+  // Topic, preselect the SAME goal by its original ID/context in Ideas.
+  // No duplicate questionnaire, client data access, render or XP charge.
+  useEffect(()=>{
+    if(!pendingMirrorPurpose||activeWorkspace!=="phrases"||
+      selectedConceptTopic?.topicId!==pendingMirrorPurpose.topicId)return;
+    const goal=personalGoalOptions.goals.find(item=>item.id===pendingMirrorPurpose.id);
+    if(!goal){setPendingMirrorPurpose(null);return;}
+    setIdeasGoalChoice({contextKey:personalGoalOptions.contextKey,id:goal.id});
+    setIdeasProfile({...DEFAULT_VIDEO_GOAL_PROFILE});
+    setIdeasProfileConfirmed(false);
+    applyPurposePhrases(goal.type,"",true);
+    setPendingMirrorPurpose(null);
+  },[pendingMirrorPurpose,activeWorkspace,selectedConceptTopic?.topicId,personalGoalOptions]);
   const conceptGoalText=composePersonalVideoGoalIntent(wish,chosenIdeaGoal,locale);
   const conceptTopic=chosenIdeaGoal?.topicId?{
     categoryId:chosenIdeaGoal.categoryId!,subcategoryId:chosenIdeaGoal.subcategoryId!,
@@ -3285,7 +3303,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     !audioDurationInvalid && !micRecording && !preparing && !recording && !voiceGenerating && !narrationInvalid && !phrasePending && !photoPending &&
     creditCatalog!==null && (!creditCatalog.chargeRequired||creditCatalog.ready) &&
     (!creditCatalog.chargeRequired||creditSession==="signed_in"||
-      (creditSession==="guest"&&!guestFirstVideoUsed)) &&
+      ((creditSession==="guest"&&creditCatalog?.pricingModel!=="xp-v2")&&!guestFirstVideoUsed)) &&
     !creditOpRef.current;
   const previewAudioUrl = samplePreviewId ? presetAudioUrl(samplePreviewId) : uploadedAudio?.url || (music==="none" ? null : presetAudioUrl(music));
   // Context comes from the existing theme/filter on this very screen.
@@ -3930,15 +3948,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     }finally{creditCompletingRef.current=false;}
   }
   async function holdVideoExportCredit(catalog:NonNullable<typeof creditCatalog>){
-    const guestLocalRender=catalog.chargeRequired&&creditSession==="guest"&&!guestFirstVideoUsed;
+    const guestLocalRender=catalog.chargeRequired&&catalog.pricingModel!=="xp-v2"&&(creditSession==="guest"&&creditCatalog?.pricingModel!=="xp-v2")&&!guestFirstVideoUsed;
     guestRenderRef.current=guestLocalRender;
-    if(guestLocalRender){setCreditConfirmed(true);setCreditRetry(false);}
+    if(!catalog.chargeRequired||guestLocalRender){setCreditConfirmed(true);setCreditRetry(false);}
     // Registered exports retain the exact same account-scoped hold/complete
     // ledger. The first anonymous render is strictly local, no server debit.
     if(catalog.chargeRequired&&!guestLocalRender){
       const operationId=crypto.randomUUID();
       try{
-        const hold=await videoCreditRequest("hold",{operationId});
+        const hold=await videoCreditRequest("hold",{operationId,...(catalog.pricingModel==="xp-v2"?{sku:"basic"}:{})});
         if(hold.status!=="held")throw Error("VIDEO_CREDIT_HOLD_INVALID");
         creditOpRef.current=operationId;
         creditValidRef.current=false;
@@ -3975,7 +3993,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
        jobRef.current||webCodecJobRef.current||creditOpRef.current||!creditCatalog||
        creditCatalog.blocked||(creditCatalog.chargeRequired&&!creditCatalog.ready))return;
     if(creditCatalog.chargeRequired&&creditSession!=="signed_in"&&
-      (creditSession!=="guest"||guestFirstVideoUsed)){
+      ((creditSession!=="guest"||creditCatalog?.pricingModel==="xp-v2")||guestFirstVideoUsed)){
       setActiveWorkspace("pro");
       setNotice(locale==="ru"?"Войдите, чтобы создать новый ролик.":
         locale==="es"?"Inicia sesión para crear otro vídeo.":"Sign in to create another video.");
@@ -4605,15 +4623,26 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               const {normalizeNativeSafariMp4ForPlayback}=await import("@/lib/mandala/webcodecs-mp4-export");
               blob=await withLocalMediaDeadline(
                 normalizeNativeSafariMp4ForPlayback(blob,Boolean(job.musicSession),duration),30000);
-            }catch{
+            }catch(error){
               if(job.cancelled||jobRef.current!==job||sourceRef.current!==snapshotKey||!aliveRef.current)return;
+              // Fixed diagnostic codes only; no scenes, sound, voice or files.
+              const reason=error instanceof Error?error.message:"";
+              const allowed=[
+                "native_mp4_invalid_tracks","native_mp4_remux_unavailable",
+                "native_mp4_remux_invalid","native_mp4_remux_failed",
+                "native_mp4_output_unplayable","native_mp4_output_incomplete",
+                "native_mp4_output_missing_aac","local_media_timeout",
+              ];
+              const code=allowed.includes(reason)?reason:"native_mp4_finalize_failed";
+              console.warn("HH_SAFARI_NATIVE_MP4_FINALIZE:"+code);
               nativeSafariMp4RejectedRef.current=true;
               setPlaybackStatus("failed");setExportUnavailable(true);
-              setNotice(locale==="ru"
+              setNotice((locale==="ru"
                 ?"Safari не завершил воспроизводимый MP4. Кредиты не списываются; попробуйте другой кодировщик."
                 :locale==="es"
                 ?"Safari no pudo finalizar un MP4 reproducible. No se cobrarán créditos; prueba el otro codificador."
-                :"Safari could not finalize a playable MP4. Credits will not be charged; try the alternate encoder.");
+                :"Safari could not finalize a playable MP4. Credits will not be charged; try the alternate encoder.")+
+                " ("+code+").");
               return;
             }
             if(job.cancelled||jobRef.current!==job||sourceRef.current!==snapshotKey||!aliveRef.current)return;
@@ -6351,7 +6380,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         "This format requires a separate order. Select Basic Video for a free export.");
       return false;
     }
-    if(creditCatalog?.chargeRequired&&creditSession==="guest"&&guestFirstVideoUsed){
+    if(creditCatalog?.chargeRequired&&(creditSession==="guest"&&creditCatalog?.pricingModel!=="xp-v2")&&guestFirstVideoUsed){
       setNotice(locale==="ru"?"Первое видео готово в PRO. Для следующего ролика войдите в аккаунт.":
         locale==="es"?"Tu primer vídeo está listo en PRO. Para crear otro, inicia sesión.":
         "Your first video is ready in PRO. Sign in to create another video.");
@@ -6470,7 +6499,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           "Export eligibility and credits are not yet available.");
       return false;
     }
-    if(creditCatalog.chargeRequired&&creditSession==="guest"&&guestFirstVideoUsed){
+    if(creditCatalog.chargeRequired&&(creditSession==="guest"&&creditCatalog?.pricingModel!=="xp-v2")&&guestFirstVideoUsed){
       setNotice(locale==="ru"?"Первое бесплатное видео уже использовано. Для нового войдите в аккаунт.":
         locale==="es"?"Tu primer vídeo gratuito ya se utilizó. Inicia sesión.":
           "Your free first video has been used. Sign in to create another.");
@@ -7504,6 +7533,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const activateQuickWorkspace=(id:(typeof workspaceTabs)[number]["id"])=>{
     quickNavTokenRef.current++;
     setActiveWorkspace(id);
+    if(id==="video"){setMirrorAdvanced(false);setVideoScenarioOpen(false);setMirrorStep(1);}
     if(id==="ready")setReadyGenerationPending(false);
     if(id==="editor")setMontagePanel("effects");
     if(id==="effects")setHypnoEntryGroup("visual");
@@ -7645,6 +7675,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       data-ideas-step={activeWorkspace==="phrases"?ideasSubtab:undefined}
       data-video-advanced-open={(showAdvancedVideo||videoScenarioOpen)?"true":"false"}
       data-hh-mirror-advanced={mirrorAdvanced?"true":"false"}
+      data-hh-mirror-step={mirrorStep}
+      data-hh-mirror-scope={mirrorScope}
+      data-hh-mirror-planned-format={mirrorPlannedFormat}
       data-video-scenario-open={videoScenarioOpen?"true":"false"}
       data-video-studio-hydrated={studioHydrated?"true":"false"}
       data-montage-panel={activeWorkspace==="editor"?montagePanel:undefined}
@@ -7694,7 +7727,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         {creditCatalog?.chargeRequired?<p className={videoStyles.quickHint}
           data-video-credit-status role="status" aria-live="polite">
           {creditCatalog.ready
-            ?creditSession==="guest"
+            ?(creditSession==="guest"&&creditCatalog?.pricingModel!=="xp-v2")
               ?(locale==="ru"?"Первое видео бесплатно · просмотр без входа":
                 locale==="es"?"Primer vídeo gratis · ver sin entrar":
                 "First video free · watch without sign-in")
@@ -7747,22 +7780,35 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           disabled={!studioHydrated||recording||preparing}
           onWishChange={value=>{setWish(value);setSuggestion("");}}
           onSelectCategory={selectCategory}
-          onContinue={(selectedTheme,categoryId,goalText)=>{
-            // Category -> subcategory -> topic precedes the production's
-            // three purpose goals and goal-specific Personalization.
-            setMirrorAdvanced(true);
-            setMirrorDetailedWish(goalText);
-            setVideoScenarioOpen(true);
-            mirrorStartRef.current?.(selectedTheme,categoryId,goalText);
-            window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
-              document.querySelector("[data-auto-video-subcategories]")?.scrollIntoView({block:"start",behavior:"auto"})));
+          onStepChange={setMirrorStep}
+          onScopeChange={setMirrorScope}
+          onComplete={(path:MirrorResolution)=>{
+            // Both paths use the ONE canonical MyTube taxonomy state:
+            // card -> two explicit choices, or own wish -> local auto-selection.
+            // This is only navigation to the next Goal step; it NEVER renders,
+            // bills or sends private content to a provider.
+            const accepted=mirrorResolveRef.current?.(path);
+            if(!accepted)return false;
+            setPendingMirrorPurpose(path.goalPurposeId?{id:path.goalPurposeId,topicId:path.topicId}:null);
+            setMirrorPlannedFormat(path.videoFormat);
+            setMirrorDetailedWish(path.wish);
+            setMirrorAdvanced(false);setVideoScenarioOpen(false);
+            setMirrorStep(1);
+            setNotice("");
+            const navigationToken=++quickNavTokenRef.current;
+            setIdeasSubtab("goal");setActiveWorkspace("phrases");setStudioMode("pump");
+            window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
+              if(navigationToken!==quickNavTokenRef.current)return;
+              document.querySelector<HTMLElement>("[data-video-ideas-goal-panel]")
+                ?.scrollIntoView({block:"start",behavior:"instant" as ScrollBehavior});
+            }));
+            return true;
           }}
           onExpand={()=>{
-            setMirrorAdvanced(true);
+            // Advanced is explicitly opted in through the small overflow icon.
+            // Never reveal the old 20-text panel on card, Next or back to Goal.
+            setMirrorAdvanced(true);setVideoScenarioOpen(true);
             setMirrorDetailedWish(wish);
-            setVideoScenarioOpen(true);
-            window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
-              document.getElementById("quick-theme-title")?.scrollIntoView({block:"start",behavior:"auto"})));
           }}/>
         <header className={videoStyles.quickHeader}>
           <div className={videoStyles.quickHeaderText}>
@@ -7855,10 +7901,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             }}><Sparkles size={21} aria-hidden="true"/>
             {locale==="ru"?"Создать видео":locale==="es"?"Crear vídeo":"Create Video"}
           </button>
-          <details data-video-goal-quiz-optional ref={quickThemeAdvancedRef} className={videoStyles.quickThemeAdvanced} data-video-theme-advanced open={activeWorkspace==="effects"||undefined}>
-            <summary>{locale==="ru"?"Все темы и образы":locale==="es"?"Más temas e imágenes":"More topics and imagery"}</summary>
+          {activeWorkspace==="effects"?<details data-video-goal-quiz-optional ref={quickThemeAdvancedRef} className={videoStyles.quickThemeAdvanced} data-video-theme-advanced open>
+            <summary>{locale==="ru"?"Образы и настроение":locale==="es"?"Estilos visuales y ambiente":"Visual moods & video styles"}</summary>
           <div className={videoStyles.quickThemeRail} role="group" aria-label={quick.theme}>
-            {(activeWorkspace==="effects"?effectsThemeOrder:quickThemeOrder).map(value=>{
+            {effectsThemeOrder.map(value=>{
               const Icon=value==="energy"?Zap:value==="health"?HeartPulse:value==="relationships"?Heart:value==="money"?Coins:value==="goals"?Target:Sprout;
               const poster=value==="money"
                 ?getRealMoneyFilm(quickStyleSceneIds[value][0] as MoneySceneId).poster
@@ -7875,11 +7921,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={poster} alt="" loading="lazy"/>
                 <span className={videoStyles.quickThemeIcon}><Icon size={23} aria-hidden="true"/></span>
-                <span className={videoStyles.quickThemeName}>{activeWorkspace==="effects"?effectsThemeNames[locale][value]:approved.themes[value]}</span>
+                <span className={videoStyles.quickThemeName}>{effectsThemeNames[locale][value]}</span>
               </button>;
             })}
           </div>
-          </details>
+          </details>:null}
         </section>
         <section className={videoStyles.quickSection} data-video-topic-section
           data-video-goal-quiz-step={goalQuizState.step}
@@ -7901,7 +7947,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               {locale==="ru"?"Создать видео":locale==="es"?"Generar vídeo":"Generate video"}
               <small>{locale==="ru"?"Экспресс · 1 клик":locale==="es"?"Exprés · 1 clic":"Express · 1 click"}</small>
               {creditCatalog?.chargeRequired && creditCatalog.ready ?
-                <small>{creditSession==="guest"&&!guestFirstVideoUsed
+                <small>{(creditSession==="guest"&&creditCatalog?.pricingModel!=="xp-v2")&&!guestFirstVideoUsed
                   ?locale==="ru"?"Первое бесплатно":locale==="es"?"Primero gratis":"First free"
                   :creditCatalog.priceCredits+" "+(locale==="ru"?"кредитов":locale==="es"?"créditos":"credits")}</small>
                 :null}
@@ -8602,7 +8648,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           onExportMotionPreset={createMotionPresetVideo}
           motionExportReady={Boolean(creditCatalog&&!creditCatalog.blocked&&
             (!creditCatalog.chargeRequired||(creditCatalog.ready&&
-              (creditSession==="guest"||creditSession==="signed_in")))&&!creditOpRef.current)}
+              ((creditSession==="guest"&&creditCatalog?.pricingModel!=="xp-v2")||creditSession==="signed_in")))&&!creditOpRef.current)}
           onCreate={()=>{
             firstVideoRequestRef.current=false;
             openReadyForGeneration();
@@ -8935,6 +8981,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           goalContinueRef={goalContinueRef}
           mirrorDetailedWish={mirrorDetailedWish}
           mirrorStartRef={mirrorStartRef}
+          mirrorResolveRef={mirrorResolveRef}
           onGoalQuizChange={setGoalQuizState}
           recipientAudioPanel={recipientAudioPanel}
           audioStoryboardReady={audioPlanApplied&&Boolean(voiceVisualPlan?.canExport)&&audioRights}
@@ -9908,6 +9955,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                       data-video-stories-photo={index}
                       onChange={event=>{const file=event.currentTarget.files?.[0]||null;event.currentTarget.value="";if(file)setStoryboardPhoto(shot.sceneId,file);}} />
                   </label>
+                  <VideoPhotoLibrary locale={locale} compact disabled={recording||preparing} onSelectPhoto={file=>setStoryboardPhoto(shot.sceneId,file)} />
                   {localPhoto?<div className={videoStyles.storyboardPhotoControls}>
                     <small>{localPhoto.name} · {localPhoto.width}×{localPhoto.height} · {locale==="ru"?"локально":"local only"}</small>
                     <button type="button" data-video-stories-photo-remove={index}
@@ -10637,7 +10685,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           onGenerateFree={createQuickVideo}
           onPickPhoto={onPickPhoto} photoSelected={Boolean(photoUrl)} photoPending={photoPending}
           proWish={wish} onProWishChange={setWish}
-          freeButtonLabel={creditCatalog?.chargeRequired&&creditSession!=="guest"
+          freeButtonLabel={creditCatalog?.chargeRequired&&(creditSession!=="guest"||creditCatalog?.pricingModel==="xp-v2")
             ? (locale==="ru"?"Создать видео · ":locale==="es"?"Crear vídeo · ":"Create video · ")+creditCatalog.priceCredits+" XP"
             : guestFirstVideoUsed
               ? (locale==="ru"?"Создать следующее видео":locale==="es"?"Crear otro vídeo":"Create another video")
@@ -10747,14 +10795,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <div className={videoStyles.quickOrderSummary} data-video-price-summary aria-live="polite">
             <small>{practiceCopy.total}</small>
             <strong>{creditCatalog?.chargeRequired&&freeVideoSelected
-              ?creditSession==="guest"
+              ?(creditSession==="guest"&&creditCatalog?.pricingModel!=="xp-v2")
                 ?(locale==="ru"?"Первое видео бесплатно":locale==="es"?"Primer vídeo gratis":"First video free")
                 :creditCatalog.priceCredits+" XP"
               :selectedDraftPrice===null?practiceCopy.noQuote:
                 selectedDraftPrice===0?practiceCopy.free:"$"+selectedDraftPrice.toFixed(2)}</strong>
             <small>{practiceCopy.names[practiceType]} · {practiceCopy.quality[practiceLevels[practiceType]]}
               {" · "}{creditCatalog?.chargeRequired&&freeVideoSelected
-                ?creditSession==="guest"
+                ?(creditSession==="guest"&&creditCatalog?.pricingModel!=="xp-v2")
                   ?(locale==="ru"?"Создать и смотреть без входа · скачать после входа":
                     locale==="es"?"Crear y ver sin entrar · descargar tras acceder":
                     "Create and watch without sign-in · download after sign-in")
@@ -10805,7 +10853,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         {notice?<p role="status" className={videoStyles.quickStatus} aria-live="polite">{notice}</p>:null}
         <p className={videoStyles.quickPrivacy} data-workspace-section="video"><Check size={16} aria-hidden="true"/>
           {creditCatalog?.chargeRequired
-            ?creditSession==="guest"
+            ?(creditSession==="guest"&&creditCatalog?.pricingModel!=="xp-v2")
               ?(locale==="ru"?"Создать и смотреть без регистрации":
                 locale==="es"?"Crea y mira el vídeo sin entrar":
                 "Create and watch without sign-in")
@@ -10965,6 +11013,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             onClick={()=>selectCategory(lowestTheme)}>
             <Sparkles size={16} aria-hidden="true"/>{supportUi.recommend}
           </button>
+          <VideoPhotoLibrary locale={locale} onSelectPhoto={selectNativePhoto} disabled={recording||preparing} compact />
           {photoPending?<p role="status" data-video-photo-pending className={videoStyles.warning}>{locale==="ru"?"Подготавливаем фото на устройстве…":locale==="es"?"Preparando la foto en tu dispositivo…":"Preparing photo on this device…"}</p>:null}
           {photoError?<p role="alert" className={videoStyles.warning}>{ui.photoError}</p>:null}
         </section>
@@ -11201,7 +11250,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           disabled={!studioHydrated||recording||preparing} onClick={openReadyForGeneration}>
           <Play size={21} fill="currentColor" aria-hidden="true"/>
           {creditCatalog?.chargeRequired
-            ?creditSession==="guest"
+            ?(creditSession==="guest"&&creditCatalog?.pricingModel!=="xp-v2")
               ?(locale==="ru"?"Первое видео бесплатно":locale==="es"?"Primer vídeo gratis":"First video free")
               :(locale==="ru"?"Создать за ":locale==="es"?"Crear por ":"Create for ")+creditCatalog.priceCredits+" XP"
             :ui.create}
@@ -11228,7 +11277,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       {musicWarning?<p role="status" className={videoStyles.warning}>{musicWarning}</p>:null}
       <p className={videoStyles.privacy}><Check size={15} aria-hidden="true"/>
         {creditCatalog?.chargeRequired
-          ?creditSession==="guest"
+          ?(creditSession==="guest"&&creditCatalog?.pricingModel!=="xp-v2")
             ?(locale==="ru"?"Первое видео бесплатно. Просмотр без входа; скачивание через «Мой дом».":
               locale==="es"?"Primer vídeo gratis. Míralo sin entrar; descarga desde Mi espacio.":
               "First video free. Watch without sign-in; download through My House.")

@@ -62,23 +62,21 @@ test("macOS WebKit hydration follows visible Goals → Ideas → Montage without
  const first=browser.indexOf("async function verifyWorkspaceHydration");
  const last=browser.indexOf("// Real guest route browser acceptance",first);
  const flow=browser.slice(first,last);
- const click=flow.indexOf("await continueToIdeas.click()");
- const ideas=flow.indexOf('toHaveAttribute("data-active-workspace","phrases")',click);
- const goalPanel=flow.indexOf('data-video-ideas-goal-panel',ideas);
- const chooseCandidates=[
-   flow.indexOf('await choice.tap()',goalPanel),
-   flow.indexOf("await ideasGoalPane.locator('[data-video-ideas-goal-choice=\"rest\"]').click()",goalPanel)
- ].filter(index=>index>=0);
- const choose=chooseCandidates.length?Math.min(...chooseCandidates):-1;
- const nextCandidates=[
-   flow.indexOf('await nextGoal.tap()',choose),
-   flow.indexOf("await ideasGoalPane.locator('[data-video-ideas-goal-next]').click()",choose)
- ].filter(index=>index>=0);
- const next=nextCandidates.length?Math.min(...nextCandidates):-1;
+ const scope=flow.indexOf("await mirror.locator('[data-hh-mirror-enter=\"me\"]').click()");
+ const choose=flow.indexOf("await purpose.locator('[data-video-ideas-goal-choice=\"rest\"]').click()",scope);
+ const goalContinue=flow.indexOf("await purpose.locator('[data-video-ideas-goal-next]').click()",choose);
+ const format=flow.indexOf("await mirror.locator('[data-hh-mirror-video-format=\"pro\"]').click()",goalContinue);
+ const click=flow.indexOf("await mirror.locator('[data-hh-mirror-next]').click()",format);
+ const ideas=flow.indexOf('toHaveAttribute("data-active-workspace","phrases",{timeout:15000})',click);
+ const goalPanel=flow.indexOf('const ideasGoalPane=page.locator',ideas);
+ const preserved=flow.indexOf("await expect(ideasGoalPane.locator('[data-video-ideas-goal-choice=\"rest\"]'))",goalPanel);
+ const next=flow.indexOf("await ideasGoalPane.locator('[data-video-ideas-goal-next]').click()",preserved);
  const personalized=flow.indexOf('data-video-ideas-personalization-panel',next);
  const montage=flow.indexOf("await montage.tap()",personalized);
- assert.ok(first>=0&&last>first&&click>=0&&ideas>click&&goalPanel>ideas&&choose>goalPanel&&next>choose&&personalized>next&&montage>personalized,
-   "one real visitor tap selects a Goal, advances to Personalization, then reaches Montage");
+ assert.ok(first>=0&&last>first&&scope>=0&&choose>scope&&goalContinue>choose&&
+   format>goalContinue&&click>format&&ideas>click&&goalPanel>ideas&&preserved>goalPanel&&
+   next>preserved&&personalized>next&&montage>personalized,
+   "one visible journey chooses the original Goal before Format, preserves it in Ideas and reaches Montage");
  assert.match(flow,/data-video-continue-scenarios/);
  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
  assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
@@ -175,4 +173,54 @@ test("guided meditation include/omit commits native narration disclosure after R
  assert.match(studio,/setCourseMeditationIncluded\(true\);\s*setCourseMeditationDraft\(script\);/);
  assert.match(studio,/onOmitMeditation=\{\(\)=>\{\s*setCourseMeditationIncluded\(false\);/);
  assert.doesNotMatch(studio,/onAddMeditation=\{script=>\{[\s\S]{0,500}requestAnimationFrame/);
+});
+
+
+test("macOS WebKit exposes preserved recipient actions through visible Magic Mirror Plan and composer controls",()=>{
+ const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+ const start=browser.indexOf("async function verifyWorkspaceHydration");
+ const end=browser.indexOf("// Real guest route browser acceptance",start);
+ const flow=browser.slice(start,end);
+ assert.match(flow,/const openAdvancedGoal=async\(\)=>\{/);
+ assert.match(flow,/await revealMirrorAdvanced\(page\)/);
+ assert.equal((flow.match(/await openAdvancedGoal\(\)/g)||[]).length,3);
+ assert.doesNotMatch(flow,/backGoal\.click\(\{force:true\}\)|backGoal\.evaluate\(/);
+ const reveal=browser.slice(browser.indexOf("async function revealMirrorAdvanced"),
+  browser.indexOf("async function enterVisibleStudioWorkspace"));
+ assert.match(reveal,/data-hh-mirror-enter="me"/);
+ assert.match(reveal,/data-hh-mirror-composer/);
+ assert.match(reveal,/data-hh-mirror-open-advanced/);
+ assert.match(reveal,/await expect\(plus\)\.toBeEnabled\(\)/);
+ assert.doesNotMatch(reveal,/force:true|\.evaluate\(/);
+});
+
+test("real macOS WebKit Montage navigation opens visible Magic Mirror controls before the hidden workspace rail",()=>{
+ const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+ const helperStart=browser.indexOf("async function enterVisibleStudioWorkspace");
+ const helperEnd=browser.indexOf("async function openVisibleMontageText",helperStart);
+ assert.ok(helperStart>=0&&helperEnd>helperStart);
+ const helper=browser.slice(helperStart,helperEnd);
+ assert.match(helper,/if\(!await control\.isVisible\(\)\)/);
+ assert.match(helper,/await revealMirrorAdvanced\(page,engine\)/);
+ assert.match(helper,/await expect\(control\)\.toBeVisible/);
+ assert.match(helper,/if\(engine==="webkit"\)await control\.tap\(\)/);
+ assert.match(helper,/else await control\.click\(\)/);
+ assert.doesNotMatch(helper,/force:true|\.evaluate\(/);
+ const reveal=browser.slice(browser.indexOf("async function revealMirrorAdvanced"),helperStart);
+ assert.match(reveal,/if\(engine==="webkit"\)await entry\.tap\(\)/);
+ assert.match(reveal,/if\(engine==="webkit"\)await format\.tap\(\)/);
+ assert.match(reveal,/if\(engine==="webkit"\)await plus\.tap\(\)/);
+ const editor=browser.slice(browser.indexOf('phase(engine,"editor-ready")'));
+ assert.match(editor,/await enterVisibleStudioWorkspace\(page,"editor",engine\)/);
+ assert.doesNotMatch(editor,/await editorTab\.click\(\)|await page\.locator\('\[data-video-quick-control="editor"\]'\)\.click\(\)/);
+});
+
+test("shared original-motion WebKit quiz uses real Scope → Goal → Format → Topic touches",()=>{
+ const source=read("scripts/benchmarking/complete-three-step-goals-quiz.mjs");
+ for(const token of ['[data-hh-mirror-enter="me"]','[data-hh-mirror-purpose-step]',
+   '[data-video-ideas-goal-choice="rest"]','[data-video-ideas-goal-next]',
+   '[data-hh-mirror-video-format="basic"]','[data-hh-mirror-open-advanced="true"]'])
+  assert.ok(source.includes(token),token);
+ assert.doesNotMatch(source,/data-hh-mirror-plan|MIRROR_VISIBLE_BACK_UNAVAILABLE/);
+ assert.match(source,/step==='2'\|\|step==='3'/);
 });

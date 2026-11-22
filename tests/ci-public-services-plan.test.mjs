@@ -1550,6 +1550,10 @@ test('PR #2969 exactly reviewed 120-scenario audio cannot trigger 13 unrelated p
     'node --test tests/import-reviewed-audio.test.mjs',
     'node --test tests/curated-audio-selection.test.mjs',
     'node --test tests/mandala-video-phrase-catalog.test.mjs',
+    // Reviewed Mandala owner requires real impact and an independently Ready PR.
+    "if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}",
+    'run: node scripts/ci-heavy-impact.mjs mandala',
+    "if: steps.policy.outputs.policy_only != 'true'",
     // The Mandala specialist now triggers on reviewed media paths for any PR,
     // rather than on a historical branch-name allowlist. Both the changed
     // source path and the actual 120-scenario manifest must route to it.

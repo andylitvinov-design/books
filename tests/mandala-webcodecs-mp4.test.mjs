@@ -203,7 +203,7 @@ test("hydration progresses Goals → Ideas through a real tap without hidden leg
   const end=browser.indexOf("// Real guest route browser acceptance",start);
   const flow=browser.slice(start,end);
   const hydrate=flow.indexOf('data-video-studio-hydrated","true"');
-  const continueTap=flow.indexOf("await continueToIdeas.click()",hydrate);
+  const continueTap=flow.indexOf("await mirror.locator('[data-hh-mirror-next]').click()",hydrate);
   const goal=flow.indexOf('const ideasGoalPane=page.locator',continueTap);
   const chosen=flow.indexOf('data-video-ideas-goal-choice="rest"',goal);
   const next=flow.indexOf('data-video-ideas-goal-next',chosen);
@@ -720,4 +720,61 @@ test("Safari and local WebCodecs exports decode first/middle/last actual MP4 sam
   assert.match(native,/sample\?\.close\(\)/);
   assert.match(studio,/playbackStatus==="ready"/,
     "Ready continues to require actual playback and credit confirmation");
+});
+
+test("iPhone native MP4 preserves a verified playable file before remux",()=>{
+  const part=helper.split("export async function normalizeNativeSafariMp4ForPlayback(")[1]
+    .split("/** A real H.264/AAC video/audio MP4.")[0];
+  for(const text of ["nativeSafariMp4HasPlayableTimeline","await awaitEvent(\"loadeddata\"",
+    "await awaitEvent(\"seeked\"","seconds/2","seconds-.55",
+    "URL.revokeObjectURL(objectUrl)"])
+    assert.ok(helper.includes(text),text);
+  assert.ok(part.includes('requireAudio&&(!audio||await audio.getCodec()!=="aac")'));
+  assert.ok(part.includes("if(await nativeSafariMp4HasPlayableTimeline(nativeBlob,expectedSeconds))"));
+  assert.ok(part.includes("return nativeBlob;"));
+  assert.ok(part.indexOf("nativeSafariMp4HasPlayableTimeline(nativeBlob,expectedSeconds)")<
+    part.indexOf("Conversion.init("));
+  assert.ok(part.includes("await conversion.execute()"));
+  assert.ok(studio.includes("HH_SAFARI_NATIVE_MP4_FINALIZE:"));
+  assert.ok(studio.includes('"native_mp4_remux_failed"'));
+  assert.ok(studio.includes('"native_mp4_output_unplayable"'));
+});
+test("verified Ready file offers real local Download and iOS Share",()=>{
+  const ready=readFileSync(new URL("../components/mandala-video-ready.tsx",import.meta.url),"utf8");
+  const css=readFileSync(new URL("../components/mandala-video-ready.module.css",import.meta.url),"utf8");
+  for(const text of ["const completed=Boolean(verified&&video)",
+    "{video?.blob?<div className={css.localFileActions}","data-ready-direct-download",
+    "download={\"holistic-house-personal.\"+video.extension}","data-ready-share-file",
+    "files:[file]","navigator.canShare(payload)","navigator.share(payload)"])
+    assert.ok(ready.includes(text),text);
+  assert.ok(css.includes(".localFileActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))"));
+});
+
+test("real WebKit Ready export downloads actual encoded MP4 bytes, not just preview",()=>{
+  const acceptance=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
+  for(const marker of [
+    "data-ready-direct-download",
+    '[data-ready-state="complete"]',
+    "page.waitForEvent('download'",
+    "directDownload.tap()",
+    "download.suggestedFilename()",
+    "download.createReadStream()",
+    "assert.deepEqual(savedBytes,bytes",
+    "row.downloadedVideo=true",
+  ])assert.ok(acceptance.includes(marker),marker);
+  assert.match(acceptance,/row\.anonymousSaveAuthGateVerified=captured\.authGateVerified/);
+  assert.match(acceptance,/assert\.deepEqual\(savedBytes,bytes,'VERIFIED_READY_DOWNLOAD_BYTES_DIFFER_FROM_MP4'\)/);
+});
+
+test("WebKit voice transcription continues to Montage via genuine visible touch",()=>{
+  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+  const flow=browser.split("async function verifyWorkspaceHydration(browser,locale)")[1]
+    .split("// Real guest route browser acceptance")[0];
+  assert.ok(flow.includes('if(browser.browserType().name()==="webkit")await nextWithSpeech.tap()'),
+    "native WebKit touch must invoke original audio-to-montage handler");
+  assert.ok(flow.includes('else await nextWithSpeech.click()'));
+  assert.ok(flow.includes('await expect(nextWithSpeech).toBeEnabled()'));
+  assert.ok(flow.includes('await expect(studio).toHaveAttribute("data-active-workspace","editor")'));
+  assert.ok(flow.includes('await expect(page.locator(\'[data-video-montage-tab="concept"]\')).toHaveAttribute("aria-pressed","true")'));
+  assert.doesNotMatch(flow,/nextWithSpeech\.click\(\{force:true\}\)|nextWithSpeech\.evaluate\(/);
 });

@@ -58,17 +58,49 @@ test('profile stays inside existing live conversation with user-invoked Back',()
   assert.match(css,/max-height:735px/)
 })
 
-test('mobile reference blocks remain model-first and quote artwork is height-bounded',()=>{
+test('approved profile has separate large cards, localized 100 XP price and a clear lighthouse photo',()=>{
   const component=readFileSync(new URL('../components/my-coach-compact-profile.jsx',import.meta.url),'utf8')
   const css=readFileSync(new URL('../components/my-coach-compact-profile.module.css',import.meta.url),'utf8')
   let i=-1
-  for(const key of ['styles.characterCard','styles.modelCard','styles.focusCard','styles.featuresCard']){
-    const j=component.indexOf(key,i+1);assert.ok(j>i,key);i=j
+  for(const key of ['styles.characterCard','styles.archetypeCard','styles.styleCard','styles.workCard',
+    'styles.modelCard','styles.focusCard','styles.featuresCard']){
+    const j=component.indexOf(key,i+1)
+    assert.ok(j>i,'separate large section '+key);i=j
   }
-  for(const token of ['styles.cardIcon','styles.heroTags','styles.quoteArt','data-quote-persona'])assert.ok(component.includes(token),token)
-  assert.match(css,/grid-template-rows:/)
+  assert.match(component,/100 XP \/ 20 min session/)
+  assert.match(component,/100 XP \/ сеанс 20 мин/)
+  assert.match(component,/100 XP \/ sesión de 20 min/)
+  assert.match(component,/data-coach-session-price="100xp-20min"/)
+  assert.match(component,/data-coach-style-passport=\{personaId\}/)
+  assert.doesNotMatch(component,/styles\.quoteArt/)
   assert.match(css,/report-lighthouse-coast\.avif/)
+  assert.match(css,/\.inlineProfile \.card h2/)
+  assert.match(css,/\.inlineProfile \.card p/)
+  assert.match(css,/\.page \.hero\{flex:0 0 auto;min-height:clamp\(310px/)
+  assert.match(css,/\.inlineProfile \.quote/)
   assert.match(css,/@media\(max-width:355px\)/)
-  assert.match(css,/@media\(max-height:735px\)/)
-  assert.doesNotMatch(css,/flex:1 0 auto/)
+})
+
+test('public coach profile is inline before Play; only real session shows stage lamps',()=>{
+  const live=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+  const compact=readFileSync(new URL('../components/my-coach-compact-profile.jsx',import.meta.url),'utf8')
+  const css=readFileSync(new URL('../components/my-coach-live-dialogue.module.css',import.meta.url),'utf8')
+  const profileCss=readFileSync(new URL('../components/my-coach-compact-profile.module.css',import.meta.url),'utf8')
+  assert.match(live,/const sessionHasStarted=sessionClockStarted\|\|voiceState\.phase!=='idle'\|\|turns\.length>0/)
+  assert.match(live,/data-coach-prestart-profile=\{sessionHasStarted\?'false':'true'\}/)
+  const inline=live.indexOf('{!sessionHasStarted&&<MyCoachInlineProfile')
+  const lamps=live.indexOf('{sessionHasStarted&&<details className={styles.sessionProgress}')
+  assert.ok(inline>0&&lamps>inline,'inline profile before director-confirmed progress')
+  assert.match(live,/stageProgressVerified=\{progressValid\}/)
+  assert.match(live,/onSessionStart=\{\(\)=>\{setGeminiLiveConsent\(true\);setSessionClockStarted\(true\);setIntroComplete\(true\)\}\}/)
+  assert.match(compact,/export function MyCoachInlineProfile/)
+  assert.match(compact,/function CoachProfileSections/)
+  assert.equal((compact.match(/<CoachProfileSections profile=\{profile\} personaId=\{personaId\} t=\{t\}\/>/g)||[]).length,2)
+  assert.match(compact,/data-coach-inline-profile=\{personaId\}/)
+  assert.match(profileCss,/\.inlineProfile\{/)
+  assert.match(css,/data-coach-prestart-profile='true'\][\s\S]*?overflow-y:auto/)
+  assert.match(css,/data-coach-prestart-profile='true'\] \.voiceWorkspace\{[\s\S]*?overflow:visible/)
+  for(const id of PUBLIC_COACH_PERSONA_IDS){
+    for(const locale of ['ru','en','es'])assert.ok(getCoachCompactProfile(id,locale),'inline profile '+id+' '+locale)
+  }
 })

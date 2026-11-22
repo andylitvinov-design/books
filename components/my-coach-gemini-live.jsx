@@ -4,7 +4,7 @@ import {forwardRef,useEffect,useImperativeHandle,useRef,useState} from 'react'
 import {Mic,Play,Volume2,Square} from 'lucide-react'
 import styles from './my-coach-speech-loop.module.css'
 import {
-  GeminiLivePcmPlayer,GeminiLivePcmResampler,GeminiLiveBargeGate,
+  GeminiLivePcmPlayer,GeminiLivePcmResampler,GeminiLiveBargeGate,GeminiLiveBargeDetector,
   geminiLiveAudioRms,geminiLiveSocketUrl,geminiLiveSetupMessage,
   geminiLivePcmMessage,geminiLiveTextMessage,readGeminiLiveServerMessage,
   appendGeminiLiveTranscript,
@@ -33,7 +33,6 @@ const ui={
 const MAX_SESSION_MS=1200000
 const MAX_BUFFERED_SOCKET_BYTES=200000
 const LIVE_START_TIMEOUT_MS=15000
-const INPUT_VAD_THRESHOLD=0.075
 const safeLocale=locale=>['en','ru','es'].includes(locale)?locale:'en'
 function audioTranscription(value){return typeof value==='string'?value.trim().slice(0,1200):''}
 
@@ -44,7 +43,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   locale='en',personaId='mira',settings={},voiceName='Puck',enabled=false,
   canStart=true,elapsedSeconds=0,onSessionStart,onVoiceStateChange,
   onMicLevel,onInputInterim,onInputFinal,onOutputInterim,onOutputFinal,
-  onInterrupted,onDirectorProgress,onNotice,
+  onInterrupted,onDirectorProgress,onOpeningProgress,onNotice,
+  openingPrior=null,allowOpeningPrior=false,
 },ref){
   const lang=safeLocale(locale),t=ui[lang]
   const [phase,setPhase]=useState('idle')
@@ -54,7 +54,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   propsRef.current={locale:lang,personaId,settings,voiceName,enabled,canStart,
     elapsedSeconds,onSessionStart,onVoiceStateChange,onMicLevel,onInputInterim,
     onInputFinal,onOutputInterim,onOutputFinal,onInterrupted,
-    onDirectorProgress,onNotice}
+    onDirectorProgress,onOpeningProgress,onNotice,openingPrior,allowOpeningPrior}
 
   const notify=text=>{
     setNotice(text)
@@ -102,14 +102,17 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const r=runtime.current
     if(!r||r.ended)return
     if(r.player?.playing||r.speaking){
+      const partial=r.outputText
       r.interrupted=true
-      // Stop playback instantly, before server VAD/interrupt reaches Safari.
+      // Stop the audio graph on detected user speech, not when the coach's
+      // network turn ends. A partial transcript is always marked interrupted.
       r.player.stop()
       r.audioGate.interrupt()
       r.speaking=false
-      propsRef.current.onInterrupted?.(r.outputText)
-      r.outputText=''
-      propsRef.current.onOutputInterim?.('')
+      if(partial)commitOutput(r)
+      else propsRef.current.onOutputInterim?.('')
+      propsRef.current.onInterrupted?.(partial)
+      r.interrupted=false
       phaseChange('listening')
     }
   }
@@ -129,13 +132,18 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
         method:'POST',credentials:'same-origin',cache:'no-store',signal:r.abort.signal,
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({personaId:p.personaId,locale:p.locale,settings:p.settings,
-          message:text,turns:previous,elapsedSeconds:Math.min(7200,Math.max(0,Math.floor(p.elapsedSeconds||0))),
+          message:text,turns:previous.map(turn=>({...turn,content:turn.content.slice(0,300)})),
+          elapsedSeconds:Math.min(7200,Math.max(0,Math.floor(p.elapsedSeconds||0))),
+          openingHistory:r.openingHistory.slice(0,-1).slice(0,20).map(text=>text.slice(0,120)),
+          ...(p.allowOpeningPrior&&p.openingPrior?{allowOpeningPrior:true,openingPrior:p.openingPrior}:{}),
           consent:true,voiceConsent:true,trainingUseConsent:true}),
       })
       const data=response.ok?await response.json().catch(()=>null):null
       if(!r.ended&&data?.schema==='HH_GEMINI_LIVE_DIRECTOR_V1'&&
          data.sessionProgress?.source==='director-client-evidence')
         p.onDirectorProgress?.(data.sessionProgress)
+      if(!r.ended&&data?.openingProgress?.schema==='hh-coach-opening-v1-20261122')
+        p.onOpeningProgress?.(data.openingProgress)
     }catch{/* Ignore failed evidence check; never promote unverified model speech. */}
   }
   function commitInput(r){
@@ -147,6 +155,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     r.history.push({role:'user',content:value})
     r.history=r.history.slice(-20)
     propsRef.current.onInputFinal?.(value)
+    r.openingHistory.push(value)
+    r.openingHistory=r.openingHistory.slice(0,33)
     void checkpoint({...r,history:preceding},value)
   }
   function commitOutput(r){
@@ -173,10 +183,22 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(frame.interrupted){
       interrupt()
       r.audioGate.accept(frame) // Gemini acknowledged the cut; flush queued network audio.
-      if(r.outputText)commitOutput(r)
+      if(r.outputText){r.interrupted=true;commitOutput(r)}
       r.interrupted=false
       phaseChange('listening')
       return
+    }
+    // Gemini 3.1 may NOT emit interrupted if the person was already talking
+    // before the model turn. Protect the microphone's active human turn here.
+    // Output transcription may arrive before PCM. If the human is already
+    // speaking, suppress both so discarded words cannot become a new reply.
+    if((frame.audio?.length||frame.output)&&r.bargeDetector.userActive){
+      if(r.speaking||r.player?.playing)interrupt()
+      else{
+        r.audioGate.interrupt()
+        r.outputText=''
+        propsRef.current.onOutputInterim?.('')
+      }
     }
     const allowAudio=r.audioGate.accept(frame)
     if(frame.input||frame.interim){
@@ -184,7 +206,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       r.inputText=appendGeminiLiveTranscript(r.inputText,value)
       propsRef.current.onInputInterim?.(r.inputText)
     }
-    if(frame.output){
+    if(frame.output&&allowAudio){
       if(r.inputText)commitInput(r)
       r.outputText=appendGeminiLiveTranscript(r.outputText,frame.output)
       propsRef.current.onOutputInterim?.(r.outputText)
@@ -220,13 +242,13 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(!audio.length)return
     const level=geminiLiveAudioRms(audio)
     propsRef.current.onMicLevel?.(Math.max(0,Math.min(1,level*4)))
-    // Fast local barge-in while the remote model also performs interruption.
-    r.bargeFrames=(r.speaking&&level>INPUT_VAD_THRESHOLD)
-      ?r.bargeFrames+1:0
-    if(r.bargeFrames>=3){
-      r.bargeFrames=0
-      interrupt()
-    }
+    // Listen CONTINUOUSLY while the coach plays, including very quiet speech.
+    // First candidate ducks playback to rule out its own acoustic echo; a
+    // confirmed phrase cuts speaker audio immediately while PCM continues.
+    const event=r.bargeDetector.sample(level,r.speaking||r.player?.playing)
+    if(event==='duck')r.player?.setVolume(0.08)
+    else if(event==='restore')r.player?.setVolume(1)
+    else if(event==='interrupt')interrupt()
     if(r.socket.bufferedAmount>MAX_BUFFERED_SOCKET_BYTES)return
     let pcm
     try{pcm=r.resampler.push(audio)}catch{return}
@@ -263,6 +285,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     let socket
     try{
       socket=new WebSocket(geminiLiveSocketUrl(token.token))
+      // Gemini can send JSON as binary frames. ArrayBuffer keeps decoding synchronous
+      // so setup, PCM and interruption stay in their original wire order.
+      socket.binaryType='arraybuffer'
     }catch{notify(t.failure);stop();return}
     r.socket=socket
     r.ready=false
@@ -280,7 +305,6 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     }
     socket.onmessage=event=>{
       if(r.ended||r.socket!==socket)return
-      if(typeof event.data!=='string')return
       handleAudio(r,event.data)
       if(r.ready)clearTimeout(setupTimer)
     }
@@ -362,10 +386,13 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       notify(t.permission);return false
     }
     const r={context,stream:null,source:null,processor:null,sink:null,
-      socket:null,ready:false,ended:false,history:[],inputText:'',outputText:'',
-      speaking:false,interrupted:false,bargeFrames:0,resumeHandle:null,
+      socket:null,ready:false,ended:false,history:[],openingHistory:[],inputText:'',outputText:'',
+      speaking:false,interrupted:false,resumeHandle:null,
+      bargeDetector:new GeminiLiveBargeDetector(),
       reconnects:0,voiceName:p.voiceName,locale:p.locale,personaId:p.personaId,
-      settings:p.settings,abort:new AbortController(),timer:null,reconnectTimer:null,
+      settings:p.settings,allowOpeningPrior:p.allowOpeningPrior===true,
+      openingPrior:p.allowOpeningPrior===true?p.openingPrior:null,
+      abort:new AbortController(),timer:null,reconnectTimer:null,
       resampler:new GeminiLivePcmResampler(context.sampleRate),
       audioGate:new GeminiLiveBargeGate()}
     r.player=new GeminiLivePcmPlayer(context,{
@@ -392,6 +419,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     r.history.push({role:'user',content:body})
     r.history=r.history.slice(-20)
     propsRef.current.onInputFinal?.(body)
+    r.openingHistory.push(body)
+    r.openingHistory=r.openingHistory.slice(0,33)
     void checkpoint({...r,history:previous},body)
     phaseChange('thinking')
     return true
