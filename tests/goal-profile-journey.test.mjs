@@ -175,7 +175,10 @@ test('saved goal check-in is read only under account identity; conversion remain
   assert.match(editor,/data-goal-checkin-control=\{key\}/)
   assert.match(editor,/goalCheckin: values\.every/)
   assert.match(editor,/measuredAt: new Date\(\)\.toISOString\(\)/)
-  assert.match(backend,/onlyKeys\(input, \['version', 'targets', 'details', 'goalCheckin', 'revision'\]\)/)
+  // Strict allowlist now includes the separate, encrypted Daybook vector pair.
+  assert.match(backend,/onlyKeys\(input, \['version', 'targets', 'details', 'goalCheckin', 'vectors', 'revision'\]\)/)
+  // An older goal editor that omitted vectors must not erase the newer scores.
+  assert.match(backend,/if\(prior\.vectors\)nextGoals=\{\.\.\.goals,vectors:prior\.vectors\}/)
   assert.match(backend,/openSealed/)
   assert.match(backend,/seal\(/)
   assert.match(backend,/account_id=\$1/)
