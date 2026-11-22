@@ -129,8 +129,8 @@ test('Samir has 72 original full questions — four for each of six steps in RU/
    assert.ok(Object.isFrozen(questions))
    for(const q of questions){
     assert.ok(q.length>=40&&q.length<230,stage+'/'+lang)
-    assert.equal((q.match(/\\?/g)||[]).length,1,q)
-    assert.match(q,/\\?$/)
+    assert.equal(q.split('?').length-1,1,q)
+    assert.ok(q.endsWith('?'))
     assert.doesNotMatch(q,/^(One wish at a time|Одно желание за раз|Un deseo a la vez):/)
     count++
    }
@@ -152,7 +152,7 @@ test('Samir follows consent, optional memory and resistance boundaries without m
  assert.equal(repeated.current,'invitation')
  assert.equal(repeated.checkmarks.invitation,false)
  assert.equal(coachOpeningNextReply(repeated),genieOpeningReassurance('ru',3))
- assert.doesNotMatch(coachOpeningNextReply(repeated),/\\?/)
+ assert.ok(!coachOpeningNextReply(repeated).includes('?'))
  const no=coachOpeningProgress({personaId:'genie',locale:'ru',turns:['нет']})
  assert.equal(no.declined,true)
  assert.match(coachOpeningNextReply(no),/Без вашего согласия/)
