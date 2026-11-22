@@ -36,6 +36,15 @@ test("experimental global CSS inlining cannot silently bring back multi-megabyte
   assert.doesNotMatch(config, /inlineCss\s*:\s*true/);
 });
 
+test("Cabinet landing styles are loaded by the Cabinet route rather than every homepage", () => {
+  const rootStyles = read("app/ia-v2.css");
+  const cabinetStyles = read("app/[locale]/client/cabinet-landing.css");
+  const cabinetPage = read("app/[locale]/client/page.tsx");
+  assert.doesNotMatch(rootStyles, /\.cabinet-landing-shell\s+\.hh-mood-checkin\s*\{/);
+  assert.match(cabinetStyles, /\.cabinet-landing-shell\s+\.hh-mood-checkin\s*\{/);
+  assert.match(cabinetPage, /import\s+["']\.\/cabinet-landing\.css["']/);
+});
+
 test("hidden Home catalogs use observer/disclosure-triggered React.lazy with no initial CSS", () => {
   const observer=read("components/home-deferred-sections.tsx");
   const content=read("components/home-deferred-content.tsx");
