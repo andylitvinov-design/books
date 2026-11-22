@@ -96,6 +96,24 @@ try {
   await press(quiz.locator('[data-personalization-kind="desired"] [data-video-personalization-choice]').first());
   await press(quiz.locator('[data-video-personalization-energy="3"]'));
   await press(quiz.locator('[data-video-personalization-clarify-continue]'));
+  // Personal requires all eight current/desired ratings and an explicit focus.
+  const axes=page.locator('[data-video-meaning-axes-screen]');
+  await axes.waitFor({state:'visible',timeout:15000});
+  const cards=axes.locator('[data-video-meaning-axis]');
+  assert.equal(await cards.count(),8,'PERSONAL_MUST_EXPOSE_EIGHT_AXES');
+  for(let index=0;index<8;index++){
+    const card=cards.nth(index);
+    await card.locator('[data-axis-slider="now"] input').press('ArrowLeft');
+    await card.locator('[data-axis-slider="desired"] input').press('ArrowRight');
+    assert.equal(await card.locator('[data-axis-slider="now"] output').textContent(),'4');
+    assert.equal(await card.locator('[data-axis-slider="desired"] output').textContent(),'6');
+  }
+  const focus=cards.first().locator('[data-video-meaning-focus]');
+  await press(focus);
+  assert.equal(await focus.getAttribute('aria-checked'),'true');
+  const axesNext=axes.locator('[data-video-meaning-axes-continue]');
+  assert.equal(await axesNext.isEnabled(),true,'EIGHT_AXES_AND_FOCUS_REQUIRED');
+  await press(axesNext);
   const conceptPanel=page.locator('[data-video-ideas-concept-panel]');
   await conceptPanel.waitFor({state:'visible',timeout:15000});
   await conceptPanel.locator('[data-video-concept-approve]').click();
