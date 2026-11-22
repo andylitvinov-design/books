@@ -44,7 +44,8 @@ test("six-slide localized carousel retains destinations but is not on first Home
  }
  assert.match(expanded,/<HomeSectionCarousel locale=\{locale\}\s*\/>/);
  assert.match(expanded,/<HomeFeaturedWorkspace locale=\{locale\}\s*\/>/);
- assert.match(lazy,/ssr:false/);
+ assert.match(lazy,/const HomeExpandedCatalog = lazy\(/);
+ assert.match(lazy,/expanded\?<Suspense fallback=\{null\}>/);
  assert.match(lazy,/HomeExpandedCatalog/);
  const workspace=read("components/home-featured-workspace.tsx");
  for(const route of ["/services#consultation","/services/free-situation-review","/client/tests"])
