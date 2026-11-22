@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { matchesGlob } from 'node:path';
 import { parsePrTrigger } from '../lib/ci/specialist-aggregate.mjs';
+import { requiresRealMediaWebKit } from '../lib/ci/merge-check-light.mjs';
 import test from 'node:test';
 import { approvedTelegramPresentation } from '../lib/crm/telegram-presentation.mjs';
 import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines, isTrustedMandalaOwnerPath, isTrustedCoreCiOwnerPath, verifiedCriticalPublicCases, REVIEWED_VOICE_2629_DELTA, REVIEWED_PHRASES_3006_DELTA , exactReleaseProofAddition, EXACT_RELEASE_PROOF_BLOBS, planPrivatePractitionerMediaRows, PRIVATE_PRACTITIONER_MEDIA_OWNERS, PRIVATE_PRACTITIONER_MEDIA_REVIEWED_ADDITIONS } from '../scripts/ci-public-services-plan.mjs';
@@ -1549,7 +1550,7 @@ test('PR #2969 exactly reviewed 120-scenario audio cannot trigger 13 unrelated p
     'node --test tests/import-reviewed-audio.test.mjs',
     'node --test tests/curated-audio-selection.test.mjs',
     'node --test tests/mandala-video-phrase-catalog.test.mjs',
-    // Preserve reviewed Mandala owner guards alongside source-based dispatch.
+    // Reviewed Mandala owner requires real impact and an independently Ready PR.
     "if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}",
     'run: node scripts/ci-heavy-impact.mjs mandala',
     "if: steps.policy.outputs.policy_only != 'true'",
@@ -1563,6 +1564,15 @@ test('PR #2969 exactly reviewed 120-scenario audio cannot trigger 13 unrelated p
   // not be a substitute for the real audio contracts asserted above.
   assert.doesNotMatch(mandala,/startsWith\(github\.head_ref, 'feat\/hh-goal-tree-'\)/,
     'audio owner tests must not rely on a retired branch-specific gate');
+  // Protected macOS release ownership follows exact changed source, never branch prefixes.
+  assert.ok(mandala.includes("needs.webkit_preflight.outputs.media_required == 'true'"),
+    'macOS job must require tested-base real media impact');
+  assert.ok(mandala.includes('git show "$tested_base:lib/ci/merge-check-light.mjs"'),
+    'trusted production classifier must decide whether WebKit runs');
+  assert.equal(requiresRealMediaWebKit(delta.map(([status,filename])=>({status,filename}))),true,
+    'real 120-scenario audio source changes must run macOS WebKit');
+  assert.equal(requiresRealMediaWebKit([{status:'M',filename:'tests/goal-tree-audio-playlists.test.mjs'}]),false,
+    'Node contract-only edits do not spend on macOS browser');
   for(const path of [
     'app/api/payments/checkout/route.js','app/api/service-enquiries/route.js',
     'middleware.ts','components/commerce/service-cart.tsx',
