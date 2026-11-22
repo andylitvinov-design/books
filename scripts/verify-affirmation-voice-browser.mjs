@@ -543,6 +543,14 @@ async function verifyWorkspaceHydration(browser,locale){
     await ideasGoalTab.tap();
     await expect(ideasGoalTab).toHaveAttribute("aria-pressed","true");
     await expect(page.locator('[data-video-ideas-goal-selected]')).toBeVisible();
+    // Earlier the visitor explicitly chose 0-XP Standard in Extra to test
+    // category-only Text. Merely opening Personal does NOT convert that to a
+    // +50-XP personalized order. Re-select Personal through the actual Extra
+    // photo card + Continue before the next personal goal/Concept approval.
+    await enterVisibleStudioWorkspace(page,"editor",browser.browserType().name());
+    await enterPersonalAfterMontageExtra(page,browser.browserType().name());
+    await expect(ideasGoalTab).toHaveAttribute("aria-pressed","true");
+    await expect(page.locator('[data-video-ideas-goal-panel]')).toBeVisible();
     // The previous leisure profile has been confirmed; only changing the goal
     // should reset confirmation and temporarily lock Concept. Exercise an
     // actual visitor switch to emotional support, not a synthetic reset.

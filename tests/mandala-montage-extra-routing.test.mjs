@@ -49,6 +49,17 @@ test("reopening Text after Emotional Support keeps the real editor (touch and cl
  assert.match(browser,/await expect\(page\.locator\('\[data-video-montage-text\] \[data-video-ideas-phrases\]'\)\)\.toBeVisible/);
 });
 
+test("after Standard, a personalized Concept requires a fresh explicit Extra→Personal choice",()=>{
+ const i=browser.indexOf('const ideasTop=page.locator(');
+ const j=browser.indexOf('const supportGoal=page.locator(',i);
+ assert.ok(i>0&&j>i,"Personal goal change has a visible browser journey");
+ const flow=browser.slice(i,j);
+ assert.match(flow,/await enterVisibleStudioWorkspace\(page,"editor",browser\.browserType\(\)\.name\(\)\)/);
+ assert.match(flow,/await enterPersonalAfterMontageExtra\(page,browser\.browserType\(\)\.name\(\)\)/);
+ assert.match(flow,/await expect\(ideasGoalTab\)\.toHaveAttribute\("aria-pressed","true"\)/);
+ assert.match(extra,/data-video-extra-continue/);
+});
+
 test("approved Personal Concept is stable on passive phrase-editor navigation",()=>{
  assert.match(studio,/preserveApprovedConcept=\{Boolean\(approvedVideoConcept\)&&personalPhrasesOpen\}/);
  assert.match(ideas,/preserveApprovedConcept\?:boolean/);
