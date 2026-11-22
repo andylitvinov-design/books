@@ -6,6 +6,7 @@ import {ArrowDown,Check,ChevronDown,Gift,HandHeart,Heart,Leaf,Mic,Pencil,Play,Pl
 import {listMeaningAxes} from "@/lib/mandala/meaning-emotion/idea-engine.mjs";
 import {listCurrentEmotionClusters,listDesiredEmotionClusters} from "@/lib/mandala/meaning-emotion/emotional-vector-matrix.mjs";
 import {resolveVideoIdeaContext,suggestVideoGoalPhrases,translateVideoGoalPhrase,personalVideoClosingPhrase,appendPersonalVideoClosingPhrase} from "@/lib/mandala/video-goal-idea-phrases.mjs";
+import {suggestBasicSupportPhrases} from "@/lib/mandala/video-basic-support-phrases.mjs";
 import {isIdeaEditorSnapshot,planIdeaSelection,sanitizeIdeaPhrase} from "@/lib/mandala/video-idea-selection.mjs";
 import {goalCurrentMeaningId,goalDesiredMeaningId,DEFAULT_VIDEO_GOAL_PROFILE,type VideoGoalProfile} from "./mandala-video-personalization";
 import {linesForVideoAffirmations,type AffirmationSettings} from "@/lib/mandala/video-affirmations";
@@ -139,7 +140,9 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
  const [selectedAxes,setSelectedAxes]=useState<string[]>(()=>goalContext.axisIds);
  const [selectionGoalKey,setSelectionGoalKey]=useState(goalContext.key);
  const [revision,setRevision]=useState(0);
- const [options,setOptions]=useState<string[]>(()=>suggestVideoGoalPhrases({locale,request:requestText,theme,goalType,supportNeed:profile?.supportNeed,selectedTopicId,axisIds:goalContext.axisIds,desired:goalContext.desiredId,limit:7}));
+ const [options,setOptions]=useState<string[]>(()=>phraseMode==="standard"?
+  suggestBasicSupportPhrases({locale,theme,limit:7}):
+  suggestVideoGoalPhrases({locale,request:requestText,theme,goalType,supportNeed:profile?.supportNeed,selectedTopicId,axisIds:goalContext.axisIds,desired:goalContext.desiredId,limit:7}));
  const [chosen,setChosen]=useState<number[]>(allFive);
  const [editing,setEditing]=useState<number|null>(null);
  const [draft,setDraft]=useState("");
@@ -161,7 +164,7 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
  // Preserve the canonical Goal classifier. Explicit local Personalization
  // answers refine its suggestions without losing Love/relationship relevance.
  const profileKey=JSON.stringify(profile??null);
- const personalClosingPhrase=goalType==="change"||goalType==="leisure"?"":personalVideoClosingPhrase(captionLocale,profile?.name);
+ const personalClosingPhrase=phraseMode==="standard"||goalType==="change"||goalType==="leisure"?"":personalVideoClosingPhrase(captionLocale,profile?.name);
  const hasCurrentChoice=Boolean(profile&&
   JSON.stringify(profile.current)!==JSON.stringify(DEFAULT_VIDEO_GOAL_PROFILE.current));
  const hasDesiredChoice=Boolean(profile&&
@@ -183,7 +186,7 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
  const signature=JSON.stringify([goalContext.key,goalType,axesForSuggestions,currentForSuggestions,
   desiredForSuggestions,strengthForSuggestions,energyForSuggestions,revision,profileKey,phraseMode]);
  const suggested=useMemo(()=>{
-  if(phraseMode==="standard")return [...categoryPhrases.support[captionLocale]];
+  if(phraseMode==="standard")return suggestBasicSupportPhrases({locale:captionLocale,theme,revision,limit:7});
   const pool:string[]=[];
   for(let i=0;i<Math.max(currentForSuggestions.length,desiredForSuggestions.length);i++){
    const next=suggestVideoGoalPhrases({
@@ -261,7 +264,9 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
   if(next==="custom"){setAdding(true);setDraft("");return;}
   setAdding(false);setDraft("");
   const saved=categoryDrafts.current.get(JSON.stringify([signature,captionLocale,next]));
-  apply(saved?.options??[...categoryPhrases[next][captionLocale]],saved?.chosen??allFive,captionLocale);
+  const defaults=next==="support"&&phraseMode==="standard"?
+   suggestBasicSupportPhrases({locale:captionLocale,theme,limit:7}):[...categoryPhrases[next][captionLocale]];
+  apply(saved?.options??defaults,saved?.chosen??allFive,captionLocale);
  };
  const chooseTextLanguage=(next:VideoLocale)=>{
   if(next===captionLocale||disabled||generating)return;
@@ -269,7 +274,13 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
   const nextClosing=personalVideoClosingPhrase(next,profile?.name);
   // An unchanged generated closing follows EN/RU/ES; manually edited words
   // remain private and untouched, as with every other custom phrase.
+  const sourceBasic=phraseMode==="standard"&&phraseCategory==="support"?
+   suggestBasicSupportPhrases({locale:captionLocale,theme,limit:14}):[];
+  const targetBasic=phraseMode==="standard"&&phraseCategory==="support"?
+   suggestBasicSupportPhrases({locale:next,theme,limit:14}):[];
   const translated=options.map(line=>{
+   const basicIndex=sourceBasic.indexOf(line);
+   if(basicIndex>=0&&targetBasic[basicIndex])return targetBasic[basicIndex];
    const curated=phraseCategory!=="custom"?categoryPhrases[phraseCategory]:null;
    const index=curated?.[captionLocale].indexOf(line)??-1;
    if(curated&&index>=0)return curated[next][index];
@@ -321,13 +332,16 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
  };
  const moreOptions=()=>{
   if(options.length>=14)return;
-  const candidates=suggestVideoGoalPhrases({
-   locale:captionLocale,request:requestText,theme,goalType,supportNeed:profile?.supportNeed,selectedTopicId,axisIds:axesForSuggestions,
-   current:currentForSuggestions[0],desired:desiredForSuggestions[0],
-   strength:strengthForSuggestions,energy:energyForSuggestions,
-   revision:revision+moreClicks,
-   excluded:options,limit:Math.min(3,14-options.length),
-  });
+  const candidates=phraseMode==="standard"?
+   suggestBasicSupportPhrases({locale:captionLocale,theme,revision:revision+moreClicks,
+     excluded:options,limit:Math.min(3,14-options.length)}):
+   suggestVideoGoalPhrases({
+    locale:captionLocale,request:requestText,theme,goalType,supportNeed:profile?.supportNeed,selectedTopicId,axisIds:axesForSuggestions,
+    current:currentForSuggestions[0],desired:desiredForSuggestions[0],
+    strength:strengthForSuggestions,energy:energyForSuggestions,
+    revision:revision+moreClicks,
+    excluded:options,limit:Math.min(3,14-options.length),
+   });
   setMoreClicks(n=>n+1);
   if(candidates.length){
    // Offer more options before the generated closing, keeping it last and selected.

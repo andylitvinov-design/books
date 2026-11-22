@@ -12,7 +12,7 @@
 .heroCopy{display:grid;gap:6px;max-width:70%;padding:16px 18px;color:#fff}
 .heroCopy h2{margin:0;font:700 clamp(27px,6.6vw,38px)/.98 Georgia,serif;letter-spacing:-.035em}
 .heroCopy p{margin:0;font:500 clamp(13px,3.5vw,16px)/1.3 Arial,Helvetica,sans-serif;color:#fff}
-.stepStrip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;min-width:0;
+.stepStrip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;min-width:0;
  padding:6px;border-radius:22px;background:#fffaf4;border:1px solid #eee4d8;
  box-shadow:0 3px 12px #76583e13}
 .stepStrip button{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;

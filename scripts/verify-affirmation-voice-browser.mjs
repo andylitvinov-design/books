@@ -45,25 +45,38 @@ async function enterPersonalAfterMontageExtra(page,engine="chromium"){
 }
 async function openVisibleMontageText(page,engine="chromium",mode="standard"){
   await enterVisibleStudioWorkspace(page,"editor",engine);
-  const text=page.locator('[data-video-montage-tab="text"]');
-  await expect(text).toBeVisible({timeout:15000});
-  if(engine==="webkit")await text.tap();
-  else await text.click();
-  await expect(text).toHaveAttribute("aria-pressed","true",{timeout:15000});
-  const choice=page.locator("[data-video-text-choice]");
-  if(await choice.isVisible()){
-    // Direct Text-tab entry still uses the accessible three-card choice.
-    const selected=choice.locator('[data-video-text-mode="'+mode+'"]');
-    await expect(selected).toBeVisible();
-    if(engine==="webkit")await selected.tap();else await selected.click();
-    await expect(selected).toHaveAttribute("aria-pressed","true");
-    const continueButton=choice.locator("[data-video-text-choice-continue]");
-    if(engine==="webkit")await continueButton.tap();else await continueButton.click();
+  // A revisited Standard Text editor retains the approved narration WAV.
+  // Only the *first* selection goes through Extra and resets stale personal TTS.
+  if(mode==="standard"){
+    const text=page.locator('[data-video-montage-tab="text"]');
+    await expect(text).toBeVisible({timeout:15000});
+    if(engine==="webkit")await text.tap();else await text.click();
+    if(await text.getAttribute("aria-pressed")==="true"){
+      await expect(page.locator('[data-video-montage-text] [data-video-ideas-phrases]')).toBeVisible();
+      return;
+    }
   }
-  // Extra→Personal preselects the mode and opens the editor directly.
-  await expect(page.locator("[data-video-montage-text] [data-video-ideas-phrases]"))
-    .toBeVisible({timeout:15000});
+  const extra=page.locator('[data-video-montage-tab="promo"]');
+  await expect(extra).toBeVisible({timeout:15000});
+  if(engine==="webkit")await extra.tap();else await extra.click();
+  await expect(extra).toHaveAttribute("aria-pressed","true",{timeout:15000});
+  const card=page.locator('[data-video-extra-text-option="'+(mode==="personalized"?"personal":"support")+'"]');
+  await expect(card).toBeVisible();
+  if(engine==="webkit")await card.tap();else await card.click();
+  if(mode==="personalized"){
+    await expect(page.locator('[data-video-quick-control="phrases"]'))
+      .toHaveAttribute("aria-pressed","true",{timeout:15000});
+    await expect(page.locator('[data-video-ideas-goal-panel]')).toBeVisible();
+    // Do not bypass real Personal questions/8 axes. This helper only enters
+    // Personal; the caller owns the approved quiz and concept steps.
+  }else{
+    await expect(page.locator('[data-video-montage-tab="text"]'))
+      .toHaveAttribute("aria-pressed","true",{timeout:15000});
+    await expect(page.locator('[data-video-montage-text] [data-video-ideas-phrases]'))
+      .toBeVisible({timeout:15000});
+  }
 }
+
 function wav(seconds=3) {
   const rate=24000,n=rate*seconds,b=Buffer.alloc(44+n*2);
   b.write("RIFF",0);b.writeUInt32LE(b.length-8,4);b.write("WAVE",8);b.write("fmt ",12);
@@ -564,16 +577,21 @@ async function verifyWorkspaceHydration(browser,locale){
     await page.locator("[data-video-concept-auth-close]").click();
     await expect(page.locator("[data-video-concept-auth-overlay]")).toHaveCount(0);
     await concept.locator("[data-video-concept-approve]").click();
-    await expect(studio).toHaveAttribute("data-active-workspace","editor");
-    // The approved Personal path returns to the existing Text editor so the
-    // user may refine phrases without losing film/audio; it does not reset Style.
-    await expect(page.locator('[data-video-montage-tab="text"]'))
-      .toHaveAttribute("aria-pressed","true");
-    await expect(page.locator("[data-video-montage-text]")).toBeVisible();
-    await ideasTop.tap();
+    await expect(studio).toHaveAttribute("data-active-workspace","phrases");
+    await expect(page.locator("[data-video-personal-phrases]")).toBeVisible({timeout:15000});
     await expect(ideasConceptTab).toHaveAttribute("aria-pressed","true");
-    await expect(page.locator("[data-video-concept-auto]"))
-      .toHaveAttribute("data-concept-approved","true");
+    // The confirmed phrase/meaning program may change a concept signature
+    // during approval; require an explicit, real re-review rather than
+    // pretending the stale signature is still approved.
+    const conceptRoot=page.locator("[data-video-concept-auto]");
+    if(await conceptRoot.getAttribute("data-concept-approved")!=="true"){
+      const reapprove=conceptRoot.locator("[data-video-concept-approve]");
+      await expect(reapprove).toBeVisible();
+      await reapprove.tap();
+      await expect(page.locator("[data-video-personal-phrases]")).toBeVisible();
+    }
+    await expect(page.locator("[data-video-personal-phrases] [data-video-ideas-phrases]"))
+      .toBeVisible({timeout:15000});
     await montage.tap();
     // Explicit Style selection remains a real tap, not a render bypass.
     const styleTab=page.locator('[data-video-montage-tab="effects"]');
@@ -1008,30 +1026,46 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(montageProTab).toHaveAttribute('aria-pressed','true');
       await expect(page.locator('[data-video-basic-editor]'))
         .toHaveAttribute('data-montage-panel','promo');
-      if(!sourceReady)await expect(page.locator('[data-video-montage-pro-offer]')).toBeVisible();
+      // One photo-card selector in Extra, optional old video format choices.
+      const extraChoice=page.locator('[data-video-montage-extra-personal]');
+      await expect(extraChoice).toBeVisible();
+      await expect(extraChoice.locator('[data-video-extra-text-option]')).toHaveCount(3);
       const montageProOffer=page.locator('[data-video-montage-pro-offer]');
-      await expect(montageProOffer).toBeVisible();
-      await expect(montageProOffer.locator('[data-video-pro-feature]')).toHaveCount(3);
-      await expect(montageProOffer.locator('[data-video-montage-pro-choice]')).toHaveCount(3);
-      for(const width of [320,390,430]){
+      const openVideoFormats=async()=>{
+        const disclosure=page.locator('[data-video-extra-advanced-formats]');
+        if(await disclosure.getAttribute('open')===null) {
+          const summary=disclosure.locator('summary');
+          if(engine==="webkit")await summary.tap();else await summary.click();
+        }
+        await expect(disclosure).toHaveAttribute('open','');
+      };
+      for(const width of [320,354,390,430]){
         await page.setViewportSize({width,height:844});
         const geometry=await page.evaluate(()=>({
           viewport:document.documentElement.clientWidth,
           document:document.documentElement.scrollWidth,
-          lastCardBottom:document.querySelector('[data-video-pro-feature="cinematic"]')?.getBoundingClientRect().bottom
+          cards:[...document.querySelectorAll('[data-video-extra-text-option]')]
+            .map(node=>({height:node.getBoundingClientRect().height,
+              right:node.getBoundingClientRect().right}))
         }));
         assert.ok(geometry.document<=geometry.viewport+2,
-          'MONTAGE_PRO_NO_HORIZONTAL_OVERFLOW_'+width+' '+JSON.stringify(geometry));
-        assert.ok(typeof geometry.lastCardBottom==="number"&&geometry.lastCardBottom<844-65,
-          'MONTAGE_PRO_LAST_CARD_VISIBLE_'+width+' '+JSON.stringify(geometry));
+          'MONTAGE_EXTRA_NO_HORIZONTAL_OVERFLOW_'+width+' '+JSON.stringify(geometry));
+        assert.equal(geometry.cards.length,3,'three real Extra photo-card actions '+width);
+        assert.ok(geometry.cards.every(card=>card.height>=70&&card.right<=width+2),
+          'MONTAGE_EXTRA_3_TAPPABLE_CARDS_'+width+' '+JSON.stringify(geometry));
       }
       await page.setViewportSize({width:390,height:844});
+      await openVideoFormats();
+      await expect(montageProOffer).toBeVisible();
+      await expect(montageProOffer.locator('[data-video-pro-feature]')).toHaveCount(3);
+      await expect(montageProOffer.locator('[data-video-montage-pro-choice]')).toHaveCount(3);
       // Free is verified by a real encoded export later in this same test.
       // Don't start a second chargeable render just to test navigation here.
       await expect(montageProOffer.locator('[data-video-montage-pro-choice="free"]')).toBeEnabled();
       await montageProOffer.locator('[data-video-montage-pro-choice="character"]').click();
       await expect(page.locator('[data-video-quick-control="effects"]')).toHaveAttribute('aria-pressed','true');
       await enterVisibleStudioWorkspace(page,"editor",engine);await montageProTab.click();
+      await openVideoFormats();
       await montageProOffer.locator('[data-video-montage-pro-choice="cinematic"]').click();
       await expect(page.locator('[data-video-quick-control="pro"]')).toHaveAttribute('aria-pressed','true');
       await enterVisibleStudioWorkspace(page,"editor",engine);await montageStyleTab.click();
@@ -1127,7 +1161,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           const timeline=document.querySelector('[data-video-montage-shared-timeline]');
           const actions=document.querySelector('[data-video-stage-actions="montage"]');
           const create=actions?.querySelector('[data-video-quick-generate]');
-          const next=actions?.querySelector('[data-video-montage-next="text"]');
+          const next=actions?.querySelector('[data-video-montage-next="promo"]');
           const tile=audio?.querySelector('[data-video-audio-compact-track]');
           const play=tile?.querySelector('[data-video-audio-compact-play]');
           const category=audio?.querySelector('[data-video-audio-category="all"]')?.parentElement;
@@ -1248,6 +1282,21 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","5");
       await expect(firstNameInput).toHaveValue(preferredName);
       await nextQuiz.click();
+      // The eight scored meaning axes are a required Personal step.
+      const personalAxes=phrases.locator('[data-video-meaning-axes-screen]');
+      await expect(personalAxes).toBeVisible({timeout:15000});
+      for(const axis of await personalAxes.locator('[data-video-meaning-axis]').all()){
+        await axis.locator('[data-axis-slider="now"] input').press("ArrowLeft");
+        await axis.locator('[data-axis-slider="desired"] input').press("ArrowRight");
+      }
+      await expect(personalAxes.locator('[data-video-axes-progress]')).toContainText("8/8");
+      const axisFocus=personalAxes.locator('[data-video-meaning-focus]').first();
+      if(engine==="webkit")await axisFocus.tap();else await axisFocus.click();
+      await expect(axisFocus).toHaveAttribute("aria-checked","true");
+      const axisNext=personalAxes.locator('[data-video-meaning-axes-continue]');
+      await expect(axisNext).toBeEnabled();
+      if(engine==="webkit")await axisNext.tap();else await axisNext.click();
+      await expect(personalAxes).toBeHidden();
       await expect(conceptTab).toHaveAttribute("aria-pressed","true");
       await expect(phrases.locator("[data-video-ideas-concept-panel]")).toBeVisible();
       await personalTab.click();
@@ -1340,8 +1389,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await personalTab.click();
       await expect(personalTab).toHaveAttribute("aria-pressed","true");
       await expect(phrases.locator("[data-video-ideas-personalization-panel]")).toBeVisible();
-      // Owner-approved Phrases: measure the actual DOM in three iPhone widths.
-      // These checks fail on double-row tabs, a tall portrait player or overflow.
+      // Owner-approved compact Personal intentionally hides the duplicated
+      // portrait photo, preserving the one shared Canvas/player. Check layout
+      // without demanding the removed photo be visible.
+      // These checks still fail for double-row tabs or overflow.
       for(const width of [320,390,430]){
         phase(engine,"phrases-geometry-"+width);
         await page.setViewportSize({width,height:840});
@@ -1372,16 +1423,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         assert.equal(measured.tabs.length,6,"six workspace tabs: "+width);
         assert.ok(measured.tabs.every(t=>Math.abs(t.top-measured.tabs[0].top)<3),
           "single row of six workspace tabs: "+width+" "+JSON.stringify(measured));
-        assert.ok(measured.navBottom<=measured.photoTop+2,
-          "workspace tabs above still photo: "+width+" "+JSON.stringify(measured));
-        assert.ok(measured.photoVisible&&measured.movieHidden&&
-          measured.photoWidth>=260&&measured.photoHeight>=100,
-          "real static photo replaces Ideas player: "+width+" "+JSON.stringify(measured));
-        assert.equal(measured.source,"/images/holistic-house/support-mock-hero.webp",
-          "one first-party photo rather than remote media");
-        assert.ok(measured.photoBottom<=measured.ideasTabsTop+2&&
-          measured.ideasTabsTop<=measured.quizTop,
-          "Photo → Personalization/Goal/Scenario tabs → active question: "+width+" "+JSON.stringify(measured));
+        assert.ok(!measured.photoVisible&&measured.movieHidden,
+          "Personal hides duplicate photo and the shared player: "+width+" "+JSON.stringify(measured));
+        assert.ok(measured.ideasTabsTop<=measured.quizTop,
+          "Personal tabs appear before the active question: "+width+" "+JSON.stringify(measured));
         assert.ok(measured.documentWidth<=measured.viewportWidth+2,
           "one-screen Ideas must not overflow horizontally: "+width+" "+JSON.stringify(measured));
         if(engine==="chromium"){
@@ -1392,19 +1437,26 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await page.setViewportSize({width:390,height:840});
       // The original voice editor was opened by the real opt-in gesture above.
       await expect(advancedVoice).toHaveAttribute("open","");
-      // Preserve the user's real touch path through Montage → Text.
-      await openVisibleMontageText(page,engine,"personalized");
-      await expect(page.locator('[data-video-montage-tab="text"]')).toHaveAttribute("aria-pressed","true");
-      await expect(page.locator('[data-video-montage-text]')).toBeVisible();
-      const montageIdeas=page.locator('[data-video-montage-text] [data-video-ideas-compact]');
+      // Personal phrases appear only after the real approved Concept.
+      await conceptTab.click();
+      const personalConcept=page.locator('[data-video-ideas-concept-panel] [data-video-concept-auto]');
+      await expect(personalConcept).toBeVisible({timeout:15000});
+      const approvePersonal=personalConcept.locator('[data-video-concept-approve]');
+      await expect(approvePersonal).toBeVisible();
+      if(engine==="webkit")await approvePersonal.tap();else await approvePersonal.click();
+      await expect(studio).toHaveAttribute("data-active-workspace","phrases");
+      await expect(page.locator('[data-video-personal-phrases]')).toBeVisible({timeout:15000});
+      let montageIdeas=page.locator('[data-video-personal-phrases] [data-video-ideas-compact]');
       await expect(montageIdeas).toBeVisible();
       // The proposed closing is actually included among the selected captions
       // fed to Canvas and export, not merely visible as an unselected suggestion.
-      const selectedClosing=montageIdeas.locator("[data-video-idea-phrase]").last();
-      await expect(selectedClosing).toContainText(personalClosing);
-      await expect(selectedClosing.locator("[data-video-idea-select]"))
-        .toHaveAttribute("aria-pressed","true");
-      const montageCountLabel=montageIdeas.locator('[data-video-ideas-selected-count]');
+      // Personal selections (including a name-based closing when approved)
+      // remain inside Personal and feed the single Canvas; no Standard text.
+      const personalRows=montageIdeas.locator("[data-video-idea-phrase]");
+      assert.ok((await personalRows.count())>=5,
+        "Personal starts with at least five editable phrases from the approved Concept");
+      await expect(page.locator('[data-video-montage-text]')).toBeHidden();
+      let montageCountLabel=montageIdeas.locator('[data-video-ideas-selected-count]');
       await expect(montageCountLabel).toBeVisible();
       const initialMontageCount=Number(((await montageCountLabel.innerText()).match(/^\s*(\d+)/)||[])[1]||0);
       assert.ok(initialMontageCount>=5,"Montage Text starts with at least five selected phrases");
@@ -1420,49 +1472,28 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(firstIdea).toHaveAttribute("aria-pressed","true");
       await expect(montageCountLabel).toHaveText(new RegExp("^\\s*"+initialMontageCount+"\\s*/\\s*\\d+\\b"));
       await expect(montageIdeas.locator("[data-video-ideas-minimum]")).toHaveCount(0);
-      // Personalized +50 XP has no verified server-side price. A real Create
-      // tap must remain on the protected text editor, never open Ready, debit
-      // the Basic price or launch the media encoder.
-      // The approved compact Text editor hides the redundant Montage order-bar
-      // CTA. Activate the visible Text Generate button bound to the SAME
-      // openReadyForGeneration handler, so unpriced export is tested by real UI.
-      const directReady=montageIdeas.locator('[data-video-text-direct-create]');
-      await expect(directReady).toBeVisible();
-      // This deliberate shortcut is folded behind a disclosure. Use the same
-      // real summary tap a visitor uses before testing fail-closed export.
-      const readySummary=directReady.locator("summary");
-      if(engine==="webkit")await readySummary.tap();else await readySummary.click();
-      await expect(directReady).toHaveAttribute("open","");
-      const unpricedCreate=directReady.locator('[data-video-ideas-generate]');
+      // A real user opens Personal's optional direct-Ready disclosure.
+      // The +50 XP add-on is unpriced, so Ready MUST remain closed.
+      const personalReady=montageIdeas.locator('[data-video-text-direct-create]');
+      await expect(personalReady).toBeVisible();
+      const directSummary=personalReady.locator("summary");
+      if(engine==="webkit")await directSummary.tap();else await directSummary.click();
+      await expect(personalReady).toHaveAttribute("open","");
+      const unpricedCreate=personalReady.locator('[data-video-ideas-generate]');
       await expect(unpricedCreate).toBeVisible();
-      await expect(unpricedCreate).toBeEnabled();
       if(engine==="webkit")await unpricedCreate.tap();else await unpricedCreate.click();
-      await expect(studio).toHaveAttribute("data-active-workspace","editor");
-      await expect(page.locator('[data-video-montage-text]')).toBeVisible();
-      await expect(montageIdeas).toContainText("+50 XP");
+      await expect(studio).toHaveAttribute("data-active-workspace","phrases");
       await expect(page.locator('[data-video-ready]')).toBeHidden();
+      await expect(page.locator('[data-video-personal-phrases]')).toBeVisible();
       phase(engine,"personalized-unpriced-export-fail-closed");
-      // Switch through the REAL visible selector to Standard BEFORE asking
-      // the Voice provider to speak a line. The original personalized draft
-      // cannot slip into a 0-XP Standard export: a new mode signature restores
-      // the generic selected phrases before narration is generated.
-      const backToTypes=page.locator('[data-video-text-editor-back]');
-      await expect(backToTypes).toBeVisible();
-      if(engine==="webkit")await backToTypes.tap();else await backToTypes.click();
-      const textChoice=page.locator('[data-video-text-choice]');
-      await expect(textChoice).toBeVisible();
-      const standardCard=textChoice.locator('[data-video-text-mode="standard"]');
-      if(engine==="webkit")await standardCard.tap();else await standardCard.click();
-      await expect(standardCard).toHaveAttribute("aria-pressed","true");
-      const proceedStandard=textChoice.locator('[data-video-text-choice-continue]');
-      if(engine==="webkit")await proceedStandard.tap();else await proceedStandard.click();
+      // Move to 0-XP Standard through Extra. Old personal name and WAV
+      // must not leak into category-based selection or the real encoded MP4.
+      await openVisibleMontageText(page,engine,"standard");
+      montageIdeas=page.locator('[data-video-montage-text] [data-video-ideas-compact]');
+      montageCountLabel=montageIdeas.locator('[data-video-ideas-selected-count]');
       await expect(montageIdeas).toBeVisible();
       await expect(montageIdeas.locator('[data-video-ideas-phrases]')).toBeVisible();
-      await expect(montageIdeas.locator('[data-video-ideas-selected-count]')).toContainText("5/");
-      await expect(montageIdeas.locator('[data-video-idea-phrase="0"]')).toContainText(
-        {en:"You are not alone",ru:"Ты не один",es:"No estás a solas"}[locale]);
-      // The personalized closing is no longer among the 0-XP editor options:
-      // switching mode cannot leak a paid draft into the Standard export.
+      await expect(montageCountLabel).toContainText("5/");
       await expect(montageIdeas).not.toContainText(personalClosing);
       phase(engine,"standard-mode-after-personalized-draft");
       const recordEntry=page.locator('[data-video-montage-text] [data-video-ideas-record]');
@@ -1982,6 +2013,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         // The Free card only navigates to Ready. The separate Ready button
         // starts the real local encoder with a second trusted user gesture.
         await montageProTab.click();
+        await openVideoFormats();
         await expect(montageProOffer.locator('[data-video-montage-pro-choice="free"]')).toBeEnabled();
         await montageProOffer.locator('[data-video-montage-pro-choice="free"]').click();
         await expect(page.locator("[data-mandala-free-video]")).toHaveAttribute("data-active-workspace","ready");
@@ -2153,6 +2185,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           }
           await montageProTab.click();
         }
+        await openVideoFormats();
         await montageProOffer.locator('[data-video-montage-pro-choice="free"]').click();
         await expect(page.locator("[data-mandala-free-video]"))
           .toHaveAttribute("data-active-workspace","ready");

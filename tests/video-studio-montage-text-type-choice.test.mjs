@@ -1,64 +1,77 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-const choice=readFileSync(new URL("../components/mandala-montage-text-choice.tsx",import.meta.url),"utf8");
-const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
-const ideas=readFileSync(new URL("../components/mandala-video-ideas.tsx",import.meta.url),"utf8");
-const css=readFileSync(new URL("../components/mandala-montage-text-choice.module.css",import.meta.url),"utf8");
-test("three accessible EN/RU/ES text modes with 0/0/+50 XP",()=>{
- assert.match(choice,/type MontageTextMode="simple"\|"standard"\|"personalized"/);
- assert.deepEqual([...choice.matchAll(/\{id:"(simple|standard|personalized)",image:/g)].map(m=>m[1]),["simple","standard","personalized"]);
- assert.match(choice,/"\+50 XP":"0 XP"/);
- assert.match(choice,/data-video-text-choice-continue/);
- assert.match(choice,/aria-pressed=\{active\}/);
- for(const language of ["en:","ru:","es:"])assert.ok(choice.includes(language));
- assert.doesNotMatch(choice,/fetch\(|postVideoCreditAction|localStorage/);
+const read=p=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
+const extra=read("components/mandala-montage-extra-personal.tsx");
+const studio=read("components/mandala-free-video-studio.tsx");
+const ideas=read("components/mandala-video-ideas.tsx");
+const css=read("components/mandala-video-personal-compact.module.css");
+const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+
+test("owner-approved Extra contains one photographic 0/0/+50 XP selector in EN/RU/ES",()=>{
+ for(const id of ["simple","support","personal"])assert.ok(extra.includes('id:"'+id+'"'),id);
+ for(const photo of ["sun-autumn-hills.jpg","heart-flow.jpg","sun-warm-ocean-dawn.jpg"])
+  assert.ok(extra.includes(photo),photo);
+ for(const language of ["en:","ru:","es:"])assert.ok(extra.includes(language),language);
+ for(const mode of ["simple","standard","personalized"])
+  assert.ok(extra.includes('mode:"'+mode+'"'),mode);
+ assert.match(extra,/data-video-extra-text-option={card\.id}/);
+ assert.match(extra,/onClick={actions\[card\.id\]}/);
+ assert.match(extra,/No credits are charged here/);
+ assert.match(extra,/\+50 XP\*/);
+ assert.doesNotMatch(extra,/fetch\(|postVideoCreditAction|localStorage/);
+ assert.match(css,/\.extraChoices \.extraPhotoCard/);
+ assert.match(css,/@media\(max-width:359px\)/);
+ assert.match(css,/@media\(min-width:760px\)/);
 });
-test("Audio enters Extra choice; Basic and Personal modes preserve safeguards",()=>{
- assert.match(studio,/montagePanel==="audio"\)\{\s*setMontagePanel\("promo"\)/);
- assert.match(studio,/onSupport=\{\(\)=>\{\s*setExtraTextChoice\("support"\);setMontageTextMode\("standard"\);setMontageTextStage\("edit"\)/);
- assert.match(studio,/onPersonal=\{\(\)=>\{\s*setExtraTextChoice\("personal"\);setMontageTextMode\("personalized"\);setMontageTextStage\("edit"\)/);
- assert.match(studio,/montageTextStage==="choice" \? <MandalaMontageTextChoice/);
- assert.match(studio,/setCaptionMode\("none"\);setCustomCaption\(""\)/);
- assert.match(studio,/setTimelineTextClips\(null\);setMontageScriptText\(""\)/);
- assert.match(studio,/data-video-text-personal-request/);
+
+test("Montage text type chooser is not duplicated after Extra; only Support opens Text",()=>{
+ const start=studio.indexOf('montagePanel==="promo" ? <>');
+ const end=studio.indexOf('montagePanel==="concept" ?',start);
+ assert.ok(start>0&&end>start);
+ const extraMarkup=studio.slice(start,end);
+ assert.match(extraMarkup,/<MandalaMontageExtraPersonal/);
+ assert.match(extraMarkup,/data-video-extra-advanced-formats/);
+ assert.match(extraMarkup,/<MandalaMontageProOffer/);
+ assert.doesNotMatch(studio,/<MandalaMontageTextChoice/);
+ assert.match(studio,/extraTextChoice==="support"&&montageTextStage==="edit"/);
+ assert.match(studio,/onSupport=\{\(\)=>\{/);
+ assert.match(studio,/setMontagePanel\("text"\);setNotice\(""\)/);
+ assert.match(studio,/onSimple=\{\(\)=>\{/);
+ assert.match(studio,/setMontagePanel\("concept"\);setNotice\(""\)/);
+});
+
+test("standard 0 XP phrases are based on film category only, not user answers",()=>{
+ assert.match(studio,/requestText="" profile={undefined} languagePicker phraseMode="standard"/);
+ assert.match(studio,/goalType="support" selectedTopicId={null}/);
+ assert.match(ideas,/if\(phraseMode==="standard"\)return suggestBasicSupportPhrases/);
+ assert.match(ideas,/const candidates=phraseMode==="standard"\?/);
+ assert.match(ideas,/const sourceBasic=phraseMode==="standard"/);
+ assert.match(ideas,/const targetBasic=phraseMode==="standard"/);
+ assert.match(studio,/setHypnoSpeechSource\(null\);setHypnoSpeechText\(""\)/);
+});
+
+test("Personal phrase editor mounts only after Concept approval and guards +50 XP",()=>{
+ assert.match(studio,/setPersonalPhrasesOpen\(extraTextChoice==="personal"\)/);
+ assert.match(studio,/data-video-personal-phrases/);
+ assert.match(studio,/active=\{activeWorkspace==="phrases"&&ideasSubtab==="concept"\}/);
+ assert.match(studio,/data-video-personal-eight-axes-page/);
  assert.match(studio,/data-video-text-premium-unavailable/);
- assert.match(studio,/if\(montageTextMode==="personalized"\)\{/);
- assert.match(studio,/phraseMode=\{montageTextMode==="standard"\?"standard":"personalized"\}/);
- assert.match(css,/@media\(max-width:355px\)/);
+ assert.match(studio,/if\(extraTextChoice!=="personal"&&montageTextMode!=="personalized"\)return false/);
+ for(const fn of ["const startFromHero=()=>","const openReadyForGeneration = () =>",
+                  "const createQuickVideo = () =>","const generateExpressFromCurrent=()=>"]){
+  const i=studio.indexOf(fn);assert.ok(i>0,fn);
+  assert.ok(studio.slice(i,i+210).includes("if(blockUnpricedPersonalExport())return false"),fn+" guarded");
+ }
 });
 
-test("opening Personal Text never silently replaces an approved Concept",()=>{
- const guard=ideas.indexOf('if(!remembered&&phraseMode==="personalized"&&Array.isArray(settings.presetOverride))');
- const autoSelection=ideas.indexOf('const initialChosen=phraseMode==="standard"?allFive');
- assert.ok(guard>0&&guard<autoSelection,
-   "approved Text hydration must run before automatic generation");
- const hydration=ideas.slice(guard,autoSelection);
- assert.match(hydration,/linesForVideoAffirmations\(locale,theme,settings\)/);
- assert.match(hydration,/setChosen\(committed\.map\(/);
- assert.doesNotMatch(hydration,/onChange\(/,
-   "visiting Text cannot replace Canvas\/MP4 words without a user selection");
-});
-
-test("standard selects classic phrases while personalized uses local goal",()=>{
- assert.match(ideas,/phraseMode\?:"standard"\|"personalized"/);
- assert.match(ideas,/phraseMode==="standard"/);
- assert.match(ideas,/categoryPhrases\.support\[captionLocale\]/);
-});
-
-test("macOS WebKit fail-closes unpriced personalized export and switches through Standard before spoken MP4",()=>{
- const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
- const personal=browser.indexOf('await openVisibleMontageText(page,engine,"personalized")');
- const blocked=browser.indexOf('phase(engine,"personalized-unpriced-export-fail-closed")',personal);
- const standard=browser.indexOf('phase(engine,"standard-mode-after-personalized-draft")',blocked);
- const narration=browser.indexOf('const approved=(await phraseSelector.locator',standard);
- const ready=browser.indexOf('phase(engine,"start-media-recorder")',narration);
- assert.ok(personal>=0&&blocked>personal&&standard>blocked&&narration>standard&&ready>narration);
- assert.ok(browser.includes('await expect(montageIdeas).toContainText("+50 XP")'));
- assert.ok(browser.includes(`await expect(page.locator('[data-video-ready]')).toBeHidden()`));
- assert.ok(browser.includes(`const standardCard=textChoice.locator('[data-video-text-mode="standard"]')`));
- const portraitCss=readFileSync(new URL("../components/mandala-video-ideas.module.css",import.meta.url),"utf8");
- assert.doesNotMatch(portraitCss,/width:40px;min-width:40px;height:42px/);
- assert.doesNotMatch(portraitCss,/min-width:41px;width:41px;min-height:44px;height:44px/);
- assert.doesNotMatch(portraitCss,/min-width:38px;min-height:42px;font-size:13px/);
+test("real macOS WebKit checks Extra photo cards, private editor and guards export",()=>{
+ assert.match(browser,/MONTAGE_EXTRA_3_TAPPABLE_CARDS_/);
+ assert.match(browser,/personalized-unpriced-export-fail-closed/);
+ assert.match(browser,/standard-mode-after-personalized-draft/);
+ assert.match(browser,/data-video-personal-phrases/);
+ assert.match(browser,/data-video-text-direct-create/);
+ assert.match(browser,/Text controls must be at least 44x44/);
+ assert.match(browser,/start-media-recorder/);
+ assert.match(browser,/ffprobe/);
 });

@@ -1,25 +1,32 @@
 .personalStudio{min-width:0}
-.extraRoot{display:grid;gap:8px;min-width:0;color:#183e37}
-.extraRoot h2{margin:0 2px;font:700 clamp(22px,5.4vw,29px)/1.1 Georgia,serif}
-.extraChoices{display:grid;gap:7px}
-.extraChoices button{display:grid;grid-template-columns:42px minmax(0,1fr) auto 17px;gap:8px;
-align-items:center;min-height:77px;width:100%;padding:8px;text-align:left;border-radius:18px;
-border:1px solid #ded8c7;background:#fffcf7;color:#19463a;cursor:pointer}
-.extraChoices button:last-child{border-color:#9fc7b8;background:#ebf8f0}
-.extraChoices button:disabled{opacity:.5;cursor:not-allowed}
-.extraChoices button:focus-visible{outline:3px solid #b18d50;outline-offset:2px}
-.extraIcon{display:grid;place-items:center;width:42px;height:42px;border-radius:13px;
-background:#dff2e6;color:#087659}
-.extraCopy{display:grid;gap:3px;min-width:0}
-.extraCopy strong{font:800 clamp(13px,3.9vw,17px)/1.15 system-ui,sans-serif}
-.extraCopy small{font:500 clamp(11px,3.05vw,13px)/1.2 system-ui,sans-serif;color:#5b7065}
-.extraPrice{padding:5px;border-radius:999px;background:#e0f3e7;color:#0a6d52;
-white-space:nowrap;font:800 12px/1 system-ui,sans-serif}
-.extraNote{margin:0 3px;font:500 11px/1.3 system-ui,sans-serif;color:#637169}
-.advancedFormats{margin-top:9px;padding:8px 10px;border:1px solid #dcd6ca;
-border-radius:14px;background:#fffaf2;color:#17483e}
-.advancedFormats>summary{display:flex;align-items:center;min-height:36px;
-cursor:pointer;font:750 13px/1.2 system-ui,sans-serif}
+/* Owner-approved compact, photographic Extra: single three-way text selector. */
+.extraRoot{display:grid;gap:9px;min-width:0;color:#173f37}
+.extraHeading{display:grid;gap:4px;padding:0 3px}
+.extraHeading h2{margin:0;color:#165243;font:700 clamp(24px,5.8vw,30px)/1.06 Georgia,serif;letter-spacing:-.03em}
+.extraHeading p{margin:0;color:#5d7068;font:500 clamp(12px,3.2vw,14px)/1.3 Arial,Helvetica,sans-serif}
+.extraChoices{display:grid;gap:9px;min-width:0}
+.extraChoices .extraPhotoCard{appearance:none;display:grid;grid-template-columns:clamp(78px,25%,112px) minmax(0,1fr) minmax(67px,20%);align-items:center;gap:10px;
+ min-width:0;width:100%;min-height:109px;padding:7px;text-align:left;border:1px solid #dfd8cb;border-radius:20px;
+ background:linear-gradient(125deg,#fffdf8,#fff7ef);color:#173d35;box-shadow:0 3px 12px #62473016;cursor:pointer;touch-action:manipulation}
+.extraChoices .extraPhotoCard:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.extraChoices .extraPhotoCard:hover:not(:disabled){border-color:#7eb7a4;background:#f1fbf5}
+.extraChoices .extraPhotoCard:disabled{opacity:.55;cursor:not-allowed}
+.extraPoster{position:relative;display:block;align-self:stretch;min-width:0;height:96px;border-radius:14px;overflow:hidden;background:#bdccbe}
+.extraPoster img{display:block;width:100%;height:100%;object-fit:cover}
+.extraPosterIcon{position:absolute;bottom:5px;left:5px;width:32px;height:32px;display:grid;place-items:center;
+ border:1px solid #ffffffb8;border-radius:999px;background:#0c684fce;color:#fff}
+.extraCopy{display:grid;align-content:center;gap:6px;min-width:0}
+.extraCopy strong{font:750 clamp(15px,4.2vw,19px)/1.14 Georgia,serif;overflow-wrap:break-word;hyphens:auto}
+.extraCopy small{font:500 clamp(11px,3vw,13px)/1.28 Arial,Helvetica,sans-serif;color:#556a5f;overflow-wrap:break-word}
+.extraChoiceRight{display:flex;flex-direction:column;align-items:stretch;justify-content:space-between;gap:13px;align-self:stretch;min-width:0;padding:9px 0}
+.extraPrice,.extraPricePersonal{display:grid;place-items:center;min-height:30px;padding:5px 3px;border-radius:999px;
+ color:#087054;background:#e0f3e8;font:800 clamp(12px,3.2vw,15px)/1.05 Arial,Helvetica,sans-serif;white-space:nowrap}
+.extraPricePersonal{color:#835714;background:#fff0c9}
+.extraArrow{display:grid;place-items:center;align-self:end;width:32px;height:32px;border-radius:50%;
+ color:#fff;background:linear-gradient(130deg,#11a77f,#066f54)}
+.extraNote{margin:0 3px;color:#637169;font:500 11px/1.35 Arial,Helvetica,sans-serif}
+.advancedFormats{margin-top:6px;padding:9px 12px;border:1px solid #dcd6ca;border-radius:16px;background:#fffaf2;color:#17483e}
+.advancedFormats>summary{display:flex;align-items:center;min-height:44px;cursor:pointer;font:750 13px/1.2 Arial,Helvetica,sans-serif}
 .advancedFormats[open]>summary{margin-bottom:10px}
 @media(max-width:759px){
 .personalStudio.personalStudio.personalStudio[data-active-workspace="phrases"] :global([data-video-ideas-photo]){display:none!important}
@@ -33,6 +40,26 @@ margin:0 0 3px!important;font-size:11px!important}
 .personalStudio.personalStudio.personalStudio[data-active-workspace="phrases"] :global([data-video-quick-phrases]){min-width:0!important}
 }
 @media(max-width:359px){
-.extraChoices button{grid-template-columns:37px minmax(0,1fr) auto 16px;gap:5px;padding:6px;min-height:73px}
-.extraIcon{width:37px;height:37px}.extraCopy strong{font-size:13px}.extraPrice{font-size:11px}
+ .extraChoices .extraPhotoCard{grid-template-columns:74px minmax(0,1fr) 58px;gap:6px;padding:5px;min-height:99px;border-radius:17px}
+ .extraPoster{height:88px;border-radius:12px}
+ .extraPosterIcon{width:29px;height:29px}
+ .extraCopy strong{font-size:14px}
+ .extraCopy small{font-size:11px}
+ .extraChoiceRight{padding:5px 0}
+ .extraPrice,.extraPricePersonal{font-size:11px;min-height:27px}
+ .extraArrow{width:29px;height:29px}
 }
+@media(min-width:760px){
+ .extraChoices{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .extraChoices .extraPhotoCard{grid-template-columns:minmax(0,1fr);min-height:280px;align-content:start;padding:10px}
+ .extraPoster{height:150px}
+ .extraChoiceRight{flex-direction:row;gap:9px;align-items:center}
+ .extraArrow{align-self:auto}
+}
+
+/* Reuses the same Voice/Canvas phrase editor; visible only within approved Personal. */
+.personalPhrases{display:grid;gap:10px;min-width:0;margin-top:12px;padding:12px;
+ border:1px solid #e3d7c9;border-radius:20px;background:linear-gradient(145deg,#fffcf7,#fff8f1)}
+.personalPhrases>h3{margin:0;color:#155544;font:700 clamp(21px,5.4vw,27px)/1.13 Georgia,serif}
+.personalPhrases>p{margin:0;color:#596e65;font:500 13px/1.4 Arial,Helvetica,sans-serif}
+@media(max-width:359px){.personalPhrases{padding:9px}}

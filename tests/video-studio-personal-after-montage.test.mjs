@@ -17,15 +17,21 @@ test("top order and Magic Mirror navigate to Montage before Personal",()=>{
  assert.match(studio,/setIdeasSubtab\("goal"\);setActiveWorkspace\("editor"\);setMontagePanel\("effects"\)/);
  for(const localeLabel of ['phrases:{tab:"Personal"','phrases:"Personal"'])assert.ok(studio.includes(localeLabel));
 });
-test("Audio → Extra, only explicit Personal choice begins the questionnaire",()=>{
+test("Audio → photo-led Extra; Standard goes Text, Personal owns its phrases",()=>{
  assert.match(studio,/montagePanel==="audio"\)\{\s*setMontagePanel\("promo"\)/);
  assert.match(studio,/onPersonal=\{\(\)=>\{/);
  assert.match(studio,/setIdeasSubtab\("goal"\);setIdeasVoiceAdvancedOpen\(false\)/);
  assert.match(studio,/data-video-extra-advanced-formats/);
- assert.match(studio,/applyPurposePhrases\("support","",true\)/);
- assert.match(studio,/setActiveWorkspace\("editor"\);setMontagePanel\("text"\)/);
+ assert.match(studio,/onSupport=\{\(\)=>\{/);
+ assert.match(studio,/requestText="" profile=\{undefined\} languagePicker phraseMode="standard"/);
+ assert.match(studio,/data-video-personal-phrases/);
+ assert.match(studio,/setPersonalPhrasesOpen\(extraTextChoice==="personal"\)/);
+ assert.match(studio,/blockUnpricedPersonalExport/);
  for(const id of ["simple","support","personal"])assert.ok(extra.includes('id:"'+id+'"'));
- assert.ok(extra.includes("No XP is charged when choosing"));
+ for(const file of ["sun-autumn-hills.jpg","heart-flow.jpg","sun-warm-ocean-dawn.jpg"])
+  assert.ok(extra.includes(file),"Extra has original first-party photo "+file);
+ assert.match(extra,/data-video-extra-text-option=\{card\.id\}/);
+ assert.match(extra,/No credits are charged here/);
  assert.doesNotMatch(extra,/fetch\(|checkout\(|postVideoCreditAction/);
 });
 test("mobile Personal has no duplicate banner, all goal options and one Canvas",()=>{

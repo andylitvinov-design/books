@@ -228,10 +228,15 @@ test("compact Ideas preserves one opt-in advanced phrase and voice editor",()=>{
  const audio=section.indexOf('data-video-phrase-audio-shortcut');
  assert.ok(editor>0&&audio>editor);
  assert.equal((section.match(/\{deepHypnoPane\}/g)||[]).length,1);
- assert.doesNotMatch(section,/<MandalaVideoIdeas/);
+ assert.match(section,/data-video-personal-phrases/,
+  "approved Personal Concept owns personalized phrase selection");
+ assert.match(section,/<MandalaVideoIdeas key=\{"personal-phrases-"/);
  assert.match(section,/data-video-ideas-open-montage-text/);
  assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
- assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1);
+ assert.equal((studio.match(/<MandalaVideoIdeas key=/g)||[]).length,2,
+   "one basic Text editor and one conditional Personal editor, both reuse one Canvas");
+ assert.match(studio,/extraTextChoice==="support"&&montageTextStage==="edit"/);
+ assert.match(studio,/active=\{activeWorkspace==="phrases"&&ideasSubtab==="concept"\}/);
  assert.match(section,/data-video-legacy-phrase-editor/);
  assert.match(section,/data-video-ideas-recording-open=\{ideasVoiceAdvancedOpen\?"true":"false"\}/);
  assert.match(section,/hidden=\{activeWorkspace!=="phrases"\|\|ideasSubtab!=="personalization"\}/);
