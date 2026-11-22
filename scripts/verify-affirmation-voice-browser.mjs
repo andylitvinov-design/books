@@ -215,6 +215,32 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(finishPersonalization).toBeVisible();
     await expect(finishPersonalization).toBeEnabled();
     await finishPersonalization.tap();
+    // The new owner-approved Personal step must be answered before Concept.
+    // Exercise eight real range inputs and one explicit focus, not synthetic
+    // state or a forced disabled navigation click.
+    const meaningAxes=page.locator('[data-video-meaning-axes-screen]');
+    await expect(meaningAxes).toBeVisible({timeout:15000});
+    await expect(meaningAxes.locator('[data-video-meaning-axis]')).toHaveCount(8);
+    const axisCards=meaningAxes.locator('[data-video-meaning-axis]');
+    const nextAxes=meaningAxes.locator('[data-video-meaning-axes-continue]');
+    await expect(nextAxes).toBeDisabled();
+    for(let index=0;index<8;index++){
+      const card=axisCards.nth(index);
+      const now=card.locator('[data-axis-slider="now"] input');
+      const desired=card.locator('[data-axis-slider="desired"] input');
+      await now.press("ArrowLeft"); // current rating 4
+      await desired.press("ArrowRight"); // desired rating 6
+      await expect(card.locator('[data-axis-slider="now"] output')).toHaveText("4");
+      await expect(card.locator('[data-axis-slider="desired"] output')).toHaveText("6");
+      await expect(card.locator('[data-video-meaning-difference]')).toContainText("+2");
+    }
+    await expect(meaningAxes.locator('[data-video-axes-progress]')).toContainText("8/8");
+    const chooseFocus=axisCards.first().locator('[data-video-meaning-focus]');
+    await chooseFocus.tap();
+    await expect(chooseFocus).toHaveAttribute("aria-checked","true");
+    await expect(nextAxes).toBeEnabled();
+    await nextAxes.tap();
+    await expect(meaningAxes).toBeHidden();
     try{
       await expect(page.locator('[data-video-ideas-tab="concept"]'))
         .toHaveAttribute("aria-pressed","true",{timeout:12000});
