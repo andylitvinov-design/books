@@ -41,3 +41,16 @@ test('MP3 encoder padding is tolerated only for looping music',async()=>{
  voice=buffer(181);assert.equal(await startUploadedAudio(file,80,{loop:true,deferStart:true}),null);
  } finally {voice=previous;}
 });
+
+
+test('stereo music excerpt preserves the first 30 seconds without mutating its source',()=>{
+ const rate=100, frames=180*rate;
+ const channels=[Float32Array.from({length:frames},(_,i)=>i/frames),Float32Array.from({length:frames},(_,i)=>1-i/frames)];
+ const input={length:frames,duration:180,sampleRate:rate,numberOfChannels:2,getChannelData:i=>channels[i]};
+ const context={createBuffer:(count,length,sampleRate)=>({length,duration:length/sampleRate,sampleRate,numberOfChannels:count,channels:Array.from({length:count},()=>new Float32Array(length)),copyToChannel(data,i){this.channels[i].set(data)}})};
+ const result=api.clipMusicBuffer(context,input,30);
+ assert.equal(result.length,3000);assert.equal(result.numberOfChannels,2);
+ for(const i of [0,1,2999])for(const channel of [0,1])assert.equal(result.channels[channel][i],channels[channel][i]);
+ assert.equal(channels[0].length,frames);assert.equal(api.clipMusicBuffer(context,result,30),result);
+ assert.throws(()=>api.clipMusicBuffer(context,input,90),/invalid_music_excerpt/);
+});
