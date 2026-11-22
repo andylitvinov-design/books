@@ -199,16 +199,9 @@ async function trustedRepair(github,cmd){
  if(!labels.has('hh:repair-needed')||
    ['hh:hold','hh:blocked','hh:repair-manual','hh:worker-claimed'].some(x=>labels.has(x)))
   return {reason:'REPAIR_NOT_ROUTED_OR_HELD'};
- let proof;try{proof=await github.rest.issues.listComments({owner:OWNER,repo:REPO,issue_number:cmd.pr,per_page:100,page:1});}
- catch(_){return {reason:'SIGNED_SOURCE_PROOF_UNAVAILABLE'};}
- if(!Array.isArray(proof?.data)||proof.data.length>=100)return {reason:'SOURCE_PROOF_INCOMPLETE'};
- const marker='<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+cmd.sha+' -->\n';
- const signed=proof.data.some(c=>c.user?.id===41898282&&c.user?.login==='github-actions[bot]'&&
-  c.user?.type==='Bot'&&c.performed_via_github_app?.id===15368&&
-  c.performed_via_github_app?.slug==='github-actions'&&typeof c.body==='string'&&
-  c.body.startsWith(marker)&&/^Failed jobs: ([^\n]+)$/m.test(c.body)&&
-  c.body.match(/^Failed jobs: ([^\n]+)$/m)[1].split(',').some(s=>s.trim()==='core-lint-types-build'));
- if(!signed)return {reason:'SIGNED_FAILED_CORE_PROOF_MISSING'};
+ const proof=await require('./ci-pr-owner-source-proof.cjs')
+  .signedCoreSourceProof(github,cmd.pr,cmd.sha);
+ if(proof.verified!==true)return {reason:proof.reasonCode};
  return {ok:true};
 }
 // Only trusted default-branch Watchdog code calls this helper after the
