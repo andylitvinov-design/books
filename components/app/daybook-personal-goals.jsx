@@ -25,15 +25,25 @@ export default function DaybookPersonalGoals({accountId,locale='en',onSessionLos
   setSelection(restoredSelection);setBusy(false);working.current=false;setStatus(restoredPending?'failed':'');setPendingDelete(restoredPending);setView({owner:accountId,goals:[],phase:'loading'})
   remover.current=checkpoint?.remover||(accountId?createPersonalGoalRemover(appFetch,accountId):null)
   if(accountId)remember(restoredSelection,restoredPending)
-  if(accountId)appFetch('coaching-life-plan?locale='+locale,undefined,'GET',{accountId,signal:abort.signal}).then(plan=>{
+  if(accountId)appFetch('coaching-life-plan?locale='+locale,undefined,'GET',{accountId,signal:abort.signal}).then(async plan=>{
    if(token!==epoch.current)return
    if(!Array.isArray(plan.goals))throw new Error('INVALID_PLAN')
-   if(restoredPending&&!plan.goals.some(goal=>goal.id===restoredPending)){
-    if(restoredSelection?.session?.snapshot()?.draft?.id===restoredPending)restoredSelection=null
-    restoredPending=null;remember(restoredSelection,null);setSelection(restoredSelection);setPendingDelete(null);setStatus('deleted')
+   if(restoredPending){
+    try{
+     const result=await remover.current.recover()
+     if(token!==epoch.current)return
+     if(result.id!==restoredPending)throw new Error('GOAL_DELETE_UNCONFIRMED')
+     plan={...plan,goals:plan.goals.filter(goal=>goal.id!==result.id)}
+     if(restoredSelection?.session?.snapshot()?.draft?.id===restoredPending)restoredSelection=null
+     restoredPending=null;remember(restoredSelection,null);setSelection(restoredSelection);setPendingDelete(null);setStatus('deleted')
+    }catch(error){
+     if(token!==epoch.current)return
+     if(error.status===401||error.status===403||error.code==='ACCOUNT_CHANGED'){sessionLost();return}
+     setStatus('failed')
+    }
    }
    setView({owner:accountId,goals:plan.goals,phase:'ready'})
-  }).catch(error=>{if(token===epoch.current){if(error.status===401||error.code==='ACCOUNT_CHANGED')sessionLost();else setView({owner:accountId,goals:[],phase:'error'})}})
+  }).catch(error=>{if(token===epoch.current){if(error.status===401||error.status===403||error.code==='ACCOUNT_CHANGED')sessionLost();else setView({owner:accountId,goals:[],phase:'error'})}})
   const activeRemover=remover.current
   return ()=>{invalidate();abort.abort();if(!memory){activeRemover?.discard();cache.current?.selection?.session?.dispose()}}
  },[accountId,locale,reload,invalidate,sessionLost,memory,remember])
@@ -43,17 +53,20 @@ export default function DaybookPersonalGoals({accountId,locale='en',onSessionLos
   if(working.current||!canSwitch())return
   working.current=true;setBusy(true);const token=epoch.current
   try{const read=await appFetch('personal-goals?id='+encodeURIComponent(goal.id),undefined,'GET',{accountId});if(token===epoch.current){const selected={key:crypto.randomUUID(),goal:read.goal,session:createGoalEditorSession(appFetch,accountId,read.goal)};remember(selected,null);setSelection(selected);setStatus('')}}
-  catch(error){if(token===epoch.current){if(error.status===401||error.code==='ACCOUNT_CHANGED')sessionLost();else setStatus('error')}}
+  catch(error){if(token===epoch.current){if(error.status===401||error.status===403||error.code==='ACCOUNT_CHANGED')sessionLost();else setStatus('error')}}
   finally{if(token===epoch.current){working.current=false;setBusy(false)}}
  }
  async function remove(goal){
-  if(working.current||!window.confirm(c.confirm))return
-  working.current=true;setBusy(true);setPendingDelete(goal.id);remember(selection,goal.id);const token=epoch.current
-  try{await remover.current.remove({id:goal.id,revision:goal.revision,confirmed:true});if(token!==epoch.current)return
+  if(working.current||goal&&!window.confirm(c.confirm))return
+  const id=goal?.id||pendingDelete
+  if(!id)return
+  working.current=true;setBusy(true);setPendingDelete(id);remember(selection,id);const token=epoch.current
+  try{const result=await (goal?remover.current.remove({id,revision:goal.revision,confirmed:true}):remover.current.recover());if(token!==epoch.current)return
+   if(result.id!==id)throw new Error('GOAL_DELETE_UNCONFIRMED')
    const selected=cache.current?.selection
-   const next=selected?.session?.snapshot()?.draft?.id===goal.id?null:selected
-   remember(next,null);setSelection(next);setView(old=>({...old,goals:old.goals.filter(item=>item.id!==goal.id)}));setStatus('deleted');setPendingDelete(null)
-  }catch(error){if(token===epoch.current){if(error.status===401||error.code==='ACCOUNT_CHANGED')sessionLost();else setStatus('failed')}}
+   const next=selected?.session?.snapshot()?.draft?.id===id?null:selected
+   remember(next,null);setSelection(next);setView(old=>({...old,goals:old.goals.filter(item=>item.id!==id)}));setStatus('deleted');setPendingDelete(null)
+  }catch(error){if(token===epoch.current){if(error.status===401||error.status===403||error.code==='ACCOUNT_CHANGED')sessionLost();else setStatus('failed')}}
   finally{if(token===epoch.current){working.current=false;setBusy(false)}}
  }
  function saved(goal,owner){
@@ -67,7 +80,7 @@ export default function DaybookPersonalGoals({accountId,locale='en',onSessionLos
  return <section><h2>{c.title}</h2><button disabled={busy||Boolean(pendingDelete)} onClick={fresh}>{c.new}</button>
   <button disabled={busy} onClick={()=>{if(canSwitch()){memory?.clear();cache.current?.selection?.session?.dispose();setReload(v=>v+1)}}}>{c.retry}</button>
   {selection&&<><button disabled={busy} onClick={()=>{if(canSwitch()){remember(null,pendingDelete);setSelection(null)}}}>{c.close}</button><DaybookGoalEditor key={selection.key} accountId={accountId} locale={locale} editorSession={selection.session} onSaved={saved} onSessionLost={sessionLost}/></>}
-  <p role="status">{c[status]||''}</p>{!view.goals.length&&<p>{c.empty}</p>}
+  <p role="status">{c[status]||''}</p>{pendingDelete&&<button disabled={busy} onClick={()=>void remove(null)}>{c.retry}</button>}{!view.goals.length&&<p>{c.empty}</p>}
   {view.goals.map(goal=><article key={goal.id}><h3>{goal.title}</h3><button disabled={busy||Boolean(pendingDelete)} onClick={()=>void edit(goal)}>{c.edit}</button><button disabled={busy||Boolean(pendingDelete&&pendingDelete!==goal.id)} onClick={()=>void remove(goal)}>{c.remove}</button></article>)}
  </section>
 }

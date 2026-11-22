@@ -28,3 +28,36 @@ test('disposed account rejects a late deletion acknowledgement',async()=>{
  const task=remover.remove(target);remover.discard();resolve({deleted:true,id})
  await assert.rejects(task,{code:'ACCOUNT_CHANGED'})
 })
+test('recovery waits for active deletion and retains only verified result',async()=>{
+ let finish;const calls=[]
+ const remover=createPersonalGoalRemover(async(path,body,method)=>{
+  calls.push(method)
+  if(method==='DELETE'){await new Promise(r=>{finish=r});return {deleted:true,id}}
+  throw Object.assign(new Error('absent'),{status:404})
+ },id,()=>id)
+ const pending=remover.remove(target),recovery=remover.recover();finish()
+ assert.deepEqual(await recovery,await pending);assert.deepEqual(calls,['DELETE','GET'])
+ assert.deepEqual(await remover.recover(),{id,deleted:true});assert.equal(calls.length,2)
+})
+test('recovery retries unknown deletion with same operation and requires readback',async()=>{
+ const bodies=[];let fail=true
+ const remover=createPersonalGoalRemover(async(path,body,method)=>{
+  if(method==='GET')throw Object.assign(new Error('absent'),{status:404})
+  bodies.push(body);if(fail){fail=false;throw new Error('offline')}return {deleted:true,id}
+ },id,()=>id)
+ await assert.rejects(remover.remove(target));await remover.recover();assert.deepEqual(bodies[0],bodies[1])
+ remover.discard();await assert.rejects(remover.recover(),{code:'ACCOUNT_CHANGED'})
+})
+test('recovery never converts a positive or unavailable readback into deletion',async()=>{
+ let missing=false
+ const remover=createPersonalGoalRemover(async(path,body,method)=>{
+  if(method==='GET'){
+   if(missing)throw new Error('offline')
+   return {goal:{id}}
+  }
+  return {deleted:true,id}
+ },id,()=>id)
+ await assert.rejects(remover.remove(target),{code:'GOAL_DELETE_UNCONFIRMED'})
+ await assert.rejects(remover.recover(),{code:'GOAL_DELETE_UNCONFIRMED'})
+ missing=true;await assert.rejects(remover.recover(),/offline/)
+})
