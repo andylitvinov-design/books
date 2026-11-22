@@ -724,7 +724,10 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(page.locator('[data-video-recipient-audio-concept-preview]')).toBeVisible();
     await expect(page.locator('[data-video-recipient-audio-plan]')).toHaveCount(0);
     await expect(nextWithSpeech).toBeEnabled();
-    await nextWithSpeech.click();
+    // Mobile WebKit must perform the visitor touch gesture on this real
+    // recipient speech CTA; a synthetic click can be acknowledged but lost.
+    if(browser.browserType().name()==="webkit")await nextWithSpeech.tap();
+    else await nextWithSpeech.click();
     await expect(studio).toHaveAttribute("data-active-workspace","editor");
     await expect(page.locator('[data-video-montage-tab="concept"]')).toHaveAttribute("aria-pressed","true");
     assert.equal(sttMockCalls,1,"one explicitly consented mocked transcription, not an automatic provider request");
