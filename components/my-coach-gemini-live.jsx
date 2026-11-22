@@ -173,6 +173,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     propsRef.current.onInputInterim?.('')
     if(!value||r.ended)return
     const preceding=r.history.slice(-10)
+    r.turnComplete=false
     r.history.push({role:'user',content:value})
     r.history=r.history.slice(-20)
     propsRef.current.onInputFinal?.(value)
@@ -222,6 +223,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     }
     const allowAudio=r.audioGate.accept(frame)
     if(frame.input||frame.interim){
+      r.turnComplete=false
       const value=frame.input||frame.interim
       r.inputText=appendGeminiLiveTranscript(r.inputText,value)
       propsRef.current.onInputInterim?.(r.inputText)
@@ -438,6 +440,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(!r||r.ended||!r.ready||!body||body.length>1200)return false
     interrupt()
     if(!sendSocket(r,geminiLiveTextMessage(body)))return false
+    r.turnComplete=false
     r.inputText=''
     const previous=r.history.slice(-10)
     r.history.push({role:'user',content:body})
