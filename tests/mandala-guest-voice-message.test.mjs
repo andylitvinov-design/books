@@ -178,29 +178,39 @@ test("guided meditation include/omit commits native narration disclosure after R
 });
 
 
-test("macOS WebKit exposes preserved recipient actions only after actual Mirror overflow taps",()=>{
+test("macOS WebKit exposes preserved recipient actions through visible Magic Mirror Plan and composer controls",()=>{
  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
  const start=browser.indexOf("async function verifyWorkspaceHydration");
  const end=browser.indexOf("// Real guest route browser acceptance",start);
  const flow=browser.slice(start,end);
  assert.match(flow,/const openAdvancedGoal=async\(\)=>\{/);
- assert.match(flow,/await moreGoals\.click\(\)/);
+ assert.match(flow,/await revealMirrorAdvanced\(page\)/);
  assert.equal((flow.match(/await openAdvancedGoal\(\)/g)||[]).length,3);
  assert.doesNotMatch(flow,/backGoal\.click\(\{force:true\}\)|backGoal\.evaluate\(/);
+ const reveal=browser.slice(browser.indexOf("async function revealMirrorAdvanced"),
+  browser.indexOf("async function enterVisibleStudioWorkspace"));
+ assert.match(reveal,/data-hh-mirror-plan/);
+ assert.match(reveal,/data-hh-mirror-composer/);
+ assert.match(reveal,/data-hh-mirror-open-advanced/);
+ assert.match(reveal,/await expect\(plus\)\.toBeEnabled\(\)/);
+ assert.doesNotMatch(reveal,/force:true|\.evaluate\(/);
 });
 
-test("real macOS WebKit Montage navigation opens the compact Mirror overflow before the hidden workspace rail",()=>{
+test("real macOS WebKit Montage navigation opens visible Magic Mirror controls before the hidden workspace rail",()=>{
  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
  const helperStart=browser.indexOf("async function enterVisibleStudioWorkspace");
  const helperEnd=browser.indexOf("async function openVisibleMontageText",helperStart);
  assert.ok(helperStart>=0&&helperEnd>helperStart);
  const helper=browser.slice(helperStart,helperEnd);
  assert.match(helper,/if\(!await control\.isVisible\(\)\)/);
- assert.match(helper,/await expect\(moreGoals\)\.toBeVisible/);
- assert.match(helper,/await moreGoals\.tap\(\)/);
- assert.match(helper,/await moreGoals\.click\(\)/);
+ assert.match(helper,/await revealMirrorAdvanced\(page,engine\)/);
  assert.match(helper,/await expect\(control\)\.toBeVisible/);
+ assert.match(helper,/if\(engine==="webkit"\)await control\.tap\(\)/);
+ assert.match(helper,/else await control\.click\(\)/);
  assert.doesNotMatch(helper,/force:true|\.evaluate\(/);
+ const reveal=browser.slice(browser.indexOf("async function revealMirrorAdvanced"),helperStart);
+ assert.match(reveal,/if\(engine==="webkit"\)await plan\.tap\(\)/);
+ assert.match(reveal,/if\(engine==="webkit"\)await plus\.tap\(\)/);
  const editor=browser.slice(browser.indexOf('phase(engine,"editor-ready")'));
  assert.match(editor,/await enterVisibleStudioWorkspace\(page,"editor",engine\)/);
  assert.doesNotMatch(editor,/await editorTab\.click\(\)|await page\.locator\('\[data-video-quick-control="editor"\]'\)\.click\(\)/);
