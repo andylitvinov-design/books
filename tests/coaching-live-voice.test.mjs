@@ -631,7 +631,7 @@ test('Web Audio unlock is used only for WebKit phones; desktop retains streaming
 });
 
 
-test('Basic/Pro one-tap Free selection includes informed disclosure and speech, with paid consent separate',()=>{
+test('Gemini Live is the default and Basic/Pro returns to a two-way Free stream with visible Play consent',()=>{
  const ui=source('components/my-coach-live-dialogue.jsx')
  const start=ui.indexOf('data-coach-basic-pro-toggle')
  assert.ok(start>0)
@@ -639,11 +639,17 @@ test('Basic/Pro one-tap Free selection includes informed disclosure and speech, 
  assert.match(toggle,/disabled=\{replaying\|\|paused\|\|protocolOpen\}/)
  assert.match(toggle,/speechRef\.current\?\.stop\?\.\(\)/)
  assert.match(toggle,/cancelPendingCoachTurn\(\)/)
- assert.match(toggle,/setCoachEngine\('gemini_free'\)/)
- assert.match(toggle,/setGeminiConsent\(true\)/)
+ assert.match(ui,/\[coachEngine,setCoachEngine\]=useState\('gemini_live_free'\)/)
+ assert.match(toggle,/const chooseLive=status\.capabilities\.gemini_live_free===true/)
+ assert.match(toggle,/setCoachEngine\(chooseLive\?'gemini_live_free':'gemini_free'\)/)
+ assert.match(toggle,/setGeminiConsent\(!chooseLive\)/)
  assert.match(toggle,/setGeminiVoiceTier\(freeTtsReady\?'gemini_tts_free':'existing'\)/)
  assert.match(toggle,/setGeminiVoiceConsent\(freeTtsReady\)/)
  assert.match(ui,/data-coach-pro-same-tap-disclosure/)
+ assert.match(ui,/data-consent-on-play/)
+ assert.match(ui,/onSessionStart=\{\(\)=>\{setGeminiLiveConsent\(true\)/)
+ assert.match(ui,/onOutputFinal=\{\(text,details\)=>appendLiveTranscript\('assistant',text,\{interrupted:details\?\.interrupted===true\}\)\}/)
+ assert.match(ui,/Google может использовать данные|Google.*may use them to improve models/)
  assert.match(ui,/Google может использовать данные|Google.*may use Free data/)
  assert.doesNotMatch(ui,/data-coach-experience-consent|experienceTextConsent|experienceTtsConsent/)
  assert.match(ui,/coachEngine==='gemini_paid'&&<label/)
