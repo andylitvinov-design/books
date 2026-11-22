@@ -88,7 +88,9 @@ test("macOS WebKit hydration follows visible Goals → Ideas → Montage without
  // The live Style controls are direct buttons, not the removed legacy wrapper.
  assert.ok(flow.includes('const styleTab=page.locator(\'[data-video-montage-tab="effects"]\')'));
  assert.ok(flow.includes('await styleTab.tap()'));
- assert.ok(flow.includes('const styles=page.locator("[data-video-montage-style]")'));
+ assert.ok(flow.includes('const moreStyles=page.locator("[data-video-montage-more-styles]")'));
+ assert.ok(flow.includes('await moreStyles.locator("summary").tap()'));
+ assert.ok(flow.includes('const styles=moreStyles.locator("[data-video-montage-style]")'));
  assert.ok(flow.includes('await expect(styles).toHaveCount(6)'));
  assert.ok(flow.includes('await minimal.tap()'));
  assert.ok(flow.includes('await expect(minimal).toHaveAttribute("aria-pressed","true")'));

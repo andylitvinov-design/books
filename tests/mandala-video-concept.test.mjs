@@ -100,7 +100,7 @@ test("Ideas Concept owns the single editor and Montage retains its real timeline
 test("macOS WebKit opens Style by default and still allows reviewed Concept",()=>{
   const source=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
   const start=source.indexOf('const editorTab=page.locator');
-  const end=source.indexOf('const selectedStyle=page.locator',start);
+  const end=source.indexOf("const extraStyles=page.locator",start);
   assert.ok(start>0&&end>start);
   const route=source.slice(start,end);
   assert.match(route,/\[data-video-montage-tab="effects"\]/);
