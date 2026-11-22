@@ -168,6 +168,6 @@ test('owner reference: compact choices, readable wish and separate drafts per in
  assert.ok(mirrorCss.includes('.promptRow input'));
  assert.ok(mirrorCss.includes('.choiceIcon'));
  assert.ok(mobile.includes('Magic Mirror owner reference 2026-11-21'));
- assert.ok(mobile.includes('therapyHeroPlayback[data-playing="false"]::after'));
+ assert.ok(mobile.includes('.previewStage .therapyHeroLaunch{background:url('));
  for(const poster of ['sun-warm-ocean-dawn.jpg','heart-flow.jpg','lone-tree.jpg','sun-autumn-hills.jpg'])assert.ok(mirror.includes(poster));
 });
