@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import test from 'node:test'
+test('legacy Daybook entry leads to the canonical persistent journal in every locale',()=>{
+ const source=read('components/app/coaching-daybook.jsx')
+ assert.match(source,/href=\{'\/'\+lang\+'\/app\/daybook'\}/)
+ for(const label of ['Open my private journal','Открыть личный дневник','Abrir mi diario privado'])assert.ok(source.includes(label))
+ assert.match(source,/href=\{'\/'\+lang\+'\/my-coach'\}/)
+})
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 test('My Space approved order: heading -> real focus -> one Daybook CTA -> existing cards',()=>{
  const dashboard=read('components/app/profile-space-dashboard.jsx')

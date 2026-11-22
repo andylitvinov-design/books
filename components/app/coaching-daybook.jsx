@@ -15,7 +15,7 @@ const TEXT={
   axes:'Eight areas of meaning',axesIntro:'Reflect on an axis with your coach. A self-rating does not automatically choose an axis.',
   noGoals:'No active goal saved yet. Set one in My Goals & Coaching Reports.',
   noSteps:'No confirmed next step saved yet.',noNotes:'Your reviewed coaching reflections will appear here.',
-  start:'Continue with a coach',edit:'Edit my goals',unavailable:'Saved details are unavailable right now.',
+  start:'Continue with a coach',openJournal:'Open my private journal',edit:'Edit my goals',unavailable:'Saved details are unavailable right now.',
   measured:'My self-ratings',noRatings:'No saved introductory axis ratings yet.',
  },
  ru:{
@@ -25,7 +25,7 @@ const TEXT={
   axes:'Восемь смысловых осей',axesIntro:'Вы можете обсудить ось с коучем. Самооценка не означает автоматический выбор оси.',
   noGoals:'Активных целей пока нет. Их можно оформить в разделе целей и отчётов.',
   noSteps:'Подтверждённых следующих шагов пока нет.',noNotes:'Здесь появятся ваши сохранённые итоги коучинга.',
-  start:'Продолжить с коучем',edit:'Уточнить цели',unavailable:'Сейчас не удалось загрузить сохранённые данные.',
+  start:'Продолжить с коучем',openJournal:'Открыть личный дневник',edit:'Уточнить цели',unavailable:'Сейчас не удалось загрузить сохранённые данные.',
   measured:'Мои самооценки',noRatings:'Сохранённых оценок восьми осей пока нет.',
  },
  es:{
@@ -35,7 +35,7 @@ const TEXT={
   axes:'Ocho ejes de significado',axesIntro:'Explora un eje con tu coach. La autoevaluación no selecciona automáticamente un eje.',
   noGoals:'Todavía no hay metas activas guardadas. Puedes añadirlas en Mis metas.',
   noSteps:'Todavía no hay pasos confirmados.',noNotes:'Aquí aparecerán las reflexiones guardadas de tus sesiones.',
-  start:'Continuar con un coach',edit:'Editar mis metas',unavailable:'Los datos guardados no están disponibles.',
+  start:'Continuar con un coach',openJournal:'Abrir mi diario privado',edit:'Editar mis metas',unavailable:'Los datos guardados no están disponibles.',
   measured:'Mis autoevaluaciones',noRatings:'Todavía no hay valoraciones guardadas.',
  }
 }
@@ -95,6 +95,7 @@ export default function CoachingDaybook({accountId,locale='en'}){
       <small>{t.measured}: {ratings.find(r=>r.axis===axis.id).current} → {ratings.find(r=>r.axis===axis.id).desired}</small>:null}
    </span>)}</div>
   </section>
-  <Link className={css.coach} href={'/'+lang+'/my-coach'} prefetch={false}>{t.start}<ArrowRight size={20}/></Link>
+  <Link className={css.coach} href={'/'+lang+'/app/daybook'} prefetch={false}>{t.openJournal}<ArrowRight size={20}/></Link>
+  <Link href={'/'+lang+'/my-coach'} prefetch={false}>{t.start}<ArrowRight size={20}/></Link>
  </section>
 }
