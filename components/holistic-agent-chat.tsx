@@ -308,13 +308,13 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     if(!messengerView||!voiceEnabled)return;
     if(voice.speechLocale!==locale)voice.setSpeechLocale(locale);
     const available=voice.voices.filter(item=>item.lang.toLowerCase().startsWith(locale));
-    if(available.length){
+    if(available.length&&!voice.conversing){
       const ordered=[...available].sort((a,b)=>a.name.localeCompare(b.name));
       const selected=ordered[persona.voice.slot%ordered.length]?.voiceURI;
       if(selected&&selected!==voice.voiceId)voice.setVoiceId(selected);
     }
     if(Math.abs(voice.rate-persona.voice.rate)>0.015)voice.setRate(persona.voice.rate);
-  },[messengerView,voiceEnabled,locale,persona.id,voice.voices,voice.voiceId,voice.rate,voice.setVoiceId,voice.setRate,voice.speechLocale,voice.setSpeechLocale]);
+  },[messengerView,voiceEnabled,locale,persona.id,voice.voices,voice.voiceId,voice.rate,voice.setVoiceId,voice.setRate,voice.speechLocale,voice.setSpeechLocale,voice.conversing]);
   const [mode,setMode]=useState<Mode>("rules");
   // Pro intentionally selects the already budget-gated Gemini FREE API, never Paid.
   const [proSelected,setProSelected]=useState(false);
@@ -372,6 +372,9 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   useEffect(()=>()=>voiceAbortRef.current?.abort(),[]);
   const [entryOpen,setEntryOpen]=useState(true);
   const [recorderOpen,setRecorderOpen]=useState(false);
+  const [voicePermissionOpen,setVoicePermissionOpen]=useState(false);
+  const [recordedSttConsent,setRecordedSttConsent]=useState(false);
+  const voiceRequiresRecorded=voice.prefersRecorded||!voice.recognitionSupported;
   const [guideLink,setGuideLink]=useState<"tests"|null>(null);
   const [testChatOpen,setTestChatOpen]=useState(false);
   const [projectFlow,setProjectFlow]=useState<MessengerProjectId|null>(null);
@@ -1647,6 +1650,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         setMessages(prev=>prev.at(-1)?.role==="user"&&prev.at(-1)?.text===text?
           prev.slice(0,-1):prev);
         setDraft(text);
+        voice.stopDialogue();
         setStatus(locale==="ru"?"Gemini сейчас недоступен. Текст сохранён — повторите позже или выберите Free.":
           locale==="es"?"Gemini no está disponible. Conservamos tu texto; inténtalo luego o elige Free.":
           "Gemini is unavailable. Your text is kept; retry later or choose Free.");
@@ -1663,7 +1667,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     event.preventDefault();
     sendSelectedTurn(draft);
   }
-  function resetConversation(){setPsychInterview("off");setPsychStage("situation");setPsychSlots({});setPsychSummaryVisible(false);setPsychFinalSummary(null);setPsychCopyStatus("idle");nativeSession.current=null;voice.stopDialogue();lastSpeechTurn.current=null;alternativeAbortRef.current?.abort();alternativeAbortRef.current=null;lastAnswerRef.current=null;setAlternativeBusy(false);controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setSupportQuizOpen(false);setSupportSelection(null);setFriendTone("friendly");setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setTestFocus(null);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);setRecorderOpen(false);proAbort.current?.abort();proAbort.current=null;proTurns.current=[];
+  function resetConversation(){setPsychInterview("off");setPsychStage("situation");setPsychSlots({});setPsychSummaryVisible(false);setPsychFinalSummary(null);setPsychCopyStatus("idle");nativeSession.current=null;voice.stopDialogue();lastSpeechTurn.current=null;alternativeAbortRef.current?.abort();alternativeAbortRef.current=null;lastAnswerRef.current=null;setAlternativeBusy(false);controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setSupportQuizOpen(false);setSupportSelection(null);setFriendTone("friendly");setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setTestFocus(null);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);setRecorderOpen(false);setVoicePermissionOpen(false);setRecordedSttConsent(false);proAbort.current?.abort();proAbort.current=null;proTurns.current=[];
     setProBusy(false);setProSelected(false);setProConsent(false);setProDataConsent(false);setGeminiAvailable(null);}
 
   useEffect(()=>{
@@ -1682,6 +1686,28 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       window.removeEventListener("hh:messenger-open-history",openConversationHistory);
     };
   },[locale,authenticated]);
+
+  function beginMessengerVoice(){
+    if(!voiceEnabled){setStatus(locale==="ru"?"Голосовой разговор сейчас отключён.":locale==="es"?
+      "El chat de voz está desactivado.":"Voice conversation is disabled.");return;}
+    if(proSelected&&!proReady){
+      setStatus(locale==="ru"?"Для голосового Pro сначала войдите в аккаунт и разрешите Gemini.":locale==="es"?
+        "Para hablar con Gemini, inicia sesión y da tu consentimiento.":
+        "Sign in and approve the Gemini Pro consents before voice.");
+      return;
+    }
+    if(!voice.supported||!voice.playbackConsent||!voice.sttConsent)return;
+    if(voiceRequiresRecorded&&(!voice.recordedSupported||!recordedSttConsent))return;
+    const launched=voice.startDialogue(text=>{
+      if(busy||proBusy||(proSelected&&!proReady)||(mode==="owned"&&!agree)){
+        setDraft(text);voice.stopDialogue();return;
+      }
+      if(requiresProtectedReply(text,locale))voice.stopDialogue();
+      setDraft(text);sendSelectedTurn(text);
+    },{allowRecorded:voiceRequiresRecorded&&recordedSttConsent,
+      recordedPurpose:authenticated?'ali_chat':'public'});
+    if(launched){setVoicePermissionOpen(false);setStatus("");}
+  }
 
   const voiceAttachment=compact?<label className={styles.mode} data-hh-voice-message-upload
     style={{display:"inline-flex",alignItems:"center",cursor:"pointer",fontSize:13}}>
@@ -1778,7 +1804,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const composer=(
     <form onSubmit={submit} className={styles.form} data-hh-ai-chat-composer={messengerView||undefined}
       data-landing-composer={showLandingComposer||undefined}
-      data-gemini-pending={messengerView&&proSelected&&!proReady||undefined}>
+      data-gemini-pending={messengerView&&proSelected&&!proReady||undefined}
+      data-voice-onboarding={messengerView&&(voicePermissionOpen||voice.conversing||Boolean(voice.notice))||undefined}>
       <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)}
         placeholder={showLandingComposer?(locale==="ru"?"Опиши ситуацию, вопрос или цель…":locale==="es"?"Describe tu situación, pregunta o meta…":"Describe your situation, concern, or goal…"):t.placeholder}
         onFocus={()=>{
@@ -1832,18 +1859,20 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
             (locale==="ru"?"Начать бесплатный чат":locale==="es"?"Empezar chat gratis":"Start free chat")}</span>}</>:busy?t.loading:t.send}</button>
         {messengerView&&!pageHelp&&<button type="button"
           className={styles.recorderToggle} data-hh-conversation-mic
-          onClick={()=>voice.conversing?voice.stopDialogue():voice.startDialogue(text=>{
-            if(busy||proBusy||(proSelected&&!proReady)||(mode==="owned"&&!agree)){
-              setDraft(text);voice.stopDialogue();return;
-            }
-            if(requiresProtectedReply(text,locale))voice.stopDialogue();
-            setDraft(text);sendSelectedTurn(text);
-          })}
-          disabled={!voiceEnabled||(!voice.conversing&&
-            (!voice.recognitionSupported||!voice.sttConsent||!voice.supported||!voice.playbackConsent))}
+          onClick={()=>{
+            if(voice.conversing){
+              if(voice.speaking)voice.interruptReply();
+              else voice.stopDialogue();
+            }else setVoicePermissionOpen(true);
+          }}
+          disabled={!voiceEnabled}
           aria-pressed={voice.conversing}
-          aria-label={voice.conversing?(locale==="ru"?"Завершить голосовой разговор":locale==="es"?"Terminar conversación":"End voice conversation"):
-            (locale==="ru"?"Голосовой разговор":locale==="es"?"Conversación por voz":"Voice conversation")}>
+          aria-expanded={voicePermissionOpen}
+          aria-controls="hh-ai-voice-onboarding"
+          aria-label={voice.conversing?(voice.speaking?
+            (locale==="ru"?"Перебить и говорить":locale==="es"?"Interrumpir y hablar":"Interrupt and speak"):
+            (locale==="ru"?"Завершить голосовой разговор":locale==="es"?"Terminar conversación":"End voice conversation")):
+            (locale==="ru"?"Начать голосовой разговор":locale==="es"?"Iniciar voz":"Start voice conversation")}>
           <Mic size={20} aria-hidden="true"/>
         </button>}
         {busy&&<button type="button" onClick={()=>{voice.stopDialogue();controller.current?.abort();}}
@@ -1851,6 +1880,53 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         {proBusy&&<button type="button" onClick={()=>{proAbort.current?.abort();setProBusy(false);}}
           aria-label={messengerView?t.cancel:undefined}><X size={19} aria-hidden="true"/></button>}
       </div>
+      {messengerView&&voicePermissionOpen&&!voice.conversing&&<section
+        id="hh-ai-voice-onboarding" className={styles.voiceOnboarding}
+        data-hh-ai-voice-consent role="group" aria-label={locale==="ru"?"Голосовой разговор":locale==="es"?"Conversación por voz":"Voice conversation"}>
+        <strong>{locale==="ru"?"Говорите с Ali":locale==="es"?"Habla con Ali":"Talk with Ali"}</strong>
+        <label><input type="checkbox" checked={voice.playbackConsent}
+          onChange={event=>voice.setPlayback(event.target.checked)}/>
+          {voice.t.playConsent}</label>
+        <label><input type="checkbox" checked={voice.sttConsent}
+          onChange={event=>voice.setRecognitionConsent(event.target.checked)}/>
+          {voice.t.sttConsent}</label>
+        {voiceRequiresRecorded&&<div className={styles.recordedVoiceGate}>
+          <label><input type="checkbox" checked={recordedSttConsent}
+            onChange={event=>setRecordedSttConsent(event.target.checked)}/>
+            {locale==="ru"?"Разрешаю отправлять короткие голосовые реплики Groq Whisper Free для распознавания. Аудио Holistic House не хранит.":
+             locale==="es"?"Autorizo enviar frases cortas a Groq Whisper Free para transcripción. No se guarda audio.":
+             "I consent to sending short speech clips to Groq Whisper Free for transcription. Holistic House does not store audio."}
+          </label>
+          {!authenticated&&<p>{locale==="ru"?"Для гостей действует общая ограниченная бесплатная квота. Вход даёт отдельный лимит.":locale==="es"?
+            "Para invitados hay una cuota gratuita compartida y limitada. Inicia sesión para un límite personal.":
+            "Guests share a small free quota. Sign in for a separate personal limit."}{" "}
+            <a href={"/"+locale+"/app/portrait"}>{locale==="ru"?"Войти":locale==="es"?"Entrar":"Sign in"}</a></p>}
+        </div>}
+        {voice.notice&&<small role="status">{voice.notice}</small>}
+        <div className={styles.voiceConsentActions}>
+          <button type="button" onClick={()=>setVoicePermissionOpen(false)}>
+            {locale==="ru"?"Не сейчас":locale==="es"?"Ahora no":"Not now"}</button>
+          <button type="button" data-hh-ai-start-voice
+            disabled={!voice.supported||!voice.playbackConsent||!voice.sttConsent||
+              (voiceRequiresRecorded&&(!voice.recordedSupported||!recordedSttConsent))||
+              (proSelected&&!proReady)}
+            onClick={beginMessengerVoice}>
+            <Mic size={17} aria-hidden="true"/>
+            {locale==="ru"?"Начать говорить":locale==="es"?"Empezar a hablar":"Start talking"}
+          </button>
+        </div>
+      </section>}
+      {messengerView&&(voice.conversing||voice.notice)&&<div className={styles.voiceConversationStatus}
+        data-hh-ai-voice-status role="status" aria-live="polite">
+        <span>{voice.notice||(
+          voice.speaking?(locale==="ru"?"Ali отвечает…":locale==="es"?"Ali responde…":"Ali is speaking…"):
+          voice.recording?(locale==="ru"?"Слушаю…":locale==="es"?"Escuchando…":"Listening…"):
+          locale==="ru"?"Голосовой разговор включён":locale==="es"?"Conversación activa":"Voice conversation active")}</span>
+        {voice.conversing&&<button type="button" data-hh-ai-stop-voice
+          onClick={()=>voice.stopDialogue()}>
+          {locale==="ru"?"Завершить":locale==="es"?"Terminar":"End"}
+        </button>}
+      </div>}
       {messengerView&&proSelected&&!proReady&&<div className={styles.geminiConsent} data-hh-ai-gemini-consent role="group"
         aria-label="Gemini consultant">
         <strong>{locale==="ru"?"Pro · консультант Gemini (бесплатный API)":locale==="es"?

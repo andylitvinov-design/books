@@ -881,3 +881,66 @@
  .root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form textarea{
    min-height:85px;height:85px}
 }
+
+/* Ali mobile microphone: tap reveals explicit permissions before using hardware.
+   iOS 27 uses the existing short free STT path only with signed-in opt-in. */
+.root[data-compact][data-chat-skin="messenger"] .voiceOnboarding{
+  display:grid;gap:8px;min-width:0;width:100%;padding:10px 11px;
+  box-sizing:border-box;border:1px solid #cee5d9;border-radius:15px;
+  background:#f8fcf8;color:#194839;font:520 12px/1.4 system-ui,sans-serif
+}
+.root[data-compact][data-chat-skin="messenger"] .voiceOnboarding strong{
+  font:800 15px/1.3 system-ui,sans-serif;color:#114937}
+.root[data-compact][data-chat-skin="messenger"] .voiceOnboarding label{
+  display:flex;align-items:flex-start;gap:8px;min-width:0;overflow-wrap:anywhere}
+.root[data-compact][data-chat-skin="messenger"] .voiceOnboarding input[type="checkbox"]{
+  margin:2px 0 0;width:18px;height:18px;min-width:18px;accent-color:#07977a}
+.root[data-compact][data-chat-skin="messenger"] .recordedVoiceGate p{margin:1px 0;font:inherit}
+.root[data-compact][data-chat-skin="messenger"] .recordedVoiceGate a{
+  font-weight:800;color:#05694f;text-decoration:underline}
+.root[data-compact][data-chat-skin="messenger"] .voiceConsentActions{
+  display:flex;gap:7px;align-items:center;justify-content:flex-end}
+.root[data-compact][data-chat-skin="messenger"] .voiceConsentActions button{
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  min-height:42px;padding:7px 12px;border-radius:11px;
+  border:1px solid #cbdad0;color:#17513d;background:#fffefa;
+  font:750 12px/1.2 system-ui,sans-serif}
+.root[data-compact][data-chat-skin="messenger"] .voiceConsentActions button[data-hh-ai-start-voice]{
+  background:#087e64;border-color:#087e64;color:white}
+.root[data-compact][data-chat-skin="messenger"] .voiceConsentActions button:disabled{
+  opacity:.46;cursor:not-allowed}
+.root[data-compact][data-chat-skin="messenger"] .voiceConversationStatus{
+  display:flex;gap:8px;align-items:center;justify-content:space-between;
+  min-height:34px;padding:5px 9px;box-sizing:border-box;
+  border:1px solid #bcdbc9;border-radius:11px;background:#edfbf4;
+  color:#14553e;font:690 12px/1.3 system-ui,sans-serif}
+.root[data-compact][data-chat-skin="messenger"] .voiceConversationStatus button{
+  flex:none;min-height:33px;padding:5px 9px;background:white;
+  border:1px solid #bedccc;border-radius:9px;color:#11694e;
+  font:740 12px/1.2 system-ui,sans-serif}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form[data-voice-onboarding="true"]{
+  min-height:0;display:flex;flex-direction:column;align-items:stretch;gap:8px;
+  padding:10px}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form[data-voice-onboarding="true"] textarea{
+  min-height:56px;height:56px;padding:4px;flex:none}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form[data-voice-onboarding="true"] .actions{
+  position:static;order:1;width:100%;align-self:stretch}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form[data-voice-onboarding="true"] .voiceOnboarding{
+  order:2}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form[data-voice-onboarding="true"] .voiceConversationStatus{
+  order:3}
+.root[data-compact][data-chat-skin="messenger"]>.form[data-voice-onboarding="true"]{
+  flex-direction:column;align-items:stretch;gap:6px;
+  max-height:min(65dvh,480px);overflow-y:auto}
+.root[data-compact][data-chat-skin="messenger"]>.form[data-voice-onboarding="true"] textarea{
+  flex:none;width:100%;min-height:44px;height:44px}
+.root[data-compact][data-chat-skin="messenger"]>.form[data-voice-onboarding="true"] .actions{
+  width:100%;align-self:stretch;justify-content:space-between}
+.root[data-compact][data-chat-skin="messenger"] .recorderToggle[aria-expanded="true"]{
+  border-color:#0c9778;color:#066d54;background:#e7f9ef}
+.root[data-compact][data-chat-skin="messenger"] .recorderToggle[aria-pressed="true"]{
+  color:#075641;border-color:#0c9778;background:#ddf4e6}
+@media(max-width:370px){
+ .root[data-compact][data-chat-skin="messenger"] .voiceOnboarding{font-size:11px;padding:8px}
+ .root[data-compact][data-chat-skin="messenger"] .voiceConsentActions button{padding:6px 8px;font-size:11px}
+}
