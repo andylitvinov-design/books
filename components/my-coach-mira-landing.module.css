@@ -421,3 +421,7 @@
 .railPortrait[data-persona=merlin]{background-image:url('/images/holistic-house/my-coach-motion/merlin-still.webp')!important;background-size:cover!important;background-position:center 24%!important}
 .heroPortrait[data-persona=harry]{background-image:url('/images/holistic-house/my-coach-motion/harry-soft-still.webp')!important;background-size:cover!important;background-position:center 24%!important}
 .railPortrait[data-persona=harry]{background-image:url('/images/holistic-house/my-coach-motion/harry-soft-still.webp')!important;background-size:cover!important;background-position:center 24%!important}
+
+/* Samir: small first-party photographic raster in the coach chooser; preserve SVG for large hero. */
+.railPortrait[data-persona=genie]{background-image:url('/images/holistic-house/my-coach-motion/genie-photo.webp')!important;background-size:cover!important;background-position:center 24%!important}
+.heroPortrait[data-persona=genie]{background-image:url('/images/holistic-house/my-coach-motion/genie-still.svg')!important;background-size:cover!important;background-position:center 38%!important}

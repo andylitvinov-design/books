@@ -70,12 +70,13 @@ test("macOS WebKit hydration follows visible Goals → Ideas → Montage without
  const ideas=flow.indexOf('toHaveAttribute("data-active-workspace","phrases",{timeout:15000})',click);
  const goalPanel=flow.indexOf('const ideasGoalPane=page.locator',ideas);
  const preserved=flow.indexOf("await expect(ideasGoalPane.locator('[data-video-ideas-goal-choice=\"rest\"]'))",goalPanel);
- const next=flow.indexOf("await ideasGoalPane.locator('[data-video-ideas-goal-next]').click()",preserved);
+ const nextControl=flow.indexOf("const ideasNext=ideasGoalPane.locator('[data-video-ideas-goal-next]')",preserved);
+ const next=flow.indexOf("await ideasNext.tap()",nextControl);
  const personalized=flow.indexOf('data-video-ideas-personalization-panel',next);
  const montage=flow.indexOf("await montage.tap()",personalized);
  assert.ok(first>=0&&last>first&&scope>=0&&choose>scope&&goalContinue>choose&&
    format>goalContinue&&click>format&&ideas>click&&goalPanel>ideas&&preserved>goalPanel&&
-   next>preserved&&personalized>next&&montage>personalized,
+   nextControl>preserved&&next>nextControl&&personalized>next&&montage>personalized,
    "one visible journey chooses the original Goal before Format, preserves it in Ideas and reaches Montage");
  assert.match(flow,/data-video-continue-scenarios/);
  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
