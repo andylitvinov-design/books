@@ -6,7 +6,8 @@ import styles from './my-coach-speech-loop.module.css'
 import {
   GeminiLivePcmPlayer,GeminiLivePcmResampler,GeminiLiveBargeGate,GeminiLiveBargeDetector,
   geminiLiveAudioRms,geminiLiveSocketUrl,geminiLiveSetupMessage,
-  geminiLivePcmMessage,geminiLiveTextMessage,geminiLiveStartMessage,readGeminiLiveServerMessage,
+  geminiLivePcmMessage,geminiLiveTextMessage,geminiLiveStartMessage,
+  geminiLiveContextMessage,geminiLiveDirectorMessage,readGeminiLiveServerMessage,
   appendGeminiLiveTranscript,
 } from '@/lib/coaching/gemini-live-transport.mjs'
 
@@ -21,6 +22,8 @@ const ui={
     rateLimit:'Лимит бесплатных голосовых подключений достигнут. Можно продолжить текстом.',
     login:'Для голосовой сессии снова войдите в Holistic House.',
     greetingLate:'Соединение готово, но первая фраза задерживается. Вы можете начать говорить.',
+    contextUnavailable:'Разрешённые сведения пока не загружены. Можно продолжить без них.',
+    contextRevoked:'Доступ отозван: голосовая связь завершена. Ранее переданные сведения могут остаться у провайдера.',
     ended:'20 минут — голосовую сессию можно завершить или начать новую.'},
   en:{start:'Start live conversation',connecting:'Connecting Gemini Live…',
     listening:'Listening',speaking:'Coach speaking',thinking:'Coach replying…',
@@ -32,6 +35,8 @@ const ui={
     rateLimit:'Free live voice limit reached. You can continue by text.',
     login:'Sign in to Holistic House again to use live voice.',
     greetingLate:'Connected, but the first spoken reply is delayed. You can start speaking.',
+    contextUnavailable:'Approved context was not loaded. You can keep talking without it.',
+    contextRevoked:'Access changed: this voice connection was closed. Previously shared data may remain with the provider.',
     ended:'20 minutes — close the voice session or begin a new one.'},
   es:{start:'Iniciar voz en vivo',connecting:'Conectando voz Gemini…',
     listening:'Escuchando',speaking:'El coach habla',thinking:'Respondiendo…',
@@ -43,6 +48,8 @@ const ui={
     rateLimit:'Se alcanzó el límite de voz gratuita. Puedes seguir escribiendo.',
     login:'Inicia sesión de nuevo en Holistic House para usar la voz.',
     greetingLate:'Conectado, pero la primera frase tarda. Puedes empezar a hablar.',
+    contextUnavailable:'No se cargó el contexto autorizado. Puedes continuar sin él.',
+    contextRevoked:'Se revocó el acceso: se cerró esta conversación. El proveedor puede conservar datos enviados antes.',
     ended:'20 minutos: puedes terminar la sesión o comenzar otra.'},
 }
 const MAX_SESSION_MS=1200000
@@ -60,6 +67,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   onMicLevel,onInputInterim,onInputFinal,onOutputInterim,onOutputFinal,
   onInterrupted,onDirectorProgress,onOpeningProgress,onNotice,
   openingPrior=null,allowOpeningPrior=false,
+  liveContextAccess='',contextRevision=0,
 },ref){
   const lang=safeLocale(locale),t=ui[lang]
   const [phase,setPhase]=useState('idle')
@@ -70,7 +78,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   propsRef.current={locale:lang,personaId,settings,voiceName,enabled,canStart,
     elapsedSeconds,onSessionStart,onVoiceStateChange,onMicLevel,onInputInterim,
     onInputFinal,onOutputInterim,onOutputFinal,onInterrupted,
-    onDirectorProgress,onOpeningProgress,onNotice,openingPrior,allowOpeningPrior}
+    onDirectorProgress,onOpeningProgress,onNotice,openingPrior,allowOpeningPrior,
+    liveContextAccess,contextRevision}
 
   const notify=text=>{
     setNotice(text)
@@ -105,6 +114,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(r.timer)clearTimeout(r.timer)
     if(r.reconnectTimer)clearTimeout(r.reconnectTimer)
     if(r.greetingTimer)clearTimeout(r.greetingTimer)
+    if(r.sidebandTimer)clearTimeout(r.sidebandTimer)
+    r.pendingContext='';r.pendingDirectorHint=''
     propsRef.current.onMicLevel?.(0)
   }
   function stop(){
@@ -143,11 +154,12 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(r.ended||!r.socket||r.socket.readyState!==1)return false
     try{r.socket.send(JSON.stringify(packet));return true}catch{return false}
   }
-  async function checkpoint(r,message){
+  async function checkpoint(r,message,preceding=null){
     const text=audioTranscription(message)
     if(!text||r.ended)return
     const p=propsRef.current
-    const previous=r.history.slice(-10)
+    const ticket=++r.checkpointSerial
+    const previous=Array.isArray(preceding)?preceding:r.history.slice(-10)
     // A typed or ASR turn is sent to the SAME bounded server Director.
     // This does NOT request another text/audio model or persist a transcript.
     try{
@@ -162,11 +174,21 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
           consent:true,voiceConsent:true,trainingUseConsent:true}),
       })
       const data=response.ok?await response.json().catch(()=>null):null
-      if(!r.ended&&data?.schema==='HH_GEMINI_LIVE_DIRECTOR_V1'&&
-         data.sessionProgress?.source==='director-client-evidence')
+      if(!r.ended&&ticket===r.checkpointSerial&&
+         data?.schema==='HH_GEMINI_LIVE_DIRECTOR_V1'&&
+         data.source==='director-client-evidence'&&
+         data.sessionProgress?.source==='director-client-evidence'){
         p.onDirectorProgress?.(data.sessionProgress)
-      if(!r.ended&&data?.openingProgress?.schema==='hh-coach-opening-v1-20261122')
-        p.onOpeningProgress?.(data.openingProgress)
+        if(data.openingProgress?.schema==='hh-coach-opening-v1-20261122')
+          p.onOpeningProgress?.(data.openingProgress)
+        // This is the NEXT-turn reviewed Director hint, never a replacement
+        // for client words, approval, provider consent, or authoritative state.
+        const guidance=typeof data.guidance==='string'?data.guidance.trim():''
+        if(guidance&&guidance.length<=620){
+          r.pendingDirectorHint=guidance
+          flushSideband(r)
+        }
+      }
     }catch{/* Ignore failed evidence check; never promote unverified model speech. */}
   }
   function commitInput(r){
@@ -180,7 +202,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     propsRef.current.onInputFinal?.(value)
     r.openingHistory.push(value)
     r.openingHistory=r.openingHistory.slice(0,33)
-    void checkpoint({...r,history:preceding},value)
+    r.lastAssistantTurnFinished=false
+    r.pendingDirectorHint=''
+    void checkpoint(r,value,preceding)
   }
   function commitOutput(r){
     const value=audioTranscription(r.outputText)
@@ -191,6 +215,76 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     r.history=r.history.slice(-20)
     propsRef.current.onOutputFinal?.(value,{interrupted:r.interrupted})
     r.interrupted=false
+  }
+  // Deliver server-rechecked references and Director hints ONLY after the
+  // previous audible assistant turn ends and the human microphone is idle.
+  // clientContent can interrupt a Google model, even with turnComplete:false.
+  function canSendSideband(r){
+    return !r.ended&&r.ready&&r.socket?.readyState===1&&
+      r.lastAssistantTurnFinished&&!r.speaking&&!r.player?.playing&&
+      !r.modelTurnComplete&&!r.pendingAudio?.length&&!r.inputText&&
+      !r.bargeDetector.userActive&&!r.reconnectSoon&&
+      Date.now()-(r.lastHumanAudioAt||0)>350
+  }
+  function flushSideband(r){
+    if(!canSendSideband(r)){
+      if(!r.ended&&r.ready&&r.lastAssistantTurnFinished&&
+         (r.pendingContext||r.pendingDirectorHint)&&
+         Date.now()-(r.lastHumanAudioAt||0)<=350&&!r.sidebandTimer){
+        r.sidebandTimer=setTimeout(()=>{
+          r.sidebandTimer=null
+          if(!r.ended)flushSideband(r)
+        },400)
+      }
+      return
+    }
+    if(r.sidebandTimer){clearTimeout(r.sidebandTimer);r.sidebandTimer=null}
+    if(r.pendingContext){
+      if(propsRef.current.liveContextAccess!==r.contextRequestKey){
+        r.pendingContext=''
+      }else try{
+        const packet=geminiLiveContextMessage(r.pendingContext)
+        if(sendSocket(r,packet)){
+          r.contextSentKey=r.contextRequestKey
+          r.pendingContext=''
+        }
+      }catch{r.pendingContext=''}
+    }
+    if(r.pendingDirectorHint&&!r.pendingContext){
+      try{
+        const packet=geminiLiveDirectorMessage(r.pendingDirectorHint)
+        if(sendSocket(r,packet))r.pendingDirectorHint=''
+      }catch{r.pendingDirectorHint=''}
+    }
+  }
+  async function loadApprovedContext(r){
+    const key=propsRef.current.liveContextAccess
+    if(!key||r.ended||!r.ready||r.contextRequestKey===key)return
+    if(r.contextSentKey&&r.contextSentKey!==key){
+      notify(t.contextRevoked);stop();return
+    }
+    r.contextRequestKey=key
+    r.pendingContext=''
+    const revisionAtRequest=propsRef.current.contextRevision
+    try{
+      const response=await fetch('/api/app/my-coach/live-context',{
+        method:'POST',credentials:'same-origin',cache:'no-store',
+        signal:r.abort.signal,headers:{'Content-Type':'application/json'},body:key,
+      })
+      const result=response.ok?await response.json().catch(()=>null):null
+      if(r.ended||propsRef.current.liveContextAccess!==key||
+         r.contextRequestKey!==key||r.contextVersion!==revisionAtRequest||
+         propsRef.current.contextRevision!==revisionAtRequest)return
+      if(!result||result.schema!=='HH_MY_COACH_LIVE_CONTEXT_V1'||
+         typeof result.note!=='string')throw Error('LIVE_CONTEXT_INVALID')
+      if(result.note){
+        r.pendingContext=result.note
+        flushSideband(r)
+      }
+    }catch{
+      if(!r.ended&&propsRef.current.liveContextAccess===key)
+        notify(t.contextUnavailable)
+    }
   }
   // A generated/queued assistant turn is not completed until its last PCM
   // source finishes playing. Do not tell the Director it was fully heard early.
@@ -203,8 +297,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     r.modelTurnComplete=false
     r.hadAudio=false
     r.outputWithoutAudio=false
+    r.lastAssistantTurnFinished=true
     if(r.reconnectSoon)maybeReconnectOnGoAway(r)
-    else phaseChange('listening')
+    else{phaseChange('listening');flushSideband(r)}
   }
   function maybeReconnectOnGoAway(r){
     if(!r.reconnectSoon||r.ended||r.reconnects>=1||!r.resumeHandle||
@@ -296,6 +391,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
           if(!r.ended&&!r.firstAudio)notify(t.greetingLate)
         },10000)
       }else phaseChange('listening')
+      if(propsRef.current.liveContextAccess)void loadApprovedContext(r)
       return
     }
     if(!r.ready)return
@@ -366,6 +462,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const audio=chunk instanceof Float32Array?chunk:new Float32Array(chunk)
     if(!audio.length)return
     const level=geminiLiveAudioRms(audio)
+    if(level>=0.013)r.lastHumanAudioAt=Date.now()
     propsRef.current.onMicLevel?.(Math.max(0,Math.min(1,level*4)))
     // Listen CONTINUOUSLY while the coach plays, including very quiet speech.
     // First candidate ducks playback to rule out its own acoustic echo; a
@@ -537,6 +634,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       introSent:false,sessionStarted:false,firstAudio:false,greetingTimer:null,
       pendingAudio:[],pendingAudioChars:0,audioResuming:false,audioNoticeShown:false,
       reconnectSoon:false,backpressureChunks:0,
+      checkpointSerial:0,lastAssistantTurnFinished:false,lastHumanAudioAt:0,
+      contextRequestKey:'',contextSentKey:'',contextVersion:propsRef.current.contextRevision,
+      pendingContext:'',pendingDirectorHint:'',sidebandTimer:null,
       bargeDetector:new GeminiLiveBargeDetector(),
       reconnects:0,voiceName:p.voiceName,locale:p.locale,personaId:p.personaId,
       settings:p.settings,allowOpeningPrior:p.allowOpeningPrior===true,
@@ -575,7 +675,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     propsRef.current.onInputFinal?.(body)
     r.openingHistory.push(body)
     r.openingHistory=r.openingHistory.slice(0,33)
-    void checkpoint({...r,history:previous},body)
+    r.lastAssistantTurnFinished=false
+    r.pendingDirectorHint=''
+    void checkpoint(r,body,previous)
     phaseChange('thinking')
     return true
   }
@@ -604,6 +706,24 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       stop()
     }
   },[])
+  useEffect(()=>{
+    const r=runtime.current
+    if(!r||r.ended)return
+    // The Google socket retains previously delivered reference data. A
+    // withdrawal, provider/topic/grant revision change MUST retire it; do not
+    // pretend that a new context packet can retract an earlier disclosure.
+    if(r.contextSentKey&&(r.contextSentKey!==liveContextAccess||
+       r.contextVersion!==contextRevision)){
+      notify(t.contextRevoked);stop();return
+    }
+    const revisionChanged=r.contextVersion!==contextRevision
+    r.contextVersion=contextRevision
+    if(revisionChanged||r.contextRequestKey!==liveContextAccess){
+      r.pendingContext=''
+      r.contextRequestKey=''
+      if(r.ready&&liveContextAccess)void loadApprovedContext(r)
+    }
+  },[liveContextAccess,contextRevision])
   useEffect(()=>{
     // Changing persona, language, voice or consent must never silently keep
     // streaming captured audio under the previous server-locked token.
