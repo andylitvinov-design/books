@@ -1,6 +1,8 @@
 'use client'
 
 import {useEffect,useRef,useState} from 'react'
+import {appFetch,getCabinetBootstrap} from '@/lib/app/client-fetch'
+import MyCoachContext from '@/components/app/my-coach-context'
 import Link from 'next/link'
 import {ArrowLeft,ChevronDown,ArrowRight,Heart,Home,Keyboard,Leaf,Languages,PhoneOff,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Play,LoaderCircle,Zap,Download,Printer,FileText,Maximize2,Minimize2} from 'lucide-react'
 import {getCoachPersona,localCoachText,coachStagePrompt} from '@/lib/coaching/persona-registry.mjs'
@@ -306,6 +308,19 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [contextTopic,setContextTopic]=useState('')
   const [contextAssessments,setContextAssessments]=useState(false)
   const [contextPaused,setContextPaused]=useState(false)
+  const [contextSession,setContextSession]=useState(null)
+  const [contextSessionLoading,setContextSessionLoading]=useState(false)
+  const [contextSessionError,setContextSessionError]=useState(false)
+  const [contextRevision,setContextRevision]=useState(0)
+  useEffect(()=>{
+    if(!contextSession||contextSession.expired)return
+    const timer=setTimeout(()=>{
+      setContextSession(current=>current===contextSession?{...current,expired:true}:current)
+      setStagedMemory(null)
+      cancelPendingCoachTurn()
+    },Math.max(0,contextSession.expiresAt-Date.now()))
+    return ()=>clearTimeout(timer)
+  },[contextSession])
   const composerDetailsRef=useRef(null),speechRef=useRef(null)
   const replayControllerRef=useRef(null),replayPlayerRef=useRef(null)
   const micWaveRef=useRef(null)
@@ -975,8 +990,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     pending.current?.abort()
     pending.current=controller
     setBusy(true);setError('');setStreamingPreview('')
-    const requestedSavedContext=!contextFocusChanged&&!contextPaused&&memoryReady&&
+    const sessionValid=!contextSession||(!contextSession.expired&&contextSession.expiresAt>Date.now())
+    const requestedSavedContext=!contextFocusChanged&&!contextPaused&&memoryReady&&sessionValid&&
       (memorySharePrior||memoryShareGoals||memoryShareTests)
+    const sessionToken=contextSession&&!contextSession.expired&&contextSession.expiresAt>Date.now()
+      ?contextSession.token:undefined
     // A previous reply may quote a saved item whose grant has since changed.
     // Keep it in the local transcript and resolve approved items again server-side.
     const providerHistory=coachProviderHistory(conversationTurns)
@@ -993,6 +1011,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           ...(requestedSavedContext?{
             memoryStageToken:stagedMemory.stageToken,memorySharePrior,
             memoryShareGoals,memoryShareTests,
+            ...(sessionToken?{contextSessionToken:sessionToken}:{}),
           }:{}),
           ...(selectedGeminiEngine?{
             engine:coachEngine,geminiConsent:true,
@@ -1510,7 +1529,36 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           setContextTopic(value);setContextAssessments(false)
         }}
         assessmentsAllowed={contextAssessments} onAssessmentsAllowed={setContextAssessments}
-        onMemoryChange={setStagedMemory}/>
+        contextSessionToken={contextSession?.token} contextRevision={contextRevision}
+        onMemoryChange={setStagedMemory}>
+          <button type="button" disabled={contextSessionLoading||busy||Boolean(contextSession&&contextSession.expiresAt>Date.now())} onClick={async()=>{
+            setContextSessionLoading(true)
+            setContextSessionError(false)
+            try{
+              const {account:{id:accountId}}=await getCabinetBootstrap('portrait')
+              const [session,plan]=await Promise.all([
+                appFetch('coaching-context/session',{},'POST',{accountId}),
+                appFetch('coaching-life-plan?locale='+lang,undefined,'GET',{accountId}),
+              ])
+              setContextSession({...session,accountId,domains:plan.domains})
+            }catch{setContextSessionError(true)}
+            finally{setContextSessionLoading(false)}
+          }}>
+            {({en:'Review context for this conversation',ru:'Проверить контекст для этой беседы',
+              es:'Revisar el contexto de esta conversación'})[lang]}
+          </button>
+          {contextSessionError&&<p role="status">
+            {({en:'Session context is unavailable.',ru:'Контекст беседы недоступен.',
+              es:'El contexto de la conversación no está disponible.'})[lang]}
+          </p>}
+          {contextSession?.expired&&<p role="status">
+            {({en:'Session permission expired. Review again to share saved context.',ru:'Разрешение для беседы истекло. Повторите проверку, чтобы поделиться контекстом.',
+              es:'El permiso de esta conversación venció. Revisa el contexto antes de compartirlo de nuevo.'})[lang]}
+          </p>}
+          {contextSession&&!contextSession.expired&&<MyCoachContext key={contextSession.sessionId}
+            accountId={contextSession.accountId} locale={lang} domains={contextSession.domains}
+            contextSessionToken={contextSession.token} onGrantChange={()=>{cancelPendingCoachTurn();setStagedMemory(null);setContextRevision(value=>value+1)}}/>}
+      </MyCoachStagedMemoryControls>
       <details className={styles.voicePrivacyDetails}>
         <summary>{lang==='ru'?'Приватность голоса':lang==='es'?'Privacidad de voz':'Voice privacy'}</summary>
         <p>{liveVoiceSelected?({
@@ -1592,6 +1640,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             <input type="checkbox" checked={contextPaused} onChange={event=>setContextPaused(event.target.checked)}/>
             {lang==='ru'?'Приостановить использование контекста в этой беседе':lang==='es'?'Pausar el uso del contexto en esta conversación':'Pause saved context for this conversation'}
           </label>}
+
         <label className={styles.coachEnginePicker} data-coach-engine-choice>
           <span>{({ru:'Движок диалога',en:'Dialogue engine',es:'Motor de diálogo'})[lang]}</span>
           <select value={coachEngine} disabled={busy} onChange={event=>{
