@@ -216,3 +216,10 @@ test("final three destinations are direct, localized and have no initial hidden 
  assert.match(mirrorCss,/\.goals\.landing \.destinationCards/);
  assert.match(mobile,/Three-category Magic Mirror/);
 });
+
+test("direct Work selection shows its own localized Topic heading, not the gift heading",()=>{
+ assert.match(mirror,/scope==="me"\?copy\.therapy:scope==="business"\?copy\.work:copy\.other/);
+ assert.match(mirror,/scope==="me"\?copy\.therapyHint:scope==="business"\?copy\.workHint:copy\.otherHint/);
+ for(const name of ['work:"Видео для работы"','work:"Videos for Work"','work:"Vídeos para el trabajo"'])
+  assert.ok(mirror.includes(name),name);
+});

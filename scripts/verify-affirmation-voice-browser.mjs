@@ -172,6 +172,10 @@ async function verifyWorkspaceHydration(browser,locale){
     await mirror.locator('[data-hh-mirror-enter="work"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","business");
+    await expect(mirror.locator('header').first()).toContainText({
+      en:"Videos for Work",ru:"Видео для работы",es:"Vídeos para el trabajo"
+    }[locale]);
+    await expect(mirror).toHaveAttribute("data-hh-mirror-mode","business");
     const workCards=mirror.locator('[data-hh-mirror-goal-choice]');
     const workLabels={
       en:["Insta Reels","Video About Me","Service Presentation","Client Video Offer"],

@@ -235,8 +235,8 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
   <button type="button" data-hh-mirror-back-landing className={css.backLanding}
    onClick={()=>{closeExistingIntro();setScreen("landing");changeStep(1);}}><ArrowLeft size={16}/>{copy.back}</button>
   <header className={css.therapyHero}>
-   <span className={css.therapyEyebrow}><Sparkles size={23} aria-hidden="true"/>{scope==="me"?copy.therapy:copy.other}</span>
-   <p>{scope==="me"?copy.therapyHint:copy.otherHint}</p>
+   <span className={css.therapyEyebrow}><Sparkles size={23} aria-hidden="true"/>{scope==="me"?copy.therapy:scope==="business"?copy.work:copy.other}</span>
+   <p>{scope==="me"?copy.therapyHint:scope==="business"?copy.workHint:copy.otherHint}</p>
   </header>
   <button type="button" className={css.exampleVideo} data-hh-mirror-play-example
     aria-label={copy.watch} onClick={playExistingIntro}>
