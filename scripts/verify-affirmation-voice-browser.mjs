@@ -2006,7 +2006,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           window.__hhReadyCheckInObserver.observe(document.body,{childList:true,subtree:true});
           scan();
         });
-        await readyGenerate.click();
+        // WebKit on a mobile touch viewport must exercise the same trusted
+        // tap as a real iPhone user. A desktop mouse click can fail to
+        // unlock Safari's local media/canvas encoder on the first gesture.
+        if(engine==="webkit")await readyGenerate.tap();
+        else await readyGenerate.click();
         phase(engine,"ready-free-render-requested");
         try{
           await expect.poll(()=>page.evaluate(()=>
@@ -2022,6 +2026,12 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
             firstVideoApproval:document.querySelector('[data-video-auto-storyboard]')?.getAttribute('data-storyboard-media-ready')||null,
             hasSelectedFilm:Boolean(document.querySelector('[data-free-film-preset][aria-pressed="true"]')),
             hasCheckin:Boolean(document.querySelector('[data-ready-sequential-checkin]')),
+            // Report only structural gate evidence, no wishes/photos/audio.
+            basicPressed:document.querySelector('[data-video-quality-option="video-basic"]')
+              ?.getAttribute('aria-pressed')||null,
+            hasReadyTierNotice:Boolean(document.querySelector('[data-ready-video-tier-notice]')),
+            hasExportError:Boolean(document.querySelector('[data-ready-export-failed]')),
+            hasSourceReady:Boolean(document.querySelector('[data-free-film-readiness]')),
             observed:window.__hhReadyInlineCheckInEvidence||null
           }));
           throw new Error("READY_CHECKIN_REAL_EXPORT_NOT_STARTED "+JSON.stringify(gate),{cause:error});
