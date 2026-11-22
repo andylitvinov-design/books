@@ -1011,6 +1011,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         };
       });
       const page=await context.newPage();
+      // Use a distinct main Studio locator throughout Personal / Montage tests.
+      const studio=page.locator("[data-video-studio-hydrated]");
       const payloads=[];
       const errors=[];
       const requests=[];
@@ -2708,15 +2710,15 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       }
       // The real gesture must commit React lazy editor state, not just HTML open.
       await expect(voicePanel).toHaveAttribute("open","",{timeout:15000});
-      const studio=voicePanel.locator("[data-voice-studio]");
-      await studio.waitFor({state:"visible",timeout:25000});
-      assert.equal(await studio.locator("[data-voice-id]").count(),6);
+      const voiceStudio=voicePanel.locator("[data-voice-studio]");
+      await voiceStudio.waitFor({state:"visible",timeout:25000});
+      assert.equal(await voiceStudio.locator("[data-voice-id]").count(),6);
       // WebKit mobile verification must issue a real touch, not a desktop mouse click.
-      if(engine==="webkit")await studio.locator("[data-voice-studio-generate]").tap();
-      else await studio.locator("[data-voice-studio-generate]").click();
-      try{await studio.locator("[data-voice-studio-audio]").waitFor({state:"visible",timeout:30000});}
+      if(engine==="webkit")await voiceStudio.locator("[data-voice-studio-generate]").tap();
+      else await voiceStudio.locator("[data-voice-studio-generate]").click();
+      try{await voiceStudio.locator("[data-voice-studio-audio]").waitFor({state:"visible",timeout:30000});}
       catch(error){
-        const snapshot=await studio.evaluate(element=>({
+        const snapshot=await voiceStudio.evaluate(element=>({
           audioNodes:element.querySelectorAll("[data-voice-studio-audio]").length,
           notices:[...element.querySelectorAll('[role="status"]')].map(e=>e.textContent?.slice(0,160)),
           buttonDisabled:element.querySelector('[data-voice-studio-generate]')?.disabled,
@@ -2730,12 +2732,12 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       assert.equal(sample.voiceId,"mark");
       assert.equal(sample.language,locale);
       assert.ok(!("text" in sample),"public voice sample never sends private content");
-      await studio.getByRole("button",{name:locale==="ru"?"Мой текст":"My own script",exact:true}).click();
+      await voiceStudio.getByRole("button",{name:locale==="ru"?"Мой текст":"My own script",exact:true}).click();
       const customText=locale==="ru"?"Сегодня я выбираю спокойствие.":"Today I choose calm.";
-      await studio.locator("textarea").fill(customText);
-      const studioConsent=studio.locator('input[type="checkbox"]');
+      await voiceStudio.locator("textarea").fill(customText);
+      const studioConsent=voiceStudio.locator('input[type="checkbox"]');
       await expect(studioConsent).not.toBeChecked({timeout:10000});
-      await expect(studio.locator("[data-voice-studio-generate]")).toBeDisabled();
+      await expect(voiceStudio.locator("[data-voice-studio-generate]")).toBeDisabled();
       // Use a genuine label tap on touch WebKit: fixed bottom navigation can
       // overlap the checkbox's 19px hit area after scrolling a long editor.
       // Never set checked in page.evaluate, force a click, or waive consent.
@@ -2744,9 +2746,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       if(engine==="webkit")await consentLabel.tap();
       else await studioConsent.check();
       await expect(studioConsent).toBeChecked();
-      if(engine==="webkit")await studio.locator("[data-voice-studio-generate]").tap();
-      else await studio.locator("[data-voice-studio-generate]").click();
-      await studio.locator("[data-voice-studio-audio]").waitFor({state:"visible",timeout:30000});
+      if(engine==="webkit")await voiceStudio.locator("[data-voice-studio-generate]").tap();
+      else await voiceStudio.locator("[data-voice-studio-generate]").click();
+      await voiceStudio.locator("[data-voice-studio-audio]").waitFor({state:"visible",timeout:30000});
       const typed=payloads.find(item=>item.mode==="short_text");
       assert.ok(typed,engine+" guest short text reached TTS API");
       assert.equal(typed.text,customText);
