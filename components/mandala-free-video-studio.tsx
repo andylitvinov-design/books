@@ -2097,8 +2097,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [montageStyleSettingsOpen,setMontageStyleSettingsOpen] = useState(false);
   // Montage is a preference-first wizard: detailed timeline is available only under Text.
   const [montagePanel,setMontagePanel] = useState<"settings"|"effects"|"text"|"concept"|"audio"|"promo">("effects");
-  // Only selects a visual source. HeyGen face animation is not a local Canvas
-  // effect; the paid API remains gated until a separate real provider flow.
+  // Only selects a visual source. External AI face animation is not
+  // a local Canvas effect; provider spending stays disabled.
   const [montagePhotoChoice,setMontagePhotoChoice] = useState<"animate"|"library">("library");
   const montageAudioNavQueuedRef=useRef(false);
   const montageAudioShortcutIgnoreNextUntilRef=useRef(0);
@@ -10253,9 +10253,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 data-selected={montagePhotoChoice==="animate"} aria-pressed={montagePhotoChoice==="animate"}
                 disabled={recording||preparing} onClick={()=>{
                   setMontagePhotoChoice("animate");
-                  setNotice(locale==="ru"?"Оживление лица через HeyGen пока не подключено к оплате. Вы можете загрузить фото, но новый AI-рендер здесь не запускается.":
-                    locale==="es"?"La animación HeyGen aún no está activada. Puedes subir tu foto sin generar un vídeo de IA.":
-                      "HeyGen face animation is not yet payment-enabled. You can prepare your photo, but no AI render starts here.");
+                  setNotice(locale==="ru"?"Создание новой AI-анимации пока не подключено к оплате. Можно выбрать фото, но платный рендер здесь не запускается.":
+                    locale==="es"?"La nueva animación de IA no está habilitada. Puedes elegir una foto, pero la generación no se inicia.":
+                      "External AI face animation is not payment-enabled. You can choose a photo, but no paid render starts here.");
                 }}>
                 <span className={montageRef.photoImage}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -10299,16 +10299,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   locale==="es"?"Fotos, escenas y avatares guardados":"Photos, scenes and saved avatars"}</span>
               </div>
               <div className={montageRef.avatarRail}>
-                <label className={montageRef.photoUpload} data-video-montage-photo-upload>
+                <button type="button" className={montageRef.photoUpload} data-video-montage-photo-upload
+                  disabled={recording||preparing||photoPending} onClick={()=>{
+                    // Reuse the one native file input in the parent; no duplicate
+                    // input, no tariff change when a new portrait is selected.
+                    setBackgroundOnly(false);
+                    if(montagePhotoChoice!=="animate")setNotice("");
+                    onPickPhoto();
+                  }}>
                   <Camera size={25} aria-hidden="true"/>
                   <span>{locale==="ru"?"Загрузить фото":locale==="es"?"Subir foto":"Upload Photo"}</span>
-                  <NativePhotoInput label={locale==="ru"?"Выбрать своё фото":locale==="es"?
-                    "Seleccionar foto":"Choose my photo"}
-                    disabled={recording||preparing||photoPending}
-                    onPhotoFileSelected={photo=>{
-                      setMontagePhotoChoice("library");setBackgroundOnly(false);onPhotoFileSelected(photo);setNotice("");
-                    }}/>
-                </label>
+                </button>
                 {photoUrl?<button type="button" className={montageRef.avatarThumb}
                   data-video-montage-current-photo aria-pressed={!backgroundOnly}
                   disabled={recording||preparing} onClick={()=>{setMontagePhotoChoice("library");setBackgroundOnly(false);}}>
@@ -10340,9 +10341,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   "I have permission to use this photo in my video."}
             </label>:null}
             {montagePhotoChoice==="animate"?<p className={montageRef.photoGate} role="status">
-              {locale==="ru"?"Новая анимация HeyGen требует отдельного подтверждённого заказа и пока недоступна. Для продолжения выберите вариант без AI-анимации.":
-                locale==="es"?"La nueva animación requiere un pedido HeyGen habilitado. Elige una foto sin nueva animación para continuar.":
-                  "New animation requires a verified HeyGen order and is not enabled here yet. Choose a non-animated photo to continue."}
+              {locale==="ru"?"Новая AI-анимация требует отдельного подтверждённого заказа. Пока выберите фото без оживления.":
+                locale==="es"?"La nueva animación de IA requiere un pedido habilitado. Elige una foto sin animación.":
+                  "New AI animation requires a verified order and is not enabled here yet. Choose a non-animated photo to continue."}
             </p>:null}
             <details className={montageRef.moreStyles} data-video-montage-more-styles>
               <summary>{locale==="ru"?"Другие визуальные стили и формат видео":

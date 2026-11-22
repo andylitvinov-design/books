@@ -19,6 +19,9 @@ test('owner-approved Montage Style is the existing editor, not a second page',()
   assert.match(studio,/500 XP/);
   assert.match(studio,/250 XP/);
   assert.match(studio,/onPhotoFileSelected\(photo\)/);
+  assert.match(studio,/data-video-montage-photo-upload[\s\S]*?onPickPhoto\(\)/);
+  assert.equal((studio.match(/<NativePhotoInput label=/g)||[]).length,4,
+    'reuses the original parent native iOS picker; no fifth input');
   assert.match(studio,/data-video-montage-photo-rights/);
   assert.match(studio,/data-video-montage-next="audio"/);
   assert.match(studio,/data-video-montage-more-styles/);
@@ -30,7 +33,7 @@ test('AI-photo selection never triggers an unapproved HeyGen spend or silent sti
     studio.indexOf('{montagePanel==="audio" ? <div'));
   assert.match(style,/montagePhotoChoice==="animate"/);
   assert.match(style,/disabled=\{recording\|\|preparing\|\|montagePhotoChoice==="animate"/);
-  assert.match(style,/HeyGen face animation is not yet payment-enabled/);
+  assert.match(style,/External AI face animation is not payment-enabled/);
   assert.match(style,/No XP is charged here/);
   assert.doesNotMatch(style,/heygen\.ai\/v\d|postVideoCreditAction\(/i);
 });
