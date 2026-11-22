@@ -41,3 +41,26 @@ The user's tier is voluntary and may vary by day. It is **not** psychiatric or m
 - No HeyGen, no paid credits, no photo storage, no automatic personal-data transfer, no render claims and no new Vercel workflow. Production release remains the protected hourly publisher after required CI.
 
 **Status:** full-catalog computational structural/uniqueness pass; human aesthetic review and physical iPhone/MP4 acceptance still open.
+
+## P0 editorial pass v4 — 22 November 2026
+
+A targeted, individually authored **first-ranked** rewrite covers **144 phrase IDs**:
+6 priority topics (panic-attacks, childhood-trauma, apathy, low-mood, breakup-recovery,
+abandonment-wounds) × 8 meaning axes × 3 voluntarily selected levels × 1 first-ranked phrase.
+Original 48 proposals are incorporated and 96 new context-specific RU/EN/ES texts are added.
+
+- **Canonical IDs:** All 512 scenarios, 256 original MyTube storyboards, 3 × 5 levels,
+  and 7,680 total spoken lines per locale remain unchanged in count and order.
+- **Actual edits:** Only the spoken `[ru,en,es]` fields at position `tierPhrases[low|medium|high][0]`
+  for 48 selected scenarios. Previous captions at positions `[3..5]` remain unchanged.
+  They need human confirmation against their revised spoken text before public use.
+- **QA:** Local proposed-source focused tests 4/4 PASS. Full-catalog unique spoken/caption
+  counts remain 7,680/7,680 per locale. Distinct sentence fragments after this pass:
+  RU 799, EN 801, ES 802. This is only a partial diversity improvement;
+  **7,536 spoken lines per locale still await individual literary review.**
+- **Safety:** No efficacy claims, medical or psychiatric scoring, automatic tier selection,
+  content approval, provider requests or paid generation. `canRender:false`, and
+  `editorial_draft_native_language_review_required` remain in effect. A passed unit test
+  does not certify natural-language fluency or rendered iPhone media.
+- **Follow-up:** Native language editors review all 144 proposals and associated captions,
+  then expand beyond six priority topics. The current PR does not change the Video Studio UI.

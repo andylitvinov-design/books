@@ -20,6 +20,7 @@ import {understandCoachingTurn} from '@/lib/personal-coaching/coaching-turn-unde
 import styles from './my-coach-live-dialogue.module.css'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
 import MyCoachGeminiLive from './my-coach-gemini-live'
+import MyCoachStagedMemoryControls from './my-coach-staged-memory-controls'
 import MyCoachSessionStateCard from './my-coach-session-state-card'
 import {startCoachingMp3Playback,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 import {setCoachIos27AudioSession,refreshCoachIos27PlaybackRoute} from '@/lib/personal-coaching/coach-ios-audio-route.mjs'
@@ -300,8 +301,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [playbackNotice,setPlaybackNotice]=useState('')
   const pending=useRef(null),composerRef=useRef(null),transcriptRef=useRef(null)
   const [allowOpeningPrior,setAllowOpeningPrior]=useState(false)
-  const [openingPrior,setOpeningPrior]=useState(null)
-  const [openingPriorLoading,setOpeningPriorLoading]=useState(false)
+  const [stagedMemory,setStagedMemory]=useState(null)
   const [contextTopic,setContextTopic]=useState('')
   const [contextAssessments,setContextAssessments]=useState(false)
   const [contextPaused,setContextPaused]=useState(false)
@@ -400,23 +400,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     return ()=>controller.abort()
   },[])
   useEffect(()=>{if(transcriptRef.current)transcriptRef.current.scrollTop=transcriptRef.current.scrollHeight},[turns,speechPreview,streamingPreview])
-  useEffect(()=>{
-    if(!allowOpeningPrior){setOpeningPrior(null);setOpeningPriorLoading(false);return}
-    const controller=new AbortController()
-    setOpeningPriorLoading(true)
-    // Access encrypted saved sessions only AFTER explicit user opt-in.
-    fetch('/api/app/my-coach/protocol',{credentials:'same-origin',cache:'no-store',
-      signal:controller.signal}).then(response=>response.ok?response.json():null)
-      .then(data=>{
-        if(controller.signal.aborted)return
-        const old=Array.isArray(data?.protocols)?
-          data.protocols.find(item=>item?.opening?.name||item?.goal):null
-        setOpeningPrior(old?{name:String(old.opening?.name||'').slice(0,60),
-          topic:String(old.goal||old.opening?.focus||'').slice(0,140)}:null)
-      }).catch(()=>{if(!controller.signal.aborted)setOpeningPrior(null)})
-      .finally(()=>{if(!controller.signal.aborted)setOpeningPriorLoading(false)})
-    return()=>controller.abort()
-  },[allowOpeningPrior])
   useEffect(()=>{
     if(voiceState.phase!=='listening'){
       micWaveRef.current?.style.setProperty('--coach-mic-level','0')
@@ -523,11 +506,37 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       'Solution-focused':'solution_focused',
       'Appreciative inquiry':'appreciative_inquiry'})[persona?.methods?.[0]]||'grow'
   const visibleMethodName=coachMethodNames[visibleMethodId]||'GROW'
+  const memoryProvider=coachEngine==='gemini_live_free'||coachEngine==='gemini_free'
+    ?'gemini_free':coachEngine==='gemini_paid'?'gemini_paid':'groq'
+  const lastMemoryProviderRef=useRef(memoryProvider)
+  useEffect(()=>{
+    // A prior opt-in to Groq is never automatically an opt-in to Gemini Free,
+    // Paid or any provider with a different data-use policy.
+    if(lastMemoryProviderRef.current===memoryProvider)return
+    lastMemoryProviderRef.current=memoryProvider
+    setAllowOpeningPrior(false)
+    setStagedMemory(null)
+    setContextTopic('')
+    setContextAssessments(false)
+    setContextPaused(true)
+  },[memoryProvider])
+  const memoryReady=Boolean(stagedMemory?.stageToken)&&stagedMemory?.provider===memoryProvider
+  const openingPrior=memoryReady&&allowOpeningPrior?{
+    name:String(stagedMemory?.prior?.preferredName||'').slice(0,60),
+    topic:String(stagedMemory?.prior?.previous?.[0]?.topic||'').slice(0,140)
+  }:null
   const openingHistory=turns.filter(turn=>turn.role==='user').slice(0,32)
     .map(turn=>String(turn.content||'').slice(0,160))
   const openingProgress=coachOpeningProgress({turns:openingHistory,locale:conversationLang,
     personaId,allowPrior:allowOpeningPrior,priorSession:openingPrior})
   const openingActive=!openingProgress.completed
+  const continuityChoice=openingProgress.answers.continuity?.kind||''
+  const personalApproved=memoryReady&&openingProgress.checkmarks.name&&
+    openingProgress.checkmarks.continuity&&openingProgress.checkmarks.focus&&
+    stagedMemory?.sharePersonal===true&&stagedMemory?.personal?.stage==='personal'
+  const memorySharePrior=memoryReady&&allowOpeningPrior&&continuityChoice==='previous'
+  const memoryShareGoals=Boolean(personalApproved&&stagedMemory?.allowGoals&&!contextPaused)
+  const memoryShareTests=Boolean(personalApproved&&stagedMemory?.assessmentsAllowed&&!contextPaused)
   // An optional, very soft acknowledgment on the FOUR lit milestones only.
   // The feelings checkbox (step 5) has no sound or lamp by design.
   const previousOpeningLamps=useRef(null)
@@ -885,6 +894,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       semanticHintsRef.current=[]
       setContextTopic('')
       setContextAssessments(false)
+      setContextPaused(true)
     }
     const commitGoalTurn=()=>{
       if(goalTurn.goalIncluded)lastSharedGoalRef.current=goalTurn.goal
@@ -955,7 +965,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     pending.current?.abort()
     pending.current=controller
     setBusy(true);setError('');setStreamingPreview('')
-    const requestedSavedContext=!contextFocusChanged&&!contextPaused&&Boolean(contextTopic)
+    const requestedSavedContext=!contextFocusChanged&&!contextPaused&&memoryReady&&
+      (memorySharePrior||memoryShareGoals||memoryShareTests)
     // A previous reply may quote a saved item whose grant has since changed.
     // Keep it in the local transcript and resolve approved items again server-side.
     const providerHistory=coachProviderHistory(conversationTurns)
@@ -967,8 +978,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
           personaId,settings,locale:responseLocale,consent:true,message,voiceTurn:voiceTurn===true,
-          ...(requestedSavedContext?{contextTopic}:{}),
-          ...(requestedSavedContext&&contextTopic==='personal_growth'&&contextAssessments?{contextAssessments:true}:{}),
+          ...(requestedSavedContext&&contextTopic&&(memoryShareGoals||memoryShareTests)?{contextTopic}:{}),
+          ...(requestedSavedContext&&contextTopic==='personal_growth'&&memoryShareTests?{contextAssessments:true}:{}),
+          ...(requestedSavedContext?{
+            memoryStageToken:stagedMemory.stageToken,memorySharePrior,
+            memoryShareGoals,memoryShareTests,
+          }:{}),
           ...(selectedGeminiEngine?{
             engine:coachEngine,geminiConsent:true,
             ...(coachEngine==='gemini_free'?{geminiFreeDataConsent:true}:{})
@@ -1270,7 +1285,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           {liveVoiceSelected?<MyCoachGeminiLive ref={speechRef}
             locale={conversationLang} personaId={personaId} settings={settings}
             voiceName={selectedGeminiVoice} elapsedSeconds={activeSessionSeconds}
-            openingPrior={openingPrior} allowOpeningPrior={allowOpeningPrior}
+            openingPrior={openingPrior} allowOpeningPrior={Boolean(openingPrior)&&openingProgress.checkmarks.invitation}
             enabled={liveVoiceReady} canStart={!busy&&!paused&&!replaying&&liveVoiceReady}
             onSessionStart={()=>{setGeminiLiveConsent(true);setSessionClockStarted(true);setIntroComplete(true)}}
             onVoiceStateChange={setVoiceState}
@@ -1282,7 +1297,16 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               wave.dataset.voiceDetected=rms>0.15?'true':'false'
             }}
             onInputInterim={setSpeechPreview}
-            onInputFinal={text=>appendLiveTranscript('user',text)}
+            onInputFinal={text=>{
+              appendLiveTranscript('user',text)
+              // Current client corrections/topic changes outrank all old memory.
+              if(['correction','topic_shift'].includes(
+                understandCoachingTurn({locale:conversationLang,message:text}).act)){
+                setContextTopic('')
+                setContextAssessments(false)
+                setContextPaused(true)
+              }
+            }}
             onOutputInterim={setStreamingPreview}
             onOutputFinal={(text,details)=>appendLiveTranscript('assistant',text,{interrupted:details?.interrupted===true})}
             onInterrupted={()=>{setStreamingPreview('');setPlaybackNotice('')}}
@@ -1460,15 +1484,19 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           stageNames={stageChecklistTitles} stageIndex={visibleStageIndex}
           stageProgressVerified={progressValid} opening={openingProgress}/>
       </details>}
-      <label className={styles.goalPrivacy} data-coach-prior-session-opt-in>
-        <input type="checkbox" checked={allowOpeningPrior}
-          disabled={openingPriorLoading||sessionClockStarted||turns.length>0}
-          onChange={event=>setAllowOpeningPrior(event.target.checked)}/>
-        {lang==='ru'?' Использовать имя и тему из моей сохранённой прошлой сессии':
-          lang==='es'?' Usar mi nombre y tema de la última sesión guardada':
-          ' Use my saved previous session name and topic'}
-        {openingPriorLoading?' …':''}
-      </label>
+      <MyCoachStagedMemoryControls key={memoryProvider} locale={conversationLang} provider={memoryProvider}
+        invitationAccepted={openingProgress.checkmarks.invitation&&!openingProgress.declined}
+        identityConfirmed={openingProgress.checkmarks.name&&openingProgress.checkmarks.continuity}
+        focusConfirmed={openingProgress.checkmarks.focus}
+        priorAllowed={allowOpeningPrior} onPriorAllowed={value=>{
+          setAllowOpeningPrior(value)
+          if(!value)cancelPendingCoachTurn()
+        }}
+        topicKey={contextTopic} onTopicKey={value=>{
+          setContextTopic(value);setContextAssessments(false)
+        }}
+        assessmentsAllowed={contextAssessments} onAssessmentsAllowed={setContextAssessments}
+        onMemoryChange={setStagedMemory}/>
       <details className={styles.voicePrivacyDetails}>
         <summary>{lang==='ru'?'Приватность голоса':lang==='es'?'Privacidad de voz':'Voice privacy'}</summary>
         <p>{liveVoiceSelected?({

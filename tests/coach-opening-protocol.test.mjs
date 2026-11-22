@@ -59,6 +59,7 @@ test('returning client: saved name requires confirmation and past-vs-new topic m
   let p=progress(['да'],opts)
   assert.equal(p.current,'name')
   assert.match(coachOpeningNextReply(p),/Андрей/)
+  assert.match(coachOpeningNextReply(p),/кабинете/)
   p=progress(['да','да, верно'],opts)
   assert.equal(p.current,'continuity')
   assert.equal(p.lamps.identity,false)
@@ -98,4 +99,16 @@ test('opening turn stays local and deterministic until client explicitly confirm
   assert.equal(x.openingProgress.current,'name')
   const h=['да','Гарри','goal','нормально','да']
   assert.equal(coachOpeningTurn({message:'хочу обсудить цель',openingHistory:h,locale:'ru'},'harry'),null)
+})
+
+test('explicit willingness to try after a maybe is consent; uncertainty alone is not',()=>{
+ for(const [locale,reply,ambiguous] of [
+  ['ru','Возможно, давай попробуем','Возможно'],
+  ['en',"Maybe, let's try",'Maybe'],
+  ['es','Quizá, vamos a probar','Quizá'],
+ ]){
+  assert.equal(coachOpeningProgress({locale,turns:[reply]}).lamps.invitation,true,locale)
+  assert.equal(coachOpeningProgress({locale,turns:[ambiguous]}).lamps.invitation,false,locale)
+  assert.equal(coachOpeningProgress({locale,turns:['no, let\'s try']}).lamps.invitation,false,locale)
+ }
 })
