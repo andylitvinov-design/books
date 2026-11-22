@@ -4,6 +4,7 @@ import {useMemo} from 'react'
 import {BookOpenCheck,Check,CheckCircle2,Compass,FileText,Flag,HeartHandshake,Milestone,Scale,ShieldCheck,Target} from 'lucide-react'
 import {coachSessionStateView} from '@/lib/coaching/coach-session-state-view.mjs'
 import styles from './my-coach-session-state-card.module.css'
+import MyCoachOpeningProgress from './my-coach-opening-progress'
 
 const copy={
   ru:{
@@ -59,7 +60,7 @@ function ReadOnlyCheckbox({checked}){
  * not a guess, diagnosis, editable form, new AI call or durable record.
  */
 export default function MyCoachSessionStateCard({
-  locale='en',turns=[],progress=null,stageLabel='',
+  locale='en',turns=[],progress=null,openingProgress=null,stageLabel='',
   stageNames=[],stageIndex=0,stageProgressVerified=false
 }){
   const language=copy[locale]?locale:'en'
@@ -85,6 +86,7 @@ export default function MyCoachSessionStateCard({
   ]
   return <div className={styles.body} data-coach-session-state-card>
     <p className={styles.intro}><BookOpenCheck size={16} aria-hidden="true"/>{t.subtitle}</p>
+    <MyCoachOpeningProgress locale={language} progress={openingProgress}/>
     <section className={styles.stageSection} aria-label={t.stages}>
       <h3 className={styles.sectionTitle}><CheckCircle2 size={18} aria-hidden="true"/>{t.stages}</h3>
       <ol className={styles.stageList} data-coach-stage-checklist>

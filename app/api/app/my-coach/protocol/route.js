@@ -24,6 +24,14 @@ export async function GET(request){
     const provided=request.headers.get('x-hh-account-id')
     if(provided&&provided!==actor.id)throw new AppError('ACCOUNT_CHANGED',409)
     const result=await listMyCoachProtocols(config,actor)
+    // A minimal read for a client-initiated cross-session memory opt-in.
+    // Do not send old transcripts into the live coach or the browser.
+    if(new URL(request.url).searchParams.get('opening')==='1'){
+      const recent=result?.protocols?.find(item=>item?.opening?.name||item?.goal)
+      const opening=recent?{name:recent.opening?.name||'',
+        topic:recent.opening?.topic||recent.goal||''}:null
+      return auth.apply(NextResponse.json({opening},{headers:PRIVATE_HEADERS}))
+    }
     return auth.apply(NextResponse.json(result,{headers:PRIVATE_HEADERS}))
   }catch(error){
     const safe=safeError(error)

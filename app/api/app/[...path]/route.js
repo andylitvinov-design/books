@@ -15,7 +15,7 @@ import { readDevelopmentGoals, saveDevelopmentGoals } from '@/lib/app/developmen
 import { readLearningJourney } from '@/lib/app/learning-journey-repository'
 import { listLabReports, saveLabReport, deleteLabReport } from '@/lib/app/lab-reports'
 import { readBusinessCoaching, saveBusinessCoaching } from '@/lib/app/business-coaching'
-import { readPersonalCoaching, savePersonalCoaching, readTraditionCoaching, saveTraditionCoaching, readTraditionCoachingSummaries } from '@/lib/app/personal-coaching'
+import { readPersonalCoaching, savePersonalCoaching, readTraditionCoaching, saveTraditionCoaching, readTraditionCoachingSummaries, listMyCoachProtocols } from '@/lib/app/personal-coaching'
 import {personalCoachingBrainTurn,personalCoachingBrainProbe,myCoachGenerativeTurn,myCoachGenerativeStreamTurn,myCoachGenerativeProbe} from '@/lib/app/coaching-brain'
 import {geminiCoachTextConfig} from '@/lib/coaching/gemini-coach-text.mjs'
 import {geminiCoachTtsConfig} from '@/lib/coaching/gemini-coach-tts.mjs'
@@ -1024,6 +1024,17 @@ async function handle(request, { params }) {
         'X-Accel-Buffering':'no',
       }})
     }
+
+    // The current account's only reusable onboarding context is client-reviewed,
+    // encrypted saved protocol metadata. It is read ONLY when the visitor opts in.
+    const openingMemory=async approved=>{
+      if(approved!==true)return null
+      const result=await listMyCoachProtocols(config,actor)
+      const previous=result?.protocols?.find(row=>row?.opening?.name||row?.goal)
+      if(!previous)return null
+      return {consent:true,name:previous.opening?.name||'',
+        topic:previous.opening?.topic||previous.goal||''}
+    }
     // An authenticated, one-use credential constrained to a single FREE
     // Gemini Live model, chosen fictional persona and allowed voice.
     // The browser never receives the permanent API key. The audio WebSocket
@@ -1039,7 +1050,15 @@ async function handle(request, { params }) {
       await consumeRate(config,{op:'my-coach-live-free-actor-day',actor:actor.id},4,86400)
       await consumeRate(config,{op:'my-coach-live-free-global-day'},20,86400)
       let token
-      try{token=await issueGeminiFreeLiveToken(vendor,start,{
+      const prior=await openingMemory(start.reuseHistory)
+      const openingPrompts=await transaction(config,actor,async db=>{
+        const rows=(await db.query(
+          'select step_key,variant,prompt_i18n->>$2 as question from app_private.coach_opening_questions_v1 where persona_id=$1 and enabled=true order by step_key,variant limit 24',
+          [start.personaId,start.locale])).rows
+        return rows.map(row=>({step:row.step_key,variant:row.variant,
+          question:String(row.question||'').slice(0,260)}))
+      }).catch(()=>[])
+      try{token=await issueGeminiFreeLiveToken(vendor,{...start,prior,openingPrompts},{
         signal:AbortSignal.any([request.signal,AbortSignal.timeout(12000)])})}
       catch{throw new AppError('MY_COACH_GEMINI_LIVE_UNAVAILABLE',503)}
       return json(token)
@@ -1051,7 +1070,11 @@ async function handle(request, { params }) {
       if (!geminiFreeLiveConfig(process.env))throw new AppError('MY_COACH_GEMINI_LIVE_DISABLED',503)
       await consumeRate(config,{op:'my-coach-live-evidence-hour',actor:actor.id},65,3600)
       let progress
-      try{progress=geminiFreeLiveCheckpoint(await readBody(request,8192))}
+      try{
+        const checkpoint=await readBody(request,8192)
+        const prior=await openingMemory(checkpoint?.reuseHistory===true)
+        progress=geminiFreeLiveCheckpoint(checkpoint,{prior})
+      }
       catch{throw new AppError('MY_COACH_GEMINI_LIVE_INVALID',400)}
       return json(progress)
     }

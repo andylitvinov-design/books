@@ -40,20 +40,20 @@ function audioTranscription(value){return typeof value==='string'?value.trim().s
 // ONE unlocked AudioContext. No server audio proxy, retrying cloud TTS,
 // client-side transcript persistence or unconsented fallback.
 const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
-  locale='en',personaId='mira',settings={},voiceName='Puck',enabled=false,
+  locale='en',personaId='mira',settings={},voiceName='Puck',enabled=false,reuseHistory=false,
   canStart=true,elapsedSeconds=0,onSessionStart,onVoiceStateChange,
   onMicLevel,onInputInterim,onInputFinal,onOutputInterim,onOutputFinal,
-  onInterrupted,onDirectorProgress,onNotice,
+  onInterrupted,onDirectorProgress,onOpeningProgress,onNotice,
 },ref){
   const lang=safeLocale(locale),t=ui[lang]
   const [phase,setPhase]=useState('idle')
   const [notice,setNotice]=useState('')
   const runtime=useRef(null),starting=useRef(false),generation=useRef(0)
   const propsRef=useRef({})
-  propsRef.current={locale:lang,personaId,settings,voiceName,enabled,canStart,
+  propsRef.current={locale:lang,personaId,settings,voiceName,enabled,canStart,reuseHistory,
     elapsedSeconds,onSessionStart,onVoiceStateChange,onMicLevel,onInputInterim,
     onInputFinal,onOutputInterim,onOutputFinal,onInterrupted,
-    onDirectorProgress,onNotice}
+    onDirectorProgress,onOpeningProgress,onNotice}
 
   const notify=text=>{
     setNotice(text)
@@ -132,12 +132,15 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({personaId:p.personaId,locale:p.locale,settings:p.settings,
           message:text,turns:previous,elapsedSeconds:Math.min(7200,Math.max(0,Math.floor(p.elapsedSeconds||0))),
-          consent:true,voiceConsent:true,trainingUseConsent:true}),
+          consent:true,voiceConsent:true,trainingUseConsent:true,
+          openingAnswers:r.openingAnswers||[],reuseHistory:r.reuseHistory===true}),
       })
       const data=response.ok?await response.json().catch(()=>null):null
       if(!r.ended&&data?.schema==='HH_GEMINI_LIVE_DIRECTOR_V1'&&
          data.sessionProgress?.source==='director-client-evidence')
         p.onDirectorProgress?.(data.sessionProgress)
+      if(!r.ended&&data?.openingProgress?.source==='client-spoken-or-typed-answers')
+        p.onOpeningProgress?.(data.openingProgress)
     }catch{/* Ignore failed evidence check; never promote unverified model speech. */}
   }
   function commitInput(r){
@@ -149,7 +152,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     r.history.push({role:'user',content:value})
     r.history=r.history.slice(-20)
     propsRef.current.onInputFinal?.(value)
-    void checkpoint({...r,history:preceding},value)
+    const beforeOpening=r.openingAnswers.slice()
+    if(r.openingAnswers.length<24)r.openingAnswers.push(value.slice(0,240))
+    void checkpoint({...r,history:preceding,openingAnswers:beforeOpening},value)
   }
   function commitOutput(r){
     const value=audioTranscription(r.outputText)
@@ -323,7 +328,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       signal:r.abort.signal,headers:{'Content-Type':'application/json'},
       body:JSON.stringify({personaId:r.personaId,locale:r.locale,
         settings:r.settings,voiceName:r.voiceName,consent:true,
-        voiceConsent:true,trainingUseConsent:true}),
+        voiceConsent:true,trainingUseConsent:true,reuseHistory:r.reuseHistory===true}),
     })
     if(!response.ok)throw Error('GEMINI_LIVE_UNAVAILABLE')
     const data=await response.json().catch(()=>null)
@@ -376,10 +381,11 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       notify(t.permission);return false
     }
     const r={context,stream:null,source:null,processor:null,sink:null,
-      socket:null,ready:false,ended:false,history:[],inputText:'',outputText:'',
+      socket:null,ready:false,ended:false,history:[],openingAnswers:[],inputText:'',outputText:'',
       speaking:false,interrupted:false,resumeHandle:null,
       bargeDetector:new GeminiLiveBargeDetector(),
       reconnects:0,voiceName:p.voiceName,locale:p.locale,personaId:p.personaId,
+      reuseHistory:p.reuseHistory===true,
       settings:p.settings,abort:new AbortController(),timer:null,reconnectTimer:null,
       resampler:new GeminiLivePcmResampler(context.sampleRate),
       audioGate:new GeminiLiveBargeGate()}
@@ -407,7 +413,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     r.history.push({role:'user',content:body})
     r.history=r.history.slice(-20)
     propsRef.current.onInputFinal?.(body)
-    void checkpoint({...r,history:previous},body)
+    const beforeOpening=r.openingAnswers.slice()
+    if(r.openingAnswers.length<24)r.openingAnswers.push(body.slice(0,240))
+    void checkpoint({...r,history:previous,openingAnswers:beforeOpening},body)
     phaseChange('thinking')
     return true
   }
@@ -427,7 +435,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     // Changing persona, language, voice or consent must never silently keep
     // streaming captured audio under the previous server-locked token.
     if(runtime.current)stop()
-  },[personaId,lang,voiceName,enabled])
+  },[personaId,lang,voiceName,enabled,reuseHistory])
   const label=phase==='speaking'?t.interrupt:phase==='idle'?t.start:
     phase==='loading'?t.connecting:phase==='thinking'?t.thinking:t.stop
   return <div className={styles.root} data-my-coach-voice={phase}
