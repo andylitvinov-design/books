@@ -24,6 +24,16 @@ test("top and Montage tab order is approved, one photographic Extra",()=>{
  for(const scene of ["sun-autumn-hills.jpg","heart-flow.jpg","sun-warm-ocean-dawn.jpg"])
   assert.ok(extra.includes(scene),scene);
  assert.match(studio,/data-video-extra-advanced-formats/);
+ assert.match(extra,/useState<"simple"\|"support"\|"personal">\(selectedMode\|\|"simple"\)/);
+ assert.match(studio,/selectedMode=\{extraTextChoice\}/);
+ assert.match(extra,/aria-pressed={selected===card\.id}/);
+ assert.match(extra,/data-selected={selected===card\.id}/);
+ assert.match(extra,/onClick=\{\(\)=>setSelected\(card\.id\)\}/);
+ assert.match(extra,/data-video-extra-continue/);
+ assert.match(extra,/onClick=\{\(\)=>actions\[selected\]\(\)\}/);
+ assert.doesNotMatch(extra,/onClick=\{actions\[card\.id\]\}/,
+  "choosing an Extra photo card alone must never navigate, debit or render");
+
 });
 
 test("Emotional Support alone opens updated Text; Personal stays in Personal",()=>{

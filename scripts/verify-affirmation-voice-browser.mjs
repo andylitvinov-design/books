@@ -40,6 +40,11 @@ async function enterPersonalAfterMontageExtra(page,engine="chromium"){
   const choice=page.locator('[data-video-extra-text-option="personal"]');
   await expect(choice).toBeVisible({timeout:15000});
   if(engine==="webkit")await choice.tap();else await choice.click();
+  await expect(choice).toHaveAttribute("aria-pressed","true");
+  const continueExtra=page.locator('[data-video-extra-continue]');
+  await expect(continueExtra).toBeVisible();
+  await expect(continueExtra).toBeEnabled();
+  if(engine==="webkit")await continueExtra.tap();else await continueExtra.click();
   await expect(studio).toHaveAttribute("data-active-workspace","phrases",{timeout:15000});
   await expect(page.locator('[data-video-ideas-goal-panel]')).toBeVisible({timeout:15000});
 }
@@ -63,6 +68,10 @@ async function openVisibleMontageText(page,engine="chromium",mode="standard"){
   const card=page.locator('[data-video-extra-text-option="'+(mode==="personalized"?"personal":"support")+'"]');
   await expect(card).toBeVisible();
   if(engine==="webkit")await card.tap();else await card.click();
+  await expect(card).toHaveAttribute("aria-pressed","true");
+  const continueExtra=page.locator('[data-video-extra-continue]');
+  await expect(continueExtra).toBeVisible();
+  if(engine==="webkit")await continueExtra.tap();else await continueExtra.click();
   if(mode==="personalized"){
     await expect(page.locator('[data-video-quick-control="phrases"]'))
       .toHaveAttribute("aria-pressed","true",{timeout:15000});
@@ -1030,6 +1039,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const extraChoice=page.locator('[data-video-montage-extra-personal]');
       await expect(extraChoice).toBeVisible();
       await expect(extraChoice.locator('[data-video-extra-text-option]')).toHaveCount(3);
+      const extraContinue=extraChoice.locator('[data-video-extra-continue]');
+      await expect(extraContinue).toBeVisible();
+      await expect(extraContinue).toBeEnabled();
+      await expect(extraChoice.locator('[data-video-extra-text-option="simple"]')).toHaveAttribute("aria-pressed","true");
       const montageProOffer=page.locator('[data-video-montage-pro-offer]');
       const openVideoFormats=async()=>{
         const disclosure=page.locator('[data-video-extra-advanced-formats]');

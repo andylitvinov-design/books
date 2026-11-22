@@ -9,6 +9,11 @@
  min-width:0;width:100%;min-height:109px;padding:7px;text-align:left;border:1px solid #dfd8cb;border-radius:20px;
  background:linear-gradient(125deg,#fffdf8,#fff7ef);color:#173d35;box-shadow:0 3px 12px #62473016;cursor:pointer;touch-action:manipulation}
 .extraChoices .extraPhotoCard:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.extraChoices .extraPhotoCard[data-selected="true"]{
+ border:2px solid #088c6d;background:linear-gradient(135deg,#effff7,#fffdf7);
+ box-shadow:0 0 0 2px #cfeee1,0 4px 15px #08735320;
+ padding:6px
+}
 .extraChoices .extraPhotoCard:hover:not(:disabled){border-color:#7eb7a4;background:#f1fbf5}
 .extraChoices .extraPhotoCard:disabled{opacity:.55;cursor:not-allowed}
 .extraPoster{position:relative;display:block;align-self:stretch;min-width:0;height:96px;border-radius:14px;overflow:hidden;background:#bdccbe}
@@ -24,6 +29,14 @@
 .extraPricePersonal{color:#835714;background:#fff0c9}
 .extraArrow{display:grid;place-items:center;align-self:end;width:32px;height:32px;border-radius:50%;
  color:#fff;background:linear-gradient(130deg,#11a77f,#066f54)}
+.extraContinue{display:flex;align-items:center;justify-content:center;gap:9px;
+ width:100%;min-height:54px;padding:10px 17px;border:0;border-radius:999px;
+ background:linear-gradient(125deg,#08a77e,#047554);color:#fff;
+ box-shadow:0 4px 15px #0e765a42;cursor:pointer;touch-action:manipulation;
+ font:800 clamp(15px,4vw,20px)/1.15 Arial,Helvetica,sans-serif}
+.extraContinue span{flex:1}
+.extraContinue:focus-visible{outline:3px solid #176e6e;outline-offset:3px}
+.extraContinue:disabled{opacity:.55;cursor:not-allowed}
 .extraNote{margin:0 3px;color:#637169;font:500 11px/1.35 Arial,Helvetica,sans-serif}
 .advancedFormats{margin-top:6px;padding:9px 12px;border:1px solid #dcd6ca;border-radius:16px;background:#fffaf2;color:#17483e}
 .advancedFormats>summary{display:flex;align-items:center;min-height:44px;cursor:pointer;font:750 13px/1.2 Arial,Helvetica,sans-serif}

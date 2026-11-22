@@ -9786,7 +9786,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </button>)}
           </nav>:null}
           {montagePanel==="promo" ? <>
-          <MandalaMontageExtraPersonal locale={locale}
+          <MandalaMontageExtraPersonal locale={locale} selectedMode={extraTextChoice}
             disabled={!studioHydrated||recording||preparing}
             onSimple={()=>{
               setExtraTextChoice("simple");setMontageTextMode("simple");setMontageTextStage("choice");

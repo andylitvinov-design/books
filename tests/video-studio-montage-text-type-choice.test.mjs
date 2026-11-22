@@ -16,7 +16,10 @@ test("owner-approved Extra contains one photographic 0/0/+50 XP selector in EN/R
  for(const mode of ["simple","standard","personalized"])
   assert.ok(extra.includes('mode:"'+mode+'"'),mode);
  assert.match(extra,/data-video-extra-text-option={card\.id}/);
- assert.match(extra,/onClick={actions\[card\.id\]}/);
+ assert.match(extra,/aria-pressed={selected===card\.id}/);
+ assert.match(extra,/onClick=\{\(\)=>setSelected\(card\.id\)\}/);
+ assert.match(extra,/data-video-extra-continue/);
+ assert.match(extra,/onClick=\{\(\)=>actions\[selected\]\(\)\}/);
  assert.match(extra,/No credits are charged here/);
  assert.match(extra,/\+50 XP\*/);
  assert.doesNotMatch(extra,/fetch\(|postVideoCreditAction|localStorage/);
