@@ -338,3 +338,31 @@
   padding:9px;color:#f9e6c1;
  }
 }
+
+
+/* SHAMANIC_GENIE_BUSINESS_PARITY_20261122: one gallery and one hero across both views. */
+@media(max-width:759px){
+ .root[data-shamanica-business] .serviceGrid{
+  grid-auto-rows:clamp(74px,11.5dvh,99px);
+  gap:8px;
+ }
+ .root[data-shamanica-business] .serviceCard{
+  border:2px solid #f4c47f;border-radius:20px;
+  box-shadow:0 3px 9px #0c04058f;
+ }
+ .root[data-shamanica-business] .serviceText{
+  border-radius:15px 15px 18px 18px;
+  background:linear-gradient(110deg,#fff2d1,#f8daa8 83%,#ffedc3);
+  grid-template-columns:clamp(24px,5.5vw,32px) minmax(0,1fr);
+ }
+ .root[data-shamanica-business] .serviceText strong{
+  font:700 clamp(12.2px,3.5vw,17px)/1.03 Georgia,serif;
+ }
+}
+@media(max-width:354px){
+ .root[data-shamanica-business] .serviceGrid{grid-auto-rows:clamp(68px,10.5dvh,85px);gap:6px}
+ .root[data-shamanica-business] .serviceText strong{font-size:clamp(11.2px,3.6vw,12.9px)}
+}
+@media(max-width:759px) and (max-height:690px){
+ .root[data-shamanica-business] .serviceGrid{grid-auto-rows:clamp(66px,10.5dvh,78px)}
+}

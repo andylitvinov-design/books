@@ -932,6 +932,17 @@ try{
  assert.ok(mirrorScreen.overflowX<=2,"Shamanic must not scroll horizontally: "+JSON.stringify(mirrorScreen));
  await page.screenshot({path:folder+"/shamanica-first-screen-ru-390-webkit.png",fullPage:false,animations:"disabled"});
  results.push({journey:"Shamanic six-shelf alchemist first screen",mirrorScreen,passed:true});
+ const geanieAsk=shamanicaHome.locator('[data-shamanica-genie-ask]');
+ await geanieAsk.waitFor({state:"visible",timeout:15000});
+ assert.ok((await geanieAsk.innerText()).trim().length>0);
+ assert.equal(await shamanicaHome.locator('[data-shamanica-ai-geanie] img').count(),1);
+ await geanieAsk.click();
+ const geanieHelp=page.locator('[data-hh-ihelp-dialog]:visible');
+ await geanieHelp.waitFor({state:"visible",timeout:15000});
+ await geanieHelp.locator('header button[aria-label]').first().click();
+ await geanieHelp.waitFor({state:"hidden",timeout:15000});
+ results.push({journey:"Shamanic Geanie opens existing real iHelp dialog",passed:true});
+
 
  // Browser-rendered iPhone first-fold acceptance for BOTH audiences.
  // No CSS-only or screenshot-of-the-other-view substitute is accepted:
@@ -965,7 +976,7 @@ try{
      assert.ok(fold.firstTop>=0&&fold.lastBottom<=fold.dockTop-4,
        "All six cards must clear the dock on "+width+"x768: "+JSON.stringify(fold));
      assert.ok(fold.overflowX<=2,"No sideways overflow at "+width+": "+JSON.stringify(fold));
-     assert.match(fold.room,/shamanic-lounge-hd\.avif/,
+     assert.match(fold.room,/shamanic-genie-lounge\.webp/,
        "Both tabs must show the same HD lounge background");
      assert.ok(fold.atlas.includes(atlas),"Photo atlas must stay HD: "+JSON.stringify(fold));
      folds.push({width,firstTop:fold.firstTop,lastBottom:fold.lastBottom,dockTop:fold.dockTop});
@@ -974,12 +985,14 @@ try{
    return folds;
  };
  const personalFolds=await verifyLoungeFold("[data-shamanica-service]",
-   "shamanic-cards-personal-hd.avif");
+   "shamanic-genie-cards-personal.webp");
  results.push({journey:"Shamanic personal one-screen HD photos at 320/353/390/430",folds:personalFolds,passed:true});
  await shamanicaHome.locator('nav[aria-label="Audience"] a[href="/ru/shamanica/business"]').click();
  await page.waitForURL(/\/ru\/shamanica\/business\/?$/,{timeout:45000});
  const businessCabinet=page.locator("[data-shamanica-business] [data-business-cabinet-shelves]");
  await businessCabinet.waitFor({state:"visible",timeout:30000});
+ assert.equal(await page.locator('[data-shamanica-ai-geanie] [data-shamanica-genie-ask]:visible').count(),1,
+ "Business shares the interactive Geanie help action");
  const businessCards=businessCabinet.locator("[data-business-shelf]");
  assert.deepEqual(await businessCards.evaluateAll(nodes=>nodes.map(node=>node.dataset.businessShelf)),
    ["express","remedies","strategy","artifacts","energy","energywork"],

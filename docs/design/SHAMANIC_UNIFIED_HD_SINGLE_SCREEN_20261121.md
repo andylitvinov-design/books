@@ -42,3 +42,11 @@ Run existing core/specialist checks and source tests including `tests/shamanica-
 Release: one atomic HEAD → ready PR → protected exact-HEAD CI + native auto-merge. The *existing* hourly GitHub/Vercel publisher is sole ordinary production writer; do not create an extra manual deployment, Vercel preview, paid provider, new CI workflow, or new project. Verify served production alias and Git SHA after it publishes. Until proven, status is CODE IN PR / CI or MERGED AWAITING HOURLY, not LIVE.
 
 **Correction before release:** the room photo was recropped to eliminate a stray subtitle baked into the earlier image source; the H1 and subtitle remain native, readable website text.
+
+## Approved Geanie variation (22 Nov 2026)
+
+The owner-approved newest screenshot extends the SAME luxury Alchemist's Cabinet with a glowing genie in the right of the title/hero: "Need Hint? Help? Ask our AI Geanie." and a real "Ask a question" action. The button uses the existing sitewide `hh:open-ihelp` event and opens the actual iHelp chat dialog; it does **not** pretend a separate Genie LLM/model or new coaching persona already runs. The historical header question mark remains functional. Personal and Business share this single hero without navigating into a different beige Business design.
+
+Approved generated images were crop-exported as self-hosted WebP without baked text: `shamanic-ai-geanie.webp` (character illustration, 14.8 KB), `shamanic-genie-lounge.webp` (clean 940px room, 67.5 KB), and `shamanic-genie-cards-personal.webp` (810×330 six-photos atlas, 51 KB); existing Business photo atlas is unchanged. The six cards keep their semantic localized labels and real subcategory handlers, the personal 3-question drawer and the business priced options are not removed. The enlarged hero remains first-fold bounded using dvh-based rows; Playwright must verify the six cards clear the fixed dock at 320, 353, 390 and 430 CSS px.
+
+Release policy: protected exact-HEAD CI including WebKit, native auto-merge, existing hourly Vercel production publisher, then compare real served SHA/alias, image HTTP statuses and on-device 1-screen acceptance. Do not call a GitHub PR or a prepared screenshot LIVE. No new provider, paid API, manual Vercel deploy or security test waiver.

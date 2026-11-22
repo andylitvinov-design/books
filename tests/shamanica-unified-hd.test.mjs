@@ -74,3 +74,25 @@ test("Shared bottom dock stays readable and duplicate floating help is suppresse
  assert.match(css,/white-space:normal!important/);
  assert.match(css,/font-size:clamp\(10px,2\.5vw,10\.3px\)!important/);
 });
+
+
+test("Owner-approved Geanie invitation has real localized CTA and a single shared HD visual shell",()=>{
+ const tsx=source("components/shamanica-mobile.tsx");
+ const css=source("components/shamanica-mobile.module.css");
+ const businessCss=source("components/shamanica-business-content.module.css");
+ assert.match(tsx,/data-shamanica-ai-geanie/);
+ assert.match(tsx,/data-shamanica-genie-ask/);
+ for(const text of ["Need Hint? Help?","Ask our AI Geanie.","Ask a question","Задать вопрос","Hacer una pregunta"])
+   assert.ok(tsx.includes(text),text);
+ assert.match(tsx,/onClick=\{\(\)=>window\.dispatchEvent\(new Event\("hh:open-ihelp"\)\)\}/);
+ assert.match(css,/SHAMANIC_GENIE_APPROVED_20261122/);
+ assert.match(css,/shamanic-genie-lounge\.webp/);
+ assert.match(css,/shamanic-genie-cards-personal\.webp/);
+ assert.match(businessCss,/SHAMANIC_GENIE_BUSINESS_PARITY_20261122/);
+ for(const [name,threshold] of [["shamanic-ai-geanie.webp",12000],["shamanic-genie-lounge.webp",60000],["shamanic-genie-cards-personal.webp",45000]]){
+  const file=new URL("../"+photoPath(name),import.meta.url);
+  assert.ok(statSync(file).size>=threshold,name+" full-resolution first-party image");
+ }
+ assert.match(css,/grid-auto-rows:clamp\(74px,11\.5dvh,99px\)/);
+ assert.match(businessCss,/grid-auto-rows:clamp\(74px,11\.5dvh,99px\)/);
+});

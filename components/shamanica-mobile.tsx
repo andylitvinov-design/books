@@ -194,6 +194,11 @@ const personalSubcategories:Record<ShelfId,readonly PersonalChoice[]>={
  ]
 };
 const personalUi={"ru":{"back":"Все 6 направлений","choose":"Выберите подходящее направление","all":"Все услуги категории"},"en":{"back":"All 6 categories","choose":"Choose a specific service","all":"All services in this category"},"es":{"back":"Las 6 categorías","choose":"Elige un servicio","all":"Todos los servicios de la categoría"}} as const;
+const geanieCopy={
+ en:{headline:"Need Hint? Help?",invitation:"Ask our AI Geanie.",cta:"Ask a question"},
+ ru:{headline:"Нужна подсказка? Помощь?",invitation:"Спросите нашего AI-Джина.",cta:"Задать вопрос"},
+ es:{headline:"¿Necesitas ayuda?",invitation:"Pregunta a nuestro Genio IA.",cta:"Hacer una pregunta"}
+} as const;
 const cabinetCopy={
  en:{subtitle:"Tools for mind, heart, power & life.",open:"Find the right practice · 3 questions",shelves:"Explore the alchemist's shelves"},
  ru:{subtitle:"Инструменты для ума, сердца, силы и жизни.",open:"Подобрать практику · 3 вопроса",shelves:"Полки кабинета алхимика"},
@@ -362,6 +367,18 @@ export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;au
      </h1>
      <p className={styles.mirrorTagline}>{cabinetCopy[locale].subtitle}</p>
     </div>
+    <aside className={styles.geaniePromo} data-shamanica-ai-geanie aria-label={geanieCopy[locale].headline}>
+     <Image className={styles.geaniePortrait} src="/images/holistic-house/shamanic-ai-geanie.webp"
+      width={173} height={257} alt="" unoptimized/>
+     <div className={styles.geanieSpeech}>
+      <strong>{geanieCopy[locale].headline}</strong>
+      <span>{geanieCopy[locale].invitation}</span>
+      <button type="button" className={styles.geanieAsk} data-shamanica-genie-ask
+       onClick={()=>window.dispatchEvent(new Event("hh:open-ihelp"))}>
+       {geanieCopy[locale].cta}<ArrowRight size={15} aria-hidden="true"/>
+      </button>
+     </div>
+    </aside>
    </section>
    {business?<ShamanicaBusinessContent locale={locale}/>:<>
    <section className={styles.services} data-shamanica-cabinet-shelves aria-labelledby="shamanica-services-title">
