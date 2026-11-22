@@ -156,7 +156,7 @@ test("all six voices can be selected and their real samples requested before phr
 });
 
 
-test("voice browser opens Ideas and applies six visible Montage styles with decoded playback",()=>{
+test("voice browser opens the native Style disclosure and applies six Montage styles with decoded playback",()=>{
  const start=source.indexOf("async function verifyWorkspaceHydration");
  const end=source.indexOf("// Real guest route browser acceptance",start);
  const flow=source.slice(start,end);
@@ -170,12 +170,15 @@ test("voice browser opens Ideas and applies six visible Montage styles with deco
  const mood=flow.indexOf('data-video-personalization-choice="desired-calm"',personal);
  const energy=flow.indexOf('data-video-personalization-energy="5"',mood);
  const montage=flow.indexOf('await montage.tap()',energy);
- const style=flow.indexOf('const styles=page.locator("[data-video-montage-style]")',montage);
+ const disclosure=flow.indexOf('const moreStyles=page.locator("[data-video-montage-more-styles]")',montage);
+ const disclosureTap=flow.indexOf('await moreStyles.locator("summary").tap()',disclosure);
+ const disclosureOpen=flow.indexOf('await expect(moreStyles).toHaveAttribute("open","")',disclosureTap);
+ const style=flow.indexOf('const styles=moreStyles.locator("[data-video-montage-style]")',disclosureOpen);
  const six=flow.indexOf('await expect(styles).toHaveCount(6)',style);
  const selected=flow.indexOf('await minimal.tap()',six);
  const reflected=flow.indexOf('data-video-preview-style","minimal"',selected);
  const decoded=flow.indexOf('video.readyState>=2&&video.videoWidth>0',reflected);
- assert.ok(start>=0&&end>start&&click>=0&&ideas>click&&goal>ideas&&choices>goal&&goalSelected>choices&&next>goalSelected&&personal>next&&mood>personal&&energy>mood&&montage>energy&&style>montage&&six>style&&selected>six&&reflected>selected&&decoded>reflected,
+ assert.ok(start>=0&&end>start&&click>=0&&ideas>click&&goal>ideas&&choices>goal&&goalSelected>choices&&next>goalSelected&&personal>next&&mood>personal&&energy>mood&&montage>energy&&disclosure>montage&&disclosureTap>disclosure&&disclosureOpen>disclosureTap&&style>disclosureOpen&&six>style&&selected>six&&reflected>selected&&decoded>reflected,
    "real leisure Goal, mood and energy selections precede six Montage styles and decoded MP4");
  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
  assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);

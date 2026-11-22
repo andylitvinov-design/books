@@ -946,7 +946,15 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(montageStyleTab).toHaveAttribute('aria-pressed','true');
       phase(engine,"montage-pro-offer-routes-passed");
       // Reproduce the owner's iPhone case before recording real voice.
-      const selectedStyle=page.locator('[data-video-montage-style="3"]');
+      // The second real WebKit route must open the photo-first Style disclosure
+      // after returning from Extra. A previously open details was unmounted.
+      const extraStyles=page.locator('[data-video-montage-more-styles]');
+      await expect(extraStyles).toBeVisible();
+      await expect(extraStyles).not.toHaveAttribute("open","");
+      if(engine==="webkit")await extraStyles.locator("summary").tap();
+      else await extraStyles.locator("summary").click();
+      await expect(extraStyles).toHaveAttribute("open","");
+      const selectedStyle=extraStyles.locator('[data-video-montage-style="3"]');
       const selectedMaster=page.locator("[data-mandala-master-mp4]");
       await expect(selectedStyle).toBeVisible();
       const singleVideoMaster=await selectedMaster.count()>0;
@@ -998,12 +1006,16 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const focusMusic=page.locator('[data-video-audio-category="focus"]');
       await allMusic.click();
       await expect(allMusic).toHaveAttribute("aria-pressed","true");
-      await expect(compactGrid.locator('[data-video-audio-compact-track]')).toHaveCount(5);
+      // The large mobile Audio layout shows four reviewed tracks at a time;
+      // additional licensed tracks are available under Browse All Music.
+      await expect(compactGrid.locator('[data-video-audio-compact-track]')).toHaveCount(4);
       await focusMusic.click();
       await expect(focusMusic).toHaveAttribute("aria-pressed","true");
       await expect(compactGrid.locator('[data-video-audio-compact-track]')).toHaveCount(1);
       await allMusic.click();
-      await expect(compactGrid.locator('[data-video-audio-compact-track]')).toHaveCount(5);
+      // The large mobile Audio layout shows four reviewed tracks at a time;
+      // additional licensed tracks are available under Browse All Music.
+      await expect(compactGrid.locator('[data-video-audio-compact-track]')).toHaveCount(4);
       await expect(page.locator('[data-video-audio-compact-upload]')).toHaveCount(1);
       await expect(page.locator('[data-video-audio-mode]')).toHaveCount(0);
       await page.locator('[data-video-audio-compact-silent]').click();
@@ -1014,36 +1026,47 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(choices.nth(1)).toHaveAttribute("aria-pressed","true");
       await expect(page.locator('[data-video-audio-compact-selected]')).toContainText("2/3");
       await expect(page.locator('[data-video-stage-actions="montage"] [data-video-quick-generate]')).toBeVisible();
-      // Real DOM geometry of the owner-approved Audio first-fold layout.
-      // Two actions share one row, Create is the outlined LEFT choice, Text the
-      // emerald RIGHT choice. A short horizontal music rail must never push
-      // the footer into a second tall section or cause page-wide x-overflow.
+      // Large text-only music rows, six one-line filters and one real
+      // multitrack timeline below Audio; preserve 320–430px and touch tests.
       for(const width of [320,354,390,430]){
         await page.setViewportSize({width,height:840});
         const audioLayout=await page.evaluate(()=>{
           const audio=document.querySelector('[data-video-montage-audio]');
+          const timeline=document.querySelector('[data-video-montage-shared-timeline]');
           const actions=document.querySelector('[data-video-stage-actions="montage"]');
           const create=actions?.querySelector('[data-video-quick-generate]');
           const next=actions?.querySelector('[data-video-montage-next="text"]');
           const tile=audio?.querySelector('[data-video-audio-compact-track]');
-          if(!audio||!actions||!create||!next||!tile)return null;
-          const a=audio.getBoundingClientRect(),f=actions.getBoundingClientRect();
-          const c=create.getBoundingClientRect(),n=next.getBoundingClientRect();
-          const t=tile.getBoundingClientRect();
-          return {span:f.bottom-a.top,tileHeight:t.height,
-            createLeft:c.left,createTop:c.top,createWidth:c.width,
-            nextLeft:n.left,nextTop:n.top,nextWidth:n.width,
+          const play=tile?.querySelector('[data-video-audio-compact-play]');
+          const category=audio?.querySelector('[data-video-audio-category="all"]')?.parentElement;
+          if(!audio||!timeline||!actions||!create||!next||!tile||!play||!category)return null;
+          const a=audio.getBoundingClientRect(),t=timeline.getBoundingClientRect();
+          const f=actions.getBoundingClientRect(),c=create.getBoundingClientRect();
+          const n=next.getBoundingClientRect(),row=tile.getBoundingClientRect();
+          const playBox=play.getBoundingClientRect();
+          return {audioHeight:a.height,audioBottom:a.bottom,
+            timelineTop:t.top,timelineBottom:t.bottom,actionsTop:f.top,
+            tileHeight:row.height,playWidth:playBox.width,playHeight:playBox.height,
+            createWidth:c.width,nextWidth:n.width,createRight:c.right,nextRight:n.right,
+            categoryTops:[...category.querySelectorAll('button[data-video-audio-category]')]
+              .map(button=>button.getBoundingClientRect().top),
             documentWidth:document.documentElement.scrollWidth,
             viewportWidth:document.documentElement.clientWidth};
         });
-        assert.ok(audioLayout&&audioLayout.span<570,
-          'AUDIO_COMPACT_FIRST_FOLD_SPAN_'+width+' '+JSON.stringify(audioLayout));
-        assert.ok(audioLayout.tileHeight<=86&&audioLayout.tileHeight>=70,
-          'AUDIO_COMPACT_TRACK_HEIGHT_'+width+' '+JSON.stringify(audioLayout));
-        assert.ok(audioLayout.createLeft<audioLayout.nextLeft&&
-          Math.abs(audioLayout.createTop-audioLayout.nextTop)<=3&&
-          audioLayout.createWidth>=90&&audioLayout.nextWidth>=90,
-          'AUDIO_TWO_ACTIONS_CREATE_LEFT_TEXT_RIGHT_'+width+' '+JSON.stringify(audioLayout));
+        assert.ok(audioLayout&&audioLayout.audioHeight>200&&audioLayout.audioHeight<950,
+          'AUDIO_LARGE_MOBILE_CONTROLS_'+width+' '+JSON.stringify(audioLayout));
+        assert.ok(audioLayout.timelineTop>=audioLayout.audioBottom-3&&
+          audioLayout.actionsTop>=audioLayout.timelineBottom-3,
+          'AUDIO_REAL_TIMELINE_AFTER_CONTROLS_'+width+' '+JSON.stringify(audioLayout));
+        assert.ok(audioLayout.categoryTops.length===6&&
+          audioLayout.categoryTops.every(y=>Math.abs(y-audioLayout.categoryTops[0])<=2),
+          'AUDIO_FILTERS_SINGLE_ROW_'+width+' '+JSON.stringify(audioLayout));
+        assert.ok(audioLayout.tileHeight>=60&&audioLayout.tileHeight<=110&&
+          audioLayout.playWidth>=44&&audioLayout.playHeight>=44,
+          'AUDIO_BIG_TRACK_TOUCH_TARGETS_'+width+' '+JSON.stringify(audioLayout));
+        assert.ok(audioLayout.createWidth>=90&&audioLayout.nextWidth>=90&&
+          Math.max(audioLayout.createRight,audioLayout.nextRight)<=audioLayout.viewportWidth+2,
+          'AUDIO_BOTH_ACTIONS_REACHABLE_'+width+' '+JSON.stringify(audioLayout));
         assert.ok(audioLayout.documentWidth<=audioLayout.viewportWidth+2,
           'AUDIO_NO_PAGE_OVERFLOW_'+width+' '+JSON.stringify(audioLayout));
       }
