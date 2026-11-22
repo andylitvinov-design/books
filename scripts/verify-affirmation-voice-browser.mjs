@@ -1472,6 +1472,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await personalTab.click();
       await expect(personalTab).toHaveAttribute("aria-pressed","true");
       await expect(phrases.locator("[data-video-ideas-personalization-panel]")).toBeVisible();
+      // The completed eight-axis page, not the hidden previous quiz, stays
+      // active on a return to Personal from the approved Concept.
+      await expect(phrases.locator("[data-video-meaning-axes-screen]")).toBeVisible();
+      await expect(phrases.locator("[data-video-meaning-axis]")).toHaveCount(8);
       // Owner-approved compact Personal intentionally hides the duplicated
       // portrait photo, preserving the one shared Canvas/player. Check layout
       // without demanding the removed photo be visible.
@@ -1485,7 +1489,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           const movie=document.querySelector("[data-video-player-with-controls]");
           const tabsBar=document.querySelector("[data-video-ideas-tabs]");
           const quiz=document.querySelector("[data-video-personalization]");
-          if(!nav||!photo||!movie||!tabsBar||!quiz)return null;
+          const axes=document.querySelector("[data-video-meaning-axes-screen]");
+          const quizVisible=Boolean(quiz?.getClientRects().length);
+          const axesVisible=Boolean(axes?.getClientRects().length);
+          const activePersonal=axesVisible?axes:quizVisible?quiz:null;
+          if(!nav||!photo||!movie||!tabsBar||!quiz||!activePersonal)return null;
           const tabs=[...nav.querySelectorAll("button")].map(node=>{
             const rect=node.getBoundingClientRect();
             return {top:rect.top,bottom:rect.bottom};
@@ -1498,7 +1506,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
             movieHidden:getComputedStyle(movie).display==="none",
             source:img?.getAttribute("src"),
             ideasTabsTop:tabsBar.getBoundingClientRect().top,
-            quizTop:quiz.getBoundingClientRect().top,
+            activePersonalTop:activePersonal.getBoundingClientRect().top,
+            activePersonalType:axesVisible?"axes":"questions",
             documentWidth:document.documentElement.scrollWidth,
             viewportWidth:document.documentElement.clientWidth};
         });
@@ -1508,8 +1517,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           "single row of six workspace tabs: "+width+" "+JSON.stringify(measured));
         assert.ok(!measured.photoVisible&&measured.movieHidden,
           "Personal hides duplicate photo and the shared player: "+width+" "+JSON.stringify(measured));
-        assert.ok(measured.ideasTabsTop<=measured.quizTop,
-          "Personal tabs appear before the active question: "+width+" "+JSON.stringify(measured));
+        assert.equal(measured.activePersonalType,"axes",
+          "The completed eight-axis page stays active on return: "+width+" "+JSON.stringify(measured));
+        assert.ok(measured.activePersonalTop>0&&measured.ideasTabsTop<=measured.activePersonalTop,
+          "Personal tabs precede the visible eight-axis page: "+width+" "+JSON.stringify(measured));
         assert.ok(measured.documentWidth<=measured.viewportWidth+2,
           "one-screen Ideas must not overflow horizontally: "+width+" "+JSON.stringify(measured));
         if(engine==="chromium"){
