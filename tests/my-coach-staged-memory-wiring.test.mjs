@@ -19,7 +19,7 @@ test('old browser GET of complete archived protocols is not used before a yes',(
   assert.match(ui(),/openingProgress\.checkmarks\.invitation/)
 })
 test('separate later personal-context gate, account-bound token and independent test opt-in',()=>{
-  assert.match(control(),/if\(!identityConfirmed\|\|!stageToken\|\|!topicKey/)
+  assert.match(control(),/if\(!identityConfirmed\|\|!focusConfirmed\|\|!stageToken\|\|!topicKey/)
   assert.match(control(),/stage:'personal'/)
   assert.match(control(),/stageToken,consent:/)
   assert.match(control(),/goals:allowGoals,profile:allowProfile,assessments:assessmentsAllowed/)
@@ -71,4 +71,16 @@ test('switching provider invalidates old consent and suppresses old-topic contex
  const policy=readFileSync(new URL('../lib/coaching/gemini-live-free.mjs',import.meta.url),'utf8')
  assert.match(policy,/CLIENT-APPROVED REFERENCE DATA/)
  assert.match(policy,/A new topic overrides previous memory/)
+})
+
+test('personal preview requires focus and a separate final AI-share checkbox',()=>{
+  const controls=control(),dialogue=ui()
+  assert.match(controls,/focusConfirmed=false/)
+  assert.match(controls,/!identityConfirmed\|\|!focusConfirmed/)
+  assert.match(controls,/data-coach-memory-final-sharing/)
+  assert.match(controls,/sharePersonal,topicKey,invitationAccepted/)
+  assert.match(dialogue,/openingProgress\.checkmarks\.focus/)
+  assert.match(dialogue,/stagedMemory\?\.sharePersonal===true/)
+  const model=service()
+  assert.match(model,/requirePrior:body\.memorySharePrior===true/)
 })

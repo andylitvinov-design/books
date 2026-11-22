@@ -62,3 +62,18 @@ test('stage 3 token is bound to the signed-in owner, selected provider, and expi
   assert.equal(verifyCoachMemoryTicket(token, { accountId: 'account-one', provider: 'gemini_free', secret, now: 1000000000000 + 46 * 60000 }), false)
   assert.equal(verifyCoachMemoryTicket('invalid', { accountId: 'account-one', provider: 'gemini_free', secret }), false)
 })
+
+test('prior-session permission is cryptographically scoped to a separately opted-in identity lookup',()=>{
+  const args={accountId:'account-one',provider:'gemini_free',secret:'test-key',now:1000000000000}
+  const noPrior=issueCoachMemoryTicket(args)
+  const prior=issueCoachMemoryTicket({...args,priorSessions:true})
+  assert.equal(verifyCoachMemoryTicket(noPrior,{...args,now:1000000000001}),true)
+  assert.equal(verifyCoachMemoryTicket(noPrior,{...args,requirePrior:true,now:1000000000001}),false)
+  assert.equal(verifyCoachMemoryTicket(prior,{...args,requirePrior:true,now:1000000000001}),true)
+  assert.equal(verifyCoachMemoryTicket(prior,{...args,provider:'gemini_paid',requirePrior:true,now:1000000000001}),false)
+  const tampered=prior.replace('.p.','.n.')
+  assert.equal(verifyCoachMemoryTicket(tampered,{...args,now:1000000000001}),false)
+  const service=readFileSync(new URL('../lib/app/my-coach-staged-memory.js',import.meta.url),'utf8')
+  assert.match(service,/if \(consent\.providerSharing !== true\) return empty\(stage\)/)
+  assert.match(service,/priorSessions: consent\.priorSessions === true/)
+})

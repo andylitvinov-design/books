@@ -533,7 +533,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const openingActive=!openingProgress.completed
   const continuityChoice=openingProgress.answers.continuity?.kind||''
   const personalApproved=memoryReady&&openingProgress.checkmarks.name&&
-    openingProgress.checkmarks.continuity&&stagedMemory?.personal?.stage==='personal'
+    openingProgress.checkmarks.continuity&&openingProgress.checkmarks.focus&&
+    stagedMemory?.sharePersonal===true&&stagedMemory?.personal?.stage==='personal'
   const memorySharePrior=memoryReady&&allowOpeningPrior&&continuityChoice==='previous'
   const memoryShareGoals=Boolean(personalApproved&&stagedMemory?.allowGoals&&!contextPaused)
   const memoryShareTests=Boolean(personalApproved&&stagedMemory?.assessmentsAllowed&&!contextPaused)
@@ -1501,6 +1502,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       <MyCoachStagedMemoryControls key={memoryProvider} locale={conversationLang} provider={memoryProvider}
         invitationAccepted={openingProgress.checkmarks.invitation&&!openingProgress.declined}
         identityConfirmed={openingProgress.checkmarks.name&&openingProgress.checkmarks.continuity}
+        focusConfirmed={openingProgress.checkmarks.focus}
         priorAllowed={allowOpeningPrior} onPriorAllowed={value=>{
           setAllowOpeningPrior(value)
           if(!value)cancelPendingCoachTurn()
