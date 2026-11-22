@@ -65,15 +65,16 @@ test('one-use ephemeral token locks model, voice and Director; secret never retu
    assert.equal(options.headers['x-goog-api-key'],key)
    const body=JSON.parse(options.body)
    assert.equal(body.uses,1)
-   // v1beta discovery: AuthToken directly contains BidiGenerateContentSetup.
+   // Official v1beta REST AuthToken contract: LiveConnectConstraints.config.
    assert.deepEqual(Object.keys(body).sort(),
-     ['bidiGenerateContentSetup','expireTime','newSessionExpireTime','uses'])
-   const config=body.bidiGenerateContentSetup
-   assert.equal(config.model,'models/'+GEMINI_FREE_LIVE_MODEL)
-   assert.deepEqual(config.generationConfig.responseModalities,['AUDIO'])
-   assert.equal(config.generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName,'Sulafat')
+     ['expireTime','liveConnectConstraints','newSessionExpireTime','uses'])
+   assert.equal(Object.hasOwn(body,'bidiGenerateContentSetup'),false)
+   const {model,config}=body.liveConnectConstraints
+   assert.equal(model,'models/'+GEMINI_FREE_LIVE_MODEL)
+   assert.deepEqual(config.responseModalities,['AUDIO'])
+   assert.equal(config.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName,'Sulafat')
    assert.deepEqual(config.sessionResumption,{})
-   assert.equal(config.generationConfig.maxOutputTokens,1100)
+   assert.equal(config.maxOutputTokens,1100)
    assert.match(config.systemInstruction.parts[0].text,/coaching method/)
    assert.equal(config.realtimeInputConfig.activityHandling,'START_OF_ACTIVITY_INTERRUPTS')
    assert.ok(config.inputAudioTranscription)
