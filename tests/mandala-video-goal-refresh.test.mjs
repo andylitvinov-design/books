@@ -9,7 +9,7 @@ const director = readFileSync(new URL("../components/mandala-auto-video-director
 
 test("Video Studio imports the route-scoped mobile Goal refresh", () => {
   assert.match(page, /import ["']@\/components\/mandala-video-goal-refresh\.css["']/);
-  assert.match(page, /data-mandala-mode=\{photoMode \? "photo" : "video"\}/);
+  assert.match(page, /data-mandala-mode=\{giftMode \? "gift" : photoMode \? "photo" : "video"\}/);
   assert.match(css, /@media \(max-width:759px\)/);
   assert.match(css, /\[data-mandala-mode="video"\] \[data-active-workspace="video"\]/);
   assert.doesNotMatch(css, /\[data-active-workspace="(?:editor|phrases|effects|pro|ready)"\]/);
@@ -22,7 +22,7 @@ test("Goal cards are readable and preserve the original director controls", () =
   assert.match(css, /min-height:46px!important/);
   assert.match(studio, /data-video-director-goal-controls/);
   assert.match(director, /data-auto-video-category=\{item\.id\}/);
-  assert.match(director, /aria-pressed=\{selectedCategoryId===item\.id\}/);
+  assert.match(director, /aria-pressed=\{selectedCategoryId===item\.id&&goalCategoryAnswered&&!requestNeedsChoice\}/);
 });
 
 test("Mobile tabs retain six working workspaces; the one video player remains intact", () => {
@@ -34,7 +34,7 @@ test("Mobile tabs retain six working workspaces; the one video player remains in
   assert.match(studio, /data-video-quick-control=\{item\.id\}/);
   assert.match(studio, /data-video-preview-toggle/);
   assert.match(studio, /data-video-continue-scenarios/);
-  assert.match(studio, /onClick=\{continueToIdeas\}/);
+  assert.match(studio, /onClick=\{continueToMontage\}/);
   assert.match(css, /prefers-reduced-motion:reduce/);
 });
 
