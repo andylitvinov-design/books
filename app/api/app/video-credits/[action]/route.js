@@ -30,7 +30,7 @@ async function handle(request,{params}){
     let result
     if(request.method==='GET'&&action==='status'){
       await consumeRate(config,{op:'video-credit-status',actor:actor.id},60,60)
-      result=await credits.status(actor)
+      result={...await credits.status(actor),accountId:actor.id}
     }else if(request.method==='POST'&&action==='hold'){
       await consumeRate(config,{op:'video-credit-hold',actor:actor.id},20,3600)
       result=await credits.hold(actor,await readBody(request,512))

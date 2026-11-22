@@ -91,3 +91,18 @@ test('a stalled credit settlement times out and can be retried with the same ope
     }
   }
 })
+
+test('a video hold carries the confirmed account across a tab switch', async t=>{
+  const accountId='11111111-1111-4111-8111-111111111111'
+  const {postVideoCreditAction}=await import('../lib/video-credits/client.mjs')
+  const mock=t.mock.method(globalThis,'fetch',async (_,options)=>{
+    assert.equal(options.headers['x-hh-account-id'],accountId)
+    return Response.json({error:'ACCOUNT_CHANGED'},{status:409})
+  })
+  try{
+    await assert.rejects(postVideoCreditAction('hold',{operationId:accountId},{accountId}),
+      {message:'ACCOUNT_CHANGED'})
+  }finally{
+    mock.mock.restore()
+  }
+})

@@ -195,3 +195,31 @@ test("native WebKit recovers bounded mid-shot licensed source drift without stal
  assert.match(source,/stock\?\.complete&&stock\.naturalWidth>=600&&stock\.naturalHeight>=600/);
  assert.match(source,/licensed_scene_frame_unavailable/);
 });
+
+test('an in-flight studio preview cannot seek a source after Create takes the decoders',async()=>{
+  const section=studio.indexOf('// No autoplay: paint a still scene');
+  const start=studio.indexOf('useEffect(() => {',section)+'useEffect('.length;
+  const end=studio.indexOf('  }, [source, effect',start);
+  assert.ok(section>=0&&end>start);
+  const preparingRef={current:false};
+  let seekCount=0;
+  const runPreview=runInNewContext('('+studio.slice(start,end+3).replace('(now: number)','(now)')+')',{
+    source:'poster',jobRef:{current:null},webCodecJobRef:{current:null},
+    preparing:false,preparingRef,recording:false,previewPlaying:false,previewSeekSeconds:2,
+    usingFreeFilmCompilation:true,freeFilmReady:true,styleFilmReady:false,
+    canvasRef:{current:{getContext:()=>({})}},aspect:'portrait',
+    loadSceneImage:async()=>({}),formatDimensions:()=>[720,1280],
+    freeFilmVideoAt:()=>{seekCount++;return null;},
+    selectedStyleFilm:null,hasStoryboardPhotoAt:()=>false,
+  });
+
+  runPreview();
+  preparingRef.current=true;
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(seekCount,0,'a preview frame queued before the tap must yield to export');
+
+  preparingRef.current=false;
+  runPreview();
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(seekCount,1,'preview resumes when export releases the decoders');
+});

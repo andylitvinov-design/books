@@ -64,8 +64,8 @@ test('active account row locks preserve one starter and historical allowance',()
   assert.match(service,/accountCreatedAt:account\.created_at/)
   assert.match(service,/Date\.parse\(accountCreatedAt/)
   assert.match(service,/grant_key='starter' and credits=1300/)
-  assert.match(service,/xpV2\?XP_V2_WELCOME_CREDITS:1300/)
-  assert.match(service,/starterLimit:xpV2\?XP_V2_WELCOME_CREDITS:1300/)
+  assert.match(service,/const welcome=newAccount\?XP_V2_WELCOME_CREDITS:1300/)
+  assert.match(service,/starterLimit:starterGranted===XP_V2_WELCOME_CREDITS\?XP_V2_WELCOME_CREDITS:STARTER_CREDITS/)
   assert.match(service,/if\(v2\.ready&&sku!=='basic'\)fail\('VIDEO_SKU_RENDERER_UNAVAILABLE'/)
   assert.match(service,/if\(v2\.ready&&\(prior\.sku!==sku/)
   assert.match(service,/price_version/)
@@ -101,3 +101,20 @@ test('unresolved provider Live Gift reserves 500 XP after ordinary hold TTL and 
   assert.match(service,/if\(charge\.sku==='live_gift'\)fail\('VIDEO_CREDIT_SERVER_SETTLEMENT_REQUIRED',403\)/)
   assert.match(service,/if\(v2\.ready&&sku!=='basic'\)fail\('VIDEO_SKU_RENDERER_UNAVAILABLE'/)
 })
+
+test('a closed XP v2 pilot leaves guest and other accounts on the current catalog',()=>{
+  const a={id:'11111111-1111-4111-8111-111111111111'}
+  const b={id:'22222222-2222-4222-8222-222222222222'}
+  const other={id:'33333333-3333-4333-8333-333333333333'}
+  const scope='HH_VIDEO_XP_V2_PILOT_ACCOUNT_IDS'
+  const pilot={...flags,[scope]:a.id+','+b.id}
+  assert.equal(videoCreditCatalog(pilot).priceCredits,10)
+  assert.equal(videoCreditCatalog(pilot,other).priceCredits,10)
+  assert.equal(videoCreditCatalog(pilot,a).priceCredits,250)
+  assert.equal(videoCreditCatalog(pilot,b).priceCredits,250)
+  assert.equal(videoCreditCatalog({...pilot,HH_VIDEO_XP_V2_ENABLED:"false"},a).priceCredits,10)
+  assert.equal(videoCreditCatalog({...pilot,HH_VIDEO_XP_V2_SCHEMA_APPROVED:'false'},a).blocked,true)
+  for(const malformed of ['',a.id+',not-an-id',[a.id,b.id,other.id].join(',')]){
+    assert.equal(videoCreditCatalog({...flags,[scope]:malformed},a).priceCredits,10)
+  }
+});
