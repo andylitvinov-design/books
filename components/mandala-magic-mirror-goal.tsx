@@ -80,7 +80,7 @@ const labels={
   advanced:"Opciones avanzadas",dictation:"Usa el micrófono del teclado para dictar",workQuestion:"¿Qué vídeo quieres crear?",workPlaceholder:"Describe tu vídeo o servicio…",workAlternative:"O elige un formato de vídeo",format:"Formato"},
 } as const;
 
-const formatOptions=[{id:"basic",credits:250,Icon:Film},{id:"pro",credits:500,Icon:Play},{id:"vip",credits:1000,Icon:Clapperboard}] as const;
+const formatOptions=[{id:"basic",credits:250,Icon:Film},{id:"pro",credits:500,Icon:UserRound},{id:"vip",credits:1000,Icon:Clapperboard}] as const;
 const mirrorPosterUrl=(image:string)=>image.startsWith("/")?image:"/videos/holistic-house/film-collection-v2/"+image;
 
 export function MandalaMagicMirrorTitle({locale}:{locale:VideoLocale}){
@@ -89,12 +89,12 @@ export function MandalaMagicMirrorTitle({locale}:{locale:VideoLocale}){
   <Sparkles size={22} aria-hidden="true"/>
   <h2>Magic Mirror</h2>
   <strong>{t.subtitle}</strong>
-  <p>{t.hint}</p>
+  <p>{t.hint}</p><span className={css.heroSwoosh} aria-hidden="true"/>
  </header>;
 }
 
 const onboardingCopy={
- en:{therapy:"Video Therapy for Myself",other:"Videos for Others",therapyHint:"Supportive videos, meditations and practices for your current situation, challenge or goal.",otherHint:"Personal gifts, congratulations, support — and videos for Instagram and social media.",formatTitle:"Choose a Creation Format",formatNote:"Format selection is a planning preference. Credits are confirmed before generation.",basic:"Simple Video",pro:"Live Photo",vip:"Cinematographic Video",basicHelp:"A simple supporting video",proHelp:"Photo animation with your permission",vipHelp:"Cinematic story and scenes",plan:"Plan & Generate Video",back:"Magic Mirror",step:"Step 1 of 3",topic:"Topic",script:"Script & Style",create:"Create",describe:"Describe your situation or goal…",example:"Example: “I feel stressed and need to restore my energy”",ideas:"AI Ideas",guide:"Guide me",guideHelp:"Choose one of four directions below, then a subcategory and topic. Or describe your situation and continue directly.",quiz:"Or choose a topic through a short quiz",next:"Get AI Suggestions & Script",watch:"Watch example video",media:"Open media options",keyboard:"Focus the text field for keyboard dictation"},
+ en:{therapy:"Video Therapy for Myself",other:"Videos for Others",therapyHint:"Supportive videos, meditations and practices that shift beliefs, restore energy and create change.",otherHint:"Personal gifts, congratulations, thank you, support — and creative videos for Instagram and social media.",formatTitle:"Choose a Creation Format",formatNote:"Format selection is a planning preference. Credits are confirmed before generation.",basic:"Simple Video",pro:"Live Photo",vip:"Cinematographic Video",basicHelp:"Quick & easy video with your message",proHelp:"Turn your photo into a living video with a natural smile and movement",vipHelp:"A cinematic story with music, scenes and special effects",plan:"Plan & Generate Video",back:"Magic Mirror",step:"Step 1 of 3",topic:"Topic",script:"Script & Style",create:"Create",describe:"Describe your situation or goal…",example:"Example: “I feel stressed and need to restore my energy”",ideas:"AI Ideas",guide:"Guide me",guideHelp:"Choose one of four directions below, then a subcategory and topic. Or describe your situation and continue directly.",quiz:"Or choose a topic through a short quiz",next:"Get AI Suggestions & Script",watch:"Watch example video",media:"Open media options",keyboard:"Focus the text field for keyboard dictation"},
  ru:{therapy:"Видеотерапия для себя",other:"Видео для других",therapyHint:"Поддерживающие видео, медитации и практики для вашей ситуации, трудности или цели.",otherHint:"Подарки, поздравления, поддержка близким и видео для Instagram и соцсетей.",formatTitle:"Выберите формат видео",formatNote:"Выбор формата пока задаёт предпочтение. Кредиты подтверждаются перед генерацией.",basic:"Простое видео",pro:"Живое фото",vip:"Кинематографическое видео",basicHelp:"Короткое поддерживающее видео",proHelp:"Оживление фото с разрешения",vipHelp:"История с видеосценами",plan:"Спланировать и создать видео",back:"Magic Mirror",step:"Шаг 1 из 3",topic:"Тема",script:"Сценарий и стиль",create:"Создание",describe:"Опишите ситуацию или цель…",example:"Пример: «Испытываю стресс и хочу восстановить силы»",ideas:"ИИ-идеи",guide:"Помоги мне",guideHelp:"Выберите одно из четырёх направлений, затем подтему и тему. Или опишите запрос и переходите дальше.",quiz:"Или выберите тему через короткий квиз",next:"Предложить тему и сценарий",watch:"Смотреть пример видео",media:"Открыть медианастройки",keyboard:"Открыть клавиатуру для диктовки"},
  es:{therapy:"Videoterapia para mí",other:"Vídeos para otros",therapyHint:"Vídeos de apoyo, meditaciones y prácticas para tu situación, reto u objetivo.",otherHint:"Regalos, felicitaciones, apoyo y vídeos para Instagram y redes sociales.",formatTitle:"Elige un formato de vídeo",formatNote:"El formato es una preferencia de planificación. Los créditos se confirman antes de generar.",basic:"Vídeo sencillo",pro:"Foto animada",vip:"Vídeo cinematográfico",basicHelp:"Vídeo breve de apoyo",proHelp:"Anima tu foto con permiso",vipHelp:"Historia con escenas cinematográficas",plan:"Planificar y generar vídeo",back:"Magic Mirror",step:"Paso 1 de 3",topic:"Tema",script:"Guion y estilo",create:"Crear",describe:"Describe tu situación u objetivo…",example:"Ejemplo: «Me siento estresado y quiero recuperar energía»",ideas:"Ideas de IA",guide:"Guíame",guideHelp:"Elige una de las cuatro categorías, después una subcategoría y un tema, o describe tu objetivo.",quiz:"O elige un tema con un cuestionario corto",next:"Sugerir ideas y guion",watch:"Ver vídeo de ejemplo",media:"Abrir opciones multimedia",keyboard:"Enfocar el campo para dictar"},
 } as const;
@@ -137,10 +137,11 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
   onWishChange(scopeWishes[next]||"");
   onScopeChange(next);onSelectCategory(choices[next][0].theme);changeStep(1);
  };
- const enterScreen=(next:"me"|"others")=>{
+ // Direction selection stays on landing; this is the ONLY transition to Topic.
+ const enterScreen=()=>{
   if(disabled)return;
-  setScreen("topic");setIntroExpanded(false);setFormatMenuOpen(false);setGuideOpen(false);
-  switchScope(next==="me"?"me":"present");
+  closeExistingIntro();
+  setScreen("topic");setFormatMenuOpen(false);setGuideOpen(false);changeStep(1);
  };
  const playExistingIntro=()=>{
   // This is a poster button, NOT a second video element. Reuse the real
@@ -204,14 +205,14 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
   aria-label={copy.formatTitle}>
   <div className={css.destinationCards} role="group" aria-label={locale==="ru"?"Для кого видео":locale==="es"?"Destinatario":"Who is this video for?"}>
    <button type="button" data-hh-mirror-enter="me" className={css.destination}
-    disabled={disabled} onClick={()=>enterScreen("me")}>
-    <img src="/images/holistic-house/assessment-lotus.svg" alt="" loading="eager"/>
+    aria-pressed={scope==="me"} disabled={disabled} onClick={()=>switchScope("me")}>
+    <img src="/images/holistic-house/magic-mirror-lotus.webp" alt="" loading="eager" decoding="async"/>
     <span className={css.destinationCopy}><Flower2 size={26} aria-hidden="true"/><strong>{copy.therapy}</strong><small>{copy.therapyHint}</small></span>
     <span className={css.destinationArrow}><ArrowRight size={22}/></span>
    </button>
    <button type="button" data-hh-mirror-enter="others" className={css.destination}
-    disabled={disabled} onClick={()=>enterScreen("others")}>
-    <img src="/images/holistic-house/assist-video-letter.svg" alt="" loading="lazy"/>
+    aria-pressed={scope==="present"} disabled={disabled} onClick={()=>switchScope("present")}>
+    <img src="/images/holistic-house/magic-mirror-gift.webp" alt="" loading="eager" decoding="async"/>
     <span className={css.destinationCopy}><Gift size={26} aria-hidden="true"/><strong>{copy.other}</strong><small>{copy.otherHint}</small></span>
     <span className={css.destinationArrow}><ArrowRight size={22}/></span>
    </button>
@@ -224,12 +225,12 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
      <option.Icon size={27} aria-hidden="true"/>
      <strong>{copy[option.id]}</strong>
      <small>{copy[(option.id+"Help") as "basicHelp"|"proHelp"|"vipHelp"]}</small>
-     <span>{option.credits.toLocaleString("en-US")} XP</span>
+     <span><Sparkles size={15} aria-hidden="true"/>{option.credits.toLocaleString("en-US").replaceAll(",", " ")} XP</span>
     </button>)}
   </div>
   <p className={css.formatDisclosure}>{copy.formatNote}</p>
   <button type="button" className={css.primaryAction} data-hh-mirror-plan
-   disabled={disabled} onClick={()=>enterScreen("me")}>
+   disabled={disabled} onClick={enterScreen}>
    <Clapperboard size={23} aria-hidden="true"/>{copy.plan}<ArrowRight size={22} aria-hidden="true"/>
   </button>
  </section>;

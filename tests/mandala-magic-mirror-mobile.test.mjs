@@ -44,8 +44,8 @@ test("the approved mobile Mirror contains only three scopes, a compact input Nex
  assert.match(mirrorCss,/\.formatGrid/);
  assert.match(mirrorCss,/\.composerToolbar/);
  assert.match(mirrorCss,/reiki-approved-sunrise-v3\.webp/);
- assert.match(mirror,/src="\/images\/holistic-house\/assessment-lotus\.svg"/);
- assert.match(mirror,/src="\/images\/holistic-house\/assist-video-letter\.svg"/);
+ assert.match(mirror,/src="\/images\/holistic-house\/magic-mirror-lotus\.webp"/);
+ assert.match(mirror,/src="\/images\/holistic-house\/magic-mirror-gift\.webp"/);
  assert.match(mirror,/data-hh-mirror-wish/);
  assert.match(mirror,/data-hh-mirror-goal-choice=\{item\.id\}/);
  assert.match(mirror,/data-hh-mirror-next/);
@@ -197,4 +197,20 @@ test("Mirror quiz image URL survives category then subcategory and topic",()=>{
  assert.ok(mirror.includes('const mirrorPosterUrl=(image:string)=>image.startsWith("/")?image:'));
  assert.equal((mirror.match(/mirrorPosterUrl\(available\[index%available\.length\]\.image\)/g)||[]).length,2);
  assert.equal((mirror.match(/<img src=\{"\/videos\/holistic-house\/film-collection-v2\/"\+/g)||[]).length,0);
+});
+
+test("owner 22 Nov: destination stays on landing; green Plan alone advances",()=>{
+ const landing=mirror.slice(mirror.indexOf('if(screen==="landing")'),mirror.indexOf('return <section className={css.goals} data-hh-mirror-screen="topic"'));
+ assert.match(landing,/data-hh-mirror-enter="me"[\s\S]*?onClick=\{\(\)=>switchScope\("me"\)\}/);
+ assert.match(landing,/data-hh-mirror-enter="others"[\s\S]*?onClick=\{\(\)=>switchScope\("present"\)\}/);
+ assert.match(landing,/aria-pressed=\{scope==="me"\}/);
+ assert.match(landing,/aria-pressed=\{scope==="present"\}/);
+ assert.match(landing,/data-hh-mirror-plan[\s\S]*?onClick=\{enterScreen\}/);
+ assert.doesNotMatch(landing,/onClick=\{\(\)=>enterScreen/);
+ const entry=mirror.slice(mirror.indexOf('const enterScreen='),mirror.indexOf('const playExistingIntro='));
+ assert.match(entry,/setScreen\("topic"\)/);
+ assert.doesNotMatch(entry,/switchScope\(/);
+ assert.match(mirrorCss,/\.destination\[aria-pressed="true"\]/);
+ assert.match(mirrorCss,/\.heroSwoosh/);
+ assert.match(mobile,/one-screen hero/);
 });
