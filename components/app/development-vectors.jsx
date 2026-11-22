@@ -6,6 +6,8 @@ import {INNER_VECTOR_ITEMS,OUTER_VECTOR_ITEMS,emptyDevelopmentVectors,
  normalizeDevelopmentVectors,toVectorDraft,fromVectorDraft,ratingsFromCoachProtocol,coachVectorSummary
 } from '@/lib/profile/development-vectors.mjs'
 import styles from './development-vectors.module.css'
+import DevelopmentVectorWheel from './development-vector-wheel'
+import {promptForDevelopmentVector} from '@/lib/profile/development-vector-prompts.mjs'
 const C={
  en:{title:'Two vectors of development',inner:'Inner · meaning axes',outer:'Outer · life goals',
  lead:'Inner qualities and outer results are different dimensions of your growth.',
@@ -158,6 +160,7 @@ export default function DevelopmentVectors({locale='en'}){
      <button type="button" className={styles.focus} aria-pressed={draft[track].focusId===item.id}
       onClick={()=>focus(item.id)}>{draft[track].focusId===item.id?'★ '+t.focus:'☆ '+t.choose}</button>
    </header>
+   {guided&&<p className={styles.prompt}>{promptForDevelopmentVector(track,item.id,lang)}</p>}
    <div className={styles.numbers}>
     {['current','desired'].map((key,n)=><label key={key}>
       <span>{n?t.want:t.now}</span>
@@ -185,6 +188,8 @@ export default function DevelopmentVectors({locale='en'}){
     <button type="button" aria-pressed={guided} onClick={()=>setGuided(true)}>{t.guided}</button>
    </nav>
    <p className={styles.help}>{guided?t.guide:t.help}</p>
+   <DevelopmentVectorWheel items={items} ratings={draft[track].ratings}
+    focusId={draft[track].focusId} locale={lang} track={track} pending={dirty}/>
    {guided?<section><p className={styles.help}>{t.step} {index+1}/8</p>{row(items[index])}
      <div className={styles.navigation}>
       <button type="button" disabled={index===0} onClick={()=>setIndex(n=>n-1)}>{t.back}</button>

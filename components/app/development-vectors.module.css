@@ -32,3 +32,5 @@
 .share button{background:#1b6550;color:white;border:0;border-radius:9px;padding:10px 17px;cursor:pointer}
 .empty{padding:28px;background:#f6f8f3;border-radius:17px}
 @media(max-width:450px){.root{padding:12px 11px 40px}.hero{padding:22px}.card{padding:13px}.cardHead h3{font-size:18px}.focus{max-width:119px}.numbers{grid-template-columns:1fr 1fr 52px;gap:6px}.numbers select{font-size:15px}.delta strong{font-size:18px}.tabs button{font-size:15px;padding:14px 7px}}
+
+.prompt{border-left:3px solid #067a67;padding:8px 12px;margin:4px 0 14px;background:#f5ecdc;border-radius:0 10px 10px 0;font-size:16px;line-height:1.5;color:#143d3a}
