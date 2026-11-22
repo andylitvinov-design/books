@@ -249,7 +249,7 @@ export function StudioMusicFeatured({locale="en",category="all",disabled=false,
     if(!Array.isArray(data?.items))throw Error("MUSIC_LIST_INVALID");
     if(live){setTracks(data.items.filter(validSiteRecording));setLoadState("ready");}
    }).catch(error=>{
-     if(live&&error?.name!=="AbortError"){setLoadState("failed");onError?.(t.unavailable);}
+     if(live&&error?.name!=="AbortError")setLoadState("failed");
    });
   return ()=>{live=false;controller.abort();audioRef.current?.pause();};
  // The public source route owns permissions; retry triggers a new bounded read.
