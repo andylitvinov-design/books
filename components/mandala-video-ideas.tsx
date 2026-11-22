@@ -18,7 +18,7 @@ type Cluster={id:string;label:string};
 type Props={
  locale:VideoLocale;theme:VideoTheme;requestText:string;active:boolean;disabled:boolean;settings:AffirmationSettings;
  profile?:VideoGoalProfile; languagePicker?:boolean; creationPriceCredits?:number|null;
- phraseMode?:"standard"|"personalized";
+ phraseMode?:"standard"|"personalized"; preserveApprovedConcept?:boolean;
  goalType?:"leisure"|"support"|"change"|null; selectedTopicId?:string|null;
  generating:boolean;onChange:Dispatch<SetStateAction<AffirmationSettings>>;
  onPendingChange:Dispatch<SetStateAction<boolean>>;onPreview:()=>void;onCreate:()=>void;onGenerate:()=>void;status?:string;
@@ -120,7 +120,7 @@ const allFive=[0,1,2,3,4];
 const scaleValues=["small","medium","large"] as const;
 const cleanPhrase=sanitizeIdeaPhrase;
 
-export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePicker=false,creationPriceCredits=null,phraseMode="personalized",goalType=null,selectedTopicId=null,active,disabled,settings,generating,
+export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePicker=false,creationPriceCredits=null,phraseMode="personalized",preserveApprovedConcept=false,goalType=null,selectedTopicId=null,active,disabled,settings,generating,
  onChange,onPendingChange,onPreview,onCreate,onGenerate,status,onRecord,onResetPreview}:Props){
  const t=wording[locale];
  const [phraseLocale,setPhraseLocale]=useState<VideoLocale>(()=>settings.ideasDraft?.locale??locale);
@@ -211,6 +211,18 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
   lastApplied.current=signature;
   setMoreClicks(0);setEditing(null);setAdding(false);setFeedback("");setLanguageNotice("");
   const remembered=settings.ideasDraft;
+  // An approved Personal Concept already binds these exact captions to the film.
+  // Passive navigation must never replace them just because the older editor
+  // snapshot has a stale signature after the eight-axis questionnaire.
+  if(preserveApprovedConcept&&phraseMode==="personalized"){
+   const committed=settings.enabled
+    ?[...new Set(linesForVideoAffirmations(locale,theme,settings).map(sanitizeIdeaPhrase).filter(Boolean))].slice(0,10)
+    :[];
+   const remaining=suggested.map(sanitizeIdeaPhrase).filter(line=>line&&!committed.includes(line));
+   setOptions([...committed,...new Set(remaining)].slice(0,14));
+   setChosen(committed.map((_,index)=>index));
+   return;
+  }
   if(remembered&&isIdeaEditorSnapshot(remembered,signature)){
    setOptions(remembered.options);setChosen(remembered.chosen);
    if(languagePicker&&remembered.locale)setPhraseLocale(remembered.locale);
@@ -238,7 +250,7 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
   setOptions(initial.editor.options);setChosen(initial.editor.chosen);
   onChange(old=>({...old,...initial.settingsPatch,ideasDraft:{...initial.editor,locale:captionLocale},
    motion:"rise",visibility:old.visibility.length?old.visibility:["large"]}));
- },[active,signature,suggested,personalClosingPhrase,onChange,settings.ideasDraft]);
+ },[active,signature,suggested,personalClosingPhrase,onChange,settings.ideasDraft,preserveApprovedConcept,settings.enabled,settings.presetOverride,locale,theme]);
 
  const selectedCount=chosen.length;
  const textSizeIndex=Math.max(0,scaleValues.indexOf(settings.textScale??"medium"));

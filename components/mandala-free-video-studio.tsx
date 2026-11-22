@@ -8901,7 +8901,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               "Suggestions based on your answers. Edit or preview them; +50 XP is not charged yet."}</p>
             <MandalaVideoIdeas key={"personal-phrases-"+theme} locale={locale} theme={theme}
               requestText={montagePersonalGoal||wish} profile={ideasProfileConfirmed?ideasProfile:undefined}
-              languagePicker phraseMode="personalized" goalType={chosenIdeaGoal?.type||null}
+              languagePicker phraseMode="personalized"
+              preserveApprovedConcept={Boolean(approvedVideoConcept)&&personalPhrasesOpen}
+              goalType={chosenIdeaGoal?.type||null}
               selectedTopicId={selectedConceptTopic?.topicId||null}
               creationPriceCredits={creditCatalog?.ready&&creditCatalog.chargeRequired?creditCatalog.priceCredits:null}
               active={activeWorkspace==="phrases"&&ideasSubtab==="concept"} disabled={recording||preparing}

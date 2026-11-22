@@ -36,6 +36,20 @@ test("top and Montage tab order is approved, one photographic Extra",()=>{
 
 });
 
+test("approved Personal Concept is stable on passive phrase-editor navigation",()=>{
+ assert.match(studio,/preserveApprovedConcept=\{Boolean\(approvedVideoConcept\)&&personalPhrasesOpen\}/);
+ assert.match(ideas,/preserveApprovedConcept\?:boolean/);
+ const guard=ideas.indexOf('if(preserveApprovedConcept&&phraseMode==="personalized")');
+ const snapshot=ideas.indexOf('if(remembered&&isIdeaEditorSnapshot(remembered,signature))');
+ assert.ok(guard>0&&snapshot>guard,"current approved film precedes any stale eight-axis snapshot");
+ const passive=ideas.slice(guard,snapshot);
+ assert.match(passive,/linesForVideoAffirmations\(locale,theme,settings\)/);
+ assert.match(passive,/setChosen\(committed\.map\(/);
+ assert.doesNotMatch(passive,/onChange\(/,"passive Personal opening cannot rewrite Canvas captions");
+ assert.match(browser,/await expect\(conceptRoot\)\.toHaveAttribute\("data-concept-approved","true"/);
+ assert.doesNotMatch(browser,/if\(await conceptRoot\.getAttribute\("data-concept-approved"\)!=="true"\)/);
+});
+
 test("Emotional Support alone opens updated Text; Personal stays in Personal",()=>{
  assert.match(studio,/onSupport=\{\(\)=>\{/);
  assert.match(studio,/setExtraTextChoice\("support"\);setMontageTextMode\("standard"\)/);

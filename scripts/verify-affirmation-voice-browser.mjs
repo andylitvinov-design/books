@@ -649,18 +649,17 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(studio).toHaveAttribute("data-active-workspace","phrases");
     await expect(page.locator("[data-video-personal-phrases]")).toBeVisible({timeout:15000});
     await expect(ideasConceptTab).toHaveAttribute("aria-pressed","true");
-    // The confirmed phrase/meaning program may change a concept signature
-    // during approval; require an explicit, real re-review rather than
-    // pretending the stale signature is still approved.
+    // Passive tab navigation cannot mutate the already approved film.
+    // A real phrase edit must still change the signature and require approval.
     const conceptRoot=page.locator("[data-video-concept-auto]");
-    if(await conceptRoot.getAttribute("data-concept-approved")!=="true"){
-      const reapprove=conceptRoot.locator("[data-video-concept-approve]");
-      await expect(reapprove).toBeVisible();
-      await reapprove.tap();
-      await expect(page.locator("[data-video-personal-phrases]")).toBeVisible();
-    }
+    await expect(conceptRoot).toHaveAttribute("data-concept-approved","true",{timeout:15000});
     await expect(page.locator("[data-video-personal-phrases] [data-video-ideas-phrases]"))
       .toBeVisible({timeout:15000});
+    await montage.tap();
+    await expect(studio).toHaveAttribute("data-active-workspace","editor");
+    await ideasTop.tap();
+    await expect(studio).toHaveAttribute("data-active-workspace","phrases");
+    await expect(conceptRoot).toHaveAttribute("data-concept-approved","true");
     await montage.tap();
     // Explicit Style selection remains a real tap, not a render bypass.
     const styleTab=page.locator('[data-video-montage-tab="effects"]');
