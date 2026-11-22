@@ -6,6 +6,7 @@ import {createGoalEditorSession} from '@/lib/app/daybook-goal-editor-session.mjs
 import {PERSONAL_GOAL_AREAS,PERSONAL_GOAL_AXES} from '@/lib/app/daybook-personal-goal-contract.mjs'
 import {COACH_PROFILE_AXES} from '@/lib/coaching/coach-profile-intake.mjs'
 import css from './daybook-goal-editor.module.css'
+const OBSTACLES={en:'What might get in the way',ru:'Что может помешать',es:'Qué podría dificultarlo'}
 const KEYS=['heading','title','why','outcome','area','axes','deadline','step','fallback','status','confirm','milestone','done','add','remove','save','saving','saved','failed','invalid','legacy']
 const COPY={
  en:['My personal goal','My goal','Why this matters to me','Desired result','Life area','Meaning axes (optional)','Deadline (optional)','My 15-minute step','My gentler alternative','Stage','I confirm these details and the selected stage.','Milestone','Completed','Add milestone','Remove milestone','Save goal','Saving…','Saved and verified','Save not confirmed. Your draft remains here. Retry before editing.','Check the fields. Your draft remains here.','Additional details were not previously recorded. Blank fields are not AI recommendations.'],
@@ -16,7 +17,7 @@ const STAGES=['proposed','accepted','active','deferred','declined','completed','
 const STAGE_LABELS={en:['Proposed','Accepted','Active','Deferred','Declined','Completed','Paused','Cancelled'],ru:['Предложена','Принята','Активна','Отложена','Отклонена','Завершена','На паузе','Отменена'],es:['Propuesto','Aceptado','Activo','Aplazado','Rechazado','Completado','En pausa','Cancelado']}
 const AREA_LABELS={en:['Body & health','Emotional wellbeing','Relationships','Career & business','Finance','Personal growth','Lifestyle','Meaning & purpose'],ru:['Тело и здоровье','Эмоциональное благополучие','Отношения','Карьера и бизнес','Финансы','Личностный рост','Образ жизни','Смысл и предназначение'],es:['Cuerpo y salud','Bienestar emocional','Relaciones','Carrera y negocio','Finanzas','Crecimiento personal','Estilo de vida','Sentido y propósito']}
 export default function DaybookGoalEditor({accountId,locale='en',initialGoal=null,editorSession=null,onSaved,onSessionLost}){
- const lang=COPY[locale]?locale:'en',c=Object.fromEntries(KEYS.map((key,i)=>[key,COPY[lang][i]]))
+ const lang=COPY[locale]?locale:'en',c=Object.fromEntries(KEYS.map((key,i)=>[key,COPY[lang][i]]));c.obstacles=OBSTACLES[lang]
  const [state,setState]=useState(null)
  const active=useRef(null),notified=useRef(null),callbacks=useRef({onSaved,onSessionLost})
  useEffect(()=>{callbacks.current={onSaved,onSessionLost}},[onSaved,onSessionLost])
@@ -42,7 +43,7 @@ export default function DaybookGoalEditor({accountId,locale='en',initialGoal=nul
   event.preventDefault();await active.current?.save()
  }
  return <form className={css.editor} onSubmit={save}><h2>{c.heading}</h2>{state.legacy&&<p>{c.legacy}</p>}
-  {[['title','title',1000],['why','why',4000],['desiredOutcome','outcome',4000],['firstStep','step',2000],['fallbackStep','fallback',2000]].map(([key,label,max])=><label key={key}>{c[label]}<textarea rows={key==='title'?2:3} required={key==='title'} maxLength={max} value={draft[key]} disabled={locked} onChange={e=>change(key,e.target.value)}/></label>)}
+  {[['title','title',1000],['why','why',4000],['obstacles','obstacles',4000],['desiredOutcome','outcome',4000],['firstStep','step',2000],['fallbackStep','fallback',2000]].map(([key,label,max])=><label key={key}>{c[label]}<textarea rows={key==='title'?2:3} required={key==='title'} maxLength={max} value={draft[key]} disabled={locked} onChange={e=>change(key,e.target.value)}/></label>)}
   <label>{c.area}<select value={draft.areaKey} disabled={locked} onChange={e=>change('areaKey',e.target.value)}>{PERSONAL_GOAL_AREAS.map((key,i)=><option key={key} value={key}>{AREA_LABELS[lang][i]}</option>)}</select></label>
   <fieldset disabled={locked}><legend>{c.axes}</legend>{PERSONAL_GOAL_AXES.map(axis=><label key={axis}><input type="checkbox" checked={draft.axes.includes(axis)} onChange={e=>change('axes',e.target.checked?[...draft.axes,axis]:draft.axes.filter(key=>key!==axis))}/>{COACH_PROFILE_AXES.find(item=>item.id===axis)?.name[lang]||axis}</label>)}</fieldset>
   <label>{c.deadline}<input type="date" value={draft.targetDate||''} disabled={locked} onChange={e=>change('targetDate',e.target.value||null)}/></label>

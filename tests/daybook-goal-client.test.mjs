@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {goalEditorDraft,goalStatusOptions,createPersonalGoalSaver} from '../lib/app/daybook-goal-client.mjs'
 const id='550e8400-e29b-41d4-a716-446655440000'
-const draft={id,revision:0,areaKey:'meaning_purpose',title:'Synthetic goal',why:'My reason',desiredOutcome:'A manuscript',axes:[],status:'active',confirmed:true,targetDate:null,milestones:[],firstStep:'15 minutes',fallbackStep:'One line'}
+const draft={id,revision:0,areaKey:'meaning_purpose',title:'Synthetic goal',why:'My reason',obstacles:'',desiredOutcome:'A manuscript',axes:[],status:'active',confirmed:true,targetDate:null,milestones:[],firstStep:'15 minutes',fallbackStep:'One line'}
 test('legacy edit retains canonical fields and leaves unrecorded details blank with explicit confirmation unchecked',()=>{
  const result=goalEditorDraft({id,revision:2,title:'Legacy goal',desiredOutcome:null,status:'paused',areaKey:'finance',targetDate:null,details:null})
  assert.equal(result.legacy,true);assert.equal(result.draft.title,'Legacy goal');assert.equal(result.draft.why,'');assert.equal(result.draft.confirmed,false)
@@ -32,4 +32,9 @@ test('local validation keeps editing available and disposal rejects an in-flight
  const pending=createPersonalGoalSaver(()=>new Promise(r=>{resolve=r}),id,()=>id)
  const write=pending.save(draft);pending.discard();resolve({saved:true,goal:{...draft,revision:1}})
  await assert.rejects(write,{code:'ACCOUNT_CHANGED'})
+})
+
+test('mismatched obstacle readback cannot report a goal saved',async()=>{
+ const saver=createPersonalGoalSaver(async(path,body)=>body?{saved:true,goal:{...draft,revision:1}}:{goal:{...draft,obstacles:'Other device changed this',revision:1}},id,()=>id)
+ await assert.rejects(saver.save(draft),{code:'GOAL_READBACK_CONFLICT'})
 })
