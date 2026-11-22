@@ -170,7 +170,11 @@ test('Consent is explained once; follow-up nudges do not repeat the privacy wall
   assert.ok(service.includes("if(!agrees||!purposeReady)"),"explicit consent and runtime readiness are both mandatory");
   assert.ok(service.includes("if((serviceCopy||ctx.supportSelection)&&ctx.mode!==SECRETARY_MODES.PSYCHOLOGIST&&"),"native Secretary path excludes psychologist");
   assert.ok(service.includes("const reminder=general?(chatAllowed?chat.nudge:copy.notReady):"));
-  assert.ok(service.includes("(purposeReady?(serviceCopy?serviceCopy.welcomeNudge:copy.nudge):copy.notReady)"));
+  // Public FAQ first; only explicit Start booking opens the consent gate.
+  assert.ok(service.includes("const menuBooking=Boolean(serviceCopy&&ctx.serviceMenuShown&&"));
+  assert.ok(service.includes("menuBooking?telegramServiceMenuAnswer({locale:lang,"));
+  assert.ok(service.includes("serviceCopy?serviceCopy.welcomeNudge:copy.nudge):copy.notReady)"));
+  assert.ok(service.includes("menuBooking?'service_consent':serviceCopy?'consent':"));
   assert.ok(service.includes("purposeReady?v3ButtonsFor(lang,general?'chat_consent':"));
   assert.ok(service.includes("ai_consent_at=now()"));
   assert.ok(service.includes("row&&Number(row.last_update_id)>=updateId"));
