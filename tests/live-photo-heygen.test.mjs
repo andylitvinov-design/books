@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   LIVE_PHOTO_MOTIONS, buildLivePhotoPrompt, buildHeyGenLivePhotoBody,
-  isLivePhotoCreationEnabled, hasLivePhotoProviderKey, getHeyGenLivePhotoStatus, isAllowedHeyGenDownloadUrl,
+  isLivePhotoCreationEnabled, hasLivePhotoProviderKey, getHeyGenLivePhotoStatus, uploadHeyGenPortrait, submitHeyGenLivePhoto, isAllowedHeyGenDownloadUrl,
 } from '../lib/app/live-photo-heygen.mjs';
 
 test('HeyGen calls are off without two owner gates and a private provider key', () => {
@@ -126,4 +126,29 @@ test('sitewide daily budget includes failed and deleted reservations', () => {
   const service = readFileSync('lib/app/live-photo-service.js', 'utf8');
   assert.match(service, /where created_at > now\(\) - interval '24 hours'/);
   assert.doesNotMatch(service, /where created_at > now\(\) - interval '24 hours' and status not in/);
+});
+
+test('provider asset and generation POST remain blocked after creation/spend toggles switch off', async () => {
+  const previous = {
+    key: process.env.HH_LIVE_PHOTO_HEYGEN_API_KEY,
+    enabled: process.env.HH_LIVE_PHOTOS_ENABLED,
+    approved: process.env.HH_LIVE_PHOTOS_SPEND_APPROVED,
+  };
+  try {
+    process.env.HH_LIVE_PHOTO_HEYGEN_API_KEY = 'test_'.padEnd(32,'x');
+    delete process.env.HH_LIVE_PHOTOS_ENABLED;
+    delete process.env.HH_LIVE_PHOTOS_SPEND_APPROVED;
+    await assert.rejects(uploadHeyGenPortrait(Buffer.alloc(1024)), /HEYGEN_LIVE_PHOTO_NOT_ENABLED/);
+    await assert.rejects(submitHeyGenLivePhoto('abcdefgh12345678','smile',
+      '6b7efdac-7ee6-4a89-8c3a-dd7d47d8781c'), /HEYGEN_LIVE_PHOTO_NOT_ENABLED/);
+  } finally {
+    for(const [env,value] of Object.entries({
+      HH_LIVE_PHOTO_HEYGEN_API_KEY:previous.key,
+      HH_LIVE_PHOTOS_ENABLED:previous.enabled,
+      HH_LIVE_PHOTOS_SPEND_APPROVED:previous.approved,
+    })){
+      if (value === undefined) delete process.env[env];
+      else process.env[env] = value;
+    }
+  }
 });
