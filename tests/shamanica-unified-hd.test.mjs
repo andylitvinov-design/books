@@ -72,5 +72,5 @@ test("Shared bottom dock stays readable and duplicate floating help is suppresse
  assert.match(css,/SHAMANIC_UNIFIED_HD_DOCK_20261121/);
  assert.match(css,/body:has\(main\[data-shamanica-mobile\]\) \[data-hh-ihelp-trigger\]/);
  assert.match(css,/white-space:normal!important/);
- assert.match(css,/font-size:clamp\(8\.5px,2\.5vw,10\.3px\)!important/);
+ assert.match(css,/font-size:clamp\(10px,2\.5vw,10\.3px\)!important/);
 });

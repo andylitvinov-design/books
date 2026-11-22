@@ -211,7 +211,7 @@ body:has([data-hh-unified-dock]) [data-video-director-chat-details]{scroll-margi
  }
  body:has(main[data-shamanica-mobile]) [data-hh-unified-dock] [data-unified-dock-item] span{
   max-width:100%;white-space:normal!important;overflow-wrap:break-word!important;
-  font-size:clamp(8.5px,2.5vw,10.3px)!important;line-height:1.08;
+  font-size:clamp(10px,2.5vw,10.3px)!important;line-height:1.08;
   letter-spacing:-.12px!important;text-align:center;
  }
  body:has(main[data-shamanica-mobile]) [data-hh-unified-dock] [data-unified-dock-item="practice"][aria-current="page"]{
