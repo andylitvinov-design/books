@@ -233,8 +233,8 @@ try {
           .map(card=>card.getBoundingClientRect().height),
       }));
       assert.ok(sizes.hero>=24 && sizes.hero<=60,"Room scene proportions: " + JSON.stringify(sizes));
-      assert.ok(sizes.cards.length===4 && sizes.cards.every(height=>height>=78 && height<=113),
-        "Four reference cards must be compact and readable: " + JSON.stringify(sizes));
+      assert.ok(sizes.cards.length===4 && sizes.cards.every(height=>height>=116 && height<=174),
+        "Four progressive choice cards must be large and readable: " + JSON.stringify(sizes));
     }
     await expect(quiz.locator("[data-services-hero-play]")).toHaveCount(0);
     if(width===390 && locale==="en"){
