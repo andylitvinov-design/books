@@ -38,6 +38,8 @@ on:
       - 'components/home-deferred-sections.tsx'
       - 'components/home-deferred-content.tsx'
       - 'tests/home-css-isolation.test.mjs'
+      - 'tests/home-noncritical-css-boundary.test.mjs'
+      - 'scripts/extract-home-lighthouse-screenshots.mjs'
       - 'scripts/measure-home-css-network.mjs'
       - 'scripts/report-home-mobile-compare.mjs'
       - 'tests/home-mobile-compare.test.mjs'
@@ -62,7 +64,7 @@ jobs:
         with:
           node-version: 22
       - name: Check first-screen CSS isolation and hero preloads
-        run: node --test tests/home-css-isolation.test.mjs tests/home-mobile-compare.test.mjs
+        run: node --test tests/home-css-isolation.test.mjs tests/home-mobile-compare.test.mjs tests/home-noncritical-css-boundary.test.mjs
       - name: Validate targeted safety and booking contracts
         run: node --test tests/holistic-house-image-quota.test.mjs tests/hh-public-html-metrics.test.mjs tests/holistic-house-speed-and-cta.test.mjs tests/holistic-house-home-streaming.test.mjs tests/home-carousel-first-screen-cta.test.mjs tests/home-rsc-on-demand.test.mjs tests/public-consultation-cta-design.test.mjs tests/consultation-capture-choice.test.mjs tests/personal-testimonials.test.mjs
       - name: Stage checksum-verified FFmpeg before npm lifecycle
@@ -199,12 +201,13 @@ jobs:
             done
           done
           node scripts/report-home-mobile-compare.mjs artifacts/home-perf
+          node scripts/extract-home-lighthouse-screenshots.mjs artifacts/home-perf
       - name: Save matched slow-4G evidence for first-screen release review
         if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'perf(home):')
         uses: actions/upload-artifact@v4
         with:
           name: hh-home-lighthouse-${{ github.run_id }}
-          path: artifacts/home-perf/*.json
+          path: artifacts/home-perf/*
           if-no-files-found: ignore
           retention-days: 7
       - name: Measure public TTFB and HTML/RSC size (no login, no private routes)

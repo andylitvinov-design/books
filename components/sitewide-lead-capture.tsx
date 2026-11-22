@@ -1,5 +1,8 @@
 "use client";
 
+// This route-specific stylesheet must not block the approved React Home.
+import "@/app/sitewide-capture.css";
+
 import Link from "next/link";
 import { StaticPortrait } from "@/components/static-portrait";
 import { ArrowRight, ChevronDown, MessageCircle, Send, ShoppingBag } from "lucide-react";

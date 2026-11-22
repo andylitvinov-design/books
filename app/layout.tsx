@@ -7,7 +7,7 @@ import { UnifiedMobileDock } from "@/components/unified-mobile-dock";
 import { SitewideIHelp } from "@/components/sitewide-ihelp";
 import { HomePersonalSpaceProvider } from "@/components/home-personal-space";
 import { SitewideLeadCaptureDeferred } from "@/components/sitewide-lead-capture-deferred";
-import { SitewideAntistressBanner } from "@/components/sitewide-antistress-banner";
+import { SitewideAntistressBannerDeferred } from "@/components/sitewide-antistress-banner-deferred";
 import { AnalyticsConsent } from "@/components/analytics-consent";
 import { PublicPageTraffic } from "@/components/public-page-traffic";
 import { Ga4Analytics } from "@/components/ga4-analytics";
@@ -22,7 +22,6 @@ import "./site-videos.css";
 import "./unified-mobile-dock.css";
 import "./reader-responsive.css";
 import "./ia-v2.css";
-import "./sitewide-capture.css";
 import "./public-wide-layout.css";
 
 export const metadata: Metadata = {
@@ -79,7 +78,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             preserving script.nonce. Keep the CSP nonce and JSON-LD unchanged. */}
         <script nonce={nonce} suppressHydrationWarning type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
       </head>
-      <body className="font-sans" data-csp-class={cspClass}>{standaloneCommander ? children : <><PwaRegistration /><NativeLinkHandler /><NativeExternalLinks /><CspNavigationBoundary /><Ga4Analytics nonce={nonce} /><SitewideAntistressBanner initialLocale={lang} /><HomePersonalSpaceProvider locale={lang}>{children}</HomePersonalSpaceProvider><SitewideLeadCaptureDeferred /><AnalyticsConsent /><PublicPageTraffic /><MobileBottomNavigation initialLocale={lang} /><UnifiedMobileDock initialLocale={lang} /><SitewideIHelp /></>}</body>
+      <body className="font-sans" data-csp-class={cspClass}>{standaloneCommander ? children : <><PwaRegistration /><NativeLinkHandler /><NativeExternalLinks /><CspNavigationBoundary /><Ga4Analytics nonce={nonce} /><SitewideAntistressBannerDeferred initialLocale={lang} /><HomePersonalSpaceProvider locale={lang}>{children}</HomePersonalSpaceProvider><SitewideLeadCaptureDeferred /><AnalyticsConsent /><PublicPageTraffic /><MobileBottomNavigation initialLocale={lang} /><UnifiedMobileDock initialLocale={lang} /><SitewideIHelp /></>}</body>
     </html>
   );
 }
