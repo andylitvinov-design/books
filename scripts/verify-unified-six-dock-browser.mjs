@@ -807,6 +807,9 @@ try{
    // “More ways Ali can help” disclosure on the conversation-first landing.
    // Test the real disclosure, rather than waiting for a hidden button.
    const tools=chat.locator("details[data-hh-alchemist-tools]");
+   const more=chat.locator("details[data-hh-ai-more]");
+   await more.waitFor({state:"visible",timeout:15000});
+   if(await more.evaluate(node=>!node.open))await more.locator(":scope > summary").click();
    await tools.waitFor({state:"visible",timeout:15000});
    if(await tools.evaluate(node=>!node.open))await tools.locator(":scope > summary").click();
    await chat.locator('[data-hh-ai-project="'+id+'"]').waitFor({state:"visible",timeout:15000});
