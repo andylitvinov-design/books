@@ -20,6 +20,7 @@ import {suggestVideoGoalPhrases} from "@/lib/mandala/video-goal-idea-phrases.mjs
 import {MandalaVideoPersonalization,DEFAULT_VIDEO_GOAL_PROFILE,summarizeVideoGoalProfile,type VideoGoalProfile} from "./mandala-video-personalization";
 import { HeaderCreditProfile } from "./header-credit-profile";
 import { MandalaVideoConcept, type ApprovedVideoConcept } from "./mandala-video-concept";
+import { MandalaMontageExtraPersonal } from "./mandala-montage-extra-personal";
 
 import type { HypnoLightSettings } from "./mandala-hypnocorrection-mobile";
 import { paintHypnoLightOverlay, recommendHypnoLight } from "@/lib/mandala/hypno-visual-overlay.mjs";
@@ -116,6 +117,7 @@ import { SUPPORT_PHOTO_ACCEPT } from "@/lib/mandala/prepare-browser-photo";
 import {getStoryFormatCopy} from "@/lib/mandala/stories-studio.mjs";
 import styles from "./mandala-meditation.module.css";
 import videoStyles from "./mandala-video-mobile.module.css";
+import personalStyles from "./mandala-video-personal-compact.module.css";
 
 // First-screen player and Auto Video Director remain eager. Optional workspaces
 // and collapsed tools download on interaction, reducing initial JS on mobile.
@@ -252,7 +254,7 @@ const translations = {
 const workspaceCopy = {
  ru:{
   video:{tab:"Цель",title:"Цель видео",desc:"Реальные видеосюжеты, атмосфера и оформление."},
-  phrases:{tab:"Идеи",title:"Идеи для видео",desc:"Мой запрос, фразы поддержки и, по желанию, голос и музыка."},
+  phrases:{tab:"Personal",title:"Персональное видео",desc:"Цель, персональные вопросы и поддерживающие фразы."},
   effects:{tab:"Therapy",title:"Therapy Studio",desc:"Медитация, голос и курс из восьми последовательных практик."},
   practices:{tab:"Курс практик",title:"Курсы и практики",desc:"Выберите фокус, создайте медитацию, практику и личную программу из восьми сессий."},
   pro:{tab:"PRO",title:"PRO генерация",desc:"Персонажи, сюжеты, места и профессиональный режиссёрский бриф."},
@@ -261,7 +263,7 @@ const workspaceCopy = {
  },
  en:{
   video:{tab:"Goal",title:"Video goal",desc:"Real film scenes, atmosphere and visual direction."},
-  phrases:{tab:"Ideas",title:"Video ideas",desc:"Your intention, support phrases and optional voice or music."},
+  phrases:{tab:"Personal",title:"Personal video",desc:"Your goal, personal questions and supportive phrases."},
   effects:{tab:"Therapy",title:"Therapy Studio",desc:"A guided meditation, a voice, and eight connected practice sessions."},
   practices:{tab:"Practice course",title:"Courses & practices",desc:"Choose your focus, create a meditation and practice, then explore eight guided sessions."},
   pro:{tab:"PRO",title:"PRO generation",desc:"Characters, stories, locations and advanced direction."},
@@ -270,7 +272,7 @@ const workspaceCopy = {
  },
  es:{
   video:{tab:"Objetivo",title:"Objetivo del vídeo",desc:"Escenas reales, ambiente y estilo visual."},
-  phrases:{tab:"Ideas",title:"Ideas para vídeo",desc:"Tu intención, frases de apoyo y voz o música opcionales."},
+  phrases:{tab:"Personal",title:"Vídeo personal",desc:"Tu objetivo, preguntas y frases de apoyo."},
   effects:{tab:"Therapy",title:"Therapy Studio",desc:"Una meditación, una voz y un curso de ocho sesiones relacionadas."},
   practices:{tab:"Curso práctico",title:"Cursos y prácticas",desc:"Elige tu enfoque, crea una meditación y una práctica, y descubre ocho sesiones guiadas."},
   pro:{tab:"PRO",title:"Generación PRO",desc:"Personajes, historias, lugares y dirección avanzada."},
@@ -280,14 +282,14 @@ const workspaceCopy = {
 } as const;
 // One row, six real existing workspace destinations. No anchor-only navigation.
 const workspaceTabs=[
- {id:"video",Icon:Film},{id:"phrases",Icon:Heart},
- {id:"editor",Icon:Scissors},{id:"pro",Icon:Zap},
+ {id:"video",Icon:Film},{id:"editor",Icon:Scissors},
+ {id:"phrases",Icon:Heart},{id:"pro",Icon:Zap},
  {id:"ready",Icon:Check},{id:"effects",Icon:Leaf}
 ] as const;
 const mobileWorkspaceCopy={
- ru:{video:"Цель",editor:"Монтаж",phrases:"Идеи",effects:"Therapy",practices:"Курс",pro:"PRO",ready:"Ready"},
- en:{video:"Goal",editor:"Montage",phrases:"Ideas",effects:"Therapy",practices:"Course",pro:"PRO",ready:"Ready"},
- es:{video:"Objetivo",editor:"Montaje",phrases:"Ideas",effects:"Therapy",practices:"Curso",pro:"PRO",ready:"Ready"}
+ ru:{video:"Цель",editor:"Монтаж",phrases:"Personal",effects:"Therapy",practices:"Курс",pro:"PRO",ready:"Ready"},
+ en:{video:"Goal",editor:"Montage",phrases:"Personal",effects:"Therapy",practices:"Course",pro:"PRO",ready:"Ready"},
+ es:{video:"Objetivo",editor:"Montaje",phrases:"Personal",effects:"Therapy",practices:"Curso",pro:"PRO",ready:"Ready"}
 } as const;
 
 const studioCopy = {
@@ -2096,6 +2098,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [montageStyleSettingsOpen,setMontageStyleSettingsOpen] = useState(false);
   // Montage is a preference-first wizard: detailed timeline is available only under Text.
   const [montagePanel,setMontagePanel] = useState<"settings"|"effects"|"text"|"concept"|"audio"|"promo">("effects");
+  const [extraTextChoice,setExtraTextChoice] = useState<"simple"|"support"|"personal"|null>(null);
   const montageAudioNavQueuedRef=useRef(false);
   const montageAudioShortcutIgnoreNextUntilRef=useRef(0);
   const [hypnoEntryGroup,setHypnoEntryGroup] = useState<"visual"|"audio"|"effects">("visual");
@@ -5988,9 +5991,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       return false;
     }
     if(narrationInvalid){
-      setNotice(locale==="ru"?"Озвучка не совпадает с фразами. Обновите её во вкладке «Идеи».":
-        locale==="es"?"La voz ya no coincide con las frases. Actualízala en Ideas.":
-        "The voice no longer matches your phrases. Update it in Ideas.");
+      setNotice(locale==="ru"?"Озвучка не совпадает с фразами. Обновите её во вкладке Personal.":
+        locale==="es"?"La voz ya no coincide con las frases. Actualízala en Personal.":
+        "The voice no longer matches your phrases. Update it in Personal.");
       return false;
     }
     setIntroPlaying(false);
@@ -6410,18 +6413,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const continueMontageOrGenerate=()=>{
     if(montageAudioNavQueuedRef.current||
       performance.now()<montageAudioShortcutIgnoreNextUntilRef.current)return;
-    // Style → Audio → Text → Story → Montage PRO; format choices navigate,
+    // Style → Audio → Extra; personal questions open by explicit choice.
     // but never charge or render without the destination workspace's checks.
     if(montagePanel==="effects"){
       setMontagePanel("audio");setBasicPanelTab("music");
     }else if(montagePanel==="audio"){
-      setMontagePanel("text");
+      setMontagePanel("promo");
     }else if(montagePanel==="text"||montagePanel==="settings"){
       setMontagePanel("concept");
     }else if(montagePanel==="concept"){
-      // Navigation to Extra does not render or debit credits. Keep it usable:
-      // the same real startFromHero/Ready source guard prevents old-stock export.
-      setMontagePanel("promo");
+      // Reviewing Ready is not a render or a credit debit.
+      openReadyForGeneration();
     }else{
       return;
     }
@@ -6430,26 +6432,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       document.querySelector("[data-video-montage-tools]")?.scrollIntoView({block:"start",behavior:"smooth"}));
   };
 
-  // First mobile step is only the short goal, category and optional request.
-  // The user then moves to Ideas; the actual scene catalogue is an optional
-  // visible action from Montage, never a hidden first-screen dialog.
-  const continueToIdeas = () => {
-    if(!goalQuizReady)return;
-    // Match the one real recipient kind to a verified video plan before Ideas.
-    // No export, billing or consent prompt can be triggered by this action.
-    if(goalContinueRef.current?.()===false)return;
-    // The visitor can immediately tap Montage after Ideas. Invalidate the
-    // delayed Ideas scroll when another real workspace is requested; Safari
-    // must never slide the pointer target out from under the next click.
-    const navigationToken=++quickNavTokenRef.current;
-    setVideoScenarioOpen(false);
-    setActiveWorkspace("phrases");
-    setIdeasSubtab("goal");
-    setStudioMode("pump");
+  // Goal always enters Montage. The personal questionnaire is an Extra opt-in.
+  const continueToMontage = () => {
+    if(!goalQuizReady||goalContinueRef.current?.()===false)return;
+    const token=++quickNavTokenRef.current;
+    setVideoScenarioOpen(false);setActiveWorkspace("editor");
+    setMontagePanel("effects");setExtraTextChoice(null);setStudioMode("pump");
     window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
-      if(navigationToken!==quickNavTokenRef.current)return;
-      document.querySelector("[data-video-quick-phrases]")?.scrollIntoView({
-        behavior:"instant" as ScrollBehavior,block:"start",
+      if(token!==quickNavTokenRef.current)return;
+      document.querySelector("[data-video-montage-tools]")?.scrollIntoView({
+        block:"start",behavior:"instant" as ScrollBehavior
       });
     }));
   };
@@ -7642,7 +7634,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // The only workspace tab rail stays in the same place above the ONE player
   // for every mode; portal relocation previously changed geometry and focus.
   return (
-    <section className={videoStyles.studio} data-active-workspace={activeWorkspace||undefined} id="free-personal-video"
+    <section className={[videoStyles.studio,personalStyles.personalStudio].join(" ")} data-active-workspace={activeWorkspace||undefined} id="free-personal-video"
       data-video-preview-playing={previewPlaying?"true":undefined}
       data-hh-video-ihelp-open={videoIHelpOpen||undefined}
       data-mandala-free-video data-video-studio-mode={studioMode} data-video-export-mode={videoExportMode}
@@ -7767,11 +7759,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             setMirrorStep(1);
             setNotice("");
             const navigationToken=++quickNavTokenRef.current;
-            setIdeasSubtab("goal");setActiveWorkspace("phrases");setStudioMode("pump");
+            setIdeasSubtab("goal");setActiveWorkspace("editor");setMontagePanel("effects");setExtraTextChoice(null);setStudioMode("pump");
             window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
               if(navigationToken!==quickNavTokenRef.current)return;
-              document.querySelector<HTMLElement>("[data-video-ideas-goal-panel]")
-                ?.scrollIntoView({block:"start",behavior:"instant" as ScrollBehavior});
+              document.querySelector<HTMLElement>("[data-video-montage-tools]")?.scrollIntoView({block:"start",behavior:"instant" as ScrollBehavior});
             }));
             return true;
           }}
@@ -7858,7 +7849,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             onClick={()=>{
               // CTA never runs encoder or charges. Keep the native taxonomy
               // steps and advance only via existing Ideas/Ready actions.
-              if(goalQuizReady){continueToIdeas();return;}
+              if(goalQuizReady){continueToMontage();return;}
               if(goalQuizState.audience==="self"&&goalQuizState.step===2){
                 document.querySelector<HTMLButtonElement>("[data-auto-video-subcategories] button")?.focus();return;
               }
@@ -7924,10 +7915,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 :null}
             </button>
             <button type="button" className={videoStyles.stageAddButton} data-video-continue-scenarios
-              disabled={!goalQuizReady||!studioHydrated||recording||preparing} onClick={continueToIdeas}>
+              disabled={!goalQuizReady||!studioHydrated||recording||preparing} onClick={continueToMontage}>
               <Sparkles size={19} aria-hidden="true"/>
-              {locale==="ru"?"Перейти к выбору цели":
-                locale==="es"?"Continuar al objetivo":"Proceed to goal selection"}
+              {locale==="ru"?"Перейти к монтажу":locale==="es"?"Continuar al montaje":"Continue to Montage"}
               <ArrowRight size={18} aria-hidden="true"/>
             </button>
             {notice?<p className={videoStyles.quickStatus} role="status" aria-live="polite" data-video-stage-status>{notice}</p>:null}
@@ -8121,7 +8111,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <div className={videoStyles.heroShade} aria-hidden="true"/>
         <div className={videoStyles.heroEditorial} aria-hidden={previewPlaying||recording||activeWorkspace==="phrases"||showIntroHero}>
           <span className={videoStyles.heroEyebrow}><Film size={16} aria-hidden="true"/>
-            {activeWorkspace==="phrases"?(locale==="ru"?"Идеи · предпросмотр":locale==="es"?"Ideas · vista previa":"Ideas · preview"):activeWorkspace==="editor"&&montagePanel==="promo"?"Montage PRO":locale==="ru"?"Видеогенератор":locale==="es"?"Generador de vídeo":"Video creator"}
+            {activeWorkspace==="phrases"?(locale==="ru"?"Personal · просмотр":locale==="es"?"Personal · vista previa":"Personal · preview"):activeWorkspace==="editor"&&montagePanel==="promo"?"Montage PRO":locale==="ru"?"Видеогенератор":locale==="es"?"Generador de vídeo":"Video creator"}
           </span>
           <h2>{activeWorkspace==="phrases"
               ?(locale==="ru"?"Как работают фразы поддержки":locale==="es"?"Cómo funcionan las frases":"How support phrases work")
@@ -8636,8 +8626,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
       <section className={videoStyles.quickPhraseSection} data-workspace-section="phrases" data-video-quick-phrases aria-label={workspaceCopy[locale].phrases.title} data-ideas-subtab={ideasSubtab} data-ideas-active-tab={ideasSubtab}>
         <div className={videoStyles.ideasSubtabs} data-video-ideas-tabs role="group"
-          aria-label={locale==="ru"?"Идеи: цель, персонализация и концепт":
-            locale==="es"?"Ideas: objetivo, personalización y concepto":"Ideas: goal, personalization and concept"}>
+          aria-label={locale==="ru"?"Personal: цель, вопросы и концепт":locale==="es"?"Personal: objetivo, preguntas y concepto":"Personal: goal, questions and concept"}>
           <button type="button" data-video-ideas-tab="goal" aria-pressed={ideasSubtab==="goal"}
             onClick={()=>setIdeasSubtab("goal")}>
             <Target size={20} aria-hidden="true"/>
@@ -8646,7 +8635,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <button type="button" data-video-ideas-tab="personalization" aria-pressed={ideasSubtab==="personalization"}
             disabled={!chosenIdeaGoal} onClick={()=>setIdeasSubtab("personalization")}>
             <Heart size={19} aria-hidden="true"/>
-            {locale==="ru"?"Персонализация":locale==="es"?"Personalización":"Personalization"}
+            {locale==="ru"?"Вопросы":locale==="es"?"Preguntas":"Questions"}
           </button>
           <button type="button" data-video-ideas-tab="concept" aria-pressed={ideasSubtab==="concept"}
             disabled={!chosenIdeaGoal||!ideasProfileConfirmed} onClick={()=>setIdeasSubtab("concept")}>
@@ -8779,7 +8768,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               }:null);
               // Approval is local and free: only unedited storyboard overlays may change.
               // Existing manually edited text clips, voice, music and media are retained.
-              if(!timelineTextClips?.length){
+              if(extraTextChoice!=="simple"&&!timelineTextClips?.length){
                 setMontageScriptText(approved.sceneOutline.join("\n"));
                 if(!approved.storyboard?.length&&cinematicPlan?.version===FREE_FILM_PLAN_VERSION&&
                   cinematicPlan.shots.length>=4&&captionMode!=="custom"){
@@ -8794,10 +8783,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 (locale==="ru"?"История одобрена. В Монтаже проверьте реальные кадры на соответствие сценам. Неподходящие материалы не подставляем.":
                  locale==="es"?"Historia aprobada. En Montaje comprueba que las tomas reales correspondan a cada escena.":
                  "Story approved. In Montage, check that real footage matches each scene; unrelated clips will not be substituted."):
-                (locale==="ru"?"Концепция одобрена. Выберите стиль и аудио в разделе «Монтаж».":
-                 locale==="es"?"Concepto aprobado. Elige el estilo y audio en Montaje.":
-                 "Concept approved. Choose style and audio in Montage before making the video."));
-              setActiveWorkspace("editor");setMontagePanel("effects");
+                (locale==="ru"?"Концепция одобрена. Проверьте текст в Монтаже перед созданием видео.":
+                 locale==="es"?"Concepto aprobado. Revisa el texto en Montaje antes de crear el vídeo.":
+                 "Concept approved. Check the text in Montage before making the video."));
+              setActiveWorkspace("editor");setMontagePanel("text");
             }}/>
         </div>
         <div data-video-director-idea-controls hidden={ideasSubtab!=="personalization"} />
@@ -9624,8 +9613,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <nav className={videoStyles.montageQuickTools} data-video-montage-tools
             aria-label={locale==="ru"?"Разделы монтажа":locale==="es"?"Secciones de montaje":"Montage sections"}>
             {([{id:"effects",Icon:Sparkles},{id:"audio",Icon:Music2},
-              {id:"text",Icon:Type},{id:"concept",Icon:Film},
-              {id:"promo",Icon:Zap}] as const).map(item=>
+              {id:"promo",Icon:Zap},{id:"text",Icon:Type},
+              {id:"concept",Icon:Film}] as const).map(item=>
               <button type="button" key={item.id} data-video-montage-tab={item.id}
                 aria-pressed={montagePanel===item.id} aria-controls="video-montage-active-panel"
                 disabled={recording||preparing}
@@ -9653,7 +9642,33 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </nav>
           <div data-video-director-style-controls hidden={montagePanel!=="effects"} />
           <div id="video-montage-active-panel" className={videoStyles.montageActivePanel}>
-          {montagePanel==="promo" ? <MandalaMontageProOffer
+          {montagePanel==="promo" ? <>
+          <MandalaMontageExtraPersonal locale={locale}
+            disabled={!studioHydrated||recording||preparing}
+            onSimple={()=>{
+              setExtraTextChoice("simple");setAffirmations(old=>({...old,enabled:false,selected:[]}));
+              setCaptionMode("none");setTimelineTextClips(null);
+              setCinematicPlan(old=>old?{...old,shots:old.shots.map(shot=>({...shot,overlayText:""}))}:old);
+              setMontagePanel("concept");setNotice("");
+            }}
+            onSupport={()=>{
+              setExtraTextChoice("support");applyPurposePhrases("support","",true);setMontagePanel("text");setNotice("");
+            }}
+            onPersonal={()=>{
+              setExtraTextChoice("personal");
+              const token=++quickNavTokenRef.current;
+              setIdeasSubtab("goal");setIdeasVoiceAdvancedOpen(false);
+              setActiveWorkspace("phrases");setStudioMode("pump");setNotice("");
+              window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
+                if(token!==quickNavTokenRef.current)return;
+                document.querySelector<HTMLElement>("[data-video-ideas-goal-panel]")
+                  ?.scrollIntoView({block:"start",behavior:"instant" as ScrollBehavior});
+              }));
+            }}/>
+          <details className={personalStyles.advancedFormats} data-video-extra-advanced-formats>
+            <summary>{locale==="ru"?"Другие форматы видео":
+              locale==="es"?"Otros formatos de vídeo":"Other video formats"}</summary>
+            <MandalaMontageProOffer
             locale={locale} disabled={!studioHydrated||recording||preparing}
             onChooseFree={()=>{
               // One click selects Basic and opens Ready; generation begins there.
@@ -9673,7 +9688,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               window.requestAnimationFrame(()=>
                 document.getElementById("free-personal-video")?.scrollIntoView({behavior:"auto",block:"start"}));
             }}
-          /> : null}
+          />
+          </details></> : null}
           {montagePanel==="concept" ? <section className={videoStyles.montagePane}
             data-video-montage-concept aria-label={locale==="ru"?"Простая раскадровка":
               locale==="es"?"Guion visual simple":"Simple storyboard"}>
@@ -10782,19 +10798,19 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </div>
           <div className={videoStyles.stageActionPair} data-video-stage-actions="montage">
             <button type="button" className={videoStyles.stageAddButton}
-              data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"text":montagePanel==="text"||montagePanel==="settings"?"concept":montagePanel==="concept"?"promo":"choose"}
-              disabled={!studioHydrated||recording||preparing}
+              data-video-montage-next={montagePanel==="effects"?"audio":montagePanel==="audio"?"promo":montagePanel==="text"||montagePanel==="settings"?"concept":montagePanel==="concept"?"ready":"choose"}
+              disabled={!studioHydrated||recording||preparing||montagePanel==="promo"}
               onClick={continueMontageOrGenerate}>
               <Sparkles size={19} aria-hidden="true"/>
               {montagePanel==="effects"?
                 (locale==="ru"?"Выбрать аудио":locale==="es"?"Elegir audio":"Choose Audio"):
                 montagePanel==="audio"?
-                (locale==="ru"?"Добавить текст":locale==="es"?"Añadir texto":"Add Text"):
+                (locale==="ru"?"Выбрать текст":locale==="es"?"Elegir texto":"Choose Text"):
                 montagePanel==="text"||montagePanel==="settings"?
                 (locale==="ru"?"Сюжет":locale==="es"?"Guion":"Story"):
                 montagePanel==="concept"?
-                (locale==="ru"?"Выбрать видео":locale==="es"?"Elegir vídeo":"Choose video"):
-                (locale==="ru"?"Выбрать формат":locale==="es"?"Elegir formato":"Choose format")}
+                (locale==="ru"?"К готовому видео":locale==="es"?"Continuar a Listo":"Continue to Ready"):
+                (locale==="ru"?"Выберите вариант выше":locale==="es"?"Elige una opción arriba":"Choose an option above")}
               <ArrowRight size={18} aria-hidden="true"/>
             </button>
             <button type="button" className={videoStyles.quickGenerate} data-video-quick-generate
@@ -10805,9 +10821,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </button>
           </div>
           {narrationInvalid&&<p role="status" className={videoStyles.quickStatus} data-video-narration-reapproval>
-            {locale==="ru"?"Озвучка больше не соответствует выбранным фразам. Обновите голос во вкладке «Идеи», затем создайте видео.":
-              locale==="es"?"La voz ya no coincide con las frases. Actualiza la narración en Ideas antes de crear el vídeo.":
-                "Your voice no longer matches the chosen phrases. Regenerate it in Ideas before creating the video."}
+            {locale==="ru"?"Озвучка больше не соответствует фразам. Обновите голос во вкладке Personal перед созданием видео.":
+              locale==="es"?"La voz ya no coincide con las frases. Actualiza la narración en Personal antes de crear el vídeo.":
+                "Your voice no longer matches the chosen phrases. Regenerate it in Personal before creating the video."}
           </p>}
           {phrasePending&&<p role="status" className={videoStyles.quickStatus} data-video-phrase-approval-required>
             {locale==="ru"?"Новые фразы ещё не утверждены. Откройте вкладку «Фразы» и подтвердите выбор.":

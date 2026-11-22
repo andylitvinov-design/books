@@ -53,7 +53,7 @@ test("photo -> exactly two visible taxonomy choices -> Goal; Next auto-classifie
  assert.match(mirror,/classifyMyTubeRequest\(wish,locale\)/);
  assert.match(mirror,/finish\(categoryId,subId,topicId,goalText\)/);
  assert.match(studio,/mirrorResolveRef\.current\?\.\(path\)/);
- assert.match(studio,/setIdeasSubtab\("goal"\);setActiveWorkspace\("phrases"\)/);
+ assert.match(studio,/setIdeasSubtab\("goal"\);setActiveWorkspace\("editor"\);setMontagePanel\("effects"\)/);
  assert.match(studio,/setMirrorAdvanced\(false\);setVideoScenarioOpen\(false\)/);
  assert.match(director,/mirrorResolveRef\.current=resolve/);
  assert.match(director,/found\.category\.id!==path\.categoryId/);
