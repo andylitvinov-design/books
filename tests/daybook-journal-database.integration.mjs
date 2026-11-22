@@ -29,7 +29,7 @@ before(async()=>{
   grant usage on schema app,app_private,auth to hh_app_backend;
   grant select on app.accounts,auth.sessions,app_private.coaching_goals to hh_app_backend;
   grant update on app.accounts to hh_app_backend;`)
- await admin.query(await readFile(new URL('../supabase/migrations/20261122210000_hh_daybook_journal.sql',import.meta.url),'utf8'))
+ await admin.query(await readFile(new URL('../supabase/migrations/20261122182733_hh_daybook_private_journal_20261122.sql',import.meta.url),'utf8'))
  for(const actor of [a,b]){
   await admin.query("insert into app.accounts values($1,'active','active')",[actor.id])
   await admin.query('insert into auth.sessions values($1,$2)',[actor.claims.session_id,actor.id])

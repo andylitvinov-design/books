@@ -10,7 +10,7 @@ create table app.accounts(id uuid primary key);
 create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('test.account_id',true),'')::uuid $$;
 create function app_private.account_active() returns boolean language sql stable as $$ select current_setting('test.active',true)='true' $$;
 grant usage on schema app_private,auth to hh_app_backend;
-\ir ../supabase/migrations/20261122210000_hh_daybook_journal.sql
+\ir ../supabase/migrations/20261122182733_hh_daybook_private_journal_20261122.sql
 insert into app.accounts values ('550e8400-e29b-41d4-a716-446655440001'),('550e8400-e29b-41d4-a716-446655440002');
 set role hh_app_backend;
 set test.active='true';
