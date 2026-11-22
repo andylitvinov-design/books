@@ -1,5 +1,4 @@
 "use client";
-import Image from "next/image";
 import Link from "next/link";
 import {useState} from "react";
 import {ArrowLeft, ArrowRight, ClipboardCheck, Compass, Gem, Search, Sprout, Target, TrendingUp, UserRound, Users} from "lucide-react";
@@ -163,18 +162,7 @@ export function ShamanicaBusinessContent({locale}:{locale:PublicLocale}){
   return t.services[index>=0?index:0];
  };
  return <div className={styles.root} data-shamanica-business>
-  <section className={styles.hero} aria-labelledby="shamanica-business-title">
-   <Image src="/images/holistic-house/ideas-zen-landscape.svg" alt="" fill priority className={styles.heroImage} sizes="(max-width:640px) 100vw, 920px"/>
-   <Image src="/images/holistic-house/messenger-zen-stones.svg" alt="" width={240} height={156} unoptimized className={styles.heroStones}/>
-   <div className={styles.heroCopy}>
-    <h1 id="shamanica-business-title">{t.title}</h1>
-    <p>{t.subtitle}</p>
-   </div>
-   <div className={styles.heroActions}>
-    <Link className={styles.primary} href={shamanicaBusinessHref(locale,"express")} prefetch={false}>{t.diagnosis}<ArrowRight size={19} aria-hidden="true"/></Link>
-    <a className={styles.secondary} href="#business-quiz"><Target size={19} aria-hidden="true"/>{t.choose}</a>
-   </div>
-  </section>
+  <details className={styles.quizDrawer} data-business-extras><summary>{locale==="ru"?"Подобрать решение · 3 вопроса":locale==="es"?"Encontrar solución · 3 preguntas":"Find my approach · 3 questions"}<ArrowRight size={17} aria-hidden="true"/></summary>
   <section id="business-quiz" className={styles.quiz} data-business-quiz data-quiz-step={step+1} aria-labelledby="business-quiz-heading">
    <div className={styles.quizTop}>
     <span className={styles.stepLabel}>{t.step} {step+1} {t.of} 3</span>
@@ -202,15 +190,7 @@ export function ShamanicaBusinessContent({locale}:{locale:PublicLocale}){
      </div>
     </>}
   </section>
-  <section className={styles.feature} aria-labelledby="business-feature-heading">
-   <Image src="/images/holistic-house/books-library.webp" alt="" fill className={styles.featureImage} sizes="(max-width:640px) 100vw, 920px"/>
-   <div className={styles.featureContent}>
-    <span className={styles.featureBadge}><Target size={17} aria-hidden="true"/>{t.featured}</span>
-    <h2 id="business-feature-heading">{t.featureTitle}</h2>
-    <p>{t.featureDesc}</p>
-   </div>
-   <Link className={styles.featureLink} href={shamanicaBusinessHref(locale,"express")} prefetch={false}>{t.begin}<ArrowRight size={19} aria-hidden="true"/></Link>
-  </section>
+  </details>
   <section className={styles.services} data-business-cabinet-shelves data-expanded={activeShelf?"true":"false"} aria-labelledby="business-services-heading">
    <h2 id="business-services-heading">{activeShelf?t.shelves[shelfIndex]:t.servicesTitle}</h2>
    {activeShelf?<>
@@ -251,9 +231,9 @@ export function ShamanicaBusinessContent({locale}:{locale:PublicLocale}){
      <p className={styles.catalogHint}>{t.categoryHint}</p>
     </>}
    </>:<div className={styles.serviceGrid}>
-    {businessShelves.map(({id,Icon,image},index)=><button className={styles.serviceCard} type="button" key={id}
+    {businessShelves.map(({id,Icon},index)=><button className={styles.serviceCard} type="button" key={id}
      onClick={()=>{setSelectedShelf(id);setSelectedOption(null);}} data-business-shelf={id} aria-label={t.shelves[index]}>
-     <Image src={image} fill alt="" className={styles.serviceImage} sizes="(max-width:760px) 48vw, 300px"/>
+     <span className={styles.serviceImage} aria-hidden="true"/>
      <span className={styles.serviceText}><Icon size={25} className={styles.serviceIcon} strokeWidth={1.6} aria-hidden="true"/><strong>{t.shelves[index]}</strong><ArrowRight size={16} className={styles.cardArrow} aria-hidden="true"/></span>
     </button>)}
    </div>}
