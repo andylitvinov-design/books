@@ -46,6 +46,7 @@ import { MandalaAutoVideoDirector } from "./mandala-auto-video-director";
 
 import { MandalaProfessionalPromo } from "./mandala-professional-promo";
 import type { MandalaProfessionalSource } from "./mandala-meditation-client";
+import {INSTAGRAM_REELS_PROFILE,isInstagramReelSelection,isInstagramReelActive,reelCaptionCenterY,reelCaptionBeatAt} from "@/lib/mandala/instagram-reels.mjs";
 import { availableStoryScene, storySelectionItems } from "@/lib/mandala/story-addon-catalog";
 import type { StorySelection, StoryAddonKind } from "@/lib/mandala/story-addon-catalog";
 import { paintFreeGreeting, FREE_GREETING_DURATION } from "@/lib/mandala/free-greeting-overlay.mjs";
@@ -1600,6 +1601,7 @@ function paintSingleVideoTextOverlay(
   source:"affirmations"|"stage"|"caption"|"none",
   lines:readonly string[],settings:AffirmationSettings,totalSeconds:number,
   plan:CinematicStoryboard|null,clips:readonly TimelineTextClip[]|null,
+  reelSafe=false,
 ):void{
   if(source==="affirmations"){
     // Legacy medium/high density could draw 2-3 sentences simultaneously.
@@ -1608,13 +1610,13 @@ function paintSingleVideoTextOverlay(
       settings.visibility.includes("small")?"small":"frame";
     paintVideoAffirmations(ctx,time,lines,{...settings,density:"low",visibility:[visibility]},totalSeconds);
   }else if(source==="stage"){
-    paintStageCaptionOverlay(ctx,time,plan,clips);
+    paintStageCaptionOverlay(ctx,time,plan,clips,reelSafe);
   }
 }
 /** Each authored caption is rendered locally on the same Canvas as MediaRecorder. */
 function paintStageCaptionOverlay(
   ctx:CanvasRenderingContext2D,time:number,plan:CinematicStoryboard|null,
-  editedCaptions:readonly TimelineTextClip[]|null=null,
+  editedCaptions:readonly TimelineTextClip[]|null=null,reelSafe=false,
 ){
   if(editedCaptions===null&&(!plan||plan.version!==FREE_FILM_PLAN_VERSION))return;
   const frame=editedCaptions===null
@@ -1640,8 +1642,9 @@ function paintStageCaptionOverlay(
     }else line=next;
   }
   if(line)lines.push(line);
-  const centerY=animation.positionId==="top"?h*.16:
-    animation.positionId==="center"?h*.49:h*.80;
+  const centerY=reelSafe?reelCaptionCenterY(animation.positionId,h):
+    animation.positionId==="top"?h*.16:
+      animation.positionId==="center"?h*.49:h*.80;
   const top=centerY-(lines.length-1)*font*.67;
   const bandHeight=lines.length*font*1.25+font*.8;
   ctx.globalAlpha=animation.alpha;
@@ -2063,6 +2066,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const mirrorResolveRef=useRef<((path:MirrorResolution)=>boolean)|null>(null);
   const [mirrorStep,setMirrorStep]=useState<1|2|3>(1);
   const [mirrorScope,setMirrorScope]=useState<MirrorScope>("me");
+  const [reelMode,setReelMode]=useState(false);
   const [goalQuizState,setGoalQuizState]=useState<{
     step:1|2|3;complete:boolean;audience:"self"|"others";
   }>({step:1,complete:false,audience:"self"});
@@ -2280,6 +2284,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [aspect, setAspect] = useState<Aspect>("landscape");
   const [quality, setQuality] = useState<Quality>("hd");
   const [duration, setDuration] = useState<(typeof durations)[number]>(30);
+  const reelModeActive=isInstagramReelActive(reelMode,aspect,duration,videoExportMode);
   const [speed,setSpeed] = useState<Speed>("slow");
   const [brightness,setBrightness] = useState<Brightness>("soft");
   const [music,setMusic] = useState<AmbientMusic>("none");
@@ -3837,7 +3842,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         paintHypnoLightOverlay(ctx,previewSeekSeconds,hypnoLight);
         paintStoryMotifs(ctx,previewSeekSeconds,appliedStory);
         paintFreeGreeting(ctx,previewSeekSeconds,duration,greetingCharacter,aspect,greetingSceneKey,theme);
-        paintSingleVideoTextOverlay(ctx,previewSeekSeconds,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips);
+        paintSingleVideoTextOverlay(ctx,previewSeekSeconds,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips,reelModeActive);
       }
       if (!previewPlaying) return;
       const previewCores=Number.isFinite(navigator.hardwareConcurrency)?navigator.hardwareConcurrency:4;
@@ -3863,7 +3868,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             paintStoryMotifs(ctx,frameSecond,appliedStory);
             paintFreeGreeting(ctx,elapsed,duration,greetingCharacter,aspect,greetingSceneKey,theme);
             paintHypnoLightOverlay(ctx,frameSecond,hypnoLight);
-            paintSingleVideoTextOverlay(ctx,frameSecond,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips);
+            paintSingleVideoTextOverlay(ctx,frameSecond,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips,reelModeActive);
           }
           lastFrame = now;
         }
@@ -4088,8 +4093,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       hasWebCodecs,safariWebKit,procedural,proceduralRoute,preferWebm,
       nativeMp4Available:nativeAppleMp4Available,
       userAgent:ua,maxTouchPoints:navigator.maxTouchPoints,
-      forceWebCodecs:forceWebCodecs||nativeRejectedOnThisDevice
+      forceWebCodecs:reelModeActive||forceWebCodecs||nativeRejectedOnThisDevice
     });
+    // Reels never silently leave the browser as 8-fps MP4 or mislabeled WebM.
+    // A genuine H.264 encoder is required before reserving any video credits.
+    if(reelModeActive&&(!useWebCodecsMp4||!hasWebCodecs||preferWebm||forceMp4ForRetry)){
+      setExportUnavailable(true);setPlaybackStatus("failed");
+      setNotice(locale==="ru"?"Для Instagram Reels нужен браузер с WebCodecs H.264 (24 кадра/с). Откройте редактор в актуальном Chrome или Safari.":
+        locale==="es"?"Reels requiere WebCodecs H.264 a 24 fps. Abre el editor en Chrome o Safari actualizado.":
+        "Instagram Reels requires WebCodecs H.264 at 24 fps. Open this editor in an up-to-date Chrome or Safari.");
+      return;
+    }
     lastExportEngineRef.current=useWebCodecsMp4?"webcodecs":"native";
     if(procedural&&!safariWebKit&&proceduralRoute==="unsupported"){
       setResult(null);setPlaybackStatus("checking");
@@ -4313,7 +4327,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       paintStoryMotifs(ctx,0,appliedStory);
       paintFreeGreeting(ctx,0,duration,greetingCharacter,aspect,greetingSceneKey,theme);
       paintHypnoLightOverlay(ctx,0,hypnoLight);
-      paintSingleVideoTextOverlay(ctx,0,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips);
+      paintSingleVideoTextOverlay(ctx,0,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips,reelModeActive);
        paintVideoBrandStamp(ctx,exportBrandVariant);
       // Device-aware capture targets smoother frames while keeping low-end
       // iPhone and timed subliminal-frame fallback bounded.
@@ -4325,7 +4339,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       const suggestedFps = phone
         ? (quality === "fullhd" ? (cores>=6 ? 20 : 16) : (cores>=6 ? 24 : 20))
         : (quality === "fullhd" ? (cores>=8 ? 25 : 20) : (cores>=8 ? 30 : 24));
-      const framesPerSecond=isApplePhone?8:
+      const framesPerSecond=reelModeActive?INSTAGRAM_REELS_PROFILE.frameRate:isApplePhone?8:
         baselineFramesPerSecond === 25 || (phone && cores<=2)
         ? baselineFramesPerSecond : suggestedFps;
       if(useWebCodecsMp4){
@@ -4365,9 +4379,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           // four-shot/portrait/consent checks exercise actual encoder input.
           const encodeCanvasMovie=async (lighter=false)=>{
             const blob=await encodeLocalWebCodecsMp4({
-              canvas,allowProceduralBrowser:procedural&&!safariWebKit,
-              seconds:duration,frameRate:Math.min((safeWebkitRetry||isApplePhone)?8:10,framesPerSecond),
-              ...(lighter?{frameRate:8}:{}),
+              canvas,allowProceduralBrowser:reelModeActive||(procedural&&!safariWebKit),
+              seconds:duration,frameRate:reelModeActive?INSTAGRAM_REELS_PROFILE.frameRate:
+                Math.min((safeWebkitRetry||isApplePhone)?8:10,framesPerSecond),
+              ...((lighter&&!reelModeActive)?{frameRate:8}:{}),
               audio:files.length?{files,volume:soundVolume}:undefined,
               shouldContinue:()=>!controller.signal.aborted&&aliveRef.current&&sourceRef.current===snapshotKey,
               onProgress:(p:number)=>{if(!controller.signal.aborted&&aliveRef.current&&sourceRef.current===snapshotKey)
@@ -4383,7 +4398,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               paintStoryMotifs(ctx,time,appliedStory);
               paintFreeGreeting(ctx,time,duration,greetingCharacter,aspect,greetingSceneKey,theme);
               paintHypnoLightOverlay(ctx,time,hypnoLight);
-              paintSingleVideoTextOverlay(ctx,time,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips);
+              paintSingleVideoTextOverlay(ctx,time,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips,reelModeActive);
               paintVideoBrandStamp(ctx,exportBrandVariant);
               return true;
               }
@@ -4688,7 +4703,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           paintStoryMotifs(ctx,frameTime,appliedStory);
           paintFreeGreeting(ctx,frameTime,duration,greetingCharacter,aspect,greetingSceneKey,theme);
           paintHypnoLightOverlay(ctx,frameTime,hypnoLight);
-          paintSingleVideoTextOverlay(ctx,frameTime,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips);
+          paintSingleVideoTextOverlay(ctx,frameTime,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips,reelModeActive);
           paintVideoBrandStamp(ctx,exportBrandVariant);
           lastFrame=now;
           if(now-lastProgress>650){
@@ -5298,7 +5313,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   async function shareVideo(){
     if(!result||result.mode==="catalog"||!creditConfirmed||
       (creditCatalog?.chargeRequired&&creditSession!=="signed_in"))return;
-    const file=new File([result.blob],"holistic-house-personal."+result.extension,{type:result.mime});
+    const file=new File([result.blob],reelModeActive?INSTAGRAM_REELS_PROFILE.downloadName:"holistic-house-personal."+result.extension,{type:result.mime});
     if(typeof navigator.share!=="function" ||
       (typeof navigator.canShare==="function" && !navigator.canShare({files:[file]}))){
       setNotice(ui.shareUnsupported);return;
@@ -5336,6 +5351,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const changeVideoAspect=(nextAspect:Aspect)=>{
     if(recording||preparing||nextAspect===aspect)return;
     recordBeforeEditorChange("aspect");
+    if(reelMode&&nextAspect!=="portrait")setReelMode(false);
     setAspect(nextAspect);
     setCinematicPlan(plan=>{
       if(!plan)return null;
@@ -5349,6 +5365,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const changeVideoDuration=(seconds:(typeof durations)[number])=>{
     if(seconds===duration)return;
     recordBeforeEditorChange("duration");
+    if(reelMode&&seconds!==INSTAGRAM_REELS_PROFILE.durationSeconds)setReelMode(false);
     setDuration(seconds);
     setTimelineTextClips(current=>current?retimeMontageSetups(current,seconds):null);
     setCinematicPlan(plan=>{
@@ -7772,6 +7789,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             // bills or sends private content to a provider.
             const accepted=mirrorResolveRef.current?.(path);
             if(!accepted)return false;
+            const requestedReel=isInstagramReelSelection(path);
+            setReelMode(requestedReel);
+            if(requestedReel){
+              setVideoExportMode("personal");
+              setAspect(INSTAGRAM_REELS_PROFILE.aspect);
+              setDuration(INSTAGRAM_REELS_PROFILE.durationSeconds);
+              setQuality("fullhd");
+            }
             setMirrorDetailedWish(path.wish);
             setMirrorAdvanced(false);setVideoScenarioOpen(false);
             setMirrorStep(1);
@@ -9002,6 +9027,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             if(next===aspect)return;
             // Preserve the single edited player while switching to the only
             // physically verified video geometry for recipient gifts.
+            if(reelMode&&next!=="portrait")setReelMode(false);
             setAspect(next);setCinematicPlan(null);setPreviewPlaying(false);
           }}
           onInvalidate={()=>{setPreviewPlaying(false);setCinematicPlan(null);}}
@@ -9087,7 +9113,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             :"Retry in lighter mode · 540p / 8 fps (all scenes and audio retained)"}
         </button>
       ):null}
-      {professionalMode ? <p className={videoStyles.quickHint}
+      {reelModeActive?<p className={videoStyles.quickHint} data-instagram-reels-profile role="status">
+        {locale==="ru"
+          ?"Instagram Reels · 9:16 · 30 секунд · проверяемый MP4 H.264 · 24 кадра/с. На iPhone разрешение может снижаться до 540×960."
+          :locale==="es"
+          ?"Instagram Reels · 9:16 · 30 segundos · MP4 H.264 verificado · 24 fps. En iPhone puede bajar a 540×960."
+          :"Instagram Reels · 9:16 · 30 seconds · verified H.264 MP4 · 24 fps. iPhone may use 540×960."}
+      </p>:null}
+      {(professionalMode||reelModeActive) ? <p className={videoStyles.quickHint}
         data-video-professional-branding-note role="note">
         {locale==="ru"
           ?"FREE: на готовом видео мастера будет знак Holistic House. Без знака — только при подтверждённом доступе к чистому экспорту."
@@ -9095,8 +9128,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           ?"FREE: el vídeo profesional tendrá la marca Holistic House. Sin marca solo con acceso verificado."
           :"FREE professional exports include the Holistic House mark. Clean exports require verified access."}
       </p> : null}
-      {professionalMode ? <MandalaProfessionalPromo
-        locale={locale} presets={aspectFilmPresets} scenes={FREE_FILM_CATALOG}
+      {(professionalMode||reelModeActive) ? <MandalaProfessionalPromo
+        locale={locale} initiallyOpen={reelModeActive} presets={aspectFilmPresets} scenes={FREE_FILM_CATALOG}
         publicOffer={professionalSource?.publicOffer ?? null}
         publicPractitioner={professionalSource?.publicPractitioner ?? null}
         disabled={recording||preparing}
@@ -9110,15 +9143,30 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             setNotice(ui.videoUnavailable);
             return;
           }
-          applyAutoFilm(presetId,seconds,undefined,outputAspect);
+          // Reels: actually carry four authored hook / context / value / CTA
+          // captions into the SAME real scene-bound Canvas movie. Never invent
+          // permissions, exceed source duration or replace a failed source.
+          if(reelModeActive){
+            let plan:CinematicStoryboard;
+            try{plan=compileFreeFilmPreset(existing,locale,seconds,outputAspect);}
+            catch{setNotice(ui.videoUnavailable);return;}
+            const beats=proposal.shotPlan.map(beat=>beat.onScreenText);
+            const edit:FreeFilmCompilationEdit={
+              clipIds:plan.shots.map(shot=>shot.sceneId),
+              durationSecondsByStage:plan.shots.map(shot=>shot.durationSeconds),
+              captionTexts:plan.shots.map(shot=>normalizeStageCaption(
+                reelCaptionBeatAt(shot.startSeconds,seconds,beats))),
+            };
+            if(!applyAutoFilm(presetId,seconds,edit,outputAspect))return;
+          }else if(!applyAutoFilm(presetId,seconds,undefined,outputAspect))return;
           // Optional source-approved professional draft; not a publication.
           // Don't silently include client photos, personal hypnosis or music.
           setBackgroundOnly(true);
           setAffirmations({...defaultAffirmations,enabled:false});
           setMusic("none");setAttachedAudio(null);setAudioAuto(false);
           setWish(proposal.headline.slice(0,160));
-          setCustomCaption(proposal.headline.slice(0,160));
-          setCaptionMode("custom");
+          setCustomCaption(reelModeActive?"":proposal.headline.slice(0,160));
+          setCaptionMode(reelModeActive?"none":"custom");
         }}/> : null}
       <section className={videoStyles.result} id="personal-video-result" data-video-result hidden={!result}
         aria-hidden={activeWorkspace==="ready"} inert={activeWorkspace==="ready"}
@@ -9272,7 +9320,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               (!creditCatalog?.chargeRequired||creditSession==="signed_in"||result.mode==="catalog") ? <>
             <div className={videoStyles.resultActions}>
               {(result.mode!=="catalog"||canOfferOriginalVideoSource(professionalMode))?<a className={videoStyles.download} href={result.url}
-                download={"holistic-house-"+(backgroundOnly?(theme==="money"?"money-background":theme+"-background"):"personal-mandala")+"."+result.extension}
+                download={reelModeActive?INSTAGRAM_REELS_PROFILE.downloadName:"holistic-house-"+(backgroundOnly?(theme==="money"?"money-background":theme+"-background"):"personal-mandala")+"."+result.extension}
                 onClick={event=>{
                   if(result.mode==="catalog")return;
                   event.preventDefault();
@@ -9299,7 +9347,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 data-video-save-direct
                 className={videoStyles.audioDirectLink}
                 href={result.url}
-                download={"holistic-house-personal."+result.extension}>
+                download={reelModeActive?INSTAGRAM_REELS_PROFILE.downloadName:"holistic-house-personal."+result.extension}>
                 {locale==="ru"?"Скачать файл напрямую (если меню «Файлы» не открылось)"
                   :locale==="es"?"Descargar el archivo directamente (si no se abre Compartir)"
                   :"Direct file download (if Share did not open)"}
