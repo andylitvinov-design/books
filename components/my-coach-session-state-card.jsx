@@ -3,6 +3,7 @@
 import {useMemo} from 'react'
 import {BookOpenCheck,Check,CheckCircle2,Compass,FileText,Flag,HeartHandshake,Milestone,Scale,ShieldCheck,Target} from 'lucide-react'
 import {coachSessionStateView} from '@/lib/coaching/coach-session-state-view.mjs'
+import {COACH_PROFILE_AXES} from '@/lib/coaching/coach-profile-intake.mjs'
 import styles from './my-coach-session-state-card.module.css'
 
 const copy={
@@ -67,7 +68,7 @@ function ReadOnlyCheckbox({checked}){
  */
 export default function MyCoachSessionStateCard({
   locale='en',turns=[],progress=null,stageLabel='',
-  stageNames=[],stageIndex=0,stageProgressVerified=false,opening=null
+  stageNames=[],stageIndex=0,stageProgressVerified=false,opening=null,profile=null
 }){
   const language=copy[locale]?locale:'en'
   const t=copy[language]
@@ -121,7 +122,32 @@ export default function MyCoachSessionStateCard({
         })}
       </ol>
     </section>}
-    {(!opening||opening.completed)&&<section className={styles.stageSection} aria-label={t.stages}>
+    {profile&&<section className={styles.stageSection} data-coach-profile-checklist
+      aria-label={language==='ru'?'Личный профиль':language==='es'?'Perfil personal':'Personal profile'}>
+      <h3 className={styles.sectionTitle}><CheckCircle2 size={18} aria-hidden="true"/>
+        {language==='ru'?'Личный профиль':language==='es'?'Perfil personal':'Personal profile'} · {profile.ratings.length}/{COACH_PROFILE_AXES.length}
+      </h3>
+      <ol className={styles.stageList}>
+        {COACH_PROFILE_AXES.map((axis,index)=>{
+          const rating=profile.ratings[index]
+          const done=Boolean(rating)
+          const active=!profile.completed&&index===profile.step-1
+          const state=done?t.done:active?t.current:t.waiting
+          const value=rating?.kind==='rated'?rating.current+' → '+rating.desired:
+            rating?.kind==='skipped'?(language==='ru'?'Пропущено':language==='es'?'Omitido':'Skipped'):''
+          return <li key={axis.id} className={styles.stageRow} data-profile-axis={axis.id}
+            data-stage-status={done?'done':active?'current':'pending'}>
+            <span className={styles.stageNumber} aria-hidden="true">{done?<Check size={15} strokeWidth={3}/>:index+1}</span>
+            <span className={styles.stageName}>{axis.name[language]}
+              {value&&<small className={styles.openingValue}>{value}</small>}
+            </span>
+            <span className={styles.stageStatus}>{state}</span>
+            <ReadOnlyCheckbox checked={done}/>
+          </li>
+        })}
+      </ol>
+    </section>}
+    {(!opening||opening.completed)&&(!profile||profile.completed)&&<section className={styles.stageSection} aria-label={t.stages}>
       <h3 className={styles.sectionTitle}><CheckCircle2 size={18} aria-hidden="true"/>{t.stages}</h3>
       <ol className={styles.stageList} data-coach-stage-checklist>
         {stageNames.map((label,index)=>{
