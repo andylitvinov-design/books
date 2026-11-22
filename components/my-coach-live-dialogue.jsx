@@ -13,6 +13,8 @@ import {coachAudibleTurns,coachProviderHistory,markLatestCoachReplyInterrupted} 
 import {coachEphemeralContext} from '@/lib/coaching/coach-ephemeral-context.mjs'
 import {coachModelProbeRetryAllowed} from '@/lib/coaching/coach-model-recovery.mjs'
 import {coachSessionVisibleStageIds} from '@/lib/coaching/coach-session-progress.mjs'
+import {coachOpeningIntro,coachOpeningProgress,coachOpeningProtocolSnapshot} from '@/lib/coaching/coach-opening-protocol.mjs'
+import {coachOpeningTurn} from '@/lib/coaching/coach-opening-entry.mjs'
 import {coachGoalTurn} from '@/lib/coaching/goal-turn.mjs'
 import {understandCoachingTurn} from '@/lib/personal-coaching/coaching-turn-understanding.mjs'
 import styles from './my-coach-live-dialogue.module.css'
@@ -297,6 +299,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [replayBlocked,setReplayBlocked]=useState(false)
   const [playbackNotice,setPlaybackNotice]=useState('')
   const pending=useRef(null),composerRef=useRef(null),transcriptRef=useRef(null)
+  const [allowOpeningPrior,setAllowOpeningPrior]=useState(false)
+  const [openingPrior,setOpeningPrior]=useState(null)
+  const [openingPriorLoading,setOpeningPriorLoading]=useState(false)
   const [contextTopic,setContextTopic]=useState('')
   const [contextAssessments,setContextAssessments]=useState(false)
   const [contextPaused,setContextPaused]=useState(false)
@@ -396,6 +401,23 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   },[])
   useEffect(()=>{if(transcriptRef.current)transcriptRef.current.scrollTop=transcriptRef.current.scrollHeight},[turns,speechPreview,streamingPreview])
   useEffect(()=>{
+    if(!allowOpeningPrior){setOpeningPrior(null);setOpeningPriorLoading(false);return}
+    const controller=new AbortController()
+    setOpeningPriorLoading(true)
+    // Access encrypted saved sessions only AFTER explicit user opt-in.
+    fetch('/api/app/my-coach/protocol',{credentials:'same-origin',cache:'no-store',
+      signal:controller.signal}).then(response=>response.ok?response.json():null)
+      .then(data=>{
+        if(controller.signal.aborted)return
+        const old=Array.isArray(data?.protocols)?
+          data.protocols.find(item=>item?.opening?.name||item?.goal):null
+        setOpeningPrior(old?{name:String(old.opening?.name||'').slice(0,60),
+          topic:String(old.goal||old.opening?.focus||'').slice(0,140)}:null)
+      }).catch(()=>{if(!controller.signal.aborted)setOpeningPrior(null)})
+      .finally(()=>{if(!controller.signal.aborted)setOpeningPriorLoading(false)})
+    return()=>controller.abort()
+  },[allowOpeningPrior])
+  useEffect(()=>{
     if(voiceState.phase!=='listening'){
       micWaveRef.current?.style.setProperty('--coach-mic-level','0')
       if(micWaveRef.current)micWaveRef.current.dataset.voiceDetected='false'
@@ -422,12 +444,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const opening=persona?localCoachText(persona.opening,conversationLang):t.goal
   const coachStyle=getCoachPresentation(personaId,conversationLang)?.style
   const sessionTimebox=coachTimeboxState(sessionClockStarted?Math.floor(activeSessionSeconds):null)
-  const authoredIntroduction=getCoachPresentation(personaId,conversationLang)?.text
-  const introduction=authoredIntroduction||(persona?({
-    en:`Hello, I'm ${name}, your AI coach. I focus on ${localCoachText(persona.role,conversationLang).toLowerCase()}. ${localCoachText(persona.description,conversationLang)} My approach: ${localCoachText(persona.approach,conversationLang)} ${opening}`,
-    ru:`Здравствуйте! Я ${name}, ваш AI-коуч. Моё направление — ${localCoachText(persona.role,conversationLang).toLowerCase()}. ${localCoachText(persona.description,conversationLang)} Мой подход: ${localCoachText(persona.approach,conversationLang)} ${opening}`,
-    es:`¡Hola! Soy ${name}, tu coach de IA. Mi enfoque: ${localCoachText(persona.role,conversationLang).toLowerCase()}. ${localCoachText(persona.description,conversationLang)} Mi método: ${localCoachText(persona.approach,conversationLang)} ${opening}`,
-  })[conversationLang]:opening)
+  const introduction=coachOpeningIntro(personaId,conversationLang)
   const ui=sessionUi[lang]||sessionUi.en
   const voiceGate=voiceGateText[lang]||voiceGateText.en
   const liveVoiceSelected=coachEngine==='gemini_live_free'
@@ -506,6 +523,45 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       'Solution-focused':'solution_focused',
       'Appreciative inquiry':'appreciative_inquiry'})[persona?.methods?.[0]]||'grow'
   const visibleMethodName=coachMethodNames[visibleMethodId]||'GROW'
+  const openingHistory=turns.filter(turn=>turn.role==='user').slice(0,32)
+    .map(turn=>String(turn.content||'').slice(0,160))
+  const openingProgress=coachOpeningProgress({turns:openingHistory,locale:conversationLang,
+    personaId,allowPrior:allowOpeningPrior,priorSession:openingPrior})
+  const openingActive=!openingProgress.completed
+  // An optional, very soft acknowledgment on the FOUR lit milestones only.
+  // The feelings checkbox (step 5) has no sound or lamp by design.
+  const previousOpeningLamps=useRef(null)
+  useEffect(()=>{
+    const current=openingProgress.lamps,old=previousOpeningLamps.current
+    previousOpeningLamps.current=current
+    if(!old||!sessionClockStarted||paused||voiceState.phase==='speaking'||
+      !['invitation','identity','focus','confirmation'].some(key=>current[key]&&!old[key]))return
+    try{
+      const Audio=window.AudioContext||window.webkitAudioContext
+      if(!Audio)return
+      const ctx=new Audio(),osc=ctx.createOscillator(),gain=ctx.createGain()
+      const now=ctx.currentTime
+      osc.type='sine';osc.frequency.setValueAtTime(680,now)
+      osc.frequency.exponentialRampToValueAtTime(880,now+0.075)
+      gain.gain.setValueAtTime(0.0001,now)
+      gain.gain.exponentialRampToValueAtTime(0.013,now+0.015)
+      gain.gain.exponentialRampToValueAtTime(0.0001,now+0.11)
+      osc.connect(gain);gain.connect(ctx.destination)
+      osc.onended=()=>{void ctx.close().catch(()=>{})}
+      osc.start(now);osc.stop(now+0.12)
+    }catch{/* Sound is optional; the visual checkpoint is authoritative. */}
+  },[openingProgress.lamps.invitation,openingProgress.lamps.identity,
+    openingProgress.lamps.focus,openingProgress.lamps.confirmation,sessionClockStarted,paused,voiceState.phase])
+  const openingStepNames={
+    en:['Invitation','Your name','Session continuity','Choose a focus','How you feel','Ready to begin'],
+    ru:['Приглашение','Как обращаться','Продолжение или новая тема','Выбор направления','Как вы себя чувствуете','Начало работы'],
+    es:['Invitación','Tu nombre','Continuidad','Elegir un enfoque','Cómo te sientes','Comenzar']
+  }
+  const openingDescription=openingStepNames[lang][Math.min(5,openingProgress.step-1)]
+  const visibleProgressStep=openingActive?openingProgress.step:visibleStageIndex+1
+  const visibleProgressTotal=openingActive?6:visibleStageTotal
+  const visibleProgressName=openingActive?(
+    {ru:'Начало сессии',en:'Session opening',es:'Inicio de sesión'}[lang]):visibleMethodName
   const stageChecklistTitles=coachSessionVisibleStageIds(visibleMethodId,{
     legacy:progressValid&&!meaningProgressValid
   }).map((stepId,index)=>semanticStageTitles[lang]?.[stepId]||
@@ -518,6 +574,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       ?(methodStepTitles[lang]?.[lastRecordedProgress.stepId]||
         stageChecklistTitles[visibleStageIndex]||ui.stages[visibleStageIndex])
       :stageChecklistTitles[visibleStageIndex]||ui.stages[visibleStageIndex]
+  const visibleProgressDescription=openingActive?openingDescription:stageDescription
   const keyInfoUi=keyInfoCopy[lang]
   const goalPrompts={
     en:{stress:'I would like to feel less stressed. Can we explore what is weighing on me?',energy:'I would like to restore my energy. Can we explore what is draining it?',relationships:'I would like to improve an important relationship. Can we explore what matters most?'},
@@ -818,7 +875,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       message,goal:selectedGoal,lastSharedGoal:lastSharedGoalRef.current,
       locale:responseLocale,turns:conversationTurns,skip:wisdomRequested,
     })
-    message=goalTurn.message
+    // A preselected goal cannot rewrite a simple invitation reply like 'yes'.
+    message=openingProgress.completed?goalTurn.message:message
     inFlightClientRef.current={requestId,message}
     // A new focus requires the client to choose which saved topic to use again.
     const contextFocusChanged=['correction','topic_shift'].includes(
@@ -860,7 +918,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const legacyStage={clarify:'goal',explore:'reality',awareness:'resources',
         reframe:'options',choice:'options',planning:'action',commitment:'action',integration:'action'}
       const stage=legacyStage[semanticStage]||'goal'
-      const offlineReply=interruption||offlineCoachingBrainReply(input,selectCoachingBrainMethod(input),semanticStage)
+      const offlineOpening=!interruption?coachOpeningTurn({locale:responseLocale,
+        message,openingHistory,openingPrior,allowOpeningPrior},personaId):null
+      const offlineReply=interruption||offlineOpening||
+        offlineCoachingBrainReply(input,selectCoachingBrainMethod(input),semanticStage)
       const offlinePrompt=String(offlineReply.question||coachStagePrompt(personaId,stage,responseLocale,settings)||t.goal)
       // Offline: only an explicit client request can prompt a reflective close.
       const requestedWrap=/(?:подвед[её]м? итог|подвести итог|заверш(?:им|ить)|summari[sz]e|wrap up|close the session|resumir|cerrar la sesi[oó]n)/iu.test(message)
@@ -869,7 +930,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         en:'We can close gently. What became clearer, what remains open, and would you like to choose a next step of your own?',
         es:'Podemos cerrar con calma. ¿Qué te quedó más claro, qué sigue abierto y quieres elegir un próximo paso por tu cuenta?'
       }[responseLocale]
-      const answer=(interruption?[offlineReply.reflection,offlinePrompt].filter(Boolean).join(' '):
+      const answer=(offlineOpening?offlineOpening.message:interruption?[offlineReply.reflection,offlinePrompt].filter(Boolean).join(' '):
         requestedWrap&&sessionTimebox.offerWrapUp?reflectiveClose:offlinePrompt).slice(0,900)
       const mode=offlineReply.mode||'offline'
       setTurns(previous=>{
@@ -878,6 +939,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           question:offlinePrompt,
           mode,reason:mode==='offline'?(readiness.reason||'model_unavailable'):'',
           stage:offlineReply.stage||semanticStage,
+          ...(offlineOpening?{openingProgress:offlineOpening.openingProgress}:{}),
         }]
         return updated.slice(-160) // Complete, bounded in-tab protocol through an 80-exchange session
       })
@@ -912,6 +974,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             ...(coachEngine==='gemini_free'?{geminiFreeDataConsent:true}:{})
           }:{}),
           elapsedSeconds:sessionClockStarted?Math.floor(activeSessionSeconds):0,
+          openingHistory,
+          ...(allowOpeningPrior&&openingPrior?{openingPrior,allowOpeningPrior:true}:{}),
           sessionContext:coachEphemeralContext(providerHistory,providerWindow,responseLocale,message),
           semanticHints:semanticHintsRef.current,
           turns:providerWindow
@@ -966,7 +1030,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       commitGoalTurn()
       // An unsuccessful in-flight model must not strand the same hands-free
       // voice session in repeated failed calls or permanent offline mode.
-      if(result.mode==='offline'&&result.offlineReason){
+      if(result.mode==='offline'&&result.offlineReason&&result.offlineReason!=='structured_opening'){
         modelProbeRef.current.lastAttempt=Date.now()
         setReadiness({status:'unavailable',reason:result.offlineReason})
       }
@@ -1034,6 +1098,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       startedAt:protocolStartedRef.current||protocolFinishedAt,
       completedAt:protocolFinishedAt,durationSeconds:Math.floor(activeSessionSeconds),
       goal:selectedGoal,clientSummary:protocolSummary,clientNextStep:protocolNextStep,
+      opening:coachOpeningProtocolSnapshot(openingProgress),
       turns:turns.map(row=>({
         role:row.role,content:row.content,
         ...(row.role==='user'&&row.unanswered===true?{unanswered:true}:{}),
@@ -1105,8 +1170,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const ratingUi=sessionRatingCopy[lang]
   const protocolUi=protocolCopy[lang]
 
-  // Use the actual voice/session lifecycle; preserve the profile on idle, and
-  // never restore it after a started session is paused or interrupted.
+  // Preserve the approved pre-session profile until voice or a client turn starts.
   const sessionHasStarted=sessionClockStarted||voiceState.phase!=='idle'||turns.length>0
   const motionPhase=paused?'idle':voiceState.phase==='speaking'?'speaking':
     voiceState.phase==='listening'?'listening':!introComplete?'greeting':'idle'
@@ -1206,6 +1270,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           {liveVoiceSelected?<MyCoachGeminiLive ref={speechRef}
             locale={conversationLang} personaId={personaId} settings={settings}
             voiceName={selectedGeminiVoice} elapsedSeconds={activeSessionSeconds}
+            openingPrior={openingPrior} allowOpeningPrior={allowOpeningPrior}
             enabled={liveVoiceReady} canStart={!busy&&!paused&&!replaying&&liveVoiceReady}
             onSessionStart={()=>{setGeminiLiveConsent(true);setSessionClockStarted(true);setIntroComplete(true)}}
             onVoiceStateChange={setVoiceState}
@@ -1367,28 +1432,43 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         locale={conversationLang} methodId={visibleMethodId}/>}
       {sessionHasStarted&&<details className={styles.sessionProgress} data-coach-progress-accordion
         aria-label={ui.stageQuestion}
-        data-coach-stage-index={visibleStageIndex+1}
-        data-coach-stage-source={progressValid?'director-client-evidence':'local-provisional'}
+        data-coach-stage-index={visibleProgressStep}
+        data-coach-stage-source={openingActive?'client-evidence-opening':progressValid?'director-client-evidence':'local-provisional'}
         title={stageProgressHelp[lang]}>
         <summary className={styles.sessionProgressSummary}>
           <div className={styles.sessionProgressText} aria-live="polite">
-            <strong>{ui.step} {visibleStageIndex+1} {ui.of} {visibleStageTotal} · {visibleMethodName}</strong>
-            <span>{stageDescription}</span>
+            <strong>{ui.step} {visibleProgressStep} {ui.of} {visibleProgressTotal} · {visibleProgressName}</strong>
+            <span>{visibleProgressDescription}</span>
           </div>
           <div className={styles.sessionProgressSegments} role="progressbar" aria-label={ui.stageQuestion}
-            aria-valuemin={1} aria-valuemax={visibleStageTotal} aria-valuenow={visibleStageIndex+1}
-            aria-valuetext={ui.step+' '+(visibleStageIndex+1)+' '+ui.of+' '+visibleStageTotal+' · '+stageDescription}>
-            {Array.from({length:visibleStageTotal},(_,index)=><span key={index}
-              data-complete={progressValid&&index<visibleStageIndex?'true':undefined}
-              data-current={index===visibleStageIndex?'true':undefined}/>)}
+            aria-valuemin={1} aria-valuemax={visibleProgressTotal} aria-valuenow={visibleProgressStep}
+            aria-valuetext={ui.step+' '+visibleProgressStep+' '+ui.of+' '+visibleProgressTotal+' · '+visibleProgressDescription}>
+            {openingActive?(['invitation','identity','focus','confirmation'].map((key,index)=><span key={key}
+              data-complete={openingProgress.lamps[key]?'true':undefined}
+              data-current={(openingProgress.step===1&&index===0)||
+                ([2,3].includes(openingProgress.step)&&index===1)||
+                (openingProgress.step===4&&index===2)||
+                (openingProgress.step===6&&index===3)?'true':undefined}/>)):
+              Array.from({length:visibleStageTotal},(_,index)=><span key={index}
+                data-complete={progressValid&&index<visibleStageIndex?'true':undefined}
+                data-current={index===visibleStageIndex?'true':undefined}/>)}
           </div>
           <ChevronDown className={styles.sessionProgressChevron} size={20} aria-hidden="true"/>
         </summary>
         <MyCoachSessionStateCard locale={lang} turns={turns}
           progress={progressValid?lastRecordedProgress:null} stageLabel={stageDescription}
           stageNames={stageChecklistTitles} stageIndex={visibleStageIndex}
-          stageProgressVerified={progressValid}/>
+          stageProgressVerified={progressValid} opening={openingProgress}/>
       </details>}
+      <label className={styles.goalPrivacy} data-coach-prior-session-opt-in>
+        <input type="checkbox" checked={allowOpeningPrior}
+          disabled={openingPriorLoading||sessionClockStarted||turns.length>0}
+          onChange={event=>setAllowOpeningPrior(event.target.checked)}/>
+        {lang==='ru'?' Использовать имя и тему из моей сохранённой прошлой сессии':
+          lang==='es'?' Usar mi nombre y tema de la última sesión guardada':
+          ' Use my saved previous session name and topic'}
+        {openingPriorLoading?' …':''}
+      </label>
       <details className={styles.voicePrivacyDetails}>
         <summary>{lang==='ru'?'Приватность голоса':lang==='es'?'Privacidad de voz':'Voice privacy'}</summary>
         <p>{liveVoiceSelected?({
@@ -1414,7 +1494,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
                   {' · '}{turn.inference.provider==='groq'?'Groq':turn.inference.provider?.startsWith('gemini_')?'Gemini':'OpenRouter'} · {turn.inference.model}
                   {turn.inference.reasoningEffort?' · '+turn.inference.reasoningEffort:''}
                 </span>}
-              {turn.role==='assistant'&&turn.mode==='offline'&&
+              {turn.role==='assistant'&&turn.mode==='offline'&&turn.stage!=='opening'&&
                 <span className={styles.responseSource}> · {t.offline}</span>}
             </strong><p>{turn.content}</p>
           </div>)}
