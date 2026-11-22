@@ -171,3 +171,9 @@ test('owner reference: compact choices, readable wish and separate drafts per in
  assert.ok(mobile.includes('.previewStage .therapyHeroLaunch{background:url('));
  for(const poster of ['sun-warm-ocean-dawn.jpg','heart-flow.jpg','lone-tree.jpg','sun-autumn-hills.jpg'])assert.ok(mirror.includes(poster));
 });
+
+test("Mirror quiz image URL survives category then subcategory and topic",()=>{
+ assert.ok(mirror.includes('const mirrorPosterUrl=(image:string)=>image.startsWith("/")?image:'));
+ assert.equal((mirror.match(/mirrorPosterUrl\(available\[index%available\.length\]\.image\)/g)||[]).length,2);
+ assert.equal((mirror.match(/<img src=\{"\/videos\/holistic-house\/film-collection-v2\/"\+/g)||[]).length,0);
+});

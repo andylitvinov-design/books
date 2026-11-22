@@ -79,6 +79,8 @@ const labels={
   advanced:"Opciones avanzadas",dictation:"Usa el micrófono del teclado para dictar",workQuestion:"¿Qué vídeo quieres crear?",workPlaceholder:"Describe tu vídeo o servicio…",workAlternative:"O elige un formato de vídeo",format:"Formato"},
 } as const;
 
+const mirrorPosterUrl=(image:string)=>image.startsWith("/")?image:"/videos/holistic-house/film-collection-v2/"+image;
+
 export function MandalaMagicMirrorTitle({locale}:{locale:VideoLocale}){
  const t=labels[locale];
  return <header className={css.title} data-hh-mirror-title>
@@ -236,15 +238,13 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
    {step===2?subcategories.map((item,index)=><button type="button" className={css.card}
      key={item.id} data-hh-mirror-subcategory={item.id} disabled={disabled}
      onClick={()=>{setSubcategoryId(item.id);changeStep(3);}}>
-     <img src={"/videos/holistic-house/film-collection-v2/"+
-      available[index%available.length].image} alt="" loading="lazy"/>
+     <img src={mirrorPosterUrl(available[index%available.length].image)} alt="" loading="lazy"/>
      <span className={css.cardLabel}>{item.label}</span>
     </button>):topics.map((item,index)=><button type="button" className={css.card}
      key={item.id} data-hh-mirror-topic={item.id} disabled={disabled}
      onClick={()=>finish(selected.categoryId,subcategoryId,item.id,
       wish.trim()||selected.request[locale])}>
-     <img src={"/videos/holistic-house/film-collection-v2/"+
-      available[index%available.length].image} alt="" loading="lazy"/>
+     <img src={mirrorPosterUrl(available[index%available.length].image)} alt="" loading="lazy"/>
      <span className={css.cardLabel}>{item.label}</span>
     </button>)}
    </div>}
