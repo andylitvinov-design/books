@@ -125,3 +125,19 @@ test('owner-only staged memory and client UI do not transmit the audit to AI',()
  assert.match(ui,/const goalEligible=openingProgress.completed&&openingProgress.answers.focus\?\.kind!=='profile'/)
  assert.doesNotMatch(ui,/JSON.stringify\(\{[^}]*profileAudit/)
 })
+
+test('an incomplete archive never asks for scores marked unavailable',()=>{
+ const unknown=buildCoachProfileAudit([],{exhaustive:false})
+ assert.equal(unknown.completeArchive,false)
+ assert.ok(unknown.axes.every(axis=>axis.status==='unavailable'))
+ assert.equal(coachProfileReviewProgress({audit:unknown,locale:'en'}),null)
+ const complete=buildCoachProfileAudit([],{exhaustive:true})
+ assert.equal(coachProfileReviewProgress({audit:complete,locale:'en'}).current,COACH_PROFILE_AXES[0].id)
+})
+
+test('a bounded scan with all eight saved axes remains reviewable',()=>{
+ const audit=buildCoachProfileAudit([mk(completed(COACH_PROFILE_AXES.map(axis=>axis.id)))],{exhaustive:false})
+ assert.equal(audit.completeArchive,false)
+ assert.ok(audit.axes.every(axis=>axis.status==='present'))
+ assert.equal(coachProfileReviewProgress({audit,locale:'en'}).finished,true)
+})
