@@ -489,7 +489,14 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(styleTab).toBeVisible();
     await styleTab.tap();
     await expect(styleTab).toHaveAttribute("aria-pressed","true");
-    const styles=page.locator("[data-video-montage-style]");
+    // The approved photo-first Style screen keeps all six extra styles behind
+    // a native, user-operated disclosure. Never force-click hidden controls.
+    const moreStyles=page.locator("[data-video-montage-more-styles]");
+    await expect(moreStyles).toBeVisible();
+    await expect(moreStyles).not.toHaveAttribute("open","");
+    await moreStyles.locator("summary").tap();
+    await expect(moreStyles).toHaveAttribute("open","");
+    const styles=moreStyles.locator("[data-video-montage-style]");
     await expect(styles).toHaveCount(6);
     const minimal=styles.nth(3);
     await expect(minimal).toBeVisible();
