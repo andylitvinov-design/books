@@ -37,3 +37,12 @@ test("Mobile tabs retain six working workspaces; the one video player remains in
   assert.match(studio, /onClick=\{continueToIdeas\}/);
   assert.match(css, /prefers-reduced-motion:reduce/);
 });
+
+
+test("Recipient Goal actions remain visible after the self quiz resets",()=>{
+  assert.match(studio,/data-video-topic-section\s+data-video-goal-quiz-step=\{goalQuizState\.step\}\s+data-video-goal-quiz-audience=\{goalQuizState\.audience\}/);
+  assert.match(css,/\[data-video-topic-section\]\[data-video-goal-quiz-step="1"\]\[data-video-goal-quiz-audience="self"\] \[data-video-stage-actions="goal"\]/);
+  assert.doesNotMatch(css,/\[data-video-topic-section\]\[data-video-goal-quiz-step="1"\] \[data-video-stage-actions="goal"\]/);
+  assert.match(director,/const resetAudienceStory=\(\)=>\{\s+setGoalQuizStep\(1\)/);
+  assert.match(studio,/data-video-continue-scenarios[\s\S]*?onClick=\{continueToMontage\}/);
+});
