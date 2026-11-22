@@ -6,9 +6,9 @@ import {getCoachCompactProfile} from '@/lib/coaching/coach-compact-profiles.mjs'
 import styles from './my-coach-compact-profile.module.css'
 
 const copy={
-  en:{profile:'Coach Profile',back:'Back',character:'Character',focus:'Focus Areas',model:'Coaching Model',features:'Key Features',brand:'Holistic House'},
-  ru:{profile:'Профиль коуча',back:'Назад',character:'Характер',focus:'С чем помогает',model:'Модель коучинга',features:'Особенности',brand:'Holistic House'},
-  es:{profile:'Perfil del coach',back:'Volver',character:'Carácter',focus:'Áreas de apoyo',model:'Modelo de coaching',features:'Características',brand:'Holistic House'}
+  en:{profile:'Coach Profile',back:'Back',character:'Character',archetype:'Archetype',style:'Style',workStyle:'How I work',focus:'Focus Areas',model:'Coaching Model',features:'Key Features',brand:'Holistic House'},
+  ru:{profile:'Профиль коуча',back:'Назад',character:'Характер',archetype:'Архетип',style:'Стиль',workStyle:'Манера работы',focus:'С чем помогает',model:'Модель коучинга',features:'Особенности',brand:'Holistic House'},
+  es:{profile:'Perfil del coach',back:'Volver',character:'Carácter',archetype:'Arquetipo',style:'Estilo',workStyle:'Cómo trabajo',focus:'Áreas de apoyo',model:'Modelo de coaching',features:'Características',brand:'Holistic House'}
 }
 export default function MyCoachCompactProfile({personaId,locale='en',methodId,onBack}){
   const dialogRef=useRef(null)
@@ -49,7 +49,13 @@ export default function MyCoachCompactProfile({personaId,locale='en',methodId,on
       </section>
       <section className={[styles.card,styles.characterCard].join(' ')}>
         <span className={styles.cardIcon}><Heart size={29} strokeWidth={1.8} aria-hidden="true"/></span>
-        <div className={styles.cardBody}><h2>{t.character}</h2><p>{profile.character}</p></div>
+        <div className={styles.cardBody}><h2>{t.character}</h2><p>{profile.character}</p>
+          <dl className={styles.stylePassport} data-coach-style-passport={personaId}>
+            <div><dt>{t.archetype}</dt><dd>{profile.archetype}</dd></div>
+            <div><dt>{t.style}</dt><dd>{profile.style}</dd></div>
+            <div><dt>{t.workStyle}</dt><dd>{profile.workStyle}</dd></div>
+          </dl>
+        </div>
         <ChevronRight className={styles.cardChevron} size={22} aria-hidden="true"/>
       </section>
       <section className={[styles.card,styles.modelCard].join(' ')}>
