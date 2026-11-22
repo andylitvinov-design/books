@@ -34,17 +34,15 @@ try {
   await page.locator('[data-video-studio-hydrated="true"]').waitFor({ timeout: 60000 });
   // Complete all three real Goal selections before the visitor's Ideas CTA.
   await completeThreeStepGoalsQuiz(page,{engine});
-  const ideasEntry=page.locator('[data-video-quick-control="phrases"]');
-  const openIdeas=page.locator('[data-video-continue-scenarios]');
+  const openMontage=page.locator('[data-video-continue-scenarios]');
   const press=button=>engine==='webkit'?button.tap({timeout:15000}):button.click({timeout:15000});
-  await press(openIdeas);
-  await page.waitForFunction(()=>
-    document.querySelector('[data-video-quick-control="phrases"]')
-      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
-  assert.equal(await ideasEntry.getAttribute('aria-pressed'),
-    'true','GOALS_MUST_OPEN_IDEAS');
+  await press(openMontage);
   const editor=page.locator('[data-video-quick-control="editor"]');
-  await editor.click();
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-quick-control="editor"]')
+      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  assert.equal(await editor.getAttribute('aria-pressed'),
+    'true','GOALS_MUST_OPEN_MONTAGE');
   // Use the same actual Montage entry flow proven by the physical voice test.
   // The compact Settings control appears only after activating the visible
   // Style stage; a hidden Settings click must never be force-clicked.

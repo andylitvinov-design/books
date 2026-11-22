@@ -435,7 +435,7 @@ test("original-motion WebKit uses native Goal and personalization before actual 
  let prev=-1;
  for(const marker of markers){const at=script.indexOf(marker,prev+1);
   assert.ok(at>prev,"real guest MP4 journey preserves "+marker);prev=at;}
- assert.match(script,/GOALS_MUST_OPEN_IDEAS/);
+ assert.match(script,/GOALS_MUST_OPEN_MONTAGE/);
  assert.match(script,/APPROVED_CONCEPT_MUST_PERSIST/);
  assert.doesNotMatch(script,/\.(?:click|tap)\(\{[^}]*\bforce:\s*true|setIdeasProfileConfirmed\(true\)/,
   "do not force browser gestures or mutate user consent");
