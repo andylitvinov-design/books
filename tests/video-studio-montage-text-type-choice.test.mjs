@@ -27,6 +27,19 @@ test("Audio enters Extra choice; Basic and Personal modes preserve safeguards",(
  assert.match(studio,/phraseMode=\{montageTextMode==="standard"\?"standard":"personalized"\}/);
  assert.match(css,/@media\(max-width:355px\)/);
 });
+
+test("opening Personal Text never silently replaces an approved Concept",()=>{
+ const guard=ideas.indexOf('if(!remembered&&phraseMode==="personalized"&&Array.isArray(settings.presetOverride))');
+ const autoSelection=ideas.indexOf('const initialChosen=phraseMode==="standard"?allFive');
+ assert.ok(guard>0&&guard<autoSelection,
+   "approved Text hydration must run before automatic generation");
+ const hydration=ideas.slice(guard,autoSelection);
+ assert.match(hydration,/linesForVideoAffirmations\(locale,theme,settings\)/);
+ assert.match(hydration,/setChosen\(committed\.map\(/);
+ assert.doesNotMatch(hydration,/onChange\(/,
+   "visiting Text cannot replace Canvas\/MP4 words without a user selection");
+});
+
 test("standard selects classic phrases while personalized uses local goal",()=>{
  assert.match(ideas,/phraseMode\?:"standard"\|"personalized"/);
  assert.match(ideas,/phraseMode==="standard"/);
