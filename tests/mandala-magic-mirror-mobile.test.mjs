@@ -116,7 +116,7 @@ test("preserve protected purpose-first Goal and adaptive Personalization to Conc
  assert.match(studio,/applyPurposePhrases\(chosenIdeaGoal\.type,ideasProfile\.supportNeed\|\|""\)/);
  for(const line of ['goalType==="leisure"','["desired","energy","name"]',
    '["current","desired","support","energy","name"]',
-   '["current","desired","meaning","energy","name"]',
+   '["current","desired","energy","name"]',
    'data-personalization-kind="energy-current" hidden={stage!=="energy"}',
    'data-video-personalization-energy={score}'])
    assert.ok(personal.includes(line),line);

@@ -18,6 +18,7 @@ import {MandalaMagicMirrorTitle,MandalaMagicMirrorGoal,type MirrorResolution,typ
 import {buildPersonalVideoGoalOptions,composePersonalVideoGoalIntent,goalScenarioPlan} from "@/lib/mandala/video-personal-goal-composer.mjs";
 import {suggestVideoGoalPhrases} from "@/lib/mandala/video-goal-idea-phrases.mjs";
 import {MandalaVideoPersonalization,DEFAULT_VIDEO_GOAL_PROFILE,summarizeVideoGoalProfile,type VideoGoalProfile} from "./mandala-video-personalization";
+import {MandalaVideoEightAxes} from "./mandala-video-eight-axes";
 import { HeaderCreditProfile } from "./header-credit-profile";
 import { MandalaVideoConcept, type ApprovedVideoConcept } from "./mandala-video-concept";
 
@@ -2087,6 +2088,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [proCatalogKind,setProCatalogKind]=useState<StoryAddonKind>("character");
   const [ideasVoiceAdvancedOpen,setIdeasVoiceAdvancedOpen] = useState(false);
   const [ideasSubtab,setIdeasSubtab] = useState<"personalization"|"goal"|"concept">("goal");
+  const [axesScreenOpen,setAxesScreenOpen] = useState(false);
   const [ideasVoiceMode,setIdeasVoiceMode] = useState<"voice"|"my-voice">("voice");
   const [ideasProfile,setIdeasProfile] = useState<VideoGoalProfile>(DEFAULT_VIDEO_GOAL_PROFILE);
   // Do not misread initial preselected chips as answers until the visitor
@@ -8690,21 +8692,30 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         {/* Personalization questions and local phrases share one renderer; voice stays optional. */}
         <div className={videoStyles.phraseEditorLead} data-video-phrase-editor-first>
           <div id="video-ideas-personalization-panel" data-video-ideas-personalization-panel hidden={ideasSubtab!=="personalization"}>
+          <div hidden={axesScreenOpen} data-video-personal-questions-page>
           <MandalaVideoPersonalization key={activeIdeasGoalId||"none"} locale={locale} value={ideasProfile}
             goalType={chosenIdeaGoal?.type||"leisure"} selectedTopicId={selectedConceptTopic?.topicId}
-            onChange={setIdeasProfile} disabled={recording||preparing}
+            onChange={update=>{setIdeasProfile(update);setIdeasProfileConfirmed(false);}}
+            disabled={recording||preparing}
             onBack={()=>setIdeasSubtab("goal")}
-            onContinue={()=>{
-              setIdeasProfileConfirmed(true);
-              if(chosenIdeaGoal)applyPurposePhrases(chosenIdeaGoal.type,ideasProfile.supportNeed||"");
-              setIdeasSubtab("concept");
-            }}/>
+            onContinue={()=>setAxesScreenOpen(true)}/>
           <p className={videoStyles.montageMovedNote}>{locale==="ru"?"Выбор фраз — в Монтаже → Текст.":locale==="es"?"Las frases están en Montaje → Texto.":"Choose phrases in Montage → Text."}</p>
           <button type="button" className={videoStyles.montageStepNext} data-video-ideas-open-montage-text
             disabled={recording||preparing} onClick={goToMontageFromIdeas}>
             <Type size={18} aria-hidden="true"/>{locale==="ru"?"Выбрать фразы":locale==="es"?"Elegir frases":"Choose phrases"}
             <ArrowRight size={18} aria-hidden="true"/>
           </button>
+          </div>
+          <div hidden={!axesScreenOpen} data-video-personal-eight-axes-page>
+            <MandalaVideoEightAxes locale={locale} value={ideasProfile}
+              onChange={update=>{setIdeasProfile(update);setIdeasProfileConfirmed(false);}}
+              disabled={recording||preparing} onBack={()=>setAxesScreenOpen(false)}
+              onContinue={()=>{
+                setIdeasProfileConfirmed(true);
+                if(chosenIdeaGoal)applyPurposePhrases(chosenIdeaGoal.type,ideasProfile.supportNeed||"");
+                setIdeasSubtab("concept");
+              }}/>
+          </div>
           </div>
           {/* One persistent editor instance; collapsed by default in Ideas.
               Do not unmount it between workspaces or duplicate audio state. */}
@@ -8744,7 +8755,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               const next=personalGoalOptions.goals.find(goal=>goal.id===id);
               if(!next)return;
               setIdeasGoalChoice({contextKey:personalGoalOptions.contextKey,id});
-              setIdeasProfile({...DEFAULT_VIDEO_GOAL_PROFILE});setIdeasProfileConfirmed(false);
+              setIdeasProfile({...DEFAULT_VIDEO_GOAL_PROFILE});setIdeasProfileConfirmed(false);setAxesScreenOpen(false);
               applyPurposePhrases(next.type,"",true);
               setApprovedVideoConcept(null);setDraftVideoConcept(null);
               setChosenFilm(null);setAppliedStoryKey(null);
