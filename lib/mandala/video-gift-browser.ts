@@ -4,7 +4,7 @@ import {encodeLocalWebCodecsMp4,supportsProceduralWebCodecsMp4,
 import {acquirePlaybackSession} from "./local-video-music";
 import {VIDEO_GIFT_DURATION,videoGiftStage} from "./video-gift-contract.mjs";
 import type {VideoGiftManifest} from "./video-gift-contract.mjs";
-import {Input,MP4,UrlSource,CanvasSink} from "mediabunny";
+import {Input,MP4,UrlSource,BlobSource,CanvasSink} from "mediabunny";
 import {giftApprovedSceneById} from "./video-gift-clip-catalog.mjs";
 import type {GiftScene} from "./video-gift-clip-catalog.mjs";
 
@@ -103,7 +103,7 @@ function stageOpacity(t:number,start:number,end:number){
 /** Used identically for live preview, local H.264/AAC export and retries. */
 export function paintVideoGiftFrame(ctx:CanvasRenderingContext2D,
   image:HTMLImageElement,manifest:VideoGiftManifest,seconds:number,
-  sceneFrame:CanvasImageSource|null=null,sceneCredit:string|null=null){
+  sceneFrame:CanvasImageSource|null=null,sceneCredit:string|null=null,liveSequence=false){
   const w=ctx.canvas.width,h=ctx.canvas.height,t=Math.max(0,Math.min(24.999,seconds));
   const [dark,bright,white]=COLORS[manifest.palette];
   const bg=ctx.createLinearGradient(0,0,w,h);
@@ -117,7 +117,10 @@ export function paintVideoGiftFrame(ctx:CanvasRenderingContext2D,
   // AI facial motion is never faked: paid motion modes require an actual
   // consented provider clip, not this free-photo compositor.
   if(manifest.requiresPaidAnimation)throw new Error("gift_paid_fragment_required");
-  if(t>=14&&t<19&&sceneFrame)paintGiftScene(ctx,sceneFrame);
+  if(liveSequence){
+    if(!sceneFrame)throw new Error("gift_live_frame_unavailable");
+    paintGiftScene(ctx,sceneFrame);
+  }else if(t>=14&&t<19&&sceneFrame)paintGiftScene(ctx,sceneFrame);
   else paintPhoto(ctx,image,t,manifest.motion);
   const portrait=w<h;
   const captionY=portrait?h-160:h-74;
@@ -148,7 +151,7 @@ export function paintVideoGiftFrame(ctx:CanvasRenderingContext2D,
     drawTitle(ctx,manifest.finalWish,portrait?h*.75:h*.76,portrait?26:24,3);
   }
   ctx.globalAlpha=1;ctx.shadowBlur=0;
-  if(t>=14&&t<19&&sceneFrame&&sceneCredit){
+  if((liveSequence?t>=5:t>=14&&t<19)&&sceneFrame&&sceneCredit){
     ctx.save();
     ctx.font="500 9px system-ui, -apple-system, sans-serif";
     ctx.fillStyle="#f4eee3";ctx.textBaseline="bottom";ctx.textAlign="left";
@@ -210,7 +213,8 @@ async function nativeGiftMp4(canvas:HTMLCanvasElement,
   image:HTMLImageElement,manifest:VideoGiftManifest,audio:AudioBuffer|undefined,
   signal:AbortSignal,onProgress:(p:number)=>void,mime:string,
   preactivatedContext:AudioContext|null=null,
-  sceneVideo:HTMLVideoElement|null=null,sceneCredit:string|null=null):Promise<Blob>{
+  sceneVideo:HTMLVideoElement|null=null,sceneCredit:string|null=null,
+  liveSequence:ReadonlyArray<{from:number;to:number;video:HTMLVideoElement;credit:string|null}>|null=null):Promise<Blob>{
   const stream=canvas.captureStream(FRAME_RATE);
   const tracks:MediaStreamTrack[]=[...stream.getVideoTracks()];
   let context:AudioContext|null=null;
@@ -247,7 +251,8 @@ async function nativeGiftMp4(canvas:HTMLCanvasElement,
     };
     signal.addEventListener("abort",abort,{once:true});
     try{
-      paintVideoGiftFrame(canvas.getContext("2d")!,image,manifest,0);
+      paintVideoGiftFrame(canvas.getContext("2d")!,image,manifest,0,
+        liveSequence?.[0]?.video??null,null,Boolean(liveSequence));
       recorder.start(1000);
       source?.start();
       await new Promise<void>((resolve,reject)=>{
@@ -256,19 +261,35 @@ async function nativeGiftMp4(canvas:HTMLCanvasElement,
           if(scenePlaybackFailed){reject(new Error("gift_scene_playback_failed"));return;}
           try{
             const elapsed=(performance.now()-started)/1000;
-            const inScene=Boolean(sceneVideo&&elapsed>=14&&elapsed<19);
-            if(inScene&&sceneVideo&&!sceneStarted){
-              sceneStarted=true;
-              sceneVideo.currentTime=0;
-              void sceneVideo.play().catch(()=>{scenePlaybackFailed=true;});
+            if(liveSequence){
+              const index=Math.min(4,Math.floor(Math.min(elapsed,24.999)/5));
+              const current=liveSequence[index];
+              if(!current)throw new Error("gift_live_segment_missing");
+              for(const entry of liveSequence){
+                if(entry!==current&&!entry.video.paused)entry.video.pause();
+              }
+              if(current.video.paused){
+                current.video.currentTime=Math.max(0,Math.min(4.9,elapsed-current.from));
+                void current.video.play().catch(()=>{scenePlaybackFailed=true;});
+              }
+              if(current.video.readyState<2)throw new Error("gift_live_frame_unavailable");
+              paintVideoGiftFrame(canvas.getContext("2d")!,image,manifest,elapsed,
+                current.video,current.credit,true);
+            }else{
+              const inScene=Boolean(sceneVideo&&elapsed>=14&&elapsed<19);
+              if(inScene&&sceneVideo&&!sceneStarted){
+                sceneStarted=true;
+                sceneVideo.currentTime=0;
+                void sceneVideo.play().catch(()=>{scenePlaybackFailed=true;});
+              }
+              if(sceneStarted&&sceneVideo&&elapsed>=19&&!sceneVideo.paused)
+                sceneVideo.pause();
+              const visual=inScene&&sceneVideo?.readyState&&sceneVideo.readyState>=2
+                ?sceneVideo:null;
+              if(inScene&&!visual)throw new Error("gift_scene_frame_unavailable");
+              paintVideoGiftFrame(canvas.getContext("2d")!,image,manifest,elapsed,
+                visual,sceneCredit);
             }
-            if(sceneStarted&&sceneVideo&&elapsed>=19&&!sceneVideo.paused)
-              sceneVideo.pause();
-            const visual=inScene&&sceneVideo?.readyState&&sceneVideo.readyState>=2
-              ?sceneVideo:null;
-            if(inScene&&!visual)throw new Error("gift_scene_frame_unavailable");
-            paintVideoGiftFrame(canvas.getContext("2d")!,image,manifest,elapsed,
-              visual,sceneCredit);
             onProgress(Math.min(99,Math.round(elapsed/VIDEO_GIFT_DURATION*100)));
             if(elapsed>=VIDEO_GIFT_DURATION){resolve();return;}
             animation=requestAnimationFrame(step);
@@ -303,10 +324,11 @@ async function nativeGiftMp4(canvas:HTMLCanvasElement,
   }
 }
 
-async function prepareNativeGiftScene(scene:GiftScene,signal:AbortSignal):Promise<HTMLVideoElement>{
+async function prepareNativeGiftScene(scene:GiftScene|Blob,signal:AbortSignal):Promise<HTMLVideoElement>{
   const video=document.createElement("video");
   video.preload="auto";video.muted=true;video.playsInline=true;
-  video.crossOrigin="anonymous";video.src=scene.video;
+  const localUrl=scene instanceof Blob?URL.createObjectURL(scene):null;
+  video.crossOrigin="anonymous";video.src=localUrl??(scene as GiftScene).video;
   try{
     await new Promise<void>((resolve,reject)=>{
       let done=false;
@@ -330,24 +352,30 @@ async function prepareNativeGiftScene(scene:GiftScene,signal:AbortSignal):Promis
       video.load();
       if(video.readyState>=2)ready();
     });
-    if(!Number.isFinite(video.duration)||video.duration<4.4)
-      throw new Error("gift_scene_too_short");
+    if(!Number.isFinite(video.duration)||video.duration<4.4||video.duration>6.6)
+      throw new Error("gift_scene_duration_invalid");
     return video;
   }catch(error){
     video.pause();video.removeAttribute("src");video.load();
+    if(localUrl)URL.revokeObjectURL(localUrl);
     throw error;
   }
 }
-async function createDecodedGiftScene(scene:GiftScene,signal:AbortSignal,
+async function createDecodedGiftScene(scene:GiftScene|Blob,signal:AbortSignal,
   width:number,height:number){
-  const url=new URL(scene.video,location.origin);
-  if(url.origin!==location.origin||
-    !url.pathname.startsWith("/videos/holistic-house/film-collection-v3/"))
-    throw new Error("gift_scene_origin_invalid");
-  const input=new Input({source:new UrlSource(url,{
-    maxCacheSize:4*1024*1024,parallelism:1,
-    getRetryDelay:attempt=>attempt<2?0.25:null,
-  }),formats:[MP4]});
+  let source:BlobSource|UrlSource;
+  if(scene instanceof Blob)source=new BlobSource(scene);
+  else{
+    const url=new URL(scene.video,location.origin);
+    if(url.origin!==location.origin||
+      !url.pathname.startsWith("/videos/holistic-house/film-collection-v3/"))
+      throw new Error("gift_scene_origin_invalid");
+    source=new UrlSource(url,{
+      maxCacheSize:4*1024*1024,parallelism:1,
+      getRetryDelay:attempt=>attempt<2?0.25:null,
+    });
+  }
+  const input=new Input({source,formats:[MP4]});
   try{
     const track=await input.getPrimaryVideoTrack();
     if(!track||await track.getCodec()!=="avc"||!(await track.canDecode()))
@@ -355,22 +383,43 @@ async function createDecodedGiftScene(scene:GiftScene,signal:AbortSignal,
     signal.throwIfAborted();
     const sink=new CanvasSink(track,{width,height,fit:"cover",poolSize:2});
     const count=5*FRAME_RATE;
-    const timestamps=Array.from({length:count},(_,i)=>i/FRAME_RATE);
+    const first=await track.getFirstTimestamp();
+    if(scene instanceof Blob){
+      const duration=await track.computeDuration();
+      if(!Number.isFinite(duration)||duration<4.4||duration>6.6)
+        throw new Error("gift_live_fragment_invalid");
+    }
+    const timestamps=Array.from({length:count},(_,i)=>first+i/FRAME_RATE);
     return {input,frames:sink.canvasesAtTimestamps(timestamps)};
   }catch(error){input.dispose();throw error;}
 }
 /** Shared Video Studio MP4 exporter. Optional reviewed source is an actual 5s
  * moving shot on the 14-19s timeline, never a Drive link or static substitute. */
-export async function exportVideoGiftMp4({image,manifest,sound,sceneId,signal,onProgress}:{
+export async function exportVideoGiftMp4({image,manifest,sound,sceneId,liveIntroClip,liveSceneIds,signal,onProgress}:{
   image:HTMLImageElement;manifest:VideoGiftManifest;sound:GiftSound;
-  sceneId?:string|null;
+  sceneId?:string|null;liveIntroClip?:Blob|null;liveSceneIds?:string[]|null;
   signal:AbortSignal;onProgress:(percent:number)=>void;
 }):Promise<Blob>{
   if(manifest.requiresPaidAnimation)throw new Error("gift_paid_fragment_required");
   if(!image.naturalWidth||!image.naturalHeight)throw new Error("gift_photo_not_decoded");
   signal.throwIfAborted();
-  const scene=sceneId?giftApprovedSceneById(sceneId):null;
-  if(sceneId&&!scene)throw new Error("gift_scene_not_approved");
+  const hasLive=liveIntroClip instanceof Blob;
+  if(!hasLive&&liveSceneIds?.length)throw new Error("gift_live_intro_missing");
+  if(hasLive){
+    if(liveIntroClip.size<2048||liveIntroClip.size>12_000_000)
+      throw new Error("gift_live_fragment_invalid");
+    const head=new Uint8Array(await liveIntroClip.slice(0,12).arrayBuffer());
+    if(String.fromCharCode(...head.slice(4,8))!=="ftyp")
+      throw new Error("gift_live_fragment_invalid");
+    if(!Array.isArray(liveSceneIds)||liveSceneIds.length!==4||
+      new Set(liveSceneIds).size!==4)throw new Error("gift_live_scenes_invalid");
+  }
+  const selectedLiveScenes=hasLive?(liveSceneIds??[]).map(id=>giftApprovedSceneById(id)):[];
+  if(hasLive&&selectedLiveScenes.some(scene=>!scene))
+    throw new Error("gift_live_scenes_not_approved");
+  const liveScenes=selectedLiveScenes as GiftScene[];
+  const scene=!hasLive&&sceneId?giftApprovedSceneById(sceneId):null;
+  if(!hasLive&&sceneId&&!scene)throw new Error("gift_scene_not_approved");
   const canvas=document.createElement("canvas");
   const [width,height]=VIDEO_GIFT_SIZES[manifest.aspect];
   canvas.width=width;canvas.height=height;
@@ -383,6 +432,18 @@ export async function exportVideoGiftMp4({image,manifest,sound,sceneId,signal,on
   let preactivatedContext:AudioContext|null=null;
   let nativeScene:HTMLVideoElement|null=null;
   let decoded:Awaited<ReturnType<typeof createDecodedGiftScene>>|null=null;
+  const nativeLiveSequence:{from:number;to:number;video:HTMLVideoElement;credit:string|null}[]=[];
+  const decodedLiveSequence:Awaited<ReturnType<typeof createDecodedGiftScene>>[]=[];
+  async function prepareNativeLiveSequence(){
+    const sources:[Blob|GiftScene,string|null][]=[
+      [liveIntroClip!,null],...liveScenes.map(scene=>[scene,scene.credit] as [GiftScene,string])
+    ];
+    for(let i=0;i<sources.length;i++){
+      const [source,credit]=sources[i];
+      const video=await prepareNativeGiftScene(source,signal);
+      nativeLiveSequence.push({from:i*5,to:(i+1)*5,video,credit});
+    }
+  }
   try{
     if(nativeFirst&&needsAudio){
       preactivatedContext=new AudioContext();
@@ -391,14 +452,18 @@ export async function exportVideoGiftMp4({image,manifest,sound,sceneId,signal,on
     const audio=await localAudioMaster(sound,signal);
     signal.throwIfAborted();
     if(nativeFirst&&mime){
-      if(scene)nativeScene=await prepareNativeGiftScene(scene,signal);
+      if(hasLive)await prepareNativeLiveSequence();
+      else if(scene)nativeScene=await prepareNativeGiftScene(scene,signal);
       const readyContext=preactivatedContext;
       preactivatedContext=null;
       return await nativeGiftMp4(canvas,image,manifest,audio,signal,onProgress,mime,
-        readyContext,nativeScene,scene?.credit??null);
+        readyContext,nativeScene,scene?.credit??null,hasLive?nativeLiveSequence:null);
     }
     if(supportsProceduralWebCodecsMp4(needsAudio)){
-      if(scene)decoded=await createDecodedGiftScene(scene,signal,width,height);
+      if(hasLive){
+        for(const source of [liveIntroClip!,...liveScenes])
+          decodedLiveSequence.push(await createDecodedGiftScene(source,signal,width,height));
+      }else if(scene)decoded=await createDecodedGiftScene(scene,signal,width,height);
       return await encodeLocalWebCodecsMp4({
         canvas,allowProceduralBrowser:true,seconds:VIDEO_GIFT_DURATION,
         frameRate:FRAME_RATE,audioMaster:audio,
@@ -406,28 +471,43 @@ export async function exportVideoGiftMp4({image,manifest,sound,sceneId,signal,on
         shouldContinue:()=>!signal.aborted,onProgress,
         renderFrame:async second=>{
           signal.throwIfAborted();
-          let visual:CanvasImageSource|null=null;
-          if(decoded&&second>=14&&second<19){
-            const {value}=await decoded.frames.next();
-            if(!value)throw new Error("gift_scene_frame_unavailable");
-            visual=value.canvas;
+          if(hasLive){
+            const index=Math.min(4,Math.floor(second/5));
+            const frame=await decodedLiveSequence[index]?.frames.next();
+            if(!frame?.value)throw new Error("gift_live_frame_unavailable");
+            paintVideoGiftFrame(ctx,image,manifest,second,frame.value.canvas,
+              index>0?liveScenes[index-1]?.credit??null:null,true);
+          }else{
+            let visual:CanvasImageSource|null=null;
+            if(decoded&&second>=14&&second<19){
+              const {value}=await decoded.frames.next();
+              if(!value)throw new Error("gift_scene_frame_unavailable");
+              visual=value.canvas;
+            }
+            paintVideoGiftFrame(ctx,image,manifest,second,visual,scene?.credit??null);
           }
-          paintVideoGiftFrame(ctx,image,manifest,second,visual,scene?.credit??null);
           return true;
         },
       });
     }
     if(mime){
-      if(scene)nativeScene=await prepareNativeGiftScene(scene,signal);
+      if(hasLive)await prepareNativeLiveSequence();
+      else if(scene)nativeScene=await prepareNativeGiftScene(scene,signal);
       return await nativeGiftMp4(canvas,image,manifest,audio,signal,onProgress,mime,
-        null,nativeScene,scene?.credit??null);
+        null,nativeScene,scene?.credit??null,hasLive?nativeLiveSequence:null);
     }
     throw new Error("gift_mp4_not_supported_on_device");
   }finally{
     if(preactivatedContext)await preactivatedContext.close().catch(()=>{});
     decoded?.input.dispose();
+    for(const source of decodedLiveSequence)source.input.dispose();
     if(nativeScene){
       nativeScene.pause();nativeScene.removeAttribute("src");nativeScene.load();
+    }
+    for(const part of nativeLiveSequence){
+      const src=part.video.currentSrc||part.video.src;
+      part.video.pause();part.video.removeAttribute("src");part.video.load();
+      if(src.startsWith("blob:"))URL.revokeObjectURL(src);
     }
   }
 }

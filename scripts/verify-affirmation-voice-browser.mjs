@@ -2006,7 +2006,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           window.__hhReadyCheckInObserver.observe(document.body,{childList:true,subtree:true});
           scan();
         });
-        await readyGenerate.click();
+        // WebKit on a mobile touch viewport must exercise the same trusted
+        // tap as a real iPhone user. A desktop mouse click can fail to
+        // unlock Safari's local media/canvas encoder on the first gesture.
+        if(engine==="webkit")await readyGenerate.tap();
+        else await readyGenerate.click();
         phase(engine,"ready-free-render-requested");
         try{
           await expect.poll(()=>page.evaluate(()=>
@@ -2022,6 +2026,12 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
             firstVideoApproval:document.querySelector('[data-video-auto-storyboard]')?.getAttribute('data-storyboard-media-ready')||null,
             hasSelectedFilm:Boolean(document.querySelector('[data-free-film-preset][aria-pressed="true"]')),
             hasCheckin:Boolean(document.querySelector('[data-ready-sequential-checkin]')),
+            // Report only structural gate evidence, no wishes/photos/audio.
+            basicPressed:document.querySelector('[data-video-quality-option="video-basic"]')
+              ?.getAttribute('aria-pressed')||null,
+            hasReadyTierNotice:Boolean(document.querySelector('[data-ready-video-tier-notice]')),
+            hasExportError:Boolean(document.querySelector('[data-ready-export-failed]')),
+            hasSourceReady:Boolean(document.querySelector('[data-free-film-readiness]')),
             observed:window.__hhReadyInlineCheckInEvidence||null
           }));
           throw new Error("READY_CHECKIN_REAL_EXPORT_NOT_STARTED "+JSON.stringify(gate),{cause:error});
@@ -2403,8 +2413,20 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const studio=voicePanel.locator("[data-voice-studio]");
       await studio.waitFor({state:"visible",timeout:25000});
       assert.equal(await studio.locator("[data-voice-id]").count(),6);
-      await studio.locator("[data-voice-studio-generate]").click();
-      await studio.locator("[data-voice-studio-audio]").waitFor({state:"visible",timeout:30000});
+      // WebKit mobile verification must issue a real touch, not a desktop mouse click.
+      if(engine==="webkit")await studio.locator("[data-voice-studio-generate]").tap();
+      else await studio.locator("[data-voice-studio-generate]").click();
+      try{await studio.locator("[data-voice-studio-audio]").waitFor({state:"visible",timeout:30000});}
+      catch(error){
+        const snapshot=await studio.evaluate(element=>({
+          audioNodes:element.querySelectorAll("[data-voice-studio-audio]").length,
+          notices:[...element.querySelectorAll('[role="status"]')].map(e=>e.textContent?.slice(0,160)),
+          buttonDisabled:element.querySelector('[data-voice-studio-generate]')?.disabled,
+        })).catch(()=>({studioDetached:true}));
+        throw new Error("VOICE_STUDIO_SAMPLE_NO_VISIBLE_OUTPUT "+JSON.stringify({
+          snapshot,requests:requests.slice(-8),payloads:payloads.slice(-5),errors:errors.slice(-5),
+        }),{cause:error});
+      }
       const sample=payloads.find(item=>item.mode==="sample"&&item.voiceId==="mark");
       assert.ok(sample,engine+" free text-to-speech sample reached provider");
       assert.equal(sample.voiceId,"mark");
@@ -2424,7 +2446,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       if(engine==="webkit")await consentLabel.tap();
       else await studioConsent.check();
       await expect(studioConsent).toBeChecked();
-      await studio.locator("[data-voice-studio-generate]").click();
+      if(engine==="webkit")await studio.locator("[data-voice-studio-generate]").tap();
+      else await studio.locator("[data-voice-studio-generate]").click();
       await studio.locator("[data-voice-studio-audio]").waitFor({state:"visible",timeout:30000});
       const typed=payloads.find(item=>item.mode==="short_text");
       assert.ok(typed,engine+" guest short text reached TTS API");
