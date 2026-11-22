@@ -1,0 +1,28 @@
+.panel{margin:18px 0 20px;padding:18px 16px 16px;border:1px solid #e9dfd1;border-radius:24px;background:#fffcf7;color:#143d3a;box-shadow:0 6px 24px rgba(48,57,43,.04)}
+.heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.heading h2{font:700 clamp(23px,4.9vw,29px)/1.14 Georgia,serif;margin:0;color:#143d3a}
+.heading p{margin:7px 0 0;color:#5d6a71;font-size:14px;line-height:1.4}
+.count{flex:none;border-radius:14px;background:#e6f6f1;color:#176354;font-size:12px;font-weight:700;padding:9px 10px}
+.keys{display:flex;align-items:center;justify-content:center;gap:22px;margin-top:11px;font-size:15px;font-weight:650}
+.keys span{display:inline-flex;align-items:center;gap:8px}
+.keys i{display:inline-block;width:12px;height:12px;border-radius:50%}
+.nowKey{background:#087a70}.wantKey{background:#b17a2b}
+.chart{display:block;width:min(100%,370px);height:auto;margin:4px auto 2px;overflow:visible}
+.ring{fill:none;stroke:#d9e3db;stroke-width:1.1}
+.spoke{stroke:#d9e3db;stroke-width:1}
+.nowArea{fill:rgba(8,122,112,.22);stroke:#087a70;stroke-width:2.9;stroke-linejoin:round}
+.wantArea{fill:rgba(177,122,43,.17);stroke:#b17a2b;stroke-width:2.9;stroke-linejoin:round}
+.nowLine{stroke:#087a70;stroke-width:2.8;stroke-linecap:round}
+.wantLine{stroke:#b17a2b;stroke-width:2.8;stroke-linecap:round}
+.nowDot{fill:#087a70;stroke:#fff;stroke-width:1.2}
+.wantDot{fill:#b17a2b;stroke:#fff;stroke-width:1.2}
+.numberCircle{fill:#f4f0e6;stroke:#c9d8cc;stroke-width:1}
+.focusCircle{fill:#e1b869;stroke:#88601c;stroke-width:1.6}
+.numberText{fill:#143d3a;font-size:12px;font-weight:750}
+.empty{text-align:center;font-size:14px;color:#5d6a71;margin:0 0 14px}
+.axisList{list-style:none;padding:0;margin:8px 0 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px}
+.axisList li{display:flex;align-items:flex-start;gap:8px;min-width:0}
+.axisNumber{display:grid;place-items:center;flex:none;width:25px;height:25px;border-radius:50%;background:#e6f6f1;color:#176354;font-size:12px;font-weight:750}
+.axisList strong{display:block;font-size:14px;line-height:1.25;overflow-wrap:anywhere}
+.axisList small{display:block;font-size:12px;line-height:1.4;color:#5d6a71;margin-top:3px}
+@media(max-width:390px){.panel{padding:15px 12px}.heading{flex-wrap:wrap}.count{padding:6px 9px}.axisList{gap:11px 9px}.axisList strong{font-size:13px}}
