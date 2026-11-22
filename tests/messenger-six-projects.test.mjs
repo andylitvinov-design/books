@@ -53,7 +53,7 @@ test('each direction keeps a single-question dialogue and routes to existing fir
  assert.match(agent,/entry\.question/)
  assert.match(agent,/setProjectFlow\(null\)/)
  assert.match(agent,/composerRef\.current\?\.focus/)
- assert.match(agent,/<form onSubmit=\{submit\} className=\{styles\.form\} data-hh-ai-chat-composer=\{messengerView\|\|undefined\}\s+data-landing-composer=\{showLandingComposer\|\|undefined\}>/,
+ assert.match(agent,/<form onSubmit=\{submit\} className=\{styles\.form\} data-hh-ai-chat-composer=\{messengerView\|\|undefined\}\s+data-landing-composer=\{showLandingComposer\|\|undefined\}\s+data-gemini-pending=\{messengerView&&proSelected&&!proReady\|\|undefined\}>/,
    'the same working submit form is pinned as the live Messenger composer')
  assert.match(agent,/if\(id==="ai-video"\)\{startContent\(\);return;\}/)
  for(const path of ['app/[locale]/mytube/page.tsx','app/[locale]/tests/page.tsx',
