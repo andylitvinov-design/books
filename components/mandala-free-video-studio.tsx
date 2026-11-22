@@ -4608,15 +4608,26 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               const {normalizeNativeSafariMp4ForPlayback}=await import("@/lib/mandala/webcodecs-mp4-export");
               blob=await withLocalMediaDeadline(
                 normalizeNativeSafariMp4ForPlayback(blob,Boolean(job.musicSession),duration),30000);
-            }catch{
+            }catch(error){
               if(job.cancelled||jobRef.current!==job||sourceRef.current!==snapshotKey||!aliveRef.current)return;
+              // Fixed diagnostic codes only; no scenes, sound, voice or files.
+              const reason=error instanceof Error?error.message:"";
+              const allowed=[
+                "native_mp4_invalid_tracks","native_mp4_remux_unavailable",
+                "native_mp4_remux_invalid","native_mp4_remux_failed",
+                "native_mp4_output_unplayable","native_mp4_output_incomplete",
+                "native_mp4_output_missing_aac","local_media_timeout",
+              ];
+              const code=allowed.includes(reason)?reason:"native_mp4_finalize_failed";
+              console.warn("HH_SAFARI_NATIVE_MP4_FINALIZE:"+code);
               nativeSafariMp4RejectedRef.current=true;
               setPlaybackStatus("failed");setExportUnavailable(true);
-              setNotice(locale==="ru"
+              setNotice((locale==="ru"
                 ?"Safari не завершил воспроизводимый MP4. Кредиты не списываются; попробуйте другой кодировщик."
                 :locale==="es"
                 ?"Safari no pudo finalizar un MP4 reproducible. No se cobrarán créditos; prueba el otro codificador."
-                :"Safari could not finalize a playable MP4. Credits will not be charged; try the alternate encoder.");
+                :"Safari could not finalize a playable MP4. Credits will not be charged; try the alternate encoder.")+
+                " ("+code+").");
               return;
             }
             if(job.cancelled||jobRef.current!==job||sourceRef.current!==snapshotKey||!aliveRef.current)return;
