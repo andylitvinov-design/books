@@ -749,3 +749,19 @@ test("verified Ready file offers real local Download and iOS Share",()=>{
     assert.ok(ready.includes(text),text);
   assert.ok(css.includes(".localFileActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))"));
 });
+
+test("real WebKit Ready export downloads actual encoded MP4 bytes, not just preview",()=>{
+  const acceptance=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
+  for(const marker of [
+    "data-ready-direct-download",
+    '[data-ready-state="complete"]',
+    "page.waitForEvent('download'",
+    "directDownload.tap()",
+    "download.suggestedFilename()",
+    "download.createReadStream()",
+    "assert.deepEqual(savedBytes,bytes",
+    "row.downloadedVideo=true",
+  ])assert.ok(acceptance.includes(marker),marker);
+  assert.match(acceptance,/row\.anonymousSaveAuthGateVerified=captured\.authGateVerified/);
+  assert.match(acceptance,/assert\.deepEqual\(savedBytes,bytes,'VERIFIED_READY_DOWNLOAD_BYTES_DIFFER_FROM_MP4'\)/);
+});
