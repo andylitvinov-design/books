@@ -10172,11 +10172,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               {locale==="ru"?"Обновить сценарий":locale==="es"?"Actualizar guion":"Update script"}</button>
           </div>
         </details>
-          {activeWorkspace==="editor"&&montagePanel!=="effects"?
-            <div className={montageRef.timelineLayer} data-video-montage-shared-timeline>
-              {sharedMontageTimeline}
-            </div>:null}
-
           <details className={videoStyles.montageAdvancedTools} data-video-montage-advanced-tools>
             <summary>{locale==="ru"?"Ещё инструменты · SRT, монтаж, черновики":locale==="es"?"Más herramientas · SRT y borradores":"More tools · SRT & drafts"}</summary>
           <div className={videoStyles.editorDraftTools} data-video-editor-smart-tools>
@@ -10785,6 +10780,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   </div>
             {musicWarning?<p role="alert" className={videoStyles.montageAudioWarning}>{musicWarning}</p>:null}
           </div> : null}
+          {activeWorkspace==="editor"&&montagePanel==="audio"?
+            <div className={montageRef.timelineLayer} data-video-montage-shared-timeline>
+              {sharedMontageTimeline}
+            </div>:null}
           </div>
         </section>
 

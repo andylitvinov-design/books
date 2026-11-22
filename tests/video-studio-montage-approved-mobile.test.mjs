@@ -58,6 +58,10 @@ test('Montage Audio has one-row music filters and readable rows without album ar
 test('only the existing multitrack editor is used for visuals/music/voice and real music offset',()=>{
   assert.match(studio,/const sharedMontageTimeline = \(/);
   assert.match(studio,/data-video-montage-shared-timeline/);
+  assert.match(studio,/activeWorkspace==="editor"&&montagePanel==="audio"\?/);
+  assert.ok(studio.indexOf('data-video-montage-shared-timeline')>
+    studio.indexOf('className={videoStyles.montageAudioWarning}'),
+    'timeline is a sibling *after* the Audio panel, not nested in Settings');
   assert.equal((studio.match(/\{sharedMontageTimeline\}/g)||[]).length,1,
     'one relocated Montage timeline; PRO reuses the variable without a duplicate editor');
   assert.match(studio,/activeWorkspace==="pro"\?sharedMontageTimeline:null/);
