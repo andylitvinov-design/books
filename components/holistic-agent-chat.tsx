@@ -1604,15 +1604,18 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   async function sendProTurn(raw:string){
     const text=raw.trim();
     if(!text||busy||proBusy)return;
+    // As in the main Messenger, the user's latest words determine the reply language.
+    const turnLocale=detectConversationLocale(text,locale) as PublicLocale;
+    if(turnLocale!==locale){setLocale(turnLocale);onConversationLocaleChange?.(turnLocale);}
     if(!proReady){
       setStatus(locale==="ru"?"Для Gemini нужны вход и два согласия.":locale==="es"?
         "Para Gemini se requiere acceso y dos consentimientos.":"Sign in and approve both Gemini consents first.");
       return;
     }
     // Immediate safety guard: protected topics stay with the established safe Ali route.
-    if(requiresProtectedReply(text,locale)){void sendTurn(text);return;}
+    if(requiresProtectedReply(text,turnLocale)){void sendTurn(text);return;}
     let payload;
-    try{payload=aliGeminiRequest({message:text,locale,personaId:persona.id,
+    try{payload=aliGeminiRequest({message:text,locale:turnLocale,personaId:persona.id,
       turns:proTurns.current.slice(-10),consent:proConsent,freeDataConsent:proDataConsent});}
     catch{
       setStatus(locale==="ru"?"Для Gemini используйте сообщение до 1200 знаков.":locale==="es"?
