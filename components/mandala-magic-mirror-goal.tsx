@@ -5,6 +5,8 @@ import {ArrowLeft,ArrowRight,Briefcase,Check,ChevronDown,Clapperboard,Ellipsis,F
 import type {VideoLocale} from "@/lib/mandala/holistic-video-themes";
 import {listMyTubeCategories,listMyTubeSubcategories,listMyTubeTopics,getMyTubeTopic} from "@/lib/mandala/mytube-content-taxonomy.mjs";
 import {classifyMyTubeRequest} from "@/lib/mandala/mytube-prompt-classifier.mjs";
+import {buildPersonalVideoGoalOptions} from "@/lib/mandala/video-personal-goal-composer.mjs";
+import {MandalaVideoIdeaGoal} from "./mandala-video-idea-goal";
 import css from "./mandala-magic-mirror-goal.module.css";
 
 export type MirrorScope="me"|"business"|"present";
@@ -14,7 +16,7 @@ type Theme="energy"|"money"|"relationships"|"goals"|"health";
 export type MirrorVideoFormat="basic"|"pro"|"vip";
 export type MirrorResolution={
  scope:MirrorScope;categoryId:MirrorCategory;subcategoryId:string;topicId:string;
- theme:Theme;wish:string;goalChoiceId:string;workFormat?:WorkVideoFormat;videoFormat?:MirrorVideoFormat;
+ theme:Theme;wish:string;goalChoiceId:string;workFormat?:WorkVideoFormat;videoFormat?:MirrorVideoFormat;goalPurposeId?:string;
 };
 type GoalOption={
  id:string;theme:Theme;categoryId:MirrorCategory;image:string;defaultTopicId:string;
@@ -106,7 +108,8 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
  onComplete:(value:MirrorResolution)=>boolean|void;onExpand:()=>void;
 }){
  const [scope,setScope]=useState<MirrorScope>("me");
- const [screen,setScreen]=useState<"landing"|"format"|"topic">("landing");
+ const [screen,setScreen]=useState<"landing"|"purpose"|"format"|"topic">("landing");
+ const [goalPurposeId,setGoalPurposeId]=useState<string|null>(null);
  const [videoFormat,setVideoFormat]=useState<MirrorVideoFormat|undefined>(undefined);
  const [formatMenuOpen,setFormatMenuOpen]=useState(false);
  const [guideOpen,setGuideOpen]=useState(false);
@@ -123,6 +126,9 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
  const selected=available.find(item=>item.id===selectedId)??available[0];
  const subcategories=listMyTubeSubcategories(selected.categoryId,locale);
  const topics=subcategoryId?listMyTubeTopics(selected.categoryId,subcategoryId,locale):[];
+ // Screen 2 reuses the real three-purpose Ideas Goal composer, not a copy.
+ const purposeOptions=buildPersonalVideoGoalOptions({locale,wish,theme:selected.theme,
+  selectedTopic:{topicId:selected.defaultTopicId}});
  const changeStep=(next:1|2|3)=>{setStep(next);onStepChange(next);setBlocked(false);};
  const closeExistingIntro=()=>{
   // Leaving the page must stop the original MP4, not keep audio playing hidden.
@@ -134,19 +140,24 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
   closeExistingIntro();
   setScopeWishes(prev=>({...prev,[scope]:wish}));
   setScope(next);setSelectedId(choices[next][0].id);setSubcategoryId("");
+  setGoalPurposeId(null);setVideoFormat(undefined);
   onWishChange(scopeWishes[next]||"");
   onScopeChange(next);onSelectCategory(choices[next][0].theme);changeStep(1);
  };
- // Three visible audience cards open Format; a format row then opens Topic.
+ // Direct card → original Goal → Format. No render or credit debit here.
  const enterScreen=(next:MirrorScope)=>{
   if(disabled)return;
   if(next!==scope)switchScope(next);
   else changeStep(1);
   closeExistingIntro();
-  setScreen("format");setFormatMenuOpen(false);setGuideOpen(false);
+  setScreen("purpose");setFormatMenuOpen(false);setGuideOpen(false);
+ };
+ const continueFromGoal=()=>{
+  if(disabled||!purposeOptions.goals.some(goal=>goal.id===goalPurposeId))return;
+  closeExistingIntro();setScreen("format");
  };
  const chooseFormat=(next:MirrorVideoFormat)=>{
-  if(disabled)return;
+  if(disabled||!goalPurposeId)return;
   setVideoFormat(next);closeExistingIntro();changeStep(1);
   setScreen("topic");setFormatMenuOpen(false);setGuideOpen(false);
  };
@@ -167,7 +178,8 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
   const theme=scope==="business"?categoryTheme[categoryId]:
     categoryId===selected.categoryId?selected.theme:categoryTheme[categoryId];
   const accepted=onComplete({scope,categoryId,subcategoryId:subId,topicId,theme,
-    wish:goalText.slice(0,500),goalChoiceId:workFormat||selected.id,workFormat,videoFormat});
+    wish:goalText.slice(0,500),goalChoiceId:workFormat||selected.id,workFormat,videoFormat,
+    goalPurposeId:goalPurposeId||undefined});
   if(accepted===false){setBlocked(true);return;}
   closeExistingIntro();
   setSubcategoryId("");changeStep(1);
@@ -235,11 +247,29 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
    </button>
   </div>
  </section>;
+ if(screen==="purpose")return <section className={css.goals+" "+css.purposeScreen}
+  data-hh-mirror-goals data-hh-mirror-screen="purpose" data-hh-mirror-mode={scope}
+  data-hh-mirror-step={1} aria-label={locale==="ru"?"Зачем вам видео?":locale==="es"?"¿Para qué quieres este vídeo?":"Why do you want this video?"}>
+  <button type="button" data-hh-mirror-back-purpose className={css.formatBack}
+    disabled={disabled} onClick={()=>{closeExistingIntro();setScreen("landing");changeStep(1);}}>
+    <ArrowLeft size={17} aria-hidden="true"/>{copy.back}
+  </button>
+  <div data-hh-mirror-purpose-step>
+   <MandalaVideoIdeaGoal locale={locale} options={purposeOptions}
+    headingId="hh-mirror-purpose-heading"
+    introOverride={locale==="ru"?"Выберите, что хотите получить от видео.":
+      locale==="es"?"Elige lo que deseas recibir del vídeo.":"Choose what you want from this video."}
+    continueLabel={locale==="ru"?"Выбрать формат видео":
+      locale==="es"?"Elegir formato de vídeo":"Choose video format"}
+    selectedId={goalPurposeId} onSelect={setGoalPurposeId}
+    onContinue={continueFromGoal} disabled={disabled}/>
+  </div>
+ </section>;
  if(screen==="format")return <section className={css.goals+" "+css.formatScreen} data-hh-mirror-goals
   data-hh-mirror-screen="format" data-hh-mirror-mode={scope} data-hh-mirror-step={1}
   aria-label={copy.formatTitle}>
   <button type="button" data-hh-mirror-back-format className={css.formatBack}
-   onClick={()=>{closeExistingIntro();setScreen("landing");changeStep(1);}}>
+   onClick={()=>{closeExistingIntro();setScreen("purpose");changeStep(1);}}>
    <ArrowLeft size={17} aria-hidden="true"/>{copy.back}
   </button>
   <header className={css.formatHero}>
@@ -282,7 +312,7 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
    {(["me","business","present"] as const).map(item=>{
     const Icon=item==="me"?UserRound:item==="business"?Briefcase:Gift;
     return <button type="button" key={item} data-hh-mirror-audience={item}
-     aria-pressed={scope===item} disabled={disabled} onClick={()=>switchScope(item)}>
+     aria-pressed={scope===item} disabled={disabled} onClick={()=>enterScreen(item)}>
      <Icon size={17} aria-hidden="true"/>{t[item]}
     </button>;
    })}

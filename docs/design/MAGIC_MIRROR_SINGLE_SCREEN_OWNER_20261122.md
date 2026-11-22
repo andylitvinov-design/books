@@ -1,13 +1,15 @@
-# Magic Mirror · три страницы создания видео · 22 ноября 2026
+# Magic Mirror — Scope → Goal → Format → existing Video Studio
+**Owner-approved 22 Nov 2026, source route:** `/{en,ru,es}/holistic-support/mandala` for guest/signed-in mobile. This revision supersedes the older Format-second/Topic-second descriptions.
 
-**Канонический маршрут:** `/{en,ru,es}/holistic-support/mandala` → мобильный Video / Magic Mirror. Утверждённое последовательное решение владельца: фото-карточки направлений, отдельный экран формата и существующий Topic; никакого нового видеоредактора.
+## Screen 1 — Who is the video for?
+Three large full-row image cards from owner-approved mobile reference:
+**Videos for Myself / Видео для себя**, **Videos for Others / Видео для других**, **Videos for Work / Видео для работы**. The card itself navigates; no green Plan button, prices, media upload or new request.
 
-1. **Landing** (`data-hh-mirror-screen="landing"`): «Видео для себя», «Видео для других», «Видео для работы». Каждая вертикальная карточка открывает Format с `scope=me/present/business`, без зелёной кнопки внизу.
-2. **Format** (`data-hh-mirror-screen="format"`): три горизонтальные фото-строки, каждая целиком кнопка — Simple Video 250 XP, Live Photo 500 XP (мятный выделенный вариант), Cinematographic Video 2 000 XP. Выбор сохраняет `MirrorResolution.videoFormat` (`basic/pro/vip`) и открывает Topic. Back возвращает к Landing. Ни списания, ни запроса к HeyGen на выбор.
-3. **Topic** (`data-hh-mirror-screen="topic"`): прежнее компактное поле цели, пример видео, 2×2 направления, локальная классификация и существующее разрешённое продолжение в Ideas/Script/Montage. Back возвращает к Format с сохранёнными `scope` и `videoFormat`.
+## Screen 2 — Why? (reuse existing canonical Goal)
+The EXACT original `MandalaVideoIdeaGoal` and `buildPersonalVideoGoalOptions` supply three IDs **rest/accept/reframe**, types leisure/support/change, localized artwork and wording. The actual Goal CTA continues to Format instead of Personalization; a visible Back returns to Sector. Preserve selection on Back. This is not a second goal taxonomy: when a Topic is chosen later, `pendingMirrorPurpose` preselects the same ID with the actual Director Topic/contextKey in Ideas, then retains the original Goal → Personalization → Concept workflow.
 
-EN/RU/ES и 320/354/390/430 px; использовать существующие лицензированные изображения/плеер, не смешивать CRM и частные материалы. Действующий серверный XP/consent/rights gate — источник истины; 2 000 XP на экране пока лишь планирование, а не доказательство работающего тарифа.
+## Screen 3 — Format
+Three vertical photo-led selection rows with **Simple 250 XP / Live Photo 500 XP / Cinematographic 2 000 XP**, IDs basic/pro/vip. Whole row opens the existing Topic/Script/Montage flow. Back returns to Goal, Topic Back returns to Format. This screen is a **planning preference**, not a charge, bought video or provider request. The current server pricebook DOES NOT have an authorized 2 000 XP cinematic SKU; final server billing and non-Basic generation remain fail-closed pending separate provider/pricebook approval. No new paid service, render or allowance bypass.
 
-**Acceptance:** исходные ошибки WebKit связаны с ожиданием удалённой кнопки Plan/Back в `scripts/benchmarking/first-video-live-export.mjs`. Сценарий теперь проходит именно через видимые Landing → Format → Topic → Plus, затем обязан доказать реальный 30-секундный MP4/AAC, скачанный файл, аудио и движение; не обходить проверку. Core + Mandala, Public Services, WebKit, hh-merge-check на точном HEAD; защищённый merge; затем только штатная почасовая Vercel-публикация, совпадающий READY/SHA и проверка реальных мобильных кликов.
-
-**Ограничение доказательств:** готовый код и source-contract не являются скриншотным совпадением или подтверждённым LIVE. Физический Safari/iPhone и пиксельные overlay-измерения проводятся отдельно. No extra spend / no manual deploy.
+## Media / accessibility / release
+Keep existing real one-player/Canvas, private media, Google auth and credits authority, rights/consent and synthetic WebKit H264/AAC MP4 Download/Save evidence. Same EN/RU/ES UI and 320/354/390/430 px real mobile dock and keyboard coverage. `scripts/benchmarking/first-video-live-export.mjs` uses visible Scope→Goal→Format→Topic→Plus gestures, never hidden Plan or Back. Gate: original Core lint/types/build, Public Services Specialist, Mandala/WebKit, `hh-merge-check`, protected merge, existing hourly Vercel publisher, READY+served SHA and actual mobile taps. Do not assert pixel-perfect LIVE from source checks.

@@ -191,6 +191,15 @@ try {
       row.phase='mirror-audience-native-selection';
       if(engine==='webkit')await entry.tap();else await entry.click();
     }
+    const goal=page.locator('[data-hh-mirror-purpose-step]');
+    if(await goal.isVisible()){
+      row.phase='mirror-canonical-goal-native-selection';
+      const rest=goal.locator('[data-video-ideas-goal-choice="rest"]');
+      if(engine==='webkit')await rest.tap();else await rest.click();
+      const next=goal.locator('[data-video-ideas-goal-next]');
+      await expect(next).toBeEnabled();
+      if(engine==='webkit')await next.tap();else await next.click();
+    }
     const format=page.locator('[data-hh-mirror-video-format="basic"]');
     if(await format.isVisible()){
       row.phase='mirror-format-native-selection';

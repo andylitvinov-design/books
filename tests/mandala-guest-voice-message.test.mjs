@@ -216,3 +216,13 @@ test("real macOS WebKit Montage navigation opens visible Magic Mirror controls b
  assert.match(editor,/await enterVisibleStudioWorkspace\(page,"editor",engine\)/);
  assert.doesNotMatch(editor,/await editorTab\.click\(\)|await page\.locator\('\[data-video-quick-control="editor"\]'\)\.click\(\)/);
 });
+
+test("shared original-motion WebKit quiz uses real Scope → Goal → Format → Topic touches",()=>{
+ const source=read("scripts/benchmarking/complete-three-step-goals-quiz.mjs");
+ for(const token of ['[data-hh-mirror-enter="me"]','[data-hh-mirror-purpose-step]',
+   '[data-video-ideas-goal-choice="rest"]','[data-video-ideas-goal-next]',
+   '[data-hh-mirror-video-format="basic"]','[data-hh-mirror-open-advanced="true"]'])
+  assert.ok(source.includes(token),token);
+ assert.doesNotMatch(source,/data-hh-mirror-plan|MIRROR_VISIBLE_BACK_UNAVAILABLE/);
+ assert.match(source,/step==='2'\|\|step==='3'/);
+});

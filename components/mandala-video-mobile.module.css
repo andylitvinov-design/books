@@ -6197,3 +6197,11 @@
   .quickBuilder{gap:4px!important;margin-top:0!important;
     background:linear-gradient(175deg,#fff9f2,#faefe3 82%,#fff9f0)!important}
 }
+
+/* The second screen reuses original Goal UI; never show the dormant player. */
+@media(max-width:759px){
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="purpose"]) .quickBuilder>[data-hh-mirror-title],
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="purpose"]) .quickBuilder>.previewStage{display:none!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="purpose"]) .quickBuilder{
+  gap:4px!important;margin-top:0!important;background:linear-gradient(175deg,#fff9f2,#faefe3 82%,#fff9f0)!important}
+}

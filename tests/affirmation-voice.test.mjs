@@ -224,6 +224,8 @@ test("voice browser opens Montage through visible Magic Mirror Plan and composer
   const reveal=source.slice(revealStart,revealEnd);
   for(const action of [
     '[data-hh-mirror-enter="me"]',
+    '[data-hh-mirror-purpose-step]',
+    '[data-video-ideas-goal-choice="rest"]',
     '[data-hh-mirror-composer]',
     '[data-hh-mirror-open-advanced]',
     'if(engine==="webkit")await entry.tap()',

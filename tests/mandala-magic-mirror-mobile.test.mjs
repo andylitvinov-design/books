@@ -200,39 +200,62 @@ test("Mirror quiz image URL survives category then subcategory and topic",()=>{
  assert.equal((mirror.match(/<img src=\{"\/videos\/holistic-house\/film-collection-v2\/"\+/g)||[]).length,0);
 });
 
-test("three real audience cards open the dedicated Format screen before Topic, with no XP debit",()=>{
- const landing=mirror.slice(mirror.indexOf('if(screen==="landing")'),mirror.indexOf('if(screen==="format")'));
+test("three screen path reuses canonical Goal before Format; no early XP charge",()=>{
+ const landing=mirror.slice(mirror.indexOf('if(screen==="landing")'),mirror.indexOf('if(screen==="purpose")'));
+ const purpose=mirror.slice(mirror.indexOf('if(screen==="purpose")'),mirror.indexOf('if(screen==="format")'));
  const format=mirror.slice(mirror.indexOf('if(screen==="format")'),mirror.indexOf('return <section className={css.goals} data-hh-mirror-screen="topic"'));
  assert.equal((landing.match(/data-hh-mirror-enter="/g)||[]).length,3);
  for(const [id,next] of [["me","me"],["others","present"],["work","business"]])
   assert.match(landing,new RegExp('data-hh-mirror-enter="'+id+'"[^]*?onClick=\\{\\(\\)=>enterScreen\\("'+next+'"\\)\\}'));
  for(const name of ['therapy:"Видео для себя"','therapy:"Videos for Myself"','therapy:"Vídeos para mí"'])
   assert.ok(mirror.includes(name),name);
- assert.match(mirror,/useState<"landing"\|"format"\|"topic">\("landing"\)/);
+ assert.match(mirror,/useState<"landing"\|"purpose"\|"format"\|"topic">\("landing"\)/);
  assert.match(mirror,/const enterScreen=\(next:MirrorScope\)=>/);
- assert.match(mirror,/if\(next!==scope\)switchScope\(next\)/);
+ assert.match(mirror,/setScreen\("purpose"\)/);
+ assert.match(mirror,/const continueFromGoal=\(\)=>/);
  assert.match(mirror,/setScreen\("format"\)/);
  assert.match(mirror,/const chooseFormat=\(next:MirrorVideoFormat\)=>/);
  assert.match(mirror,/setVideoFormat\(next\)/);
  assert.match(mirror,/setScreen\("topic"\)/);
- assert.doesNotMatch(landing,/data-hh-mirror-plan|data-hh-mirror-video-format|formatOptions/);
- assert.equal((format.match(/data-hh-mirror-video-format=\{option\.id\}/g)||[]).length,1);
+ assert.match(purpose,/<MandalaVideoIdeaGoal/);
+ assert.match(purpose,/data-hh-mirror-purpose-step/);
+ assert.match(purpose,/data-hh-mirror-back-purpose/);
+ assert.match(purpose,/onContinue=\{continueFromGoal\}/);
  assert.match(format,/data-hh-mirror-back-format/);
+ assert.equal((format.match(/data-hh-mirror-video-format=\{option\.id\}/g)||[]).length,1);
  assert.match(format,/onClick=\{\(\)=>chooseFormat\(option\.id\)\}/);
+ assert.doesNotMatch(landing,/data-hh-mirror-plan|data-hh-mirror-video-format|formatOptions/);
+ assert.doesNotMatch(purpose,/data-hh-mirror-video-format/);
  assert.doesNotMatch(format,/data-hh-mirror-plan|data-hh-mirror-ideas-cta/);
  for(const price of ["250","500","2000"])assert.ok(mirror.includes("credits:"+price));
+ assert.match(mirror,/goalPurposeId:goalPurposeId\|\|undefined/);
  assert.match(mirror,/useState<MirrorVideoFormat\|undefined>\(undefined\)/);
  assert.match(mirror,/data-hh-mirror-tier-option=\{option\.id\}/);
+ assert.match(mirrorCss,/\.purposeScreen \[data-video-ideas-goal-picker\]/);
  assert.match(mirrorCss,/\.formatRows/);
- assert.match(mirrorCss,/\.formatRowPrice/);
- assert.match(mirrorCss,/\.goals\.landing \.destinationCards/);
- assert.match(mobile,/Three-category Magic Mirror/);
- assert.match(browser,/data-hh-mirror-back-format/);
+ assert.match(mobile,/second screen reuses original Goal UI/i);
+ assert.match(studio,/setPendingMirrorPurpose\(path\.goalPurposeId/);
+ assert.match(studio,/setIdeasGoalChoice\(\{contextKey:personalGoalOptions\.contextKey,id:goal\.id\}\)/);
+ assert.match(browser,/data-hh-mirror-purpose-step/);
+ assert.match(browser,/data-hh-mirror-back-purpose/);
+ const exportBrowser=read("scripts/benchmarking/first-video-live-export.mjs");
+ assert.match(exportBrowser,/data-video-ideas-goal-choice="rest"/);
+ assert.match(exportBrowser,/data-hh-mirror-video-format="basic"/);
 });
-
 test("direct Work selection shows its own localized Topic heading, not the gift heading",()=>{
  assert.match(mirror,/scope==="me"\?copy\.therapy:scope==="business"\?copy\.work:copy\.other/);
  assert.match(mirror,/scope==="me"\?copy\.therapyHint:scope==="business"\?copy\.workHint:copy\.otherHint/);
  for(const name of ['work:"Видео для работы"','work:"Videos for Work"','work:"Vídeos para el trabajo"'])
   assert.ok(mirror.includes(name),name);
+});
+test("owner goal step uses the actual three goal IDs and original editor",async()=>{
+ const {buildPersonalVideoGoalOptions}=await import("../lib/mandala/video-personal-goal-composer.mjs");
+ for(const locale of ["en","ru","es"]){
+  const found=buildPersonalVideoGoalOptions({locale,theme:"energy"});
+  assert.deepEqual(found.goals.map(goal=>goal.id),["rest","accept","reframe"]);
+ }
+ const reused=read("components/mandala-video-idea-goal.tsx");
+ assert.match(reused,/continueLabel?:string/);
+ assert.match(reused,/introOverride?:string/);
+ assert.match(reused,/data-video-ideas-goal-choice={choice.id}/);
 });

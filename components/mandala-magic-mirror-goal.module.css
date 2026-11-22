@@ -594,3 +594,37 @@
 @media(min-width:760px){
  .goals[data-hh-mirror-screen="format"]{display:none}
 }
+
+/* Canonical Goal is mobile Screen 2; real MandalaVideoIdeaGoal is reused. */
+@media(max-width:759px){
+ .purposeScreen{display:grid!important;align-content:start;gap:4px!important;padding:0 2px 6px!important}
+ .purposeScreen [data-video-ideas-goal-picker]{display:grid;gap:6px!important;padding:0 0 5px!important}
+ .purposeScreen [data-video-ideas-goal-picker] header{padding:0 5px 2px!important}
+ .purposeScreen [data-video-ideas-goal-picker] header span{margin:0 0 2px!important;font-size:11px!important}
+ .purposeScreen [data-video-ideas-goal-picker] header h2{font-size:clamp(21px,5.5vw,27px)!important;margin:0 0 2px!important}
+ .purposeScreen [data-video-ideas-goal-picker] header p{font-size:clamp(11px,3.15vw,13px)!important;line-height:1.18!important}
+ .purposeScreen [data-video-ideas-goal-page]{gap:7px!important}
+ .purposeScreen [data-video-ideas-goal-choice]{min-height:clamp(104px,14dvh,123px)!important;
+  grid-template-columns:31% minmax(0,1fr) 24px!important;gap:7px!important;padding:5px 6px!important;border-radius:20px!important}
+ .purposeScreen [data-goal-photo]{min-height:92px!important;border-radius:16px 7px 7px 16px!important}
+ .purposeScreen [data-video-ideas-goal-choice] strong{font-size:clamp(15px,4.4vw,20px)!important;line-height:1.06!important}
+ .purposeScreen [data-video-ideas-goal-choice] [class*="kind"]{font-size:10px!important}
+ .purposeScreen [data-video-ideas-goal-choice] [class*="detail"]{font-size:clamp(11px,3vw,13px)!important;line-height:1.17!important}
+ .purposeScreen [data-video-ideas-goal-choice] [class*="wording"]{gap:4px!important}
+ .purposeScreen [data-video-ideas-goal-selected]{margin:0 3px!important;font-size:11px!important}
+ .purposeScreen [data-video-ideas-goal-next]{min-height:46px!important;padding:7px 12px!important;
+  margin:0!important;font-size:clamp(15px,4vw,19px)!important}
+ .purposeScreen [data-video-ideas-goal-next] svg{width:21px;height:21px}
+ .purposeScreen button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+}
+@media(max-width:359px){
+ .purposeScreen [data-video-ideas-goal-choice]{min-height:105px!important;grid-template-columns:29% minmax(0,1fr) 23px!important;gap:5px!important}
+ .purposeScreen [data-goal-photo]{min-height:89px!important}
+ .purposeScreen [data-video-ideas-goal-choice] strong{font-size:15px!important}
+ .purposeScreen [data-video-ideas-goal-choice] [class*="detail"]{font-size:10.5px!important}
+}
+@media(max-width:759px) and (max-height:740px){
+ .purposeScreen [data-video-ideas-goal-choice]{min-height:97px!important}
+ .purposeScreen [data-video-ideas-goal-page]{gap:5px!important}
+ .purposeScreen [data-video-ideas-goal-next]{min-height:44px!important}
+}
