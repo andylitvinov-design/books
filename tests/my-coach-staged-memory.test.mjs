@@ -95,3 +95,13 @@ test('real signed four-part staged memory token reaches text/stream request norm
   assert.equal(verifyCoachMemoryTicket(token,{accountId,provider:'groq',secret,now:1000000000001,requirePrior:true}),true)
   assert.equal(verifyCoachMemoryTicket(token,{accountId,provider:'gemini_free',secret,now:1000000000001,requirePrior:true}),false)
 })
+
+test('session-scoped grants require a staged provider ticket in model input',()=>{
+  const stage=issueCoachMemoryTicket({accountId:'owner',provider:'groq',secret:'fixture'})
+  const session='00000000-0000-4000-8000-000000000001.9999999999999.'+'a'.repeat(64)
+  const input={personaId:'mira',locale:'en',consent:true,message:'Hello',turns:[],
+    memoryStageToken:stage,contextSessionToken:session,memoryShareGoals:true}
+  assert.doesNotThrow(()=>normalizeGenerativeCoachInput(input))
+  assert.throws(()=>normalizeGenerativeCoachInput({...input,memoryStageToken:undefined}),/COACHING_BRAIN_INPUT_INVALID/)
+  assert.throws(()=>normalizeGenerativeCoachInput({...input,contextSessionToken:'invalid'}),/COACHING_BRAIN_INPUT_INVALID/)
+})
