@@ -4,7 +4,8 @@ import {randomUUID} from 'node:crypto'
 import {readFile} from 'node:fs/promises'
 import pg from 'pg'
 import {createPersonalGoalRepository} from '../lib/app/daybook-personal-goals.js'
-import {closeDatabase} from '../lib/app/database.js'
+import {closeDatabase,transaction} from '../lib/app/database.js'
+import {assertCoachingGoalNotErased} from '../lib/app/coaching-goal-erasure.js'
 const url=process.env.HH_GOAL_TEST_DATABASE_URL
 if(!url||process.env.VERCEL||process.env.HH_APP_TEST_RUNTIME!=='isolated')throw new Error('ISOLATED_DATABASE_REQUIRED')
 const parsed=new URL(url)
@@ -24,6 +25,7 @@ before(async()=>{
  create table app_private.coaching_life_plans(id uuid primary key default gen_random_uuid(),account_id uuid unique references app.accounts(id),plan_version integer default 1,status text default 'active');
  create table app_private.coaching_life_plan_areas(id uuid primary key default gen_random_uuid(),plan_id uuid,account_id uuid,area_key text,unique(plan_id,area_key));
  create table app_private.coaching_goals(id uuid primary key,area_id uuid,account_id uuid,title_ciphertext text,desired_outcome_ciphertext text,status text check(status in ('proposed','active','paused','completed','cancelled')),target_date date,revision integer,idempotency_key uuid,created_at timestamptz default now(),updated_at timestamptz default now());
+ create table app_private.coaching_action_items(id uuid primary key,goal_id uuid references app_private.coaching_goals(id) on delete cascade,account_id uuid,source_report_id uuid,source_action_key text);
  create table app_private.coaching_life_plan_changes(id uuid primary key,plan_id uuid,account_id uuid,entity_kind text,entity_id uuid,from_revision integer,to_revision integer,change_kind text,snapshot_ciphertext text,changed_by text,actor_account_id uuid,created_at timestamptz default now());
  grant usage on schema app,auth,app_private to hh_app_backend;
  grant select,update on app.accounts to hh_app_backend;grant select on auth.sessions to hh_app_backend;
@@ -32,6 +34,8 @@ before(async()=>{
  for(const table of ['coaching_life_plans','coaching_life_plan_areas','coaching_goals','coaching_life_plan_changes'])await admin.query(`alter table app_private.${table} enable row level security;alter table app_private.${table} force row level security;create policy owner on app_private.${table} for all to hh_app_backend using(account_id=auth.uid() and app_private.account_active()) with check(account_id=auth.uid() and app_private.account_active())`)
  for(const actor of [a,b]){await admin.query("insert into app.accounts values($1,'active','active')",[actor.id]);await admin.query('insert into auth.sessions values($1,$2)',[actor.claims.session_id,actor.id])}
  await admin.query(await readFile(new URL('../supabase/migrations/20261122223000_hh_personal_goal_statuses.sql',import.meta.url),'utf8'))
+ await admin.query(await readFile(new URL('../supabase/migrations/20261110153142_hh_coaching_action_erasure.sql',import.meta.url),'utf8'))
+ await admin.query(await readFile(new URL('../supabase/migrations/20261122224000_hh_personal_goal_erasure.sql',import.meta.url),'utf8'))
 })
 after(async()=>{await closeDatabase();await admin.end()})
 test('creates canonical goal and encrypted audit details, reads back and retries without duplicates',async()=>{
@@ -63,4 +67,31 @@ test('expanded statuses and deadline persist through canonical table and validat
  const next=await repo.save(a,{...input,revision:1,operationId:randomUUID(),status:'deferred'})
  assert.equal(next.goal.status,'deferred')
  await assert.rejects(admin.query("update app_private.coaching_goals set status='ai_completed' where id=$1",[input.id]),{code:'23514'})
+})
+test('goal erasure is owner-only, revision checked, retryable and blocks resurrection',async()=>{
+ const input=draft();await repo.save(a,input)
+ const actionId=randomUUID(),reportId=randomUUID()
+ await admin.query('insert into app_private.coaching_action_items values($1,$2,$3,$4,$5)',[actionId,input.id,a.id,reportId,'synthetic-action'])
+ const removal={id:input.id,revision:1,operationId:randomUUID(),confirmed:true}
+ await assert.rejects(repo.remove(b,removal))
+ await assert.rejects(repo.remove(a,{...removal,revision:2}))
+ assert.equal((await repo.remove(a,removal)).deleted,true)
+ assert.equal((await repo.remove(a,removal)).deleted,true)
+ await assert.rejects(repo.read(a,input.id),{code:'NOT_FOUND'})
+ await assert.rejects(repo.save(a,input),{code:'GOAL_ERASED'})
+ assert.equal((await admin.query("select 1 from app_private.coaching_life_plan_changes where entity_kind='goal' and entity_id=$1",[input.id])).rowCount,0)
+ const receipt=(await admin.query('select * from app_private.coaching_erased_goal_receipts where account_id=$1 and goal_id=$2',[a.id,input.id])).rows[0]
+ assert.ok(receipt);assert.equal(JSON.stringify(receipt).includes(input.title),false)
+ assert.equal((await admin.query('select 1 from app_private.coaching_action_items where id=$1',[actionId])).rowCount,0)
+ assert.equal((await admin.query('select 1 from app_private.coaching_erased_action_receipts where account_id=$1',[a.id])).rowCount,1)
+ await assert.rejects(transaction(config,a,db=>assertCoachingGoalNotErased(db,a,input.id)),{code:'COACHING_PLAN_GOAL_DELETED'})
+ await transaction(config,b,db=>assertCoachingGoalNotErased(db,b,input.id))
+})
+test('legacy goal without extended snapshot stays readable and can be explicitly edited',async()=>{
+ const input=draft();await repo.save(a,input)
+ await admin.query("delete from app_private.coaching_life_plan_changes where account_id=$1 and entity_kind='goal' and entity_id=$2",[a.id,input.id])
+ const legacy=await repo.read(a,input.id)
+ assert.equal(legacy.goal.title,input.title);assert.equal(legacy.goal.details,null)
+ const edited=await repo.save(a,{...input,operationId:randomUUID(),revision:1,why:'New owner-authored details'})
+ assert.equal(edited.goal.why,'New owner-authored details');assert.equal(edited.goal.revision,2)
 })

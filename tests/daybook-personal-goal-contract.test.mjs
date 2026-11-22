@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {personalGoalWrite,goalTransition} from '../lib/app/daybook-personal-goal-contract.mjs'
+import {personalGoalWrite,personalGoalDelete,goalTransition} from '../lib/app/daybook-personal-goal-contract.mjs'
 const id='550e8400-e29b-41d4-a716-446655440000'
 const goal={id,operationId:id,revision:0,areaKey:'meaning_purpose',title:'Write a book',why:'Share what I learned',desiredOutcome:'A reviewed manuscript',axes:['realization'],status:'active',confirmed:true,targetDate:null,milestones:[{id,title:'First chapter',completed:false}],firstStep:'Draft for 15 minutes',fallbackStep:'Write one sentence'}
 test('personal goal preserves owner wording, optional deadline and separate inner axes',()=>{
@@ -25,4 +25,9 @@ test('legacy statuses remain editable and support explicit resumption without re
  assert.equal(goalTransition('paused','active',true),'active')
  assert.equal(goalTransition('cancelled','proposed',true),'proposed')
  assert.throws(()=>goalTransition('unknown','active',true))
+})
+test('delete is explicit, revision bound and rejects ownership injection',()=>{
+ const deletion={id,operationId:id,revision:1,confirmed:true}
+ assert.deepEqual(personalGoalDelete(deletion),deletion)
+ for(const change of [{confirmed:false},{revision:0},{revision:'1'},{accountId:id},{operationId:'invalid'}])assert.throws(()=>personalGoalDelete({...deletion,...change}))
 })
