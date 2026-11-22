@@ -116,6 +116,7 @@ import { SUPPORT_PHOTO_ACCEPT } from "@/lib/mandala/prepare-browser-photo";
 import {getStoryFormatCopy} from "@/lib/mandala/stories-studio.mjs";
 import styles from "./mandala-meditation.module.css";
 import videoStyles from "./mandala-video-mobile.module.css";
+import montageRef from "./mandala-montage-approved.module.css";
 
 // First-screen player and Auto Video Director remain eager. Optional workspaces
 // and collapsed tools download on interaction, reducing initial JS on mobile.
@@ -2096,6 +2097,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [montageStyleSettingsOpen,setMontageStyleSettingsOpen] = useState(false);
   // Montage is a preference-first wizard: detailed timeline is available only under Text.
   const [montagePanel,setMontagePanel] = useState<"settings"|"effects"|"text"|"concept"|"audio"|"promo">("effects");
+  // Only selects a visual source. HeyGen face animation is not a local Canvas
+  // effect; the paid API remains gated until a separate real provider flow.
+  const [montagePhotoChoice,setMontagePhotoChoice] = useState<"animate"|"library">("library");
   const montageAudioNavQueuedRef=useRef(false);
   const montageAudioShortcutIgnoreNextUntilRef=useRef(0);
   const [hypnoEntryGroup,setHypnoEntryGroup] = useState<"visual"|"audio"|"effects">("visual");
@@ -9652,7 +9656,25 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               </button>)}
           </nav>
           <div data-video-director-style-controls hidden={montagePanel!=="effects"} />
-          <div id="video-montage-active-panel" className={videoStyles.montageActivePanel}>
+          <div id="video-montage-active-panel" className={videoStyles.montageActivePanel+" "+montageRef.orderedPanel}>
+          {(montagePanel==="effects"||montagePanel==="audio")?<nav className={montageRef.stepStrip}
+            data-video-montage-progress aria-label={locale==="ru"?"Этапы создания видео":
+              locale==="es"?"Pasos para crear el vídeo":"Video creation steps"}>
+            {([
+              {step:1,panel:"effects",en:"Your Photo",ru:"Ваше фото",es:"Tu foto"},
+              {step:2,panel:"concept",en:"Visuals",ru:"Видеоряд",es:"Imágenes"},
+              {step:3,panel:"audio",en:"Audio & Edit",ru:"Аудио и монтаж",es:"Audio y montaje"}
+            ] as const).map(item=><button type="button" key={item.step}
+              data-video-montage-progress-step={item.step}
+              data-current={montagePanel===item.panel}
+              data-complete={montagePanel==="audio"&&item.step<3}
+              aria-current={montagePanel===item.panel?"step":undefined}
+              disabled={recording||preparing}
+              onClick={()=>{setMontagePanel(item.panel);if(item.panel==="audio")setBasicPanelTab("music");}}>
+              <span>{montagePanel==="audio"&&item.step<3?<Check size={16} strokeWidth={3}/>:item.step}</span>
+              {item[locale]}
+            </button>)}
+          </nav>:null}
           {montagePanel==="promo" ? <MandalaMontageProOffer
             locale={locale} disabled={!studioHydrated||recording||preparing}
             onChooseFree={()=>{
@@ -10150,7 +10172,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               {locale==="ru"?"Обновить сценарий":locale==="es"?"Actualizar guion":"Update script"}</button>
           </div>
         </details>
-          {activeWorkspace==="editor" ? sharedMontageTimeline : null}
+          {activeWorkspace==="editor"&&montagePanel!=="effects"?
+            <div className={montageRef.timelineLayer} data-video-montage-shared-timeline>
+              {sharedMontageTimeline}
+            </div>:null}
 
           <details className={videoStyles.montageAdvancedTools} data-video-montage-advanced-tools>
             <summary>{locale==="ru"?"Ещё инструменты · SRT, монтаж, черновики":locale==="es"?"Más herramientas · SRT y borradores":"More tools · SRT & drafts"}</summary>
@@ -10220,8 +10245,113 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </div>
           </details>
           </div> : null}
-          {montagePanel==="effects" ? <div className={videoStyles.montagePane} data-video-montage-effects>
-            <h3>{locale==="ru"?"Выберите стиль":locale==="es"?"Elige tu estilo":"Choose your style"}</h3>
+          {montagePanel==="effects" ? <div className={videoStyles.montagePane+" "+montageRef.stylePane} data-video-montage-effects>
+            <div className={montageRef.photoLead}>
+              <h3>{locale==="ru"?"Добавьте фотографию":locale==="es"?"Añade tu foto":"Add Your Photo"}</h3>
+              <p>{locale==="ru"?"Выберите, как использовать фотографию в вашем видео.":
+                locale==="es"?"Elige cómo utilizar la foto en tu vídeo.":"Choose how to use your photo in your video."}</p>
+            </div>
+            <div className={montageRef.photoChoices} data-video-montage-photo-options role="group"
+              aria-label={locale==="ru"?"Новая анимация или готовая фотография":locale==="es"?
+                "Nueva animación o imagen preparada":"New animation or ready photo"}>
+              <button type="button" className={montageRef.photoCard} data-video-montage-photo-choice="animate"
+                data-selected={montagePhotoChoice==="animate"} aria-pressed={montagePhotoChoice==="animate"}
+                disabled={recording||preparing} onClick={()=>{
+                  setMontagePhotoChoice("animate");
+                  setNotice(locale==="ru"?"Оживление лица через HeyGen пока не подключено к оплате. Вы можете загрузить фото, но новый AI-рендер здесь не запускается.":
+                    locale==="es"?"La animación HeyGen aún no está activada. Puedes subir tu foto sin generar un vídeo de IA.":
+                      "HeyGen face animation is not yet payment-enabled. You can prepare your photo, but no AI render starts here.");
+                }}>
+                <span className={montageRef.photoImage}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={photoUrl||quickStyleFilmFor(theme,0)?.poster||quickCanvasPoster("sun-flight")} alt="" loading="lazy"/>
+                  <i>AI</i>
+                </span>
+                {montagePhotoChoice==="animate"?<span className={montageRef.photoCardCheck}><Check size={17}/></span>:null}
+                <strong className={montageRef.photoTitle}>{locale==="ru"?"Оживить моё новое фото":
+                  locale==="es"?"Animar una foto nueva":"Animate My New Photo"}</strong>
+                <span className={montageRef.photoHint}>{locale==="ru"?"Улыбка, приветствие, движение — после подключения AI.":
+                  locale==="es"?"Sonrisa o saludo, al activar el servicio IA.":
+                    "Smile or greeting, once AI rendering is activated."}</span>
+                <span className={montageRef.photoPrice}>500 XP</span>
+              </button>
+              <button type="button" className={montageRef.photoCard} data-video-montage-photo-choice="library"
+                data-selected={montagePhotoChoice==="library"} aria-pressed={montagePhotoChoice==="library"}
+                disabled={recording||preparing} onClick={()=>{
+                  setMontagePhotoChoice("library");setBackgroundOnly(true);
+                  quickPickStyle(0);setNotice("");
+                }}>
+                <span className={montageRef.photoImage+" "+montageRef.collage}>
+                  {([0,1,2] as const).map(index=><img key={index}
+                    src={quickStyleFilmFor(theme,index)?.poster||
+                      quickCanvasPoster(quickStyleSceneIds[theme][index] as LocalSceneId)}
+                    alt="" loading="lazy"/>)}
+                </span>
+                {montagePhotoChoice==="library"?<span className={montageRef.photoCardCheck}><Check size={17}/></span>:null}
+                <strong className={montageRef.photoTitle}>{locale==="ru"?"Фото из библиотеки или моё фото":
+                  locale==="es"?"Foto de la biblioteca o propia":"Choose a Ready Photo or Mine"}</strong>
+                <span className={montageRef.photoHint}>{locale==="ru"?"Готовые кадры или собственное фото без новой AI-анимации.":
+                  locale==="es"?"Imágenes listas o tu foto, sin animación IA nueva.":
+                    "Ready scenes or your photo, with no new AI animation."}</span>
+                <span className={montageRef.photoPrice}>250 XP</span>
+              </button>
+            </div>
+            <section className={montageRef.avatarLibrary} data-video-montage-avatar-library
+              aria-label={locale==="ru"?"Библиотека фото и аватаров":locale==="es"?"Biblioteca de fotos y avatares":"Photo and avatar library"}>
+              <div className={montageRef.avatarHeader}>
+                <strong>{locale==="ru"?"Моя библиотека":locale==="es"?"Mi biblioteca":"My Library"}</strong>
+                <span>{locale==="ru"?"Фото, готовые сцены и сохранённые аватары":
+                  locale==="es"?"Fotos, escenas y avatares guardados":"Photos, scenes and saved avatars"}</span>
+              </div>
+              <div className={montageRef.avatarRail}>
+                <label className={montageRef.photoUpload} data-video-montage-photo-upload>
+                  <Camera size={25} aria-hidden="true"/>
+                  <span>{locale==="ru"?"Загрузить фото":locale==="es"?"Subir foto":"Upload Photo"}</span>
+                  <NativePhotoInput label={locale==="ru"?"Выбрать своё фото":locale==="es"?
+                    "Seleccionar foto":"Choose my photo"}
+                    disabled={recording||preparing||photoPending}
+                    onPhotoFileSelected={photo=>{
+                      setMontagePhotoChoice("library");setBackgroundOnly(false);onPhotoFileSelected(photo);setNotice("");
+                    }}/>
+                </label>
+                {photoUrl?<button type="button" className={montageRef.avatarThumb}
+                  data-video-montage-current-photo aria-pressed={!backgroundOnly}
+                  disabled={recording||preparing} onClick={()=>{setMontagePhotoChoice("library");setBackgroundOnly(false);}}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={photoUrl} alt="" loading="lazy"/><span>{locale==="ru"?"Моё фото":locale==="es"?"Mi foto":"My Photo"}</span>
+                </button>:null}
+                {([0,1,2] as const).map(index=><button type="button" key={index}
+                  className={montageRef.avatarThumb} data-video-montage-library-scene={index}
+                  aria-pressed={montagePhotoChoice==="library"&&quickStyleIndex===index&&backgroundOnly}
+                  disabled={recording||preparing||!quickStyleFilmFor(theme,index)}
+                  onClick={()=>{setMontagePhotoChoice("library");setBackgroundOnly(true);quickPickStyle(index);}}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={quickStyleFilmFor(theme,index)?.poster||
+                    quickCanvasPoster(quickStyleSceneIds[theme][index] as LocalSceneId)} alt="" loading="lazy"/>
+                  <span>{quick.styles[index]}</span>
+                </button>)}
+                <Link className={montageRef.avatarLibraryLink} prefetch={false}
+                  href={"/"+locale+"/app/videos?tab=avatars"}>
+                  <FolderOpen size={22} aria-hidden="true"/>
+                  {locale==="ru"?"Все материалы":locale==="es"?"Ver todos":"See All"}
+                </Link>
+              </div>
+            </section>
+            {photoUrl&&!backgroundOnly?<label className={montageRef.photoConsent}>
+              <input type="checkbox" checked={photoConsent} data-video-montage-photo-rights
+                disabled={recording||preparing} onChange={e=>setPhotoConsent(e.currentTarget.checked)}/>
+              {locale==="ru"?"У меня есть право использовать это фото в видео.":
+                locale==="es"?"Tengo permiso para utilizar esta foto.":
+                  "I have permission to use this photo in my video."}
+            </label>:null}
+            {montagePhotoChoice==="animate"?<p className={montageRef.photoGate} role="status">
+              {locale==="ru"?"Новая анимация HeyGen требует отдельного подтверждённого заказа и пока недоступна. Для продолжения выберите вариант без AI-анимации.":
+                locale==="es"?"La nueva animación requiere un pedido HeyGen habilitado. Elige una foto sin nueva animación para continuar.":
+                  "New animation requires a verified HeyGen order and is not enabled here yet. Choose a non-animated photo to continue."}
+            </p>:null}
+            <details className={montageRef.moreStyles} data-video-montage-more-styles>
+              <summary>{locale==="ru"?"Другие визуальные стили и формат видео":
+                locale==="es"?"Más estilos y formato de vídeo":"More visual styles and video format"}</summary>
             <div className={videoStyles.montageEffectsGrid}>
               {quickStylePosters.map((poster,index)=>{
                 const sceneId=quickStyleSceneIds[theme][index];
@@ -10270,32 +10400,35 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 </button>)}
               </div>
             </fieldset>
-            <button type="button" className={videoStyles.montageStepNext}
-              data-video-montage-next="audio" disabled={recording||preparing}
-              onPointerUp={event=>{
-                if(event.pointerType==="touch"&&montagePanel==="effects"){
-                  setMontagePanel("audio");setBasicPanelTab("music");
-                }
-              }}
-              onClick={()=>{setMontagePanel("audio");setBasicPanelTab("music");}}>
-              <Music2 size={19} aria-hidden="true"/>
-              <span>{locale==="ru"?"Далее · Аудио":
-                locale==="es"?"Siguiente · Audio":"Next · Audio"}</span>
-              <ArrowRight size={20} aria-hidden="true"/>
+
+            </details>
+            <button type="button" className={videoStyles.montageStepNext+" "+montageRef.styleNext}
+              data-video-montage-next="audio"
+              disabled={recording||preparing||montagePhotoChoice==="animate"||
+                Boolean(photoUrl&&!backgroundOnly&&!photoConsent)}
+              onClick={()=>{setMontagePanel("audio");setBasicPanelTab("music");setNotice("");}}>
+              <Sparkles size={22} aria-hidden="true"/>
+              <span>{locale==="ru"?"Далее → Аудио":locale==="es"?"Continuar → Audio":"Continue to Audio"}
+                {" · "}{montagePhotoChoice==="animate"?"500":"250"} XP</span>
+              <ArrowRight size={22} aria-hidden="true"/>
             </button>
+            <p className={montageRef.actualPriceNote}>{locale==="ru"?
+              "Это указанные тарифы пакетов. На этом шаге XP не списываются; итоговую цену подтверждает сервер при создании.":
+              locale==="es"?"Precios indicativos del paquete. No se cobran XP en este paso; el servidor valida el precio final.":
+                "Package prices shown. No XP is charged here; the final price is validated by the server."}
+            </p>
           </div> : null}
-          {montagePanel==="audio" ? <div className={videoStyles.montageAudioCompact} data-video-montage-audio>
-            <div className={videoStyles.audioCompactHeading}>
-              <h3>{locale==="ru"?"Выберите аудиодорожки":locale==="es"?"Elige pistas de audio":"Choose audio tracks"}
-                <small>{locale==="ru"?" · до 3":locale==="es"?" · hasta 3":" · up to 3"}</small>
-              </h3>
-              <button type="button" className={videoStyles.audioCompactBrowse} ref={audioLibraryTriggerRef}
-                data-video-audio-compact-browse aria-haspopup="dialog" aria-expanded={audioLibraryOpen}
-                onClick={openAudioLibrary} disabled={recording||preparing}><Search size={15} aria-hidden="true"/>
-                {locale==="ru"?"Все записи":locale==="es"?"Explorar":"Browse"}
-              </button>
-            </div>
-            <div className={videoStyles.montageAudioFilters} role="group"
+          {montagePanel==="audio" ? <div className={videoStyles.montageAudioCompact+" "+montageRef.audioWrap} data-video-montage-audio>
+            <div className={montageRef.audioColumns} data-video-montage-audio-columns>
+              <section className={montageRef.musicPanel} aria-label={locale==="ru"?"Выбрать музыку":
+                locale==="es"?"Elegir música":"Choose Music"}>
+                <div className={montageRef.musicHeading}>
+                  <Music2 size={30} aria-hidden="true"/>
+                  <div><h3>{locale==="ru"?"Выбрать музыку":locale==="es"?"Elegir música":"Choose Music Track"}</h3>
+                    <small>{locale==="ru"?"Готовые записи из библиотеки":locale==="es"?"Canciones de la biblioteca":"Reviewed tracks from our library"}</small>
+                  </div>
+                </div>
+            <div className={videoStyles.montageAudioFilters+" "+montageRef.filterRail} role="group"
               aria-label={locale==="ru"?"Категории музыки":locale==="es"?"Categorías musicales":"Music categories"}>
               {([
                 {id:"all",theme:null,mood:"all"},{id:"wellbeing",theme:"health",mood:"all"},
@@ -10314,9 +10447,60 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   locale==="es"?["Todo","Bienestar","Enfoque","Calma","Energía","Amor"]:
                     ["All","Wellbeing","Focus","Calm","Energy","Love"])[index]}</button>)}
             </div>
-            <div className={videoStyles.audioCompactGrid} data-video-audio-compact-grid
-              role="group" aria-label={locale==="ru"?"Выберите до трёх аудиодорожек":
-                locale==="es"?"Selecciona hasta tres pistas":"Select up to three tracks"}>
+
+                <div className={montageRef.trackList} data-video-audio-compact-grid role="group"
+                  aria-label={locale==="ru"?"Музыкальные треки":locale==="es"?"Pistas de música":"Music tracks"}>
+                  {filteredAudio.slice(0,4).map(track=>{
+                    const id=track.id as PresetId;
+                    const checked=!uploadedAudio&&attachedPresetIds.includes(id);
+                    const listening=samplePreviewId===id&&soundPreview;
+                    return <article key={id} className={montageRef.trackRow}
+                      data-video-audio-compact-track={id} data-selected={checked}
+                      data-audio-quality="licensed-recording">
+                      <button type="button" className={montageRef.trackPlay}
+                        data-video-audio-compact-play={id} aria-pressed={listening}
+                        disabled={recording||preparing||micRecording}
+                        aria-label={(listening?ui.soundStop:ui.soundPreview)+" — "+track.name[locale]}
+                        onClick={()=>playQuickTrack(id)}>
+                        {listening?<Pause size={23} fill="currentColor"/>:<Play size={23} fill="currentColor"/>}
+                      </button>
+                      <button type="button" className={montageRef.trackChoose}
+                        data-video-audio-compact-select={id} aria-pressed={checked}
+                        aria-label={(checked?audioUi.picked:audioUi.pick)+" — "+track.name[locale]}
+                        disabled={recording||preparing||micRecording||
+                          Boolean(attachedAudio?.kind==="file"&&attachedAudio.narration)}
+                        onClick={()=>{
+                          if(!checked&&attachedPresetIds.length>=3){
+                            setMusicWarning(locale==="ru"?"Можно выбрать не более трёх треков.":
+                              locale==="es"?"Elige un máximo de tres pistas.":"Select up to three tracks.");
+                            return;
+                          }
+                          toggleQuickMusic(id);
+                        }}>
+                        <span className={montageRef.trackMeta}>
+                          <strong>{track.name[locale]}</strong>
+                          <small>{Math.floor(track.durationSeconds/60)}:
+                            {Math.round(track.durationSeconds%60).toString().padStart(2,"0")}</small>
+                        </span>
+                        <span className={montageRef.trackWave} aria-hidden="true">
+                          {Array.from({length:14},(_,i)=><i key={i}/>)}
+                        </span>
+                        {checked?<span className={montageRef.trackTick}><Check size={14}/></span>:null}
+                      </button>
+                    </article>;
+                  })}
+                  {!filteredAudio.length?<p role="status">{locale==="ru"?"В этой категории пока нет музыки.":
+                    locale==="es"?"No hay canciones en esta categoría.":"No tracks in this category."}</p>:null}
+                </div>
+                <button type="button" className={videoStyles.audioCompactBrowse} ref={audioLibraryTriggerRef}
+                  data-video-audio-compact-browse aria-haspopup="dialog" aria-expanded={audioLibraryOpen}
+                  onClick={openAudioLibrary} disabled={recording||preparing}>
+                  <Search size={16}/>{locale==="ru"?"Все музыкальные записи":
+                    locale==="es"?"Ver todas las pistas":"Browse All Music"}
+                </button>
+                <details className={montageRef.moreAudio} data-video-montage-other-music>
+                  <summary>{locale==="ru"?"Другие записи и загрузка моего аудио":
+                    locale==="es"?"Más grabaciones y subir mi audio":"Other tracks & upload my audio"}</summary>
               <StudioMusicFeatured locale={locale} category={audioCategory}
                 disabled={recording||preparing||micRecording}
                 selectedFilename={uploadedAudio?.file===verifiedLibraryAudioFileRef.current?
@@ -10331,62 +10515,38 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 }}
                 onPreviewStart={stopSoundPreview}
                 onError={setMusicWarning}/>
-              {filteredAudio.slice(0,12).map((track,index)=>{
-                const id=track.id as PresetId;
-                const checked=!uploadedAudio&&attachedPresetIds.includes(id);
-                const listening=samplePreviewId===id&&soundPreview;
-                const poster=quickStyleFilmFor(theme,index)?.poster ||
-                  quickCanvasPoster(quickStyleSceneIds[theme][index] as LocalSceneId);
-                return <article key={id} className={videoStyles.audioCompactTile}
-                  data-video-audio-compact-track={id} data-selected={checked} data-audio-quality="licensed-recording">
-                  {/* Verified local film stills are decorative, not invented music album art. */}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={poster} alt="" loading="lazy"/>
-                  <button type="button" className={videoStyles.audioCompactSelect}
-                    data-video-audio-compact-select={id} aria-pressed={checked}
-                    aria-label={(checked?
-                      locale==="ru"?"Убрать ":locale==="es"?"Quitar ":"Remove ":
-                      locale==="ru"?"Добавить ":locale==="es"?"Añadir ":"Add ")+track.name[locale]}
-                    disabled={recording||preparing||micRecording||Boolean(attachedAudio?.kind==="file"&&attachedAudio.narration)}
-                    onClick={()=>{
-                      if(!checked&&attachedPresetIds.length>=3){
-                        setMusicWarning(locale==="ru"?"Выберите не более 3 дорожек. Снимите одну.":
-                          locale==="es"?"Máximo 3 pistas. Quita una primero.":"Maximum 3 tracks. Remove one first.");return;
-                      }
-                      toggleQuickMusic(id);
-                    }}>
-                    <span className={videoStyles.audioCompactCheck} aria-hidden="true">
-                      {checked?<Check size={16} strokeWidth={3}/>:null}
-                    </span>
-                    <strong>{track.name[locale]}</strong>
-                    <small>{Math.floor(track.durationSeconds/60)}:{Math.round(track.durationSeconds%60).toString().padStart(2,"0")}</small>
-                  </button>
-                  <button type="button" className={videoStyles.audioCompactPlay}
-                    data-video-audio-compact-play={id}
-                    aria-label={(listening?ui.soundStop:ui.soundPreview)+" — "+track.name[locale]}
-                    aria-pressed={listening} disabled={recording||preparing||micRecording}
-                    onClick={()=>playQuickTrack(id)}>
-                    {listening?<Pause size={17} fill="currentColor"/>:<Play size={17} fill="currentColor"/>}
-                  </button>
-                </article>;
-              })}
-              {filteredAudio.length===0?<p role="status">{locale==="ru"?
-                "По этому фильтру записей нет. Измените категорию или очистите поиск.":locale==="es"?
-                "No hay pistas para este filtro. Cambia la categoría o borra la búsqueda.":
-                "No recordings match this filter. Change category or clear search."}</p>:null}
-              <label className={videoStyles.audioCompactUpload} data-video-audio-compact-upload-tile
-                data-selected={Boolean(uploadedAudio)}>
-                <Paperclip size={24} aria-hidden="true"/>
-                <strong>{locale==="ru"?"Моё аудио":locale==="es"?"Mi audio":"My audio"}</strong>
-                <small>{locale==="ru"?"Загрузить":locale==="es"?"Subir":"Upload"}</small>
-                <input type="file" data-video-audio-compact-upload
-                  accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/aac,audio/webm,.mp3,.m4a,.wav,.aac,.mp4,.webm"
-                  disabled={recording||preparing}
-                  onChange={event=>{chooseAudioFile(event.currentTarget.files?.[0]);event.currentTarget.value="";}}/>
-              </label>
+
+                  <StudioMusicPicker locale={locale} disabled={recording||preparing||micRecording}
+                    onSelect={attachVerifiedStudioMusic}/>
+                  <label data-video-audio-compact-upload-tile>
+                    <Paperclip size={22} aria-hidden="true"/>
+                    <span>{locale==="ru"?"Загрузить мой аудиофайл":locale==="es"?"Subir mi audio":"Upload My Audio"}</span>
+                    <input type="file" data-video-audio-compact-upload
+                      accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/aac,audio/webm,.mp3,.m4a,.wav,.aac,.mp4,.webm"
+                      disabled={recording||preparing}
+                      onChange={event=>{chooseAudioFile(event.currentTarget.files?.[0]);event.currentTarget.value="";}}/>
+                  </label>
+                </details>
+              </section>
+              <aside className={montageRef.voiceCard} data-video-montage-voice-card>
+                <Mic size={32} aria-hidden="true"/>
+                <h3>{locale==="ru"?"Записать аудиопожелание":locale==="es"?
+                  "Grabar un mensaje":"Record a Voice Wish"}</h3>
+                <button type="button" className={montageRef.recordVoice}
+                  data-video-montage-voice-record aria-pressed={micRecording}
+                  disabled={recording||preparing} onClick={()=>{
+                    if(micRecording)stopMicRecording();else void startMicRecording();
+                  }}>
+                  {micRecording?<Pause size={28} aria-hidden="true"/>:<Mic size={28} aria-hidden="true"/>}
+                  <span>{micRecording?(locale==="ru"?"Стоп":locale==="es"?"Parar":"Stop"):
+                    locale==="ru"?"Записать":locale==="es"?"Grabar":"Record"}</span>
+                </button>
+                {uploadedAudio?<p role="status"><strong>{uploadedAudio.file.name}</strong></p>:<p>
+                  {locale==="ru"?"Ваш голос сохранится только после подтверждения прав.":
+                    locale==="es"?"Confirma los derechos antes de utilizar el audio.":
+                      "Confirm your rights before using your recording."}</p>}
+              </aside>
             </div>
-            <StudioMusicPicker locale={locale} disabled={recording||preparing||micRecording}
-              onSelect={attachVerifiedStudioMusic}/>
             <div className={videoStyles.audioCompactSelection} data-video-audio-compact-selected
               role="status" aria-live="polite"><Check size={16} aria-hidden="true"/>
               <span>{uploadedAudio?uploadedAudio.file.name:attachedPresetIds.length?appliedAudioName:
@@ -10802,6 +10962,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               {recording||preparing?<span aria-hidden="true">◌</span>:<Play size={20} fill="currentColor" aria-hidden="true"/>}
               {recording||preparing?quick.creating:
                 locale==="ru"?"Создать видео":locale==="es"?"Crear vídeo":"Create Video"}
+              {montagePanel==="audio"&&creditCatalog?.chargeRequired&&freeVideoSelected&&
+                creditSession!=="guest"?" · "+creditCatalog.priceCredits+" XP":null}
             </button>
           </div>
           {narrationInvalid&&<p role="status" className={videoStyles.quickStatus} data-video-narration-reapproval>
