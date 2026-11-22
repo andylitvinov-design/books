@@ -38,3 +38,9 @@ test('account-scoped memory rejects other owner and disposes late save on wipe',
  const pending=session.save();memory.clear();finish({saved:true,goal:{id:owner,revision:1}});await pending
  assert.equal(session.snapshot(),null);assert.equal(memory.get(owner),null)
 })
+
+test("forbidden session wipes the private draft",async()=>{
+ const session=createGoalEditorSession(async()=>{throw Object.assign(new Error("FORBIDDEN"),{status:403})},owner,null,()=>owner)
+ session.change("title","Private revoked draft");await session.save()
+ assert.equal(session.snapshot().draft,null);assert.equal(session.snapshot().status,"signed-out")
+})
