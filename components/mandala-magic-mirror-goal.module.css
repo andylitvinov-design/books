@@ -314,3 +314,155 @@
  .formatCard span{min-height:26px}
  .primaryAction{min-height:45px;margin-top:0}
 }
+
+/* Owner 2026-11-22: one-fold Topic composition, based on the supplied iPhone
+   screenshots and approved fourth mock. Keep the actual player, keyboard,
+   category controls and consent-safe Next flow; never hide the primary CTA. */
+@media(max-width:759px){
+ .goals[data-hh-mirror-screen="topic"]{gap:4px!important;padding:0 2px 4px!important}
+ .goals[data-hh-mirror-screen="topic"] .backLanding{
+  position:absolute;z-index:4;top:7px;right:8px;left:auto;
+  min-height:32px;padding:5px 9px;border:1px solid #ffffff69;border-radius:999px;
+  background:#0a493bbc;color:#fff;font-size:11px;backdrop-filter:blur(4px)
+ }
+ .goals[data-hh-mirror-screen="topic"] .therapyHero{
+  min-height:clamp(110px,15.5dvh,132px);height:auto;padding:11px 13px 9px;
+  border-radius:21px;align-content:center
+ }
+ .goals[data-hh-mirror-screen="topic"] .therapyEyebrow{
+  max-width:68%;gap:5px;font-size:clamp(22px,5.75vw,29px);line-height:1.04
+ }
+ .goals[data-hh-mirror-screen="topic"] .therapyEyebrow svg{width:20px;height:20px}
+ .goals[data-hh-mirror-screen="topic"] .therapyHero p{
+  max-width:68%;margin:5px 0 0!important;
+  font-size:clamp(11px,2.9vw,13px);line-height:1.18
+ }
+ .goals[data-hh-mirror-screen="topic"] .exampleVideo{
+  height:clamp(76px,10.9dvh,96px);border-width:3px;border-radius:21px
+ }
+ .goals[data-hh-mirror-screen="topic"] .videoPlay{
+  width:48px;height:48px;border-width:3px
+ }
+ .goals[data-hh-mirror-screen="topic"] .videoPlay svg{width:25px;height:25px}
+ .goals[data-hh-mirror-screen="topic"] .videoCaption{bottom:5px;left:9px;font-size:11px}
+ .goals[data-hh-mirror-screen="topic"] .progress{
+  min-height:35px;padding:4px 6px;gap:4px;flex-wrap:nowrap;
+  font-size:11px
+ }
+ .goals[data-hh-mirror-screen="topic"] .progress>strong{
+  min-width:75px;padding:6px 4px;font-size:clamp(10px,2.7vw,12px)
+ }
+ .goals[data-hh-mirror-screen="topic"] .progressStages{gap:2px}
+ .goals[data-hh-mirror-screen="topic"] .progressStages span{
+  gap:3px;font-size:clamp(9px,2.45vw,11.5px)
+ }
+ .goals[data-hh-mirror-screen="topic"] .progressStages span b{
+  width:19px;height:19px;font-size:10px
+ }
+ .goals[data-hh-mirror-screen="topic"] .question{margin:0!important}
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .composer{
+  border-radius:21px
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .composer textarea{
+  min-height:clamp(47px,6.8dvh,64px);height:clamp(47px,6.8dvh,64px);
+  max-height:190px;padding:10px 12px 5px;border-radius:21px 21px 0 0;
+  font-size:clamp(13px,3.65vw,15.5px);line-height:1.25
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .composerToolbar{
+  min-height:43px;padding:3px 5px;gap:3px
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .toolIcon{
+  width:35px;height:38px;border-radius:11px
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .toolIcon svg{
+  width:19px;height:19px
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .toolbarMenu{
+  min-height:38px;padding:0 2px;gap:2px;font-size:clamp(10px,2.8vw,12px)
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .toolbarMenu svg{
+  width:14px;height:14px
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .send{
+  width:42px;height:42px
+ }
+ .goals[data-hh-mirror-screen="topic"] .example{
+  font-size:clamp(10px,2.65vw,12px);line-height:1.14
+ }
+ .goals[data-hh-mirror-screen="topic"] .alternative{
+  margin:1px 0!important;gap:5px;font-size:clamp(11px,3.1vw,13px);line-height:1.1
+ }
+ .goals[data-hh-mirror-screen="topic"] .cards{gap:5px}
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .card{
+  grid-template-rows:clamp(33px,5.2dvh,43px) minmax(33px,auto);
+  min-height:70px;border-radius:16px
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .cardLabel{
+  min-height:33px;gap:4px;padding:2px 5px;
+  font-size:clamp(11.5px,3.3vw,14.5px);line-height:1.06
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .choiceIcon{
+  width:17px;height:17px;flex-basis:17px
+ }
+ .goals[data-hh-mirror-screen="topic"] .check{
+  top:2px;right:2px;width:22px;height:22px;padding:2px
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .primaryAction{
+  min-height:47px;margin:3px 0 0;padding:7px 11px;
+  gap:7px;font-size:clamp(13px,4.1vw,18px);line-height:1.08
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .primaryAction svg{
+  width:19px;height:19px
+ }
+}
+/* On a 320px phone the editor tools must stay in one row, not create a
+   second toolbar with a second-screen CTA. Each action remains operable. */
+@media(max-width:359px){
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .composerToolbar{
+  flex-wrap:nowrap;gap:2px;padding:3px 4px
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .toolIcon{
+  width:31px;height:40px
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .toolbarMenu{
+  gap:0;padding:0;font-size:10px
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .toolbarMenu svg{
+  width:12px;height:12px
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .send{
+  width:40px;height:40px
+ }
+}
+/* Short Safari content viewports trade ornamental height, not text or
+   functionality. The page can scroll when the keyboard or font scale grows. */
+@media(max-width:759px) and (max-height:740px){
+ .goals[data-hh-mirror-screen="topic"]{gap:3px!important}
+ .goals[data-hh-mirror-screen="topic"] .therapyHero{
+  min-height:103px;padding:8px 12px 7px
+ }
+ .goals[data-hh-mirror-screen="topic"] .therapyEyebrow{
+  font-size:clamp(21px,5.6vw,27px)
+ }
+ .goals[data-hh-mirror-screen="topic"] .therapyHero p{
+  margin-top:3px!important;font-size:11px;line-height:1.14
+ }
+ .goals[data-hh-mirror-screen="topic"] .exampleVideo{height:72px}
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .composer textarea{
+  min-height:45px;height:45px
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .card{
+  grid-template-rows:30px minmax(32px,auto);min-height:64px
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .cardLabel{
+  min-height:32px;font-size:clamp(11px,3.1vw,13px)
+ }
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .primaryAction{
+  min-height:44px;padding-block:5px
+ }
+}
+/* Preserve a readable, vertically scrollable landscape / accessibility view. */
+@media(max-width:759px) and (orientation:landscape){
+ .goals[data-hh-mirror-screen="topic"] .therapyHero{min-height:100px}
+ .goals[data-hh-mirror-screen="topic"] .exampleVideo{height:74px}
+}
