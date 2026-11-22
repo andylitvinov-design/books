@@ -103,7 +103,8 @@ export default function MyPersonalVideos({accountId,locale='en'}){
         file,
         details:{theme,sceneId:theme==='money'?'golden-rain':theme==='relationships'?'heart-light':
           theme==='energy'?'sun-flight':'light-path',duration,aspect},
-        request:(path,body)=>appFetch(path,body,'POST',{accountId}),
+        accountId,
+        request:(path,body,method)=>appFetch(path,body,method,{accountId}),
         sessionRef:uploadSessionRef,
         onProgress:(done,total)=>setUploadPercent(Math.min(100,Math.round(done/total*100)))
       })
@@ -124,7 +125,7 @@ export default function MyPersonalVideos({accountId,locale='en'}){
   }
   async function prepareDownload(id){
     setNotice('')
-    try{const result=await appFetch('personal-videos/'+id,undefined,'GET',{accountId});setDownload({id,url:result.url})}
+    try{const result=await appFetch('personal-videos/'+id+'?download=1',undefined,'GET',{accountId});setDownload({id,url:result.url})}
     catch{setNotice(t.error)}
   }
   async function remove(id){

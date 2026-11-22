@@ -74,11 +74,12 @@ test("macOS WebKit hydration follows visible Goal → Montage Extra → Personal
  const extraToPersonal=flow.indexOf("await enterPersonalAfterMontageExtra(page)",mirrorNext);
  const personalGoal=flow.indexOf("data-video-ideas-goal-panel",extraToPersonal);
  const selectGoal=flow.indexOf("await expect(ideasGoalPane.locator('[data-video-ideas-goal-choice=\"rest\"]'))",personalGoal);
- const nextGoal=flow.indexOf("await ideasGoalPane.locator('[data-video-ideas-goal-next]').click()",selectGoal);
+ const nextControl=flow.indexOf("const ideasNext=ideasGoalPane.locator('[data-video-ideas-goal-next]')",selectGoal);
+ const nextGoal=flow.indexOf("await ideasNext.tap()",nextControl);
  const personalization=flow.indexOf("data-video-ideas-personalization-panel",nextGoal);
  const backToMontageText=flow.indexOf("await openVisibleMontageText(page",personalization);
  assert.ok(first>=0&&last>first&&mirrorNext>=0&&extraToPersonal>mirrorNext&&personalGoal>extraToPersonal&&
-   selectGoal>personalGoal&&nextGoal>selectGoal&&personalization>nextGoal&&backToMontageText>personalization,
+   selectGoal>personalGoal&&nextControl>selectGoal&&nextGoal>nextControl&&personalization>nextGoal&&backToMontageText>personalization,
    "real visitor goes from Goal to Montage Extra, chooses Personal, then returns to Montage Text after answering");
  const helperStart=browser.indexOf("async function enterPersonalAfterMontageExtra");
  const helperEnd=browser.indexOf("async function openVisibleMontageText",helperStart);

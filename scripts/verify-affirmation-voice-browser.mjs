@@ -380,7 +380,9 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(goalChoices).toHaveCount(3);
     await expect(ideasGoalPane.locator('[data-video-ideas-goal-choice="rest"]'))
       .toHaveAttribute("aria-pressed","true",{timeout:15000});
-    await ideasGoalPane.locator('[data-video-ideas-goal-next]').click();
+    const ideasNext=ideasGoalPane.locator('[data-video-ideas-goal-next]');
+    await expect(ideasNext).toBeEnabled();
+    await ideasNext.tap();
     await expect(page.locator('[data-video-ideas-tab="personalization"]'))
       .toHaveAttribute("aria-pressed","true");
     await expect(page.locator('[data-video-ideas-personalization-panel]')).toBeVisible();

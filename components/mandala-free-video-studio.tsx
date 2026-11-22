@@ -8572,10 +8572,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           return createQuickVideo();
         }}
         saveStatus={readySaveStatus}
-        onSaveDirect={()=>{
+        onSaveDirect={consentApproved=>{
           // Reuse the ONE already-mounted private uploader. No second save dialog
           // or automatic public publishing of a personal therapy video.
-          if(deliveryRef.current)void deliveryRef.current.saveToLibrary();
+          if(deliveryRef.current)void deliveryRef.current.saveToLibrary(consentApproved);
           else setDeliveryChooserOpen(true);
         }}
         onSendTelegramDirect={()=>{if(deliveryRef.current)void deliveryRef.current.sendToTelegram();}}
