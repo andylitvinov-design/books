@@ -5,7 +5,7 @@ import {PUBLIC_COACH_PERSONA_IDS,buildCoachBehaviorPolicy} from '../lib/coaching
 import {COACH_STYLE_PASSPORTS,COACH_STYLE_PASSPORTS_VERSION,getCoachStylePassport} from '../lib/coaching/coach-style-passports.mjs'
 import {getCoachCompactProfile} from '../lib/coaching/coach-compact-profiles.mjs'
 
-test('six immutable distinct three-language character passports feed both public profiles and coach policy',()=>{
+test('seven immutable distinct three-language character passports feed both public profiles and coach policy',()=>{
   assert.match(COACH_STYLE_PASSPORTS_VERSION,/20261122/)
   assert.deepEqual(Object.keys(COACH_STYLE_PASSPORTS),PUBLIC_COACH_PERSONA_IDS)
   assert.ok(Object.isFrozen(COACH_STYLE_PASSPORTS))
