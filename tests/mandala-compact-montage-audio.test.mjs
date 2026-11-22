@@ -60,6 +60,10 @@ test("compact Montage Audio runs the existing macOS WebKit and Chromium paths",(
   assert.match(macos,/runs-on: macos-15/);
   assert.match(macos,/node scripts\/verify-affirmation-voice-browser\.mjs/);
   assert.match(workflow,/requiresRealMediaWebKit\(changed\)/);
+  assert.match(workflow,/playwright install --with-deps chromium webkit/);
+  assert.match(workflow,/HH_VOICE_E2E_ENGINE=chromium node scripts\/verify-affirmation-voice-browser\.mjs/);
+  assert.match(workflow,/startsWith\(github\.head_ref, 'codex\/montage-audio-'\)/);
+
 });
 
 test("physical original-motion WebKit exports selected licensed music without requiring upload-only Attach",()=>{
