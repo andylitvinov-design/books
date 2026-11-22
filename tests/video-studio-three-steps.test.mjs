@@ -228,3 +228,9 @@ test("real iPhone WebKit navigation uses native touch and verifies committed pan
  assert.match(source,/readRealGuestVideo\(page,\{timeout:80000\}\)/);
  assert.doesNotMatch(source,/force:\s*true|createFakeVideo|skipWebkit/);
 });
+
+test("Original Motion uses native WebKit tap for Style Next and verifies Audio",()=>{
+ const motion=read("scripts/benchmarking/verify-original-motion-export.mjs");
+ assert.match(motion,/const press=button=>engine==='webkit'\?button\.tap\(/);
+ assert.match(motion,/await press\(styleNext\)[\s\S]*?VISIBLE_STYLE_NEXT_MUST_OPEN_AUDIO/);
+});
