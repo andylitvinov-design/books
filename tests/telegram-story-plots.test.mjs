@@ -77,3 +77,26 @@ test('Telegram plot IDs, labels, synopsis and all four story beats equal the liv
  assert.equal(compared,256*3);
  assert.equal(languageVariants,1536*3);
 });
+
+test('historically reassigned categories resolve exact original editorial plots without cross-shard fallback', async () => {
+ const relocated = [
+   {scenario:'everyday-overload-s1',category:'stress-anxiety',original:'energy-confidence'},
+   {scenario:'self-confidence-s1',category:'goals-money',original:'energy-confidence'},
+   {scenario:'life-purpose-s1',category:'energy-confidence',original:'goals-money'},
+   {scenario:'childhood-trauma-s1',category:'energy-confidence',original:'stress-anxiety'},
+ ];
+ for(const row of relocated){
+   for(const locale of ['en','ru','es']){
+     const telegram=listTelegramStoryPlots(row.scenario,locale);
+     const website=await listMyTubePlots(row.scenario,locale);
+     assert.equal(telegram.length,6,row.scenario+':'+locale);
+     assert.deepEqual(telegram.map(x=>x.id),website.map(x=>x.id));
+     for(const plot of telegram){
+       assert.equal(plot.categoryId,row.category,'Expose CURRENT taxonomy, not old storage owner');
+       assert.equal(plot.sourceStatus,'editorial_only_unbound');
+       assert.equal(plot.canExport,false);
+       assert.deepEqual(resolveTelegramStoryPlot(plot.id,locale),plot);
+     }
+   }
+ }
+});

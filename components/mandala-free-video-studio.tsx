@@ -2066,6 +2066,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const mirrorResolveRef=useRef<((path:MirrorResolution)=>boolean)|null>(null);
   const [mirrorStep,setMirrorStep]=useState<1|2|3>(1);
   const [mirrorScope,setMirrorScope]=useState<MirrorScope>("me");
+  const [mirrorPlannedFormat,setMirrorPlannedFormat]=useState<MirrorResolution["videoFormat"]>(undefined);
+  const [pendingMirrorPurpose,setPendingMirrorPurpose]=useState<{id:string;topicId:string}|null>(null);
   const [reelMode,setReelMode]=useState(false);
   const [goalQuizState,setGoalQuizState]=useState<{
     step:1|2|3;complete:boolean;audience:"self"|"others";
@@ -3203,6 +3205,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       presetOverride:suggestions,custom:"",ideasDraft:undefined
     });
   };
+  // Screen 2 is the real canonical Goal. Once Director verifies the chosen
+  // Topic, preselect the SAME goal by its original ID/context in Ideas.
+  // No duplicate questionnaire, client data access, render or XP charge.
+  useEffect(()=>{
+    if(!pendingMirrorPurpose||activeWorkspace!=="phrases"||
+      selectedConceptTopic?.topicId!==pendingMirrorPurpose.topicId)return;
+    const goal=personalGoalOptions.goals.find(item=>item.id===pendingMirrorPurpose.id);
+    if(!goal){setPendingMirrorPurpose(null);return;}
+    setIdeasGoalChoice({contextKey:personalGoalOptions.contextKey,id:goal.id});
+    setIdeasProfile({...DEFAULT_VIDEO_GOAL_PROFILE});
+    setIdeasProfileConfirmed(false);
+    applyPurposePhrases(goal.type,"",true);
+    setPendingMirrorPurpose(null);
+  },[pendingMirrorPurpose,activeWorkspace,selectedConceptTopic?.topicId,personalGoalOptions]);
   const conceptGoalText=composePersonalVideoGoalIntent(wish,chosenIdeaGoal,locale);
   const conceptTopic=chosenIdeaGoal?.topicId?{
     categoryId:chosenIdeaGoal.categoryId!,subcategoryId:chosenIdeaGoal.subcategoryId!,
@@ -7680,6 +7696,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       data-hh-mirror-advanced={mirrorAdvanced?"true":"false"}
       data-hh-mirror-step={mirrorStep}
       data-hh-mirror-scope={mirrorScope}
+      data-hh-mirror-planned-format={mirrorPlannedFormat}
       data-video-scenario-open={videoScenarioOpen?"true":"false"}
       data-video-studio-hydrated={studioHydrated?"true":"false"}
       data-montage-panel={activeWorkspace==="editor"?montagePanel:undefined}
@@ -7791,6 +7808,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             // bills or sends private content to a provider.
             const accepted=mirrorResolveRef.current?.(path);
             if(!accepted)return false;
+            setPendingMirrorPurpose(path.goalPurposeId?{id:path.goalPurposeId,topicId:path.topicId}:null);
+            setMirrorPlannedFormat(path.videoFormat);
             const requestedReel=isInstagramReelSelection(path);
             setReelMode(requestedReel);
             if(requestedReel){

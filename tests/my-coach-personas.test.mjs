@@ -15,9 +15,9 @@ import {
   coachSessionHref, coachStagePrompt, buildCoachBehaviorPolicy, personaMethodFit,
 } from '../lib/coaching/persona-registry.mjs'
 
-test('ten distinct fictional AI coaches have complete EN/RU/ES profiles and stage examples', () => {
-  assert.equal(COACH_PERSONAS.length, 10)
-  assert.equal(new Set(COACH_PERSONAS.map(persona => persona.id)).size, 10)
+test('eleven distinct fictional AI coaches have complete EN/RU/ES profiles and stage examples', () => {
+  assert.equal(COACH_PERSONAS.length, 11)
+  assert.equal(new Set(COACH_PERSONAS.map(persona => persona.id)).size, 11)
   assert.equal(new Set(COACH_PERSONAS.map(persona => persona.topic)).size, 8)
   for (const persona of COACH_PERSONAS) {
     assert.ok(COACH_TOPICS.includes(persona.topic), persona.id)
@@ -251,7 +251,7 @@ test('Play starts the authored natural voice once, without recording or extra ch
   assert.ok(!voice.includes('audio-storyboard'))
 })
 
-test('each of ten AI personae introduces its own approach and unique speech style in EN/RU/ES',()=>{
+test('each of eleven AI personae introduces its own approach and unique speech style in EN/RU/ES',()=>{
   assert.deepEqual(Object.keys(COACH_PRESENTATIONS).sort(),COACH_PERSONAS.map(p=>p.id).sort())
   for(const locale of COACH_LOCALES){
     const voices=new Set(),introductions=new Set(),styles=new Set()
@@ -268,9 +268,9 @@ test('each of ten AI personae introduces its own approach and unique speech styl
       const behavior=buildCoachBehaviorPolicy(persona.id,{},locale)
       assert.ok(behavior.systemInstructions.includes(intro.style),persona.id+' model keeps its style')
     }
-    assert.equal(introductions.size,10)
-    assert.equal(styles.size,10)
-    assert.equal(voices.size,10)
+    assert.equal(introductions.size,11)
+    assert.equal(styles.size,11)
+    assert.equal(voices.size,11)
   }
   assert.equal(getCoachPresentation('__proto__'),null)
   assert.equal(getCoachPresentation('unknown'),null)
@@ -295,7 +295,7 @@ test('legacy persona speech profiles remain pure and do not trigger device playb
   }
 })
 
-test('the ten approved presentations flow directly into the same live dialogue',()=>{
+test('the eleven registered presentations flow directly into the same live dialogue',()=>{
   const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
   const voice=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
   const css=readFileSync(new URL('../components/my-coach-live-dialogue.module.css',import.meta.url),'utf8')

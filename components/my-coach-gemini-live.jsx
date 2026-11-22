@@ -135,7 +135,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
           message:text,turns:previous.map(turn=>({...turn,content:turn.content.slice(0,300)})),
           elapsedSeconds:Math.min(7200,Math.max(0,Math.floor(p.elapsedSeconds||0))),
           openingHistory:r.openingHistory.slice(0,-1).slice(0,20).map(text=>text.slice(0,120)),
-          ...(r.allowOpeningPrior&&r.openingPrior?{allowOpeningPrior:true,openingPrior:r.openingPrior}:{}),
+          ...(p.allowOpeningPrior&&p.openingPrior?{allowOpeningPrior:true,openingPrior:p.openingPrior}:{}),
           consent:true,voiceConsent:true,trainingUseConsent:true}),
       })
       const data=response.ok?await response.json().catch(()=>null):null
@@ -190,7 +190,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     }
     // Gemini 3.1 may NOT emit interrupted if the person was already talking
     // before the model turn. Protect the microphone's active human turn here.
-    if(frame.audio?.length&&r.bargeDetector.userActive){
+    // Output transcription may arrive before PCM. If the human is already
+    // speaking, suppress both so discarded words cannot become a new reply.
+    if((frame.audio?.length||frame.output)&&r.bargeDetector.userActive){
       if(r.speaking||r.player?.playing)interrupt()
       else{
         r.audioGate.interrupt()
@@ -204,7 +206,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       r.inputText=appendGeminiLiveTranscript(r.inputText,value)
       propsRef.current.onInputInterim?.(r.inputText)
     }
-    if(frame.output){
+    if(frame.output&&allowAudio){
       if(r.inputText)commitInput(r)
       r.outputText=appendGeminiLiveTranscript(r.outputText,frame.output)
       propsRef.current.onOutputInterim?.(r.outputText)
@@ -331,7 +333,6 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       signal:r.abort.signal,headers:{'Content-Type':'application/json'},
       body:JSON.stringify({personaId:r.personaId,locale:r.locale,
         settings:r.settings,voiceName:r.voiceName,consent:true,
-        ...(r.allowOpeningPrior&&r.openingPrior?{allowOpeningPrior:true,openingPrior:r.openingPrior}:{}),
         voiceConsent:true,trainingUseConsent:true}),
     })
     if(!response.ok)throw Error('GEMINI_LIVE_UNAVAILABLE')

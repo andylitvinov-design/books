@@ -125,6 +125,10 @@ try {
   await expect(shelves).toHaveAttribute("data-expanded","false");
   await expect(shelves.locator("[data-business-shelf]")).toHaveCount(6);
   await expect(shelves.locator("[data-business-shelf] img")).toHaveCount(6);
+  const orderedCards=shelves.locator("[data-business-shelf]");
+  assert.deepEqual(await orderedCards.evaluateAll(nodes=>nodes.map(node=>node.dataset.businessShelf)),
+    ["express","remedies","strategy","artifacts","energy","energywork"],
+    "Business shelves must preserve the six approved categories");
   await expect(page.locator("[data-hh-unified-dock]")).toHaveCount(1);
   const m=await page.evaluate(()=>{
    const cards=[...document.querySelectorAll("[data-business-shelf]")];
@@ -157,11 +161,19 @@ try {
   await expect(shelves).toHaveAttribute("data-expanded","true");
   await expect(shelves.locator('[data-business-second-level="express"] [data-business-subservice]')).toHaveCount(5);
   await expect(shelves.locator('[data-business-get-details="express"]')).toHaveCount(1);
+  if(width===390){
+    const express=shelves.locator('[data-business-second-level="express"]');
+    await expect(shelves.locator('[data-business-get-details="express"]')).toBeVisible();
+    await express.locator('[data-business-subservice="express-1"]').click();
+    await expect(express.locator('[data-business-subservice="express-1"]')).toHaveAttribute("aria-pressed","true");
+    if(locale==="en")assert.match(await express.innerText(),/FREE[\s\S]*45 CAD[\s\S]*75 CAD[\s\S]*200 CAD[\s\S]*300 CAD/);
+  }
   await shelves.locator("[data-business-back-to-shelves]").click();
   await expect(shelves).toHaveAttribute("data-expanded","false");
   await shelves.locator('[data-business-shelf="strategy"]').click();
   await expect(shelves.locator('[data-business-second-level="strategy"] [data-business-subservice]')).toHaveCount(4);
   await expect(shelves.locator('[data-business-get-details="strategy"]')).toHaveCount(1);
+  if(width===390)await expect(shelves.locator('[data-business-get-details="strategy"]')).toBeVisible();
   await shelves.locator("[data-business-back-to-shelves]").click();
   const quiz=section.locator("[data-business-quiz]");
   await expect(quiz).toHaveAttribute("data-quiz-step","1");
