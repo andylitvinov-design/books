@@ -234,3 +234,11 @@ test("Original Motion uses native WebKit tap for Style Next and verifies Audio",
  assert.match(motion,/const press=button=>engine==='webkit'\?button\.tap\(/);
  assert.match(motion,/await press\(styleNext\)[\s\S]*?VISIBLE_STYLE_NEXT_MUST_OPEN_AUDIO/);
 });
+
+test("mobile hydration taps the visible Ideas Next before asserting Personalization",()=>{
+ const voice=read("scripts/verify-affirmation-voice-browser.mjs");
+ const hydration=voice.split("async function verifyWorkspaceHydration")[1]
+  .split("async function verifyGuestVoiceConsent")[0];
+ assert.match(hydration,/const ideasNext=ideasGoalPane\.locator\('\[data-video-ideas-goal-next\]'\)/);
+ assert.match(hydration,/await ideasNext\.tap\(\);[\s\S]*?data-video-ideas-tab="personalization"[\s\S]*?toHaveAttribute\("aria-pressed","true"\)/);
+});
