@@ -147,8 +147,10 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(mirror.locator('[data-hh-mirror-plan]')).toHaveCount(0);
     const checkGeometry=async(selector,width)=>{
       await page.setViewportSize({width,height:840});
-      const geometry=await mirror.evaluate((selector)=>{
-        const cards=[...document.querySelectorAll(selector)].map(el=>{
+      // Playwright Locator.evaluate passes the root element first; the CSS selector
+      // is the second argument. Passing the element to querySelectorAll fails in WebKit.
+      const geometry=await mirror.evaluate((root,selector)=>{
+        const cards=[...root.querySelectorAll(selector)].map(el=>{
           const r=el.getBoundingClientRect();return {top:r.top,bottom:r.bottom,width:r.width};
         });
         return {cards,scrollWidth:document.documentElement.scrollWidth,viewport:innerHeight};
