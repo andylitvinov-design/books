@@ -14,7 +14,7 @@ if(parsed.hostname!=='127.0.0.1'||parsed.pathname!=='/hh_personal_goal_test')thr
 const admin=new pg.Client({connectionString:url}),config={test:true,databaseUrl:url,encryptionKey:Buffer.alloc(32,3),encryptionKeyId:'synthetic'}
 const repo=createPersonalGoalRepository(config),a={id:randomUUID(),claims:{}},b={id:randomUUID(),claims:{}}
 for(const actor of [a,b])actor.claims={sub:actor.id,session_id:randomUUID()}
-const draft=(changes={})=>({id:randomUUID(),operationId:randomUUID(),revision:0,areaKey:'meaning_purpose',title:'Synthetic title',why:'Synthetic reason',desiredOutcome:'A draft manuscript',axes:['realization'],status:'active',confirmed:true,targetDate:null,milestones:[],firstStep:'Write 15 minutes',fallbackStep:'Write one line',...changes})
+const draft=(changes={})=>({id:randomUUID(),operationId:randomUUID(),revision:0,areaKey:'meaning_purpose',title:'Synthetic title',why:'Synthetic reason',desiredOutcome:'A draft manuscript',axes:['self-realization'],status:'active',confirmed:true,targetDate:null,milestones:[],firstStep:'Write 15 minutes',fallbackStep:'Write one line',...changes})
 before(async()=>{
  await admin.connect()
  await admin.query(`create schema app;create schema app_private;create schema auth;

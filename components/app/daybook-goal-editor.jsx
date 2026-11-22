@@ -1,7 +1,8 @@
 'use client'
-import {useCallback,useEffect,useRef,useState} from 'react'
+import {useEffect,useRef,useState} from 'react'
 import {appFetch} from '@/lib/app/client-fetch'
-import {goalEditorDraft,goalStatusOptions,createPersonalGoalSaver} from '@/lib/app/daybook-goal-client.mjs'
+import {goalStatusOptions} from '@/lib/app/daybook-goal-client.mjs'
+import {createGoalEditorSession} from '@/lib/app/daybook-goal-editor-session.mjs'
 import {PERSONAL_GOAL_AREAS,PERSONAL_GOAL_AXES} from '@/lib/app/daybook-personal-goal-contract.mjs'
 import {COACH_PROFILE_AXES} from '@/lib/coaching/coach-profile-intake.mjs'
 import css from './daybook-goal-editor.module.css'
@@ -14,38 +15,31 @@ const COPY={
 const STAGES=['proposed','accepted','active','deferred','declined','completed','paused','cancelled']
 const STAGE_LABELS={en:['Proposed','Accepted','Active','Deferred','Declined','Completed','Paused','Cancelled'],ru:['Предложена','Принята','Активна','Отложена','Отклонена','Завершена','На паузе','Отменена'],es:['Propuesto','Aceptado','Activo','Aplazado','Rechazado','Completado','En pausa','Cancelado']}
 const AREA_LABELS={en:['Body & health','Emotional wellbeing','Relationships','Career & business','Finance','Personal growth','Lifestyle','Meaning & purpose'],ru:['Тело и здоровье','Эмоциональное благополучие','Отношения','Карьера и бизнес','Финансы','Личностный рост','Образ жизни','Смысл и предназначение'],es:['Cuerpo y salud','Bienestar emocional','Relaciones','Carrera y negocio','Finanzas','Crecimiento personal','Estilo de vida','Sentido y propósito']}
-export default function DaybookGoalEditor({accountId,locale='en',initialGoal=null,onSaved,onSessionLost}){
+export default function DaybookGoalEditor({accountId,locale='en',initialGoal=null,editorSession=null,onSaved,onSessionLost}){
  const lang=COPY[locale]?locale:'en',c=Object.fromEntries(KEYS.map((key,i)=>[key,COPY[lang][i]]))
- const [state,setState]=useState(null),[status,setStatus]=useState(''),[busy,setBusy]=useState(false)
- const saver=useRef(null),epoch=useRef(0),working=useRef(false),callbacks=useRef({onSaved,onSessionLost})
- const invalidate=useCallback(()=>{epoch.current++},[])
+ const [state,setState]=useState(null)
+ const active=useRef(null),notified=useRef(null),callbacks=useRef({onSaved,onSessionLost})
  useEffect(()=>{callbacks.current={onSaved,onSessionLost}},[onSaved,onSessionLost])
  useEffect(()=>{
-  epoch.current++;working.current=false;saver.current?.discard();setBusy(false);setStatus('')
-  if(!accountId){setState(null);return}
-  saver.current=createPersonalGoalSaver(appFetch,accountId)
-  try{
-   const value=initialGoal?goalEditorDraft(initialGoal):{legacy:false,draft:{id:crypto.randomUUID(),revision:0,areaKey:'meaning_purpose',title:'',why:'',desiredOutcome:'',axes:[],status:'proposed',confirmed:false,targetDate:null,milestones:[],firstStep:'',fallbackStep:''}}
-   setState({owner:accountId,...value,previous:initialGoal?.status??null})
-  }catch{setState(null);setStatus('invalid')}
-  const activeSaver=saver.current
-  return ()=>{invalidate();activeSaver?.discard()}
- },[accountId,initialGoal,invalidate])
+  if(!accountId){setState(null);active.current=null;return}
+  let session
+  try{session=editorSession||createGoalEditorSession(appFetch,accountId,initialGoal)}catch{setState(null);return}
+  active.current=session
+  const update=()=>setState(session.snapshot())
+  update();const unsubscribe=session.subscribe(update)
+  return ()=>{unsubscribe();if(!editorSession)session.dispose()}
+ },[accountId,initialGoal,editorSession])
+ useEffect(()=>{
+  if(state?.owner!==accountId)return
+  if(state.status==='signed-out')callbacks.current.onSessionLost?.()
+  if(state.status==='saved'&&state.result&&notified.current!==state.result){notified.current=state.result;callbacks.current.onSaved?.(state.result,accountId)}
+ },[state,accountId])
  if(!accountId)return null
- if(!state||state.owner!==accountId)return <p role="status">{c[status]||''}</p>
- const draft=state.draft,locked=busy||status==='failed'
- const change=(key,value)=>{setState(old=>({...old,draft:{...old.draft,[key]:value}}));setStatus('')}
+ if(!state||state.owner!==accountId||!state.draft)return <p role="status"/>
+ const {draft,status,busy}=state,locked=busy||status==='failed'
+ const change=(key,value)=>active.current?.change(key,value)
  async function save(event){
-  event.preventDefault();if(working.current)return
-  working.current=true;setBusy(true);setStatus('saving');const token=epoch.current
-  try{
-   const goal=await saver.current.save(draft)
-   if(token!==epoch.current)return
-   setState({owner:accountId,...goalEditorDraft(goal),previous:goal.status});setStatus('saved');callbacks.current.onSaved?.(goal,accountId)
-  }catch(error){if(token!==epoch.current)return
-   if(error.status===401||error.code==='ACCOUNT_CHANGED'){epoch.current++;saver.current?.discard();setState(null);callbacks.current.onSessionLost?.()}
-   else setStatus(saver.current?.hasPending()?'failed':'invalid')
-  }finally{if(token===epoch.current){working.current=false;setBusy(false)}}
+  event.preventDefault();await active.current?.save()
  }
  return <form className={css.editor} onSubmit={save}><h2>{c.heading}</h2>{state.legacy&&<p>{c.legacy}</p>}
   {[['title','title',1000],['why','why',4000],['desiredOutcome','outcome',4000],['firstStep','step',2000],['fallbackStep','fallback',2000]].map(([key,label,max])=><label key={key}>{c[label]}<textarea rows={key==='title'?2:3} required={key==='title'} maxLength={max} value={draft[key]} disabled={locked} onChange={e=>change(key,e.target.value)}/></label>)}

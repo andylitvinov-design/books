@@ -8,6 +8,7 @@ import {localJournalDay} from '@/lib/app/daybook-journal-contract.mjs'
 import {collectJournalExport} from '@/lib/app/daybook-journal-export.mjs'
 import DaybookGoalContext from './daybook-goal-context'
 import {createJournalSessionGuard} from '@/lib/app/daybook-session-guard.mjs'
+import {createGoalWorkspaceMemory} from '@/lib/app/daybook-goal-editor-session.mjs'
 import styles from './daybook-journal.module.css'
 const DaybookPersonalGoals=dynamic(()=>import('./daybook-personal-goals'))
 
@@ -29,8 +30,10 @@ export default function DaybookJournal({locale}){
  const [goalsVisited,setGoalsVisited]=useState(false)
  const epoch=useRef(0),owner=useRef(null),saver=useRef(null),saving=useRef(false)
  const sessionGuard=useRef(null)
+ const goalMemory=useRef(null)
+ if(!goalMemory.current)goalMemory.current=createGoalWorkspaceMemory()
  const invalidate=useCallback(()=>{epoch.current++;saver.current?.discard()},[])
- const wipe=useCallback(()=>{invalidate();sessionGuard.current?.dispose();owner.current=null;saver.current=null;setAccount(null);setEntries([]);setDraft(null);setNext(null);setQuery('');setStatus('');setExportStatus('');setGoalsVisited(false);setBusy(false);saving.current=false},[invalidate])
+ const wipe=useCallback(()=>{invalidate();goalMemory.current?.clear();sessionGuard.current?.dispose();owner.current=null;saver.current=null;setAccount(null);setEntries([]);setDraft(null);setNext(null);setQuery('');setStatus('');setExportStatus('');setGoalsVisited(false);setBusy(false);saving.current=false},[invalidate])
  const sessionLost=useCallback(()=>{wipe();setPhase('signed-out')},[wipe])
  const load=useCallback(async()=>{
   wipe();setPhase('loading');const token=epoch.current
@@ -49,7 +52,7 @@ export default function DaybookJournal({locale}){
   try{channel=new BroadcastChannel('hh-app-session');channel.onmessage=e=>{if(e.data==='signed-out'){wipe();setPhase('signed-out')}}}catch{}
   const hide=()=>{wipe();setPhase('loading')},show=e=>{if(e.persisted)void load()}
   window.addEventListener('pagehide',hide);window.addEventListener('pageshow',show)
-  return ()=>{invalidate();channel?.close();window.removeEventListener('pagehide',hide);window.removeEventListener('pageshow',show)}
+  return ()=>{invalidate();goalMemory.current?.clear();channel?.close();window.removeEventListener('pagehide',hide);window.removeEventListener('pageshow',show)}
  },[load,wipe,invalidate])
  useEffect(()=>{
   if(!account)return
@@ -125,7 +128,7 @@ export default function DaybookJournal({locale}){
   <Link href={root+'/portrait'}>{c.home}</Link><h1>{c.title}</h1><p>{c.intro}</p>
   {phase!=='ready'?<section aria-live="polite"><p>{['loading','checking'].includes(phase)?c.loading:phase==='signed-out'?c.login:c.error}</p>{phase==='signed-out'?<Link href={root+'/portrait'}>{c.login}</Link>:phase==='error'||phase==='locked-error'?<button onClick={()=>void(phase==='locked-error'?sessionGuard.current?.verify():load())}>{c.retry}</button>:null}</section>:<>
    <nav aria-label={c.title}>{['today','journal','goals','growth'].map(key=><button key={key} aria-current={tab===key?'page':undefined} onClick={()=>{if(key==='goals')setGoalsVisited(true);setTab(key)}}>{c[key]}</button>)}</nav>
-   {(goalsVisited||tab==='goals')&&<div hidden={tab!=='goals'}><DaybookPersonalGoals key={account} accountId={account} locale={locale} onSessionLost={sessionLost}/><Link href={root+'/my-coaching-plan'}>{c.plan}</Link></div>}
+   {(goalsVisited||tab==='goals')&&<div hidden={tab!=='goals'}><DaybookPersonalGoals key={account} accountId={account} locale={locale} onSessionLost={sessionLost} memory={goalMemory.current}/><Link href={root+'/my-coaching-plan'}>{c.plan}</Link></div>}
    {tab==='goals'?null:tab==='growth'?<section><h2>{c.growth}</h2><Link href={'/'+locale+'/development-vectors'}>{c.vectors}</Link></section>:<>
     <button onClick={()=>open(null)} disabled={busy||status==='failed'}>{c.new}</button>
     {draft&&<section><label>{c.note}<select value={draft.kind} disabled={busy||status==='failed'} onChange={e=>change('kind',e.target.value)}>{['note','morning','evening'].map(kind=><option key={kind} value={kind}>{c[kind]}</option>)}</select></label>
