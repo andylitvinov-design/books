@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {dailyDayKey,sealDailyIntention,readDailyIntention} from '../lib/app/daybook-daily-storage.mjs'
 const owner='550e8400-e29b-41d4-a716-446655440000',other='550e8400-e29b-41d4-a716-446655440001',id='550e8400-e29b-41d4-a716-446655440002'
 const config={encryptionKey:Buffer.alloc(32,9),encryptionKeyId:'synthetic'}
-const input={id,operationId:other,revision:0,localDay:'2026-11-22',timezone:'America/Toronto',weeklyGoalId:other,actionIds:[owner],carryFromDay:null,confirmed:true}
+const input={id,operationId:other,revision:0,localDay:'2026-11-22',timezone:'America/Toronto',weeklyGoalId:other,actionIds:[owner],carriedActionIds:[],carryFromDay:null,confirmed:true}
 test('daily lookup uses account-bound keyed digest rather than plaintext date',()=>{
  const key=dailyDayKey(owner,input.localDay,config)
  assert.match(key,/^[a-f0-9]{64}$/);assert.notEqual(key,dailyDayKey(other,input.localDay,config))
