@@ -30,16 +30,18 @@ test("one phrase editor supplies Montage Text with selected and manually edited 
  assert.doesNotMatch(cmp,/fetch\(|appFetch\(|localStorage|sessionStorage|navigator\.sendBeacon/);
  assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
  assert.match(studio,/onCreate=\{\(\)=>\{\s*setMontagePanel\("concept"\);setPreviewPlaying\(false\);setNotice\(""\);/);
- assert.match(studio,/const workspaceTabs=\[\s*\{id:"video",Icon:Film\},\s*\{id:"phrases",Icon:Heart\},\s*\{id:"editor",Icon:Scissors\}/);
+ assert.match(studio,/const workspaceTabs=\[\s*\{id:"video",Icon:Film\},\s*\{id:"editor",Icon:Scissors\},\s*\{id:"phrases",Icon:Heart\}/);
 });
 
-test("Ideas shortcut opens the single Montage Text editor without renderer or paid request",()=>{
+test("Ideas shortcut respects Extra → Text and Personal routes without a paid request",()=>{
  const start=studio.indexOf("const goToMontageFromIdeas = () => {");
  const end=studio.indexOf("const createQuickVideo = () => {",start);
  assert.ok(start>0&&end>start,"Ideas navigation handler");
  const action=studio.slice(start,end);
  assert.match(action,/setActiveWorkspace\("editor"\)/);
- assert.match(action,/setMontagePanel\("text"\)/);
+ assert.match(action,/if\(extraTextChoice==="personal"\)/);
+ assert.match(action,/setIdeasSubtab\(ideasProfileConfirmed\?"concept":"personalization"\)/);
+ assert.match(action,/setMontagePanel\(extraTextChoice==="support"\?"text":"promo"\)/);
   assert.match(studio,/data-video-ideas-concept-panel/);
   assert.match(studio,/data-video-concept-text-tools/);
  assert.match(action,/scrollIntoView/);
@@ -92,7 +94,7 @@ test("Ideas rolling preview iPhone bug regression: first selected phrase is show
  assert.ok(render.includes('textScale === "small"')&&render.includes('textScale === "large"'));
  assert.ok(cmp.includes('onResetPreview();onChange(old=>'),"size slider refreshes the first actual phrase");
  assert.ok(cmp.includes('motion:"rise"'),"Ideas enables rolling renderer");
- assert.ok(studio.includes('paintSingleVideoTextOverlay(ctx,previewSeekSeconds,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips)'));
+ assert.ok(studio.includes('paintSingleVideoTextOverlay(ctx,previewSeekSeconds,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips,reelModeActive)'));
  assert.equal((studio.match(/paintSingleVideoTextOverlay\(ctx,/g)||[]).length,5,
    "live preview and all three export paths share the same renderer");
 });
@@ -135,7 +137,13 @@ test("Ideas shows Personalization, Goal and Concept without cloning Montage or t
  assert.match(studio,/data-video-ideas-goal-panel/);
  assert.match(studio,/data-video-ideas-concept-panel/);
  assert.equal((studio.match(/<MandalaVideoConcept /g)||[]).length,1);
- assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1);
+ // One renderer and one recorder; Personal and Standard Text use two distinct
+ // phrase-editor instances, enabled on separate workspaces by design.
+ assert.equal((studio.match(/<MandalaVideoIdeas key=/g)||[]).length,2);
+ assert.match(studio,/key=\{"personal-phrases-"\+theme\}/);
+ assert.match(studio,/key=\{"standard-phrases-"\+theme\}/);
+ assert.match(studio,/active=\{activeWorkspace==="phrases"&&ideasSubtab==="concept"\}/);
+ assert.match(studio,/active=\{activeWorkspace==="editor"&&montagePanel==="text"\}/);
  assert.equal((studio.match(/<MandalaAffirmationVoice locale/g)||[]).length,1);
  assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
  assert.match(studio,/data-video-ideas-voice-mode="voice"/);

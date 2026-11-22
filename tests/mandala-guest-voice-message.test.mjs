@@ -55,7 +55,7 @@ test("actual browser route checks speaker consent, fragment invitation, and no p
  assert.ok(browser.includes('toHaveAttribute("data-guest-voice-hydrated","true"'),"real WebKit must wait for React hydration");
 });
 
-test("macOS WebKit hydration follows visible Goals → Ideas → Montage without legacy clicks",()=>{
+test("macOS WebKit hydration follows visible Goal → Montage Extra → Personal without legacy clicks",()=>{
  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
  const studio=read("components/mandala-free-video-studio.tsx");
  const style=read("components/mandala-video-mobile.module.css");
@@ -66,28 +66,43 @@ test("macOS WebKit hydration follows visible Goals → Ideas → Montage without
  const choose=flow.indexOf("await purpose.locator('[data-video-ideas-goal-choice=\"rest\"]').click()",scope);
  const goalContinue=flow.indexOf("await purpose.locator('[data-video-ideas-goal-next]').click()",choose);
  const format=flow.indexOf("await mirror.locator('[data-hh-mirror-video-format=\"pro\"]').click()",goalContinue);
- const click=flow.indexOf("await mirror.locator('[data-hh-mirror-next]').click()",format);
- const ideas=flow.indexOf('toHaveAttribute("data-active-workspace","phrases",{timeout:15000})',click);
- const goalPanel=flow.indexOf('const ideasGoalPane=page.locator',ideas);
- const preserved=flow.indexOf("await expect(ideasGoalPane.locator('[data-video-ideas-goal-choice=\"rest\"]'))",goalPanel);
- const nextControl=flow.indexOf("const ideasNext=ideasGoalPane.locator('[data-video-ideas-goal-next]')",preserved);
- const next=flow.indexOf("await ideasNext.tap()",nextControl);
- const personalized=flow.indexOf('data-video-ideas-personalization-panel',next);
- const montage=flow.indexOf("await montage.tap()",personalized);
- assert.ok(first>=0&&last>first&&scope>=0&&choose>scope&&goalContinue>choose&&
-   format>goalContinue&&click>format&&ideas>click&&goalPanel>ideas&&preserved>goalPanel&&
-   nextControl>preserved&&next>nextControl&&personalized>next&&montage>personalized,
-   "one visible journey chooses the original Goal before Format, preserves it in Ideas and reaches Montage");
+ assert.ok(scope>=0&&choose>scope&&goalContinue>choose&&format>goalContinue,
+   "the visible journey chooses Goal before Format");
+ assert.ok(flow.includes("const preservedGoal=ideasGoalPane.locator"),"the selected Goal must be checked after personalization");
+ // Test the exact supported user path, not the retired Goal → Ideas shortcut.
+ const mirrorNext=flow.indexOf("await mirror.locator('[data-hh-mirror-next]').click()");
+ const extraToPersonal=flow.indexOf("await enterPersonalAfterMontageExtra(page)",mirrorNext);
+ const personalGoal=flow.indexOf("data-video-ideas-goal-panel",extraToPersonal);
+ const selectGoal=flow.indexOf("await expect(ideasGoalPane.locator('[data-video-ideas-goal-choice=\"rest\"]'))",personalGoal);
+ const nextControl=flow.indexOf("const ideasNext=ideasGoalPane.locator('[data-video-ideas-goal-next]')",selectGoal);
+ const nextGoal=flow.indexOf("await ideasNext.tap()",nextControl);
+ const personalization=flow.indexOf("data-video-ideas-personalization-panel",nextGoal);
+ const backToMontageText=flow.indexOf("await openVisibleMontageText(page",personalization);
+ assert.ok(first>=0&&last>first&&mirrorNext>=0&&extraToPersonal>mirrorNext&&personalGoal>extraToPersonal&&
+   selectGoal>personalGoal&&nextControl>selectGoal&&nextGoal>nextControl&&personalization>nextGoal&&backToMontageText>personalization,
+   "real visitor goes from Goal to Montage Extra, chooses Personal, then returns to Montage Text after answering");
+ const helperStart=browser.indexOf("async function enterPersonalAfterMontageExtra");
+ const helperEnd=browser.indexOf("async function openVisibleMontageText",helperStart);
+ const helper=browser.slice(helperStart,helperEnd);
+ const editor=helper.indexOf('toHaveAttribute("data-active-workspace","editor"');
+ const extra=helper.indexOf('data-video-montage-tab=\"promo\"',editor);
+ const choice=helper.indexOf('data-video-extra-text-option=\"personal\"',extra);
+ const personal=helper.indexOf('toHaveAttribute("data-active-workspace","phrases"',choice);
+ assert.ok(helperStart>=0&&helperEnd>helperStart&&editor>=0&&extra>editor&&choice>extra&&personal>choice,
+   "the helper must exercise visible Extra and Personal buttons and await React workspace state");
+ assert.doesNotMatch(helper,/click\(\{force:true\}\)|\.evaluate\(/);
  assert.match(flow,/data-video-continue-scenarios/);
  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
  assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
  assert.match(studio,/data-video-scenario-open=\{videoScenarioOpen\?"true":"false"\}/);
- assert.match(studio,/onClick=\{continueToIdeas\}/);
+ assert.match(studio,/onClick=\{continueToMontage\}/);
  assert.match(style,/\[data-video-scenario-open="false"\]/);
- // The live Style controls are direct buttons, not the removed legacy wrapper.
+ // The live Style controls remain real buttons, not a removed legacy wrapper.
  assert.ok(flow.includes('const styleTab=page.locator(\'[data-video-montage-tab="effects"]\')'));
  assert.ok(flow.includes('await styleTab.tap()'));
- assert.ok(flow.includes('const styles=page.locator("[data-video-montage-style]")'));
+ assert.ok(flow.includes('const moreStyles=page.locator("[data-video-montage-more-styles]")'));
+ assert.ok(flow.includes('await moreStyles.locator("summary").tap()'));
+ assert.ok(flow.includes('const styles=moreStyles.locator("[data-video-montage-style]")'));
  assert.ok(flow.includes('await expect(styles).toHaveCount(6)'));
  assert.ok(flow.includes('await minimal.tap()'));
  assert.ok(flow.includes('await expect(minimal).toHaveAttribute("aria-pressed","true")'));
