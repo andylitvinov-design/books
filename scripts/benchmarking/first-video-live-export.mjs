@@ -184,11 +184,28 @@ try {
   if(await mirrorMore.count() && await mirrorMore.isVisible()){
     if(engine==='webkit')await mirrorMore.tap();
     else await mirrorMore.click();
-    await expect(page.locator('[data-mandala-free-video]'))
-      .toHaveAttribute('data-hh-mirror-advanced','true');
-    await expect(page.locator('[data-mandala-free-video]'))
-      .toHaveAttribute('data-video-scenario-open','true');
+  }else{
+    // Approved Magic Mirror now has a landing page and a large topic composer.
+    // Older More-goals control is intentionally hidden at phone widths.
+    // Open the same advanced tools through the visible composer + button.
+    const plan=page.locator('[data-hh-mirror-plan]');
+    if(await plan.isVisible()){
+      if(engine==='webkit')await plan.tap();else await plan.click();
+    }
+    const composer=page.locator('[data-hh-mirror-composer]');
+    for(let i=0;i<2&&!await composer.isVisible();i++){
+      const back=page.locator('[data-hh-mirror-back]');
+      await expect(back).toBeVisible();
+      if(engine==='webkit')await back.tap();else await back.click();
+    }
+    await expect(composer).toBeVisible({timeout:15000});
+    const plus=composer.locator('button').first();
+    await expect(plus).toBeVisible();
+    if(engine==='webkit')await plus.tap();else await plus.click();
   }
+  const studio=page.locator('[data-mandala-free-video]');
+  await expect(studio).toHaveAttribute('data-hh-mirror-advanced','true');
+  await expect(studio).toHaveAttribute('data-video-scenario-open','true');
   const aspectMenu=page.locator('[data-video-prompt-aspect]');
   const aspectSummary=aspectMenu.locator(':scope > summary');
   await expect(aspectSummary).toBeVisible({timeout:15000});

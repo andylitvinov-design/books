@@ -17,7 +17,7 @@ test('legacy first guest video remains local, while XP v2 requires signed-in bal
   assert.match(studio,/sku:"basic"/)
   assert.match(studio,/if\(catalog\.chargeRequired&&!guestLocalRender\)\{[\s\S]*?videoCreditRequest\("hold"/)
   assert.match(studio,/await holdVideoExportCredit\(creditCatalog\)/)
-  assert.match(studio,/if\(guestLocalRender\)\{setCreditConfirmed\(true\)/)
+  assert.match(studio,/if\(!catalog\.chargeRequired\|\|guestLocalRender\)\{setCreditConfirmed\(true\);setCreditRetry\(false\)/)
   assert.match(studio,/if\(result&&result\.mode!=="catalog"&&guestRenderRef\.current&&playbackStatus==="ready"\)/)
   assert.match(studio,/setGuestFirstVideoUsed\(true\)/)
   assert.match(studio,/error\.message==="SIGN_IN_REQUIRED"\?"guest":"unavailable"/)

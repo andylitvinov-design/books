@@ -18,3 +18,6 @@ export function searchMotionGuideScenes(query:string,locale:Locale,aspect:VideoP
   {id:string;label:string;tags:string[]}[];
 export function replaceMotionGuideScene(markdown:string,clipId:string,assetId:string,locale:Locale):string;
 export function moveMotionGuideScene(markdown:string,clipId:string,direction:-1|1,locale:Locale):string;
+
+export function searchMotionGuideAudio(query:string,locale:Locale):{id:string;label:string}[];
+export function replaceMotionGuideAudio(markdown:string,laneId:string,assetId:string,locale:Locale):string;

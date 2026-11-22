@@ -1,7 +1,7 @@
 "use client";
 
 import {useRef,useState} from "react";
-import {ArrowLeft,ArrowRight,Briefcase,Check,Ellipsis,Flower2,Gift,Heart,Mic,Sparkles,TrendingUp,UserRound,Zap} from "lucide-react";
+import {ArrowLeft,ArrowRight,Briefcase,Check,ChevronDown,Clapperboard,Ellipsis,Film,Flower2,Gift,Heart,ImagePlus,Mic,Play,Plus,Sparkles,TrendingUp,UserRound,WandSparkles,Zap} from "lucide-react";
 import type {VideoLocale} from "@/lib/mandala/holistic-video-themes";
 import {listMyTubeCategories,listMyTubeSubcategories,listMyTubeTopics,getMyTubeTopic} from "@/lib/mandala/mytube-content-taxonomy.mjs";
 import {classifyMyTubeRequest} from "@/lib/mandala/mytube-prompt-classifier.mjs";
@@ -11,9 +11,10 @@ export type MirrorScope="me"|"business"|"present";
 export type MirrorCategory="goals-money"|"love-relationships"|"energy-confidence"|"stress-anxiety";
 export type WorkVideoFormat="insta-reels"|"video-about-me"|"service-presentation"|"client-video-offer";
 type Theme="energy"|"money"|"relationships"|"goals"|"health";
+export type MirrorVideoFormat="basic"|"pro"|"vip";
 export type MirrorResolution={
  scope:MirrorScope;categoryId:MirrorCategory;subcategoryId:string;topicId:string;
- theme:Theme;wish:string;goalChoiceId:string;workFormat?:WorkVideoFormat;
+ theme:Theme;wish:string;goalChoiceId:string;workFormat?:WorkVideoFormat;videoFormat?:MirrorVideoFormat;
 };
 type GoalOption={
  id:string;theme:Theme;categoryId:MirrorCategory;image:string;defaultTopicId:string;
@@ -79,6 +80,7 @@ const labels={
   advanced:"Opciones avanzadas",dictation:"Usa el micrófono del teclado para dictar",workQuestion:"¿Qué vídeo quieres crear?",workPlaceholder:"Describe tu vídeo o servicio…",workAlternative:"O elige un formato de vídeo",format:"Formato"},
 } as const;
 
+const formatOptions=[{id:"basic",credits:250,Icon:Film},{id:"pro",credits:500,Icon:Play},{id:"vip",credits:1000,Icon:Clapperboard}] as const;
 const mirrorPosterUrl=(image:string)=>image.startsWith("/")?image:"/videos/holistic-house/film-collection-v2/"+image;
 
 export function MandalaMagicMirrorTitle({locale}:{locale:VideoLocale}){
@@ -91,6 +93,11 @@ export function MandalaMagicMirrorTitle({locale}:{locale:VideoLocale}){
  </header>;
 }
 
+const onboardingCopy={
+ en:{therapy:"Video Therapy for Myself",other:"Videos for Others",therapyHint:"Supportive videos, meditations and practices for your current situation, challenge or goal.",otherHint:"Personal gifts, congratulations, support — and videos for Instagram and social media.",formatTitle:"Choose a Creation Format",formatNote:"Format selection is a planning preference. Credits are confirmed before generation.",basic:"Simple Video",pro:"Live Photo",vip:"Cinematographic Video",basicHelp:"A simple supporting video",proHelp:"Photo animation with your permission",vipHelp:"Cinematic story and scenes",plan:"Plan & Generate Video",back:"Magic Mirror",step:"Step 1 of 3",topic:"Topic",script:"Script & Style",create:"Create",describe:"Describe your situation or goal…",example:"Example: “I feel stressed and need to restore my energy”",ideas:"AI Ideas",guide:"Guide me",guideHelp:"Choose one of four directions below, then a subcategory and topic. Or describe your situation and continue directly.",quiz:"Or choose a topic through a short quiz",next:"Get AI Suggestions & Script",watch:"Watch example video",media:"Open media options",keyboard:"Focus the text field for keyboard dictation"},
+ ru:{therapy:"Видеотерапия для себя",other:"Видео для других",therapyHint:"Поддерживающие видео, медитации и практики для вашей ситуации, трудности или цели.",otherHint:"Подарки, поздравления, поддержка близким и видео для Instagram и соцсетей.",formatTitle:"Выберите формат видео",formatNote:"Выбор формата пока задаёт предпочтение. Кредиты подтверждаются перед генерацией.",basic:"Простое видео",pro:"Живое фото",vip:"Кинематографическое видео",basicHelp:"Короткое поддерживающее видео",proHelp:"Оживление фото с разрешения",vipHelp:"История с видеосценами",plan:"Спланировать и создать видео",back:"Magic Mirror",step:"Шаг 1 из 3",topic:"Тема",script:"Сценарий и стиль",create:"Создание",describe:"Опишите ситуацию или цель…",example:"Пример: «Испытываю стресс и хочу восстановить силы»",ideas:"ИИ-идеи",guide:"Помоги мне",guideHelp:"Выберите одно из четырёх направлений, затем подтему и тему. Или опишите запрос и переходите дальше.",quiz:"Или выберите тему через короткий квиз",next:"Предложить тему и сценарий",watch:"Смотреть пример видео",media:"Открыть медианастройки",keyboard:"Открыть клавиатуру для диктовки"},
+ es:{therapy:"Videoterapia para mí",other:"Vídeos para otros",therapyHint:"Vídeos de apoyo, meditaciones y prácticas para tu situación, reto u objetivo.",otherHint:"Regalos, felicitaciones, apoyo y vídeos para Instagram y redes sociales.",formatTitle:"Elige un formato de vídeo",formatNote:"El formato es una preferencia de planificación. Los créditos se confirman antes de generar.",basic:"Vídeo sencillo",pro:"Foto animada",vip:"Vídeo cinematográfico",basicHelp:"Vídeo breve de apoyo",proHelp:"Anima tu foto con permiso",vipHelp:"Historia con escenas cinematográficas",plan:"Planificar y generar vídeo",back:"Magic Mirror",step:"Paso 1 de 3",topic:"Tema",script:"Guion y estilo",create:"Crear",describe:"Describe tu situación u objetivo…",example:"Ejemplo: «Me siento estresado y quiero recuperar energía»",ideas:"Ideas de IA",guide:"Guíame",guideHelp:"Elige una de las cuatro categorías, después una subcategoría y un tema, o describe tu objetivo.",quiz:"O elige un tema con un cuestionario corto",next:"Sugerir ideas y guion",watch:"Ver vídeo de ejemplo",media:"Abrir opciones multimedia",keyboard:"Enfocar el campo para dictar"},
+} as const;
 export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSelectCategory,
  onStepChange,onScopeChange,onComplete,onExpand}:{
  locale:VideoLocale;wish:string;disabled:boolean;
@@ -99,25 +106,50 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
  onComplete:(value:MirrorResolution)=>boolean|void;onExpand:()=>void;
 }){
  const [scope,setScope]=useState<MirrorScope>("me");
+ const [screen,setScreen]=useState<"landing"|"topic">("landing");
+ const [videoFormat,setVideoFormat]=useState<MirrorVideoFormat>("pro");
+ const [formatMenuOpen,setFormatMenuOpen]=useState(false);
+ const [guideOpen,setGuideOpen]=useState(false);
+ const [introExpanded,setIntroExpanded]=useState(false);
  const [selectedId,setSelectedId]=useState("stress");
  // Each intent keeps its own local wish, avoiding accidental cross-purpose reuse.
  const [scopeWishes,setScopeWishes]=useState<Record<MirrorScope,string>>(()=>({me:wish,business:"",present:""}));
  const [step,setStep]=useState<1|2|3>(1);
  const [subcategoryId,setSubcategoryId]=useState("");
  const [blocked,setBlocked]=useState(false);
- const inputRef=useRef<HTMLInputElement>(null);
- const t=labels[locale],available=choices[scope];
+ const inputRef=useRef<HTMLTextAreaElement>(null);
+ const t=labels[locale],copy=onboardingCopy[locale],available=choices[scope];
  const categoryLabels=listMyTubeCategories(locale);
  const selected=available.find(item=>item.id===selectedId)??available[0];
  const subcategories=listMyTubeSubcategories(selected.categoryId,locale);
  const topics=subcategoryId?listMyTubeTopics(selected.categoryId,subcategoryId,locale):[];
  const changeStep=(next:1|2|3)=>{setStep(next);onStepChange(next);setBlocked(false);};
+ const closeExistingIntro=()=>{
+  // Leaving the page must stop the original MP4, not keep audio playing hidden.
+  document.querySelector<HTMLButtonElement>('[data-video-therapy-intro-close]')?.click();
+  setIntroExpanded(false);
+ };
  const switchScope=(next:MirrorScope)=>{
   if(disabled||scope===next)return;
+  closeExistingIntro();
   setScopeWishes(prev=>({...prev,[scope]:wish}));
   setScope(next);setSelectedId(choices[next][0].id);setSubcategoryId("");
   onWishChange(scopeWishes[next]||"");
   onScopeChange(next);onSelectCategory(choices[next][0].theme);changeStep(1);
+ };
+ const enterScreen=(next:"me"|"others")=>{
+  if(disabled)return;
+  setScreen("topic");setIntroExpanded(false);setFormatMenuOpen(false);setGuideOpen(false);
+  switchScope(next==="me"?"me":"present");
+ };
+ const playExistingIntro=()=>{
+  // This is a poster button, NOT a second video element. Reuse the real
+  // owner-provided intro player already mounted by MandalaFreeVideoStudio.
+  setIntroExpanded(true);
+  const player=document.querySelector<HTMLButtonElement>('[data-video-therapy-intro="ready"]');
+  if(player&&!player.disabled){player.click();window.requestAnimationFrame(()=>
+    document.getElementById("video-hero")?.scrollIntoView({behavior:"smooth",block:"center"}));}
+  else document.getElementById("video-hero")?.scrollIntoView({behavior:"smooth",block:"center"});
  };
  const finish=(categoryId:MirrorCategory,subId:string,topicId:string,goalText:string,workFormat?:WorkVideoFormat)=>{
   const found=getMyTubeTopic(topicId);
@@ -127,8 +159,9 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
   const theme=scope==="business"?categoryTheme[categoryId]:
     categoryId===selected.categoryId?selected.theme:categoryTheme[categoryId];
   const accepted=onComplete({scope,categoryId,subcategoryId:subId,topicId,theme,
-    wish:goalText.slice(0,500),goalChoiceId:workFormat||selected.id,workFormat});
+    wish:goalText.slice(0,500),goalChoiceId:workFormat||selected.id,workFormat,videoFormat});
   if(accepted===false){setBlocked(true);return;}
+  closeExistingIntro();
   setSubcategoryId("");changeStep(1);
  };
  const autoNext=()=>{
@@ -166,8 +199,55 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
   const topicId=inferred.topic.id;
   finish(categoryId,subId,topicId,goalText);
  };
- return <section className={css.goals} data-hh-mirror-goals data-hh-mirror-mode={scope}
-  data-hh-mirror-step={step} aria-label={scope==="business"?t.workQuestion:t.question}>
+ if(screen==="landing")return <section className={css.goals+" "+css.landing} data-hh-mirror-goals
+  data-hh-mirror-screen="landing" data-hh-mirror-mode={scope} data-hh-mirror-step={1}
+  aria-label={copy.formatTitle}>
+  <div className={css.destinationCards} role="group" aria-label={locale==="ru"?"Для кого видео":locale==="es"?"Destinatario":"Who is this video for?"}>
+   <button type="button" data-hh-mirror-enter="me" className={css.destination}
+    disabled={disabled} onClick={()=>enterScreen("me")}>
+    <img src="/images/holistic-house/assessment-lotus.svg" alt="" loading="eager"/>
+    <span className={css.destinationCopy}><Flower2 size={26} aria-hidden="true"/><strong>{copy.therapy}</strong><small>{copy.therapyHint}</small></span>
+    <span className={css.destinationArrow}><ArrowRight size={22}/></span>
+   </button>
+   <button type="button" data-hh-mirror-enter="others" className={css.destination}
+    disabled={disabled} onClick={()=>enterScreen("others")}>
+    <img src="/images/holistic-house/assist-video-letter.svg" alt="" loading="lazy"/>
+    <span className={css.destinationCopy}><Gift size={26} aria-hidden="true"/><strong>{copy.other}</strong><small>{copy.otherHint}</small></span>
+    <span className={css.destinationArrow}><ArrowRight size={22}/></span>
+   </button>
+  </div>
+  <h3 className={css.formatHeading}>{copy.formatTitle}</h3>
+  <div className={css.formatGrid} role="group" aria-label={copy.formatTitle}>
+   {formatOptions.map(option=><button type="button" key={option.id}
+    data-hh-mirror-video-format={option.id} aria-pressed={videoFormat===option.id}
+    disabled={disabled} onClick={()=>setVideoFormat(option.id)} className={css.formatCard}>
+     <option.Icon size={27} aria-hidden="true"/>
+     <strong>{copy[option.id]}</strong>
+     <small>{copy[(option.id+"Help") as "basicHelp"|"proHelp"|"vipHelp"]}</small>
+     <span>{option.credits.toLocaleString("en-US")} XP</span>
+    </button>)}
+  </div>
+  <p className={css.formatDisclosure}>{copy.formatNote}</p>
+  <button type="button" className={css.primaryAction} data-hh-mirror-plan
+   disabled={disabled} onClick={()=>enterScreen("me")}>
+   <Clapperboard size={23} aria-hidden="true"/>{copy.plan}<ArrowRight size={22} aria-hidden="true"/>
+  </button>
+ </section>;
+ return <section className={css.goals} data-hh-mirror-screen="topic" data-hh-mirror-goals data-hh-mirror-mode={scope}
+  data-hh-mirror-step={step} data-hh-mirror-video-preview={introExpanded?"open":"closed"} aria-label={scope==="business"?t.workQuestion:t.question}>
+  <button type="button" data-hh-mirror-back-landing className={css.backLanding}
+   onClick={()=>{closeExistingIntro();setScreen("landing");changeStep(1);}}><ArrowLeft size={16}/>{copy.back}</button>
+  <header className={css.therapyHero}>
+   <span className={css.therapyEyebrow}><Sparkles size={23} aria-hidden="true"/>{scope==="me"?copy.therapy:copy.other}</span>
+   <p>{scope==="me"?copy.therapyHint:copy.otherHint}</p>
+  </header>
+  <button type="button" className={css.exampleVideo} data-hh-mirror-play-example
+    aria-label={copy.watch} onClick={playExistingIntro}>
+   <img src="/videos/holistic-house/film-collection-v3/sun-autumn-hills.jpg"
+    alt="" loading="eager"/>
+   <span className={css.videoPlay}><Play size={31} fill="currentColor" aria-hidden="true"/></span>
+   <span className={css.videoCaption}>{copy.watch}</span>
+  </button>
   <div className={css.audience} role="group" aria-label={t.question}>
    {(["me","business","present"] as const).map(item=>{
     const Icon=item==="me"?UserRound:item==="business"?Briefcase:Gift;
@@ -177,10 +257,16 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
     </button>;
    })}
   </div>
-  <div className={css.progress} aria-label={(locale==="ru"?"Шаг ":locale==="es"?"Paso ":"Step ")+step+" / 5"}>
-   <span className={css.dots} aria-hidden="true">{[1,2,3,4,5].map(index=>
-    <i key={index} data-active={index<=step?"true":"false"}/>)}</span>
-   <span data-hh-mirror-stage-label>{locale==="ru"?"Шаг":locale==="es"?"Paso":"Step"} {step} {locale==="ru"?"из":locale==="es"?"de":"of"} 5</span>
+  <div className={css.progress} data-hh-mirror-progress
+    aria-label={(locale==="ru"?"Шаг ":locale==="es"?"Paso ":"Step ")+"1 / 3"}>
+   <strong data-hh-mirror-stage-label>{copy.step}</strong>
+   <span className={css.progressStages}>
+    <span aria-current="step"><b>1</b>{copy.topic}</span>
+    <i aria-hidden="true">—</i>
+    <span><b>2</b>{copy.script}</span>
+    <i aria-hidden="true">—</i>
+    <span><b>3</b>{copy.create}</span>
+   </span>
   </div>
   {step>1?<button type="button" className={css.back} data-hh-mirror-back
     disabled={disabled} onClick={()=>changeStep(step===3?2:1)}>
@@ -191,22 +277,46 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
    </button>}
   <h3 className={css.question}>{scope==="business"?t.workQuestion:step===1?t.question:step===2?t.sub:t.topic}</h3>
   {step===1?<>
-   <div className={css.entry}>
-    <div className={css.promptRow}>
-     <Sparkles size={18} aria-hidden="true"/>
-     <input id="hh-mirror-own-wish" ref={inputRef} type="text" maxLength={500} autoComplete="off"
-      data-hh-mirror-wish disabled={disabled} value={wish}
-      onChange={event=>{const value=event.currentTarget.value;
-       setScopeWishes(prev=>({...prev,[scope]:value}));onWishChange(value);}}
-      placeholder={scope==="business"?t.workPlaceholder:t.placeholder} aria-label={scope==="business"?t.workPlaceholder:t.placeholder}/>
-     <span className={css.microphone} title={t.dictation}><Mic size={20} aria-hidden="true"/></span>
+   <div className={css.composer} data-hh-mirror-composer>
+    <textarea id="hh-mirror-own-wish" ref={inputRef} rows={3} maxLength={500} autoComplete="off"
+     data-hh-mirror-wish disabled={disabled} value={wish}
+     onChange={event=>{const value=event.currentTarget.value;
+      setScopeWishes(prev=>({...prev,[scope]:value}));onWishChange(value);}}
+     onKeyDown={event=>{if((event.metaKey||event.ctrlKey)&&event.key==="Enter"){event.preventDefault();autoNext();}}}
+     placeholder={scope==="business"?t.workPlaceholder:copy.describe}
+     aria-label={scope==="business"?t.workPlaceholder:copy.describe}/>
+    <div className={css.composerToolbar}>
+     <button type="button" className={css.toolIcon} data-hh-mirror-open-advanced="true" disabled={disabled}
+      aria-label={t.advanced} onClick={onExpand}><Plus size={23} aria-hidden="true"/></button>
+     <button type="button" className={css.toolIcon} disabled={disabled}
+      aria-label={copy.media} onClick={onExpand}><ImagePlus size={21} aria-hidden="true"/></button>
+     <button type="button" className={css.toolIcon} disabled={disabled}
+      aria-label={copy.keyboard} onClick={()=>inputRef.current?.focus()}><Mic size={22} aria-hidden="true"/></button>
+     <button type="button" className={css.toolbarMenu} data-hh-mirror-ideas-menu
+      aria-expanded={formatMenuOpen} aria-controls="hh-mirror-format-menu"
+      onClick={()=>{setFormatMenuOpen(value=>!value);setGuideOpen(false);}}>
+      <Sparkles size={18} aria-hidden="true"/>{copy.ideas}<ChevronDown size={16} aria-hidden="true"/>
+     </button>
+     <button type="button" className={css.toolbarMenu} aria-expanded={guideOpen}
+      onClick={()=>{setGuideOpen(value=>!value);setFormatMenuOpen(false);}}>
+      {copy.guide}<ChevronDown size={16} aria-hidden="true"/>
+     </button>
+     <button type="button" className={css.send} data-hh-mirror-next
+      disabled={disabled} onClick={autoNext} aria-label={t.next}><ArrowRight size={22} aria-hidden="true"/></button>
     </div>
-    <button className={css.next} type="button" data-hh-mirror-next
-      disabled={disabled} onClick={autoNext} aria-label={t.next}>
-      <span>{t.next}</span><ArrowRight size={18} aria-hidden="true"/>
-    </button>
+    {formatMenuOpen?<div className={css.formatMenu} id="hh-mirror-format-menu" role="group" aria-label={copy.formatTitle}>
+     {formatOptions.map(option=><button type="button" key={option.id} aria-pressed={videoFormat===option.id}
+      data-hh-mirror-tier-option={option.id} onClick={()=>{setVideoFormat(option.id);setFormatMenuOpen(false);}}>
+       <option.Icon size={22} aria-hidden="true"/>
+       <span><strong>{option.id.toUpperCase()}</strong><small>{copy[(option.id+"Help") as "basicHelp"|"proHelp"|"vipHelp"]}</small></span>
+       <b>{option.credits.toLocaleString("en-US")} XP</b>
+      </button>)}
+     <small className={css.formatDisclosure}>{copy.formatNote}</small>
+    </div>:null}
+    {guideOpen?<p className={css.guide}>{copy.guideHelp}</p>:null}
    </div>
-   <p className={css.alternative}>{scope==="business"?t.workAlternative:t.alternative}</p>
+   <p className={css.example}>{copy.example}</p>
+   <p className={css.alternative}>{copy.quiz}</p>
    <div className={css.cards} role="group" aria-label={t.alternative}>
     {available.map(item=><button type="button" key={item.id} className={css.card}
       data-hh-mirror-goal-choice={item.id} disabled={disabled}
@@ -234,6 +344,8 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
       {selectedId===item.id?<Check className={css.check} size={18} aria-hidden="true"/>:null}
     </button>)}
    </div>
+   <button type="button" data-hh-mirror-ideas-cta className={css.primaryAction}
+     disabled={disabled} onClick={autoNext}><WandSparkles size={22} aria-hidden="true"/>{copy.next}<ArrowRight size={21} aria-hidden="true"/></button>
   </>:<div className={css.cards} role="group" aria-label={step===2?t.sub:t.topic}>
    {step===2?subcategories.map((item,index)=><button type="button" className={css.card}
      key={item.id} data-hh-mirror-subcategory={item.id} disabled={disabled}
