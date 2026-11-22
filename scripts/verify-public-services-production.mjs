@@ -183,7 +183,12 @@ try {
   await expect(shelves.locator('[data-business-get-details="strategy"]')).toHaveCount(1);
   if(width===390)await expect(shelves.locator('[data-business-get-details="strategy"]')).toBeVisible();
   await shelves.locator("[data-business-back-to-shelves]").click();
+  const quizDrawer=section.locator("[data-business-extras]");
+  await expect(quizDrawer).not.toHaveAttribute("open", "");
+  await quizDrawer.locator("summary").click();
+  await expect(quizDrawer).toHaveAttribute("open", "");
   const quiz=section.locator("[data-business-quiz]");
+  await expect(quiz).toBeVisible();
   await expect(quiz).toHaveAttribute("data-quiz-step","1");
   await quiz.locator('[data-business-answer="express"]').click();
   await expect(quiz).toHaveAttribute("data-quiz-step","2");
