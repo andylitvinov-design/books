@@ -2063,6 +2063,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const mirrorResolveRef=useRef<((path:MirrorResolution)=>boolean)|null>(null);
   const [mirrorStep,setMirrorStep]=useState<1|2|3>(1);
   const [mirrorScope,setMirrorScope]=useState<MirrorScope>("me");
+  const [mirrorPlannedFormat,setMirrorPlannedFormat]=useState<MirrorResolution["videoFormat"]>(undefined);
   const [pendingMirrorPurpose,setPendingMirrorPurpose]=useState<{id:string;topicId:string}|null>(null);
   const [goalQuizState,setGoalQuizState]=useState<{
     step:1|2|3;complete:boolean;audience:"self"|"others";
@@ -7676,6 +7677,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       data-hh-mirror-advanced={mirrorAdvanced?"true":"false"}
       data-hh-mirror-step={mirrorStep}
       data-hh-mirror-scope={mirrorScope}
+      data-hh-mirror-planned-format={mirrorPlannedFormat}
       data-video-scenario-open={videoScenarioOpen?"true":"false"}
       data-video-studio-hydrated={studioHydrated?"true":"false"}
       data-montage-panel={activeWorkspace==="editor"?montagePanel:undefined}
@@ -7788,6 +7790,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             const accepted=mirrorResolveRef.current?.(path);
             if(!accepted)return false;
             setPendingMirrorPurpose(path.goalPurposeId?{id:path.goalPurposeId,topicId:path.topicId}:null);
+            setMirrorPlannedFormat(path.videoFormat);
             setMirrorDetailedWish(path.wish);
             setMirrorAdvanced(false);setVideoScenarioOpen(false);
             setMirrorStep(1);

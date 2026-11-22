@@ -62,23 +62,21 @@ test("macOS WebKit hydration follows visible Goals → Ideas → Montage without
  const first=browser.indexOf("async function verifyWorkspaceHydration");
  const last=browser.indexOf("// Real guest route browser acceptance",first);
  const flow=browser.slice(first,last);
- const click=flow.indexOf("await mirror.locator('[data-hh-mirror-next]').click()");
+ const scope=flow.indexOf("await mirror.locator('[data-hh-mirror-enter=\"me\"]').click()");
+ const choose=flow.indexOf("await purpose.locator('[data-video-ideas-goal-choice=\"rest\"]').click()",scope);
+ const goalContinue=flow.indexOf("await purpose.locator('[data-video-ideas-goal-next]').click()",choose);
+ const format=flow.indexOf("await mirror.locator('[data-hh-mirror-video-format=\"pro\"]').click()",goalContinue);
+ const click=flow.indexOf("await mirror.locator('[data-hh-mirror-next]').click()",format);
  const ideas=flow.indexOf('toHaveAttribute("data-active-workspace","phrases",{timeout:15000})',click);
- const goalPanel=flow.indexOf('data-video-ideas-goal-panel',ideas);
- const chooseCandidates=[
-   flow.indexOf('await choice.tap()',goalPanel),
-   flow.indexOf("await ideasGoalPane.locator('[data-video-ideas-goal-choice=\"rest\"]').click()",goalPanel)
- ].filter(index=>index>=0);
- const choose=chooseCandidates.length?Math.min(...chooseCandidates):-1;
- const nextCandidates=[
-   flow.indexOf('await nextGoal.tap()',choose),
-   flow.indexOf("await ideasGoalPane.locator('[data-video-ideas-goal-next]').click()",choose)
- ].filter(index=>index>=0);
- const next=nextCandidates.length?Math.min(...nextCandidates):-1;
+ const goalPanel=flow.indexOf('const ideasGoalPane=page.locator',ideas);
+ const preserved=flow.indexOf("await expect(ideasGoalPane.locator('[data-video-ideas-goal-choice=\"rest\"]'))",goalPanel);
+ const next=flow.indexOf("await ideasGoalPane.locator('[data-video-ideas-goal-next]').click()",preserved);
  const personalized=flow.indexOf('data-video-ideas-personalization-panel',next);
  const montage=flow.indexOf("await montage.tap()",personalized);
- assert.ok(first>=0&&last>first&&click>=0&&ideas>click&&goalPanel>ideas&&choose>goalPanel&&next>choose&&personalized>next&&montage>personalized,
-   "one real visitor tap selects a Goal, advances to Personalization, then reaches Montage");
+ assert.ok(first>=0&&last>first&&scope>=0&&choose>scope&&goalContinue>choose&&
+   format>goalContinue&&click>format&&ideas>click&&goalPanel>ideas&&preserved>goalPanel&&
+   next>preserved&&personalized>next&&montage>personalized,
+   "one visible journey chooses the original Goal before Format, preserves it in Ideas and reaches Montage");
  assert.match(flow,/data-video-continue-scenarios/);
  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
  assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);

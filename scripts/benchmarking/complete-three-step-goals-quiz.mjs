@@ -26,19 +26,25 @@ export async function completeThreeStepGoalsQuiz(page,{
     else{
       // 3 real mobile pages; no retired Plan, hidden Back or test-only React state.
       const screen=()=>collapsedMirror.getAttribute('data-hh-mirror-screen');
+      // React/WebKit can commit the next page AFTER the trusted native tap
+      // resolves. Wait for actual visible state; never patch DOM or force-click.
+      const awaitScreen=async expected=>page.waitForFunction(expected=>
+        document.querySelector('[data-hh-mirror-goals]')
+          ?.getAttribute('data-hh-mirror-screen')===expected,
+        expected,{timeout:15000});
       if(await screen()==='landing'){
         await tap(collapsedMirror.locator('[data-hh-mirror-enter="me"]'));
-        assert.equal(await screen(),'purpose','GOAL_QUIZ_SCOPE_MUST_OPEN_CANONICAL_PURPOSE');
+        await awaitScreen('purpose');
       }
       if(await screen()==='purpose'){
         const picker=collapsedMirror.locator('[data-hh-mirror-purpose-step]');
         await tap(picker.locator('[data-video-ideas-goal-choice="rest"]'));
         await tap(picker.locator('[data-video-ideas-goal-next]'));
-        assert.equal(await screen(),'format','GOAL_QUIZ_PURPOSE_MUST_OPEN_FORMAT');
+        await awaitScreen('format');
       }
       if(await screen()==='format'){
         await tap(collapsedMirror.locator('[data-hh-mirror-video-format="basic"]'));
-        assert.equal(await screen(),'topic','GOAL_QUIZ_FORMAT_MUST_OPEN_TOPIC');
+        await awaitScreen('topic');
       }
       assert.equal(await screen(),'topic','GOAL_QUIZ_EXPECTS_REAL_VISIBLE_TOPIC');
       const composer=collapsedMirror.locator('[data-hh-mirror-composer]');

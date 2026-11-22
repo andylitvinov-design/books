@@ -259,3 +259,12 @@ test("owner goal step uses the actual three goal IDs and original editor",async(
  assert.match(reused,/introOverride?:string/);
  assert.match(reused,/data-video-ideas-goal-choice={choice.id}/);
 });
+
+test("chosen format persists as planning state in original Studio, never a debit",()=>{
+ assert.match(studio,/const \[mirrorPlannedFormat,setMirrorPlannedFormat\]=useState<MirrorResolution\["videoFormat"\]>\(undefined\)/);
+ assert.match(studio,/setMirrorPlannedFormat\(path\.videoFormat\)/);
+ assert.match(studio,/data-hh-mirror-planned-format=\{mirrorPlannedFormat\}/);
+ const landing=mirror.slice(mirror.indexOf('if(screen==="landing")'),mirror.indexOf('if(screen==="purpose")'));
+ const purpose=mirror.slice(mirror.indexOf('if(screen==="purpose")'),mirror.indexOf('if(screen==="format")'));
+ assert.doesNotMatch(landing+purpose,/fetch\(|createQuickVideo\(|confirmCredit\(/);
+});

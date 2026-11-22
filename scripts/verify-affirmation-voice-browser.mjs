@@ -26,22 +26,27 @@ async function revealMirrorAdvanced(page,engine="chromium"){
   }else{
     // Real mobile path: Scope → the existing Goal → Format → Topic.
     // Do not synthesize a hidden Back/Plan click or bypass consent.
-    const entry=mirror.locator('[data-hh-mirror-enter="me"]');
-    if(await entry.isVisible()){
+    const screen=()=>mirror.getAttribute("data-hh-mirror-screen");
+    if(await screen()==="landing"){
+      const entry=mirror.locator('[data-hh-mirror-enter="me"]');
       if(engine==="webkit")await entry.tap();else await entry.click();
       await expect(mirror).toHaveAttribute("data-hh-mirror-screen","purpose");
     }
-    const goal=mirror.locator('[data-hh-mirror-purpose-step]');
-    if(await goal.isVisible()){
+    if(await screen()==="purpose"){
+      const goal=mirror.locator('[data-hh-mirror-purpose-step]');
       const rest=goal.locator('[data-video-ideas-goal-choice="rest"]');
+      await expect(rest).toBeVisible();
       if(engine==="webkit")await rest.tap();else await rest.click();
       const next=goal.locator('[data-video-ideas-goal-next]');
+      await expect(next).toBeEnabled();
       if(engine==="webkit")await next.tap();else await next.click();
       await expect(mirror).toHaveAttribute("data-hh-mirror-screen","format");
     }
-    const format=mirror.locator('[data-hh-mirror-video-format="basic"]');
-    if(await format.isVisible()){
+    if(await screen()==="format"){
+      const format=mirror.locator('[data-hh-mirror-video-format="basic"]');
+      await expect(format).toBeVisible();
       if(engine==="webkit")await format.tap();else await format.click();
+      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
     }
     const composer=mirror.locator('[data-hh-mirror-composer]');
     for(let step=0;step<3&&!await composer.isVisible();step++){
@@ -250,6 +255,7 @@ async function verifyWorkspaceHydration(browser,locale){
     await page.setViewportSize({width:390,height:840});
     await mirror.locator('[data-hh-mirror-goal-choice="insta-reels"]').click();
     await expect(studio).toHaveAttribute("data-active-workspace","phrases",{timeout:15000});
+    await expect(studio).toHaveAttribute("data-hh-mirror-planned-format","pro");
     await expect(page.locator('[data-video-ideas-goal-panel]')).toBeVisible();
     // The second-screen Goal is preselected in the SAME canonical Ideas Goal.
     await expect(page.locator('[data-video-ideas-goal-panel] [data-video-ideas-goal-choice="reframe"]'))
