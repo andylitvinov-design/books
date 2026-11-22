@@ -1,0 +1,76 @@
+.page{display:grid;gap:12px;min-width:0;width:100%;padding:0 0 18px;color:#143d3a;font-family:system-ui,sans-serif}
+.page *{box-sizing:border-box}
+.hero{min-height:157px;border-radius:27px;overflow:hidden;padding:19px 16px 22px;
+ background:linear-gradient(90deg,#075b50eF,#075b50ba 49%,#075b5012),url("/images/holistic-house/support-mock-hero.webp") center/cover;
+ color:#fff;box-shadow:0 7px 20px #23483d22}
+.kicker{display:inline-flex;align-items:center;gap:7px;border-radius:999px;background:#fffcebe4;
+ color:#076b53;font:800 13px/1.2 system-ui,sans-serif;padding:7px 12px;margin-bottom:13px}
+.hero h2{color:#fff!important;font:750 clamp(32px,8vw,44px)/1 Georgia,serif!important;margin:0 0 9px!important}
+.hero p{color:#fff!important;text-shadow:0 2px 5px #114f4694;max-width:34ch;
+ font:600 clamp(15px,4vw,18px)/1.3 system-ui,sans-serif!important;margin:0!important}
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:6px;gap:4px;background:#fffcf7;
+ border:1px solid #e9dfd1;border-radius:18px;box-shadow:0 5px 15px #53422f19}
+.steps span{display:flex;align-items:center;gap:5px;min-width:0;font:750 clamp(10px,3vw,14px)/1.15 system-ui,sans-serif}
+.steps b{display:grid;place-items:center;flex:none;width:29px;height:29px;border-radius:50%;
+ background:#cef1da;color:#0a6d52;font-size:14px}
+.steps span:last-child b{background:#008d68;color:#fff}
+.heading{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:2px 5px}
+.heading strong{font:750 20px/1.2 Georgia,serif}
+.heading span{color:#3c6860;font:700 13px/1.2 system-ui,sans-serif}
+.axes{display:grid;gap:8px;min-width:0}
+.card{min-width:0;padding:11px;border-radius:22px;border:1px solid #e9dfd1;
+ background:linear-gradient(115deg,#fffcf7,#fff7ee);box-shadow:0 4px 12px #5a42291c}
+.card[data-selected="true"]{padding:10px;border:2px solid #10b789;background:linear-gradient(110deg,#e4fff1,#fbfffb);
+ box-shadow:0 0 0 3px #b7f5dfa6,0 5px 16px #05846130}
+.top{display:grid;grid-template-columns:61px 27px minmax(0,1fr) 44px;align-items:center;gap:6px}
+.image{width:61px;height:62px;border-radius:13px;object-fit:cover}
+.num{display:grid;place-items:center;width:27px;height:34px;border-radius:10px;
+ background:#d0f1dc;color:#07533e;font:850 19px/1 system-ui,sans-serif}
+.label{display:grid;gap:2px;min-width:0}
+.label strong{font:750 clamp(19px,5.15vw,25px)/1.1 Georgia,serif;color:#112f2b;overflow-wrap:anywhere}
+.label small{font:500 clamp(13px,3.5vw,16px)/1.22 system-ui,sans-serif;color:#385147}
+.radio{display:grid;place-items:center;min-width:44px;min-height:44px;border:2px solid #929b95;
+ border-radius:50%;background:#fffdf8;color:#fff;cursor:pointer}
+.card[data-selected="true"] .radio{background:#008b64;border-color:#008b64;box-shadow:0 3px 9px #028d615c}
+.ratings{display:grid;grid-template-columns:minmax(0,1fr) 62px;gap:3px 7px;align-items:center;padding-top:8px}
+.slider{display:grid;grid-template-columns:72px minmax(0,1fr) 29px;gap:5px;align-items:center;min-width:0;
+ font:750 13px/1.15 system-ui,sans-serif}
+.slider input{appearance:none;min-width:0;width:100%;height:31px;background:transparent;cursor:pointer}
+.slider input::-webkit-slider-runnable-track{height:9px;border-radius:999px;background:linear-gradient(90deg,#1abf8c,#c8d7cf)}
+.slider[data-axis-slider="desired"] input::-webkit-slider-runnable-track{background:linear-gradient(90deg,#f4cc39,#f3dda3)}
+.slider input::-webkit-slider-thumb{appearance:none;width:24px;height:24px;margin-top:-8px;border:2px solid #8ed7ae;
+ border-radius:50%;background:#fffcf7;box-shadow:0 2px 5px #15382d36}
+.slider[data-axis-slider="desired"] input::-webkit-slider-thumb{border-color:#f2bc40}
+.slider input::-moz-range-track{height:9px;border-radius:999px;background:#9bd9b7}
+.slider input::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#fffcf7;border:2px solid #40a983}
+.slider[data-has-value="false"] input{opacity:.6}
+.slider output{font:850 17px/1 system-ui,sans-serif;color:#164d3d;text-align:center}
+.gap{grid-column:2;grid-row:1/span 2;display:grid;place-content:center;justify-items:center;
+ min-height:54px;border-radius:14px;background:#ffe8ac;color:#69480d}
+.gap small{font:700 10px/1.1 system-ui,sans-serif}
+.gap strong{font:850 25px/1.1 system-ui,sans-serif}
+.card[data-selected="true"] .gap{background:#008c6b;color:#fff}
+.help{margin:0 4px!important;font:600 13px/1.3 system-ui,sans-serif;color:#845924!important}
+.cta{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:57px;
+ width:100%;padding:11px 12px;border:1px solid #19b485;border-radius:999px;
+ background:linear-gradient(180deg,#00b785,#006c50 82%);color:#fff;
+ font:800 clamp(16px,4.5vw,22px)/1.2 system-ui,sans-serif;box-shadow:0 6px 15px #04775846;cursor:pointer}
+.cta:disabled{background:#9cb8ab;border-color:#9cb8ab;box-shadow:none;cursor:not-allowed}
+.cta span{min-width:0}.cta svg{flex:none}
+.back{display:flex;align-items:center;justify-content:center;gap:6px;justify-self:center;min-height:44px;
+ padding:7px 14px;border:0;background:transparent;color:#266858;font:700 14px/1.2 system-ui,sans-serif;cursor:pointer}
+.radio:focus-visible,.slider input:focus-visible,.cta:focus-visible,.back:focus-visible{outline:3px solid #176e6e;outline-offset:3px}
+@media(min-width:760px){.page{max-width:1020px;margin:auto}.hero{min-height:205px;padding:30px}
+.card{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);align-items:center;gap:12px}
+.top{grid-template-columns:76px 34px minmax(0,1fr) 44px}
+.image{width:76px;height:76px}
+.ratings{padding-top:0}}
+@media(max-width:359px){.hero{padding:14px 12px;min-height:153px}
+.hero h2{font-size:28px!important}
+.top{grid-template-columns:48px 24px minmax(0,1fr) 44px;gap:5px}
+.image{width:48px;height:53px}.num{width:24px;height:29px;font-size:17px}
+.label strong{font-size:18px}.label small{font-size:12px}
+.card{padding:9px}.slider{grid-template-columns:61px minmax(0,1fr) 27px;gap:3px}
+.ratings{grid-template-columns:minmax(0,1fr) 54px;gap:4px}
+.steps span{font-size:10px;gap:3px}.steps b{width:25px;height:25px}}
+@media(prefers-reduced-motion:reduce){.page *{scroll-behavior:auto!important;transition:none!important}}

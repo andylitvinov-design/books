@@ -31,14 +31,38 @@ async function enterVisibleStudioWorkspace(page,workspace,engine="chromium"){
   else await control.click();
   await expect(control).toHaveAttribute("aria-pressed","true",{timeout:15000});
 }
-async function openVisibleMontageText(page,engine="chromium"){
+async function enterPersonalAfterMontageExtra(page,engine="chromium"){
+  const studio=page.locator('[data-video-studio-hydrated]');
+  await expect(studio).toHaveAttribute("data-active-workspace","editor",{timeout:15000});
+  const extra=page.locator('[data-video-montage-tab="promo"]');
+  await expect(extra).toBeVisible({timeout:15000});
+  if(engine==="webkit")await extra.tap();else await extra.click();
+  const choice=page.locator('[data-video-extra-text-option="personal"]');
+  await expect(choice).toBeVisible({timeout:15000});
+  if(engine==="webkit")await choice.tap();else await choice.click();
+  await expect(studio).toHaveAttribute("data-active-workspace","phrases",{timeout:15000});
+  await expect(page.locator('[data-video-ideas-goal-panel]')).toBeVisible({timeout:15000});
+}
+async function openVisibleMontageText(page,engine="chromium",mode="standard"){
   await enterVisibleStudioWorkspace(page,"editor",engine);
   const text=page.locator('[data-video-montage-tab="text"]');
   await expect(text).toBeVisible({timeout:15000});
   if(engine==="webkit")await text.tap();
   else await text.click();
   await expect(text).toHaveAttribute("aria-pressed","true",{timeout:15000});
-  await expect(page.locator("[data-video-montage-text]")).toBeVisible({timeout:15000});
+  const choice=page.locator("[data-video-text-choice]");
+  if(await choice.isVisible()){
+    // Direct Text-tab entry still uses the accessible three-card choice.
+    const selected=choice.locator('[data-video-text-mode="'+mode+'"]');
+    await expect(selected).toBeVisible();
+    if(engine==="webkit")await selected.tap();else await selected.click();
+    await expect(selected).toHaveAttribute("aria-pressed","true");
+    const continueButton=choice.locator("[data-video-text-choice-continue]");
+    if(engine==="webkit")await continueButton.tap();else await continueButton.click();
+  }
+  // Extra→Personal preselects the mode and opens the editor directly.
+  await expect(page.locator("[data-video-montage-text] [data-video-ideas-phrases]"))
+    .toBeVisible({timeout:15000});
 }
 function wav(seconds=3) {
   const rate=24000,n=rate*seconds,b=Buffer.alloc(44+n*2);
@@ -125,7 +149,7 @@ async function verifyWorkspaceHydration(browser,locale){
     }
     await page.setViewportSize({width:390,height:840});
     await mirror.locator('[data-hh-mirror-goal-choice="insta-reels"]').click();
-    await expect(studio).toHaveAttribute("data-active-workspace","phrases",{timeout:15000});
+    await enterPersonalAfterMontageExtra(page);
     await expect(page.locator('[data-video-ideas-goal-panel]')).toBeVisible();
     await page.locator('[data-video-quick-control="video"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-step","1");
@@ -140,7 +164,7 @@ async function verifyWorkspaceHydration(browser,locale){
       ?"Quiero tener más comprensión mutua":"I want more mutual understanding";
     await mirror.locator('[data-hh-mirror-wish]').fill(customWish);
     await mirror.locator('[data-hh-mirror-next]').click();
-    await expect(studio).toHaveAttribute("data-active-workspace","phrases",{timeout:15000});
+    await enterPersonalAfterMontageExtra(page);
     await expect(page.locator('[data-video-ideas-goal-panel]')).toBeVisible();
     await expect(page.locator('[data-video-ideas-tab="goal"]')).toHaveAttribute("aria-pressed","true");
     // Return to the genuine Goal tab to exercise the second path:
@@ -173,7 +197,7 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(mirror).toHaveAttribute('data-hh-mirror-step','3');
     await expect(mirror.locator('[data-hh-mirror-topic]')).toHaveCount(4);
     await mirror.locator('[data-hh-mirror-topic]').first().click();
-    await expect(studio).toHaveAttribute("data-active-workspace","phrases",{timeout:15000});
+    await enterPersonalAfterMontageExtra(page);
     const ideas=page.locator('[data-video-quick-control="phrases"]');
     await expect(ideas).toHaveAttribute("aria-pressed","true");
     await expect(page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]')).toBeVisible();
@@ -215,6 +239,32 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(finishPersonalization).toBeVisible();
     await expect(finishPersonalization).toBeEnabled();
     await finishPersonalization.tap();
+    // The new owner-approved Personal step must be answered before Concept.
+    // Exercise eight real range inputs and one explicit focus, not synthetic
+    // state or a forced disabled navigation click.
+    const meaningAxes=page.locator('[data-video-meaning-axes-screen]');
+    await expect(meaningAxes).toBeVisible({timeout:15000});
+    await expect(meaningAxes.locator('[data-video-meaning-axis]')).toHaveCount(8);
+    const axisCards=meaningAxes.locator('[data-video-meaning-axis]');
+    const nextAxes=meaningAxes.locator('[data-video-meaning-axes-continue]');
+    await expect(nextAxes).toBeDisabled();
+    for(let index=0;index<8;index++){
+      const card=axisCards.nth(index);
+      const now=card.locator('[data-axis-slider="now"] input');
+      const desired=card.locator('[data-axis-slider="desired"] input');
+      await now.press("ArrowLeft"); // current rating 4
+      await desired.press("ArrowRight"); // desired rating 6
+      await expect(card.locator('[data-axis-slider="now"] output')).toHaveText("4");
+      await expect(card.locator('[data-axis-slider="desired"] output')).toHaveText("6");
+      await expect(card.locator('[data-video-meaning-difference]')).toContainText("+2");
+    }
+    await expect(meaningAxes.locator('[data-video-axes-progress]')).toContainText("8/8");
+    const chooseFocus=axisCards.first().locator('[data-video-meaning-focus]');
+    await chooseFocus.tap();
+    await expect(chooseFocus).toHaveAttribute("aria-checked","true");
+    await expect(nextAxes).toBeEnabled();
+    await nextAxes.tap();
+    await expect(meaningAxes).toBeHidden();
     try{
       await expect(page.locator('[data-video-ideas-tab="concept"]'))
         .toHaveAttribute("aria-pressed","true",{timeout:12000});
@@ -238,14 +288,17 @@ async function verifyWorkspaceHydration(browser,locale){
     // Two separate actions: the existing guarded render and navigation-only storyboard.
     const textFooter=page.locator('[data-video-ideas-compact] [data-video-stage-actions="ideas"]');
     await expect(textFooter.locator("button")).toHaveCount(2);
-    const generateText=textFooter.locator('[data-video-ideas-generate]');
+    const previewText=textFooter.locator('[data-video-ideas-preview]');
     const reviewStory=textFooter.locator('[data-video-ideas-create]');
-    await expect(generateText).toBeEnabled();
-    await expect(generateText).toContainText(
-      locale==="ru"?"Создать видео":locale==="es"?"Generar vídeo":"Generate Video");
+    await expect(previewText).toBeEnabled();
+    await expect(previewText).toContainText(
+      locale==="ru"?"Предпросмотр":locale==="es"?"Vista previa":"Preview");
     await expect(reviewStory).toBeEnabled();
     await expect(reviewStory).toContainText(
-      locale==="ru"?"Раскадровка":locale==="es"?"Guion visual":"Storyboard");
+      locale==="ru"?"К созданию видео":locale==="es"?"Continuar a crear":"Continue to Create");
+    const directReady=page.locator('[data-video-text-direct-create]');
+    await expect(directReady).toBeVisible();
+    await expect(directReady.locator('[data-video-ideas-generate]')).toBeHidden();
     for(const width of [320,354,390,430]){
       await page.setViewportSize({width,height:840});
       const layout=await textFooter.evaluate(footer=>{
@@ -260,6 +313,19 @@ async function verifyWorkspaceHydration(browser,locale){
         "both Text actions remain readable: "+width+" "+JSON.stringify(layout));
       assert.ok(layout.doc<=layout.viewport+2,
         "Text actions do not overflow horizontally: "+width+" "+JSON.stringify(layout));
+      // Real WebKit geometry at the narrowest iPhone widths. No CSS-only
+      // approval: every selected phrase/language control must be tappable.
+      const targets=await page.locator('[data-video-montage-text]').evaluate(panel=>
+        ["[data-video-text-language=\"en\"]",
+         "[data-video-idea-select=\"0\"]",
+         "[data-video-idea-play=\"0\"]",
+         "[data-video-idea-edit-button=\"0\"]"].map(selector=>{
+           const box=panel.querySelector(selector)?.getBoundingClientRect();
+           return {width:box?.width??0,height:box?.height??0};
+         }));
+      assert.ok(targets.every(box=>box.width>=43.5&&box.height>=43.5),
+        "Text controls must be at least 44x44: "+width+" "+JSON.stringify(targets));
+      phase(browser.browserType().name(),"text-hit-targets-"+width);
     }
     await page.setViewportSize({width:390,height:840});
     await reviewStory.tap();
@@ -423,6 +489,27 @@ async function verifyWorkspaceHydration(browser,locale){
     await supportQuiz.locator('[data-video-personalization-energy="5"]').tap();
     await expect(supportQuiz).toHaveAttribute("data-video-personalization-step","5");
     await supportQuiz.locator('[data-video-personalization-clarify-continue]').tap();
+    // Every Personal goal, including Support, passes through the eight-axis
+    // page before the existing creative Concept. Keep the real mobile path.
+    const supportAxes=page.locator('[data-video-meaning-axes-screen]');
+    await expect(supportAxes).toBeVisible({timeout:15000});
+    const supportRows=supportAxes.locator('[data-video-meaning-axis]');
+    await expect(supportRows).toHaveCount(8);
+    const supportProceed=supportAxes.locator('[data-video-meaning-axes-continue]');
+    await expect(supportProceed).toBeDisabled();
+    for(let index=0;index<8;index++){
+      const now=supportRows.nth(index).locator('[data-axis-slider="now"] input');
+      const desired=supportRows.nth(index).locator('[data-axis-slider="desired"] input');
+      await now.press("ArrowLeft");
+      await desired.press("ArrowRight");
+      await expect(supportRows.nth(index).locator('[data-video-meaning-difference]')).toContainText("+2");
+    }
+    const focus=supportRows.first().locator('[data-video-meaning-focus]');
+    await focus.tap();
+    await expect(focus).toHaveAttribute("aria-checked","true");
+    await expect(supportProceed).toBeEnabled();
+    await supportProceed.tap();
+    await expect(supportAxes).toBeHidden();
     await expect(ideasConceptTab).toHaveAttribute("aria-pressed","true");
     const concept=page.locator("[data-video-ideas-concept-panel]");
     await expect(concept).toBeVisible();
@@ -478,7 +565,11 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(page.locator("[data-video-concept-auth-overlay]")).toHaveCount(0);
     await concept.locator("[data-video-concept-approve]").click();
     await expect(studio).toHaveAttribute("data-active-workspace","editor");
-    await expect(montageStyle).toHaveAttribute("aria-pressed","true");
+    // The approved Personal path returns to the existing Text editor so the
+    // user may refine phrases without losing film/audio; it does not reset Style.
+    await expect(page.locator('[data-video-montage-tab="text"]'))
+      .toHaveAttribute("aria-pressed","true");
+    await expect(page.locator("[data-video-montage-text]")).toBeVisible();
     await ideasTop.tap();
     await expect(ideasConceptTab).toHaveAttribute("aria-pressed","true");
     await expect(page.locator("[data-video-concept-auto]"))
@@ -489,7 +580,14 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(styleTab).toBeVisible();
     await styleTab.tap();
     await expect(styleTab).toHaveAttribute("aria-pressed","true");
-    const styles=page.locator("[data-video-montage-style]");
+    // The approved photo-first Style screen keeps all six extra styles behind
+    // a native, user-operated disclosure. Never force-click hidden controls.
+    const moreStyles=page.locator("[data-video-montage-more-styles]");
+    await expect(moreStyles).toBeVisible();
+    await expect(moreStyles).not.toHaveAttribute("open","");
+    await moreStyles.locator("summary").tap();
+    await expect(moreStyles).toHaveAttribute("open","");
+    const styles=moreStyles.locator("[data-video-montage-style]");
     await expect(styles).toHaveCount(6);
     const minimal=styles.nth(3);
     await expect(minimal).toBeVisible();
@@ -610,6 +708,7 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(recipientCreate).toBeVisible({timeout:15000});
     await expect(recipientCreate).toBeEnabled();
     await recipientCreate.click();
+    await enterPersonalAfterMontageExtra(page);
     await expect(ideas).toHaveAttribute("aria-pressed","true");
     await expect(studio).toHaveAttribute("data-active-workspace","phrases");
     // These are the actual source-backed montage title inputs; source edits
@@ -872,7 +971,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const montageStoryTab=page.locator('[data-video-montage-tab="concept"]');
       const order=await page.locator('[data-video-montage-tools] [data-video-montage-tab]')
         .evaluateAll(items=>items.map(item=>item.getAttribute("data-video-montage-tab")));
-      assert.deepEqual(order,["effects","audio","text","concept","promo"]);
+      assert.deepEqual(order,["effects","audio","promo","text","concept"]);
       await montageStoryTab.click();
       await expect(montageStoryTab).toHaveAttribute("aria-pressed","true");
       await expect(page.locator('[data-video-auto-storyboard-list]')).toBeVisible({timeout:20000});
@@ -939,7 +1038,15 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(montageStyleTab).toHaveAttribute('aria-pressed','true');
       phase(engine,"montage-pro-offer-routes-passed");
       // Reproduce the owner's iPhone case before recording real voice.
-      const selectedStyle=page.locator('[data-video-montage-style="3"]');
+      // The second real WebKit route must open the photo-first Style disclosure
+      // after returning from Extra. A previously open details was unmounted.
+      const extraStyles=page.locator('[data-video-montage-more-styles]');
+      await expect(extraStyles).toBeVisible();
+      await expect(extraStyles).not.toHaveAttribute("open","");
+      if(engine==="webkit")await extraStyles.locator("summary").tap();
+      else await extraStyles.locator("summary").click();
+      await expect(extraStyles).toHaveAttribute("open","");
+      const selectedStyle=extraStyles.locator('[data-video-montage-style="3"]');
       const selectedMaster=page.locator("[data-mandala-master-mp4]");
       await expect(selectedStyle).toBeVisible();
       const singleVideoMaster=await selectedMaster.count()>0;
@@ -991,12 +1098,16 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const focusMusic=page.locator('[data-video-audio-category="focus"]');
       await allMusic.click();
       await expect(allMusic).toHaveAttribute("aria-pressed","true");
-      await expect(compactGrid.locator('[data-video-audio-compact-track]')).toHaveCount(5);
+      // The large mobile Audio layout shows four reviewed tracks at a time;
+      // additional licensed tracks are available under Browse All Music.
+      await expect(compactGrid.locator('[data-video-audio-compact-track]')).toHaveCount(4);
       await focusMusic.click();
       await expect(focusMusic).toHaveAttribute("aria-pressed","true");
       await expect(compactGrid.locator('[data-video-audio-compact-track]')).toHaveCount(1);
       await allMusic.click();
-      await expect(compactGrid.locator('[data-video-audio-compact-track]')).toHaveCount(5);
+      // The large mobile Audio layout shows four reviewed tracks at a time;
+      // additional licensed tracks are available under Browse All Music.
+      await expect(compactGrid.locator('[data-video-audio-compact-track]')).toHaveCount(4);
       await expect(page.locator('[data-video-audio-compact-upload]')).toHaveCount(1);
       await expect(page.locator('[data-video-audio-mode]')).toHaveCount(0);
       await page.locator('[data-video-audio-compact-silent]').click();
@@ -1007,36 +1118,47 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(choices.nth(1)).toHaveAttribute("aria-pressed","true");
       await expect(page.locator('[data-video-audio-compact-selected]')).toContainText("2/3");
       await expect(page.locator('[data-video-stage-actions="montage"] [data-video-quick-generate]')).toBeVisible();
-      // Real DOM geometry of the owner-approved Audio first-fold layout.
-      // Two actions share one row, Create is the outlined LEFT choice, Text the
-      // emerald RIGHT choice. A short horizontal music rail must never push
-      // the footer into a second tall section or cause page-wide x-overflow.
+      // Large text-only music rows, six one-line filters and one real
+      // multitrack timeline below Audio; preserve 320–430px and touch tests.
       for(const width of [320,354,390,430]){
         await page.setViewportSize({width,height:840});
         const audioLayout=await page.evaluate(()=>{
           const audio=document.querySelector('[data-video-montage-audio]');
+          const timeline=document.querySelector('[data-video-montage-shared-timeline]');
           const actions=document.querySelector('[data-video-stage-actions="montage"]');
           const create=actions?.querySelector('[data-video-quick-generate]');
           const next=actions?.querySelector('[data-video-montage-next="text"]');
           const tile=audio?.querySelector('[data-video-audio-compact-track]');
-          if(!audio||!actions||!create||!next||!tile)return null;
-          const a=audio.getBoundingClientRect(),f=actions.getBoundingClientRect();
-          const c=create.getBoundingClientRect(),n=next.getBoundingClientRect();
-          const t=tile.getBoundingClientRect();
-          return {span:f.bottom-a.top,tileHeight:t.height,
-            createLeft:c.left,createTop:c.top,createWidth:c.width,
-            nextLeft:n.left,nextTop:n.top,nextWidth:n.width,
+          const play=tile?.querySelector('[data-video-audio-compact-play]');
+          const category=audio?.querySelector('[data-video-audio-category="all"]')?.parentElement;
+          if(!audio||!timeline||!actions||!create||!next||!tile||!play||!category)return null;
+          const a=audio.getBoundingClientRect(),t=timeline.getBoundingClientRect();
+          const f=actions.getBoundingClientRect(),c=create.getBoundingClientRect();
+          const n=next.getBoundingClientRect(),row=tile.getBoundingClientRect();
+          const playBox=play.getBoundingClientRect();
+          return {audioHeight:a.height,audioBottom:a.bottom,
+            timelineTop:t.top,timelineBottom:t.bottom,actionsTop:f.top,
+            tileHeight:row.height,playWidth:playBox.width,playHeight:playBox.height,
+            createWidth:c.width,nextWidth:n.width,createRight:c.right,nextRight:n.right,
+            categoryTops:[...category.querySelectorAll('button[data-video-audio-category]')]
+              .map(button=>button.getBoundingClientRect().top),
             documentWidth:document.documentElement.scrollWidth,
             viewportWidth:document.documentElement.clientWidth};
         });
-        assert.ok(audioLayout&&audioLayout.span<570,
-          'AUDIO_COMPACT_FIRST_FOLD_SPAN_'+width+' '+JSON.stringify(audioLayout));
-        assert.ok(audioLayout.tileHeight<=86&&audioLayout.tileHeight>=70,
-          'AUDIO_COMPACT_TRACK_HEIGHT_'+width+' '+JSON.stringify(audioLayout));
-        assert.ok(audioLayout.createLeft<audioLayout.nextLeft&&
-          Math.abs(audioLayout.createTop-audioLayout.nextTop)<=3&&
-          audioLayout.createWidth>=90&&audioLayout.nextWidth>=90,
-          'AUDIO_TWO_ACTIONS_CREATE_LEFT_TEXT_RIGHT_'+width+' '+JSON.stringify(audioLayout));
+        assert.ok(audioLayout&&audioLayout.audioHeight>200&&audioLayout.audioHeight<950,
+          'AUDIO_LARGE_MOBILE_CONTROLS_'+width+' '+JSON.stringify(audioLayout));
+        assert.ok(audioLayout.timelineTop>=audioLayout.audioBottom-3&&
+          audioLayout.actionsTop>=audioLayout.timelineBottom-3,
+          'AUDIO_REAL_TIMELINE_AFTER_CONTROLS_'+width+' '+JSON.stringify(audioLayout));
+        assert.ok(audioLayout.categoryTops.length===6&&
+          audioLayout.categoryTops.every(y=>Math.abs(y-audioLayout.categoryTops[0])<=2),
+          'AUDIO_FILTERS_SINGLE_ROW_'+width+' '+JSON.stringify(audioLayout));
+        assert.ok(audioLayout.tileHeight>=60&&audioLayout.tileHeight<=110&&
+          audioLayout.playWidth>=44&&audioLayout.playHeight>=44,
+          'AUDIO_BIG_TRACK_TOUCH_TARGETS_'+width+' '+JSON.stringify(audioLayout));
+        assert.ok(audioLayout.createWidth>=90&&audioLayout.nextWidth>=90&&
+          Math.max(audioLayout.createRight,audioLayout.nextRight)<=audioLayout.viewportWidth+2,
+          'AUDIO_BOTH_ACTIONS_REACHABLE_'+width+' '+JSON.stringify(audioLayout));
         assert.ok(audioLayout.documentWidth<=audioLayout.viewportWidth+2,
           'AUDIO_NO_PAGE_OVERFLOW_'+width+' '+JSON.stringify(audioLayout));
       }
@@ -1271,7 +1393,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // The original voice editor was opened by the real opt-in gesture above.
       await expect(advancedVoice).toHaveAttribute("open","");
       // Preserve the user's real touch path through Montage → Text.
-      await openVisibleMontageText(page,engine);
+      await openVisibleMontageText(page,engine,"personalized");
       await expect(page.locator('[data-video-montage-tab="text"]')).toHaveAttribute("aria-pressed","true");
       await expect(page.locator('[data-video-montage-text]')).toBeVisible();
       const montageIdeas=page.locator('[data-video-montage-text] [data-video-ideas-compact]');
@@ -1298,6 +1420,51 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(firstIdea).toHaveAttribute("aria-pressed","true");
       await expect(montageCountLabel).toHaveText(new RegExp("^\\s*"+initialMontageCount+"\\s*/\\s*\\d+\\b"));
       await expect(montageIdeas.locator("[data-video-ideas-minimum]")).toHaveCount(0);
+      // Personalized +50 XP has no verified server-side price. A real Create
+      // tap must remain on the protected text editor, never open Ready, debit
+      // the Basic price or launch the media encoder.
+      // The approved compact Text editor hides the redundant Montage order-bar
+      // CTA. Activate the visible Text Generate button bound to the SAME
+      // openReadyForGeneration handler, so unpriced export is tested by real UI.
+      const directReady=montageIdeas.locator('[data-video-text-direct-create]');
+      await expect(directReady).toBeVisible();
+      // This deliberate shortcut is folded behind a disclosure. Use the same
+      // real summary tap a visitor uses before testing fail-closed export.
+      const readySummary=directReady.locator("summary");
+      if(engine==="webkit")await readySummary.tap();else await readySummary.click();
+      await expect(directReady).toHaveAttribute("open","");
+      const unpricedCreate=directReady.locator('[data-video-ideas-generate]');
+      await expect(unpricedCreate).toBeVisible();
+      await expect(unpricedCreate).toBeEnabled();
+      if(engine==="webkit")await unpricedCreate.tap();else await unpricedCreate.click();
+      await expect(studio).toHaveAttribute("data-active-workspace","editor");
+      await expect(page.locator('[data-video-montage-text]')).toBeVisible();
+      await expect(montageIdeas).toContainText("+50 XP");
+      await expect(page.locator('[data-video-ready]')).toBeHidden();
+      phase(engine,"personalized-unpriced-export-fail-closed");
+      // Switch through the REAL visible selector to Standard BEFORE asking
+      // the Voice provider to speak a line. The original personalized draft
+      // cannot slip into a 0-XP Standard export: a new mode signature restores
+      // the generic selected phrases before narration is generated.
+      const backToTypes=page.locator('[data-video-text-editor-back]');
+      await expect(backToTypes).toBeVisible();
+      if(engine==="webkit")await backToTypes.tap();else await backToTypes.click();
+      const textChoice=page.locator('[data-video-text-choice]');
+      await expect(textChoice).toBeVisible();
+      const standardCard=textChoice.locator('[data-video-text-mode="standard"]');
+      if(engine==="webkit")await standardCard.tap();else await standardCard.click();
+      await expect(standardCard).toHaveAttribute("aria-pressed","true");
+      const proceedStandard=textChoice.locator('[data-video-text-choice-continue]');
+      if(engine==="webkit")await proceedStandard.tap();else await proceedStandard.click();
+      await expect(montageIdeas).toBeVisible();
+      await expect(montageIdeas.locator('[data-video-ideas-phrases]')).toBeVisible();
+      await expect(montageIdeas.locator('[data-video-ideas-selected-count]')).toContainText("5/");
+      await expect(montageIdeas.locator('[data-video-idea-phrase="0"]')).toContainText(
+        {en:"You are not alone",ru:"Ты не один",es:"No estás a solas"}[locale]);
+      // The personalized closing is no longer among the 0-XP editor options:
+      // switching mode cannot leak a paid draft into the Standard export.
+      await expect(montageIdeas).not.toContainText(personalClosing);
+      phase(engine,"standard-mode-after-personalized-draft");
       const recordEntry=page.locator('[data-video-montage-text] [data-video-ideas-record]');
       await expect(recordEntry).toBeVisible();
       await recordEntry.click();
@@ -2318,7 +2485,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // Do not use the retired hidden Ideas/Hypno phrase picker. WebKit needs
       // the visitor's real touch gesture after recording and switching modes:
       // a synthetic click can leave Ideas selected with Text hidden.
-      await openVisibleMontageText(page,engine);
+      // Standard was selected BEFORE speaking and was used for the actual
+      // encoded MP4; keep the same phrase set while testing stale narration.
+      await openVisibleMontageText(page,engine,"standard");
       await expect(page.locator('[data-video-quick-control="editor"]'))
         .toHaveAttribute("aria-pressed","true",{timeout:15000});
       await expect(page.locator('[data-video-montage-tab="text"]'))

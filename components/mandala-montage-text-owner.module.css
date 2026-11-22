@@ -1,0 +1,44 @@
+/* Single owner-approved Text screen within the real Montage component. */
+.textPane[data-video-montage-text]{
+ display:grid;gap:9px;min-width:0;padding:0!important;border:0!important;
+ border-radius:0!important;background:transparent!important;box-shadow:none!important
+}
+.textPane[hidden]{display:none!important}
+.hero{position:relative;isolation:isolate;display:flex;align-items:flex-end;min-height:146px;
+ border-radius:25px;overflow:hidden;background:linear-gradient(130deg,#164c44,#e8bb8a)}
+.hero>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 54%;z-index:-2}
+.hero::before{content:"";position:absolute;inset:0;z-index:-1;
+ background:linear-gradient(90deg,#123f34ef 0%,#205745d4 44%,#1f5c3e12 100%)}
+.heroCopy{display:grid;gap:6px;max-width:70%;padding:16px 18px;color:#fff}
+.heroCopy h2{margin:0;font:700 clamp(27px,6.6vw,38px)/.98 Georgia,serif;letter-spacing:-.035em}
+.heroCopy p{margin:0;font:500 clamp(13px,3.5vw,16px)/1.3 Arial,Helvetica,sans-serif;color:#fff}
+.stepStrip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;min-width:0;
+ padding:6px;border-radius:22px;background:#fffaf4;border:1px solid #eee4d8;
+ box-shadow:0 3px 12px #76583e13}
+.stepStrip button{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;
+ min-height:51px;padding:7px 3px;border:0;border-radius:16px;background:transparent;
+ color:#1a5845;cursor:pointer;font:800 clamp(11px,2.9vw,14px)/1.12 Arial,Helvetica,sans-serif}
+.stepStrip button span{display:grid;place-items:center;flex:none;width:28px;height:28px;
+ border-radius:50%;background:linear-gradient(135deg,#0cb78a,#087956);color:#fff;font-weight:850}
+.stepStrip button strong{font:inherit;min-width:0;overflow-wrap:anywhere;text-align:left}
+.stepStrip button[aria-current="step"]{background:linear-gradient(115deg,#0ab184,#047653);color:#fff;cursor:default}
+.stepStrip button[aria-current="step"] span{background:#f3fbf6;color:#086c52}
+.stepStrip button:disabled{opacity:1}
+.stepStrip button:not(:disabled):focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.content{min-width:0;border:1px solid #eaddd2;border-radius:26px;
+ background:linear-gradient(145deg,#fffcf8,#fff9f4);padding:15px 13px;
+ box-shadow:0 5px 18px #6e4b3120}
+@media(min-width:760px){
+ .hero{min-height:178px}
+ .heroCopy{max-width:62%;padding:24px 27px}
+ .content{padding:20px}
+ .stepStrip{gap:8px;padding:8px}
+}
+@media(max-width:355px){
+ .hero{min-height:130px;border-radius:20px}
+ .heroCopy{max-width:80%;padding:12px}
+ .heroCopy h2{font-size:25px}
+ .content{padding:11px 8px}
+ .stepStrip button{gap:3px;font-size:11px}
+ .stepStrip button span{width:24px;height:24px}
+}
