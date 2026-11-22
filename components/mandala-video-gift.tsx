@@ -1,6 +1,7 @@
 "use client";
 import {useEffect,useMemo,useRef,useState} from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import {ArrowLeft,ArrowRight,Check,Download,Play,Pause,Share2,Video,Save,LockKeyhole} from "lucide-react";
 import {appFetch} from "@/lib/app/client-fetch";
 import {savePrivateMp4} from "@/lib/mandala/signed-private-video-upload.mjs";
@@ -113,6 +114,7 @@ const COPY={
 } as const;
 const PALETTES=VIDEO_GIFT_PALETTES;
 const SOUND_IDS=["none","forest","breeze","crystal","voice"] as const;
+const VideoPhotoLibrary = dynamic<{locale:"ru"|"en"|"es";onSelectPhoto:(photo:File)=>void;disabled?:boolean;compact?:boolean}>(()=>import("./app/video-photo-library").then(m=>m.default));
 type Locale="ru"|"en"|"es";
 
 export function MandalaVideoGift({locale}:{locale:Locale}){
@@ -389,6 +391,7 @@ export function MandalaVideoGift({locale}:{locale:Locale}){
             onChange={e=>void choosePhoto(e.currentTarget.files?.[0]??null)}/>
         </label>
         <p className={styles.hint}>{t.photoPrivate}</p>
+        <VideoPhotoLibrary locale={locale} onSelectPhoto={file=>{void choosePhoto(file)}} compact disabled={photoBusy} />
         <fieldset className={styles.group}><legend>{t.source}</legend>
           {(["self","other","minor"] as const).map(id=><label key={id} className={styles.inline}>
             <input type="radio" checked={sourceOwner===id} onChange={()=>setSourceOwner(id)}/>
