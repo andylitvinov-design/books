@@ -13,6 +13,8 @@ import originalMotionLibrary from "@/data/video-catalog/original-motion-scenes-v
 import extraFreeFilmPresets from "@/data/video-catalog/free-film-presets-v2.json";
 import { MandalaHypnoCompact } from "./mandala-hypno-compact";
 import { MandalaVideoIdeas } from "./mandala-video-ideas";
+import { MandalaMontageTextChoice, type MontageTextMode } from "./mandala-montage-text-choice";
+import textChoiceStyles from "./mandala-montage-text-choice.module.css";
 import { MandalaVideoIdeaGoal } from "./mandala-video-idea-goal";
 import {MandalaMagicMirrorTitle,MandalaMagicMirrorGoal,type MirrorResolution,type MirrorScope} from "./mandala-magic-mirror-goal";
 import {buildPersonalVideoGoalOptions,composePersonalVideoGoalIntent,goalScenarioPlan} from "@/lib/mandala/video-personal-goal-composer.mjs";
@@ -2097,6 +2099,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [montageStyleSettingsOpen,setMontageStyleSettingsOpen] = useState(false);
   // Montage is a preference-first wizard: detailed timeline is available only under Text.
   const [montagePanel,setMontagePanel] = useState<"settings"|"effects"|"text"|"concept"|"audio"|"promo">("effects");
+  const [montageTextMode,setMontageTextMode] = useState<MontageTextMode>("simple");
+  const [montageTextStage,setMontageTextStage] = useState<"choice"|"edit">("choice");
+  const [montagePersonalDraft,setMontagePersonalDraft] = useState("");
+  const [montagePersonalGoal,setMontagePersonalGoal] = useState("");
   const montageAudioNavQueuedRef=useRef(false);
   const montageAudioShortcutIgnoreNextUntilRef=useRef(0);
   const [hypnoEntryGroup,setHypnoEntryGroup] = useState<"visual"|"audio"|"effects">("visual");
@@ -6319,6 +6325,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // check-in or credit transaction; the separate Ready Generate click does.
   const openReadyForGeneration = () => {
     if(!studioHydrated||recording||preparing||preparingRef.current||jobRef.current||webCodecJobRef.current)return false;
+    if(montageTextMode==="personalized"){
+      // No authenticated +50 XP add-on SKU exists. Never export at the base price.
+      setActiveWorkspace("editor");setMontagePanel("text");setMontageTextStage("edit");
+      setNotice(locale==="ru"?"Текст подготовлен, но экспорт ждёт подтверждённого тарифа +50 XP. Для экспорта выберите стандартные фразы.":
+        locale==="es"?"El suplemento +50 XP espera precio confirmado del servidor. Elige frases estándar para exportar.":
+        "Personalized text is a draft. Export needs server-confirmed +50 XP pricing; select standard phrases to export.");
+      return false;
+    }
     if(videoExportMode==="openmotion"){openExistingMotionPicker();return false;}
     if(videoExportMode==="express"){
       setActiveWorkspace("ready");setReadyGenerationPending(false);
@@ -6336,6 +6350,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   };
 
   const createQuickVideo = () => {
+    if(montageTextMode==="personalized"){
+      setActiveWorkspace("editor");setMontagePanel("text");setMontageTextStage("edit");
+      setNotice(locale==="ru"?"Персональный текст нельзя экспортировать без тарифа +50 XP. Выберите стандартные фразы.":
+        locale==="es"?"La exportación personalizada requiere un suplemento +50 XP confirmado por el servidor.":
+        "Personalized export requires a verified +50 XP price. Choose standard phrases to export now.");
+      return false;
+    }
     if(videoExportMode!=="personal"){
       if(videoExportMode==="openmotion")openExistingMotionPicker();
       else setNotice(expressUnavailable);
@@ -6408,6 +6429,28 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     });
   };
 
+  // An in-browser choice: never request provider credits or render here.
+  const continueMontageText=()=>{
+    if(montageTextStage==="choice"){
+      if(montageTextMode==="simple"){
+        setCaptionMode("none");setCustomCaption("");
+        setAffirmations(previous=>({...previous,enabled:false,selected:[],custom:"",
+          presetOverride:[],ideasDraft:undefined}));
+        setTimelineTextClips(null);setMontageScriptText("");
+        setCinematicPlan(current=>current?({...current,
+          shots:current.shots.map(shot=>({...shot,overlayText:""}))} as CinematicStoryboard):null);
+        setMontagePanel("concept");
+      }else{
+        setAffirmations(previous=>({...previous,enabled:true,
+          selected:previous.selected.length?previous.selected:[0,1,2]}));
+        setMontageTextStage("edit");
+      }
+    }else{
+      setMontagePanel("concept");
+    }
+    setNotice("");setPreviewPlaying(false);
+  };
+
   const continueMontageOrGenerate=()=>{
     if(montageAudioNavQueuedRef.current||
       performance.now()<montageAudioShortcutIgnoreNextUntilRef.current)return;
@@ -6416,8 +6459,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(montagePanel==="effects"){
       setMontagePanel("audio");setBasicPanelTab("music");
     }else if(montagePanel==="audio"){
-      setMontagePanel("text");
-    }else if(montagePanel==="text"||montagePanel==="settings"){
+      setMontageTextStage("choice");setMontagePanel("text");
+    }else if(montagePanel==="text"){
+      continueMontageText();
+    }else if(montagePanel==="settings"){
       setMontagePanel("concept");
     }else if(montagePanel==="concept"){
       // Navigation to Extra does not render or debit credits. Keep it usable:
@@ -9636,11 +9681,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 onPointerUp={event=>{
                   if(event.pointerType!=="touch"||montagePanel===item.id)return;
                   setMontagePanel(item.id);
-                  if(item.id==="audio")setBasicPanelTab("music");
+                  if(item.id==="audio")setBasicPanelTab("music"); if(item.id==="text")setMontageTextStage("choice");
                 }}
                 onClick={()=>{
                   setMontagePanel(item.id);
-                  if(item.id==="audio")setBasicPanelTab("music");
+                  if(item.id==="audio")setBasicPanelTab("music"); if(item.id==="text")setMontageTextStage("choice");
                 }}>
                 <item.Icon size={19} aria-hidden="true"/>
                 <span>{({
@@ -9759,7 +9804,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 // Keep the original Text workspace as the sole phrase editor.
                 // A changed phrase invalidates the current Story approval through
                 // its existing phraseKey; the visitor must re-approve source photos.
-                flushSync(()=>setMontagePanel("text"));
+                flushSync(()=>{setMontagePanel("text");setMontageTextStage("edit");setMontageTextMode(current=>current==="simple"?"standard":current);});
                 window.requestAnimationFrame(()=>{
                   const panel=document.querySelector<HTMLElement>('[data-video-montage-text]');
                   const rows=Array.from(panel?.querySelectorAll<HTMLElement>('[data-video-idea-phrase]')||[]);
@@ -9797,12 +9842,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 const edit:FreeFilmCompilationEdit={
                   clipIds:shots.map(shot=>shot.sceneId),
                   durationSecondsByStage:shots.map(shot=>shot.durationMs/1000),
-                  captionTexts:shots.map((_,index)=>captions[index]||""),
+                  captionTexts:shots.map((_,index)=>montageTextMode==="simple"?"":captions[index]||""),
                 };
                 if(applyAutoFilm(preset.id,duration,edit,outputAspect,true)){
                   storySourcePendingRef.current=false;
                   setAppliedStoryKey(key);
-                  setMontageScriptText(captions.filter(Boolean).join("\n")||
+                  setMontageScriptText(montageTextMode==="simple"?"":captions.filter(Boolean).join("\n")||
                     concept.sceneOutline.join("\n"));
                   setNotice(locale==="ru"
                     ?"Раскадровка применена. Проверьте сцены и нажмите «Создать видео»."
@@ -10080,6 +10125,41 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </div> : null}
           <div className={videoStyles.montagePane+" "+textRef.textPane}
             data-video-montage-text hidden={montagePanel!=="text"}>
+            {montageTextStage==="choice" ? <MandalaMontageTextChoice
+              locale={locale} mode={montageTextMode} disabled={recording||preparing}
+              onChange={setMontageTextMode} onContinue={continueMontageText}/> : null}
+            {montageTextStage==="edit" ? <>
+            <button type="button" className={textChoiceStyles.back}
+              data-video-text-editor-back disabled={recording||preparing}
+              onClick={()=>setMontageTextStage("choice")}>
+              <ChevronRight size={17} style={{transform:"rotate(180deg)"}} aria-hidden="true"/>
+              {locale==="ru"?"Назад к выбору текста":locale==="es"?"Volver a tipos de texto":"Back to text types"}
+            </button>
+            {montageTextMode==="personalized" ? <section className={textChoiceStyles.prompt}
+              data-video-text-personal-refinement>
+              <label htmlFor="video-text-personal-request">
+                {locale==="ru"?"Какую поддержку вы хотите получить?":locale==="es"?"¿Qué apoyo necesitas?":"What kind of support would help?"}
+              </label>
+              <textarea id="video-text-personal-request" data-video-text-personal-request
+                rows={3} maxLength={380} value={montagePersonalDraft}
+                placeholder={locale==="ru"?"Опишите свою цель без личных данных.":
+                  locale==="es"?"Describe tu objetivo sin datos privados.":"Describe your goal without identifying details."}
+                disabled={recording||preparing}
+                onChange={event=>setMontagePersonalDraft(event.currentTarget.value)}/>
+              <button type="button" data-video-text-personal-apply disabled={recording||preparing}
+                onClick={()=>setMontagePersonalGoal(montagePersonalDraft.trim())}>
+                <Sparkles size={17} aria-hidden="true"/>
+                {locale==="ru"?"Предложить фразы по запросу":locale==="es"?"Sugerir frases para mi objetivo":"Suggest phrases for my goal"}
+              </button>
+              <p>{locale==="ru"?"Подбор выполняется в браузере; это фразы поддержки, а не медицинские рекомендации.":
+                locale==="es"?"Sugerencias locales para reflexionar, no tratamiento médico.":
+                "Local supportive suggestions for reflection, not diagnosis or treatment."}</p>
+              <p data-video-text-premium-unavailable role="status">
+                {locale==="ru"?"Доплата +50 XP: редактирование доступно, экспорт ждёт серверного тарифа.":
+                  locale==="es"?"Suplemento +50 XP: edición disponible, exportación espera precio confirmado.":
+                  "+50 XP add-on: editing is available; export awaits server-verified pricing."}
+              </p>
+            </section> : null}
             <header className={textRef.hero} data-video-text-hero>
               {/* Existing rights-reviewed scenic poster: not a paid AI avatar. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -10108,7 +10188,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               </button>)}
             </nav>
             <div className={textRef.content}>
-          <MandalaVideoIdeas locale={locale} theme={theme} requestText={wish} profile={ideasProfileConfirmed?ideasProfile:undefined} languagePicker
+          <MandalaVideoIdeas locale={locale} theme={theme} requestText={montageTextMode==="personalized"?(montagePersonalGoal||wish):wish} profile={ideasProfileConfirmed?ideasProfile:undefined} languagePicker
+            phraseMode={montageTextMode==="standard"?"standard":"personalized"}
             creationPriceCredits={creditCatalog?.ready&&creditCatalog.chargeRequired?creditCatalog.priceCredits:null}
             goalType={chosenIdeaGoal?.type||null} selectedTopicId={selectedConceptTopic?.topicId||null}
             active={activeWorkspace==="editor"&&montagePanel==="text"} disabled={recording||preparing}
@@ -10131,6 +10212,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 document.querySelector("[data-video-montage-tools]")?.scrollIntoView({block:"start",behavior:"smooth"}));
             }} status={notice}/>
             </div>
+            </> : null}
           </div>
           {montagePanel==="settings" ? <div className={videoStyles.montagePane} data-video-montage-text-tools>
           <details className={videoStyles.montageAdvancedTools} data-video-concept-text-tools>
@@ -10792,7 +10874,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </details>
         </section> : null}
         <div className={videoStyles.quickOrderBar} data-workspace-section="editor" data-video-order-bar
-          hidden={montagePanel==="promo"}>
+          hidden={montagePanel==="promo"||(montagePanel==="text"&&montageTextStage==="choice")}>
           <div className={videoStyles.quickOrderSummary} data-video-price-summary aria-live="polite">
             <small>{practiceCopy.total}</small>
             <strong>{creditCatalog?.chargeRequired&&freeVideoSelected

@@ -17,6 +17,7 @@ type Cluster={id:string;label:string};
 type Props={
  locale:VideoLocale;theme:VideoTheme;requestText:string;active:boolean;disabled:boolean;settings:AffirmationSettings;
  profile?:VideoGoalProfile; languagePicker?:boolean; creationPriceCredits?:number|null;
+ phraseMode?:"standard"|"personalized";
  goalType?:"leisure"|"support"|"change"|null; selectedTopicId?:string|null;
  generating:boolean;onChange:Dispatch<SetStateAction<AffirmationSettings>>;
  onPendingChange:Dispatch<SetStateAction<boolean>>;onPreview:()=>void;onCreate:()=>void;onGenerate:()=>void;status?:string;
@@ -118,7 +119,7 @@ const allFive=[0,1,2,3,4];
 const scaleValues=["small","medium","large"] as const;
 const cleanPhrase=sanitizeIdeaPhrase;
 
-export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePicker=false,creationPriceCredits=null,goalType=null,selectedTopicId=null,active,disabled,settings,generating,
+export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePicker=false,creationPriceCredits=null,phraseMode="personalized",goalType=null,selectedTopicId=null,active,disabled,settings,generating,
  onChange,onPendingChange,onPreview,onCreate,onGenerate,status,onRecord,onResetPreview}:Props){
  const t=wording[locale];
  const [phraseLocale,setPhraseLocale]=useState<VideoLocale>(()=>settings.ideasDraft?.locale??locale);
@@ -180,8 +181,9 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
  const energyForSuggestions=profile&&profile.energy!==DEFAULT_VIDEO_GOAL_PROFILE.energy
   ?profile.energy:energy;
  const signature=JSON.stringify([goalContext.key,goalType,axesForSuggestions,currentForSuggestions,
-  desiredForSuggestions,strengthForSuggestions,energyForSuggestions,revision,profileKey]);
+  desiredForSuggestions,strengthForSuggestions,energyForSuggestions,revision,profileKey,phraseMode]);
  const suggested=useMemo(()=>{
+  if(phraseMode==="standard")return [...categoryPhrases.support[captionLocale]];
   const pool:string[]=[];
   for(let i=0;i<Math.max(currentForSuggestions.length,desiredForSuggestions.length);i++){
    const next=suggestVideoGoalPhrases({
@@ -197,7 +199,7 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
   // Personal answers are represented by their stable serialized values.
   // eslint-disable-next-line react-hooks/exhaustive-deps
  },[captionLocale,requestText,theme,goalType,selectedTopicId,goalContext.key,profileKey,selectionGoalKey,
-  selectedAxes,current,desired,stateScore,energy,revision]);
+  selectedAxes,current,desired,stateScore,energy,revision,phraseMode]);
 
  // Keep the edited list in the parent's session state, the same source used by
  // Canvas and export. Mounting Ideas again must not replace saved user words.
@@ -213,7 +215,8 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
   }
   // A genuine change in Goal refinement deliberately starts new suggestions.
   // The optional name-based closing is the fifth initial chosen video phrase.
-  const initialChosen=personalClosingPhrase?[...allFive.slice(0,4),suggested.length-1]:allFive;
+  const initialChosen=phraseMode==="standard"?allFive:
+    personalClosingPhrase?[...allFive.slice(0,4),suggested.length-1]:allFive;
   const initial=planIdeaSelection(suggested,initialChosen,suggested,signature);
   setOptions(initial.editor.options);setChosen(initial.editor.chosen);
   onChange(old=>({...old,...initial.settingsPatch,ideasDraft:{...initial.editor,locale:captionLocale},
