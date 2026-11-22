@@ -5,7 +5,7 @@ import Link from "next/link";
 import {BookOpen, CalendarDays, ClipboardCheck, Clapperboard, Flower2,
   HandHeart, MessageCircle, Play, X, ChevronDown} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
-import {Heart,Sun,Compass,BriefcaseBusiness,Sprout,SearchCheck,Lightbulb,Flag,ArrowRight,Sparkles,UserRound,ShoppingBag,UsersRound} from "lucide-react";
+import {Heart,Sun,Compass,BriefcaseBusiness,Sprout,Lightbulb,Flag,ArrowRight,Sparkles,UserRound,ShoppingBag,UsersRound} from "lucide-react";
 import css from "./messenger-ai-landing.module.css";
 import {useAliPersona} from "./use-ali-persona";
 import {playAliPersonaAudio,stopAliPersonaAudio,prepareAliNaturalVoice} from "./ali-persona-audio";
@@ -301,16 +301,6 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupp
           <span className={css.topicArrow}><ArrowRight size={17} aria-hidden="true"/></span>
         </button>;
       })}
-    </div>
-    <div className={css.journey} data-hh-alchemist-journey
-      aria-label={locale==="ru"?"Как мы будем искать решение":locale==="es"?"Cómo podemos avanzar":"How we can move forward"}>
-      <h3 className={css.journeyHeading}>
-        {locale==="ru"?"Как это работает — 3 шага":locale==="es"?"Cómo funciona — 3 pasos":"How it works — in 3 simple steps"}
-      </h3>
-      <div className={css.journeySteps}>
-        {[SearchCheck,Lightbulb,Flag].map((Icon,index)=>
-          <div key={index}><Icon size={20} aria-hidden="true"/><span>{index+1}. {inner.steps[index]}</span></div>)}
-      </div>
     </div>
     {moreTopics&&<div className={css.expandedContent} data-hh-ali-more-options>
       <button type="button" className={css.analysisButton} data-hh-alchemist-start-analysis

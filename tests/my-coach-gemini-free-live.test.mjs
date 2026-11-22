@@ -5,7 +5,7 @@ import {GEMINI_FREE_LIVE_MODEL,GEMINI_FREE_LIVE_MAX_SECONDS,geminiFreeLiveConfig
  normalizeGeminiFreeLiveStart,geminiFreeLiveSetup,issueGeminiFreeLiveToken,
  geminiFreeLiveCheckpoint} from '../lib/coaching/gemini-live-free.mjs'
 import {GEMINI_LIVE_WEBSOCKET,GEMINI_LIVE_INPUT_RATE,GEMINI_LIVE_OUTPUT_RATE,
- GeminiLivePcmPlayer,GeminiLivePcmResampler,GeminiLiveBargeGate,geminiLiveSocketUrl,
+ GeminiLivePcmPlayer,GeminiLivePcmResampler,GeminiLiveBargeGate,GeminiLiveBargeDetector,geminiLiveSocketUrl,
  geminiLiveSetupMessage,geminiLivePcmMessage,geminiLiveTextMessage,
  base64ToPcmFloats,bytesToBase64,readGeminiLiveServerMessage,
  appendGeminiLiveTranscript} from '../lib/coaching/gemini-live-transport.mjs'
@@ -64,9 +64,13 @@ test('one-use ephemeral token locks model, voice and Director; secret never retu
    assert.equal(options.headers['x-goog-api-key'],key)
    const body=JSON.parse(options.body)
    assert.equal(body.uses,1)
+   assert.equal(Object.hasOwn(body,'bidiGenerateContentSetup'),false,
+    'a REST AuthToken request requires liveConnectConstraints, not WebSocket setup')
    assert.equal(body.liveConnectConstraints.model,'models/'+GEMINI_FREE_LIVE_MODEL)
    const config=body.liveConnectConstraints.config
+   assert.deepEqual(config.responseModalities,['AUDIO'])
    assert.equal(config.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName,'Sulafat')
+   assert.equal(config.generationConfig.maxOutputTokens,1100)
    assert.match(config.systemInstruction.parts[0].text,/coaching method/)
    assert.equal(config.realtimeInputConfig.activityHandling,'START_OF_ACTIVITY_INTERRUPTS')
    assert.ok(config.inputAudioTranscription)
@@ -109,6 +113,11 @@ test('direct constrained WebSocket and genuine 16 kHz little-endian audio frames
   'raw Gemini WebSocket must use BidiGenerateContentSetup generationConfig')
  assert.equal(setup.setup.generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName,
   'Sulafat','initial WebSocket setup must actually apply the voice')
+ assert.equal(setup.setup.realtimeInputConfig.activityHandling,'START_OF_ACTIVITY_INTERRUPTS',
+  'the actual socket setup must request start-of-user-speech interruption')
+ assert.equal(setup.setup.realtimeInputConfig.automaticActivityDetection.startOfSpeechSensitivity,'START_SENSITIVITY_HIGH')
+ assert.deepEqual(setup.setup.inputAudioTranscription,{})
+ assert.deepEqual(setup.setup.outputAudioTranscription,{})
  assert.throws(()=>geminiLiveSetupMessage('gemini-3.8-live','Sulafat'))
  const bytes=new Uint8Array([0,0,255,127,0,128,0,0])
  const packet=geminiLivePcmMessage(bytes)
@@ -166,6 +175,53 @@ test('local interruption rejects stale PCM even if Google buffers old chunks',()
  assert.match(component,/if\(queued\)/)
 })
 
+test('quiet human voice ducks and interrupts coach within three microphone frames',()=>{
+ const detector=new GeminiLiveBargeDetector()
+ assert.equal(detector.sample(.001,true),'none')
+ assert.equal(detector.sample(.023,true),'duck')
+ assert.equal(detector.sample(.025,true),'candidate')
+ assert.equal(detector.sample(.024,true),'interrupt')
+ assert.equal(detector.userActive,true)
+ for(let i=0;i<7;i++)detector.sample(.001,false)
+ assert.equal(detector.userActive,false)
+})
+test('short playback echo ducks then restores without interrupting the coach',()=>{
+ const detector=new GeminiLiveBargeDetector()
+ assert.equal(detector.sample(.03,true),'duck')
+ assert.equal(detector.sample(.001,true),'none')
+ assert.equal(detector.sample(.001,true),'restore')
+ assert.equal(detector.userActive,false)
+})
+test('human already talking before Gemini responds suppresses overlapping coach audio',()=>{
+ const detector=new GeminiLiveBargeDetector()
+ for(let i=0;i<3;i++)detector.sample(.027,false)
+ assert.equal(detector.userActive,true)
+ const gate=new GeminiLiveBargeGate()
+ gate.interrupt()
+ assert.equal(gate.accept({audio:['unwanted']}),false)
+ assert.equal(gate.accept({interrupted:true}),false)
+ assert.equal(gate.accept({audio:['next-turn']}),true)
+ const source=load('components/my-coach-gemini-live.jsx')
+ assert.match(source,/r\.bargeDetector\.userActive/)
+ assert.match(source,/r\.player\?\.setVolume\(0\.08\)/)
+ assert.match(source,/else if\(event==='interrupt'\)interrupt\(\)/)
+ assert.match(source,/r\.player\.stop\(\)/)
+ assert.match(source,/if\(partial\)commitOutput\(r\)/)
+})
+test('gain duck restores full output on stop without starting a second audio context',()=>{
+ const audioGain={value:1},connections=[]
+ const ctx={state:'running',currentTime:0,destination:{},
+  createGain:()=>({gain:audioGain,connect:target=>connections.push(target)}),
+  createBuffer:(_ch,size,rate)=>({duration:size/rate,getChannelData:()=>new Float32Array(size)}),
+  createBufferSource:()=>({connect(){},disconnect(){},start(){},stop(){}})}
+ const player=new GeminiLivePcmPlayer(ctx)
+ assert.equal(player.append(bytesToBase64(new Uint8Array(960))),true)
+ player.setVolume(.08)
+ assert.equal(audioGain.value,.08)
+ player.stop()
+ assert.equal(audioGain.value,1)
+ assert.deepEqual(connections,[ctx.destination])
+})
 test('24k output stops immediately and is not marked complete after barge-in',()=>{
  let started=0,stopped=0,disconnected=0,ended=0
  const ctx={state:'running',currentTime:0,destination:{},
