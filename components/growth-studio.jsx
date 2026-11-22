@@ -783,7 +783,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
             <button type="button" disabled={busy||!ready||!storageVerified||!instagramReady(post.socialAccountId,post.placement)}
               title={instagramReady(post.socialAccountId,post.placement)?(post.placement==='reel'?t.instagramReelResume:t.instagramStoryResume):
                 (t[instagramPublishReadiness(metaStatus,post.socialAccountId,post.placement).reason]||t.instagram_account_not_connected)} onClick={()=>sendInstagram(post,true)}>
-              <RefreshCcw size={15}/>{post.placement==='reel'?t.instagramReelResume:t.instagramStoryResume}</button>
+              <RefreshCcw size={15}/>{post.placement==='reel'?t.instagramReelResume:t.instagramStoryResume}</button>}
           {post.channel==='instagram'&&post.status==='approved'&&post.socialAccountId&&
             !instagramReady(post.socialAccountId,post.placement)&&<p className={styles.hint} role="status">
               {t[instagramPublishReadiness(metaStatus,post.socialAccountId,post.placement).reason]||t.instagram_account_not_connected}
