@@ -35,10 +35,10 @@ before(async()=>{
  grant select,insert on app_private.coaching_life_plan_changes to hh_app_backend;`)
  for(const table of ['coaching_life_plans','coaching_life_plan_areas','coaching_goals','coaching_action_items','coaching_life_plan_changes'])await admin.query(`alter table app_private.${table} enable row level security;alter table app_private.${table} force row level security;create policy owner on app_private.${table} for all to hh_app_backend using(account_id=auth.uid() and app_private.account_active()) with check(account_id=auth.uid() and app_private.account_active())`)
  for(const actor of [a,b]){await admin.query("insert into app.accounts values($1,'active','active')",[actor.id]);await admin.query('insert into auth.sessions values($1,$2)',[actor.claims.session_id,actor.id])}
- await admin.query(await readFile(new URL('../supabase/migrations/20261122223000_hh_personal_goal_statuses.sql',import.meta.url),'utf8'))
+ await admin.query(await readFile(new URL('../supabase/migrations/20261122215422_hh_personal_goal_statuses_20261122.sql',import.meta.url),'utf8'))
  await admin.query(await readFile(new URL('../supabase/migrations/20261110153142_hh_coaching_action_erasure.sql',import.meta.url),'utf8'))
- await admin.query(await readFile(new URL('../supabase/migrations/20261122233000_hh_personal_action_erasure.sql',import.meta.url),'utf8'))
- await admin.query(await readFile(new URL('../supabase/migrations/20261122230000_hh_daybook_daily_intentions.sql',import.meta.url),'utf8'))
+ await admin.query(await readFile(new URL('../supabase/migrations/20261122215438_hh_personal_action_erasure_20261122.sql',import.meta.url),'utf8'))
+ await admin.query(await readFile(new URL('../supabase/migrations/20261122215437_hh_daybook_daily_intentions_20261122.sql',import.meta.url),'utf8'))
  for(const [actor,id] of [[a,goal],[b,foreignGoal]]){
   const plan=(await admin.query('insert into app_private.coaching_life_plans(account_id) values($1) returning id',[actor.id])).rows[0].id
   const area=(await admin.query("insert into app_private.coaching_life_plan_areas(plan_id,account_id,area_key) values($1,$2,'meaning_purpose') returning id",[plan,actor.id])).rows[0].id

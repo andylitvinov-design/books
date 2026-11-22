@@ -34,9 +34,9 @@ before(async()=>{
  grant select,insert on app_private.coaching_life_plan_changes to hh_app_backend;`)
  for(const table of ['coaching_life_plans','coaching_life_plan_areas','coaching_goals','coaching_life_plan_changes'])await admin.query(`alter table app_private.${table} enable row level security;alter table app_private.${table} force row level security;create policy owner on app_private.${table} for all to hh_app_backend using(account_id=auth.uid() and app_private.account_active()) with check(account_id=auth.uid() and app_private.account_active())`)
  for(const actor of [a,b]){await admin.query("insert into app.accounts values($1,'active','active')",[actor.id]);await admin.query('insert into auth.sessions values($1,$2)',[actor.claims.session_id,actor.id])}
- await admin.query(await readFile(new URL('../supabase/migrations/20261122223000_hh_personal_goal_statuses.sql',import.meta.url),'utf8'))
+ await admin.query(await readFile(new URL('../supabase/migrations/20261122215422_hh_personal_goal_statuses_20261122.sql',import.meta.url),'utf8'))
  await admin.query(await readFile(new URL('../supabase/migrations/20261110153142_hh_coaching_action_erasure.sql',import.meta.url),'utf8'))
- await admin.query(await readFile(new URL('../supabase/migrations/20261122224000_hh_personal_goal_erasure.sql',import.meta.url),'utf8'))
+ await admin.query(await readFile(new URL('../supabase/migrations/20261122215436_hh_personal_goal_erasure_20261122.sql',import.meta.url),'utf8'))
 })
 after(async()=>{await closeDatabase();await admin.end()})
 test('creates canonical goal and encrypted audit details, reads back and retries without duplicates',async()=>{

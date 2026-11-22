@@ -32,7 +32,7 @@ before(async()=>{
  for(const actor of [a,b]){await admin.query("insert into app.accounts values($1,'active','active')",[actor.id]);await admin.query('insert into auth.sessions values($1,$2)',[actor.claims.session_id,actor.id])}
  await admin.query("insert into app_private.coaching_goals values($1,$2,'active')",[goal,a.id])
  for(const id of [action,fresh])await admin.query("insert into app_private.coaching_action_items values($1,$2,$3,'active',now())",[id,goal,a.id])
- await admin.query(await readFile(new URL('../supabase/migrations/20261122230000_hh_daybook_daily_intentions.sql',import.meta.url),'utf8'))
+ await admin.query(await readFile(new URL('../supabase/migrations/20261122215437_hh_daybook_daily_intentions_20261122.sql',import.meta.url),'utf8'))
 })
 after(async()=>{await closeDatabase();await admin.end()})
 let initial
