@@ -229,8 +229,15 @@ test('private erasure never pretends Supabase removal also removed a HeyGen asse
   assert.match(service, /status in \('ready','failed','deleted'\)/);
   assert.match(service, /provider_cleanup_pending/);
   assert.match(service, /providerCleanup/);
+  assert.match(service, /localCleanup/);
+  assert.match(service, /LOCAL_MEDIA_DELETE_PENDING/);
+  assert.match(service, /removal && removal\.error == null && Array\.isArray\(removal\.data\)/);
+  assert.match(service, /failure_code=null/);
+  assert.match(service, /'local_cleanup_pending'/);
   assert.match(service, /\['pending','submitting','submitted','finalizing','unknown'\]/);
   assert.match(ui, /retryCleanup/);
+  assert.match(ui, /retryLocal/);
+  assert.match(ui, /localCleanup === 'pending'/);
   assert.match(ui, /providerCleanup === 'pending'/);
   assert.doesNotMatch(service, /console\.log\(.+provider_asset_id/);
 });
