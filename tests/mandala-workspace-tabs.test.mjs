@@ -71,17 +71,24 @@ const source=readFileSync(new URL('../components/mandala-free-video-studio.tsx',
 const workspaces=[null,'video','phrases','effects','practices','editor','pro'];
 function exercise(input,workspace,overrides={}){
  const ast=ts.createSourceFile('studio.tsx',input,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
- let handler;const visit=n=>{if(ts.isVariableDeclaration(n)&&n.name.getText(ast)==='startFromHero')handler=n.initializer;ts.forEachChild(n,visit);};visit(ast);
- assert.ok(handler);
- const js=ts.transpileModule('const startFromHero='+handler.getText(ast)+';startFromHero();',{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
+ let handler,personalExportGuard;
+ const visit=n=>{
+  if(ts.isVariableDeclaration(n)){
+   if(n.name.getText(ast)==='startFromHero')handler=n.initializer;
+   if(n.name.getText(ast)==='blockUnpricedPersonalExport')personalExportGuard=n.initializer;
+  }
+  ts.forEachChild(n,visit);
+ };visit(ast);
+ assert.ok(handler&&personalExportGuard,"execute the production pricing guard instead of mocking success");
+ const js=ts.transpileModule('const blockUnpricedPersonalExport='+personalExportGuard.getText(ast)+';const startFromHero='+handler.getText(ast)+';startFromHero();',{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
  let active=workspace,queued=workspace,basicTab=null,renders=0,picks=0;const cover={open:false},frames=[],scrolls=[],notices=[];
- const state={recording:false,preparing:false,storySourcePending:false,hypnoAudioBusy:false,photoPending:false,phrasePending:false,narrationInvalid:false,locale:'ru',photoUrl:'blob:synthetic',backgroundOnly:false,photoConsent:false,audioNeedsAttachment:false,uploadedAudio:null,audioRights:false,source:'synthetic',...overrides};
+ const state={recording:false,preparing:false,storySourcePending:false,hypnoAudioBusy:false,photoPending:false,phrasePending:false,narrationInvalid:false,locale:'ru',photoUrl:'blob:synthetic',backgroundOnly:false,photoConsent:false,extraTextChoice:null,montageTextMode:"standard",ideasProfileConfirmed:false,chosenIdeaGoal:null,audioNeedsAttachment:false,uploadedAudio:null,audioRights:false,source:'synthetic',...overrides};
  // Models only the source-defined workspace/display and native-details state,
  // not pixels or a real browser. React state commits at the frame boundary.
  const consent={scrollIntoView:()=>scrolls.push({open:cover.open,workspace:active,
    visible:cover.open&&(active==='video'||active==='editor')})};
  runInNewContext(js,{...state,storySourcePendingRef:{current:Boolean(state.storySourcePending)},canGenerate:true,preparingRef:{current:state.preparing},jobRef:{current:null},webCodecJobRef:{current:null},activeWorkspace:workspace,setActiveWorkspace:value=>{queued=value;},
-   setBasicPanelTab:value=>{basicTab=value;},setMontagePanel:()=>{},setMontageStyleSettingsOpen:()=>{},setIntroPlaying:()=>{},setNotice:value=>notices.push(value),supportUi:{heroConsent:'Consent required'},audioUi:{needsAttach:'Attach audio'},ui:{audioRightsHelp:'Audio rights required'},onPickPhoto:()=>picks++,createVideo:()=>renders++,window:{requestAnimationFrame:cb=>frames.push(cb)},document:{querySelector:selector=>selector==='[data-video-cover-options]'?cover:selector==='[data-video-photo-consent]'?consent:{scrollIntoView(){}}}},{timeout:1000});
+   setBasicPanelTab:value=>{basicTab=value;},setIdeasSubtab:()=>{},setMontagePanel:()=>{},setMontageStyleSettingsOpen:()=>{},setIntroPlaying:()=>{},setNotice:value=>notices.push(value),supportUi:{heroConsent:'Consent required'},audioUi:{needsAttach:'Attach audio'},ui:{audioRightsHelp:'Audio rights required'},onPickPhoto:()=>picks++,createVideo:()=>renders++,window:{requestAnimationFrame:cb=>frames.push(cb)},document:{querySelector:selector=>selector==='[data-video-cover-options]'?cover:selector==='[data-video-photo-consent]'?consent:{scrollIntoView(){}}}},{timeout:1000});
  assert.equal(scrolls.length,0,'scroll must retain two-frame boundary');
  while(frames.length){active=queued;frames.shift()();}
  // A guarded handler may return before scheduling rAF; React still commits
@@ -89,6 +96,17 @@ function exercise(input,workspace,overrides={}){
  active=queued;
  return {workspace:active,basicTab,open:cover.open,scrolls,notices,renders,picks};
 }
+test("personalized +50 XP export is refused before local MP4 starts",()=>{
+ for(const workspace of workspaces){
+  for(const extra of [{extraTextChoice:"personal"},{montageTextMode:"personalized"}]){
+   const result=exercise(source,workspace,{photoConsent:true,...extra});
+   assert.equal(result.renders,0,"unpriced personalization must not render");
+   assert.equal(result.workspace,"phrases","return to editable Personal");
+   assert.ok(result.notices.some(line=>line.includes("+50 XP")),"show the unpriced surcharge");
+  }
+ }
+});
+
 test('one original consent pane is accessible in Video or fifth Montage Photo',()=>{
  assert.match(source,/activeWorkspace==="video" \? deepCharacterPhotoPane : null/);
  assert.match(source,/basicPanelTab==="photo" \? deepCharacterPhotoPane : null/);
