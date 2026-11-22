@@ -116,6 +116,7 @@ import { SUPPORT_PHOTO_ACCEPT } from "@/lib/mandala/prepare-browser-photo";
 import {getStoryFormatCopy} from "@/lib/mandala/stories-studio.mjs";
 import styles from "./mandala-meditation.module.css";
 import videoStyles from "./mandala-video-mobile.module.css";
+import textRef from "./mandala-montage-text-owner.module.css";
 
 // First-screen player and Auto Video Director remain eager. Optional workspaces
 // and collapsed tools download on interaction, reducing initial JS on mobile.
@@ -10077,9 +10078,38 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               </button>
             </div>
           </div> : null}
-          <div className={videoStyles.montagePane} data-video-montage-text hidden={montagePanel!=="text"}>
-            <p className={videoStyles.montageMovedNote}>{locale==="ru"?"Выберите, измените или добавьте свои фразы. Они сразу используются в предпросмотре и экспорте.":locale==="es"?"Elige o edita tus frases. Aparecen en la vista previa y el vídeo final.":"Select or edit phrases. Your choices appear in the preview and final video."}</p>
+          <div className={videoStyles.montagePane+" "+textRef.textPane}
+            data-video-montage-text hidden={montagePanel!=="text"}>
+            <header className={textRef.hero} data-video-text-hero>
+              {/* Existing rights-reviewed scenic poster: not a paid AI avatar. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={quickStyleFilmFor(theme,0)?.poster||quickCanvasPoster("sun-flight")}
+                loading="lazy" alt="" aria-hidden="true"/>
+              <div className={textRef.heroCopy}>
+                <h2>{locale==="ru"?"Создайте своё видео":locale==="es"?"Crea tu vídeo":"Create Your Video"}</h2>
+                <p>{locale==="ru"?"Добавьте фразы поддержки, поздравления или личное пожелание.":
+                  locale==="es"?"Añade palabras de apoyo, felicitación o un mensaje personal.":
+                  "Add meaningful phrases, wishes or a personal message for your video."}</p>
+              </div>
+            </header>
+            <nav className={textRef.stepStrip} data-video-text-progress
+              aria-label={locale==="ru"?"Этапы монтажа":locale==="es"?"Pasos del montaje":"Montage steps"}>
+              {([
+                {id:"effects",en:"Style",ru:"Стиль",es:"Estilo",number:1},
+                {id:"audio",en:"Audio",ru:"Аудио",es:"Audio",number:2},
+                {id:"text",en:"Text & Phrases",ru:"Текст и фразы",es:"Texto y frases",number:3}
+              ] as const).map(step=><button type="button" key={step.id}
+                data-video-text-progress-step={step.number}
+                aria-current={step.id==="text"?"step":undefined}
+                disabled={recording||preparing||step.id==="text"}
+                onClick={()=>{setMontagePanel(step.id);if(step.id==="audio")setBasicPanelTab("music");}}>
+                <span>{step.id==="text"?step.number:<Check size={18} strokeWidth={3} aria-hidden="true"/>}</span>
+                <strong>{step[locale]}</strong>
+              </button>)}
+            </nav>
+            <div className={textRef.content}>
           <MandalaVideoIdeas locale={locale} theme={theme} requestText={wish} profile={ideasProfileConfirmed?ideasProfile:undefined} languagePicker
+            creationPriceCredits={creditCatalog?.ready&&creditCatalog.chargeRequired?creditCatalog.priceCredits:null}
             goalType={chosenIdeaGoal?.type||null} selectedTopicId={selectedConceptTopic?.topicId||null}
             active={activeWorkspace==="editor"&&montagePanel==="text"} disabled={recording||preparing}
             settings={affirmations}
@@ -10100,6 +10130,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               window.requestAnimationFrame(()=>
                 document.querySelector("[data-video-montage-tools]")?.scrollIntoView({block:"start",behavior:"smooth"}));
             }} status={notice}/>
+            </div>
           </div>
           {montagePanel==="settings" ? <div className={videoStyles.montagePane} data-video-montage-text-tools>
           <details className={videoStyles.montageAdvancedTools} data-video-concept-text-tools>

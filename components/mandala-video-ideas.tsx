@@ -2,7 +2,7 @@
 
 import {useEffect,useMemo,useRef,useState} from "react";
 import type {Dispatch,SetStateAction} from "react";
-import {ArrowDown,Check,ChevronDown,Heart,Mic,Pencil,Play,Plus,RefreshCw,SlidersHorizontal,Sparkles,Target,Zap} from "lucide-react";
+import {ArrowDown,Check,ChevronDown,Gift,HandHeart,Heart,Leaf,Mic,Pencil,Play,Plus,RefreshCw,SlidersHorizontal,Sparkles,Star,Target,Zap} from "lucide-react";
 import {listMeaningAxes} from "@/lib/mandala/meaning-emotion/idea-engine.mjs";
 import {listCurrentEmotionClusters,listDesiredEmotionClusters} from "@/lib/mandala/meaning-emotion/emotional-vector-matrix.mjs";
 import {resolveVideoIdeaContext,suggestVideoGoalPhrases,translateVideoGoalPhrase,personalVideoClosingPhrase,appendPersonalVideoClosingPhrase} from "@/lib/mandala/video-goal-idea-phrases.mjs";
@@ -16,7 +16,7 @@ type Axis={id:string;label:string;description:string};
 type Cluster={id:string;label:string};
 type Props={
  locale:VideoLocale;theme:VideoTheme;requestText:string;active:boolean;disabled:boolean;settings:AffirmationSettings;
- profile?:VideoGoalProfile; languagePicker?:boolean;
+ profile?:VideoGoalProfile; languagePicker?:boolean; creationPriceCredits?:number|null;
  goalType?:"leisure"|"support"|"change"|null; selectedTopicId?:string|null;
  generating:boolean;onChange:Dispatch<SetStateAction<AffirmationSettings>>;
  onPendingChange:Dispatch<SetStateAction<boolean>>;onPreview:()=>void;onCreate:()=>void;onGenerate:()=>void;status?:string;
@@ -74,17 +74,59 @@ const wording={
  }
 } as const;
 
+
+type PhraseCategory="support"|"congratulations"|"motivation"|"love"|"peace"|"custom";
+const categoryIds:PhraseCategory[]=["support","congratulations","motivation","love","peace","custom"];
+const categoryLabels:Record<PhraseCategory,Record<VideoLocale,string>>={
+ support:{en:"Support & Care",ru:"Поддержка",es:"Apoyo y cariño"},
+ congratulations:{en:"Congratulations",ru:"Поздравления",es:"Felicitaciones"},
+ motivation:{en:"Motivation",ru:"Мотивация",es:"Motivación"},
+ love:{en:"Love & Relationships",ru:"Любовь и отношения",es:"Amor y relaciones"},
+ peace:{en:"Peace & Wellbeing",ru:"Покой и гармония",es:"Calma y bienestar"},
+ custom:{en:"My Own Words",ru:"Свои слова",es:"Mis palabras"}
+};
+/* First-party editorial choices. Existing planIdeaSelection alone writes video text. */
+const categoryPhrases:Record<Exclude<PhraseCategory,"custom">,Record<VideoLocale,string[]>>={
+ support:{
+  en:["You are not alone","I'm here with you","One step at a time","You matter so much","I believe in you","Take the time you need","Sending you a warm hug"],
+  ru:["Ты не один","Я рядом с тобой","Шаг за шагом","Ты очень важен","Я верю в тебя","Не спеши, дай себе время","Обнимаю тебя"],
+  es:["No estás a solas","Estoy aquí contigo","Un paso a la vez","Eres muy importante","Creo en ti","Tómate tu tiempo","Te mando un abrazo"]
+ },
+ congratulations:{
+  en:["Today is your day","So happy for you","You did it!","A beautiful new chapter","You deserve to celebrate","Here's to your next adventure","Sending you joyful wishes"],
+  ru:["Сегодня твой день","Очень рад за тебя","У тебя получилось!","Начинается новая глава","Время праздновать","Впереди новые открытия","Шлю радостные пожелания"],
+  es:["Hoy es tu día","Me alegro mucho por ti","¡Lo lograste!","Una nueva etapa hermosa","Es momento de celebrar","Vienen nuevas aventuras","Mis mejores deseos"]
+ },
+ motivation:{
+  en:["You have what it takes","Keep going, step by step","Your ideas are worth sharing","Every small step counts","Trust the path you choose","New possibilities are opening","You can begin today"],
+  ru:["У тебя есть всё необходимое","Продолжай шаг за шагом","Твои идеи ценны","Каждый шаг важен","Доверяй своему пути","Впереди новые возможности","Можно начать сегодня"],
+  es:["Tienes lo que hace falta","Sigue paso a paso","Tus ideas valen mucho","Cada paso importa","Confía en tu camino","Hay nuevas posibilidades","Puedes empezar hoy"]
+ },
+ love:{
+  en:["You are in my heart","Thinking of you today","I'm grateful for us","Sending you all my love","You make life brighter","I cherish our moments","I'm glad you're in my life"],
+  ru:["Ты в моём сердце","Сегодня думаю о тебе","Я ценю то, что между нами","Посылаю тебе любовь","С тобой жизнь светлее","Бережно храню наши моменты","Как хорошо, что ты есть"],
+  es:["Estás en mi corazón","Hoy pienso en ti","Agradezco lo nuestro","Te envío todo mi cariño","Iluminas mi vida","Atesoro nuestros momentos","Me alegra tenerte en mi vida"]
+ },
+ peace:{
+  en:["Time for a gentle pause","I can enjoy this moment","Let the day slow down","There's no rush right now","Rest can be enough","At my own gentle pace","Nothing to prove right now"],
+  ru:["Пора мягко выдохнуть","Я могу быть в этом моменте","Пусть день замедлится","Сейчас можно не спешить","Отдыха бывает достаточно","В моём собственном ритме","Не нужно ничего доказывать"],
+  es:["Es hora de hacer una pausa","Puedo disfrutar este momento","Deja que el día vaya lento","Ahora no hay prisa","Descansar es suficiente","A mi propio ritmo","No tengo nada que demostrar"]
+ }
+};
+
 const allFive=[0,1,2,3,4];
 const scaleValues=["small","medium","large"] as const;
 const cleanPhrase=sanitizeIdeaPhrase;
 
-export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePicker=false,goalType=null,selectedTopicId=null,active,disabled,settings,generating,
+export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePicker=false,creationPriceCredits=null,goalType=null,selectedTopicId=null,active,disabled,settings,generating,
  onChange,onPendingChange,onPreview,onCreate,onGenerate,status,onRecord,onResetPreview}:Props){
  const t=wording[locale];
  const [phraseLocale,setPhraseLocale]=useState<VideoLocale>(()=>settings.ideasDraft?.locale??locale);
  const [languageNotice,setLanguageNotice]=useState("");
  const captionLocale=languagePicker?phraseLocale:(settings.ideasDraft?.locale??locale);
- const languageChoices:VideoLocale[]=locale==="es"?["es","en","ru"]:["en","ru"];
+ const languageChoices:VideoLocale[]=["en","ru","es"];
+ const [phraseCategory,setPhraseCategory]=useState<PhraseCategory>("support");
+ const categoryDrafts=useRef(new Map<string,{options:string[];chosen:number[]}>());
  const goalContext=useMemo(()=>resolveVideoIdeaContext({locale,request:requestText,theme,selectedTopicId}),[locale,requestText,theme,selectedTopicId]);
  const currentOptions=useMemo<Cluster[]>(()=>listCurrentEmotionClusters(locale),[locale]);
  const desiredOptions=useMemo<Cluster[]>(()=>listDesiredEmotionClusters(locale),[locale]);
@@ -194,14 +236,29 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
   onPendingChange(false);
   setOptions(plan.editor.options);setChosen(plan.editor.chosen);setFeedback("");
  };
+ const selectPhraseCategory=(next:PhraseCategory)=>{
+  if(disabled||generating)return;
+  if(next===phraseCategory){if(next==="custom"){setAdding(true);setEditing(null);}return;}
+  categoryDrafts.current.set(JSON.stringify([signature,captionLocale,phraseCategory]),{options:[...options],chosen:[...chosen]});
+  setPhraseCategory(next);setEditing(null);setLanguageNotice("");
+  if(next==="custom"){setAdding(true);setDraft("");return;}
+  setAdding(false);setDraft("");
+  const saved=categoryDrafts.current.get(JSON.stringify([signature,captionLocale,next]));
+  apply(saved?.options??[...categoryPhrases[next][captionLocale]],saved?.chosen??allFive,captionLocale);
+ };
  const chooseTextLanguage=(next:VideoLocale)=>{
   if(next===captionLocale||disabled||generating)return;
   const priorClosing=personalVideoClosingPhrase(captionLocale,profile?.name);
   const nextClosing=personalVideoClosingPhrase(next,profile?.name);
   // An unchanged generated closing follows EN/RU/ES; manually edited words
   // remain private and untouched, as with every other custom phrase.
-  const translated=options.map(line=>line===priorClosing&&priorClosing&&nextClosing
-   ?nextClosing:translateVideoGoalPhrase(line,captionLocale,next));
+  const translated=options.map(line=>{
+   const curated=phraseCategory!=="custom"?categoryPhrases[phraseCategory]:null;
+   const index=curated?.[captionLocale].indexOf(line)??-1;
+   if(curated&&index>=0)return curated[next][index];
+   return line===priorClosing&&priorClosing&&nextClosing
+    ?nextClosing:translateVideoGoalPhrase(line,captionLocale,next);
+  });
   const unchanged=translated.filter((line,index)=>line===options[index]).length;
   setPhraseLocale(next);
   setEditing(null);setAdding(false);setDraft("");
@@ -269,7 +326,7 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
   onPendingChange(false);
  };
 
- return <section className={css.ideas} data-video-ideas-compact data-video-ideas-goal-category={goalContext.categoryId||"neutral"} aria-label={t.select} hidden={!active}>
+ return <section className={css.ideas} data-video-text-redesign={languagePicker?"true":undefined} data-video-ideas-compact data-video-ideas-goal-category={goalContext.categoryId||"neutral"} aria-label={t.select} hidden={!active}>
   {languagePicker?<header className={css.languageHeader} data-video-text-language-header>
    <h3 id="video-ideas-phrases-heading">{locale==="ru"?"Фразы в вашем видео":locale==="es"?"Frases de tu vídeo":"Text for your video"}</h3>
    <div className={css.languageTools}>
@@ -281,6 +338,21 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
     </div>
    </div>
   </header>:null}
+  {languagePicker?<p className={css.textIntro}>{locale==="ru"?"Выберите готовые фразы или добавьте своё пожелание.":
+    locale==="es"?"Elige frases listas o añade tu propio mensaje.":"Choose ready phrases or add your own message."}</p>:null}
+  {languagePicker?<nav className={css.categoryRail} data-video-text-categories
+    aria-label={locale==="ru"?"Темы фраз":locale==="es"?"Temas de las frases":"Phrase categories"}>
+    {categoryIds.map(id=><button key={id} type="button" className={css.categoryCard}
+      data-video-text-category={id} aria-pressed={phraseCategory===id} disabled={disabled||generating}
+      onClick={()=>selectPhraseCategory(id)}>
+      {id==="support"?<HandHeart size={24} aria-hidden="true"/>:
+       id==="congratulations"?<Gift size={24} aria-hidden="true"/>:
+       id==="motivation"?<Sparkles size={24} aria-hidden="true"/>:
+       id==="love"?<Heart size={24} aria-hidden="true"/>:
+       id==="peace"?<Leaf size={24} aria-hidden="true"/>:<Star size={24} aria-hidden="true"/>}
+      <span>{categoryLabels[id][locale]}</span>
+    </button>)}
+  </nav>:null}
   {languagePicker&&languageNotice?<p className={css.languageNotice} role="status" data-video-text-language-notice>{languageNotice}</p>:null}
   <div className={css.sizeCard} data-video-ideas-size>
    <div className={css.sizeTitle}>
@@ -390,7 +462,27 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
    </div>
   </details>
 
-  <div className={css.stageActions} data-video-stage-actions="ideas">
+  {languagePicker?<div className={css.stageActions} data-video-stage-actions="ideas" data-video-text-actions>
+   <button type="button" className={css.create} data-video-ideas-preview
+     disabled={disabled} onClick={onPreview}>
+     <Play size={21} aria-hidden="true"/>
+     {locale==="ru"?"Предпросмотр":locale==="es"?"Vista previa":"Preview"}
+   </button>
+   <button type="button" className={css.addEffects} data-video-ideas-create
+     disabled={disabled||selectedCount<5} onClick={onCreate}
+     title={locale==="ru"?"Переход без списания XP":locale==="es"?"Continuar sin cobrar XP":"Continue without charging XP"}>
+     <Sparkles size={21} aria-hidden="true"/>
+     <span>{locale==="ru"?"К созданию видео":locale==="es"?"Continuar a crear":"Continue to Create"}</span>
+     {creationPriceCredits!==null&&Number.isFinite(creationPriceCredits)&&creationPriceCredits>0?
+      <small>{creationPriceCredits} XP</small>:null}
+   </button>
+   <details className={css.quickCreateDisclosure} data-video-text-direct-create>
+    <summary>{locale==="ru"?"Сразу в Готово, без раскадровки":
+      locale==="es"?"Ir a Listo sin guion visual":"Skip storyboard and open Ready"}</summary>
+    <button type="button" data-video-ideas-generate disabled={disabled||generating}
+      onClick={onGenerate}>{locale==="ru"?"Перейти в Готово":locale==="es"?"Ir a Listo":"Go to Ready"}</button>
+   </details>
+  </div>:  <div className={css.stageActions} data-video-stage-actions="ideas">
    <button type="button" className={css.create} data-video-ideas-generate
      disabled={disabled||generating} onClick={onGenerate}>
      {locale==="ru"?"Создать видео":locale==="es"?"Generar vídeo":"Generate Video"}
@@ -399,7 +491,7 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
      disabled={disabled||selectedCount<5} onClick={onCreate}>
      {locale==="ru"?"Раскадровка":locale==="es"?"Guion visual":"Storyboard"}
    </button>
-  </div>
+  </div>}
  {status?<p className={css.stageStatus} role="status" aria-live="polite">{status}</p>:null}
  <p className={css.privacy}>{t.privacy}</p>
  </section>;
