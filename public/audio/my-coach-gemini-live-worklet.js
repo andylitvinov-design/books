@@ -1,9 +1,9 @@
 // Browser-local microphone PCM frames; no recording, network, storage or imports.
-// Capture and chunk every ~2048 native samples (~43ms at 48kHz).
+// Capture every 1536 native samples (~32ms at 48kHz / ~35ms at 44.1kHz).
 class HolisticGeminiLiveCaptureProcessor extends AudioWorkletProcessor {
   constructor(){
     super()
-    this.pending=new Float32Array(2048)
+    this.pending=new Float32Array(1536)
     this.count=0
   }
   process(inputs){
@@ -12,7 +12,7 @@ class HolisticGeminiLiveCaptureProcessor extends AudioWorkletProcessor {
       this.pending[this.count++]=input[i]
       if(this.count===this.pending.length){
         const chunk=this.pending
-        this.pending=new Float32Array(2048)
+        this.pending=new Float32Array(1536)
         this.count=0
         this.port.postMessage(chunk,[chunk.buffer])
       }
