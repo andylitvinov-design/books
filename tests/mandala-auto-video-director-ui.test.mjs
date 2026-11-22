@@ -197,8 +197,8 @@ test("four canonical goal pills, exclusive subcategories and real scenario/audio
  assert.match(director,/onClick=\{\(\)=>chooseTaxonomySubcategory\(item\.id\)\}/);
  assert.doesNotMatch(director,/selectedGoalIds|popularTopicIds|popularTopicCopy/);
  assert.match(director,/onCategoryChange\?\.\(nextTheme\)/);
- const topicHandler=director.slice(director.indexOf("const chooseTaxonomySubcategory="),
-   director.indexOf("const chooseTaxonomyScenario="));
+ const topicHandler=director.slice(director.indexOf("const chooseTaxonomyTopic="),
+   director.indexOf("// The approved mobile Mirror owns only the visible three questions."));
  assert.ok(topicHandler.includes("const nextTheme="),"subtopics inherit the active category");
  assert.match(topicHandler,/found\.category\.id!==selectedCategoryId/);
  assert.match(topicHandler,/found\.subcategory\.id!==selectedSubcategoryId/);
