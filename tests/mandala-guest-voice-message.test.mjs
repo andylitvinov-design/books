@@ -73,7 +73,7 @@ test("macOS WebKit hydration follows visible Goal → Montage Extra → Personal
  const mirrorNext=flow.indexOf("await mirror.locator('[data-hh-mirror-next]').click()");
  const extraToPersonal=flow.indexOf("await enterPersonalAfterMontageExtra(page)",mirrorNext);
  const personalGoal=flow.indexOf("data-video-ideas-goal-panel",extraToPersonal);
- const selectGoal=flow.indexOf("await ideasGoalPane.locator('[data-video-ideas-goal-choice=\"rest\"]').click()",personalGoal);
+ const selectGoal=flow.indexOf("await expect(ideasGoalPane.locator('[data-video-ideas-goal-choice=\"rest\"]'))",personalGoal);
  const nextGoal=flow.indexOf("await ideasGoalPane.locator('[data-video-ideas-goal-next]').click()",selectGoal);
  const personalization=flow.indexOf("data-video-ideas-personalization-panel",nextGoal);
  const backToMontageText=flow.indexOf("await openVisibleMontageText(page",personalization);
