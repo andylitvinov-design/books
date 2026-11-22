@@ -202,7 +202,7 @@ test("WebKit selects a real male narration voice with native touch before consen
   assert.doesNotMatch(stage,/force:\s*true|node\.click\(\)/);
 });
 
-test("voice browser enters Montage through the real compact Mirror overflow before recording",()=>{
+test("voice browser opens Montage through visible Magic Mirror Plan and composer controls before recording",()=>{
   const start=source.indexOf('phase(engine,"offline-remix-ready")');
   const end=source.indexOf('await expect(generate).toBeVisible',start);
   assert.ok(start>=0&&end>start,"inspect the real post-remix route before MP4 export");
@@ -210,17 +210,36 @@ test("voice browser enters Montage through the real compact Mirror overflow befo
   assert.ok(flow.includes("await page.locator('[data-video-quick-control=\"video\"]').click();"),
     "the real visitor returns to the compact first Video screen");
   assert.ok(flow.includes('await enterVisibleStudioWorkspace(page,"editor",engine);'),
-    "the visible assistant must open the old Montage workspace");
-  const first=source.indexOf("async function enterVisibleStudioWorkspace");
-  const last=source.indexOf("async function openVisibleMontageText",first);
-  assert.ok(first>=0&&last>first,"inspect actual shared browser navigation helper");
-  const helper=source.slice(first,last);
-  for(const action of ["await expect(moreGoals).toBeVisible","await moreGoals.tap()",
-    "await moreGoals.click()",'await expect(control).toBeVisible'])
-    assert.ok(helper.includes(action),action);
+    "Montage uses the authentic visible Studio navigation");
+  const entry=source.indexOf("async function enterVisibleStudioWorkspace");
+  const entryEnd=source.indexOf("async function openVisibleMontageText",entry);
+  assert.ok(entry>=0&&entryEnd>entry,"shared visible navigation helper must exist");
+  const helper=source.slice(entry,entryEnd);
+  for(const action of [
+    'await revealMirrorAdvanced(page,engine)',
+    'await expect(control).toBeVisible({timeout:15000})',
+    'await expect(control).toBeEnabled()',
+    'if(engine==="webkit")await control.tap()',
+    'else await control.click()'
+  ])assert.ok(helper.includes(action),action);
+  const revealStart=source.indexOf("async function revealMirrorAdvanced");
+  const revealEnd=source.indexOf("async function enterVisibleStudioWorkspace",revealStart);
+  assert.ok(revealStart>=0&&revealEnd>revealStart,"only visible Mirror actions reveal advanced editor");
+  const reveal=source.slice(revealStart,revealEnd);
+  for(const action of [
+    '[data-hh-mirror-plan]',
+    '[data-hh-mirror-composer]',
+    '[data-hh-mirror-open-advanced]',
+    'if(engine==="webkit")await plan.tap()',
+    'if(engine==="webkit")await plus.tap()',
+    'await expect(composer).toBeVisible({timeout:15000})',
+    'await expect(plus).toBeEnabled()',
+    'await expect(studio).toHaveAttribute("data-hh-mirror-advanced","true",{timeout:15000})'
+  ])assert.ok(reveal.includes(action),action);
+  assert.doesNotMatch(reveal,/force:\s*true|node\.click\(\)|evaluate\([^)]*click/);
   assert.ok(!flow.includes("await editorTab.click();")&&
     !flow.includes("await page.locator('[data-video-quick-control=\"editor\"]').click();"),
-    "no hidden direct Editor click may stand in for a user-visible tap");
+    "a hidden direct Editor click must never stand in for a user-visible tap");
 });
 
 test("affirmation attachment acceptance verifies the visible live movie soundtrack",()=>{

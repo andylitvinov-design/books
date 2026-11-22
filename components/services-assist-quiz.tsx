@@ -848,17 +848,6 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
       <p className={styles.heroPrompt}>{audience === "business" ? businessPrompt[locale] : v.prompt}</p>
       <div className={styles.heroStage} data-support-luxe-room aria-hidden="true" />
     </header>
-    <div className={styles.audienceSwitch} data-services-audience role="group" aria-label={v.audience}>
-      <button type="button" aria-pressed={audience === "personal"} onClick={() => {
-        setAudience("personal");setAnswers({topic:"stress_energy"});setStep(0);setSubmitted(false);
-        setTopicTouched(false);changeBusinessCategory(null);
-      }}><UserRound size={23} aria-hidden="true" />{v.forMe}</button>
-      <button type="button" aria-pressed={audience === "business"} onClick={() => {
-        setAudience("business");setAnswers({topic:"business_support"});setStep(0);setSubmitted(false);
-        setTopicTouched(false);changeBusinessCategory(null);
-      }}><BriefcaseBusiness size={23} aria-hidden="true" />{v.forBusiness}</button>
-    </div>
-
     <div className={styles.goalEntry} data-services-goal-entry>
       <div className={styles.goalComposer}>
         <Sparkles size={22} aria-hidden="true" />
@@ -876,8 +865,16 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
         <span>{v.next}</span><ArrowRight size={19} aria-hidden="true" />
       </button>
     </div>
-    {((audience==="personal"&&step===0)||(audience==="business"&&!businessCategory)) ?
-      <div className={styles.orDivider} data-services-goal-or><span>{v.or}</span></div> : null}
+    <div className={styles.audienceSwitch} data-services-audience role="group" aria-label={v.audience}>
+      <button type="button" aria-pressed={audience === "personal"} onClick={() => {
+        setAudience("personal");setAnswers({topic:"stress_energy"});setStep(0);setSubmitted(false);
+        setTopicTouched(false);changeBusinessCategory(null);
+      }}><UserRound size={23} aria-hidden="true" />{v.forMe}</button>
+      <button type="button" aria-pressed={audience === "business"} onClick={() => {
+        setAudience("business");setAnswers({topic:"business_support"});setStep(0);setSubmitted(false);
+        setTopicTouched(false);changeBusinessCategory(null);
+      }}><BriefcaseBusiness size={23} aria-hidden="true" />{v.forBusiness}</button>
+    </div>
 
     {audience === "business" ? <ServicesBusinessMenu locale={locale} goal={goal}
       category={businessCategory} selectedOption={businessOption}

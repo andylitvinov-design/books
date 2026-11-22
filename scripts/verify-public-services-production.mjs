@@ -205,6 +205,7 @@ try {
     await expect(quiz.locator("[data-services-quiz-goal]")).toHaveCount(1);
     await expect(quiz.locator("[data-services-goal-entry]")).toHaveCount(1);
     await expect(quiz.locator("[data-services-quiz-next]")).toHaveCount(1);
+    await expect(quiz.locator("[data-services-goal-or]")).toHaveCount(0);
     await expect(quiz.locator("[data-support-luxe-room]")).toHaveCount(1);
     await expect(page.locator('main[data-support-luxe="true"]')).toHaveCount(1);
     await expect(quiz.locator('[data-support-choice-photo]')).toHaveCount(4);
@@ -232,7 +233,7 @@ try {
         cards:[...el.querySelectorAll('[data-services-quiz-question="topic"] [data-services-quiz-choice]')]
           .map(card=>card.getBoundingClientRect().height),
       }));
-      assert.ok(sizes.hero>=24 && sizes.hero<=60,"Room scene proportions: " + JSON.stringify(sizes));
+      assert.ok(sizes.hero>=54 && sizes.hero<=76,"Room scene proportions: " + JSON.stringify(sizes));
       assert.ok(sizes.cards.length===4 && sizes.cards.every(height=>height>=116 && height<=174),
         "Four progressive choice cards must be large and readable: " + JSON.stringify(sizes));
     }
@@ -241,9 +242,23 @@ try {
       const firstScreenFit=await page.evaluate(()=>{
         const next=document.querySelector("[data-services-quiz-next]");
         const goal=document.querySelector("[data-services-quiz-goal]");
+        const entry=document.querySelector("[data-services-goal-entry]");
+        const glass=entry?.firstElementChild;
+        const audience=document.querySelector("[data-services-audience]");
+        const room=document.querySelector("[data-support-luxe-room]");
+        const progress=document.querySelector("[data-services-quiz-form] [data-quiz-dot]");
         const dock=document.querySelector("[data-hh-unified-dock]");
-        if(!next||!goal||!dock)return null;
-        return {ctaBottom:next.getBoundingClientRect().bottom,
+        if(!next||!goal||!entry||!glass||!audience||!room||!progress||!dock)return null;
+        return {
+          roomBottom:room.getBoundingClientRect().bottom,
+          entryTop:entry.getBoundingClientRect().top,
+          entryBottom:entry.getBoundingClientRect().bottom,
+          audienceTop:audience.getBoundingClientRect().top,
+          audienceBottom:audience.getBoundingClientRect().bottom,
+          progressTop:progress.getBoundingClientRect().top,
+          glassBlur:getComputedStyle(glass).backdropFilter,
+          glassBackground:getComputedStyle(glass).backgroundImage,
+          ctaBottom:next.getBoundingClientRect().bottom,
           goalBottom:goal.getBoundingClientRect().bottom,
           nextLeft:next.getBoundingClientRect().left,
           goalRight:goal.getBoundingClientRect().right,
@@ -258,6 +273,16 @@ try {
         Math.abs(firstScreenFit.goalTop-firstScreenFit.nextTop)<12 &&
         firstScreenFit.goalBottom<firstScreenFit.dockTop-16,
         "390x844 goal and right-side Next must appear ABOVE four quiz buttons: "+JSON.stringify(firstScreenFit));
+      assert.ok(firstScreenFit &&
+        firstScreenFit.roomBottom<=firstScreenFit.entryTop+4 &&
+        firstScreenFit.entryBottom<=firstScreenFit.audienceTop+3 &&
+        firstScreenFit.audienceBottom<firstScreenFit.questionTop &&
+        firstScreenFit.progressTop>=firstScreenFit.audienceBottom-3,
+        "Approved order must be room → frosted input/Next → For Me/Business → quiz: "+JSON.stringify(firstScreenFit));
+      assert.ok(firstScreenFit?.glassBlur?.includes("blur(") &&
+        firstScreenFit.glassBackground?.includes("linear-gradient"),
+        "Goal composer must have real semi-transparent backdrop blur, not opaque cream or a flattened mock: "+
+          JSON.stringify(firstScreenFit));
     }
     await expect(quiz.locator("[data-services-quiz-next]")).toBeEnabled();
     await expect(quiz.locator('[data-services-quiz-choice="stress_energy"]')).toHaveAttribute("aria-pressed","true");
