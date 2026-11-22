@@ -92,7 +92,7 @@ test("Ideas rolling preview iPhone bug regression: first selected phrase is show
  assert.ok(render.includes('textScale === "small"')&&render.includes('textScale === "large"'));
  assert.ok(cmp.includes('onResetPreview();onChange(old=>'),"size slider refreshes the first actual phrase");
  assert.ok(cmp.includes('motion:"rise"'),"Ideas enables rolling renderer");
- assert.ok(studio.includes('paintSingleVideoTextOverlay(ctx,previewSeekSeconds,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips)'));
+ assert.ok(studio.includes('paintSingleVideoTextOverlay(ctx,previewSeekSeconds,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips,reelModeActive)'));
  assert.equal((studio.match(/paintSingleVideoTextOverlay\(ctx,/g)||[]).length,5,
    "live preview and all three export paths share the same renderer");
 });
