@@ -1,6 +1,7 @@
 'use client'
 import {useCallback,useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import {appFetch} from '@/lib/app/client-fetch'
 import {createJournalSaver} from '@/lib/app/daybook-journal-save.mjs'
 import {localJournalDay} from '@/lib/app/daybook-journal-contract.mjs'
@@ -8,6 +9,7 @@ import {collectJournalExport} from '@/lib/app/daybook-journal-export.mjs'
 import DaybookGoalContext from './daybook-goal-context'
 import {createJournalSessionGuard} from '@/lib/app/daybook-session-guard.mjs'
 import styles from './daybook-journal.module.css'
+const DaybookPersonalGoals=dynamic(()=>import('./daybook-personal-goals'))
 
 const copy={
  en:{title:'Coaching Daybook',home:'My Space',today:'Today',journal:'Journal',goals:'Goals',growth:'My growth',intro:'A private place for your thoughts and voluntary reflections.',loading:'Opening your private journal…',login:'Sign in to your cabinet',error:'Could not load your journal.',retry:'Try again',new:'New entry',note:'A thought',morning:'Morning reflection',evening:'Evening reflection',text:'Your private entry',tags:'Tags, separated by commas',date:'Local date',save:'Save',saving:'Saving…',saved:'Saved and verified',failed:'Save not confirmed. Your draft remains here. Retry before editing.',empty:'No entries yet.',edit:'Edit',remove:'Delete permanently',confirm:'Permanently delete this entry?',more:'Load more',search:'Search loaded entries by text or tag',cancel:'Discard draft',discard:'Discard this unsaved draft?',privacy:'Drafts stay only in this page’s memory. Leaving or signing out clears them. Nothing is shared with a coach automatically.',plan:'Open my goals and actions',vectors:'Open my development vectors',deleteError:'Deletion not confirmed. Reload your journal before trying again.'},
@@ -24,10 +26,11 @@ export default function DaybookJournal({locale}){
  const [account,setAccount]=useState(null),[entries,setEntries]=useState([]),[next,setNext]=useState(null)
  const [phase,setPhase]=useState('loading'),[tab,setTab]=useState('today'),[draft,setDraft]=useState(null),[status,setStatus]=useState(''),[query,setQuery]=useState(''),[busy,setBusy]=useState(false)
  const [exportStatus,setExportStatus]=useState('')
+ const [goalsVisited,setGoalsVisited]=useState(false)
  const epoch=useRef(0),owner=useRef(null),saver=useRef(null),saving=useRef(false)
  const sessionGuard=useRef(null)
  const invalidate=useCallback(()=>{epoch.current++;saver.current?.discard()},[])
- const wipe=useCallback(()=>{invalidate();sessionGuard.current?.dispose();owner.current=null;saver.current=null;setAccount(null);setEntries([]);setDraft(null);setNext(null);setQuery('');setStatus('');setExportStatus('');setBusy(false);saving.current=false},[invalidate])
+ const wipe=useCallback(()=>{invalidate();sessionGuard.current?.dispose();owner.current=null;saver.current=null;setAccount(null);setEntries([]);setDraft(null);setNext(null);setQuery('');setStatus('');setExportStatus('');setGoalsVisited(false);setBusy(false);saving.current=false},[invalidate])
  const sessionLost=useCallback(()=>{wipe();setPhase('signed-out')},[wipe])
  const load=useCallback(async()=>{
   wipe();setPhase('loading');const token=epoch.current
@@ -121,8 +124,9 @@ export default function DaybookJournal({locale}){
  return <main className={styles.page}>
   <Link href={root+'/portrait'}>{c.home}</Link><h1>{c.title}</h1><p>{c.intro}</p>
   {phase!=='ready'?<section aria-live="polite"><p>{['loading','checking'].includes(phase)?c.loading:phase==='signed-out'?c.login:c.error}</p>{phase==='signed-out'?<Link href={root+'/portrait'}>{c.login}</Link>:phase==='error'||phase==='locked-error'?<button onClick={()=>void(phase==='locked-error'?sessionGuard.current?.verify():load())}>{c.retry}</button>:null}</section>:<>
-   <nav aria-label={c.title}>{['today','journal','goals','growth'].map(key=><button key={key} aria-current={tab===key?'page':undefined} onClick={()=>setTab(key)}>{c[key]}</button>)}</nav>
-   {tab==='goals'?<section><h2>{c.goals}</h2><Link href={root+'/my-coaching-plan'}>{c.plan}</Link></section>:tab==='growth'?<section><h2>{c.growth}</h2><Link href={'/'+locale+'/development-vectors'}>{c.vectors}</Link></section>:<>
+   <nav aria-label={c.title}>{['today','journal','goals','growth'].map(key=><button key={key} aria-current={tab===key?'page':undefined} onClick={()=>{if(key==='goals')setGoalsVisited(true);setTab(key)}}>{c[key]}</button>)}</nav>
+   {(goalsVisited||tab==='goals')&&<div hidden={tab!=='goals'}><DaybookPersonalGoals key={account} accountId={account} locale={locale} onSessionLost={sessionLost}/><Link href={root+'/my-coaching-plan'}>{c.plan}</Link></div>}
+   {tab==='goals'?null:tab==='growth'?<section><h2>{c.growth}</h2><Link href={'/'+locale+'/development-vectors'}>{c.vectors}</Link></section>:<>
     <button onClick={()=>open(null)} disabled={busy||status==='failed'}>{c.new}</button>
     {draft&&<section><label>{c.note}<select value={draft.kind} disabled={busy||status==='failed'} onChange={e=>change('kind',e.target.value)}>{['note','morning','evening'].map(kind=><option key={kind} value={kind}>{c[kind]}</option>)}</select></label>
      <DaybookGoalContext key={account} accountId={account} locale={locale} selectedId={draft.goalId} disabled={busy||status==='failed'} onChange={goalId=>change('goalId',goalId)} onSessionLost={sessionLost}/>
