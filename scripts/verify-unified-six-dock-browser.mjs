@@ -412,6 +412,19 @@ async function inspect(browserType,locale,width){
   if(browserType===webkit && locale==="ru" && width===390){
     for(const tab of ["video","phrases","editor","effects","pro","ready"]){
       const nav=page.locator('[data-video-quick-control="'+tab+'"]');
+      // In the approved compact Video/Magic Mirror entrance the workspace
+      // rail closes after a real tool selection. It is reopened only by a
+      // visible "More goals" tap, never via forced clicks or DOM mutation.
+      if(!await nav.isVisible()){
+        const studio=page.locator('[data-mandala-free-video]');
+        assert.equal(await studio.getAttribute("data-active-workspace"),"video",
+          "Only the compact Magic Mirror Video entrance may hide the tool rail");
+        const moreGoals=page.locator('[data-hh-mirror-more-goals]');
+        await moreGoals.waitFor({state:"visible",timeout:15000});
+        await moreGoals.click();
+        await expect(studio).toHaveAttribute("data-hh-mirror-advanced","true",{timeout:15000});
+        await nav.waitFor({state:"visible",timeout:15000});
+      }
       await nav.click({timeout:30000});
       await page.waitForFunction(expected=>{
         return document.querySelector('[data-active-workspace]')?.getAttribute("data-active-workspace")===expected;
