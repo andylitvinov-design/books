@@ -197,6 +197,9 @@ export function MandalaVideoReady({
   const [walletOpen,setWalletOpen]=useState(false);
   const closeWallet=useCallback(()=>setWalletOpen(false),[]);
   const [videoGenerationNotice,setVideoGenerationNotice]=useState("");
+  const [fileShareSupported,setFileShareSupported]=useState(false);
+  useEffect(()=>setFileShareSupported(typeof navigator.share==="function"&&
+    typeof File!=="undefined"),[]);
   const [checkinEngaged,setCheckinEngaged]=useState(false);
   const [checkinDismissed,setCheckinDismissed]=useState(false);
   // Exactly ONE decodable video is mounted in Ready. iPhone Safari supports
@@ -359,6 +362,28 @@ export function MandalaVideoReady({
     if(intent==="telegram"){onSendTelegramDirect();return;}
     if(intent==="whatsapp"){onShareWhatsApp();return;}
     onOpenDelivery();
+  }
+  function shareVerifiedLocalFile(){
+    // Only a truly verified local Blob may reach the iOS share sheet.
+    if(!verified||!video?.blob||typeof navigator.share!=="function")return;
+    const file=new File([video.blob],
+      "holistic-house-personal."+video.extension,
+      {type:video.extension==="mp4"?"video/mp4":"video/webm"});
+    try{
+      const payload:ShareData={files:[file],title:"Holistic House"};
+      if(typeof navigator.canShare==="function"&&!navigator.canShare(payload))
+        throw new Error("LOCAL_FILE_SHARE_UNSUPPORTED");
+      void navigator.share(payload).catch(error=>{
+        if(error instanceof Error&&error.name==="AbortError")return;
+        setNotice(locale==="ru"?"Не удалось передать файл. Используйте «Скачать MP4»."
+          :locale==="es"?"No se pudo compartir. Usa Descargar MP4."
+          :"Could not share the file. Use Download MP4.");
+      });
+    }catch{
+      setNotice(locale==="ru"?"Не удалось открыть меню отправки. Используйте «Скачать MP4»."
+        :locale==="es"?"No se pudo abrir el menú Compartir. Usa Descargar MP4."
+        :"Could not open the Share sheet. Use Download MP4.");
+    }
   }
   async function requestTelegramLink(){
     if(!signedIn||telegramStatus==="loading")return;
@@ -568,6 +593,20 @@ export function MandalaVideoReady({
           {t.backPro}<ArrowRight size={17} aria-hidden="true"/>
         </button>:null}
       {completed?<>
+        {video?.blob?<div className={css.localFileActions} data-ready-local-file-actions>
+          <a href={video.url} download={"holistic-house-personal."+video.extension}
+            data-ready-direct-download>
+            <Download size={20} aria-hidden="true"/>
+            <span>{locale==="ru"?"Скачать "+video.extension.toUpperCase():
+              locale==="es"?"Descargar "+video.extension.toUpperCase():
+                "Download "+video.extension.toUpperCase()}</span>
+          </a>
+          {fileShareSupported?<button type="button" onClick={shareVerifiedLocalFile}
+            data-ready-share-file>
+            <Send size={20} aria-hidden="true"/>
+            <span>{locale==="ru"?"Сохранить / поделиться":locale==="es"?"Guardar / compartir":"Save / Share"}</span>
+          </button>:null}
+        </div>:null}
         <div className={css.actions} data-ready-save-choices>
           <button type="button" onClick={()=>chooseDelivery("save")}
             disabled={disabled||saveStatus.busy} aria-busy={saveStatus.busy}
