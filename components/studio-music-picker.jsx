@@ -333,6 +333,7 @@ export function StudioMusicFeatured({locale="en",category="all",disabled=false,
    onPlaying={()=>{setPlaying(true);setBufferingId(null)}}
     onWaiting={()=>{if(preview?.id)setBufferingId(preview.id)}}
     onStalled={()=>{if(preview?.id)setBufferingId(preview.id)}}
+    onTimeUpdate={event=>{if(event.currentTarget.currentTime>=30){event.currentTarget.pause();event.currentTarget.currentTime=0;}}}
     onPause={()=>setPlaying(false)}
     onEnded={()=>{setPlaying(false);setBufferingId(null)}}
     onError={()=>{setPlaying(false);setBufferingId(null)}}/>
