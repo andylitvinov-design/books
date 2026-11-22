@@ -1,0 +1,146 @@
+'use client'
+import {useCallback,useEffect,useRef,useState} from 'react'
+import Link from 'next/link'
+import {appFetch} from '@/lib/app/client-fetch'
+import {createJournalSaver} from '@/lib/app/daybook-journal-save.mjs'
+import {localJournalDay} from '@/lib/app/daybook-journal-contract.mjs'
+import {collectJournalExport} from '@/lib/app/daybook-journal-export.mjs'
+import DaybookGoalContext from './daybook-goal-context'
+import {createJournalSessionGuard} from '@/lib/app/daybook-session-guard.mjs'
+import styles from './daybook-journal.module.css'
+
+const copy={
+ en:{title:'Coaching Daybook',home:'My Space',today:'Today',journal:'Journal',goals:'Goals',growth:'My growth',intro:'A private place for your thoughts and voluntary reflections.',loading:'Opening your private journal…',login:'Sign in to your cabinet',error:'Could not load your journal.',retry:'Try again',new:'New entry',note:'A thought',morning:'Morning reflection',evening:'Evening reflection',text:'Your private entry',tags:'Tags, separated by commas',date:'Local date',save:'Save',saving:'Saving…',saved:'Saved and verified',failed:'Save not confirmed. Your draft remains here. Retry before editing.',empty:'No entries yet.',edit:'Edit',remove:'Delete permanently',confirm:'Permanently delete this entry?',more:'Load more',search:'Search loaded entries by text or tag',cancel:'Discard draft',discard:'Discard this unsaved draft?',privacy:'Drafts stay only in this page’s memory. Leaving or signing out clears them. Nothing is shared with a coach automatically.',plan:'Open my goals and actions',vectors:'Open my development vectors',deleteError:'Deletion not confirmed. Reload your journal before trying again.'},
+ ru:{title:'Коучинговый дневник',home:'Моё пространство',today:'Сегодня',journal:'Дневник',goals:'Цели',growth:'Мой рост',intro:'Личное место для мыслей и добровольной рефлексии.',loading:'Открываем личный дневник…',login:'Войти в кабинет',error:'Не удалось загрузить дневник.',retry:'Повторить',new:'Новая запись',note:'Мысль',morning:'Утренняя рефлексия',evening:'Вечерняя рефлексия',text:'Ваша личная запись',tags:'Теги через запятую',date:'Местная дата',save:'Сохранить',saving:'Сохранение…',saved:'Сохранено и проверено',failed:'Сохранение не подтверждено. Черновик остаётся здесь. Повторите перед редактированием.',empty:'Записей пока нет.',edit:'Изменить',remove:'Удалить навсегда',confirm:'Безвозвратно удалить эту запись?',more:'Загрузить ещё',search:'Поиск по тексту и тегам загруженных записей',cancel:'Удалить черновик',discard:'Удалить несохранённый черновик?',privacy:'Черновик хранится только в памяти страницы и очищается при выходе. Записи не передаются коучу автоматически.',plan:'Открыть мои цели и действия',vectors:'Открыть мои векторы развития',deleteError:'Удаление не подтверждено. Обновите дневник перед повторной попыткой.'},
+ es:{title:'Diario de coaching',home:'Mi espacio',today:'Hoy',journal:'Diario',goals:'Objetivos',growth:'Mi crecimiento',intro:'Un espacio privado para tus pensamientos y reflexiones voluntarias.',loading:'Abriendo tu diario privado…',login:'Iniciar sesión en mi espacio',error:'No se pudo cargar el diario.',retry:'Reintentar',new:'Nueva entrada',note:'Un pensamiento',morning:'Reflexión de la mañana',evening:'Reflexión de la noche',text:'Tu entrada privada',tags:'Etiquetas separadas por comas',date:'Fecha local',save:'Guardar',saving:'Guardando…',saved:'Guardado y verificado',failed:'Guardado sin confirmar. El borrador sigue aquí. Reintenta antes de editar.',empty:'Aún no hay entradas.',edit:'Editar',remove:'Eliminar permanentemente',confirm:'¿Eliminar esta entrada permanentemente?',more:'Cargar más',search:'Buscar texto o etiquetas en las entradas cargadas',cancel:'Descartar borrador',discard:'¿Descartar este borrador sin guardar?',privacy:'Los borradores solo permanecen en la memoria de esta página. Salir o cerrar sesión los borra. No se comparten automáticamente con un coach.',plan:'Abrir mis objetivos y acciones',vectors:'Abrir mis vectores de desarrollo',deleteError:'Eliminación sin confirmar. Recarga el diario antes de reintentar.'},
+}
+const exportCopy={
+ en:{download:'Export saved entries (JSON)',all:'Load all entries for search',working:'Reading all saved entries…',failed:'Could not finish. No partial file was downloaded. Try again.',large:'The export exceeds the current 32 MiB browser limit. No partial file was downloaded.',done:'Export file prepared. Unsaved drafts are not included.'},
+ ru:{download:'Экспорт сохранённых записей (JSON)',all:'Загрузить все записи для поиска',working:'Чтение всех сохранённых записей…',failed:'Не удалось завершить. Неполный файл не скачан. Повторите попытку.',large:'Экспорт превышает текущий лимит браузера 32 МиБ. Неполный файл не скачан.',done:'Файл экспорта подготовлен. Несохранённые черновики не включены.'},
+ es:{download:'Exportar entradas guardadas (JSON)',all:'Cargar todas las entradas para buscar',working:'Leyendo todas las entradas guardadas…',failed:'No se pudo completar. No se descargó un archivo parcial. Reintenta.',large:'La exportación supera el límite actual de 32 MiB del navegador. No se descargó un archivo parcial.',done:'Archivo de exportación preparado. No incluye borradores sin guardar.'},
+}
+export default function DaybookJournal({locale}){
+ const c=copy[locale],root='/'+locale+'/app'
+ const [account,setAccount]=useState(null),[entries,setEntries]=useState([]),[next,setNext]=useState(null)
+ const [phase,setPhase]=useState('loading'),[tab,setTab]=useState('today'),[draft,setDraft]=useState(null),[status,setStatus]=useState(''),[query,setQuery]=useState(''),[busy,setBusy]=useState(false)
+ const [exportStatus,setExportStatus]=useState('')
+ const epoch=useRef(0),owner=useRef(null),saver=useRef(null),saving=useRef(false)
+ const sessionGuard=useRef(null)
+ const invalidate=useCallback(()=>{epoch.current++;saver.current?.discard()},[])
+ const wipe=useCallback(()=>{invalidate();sessionGuard.current?.dispose();owner.current=null;saver.current=null;setAccount(null);setEntries([]);setDraft(null);setNext(null);setQuery('');setStatus('');setExportStatus('');setBusy(false);saving.current=false},[invalidate])
+ const sessionLost=useCallback(()=>{wipe();setPhase('signed-out')},[wipe])
+ const load=useCallback(async()=>{
+  wipe();setPhase('loading');const token=epoch.current
+  try{
+   const boot=await appFetch('bootstrap?view=portrait')
+   if(token!==epoch.current)return
+   const id=boot.account.id
+   const result=await appFetch('daybook-journal',undefined,'GET',{accountId:id})
+   if(token!==epoch.current)return
+   owner.current=id;saver.current=createJournalSaver(appFetch,id);setAccount(id);setEntries(result.entries);setNext(result.nextCursor);setPhase('ready')
+  }catch(error){if(token===epoch.current)setPhase(error.status===401?'signed-out':'error')}
+ },[wipe])
+ useEffect(()=>{
+  void load()
+  let channel
+  try{channel=new BroadcastChannel('hh-app-session');channel.onmessage=e=>{if(e.data==='signed-out'){wipe();setPhase('signed-out')}}}catch{}
+  const hide=()=>{wipe();setPhase('loading')},show=e=>{if(e.persisted)void load()}
+  window.addEventListener('pagehide',hide);window.addEventListener('pageshow',show)
+  return ()=>{invalidate();channel?.close();window.removeEventListener('pagehide',hide);window.removeEventListener('pageshow',show)}
+ },[load,wipe,invalidate])
+ useEffect(()=>{
+  if(!account)return
+  const guard=createJournalSessionGuard(appFetch,account,{
+   lock:()=>setPhase('checking'),ready:()=>setPhase('ready'),
+   invalid:()=>{wipe();setPhase('signed-out')},unavailable:()=>setPhase('locked-error'),
+  })
+  sessionGuard.current=guard
+  const visibility=()=>{if(document.visibilityState==='hidden')guard.suspend();else void guard.verify()}
+  const focus=()=>{if(document.visibilityState==='visible')void guard.verify()}
+  document.addEventListener('visibilitychange',visibility);window.addEventListener('focus',focus)
+  return ()=>{guard.dispose();document.removeEventListener('visibilitychange',visibility);window.removeEventListener('focus',focus)}
+ },[account,wipe])
+ function open(entry){
+  if(draft&&status!=='saved'&&!window.confirm(c.discard))return
+  saver.current?.discard();saver.current=createJournalSaver(appFetch,account)
+  const timezone=Intl.DateTimeFormat().resolvedOptions().timeZone
+  setDraft(entry?{...entry,tags:[...entry.tags]}:{id:crypto.randomUUID(),revision:0,text:'',tags:[],kind:'note',locale,timezone,localDay:localJournalDay(new Date().toISOString(),timezone),goalId:null})
+  setStatus('')
+ }
+ const save=useCallback(async()=>{
+  if(saving.current||!draft||phase!=='ready')return
+  saving.current=true;setBusy(true);setStatus('saving');const token=epoch.current
+  try{
+   const input={id:draft.id,revision:draft.revision,text:draft.text,tags:draft.tags.filter(tag=>tag.trim()),kind:draft.kind,locale:draft.locale,timezone:draft.timezone,localDay:draft.localDay,goalId:draft.goalId}
+   const entry=await saver.current.save(input)
+   if(token!==epoch.current)return
+   setEntries(old=>[entry,...old.filter(item=>item.id!==entry.id)]);setDraft(entry);setStatus('saved')
+  }catch(error){
+   if(token!==epoch.current)return
+   if(error.status===401||error.code==='ACCOUNT_CHANGED'){wipe();setPhase('signed-out')}
+   else setStatus('failed')
+  }finally{if(token===epoch.current){saving.current=false;setBusy(false)}}
+ },[draft,phase,wipe])
+ useEffect(()=>{
+  if(!draft?.text.trim()||status!==''||busy||phase!=='ready')return
+  const timer=setTimeout(()=>void save(),1200)
+  return ()=>clearTimeout(timer)
+ },[draft,status,busy,phase,save])
+ function change(field,value){setDraft(old=>({...old,[field]:value}));setStatus('')}
+ async function remove(entry){
+  if(busy||!window.confirm(c.confirm))return
+  const token=epoch.current;setBusy(true)
+  try{
+   await appFetch('daybook-journal',{id:entry.id,revision:entry.revision,operationId:crypto.randomUUID()},'DELETE',{accountId:account})
+   if(token!==epoch.current)return
+   setEntries(old=>old.filter(item=>item.id!==entry.id));if(draft?.id===entry.id)setDraft(null)
+  }catch(error){if(token===epoch.current){if(error.status===401||error.code==='ACCOUNT_CHANGED'){wipe();setPhase('signed-out')}else setStatus('deleteError')}}
+  finally{if(token===epoch.current)setBusy(false)}
+ }
+ async function more(){
+  if(busy||!next)return
+  setBusy(true);const token=epoch.current
+  try{const result=await appFetch('daybook-journal?before='+encodeURIComponent(next),undefined,'GET',{accountId:account});if(token===epoch.current){setEntries(old=>[...old,...result.entries.filter(item=>!old.some(x=>x.id===item.id))]);setNext(result.nextCursor)}}catch{if(token===epoch.current)setStatus('error')}finally{if(token===epoch.current)setBusy(false)}
+ }
+ async function collect(download){
+  if(busy)return
+  setBusy(true);setExportStatus('working');const token=epoch.current
+  try{
+   const data=await collectJournalExport(appFetch,account,()=>token===epoch.current&&owner.current===account)
+   if(token!==epoch.current)return
+   if(download){
+    const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'}))
+    const link=document.createElement('a');link.href=url;link.download='holistic-house-daybook-'+data.exportedAt.slice(0,10)+'.json';link.click()
+    setTimeout(()=>URL.revokeObjectURL(url),1000);setExportStatus('done')
+   }else{setEntries(data.entries);setNext(null);setExportStatus('')}
+  }catch(error){if(token===epoch.current){if(error.status===401||error.code==='ACCOUNT_CHANGED'){wipe();setPhase('signed-out')}else setExportStatus(error.code==='JOURNAL_EXPORT_TOO_LARGE'?'large':'failed')}}
+  finally{if(token===epoch.current)setBusy(false)}
+ }
+ const today=localJournalDay(new Date().toISOString(),Intl.DateTimeFormat().resolvedOptions().timeZone)
+ const visible=entries.filter(entry=>(tab!=='today'||entry.localDay===today)&&(!query||[entry.text,...entry.tags].join(' ').toLocaleLowerCase(locale).includes(query.toLocaleLowerCase(locale))))
+ return <main className={styles.page}>
+  <Link href={root+'/portrait'}>{c.home}</Link><h1>{c.title}</h1><p>{c.intro}</p>
+  {phase!=='ready'?<section aria-live="polite"><p>{['loading','checking'].includes(phase)?c.loading:phase==='signed-out'?c.login:c.error}</p>{phase==='signed-out'?<Link href={root+'/portrait'}>{c.login}</Link>:phase==='error'||phase==='locked-error'?<button onClick={()=>void(phase==='locked-error'?sessionGuard.current?.verify():load())}>{c.retry}</button>:null}</section>:<>
+   <nav aria-label={c.title}>{['today','journal','goals','growth'].map(key=><button key={key} aria-current={tab===key?'page':undefined} onClick={()=>setTab(key)}>{c[key]}</button>)}</nav>
+   {tab==='goals'?<section><h2>{c.goals}</h2><Link href={root+'/my-coaching-plan'}>{c.plan}</Link></section>:tab==='growth'?<section><h2>{c.growth}</h2><Link href={'/'+locale+'/development-vectors'}>{c.vectors}</Link></section>:<>
+    <button onClick={()=>open(null)} disabled={busy||status==='failed'}>{c.new}</button>
+    {draft&&<section><label>{c.note}<select value={draft.kind} disabled={busy||status==='failed'} onChange={e=>change('kind',e.target.value)}>{['note','morning','evening'].map(kind=><option key={kind} value={kind}>{c[kind]}</option>)}</select></label>
+     <DaybookGoalContext key={account} accountId={account} locale={locale} selectedId={draft.goalId} disabled={busy||status==='failed'} onChange={goalId=>change('goalId',goalId)} onSessionLost={sessionLost}/>
+     <label>{c.text}<textarea rows={7} maxLength={20000} value={draft.text} disabled={busy||status==='failed'} onChange={e=>change('text',e.target.value)}/></label>
+     <label>{c.tags}<input value={draft.tags.join(',')} disabled={busy||status==='failed'} onChange={e=>change('tags',e.target.value.split(','))}/></label>
+     <label>{c.date}<input type="date" value={draft.localDay} disabled={busy||status==='failed'} onChange={e=>change('localDay',e.target.value)}/></label>
+     <p>{c.privacy}</p><button disabled={busy||!draft.text.trim()} onClick={()=>void save()}>{status==='failed'?c.retry:c.save}</button>
+     <button disabled={busy} onClick={()=>{if(window.confirm(c.discard)){saver.current?.discard();saver.current=createJournalSaver(appFetch,account);setDraft(null);setStatus('')}}}>{c.cancel}</button>
+    </section>}
+    <p role="status">{c[status]||''}</p>
+    <label>{c.search}<input type="search" value={query} onChange={e=>setQuery(e.target.value)}/></label>
+    <button disabled={busy} onClick={()=>void collect(true)}>{exportCopy[locale].download}</button>
+    {next&&<button disabled={busy} onClick={()=>void collect(false)}>{exportCopy[locale].all}</button>}
+    <p role="status">{exportCopy[locale][exportStatus]||''}</p>
+    {!visible.length&&<p>{c.empty}</p>}
+    {visible.map(entry=><article key={entry.id}><time dateTime={entry.localDay}>{entry.localDay}</time><h2>{c[entry.kind]}</h2><p className={styles.entry}>{entry.text}</p><p>{entry.tags.join(' · ')}</p><button disabled={busy||status==='failed'} onClick={()=>open(entry)}>{c.edit}</button><button disabled={busy||status==='failed'} onClick={()=>void remove(entry)}>{c.remove}</button></article>)}
+    {next&&<button disabled={busy} onClick={()=>void more()}>{c.more}</button>}
+   </>}
+  </>}
+ </main>
+}
