@@ -316,14 +316,32 @@ async function inspect(browserType,locale,width){
       waitUntil:"domcontentloaded",timeout:75000,
     });
     const ideaButton=page.locator('[data-video-quick-control="phrases"]');
-    // The approved Magic Mirror initially presents a concise Goal screen.
-    // Its workspace rail can be hidden until the visitor opens "More goals".
-    // Follow the genuine visible user action used by the existing Voice/Ideas
-    // browser acceptance; never force-click a hidden tab or mutate the DOM.
+    // Follow the same visible Magic Mirror path as the existing voice E2E.
+    // Selecting the format does not generate a video or spend credits.
     if(!await ideaButton.isVisible()){
-      const mirrorMoreGoals=page.locator('[data-hh-mirror-more-goals]');
-      await mirrorMoreGoals.waitFor({state:"visible",timeout:15000});
-      await mirrorMoreGoals.click();
+      const mirror=page.locator('[data-hh-mirror-goals]');
+      const entry=mirror.locator('[data-hh-mirror-enter="me"]');
+      await expect(entry).toBeVisible({timeout:30000});
+      await entry.click();
+      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","purpose");
+      const goal=mirror.locator('[data-hh-mirror-purpose-step]');
+      await goal.locator('[data-video-ideas-goal-choice="rest"]').click();
+      const next=goal.locator('[data-video-ideas-goal-next]');
+      await expect(next).toBeEnabled();
+      await next.click();
+      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","format");
+      await mirror.locator('[data-hh-mirror-video-format="basic"]').click();
+      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
+      const composer=mirror.locator('[data-hh-mirror-composer]');
+      for(let step=0;step<3&&!await composer.isVisible();step++){
+        const back=mirror.locator('[data-hh-mirror-back]');
+        await expect(back).toBeVisible();
+        await back.click();
+      }
+      const advanced=composer.locator('[data-hh-mirror-open-advanced]');
+      await expect(advanced).toBeVisible();
+      await expect(advanced).toBeEnabled();
+      await advanced.click();
       await expect(page.locator('[data-mandala-free-video]'))
         .toHaveAttribute("data-hh-mirror-advanced","true",{timeout:15000});
     }
