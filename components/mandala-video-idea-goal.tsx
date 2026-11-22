@@ -5,9 +5,9 @@ import type {VideoGoalOptions} from "@/lib/mandala/video-personal-goal-composer.
 import css from "./mandala-video-idea-goal.module.css";
 
 const COPY={
- ru:{kicker:"Magic Mirror · Цель",title:"Выберите цель видео",intro:"Тема уже выбрана. Какую задачу должно решить ваше видео?",selected:"Выбрана цель",continue:"Перейти к персонализации",kinds:{leisure:"ОТДЫХ И УДОВОЛЬСТВИЕ",support:"ЭМОЦИОНАЛЬНАЯ ПОДДЕРЖКА",change:"ИЗМЕНЕНИЕ УСТАНОВОК"}},
- en:{kicker:"Magic Mirror · Goal",title:"Choose your goal",intro:"Your topic is set. What would you like the video to do for you?",selected:"Your goal",continue:"Personalize my video",kinds:{leisure:"REST & ENJOYMENT",support:"EMOTIONAL SUPPORT",change:"BELIEFS & MEANING"}},
- es:{kicker:"Magic Mirror · Objetivo",title:"Elige tu objetivo",intro:"Ya elegiste un tema. ¿Qué quieres que haga el vídeo por ti?",selected:"Tu objetivo",continue:"Personalizar mi vídeo",kinds:{leisure:"DESCANSO Y DISFRUTE",support:"APOYO EMOCIONAL",change:"CAMBIO DE CREENCIAS"}}
+ ru:{kicker:"Personal · Цель",title:"Выберите цель видео",intro:"Для чего вам это видео?",selected:"Выбрана цель",continue:"Перейти к персонализации",kinds:{leisure:"ОТДЫХ И УДОВОЛЬСТВИЕ",support:"ЭМОЦИОНАЛЬНАЯ ПОДДЕРЖКА",change:"ИЗМЕНЕНИЕ УСТАНОВОК"}},
+ en:{kicker:"Personal · Goal",title:"Choose your goal",intro:"What would help you most?",selected:"Your goal",continue:"Personalize my video",kinds:{leisure:"REST & ENJOYMENT",support:"EMOTIONAL SUPPORT",change:"BELIEFS & MEANING"}},
+ es:{kicker:"Personal · Objetivo",title:"Elige tu objetivo",intro:"¿Qué te ayudaría más?",selected:"Tu objetivo",continue:"Personalizar mi vídeo",kinds:{leisure:"DESCANSO Y DISFRUTE",support:"APOYO EMOCIONAL",change:"CAMBIO DE CREENCIAS"}}
 } as const;
 export function MandalaVideoIdeaGoal({locale,options,selectedId,onSelect,onContinue,disabled,
  headingId="video-ideas-goal-heading",introOverride,continueLabel}:{

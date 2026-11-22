@@ -1,21 +1,21 @@
 "use client";
-import {useMemo,useRef,useState} from "react";
+import {useRef,useState} from "react";
 import type {Dispatch,SetStateAction} from "react";
-import {ArrowLeft,ArrowRight,Check,Heart,Leaf,Sparkles,Zap} from "lucide-react";
+import {ArrowLeft,ArrowRight,Check,Heart,Sparkles,Zap} from "lucide-react";
 import {listMeaningAxes} from "@/lib/mandala/meaning-emotion/idea-engine.mjs";
 import {getMyTubeTopic} from "@/lib/mandala/mytube-content-taxonomy.mjs";
+import {PERSONAL_EIGHT_AXES,axisGap} from "@/lib/mandala/personal-eight-axes.mjs";
 import type {VideoLocale} from "@/lib/mandala/holistic-video-themes";
 import css from "./mandala-video-personalization.module.css";
 
-export type VideoGoalProfile={name?:string;current:string[];desired:string[];axes:string[];supportNeed?:string;energy:number;desiredLevel:number};
+export type VideoGoalProfile={name?:string;current:string[];desired:string[];axes:string[];supportNeed?:string;energy:number;desiredLevel:number;focusAxisId?:string|null;axisRatings?:Record<string,{now?:number|null;desired?:number|null}>};
 export const DEFAULT_VIDEO_GOAL_PROFILE:VideoGoalProfile={
  name:"",current:[],desired:[],axes:[],supportNeed:"",energy:0,desiredLevel:0,
 };
 type Mood="sad"|"calm"|"happy";
-type Axis={id:string;label:string;description:string};
 type Choice={id:string;ru:string;en:string;es:string;meaning:string};
 type GoalPurpose="leisure"|"support"|"change";
-type QuizStage="current"|"desired"|"support"|"meaning"|"energy"|"name";
+type QuizStage="current"|"desired"|"support"|"energy"|"name";
 const energyScores=[1,2,3,4,5,6,7,8,9,10] as const;
 const currentChoices:Choice[]=[
  ["fatigue","Усталость","Tired","Cansancio","fatigue"],
@@ -71,9 +71,9 @@ const desiredByMood:Record<Mood,string[]>={
 };
 const moods:[Mood,string][]=[["sad","☹"],["calm","☺"],["happy","☻"]];
 const copy={
- ru:{step:"Идеи · Персонализация",title:"Персонализируйте своё видео",intro:"Выберите по одному ответу, затем оцените энергию сейчас и желаемую по шкале от 1 до 10.",now:"Как я чувствую себя сейчас?",want:"Как я хотел бы себя чувствовать?",strength:"Что я хочу укрепить?",choose:"Выберите одно слово",axisHint:"Выберите одно направление",energy:"Сколько энергии у меня сейчас?",level:"Сколько энергии я хочу иметь?",energyHint:"Выберите один балл от 1 до 10",more:"Прокрутите для других вариантов",nameQuestion:"Как вас зовут?",namePlaceholder:"Ваше имя",nameHint:"Необязательно · имя появится в последней фразе поддержки.",back:"Назад к цели",previous:"Назад",quizStep:"Шаг",next:"Перейти к цели",moods:{sad:"Грустное",calm:"Спокойное",happy:"Радостное"}},
- en:{step:"Ideas · Personalization",title:"Personalize your video",intro:"Choose one answer at a time, then rate your energy now and your desired energy from 1 to 10.",now:"How do I feel now?",want:"How would I like to feel?",strength:"What would I like to strengthen?",choose:"Choose one word",axisHint:"Choose one direction",energy:"How much energy do I have now?",level:"How much energy would I like?",energyHint:"Choose one number from 1 to 10",more:"Scroll for more choices",nameQuestion:"What is your name?",namePlaceholder:"Your first name",nameHint:"Optional · the final suggested phrase will use your name.",back:"Back to goal",previous:"Back",quizStep:"Step",next:"Continue to goal",moods:{sad:"Sad",calm:"Calm",happy:"Happy"}},
- es:{step:"Ideas · Personalización",title:"Personaliza tu vídeo",intro:"Elige una respuesta por paso y después valora tu energía actual y deseada del 1 al 10.",now:"¿Cómo me siento ahora?",want:"¿Cómo me gustaría sentirme?",strength:"¿Qué me gustaría fortalecer?",choose:"Elige una palabra",axisHint:"Elige una dirección",energy:"¿Cuánta energía tengo ahora?",level:"¿Cuánta energía quiero tener?",energyHint:"Elige un número del 1 al 10",more:"Desliza para ver más",nameQuestion:"¿Cómo te llamas?",namePlaceholder:"Tu nombre",nameHint:"Opcional · la última frase de apoyo incluirá tu nombre.",back:"Volver al objetivo",previous:"Atrás",quizStep:"Paso",next:"Continuar al objetivo",moods:{sad:"Triste",calm:"Tranquilo",happy:"Alegre"}},
+ ru:{step:"Personal · Персонализация",title:"Персонализируйте своё видео",intro:"Выберите по одному ответу, затем оцените энергию сейчас и желаемую по шкале от 1 до 10.",now:"Как я чувствую себя сейчас?",want:"Как я хотел бы себя чувствовать?",strength:"Что я хочу укрепить?",choose:"Выберите одно слово",axisHint:"Выберите одно направление",energy:"Сколько энергии у меня сейчас?",level:"Сколько энергии я хочу иметь?",energyHint:"Выберите один балл от 1 до 10",more:"Прокрутите для других вариантов",nameQuestion:"Как вас зовут?",namePlaceholder:"Ваше имя",nameHint:"Необязательно · имя появится в последней фразе поддержки.",back:"Назад к цели",previous:"Назад",quizStep:"Шаг",next:"Перейти к цели",moods:{sad:"Грустное",calm:"Спокойное",happy:"Радостное"}},
+ en:{step:"Personal · Personalization",title:"Personalize your video",intro:"Choose one answer at a time, then rate your energy now and your desired energy from 1 to 10.",now:"How do I feel now?",want:"How would I like to feel?",strength:"What would I like to strengthen?",choose:"Choose one word",axisHint:"Choose one direction",energy:"How much energy do I have now?",level:"How much energy would I like?",energyHint:"Choose one number from 1 to 10",more:"Scroll for more choices",nameQuestion:"What is your name?",namePlaceholder:"Your first name",nameHint:"Optional · the final suggested phrase will use your name.",back:"Back to goal",previous:"Back",quizStep:"Step",next:"Continue to goal",moods:{sad:"Sad",calm:"Calm",happy:"Happy"}},
+ es:{step:"Personal · Personalización",title:"Personaliza tu vídeo",intro:"Elige una respuesta por paso y después valora tu energía actual y deseada del 1 al 10.",now:"¿Cómo me siento ahora?",want:"¿Cómo me gustaría sentirme?",strength:"¿Qué me gustaría fortalecer?",choose:"Elige una palabra",axisHint:"Elige una dirección",energy:"¿Cuánta energía tengo ahora?",level:"¿Cuánta energía quiero tener?",energyHint:"Elige un número del 1 al 10",more:"Desliza para ver más",nameQuestion:"¿Cómo te llamas?",namePlaceholder:"Tu nombre",nameHint:"Opcional · la última frase de apoyo incluirá tu nombre.",back:"Volver al objetivo",previous:"Atrás",quizStep:"Paso",next:"Continuar al objetivo",moods:{sad:"Triste",calm:"Tranquilo",happy:"Alegre"}},
 } as const;
 export const goalCurrentMeaningId=(id:string)=>currentChoices.find(c=>c.id===id)?.meaning||"present";
 export const goalDesiredMeaningId=(id:string)=>desiredChoices.find(c=>c.id===id)?.meaning||"calm";
@@ -83,9 +83,12 @@ export function summarizeVideoGoalProfile(value:VideoGoalProfile,locale:VideoLoc
  const current=value.current.map(id=>currentChoices.find(c=>c.id===id)?.[locale]).filter(Boolean).join(" · ");
  const desired=value.desired.map(id=>desiredChoices.find(c=>c.id===id)?.[locale]).filter(Boolean).join(" · ");
  const axes=listMeaningAxes(locale);
- const focus=value.axes.map(id=>axes.find(c=>c.id===id)?.label).filter(Boolean).join(" · ");
+ const chosenAxis=PERSONAL_EIGHT_AXES.find(axis=>axis.id===value.focusAxisId);
+ const focus=chosenAxis?chosenAxis[locale][0]:value.axes.map(id=>axes.find(c=>c.id===id)?.label).filter(Boolean).join(" · ");
  return {currentState:current,desiredState:desired,focus,
-  currentIds:[...value.current],desiredIds:[...value.desired],focusIds:[...value.axes],
+  currentIds:[...value.current],desiredIds:[...value.desired],focusIds:[...value.axes],focusAxisId:value.focusAxisId??null,
+  axisRatings:PERSONAL_EIGHT_AXES.map(axis=>({id:axis.id,now:value.axisRatings?.[axis.id]?.now??null,
+   desired:value.axisRatings?.[axis.id]?.desired??null,gap:axisGap(value.axisRatings?.[axis.id])})),
   energyStart:value.energy>=1?value.energy:undefined,energyTarget:value.desiredLevel>=1?value.desiredLevel:undefined};
 }
 
@@ -105,7 +108,7 @@ const PURPOSE_COPY={
   change:"Исследуем желаемое состояние и направление изменения отношения к себе.",
   supportQuestion:"Какие слова поддержки хотелось бы услышать?",
   supportHint:"Выберите то, что действительно откликается.",
-  topic:"Ваша тема",next:"Перейти к концепту",
+  topic:"Ваша тема",next:"К 8 смысловым осям",
   note:"Поддерживающее видео не заменяет индивидуальную психотерапию.",
  },
  en:{
@@ -114,7 +117,7 @@ const PURPOSE_COPY={
   change:"Explore your desired state and the meaning you want to give to yourself.",
   supportQuestion:"What kind of supportive words would you like to hear?",
   supportHint:"Choose what feels right for you.",
-  topic:"Your topic",next:"Continue to concept",
+  topic:"Your topic",next:"Continue to 8 meaning axes",
   note:"A supportive video is not a substitute for individual psychotherapy.",
  },
  es:{
@@ -123,7 +126,7 @@ const PURPOSE_COPY={
   change:"Explora cómo quieres sentirte y qué creencia sobre ti deseas revisar.",
   supportQuestion:"¿Qué palabras de apoyo te gustaría escuchar?",
   supportHint:"Elige lo que encaje contigo.",
-  topic:"Tu tema",next:"Continuar al concepto",
+  topic:"Tu tema",next:"Continuar a los 8 ejes",
   note:"Un vídeo de apoyo no sustituye la psicoterapia individual.",
  }
 } as const;
@@ -133,7 +136,7 @@ export const personalizationStagesForGoal=(goalType:GoalPurpose):QuizStage[]=>go
  ?["desired","energy","name"]
  :goalType==="support"
  ?["current","desired","support","energy","name"]
- :["current","desired","meaning","energy","name"];
+ :["current","desired","energy","name"];
 
 export function MandalaVideoPersonalization({locale,value,onChange,onBack,onContinue,disabled,goalType,selectedTopicId}:{
  locale:VideoLocale;value:VideoGoalProfile;onChange:Dispatch<SetStateAction<VideoGoalProfile>>;
@@ -141,8 +144,7 @@ export function MandalaVideoPersonalization({locale,value,onChange,onBack,onCont
  goalType:GoalPurpose;selectedTopicId?:string|null;
 }){
  const t=copy[locale],p=PURPOSE_COPY[locale];
- const axes=useMemo<Axis[]>(()=>listMeaningAxes(locale),[locale]);
- const stages=personalizationStagesForGoal(goalType);
+  const stages=personalizationStagesForGoal(goalType);
  const [quizStep,setQuizStep]=useState(1);
  const quizRef=useRef<HTMLDivElement>(null);
  const [currentMood,setCurrentMood]=useState<Mood>("calm");
@@ -156,11 +158,6 @@ export function MandalaVideoPersonalization({locale,value,onChange,onBack,onCont
  const chooseOne=(side:"current"|"desired",id:string)=>{
   if(disabled)return;
   onChange(old=>({...old,[side]:[id]}));
-  move(1);
- };
- const chooseAxis=(id:string)=>{
-  if(disabled)return;
-  onChange(old=>({...old,axes:[id]}));
   move(1);
  };
  const chooseSupport=(id:string)=>{
@@ -237,19 +234,6 @@ export function MandalaVideoPersonalization({locale,value,onChange,onBack,onCont
     {SUPPORT_NEEDS.map(need=><button key={need.id} type="button" data-video-personalization-support-need={need.id}
      aria-pressed={value.supportNeed===need.id} disabled={disabled} onClick={()=>chooseSupport(need.id)}>
      {value.supportNeed===need.id?<Check size={16} aria-hidden="true"/>:null}{need[locale]}
-    </button>)}
-   </div>
-  </section>
-  <section className={css.card} data-personalization-kind="strength" hidden={stage!=="meaning"} aria-labelledby="personalization-strength-heading">
-   <div className={css.cardHead}><div className={css.cardName}>
-    <Leaf size={25} aria-hidden="true"/><div><h3 id="personalization-strength-heading">{t.strength}</h3>
-      <p>{topic?(locale==="ru"?"Какое отношение к себе вы хотите развить в теме «"+topic+"»?":locale==="es"?"¿Qué creencia deseas cultivar sobre «"+topic+"»?":"What belief about yourself would help with “"+topic+"”?"):t.axisHint}</p></div>
-   </div></div>
-   <div className={css.axisGrid} role="group" aria-label={t.strength}>
-    {axes.map(axis=><button key={axis.id} type="button" data-video-personalization-axis={axis.id}
-     title={axis.description} aria-pressed={value.axes.includes(axis.id)} disabled={disabled}
-     onClick={()=>chooseAxis(axis.id)}>
-     {value.axes.includes(axis.id)?<Check size={16} aria-hidden="true"/>:null}{axis.label}
     </button>)}
    </div>
   </section>

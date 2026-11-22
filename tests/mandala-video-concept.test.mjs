@@ -70,8 +70,8 @@ test("Ideas Concept owns the single editor and Montage retains its real timeline
   assert.ok(navStart>0&&navEnd>navStart,'The real five-tab Montage navigator must render');
   const navigation=source.slice(navStart,navEnd);
   assert.deepEqual([...navigation.matchAll(/id:"(effects|audio|text|promo|concept)",Icon:/g)]
-    .map(match=>match[1]),["effects","audio","text","concept","promo"],
-    "Style → Audio → Text → Story → Montage PRO without missing or repeated tabs");
+    .map(match=>match[1]),["effects","audio","promo","text","concept"],
+    "Style → Audio → Extra before optional Text/Story, with no duplicated steps");
   assert.match(source,/data-video-montage-next=\{montagePanel==="effects"\?"audio"/);
   assert.match(source,/onClick=\{continueMontageOrGenerate\}/);
   assert.match(source,/data-video-story-open-settings/);
@@ -99,14 +99,15 @@ test("Ideas Concept owns the single editor and Montage retains its real timeline
 
 test("macOS WebKit opens Style by default and still allows reviewed Concept",()=>{
   const source=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
-  const start=source.indexOf('const editorTab=page.locator');
-  const end=source.indexOf('const selectedStyle=page.locator',start);
+  const start=source.indexOf('const styleTab=page.locator');
+  const end=source.indexOf('const styles=moreStyles.locator',start);
   assert.ok(start>0&&end>start);
   const route=source.slice(start,end);
   assert.match(route,/\[data-video-montage-tab="effects"\]/);
   assert.match(source,/\[data-video-ideas-concept-panel\]/);
-  assert.match(route,/await montageStyleTab\.click\(\)/);
-  assert.match(route,/await expect\(montageStyleTab\)\.toHaveAttribute\("aria-pressed","true"/);
+  assert.match(route,/await styleTab\.tap\(\)/);
+  assert.match(route,/await expect\(styleTab\)\.toHaveAttribute\("aria-pressed","true"/);
+  assert.match(route,/moreStyles\.locator\("summary"\)\.tap\(\)/);
   assert.doesNotMatch(route,/force:\s*true|setMontagePanel/);
 });
 
