@@ -1,58 +1,43 @@
-# 512 scenarios × three energy/readiness levels × five support phrases
+# Meaning-axis support phrases — creative revision v2 (22 Nov 2026)
 
-**Owner brief, 22 Nov 2026. Status: editorial draft, NOT LIVE, NOT human-reviewed.**
+**Scope:** This is a content rewrite of `data/video-catalog/meaning-axis-energy-phrases-512-v1.json`, not a replacement video generator, endpoint or clinical assessment. Previous 512 scenario IDs and original 256 storyboard IDs stay exactly as published. Keep the `lib/mandala/meaning-axis-energy-phrases.mjs` public contract unchanged.
 
-The existing 512 distinct 14-second short-film concepts are **not overwritten**. Their
-`scenarioId`, `subsectorId`, `topicId`, `axisId`, four shots and canonical taxonomy remain
-unchanged. The separate first-party data file `data/video-catalog/meaning-axis-energy-phrases-512-v1.json`
-contains 512 scenario-linked records × three energy/readiness levels × five ranked phrases:
-**7,680** new primary lines per locale, **23,040** localized lines in EN/RU/ES.
+## Concrete editorial upgrade
 
-## Meaning of three levels (self-selection only)
+The previous 7,680 RU / EN / ES lines were structurally unique mainly by appending the same topic prepositional phrase to one of 15 axis/tier templates (e.g. `... при стрессе`, `... в семье`). That is formally unique but unconvincing, especially for trauma, loss of joy and money. The owner requested genuinely topical, attractive, concise video support copy.
 
-- **LOW · Низкая энергия / начальная готовность** — emotional permission, validation,
-  pause, gentleness; no pressure to do or feel more.
-- **MEDIUM · Средняя энергия / развивающаяся готовность** — notice choices, manageable
-  steps and available support; actions remain optional.
-- **HIGH · Высокая энергия / устойчивая готовность** — self-directed choice,
-  compassionate boundaries, integration and self-recognition, never forced achievement.
+V2 now makes each option a short **two-part film-and-human couplet**, relating a tangible scene cue to one soft meaning-axis message. Material reused:
 
-No score algorithm measures maturity, mental health or another person's readiness.
-The person picks their level voluntarily. A level describes their *current available
-energy and intention*, not their value, psychiatric diagnosis or permanent ability.
+- 512 reviewed-for-structure 14-second short-film concepts; each supplies stable IDs, four physical visual beats and already localized EN/RU/ES film descriptions.
+- 64 unique topic cue motifs, plus 128 original short context vignettes independently written and localized EN/RU/ES for this revision.
+- 192 distinct meaning-axis × readiness supportive texts per locale (8 axes × 3 tiers × 8 alternatives), 120 short caption intentions per locale.
+- 75 additional copy/caption alternatives per locale with specific semantic handling for sensitive relationships, body, loss, trauma, financial/professional topics.
 
-## Copy usage and limitations
+**The resulting combinations are not 7,680 individually hand-reviewed creative works.** They are 7,680 distinct topic-matched, composed **editorial drafts** per locale; on-screen captions are also globally unique per locale, each ≤36 Unicode code points. Do not call them clinically validated or reviewed by a native-language editor. A large number of phrase pairs are better grounded and less monotonous; this is not a substitute for listening to actual playback in context.
 
-- Each phrase is uniquely authored as a **deterministically composed editorial draft**
-  from a context cue and one axis/tier-specific expression; 7,680 *full* phrases
-  are unique in each of RU/EN/ES. This is not evidence of 7,680 independently
-  hand-reviewed creative narratives. Human review is still needed for idiom,
-  specificity and sensitive contexts (panic, childhood adversity, low mood).
-- Spoken lines may be **longer than 36 characters**. For the existing Montage editor,
-  a separate `*Caption` variant is at most 36 code points; these compact variants
-  may repeat across different scenarios. Do not silently cut full voice text or
-  claim captions are globally unique. Current UI is **not wired** to this library.
-- A 14-second short video can show **one to three selected lines**, not 15. The
-  fifteen are five options for each level, not 15 simultaneous overlays.
-- No medical diagnoses, healing guarantees, prescriptions, coercion, private health
-  profiling, social-platform delivery, or user material sent to a provider.
-- No fake render: **all texts are drafts**; licensed media matching, user acceptance,
-  real MP4, physical iPhone, EN/RU/ES editorial review and exact LIVE E2E are unverified.
-- No HeyGen/paid API/render calls; no deployment/extra scheduled release triggered
-  merely by adding static data.
+## Tier progression
 
-## Programmatic reference
+| Self-selected tier | Meaning | Constraints |
+|---|---|---|
+| low | Recognition, gentleness and permission to stop | No forced action or healing assurance |
+| medium | One optional gesture, choice or request | No guaranteed transformation |
+| high | Boundaries, mutuality and self-directed continuation | No moral hierarchy, no compulsory achievement |
 
-`listMeaningEnergyPhrases(scenarioId, {tier: 'low'|'medium'|'high', locale:'en'|'ru'|'es'})`
-returns five ranked proposals. An omitted/invalid level returns `[]` (fail-closed).
-`auditMeaningEnergyPhrases()` checks all 512 × 15 × 3 primary lines, stable IDs and
-36-codepoint caption variants. Existing canonical 256 plot IDs remain unchanged.
+The user's tier is voluntary and may vary by day. It is **not** psychiatric or medical maturity, diagnosis, personality rank, score or statement about psychological fitness. UI continues to require explicit choice; no automatic detection, profiling or external communication.
 
-## Local checks
+## Demonstration (RU)
 
-- `node --test tests/meaning-axis-energy-phrases-512.test.mjs`
-- Source-first structural audit of JSON, all scene and phrase IDs, locale counts,
-  tier ordering, unique full copies and no duplicate with previous eight phrases.
+**Stress relief × Grounding × low:** «Стикеры заполнили край рабочего стола. Пауза тоже заслуживает места.»  Caption: «Стикеры · право на паузу».
 
-This file is independent of the separate, still separately gated 512-scenario
-concept PR; no dependency on an unmerged UI branch is assumed.
+**Childhood adversity × Agency × medium:** «Человек отодвигает альбом и ставит рядом карточку помощи. Выбери жест, который тебе посилен.» Caption: «Прошлое · посильный жест».
+
+**Loneliness × Connection × high:** «Одна чашка стоит рядом с карточкой контакта. Выбирай взаимность без давления.» Caption: «Две чашки · беречь взаимность».
+
+## Release gates and exclusions
+
+- Local Node syntax/QA: run `node --test tests/meaning-axis-energy-phrases-512.test.mjs tests/meaning-axis-energy-phrases-style-512.test.mjs` and independent full JSON audit for 512 × 3 × 5 × 3; compare stable canonical IDs and all captions to the production editor's 36-codepoint hard limit.
+- Real editor/renderer wiring is not introduced here; `requiresUserApproval:true` and `canRender:false` stay as before.
+- Before public captions, manually review native-level English, Russian and Spanish idiom, all sensitive scenarios and spoken timing; existing media need verifiable rights and relevance.
+- No HeyGen, no paid credits, no photo storage, no automatic personal-data transfer, no render claims and no new Vercel workflow. Production release remains the protected hourly publisher after required CI.
+
+**Status:** full-catalog computational structural/uniqueness pass; human aesthetic review and physical iPhone/MP4 acceptance still open.
