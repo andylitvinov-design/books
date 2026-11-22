@@ -21,7 +21,6 @@ import styles from './my-coach-live-dialogue.module.css'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
 import MyCoachGeminiLive from './my-coach-gemini-live'
 import MyCoachStagedMemoryControls from './my-coach-staged-memory-controls'
-import {coachLiveMemoryNote,coachLiveMemoryScopes} from '@/lib/coaching/coach-live-memory-note.mjs'
 import MyCoachSessionStateCard from './my-coach-session-state-card'
 import {startCoachingMp3Playback,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 import {setCoachIos27AudioSession,refreshCoachIos27PlaybackRoute} from '@/lib/personal-coaching/coach-ios-audio-route.mjs'
@@ -538,19 +537,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const memorySharePrior=memoryReady&&allowOpeningPrior&&continuityChoice==='previous'
   const memoryShareGoals=Boolean(personalApproved&&stagedMemory?.allowGoals&&!contextPaused)
   const memoryShareTests=Boolean(personalApproved&&stagedMemory?.assessmentsAllowed&&!contextPaused)
-  const memoryShareProfile=Boolean(personalApproved&&stagedMemory?.allowProfile&&!contextPaused)
-  const memoryNote=memoryReady&&!contextPaused?coachLiveMemoryNote({
-    prior:stagedMemory?.prior,
-    personal:personalApproved?stagedMemory.personal:null,
-    priorAllowed:allowOpeningPrior,continuity:continuityChoice,
-    goalsAllowed:memoryShareGoals,profileAllowed:memoryShareProfile,
-    assessmentsAllowed:memoryShareTests,topicKey:contextTopic,
-  }):''
-  const memoryScopes=memoryReady&&!contextPaused?coachLiveMemoryScopes({
-    priorAllowed:allowOpeningPrior,continuity:continuityChoice,
-    goalsAllowed:memoryShareGoals,profileAllowed:memoryShareProfile,
-    assessmentsAllowed:memoryShareTests,topicKey:contextTopic,
-  }):[]
   // An optional, very soft acknowledgment on the FOUR lit milestones only.
   // The feelings checkbox (step 5) has no sound or lamp by design.
   const previousOpeningLamps=useRef(null)
@@ -1300,7 +1286,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             locale={conversationLang} personaId={personaId} settings={settings}
             voiceName={selectedGeminiVoice} elapsedSeconds={activeSessionSeconds}
             openingPrior={openingPrior} allowOpeningPrior={Boolean(openingPrior)&&openingProgress.checkmarks.invitation}
-            memoryNote={memoryNote} memoryScopes={memoryScopes}
             enabled={liveVoiceReady} canStart={!busy&&!paused&&!replaying&&liveVoiceReady}
             onSessionStart={()=>{setGeminiLiveConsent(true);setSessionClockStarted(true);setIntroComplete(true)}}
             onVoiceStateChange={setVoiceState}
