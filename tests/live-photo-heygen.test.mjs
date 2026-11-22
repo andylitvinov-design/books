@@ -241,3 +241,17 @@ test('private erasure never pretends Supabase removal also removed a HeyGen asse
   assert.match(ui, /providerCleanup === 'pending'/);
   assert.doesNotMatch(service, /console\.log\(.+provider_asset_id/);
 });
+
+
+test('private source upload transport failure releases its reserved XP before provider POST', () => {
+  const service = readFileSync('lib/app/live-photo-service.js', 'utf8');
+  const start = service.indexOf('let uploadError = null;');
+  const end = service.indexOf('let assetId;', start);
+  assert.ok(start > 0 && end > start, 'Supabase upload precedes the HeyGen asset submission');
+  const stage = service.slice(start, end);
+  assert.match(stage, /try\s*\{[\s\S]*storage\(config\)\.upload\(reservation\.source_key/);
+  assert.match(stage, /catch\s*\{\s*uploadError = new Error\('PRIVATE_UPLOAD_FAILED'\)/);
+  assert.match(stage, /if \(uploadError\) \{\s*await failBeforeProvider\(config, actor, id, 'PRIVATE_UPLOAD_FAILED'\)/);
+  assert.doesNotMatch(stage, /uploadHeyGenPortrait|submitHeyGenLivePhoto/);
+  assert.match(service, /await settleLiveGiftXp\(db, actor\.id, current\.xp_operation_id, 'released'\)/);
+});

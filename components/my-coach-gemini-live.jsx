@@ -43,7 +43,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   locale='en',personaId='mira',settings={},voiceName='Puck',enabled=false,
   canStart=true,elapsedSeconds=0,onSessionStart,onVoiceStateChange,
   onMicLevel,onInputInterim,onInputFinal,onOutputInterim,onOutputFinal,
-  onInterrupted,onDirectorProgress,onNotice,
+  onInterrupted,onDirectorProgress,onOpeningProgress,onNotice,
+  openingPrior=null,allowOpeningPrior=false,
 },ref){
   const lang=safeLocale(locale),t=ui[lang]
   const [phase,setPhase]=useState('idle')
@@ -53,7 +54,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   propsRef.current={locale:lang,personaId,settings,voiceName,enabled,canStart,
     elapsedSeconds,onSessionStart,onVoiceStateChange,onMicLevel,onInputInterim,
     onInputFinal,onOutputInterim,onOutputFinal,onInterrupted,
-    onDirectorProgress,onNotice}
+    onDirectorProgress,onOpeningProgress,onNotice,openingPrior,allowOpeningPrior}
 
   const notify=text=>{
     setNotice(text)
@@ -131,13 +132,18 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
         method:'POST',credentials:'same-origin',cache:'no-store',signal:r.abort.signal,
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({personaId:p.personaId,locale:p.locale,settings:p.settings,
-          message:text,turns:previous,elapsedSeconds:Math.min(7200,Math.max(0,Math.floor(p.elapsedSeconds||0))),
+          message:text,turns:previous.map(turn=>({...turn,content:turn.content.slice(0,300)})),
+          elapsedSeconds:Math.min(7200,Math.max(0,Math.floor(p.elapsedSeconds||0))),
+          openingHistory:r.openingHistory.slice(0,-1).slice(0,20).map(text=>text.slice(0,120)),
+          ...(r.allowOpeningPrior&&r.openingPrior?{allowOpeningPrior:true,openingPrior:r.openingPrior}:{}),
           consent:true,voiceConsent:true,trainingUseConsent:true}),
       })
       const data=response.ok?await response.json().catch(()=>null):null
       if(!r.ended&&data?.schema==='HH_GEMINI_LIVE_DIRECTOR_V1'&&
          data.sessionProgress?.source==='director-client-evidence')
         p.onDirectorProgress?.(data.sessionProgress)
+      if(!r.ended&&data?.openingProgress?.schema==='hh-coach-opening-v1-20261122')
+        p.onOpeningProgress?.(data.openingProgress)
     }catch{/* Ignore failed evidence check; never promote unverified model speech. */}
   }
   function commitInput(r){
@@ -149,6 +155,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     r.history.push({role:'user',content:value})
     r.history=r.history.slice(-20)
     propsRef.current.onInputFinal?.(value)
+    r.openingHistory.push(value)
+    r.openingHistory=r.openingHistory.slice(0,33)
     void checkpoint({...r,history:preceding},value)
   }
   function commitOutput(r){
@@ -323,6 +331,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       signal:r.abort.signal,headers:{'Content-Type':'application/json'},
       body:JSON.stringify({personaId:r.personaId,locale:r.locale,
         settings:r.settings,voiceName:r.voiceName,consent:true,
+        ...(r.allowOpeningPrior&&r.openingPrior?{allowOpeningPrior:true,openingPrior:r.openingPrior}:{}),
         voiceConsent:true,trainingUseConsent:true}),
     })
     if(!response.ok)throw Error('GEMINI_LIVE_UNAVAILABLE')
@@ -376,11 +385,13 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       notify(t.permission);return false
     }
     const r={context,stream:null,source:null,processor:null,sink:null,
-      socket:null,ready:false,ended:false,history:[],inputText:'',outputText:'',
+      socket:null,ready:false,ended:false,history:[],openingHistory:[],inputText:'',outputText:'',
       speaking:false,interrupted:false,resumeHandle:null,
       bargeDetector:new GeminiLiveBargeDetector(),
       reconnects:0,voiceName:p.voiceName,locale:p.locale,personaId:p.personaId,
-      settings:p.settings,abort:new AbortController(),timer:null,reconnectTimer:null,
+      settings:p.settings,allowOpeningPrior:p.allowOpeningPrior===true,
+      openingPrior:p.allowOpeningPrior===true?p.openingPrior:null,
+      abort:new AbortController(),timer:null,reconnectTimer:null,
       resampler:new GeminiLivePcmResampler(context.sampleRate),
       audioGate:new GeminiLiveBargeGate()}
     r.player=new GeminiLivePcmPlayer(context,{
@@ -407,6 +418,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     r.history.push({role:'user',content:body})
     r.history=r.history.slice(-20)
     propsRef.current.onInputFinal?.(body)
+    r.openingHistory.push(body)
+    r.openingHistory=r.openingHistory.slice(0,33)
     void checkpoint({...r,history:previous},body)
     phaseChange('thinking')
     return true
