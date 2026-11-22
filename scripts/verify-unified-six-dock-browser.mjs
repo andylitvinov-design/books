@@ -444,7 +444,12 @@ async function inspect(browserType,locale,width){
         id+" "+tab+" active control remains readable");
       assert.ok(palette.width<=palette.viewport+2,id+" "+tab+" no document overflow");
       assert.equal(palette.dockCount,1,id+" "+tab+" one fixed Holistic House dock");
-      await nav.scrollIntoViewIfNeeded();
+      // Switching workspaces can retire/collapse the original rail after
+      // its real click. The selected workspace surface remains visible:
+      // capture THAT rendered view, not the detached/hidden old tab node.
+      const visibleStudio=page.locator('[data-mandala-free-video][data-active-workspace="'+tab+'"]');
+      await visibleStudio.waitFor({state:"visible",timeout:15000});
+      await visibleStudio.scrollIntoViewIfNeeded({timeout:15000});
       await page.screenshot({
         path:folder+"/studio-palette-"+tab+"-ru-390-webkit.png",
         fullPage:false,animations:"disabled",
