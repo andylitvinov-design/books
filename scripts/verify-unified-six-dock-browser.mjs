@@ -892,6 +892,81 @@ try{
  assert.ok(mirrorScreen.overflowX<=2,"Shamanic must not scroll horizontally: "+JSON.stringify(mirrorScreen));
  await page.screenshot({path:folder+"/shamanica-first-screen-ru-390-webkit.png",fullPage:false,animations:"disabled"});
  results.push({journey:"Shamanic six-shelf alchemist first screen",mirrorScreen,passed:true});
+
+ // Browser-rendered iPhone first-fold acceptance for BOTH audiences.
+ // No CSS-only or screenshot-of-the-other-view substitute is accepted:
+ // all six photo tiles must clear the same fixed seven-item dock.
+ const verifyLoungeFold=async(cardSelector,atlas)=>{
+   const previous=page.viewportSize();
+   const folds=[];
+   for(const width of [320,353,390,430]){
+     await page.setViewportSize({width,height:768});
+     await page.evaluate(async()=>{
+       window.scrollTo({top:0,behavior:"instant"});
+       await new Promise(done=>requestAnimationFrame(()=>requestAnimationFrame(done)));
+     });
+     const fold=await page.evaluate(selector=>{
+       const tiles=[...document.querySelectorAll(selector)];
+       const nav=document.querySelector("[data-hh-unified-dock]");
+       const heading=document.getElementById("shamanica-hero-title");
+       const room=heading?.closest("section");
+       const image=tiles[0]?.firstElementChild;
+       return {
+         tiles:tiles.length,
+         firstTop:tiles[0]?.getBoundingClientRect().top??-1,
+         lastBottom:tiles.at(-1)?.getBoundingClientRect().bottom??Infinity,
+         dockTop:nav?.getBoundingClientRect().top??-1,
+         room:room?getComputedStyle(room,"::before").backgroundImage:"",
+         atlas:image?getComputedStyle(image).backgroundImage:"",
+         overflowX:document.documentElement.scrollWidth-innerWidth
+       };
+     },cardSelector);
+     assert.equal(fold.tiles,6,"Both Shamanic audiences retain six real buttons: "+width);
+     assert.ok(fold.firstTop>=0&&fold.lastBottom<=fold.dockTop-4,
+       "All six cards must clear the dock on "+width+"x768: "+JSON.stringify(fold));
+     assert.ok(fold.overflowX<=2,"No sideways overflow at "+width+": "+JSON.stringify(fold));
+     assert.match(fold.room,/shamanic-lounge-hd\.avif/,
+       "Both tabs must show the same HD lounge background");
+     assert.ok(fold.atlas.includes(atlas),"Photo atlas must stay HD: "+JSON.stringify(fold));
+     folds.push({width,firstTop:fold.firstTop,lastBottom:fold.lastBottom,dockTop:fold.dockTop});
+   }
+   if(previous)await page.setViewportSize(previous);
+   return folds;
+ };
+ const personalFolds=await verifyLoungeFold("[data-shamanica-service]",
+   "shamanic-cards-personal-hd.avif");
+ results.push({journey:"Shamanic personal one-screen HD photos at 320/353/390/430",folds:personalFolds,passed:true});
+ await shamanicaHome.locator('nav[aria-label="Audience"] a[href="/ru/shamanica/business"]').click();
+ await page.waitForURL(/\/ru\/shamanica\/business\/?$/,{timeout:45000});
+ const businessCabinet=page.locator("[data-shamanica-business] [data-business-cabinet-shelves]");
+ await businessCabinet.waitFor({state:"visible",timeout:30000});
+ const businessCards=businessCabinet.locator("[data-business-shelf]");
+ assert.deepEqual(await businessCards.evaluateAll(nodes=>nodes.map(node=>node.dataset.businessShelf)),
+   ["express","remedies","strategy","artifacts","energy","energywork"],
+   "Business uses the same six-tile lounge with approved distinct categories");
+ const businessFolds=await verifyLoungeFold("[data-business-shelf]",
+   "shamanic-cards-business-hd.avif");
+ await page.screenshot({path:folder+"/shamanica-business-first-screen-ru-390-webkit.png",
+   fullPage:false,animations:"disabled"});
+ await businessCards.first().click();
+ const businessExpress=businessCabinet.locator('[data-business-second-level="express"]');
+ await businessExpress.waitFor({state:"visible",timeout:15000});
+ const expressChoices=await businessExpress.locator("[data-business-subservice]").allTextContents();
+ assert.equal(expressChoices.length,5,"Express business opens five real pricing choices");
+ for(const price of ["FREE","45 CAD","75 CAD","200 CAD","300 CAD"]){
+   assert.ok(expressChoices.some(label=>label.includes(price)),"Approved business offer price: "+price);
+ }
+ assert.equal(await businessCabinet.locator('[data-business-get-details="express"]').count(),1,
+   "Express options retain their existing WhatsApp/Telegram Get details handoff");
+ await businessCabinet.locator("[data-business-back-to-shelves]").click();
+ assert.equal(await businessCabinet.locator("[data-business-shelf]").count(),6,
+   "Business Back returns to the six categories");
+ await page.locator('[data-shamanica-mobile] nav[aria-label="Audience"] a[href="/ru/shamanica"]').click();
+ await page.waitForURL(/\/ru\/shamanica\/?$/,{timeout:45000});
+ await shamanicaHome.waitFor({state:"visible",timeout:30000});
+ results.push({journey:"Shamanic Business same HD lounge → 5 priced suboptions → Back → Personal",
+   folds:businessFolds,passed:true});
+
  const originalShamanicaViewport=page.viewportSize();
  await shamanicaHome.locator("[data-shamanica-extras] > summary").click();
  await page.setViewportSize({width:353,height:768});
@@ -930,15 +1005,44 @@ try{
  if(originalShamanicaViewport)await page.setViewportSize(originalShamanicaViewport);
  assert.equal(await shamanicaHome.locator("[data-shamanica-service]").count(),6,
    "Shamanic has exactly six approved functional shelves");
- // A category tile must open the concrete Support-style offer list right
- // away, without requiring any of the three Shamanic quiz answers.
+ // The approved Shamanic category is an in-page two-stage selector, not
+ // the old immediate navigation. Exercise category → subcategories → the
+ // unchanged three concrete priced Details/Order offers without quiz answers.
  const energyEntrance=shamanicaHome.locator('[data-shamanica-service="energy"]');
- assert.equal(await energyEntrance.getAttribute("href"),"/ru/shamanica/results?category=energy");
- assert.equal(await shamanicaHome.locator('[data-shamanica-service="academy"]').getAttribute("href"),
-   "/ru/shamanica/results?category=learning");
- assert.equal(await shamanicaHome.locator('[data-shamanica-service="guidance"]').getAttribute("href"),
-   "/ru/shamanica/results?category=guidance");
+ assert.equal(await energyEntrance.evaluate(node=>node.tagName),"BUTTON",
+   "Category is an interactive in-page selector, not a stale direct href");
  await energyEntrance.click();
+ const energySubcategories=shamanicaHome.locator('[data-shamanica-subcategories="energy"]');
+ await energySubcategories.waitFor({state:"visible",timeout:30000});
+ assert.equal(new URL(page.url()).pathname,"/ru/shamanica",
+   "Category tap reveals a local second level, not another page");
+ assert.equal(await shamanicaHome.locator("[data-shamanica-service]").count(),0,
+   "Subcategory choices replace the six category buttons");
+ assert.equal(await energySubcategories.locator("[data-shamanica-subcategory]").count(),3,
+   "Energy shows three real next-step service choices");
+ assert.equal(await energySubcategories.locator('[data-shamanica-subcategory="energy-0"]').getAttribute("href"),
+   "/ru/services/remote-energy-support",
+   "First energy choice opens the existing booking service");
+ const energyAll=energySubcategories.locator('a[href="/ru/shamanica/results?category=energy"]');
+ assert.equal(await energyAll.count(),1,
+   "All-services action keeps the original three priced offer page reachable");
+ await energySubcategories.locator("button").click();
+ assert.equal(await shamanicaHome.locator("[data-shamanica-service]").count(),6,
+   "Back restores all six category buttons");
+ await shamanicaHome.locator('[data-shamanica-service="academy"]').click();
+ const academySubcategories=shamanicaHome.locator('[data-shamanica-subcategories="academy"]');
+ await academySubcategories.waitFor({state:"visible",timeout:15000});
+ assert.equal(await academySubcategories.locator("[data-shamanica-subcategory]").count(),4,
+   "Academy keeps the four existing course pathways");
+ await academySubcategories.locator("button").click();
+ await shamanicaHome.locator('[data-shamanica-service="guidance"]').click();
+ const guidanceSubcategories=shamanicaHome.locator('[data-shamanica-subcategories="guidance"]');
+ await guidanceSubcategories.waitFor({state:"visible",timeout:15000});
+ assert.equal(await guidanceSubcategories.locator("[data-shamanica-subcategory]").count(),3,
+   "Guidance exposes three published readings");
+ await guidanceSubcategories.locator("button").click();
+ await shamanicaHome.locator('[data-shamanica-service="energy"]').click();
+ await shamanicaHome.locator('[data-shamanica-subcategories="energy"] a[href="/ru/shamanica/results?category=energy"]').click();
  await page.waitForURL(url => url.pathname==="/ru/shamanica/results" &&
    url.searchParams.get("category")==="energy",{timeout:45000});
  const categoryOffers=page.locator('[data-shamanica-category-offers="energy"]');
