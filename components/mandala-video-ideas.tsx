@@ -8,7 +8,7 @@ import {listCurrentEmotionClusters,listDesiredEmotionClusters} from "@/lib/manda
 import {resolveVideoIdeaContext,suggestVideoGoalPhrases,translateVideoGoalPhrase,personalVideoClosingPhrase,appendPersonalVideoClosingPhrase} from "@/lib/mandala/video-goal-idea-phrases.mjs";
 import {isIdeaEditorSnapshot,planIdeaSelection,sanitizeIdeaPhrase} from "@/lib/mandala/video-idea-selection.mjs";
 import {goalCurrentMeaningId,goalDesiredMeaningId,DEFAULT_VIDEO_GOAL_PROFILE,type VideoGoalProfile} from "./mandala-video-personalization";
-import type {AffirmationSettings} from "@/lib/mandala/video-affirmations";
+import {linesForVideoAffirmations,type AffirmationSettings} from "@/lib/mandala/video-affirmations";
 import type {VideoLocale,VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import css from "./mandala-video-ideas.module.css";
 
@@ -211,6 +211,20 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
   if(remembered&&isIdeaEditorSnapshot(remembered,signature)){
    setOptions(remembered.options);setChosen(remembered.chosen);
    if(languagePicker&&remembered.locale)setPhraseLocale(remembered.locale);
+   return;
+  }
+  // Confirmed Goal/Concept phrases already power Canvas and MP4. Entering
+  // Personal Text is navigation, not consent to replace the approved film.
+  // Seed its controls from committed text; only an explicit user edit should
+  // change parent settings. A changed Goal with an existing editor snapshot
+  // still follows the real regeneration path below.
+  if(!remembered&&phraseMode==="personalized"&&Array.isArray(settings.presetOverride)){
+   const committed=settings.enabled
+    ?[...new Set(linesForVideoAffirmations(locale,theme,settings).map(sanitizeIdeaPhrase).filter(Boolean))].slice(0,10)
+    :[];
+   const suggestions=suggested.map(sanitizeIdeaPhrase).filter(line=>line&&!committed.includes(line));
+   setOptions([...committed,...new Set(suggestions)].slice(0,14));
+   setChosen(committed.map((_,index)=>index));
    return;
   }
   // A genuine change in Goal refinement deliberately starts new suggestions.
