@@ -209,7 +209,7 @@ test("real macOS WebKit Montage navigation opens visible Magic Mirror controls b
  assert.match(helper,/else await control\.click\(\)/);
  assert.doesNotMatch(helper,/force:true|\.evaluate\(/);
  const reveal=browser.slice(browser.indexOf("async function revealMirrorAdvanced"),helperStart);
- assert.match(reveal,/if\(engine==="webkit"\)await plan\.tap\(\)/);
+ assert.match(reveal,/if\(engine==="webkit"\)await entry\.tap\(\)/);
  assert.match(reveal,/if\(engine==="webkit"\)await plus\.tap\(\)/);
  const editor=browser.slice(browser.indexOf('phase(engine,"editor-ready")'));
  assert.match(editor,/await enterVisibleStudioWorkspace\(page,"editor",engine\)/);
