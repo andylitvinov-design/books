@@ -792,11 +792,12 @@ async function verifyWorkspaceHydration(browser,locale){
     const openAdvancedGoal=async()=>{
       await expect(studio).toHaveAttribute("data-hh-mirror-advanced","false");
       await revealMirrorAdvanced(page);
-      await expect(page.locator('[data-video-goal-quiz-audience]')).toBeVisible();
+      await expect(page.locator('[data-video-quick-section="1"][data-video-goal-quiz-audience]')).toBeVisible();
     };
     await goalTab.click();
     await expect(goalTab).toHaveAttribute("aria-pressed","true");
-    const goalQuiz=page.locator('[data-video-goal-quiz-audience]');
+    const goalQuiz=page.locator('[data-video-quick-section="1"][data-video-goal-quiz-audience]');
+    const topicQuiz=page.locator('[data-video-topic-section][data-video-goal-quiz-audience]');
     // Return from Ideas leaves the completed Self quiz at step 3: reveal
     // it using the guest-visible advanced control, then back through it.
     await openAdvancedGoal();
@@ -810,6 +811,7 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(page.locator('[data-video-goal-audience-option]')).toHaveCount(0);
     await others.click();
     await expect(goalQuiz).toHaveAttribute("data-video-goal-quiz-audience","others");
+    await expect(topicQuiz).toHaveAttribute("data-video-goal-quiz-audience","others");
     const recipientCatalog=page.locator('[data-video-recipient-catalog]');
     await expect(recipientCatalog).toBeVisible();
     await expect(recipientCatalog).toHaveAttribute("data-video-recipient-aspect","portrait");
