@@ -248,7 +248,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
   const picture="/images/holistic-house/my-coach-motion/"+persona.id+"-living.webp";
   const chatRoute="/"+locale+"/app/messages?section=ai";
   const ideasRoute="/"+locale+(mode==="business"?"/explore/business":"/services/free-situation-review");
-  const supportRoute="/"+locale+"/services"+(mode==="business"?"#service-group-business":"");
+  const supportRoute="/"+locale+(mode==="business"?"/services#service-group-business":"/services/free-consultation");
 
   return <section className={styles.root} data-home-dialogue-entry data-home-mode={mode}
     data-home-interactive={interactive?"true":"false"} lang={locale}>

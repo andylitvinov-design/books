@@ -19,6 +19,17 @@ const practitionerRecordingSources = [
   "/admin/clients/:id/sessions/:path*",
 ];
 
+// Only unchanged, publicly accessible first-screen photography.
+// These files currently arrive with max-age=0 despite long-lived CSS caching.
+// Browser/edge reuse avoids conditional image re-fetches without transforming
+// or recompressing pixels; private uploads and dynamic HTML remain uncached.
+const homepagePublicImageSources = [
+  "/images/holistic-house/my-coach-motion/:path*",
+  "/images/holistic-house/ideas-pine-reference.webp",
+  "/images/video-goal-art/:path*",
+  "/images/holistic-house/andy-about.png",
+] as const;
+
 // Only approved pages with an explicit Record button may ask for microphone.
 // The public Messenger needs the same narrowly scoped permission as Studio;
 // microphone remains denied across the rest of the site.
@@ -87,6 +98,12 @@ const nextConfig: NextConfig = {
         source: "/images/holistic-house/static-card-media/:path*",
         headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
       },
+      // Reuse the exact approved homepage photography on repeat mobile visits.
+      // Do not extend public caching to HTML, RSC, sessions, clients or APIs.
+      ...homepagePublicImageSources.map((source) => ({
+        source,
+        headers: [{ key: "Cache-Control", value: "public, max-age=3600, s-maxage=86400, stale-while-revalidate=120" }],
+      })),
       // Versioned public video artwork is safe to cache; never apply this policy
       // to HTML, sessions, consultations, prescriptions, API or RSC payloads.
       ...["/images/holistic-house/video-posters/:path*", "/images/holistic-house/testimonial-posters/:path*", "/images/reiki-originals/:path*"].map((source) => ({
