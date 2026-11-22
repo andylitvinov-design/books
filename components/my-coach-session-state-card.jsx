@@ -1,9 +1,11 @@
 'use client'
 
 import {useMemo} from 'react'
+import Link from 'next/link'
 import {BookOpenCheck,Check,CheckCircle2,Compass,FileText,Flag,HeartHandshake,Milestone,Scale,ShieldCheck,Target} from 'lucide-react'
 import {coachSessionStateView} from '@/lib/coaching/coach-session-state-view.mjs'
 import {COACH_PROFILE_AXES} from '@/lib/coaching/coach-profile-intake.mjs'
+import {COACH_PROFILE_REVIEW_VERSION,coachProfileReviewNextReply} from '@/lib/coaching/coach-profile-review.mjs'
 import styles from './my-coach-session-state-card.module.css'
 
 const copy={
@@ -50,7 +52,7 @@ const radarPoint=(index,value)=>{
   return [Number((160+Math.cos(angle)*94*value/10).toFixed(1)),Number((123+Math.sin(angle)*94*value/10).toFixed(1))]
 }
 function ProfileWheel({profile,language}){
-  const rows=COACH_PROFILE_AXES.map((axis,index)=>({axis,index,rating:profile.ratings[index]}))
+  const rows=COACH_PROFILE_AXES.map((axis,index)=>({axis,index,rating:profile.ratings.find(item=>item.axis===axis.id)}))
   const allRated=rows.every(({rating})=>rating?.kind==='rated')
   const polygon=key=>rows.map(({index,rating})=>radarPoint(index,rating[key]).join(',')).join(' ')
   const label={ru:'Колесо смыслов: сейчас и хочу',en:'Meaning wheel: now and desired',es:'Rueda de sentidos: ahora y deseado'}[language]
@@ -106,6 +108,7 @@ export default function MyCoachSessionStateCard({
   const t=copy[language]
   const card=useMemo(()=>coachSessionStateView({locale:language,turns,progress}),[language,turns,progress])
   const verified=stageProgressVerified&&card.stageVerifiedByDirector
+  const review=profile?.version===COACH_PROFILE_REVIEW_VERSION
   const selectedStage=Math.max(0,Math.min(stageNames.length-1,stageIndex))
   const fields=[
     {id:'topic',label:t.topic,Icon:Target,mentioned:!!card.workingTopicQuote,
@@ -157,15 +160,16 @@ export default function MyCoachSessionStateCard({
     {profile&&<section className={styles.stageSection} data-coach-profile-checklist
       aria-label={language==='ru'?'Личный профиль':language==='es'?'Perfil personal':'Personal profile'}>
       <h3 className={styles.sectionTitle}><CheckCircle2 size={18} aria-hidden="true"/>
-        {language==='ru'?'Личный профиль':language==='es'?'Perfil personal':'Personal profile'} · {profile.ratings.length}/{COACH_PROFILE_AXES.length}
+        {language==='ru'?'Личный профиль':language==='es'?'Perfil personal':'Personal profile'} · {review?profile.ratings.filter(x=>x.kind==='rated').length:profile.ratings.length}/{COACH_PROFILE_AXES.length}
       </h3>
       <ol className={styles.stageList}>
         {COACH_PROFILE_AXES.map((axis,index)=>{
-          const rating=profile.ratings[index]
-          const done=Boolean(rating)
+          const rating=review?profile.ratings.find(item=>item.axis===axis.id):profile.ratings[index]
+          const done=review?rating?.kind==='rated':Boolean(rating)
           const active=!profile.completed&&index===profile.step-1
           const state=done?t.done:active?t.current:t.waiting
-          const value=rating?.kind==='rated'?rating.current+' → '+rating.desired:
+          const value=(rating?.kind==='rated'||rating?.kind==='partial')
+            ?(rating.current===null?'—':rating.current)+' → '+(rating.desired===null?'—':rating.desired):
             rating?.kind==='skipped'?(language==='ru'?'Пропущено':language==='es'?'Omitido':'Skipped'):''
           return <li key={axis.id} className={styles.stageRow} data-profile-axis={axis.id}
             data-stage-status={done?'done':active?'current':'pending'}>
@@ -178,7 +182,19 @@ export default function MyCoachSessionStateCard({
           </li>
         })}
       </ol>
-      {profile.completed&&<ProfileWheel profile={profile} language={language}/>}
+      {(profile.completed||review)&&<ProfileWheel profile={profile} language={language}/>}
+      {review&&!profile.finished&&<p data-coach-profile-next-question>
+        {coachProfileReviewNextReply(profile)}
+      </p>}
+      {review&&profile.finished&&<div data-coach-profile-next-steps>
+        <p>{language==='ru'?'Следующий шаг выбираете вы:':language==='es'?'Elige el siguiente paso:':'Choose your next step:'}</p>
+        <p><Link href={'/'+language+'/app/my-coaching-plan'}>
+          {language==='ru'?'Уточнить мои цели':language==='es'?'Revisar mis metas':'Review my goals'}
+        </Link></p>
+        <p><Link href={'/'+language+'/app/tests'}>
+          {language==='ru'?'Посмотреть доступные тесты':language==='es'?'Ver mis pruebas':'View available tests'}
+        </Link></p>
+      </div>
     </section>}
     {(!opening||opening.completed)&&!profile&&<section className={styles.stageSection} aria-label={t.stages}>
       <h3 className={styles.sectionTitle}><CheckCircle2 size={18} aria-hidden="true"/>{t.stages}</h3>
