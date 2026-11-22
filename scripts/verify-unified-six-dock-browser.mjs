@@ -316,6 +316,17 @@ async function inspect(browserType,locale,width){
       waitUntil:"domcontentloaded",timeout:75000,
     });
     const ideaButton=page.locator('[data-video-quick-control="phrases"]');
+    // The approved Magic Mirror initially presents a concise Goal screen.
+    // Its workspace rail can be hidden until the visitor opens "More goals".
+    // Follow the genuine visible user action used by the existing Voice/Ideas
+    // browser acceptance; never force-click a hidden tab or mutate the DOM.
+    if(!await ideaButton.isVisible()){
+      const mirrorMoreGoals=page.locator('[data-hh-mirror-more-goals]');
+      await mirrorMoreGoals.waitFor({state:"visible",timeout:15000});
+      await mirrorMoreGoals.click();
+      await expect(page.locator('[data-mandala-free-video]'))
+        .toHaveAttribute("data-hh-mirror-advanced","true",{timeout:15000});
+    }
     await ideaButton.waitFor({state:"visible",timeout:30000});
     await page.waitForFunction(()=>{
       const link=document.querySelector('[data-video-quick-control="phrases"]');
