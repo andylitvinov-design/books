@@ -25,7 +25,16 @@ function mock(task,pr=base){
   throw Error('UNKNOWN_ACTION');
  };
  const core={getIDToken:async()=>'.'.repeat(121),warning:s=>warn.push(s),info:s=>info.push(s)};
- const github={rest:{pulls:{get:async()=>({data:pr})}}};
+ const github={rest:{
+  pulls:{get:async()=>({data:pr})},
+  issues:{listComments:async({page})=>({data:page===1&&
+   pr?.labels?.some(l=>l.name==='hh:repair-needed')?[{
+    user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+    performed_via_github_app:{id:15368,slug:'github-actions'},
+    body:['<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+SHA+' -->',
+     'Failed jobs: core-lint-types-build'].join(String.fromCharCode(10))
+   }]:[]})}
+ }};
  return {fetcher,core,github,calls,warn,info};
 }
 const task={requestId:'123e4567-e89b-42d3-a456-426614174000',
@@ -62,6 +71,28 @@ test('exact-head first eligible source task dispatches once, but never claims mo
  const later=mock({...task,dispatchEligibleOnce:false},p);
  const second=await run({...later,context,dispatch:async()=>{throw Error('DUPLICATE')}});
  assert.equal(second.dispatchAccepted,false);
+});
+test('unsigned source hint does not consume one-shot owner repair dispatch',async()=>{
+ const pr={...base,labels:[{name:'hh:repair-needed'}]};
+ const fx=mock(task,pr);
+ fx.github.rest.issues.listComments=async()=>({data:[]});
+ let calls=0;
+ const out=await run({...fx,context,dispatch:async()=>{calls++;return {dispatched:true};}});
+ assert.equal(out.status,'WATCHING');
+ assert.equal(out.reasonCode,'SIGNED_FAILED_CORE_PROOF_MISSING');
+ assert.equal(out.dispatchAccepted,false);
+ assert.equal(calls,0);
+ assert.equal(fx.calls.filter(x=>x.action==='arm_dispatch').length,0);
+ assert.equal(fx.calls.filter(x=>x.action==='finish').length,1);
+});
+test('GitHub history outage retains owner grant for the next Watchdog sweep',async()=>{
+ const pr={...base,labels:[{name:'hh:repair-needed'}]};
+ const fx=mock(task,pr);
+ fx.github.rest.issues.listComments=async()=>{throw Error('GITHUB_UNAVAILABLE');};
+ const out=await run({...fx,context,dispatch:async()=>{throw Error('UNSAFE_DISPATCH');}});
+ assert.equal(out.status,'WATCHING');
+ assert.equal(out.reasonCode,'SIGNED_SOURCE_PROOF_UNAVAILABLE');
+ assert.equal(fx.calls.filter(x=>x.action==='arm_dispatch').length,0);
 });
 test('signed private OIDC owner intent is carried only after atomic arm, without PAT redispatch',async()=>{
  const p={...base,labels:[{name:'hh:repair-needed'}]};

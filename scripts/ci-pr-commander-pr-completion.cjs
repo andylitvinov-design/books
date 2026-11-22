@@ -151,6 +151,19 @@ async function run({github,core,context,ownerToken='',fetcher=global.fetch,
       headSha:pr.head.sha,eligibleForFirstRepair:true,machineRetry:true};
    }
   }
+  // Do not consume the signed, one-shot OIDC dispatch fence while the
+  // exact-HEAD Core failure receipt is pending or incomplete. The existing
+  // Watchdog will retry this WATCHING request without extra CI or a new cron.
+  // Explicit signed truncation retries retain their separate safe proof.
+  if(task.dispatchEligibleOnce&&decision.eligibleForFirstRepair&&
+     !decision.machineRetry&&decision.headSha===task.requestedHeadSha){
+   const proof=await require('./ci-pr-owner-source-proof.cjs')
+     .signedCoreSourceProof(github,task.prNumber,task.requestedHeadSha);
+   if(proof.verified!==true){
+    decision.eligibleForFirstRepair=false;
+    decision.reasonCode=proof.reasonCode;
+   }
+  }
   // Only a first dispatch per owner intent. Never enqueue another Core wave.
   // Source writing still requires signed exact-HEAD failed Core proof,
   // worker reservation and all merge gates. A private signed OIDC owner task

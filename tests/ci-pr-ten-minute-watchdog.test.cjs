@@ -2306,22 +2306,25 @@ test('Vercel cleanup paginates rollback evidence with bounded cursors and no des
      githubCommitRef:'codex/public-book-library',githubCommitSha:'a'.repeat(40)},
  });
  const collected={recentDeployments:[],recentSeen:new Set(),readyCount:0};
+ // Owner-approved Vercel cost policy retains TEN READY rollback builds.
+ // First page contains only seven distinct READY rows, plus one duplicate:
+ // pagination must continue, without counting the duplicate as a version.
  const before=appendRollbackEvidencePage({
-   deployments:[...Array.from({length:20},(_,i)=>make(i)),make(0)],
+   deployments:[...Array.from({length:7},(_,i)=>make(i)),make(0)],
    pagination:{next:now-1000}},collected,now);
- assert.deepEqual(before,{done:false,readyCount:20,nextUntil:now-1000},
+ assert.deepEqual(before,{done:false,readyCount:7,nextUntil:now-1000},
    'duplicate rows do not inflate rollback versions');
  const after=appendRollbackEvidencePage({
-   deployments:Array.from({length:16},(_,i)=>make(i+20)),
+   deployments:Array.from({length:9},(_,i)=>make(i+7)),
    pagination:{next:now-2000}},{
      ...collected,readyCount:before.readyCount,
    },before.nextUntil);
- assert.deepEqual(after,{done:true,readyCount:36,nextUntil:null});
- assert.equal(collected.recentDeployments.length,36);
+ assert.deepEqual(after,{done:true,readyCount:16,nextUntil:null});
+ assert.equal(collected.recentDeployments.length,16);
  const guarded=protectedDeploymentIds(collected.recentDeployments);
- assert.equal(guarded.size,30);
- for(let i=0;i<30;i++)assert.ok(guarded.has(make(i).id));
- assert.equal(eligibleForDelete(make(25),{
+ assert.equal(guarded.size,10);
+ for(let i=0;i<10;i++)assert.ok(guarded.has(make(i).id));
+ assert.equal(eligibleForDelete(make(9),{
    now,liveId:make(0).id,protectedIds:guarded,assignedAliases:[],
  }),false,'saved rollback READY is never a delete candidate');
  assert.throws(()=>appendRollbackEvidencePage({
