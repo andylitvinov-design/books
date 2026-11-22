@@ -160,3 +160,14 @@ test("Next uses a relevant canonical default for every approved card, never arbi
  assert.match(mirror,/const curated=getMyTubeTopic\(selected\.defaultTopicId\)/);
  assert.doesNotMatch(mirror,/const fallbackSub=subcategories\[0\]/);
 });
+
+test('owner reference: compact choices, readable wish and separate drafts per intent',()=>{
+ assert.ok(mirror.includes('scopeWishes,setScopeWishes'));
+ assert.ok(mirror.includes('onWishChange(scopeWishes[next]||""'));
+ assert.ok(mirror.includes('type="text" maxLength={500}'));
+ assert.ok(mirrorCss.includes('.promptRow input'));
+ assert.ok(mirrorCss.includes('.choiceIcon'));
+ assert.ok(mobile.includes('Magic Mirror owner reference 2026-11-21'));
+ assert.ok(mobile.includes('therapyHeroPlayback[data-playing="false"]::after'));
+ for(const poster of ['sun-warm-ocean-dawn.jpg','heart-flow.jpg','lone-tree.jpg','sun-autumn-hills.jpg'])assert.ok(mirror.includes(poster));
+});

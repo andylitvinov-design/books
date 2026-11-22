@@ -6094,3 +6094,36 @@
   height:clamp(86px,16dvh,115px)!important;border-width:5px!important
  }
 }
+
+/* Magic Mirror owner reference 2026-11-21. Only mobile Video Goal first view. */
+@media(max-width:759px){
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder{
+  margin-top:-27px!important;gap:3px!important;padding-inline:10px!important;
+  background-image:radial-gradient(ellipse at 50% 12%,#fff9f1ed,transparent 60%),
+   url('/images/holistic-house/homepage-botanical.svg'),
+   url('/images/holistic-house/homepage-botanical.svg'),
+   linear-gradient(175deg,#fff9f1,#fcf1e7 75%,#fff9f0)!important;
+  background-size:auto,100px auto,100px auto,auto!important;
+  background-position:center,left -46px top 65px,right -45px top 190px,center!important;
+  background-repeat:no-repeat!important
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder>.quickBrandBar{min-height:45px!important;margin:0!important;padding:0 2px!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBrandIdentity strong{font-size:clamp(17px,4.8vw,23px)!important;color:#0a4134!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBrandIdentity small{font-size:clamp(10px,2.95vw,12px)!important;color:#5b6a65!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder>[data-hh-mirror-title]{margin:0 0 2px!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder>.previewStage{margin:0!important;padding:0 5px 2px!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .previewStage .heroWithRail{padding-bottom:10px!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .previewStage .heroWithRail:after{bottom:0!important;height:11px!important;background:linear-gradient(#e6e7e9,#aeb5b9 48%,#e4e6e5 76%,#9ea7ac)!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .previewStage .hero{height:clamp(116px,18.3dvh,174px)!important;border:6px solid #242c2e!important;border-bottom-width:5px!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .previewStage .therapyHeroPlayback[data-playing="false"]::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:1;background:url('/images/holistic-house/reiki-approved-sunrise-v3.webp') center 48%/cover no-repeat}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .previewStage .therapyHeroLaunch{z-index:2!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .previewStage .therapyHeroPlayIcon{width:49px!important;height:49px!important;min-width:49px!important;min-height:49px!important;background:#163e3a7c!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder>[data-hh-mirror-goals]{gap:4px!important}
+}
+@media(max-width:759px) and (max-height:740px){
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder{margin-top:-16px!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .previewStage .hero{height:clamp(88px,15dvh,114px)!important}
+}
+@media(max-width:359px){
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder{margin-top:-17px!important;padding-inline:7px!important}
+}
