@@ -248,7 +248,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
   const picture="/images/holistic-house/my-coach-motion/"+persona.id+"-living.webp";
   const chatRoute="/"+locale+"/app/messages?section=ai";
   const ideasRoute="/"+locale+(mode==="business"?"/explore/business":"/services/free-situation-review");
-  const supportRoute="/"+locale+"/services"+(mode==="business"?"#service-group-business":"");
+  const supportRoute="/"+locale+(mode==="business"?"/services#service-group-business":"/services/free-consultation");
 
   // A CSS background cannot be discovered by the HTML preload scanner.
   // React hoists resource hints into the initial document <head> without
