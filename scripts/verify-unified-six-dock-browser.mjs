@@ -315,13 +315,23 @@ async function inspect(browserType,locale,width){
     await page.goto(origin+"/"+locale+"/holistic-support/mandala",{
       waitUntil:"domcontentloaded",timeout:75000,
     });
+    // The approved Magic Mirror entry intentionally hides the legacy
+    // workspace rail. Follow a REAL visitor's Wish -> Next -> Ideas path;
+    // do not force hidden controls or skip the goal handoff.
+    const mirrorWish=page.locator('[data-hh-mirror-wish]');
+    const mirrorNext=page.locator('[data-hh-mirror-next]');
+    await mirrorWish.waitFor({state:"visible",timeout:30000});
+    await page.waitForFunction(()=>{
+      const button=document.querySelector('[data-hh-mirror-next]');
+      return button&&Object.keys(button).some(k=>k.startsWith("__reactProps$"));
+    },null,{timeout:20000});
+    await mirrorWish.fill(locale==="ru"?"Хочу снизить стресс":locale==="es"?
+      "Quiero reducir el estrés":"I want to reduce stress");
+    await expect(mirrorNext).toBeEnabled({timeout:15000});
+    await mirrorNext.click();
     const ideaButton=page.locator('[data-video-quick-control="phrases"]');
     await ideaButton.waitFor({state:"visible",timeout:30000});
-    await page.waitForFunction(()=>{
-      const link=document.querySelector('[data-video-quick-control="phrases"]');
-      return link&&Object.keys(link).some(k=>k.startsWith("__reactProps$"));
-    },null,{timeout:20000});
-    await ideaButton.click();
+    await expect(ideaButton).toHaveAttribute("aria-pressed","true",{timeout:15000});
     // The approved Magic Mirror sequence is Goal → Personalization → Concept.
     // Test the REAL visitor's choice instead of assuming the retired
     // Personalization-first interface, especially on 320px iPhone Safari.
@@ -399,7 +409,9 @@ async function inspect(browserType,locale,width){
   // Design Bible §10.13: inspect the REAL six-workspace Studio DOM in one
   // WebKit RU390 session without calling any TTS/video render provider.
   if(browserType===webkit && locale==="ru" && width===390){
-    for(const tab of ["video","phrases","editor","effects","pro","ready"]){
+    // After Ideas, inspect the interactive workspaces first and return to
+    // Magic Mirror's video entry LAST (it correctly hides the old rail).
+    for(const tab of ["phrases","editor","effects","pro","ready","video"]){
       const nav=page.locator('[data-video-quick-control="'+tab+'"]');
       await nav.click({timeout:30000});
       await page.waitForFunction(expected=>{
