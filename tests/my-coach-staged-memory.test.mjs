@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 import { projectCoachPriorSessions, projectCoachSelectedContext,
   COACH_STAGED_MEMORY_VERSION } from '../lib/coaching/coach-staged-memory.mjs'
 import { issueCoachMemoryTicket, verifyCoachMemoryTicket } from '../lib/coaching/coach-staged-memory-ticket.mjs'
+import { normalizeGenerativeCoachInput } from '../lib/coaching/generative-persona.mjs'
 
 const now = '2026-11-22T10:00:00.000Z'
 const protocol = {
@@ -76,4 +77,21 @@ test('prior-session permission is cryptographically scoped to a separately opted
   const service=readFileSync(new URL('../lib/app/my-coach-staged-memory.js',import.meta.url),'utf8')
   assert.match(service,/if \(consent\.providerSharing !== true\) return empty\(stage\)/)
   assert.match(service,/priorSessions: consent\.priorSessions === true/)
+})
+
+test('real signed four-part staged memory token reaches text/stream request normalization',()=>{
+  const accountId='account-one',secret='staged-token-fixture'
+  const token=issueCoachMemoryTicket({accountId,provider:'groq',secret,now:1000000000000,priorSessions:true})
+  assert.match(token,/^[0-9a-f-]{36}\.[0-9]{13}\.p\.[0-9a-f]{64}$/)
+  const input={personaId:'mira',locale:'en',consent:true,
+    message:'I would like to explore a work goal today.',turns:[],
+    memoryStageToken:token,memorySharePrior:true}
+  assert.doesNotThrow(()=>normalizeGenerativeCoachInput(input))
+  // A missing scope (the old three-part form) must never be accepted.
+  assert.throws(()=>normalizeGenerativeCoachInput({...input,
+    memoryStageToken:token.replace('.p.','.')}),/COACHING_BRAIN_INPUT_INVALID/)
+  assert.throws(()=>normalizeGenerativeCoachInput({...input,
+    memoryStageToken:token.replace('.p.','.untrusted.')}),/COACHING_BRAIN_INPUT_INVALID/)
+  assert.equal(verifyCoachMemoryTicket(token,{accountId,provider:'groq',secret,now:1000000000001,requirePrior:true}),true)
+  assert.equal(verifyCoachMemoryTicket(token,{accountId,provider:'gemini_free',secret,now:1000000000001,requirePrior:true}),false)
 })
