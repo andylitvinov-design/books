@@ -6,7 +6,7 @@ import {needsPrivateVideoChunks,uploadSignedPrivateVideoChunks,savePrivateMp4,
 
 const ref="shervdixkaxurnaecioe";
 const api="https://"+ref+".supabase.co/";
-const tus="https://"+ref+".storage.supabase.co/storage/v1/upload/resumable";
+const tus="https://"+ref+".storage.supabase.co/storage/v1/upload/resumable/sign";
 const location=tus+"/mock-upload-id";
 const bucket="hh-client-private-media";
 const key="personal-videos/12345678-1234-4123-8123-123456789012/aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee/master.mp4";
@@ -109,6 +109,18 @@ test("untrusted TUS Location never receives a signed token",async()=>{
  }),/INVALID_STORAGE_UPLOAD_URL/);
  assert.equal(calls.length,1);
  assert.ok(calls.every(x=>x.url===tus));
+});
+
+test("unsigned TUS Location never receives a signed token even on the project host",async()=>{
+ const file=mp4(PRIVATE_VIDEO_CHUNK_BYTES+1);
+ const calls=[];
+ await assert.rejects(()=>uploadSignedPrivateVideoChunks({
+  ...metadata,file,fetchImpl:async(url,options)=>{
+   calls.push(options.method);
+   return response(201,{Location:tus.replace(/\/sign$/,"/unsigned-upload-id")});
+  }
+ }),/INVALID_STORAGE_UPLOAD_URL/);
+ assert.deepEqual(calls,["POST"]);
 });
 
 test("malformed media and an expired reservation fail before new uploads",async()=>{
