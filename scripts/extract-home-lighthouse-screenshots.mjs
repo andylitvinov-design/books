@@ -8,7 +8,7 @@ import sharp from "sharp";
 export function screenshotBytes(lhr) {
   const uri = lhr?.audits?.["final-screenshot"]?.details?.data;
   if (typeof uri !== "string") return null;
-  const match = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/.exec(uri);
+  const match = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+\x2F=]+)$/.exec(uri);
   if (!match) return null;
   return { bytes: Buffer.from(match[2], "base64"), ext: match[1] === "jpeg" ? "jpg" : match[1] };
 }

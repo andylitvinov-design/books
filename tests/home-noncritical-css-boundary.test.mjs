@@ -15,7 +15,7 @@ test("Home excludes the unused ribbon CSS without changing global enquiry contra
   assert.match(deferred, /pathname === "\/"/);
   assert.match(deferred, /ru\|en\|es/);
   assert.doesNotMatch(deferred, /ssr:\s*false/, "non-Home ribbons must retain SSR");
-  assert.doesNotMatch(source("components/sitewide-lead-capture.tsx"), /import "@\\/app\\/sitewide-capture\\.css"/);
+  assert.equal(source("components/sitewide-lead-capture.tsx").includes('import "@/app/sitewide-capture.css";'), false);
   assert.match(source("components/sitewide-lead-capture-deferred.tsx"),
     /classifyPublicLead\(pathname\)/);
 });
