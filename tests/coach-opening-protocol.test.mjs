@@ -60,6 +60,7 @@ test('returning client: saved name requires confirmation and past-vs-new topic m
   let p=progress(['да'],opts)
   assert.equal(p.current,'name')
   assert.match(coachOpeningNextReply(p),/Андрей/)
+  assert.match(coachOpeningNextReply(p),/кабинете/)
   p=progress(['да','да, верно'],opts)
   assert.equal(p.current,'continuity')
   assert.equal(p.lamps.identity,false)
@@ -171,4 +172,15 @@ test('Samir follows consent, optional memory and resistance boundaries without m
   assert.ok(live.includes(GENIE_OPENING_QUESTIONS[stage].ru[0]),stage)
  assert.match(live,/One question per spoken turn/)
  assert.match(live,/never ask|Never ask|Do not recite/)
+})
+test('explicit willingness to try after a maybe is consent; uncertainty alone is not',()=>{
+ for(const [locale,reply,ambiguous] of [
+  ['ru','Возможно, давай попробуем','Возможно'],
+  ['en',"Maybe, let's try",'Maybe'],
+  ['es','Quizá, vamos a probar','Quizá'],
+ ]){
+  assert.equal(coachOpeningProgress({locale,turns:[reply]}).lamps.invitation,true,locale)
+  assert.equal(coachOpeningProgress({locale,turns:[ambiguous]}).lamps.invitation,false,locale)
+  assert.equal(coachOpeningProgress({locale,turns:['no, let\'s try']}).lamps.invitation,false,locale)
+ }
 })

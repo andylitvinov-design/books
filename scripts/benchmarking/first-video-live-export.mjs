@@ -185,21 +185,34 @@ try {
     if(engine==='webkit')await mirrorMore.tap();
     else await mirrorMore.click();
   }else{
-    // Approved Magic Mirror now has a landing page and a large topic composer.
-    // Older More-goals control is intentionally hidden at phone widths.
-    // Open the same advanced tools through the visible composer + button.
-    const plan=page.locator('[data-hh-mirror-plan]');
-    if(await plan.isVisible()){
-      if(engine==='webkit')await plan.tap();else await plan.click();
+    // Follow actual visible Landing → Format → Topic → Plus; no hidden controls.
+    const mirror=page.locator('[data-hh-mirror-goals]');
+    const screen=()=>mirror.getAttribute('data-hh-mirror-screen');
+    if(await screen()==='landing'){
+      row.phase='mirror-audience-native-selection';
+      const entry=mirror.locator('[data-hh-mirror-enter="me"]');
+      if(engine==='webkit')await entry.tap();else await entry.click();
+      await expect(mirror).toHaveAttribute('data-hh-mirror-screen','purpose');
+    }
+    if(await screen()==='purpose'){
+      row.phase='mirror-canonical-goal-native-selection';
+      const goal=mirror.locator('[data-hh-mirror-purpose-step]');
+      const rest=goal.locator('[data-video-ideas-goal-choice="rest"]');
+      if(engine==='webkit')await rest.tap();else await rest.click();
+      const next=goal.locator('[data-video-ideas-goal-next]');
+      await expect(next).toBeEnabled();
+      if(engine==='webkit')await next.tap();else await next.click();
+      await expect(mirror).toHaveAttribute('data-hh-mirror-screen','format');
+    }
+    if(await screen()==='format'){
+      row.phase='mirror-format-native-selection';
+      const format=mirror.locator('[data-hh-mirror-video-format="basic"]');
+      if(engine==='webkit')await format.tap();else await format.click();
+      await expect(mirror).toHaveAttribute('data-hh-mirror-screen','topic');
     }
     const composer=page.locator('[data-hh-mirror-composer]');
-    for(let i=0;i<2&&!await composer.isVisible();i++){
-      const back=page.locator('[data-hh-mirror-back]');
-      await expect(back).toBeVisible();
-      if(engine==='webkit')await back.tap();else await back.click();
-    }
     await expect(composer).toBeVisible({timeout:15000});
-    const plus=composer.locator('button').first();
+    const plus=composer.locator('[data-hh-mirror-open-advanced]');
     await expect(plus).toBeVisible();
     if(engine==='webkit')await plus.tap();else await plus.click();
   }

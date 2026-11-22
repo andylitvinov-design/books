@@ -21,17 +21,14 @@ test('old browser GET of complete archived protocols is not used before a yes',(
 test('separate later personal-context gate, account-bound token and independent test opt-in',()=>{
   assert.match(control(),/if\(!identityConfirmed\|\|!focusConfirmed\|\|!stageToken\|\|!topicKey/)
   assert.match(control(),/stage:'personal'/)
-  assert.match(control(),/stageToken,consent:/)
+  assert.match(control(),/stageToken,\.\.\.\(contextSessionToken\?\{contextSessionToken\}:\{\}\),consent:/)
   assert.match(control(),/goals:allowGoals,profile:allowProfile,assessments:assessmentsAllowed/)
   assert.match(ui(),/memoryShareGoals/)
   assert.match(ui(),/memoryShareTests/)
 })
-test('live token does not send prior context on initial Play; memory is in-band after opt-in',()=>{
+test('Free Live keeps archive data off the token and WebSocket path',()=>{
   assert.doesNotMatch(live(),/voiceName:r.voiceName,consent:true,\s*\.\.\.\(r\.allowOpeningPrior/)
-  assert.match(live(),/geminiLiveContextMessage/)
-  assert.match(live(),/memorySharedScopes/)
-  assert.match(live(),/if\(removed\|\|\(r\.memorySentNote/)
-  assert.match(live(),/stop\(\);return/)
+  assert.doesNotMatch(live(),/geminiLiveContextMessage|memorySharedScopes|memorySentNote/)
   const note=coachLiveMemoryNote({prior:{preferredName:'Ana'},priorAllowed:true})
   const packet=geminiLiveContextMessage(note)
   assert.equal(packet.clientContent.turnComplete,false)
@@ -69,8 +66,8 @@ test('switching provider invalidates old consent and suppresses old-topic contex
  assert.match(current,/key=\{memoryProvider\}/)
  assert.match(current,/setContextPaused\(true\)/)
  const policy=readFileSync(new URL('../lib/coaching/gemini-live-free.mjs',import.meta.url),'utf8')
- assert.match(policy,/CLIENT-APPROVED REFERENCE DATA/)
- assert.match(policy,/A new topic overrides previous memory/)
+ assert.doesNotMatch(policy,/CLIENT-APPROVED REFERENCE DATA/)
+ assert.doesNotMatch(policy,/A new topic overrides previous memory/)
 })
 
 test('personal preview requires focus and a separate final AI-share checkbox',()=>{
