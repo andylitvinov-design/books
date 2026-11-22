@@ -9,6 +9,7 @@ import {
   PUBLIC_COACH_PERSONA_IDS, PUBLIC_COACH_PERSONAS, PUBLIC_COACH_TOPICS, coachSessionHref, coachStagePrompt, getCoachPersona,
   localCoachText, normalizeCoachSettings,
 } from '@/lib/coaching/persona-registry.mjs'
+import {getCoachStylePassport} from '@/lib/coaching/coach-style-passports.mjs'
 import styles from './my-coach-catalog.module.css'
 import heroStyles from './my-coach-mira-landing.module.css'
 import MyCoachExpressStart from './my-coach-express-start'
@@ -28,6 +29,7 @@ const words = {
     search: 'Search coaches and topics', searchPlaceholder: 'E.g. relationships, decisions, habits',
     all: 'All coaches', favorites: 'Favorites', noResults: 'No coaches match. Clear the filters to see everyone.',
     topics: 'Choose a direction', profile: 'Coach profile', about: 'About this coach',
+    archetype:'Archetype',style:'Style',workStyle:'How this coach works',
     suited: 'Good for', method: 'Approaches', example: 'How this coach starts',
     adjust: 'Your conversation settings', adjustNote: 'Settings change the tone and optional follow-up questions, not the safety rules.',
     warmth: 'Warmth', directness: 'Directness', pace: 'Pace', depth: 'Depth',
@@ -48,6 +50,7 @@ const words = {
     search: 'Поиск по коучам и темам', searchPlaceholder: 'Например: отношения, решение, привычки',
     all: 'Все коучи', favorites: 'Избранные', noResults: 'По запросу никого нет. Сбросьте фильтры, чтобы увидеть всех.',
     topics: 'Выберите направление', profile: 'Профиль коуча', about: 'О коуче',
+    archetype:'Архетип',style:'Стиль',workStyle:'Манера работы',
     suited: 'Подходит для', method: 'Методики', example: 'Как коуч начинает разговор',
     adjust: 'Настройки разговора', adjustNote: 'Настройки меняют тон и дополнительные вопросы, но не правила безопасности.',
     warmth: 'Теплота', directness: 'Прямота', pace: 'Темп', depth: 'Глубина',
@@ -68,6 +71,7 @@ const words = {
     search: 'Buscar coaches y temas', searchPlaceholder: 'Ej.: relaciones, decisiones, hábitos',
     all: 'Todos los coaches', favorites: 'Favoritos', noResults: 'No hay resultados. Borra los filtros para verlos todos.',
     topics: 'Elige una dirección', profile: 'Perfil del coach', about: 'Sobre el coach',
+    archetype:'Arquetipo',style:'Estilo',workStyle:'Cómo trabaja',
     suited: 'Adecuado para', method: 'Métodos', example: 'Así comienza la conversación',
     adjust: 'Ajustes de conversación', adjustNote: 'Cambian el tono y preguntas adicionales, no las reglas de seguridad.',
     warmth: 'Calidez', directness: 'Claridad directa', pace: 'Ritmo', depth: 'Profundidad',
@@ -302,6 +306,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
     const haystack = [
       persona.id, persona.name[lang], persona.role[lang], persona.description[lang],
       persona.suitable[lang], categories[persona.topic],
+      ...['archetype','style','workStyle'].map(key=>localCoachText(getCoachStylePassport(persona.id)?.[key],lang)),
       ...persona.related.map(id => categories[id]), ...persona.methods,
     ].join(' ')
     return normalizeSearch(haystack).includes(normalizeSearch(search))
@@ -314,6 +319,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
   const displayedCoaches = visibleList
   const coachModes = directoryMode === 'all' || directoryMode === 'ai' || directoryMode === 'human'
   const selected = getCoachPersona(selectedId) || PUBLIC_COACH_PERSONAS[0]
+  const selectedPassport = getCoachStylePassport(selected.id)
   const safeSettings = normalizeCoachSettings(selected.id, settings)
   const updateSettings = (field, value) => setSettings(previous =>
     normalizeCoachSettings(selected.id, { ...previous, [field]: value }))
@@ -600,8 +606,11 @@ export default function MyCoachCatalog({ locale = 'en' }) {
           </div>
         </div>
         <p className={styles.profileAbout}>{localCoachText(selected.description, lang)}</p>
-        <div className={styles.profileFacts}>
-          <div><h3>{t.suited}</h3><p>{localCoachText(selected.suitable, lang)}</p></div>
+        <div className={styles.profileFacts} data-coach-style-passport={selected.id}>
+          <div><h3>{t.archetype}</h3><p>{localCoachText(selectedPassport?.archetype,lang)}</p></div>
+           <div><h3>{t.style}</h3><p>{localCoachText(selectedPassport?.style,lang)}</p></div>
+           <div><h3>{t.workStyle}</h3><p>{localCoachText(selectedPassport?.workStyle,lang)}</p></div>
+           <div><h3>{t.suited}</h3><p>{localCoachText(selected.suitable, lang)}</p></div>
           <div><h3>{t.about}</h3><p>{localCoachText(selected.approach, lang)}</p></div>
           <div><h3>{t.method}</h3><p>{selected.methods.join(' · ')}</p></div>
         </div>

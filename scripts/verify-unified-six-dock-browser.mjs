@@ -315,23 +315,13 @@ async function inspect(browserType,locale,width){
     await page.goto(origin+"/"+locale+"/holistic-support/mandala",{
       waitUntil:"domcontentloaded",timeout:75000,
     });
-    // The approved Magic Mirror entry intentionally hides the legacy
-    // workspace rail. Follow a REAL visitor's Wish -> Next -> Ideas path;
-    // do not force hidden controls or skip the goal handoff.
-    const mirrorWish=page.locator('[data-hh-mirror-wish]');
-    const mirrorNext=page.locator('[data-hh-mirror-next]');
-    await mirrorWish.waitFor({state:"visible",timeout:30000});
-    await page.waitForFunction(()=>{
-      const button=document.querySelector('[data-hh-mirror-next]');
-      return button&&Object.keys(button).some(k=>k.startsWith("__reactProps$"));
-    },null,{timeout:20000});
-    await mirrorWish.fill(locale==="ru"?"Хочу снизить стресс":locale==="es"?
-      "Quiero reducir el estrés":"I want to reduce stress");
-    await expect(mirrorNext).toBeEnabled({timeout:15000});
-    await mirrorNext.click();
     const ideaButton=page.locator('[data-video-quick-control="phrases"]');
     await ideaButton.waitFor({state:"visible",timeout:30000});
-    await expect(ideaButton).toHaveAttribute("aria-pressed","true",{timeout:15000});
+    await page.waitForFunction(()=>{
+      const link=document.querySelector('[data-video-quick-control="phrases"]');
+      return link&&Object.keys(link).some(k=>k.startsWith("__reactProps$"));
+    },null,{timeout:20000});
+    await ideaButton.click();
     // The approved Magic Mirror sequence is Goal → Personalization → Concept.
     // Test the REAL visitor's choice instead of assuming the retired
     // Personalization-first interface, especially on 320px iPhone Safari.
@@ -409,9 +399,7 @@ async function inspect(browserType,locale,width){
   // Design Bible §10.13: inspect the REAL six-workspace Studio DOM in one
   // WebKit RU390 session without calling any TTS/video render provider.
   if(browserType===webkit && locale==="ru" && width===390){
-    // After Ideas, inspect the interactive workspaces first and return to
-    // Magic Mirror's video entry LAST (it correctly hides the old rail).
-    for(const tab of ["phrases","editor","effects","pro","ready","video"]){
+    for(const tab of ["video","phrases","editor","effects","pro","ready"]){
       const nav=page.locator('[data-video-quick-control="'+tab+'"]');
       await nav.click({timeout:30000});
       await page.waitForFunction(expected=>{
@@ -445,14 +433,7 @@ async function inspect(browserType,locale,width){
         id+" "+tab+" active control remains readable");
       assert.ok(palette.width<=palette.viewport+2,id+" "+tab+" no document overflow");
       assert.equal(palette.dockCount,1,id+" "+tab+" one fixed Holistic House dock");
-      // The approved Video entry intentionally hides the old workspace
-      // rail. Its visible Magic Mirror goal picker, not a hidden nav tab,
-      // is the real iPhone landmark after returning from the editor.
-      if(tab==="video"){
-        await expect(page.locator('[data-hh-mirror-goals]')).toBeVisible();
-      }else{
-        await nav.scrollIntoViewIfNeeded();
-      }
+      await nav.scrollIntoViewIfNeeded();
       await page.screenshot({
         path:folder+"/studio-palette-"+tab+"-ru-390-webkit.png",
         fullPage:false,animations:"disabled",
@@ -618,19 +599,10 @@ try{
  const projectGrid=chat.locator('[data-hh-messenger-six-projects]');
  // Inner Alchemist begins with an inviting question, not a wall of service cards.
  // Keep the entire canonical six-project catalogue available after user intent.
- // Ali's real "+" composer action is the parent of the optional tools.
- // The first screen keeps it collapsed: open it using a real tap, inspect
- // the secondary disclosure, then collapse it before tapping topic cards.
- const composerMore=chat.locator('details[data-hh-ai-more]');
- await composerMore.waitFor({state:"visible",timeout:15000});
- assert.equal(await composerMore.evaluate(node=>node.open),false,
-   "Ali's additional tools begin collapsed to leave room for the conversation");
- await composerMore.locator(':scope > summary').click();
  const alchemistTools=chat.locator('[data-hh-alchemist-tools]');
  await alchemistTools.waitFor({state:"visible",timeout:15000});
  assert.equal(await alchemistTools.evaluate(node=>node.open),false,
    "six legacy service cards are tucked away until requested");
- await composerMore.locator(':scope > summary').click();
  assert.equal(await chat.locator('[data-hh-alchemist-topic]').count(),4,
    "first screen presents four large conversational problem starters");
  const moreTopics=chat.locator('[data-hh-alchemist-more-topics]');
@@ -641,8 +613,7 @@ try{
  await chat.locator('[data-hh-ai-chat-composer] textarea').waitFor({state:"visible",timeout:15000});
  assert.equal(await chat.locator('[data-hh-ai-chat-composer]').count(),1,
    "first screen owns one real pinned message composer");
- await composerMore.locator(':scope > summary').click();
- await alchemistTools.locator(':scope > summary').click();
+ await alchemistTools.locator('summary').click();
  await projectGrid.waitFor({state:"visible",timeout:15000});
  const projects=chat.locator('[data-hh-messenger-six-projects] [data-hh-ai-project]');
  const six=["hint","test","mytube","sessions","practice","ai-video"];
@@ -662,8 +633,6 @@ try{
  // AI-Video opens the existing in-chat format selector through the approved
  // six-project entry. No generation, payment or external request occurs here.
  await chat.locator('[data-hh-ai-project="ai-video"]').click();
- if(await composerMore.evaluate(node=>node.open))
-   await composerMore.locator(':scope > summary').click();
  const initialContentKinds=chat.locator('[data-hh-content-step="kind"] [data-hh-content-kind]');
  await initialContentKinds.first().waitFor({state:"visible",timeout:15000});
  assert.deepEqual(await initialContentKinds.evaluateAll(nodes=>nodes.map(node=>
@@ -800,15 +769,11 @@ try{
    // The six legacy projects are intentionally inside a collapsed accessible
    // “More ways Ali can help” disclosure on the conversation-first landing.
    // Test the real disclosure, rather than waiting for a hidden button.
-   const more=chat.locator('details[data-hh-ai-more]');
-   await more.waitFor({state:"visible",timeout:15000});
-   if(await more.evaluate(node=>!node.open))await more.locator(':scope > summary').click();
    const tools=chat.locator("details[data-hh-alchemist-tools]");
    await tools.waitFor({state:"visible",timeout:15000});
-   if(await tools.evaluate(node=>!node.open))await tools.locator(':scope > summary').click();
+   if(await tools.evaluate(node=>!node.open))await tools.locator("summary").click();
    await chat.locator('[data-hh-ai-project="'+id+'"]').waitFor({state:"visible",timeout:15000});
    await chat.locator('[data-hh-ai-project="'+id+'"]').click();
-   if(await more.evaluate(node=>node.open))await more.locator(':scope > summary').click();
    // Sessions has a goal-first two-step intake; other projects use one-step choices.
    const options=id==="sessions"?
      chat.locator("[data-hh-session-goal-options]"):

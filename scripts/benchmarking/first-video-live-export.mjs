@@ -184,11 +184,28 @@ try {
   if(await mirrorMore.count() && await mirrorMore.isVisible()){
     if(engine==='webkit')await mirrorMore.tap();
     else await mirrorMore.click();
-    await expect(page.locator('[data-mandala-free-video]'))
-      .toHaveAttribute('data-hh-mirror-advanced','true');
-    await expect(page.locator('[data-mandala-free-video]'))
-      .toHaveAttribute('data-video-scenario-open','true');
+  }else{
+    // Approved Magic Mirror now has a landing page and a large topic composer.
+    // Older More-goals control is intentionally hidden at phone widths.
+    // Open the same advanced tools through the visible composer + button.
+    const plan=page.locator('[data-hh-mirror-plan]');
+    if(await plan.isVisible()){
+      if(engine==='webkit')await plan.tap();else await plan.click();
+    }
+    const composer=page.locator('[data-hh-mirror-composer]');
+    for(let i=0;i<2&&!await composer.isVisible();i++){
+      const back=page.locator('[data-hh-mirror-back]');
+      await expect(back).toBeVisible();
+      if(engine==='webkit')await back.tap();else await back.click();
+    }
+    await expect(composer).toBeVisible({timeout:15000});
+    const plus=composer.locator('button').first();
+    await expect(plus).toBeVisible();
+    if(engine==='webkit')await plus.tap();else await plus.click();
   }
+  const studio=page.locator('[data-mandala-free-video]');
+  await expect(studio).toHaveAttribute('data-hh-mirror-advanced','true');
+  await expect(studio).toHaveAttribute('data-video-scenario-open','true');
   const aspectMenu=page.locator('[data-video-prompt-aspect]');
   const aspectSummary=aspectMenu.locator(':scope > summary');
   await expect(aspectSummary).toBeVisible({timeout:15000});
@@ -240,6 +257,28 @@ try {
   const bytes=captured.bytes;
   row.anonymousSaveAuthGateVerified=captured.authGateVerified;
   row.recordedBlobVerified=true;row.downloadedVideo=false;
+  // The previous test inspected the encoded Blob but never clicked Download.
+  // Assert real guest Ready user-gesture download yields identical encoded MP4
+  // bytes. Save-to-My-Videos still separately requires signed-in consent.
+  const directDownload=page.locator('[data-video-ready][data-ready-state="complete"] [data-ready-direct-download]');
+  await expect(directDownload).toBeVisible({timeout:10000});
+  const expectedFilename='holistic-house-personal.'+captured.extension;
+  await expect(directDownload).toHaveAttribute('download',expectedFilename);
+  row.phase='verified-ready-user-download';
+  const [download]=await Promise.all([
+    page.waitForEvent('download',{timeout:20000}),
+    engine==='webkit'?directDownload.tap():directDownload.click(),
+  ]);
+  assert.equal(download.suggestedFilename(),expectedFilename,
+    'VERIFIED_READY_DOWNLOAD_WRONG_FILENAME');
+  const parts=[];
+  for await(const chunk of await download.createReadStream())
+    parts.push(Buffer.from(chunk));
+  const savedBytes=Buffer.concat(parts);
+  assert.ok(savedBytes.length>20000,'VERIFIED_READY_DOWNLOAD_EMPTY');
+  assert.deepEqual(savedBytes,bytes,'VERIFIED_READY_DOWNLOAD_BYTES_DIFFER_FROM_MP4');
+  row.downloadedVideo=true;
+  row.downloadedBytes=savedBytes.length;
   assert.ok(bytes.length > 20000, 'VIDEO_EXPORT_EMPTY');
   const filename = 'holistic-house-guest.'+captured.extension;
   assert.match(filename, /\.(mp4|webm)$/, 'INCORRECT_VIDEO_FILENAME');

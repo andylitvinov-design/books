@@ -125,6 +125,10 @@ try {
   await expect(shelves).toHaveAttribute("data-expanded","false");
   await expect(shelves.locator("[data-business-shelf]")).toHaveCount(6);
   await expect(shelves.locator("[data-business-shelf] img")).toHaveCount(6);
+  const orderedCards=shelves.locator("[data-business-shelf]");
+  assert.deepEqual(await orderedCards.evaluateAll(nodes=>nodes.map(node=>node.dataset.businessShelf)),
+    ["express","remedies","strategy","artifacts","energy","energywork"],
+    "Business shelves must preserve the six approved categories");
   await expect(page.locator("[data-hh-unified-dock]")).toHaveCount(1);
   const m=await page.evaluate(()=>{
    const cards=[...document.querySelectorAll("[data-business-shelf]")];
@@ -157,11 +161,19 @@ try {
   await expect(shelves).toHaveAttribute("data-expanded","true");
   await expect(shelves.locator('[data-business-second-level="express"] [data-business-subservice]')).toHaveCount(5);
   await expect(shelves.locator('[data-business-get-details="express"]')).toHaveCount(1);
+  if(width===390){
+    const express=shelves.locator('[data-business-second-level="express"]');
+    await expect(shelves.locator('[data-business-get-details="express"]')).toBeVisible();
+    await express.locator('[data-business-subservice="express-1"]').click();
+    await expect(express.locator('[data-business-subservice="express-1"]')).toHaveAttribute("aria-pressed","true");
+    if(locale==="en")assert.match(await express.innerText(),/FREE[\s\S]*45 CAD[\s\S]*75 CAD[\s\S]*200 CAD[\s\S]*300 CAD/);
+  }
   await shelves.locator("[data-business-back-to-shelves]").click();
   await expect(shelves).toHaveAttribute("data-expanded","false");
   await shelves.locator('[data-business-shelf="strategy"]').click();
   await expect(shelves.locator('[data-business-second-level="strategy"] [data-business-subservice]')).toHaveCount(4);
   await expect(shelves.locator('[data-business-get-details="strategy"]')).toHaveCount(1);
+  if(width===390)await expect(shelves.locator('[data-business-get-details="strategy"]')).toBeVisible();
   await shelves.locator("[data-business-back-to-shelves]").click();
   const quiz=section.locator("[data-business-quiz]");
   await expect(quiz).toHaveAttribute("data-quiz-step","1");
@@ -205,6 +217,7 @@ try {
     await expect(quiz.locator("[data-services-quiz-goal]")).toHaveCount(1);
     await expect(quiz.locator("[data-services-goal-entry]")).toHaveCount(1);
     await expect(quiz.locator("[data-services-quiz-next]")).toHaveCount(1);
+    await expect(quiz.locator("[data-services-goal-or]")).toHaveCount(0);
     await expect(quiz.locator("[data-support-luxe-room]")).toHaveCount(1);
     await expect(page.locator('main[data-support-luxe="true"]')).toHaveCount(1);
     await expect(quiz.locator('[data-support-choice-photo]')).toHaveCount(4);
@@ -232,7 +245,7 @@ try {
         cards:[...el.querySelectorAll('[data-services-quiz-question="topic"] [data-services-quiz-choice]')]
           .map(card=>card.getBoundingClientRect().height),
       }));
-      assert.ok(sizes.hero>=24 && sizes.hero<=60,"Room scene proportions: " + JSON.stringify(sizes));
+      assert.ok(sizes.hero>=54 && sizes.hero<=76,"Room scene proportions: " + JSON.stringify(sizes));
       assert.ok(sizes.cards.length===4 && sizes.cards.every(height=>height>=116 && height<=174),
         "Four progressive choice cards must be large and readable: " + JSON.stringify(sizes));
     }
@@ -241,9 +254,23 @@ try {
       const firstScreenFit=await page.evaluate(()=>{
         const next=document.querySelector("[data-services-quiz-next]");
         const goal=document.querySelector("[data-services-quiz-goal]");
+        const entry=document.querySelector("[data-services-goal-entry]");
+        const glass=entry?.firstElementChild;
+        const audience=document.querySelector("[data-services-audience]");
+        const room=document.querySelector("[data-support-luxe-room]");
+        const progress=document.querySelector("[data-services-quiz-form] [data-quiz-dot]");
         const dock=document.querySelector("[data-hh-unified-dock]");
-        if(!next||!goal||!dock)return null;
-        return {ctaBottom:next.getBoundingClientRect().bottom,
+        if(!next||!goal||!entry||!glass||!audience||!room||!progress||!dock)return null;
+        return {
+          roomBottom:room.getBoundingClientRect().bottom,
+          entryTop:entry.getBoundingClientRect().top,
+          entryBottom:entry.getBoundingClientRect().bottom,
+          audienceTop:audience.getBoundingClientRect().top,
+          audienceBottom:audience.getBoundingClientRect().bottom,
+          progressTop:progress.getBoundingClientRect().top,
+          glassBlur:getComputedStyle(glass).backdropFilter,
+          glassBackground:getComputedStyle(glass).backgroundImage,
+          ctaBottom:next.getBoundingClientRect().bottom,
           goalBottom:goal.getBoundingClientRect().bottom,
           nextLeft:next.getBoundingClientRect().left,
           goalRight:goal.getBoundingClientRect().right,
@@ -258,6 +285,16 @@ try {
         Math.abs(firstScreenFit.goalTop-firstScreenFit.nextTop)<12 &&
         firstScreenFit.goalBottom<firstScreenFit.dockTop-16,
         "390x844 goal and right-side Next must appear ABOVE four quiz buttons: "+JSON.stringify(firstScreenFit));
+      assert.ok(firstScreenFit &&
+        firstScreenFit.roomBottom<=firstScreenFit.entryTop+4 &&
+        firstScreenFit.entryBottom<=firstScreenFit.audienceTop+3 &&
+        firstScreenFit.audienceBottom<firstScreenFit.questionTop &&
+        firstScreenFit.progressTop>=firstScreenFit.audienceBottom-3,
+        "Approved order must be room → frosted input/Next → For Me/Business → quiz: "+JSON.stringify(firstScreenFit));
+      assert.ok(firstScreenFit?.glassBlur?.includes("blur(") &&
+        firstScreenFit.glassBackground?.includes("linear-gradient"),
+        "Goal composer must have real semi-transparent backdrop blur, not opaque cream or a flattened mock: "+
+          JSON.stringify(firstScreenFit));
     }
     await expect(quiz.locator("[data-services-quiz-next]")).toBeEnabled();
     await expect(quiz.locator('[data-services-quiz-choice="stress_energy"]')).toHaveAttribute("aria-pressed","true");

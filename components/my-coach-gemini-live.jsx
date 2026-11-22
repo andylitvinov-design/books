@@ -6,7 +6,7 @@ import styles from './my-coach-speech-loop.module.css'
 import {
   GeminiLivePcmPlayer,GeminiLivePcmResampler,GeminiLiveBargeGate,GeminiLiveBargeDetector,
   geminiLiveAudioRms,geminiLiveSocketUrl,geminiLiveSetupMessage,
-  geminiLivePcmMessage,geminiLiveTextMessage,readGeminiLiveServerMessage,
+  geminiLivePcmMessage,geminiLiveTextMessage,geminiLiveContextMessage,readGeminiLiveServerMessage,
   appendGeminiLiveTranscript,
 } from '@/lib/coaching/gemini-live-transport.mjs'
 
@@ -43,7 +43,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   locale='en',personaId='mira',settings={},voiceName='Puck',enabled=false,
   canStart=true,elapsedSeconds=0,onSessionStart,onVoiceStateChange,
   onMicLevel,onInputInterim,onInputFinal,onOutputInterim,onOutputFinal,
-  onInterrupted,onDirectorProgress,onNotice,
+  onInterrupted,onDirectorProgress,onOpeningProgress,onNotice,
+  openingPrior=null,allowOpeningPrior=false,memoryNote='',memoryScopes=[],
 },ref){
   const lang=safeLocale(locale),t=ui[lang]
   const [phase,setPhase]=useState('idle')
@@ -53,7 +54,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   propsRef.current={locale:lang,personaId,settings,voiceName,enabled,canStart,
     elapsedSeconds,onSessionStart,onVoiceStateChange,onMicLevel,onInputInterim,
     onInputFinal,onOutputInterim,onOutputFinal,onInterrupted,
-    onDirectorProgress,onNotice}
+    onDirectorProgress,onOpeningProgress,onNotice,openingPrior,allowOpeningPrior,
+    memoryNote,memoryScopes}
 
   const notify=text=>{
     setNotice(text)
@@ -119,6 +121,30 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(r.ended||!r.socket||r.socket.readyState!==1)return false
     try{r.socket.send(JSON.stringify(packet));return true}catch{return false}
   }
+  function deliverReviewedMemory(r){
+    if(!r||r.ended||!r.ready)return
+    const p=propsRef.current
+    const scopes=Array.isArray(p.memoryScopes)?p.memoryScopes.filter(x=>typeof x==='string'&&x.length<80):[]
+    const note=typeof p.memoryNote==='string'&&p.memoryNote.length<=1200?p.memoryNote:''
+    const shared=r.memorySharedScopes||[]
+    const removed=shared.some(scope=>!scopes.includes(scope))
+    const added=scopes.some(scope=>!shared.includes(scope))
+    // The vendor's current Live socket holds prior content. Withdrawing a
+    // category or changing its source terminates that socket immediately.
+    if(removed||(r.memorySentNote&&r.memorySentNote!==note&&!added)){
+      notify(({ru:'Память обновлена или отключена. Нажмите Play для нового приватного соединения.',
+        en:'Memory changed or was revoked. Tap Play to start a new private call.',
+        es:'La memoria cambió o fue revocada. Pulsa Play para un nuevo diálogo privado.'})[p.locale]||t.failure)
+      stop();return
+    }
+    if(!note||r.memorySentNote===note||r.speaking||r.player?.playing)return
+    try{
+      if(sendSocket(r,geminiLiveContextMessage(note))){
+        r.memorySentNote=note
+        r.memorySharedScopes=[...scopes]
+      }
+    }catch{/* Invalid context is never sent to Google. */}
+  }
   async function checkpoint(r,message){
     const text=audioTranscription(message)
     if(!text||r.ended)return
@@ -131,13 +157,18 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
         method:'POST',credentials:'same-origin',cache:'no-store',signal:r.abort.signal,
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({personaId:p.personaId,locale:p.locale,settings:p.settings,
-          message:text,turns:previous,elapsedSeconds:Math.min(7200,Math.max(0,Math.floor(p.elapsedSeconds||0))),
+          message:text,turns:previous.map(turn=>({...turn,content:turn.content.slice(0,300)})),
+          elapsedSeconds:Math.min(7200,Math.max(0,Math.floor(p.elapsedSeconds||0))),
+          openingHistory:r.openingHistory.slice(0,-1).slice(0,20).map(text=>text.slice(0,120)),
+          ...(p.allowOpeningPrior&&p.openingPrior?{allowOpeningPrior:true,openingPrior:p.openingPrior}:{}),
           consent:true,voiceConsent:true,trainingUseConsent:true}),
       })
       const data=response.ok?await response.json().catch(()=>null):null
       if(!r.ended&&data?.schema==='HH_GEMINI_LIVE_DIRECTOR_V1'&&
          data.sessionProgress?.source==='director-client-evidence')
         p.onDirectorProgress?.(data.sessionProgress)
+      if(!r.ended&&data?.openingProgress?.schema==='hh-coach-opening-v1-20261122')
+        p.onOpeningProgress?.(data.openingProgress)
     }catch{/* Ignore failed evidence check; never promote unverified model speech. */}
   }
   function commitInput(r){
@@ -149,6 +180,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     r.history.push({role:'user',content:value})
     r.history=r.history.slice(-20)
     propsRef.current.onInputFinal?.(value)
+    r.openingHistory.push(value)
+    r.openingHistory=r.openingHistory.slice(0,33)
     void checkpoint({...r,history:preceding},value)
   }
   function commitOutput(r){
@@ -169,6 +202,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       r.ready=true
       r.interrupted=false
       phaseChange('listening')
+      deliverReviewedMemory(r)
       return
     }
     if(!r.ready)return
@@ -222,6 +256,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       if(r.inputText)commitInput(r)
       commitOutput(r)
       if(!r.player?.playing)phaseChange('listening')
+      deliverReviewedMemory(r)
     }
     if(frame.resumeHandle)r.resumeHandle=frame.resumeHandle
     if(frame.goAway&&r.resumeHandle)r.reconnectSoon=true
@@ -376,11 +411,14 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       notify(t.permission);return false
     }
     const r={context,stream:null,source:null,processor:null,sink:null,
-      socket:null,ready:false,ended:false,history:[],inputText:'',outputText:'',
+      socket:null,ready:false,ended:false,history:[],openingHistory:[],inputText:'',outputText:'',
+      memorySentNote:'',memorySharedScopes:[],
       speaking:false,interrupted:false,resumeHandle:null,
       bargeDetector:new GeminiLiveBargeDetector(),
       reconnects:0,voiceName:p.voiceName,locale:p.locale,personaId:p.personaId,
-      settings:p.settings,abort:new AbortController(),timer:null,reconnectTimer:null,
+      settings:p.settings,allowOpeningPrior:p.allowOpeningPrior===true,
+      openingPrior:p.allowOpeningPrior===true?p.openingPrior:null,
+      abort:new AbortController(),timer:null,reconnectTimer:null,
       resampler:new GeminiLivePcmResampler(context.sampleRate),
       audioGate:new GeminiLiveBargeGate()}
     r.player=new GeminiLivePcmPlayer(context,{
@@ -407,11 +445,18 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     r.history.push({role:'user',content:body})
     r.history=r.history.slice(-20)
     propsRef.current.onInputFinal?.(body)
+    r.openingHistory.push(body)
+    r.openingHistory=r.openingHistory.slice(0,33)
     void checkpoint({...r,history:previous},body)
     phaseChange('thinking')
     return true
   }
   useImperativeHandle(ref,()=>({startSession,stop,sendText,interrupt}),[startSession])
+  const memoryScopeKey=Array.isArray(memoryScopes)?memoryScopes.join('|'):''
+  useEffect(()=>{
+    const r=runtime.current
+    if(r?.ready)deliverReviewedMemory(r)
+  },[memoryNote,memoryScopeKey])
   useEffect(()=>{
     const onHidden=()=>{if(document.visibilityState==='hidden')stop()}
     const onPageHide=()=>stop()

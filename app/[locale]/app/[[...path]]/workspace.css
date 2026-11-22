@@ -1810,3 +1810,33 @@ main.hh-app:has([data-profile-space-dashboard]) [data-profile-hub-tabs]{
 @media(max-width:354px){
   main.hh-app:has([data-profile-space-dashboard]){padding:8px 9px calc(115px + env(safe-area-inset-bottom))}
 }
+
+/* MY_SPACE_CINEMATIC_SCOPED_DOCK_20261122 — profile-only dock; no global component edits.
+   Retain original seven links, active state, AI orb and keyboard handling. */
+body:has([data-profile-space-dashboard]) [data-hh-unified-dock]{
+  border:1px solid #d5ad6e;border-bottom:0;
+  border-radius:30px 30px 0 0;
+  background:linear-gradient(180deg,#07523bef,#012d21f9 63%,#012117fa)!important;
+  box-shadow:0 -5px 24px #070704c9,inset 0 1px #f5d58b59;
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+}
+body:has([data-profile-space-dashboard]) [data-unified-dock-item]{
+  color:#fff1d6;
+}
+body:has([data-profile-space-dashboard]) [data-unified-dock-item][aria-current="page"]:not([data-unified-dock-item="ai"]){
+  color:#fff8dc;background:#347c3b85;
+}
+body:has([data-profile-space-dashboard]) [data-unified-dock-item="ai"] svg{
+  border:2px solid #f9db94;
+  background:radial-gradient(circle at 35% 14%,#13c88d,#00754d 60%,#004532);
+  box-shadow:0 0 0 4px #e8ba6482,0 1px 20px 5px #e7bf6766;
+}
+body:has([data-profile-space-dashboard]) [data-unified-dock-item="ai"] span{
+  color:#fff7de;background:linear-gradient(#087953,#03482e);
+}
+@media(max-width:430px){
+  body:has([data-profile-space-dashboard]) [data-hh-unified-dock]{min-height:90px;padding-top:12px}
+  body:has([data-profile-space-dashboard]) [data-unified-dock-item] span{
+    font-size:clamp(9.5px,2.65vw,11.5px);overflow-wrap:normal;white-space:nowrap;
+  }
+}
