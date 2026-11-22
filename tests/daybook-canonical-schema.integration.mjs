@@ -43,7 +43,7 @@ before(async()=>{
   '20261109182832_coaching_voice_reference_and_history_guard_20261109.sql',
   '20261110153139_hh_coaching_plan_account_delete_cascade.sql',
   '20261110153142_hh_coaching_action_erasure.sql',
-  '20261122210000_hh_daybook_journal.sql',
+  '20261122182733_hh_daybook_private_journal_20261122.sql',
   '20261122215422_hh_personal_goal_statuses_20261122.sql',
   '20261122215436_hh_personal_goal_erasure_20261122.sql',
   '20261122215437_hh_daybook_daily_intentions_20261122.sql',
