@@ -5,6 +5,7 @@ import {appFetch} from '@/lib/app/client-fetch'
 import {createJournalSaver} from '@/lib/app/daybook-journal-save.mjs'
 import {localJournalDay} from '@/lib/app/daybook-journal-contract.mjs'
 import {collectJournalExport} from '@/lib/app/daybook-journal-export.mjs'
+import DaybookGoalContext from './daybook-goal-context'
 import styles from './daybook-journal.module.css'
 
 const copy={
@@ -108,6 +109,7 @@ export default function DaybookJournal({locale}){
    {tab==='goals'?<section><h2>{c.goals}</h2><Link href={root+'/my-coaching-plan'}>{c.plan}</Link></section>:tab==='growth'?<section><h2>{c.growth}</h2><Link href={'/'+locale+'/development-vectors'}>{c.vectors}</Link></section>:<>
     <button onClick={()=>open(null)} disabled={busy||status==='failed'}>{c.new}</button>
     {draft&&<section><label>{c.note}<select value={draft.kind} disabled={busy||status==='failed'} onChange={e=>change('kind',e.target.value)}>{['note','morning','evening'].map(kind=><option key={kind} value={kind}>{c[kind]}</option>)}</select></label>
+     <DaybookGoalContext key={account} accountId={account} locale={locale} selectedId={draft.goalId} disabled={busy||status==='failed'} onChange={goalId=>change('goalId',goalId)} onSessionLost={()=>{wipe();setPhase('signed-out')}}/>
      <label>{c.text}<textarea rows={7} maxLength={20000} value={draft.text} disabled={busy||status==='failed'} onChange={e=>change('text',e.target.value)}/></label>
      <label>{c.tags}<input value={draft.tags.join(',')} disabled={busy||status==='failed'} onChange={e=>change('tags',e.target.value.split(','))}/></label>
      <label>{c.date}<input type="date" value={draft.localDay} disabled={busy||status==='failed'} onChange={e=>change('localDay',e.target.value)}/></label>

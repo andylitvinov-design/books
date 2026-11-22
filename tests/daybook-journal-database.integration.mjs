@@ -96,3 +96,12 @@ test('account hard deletion erases journal ciphertext and retry receipts by casc
  await admin.query('delete from app.accounts where id=$1',[c.id])
  for(const table of ['daybook_entries','daybook_entry_receipts']) assert.equal((await admin.query(`select 1 from app_private.${table} where account_id=$1`,[c.id])).rowCount,0)
 })
+test('journal remains editable when its previously selected goal is later completed',async()=>{
+ const goalId=randomUUID();await admin.query("insert into app_private.coaching_goals values($1,$2,'active')",[goalId,a.id])
+ const input=entry({goalId});await repo.save(a,input)
+ await admin.query("update app_private.coaching_goals set status='completed' where id=$1",[goalId])
+ const saved=await repo.save(a,{...input,operationId:randomUUID(),revision:1,text:'Reflection after completing the goal'})
+ assert.equal(saved.entry.revision,2)
+ assert.equal(saved.entry.goalId,goalId)
+ await assert.rejects(repo.save(a,entry({goalId})),{code:'JOURNAL_GOAL_UNAVAILABLE'})
+})
