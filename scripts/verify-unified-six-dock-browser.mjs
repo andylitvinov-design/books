@@ -704,7 +704,7 @@ try{
  await videoGoals.first().waitFor({state:"visible"});
  assert.deepEqual(await videoGoals.evaluateAll(nodes=>nodes.map(node=>
    node.getAttribute("data-hh-video-chat-choice"))),
-   ["goals-money","love-relationships","energy-confidence","stress-anxiety"]);
+   ["stress-anxiety","love-relationships","goals-money","energy-confidence"]);
  assert.equal(await chat.locator("[data-hh-guest-ready-videos]").count(),0,
    "personal video branch must not offer ready-made videos");
  assert.equal(await chat.locator("[data-hh-video-sign-in]").count(),0,
