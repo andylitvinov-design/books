@@ -224,7 +224,7 @@ test('selected persona opens immersive My Coach session with real avatar, stages
   for(const token of ['data-my-coach-immersive-session','sessionHero','sessionPortrait','sessionAvatar',
     'CoachingAvatar locale={lang}','sessionProgressSegments','conversationPanel','quickGoalCard',
     'sessionBottomNav','goalRow','onVoiceStateChange={setVoiceState}']) assert.ok(ui.includes(token),token)
-  for(const token of ['data-coach-stage-index={visibleStageIndex+1}','replayCoachReply(result.reply)',
+  for(const token of ['data-coach-stage-index={visibleProgressStep}','replayCoachReply(result.reply)',
     'onClick={()=>chooseTopic(id)}','composerRef.current?.focus()',
     'progressValid?lastRecordedProgress.index:provisionalIndex',
     'coachingBrainSafety(input)||coachingBrainBoundary(input)']) assert.ok(ui.includes(token),token)
@@ -475,7 +475,7 @@ test('spoken My Coach reply retains the reflection and start introduction',()=>{
  assert.ok(loop.includes('introPlayerRef.current=startDirectCoachIntroAudio'))
  assert.doesNotMatch(loop,/questions\.slice\(\)\.reverse\(\)\.find/)
  assert.ok(ui.includes('coachSpokenText(spokenText).text'))
- assert.ok(ui.includes('getCoachPresentation(personaId,conversationLang)?.text'))
+ assert.ok(ui.includes('coachOpeningIntro(personaId,conversationLang)'))
  assert.ok(ui.includes('introduction={introduction}'))
  assert.ok(ui.includes('onSessionStart={()=>setCloudAgreed(true)}'))
  assert.ok(loop.includes('(naturalVoice||voiceAgreed)&&voiceAvailable'))
