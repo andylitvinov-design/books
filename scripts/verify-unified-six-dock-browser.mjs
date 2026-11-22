@@ -648,9 +648,9 @@ try{
  await composerMore.waitFor({state:"visible",timeout:15000});
  assert.equal(await composerMore.evaluate(node=>node.open),false,
    "More actions starts collapsed to keep the first-screen composer compact");
- await composerMore.locator('summary').click();
+ await composerMore.locator(':scope > summary').click();
  await alchemistTools.waitFor({state:"visible",timeout:15000});
- await alchemistTools.locator('summary').click();
+ await alchemistTools.locator(':scope > summary').click();
  await projectGrid.waitFor({state:"visible",timeout:15000});
  const projects=chat.locator('[data-hh-messenger-six-projects] [data-hh-ai-project]');
  const six=["hint","test","mytube","sessions","practice","ai-video"];
@@ -791,13 +791,13 @@ try{
  const resetViaMore=async()=>{
    const more=chat.locator('details[data-hh-ai-more]');
    await more.waitFor({state:"visible",timeout:15000});
-   if(await more.evaluate(node=>!node.open)) await more.locator("summary").click();
+   if(await more.evaluate(node=>!node.open)) await more.locator(":scope > summary").click();
    // The More menu also contains legitimate voice/psychologist actions.
    // Require exactly one accessible Reset, not exactly one button total.
    const resetButtons=more.getByRole("button",{name:"Новый разговор",exact:true});
    await expect(resetButtons).toHaveCount(1);
    await resetButtons.click();
-   if(await more.evaluate(node=>node.open)) await more.locator("summary").click();
+   if(await more.evaluate(node=>node.open)) await more.locator(":scope > summary").click();
    await chat.locator('[data-hh-ai-landing]').waitFor({state:"visible",timeout:15000});
    await expect.poll(()=>chat.locator('[data-hh-chat-turn="user"]').count()).toBe(0);
  };
@@ -808,7 +808,7 @@ try{
    // Test the real disclosure, rather than waiting for a hidden button.
    const tools=chat.locator("details[data-hh-alchemist-tools]");
    await tools.waitFor({state:"visible",timeout:15000});
-   if(await tools.evaluate(node=>!node.open))await tools.locator("summary").click();
+   if(await tools.evaluate(node=>!node.open))await tools.locator(":scope > summary").click();
    await chat.locator('[data-hh-ai-project="'+id+'"]').waitFor({state:"visible",timeout:15000});
    await chat.locator('[data-hh-ai-project="'+id+'"]').click();
    // Sessions has a goal-first two-step intake; other projects use one-step choices.
