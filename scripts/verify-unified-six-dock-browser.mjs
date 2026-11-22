@@ -629,7 +629,7 @@ try{
  // Inner Alchemist begins with an inviting question, not a wall of service cards.
  // Keep the entire canonical six-project catalogue available after user intent.
  const alchemistTools=chat.locator('[data-hh-alchemist-tools]');
- await alchemistTools.waitFor({state:"visible",timeout:15000});
+ await alchemistTools.waitFor({state:"attached",timeout:15000});
  assert.equal(await alchemistTools.evaluate(node=>node.open),false,
    "six legacy service cards are tucked away until requested");
  assert.equal(await chat.locator('[data-hh-alchemist-topic]').count(),4,
@@ -642,6 +642,14 @@ try{
  await chat.locator('[data-hh-ai-chat-composer] textarea').waitFor({state:"visible",timeout:15000});
  assert.equal(await chat.locator('[data-hh-ai-chat-composer]').count(),1,
    "first screen owns one real pinned message composer");
+ // "More ways Ali can help" is nested in the real composer More actions menu.
+ // Verify both disclosures start closed, then open them through visible summaries.
+ const composerMore=chat.locator('[data-hh-ai-more]');
+ await composerMore.waitFor({state:"visible",timeout:15000});
+ assert.equal(await composerMore.evaluate(node=>node.open),false,
+   "More actions starts collapsed to keep the first-screen composer compact");
+ await composerMore.locator('summary').click();
+ await alchemistTools.waitFor({state:"visible",timeout:15000});
  await alchemistTools.locator('summary').click();
  await projectGrid.waitFor({state:"visible",timeout:15000});
  const projects=chat.locator('[data-hh-messenger-six-projects] [data-hh-ai-project]');
