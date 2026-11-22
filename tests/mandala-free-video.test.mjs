@@ -1,4 +1,5 @@
 import "./mandala-storyboard-photo-semantic.test.mjs";
+import "./video-gift-live-sequence.test.mjs";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";

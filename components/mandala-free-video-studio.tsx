@@ -133,6 +133,8 @@ const MandalaPersonalMeditation = dynamic(() => import("./mandala-personal-medit
 const MandalaCloudVoiceStudio = dynamic(() => import("./mandala-cloud-voice-studio").then(module => module.MandalaCloudVoiceStudio));
 const MandalaPhraseCatalog = dynamic(() => import("./mandala-phrase-catalog").then(module => module.MandalaPhraseCatalog));
 const MandalaMultiTrackTimeline = dynamic(() => import("./mandala-multitrack-timeline").then(module => module.MandalaMultiTrackTimeline));
+const VideoPhotoLibrary = dynamic<{locale: PublicLocale; onSelectPhoto: (photo: File)=>void;
+  disabled?: boolean; compact?: boolean}>(()=>import("./app/video-photo-library").then(module=>module.default));
 
 type Effect = "glow" | "energy" | "prosperity" | "temple";
 const BACKGROUND_CLIP="local-money-background-only";
@@ -4609,15 +4611,26 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               const {normalizeNativeSafariMp4ForPlayback}=await import("@/lib/mandala/webcodecs-mp4-export");
               blob=await withLocalMediaDeadline(
                 normalizeNativeSafariMp4ForPlayback(blob,Boolean(job.musicSession),duration),30000);
-            }catch{
+            }catch(error){
               if(job.cancelled||jobRef.current!==job||sourceRef.current!==snapshotKey||!aliveRef.current)return;
+              // Fixed diagnostic codes only; no scenes, sound, voice or files.
+              const reason=error instanceof Error?error.message:"";
+              const allowed=[
+                "native_mp4_invalid_tracks","native_mp4_remux_unavailable",
+                "native_mp4_remux_invalid","native_mp4_remux_failed",
+                "native_mp4_output_unplayable","native_mp4_output_incomplete",
+                "native_mp4_output_missing_aac","local_media_timeout",
+              ];
+              const code=allowed.includes(reason)?reason:"native_mp4_finalize_failed";
+              console.warn("HH_SAFARI_NATIVE_MP4_FINALIZE:"+code);
               nativeSafariMp4RejectedRef.current=true;
               setPlaybackStatus("failed");setExportUnavailable(true);
-              setNotice(locale==="ru"
+              setNotice((locale==="ru"
                 ?"Safari не завершил воспроизводимый MP4. Кредиты не списываются; попробуйте другой кодировщик."
                 :locale==="es"
                 ?"Safari no pudo finalizar un MP4 reproducible. No se cobrarán créditos; prueba el otro codificador."
-                :"Safari could not finalize a playable MP4. Credits will not be charged; try the alternate encoder.");
+                :"Safari could not finalize a playable MP4. Credits will not be charged; try the alternate encoder.")+
+                " ("+code+").");
               return;
             }
             if(job.cancelled||jobRef.current!==job||sourceRef.current!==snapshotKey||!aliveRef.current)return;
@@ -9927,6 +9940,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                       data-video-stories-photo={index}
                       onChange={event=>{const file=event.currentTarget.files?.[0]||null;event.currentTarget.value="";if(file)setStoryboardPhoto(shot.sceneId,file);}} />
                   </label>
+                  <VideoPhotoLibrary locale={locale} compact disabled={recording||preparing} onSelectPhoto={file=>setStoryboardPhoto(shot.sceneId,file)} />
                   {localPhoto?<div className={videoStyles.storyboardPhotoControls}>
                     <small>{localPhoto.name} · {localPhoto.width}×{localPhoto.height} · {locale==="ru"?"локально":"local only"}</small>
                     <button type="button" data-video-stories-photo-remove={index}
@@ -10984,6 +10998,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             onClick={()=>selectCategory(lowestTheme)}>
             <Sparkles size={16} aria-hidden="true"/>{supportUi.recommend}
           </button>
+          <VideoPhotoLibrary locale={locale} onSelectPhoto={selectNativePhoto} disabled={recording||preparing} compact />
           {photoPending?<p role="status" data-video-photo-pending className={videoStyles.warning}>{locale==="ru"?"Подготавливаем фото на устройстве…":locale==="es"?"Preparando la foto en tu dispositivo…":"Preparing photo on this device…"}</p>:null}
           {photoError?<p role="alert" className={videoStyles.warning}>{ui.photoError}</p>:null}
         </section>

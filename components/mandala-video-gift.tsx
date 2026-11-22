@@ -1,12 +1,13 @@
 "use client";
 import {useEffect,useMemo,useRef,useState} from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import {ArrowLeft,ArrowRight,Check,Download,Play,Pause,Share2,Video,Save,LockKeyhole} from "lucide-react";
 import {appFetch} from "@/lib/app/client-fetch";
 import {savePrivateMp4} from "@/lib/mandala/signed-private-video-upload.mjs";
 import {prepareBrowserPhoto,SUPPORT_PHOTO_ACCEPT} from "@/lib/mandala/prepare-browser-photo";
 import {VIDEO_GIFT_DURATION,VIDEO_GIFT_FREE_MOTIONS,
-  VIDEO_GIFT_AI_MOTIONS,VIDEO_GIFT_PALETTES,
+  VIDEO_GIFT_PALETTES,
   validateVideoGiftDraft} from "@/lib/mandala/video-gift-contract.mjs";
 import {VIDEO_GIFT_EMOTIONS,VIDEO_GIFT_STYLES,getGiftEmotionCategory,getGiftEmotionMessage,
  getGiftEmotionStyle,suggestGiftEmotionText} from "@/lib/mandala/video-gift-emotions.mjs";
@@ -17,6 +18,8 @@ import {VIDEO_GIFT_SIZES,paintVideoGiftFrame,exportVideoGiftMp4} from "@/lib/man
 import {GIFT_VISUAL_GROUPS,listGiftApprovedScenes,defaultGiftVisualGroup} from "@/lib/mandala/video-gift-clip-catalog.mjs";
 import type {GiftVisualGroup} from "@/lib/mandala/video-gift-clip-catalog.mjs";
 import type {GiftSound} from "@/lib/mandala/video-gift-browser";
+import {planGiftLiveSequence} from "@/lib/mandala/video-gift-live-sequence.mjs";
+import {MandalaGiftLiveIntro} from "./mandala-gift-live-intro";
 import styles from "./mandala-video-gift.module.css";
 
 const COPY={
@@ -40,7 +43,7 @@ const COPY={
     text:"Текст поздравления",final:"Финальное пожелание",suggest:"Предложить текст",editable:"Текст можно исправлять сколько угодно без новой генерации фотографии.",
     soundtrack:"Звуковое оформление",sounds:["Без звука","Лес · звуковая атмосфера","Лёгкий ветер","Кристальный звук","Голосовое поздравление"],
     voice:"Добавить запись поздравления",voiceRights:"Я имею разрешение использовать эту аудиозапись. Она не создаёт имитацию чужого голоса.",
-    preview:"Посмотреть композицию",stop:"Остановить просмотр",create:"Создать MP4 бесплатно",
+    preview:"Посмотреть композицию",stop:"Остановить просмотр",create:"Создать MP4 бесплатно",createLive:"Собрать HeyGen + 20 секунд видео",
     creating:"Создаётся MP4…",cancel:"Отменить",ready:"MP4 готов",download:"Скачать MP4",
     share:"Поделиться",save:"Сохранить в My Videos",cloudConsent:"Разрешаю приватно сохранить готовый MP4 в My Videos. Исходное фото и текст не загружаются.",
     signIn:"Для сохранения войдите в My House. Готовый MP4 можно скачать сейчас и загрузить позже.",
@@ -70,7 +73,7 @@ const COPY={
     text:"Greeting message",final:"Final wish",suggest:"Suggest a message",editable:"Edit your message any time without regenerating the photo.",
     soundtrack:"Soundtrack",sounds:["Silence","Forest atmosphere","Light breeze","Crystal tones","Voice greeting"],
     voice:"Choose recorded greeting",voiceRights:"I have the right to use this recording. No voice impersonation is performed.",
-    preview:"Preview composition",stop:"Stop preview",create:"Create free MP4",
+    preview:"Preview composition",stop:"Stop preview",create:"Create free MP4",createLive:"Assemble HeyGen + 20s footage",
     creating:"Creating MP4…",cancel:"Cancel",ready:"Your MP4 is ready",download:"Download MP4",
     share:"Share",save:"Save in My Videos",cloudConsent:"I consent to storing the finished MP4 privately in My Videos. The original photo and text are not uploaded.",
     signIn:"Sign in to My House to save. You can download the MP4 now and upload it later.",
@@ -100,7 +103,7 @@ const COPY={
     text:"Mensaje de felicitación",final:"Deseo final",suggest:"Proponer un texto",editable:"Puedes editar el texto sin volver a generar la foto.",
     soundtrack:"Sonido",sounds:["Sin sonido","Bosque","Brisa suave","Tonos de cristal","Saludo de voz"],
     voice:"Elegir grabación de voz",voiceRights:"Tengo derecho a usar esta grabación. No se imitan voces ajenas.",
-    preview:"Vista previa",stop:"Detener vista previa",create:"Crear MP4 gratuito",
+    preview:"Vista previa",stop:"Detener vista previa",create:"Crear MP4 gratuito",createLive:"Montar HeyGen + 20s de vídeo",
     creating:"Creando MP4…",cancel:"Cancelar",ready:"Tu MP4 está listo",download:"Descargar MP4",
     share:"Compartir",save:"Guardar en Mis vídeos",cloudConsent:"Autorizo guardar el MP4 final de forma privada. La foto y el texto originales no se suben.",
     signIn:"Inicia sesión en Mi Casa para guardarlo. Puedes descargar el MP4 ahora y subirlo luego.",
@@ -113,6 +116,7 @@ const COPY={
 } as const;
 const PALETTES=VIDEO_GIFT_PALETTES;
 const SOUND_IDS=["none","forest","breeze","crystal","voice"] as const;
+const VideoPhotoLibrary = dynamic<{locale:"ru"|"en"|"es";onSelectPhoto:(photo:File)=>void;disabled?:boolean;compact?:boolean}>(()=>import("./app/video-photo-library").then(m=>m.default));
 type Locale="ru"|"en"|"es";
 
 export function MandalaVideoGift({locale}:{locale:Locale}){
@@ -127,6 +131,7 @@ export function MandalaVideoGift({locale}:{locale:Locale}){
   const [visualGroup,setVisualGroup]=useState<GiftVisualGroup>(defaultGiftVisualGroup("love"));
   const [sceneId,setSceneId]=useState<string|null>(null);
   const scenePreviewRef=useRef<HTMLVideoElement|null>(null);
+  const montagePreviewRefs=useRef<(HTMLVideoElement|null)[]>([]);
   const [recipient,setRecipient]=useState("");
   const [aspect,setAspect]=useState<VideoGiftAspect>("portrait");
   const [sourceOwner,setSourceOwner]=useState<VideoGiftSubject>("self");
@@ -136,6 +141,10 @@ export function MandalaVideoGift({locale}:{locale:Locale}){
   const [photo,setPhoto]=useState<HTMLImageElement|null>(null);
   const [photoUrl,setPhotoUrl]=useState<string|null>(null);
   const photoUrlRef=useRef<string|null>(null);
+  const [liveIntro,setLiveIntro]=useState<{
+    id:string;blob:Blob;url:string;orientation:VideoGiftAspect
+  }|null>(null);
+  const liveIntroUrlRef=useRef<string|null>(null);
   const [photoBusy,setPhotoBusy]=useState(false);
   const [motion,setMotion]=useState<VideoGiftMotion>("zoom");
   const [palette,setPalette]=useState<VideoGiftPalette>("sunrise");
@@ -161,6 +170,9 @@ export function MandalaVideoGift({locale}:{locale:Locale}){
     group:visualGroup,occasion,aspect
   }),[visualGroup,occasion,aspect]);
   const selectedScene=sceneId==="none"?null:(groupScenes.find(x=>x.id===sceneId)||groupScenes[0]||null);
+  const livePlan=useMemo(()=>liveIntro?planGiftLiveSequence({
+    sceneId:selectedScene?.id??null,group:visualGroup,occasion,aspect
+  }):null,[liveIntro,selectedScene,visualGroup,occasion,aspect]);
   const selectedGiftCategory=getGiftEmotionCategory(giftCategoryId);
   const selectedGiftMessage=getGiftEmotionMessage(giftCategoryId,giftMessageId);
   const manifest=useMemo<VideoGiftManifest|null>(()=>{
@@ -171,6 +183,7 @@ export function MandalaVideoGift({locale}:{locale:Locale}){
     guardianConsent,motion,palette,aspect,soundtrack,message,finalWish]);
   useEffect(()=>()=>{if(photoUrlRef.current)URL.revokeObjectURL(photoUrlRef.current);
     if(resultUrlRef.current)URL.revokeObjectURL(resultUrlRef.current);
+    if(liveIntroUrlRef.current)URL.revokeObjectURL(liveIntroUrlRef.current);
     controllerRef.current?.abort();
   },[]);
   useEffect(()=>{
@@ -183,22 +196,48 @@ export function MandalaVideoGift({locale}:{locale:Locale}){
     if(playing)previewStart.current=performance.now();
     const render=()=>{
       const seconds=playing?((performance.now()-previewStart.current)/1000)%VIDEO_GIFT_DURATION:0;
-      const video=scenePreviewRef.current;
-      const duringClip=Boolean(selectedScene&&playing&&seconds>=14&&seconds<19);
-      if(video&&duringClip&&video.paused){
-        try{video.currentTime=Math.max(0,seconds-14);}catch{/* Decode readiness is checked below. */}
-        void video.play().catch(()=>{/* Export has stricter decode gate. */});
-      }else if(video&&!duringClip&&!video.paused)video.pause();
-      const decoded=duringClip&&video&&video.readyState>=2?video:null;
-      paintVideoGiftFrame(ctx,photo,manifest,seconds,decoded,selectedScene?.credit??null);
+      if(liveIntro&&livePlan){
+        const index=Math.min(4,Math.floor(seconds/5));
+        const active=montagePreviewRefs.current[index];
+        for(const [position,clip] of montagePreviewRefs.current.entries()){
+          if(clip&&position!==index&&!clip.paused)clip.pause();
+        }
+        if(active&&playing&&active.paused){
+          try{active.currentTime=Math.max(0,seconds-index*5);}catch{/* Playback only. */}
+          void active.play().catch(()=>{/* Real export fails closed on decode errors. */});
+        }
+        if(active&&active.readyState>=2){
+          paintVideoGiftFrame(ctx,photo,manifest,seconds,active,
+            index>0?livePlan[index-1]?.credit??null:null,true);
+        }else{
+          ctx.fillStyle="#244337";ctx.fillRect(0,0,canvas.width,canvas.height);
+        }
+      }else{
+        const video=scenePreviewRef.current;
+        const duringClip=Boolean(selectedScene&&playing&&seconds>=14&&seconds<19);
+        if(video&&duringClip&&video.paused){
+          try{video.currentTime=Math.max(0,seconds-14);}catch{/* Decode readiness is checked below. */}
+          void video.play().catch(()=>{/* Export has stricter decode gate. */});
+        }else if(video&&!duringClip&&!video.paused)video.pause();
+        const decoded=duringClip&&video&&video.readyState>=2?video:null;
+        paintVideoGiftFrame(ctx,photo,manifest,seconds,decoded,selectedScene?.credit??null);
+      }
       if(playing)frame=requestAnimationFrame(render);
     };
     render();
-    return()=>{cancelAnimationFrame(frame);scenePreviewRef.current?.pause();};
-  },[step,photo,manifest,aspect,playing,selectedScene]);
+    return()=>{cancelAnimationFrame(frame);scenePreviewRef.current?.pause();
+      montagePreviewRefs.current.forEach(clip=>clip?.pause());
+    };
+  },[step,photo,manifest,aspect,playing,selectedScene,liveIntro,livePlan]);
   const invalidateResult=()=>{
     setSaved(false);setCloudConsent(false);setResult(null);saveSessionRef.current=null;
     if(resultUrlRef.current){URL.revokeObjectURL(resultUrlRef.current);resultUrlRef.current=null;}
+  };
+  const clearLiveIntro=()=>{
+    if(liveIntroUrlRef.current){
+      URL.revokeObjectURL(liveIntroUrlRef.current);liveIntroUrlRef.current=null;
+    }
+    setLiveIntro(null);invalidateResult();
   };
   const chooseGiftCategory=(id:GiftEmotionCategoryId)=>{
     const choice=getGiftEmotionCategory(id);
@@ -232,7 +271,7 @@ export function MandalaVideoGift({locale}:{locale:Locale}){
   };
   async function choosePhoto(file:File|null){
     if(!file)return;
-    setNotice("");setPhotoBusy(true);invalidateResult();
+    setNotice("");setPhotoBusy(true);clearLiveIntro();
     try{
       const blob=await prepareBrowserPhoto(file);
       const url=URL.createObjectURL(blob);
@@ -287,7 +326,8 @@ export function MandalaVideoGift({locale}:{locale:Locale}){
     const sound:GiftSound={music:soundtrack==="voice"?"none":soundtrack,voice:soundtrack==="voice"?voice:null};
     try{
       const blob=await exportVideoGiftMp4({image:photo,manifest,sound,
-        sceneId:selectedScene?.id??null,
+        sceneId:selectedScene?.id??null,liveIntroClip:liveIntro?.blob??null,
+        liveSceneIds:livePlan?.map(scene=>scene.id)??null,
         signal:controller.signal,onProgress:setProgress});
       if(blob.size<1024||blob.size>12_000_000)throw new Error("gift_mp4_size_invalid");
       const url=URL.createObjectURL(blob);resultUrlRef.current=url;
@@ -389,6 +429,7 @@ export function MandalaVideoGift({locale}:{locale:Locale}){
             onChange={e=>void choosePhoto(e.currentTarget.files?.[0]??null)}/>
         </label>
         <p className={styles.hint}>{t.photoPrivate}</p>
+        <VideoPhotoLibrary locale={locale} onSelectPhoto={file=>{void choosePhoto(file)}} compact disabled={photoBusy} />
         <fieldset className={styles.group}><legend>{t.source}</legend>
           {(["self","other","minor"] as const).map(id=><label key={id} className={styles.inline}>
             <input type="radio" checked={sourceOwner===id} onChange={()=>setSourceOwner(id)}/>
@@ -443,12 +484,16 @@ export function MandalaVideoGift({locale}:{locale:Locale}){
             onClick={()=>{setSceneId("none");invalidateResult();}}>{t.noScene}</button>
           <small className={styles.hint}>{t.clipCredits}</small>
         </section>
-        <div className={styles.locked}><h3>{t.aiTitle}</h3><p>{t.aiUnavailable}</p>
-          <div className={styles.options}>
-            {VIDEO_GIFT_AI_MOTIONS.map((id,index)=><button type="button" key={id}
-              disabled className={styles.option} title={t.aiUnavailable}>{t.aiMoves[index]}</button>)}
-          </div>
-        </div>
+        <MandalaGiftLiveIntro locale={locale} photoUrl={photoUrl} aspect={aspect}
+          sourceOwner={sourceOwner} rightsConfirmed={rightsConfirmed}
+          subjectConsent={subjectConsent}
+          selectedId={liveIntro?.id??null} disabled={working||saving}
+          onSelect={clip=>{
+            if(liveIntroUrlRef.current)URL.revokeObjectURL(liveIntroUrlRef.current);
+            const url=URL.createObjectURL(clip.blob);liveIntroUrlRef.current=url;
+            setLiveIntro({...clip,url});invalidateResult();
+          }}/>
+
       </>}
       {step===3&&<>
         <h2>{t.steps[3]}</h2>
@@ -488,11 +533,15 @@ export function MandalaVideoGift({locale}:{locale:Locale}){
         <div className={styles.format} role="group" aria-label={t.formats}>
           {(["portrait","landscape"] as const).map(id=><button type="button" key={id}
             aria-pressed={aspect===id} className={aspect===id?styles.selected:styles.option}
-            disabled={working||saving} onClick={()=>{setAspect(id);invalidateResult();}}>
+            disabled={working||saving} onClick={()=>{setAspect(id);clearLiveIntro();}}>
             {id==="portrait"?t.portrait:t.landscape}</button>)}
         </div>
         {!result&&<div className={styles.previewArea}>
-          {selectedScene?<video ref={scenePreviewRef} src={selectedScene.video}
+          {liveIntro&&livePlan?[liveIntro.url,...livePlan.map(scene=>scene.video)].map((src,index)=>
+            <video key={src} ref={node=>{montagePreviewRefs.current[index]=node;}}
+              src={src} preload="auto" muted playsInline crossOrigin="anonymous"
+              className={styles.preloadClip} aria-hidden="true"/>
+          ):selectedScene?<video ref={scenePreviewRef} src={selectedScene.video}
             poster={selectedScene.poster} preload="metadata" muted playsInline
             crossOrigin="anonymous" className={styles.preloadClip} aria-hidden="true"/>:null}
           <canvas ref={canvasRef} aria-label={t.preview}
@@ -521,7 +570,7 @@ export function MandalaVideoGift({locale}:{locale:Locale}){
         </div>}
         {!result&&<button type="button" className={styles.primary}
           disabled={!manifest||!photo||working||saving} onClick={()=>void create()}>
-          {working?t.creating:t.create}<ArrowRight size={18}/></button>}
+          {working?t.creating:liveIntro?t.createLive:t.create}<ArrowRight size={18}/></button>}
         {working&&<div className={styles.progress} role="status" aria-live="polite">
           <progress max={100} value={progress}/><span>{progress}%</span>
           <button type="button" className={styles.secondary} onClick={()=>controllerRef.current?.abort()}>{t.cancel}</button>
