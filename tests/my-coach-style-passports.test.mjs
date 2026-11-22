@@ -43,6 +43,9 @@ test('compact session and directory reveal archetype, style and working manner w
     assert.ok(catalog.includes('selectedPassport?.'+key))
   }
   assert.match(compact,/data-coach-style-passport=\{personaId\}/)
+  assert.match(compact,/function CoachProfileSections/)
+  assert.match(compact,/MyCoachInlineProfile/)
+  assert.match(compact,/<CoachProfileSections profile=\{profile\} personaId=\{personaId\} t=\{t\}\/>/)
   assert.match(catalog,/data-coach-style-passport=\{selected\.id\}/)
   assert.match(css,/\.stylePassport/)
   for(const t of ['Archetype','Архетип','Arquetipo'])assert.ok(compact.includes(t))

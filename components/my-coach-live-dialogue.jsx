@@ -29,7 +29,7 @@ import {detectedSpeechLocale} from '@/lib/personal-coaching/my-coach-dictation.m
 import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
 import CoachingAvatar from '@/components/app/coaching-avatar'
 import MyCoachMotionMedia from '@/components/my-coach-motion-media'
-import MyCoachCompactProfile from './my-coach-compact-profile'
+import MyCoachCompactProfile,{MyCoachInlineProfile} from './my-coach-compact-profile'
 import {selectCoachVisualScene} from '@/lib/coaching/coach-visual-cues.mjs'
 import {downloadCoachingSessionPdf,openCoachingSessionPdf} from '@/lib/personal-coaching/session-pdf'
 import {myCoachProtocolPdfOptions,normalizeMyCoachProtocol} from '@/lib/personal-coaching/session-protocol.mjs'
@@ -1105,13 +1105,16 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const ratingUi=sessionRatingCopy[lang]
   const protocolUi=protocolCopy[lang]
 
+  // Use the actual voice/session lifecycle; preserve the profile on idle, and
+  // never restore it after a started session is paused or interrupted.
+  const sessionHasStarted=sessionClockStarted||voiceState.phase!=='idle'||turns.length>0
   const motionPhase=paused?'idle':voiceState.phase==='speaking'?'speaking':
     voiceState.phase==='listening'?'listening':!introComplete?'greeting':'idle'
   const visualScene=selectCoachVisualScene({phase:motionPhase,text:latestCoachText,stage:currentStage})
   const videoViewLabel=viewExpanded?
     ({ru:'Свернуть видео коуча',en:'Collapse coach video',es:'Contraer el vídeo del coach'})[lang]:
     ({ru:'Развернуть видео коуча',en:'Expand coach video',es:'Ampliar el vídeo del coach'})[lang]
-  return <section ref={sessionRootRef} className={styles.root} lang={lang} data-my-coach-live-dialogue={personaId} data-my-coach-immersive-session data-session-visual-v2 data-session-visual-v3 data-session-visual-v4 data-coach-view-expanded={viewExpanded?'true':'false'} data-coach-session-started={sessionClockStarted?'true':'false'} data-coach-showcase={introComplete?'false':'true'}>
+  return <section ref={sessionRootRef} className={styles.root} lang={lang} data-my-coach-live-dialogue={personaId} data-my-coach-immersive-session data-session-visual-v2 data-session-visual-v3 data-session-visual-v4 data-coach-view-expanded={viewExpanded?'true':'false'} data-coach-session-started={sessionClockStarted?'true':'false'} data-coach-prestart-profile={sessionHasStarted?'false':'true'} data-coach-showcase={introComplete?'false':'true'}>
     <header className={styles.sessionTopbar}>
       <Link className={styles.sessionBrand} href={'/'+lang+'/coaching/sessions'} onClick={interceptSessionExit} aria-label="Holistic House">
         <span className={styles.sessionBrandMark} aria-hidden="true">✿</span><span>Holistic House</span>
@@ -1360,7 +1363,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         ru:'Play запускает голос. На iPhone короткие ответы могут расшифровываться через Groq Whisper без хранения аудио на Holistic House.',
         es:'Play activa la voz. En iPhone, Groq Whisper puede transcribir respuestas breves; Holistic House no almacena el audio.',
       })[lang]}</p>
-      <details className={styles.sessionProgress} data-coach-progress-accordion
+      {!sessionHasStarted&&<MyCoachInlineProfile personaId={personaId}
+        locale={conversationLang} methodId={visibleMethodId}/>}
+      {sessionHasStarted&&<details className={styles.sessionProgress} data-coach-progress-accordion
         aria-label={ui.stageQuestion}
         data-coach-stage-index={visibleStageIndex+1}
         data-coach-stage-source={progressValid?'director-client-evidence':'local-provisional'}
@@ -1383,7 +1388,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           progress={progressValid?lastRecordedProgress:null} stageLabel={stageDescription}
           stageNames={stageChecklistTitles} stageIndex={visibleStageIndex}
           stageProgressVerified={progressValid}/>
-      </details>
+      </details>}
       <details className={styles.voicePrivacyDetails}>
         <summary>{lang==='ru'?'Приватность голоса':lang==='es'?'Privacidad de voz':'Voice privacy'}</summary>
         <p>{liveVoiceSelected?({

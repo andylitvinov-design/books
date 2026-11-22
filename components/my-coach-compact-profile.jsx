@@ -10,43 +10,8 @@ const copy={
   ru:{profile:'Профиль коуча',back:'Назад',character:'Характер',archetype:'Архетип',style:'Стиль',workStyle:'Манера работы',focus:'С чем помогает',model:'Модель коучинга',features:'Особенности',brand:'Holistic House'},
   es:{profile:'Perfil del coach',back:'Volver',character:'Carácter',archetype:'Arquetipo',style:'Estilo',workStyle:'Cómo trabajo',focus:'Áreas de apoyo',model:'Modelo de coaching',features:'Características',brand:'Holistic House'}
 }
-export default function MyCoachCompactProfile({personaId,locale='en',methodId,onBack}){
-  const dialogRef=useRef(null)
-  const backRef=useRef(null)
-  const [viewLocale,setViewLocale]=useState(locale)
-  useEffect(()=>setViewLocale(locale),[locale])
-  const lang=copy[viewLocale]?viewLocale:'en'
-  const t=copy[lang]
-  const profile=getCoachCompactProfile(personaId,lang,methodId)
-  useEffect(()=>{
-    const dialog=dialogRef.current
-    if(!dialog)return
-    if(!dialog.open)dialog.showModal()
-    backRef.current?.focus({preventScroll:true})
-    return()=>{if(dialog.open)dialog.close()}
-  },[])
-  if(!profile)return null
-  return <dialog ref={dialogRef} className={styles.dialog}
-    aria-label={t.profile+' · '+profile.name}
-    onCancel={event=>{event.preventDefault();onBack?.()}}>
-    <main className={styles.page} lang={lang} data-coach-profile-screen={personaId}
-      data-coach-profile-method={profile.methodId}>
-      <header className={styles.header}>
-        <span className={styles.brand}><span className={styles.mark} aria-hidden="true">✿</span>{t.brand}</span>
-        <label className={styles.language}><Languages size={16} aria-hidden="true"/><select aria-label="Profile language" value={lang} onChange={event=>setViewLocale(event.target.value)}><option value="en">EN</option><option value="ru">RU</option><option value="es">ES</option></select><ChevronDown size={13} aria-hidden="true"/></label>
-        <button ref={backRef} type="button" className={styles.back} onClick={onBack}>
-          <ArrowLeft size={18} aria-hidden="true"/>{t.back}
-        </button>
-      </header>
-      <section className={styles.hero} aria-label={profile.name}>
-        <img src={'/images/holistic-house/my-coach-motion/'+personaId+'-still.webp'}
-          alt="" loading="eager" decoding="async"/>
-        <div className={styles.heroShade} aria-hidden="true"/>
-        <div className={styles.heroCopy}>
-          <span className={styles.eyebrow}><UserRound size={16} aria-hidden="true"/>{t.profile}</span>
-          <h1>{profile.name}</h1><p>{profile.role}</p><div className={styles.heroTags}>{profile.tags.map((tag,index)=><span key={index}>{index===0?<Leaf size={14}/>:index===1?<Sparkles size={14}/>:<Heart size={14}/>} {tag}</span>)}</div>
-        </div>
-      </section>
+function CoachProfileSections({profile,personaId,t}){
+  return <>
       <section className={[styles.card,styles.characterCard].join(' ')}>
         <span className={styles.cardIcon}><Heart size={29} strokeWidth={1.8} aria-hidden="true"/></span>
         <div className={styles.cardBody}><h2>{t.character}</h2><p>{profile.character}</p>
@@ -84,6 +49,62 @@ export default function MyCoachCompactProfile({personaId,locale='en',methodId,on
           <p>“{profile.quote}”</p><footer>— {profile.name}</footer>
         </div>
       </blockquote>
+  </>
+}
+
+// The same public editorial profile is available below Play without opening a dialog.
+// This component has no personal-data reads, microphone access, or persistence.
+export function MyCoachInlineProfile({personaId,locale='en',methodId}){
+  const lang=copy[locale]?locale:'en'
+  const t=copy[lang]
+  const profile=getCoachCompactProfile(personaId,lang,methodId)
+  if(!profile)return null
+  return <section className={styles.inlineProfile} lang={lang}
+    data-coach-inline-profile={personaId} data-coach-profile-method={profile.methodId}
+    aria-label={t.profile+' · '+profile.name}>
+    <h2 className={styles.inlineHeading}><UserRound size={19} aria-hidden="true"/>{t.profile} · {profile.name}</h2>
+    <CoachProfileSections profile={profile} personaId={personaId} t={t}/>
+  </section>
+}
+
+export default function MyCoachCompactProfile({personaId,locale='en',methodId,onBack}){
+  const dialogRef=useRef(null)
+  const backRef=useRef(null)
+  const [viewLocale,setViewLocale]=useState(locale)
+  useEffect(()=>setViewLocale(locale),[locale])
+  const lang=copy[viewLocale]?viewLocale:'en'
+  const t=copy[lang]
+  const profile=getCoachCompactProfile(personaId,lang,methodId)
+  useEffect(()=>{
+    const dialog=dialogRef.current
+    if(!dialog)return
+    if(!dialog.open)dialog.showModal()
+    backRef.current?.focus({preventScroll:true})
+    return()=>{if(dialog.open)dialog.close()}
+  },[])
+  if(!profile)return null
+  return <dialog ref={dialogRef} className={styles.dialog}
+    aria-label={t.profile+' · '+profile.name}
+    onCancel={event=>{event.preventDefault();onBack?.()}}>
+    <main className={styles.page} lang={lang} data-coach-profile-screen={personaId}
+      data-coach-profile-method={profile.methodId}>
+      <header className={styles.header}>
+        <span className={styles.brand}><span className={styles.mark} aria-hidden="true">✿</span>{t.brand}</span>
+        <label className={styles.language}><Languages size={16} aria-hidden="true"/><select aria-label="Profile language" value={lang} onChange={event=>setViewLocale(event.target.value)}><option value="en">EN</option><option value="ru">RU</option><option value="es">ES</option></select><ChevronDown size={13} aria-hidden="true"/></label>
+        <button ref={backRef} type="button" className={styles.back} onClick={onBack}>
+          <ArrowLeft size={18} aria-hidden="true"/>{t.back}
+        </button>
+      </header>
+      <section className={styles.hero} aria-label={profile.name}>
+        <img src={'/images/holistic-house/my-coach-motion/'+personaId+'-still.webp'}
+          alt="" loading="eager" decoding="async"/>
+        <div className={styles.heroShade} aria-hidden="true"/>
+        <div className={styles.heroCopy}>
+          <span className={styles.eyebrow}><UserRound size={16} aria-hidden="true"/>{t.profile}</span>
+          <h1>{profile.name}</h1><p>{profile.role}</p><div className={styles.heroTags}>{profile.tags.map((tag,index)=><span key={index}>{index===0?<Leaf size={14}/>:index===1?<Sparkles size={14}/>:<Heart size={14}/>} {tag}</span>)}</div>
+        </div>
+      </section>
+      <CoachProfileSections profile={profile} personaId={personaId} t={t}/>
     </main>
   </dialog>
 }
