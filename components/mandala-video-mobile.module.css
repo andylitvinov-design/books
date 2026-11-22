@@ -6185,3 +6185,15 @@
   background-size:100% 152px,100% 152px,100% 100%!important
  }
 }
+
+
+/* Format owns its compact hero; preserve original intro MP4 until Topic Play. */
+@media(max-width:759px){
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="format"])
+  .quickBuilder>[data-hh-mirror-title],
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="format"])
+  .quickBuilder>.previewStage{display:none!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="format"])
+  .quickBuilder{gap:4px!important;margin-top:0!important;
+    background:linear-gradient(175deg,#fff9f2,#faefe3 82%,#fff9f0)!important}
+}

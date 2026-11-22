@@ -521,3 +521,76 @@
  .goals.landing .destinationCopy small{font-size:clamp(11px,2.95vw,12px)}
  .goals.landing .destinationCopy>svg{width:21px;height:21px}
 }
+
+
+/* Approved second screen: three photo-led horizontal format choices.
+   Planning only: do not spend XP or call a provider on selection. */
+@media(max-width:759px){
+ .goals[data-hh-mirror-screen="format"]{display:grid!important;align-content:start;gap:7px;
+  min-width:0;margin:0!important;padding:0 2px 7px!important}
+ .formatBack{display:inline-flex;align-items:center;justify-self:start;gap:6px;
+  min-height:36px;padding:4px 9px;border:0;border-radius:999px;
+  color:#09664f;background:#fffaf2;font:750 13px/1.14 system-ui,sans-serif;cursor:pointer}
+ .formatHero{display:grid;align-content:center;gap:4px;min-height:clamp(101px,14dvh,125px);
+  padding:12px 14px;border-radius:23px;overflow:hidden;
+  background:linear-gradient(90deg,rgba(7,56,46,.97),rgba(10,62,50,.78) 62%,rgba(10,62,50,.1)),
+   url("/images/holistic-house/reiki-approved-sunrise-v3.webp") center 47%/cover;color:#fff}
+ .formatHeroKicker{display:inline-flex;align-items:center;gap:6px;
+  max-width:82%;font:800 clamp(22px,5.6vw,27px)/1.08 Georgia,serif;color:#ffe7b7}
+ .formatHeroKicker svg{flex:none;color:#ffe69b}
+ .formatHero p{margin:1px 0 0!important;color:#fffefa;
+  font:600 clamp(12px,3.2vw,14px)/1.2 system-ui,sans-serif}
+ .formatRows{display:grid;grid-template-columns:minmax(0,1fr);gap:7px}
+ .formatRow{position:relative;display:grid;align-items:stretch;
+  grid-template-columns:31% minmax(0,1fr) 31px;gap:7px;
+  min-height:118px;padding:0 7px 0 0;border:1px solid #e5d6c6;border-radius:21px;
+  overflow:hidden;text-align:left;background:#fffdf7;color:#153e32;
+  box-shadow:0 5px 13px #694a2b20;cursor:pointer}
+ .formatRow>img{display:block;width:100%;height:100%;min-height:118px;
+  object-fit:cover;object-position:center}
+ .formatRowCopy{display:flex;flex-direction:column;align-items:start;justify-content:center;
+  gap:4px;min-width:0;padding:7px 0}
+ .formatRowCopy strong{font:800 clamp(17px,4.6vw,21px)/1.04 Georgia,serif;letter-spacing:-.01em}
+ .formatRowCopy small{color:#4d645c;font:500 clamp(11px,2.9vw,13px)/1.14 system-ui,sans-serif}
+ .formatRowPrice{display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  min-height:27px;margin-top:2px;padding:4px 10px;border-radius:99px;
+  background:#f5ecd8;color:#075b45;white-space:nowrap;
+  font:850 clamp(14px,3.7vw,17px)/1 system-ui,sans-serif}
+ .formatRowPrice svg{flex:none;color:#c99826}
+ .formatRowArrow{display:grid;align-self:center;place-items:center;width:29px;height:34px;
+  color:#07654e;border-radius:99px;background:#f0f7ed}
+ .formatRow[data-hh-mirror-video-format="pro"]{border:2px solid #12b987;
+  background:linear-gradient(105deg,#eafff3,#fcfff8);box-shadow:0 4px 16px #0596682c}
+ .formatRow[data-hh-mirror-video-format="pro"] .formatRowPrice{color:#fff;
+  background:linear-gradient(120deg,#05ad7e,#00694d)}
+ .formatRow[data-hh-mirror-video-format="pro"] .formatRowPrice svg{color:#ffe69b}
+ .formatRow[aria-pressed="true"]{outline:2px solid #04b67c;outline-offset:-2px}
+ .formatPlanningNote{margin:0 5px!important;color:#607067;
+  font:500 11px/1.2 system-ui,sans-serif;text-align:center}
+ .formatRow:focus-visible,.formatBack:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+}
+@media(max-width:359px){
+ .goals[data-hh-mirror-screen="format"]{gap:5px}
+ .formatHero{min-height:99px;padding:9px 12px}
+ .formatHeroKicker{font-size:21px}
+ .formatRow{grid-template-columns:29% minmax(0,1fr) 25px;gap:5px;min-height:116px;padding-right:4px}
+ .formatRow>img{min-height:116px}
+ .formatRowCopy{gap:3px}
+ .formatRowCopy strong{font-size:17px}
+ .formatRowCopy small{font-size:11px}
+ .formatRowArrow{width:24px}
+ .formatRowPrice{padding:4px 8px}
+}
+@media(max-width:759px) and (max-height:740px){
+ .goals[data-hh-mirror-screen="format"]{gap:5px}
+ .formatHero{min-height:87px;padding:8px 12px}
+ .formatHeroKicker{font-size:21px}
+ .formatRow{min-height:100px}
+ .formatRow>img{min-height:100px}
+ .formatRowCopy{padding:4px 0}
+ .formatRowPrice{min-height:24px;margin-top:0}
+ .formatPlanningNote{font-size:10px}
+}
+@media(min-width:760px){
+ .goals[data-hh-mirror-screen="format"]{display:none}
+}

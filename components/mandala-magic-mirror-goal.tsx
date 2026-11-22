@@ -80,7 +80,7 @@ const labels={
   advanced:"Opciones avanzadas",dictation:"Usa el micrófono del teclado para dictar",workQuestion:"¿Qué vídeo quieres crear?",workPlaceholder:"Describe tu vídeo o servicio…",workAlternative:"O elige un formato de vídeo",format:"Formato"},
 } as const;
 
-const formatOptions=[{id:"basic",credits:250,Icon:Film},{id:"pro",credits:500,Icon:UserRound},{id:"vip",credits:1000,Icon:Clapperboard}] as const;
+const formatOptions=[{id:"basic",credits:250,Icon:Film,image:"/videos/holistic-house/film-collection-v3/sun-warm-ocean-dawn.jpg"},{id:"pro",credits:500,Icon:UserRound,image:"/images/holistic-house/reiki-approved-sunrise-v3.webp"},{id:"vip",credits:2000,Icon:Clapperboard,image:"/videos/holistic-house/film-collection-v3/sun-autumn-hills.jpg"}] as const;
 const mirrorPosterUrl=(image:string)=>image.startsWith("/")?image:"/videos/holistic-house/film-collection-v2/"+image;
 
 export function MandalaMagicMirrorTitle({locale}:{locale:VideoLocale}){
@@ -106,7 +106,7 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
  onComplete:(value:MirrorResolution)=>boolean|void;onExpand:()=>void;
 }){
  const [scope,setScope]=useState<MirrorScope>("me");
- const [screen,setScreen]=useState<"landing"|"topic">("landing");
+ const [screen,setScreen]=useState<"landing"|"format"|"topic">("landing");
  const [videoFormat,setVideoFormat]=useState<MirrorVideoFormat|undefined>(undefined);
  const [formatMenuOpen,setFormatMenuOpen]=useState(false);
  const [guideOpen,setGuideOpen]=useState(false);
@@ -137,12 +137,17 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
   onWishChange(scopeWishes[next]||"");
   onScopeChange(next);onSelectCategory(choices[next][0].theme);changeStep(1);
  };
- // The three whole-card buttons, not a separate Plan control, open Topic.
+ // Three visible audience cards open Format; a format row then opens Topic.
  const enterScreen=(next:MirrorScope)=>{
   if(disabled)return;
   if(next!==scope)switchScope(next);
   else changeStep(1);
   closeExistingIntro();
+  setScreen("format");setFormatMenuOpen(false);setGuideOpen(false);
+ };
+ const chooseFormat=(next:MirrorVideoFormat)=>{
+  if(disabled)return;
+  setVideoFormat(next);closeExistingIntro();changeStep(1);
   setScreen("topic");setFormatMenuOpen(false);setGuideOpen(false);
  };
  const playExistingIntro=()=>{
@@ -230,10 +235,38 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
    </button>
   </div>
  </section>;
+ if(screen==="format")return <section className={css.goals+" "+css.formatScreen} data-hh-mirror-goals
+  data-hh-mirror-screen="format" data-hh-mirror-mode={scope} data-hh-mirror-step={1}
+  aria-label={copy.formatTitle}>
+  <button type="button" data-hh-mirror-back-format className={css.formatBack}
+   onClick={()=>{closeExistingIntro();setScreen("landing");changeStep(1);}}>
+   <ArrowLeft size={17} aria-hidden="true"/>{copy.back}
+  </button>
+  <header className={css.formatHero}>
+   <span className={css.formatHeroKicker}><Sparkles size={20} aria-hidden="true"/>{copy.formatTitle}</span>
+   <p>{scope==="me"?copy.therapy:scope==="business"?copy.work:copy.other}</p>
+  </header>
+  <div className={css.formatRows} role="group" aria-label={copy.formatTitle}>
+   {formatOptions.map(option=><button type="button" key={option.id}
+    className={css.formatRow} data-hh-mirror-video-format={option.id}
+    aria-pressed={videoFormat===option.id} disabled={disabled}
+    onClick={()=>chooseFormat(option.id)}>
+    <img src={option.image} alt="" loading="eager" decoding="async"/>
+    <span className={css.formatRowCopy}>
+     <strong>{copy[option.id]}</strong>
+     <small>{copy[(option.id+"Help") as "basicHelp"|"proHelp"|"vipHelp"]}</small>
+     <span className={css.formatRowPrice}><Sparkles size={16} aria-hidden="true"/>
+      {option.credits.toLocaleString("en-US").replaceAll(","," ")} XP</span>
+    </span>
+    <span className={css.formatRowArrow} aria-hidden="true"><ArrowRight size={22}/></span>
+   </button>)}
+  </div>
+  <p className={css.formatPlanningNote}>{copy.formatNote}</p>
+ </section>;
  return <section className={css.goals} data-hh-mirror-screen="topic" data-hh-mirror-goals data-hh-mirror-mode={scope}
   data-hh-mirror-step={step} data-hh-mirror-video-preview={introExpanded?"open":"closed"} aria-label={scope==="business"?t.workQuestion:t.question}>
   <button type="button" data-hh-mirror-back-landing className={css.backLanding}
-   onClick={()=>{closeExistingIntro();setScreen("landing");changeStep(1);}}><ArrowLeft size={16}/>{copy.back}</button>
+   onClick={()=>{closeExistingIntro();setScreen("format");changeStep(1);}}><ArrowLeft size={16}/>{copy.formatTitle}</button>
   <header className={css.therapyHero}>
    <span className={css.therapyEyebrow}><Sparkles size={23} aria-hidden="true"/>{scope==="me"?copy.therapy:scope==="business"?copy.work:copy.other}</span>
    <p>{scope==="me"?copy.therapyHint:scope==="business"?copy.workHint:copy.otherHint}</p>

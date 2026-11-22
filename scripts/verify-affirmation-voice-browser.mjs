@@ -31,6 +31,12 @@ async function revealMirrorAdvanced(page,engine="chromium"){
       if(engine==="webkit")await entry.tap();
       else await entry.click();
     }
+    // Open the visible Format row after selecting an audience.
+    const format=mirror.locator('[data-hh-mirror-video-format="basic"]');
+    if(await format.isVisible()){
+      if(engine==="webkit")await format.tap();
+      else await format.click();
+    }
     const composer=mirror.locator('[data-hh-mirror-composer]');
     for(let step=0;step<3&&!await composer.isVisible();step++){
       const back=mirror.locator('[data-hh-mirror-back]');
@@ -146,6 +152,30 @@ async function verifyWorkspaceHydration(browser,locale){
     await page.setViewportSize({width:390,height:840});
     await mirror.locator('[data-hh-mirror-enter="me"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","me");
+    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","format");
+    await expect(mirror.locator('[data-hh-mirror-video-format]')).toHaveCount(3);
+    for(const width of [320,354,390,430]){
+      await page.setViewportSize({width,height:840});
+      const geometry=await mirror.evaluate(element=>({
+        cards:[...element.querySelectorAll('[data-hh-mirror-video-format]')].map(node=>{
+          const rect=node.getBoundingClientRect();return {top:rect.top,bottom:rect.bottom,width:rect.width};
+        }),
+        scrollWidth:document.documentElement.scrollWidth,viewport:innerHeight
+      }));
+      assert.ok(geometry.cards.length===3&&geometry.cards.every(card=>card.top>=0&&card.width>=275),
+        "all three format rows visible at "+width+": "+JSON.stringify(geometry));
+      assert.ok(geometry.cards[2].bottom<geometry.viewport-64,
+        "format rows above bottom dock "+width+": "+JSON.stringify(geometry));
+      assert.ok(geometry.scrollWidth<=width+1,"no format overflow at "+width);
+    }
+    await page.setViewportSize({width:390,height:840});
+    for(const [id,credits] of [["basic","250"],["pro","500"],["vip","2 000"]])
+      await expect(mirror.locator('[data-hh-mirror-video-format="'+id+'"]')).toContainText(credits+" XP");
+    await mirror.locator('[data-hh-mirror-back-format]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","landing");
+    await mirror.locator('[data-hh-mirror-enter="me"]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","format");
+    await mirror.locator('[data-hh-mirror-video-format="pro"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
     await expect(mirror.locator('[data-hh-mirror-composer] textarea')).toBeVisible();
     await expect(page.locator('[data-video-live-stage]')).toBeHidden();
@@ -165,11 +195,18 @@ async function verifyWorkspaceHydration(browser,locale){
     for(let index=0;index<4;index++)await expect(mirror.locator('[data-hh-mirror-goal-choice]').nth(index))
       .toContainText(approvedAxisLabels[index]);
     await mirror.locator('[data-hh-mirror-back-landing]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","format");
+    await mirror.locator('[data-hh-mirror-back-format]').click();
     await mirror.locator('[data-hh-mirror-enter="others"]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","format");
+    await mirror.locator('[data-hh-mirror-video-format="basic"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","present");
     await mirror.locator('[data-hh-mirror-back-landing]').click();
+    await mirror.locator('[data-hh-mirror-back-format]').click();
     await mirror.locator('[data-hh-mirror-enter="work"]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","format");
+    await mirror.locator('[data-hh-mirror-video-format="vip"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","business");
     await expect(mirror.locator('header').first()).toContainText({

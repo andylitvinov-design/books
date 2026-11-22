@@ -40,9 +40,9 @@ test("the approved mobile Mirror contains only three scopes, a compact input Nex
  assert.match(browser,/await revealMirrorAdvanced\(page,engine\)/);
  assert.doesNotMatch(browser,/await expect\(moreGoals\)\.toBeVisible\(\{timeout:15000\}\)/);
  assert.match(mirror,/videoFormat\}\);/);
- for(const price of ["250","500","1000"])assert.ok(mirror.includes("credits:"+price));
+ for(const price of ["250","500","2000"])assert.ok(mirror.includes("credits:"+price));
  assert.match(mirrorCss,/\.destinationCards/);
- assert.match(mirrorCss,/\.formatGrid/);
+ assert.match(mirrorCss,/\.formatRows/);
  assert.match(mirrorCss,/\.composerToolbar/);
  assert.match(mirrorCss,/reiki-approved-sunrise-v3\.webp/);
  assert.match(mirror,/src="\/images\/holistic-house\/magic-mirror-lotus\.webp"/);
@@ -200,21 +200,34 @@ test("Mirror quiz image URL survives category then subcategory and topic",()=>{
  assert.equal((mirror.match(/<img src=\{"\/videos\/holistic-house\/film-collection-v2\/"\+/g)||[]).length,0);
 });
 
-test("final three destinations are direct, localized and have no initial hidden charge or Plan",()=>{
- const landing=mirror.slice(mirror.indexOf('if(screen==="landing")'),mirror.indexOf('return <section className={css.goals} data-hh-mirror-screen="topic"'));
+test("three real audience cards open the dedicated Format screen before Topic, with no XP debit",()=>{
+ const landing=mirror.slice(mirror.indexOf('if(screen==="landing")'),mirror.indexOf('if(screen==="format")'));
+ const format=mirror.slice(mirror.indexOf('if(screen==="format")'),mirror.indexOf('return <section className={css.goals} data-hh-mirror-screen="topic"'));
  assert.equal((landing.match(/data-hh-mirror-enter="/g)||[]).length,3);
  for(const [id,next] of [["me","me"],["others","present"],["work","business"]])
   assert.match(landing,new RegExp('data-hh-mirror-enter="'+id+'"[^]*?onClick=\\{\\(\\)=>enterScreen\\("'+next+'"\\)\\}'));
  for(const name of ['therapy:"Видео для себя"','therapy:"Videos for Myself"','therapy:"Vídeos para mí"'])
   assert.ok(mirror.includes(name),name);
+ assert.match(mirror,/useState<"landing"\|"format"\|"topic">\("landing"\)/);
  assert.match(mirror,/const enterScreen=\(next:MirrorScope\)=>/);
  assert.match(mirror,/if\(next!==scope\)switchScope\(next\)/);
+ assert.match(mirror,/setScreen\("format"\)/);
+ assert.match(mirror,/const chooseFormat=\(next:MirrorVideoFormat\)=>/);
+ assert.match(mirror,/setVideoFormat\(next\)/);
  assert.match(mirror,/setScreen\("topic"\)/);
  assert.doesNotMatch(landing,/data-hh-mirror-plan|data-hh-mirror-video-format|formatOptions/);
+ assert.equal((format.match(/data-hh-mirror-video-format=\{option\.id\}/g)||[]).length,1);
+ assert.match(format,/data-hh-mirror-back-format/);
+ assert.match(format,/onClick=\{\(\)=>chooseFormat\(option\.id\)\}/);
+ assert.doesNotMatch(format,/data-hh-mirror-plan|data-hh-mirror-ideas-cta/);
+ for(const price of ["250","500","2000"])assert.ok(mirror.includes("credits:"+price));
  assert.match(mirror,/useState<MirrorVideoFormat\|undefined>\(undefined\)/);
- assert.match(mirror,/data-hh-mirror-tier-option=\{option.id\}/);
+ assert.match(mirror,/data-hh-mirror-tier-option=\{option\.id\}/);
+ assert.match(mirrorCss,/\.formatRows/);
+ assert.match(mirrorCss,/\.formatRowPrice/);
  assert.match(mirrorCss,/\.goals\.landing \.destinationCards/);
  assert.match(mobile,/Three-category Magic Mirror/);
+ assert.match(browser,/data-hh-mirror-back-format/);
 });
 
 test("direct Work selection shows its own localized Topic heading, not the gift heading",()=>{
