@@ -5977,3 +5977,153 @@
   display:block
  }
 }
+
+
+/* Magic Mirror v3 — one-screen phone entry.
+   The old editor, API and original movie player stay mounted, but the old
+   full-page textual controls are not rendered as the initial Goal screen.
+   Explicit advanced tap still exposes the original protected editor. */
+@media(max-width:759px){
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder{
+  display:grid!important;align-content:start!important;gap:5px!important;
+  width:100%;max-width:540px;min-width:0;margin:0 auto!important;
+  padding:0 11px calc(88px + env(safe-area-inset-bottom,0px))!important;
+  background:linear-gradient(175deg,#fff9f1 0%,#f9f2e5 80%,#fbf7ef 100%)
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .quickBuilder>:not(.quickBrandBar):not([data-hh-mirror-title]):not(.previewStage):not([data-hh-mirror-goals]):not([data-video-director-chat-details][open]){
+  display:none!important
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder>.quickBrandBar{
+  display:flex!important;order:1!important;min-width:0;min-height:42px;
+  margin:0 0 2px!important;padding:2px 1px!important;
+  background:transparent!important;box-shadow:none!important
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBrandPhoto{
+  display:none!important
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder>[data-hh-mirror-title]{
+  display:grid!important;order:2!important;margin:0!important
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder>.previewStage{
+  display:block!important;order:3!important;min-width:0;min-height:0;
+  margin:0 0 1px!important;padding:0 6px 5px!important;
+  border:0!important;border-radius:0!important;
+  background:transparent!important;box-shadow:none!important
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .quickBuilder>.previewStage>:not(.heroWithRail){display:none!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .previewStage .heroWithRail{
+  position:relative;display:block!important;height:auto;min-width:0;
+  margin:0!important;padding:0 0 8px!important
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .previewStage .heroWithRail:after{
+  content:"";position:absolute;bottom:0;left:-3%;width:106%;height:9px;
+  background:linear-gradient(#c4c8cb,#818b90 40%,#e2e3e1 75%,#a8acad);
+  border-radius:2px 2px 55% 55%;box-shadow:0 3px 8px #66544023
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .previewStage .hero{
+  display:block!important;width:100%!important;
+  height:clamp(110px,18.2dvh,168px)!important;min-height:0!important;max-height:none!important;
+  aspect-ratio:auto!important;margin:0!important;
+  border:8px solid #242c33!important;border-bottom-width:4px!important;
+  border-radius:13px 13px 5px 5px!important;overflow:hidden!important;
+  box-shadow:0 5px 16px #1e28252c!important
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .previewStage .heroRail,
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .previewStage .heroEditorial,
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .previewStage .heroDuration,
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .previewStage .quickSoundBadge{display:none!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .previewStage .therapyHero,
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .previewStage .therapyHeroPlayback,
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .previewStage .therapyHeroVideo{
+  width:100%;height:100%;min-height:0!important;max-height:none!important
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .previewStage .therapyHeroKicker,
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .previewStage .therapyHeroTitle,
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .previewStage .therapyHeroCaption{display:none!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .previewStage .therapyHeroLaunch{
+  display:grid!important;place-items:center;position:absolute;inset:0;width:100%;height:100%;
+  min-height:0!important;border:0!important;background:transparent!important
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .previewStage .therapyHeroPlayIcon{
+  display:grid;place-items:center;width:51px;height:51px;min-width:51px;min-height:51px;
+  border:2px solid #fff;border-radius:50%;
+  background:#0c25247d;color:#fff;box-shadow:0 2px 12px #14252552
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder>[data-hh-mirror-goals]{
+  display:grid!important;order:4!important;gap:6px!important;margin:0!important;min-width:0
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"][data-hh-mirror-step="2"]
+  .quickBuilder>[data-hh-mirror-title],
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"][data-hh-mirror-step="2"]
+  .quickBuilder>.previewStage,
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"][data-hh-mirror-step="3"]
+  .quickBuilder>[data-hh-mirror-title],
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"][data-hh-mirror-step="3"]
+  .quickBuilder>.previewStage{display:none!important}
+}
+@media(max-width:759px) and (max-height:740px){
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder{
+  gap:2px!important;padding-bottom:calc(78px + env(safe-area-inset-bottom,0px))!important
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .previewStage .hero{
+  height:clamp(87px,14.8dvh,115px)!important;border-width:6px!important;border-bottom-width:3px!important
+ }
+}
+@media(max-width:359px){
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder{
+  padding-inline:7px!important
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .previewStage .hero{
+  height:clamp(86px,16dvh,115px)!important;border-width:5px!important
+ }
+}
+
+/* Magic Mirror owner reference 2026-11-21. Only mobile Video Goal first view. */
+@media(max-width:759px){
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder{
+  margin-top:-27px!important;gap:3px!important;padding-inline:10px!important;
+  background-image:radial-gradient(ellipse at 50% 12%,#fff9f1ed,transparent 60%),
+   url('/images/holistic-house/homepage-botanical.svg'),
+   url('/images/holistic-house/homepage-botanical.svg'),
+   linear-gradient(175deg,#fff9f1,#fcf1e7 75%,#fff9f0)!important;
+  background-size:auto,100px auto,100px auto,auto!important;
+  background-position:center,left -46px top 65px,right -45px top 190px,center!important;
+  background-repeat:no-repeat!important
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder>.quickBrandBar{min-height:45px!important;margin:0!important;padding:0 2px!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBrandIdentity strong{font-size:clamp(17px,4.8vw,23px)!important;color:#0a4134!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBrandIdentity small{font-size:clamp(10px,2.95vw,12px)!important;color:#5b6a65!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder>[data-hh-mirror-title]{margin:0 0 2px!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder>.previewStage{margin:0!important;padding:0 5px 2px!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .previewStage .heroWithRail{padding-bottom:10px!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .previewStage .heroWithRail:after{bottom:0!important;height:11px!important;background:linear-gradient(#e6e7e9,#aeb5b9 48%,#e4e6e5 76%,#9ea7ac)!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .previewStage .hero{height:clamp(116px,18.3dvh,174px)!important;border:6px solid #242c2e!important;border-bottom-width:5px!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .previewStage .therapyHeroLaunch{background:url('/images/holistic-house/reiki-approved-sunrise-v3.webp') center 48%/cover no-repeat!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .previewStage .therapyHeroLaunch{z-index:2!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .previewStage .therapyHeroPlayIcon{width:49px!important;height:49px!important;min-width:49px!important;min-height:49px!important;background:#163e3a7c!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder>[data-hh-mirror-goals]{gap:4px!important}
+}
+@media(max-width:759px) and (max-height:740px){
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder{margin-top:-16px!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .previewStage .hero{height:clamp(88px,15dvh,114px)!important}
+}
+@media(max-width:359px){
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder{margin-top:-17px!important;padding-inline:7px!important}
+}

@@ -20,8 +20,8 @@ test("Support branding and four always visible paths remain on the existing Serv
    const ids=[...quiz.slice(start,end).matchAll(/^\s+"(stress_energy|money_growth|relationships_esteem|business_support)",?\s*$/gm)].map(x=>x[1]);
    assert.deepEqual(ids,wanted,"Two-column row-major order in "+label);
  }
- assert.match(css,/\.choices\[data-question-kind="topic"\] \.choice:nth-child\(2\) \.choiceMedia\{background-position:0 100%\}/);
- assert.match(css,/\.choices\[data-question-kind="topic"\] \.choice:nth-child\(3\) \.choiceMedia\{background-position:100% 0\}/);
+ assert.match(css,/\.choices\[data-question-kind="topic"\] \.choice:nth-child\(2\) \.choiceMedia\{background-position:0 83%\}/);
+ assert.match(css,/\.choices\[data-question-kind="topic"\] \.choice:nth-child\(3\) \.choiceMedia\{background-position:100% 17%\}/);
  assert.match(quiz,/const questionKeys = \["topic", "need", "mode", "budget"\]/);
  assert.match(quiz,/data-services-quiz-questions="4"/);
  assert.match(quiz,/data-services-quiz-step=\{step \+ 1\}/);
@@ -60,13 +60,21 @@ test("same-page categories and production browser acceptance remain",()=>{
  assert.match(quiz,/data-support-luxe-room/);
  assert.match(quiz,/data-support-choice-photo/);
  assert.match(css,/SUPPORT_THERAPY_CABINET_V2_20261121/);
- assert.match(css,/support-therapy-cabinet\.webp/);
+ assert.match(css,/support-therapy-cabinet-hd\.webp/);
  assert.match(css,/OWNER_APPROVED_CABINET_PROPORTIONS_20261121/);
- assert.match(css,/support-luxury-choice-photos\.webp/);
+ assert.match(css,/support-personal-choice-photos-hd\.webp/);
  const photo = readFileSync(new URL("../public/images/holistic-house/support-therapy-cabinet.webp",import.meta.url));
  const sprite = readFileSync(new URL("../public/images/holistic-house/support-luxury-choice-photos.webp",import.meta.url));
  assert.ok(photo.length>=12000,"Therapy room should not be the older 200px placeholder");
  assert.ok(sprite.length>=4000,"Four reference card photos must be real first-party artwork");
+ const hdPhoto=readFileSync(new URL("../public/images/holistic-house/support-therapy-cabinet-hd.webp",import.meta.url));
+ assert.ok(hdPhoto.length>=150000 && hdPhoto.length<=270000,"User-approved 1024px room must remain Retina sharp");
+ assert.equal(hdPhoto.toString("ascii",0,4),"RIFF");
+ const personalPhotos=readFileSync(new URL("../public/images/holistic-house/support-personal-choice-photos-hd.webp",import.meta.url));
+ assert.ok(personalPhotos.length>=120000 && personalPhotos.length<=260000,"The four personal images must be high resolution");
+ assert.equal(personalPhotos.toString("ascii",0,4),"RIFF");
+ assert.match(quiz,/<svg className=\{styles\.lotusMark\}/);
+ assert.match(css,/SUPPORT_MOBILE_FIRST_SCREEN_FIT_20261121/);
  assert.equal(photo.toString("ascii",0,4),"RIFF");
  assert.equal(sprite.toString("ascii",0,4),"RIFF");
  const themedDock=read("app/unified-mobile-dock.css");
@@ -88,7 +96,37 @@ test("same-page categories and production browser acceptance remain",()=>{
    assert.ok(css.includes(".category:nth-child("+index+") .categoryMedia"),"Missing photographic category "+index);
  assert.match(quiz,/serviceGroupAnchor\(servicesCategoryTargets\[key\]\)/);
  const browser=read("scripts/verify-public-services-production.mjs");
- for(const needle of ['data-services-quiz-choice="business_support"','data-services-quiz-choice="business_strategy"','data-services-quiz-choice="consultation"','data-services-quiz-choice="money_growth"','data-services-quiz-summary','data-services-quiz-results','assist=chat'])assert.ok(browser.includes(needle),needle);
+ for(const needle of ['data-services-business-menu','data-services-business-category="express"','data-business-offer="strategy-3"','data-business-get-details','data-services-quiz-choice="money_growth"','data-services-quiz-results','assist=chat'])assert.ok(browser.includes(needle),needle);
  assert.doesNotMatch(browser,/data-services-more-topics/);
  assert.match(read("app/es/services/page.tsx"),/<ServicesAssistQuiz locale="es"\s*\/>/);
+});
+
+test("ten Support directions are visible and empty quiz results offer useful actions",()=>{
+  const c=read("components/services-assist-quiz.tsx");
+  const styles=read("components/services-assist-quiz.module.css");
+  const recommendations=read("components/assist-top-recommendations.tsx");
+  for(const key of ["constellations","practices","courses","tests"]){
+    assert.ok(c.includes('key: "'+key+'"'),key+" must have a visible card");
+    assert.ok(styles.includes('data-services-quiz-category="'+key+'"'),key+" must use its own photograph");
+  }
+  assert.match(c,/data-services-extra-categories/);
+  assert.match(c,/categoryGridMore/);
+  assert.doesNotMatch(c,/<details className=\{styles\.categoryMore\}/);
+  assert.match(c,/data-services-quiz-summary/);
+  assert.match(c,/onAdjustFilters/);
+  assert.match(recommendations,/data-support-empty-result/);
+  assert.match(recommendations,/services\/free-situation-review/);
+  assert.match(recommendations,/styles\.disclosure/);
+});
+
+test("goal entry sits above progressive photo cards with Next on its right and final CTA only",()=>{
+ assert.match(quiz,/data-services-goal-entry/);
+ assert.match(quiz,/className=\{styles\.goalNext\} data-services-quiz-next/);
+ assert.ok(quiz.indexOf("data-services-goal-entry")<quiz.indexOf('data-services-quiz-form'));
+ assert.match(quiz,/if\(key!=="budget"\)/);
+ assert.match(quiz,/setStep\(index=>Math\.min\(index\+1,questionKeys\.length-1\)\)/);
+ assert.match(quiz,/step===questionKeys\.length-1 && ready && !submitted/);
+ assert.match(css,/SUPPORT_GOAL_FIRST_PROGRESSIVE_20261121/);
+ assert.match(css,/grid-template-columns:minmax\(0,1fr\) 79px/);
+ assert.match(css,/\.root \.goalNext/);
 });

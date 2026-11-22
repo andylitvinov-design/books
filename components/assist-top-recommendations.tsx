@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, BookOpen } from "lucide-react";
+import { ArrowRight, BookOpen, SlidersHorizontal } from "lucide-react";
 import { ServicesCardActions } from "@/components/services-card-actions";
 import { ServicesThreeVisibleOptions } from "@/components/services-three-visible-options";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -51,7 +51,7 @@ const groupPriceNote:Record<PublicLocale,string> = {
 
 const copy = {
   ru:{
-    heading:"Предложения под ваш запрос",
+    heading:"Предложения под ваш запрос",noMatchTitle:"Точного совпадения нет",adjust:"Изменить условия",freeAlternative:"Бесплатный письменный разбор",disclaimer:"Важная информация",
     detail:"Конкретные услуги, подобранные под описанную проблему.",
     request:"Заказать",open:"Открыть",more:"Все предложения",price:"Стоимость уточните в предложении",
     none:"По выбранным условиям подходящих предложений пока нет. Измените формат или бюджет.",
@@ -68,7 +68,7 @@ const copy = {
     },
   },
   en:{
-    heading:"Offers for your situation",
+    heading:"Offers for your situation",noMatchTitle:"No exact match",adjust:"Change choices",freeAlternative:"Free written review",disclaimer:"Before requesting",
     detail:"Specific services selected for the problem you described.",
     request:"Request",open:"View",more:"All services",price:"See the offer for pricing",
     none:"No suitable offers match those conditions. Try another format or budget.",
@@ -85,7 +85,7 @@ const copy = {
     },
   },
   es:{
-    heading:"Ofertas para tu situación",
+    heading:"Ofertas para tu situación",noMatchTitle:"No hay coincidencia exacta",adjust:"Cambiar opciones",freeAlternative:"Revisión escrita gratis",disclaimer:"Información importante",
     detail:"Servicios concretos seleccionados para el problema que describes.",
     request:"Solicitar",open:"Ver",more:"Todos los servicios",price:"Consulta el precio en la oferta",
     none:"No hay ofertas que cumplan esas condiciones. Prueba otro formato o presupuesto.",
@@ -104,11 +104,11 @@ const copy = {
 } as const;
 
 export function AssistTopRecommendations({
-  locale,focus,preferences={},priorityIds=[],matchingIds,allowedIds,noMatchLabel,categoryGroups=false,
+  locale,focus,preferences={},priorityIds=[],matchingIds,allowedIds,noMatchLabel,categoryGroups=false,onAdjustFilters,
 }:{
   locale:PublicLocale;focus:Focus;preferences?:AssistPreferences;
   priorityIds?:readonly string[];matchingIds?:readonly string[];allowedIds?:readonly string[];noMatchLabel?:string;
-  categoryGroups?:boolean;
+  categoryGroups?:boolean;onAdjustFilters?:()=>void;
 }){
   const t=copy[locale];
   // Keep budget/mode/channel hard filters authoritative even if the same
@@ -122,13 +122,34 @@ export function AssistTopRecommendations({
   // The quiz presents TWO ranked service categories, each containing the same
   // three concrete, priced request cards as the public Services catalogue.
   // Other contexts retain the original three individual recommendations.
+  if (categoryGroups && !productIds.length) {
+    return <section className={styles.root + " " + styles.quizResult + " " + styles.noMatchResult}
+      id="assist-recommendations" tabIndex={-1} data-assist-best-three
+      aria-labelledby="assist-best-three-title">
+      <header className={styles.header}>
+        <h2 id="assist-best-three-title">{t.heading}</h2>
+      </header>
+      <div className={styles.emptyMatch} data-support-empty-result role="status">
+        <span className={styles.emptyMark} aria-hidden="true"><SlidersHorizontal size={20}/></span>
+        <div><strong>{t.noMatchTitle}</strong><p>{noMatchLabel??t.none}</p></div>
+      </div>
+      <div className={styles.emptyActions}>
+        {onAdjustFilters?<button type="button" onClick={onAdjustFilters}
+          className={styles.adjustAction}><SlidersHorizontal size={16} aria-hidden="true"/>{t.adjust}</button>:null}
+        <Link href={"/"+locale+"/services/free-situation-review"} prefetch={false}
+          className={styles.freeAction}>{t.freeAlternative}<ArrowRight size={16} aria-hidden="true"/></Link>
+      </div>
+      <details className={styles.disclosure}><summary>{t.disclaimer}</summary>
+        <p className={styles.note}>{t.note}</p></details>
+    </section>;
+  }
   if (categoryGroups && productIds.length) {
     const focusKey=focus??"general";
     const rankedGroups = [...new Set([
       ...productIds.map(id=>groupForProduct[id]),
       ...groupFallback[focusKey],
     ])].slice(0,2);
-    return <section className={styles.root} id="assist-recommendations" tabIndex={-1}
+    return <section className={styles.root + " " + styles.quizResult} id="assist-recommendations" tabIndex={-1}
       data-assist-best-three data-assist-grouped-results aria-labelledby="assist-best-three-title">
       <header className={styles.header}>
         <h2 id="assist-best-three-title">{t.heading}</h2>
@@ -148,7 +169,8 @@ export function AssistTopRecommendations({
       <Link className={styles.all} href={"/"+locale+"/services/catalog#service-listings"} prefetch={false}>
         <BookOpen size={19} aria-hidden="true"/>{t.more}<ArrowRight size={17} aria-hidden="true"/>
       </Link>
-      <p className={styles.note}>{t.note}</p>
+      <details className={styles.disclosure}><summary>{t.disclaimer}</summary>
+        <p className={styles.note}>{t.note}</p></details>
     </section>;
   }
   return <section className={styles.root} id="assist-recommendations" tabIndex={-1} data-assist-best-three aria-labelledby="assist-best-three-title">

@@ -182,7 +182,7 @@ test('Fish natural voice accepts the exact live/replay persona payload but no ex
   const route=readFileSync(new URL('../app/api/app/my-coach/voice/synthesize/route.js',import.meta.url),'utf8')
   assert.match(speech,/body:JSON\.stringify\(\{provider:voiceProvider,locale:replyLocale,personaId,/)
   assert.match(dialog,/body:JSON\.stringify\(\{provider:chosenCloudProvider,personaId,/)
-  assert.match(dialog,/const chosenCloudProvider=geminiVoiceReady\?geminiVoiceTier:cloudProvider/)
+  assert.match(dialog,/const chosenCloudProvider=usingExistingVoice\?cloudProvider:\s*geminiVoiceReady\?geminiVoiceTier:null/)
   assert.match(route,/const \{provider:_,\.\.\.fishRaw\}=raw/)
   assert.match(route,/normalizeMyCoachFishRequest\(fishRaw\)/)
   const normal={locale:'ru',text:'Какой следующий шаг сейчас поможет?',voiceConsent:true,

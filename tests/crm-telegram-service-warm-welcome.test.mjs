@@ -18,7 +18,10 @@ test('first service response is a short thematic photo caption; one button start
   assert.ok(intro.length<260,lang+' '+service+' should fit one light Telegram photo caption');
   assert.match(intro,/Ali/);
   assert.doesNotMatch(intro,/OpenRouter|medical records|медицинских документов|documentos médicos|\/stop|consent|соглас|aprobación|payment|оплат/i);
-  assert.equal(countQuestions(intro),0);
+  // Service-first welcome is informational, never a premature booking request.
+  assert.ok(countQuestions(intro)<=1);
+  assert.match(intro,/Выберите, что вам хотелось бы узнать|What would you like to know first|Qué te gustaría saber primero/u);
+  assert.doesNotMatch(intro,/Would you like to request this service|Хотите оформить заявку|Quieres solicitar este servicio/i);
   const consent=v3ServiceCopy(lang,service).consent;
   assert.doesNotMatch(consent,/OpenRouter/);
   assert.doesNotMatch(consent,/external AI model|медицинских документов|documentos médicos/i);
@@ -111,7 +114,9 @@ test('service welcome photo is limited to first signed consent message and uses 
  assert.ok(v3.includes("const purposeReady=general||ctx.mode===FREE_DIAGNOSTIC_MODE||"));
  assert.ok(v3.includes("(ctx.supportSelection&&ctx.conversationKind!=='general')?chatAllowed:serviceAllowed;"));
  assert.ok(v3.includes("if(!agrees||!purposeReady)"));
- assert.ok(v3.includes("serviceCopy?'consent':ctx.mode===FREE_DIAGNOSTIC_MODE"));
+ assert.ok(v3.includes("const menuBooking=Boolean(serviceCopy&&ctx.serviceMenuShown&&"));
+ assert.ok(v3.includes("menuBooking?'service_consent':serviceCopy?'consent':"));
+ assert.ok(v3.includes("if(serviceCopy&&ctx.serviceMenuShown&&ctx.conversationKind!=='general')"));
  assert.match(v3,/if\(!agrees\|\|!purposeReady\)/);
  assert.match(v3,/stage='interview',locale=\$3,ai_consent_at=now\(\)/);
  assert.match(v3,/serviceCopy\?\.first/);

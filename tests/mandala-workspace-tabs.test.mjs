@@ -332,8 +332,10 @@ test("validated Messenger video handoff visibly opens the original Studio Direct
  assert.match(director,/if\(panel instanceof HTMLDetailsElement\)panel\.open=true/);
  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
  assert.match(browser,/const handoffPanel=page\.locator/);
- assert.match(browser,/await handoffPanel\.evaluate\(element=>\{element\.open=true;\}\)/);
- assert.match(browser,/await expect\(handoffPanel\)\.toBeVisible/);
+ assert.match(browser,/await expect\(handoffPanel\)\.toBeHidden\(\)/,
+   "ordinary guests must not see a private Messenger handoff");
+ assert.doesNotMatch(browser,/await handoffPanel\.evaluate\(element=>\{element\.open=true;\}\)/,
+   "browser QA must not forge handoff state");
 
  assert.match(studio,/data-video-director-chat-details data-workspace-section="video"/);
  const handoffStart=css.lastIndexOf("/* Messenger Video validated handoff visibility.");
@@ -343,6 +345,9 @@ test("validated Messenger video handoff visibly opens the original Studio Direct
  assert.match(rule,/data-video-scenario-open="false"\]:not\(\[data-hh-video-ihelp-open="true"\]\)/);
  assert.match(rule,/\[data-video-director-chat-details\]\[data-workspace-section="video"\]\[open\]\s*\{\s*display:grid!important;/);
  assert.doesNotMatch(rule,/display:none!important/,"the opened handoff must be visible");
+ const compactCss=css.slice(css.indexOf("/* Magic Mirror v3"));
+ assert.match(compactCss,/:not\(\[data-video-director-chat-details\]\[open\]\)/,
+   "compact Mirror keeps validated, explicitly opened Messenger handoffs visible");
  assert.match(css,/\[data-workspace-section="video"\]:not\(\[data-video-topic-section\]\)\s*\{\s*display:none!important;/,
    "unopened legacy Goals sections remain hidden");
 });

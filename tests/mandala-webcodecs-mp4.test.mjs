@@ -203,7 +203,7 @@ test("hydration progresses Goals → Ideas through a real tap without hidden leg
   const end=browser.indexOf("// Real guest route browser acceptance",start);
   const flow=browser.slice(start,end);
   const hydrate=flow.indexOf('data-video-studio-hydrated","true"');
-  const continueTap=flow.indexOf("await continueToIdeas.click()",hydrate);
+  const continueTap=flow.indexOf("await mirror.locator('[data-hh-mirror-next]').click()",hydrate);
   const goal=flow.indexOf('const ideasGoalPane=page.locator',continueTap);
   const chosen=flow.indexOf('data-video-ideas-goal-choice="rest"',goal);
   const next=flow.indexOf('data-video-ideas-goal-next',chosen);
@@ -295,17 +295,24 @@ test("Safari deferred MP4 decoding requires a real user Play gesture, not a fals
   assert.match(e2e,/await output\.waitFor\(\{state:"visible",timeout:45000\}\)/);
 });
 
-test("Safari MP4 finalized bytes require real tracks and decodable beginning, middle and end",()=>{
+test("Safari MP4 requires real H264/AAC tracks and decoded beginning/middle/end frames",()=>{
   for(const marker of [
     "new Input({","new BlobSource(new Blob([bytes]",
     "formats:[MP4]","await input.canRead()",
     "input.getPrimaryVideoTrack()","track.getDurationFromMetadata()",
     "input.getPrimaryAudioTrack()","track.canDecode()",
-    "new VideoSampleSink(track)","const first=await track.getFirstTimestamp()",
-    "Math.max(0,first+.05)","Math.max(0,expected.seconds/2)","Math.max(0,expected.seconds-.5)",
-    "for(const at of checkpoints)","sink.getSample(at)","sample?.close()","input.dispose()","await output.getMimeType()",
+    "new VideoSampleSink(track)","await track.getFirstTimestamp()",
+    "input.dispose()","await output.getMimeType()",
     "verifyDecodableMp4Export(bytes,{",
   ])assert.ok(helper.includes(marker),marker);
+  const verify=helper.slice(helper.indexOf("async function verifyDecodableMp4Export("),
+    helper.indexOf("export async function verifyNativeSafariMp4Tracks"));
+  for(const marker of [
+    "const checkpoints=[","Math.max(0,first+.05)",
+    "Math.max(0,expected.seconds/2)","Math.max(0,expected.seconds-.5)",
+    "for(const at of checkpoints)","await sink.getSample(at)",
+    "sample.timestamp<at-1.25","sample?.close()",
+  ])assert.ok(verify.includes(marker),marker);
   assert.match(helper,/document.createElement\("video"\).canPlayType\(expected.mime\)/);
   assert.match(helper,/video_output_codec_unsupported/);
   assert.match(helper,/video_output_invalid_tracks/);
@@ -713,4 +720,32 @@ test("Safari and local WebCodecs exports decode first/middle/last actual MP4 sam
   assert.match(native,/sample\?\.close\(\)/);
   assert.match(studio,/playbackStatus==="ready"/,
     "Ready continues to require actual playback and credit confirmation");
+});
+
+test("iPhone native MP4 preserves a verified playable file before remux",()=>{
+  const part=helper.split("export async function normalizeNativeSafariMp4ForPlayback(")[1]
+    .split("/** A real H.264/AAC video/audio MP4.")[0];
+  for(const text of ["nativeSafariMp4HasPlayableTimeline","await awaitEvent(\"loadeddata\"",
+    "await awaitEvent(\"seeked\"","seconds/2","seconds-.55",
+    "URL.revokeObjectURL(objectUrl)"])
+    assert.ok(helper.includes(text),text);
+  assert.ok(part.includes('requireAudio&&(!audio||await audio.getCodec()!=="aac")'));
+  assert.ok(part.includes("if(await nativeSafariMp4HasPlayableTimeline(nativeBlob,expectedSeconds))"));
+  assert.ok(part.includes("return nativeBlob;"));
+  assert.ok(part.indexOf("nativeSafariMp4HasPlayableTimeline(nativeBlob,expectedSeconds)")<
+    part.indexOf("Conversion.init("));
+  assert.ok(part.includes("await conversion.execute()"));
+  assert.ok(studio.includes("HH_SAFARI_NATIVE_MP4_FINALIZE:"));
+  assert.ok(studio.includes('"native_mp4_remux_failed"'));
+  assert.ok(studio.includes('"native_mp4_output_unplayable"'));
+});
+test("verified Ready file offers real local Download and iOS Share",()=>{
+  const ready=readFileSync(new URL("../components/mandala-video-ready.tsx",import.meta.url),"utf8");
+  const css=readFileSync(new URL("../components/mandala-video-ready.module.css",import.meta.url),"utf8");
+  for(const text of ["const completed=Boolean(verified&&video)",
+    "{video?.blob?<div className={css.localFileActions}","data-ready-direct-download",
+    "download={\"holistic-house-personal.\"+video.extension}","data-ready-share-file",
+    "files:[file]","navigator.canShare(payload)","navigator.share(payload)"])
+    assert.ok(ready.includes(text),text);
+  assert.ok(css.includes(".localFileActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))"));
 });
