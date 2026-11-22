@@ -275,6 +275,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     let socket
     try{
       socket=new WebSocket(geminiLiveSocketUrl(token.token))
+      // Gemini can send JSON as binary frames. ArrayBuffer keeps decoding synchronous
+      // so setup, PCM and interruption stay in their original wire order.
+      socket.binaryType='arraybuffer'
     }catch{notify(t.failure);stop();return}
     r.socket=socket
     r.ready=false
@@ -292,7 +295,6 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     }
     socket.onmessage=event=>{
       if(r.ended||r.socket!==socket)return
-      if(typeof event.data!=='string')return
       handleAudio(r,event.data)
       if(r.ready)clearTimeout(setupTimer)
     }
