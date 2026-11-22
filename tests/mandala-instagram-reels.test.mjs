@@ -12,6 +12,7 @@ import {selectWebCodecsForRecording} from "../lib/mandala/recording-codecs.mjs";
 
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 const studio=read("components/mandala-free-video-studio.tsx");
+const ready=read("components/mandala-video-ready.tsx");
 const mirror=read("components/mandala-magic-mirror-goal.tsx");
 const director=read("components/mandala-auto-video-director.tsx");
 const encoder=read("lib/mandala/webcodecs-mp4-export.ts");
@@ -83,6 +84,11 @@ test("four genuine editorial beats survive source-bound montage and have safe on
 test("Reel release uses the existing verified Ready/share paths and source-rights gate",()=>{
   assert.match(studio,/data-instagram-reels-profile/);
   assert.match(studio,/reelModeActive\?INSTAGRAM_REELS_PROFILE\.downloadName/);
+  assert.match(studio,/reelDownloadName=\{reelModeActive\?INSTAGRAM_REELS_PROFILE\.downloadName:null\}/);
+  assert.match(ready,/reelDownloadName\?:string\|null/);
+  assert.match(ready,/const readyDownloadName=video\?\.extension==="mp4"&&reelDownloadName/);
+  assert.match(ready,/download=\{readyDownloadName\}/);
+  assert.match(ready,/new File\(\[video\.blob\],\s*readyDownloadName/);
   assert.match(studio,/if\(!applyAutoFilm\(presetId,seconds,edit,outputAspect\)\)return/);
   assert.match(studio,/existing\.clips\.join\("\|"\)!==proposal\.montage\.sceneIds\.join\("\|"\)/);
   assert.match(studio,/paintVideoBrandStamp\(ctx,exportBrandVariant\)/);

@@ -25,6 +25,7 @@ type CourseText={number:number;title:string;motif:string;script:string};
 type Props={
   locale:PublicLocale;theme:VideoTheme;wish:string;focus:GuidedMeditationFocus;aspect:"portrait"|"landscape"|"square";
   video:VideoFile|null;verified:boolean;checking:boolean;rendering:boolean;renderProgress:number;
+  reelDownloadName?:string|null;
   previewSourceCanvasRef?:{readonly current:HTMLCanvasElement|null};
   previewAvailable:boolean;previewPlaying:boolean;previewDurationSeconds:number;previewPositionSeconds:number;
   onPreviewToggle:()=>void;onPreviewSeek:(seconds:number)=>void;
@@ -188,9 +189,11 @@ export function MandalaVideoReady({
   meditationEditor,onOpenDelivery,onRefreshLogin,onOpenCourse,onOpenTherapy,onReturnToPro,
   onGenerateBasicVideo,onStartNewVideo,onVerifyPlayback,onSaveDirect,
   onSendTelegramDirect,onShareWhatsApp,saveStatus,
-  basicFreeAvailable,basicFreeIssue,basicCreditCost,courseFlow=false,exportMode="personal"
+  basicFreeAvailable,basicFreeIssue,basicCreditCost,courseFlow=false,exportMode="personal",reelDownloadName=null
 }:Props){
   const t=COPY[locale];
+  const readyDownloadName=video?.extension==="mp4"&&reelDownloadName
+    ?reelDownloadName:"holistic-house-personal."+(video?.extension||"mp4");
   const courseActions=courseActionCopy[locale];
   const expressMaster=exportMode==="express"?getPublishedStandardMotionFilm("anti-stress-30s",locale):undefined;
   const [view,setView]=useState<View>("home");
@@ -367,7 +370,7 @@ export function MandalaVideoReady({
     // Only a truly verified local Blob may reach the iOS share sheet.
     if(!verified||!video?.blob||typeof navigator.share!=="function")return;
     const file=new File([video.blob],
-      "holistic-house-personal."+video.extension,
+      readyDownloadName,
       {type:video.extension==="mp4"?"video/mp4":"video/webm"});
     try{
       const payload:ShareData={files:[file],title:"Holistic House"};
@@ -594,7 +597,7 @@ export function MandalaVideoReady({
         </button>:null}
       {completed?<>
         {video?.blob?<div className={css.localFileActions} data-ready-local-file-actions>
-          <a href={video.url} download={"holistic-house-personal."+video.extension}
+          <a href={video.url} download={readyDownloadName}
             data-ready-direct-download>
             <Download size={20} aria-hidden="true"/>
             <span>{locale==="ru"?"Скачать "+video.extension.toUpperCase():
@@ -646,7 +649,7 @@ export function MandalaVideoReady({
           {saveStatus.savedId?<Link href={myVideos} target="_blank" rel="noopener noreferrer"
             prefetch={false} data-ready-saved-video-link>{t.house}</Link>:null}
           {saveStatus.cloudAvailable===false&&!saveStatus.savedId&&video?
-            <a href={video.url} download={"holistic-house-personal."+video.extension}
+            <a href={video.url} download={readyDownloadName}
               data-ready-download-fallback>{t.download}</a>:null}
         </div>:null}
       </>:null}

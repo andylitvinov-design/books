@@ -5970,6 +5970,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const resetVideoSettings=()=>{
     if(recording||preparing)return;
     clearUploadedAudio();
+    setReelMode(false);
     setDuration(20);setAspect("landscape");setSpeed("slow");setBrightness("soft");
     setMusic("none");setAttachedAudio(null);setSoundVolume(75);setCaptionMode("none");
     setAudioAuto(false);setAudioKind("all");setAudioMood("all");setAudioPace("all");
@@ -6306,6 +6307,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       motionPresetRetryRef.current=null;
     }
     setVideoExportMode(mode);
+    if(mode!=="personal")setReelMode(false);
     const url=new URL(window.location.href);
     url.searchParams.set("videoMode",mode);
     window.history.replaceState(window.history.state,"",url.pathname+url.search+url.hash);
@@ -7781,7 +7783,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           onWishChange={value=>{setWish(value);setSuggestion("");}}
           onSelectCategory={selectCategory}
           onStepChange={setMirrorStep}
-          onScopeChange={setMirrorScope}
+          onScopeChange={next=>{setMirrorScope(next);if(next!=="business")setReelMode(false);}}
           onComplete={(path:MirrorResolution)=>{
             // Both paths use the ONE canonical MyTube taxonomy state:
             // card -> two explicit choices, or own wish -> local auto-selection.
@@ -8429,7 +8431,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           :locale==="es"?"Reintentar liberación":"Retry credit release"}</button>:null}
       </div>:null}
       {activeWorkspace==="ready"?<MandalaVideoReady
-        courseFlow={readyCourseFlow} exportMode={videoExportMode} locale={locale} theme={theme} wish={wish} focus={meditationFocus} aspect={aspect}
+        courseFlow={readyCourseFlow} exportMode={videoExportMode} reelDownloadName={reelModeActive?INSTAGRAM_REELS_PROFILE.downloadName:null} locale={locale} theme={theme} wish={wish} focus={meditationFocus} aspect={aspect}
         video={!readyGenerationPending&&playbackStatus!=="failed"&&result&&result.mode!=="catalog"?{
           url:result.url,extension:result.extension,bytes:result.bytes,duration:result.durationSeconds??duration,blob:result.blob
         }:null}
