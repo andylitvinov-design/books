@@ -233,7 +233,7 @@ try {
         cards:[...el.querySelectorAll('[data-services-quiz-question="topic"] [data-services-quiz-choice]')]
           .map(card=>card.getBoundingClientRect().height),
       }));
-      assert.ok(sizes.hero>=24 && sizes.hero<=60,"Room scene proportions: " + JSON.stringify(sizes));
+      assert.ok(sizes.hero>=54 && sizes.hero<=76,"Room scene proportions: " + JSON.stringify(sizes));
       assert.ok(sizes.cards.length===4 && sizes.cards.every(height=>height>=116 && height<=174),
         "Four progressive choice cards must be large and readable: " + JSON.stringify(sizes));
     }
