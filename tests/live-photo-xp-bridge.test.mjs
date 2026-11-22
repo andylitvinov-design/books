@@ -76,3 +76,11 @@ test('release uses the exact same reserved operation and never authorizes client
  assert.match(service,/settleLiveGiftXp/);
  assert.match(service,/billing_kind,xp_operation_id/);
 });
+
+test('unsettled HeyGen Live Gift still reserves its XP beyond the ordinary export deadline',()=>{
+ const source=readFileSync('lib/video-credits/live-gift-wallet.mjs','utf8');
+ assert.match(source,/status='held' and \(expires_at>now\(\) or sku='live_gift'\)/);
+ assert.match(source,/30 days/);
+ assert.match(source,/status='completed'/);
+ assert.match(source,/status='released'/);
+});

@@ -73,3 +73,6 @@ without new XP or HeyGen generation. All new source requires exact-HEAD CI.
 #5348 must be protected-merged, explicit API budget and a dedicated site Direct
 API credential are necessary, and a real consented E2E MP4 delivery on iPhone
 must pass. This code does not prove that an external HeyGen render has occurred.
+
+## Long-running/uncertain provider reservations
+The existing XP ledger may auto-release ordinary timed-out Basic exports, but not unresolved `live_gift` holds. Live Gift availability accounting includes outstanding 500 XP even when the 30-day nominal expiry has passed. The server-only verified-provider settlement completes or refunds the hold; an ambiguous job remains held for explicit reconciliation, never implicitly retried, credited, or silently completed. Related wallet fix: PR #5348. Disabled production flags remain unchanged.
