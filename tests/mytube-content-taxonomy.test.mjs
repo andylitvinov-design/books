@@ -16,6 +16,26 @@ test("agreed MyTube taxonomy is exactly 4 × 4 × 4 × 4", () => {
   assert.deepEqual(audit.uniqueScenarioOutlines, {ru: 256, en: 256, es: 256});
 });
 
+test("the four approved global axes own exactly 16 non-overlapping subcategories and 64 topics",()=>{
+ const expected={en:["Ease Stress & Restore Energy","Improve Love & Relationships","Money, Success & Self-Esteem","Personal & Business Growth"],
+ ru:["Снизить стресс и восстановить энергию","Улучшить любовь и отношения","Деньги, успех и самооценка","Личностный и бизнес-рост"],
+ es:["Aliviar el estrés y recuperar energía","Mejorar el amor y las relaciones","Dinero, éxito y autoestima","Crecimiento personal y empresarial"]};
+ const grouping={"stress-anxiety":["stress-burnout","anxiety-fears","stress-fatigue","vital-energy"],"love-relationships":["loneliness-breakups","finding-love","couple-relationships","intimacy-family"],"goals-money":["money-abundance","goal-achievement","confidence-calm","body-health"],"energy-confidence":["purpose-development","business-career","psychological-trauma","depression-apathy"]};
+ for(const locale of ["en","ru","es"]){
+  assert.deepEqual(listMyTubeCategories(locale).map(row=>row.id),Object.keys(grouping));
+  assert.deepEqual(listMyTubeCategories(locale).map(row=>row.label),expected[locale]);
+ }
+ const actual=new Set();
+ for(const [categoryId,ids] of Object.entries(grouping)){
+  assert.deepEqual(listMyTubeSubcategories(categoryId,"en").map(sub=>sub.id),ids);
+  for(const sub of ids)for(const topic of listMyTubeTopics(categoryId,sub,"en")){
+   assert.ok(!actual.has(topic.id),"no topic appears in two axes");
+   actual.add(topic.id);
+  }
+ }
+ assert.equal(actual.size,64);
+});
+
 test("all labels and choice hints are localized in RU, EN and ES", () => {
   for (const locale of ["ru", "en", "es"]) {
     const categories = listMyTubeCategories(locale);
@@ -52,7 +72,7 @@ test("localized search seeds resolve to one canonical topic", () => {
     categoryId: "stress-anxiety", subcategoryId: "anxiety-fears", topicId: "panic-attacks",
   });
   assert.deepEqual(resolveMyTubeTopic("baja autoestima", "es"), {
-    categoryId: "energy-confidence", subcategoryId: "confidence-calm", topicId: "low-self-esteem",
+    categoryId: "goals-money", subcategoryId: "confidence-calm", topicId: "low-self-esteem",
   });
   assert.equal(resolveMyTubeTopic("ambiguous partial", "en"), null);
   assert.equal(getMyTubeTopic("missing"), null);

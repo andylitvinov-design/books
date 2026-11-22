@@ -4,3 +4,4 @@ import './my-coach-gemini-tiers-tts.test.mjs';
 import './my-coach-gemini-free-live.test.mjs';
 import './my-coach-gemini-approved-voices.test.mjs';
 import './my-coach-webcodecs-stream.test.mjs';
+import './my-coach-stt-recovery.test.mjs';

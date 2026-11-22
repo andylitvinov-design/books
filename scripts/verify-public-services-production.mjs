@@ -199,21 +199,29 @@ try {
       await expect(quiz.locator('[data-services-quiz-choice="business_support"]')).toContainText("Personal & business growth");
     }
 
-    await expect(quiz.locator("[data-services-quiz-category]")).toHaveCount(6);
-    await expect(quiz.locator("[data-services-card-photo]")).toHaveCount(6);
+    await expect(quiz.locator("[data-services-quiz-category]")).toHaveCount(10);
+    await expect(quiz.locator("[data-services-card-photo]")).toHaveCount(10);
     await expect(quiz.locator("[data-services-audience] button")).toHaveCount(2);
     await expect(quiz.locator("[data-services-quiz-goal]")).toHaveCount(1);
     await expect(quiz.locator("[data-support-luxe-room]")).toHaveCount(1);
     await expect(page.locator('main[data-support-luxe="true"]')).toHaveCount(1);
     await expect(quiz.locator('[data-support-choice-photo]')).toHaveCount(4);
     const luxuryBackground = await quiz.evaluate(el=>getComputedStyle(el).backgroundImage);
-    assert.ok(luxuryBackground.includes("support-therapy-cabinet.webp"),"Real two-chair therapy room image is painted");
+    assert.ok(luxuryBackground.includes("support-therapy-cabinet-hd.webp"),"Real two-chair therapy room image is painted");
+    const hdPhotoDimensions=await page.evaluate(async()=>{
+      const img=new Image();
+      img.src="/images/holistic-house/support-therapy-cabinet-hd.webp";
+      await img.decode();
+      return {width:img.naturalWidth,height:img.naturalHeight};
+    });
+    assert.ok(hdPhotoDimensions.width>=1024&&hdPhotoDimensions.height>=1536,
+      "HD psychotherapy cabinet image must be Retina sharp: "+JSON.stringify(hdPhotoDimensions));
     const cardPhoto = await quiz.locator('[data-services-quiz-question="topic"] [data-support-choice-photo]').first()
       .evaluate(el=>getComputedStyle(el).backgroundImage);
-    assert.ok(cardPhoto.includes("support-luxury-choice-photos.webp"),
+    assert.ok(cardPhoto.includes("support-personal-choice-photos-hd.webp"),
       "All four first-step photos must use the approved photo montage");
     if (width === 390 && locale === "en") {
-      for (const asset of ["support-therapy-cabinet.webp","support-luxury-choice-photos.webp"]) {
+      for (const asset of ["support-therapy-cabinet-hd.webp","support-personal-choice-photos-hd.webp"]) {
         const response = await page.request.get(origin + "/images/holistic-house/" + asset);
         assert.equal(response.status(),200,"First-party Support photo must load: " + asset);
       }
@@ -222,18 +230,34 @@ try {
         cards:[...el.querySelectorAll('[data-services-quiz-question="topic"] [data-services-quiz-choice]')]
           .map(card=>card.getBoundingClientRect().height),
       }));
-      assert.ok(sizes.hero>=85 && sizes.hero<=136,"Room scene proportions: " + JSON.stringify(sizes));
-      assert.ok(sizes.cards.length===4 && sizes.cards.every(height=>height>=88 && height<=132),
+      assert.ok(sizes.hero>=24 && sizes.hero<=60,"Room scene proportions: " + JSON.stringify(sizes));
+      assert.ok(sizes.cards.length===4 && sizes.cards.every(height=>height>=78 && height<=113),
         "Four reference cards must be compact and readable: " + JSON.stringify(sizes));
     }
     await expect(quiz.locator("[data-services-hero-play]")).toHaveCount(0);
+    if(width===390 && locale==="en"){
+      const firstScreenFit=await page.evaluate(()=>{
+        const next=document.querySelector("[data-services-quiz-next]");
+        const goal=document.querySelector("[data-services-quiz-goal]");
+        const dock=document.querySelector("[data-hh-unified-dock]");
+        if(!next||!goal||!dock)return null;
+        return {ctaBottom:next.getBoundingClientRect().bottom,
+          goalBottom:goal.getBoundingClientRect().bottom,
+          dockTop:dock.getBoundingClientRect().top,
+          viewport:innerHeight};
+      });
+      assert.ok(firstScreenFit && firstScreenFit.goalBottom<firstScreenFit.dockTop-16 &&
+        firstScreenFit.ctaBottom<firstScreenFit.dockTop-16,
+        "390x844 first personal screen must show goal and Next above the dock: "+JSON.stringify(firstScreenFit));
+    }
     await expect(quiz.locator("[data-services-quiz-next]")).toBeEnabled();
     await expect(quiz.locator('[data-services-quiz-choice="stress_energy"]')).toHaveAttribute("aria-pressed","true");
     await quiz.locator("[data-services-quiz-goal]").fill("Calm and clear decisions");
     assert.deepEqual(await quiz.locator("[data-services-quiz-category]").evaluateAll(cards =>
       cards.map(card => card.getAttribute("data-services-quiz-category"))),
-      ["diagnostics", "business", "homeopathy", "coaching", "psychotherapy", "video"],
-      "The six owner-prioritized Support cards must remain in 3×2 order");
+      ["diagnostics", "business", "homeopathy", "coaching", "psychotherapy", "video",
+       "constellations", "practices", "courses", "tests"],
+      "Keep the six prioritized Support cards and four always-visible follow-up cards in order");
     await expect(quiz.locator("[data-services-shamanica-link]"))
       .toHaveAttribute("href", "/"+locale+"/shamanica");
     assert.equal(await page.locator("[data-hh-unified-dock]").count(), 1,
@@ -271,7 +295,25 @@ try {
       () => page.evaluate(() => history.pushState.toString().includes("__NA")),
       { timeout: 30000, message: "Services quiz must hydrate before the first answer" },
     ).toBe(true);
-    // Six photographic first-screen categories stay on /services and expose exactly three matching options.
+    // Before the lower service catalog scroll, validate that the audience switch
+    // really replaces all personal cards and preserves the shared cabinet.
+    await quiz.locator("[data-services-audience] button").nth(1).click();
+    const quickBusiness=quiz.locator("[data-services-business-menu]");
+    await expect(quickBusiness).toHaveAttribute("data-business-step","1");
+    await expect(quiz.locator("[data-services-quiz-question]")).toHaveCount(0);
+    await expect(quickBusiness.locator("[data-services-business-category]")).toHaveCount(4);
+    if(width===390 && locale==="en"){
+      const businessFit=await page.evaluate(()=>{
+        const last=document.querySelector('[data-services-business-category="hints"]');
+        const dock=document.querySelector("[data-hh-unified-dock]");
+        return last&&dock?{bottom:last.getBoundingClientRect().bottom,dockTop:dock.getBoundingClientRect().top}:null;
+      });
+      assert.ok(businessFit&&businessFit.bottom<businessFit.dockTop-16,
+        "390x844 business first screen must fit four real business categories: "+JSON.stringify(businessFit));
+    }
+    await quiz.locator("[data-services-audience] button").first().click();
+    await expect(quiz.locator("[data-services-quiz-question]")).toHaveCount(1);
+        // Six photographic first-screen categories stay on /services and expose exactly three matching options.
     const quickTargets = {
       diagnostics: "consultation", business: "business", homeopathy: "homeopathy",
       coaching: "coach", psychotherapy: "services", video: "video",
@@ -289,50 +331,74 @@ try {
       await expect(target.locator(':scope > [data-services-three-visible] > [data-service-variant]').first()).toBeVisible();
     }
     await expect(quiz.locator("[data-services-shamanica-link]")).toHaveAttribute("href", "/" + locale + "/shamanica");
-    await expect(quiz.locator("[data-services-extra-categories]")).toHaveCount(1);
-    const more = quiz.locator("[data-services-extra-categories]");
-    await more.locator("summary").click();
-    await expect(more.locator("nav a")).toHaveCount(4);
-    await expect(more.locator('nav a[href="#service-group-browse"]')).toHaveCount(1);
-    await more.locator("summary").click();
+    const extra = quiz.locator("[data-services-extra-categories]");
+    await expect(extra.locator("a[data-services-quiz-category]")).toHaveCount(4);
+    const extraTargets = { constellations:"services",practices:"reiki",courses:"courses",tests:"browse" };
+    for (const [category, group] of Object.entries(extraTargets)) {
+      const card = extra.locator('[data-services-quiz-category="' + category + '"]');
+      await expect(card).toBeVisible();
+      await expect(card).toHaveAttribute("href","#service-group-"+group);
+      await expect(page.locator("#service-group-"+group)).toHaveCount(1);
+    }
     await expect(quiz.locator('[data-services-quiz-category="business"]')).toHaveAttribute("href", "#service-group-business");
-    // Business has its own topic, need and start-format branching.
-    await quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice="business_support"]').click();
-    await quiz.locator("[data-services-quiz-next]").click();
-    await expect(quiz).toHaveAttribute("data-services-quiz-step", "2");
-    await expect(quiz.locator('[data-services-quiz-question="need"] [data-services-quiz-choice]')).toHaveCount(4);
-    await quiz.locator('[data-services-quiz-question="need"] [data-services-quiz-choice="business_strategy"]').click();
-    await quiz.locator("[data-services-quiz-next]").click();
-    await expect(quiz).toHaveAttribute("data-services-quiz-step", "3");
-    await quiz.locator('[data-services-quiz-question="mode"] [data-services-quiz-choice="consultation"]').click();
-    await quiz.locator("[data-services-quiz-next]").click();
-    await expect(quiz).toHaveAttribute("data-services-quiz-step", "4");
-    const submitQuiz = quiz.locator("[data-services-quiz-submit]");
-    await expect(submitQuiz).toBeDisabled();
-    await quiz.locator('[data-services-quiz-question="budget"] [data-services-quiz-choice="flexible"]').click();
-    await expect(submitQuiz).toBeEnabled();
-    await quiz.locator('[data-quiz-dot="3"]').click();
-    await expect(quiz).toHaveAttribute("data-services-quiz-step", "3");
-    await quiz.locator('[data-services-quiz-choice="consultation"]').click();
-    await quiz.locator("[data-services-quiz-next]").click();
-    await submitQuiz.click();
-    await visible(page.locator("[data-services-quiz-results]"));
-    await visible(quiz.locator("[data-services-quiz-summary]"));
-    const businessGroup = page.locator('[data-services-quiz-results] [data-services-priority-category="business"]');
-    await expect(businessGroup).toHaveCount(1);
-    await expect(businessGroup).toHaveAttribute("data-priority-offer-count", "3");
-    if (width === 390) {
-      await quiz.locator('[data-quiz-dot="1"]').click();
+    // Business is a separate two-step format + offer selector; For Me keeps 4 questions.
+    await quiz.locator("[data-services-audience] button").nth(1).click();
+    const businessBackground=await quiz.evaluate(el=>getComputedStyle(el).backgroundImage);
+    assert.equal(businessBackground,luxuryBackground,"For Business and For Me must share exactly one therapy room image");
+
+    const business = quiz.locator("[data-services-business-menu]");
+    await expect(business).toHaveAttribute("data-business-step", "1");
+    await expect(business.locator("[data-services-business-category]")).toHaveCount(4);
+    const businessCardPhoto=await business.locator('[data-business-card-photo="express"]').evaluate(el=>getComputedStyle(el).backgroundImage);
+    assert.ok(businessCardPhoto.includes("support-business-choice-photos-hd.webp"),
+      "All four business cards must use optimized photographic sheet");
+
+    assert.deepEqual(await business.locator("[data-services-business-category]").evaluateAll(cards=>
+      cards.map(card=>card.getAttribute("data-services-business-category"))),
+      ["express","strategy","remedies","hints"]);
+    await business.locator('[data-services-business-category="express"]').click();
+    await expect(business).toHaveAttribute("data-business-step","2");
+    await expect(business.locator("[data-business-options='express'] [data-business-offer]")).toHaveCount(5);
+    await business.locator('[data-business-offer="express-1"]').click();
+    await business.locator('[data-business-get-details] [data-contact-order]').click();
+    await expect(business.locator('[data-business-get-details] [data-messenger-only-channel]')).toHaveCount(2);
+    const preparedWhatsApp=await business.locator('[data-business-get-details] [data-messenger-only-channel="whatsapp"]').getAttribute("href");
+    assert.ok(new URL(preparedWhatsApp).searchParams.get("text").includes("Advanced Insight · 45 CAD"),
+      "selected paid Express choice preserved in WhatsApp draft");
+    const botLink=await business.locator('[data-business-get-details] [data-messenger-only-channel="telegram"]').getAttribute("href");
+    assert.ok(botLink?.includes("/api/public/telegram-service-entry?service=business&locale="+locale),
+      "Telegram must use existing readiness-gated Ali service route");
+    await business.locator("[data-business-back]").click();
+    await business.locator('[data-services-business-category="strategy"]').click();
+    await expect(business.locator("[data-business-options='strategy'] [data-business-offer]")).toHaveCount(4);
+    await business.locator('[data-business-offer="strategy-3"]').click();
+    await business.locator('[data-business-get-details] [data-contact-order]').click();
+    const strategyDraft=await business.locator('[data-business-get-details] [data-messenger-only-channel="whatsapp"]').getAttribute("href");
+    assert.ok(new URL(strategyDraft).searchParams.get("text").includes("Growth Strategy & Implementation"));
+    if (width===390){
+      await business.locator("[data-business-back]").click();
+      await business.locator('[data-services-business-category="remedies"]').click();
+      await expect(business.locator("[data-business-offer]")).toHaveCount(4);
+      await business.locator("[data-business-back]").click();
+      await business.locator('[data-services-business-category="hints"]').click();
+      await expect(business.locator("[data-business-offer]")).toHaveCount(4);
+      await expect(business.locator('[data-business-offer="hints-0"]')).toContainText("AI Coaching");
+      await expect(business.locator('[data-business-offer="hints-3"]')).toContainText("Human Taoist Hints");
+    }
+    await quiz.locator("[data-services-audience] button").first().click();
+    await expect(business).toHaveCount(0);
+    await expect(quiz.locator('[data-services-quiz-choice="stress_energy"]')).toHaveAttribute("aria-pressed","true");
+    if (width===390){
       await quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice="money_growth"]').click();
-    await quiz.locator("[data-services-quiz-next]").click();
-      await expect(quiz).toHaveAttribute("data-services-quiz-step", "2");
+      await quiz.locator("[data-services-quiz-next]").click();
+      await expect(quiz).toHaveAttribute("data-services-quiz-step","2");
       await expect(quiz.locator('[data-quiz-dot="4"]')).toBeDisabled();
       await quiz.locator('[data-services-quiz-question="need"] [data-services-quiz-choice="growth_ideas"]').click();
-    await quiz.locator("[data-services-quiz-next]").click();
+      await quiz.locator("[data-services-quiz-next]").click();
       await quiz.locator('[data-services-quiz-question="mode"] [data-services-quiz-choice="any"]').click();
-    await quiz.locator("[data-services-quiz-next]").click();
+      await quiz.locator("[data-services-quiz-next]").click();
       await quiz.locator('[data-services-quiz-question="budget"] [data-services-quiz-choice="flexible"]').click();
-      await submitQuiz.click();
+      await quiz.locator("[data-services-quiz-submit]").click();
       await visible(page.locator("[data-services-quiz-results]"));
       await expect(page.locator('[data-services-quiz-results] [data-services-priority-category="business"]')).toHaveCount(0);
     }
