@@ -29,6 +29,16 @@ test("the approved mobile Mirror contains only three scopes, a compact input Nex
   assert.ok(mirror.includes(label),label);
  assert.equal((mirror.match(/categoryId:"(goals-money|love-relationships|energy-confidence|stress-anxiety)"/g)||[]).length,12);
  assert.match(mirror,/data-hh-mirror-audience=\{item\}/);
+ assert.match(mirror,/data-hh-mirror-enter="me"/);
+ assert.match(mirror,/data-hh-mirror-enter="others"/);
+ assert.match(mirror,/data-hh-mirror-plan/);
+ assert.match(mirror,/data-hh-mirror-tier-option=\{option.id\}/);
+ assert.match(mirror,/data-hh-mirror-ideas-cta/);
+ assert.match(mirror,/videoFormat\}\);/);
+ for(const price of ["250","500","1000"])assert.ok(mirror.includes("credits:"+price));
+ assert.match(mirrorCss,/\.destinationCards/);
+ assert.match(mirrorCss,/\.formatGrid/);
+ assert.match(mirrorCss,/\.composerToolbar/);
  assert.match(mirror,/data-hh-mirror-wish/);
  assert.match(mirror,/data-hh-mirror-goal-choice=\{item\.id\}/);
  assert.match(mirror,/data-hh-mirror-next/);
@@ -164,8 +174,9 @@ test("Next uses a relevant canonical default for every approved card, never arbi
 test('owner reference: compact choices, readable wish and separate drafts per intent',()=>{
  assert.ok(mirror.includes('scopeWishes,setScopeWishes'));
  assert.ok(mirror.includes('onWishChange(scopeWishes[next]||""'));
- assert.ok(mirror.includes('type="text" maxLength={500}'));
- assert.ok(mirrorCss.includes('.promptRow input'));
+ assert.ok(mirror.includes('rows={3} maxLength={500}'));
+ assert.ok(mirror.includes("data-hh-mirror-composer"));
+ assert.ok(mirrorCss.includes('.composer textarea'));
  assert.ok(mirrorCss.includes('.choiceIcon'));
  assert.ok(mobile.includes('Magic Mirror owner reference 2026-11-21'));
  assert.ok(mobile.includes('.previewStage .therapyHeroLaunch{background:url('));

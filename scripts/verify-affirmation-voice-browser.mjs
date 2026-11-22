@@ -95,6 +95,30 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(page.locator('[data-video-my-film]')).toBeHidden();
     await expect(mirror).toBeVisible();
     await expect(mirror).toHaveAttribute('data-hh-mirror-step','1');
+    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","landing");
+    await expect(mirror.locator('[data-hh-mirror-enter]')).toHaveCount(2);
+    await expect(mirror.locator('[data-hh-mirror-video-format]')).toHaveCount(3);
+    for(const width of [320,354,390,430]){
+      await page.setViewportSize({width,height:840});
+      for(const item of await mirror.locator('[data-hh-mirror-enter]').all()){
+        await item.scrollIntoViewIfNeeded();
+        await expect(item).toBeVisible();
+        assert.ok(await item.evaluate(node=>node.getBoundingClientRect().width>=275),
+          "Direction stays touch readable at "+width);
+      }
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),
+        false,"Magic Mirror landing must not overflow at "+width);
+    }
+    await page.setViewportSize({width:390,height:840});
+    await mirror.locator('[data-hh-mirror-video-format="vip"]').click();
+    await expect(mirror.locator('[data-hh-mirror-video-format="vip"]')).toHaveAttribute("aria-pressed","true");
+    await mirror.locator('[data-hh-mirror-enter="me"]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
+    await expect(mirror.locator('[data-hh-mirror-composer] textarea')).toBeVisible();
+    await mirror.locator('[data-hh-mirror-ideas-menu]').click();
+    await expect(mirror.locator('[data-hh-mirror-tier-option]')).toHaveCount(3);
+    await mirror.locator('[data-hh-mirror-tier-option="basic"]').click();
+    await expect(mirror.locator('[data-hh-mirror-ideas-menu]')).toHaveAttribute("aria-expanded","false");
     await expect(mirror.locator('[data-hh-mirror-goal-choice]')).toHaveCount(4);
     const approvedAxisLabels={
       en:["Ease Stress & Restore Energy","Improve Love & Relationships","Money, Success & Self-Esteem","Personal & Business Growth"],
@@ -103,6 +127,8 @@ async function verifyWorkspaceHydration(browser,locale){
     }[locale];
     for(let index=0;index<4;index++)await expect(mirror.locator('[data-hh-mirror-goal-choice]').nth(index))
       .toContainText(approvedAxisLabels[index]);
+    await mirror.locator('[data-hh-mirror-back-landing]').click();
+    await mirror.locator('[data-hh-mirror-enter="others"]').click();
     await mirror.locator('[data-hh-mirror-audience="business"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","business");
     const workCards=mirror.locator('[data-hh-mirror-goal-choice]');
