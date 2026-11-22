@@ -2,7 +2,7 @@
 
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
-import {ArrowLeft,ChevronDown,ArrowRight,Heart,Home,Keyboard,Leaf,Languages,PhoneOff,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Play,LoaderCircle,Zap,Download,Printer,FileText} from 'lucide-react'
+import {ArrowLeft,ChevronDown,ArrowRight,Heart,Home,Keyboard,Leaf,Languages,PhoneOff,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Play,LoaderCircle,Zap,Download,Printer,FileText,Maximize2,Minimize2} from 'lucide-react'
 import {getCoachPersona,localCoachText,coachStagePrompt} from '@/lib/coaching/persona-registry.mjs'
 import {getCoachPresentation} from '@/lib/coaching/persona-presentations.mjs'
 import {coachTimeboxState} from '@/lib/coaching/session-timebox.mjs'
@@ -223,6 +223,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const lang=copy[locale]?locale:'en',t=copy[lang]
   const persona=getCoachPersona(personaId)
   const [draft,setDraft]=useState('')
+  const [viewExpanded,setViewExpanded]=useState(false)
   const [coachProfileOpen,setCoachProfileOpen]=useState(false)
   const coachProfileOpenRef=useRef(false)
   const [speechPreview,setSpeechPreview]=useState('')
@@ -689,7 +690,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const details=composerDetailsRef.current
     if(!details)return
     details.open=true
-    composerRef.current?.focus()
+    if(viewExpanded){
+      setViewExpanded(false)
+      window.requestAnimationFrame(()=>composerRef.current?.focus())
+    }else composerRef.current?.focus()
   }
 
   async function send(event){
@@ -1094,7 +1098,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const motionPhase=paused?'idle':voiceState.phase==='speaking'?'speaking':
     voiceState.phase==='listening'?'listening':!introComplete?'greeting':'idle'
   const visualScene=selectCoachVisualScene({phase:motionPhase,text:latestCoachText,stage:currentStage})
-  return <section ref={sessionRootRef} className={styles.root} lang={lang} data-my-coach-live-dialogue={personaId} data-my-coach-immersive-session data-session-visual-v2 data-session-visual-v3 data-session-visual-v4 data-coach-session-started={sessionClockStarted?'true':'false'} data-coach-showcase={introComplete?'false':'true'}>
+  const videoViewLabel=viewExpanded?
+    ({ru:'Свернуть видео коуча',en:'Collapse coach video',es:'Contraer el vídeo del coach'})[lang]:
+    ({ru:'Развернуть видео коуча',en:'Expand coach video',es:'Ampliar el vídeo del coach'})[lang]
+  return <section ref={sessionRootRef} className={styles.root} lang={lang} data-my-coach-live-dialogue={personaId} data-my-coach-immersive-session data-session-visual-v2 data-session-visual-v3 data-session-visual-v4 data-coach-view-expanded={viewExpanded?'true':'false'} data-coach-session-started={sessionClockStarted?'true':'false'} data-coach-showcase={introComplete?'false':'true'}>
     <header className={styles.sessionTopbar}>
       <Link className={styles.sessionBrand} href={'/'+lang+'/coaching/sessions'} onClick={interceptSessionExit} aria-label="Holistic House">
         <span className={styles.sessionBrandMark} aria-hidden="true">✿</span><span>Holistic House</span>
@@ -1131,6 +1138,14 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <MyCoachMotionMedia personaId={personaId} phase={motionPhase} context="session" scene={visualScene} />
       </div>
       <div className={styles.sessionHeroShade} aria-hidden="true"/>
+      <button type="button" className={styles.heroViewToggle} data-coach-view-toggle
+        aria-label={videoViewLabel} title={videoViewLabel} aria-pressed={viewExpanded}
+        onClick={()=>{
+          if(!viewExpanded)composerRef.current?.blur()
+          setViewExpanded(value=>!value)
+        }}>
+        {viewExpanded?<Minimize2 size={21} aria-hidden="true"/>:<Maximize2 size={21} aria-hidden="true"/>}
+      </button>
       <div className={styles.sessionHeroCopy}>
         <span className={styles.sessionHeroBadge}><Sparkles size={14} aria-hidden="true"/>{ui.mode}</span>
         <p>{localCoachText(persona?.role,lang)||t.coach}</p><h1>{name}</h1>
