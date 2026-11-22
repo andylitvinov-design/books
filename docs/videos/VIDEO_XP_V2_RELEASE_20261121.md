@@ -33,3 +33,5 @@ Source of truth: GitHub issue #5345. Approved SKU prices: Basic 250 XP, Live Gif
 - Routine Vercel production release may only use existing top-of-hour workflow; no direct deploy/promote, even at user request 'LIVE'. Independently verify canonical domain SHA and signed-in real E2E.
 
 Status categories: SCHEMA_APPLIED != CODE_MERGED != VERCEL_READY != REAL_PROVIDER_E2E. Never claim finished where any stage is missing.
+## Reconciliation-safe Live Gift XP holds
+Unsettled `live_gift` reservations are retained even after the standard Basic-export hold deadline, counted as committed XP, and cannot be released or completed through the public video-credit endpoint. The separate protected provider-verified worker from PR #5337 settles the same operation once the private MP4 is archived or a genuine failure is verified. An ambiguous provider request cannot be automatically refunded; operator reconciliation is required. This is a fail-closed contract, not permission to activate external API spending.

@@ -83,3 +83,13 @@ test('existing studio uses 250-XP server-priced basic hold and no v2 anonymous f
   assert.match(panel,/t\.v2Hint/)
   assert.doesNotMatch(panel,/NEXT_PUBLIC_.*KEY/)
 })
+
+test('unresolved provider Live Gift reserves 500 XP after ordinary hold TTL and forbids client settlement',()=>{
+  const service=source('lib/video-credits/service.js')
+  // Keep the 30-minute Basic export deadline, but never silently release a
+  // submitted/ambiguous paid HeyGen request due to a wall-clock timeout.
+  assert.match(service,/expires_at<=now\(\) and \(sku is null or sku<>'live_gift'\)/)
+  assert.match(service,/expires_at>now\(\) or sku='live_gift'/)
+  assert.match(service,/if\(charge\.sku==='live_gift'\)fail\('VIDEO_CREDIT_SERVER_SETTLEMENT_REQUIRED',403\)/)
+  assert.match(service,/if\(v2\.ready&&sku!=='basic'\)fail\('VIDEO_SKU_RENDERER_UNAVAILABLE'/)
+})
