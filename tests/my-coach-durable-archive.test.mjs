@@ -8,16 +8,18 @@ import {
 
 const protocolId = '11111111-1111-4111-8111-111111111111'
 const date = '2026-11-22T13:35:22.000Z'
+const cursorDate = '2026-11-22T13:35:22.000123Z'
 
 test('keyset cursor rejects missing twin, invalid dates, injection, and odd IDs', () => {
   assert.equal(MY_COACH_PROTOCOL_PAGE_SIZE, 20)
   assert.equal(normalizeMyCoachProtocolCursor(), null)
-  assert.deepEqual(normalizeMyCoachProtocolCursor({before: date, beforeId: protocolId}),
-    {before: date, beforeId: protocolId})
+  assert.deepEqual(normalizeMyCoachProtocolCursor({before: cursorDate, beforeId: protocolId}),
+    {before: cursorDate, beforeId: protocolId})
   for (const invalid of [
-    {before:date},{beforeId:protocolId},
+    {before:cursorDate},{beforeId:protocolId},
+    {before:date,beforeId:protocolId}, // 3-digit Date silently loses precision
     {before:'2026-11-22T13:35:22Z',beforeId:protocolId},
-    {before:date,beforeId:"' OR TRUE --"},
+    {before:cursorDate,beforeId:"' OR TRUE --"},
     {before:'not-a-date',beforeId:protocolId},
   ]) assert.throws(() => normalizeMyCoachProtocolCursor(invalid),
     /MY_COACH_PROTOCOL_CURSOR_INVALID/)
@@ -56,4 +58,38 @@ test('archive repository enforces per-account SQL, encryption, and deletion', ()
   assert.match(migration,/account_id = \(select auth.uid\(\)\)/i)
   assert.match(migration,/to hh_app_backend/i)
   assert.doesNotMatch(migration,/grant all .* authenticated/i)
+})
+
+
+test('microsecond cursor preserves distinct records inside the same millisecond',()=>{
+ const first=normalizeMyCoachProtocolCursor({before:'2026-11-22T13:35:22.000001Z',
+   beforeId:protocolId})
+ const last=normalizeMyCoachProtocolCursor({before:'2026-11-22T13:35:22.000999Z',
+   beforeId:'22222222-2222-4222-8222-222222222222'})
+ assert.notEqual(first.before,last.before)
+ assert.ok(first.before<last.before)
+ const sameTimestamp=normalizeMyCoachProtocolCursor({before:first.before,
+   beforeId:'33333333-3333-4333-8333-333333333333'})
+ assert.notEqual(first.beforeId,sameTimestamp.beforeId)
+ for(const bad of ['2026-02-30T13:35:22.000123Z',
+   '2026-11-22T13:35:22.000123+00:00',
+   '2026-11-22T13:35:22.000123Z\' OR 1=1 --'])
+  assert.throws(()=>normalizeMyCoachProtocolCursor({before:bad,beforeId:protocolId}),
+    /MY_COACH_PROTOCOL_CURSOR_INVALID/)
+})
+
+test('archived pages show earlier owner-only protocols without dropping same-millisecond records',()=>{
+ const code=readFileSync(new URL('../lib/app/personal-coaching.js',import.meta.url),'utf8')
+ const ui=readFileSync(new URL('../components/app/my-coaching-plan.jsx',import.meta.url),'utf8')
+ assert.match(code,/saved_at_cursor/)
+ assert.match(code,/before:last\.saved_at_cursor/)
+ assert.match(code,/to_char\(saved_at AT TIME ZONE 'UTC'/)
+ assert.match(code,/\(saved_at,protocol_id\)<\(\$2::timestamptz,\$3::uuid\)/)
+ for(const label of ['Show earlier sessions','Показать предыдущие сессии','Mostrar sesiones anteriores'])
+  assert.ok(ui.includes(label),label)
+ assert.match(ui,/data-my-coach-load-earlier/)
+ assert.match(ui,/new URLSearchParams\(\{before:cursor.before,beforeId:cursor.beforeId\}\)/)
+ assert.match(ui,/known\.has\(item\.id\)/)
+ assert.match(ui,/protocolPage\.accountId===accountId/)
+ assert.match(ui,/activeAccountRef\.current!==accountId/)
 })
