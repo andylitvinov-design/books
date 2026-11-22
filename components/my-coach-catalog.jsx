@@ -382,11 +382,12 @@ export default function MyCoachCatalog({ locale = 'en' }) {
             <h2>{hw.hello} {selectedName}</h2>
             <p>{hw.subtitle}</p>
           </div>
+          {/* Session anchors load a new document for its microphone and Gemini CSP. */}
           <div className={heroStyles.stageActions}>
             {selected.id === 'mira'
               ? <MyCoachExpressStart locale={lang} embedded data-my-coach-hero-start={selected.id} />
-              : <Link className={heroStyles.talkButton} href={startHref} prefetch={false}
-                  data-my-coach-hero-start={selected.id}>♩ {hw.talk} {selectedName} <ArrowRight size={17} aria-hidden="true" /></Link>}
+              : <a className={heroStyles.talkButton} href={startHref}
+                  data-my-coach-hero-start={selected.id}>♩ {hw.talk} {selectedName} <ArrowRight size={17} aria-hidden="true" /></a>}
           </div>
           <div className={heroStyles.stageTopics}>
             <span>{hw.topic}</span>
@@ -443,7 +444,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
         <div className={heroStyles.benefitTiles}>
           <Link href={'/' + lang + '/holistic-support/mobile'}><BookOpen size={27} aria-hidden="true" /><strong>{hw.review}</strong></Link>
           <a href="#all-coaches"><Sparkles size={27} aria-hidden="true" /><strong>{hw.hint}</strong></a>
-          <Link href={startHref} prefetch={false}><Leaf size={27} aria-hidden="true" /><strong>{hw.plan}</strong></Link>
+          <a href={startHref}><Leaf size={27} aria-hidden="true" /><strong>{hw.plan}</strong></a>
         </div>
       </section>
       <section className={[heroStyles.directoryHeading, styles.compactHeading].join(" ")} id="all-coaches" aria-label={hw.browse}>
@@ -581,9 +582,9 @@ export default function MyCoachCatalog({ locale = 'en' }) {
                 <div className={styles.cardFooter}>
                   <button type="button" className={styles.viewProfile} onClick={() => choose(persona.id)}
                     aria-expanded={isExpanded} aria-controls={'my-coach-profile-' + persona.id}>{d.showProfile}</button>
-                  <Link className={styles.cardButton}
-                    href={coachSessionHref(lang, persona.id, normalizeCoachSettings(persona.id))}
-                    prefetch={false}>{d.startNow}<ArrowRight size={16} aria-hidden="true" /></Link>
+                  <a className={styles.cardButton}
+                    href={coachSessionHref(lang, persona.id, normalizeCoachSettings(persona.id))}>
+                    {d.startNow}<ArrowRight size={16} aria-hidden="true" /></a>
                 </div>
               </div>
               <button type="button" className={styles.heart}
@@ -644,8 +645,8 @@ export default function MyCoachCatalog({ locale = 'en' }) {
         <div className={styles.preview}>
           <span>{t.preview}</span><p>{followupPreview}</p>
         </div>
-        <Link className={styles.primary} href={startHref} prefetch={false}
-          data-my-coach-start={selected.id}>{t.start}<ArrowRight size={19} aria-hidden="true" /></Link>
+        <a className={styles.primary} href={startHref}
+          data-my-coach-start={selected.id}>{t.start}<ArrowRight size={19} aria-hidden="true" /></a>
         <p className={styles.sessionNote}>{t.sessionNote}</p>
         <p className={styles.privacy}>{t.privacy}</p>
       </section>
