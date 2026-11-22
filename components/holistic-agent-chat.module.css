@@ -944,3 +944,9 @@
  .root[data-compact][data-chat-skin="messenger"] .voiceOnboarding{font-size:11px;padding:8px}
  .root[data-compact][data-chat-skin="messenger"] .voiceConsentActions button{padding:6px 8px;font-size:11px}
 }
+
+/* Inline landing composer lives in the scrollable conversation: let its menu
+   extend into that scroll area instead of underneath the fixed page header. */
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .composerMenu{
+ top:calc(100% + 9px);bottom:auto
+}
