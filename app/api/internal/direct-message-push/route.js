@@ -29,6 +29,14 @@ export async function GET(request){
         if(cc.status==='unconfirmed')console.error('HH_CC_TICK_UNCONFIRMED')
       }catch{console.error('HH_CC_TICK_UNAVAILABLE')}
     }
+    // Reuse this existing authenticated five-minute cron; no extra schedule.
+    // Independent failure must never interrupt existing direct-message push.
+    if(process.env.HH_DAYBOOK_INSPIRATIONS_ENABLED==='true'){
+      try{
+        const {dispatchDailyInspirations}=await import('@/lib/app/daybook-inspirations-dispatch')
+        await dispatchDailyInspirations(config)
+      }catch{console.error('HH_DAYBOOK_DAILY_DISPATCH_FAILED')}
+    }
     return NextResponse.json(pushed,{headers:PRIVATE_HEADERS})
   }catch{
     console.error('HH_DIRECT_PUSH_RECOVERY_FAILED')
