@@ -490,7 +490,11 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(page.locator("[data-video-concept-auth-overlay]")).toHaveCount(0);
     await concept.locator("[data-video-concept-approve]").click();
     await expect(studio).toHaveAttribute("data-active-workspace","editor");
-    await expect(montageStyle).toHaveAttribute("aria-pressed","true");
+    // The approved Personal path returns to the existing Text editor so the
+    // user may refine phrases without losing film/audio; it does not reset Style.
+    await expect(page.locator('[data-video-montage-tab="text"]'))
+      .toHaveAttribute("aria-pressed","true");
+    await expect(page.locator("[data-video-montage-text]")).toBeVisible();
     await ideasTop.tap();
     await expect(ideasConceptTab).toHaveAttribute("aria-pressed","true");
     await expect(page.locator("[data-video-concept-auto]"))
