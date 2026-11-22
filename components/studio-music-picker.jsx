@@ -4,6 +4,7 @@ import Link from "next/link";
 import styles from "./studio-music-picker.module.css";
 import {Check,Play,Pause} from "lucide-react";
 import videoStyles from "./mandala-video-mobile.module.css";
+import montageRef from "./mandala-montage-approved.module.css";
 import {createStudioMusicPreviewUrlCache} from "@/lib/mandala/studio-music-preview-cache.mjs";
 import {PUBLIC_MUSIC_TAG_LABELS,musicTagLabel,safeStudioMusicTags,studioMusicFilter,studioMusicFeaturedTracks,studioMusicAttachmentName} from "@/lib/mandala/studio-music-catalog.mjs";
 
@@ -227,7 +228,7 @@ async function verifiedStudioMusicUrl(row){
  * }} props
  */
 export function StudioMusicFeatured({locale="en",category="all",disabled=false,
- selectedFilename=null,posters=[],onSelect,onDeselect,onPreviewStart,onError}){
+ selectedFilename=null,onSelect,onDeselect,onPreviewStart,onError}){
  const t=featuredText[locale]||featuredText.en;
  const [tracks,setTracks]=useState([]);
  const [loadState,setLoadState]=useState("loading"),[retry,setRetry]=useState(0);
@@ -255,7 +256,7 @@ export function StudioMusicFeatured({locale="en",category="all",disabled=false,
  // The public source route owns permissions; retry triggers a new bounded read.
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[retry]);
- const picked=useMemo(()=>studioMusicFeaturedTracks(tracks,category,5),[tracks,category]);
+ const picked=useMemo(()=>studioMusicFeaturedTracks(tracks,category,4),[tracks,category]);
  useEffect(()=>{
   if(loadState!=="ready"||disabled)return;
   // Only sign three visible music URLs after paint. Audio bytes are never prefetched.
@@ -331,58 +332,54 @@ export function StudioMusicFeatured({locale="en",category="all",disabled=false,
  return <>
   <audio ref={audioRef} preload="none" style={{display:"none"}}
    onPlaying={()=>{setPlaying(true);setBufferingId(null)}}
-    onWaiting={()=>{if(preview?.id)setBufferingId(preview.id)}}
-    onStalled={()=>{if(preview?.id)setBufferingId(preview.id)}}
-    onTimeUpdate={event=>{if(event.currentTarget.currentTime>=30){event.currentTarget.pause();event.currentTarget.currentTime=0;}}}
-    onPause={()=>setPlaying(false)}
-    onEnded={()=>{setPlaying(false);setBufferingId(null)}}
-    onError={()=>{setPlaying(false);setBufferingId(null)}}/>
-  {loadState==="loading"&&<div data-video-studio-featured-loading
-    className={videoStyles.audioCompactUpload} role="status">
-    <strong>♫</strong><small>{locale==="ru"?"Загружаем записи…":
-      locale==="es"?"Cargando grabaciones…":"Loading recordings…"}</small>
-   </div>}
-  {loadState==="failed"&&<button type="button"
-    data-video-studio-featured-retry className={videoStyles.audioCompactUpload}
-    disabled={disabled} onClick={()=>{setLoadState("loading");setRetry(v=>v+1);}}>
-    <strong>↻</strong><small>{locale==="ru"?"Повторить":locale==="es"?"Reintentar":"Retry"}</small>
-   </button>}
-  {picked.map((row,index)=>{
+   onWaiting={()=>{if(preview?.id)setBufferingId(preview.id)}}
+   onStalled={()=>{if(preview?.id)setBufferingId(preview.id)}}
+   onTimeUpdate={event=>{if(event.currentTarget.currentTime>=30){event.currentTarget.pause();event.currentTarget.currentTime=0;}}}
+   onPause={()=>setPlaying(false)}
+   onEnded={()=>{setPlaying(false);setBufferingId(null)}}
+   onError={()=>{setPlaying(false);setBufferingId(null)}}/>
+  {loadState==="loading"&&<div data-video-studio-featured-loading className={videoStyles.audioCompactUpload}
+    role="status">{locale==="ru"?"Загружаем записи…":locale==="es"?"Cargando grabaciones…":"Loading recordings…"}</div>}
+  {loadState==="failed"&&<button type="button" data-video-studio-featured-retry
+    className={videoStyles.audioCompactUpload} disabled={disabled}
+    onClick={()=>{setLoadState("loading");setRetry(v=>v+1);}}>
+    {locale==="ru"?"Дополнительные записи недоступны · Повторить":
+      locale==="es"?"Más grabaciones no disponibles · Reintentar":"Extra recordings unavailable · Retry"}
+  </button>}
+  {picked.map(row=>{
    const selected=selectedFilename===studioMusicAttachmentName(row);
    const current=preview?.id===row.id&&playing;
-    const buffering=busyId===row.id||bufferingId===row.id;
-   const poster=Array.isArray(posters)?posters[index%Math.max(1,posters.length)]:null;
+   const buffering=busyId===row.id||bufferingId===row.id;
    const parts=row.title.split(" · ");
    const short=parts.length>=2?(parts.slice(1,-1).join(" · ")||parts[1]):row.title;
-   return <article key={row.id} className={videoStyles.audioCompactTile}
+   return <article key={row.id} className={montageRef.trackRow}
      data-video-audio-compact-track={"library:"+row.id}
-     data-video-studio-featured-recording={row.id} data-selected={selected} data-audio-buffering={buffering}
-     data-audio-quality={row.reviewStage==="published"?"listening-reviewed":"source-verified"}
-     style={!poster?{background:"linear-gradient(145deg,#35645b,#19433e 56%,#7c9a89)"}:undefined}>
-    {poster&&<>
-      {/* Decorative film scene, not a recording cover. */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={poster} alt="" loading="lazy"/>
-    </>}
-    <button type="button" className={videoStyles.audioCompactSelect}
-     aria-label={(selected?t.remove:t.add)+" — "+row.title+" · "+t.verified}
-     aria-pressed={selected} disabled={disabled||Boolean(busyId)}
-     onClick={()=>void choose(row)}>
-     <span className={videoStyles.audioCompactCheck} aria-hidden="true">
-      {selected?<Check size={16} strokeWidth={3}/>:null}
-     </span>
-     <strong>{short}</strong>
-     <small>{row.composer?.split(" ").at(-1)||"Classical"} · {row.licenseCode||"PD"} ♫</small>
-    </button>
-    <button type="button" className={videoStyles.audioCompactPlay}
-     data-video-studio-featured-play={row.id}
-     aria-label={(buffering?t.loading:current?t.pause:t.listen)+" — "+row.title}
-     aria-busy={buffering} aria-pressed={current} disabled={disabled||Boolean(busyId)}
-     onPointerEnter={()=>{if(!disabled)void signedUrlCache.get(row).catch(()=>{})}}
+     data-video-studio-featured-recording={row.id} data-selected={selected}
+     data-audio-buffering={buffering}
+     data-audio-quality={row.reviewStage==="published"?"listening-reviewed":"source-verified"}>
+    <button type="button" className={montageRef.trackPlay}
+      data-video-studio-featured-play={row.id}
+      aria-label={(buffering?t.loading:current?t.pause:t.listen)+" — "+row.title}
+      aria-busy={buffering} aria-pressed={current} disabled={disabled||Boolean(busyId)}
+      onPointerEnter={()=>{if(!disabled)void signedUrlCache.get(row).catch(()=>{})}}
       onFocus={()=>{if(!disabled)void signedUrlCache.get(row).catch(()=>{})}}
       onTouchStart={()=>{if(!disabled)void signedUrlCache.get(row).catch(()=>{})}}
       onClick={()=>void audition(row)}>
-     {buffering?<span aria-hidden="true">…</span>:current?<Pause size={17} fill="currentColor"/>:<Play size={17} fill="currentColor"/>}
+      {buffering?<span aria-hidden="true">…</span>:current?<Pause size={18} fill="currentColor"/>:<Play size={18} fill="currentColor"/>}
+    </button>
+    <button type="button" className={montageRef.trackChoose}
+      data-video-audio-compact-select={"library:"+row.id}
+      aria-label={(selected?t.remove:t.add)+" — "+row.title+" · "+t.verified}
+      aria-pressed={selected} disabled={disabled||Boolean(busyId)}
+      onClick={()=>void choose(row)}>
+      <span className={montageRef.trackMeta}>
+        <strong>{short}</strong>
+        <small>{(row.composer?.split(" ").at(-1)||"Classical")+" · "+(row.licenseCode||"PD")}</small>
+      </span>
+      <span className={montageRef.trackWave} aria-hidden="true">
+        {Array.from({length:13},(_,bar)=><i key={bar}/>)}
+      </span>
+      {selected?<span className={montageRef.trackTick} aria-hidden="true"><Check size={16} strokeWidth={3}/></span>:null}
     </button>
    </article>;
   })}
