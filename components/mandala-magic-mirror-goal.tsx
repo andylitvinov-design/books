@@ -1,131 +1,246 @@
 "use client";
+
 import {useRef,useState} from "react";
-import {ArrowRight,Briefcase,Check,Mic,Sparkles,UserRound} from "lucide-react";
+import {ArrowLeft,ArrowRight,Briefcase,Check,Ellipsis,Gift,Mic,Sparkles,UserRound} from "lucide-react";
 import type {VideoLocale} from "@/lib/mandala/holistic-video-themes";
+import {listMyTubeCategories,listMyTubeSubcategories,listMyTubeTopics,getMyTubeTopic} from "@/lib/mandala/mytube-content-taxonomy.mjs";
+import {classifyMyTubeRequest} from "@/lib/mandala/mytube-prompt-classifier.mjs";
 import css from "./mandala-magic-mirror-goal.module.css";
 
-type Scope="me"|"business";
+export type MirrorScope="me"|"business"|"present";
+export type MirrorCategory="goals-money"|"love-relationships"|"energy-confidence"|"stress-anxiety";
+export type WorkVideoFormat="insta-reels"|"video-about-me"|"service-presentation"|"client-video-offer";
 type Theme="energy"|"money"|"relationships"|"goals"|"health";
-type CategoryId="goals-money"|"love-relationships"|"energy-confidence"|"stress-anxiety";
-type GoalOption={
- id:string;theme:Theme;categoryId:CategoryId;image:string;
- label:Record<VideoLocale,string>;request:Record<VideoLocale,string>;
+export type MirrorResolution={
+ scope:MirrorScope;categoryId:MirrorCategory;subcategoryId:string;topicId:string;
+ theme:Theme;wish:string;goalChoiceId:string;workFormat?:WorkVideoFormat;
 };
-const choices:Record<Scope,GoalOption[]>={
+type GoalOption={
+ id:string;theme:Theme;categoryId:MirrorCategory;image:string;defaultTopicId:string;
+ request:Record<VideoLocale,string>;label?:Record<VideoLocale,string>;workFormat?:WorkVideoFormat;
+};
+const choices:Record<MirrorScope,GoalOption[]>={
  me:[
-  {id:"energy",theme:"energy",categoryId:"energy-confidence",image:"sunbeam-flow.jpg",
-   label:{en:"More Energy & Vitality",ru:"Больше энергии и сил",es:"Más energía y vitalidad"},
-   request:{en:"I want more energy and vitality in my daily life.",ru:"Хочу больше энергии и жизненных сил каждый день.",es:"Quiero más energía y vitalidad en mi día a día."}},
-  {id:"love",theme:"relationships",categoryId:"love-relationships",image:"wildflower-dance.jpg",
-   label:{en:"Love & Relationships",ru:"Любовь и отношения",es:"Amor y relaciones"},
-   request:{en:"I want to build warm, trusting relationships.",ru:"Хочу развивать тёплые, доверительные отношения.",es:"Quiero construir relaciones cálidas y de confianza."}},
-  {id:"peace",theme:"health",categoryId:"stress-anxiety",image:"calm-sea.jpg",
-   label:{en:"Inner Peace & Balance",ru:"Спокойствие и баланс",es:"Paz interior y equilibrio"},
-   request:{en:"I want more inner peace and emotional balance.",ru:"Хочу больше внутреннего спокойствия и равновесия.",es:"Quiero más paz interior y equilibrio emocional."}},
-  {id:"abundance",theme:"money",categoryId:"goals-money",image:"wealth-sunrise.jpg",
-   label:{en:"Success & Abundance",ru:"Успех и достаток",es:"Éxito y abundancia"},
-   request:{en:"I want to feel confident while working toward financial stability.",ru:"Хочу уверенно двигаться к финансовой стабильности.",es:"Quiero avanzar con confianza hacia la estabilidad económica."}},
+  {id:"stress",theme:"health",categoryId:"stress-anxiety",image:"calm-sea.jpg",defaultTopicId:"low-energy",
+   request:{en:"I want to release stress and restore my energy.",ru:"Хочу снизить стресс и восстановить энергию.",es:"Quiero aliviar el estrés y recuperar energía."}},
+  {id:"love",theme:"relationships",categoryId:"love-relationships",image:"wildflower-dance.jpg",defaultTopicId:"emotional-intimacy",
+   request:{en:"I want loving, trusting relationships.",ru:"Хочу тёплых и доверительных отношений.",es:"Quiero relaciones amorosas y de confianza."}},
+  {id:"money",theme:"money",categoryId:"goals-money",image:"wealth-sunrise.jpg",defaultTopicId:"financial-stability",
+   request:{en:"I want greater confidence and financial stability.",ru:"Хочу уверенности и финансовой устойчивости.",es:"Quiero más confianza y estabilidad financiera."}},
+  {id:"growth",theme:"goals",categoryId:"energy-confidence",image:"mountain-air.jpg",defaultTopicId:"personal-growth",
+   request:{en:"I want personal growth and a clearer direction.",ru:"Хочу личностного развития и ясного направления.",es:"Quiero crecer personalmente y tener una dirección clara."}},
  ],
  business:[
-  {id:"growth",theme:"money",categoryId:"goals-money",image:"wealth-sunrise.jpg",
-   label:{en:"Growth & Revenue",ru:"Рост и доход",es:"Crecimiento e ingresos"},
-   request:{en:"I want to grow my business with sustainable revenue.",ru:"Хочу развивать бизнес с устойчивым доходом.",es:"Quiero hacer crecer mi negocio con ingresos sostenibles."}},
-  {id:"team",theme:"relationships",categoryId:"love-relationships",image:"wildflower-dance.jpg",
-   label:{en:"Team & Trust",ru:"Команда и доверие",es:"Equipo y confianza"},
-   request:{en:"I want a stronger, more trusting team.",ru:"Хочу укрепить доверие и сотрудничество в команде.",es:"Quiero un equipo más fuerte y unido."}},
-  {id:"focus",theme:"goals",categoryId:"goals-money",image:"mountain-air.jpg",
-   label:{en:"Focus & Strategy",ru:"Фокус и стратегия",es:"Enfoque y estrategia"},
-   request:{en:"I want clarity and focus for important business decisions.",ru:"Хочу ясности и концентрации при важных бизнес-решениях.",es:"Quiero claridad y enfoque para las decisiones de mi negocio."}},
-  {id:"leadership",theme:"energy",categoryId:"energy-confidence",image:"sunbeam-flow.jpg",
-   label:{en:"Energy & Leadership",ru:"Энергия лидера",es:"Energía y liderazgo"},
-   request:{en:"I want steady energy and confidence as a leader.",ru:"Хочу больше устойчивой энергии и уверенности как руководитель.",es:"Quiero energía estable y confianza como líder."}},
- ]
+  // Work is one level of four concrete formats, not the 4×4×4 wellness taxonomy.
+  // Four distinct approved first-party film stills: no external image request or tracking.
+  {id:"insta-reels",theme:"goals",categoryId:"energy-confidence",image:"/videos/holistic-house/film-collection-v3/sun-leaves-canopy.jpg",defaultTopicId:"entrepreneurship",workFormat:"insta-reels",
+   label:{en:"Insta Reels",ru:"Insta Reels",es:"Insta Reels"},
+   request:{en:"Create an Instagram Reel about my work with captions and a clear call to action.",ru:"Создать Instagram Reels о моей работе с титрами и призывом к действию.",es:"Crear un Reel de Instagram sobre mi trabajo con subtítulos y una llamada a la acción."}},
+  {id:"video-about-me",theme:"goals",categoryId:"energy-confidence",image:"/videos/holistic-house/film-collection-v3/sun-autumn-hills.jpg",defaultTopicId:"personal-growth",workFormat:"video-about-me",
+   label:{en:"Video About Me",ru:"Видео обо мне",es:"Vídeo sobre mí"},
+   request:{en:"Create a video about me, my expertise and why clients can trust my work.",ru:"Создать видеовизитку обо мне, моём опыте и о том, почему мне можно доверять.",es:"Crear un vídeo sobre mí, mi experiencia y por qué pueden confiar en mi trabajo."}},
+  {id:"service-presentation",theme:"goals",categoryId:"energy-confidence",image:"/videos/holistic-house/film-collection-v3/sun-golden-aspen.jpg",defaultTopicId:"entrepreneurship",workFormat:"service-presentation",
+   label:{en:"Service Presentation",ru:"Презентация услуги",es:"Presentación del servicio"},
+   request:{en:"Create a video presenting my service, how it works and the next step.",ru:"Создать видеопрезентацию моей услуги: как она работает и как начать.",es:"Crear una presentación de mi servicio, cómo funciona y cómo empezar."}},
+  {id:"client-video-offer",theme:"money",categoryId:"goals-money",image:"/videos/holistic-house/film-collection-v3/sun-warm-ocean-dawn.jpg",defaultTopicId:"income-growth",workFormat:"client-video-offer",
+   label:{en:"Client Video Offer",ru:"Видео-предложение клиенту",es:"Oferta en vídeo para clientes"},
+   request:{en:"Create a personal video offer to a client, with clear value and a respectful next step.",ru:"Создать персональное видео-предложение клиенту с пользой и деликатным следующим шагом.",es:"Crear una oferta personal en vídeo para un cliente, con valor claro y un siguiente paso respetuoso."}},
+ ],
+ present:[
+  {id:"stress",theme:"health",categoryId:"stress-anxiety",image:"calm-sea.jpg",defaultTopicId:"recovery-after-load",
+   request:{en:"I want to offer rest and support to someone I care about.",ru:"Хочу подарить отдых и поддержку близкому человеку.",es:"Quiero regalar descanso y apoyo a alguien querido."}},
+  {id:"love",theme:"relationships",categoryId:"love-relationships",image:"wildflower-dance.jpg",defaultTopicId:"emotional-intimacy",
+   request:{en:"I want to express love and gratitude.",ru:"Хочу выразить любовь и благодарность.",es:"Quiero expresar amor y gratitud."}},
+  {id:"money",theme:"money",categoryId:"goals-money",image:"wealth-sunrise.jpg",defaultTopicId:"self-confidence",
+   request:{en:"I want to encourage someone's confidence and success.",ru:"Хочу поддержать уверенность и успех близкого.",es:"Quiero animar la confianza y el éxito de alguien."}},
+  {id:"growth",theme:"goals",categoryId:"energy-confidence",image:"mountain-air.jpg",defaultTopicId:"life-transitions",
+   request:{en:"I want to celebrate a new chapter and personal growth.",ru:"Хочу поздравить с новым этапом и развитием.",es:"Quiero celebrar una nueva etapa y el crecimiento personal."}},
+ ],
+};
+const categoryTheme:Record<MirrorCategory,Theme>={
+ "goals-money":"money","love-relationships":"relationships",
+ "energy-confidence":"goals","stress-anxiety":"health",
 };
 const labels={
- en:{subtitle:"Create Your Transformative Video",hint:"A few simple choices to shape a personal video journey.",question:"What is your main goal now?",me:"For Me",business:"For Business",custom:"Or describe your own wish",placeholder:"Describe your goal or wish…",more:"More goals",next:"Next",dictation:"Use your keyboard microphone to dictate your goal"},
- ru:{subtitle:"Создайте своё видео перемен",hint:"Несколько простых ответов помогут подобрать видео под ваш запрос.",question:"Какая у вас сейчас главная цель?",me:"Для себя",business:"Для бизнеса",custom:"Или сформулируйте свою цель",placeholder:"Опишите вашу цель или желание…",more:"Другие цели",next:"Далее",dictation:"Для диктовки используйте микрофон клавиатуры"},
- es:{subtitle:"Crea tu vídeo de transformación",hint:"Unas elecciones sencillas darán forma a tu vídeo personal.",question:"¿Cuál es tu principal objetivo ahora?",me:"Para mí",business:"Para mi negocio",custom:"O escribe tu propio deseo",placeholder:"Describe tu objetivo o deseo…",more:"Más objetivos",next:"Siguiente",dictation:"Usa el micrófono del teclado para dictar tu objetivo"}
+ en:{subtitle:"Create Your Transformative Video",hint:"A few choices for a video shaped around your wish.",
+  question:"What is your main goal now?",me:"For Me",business:"For Work",present:"Present",
+  placeholder:"Describe your goal or wish…",alternative:"Or choose what matters now",
+  sub:"Choose a subcategory",topic:"Choose a topic",next:"Next",back:"Back",
+  advanced:"Advanced choices",dictation:"Use your phone keyboard microphone to dictate",workQuestion:"What video would you like to create?",workPlaceholder:"Describe your video or service…",workAlternative:"Or choose a video format",format:"Format"},
+ ru:{subtitle:"Создайте своё видео перемен",hint:"Несколько ответов — и видео под ваше желание.",
+  question:"Какая у вас сейчас главная цель?",me:"Для себя",business:"Для работы",present:"Подарок",
+  placeholder:"Опишите цель или желание…",alternative:"Или выберите то, что актуально",
+  sub:"Выберите подкатегорию",topic:"Выберите тему",next:"Далее",back:"Назад",
+  advanced:"Расширенные настройки",dictation:"Для диктовки используйте микрофон клавиатуры",workQuestion:"Какое видео вы хотите создать?",workPlaceholder:"Опишите видео или услугу…",workAlternative:"Или выберите формат видео",format:"Формат"},
+ es:{subtitle:"Crea tu vídeo de transformación",hint:"Unas elecciones para un vídeo sobre tu deseo.",
+  question:"¿Cuál es tu objetivo principal?",me:"Para mí",business:"Para el trabajo",present:"Regalo",
+  placeholder:"Describe tu objetivo o deseo…",alternative:"O elige lo que importa ahora",
+  sub:"Elige una subcategoría",topic:"Elige un tema",next:"Siguiente",back:"Atrás",
+  advanced:"Opciones avanzadas",dictation:"Usa el micrófono del teclado para dictar",workQuestion:"¿Qué vídeo quieres crear?",workPlaceholder:"Describe tu vídeo o servicio…",workAlternative:"O elige un formato de vídeo",format:"Formato"},
 } as const;
 
 export function MandalaMagicMirrorTitle({locale}:{locale:VideoLocale}){
  const t=labels[locale];
  return <header className={css.title} data-hh-mirror-title>
-  <Sparkles size={24} aria-hidden="true"/>
+  <Sparkles size={22} aria-hidden="true"/>
   <h2>Magic Mirror</h2>
   <strong>{t.subtitle}</strong>
   <p>{t.hint}</p>
  </header>;
 }
-export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSelectCategory,onContinue,onExpand}:{
+
+export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSelectCategory,
+ onStepChange,onScopeChange,onComplete,onExpand}:{
  locale:VideoLocale;wish:string;disabled:boolean;
- onWishChange:(value:string)=>void;
- onSelectCategory:(theme:Theme)=>void;
- onContinue:(theme:Theme,categoryId:CategoryId,wish:string)=>void;onExpand:()=>void;
+ onWishChange:(value:string)=>void;onSelectCategory:(theme:Theme)=>void;
+ onStepChange:(step:1|2|3)=>void;onScopeChange:(scope:MirrorScope)=>void;
+ onComplete:(value:MirrorResolution)=>boolean|void;onExpand:()=>void;
 }){
- const [scope,setScope]=useState<Scope>("me");
- const [selectedId,setSelectedId]=useState("energy");
- const [autoPrompt,setAutoPrompt]=useState<string|null>(null);
+ const [scope,setScope]=useState<MirrorScope>("me");
+ const [selectedId,setSelectedId]=useState("stress");
+ const [step,setStep]=useState<1|2|3>(1);
+ const [subcategoryId,setSubcategoryId]=useState("");
+ const [blocked,setBlocked]=useState(false);
  const inputRef=useRef<HTMLTextAreaElement>(null);
- const t=labels[locale];
- const available=choices[scope];
+ const t=labels[locale],available=choices[scope];
+ const categoryLabels=listMyTubeCategories(locale);
  const selected=available.find(item=>item.id===selectedId)??available[0];
- // The visitor's own prose always wins; auto-filled copy should follow a changed
- // photographic goal instead of surviving as an unrelated stale wish.
- const clearAutoPrompt=()=>{
-  if(autoPrompt&&wish===autoPrompt)onWishChange("");
-  setAutoPrompt(null);
+ const subcategories=listMyTubeSubcategories(selected.categoryId,locale);
+ const topics=subcategoryId?listMyTubeTopics(selected.categoryId,subcategoryId,locale):[];
+ const changeStep=(next:1|2|3)=>{setStep(next);onStepChange(next);setBlocked(false);};
+ const switchScope=(next:MirrorScope)=>{
+  if(disabled||scope===next)return;
+  setScope(next);setSelectedId(choices[next][0].id);setSubcategoryId("");
+  onScopeChange(next);onSelectCategory(choices[next][0].theme);changeStep(1);
  };
- const switchScope=(next:Scope)=>{
-  if(disabled||next===scope)return;
-  clearAutoPrompt();
-  setScope(next);
-  setSelectedId(choices[next][0].id);
-  onSelectCategory(choices[next][0].theme);
+ const finish=(categoryId:MirrorCategory,subId:string,topicId:string,goalText:string,workFormat?:WorkVideoFormat)=>{
+  const found=getMyTubeTopic(topicId);
+  if(!found||found.category.id!==categoryId||found.subcategory.id!==subId){
+   setBlocked(true);return;
+  }
+  const theme=scope==="business"?categoryTheme[categoryId]:
+    categoryId===selected.categoryId?selected.theme:categoryTheme[categoryId];
+  const accepted=onComplete({scope,categoryId,subcategoryId:subId,topicId,theme,
+    wish:goalText.slice(0,500),goalChoiceId:workFormat||selected.id,workFormat});
+  if(accepted===false){setBlocked(true);return;}
+  setSubcategoryId("");changeStep(1);
  };
- const next=()=>{
+ const autoNext=()=>{
   if(disabled)return;
   const goalText=wish.trim()||selected.request[locale];
-  if(!wish.trim()){setAutoPrompt(selected.request[locale]);onWishChange(selected.request[locale]);}
-  // Photos confirm the category only: native topic and purpose still require a choice.
-  onContinue(selected.theme,selected.categoryId,goalText);
+  // Existing local taxonomy classifier: no API, invented diagnosis or render.
+  // An ambiguous request uses the visibly selected card as a reversible default.
+  if(scope==="business"){
+   // Keyboard Next chooses the obvious video format locally; no AI/API call.
+   const text=wish.toLowerCase();
+   const formatId=/instagram|reels?|рил[сз]/iu.test(text)?"insta-reels":
+    /about me|обо мне|о себе|sobre m[ií]|presentarme/iu.test(text)?"video-about-me":
+    /client.*offer|offer.*client|клиент.*предлож|предлож.*клиент|oferta.*cliente/iu.test(text)?"client-video-offer":
+    /service|услуг|servicio|презентац/iu.test(text)?"service-presentation":selected.id;
+   const format=choices.business.find(item=>item.id===formatId)||selected;
+   const match=getMyTubeTopic(format.defaultTopicId);
+   if(!match){setBlocked(true);return;}
+   setSelectedId(format.id);
+   finish(match.category.id as MirrorCategory,match.subcategory.id,match.topic.id,
+    wish.trim()||format.request[locale],format.workFormat);
+   return;
+  }
+  const classified=wish.trim()?classifyMyTubeRequest(wish,locale):null;
+  const match=classified?.topicId?getMyTubeTopic(classified.topicId):null;
+  const curated=getMyTubeTopic(selected.defaultTopicId);
+  const valid=match&&match.category.id===classified?.categoryId&&
+   match.subcategory.id===classified?.subcategoryId;
+  // Explicitly approved category-specific defaults, never array[0] from an
+  // unrelated subcategory. A typed wish can select another canonical topic.
+  const inferred=valid?match:curated;
+  if(!inferred||!["goals-money","love-relationships","energy-confidence","stress-anxiety"]
+    .includes(inferred.category.id)){setBlocked(true);return;}
+  const categoryId=inferred.category.id as MirrorCategory;
+  const subId=inferred.subcategory.id;
+  const topicId=inferred.topic.id;
+  finish(categoryId,subId,topicId,goalText);
  };
  return <section className={css.goals} data-hh-mirror-goals data-hh-mirror-mode={scope}
-  aria-label={t.question}>
-  <div className={css.audience} role="group" aria-label={locale==="ru"?"Для кого видео":locale==="es"?"Tipo de vídeo":"Video purpose"}>
-   <button type="button" data-hh-mirror-audience="me" aria-pressed={scope==="me"} disabled={disabled}
-    onClick={()=>switchScope("me")}><UserRound size={19} aria-hidden="true"/>{t.me}</button>
-   <button type="button" data-hh-mirror-audience="business" aria-pressed={scope==="business"} disabled={disabled}
-    onClick={()=>switchScope("business")}><Briefcase size={19} aria-hidden="true"/>{t.business}</button>
+  data-hh-mirror-step={step} aria-label={scope==="business"?t.workQuestion:t.question}>
+  <div className={css.audience} role="group" aria-label={t.question}>
+   {(["me","business","present"] as const).map(item=>{
+    const Icon=item==="me"?UserRound:item==="business"?Briefcase:Gift;
+    return <button type="button" key={item} data-hh-mirror-audience={item}
+     aria-pressed={scope===item} disabled={disabled} onClick={()=>switchScope(item)}>
+     <Icon size={17} aria-hidden="true"/>{t[item]}
+    </button>;
+   })}
   </div>
-  <div className={css.progress} aria-label={locale==="ru"?"Шаг 1 из 5":locale==="es"?"Paso 1 de 5":"Step 1 of 5"}>
-   <span className={css.dots} aria-hidden="true"><i data-active="true"/><i/><i/><i/><i/></span>
-   <span>{locale==="ru"?"Шаг 1 из 5":locale==="es"?"Paso 1 de 5":"Step 1 of 5"}</span>
+  <div className={css.progress} aria-label={(locale==="ru"?"Шаг ":locale==="es"?"Paso ":"Step ")+step+" / 5"}>
+   <span className={css.dots} aria-hidden="true">{[1,2,3,4,5].map(index=>
+    <i key={index} data-active={index<=step?"true":"false"}/>)}</span>
+   <span data-hh-mirror-stage-label>{scope==="business"?t.format+" · 1/1":step===1?(locale==="ru"?"Категория":locale==="es"?"Categoría":"Category"):
+    step===2?(locale==="ru"?"Подкатегория":locale==="es"?"Subcategoría":"Subcategory"):
+    (locale==="ru"?"Тема":locale==="es"?"Tema":"Topic")} · {step}/3</span>
   </div>
-  <h3 className={css.question}>{t.question}</h3>
-  <div className={css.cards} role="group" aria-label={t.question}>
-   {available.map(item=><button type="button" key={item.id} className={css.card}
-    data-hh-mirror-goal-choice={item.id} disabled={disabled}
-    aria-pressed={selectedId===item.id} onClick={()=>{
-     clearAutoPrompt();setSelectedId(item.id);onSelectCategory(item.theme);
-    }}>
-    <img src={"/videos/holistic-house/film-collection-v2/"+item.image}
-     alt="" aria-hidden="true" loading="lazy"/>
-    <span className={css.cardLabel}>{item.label[locale]}</span>
-    {selectedId===item.id?<Check className={css.check} size={19} aria-hidden="true"/>:null}
-   </button>)}
-  </div>
-  <button type="button" className={css.more} data-hh-mirror-more-goals disabled={disabled}
-   onClick={onExpand}>{t.more} <ArrowRight size={16} aria-hidden="true"/></button>
-  <label className={css.promptLabel} htmlFor="hh-mirror-own-wish">{t.custom}</label>
-  <div className={css.promptRow}>
-   <Sparkles size={19} aria-hidden="true"/>
-   <textarea id="hh-mirror-own-wish" ref={inputRef}
-    data-hh-mirror-wish rows={2} maxLength={500} disabled={disabled}
-    value={wish} onChange={event=>{setAutoPrompt(null);onWishChange(event.currentTarget.value);}}
-    placeholder={t.placeholder}/>
-   <span className={css.microphone} title={t.dictation}><Mic size={23} aria-hidden="true"/></span>
-  </div>
-  <button className={css.next} type="button" data-hh-mirror-next disabled={disabled}
-   onClick={next}><span>{t.next}</span><ArrowRight size={23} aria-hidden="true"/></button>
+  {step>1?<button type="button" className={css.back} data-hh-mirror-back
+    disabled={disabled} onClick={()=>changeStep(step===3?2:1)}>
+    <ArrowLeft size={17} aria-hidden="true"/>{t.back}
+   </button>:<button type="button" className={css.more} data-hh-mirror-more-goals
+     disabled={disabled} onClick={onExpand} aria-label={t.advanced} title={t.advanced}>
+     <Ellipsis size={20} aria-hidden="true"/>
+   </button>}
+  <h3 className={css.question}>{scope==="business"?t.workQuestion:step===1?t.question:step===2?t.sub:t.topic}</h3>
+  {step===1?<>
+   <div className={css.entry}>
+    <div className={css.promptRow}>
+     <Sparkles size={18} aria-hidden="true"/>
+     <textarea id="hh-mirror-own-wish" ref={inputRef} rows={1} maxLength={500}
+      data-hh-mirror-wish disabled={disabled} value={wish}
+      onChange={event=>onWishChange(event.currentTarget.value)}
+      placeholder={scope==="business"?t.workPlaceholder:t.placeholder} aria-label={scope==="business"?t.workPlaceholder:t.placeholder}/>
+     <span className={css.microphone} title={t.dictation}><Mic size={20} aria-hidden="true"/></span>
+    </div>
+    <button className={css.next} type="button" data-hh-mirror-next
+      disabled={disabled} onClick={autoNext} aria-label={t.next}>
+      <span>{t.next}</span><ArrowRight size={18} aria-hidden="true"/>
+    </button>
+   </div>
+   <p className={css.alternative}>{scope==="business"?t.workAlternative:t.alternative}</p>
+   <div className={css.cards} role="group" aria-label={t.alternative}>
+    {available.map(item=><button type="button" key={item.id} className={css.card}
+      data-hh-mirror-goal-choice={item.id} disabled={disabled}
+      aria-pressed={selectedId===item.id}
+      onClick={()=>{setSelectedId(item.id);setSubcategoryId("");
+       onSelectCategory(item.theme);
+       if(scope==="business"){
+        const match=getMyTubeTopic(item.defaultTopicId);
+        if(!match){setBlocked(true);return;}
+        finish(match.category.id as MirrorCategory,match.subcategory.id,match.topic.id,
+         wish.trim()||item.request[locale],item.workFormat);
+       }else changeStep(2);}}>
+      <img src={item.image.startsWith("/")?item.image:
+        "/videos/holistic-house/film-collection-v2/"+item.image}
+       alt="" aria-hidden="true" loading="lazy" decoding="async"
+       referrerPolicy={scope==="business"?"no-referrer":undefined}/>
+      <span className={css.cardLabel}>{scope==="business"?item.label?.[locale]:categoryLabels.find(category=>category.id===item.categoryId)?.label||item.id}</span>
+      {selectedId===item.id?<Check className={css.check} size={18} aria-hidden="true"/>:null}
+    </button>)}
+   </div>
+  </>:<div className={css.cards} role="group" aria-label={step===2?t.sub:t.topic}>
+   {step===2?subcategories.map((item,index)=><button type="button" className={css.card}
+     key={item.id} data-hh-mirror-subcategory={item.id} disabled={disabled}
+     onClick={()=>{setSubcategoryId(item.id);changeStep(3);}}>
+     <img src={"/videos/holistic-house/film-collection-v2/"+
+      available[index%available.length].image} alt="" loading="lazy"/>
+     <span className={css.cardLabel}>{item.label}</span>
+    </button>):topics.map((item,index)=><button type="button" className={css.card}
+     key={item.id} data-hh-mirror-topic={item.id} disabled={disabled}
+     onClick={()=>finish(selected.categoryId,subcategoryId,item.id,
+      wish.trim()||selected.request[locale])}>
+     <img src={"/videos/holistic-house/film-collection-v2/"+
+      available[index%available.length].image} alt="" loading="lazy"/>
+     <span className={css.cardLabel}>{item.label}</span>
+    </button>)}
+   </div>}
+  {blocked?<p className={css.error} role="alert">
+   {locale==="ru"?"Пожалуйста, выберите тему ещё раз.":
+    locale==="es"?"Selecciona el tema otra vez.":"Please select the topic again."}
+  </p>:null}
  </section>;
 }
