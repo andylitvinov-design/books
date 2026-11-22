@@ -1,16 +1,17 @@
 import Link from 'next/link'
 import {
   ArrowRight, BookOpen, Brain, BriefcaseBusiness, CalendarDays,
-  Heart, Route, Settings2, Sparkles, Target, UserRound,
+  Heart, NotebookPen, Settings2, Sparkles, Target, UserRound,
 } from 'lucide-react'
 import styles from './profile-space-dashboard.module.css'
+import { ProfileSpaceFocus } from './profile-space-focus'
 
 const TEXT = {
   en: {
     label: 'MY SPACE', title: 'My Space',
     intro: 'Your wellbeing, progress and personal growth — all in one place.',
     life: 'My Life', work: 'My Work',
-    path: 'My Path', pathDetail: 'Continue your journey and next steps.',
+    path: 'Coaching Daybook', pathDetail: 'Intentions, notes & check-ins.',
     state: 'My Goals & Coaching Reports', stateDetail: 'Goals, actions & session reports',
     courses: 'My Courses', coursesDetail: 'My learning and progress',
     reports: 'My Psychic Health', reportsDetail: 'Tests & therapy plan',
@@ -23,7 +24,7 @@ const TEXT = {
     label: 'МОЁ ПРОСТРАНСТВО', title: 'Моё пространство',
     intro: 'Самочувствие, развитие и личные результаты — всё в одном месте.',
     life: 'Моя жизнь', work: 'Моя работа',
-    path: 'Мой путь', pathDetail: 'Продолжить развитие и следующие шаги.',
+    path: 'Дневник коучинга', pathDetail: 'Цели, заметки и ежедневные шаги.',
     state: 'Мои цели и отчёты коучинга', stateDetail: 'Цели, действия и итоги сессий',
     courses: 'Мои курсы', coursesDetail: 'Обучение и прогресс',
     reports: 'Моё психическое здоровье', reportsDetail: 'Тесты и план терапии',
@@ -36,7 +37,7 @@ const TEXT = {
     label: 'MI ESPACIO', title: 'Mi espacio',
     intro: 'Bienestar, progreso y crecimiento personal en un solo lugar.',
     life: 'Mi vida', work: 'Mi trabajo',
-    path: 'Mi camino', pathDetail: 'Continúa tu recorrido y próximos pasos.',
+    path: 'Diario de coaching', pathDetail: 'Intenciones, notas y seguimiento.',
     state: 'Mis metas e informes de coaching', stateDetail: 'Metas, acciones y sesiones',
     courses: 'Mis cursos', coursesDetail: 'Aprendizaje y progreso',
     reports: 'Mi salud mental', reportsDetail: 'Tests y plan terapéutico',
@@ -47,7 +48,7 @@ const TEXT = {
   },
 }
 
-export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultCount = null }) {
+export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultCount = null, accountId = null }) {
   const selected = Object.hasOwn(TEXT, locale) ? locale : 'en'
   const t = TEXT[selected]
   const cards = [
@@ -68,9 +69,10 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
       <p className={styles.eyebrow}><Sparkles size={17} aria-hidden="true" />{t.label}</p>
       <h1 className={styles.title}>{t.title}</h1>
       <p className={styles.intro}>{t.intro}</p>
+      <ProfileSpaceFocus locale={selected} root={root} accountId={accountId} />
       <Link className={styles.path} href={root + '/portrait?space=path'} prefetch={false}
         data-profile-space-path>
-        <span className={styles.pathIcon} aria-hidden="true"><Route size={30}/></span>
+        <span className={styles.pathIcon} aria-hidden="true"><NotebookPen size={30}/></span>
         <span className={styles.pathText}><strong>{t.path}</strong><small>{t.pathDetail}</small></span>
         <ArrowRight className={styles.pathArrow} size={23} aria-hidden="true"/>
       </Link>

@@ -290,7 +290,7 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
         {selected==='ru'?'Настройки':selected==='es'?'Ajustes':'Settings'}
       </Link>
     </div>}
-    {current === 'today' && <ProfileSpaceDashboard locale={selected} root={root} resultCount={resultCount} />}
+    {current === 'today' && <ProfileSpaceDashboard locale={selected} root={root} resultCount={resultCount} accountId={account?.id || null} />}
      {isCourseLanding && <CourseSpaceIntro locale={selected} root={root} />}
     {settingsMode && <ProfileSettingsLanding locale={selected} root={root} plans={NEW_PACKAGES} />}
     {!simplifiedSpace && current !== 'create' && current !== 'reports' && !settingsMode && !publicEntry && <div className={styles.sectionIntro}>
