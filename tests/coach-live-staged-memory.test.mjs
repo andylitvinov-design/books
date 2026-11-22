@@ -48,7 +48,8 @@ test('client UI gates old records after accepted invitation and later goals afte
   const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
   const live=readFileSync(new URL('../components/my-coach-gemini-live.jsx',import.meta.url),'utf8')
   const server=readFileSync(new URL('../lib/coaching/gemini-live-free.mjs',import.meta.url),'utf8')
-  assert.ok(!ui.includes("fetch('/api/app/my-coach/protocol'"))
+  // Archive POST must remain for explicit protocol saving; disallow the old pre-Play GET.
+  assert.ok(!ui.includes("fetch('/api/app/my-coach/protocol',{credentials:"))
   assert.match(ui,/allowOpeningPrior&&openingProgress\.lamps\.invitation/)
   assert.match(ui,/allowPersonalMemory&&openingProgress\.lamps\.focus/)
   assert.match(ui,/postStagedCoachMemory/)
