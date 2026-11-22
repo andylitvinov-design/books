@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import SiteOwnerAvatarGallery from './site-owner-avatar-gallery';
 
 const COPY = {
   ru: {
@@ -217,6 +218,7 @@ export default function MyLivePhotos({ locale = 'en' }) {
   return <section data-client-live-photos style={styles.card} aria-label={t.title}>
     <h2 style={{ fontSize: 19, margin: '0 0 6px' }}>{t.title}</h2>
     <p style={{ fontSize: 14, marginTop: 0 }}>{t.intro}</p>
+    <SiteOwnerAvatarGallery locale={locale} />
     {state === 'loading' ? <p role="status">{t.loading}</p> : null}
     {state === 'error' ? <button type="button" style={styles.button} onClick={() => void refresh()}>{t.retry}</button> : null}
     {state === 'ready' && !enabled ? <p role="status">{t.disabled}</p> : null}

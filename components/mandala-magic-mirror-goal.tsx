@@ -1,7 +1,7 @@
 "use client";
 
 import {useRef,useState} from "react";
-import {ArrowLeft,ArrowRight,Briefcase,Check,Ellipsis,Gift,Mic,Sparkles,UserRound} from "lucide-react";
+import {ArrowLeft,ArrowRight,Briefcase,Check,Ellipsis,Flower2,Gift,Heart,Mic,Sparkles,TrendingUp,UserRound,Zap} from "lucide-react";
 import type {VideoLocale} from "@/lib/mandala/holistic-video-themes";
 import {listMyTubeCategories,listMyTubeSubcategories,listMyTubeTopics,getMyTubeTopic} from "@/lib/mandala/mytube-content-taxonomy.mjs";
 import {classifyMyTubeRequest} from "@/lib/mandala/mytube-prompt-classifier.mjs";
@@ -21,13 +21,13 @@ type GoalOption={
 };
 const choices:Record<MirrorScope,GoalOption[]>={
  me:[
-  {id:"stress",theme:"health",categoryId:"stress-anxiety",image:"calm-sea.jpg",defaultTopicId:"low-energy",
+  {id:"stress",theme:"health",categoryId:"stress-anxiety",image:"/videos/holistic-house/film-collection-v3/sun-warm-ocean-dawn.jpg",defaultTopicId:"low-energy",
    request:{en:"I want to release stress and restore my energy.",ru:"Хочу снизить стресс и восстановить энергию.",es:"Quiero aliviar el estrés y recuperar energía."}},
-  {id:"love",theme:"relationships",categoryId:"love-relationships",image:"wildflower-dance.jpg",defaultTopicId:"emotional-intimacy",
+  {id:"love",theme:"relationships",categoryId:"love-relationships",image:"/videos/holistic-house/film-collection-v3/heart-flow.jpg",defaultTopicId:"emotional-intimacy",
    request:{en:"I want loving, trusting relationships.",ru:"Хочу тёплых и доверительных отношений.",es:"Quiero relaciones amorosas y de confianza."}},
-  {id:"money",theme:"money",categoryId:"goals-money",image:"wealth-sunrise.jpg",defaultTopicId:"financial-stability",
+  {id:"money",theme:"money",categoryId:"goals-money",image:"/videos/holistic-house/film-collection-v2/lone-tree.jpg",defaultTopicId:"financial-stability",
    request:{en:"I want greater confidence and financial stability.",ru:"Хочу уверенности и финансовой устойчивости.",es:"Quiero más confianza y estabilidad financiera."}},
-  {id:"growth",theme:"goals",categoryId:"energy-confidence",image:"mountain-air.jpg",defaultTopicId:"personal-growth",
+  {id:"growth",theme:"goals",categoryId:"energy-confidence",image:"/videos/holistic-house/film-collection-v3/sun-autumn-hills.jpg",defaultTopicId:"personal-growth",
    request:{en:"I want personal growth and a clearer direction.",ru:"Хочу личностного развития и ясного направления.",es:"Quiero crecer personalmente y tener una dirección clara."}},
  ],
  business:[
@@ -47,13 +47,13 @@ const choices:Record<MirrorScope,GoalOption[]>={
    request:{en:"Create a personal video offer to a client, with clear value and a respectful next step.",ru:"Создать персональное видео-предложение клиенту с пользой и деликатным следующим шагом.",es:"Crear una oferta personal en vídeo para un cliente, con valor claro y un siguiente paso respetuoso."}},
  ],
  present:[
-  {id:"stress",theme:"health",categoryId:"stress-anxiety",image:"calm-sea.jpg",defaultTopicId:"recovery-after-load",
+  {id:"stress",theme:"health",categoryId:"stress-anxiety",image:"/videos/holistic-house/film-collection-v3/sun-warm-ocean-dawn.jpg",defaultTopicId:"recovery-after-load",
    request:{en:"I want to offer rest and support to someone I care about.",ru:"Хочу подарить отдых и поддержку близкому человеку.",es:"Quiero regalar descanso y apoyo a alguien querido."}},
-  {id:"love",theme:"relationships",categoryId:"love-relationships",image:"wildflower-dance.jpg",defaultTopicId:"emotional-intimacy",
+  {id:"love",theme:"relationships",categoryId:"love-relationships",image:"/videos/holistic-house/film-collection-v3/heart-flow.jpg",defaultTopicId:"emotional-intimacy",
    request:{en:"I want to express love and gratitude.",ru:"Хочу выразить любовь и благодарность.",es:"Quiero expresar amor y gratitud."}},
-  {id:"money",theme:"money",categoryId:"goals-money",image:"wealth-sunrise.jpg",defaultTopicId:"self-confidence",
+  {id:"money",theme:"money",categoryId:"goals-money",image:"/videos/holistic-house/film-collection-v2/lone-tree.jpg",defaultTopicId:"self-confidence",
    request:{en:"I want to encourage someone's confidence and success.",ru:"Хочу поддержать уверенность и успех близкого.",es:"Quiero animar la confianza y el éxito de alguien."}},
-  {id:"growth",theme:"goals",categoryId:"energy-confidence",image:"mountain-air.jpg",defaultTopicId:"life-transitions",
+  {id:"growth",theme:"goals",categoryId:"energy-confidence",image:"/videos/holistic-house/film-collection-v3/sun-autumn-hills.jpg",defaultTopicId:"life-transitions",
    request:{en:"I want to celebrate a new chapter and personal growth.",ru:"Хочу поздравить с новым этапом и развитием.",es:"Quiero celebrar una nueva etapa y el crecimiento personal."}},
  ],
 };
@@ -62,22 +62,24 @@ const categoryTheme:Record<MirrorCategory,Theme>={
  "energy-confidence":"goals","stress-anxiety":"health",
 };
 const labels={
- en:{subtitle:"Create Your Transformative Video",hint:"A few choices for a video shaped around your wish.",
+ en:{subtitle:"Create Your Transformative Video",hint:"Answer a few simple questions and let the Mirror create a video-journey for your goal or wish.",
   question:"What is your main goal now?",me:"For Me",business:"For Work",present:"Present",
   placeholder:"Describe your goal or wish…",alternative:"Or choose what matters now",
   sub:"Choose a subcategory",topic:"Choose a topic",next:"Next",back:"Back",
   advanced:"Advanced choices",dictation:"Use your phone keyboard microphone to dictate",workQuestion:"What video would you like to create?",workPlaceholder:"Describe your video or service…",workAlternative:"Or choose a video format",format:"Format"},
- ru:{subtitle:"Создайте своё видео перемен",hint:"Несколько ответов — и видео под ваше желание.",
+ ru:{subtitle:"Создайте своё видео перемен",hint:"Несколько простых вопросов — и видео для вашей цели или желания.",
   question:"Какая у вас сейчас главная цель?",me:"Для себя",business:"Для работы",present:"Подарок",
   placeholder:"Опишите цель или желание…",alternative:"Или выберите то, что актуально",
   sub:"Выберите подкатегорию",topic:"Выберите тему",next:"Далее",back:"Назад",
   advanced:"Расширенные настройки",dictation:"Для диктовки используйте микрофон клавиатуры",workQuestion:"Какое видео вы хотите создать?",workPlaceholder:"Опишите видео или услугу…",workAlternative:"Или выберите формат видео",format:"Формат"},
- es:{subtitle:"Crea tu vídeo de transformación",hint:"Unas elecciones para un vídeo sobre tu deseo.",
+ es:{subtitle:"Crea tu vídeo de transformación",hint:"Unas preguntas sencillas para crear un vídeo sobre tu meta o deseo.",
   question:"¿Cuál es tu objetivo principal?",me:"Para mí",business:"Para el trabajo",present:"Regalo",
   placeholder:"Describe tu objetivo o deseo…",alternative:"O elige lo que importa ahora",
   sub:"Elige una subcategoría",topic:"Elige un tema",next:"Siguiente",back:"Atrás",
   advanced:"Opciones avanzadas",dictation:"Usa el micrófono del teclado para dictar",workQuestion:"¿Qué vídeo quieres crear?",workPlaceholder:"Describe tu vídeo o servicio…",workAlternative:"O elige un formato de vídeo",format:"Formato"},
 } as const;
+
+const mirrorPosterUrl=(image:string)=>image.startsWith("/")?image:"/videos/holistic-house/film-collection-v2/"+image;
 
 export function MandalaMagicMirrorTitle({locale}:{locale:VideoLocale}){
  const t=labels[locale];
@@ -98,10 +100,12 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
 }){
  const [scope,setScope]=useState<MirrorScope>("me");
  const [selectedId,setSelectedId]=useState("stress");
+ // Each intent keeps its own local wish, avoiding accidental cross-purpose reuse.
+ const [scopeWishes,setScopeWishes]=useState<Record<MirrorScope,string>>(()=>({me:wish,business:"",present:""}));
  const [step,setStep]=useState<1|2|3>(1);
  const [subcategoryId,setSubcategoryId]=useState("");
  const [blocked,setBlocked]=useState(false);
- const inputRef=useRef<HTMLTextAreaElement>(null);
+ const inputRef=useRef<HTMLInputElement>(null);
  const t=labels[locale],available=choices[scope];
  const categoryLabels=listMyTubeCategories(locale);
  const selected=available.find(item=>item.id===selectedId)??available[0];
@@ -110,7 +114,9 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
  const changeStep=(next:1|2|3)=>{setStep(next);onStepChange(next);setBlocked(false);};
  const switchScope=(next:MirrorScope)=>{
   if(disabled||scope===next)return;
+  setScopeWishes(prev=>({...prev,[scope]:wish}));
   setScope(next);setSelectedId(choices[next][0].id);setSubcategoryId("");
+  onWishChange(scopeWishes[next]||"");
   onScopeChange(next);onSelectCategory(choices[next][0].theme);changeStep(1);
  };
  const finish=(categoryId:MirrorCategory,subId:string,topicId:string,goalText:string,workFormat?:WorkVideoFormat)=>{
@@ -174,9 +180,7 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
   <div className={css.progress} aria-label={(locale==="ru"?"Шаг ":locale==="es"?"Paso ":"Step ")+step+" / 5"}>
    <span className={css.dots} aria-hidden="true">{[1,2,3,4,5].map(index=>
     <i key={index} data-active={index<=step?"true":"false"}/>)}</span>
-   <span data-hh-mirror-stage-label>{scope==="business"?t.format+" · 1/1":step===1?(locale==="ru"?"Категория":locale==="es"?"Categoría":"Category"):
-    step===2?(locale==="ru"?"Подкатегория":locale==="es"?"Subcategoría":"Subcategory"):
-    (locale==="ru"?"Тема":locale==="es"?"Tema":"Topic")} · {step}/3</span>
+   <span data-hh-mirror-stage-label>{locale==="ru"?"Шаг":locale==="es"?"Paso":"Step"} {step} {locale==="ru"?"из":locale==="es"?"de":"of"} 5</span>
   </div>
   {step>1?<button type="button" className={css.back} data-hh-mirror-back
     disabled={disabled} onClick={()=>changeStep(step===3?2:1)}>
@@ -190,9 +194,10 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
    <div className={css.entry}>
     <div className={css.promptRow}>
      <Sparkles size={18} aria-hidden="true"/>
-     <textarea id="hh-mirror-own-wish" ref={inputRef} rows={1} maxLength={500}
+     <input id="hh-mirror-own-wish" ref={inputRef} type="text" maxLength={500} autoComplete="off"
       data-hh-mirror-wish disabled={disabled} value={wish}
-      onChange={event=>onWishChange(event.currentTarget.value)}
+      onChange={event=>{const value=event.currentTarget.value;
+       setScopeWishes(prev=>({...prev,[scope]:value}));onWishChange(value);}}
       placeholder={scope==="business"?t.workPlaceholder:t.placeholder} aria-label={scope==="business"?t.workPlaceholder:t.placeholder}/>
      <span className={css.microphone} title={t.dictation}><Mic size={20} aria-hidden="true"/></span>
     </div>
@@ -218,7 +223,14 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
         "/videos/holistic-house/film-collection-v2/"+item.image}
        alt="" aria-hidden="true" loading="lazy" decoding="async"
        referrerPolicy={scope==="business"?"no-referrer":undefined}/>
-      <span className={css.cardLabel}>{scope==="business"?item.label?.[locale]:categoryLabels.find(category=>category.id===item.categoryId)?.label||item.id}</span>
+      <span className={css.cardLabel}>
+       {scope==="business"?<Briefcase className={css.choiceIcon} size={20} aria-hidden="true"/>:
+        item.id==="stress"?<Zap className={css.choiceIcon} size={20} aria-hidden="true"/>:
+        item.id==="love"?<Heart className={css.choiceIcon} size={20} aria-hidden="true"/>:
+        item.id==="money"?<TrendingUp className={css.choiceIcon} size={20} aria-hidden="true"/>:
+        <Flower2 className={css.choiceIcon} size={20} aria-hidden="true"/>}
+       <span>{scope==="business"?item.label?.[locale]:categoryLabels.find(category=>category.id===item.categoryId)?.label||item.id}</span>
+      </span>
       {selectedId===item.id?<Check className={css.check} size={18} aria-hidden="true"/>:null}
     </button>)}
    </div>
@@ -226,15 +238,13 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
    {step===2?subcategories.map((item,index)=><button type="button" className={css.card}
      key={item.id} data-hh-mirror-subcategory={item.id} disabled={disabled}
      onClick={()=>{setSubcategoryId(item.id);changeStep(3);}}>
-     <img src={"/videos/holistic-house/film-collection-v2/"+
-      available[index%available.length].image} alt="" loading="lazy"/>
+     <img src={mirrorPosterUrl(available[index%available.length].image)} alt="" loading="lazy"/>
      <span className={css.cardLabel}>{item.label}</span>
     </button>):topics.map((item,index)=><button type="button" className={css.card}
      key={item.id} data-hh-mirror-topic={item.id} disabled={disabled}
      onClick={()=>finish(selected.categoryId,subcategoryId,item.id,
       wish.trim()||selected.request[locale])}>
-     <img src={"/videos/holistic-house/film-collection-v2/"+
-      available[index%available.length].image} alt="" loading="lazy"/>
+     <img src={mirrorPosterUrl(available[index%available.length].image)} alt="" loading="lazy"/>
      <span className={css.cardLabel}>{item.label}</span>
     </button>)}
    </div>}
