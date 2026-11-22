@@ -10,7 +10,13 @@ test("Stories keep compact Story, Extra choices, and advanced editing in Story s
  assert.match(nav,/id:"concept",Icon:Film/);
  assert.match(nav,/id:"promo",Icon:Zap/);
  assert.doesNotMatch(nav,/id:"settings",Icon:SlidersHorizontal/);
- assert.match(studio,/montagePanel==="promo" \? <MandalaMontageProOffer/);
+ // The new Extra screen presents the three text choices first. Existing
+ // PRO film format selection remains preserved under Other video formats.
+ assert.match(studio,/montagePanel==="promo" \? <>/);
+ const extraStart=studio.indexOf("<MandalaMontageExtraPersonal",studio.indexOf('montagePanel==="promo" ? <>'));
+ const extraFormats=studio.indexOf("<MandalaMontageProOffer",extraStart);
+ assert.ok(extraStart>=0&&extraFormats>extraStart,"Extra offers text modes first, with original PRO formats retained");
+ assert.match(studio.slice(extraStart,extraFormats),/Other video formats/);
  assert.match(studio,/data-video-story-open-settings\s+aria-label=/);
  assert.match(mobile,/data-video-story-open-settings\]\{\s*display:inline-flex!important/);
  assert.doesNotMatch(mobile,/data-video-story-open-settings\]\{\s*display:none!important/);

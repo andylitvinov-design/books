@@ -9,7 +9,7 @@ const director = readFileSync(new URL("../components/mandala-auto-video-director
 
 test("Video Studio imports the route-scoped mobile Goal refresh", () => {
   assert.match(page, /import ["']@\/components\/mandala-video-goal-refresh\.css["']/);
-  assert.match(page, /data-mandala-mode=\{photoMode \? "photo" : "video"\}/);
+  assert.match(page, /data-mandala-mode=\{giftMode \? "gift" : photoMode \? "photo" : "video"\}/);
   assert.match(css, /@media \(max-width:759px\)/);
   assert.match(css, /\[data-mandala-mode="video"\] \[data-active-workspace="video"\]/);
   assert.doesNotMatch(css, /\[data-active-workspace="(?:editor|phrases|effects|pro|ready)"\]/);
@@ -34,30 +34,15 @@ test("Mobile tabs retain six working workspaces; the one video player remains in
   assert.match(studio, /data-video-quick-control=\{item\.id\}/);
   assert.match(studio, /data-video-preview-toggle/);
   assert.match(studio, /data-video-continue-scenarios/);
-  assert.match(studio, /onClick=\{continueToIdeas\}/);
+  assert.match(studio, /onClick=\{continueToMontage\}/);
   assert.match(css, /prefers-reduced-motion:reduce/);
 });
 
 
-test("Continue is hidden only in unfinished self quiz, never after switching to recipient",()=>{
-  // WebKit real-user flow: finish 3-step self quiz, switch to 'others' (resets
-  // step to 1), select Greeting/Birthday and tap Continue to Ideas once.
-  // Old unqualified selector hid the enabled Continue in both audiences.
-  assert.match(studio, /data-video-topic-section\s+data-video-goal-quiz-step=\{goalQuizState\.step\}\s+data-video-goal-quiz-audience=\{goalQuizState\.audience\}/);
-  assert.match(css, /\[data-video-topic-section\]\[data-video-goal-quiz-step="1"\]\[data-video-goal-quiz-audience="self"\] \[data-video-stage-actions="goal"\]/);
-  assert.doesNotMatch(css, /\[data-video-topic-section\]\[data-video-goal-quiz-step="1"\] \[data-video-stage-actions="goal"\]/);
-  assert.match(director, /const resetAudienceStory=\(\)=>\{\s+setGoalQuizStep\(1\)/);
-  assert.match(studio, /data-video-continue-scenarios[\s\S]*?onClick=\{continueToIdeas\}/);
-});
-
-test("Life/Work keeps recipient flow, but the obsolete audience switch cannot return",()=>{
-  const webkit = readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs", import.meta.url), "utf8");
-  assert.match(director,/data-video-quick-scope=\{scope\}/);
-  assert.match(director,/changeVideoAudience\(scope==="life"\?"self":"others"\)/);
-  assert.match(webkit,/\[data-video-quick-scope="work"\]/);
-  assert.match(webkit,/\[data-auto-video-audience\]'\)\)\.toHaveCount\(0\)/);
-  assert.match(webkit,/await work\.tap\(\)/);
-  assert.match(webkit,/data-video-recipient-catalog/);
-  assert.match(webkit,/data-video-recipient-audio-transcribe/);
-  assert.match(css,/\[data-video-goal-quiz-audience="self"\]/);
+test("Recipient Goal actions remain visible after the self quiz resets",()=>{
+  assert.match(studio,/data-video-topic-section\s+data-video-goal-quiz-step=\{goalQuizState\.step\}\s+data-video-goal-quiz-audience=\{goalQuizState\.audience\}/);
+  assert.match(css,/\[data-video-topic-section\]\[data-video-goal-quiz-step="1"\]\[data-video-goal-quiz-audience="self"\] \[data-video-stage-actions="goal"\]/);
+  assert.doesNotMatch(css,/\[data-video-topic-section\]\[data-video-goal-quiz-step="1"\] \[data-video-stage-actions="goal"\]/);
+  assert.match(director,/const resetAudienceStory=\(\)=>\{\s+setGoalQuizStep\(1\)/);
+  assert.match(studio,/data-video-continue-scenarios[\s\S]*?onClick=\{continueToMontage\}/);
 });

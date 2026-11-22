@@ -4,6 +4,7 @@ import Link from "next/link";
 import styles from "./studio-music-picker.module.css";
 import {Check,Play,Pause} from "lucide-react";
 import videoStyles from "./mandala-video-mobile.module.css";
+import montageRef from "./mandala-montage-approved.module.css";
 import {createStudioMusicPreviewUrlCache} from "@/lib/mandala/studio-music-preview-cache.mjs";
 import {PUBLIC_MUSIC_TAG_LABELS,musicTagLabel,safeStudioMusicTags,studioMusicFilter,studioMusicFeaturedTracks,studioMusicAttachmentName} from "@/lib/mandala/studio-music-catalog.mjs";
 
@@ -219,6 +220,7 @@ async function verifiedStudioMusicUrl(row){
  *   category?: string,
  *   disabled?: boolean,
  *   selectedFilename?: string | null,
+ *   posters?: string[],
  *   onSelect?: (file: File) => void,
  *   onDeselect?: () => void,
  *   onPreviewStart?: () => void,
@@ -336,10 +338,10 @@ export function StudioMusicFeatured({locale="en",category="all",disabled=false,
    onPause={()=>setPlaying(false)}
    onEnded={()=>{setPlaying(false);setBufferingId(null)}}
    onError={()=>{setPlaying(false);setBufferingId(null)}}/>
-  {loadState==="loading"&&<div data-video-studio-featured-loading className={videoStyles.audioCompactLoading}
+  {loadState==="loading"&&<div data-video-studio-featured-loading className={videoStyles.audioCompactUpload}
     role="status">{locale==="ru"?"Загружаем записи…":locale==="es"?"Cargando grabaciones…":"Loading recordings…"}</div>}
   {loadState==="failed"&&<button type="button" data-video-studio-featured-retry
-    className={videoStyles.audioCompactLoading} disabled={disabled}
+    className={videoStyles.audioCompactUpload} disabled={disabled}
     onClick={()=>{setLoadState("loading");setRetry(v=>v+1);}}>
     {locale==="ru"?"Дополнительные записи недоступны · Повторить":
       locale==="es"?"Más grabaciones no disponibles · Reintentar":"Extra recordings unavailable · Retry"}
@@ -350,12 +352,12 @@ export function StudioMusicFeatured({locale="en",category="all",disabled=false,
    const buffering=busyId===row.id||bufferingId===row.id;
    const parts=row.title.split(" · ");
    const short=parts.length>=2?(parts.slice(1,-1).join(" · ")||parts[1]):row.title;
-   return <article key={row.id} className={videoStyles.audioCompactTile}
+   return <article key={row.id} className={montageRef.trackRow}
      data-video-audio-compact-track={"library:"+row.id}
      data-video-studio-featured-recording={row.id} data-selected={selected}
      data-audio-buffering={buffering}
      data-audio-quality={row.reviewStage==="published"?"listening-reviewed":"source-verified"}>
-    <button type="button" className={videoStyles.audioCompactPlay}
+    <button type="button" className={montageRef.trackPlay}
       data-video-studio-featured-play={row.id}
       aria-label={(buffering?t.loading:current?t.pause:t.listen)+" — "+row.title}
       aria-busy={buffering} aria-pressed={current} disabled={disabled||Boolean(busyId)}
@@ -365,23 +367,19 @@ export function StudioMusicFeatured({locale="en",category="all",disabled=false,
       onClick={()=>void audition(row)}>
       {buffering?<span aria-hidden="true">…</span>:current?<Pause size={18} fill="currentColor"/>:<Play size={18} fill="currentColor"/>}
     </button>
-    <button type="button" className={videoStyles.audioCompactSelect}
+    <button type="button" className={montageRef.trackChoose}
       data-video-audio-compact-select={"library:"+row.id}
       aria-label={(selected?t.remove:t.add)+" — "+row.title+" · "+t.verified}
       aria-pressed={selected} disabled={disabled||Boolean(busyId)}
       onClick={()=>void choose(row)}>
-      <span className={videoStyles.audioCompactTrackInfo}>
+      <span className={montageRef.trackMeta}>
         <strong>{short}</strong>
-        <small>{(row.composer?.split(" ").at(-1)||"Classical")+" · "+(row.licenseCode||"PD")}</small>
+        <small>{(row.composer?.split(" ").at(-1)||"Classical")+" · "+(row.licenseCode||"PD")+" · ≤0:30"}</small>
       </span>
-      <span className={videoStyles.audioCompactWave} aria-hidden="true">
+      <span className={montageRef.trackWave} aria-hidden="true">
         {Array.from({length:13},(_,bar)=><i key={bar}/>)}
       </span>
-      <small className={videoStyles.audioCompactDuration}
-        title={locale==="ru"?"Фрагмент для ролика":locale==="es"?"Fragmento para vídeo":"Video excerpt"}>0:30</small>
-      <span className={videoStyles.audioCompactCheck} aria-hidden="true">
-        {selected?<Check size={16} strokeWidth={3}/>:null}
-      </span>
+      {selected?<span className={montageRef.trackTick} aria-hidden="true"><Check size={16} strokeWidth={3}/></span>:null}
     </button>
    </article>;
   })}

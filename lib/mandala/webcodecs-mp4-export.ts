@@ -171,9 +171,25 @@ async function verifyDecodableMp4Export(
     }
     if(!(await track.canDecode()))throw new Error("video_output_decoder_failed");
     const sink=new VideoSampleSink(track);
-    const frame=await sink.getSample(await track.getFirstTimestamp());
-    if(!frame)throw new Error("video_output_decoder_failed");
-    frame.close();
+    const first=await track.getFirstTimestamp();
+    if(first===null||!Number.isFinite(first))
+      throw new Error("video_output_decoder_failed");
+    // MP4 metadata and one decoded frame do not prove that later shots exist.
+    // Check the beginning, middle and end before credits or download.
+    const checkpoints=[
+      Math.max(0,first+.05),
+      Math.max(0,expected.seconds/2),
+      Math.max(0,expected.seconds-.5),
+    ];
+    for(const at of checkpoints){
+      const sample=await sink.getSample(at);
+      try{
+        if(!sample||sample.codedWidth!==expected.width||
+           sample.codedHeight!==expected.height||
+           !Number.isFinite(sample.timestamp)||sample.timestamp<at-1.25)
+          throw new Error("video_output_decoder_failed");
+      }finally{sample?.close();}
+    }
   }catch(error){
     if(error instanceof Error&&/^video_output_/.test(error.message))throw error;
     throw new Error("video_output_decoder_failed");
@@ -206,6 +222,56 @@ export async function verifyNativeSafariMp4Tracks(blob:Blob,requireAudio:boolean
 }
 
 /**
+ * Safari's own MediaRecorder can produce a playable H.264/AAC movie.
+ * A forced Mediabunny remux used to discard it when conversion failed.
+ * Inspect real native opening/middle/last frames before attempting remux.
+ * No sound playback, network calls, uploads or paid renderer.
+ */
+async function nativeSafariMp4HasPlayableTimeline(blob:Blob,seconds:number):Promise<boolean>{
+  if(typeof document==="undefined"||typeof window==="undefined"||
+     typeof URL.createObjectURL!=="function")return false;
+  const video=document.createElement("video");
+  const objectUrl=URL.createObjectURL(blob);
+  video.preload="auto";video.muted=true;video.playsInline=true;
+  const awaitEvent=(eventName:"loadeddata"|"seeked",start:()=>void):Promise<void>=>
+    new Promise((resolve,reject)=>{
+      let done=false;
+      const cleanup=()=>{window.clearTimeout(timer);
+        video.removeEventListener(eventName,ok);video.removeEventListener("error",fail);};
+      const finish=(error?:Error)=>{
+        if(done)return;
+        done=true;cleanup();
+        if(error)reject(error);else resolve();
+      };
+      const ok=()=>finish();
+      const fail=()=>finish(new Error("native_mp4_player_rejected"));
+      const timer=window.setTimeout(()=>finish(new Error("native_mp4_player_timeout")),4500);
+      video.addEventListener(eventName,ok,{once:true});
+      video.addEventListener("error",fail,{once:true});
+      try{start();}catch{finish(new Error("native_mp4_player_rejected"));}
+    });
+  try{
+    await awaitEvent("loadeddata",()=>{video.src=objectUrl;video.load();});
+    if(video.error||video.videoWidth<160||video.videoHeight<160||
+       !Number.isFinite(video.duration)||Math.abs(video.duration-seconds)>2)
+      return false;
+    for(const at of [Math.max(.05,seconds/2),Math.max(.05,seconds-.55)]){
+      await awaitEvent("seeked",()=>{video.currentTime=at;});
+      if(video.error||video.readyState<2||video.videoWidth<160||
+         video.videoHeight<160||Math.abs(video.currentTime-at)>1.25)
+        return false;
+    }
+    return true;
+  }catch{
+    return false;
+  }finally{
+    video.pause();video.removeAttribute("src");
+    try{video.load();}catch{/* Detached native player cleanup. */}
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+/**
  * Safari's MediaRecorder can return a fragmented but superficially valid MP4
  * that its own <video> rejects. Losslessly remux the H.264/AAC packets into a
  * fast-start MP4 before Ready; if the browser has to reencode incompatible
@@ -228,6 +294,12 @@ export async function normalizeNativeSafariMp4ForPlayback(
     const audio=await original.getPrimaryAudioTrack();
     if(requireAudio&&(!audio||await audio.getCodec()!=="aac"))
       throw new Error("native_mp4_invalid_tracks");
+
+    // Preserve a genuinely native-playable, AVC/AAC-verified original instead
+    // of forcing every Safari recording through conversion. Otherwise use the
+    // existing fast-start conversion and sample verification, never stock.
+    if(await nativeSafariMp4HasPlayableTimeline(nativeBlob,expectedSeconds))
+      return nativeBlob;
 
     // Fast-start places moov metadata ahead of mdat. Do not rely on the
     // MediaRecorder's claimed MIME or copy its raw fragmented header to Ready.
@@ -267,11 +339,13 @@ export async function normalizeNativeSafariMp4ForPlayback(
        end<expectedSeconds-2||end>expectedSeconds+2||end<=first)
       throw new Error("native_mp4_output_incomplete");
     const sink=new VideoSampleSink(track);
-    for(const at of [Math.max(0,first+.05),Math.max(0,end-.5)]){
+    // Fragmented Safari files can have intact metadata and first/last samples
+    // but an undecodable middle. Do not advertise such a movie as Ready.
+    for(const at of [Math.max(0,first+.05),Math.max(0,end/2),Math.max(0,end-.5)]){
       const sample=await sink.getSample(at);
       try{
         if(!sample||sample.codedWidth<160||sample.codedHeight<160||
-           (at>end*.6&&sample.timestamp<end*.5))
+           !Number.isFinite(sample.timestamp)||sample.timestamp<at-1.25)
           throw new Error("native_mp4_output_unplayable");
       }finally{sample?.close();}
     }

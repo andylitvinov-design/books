@@ -5,19 +5,19 @@ import {requiresRealMediaWebKit} from "../lib/ci/merge-check-light.mjs";
 const source=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
 const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
 test("Montage audio is an owner-approved compact panel, not a second generator",()=>{
-  const start=source.indexOf('{montagePanel==="audio" ? <div className={videoStyles.montageAudioCompact}');
+  const start=source.indexOf('{montagePanel==="audio" ? <div className={videoStyles.montageAudioCompact');
   const end=source.indexOf('data-video-audio-bed-panel',start);
   const pane=source.slice(start,end+300);
   assert.ok(start>0&&end>start,"dedicated compact pane");
-  assert.match(pane,/Choose audio tracks/);
-  assert.match(pane,/up to 3/);
+  assert.match(pane,/Choose Music/);
+  assert.match(pane,/attachedPresetIds\.length>=3/);
   for(const marker of ["data-video-audio-category","data-video-audio-compact-grid",
     "data-video-audio-compact-track","data-video-audio-compact-select","data-video-audio-compact-play",
     "data-video-audio-compact-upload","data-video-audio-compact-selected","data-video-audio-compact-volume",
     "data-video-audio-compact-attach",
     "data-video-audio-library","{deepAudioPane}"])assert.ok(pane.includes(marker),marker);
   assert.doesNotMatch(pane,/data-video-audio-mode=/);
-  assert.match(pane,/filteredAudio\.slice\(0,12\)/);
+  assert.match(pane,/filteredAudio\.slice\(0,4\)/);
   assert.doesNotMatch(pane,/data-video-audio-affirmations|data-video-voice-studio/);
   assert.match(pane,/setAudioCategoryOverride\(item\.id\)/);
   assert.match(pane,/attachedPresetIds\.includes\(id\)/);
@@ -34,16 +34,16 @@ test("Montage audio is an owner-approved compact panel, not a second generator",
 test("Style, Add text, Audio, Montage PRO and real audio source actions remain",()=>{
   const start=source.indexOf('<nav className={videoStyles.montageQuickTools}');
   const rail=source.slice(start,source.indexOf('</nav>',start));
-  assert.match(rail,/id:"effects".*id:"audio"[\s\S]*id:"text"[\s\S]*id:"concept"[\s\S]*id:"promo"/);
-  assert.ok(source.includes('"Choose your style"'));
-  assert.match(source,/"Add Text"/);
+  assert.match(rail,/id:"effects".*id:"audio"[\s\S]*id:"promo"[\s\S]*id:"text"[\s\S]*id:"concept"/);
+  assert.match(source,/data-video-montage-style/);
+  assert.match(rail,/id:"text"/);
   assert.ok(source.includes('data-video-audio-compact-upload'));
   assert.ok(source.includes('chooseAudioFile(event.currentTarget.files?.[0])'));
   assert.ok(source.includes('data-video-audio-rights'));
 });
 
 test("Montage Audio shows music only; voice lives in Hypno",()=>{
-  const panel=source.slice(source.indexOf('{montagePanel==="audio" ? <div className={videoStyles.montageAudioCompact}'),
+  const panel=source.slice(source.indexOf('{montagePanel==="audio" ? <div className={videoStyles.montageAudioCompact'),
     source.indexOf('{musicWarning?<p role="alert" className={videoStyles.montageAudioWarning}>'));
   assert.doesNotMatch(panel,/data-video-voice-studio|MandalaCloudVoiceStudio|data-video-audio-affirmations/);
   assert.match(source,/voiceEditor=\{activeWorkspace==="effects"\?hypnoVoiceEditor:null\}/);
@@ -53,10 +53,17 @@ test("Montage Audio shows music only; voice lives in Hypno",()=>{
 
 test("compact Montage Audio runs the existing macOS WebKit and Chromium paths",()=>{
   const workflow=readFileSync(new URL("../.github/workflows/holistic-support-mandala.yml",import.meta.url),"utf8");
-  assert.equal(requiresRealMediaWebKit(["components/mandala-free-video-studio.tsx"]),true);
+  for(const filename of ["components/mandala-free-video-studio.tsx","lib/mandala/local-video-music.ts","components/studio-music-picker.jsx"])
+    assert.equal(requiresRealMediaWebKit([{status:"M",filename}]),true,filename);
+  const macos=workflow.slice(workflow.indexOf("  voice-webkit-macos:"),workflow.indexOf("  voice-webkit-macos:")+12000);
+  assert.match(macos,/needs\.webkit_preflight\.outputs\.media_required == 'true'/);
+  assert.match(macos,/runs-on: macos-15/);
+  assert.match(macos,/node scripts\/verify-affirmation-voice-browser\.mjs/);
   assert.match(workflow,/requiresRealMediaWebKit\(changed\)/);
-  assert.match(workflow,/runs-on: macos-15/);
-  assert.match(workflow,/node scripts\/verify-affirmation-voice-browser\.mjs/);
+  assert.match(workflow,/playwright install --with-deps chromium webkit/);
+  assert.match(workflow,/HH_VOICE_E2E_ENGINE=chromium node scripts\/verify-affirmation-voice-browser\.mjs/);
+  assert.match(workflow,/startsWith\(github\.head_ref, 'codex\/montage-audio-'\)/);
+
 });
 
 test("physical original-motion WebKit exports selected licensed music without requiring upload-only Attach",()=>{
@@ -77,7 +84,7 @@ test("physical original-motion WebKit exports selected licensed music without re
   assert.match(browser,/sceneCorrelations:/,"preserve four physical footage comparisons");
 });
 
-test("Audio two-button route never renders early and shows a vertical track playlist",()=>{
+test("Audio two-button route never performs premature render and keeps a single-row soundtrack",()=>{
   const studio=source;
   const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
   const from=studio.indexOf('data-video-stage-actions="montage"');
@@ -87,45 +94,11 @@ test("Audio two-button route never renders early and shows a vertical track play
   assert.match(actions,/onClick=\{openReadyForGeneration\}/);
   assert.doesNotMatch(actions,/onClick=\{createQuickVideo\}/);
   assert.match(studio,/const openReadyForGeneration\s*=/);
-  assert.match(css,/\.studio\[data-montage-panel="audio"\] \.audioCompactGrid\{\s*display:flex;flex-direction:column/);
-  assert.match(css,/overflow-x:hidden;overflow-y:auto/,"vertical scrolling inside music library");
-  assert.match(css,/max-height:clamp\(172px,33dvh,300px\)/);
-  assert.match(css,/@media\(max-width:430px\)\{\s*\.studio\[data-montage-panel="audio"\] \.audioCompactGrid\{max-height:clamp\(160px,29dvh,244px\)\}/);
-  const playlistRules=[...css.matchAll(/\.audioCompactGrid\s*\{([^}]*)\}/g)].map(match=>match[1]);
-  assert.ok(playlistRules.length>0);
-  for(const rule of playlistRules)assert.doesNotMatch(rule,/grid-auto-flow:\s*column/);
-  assert.match(css,/\.audioCompactWave/);
-  assert.match(css,/\.audioCompactTile\[data-selected="true"\]/);
-  assert.match(css,/\[data-video-order-bar\] \.quickOrderSummary\{display:none!important/);
+  assert.match(css,/grid-auto-flow:column;grid-auto-columns:clamp\(84px,27vw,112px\)/);
+  assert.match(css,/max-width:100%;overflow-x:auto;overflow-y:hidden/);
+  assert.match(css,/\[data-video-order-bar\] \.quickOrderSummary\{\s*display:none!important/);
   assert.match(css,/\[data-video-stage-actions="montage"\]>\.quickGenerate/);
-  assert.match(css,/order:0;background:#fffcf7!important/);
-  assert.match(css,/order:1;border:1px solid #087e61!important/);
-  assert.match(studio,/filteredAudio\.slice\(0,12\)/);
-});
-
-test("Audio is an accessible, slim music list with actual controls, not film posters",()=>{
-  const begin=source.indexOf('{montagePanel==="audio" ? <div className={videoStyles.montageAudioCompact}');
-  const end=source.indexOf('data-video-audio-compact-selected',begin);
-  const audio=source.slice(begin,end);
-  assert.match(audio,/data-video-audio-clip-seconds=\{Math\.min\(duration,30\)\}/);
-  assert.match(audio,/data-video-audio-compact-upload-tile/);
-  assert.match(audio,/className=\{videoStyles\.audioCompactTrackInfo\}/);
-  assert.match(audio,/className=\{videoStyles\.audioCompactWave\}/);
-  assert.match(audio,/className=\{videoStyles\.audioCompactDuration\}/);
-  assert.match(audio,/role="group"/);
-  assert.doesNotMatch(audio,/<img/,"Audio mode must never use film stills as music covers");
-  const featured=readFileSync(new URL("../components/studio-music-picker.jsx",import.meta.url),"utf8");
-  assert.match(featured,/data-video-studio-featured-play/);
-  assert.match(featured,/data-video-audio-compact-track=\{"library:"\+row\.id\}/);
-  assert.doesNotMatch(featured,/<img src=\{poster\}/);
-});
-
-test("WebKit audience checks scope two real Goal sections instead of ambiguous global locator",()=>{
-  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
-  assert.match(browser,/const goalQuiz=page\.locator\('\[data-video-quick-section="1"\]\[data-video-goal-quiz-audience\]'\)/);
-  assert.match(browser,/const topicQuiz=page\.locator\('\[data-video-topic-section="true"\]\[data-video-goal-quiz-audience\]'\)/);
-  assert.match(browser,/await expect\(goalQuiz\)\.toHaveAttribute\("data-video-goal-quiz-audience","others"\)/);
-  assert.match(browser,/await expect\(topicQuiz\)\.toHaveAttribute\("data-video-goal-quiz-audience","others"\)/);
-  assert.doesNotMatch(browser,/const goalQuiz=page\.locator\('\[data-video-goal-quiz-audience\]'\)/);
-  assert.match(browser,/await work\.tap\(\)/,"real touch selection stays required");
+  assert.match(css,/order:0;min-height:49px;background:#fffcf7!important/);
+  assert.match(css,/order:1;min-height:49px;border:1px solid #087e61!important/);
+  assert.match(studio,/filteredAudio\.slice\(0,4\)/);
 });

@@ -12,6 +12,7 @@ test('approved context reaches one provider and an interrupted voice lookup send
     const lookups = []
     const body = {
       personaId: 'mira', locale: 'en', consent: true, turns: [],
+      openingHistory: ['yes', 'Anna', 'goal', 'fine', 'yes'],
       message: 'I want to organize my work week and make time for breaks.',
     }
     const options = {

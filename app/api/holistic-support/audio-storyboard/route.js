@@ -6,6 +6,7 @@
 import {NextResponse} from "next/server";
 import {AppError} from "@/lib/assessments/contracts";
 import {getAppConfig,requireSameOrigin} from "@/lib/app/config";
+import {createRequestAuth} from "@/lib/app/session";
 import {consumeRate} from "@/lib/app/database";
 import {PRIVATE_HEADERS,safeError} from "@/lib/app/http";
 import {normalizeTimedTranscript} from "@/lib/mandala/audio-visual-storyboard.mjs";
@@ -48,10 +49,34 @@ export async function POST(request){
       file.size===0||file.size>MAX_AUDIO_BYTES||
       !EXTENSION.test(file.name)||!ACCEPTED.has(file.type))
       throw new AppError("AUDIO_STT_INVALID_FILE",400);
-    // Shared conservative global quota: never turn a guest microphone into
-    // automatic provider requests or a new third-party billing obligation.
-    await consumeRate(config,{op:"audio-stt-free-global-day"},20,86400);
-    await consumeRate(config,{op:"audio-stt-free-global-minute"},3,60);
+    // The coach previously shared Video Studio's three-requests-per-minute,
+    // twenty-per-day GLOBAL bucket. A normal five-turn conversation therefore
+    // ran out of recognition even though the microphone was still working.
+    // Separate the quotas without removing the verified FREE-only provider gate.
+    // The coach lane is authenticated so a public caller cannot claim its quota.
+    const purpose=form.get("purpose");
+    if(purpose==="my_coach"){
+      const actor=await createRequestAuth(request,config).verified();
+      await consumeRate(config,{op:"my-coach-stt-free-user-minute",userId:actor.id},8,60);
+      await consumeRate(config,{op:"my-coach-stt-free-user-day",userId:actor.id},120,86400);
+      await consumeRate(config,{op:"my-coach-stt-free-global-minute"},12,60);
+      await consumeRate(config,{op:"my-coach-stt-free-global-day"},240,86400);
+    }else if(purpose==="ali_chat"){
+      // A distinct authenticated Ali quota shares the existing Coach global
+      // free-tier ceiling; no paid provider or extra background retry.
+      const actor=await createRequestAuth(request,config).verified();
+      await consumeRate(config,{op:"ali-chat-stt-free-user-minute",userId:actor.id},6,60);
+      await consumeRate(config,{op:"ali-chat-stt-free-user-day",userId:actor.id},60,86400);
+      await consumeRate(config,{op:"ali-chat-stt-free-global-minute"},6,60);
+      await consumeRate(config,{op:"ali-chat-stt-free-global-day"},60,86400);
+      await consumeRate(config,{op:"my-coach-stt-free-global-minute"},12,60);
+      await consumeRate(config,{op:"my-coach-stt-free-global-day"},240,86400);
+    }else{
+      if(purpose!==null)throw new AppError("AUDIO_STT_PURPOSE_INVALID",400);
+      // Preserve the original Video Studio allocation and no-guest-abuse gate.
+      await consumeRate(config,{op:"audio-stt-free-global-day"},20,86400);
+      await consumeRate(config,{op:"audio-stt-free-global-minute"},3,60);
+    }
     const multipart=new FormData();
     multipart.set("file",file,file.name.replace(/[^a-z0-9._-]/gi,"_").slice(-70));
     multipart.set("model","whisper-large-v3-turbo");

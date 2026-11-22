@@ -99,6 +99,9 @@ on:
       - 'tests/academy-discovery-hero.test.mjs'
       - 'supabase/migrations/*personal_coaching*'
       - 'supabase/migrations/*coaching_tradition*'
+      # Client Live Photo APIs have their own App/IA/billing/video owners.
+      # Keep the literal shared catch-all dispatcher and all source/security routes.
+      - '!app/api/app/live-photos/**'
   workflow_dispatch:
 permissions:
   contents: read

@@ -5,9 +5,9 @@ import {coachVisualClip,normalizeCoachVisualScene} from '@/lib/coaching/coach-vi
 import {coachNaturalTake,coachNaturalVideoPath} from '@/lib/coaching/coach-natural-motion.mjs'
 import styles from './my-coach-motion-media.module.css'
 
-// Merlin stays still. Harry uses the approved non-deforming soft portrait loops;
-// the other four coaches use their own natural takes. No lip synchronization.
-const VIDEO_PERSONAS=new Set(['mira','max','sofia','alex','harry'])
+// The existing six retain their approved motion. Samir uses an original WebP portrait in the coach roster and a static SVG for large views; no invented video or face distortion.
+// Merlin and Harry have welcoming smiles, with Harry's existing attentive loop retained.
+const VIDEO_PERSONAS=new Set(['mira','max','sofia','alex','merlin','harry'])
 const PHASES=new Set(['greeting','idle','listening','speaking'])
 const MEDIA_ROOT='/images/holistic-house/my-coach-motion/'
 
@@ -25,9 +25,14 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   const fallbackScene=state==='greeting'?'welcome':state==='listening'?'attentive':'calm'
   const visualScene=state==='speaking'?normalizeCoachVisualScene(scene,'explain'):fallbackScene
   const clip=personaId==='harry'?coachVisualClip(state,visualScene):coachNaturalTake(state,visualScene)
-  const poster=supported?(personaId==='harry'?MEDIA_ROOT+'harry-soft-still.webp':MEDIA_ROOT+personaId+'-still.webp'):null
+  const poster=supported?(personaId==='harry'?MEDIA_ROOT+'harry-soft-still.webp':personaId==='genie'?MEDIA_ROOT+(context==='card'?'genie-photo.webp':'genie-still.svg'):MEDIA_ROOT+personaId+'-still.webp'):null
   const harryClip=state==='listening'?'attentive':'calm'
-  const src=supported&&hasVideo?(personaId==='harry'?MEDIA_ROOT+'harry-soft-'+harryClip+'.mp4':coachNaturalVideoPath(personaId,state,visualScene)):null
+  const greetingSrc=state==='greeting'&&(personaId==='merlin'||personaId==='harry')
+    ?MEDIA_ROOT+personaId+'-greeting-real-v1.mp4':null
+  const src=supported&&hasVideo?(greetingSrc||(
+    personaId==='merlin'?MEDIA_ROOT+'merlin-greeting-real-v1.mp4':
+    personaId==='harry'?MEDIA_ROOT+'harry-soft-'+harryClip+'.mp4':
+    coachNaturalVideoPath(personaId,state,visualScene))):null
 
   useEffect(()=>{
     const preference=window.matchMedia?.('(prefers-reduced-motion: reduce)')
@@ -71,8 +76,8 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   if(!supported)return null
   return <span ref={containerRef} className={[styles.media,className].filter(Boolean).join(' ')}
     data-coach-motion-media={personaId} data-coach-motion-context={context}
-    data-coach-motion-state={state} data-coach-motion-clip={hasVideo?(personaId==='harry'?harryClip:clip):'still'}
-    data-coach-natural-performance={hasVideo&&personaId!=='harry'?'v1':'still'}
+    data-coach-motion-state={state} data-coach-motion-clip={hasVideo?(greetingSrc||personaId==='merlin'?'greeting-real-v1':personaId==='harry'?harryClip:clip):'still'}
+    data-coach-natural-performance={hasVideo&&(personaId!=='harry'||Boolean(greetingSrc))?'v1':'still'}
     data-coach-motion-scene={visualScene} data-coach-motion-ready={videoReady?'true':'false'}
     aria-hidden="true">
     <img src={poster} className={styles.poster} alt="" draggable={false} loading="lazy" decoding="async" />

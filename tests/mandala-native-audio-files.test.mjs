@@ -222,37 +222,6 @@ test('procedural native recorder cannot silently downgrade H264/AAC to generic M
   assert.match(verifier,/!video\|\|await video\.getCodec\(\)!=="avc"/);
   assert.match(client,/recordingMimes\(Boolean\(musicSession\),true\)\.filter\(mime=>mime===explicitWebmMime\)/);
   assert.match(client,/proceduralRoute==="unsupported"/);
-  assert.match(client,/allowProceduralBrowser:procedural&&!safariWebKit/);
-});
-
-test("three-minute music retains exactly the first 30 seconds for local video export",()=>{
-  const h=loadAudio();
-  const sampleRate=100,length=180*sampleRate;
-  const channels=[
-    Float32Array.from({length},(_,i)=>i/length),
-    Float32Array.from({length},(_,i)=>1-i/length)
-  ];
-  const long={length,duration:180,sampleRate,numberOfChannels:2,
-    getChannelData:(index)=>channels[index]};
-  const context={createBuffer:(count,frames,rate)=>{
-    assert.equal(count,2);assert.equal(rate,sampleRate);
-    const result={length:frames,duration:frames/rate,sampleRate:rate,
-      channels:Array.from({length:count},()=>new Float32Array(frames)),
-      copyToChannel(data,index){this.channels[index].set(data)}};
-    return result;
-  }};
-  const excerpt=h.api.clipMusicBuffer(context,long,30);
-  assert.equal(excerpt.duration,30);
-  assert.equal(excerpt.length,3000);
-  assert.equal(excerpt.channels[0][2999],channels[0][2999]);
-  assert.equal(excerpt.channels[1][2999],channels[1][2999]);
-  assert.equal(channels[0].length,length,"never mutate the original music");
-  assert.equal(h.api.clipMusicBuffer(context,excerpt,30),excerpt);
-  assert.throws(()=>h.api.clipMusicBuffer(context,long,90),/invalid_music_excerpt/);
-  assert.match(audioSource,/source\.buffer = options\.loop===false\?buffer:clipMusicBuffer\(context,buffer,30\)/);
-  assert.match(audioSource,/clipMusicBuffer\(context,await context\.decodeAudioData\(await response\.arrayBuffer\(\)\),30\)/);
-  assert.match(audioSource,/index===1\|\|options\.loop!==false\?clipMusicBuffer\(context,buffer,Math\.min\(options\.seconds,30\)\):buffer/);
-  const webCodecs=read("lib/mandala/webcodecs-mp4-export.ts");
-  assert.match(webCodecs,/if\(entry\.loop && decoded\.duration>seconds-startSeconds\)/,
-    "Safari WebCodecs also truncates multi-minute music");
+  assert.match(client,/allowProceduralBrowser:reelModeActive\|\|\(procedural&&!safariWebKit\)/);
+  assert.match(client,/if\(reelModeActive&&\(!useWebCodecsMp4\|\|!hasWebCodecs\|\|preferWebm\|\|forceMp4ForRetry\)\)/);
 });

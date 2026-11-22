@@ -492,11 +492,15 @@ test("iPhone release layout has no unsolicited diagnostic banner, with Picks and
 test("approved video quick flow keeps one real Canvas, six direct controls and actual local phrase/music handlers", () => {
   const studio=read("components/mandala-free-video-studio.tsx");
   const css=read("components/mandala-video-mobile.module.css");
-  const topics=["energy","health","relationships","money","goals","life"];
-  const orderStart=studio.indexOf("const quickThemeOrder: VideoTheme[]");
+  const effectsMoods=["life","energy","relationships","goals","money","health"];
+  const orderStart=studio.indexOf("const effectsThemeOrder: VideoTheme[]");
   const orderEnd=studio.indexOf(";",orderStart);
+  assert.ok(orderStart>=0&&orderEnd>orderStart,"existing six licensed scene moods are still available");
   assert.deepEqual([...studio.slice(orderStart,orderEnd).matchAll(/"(energy|health|relationships|money|goals|life)"/g)]
-    .map(match=>match[1]),topics,"approved topic order");
+    .map(match=>match[1]),effectsMoods,"visual mood order preserved only in Effects");
+  assert.match(studio,/activeWorkspace==="effects"\?<details[^>]+data-video-theme-advanced/);
+  assert.doesNotMatch(studio,/const quickThemeOrder: VideoTheme\[\]/);
+  assert.match(read("components/mandala-auto-video-director.tsx"),/data-video-goal-category-label/);
   assert.match(studio,/locale==="ru"\?"1\. Выберите категорию":locale==="es"\?"1\. Elige la categoría":"1\. Choose a category"/);
   const goal=studio.indexOf("data-video-director-goal-controls");
   const topic=studio.indexOf("data-video-director-topic-controls");

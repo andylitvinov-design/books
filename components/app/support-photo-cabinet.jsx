@@ -1,6 +1,7 @@
 'use client'
 import {useEffect,useRef,useState} from 'react'
 import {prepareBrowserPhoto,SUPPORT_PHOTO_ACCEPT} from '@/lib/mandala/prepare-browser-photo'
+import VideoPhotoLibrary from '@/components/app/video-photo-library'
 
 const COPY={
   en:{title:'My private photo',intro:'Your portrait for personal video mandalas and goal images. Only you can open it in My House.',
@@ -113,5 +114,6 @@ export default function SupportPhotoCabinet({locale='en'}){
     <p style={{margin:'9px 0 0',fontSize:12,color:'#4a675c'}}>{t.private}</p>
     {notice&&<p role="status" style={{fontSize:13,color:'#137557'}}>{notice}</p>}
     {error&&<p role="alert" style={{fontSize:13,color:'#a33639'}}>{error}</p>}
+    <VideoPhotoLibrary locale={locale}/>
   </section>
 }

@@ -5496,131 +5496,102 @@
   .studio[data-active-workspace="editor"] .previewStage .hero[data-montage-pro-hero="true"] .heroEditorial p{font-size:10px!important}
 }
 
-/* Owner approved 19 Nov: real audio playlist, not film-thumbnail tiles.
-   Audio files are streamed on Play only; fixed-height internal list keeps actions
-   above the existing mobile dock at 320–430px with an accessible scroll region. */
-.studio[data-montage-panel="audio"] .montageAudioCompact{
-  gap:7px;padding:10px;border:1px solid #e6e2d6;border-radius:21px;
-  background:#fffcf7;box-shadow:0 4px 18px #483b2d0c}
-.audioCompactHeading{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
-.audioCompactHeading h3{display:flex;align-items:center;gap:5px;flex:1;min-width:0;margin:0;
-  color:#123c35;font-size:clamp(15px,3.8vw,20px);line-height:1.16;font-weight:850}
-.audioCompactHeading h3 svg{flex:none;color:#0a896c}
-.audioCompactHeading h3 small{color:#73817a;font-size:clamp(10px,2.5vw,12px);font-weight:500;white-space:nowrap}
-.audioCompactHeadingActions{display:flex;align-items:center;gap:5px;flex:none}
-.audioCompactBrowse,.audioCompactHeadingUpload{box-sizing:border-box;position:relative;display:flex;align-items:center;
-  justify-content:center;gap:5px;min-height:42px;padding:7px 9px;border:1px solid #bddccf;
-  border-radius:12px;background:#fffefa;color:#096c57;font-size:clamp(11px,2.8vw,13px);font-weight:750;cursor:pointer}
-.audioCompactHeadingUpload input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
-.audioCompactHeadingUpload:focus-within,.audioCompactBrowse:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
-.studio[data-montage-panel="audio"] .montageAudioFilters{
-  gap:5px;padding:0 0 2px;scrollbar-width:none;overscroll-behavior-x:contain}
+/* Approved 11 Nov Audio: one compact multitrack screen with the original film player. */
+.studio[data-montage-panel="audio"] .montageAudioCompact{gap:7px;padding:11px;border-radius:21px;background:#fffcf7}
+.audioCompactHeading{display:flex;align-items:center;justify-content:space-between;gap:6px;min-width:0}
+.audioCompactHeading h3{margin:0;color:#143d3a;font-size:clamp(16px,4.6vw,23px);line-height:1.15;font-weight:850}
+.audioCompactHeading h3 small{font-size:clamp(10px,2.7vw,13px);font-weight:500;color:#64796d;white-space:nowrap}
+.audioCompactBrowse{display:flex;gap:4px;align-items:center;justify-content:center;min-height:35px;padding:6px 8px;border:1px solid #c9ded1;border-radius:10px;background:#fffefa;color:#12664f;font-size:11px;font-weight:750;cursor:pointer}
+.studio[data-montage-panel="audio"] .montageAudioFilters{gap:5px;padding:0 0 2px;scrollbar-width:none}
 .studio[data-montage-panel="audio"] .montageAudioFilters::-webkit-scrollbar{display:none}
-.studio[data-montage-panel="audio"] .montageAudioFilters button{
-  min-height:34px;padding:6px 11px;font-size:clamp(11px,2.8vw,13px)}
-.studio[data-montage-panel="audio"] .audioCompactGrid{
-  display:flex;flex-direction:column;gap:5px;min-width:0;width:100%;
-  max-height:clamp(172px,33dvh,300px);padding:2px 1px 3px;overflow-x:hidden;overflow-y:auto;
-  overscroll-behavior-y:contain;scrollbar-width:thin;scrollbar-color:#a4ccc0 #fffaf3}
-.audioCompactTile{box-sizing:border-box;position:relative;display:grid;grid-template-columns:40px minmax(0,1fr);
-  align-items:center;gap:5px;width:100%;min-height:58px;flex:0 0 58px;padding:5px 6px;
-  border:1px solid #eee9e0;border-radius:15px;background:#fffefd;color:#174638;
-  box-shadow:0 1px 5px #483b2d07}
-.audioCompactTile[data-selected="true"]{border:1.5px solid #0c9c80;
-  background:#effbf5;box-shadow:0 0 0 1px #d5efe3}
-.audioCompactTile[data-audio-buffering="true"]{border-color:#a7c7b6}
-.audioCompactTile img,.audioCompactTile:after{display:none!important}
-.audioCompactPlay{box-sizing:border-box;position:static;display:grid;place-items:center;width:40px;
-  height:42px;min-height:42px;border:1px solid #e0ebe2;border-radius:50%;background:#f5fbf7;
-  box-shadow:0 2px 4px #144e3520;color:#095c46;cursor:pointer}
-.audioCompactPlay[aria-pressed="true"]{background:#0b8a6c;color:#fff}
-.audioCompactPlay[aria-busy="true"]{color:#6c867c;background:#f0f5ee}
-.audioCompactSelect{box-sizing:border-box;position:static;display:grid;
-  grid-template-columns:minmax(0,1fr) minmax(29px,13%) 36px 26px;gap:5px;
-  align-items:center;min-width:0;width:100%;height:100%;min-height:46px;padding:0 1px;
-  border:0;background:transparent;color:#173e34;text-align:left;cursor:pointer}
-.audioCompactTrackInfo{display:flex;flex-direction:column;gap:3px;min-width:0;overflow:hidden}
-.audioCompactTrackInfo strong{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;
-  white-space:nowrap;font-size:clamp(12px,3.4vw,15px);line-height:1.2;font-weight:800;color:#173e34}
-.audioCompactTrackInfo small{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;
-  white-space:nowrap;font-size:clamp(10px,2.7vw,12px);line-height:1.15;color:#678076}
-.audioCompactWave{display:flex;align-items:center;justify-content:center;gap:2px;width:100%;height:28px;color:#b2bdbc}
-.audioCompactWave i{display:block;flex:1;min-width:1px;height:36%;border-radius:3px;background:currentColor}
-.audioCompactWave i:nth-child(4n+1){height:64%}
-.audioCompactWave i:nth-child(3n+2){height:24%}
-.audioCompactWave i:nth-child(5n+3){height:84%}
-.audioCompactTile[data-selected="true"] .audioCompactWave{color:#0b9c7a}
-.audioCompactDuration{color:#486158;font-size:clamp(10px,2.7vw,12px);white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}
-.audioCompactCheck{position:static;display:grid;place-items:center;width:24px;height:24px;
-  border:1.5px solid #aabbb2;border-radius:8px;background:#fff;color:#0b8063}
-.audioCompactTile[data-selected="true"] .audioCompactCheck{
-  border-color:#0b8469;background:#0b8469;color:#fff}
-.audioCompactSelect:focus-visible,.audioCompactPlay:focus-visible{outline:3px solid #1d7b6d;outline-offset:1px}
-.audioCompactLoading{display:flex;align-items:center;justify-content:center;flex:0 0 auto;
-  width:100%;min-height:42px;padding:7px 10px;border:1px dashed #c9ded3;border-radius:11px;
-  background:#f7fbf7;color:#476b60;font-size:12px;cursor:default}
-button.audioCompactLoading{cursor:pointer}
-.audioCompactSelection{display:flex;gap:7px;align-items:center;min-width:0;padding:2px;color:#137053;
-  font-size:12px;line-height:1.2}
+.studio[data-montage-panel="audio"] .montageAudioFilters button{min-height:36px;padding:7px 10px;font-size:clamp(10px,2.9vw,12px)}
+.audioCompactGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;min-width:0}
+.audioCompactTile,.audioCompactUpload{position:relative;min-width:0;height:clamp(80px,24vw,104px);overflow:hidden;border:1px solid #dedbd2;border-radius:14px;background:#eef6ed;box-shadow:0 2px 7px #483b2d10}
+.audioCompactTile[data-selected="true"]{border:2px solid #067a67;box-shadow:0 0 0 2px #d6f2e9}
+.audioCompactTile img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover;pointer-events:none}
+.audioCompactTile:after{content:"";position:absolute;inset:24% 0 0;background:linear-gradient(0deg,#072d29e8,#072d2900);pointer-events:none}
+.audioCompactSelect{position:absolute;inset:0;z-index:1;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;gap:1px;width:100%;height:100%;padding:5px 6px;border:0;background:transparent;color:#fff;text-align:left;cursor:pointer}
+.audioCompactSelect strong{max-width:100%;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:clamp(10px,2.65vw,12px);line-height:1.13;font-weight:850;overflow-wrap:anywhere;text-shadow:0 1px 3px #082b24}
+.audioCompactSelect small{font-size:9px;font-weight:650;color:#f7fff9}
+.audioCompactCheck{position:absolute;right:5px;top:5px;display:grid;place-items:center;width:23px;height:23px;border:1.5px solid #fff;border-radius:50%;background:#ffffffde;color:#087b65}
+.audioCompactTile[data-selected="true"] .audioCompactCheck{background:#067a67;color:#fff}
+.audioCompactPlay{position:absolute;top:5px;left:5px;z-index:2;display:grid;place-items:center;width:30px;height:30px;border:1px solid #fff;border-radius:50%;background:#fffcf0ed;color:#12533e;cursor:pointer}
+.audioCompactPlay[aria-pressed="true"]{background:#067a67;color:#fff}
+.audioCompactUpload{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:7px 4px;border:1.5px dashed #9cbaa9;background:linear-gradient(135deg,#f0faf5,#fff5e6);color:#115d4d;text-align:center;cursor:pointer}
+.audioCompactUpload[data-selected="true"]{border-style:solid;border-color:#067a67;background:#e6f6f1}
+.audioCompactUpload strong{font-size:clamp(10px,2.8vw,12px);font-weight:850}
+.audioCompactUpload small{font-size:10px}
+.audioCompactUpload input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.audioCompactUpload:focus-within,.audioCompactSelect:focus-visible,.audioCompactPlay:focus-visible,.audioCompactBrowse:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.audioCompactSelection{display:flex;gap:6px;align-items:center;min-width:0;padding:3px 2px;color:#14634d;font-size:clamp(10px,2.7vw,12px);line-height:1.3}
 .audioCompactSelection svg{flex:none}
 .audioCompactSelection span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.audioCompactSelection small{color:#5c7d70;font-size:11px;white-space:nowrap}
-.audioCompactAdvanced{min-width:0}
-.audioCompactAdvanced>summary{display:flex;align-items:center;min-height:23px;
-  color:#558574;font-size:11px;cursor:pointer}
-.audioCompactAdvanced[open]>summary{margin-bottom:4px}
-.studio[data-montage-panel="audio"] .montageAudioVolume{gap:6px}
+.audioCompactSelection small{color:#587d6d;white-space:nowrap}
+.audioCompactAffirmations{display:flex;align-items:center;gap:9px;width:100%;min-height:47px;padding:7px 10px;border:1px solid #dedbd2;border-radius:14px;background:linear-gradient(100deg,#f7fcf7,#fff6e8);color:#145144;text-align:left;cursor:pointer}
+.audioCompactAffirmations>svg:first-child{flex:none;color:#067a67}
+.audioCompactAffirmations>svg:last-child{flex:none;margin-left:auto}
+.audioCompactAffirmations span{display:grid;gap:2px;min-width:0}
+.audioCompactAffirmations strong{font-size:clamp(13px,3.5vw,16px);line-height:1.1}
+.audioCompactAffirmations small{font-size:clamp(10px,2.8vw,12px);line-height:1.18;color:#66726b}
+.studio[data-montage-panel="audio"] .montageAudioVolume{gap:7px}
 .studio[data-montage-panel="audio"] .montageAudioVolume label{font-size:clamp(10px,2.8vw,12px)}
-.studio[data-montage-panel="audio"] .montageAudioVolume input{min-height:30px}
-.studio[data-montage-panel="audio"] .montageAudioVolume button{min-height:35px;padding:5px 8px;font-size:11px}
-.audioCompactRights{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;align-items:center}
+.studio[data-montage-panel="audio"] .montageAudioVolume input{min-height:34px}
+.studio[data-montage-panel="audio"] .montageAudioVolume button{min-height:37px;padding:6px 8px;font-size:11px}
+.audioCompactRights{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
 .audioCompactRights label{display:flex;align-items:flex-start;gap:5px;font-size:11px;line-height:1.2;color:#275449}
 .audioCompactRights input{flex:none;width:17px;height:17px;accent-color:#067a67}
 .audioCompactRights button{min-height:38px;padding:6px 8px;border:1px solid #067a67;border-radius:11px;background:#e6f6f1;color:#067a67;font-weight:800}
 .audioCompactRights button:disabled{opacity:.45}
-.studio[data-active-workspace="editor"][data-montage-panel="audio"] [data-video-stage-actions="montage"]{
-  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px;margin:2px 0 0}
-.studio[data-active-workspace="editor"][data-montage-panel="audio"] [data-video-stage-actions="montage"]>button{
-  min-height:49px;padding:7px 6px;font-size:clamp(12px,3.3vw,15px);gap:5px}
-.studio[data-active-workspace="editor"][data-montage-panel="audio"] [data-video-stage-actions="montage"]>.quickGenerate{
-  order:0;background:#fffcf7!important;color:#11664f!important;
-  border:1px solid #a4cfc1!important;box-shadow:none!important}
-.studio[data-active-workspace="editor"][data-montage-panel="audio"] [data-video-stage-actions="montage"]>.stageAddButton{
-  order:1;border:1px solid #087e61!important;
-  background:linear-gradient(105deg,#087e61,#0a9b74)!important;color:#fff!important}
+.studio[data-active-workspace="editor"][data-montage-panel="audio"] [data-video-stage-actions="montage"]{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.studio[data-active-workspace="editor"][data-montage-panel="audio"] [data-video-stage-actions="montage"]>button{min-height:52px;padding:8px 7px;font-size:clamp(12px,3.5vw,16px);gap:5px}
+.studio[data-active-workspace="editor"][data-montage-panel="audio"] [data-video-stage-actions="montage"] .stageAddButton{border-color:#067a67;background:#fffcf7;color:#067a67}
 .studio[data-active-workspace="editor"][data-montage-panel="audio"] [data-video-stage-actions="montage"] svg{flex:none;width:17px;height:17px}
 @media(max-width:759px){
- .studio[data-active-workspace="editor"][data-montage-panel="audio"] .previewStage>.heroWithRail{
-   display:grid!important;grid-template-columns:minmax(0,1fr) clamp(85px,27vw,115px)!important;
-   gap:6px!important;align-items:stretch!important;width:100%!important}
- .studio[data-active-workspace="editor"][data-montage-panel="audio"] .previewStage .heroWithRail>.hero{
-   flex:auto!important;width:100%!important;max-width:100%!important;height:auto!important;
-   aspect-ratio:16/9!important;min-height:0!important}
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] .previewStage>.heroWithRail{display:grid!important;grid-template-columns:minmax(0,1fr) clamp(90px,27vw,118px)!important;gap:8px!important;align-items:stretch!important;width:100%!important}
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] .previewStage .heroWithRail>.hero{flex:auto!important;width:100%!important;max-width:100%!important;height:auto!important;aspect-ratio:16/9!important;min-height:0!important}
  .studio[data-active-workspace="editor"][data-montage-panel="audio"] .previewStage .heroRail{display:grid!important}
  .studio[data-active-workspace="editor"][data-montage-panel="audio"] .montageAudioHero{display:none!important}
- .studio[data-active-workspace="editor"][data-montage-panel="audio"] [data-video-order-bar] .quickOrderSummary{display:none!important}
-}
-@media(max-width:430px){
- .studio[data-montage-panel="audio"] .audioCompactGrid{max-height:clamp(160px,29dvh,244px)}
-}
-@media(max-width:390px){
- .audioCompactHeading{flex-wrap:wrap}
- .audioCompactHeading h3{flex:1 1 auto}
- .audioCompactHeadingActions{margin-left:auto}
 }
 @media(max-width:359px){
- .studio[data-montage-panel="audio"] .montageAudioCompact{gap:5px;padding:8px}
- .audioCompactHeading h3{font-size:15px}
- .audioCompactHeadingUpload,.audioCompactBrowse{padding:6px 7px}
- .audioCompactTile{grid-template-columns:37px minmax(0,1fr);gap:4px;padding:4px;height:54px;min-height:54px;flex-basis:54px}
- .audioCompactPlay{width:37px;height:40px;min-height:40px}
- .audioCompactSelect{grid-template-columns:minmax(0,1fr) 28px 31px 24px;gap:3px}
- .audioCompactWave i:nth-child(n+9){display:none}
- .audioCompactTrackInfo strong{font-size:12px}
- .studio[data-montage-panel="audio"] .audioCompactGrid{max-height:clamp(160px,29dvh,220px)}
+ .studio[data-montage-panel="audio"] .montageAudioCompact{padding:9px;gap:6px}
+ .audioCompactTile,.audioCompactUpload{height:80px;border-radius:11px}
+ .audioCompactGrid{gap:5px}
+ .audioCompactSelect{padding:4px}
+ .audioCompactSelect strong{font-size:10px}
+ .audioCompactBrowse{padding:5px;font-size:10px}
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] [data-video-stage-actions="montage"]>button{font-size:12px}
 }
-@media(max-height:740px){
- .studio[data-montage-panel="audio"] .audioCompactGrid{max-height:clamp(150px,28dvh,225px)}
+
+/* Compact Audio consent/rights-preserving layout. Reuses the real existing
+   Ready-navigation and Text handlers; this CSS does not start rendering. */
+@media(max-width:759px){
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] .audioCompactGrid{
+   display:grid;grid-auto-flow:column;grid-auto-columns:clamp(84px,27vw,112px);
+   grid-template-columns:none;grid-template-rows:1fr;gap:6px;min-width:0;
+   max-width:100%;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;
+   scroll-snap-type:x proximity;scrollbar-width:thin;padding:2px 2px 5px}
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] .audioCompactGrid>*{
+   scroll-snap-align:start}
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] .audioCompactTile,
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] .audioCompactUpload{
+   width:100%;height:clamp(72px,20vw,84px);border-radius:12px}
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] [data-video-order-bar] .quickOrderSummary{
+   display:none!important}
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] [data-video-stage-actions="montage"]{
+   display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+   gap:8px;margin:2px 0 0}
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] [data-video-stage-actions="montage"]>.quickGenerate{
+   order:0;min-height:49px;background:#fffcf7!important;color:#11664f!important;
+   border:1px solid #a4cfc1!important;box-shadow:none!important;
+   font-size:clamp(12px,3.3vw,15px)!important;line-height:1.2}
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] [data-video-stage-actions="montage"]>.stageAddButton{
+   order:1;min-height:49px;border:1px solid #087e61!important;
+   background:linear-gradient(105deg,#087e61,#0a9b74)!important;color:#fff!important;
+   font-size:clamp(12px,3.3vw,15px)!important;line-height:1.2}
+}
+@media(max-width:359px){
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] .audioCompactGrid{
+   grid-auto-columns:84px}
 }
 
 /* Compact verified credit balance: retain the approved Audio/Montage layout. */
@@ -6005,4 +5976,232 @@ button.audioCompactLoading{cursor:pointer}
  .studio[data-active-workspace="video"][data-hh-mirror-advanced="true"] .quickBuilder>[data-auto-video-director]{
   display:block
  }
+}
+
+
+/* Magic Mirror v3 — one-screen phone entry.
+   The old editor, API and original movie player stay mounted, but the old
+   full-page textual controls are not rendered as the initial Goal screen.
+   Explicit advanced tap still exposes the original protected editor. */
+@media(max-width:759px){
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder{
+  display:grid!important;align-content:start!important;gap:5px!important;
+  width:100%;max-width:540px;min-width:0;margin:0 auto!important;
+  padding:0 11px calc(88px + env(safe-area-inset-bottom,0px))!important;
+  background:linear-gradient(175deg,#fff9f1 0%,#f9f2e5 80%,#fbf7ef 100%)
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .quickBuilder>:not(.quickBrandBar):not([data-hh-mirror-title]):not(.previewStage):not([data-hh-mirror-goals]):not([data-video-director-chat-details][open]){
+  display:none!important
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder>.quickBrandBar{
+  display:flex!important;order:1!important;min-width:0;min-height:42px;
+  margin:0 0 2px!important;padding:2px 1px!important;
+  background:transparent!important;box-shadow:none!important
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBrandPhoto{
+  display:none!important
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder>[data-hh-mirror-title]{
+  display:grid!important;order:2!important;margin:0!important
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder>.previewStage{
+  display:block!important;order:3!important;min-width:0;min-height:0;
+  margin:0 0 1px!important;padding:0 6px 5px!important;
+  border:0!important;border-radius:0!important;
+  background:transparent!important;box-shadow:none!important
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .quickBuilder>.previewStage>:not(.heroWithRail){display:none!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .previewStage .heroWithRail{
+  position:relative;display:block!important;height:auto;min-width:0;
+  margin:0!important;padding:0 0 8px!important
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .previewStage .heroWithRail:after{
+  content:"";position:absolute;bottom:0;left:-3%;width:106%;height:9px;
+  background:linear-gradient(#c4c8cb,#818b90 40%,#e2e3e1 75%,#a8acad);
+  border-radius:2px 2px 55% 55%;box-shadow:0 3px 8px #66544023
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .previewStage .hero{
+  display:block!important;width:100%!important;
+  height:clamp(110px,18.2dvh,168px)!important;min-height:0!important;max-height:none!important;
+  aspect-ratio:auto!important;margin:0!important;
+  border:8px solid #242c33!important;border-bottom-width:4px!important;
+  border-radius:13px 13px 5px 5px!important;overflow:hidden!important;
+  box-shadow:0 5px 16px #1e28252c!important
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .previewStage .heroRail,
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .previewStage .heroEditorial,
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .previewStage .heroDuration,
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .previewStage .quickSoundBadge{display:none!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .previewStage .therapyHero,
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .previewStage .therapyHeroPlayback,
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .previewStage .therapyHeroVideo{
+  width:100%;height:100%;min-height:0!important;max-height:none!important
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .previewStage .therapyHeroKicker,
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .previewStage .therapyHeroTitle,
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .previewStage .therapyHeroCaption{display:none!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .previewStage .therapyHeroLaunch{
+  display:grid!important;place-items:center;position:absolute;inset:0;width:100%;height:100%;
+  min-height:0!important;border:0!important;background:transparent!important
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]
+  .previewStage .therapyHeroPlayIcon{
+  display:grid;place-items:center;width:51px;height:51px;min-width:51px;min-height:51px;
+  border:2px solid #fff;border-radius:50%;
+  background:#0c25247d;color:#fff;box-shadow:0 2px 12px #14252552
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder>[data-hh-mirror-goals]{
+  display:grid!important;order:4!important;gap:6px!important;margin:0!important;min-width:0
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"][data-hh-mirror-step="2"]
+  .quickBuilder>[data-hh-mirror-title],
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"][data-hh-mirror-step="2"]
+  .quickBuilder>.previewStage,
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"][data-hh-mirror-step="3"]
+  .quickBuilder>[data-hh-mirror-title],
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"][data-hh-mirror-step="3"]
+  .quickBuilder>.previewStage{display:none!important}
+}
+@media(max-width:759px) and (max-height:740px){
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder{
+  gap:2px!important;padding-bottom:calc(78px + env(safe-area-inset-bottom,0px))!important
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .previewStage .hero{
+  height:clamp(87px,14.8dvh,115px)!important;border-width:6px!important;border-bottom-width:3px!important
+ }
+}
+@media(max-width:359px){
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder{
+  padding-inline:7px!important
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .previewStage .hero{
+  height:clamp(86px,16dvh,115px)!important;border-width:5px!important
+ }
+}
+
+/* Magic Mirror owner reference 2026-11-21. Only mobile Video Goal first view. */
+@media(max-width:759px){
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder{
+  margin-top:-27px!important;gap:3px!important;padding-inline:10px!important;
+  background-image:radial-gradient(ellipse at 50% 12%,#fff9f1ed,transparent 60%),
+   url('/images/holistic-house/homepage-botanical.svg'),
+   url('/images/holistic-house/homepage-botanical.svg'),
+   linear-gradient(175deg,#fff9f1,#fcf1e7 75%,#fff9f0)!important;
+  background-size:auto,100px auto,100px auto,auto!important;
+  background-position:center,left -46px top 65px,right -45px top 190px,center!important;
+  background-repeat:no-repeat!important
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder>.quickBrandBar{min-height:45px!important;margin:0!important;padding:0 2px!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBrandIdentity strong{font-size:clamp(17px,4.8vw,23px)!important;color:#0a4134!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBrandIdentity small{font-size:clamp(10px,2.95vw,12px)!important;color:#5b6a65!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder>[data-hh-mirror-title]{margin:0 0 2px!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder>.previewStage{margin:0!important;padding:0 5px 2px!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .previewStage .heroWithRail{padding-bottom:10px!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .previewStage .heroWithRail:after{bottom:0!important;height:11px!important;background:linear-gradient(#e6e7e9,#aeb5b9 48%,#e4e6e5 76%,#9ea7ac)!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .previewStage .hero{height:clamp(116px,18.3dvh,174px)!important;border:6px solid #242c2e!important;border-bottom-width:5px!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .previewStage .therapyHeroLaunch{background:url('/images/holistic-house/reiki-approved-sunrise-v3.webp') center 48%/cover no-repeat!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .previewStage .therapyHeroLaunch{z-index:2!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .previewStage .therapyHeroPlayIcon{width:49px!important;height:49px!important;min-width:49px!important;min-height:49px!important;background:#163e3a7c!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder>[data-hh-mirror-goals]{gap:4px!important}
+}
+@media(max-width:759px) and (max-height:740px){
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder{margin-top:-16px!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .previewStage .hero{height:clamp(88px,15dvh,114px)!important}
+}
+@media(max-width:359px){
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder{margin-top:-17px!important;padding-inline:7px!important}
+}
+
+/* Magic Mirror approved 2-screen entrance: hide the prior player layout, but
+   keep its single genuine video and Canvas mounted. Example Play reveals it. */
+@media(max-width:759px){
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) .quickBuilder>.previewStage,
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="topic"]) .quickBuilder>.previewStage,
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="topic"]) .quickBuilder>[data-hh-mirror-title]{
+  display:none!important
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-video-preview="open"]) .quickBuilder>.previewStage{
+  display:block!important;order:5!important;padding-top:9px!important
+ }
+}
+
+/* 22 Nov one-screen hero · one original portrait photo instead of a second banner.
+   Keep existing intro MP4 mounted and consent-gated; never autoplay on landing. */
+@media(max-width:759px){
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) .quickBuilder{
+  gap:3px!important;margin-top:-22px!important;padding-inline:9px!important;
+  background-image:linear-gradient(90deg,#073f35f7 0%,#0a5749c4 40%,#093e3722 92%),
+   url('/images/holistic-house/reiki-approved-sunrise-v3.webp'),
+   linear-gradient(175deg,#fff8ef 0%,#fdf0e5 90%,#fff9f1)!important;
+  background-position:top center,top right,center!important;
+  background-size:100% 149px,100% 149px,100% 100%!important;
+  background-repeat:no-repeat!important
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) .quickBuilder>.quickBrandBar{
+  min-height:39px!important;margin:0!important;padding:1px 3px!important;background:transparent!important
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) .quickBrandIdentity strong{color:#fffaf0!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) .quickBrandIdentity small{color:#fff7e4!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) .quickBrandMobileTitle{color:#fffaf1!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) .quickBrandBack{color:#f9f9e9!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) .quickBuilder>[data-hh-mirror-title]{
+  display:grid!important;order:2!important;margin:0!important
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) .quickBuilder>[data-hh-mirror-goals]{
+  display:grid!important;order:4!important;gap:5px!important;min-width:0
+ }
+}
+@media(max-width:759px) and (max-height:740px){
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) .quickBuilder{
+  margin-top:-18px!important;background-size:100% 132px,100% 132px,100% 100%!important
+ }
+}
+
+/* Three-category Magic Mirror keeps one existing portrait hero and bottom dock. */
+@media(max-width:759px){
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) .quickBuilder{
+  background-size:100% 192px,100% 192px,100% 100%!important;
+  background-position:top center,top right,center!important
+ }
+}
+@media(max-width:759px) and (max-height:740px){
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) .quickBuilder{
+  background-size:100% 152px,100% 152px,100% 100%!important
+ }
+}
+
+
+/* Format owns its compact hero; preserve original intro MP4 until Topic Play. */
+@media(max-width:759px){
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="format"])
+  .quickBuilder>[data-hh-mirror-title],
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="format"])
+  .quickBuilder>.previewStage{display:none!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="format"])
+  .quickBuilder{gap:4px!important;margin-top:0!important;
+    background:linear-gradient(175deg,#fff9f2,#faefe3 82%,#fff9f0)!important}
+}
+
+/* The second screen reuses original Goal UI; never show the dormant player. */
+@media(max-width:759px){
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="purpose"]) .quickBuilder>[data-hh-mirror-title],
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="purpose"]) .quickBuilder>.previewStage{display:none!important}
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="purpose"]) .quickBuilder{
+  gap:4px!important;margin-top:0!important;background:linear-gradient(175deg,#fff9f2,#faefe3 82%,#fff9f0)!important}
 }

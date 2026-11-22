@@ -7,7 +7,7 @@ import {prepareGrowthBulk,sameGrowthDraft} from '@/lib/growth-studio/bulk.mjs'
 import {prepareEvergreenGrowthDrafts} from '@/lib/growth-studio/evergreen.mjs'
 import {getGrowthStudioStore} from '@/lib/growth-studio/store'
 import {readGrowthStudioProviderReadiness} from '@/lib/growth-studio/provider-readiness.mjs'
-import {isInstagramPublisherEnabled,publishApprovedInstagramImage,publishApprovedInstagramStory} from '@/lib/growth-studio/instagram-publisher.mjs'
+import {isInstagramPublisherEnabled,publishApprovedInstagramImage,publishApprovedInstagramStory,publishApprovedInstagramReel} from '@/lib/growth-studio/instagram-publisher.mjs'
 import {isFacebookPublisherEnabled,publishApprovedFacebookPagePost,facebookPagePostPayload} from '@/lib/growth-studio/facebook-publisher.mjs'
 import {createMetaFacebookPagePublisherClient} from '@/lib/growth-studio/meta-instagram.mjs'
 import {createMetaInstagramPublisherClient} from '@/lib/growth-studio/meta-instagram.mjs'
@@ -249,7 +249,7 @@ export async function publishGrowthTelegramNowAction(input){
 }
 
 
-// One exact, owner-confirmed Instagram Feed or Story. No cron/worker calls this.
+// One exact, owner-confirmed Instagram Feed, Story or Reel. No cron/worker calls this.
 // The global publishing flag is OFF by default; a separate scheduler/receipt worker
 // must be commissioned before enabling unattended publishing.
 export async function publishGrowthInstagramNowAction(input){
@@ -270,7 +270,7 @@ export async function publishGrowthInstagramNowAction(input){
     if(!source)return {ok:false,error:'not_found'}
     if(source.revision!==input.expectedRevision)return {ok:false,error:'conflict'}
     const resume=input.resume===true
-    const validResume=source.status==='delivery_unknown'&&source.placement==='story'&&
+    const validResume=source.status==='delivery_unknown'&&['story','reel'].includes(source.placement)&&
       source.delivery?.provider==='meta_graph_api'&&
       source.delivery?.providerState==='provider_processing'&&
       source.delivery?.accountId===source.socialAccountId&&
@@ -294,7 +294,8 @@ export async function publishGrowthInstagramNowAction(input){
   catch{return {ok:false,error:'conflict'}}
   let result
   try{
-    result=await (source.placement==='story'?publishApprovedInstagramStory:publishApprovedInstagramImage)({
+    result=await (source.placement==='story'?publishApprovedInstagramStory:
+      source.placement==='reel'?publishApprovedInstagramReel:publishApprovedInstagramImage)({
       post:source,expectedRevision:source.revision,confirmed:true,providerClient,
       ...(input.resume===true?{resumeContainerId:source.delivery.containerId}:{}),
     })
