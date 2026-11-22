@@ -26,7 +26,7 @@ test("only one goal input, a visible proposal and a confirmation gate",()=>{
  assert.ok(director.includes("data-auto-video-confirm"));
  assert.ok(director.includes("recommendAutoVideo({goal,locale,fallbackTheme:theme,presets,scenes})"));
  assert.ok(director.includes("data-auto-video-category={item.id}"));
- assert.ok(director.includes('data-auto-video-goal={variant==="subcategory"?item.id:undefined}'));
+ assert.ok(director.includes('data-auto-video-popular-subcategory={item.id}'));
  assert.ok(studio.includes('scenes={FREE_FILM_CATALOG}'));
  assert.ok(director.includes('scene.description[locale]'));
  assert.ok(director.includes('scene.tags.slice(0,3)'));
@@ -151,7 +151,7 @@ test("mobile six workspaces use short locale labels without changing full panel 
    "Ready highlights the retained course planner and Goal stays selected at entry");
 });
 
-test("desktop keeps six themes while iPhone uses four canonical MyTube goals",()=>{
+test("Goal keeps four canonical MyTube choices; six film moods remain only in Effects",()=>{
  const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
  assert.match(studio,/quickThemeAdvancedRef=useRef<HTMLDetailsElement>\(null\)/);
  assert.match(studio,/window\.matchMedia\("\(min-width: 760px\)"\)/);
@@ -351,9 +351,9 @@ test("owner correction: explicit quiz category precedes its four subcategories a
  assert.match(goalBlock,/data-auto-video-subcategory=\{item\.id\}/);
  assert.match(goalBlock,/selectedSubcategoryId===item\.id/);
  assert.doesNotMatch(goalBlock,/categoryPoster|scenePoster\(item.poster\)/);
- assert.match(director,/setSelectedGoalIds\(nextIds\)/);
- assert.match(director,/goalId:nextIds\[0\],locale,\s*fallbackTheme:selectedTheme,preferredTheme:selectedTheme/,
-   "subtopics must refine, never silently replace, the selected parent video category");
+ assert.match(director,/setSelectedSubcategoryId\(found\.subcategory\.id\);setSelectedTopicId\(found\.topic\.id\)/);
+ assert.match(director,/found\.category\.id!==profileCategory/);
+ assert.match(director,/profileTopicGroups\.map/);
  assert.match(director,/data-video-optional-topic/);
  assert.match(director,/data-auto-video-input value=\{requestDraft\}/);
  assert.match(director,/createPortal\(requestInput,requestTarget\)/,
@@ -528,4 +528,21 @@ test("Just make it sends a typed wish straight to the existing rights-checked Ex
    "new wishes invalidate an older canonical topic");
  assert.match(director,/data-video-request-flow=\{quickFlow\}/);
  assert.match(director,/Create video automatically/);
+});
+
+test("every Goal entry uses one 4×4×4 taxonomy, not parallel six-topic menus",()=>{
+ const taxonomy=JSON.parse(readFileSync(new URL("../data/video-catalog/mytube-content-taxonomy-4x4x4-v2.json",import.meta.url),"utf8"));
+ assert.equal(taxonomy.categories.length,4);
+ assert.deepEqual(taxonomy.categories.map(row=>row.subcategories.length),[4,4,4,4]);
+ for(const category of taxonomy.categories)for(const subcategory of category.subcategories)
+   assert.equal(subcategory.topics.length,4,category.id+":"+subcategory.id);
+ assert.match(director,/data-video-goal-category-label/);
+ assert.match(director,/taxonomyCategories\.find\(category=>category\.id===item\.id\)\?\.label/);
+ assert.match(director,/taxonomySubcategories\.map\(item=><button/);
+ assert.match(director,/profileTopicGroups\.map\(\(\{subcategory,topics\}\)=>/);
+ assert.match(director,/setSelectedSubcategoryId\(found\.subcategory\.id\);setSelectedTopicId\(found\.topic\.id\)/);
+ assert.doesNotMatch(director,/popularTopicIds|popularTopicCopy|AUTO_VIDEO_GOALS/);
+ assert.doesNotMatch(director,/"Goals & Money","Love & Relationships","Energy & Confidence"/);
+ assert.match(studio,/activeWorkspace==="effects"\?<details[^>]+data-video-theme-advanced/);
+ assert.doesNotMatch(studio,/activeWorkspace==="effects"\?effectsThemeOrder:quickThemeOrder/);
 });
