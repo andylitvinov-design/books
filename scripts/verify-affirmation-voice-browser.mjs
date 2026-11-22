@@ -542,8 +542,24 @@ async function verifyWorkspaceHydration(browser,locale){
     const openAdvancedGoal=async()=>{
       const moreGoals=mirror.locator('[data-hh-mirror-more-goals]');
       await expect(studio).toHaveAttribute("data-hh-mirror-advanced","false");
-      await expect(moreGoals).toBeVisible();
-      await moreGoals.click();
+      if(await moreGoals.isVisible()){
+        await moreGoals.click();
+      }else{
+        // The approved compact topic screen deliberately hides the old
+        // overflow button. Use the same visible + toolbar action a guest uses.
+        const landingPlan=page.locator('[data-hh-mirror-plan]');
+        if(await landingPlan.isVisible())await landingPlan.click();
+        const composer=mirror.locator('[data-hh-mirror-composer]');
+        for(let backStep=0;backStep<2&&!await composer.isVisible();backStep++){
+          const back=mirror.locator('[data-hh-mirror-back]');
+          await expect(back).toBeVisible();
+          await back.click();
+        }
+        const visiblePlus=composer.locator("button").first();
+        await expect(visiblePlus).toBeVisible();
+        await expect(visiblePlus).toBeEnabled();
+        await visiblePlus.click();
+      }
       await expect(studio).toHaveAttribute("data-hh-mirror-advanced","true");
       await expect(page.locator('[data-video-goal-quiz-audience]')).toBeVisible();
     };
