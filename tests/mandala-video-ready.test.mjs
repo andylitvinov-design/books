@@ -293,21 +293,22 @@ test("real Safari encoded-Blob guest helper gates Save without relying on the re
 });
 
 
-test("verified signed-in Ready Save uploads directly through the existing signed private MP4 uploader",()=>{
+test("verified signed-in Ready Save uses the existing signed uploader after private MP4 consent",()=>{
   const css=readFileSync(new URL("../components/mandala-video-ready.module.css",import.meta.url),"utf8");
   assert.match(ready,/if\(!signedIn\|\|intent==="house"\)/);
-  assert.match(ready,/if\(intent==="save"\)\{onSaveDirect\(\);return;\}/);
+  assert.match(ready,/if\(intent==="save"\)\{saveWithConsent\(\);return;\}/);
+  assert.match(ready,/if\(cloudConsent\)onSaveDirect\(true\)/);
   assert.match(ready,/data-ready-save-status/);
   assert.match(ready,/disabled=\{disabled\|\|saveStatus\.busy\}/);
   assert.match(ready,/data-ready-download-fallback/);
   assert.match(studio,/const deliveryRef=useRef<VideoDeliveryHandle\|null>\(null\)/);
-  assert.match(studio,/if\(deliveryRef\.current\)void deliveryRef\.current\.saveToLibrary\(\)/);
+  assert.match(studio,/if\(deliveryRef\.current\)void deliveryRef\.current\.saveToLibrary\(consentApproved\)/);
   assert.match(studio,/onStatusChange=\{setReadySaveStatus\}/);
   assert.match(delivery,/forwardRef<VideoDeliveryHandle,Props>/);
   assert.match(delivery,/useImperativeHandle\(ref,\(\)=>\(\{saveToLibrary,sendToTelegram,shareToWhatsApp\}\)/);
   assert.match(delivery,/if\(!current\.cloudAvailable\)\{setNotice\(t\.cloudSaveOff\);return;\}/);
   assert.match(delivery,/savingRef\.current=true/);
-  assert.match(delivery,/const id=await privateUpload\(\)/);
+  assert.match(delivery,/const id=await privateUpload\(accountId\)/);
   assert.match(delivery,/setSavedId\(id\)/);
   assert.match(css,/\.saveStatus\{display:flex/);
   for(const loc of ["en","ru","es"]){

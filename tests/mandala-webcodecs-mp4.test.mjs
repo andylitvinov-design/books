@@ -42,8 +42,8 @@ test("Safari movie retains the real Canvas scene, story, hypno and stage caption
     "paintCinematicFrame(ctx,image,effect,time",
     "paintStoryMotifs(ctx,time,appliedStory)",
     "paintHypnoLightOverlay(ctx,time,hypnoLight)",
-    "paintSingleVideoTextOverlay(ctx,time,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips)",
-    "paintStageCaptionOverlay(ctx,time,plan,clips)",
+    "paintSingleVideoTextOverlay(ctx,time,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips,reelModeActive)",
+    "paintStageCaptionOverlay(ctx,time,plan,clips,reelSafe)",
     "if(usingFreeFilmCompilation&&!frame&&!hasStoryboardPhotoAt(time))return false",
   ])assert.ok(studio.includes(marker),marker);
 });
@@ -60,7 +60,7 @@ test("No customer upload, fake video or unbounded output",()=>{
     "single Safari encoder stalls are not necessarily corrupted frame timestamps");
   assert.match(helper,/seconds\+20\)\*1000\+decoderHoldMs/,
     "whole-export deadline must still reject unbounded stalls");
-  assert.match(studio,/frameRate:Math\.min\(\(safeWebkitRetry\|\|isApplePhone\)\?8:10,framesPerSecond\)/,
+  assert.match(studio,/frameRate:reelModeActive\?INSTAGRAM_REELS_PROFILE\.frameRate:\s*Math\.min\(\(safeWebkitRetry\|\|isApplePhone\)\?8:10,framesPerSecond\)/,
     "Safari must pace real 10-second H.264+AAC exports without skipping timed scenes");
   assert.match(helper,/const time=i\/frameRate/);
   assert.match(helper,/audio_decode_invalid/);
@@ -435,7 +435,9 @@ test("original-motion WebKit uses native Goal and personalization before actual 
  let prev=-1;
  for(const marker of markers){const at=script.indexOf(marker,prev+1);
   assert.ok(at>prev,"real guest MP4 journey preserves "+marker);prev=at;}
- assert.match(script,/GOALS_MUST_OPEN_IDEAS/);
+ assert.match(script,/GOALS_MUST_OPEN_MONTAGE/);
+ assert.match(script,/data-video-montage-more-styles/);
+ assert.match(script,/MORE_STYLES_MUST_BE_OPEN/);
  assert.match(script,/APPROVED_CONCEPT_MUST_PERSIST/);
  assert.doesNotMatch(script,/\.(?:click|tap)\(\{[^}]*\bforce:\s*true|setIdeasProfileConfirmed\(true\)/,
   "do not force browser gestures or mutate user consent");
@@ -522,7 +524,7 @@ test("one iPhone hardware fallback keeps the same reserved credit and every real
   assert.match(branch,/renderFrame:time=>\{/);
  assert.match(branch,/blob=await encodeCanvasMovie\(\)/);
  assert.match(branch,/blob=await encodeCanvasMovie\(true\)/);
-  assert.match(branch,/\.\.\.\(lighter\?\{frameRate:8\}:\{\}\)/);
+  assert.match(branch,/\.\.\.\(\(lighter&&!reelModeActive\)\?\{frameRate:8\}:\{\}\)/);
  assert.match(branch,/const scale=540\/\(quality==="fullhd"\?1080:720\)/);
  assert.match(branch,/compatibilityExportRef\.current=true/);
  assert.match(branch,/controller\.signal\.aborted/);
@@ -597,7 +599,7 @@ test("real iPhone prefers native playable MP4 and uses WebCodecs only as an expl
   assert.match(studio,/MediaRecorder\.isTypeSupported\("video\/mp4"\)/);
   assert.match(studio,/nativeMp4Available:nativeAppleMp4Available/);
   assert.match(studio,/lastExportEngineRef\.current=useWebCodecsMp4\?"webcodecs":"native"/);
-  assert.match(studio,/const framesPerSecond=isApplePhone\?8/);
+  assert.match(studio,/const framesPerSecond=reelModeActive\?INSTAGRAM_REELS_PROFILE\.frameRate:isApplePhone\?8/);
   assert.match(studio,/videoBitsPerSecond:isApplePhone\?1_400_000/);
   assert.match(studio,/mime===explicitAvcMime\|\|\(nativeAppleMp4Available&&mime==="video\/mp4"\)/);
   assert.match(studio,/if\(iphoneWebCodecsFallbackAvailable\)void createVideo\(false,false,true,true\)/);
@@ -653,7 +655,7 @@ test("physical iPhone native MP4 is fast-start normalized and genuinely decoded 
   assert.match(studio,/const nativeSafariMp4RejectedRef=useRef\(false\)/);
   assert.match(studio,/nativeSafariMp4RejectedRef\.current=true/);
   assert.doesNotMatch(studio,/hh_safari_native_mp4_rejected_v1|sessionStorage/);
-  assert.match(studio,/forceWebCodecs:forceWebCodecs\|\|nativeRejectedOnThisDevice/);
+  assert.match(studio,/forceWebCodecs:reelModeActive\|\|forceWebCodecs\|\|nativeRejectedOnThisDevice/);
   // No automatic second video export, URL upload, or second credit reservation.
   assert.doesNotMatch(helper,/fetch\(\s*["']\/api\/render|navigator\.sendBeacon/);
 });
@@ -744,9 +746,10 @@ test("verified Ready file offers real local Download and iOS Share",()=>{
   const css=readFileSync(new URL("../components/mandala-video-ready.module.css",import.meta.url),"utf8");
   for(const text of ["const completed=Boolean(verified&&video)",
     "{video?.blob?<div className={css.localFileActions}","data-ready-direct-download",
-    "download={\"holistic-house-personal.\"+video.extension}","data-ready-share-file",
+    "download={readyDownloadName}","data-ready-share-file",
     "files:[file]","navigator.canShare(payload)","navigator.share(payload)"])
     assert.ok(ready.includes(text),text);
+  assert.ok(ready.includes('reelDownloadName:"holistic-house-personal."+(video?.extension||"mp4")'));
   assert.ok(css.includes(".localFileActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))"));
 });
 

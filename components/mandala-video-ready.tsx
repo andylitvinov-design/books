@@ -8,7 +8,7 @@ import {ArrowRight,BookOpen,CheckCircle2,Clock3,Download,Flower2,FolderOpen,Head
 import type {PublicLocale} from "@/lib/public-locales";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import type {GuidedMeditationFocus} from "./mandala-guided-course";
-import type {VideoDeliveryStatus} from "./mandala-video-delivery";
+import {PRIVATE_VIDEO_SAVE_CONSENT,type VideoDeliveryStatus} from "./mandala-video-delivery";
 import {selectResourcePractice} from "@/lib/mandala/resource-practice-selector.mjs";
 import {buildPersonalMeditationScript} from "@/lib/mandala/personal-meditation-script.mjs";
 import {buildPersonalImageryCourse} from "@/lib/mandala/personal-guided-course.mjs";
@@ -25,6 +25,7 @@ type CourseText={number:number;title:string;motif:string;script:string};
 type Props={
   locale:PublicLocale;theme:VideoTheme;wish:string;focus:GuidedMeditationFocus;aspect:"portrait"|"landscape"|"square";
   video:VideoFile|null;verified:boolean;checking:boolean;rendering:boolean;renderProgress:number;
+  reelDownloadName?:string|null;
   previewSourceCanvasRef?:{readonly current:HTMLCanvasElement|null};
   previewAvailable:boolean;previewPlaying:boolean;previewDurationSeconds:number;previewPositionSeconds:number;
   onPreviewToggle:()=>void;onPreviewSeek:(seconds:number)=>void;
@@ -34,7 +35,7 @@ type Props={
   loginUnavailable:boolean;disabled:boolean;meditationEditor:ReactNode;
   onOpenDelivery:()=>void;onRefreshLogin:()=>void;onOpenCourse:()=>void;onOpenTherapy:(format:"single"|"course")=>void;onReturnToPro:()=>void;
   onGenerateBasicVideo:()=>boolean;onStartNewVideo:()=>void;onVerifyPlayback:(player:HTMLVideoElement)=>void;
-  onSaveDirect:()=>void;onSendTelegramDirect:()=>void;onShareWhatsApp:(consentApproved?:boolean)=>void;
+  onSaveDirect:(consentApproved:boolean)=>void;onSendTelegramDirect:()=>void;onShareWhatsApp:(consentApproved?:boolean)=>void;
   saveStatus:VideoDeliveryStatus;exportMode?:"personal"|"openmotion"|"express";basicFreeAvailable:boolean;
   basicFreeIssue:"checking"|"unavailable"|"guest_used"|"insufficient"|null;basicCreditCost:number;courseFlow?:boolean;
 };
@@ -188,12 +189,18 @@ export function MandalaVideoReady({
   meditationEditor,onOpenDelivery,onRefreshLogin,onOpenCourse,onOpenTherapy,onReturnToPro,
   onGenerateBasicVideo,onStartNewVideo,onVerifyPlayback,onSaveDirect,
   onSendTelegramDirect,onShareWhatsApp,saveStatus,
-  basicFreeAvailable,basicFreeIssue,basicCreditCost,courseFlow=false,exportMode="personal"
+  basicFreeAvailable,basicFreeIssue,basicCreditCost,courseFlow=false,exportMode="personal",reelDownloadName=null
 }:Props){
   const t=COPY[locale];
+  const readyDownloadName=video?.extension==="mp4"&&reelDownloadName
+    ?reelDownloadName:"holistic-house-personal."+(video?.extension||"mp4");
   const courseActions=courseActionCopy[locale];
   const expressMaster=exportMode==="express"?getPublishedStandardMotionFilm("anti-stress-30s",locale):undefined;
   const [view,setView]=useState<View>("home");
+  const [cloudConsentUrl,setCloudConsentUrl]=useState<string|null>(null);
+  const cloudConsentRef=useRef<HTMLInputElement>(null);
+  const cloudConsent=Boolean(signedIn&&video&&cloudConsentUrl===video.url);
+  useEffect(()=>{if(!signedIn)setCloudConsentUrl(null);},[signedIn]);
   const [walletOpen,setWalletOpen]=useState(false);
   const closeWallet=useCallback(()=>setWalletOpen(false),[]);
   const [videoGenerationNotice,setVideoGenerationNotice]=useState("");
@@ -345,9 +352,13 @@ export function MandalaVideoReady({
     ...ritual.steps,ritual.transfer
   ].filter(Boolean).join("\n\n"):"";
   function closeSaveGate(){setView("home");setTelegramLink("");setTelegramError("");}
+  function saveWithConsent(){
+    if(cloudConsent)onSaveDirect(true);
+    else window.requestAnimationFrame(()=>cloudConsentRef.current?.focus());
+  }
   function openDelivery(){
     closeSaveGate();
-    if(gateIntent==="save"){onSaveDirect();return;}
+    if(gateIntent==="save"){saveWithConsent();return;}
     if(gateIntent==="telegram"){onSendTelegramDirect();return;}
     if(gateIntent==="whatsapp"){onShareWhatsApp();return;}
     onOpenDelivery();
@@ -358,7 +369,7 @@ export function MandalaVideoReady({
       gateLauncherRef.current=document.activeElement instanceof HTMLElement?document.activeElement:null;
       setGateIntent(intent);setView("login");return;
     }
-    if(intent==="save"){onSaveDirect();return;}
+    if(intent==="save"){saveWithConsent();return;}
     if(intent==="telegram"){onSendTelegramDirect();return;}
     if(intent==="whatsapp"){onShareWhatsApp();return;}
     onOpenDelivery();
@@ -367,7 +378,7 @@ export function MandalaVideoReady({
     // Only a truly verified local Blob may reach the iOS share sheet.
     if(!verified||!video?.blob||typeof navigator.share!=="function")return;
     const file=new File([video.blob],
-      "holistic-house-personal."+video.extension,
+      readyDownloadName,
       {type:video.extension==="mp4"?"video/mp4":"video/webm"});
     try{
       const payload:ShareData={files:[file],title:"Holistic House"};
@@ -594,7 +605,7 @@ export function MandalaVideoReady({
         </button>:null}
       {completed?<>
         {video?.blob?<div className={css.localFileActions} data-ready-local-file-actions>
-          <a href={video.url} download={"holistic-house-personal."+video.extension}
+          <a href={video.url} download={readyDownloadName}
             data-ready-direct-download>
             <Download size={20} aria-hidden="true"/>
             <span>{locale==="ru"?"Скачать "+video.extension.toUpperCase():
@@ -607,9 +618,19 @@ export function MandalaVideoReady({
             <span>{locale==="ru"?"Сохранить / поделиться":locale==="es"?"Guardar / compartir":"Save / Share"}</span>
           </button>:null}
         </div>:null}
+        {signedIn&&!saveStatus.savedId?<div className={css.linkConsent}>
+          <label>
+            <input ref={cloudConsentRef} type="checkbox" checked={cloudConsent}
+              disabled={saveStatus.busy}
+              onChange={event=>setCloudConsentUrl(event.currentTarget.checked&&video?video.url:null)}
+              data-ready-cloud-consent/>
+            <span>{PRIVATE_VIDEO_SAVE_CONSENT[locale]}</span>
+          </label>
+        </div>:null}
         <div className={css.actions} data-ready-save-choices>
           <button type="button" onClick={()=>chooseDelivery("save")}
-            disabled={disabled||saveStatus.busy} aria-busy={saveStatus.busy}
+            disabled={disabled||saveStatus.busy||(signedIn&&!cloudConsent&&!saveStatus.savedId)}
+            aria-busy={saveStatus.busy}
             data-ready-save><Download size={21} aria-hidden="true"/><span>{t.save}</span></button>
           <button type="button" onClick={()=>chooseDelivery("telegram")} disabled={disabled||saveStatus.busy}
             data-ready-telegram><Send size={21} aria-hidden="true"/><span>{t.sendTelegram}</span></button>
@@ -646,7 +667,7 @@ export function MandalaVideoReady({
           {saveStatus.savedId?<Link href={myVideos} target="_blank" rel="noopener noreferrer"
             prefetch={false} data-ready-saved-video-link>{t.house}</Link>:null}
           {saveStatus.cloudAvailable===false&&!saveStatus.savedId&&video?
-            <a href={video.url} download={"holistic-house-personal."+video.extension}
+            <a href={video.url} download={readyDownloadName}
               data-ready-download-fallback>{t.download}</a>:null}
         </div>:null}
       </>:null}

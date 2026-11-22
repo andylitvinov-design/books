@@ -1,9 +1,9 @@
 import {NextResponse} from 'next/server'
 import {getAppConfig,requestOrigin,requireSameOrigin} from '@/lib/app/config'
 import {createRequestAuth} from '@/lib/app/session'
-import {PRIVATE_HEADERS,safeError} from '@/lib/app/http'
+import {PRIVATE_HEADERS,readBody,safeError} from '@/lib/app/http'
 import {consumeRate} from '@/lib/app/database'
-import {personalVideoReadUrl,completePersonalVideoUpload,deletePersonalVideo} from '@/lib/app/personal-videos'
+import {personalVideoReadUrl,completePersonalVideoUpload,checkpointPersonalVideoUpload,deletePersonalVideo} from '@/lib/app/personal-videos'
 
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
@@ -23,10 +23,14 @@ async function handle(request,{params}){
     const {id}=await params
     await consumeRate(config,{op:'personal-video-'+request.method,accountId:actor.id},30,60)
     const data=request.method==='GET'
-      ? await personalVideoReadUrl(config,actor,id)
+      ? await personalVideoReadUrl(config,actor,id,{
+          download:new URL(request.url).searchParams.get('download')==='1',
+        })
       : request.method==='POST'
         ? {video:await completePersonalVideoUpload(config,actor,id)}
-        : await deletePersonalVideo(config,actor,id)
+        : request.method==='PATCH'
+          ? await checkpointPersonalVideoUpload(config,actor,id,await readBody(request,8192))
+          : await deletePersonalVideo(config,actor,id)
     return auth.apply(NextResponse.json(data,{headers:PRIVATE_HEADERS}))
   }catch(error){
     const safe=safeError(error)
@@ -36,4 +40,5 @@ async function handle(request,{params}){
 }
 export async function GET(request,ctx){return handle(request,ctx)}
 export async function POST(request,ctx){return handle(request,ctx)}
+export async function PATCH(request,ctx){return handle(request,ctx)}
 export async function DELETE(request,ctx){return handle(request,ctx)}

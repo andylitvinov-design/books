@@ -134,9 +134,9 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
 
 test("mobile six workspaces use short locale labels without changing full panel titles",()=>{
  const labels={
-  ru:["Цель","Идеи","Монтаж","PRO","Ready","Therapy"],
-  en:["Goal","Ideas","Montage","PRO","Ready","Therapy"],
-  es:["Objetivo","Ideas","Montaje","PRO","Ready","Therapy"],
+  ru:["Цель","Монтаж","Personal","PRO","Ready","Therapy"],
+  en:["Goal","Montage","Personal","PRO","Ready","Therapy"],
+  es:["Objetivo","Montaje","Personal","PRO","Ready","Therapy"],
  };
  const source=studio.slice(studio.indexOf("const workspaceCopy ="),studio.indexOf("const workspaceTabs="));
  for(const language of Object.keys(labels)){
@@ -293,7 +293,7 @@ test("Holistic Light mobile overrides the legacy small-card grid without adding 
 
 test("Montage and PRO retain one operational video/audio pipeline without duplicate controls",()=>{
   const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
-  assert.match(studio,/\{id:"video",Icon:Film\},\s*\{id:"phrases",Icon:Heart\},\s*\{id:"editor",Icon:Scissors\}/);
+  assert.match(studio,/\{id:"video",Icon:Film\},\s*\{id:"editor",Icon:Scissors\},\s*\{id:"phrases",Icon:Heart\}/);
   assert.match(studio,/\{id:"pro",Icon:Zap\},\s*\{id:"ready",Icon:Check\},\s*\{id:"effects",Icon:Leaf\}/);
   assert.match(studio,/editor:\{tab:"Монтаж",title:"Быстрая генерация"/);
   assert.match(studio,/pro:\{tab:"PRO",title:"PRO генерация"/);
@@ -301,7 +301,7 @@ test("Montage and PRO retain one operational video/audio pipeline without duplic
   const nav=studio.slice(studio.indexOf('<nav className={videoStyles.montageQuickTools}'),
     studio.indexOf('</nav>',studio.indexOf('<nav className={videoStyles.montageQuickTools}')));
   assert.deepEqual([...nav.matchAll(/id:"(effects|text|audio|promo|concept)",Icon:/g)].map(m=>m[1]),
-    ["effects","audio","text","concept","promo"],"Style, Audio, Text, Story and Montage PRO under the existing player");
+    ["effects","audio","promo","text","concept"],"Style, Audio, Extra, then optional Text / Story under the existing player");
   assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
   assert.match(studio,/data-video-montage-audio/);
   assert.doesNotMatch(studio,/data-video-montage-visual-effect=/);
