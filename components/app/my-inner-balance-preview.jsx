@@ -1,8 +1,9 @@
 'use client'
-import {useEffect,useState} from 'react'
+import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import {appFetch} from '@/lib/app/client-fetch'
-import {INNER_VECTOR_ITEMS,emptyDevelopmentVectors,normalizeDevelopmentVectors} from '@/lib/profile/development-vectors.mjs'
+import {INNER_VECTOR_ITEMS} from '@/lib/profile/development-vectors.mjs'
+import {savedDaybookBalance} from '@/lib/profile/daybook-growth-balance.mjs'
 import DevelopmentVectorWheel from './development-vector-wheel'
 import styles from './my-inner-balance-preview.module.css'
 
@@ -11,22 +12,27 @@ const COPY={
  ru:{edit:'Посмотреть или изменить мой баланс',note:'Здесь показаны только сохранённые самооценки. Они не передаются автоматически AI-коучу или специалисту.',loading:'Открываем сохранённый баланс…',error:'Не удалось открыть личный баланс.'},
  es:{edit:'Ver o editar mi equilibrio',note:'Solo aparecen tus valoraciones guardadas. No se comparten automáticamente con un coach IA ni con profesionales.',loading:'Cargando tu equilibrio guardado…',error:'No se pudo cargar tu equilibrio privado.'}
 }
-export default function MyInnerBalancePreview({accountId,locale='en'}){
+export default function MyInnerBalancePreview({accountId,locale='en',onSessionLost}){
  const lang=COPY[locale]?locale:'en',t=COPY[lang]
+ const lost=useRef(onSessionLost)
+ useEffect(()=>{lost.current=onSessionLost},[onSessionLost])
  const [snapshot,setSnapshot]=useState({owner:null,loading:true,error:false,vectors:null})
  useEffect(()=>{
   if(!accountId)return undefined
-  let active=true
+  let active=true,sequence=0
   const controller=new AbortController()
   const refresh=()=>{
+   const token=++sequence
    appFetch('development-goals',undefined,'GET',{accountId,signal:controller.signal})
     .then(result=>{
-     if(!active||controller.signal.aborted)return
-     const values=normalizeDevelopmentVectors(result?.goals?.vectors)||emptyDevelopmentVectors()
+     if(!active||controller.signal.aborted||token!==sequence)return
+     const values=savedDaybookBalance(result)
      setSnapshot({owner:accountId,loading:false,error:false,vectors:values})
-    }).catch(()=>{
-     if(active&&!controller.signal.aborted)
+    }).catch(error=>{
+     if(active&&!controller.signal.aborted&&token===sequence){
       setSnapshot({owner:accountId,loading:false,error:true,vectors:null})
+      if(error.status===401||error.status===403||error.code==='ACCOUNT_CHANGED')lost.current?.()
+     }
     })
   }
   refresh()
