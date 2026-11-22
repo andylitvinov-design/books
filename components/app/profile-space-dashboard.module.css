@@ -412,3 +412,74 @@
   .dashboard[data-profile-space-dashboard] .cardBody small{font-size:15px}
   .dashboard[data-profile-space-dashboard] .account a{min-height:68px}
 }
+
+
+/* OWNER_DAYBOOK_FOCUS_20261122 — owner's second approved My Space layout:
+   actual client focus below the hero copy and ABOVE the ONE Daybook action.
+   Signed-out preview is neutral, never filled with fictitious goals/axes.
+   Scoped to My Space, NOT My Courses or reports. */
+.dashboard[data-profile-space-dashboard] .scenic{
+  min-height:258px;
+  background-position:center,61% 50%;
+  padding-bottom:13px;
+}
+.focusRow{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:9px;width:100%;margin:12px 0 10px;min-width:0;
+}
+.focusChip{
+  display:flex;align-items:center;gap:9px;box-sizing:border-box;
+  min-width:0;min-height:57px;padding:8px 10px;
+  border:1.5px solid #f5d58f;border-radius:999px;
+  background:linear-gradient(128deg,#fff9e7,#fbe5b8 67%,#f3ca89);
+  box-shadow:0 4px 12px #160c0875,inset 0 1px #fffef0;
+  color:#082e1e;text-decoration:none;
+}
+.focusIcon{
+  display:grid;place-items:center;flex:0 0 32px;
+  width:32px;height:32px;border-right:1px solid #ba935f;
+  color:#00603c;
+}
+.focusChip span:last-child{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.focusChip small{
+  color:#133c2a;font:740 clamp(10px,2.6vw,13px)/1.08 Georgia,serif;
+  white-space:nowrap;
+}
+.focusChip strong{
+  color:#092f20;font:620 clamp(11.5px,2.9vw,16px)/1.15 system-ui,sans-serif;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+  line-clamp:2;overflow:hidden;overflow-wrap:anywhere;
+}
+.focusChip:focus-visible{outline:3px solid #ffeda9;outline-offset:3px}
+.dashboard[data-profile-space-dashboard] .path{
+  margin-top:0;min-height:65px;
+}
+.dashboard[data-profile-space-dashboard] .pathText strong{
+  font-size:clamp(19px,4.5vw,28px);
+}
+@media(max-width:430px){
+  .dashboard[data-profile-space-dashboard] .scenic{min-height:260px;padding:14px 10px 11px}
+  .focusRow{gap:6px;margin:12px 0 9px}
+  .focusChip{gap:5px;min-height:53px;padding:7px 7px;border-radius:21px}
+  .focusIcon{width:26px;height:28px;flex-basis:26px}
+  .focusIcon svg{width:23px;height:23px}
+  .focusChip small{font-size:clamp(10px,2.55vw,12px)}
+  .focusChip strong{font-size:clamp(10.7px,2.8vw,13px)}
+  .dashboard[data-profile-space-dashboard] .path{min-height:61px}
+  .dashboard[data-profile-space-dashboard] .pathText strong{font-size:clamp(18px,5.1vw,23px)}
+}
+@media(max-width:350px){
+  .focusChip{gap:4px;padding:6px 5px}
+  .focusIcon{width:23px;flex-basis:23px}
+  .focusChip small{font-size:9.6px}
+  .focusChip strong{font-size:10.5px}
+}
+@media(min-width:700px){
+  .dashboard[data-profile-space-dashboard] .scenic{min-height:316px}
+  .focusRow{gap:12px;margin-top:22px}
+  .focusChip{min-height:70px;padding:11px 16px;gap:12px}
+  .focusIcon{width:42px;height:42px;flex-basis:42px}
+  .focusChip small{font-size:15px}
+  .focusChip strong{font-size:18px}
+  .dashboard[data-profile-space-dashboard] .path{min-height:80px}
+}
