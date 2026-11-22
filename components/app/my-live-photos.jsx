@@ -19,6 +19,7 @@ const COPY = {
     limit: 'Максимум 3 живых фото. Новый заказ требует явного подтверждения.',
     studio: 'Создать ролик', private: 'Материалы приватны, публикация не выполняется автоматически.',
     choose: 'Выберите JPG, PNG, WebP или HEIC до 3 МБ.',
+     savedTitle: 'Выбрать из Моих фото', savedEmpty: 'Сохранённых фотографий пока нет.', savedUnavailable: 'Галерея фото ещё недоступна.', savedSelected: 'Фото из личного кабинета выбрано. Для HeyGen подтвердите согласие отдельно.', savedPick: 'Выбрать', savedLoading: 'Загружаем Мои фото…',
     waveTip: 'Для взмаха на фото должны быть видны кисть и предплечье. Иначе возможна только улыбка.',
   },
   en: {
@@ -37,6 +38,7 @@ const COPY = {
     limit: 'Up to 3 live photos. Every new render requires your confirmation.',
     studio: 'Create a video', private: 'Private by default. Nothing is published automatically.',
     choose: 'Choose a JPG, PNG, WebP or HEIC image up to 3 MB.',
+     savedTitle: 'Choose from My Photos', savedEmpty: 'No photos saved yet.', savedUnavailable: 'Private photo gallery is not available yet.', savedSelected: 'A private photo was selected. Confirm separate HeyGen consent before animating.', savedPick: 'Select photo', savedLoading: 'Loading My Photos…',
     waveTip: 'For a natural wave, the photo should show the hand and forearm. Otherwise the clip may only smile.',
   },
   es: {
@@ -55,6 +57,7 @@ const COPY = {
     limit: 'Máximo 3 fotos vivas. Cada nueva generación requiere confirmación.',
     studio: 'Crear un vídeo', private: 'Privado por defecto. No se publica automáticamente.',
     choose: 'Selecciona JPG, PNG, WebP o HEIC de hasta 3 MB.',
+     savedTitle: 'Elegir de Mis fotos', savedEmpty: 'Aún no tienes fotos guardadas.', savedUnavailable: 'La galería privada no está disponible.', savedSelected: 'Foto privada seleccionada. Confirma el permiso separado para HeyGen.', savedPick: 'Elegir foto', savedLoading: 'Cargando Mis fotos…',
     waveTip: 'Para el saludo, la foto debe mostrar la mano y el antebrazo. Si no, el vídeo quizá solo sonría.',
   },
 };
@@ -69,6 +72,10 @@ export default function MyLivePhotos({ locale = 'en' }) {
   const [enabled, setEnabled] = useState(false);
   const [state, setState] = useState('loading');
   const [file, setFile] = useState(null);
+  const [savedPhotos, setSavedPhotos] = useState([]);
+  const [savedPhotosState, setSavedPhotosState] = useState('idle');
+  const [savedPhotoBusy, setSavedPhotoBusy] = useState(false);
+  const [photoNotice, setPhotoNotice] = useState('');
   const [motion, setMotion] = useState('smile');
   const [orientation, setOrientation] = useState('portrait');
   const [subject, setSubject] = useState('self');
@@ -105,6 +112,49 @@ export default function MyLivePhotos({ locale = 'en' }) {
     }, 20000);
     return () => { cancelled = true; clearInterval(timer); };
   }, [active, items, refresh]);
+
+  // My Photos is the existing first-party owner-scoped gallery. Opening it never
+  // authorizes an external upload or creates a billed HeyGen job.
+  async function loadSavedPhotos() {
+    if (savedPhotosState === 'loading') return;
+    setSavedPhotosState('loading');
+    try {
+      const response = await fetch('/api/app/video-photos', {
+        credentials: 'same-origin', cache: 'no-store',
+      });
+      if (!response.ok) throw Error('PHOTO_LIBRARY_UNAVAILABLE');
+      const value = await response.json();
+      const photos = Array.isArray(value.photos) ? value.photos : [];
+      setSavedPhotos(photos.filter(entry => entry &&
+        (entry.id === 'portrait' || /^[a-f0-9]{64}$/.test(entry.id)) &&
+        typeof entry.url === 'string').slice(0, 9));
+      setSavedPhotosState('ready');
+    } catch { setSavedPhotosState('unavailable'); }
+  }
+  async function chooseSavedPhoto(id) {
+    if (busy || savedPhotoBusy || !(id === 'portrait' || /^[a-f0-9]{64}$/.test(id))) return;
+    setSavedPhotoBusy(true); setError(''); setPhotoNotice('');
+    try {
+      // Renew the 120s signed link on selection; do not trust an expired thumbnail URL.
+      const response = await fetch('/api/app/video-photos?id=' + encodeURIComponent(id), {
+        credentials: 'same-origin', cache: 'no-store',
+      });
+      if (!response.ok) throw Error('PHOTO_LIBRARY_UNAVAILABLE');
+      const value = await response.json();
+      const source = value?.photo?.url;
+      if (typeof source !== 'string' || !source.startsWith('https://')) throw Error('INVALID_SOURCE');
+      const media = await fetch(source, { credentials: 'omit', cache: 'no-store', mode: 'cors' });
+      if (!media.ok) throw Error('PRIVATE_PHOTO_UNAVAILABLE');
+      const blob = await media.blob();
+      if (blob.size < 128 || blob.size > 1500000 ||
+          !['image/jpeg', 'application/octet-stream'].includes(blob.type)) throw Error('INVALID_PHOTO');
+      setFile(new File([blob], 'my-private-photo.jpg', { type: 'image/jpeg' }));
+      setConsent(false);
+      requestId.current = null;
+      setPhotoNotice(t.savedSelected);
+    } catch { setError(t.error); }
+    finally { setSavedPhotoBusy(false); }
+  }
   async function create() {
     if (!enabled || busy || !file || !consent || file.size > 3000000) return;
     setBusy(true); setError('');
@@ -161,9 +211,30 @@ export default function MyLivePhotos({ locale = 'en' }) {
     {enabled ? <div style={{ display: 'grid', gap: 11, marginBottom: 12 }}>
       <label style={{ display: 'grid', gap: 4, fontSize: 14 }}>{t.new}
         <input type="file" style={styles.field} disabled={busy} accept="image/jpeg,image/png,image/webp,image/heic,image/heif" onChange={event => {
-          setFile(event.target.files?.[0] || null); setConsent(false); setError(''); requestId.current = null;
+          setFile(event.target.files?.[0] || null); setConsent(false); setError(''); setPhotoNotice(''); requestId.current = null;
         }}/>
       </label>
+      <details data-live-photo-saved-picker style={{ border: '1px solid #d1e2df', borderRadius: 10, padding: 9 }}
+        onToggle={event => { if (event.currentTarget.open) void loadSavedPhotos(); }}>
+        <summary style={{ cursor: 'pointer', fontSize: 14, fontWeight: 650 }}>{t.savedTitle}</summary>
+        {savedPhotosState === 'loading' ? <small role="status">{t.savedLoading}</small> : null}
+        {savedPhotosState === 'unavailable' ? <small role="status">{t.savedUnavailable}</small> : null}
+        {savedPhotosState === 'ready' && savedPhotos.length === 0 ? <small>{t.savedEmpty}</small> : null}
+        {savedPhotosState === 'ready' && savedPhotos.length > 0 ? <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(94px,1fr))', gap: 8, marginTop: 9,
+        }}>
+          {savedPhotos.map(photo => <button type="button" key={photo.id}
+            disabled={busy || savedPhotoBusy} aria-label={t.savedPick}
+            onClick={() => void chooseSavedPhoto(photo.id)}
+            style={{ ...styles.button, padding: 5, minWidth: 0 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={photo.url} alt="" loading="lazy" style={{ width: '100%', aspectRatio: '1/1',
+              objectFit: 'cover', borderRadius: 7 }} />
+            <span style={{ fontSize: 12 }}>{t.savedPick}</span>
+          </button>)}
+        </div> : null}
+      </details>
+      {photoNotice ? <small role="status">{photoNotice}</small> : null}
       {file?.size > 3000000 ? <p role="alert">{t.choose}</p> : null}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 9 }}>
         <label style={{ fontSize: 13 }}>{t.motion}

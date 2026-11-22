@@ -152,3 +152,16 @@ test('provider asset and generation POST remain blocked after creation/spend tog
     }
   }
 });
+
+test('private My Photos can be selected as an Avatar source without implicit HeyGen consent or reuse of stale signed links',()=>{
+  const ui = readFileSync('components/app/my-live-photos.jsx', 'utf8');
+  assert.match(ui, /data-live-photo-saved-picker/);
+  assert.match(ui, /\/api\/app\/video-photos\?id=/);
+  assert.match(ui, /credentials: 'same-origin'/);
+  assert.match(ui, /new File\(\[blob\], 'my-private-photo.jpg'/);
+  assert.match(ui, /setConsent\(false\)/);
+  assert.match(ui, /setPhotoNotice\(t.savedSelected\)/);
+  assert.match(ui, /savedTitle: 'Choose from My Photos'/);
+  assert.match(ui, /savedTitle: 'Выбрать из Моих фото'/);
+  assert.match(ui, /savedTitle: 'Elegir de Mis fotos'/);
+});
