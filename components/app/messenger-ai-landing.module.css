@@ -368,3 +368,41 @@
  .root .topicHeading{font-size:22px}
  .root .moreTopics{font-size:11px;min-height:38px;padding:6px 8px}
 }
+
+/* 21 Nov: one-viewport first screen; the three-step explainer was removed. */
+.root[data-hh-ai-landing]{gap:7px;padding:0 1px 8px}
+.root .chatShortcuts{gap:5px}
+.root .chatShortcut{min-height:42px;padding:6px 3px}
+.root .welcomeRow{min-height:157px;border-radius:20px}
+.root .welcomeBubble{min-height:157px;gap:5px;padding:9px 0 10px 12px;max-width:63%}
+.root .welcomeBubble h2{font-size:clamp(24px,6.8vw,32px);line-height:1.03}
+.root .welcomeBubble h2 span{font-size:clamp(12px,3.4vw,16px);margin-top:4px}
+.root .welcomeBubble p{font-size:clamp(11px,3vw,13px);line-height:1.26}
+.root .heroLabel{font-size:10px}
+.root .welcomeMeta{margin-top:2px}
+.root .welcomeListen{min-height:34px;padding:5px 12px;font-size:12px}
+.root .topicTitleRow{gap:5px}
+.root .topicHeading{font-size:clamp(21px,5.8vw,27px)}
+.root .moreTopics{min-height:36px;padding:6px 9px}
+.root .topics{gap:6px}
+.root .topics button{grid-template-columns:56px minmax(0,1fr) 20px;
+  gap:6px;min-height:71px;padding:5px;border-radius:17px}
+.root .topicIllustration{width:56px;height:59px;border-radius:12px}
+.root .topics .topicLabel{font-size:clamp(11px,3vw,13px);gap:2px}
+.root .topics .topicLabel svg{width:15px;height:15px}
+.root .topicArrow{width:20px;height:20px}
+@media(max-width:365px){
+ .root .welcomeRow{min-height:144px}
+ .root .welcomeBubble{min-height:144px;padding-left:9px;max-width:64%}
+ .root .welcomeBubble h2{font-size:23px}
+ .root .welcomeBubble p{font-size:10px}
+ .root .topics button{grid-template-columns:48px minmax(0,1fr) 18px;gap:4px;min-height:65px}
+ .root .topicIllustration{width:48px;height:54px}
+ .root .topics .topicLabel{font-size:10.5px}
+ .root .topicArrow{width:18px;height:18px}
+}
+@media(max-height:740px) and (max-width:760px){
+ .root .welcomeRow,.root .welcomeBubble{min-height:130px}
+ .root .welcomeBubble p{font-size:10.5px}
+ .root .topics button{min-height:64px}
+}

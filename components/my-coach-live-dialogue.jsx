@@ -228,7 +228,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const coachProfileOpenRef=useRef(false)
   const [speechPreview,setSpeechPreview]=useState('')
   const [streamingPreview,setStreamingPreview]=useState('')
-  const [coachEngine,setCoachEngine]=useState('groq_stream')
+  // Native duplex Gemini Live is the preferred coach; no mic opens on mount.
+  const [coachEngine,setCoachEngine]=useState('gemini_live_free')
+  const engineManuallySelectedRef=useRef(false)
   const [geminiCapabilities,setGeminiCapabilities]=useState({
     gemini_free:false,gemini_paid:false,gemini_tts_free:false,gemini_tts_paid:false,
     gemini_live_free:false,
@@ -382,8 +384,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const controller=new AbortController()
     void readGeminiEngineStatus(controller.signal).then(status=>{
       if(controller.signal.aborted)return
-      if(status.kind==='ok')setGeminiCapabilities(status.capabilities)
-      else if(status.kind==='login')setAuthRequired(true)
+      if(status.kind==='ok'){
+        setGeminiCapabilities(status.capabilities)
+        // A late metadata response must not undo an explicit provider choice.
+        if(!engineManuallySelectedRef.current)
+          setCoachEngine(status.capabilities.gemini_live_free?'gemini_live_free':'groq_stream')
+      }else if(status.kind==='login')setAuthRequired(true)
+      else if(!engineManuallySelectedRef.current)setCoachEngine('groq_stream')
     })
     return ()=>controller.abort()
   },[])
@@ -424,7 +431,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const ui=sessionUi[lang]||sessionUi.en
   const voiceGate=voiceGateText[lang]||voiceGateText.en
   const liveVoiceSelected=coachEngine==='gemini_live_free'
-  const liveVoiceReady=liveVoiceSelected&&geminiCapabilities.gemini_live_free===true&&geminiLiveConsent
+  // Pressing Play affirmatively consents to live voice use, disclosed beside
+  // the control. Availability alone never starts streaming or contacts Google.
+  const liveVoiceReady=liveVoiceSelected&&geminiCapabilities.gemini_live_free===true
   const selectedGeminiEngine=coachEngine==='gemini_free'||coachEngine==='gemini_paid'
   const geminiEngineReady=selectedGeminiEngine&&geminiCapabilities[coachEngine]===true&&geminiConsent
   const geminiVoices=coachGeminiVoiceOptions(personaId)
@@ -751,7 +760,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       modelProbeRef.current.inFlight=false
     }
   }
-  function appendLiveTranscript(role,text){
+  function appendLiveTranscript(role,text,{interrupted=false}={}){
     const value=String(text||'').trim().slice(0,1200)
     if(!value)return
     setTurns(previous=>{
@@ -759,7 +768,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(last?.role===role&&last?.content===value)return previous
       const entry={role,content:value,locale:conversationLang,
         ...(role==='assistant'?{mode:'ai',inference:{
-          provider:'gemini_live_free',model:'gemini-3.1-flash-live-preview'}}:{})}
+          provider:'gemini_live_free',model:'gemini-3.1-flash-live-preview'},
+          ...(interrupted?{interrupted:true}:{})}:{})}
       const next=[...previous,entry].slice(-96)
       turnsRef.current=next
       return next
@@ -1194,7 +1204,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             locale={conversationLang} personaId={personaId} settings={settings}
             voiceName={selectedGeminiVoice} elapsedSeconds={activeSessionSeconds}
             enabled={liveVoiceReady} canStart={!busy&&!paused&&!replaying&&liveVoiceReady}
-            onSessionStart={()=>{setSessionClockStarted(true);setIntroComplete(true)}}
+            onSessionStart={()=>{setGeminiLiveConsent(true);setSessionClockStarted(true);setIntroComplete(true)}}
             onVoiceStateChange={setVoiceState}
             onMicLevel={level=>{
               const wave=micWaveRef.current
@@ -1206,7 +1216,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             onInputInterim={setSpeechPreview}
             onInputFinal={text=>appendLiveTranscript('user',text)}
             onOutputInterim={setStreamingPreview}
-            onOutputFinal={text=>appendLiveTranscript('assistant',text)}
+            onOutputFinal={(text,details)=>appendLiveTranscript('assistant',text,{interrupted:details?.interrupted===true})}
             onInterrupted={()=>{setStreamingPreview('');setPlaybackNotice('')}}
             onDirectorProgress={setLiveDirectorProgress}
             onNotice={setPlaybackNotice}
@@ -1247,6 +1257,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             // Leaving Pro immediately cancels its in-flight model/audio, but
             // simply opening Pro must NEVER silence a healthy Basic microphone.
             if(selectedGeminiEngine){
+              engineManuallySelectedRef.current=true
               if(voiceState.phase==='speaking'&&latestCoachText)
                 markCoachSpeechInterrupted(latestCoachText)
               speechRef.current?.stop?.()
@@ -1262,6 +1273,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               return
             }
             if(liveVoiceSelected){
+              engineManuallySelectedRef.current=true
               speechRef.current?.stop?.()
               cancelPendingCoachTurn()
               setGeminiLiveConsent(false)
@@ -1296,26 +1308,30 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               return
             }
             setGeminiCapabilities(status.capabilities)
-            if(!status.capabilities.gemini_free){
+            if(!status.capabilities.gemini_live_free&&!status.capabilities.gemini_free){
               setPlaybackNotice(({ru:'Gemini Free не готов на сервере. Basic продолжает работать.',en:'Gemini Free is not ready on the server. Basic still works.',es:'Gemini gratuito no está listo en el servidor. Basic sigue activo.'})[lang])
               return
             }
-            // Pro tap is an informed Free text+TTS choice; no second form.
+            // Prefer true duplex audio over separate text/TTS when Pro is tapped.
+            engineManuallySelectedRef.current=true
+            const chooseLive=status.capabilities.gemini_live_free===true
             if(voiceState.phase==='speaking'&&latestCoachText)
               markCoachSpeechInterrupted(latestCoachText)
-            // If Basic already listens, keep its unlocked iPhone audio session
-            // and restart the microphone for the next Gemini turn — no second Play.
-            const continued=speechRef.current?.pauseForTypedTurn?.()===true
+            const continued=!chooseLive&&speechRef.current?.pauseForTypedTurn?.()===true
             if(!continued)speechRef.current?.stop?.()
             cancelPendingCoachTurn()
-            const freeTtsReady=status.capabilities.gemini_tts_free===true
-            setCoachEngine('gemini_free')
-            setGeminiConsent(true)
+            const freeTtsReady=!chooseLive&&status.capabilities.gemini_tts_free===true
+            setCoachEngine(chooseLive?'gemini_live_free':'gemini_free')
+            setGeminiConsent(!chooseLive)
             setGeminiVoiceTier(freeTtsReady?'gemini_tts_free':'existing')
             setGeminiVoiceConsent(freeTtsReady)
             setGeminiLiveConsent(false)
             if(continued)speechRef.current?.resumeAfterTypedFailure?.()
-            setPlaybackNotice(freeTtsReady?'':({
+            setPlaybackNotice(chooseLive?({
+              ru:'Gemini Live выбран. Нажмите Play, чтобы начать двусторонний разговор.',
+              en:'Gemini Live selected. Tap Play to begin the two-way conversation.',
+              es:'Gemini Live elegido. Pulsa Play para iniciar la conversación en vivo.',
+            })[lang]:freeTtsReady?'':({
               ru:'Gemini Free включён; голос Gemini недоступен. Можно выбрать текущий голос.',
               en:'Gemini Free is on; Gemini voice is unavailable. You can choose the existing voice.',
               es:'Gemini gratuito activado; su voz no está disponible. Puedes usar la voz anterior.',
@@ -1336,9 +1352,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           es:'Pulsa Pro para activar texto y voz de Gemini gratuito. Google puede usar el texto para mejorar modelos. Pulsa Basic para salir.',
         })[lang]}</p>}
       <p className={styles.voicePlayNotice} data-coach-voice-consent-one-play>{liveVoiceSelected?({
-        ru:'Gemini Live: прямой поток RU/EN · можно перебивать коуча голосом или кнопкой. Микрофон передаёт звук Google только после отдельного согласия.',
-        en:'Gemini Live: real-time audio · interrupt the coach by speaking or tapping. Your microphone streams to Google only after separate consent.',
-        es:'Gemini Live: audio en tiempo real · interrumpe al coach hablando o tocando. El micrófono se transmite a Google solo con tu consentimiento.',
+        ru:'Play отправляет голос и текст Google Gemini Free (возможно обучение моделей). Говорите в любой момент, чтобы перебить коуча.',
+        en:'Play sends voice and transcripts to Google Gemini Free (may train models). Speak anytime to interrupt the coach.',
+        es:'Play envía voz y texto a Google Gemini Free (puede entrenar modelos). Habla cuando quieras para interrumpir.',
       })[lang]:({
         en:'Play starts voice. On iPhone, short answers may be transcribed by Groq Whisper (no Holistic House audio storage). No extra step.',
         ru:'Play запускает голос. На iPhone короткие ответы могут расшифровываться через Groq Whisper без хранения аудио на Holistic House.',
@@ -1452,6 +1468,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <label className={styles.coachEnginePicker} data-coach-engine-choice>
           <span>{({ru:'Движок диалога',en:'Dialogue engine',es:'Motor de diálogo'})[lang]}</span>
           <select value={coachEngine} disabled={busy} onChange={event=>{
+            engineManuallySelectedRef.current=true
             speechRef.current?.stop?.()
             setCoachEngine(event.target.value)
             setGeminiConsent(event.target.value==='gemini_free')
@@ -1491,16 +1508,14 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               {geminiVoices.map(v=><option value={v} key={v}>{v}</option>)}
             </select>
           </label>
-          <label className={styles.coachEnginePicker} data-gemini-live-free-consent>
-            <input type="checkbox" checked={geminiLiveConsent}
-              disabled={voiceState.phase!=='idle'}
-              onChange={event=>setGeminiLiveConsent(event.target.checked)}/>
-            <span>{({
-              ru:'Согласен(на) отправлять живой голос и расшифровки Google Gemini Free. Google может использовать эти данные для улучшения моделей. Разговор можно остановить в любой момент.',
-              en:'I consent to streaming my voice and transcripts to Google Gemini Free. Google may use these data to improve models. I can stop anytime.',
-              es:'Acepto transmitir mi voz y transcripciones a Gemini Free. Google puede usar estos datos para mejorar modelos. Puedo parar cuando quiera.'
-            })[lang]}</span>
-          </label>
+          <p className={styles.voicePlayNotice} data-gemini-live-free-consent data-consent-on-play
+            data-live-consented={geminiLiveConsent?'true':'false'}>
+            {({
+              ru:'Нажимая Play, вы разрешаете отправлять голос и расшифровки в Google Gemini Free; Google может использовать их для улучшения моделей. Микрофон отключается при завершении разговора.',
+              en:'By pressing Play, you agree to stream voice and transcripts to Google Gemini Free; Google may use them to improve models. Ending the call stops the microphone.',
+              es:'Al pulsar Play, aceptas enviar voz y transcripciones a Gemini Free; Google puede usarlas para mejorar modelos. Al terminar se apaga el micrófono.'
+            })[lang]}
+          </p>
         </>}
         {!liveVoiceSelected&&<label className={styles.coachEnginePicker} data-gemini-voice-provider>
           <span>{({ru:'Голос коуча',en:'Coach voice',es:'Voz del coach'})[lang]}</span>

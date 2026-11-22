@@ -83,3 +83,26 @@
  .contact{gap:4px}
  .contactNote{font-size:10px}
 }
+
+/* OWNER_GOAL_FIRST_BUSINESS_20261121 — larger photographic format buttons
+   replacing the previous tiny one-screen tile arrangement. */
+@media(max-width:760px){
+ .root .grid{gap:9px}
+ .root .card{min-height:127px;border-radius:18px}
+ .root .cardPhoto{min-height:57px}
+ .root .cardLabel{min-height:67px;grid-template-columns:23px minmax(0,1fr) 14px;gap:6px;padding:7px 8px;font-size:clamp(14px,3.85vw,18px);line-height:1.09}
+ .root .cardLabel svg{width:23px;height:23px}
+ .root .cardLabel svg:last-child{height:14px;width:14px}
+ .root .offerList{gap:8px}
+ .root .offer{min-height:66px;padding:10px 11px}
+ .root .offerText strong{font-size:clamp(14px,3.75vw,17px)}
+ .root .offerText small{font-size:clamp(11px,3vw,13px)}
+ .root .price{font-size:clamp(11px,2.95vw,14px)}
+ .root .detailsButton{min-height:52px!important;font-size:clamp(18px,4.75vw,23px)!important}
+ .root .title{font-size:clamp(23px,6.2vw,30px)}
+ .root :is(.card,.offer,.detailsButton){scroll-margin-bottom:calc(108px + env(safe-area-inset-bottom))}
+}
+@media(max-width:350px){
+ .root .cardLabel{font-size:13px;gap:4px;padding:5px}
+ .root .cardLabel svg{width:20px}
+}
