@@ -1028,7 +1028,7 @@
  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
   [data-video-quick-section="1"] [data-video-goal-create-cta]:disabled{opacity:.55!important}
  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"]
-  [data-video-topic-section][data-video-goal-quiz-step="1"] [data-video-stage-actions="goal"]{
+  [data-video-topic-section][data-video-goal-quiz-step="1"][data-video-goal-quiz-audience="self"] [data-video-stage-actions="goal"]{
   display:none!important;
  }
 }
