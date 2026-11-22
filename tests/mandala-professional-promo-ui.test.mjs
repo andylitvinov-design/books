@@ -27,8 +27,8 @@ const liveStudio=readFileSync('components/mandala-free-video-studio.tsx','utf8')
 const parent=readFileSync('components/mandala-meditation-client.tsx','utf8');
 test('professional card is wired to the existing local four-MP4 editor',()=>{
   assert.ok(parent.includes('professionalSource={professionalSource} professionalMode={professionalMode}'));
-  assert.ok(liveStudio.includes('professionalMode ? <MandalaProfessionalPromo'));
-  assert.ok(liveStudio.includes('presets={FREE_FILM_PRESETS} scenes={FREE_FILM_CATALOG}'));
+  assert.ok(liveStudio.includes('(professionalMode||reelModeActive) ? <MandalaProfessionalPromo'));
+  assert.ok(liveStudio.includes('presets={aspectFilmPresets} scenes={FREE_FILM_CATALOG}'));
   assert.ok(liveStudio.includes('publicOffer={professionalSource?.publicOffer ?? null}'));
   assert.ok(liveStudio.includes('existing.clips.join("|")!==proposal.montage.sceneIds.join("|")'));
   assert.ok(liveStudio.includes('applyAutoFilm(presetId,seconds,undefined,outputAspect)'), 'current director keeps edit argument before aspect');
