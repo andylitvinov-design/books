@@ -1354,7 +1354,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // The approved compact Text editor hides the redundant Montage order-bar
       // CTA. Activate the visible Text Generate button bound to the SAME
       // openReadyForGeneration handler, so unpriced export is tested by real UI.
-      const unpricedCreate=montageIdeas.locator('[data-video-ideas-generate]');
+      const directReady=montageIdeas.locator('[data-video-text-direct-create]');
+      await expect(directReady).toBeVisible();
+      // This deliberate shortcut is folded behind a disclosure. Use the same
+      // real summary tap a visitor uses before testing fail-closed export.
+      const readySummary=directReady.locator("summary");
+      if(engine==="webkit")await readySummary.tap();else await readySummary.click();
+      await expect(directReady).toHaveAttribute("open","");
+      const unpricedCreate=directReady.locator('[data-video-ideas-generate]');
       await expect(unpricedCreate).toBeVisible();
       await expect(unpricedCreate).toBeEnabled();
       if(engine==="webkit")await unpricedCreate.tap();else await unpricedCreate.click();
