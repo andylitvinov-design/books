@@ -235,17 +235,44 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(page.locator('[data-video-montage-tab="text"]'))
       .toHaveAttribute("aria-pressed","true");
     await expect(page.locator('[data-video-montage-text]')).toBeVisible();
-    // Two separate actions: the existing guarded render and navigation-only storyboard.
-    const textFooter=page.locator('[data-video-ideas-compact] [data-video-stage-actions="ideas"]');
+    // The approved Text screen replaced legacy "Generate / Storyboard" with
+    // the real Preview / Continue pair; an optional, explicit shortcut to
+    // Ready lives outside this footer. Never simulate a paid Generate click.
+    const textPane=page.locator('[data-video-montage-text]');
+    await expect(textPane.locator('[data-video-text-hero]')).toBeVisible();
+    await expect(textPane.locator('[data-video-text-progress]')).toBeVisible();
+    const phraseTopics=textPane.locator('[data-video-text-category]');
+    await expect(phraseTopics).toHaveCount(6);
+    const supportTopic=textPane.locator('[data-video-text-category="support"]');
+    const congratulationsTopic=textPane.locator('[data-video-text-category="congratulations"]');
+    await expect(supportTopic).toHaveAttribute("aria-pressed","true");
+    const firstPhrase=textPane.locator('[data-video-idea-phrase="0"] span').first();
+    const beforeCategory=await firstPhrase.innerText();
+    await congratulationsTopic.tap();
+    await expect(congratulationsTopic).toHaveAttribute("aria-pressed","true");
+    await expect(firstPhrase).not.toHaveText(beforeCategory);
+    await supportTopic.tap();
+    await expect(supportTopic).toHaveAttribute("aria-pressed","true");
+    await expect(firstPhrase).toHaveText(beforeCategory);
+    // Each local caption language is interactive, independent of page locale.
+    const languages=textPane.locator('[data-video-text-language]');
+    await expect(languages).toHaveCount(3);
+    const spanish=textPane.locator('[data-video-text-language="es"]');
+    await spanish.tap();
+    await expect(spanish).toHaveAttribute("aria-pressed","true");
+    const directReady=textPane.locator('[data-video-text-direct-create]');
+    await expect(directReady).toHaveCount(1);
+    await expect(directReady.locator('[data-video-ideas-generate]')).toHaveCount(1);
+    const textFooter=textPane.locator('[data-video-stage-actions="ideas"]');
     await expect(textFooter.locator("button")).toHaveCount(2);
-    const generateText=textFooter.locator('[data-video-ideas-generate]');
+    const previewText=textFooter.locator('[data-video-ideas-preview]');
     const reviewStory=textFooter.locator('[data-video-ideas-create]');
-    await expect(generateText).toBeEnabled();
-    await expect(generateText).toContainText(
-      locale==="ru"?"Создать видео":locale==="es"?"Generar vídeo":"Generate Video");
+    await expect(previewText).toBeEnabled();
+    await expect(previewText).toContainText(
+      locale==="ru"?"Предпросмотр":locale==="es"?"Vista previa":"Preview");
     await expect(reviewStory).toBeEnabled();
     await expect(reviewStory).toContainText(
-      locale==="ru"?"Раскадровка":locale==="es"?"Guion visual":"Storyboard");
+      locale==="ru"?"К созданию видео":locale==="es"?"Continuar a crear":"Continue to Create");
     for(const width of [320,354,390,430]){
       await page.setViewportSize({width,height:840});
       const layout=await textFooter.evaluate(footer=>{
@@ -260,6 +287,18 @@ async function verifyWorkspaceHydration(browser,locale){
         "both Text actions remain readable: "+width+" "+JSON.stringify(layout));
       assert.ok(layout.doc<=layout.viewport+2,
         "Text actions do not overflow horizontally: "+width+" "+JSON.stringify(layout));
+      // Real WebKit hit targets, not CSS-source guesses: labels, phrase
+      // checkbox, Play and Edit are at least 44x44 at every iPhone width.
+      const taps=await textPane.evaluate(root=>
+        ["[data-video-text-language=\"en\"]","[data-video-idea-select=\"0\"]",
+         "[data-video-idea-play=\"0\"]","[data-video-idea-edit-button=\"0\"]"].map(selector=>{
+          const box=root.querySelector(selector)?.getBoundingClientRect();
+          return {width:box?.width??0,height:box?.height??0};
+        }));
+      assert.ok(taps.every(box=>box.width>=43.5&&box.height>=43.5),
+        "Text buttons keep 44px targets: "+width+" "+JSON.stringify(taps));
+      console.log("MONTAGE_TEXT_WEBKIT_GEOMETRY",locale,width,
+        JSON.stringify({buttons:layout.widths,doc:layout.doc,viewport:layout.viewport,taps}));
     }
     await page.setViewportSize({width:390,height:840});
     await reviewStory.tap();

@@ -238,7 +238,7 @@
   gap:6px;flex:0 1 auto;max-width:100%
 }
 :global([data-active-workspace="editor"][data-montage-panel="text"]) .ideas[data-video-text-redesign="true"] .languageSwitch button{
-  min-width:38px;min-height:42px;font-size:13px
+  min-width:44px;min-height:44px;font-size:13px
 }
 :global([data-active-workspace="editor"][data-montage-panel="text"]) .ideas[data-video-text-redesign="true"] .headerCount{
   padding:7px 9px;font-size:12px
@@ -305,10 +305,10 @@
  .categoryRail{grid-auto-columns:minmax(103px,37%);gap:6px}
  :global([data-active-workspace="editor"][data-montage-panel="text"]) .ideas[data-video-text-redesign="true"] .item{gap:3px;padding:4px}
  :global([data-active-workspace="editor"][data-montage-panel="text"]) .ideas[data-video-text-redesign="true"] .pick{
-   width:40px;min-width:40px;height:42px
+   width:44px;min-width:44px;height:44px
  }
  :global([data-active-workspace="editor"][data-montage-panel="text"]) .ideas[data-video-text-redesign="true"] .play,
  :global([data-active-workspace="editor"][data-montage-panel="text"]) .ideas[data-video-text-redesign="true"] .edit{
-   min-width:41px;width:41px;min-height:44px;height:44px
+   min-width:44px;width:44px;min-height:44px;height:44px
  }
 }
