@@ -12,4 +12,6 @@ Verified: five contract tests (first run failed because implementation was absen
 
 Incomplete: repository runtime integration against actual transaction/session stack, request retry/concurrent saves, bounded storage/receipt retention, API/CSRF/rate-limit/account-change handling, export/search UX, route and journal UI with readback/autosave, existing Daybook CTA integration, migration approval/provenance, browser/mobile acceptance and all native/production gates. Do not publish this partial backend as a completed feature.
 
-Next: API and repository integration tests, account deletion/export integration, mobile journal UI and canonical route; one coherent remote publish only after local preflight and lease revalidation.
+API checkpoint: dedicated GET/POST/PATCH/DELETE route now delegates through a Request/Response-tested handler. Verified server auth, account-change header, same-origin mutations, rate rejection before storage, bounded pagination and query validation, bounded JSON bodies and private no-store responses. Unexpected errors return generic codes. Six API tests plus seven existing model/encryption tests pass. Production dependencies are wired by the Next route; actual Next runtime and repository/session integration remain unverified.
+
+Next: repository integration tests, account deletion/export integration, mobile journal UI and canonical route; one coherent remote publish only after local preflight and lease revalidation.
