@@ -23,7 +23,12 @@ export async function GET(request){
     const actor=await auth.verified()
     const provided=request.headers.get('x-hh-account-id')
     if(provided&&provided!==actor.id)throw new AppError('ACCOUNT_CHANGED',409)
-    const result=await listMyCoachProtocols(config,actor)
+    const params=new URL(request.url).searchParams
+    for(const key of params.keys())
+      if(!['before','beforeId'].includes(key))throw new AppError('MY_COACH_PROTOCOL_CURSOR_INVALID',400)
+    const result=await listMyCoachProtocols(config,actor,{
+      before:params.get('before'),beforeId:params.get('beforeId'),
+    })
     return auth.apply(NextResponse.json(result,{headers:PRIVATE_HEADERS}))
   }catch(error){
     const safe=safeError(error)
