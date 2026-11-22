@@ -6,6 +6,7 @@ import {createJournalSaver} from '@/lib/app/daybook-journal-save.mjs'
 import {localJournalDay} from '@/lib/app/daybook-journal-contract.mjs'
 import {collectJournalExport} from '@/lib/app/daybook-journal-export.mjs'
 import DaybookGoalContext from './daybook-goal-context'
+import {createJournalSessionGuard} from '@/lib/app/daybook-session-guard.mjs'
 import styles from './daybook-journal.module.css'
 
 const copy={
@@ -24,7 +25,8 @@ export default function DaybookJournal({locale}){
  const [phase,setPhase]=useState('loading'),[tab,setTab]=useState('today'),[draft,setDraft]=useState(null),[status,setStatus]=useState(''),[query,setQuery]=useState(''),[busy,setBusy]=useState(false)
  const [exportStatus,setExportStatus]=useState('')
  const epoch=useRef(0),owner=useRef(null),saver=useRef(null),saving=useRef(false)
- function wipe(){epoch.current++;owner.current=null;saver.current?.discard();saver.current=null;setAccount(null);setEntries([]);setDraft(null);setNext(null);setQuery('');setStatus('');setExportStatus('');setBusy(false);saving.current=false}
+ const sessionGuard=useRef(null)
+ function wipe(){epoch.current++;sessionGuard.current?.dispose();owner.current=null;saver.current?.discard();saver.current=null;setAccount(null);setEntries([]);setDraft(null);setNext(null);setQuery('');setStatus('');setExportStatus('');setBusy(false);saving.current=false}
  async function load(){
   wipe();setPhase('loading');const token=epoch.current
   try{
@@ -44,6 +46,18 @@ export default function DaybookJournal({locale}){
   window.addEventListener('pagehide',hide);window.addEventListener('pageshow',show)
   return ()=>{epoch.current++;saver.current?.discard();channel?.close();window.removeEventListener('pagehide',hide);window.removeEventListener('pageshow',show)}
  },[])
+ useEffect(()=>{
+  if(!account)return
+  const guard=createJournalSessionGuard(appFetch,account,{
+   lock:()=>setPhase('checking'),ready:()=>setPhase('ready'),
+   invalid:()=>{wipe();setPhase('signed-out')},unavailable:()=>setPhase('locked-error'),
+  })
+  sessionGuard.current=guard
+  const visibility=()=>{if(document.visibilityState==='hidden')guard.suspend();else void guard.verify()}
+  const focus=()=>{if(document.visibilityState==='visible')void guard.verify()}
+  document.addEventListener('visibilitychange',visibility);window.addEventListener('focus',focus)
+  return ()=>{guard.dispose();document.removeEventListener('visibilitychange',visibility);window.removeEventListener('focus',focus)}
+ },[account])
  function open(entry){
   if(draft&&status!=='saved'&&!window.confirm(c.discard))return
   saver.current?.discard();saver.current=createJournalSaver(appFetch,account)
@@ -52,7 +66,7 @@ export default function DaybookJournal({locale}){
   setStatus('')
  }
  async function save(){
-  if(saving.current||!draft)return
+  if(saving.current||!draft||phase!=='ready')return
   saving.current=true;setBusy(true);setStatus('saving');const token=epoch.current
   try{
    const {createdAt,updatedAt,...input}=draft
@@ -66,10 +80,10 @@ export default function DaybookJournal({locale}){
   }finally{if(token===epoch.current){saving.current=false;setBusy(false)}}
  }
  useEffect(()=>{
-  if(!draft?.text.trim()||status!==''||busy)return
+  if(!draft?.text.trim()||status!==''||busy||phase!=='ready')return
   const timer=setTimeout(()=>void save(),1200)
   return ()=>clearTimeout(timer)
- },[draft,status,busy])
+ },[draft,status,busy,phase])
  function change(field,value){setDraft(old=>({...old,[field]:value}));setStatus('')}
  async function remove(entry){
   if(busy||!window.confirm(c.confirm))return
@@ -104,7 +118,7 @@ export default function DaybookJournal({locale}){
  const visible=entries.filter(entry=>(tab!=='today'||entry.localDay===today)&&(!query||[entry.text,...entry.tags].join(' ').toLocaleLowerCase(locale).includes(query.toLocaleLowerCase(locale))))
  return <main className={styles.page}>
   <Link href={root+'/portrait'}>{c.home}</Link><h1>{c.title}</h1><p>{c.intro}</p>
-  {phase!=='ready'?<section aria-live="polite"><p>{phase==='loading'?c.loading:phase==='signed-out'?c.login:c.error}</p>{phase==='signed-out'?<Link href={root+'/portrait'}>{c.login}</Link>:phase==='error'?<button onClick={()=>void load()}>{c.retry}</button>:null}</section>:<>
+  {phase!=='ready'?<section aria-live="polite"><p>{['loading','checking'].includes(phase)?c.loading:phase==='signed-out'?c.login:c.error}</p>{phase==='signed-out'?<Link href={root+'/portrait'}>{c.login}</Link>:phase==='error'||phase==='locked-error'?<button onClick={()=>void(phase==='locked-error'?sessionGuard.current?.verify():load())}>{c.retry}</button>:null}</section>:<>
    <nav aria-label={c.title}>{['today','journal','goals','growth'].map(key=><button key={key} aria-current={tab===key?'page':undefined} onClick={()=>setTab(key)}>{c[key]}</button>)}</nav>
    {tab==='goals'?<section><h2>{c.goals}</h2><Link href={root+'/my-coaching-plan'}>{c.plan}</Link></section>:tab==='growth'?<section><h2>{c.growth}</h2><Link href={'/'+locale+'/development-vectors'}>{c.vectors}</Link></section>:<>
     <button onClick={()=>open(null)} disabled={busy||status==='failed'}>{c.new}</button>
