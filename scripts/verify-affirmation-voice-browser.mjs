@@ -31,6 +31,18 @@ async function enterVisibleStudioWorkspace(page,workspace,engine="chromium"){
   else await control.click();
   await expect(control).toHaveAttribute("aria-pressed","true",{timeout:15000});
 }
+async function enterPersonalAfterMontageExtra(page,engine="chromium"){
+  const studio=page.locator('[data-video-studio-hydrated]');
+  await expect(studio).toHaveAttribute("data-active-workspace","editor",{timeout:15000});
+  const extra=page.locator('[data-video-montage-tab="promo"]');
+  await expect(extra).toBeVisible({timeout:15000});
+  if(engine==="webkit")await extra.tap();else await extra.click();
+  const choice=page.locator('[data-video-extra-text-option="personal"]');
+  await expect(choice).toBeVisible({timeout:15000});
+  if(engine==="webkit")await choice.tap();else await choice.click();
+  await expect(studio).toHaveAttribute("data-active-workspace","phrases",{timeout:15000});
+  await expect(page.locator('[data-video-ideas-goal-panel]')).toBeVisible({timeout:15000});
+}
 async function openVisibleMontageText(page,engine="chromium"){
   await enterVisibleStudioWorkspace(page,"editor",engine);
   const text=page.locator('[data-video-montage-tab="text"]');
@@ -125,7 +137,7 @@ async function verifyWorkspaceHydration(browser,locale){
     }
     await page.setViewportSize({width:390,height:840});
     await mirror.locator('[data-hh-mirror-goal-choice="insta-reels"]').click();
-    await expect(studio).toHaveAttribute("data-active-workspace","phrases",{timeout:15000});
+    await enterPersonalAfterMontageExtra(page);
     await expect(page.locator('[data-video-ideas-goal-panel]')).toBeVisible();
     await page.locator('[data-video-quick-control="video"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-step","1");
@@ -140,7 +152,7 @@ async function verifyWorkspaceHydration(browser,locale){
       ?"Quiero tener más comprensión mutua":"I want more mutual understanding";
     await mirror.locator('[data-hh-mirror-wish]').fill(customWish);
     await mirror.locator('[data-hh-mirror-next]').click();
-    await expect(studio).toHaveAttribute("data-active-workspace","phrases",{timeout:15000});
+    await enterPersonalAfterMontageExtra(page);
     await expect(page.locator('[data-video-ideas-goal-panel]')).toBeVisible();
     await expect(page.locator('[data-video-ideas-tab="goal"]')).toHaveAttribute("aria-pressed","true");
     // Return to the genuine Goal tab to exercise the second path:
@@ -173,7 +185,7 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(mirror).toHaveAttribute('data-hh-mirror-step','3');
     await expect(mirror.locator('[data-hh-mirror-topic]')).toHaveCount(4);
     await mirror.locator('[data-hh-mirror-topic]').first().click();
-    await expect(studio).toHaveAttribute("data-active-workspace","phrases",{timeout:15000});
+    await enterPersonalAfterMontageExtra(page);
     const ideas=page.locator('[data-video-quick-control="phrases"]');
     await expect(ideas).toHaveAttribute("aria-pressed","true");
     await expect(page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]')).toBeVisible();
@@ -610,6 +622,7 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(recipientCreate).toBeVisible({timeout:15000});
     await expect(recipientCreate).toBeEnabled();
     await recipientCreate.click();
+    await enterPersonalAfterMontageExtra(page);
     await expect(ideas).toHaveAttribute("aria-pressed","true");
     await expect(studio).toHaveAttribute("data-active-workspace","phrases");
     // These are the actual source-backed montage title inputs; source edits
@@ -872,7 +885,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const montageStoryTab=page.locator('[data-video-montage-tab="concept"]');
       const order=await page.locator('[data-video-montage-tools] [data-video-montage-tab]')
         .evaluateAll(items=>items.map(item=>item.getAttribute("data-video-montage-tab")));
-      assert.deepEqual(order,["effects","audio","text","concept","promo"]);
+      assert.deepEqual(order,["effects","audio","promo","text","concept"]);
       await montageStoryTab.click();
       await expect(montageStoryTab).toHaveAttribute("aria-pressed","true");
       await expect(page.locator('[data-video-auto-storyboard-list]')).toBeVisible({timeout:20000});
