@@ -5,6 +5,8 @@ import type {PublicLocale} from "@/lib/public-locales";
 import {createDeviceSpeech,type SpeechController} from "@/lib/assistant-avatar/device-speech";
 import {browserSpeechLanguage,speechSegments,chooseVoiceRoute,createRecognitionGate} from "@/lib/voice-companion/browser-voice.mjs";
 import {normalizeDeviceVoiceId,normalizeSpeechRate,publicPreviewText} from "@/lib/voice-companion/voice-catalog.mjs";
+import {startCoachRecordedTurn,coachRecordedSupported} from "@/lib/personal-coaching/coach-recorded-turn.mjs";
+import {ios27NeedsSpeechRecovery} from "@/lib/personal-coaching/my-coach-dictation.mjs";
 
 type RecognitionResult={results:ArrayLike<ArrayLike<{transcript:string}>>};
 type VoiceRecognition={lang:string;continuous:boolean;interimResults:boolean;
@@ -18,7 +20,7 @@ type MicPolicyDocument=Document & {permissionsPolicy?:{allowsFeature:(feature:st
 type VoiceCopy={play:string;welcome:string;repeat:string;stop:string;dictate:string;
   recording:string;settings:string;playConsent:string;sttConsent:string;auto:string;
   rate:string;voice:string;language:string;none:string;unavailable:string;permission:string;
-  inputUnavailable:string;captured:string;error:string};
+  inputUnavailable:string;captured:string;error:string;transcribing:string;micDenied:string;sttQuota:string;sttSignIn:string;micSilent:string;recordedConsent:string};
 const COPY:Record<PublicLocale,VoiceCopy>={
   ru:{play:"Прослушать",welcome:"Слушать приветствие",repeat:"Повторить ответ",stop:"Остановить",
     dictate:"Задать голосом",recording:"Слушаю…",settings:"Голос и конфиденциальность",
@@ -27,7 +29,12 @@ const COPY:Record<PublicLocale,VoiceCopy>={
     auto:"Автоматически читать новые ответы (после моего разрешения)",rate:"Скорость",voice:"Голос",language:"Язык речи",
     none:"Системный голос",unavailable:"На этом устройстве нет доступного синтезатора речи. Текст остаётся доступным.",
     permission:"Сначала разрешите озвучивание ниже.",inputUnavailable:"Голосовой ввод здесь недоступен. Напишите вопрос.",
-    captured:"Распознано. Проверьте текст и нажмите «Отправить».",error:"Голосовая функция недоступна. Используйте текст."},
+    captured:"Распознано. Проверьте текст и нажмите «Отправить».",error:"Голосовая функция недоступна. Используйте текст.",
+  transcribing:"Распознаю речь…",micDenied:"Микрофон заблокирован. Разрешите доступ для сайта в Safari.",
+  sttQuota:"Достигнут бесплатный лимит распознавания. Повторите позднее.",
+  sttSignIn:"Войдите в аккаунт для голосового распознавания.",
+  micSilent:"Не слышу голос. Нажмите микрофон и повторите.",
+  recordedConsent:"Для голосового разговора на этом iPhone нужны вход и согласие на распознавание речи."},
   en:{play:"Listen",welcome:"Hear welcome",repeat:"Repeat reply",stop:"Stop",
     dictate:"Ask by voice",recording:"Listening…",settings:"Voice and privacy",
     playConsent:"I allow playback on this device. My browser's system voice may sometimes use the device provider's cloud.",
@@ -35,7 +42,11 @@ const COPY:Record<PublicLocale,VoiceCopy>={
     auto:"Read new replies automatically (after I opt in)",rate:"Speed",voice:"Voice",language:"Speech language",
     none:"System voice",unavailable:"Speech playback is unavailable on this device. Text remains available.",
     permission:"Enable speech playback below first.",inputUnavailable:"Speech input is unavailable here. Please type your question.",
-    captured:"Recognized. Check the text and press Send.",error:"Voice is unavailable. Please use text."},
+    captured:"Recognized. Check the text and press Send.",error:"Voice is unavailable. Please use text.",
+  transcribing:"Transcribing speech…",micDenied:"Microphone blocked. Allow access for this site in Safari.",
+  sttQuota:"Free recognition quota reached. Try later.",sttSignIn:"Sign in for voice recognition.",
+  micSilent:"I couldn't hear you. Tap the mic and try again.",
+  recordedConsent:"Voice on this iPhone requires sign-in and separate consent to speech recognition."},
   es:{play:"Escuchar",welcome:"Escuchar bienvenida",repeat:"Repetir respuesta",stop:"Detener",
     dictate:"Preguntar por voz",recording:"Escuchando…",settings:"Voz y privacidad",
     playConsent:"Autorizo la reproducción de voz en este dispositivo. La voz del navegador puede usar la nube del fabricante.",
@@ -43,13 +54,19 @@ const COPY:Record<PublicLocale,VoiceCopy>={
     auto:"Leer automáticamente respuestas nuevas (con mi permiso)",rate:"Velocidad",voice:"Voz",language:"Idioma de voz",
     none:"Voz del sistema",unavailable:"La lectura de voz no está disponible. El texto sigue accesible.",
     permission:"Primero autoriza la lectura abajo.",inputUnavailable:"La entrada de voz no está disponible. Escribe tu pregunta.",
-    captured:"Texto reconocido. Revísalo y pulsa Enviar.",error:"La voz no está disponible. Usa el texto."},
+    captured:"Texto reconocido. Revísalo y pulsa Enviar.",error:"La voz no está disponible. Usa el texto.",
+  transcribing:"Transcribiendo voz…",micDenied:"Micrófono bloqueado. Permite el acceso en Safari.",
+  sttQuota:"Límite gratuito de reconocimiento alcanzado. Inténtalo más tarde.",
+  sttSignIn:"Inicia sesión para usar voz.",micSilent:"No te oí. Toca el micrófono y prueba de nuevo.",
+  recordedConsent:"La voz en este iPhone requiere acceso y permiso separado."},
 };
 
 export function useVoiceCompanion(locale:PublicLocale,enabled=false){
  const t=COPY[locale];
  const [supported,setSupported]=useState(false);
  const [recognitionSupported,setRecognitionSupported]=useState(false);
+ const [recordedSupported,setRecordedSupported]=useState(false);
+ const [prefersRecorded,setPrefersRecorded]=useState(false);
  const [voices,setVoices]=useState<SpeechSynthesisVoice[]>([]);
  const [playbackConsent,setPlaybackConsent]=useState(false);
  const [sttConsent,setSttConsent]=useState(false);
@@ -68,6 +85,9 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
  const [notice,setNotice]=useState('');
  const generation=useRef(0);
  const recognition=useRef<VoiceRecognition|null>(null);
+ const recordedTurn=useRef<{cancel:()=>void}|null>(null);
+ const useRecordedDialogue=useRef(false);
+ const recordedPurpose=useRef<'ali_chat'|'public'>('ali_chat');
  const speaker=useRef<SpeechController|null>(null);
  const lastSpoken=useRef('');
  const mounted=useRef(true);
@@ -77,11 +97,12 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   // Reuse Emotional Avatar's single browser speech adapter. It only cancels
   // utterances that it actually owns, never unrelated coaching/site audio.
   speaker.current?.stop();
+  recordedTurn.current?.cancel();recordedTurn.current=null;
   recognition.current?.abort();recognition.current=null;
   if(mounted.current){setSpeaking(false);setRecording(false)}
  },[]);
  const stopDialogue=useCallback(()=>{
-  dialogueActive.current=false;dialogueOnTurn.current=null;
+  dialogueActive.current=false;dialogueOnTurn.current=null;useRecordedDialogue.current=false;
   if(mounted.current)setConversing(false);
   stop();
  },[stop]);
@@ -105,6 +126,8 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   setRecognitionSupported(microphoneAllowed&&Boolean(
     (window as SpeechWindow).SpeechRecognition||
     (window as SpeechWindow).webkitSpeechRecognition));
+  setRecordedSupported(microphoneAllowed&&coachRecordedSupported(window));
+  setPrefersRecorded(ios27NeedsSpeechRecovery(window.navigator));
   const unwatch=controller.watchVoices(list=>
     setVoices(list.filter(v=>v.lang.toLowerCase().startsWith(speechLocale))));
   const hide=()=>{if(document.hidden)stopDialogue();};
@@ -215,22 +238,70 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
    instance.start();setRecording(true);
   }catch{stopDialogue();recognition.current=null;setRecording(false);setNotice(t.inputUnavailable);}
  },[enabled,speechLocale,sttConsent,stop,stopDialogue,t]);
- const startDialogue=useCallback((onTurn:(text:string)=>void)=>{
-  if(!enabled)return;
-  if(!supported||!recognitionSupported||!playbackConsent||!sttConsent){
-   setNotice(t.inputUnavailable);return;
+ // iOS Safari 27 can report a live WebSpeech session without delivering text.
+ // Reuse My Coach's ephemeral capture, with its own signed-in, free-tier quota.
+ const dictateRecorded=useCallback((onTranscript:(text:string)=>void)=>{
+  if(!enabled||!recordedSupported){stopDialogue();setNotice(t.inputUnavailable);return;}
+  stop();setNotice('');
+  const epoch=generation.current;
+  const capture=startCoachRecordedTurn({
+   locale:speechLocale,environment:window,purpose:recordedPurpose.current,
+   onState:state=>{
+    if(epoch!==generation.current)return;
+    if(state==='listening'||state==='hearing'){
+     setRecording(true);setNotice(state==='hearing'?t.recording:'');
+    }else if(state==='transcribing'){
+     setRecording(false);setNotice(t.transcribing);
+    }else if(state==='recovering')setNotice(t.recording);
+   },
+   onResult:text=>{
+    if(epoch!==generation.current)return;
+    recordedTurn.current=null;setRecording(false);setNotice('');
+    if(dialogueActive.current)onTranscript(text);
+   },
+   onFailure:code=>{
+    if(epoch!==generation.current)return;
+    recordedTurn.current=null;stopDialogue();
+    setNotice(code==='MIC_PERMISSION'?t.micDenied:
+      code==='STT_RATE_LIMIT'?t.sttQuota:code==='STT_SIGN_IN'?t.sttSignIn:
+      code==='MIC_NO_SIGNAL'?t.micSilent:t.error);
+   },
+  });
+  if(capture){recordedTurn.current=capture;setRecording(true);}
+  else{stopDialogue();setNotice(t.inputUnavailable);}
+ },[enabled,recordedSupported,stop,stopDialogue,speechLocale,t]);
+ const startDialogue=useCallback((onTurn:(text:string)=>void,options:{allowRecorded?:boolean;recordedPurpose?:'ali_chat'|'public'}={})=>{
+  if(!enabled)return false;
+  if(!supported||!playbackConsent||!sttConsent){setNotice(t.permission);return false;}
+  const recordedNeeded=prefersRecorded||!recognitionSupported;
+  if(recordedNeeded&&(!recordedSupported||options.allowRecorded!==true)){
+   setNotice(t.recordedConsent);return false;
   }
+  if(!recordedNeeded&&!recognitionSupported){setNotice(t.inputUnavailable);return false;}
+  useRecordedDialogue.current=recordedNeeded;
+  recordedPurpose.current=options.recordedPurpose==='public'?'public':'ali_chat';
   dialogueActive.current=true;dialogueOnTurn.current=onTurn;setConversing(true);
-  dictate(text=>{if(dialogueActive.current)dialogueOnTurn.current?.(text);});
- },[enabled,dictate,playbackConsent,recognitionSupported,sttConsent,supported,t]);
+  const receive=(text:string)=>{if(dialogueActive.current)dialogueOnTurn.current?.(text);};
+  if(recordedNeeded)dictateRecorded(receive);
+  else dictate(receive);
+  return true;
+ },[enabled,dictate,dictateRecorded,playbackConsent,recognitionSupported,
+   recordedSupported,prefersRecorded,sttConsent,supported,t]);
  resumeDialogue.current=()=>{
   if(dialogueActive.current&&dialogueOnTurn.current){
-   dictate(text=>{if(dialogueActive.current)dialogueOnTurn.current?.(text);});
+   const receive=(text:string)=>{if(dialogueActive.current)dialogueOnTurn.current?.(text);};
+   if(useRecordedDialogue.current)dictateRecorded(receive);
+   else dictate(receive);
   }
  };
- return {t,supported,recognitionSupported,voices,playbackConsent,sttConsent,autoRead,
+ const interruptReply=()=>{
+  if(!dialogueActive.current||!speaking)return;
+  stop();
+  resumeDialogue.current?.();
+ };
+ return {t,supported,recognitionSupported,recordedSupported,prefersRecorded,voices,playbackConsent,sttConsent,autoRead,
   setAutoRead,voiceId,setVoiceId,rate,setRate,speechLocale,setSpeechLocale,speaking,recording,notice,lastSpoken,
-  setPlayback,setRecognitionConsent,speak,dictate,stop,conversing,startDialogue,stopDialogue};
+  setPlayback,setRecognitionConsent,speak,dictate,stop,conversing,startDialogue,stopDialogue,interruptReply};
 }
 export type VoiceCompanion=ReturnType<typeof useVoiceCompanion>;
 

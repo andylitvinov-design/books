@@ -250,8 +250,13 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
   const ideasRoute="/"+locale+(mode==="business"?"/explore/business":"/services/free-situation-review");
   const supportRoute="/"+locale+"/services"+(mode==="business"?"#service-group-business":"");
 
+  // A CSS background cannot be discovered by the HTML preload scanner.
+  // React hoists resource hints into the initial document <head> without
+  // changing the existing portrait, hero, copy or mobile layout.
   return <section className={styles.root} data-home-dialogue-entry data-home-mode={mode}
     data-home-interactive={interactive?"true":"false"} lang={locale}>
+    <link rel="preload" as="image" href={picture} fetchPriority="high" />
+    <link rel="preload" as="image" href="/images/holistic-house/ideas-pine-reference.webp" fetchPriority="high" />
     <header className={styles.header} data-home-dialogue-header>
       <div className={styles.brand}>
         <span className={styles.brandIcon} aria-hidden="true"><Leaf size={25}/></span>

@@ -62,6 +62,24 @@ test("every one of 256 original scenario IDs has a complete RU/EN/ES 30-second s
  }
 });
 
+test("each localized shot retains the same plot beat for action, title and emotional arc",()=>{
+ for(const locale of locales)for(const id of scenarioIds){
+  const film=getCompleteFilmScreenplay(id,locale);
+  assert.deepEqual(film.storyboard.map(shot=>shot.sourceBeatIndex),[0,0,1,2,3,3]);
+  assert.deepEqual(film.storyboard.map(shot=>shot.sourceBeat),film.conceptScenes.map(scene=>scene.sourceBeat));
+  assert.deepEqual(buildConceptShotSketch(film).map(shot=>shot.stageIndex),
+   film.storyboard.map(shot=>shot.sourceBeatIndex));
+
+  for(const {scene,originalBeat} of film.specificBeatActions){
+   const shot=film.storyboard[scene-1];
+   assert.equal(shot.sourceBeat,originalBeat,locale+":"+id+":scene:"+scene);
+   assert.equal(shot.title,originalBeat);
+   assert.equal(shot.emotionalFunction,film.emotionalBeats[shot.sourceBeatIndex]);
+   assert.equal(film.conceptScenes[scene-1].sourceBeat,originalBeat);
+  }
+ }
+});
+
 test("the screenshot's four motivation films are individually directed, not relabeled stock shots",()=>{
  assert.deepEqual(film256EditorialOverrideIds,[
   "motivation-drive-s1","motivation-drive-s2","motivation-drive-s3","motivation-drive-s4",

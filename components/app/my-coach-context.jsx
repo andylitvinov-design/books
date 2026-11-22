@@ -17,7 +17,7 @@ const grantCopy = {
   es: ['Permisos guardados', 'Elemento ausente del plan', 'Revoca un permiso para ver más.'],
 }
 
-export default function MyCoachContext({ accountId, locale, domains, contextSessionToken }) {
+export default function MyCoachContext({ accountId, locale, domains, contextSessionToken, onGrantChange }) {
   const [providerLabel, itemLabel, reviewLabel, allowLabel, revokeLabel, saved, error,
     disclosure, loading, empty] = copy[locale] || copy.en
   const [providers, setProviders] = useState(null)
@@ -70,6 +70,7 @@ export default function MyCoachContext({ accountId, locale, domains, contextSess
       }, 'POST', { accountId })
       setPreview(operation === 'review' ? result : null)
       if (operation !== 'review') {
+        onGrantChange?.()
         setStatus(saved)
         setRefresh(value => value + 1)
       }

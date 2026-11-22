@@ -7,9 +7,9 @@ import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./holistic-support-mobile.module.css";
 
 const copy = {
-  en: { home: "Home", practice: "Practice", messages: "Messages", progress: "Progress", settings: "Settings", language: "Language", close: "Close", modeLabel:"Video creation", personal:"Personal · on device", openmotion:"OpenMotion · templates", express:"Express · no verified MP4 yet", ffmpeg:"FFmpeg Fast Assembly prepares offline masters only.", busy:"Finish or cancel the current export before switching." },
-  ru: { home: "Главная", practice: "Практика", messages: "Сообщения", progress: "Прогресс", settings: "Настройки", language: "Язык", close: "Закрыть", modeLabel:"Создание видео", personal:"Personal · на устройстве", openmotion:"OpenMotion · шаблоны", express:"Express · MP4 ещё нет", ffmpeg:"FFmpeg Fast Assembly готовит мастер-файлы офлайн.", busy:"Сначала завершите или отмените экспорт." },
-  es: { home: "Inicio", practice: "Práctica", messages: "Mensajes", progress: "Progreso", settings: "Ajustes", language: "Idioma", close: "Cerrar", modeLabel:"Crear vídeo", personal:"Personal · en el dispositivo", openmotion:"OpenMotion · plantillas", express:"Express · MP4 no disponible", ffmpeg:"FFmpeg Fast Assembly prepara maestros sin conexión.", busy:"Termina o cancela la exportación antes de cambiar." },
+  en: { home: "Home", practice: "Practice", messages: "Messages", progress: "Progress", settings: "Settings", language: "Language", close: "Close", modeLabel:"Video creation", personal:"Personal · on device", openmotion:"Template (OpenMotion)", express:"Express · standard MP4", ffmpeg:"FFmpeg Fast Assembly prepares offline masters only.", busy:"Finish or cancel the current export before switching." },
+  ru: { home: "Главная", practice: "Практика", messages: "Сообщения", progress: "Прогресс", settings: "Настройки", language: "Язык", close: "Закрыть", modeLabel:"Создание видео", personal:"Personal · на устройстве", openmotion:"Template (OpenMotion)", express:"Express · стандартные MP4", ffmpeg:"FFmpeg Fast Assembly готовит мастер-файлы офлайн.", busy:"Сначала завершите или отмените экспорт." },
+  es: { home: "Inicio", practice: "Práctica", messages: "Mensajes", progress: "Progreso", settings: "Ajustes", language: "Idioma", close: "Cerrar", modeLabel:"Crear vídeo", personal:"Personal · en el dispositivo", openmotion:"Template (OpenMotion)", express:"Express · MP4 estándar", ffmpeg:"FFmpeg Fast Assembly prepara maestros sin conexión.", busy:"Termina o cancela la exportación antes de cambiar." },
 } as const;
 
 /** The free video editor is a part of the approved Support experience, not
@@ -30,8 +30,13 @@ export function HolisticSupportMandalaDock({ locale, photoMode = false }: { loca
         setExportMode(current);setModeBusy(false);
       }
     };
+    const toggleSettings=()=>setSettingsOpen(open=>!open);
+    window.addEventListener("hh:video-settings-toggle",toggleSettings);
     window.addEventListener("hh:video-export-mode-active",active);
-    return()=>window.removeEventListener("hh:video-export-mode-active",active);
+    return()=>{
+      window.removeEventListener("hh:video-export-mode-active",active);
+      window.removeEventListener("hh:video-settings-toggle",toggleSettings);
+    };
   },[photoMode]);
   const chooseExportMode=(mode:"personal"|"openmotion"|"express")=>{
     const detail:{mode:typeof mode;accepted:boolean}={mode,accepted:false};

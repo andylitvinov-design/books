@@ -649,3 +649,66 @@ test('OpenMotion picker is checked by Mandala alone; public booking stays protec
     }
   }
 });
+
+test('Home first-click PR source tests use one runner; full browsers remain after merge',()=>{
+  const s=workflow('home-locale-switch.yml');
+  const core=s.slice(s.indexOf('  core-methods:'),s.indexOf('  first-click:'));
+  for(const contract of ['tests/home-locale-menu-state.test.mjs',
+    'tests/navigation-cabinet.test.mjs','tests/page-video-release.test.mjs']){
+    assert.ok(core.includes(contract),'homepage source regressions must run in the single PR job: '+contract);
+  }
+  assert.ok(core.includes('components/site-navigation.tsx'),
+    'first-click navigation lint must remain in normal PR CI');
+  assert.match(s,/^  first-click:\n(?:    #.*\n)*    if: \$\{\{ github\.event_name != 'pull_request' \}\}/m,
+    'second runner cannot be scheduled for normal PRs');
+  assert.ok(trustedConditionalJobs(s).includes('first-click'),
+    'BASE-trusted specialist validator must recognize the post-merge-only job');
+  assert.equal(matchesTrigger(parsePrTrigger(s,'home-locale-switch.yml'),
+    ['components/holistic-house-home.tsx'],'codex/public-book-library'),true,
+    'real homepage product changes must still enter this specialist');
+  assert.match(s,/^  push:/m);
+  assert.match(s,/^  workflow_dispatch:/m);
+  assert.match(s,/Delayed navigation cannot discard the first play click/);
+  assert.match(s,/node scripts\/verify-home-locale-switch\.mjs --live/);
+  assert.doesNotMatch(s,/continue-on-error:\s*true/);
+});
+
+test('client Live Photo APIs do not fan out into unrelated coaching, course, Practice, interpretation or session-audio specialists', () => {
+  const target = 'codex/public-book-library';
+  const photoApi = [
+    'app/api/app/live-photos/route.js',
+    'app/api/app/live-photos/orders/route.js',
+    'app/api/app/live-photos/[id]/route.js',
+  ];
+  const unrelated = [
+    'hh-profile-axis-matching.yml',
+    'hh-private-audio-e2e.yml',
+    'practice-google-browser.yml',
+    'hh-personal-coaching-session.yml',
+    'hh-course-presets.yml',
+    'practice-visual-services.yml',
+    'hh-interpretation-database.yml',
+  ];
+  for (const name of unrelated) {
+    const src = workflow(name);
+    const trigger = parsePrTrigger(src, '.github/workflows/' + name);
+    assert.ok(src.includes("      - '!app/api/app/live-photos/**'"), name + ' must explicitly exclude standalone Live Photo API routes');
+    for (const file of photoApi) assert.equal(matchesTrigger(trigger, [file], target), false,
+      name + ' must not schedule unrelated specialist CI for ' + file);
+    // Global dispatcher edits remain cross-domain: these jobs are still required.
+    assert.equal(matchesTrigger(trigger, ['app/api/app/[...path]/route.js'], target), true,
+      name + ' must still validate the shared private dispatcher');
+  }
+  // Never waive the actual private-data, authorization and schema owners.
+  for (const name of ['hh-app-r1.yml', 'hh-app-browser.yml', 'ia-v2.yml']) {
+    const trigger = parsePrTrigger(workflow(name), '.github/workflows/' + name);
+    for (const file of photoApi) assert.equal(matchesTrigger(trigger, [file], target), true,
+      name + ' must retain the Live Photo private API gate');
+    assert.equal(matchesTrigger(trigger,
+      ['supabase/migrations/20261121221900_hh_client_live_photo_first_free_paid_v1.sql'], target), true,
+      name + ' must retain Live Photo schema/RLS impact');
+  }
+  // Billing still owns the changed pricing/schema footprint; no payment gates removed.
+  assert.equal(matchesTrigger(parsePrTrigger(workflow('hh-billing-isolated.yml')),
+    ['supabase/migrations/20261121221900_hh_client_live_photo_first_free_paid_v1.sql'], target), true);
+});

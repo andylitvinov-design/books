@@ -631,7 +631,7 @@ jobs:
           echo "route=$route" >> "$GITHUB_OUTPUT"
           echo "Independent trusted specialist route: $route" >> "$GITHUB_STEP_SUMMARY"
       - name: Validate exact-head risk and required specialist workflows
-        if: github.event_name == 'pull_request' && (steps.specialist_route.outputs.route == 'FULL' || steps.specialist_route.outputs.route == 'DOCK')
+        if: github.event_name == 'pull_request' && (steps.specialist_route.outputs.route == 'FULL' || steps.specialist_route.outputs.route == 'DOCK' || steps.specialist_route.outputs.route == 'CORE')
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}

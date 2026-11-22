@@ -145,3 +145,30 @@ test('moves a scene source to the next slot without changing transition timing',
   assert.deepEqual(shots.map(shot=>shot.transitionIn),['cut','crossfade','crossfade','crossfade']);
   assert.throws(()=>moveMotionGuideScene(base,'shot-1',-1,'en'),/motion_guide_move_outside_track/);
 });
+
+test('catalog Motion.md imports existing original scenario and classical score IDs', async () => {
+  const {createPresetMotionGuideV3,importCatalogMotionGuideV3}=await import('../lib/mandala/openmotion-preset-guide.mjs');
+  const guide=JSON.parse(createPresetMotionGuideV3('focused-action','en').split('\n').slice(1,-1).join('\n'));
+  guide.audioTracks[0].assetId='score-warm-prosperity-1';
+  guide.audioTracks.push({...guide.audioTracks[0],id:'second-bed',assetId:'classic-fur-elise'});
+  const {project,approvedAssets}=importCatalogMotionGuideV3(toGuide(guide),'approved-scores','en');
+  assert.equal(project.audioTracks.length,2);
+  for(const id of ['score-warm-prosperity-1','classic-fur-elise']){
+    assert.ok(approvedAssets.some(asset=>asset.path==='/audio/mandala/scenarios/'+id+'.mp3'&&
+      asset.durationMs===32000&&asset.rightsKind==='project_generated_original'));
+  }
+  guide.audioTracks[0].assetId='score-unknown-1';
+  assert.throws(()=>importCatalogMotionGuideV3(toGuide(guide),'approved-scores','en'),/motion_guide_unapproved_audio/);
+});
+
+test('finds localized scores and swaps a soundtrack without changing the mix timing', async () => {
+  const {createPresetMotionGuideV3,replaceMotionGuideAudio,searchMotionGuideAudio}=await import('../lib/mandala/openmotion-preset-guide.mjs');
+  assert.ok(searchMotionGuideAudio('Бетховен','ru').some(track=>track.id==='classic-fur-elise'));
+  assert.ok(searchMotionGuideAudio('warm prosperity','en').some(track=>track.id==='score-warm-prosperity-1'));
+  const base=createPresetMotionGuideV3('focused-action','en');
+  const edited=replaceMotionGuideAudio(base,'ambience','classic-fur-elise','en');
+  const [original,next]=[base,edited].map(guide=>JSON.parse(guide.split('\n').slice(1,-1).join('\n')).audioTracks[0]);
+  assert.deepEqual(next,{...original,assetId:'classic-fur-elise'});
+  assert.throws(()=>replaceMotionGuideAudio(base,'ambience','https://example.com/audio.mp3','en'),
+    /motion_guide_unapproved_audio/);
+});
