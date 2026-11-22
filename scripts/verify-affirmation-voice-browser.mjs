@@ -272,6 +272,19 @@ async function verifyWorkspaceHydration(browser,locale){
         "both Text actions remain readable: "+width+" "+JSON.stringify(layout));
       assert.ok(layout.doc<=layout.viewport+2,
         "Text actions do not overflow horizontally: "+width+" "+JSON.stringify(layout));
+      // Real WebKit geometry at the narrowest iPhone widths. No CSS-only
+      // approval: every selected phrase/language control must be tappable.
+      const targets=await page.locator('[data-video-montage-text]').evaluate(panel=>
+        ["[data-video-text-language=\"en\"]",
+         "[data-video-idea-select=\"0\"]",
+         "[data-video-idea-play=\"0\"]",
+         "[data-video-idea-edit-button=\"0\"]"].map(selector=>{
+           const box=panel.querySelector(selector)?.getBoundingClientRect();
+           return {width:box?.width??0,height:box?.height??0};
+         }));
+      assert.ok(targets.every(box=>box.width>=43.5&&box.height>=43.5),
+        "Text controls must be at least 44x44: "+width+" "+JSON.stringify(targets));
+      phase(browser.browserType().name(),"text-hit-targets-"+width);
     }
     await page.setViewportSize({width:390,height:840});
     await reviewStory.tap();
@@ -1335,6 +1348,40 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(firstIdea).toHaveAttribute("aria-pressed","true");
       await expect(montageCountLabel).toHaveText(new RegExp("^\\s*"+initialMontageCount+"\\s*/\\s*\\d+\\b"));
       await expect(montageIdeas.locator("[data-video-ideas-minimum]")).toHaveCount(0);
+      // Personalized +50 XP has no verified server-side price. A real Create
+      // tap must remain on the protected text editor, never open Ready, debit
+      // the Basic price or launch the media encoder.
+      const unpricedCreate=page.locator('[data-video-quick-generate]');
+      await expect(unpricedCreate).toBeEnabled();
+      if(engine==="webkit")await unpricedCreate.tap();else await unpricedCreate.click();
+      await expect(studio).toHaveAttribute("data-active-workspace","editor");
+      await expect(page.locator('[data-video-montage-text]')).toBeVisible();
+      await expect(montageIdeas).toContainText("+50 XP");
+      await expect(page.locator('[data-video-ready]')).toBeHidden();
+      phase(engine,"personalized-unpriced-export-fail-closed");
+      // Switch through the REAL visible selector to Standard BEFORE asking
+      // the Voice provider to speak a line. The original personalized draft
+      // cannot slip into a 0-XP Standard export: a new mode signature restores
+      // the generic selected phrases before narration is generated.
+      const backToTypes=page.locator('[data-video-text-editor-back]');
+      await expect(backToTypes).toBeVisible();
+      if(engine==="webkit")await backToTypes.tap();else await backToTypes.click();
+      const textChoice=page.locator('[data-video-text-choice]');
+      await expect(textChoice).toBeVisible();
+      const standardCard=textChoice.locator('[data-video-text-mode="standard"]');
+      if(engine==="webkit")await standardCard.tap();else await standardCard.click();
+      await expect(standardCard).toHaveAttribute("aria-pressed","true");
+      const proceedStandard=textChoice.locator('[data-video-text-choice-continue]');
+      if(engine==="webkit")await proceedStandard.tap();else await proceedStandard.click();
+      await expect(montageIdeas).toBeVisible();
+      await expect(montageIdeas.locator('[data-video-ideas-phrases]')).toBeVisible();
+      await expect(montageIdeas.locator('[data-video-ideas-selected-count]')).toContainText("5/");
+      await expect(montageIdeas.locator('[data-video-idea-phrase="0"]')).toContainText(
+        {en:"You are not alone",ru:"Ты не один",es:"No estás a solas"}[locale]);
+      // The personalized closing is no longer among the 0-XP editor options:
+      // switching mode cannot leak a paid draft into the Standard export.
+      await expect(montageIdeas).not.toContainText(personalClosing);
+      phase(engine,"standard-mode-after-personalized-draft");
       const recordEntry=page.locator('[data-video-montage-text] [data-video-ideas-record]');
       await expect(recordEntry).toBeVisible();
       await recordEntry.click();
@@ -2345,7 +2392,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // Do not use the retired hidden Ideas/Hypno phrase picker. WebKit needs
       // the visitor's real touch gesture after recording and switching modes:
       // a synthetic click can leave Ideas selected with Text hidden.
-      await openVisibleMontageText(page,engine,"personalized");
+      // Standard was selected BEFORE speaking and was used for the actual
+      // encoded MP4; keep the same phrase set while testing stale narration.
+      await openVisibleMontageText(page,engine,"standard");
       await expect(page.locator('[data-video-quick-control="editor"]'))
         .toHaveAttribute("aria-pressed","true",{timeout:15000});
       await expect(page.locator('[data-video-montage-tab="text"]'))
