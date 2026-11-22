@@ -64,3 +64,23 @@
 .header{min-height:39px}.language{height:39px}.back{min-height:39px}.card{grid-template-columns:40px minmax(0,1fr);padding-top:5px;padding-bottom:5px}.cardIcon{width:40px;height:40px;border-radius:12px}.card h2{font-size:15.5px}.quoteCopy p{font-size:14px}
 }
 @media(prefers-reduced-motion:reduce){.dialog{scroll-behavior:auto}}
+
+/* Pre-Play view shares the dialog profile's card and quote styles without
+   duplicating its portrait, already visible in the session hero above. */
+.inlineProfile{
+  box-sizing:border-box;display:grid;grid-template-rows:none;
+  gap:9px;width:min(100%,900px);margin:0 auto;
+  padding:4px 2px 16px;color:#163f34;
+}
+.inlineHeading{
+  display:flex;align-items:center;gap:8px;margin:4px 3px 2px;
+  color:#075340;font:800 clamp(17px,4.6vw,21px)/1.25 system-ui;
+  letter-spacing:-.02em;
+}
+.inlineHeading svg{flex:none;color:#098469}
+.inlineProfile .card{width:100%;min-height:66px}
+.inlineProfile .quote{width:100%;min-height:126px}
+@media(max-width:355px){
+  .inlineProfile{gap:7px}
+  .inlineHeading{font-size:17px}
+}
