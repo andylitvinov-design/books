@@ -55,37 +55,41 @@ test("actual browser route checks speaker consent, fragment invitation, and no p
  assert.ok(browser.includes('toHaveAttribute("data-guest-voice-hydrated","true"'),"real WebKit must wait for React hydration");
 });
 
-test("macOS WebKit hydration follows visible Goals → Ideas → Montage without legacy clicks",()=>{
+test("macOS WebKit hydration follows visible Goal → Montage Extra → Personal without legacy clicks",()=>{
  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
  const studio=read("components/mandala-free-video-studio.tsx");
  const style=read("components/mandala-video-mobile.module.css");
  const first=browser.indexOf("async function verifyWorkspaceHydration");
  const last=browser.indexOf("// Real guest route browser acceptance",first);
  const flow=browser.slice(first,last);
- const click=flow.indexOf("await mirror.locator('[data-hh-mirror-next]').click()");
- const ideas=flow.indexOf('toHaveAttribute("data-active-workspace","phrases",{timeout:15000})',click);
- const goalPanel=flow.indexOf('data-video-ideas-goal-panel',ideas);
- const chooseCandidates=[
-   flow.indexOf('await choice.tap()',goalPanel),
-   flow.indexOf("await ideasGoalPane.locator('[data-video-ideas-goal-choice=\"rest\"]').click()",goalPanel)
- ].filter(index=>index>=0);
- const choose=chooseCandidates.length?Math.min(...chooseCandidates):-1;
- const nextCandidates=[
-   flow.indexOf('await nextGoal.tap()',choose),
-   flow.indexOf("await ideasGoalPane.locator('[data-video-ideas-goal-next]').click()",choose)
- ].filter(index=>index>=0);
- const next=nextCandidates.length?Math.min(...nextCandidates):-1;
- const personalized=flow.indexOf('data-video-ideas-personalization-panel',next);
- const montage=flow.indexOf("await montage.tap()",personalized);
- assert.ok(first>=0&&last>first&&click>=0&&ideas>click&&goalPanel>ideas&&choose>goalPanel&&next>choose&&personalized>next&&montage>personalized,
-   "one real visitor tap selects a Goal, advances to Personalization, then reaches Montage");
+ // Test the exact supported user path, not the retired Goal → Ideas shortcut.
+ const mirrorNext=flow.indexOf("await mirror.locator('[data-hh-mirror-next]').click()");
+ const extraToPersonal=flow.indexOf("await enterPersonalAfterMontageExtra(page)",mirrorNext);
+ const personalGoal=flow.indexOf("data-video-ideas-goal-panel",extraToPersonal);
+ const selectGoal=flow.indexOf("await ideasGoalPane.locator('[data-video-ideas-goal-choice=\"rest\"]').click()",personalGoal);
+ const nextGoal=flow.indexOf("await ideasGoalPane.locator('[data-video-ideas-goal-next]').click()",selectGoal);
+ const personalization=flow.indexOf("data-video-ideas-personalization-panel",nextGoal);
+ const backToMontageText=flow.indexOf("await openVisibleMontageText(page",personalization);
+ assert.ok(first>=0&&last>first&&mirrorNext>=0&&extraToPersonal>mirrorNext&&personalGoal>extraToPersonal&&
+   selectGoal>personalGoal&&nextGoal>selectGoal&&personalization>nextGoal&&backToMontageText>personalization,
+   "real visitor goes from Goal to Montage Extra, chooses Personal, then returns to Montage Text after answering");
+ const helperStart=browser.indexOf("async function enterPersonalAfterMontageExtra");
+ const helperEnd=browser.indexOf("async function openVisibleMontageText",helperStart);
+ const helper=browser.slice(helperStart,helperEnd);
+ const editor=helper.indexOf('toHaveAttribute("data-active-workspace","editor"');
+ const extra=helper.indexOf('data-video-montage-tab=\"promo\"',editor);
+ const choice=helper.indexOf('data-video-extra-text-option=\"personal\"',extra);
+ const personal=helper.indexOf('toHaveAttribute("data-active-workspace","phrases"',choice);
+ assert.ok(helperStart>=0&&helperEnd>helperStart&&editor>=0&&extra>editor&&choice>extra&&personal>choice,
+   "the helper must exercise visible Extra and Personal buttons and await React workspace state");
+ assert.doesNotMatch(helper,/click\(\{force:true\}\)|\.evaluate\(/);
  assert.match(flow,/data-video-continue-scenarios/);
  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
  assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
  assert.match(studio,/data-video-scenario-open=\{videoScenarioOpen\?"true":"false"\}/);
- assert.match(studio,/onClick=\{continueToIdeas\}/);
+ assert.match(studio,/onClick=\{continueToMontage\}/);
  assert.match(style,/\[data-video-scenario-open="false"\]/);
- // The live Style controls are direct buttons, not the removed legacy wrapper.
+ // The live Style controls remain real buttons, not a removed legacy wrapper.
  assert.ok(flow.includes('const styleTab=page.locator(\'[data-video-montage-tab="effects"]\')'));
  assert.ok(flow.includes('await styleTab.tap()'));
  assert.ok(flow.includes('const styles=page.locator("[data-video-montage-style]")'));
