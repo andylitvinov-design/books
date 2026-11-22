@@ -3,6 +3,7 @@ on:
   pull_request:
     branches: ['codex/bootstrap-books']
     paths:
+      - 'ops/agents-director-standalone/**'
       - 'ops/pr-monitor-isolated/**'
       - 'ops/pr-monitor-standalone/**'
       - 'ops/pr-monitor/ci-verified-model.cjs'
@@ -285,6 +286,14 @@ jobs:
           cache: npm
       - name: Install trusted test dependencies without lifecycle scripts
         run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Agent Director Tasks · PR→LIVE owner gateway and mobile UI
+        run: |
+          node --check ops/agents-director-standalone/pr-completion-mobile-model.js
+          node --check ops/agents-director-standalone/pr-completion-mobile.js
+          node --check ops/agents-director-standalone/api/commander-pr-completion.js
+          node --check ops/agents-director-standalone/commander-auth.js
+          node --check ops/agents-director-standalone/owner-google-signin.js
+          node --test ops/agents-director-standalone/tests/director.test.cjs ops/agents-director-standalone/tests/pr-completion.test.cjs
       - name: Verify cloud OpenRouter worker leases, zero-cost, and typed SQL contracts
         if: ${{ steps.control_scope.outputs.route != 'CONTROL_ONLY' }}
         run: node --test tests/commander-openrouter-worker.test.mjs

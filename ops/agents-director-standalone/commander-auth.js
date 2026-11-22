@@ -1,6 +1,17 @@
 (() => {
   const MAIN='https://holistichouse.vercel.app'
   const MONITOR='https://holistic-house-agents-director.vercel.app'
+  // The public Holistic House Google entry may only know the original
+  // /agents.html redirect. Keep a same-origin, strictly allowlisted return
+  // path through its existing signed Supabase callback.
+  const REMEMBER='hh.commander.monitor.return.v1';
+  function requestedNext(value){
+    let saved='';
+    try{saved=sessionStorage.getItem(REMEMBER)||'';}catch{}
+    return saved==='/project-management-public.html'?saved:safeNext(value);
+  }
+  function clearRemember(){try{sessionStorage.removeItem(REMEMBER);}catch{}}
+
   const status=document.getElementById('commander-auth-status')
   let sessionToken='',sessionRefreshToken=''
 
@@ -9,7 +20,7 @@
     try{
       const u=new URL(value,MONITOR)
       if(u.origin!==MONITOR||u.hash||u.pathname.includes('//'))return '/agents.html'
-      const allowed=new Set(['/agents.html','/pr-monitor.html','/task-editor.html','/chats.html','/projects.html','/memory.html','/ci-errors.html'])
+      const allowed=new Set(['/agents.html','/pr-monitor.html','/task-editor.html','/chats.html','/projects.html','/memory.html','/ci-errors.html','/project-management-public.html'])
       if(!allowed.has(u.pathname))return '/agents.html'
       if(u.pathname==='/chats.html'){
         const entries=[...u.searchParams.entries()]
@@ -46,7 +57,7 @@
   function googleAction(message){
     status.textContent=message+' '
     const link=document.createElement('a')
-    link.href=MAIN+'/commander-connect.html?next='+encodeURIComponent(safeNext(new URLSearchParams(location.search).get('next')||'/agents.html'))
+    link.href=MAIN+'/commander-connect.html?next='+encodeURIComponent(requestedNext(new URLSearchParams(location.search).get('next')||'/agents.html'))
     link.textContent='Продолжить через Google';link.className='cc-primary'
     status.append(link)
   }
@@ -65,12 +76,13 @@
     }
     // Keep the token only in this page's memory until the cookie handoff succeeds.
     sessionToken=''
+    clearRemember()
     location.replace(next)
   }
 
   async function start(){
     const params=new URLSearchParams(location.search)
-    const next=safeNext(params.get('next')||'/agents.html')
+    const next=requestedNext(params.get('next')||'/agents.html')
     try{
       const fragment=location.hash.startsWith('#')?location.hash.slice(1):''
       const values=new URLSearchParams(fragment)
@@ -99,7 +111,7 @@
         credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}
       },'Проверка защищённой сессии')
       const data=await response.json().catch(()=>({}))
-      if(response.ok&&data.authenticated===true){location.replace(next);return}
+      if(response.ok&&data.authenticated===true){clearRemember();location.replace(next);return}
       googleAction('Срок сессии истёк. Войдите ещё раз через Google на Holistic House.')
     }catch(error){googleAction(String(error.message||error)+' Войдите повторно через Google.')}
   }
