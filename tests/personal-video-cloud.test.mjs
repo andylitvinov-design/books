@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import {test} from 'node:test'
-import {readFileSync} from 'node:fs'
+import {readFileSync,readdirSync} from 'node:fs'
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
 const server=read('lib/app/personal-videos.js')
 const list=read('app/api/app/personal-videos/route.js')
@@ -11,6 +11,13 @@ const gallery=read('components/app/my-personal-videos.jsx')
 const uploader=read('lib/mandala/signed-private-video-upload.mjs')
 const shell=read('components/app/app-workspace.jsx')
 const route=read('app/[locale]/app/[[...path]]/page.jsx')
+test('the private upload checkpoint uses the single migration recorded by Supabase',()=>{
+  const migrations=readdirSync(new URL('../supabase/migrations/',import.meta.url))
+  assert.deepEqual(
+    migrations.filter(name=>name.endsWith('_hh_personal_video_resumable_checkpoint.sql')).sort(),
+    ['20261122193053_hh_personal_video_resumable_checkpoint.sql'],
+  )
+})
 test('personal videos have separate private account-scoped RLS and zero anonymous grants',()=>{
   assert.match(schema,/app_private\.personal_videos/)
   assert.match(schema,/enable row level security/)
