@@ -75,7 +75,7 @@ test('real Vercel v6 uid records establish 10-READY rollback quorum without gran
  assert.equal(result.readyCount,35);
  assert.equal(accumulated.recentDeployments.length,35);
  const protectedIds=protectedDeploymentIds(accumulated.recentDeployments);
- assert.equal(protectedIds.size,30);
+ assert.equal(protectedIds.size,RETAIN_READY);
  assert.equal(protectedIds.has(raw[9].uid),true);
  assert.equal(protectedIds.has(raw[10].uid),false);
  assert.throws(()=>protectedDeploymentIds(raw.slice(0,9)),/INSUFFICIENT_ROLLBACK_EVIDENCE/);
