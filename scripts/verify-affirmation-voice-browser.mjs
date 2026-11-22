@@ -1300,14 +1300,15 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(goalCards.nth(2)).toHaveAttribute("data-video-ideas-goal-choice","reframe");
       const chooseScenario=goalPane.locator("[data-video-ideas-goal-next]");
       await expect(chooseScenario).toBeDisabled();
-      // Support requires current feeling, desired feeling, requested support,
-      // current energy and optionally a name, but never a meaning-axis question.
+      // Support has four card questions (current, desired, support, energy),
+      // then a separately named step and the eight-axis page. The old in-quiz
+      // meaning selector was removed, not silently hidden.
       await goalCards.nth(1).click();
       await expect(goalCards.nth(1)).toHaveAttribute("aria-pressed","true");
       await chooseScenario.click();
       await expect(personalTab).toHaveAttribute("aria-pressed","true");
       await expect(phrases.locator("[data-video-ideas-personalization-panel]")).toBeVisible();
-      await expect(phrases.locator("[data-personalization-kind]")).toHaveCount(5);
+      await expect(phrases.locator("[data-personalization-kind]")).toHaveCount(4);
       const preferredName=locale==="ru"?"Андрей":locale==="es"?"Andrés":"Andy";
       const personalClosing=locale==="ru"?"Андрей, я в тебя верю":
         locale==="es"?"Andrés, creo en ti":"Andy, I believe in you";
@@ -1318,7 +1319,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","1");
       await expect(phrases.locator('[data-personalization-kind="current"]')).toBeVisible();
       await expect(phrases.locator('[data-personalization-kind="desired"]')).toBeHidden();
-      await expect(phrases.locator('[data-personalization-kind="strength"]')).toBeHidden();
+      await expect(phrases.locator('[data-personalization-kind="strength"]')).toHaveCount(0);
       await expect(nextQuiz).toHaveCount(0);
       await personalQuiz.locator('[data-video-personalization-choice="current-tension"]').click();
       await expect(personalQuiz).toHaveAttribute("data-video-personalization-step","2");
@@ -1366,6 +1367,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // The eight scored meaning axes are a required Personal step.
       const personalAxes=phrases.locator('[data-video-meaning-axes-screen]');
       await expect(personalAxes).toBeVisible({timeout:15000});
+      await expect(personalAxes.locator('[data-video-meaning-axis]')).toHaveCount(8);
       for(const axis of await personalAxes.locator('[data-video-meaning-axis]').all()){
         await axis.locator('[data-axis-slider="now"] input').press("ArrowLeft");
         await axis.locator('[data-axis-slider="desired"] input').press("ArrowRight");
