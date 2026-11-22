@@ -1282,7 +1282,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       }
       await page.setViewportSize({width:390,height:840});
       await page.locator('[data-video-audio-compact-silent]').click();
-      await page.locator('[data-video-quick-control="phrases"]').click();
+      // This is a paid Personal opt-in, not merely opening the generic Ideas tab.
+      // Confirm Extra → Personalized before answering Goal and eight axes.
+      await enterPersonalAfterMontageExtra(page,engine);
       const phrases=page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]');
       await phrases.waitFor({state:"visible"});
       // Ideas has three tabs. Voice and My Voice remain visible opt-in submodes.

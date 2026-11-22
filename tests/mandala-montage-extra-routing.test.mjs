@@ -60,6 +60,17 @@ test("after Standard, a personalized Concept requires a fresh explicit Extra→P
  assert.match(extra,/data-video-extra-continue/);
 });
 
+test("eight-axis browser journey opts into Extra Personal before questionnaires",()=>{
+ const silent=browser.indexOf("await page.locator('[data-video-audio-compact-silent]').click()");
+ const entered=browser.indexOf("await enterPersonalAfterMontageExtra(page,engine)",silent);
+ const phrases=browser.indexOf("const phrases=page.locator('[data-workspace-section=\"phrases\"][data-video-quick-phrases]')",entered);
+ const axes=browser.indexOf("const personalAxes=phrases.locator(",phrases);
+ const approval=browser.indexOf('const approvePersonal=personalConcept.locator(',axes);
+ assert.ok(silent>0&&entered>silent&&phrases>entered&&axes>phrases&&approval>axes,
+   "user must explicitly choose Extra → Personal before answering eight axes and approving");
+ assert.match(browser,/await expect\(studio\)\.toHaveAttribute\("data-video-extra-choice","personal"\)/);
+});
+
 test("approved Personal Concept is stable on passive phrase-editor navigation",()=>{
  assert.match(studio,/preserveApprovedConcept=\{Boolean\(approvedVideoConcept\)&&personalPhrasesOpen\}/);
  assert.match(ideas,/preserveApprovedConcept\?:boolean/);
