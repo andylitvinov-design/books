@@ -2,8 +2,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
-import {useRef, useState} from "react";
-import {ArrowRight, BookOpen, BriefcaseBusiness, ChevronDown, CircleHelp, Coins, GraduationCap, Heart, Leaf, Menu, Mic, Play, Search, Shield, Sparkles, Sprout, Sun, TrendingUp, UserRound, WandSparkles, Zap} from "lucide-react";
+import {useEffect, useRef, useState} from "react";
+import {ArrowLeft, ArrowRight, BookOpen, BriefcaseBusiness, ChevronDown, CircleHelp, Coins, GraduationCap, Heart, Leaf, Menu, Mic, Play, Search, Shield, Sparkles, Sprout, Sun, TrendingUp, UserRound, WandSparkles, Zap} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
 import {shamanicaCategoryHref} from "@/lib/shamanica-recommendations.mjs";
 import styles from "./shamanica-mobile.module.css";
@@ -25,6 +25,180 @@ const shelfCatalog=[
  {id:"academy",category:"learning",image:"/images/holistic-house/shamanic-approved-academy.webp",title:{en:"Shamanic & Reiki Academy",ru:"Академия шаманизма и Рейки",es:"Academia de chamanismo y Reiki"},subtitle:{en:"Courses, practices, initiations & programs",ru:"Курсы, практики, посвящения",es:"Cursos, prácticas e iniciaciones"}}
 ] as const;
 const shelfIcons={guidance:Sparkles,rituals:WandSparkles,remedies:Sprout,mysteries:BookOpen,energy:Heart,academy:GraduationCap} as const;
+type ShelfId=(typeof shelfCatalog)[number]["id"];
+type PersonalChoice={title:Record<PublicLocale,string>;path:string};
+const personalSubcategories:Record<ShelfId,readonly PersonalChoice[]>={
+ "guidance": [
+  {
+   "title": {
+    "en": "Free I Ching reflection",
+    "ru": "Бесплатная подсказка И-Цзин",
+    "es": "Reflexión I Ching gratuita"
+   },
+   "path": "holistic-support#dao-guidance"
+  },
+  {
+   "title": {
+    "en": "Taoist reading with a master",
+    "ru": "Даосское чтение с мастером",
+    "es": "Lectura taoísta con maestro"
+   },
+   "path": "services/spiritual-reading#spiritual-tao"
+  },
+  {
+   "title": {
+    "en": "Personal Tarot reading",
+    "ru": "Персональное чтение Таро",
+    "es": "Lectura personal de Tarot"
+   },
+   "path": "services/spiritual-reading#spiritual-tarot"
+  }
+ ],
+ "rituals": [
+  {
+   "title": {
+    "en": "Personal ritual and mandala",
+    "ru": "Персональный ритуал и мандала",
+    "es": "Ritual y mandala personal"
+   },
+   "path": "holistic-support/mandala"
+  },
+  {
+   "title": {
+    "en": "Talismans and symbolic artifacts",
+    "ru": "Талисманы и артефакты",
+    "es": "Talismanes y artefactos"
+   },
+   "path": "holistic-support#talismans"
+  },
+  {
+   "title": {
+    "en": "Daoist Fu symbols",
+    "ru": "Даосские символы Фу",
+    "es": "Símbolos taoístas Fu"
+   },
+   "path": "holistic-support#talismans"
+  }
+ ],
+ "remedies": [
+  {
+   "title": {
+    "en": "Free written situation review",
+    "ru": "Бесплатный письменный разбор",
+    "es": "Revisión escrita gratuita"
+   },
+   "path": "services/free-situation-review"
+  },
+  {
+   "title": {
+    "en": "Express personal consultation",
+    "ru": "Экспресс-консультация",
+    "es": "Consulta personal exprés"
+   },
+   "path": "services/free-consultation"
+  },
+  {
+   "title": {
+    "en": "Psycho-homeopathy consultation",
+    "ru": "Консультация по психогомеопатии",
+    "es": "Consulta de psicohomeopatía"
+   },
+   "path": "services/psychohomeopathy"
+  }
+ ],
+ "mysteries": [
+  {
+   "title": {
+    "en": "Greek mysteries and archetypes",
+    "ru": "Греческие мистерии и архетипы",
+    "es": "Misterios griegos y arquetipos"
+   },
+   "path": "academy/mysteries/greece-rome/beauty-and-power"
+  },
+  {
+   "title": {
+    "en": "Egyptian mysteries",
+    "ru": "Египетские мистерии",
+    "es": "Misterios egipcios"
+   },
+   "path": "academy/mysteries/egypt/high-wisdom"
+  },
+  {
+   "title": {
+    "en": "Mysteries & Initiations",
+    "ru": "Мистерии и инициации",
+    "es": "Misterios e iniciaciones"
+   },
+   "path": "academy/mysteries/initiations"
+  }
+ ],
+ "energy": [
+  {
+   "title": {
+    "en": "Personal Reiki energy session",
+    "ru": "Личная сессия Рейки",
+    "es": "Sesión personal de Reiki"
+   },
+   "path": "services/remote-energy-support"
+  },
+  {
+   "title": {
+    "en": "Free Tantra Reiki introduction",
+    "ru": "Бесплатное введение в Тантра Рейки",
+    "es": "Introducción gratuita al Tantra Reiki"
+   },
+   "path": "academy/reiki/tantra-reiki/free-initiation"
+  },
+  {
+   "title": {
+    "en": "Reiki Yggdrasil practice",
+    "ru": "Практики Рейки Иггдрасиль",
+    "es": "Práctica Reiki Yggdrasil"
+   },
+   "path": "academy/reiki/yggdrasil"
+  }
+ ],
+ "academy": [
+  {
+   "title": {
+    "en": "Free Reiki Practitioner Course",
+    "ru": "Бесплатный курс практик Рейки",
+    "es": "Curso gratuito de Reiki"
+   },
+   "path": "academy/principles-of-energywork"
+  },
+  {
+   "title": {
+    "en": "Tantra Reiki",
+    "ru": "Тантра Рейки",
+    "es": "Tantra Reiki"
+   },
+   "path": "academy/reiki/tantra-reiki"
+  },
+  {
+   "title": {
+    "en": "Kundalini Reiki",
+    "ru": "Кундалини Рейки",
+    "es": "Kundalini Reiki"
+   },
+   "path": "academy/reiki/kundalini-reiki"
+  },
+  {
+   "title": {
+    "en": "Reiki Yggdrasil",
+    "ru": "Рейки Иггдрасиль",
+    "es": "Reiki Yggdrasil"
+   },
+   "path": "academy/reiki/yggdrasil"
+  }
+ ]
+};
+const personalUi={"ru":{"back":"Все 6 направлений","choose":"Выберите подходящее направление","all":"Все услуги категории"},"en":{"back":"All 6 categories","choose":"Choose a specific service","all":"All services in this category"},"es":{"back":"Las 6 categorías","choose":"Elige un servicio","all":"Todos los servicios de la categoría"}} as const;
+const geanieCopy={
+ en:{headline:"Need Hint? Help?",invitation:"Ask our AI Geanie.",cta:"Ask a question"},
+ ru:{headline:"Нужна подсказка? Помощь?",invitation:"Спросите нашего AI-Джина.",cta:"Задать вопрос"},
+ es:{headline:"¿Necesitas ayuda?",invitation:"Pregunta a nuestro Genio IA.",cta:"Hacer una pregunta"}
+} as const;
 const cabinetCopy={
  en:{subtitle:"Tools for mind, heart, power & life.",open:"Find the right practice · 3 questions",shelves:"Explore the alchemist's shelves"},
  ru:{subtitle:"Инструменты для ума, сердца, силы и жизни.",open:"Подобрать практику · 3 вопроса",shelves:"Полки кабинета алхимика"},
@@ -125,6 +299,9 @@ export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;au
  const [startChoice,setStartChoice]=useState<(typeof starts)[number]>("personal");
  const [intention,setIntention]=useState("");
  const [videoPlaying,setVideoPlaying]=useState(false);
+ const [selectedShelf,setSelectedShelf]=useState<ShelfId|null>(null);
+ const shelfBackRef=useRef<HTMLButtonElement|null>(null);
+ useEffect(()=>{if(selectedShelf)shelfBackRef.current?.focus();},[selectedShelf]);
  const inputRef=useRef<HTMLInputElement|null>(null);
  const videoRef=useRef<HTMLVideoElement|null>(null);
  const mirror=mirrorCopy[locale];
@@ -158,10 +335,10 @@ export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;au
   :step===1?methods.map((id,i)=>({id,label:t.methods[i]}))
   :starts.map((id,i)=>({id,label:t.starts[i]}));
  const chosen=step===0?goal:step===1?method:startChoice;
- return <main className={styles.page} lang={locale} data-shamanica-mobile data-shamanica-audience={business?"business":"self"} data-shamanica-business-page={business?"true":undefined}>
+ return <main className={styles.page} lang={locale} data-shamanica-mobile data-shamanica-audience={business?"business":"self"} data-shamanica-business-page={business?"true":undefined} data-shamanica-expanded={selectedShelf?"true":undefined}>
   <div className={styles.container}>
    <header className={styles.header}>
-    <Link className={styles.brand} href={locale==="en"?"/":"/"+locale} prefetch={false}><Leaf size={33} strokeWidth={1.8} aria-hidden="true"/><span>Holistic House{!business&&<small className={styles.brandSub}>{locale==="ru"?"ШАМАНИК":"SHAMANIC"}</small>}</span></Link>
+    <Link className={styles.brand} href={locale==="en"?"/":"/"+locale} prefetch={false}><Leaf size={33} strokeWidth={1.8} aria-hidden="true"/><span>Holistic House{<small className={styles.brandSub}>{locale==="ru"?"ШАМАНИК":"SHAMANIC"}</small>}</span></Link>
     <div className={styles.tools}>
      <label className={styles.lang}>
       <span className={styles.srOnly}>Language</span>
@@ -170,8 +347,8 @@ export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;au
       </select><ChevronDown size={15} aria-hidden="true"/>
      </label>
      <Link className={styles.iconButton} href={"/"+locale+"/explore"} aria-label={t.search} prefetch={false}><Search size={22}/></Link>
-     {!business&&<button type="button" className={styles.helpButton} aria-label={t.help} onClick={()=>window.dispatchEvent(new Event("hh:open-ihelp"))}><CircleHelp size={22} aria-hidden="true"/></button>}
-     {!business&&<Link className={styles.profileButton} href={"/"+(locale==="es"?"en":locale)+"/app/portrait"} aria-label={locale==="ru"?"Профиль":locale==="es"?"Perfil":"Profile"} prefetch={false}><UserRound size={23}/></Link>}
+     <button type="button" className={styles.helpButton} data-shamanica-ihelp-trigger={business||undefined} aria-label={t.help} onClick={()=>window.dispatchEvent(new Event("hh:open-ihelp"))}><CircleHelp size={22} aria-hidden="true"/></button>
+     <Link className={styles.profileButton} href={"/"+(locale==="es"?"en":locale)+"/app/portrait"} aria-label={locale==="ru"?"Профиль":locale==="es"?"Perfil":"Profile"} prefetch={false}><UserRound size={23}/></Link>
      <details className={styles.menu}><summary className={styles.iconButton} aria-label={t.menu}><Menu size={22}/></summary>
       <nav className={styles.menuPop}><Link href={locale==="en"?"/":"/"+locale}>{t.self}</Link><Link href={"/"+locale+"/shamanica/business"}>{t.work}</Link><Link href={"/"+locale+"/academy"}>{t.services.learning[0]}</Link><Link href={"/"+locale+"/explore"}>{t.search}</Link></nav>
      </details>
@@ -180,29 +357,54 @@ export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;au
    <nav className={styles.audiences} aria-label="Audience">
     <Link className={!business?styles.audienceActive:undefined} aria-current={!business?"page":undefined} href={"/"+locale+"/shamanica"}><Heart size={18}/>{t.self}</Link>
     <Link className={business?styles.audienceActive:undefined} aria-current={business?"page":undefined} href={"/"+locale+"/shamanica/business"}><BriefcaseBusiness size={18}/>{t.work}</Link>
-    {business?<button type="button" data-shamanica-ihelp-trigger aria-label={t.help} onClick={()=>window.dispatchEvent(new Event("hh:open-ihelp"))}><Sparkles size={18}/>{t.help}</button>:<Link href={"/"+locale+"/holistic-support/mobile"}><Sparkles size={18}/>{t.help}</Link>}
+    {business?<button type="button" aria-label={t.help} onClick={()=>window.dispatchEvent(new Event("hh:open-ihelp"))}><Sparkles size={18}/>{t.help}</button>:<Link href={"/"+locale+"/holistic-support/mobile"}><Sparkles size={18}/>{t.help}</Link>}
    </nav>
-   {business?<ShamanicaBusinessContent locale={locale}/>:<>
    <section className={styles.hero} aria-labelledby="shamanica-hero-title">
     <div className={styles.mirrorIntro}>
-     <span className={styles.mirrorSymbol} aria-hidden="true"><span className={styles.moonLeft}>☾</span><Image src="/images/holistic-house/shamanic-approved-sun.webp" width={66} height={48} alt="" unoptimized/><span className={styles.moonRight}>☽</span></span>
+     <span className={styles.mirrorSymbol} aria-hidden="true"><span className={styles.moonLeft}>☾</span><Image src="/images/holistic-house/shamanic-sun-hd.avif" width={66} height={48} alt="" unoptimized/><span className={styles.moonRight}>☽</span></span>
      <h1 id="shamanica-hero-title">{locale==="ru"?"Шаманик":"Shamanic"}
       <span>{locale==="ru"?"Кабинет алхимика":locale==="es"?"Gabinete del alquimista":"Alchemist’s Cabinet"}</span>
      </h1>
      <p className={styles.mirrorTagline}>{cabinetCopy[locale].subtitle}</p>
     </div>
+    <aside className={styles.geaniePromo} data-shamanica-ai-geanie aria-label={geanieCopy[locale].headline}>
+     <Image className={styles.geaniePortrait} src="/images/holistic-house/shamanic-ai-geanie.webp"
+      width={173} height={257} alt="" unoptimized/>
+     <div className={styles.geanieSpeech}>
+      <strong>{geanieCopy[locale].headline}</strong>
+      <span>{geanieCopy[locale].invitation}</span>
+      <button type="button" className={styles.geanieAsk} data-shamanica-genie-ask
+       onClick={()=>window.dispatchEvent(new Event("hh:open-ihelp"))}>
+       {geanieCopy[locale].cta}<ArrowRight size={15} aria-hidden="true"/>
+      </button>
+     </div>
+    </aside>
    </section>
+   {business?<ShamanicaBusinessContent locale={locale}/>:<>
    <section className={styles.services} data-shamanica-cabinet-shelves aria-labelledby="shamanica-services-title">
     <h2 id="shamanica-services-title" className={styles.sectionTitle}>{cabinetCopy[locale].shelves}</h2>
-    <div className={styles.serviceGrid}>{shelfCatalog.map(({id,category,image,title,subtitle})=>{
-     const Icon=shelfIcons[id];
-     return <Link key={id}
-      href={id==="mysteries"?"/"+locale+"/academy/mysteries":shamanicaCategoryHref(locale,category)}
-      prefetch={false} className={styles.serviceCard} data-shamanica-service={id}>
-      <span className={styles.servicePhoto}><Image src={image} alt="" fill sizes="(max-width:600px) 48vw, 240px" unoptimized/></span>
-      <span className={styles.serviceBody}><Icon aria-hidden="true" size={27} strokeWidth={1.8}/><strong>{title[locale]}</strong><span>{subtitle[locale]}</span></span>
-     </Link>;
-    })}</div>
+    {selectedShelf?<div id="shamanica-subcategory-panel" className={styles.subcategoryPanel} data-shamanica-subcategories={selectedShelf} aria-live="polite">
+      <button ref={shelfBackRef} type="button" className={styles.subcategoryBack} onClick={()=>setSelectedShelf(null)}><ArrowLeft size={18} aria-hidden="true"/>{personalUi[locale].back}</button>
+      <h3>{shelfCatalog.find(item=>item.id===selectedShelf)?.title[locale]}</h3>
+      <p>{personalUi[locale].choose}</p>
+      <div className={styles.subcategoryGrid}>
+       {personalSubcategories[selectedShelf].map((option,index)=><Link href={"/"+locale+"/"+option.path} prefetch={false} key={option.path+"-"+index}
+        className={styles.subcategoryLink} data-shamanica-subcategory={selectedShelf+"-"+index}>
+        <span className={styles.subcategoryCount}>{index+1}</span><strong>{option.title[locale]}</strong><ArrowRight size={17} aria-hidden="true"/>
+       </Link>)}
+      </div>
+      <Link className={styles.subcategoryAll} prefetch={false}
+       href={selectedShelf==="mysteries"?"/"+locale+"/academy/mysteries":shamanicaCategoryHref(locale,shelfCatalog.find(item=>item.id===selectedShelf)?.category||"guidance")}>
+       {personalUi[locale].all}<ArrowRight size={17} aria-hidden="true"/>
+      </Link>
+     </div>:<div className={styles.serviceGrid}>{shelfCatalog.map(({id,title,subtitle})=>{
+      const Icon=shelfIcons[id];
+      return <button key={id} type="button" onClick={()=>setSelectedShelf(id)}
+       className={styles.serviceCard} data-shamanica-service={id} aria-controls="shamanica-subcategory-panel" aria-expanded={false}>
+       <span className={styles.servicePhoto} aria-hidden="true"/>
+       <span className={styles.serviceBody}><Icon aria-hidden="true" size={27} strokeWidth={1.8}/><strong>{title[locale]}</strong><span>{subtitle[locale]}</span></span>
+      </button>;
+     })}</div>}
    </section>
    <details className={styles.toolsDrawer} data-shamanica-extras>
     <summary><Sparkles size={18} aria-hidden="true"/>{cabinetCopy[locale].open}<ChevronDown size={18} aria-hidden="true"/></summary>

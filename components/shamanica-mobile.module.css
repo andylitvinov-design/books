@@ -479,3 +479,476 @@
 @media(prefers-reduced-motion:reduce){
  .page[data-shamanica-audience="self"] .serviceCard{transition:none}
 }
+
+/* SHAMANIC_UNIFIED_HD_ONE_SCREEN_20261121
+   Same scenic cabinet for Me and Business, six actionable photo cards, no
+   compressed 2 KB miniatures, no device chrome baked into images.
+   The dock height is measured by UnifiedMobileDock, including iOS safe area. */
+.page[data-shamanica-mobile] {
+  --ink:#fff0d4;
+  color:#fff0d4;
+  background:
+    radial-gradient(ellipse at 50% 4%,#78502e66,transparent 61%),
+    linear-gradient(95deg,#170a08 0%,#28170f 17%,#1d100a 50%,#322015 84%,#180a07);
+}
+.page[data-shamanica-mobile] .container{
+  display:flex;flex-direction:column;isolation:isolate;
+  width:min(100%,490px);margin:0 auto;
+  padding:5px 10px calc(var(--hh-unified-nav-height,94px) + 5px);
+  box-shadow:inset 5px 0 14px #0b070577,inset -5px 0 14px #0b070577;
+  background:linear-gradient(90deg,#12080566,transparent 13%,transparent 87%,#12080577);
+}
+.page[data-shamanica-mobile] .header{
+  order:0;flex:none;min-height:42px;height:42px;
+  display:flex;align-items:center;justify-content:space-between;
+  margin:0 0 1px;gap:5px;z-index:3;
+}
+.page[data-shamanica-mobile] .brand{color:#fff4dc;gap:5px}
+.page[data-shamanica-mobile] .brand>svg{width:27px;height:27px;color:#fff0d9}
+.page[data-shamanica-mobile] .brand span{
+  font:700 clamp(18px,5vw,24px)/1 Georgia,serif;letter-spacing:-.5px;white-space:normal;
+}
+.page[data-shamanica-mobile] .brandSub{
+  display:block;margin-top:3px;font:600 9px/1.12 Georgia,serif;
+  letter-spacing:2.3px;color:#f7e3bd;
+}
+.page[data-shamanica-mobile] .tools{gap:5px}
+.page[data-shamanica-mobile] .tools .iconButton,
+.page[data-shamanica-mobile] .menu{display:none}
+.page[data-shamanica-mobile] .lang,
+.page[data-shamanica-mobile] .helpButton,
+.page[data-shamanica-mobile] .profileButton{
+  display:grid;place-items:center;
+  flex:none;min-width:34px;width:auto;height:35px;padding:0 6px;
+  border:1px solid #d5b37b;border-radius:999px;
+  color:#fff5dd;background:#24140d9e;
+  box-shadow:0 2px 7px #12060080,inset 0 1px 2px #f9d39744;
+  cursor:pointer;text-decoration:none;
+}
+.page[data-shamanica-mobile] .lang{display:flex;gap:2px;padding:0 7px}
+.page[data-shamanica-mobile] .lang select{font-size:12px;color:#fff0d8}
+.page[data-shamanica-mobile] .hero{
+  order:1;flex:none;position:relative;isolation:isolate;
+  height:clamp(155px,24dvh,226px);min-height:0;max-height:none;
+  margin:0 -3px 1px;padding:0 3px;text-align:center;
+  overflow:hidden;border:0;border-radius:0;background:transparent;box-shadow:none;
+}
+.page[data-shamanica-mobile] .hero:before{
+  content:"";position:absolute;z-index:-1;inset:auto 0 0;
+  height:clamp(110px,16dvh,158px);
+  background:
+    linear-gradient(180deg,#1e110966,transparent 24%,transparent 75%,#1b0d0773 100%),
+    url("/images/holistic-house/shamanic-lounge-hd.avif") center bottom/cover no-repeat;
+  pointer-events:none;
+}
+.page[data-shamanica-mobile] .mirrorIntro{position:relative;z-index:1;padding-top:0}
+.page[data-shamanica-mobile] .mirrorSymbol{
+  display:flex;align-items:center;justify-content:center;gap:2px;
+  height:38px;color:#f2bb64;filter:drop-shadow(0 1px 4px #df9f3a66);
+}
+.page[data-shamanica-mobile] .mirrorSymbol img{
+  display:block;width:67px;height:37px;object-fit:contain;
+  mix-blend-mode:screen;filter:contrast(1.09) saturate(1.1);
+}
+.page[data-shamanica-mobile] .moonLeft,
+.page[data-shamanica-mobile] .moonRight{
+  font:700 30px/1 Georgia,serif;color:#f6be65;text-shadow:0 0 6px #b97620;
+}
+.page[data-shamanica-mobile] .hero h1{
+  margin:1px auto 4px;max-width:100%;
+  color:#ffeccd;
+  font:700 clamp(26px,7.6vw,35px)/.96 Georgia,serif;
+  letter-spacing:-.035em;text-shadow:0 2px 6px #120702;
+}
+.page[data-shamanica-mobile] .hero h1 span{display:block;white-space:normal}
+.page[data-shamanica-mobile] .mirrorTagline{
+  margin:4px auto 0!important;max-width:97%;
+  font:italic 500 clamp(11.3px,3.15vw,14px)/1.17 Georgia,serif;
+  color:#fff0d8;text-shadow:0 1px 5px #130a02;
+}
+.page[data-shamanica-mobile] .audiences{
+  order:2;flex:none;display:grid;grid-template-columns:1fr 1fr;
+  width:min(91%,440px);height:42px;min-height:42px;
+  padding:2px;gap:0;margin:0 auto 8px;
+  border:1px solid #f2ce8b;border-radius:999px;
+  background:linear-gradient(110deg,#fff2d0,#f3d9a9);
+  box-shadow:0 2px 10px #0c06059a;
+}
+.page[data-shamanica-mobile] .audiences>a{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  min-height:36px;padding:2px 6px;
+  font:700 clamp(12.6px,3.5vw,17px)/1.07 Georgia,serif;
+  border:0;border-radius:99px;background:transparent;color:#153c2b;box-shadow:none;
+}
+.page[data-shamanica-mobile] .audiences>a svg{width:19px;height:19px;flex:none}
+.page[data-shamanica-mobile] .audiences .audienceActive{
+  background:linear-gradient(180deg,#087750,#00462f);
+  color:#fff5dc;box-shadow:0 1px 5px #043d2ca6,inset 0 1px #b9ead6a3;
+}
+.page[data-shamanica-mobile] .audiences>a:last-child,
+.page[data-shamanica-mobile] .audiences>button{display:none}
+.page[data-shamanica-mobile] .services{
+  order:3;position:relative;width:100%;margin:0;padding:0;
+  border:0;border-radius:0;background:transparent;box-shadow:none;
+}
+.page[data-shamanica-mobile] .sectionTitle{
+  position:absolute!important;width:1px;height:1px;margin:-1px;padding:0;
+  overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;
+}
+.page[data-shamanica-mobile] .serviceGrid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-auto-rows:clamp(72px,10.8dvh,99px);
+  column-gap:8px;row-gap:8px;background:transparent;
+}
+.page[data-shamanica-mobile] .serviceCard,
+.page[data-shamanica-mobile] .serviceCard:nth-child(n+4),
+.page[data-shamanica-mobile] .serviceCard:last-child{
+  display:block;position:relative;grid-column:auto;
+  width:100%;height:100%;min-height:0;min-width:0;
+  overflow:hidden;padding:0;margin:0;
+  border:2px solid #ecc176;border-radius:17px;background:#2d1c11;color:#113524;
+  box-shadow:0 2px 8px #0d0506a3;cursor:pointer;text-decoration:none;text-align:left;
+  transition:transform .16s ease,filter .16s ease;
+}
+.page[data-shamanica-mobile] .serviceCard:after{display:none}
+.page[data-shamanica-mobile] .servicePhoto,
+.page[data-shamanica-mobile] [data-shamanica-service] .servicePhoto{
+  display:block;position:absolute;top:0;left:0;
+  width:100%;height:64%;
+  border:0;border-radius:0;clip-path:none;
+  -webkit-mask-image:none;mask-image:none;box-shadow:none;filter:none;transform:none;
+  background-image:url("/images/holistic-house/shamanic-cards-personal-hd.avif");
+  background-size:200% 300%;background-repeat:no-repeat;
+}
+.page[data-shamanica-mobile] [data-shamanica-service="guidance"] .servicePhoto{background-position:0% 0%}
+.page[data-shamanica-mobile] [data-shamanica-service="rituals"] .servicePhoto{background-position:100% 0%}
+.page[data-shamanica-mobile] [data-shamanica-service="remedies"] .servicePhoto{background-position:0% 50%}
+.page[data-shamanica-mobile] [data-shamanica-service="mysteries"] .servicePhoto{background-position:100% 50%}
+.page[data-shamanica-mobile] [data-shamanica-service="energy"] .servicePhoto{background-position:0% 100%}
+.page[data-shamanica-mobile] [data-shamanica-service="academy"] .servicePhoto{background-position:100% 100%}
+.page[data-shamanica-mobile] .serviceBody{
+  position:absolute;z-index:1;left:0;bottom:0;
+  display:grid;grid-template-columns:clamp(22px,5.3vw,30px) minmax(0,1fr);
+  align-items:center;gap:5px;justify-content:stretch;
+  width:100%;height:53%;min-height:42px;margin:0;padding:3px 7px;
+  border:0;border-radius:13px 13px 15px 15px;
+  background:linear-gradient(112deg,#fff5dc,#f7d9a7 85%,#fce6bb);
+  box-shadow:inset 0 1px 5px #fffcf290,0 -2px 6px #2a13097a;
+}
+.page[data-shamanica-mobile] .serviceBody svg{
+  width:clamp(22px,5.3vw,29px);height:clamp(22px,5.3vw,29px);
+  color:#0c432f;stroke-width:1.7;
+}
+.page[data-shamanica-mobile] .serviceBody strong{
+  display:block;min-width:0;max-width:100%;margin:0;
+  color:#183023;
+  font:700 clamp(12.2px,3.46vw,17px)/1.03 Georgia,serif;
+  hyphens:none;overflow-wrap:normal;word-break:normal;
+}
+.page[data-shamanica-mobile] .serviceBody>span{
+  position:absolute!important;width:1px!important;height:1px!important;
+  overflow:hidden!important;clip:rect(0,0,0,0)!important;
+  white-space:nowrap!important;
+}
+.page[data-shamanica-mobile] .toolsDrawer{
+  order:4;width:100%;margin:6px 0 0;border:1px solid #a47e47;
+  border-radius:13px;background:#1b100c9c;
+}
+.page[data-shamanica-mobile] .toolsDrawer>summary{
+  min-height:40px;padding:5px 8px;font:700 13px/1.1 Georgia,serif;
+  color:#f7dfb7;
+}
+.page[data-shamanica-mobile] .subcategoryPanel{
+  width:100%;max-height:clamp(230px,44dvh,370px);
+  overflow-y:auto;overscroll-behavior:contain;
+  padding:9px;border:1px solid #b88c4f;border-radius:18px;
+  background:linear-gradient(135deg,#3b2415,#1c100c);
+  box-shadow:inset 0 1px #cfaa6780;
+}
+.page[data-shamanica-mobile] .subcategoryBack,
+.page[data-shamanica-mobile] .subcategoryAll{
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  width:100%;min-height:39px;padding:7px 9px;border:1px solid #e2bb79;
+  border-radius:13px;background:#f3dda9;color:#123d30;
+  font:700 13px/1.1 Georgia,serif;text-decoration:none;cursor:pointer;
+}
+.page[data-shamanica-mobile] .subcategoryPanel h3{
+  margin:8px 0 3px;color:#ffeed3;
+  font:700 clamp(17px,4.65vw,22px)/1.06 Georgia,serif;text-align:center;
+}
+.page[data-shamanica-mobile] .subcategoryPanel p{
+  margin:0 0 9px;color:#e9d7b8;font:500 12px/1.2 system-ui,sans-serif;text-align:center;
+}
+.page[data-shamanica-mobile] .subcategoryGrid{display:grid;gap:6px;margin:0 0 8px}
+.page[data-shamanica-mobile] .subcategoryLink{
+  display:flex;align-items:center;gap:8px;min-width:0;min-height:47px;
+  padding:6px 8px;border:1px solid #d8b574;border-radius:12px;
+  background:linear-gradient(100deg,#fff3d4,#edd19f);color:#153d31;
+  text-decoration:none;
+}
+.page[data-shamanica-mobile] .subcategoryLink strong{flex:1;min-width:0;font:700 clamp(13px,3.5vw,16px)/1.1 Georgia,serif}
+.page[data-shamanica-mobile] .subcategoryCount{
+  display:grid;place-items:center;flex:none;width:24px;height:24px;
+  border-radius:50%;background:#dec18a;color:#4a3118;font-weight:800;font-size:12px;
+}
+.page[data-shamanica-mobile] .subcategoryLink>svg{flex:none}
+.page[data-shamanica-mobile] :is(.serviceCard,.subcategoryBack,.subcategoryAll,.subcategoryLink):focus-visible{outline:3px solid #f9dc94;outline-offset:2px}
+.page[data-shamanica-expanded="true"] .hero{height:clamp(140px,19dvh,172px)}
+.page[data-shamanica-expanded="true"] .hero:before{height:clamp(91px,13dvh,113px)}
+@media(max-width:354px){
+ .page[data-shamanica-mobile] .container{padding-inline:6px}
+ .page[data-shamanica-mobile] .header{height:39px;min-height:39px}
+ .page[data-shamanica-mobile] .brand span{font-size:17px}
+ .page[data-shamanica-mobile] .brand>svg{width:24px;height:24px}
+ .page[data-shamanica-mobile] .tools{gap:3px}
+ .page[data-shamanica-mobile] .lang,
+ .page[data-shamanica-mobile] .helpButton,
+ .page[data-shamanica-mobile] .profileButton{min-width:32px;height:32px}
+ .page[data-shamanica-mobile] .hero{height:clamp(146px,23dvh,183px)}
+ .page[data-shamanica-mobile] .hero:before{height:clamp(90px,16dvh,120px)}
+ .page[data-shamanica-mobile] .hero h1{font-size:clamp(22.5px,7.25vw,27px)}
+ .page[data-shamanica-mobile] .mirrorTagline{font-size:11px}
+ .page[data-shamanica-mobile] .audiences{height:39px;min-height:39px;margin-bottom:6px}
+ .page[data-shamanica-mobile] .audiences>a{min-height:33px;font-size:12.4px}
+ .page[data-shamanica-mobile] .serviceGrid{grid-auto-rows:clamp(68px,10.55dvh,85px);gap:6px}
+ .page[data-shamanica-mobile] .serviceBody{padding:3px 5px;gap:4px;grid-template-columns:21px minmax(0,1fr)}
+ .page[data-shamanica-mobile] .serviceBody strong{font-size:clamp(11.3px,3.73vw,13px)}
+ .page[data-shamanica-mobile] .serviceBody svg{width:21px;height:21px}
+}
+@media(max-width:759px) and (max-height:690px){
+ .page[data-shamanica-mobile] .hero{height:143px}
+ .page[data-shamanica-mobile] .hero:before{height:96px}
+ .page[data-shamanica-mobile] .serviceGrid{grid-auto-rows:68px}
+ .page[data-shamanica-mobile] .toolsDrawer{margin-top:3px}
+ .page[data-shamanica-mobile] .toolsDrawer>summary{min-height:35px}
+}
+@media(min-width:760px){
+ .page[data-shamanica-mobile] .container{width:min(100%,660px);padding:12px 14px 30px}
+ .page[data-shamanica-mobile] .hero{height:270px}
+ .page[data-shamanica-mobile] .hero:before{height:190px}
+ .page[data-shamanica-mobile] .serviceGrid{grid-auto-rows:138px;gap:12px}
+ .page[data-shamanica-mobile] .serviceBody{min-height:62px}
+ .page[data-shamanica-mobile] .serviceBody strong{font-size:21px}
+}
+@media(prefers-reduced-motion:reduce){
+ .page[data-shamanica-mobile] .serviceCard{transition:none}
+}
+
+
+/* SHAMANIC_GENIE_APPROVED_20261122 — latest owner-approved mobile portrait.
+   Independent HD decorative artwork and native accessible interactive controls.
+   Shared verbatim by personal and business Shamanic; do not fork the hero. */
+.page[data-shamanica-mobile]{
+ color:#fff0d4;
+ background:
+  radial-gradient(ellipse at 50% 16%,#7b481b6b 0,transparent 56%),
+  linear-gradient(90deg,#140905,#2b180d 20%,#1c100a 79%,#100804);
+}
+.page[data-shamanica-mobile] .container{
+ width:min(100%,510px);padding:6px 9px
+  calc(var(--hh-unified-nav-height,94px) + env(safe-area-inset-bottom) + 12px);
+ background:
+  radial-gradient(ellipse at 50% 15%,#c4842852,transparent 48%),
+  linear-gradient(90deg,#130b07ae,transparent 14%,transparent 86%,#130b07ae);
+}
+.page[data-shamanica-mobile] .header{
+ min-height:43px;height:43px;margin:0 0 2px;z-index:5;
+}
+.page[data-shamanica-mobile] .brand{color:#fff3d9}
+.page[data-shamanica-mobile] .brand>svg{width:29px;height:29px}
+.page[data-shamanica-mobile] .brand span{
+ font:700 clamp(18px,5.1vw,26px)/1 Georgia,serif;
+}
+.page[data-shamanica-mobile] .brandSub{letter-spacing:2px}
+.page[data-shamanica-mobile] .lang,
+.page[data-shamanica-mobile] .helpButton,
+.page[data-shamanica-mobile] .profileButton{
+ min-width:34px;height:35px;border:1px solid #f0c888;
+ border-radius:50px;color:#fff4dc;background:#1e130cbd;
+ box-shadow:inset 0 1px 2px #ffe5aa58,0 2px 7px #06030275;
+}
+.page[data-shamanica-mobile] .lang select{color:#fff4df}
+.page[data-shamanica-mobile] .hero{
+ order:1;height:clamp(198px,31dvh,262px);min-height:0;
+ overflow:visible;isolation:isolate;position:relative;
+ padding:0;margin:0 -1px 3px;border:0;border-radius:0;box-shadow:none;
+ background:transparent;text-align:center;
+}
+.page[data-shamanica-mobile] .hero:before{
+ content:"";position:absolute;z-index:-1;bottom:0;left:-4px;right:-4px;
+ top:auto;height:clamp(124px,20dvh,178px);
+ pointer-events:none;
+ background:
+  linear-gradient(180deg,#1c0c05a1 0%,#2e17021a 19%,transparent 63%,#1a0b05aa 100%),
+  url("/images/holistic-house/shamanic-genie-lounge.webp") center bottom/cover no-repeat;
+}
+.page[data-shamanica-mobile] .mirrorIntro{
+ position:absolute;z-index:2;top:0;left:0;width:62%;
+ padding:0 1px;text-align:center;
+}
+.page[data-shamanica-mobile] .mirrorSymbol{
+ display:flex;height:40px;justify-content:center;align-items:center;gap:2px;
+ filter:drop-shadow(0 1px 5px #d58b2288);
+}
+.page[data-shamanica-mobile] .mirrorSymbol img{width:56px;height:39px}
+.page[data-shamanica-mobile] .moonLeft,
+.page[data-shamanica-mobile] .moonRight{font-size:28px}
+.page[data-shamanica-mobile] .hero h1{
+ margin:0 0 4px;max-width:100%;color:#fff0cf;
+ font:700 clamp(21px,5.7vw,31px)/1.00 Georgia,serif;
+ letter-spacing:-.04em;text-shadow:0 2px 6px #140604e6;
+}
+.page[data-shamanica-mobile] .hero h1 span{
+ display:block;white-space:normal;
+ font-size:clamp(18.6px,5.2vw,29px);
+}
+.page[data-shamanica-mobile] .mirrorTagline{
+ margin:5px 0 0!important;color:#ffe9c9;
+ font:italic 500 clamp(10.5px,2.85vw,14px)/1.13 Georgia,serif;
+ text-shadow:0 1px 5px #140604;
+}
+.page[data-shamanica-mobile] .geaniePromo{
+ position:absolute;z-index:3;right:0;top:12px;
+ display:block;width:49%;height:145px;pointer-events:none;
+}
+.page[data-shamanica-mobile] .geaniePortrait{
+ position:absolute;z-index:3;left:-20%;top:-12px;
+ width:56%;height:144px;object-fit:contain;
+ filter:drop-shadow(0 1px 8px #df9d3270);
+}
+.page[data-shamanica-mobile] .geanieSpeech{
+ position:absolute;z-index:4;right:0;top:24px;
+ display:flex;flex-direction:column;align-items:stretch;gap:3px;
+ width:78%;min-width:0;max-width:175px;
+ padding:7px 6px 8px;
+ border:1.5px solid #ffe3a4;border-radius:20px 20px 20px 16px;
+ background:linear-gradient(135deg,#fff3d1,#ffe7ab 75%,#fbd08d);
+ color:#261a0c;box-shadow:0 0 0 2px #d8984470,0 2px 17px #dca84e8c;
+ pointer-events:auto;
+}
+.page[data-shamanica-mobile] .geanieSpeech:before{
+ content:"";position:absolute;top:-8px;right:28px;
+ width:13px;height:14px;border-radius:100% 0 0 0;
+ background:#ffe9b1;transform:rotate(35deg);
+}
+.page[data-shamanica-mobile] .geanieSpeech strong,
+.page[data-shamanica-mobile] .geanieSpeech>span{
+ position:relative;z-index:1;display:block;text-align:center;
+ font:700 clamp(10px,2.7vw,13px)/1.08 Georgia,serif;
+}
+.page[data-shamanica-mobile] .geanieSpeech>span{
+ font-weight:600;font-size:clamp(9.5px,2.6vw,12px);
+}
+.page[data-shamanica-mobile] .geanieAsk{
+ position:relative;z-index:1;
+ display:flex;align-items:center;justify-content:center;gap:2px;
+ width:100%;min-height:35px;padding:5px 3px;
+ border:1.5px solid #edc778;border-radius:50px;
+ background:linear-gradient(180deg,#0b9060,#005138);
+ color:#fff9e7;text-align:center;
+ font:700 clamp(10px,2.65vw,13px)/1.1 Georgia,serif;
+ box-shadow:inset 0 1px #c3eec083,0 0 8px #cd9b486e;
+ cursor:pointer;
+}
+.page[data-shamanica-mobile] .geanieAsk svg{flex:none;width:14px;height:14px}
+.page[data-shamanica-mobile] .geanieAsk:focus-visible{
+ outline:3px solid #fff9ca;outline-offset:3px;
+}
+.page[data-shamanica-mobile] .audiences{
+ order:2;width:min(88%,450px);height:42px;min-height:42px;
+ gap:0;margin:0 auto 8px;padding:2px;
+ border:1.5px solid #ffda91;border-radius:50px;
+ background:linear-gradient(115deg,#fff0cb,#f4d9a4);
+ box-shadow:0 3px 12px #100500a6;
+}
+.page[data-shamanica-mobile] .audiences>a{
+ font:700 clamp(13px,3.5vw,17px)/1.07 Georgia,serif;
+ min-height:36px;gap:7px;
+}
+.page[data-shamanica-mobile] .audiences .audienceActive{
+ background:linear-gradient(180deg,#08845c,#004229);
+ color:#fff4db;
+}
+.page[data-shamanica-mobile] .serviceGrid{
+ grid-template-columns:repeat(2,minmax(0,1fr));
+ grid-auto-rows:clamp(74px,11.5dvh,99px);gap:8px;
+}
+.page[data-shamanica-mobile] .serviceCard,
+.page[data-shamanica-mobile] .serviceCard:nth-child(n+4),
+.page[data-shamanica-mobile] .serviceCard:last-child{
+ border:2px solid #f4c47f;border-radius:20px;
+ box-shadow:0 3px 9px #0c04058f;
+}
+.page[data-shamanica-mobile] [data-shamanica-service] .servicePhoto{
+ background-image:url("/images/holistic-house/shamanic-genie-cards-personal.webp");
+ width:100%;height:64%;
+}
+.page[data-shamanica-mobile] .serviceBody{
+ grid-template-columns:clamp(24px,5.5vw,32px) minmax(0,1fr);
+ gap:5px;padding:4px 7px;min-height:42px;
+ border-radius:15px 15px 18px 18px;
+ background:linear-gradient(110deg,#fff2d1,#f8daa8 83%,#ffedc3);
+}
+.page[data-shamanica-mobile] .serviceBody strong{
+ font:700 clamp(12.7px,3.64vw,18px)/1.03 Georgia,serif;
+}
+.page[data-shamanica-mobile] .serviceBody svg{
+ width:clamp(23px,5.5vw,30px);height:clamp(23px,5.5vw,30px);
+}
+.page[data-shamanica-mobile] .toolsDrawer{
+ margin-top:12px;
+}
+@media(max-width:354px){
+ .page[data-shamanica-mobile] .container{padding-inline:6px}
+ .page[data-shamanica-mobile] .header{height:38px;min-height:38px}
+ .page[data-shamanica-mobile] .hero{height:clamp(184px,29dvh,230px)}
+ .page[data-shamanica-mobile] .hero:before{height:clamp(114px,19dvh,160px)}
+ .page[data-shamanica-mobile] .mirrorIntro{width:61%}
+ .page[data-shamanica-mobile] .hero h1{font-size:clamp(19px,5.5vw,22px)}
+ .page[data-shamanica-mobile] .hero h1 span{font-size:clamp(17px,5.1vw,20px)}
+ .page[data-shamanica-mobile] .geaniePromo{width:50%;top:9px}
+ .page[data-shamanica-mobile] .geaniePortrait{width:51%;left:-15%;height:122px}
+ .page[data-shamanica-mobile] .geanieSpeech{top:23px;width:82%;padding:5px 4px 6px}
+ .page[data-shamanica-mobile] .geanieSpeech strong{font-size:9.4px}
+ .page[data-shamanica-mobile] .geanieSpeech>span{font-size:9px}
+ .page[data-shamanica-mobile] .geanieAsk{min-height:32px;font-size:9.5px}
+ .page[data-shamanica-mobile] .audiences{width:91%;height:39px;min-height:39px;margin-bottom:6px}
+ .page[data-shamanica-mobile] .serviceGrid{grid-auto-rows:clamp(68px,10.5dvh,85px);gap:6px}
+ .page[data-shamanica-mobile] .serviceBody strong{font-size:clamp(11.5px,3.72vw,13px)}
+}
+@media(max-width:759px) and (max-height:690px){
+ .page[data-shamanica-mobile] .hero{height:clamp(172px,29dvh,195px)}
+ .page[data-shamanica-mobile] .serviceGrid{grid-auto-rows:clamp(66px,10.5dvh,78px)}
+}
+@media(min-width:760px){
+ .page[data-shamanica-mobile] .container{width:min(100%,640px)}
+ .page[data-shamanica-mobile] .hero{height:310px}
+ .page[data-shamanica-mobile] .hero:before{height:228px}
+ .page[data-shamanica-mobile] .mirrorIntro{width:59%;padding:3px 10px}
+ .page[data-shamanica-mobile] .hero h1{font-size:37px}
+ .page[data-shamanica-mobile] .hero h1 span{font-size:33px}
+ .page[data-shamanica-mobile] .geaniePromo{width:44%;height:180px;top:15px}
+ .page[data-shamanica-mobile] .geaniePortrait{height:185px}
+ .page[data-shamanica-mobile] .geanieSpeech{top:38px;width:75%;padding:13px 11px}
+ .page[data-shamanica-mobile] .geanieSpeech strong{font-size:16px}
+ .page[data-shamanica-mobile] .geanieSpeech>span{font-size:14px}
+ .page[data-shamanica-mobile] .geanieAsk{min-height:44px;font-size:15px}
+ .page[data-shamanica-mobile] .serviceGrid{grid-auto-rows:135px;gap:12px}
+}
+@media(prefers-reduced-motion:reduce){
+ .page[data-shamanica-mobile] .geanieAsk{transition:none}
+}
+
+
+/* Compact quiz reveal keeps the approved illustration clear of dock. */
+@media(max-width:759px){
+ .page[data-shamanica-mobile] .geanieAsk{min-height:40px}
+ .page[data-shamanica-mobile][data-shamanica-expanded="true"] .hero,
+ .page[data-shamanica-mobile]:has([data-shamanica-business] .services[data-expanded="true"]) .hero{
+  height:clamp(169px,24dvh,203px)
+ }
+ .page[data-shamanica-mobile][data-shamanica-expanded="true"] .hero:before,
+ .page[data-shamanica-mobile]:has([data-shamanica-business] .services[data-expanded="true"]) .hero:before{
+  height:clamp(112px,17dvh,145px)
+ }
+}

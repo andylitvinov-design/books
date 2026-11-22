@@ -124,7 +124,15 @@ try {
   const shelves=section.locator("[data-business-cabinet-shelves]");
   await expect(shelves).toHaveAttribute("data-expanded","false");
   await expect(shelves.locator("[data-business-shelf]")).toHaveCount(6);
-  await expect(shelves.locator("[data-business-shelf] img")).toHaveCount(6);
+  const artwork = shelves.locator('[data-business-shelf] > span[aria-hidden="true"]');
+  await expect(artwork).toHaveCount(6);
+  const backgrounds = await artwork.evaluateAll(nodes => nodes.map(node => {
+   const style = getComputedStyle(node);
+   const box = node.getBoundingClientRect();
+   return {image: style.backgroundImage, position: style.backgroundPosition, visible: box.width > 0 && box.height > 0 && style.display !== "none"};
+  }));
+  assert.ok(backgrounds.every(({image,visible}) => visible && image.includes("shamanic-cards-business-hd.avif")), "All six categories must display the approved HD artwork");
+  assert.equal(new Set(backgrounds.map(({position}) => position)).size, 6, "Each category must use its own artwork crop");
   const orderedCards=shelves.locator("[data-business-shelf]");
   assert.deepEqual(await orderedCards.evaluateAll(nodes=>nodes.map(node=>node.dataset.businessShelf)),
     ["express","remedies","strategy","artifacts","energy","energywork"],
@@ -175,7 +183,12 @@ try {
   await expect(shelves.locator('[data-business-get-details="strategy"]')).toHaveCount(1);
   if(width===390)await expect(shelves.locator('[data-business-get-details="strategy"]')).toBeVisible();
   await shelves.locator("[data-business-back-to-shelves]").click();
+  const quizDrawer=section.locator("[data-business-extras]");
+  await expect(quizDrawer).not.toHaveAttribute("open", "");
+  await quizDrawer.locator("summary").click();
+  await expect(quizDrawer).toHaveAttribute("open", "");
   const quiz=section.locator("[data-business-quiz]");
+  await expect(quiz).toBeVisible();
   await expect(quiz).toHaveAttribute("data-quiz-step","1");
   await quiz.locator('[data-business-answer="express"]').click();
   await expect(quiz).toHaveAttribute("data-quiz-step","2");
