@@ -8,6 +8,39 @@ export async function completeThreeStepGoalsQuiz(page,{
   engine='chromium',categorySelector='[data-auto-video-category]'
 }={}){
   assert.ok(['chromium','webkit'].includes(engine),'GOAL_QUIZ_INVALID_BROWSER');
+  // The approved Magic Mirror is the initial one-screen choice on mobile.
+  // The full original 3-step taxonomy is intentionally collapsed until a
+  // real visitor taps More goals. Never force-click the hidden legacy CTA.
+  // New Magic Mirror has a real landing screen before the topic composer.
+  const plan=page.locator('[data-hh-mirror-plan]');
+  if(await plan.isVisible()){
+    if(engine==='webkit')await plan.tap();else await plan.click();
+  }
+  const collapsedMirror=page.locator(
+    '[data-mandala-free-video][data-hh-mirror-advanced="false"] [data-hh-mirror-goals]'
+  );
+  if(await collapsedMirror.isVisible()){
+    const moreGoals=collapsedMirror.locator('[data-hh-mirror-more-goals]');
+    if(await moreGoals.isVisible()){
+      if(engine==='webkit')await moreGoals.tap();else await moreGoals.click();
+    }else{
+      // The approved compact topic design hides the old overflow icon.
+      // The + button in the REAL visible composer opens the same advanced quiz.
+      const composer=collapsedMirror.locator('[data-hh-mirror-composer]');
+      for(let i=0;i<2&&!await composer.isVisible();i++){
+        const back=collapsedMirror.locator('[data-hh-mirror-back]');
+        await back.waitFor({state:'visible',timeout:15000});
+        if(engine==='webkit')await back.tap();else await back.click();
+      }
+      await composer.waitFor({state:'visible',timeout:15000});
+      const plus=composer.locator('button').first();
+      await plus.waitFor({state:'visible',timeout:15000});
+      if(engine==='webkit')await plus.tap();else await plus.click();
+    }
+    await page.waitForFunction(()=>
+      document.querySelector('[data-mandala-free-video]')
+        ?.getAttribute('data-hh-mirror-advanced')==='true',undefined,{timeout:15000});
+  }
   const progress=page.locator('[data-video-goal-quiz-progress]');
   const next=page.locator('[data-video-continue-scenarios]');
   // The compact mobile flow may visually hide the progress caption while

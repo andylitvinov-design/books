@@ -9,6 +9,7 @@ import {runInNewContext} from 'node:vm'
 import {chooseDictationLanguage,detectedSpeechLocale,coachSpokenTurnLocale,ios27NeedsSpeechRecovery,
   readDictationResults,hasCoachSpokenAnswer} from '../lib/personal-coaching/my-coach-dictation.mjs'
 import {appendSpokenAnswer} from '../lib/personal-coaching/speech-text.js'
+import {setCoachIos27AudioSession,refreshCoachIos27PlaybackRoute} from '../lib/personal-coaching/coach-ios-audio-route.mjs'
 import {coachVoiceFragmentNeedsReview,coachDraftWithoutUncertainSpeech} from '../lib/personal-coaching/coach-voice-turn-quality.mjs'
 import {coachRecordingMime,createCoachVoiceGate,coachFallbackLocale,coachRecordedSupported,startCoachRecordedTurn} from '../lib/personal-coaching/coach-recorded-turn.mjs'
 
@@ -35,6 +36,7 @@ function createSession({ttsFailures=[],respond,stuckCue=false,skipSpeechStart=fa
   const navigator={
     userAgent:'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Mobile/15E148 Safari/604.1',
     platform:'iPhone',maxTouchPoints:5,languages:['ru-RU'],language:'ru-RU',
+    audioSession:{type:'auto'},
     mediaDevices:{getUserMedia:async()=>({getTracks:()=>[{stop(){}}]})},
   }
   const fakeWindow={
@@ -67,6 +69,10 @@ function createSession({ttsFailures=[],respond,stuckCue=false,skipSpeechStart=fa
     ...hooks,window:fakeWindow,document:fakeDocument,
     setTimeout:schedule,clearTimeout:cancel,queueMicrotask,AbortController,
     chooseDictationLanguage,detectedSpeechLocale,coachSpokenTurnLocale,ios27NeedsSpeechRecovery,
+    setCoachIos27AudioSession,
+    // Feed the real category-reset logic into the evaluated controller, while
+    // using a synthetic browser microtask instead of touching real hardware.
+    refreshCoachIos27PlaybackRoute:(nav)=>refreshCoachIos27PlaybackRoute(nav,fn=>queueMicrotask(fn)),
     readDictationResults,appendSpokenAnswer,hasCoachSpokenAnswer,
     // The VM runs the real controller body; inject its real pure imports.
     coachVoiceFragmentNeedsReview,coachDraftWithoutUncertainSpeech,

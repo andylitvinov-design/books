@@ -48,7 +48,7 @@ export async function exportOpenMotionPresetMp4(
       if(!buffer){
         const path=paths.get(lane.assetId);
         if(!path)throw Error("motion_audio_source_missing");
-        const response=await fetch(path,{signal});
+        const response=await fetch(path,{signal,credentials:'omit',mode:'same-origin',redirect:'error',cache:'force-cache'});
         if(!response.ok)throw Error("motion_audio_unavailable");
         buffer=await audio.decodeAudioData(await response.arrayBuffer());
         buffers.set(lane.assetId,buffer);
@@ -112,6 +112,7 @@ export async function exportOpenMotionPresetMp4(
             if (!path) throw new Error("motion_video_source_missing");
             const input = new Input({
               source:new UrlSource(new URL(path,location.origin),{
+                requestInit:{credentials:'omit',mode:'same-origin',redirect:'error'},
                 maxCacheSize:4*1024*1024,
                 parallelism:1,
                 getRetryDelay:attempt=>attempt<2?0.25:null,

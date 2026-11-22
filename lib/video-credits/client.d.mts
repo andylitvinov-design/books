@@ -20,6 +20,6 @@ export interface VideoCreditChargeResult{
 export declare function fetchVideoCreditCatalog():Promise<VideoCreditCatalog>
 export declare function fetchVideoCreditStatus():Promise<VideoCreditState>
 export declare function postVideoCreditAction(
-  action:'hold'|'complete'|'release',body:Record<string,unknown>
+  action:'hold'|'complete'|'release',body:Record<string,unknown>,options?:{timeoutMs?:number}
 ):Promise<VideoCreditChargeResult>
 export declare function releaseVideoCreditOnExit(operationId:string):void

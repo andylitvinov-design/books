@@ -65,6 +65,11 @@ on:
       # Public Ali greeting and support quiz: focused conversation owner; private Messenger/auth changes keep full tests.
       - '!components/app/messenger-ai-landing.*'
       - '!components/app/messenger-support-quiz.*'
+      # Public Ali greeting and decorative coach portrait are not authenticated
+      # App/CRM, assessment, cabinet or SQL/RLS changes. Core now runs focused
+      # persona/media contracts. Mixed private changes still run App QA.
+      - '!components/app/ali-persona-audio.js'
+      - '!components/app/coaching-avatar.jsx'
 permissions:
   contents: read
   pull-requests: read

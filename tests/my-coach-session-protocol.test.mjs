@@ -152,7 +152,9 @@ test('owner mobile design keeps voice controls, back and end-call summary while 
   assert.match(ui,/data-coach-live-wave/)
   assert.match(css,/height:clamp\(320px,47dvh,448px\)/)
   assert.match(css,/\.sessionProgress\[data-coach-progress-accordion\]/)
-  assert.match(css,/\.experienceConsentPanel\{/)
+  assert.match(css,/\.voicePlayNotice\[data-coach-pro-same-tap-disclosure\]/)
+  assert.match(ui,/data-coach-pro-same-tap-disclosure/)
+  assert.doesNotMatch(ui,/data-coach-experience-consent/)
 })
 test('PDF prints the provisional key-information map using only the client transcript',()=>{
   const report=myCoachProtocolPdfOptions(sample(),{locale:'ru'})

@@ -160,22 +160,23 @@ test("voice browser opens Ideas and applies six visible Montage styles with deco
  const start=source.indexOf("async function verifyWorkspaceHydration");
  const end=source.indexOf("// Real guest route browser acceptance",start);
  const flow=source.slice(start,end);
- const click=flow.indexOf("await continueToIdeas.click()");
+ const click=flow.indexOf("await mirror.locator('[data-hh-mirror-next]').click();");
  const ideas=flow.indexOf('data-active-workspace","phrases"',click);
- const goalTab=flow.indexOf('const ideasGoalTab=page.locator',ideas);
- const goalPane=flow.indexOf('const goalPane=page.locator',goalTab);
- const choices=flow.indexOf('await expect(goalCards).toHaveCount(3)',goalPane);
- const selectedGoal=flow.indexOf('await expect(choice).toHaveAttribute("aria-pressed","true")',choices);
- const nextGoal=flow.indexOf('await expect(nextGoal).toBeEnabled()',selectedGoal);
- const personalization=flow.indexOf('data-video-ideas-personalization-panel',nextGoal);
- const montage=flow.indexOf('await openVisibleMontageText(page,browser.browserType().name())',personalization);
+ const goal=flow.indexOf('const ideasGoalPane=page.locator',ideas);
+ const choices=flow.indexOf('await expect(goalChoices).toHaveCount(3)',goal);
+ const goalSelected=flow.indexOf('data-video-ideas-goal-choice="rest"',choices);
+ const next=flow.indexOf('data-video-ideas-goal-next',goalSelected);
+ const personal=flow.indexOf('data-video-personalization-goal',next);
+ const mood=flow.indexOf('data-video-personalization-choice="desired-calm"',personal);
+ const energy=flow.indexOf('data-video-personalization-energy="5"',mood);
+ const montage=flow.indexOf('await montage.tap()',energy);
  const style=flow.indexOf('const styles=page.locator("[data-video-montage-style]")',montage);
  const six=flow.indexOf('await expect(styles).toHaveCount(6)',style);
  const selected=flow.indexOf('await minimal.tap()',six);
  const reflected=flow.indexOf('data-video-preview-style","minimal"',selected);
  const decoded=flow.indexOf('video.readyState>=2&&video.videoWidth>0',reflected);
- assert.ok(start>=0&&end>start&&click>=0&&ideas>click&&goalTab>ideas&&goalPane>goalTab&&choices>goalPane&&selectedGoal>choices&&nextGoal>selectedGoal&&personalization>nextGoal&&montage>personalization&&style>montage&&six>style&&selected>six&&reflected>selected&&decoded>reflected,
-   "real visitor must choose a visible Goal, enter Personalization, select one of six Montage styles and decode an MP4");
+ assert.ok(start>=0&&end>start&&click>=0&&ideas>click&&goal>ideas&&choices>goal&&goalSelected>choices&&next>goalSelected&&personal>next&&mood>personal&&energy>mood&&montage>energy&&style>montage&&six>style&&selected>six&&reflected>selected&&decoded>reflected,
+   "real leisure Goal, mood and energy selections precede six Montage styles and decoded MP4");
  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
  assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
  assert.match(source,/voiceOptions\.locator\(":scope > summary"\)\.tap\(\)[\s\S]*?data-video-affirmation-bed/);
@@ -197,8 +198,44 @@ test("WebKit selects a real male narration voice with native touch before consen
   assert.doesNotMatch(stage,/force:\s*true|node\.click\(\)/);
 });
 
-test("voice browser selects the visible montage workspace before recording",()=>{
-  assert.match(source,/phase\(engine,"offline-remix-ready"\)[\s\S]*?data-video-quick-control="editor"[\s\S]*?expect\(generate\)\.toBeVisible/);
+test("voice browser opens Montage through visible Magic Mirror Plan and composer controls before recording",()=>{
+  const start=source.indexOf('phase(engine,"offline-remix-ready")');
+  const end=source.indexOf('await expect(generate).toBeVisible',start);
+  assert.ok(start>=0&&end>start,"inspect the real post-remix route before MP4 export");
+  const flow=source.slice(start,end);
+  assert.ok(flow.includes("await page.locator('[data-video-quick-control=\"video\"]').click();"),
+    "the real visitor returns to the compact first Video screen");
+  assert.ok(flow.includes('await enterVisibleStudioWorkspace(page,"editor",engine);'),
+    "Montage uses the authentic visible Studio navigation");
+  const entry=source.indexOf("async function enterVisibleStudioWorkspace");
+  const entryEnd=source.indexOf("async function openVisibleMontageText",entry);
+  assert.ok(entry>=0&&entryEnd>entry,"shared visible navigation helper must exist");
+  const helper=source.slice(entry,entryEnd);
+  for(const action of [
+    'await revealMirrorAdvanced(page,engine)',
+    'await expect(control).toBeVisible({timeout:15000})',
+    'await expect(control).toBeEnabled()',
+    'if(engine==="webkit")await control.tap()',
+    'else await control.click()'
+  ])assert.ok(helper.includes(action),action);
+  const revealStart=source.indexOf("async function revealMirrorAdvanced");
+  const revealEnd=source.indexOf("async function enterVisibleStudioWorkspace",revealStart);
+  assert.ok(revealStart>=0&&revealEnd>revealStart,"only visible Mirror actions reveal advanced editor");
+  const reveal=source.slice(revealStart,revealEnd);
+  for(const action of [
+    '[data-hh-mirror-plan]',
+    '[data-hh-mirror-composer]',
+    '[data-hh-mirror-open-advanced]',
+    'if(engine==="webkit")await plan.tap()',
+    'if(engine==="webkit")await plus.tap()',
+    'await expect(composer).toBeVisible({timeout:15000})',
+    'await expect(plus).toBeEnabled()',
+    'await expect(studio).toHaveAttribute("data-hh-mirror-advanced","true",{timeout:15000})'
+  ])assert.ok(reveal.includes(action),action);
+  assert.doesNotMatch(reveal,/force:\s*true|node\.click\(\)|evaluate\([^)]*click/);
+  assert.ok(!flow.includes("await editorTab.click();")&&
+    !flow.includes("await page.locator('[data-video-quick-control=\"editor\"]').click();"),
+    "a hidden direct Editor click must never stand in for a user-visible tap");
 });
 
 test("affirmation attachment acceptance verifies the visible live movie soundtrack",()=>{

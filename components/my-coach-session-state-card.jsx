@@ -37,6 +37,13 @@ const copy={
     privacy:'Esta ficha sigue en la pestaña. Guardarla a largo plazo requiere consentimiento aparte.'
   }
 }
+const openingTitles={
+  ru:['Согласие на сессию','Как обращаться','Прошлая или новая тема','Тип работы','Чувства сегодня','Подтверждение начала'],
+  en:['Session invitation','Preferred name','Previous or new topic','Working focus','Feelings today','Ready to begin'],
+  es:['Invitación','Nombre preferido','Tema anterior o nuevo','Tipo de trabajo','Cómo te sientes','Confirmación'],
+}
+const openingKeys=['invitation','name','continuity','focus','feelings','confirmation']
+const openingLampKey={invitation:'invitation',name:'identity',focus:'focus',confirmation:'confirmation'}
 const methodTitles={
   grow:'GROW',tgrow:'T-GROW',woop:'WOOP',oskar:'OSKAR',
   solution_focused:'Solution-Focused',appreciative_inquiry:'Appreciative Inquiry'
@@ -60,7 +67,7 @@ function ReadOnlyCheckbox({checked}){
  */
 export default function MyCoachSessionStateCard({
   locale='en',turns=[],progress=null,stageLabel='',
-  stageNames=[],stageIndex=0,stageProgressVerified=false
+  stageNames=[],stageIndex=0,stageProgressVerified=false,opening=null
 }){
   const language=copy[locale]?locale:'en'
   const t=copy[language]
@@ -85,7 +92,36 @@ export default function MyCoachSessionStateCard({
   ]
   return <div className={styles.body} data-coach-session-state-card>
     <p className={styles.intro}><BookOpenCheck size={16} aria-hidden="true"/>{t.subtitle}</p>
-    <section className={styles.stageSection} aria-label={t.stages}>
+    {opening&&<section className={styles.stageSection} data-coach-opening-checklist
+      aria-label={language==='ru'?'Начало сессии':language==='es'?'Inicio de sesión':'Session opening'}>
+      <h3 className={styles.sectionTitle}><CheckCircle2 size={18} aria-hidden="true"/>
+        {language==='ru'?'Начало сессии · 6 шагов':language==='es'?'Inicio de sesión · 6 pasos':'Session opening · 6 steps'}
+      </h3>
+      <ol className={styles.stageList}>
+        {openingKeys.map((key,index)=>{
+          const done=opening.checkmarks?.[key]===true
+          const active=!opening.completed&&!opening.declined&&opening.current===key
+          const state=done?t.done:active?t.current:t.waiting
+          const lamp=openingLampKey[key]
+          const value=key==='name'?opening.answers?.name?.value:
+            key==='continuity'?opening.answers?.continuity?.kind:
+            key==='focus'?opening.answers?.focus?.kind:''
+          return <li key={key} className={styles.stageRow}
+            data-opening-step={key} data-stage-status={done?'done':active?'current':'pending'}>
+            <span className={styles.stageNumber} aria-hidden="true">{done?<Check size={15} strokeWidth={3}/>:index+1}</span>
+            <span className={styles.stageName}>
+              {openingTitles[language][index]}
+              {lamp&&<span className={styles.openingLamp} data-lit={opening.lamps?.[lamp]===true?'true':'false'}
+                aria-hidden="true"/>}
+              {value&&<small className={styles.openingValue}>{String(value).slice(0,55)}</small>}
+            </span>
+            <span className={styles.stageStatus}>{state}</span>
+            <ReadOnlyCheckbox checked={done}/>
+          </li>
+        })}
+      </ol>
+    </section>}
+    {(!opening||opening.completed)&&<section className={styles.stageSection} aria-label={t.stages}>
       <h3 className={styles.sectionTitle}><CheckCircle2 size={18} aria-hidden="true"/>{t.stages}</h3>
       <ol className={styles.stageList} data-coach-stage-checklist>
         {stageNames.map((label,index)=>{
@@ -101,7 +137,7 @@ export default function MyCoachSessionStateCard({
           </li>
         })}
       </ol>
-    </section>
+    </section>}
     <section className={styles.informationSection} aria-label={t.information}>
       <h3 className={styles.sectionTitle}><BookOpenCheck size={18} aria-hidden="true"/>{t.information}</h3>
       <dl className={styles.fieldList}>

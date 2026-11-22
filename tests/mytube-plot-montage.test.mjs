@@ -1,11 +1,33 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import stock from "../data/video-catalog/scene-taxonomy.json" with {type:"json"};
-import {listMyTubePlots} from "../lib/mandala/mytube-scenario-plots.mjs";
+import {listMyTubePlots,auditMyTubePlots} from "../lib/mandala/mytube-scenario-plots.mjs";
+import taxonomy from "../data/video-catalog/mytube-content-taxonomy-4x4x4-v2.json" with {type:"json"};
 import {recommendMyTubePlotMontage} from "../lib/mandala/mytube-plot-montage.mjs";
 import {validateMontageClips} from "../lib/mandala/video-montage-sources.mjs";
 import {allocateAdaptiveFilmTimeline} from "../lib/mandala/free-film-timeline.mjs";
 import {readFileSync} from "node:fs";
+
+test("all 256 canonical scenarios retain six distinct legacy plot variants after category reparenting",async()=>{
+  let scenarios=0;
+  for(const category of taxonomy.categories)
+    for(const subcategory of category.subcategories)
+      for(const topic of subcategory.topics)
+        for(const scenario of topic.scenarios){
+          const plots=await listMyTubePlots(scenario.id,"en");
+          assert.equal(plots.length,6,"orphan plot scenario: "+scenario.id);
+          for(const plot of plots){
+            assert.equal(plot.categoryId,category.id,scenario.id);
+            assert.equal(plot.subcategoryId,subcategory.id,scenario.id);
+            assert.equal(plot.topicId,topic.id,scenario.id);
+          }
+          scenarios++;
+        }
+  assert.equal(scenarios,256);
+  const audit=await auditMyTubePlots();
+  assert.equal(audit.ok,true,audit.errors.slice(0,5).join("; "));
+  assert.equal(audit.counts.plots,1536);
+});
 
 test("a plot selection yields four distinct approved topic-matched MP4 scenes, not fake plot footage",async()=>{
   const variants=await listMyTubePlots("money-mindset-s1","ru");

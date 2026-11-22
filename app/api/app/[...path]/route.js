@@ -19,9 +19,11 @@ import { readPersonalCoaching, savePersonalCoaching, readTraditionCoaching, save
 import {personalCoachingBrainTurn,personalCoachingBrainProbe,myCoachGenerativeTurn,myCoachGenerativeStreamTurn,myCoachGenerativeProbe} from '@/lib/app/coaching-brain'
 import {geminiCoachTextConfig} from '@/lib/coaching/gemini-coach-text.mjs'
 import {geminiCoachTtsConfig} from '@/lib/coaching/gemini-coach-tts.mjs'
+import {geminiFreeLiveConfig,normalizeGeminiFreeLiveStart,issueGeminiFreeLiveToken,geminiFreeLiveCheckpoint} from '@/lib/coaching/gemini-live-free.mjs'
 import { readCoachingReportDraft } from '@/lib/app/coaching-report-v2'
 import { listCoachingReports, exportCoachingReports, readCoachingReport, saveCoachingReport, deleteCoachingReport } from '@/lib/app/coaching-report-store'
 import { readCoachingLifePlan, updateCoachingLifePlanArea, importCoachingReportActions } from '@/lib/app/coaching-life-plan'
+import { readBusinessContext, importPlaudBusinessContext, reviewBusinessInsight } from '@/lib/app/business-context-store'
 import { exportCoachingLifePlan } from '@/lib/app/coaching-life-plan'
 import { revokeCoachingPlanContext } from '@/lib/app/coaching-life-plan'
 import { deleteCoachingPlanAction } from '@/lib/app/coaching-life-plan'
@@ -1022,6 +1024,37 @@ async function handle(request, { params }) {
         'X-Accel-Buffering':'no',
       }})
     }
+    // An authenticated, one-use credential constrained to a single FREE
+    // Gemini Live model, chosen fictional persona and allowed voice.
+    // The browser never receives the permanent API key. The audio WebSocket
+    // then goes straight to Google, avoiding a billable Vercel audio proxy.
+    if (joined === 'my-coach/live-token') {
+      if (method !== 'POST') throw new AppError('NOT_FOUND',404)
+      const vendor=geminiFreeLiveConfig(process.env)
+      if (!vendor) throw new AppError('MY_COACH_GEMINI_LIVE_DISABLED',503)
+      let start
+      try{start=normalizeGeminiFreeLiveStart(await readBody(request,2048))}
+      catch{throw new AppError('MY_COACH_GEMINI_LIVE_INVALID',400)}
+      await consumeRate(config,{op:'my-coach-live-free-actor-hour',actor:actor.id},2,3600)
+      await consumeRate(config,{op:'my-coach-live-free-actor-day',actor:actor.id},4,86400)
+      await consumeRate(config,{op:'my-coach-live-free-global-day'},20,86400)
+      let token
+      try{token=await issueGeminiFreeLiveToken(vendor,start,{
+        signal:AbortSignal.any([request.signal,AbortSignal.timeout(12000)])})}
+      catch{throw new AppError('MY_COACH_GEMINI_LIVE_UNAVAILABLE',503)}
+      return json(token)
+    }
+    // Server-only evidence checkpoint for the transcript of a Free Live call.
+    // Absolutely no second Google model call, persistence or client history log.
+    if (joined === 'my-coach/live-checkpoint') {
+      if (method !== 'POST') throw new AppError('NOT_FOUND',404)
+      if (!geminiFreeLiveConfig(process.env))throw new AppError('MY_COACH_GEMINI_LIVE_DISABLED',503)
+      await consumeRate(config,{op:'my-coach-live-evidence-hour',actor:actor.id},65,3600)
+      let progress
+      try{progress=geminiFreeLiveCheckpoint(await readBody(request,8192))}
+      catch{throw new AppError('MY_COACH_GEMINI_LIVE_INVALID',400)}
+      return json(progress)
+    }
     // Metadata-only check: no client transcript, API key or test generation.
     if (joined === 'my-coach/engines') {
       if (method !== 'GET') throw new AppError('NOT_FOUND',404)
@@ -1030,6 +1063,7 @@ async function handle(request, { params }) {
         gemini_paid:Boolean(geminiCoachTextConfig(process.env,'gemini_paid')),
         gemini_tts_free:Boolean(geminiCoachTtsConfig(process.env,'gemini_tts_free')),
         gemini_tts_paid:Boolean(geminiCoachTtsConfig(process.env,'gemini_tts_paid')),
+        gemini_live_free:Boolean(geminiFreeLiveConfig(process.env)),
         live:false})
     }
     if (joined === 'my-coach/turn') {
@@ -1122,6 +1156,13 @@ async function handle(request, { params }) {
       if (path.length===4 && path[1]==='actions' && path[3]==='delete' && method==='POST') {
         return json(await deleteCoachingPlanAction(config,actor,path[2],await readBody(request,1024)))
       }
+      throw new AppError('NOT_FOUND',404)
+    }
+    if (path[0] === 'business-context') {
+      if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
+      if (path.length===1 && method==='GET') return json(await readBusinessContext(config,actor))
+      if (path.length===2 && path[1]==='plaud-import' && method==='POST') return json(await importPlaudBusinessContext(config,actor,await readBody(request,131072)));
+      if (path.length===2 && path[1]==='review' && method==='POST') return json(await reviewBusinessInsight(config,actor,await readBody(request,1024)));
       throw new AppError('NOT_FOUND',404)
     }
     if (joined === 'tradition-coaching-summary') {

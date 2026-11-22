@@ -62,16 +62,23 @@ test("macOS WebKit hydration follows visible Goals → Ideas → Montage without
  const first=browser.indexOf("async function verifyWorkspaceHydration");
  const last=browser.indexOf("// Real guest route browser acceptance",first);
  const flow=browser.slice(first,last);
- const click=flow.indexOf("await continueToIdeas.click()");
- const ideas=flow.indexOf('toHaveAttribute("data-active-workspace","phrases")',click);
- const goal=flow.indexOf('const ideasGoalTab=page.locator',ideas);
- const cards=flow.indexOf('await expect(goalCards).toHaveCount(3)',goal);
- const selected=flow.indexOf('await expect(choice).toHaveAttribute("aria-pressed","true")',cards);
- const next=flow.indexOf('await expect(nextGoal).toBeEnabled()',selected);
- const personalization=flow.indexOf('data-video-ideas-personalization-panel',next);
- const montage=flow.indexOf('await openVisibleMontageText(page,browser.browserType().name())',personalization);
- assert.ok(first>=0&&last>first&&click>=0&&ideas>click&&goal>ideas&&cards>goal&&selected>cards&&next>selected&&personalization>next&&montage>personalization,
-   "one real visitor click reaches Ideas Goal, selects a visible choice, enters Personalization, then opens Montage");
+ const click=flow.indexOf("await mirror.locator('[data-hh-mirror-next]').click()");
+ const ideas=flow.indexOf('toHaveAttribute("data-active-workspace","phrases",{timeout:15000})',click);
+ const goalPanel=flow.indexOf('data-video-ideas-goal-panel',ideas);
+ const chooseCandidates=[
+   flow.indexOf('await choice.tap()',goalPanel),
+   flow.indexOf("await ideasGoalPane.locator('[data-video-ideas-goal-choice=\"rest\"]').click()",goalPanel)
+ ].filter(index=>index>=0);
+ const choose=chooseCandidates.length?Math.min(...chooseCandidates):-1;
+ const nextCandidates=[
+   flow.indexOf('await nextGoal.tap()',choose),
+   flow.indexOf("await ideasGoalPane.locator('[data-video-ideas-goal-next]').click()",choose)
+ ].filter(index=>index>=0);
+ const next=nextCandidates.length?Math.min(...nextCandidates):-1;
+ const personalized=flow.indexOf('data-video-ideas-personalization-panel',next);
+ const montage=flow.indexOf("await montage.tap()",personalized);
+ assert.ok(first>=0&&last>first&&click>=0&&ideas>click&&goalPanel>ideas&&choose>goalPanel&&next>choose&&personalized>next&&montage>personalized,
+   "one real visitor tap selects a Goal, advances to Personalization, then reaches Montage");
  assert.match(flow,/data-video-continue-scenarios/);
  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
  assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
@@ -168,4 +175,43 @@ test("guided meditation include/omit commits native narration disclosure after R
  assert.match(studio,/setCourseMeditationIncluded\(true\);\s*setCourseMeditationDraft\(script\);/);
  assert.match(studio,/onOmitMeditation=\{\(\)=>\{\s*setCourseMeditationIncluded\(false\);/);
  assert.doesNotMatch(studio,/onAddMeditation=\{script=>\{[\s\S]{0,500}requestAnimationFrame/);
+});
+
+
+test("macOS WebKit exposes preserved recipient actions through visible Magic Mirror Plan and composer controls",()=>{
+ const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+ const start=browser.indexOf("async function verifyWorkspaceHydration");
+ const end=browser.indexOf("// Real guest route browser acceptance",start);
+ const flow=browser.slice(start,end);
+ assert.match(flow,/const openAdvancedGoal=async\(\)=>\{/);
+ assert.match(flow,/await revealMirrorAdvanced\(page\)/);
+ assert.equal((flow.match(/await openAdvancedGoal\(\)/g)||[]).length,3);
+ assert.doesNotMatch(flow,/backGoal\.click\(\{force:true\}\)|backGoal\.evaluate\(/);
+ const reveal=browser.slice(browser.indexOf("async function revealMirrorAdvanced"),
+  browser.indexOf("async function enterVisibleStudioWorkspace"));
+ assert.match(reveal,/data-hh-mirror-plan/);
+ assert.match(reveal,/data-hh-mirror-composer/);
+ assert.match(reveal,/data-hh-mirror-open-advanced/);
+ assert.match(reveal,/await expect\(plus\)\.toBeEnabled\(\)/);
+ assert.doesNotMatch(reveal,/force:true|\.evaluate\(/);
+});
+
+test("real macOS WebKit Montage navigation opens visible Magic Mirror controls before the hidden workspace rail",()=>{
+ const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+ const helperStart=browser.indexOf("async function enterVisibleStudioWorkspace");
+ const helperEnd=browser.indexOf("async function openVisibleMontageText",helperStart);
+ assert.ok(helperStart>=0&&helperEnd>helperStart);
+ const helper=browser.slice(helperStart,helperEnd);
+ assert.match(helper,/if\(!await control\.isVisible\(\)\)/);
+ assert.match(helper,/await revealMirrorAdvanced\(page,engine\)/);
+ assert.match(helper,/await expect\(control\)\.toBeVisible/);
+ assert.match(helper,/if\(engine==="webkit"\)await control\.tap\(\)/);
+ assert.match(helper,/else await control\.click\(\)/);
+ assert.doesNotMatch(helper,/force:true|\.evaluate\(/);
+ const reveal=browser.slice(browser.indexOf("async function revealMirrorAdvanced"),helperStart);
+ assert.match(reveal,/if\(engine==="webkit"\)await plan\.tap\(\)/);
+ assert.match(reveal,/if\(engine==="webkit"\)await plus\.tap\(\)/);
+ const editor=browser.slice(browser.indexOf('phase(engine,"editor-ready")'));
+ assert.match(editor,/await enterVisibleStudioWorkspace\(page,"editor",engine\)/);
+ assert.doesNotMatch(editor,/await editorTab\.click\(\)|await page\.locator\('\[data-video-quick-control="editor"\]'\)\.click\(\)/);
 });

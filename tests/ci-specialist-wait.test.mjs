@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggregateError } from '../scripts/ci-specialist-aggregate.mjs';
 import { inspectJobs, trustedRequiredJobs, inspectWorkflowRuns } from '../lib/ci/specialist-aggregate.mjs';
-import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeStandaloneVideoAfterSpecialistScopeAdvance } from '../lib/ci/production-base-impact.mjs';
 
 const repo = 'andylitvinov-design/books', head = 'a'.repeat(40), base = 'b'.repeat(40);
 const path = '.github/workflows/mobile.yml';
@@ -970,4 +970,71 @@ test('unrelated public page-only protected advances do not invalidate a private 
   assert.equal(safeUnrelatedPublicLeafAdvance({...publicOnly,files:[
     {...publicOnly.files[0],status:'renamed',previous_filename:'app/old/page.tsx'}]},old,newer,candidate),false);
   assert.equal(safeUnrelatedPublicLeafAdvance(publicOnly,old,newer,['package.json']),false);
+});
+
+
+test('specialist leaf-trigger scope can reuse exact-HEAD green checks over two independently protected video content promotions', () => {
+  const base = 'a'.repeat(40), live = 'b'.repeat(40);
+  const candidate = [
+    '.github/workflows/hh-course-presets.yml',
+    '.github/workflows/hh-interpretation-database.yml',
+    '.github/workflows/hh-personal-coaching-session.yml',
+    '.github/workflows/hh-private-audio-e2e.yml',
+    '.github/workflows/hh-profile-axis-matching.yml',
+    '.github/workflows/practice-google-browser.yml',
+    '.github/workflows/practice-visual-services.yml',
+    'tests/ci-workflow-globs.test.mjs',
+  ];
+  const video = [
+    'data/video-catalog/meaning-axis-energy-phrases-512-v1.json',
+    'docs/videos/ENERGY_SUPPORT_PHRASES_512_20261122.md',
+    'tests/meaning-axis-energy-phrases-style-512.test.mjs',
+    'components/mandala-auto-video-director.tsx',
+    'components/mandala-free-video-studio.tsx',
+    'tests/mandala-auto-video-director-ui.test.mjs',
+    'tests/mandala-mobile-video-design.test.mjs',
+  ];
+  const diff = (filenames=video, overrides={})=>({
+    status:'ahead',ahead_by:2,behind_by:0,total_commits:2,
+    base_commit:{sha:base},merge_base_commit:{sha:base},
+    commits:[{sha:'c'.repeat(40)},{sha:live}],
+    files:filenames.map(filename=>({filename,status:'modified'})),
+    ...overrides,
+  });
+  const check = (delta,candidates=candidate) =>
+    safeStandaloneVideoAfterSpecialistScopeAdvance(delta,base,live,candidates);
+  assert.equal(check(diff()),true);
+  assert.equal(safeMixedProtectedAdvance(diff(),base,live,candidate),true);
+  // This exception must NOT apply to any changed Core, other specialist,
+  // security, privacy, payment, configuration or shared runtime source.
+  for (const unsafe of [
+    '.github/workflows/hh-pr-core-release.yml',
+    '.github/workflows/holistic-support-mandala.yml',
+    '.github/workflows/hh-pr-sweep-guard.yml',
+    'lib/ci/specialist-aggregate.mjs',
+    'tests/ci-specialist-aggregate.test.mjs',
+    'app/api/app/live-photos/route.js',
+    'app/api/auth/route.ts',
+    'components/app/my-page-client.jsx',
+    'lib/security/permissions.mjs',
+    'lib/billing/checkout.js',
+    'supabase/migrations/20261122_private.sql',
+    'package-lock.json',
+    'next.config.ts',
+    'middleware.ts',
+  ]) assert.equal(check(diff([...video,unsafe])),false,unsafe);
+  for (const proposed of [
+    candidate.slice(1),
+    [...candidate,'.github/workflows/hh-pr-core-release.yml'],
+    [...candidate,'components/mandala-free-video-studio.tsx'],
+    ['tests/ci-workflow-globs.test.mjs'],
+  ]) assert.equal(check(diff(),proposed),false,'must preserve exact specialist cohort');
+  for (const invalid of [
+    {status:'diverged'}, {behind_by:1}, {total_commits:3},
+    {commits:[]}, {merge_base_commit:{sha:'d'.repeat(40)}},
+    {files:[]},
+    {files:[{filename:video[0],status:'deleted'}]},
+    {files:[{filename:video[0],status:'renamed',previous_filename:'old.json'}]},
+    {files:[{filename:video[0],status:'modified'},{filename:video[0],status:'modified'}]},
+  ]) assert.equal(check(diff(video,invalid)),false,'must reject incomplete or ambiguous protected Compare');
 });
