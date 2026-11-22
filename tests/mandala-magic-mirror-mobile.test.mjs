@@ -34,11 +34,18 @@ test("the approved mobile Mirror contains only three scopes, a compact input Nex
  assert.match(mirror,/data-hh-mirror-plan/);
  assert.match(mirror,/data-hh-mirror-tier-option=\{option.id\}/);
  assert.match(mirror,/data-hh-mirror-ideas-cta/);
+ assert.match(mirror,/data-hh-mirror-open-advanced/);
+ assert.match(browser,/async function revealMirrorAdvanced/);
+ assert.match(browser,/await revealMirrorAdvanced\(page,engine\)/);
+ assert.doesNotMatch(browser,/await expect\(moreGoals\)\.toBeVisible\(\{timeout:15000\}\)/);
  assert.match(mirror,/videoFormat\}\);/);
  for(const price of ["250","500","1000"])assert.ok(mirror.includes("credits:"+price));
  assert.match(mirrorCss,/\.destinationCards/);
  assert.match(mirrorCss,/\.formatGrid/);
  assert.match(mirrorCss,/\.composerToolbar/);
+ assert.match(mirrorCss,/reiki-approved-sunrise-v3\.webp/);
+ assert.match(mirror,/src="\/images\/holistic-house\/assessment-lotus\.svg"/);
+ assert.match(mirror,/src="\/images\/holistic-house\/assist-video-letter\.svg"/);
  assert.match(mirror,/data-hh-mirror-wish/);
  assert.match(mirror,/data-hh-mirror-goal-choice=\{item\.id\}/);
  assert.match(mirror,/data-hh-mirror-next/);

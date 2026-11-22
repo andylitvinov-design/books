@@ -205,13 +205,13 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
   <div className={css.destinationCards} role="group" aria-label={locale==="ru"?"Для кого видео":locale==="es"?"Destinatario":"Who is this video for?"}>
    <button type="button" data-hh-mirror-enter="me" className={css.destination}
     disabled={disabled} onClick={()=>enterScreen("me")}>
-    <img src="/videos/holistic-house/film-collection-v3/sun-warm-ocean-dawn.jpg" alt="" loading="eager"/>
+    <img src="/images/holistic-house/assessment-lotus.svg" alt="" loading="eager"/>
     <span className={css.destinationCopy}><Flower2 size={26} aria-hidden="true"/><strong>{copy.therapy}</strong><small>{copy.therapyHint}</small></span>
     <span className={css.destinationArrow}><ArrowRight size={22}/></span>
    </button>
    <button type="button" data-hh-mirror-enter="others" className={css.destination}
     disabled={disabled} onClick={()=>enterScreen("others")}>
-    <img src="/videos/holistic-house/film-collection-v3/heart-flow.jpg" alt="" loading="lazy"/>
+    <img src="/images/holistic-house/assist-video-letter.svg" alt="" loading="lazy"/>
     <span className={css.destinationCopy}><Gift size={26} aria-hidden="true"/><strong>{copy.other}</strong><small>{copy.otherHint}</small></span>
     <span className={css.destinationArrow}><ArrowRight size={22}/></span>
    </button>
@@ -286,7 +286,7 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
      placeholder={scope==="business"?t.workPlaceholder:copy.describe}
      aria-label={scope==="business"?t.workPlaceholder:copy.describe}/>
     <div className={css.composerToolbar}>
-     <button type="button" className={css.toolIcon} disabled={disabled}
+     <button type="button" className={css.toolIcon} data-hh-mirror-open-advanced="true" disabled={disabled}
       aria-label={t.advanced} onClick={onExpand}><Plus size={23} aria-hidden="true"/></button>
      <button type="button" className={css.toolIcon} disabled={disabled}
       aria-label={copy.media} onClick={onExpand}><ImagePlus size={21} aria-hidden="true"/></button>

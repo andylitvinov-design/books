@@ -107,7 +107,7 @@
 
 /* Owner-approved Magic Mirror entrance + therapy composer. Real elements; existing intro/player/navigation retained. */
 @media(max-width:759px){
- .title{position:relative;isolation:isolate;justify-items:start;align-content:start;min-height:clamp(210px,55vw,298px);margin:0 0 5px!important;padding:26px 15px 18px;overflow:hidden;border-radius:23px;background:linear-gradient(90deg,rgba(8,55,45,.98),rgba(12,65,53,.84) 52%,rgba(14,67,55,.08)),url("/videos/holistic-house/film-collection-v3/sun-autumn-hills-portrait.jpg") center/cover;color:white!important;text-align:left}
+ .title{position:relative;isolation:isolate;justify-items:start;align-content:start;min-height:clamp(210px,55vw,298px);margin:0 0 5px!important;padding:26px 15px 18px;overflow:hidden;border-radius:23px;background:linear-gradient(90deg,rgba(8,55,45,.98),rgba(12,65,53,.84) 52%,rgba(14,67,55,.08)),url("/images/holistic-house/reiki-approved-sunrise-v3.webp") center/cover;color:white!important;text-align:left}
  .title>svg{color:#f6d36e;width:28px;height:28px}
  .title h2{color:white!important;font-size:clamp(32px,8vw,43px)!important}
  .title strong{max-width:270px;color:#ffdf9b!important;font-size:clamp(20px,5.8vw,28px)}
@@ -136,7 +136,7 @@
  .primaryAction{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:60px;margin:12px 0 0;padding:9px 14px;border:2px solid #fff;border-radius:999px;background:linear-gradient(115deg,#04aa76,#005c45);box-shadow:0 5px 14px #056b4f45;color:#fff;font:850 clamp(17px,5vw,23px)/1.14 system-ui,sans-serif;text-align:center;cursor:pointer}
  .primaryAction>svg:first-child{flex:none;color:#ffe18b}.primaryAction>svg:last-child{flex:none;margin-left:auto}
  .backLanding{display:inline-flex;align-items:center;gap:4px;align-self:start;min-height:36px;padding:2px 8px;border:0;background:transparent;color:#08725b;font:800 13px/1 system-ui,sans-serif}
- .therapyHero{position:relative;display:grid;align-content:center;min-height:clamp(185px,48vw,245px);overflow:hidden;padding:16px;border-radius:23px;background:linear-gradient(90deg,rgba(7,58,45,.96),rgba(6,63,49,.77) 55%,rgba(13,58,44,.04)),url("/videos/holistic-house/film-collection-v3/sun-autumn-hills-portrait.jpg") center/cover;color:#fff}
+ .therapyHero{position:relative;display:grid;align-content:center;min-height:clamp(185px,48vw,245px);overflow:hidden;padding:16px;border-radius:23px;background:linear-gradient(90deg,rgba(7,58,45,.96),rgba(6,63,49,.77) 55%,rgba(13,58,44,.04)),url("/images/holistic-house/reiki-approved-sunrise-v3.webp") center/cover;color:#fff}
  .therapyEyebrow{display:flex;align-items:center;gap:8px;max-width:280px;color:#ffe2ac;font:800 clamp(25px,7vw,34px)/1.1 Georgia,serif}
  .therapyEyebrow svg{flex:none;color:#f4d17a}
  .therapyHero p{max-width:265px;margin:10px 0 0!important;color:white;font:500 clamp(14px,3.75vw,16px)/1.37 system-ui,sans-serif}

@@ -11,19 +11,49 @@ import {verifyGuidedPractices} from "./verify-mandala-practices-browser.mjs";
 const BASE=(process.env.HH_TEST_PUBLIC_ORIGIN||"http://127.0.0.1:3100").replace(/\/$/,"");
 /** The new photo-led Ideas screen hides the retired phrase shortcut. Use real
  *  visible studio navigation instead of forcing a hidden button. */
+/** Open the actual Magic Mirror advanced editor using visible, hydrated,
+ * touch-accessible controls. The approved landing has no legacy overflow;
+ * neither a hidden click nor a generated video is used. */
+async function revealMirrorAdvanced(page,engine="chromium"){
+  const studio=page.locator('[data-mandala-free-video]');
+  if(await studio.getAttribute("data-hh-mirror-advanced")==="true")return;
+  await expect(studio).toHaveAttribute("data-active-workspace","video",{timeout:15000});
+  const mirror=page.locator('[data-hh-mirror-goals]');
+  const overflow=mirror.locator('[data-hh-mirror-more-goals]');
+  if(await overflow.isVisible()){
+    if(engine==="webkit")await overflow.tap();
+    else await overflow.click();
+  }else{
+    // Start at the actual introduction. This navigates only to Topic,
+    // without rendering, sending a request, or charging any XP.
+    const plan=mirror.locator('[data-hh-mirror-plan]');
+    if(await plan.isVisible()){
+      if(engine==="webkit")await plan.tap();
+      else await plan.click();
+    }
+    const composer=mirror.locator('[data-hh-mirror-composer]');
+    for(let step=0;step<3&&!await composer.isVisible();step++){
+      const back=mirror.locator('[data-hh-mirror-back]');
+      if(!await back.isVisible())throw Error("MIRROR_VISIBLE_BACK_UNAVAILABLE");
+      if(engine==="webkit")await back.tap();
+      else await back.click();
+    }
+    await expect(composer).toBeVisible({timeout:15000});
+    const plus=composer.locator('[data-hh-mirror-open-advanced]');
+    await expect(plus).toBeVisible({timeout:15000});
+    await expect(plus).toBeEnabled();
+    if(engine==="webkit")await plus.tap();
+    else await plus.click();
+  }
+  await expect(studio).toHaveAttribute("data-hh-mirror-advanced","true",{timeout:15000});
+}
 /** Navigate only through genuinely visible mobile Studio controls.
  * The approved first Video/Mirror screen hides the old workspace rail until
  * the visitor opens its existing overflow. No force-click or DOM mutation. */
 async function enterVisibleStudioWorkspace(page,workspace,engine="chromium"){
   const control=page.locator('[data-video-quick-control="'+workspace+'"]');
   if(!await control.isVisible()){
-    const studio=page.locator('[data-mandala-free-video]');
-    await expect(studio).toHaveAttribute("data-active-workspace","video",{timeout:15000});
-    const moreGoals=page.locator('[data-hh-mirror-more-goals]');
-    await expect(moreGoals).toBeVisible({timeout:15000});
-    if(engine==="webkit")await moreGoals.tap();
-    else await moreGoals.click();
-    await expect(studio).toHaveAttribute("data-hh-mirror-advanced","true",{timeout:15000});
+    await revealMirrorAdvanced(page,engine);
   }
   await expect(control).toBeVisible({timeout:15000});
   await expect(control).toBeEnabled();
@@ -540,27 +570,8 @@ async function verifyWorkspaceHydration(browser,locale){
     const goalTab=page.locator('[data-video-quick-control="video"]');
     // Only a real overflow tap can open the preserved advanced recipient path.
     const openAdvancedGoal=async()=>{
-      const moreGoals=mirror.locator('[data-hh-mirror-more-goals]');
       await expect(studio).toHaveAttribute("data-hh-mirror-advanced","false");
-      if(await moreGoals.isVisible()){
-        await moreGoals.click();
-      }else{
-        // The approved compact topic screen deliberately hides the old
-        // overflow button. Use the same visible + toolbar action a guest uses.
-        const landingPlan=page.locator('[data-hh-mirror-plan]');
-        if(await landingPlan.isVisible())await landingPlan.click();
-        const composer=mirror.locator('[data-hh-mirror-composer]');
-        for(let backStep=0;backStep<2&&!await composer.isVisible();backStep++){
-          const back=mirror.locator('[data-hh-mirror-back]');
-          await expect(back).toBeVisible();
-          await back.click();
-        }
-        const visiblePlus=composer.locator("button").first();
-        await expect(visiblePlus).toBeVisible();
-        await expect(visiblePlus).toBeEnabled();
-        await visiblePlus.click();
-      }
-      await expect(studio).toHaveAttribute("data-hh-mirror-advanced","true");
+      await revealMirrorAdvanced(page);
       await expect(page.locator('[data-video-goal-quiz-audience]')).toBeVisible();
     };
     await goalTab.click();
@@ -1946,10 +1957,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
             const filmCatalogue=page.locator(
               '[data-free-film-compilation-catalog] [data-free-film-preset]');
             if(!await filmCatalogue.first().isVisible()){
-              const moreGoals=page.locator('[data-hh-mirror-more-goals]');
-              await expect(moreGoals).toBeVisible({timeout:15000});
-              if(engine==="webkit")await moreGoals.tap();
-              else await moreGoals.click();
+              await revealMirrorAdvanced(page,engine);
             }
             await expect(filmCatalogue.first()).toBeVisible({timeout:15000});
             // Some approved masters cannot fill the visitor's current
