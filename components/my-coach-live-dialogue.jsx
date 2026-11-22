@@ -593,6 +593,33 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const memorySharePrior=memoryReady&&allowOpeningPrior&&continuityChoice==='previous'
   const memoryShareGoals=Boolean(personalApproved&&stagedMemory?.allowGoals&&!contextPaused)
   const memoryShareTests=Boolean(personalApproved&&stagedMemory?.assessmentsAllowed&&!contextPaused)
+  // The owner-only preview never automatically reaches an external Live AI.
+  // A model context request carries only signed stage/consent pointers, not
+  // client facts. The separate Live endpoint re-reads current item grants.
+  const livePriorApproved=Boolean(memoryReady&&stagedMemory?.sharePrior===true&&
+    allowOpeningPrior&&openingProgress.checkmarks.invitation&&!contextPaused)
+  const livePersonalApproved=Boolean(personalApproved&&!contextPaused)
+  const liveContextConsent={
+    priorSessions:livePriorApproved,
+    goals:livePersonalApproved&&stagedMemory?.allowGoals===true,
+    profile:livePersonalApproved&&stagedMemory?.allowProfile===true,
+    assessments:livePersonalApproved&&stagedMemory?.assessmentsAllowed===true,
+    axes:livePersonalApproved&&stagedMemory?.allowProfile===true&&stagedMemory?.shareAxes===true,
+  }
+  const liveContextStage=(liveContextConsent.goals||liveContextConsent.profile||
+    liveContextConsent.assessments)?'personal':livePriorApproved?'identity':null
+  const liveSessionScope=contextSession&&!contextSession.expired&&
+    contextSession.expiresAt>Date.now()?contextSession.token:null
+  const liveContextAccess=liveVoiceSelected&&liveContextStage&&stagedMemory?.stageToken
+    ?JSON.stringify({stage:liveContextStage,stageToken:stagedMemory.stageToken,
+      shareApproved:true,consent:liveContextConsent,
+      continuity:continuityChoice==='previous'?'previous':'new',
+      ...(liveContextStage==='personal'?{
+        topicKey:stagedMemory?.topicKey||
+          (liveContextConsent.profile?'meaning_purpose':contextTopic),
+        ...(liveSessionScope?{contextSessionToken:liveSessionScope}:{})
+      }:{})
+    }):''
   // An optional, very soft acknowledgment on the FOUR lit milestones only.
   // The feelings checkbox (step 5) has no sound or lamp by design.
   const previousOpeningLamps=useRef(null)
@@ -1381,6 +1408,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             voiceName={selectedGeminiVoice} elapsedSeconds={activeSessionSeconds}
             openingPrior={openingPrior} allowOpeningPrior={Boolean(openingPrior)&&openingProgress.checkmarks.invitation}
             enabled={liveVoiceReady} canStart={!busy&&!paused&&!replaying&&liveVoiceReady}
+            liveContextAccess={liveContextAccess} contextRevision={contextRevision}
             onSessionStart={()=>{setGeminiLiveConsent(true);setSessionClockStarted(true);setIntroComplete(true)}}
             onVoiceStateChange={setVoiceState}
             onMicLevel={level=>{

@@ -8,9 +8,11 @@ import {GEMINI_FREE_LIVE_MODEL,GEMINI_FREE_LIVE_MAX_SECONDS,geminiFreeLiveConfig
 import {GEMINI_LIVE_WEBSOCKET,GEMINI_LIVE_INPUT_RATE,GEMINI_LIVE_OUTPUT_RATE,
  GeminiLivePcmPlayer,GeminiLivePcmResampler,GeminiLiveBargeGate,GeminiLiveBargeDetector,geminiLiveSocketUrl,
  geminiLiveSetupMessage,geminiLivePcmMessage,geminiLiveTextMessage,geminiLiveStartMessage,
+ geminiLiveContextMessage,geminiLiveDirectorMessage,
  base64ToPcmFloats,bytesToBase64,readGeminiLiveServerMessage,
  appendGeminiLiveTranscript} from '../lib/coaching/gemini-live-transport.mjs'
 import {GEMINI_COACH_VOICE_OPTIONS} from '../lib/coaching/gemini-voice-catalog.mjs'
+import {coachLiveMemoryNote,coachLiveApprovedAxes} from '../lib/coaching/coach-live-memory-note.mjs'
 
 const key='AIza'+'A'.repeat(36)
 const free={
@@ -363,13 +365,17 @@ test('legacy archived name/topic never enters the Free token/setup or onward gui
  assert.doesNotMatch(local.guidance,/Q831|P942/)
 })
 
-test('Free Live widget never forwards a staged memory note and retains normal WebSocket traffic',()=>{
+test('Free Live uses only provider-granted context, never raw client memory props',()=>{
  const live=load('components/my-coach-gemini-live.jsx')
  const ui=load('components/my-coach-live-dialogue.jsx')
  const token=live.split('async function getToken(r){')[1].split('async function begin(')[0]
  assert.doesNotMatch(token,/openingPrior|allowOpeningPrior/)
- assert.doesNotMatch(live,/memoryNote|memoryScopes|geminiLiveContextMessage|deliverReviewedMemory/)
+ assert.doesNotMatch(live,/memoryNote|memoryScopes|deliverReviewedMemory/)
+ assert.match(live,/fetch\('\/api\/app\/my-coach\/live-context'/)
+ assert.match(live,/r\.contextVersion!==revisionAtRequest/)
+ assert.match(live,/r\.pendingContext=result\.note/)
  assert.doesNotMatch(ui,/memoryNote=|memoryScopes=|coachLiveMemoryNote/)
+ assert.match(ui,/liveContextAccess=\{liveContextAccess\}/)
  assert.match(live,/fetch\('\/api\/app\/my-coach\/live-checkpoint'/)
  assert.match(live,/openingPrior:p\.openingPrior/)
  assert.match(ui,/memoryStageToken:stagedMemory\.stageToken/,
@@ -378,7 +384,10 @@ test('Free Live widget never forwards a staged memory note and retains normal We
  assert.equal(socketCalls.filter(value=>value.startsWith('geminiLiveStartMessage()')).length,1)
  assert.ok(socketCalls.some(value=>value.startsWith('geminiLivePcmMessage(pcm)')))
  assert.ok(socketCalls.some(value=>value.startsWith('geminiLiveTextMessage(body)')))
- assert.ok(!socketCalls.some(value=>/memoryNote|contextMessage/.test(value)))
+ assert.match(live,/const packet=geminiLiveContextMessage\(r\.pendingContext\)/)
+ assert.match(live,/const packet=geminiLiveDirectorMessage\(r\.pendingDirectorHint\)/)
+ assert.ok(socketCalls.some(value=>value.startsWith('packet))')))
+ assert.ok(!socketCalls.some(value=>/memoryNote/.test(value)))
  const src=live.slice(live.indexOf('  function handleAudio('),live.indexOf('  function capture('))
  const phases=[], traffic=[], outputs=[]
  const r={ended:false,ready:false,introSent:false,sessionStarted:false,inputText:'',outputText:'',
@@ -428,6 +437,7 @@ test('server turnComplete waits for audible PCM tail onended before transcript f
  const finish=runInNewContext(body+'\nfinishAudibleTurn',{
    commitOutput:state=>{committed.push({text:state.outputText,interrupted:state.interrupted});state.outputText=''},
    phaseChange:()=>{},
+   flushSideband:()=>{},
    maybeReconnectOnGoAway:()=>{throw Error('unexpected reconnect')},
  },{timeout:1000})
  const state={ended:false,modelTurnComplete:true,pendingAudio:[],hadAudio:true,
@@ -457,4 +467,98 @@ test('iPhone audio resume and bounded network backpressure are wired',()=>{
  assert.match(live,/r\.backpressureChunks>30/)
  assert.match(live,/r\.modelTurnComplete=true\s+finishAudibleTurn\(r\)/)
  assert.match(live,/if\(r\.modelTurnComplete\)finishAudibleTurn\(r\)/)
+})
+
+test('meaning axes are withheld from Gemini until separate opt-in, with null never zero',()=>{
+ const ids=['anchor','connection','freedom','agency','love','dignity','self-realization','recognition']
+ const axes=ids.map((id,i)=>({id,current:i,desired:i===4?null:Math.min(10,i+2),
+   status:i===4?'partial':'present',source:'client_reviewed_dialogue',
+   updatedAt:'2026-11-21T12:00:00Z'}))
+ const personal={profile:{preferredLanguage:'ru'},
+   profileAudit:{version:'hh-coach-profile-intake-v2',status:'available',completeArchive:true,axes},
+   context:{items:[]}}
+ const off=coachLiveMemoryNote({personal,profileAllowed:true,axesAllowed:false})
+ assert.doesNotMatch(off,/meaning_axes/)
+ const on=coachLiveMemoryNote({personal,profileAllowed:true,axesAllowed:true})
+ assert.match(on,/meaning_axes/)
+ assert.match(on,/"current":0/)
+ assert.match(on,/"desired":null/)
+ assert.equal(coachLiveApprovedAxes({...personal.profileAudit,axes:axes.slice(1)}),null)
+ assert.equal(coachLiveApprovedAxes({...personal.profileAudit,completeArchive:false}),null,
+   'bounded unknown archive is not a model-verified profile')
+ const packet=geminiLiveContextMessage(on)
+ assert.equal(packet.clientContent.turnComplete,false)
+ assert.throws(()=>geminiLiveContextMessage('unsanctioned raw client details'))
+ const next=geminiLiveDirectorMessage('Required opening: ask the client their preferred name')
+ assert.equal(next.clientContent.turnComplete,false)
+ assert.match(next.clientContent.turns[0].parts[0].text,/APPLICATION DIRECTOR CHECKPOINT/)
+ const opening=load('lib/coaching/coach-opening-protocol.mjs')
+ assert.match(opening,/Self-realization, Recognition/)
+ assert.doesNotMatch(opening,/Self-realization, Meaning/)
+})
+test('signed owner-scoped Live memory service rejects fake data, wrong account and missing consent',async()=>{
+ const src=load('lib/app/my-coach-live-context.js')
+  .replace(/^import[^\n]*\n/gm,'').replace(/^export /gm,'')
+ class Err extends Error{constructor(code,status){super(code);this.status=status}}
+ const onlyKeys=(obj,keys)=>{
+  if(Object.keys(obj).some(key=>!keys.includes(key)))throw new Err('INVALID_FIELDS',400)
+ }
+ const service=runInNewContext(src+'\nreadMyCoachLiveContext',{
+  AppError:Err,onlyKeys,
+  verifyCoachMemoryTicket:(token,args)=>args.accountId==='client-A'&&
+   args.provider==='gemini_free'&&(token==='prior-ticket'||(!args.requirePrior&&token==='basic-ticket')),
+  geminiFreeLiveConfig:()=>({provider:'gemini_live_free'}),
+  coachLiveMemoryNote,coachLiveMemoryScopes:()=>[],
+ },{timeout:1000})
+ const axes=['anchor','connection','freedom','agency','love','dignity','self-realization','recognition']
+  .map((id,i)=>({id,current:i,desired:i+2,status:'present',
+   source:'client_reviewed_dialogue',updatedAt:'2026-11-21T12:00:00Z'}))
+ const reads=[]
+ const readStaged=async(_cfg,_actor,body)=>{
+  reads.push(body)
+  return body.stage==='identity'
+   ?{prior:{hasPreviousSession:true,preferredName:'Anna',
+     previous:[{topic:'Career goal',clientConclusions:'Reviewed last goal',
+       provenance:'client_reviewed_dialogue',date:'2026-11-21'}]}}
+   :{profile:{preferredLanguage:'ru'},profileAudit:{
+      version:'hh-coach-profile-intake-v2',status:'available',completeArchive:true,axes},
+      context:{items:[{kind:'goals',sourceKind:'saved_life_plan',text:'Reviewed chosen action'}]}}
+ }
+ const actor={id:'client-A'},config={encryptionKey:'fixture-key'}
+ const consent={priorSessions:true,goals:true,profile:true,assessments:false,axes:false}
+ const body={stage:'personal',stageToken:'prior-ticket',shareApproved:true,
+  consent,continuity:'previous',topicKey:'career_business'}
+ const first=await service(config,actor,body,{}, {readStaged})
+ assert.equal(first.available,true)
+ assert.match(first.note,/Reviewed chosen action/)
+ assert.match(first.note,/Reviewed last goal/)
+ assert.doesNotMatch(first.note,/meaning_axes/)
+ assert.equal(reads.length,2)
+ const second=await service(config,actor,{...body,consent:{...consent,axes:true}},{},{readStaged})
+ assert.match(second.note,/meaning_axes/)
+ await assert.rejects(service(config,actor,{...body,shareApproved:false},{},{readStaged}),/CONSENT_REQUIRED/)
+ await assert.rejects(service(config,{id:'client-B'},body,{},{readStaged}),/MY_COACH_MEMORY_STAGE_REQUIRED/)
+ await assert.rejects(service(config,actor,{...body,stageToken:'basic-ticket'},{},{readStaged}),/MY_COACH_MEMORY_STAGE_REQUIRED/)
+ await assert.rejects(service(config,actor,{...body,axesRaw:axes},{},{readStaged}),/INVALID_FIELDS/)
+ await assert.rejects(service(config,actor,{...body,consent:{...consent,axes:true,profile:false}},{},{readStaged}),/MY_COACH_LIVE_CONTEXT_INVALID/)
+ const route=load('app/api/app/my-coach/live-context/route.js')
+ assert.match(route,/requireSameOrigin\(request,config\)/)
+ assert.match(route,/await auth\.verified\(\)/)
+ assert.match(route,/PRIVATE_HEADERS/)
+ assert.doesNotMatch(route,/console\.log|\.send\(/)
+})
+test('Director guidance and consented references never interrupt human speech; revocation closes Live',()=>{
+ const live=load('components/my-coach-gemini-live.jsx')
+ const ui=load('components/my-coach-live-dialogue.jsx')
+ const consent=load('components/my-coach-staged-memory-controls.jsx')
+ assert.match(live,/r\.lastAssistantTurnFinished&&!r\.speaking/)
+ assert.match(live,/!r\.bargeDetector\.userActive/)
+ assert.match(live,/ticket===r\.checkpointSerial/)
+ assert.match(live,/r\.contextVersion!==revisionAtRequest/)
+ assert.match(live,/notify\(t\.contextRevoked\);stop\(\)/)
+ assert.match(live,/r\.contextSentKey!==liveContextAccess/)
+ assert.match(ui,/shareApproved:true,consent:liveContextConsent/)
+ assert.match(consent,/data-coach-prior-provider-sharing/)
+ assert.match(consent,/data-coach-axes-provider-sharing/)
+ assert.match(consent,/setSharePersonal\(false\);setShareAxes\(false\)/)
 })
