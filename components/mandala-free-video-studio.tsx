@@ -1841,7 +1841,6 @@ const approvedMobileCopy = {
     disclosure:"Краткие кадры и гипноаффирмации — экспериментальные приёмы, их влияние на убеждения не доказано.",
     benefits:["На основе ваших целей","Личные установки","Аффирмации по выбору","Природные образы и звуки"],
     directions:"1. Выберите направление",
-    themes:{energy:"Энергия и тело",money:"Деньги и карьера",relationships:"Любовь и отношения",goals:"Мотивация и уверенность",life:"Смысл и развитие",health:"Спокойствие и баланс"},
     formats:"2. Выберите формат",free:"Бесплатный",freeDetail:"Настоящее локальное видео",freeCount:"Без ограничений",
     smart:"Smart",smartDetail:"Персональные AI-сцены",pro:"Pro",proDetail:"Кинематографические AI-сцены",
     unavailable:"Не подключён",creditsNote:"Smart и Pro откроются после проверенной оплаты и учёта кредитов. Сейчас доступен реальный бесплатный экспорт.",
@@ -1856,7 +1855,6 @@ const approvedMobileCopy = {
     disclosure:"Brief frames and hypnoaffirmations are experimental; effects on beliefs are not proven.",
     benefits:["Based on your goals","Personal intentions","Optional affirmations","Nature visuals and sound"],
     directions:"1. Choose a direction",
-    themes:{energy:"Energy & body",money:"Money & career",relationships:"Love & relationships",goals:"Motivation & confidence",life:"Meaning & growth",health:"Calm & balance"},
     formats:"2. Choose a format",free:"Free",freeDetail:"Real on-device video",freeCount:"Unlimited",
     smart:"Smart",smartDetail:"Personal AI scenes",pro:"Pro",proDetail:"Cinematic AI scenes",
     unavailable:"Not enabled",creditsNote:"Smart and Pro require verified payments and credit entitlements. Real free export works locally now.",
@@ -1871,7 +1869,6 @@ const approvedMobileCopy = {
     disclosure:"Los fotogramas breves y las hipnoafirmaciones son experimentales; no hay pruebas de que cambien las creencias.",
     benefits:["Según tus objetivos","Intenciones personales","Afirmaciones opcionales","Naturaleza y sonidos"],
     directions:"1. Elige la dirección",
-    themes:{energy:"Energía y cuerpo",money:"Dinero y carrera",relationships:"Amor y relaciones",goals:"Motivación y confianza",life:"Sentido y desarrollo",health:"Calma y equilibrio"},
     formats:"2. Elige el formato",free:"Gratis",freeDetail:"Vídeo local real",freeCount:"Ilimitados",
     smart:"Smart",smartDetail:"Escenas IA personales",pro:"Pro",proDetail:"Escenas cinematográficas IA",
     unavailable:"No habilitado",creditsNote:"Smart y Pro requieren pagos y créditos verificados. La exportación gratuita local ya funciona.",
@@ -2000,7 +1997,6 @@ function quickStyleFilmFor(theme:VideoTheme,index:number){
   const film=firstPartyFilmFor(candidate.theme as VideoTheme,candidate.id);
   return film?{...film,sceneId:candidate.id,theme:candidate.theme as VideoTheme}:null;
 }
-const quickThemeOrder: VideoTheme[] = ["energy","health","relationships","money","goals","life"];
 const effectsThemeOrder: VideoTheme[] = ["life","energy","relationships","goals","money","health"];
 const effectsThemeNames: Record<PublicLocale,Record<VideoTheme,string>> = {
   ru:{life:"Спокойствие",energy:"Энергия",relationships:"Отношения",goals:"Цели",money:"Изобилие",health:"Здоровье"},
@@ -7886,10 +7882,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             }}><Sparkles size={21} aria-hidden="true"/>
             {locale==="ru"?"Создать видео":locale==="es"?"Crear vídeo":"Create Video"}
           </button>
-          <details data-video-goal-quiz-optional ref={quickThemeAdvancedRef} className={videoStyles.quickThemeAdvanced} data-video-theme-advanced open={activeWorkspace==="effects"||undefined}>
-            <summary>{locale==="ru"?"Все темы и образы":locale==="es"?"Más temas e imágenes":"More topics and imagery"}</summary>
+          {activeWorkspace==="effects"?<details data-video-goal-quiz-optional ref={quickThemeAdvancedRef} className={videoStyles.quickThemeAdvanced} data-video-theme-advanced open>
+            <summary>{locale==="ru"?"Образы и настроение":locale==="es"?"Estilos visuales y ambiente":"Visual moods & video styles"}</summary>
           <div className={videoStyles.quickThemeRail} role="group" aria-label={quick.theme}>
-            {(activeWorkspace==="effects"?effectsThemeOrder:quickThemeOrder).map(value=>{
+            {effectsThemeOrder.map(value=>{
               const Icon=value==="energy"?Zap:value==="health"?HeartPulse:value==="relationships"?Heart:value==="money"?Coins:value==="goals"?Target:Sprout;
               const poster=value==="money"
                 ?getRealMoneyFilm(quickStyleSceneIds[value][0] as MoneySceneId).poster
@@ -7906,11 +7902,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={poster} alt="" loading="lazy"/>
                 <span className={videoStyles.quickThemeIcon}><Icon size={23} aria-hidden="true"/></span>
-                <span className={videoStyles.quickThemeName}>{activeWorkspace==="effects"?effectsThemeNames[locale][value]:approved.themes[value]}</span>
+                <span className={videoStyles.quickThemeName}>{effectsThemeNames[locale][value]}</span>
               </button>;
             })}
           </div>
-          </details>
+          </details>:null}
         </section>
         <section className={videoStyles.quickSection} data-video-topic-section
           data-video-goal-quiz-step={goalQuizState.step}
