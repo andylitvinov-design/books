@@ -6,6 +6,7 @@ import pg from 'pg'
 import {createPersonalGoalRepository} from '../lib/app/daybook-personal-goals.js'
 import {closeDatabase,transaction} from '../lib/app/database.js'
 import {assertCoachingGoalNotErased} from '../lib/app/coaching-goal-erasure.js'
+import {createPersonalGoalHandler} from '../lib/app/daybook-personal-goal-handler.mjs'
 const url=process.env.HH_GOAL_TEST_DATABASE_URL
 if(!url||process.env.VERCEL||process.env.HH_APP_TEST_RUNTIME!=='isolated')throw new Error('ISOLATED_DATABASE_REQUIRED')
 const parsed=new URL(url)
@@ -94,4 +95,19 @@ test('legacy goal without extended snapshot stays readable and can be explicitly
  assert.equal(legacy.goal.title,input.title);assert.equal(legacy.goal.details,null)
  const edited=await repo.save(a,{...input,operationId:randomUUID(),revision:1,why:'New owner-authored details'})
  assert.equal(edited.goal.why,'New owner-authored details');assert.equal(edited.goal.revision,2)
+})
+test('actual Request handler round-trips create/read/edit/delete through real repository and PostgreSQL',async()=>{
+ const handler=actor=>createPersonalGoalHandler({getConfig:()=>config,origin:()=>{},sameOrigin:()=>{},auth:()=>({verified:async()=>actor,apply:r=>r}),rate:async()=>{},repository:createPersonalGoalRepository})
+ const request=(actor,method,body,query='')=>new Request('http://127.0.0.1/api/app/personal-goals'+query,{method,headers:{'x-hh-account-id':actor.id,'content-type':'application/json'},...(body?{body:JSON.stringify(body)}:{})})
+ const input=draft(),run=handler(a)
+ const created=await run(request(a,'POST',input));assert.equal(created.status,200)
+ assert.equal((await created.json()).goal.why,input.why)
+ const read=await run(request(a,'GET',null,'?id='+input.id));assert.equal(read.status,200)
+ assert.equal((await read.json()).goal.revision,1)
+ const foreign=await handler(b)(request(b,'GET',null,'?id='+input.id));assert.equal(foreign.status,404)
+ const edited=await run(request(a,'PATCH',{...input,operationId:randomUUID(),revision:1,title:'HTTP edit'}));assert.equal(edited.status,200)
+ const stale=await run(request(a,'DELETE',{id:input.id,operationId:randomUUID(),revision:1,confirmed:true}));assert.equal(stale.status,409)
+ const deleted=await run(request(a,'DELETE',{id:input.id,operationId:randomUUID(),revision:2,confirmed:true}));assert.equal(deleted.status,200)
+ assert.equal((await deleted.json()).deleted,true)
+ assert.equal((await run(request(a,'GET',null,'?id='+input.id))).status,404)
 })
