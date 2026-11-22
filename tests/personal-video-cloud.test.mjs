@@ -45,11 +45,17 @@ test('uploaded MP4 is verified by exact bytes, MIME and ftyp before ready status
 test('signed read only owner video and bounded TTL, no public bucket',()=>{
   assert.match(server,/const row=await owned\(config,actor,id\)/)
   assert.match(server,/row\.status!=='ready'/)
-  assert.match(server,/createSignedUrl\(row\.object_key,60\)/)
+  assert.match(server,/createSignedUrl\(row\.object_key,60,options\)/)
   assert.match(server,/BUCKET='hh-client-private-media'/)
   assert.match(server,/status='deleting'/)
   assert.match(server,/status='deleted',deleted_at=now\(\)/)
   assert.doesNotMatch(server,/\.getPublicUrl\(/)
+})
+test('My Videos requests a signed attachment separately from inline playback',()=>{
+  assert.match(gallery,/appFetch\('personal-videos\/'\+id\+'\?download=1',undefined,'GET',\{accountId\}\)/)
+  assert.match(gallery,/appFetch\('personal-videos\/'\+id,undefined,'GET',\{accountId\}\).*setPlay/)
+  assert.match(item,/download:new URL\(request\.url\)\.searchParams\.get\('download'\)==='1'/)
+  assert.match(server,/download:\s*'holistic-house-personal\.mp4'/)
 })
 test('gallery is lazy in same signed-in cabinet with account switch guard and real file upload',()=>{
   assert.match(route,/'videos'\]\.includes\(path\[0\]\)/)

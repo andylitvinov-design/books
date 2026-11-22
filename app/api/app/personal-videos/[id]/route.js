@@ -23,7 +23,9 @@ async function handle(request,{params}){
     const {id}=await params
     await consumeRate(config,{op:'personal-video-'+request.method,accountId:actor.id},30,60)
     const data=request.method==='GET'
-      ? await personalVideoReadUrl(config,actor,id)
+      ? await personalVideoReadUrl(config,actor,id,{
+          download:new URL(request.url).searchParams.get('download')==='1',
+        })
       : request.method==='POST'
         ? {video:await completePersonalVideoUpload(config,actor,id)}
         : await deletePersonalVideo(config,actor,id)

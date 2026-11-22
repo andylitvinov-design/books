@@ -124,7 +124,7 @@ export default function MyPersonalVideos({accountId,locale='en'}){
   }
   async function prepareDownload(id){
     setNotice('')
-    try{const result=await appFetch('personal-videos/'+id,undefined,'GET',{accountId});setDownload({id,url:result.url})}
+    try{const result=await appFetch('personal-videos/'+id+'?download=1',undefined,'GET',{accountId});setDownload({id,url:result.url})}
     catch{setNotice(t.error)}
   }
   async function remove(id){
