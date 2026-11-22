@@ -242,7 +242,8 @@ export const MandalaVideoDelivery=forwardRef<VideoDeliveryHandle,Props>(function
    const chosenTheme=["money","relationships","energy","goals","health","life"].includes(theme)?theme:"energy";
    return savePrivateMp4({
     file:blob,details:{theme:chosenTheme,sceneId:"personal-film",aspect,duration},
-    request:(path,body)=>appFetch(path,body,"POST",{accountId}),
+    accountId,
+    request:(path,body,method)=>appFetch(path,body,method,{accountId}),
     sessionRef:uploadSessionRef,
     onProgress:(done,total)=>setUploadPercent(Math.min(100,Math.round(done/total*100)))
    });

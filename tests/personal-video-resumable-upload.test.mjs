@@ -64,9 +64,10 @@ test("offline retry reuses the same reserved video and resumes via HEAD",async()
  const file=mp4(PRIVATE_VIDEO_CHUNK_BYTES+24);
  const sessionRef={current:null};
  let reserves=0,complete=0,offset=0,posts=0,heads=0,patches=0;
- const request=async(path,body)=>{
+ const request=async(path,body,method)=>{
   if(path==="personal-videos"){reserves++;return metadata;}
   assert.equal(path,"personal-videos/"+metadata.id);
+  if(method==="PATCH")return {uploadUrl:body.uploadUrl};
   complete++;
   if(offset!==file.size)throw Object.assign(new Error("missing"),{code:"MEDIA_UPLOAD_NOT_FOUND"});
   return {status:"ready"};
@@ -160,4 +161,48 @@ test("both UI routes share the signed upload helper without weakening consent",(
  assert.match(uploader,/consent:true/);
  assert.match(uploader,/request\("personal-videos\/"\+session\.created\.id,undefined,"POST"\)/);
  assert.doesNotMatch(uploader,/localStorage|sessionStorage|service_role|upsert:true/);
+});
+
+test("reselecting the exact file after page refresh resumes the same private reservation",async()=>{
+  const file=mp4(PRIVATE_VIDEO_CHUNK_BYTES+24);
+  const details={theme:"energy",sceneId:"personal-film",duration:30,aspect:"landscape"};
+  let reservations=0, tusCreates=0, offset=0;
+  let finishInterrupted=false;
+  const tickets=new Map();
+  const request=async(path,body,method)=>{
+    if(path==="personal-videos"){
+      if(body.fingerprint&&tickets.has(body.fingerprint)){
+        return {...tickets.get(body.fingerprint),resumed:true};
+      }
+      reservations++;
+      const ticket={...metadata,issuedAt:Date.now(),uploadUrl:null};
+      if(body.fingerprint)tickets.set(body.fingerprint,ticket);
+      return ticket;
+    }
+    assert.equal(path,"personal-videos/"+metadata.id);
+    if(method==="PATCH"){
+      assert.equal(tickets.size,1);
+      const ticket=[...tickets.values()][0];
+      assert.equal(body.previousUploadUrl,ticket.uploadUrl);
+      ticket.uploadUrl=body.uploadUrl;
+      return {uploadUrl:ticket.uploadUrl};
+    }
+    if(offset!==file.size)throw Object.assign(new Error("missing"),{code:"MEDIA_UPLOAD_NOT_FOUND"});
+    return {video:{id:metadata.id,status:"ready"}};
+  };
+  const fetchImpl=async(url,opts)=>{
+    if(opts.method==="POST"){tusCreates++;if(tusCreates>1)offset=0;return response(201,{Location:location});}
+    if(opts.method==="HEAD")return response(200,{"Upload-Offset":String(offset)});
+    if(offset>0&&!finishInterrupted){finishInterrupted=true;return response(503);}
+    offset+=opts.body.size;
+    return response(204,{"Upload-Offset":String(offset)});
+  };
+  const common={details,request,fetchImpl};
+  await assert.rejects(()=>savePrivateMp4({...common,file,sessionRef:{current:null}}),/PRIVATE_UPLOAD_FAILED/);
+  assert.equal(offset,PRIVATE_VIDEO_CHUNK_BYTES);
+  // Reload recreates the component and the user selects the same bytes again.
+  const reselected=mp4(file.size);
+  assert.equal(await savePrivateMp4({...common,file:reselected,sessionRef:{current:null}}),metadata.id);
+  assert.equal(reservations,1,"a reloaded page must not reserve a second video or consent");
+  assert.equal(tusCreates,1,"a reloaded page must use HEAD on the same TUS upload");
 });

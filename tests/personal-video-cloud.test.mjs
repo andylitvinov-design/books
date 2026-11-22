@@ -32,11 +32,12 @@ test('no cloud spend or browser upload without explicit feature flag, session, c
   assert.match(list,/requireSameOrigin\(request,config\)/)
   assert.match(item,/const actor=await auth\.verified\(\)/)
   assert.match(item,/requireSameOrigin\(request,config\)/)
+  assert.match(item,/checkpointPersonalVideoUpload\(config,actor,id,await readBody\(request,8192\)\)/)
   for(const value of [server,list,item,gallery])
     assert.doesNotMatch(value,/HH_APP_SUPABASE_SECRET_KEY\s*=|service_role.*in.*client|NEXT_PUBLIC_.*SECRET/)
 })
 test('the cloud pilot uses verified actor IDs for both private operations and availability',async()=>{
-  assert.equal((server.match(/^  requireEnabled\(actor\)$/gm)||[]).length,5)
+  assert.equal((server.match(/^  requireEnabled\(actor\)$/gm)||[]).length,6)
   assert.match(read('lib/app/personal-video-messenger.js'),/cloudAvailable:personalVideoCloudEnabled\(actor\)/)
   const {personalVideoCloudEnabled}=await import('../lib/app/personal-video-cloud-policy.mjs')
   const a={id:'11111111-1111-4111-8111-111111111111'}
@@ -115,7 +116,7 @@ test('canceled 2h signed uploads keep their storage quota until safe cleanup',()
 test('no client image or wish in personal videos API input or storage schema',()=>{
   assert.doesNotMatch(server,/photoUrl|wishText|clientMessage|rawPrompt|faceImage/i)
   assert.doesNotMatch(schema,/photo_url|raw_photo|client_wish|test_result|health_history/i)
-  assert.match(server,/\['theme','sceneId','aspect','duration','bytes','consent'\]/)
+  assert.match(server,/\['theme','sceneId','aspect','duration','bytes','consent','fingerprint'\]/)
 })
 
 test('Ready and the delivery drawer require an unchecked cloud consent for the finished MP4',()=>{
@@ -130,7 +131,7 @@ test('Ready and the delivery drawer require an unchecked cloud consent for the f
   assert.match(delivery,/const \[cloudConsent,setCloudConsent\]=useState\(false\)/)
   assert.match(delivery,/saveToLibrary\(cloudConsent\)/)
   assert.match(delivery,/privateUpload\(accountId\)/)
-  assert.match(delivery,/appFetch\(path,body,"POST",\{accountId\}\)/)
+  assert.match(delivery,/appFetch\(path,body,method,\{accountId\}\)/)
 })
 
 test('video save consent has a valid purpose while preserving all previous purposes',()=>{
