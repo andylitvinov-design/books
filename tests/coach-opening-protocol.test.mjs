@@ -9,9 +9,9 @@ import {coachOpeningTurn} from '../lib/coaching/coach-opening-entry.mjs'
 const progress=(turns,options={})=>coachOpeningProgress({locale:'ru',personaId:'mira',...options,
   turns:turns.map(content=>({role:'user',content}))})
 
-test('all ten personas, including six published coaches, have exactly four unique RU/EN/ES questions at every opening gate',()=>{
-  assert.equal(COACH_OPENING_PUBLIC_IDS.length,6)
-  assert.equal(Object.keys(COACH_OPENING_QUESTION_BANK).length,10)
+test('all eleven personas, including seven published coaches, have exactly four unique RU/EN/ES questions at every opening gate',()=>{
+  assert.equal(COACH_OPENING_PUBLIC_IDS.length,7)
+  assert.equal(Object.keys(COACH_OPENING_QUESTION_BANK).length,11)
   for(const id of Object.keys(COACH_OPENING_QUESTION_BANK)){
     for(const step of COACH_OPENING_IDS){
       for(const lang of ['ru','en','es']){

@@ -96,7 +96,7 @@ export default function MyCoachCompactProfile({personaId,locale='en',methodId,on
         </button>
       </header>
       <section className={styles.hero} aria-label={profile.name}>
-        <img src={'/images/holistic-house/my-coach-motion/'+personaId+'-still.webp'}
+        <img src={'/images/holistic-house/my-coach-motion/'+(personaId==='genie'?'genie-still.svg':personaId==='harry'?'harry-soft-still.webp':personaId+'-still.webp')}
           alt="" loading="eager" decoding="async"/>
         <div className={styles.heroShade} aria-hidden="true"/>
         <div className={styles.heroCopy}>
