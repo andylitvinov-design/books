@@ -8692,7 +8692,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <div id="video-ideas-personalization-panel" data-video-ideas-personalization-panel hidden={ideasSubtab!=="personalization"}>
           <MandalaVideoPersonalization key={activeIdeasGoalId||"none"} locale={locale} value={ideasProfile}
             goalType={chosenIdeaGoal?.type||"leisure"} selectedTopicId={selectedConceptTopic?.topicId}
-            onChange={setIdeasProfile} disabled={recording||preparing}
+            onChange={next=>{setIdeasProfile(next);setIdeasProfileConfirmed(false);}} disabled={recording||preparing}
             onBack={()=>setIdeasSubtab("goal")}
             onContinue={()=>{
               setIdeasProfileConfirmed(true);

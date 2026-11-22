@@ -1,21 +1,23 @@
 "use client";
-import {useMemo,useRef,useState} from "react";
+import {useRef,useState} from "react";
 import type {Dispatch,SetStateAction} from "react";
-import {ArrowLeft,ArrowRight,Check,Heart,Leaf,Sparkles,Zap} from "lucide-react";
+import {ArrowLeft,ArrowRight,Check,Heart,Sparkles,Zap} from "lucide-react";
 import {listMeaningAxes} from "@/lib/mandala/meaning-emotion/idea-engine.mjs";
 import {getMyTubeTopic} from "@/lib/mandala/mytube-content-taxonomy.mjs";
+import {PERSONAL_EIGHT_AXES,axisDifference} from "@/lib/mandala/personal-eight-axes.mjs";
+import {MandalaVideoEightAxes} from "./mandala-video-eight-axes";
 import type {VideoLocale} from "@/lib/mandala/holistic-video-themes";
 import css from "./mandala-video-personalization.module.css";
 
-export type VideoGoalProfile={name?:string;current:string[];desired:string[];axes:string[];supportNeed?:string;energy:number;desiredLevel:number};
+export type VideoGoalProfile={name?:string;current:string[];desired:string[];axes:string[];supportNeed?:string;energy:number;desiredLevel:number;focusAxisId?:string|null;axisRatings?:Record<string,{now?:number|null;desired?:number|null}>};
 export const DEFAULT_VIDEO_GOAL_PROFILE:VideoGoalProfile={
  name:"",current:[],desired:[],axes:[],supportNeed:"",energy:0,desiredLevel:0,
 };
 type Mood="sad"|"calm"|"happy";
-type Axis={id:string;label:string;description:string};
+
 type Choice={id:string;ru:string;en:string;es:string;meaning:string};
 type GoalPurpose="leisure"|"support"|"change";
-type QuizStage="current"|"desired"|"support"|"meaning"|"energy"|"name";
+type QuizStage="current"|"desired"|"support"|"energy"|"name";
 const energyScores=[1,2,3,4,5,6,7,8,9,10] as const;
 const currentChoices:Choice[]=[
  ["fatigue","Усталость","Tired","Cansancio","fatigue"],
@@ -83,9 +85,13 @@ export function summarizeVideoGoalProfile(value:VideoGoalProfile,locale:VideoLoc
  const current=value.current.map(id=>currentChoices.find(c=>c.id===id)?.[locale]).filter(Boolean).join(" · ");
  const desired=value.desired.map(id=>desiredChoices.find(c=>c.id===id)?.[locale]).filter(Boolean).join(" · ");
  const axes=listMeaningAxes(locale);
- const focus=value.axes.map(id=>axes.find(c=>c.id===id)?.label).filter(Boolean).join(" · ");
+ const personalFocus=PERSONAL_EIGHT_AXES.find(axis=>axis.id===value.focusAxisId);
+ const focus=personalFocus?.labels[locale]||value.axes.map(id=>axes.find(c=>c.id===id)?.label).filter(Boolean).join(" · ");
  return {currentState:current,desiredState:desired,focus,
   currentIds:[...value.current],desiredIds:[...value.desired],focusIds:[...value.axes],
+  focusAxisId:value.focusAxisId??null,
+  axisRatings:PERSONAL_EIGHT_AXES.map(axis=>({id:axis.id,now:value.axisRatings?.[axis.id]?.now??null,
+   desired:value.axisRatings?.[axis.id]?.desired??null,difference:axisDifference(value.axisRatings?.[axis.id])})),
   energyStart:value.energy>=1?value.energy:undefined,energyTarget:value.desiredLevel>=1?value.desiredLevel:undefined};
 }
 
@@ -105,7 +111,7 @@ const PURPOSE_COPY={
   change:"Исследуем желаемое состояние и направление изменения отношения к себе.",
   supportQuestion:"Какие слова поддержки хотелось бы услышать?",
   supportHint:"Выберите то, что действительно откликается.",
-  topic:"Ваша тема",next:"Перейти к концепту",
+  topic:"Ваша тема",next:"К 8 смысловым осям",
   note:"Поддерживающее видео не заменяет индивидуальную психотерапию.",
  },
  en:{
@@ -114,7 +120,7 @@ const PURPOSE_COPY={
   change:"Explore your desired state and the meaning you want to give to yourself.",
   supportQuestion:"What kind of supportive words would you like to hear?",
   supportHint:"Choose what feels right for you.",
-  topic:"Your topic",next:"Continue to concept",
+  topic:"Your topic",next:"Continue to 8 meaning axes",
   note:"A supportive video is not a substitute for individual psychotherapy.",
  },
  es:{
@@ -123,7 +129,7 @@ const PURPOSE_COPY={
   change:"Explora cómo quieres sentirte y qué creencia sobre ti deseas revisar.",
   supportQuestion:"¿Qué palabras de apoyo te gustaría escuchar?",
   supportHint:"Elige lo que encaje contigo.",
-  topic:"Tu tema",next:"Continuar al concepto",
+  topic:"Tu tema",next:"Continuar a los 8 ejes",
   note:"Un vídeo de apoyo no sustituye la psicoterapia individual.",
  }
 } as const;
@@ -133,7 +139,7 @@ export const personalizationStagesForGoal=(goalType:GoalPurpose):QuizStage[]=>go
  ?["desired","energy","name"]
  :goalType==="support"
  ?["current","desired","support","energy","name"]
- :["current","desired","meaning","energy","name"];
+ :["current","desired","energy","name"];
 
 export function MandalaVideoPersonalization({locale,value,onChange,onBack,onContinue,disabled,goalType,selectedTopicId}:{
  locale:VideoLocale;value:VideoGoalProfile;onChange:Dispatch<SetStateAction<VideoGoalProfile>>;
@@ -141,9 +147,10 @@ export function MandalaVideoPersonalization({locale,value,onChange,onBack,onCont
  goalType:GoalPurpose;selectedTopicId?:string|null;
 }){
  const t=copy[locale],p=PURPOSE_COPY[locale];
- const axes=useMemo<Axis[]>(()=>listMeaningAxes(locale),[locale]);
+ 
  const stages=personalizationStagesForGoal(goalType);
  const [quizStep,setQuizStep]=useState(1);
+ const [axesScreenOpen,setAxesScreenOpen]=useState(false);
  const quizRef=useRef<HTMLDivElement>(null);
  const [currentMood,setCurrentMood]=useState<Mood>("calm");
  const [desiredMood,setDesiredMood]=useState<Mood>("calm");
@@ -156,11 +163,6 @@ export function MandalaVideoPersonalization({locale,value,onChange,onBack,onCont
  const chooseOne=(side:"current"|"desired",id:string)=>{
   if(disabled)return;
   onChange(old=>({...old,[side]:[id]}));
-  move(1);
- };
- const chooseAxis=(id:string)=>{
-  if(disabled)return;
-  onChange(old=>({...old,axes:[id]}));
   move(1);
  };
  const chooseSupport=(id:string)=>{
@@ -201,6 +203,8 @@ export function MandalaVideoPersonalization({locale,value,onChange,onBack,onCont
   if(quizStep===1){onBack();return;}
   move(-1);
  };
+ if(axesScreenOpen)return <MandalaVideoEightAxes locale={locale} value={value} onChange={onChange}
+  disabled={disabled} onBack={()=>setAxesScreenOpen(false)} onContinue={onContinue}/>;
  return <div ref={quizRef} className={css.wizard} data-video-personalization
   data-video-personalization-goal={goalType} data-video-personalization-step={quizStep}>
   <header className={css.intro}><span className={css.step}>{t.step}</span>
@@ -240,19 +244,6 @@ export function MandalaVideoPersonalization({locale,value,onChange,onBack,onCont
     </button>)}
    </div>
   </section>
-  <section className={css.card} data-personalization-kind="strength" hidden={stage!=="meaning"} aria-labelledby="personalization-strength-heading">
-   <div className={css.cardHead}><div className={css.cardName}>
-    <Leaf size={25} aria-hidden="true"/><div><h3 id="personalization-strength-heading">{t.strength}</h3>
-      <p>{topic?(locale==="ru"?"Какое отношение к себе вы хотите развить в теме «"+topic+"»?":locale==="es"?"¿Qué creencia deseas cultivar sobre «"+topic+"»?":"What belief about yourself would help with “"+topic+"”?"):t.axisHint}</p></div>
-   </div></div>
-   <div className={css.axisGrid} role="group" aria-label={t.strength}>
-    {axes.map(axis=><button key={axis.id} type="button" data-video-personalization-axis={axis.id}
-     title={axis.description} aria-pressed={value.axes.includes(axis.id)} disabled={disabled}
-     onClick={()=>chooseAxis(axis.id)}>
-     {value.axes.includes(axis.id)?<Check size={16} aria-hidden="true"/>:null}{axis.label}
-    </button>)}
-   </div>
-  </section>
   <section className={css.card} data-personalization-kind="energy-current" hidden={stage!=="energy"}
    aria-labelledby="personalization-energy-current-heading">
    <div className={css.cardHead}><div className={css.cardName}>
@@ -275,7 +266,7 @@ export function MandalaVideoPersonalization({locale,value,onChange,onBack,onCont
     name="preferredName" autoComplete="given-name" maxLength={18}
     placeholder={t.namePlaceholder} value={value.name??""} disabled={disabled}
     enterKeyHint="done"
-    onKeyDown={event=>{if(event.key==="Enter"){event.preventDefault();if(!disabled)onContinue();}}}
+    onKeyDown={event=>{if(event.key==="Enter"){event.preventDefault();if(!disabled)setAxesScreenOpen(true);}}}
     onChange={event=>{
       const name=event.currentTarget.value;
       onChange(old=>({...old,name}));
@@ -283,7 +274,7 @@ export function MandalaVideoPersonalization({locale,value,onChange,onBack,onCont
    <p>{t.nameHint}</p>
   </section>
   {stage==="name"?<button className={css.next} type="button" data-video-personalization-clarify-continue
-   disabled={disabled} onClick={onContinue}>
+   disabled={disabled} onClick={()=>setAxesScreenOpen(true)}>
    <Sparkles size={22} aria-hidden="true"/><span>{p.next}</span><ArrowRight size={22} aria-hidden="true"/>
   </button>:null}
   {goalType!=="leisure"?<p className={css.scrollHint}>{p.note}</p>:null}
