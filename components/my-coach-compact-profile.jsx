@@ -20,7 +20,7 @@ function CoachProfileSections({profile,personaId,t}){
             <div><dt>{t.style}</dt><dd>{profile.style}</dd></div>
             <div><dt>{t.workStyle}</dt><dd>{profile.workStyle}</dd></div>
             {personaId==='genie'&&<><div><dt>{t.mission}</dt><dd>{profile.mission}</dd></div>
-              <div><dt>{t.signature}</dt><dd>{profile.signatureQuestion}</dd></>}
+              <div><dt>{t.signature}</dt><dd>{profile.signatureQuestion}</dd></div></>}
           </dl>
         </div>
         <ChevronRight className={styles.cardChevron} size={22} aria-hidden="true"/>
