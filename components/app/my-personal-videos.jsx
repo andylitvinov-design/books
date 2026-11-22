@@ -19,7 +19,7 @@ const COPY={
     expired:'Upload expired. Delete the unfinished entry below and start again.',
     size:'Each file ≤12 MB · Up to 3 videos · Finished MP4 only.',music:'This page stores finished videos, not your original photos.',
     states:{ready:'Ready',pending:'Upload pending',failed:'Upload failed',deleting:'Delete pending'},
-    themes:{money:'Money',relationships:'Relationships',energy:'Energy',goals:'Goals',health:'Health',life:'Personal growth'}},
+    themes:{money:'Money',relationships:'Relationships',energy:'Energy',goals:'Goals',health:'Health',life:'Personal growth',gift:'Personal Gift'}},
   ru:{title:'Мои видео',subtitle:'Приватная библиотека готовых роликов в вашем кабинете.',new:'Создать бесплатное видео',myPage:'На Мою страницу',
     empty:'Пока нет сохранённых видео.',disabled:'Облачное сохранение пока выключено. Бесплатное скачивание на устройство работает.',
     file:'Выберите готовый MP4 (до 12 МБ)',theme:'Тема',aspect:'Формат',consent:'Разрешаю сохранить только готовое видео в моём приватном кабинете Holistic House. Исходное фото и пожелание не отправляются.',
@@ -30,7 +30,7 @@ const COPY={
     expired:'Срок загрузки истёк. Удалите незавершённое видео ниже и повторите попытку.',
     size:'Каждый файл ≤12 МБ · Не более 3 видео · Только готовый MP4.',music:'Исходные фотографии и пожелания здесь не хранятся.',
     states:{ready:'Готово',pending:'Загрузка не завершена',failed:'Ошибка загрузки',deleting:'Удаление не завершено'},
-    themes:{money:'Деньги',relationships:'Отношения',energy:'Энергия',goals:'Цели',health:'Здоровье',life:'Развитие'}},
+    themes:{money:'Деньги',relationships:'Отношения',energy:'Энергия',goals:'Цели',health:'Здоровье',life:'Развитие',gift:'Живая открытка'}},
   es:{title:'Mis vídeos',subtitle:'Biblioteca privada de vídeos terminados en tu cuenta.',new:'Crear vídeo gratuito',myPage:'Publicar en Mi página',
     empty:'Todavía no hay vídeos guardados.',disabled:'El almacenamiento privado no está activado. La descarga local sigue disponible.',
     file:'Selecciona un MP4 terminado (máximo 12 MB)',theme:'Tema',aspect:'Formato',consent:'Autorizo guardar únicamente el vídeo final en mi cuenta privada de Holistic House. No se envían la foto original ni mi petición.',
@@ -41,7 +41,7 @@ const COPY={
     expired:'La carga caducó. Borra el vídeo incompleto de abajo y vuelve a intentarlo.',
     size:'Cada archivo ≤12 MB · Máximo 3 vídeos · Solo MP4 terminados.',music:'Las fotos originales y los deseos no se guardan aquí.',
     states:{ready:'Listo',pending:'Carga pendiente',failed:'Error de carga',deleting:'Eliminación pendiente'},
-    themes:{money:'Dinero',relationships:'Relaciones',energy:'Energía',goals:'Objetivos',health:'Salud',life:'Crecimiento personal'}}
+    themes:{money:'Dinero',relationships:'Relaciones',energy:'Energía',goals:'Objetivos',health:'Salud',life:'Crecimiento personal',gift:'Tarjeta viva'}}
 }
 // One shared library and three views over existing private assets.
 const MATERIAL_COPY={
@@ -68,7 +68,7 @@ async function verifyMp4(file){
       video.onerror=()=>{clearTimeout(timer);reject(new Error('INVALID_VIDEO'))}
       video.src=url
     })
-    const matched=[10,15,20,30,60].find(x=>Math.abs(x-duration)<=1.25)
+    const matched=[10,15,20,25,30,60].find(x=>Math.abs(x-duration)<=1.25)
     if(!matched)throw new Error('INVALID_DURATION')
     return matched
   } finally {URL.revokeObjectURL(url)}
@@ -181,6 +181,7 @@ export default function MyPersonalVideos({accountId,locale='en'}){
       <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
         <Link href={'/'+locale+'/my-page'} prefetch={false} data-my-videos-publish-page>{t.myPage}</Link>
         <Link href={'/'+locale+'/holistic-support/mandala'} prefetch={false}>{t.new}</Link>
+        <Link href={'/'+locale+'/holistic-support/mandala?mode=gift'} prefetch={false}>{t.themes.gift}</Link>
       </div>
     </div>
     <div role="tablist" aria-label={library.label} data-my-materials-tabs

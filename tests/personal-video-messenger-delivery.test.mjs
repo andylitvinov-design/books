@@ -59,8 +59,10 @@ test('automatic video delivery is explicit opt-in, owner scoped and private',()=
  assert.match(upload,/navigator.share/)
  assert.match(upload,/data-video-delivery-status/)
  const archive=source('components/app/my-personal-videos.jsx')
- assert.match(archive,/const matched=\[10,15,20,30,60\]/)
- assert.match(archive,/health:'Health',life:'Personal growth'/)
+ // The original five lengths remain accepted; 25 seconds is added only
+ // for the owner-consented Personal Video Gift upload.
+ assert.match(archive,/const matched=\[10,15,20,25,30,60\]/)
+ assert.match(archive,/health:'Health',life:'Personal growth',gift:'Personal Gift'/)
  assert.doesNotMatch(backend,/wa\.me|api\.whatsapp\.com/)
 })
 

@@ -33,3 +33,12 @@ test('existing media providers are single-mounted in one accessible view',()=>{
   assert.match(avatars,/data-client-live-photos/);
   assert.doesNotMatch(ui,/createBucket|service_role|heygen\.ai|new SupabaseClient/i);
 });
+
+test('My Materials retains already-shipped gift route, 25-second MP4 and EN/RU/ES labels', () => {
+  const ui = readFileSync('components/app/my-personal-videos.jsx', 'utf8');
+  assert.match(ui, /mode=gift/);
+  assert.match(ui, /\[10,15,20,25,30,60\]/);
+  assert.match(ui, /gift:'Personal Gift'/);
+  assert.match(ui, /gift:'Живая открытка'/);
+  assert.match(ui, /gift:'Tarjeta viva'/);
+});

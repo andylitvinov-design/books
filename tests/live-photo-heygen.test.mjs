@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   LIVE_PHOTO_MOTIONS, buildLivePhotoPrompt, buildHeyGenLivePhotoBody,
-  isLivePhotoCreationEnabled, isAllowedHeyGenDownloadUrl,
+  isLivePhotoCreationEnabled, hasLivePhotoProviderKey, getHeyGenLivePhotoStatus, isAllowedHeyGenDownloadUrl,
 } from '../lib/app/live-photo-heygen.mjs';
 
 test('HeyGen calls are off without two owner gates and a private provider key', () => {
@@ -84,4 +84,46 @@ test('endpoint contracts keep authenticated owner/consent and private bucket', (
   assert.match(webhook, /finalizeLivePhotoCallback/);
   assert.match(ui, /data-client-live-photos/);
   assert.doesNotMatch(start + status + ui, /HH_LIVE_PHOTO_HEYGEN_API_KEY/);
+});
+
+test('new metered requests stop on budget hold while submitted provider status remains readable', async () => {
+  const old = {
+    key: process.env.HH_LIVE_PHOTO_HEYGEN_API_KEY,
+    enabled: process.env.HH_LIVE_PHOTOS_ENABLED,
+    spend: process.env.HH_LIVE_PHOTOS_SPEND_APPROVED,
+    fetch: globalThis.fetch,
+  };
+  const restore = (name, value) => {
+    if (value === undefined) delete process.env[name];
+    else process.env[name] = value;
+  };
+  try {
+    process.env.HH_LIVE_PHOTO_HEYGEN_API_KEY = 'test_'.padEnd(32, 'x');
+    delete process.env.HH_LIVE_PHOTOS_ENABLED;
+    delete process.env.HH_LIVE_PHOTOS_SPEND_APPROVED;
+    assert.equal(hasLivePhotoProviderKey(), true);
+    assert.equal(isLivePhotoCreationEnabled(), false);
+    globalThis.fetch = async (url, init) => {
+      assert.match(String(url), /\/v3\/models\/videos\/abcdefgh12345678$/);
+      assert.equal(init.method, 'GET');
+      assert.equal(init.headers['x-api-key'], process.env.HH_LIVE_PHOTO_HEYGEN_API_KEY);
+      return new Response(JSON.stringify({data:{
+        video_id:'abcdefgh12345678', status:'completed',
+        video_url:'https://resource2.heygen.ai/cdn/ready.mp4',
+      }}), {status:200, headers:{'content-type':'application/json'}});
+    };
+    assert.deepEqual(await getHeyGenLivePhotoStatus('abcdefgh12345678'), {
+      state:'completed', url:'https://resource2.heygen.ai/cdn/ready.mp4',
+    });
+  } finally {
+    restore('HH_LIVE_PHOTO_HEYGEN_API_KEY', old.key);
+    restore('HH_LIVE_PHOTOS_ENABLED', old.enabled);
+    restore('HH_LIVE_PHOTOS_SPEND_APPROVED', old.spend);
+    globalThis.fetch = old.fetch;
+  }
+});
+test('sitewide daily budget includes failed and deleted reservations', () => {
+  const service = readFileSync('lib/app/live-photo-service.js', 'utf8');
+  assert.match(service, /where created_at > now\(\) - interval '24 hours'/);
+  assert.doesNotMatch(service, /where created_at > now\(\) - interval '24 hours' and status not in/);
 });

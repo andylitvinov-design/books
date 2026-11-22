@@ -14,7 +14,7 @@ import extraFreeFilmPresets from "@/data/video-catalog/free-film-presets-v2.json
 import { MandalaHypnoCompact } from "./mandala-hypno-compact";
 import { MandalaVideoIdeas } from "./mandala-video-ideas";
 import { MandalaVideoIdeaGoal } from "./mandala-video-idea-goal";
-import {MandalaMagicMirrorTitle,MandalaMagicMirrorGoal} from "./mandala-magic-mirror-goal";
+import {MandalaMagicMirrorTitle,MandalaMagicMirrorGoal,type MirrorResolution,type MirrorScope} from "./mandala-magic-mirror-goal";
 import {buildPersonalVideoGoalOptions,composePersonalVideoGoalIntent,goalScenarioPlan} from "@/lib/mandala/video-personal-goal-composer.mjs";
 import {suggestVideoGoalPhrases} from "@/lib/mandala/video-goal-idea-phrases.mjs";
 import {MandalaVideoPersonalization,DEFAULT_VIDEO_GOAL_PROFILE,summarizeVideoGoalProfile,type VideoGoalProfile} from "./mandala-video-personalization";
@@ -2062,6 +2062,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [videoScenarioOpen,setVideoScenarioOpen] = useState(false);
   const goalContinueRef=useRef<(()=>boolean)|null>(null);
   const mirrorStartRef=useRef<((theme:VideoTheme,categoryId:"goals-money"|"love-relationships"|"energy-confidence"|"stress-anxiety",wish:string)=>void)|null>(null);
+  const mirrorResolveRef=useRef<((path:MirrorResolution)=>boolean)|null>(null);
+  const [mirrorStep,setMirrorStep]=useState<1|2|3>(1);
+  const [mirrorScope,setMirrorScope]=useState<MirrorScope>("me");
   const [goalQuizState,setGoalQuizState]=useState<{
     step:1|2|3;complete:boolean;audience:"self"|"others";
   }>({step:1,complete:false,audience:"self"});
@@ -7504,6 +7507,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const activateQuickWorkspace=(id:(typeof workspaceTabs)[number]["id"])=>{
     quickNavTokenRef.current++;
     setActiveWorkspace(id);
+    if(id==="video"){setMirrorAdvanced(false);setVideoScenarioOpen(false);setMirrorStep(1);}
     if(id==="ready")setReadyGenerationPending(false);
     if(id==="editor")setMontagePanel("effects");
     if(id==="effects")setHypnoEntryGroup("visual");
@@ -7645,6 +7649,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       data-ideas-step={activeWorkspace==="phrases"?ideasSubtab:undefined}
       data-video-advanced-open={(showAdvancedVideo||videoScenarioOpen)?"true":"false"}
       data-hh-mirror-advanced={mirrorAdvanced?"true":"false"}
+      data-hh-mirror-step={mirrorStep}
+      data-hh-mirror-scope={mirrorScope}
       data-video-scenario-open={videoScenarioOpen?"true":"false"}
       data-video-studio-hydrated={studioHydrated?"true":"false"}
       data-montage-panel={activeWorkspace==="editor"?montagePanel:undefined}
@@ -7747,22 +7753,33 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           disabled={!studioHydrated||recording||preparing}
           onWishChange={value=>{setWish(value);setSuggestion("");}}
           onSelectCategory={selectCategory}
-          onContinue={(selectedTheme,categoryId,goalText)=>{
-            // Category -> subcategory -> topic precedes the production's
-            // three purpose goals and goal-specific Personalization.
-            setMirrorAdvanced(true);
-            setMirrorDetailedWish(goalText);
-            setVideoScenarioOpen(true);
-            mirrorStartRef.current?.(selectedTheme,categoryId,goalText);
-            window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
-              document.querySelector("[data-auto-video-subcategories]")?.scrollIntoView({block:"start",behavior:"auto"})));
+          onStepChange={setMirrorStep}
+          onScopeChange={setMirrorScope}
+          onComplete={(path:MirrorResolution)=>{
+            // Both paths use the ONE canonical MyTube taxonomy state:
+            // card -> two explicit choices, or own wish -> local auto-selection.
+            // This is only navigation to the next Goal step; it NEVER renders,
+            // bills or sends private content to a provider.
+            const accepted=mirrorResolveRef.current?.(path);
+            if(!accepted)return false;
+            setMirrorDetailedWish(path.wish);
+            setMirrorAdvanced(false);setVideoScenarioOpen(false);
+            setMirrorStep(1);
+            setNotice("");
+            const navigationToken=++quickNavTokenRef.current;
+            setIdeasSubtab("goal");setActiveWorkspace("phrases");setStudioMode("pump");
+            window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
+              if(navigationToken!==quickNavTokenRef.current)return;
+              document.querySelector<HTMLElement>("[data-video-ideas-goal-panel]")
+                ?.scrollIntoView({block:"start",behavior:"instant" as ScrollBehavior});
+            }));
+            return true;
           }}
           onExpand={()=>{
-            setMirrorAdvanced(true);
+            // Advanced is explicitly opted in through the small overflow icon.
+            // Never reveal the old 20-text panel on card, Next or back to Goal.
+            setMirrorAdvanced(true);setVideoScenarioOpen(true);
             setMirrorDetailedWish(wish);
-            setVideoScenarioOpen(true);
-            window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
-              document.getElementById("quick-theme-title")?.scrollIntoView({block:"start",behavior:"auto"})));
           }}/>
         <header className={videoStyles.quickHeader}>
           <div className={videoStyles.quickHeaderText}>
@@ -8935,6 +8952,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           goalContinueRef={goalContinueRef}
           mirrorDetailedWish={mirrorDetailedWish}
           mirrorStartRef={mirrorStartRef}
+          mirrorResolveRef={mirrorResolveRef}
           onGoalQuizChange={setGoalQuizState}
           recipientAudioPanel={recipientAudioPanel}
           audioStoryboardReady={audioPlanApplied&&Boolean(voiceVisualPlan?.canExport)&&audioRights}

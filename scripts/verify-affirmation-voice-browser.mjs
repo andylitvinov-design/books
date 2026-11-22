@@ -11,13 +11,28 @@ import {verifyGuidedPractices} from "./verify-mandala-practices-browser.mjs";
 const BASE=(process.env.HH_TEST_PUBLIC_ORIGIN||"http://127.0.0.1:3100").replace(/\/$/,"");
 /** The new photo-led Ideas screen hides the retired phrase shortcut. Use real
  *  visible studio navigation instead of forcing a hidden button. */
+/** Navigate only through genuinely visible mobile Studio controls.
+ * The approved first Video/Mirror screen hides the old workspace rail until
+ * the visitor opens its existing overflow. No force-click or DOM mutation. */
+async function enterVisibleStudioWorkspace(page,workspace,engine="chromium"){
+  const control=page.locator('[data-video-quick-control="'+workspace+'"]');
+  if(!await control.isVisible()){
+    const studio=page.locator('[data-mandala-free-video]');
+    await expect(studio).toHaveAttribute("data-active-workspace","video",{timeout:15000});
+    const moreGoals=page.locator('[data-hh-mirror-more-goals]');
+    await expect(moreGoals).toBeVisible({timeout:15000});
+    if(engine==="webkit")await moreGoals.tap();
+    else await moreGoals.click();
+    await expect(studio).toHaveAttribute("data-hh-mirror-advanced","true",{timeout:15000});
+  }
+  await expect(control).toBeVisible({timeout:15000});
+  await expect(control).toBeEnabled();
+  if(engine==="webkit")await control.tap();
+  else await control.click();
+  await expect(control).toHaveAttribute("aria-pressed","true",{timeout:15000});
+}
 async function openVisibleMontageText(page,engine="chromium"){
-  const montage=page.locator('[data-video-quick-control="editor"]');
-  await expect(montage).toBeVisible({timeout:15000});
-  await expect(montage).toBeEnabled();
-  if(engine==="webkit")await montage.tap();
-  else await montage.click();
-  await expect(montage).toHaveAttribute("aria-pressed","true",{timeout:15000});
+  await enterVisibleStudioWorkspace(page,"editor",engine);
   const text=page.locator('[data-video-montage-tab="text"]');
   await expect(text).toBeVisible({timeout:15000});
   if(engine==="webkit")await text.tap();
@@ -66,9 +81,8 @@ async function verifyWorkspaceHydration(browser,locale){
     // compact Goals disclosure; the non-handoff UI remains closed/hidden.
     const handoffPanel=page.locator('[data-video-director-chat-details][data-workspace-section="video"]');
     await expect(handoffPanel).toBeHidden();
-    await handoffPanel.evaluate(element=>{element.open=true;});
-    await expect(handoffPanel).toBeVisible({timeout:15000});
-    await handoffPanel.evaluate(element=>{element.open=false;});
+    // Compact Mirror must not expose an unrelated Director Chat disclosure
+    // before a visitor deliberately enters the advanced editor.
     await expect(handoffPanel).toBeHidden();
     // The approved Goal redesign deliberately gates Personalization behind
     // three explicit selections; hydration alone must NEVER unlock this CTA.
@@ -77,58 +91,93 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(quizProgress).toContainText('1 / 3');
     const mirror=page.locator('[data-hh-mirror-goals]');
     await expect(page.locator('[data-hh-mirror-title]')).toBeVisible();
-    await expect(page.locator('[data-video-intro-info]')).toBeVisible();
-    await expect(page.locator('[data-video-my-film]')).toBeVisible();
+    await expect(page.locator('[data-video-intro-info]')).toBeHidden();
+    await expect(page.locator('[data-video-my-film]')).toBeHidden();
     await expect(mirror).toBeVisible();
+    await expect(mirror).toHaveAttribute('data-hh-mirror-step','1');
     await expect(mirror.locator('[data-hh-mirror-goal-choice]')).toHaveCount(4);
+    const approvedAxisLabels={
+      en:["Ease Stress & Restore Energy","Improve Love & Relationships","Money, Success & Self-Esteem","Personal & Business Growth"],
+      ru:["Снизить стресс и восстановить энергию","Улучшить любовь и отношения","Деньги, успех и самооценка","Личностный и бизнес-рост"],
+      es:["Aliviar el estrés y recuperar energía","Mejorar el amor y las relaciones","Dinero, éxito y autoestima","Crecimiento personal y empresarial"]
+    }[locale];
+    for(let index=0;index<4;index++)await expect(mirror.locator('[data-hh-mirror-goal-choice]').nth(index))
+      .toContainText(approvedAxisLabels[index]);
     await mirror.locator('[data-hh-mirror-audience="business"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","business");
-    await expect(mirror.locator('[data-hh-mirror-goal-choice="growth"]')).toBeVisible();
+    const workCards=mirror.locator('[data-hh-mirror-goal-choice]');
+    const workLabels={
+      en:["Insta Reels","Video About Me","Service Presentation","Client Video Offer"],
+      ru:["Insta Reels","Видео обо мне","Презентация услуги","Видео-предложение клиенту"],
+      es:["Insta Reels","Vídeo sobre mí","Presentación del servicio","Oferta en vídeo para clientes"]
+    }[locale];
+    await expect(workCards).toHaveCount(4);
+    for(let i=0;i<4;i++)await expect(workCards.nth(i)).toContainText(workLabels[i]);
+    for(const width of [320,390,430]){
+      await page.setViewportSize({width,height:840});
+      for(const image of await workCards.locator('img').all()){
+        await image.scrollIntoViewIfNeeded();
+        await expect.poll(()=>image.evaluate(img=>img.complete&&img.naturalWidth>0),
+          {message:"Work photo loads at "+width,timeout:12000}).toBe(true);
+      }
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),
+        false,"Work cards do not overflow at "+width);
+    }
+    await page.setViewportSize({width:390,height:840});
+    await mirror.locator('[data-hh-mirror-goal-choice="insta-reels"]').click();
+    await expect(studio).toHaveAttribute("data-active-workspace","phrases",{timeout:15000});
+    await expect(page.locator('[data-video-ideas-goal-panel]')).toBeVisible();
+    await page.locator('[data-video-quick-control="video"]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-step","1");
+    await mirror.locator('[data-hh-mirror-audience="present"]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-mode","present");
+    await expect(mirror.locator('[data-hh-mirror-goal-choice="stress"]')).toBeVisible();
     await mirror.locator('[data-hh-mirror-audience="me"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","me");
-    await mirror.locator('[data-hh-mirror-goal-choice="love"]').click();
+    // One-line Next is a real local taxonomy selection and jumps directly
+    // to Goal. No advanced sections, extra copy or paid provider request.
     const customWish=locale==="ru"?"Хочу больше взаимопонимания":locale==="es"
       ?"Quiero tener más comprensión mutua":"I want more mutual understanding";
     await mirror.locator('[data-hh-mirror-wish]').fill(customWish);
-    await mirror.locator('[data-hh-mirror-more-goals]').click();
-    await expect(studio).toHaveAttribute("data-hh-mirror-advanced","true");
-    const categories=page.locator('[data-auto-video-category]');
-    await expect(categories).toHaveCount(4);
-    await expect(categories.first()).toBeVisible();
-    await expect(page.locator('[data-auto-video-input]')).toHaveValue(customWish);
     await mirror.locator('[data-hh-mirror-next]').click();
-    await expect(studio).toHaveAttribute("data-video-scenario-open","true");
-    await expect(quizProgress).toContainText('2 / 3');
-    await expect(continueToIdeas).toBeDisabled();
-    await expect(page.locator('[data-auto-video-input]')).toHaveValue(customWish);
-    const subcategories=page.locator('[data-auto-video-subcategory]');
-    await expect(subcategories).toHaveCount(4);
-    const subcategoryArt=page.locator('[data-video-goal-subcategory-cards] [data-video-goal-art]');
-    await expect(subcategoryArt).toHaveCount(4);
+    await expect(studio).toHaveAttribute("data-active-workspace","phrases",{timeout:15000});
+    await expect(page.locator('[data-video-ideas-goal-panel]')).toBeVisible();
+    await expect(page.locator('[data-video-ideas-tab="goal"]')).toHaveAttribute("aria-pressed","true");
+    // Return to the genuine Goal tab to exercise the second path:
+    // one selected photograph -> exactly two short choices -> Goal.
+    await page.locator('[data-video-quick-control="video"]').click();
+    await expect(studio).toHaveAttribute("data-active-workspace","video");
+    await expect(studio).toHaveAttribute("data-hh-mirror-advanced","false");
+    await mirror.locator('[data-hh-mirror-goal-choice="love"]').click();
+    await expect(mirror).toHaveAttribute('data-hh-mirror-step','2');
+    const subs=mirror.locator('[data-hh-mirror-subcategory]');
+    await expect(subs).toHaveCount(4);
     for(const width of [320,354,390,430]){
       await page.setViewportSize({width,height:840});
-      for(const photo of await subcategoryArt.all()){
-        await photo.scrollIntoViewIfNeeded();
-        await expect.poll(()=>photo.evaluate(img=>img.complete&&img.naturalWidth>0),
-          {message:"Goal 2 photo loads at "+width}).toBe(true);
+      for(const image of await subs.locator('img').all()){
+        await image.scrollIntoViewIfNeeded();
+        await expect.poll(()=>image.evaluate(img=>img.complete&&img.naturalWidth>0),
+          {message:"Mirror quiz image loads at "+width}).toBe(true);
       }
-      const overflows=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1);
-      assert.equal(overflows,false,"Goal step 2 fits "+width);
+      const metrics=await page.evaluate(()=>({
+        overflow:document.documentElement.scrollWidth>window.innerWidth+1,
+        controls:[...document.querySelectorAll('[data-hh-mirror-subcategory]')]
+          .map(node=>node.getBoundingClientRect().width)
+      }));
+      assert.equal(metrics.overflow,false,"Mirror quiz no horizontal overflow at "+width);
+      assert.ok(metrics.controls.every(value=>value>=125),
+        "Mirror quiz cards remain large enough for "+width);
     }
     await page.setViewportSize({width:390,height:840});
-    await subcategories.first().click();
-    await expect(quizProgress).toContainText('3 / 3');
-    await expect(continueToIdeas).toBeDisabled();
-    const topics=page.locator('[data-video-goal-topic]');
-    await expect(topics).toHaveCount(4);
-    await topics.first().click();
-    await expect(continueToIdeas).toBeEnabled();
-    await continueToIdeas.click();
+    await subs.first().click();
+    await expect(mirror).toHaveAttribute('data-hh-mirror-step','3');
+    await expect(mirror.locator('[data-hh-mirror-topic]')).toHaveCount(4);
+    await mirror.locator('[data-hh-mirror-topic]').first().click();
+    await expect(studio).toHaveAttribute("data-active-workspace","phrases",{timeout:15000});
     const ideas=page.locator('[data-video-quick-control="phrases"]');
     await expect(ideas).toHaveAttribute("aria-pressed","true");
-    await expect(studio).toHaveAttribute("data-active-workspace","phrases");
     await expect(page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]')).toBeVisible();
-    // Purpose-first Ideas opens Goal, not Personalization. Select an actual
+        // Purpose-first Ideas opens Goal, not Personalization. Select an actual
     // goal and complete its short, goal-specific quiz before testing the
     // original optional refinement and Montage text editor.
     const ideasGoalPane=page.locator('[data-video-ideas-goal-panel]');
@@ -459,13 +508,26 @@ async function verifyWorkspaceHydration(browser,locale){
     // real occasion and the original Goal→Ideas action. The ordinary visitor
     // must not need a hidden storyboard Confirm to stage these four captions.
     const goalTab=page.locator('[data-video-quick-control="video"]');
+    // Only a real overflow tap can open the preserved advanced recipient path.
+    const openAdvancedGoal=async()=>{
+      const moreGoals=mirror.locator('[data-hh-mirror-more-goals]');
+      await expect(studio).toHaveAttribute("data-hh-mirror-advanced","false");
+      await expect(moreGoals).toBeVisible();
+      await moreGoals.click();
+      await expect(studio).toHaveAttribute("data-hh-mirror-advanced","true");
+      await expect(page.locator('[data-video-goal-quiz-audience]')).toBeVisible();
+    };
     await goalTab.click();
     await expect(goalTab).toHaveAttribute("aria-pressed","true");
     const goalQuiz=page.locator('[data-video-goal-quiz-audience]');
-    // Returning from Ideas keeps the completed Self quiz at step 3. Navigate
-    // back through its real buttons before asserting step-1 Life/Work controls.
+    // Return from Ideas leaves the completed Self quiz at step 3: reveal
+    // it using the guest-visible advanced control, then back through it.
+    await openAdvancedGoal();
     const backGoal=page.locator('[data-video-goal-quiz-back]');
-    for(let step=0;step<2&&await backGoal.count();step++)await backGoal.click();
+    for(let step=0;step<2;step++){
+      await expect(backGoal).toBeVisible();
+      await backGoal.click();
+    }
     await expect(page.locator('[data-video-quick-scope]')).toHaveCount(2);
     const others=page.locator('[data-video-quick-scope="work"]');
     await expect(page.locator('[data-video-goal-audience-option]')).toHaveCount(0);
@@ -539,6 +601,7 @@ async function verifyWorkspaceHydration(browser,locale){
     // real visible Goal rail before using its in-panel Continue button.
     await goalTab.click();
     await expect(studio).toHaveAttribute("data-active-workspace","video");
+    await openAdvancedGoal();
     // For Others, the native compact Goal CTA is the visible navigation entry.
     // The legacy footer Continue button intentionally stays hidden in that mode.
     // Exercise the actual clicked handler rather than unveiling hidden controls.
@@ -558,6 +621,7 @@ async function verifyWorkspaceHydration(browser,locale){
     // Speech-driven path: one Continue tap, no separate Match Footage gate.
     // The transcription API is intercepted; no provider or paid render is called.
     await page.locator('[data-video-quick-control="video"]').click();
+    await openAdvancedGoal();
     await page.locator('[data-auto-video-recipient-kind="audio_visual"]').click();
     const sampleLines=locale==="ru"
       ?["Солнце светит утром","Дети улыбаются","Все радуются дню","Тёплый свет вокруг"]
@@ -794,7 +858,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // Phrases. The retired Video quick-audio disclosure is intentionally
       // hidden by the canonical six-workspace layout: do not bypass its CSS.
       const editorTab=page.locator('[data-video-quick-control="editor"]');
-      await editorTab.click();
+      await enterVisibleStudioWorkspace(page,"editor",engine);
       await expect(editorTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
       // Montage opens on the Style tab, not the retired Concept screen.
       const montageStyleTab=page.locator('[data-video-montage-tab="effects"]');
@@ -868,10 +932,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(montageProOffer.locator('[data-video-montage-pro-choice="free"]')).toBeEnabled();
       await montageProOffer.locator('[data-video-montage-pro-choice="character"]').click();
       await expect(page.locator('[data-video-quick-control="effects"]')).toHaveAttribute('aria-pressed','true');
-      await editorTab.click();await montageProTab.click();
+      await enterVisibleStudioWorkspace(page,"editor",engine);await montageProTab.click();
       await montageProOffer.locator('[data-video-montage-pro-choice="cinematic"]').click();
       await expect(page.locator('[data-video-quick-control="pro"]')).toHaveAttribute('aria-pressed','true');
-      await editorTab.click();await montageStyleTab.click();
+      await enterVisibleStudioWorkspace(page,"editor",engine);await montageStyleTab.click();
       await expect(montageStyleTab).toHaveAttribute('aria-pressed','true');
       phase(engine,"montage-pro-offer-routes-passed");
       // Reproduce the owner's iPhone case before recording real voice.
@@ -1381,7 +1445,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         await expect(page.locator("[data-video-live-audio]")).toContainText("holistic-house-voice-2");
         // Confirm the chosen recorded track survives the ACTUAL local MP4/WebM
         // export. Reading a selection badge or blob URL is not E2E evidence.
-        await page.locator('[data-video-quick-control="editor"]').click();
+        await enterVisibleStudioWorkspace(page,"editor",engine);
         // The original recorder's export button is available in the real
         // Montage Audio step, never in the intentionally hidden Style footer.
         await openMontageSettingsViaQuality(page);
@@ -1703,7 +1767,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(page.locator("[data-hypno-audio-effect-busy]")).toHaveCount(0);
       phase(engine,"hypno-audio-effects-rendered");
       await page.locator('[data-video-quick-control="video"]').click();
-      await page.locator('[data-video-quick-control="editor"]').click();
+      await enterVisibleStudioWorkspace(page,"editor",engine);
       // #3933 introduced TWO explicit actions: Generate Video exports on tap;
       // Add Effects navigates. Never tap Generate merely to advance a tab.
       // Exercise the visible Style and Audio controls, then create exactly once
@@ -1797,7 +1861,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         // Approve the final six decoded photographs AFTER those edits, just
         // like a real visitor. An old approval must never silently authorize
         // a changed video, and this step cannot charge or start the encoder.
-        await editorTab.click();
+        await enterVisibleStudioWorkspace(page,"editor",engine);
         await expect(editorTab).toHaveAttribute("aria-pressed","true");
         await montageStoryTab.click();
         await expect(montageStoryTab).toHaveAttribute("aria-pressed","true");
@@ -1909,7 +1973,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
             await expect(chosenFilm).toHaveAttribute('aria-pressed','true',{timeout:15000});
             await expect(page.locator('[data-free-film-readiness]')).toBeVisible();
             phase(engine,"explicit-reviewed-film-compilation-selected");
-            await page.locator('[data-video-quick-control="editor"]').click();
+            await enterVisibleStudioWorkspace(page,"editor",engine);
             await expect(page.locator('[data-mandala-free-video]'))
               .toHaveAttribute('data-active-workspace','editor');
           }else{
@@ -2286,7 +2350,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // real Montage path must remain fail-closed while its narration is stale.
       await expect(page.locator("[data-video-narration-reapproval]")).toBeVisible();
       await expect(page.locator('[data-video-quick-generate]')).toBeEnabled();
-      await page.locator('[data-video-quick-control="editor"]').click();
+      await enterVisibleStudioWorkspace(page,"editor",engine);
       await openMontageSettingsViaQuality(page);
       const montageAudioAfterExport=page.locator('[data-video-montage-open-audio]');
       if(engine==="webkit")await montageAudioAfterExport.tap();
