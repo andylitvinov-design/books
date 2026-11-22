@@ -13,7 +13,7 @@ import type { AssistMode, AssistBudget, AssistPreferences } from "@/lib/assist/s
 import { rankAssistProducts } from "@/lib/assist/product-recommendations.mjs";
 import { AssistTopRecommendations } from "./assist-top-recommendations";
 import { serviceGroupAnchor, servicesCategoryTargets } from "@/lib/services-quick-categories";
-import { ServicesBusinessMenu } from "./services-business-menu";
+import { ServicesBusinessMenu, suggestBusinessCategory, type BusinessKey } from "./services-business-menu";
 import styles from "./services-assist-quiz.module.css";
 
 type QuestionKey = "topic" | "need" | "mode" | "budget";
@@ -697,10 +697,24 @@ const businessPrompt: Record<PublicLocale,string> = {
   ru:"Выберите поддержку за 2 шага",
   es:"Elige apoyo en 2 pasos",
 };
+// The free-text entry offers a lightweight on-device topic hint; the visitor
+// always sees and can change the actual quiz choices before recommendations.
+function suggestPersonalTopic(text:string):QuizTopic|null {
+ const t=text.toLowerCase();
+ if(/business|entrepren|negocio|empresa|бизнес|команд|empresari/.test(t))return "business_support";
+ if(/relationship|partner|family|love|couple|отнош|семь|любов|pareja|amor|familia/.test(t))return "relationships_esteem";
+ if(/money|income|career|salary|finance|деньг|доход|карьер|dinero|ingreso|trabajo/.test(t))return "money_growth";
+ if(/stress|energy|fatigue|burnout|sleep|anxiety|стресс|энерг|тревог|устал|ansiedad|estrés|energía/.test(t))return "stress_energy";
+ return null;
+}
 export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
   const v = supportVisualCopy[locale];
   const [audience,setAudience]=useState<"personal"|"business">("personal");
+  const [topicTouched,setTopicTouched]=useState(false);
+  const [businessCategory,setBusinessCategory]=useState<BusinessKey|null>(null);
+  const [businessOption,setBusinessOption]=useState<number|null>(null);
+  const [businessContactsOpen,setBusinessContactsOpen]=useState(false);
   const [goal,setGoal]=useState("");
   const goalFieldRef=useRef<HTMLInputElement>(null);
   const [answers, setAnswers] = useState<Partial<Record<QuestionKey, string>>>({topic:"stress_energy"});
@@ -734,12 +748,46 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
 
   function selectOption(key: QuestionKey, value: string) {
     setAnswers(old => key === "topic" && old.topic !== value ? { topic: value } : { ...old, [key]: value });
+    if(key==="topic")setTopicTouched(true);
     setSubmitted(false);
+    // A card is the answer and opens the next question — no oversized Next row.
+    if(key!=="budget"){
+      setStep(index=>Math.min(index+1,questionKeys.length-1));
+      requestAnimationFrame(()=>questionHeading.current?.focus({preventScroll:true}));
+    }
   }
   function nextQuestion() {
     if (!answers[currentKey] || step >= questionKeys.length - 1) return;
     setStep(index => Math.min(index + 1, questionKeys.length - 1));
     requestAnimationFrame(() => questionHeading.current?.focus());
+  }
+  function changeBusinessCategory(next:BusinessKey|null){
+    setBusinessCategory(next);setBusinessOption(null);setBusinessContactsOpen(false);
+  }
+  function advanceFromGoal(){
+    if(audience==="business"){
+      if(!businessCategory){
+        if(!goal.trim())return;
+        changeBusinessCategory(suggestBusinessCategory(goal));
+      }else if(businessOption===null){
+        // A description suggests the first published offer, not a purchase;
+        // the actual price and editable choice stay visible to the visitor.
+        if(goal.trim())setBusinessOption(0);
+      }else{
+        setBusinessContactsOpen(true);
+      }
+      return;
+    }
+    if(step===questionKeys.length-1){
+      if(ready)setSubmitted(true);
+      return;
+    }
+    if(!answers[currentKey])return;
+    if(step===0 && !topicTouched && goal.trim()){
+      const suggested=suggestPersonalTopic(goal);
+      if(suggested)setAnswers({topic:suggested});
+    }
+    nextQuestion();
   }
   function jumpTo(index: number) {
     if (index > step && !answers[questionKeys[index]]) return;
@@ -803,13 +851,39 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
     <div className={styles.audienceSwitch} data-services-audience role="group" aria-label={v.audience}>
       <button type="button" aria-pressed={audience === "personal"} onClick={() => {
         setAudience("personal");setAnswers({topic:"stress_energy"});setStep(0);setSubmitted(false);
+        setTopicTouched(false);changeBusinessCategory(null);
       }}><UserRound size={23} aria-hidden="true" />{v.forMe}</button>
       <button type="button" aria-pressed={audience === "business"} onClick={() => {
         setAudience("business");setAnswers({topic:"business_support"});setStep(0);setSubmitted(false);
+        setTopicTouched(false);changeBusinessCategory(null);
       }}><BriefcaseBusiness size={23} aria-hidden="true" />{v.forBusiness}</button>
     </div>
 
-    {audience === "business" ? <ServicesBusinessMenu locale={locale} /> : <form className={styles.form} data-services-quiz-form onSubmit={submit}>
+    <div className={styles.goalEntry} data-services-goal-entry>
+      <div className={styles.goalComposer}>
+        <Sparkles size={22} aria-hidden="true" />
+        <input ref={goalFieldRef} data-services-quiz-goal value={goal} maxLength={300}
+          onChange={event => setGoal(event.target.value)}
+          onKeyDown={event=>{if(event.key==="Enter"){event.preventDefault();advanceFromGoal();}}}
+          autoComplete="off" enterKeyHint="go" placeholder={v.goal} aria-label={v.goal} />
+        <button type="button" className={styles.dictation} aria-label={v.dictation} title={v.dictation}
+          onClick={() => goalFieldRef.current?.focus()}><Mic size={22} aria-hidden="true" /></button>
+      </div>
+      <button type="button" className={styles.goalNext} data-services-quiz-next
+        disabled={audience==="personal" ? (step===questionKeys.length-1?!ready:!answers[currentKey])
+          : (!businessCategory&&!goal.trim()) || (Boolean(businessCategory)&&businessOption===null&&!goal.trim())}
+        onClick={advanceFromGoal} aria-label={v.next}>
+        <span>{v.next}</span><ArrowRight size={19} aria-hidden="true" />
+      </button>
+    </div>
+    {((audience==="personal"&&step===0)||(audience==="business"&&!businessCategory)) ?
+      <div className={styles.orDivider} data-services-goal-or><span>{v.or}</span></div> : null}
+
+    {audience === "business" ? <ServicesBusinessMenu locale={locale} goal={goal}
+      category={businessCategory} selectedOption={businessOption}
+      onCategorySelect={changeBusinessCategory}
+      onOptionSelect={index=>{setBusinessOption(index);setBusinessContactsOpen(false);}}
+      revealContacts={businessContactsOpen}/> : <form className={styles.form} data-services-quiz-form onSubmit={submit}>
       <div className={styles.progress}>
         <span>{t.step} {step + 1} {v.of} {questionKeys.length}</span>
         <div className={styles.progressSteps} aria-label={t.step + " " + (step + 1)}>
@@ -842,22 +916,11 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
           })}
         </div>
       </fieldset>
-      <div className={styles.orDivider}><span>{v.or}</span></div>
-      <div className={styles.goalComposer}>
-        <Sparkles size={24} aria-hidden="true" />
-        <input ref={goalFieldRef} data-services-quiz-goal value={goal} maxLength={300}
-          onChange={event => setGoal(event.target.value)} autoComplete="off"
-          placeholder={v.goal} aria-label={v.goal} />
-        <button type="button" aria-label={v.dictation} title={v.dictation}
-          onClick={() => goalFieldRef.current?.focus()}><Mic size={23} aria-hidden="true" /></button>
-      </div>
-      {step < questionKeys.length - 1 ? <button type="button" className={styles.next}
-        data-services-quiz-next disabled={!answers[currentKey]} onClick={nextQuestion}>
-        {v.next}<ArrowRight size={23} aria-hidden="true" />
-      </button> : <button type="submit" className={styles.submit}
-        data-services-quiz-submit disabled={!ready} aria-controls="assist-recommendations">
-        {t.button}<ArrowRight size={20} aria-hidden="true" />
-      </button>}
+      {step===questionKeys.length-1 && ready && !submitted ?
+        <button type="submit" className={styles.submit} data-services-quiz-submit
+          disabled={!ready} aria-controls="assist-recommendations">
+          {t.button}<ArrowRight size={20} aria-hidden="true" />
+        </button> : null}
     </form>}
 
     {audience === "personal" ? <section className={styles.categories} data-services-quick-categories aria-labelledby="services-quiz-categories-title">
