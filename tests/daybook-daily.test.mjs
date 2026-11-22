@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
- DAYBOOK_AXES,DAYBOOK_CONSENT_VERSION,daybookPhrase,daybookMessage,
+ DAYBOOK_AXES,DAYBOOK_CONSENT_VERSION,DAYBOOK_DAILY_VARIANT_COUNT,daybookPhrase,daybookMessage,
  validateDaybookDaily,
 } from '../lib/app/daybook-daily-copy.mjs'
 
@@ -12,13 +12,17 @@ const valid={
  timezone:'America/Toronto',locale:'ru',goalDisclosureAccepted:true,
  consentVersion:DAYBOOK_CONSENT_VERSION,
 }
-test('all eight meaning axes have five original localized daily texts',()=>{
+test('all eight meaning axes have 35 distinct complete messages per locale',()=>{
  assert.equal(DAYBOOK_AXES.length,8)
  for(const item of DAYBOOK_AXES){
   for(const locale of ['ru','en','es']){
    assert.ok(item.label[locale])
    assert.equal(item.phrases[locale].length,5)
    assert.equal(new Set(item.phrases[locale]).size,5)
+   assert.equal(DAYBOOK_DAILY_VARIANT_COUNT,35)
+   const variants=Array.from({length:35},(_,index)=>daybookPhrase(item.key,locale,'2026-11-22',goalId,index).phrase)
+   assert.equal(new Set(variants).size,35)
+   assert.ok(variants.every(v=>v.length<600))
   }
  }
 })
@@ -52,4 +56,8 @@ test('prevents accidental external/cross-origin links and control text in Telegr
  assert.throws(()=>daybookMessage({...basic,profileUrl:'https://other.example/ru/app/my-coaching-plan?goal='+goalId}))
  assert.throws(()=>daybookMessage({...basic,goal:'bad\ncontrol'}))
  assert.throws(()=>daybookPhrase('does-not-exist','ru','2026-11-22'))
+ assert.throws(()=>daybookPhrase('freedom','ru','2026-11-22','',35))
+ assert.throws(()=>daybookPhrase('freedom','ru','2026-11-22','',-1))
+ const indexed=daybookMessage({...basic,phraseIndex:34})
+ assert.equal(indexed.phrase,daybookPhrase('anchor','ru','2026-11-22',goalId,34).phrase)
 })

@@ -26,3 +26,12 @@ test('private schema prevents double sends and public grants',()=>{
  assert.match(ddl,/for update of p,l,g/)
  assert.match(ddl,/consent_version='daybook-goal-to-messenger-v1'/)
 })
+
+test('30-day nonrepeat selection is persisted on server, not browser',()=>{
+ const migration=read('supabase/migrations/20261122201000_hh_daybook_daily_35_variant_history.sql')
+ assert.match(migration,/generate_series\(0,34\)/)
+ assert.match(migration,/p_day - 30/)
+ assert.match(migration,/pg_catalog\.random\(\)/)
+ assert.match(migration,/d\.phrase_index/)
+ assert.match(read('lib/app/daybook-daily-dispatch.js'),/phraseIndex:row\.phrase_index/)
+})
