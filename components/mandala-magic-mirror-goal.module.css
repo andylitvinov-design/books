@@ -191,3 +191,34 @@
 @media(min-width:760px){
  .landing,.goals[data-hh-mirror-screen="topic"]{display:none}
 }
+
+/* Compact in one row at 390–430px; genuinely wrap at 320–354px. */
+@media(max-width:759px){
+ .toolIcon{width:35px}
+ .toolbarMenu{font-size:clamp(11px,3vw,12px)}
+ .send{width:43px;height:43px}
+ .composerToolbar{gap:3px;padding:6px}
+}
+@media(max-width:359px){
+ .composerToolbar{flex-wrap:wrap;justify-content:flex-start;gap:5px}
+ .toolbarMenu{min-height:40px;padding-inline:4px}
+ .send{margin-left:auto}
+}
+
+/* The visible three-stage film ribbon is NOT the internal 4×4×4 quiz index. */
+@media(max-width:759px){
+ .goals[data-hh-mirror-screen="topic"] .progress{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:nowrap;min-height:51px;padding:5px 7px}
+ .goals[data-hh-mirror-screen="topic"] .progress>strong{flex:none;min-width:90px;padding:9px 6px;border-radius:99px;background:linear-gradient(120deg,#0ba976,#005b45);color:#fff;font:850 clamp(11px,3.2vw,15px)/1.1 system-ui,sans-serif;text-align:center}
+ .progressStages{display:flex;align-items:center;justify-content:space-between;gap:3px;flex:1;min-width:0}
+ .progressStages span{display:inline-flex;align-items:center;gap:4px;min-width:0;color:#69726b;font:750 clamp(10px,2.5vw,13px)/1 system-ui,sans-serif}
+ .progressStages span[aria-current="step"]{color:#0c6a51}
+ .progressStages span b{display:grid;place-items:center;flex:none;width:23px;height:23px;border-radius:50%;background:#888e89;color:#fff;font-size:12px}
+ .progressStages span[aria-current="step"] b{background:#0aa36d}
+ .progressStages i{flex:none;font-style:normal;color:#8b948b}
+ .goals[data-hh-mirror-screen="topic"] .back{position:static;justify-self:start;min-height:44px;padding:5px 9px}
+ .goals[data-hh-mirror-screen="topic"] .more{display:none}
+}
+@media(max-width:359px){
+ .goals[data-hh-mirror-screen="topic"] .progress{flex-wrap:wrap;justify-content:center;gap:5px}
+ .progressStages{justify-content:center;gap:5px}
+}

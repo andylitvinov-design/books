@@ -115,6 +115,10 @@ async function verifyWorkspaceHydration(browser,locale){
     await mirror.locator('[data-hh-mirror-enter="me"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
     await expect(mirror.locator('[data-hh-mirror-composer] textarea')).toBeVisible();
+    await expect(page.locator('[data-video-live-stage]')).toBeHidden();
+    await mirror.locator('[data-hh-mirror-play-example]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-video-preview","open");
+    await expect(page.locator('[data-video-live-stage]')).toBeVisible();
     await mirror.locator('[data-hh-mirror-ideas-menu]').click();
     await expect(mirror.locator('[data-hh-mirror-tier-option]')).toHaveCount(3);
     await mirror.locator('[data-hh-mirror-tier-option="basic"]').click();

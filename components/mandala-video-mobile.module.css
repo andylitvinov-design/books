@@ -6127,3 +6127,16 @@
 @media(max-width:359px){
  .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"] .quickBuilder{margin-top:-17px!important;padding-inline:7px!important}
 }
+
+/* Magic Mirror approved 2-screen entrance: hide the prior player layout, but
+   keep its single genuine video and Canvas mounted. Example Play reveals it. */
+@media(max-width:759px){
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) .quickBuilder>.previewStage,
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="topic"]) .quickBuilder>.previewStage,
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="topic"]) .quickBuilder>[data-hh-mirror-title]{
+  display:none!important
+ }
+ .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-video-preview="open"]) .quickBuilder>.previewStage{
+  display:block!important;order:5!important;padding-top:9px!important
+ }
+}

@@ -47,6 +47,9 @@ test("the approved mobile Mirror contains only three scopes, a compact input Nex
  assert.match(mirrorCss,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
  assert.match(mirrorCss,/\.entry\{display:grid;grid-template-columns:minmax\(0,1fr\) auto/);
  assert.match(mobile,/Magic Mirror v3/);
+ assert.match(mobile,/data-hh-mirror-video-preview="open"/);
+ assert.match(mirror,/setIntroExpanded\(true\)/);
+ assert.match(mirror,/data-hh-mirror-video-preview=\{introExpanded/);
  assert.match(mobile,/quickBuilder>:not\(\.quickBrandBar\):not\(\[data-hh-mirror-title\]\):not\(\.previewStage\):not\(\[data-hh-mirror-goals\]\)/);
  assert.match(mobile,/max-height:740px/);
  assert.doesNotMatch(mirror,/fetch\(|localStorage|navigator\.sendBeacon|createQuickVideo\(/);

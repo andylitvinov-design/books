@@ -110,6 +110,7 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
  const [videoFormat,setVideoFormat]=useState<MirrorVideoFormat>("pro");
  const [formatMenuOpen,setFormatMenuOpen]=useState(false);
  const [guideOpen,setGuideOpen]=useState(false);
+ const [introExpanded,setIntroExpanded]=useState(false);
  const [selectedId,setSelectedId]=useState("stress");
  // Each intent keeps its own local wish, avoiding accidental cross-purpose reuse.
  const [scopeWishes,setScopeWishes]=useState<Record<MirrorScope,string>>(()=>({me:wish,business:"",present:""}));
@@ -123,8 +124,14 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
  const subcategories=listMyTubeSubcategories(selected.categoryId,locale);
  const topics=subcategoryId?listMyTubeTopics(selected.categoryId,subcategoryId,locale):[];
  const changeStep=(next:1|2|3)=>{setStep(next);onStepChange(next);setBlocked(false);};
+ const closeExistingIntro=()=>{
+  // Leaving the page must stop the original MP4, not keep audio playing hidden.
+  document.querySelector<HTMLButtonElement>('[data-video-therapy-intro-close]')?.click();
+  setIntroExpanded(false);
+ };
  const switchScope=(next:MirrorScope)=>{
   if(disabled||scope===next)return;
+  closeExistingIntro();
   setScopeWishes(prev=>({...prev,[scope]:wish}));
   setScope(next);setSelectedId(choices[next][0].id);setSubcategoryId("");
   onWishChange(scopeWishes[next]||"");
@@ -132,14 +139,16 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
  };
  const enterScreen=(next:"me"|"others")=>{
   if(disabled)return;
-  setScreen("topic");setFormatMenuOpen(false);setGuideOpen(false);
+  setScreen("topic");setIntroExpanded(false);setFormatMenuOpen(false);setGuideOpen(false);
   switchScope(next==="me"?"me":"present");
  };
  const playExistingIntro=()=>{
   // This is a poster button, NOT a second video element. Reuse the real
   // owner-provided intro player already mounted by MandalaFreeVideoStudio.
+  setIntroExpanded(true);
   const player=document.querySelector<HTMLButtonElement>('[data-video-therapy-intro="ready"]');
-  if(player&&!player.disabled){player.click();document.getElementById("video-hero")?.scrollIntoView({behavior:"smooth",block:"center"});}
+  if(player&&!player.disabled){player.click();window.requestAnimationFrame(()=>
+    document.getElementById("video-hero")?.scrollIntoView({behavior:"smooth",block:"center"}));}
   else document.getElementById("video-hero")?.scrollIntoView({behavior:"smooth",block:"center"});
  };
  const finish=(categoryId:MirrorCategory,subId:string,topicId:string,goalText:string,workFormat?:WorkVideoFormat)=>{
@@ -152,6 +161,7 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
   const accepted=onComplete({scope,categoryId,subcategoryId:subId,topicId,theme,
     wish:goalText.slice(0,500),goalChoiceId:workFormat||selected.id,workFormat,videoFormat});
   if(accepted===false){setBlocked(true);return;}
+  closeExistingIntro();
   setSubcategoryId("");changeStep(1);
  };
  const autoNext=()=>{
@@ -224,9 +234,9 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
   </button>
  </section>;
  return <section className={css.goals} data-hh-mirror-screen="topic" data-hh-mirror-goals data-hh-mirror-mode={scope}
-  data-hh-mirror-step={step} aria-label={scope==="business"?t.workQuestion:t.question}>
+  data-hh-mirror-step={step} data-hh-mirror-video-preview={introExpanded?"open":"closed"} aria-label={scope==="business"?t.workQuestion:t.question}>
   <button type="button" data-hh-mirror-back-landing className={css.backLanding}
-   onClick={()=>{setScreen("landing");changeStep(1);}}><ArrowLeft size={16}/>{copy.back}</button>
+   onClick={()=>{closeExistingIntro();setScreen("landing");changeStep(1);}}><ArrowLeft size={16}/>{copy.back}</button>
   <header className={css.therapyHero}>
    <span className={css.therapyEyebrow}><Sparkles size={23} aria-hidden="true"/>{scope==="me"?copy.therapy:copy.other}</span>
    <p>{scope==="me"?copy.therapyHint:copy.otherHint}</p>
@@ -247,10 +257,16 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
     </button>;
    })}
   </div>
-  <div className={css.progress} aria-label={(locale==="ru"?"Шаг ":locale==="es"?"Paso ":"Step ")+step+" / 5"}>
-   <span className={css.dots} aria-hidden="true">{[1,2,3].map(index=>
-    <i key={index} data-active={index<=step?"true":"false"}/>)}</span>
-   <span data-hh-mirror-stage-label>{locale==="ru"?"Шаг":locale==="es"?"Paso":"Step"} {step} {locale==="ru"?"из":locale==="es"?"de":"of"} 3</span>
+  <div className={css.progress} data-hh-mirror-progress
+    aria-label={(locale==="ru"?"Шаг ":locale==="es"?"Paso ":"Step ")+"1 / 3"}>
+   <strong data-hh-mirror-stage-label>{copy.step}</strong>
+   <span className={css.progressStages}>
+    <span aria-current="step"><b>1</b>{copy.topic}</span>
+    <i aria-hidden="true">—</i>
+    <span><b>2</b>{copy.script}</span>
+    <i aria-hidden="true">—</i>
+    <span><b>3</b>{copy.create}</span>
+   </span>
   </div>
   {step>1?<button type="button" className={css.back} data-hh-mirror-back
     disabled={disabled} onClick={()=>changeStep(step===3?2:1)}>
