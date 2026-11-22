@@ -18,7 +18,12 @@ export type VideoDeliveryStatus={
  telegramConnectUrl?:string|null;whatsappConnectUrl?:string|null;whatsappLinked?:boolean|null;
  whatsappConsentRequired?:boolean;
 };
-export type VideoDeliveryHandle={saveToLibrary:()=>Promise<void>;sendToTelegram:()=>Promise<void>;shareToWhatsApp:(consentApproved?:boolean)=>Promise<void>};
+export type VideoDeliveryHandle={saveToLibrary:(consentApproved:boolean)=>Promise<void>;sendToTelegram:()=>Promise<void>;shareToWhatsApp:(consentApproved?:boolean)=>Promise<void>};
+export const PRIVATE_VIDEO_SAVE_CONSENT={
+ en:"I agree to upload this finished MP4 to my private My Videos library. The original photo and request are not sent separately.",
+ ru:"Я согласен загрузить готовый MP4 в свой приватный раздел «Мои видео». Исходное фото и запрос отдельно не отправляются.",
+ es:"Acepto subir este MP4 terminado a mi biblioteca privada Mis vídeos. La foto original y la solicitud no se envían por separado.",
+} as const;
 type Props={
  locale:PublicLocale;open:boolean;onClose:()=>void;
  onStatusChange?:(status:VideoDeliveryStatus)=>void;
@@ -136,7 +141,9 @@ export const MandalaVideoDelivery=forwardRef<VideoDeliveryHandle,Props>(function
  const [state,setState]=useState<State|null>(null);
  const [session,setSession]=useState<"checking"|"signed_in"|"guest"|"unavailable">("checking");
  const [notice,setNotice]=useState("");
+ const [cloudConsent,setCloudConsent]=useState(false);
  const [savedId,setSavedId]=useState<string|null>(null);
+ useEffect(()=>{if(session!=="signed_in")setCloudConsent(false);},[session]);
  const uploadSessionRef=useRef<unknown>(null);
  const [uploadPercent,setUploadPercent]=useState<number|null>(null);
  const [busy,setBusy]=useState(false);
@@ -228,14 +235,14 @@ export const MandalaVideoDelivery=forwardRef<VideoDeliveryHandle,Props>(function
    setNotice(error instanceof DOMException&&error.name==="AbortError"?t.cancelled:t.noShare);
   }
  }
- function privateUpload(){
+ function privateUpload(accountId?:string){
   if(inFlight.current)return inFlight.current;
   const task=(async()=>{
    if(!readyMp4)throw new Error("VIDEO_FORMAT_UNSUPPORTED");
    const chosenTheme=["money","relationships","energy","goals","health","life"].includes(theme)?theme:"energy";
    return savePrivateMp4({
     file:blob,details:{theme:chosenTheme,sceneId:"personal-film",aspect,duration},
-    request:(path,body)=>appFetch(path,body,"POST"),
+    request:(path,body)=>appFetch(path,body,"POST",{accountId}),
     sessionRef:uploadSessionRef,
     onProgress:(done,total)=>setUploadPercent(Math.min(100,Math.round(done/total*100)))
    });
@@ -244,7 +251,8 @@ export const MandalaVideoDelivery=forwardRef<VideoDeliveryHandle,Props>(function
   void task.catch(()=>{if(inFlight.current===task)inFlight.current=null;});
   return task;
  }
- async function saveToLibrary(){
+ async function saveToLibrary(consentApproved:boolean){
+  if(consentApproved!==true)return;
   // The explicit Ready Save click calls this same existing idempotent uploader.
   // A double tap, expired session or disabled cloud must never create a new slot.
   if(savingRef.current||busy)return;
@@ -256,12 +264,14 @@ export const MandalaVideoDelivery=forwardRef<VideoDeliveryHandle,Props>(function
    const current=session==="signed_in"&&state?state:await refresh();
    if(!current){setNotice(t.signInRequired);return;}
    if(!current.cloudAvailable){setNotice(t.cloudSaveOff);return;}
-   const id=await privateUpload();
+   const cabinet=await appFetch("bootstrap?view=portrait");
+   const accountId=cabinet.account.id;
+   const id=await privateUpload(accountId);
    setSavedId(id);
    setNotice(t.savedPrivate);
   }catch(error){
    const code=errorCode(error);
-   setNotice(code==="SIGN_IN_REQUIRED"?t.signInRequired:
+   setNotice(code==="SIGN_IN_REQUIRED"||code==="ACCOUNT_CHANGED"?t.signInRequired:
      code==="FEATURE_UNAVAILABLE"?t.cloudSaveOff:
      code==="PRIVATE_UPLOAD_EXPIRED"?t.uploadExpired:t.uploadRetry);
   }finally{
@@ -401,9 +411,14 @@ export const MandalaVideoDelivery=forwardRef<VideoDeliveryHandle,Props>(function
   <div className={css.heading}><h4>{t.title}</h4>
    <button type="button" onClick={onClose} className={css.close}>{t.close}</button>
   </div>
+  {session==="signed_in"&&!savedId?<label className={css.consent}>
+   <input type="checkbox" checked={cloudConsent} disabled={busy}
+    onChange={event=>setCloudConsent(event.currentTarget.checked)}/>
+   <span>{PRIVATE_VIDEO_SAVE_CONSENT[locale]}</span>
+  </label>:null}
   <div className={css.choices}>
-   {session==="signed_in"?<button type="button" className={css.savePrivate}
-     disabled={busy||!readyMp4} onClick={()=>void saveToLibrary()} data-video-save-to-library>
+   {session==="signed_in"&&!savedId?<button type="button" className={css.savePrivate}
+     disabled={busy||!readyMp4||!cloudConsent} onClick={()=>void saveToLibrary(cloudConsent)} data-video-save-to-library>
      <CheckCircle2 size={18} aria-hidden="true"/>{t.savePrivate}
    </button>:null}
    {session==="signed_in"?<a className={css.device} href={url} download={fileName}

@@ -80,6 +80,21 @@ test('no client image or wish in personal videos API input or storage schema',()
   assert.match(server,/\['theme','sceneId','aspect','duration','bytes','consent'\]/)
 })
 
+test('Ready and the delivery drawer require an unchecked cloud consent for the finished MP4',()=>{
+  const ready=read('components/mandala-video-ready.tsx')
+  const delivery=read('components/mandala-video-delivery.tsx')
+  const studio=read('components/mandala-free-video-studio.tsx')
+  assert.match(ready,/cloudConsentUrl===video\.url/)
+  assert.match(ready,/type="checkbox" checked=\{cloudConsent\}/)
+  assert.match(ready,/if\(cloudConsent\)onSaveDirect\(true\)/)
+  assert.match(studio,/saveToLibrary\(consentApproved\)/)
+  assert.match(delivery,/if\(consentApproved!==true\)return;/)
+  assert.match(delivery,/const \[cloudConsent,setCloudConsent\]=useState\(false\)/)
+  assert.match(delivery,/saveToLibrary\(cloudConsent\)/)
+  assert.match(delivery,/privateUpload\(accountId\)/)
+  assert.match(delivery,/appFetch\(path,body,"POST",\{accountId\}\)/)
+})
+
 test('video save consent has a valid purpose while preserving all previous purposes',()=>{
   for(const old of ['necessary_app_processing','adult_attestation','marketing','practitioner_sharing']){
     assert.match(consentMigration,new RegExp(old));
