@@ -29,6 +29,23 @@ test("the approved mobile Mirror contains only three scopes, a compact input Nex
   assert.ok(mirror.includes(label),label);
  assert.equal((mirror.match(/categoryId:"(goals-money|love-relationships|energy-confidence|stress-anxiety)"/g)||[]).length,12);
  assert.match(mirror,/data-hh-mirror-audience=\{item\}/);
+ assert.match(mirror,/data-hh-mirror-enter="me"/);
+ assert.match(mirror,/data-hh-mirror-enter="others"/);
+ assert.match(mirror,/data-hh-mirror-plan/);
+ assert.match(mirror,/data-hh-mirror-tier-option=\{option.id\}/);
+ assert.match(mirror,/data-hh-mirror-ideas-cta/);
+ assert.match(mirror,/data-hh-mirror-open-advanced/);
+ assert.match(browser,/async function revealMirrorAdvanced/);
+ assert.match(browser,/await revealMirrorAdvanced\(page,engine\)/);
+ assert.doesNotMatch(browser,/await expect\(moreGoals\)\.toBeVisible\(\{timeout:15000\}\)/);
+ assert.match(mirror,/videoFormat\}\);/);
+ for(const price of ["250","500","1000"])assert.ok(mirror.includes("credits:"+price));
+ assert.match(mirrorCss,/\.destinationCards/);
+ assert.match(mirrorCss,/\.formatGrid/);
+ assert.match(mirrorCss,/\.composerToolbar/);
+ assert.match(mirrorCss,/reiki-approved-sunrise-v3\.webp/);
+ assert.match(mirror,/src="\/images\/holistic-house\/assessment-lotus\.svg"/);
+ assert.match(mirror,/src="\/images\/holistic-house\/assist-video-letter\.svg"/);
  assert.match(mirror,/data-hh-mirror-wish/);
  assert.match(mirror,/data-hh-mirror-goal-choice=\{item\.id\}/);
  assert.match(mirror,/data-hh-mirror-next/);
@@ -37,6 +54,9 @@ test("the approved mobile Mirror contains only three scopes, a compact input Nex
  assert.match(mirrorCss,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
  assert.match(mirrorCss,/\.entry\{display:grid;grid-template-columns:minmax\(0,1fr\) auto/);
  assert.match(mobile,/Magic Mirror v3/);
+ assert.match(mobile,/data-hh-mirror-video-preview="open"/);
+ assert.match(mirror,/setIntroExpanded\(true\)/);
+ assert.match(mirror,/data-hh-mirror-video-preview=\{introExpanded/);
  assert.match(mobile,/quickBuilder>:not\(\.quickBrandBar\):not\(\[data-hh-mirror-title\]\):not\(\.previewStage\):not\(\[data-hh-mirror-goals\]\)/);
  assert.match(mobile,/max-height:740px/);
  assert.doesNotMatch(mirror,/fetch\(|localStorage|navigator\.sendBeacon|createQuickVideo\(/);
@@ -159,4 +179,22 @@ test("Next uses a relevant canonical default for every approved card, never arbi
  }
  assert.match(mirror,/const curated=getMyTubeTopic\(selected\.defaultTopicId\)/);
  assert.doesNotMatch(mirror,/const fallbackSub=subcategories\[0\]/);
+});
+
+test('owner reference: compact choices, readable wish and separate drafts per intent',()=>{
+ assert.ok(mirror.includes('scopeWishes,setScopeWishes'));
+ assert.ok(mirror.includes('onWishChange(scopeWishes[next]||""'));
+ assert.ok(mirror.includes('rows={3} maxLength={500}'));
+ assert.ok(mirror.includes("data-hh-mirror-composer"));
+ assert.ok(mirrorCss.includes('.composer textarea'));
+ assert.ok(mirrorCss.includes('.choiceIcon'));
+ assert.ok(mobile.includes('Magic Mirror owner reference 2026-11-21'));
+ assert.ok(mobile.includes('.previewStage .therapyHeroLaunch{background:url('));
+ for(const poster of ['sun-warm-ocean-dawn.jpg','heart-flow.jpg','lone-tree.jpg','sun-autumn-hills.jpg'])assert.ok(mirror.includes(poster));
+});
+
+test("Mirror quiz image URL survives category then subcategory and topic",()=>{
+ assert.ok(mirror.includes('const mirrorPosterUrl=(image:string)=>image.startsWith("/")?image:'));
+ assert.equal((mirror.match(/mirrorPosterUrl\(available\[index%available\.length\]\.image\)/g)||[]).length,2);
+ assert.equal((mirror.match(/<img src=\{"\/videos\/holistic-house\/film-collection-v2\/"\+/g)||[]).length,0);
 });

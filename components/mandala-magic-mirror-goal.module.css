@@ -61,3 +61,164 @@
  .cardLabel{min-height:38px;font-size:13.5px}
  .alternative{margin:0!important}
 }
+
+/* Owner screenshot alignment: compact mobile category grid, single-line wish. */
+@media(max-width:759px){
+ .title{gap:2px;padding:0 3px 1px}
+ .title>svg{width:23px;height:23px;color:#e1aa37}
+ .title h2{font-size:clamp(32px,8.3vw,40px)!important;color:#093d30}
+ .title strong{font-size:clamp(16px,4.35vw,20px);color:#0c4135}
+ .title p{max-width:42ch;font-size:clamp(12px,3.55vw,15px);color:#555f60;line-height:1.25}
+ .goals{gap:4px}
+ .audience{background:#fffaf3;border-color:#e6dac9}
+ .audience button{min-height:42px;font-size:clamp(12px,3.5vw,17px)}
+ .progress{min-height:24px;margin:0;gap:2px}
+ .question{margin:0 0 3px!important;font-size:clamp(23px,6.4vw,29px)!important;line-height:1.06!important}
+ .entry{gap:6px}
+ .promptRow{height:49px;border-radius:999px;background:#fffdf9}
+ .promptRow input{flex:1;display:block;width:100%;min-width:0;height:43px;min-height:0;max-height:none;padding:6px 1px;border:0;outline:0;background:transparent;color:#143d3a;font:600 clamp(13px,3.6vw,16px)/1.18 system-ui,sans-serif;white-space:nowrap;appearance:none}
+ .promptRow input::placeholder{color:#657570;opacity:1}
+ .next{min-width:69px;min-height:48px;height:49px;padding:4px 8px;font-size:clamp(12px,3.5vw,15px)}
+ .next svg{width:16px;height:16px}
+ .alternative{margin:1px 0!important;font-size:clamp(12px,3.5vw,15px)}
+ .cards{gap:7px}
+ .card{grid-template-rows:clamp(36px,5.55dvh,49px) minmax(35px,auto);min-height:74px;border-radius:17px;background:#fffaf5}
+ .card img{filter:saturate(1.08) contrast(1.02)}
+ .cardLabel{gap:5px;min-height:35px;padding:3px 4px;font-size:clamp(12px,3.5vw,15.5px);line-height:1.08;overflow-wrap:normal}
+ .cardLabel>span{min-width:0}
+ .choiceIcon{flex:0 0 19px;width:19px;height:19px;color:#0a5342;stroke-width:1.8}
+ .check{width:25px;height:25px}
+ .more{top:45px;width:36px;height:34px}
+}
+@media(max-width:359px){
+ .title h2{font-size:29px!important}
+ .audience button{font-size:11.5px;gap:2px}
+ .card{grid-template-rows:34px minmax(34px,auto);min-height:69px}
+ .cardLabel{font-size:11.5px;gap:3px;padding-inline:3px}
+ .choiceIcon{flex-basis:16px;width:16px;height:16px}
+ .promptRow{padding-inline:6px}.promptRow input{font-size:12.5px}
+ .next{min-width:65px;padding-inline:5px}
+}
+@media(max-width:759px) and (max-height:740px){
+ .title p{font-size:11.5px;line-height:1.18}
+ .card{grid-template-rows:31px minmax(33px,auto);min-height:65px}
+ .cardLabel{min-height:33px;font-size:12px}
+}
+
+/* Owner-approved Magic Mirror entrance + therapy composer. Real elements; existing intro/player/navigation retained. */
+@media(max-width:759px){
+ .title{position:relative;isolation:isolate;justify-items:start;align-content:start;min-height:clamp(210px,55vw,298px);margin:0 0 5px!important;padding:26px 15px 18px;overflow:hidden;border-radius:23px;background:linear-gradient(90deg,rgba(8,55,45,.98),rgba(12,65,53,.84) 52%,rgba(14,67,55,.08)),url("/images/holistic-house/reiki-approved-sunrise-v3.webp") center/cover;color:white!important;text-align:left}
+ .title>svg{color:#f6d36e;width:28px;height:28px}
+ .title h2{color:white!important;font-size:clamp(32px,8vw,43px)!important}
+ .title strong{max-width:270px;color:#ffdf9b!important;font-size:clamp(20px,5.8vw,28px)}
+ .title p{max-width:270px;margin:10px 0 0!important;color:#fff6e4!important;font-size:clamp(13px,3.8vw,16px)}
+ .title:has(+ .goals[data-hh-mirror-screen="topic"]){display:none}
+ .goals.landing{gap:13px;padding:0 3px 14px}
+ .destinationCards{display:grid;gap:12px}
+ .destination{display:grid;grid-template-columns:35% minmax(0,1fr) 32px;align-items:center;gap:10px;min-height:154px;overflow:hidden;padding:0 11px 0 0;border:1px solid #ddd2c1;border-radius:25px;background:linear-gradient(120deg,#fffaf2,#fffdf9);box-shadow:0 6px 19px #56361b18;color:#103e31;text-align:left;cursor:pointer}
+ .destination:first-child{border:2px solid #4ad89a;background:linear-gradient(110deg,#effff5,#fffdf8)}
+ .destination>img{display:block;width:100%;height:100%;min-height:154px;object-fit:cover}
+ .destinationCopy{display:grid;justify-items:start;gap:6px;min-width:0}
+ .destinationCopy>svg{color:#087953}
+ .destinationCopy strong{font:800 clamp(21px,5.6vw,26px)/1.06 Georgia,serif}
+ .destinationCopy small{font:500 clamp(13px,3.8vw,16px)/1.32 system-ui,sans-serif;color:#445a54}
+ .destinationArrow{display:grid;place-items:center;width:32px;height:38px;border-radius:99px;background:linear-gradient(130deg,#06a77c,#026c50);color:white}
+ .formatHeading{margin:5px 0 1px!important;text-align:center;font:800 clamp(21px,5.7vw,26px)/1.14 system-ui,sans-serif!important;color:#143d3a}
+ .formatGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+ .formatCard{display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:7px;min-width:0;min-height:160px;padding:14px 5px 10px;border:1px solid #e7dcd0;border-radius:22px;background:#fffaf3;color:#103c31;box-shadow:0 5px 14px #4c371820;text-align:center;cursor:pointer}
+ .formatCard>svg{color:#0d7857}
+ .formatCard strong{font:800 clamp(14px,4vw,18px)/1.13 system-ui,sans-serif}
+ .formatCard small{color:#506862;font:500 clamp(11px,3.1vw,13px)/1.16 system-ui,sans-serif}
+ .formatCard span{display:block;width:100%;border-radius:99px;background:#f4e9d8;padding:8px 2px;color:#064a38;font:850 clamp(14px,4vw,19px)/1.05 system-ui,sans-serif;white-space:nowrap}
+ .formatCard[aria-pressed="true"]{border:2px solid #12b97d;background:#e9faef;box-shadow:0 0 0 3px #08a77b1e,0 6px 17px #00795827}
+ .formatCard[aria-pressed="true"] span{background:linear-gradient(120deg,#01a875,#006747);color:white}
+ .formatDisclosure{margin:0!important;color:#576961;font:500 12px/1.35 system-ui,sans-serif;text-align:center}
+ .primaryAction{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:60px;margin:12px 0 0;padding:9px 14px;border:2px solid #fff;border-radius:999px;background:linear-gradient(115deg,#04aa76,#005c45);box-shadow:0 5px 14px #056b4f45;color:#fff;font:850 clamp(17px,5vw,23px)/1.14 system-ui,sans-serif;text-align:center;cursor:pointer}
+ .primaryAction>svg:first-child{flex:none;color:#ffe18b}.primaryAction>svg:last-child{flex:none;margin-left:auto}
+ .backLanding{display:inline-flex;align-items:center;gap:4px;align-self:start;min-height:36px;padding:2px 8px;border:0;background:transparent;color:#08725b;font:800 13px/1 system-ui,sans-serif}
+ .therapyHero{position:relative;display:grid;align-content:center;min-height:clamp(185px,48vw,245px);overflow:hidden;padding:16px;border-radius:23px;background:linear-gradient(90deg,rgba(7,58,45,.96),rgba(6,63,49,.77) 55%,rgba(13,58,44,.04)),url("/images/holistic-house/reiki-approved-sunrise-v3.webp") center/cover;color:#fff}
+ .therapyEyebrow{display:flex;align-items:center;gap:8px;max-width:280px;color:#ffe2ac;font:800 clamp(25px,7vw,34px)/1.1 Georgia,serif}
+ .therapyEyebrow svg{flex:none;color:#f4d17a}
+ .therapyHero p{max-width:265px;margin:10px 0 0!important;color:white;font:500 clamp(14px,3.75vw,16px)/1.37 system-ui,sans-serif}
+ .exampleVideo{position:relative;display:grid;place-items:center;width:100%;height:clamp(145px,39vw,205px);overflow:hidden;padding:0;border:4px solid #fff;border-radius:24px;background:#154537;box-shadow:0 5px 17px #42331a22;cursor:pointer}
+ .exampleVideo img{display:block;width:100%;height:100%;object-fit:cover}
+ .videoPlay{position:absolute;display:grid;place-items:center;width:62px;height:62px;border:3px solid #fff;border-radius:50%;background:#0b39315c;color:white;box-shadow:0 2px 13px #0006}
+ .videoCaption{position:absolute;bottom:7px;left:12px;color:white;text-shadow:0 1px 6px #0a211f;font:700 13px/1.2 system-ui,sans-serif}
+ .goals[data-hh-mirror-screen="topic"]{gap:11px;padding:0 2px 12px}
+ .goals[data-hh-mirror-screen="topic"] .audience{margin-top:2px}
+ .goals[data-hh-mirror-mode="me"][data-hh-mirror-screen="topic"] .audience{display:none}
+ .goals[data-hh-mirror-screen="topic"] .progress{flex-direction:row;justify-content:space-between;flex-wrap:wrap;gap:7px;min-height:46px;padding:7px 12px;border-radius:999px;background:#fffaf5;box-shadow:0 3px 10px #59432e1c;font-size:14px}
+ .goals[data-hh-mirror-screen="topic"] .question{margin:8px 0 3px!important;font-size:clamp(21px,6vw,27px)!important}
+ .goals[data-hh-mirror-step="1"][data-hh-mirror-screen="topic"] .question{display:none}
+ .goals[data-hh-mirror-screen="topic"] .more{top:initial;bottom:0}
+ .composer{position:relative;display:grid;min-width:0;border:1px solid #cef1dd;border-radius:27px;background:#fffdfa;box-shadow:0 3px 19px #0c9a6940}
+ .composer textarea{display:block;box-sizing:border-box;width:100%;min-height:117px;max-height:270px;resize:vertical;padding:21px 16px;border:0;border-radius:27px 27px 0 0;background:transparent;color:#143d3a;font:600 clamp(16px,4.5vw,19px)/1.4 system-ui,sans-serif;outline:none}
+ .composer textarea::placeholder{color:#66716e;opacity:1}
+ .composerToolbar{display:flex;align-items:center;gap:5px;min-width:0;padding:7px;border-top:1px solid #eee7da}
+ .toolIcon{flex:none;display:grid;place-items:center;width:39px;height:42px;padding:0;border:1px solid #e9e1d4;border-radius:13px;background:#fff9f2;color:#0b5f4b;cursor:pointer}
+ .toolbarMenu{display:flex;align-items:center;justify-content:center;gap:3px;min-width:0;min-height:42px;padding:0 3px;border:0;background:transparent;color:#105c46;font:750 clamp(11px,3.1vw,14px)/1.1 system-ui,sans-serif;white-space:nowrap}
+ .toolbarMenu svg{flex:none;width:16px;height:16px}
+ .send{flex:none;display:grid;place-items:center;width:46px;height:46px;margin-left:auto;border:0;border-radius:50%;background:linear-gradient(120deg,#00ac76,#006b52);color:white;box-shadow:0 3px 12px #0378524d;cursor:pointer}
+ .formatMenu{position:relative;display:grid;gap:1px;min-width:0;margin:0 8px 8px;padding:7px;border:1px solid #ddeddf;border-radius:17px;background:#fffdfa;box-shadow:0 5px 15px #63503820}
+ .formatMenu>button{display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;gap:7px;min-height:60px;padding:7px;border:0;border-bottom:1px solid #f0e7db;background:transparent;color:#153e32;text-align:left;cursor:pointer}
+ .formatMenu>button[aria-pressed="true"]{border-radius:12px;background:#e5f7eb}
+ .formatMenu>button span{display:grid;gap:2px}
+ .formatMenu>button strong{font-size:16px}.formatMenu>button small{font-size:12px;color:#55665e}
+ .formatMenu>button b{padding:6px;border-radius:99px;background:#f6ead0;color:#2e5a39;font-size:13px;white-space:nowrap}
+ .guide{margin:5px 13px 11px!important;color:#54685d;font:500 14px/1.35 system-ui,sans-serif}
+ .example{margin:0!important;padding:0 6px;color:#5e6d65;text-align:center;font:500 12px/1.3 system-ui,sans-serif}
+ .goals[data-hh-mirror-screen="topic"] .alternative{margin:2px 0!important;font-size:clamp(14px,3.75vw,16px)}
+ .goals[data-hh-mirror-screen="topic"] .card{grid-template-rows:clamp(68px,16vw,100px) minmax(54px,auto);min-height:133px}
+ .goals[data-hh-mirror-screen="topic"] .cardLabel{gap:5px;min-height:54px;font-size:clamp(14px,3.75vw,17px)}
+ .goals[data-hh-mirror-screen="topic"] .cardLabel svg{flex:none}
+ .goals[data-hh-mirror-screen="topic"] .back{top:auto;right:0;left:auto}
+ .goals[data-hh-mirror-screen="topic"] .primaryAction{margin-top:8px}
+ .goals button:focus-visible,.composer:focus-within{outline:3px solid #176e6e;outline-offset:2px}
+}
+@media(max-width:359px){
+ .destination{grid-template-columns:34% minmax(0,1fr) 30px;gap:6px;min-height:139px}
+ .destination>img{min-height:139px}
+ .destinationCopy strong{font-size:19px}
+ .destinationCopy small{font-size:12px}
+ .formatCard{min-height:160px;padding:12px 4px 7px}
+ .formatCard strong{font-size:13px}
+ .formatCard span{font-size:13px}
+ .composerToolbar{gap:2px;padding:5px}
+ .toolIcon{width:34px;height:40px}
+ .toolbarMenu{font-size:11px;padding:0 1px}
+ .send{width:41px;height:41px}
+}
+@media(min-width:760px){
+ .landing,.goals[data-hh-mirror-screen="topic"]{display:none}
+}
+
+/* Compact in one row at 390–430px; genuinely wrap at 320–354px. */
+@media(max-width:759px){
+ .toolIcon{width:35px}
+ .toolbarMenu{font-size:clamp(11px,3vw,12px)}
+ .send{width:43px;height:43px}
+ .composerToolbar{gap:3px;padding:6px}
+}
+@media(max-width:359px){
+ .composerToolbar{flex-wrap:wrap;justify-content:flex-start;gap:5px}
+ .toolbarMenu{min-height:40px;padding-inline:4px}
+ .send{margin-left:auto}
+}
+
+/* The visible three-stage film ribbon is NOT the internal 4×4×4 quiz index. */
+@media(max-width:759px){
+ .goals[data-hh-mirror-screen="topic"] .progress{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:nowrap;min-height:51px;padding:5px 7px}
+ .goals[data-hh-mirror-screen="topic"] .progress>strong{flex:none;min-width:90px;padding:9px 6px;border-radius:99px;background:linear-gradient(120deg,#0ba976,#005b45);color:#fff;font:850 clamp(11px,3.2vw,15px)/1.1 system-ui,sans-serif;text-align:center}
+ .progressStages{display:flex;align-items:center;justify-content:space-between;gap:3px;flex:1;min-width:0}
+ .progressStages span{display:inline-flex;align-items:center;gap:4px;min-width:0;color:#69726b;font:750 clamp(10px,2.5vw,13px)/1 system-ui,sans-serif}
+ .progressStages span[aria-current="step"]{color:#0c6a51}
+ .progressStages span b{display:grid;place-items:center;flex:none;width:23px;height:23px;border-radius:50%;background:#888e89;color:#fff;font-size:12px}
+ .progressStages span[aria-current="step"] b{background:#0aa36d}
+ .progressStages i{flex:none;font-style:normal;color:#8b948b}
+ .goals[data-hh-mirror-screen="topic"] .back{position:static;justify-self:start;min-height:44px;padding:5px 9px}
+ .goals[data-hh-mirror-screen="topic"] .more{display:none}
+}
+@media(max-width:359px){
+ .goals[data-hh-mirror-screen="topic"] .progress{flex-wrap:wrap;justify-content:center;gap:5px}
+ .progressStages{justify-content:center;gap:5px}
+}

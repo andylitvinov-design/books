@@ -545,3 +545,113 @@
  .root:has([data-services-business-menu][data-business-step="2"]) .heroStage{min-height:12px}
  .root:has([data-services-business-menu][data-business-step="2"]) .hero h1{font-size:clamp(21px,5.9vw,25px);max-width:95%}
 }
+
+/* SUPPORT_GOAL_FIRST_PROGRESSIVE_20261121: one shared goal entry above the
+   progressive four-choice quiz; the compact Next is RIGHT of the input. */
+@media(max-width:760px){
+ .root .goalEntry{display:grid;grid-template-columns:minmax(0,1fr) 79px;align-items:stretch;gap:7px;margin:9px 2px 6px;min-width:0}
+ .root .goalEntry .goalComposer{display:flex;align-items:center;min-width:0;min-height:54px;padding:0 6px 0 10px;gap:6px;border-radius:29px}
+ .root .goalEntry .goalComposer>svg{flex:none;width:19px;height:19px}
+ .root .goalEntry .goalComposer input{flex:1;min-width:0;height:49px;font-size:clamp(14px,3.75vw,17px)}
+ .root .goalEntry .dictation{flex:none;display:grid;place-items:center;width:32px;height:44px;border:0;background:transparent;color:#075c41}
+ .root .goalNext{display:flex;align-items:center;justify-content:center;gap:3px;min-width:0;min-height:54px;padding:4px 7px;border:1.5px solid #dcbd83;border-radius:27px;background:linear-gradient(180deg,#0c9b70,#00583d);color:#fff6d7;box-shadow:0 4px 11px #0009;font:700 clamp(13px,3.55vw,16px)/1 Georgia,serif;cursor:pointer}
+ .root .goalNext svg{flex:none;width:17px}
+ .root .goalNext:disabled{opacity:.55;cursor:not-allowed}
+ .root .orDivider{margin:5px 0 8px}
+ .root .progress{margin:0 0 4px;font-size:13px}
+ .root .question legend{margin-bottom:8px;font-size:clamp(23px,6.4vw,29px);line-height:1.07}
+ .root .choices{gap:9px}
+ .root .choice,.root .choices[data-question-kind="topic"] .choice{min-height:121px;border-radius:17px}
+ .root .choiceMedia{height:57px;min-height:57px}
+ .root .choiceContent{min-height:62px;gap:6px;padding:7px 8px;font-size:clamp(14.5px,3.9vw,18px);line-height:1.1}
+ .root .choiceContent>svg{width:24px;height:24px}
+ .root .choices:not([data-question-kind="topic"]) .choiceMedia{display:none}
+ .root .choices:not([data-question-kind="topic"]) .choice{min-height:79px}
+ .root .choices:not([data-question-kind="topic"]) .choiceContent{min-height:78px}
+ .root .submit{display:flex;align-items:center;justify-content:center;gap:8px;width:88%;min-height:52px;margin:13px auto 4px;font-size:clamp(18px,4.8vw,23px)}
+ .root :is(.goalEntry,.question,.submit){scroll-margin-bottom:calc(108px + env(safe-area-inset-bottom))}
+}
+@media(max-width:350px){
+ .root .goalEntry{grid-template-columns:minmax(0,1fr) 67px;gap:5px;margin-inline:0}
+ .root .goalNext{font-size:12px;padding-inline:4px}
+ .root .goalNext svg{width:14px}
+ .root .goalEntry .goalComposer{padding-left:7px;gap:4px}
+ .root .goalEntry .goalComposer input{font-size:13px}
+ .root .choiceContent{font-size:14px}
+}
+
+
+/* SUPPORT_FROSTED_GOAL_ABOVE_AUDIENCE_20261121
+   Approved final mobile mock: room → translucent goal + Next → For Me/Business
+   → four progress dots → the existing photograph-led quiz. One real input,
+   no duplicate composer, second navigation bar, OR label or static UI image. */
+@media(max-width:760px){
+ .root .goalEntry{
+  display:grid;grid-template-columns:minmax(0,1fr) clamp(73px,20vw,92px);
+  align-items:stretch;gap:8px;min-width:0;
+  margin:clamp(7px,1.6dvh,13px) 4px 10px
+ }
+ .root .goalEntry .goalComposer{
+  display:flex;align-items:center;gap:6px;
+  min-width:0;min-height:54px;padding:0 7px 0 11px;border-radius:999px;
+  border:2px solid rgba(255,245,222,.95);
+  background:linear-gradient(112deg,rgba(255,251,241,.77),rgba(249,231,211,.67));
+  -webkit-backdrop-filter:blur(15px) saturate(1.14);
+  backdrop-filter:blur(15px) saturate(1.14);
+  box-shadow:0 0 0 1px rgba(201,148,84,.40),
+   0 5px 16px rgba(12,7,4,.46),
+   inset 0 1px 9px rgba(255,255,255,.38)
+ }
+ .root .goalEntry .goalComposer>svg{
+  width:22px;height:22px;flex:none;color:#e3a229
+ }
+ .root .goalEntry .goalComposer input{
+  height:49px;min-width:0;width:100%;flex:1;
+  color:#223a33;font:550 clamp(14px,3.7vw,17px)/1.2 Arial,Helvetica,sans-serif;
+  text-overflow:ellipsis
+ }
+ .root .goalEntry .goalComposer input::placeholder{
+  color:rgba(73,69,62,.84);opacity:1
+ }
+ .root .goalEntry .goalComposer .dictation{
+  display:grid;place-items:center;flex:none;width:35px;min-width:35px;
+  height:46px;border:0;background:transparent;color:#075d42
+ }
+ .root .goalEntry .goalComposer:focus-within{
+  outline:2px solid #8fefd1;outline-offset:2px;
+  box-shadow:0 0 0 1px rgba(247,224,176,.9),
+   0 5px 16px rgba(12,7,4,.45),
+   inset 0 1px 9px rgba(255,255,255,.4)
+ }
+ .root .goalNext{
+  display:flex;align-items:center;justify-content:center;gap:4px;
+  min-width:0;min-height:54px;padding:6px 6px;
+  border:2px solid #ecc889;border-radius:999px;
+  background:linear-gradient(180deg,#078e61,#005337 89%);
+  color:#fff4d8;font:700 clamp(15px,3.8vw,19px)/1.08 Georgia,"Times New Roman",serif;
+  box-shadow:0 5px 14px #080502b0,inset 0 1px 0 #84e0a75b;
+  white-space:nowrap
+ }
+ .root .goalNext svg{width:19px;height:19px;flex:none}
+ .root .goalNext:disabled{opacity:.58;cursor:not-allowed}
+ .root .audienceSwitch{margin:0 auto 6px;max-width:435px}
+ .root .orDivider{display:none}
+ .root :is(.goalEntry,.audienceSwitch,.question){scroll-margin-top:20px}
+}
+@media(max-width:520px) and (max-height:920px){
+ /* Expose the leather armchairs between the header and frosted entry.
+    Unlike the old 24px spacer, the room remains a visible part of the hero. */
+ .root .heroStage{min-height:clamp(54px,8dvh,75px)}
+}
+@media(max-width:350px){
+ .root .heroStage{min-height:46px}
+ .root .goalEntry{
+  grid-template-columns:minmax(0,1fr) 67px;gap:5px;margin-inline:0
+ }
+ .root .goalEntry .goalComposer{gap:4px;padding:0 5px 0 8px}
+ .root .goalEntry .goalComposer input{font-size:13px}
+ .root .goalEntry .goalComposer>svg{width:18px;height:18px}
+ .root .goalEntry .goalComposer .dictation{width:31px;min-width:31px}
+ .root .goalNext{font-size:13px;padding-inline:3px}
+ .root .goalNext svg{width:14px;height:14px}
+}

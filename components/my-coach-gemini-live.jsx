@@ -4,7 +4,7 @@ import {forwardRef,useEffect,useImperativeHandle,useRef,useState} from 'react'
 import {Mic,Play,Volume2,Square} from 'lucide-react'
 import styles from './my-coach-speech-loop.module.css'
 import {
-  GeminiLivePcmPlayer,GeminiLivePcmResampler,GeminiLiveBargeGate,
+  GeminiLivePcmPlayer,GeminiLivePcmResampler,GeminiLiveBargeGate,GeminiLiveBargeDetector,
   geminiLiveAudioRms,geminiLiveSocketUrl,geminiLiveSetupMessage,
   geminiLivePcmMessage,geminiLiveTextMessage,readGeminiLiveServerMessage,
   appendGeminiLiveTranscript,
@@ -33,7 +33,6 @@ const ui={
 const MAX_SESSION_MS=1200000
 const MAX_BUFFERED_SOCKET_BYTES=200000
 const LIVE_START_TIMEOUT_MS=15000
-const INPUT_VAD_THRESHOLD=0.075
 const safeLocale=locale=>['en','ru','es'].includes(locale)?locale:'en'
 function audioTranscription(value){return typeof value==='string'?value.trim().slice(0,1200):''}
 
@@ -102,14 +101,17 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const r=runtime.current
     if(!r||r.ended)return
     if(r.player?.playing||r.speaking){
+      const partial=r.outputText
       r.interrupted=true
-      // Stop playback instantly, before server VAD/interrupt reaches Safari.
+      // Stop the audio graph on detected user speech, not when the coach's
+      // network turn ends. A partial transcript is always marked interrupted.
       r.player.stop()
       r.audioGate.interrupt()
       r.speaking=false
-      propsRef.current.onInterrupted?.(r.outputText)
-      r.outputText=''
-      propsRef.current.onOutputInterim?.('')
+      if(partial)commitOutput(r)
+      else propsRef.current.onOutputInterim?.('')
+      propsRef.current.onInterrupted?.(partial)
+      r.interrupted=false
       phaseChange('listening')
     }
   }
@@ -173,10 +175,20 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(frame.interrupted){
       interrupt()
       r.audioGate.accept(frame) // Gemini acknowledged the cut; flush queued network audio.
-      if(r.outputText)commitOutput(r)
+      if(r.outputText){r.interrupted=true;commitOutput(r)}
       r.interrupted=false
       phaseChange('listening')
       return
+    }
+    // Gemini 3.1 may NOT emit interrupted if the person was already talking
+    // before the model turn. Protect the microphone's active human turn here.
+    if(frame.audio?.length&&r.bargeDetector.userActive){
+      if(r.speaking||r.player?.playing)interrupt()
+      else{
+        r.audioGate.interrupt()
+        r.outputText=''
+        propsRef.current.onOutputInterim?.('')
+      }
     }
     const allowAudio=r.audioGate.accept(frame)
     if(frame.input||frame.interim){
@@ -220,13 +232,13 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(!audio.length)return
     const level=geminiLiveAudioRms(audio)
     propsRef.current.onMicLevel?.(Math.max(0,Math.min(1,level*4)))
-    // Fast local barge-in while the remote model also performs interruption.
-    r.bargeFrames=(r.speaking&&level>INPUT_VAD_THRESHOLD)
-      ?r.bargeFrames+1:0
-    if(r.bargeFrames>=3){
-      r.bargeFrames=0
-      interrupt()
-    }
+    // Listen CONTINUOUSLY while the coach plays, including very quiet speech.
+    // First candidate ducks playback to rule out its own acoustic echo; a
+    // confirmed phrase cuts speaker audio immediately while PCM continues.
+    const event=r.bargeDetector.sample(level,r.speaking||r.player?.playing)
+    if(event==='duck')r.player?.setVolume(0.08)
+    else if(event==='restore')r.player?.setVolume(1)
+    else if(event==='interrupt')interrupt()
     if(r.socket.bufferedAmount>MAX_BUFFERED_SOCKET_BYTES)return
     let pcm
     try{pcm=r.resampler.push(audio)}catch{return}
@@ -263,6 +275,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     let socket
     try{
       socket=new WebSocket(geminiLiveSocketUrl(token.token))
+      // Gemini can send JSON as binary frames. ArrayBuffer keeps decoding synchronous
+      // so setup, PCM and interruption stay in their original wire order.
+      socket.binaryType='arraybuffer'
     }catch{notify(t.failure);stop();return}
     r.socket=socket
     r.ready=false
@@ -280,7 +295,6 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     }
     socket.onmessage=event=>{
       if(r.ended||r.socket!==socket)return
-      if(typeof event.data!=='string')return
       handleAudio(r,event.data)
       if(r.ready)clearTimeout(setupTimer)
     }
@@ -363,7 +377,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     }
     const r={context,stream:null,source:null,processor:null,sink:null,
       socket:null,ready:false,ended:false,history:[],inputText:'',outputText:'',
-      speaking:false,interrupted:false,bargeFrames:0,resumeHandle:null,
+      speaking:false,interrupted:false,resumeHandle:null,
+      bargeDetector:new GeminiLiveBargeDetector(),
       reconnects:0,voiceName:p.voiceName,locale:p.locale,personaId:p.personaId,
       settings:p.settings,abort:new AbortController(),timer:null,reconnectTimer:null,
       resampler:new GeminiLivePcmResampler(context.sampleRate),

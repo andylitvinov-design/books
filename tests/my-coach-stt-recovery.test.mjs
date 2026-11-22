@@ -17,7 +17,7 @@ test('recorded iPhone STT distinguishes quota, auth, provider and microphone fai
 test('coach recorded speech uses signed-in free STT quota independent of Video Studio',()=>{
   const recorded=read('lib/personal-coaching/coach-recorded-turn.mjs')
   const route=read('app/api/holistic-support/audio-storyboard/route.js')
-  assert.match(recorded,/body\.set\('purpose','my_coach'\)/)
+  assert.match(recorded,/body\.set\('purpose',purpose==='ali_chat'\?'ali_chat':'my_coach'\)/)
   assert.match(recorded,/body\.set\('consent','yes'\)/)
   assert.match(route,/if\(purpose==="my_coach"\)\{/)
   assert.match(route,/createRequestAuth\(request,config\)\.verified\(\)/)

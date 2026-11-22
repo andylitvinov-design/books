@@ -215,6 +215,9 @@ try {
     await expect(quiz.locator("[data-services-card-photo]")).toHaveCount(10);
     await expect(quiz.locator("[data-services-audience] button")).toHaveCount(2);
     await expect(quiz.locator("[data-services-quiz-goal]")).toHaveCount(1);
+    await expect(quiz.locator("[data-services-goal-entry]")).toHaveCount(1);
+    await expect(quiz.locator("[data-services-quiz-next]")).toHaveCount(1);
+    await expect(quiz.locator("[data-services-goal-or]")).toHaveCount(0);
     await expect(quiz.locator("[data-support-luxe-room]")).toHaveCount(1);
     await expect(page.locator('main[data-support-luxe="true"]')).toHaveCount(1);
     await expect(quiz.locator('[data-support-choice-photo]')).toHaveCount(4);
@@ -242,25 +245,56 @@ try {
         cards:[...el.querySelectorAll('[data-services-quiz-question="topic"] [data-services-quiz-choice]')]
           .map(card=>card.getBoundingClientRect().height),
       }));
-      assert.ok(sizes.hero>=24 && sizes.hero<=60,"Room scene proportions: " + JSON.stringify(sizes));
-      assert.ok(sizes.cards.length===4 && sizes.cards.every(height=>height>=78 && height<=113),
-        "Four reference cards must be compact and readable: " + JSON.stringify(sizes));
+      assert.ok(sizes.hero>=54 && sizes.hero<=76,"Room scene proportions: " + JSON.stringify(sizes));
+      assert.ok(sizes.cards.length===4 && sizes.cards.every(height=>height>=116 && height<=174),
+        "Four progressive choice cards must be large and readable: " + JSON.stringify(sizes));
     }
     await expect(quiz.locator("[data-services-hero-play]")).toHaveCount(0);
     if(width===390 && locale==="en"){
       const firstScreenFit=await page.evaluate(()=>{
         const next=document.querySelector("[data-services-quiz-next]");
         const goal=document.querySelector("[data-services-quiz-goal]");
+        const entry=document.querySelector("[data-services-goal-entry]");
+        const glass=entry?.firstElementChild;
+        const audience=document.querySelector("[data-services-audience]");
+        const room=document.querySelector("[data-support-luxe-room]");
+        const progress=document.querySelector("[data-services-quiz-form] [data-quiz-dot]");
         const dock=document.querySelector("[data-hh-unified-dock]");
-        if(!next||!goal||!dock)return null;
-        return {ctaBottom:next.getBoundingClientRect().bottom,
+        if(!next||!goal||!entry||!glass||!audience||!room||!progress||!dock)return null;
+        return {
+          roomBottom:room.getBoundingClientRect().bottom,
+          entryTop:entry.getBoundingClientRect().top,
+          entryBottom:entry.getBoundingClientRect().bottom,
+          audienceTop:audience.getBoundingClientRect().top,
+          audienceBottom:audience.getBoundingClientRect().bottom,
+          progressTop:progress.getBoundingClientRect().top,
+          glassBlur:getComputedStyle(glass).backdropFilter,
+          glassBackground:getComputedStyle(glass).backgroundImage,
+          ctaBottom:next.getBoundingClientRect().bottom,
           goalBottom:goal.getBoundingClientRect().bottom,
+          nextLeft:next.getBoundingClientRect().left,
+          goalRight:goal.getBoundingClientRect().right,
+          goalTop:goal.getBoundingClientRect().top,
+          nextTop:next.getBoundingClientRect().top,
+          questionTop:document.querySelector("[data-services-quiz-question]")?.getBoundingClientRect().top,
           dockTop:dock.getBoundingClientRect().top,
           viewport:innerHeight};
       });
-      assert.ok(firstScreenFit && firstScreenFit.goalBottom<firstScreenFit.dockTop-16 &&
-        firstScreenFit.ctaBottom<firstScreenFit.dockTop-16,
-        "390x844 first personal screen must show goal and Next above the dock: "+JSON.stringify(firstScreenFit));
+      assert.ok(firstScreenFit && firstScreenFit.goalBottom<firstScreenFit.questionTop &&
+        firstScreenFit.nextLeft>=firstScreenFit.goalRight-3 &&
+        Math.abs(firstScreenFit.goalTop-firstScreenFit.nextTop)<12 &&
+        firstScreenFit.goalBottom<firstScreenFit.dockTop-16,
+        "390x844 goal and right-side Next must appear ABOVE four quiz buttons: "+JSON.stringify(firstScreenFit));
+      assert.ok(firstScreenFit &&
+        firstScreenFit.roomBottom<=firstScreenFit.entryTop+4 &&
+        firstScreenFit.entryBottom<=firstScreenFit.audienceTop+3 &&
+        firstScreenFit.audienceBottom<firstScreenFit.questionTop &&
+        firstScreenFit.progressTop>=firstScreenFit.audienceBottom-3,
+        "Approved order must be room → frosted input/Next → For Me/Business → quiz: "+JSON.stringify(firstScreenFit));
+      assert.ok(firstScreenFit?.glassBlur?.includes("blur(") &&
+        firstScreenFit.glassBackground?.includes("linear-gradient"),
+        "Goal composer must have real semi-transparent backdrop blur, not opaque cream or a flattened mock: "+
+          JSON.stringify(firstScreenFit));
     }
     await expect(quiz.locator("[data-services-quiz-next]")).toBeEnabled();
     await expect(quiz.locator('[data-services-quiz-choice="stress_energy"]')).toHaveAttribute("aria-pressed","true");
@@ -320,8 +354,8 @@ try {
         const dock=document.querySelector("[data-hh-unified-dock]");
         return last&&dock?{bottom:last.getBoundingClientRect().bottom,dockTop:dock.getBoundingClientRect().top}:null;
       });
-      assert.ok(businessFit&&businessFit.bottom<businessFit.dockTop-16,
-        "390x844 business first screen must fit four real business categories: "+JSON.stringify(businessFit));
+      assert.ok(businessFit&&businessFit.bottom>businessFit.dockTop-170,
+        "Business categories must be readable and scrollable, never tiny tiles: "+JSON.stringify(businessFit));
     }
     await quiz.locator("[data-services-audience] button").first().click();
     await expect(quiz.locator("[data-services-quiz-question]")).toHaveCount(1);
@@ -371,7 +405,9 @@ try {
     await business.locator('[data-services-business-category="express"]').click();
     await expect(business).toHaveAttribute("data-business-step","2");
     await expect(business.locator("[data-business-options='express'] [data-business-offer]")).toHaveCount(5);
+    await expect(business.locator("[data-business-get-details]")).toHaveCount(0);
     await business.locator('[data-business-offer="express-1"]').click();
+    await expect(business.locator("[data-business-get-details]")).toHaveCount(1);
     await business.locator('[data-business-get-details] [data-contact-order]').click();
     await expect(business.locator('[data-business-get-details] [data-messenger-only-channel]')).toHaveCount(2);
     const preparedWhatsApp=await business.locator('[data-business-get-details] [data-messenger-only-channel="whatsapp"]').getAttribute("href");
@@ -402,14 +438,15 @@ try {
     await expect(quiz.locator('[data-services-quiz-choice="stress_energy"]')).toHaveAttribute("aria-pressed","true");
     if (width===390){
       await quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice="money_growth"]').click();
-      await quiz.locator("[data-services-quiz-next]").click();
       await expect(quiz).toHaveAttribute("data-services-quiz-step","2");
       await expect(quiz.locator('[data-quiz-dot="4"]')).toBeDisabled();
       await quiz.locator('[data-services-quiz-question="need"] [data-services-quiz-choice="growth_ideas"]').click();
-      await quiz.locator("[data-services-quiz-next]").click();
+      await expect(quiz).toHaveAttribute("data-services-quiz-step","3");
       await quiz.locator('[data-services-quiz-question="mode"] [data-services-quiz-choice="any"]').click();
-      await quiz.locator("[data-services-quiz-next]").click();
+      await expect(quiz).toHaveAttribute("data-services-quiz-step","4");
+      await expect(quiz.locator("[data-services-quiz-submit]")).toHaveCount(0);
       await quiz.locator('[data-services-quiz-question="budget"] [data-services-quiz-choice="flexible"]').click();
+      await expect(quiz.locator("[data-services-quiz-submit]")).toBeEnabled();
       await quiz.locator("[data-services-quiz-submit]").click();
       await visible(page.locator("[data-services-quiz-results]"));
       await expect(page.locator('[data-services-quiz-results] [data-services-priority-category="business"]')).toHaveCount(0);

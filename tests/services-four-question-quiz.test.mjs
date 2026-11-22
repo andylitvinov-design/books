@@ -118,3 +118,26 @@ test("ten Support directions are visible and empty quiz results offer useful act
   assert.match(recommendations,/services\/free-situation-review/);
   assert.match(recommendations,/styles\.disclosure/);
 });
+
+test("goal entry sits above progressive photo cards with Next on its right and final CTA only",()=>{
+ assert.match(quiz,/data-services-goal-entry/);
+ assert.match(quiz,/className=\{styles\.goalNext\} data-services-quiz-next/);
+ assert.ok(quiz.indexOf("data-services-goal-entry")<quiz.indexOf('data-services-quiz-form'));
+ assert.ok(quiz.indexOf("data-support-luxe-room") < quiz.indexOf("data-services-goal-entry"),
+   "Goal field follows the visible leather-armchair hero");
+ assert.ok(quiz.indexOf("data-services-goal-entry") < quiz.indexOf("data-services-audience"),
+   "Owner final mock puts frosted input above For Me/For Business");
+ assert.ok(quiz.indexOf("data-services-audience") < quiz.indexOf("data-services-quiz-form"),
+   "Audience switch remains directly above the real quiz");
+ assert.doesNotMatch(quiz,/data-services-goal-or/);
+ assert.match(css,/SUPPORT_FROSTED_GOAL_ABOVE_AUDIENCE_20261121/);
+ assert.match(css,/background:linear-gradient\(112deg,rgba\(255,251,241,\.77\),rgba\(249,231,211,\.67\)\)/);
+ assert.match(css,/-webkit-backdrop-filter:blur\(15px\)/);
+ assert.match(css,/\.root \.goalNext\{/);
+ assert.match(quiz,/if\(key!=="budget"\)/);
+ assert.match(quiz,/setStep\(index=>Math\.min\(index\+1,questionKeys\.length-1\)\)/);
+ assert.match(quiz,/step===questionKeys\.length-1 && ready && !submitted/);
+ assert.match(css,/SUPPORT_GOAL_FIRST_PROGRESSIVE_20261121/);
+ assert.match(css,/grid-template-columns:minmax\(0,1fr\) 79px/);
+ assert.match(css,/\.root \.goalNext/);
+});

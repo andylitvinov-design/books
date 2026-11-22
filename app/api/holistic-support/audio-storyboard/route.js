@@ -61,6 +61,16 @@ export async function POST(request){
       await consumeRate(config,{op:"my-coach-stt-free-user-day",userId:actor.id},120,86400);
       await consumeRate(config,{op:"my-coach-stt-free-global-minute"},12,60);
       await consumeRate(config,{op:"my-coach-stt-free-global-day"},240,86400);
+    }else if(purpose==="ali_chat"){
+      // A distinct authenticated Ali quota shares the existing Coach global
+      // free-tier ceiling; no paid provider or extra background retry.
+      const actor=await createRequestAuth(request,config).verified();
+      await consumeRate(config,{op:"ali-chat-stt-free-user-minute",userId:actor.id},6,60);
+      await consumeRate(config,{op:"ali-chat-stt-free-user-day",userId:actor.id},60,86400);
+      await consumeRate(config,{op:"ali-chat-stt-free-global-minute"},6,60);
+      await consumeRate(config,{op:"ali-chat-stt-free-global-day"},60,86400);
+      await consumeRate(config,{op:"my-coach-stt-free-global-minute"},12,60);
+      await consumeRate(config,{op:"my-coach-stt-free-global-day"},240,86400);
     }else{
       if(purpose!==null)throw new AppError("AUDIO_STT_PURPOSE_INVALID",400);
       // Preserve the original Video Studio allocation and no-guest-abuse gate.
