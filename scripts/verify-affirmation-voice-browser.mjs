@@ -76,6 +76,7 @@ async function enterPersonalAfterMontageExtra(page,engine="chromium"){
   await expect(continueExtra).toBeEnabled();
   if(engine==="webkit")await continueExtra.tap();else await continueExtra.click();
   await expect(studio).toHaveAttribute("data-active-workspace","phrases",{timeout:15000});
+  await expect(studio).toHaveAttribute("data-video-extra-choice","personal");
   await expect(page.locator('[data-video-ideas-goal-panel]')).toBeVisible({timeout:15000});
 }
 async function openVisibleMontageText(page,engine="chromium",mode="standard"){
@@ -1539,8 +1540,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(personalConcept).toBeVisible({timeout:15000});
       const approvePersonal=personalConcept.locator('[data-video-concept-approve]');
       await expect(approvePersonal).toBeVisible();
+      await expect(studio).toHaveAttribute("data-video-extra-choice","personal");
       if(engine==="webkit")await approvePersonal.tap();else await approvePersonal.click();
       await expect(studio).toHaveAttribute("data-active-workspace","phrases");
+      await expect(studio).toHaveAttribute("data-video-extra-choice","personal");
       await expect(page.locator('[data-video-personal-phrases]')).toBeVisible({timeout:15000});
       let montageIdeas=page.locator('[data-video-personal-phrases] [data-video-ideas-compact]');
       await expect(montageIdeas).toBeVisible();

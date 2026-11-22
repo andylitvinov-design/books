@@ -6481,6 +6481,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
   // Goal always enters Montage. The personal questionnaire is an Extra opt-in.
   const continueToMontage = () => {
+    // An old Goal button must never reset an active Extra/Personal flow.
+    // iPhone WebKit can deliver a delayed compatibility click after navigation.
+    if(activeWorkspace!=="video")return;
     if(!goalQuizReady||goalContinueRef.current?.()===false)return;
     const token=++quickNavTokenRef.current;
     setVideoScenarioOpen(false);setActiveWorkspace("editor");
@@ -7694,6 +7697,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       data-hh-mirror-scope={mirrorScope}
       data-video-scenario-open={videoScenarioOpen?"true":"false"}
       data-video-studio-hydrated={studioHydrated?"true":"false"}
+      data-video-extra-choice={extraTextChoice||"none"}
       data-montage-panel={activeWorkspace==="editor"?montagePanel:undefined}
       lang={locale} aria-label={ui.title}>
 
@@ -7797,6 +7801,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           onStepChange={setMirrorStep}
           onScopeChange={setMirrorScope}
           onComplete={(path:MirrorResolution)=>{
+            // A delayed click from a hidden Goal cannot reset selected Extra.
+            if(activeWorkspace!=="video")return false;
             // Both paths use the ONE canonical MyTube taxonomy state:
             // card -> two explicit choices, or own wish -> local auto-selection.
             // This is only navigation to the next Goal step; it NEVER renders,
@@ -8841,19 +8847,23 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 }
               }
               setPreviewPlaying(false);
-              setPersonalPhrasesOpen(extraTextChoice==="personal");
+              // An explicit Personal selection also sets personalized Text mode;
+              // preserve that choice if a stale navigation briefly cleared Extra.
+              const personalFlow=extraTextChoice==="personal"||montageTextMode==="personalized";
+              if(personalFlow&&extraTextChoice!=="personal")setExtraTextChoice("personal");
+              setPersonalPhrasesOpen(personalFlow);
               setNotice(approved.storyboard?.length?
                 (locale==="ru"?"История одобрена. В Монтаже проверьте реальные кадры на соответствие сценам. Неподходящие материалы не подставляем.":
                  locale==="es"?"Historia aprobada. En Montaje comprueba que las tomas reales correspondan a cada escena.":
                  "Story approved. In Montage, check that real footage matches each scene; unrelated clips will not be substituted."):
-                (extraTextChoice==="personal"?
+                (personalFlow?
                   (locale==="ru"?"Концепция одобрена. Теперь выберите личные фразы здесь, в Personal.":
                     locale==="es"?"Concepto aprobado. Elige las frases personales aquí en Personal.":
                     "Concept approved. Choose your tailored phrases here in Personal."):
                   (locale==="ru"?"Концепция одобрена. Проверьте текст перед созданием видео.":
                     locale==="es"?"Concepto aprobado. Revisa el texto antes de crear el vídeo.":
                     "Concept approved. Review your text before creating the video.")));
-              if(extraTextChoice==="personal"){
+              if(personalFlow){
                 setActiveWorkspace("phrases");setIdeasSubtab("concept");
                 window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
                   document.querySelector<HTMLElement>("[data-video-personal-phrases]")

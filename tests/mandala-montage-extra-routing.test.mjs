@@ -74,6 +74,18 @@ test("approved Personal Concept is stable on passive phrase-editor navigation",(
  assert.doesNotMatch(browser,/if\(await conceptRoot\.getAttribute\("data-concept-approved"\)!=="true"\)/);
 });
 
+test("stale Goal actions cannot erase a visitor-selected Personal flow",()=>{
+ const goto=studio.slice(studio.indexOf("const continueToMontage = () => {"),studio.indexOf("const generateExpressFromCurrent",studio.indexOf("const continueToMontage = () => {")));
+ assert.match(goto,/if\(activeWorkspace!=="video"\)return/);
+ assert.ok(goto.indexOf('if(activeWorkspace!=="video")return')<goto.indexOf("setExtraTextChoice(null)"));
+ const mirror=studio.slice(studio.indexOf("onComplete={(path:MirrorResolution)=>{"),studio.indexOf("onExpand={()=>{",studio.indexOf("onComplete={(path:MirrorResolution)=>{")));
+ assert.match(mirror,/if\(activeWorkspace!=="video"\)return false/);
+ assert.ok(mirror.indexOf('if(activeWorkspace!=="video")return false')<mirror.indexOf("setExtraTextChoice(null)"));
+ assert.match(studio,/data-video-extra-choice=\{extraTextChoice\|\|"none"\}/);
+ assert.match(browser,/await expect\(studio\)\.toHaveAttribute\("data-video-extra-choice","personal"\)/);
+ assert.match(studio,/if\(personalFlow&&extraTextChoice!=="personal"\)setExtraTextChoice\("personal"\)/);
+});
+
 test("Emotional Support alone opens updated Text; Personal stays in Personal",()=>{
  assert.match(studio,/onSupport=\{\(\)=>\{/);
  assert.match(studio,/setExtraTextChoice\("support"\);setMontageTextMode\("standard"\)/);
@@ -84,7 +96,8 @@ test("Emotional Support alone opens updated Text; Personal stays in Personal",()
  assert.match(studio,/data-video-text-progress/);
  assert.match(studio,/data-video-personal-eight-axes-page/);
  assert.match(studio,/data-video-personal-phrases/);
- assert.match(studio,/setPersonalPhrasesOpen\(extraTextChoice==="personal"\)/);
+ assert.match(studio,/const personalFlow=extraTextChoice==="personal"\|\|montageTextMode==="personalized"/);
+ assert.match(studio,/setPersonalPhrasesOpen\(personalFlow\)/);
  assert.equal((studio.match(/<MandalaVideoIdeas key=/g)||[]).length,2,
   "shared Canvas with mutually-exclusive editing surfaces");
  assert.equal((studio.match(/<MandalaVideoConcept /g)||[]).length,1);
