@@ -257,7 +257,8 @@ async function verifyWorkspaceHydration(browser,locale){
     await page.setViewportSize({width:390,height:840});
     await mirror.locator('[data-hh-mirror-goal-choice="insta-reels"]').click();
     await expect(studio).toHaveAttribute("data-active-workspace","phrases",{timeout:15000});
-    await expect(studio).toHaveAttribute("data-hh-mirror-planned-format","pro");
+    // The visitor selected VIP (2000 XP), not Pro (500 XP). Preserve that exact tier.
+    await expect(studio).toHaveAttribute("data-hh-mirror-planned-format","vip");
     await expect(page.locator('[data-video-ideas-goal-panel]')).toBeVisible();
     // The second-screen Goal is preselected in the SAME canonical Ideas Goal.
     await expect(page.locator('[data-video-ideas-goal-panel] [data-video-ideas-goal-choice="reframe"]'))
