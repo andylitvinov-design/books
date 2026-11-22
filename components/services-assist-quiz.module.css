@@ -444,3 +444,40 @@
  .choiceMedia{height:60px;min-height:60px}
  .choice,.choices[data-question-kind="topic"] .choice{min-height:118px}
 }
+
+/* SUPPORT_TEN_INLINE_AREAS_20261121: preserve the original 3×2 gateway;
+   four additional photo cards are visible immediately in a balanced 2×2 row. */
+.categoryGridMore{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:9px}
+.categorySecondary{min-height:109px;border-radius:18px}
+.categorySecondary .categoryMedia{height:62px;background-size:cover;background-position:center;background-repeat:no-repeat}
+.categorySecondary .categoryInfo{padding:16px 10px 8px}
+.categorySecondary .categoryName{font-size:clamp(13px,3.7vw,16px);line-height:1.13}
+.categorySecondary[data-services-quiz-category="constellations"] .categoryMedia{
+ background-image:url("/images/holistic-house/video-posters/constellations-en-v1.webp")}
+.categorySecondary[data-services-quiz-category="practices"] .categoryMedia{
+ background-image:url("/images/holistic-house/assist-video-meditation.webp")}
+.categorySecondary[data-services-quiz-category="courses"] .categoryMedia{
+ background-image:url("/images/holistic-house/course-focus-mountain-boy.webp")}
+.categorySecondary[data-services-quiz-category="tests"] .categoryMedia{
+ background-image:url("/images/holistic-house/video-posters/hypnotherapy-en-v1.webp")}
+/* Results are one tidy inset panel, not a full-width pale box of oversized text. */
+.results{margin:16px 0 0;padding:10px;border:1px solid #d5b88c;border-radius:20px;
+ background:linear-gradient(160deg,#fffaf0,#f5ead9);box-shadow:0 5px 15px #0905024d;color:#173e34}
+.summary{margin:0 0 9px;padding:0;border:1px solid #e0cba8;border-radius:12px;
+ background:#f4ead8;color:#1b493b;box-shadow:none}
+.summary summary{display:flex;align-items:center;gap:8px;min-height:39px;padding:7px 10px;
+ cursor:pointer;list-style:none;font:500 12.5px/1.25 Arial,Helvetica,sans-serif}
+.summary summary::-webkit-details-marker{display:none}
+.summary summary strong{flex:none;font-weight:800;color:#075943}
+.summary summary span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.summary summary svg{flex:none;color:#1c7154;transition:transform .15s ease}
+.summary[open] summary svg{transform:rotate(180deg)}
+.summary p{margin:0;padding:1px 11px 10px;color:#4d5c50;font:500 12px/1.43 Arial,Helvetica,sans-serif;overflow-wrap:anywhere}
+@media (max-width:350px){
+ .categoryGridMore{gap:6px}
+ .categorySecondary{min-height:104px}
+ .categorySecondary .categoryMedia{height:58px}
+ .categorySecondary .categoryInfo{padding:15px 7px 7px}
+ .categorySecondary .categoryName{font-size:12.5px}
+ .results{padding:8px}
+}

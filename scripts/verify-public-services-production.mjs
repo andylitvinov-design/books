@@ -132,17 +132,24 @@ try {
    if(cards.length!==6||!dock)return null;
    const boxes=cards.map(card=>card.getBoundingClientRect());
    return {
+    firstTop:boxes[0].top,
+    lastBottom:boxes[5].bottom,
+    dockTop:dock.getBoundingClientRect().top,
+    dockBottom:dock.getBoundingClientRect().bottom,
+    viewportHeight:window.innerHeight,
     horizontalOverflow:document.documentElement.scrollWidth-window.innerWidth,
     withinViewport:boxes.every(box=>box.width>30&&box.left>=-2&&box.right<=innerWidth+2),
     firstRowTwoColumns:Math.abs(boxes[0].top-boxes[1].top)<=5&&boxes[1].left>boxes[0].left,
     dockVisible:dock.getBoundingClientRect().height>0
    };
   });
-  assert.ok(m,"Business category shelf landmarks missing");
+  assert.ok(m&&m.lastBottom>m.firstTop,"Business category shelf/dock landmarks missing "+locale+"/"+width);
   assert.ok(m.horizontalOverflow<=2,"Business horizontal overflow "+locale+"/"+width+" "+JSON.stringify(m));
   assert.ok(m.withinViewport,"Business category cards spill horizontally "+locale+"/"+width+" "+JSON.stringify(m));
   if(width>=390)assert.ok(m.firstRowTwoColumns,"Business two-column mobile shelf lost "+locale+"/"+width+" "+JSON.stringify(m));
   assert.ok(m.dockVisible,"Business mobile dock missing "+locale+"/"+width);
+  assert.ok(m.dockTop>=0&&m.dockBottom<=m.viewportHeight+2,
+    "Business fixed dock must remain inside viewport "+locale+"/"+width+" "+JSON.stringify(m));
   if(locale==="ru"&&width===390)await page.screenshot({path:output+"/shamanica-business-ru-390.png",fullPage:false});
   await expect.poll(()=>page.evaluate(()=>history.pushState.toString().includes("__NA")),
    {timeout:30000,message:"Business quiz hydration"}).toBe(true);
@@ -192,8 +199,8 @@ try {
       await expect(quiz.locator('[data-services-quiz-choice="business_support"]')).toContainText("Personal & business growth");
     }
 
-    await expect(quiz.locator("[data-services-quiz-category]")).toHaveCount(6);
-    await expect(quiz.locator("[data-services-card-photo]")).toHaveCount(6);
+    await expect(quiz.locator("[data-services-quiz-category]")).toHaveCount(10);
+    await expect(quiz.locator("[data-services-card-photo]")).toHaveCount(10);
     await expect(quiz.locator("[data-services-audience] button")).toHaveCount(2);
     await expect(quiz.locator("[data-services-quiz-goal]")).toHaveCount(1);
     await expect(quiz.locator("[data-support-luxe-room]")).toHaveCount(1);
@@ -225,8 +232,9 @@ try {
     await quiz.locator("[data-services-quiz-goal]").fill("Calm and clear decisions");
     assert.deepEqual(await quiz.locator("[data-services-quiz-category]").evaluateAll(cards =>
       cards.map(card => card.getAttribute("data-services-quiz-category"))),
-      ["diagnostics", "business", "homeopathy", "coaching", "psychotherapy", "video"],
-      "The six owner-prioritized Support cards must remain in 3×2 order");
+      ["diagnostics", "business", "homeopathy", "coaching", "psychotherapy", "video",
+       "constellations", "practices", "courses", "tests"],
+      "Keep the six prioritized Support cards and four always-visible follow-up cards in order");
     await expect(quiz.locator("[data-services-shamanica-link]"))
       .toHaveAttribute("href", "/"+locale+"/shamanica");
     assert.equal(await page.locator("[data-hh-unified-dock]").count(), 1,
@@ -282,12 +290,15 @@ try {
       await expect(target.locator(':scope > [data-services-three-visible] > [data-service-variant]').first()).toBeVisible();
     }
     await expect(quiz.locator("[data-services-shamanica-link]")).toHaveAttribute("href", "/" + locale + "/shamanica");
-    await expect(quiz.locator("[data-services-extra-categories]")).toHaveCount(1);
-    const more = quiz.locator("[data-services-extra-categories]");
-    await more.locator("summary").click();
-    await expect(more.locator("nav a")).toHaveCount(4);
-    await expect(more.locator('nav a[href="#service-group-browse"]')).toHaveCount(1);
-    await more.locator("summary").click();
+    const extra = quiz.locator("[data-services-extra-categories]");
+    await expect(extra.locator("a[data-services-quiz-category]")).toHaveCount(4);
+    const extraTargets = { constellations:"services",practices:"reiki",courses:"courses",tests:"browse" };
+    for (const [category, group] of Object.entries(extraTargets)) {
+      const card = extra.locator('[data-services-quiz-category="' + category + '"]');
+      await expect(card).toBeVisible();
+      await expect(card).toHaveAttribute("href","#service-group-"+group);
+      await expect(page.locator("#service-group-"+group)).toHaveCount(1);
+    }
     await expect(quiz.locator('[data-services-quiz-category="business"]')).toHaveAttribute("href", "#service-group-business");
     // Business has its own topic, need and start-format branching.
     await quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice="business_support"]').click();

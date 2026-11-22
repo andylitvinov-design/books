@@ -14,7 +14,7 @@ import extraFreeFilmPresets from "@/data/video-catalog/free-film-presets-v2.json
 import { MandalaHypnoCompact } from "./mandala-hypno-compact";
 import { MandalaVideoIdeas } from "./mandala-video-ideas";
 import { MandalaVideoIdeaGoal } from "./mandala-video-idea-goal";
-import {MandalaMagicMirrorTitle,MandalaMagicMirrorGoal} from "./mandala-magic-mirror-goal";
+import {MandalaMagicMirrorTitle,MandalaMagicMirrorGoal,type MirrorResolution,type MirrorScope} from "./mandala-magic-mirror-goal";
 import {buildPersonalVideoGoalOptions,composePersonalVideoGoalIntent,goalScenarioPlan} from "@/lib/mandala/video-personal-goal-composer.mjs";
 import {suggestVideoGoalPhrases} from "@/lib/mandala/video-goal-idea-phrases.mjs";
 import {MandalaVideoPersonalization,DEFAULT_VIDEO_GOAL_PROFILE,summarizeVideoGoalProfile,type VideoGoalProfile} from "./mandala-video-personalization";
@@ -2064,6 +2064,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [videoScenarioOpen,setVideoScenarioOpen] = useState(false);
   const goalContinueRef=useRef<(()=>boolean)|null>(null);
   const mirrorStartRef=useRef<((theme:VideoTheme,categoryId:"goals-money"|"love-relationships"|"energy-confidence"|"stress-anxiety",wish:string)=>void)|null>(null);
+  const mirrorResolveRef=useRef<((path:MirrorResolution)=>boolean)|null>(null);
+  const [mirrorStep,setMirrorStep]=useState<1|2|3>(1);
+  const [mirrorScope,setMirrorScope]=useState<MirrorScope>("me");
   const [goalQuizState,setGoalQuizState]=useState<{
     step:1|2|3;complete:boolean;audience:"self"|"others";
   }>({step:1,complete:false,audience:"self"});
@@ -6107,6 +6110,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // One active request controls the fragment and scroll; no delayed scroll
   // from the previous tab can steal the next pointer's click target.
   const quickNavTokenRef=useRef(0);
+  // iPhone Safari can suppress click/pointerup when a panel shifts under a
+  // real touch. Only a stationary touchend can recover that lost navigation.
+  const quickNavTouchStartRef=useRef<{id:StudioWorkspace;x:number;y:number}|null>(null);
   const [quickNavTarget,setQuickNavTarget]=useState("");
 
   // Keep existing anchors working with the new single-editor navigation.
@@ -6247,13 +6253,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   };
 
 
-  // Existing Settings menu → same editor and Ready. The customer never receives
-  // a fake Express MP4 while our offline FFmpeg masters are absent.
-  const expressUnavailable=locale==="ru"
-    ?"Express пока недоступен: проверенных готовых MP4 нет. FFmpeg Fast Assembly работает офлайн. Выберите Personal или OpenMotion."
-    :locale==="es"
-    ?"Express aún no está disponible: no hay MP4 terminados verificados. FFmpeg Fast Assembly es sin conexión. Elige Personal u OpenMotion."
-    :"Express is not available yet: no finished verified MP4 masters exist. FFmpeg Fast Assembly is offline-only. Choose Personal or OpenMotion.";
+  // Express is a separate playback path. It never enters the Personal encoder.
+  const expressUnavailable=locale==="en"?"":locale==="ru"
+    ?"Готовый Express MP4 на русском пока недоступен."
+    :"Todavía no hay un MP4 Express terminado en español.";
   const openExistingMotionPicker=()=>{
     setActiveWorkspace("video");setStudioMode("pump");setIntroPlaying(false);
     setFirstVideoAdvancedActivated(true);setFirstVideoAdvancedOpen(true);
@@ -7506,6 +7509,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const activateQuickWorkspace=(id:(typeof workspaceTabs)[number]["id"])=>{
     quickNavTokenRef.current++;
     setActiveWorkspace(id);
+    if(id==="video"){setMirrorAdvanced(false);setVideoScenarioOpen(false);setMirrorStep(1);}
     if(id==="ready")setReadyGenerationPending(false);
     if(id==="editor")setMontagePanel("effects");
     if(id==="effects")setHypnoEntryGroup("visual");
@@ -7647,6 +7651,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       data-ideas-step={activeWorkspace==="phrases"?ideasSubtab:undefined}
       data-video-advanced-open={(showAdvancedVideo||videoScenarioOpen)?"true":"false"}
       data-hh-mirror-advanced={mirrorAdvanced?"true":"false"}
+      data-hh-mirror-step={mirrorStep}
+      data-hh-mirror-scope={mirrorScope}
       data-video-scenario-open={videoScenarioOpen?"true":"false"}
       data-video-studio-hydrated={studioHydrated?"true":"false"}
       data-montage-panel={activeWorkspace==="editor"?montagePanel:undefined}
@@ -7684,6 +7690,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <Camera size={17} aria-hidden="true"/>
             <span>{locale==="ru"?"Фото":locale==="es"?"Foto":"Photo"}</span>
           </Link>
+          <button type="button" className={videoStyles.quickBrandPhoto}
+            data-video-settings-trigger aria-controls="mandala-support-settings"
+            aria-label={locale==="ru"?"Режим создания видео":locale==="es"?"Modo de creación de vídeo":"Video creation mode"}
+            disabled={!studioHydrated}
+            onClick={()=>window.dispatchEvent(new Event("hh:video-settings-toggle"))}>
+            <SlidersHorizontal size={17} aria-hidden="true"/>
+          </button>
           <HeaderCreditProfile locale={locale} />
         </nav>
         {creditCatalog?.chargeRequired?<p className={videoStyles.quickHint}
@@ -7714,6 +7727,21 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           aria-controls="video-workspace-panel" disabled={!studioHydrated||recording||preparing}
           // WebKit may drop click after an expanded Ideas details portal shifts
           // during release; pointer-up commits the same real selected tab.
+          onTouchStart={event=>{
+            const touch=event.touches.item(0);
+            quickNavTouchStartRef.current=touch?{id:item.id,x:touch.clientX,y:touch.clientY}:null;
+          }}
+          onTouchEnd={event=>{
+            const start=quickNavTouchStartRef.current;
+            quickNavTouchStartRef.current=null;
+            const touch=event.changedTouches.item(0);
+            // A scroll/swipe is not a tab selection; do not prevent default.
+            if(start?.id===item.id&&touch&&
+               Math.abs(touch.clientX-start.x)<=12&&
+               Math.abs(touch.clientY-start.y)<=12&&
+               activeWorkspace!==item.id)activateQuickWorkspace(item.id);
+          }}
+          onTouchCancel={()=>{quickNavTouchStartRef.current=null;}}
           onPointerUp={()=>{if(activeWorkspace!==item.id)activateQuickWorkspace(item.id);}}
           onClick={()=>activateQuickWorkspace(item.id)}><item.Icon size={18} aria-hidden="true"/>
           <span className={videoStyles.quickNavFull}>{workspaceCopy[locale][item.id].tab}</span>
@@ -7727,22 +7755,33 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           disabled={!studioHydrated||recording||preparing}
           onWishChange={value=>{setWish(value);setSuggestion("");}}
           onSelectCategory={selectCategory}
-          onContinue={(selectedTheme,categoryId,goalText)=>{
-            // Category -> subcategory -> topic precedes the production's
-            // three purpose goals and goal-specific Personalization.
-            setMirrorAdvanced(true);
-            setMirrorDetailedWish(goalText);
-            setVideoScenarioOpen(true);
-            mirrorStartRef.current?.(selectedTheme,categoryId,goalText);
-            window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
-              document.querySelector("[data-auto-video-subcategories]")?.scrollIntoView({block:"start",behavior:"auto"})));
+          onStepChange={setMirrorStep}
+          onScopeChange={setMirrorScope}
+          onComplete={(path:MirrorResolution)=>{
+            // Both paths use the ONE canonical MyTube taxonomy state:
+            // card -> two explicit choices, or own wish -> local auto-selection.
+            // This is only navigation to the next Goal step; it NEVER renders,
+            // bills or sends private content to a provider.
+            const accepted=mirrorResolveRef.current?.(path);
+            if(!accepted)return false;
+            setMirrorDetailedWish(path.wish);
+            setMirrorAdvanced(false);setVideoScenarioOpen(false);
+            setMirrorStep(1);
+            setNotice("");
+            const navigationToken=++quickNavTokenRef.current;
+            setIdeasSubtab("goal");setActiveWorkspace("phrases");setStudioMode("pump");
+            window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
+              if(navigationToken!==quickNavTokenRef.current)return;
+              document.querySelector<HTMLElement>("[data-video-ideas-goal-panel]")
+                ?.scrollIntoView({block:"start",behavior:"instant" as ScrollBehavior});
+            }));
+            return true;
           }}
           onExpand={()=>{
-            setMirrorAdvanced(true);
+            // Advanced is explicitly opted in through the small overflow icon.
+            // Never reveal the old 20-text panel on card, Next or back to Goal.
+            setMirrorAdvanced(true);setVideoScenarioOpen(true);
             setMirrorDetailedWish(wish);
-            setVideoScenarioOpen(true);
-            window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
-              document.getElementById("quick-theme-title")?.scrollIntoView({block:"start",behavior:"auto"})));
           }}/>
         <header className={videoStyles.quickHeader}>
           <div className={videoStyles.quickHeaderText}>
@@ -8915,6 +8954,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           goalContinueRef={goalContinueRef}
           mirrorDetailedWish={mirrorDetailedWish}
           mirrorStartRef={mirrorStartRef}
+          mirrorResolveRef={mirrorResolveRef}
           onGoalQuizChange={setGoalQuizState}
           recipientAudioPanel={recipientAudioPanel}
           audioStoryboardReady={audioPlanApplied&&Boolean(voiceVisualPlan?.canExport)&&audioRights}

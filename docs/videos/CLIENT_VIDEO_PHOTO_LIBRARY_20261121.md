@@ -32,3 +32,6 @@ iPhone / browser file picker → browser normalization → optional authenticate
 
 ## Follow-on after PR #5335 merges
 Use this shared library picker also in the Personal Video Gift photo step (that file is currently being introduced by #5335); do not copy the upload implementation or blindly overwrite its PR. Exact workflow reuses onPhotoFileSelected(File) and keeps gift's local-only default.
+
+## Video Gift photo reuse integration
+The existing Personal Video Gift photo step now reuses the same account-private My Photos drawer. Selecting a saved photo feeds the original local `choosePhoto(File)` path; creation, identity consent, free on-device MP4 encoding and separate consent for cloud-saved output are unchanged. Saving originals to My Photos is always explicit and does not authorize or trigger HeyGen. Real iPhone HEIC and owner A/B account testing remain release gates.

@@ -160,7 +160,7 @@ test("voice browser opens Ideas and applies six visible Montage styles with deco
  const start=source.indexOf("async function verifyWorkspaceHydration");
  const end=source.indexOf("// Real guest route browser acceptance",start);
  const flow=source.slice(start,end);
- const click=flow.indexOf("await continueToIdeas.click()");
+ const click=flow.indexOf("await mirror.locator('[data-hh-mirror-next]').click();");
  const ideas=flow.indexOf('data-active-workspace","phrases"',click);
  const goal=flow.indexOf('const ideasGoalPane=page.locator',ideas);
  const choices=flow.indexOf('await expect(goalChoices).toHaveCount(3)',goal);
@@ -198,8 +198,25 @@ test("WebKit selects a real male narration voice with native touch before consen
   assert.doesNotMatch(stage,/force:\s*true|node\.click\(\)/);
 });
 
-test("voice browser selects the visible montage workspace before recording",()=>{
-  assert.match(source,/phase\(engine,"offline-remix-ready"\)[\s\S]*?data-video-quick-control="editor"[\s\S]*?expect\(generate\)\.toBeVisible/);
+test("voice browser enters Montage through the real compact Mirror overflow before recording",()=>{
+  const start=source.indexOf('phase(engine,"offline-remix-ready")');
+  const end=source.indexOf('await expect(generate).toBeVisible',start);
+  assert.ok(start>=0&&end>start,"inspect the real post-remix route before MP4 export");
+  const flow=source.slice(start,end);
+  assert.ok(flow.includes("await page.locator('[data-video-quick-control=\"video\"]').click();"),
+    "the real visitor returns to the compact first Video screen");
+  assert.ok(flow.includes('await enterVisibleStudioWorkspace(page,"editor",engine);'),
+    "the visible assistant must open the old Montage workspace");
+  const first=source.indexOf("async function enterVisibleStudioWorkspace");
+  const last=source.indexOf("async function openVisibleMontageText",first);
+  assert.ok(first>=0&&last>first,"inspect actual shared browser navigation helper");
+  const helper=source.slice(first,last);
+  for(const action of ["await expect(moreGoals).toBeVisible","await moreGoals.tap()",
+    "await moreGoals.click()",'await expect(control).toBeVisible'])
+    assert.ok(helper.includes(action),action);
+  assert.ok(!flow.includes("await editorTab.click();")&&
+    !flow.includes("await page.locator('[data-video-quick-control=\"editor\"]').click();"),
+    "no hidden direct Editor click may stand in for a user-visible tap");
 });
 
 test("affirmation attachment acceptance verifies the visible live movie soundtrack",()=>{

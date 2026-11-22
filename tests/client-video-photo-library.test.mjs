@@ -42,3 +42,11 @@ test('bounded local-first endpoint and isolated permission contract',()=>{
   assert.match(route,/createSignedUrl/)
   assert.doesNotMatch(route,/getPublicUrl|heygen|publishableUrl|service_role/i)
 })
+
+test('saved owner photos can be picked in the existing Video Gift without AI transmission',()=>{
+  const gift=readFileSync(new URL('../components/mandala-video-gift.tsx',import.meta.url),'utf8')
+  assert.match(gift,/VideoPhotoLibrary = dynamic/)
+  assert.match(gift,/onSelectPhoto=\{file=>\{void choosePhoto\(file\)\}\}/)
+  assert.match(gift,/disabled=\{photoBusy\}/)
+  assert.doesNotMatch(gift,/fetch\([^\n]*heygen/i)
+})

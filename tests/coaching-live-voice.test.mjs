@@ -346,6 +346,38 @@ test('Safari MP3 autoplay denial is recoverable on one tap without another synth
   player.cancel();assert.equal(revokes,1)
 })
 
+
+test('Gemini WAV never enters WebCodecs MP3 on iPhone, even when fast voice is enabled',async()=>{
+  const {startCoachingMp3Playback}=await import('../lib/personal-coaching/streamed-mp3-playback.mjs')
+  let reads=0,downloads=0,decodes=0,audible=0,htmlPlays=0
+  const audioContext={
+    state:'running',destination:{},currentTime:0,
+    decodeAudioData:async()=>{decodes++;return {sampleRate:24000,getChannelData:()=>new Float32Array(8)}},
+    createBufferSource:()=>({connect(){},disconnect(){},stop(){},start(){audible++}}),
+  }
+  class FakeAudio{
+    play(){htmlPlays++;throw Error('WAV must play through unlocked Web Audio')}
+    pause(){} removeAttribute(){} load(){}
+  }
+  const environment={
+    Audio:FakeAudio,AudioDecoder:class{},EncodedAudioChunk:class{},location:{search:'?coachStream=1'},
+    URL:{createObjectURL(){throw Error('No HTML blob URL for decoded WAV')},revokeObjectURL(){}},
+  }
+  const response={
+    headers:{get:()=> 'audio/wav'},
+    get body(){reads++;throw Error('WAV must never go to WebCodecs or MSE')},
+    blob:async()=>{downloads++;return new Blob(['synthetic WAV bytes'],{type:'audio/wav'})},
+  }
+  const player=startCoachingMp3Playback(response,{environment,audioContext})
+  await player.run
+  assert.equal(reads,0,'WAV must not even inspect the MP3 stream body')
+  assert.equal(downloads,1,'single authorized synthesis response')
+  assert.equal(decodes,1)
+  assert.equal(audible,1)
+  assert.equal(htmlPlays,0)
+  player.cancel()
+})
+
 test('My Coach has private default TTS, no stale transcription, and tap-to-recover',()=>{
   const loop=source('components/my-coach-speech-loop.jsx')
   const ui=source('components/my-coach-live-dialogue.jsx')
@@ -449,8 +481,11 @@ test('spoken My Coach reply retains the reflection and start introduction',()=>{
  assert.ok(loop.includes('(naturalVoice||voiceAgreed)&&voiceAvailable'))
  assert.ok(loop.includes("if(!introStartedRef.current){"))
  assert.ok(ui.includes("const dynamicAllowed=chosenCloudAgreed&&chosenCloudAvailable&&"))
- assert.ok(ui.includes('const chosenCloudAgreed=geminiVoiceReady||cloudAgreed'))
- assert.ok(ui.includes('const chosenCloudProvider=geminiVoiceReady?geminiVoiceTier:cloudProvider'))
+ assert.ok(ui.includes("const usingExistingVoice=geminiVoiceTier==='existing'"))
+ assert.ok(ui.includes('const chosenCloudAgreed=usingExistingVoice?cloudAgreed:geminiVoiceReady'))
+ assert.ok(ui.includes('const chosenCloudProvider=usingExistingVoice?cloudProvider:'))
+ assert.ok(ui.includes('geminiVoiceReady?geminiVoiceTier:null'))
+ assert.ok(ui.includes('const chosenCloudAvailable=usingExistingVoice?cloudAvailable:geminiVoiceReady'))
  assert.ok(ui.includes("const [cloudAgreed,setCloudAgreed]=useState(false)"))
  assert.ok(!ui.includes('naturalVoiceRow'))
  assert.ok(!ui.includes('checked={cloudAgreed}'))
@@ -596,18 +631,74 @@ test('Web Audio unlock is used only for WebKit phones; desktop retains streaming
 });
 
 
-test('Basic/Pro vendor toggle works during a live conversation with independent Gemini consents',()=>{
+test('Basic/Pro one-tap Free selection includes informed disclosure and speech, with paid consent separate',()=>{
  const ui=source('components/my-coach-live-dialogue.jsx')
  const start=ui.indexOf('data-coach-basic-pro-toggle')
  assert.ok(start>0)
- const toggle=ui.slice(start,ui.indexOf('data-coach-experience-consent',start))
+ const toggle=ui.slice(start,ui.indexOf('data-coach-pro-same-tap-disclosure',start))
  assert.match(toggle,/disabled=\{replaying\|\|paused\|\|protocolOpen\}/)
  assert.match(toggle,/speechRef\.current\?\.stop\?\.\(\)/)
  assert.match(toggle,/cancelPendingCoachTurn\(\)/)
- assert.match(ui,/setCoachEngine\('gemini_free'\)/)
- assert.match(ui,/setGeminiVoiceTier\(experienceTtsConsent&&geminiCapabilities\.gemini_tts_free\?'gemini_tts_free':'existing'\)/)
- assert.match(ui,/disabled=\{!experienceTextConsent\}/)
- assert.match(ui,/data-coach-experience-consent/)
+ assert.match(toggle,/setCoachEngine\('gemini_free'\)/)
+ assert.match(toggle,/setGeminiConsent\(true\)/)
+ assert.match(toggle,/setGeminiVoiceTier\(freeTtsReady\?'gemini_tts_free':'existing'\)/)
+ assert.match(toggle,/setGeminiVoiceConsent\(freeTtsReady\)/)
+ assert.match(ui,/data-coach-pro-same-tap-disclosure/)
+ assert.match(ui,/Google может использовать данные|Google.*may use Free data/)
+ assert.doesNotMatch(ui,/data-coach-experience-consent|experienceTextConsent|experienceTtsConsent/)
+ assert.match(ui,/coachEngine==='gemini_paid'&&<label/)
+ assert.match(ui,/geminiVoiceTier==='gemini_tts_paid'&&<label/)
+})
+test('iOS 27 output routing yields the receiver to the speaker, restores mic, and leaves other browsers untouched',async()=>{
+ const {setCoachIos27AudioSession}=await import('../lib/personal-coaching/coach-ios-audio-route.mjs')
+ const ios={userAgent:'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 Version/27.2 Mobile/15E148 Safari/604.1',audioSession:{type:'auto'}}
+ const desktop={userAgent:'Mozilla/5.0 (Windows NT 10.0) Chrome/131',audioSession:{type:'auto'}}
+ assert.equal(setCoachIos27AudioSession(ios,'playback'),true)
+ assert.equal(ios.audioSession.type,'playback')
+ assert.equal(setCoachIos27AudioSession(ios,'auto'),true)
+ assert.equal(ios.audioSession.type,'auto')
+ assert.equal(setCoachIos27AudioSession(desktop,'playback'),false)
+ assert.equal(desktop.audioSession.type,'auto')
+ assert.equal(setCoachIos27AudioSession(ios,'invalid'),false)
+ const loop=source('components/my-coach-speech-loop.jsx')
+ assert.match(loop,/ios27NeedsSpeechRecovery\(window\.navigator\)\|\|/)
+ assert.match(loop,/if\(!ios27NeedsSpeechRecovery\(window\.navigator\)\)primeMicrophonePermission\(\)/)
+ assert.match(loop,/setCoachIos27AudioSession\(window\.navigator,'playback'\)/)
+ assert.match(loop,/setCoachIos27AudioSession\(window\.navigator,'auto'\)/)
+ assert.match(loop,/voiceProvider\.startsWith\('gemini_tts_'\)\?\(speakable\|\|reply\)\.slice\(0,500\)/)
+ const page=source('components/my-coach-live-dialogue.jsx')
+ assert.match(page,/coachSpokenText\(spokenText\)\.text\.slice\(0,500\)/)
+})
+test('Safari iOS 27 silent output recovers by asynchronous ambient to playback cycle without cloud retries',async()=>{
+ const {refreshCoachIos27PlaybackRoute,setCoachIos27AudioSession}=
+   await import('../lib/personal-coaching/coach-ios-audio-route.mjs')
+ const transitions=[]
+ const audioSession={_type:'playback',
+   get type(){return this._type},
+   set type(value){transitions.push(value);this._type=value}}
+ const ios={userAgent:'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 Version/27.2 Mobile/15E148 Safari/604.1',
+   audioSession}
+ const tasks=[]
+ assert.equal(refreshCoachIos27PlaybackRoute(ios,fn=>tasks.push(fn)),true)
+ assert.equal(audioSession.type,'ambient')
+ assert.deepEqual(transitions,['ambient'])
+ assert.equal(tasks.length,1)
+ tasks.shift()()
+ assert.equal(audioSession.type,'playback')
+ assert.deepEqual(transitions,['ambient','playback'])
+ // A stopped or interrupted session must never be reopened by stale work.
+ assert.equal(refreshCoachIos27PlaybackRoute(ios,fn=>tasks.push(fn)),true)
+ assert.equal(setCoachIos27AudioSession(ios,'auto'),true)
+ tasks.shift()()
+ assert.equal(audioSession.type,'auto')
+ const windows={userAgent:'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/131',audioSession:{type:'auto'}}
+ assert.equal(refreshCoachIos27PlaybackRoute(windows,()=>{throw Error('not scheduled')}),false)
+ assert.equal(windows.audioSession.type,'auto')
+ const speech=source('components/my-coach-speech-loop.jsx')
+ const ui=source('components/my-coach-live-dialogue.jsx')
+ assert.match(speech,/refreshCoachIos27PlaybackRoute\(window\.navigator\)/)
+ assert.match(ui,/function ensureReplayAudioOutput\(\)\{\s*refreshCoachIos27PlaybackRoute\(window\.navigator\)/)
+ assert.doesNotMatch(speech,/api\.fish\.audio|https:\/\/generativelanguage\.googleapis\.com/)
 })
 test('AI coach never claims to run on unverified OpenAI GPT-4',async()=>{
  const {coachClaimsUnverifiedModelIdentity}=await import('../lib/coaching/conversational-persona.mjs')

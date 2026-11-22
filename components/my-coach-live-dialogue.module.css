@@ -1731,8 +1731,7 @@
   font:750 11px/1.1 system-ui;cursor:pointer;white-space:nowrap
 }
 .root[data-session-visual-v4] .sessionTopbarActions .headerProfileControl:focus-visible,
-.root[data-session-visual-v4] .voiceControls .experienceModeControl:focus-visible,
-.root[data-session-visual-v4] .experienceConsentPanel button:focus-visible{
+.root[data-session-visual-v4] .voiceControls .experienceModeControl:focus-visible{
   outline:3px solid #11816b;outline-offset:2px
 }
 .root[data-session-visual-v4] .voiceControls .experienceModeControl{
@@ -1746,20 +1745,6 @@
   background:#d9f2e8;border-color:#90ceb3;color:#08614a
 }
 .root[data-session-visual-v4] .voiceControls .experienceModeControl:disabled{opacity:.6;cursor:not-allowed}
-.experienceConsentPanel{
-  box-sizing:border-box;width:100%;display:grid;gap:9px;order:1;
-  margin:0;padding:13px 14px;border:1px solid #c7ded1;border-radius:16px;
-  background:#f8fcf8;color:#1c5243;font:500 13px/1.35 system-ui
-}
-.experienceConsentPanel strong{font-size:15px}
-.experienceConsentPanel p{margin:0}
-.experienceConsentPanel label{display:flex;gap:9px;align-items:flex-start}
-.experienceConsentPanel input{flex:none;width:18px;height:18px;accent-color:#087c61}
-.experienceConsentActions{display:flex;gap:9px;flex-wrap:wrap}
-.experienceConsentActions button{flex:1;min-height:44px;border:1px solid #b7d2c4;border-radius:11px;
-  padding:8px 10px;background:#0c755a;color:#fff;font:750 12px/1.2 system-ui;cursor:pointer}
-.experienceConsentActions button:last-child{background:#fff;color:#255e4d}
-.experienceConsentActions button:disabled{opacity:.4;cursor:not-allowed}
 @media(max-width:699px){
  .root[data-session-visual-v4] .sessionTopbar{gap:5px;padding-inline:9px}
  .root[data-session-visual-v4] .sessionTopbarActions{gap:4px}
@@ -1774,16 +1759,6 @@
    grid-template-columns:62px minmax(0,1fr) 50px 50px 50px
  }
  .root[data-session-visual-v4] .voiceControls .experienceModeControl{width:50px;max-width:50px;min-height:44px;height:48px}
- .root[data-session-visual-v4] .voiceWorkspace>.experienceConsentPanel{
-   flex:0 0 auto;max-height:none
- }
- .root[data-session-visual-v4]:has([data-coach-experience-consent]){
-   height:auto;max-height:none;min-height:var(--hh-coach-visible-height,100dvh);
-   overflow-y:auto;overflow-x:clip
- }
- .root[data-session-visual-v4]:has([data-coach-experience-consent]) .voiceWorkspace{
-   flex:0 0 auto;max-height:none;overflow:visible
- }
 }
 @media(max-width:355px){
  .root[data-session-visual-v4] .sessionBrand{font-size:13px;letter-spacing:-.045em;gap:3px}
@@ -1791,4 +1766,10 @@
  .root[data-session-visual-v4] .sessionTopbarActions .headerProfileControl,
  .root[data-session-visual-v4] .sessionTopbarActions .chooseCoach{width:37px;min-width:37px;max-width:37px}
  .root[data-session-visual-v4] .sessionTopbarActions .languageControl{min-width:51px;max-width:51px}
+}
+
+/* Visible, compact information before the one-tap Free Pro choice. */
+.root[data-session-visual-v4] .voicePlayNotice[data-coach-pro-same-tap-disclosure]{
+ display:block;margin:3px 12px 5px;padding:0;text-align:left;
+ font:500 11px/1.3 system-ui;color:#476255
 }
