@@ -188,17 +188,20 @@ test("approved home displays a source-backed example before rendering",()=>{
 
 test("four canonical goal pills, exclusive subcategories and real scenario/audio continuation",()=>{
  const css=readFileSync(new URL("../components/mandala-auto-video-director.module.css",import.meta.url),"utf8");
- assert.match(css,/\.goalPanel \.goalChoices\{\s*display:flex;flex-wrap:nowrap/,"five scrollable mobile goal pills override the former four columns");
+ assert.match(css,/\.goalPanel \.goalChoices\{\s*display:flex;flex-wrap:nowrap/,"four scrollable photo categories are retained; only their labels come from canonical taxonomy");
  assert.match(css,/\.topicChoices\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
  assert.doesNotMatch(director,/scenePoster\(item.poster\)/,"goal categories are text-only; film choices keep original artwork");
  assert.match(director,/data-auto-video-subcategories/);
- assert.match(director,/selectedGoalIds.length<2/);
- for(const id of ["confidence","connection","fresh-start","stability","calm","vitality"])
-   assert.match(director,new RegExp('(?:\\b|")'+id+'(?:\\b|")'));
+ assert.match(director,/taxonomySubcategories\.map\(item=><button/);
+ assert.match(director,/data-auto-video-popular-subcategory=\{item\.id\}/);
+ assert.match(director,/onClick=\{\(\)=>chooseTaxonomySubcategory\(item\.id\)\}/);
+ assert.doesNotMatch(director,/selectedGoalIds|popularTopicIds|popularTopicCopy/);
  assert.match(director,/onCategoryChange\?\.\(nextTheme\)/);
- const topicHandler=director.slice(director.indexOf("const chooseReadyGoal="),
-   director.indexOf("const chooseCategory="));
- assert.ok(topicHandler.includes("const selectedTheme="),"subtopics inherit the active category");
+ const topicHandler=director.slice(director.indexOf("const chooseTaxonomySubcategory="),
+   director.indexOf("const chooseTaxonomyScenario="));
+ assert.ok(topicHandler.includes("const nextTheme="),"subtopics inherit the active category");
+ assert.match(topicHandler,/found\.category\.id!==selectedCategoryId/);
+ assert.match(topicHandler,/found\.subcategory\.id!==selectedSubcategoryId/);
  const taxonomyHandler=director.slice(director.indexOf("const chooseTaxonomyTopic="),
    director.indexOf("const chooseTaxonomyScenario="));
  assert.ok(taxonomyHandler.includes("const nextTheme=legacyThemeForSubcategory[found.subcategory.id]||theme"));
@@ -469,7 +472,10 @@ test("brief and detailed questionnaires choose from existing licensed clips with
  assert.match(director,/data-video-profile-apply/);
  assert.match(director,/profileMode==="extended"/);
  assert.match(director,/onClick=\{applyProfile\}/);
- assert.match(director,/setProposal\(recommendAutoVideo\(\{goal:nextGoal,goalId:profileFocus/);
+ assert.match(director,/const found=getMyTubeTopic\(effectiveProfileTopicId\)/);
+ assert.match(director,/found\.category\.id!==profileCategory/);
+ assert.match(director,/setProposal\(recommended\)/);
+ assert.match(director,/setTimelineEdits\(timelineForTopic\(found\.topic\.id,null,recommended\)\)/);
  assert.match(director,/onCategoryChange\?\.\(nextTheme\);onGoalChange\(nextGoal\)/);
  assert.doesNotMatch(director,/fetch\(/);
  assert.doesNotMatch(director,/localStorage|sessionStorage/);
