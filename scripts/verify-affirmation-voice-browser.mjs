@@ -1351,7 +1351,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // Personalized +50 XP has no verified server-side price. A real Create
       // tap must remain on the protected text editor, never open Ready, debit
       // the Basic price or launch the media encoder.
-      const unpricedCreate=page.locator('[data-video-quick-generate]');
+      // The approved compact Text editor hides the redundant Montage order-bar
+      // CTA. Activate the visible Text Generate button bound to the SAME
+      // openReadyForGeneration handler, so unpriced export is tested by real UI.
+      const unpricedCreate=montageIdeas.locator('[data-video-ideas-generate]');
+      await expect(unpricedCreate).toBeVisible();
       await expect(unpricedCreate).toBeEnabled();
       if(engine==="webkit")await unpricedCreate.tap();else await unpricedCreate.click();
       await expect(studio).toHaveAttribute("data-active-workspace","editor");
