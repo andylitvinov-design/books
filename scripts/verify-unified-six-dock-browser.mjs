@@ -437,9 +437,31 @@ async function inspect(browserType,locale,width){
         const studio=page.locator('[data-mandala-free-video]');
         assert.equal(await studio.getAttribute("data-active-workspace"),"video",
           "Only the compact Magic Mirror Video entrance may hide the tool rail");
-        const moreGoals=page.locator('[data-hh-mirror-more-goals]');
-        await moreGoals.waitFor({state:"visible",timeout:15000});
-        await moreGoals.click();
+        const mirror=page.locator('[data-hh-mirror-goals]');
+        const legacyMore=mirror.locator('[data-hh-mirror-more-goals]');
+        if(await legacyMore.isVisible()){
+          await legacyMore.click();
+        }else{
+          const entry=mirror.locator('[data-hh-mirror-enter="me"]');
+          if(await entry.isVisible())await entry.click();
+          const purpose=mirror.locator('[data-hh-mirror-purpose-step]');
+          if(await purpose.isVisible()){
+            await purpose.locator('[data-video-ideas-goal-choice="rest"]').click();
+            await purpose.locator('[data-video-ideas-goal-next]').click();
+          }
+          const basic=mirror.locator('[data-hh-mirror-video-format="basic"]');
+          if(await basic.isVisible())await basic.click();
+          const composer=mirror.locator('[data-hh-mirror-composer]');
+          for(let step=0;step<3&&!await composer.isVisible();step++){
+            const back=mirror.locator('[data-hh-mirror-back]');
+            await expect(back).toBeVisible();
+            await back.click();
+          }
+          const advanced=composer.locator('[data-hh-mirror-open-advanced]');
+          await expect(advanced).toBeVisible();
+          await expect(advanced).toBeEnabled();
+          await advanced.click();
+        }
         await expect(studio).toHaveAttribute("data-hh-mirror-advanced","true",{timeout:15000});
         await nav.waitFor({state:"visible",timeout:15000});
       }
