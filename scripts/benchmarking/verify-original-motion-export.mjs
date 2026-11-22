@@ -128,6 +128,10 @@ try {
   const textTools=page.locator('[data-video-concept-text-tools]');
   await textTools.locator(':scope > summary').click();
   assert.equal(await textTools.getAttribute('open'),'','TIMELINE_DISCLOSURE_MUST_OPEN');
+  // The shared timeline is mounted in Audio, not within the text tools disclosure.
+  const timelineAudioTab=page.locator('[data-video-montage-tab="audio"]');
+  await press(timelineAudioTab);
+  assert.equal(await timelineAudioTab.getAttribute('aria-pressed'),'true','AUDIO_MUST_EXPOSE_SHARED_TIMELINE');
   const addVideo=page.locator('[data-video-timeline-add-video]');
   await addVideo.waitFor({state:'visible',timeout:20000});
   // Native touch must commit the real visitor's opt-in. Desktop click can be
