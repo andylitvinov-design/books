@@ -50,13 +50,13 @@ test("verified original recordings are featured first in the user's chosen Audio
  assert.equal(studioMusicFeaturedTracks(rows,"energy").length,0);
  assert.equal(studioMusicAttachmentName(rows[0]),"Chopin · Nocturne No. 2 · Frank Levy.mp3");
 });
-test("top mobile Audio carousel shows verified recordings before legacy titles without auto-play",()=>{
+test("approved Audio panel keeps verified recordings available without auto-play",()=>{
  const studio=read("components/mandala-free-video-studio.tsx");
  const featured=read("components/studio-music-picker.jsx");
  const start=studio.indexOf('data-video-audio-compact-grid');
  const insert=studio.indexOf('<StudioMusicFeatured',start);
- const legacy=studio.indexOf('filteredAudio.slice(0,12)',start);
- assert.ok(start>0&&insert>start&&legacy>insert);
+ const legacy=studio.indexOf('filteredAudio.slice(0,4)',start);
+ assert.ok(start>0&&legacy>start&&insert>legacy);
  assert.match(studio,/category=\{audioCategory\}/);
  assert.match(studio,/onSelect=\{attachVerifiedStudioMusic\}/);
  assert.match(studio,/verifiedLibraryAudioFileRef\.current/);
