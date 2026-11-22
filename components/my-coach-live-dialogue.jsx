@@ -20,7 +20,7 @@ import MyCoachSpeechLoop from './my-coach-speech-loop'
 import MyCoachGeminiLive from './my-coach-gemini-live'
 import MyCoachSessionStateCard from './my-coach-session-state-card'
 import {startCoachingMp3Playback,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
-import {setCoachIos27AudioSession} from '@/lib/personal-coaching/coach-ios-audio-route.mjs'
+import {setCoachIos27AudioSession,refreshCoachIos27PlaybackRoute} from '@/lib/personal-coaching/coach-ios-audio-route.mjs'
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
 import {readCoachTurnStream} from '@/lib/coaching/coach-stream-client.mjs'
 import {coachLooksLikeProtocolText} from '@/lib/coaching/coach-stream-format.mjs'
@@ -521,7 +521,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     setError('')
   }
   function ensureReplayAudioOutput(){
-    setCoachIos27AudioSession(window.navigator,'playback')
+    refreshCoachIos27PlaybackRoute(window.navigator)
     if(shouldUseCoachingWebAudio(window.navigator)&&
       (!replayAudioContextRef.current||replayAudioContextRef.current.state==='closed'))
       replayAudioContextRef.current=unlockCoachingAudioContext()

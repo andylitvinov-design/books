@@ -11,13 +11,28 @@ import {verifyGuidedPractices} from "./verify-mandala-practices-browser.mjs";
 const BASE=(process.env.HH_TEST_PUBLIC_ORIGIN||"http://127.0.0.1:3100").replace(/\/$/,"");
 /** The new photo-led Ideas screen hides the retired phrase shortcut. Use real
  *  visible studio navigation instead of forcing a hidden button. */
+/** Navigate only through genuinely visible mobile Studio controls.
+ * The approved first Video/Mirror screen hides the old workspace rail until
+ * the visitor opens its existing overflow. No force-click or DOM mutation. */
+async function enterVisibleStudioWorkspace(page,workspace,engine="chromium"){
+  const control=page.locator('[data-video-quick-control="'+workspace+'"]');
+  if(!await control.isVisible()){
+    const studio=page.locator('[data-mandala-free-video]');
+    await expect(studio).toHaveAttribute("data-active-workspace","video",{timeout:15000});
+    const moreGoals=page.locator('[data-hh-mirror-more-goals]');
+    await expect(moreGoals).toBeVisible({timeout:15000});
+    if(engine==="webkit")await moreGoals.tap();
+    else await moreGoals.click();
+    await expect(studio).toHaveAttribute("data-hh-mirror-advanced","true",{timeout:15000});
+  }
+  await expect(control).toBeVisible({timeout:15000});
+  await expect(control).toBeEnabled();
+  if(engine==="webkit")await control.tap();
+  else await control.click();
+  await expect(control).toHaveAttribute("aria-pressed","true",{timeout:15000});
+}
 async function openVisibleMontageText(page,engine="chromium"){
-  const montage=page.locator('[data-video-quick-control="editor"]');
-  await expect(montage).toBeVisible({timeout:15000});
-  await expect(montage).toBeEnabled();
-  if(engine==="webkit")await montage.tap();
-  else await montage.click();
-  await expect(montage).toHaveAttribute("aria-pressed","true",{timeout:15000});
+  await enterVisibleStudioWorkspace(page,"editor",engine);
   const text=page.locator('[data-video-montage-tab="text"]');
   await expect(text).toBeVisible({timeout:15000});
   if(engine==="webkit")await text.tap();
@@ -843,7 +858,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // Phrases. The retired Video quick-audio disclosure is intentionally
       // hidden by the canonical six-workspace layout: do not bypass its CSS.
       const editorTab=page.locator('[data-video-quick-control="editor"]');
-      await editorTab.click();
+      await enterVisibleStudioWorkspace(page,"editor",engine);
       await expect(editorTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
       // Montage opens on the Style tab, not the retired Concept screen.
       const montageStyleTab=page.locator('[data-video-montage-tab="effects"]');
@@ -917,10 +932,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(montageProOffer.locator('[data-video-montage-pro-choice="free"]')).toBeEnabled();
       await montageProOffer.locator('[data-video-montage-pro-choice="character"]').click();
       await expect(page.locator('[data-video-quick-control="effects"]')).toHaveAttribute('aria-pressed','true');
-      await editorTab.click();await montageProTab.click();
+      await enterVisibleStudioWorkspace(page,"editor",engine);await montageProTab.click();
       await montageProOffer.locator('[data-video-montage-pro-choice="cinematic"]').click();
       await expect(page.locator('[data-video-quick-control="pro"]')).toHaveAttribute('aria-pressed','true');
-      await editorTab.click();await montageStyleTab.click();
+      await enterVisibleStudioWorkspace(page,"editor",engine);await montageStyleTab.click();
       await expect(montageStyleTab).toHaveAttribute('aria-pressed','true');
       phase(engine,"montage-pro-offer-routes-passed");
       // Reproduce the owner's iPhone case before recording real voice.
@@ -1430,7 +1445,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         await expect(page.locator("[data-video-live-audio]")).toContainText("holistic-house-voice-2");
         // Confirm the chosen recorded track survives the ACTUAL local MP4/WebM
         // export. Reading a selection badge or blob URL is not E2E evidence.
-        await page.locator('[data-video-quick-control="editor"]').click();
+        await enterVisibleStudioWorkspace(page,"editor",engine);
         // The original recorder's export button is available in the real
         // Montage Audio step, never in the intentionally hidden Style footer.
         await openMontageSettingsViaQuality(page);
@@ -1752,7 +1767,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(page.locator("[data-hypno-audio-effect-busy]")).toHaveCount(0);
       phase(engine,"hypno-audio-effects-rendered");
       await page.locator('[data-video-quick-control="video"]').click();
-      await page.locator('[data-video-quick-control="editor"]').click();
+      await enterVisibleStudioWorkspace(page,"editor",engine);
       // #3933 introduced TWO explicit actions: Generate Video exports on tap;
       // Add Effects navigates. Never tap Generate merely to advance a tab.
       // Exercise the visible Style and Audio controls, then create exactly once
@@ -1846,7 +1861,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         // Approve the final six decoded photographs AFTER those edits, just
         // like a real visitor. An old approval must never silently authorize
         // a changed video, and this step cannot charge or start the encoder.
-        await editorTab.click();
+        await enterVisibleStudioWorkspace(page,"editor",engine);
         await expect(editorTab).toHaveAttribute("aria-pressed","true");
         await montageStoryTab.click();
         await expect(montageStoryTab).toHaveAttribute("aria-pressed","true");
@@ -1958,7 +1973,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
             await expect(chosenFilm).toHaveAttribute('aria-pressed','true',{timeout:15000});
             await expect(page.locator('[data-free-film-readiness]')).toBeVisible();
             phase(engine,"explicit-reviewed-film-compilation-selected");
-            await page.locator('[data-video-quick-control="editor"]').click();
+            await enterVisibleStudioWorkspace(page,"editor",engine);
             await expect(page.locator('[data-mandala-free-video]'))
               .toHaveAttribute('data-active-workspace','editor');
           }else{
@@ -2335,7 +2350,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // real Montage path must remain fail-closed while its narration is stale.
       await expect(page.locator("[data-video-narration-reapproval]")).toBeVisible();
       await expect(page.locator('[data-video-quick-generate]')).toBeEnabled();
-      await page.locator('[data-video-quick-control="editor"]').click();
+      await enterVisibleStudioWorkspace(page,"editor",engine);
       await openMontageSettingsViaQuality(page);
       const montageAudioAfterExport=page.locator('[data-video-montage-open-audio]');
       if(engine==="webkit")await montageAudioAfterExport.tap();

@@ -188,3 +188,20 @@ test("macOS WebKit exposes preserved recipient actions only after actual Mirror 
  assert.equal((flow.match(/await openAdvancedGoal\(\)/g)||[]).length,3);
  assert.doesNotMatch(flow,/backGoal\.click\(\{force:true\}\)|backGoal\.evaluate\(/);
 });
+
+test("real macOS WebKit Montage navigation opens the compact Mirror overflow before the hidden workspace rail",()=>{
+ const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+ const helperStart=browser.indexOf("async function enterVisibleStudioWorkspace");
+ const helperEnd=browser.indexOf("async function openVisibleMontageText",helperStart);
+ assert.ok(helperStart>=0&&helperEnd>helperStart);
+ const helper=browser.slice(helperStart,helperEnd);
+ assert.match(helper,/if\(!await control\.isVisible\(\)\)/);
+ assert.match(helper,/await expect\(moreGoals\)\.toBeVisible/);
+ assert.match(helper,/await moreGoals\.tap\(\)/);
+ assert.match(helper,/await moreGoals\.click\(\)/);
+ assert.match(helper,/await expect\(control\)\.toBeVisible/);
+ assert.doesNotMatch(helper,/force:true|\.evaluate\(/);
+ const editor=browser.slice(browser.indexOf('phase(engine,"editor-ready")'));
+ assert.match(editor,/await enterVisibleStudioWorkspace\(page,"editor",engine\)/);
+ assert.doesNotMatch(editor,/await editorTab\.click\(\)|await page\.locator\('\[data-video-quick-control="editor"\]'\)\.click\(\)/);
+});
