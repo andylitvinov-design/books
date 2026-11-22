@@ -25,7 +25,7 @@ test("Audio → photo-led Extra; Standard goes Text, Personal owns its phrases",
  assert.match(studio,/onSupport=\{\(\)=>\{/);
  assert.match(studio,/requestText="" profile=\{undefined\} languagePicker phraseMode="standard"/);
  assert.match(studio,/data-video-personal-phrases/);
- assert.match(studio,/setPersonalPhrasesOpen\(extraTextChoice==="personal"\)/);
+ assert.match(studio,/if\(extraTextChoice==="personal"\)\{\s*setActiveWorkspace\("phrases"\);setIdeasSubtab\("concept"\);setPersonalPhrasesOpen\(true\)/);
  assert.match(studio,/blockUnpricedPersonalExport/);
  for(const id of ["simple","support","personal"])assert.ok(extra.includes('id:"'+id+'"'));
  for(const file of ["sun-autumn-hills.jpg","heart-flow.jpg","sun-warm-ocean-dawn.jpg"])

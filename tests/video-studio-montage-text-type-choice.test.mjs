@@ -55,7 +55,7 @@ test("standard 0 XP phrases are based on film category only, not user answers",(
 });
 
 test("Personal phrase editor mounts only after Concept approval and guards +50 XP",()=>{
- assert.match(studio,/setPersonalPhrasesOpen\(extraTextChoice==="personal"\)/);
+ assert.match(studio,/if\(extraTextChoice==="personal"\)\{\s*setActiveWorkspace\("phrases"\);setIdeasSubtab\("concept"\);setPersonalPhrasesOpen\(true\)/);
  assert.match(studio,/data-video-personal-phrases/);
  assert.match(studio,/active=\{activeWorkspace==="phrases"&&ideasSubtab==="concept"\}/);
  assert.match(studio,/data-video-personal-eight-axes-page/);
