@@ -90,16 +90,28 @@ try {
   const coachMode=page.locator('[data-video-montage-photo-choice="coach"]');
   await coachMode.waitFor({state:'visible',timeout:20000});
   await press(coachMode);
-  const coachPhoto=page.locator('[data-video-montage-coach="mira"]');
-  await coachPhoto.waitFor({state:'visible',timeout:20000});
-  await press(coachPhoto);
-  await page.waitForFunction(() => {
-    const coach=document.querySelector('[data-video-montage-coach="mira"]');
-    const next=document.querySelector('[data-video-montage-effects] [data-video-montage-next="audio"]');
-    return coach?.getAttribute('aria-pressed')==='true' &&
-      next instanceof HTMLButtonElement && !next.disabled;
-  },undefined,{timeout:15000});
-  assert.equal(await coachPhoto.getAttribute('aria-pressed'),'true','FIRST_PARTY_COACH_STILL_SELECTED');
+  assert.equal(await styleNext.isEnabled(),false,'COACH_MODE_REQUIRES_A_PORTRAIT');
+  for(const id of ['mira','max','sofia','alex','mira']){
+    const coachPhoto=page.locator('[data-video-montage-coach="'+id+'"]');
+    await coachPhoto.waitFor({state:'visible',timeout:20000});
+    await press(coachPhoto);
+    await page.waitForFunction(selected=>{
+      const coach=document.querySelector('[data-video-montage-coach="'+selected+'"]');
+      const next=document.querySelector('[data-video-montage-effects] [data-video-montage-next="audio"]');
+      return coach?.getAttribute('aria-pressed')==='true' &&
+        next instanceof HTMLButtonElement && !next.disabled;
+    },id,{timeout:15000});
+    assert.equal(await page.locator('[data-video-montage-coach][aria-pressed="true"]').count(),1,
+      'ONLY_ONE_COACH_STILL_SELECTED');
+  }
+  // Coach selection cannot unlock an empty personal library or approve its rights.
+  await press(page.locator('[data-video-montage-photo-choice="library"]'));
+  assert.equal(await styleNext.isEnabled(),false,'COACH_DOES_NOT_AUTHORIZE_PERSONAL_PHOTO');
+  await press(coachMode);
+  assert.equal(await styleNext.isEnabled(),false,'RESELECT_COACH_AFTER_PERSONAL_MODE');
+  await press(page.locator('[data-video-montage-coach="mira"]'));
+  await page.waitForFunction(()=>!document.querySelector('[data-video-montage-effects] [data-video-montage-next="audio"]')?.disabled,
+    undefined,{timeout:15000});
   await press(styleNext);
   await page.waitForFunction(()=>document.querySelector('[data-video-montage-tab="audio"]')
     ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
