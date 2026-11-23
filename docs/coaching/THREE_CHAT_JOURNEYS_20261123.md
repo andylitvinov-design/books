@@ -1,4 +1,4 @@
-# Holistic House / Wave — Three chat journeys and seven-session goal program
+# Holistic House / Ali — Three chat journeys and seven-session goal program
 
 2026-11-23. Owner-approved product direction. This document is a specification; a merged PR is not proof of LIVE functionality.
 

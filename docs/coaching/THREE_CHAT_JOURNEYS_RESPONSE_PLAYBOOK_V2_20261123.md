@@ -1,4 +1,4 @@
-# Wave / Samir — Conversation Reaction Playbook v2
+# Ali / Samir — Conversation Reaction Playbook v2
 **23 Nov 2026. Owner request:** make the same AI Messenger respond naturally to many kinds of phrases, without sending everyone into a seven-step goal funnel. Distinct modes: TALK (support), UNDERSTAND (consultation), GOAL (coaching). This is a conversational editorial and QA contract, not authority for therapy, clinical diagnosis, payment, account sharing, or booking.
 
 ## 1. One turn = understand why the person speaks
