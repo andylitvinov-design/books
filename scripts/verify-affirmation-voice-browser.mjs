@@ -1584,8 +1584,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       if(engine==="webkit")await femaleTab.tap();else await femaleTab.click();
       await expect(femaleTab).toHaveAttribute("aria-pressed","true");
       await expect(compactVoicePanel.locator('[data-video-affirmation-voice-card="maya"]')).toBeVisible();
-      await myVoiceModeButton.click();
-      await expect(myVoiceModeButton).toHaveAttribute("aria-pressed","true");
+      // macOS WebKit must select the real device voice with an actual touch,
+      // not a compatibility click lost during the gender-filter transition.
+      if(engine==="webkit")await myVoiceModeButton.tap();
+      else await myVoiceModeButton.click();
+      await expect(myVoiceModeButton).toHaveAttribute("aria-pressed","true",{timeout:15000});
       await expect(phrases.locator("[data-video-ideas-own-upload]")).toHaveCount(1);
       await expect(phrases.locator("[data-video-ideas-record-voice]")).toHaveCount(1);
       await expect(phrases.locator("[data-video-own-voice-record]")).toBeVisible();
@@ -1593,8 +1596,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(phrases.locator('[data-video-affirmation-voice-card="maya"]')).toBeHidden();
       // Change back to the standard voice while its controls are visible,
       // then return to Personalization for the phrase and idea review.
-      await voiceModeButton.click();
-      await expect(voiceModeButton).toHaveAttribute("aria-pressed","true");
+      if(engine==="webkit")await voiceModeButton.tap();
+      else await voiceModeButton.click();
+      await expect(voiceModeButton).toHaveAttribute("aria-pressed","true",{timeout:15000});
       await personalTab.click();
       await expect(personalTab).toHaveAttribute("aria-pressed","true");
       await expect(phrases.locator("[data-video-ideas-personalization-panel]")).toBeVisible();
