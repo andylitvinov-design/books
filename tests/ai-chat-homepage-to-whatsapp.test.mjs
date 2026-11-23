@@ -68,3 +68,26 @@ test('AI Chat reuses the actual homepage photos, icon types and living persona',
  assert.ok(landCss.includes('23 Nov: approved homepage images'))
  assert.ok(chatCss.includes('23 Nov: wide editable input'))
 })
+
+test('Samir entry uses a full-height WhatsApp layout without duplicate site chrome',()=>{
+ const landing=read('components/app/messenger-ai-landing.tsx')
+ const landingCss=read('components/app/messenger-ai-landing.module.css')
+ const pageCss=read('app/[locale]/app/messages/messages-page.css')
+ const hubCss=read('components/app/messages-orders-clients.module.css')
+ const hub=read('components/app/messages-orders-clients.jsx')
+ const chat=read('components/holistic-agent-chat.tsx')
+ const composerCss=read('components/holistic-agent-chat.module.css')
+ assert.match(landing,/data-hh-genie-scene/)
+ assert.match(landing,/className=\{css\.backToHome\}/)
+ assert.match(landing,/hh:messenger-open-persona/)
+ assert.match(hub,/addEventListener\('hh:messenger-open-persona'/)
+ assert.match(pageCss,/body:has\(\.hh-messages-page \[data-hh-ai-landing\]\) \[data-hh-unified-dock\]/)
+ assert.match(hubCss,/data-section="ai"\]:has\(\[data-hh-ai-landing\]\)/)
+ assert.match(landingCss,/23 Nov: mobile chat screenshot fidelity/)
+ assert.match(chat,/data-hh-ai-photo-shortcut/)
+ assert.match(chat,/showLandingComposer&&<div className=\{styles\.freeProSwitch\}/)
+ assert.match(composerCss,/23 Nov full-screen Samir first turn/)
+ for(const marker of ['data-hh-genie-goal-choice="discover"','data-hh-genie-goal-choice="defined"','data-hh-ai-inline-composer']){
+   assert.ok(landing.includes(marker),marker)
+ }
+})

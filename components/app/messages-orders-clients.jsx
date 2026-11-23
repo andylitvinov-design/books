@@ -102,6 +102,11 @@ export default function MessagesOrdersClients({locale:routeLocale='en',children}
   const [personaOpen,setPersonaOpen]=useState(false)
   const [chatTabsOpen,setChatTabsOpen]=useState(false)
   const closePersona=useCallback(()=>setPersonaOpen(false),[])
+  useEffect(()=>{
+    const openPersona=()=>setPersonaOpen(true)
+    window.addEventListener('hh:messenger-open-persona',openPersona)
+    return()=>window.removeEventListener('hh:messenger-open-persona',openPersona)
+  },[])
   const [section,setSection]=useState(()=>{
     const requested=searchParams.get('section')
     return requested==='clients'||searchParams.has('requestId')||searchParams.has('to')||searchParams.has('tab')?'clients':

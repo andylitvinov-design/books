@@ -706,3 +706,14 @@
  .root[data-section="ai"] .languageCompact{height:40px;width:45px}
  .root[data-section="ai"]:has([data-has-messages="true"]) .presenterIdentity p{display:none}
 }
+
+/* Mock parity applies ONLY to the untouched first AI/Chat turn. */
+@media(max-width:760px){
+ .root[data-section="ai"]:has([data-hh-ai-landing]){
+   top:0!important;left:0;right:0;height:100dvh!important;
+   max-height:100dvh!important;padding:0!important;background:#102d27!important}
+ .root[data-section="ai"]:has([data-hh-ai-landing])>.head,
+ .root[data-section="ai"]:has([data-hh-ai-landing])>.sections{display:none!important}
+ .root[data-section="ai"]:has([data-hh-ai-landing]) [data-hh-messenger-ai]{
+   flex:1;min-height:0;height:100%;background:#102d27}
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import {Mic, Paperclip, Plus, Send, X} from "lucide-react";
+import {Mic, Paperclip, Plus, Send, ImageIcon, X} from "lucide-react";
 import {MessengerAiLanding} from "@/components/app/messenger-ai-landing";
 import {MessengerVoiceNote} from "@/components/app/messenger-voice-note";
 import {useAliPersona} from "@/components/app/use-ali-persona";
@@ -1861,10 +1861,17 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
               onClick={offerPsychologistInterview} disabled={busy||proBusy}>
               {locale==="ru"?"Мягко разобраться в проблеме":locale==="es"?"Explorar mi situación":"Explore my situation gently"}
             </button>}
+            {showLandingComposer&&<div className={styles.freeProSwitch} data-hh-ai-gemini-tier
+              role="group" aria-label={locale==="ru"?"Режим консультации":locale==="es"?"Modo de consulta":"Consultation mode"}>
+              <button type="button" data-hh-ai-tier="free" aria-pressed={!proSelected} disabled={busy||proBusy}
+                onClick={()=>{setProSelected(false);setStatus("");setSource("");}}>Free</button>
+              <button type="button" data-hh-ai-tier="pro" aria-pressed={proSelected} disabled={busy||proBusy}
+                onClick={()=>{setProSelected(true);setStatus("");setSource("");}}>Pro</button>
+            </div>}
             {resetControl}
           </div>
         </details>:voiceAttachment}
-        {messengerView&&<div className={styles.freeProSwitch} data-hh-ai-gemini-tier role="group"
+        {messengerView&&!showLandingComposer&&<div className={styles.freeProSwitch} data-hh-ai-gemini-tier role="group"
           aria-label={locale==="ru"?"Режим консультации":locale==="es"?"Modo de consulta":"Consultation mode"}>
           <button type="button" data-hh-ai-tier="free" aria-pressed={!proSelected} disabled={busy||proBusy}
             onClick={()=>{setProSelected(false);setStatus("");setSource("");}}
@@ -1873,6 +1880,16 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
             onClick={()=>{setProSelected(true);setStatus("");setSource("");}}
           >Pro</button>
         </div>}
+        {messengerView&&showLandingComposer&&<button type="button"
+          className={styles.photoShortcut} data-hh-ai-photo-shortcut
+          onClick={()=>{
+            const more=document.querySelector<HTMLDetailsElement>("[data-hh-ai-more]");
+            if(more)more.open=!more.open;
+          }}
+          aria-label={locale==="ru"?"Вложения и материалы":locale==="es"?"Adjuntos y materiales":"Attachments and media"}
+          title={locale==="ru"?"Открыть вложения":locale==="es"?"Abrir adjuntos":"Open attachments"}>
+          <ImageIcon size={21} aria-hidden="true"/>
+        </button>}
         {messengerView&&!showLandingComposer&&<EmotionalAvatar messages={messages} busy={busy||proBusy}
           status={status} locale={locale} compact={compact} iconOnly personaId={persona.id}
           companionVoice={voiceEnabled?voice:undefined}/>}
