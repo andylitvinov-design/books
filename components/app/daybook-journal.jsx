@@ -12,6 +12,7 @@ import {createGoalWorkspaceMemory} from '@/lib/app/daybook-goal-editor-session.m
 import styles from './daybook-journal.module.css'
 const DaybookPersonalGoals=dynamic(()=>import('./daybook-personal-goals'))
 const DaybookToday=dynamic(()=>import('./daybook-today'))
+const DaybookWeekly=dynamic(()=>import('./daybook-weekly'))
 const DaybookGrowth=dynamic(()=>import('./my-inner-balance-preview'))
 
 const copy={
@@ -29,17 +30,18 @@ export default function DaybookJournal({locale}){
  const [account,setAccount]=useState(null),[entries,setEntries]=useState([]),[next,setNext]=useState(null)
  const [phase,setPhase]=useState('loading'),[tab,setTab]=useState('today'),[draft,setDraft]=useState(null),[status,setStatus]=useState(''),[query,setQuery]=useState(''),[busy,setBusy]=useState(false)
  const [exportStatus,setExportStatus]=useState('')
- const [goalsVisited,setGoalsVisited]=useState(false)
+ const [goalsVisited,setGoalsVisited]=useState(false),[weeklyVisited,setWeeklyVisited]=useState(false)
  const epoch=useRef(0),owner=useRef(null),saver=useRef(null),saving=useRef(false)
  const sessionGuard=useRef(null)
  const journalField=useRef(null)
  useEffect(()=>{if(draft?.id)journalField.current?.focus()},[draft?.id])
  const goalMemory=useRef(null)
- const todayMemory=useRef(null)
+ const todayMemory=useRef(null),weeklyMemory=useRef(null)
  if(!goalMemory.current)goalMemory.current=createGoalWorkspaceMemory()
  if(!todayMemory.current)todayMemory.current=createGoalWorkspaceMemory()
+ if(!weeklyMemory.current)weeklyMemory.current=createGoalWorkspaceMemory()
  const invalidate=useCallback(()=>{epoch.current++;saver.current?.discard()},[])
- const wipe=useCallback(()=>{invalidate();goalMemory.current?.clear();todayMemory.current?.clear();sessionGuard.current?.dispose();owner.current=null;saver.current=null;setAccount(null);setEntries([]);setDraft(null);setNext(null);setQuery('');setStatus('');setExportStatus('');setGoalsVisited(false);setBusy(false);saving.current=false},[invalidate])
+ const wipe=useCallback(()=>{invalidate();goalMemory.current?.clear();todayMemory.current?.clear();weeklyMemory.current?.clear();sessionGuard.current?.dispose();owner.current=null;saver.current=null;setAccount(null);setEntries([]);setDraft(null);setNext(null);setQuery('');setStatus('');setExportStatus('');setGoalsVisited(false);setWeeklyVisited(false);setBusy(false);saving.current=false},[invalidate])
  const sessionLost=useCallback(()=>{wipe();setPhase('signed-out')},[wipe])
  const load=useCallback(async()=>{
   wipe();setPhase('loading');const token=epoch.current
@@ -58,7 +60,7 @@ export default function DaybookJournal({locale}){
   try{channel=new BroadcastChannel('hh-app-session');channel.onmessage=e=>{if(e.data==='signed-out'){wipe();setPhase('signed-out')}}}catch{}
   const hide=()=>{wipe();setPhase('loading')},show=e=>{if(e.persisted)void load()}
   window.addEventListener('pagehide',hide);window.addEventListener('pageshow',show)
-  return ()=>{invalidate();goalMemory.current?.clear();todayMemory.current?.clear();channel?.close();window.removeEventListener('pagehide',hide);window.removeEventListener('pageshow',show)}
+  return ()=>{invalidate();goalMemory.current?.clear();todayMemory.current?.clear();weeklyMemory.current?.clear();channel?.close();window.removeEventListener('pagehide',hide);window.removeEventListener('pageshow',show)}
  },[load,wipe,invalidate])
  useEffect(()=>{
   if(!account)return
@@ -136,6 +138,7 @@ export default function DaybookJournal({locale}){
    <nav aria-label={c.title}>{['today','journal','goals','growth'].map(key=><button key={key} aria-current={tab===key?'page':undefined} onClick={()=>{if(key==='goals')setGoalsVisited(true);setTab(key)}}>{c[key]}</button>)}</nav>
    {tab==='today'&&<button onClick={()=>open(null)} disabled={busy||status==='failed'}>{c.new}</button>}
    {tab==='today'&&<DaybookToday key={account} accountId={account} locale={locale} initialDay={today} memory={todayMemory.current} onSessionLost={sessionLost}/>}
+   {tab==='today'&&<details onToggle={event=>{if(event.currentTarget.open)setWeeklyVisited(true)}}><summary>{({en:'My weekly review',ru:'Мой недельный обзор',es:'Mi revisión semanal'})[locale]}</summary>{weeklyVisited&&<DaybookWeekly key={account} accountId={account} locale={locale} initialDay={today} memory={weeklyMemory.current} onSessionLost={sessionLost}/>}</details>}
    {(goalsVisited||tab==='goals')&&<div hidden={tab!=='goals'}><DaybookPersonalGoals key={account} accountId={account} locale={locale} onSessionLost={sessionLost} memory={goalMemory.current}/><Link href={root+'/my-coaching-plan'}>{c.plan}</Link></div>}
    {tab==='goals'?null:tab==='growth'?<section><h2>{c.growth}</h2><DaybookGrowth accountId={account} locale={locale} onSessionLost={sessionLost}/></section>:<>
     {tab!=='today'&&<button onClick={()=>open(null)} disabled={busy||status==='failed'}>{c.new}</button>}

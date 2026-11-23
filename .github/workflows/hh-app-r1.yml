@@ -8,6 +8,7 @@ on:
     paths:
       - 'tests/development-vector-wheel.test.mjs'
       - 'tests/daybook-*.mjs'
+      - 'tests/helpers/daybook-canonical-schema.mjs'
       - 'tests/ci-daybook-*.mjs'
       - 'scripts/ci-daybook*.mjs'
       - 'scripts/ci-coaching-rls*.mjs'
