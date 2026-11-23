@@ -61,6 +61,13 @@ export default function MyPageClient({locale='en'}){
    <ProfilePersonalSummary locale={locale} profile={profile} data={data} busy={busy}
        onEdit={()=>setEditingProfile(true)}
        onAddVideo={video=>void perform({action:'addVideo',videoId:video.id,title:video.theme+' · '+video.duration_seconds+'s'})}/>
+   <p data-my-page-media-library style={{margin:'12px 0'}}>
+     <Link href={'/'+locale+'/app/videos?tab=avatars'} className={css.secondary} prefetch={false}>
+       {locale==='ru'?'Мои материалы · AI-аватары, видео, фотографии':
+         locale==='es'?'Mis materiales · Avatares IA, vídeos, fotos':
+           'My Materials · AI Avatars, Videos, Photos'}
+     </Link>
+   </p>
    {editingProfile?<>
    <section className={css.card} aria-label={t.title}>
     <div className={css.row}><h2>{t.title}</h2>
