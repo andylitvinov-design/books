@@ -3628,8 +3628,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     document.addEventListener("visibilitychange",stopHiddenPreview);
     return ()=>document.removeEventListener("visibilitychange",stopHiddenPreview);
   },[]);
-  // A new visitor's photo must never inherit another person's consent.
-  useEffect(() => { setPhotoConsent(false); }, [photoUrl]);
+  // Client-supplied photographs NEVER inherit previous rights approval.
+  // A decoded first-party fictional coach poster is a different, internally
+  // licensed source. Do not revoke that trusted still when its local blob URL
+  // arrives asynchronously: otherwise Ready silently jumps back to Montage.
+  // Guard photoPending so a previously uploaded client image cannot gain coach
+  // rights during the replacement operation. User uploads clear the coach id.
+  useEffect(() => {
+    const trustedCoachStill = Boolean(photoUrl) && montageCoachPhoto !== null &&
+      montagePhotoChoice === "coach" && !photoPending;
+    setPhotoConsent(trustedCoachStill);
+  }, [photoUrl, montageCoachPhoto, montagePhotoChoice, photoPending]);
   // Native Photos/Files uploads also activate the photo overlay if the file
   // picker was used directly (not only through the compact photo toggle).
   // Unchecking the toggle later does not delete the local photo.
