@@ -8,10 +8,12 @@ on:
       - 'components/app/academy-video-progress.jsx'
       - 'components/academy-video-library-client.tsx'
       - 'app/api/app/video-progress/route.js'
+      - 'app/api/app/progress-extras/route.js'
       - 'lib/app/my-progress.mjs'
       - 'lib/app/video-progress.js'
       - 'app/**/app/my-progress/**'
       - 'tests/my-progress.test.mjs'
+      - 'tests/my-progress-unified-navigation.test.mjs'
       - 'supabase/migrations/20261029013946_hh_my_progress_video_marks_20261028.sql'
   push:
     branches: ['codex/public-book-library']
@@ -20,9 +22,11 @@ on:
       - 'components/app/academy-video-progress.jsx'
       - 'components/academy-video-library-client.tsx'
       - 'app/api/app/video-progress/route.js'
+      - 'app/api/app/progress-extras/route.js'
       - 'lib/app/my-progress.mjs'
       - 'lib/app/video-progress.js'
       - 'tests/my-progress.test.mjs'
+      - 'tests/my-progress-unified-navigation.test.mjs'
       - '.github/workflows/hh-my-progress-release.yml'
 permissions:
   contents: read
@@ -47,7 +51,7 @@ jobs:
       - name: Install pinned dependencies
         run: npm ci --no-audit --no-fund
       - name: My Progress source, ownership and status contracts
-        run: node --test tests/my-progress.test.mjs
+        run: node --test tests/my-progress.test.mjs tests/my-progress-unified-navigation.test.mjs
       - name: Scoped ESLint
         run: >
           npx --no-install eslint
@@ -57,7 +61,9 @@ jobs:
           lib/app/my-progress.mjs
           lib/app/video-progress.js
           app/api/app/video-progress/route.js
+          app/api/app/progress-extras/route.js
           tests/my-progress.test.mjs
+          tests/my-progress-unified-navigation.test.mjs
       - name: Typecheck
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit --pretty false
