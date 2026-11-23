@@ -14,6 +14,7 @@ on:
       - 'app/**/app/my-progress/**'
       - 'tests/my-progress.test.mjs'
       - 'tests/my-progress-unified-navigation.test.mjs'
+      - 'tests/app-mobile-account-bridge.test.mjs'
       - 'supabase/migrations/20261029013946_hh_my_progress_video_marks_20261028.sql'
   push:
     branches: ['codex/public-book-library']
@@ -27,6 +28,7 @@ on:
       - 'lib/app/video-progress.js'
       - 'tests/my-progress.test.mjs'
       - 'tests/my-progress-unified-navigation.test.mjs'
+      - 'tests/app-mobile-account-bridge.test.mjs'
       - '.github/workflows/hh-my-progress-release.yml'
 permissions:
   contents: read
@@ -51,7 +53,7 @@ jobs:
       - name: Install pinned dependencies
         run: npm ci --no-audit --no-fund
       - name: My Progress source, ownership and status contracts
-        run: node --test tests/my-progress.test.mjs tests/my-progress-unified-navigation.test.mjs
+        run: node --test tests/my-progress.test.mjs tests/my-progress-unified-navigation.test.mjs tests/app-mobile-account-bridge.test.mjs
       - name: Scoped ESLint
         run: >
           npx --no-install eslint
@@ -64,6 +66,7 @@ jobs:
           app/api/app/progress-extras/route.js
           tests/my-progress.test.mjs
           tests/my-progress-unified-navigation.test.mjs
+          tests/app-mobile-account-bridge.test.mjs
       - name: Typecheck
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit --pretty false
