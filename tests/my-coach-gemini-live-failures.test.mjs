@@ -236,3 +236,26 @@ test('Live Free token quota separates failed provider attempts from delivered se
   assert.match(database,/operationHash\(row.bucket,config\)/)
   assert.match(database,/hh_app_inbox|inbox:true/)
 })
+
+test('only server-verified owner gets a bounded trial budget for all coach personas',async()=>{
+  const {geminiLiveTokenQuota}=await import('../lib/coaching/gemini-live-quota.mjs')
+  const actor='123e4567-e89b-42d3-a456-426614174000'
+  const owner=geminiLiveTokenQuota(actor,{ownerTrial:true})
+  const regular=geminiLiveTokenQuota(actor)
+  assert.deepEqual(owner.attempts.map(x=>x.limit),[24,24,40])
+  assert.deepEqual(owner.successful.map(x=>x.limit),[12,12,20])
+  assert.deepEqual(regular.attempts.map(x=>x.limit),[4,8,40])
+  assert.deepEqual(regular.successful.map(x=>x.limit),[2,4,20])
+  assert.equal(owner.successful[2].bucket.op,regular.successful[2].bucket.op)
+  assert.equal(owner.attempts[2].bucket.op,regular.attempts[2].bucket.op)
+  assert.notEqual(owner.successful[0].bucket.op,regular.successful[0].bucket.op)
+  assert.equal(owner.attempts[0].bucket.actor,actor)
+  const route=load('app/api/app/[...path]/route.js')
+  const section=route.slice(route.indexOf("if (joined === 'my-coach/live-token')"),
+    route.indexOf("if (joined === 'my-coach/live-checkpoint')"))
+  assert.match(section,/ownerTrial:practitionerEmailAllowed\(actor\)/)
+  assert.match(route,/const actor=await auth\.verified\(\)/)
+  assert.doesNotMatch(section,/ownerTrial:\s*(?:true|body\.|request\.)/)
+  assert.match(section,/await consumeRateBatch\(config,liveQuota\.attempts\)/)
+  assert.match(section,/await consumeRateBatch\(config,liveQuota\.successful\)/)
+})

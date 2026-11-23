@@ -1039,7 +1039,9 @@ async function handle(request, { params }) {
       catch{throw new AppError('MY_COACH_GEMINI_LIVE_INVALID',400)}
       // Abuse control remains before Google, but a failed token mint must not
       // consume the real 2/hour, 4/day and 20/day successful-session quota.
-      const liveQuota=geminiLiveTokenQuota(actor.id)
+      const liveQuota=geminiLiveTokenQuota(actor.id,{
+        ownerTrial:practitionerEmailAllowed(actor),
+      })
       await consumeRateBatch(config,liveQuota.attempts)
       let token
       try{token=await issueGeminiFreeLiveToken(vendor,start,{
