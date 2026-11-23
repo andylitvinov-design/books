@@ -189,7 +189,7 @@
 /* Compact photo-first Montage only: keep other workspaces and the live video
    canvas mounted and functional, but do not duplicate a huge preview here. */
 @media(max-width:699px){
- :global([data-video-live-stage][data-video-montage-photo-fold="true"]){display:none!important}
+ .photoStage[data-video-montage-photo-fold="true"]{display:none!important}
 }
 .stylePane{gap:7px!important;padding:9px 10px!important;background:#fffcf7!important}
 .photoLead{gap:1px}

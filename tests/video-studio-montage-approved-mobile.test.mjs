@@ -34,7 +34,7 @@ test('photo-first Montage uses the original editor, native iPhone input and real
   assert.match(css,/\.photoOption\{/);
   assert.match(css,/\.photoUploadHero\{/);
   assert.match(css,/\.coachRail\{/);
-  assert.match(css,/\[data-video-live-stage\]\[data-video-montage-photo-fold="true"\]/);
+  assert.match(css,/\.photoStage\[data-video-montage-photo-fold="true"\]/);
 });
 test('photo options disclose unavailable AI, enforce rights and do not silently charge XP',()=>{
   const start=studio.indexOf('data-video-montage-effects>');

@@ -8188,7 +8188,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
         {/* One original Canvas/MediaRecorder stage; it is now visible after topic selection.
             The source-backed MP4 below is a MINI source example, never a second renderer. */}
-        <section className={[videoStyles.quickSection,videoStyles.catalogShell,videoStyles.previewStage].join(" ")}
+        <section className={[videoStyles.quickSection,videoStyles.catalogShell,videoStyles.previewStage,montageRef.photoStage].join(" ")}
           data-video-live-stage data-video-montage-photo-fold={activeWorkspace==="editor"&&montagePanel==="effects"?"true":undefined}
           aria-labelledby="video-live-stage-title">
 
