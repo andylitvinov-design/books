@@ -1667,6 +1667,18 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   }
   function submit(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    // The initial CTA starts a conversation even without a written question.
+    // This is a local welcome, never a blank Free/Gemini provider request.
+    // Entered text still uses the existing consent-gated delivery path.
+    if(showLandingComposer&&!draft.trim()){
+      followTail.current=true;setNewBelow(false);setEntryOpen(false);
+      setStatus("");setSource("");
+      setMessages(prev=>prev.length?prev:[
+        {role:"assistant" as const,text:messengerStarter[locale].welcome,localOnly:true},
+      ]);
+      window.requestAnimationFrame(()=>composerRef.current?.focus({preventScroll:true}));
+      return;
+    }
     sendSelectedTurn(draft);
   }
   function resetConversation(){setVoiceNoteRevision(value=>value+1);setPsychInterview("off");setPsychStage("situation");setPsychSlots({});setPsychSummaryVisible(false);setPsychFinalSummary(null);setPsychCopyStatus("idle");nativeSession.current=null;voice.stopDialogue();lastSpeechTurn.current=null;alternativeAbortRef.current?.abort();alternativeAbortRef.current=null;lastAnswerRef.current=null;setAlternativeBusy(false);controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setSupportQuizOpen(false);setSupportSelection(null);setFriendTone("friendly");setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setTestFocus(null);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);setRecorderOpen(false);setVoicePermissionOpen(false);setRecordedSttConsent(false);proAbort.current?.abort();proAbort.current=null;proTurns.current=[];
@@ -1863,10 +1875,14 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           companionVoice={voiceEnabled?voice:undefined}/>}
         {!messengerView&&resetControl}
         <button type="submit" disabled={busy||proBusy||homeHandoffPhase==="queued"||
-          homeHandoffPhase==="sending"||!draft.trim()||
-          (proSelected&&!proReady)||
-          (!proSelected&&mode==="owned"&&!agree&&!(compact&&(testChatOpen||testOfferFromText(draft))))}
-          aria-label={messengerView?(busy||proBusy?t.loading:t.send):undefined}>{messengerView?<><Send size={20} aria-hidden="true"/>
+          homeHandoffPhase==="sending"||(!draft.trim()&&!showLandingComposer)||
+          ((!showLandingComposer||Boolean(draft.trim()))&&(
+            (proSelected&&!proReady)||
+            (!proSelected&&mode==="owned"&&!agree&&!(compact&&(testChatOpen||testOfferFromText(draft))))))}
+          aria-label={showLandingComposer?(proSelected?
+            (locale==="ru"?"Начать с Gemini":locale==="es"?"Hablar con Gemini":"Start Gemini chat"):
+            (locale==="ru"?"Начать бесплатный чат":locale==="es"?"Empezar chat gratis":"Start free chat")):
+            (messengerView?(busy||proBusy?t.loading:t.send):undefined)}>{messengerView?<><Send size={20} aria-hidden="true"/>
           {showLandingComposer&&<span>{proSelected?
             (locale==="ru"?"Начать с Gemini":locale==="es"?"Hablar con Gemini":"Start Gemini chat"):
             (locale==="ru"?"Начать бесплатный чат":locale==="es"?"Empezar chat gratis":"Start free chat")}</span>}</>:busy?t.loading:t.send}</button>
