@@ -11,20 +11,21 @@ test("Therapy is sixth, after Ready; six original destinations remain intact",()
  const block=parent.match(/const workspaceTabs=\[([\s\S]*?)\] as const;/)?.[1];
  assert.ok(block);
  assert.deepEqual([...block.matchAll(/id:"([a-z]+)"/g)].map(x=>x[1]),
-  ["video","phrases","editor","pro","ready","effects"]);
+  ["video","editor","phrases","pro","ready","effects"]);
  for(const l of ["ru","en","es"])assert.match(parent,new RegExp(l+":\\{[\\s\\S]*?effects:\\{tab:\"Therapy\""));
  assert.match(parent,/data-video-quick-control=\{item\.id\}/);
  assert.equal((parent.match(/<MandalaTherapyStudio /g)||[]).length,1);
 });
-test("Approved four Therapy tabs replace the format switch",()=>{
- assert.doesNotMatch(ui,/data-therapy-format-switch|data-therapy-format="(?:single|course)"/);
- assert.match(ui,/\["meditation","voice","practice","course"\] as const/);
- assert.match(ui,/if\(id==="course"\)setIsCourse\(true\)/);
- assert.match(ui,/else if\(id==="meditation"\)setIsCourse\(false\)/);
- assert.match(ui,/editor\(isCourse\)/);
- assert.match(parent,/coursePreview=\{isCourse\}/);
+test("Owner Nov 18 replaces format switch with four accessible tabs",()=>{
+ assert.doesNotMatch(ui,/data-therapy-format-switch|data-therapy-format="single"|data-therapy-format="course"/);
+ for(const tab of ["meditation","voice","practice","course"])
+   assert.match(ui,new RegExp('"'+tab+'"'));
+ assert.match(ui,/data-therapy-subtab=\{id\}/);
+ assert.match(ui,/data-therapy-script-host data-pane=\{pane\}/);
  assert.match(ui,/role="tablist"/);
  assert.match(ui,/role="tabpanel"/);
+ assert.match(ui,/editor\(true\)/);
+ assert.match(parent,/coursePreview=\{isCourse\}/);
 });
 test("Source stays one existing private local meditation generator and one real phrase narrator",()=>{
  assert.match(parent,/editor=\{isCourse=><MandalaPersonalMeditation/);
@@ -52,14 +53,13 @@ test("Existing visual, quiet and binaural effects remain optional with no automa
  assert.match(browser,/data-therapy-subtab="practice"/);
  assert.match(browser,/data-therapy-effects-toggle/);
 });
-test("Mobile visuals have roomy touch targets and correct eight-draft disclosure",()=>{
+test("Approved four-tab mobile layout retains accessible targets",()=>{
  assert.match(css,/grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
- assert.match(css,/min-height:50px/);
+ assert.match(css,/min-height:48px/);
  assert.match(css,/@media\(max-width:355px\)/);
- assert.match(ui,/Eight-session mode starts with a plan and one script/);
- assert.match(ui,/Курс начинается с плана и первого текста/);
+ assert.match(ui,/A gentle reflective practice, not medical treatment/);
+ assert.match(ui,/Бережная рефлексивная практика/);
 });
-
 test("Therapy WebKit preserves voice and reviewed recording rights",()=>{
  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
  assert.ok(browser.includes("await expect(personalMusic.locator('[role=\"radio\"]')).toHaveCount(0);"));
@@ -112,18 +112,18 @@ test("course generates all eight local texts only on individual requests",()=>{
  assert.doesNotMatch(ui,/autoPay|autoRender|autoGenerate/);
 });
 
-test("Owner Therapy mobile: one introduction and compact controls, no feature removal",()=>{
- assert.match(ui,/data-therapy-course=\{isCourse\?"true":"false"\}/);
- assert.match(parent,/coursePreview=\{isCourse\} compactTherapy approvedVideoConcept/);
- assert.match(writer,/compactTherapy\?:boolean/);
- assert.match(writer,/compactTherapy\?extraField:null/);
- assert.match(writer,/!compactTherapy\?extraField:null/);
- assert.match(writer,/<details className=\{css\.context\} data-meditation-context/);
+test("Nov 18 selected Therapy script uses original cloud voice only after approval",()=>{
+ assert.match(ui,/MandalaTherapyTextPicker/);
+ assert.match(ui,/onApprove=\{text=>/);
+ assert.match(ui,/setApproved\(\{signature:scenarioSignature,text\}\)/);
+ assert.match(ui,/setPane\("voice"\)/);
+ assert.match(ui,/approvedText\?/);
+ assert.match(ui,/MandalaCloudVoiceStudio locale=\{locale\} sourceText=\{approvedText\}/);
+ assert.match(ui,/data-therapy-advanced-effects/);
+ assert.match(parent,/theme=\{theme\} wish=\{wish\} focus=\{meditationFocus\}/);
  assert.match(css,/\.hero\{display:none\}/);
  assert.match(css,/\.main\{padding:0;border:0/);
- assert.match(css,/\[data-meditation-main-filters\] label:nth-child\(2\)\{grid-column:1\/-1/);
- assert.match(css,/\[data-meditation-generate\]\{min-height:52px/);
- assert.match(ui,/data-therapy-advanced-effects/);
+ assert.doesNotMatch(ui,/autoPay|autoRender|autoGenerate/);
 });
 
 test("Voice one-screen retains explicit cloud consent and existing real WAV path",()=>{
