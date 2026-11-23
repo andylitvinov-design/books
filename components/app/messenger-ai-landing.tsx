@@ -5,7 +5,7 @@ import Link from "next/link";
 import {BookOpen, CalendarDays, ClipboardCheck, Clapperboard, Flower2,
   HandHeart, MessageCircle, Play, X, ChevronDown} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
-import {Heart,Sun,Compass,BriefcaseBusiness,Sprout,Lightbulb,Flag,ArrowRight,Sparkles,UserRound,ShoppingBag,UsersRound} from "lucide-react";
+import {Heart,Sun,Compass,Leaf,TrendingUp,BriefcaseBusiness,Sprout,Lightbulb,Flag,ArrowRight,Sparkles,UserRound,ShoppingBag,UsersRound} from "lucide-react";
 import css from "./messenger-ai-landing.module.css";
 import {useAliPersona} from "./use-ali-persona";
 import {playAliPersonaAudio,stopAliPersonaAudio,prepareAliNaturalVoice} from "./ali-persona-audio";
@@ -71,10 +71,10 @@ const COPY={
 
 /* Conversation-first welcome: topics are editable starters, not diagnostic labels. */
 const TOPICS=[
- {id:"stress",icon:Flower2,art:"/images/holistic-house/assessment-lotus.svg"},
- {id:"relationships",icon:Heart,art:"/images/holistic-house/ideas-zen-landscape.svg"},
- {id:"money",icon:BriefcaseBusiness,art:"/images/holistic-house/ideas-pine-reference.webp"},
- {id:"energy",icon:Sprout,art:"/images/holistic-house/messenger-zen-stones.svg"},
+ {id:"stress",icon:Leaf,art:"/images/video-goal-art/stress.webp"},
+ {id:"relationships",icon:Heart,art:"/images/video-goal-art/love.webp"},
+ {id:"money",icon:TrendingUp,art:"/images/video-goal-art/growth.webp"},
+ {id:"energy",icon:Leaf,art:"/images/video-goal-art/energy.webp"},
  {id:"confidence",icon:Sun,art:"/images/holistic-house/ideas-zen-landscape.svg"},
  {id:"direction",icon:Compass,art:"/images/holistic-house/ideas-pine-reference.webp"},
  {id:"business",icon:Lightbulb,art:"/images/holistic-house/books-library.webp"},
@@ -83,7 +83,7 @@ const TOPICS=[
 const INNER_COPY={
  en:{
   greeting:"Hi! I'm Ali.",
-  promise:"Let's understand your situation, find what matters most, and choose a helpful next step together.",
+  promise:"Let's understand your situation and find the next step together.",
   question:"What would you like to begin with today?",
   help:"Tell me about your situation, your goal, or what you would like to change.",
   steps:["Tell us your goal","Get a personal next step","Choose support or action"],
@@ -101,7 +101,7 @@ const INNER_COPY={
  },
  ru:{
   greeting:"Привет! Я Ali.",
-  promise:"Давай разберёмся, что происходит в твоей ситуации, что действительно важно, и вместе найдём подходящий следующий шаг.",
+  promise:"Давай разберёмся в твоей ситуации и вместе найдём следующий шаг.",
   question:"С чего тебе хотелось бы начать сегодня?",
   help:"Расскажи о своей ситуации, проблеме, цели или о том, чего хотелось бы достичь.",
   steps:["Расскажите о цели","Получите личную рекомендацию","Выберите действие"],
@@ -119,7 +119,7 @@ const INNER_COPY={
  },
  es:{
   greeting:"¡Hola! Soy Ali.",
-  promise:"Exploremos juntos tu situación, lo que más importa y un siguiente paso que pueda ayudarte.",
+  promise:"Exploremos juntos tu situación y encontremos el próximo paso.",
   question:"¿Por dónde te gustaría empezar hoy?",
   help:"Cuéntame tu situación, un problema, una meta o lo que te gustaría cambiar.",
   steps:["Cuéntanos tu meta","Recibe un paso personal","Elige cómo avanzar"],
@@ -249,7 +249,7 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupp
       </Link>
     </nav>
     <div className={css.welcomeRow} data-hh-ali-first-message data-hh-ali-hero-persona={persona.id}>
-      <img className={css.welcomePortrait} src={persona.image} alt="" width={330} height={250}
+      <img className={css.welcomePortrait} src={"/images/holistic-house/my-coach-motion/"+persona.id+"-living.webp"} alt="" width={330} height={250}
         loading="eager" fetchPriority="high"/>
       <article className={css.welcomeBubble} data-hh-ai-landing-question>
         <span className={css.heroLabel}><Sparkles size={16} aria-hidden="true"/>
