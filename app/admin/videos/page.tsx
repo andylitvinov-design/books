@@ -9,6 +9,7 @@ import { KlingSceneStudio } from "@/components/kling-scene-studio";
 import { VeoSceneStudio } from "@/components/veo-scene-studio";
 import { PaidVideoOrderAdmin } from "@/components/paid-video-order-admin";
 import { KlingAvatarStudio } from "@/components/kling-avatar-studio";
+import { InstagramNativeReelKit } from "@/components/instagram-native-reel-kit";
 import { books } from "@/data/library";
 import { localizedBookText } from "@/data/library-localization";
 import { getRemedyDirectory } from "@/data/remedies";
@@ -63,6 +64,7 @@ export default async function SiteVideosPage() {
         description={{ en: "Choose a page, add a YouTube link, and preview before publishing.", ru: "Выберите страницу, добавьте ссылку YouTube и проверьте видео перед публикацией." }}
       />
       <SiteVideoManager initialRecords={records} initialLocale={initialLocale} storageReady={storageReady} entities={entities} masters={masters} />
+      <InstagramNativeReelKit initialLocale={klingLocale} />
       <section className="site-video-review-entry" aria-label="Owner video review queue">
         <div><strong>{klingLocale === "ru" ? "Проверка обучающих видео · RU/EN" : "Educational video review · RU/EN"}</strong>
           <p>{klingLocale === "ru" ? "Содержание, длительность, права и категории перед появлением в MyTube." : "Verify content, length, rights and categories before MyTube."}</p></div>
