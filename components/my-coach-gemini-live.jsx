@@ -24,7 +24,14 @@ const ui={
     greetingLate:'Соединение готово, но первая фраза задерживается. Вы можете начать говорить.',
     contextUnavailable:'Разрешённые сведения пока не загружены. Можно продолжить без них.',
     contextRevoked:'Доступ отозван: голосовая связь завершена. Ранее переданные сведения могут остаться у провайдера.',
-    ended:'20 минут — голосовую сессию можно завершить или начать новую.'},
+    providerAccess:'Google отклонил доступ проекта к Gemini Live (G-L1). Можно продолжить текстом.',
+     providerSetup:'Google отклонил параметры соединения (G-L2). Текстовый режим работает.',
+     providerModel:'Модель Gemini Live недоступна этому API-проекту (G-L3).',
+     connection:'Не удалось подключиться к Gemini Live (G-L4). Попробуйте позже.',
+     setupTimeout:'Gemini Live не подтвердил подключение за 15 секунд (G-L5).',
+     providerUnavailable:'Google Gemini Live временно недоступен (G-L6).',
+     setupInvalid:'Не удалось настроить голосовую сессию (G-L7).',
+     ended:'20 минут — голосовую сессию можно завершить или начать новую.'},
   en:{start:'Start live conversation',connecting:'Connecting Gemini Live…',
     listening:'Listening',speaking:'Coach speaking',thinking:'Coach replying…',
     interrupt:'Interrupt coach',stop:'End conversation',mic:'Microphone unavailable',
@@ -37,7 +44,14 @@ const ui={
     greetingLate:'Connected, but the first spoken reply is delayed. You can start speaking.',
     contextUnavailable:'Approved context was not loaded. You can keep talking without it.',
     contextRevoked:'Access changed: this voice connection was closed. Previously shared data may remain with the provider.',
-    ended:'20 minutes — close the voice session or begin a new one.'},
+    providerAccess:'Google denied Gemini Live access for this API project (G-L1). You can use text.',
+     providerSetup:'Google rejected the Live connection settings (G-L2). Text remains available.',
+     providerModel:'This API project cannot access the selected Gemini Live model (G-L3).',
+     connection:'Could not connect to Gemini Live (G-L4). Try again later.',
+     setupTimeout:'Gemini Live did not confirm the connection within 15 seconds (G-L5).',
+     providerUnavailable:'Google Gemini Live is temporarily unavailable (G-L6).',
+     setupInvalid:'Could not initialize the voice session (G-L7).',
+     ended:'20 minutes — close the voice session or begin a new one.'},
   es:{start:'Iniciar voz en vivo',connecting:'Conectando voz Gemini…',
     listening:'Escuchando',speaking:'El coach habla',thinking:'Respondiendo…',
     interrupt:'Interrumpir al coach',stop:'Terminar conversación',mic:'Micrófono no disponible',
@@ -50,7 +64,14 @@ const ui={
     greetingLate:'Conectado, pero la primera frase tarda. Puedes empezar a hablar.',
     contextUnavailable:'No se cargó el contexto autorizado. Puedes continuar sin él.',
     contextRevoked:'Se revocó el acceso: se cerró esta conversación. El proveedor puede conservar datos enviados antes.',
-    ended:'20 minutos: puedes terminar la sesión o comenzar otra.'},
+    providerAccess:'Google rechazó el acceso a Gemini Live para este proyecto (G-L1). Puedes escribir.',
+     providerSetup:'Google rechazó la configuración de voz (G-L2). Puedes escribir.',
+     providerModel:'Este proyecto no puede usar el modelo Gemini Live elegido (G-L3).',
+     connection:'No se pudo conectar con Gemini Live (G-L4). Prueba más tarde.',
+     setupTimeout:'Gemini Live no confirmó la conexión en 15 segundos (G-L5).',
+     providerUnavailable:'Gemini Live está temporalmente no disponible (G-L6).',
+     setupInvalid:'No se pudo iniciar la sesión de voz (G-L7).',
+     ended:'20 minutos: puedes terminar la sesión o comenzar otra.'},
 }
 const MAX_SESSION_MS=1200000
 const MAX_BUFFERED_SOCKET_BYTES=200000
@@ -89,6 +110,17 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     setNotice(text)
     propsRef.current.onNotice?.(text)
   }
+  // Only fixed, first-party error codes appear to the user. Never surface the
+  // provider response, bearer URL, WebSocket event reason or sensitive keys.
+  const errorNotice=error=>({
+    GEMINI_LIVE_LIMIT:t.rateLimit,
+    GEMINI_LIVE_LOGIN:t.login,
+    GEMINI_LIVE_PROVIDER_ACCESS:t.providerAccess,
+    GEMINI_LIVE_PROVIDER_SETUP:t.providerSetup,
+    GEMINI_LIVE_PROVIDER_MODEL:t.providerModel,
+    GEMINI_LIVE_PROVIDER_OUTAGE:t.providerUnavailable,
+    GEMINI_LIVE_SETUP_INVALID:t.setupInvalid,
+  })[error?.message]||t.failure
   const phaseChange=value=>{
     setPhase(value)
     propsRef.current.onVoiceStateChange?.({phase:value,beat:0})
@@ -572,20 +604,22 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       // Gemini can send JSON as binary frames. ArrayBuffer keeps decoding synchronous
       // so setup, PCM and interruption stay in their original wire order.
       socket.binaryType='arraybuffer'
-    }catch{notify(t.failure);stop();return}
+    }catch{notify(t.connection);stop();return}
     r.socket=socket
     r.ready=false
     phaseChange('loading')
     const setupTimer=setTimeout(()=>{
       if(!r.ready&&!r.ended&&r.socket===socket){
-        notify(t.failure);stop()
+        notify(t.setupTimeout);stop()
       }
     },LIVE_START_TIMEOUT_MS)
     socket.onopen=()=>{
       if(r.ended)return
-      const setup=geminiLiveSetupMessage(token.model,r.voiceName)
-      if(resume&&r.resumeHandle)setup.setup.sessionResumption={handle:r.resumeHandle}
-      sendSocket(r,setup)
+      try{
+        const setup=geminiLiveSetupMessage(token.model,r.voiceName)
+        if(resume&&r.resumeHandle)setup.setup.sessionResumption={handle:r.resumeHandle}
+        if(!sendSocket(r,setup))throw Error('SETUP_SEND_FAILED')
+      }catch{notify(t.setupInvalid);stop()}
     }
     socket.onmessage=event=>{
       if(r.ended||r.socket!==socket)return
@@ -593,19 +627,23 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       if(r.ready)clearTimeout(setupTimer)
     }
     socket.onerror=()=>{} // Never log token-bearing URLs.
-    socket.onclose=()=>{
+    socket.onclose=event=>{
       clearTimeout(setupTimer)
       if(r.ended||r.socket!==socket)return
       if(r.player?.playing||r.speaking)interrupt()
       else if(r.outputText){r.interrupted=true;commitOutput(r)}
-      // A uses:1 ephemeral token cannot reliably be reused; at most one
-      // resumed FREE connection with its own constrained one-use token.
-      if(r.reconnects<1&&r.resumeHandle&&r.stream?.active!==false){
+      // WebSocket.reason may include vendor details. Use only the numeric code.
+      const denied=event?.code===1008
+      if(!denied&&r.reconnects<1&&r.resumeHandle&&r.stream?.active!==false){
         r.reconnects++
         notify(t.reconnecting)
         phaseChange('loading')
         r.reconnectTimer=setTimeout(()=>{void reconnect(r)},450)
-      }else{notify(t.failure);stop()}
+      }else{
+        notify(denied?t.providerAccess:
+          event?.code===1011?t.providerUnavailable:t.connection)
+        stop()
+      }
     }
   }
   async function reconnect(r){
@@ -614,7 +652,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       const token=await getToken(r)
       if(!r.ended)connect(r,token,{resume:true})
     }catch(error){if(!r.ended){
-      notify(error?.message==='GEMINI_LIVE_LIMIT'?t.rateLimit:t.failure)
+      notify(errorNotice(error))
       stop()
     }}
   }
@@ -628,7 +666,21 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     })
     if(response.status===429)throw Error('GEMINI_LIVE_LIMIT')
     if(response.status===401)throw Error('GEMINI_LIVE_LOGIN')
-    if(!response.ok)throw Error('GEMINI_LIVE_UNAVAILABLE')
+    if(!response.ok){
+      const fault=await response.json().catch(()=>null)
+      const reason=typeof fault?.error==='string'?fault.error:''
+      if(reason==='MY_COACH_GEMINI_LIVE_AUTH_FAILURE')
+        throw Error('GEMINI_LIVE_PROVIDER_ACCESS')
+      if(reason==='MY_COACH_GEMINI_LIVE_SETUP_REJECTED')
+        throw Error('GEMINI_LIVE_PROVIDER_SETUP')
+      if(reason==='MY_COACH_GEMINI_LIVE_MODEL_UNAVAILABLE')
+        throw Error('GEMINI_LIVE_PROVIDER_MODEL')
+      if(reason==='MY_COACH_GEMINI_LIVE_PROVIDER_UNAVAILABLE')
+        throw Error('GEMINI_LIVE_PROVIDER_OUTAGE')
+      if(reason==='MY_COACH_GEMINI_LIVE_INVALID')
+        throw Error('GEMINI_LIVE_SETUP_INVALID')
+      throw Error('GEMINI_LIVE_UNAVAILABLE')
+    }
     const data=await response.json().catch(()=>null)
     if(data?.schema!=='HH_GEMINI_LIVE_FREE_TOKEN_V1'||!data.token||!data.model)
       throw Error('GEMINI_LIVE_UNAVAILABLE')
@@ -653,8 +705,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       r.timer=setTimeout(()=>{if(!r.ended){notify(t.ended);stop()}},MAX_SESSION_MS)
     }catch(error){
       if(!r.ended){
-        notify(error?.message==='GEMINI_LIVE_LIMIT'?t.rateLimit:
-          error?.message==='GEMINI_LIVE_LOGIN'?t.login:t.failure)
+        notify(errorNotice(error))
         stop()
       }
     }finally{starting.current=false}

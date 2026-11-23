@@ -27,10 +27,11 @@ test("public Home has one light conversation-first entry and preserves seven rea
  assert.match(entry,/<SiteNavigation locale=\{locale\} compact \/>/);
  assert.match(entry,/data-home-intent-form/);
  assert.match(entry,/data-home-send-to-ali/);
- assert.match(entry,/data-home-mode-button="self"/);
- assert.match(entry,/data-home-mode-button="business"/);
- for(const label of ["Для себя","Для бизнеса","For myself","For business","Para mí","Para mi negocio"])
-   assert.ok(entry.includes(label),label);
+ assert.doesNotMatch(entry,/data-home-mode-button=/);
+ assert.match(entry,/data-home-intent-option="understand"/);
+ assert.match(entry,/data-home-intent-option="goal"/);
+ assert.match(entry,/data-home-intent-option="talk"/);
+ assert.match(entry,/data-home-stage-option=\{index\+1\}/);
  assert.match(dock,/"mytube","video","coach","ai","services","practice","profile"/);
  assert.match(globalDock,/UNIFIED_DOCK_IDS\.map\(id =>/);
 });
@@ -121,8 +122,8 @@ test("Home starter sends on one tap, Ali preserves original wording and shows re
  const home=read("components/home-dialogue-entry.tsx");
  const chat=read("components/holistic-agent-chat.tsx");
  const hub=read("components/app/messages-orders-clients.jsx");
- assert.match(home,/onClick=\{\(\)=>startConversationWith\(hint\.prompt,hint\.id==="business"\?"business":mode\)\}/);
- assert.match(home,/startConversationWith\(draft\)/);
+ assert.match(home,/openGoalIntent\(msg\.findPrompt\)/);
+ assert.match(home,/startConversationWith\(draft,audienceFor\(draft\)\)/);
  assert.match(chat,/homeHandoffPhase==="queued"/);
  assert.match(chat,/homeHandoffPhase==="retry"/);
  assert.match(chat,/data-home-handoff-pending/);
@@ -133,84 +134,30 @@ test("Home starter sends on one tap, Ali preserves original wording and shows re
  assert.match(hub,/const timeout=window\.setTimeout\(\(\)=>controller\.abort\(\),6000\)/);
 });
 
-test("approved scenic Home shows four clear choices above the wide Ali composer in three languages",()=>{
+test("Samir approved homepage has three gentle entry paths and a seven-step journey",()=>{
  const entry=read("components/home-dialogue-entry.tsx");
- const css=read("components/home-dialogue-entry.module.css");
+ const styles=read("components/home-dialogue-entry.module.css");
  const deferred=read("components/home-deferred-content.tsx");
- for(const phrase of ["Energy & Stress Release","Love & Confidence","Money & Growth","Business Support","Holistic House","What do you need today?","Энергия и снятие стресса","Apoyo empresarial"])
-   assert.ok(entry.includes(phrase),phrase);
- for(const id of ["stress","love","money","business"])assert.ok(entry.includes('id:"'+id+'"'),id);
- assert.match(entry,/data-home-free-review/);
- assert.match(entry,/freeReviewTitle:"Understand my situation"/);
- assert.match(entry,/freeReviewDetail:"Get a free personal review"/);
- assert.match(entry,/freeReviewTitle:"Разобраться в своей ситуации"/);
- assert.match(entry,/freeReviewTitle:"Comprender mi situación"/);
- assert.match(entry,/services\/free-situation-review/);
- assert.ok(entry.indexOf("data-home-intent-form")<entry.indexOf("data-home-focus-grid"));
- assert.ok(entry.indexOf("data-home-intent-form")<entry.indexOf("data-home-focus-grid"));
- assert.match(css,/\.reviewCta\{box-sizing:border-box;display:flex/);
- assert.match(css,/@media\(min-width:356px\) and \(max-width:430px\)/);
- assert.match(css,/\.language summary\{min-width:44px\}/);
- assert.match(css,/\{width:44px;min-width:44px\}/);
- assert.match(entry,/data-home-focus-grid/);
- assert.ok(entry.indexOf('data-home-focus-grid')<entry.indexOf('data-home-free-review'));
- assert.match(entry,/data-home-continue-path/);
+ for(const text of ["Помоги разобраться","У меня уже есть цель","Давай просто поговорим",
+   "7 шагов к твоей цели","В нашей работе мы используем:","ИИ-коучи","Специалисты","Видео","Тесты","Практики"])
+   assert.ok(entry.includes(text),text);
+ assert.doesNotMatch(entry,/data-home-mode-button=/);
+ assert.match(entry,/data-home-intent-option="understand"/);
+ assert.match(entry,/data-home-intent-option="goal"/);
+ assert.match(entry,/data-home-intent-option="talk"/);
+ assert.match(entry,/data-home-stage-option=\{index\+1\}/);
+ assert.equal((entry.match(/<form className=\{styles\.composer\}/g)||[]).length,1);
+ assert.match(entry,/useAliPersona\("alex"\)/);
+ assert.match(entry,/data-home-open-ali-persona/);
+ assert.match(entry,/data-home-ali-greeting-play/);
+ assert.match(entry,/data-home-intent-composer/);
  assert.match(entry,/data-home-send-to-ali/);
- assert.match(css,/\.focusGrid\{display:grid;grid-template-columns:repeat\(2/);
- assert.match(css,/\.composer\{display:flex;flex-direction:column/);
- assert.match(css,/\.scene\{[^\n]*ideas-pine-reference\.webp/);
- assert.doesNotMatch(entry,/<iframe|<video|fetch\(/);
- assert.doesNotMatch(entry,/data-home-service-action/);
- assert.match(deferred,/<MySpaceTopics locale=\{locale\} publicHome\/>/);
-});
-
-test("owner-approved compact first screen keeps persona, full composer, categories and help CTAs",()=>{
- const home=read("components/home-dialogue-entry.tsx");
- const styles=read("components/home-dialogue-entry.module.css");
- for(const label of ["Get Ideas","Diagnostic & Hints","Get Support","Session & Service",
-   "Choose a direction","How it works — in 3 simple steps","Start free chat"]) {
-   assert.ok(home.includes(label),label);
- }
- for(const fragment of ["data-home-open-ali-persona","data-home-ali-greeting-play",
-   "data-home-intent-composer","data-home-how-it-works","data-home-request-session"]) {
-   assert.ok(home.includes(fragment),fragment);
- }
- assert.ok(home.indexOf("data-home-dialogue-hero")<home.indexOf("data-home-intent-form"));
- assert.ok(home.indexOf("data-home-intent-form")<home.indexOf("data-home-focus-grid"));
- assert.ok(home.indexOf("data-home-focus-grid")<home.indexOf("data-home-how-it-works"));
- assert.ok(home.indexOf("data-home-how-it-works")<home.indexOf("data-home-request-session"));
- assert.match(styles,/HOME_SCREEN_VISUAL_20261120/);
+ assert.match(entry,/data-home-request-session/);
+ assert.match(entry,/data-home-continue-path/);
+ assert.match(styles,/SAMIR_HOME_OWNER_APPROVED_20261123/);
+ assert.match(styles,/\.journeyScroll\{display:flex/);
+ assert.match(styles,/scroll-snap-type:x mandatory/);
  assert.match(styles,/max-height:800px/);
- assert.match(styles,/\.heroPortrait/);
- assert.match(styles,/\.focusPhoto/);
- assert.match(styles,/\.finalActions/);
- assert.doesNotMatch(home,/<iframe|<video|fetch\(/);
-});
-
-test("mobile correction preserves distinct business help links and prevents clipped hero",()=>{
- const home=read("components/home-dialogue-entry.tsx");
- const styles=read("components/home-dialogue-entry.module.css");
- assert.match(home,/service-group-business/);
- assert.match(home,/hint.id==="love"\?Heart/);
- assert.match(home,/hint.id==="money"\?TrendingUp/);
- assert.match(styles,/MOBILE_HERO_CONTENT_SAFE_20261120/);
- assert.match(styles,/\.heroStory\{height:auto;min-height:165px/);
- const before=home.indexOf("data-home-intent-form");
- const after=home.indexOf("data-home-focus-grid");
- assert.ok(before>=0&&after>before,"The Ali composer must appear before the topic tiles");
-});
-
-test("approved Max hero paints without eager Persona dialog bundle and unrelated catalog CSS",()=>{
- const home=read("components/home-dialogue-entry.tsx");
- const hook=read("components/app/use-ali-persona.js");
- const root=read("app/layout.tsx");
- const catalog=read("components/catalog-showcase.tsx");
- assert.ok(home.includes('import dynamic from "next/dynamic"'));
- assert.ok(home.includes('dynamic(()=>import("@/components/app/ali-persona-picker")'));
- assert.ok(home.includes('{personaOpen&&<AliPersonaPicker open={personaOpen}'));
- assert.ok(home.includes('useAliPersona("max")'));
- assert.ok(hook.includes('export function useAliPersona(initialId=ALI_DEFAULT_PERSONA_ID)'));
- assert.ok(root.includes('import "./holistic-light-tokens.css"'));
- assert.ok(!root.includes('import "./catalog-showcase.css"'));
- assert.ok(catalog.includes('import "@/app/catalog-showcase.css"'));
+ assert.match(deferred,/<MySpaceTopics locale=\{locale\} publicHome\/>/);
+ assert.doesNotMatch(entry,/<iframe|<video|fetch\(/);
 });
