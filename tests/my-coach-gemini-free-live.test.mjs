@@ -69,21 +69,23 @@ test('one-use ephemeral token locks model, voice and Director; secret never retu
    assert.equal(options.headers['x-goog-api-key'],key)
    const body=JSON.parse(options.body)
    assert.equal(body.uses,1)
-   // Official v1beta REST AuthToken contract: LiveConnectConstraints.config.
+   // Production G-L2: use native AuthToken locked Bidi setup, not a
+   // LiveConnectConstraints field-mask expansion of session-only fields.
    assert.deepEqual(Object.keys(body).sort(),
-     ['expireTime','liveConnectConstraints','newSessionExpireTime','uses'])
-   assert.equal(Object.hasOwn(body,'bidiGenerateContentSetup'),false)
-   const {model,config}=body.liveConnectConstraints
-   assert.equal(model,'models/'+GEMINI_FREE_LIVE_MODEL)
-   assert.deepEqual(config.responseModalities,['AUDIO'])
-   assert.equal(config.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName,'Sulafat')
-   assert.deepEqual(config.sessionResumption,{})
-   assert.equal(config.maxOutputTokens,1100)
-   assert.match(config.systemInstruction.parts[0].text,/coaching method/)
-   assert.equal(config.realtimeInputConfig.activityHandling,'START_OF_ACTIVITY_INTERRUPTS')
-   assert.ok(config.inputAudioTranscription)
-   assert.ok(config.outputAudioTranscription)
-   assert.ok(config.contextWindowCompression.slidingWindow)
+     ['bidiGenerateContentSetup','expireTime','newSessionExpireTime','uses'])
+   assert.equal(Object.hasOwn(body,'liveConnectConstraints'),false)
+   assert.equal(Object.hasOwn(body,'fieldMask'),false)
+   const setup=body.bidiGenerateContentSetup
+   assert.equal(setup.model,'models/'+GEMINI_FREE_LIVE_MODEL)
+   assert.deepEqual(setup.generationConfig.responseModalities,['AUDIO'])
+   assert.equal(setup.generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName,'Sulafat')
+   assert.equal(setup.generationConfig.maxOutputTokens,1100)
+   assert.deepEqual(setup.sessionResumption,{})
+   assert.match(setup.systemInstruction.parts[0].text,/coaching method/)
+   assert.equal(setup.realtimeInputConfig.activityHandling,'START_OF_ACTIVITY_INTERRUPTS')
+   assert.ok(setup.inputAudioTranscription)
+   assert.ok(setup.outputAudioTranscription)
+   assert.equal(Object.hasOwn(setup,'contextWindowCompression'),false)
    return {ok:true,status:200,json:async()=>({name:'auth_tokens/synthetic-one-use'})}
   }
  })

@@ -1,9 +1,9 @@
-# Samir conversational opening · 2026-11-23
+# Samir AI Chat, reconciled with merged PR #5476 · 2026-11-23
 
-Canonical screen: `/{en|ru|es}/app/messages?section=ai`, first conversation, guest and signed-in.
+Route `/{en|ru|es}/app/messages?section=ai` stays the existing real AI Messenger, not a duplicate chatbot.
 
-Approved source: owner-supplied cinematic Samir WhatsApp-like dialogue mockup (not the older homepage card design).
+Merged #5476 already owns the approved genie-scene hero, WhatsApp-like welcome, two goal actions, responsive CSS and optional menu. **Preserve its exact layout**. This delta only assigns the existing default male presenter ID `alex` the user-approved editorial display name Samir, reuses the existing genie artwork and unchanged voice ID/provider, adds dynamic EN/RU/ES greeting, and connects BOTH existing goal actions to `sendSelectedTurn`. Previously the buttons only populated the draft; now they start the actual Free conversation or show existing Pro Gemini consent.
 
-Implementation: change the existing `MessengerAiLanding` inside `HolisticAgentChat` without creating a second assistant. The default existing presenter ID `alex` now displays as Samir and reuses the approved genie poster and **same voice backend**; the other three presenters and all storage IDs remain. First screen contains header, genuine text bubble, goal-discovery and already-have-a-goal actions, real Free/Pro composer, microphone, and optional collapsed topic menu. It retains current secure chat/history, consent, menu, persona audio, EN/RU/ES, and video intro (in explicit expanded menu). One existing app dock only.
+Keep the other three personas, history, locale switching, microphone/STT, single mobile dock, original video and optional topics intact. Direct user-entered text must still require usual provider consent; no new API, TTS tier, service, auto-orders or spending.
 
-Release checks: Core/Specialist, TS/Next, real Chromium/WebKit 320/354/390/430 CSS px (same route/state as reference), keyboard, controls, handoff with existing homepage text, Gemini consent path and voice interruption. Overlap with open microphone PRs #5466/#5447 must be reconciled before protected merge. Zero additional paid builds/services. LIVE only after existing hourly publisher and canonical alias+SHA acceptance.
+Acceptance: existing exact-head Core/Specialist, TypeScript/Next, responsive iPhone 320/354/390/430 and real click/keyboard/voice tests. Reconcile any overlap with open voice PRs #5466/#5447. A protected merge is not evidence of LIVE; existing hourly Vercel publisher is the only routine release path.

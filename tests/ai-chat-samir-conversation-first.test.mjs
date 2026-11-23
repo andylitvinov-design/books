@@ -4,22 +4,20 @@ import {readFileSync} from 'node:fs';
 const landing=readFileSync('components/app/messenger-ai-landing.tsx','utf8');
 const chat=readFileSync('components/holistic-agent-chat.tsx','utf8');
 const personas=readFileSync('lib/holistic-support/ali-personas.mjs','utf8');
-test('Samir reuses the four existing guide ids and stable voice route',()=>{
+test('Samir remains the existing stable male presenter, no extra provider',()=>{
  assert.match(personas,/ALI_DEFAULT_PERSONA_ID='alex'/);
- assert.match(personas,/name:local\('Samir','Самир','Samir'\)/);
- assert.match(personas,/genie-calm-loop-poster\.webp/);
+ assert.ok(personas.includes("name:local('Samir','Самир','Samir')"));
+ assert.ok(personas.includes('genie-calm-loop-poster.webp'));
 });
-test('first open has exactly two choice buttons with real chat handoff',()=>{
- assert.match(landing,/data-hh-ai-goal-choice="find"/);
- assert.match(landing,/data-hh-ai-goal-choice="already"/);
- assert.match(landing,/onGoalChoice\(sceneCopy\.findPrompt\)/);
- assert.match(landing,/onGoalChoice\(sceneCopy\.havePrompt\)/);
- assert.match(chat,/onGoalChoice=\{text=>sendSelectedTurn\(text\)\}/);
- assert.match(landing,/data-hh-ai-inline-composer/);
+test('two existing goal actions now actually submit a conversation turn',()=>{
+ for(const id of ['discover','defined'])assert.ok(landing.includes('data-hh-genie-goal-choice="'+id+'"'));
+ assert.ok(landing.includes('onGoalChoice(locale==='));
+ assert.ok(chat.includes('onGoalChoice={text=>sendSelectedTurn(text)}'));
+ assert.ok(chat.includes('data-hh-conversation-mic'));
+ assert.ok(chat.includes('data-hh-ai-gemini-tier'));
 });
-test('existing persona, Free-Pro, voice, media and topic controls remain',()=>{
- for(const id of ['data-hh-ai-chat-shortcuts','data-hh-ai-persona-voice-play',
- 'data-hh-alchemist-topics','data-hh-ai-video-hero'])assert.ok(landing.includes(id),id);
- for(const id of ['data-hh-ai-gemini-tier','data-hh-conversation-mic',
- 'data-hh-ai-more','data-hh-ai-chat-composer'])assert.ok(chat.includes(id),id);
+test('original one-thread and menu remain',()=>{
+ for(const key of ['data-hh-genie-scene','data-hh-ali-first-message','data-hh-ai-inline-composer',
+ 'data-hh-ai-chat-shortcuts','data-hh-alchemist-topics','data-hh-ai-video-hero'])
+  assert.ok(landing.includes(key),key);
 });
