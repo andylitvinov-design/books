@@ -10,6 +10,8 @@ import { SiteNavigation } from "@/components/site-navigation";
 import {useAliPersona} from "@/components/app/use-ali-persona";
 import {playAliPersonaAudio,stopAliPersonaAudio} from "@/components/app/ali-persona-audio";
 import { stageHomeAliHandoff } from "@/lib/home-ali-handoff.mjs";
+import {startCoachRecordedTurn,coachRecordedSupported} from "@/lib/personal-coaching/coach-recorded-turn.mjs";
+import {ios27NeedsSpeechRecovery} from "@/lib/personal-coaching/my-coach-dictation.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./home-dialogue-entry.module.css";
 
@@ -40,7 +42,13 @@ const COPY = {
     unsupported:"Используйте микрофон клавиатуры или напишите запрос.",
     speechError:"Не удалось распознать речь. Можно написать запрос.",
     speechRunning:"Слушаю. Скажите, что вас беспокоит.",
-    speechPrivacy:"Диктовка может использовать службу распознавания браузера.",
+    speechPrivacy:"Нажимая микрофон, вы разрешаете распознавание через браузер или Groq Whisper Free. Аудио не сохраняется.",
+    speechRecognized:"Речь распознана. Проверьте текст и начните чат.",
+    speechTranscribing:"Распознаю запись…",
+    speechDenied:"Микрофон заблокирован. Разрешите доступ в Safari или введите текст.",
+    speechQuota:"Бесплатный лимит распознавания исчерпан. Попробуйте позже или введите текст.",
+    speechSilent:"Не удалось услышать речь. Нажмите микрофон ещё раз.",
+    speechFallback:"Браузер не распознал голос. Нажмите микрофон ещё раз для записи.",
     transferError:"Не удалось передать запрос. Попробуйте ещё раз или откройте AI/Chat.",
     transferPrivacy:"Сообщение передаётся в чат Ali. Начать можно без регистрации.",
     freeReviewTitle:"Разобраться в своей ситуации", freeReviewDetail:"Бесплатный личный разбор",
@@ -63,7 +71,13 @@ const COPY = {
     unsupported:"Use your keyboard microphone or type a message.",
     speechError:"Speech recognition did not work. You can type your request.",
     speechRunning:"Listening. Tell me what is on your mind.",
-    speechPrivacy:"Dictation may use your browser's speech service.",
+    speechPrivacy:"Tapping the mic allows speech processing by your browser or Groq Whisper Free. No audio is stored.",
+    speechRecognized:"Recognized. Review your text and start the chat.",
+    speechTranscribing:"Transcribing the recording…",
+    speechDenied:"Microphone blocked. Allow access in Safari or type instead.",
+    speechQuota:"Free transcription limit reached. Try later or type.",
+    speechSilent:"No speech heard. Tap the microphone and try again.",
+    speechFallback:"Browser speech failed. Tap the microphone again to record.",
     transferError:"Couldn't pass your message to Ali. Try again or open AI/Chat.",
     transferPrivacy:"Your message goes to Ali’s chat. You can start without signing in.",
     freeReviewTitle:"Understand my situation", freeReviewDetail:"Get a free personal review",
@@ -86,7 +100,13 @@ const COPY = {
     unsupported:"Usa el micrófono del teclado o escribe un mensaje.",
     speechError:"No se pudo reconocer tu voz. Puedes escribir tu mensaje.",
     speechRunning:"Te escucho. Cuéntame qué necesitas.",
-    speechPrivacy:"El dictado puede usar el servicio de voz del navegador.",
+    speechPrivacy:"Al tocar el micrófono, aceptas el reconocimiento del navegador o Groq Whisper Free. No guardamos audio.",
+    speechRecognized:"Voz reconocida. Revisa el texto e inicia el chat.",
+    speechTranscribing:"Transcribiendo la grabación…",
+    speechDenied:"Micrófono bloqueado. Permite el acceso en Safari o escribe.",
+    speechQuota:"Límite gratuito de transcripción alcanzado. Inténtalo después.",
+    speechSilent:"No se escuchó voz. Toca el micrófono e inténtalo otra vez.",
+    speechFallback:"El navegador no reconoció tu voz. Toca de nuevo para grabar.",
     transferError:"No pudimos pasar el mensaje a Ali. Inténtalo de nuevo o abre IA/Chat.",
     transferPrivacy:"Tu mensaje llega al chat de Ali. Puedes empezar sin registrarte.",
     freeReviewTitle:"Comprender mi situación", freeReviewDetail:"Recibir una revisión personal gratuita",
@@ -190,9 +210,16 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
   const [interactive,setInteractive]=useState(false);
   const inputRef=useRef<HTMLTextAreaElement|null>(null);
   const speechRef=useRef<SpeechRecognitionEngine|null>(null);
+  const recordedRef=useRef<{cancel:()=>void}|null>(null);
+  const voiceAttempt=useRef(0);
+  const [preferRecorder,setPreferRecorder]=useState(false);
   useEffect(()=>{
     setInteractive(true);
-    return ()=>{speechRef.current?.abort();speechRef.current=null};
+    return ()=>{
+      voiceAttempt.current+=1;
+      speechRef.current?.abort();speechRef.current=null;
+      recordedRef.current?.cancel();recordedRef.current=null;
+    };
   },[]);
   const chatPath="/"+locale+"/app/messages?section=ai";
   const hints=t.focusHints;
@@ -214,24 +241,86 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
     startConversationWith(draft);
   }
   function dictate() {
-    if(speechRef.current){speechRef.current.stop();return}
+    // Aborting invalidates any late iPhone Safari recognition callbacks.
+    if(speechRef.current){
+      voiceAttempt.current+=1;
+      const speech=speechRef.current;speechRef.current=null;
+      speech.abort();setListening(false);setVoiceMessage("");return;
+    }
+    if(recordedRef.current){
+      voiceAttempt.current+=1;
+      recordedRef.current.cancel();recordedRef.current=null;
+      setListening(false);setVoiceMessage("");return;
+    }
+    const attempt=++voiceAttempt.current;
     const scope=window as SpeechWindow;
     const Constructor=scope.SpeechRecognition||scope.webkitSpeechRecognition;
+    // iOS 27 Web Speech can silently produce no transcript even while active.
+    // Reuse the existing ephemeral recorder; no audio persistence or new API.
+    const recordedAvailable=coachRecordedSupported(window);
+    if(recordedAvailable&&(ios27NeedsSpeechRecovery(window.navigator)||preferRecorder||!Constructor)){
+      const capture=startCoachRecordedTurn({
+        locale,environment:window,purpose:"public",
+        onState:state=>{
+          if(attempt!==voiceAttempt.current)return;
+          setListening(true);
+          setVoiceMessage(state==="transcribing"?t.speechTranscribing:t.speechRunning);
+        },
+        onResult:text=>{
+          if(attempt!==voiceAttempt.current)return;
+          recordedRef.current=null;setListening(false);
+          setDraft(previous=>(previous?previous+" ":"")+text.slice(0,2000-previous.length));
+          setVoiceMessage(t.speechRecognized);
+        },
+        onFailure:code=>{
+          if(attempt!==voiceAttempt.current)return;
+          recordedRef.current=null;setListening(false);
+          setVoiceMessage(code==="MIC_PERMISSION"?t.speechDenied:
+            code==="STT_RATE_LIMIT"?t.speechQuota:
+            code==="MIC_NO_SIGNAL"?t.speechSilent:t.speechError);
+        },
+      });
+      if(capture){
+        recordedRef.current=capture;
+        setVoiceMessage(t.speechRunning);setListening(true);return;
+      }
+    }
     if(!Constructor){setVoiceMessage(t.unsupported);inputRef.current?.focus();return}
     const speech=new Constructor();
+    let hadResult=false;
     speech.lang=locale==="ru"?"ru-RU":locale==="es"?"es-ES":"en-US";
     speech.interimResults=false;
     speech.continuous=false;
     speech.onresult=event=>{
+      if(attempt!==voiceAttempt.current||speechRef.current!==speech)return;
       const spoken=event.results?.[0]?.[0]?.transcript?.trim();
-      if(spoken)setDraft(previous=>(previous?previous+" ":"")+spoken.slice(0,2000-previous.length));
+      if(spoken){
+        hadResult=true;
+        setDraft(previous=>(previous?previous+" ":"")+spoken.slice(0,2000-previous.length));
+        setVoiceMessage(t.speechRecognized);
+      }
     };
-    speech.onerror=()=>{setVoiceMessage(t.speechError);setListening(false);speechRef.current=null};
-    speech.onend=()=>{setListening(false);speechRef.current=null};
+    speech.onerror=()=>{
+      if(attempt!==voiceAttempt.current||speechRef.current!==speech)return;
+      speechRef.current=null;setListening(false);
+      if(recordedAvailable)setPreferRecorder(true);
+      setVoiceMessage(recordedAvailable?t.speechFallback:t.speechError);
+    };
+    speech.onend=()=>{
+      if(attempt!==voiceAttempt.current||speechRef.current!==speech)return;
+      speechRef.current=null;setListening(false);
+      if(!hadResult){
+        if(recordedAvailable)setPreferRecorder(true);
+        setVoiceMessage(recordedAvailable?t.speechFallback:t.speechError);
+      }
+    };
     speechRef.current=speech;
-    setVoiceMessage(t.speechRunning);
-    setListening(true);
-    try{speech.start()}catch{setVoiceMessage(t.speechError);setListening(false);speechRef.current=null}
+    setVoiceMessage(t.speechRunning);setListening(true);
+    try{speech.start()}catch{
+      speechRef.current=null;setListening(false);
+      if(recordedAvailable)setPreferRecorder(true);
+      setVoiceMessage(recordedAvailable?t.speechFallback:t.speechError);
+    }
   }
   const screen=SCREEN_COPY[locale];
   const categories=mode==="self" ? [
@@ -330,7 +419,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
             {draft&&<button type="button" className={styles.clear}
               aria-label={locale==="ru"?"Очистить":locale==="es"?"Borrar":"Clear"}
               onClick={()=>{setDraft("");inputRef.current?.focus()}}><X size={19} aria-hidden="true"/></button>}
-            <button type="button" className={styles.microphone}
+            <button type="button" className={styles.microphone} data-home-intent-mic
               aria-label={listening?t.stopMic:t.mic} aria-pressed={listening} onClick={dictate}>
               <Mic size={23} aria-hidden="true"/>
             </button>
@@ -341,6 +430,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
             </button>
           </div>
         </form>
+        <p className={styles.speechDisclosure} data-home-voice-disclosure>{t.speechPrivacy}</p>
         {error&&<p className={styles.error} role="alert">{error}</p>}
         {voiceMessage&&<p className={styles.voiceStatus} role="status">{voiceMessage}</p>}
       </div>
