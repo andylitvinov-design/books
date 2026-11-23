@@ -161,16 +161,51 @@ try {
     assert.equal(await block.locator('iframe').count(), 0)
     const play = block.getByRole('button', { name: /^(Watch video|Open video|Смотреть видео):/ })
     if (live) await pause(1200)
-    await play.click()
+    // English archival HeyGen IDs MUST have an actual verified upload receipt.
+    // The isolated CI Redis is intentionally empty; its first click must fail closed.
+    // The separately marked local fixture tests only the client click-to-iframe wiring.
+    let expectedYouTubeId = youtubeId
+    let isolatedReceiptRoute = null
+    if (locale === 'en') {
+      const endpoint = new URL('/api/public/english-intro-video?videoId='+encodeURIComponent(id), origin)
+      const receiptResponse = await context.request.get(endpoint.href, { timeout: 15000 })
+      assert.equal(receiptResponse.status(), 200, 'Verified-channel readback endpoint must respond')
+      const payload = await receiptResponse.json()
+      const verified = payload?.youtubeId
+      assert.ok(verified === null || (typeof verified === 'string' && /^[A-Za-z0-9_-]{11}$/.test(verified)),
+        'Never accept an unverifiable video ID')
+      if (verified) {
+        expectedYouTubeId = verified
+        await play.click()
+      } else {
+        await play.click()
+        await expect(block.locator('[data-english-video-source="youtube"]')).toContainText(
+          'not yet been verified on the English YouTube channel', { timeout: 15000 })
+        await expect(block.locator('iframe')).toHaveCount(0)
+        if (live) throw new Error('LIVE blocked: missing verified English YouTube receipt for '+slot)
+        // Isolated CI UI fixture is not provider confirmation or LIVE proof.
+        isolatedReceiptRoute = url => url.pathname === '/api/public/english-intro-video' &&
+          url.searchParams.get('videoId') === id
+        await page.route(isolatedReceiptRoute, route => route.fulfill({
+          status: 200, contentType: 'application/json',
+          headers: { 'cache-control': 'no-store' },
+          body: JSON.stringify({ youtubeId }),
+        }))
+        console.log('LOCAL_UI_FIXTURE_ONLY_NO_PROVIDER_PROOF '+slot)
+        await play.click()
+      }
+    } else {
+      await play.click()
+    }
     if (live && await block.locator('iframe').count() === 0) {
-      // A very fast synthetic click can land before Next hydration has attached
-      // client handlers to SSR markup. Retry once after hydration rather than
-      // treating that test-timing race as a playback failure.
+      // Retry a click once after real hydration, not after a provider failure.
       await pause(1200)
       if (await play.count()) await play.click()
     }
-    await expect(block.locator('iframe')).toHaveAttribute('src', new RegExp(`^https://www\\.youtube-nocookie\\.com/embed/${youtubeId}\\?`), { timeout: 10000 })
+    await expect(block.locator('iframe')).toHaveAttribute('src', new RegExp(
+      `^https://www\\.youtube-nocookie\\.com/embed/${expectedYouTubeId}\\?`), { timeout: 15000 })
     await expect(block.locator('iframe')).toHaveAttribute('data-video-playback', 'youtube')
+    if (isolatedReceiptRoute) await page.unroute(isolatedReceiptRoute)
   }
   let russianPresentationVerified = false
   for (const home of ['/?full=1', '/ru?full=1']) {
@@ -325,43 +360,91 @@ try {
     }
     pass('EN/RU Services legacy videos play after user disclosure; all 3 mobile video offers preserve Details, Order and links')
 
+    // EN HeyGen masters must not expose an archival provider player/link.
+    // Genuine LIVE proves a paired-channel receipt; isolated CI first asserts
+    // no iframe and then uses a clearly labeled UI-only YouTube fixture.
     const detailRoutes = [
-      ['/en/services/alchemy-of-soul', 'alchemy', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
-      ['/en/services/hypnotherapy-course', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
-      ['/ru/services/alchemy-of-soul', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
-      // Owner-approved RU guided-imagery video in data/service-video-library.ts,
-      // not the generic Russian overview used by Alchemy and constellations.
-      ['/ru/services/hypnotherapy-course', 'hypnotherapy', 'https://www.youtube-nocookie.com/embed/eLsjFaKCBhI?'],
-      ['/en/services/psychohomeopathy', 'alchemy', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
-      ['/ru/services/psychohomeopathy', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
-      ['/es/services/imagery-therapy', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
-      // The standalone systemic-constellations landing uses the owner's
-      // published business-constellations case, not the generic method video.
-      ['/en/services/systemic-constellations', 'constellation-case', 'https://www.youtube-nocookie.com/embed/sfVFOQNr2qk?'],
-      // FreeEntryLanding owns its own inline intro; it does not render the old
-      // ServiceVideoShowcase wrapper. The approved overview recording is kept.
-      ['/en/services/free-situation-review', 'free-review-intro', 'https://www.youtube-nocookie.com/embed/s30Y42IwPcg?'],
+      ['/en/services/alchemy-of-soul', 'alchemy', null, '7c6b243f048b9c0581ae29619a4a89fc'],
+      ['/en/services/hypnotherapy-course', 'hypnotherapy', null, '8c1634ce904434a91931429b6a7eefe1'],
+      ['/ru/services/alchemy-of-soul', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?', null],
+      ['/ru/services/hypnotherapy-course', 'hypnotherapy', 'https://www.youtube-nocookie.com/embed/eLsjFaKCBhI?', null],
+      ['/en/services/psychohomeopathy', 'alchemy', null, '7c6b243f048b9c0581ae29619a4a89fc'],
+      ['/ru/services/psychohomeopathy', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?', null],
+      ['/es/services/imagery-therapy', 'hypnotherapy', null, '8c1634ce904434a91931429b6a7eefe1'],
+      ['/en/services/systemic-constellations', 'constellation-case', 'https://www.youtube-nocookie.com/embed/sfVFOQNr2qk?', null],
+      ['/en/services/free-situation-review', 'free-review-intro', 'https://www.youtube-nocookie.com/embed/s30Y42IwPcg?', null],
     ]
-    for (const [route, topic, expectedUrl] of detailRoutes) {
+    for (const [route, topic, directYoutubePrefix, englishMasterId] of detailRoutes) {
       await navigate(route)
       if (route.endsWith('/psychohomeopathy')) {
-        assert.equal(new URL(page.url()).pathname, route.replace('/psychohomeopathy', '/alchemy-of-soul'), 'Legacy service redirects to its canonical Alchemy page')
+        assert.equal(new URL(page.url()).pathname, route.replace('/psychohomeopathy', '/alchemy-of-soul'),
+          'Legacy service redirects to its canonical Alchemy page')
       }
       const block = page.locator(topic === 'alchemy' ? '[data-alchemy-panel="video"]' :
         topic === 'free-review-intro' ? '[data-free-review-intro-video]' :
-        `[data-service-video="${topic}"]`)
+        '[data-service-video="' + topic + '"]')
       await expect(block).toHaveCount(1)
       await block.scrollIntoViewIfNeeded()
-      await expect(block.locator('.site-video-play')).toBeVisible()
-      assert.equal(await block.locator('iframe').count(), 0, route + ' eager third-party iframe')
+      const play = block.locator('.site-video-play')
+      await expect(play).toBeVisible()
+      await expect(play).toBeEnabled()
+      await expect(block.locator('iframe')).toHaveCount(0)
       const transcript = block.locator('details.site-video-transcript')
-      if (await transcript.count() && !(await transcript.evaluate(node => node.open))) await transcript.locator('summary').click()
-      await expect(block.locator('.site-video-watch-link').first()).toHaveAttribute('href', /^https:\/\//)
-      await block.locator('.site-video-play').click()
-      await expect.poll(async () => (await block.locator('iframe').getAttribute('src'))?.startsWith(expectedUrl), {
-        timeout: 10000, message: `${route}: player must embed the exact approved public source ${expectedUrl}`,
-      }).toBe(true)
-      assert.equal(await block.locator('.site-video-play').count(), 0, route + ' poster remained after Play')
+      if (await transcript.count() && !(await transcript.evaluate(node => node.open)))
+        await transcript.locator('summary').click()
+      const offsite = block.locator('.site-video-watch-link').first()
+      let expectedPrefix=directYoutubePrefix
+      let isolatedRoute=null
+      try {
+        if (englishMasterId) {
+          // Do not accept a Russian channel, guessed mirror or HeyGen URL.
+          await expect(block.locator('a[href^="https://app.heygen.com"]')).toHaveCount(0)
+          const endpoint = new URL('/api/public/english-intro-video?videoId='+
+            encodeURIComponent(englishMasterId), origin)
+          const reply = await context.request.get(endpoint.href,{timeout:15000})
+          assert.equal(reply.status(),200,'Exact EN source lookup must respond')
+          const data=await reply.json()
+          assert.ok(data?.youtubeId===null||
+            (typeof data?.youtubeId==='string'&&/^[A-Za-z0-9_-]{11}$/.test(data.youtubeId)),
+            'EN video may expose only a validated permanent YouTube watch ID')
+          if (data.youtubeId) {
+            expectedPrefix='https://www.youtube-nocookie.com/embed/'+data.youtubeId+'?'
+            await expect(offsite).toHaveAttribute('href',
+              'https://www.youtube.com/watch?v='+data.youtubeId)
+            await play.click()
+          } else {
+            await expect(offsite).toHaveCount(0)
+            await play.click()
+            await expect(block.locator('[data-english-video-source="youtube"]'))
+              .toBeVisible({timeout:15000})
+            await expect(block.locator('iframe')).toHaveCount(0)
+            if (live) throw new Error('LIVE English upload receipt missing for '+route)
+            // This fixture proves CLIENT UX only, not an actual provider upload.
+            const fixtureId='QaFrame123_'
+            isolatedRoute=url=>url.pathname==='/api/public/english-intro-video'&&
+              url.searchParams.get('videoId')===englishMasterId&&url.searchParams.size===1
+            await page.route(isolatedRoute,route=>route.fulfill({
+              status:200,contentType:'application/json',headers:{'cache-control':'no-store'},
+              body:JSON.stringify({youtubeId:fixtureId}),
+            }))
+            expectedPrefix='https://www.youtube-nocookie.com/embed/'+fixtureId+'?'
+            console.log('LOCAL_UI_FIXTURE_ONLY_NO_PROVIDER_PROOF '+route)
+            await expect(play).toBeEnabled()
+            await play.click()
+          }
+        } else {
+          await expect(offsite).toHaveAttribute('href',/^https:\/\/www\.youtube\.com\/watch\?v=/)
+          await play.click()
+        }
+        await expect.poll(async()=>{
+          const src=await block.locator('iframe').getAttribute('src')
+          return typeof src==='string'&&src.startsWith(expectedPrefix)
+        },{timeout:15000,message:route+' must embed the exact approved YouTube source'}).toBe(true)
+        await expect(block.locator('iframe')).toHaveAttribute('data-video-playback','youtube')
+        await expect(play).toHaveCount(0)
+      } finally {
+        if(isolatedRoute)await page.unroute(isolatedRoute)
+      }
     }
     // Wu Xing is now a focused free entry and consented enquiry, not a
     // separate automatic method-video promotion. Preserve the approved flow.

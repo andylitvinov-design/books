@@ -114,7 +114,7 @@ test("EN/RU/ES visible attach, select, upload and recording copy is complete",()
   assert.ok(introStart>0&&introEnd>introStart,"isolated native MP4 intro manifest");
   const introBlock=studio.slice(introStart,introEnd);
   const approvedIntroUrls=[...introBlock.matchAll(/https:\/\/resource2\.heygen\.ai\/movio\/video\/[a-f0-9]+\/[a-f0-9]+\/caption\.mp4/g)].map(x=>x[0]);
-  assert.equal(approvedIntroUrls.length,2,"two fixed approved MP4 assets; no API/render endpoint");
+  assert.equal(approvedIntroUrls.length,1,"RU native original only; English presentation uses verified YouTube");
   const localAudioEditor=studio.slice(0,introStart)+studio.slice(introEnd);
   assert.doesNotMatch((localAudioEditor+source).replace(firstPartyWav,"").replace(originalBedWav,""),
     /\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|api\.kling|heygen|higgsfield/i);
