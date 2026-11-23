@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, BookOpen, Brain, CalendarDays, ChartNoAxesColumnIncreasing, CheckCircle2, ChevronRight, ClipboardList, Compass, Flame, Heart, Leaf, LockKeyhole, Plus, Rocket, ShieldCheck, Target } from 'lucide-react'
+import { ArrowRight, BookOpen, Brain, CalendarDays, ChartNoAxesColumnIncreasing, CheckCircle2, ChevronDown, ChevronRight, ClipboardList, Compass, Flame, Heart, Leaf, Plus, Rocket, ShieldCheck, Target } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import css from './profile-goal-console.module.css'
+import { goalStageOptions, goalOptionHref } from '@/lib/profile/goal-stage-options.mjs'
 
 const VALID_GOALS = new Set(['active', 'accepted', 'in_progress'])
 const STEPS = [
@@ -82,10 +83,12 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
   const t = COPY[lang]
   const [state, setState] = useState({ owner: null, loading: Boolean(accountId), error: false, plan: null })
   const [selectedId, setSelectedId] = useState('')
+  const [expandedStage, setExpandedStage] = useState(null)
   useEffect(() => {
     if (!accountId) return undefined
     const controller = new AbortController()
     setSelectedId('')
+    setExpandedStage(null)
     setState({ owner: accountId, loading: true, error: false, plan: null })
     appFetch('coaching-life-plan?locale=' + lang, undefined, 'GET', { accountId, signal: controller.signal })
       .then(plan => { if (!controller.signal.aborted) setState({ owner: accountId, loading: false, error: false, plan }) })
@@ -101,15 +104,14 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
   const overall = verifiedGoalPercent !== null ? verifiedGoalPercent : scores.length === 7 && scores.every(value => value !== null)
     ? Math.round(scores.reduce((sum, value) => sum + value, 0) / 7) : null
   const planLink = selected ? root + '/my-coaching-plan?goal=' + encodeURIComponent(selected.id) : root + '/my-coaching-plan'
-  const hrefFor = id => id === 'plan' ? planLink : id === 'coach' ? '/' + lang + '/my-coach'
-    : id === 'courses' ? root + '/course?view=courses' : root + '/portrait?space=path'
+  const optionHref = route => goalOptionHref(route, { lang, root, planLink })
   return <section className={css.console} data-profile-goal-console data-account-scoped={Boolean(accountId)}>
     <div className={css.goalStrip} aria-label={t.goals}>
       <h2 className={css.stripTitle}><Target size={18} aria-hidden="true" />{t.goals} ({goals.length})</h2>
       {goals.map(goal => {
         const active = selected?.id === goal.id
         return <button key={goal.id} type="button" className={active ? css.goalActive : css.goalChip}
-          aria-pressed={active} onClick={() => setSelectedId(String(goal.id))}>
+          aria-pressed={active} onClick={() => { setSelectedId(String(goal.id)); setExpandedStage(null) }}>
           <Target size={23} aria-hidden="true" />
           <strong>{goal.title}</strong>{active && <CheckCircle2 size={19} aria-hidden="true" />}
         </button>
@@ -132,20 +134,35 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
       </>}
     <h2 className={css.stepsTitle}>{t.plan}</h2>
     <div className={css.steps}>
-          {STEPS.map(({ id, icon: Icon, href }, index) => {
+          {STEPS.map(({ id, icon: Icon }, index) => {
             const value = selected && !view.loading && !view.error ? scores[index] : null
             const status = selected && !view.loading && !view.error ? getStatus(records[index], value, t) : t.open
             const isLocked = Boolean(selected && records[index]?.status === 'locked')
-            return <Link key={id} href={hrefFor(href)} prefetch={false} className={css.step}
-              aria-label={(index + 1) + '. ' + t.title[index] + '. ' + t.tool[index] + '. ' + status}
-              data-goal-step={index + 1} data-goal-step-status={selected && records[index]?.status || 'explore'}>
+            const expanded = expandedStage === id
+            const options = goalStageOptions(id, lang)
+            return <div key={id} className={css.stageGroup} data-goal-stage-group={id}>
+              <button type="button" id={'goal-stage-button-' + id} className={css.step}
+                aria-expanded={expanded} aria-controls={'goal-stage-options-' + id}
+                onClick={() => setExpandedStage(current => current === id ? null : id)}
+                aria-label={(index + 1) + '. ' + t.title[index] + '. ' + t.tool[index] + '. ' + status}
+                data-goal-step={index + 1} data-goal-step-status={selected && records[index]?.status || 'explore'}>
               <span className={css.number}>{index + 1}</span>
               <Icon className={css.stepIcon} size={27} aria-hidden="true" />
               <span className={css.stepBody}><strong>{t.title[index]}</strong><small>{t.detail[index]}</small>
                 {selected && value !== null && <span className={css.progressTrack}><span style={{ width: value + '%' }}/></span>}</span>
               <span className={css.stepState}>{value !== null && <b>{value + '%'}</b>}<small>{status}</small></span>
-              {isLocked ? <LockKeyhole size={18} aria-hidden="true" /> : <ChevronRight size={22} aria-hidden="true" />}
-            </Link>
+              <ChevronDown size={18} aria-hidden="true" className={css.stageChevron} />
+              </button>
+              <div id={'goal-stage-options-' + id} role="region" aria-labelledby={'goal-stage-button-' + id}
+                className={css.stageOptions} hidden={!expanded} data-goal-stage-options={id}>
+                <p className={css.optionHeading}>{({en:'Choose your support',ru:'Выберите вариант поддержки',es:'Elige tu apoyo'})[lang]}</p>
+                {isLocked && <p className={css.optionNote}>{({en:'You can explore options before this stage is activated.',ru:'Варианты можно изучить до активации этапа.',es:'Puedes explorar opciones antes de activar esta etapa.'})[lang]}</p>}
+                {options.map(option => <Link key={option.route} href={optionHref(option.route)} prefetch={false}
+                  className={css.stageOption} data-goal-stage-option={option.route}>
+                  <span><strong>{option.title}</strong><small>{option.detail}</small></span><ChevronRight size={17} aria-hidden="true"/>
+                </Link>)}
+              </div>
+            </div>
           })}
     </div>
     {selected && <p className={css.disclaimer}>{t.noStages}</p>}
