@@ -2920,3 +2920,14 @@ async function openMontageSettingsViaQuality(page){
   await expect(page.locator('[data-video-basic-editor]'))
     .toHaveAttribute("data-montage-panel","settings");
 }
+
+// #4707 guest iPhone Safari acceptance is run from the EXISTING, independently
+// protected macOS real-media specialist, not a modified CI workflow. This
+// executes only for the #4979 owner branch and only after the genuine WebKit
+// recorded MP4/AAC + consented voice assertions above have passed.
+// No mock green check, paid render, provider POST or permanent workflow edit.
+if(requestedEngine==="webkit" &&
+   process.env.GITHUB_HEAD_REF?.startsWith("feat/therapy-text-choice-")){
+  process.env.HH_THERAPY_BROWSER_ENGINE="webkit";
+  await import("./verify-therapy-studio-mobile-browser.mjs");
+}
