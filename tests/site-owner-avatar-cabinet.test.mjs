@@ -20,7 +20,7 @@ test('private per-owner preference has session, origin, RLS, account and allowli
     /requireSameOrigin\(request,config\)/,/transaction\(ctx\.config,ctx\.actor/,
     /account_id=\$1/,/isSiteOwnerAvatarId/,/PRIVATE_HEADERS/])assert.match(route,re);
   assert.doesNotMatch(route,/service_role|\.storage\.remove|heygen\.ai/i);
-  const migration=src('supabase/migrations/20261122041500_hh_site_owner_avatar_visibility_v1.sql');
+  const migration=src('supabase/migrations/20261122041736_hh_site_owner_avatar_visibility_v1.sql');
   for(const re of [/references app\.accounts\(id\) on delete cascade/,/enable row level security/,
     /force row level security/,/revoke all .*anon,authenticated/,
     /account_id=\(select auth\.uid\(\)\)/,/account_active\(\)/])assert.match(migration,re);
