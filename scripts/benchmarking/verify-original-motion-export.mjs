@@ -83,6 +83,23 @@ try {
   await press(styleTab);
   const styleNext=page.locator('[data-video-montage-effects] [data-video-montage-next="audio"]');
   await styleNext.waitFor({state:'visible',timeout:20000});
+  // Photo-first Montage must not silently bypass personal-image rights.
+  // This anonymous export chooses a first-party fictional coach still, rather
+  // than fabricating consent to use somebody else's photograph.
+  assert.equal(await styleNext.isEnabled(),false,'PHOTO_FIRST_REQUIRES_EXPLICIT_PHOTO_CHOICE');
+  const coachMode=page.locator('[data-video-montage-photo-choice="coach"]');
+  await coachMode.waitFor({state:'visible',timeout:20000});
+  await press(coachMode);
+  const coachPhoto=page.locator('[data-video-montage-coach="mira"]');
+  await coachPhoto.waitFor({state:'visible',timeout:20000});
+  await press(coachPhoto);
+  await page.waitForFunction(() => {
+    const coach=document.querySelector('[data-video-montage-coach="mira"]');
+    const next=document.querySelector('[data-video-montage-effects] [data-video-montage-next="audio"]');
+    return coach?.getAttribute('aria-pressed')==='true' &&
+      next instanceof HTMLButtonElement && !next.disabled;
+  },undefined,{timeout:15000});
+  assert.equal(await coachPhoto.getAttribute('aria-pressed'),'true','FIRST_PARTY_COACH_STILL_SELECTED');
   await press(styleNext);
   await page.waitForFunction(()=>document.querySelector('[data-video-montage-tab="audio"]')
     ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
@@ -193,7 +210,39 @@ try {
   }
   assert.equal(await preset.getAttribute('aria-pressed'), 'true');
   assert.deepEqual(await page.locator('[data-free-film-source]').evaluateAll(nodes => nodes.map(node => node.dataset.freeFilmSource)), ids);
-  await page.locator('[data-video-quick-control="editor"]').click();
+  // This is the ORIGINAL-FOOTAGE export contract. Montage now requires a
+  // photo choice, exercised above with a licensed fictional coach still.
+  // Disable that optional portrait using the actual visible visitor control
+  // before comparing full encoded frames to the four source masters.
+  // Do not lower source-identity thresholds or bypass the real MP4 encoder.
+  // Quick Start's checkbox is intentionally hidden under the current
+  // workspace navigation. Select the real visible Montage option instead:
+  // switching from an AI-coach portrait to the personal-photo library with
+  // no personal photo turns off the optional portrait overlay. The original
+  // four licensed motion sources and consent/export gates remain mandatory.
+  const portraitOverlay=page.locator('[data-video-photo-enabled]');
+  assert.equal(await portraitOverlay.isChecked(),true,'COACH_PORTRAIT_WAS_ENABLED');
+  const editorWorkspace=page.locator('[data-video-quick-control="editor"]');
+  await press(editorWorkspace);
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-quick-control="editor"]')
+      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  const styleWorkspace=page.locator('[data-video-montage-tab="effects"]');
+  await styleWorkspace.waitFor({state:'visible',timeout:15000});
+  await press(styleWorkspace);
+  const personalPhotoMode=page.locator('[data-video-montage-photo-choice="library"]');
+  await personalPhotoMode.waitFor({state:'visible',timeout:15000});
+  await press(personalPhotoMode);
+  await page.waitForFunction(()=>{
+    const choice=document.querySelector('[data-video-montage-photo-choice="library"]');
+    const checkbox=document.querySelector('[data-video-photo-enabled]');
+    return choice?.getAttribute('aria-pressed')==='true' &&
+      checkbox instanceof HTMLInputElement && !checkbox.checked;
+  },undefined,{timeout:15000});
+  assert.equal(await portraitOverlay.isChecked(),false,'ORIGINAL_MOTION_EXPORT_HAS_NO_PORTRAIT_OVERLAY');
+  assert.deepEqual(await page.locator('[data-free-film-source]').evaluateAll(nodes=>
+    nodes.map(node=>node.dataset.freeFilmSource)),ids,
+    'MONTAGE_PHOTO_MODE_PRESERVES_ORIGINAL_FOUR_MASTER_SOURCES');
   // Match the real post-#3676 Montage. Format/duration remain available via Montage → Advanced storyboard → Video settings.
   await openMontageSettings(page);
   assert.equal(await page.locator('[data-video-basic-editor]').getAttribute('data-montage-panel'),'settings');

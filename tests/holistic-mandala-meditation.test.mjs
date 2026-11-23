@@ -103,12 +103,12 @@ test("visible photo upload is a real native input on iPhone Safari and PWA", () 
   assert.match(studio, /type="file" accept=\{SUPPORT_PHOTO_ACCEPT\}/);
   assert.match(studio, /event\.currentTarget\.files\?\.\[0\]/);
   assert.match(studio, /if \(photo\) onPhotoFileSelected\(photo\)/);
-  assert.equal((studio.match(/<NativePhotoInput label=/g) || []).length, 5,
-    "the four original pickers plus the user-tappable Montage library upload");
+  assert.equal((studio.match(/<NativePhotoInput label=/g) || []).length, 4,
+    "three legacy native pickers plus the new directly-tappable Montage photo-first input");
   const montageUploadStart = studio.indexOf("data-video-montage-photo-upload");
   const montageUploadEnd = studio.indexOf("data-video-montage-current-photo", montageUploadStart);
   assert.ok(montageUploadStart > 0 && montageUploadEnd > montageUploadStart,
-    "the native input belongs to the existing My Library upload tile");
+    "the native input belongs to the photo-first Montage upload zone");
   assert.match(studio.slice(montageUploadStart, montageUploadEnd), /<NativePhotoInput label=/,
     "the user-tappable Montage tile has a real iPhone photo input");
   assert.match(studio, /data-video-quick-photo/);

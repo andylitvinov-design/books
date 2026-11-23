@@ -2107,7 +2107,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [showAdvancedVideo,setShowAdvancedVideo] = useState(false);
   const [montageStyleSettingsOpen,setMontageStyleSettingsOpen] = useState(false);
   // External AI generation is not a Canvas effect and cannot spend XP yet.
-  const [montagePhotoChoice,setMontagePhotoChoice] = useState<"animate"|"library">("library");
+  const [montagePhotoChoice,setMontagePhotoChoice] = useState<"animate"|"library"|"coach">("library");
+  const [montageLibraryTab,setMontageLibraryTab]=useState<"personal"|"animated"|"coaches">("personal");
+  const [montageCoachPhoto,setMontageCoachPhoto]=useState<"mira"|"max"|"sofia"|"alex"|null>(null);
   // Montage is a preference-first wizard: detailed timeline is available only under Text.
   const [montagePanel,setMontagePanel] = useState<"settings"|"effects"|"text"|"concept"|"audio"|"promo">("effects");
   const [extraTextChoice,setExtraTextChoice] = useState<"simple"|"support"|"personal"|null>(null);
@@ -2241,10 +2243,50 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const effect: Effect = "glow";
   const [moneyScene, setMoneyScene] = useState<MoneySceneId | null>("golden-rain");
   const [backgroundOnly,setBackgroundOnly]=useState(true);
-  const selectNativePhoto = (photo: File) => {
-    // Canceled picker preserves the previous choice; no upload takes place.
+  const selectNativePhoto = (photo: File, trustedCoachStill = false) => {
+    // Every visitor-selected photo revokes prior approval, including the
+    // alternate native pickers outside Montage. Only the bounded internal
+    // fictional coach poster may keep its verified first-party provenance.
+    if (!trustedCoachStill) {
+      setMontageCoachPhoto(null);
+      setPhotoConsent(false);
+    }
     setBackgroundOnly(false);
     onPhotoFileSelected(photo);
+  };
+  // First-party fictional coach posters; selecting a still is not AI rendering.
+  const pickMontageCoachPhoto=async (id:"mira"|"max"|"sofia"|"alex")=>{
+    if(recording||preparing||photoPending)return;
+    try{
+      // Same-origin first-party poster, decoded locally; never calls a provider.
+      const image=new Image();
+      image.decoding="async";
+      image.src="/images/holistic-house/my-coach-motion/"+id+"-still.webp";
+      if(typeof image.decode==="function")await image.decode();
+      else if(!image.complete||!image.naturalWidth){
+        await new Promise<void>((resolve,reject)=>{
+          image.onload=()=>resolve();image.onerror=()=>reject(new Error("COACH_IMAGE_LOAD_FAILED"));
+        });
+      }
+      if(image.naturalWidth<1||image.naturalHeight<1)throw new Error("COACH_IMAGE_INVALID");
+      const scale=Math.min(1,900/Math.max(image.naturalWidth,image.naturalHeight));
+      const canvas=document.createElement("canvas");
+      canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));
+      canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));
+      const context=canvas.getContext("2d");
+      if(!context)throw new Error("COACH_IMAGE_CANVAS_UNAVAILABLE");
+      context.drawImage(image,0,0,canvas.width,canvas.height);
+      const blob=await new Promise<Blob|null>(resolve=>canvas.toBlob(resolve,"image/jpeg",0.9));
+      canvas.width=0;canvas.height=0;
+      if(!blob||blob.size<128||blob.size>2_000_000)throw new Error("COACH_IMAGE_INVALID");
+      selectNativePhoto(new File([blob],id+"-coach.jpg",{type:"image/jpeg"}), true);
+      setMontageCoachPhoto(id);setMontagePhotoChoice("coach");setMontageLibraryTab("coaches");
+      setPhotoConsent(true);setNotice("");
+    }catch{
+      setNotice(locale==="ru"?"Фото коуча сейчас недоступно. Выберите другое.":
+        locale==="es"?"La foto del coach no está disponible. Prueba otra.":
+        "This coach photo is unavailable. Choose another.");
+    }
   };
   const [otherScene, setOtherScene] = useState<LocalSceneId>("mountain-air");
   const [showAllMoney, setShowAllMoney] = useState(false);
@@ -3592,8 +3634,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     document.addEventListener("visibilitychange",stopHiddenPreview);
     return ()=>document.removeEventListener("visibilitychange",stopHiddenPreview);
   },[]);
-  // A new visitor's photo must never inherit another person's consent.
-  useEffect(() => { setPhotoConsent(false); }, [photoUrl]);
+  // Client-supplied photographs NEVER inherit previous rights approval.
+  // A decoded first-party fictional coach poster is a different, internally
+  // licensed source. Do not revoke that trusted still when its local blob URL
+  // arrives asynchronously: otherwise Ready silently jumps back to Montage.
+  // Guard photoPending so a previously uploaded client image cannot gain coach
+  // rights during the replacement operation. User uploads clear the coach id.
+  useEffect(() => {
+    const trustedCoachStill = Boolean(photoUrl) && montageCoachPhoto !== null &&
+      montagePhotoChoice === "coach" && !photoPending;
+    setPhotoConsent(trustedCoachStill);
+  }, [photoUrl, montageCoachPhoto, montagePhotoChoice, photoPending]);
   // Native Photos/Files uploads also activate the photo overlay if the file
   // picker was used directly (not only through the compact photo toggle).
   // Unchecking the toggle later does not delete the local photo.
@@ -7277,10 +7328,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <div className={videoStyles.quickSectionHeading}>
             <div><h3 id="quick-image-title"><Camera size={20} aria-hidden="true"/>{approved.preview}</h3>
               <p>{approved.covers}</p></div>
-            <label className={videoStyles.quickEdit+" "+videoStyles.nativePhotoControl} aria-disabled={recording||preparing}>
-              <Camera size={15} aria-hidden="true"/>{quick.pick}
-              <NativePhotoInput label={photoUrl ? ui.replace : quick.pick} disabled={recording||preparing} onPhotoFileSelected={selectNativePhoto}/>
-            </label>
           </div>
 
           <div className={videoStyles.quickImageRail}>
@@ -8152,8 +8199,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
         {/* One original Canvas/MediaRecorder stage; it is now visible after topic selection.
             The source-backed MP4 below is a MINI source example, never a second renderer. */}
-        <section className={[videoStyles.quickSection,videoStyles.catalogShell,videoStyles.previewStage].join(" ")}
-          data-video-live-stage aria-labelledby="video-live-stage-title">
+        <section className={[videoStyles.quickSection,videoStyles.catalogShell,videoStyles.previewStage,montageRef.photoStage].join(" ")}
+          data-video-live-stage data-video-montage-photo-fold={activeWorkspace==="editor"&&montagePanel==="effects"?"true":undefined}
+          aria-labelledby="video-live-stage-title">
 
         <div className={videoStyles.previewStageHeading}>
             <div>
@@ -10534,112 +10582,149 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </div> : null}
           {montagePanel==="effects" ? <div className={videoStyles.montagePane+" "+montageRef.stylePane} data-video-montage-effects>
             <div className={montageRef.photoLead}>
-              <h3>{locale==="ru"?"Добавьте фотографию":locale==="es"?"Añade tu foto":"Add Your Photo"}</h3>
-              <p>{locale==="ru"?"Выберите, как использовать фотографию в вашем видео.":
-                locale==="es"?"Elige cómo utilizar la foto en tu vídeo.":"Choose how to use your photo in your video."}</p>
+              <h3>{locale==="ru"?"Создайте живое фото":locale==="es"?"Crea tu foto viva":"Create Your Living Photo"}</h3>
+              <p>{locale==="ru"?"Ваше фото или фото близкого человека.":locale==="es"?"Tu foto o la de alguien importante.":"Your photo or someone important to you."}</p>
             </div>
+            <label className={montageRef.photoUploadHero} data-video-montage-photo-upload
+              data-has-photo={photoUrl&&montageCoachPhoto===null?"true":"false"}>
+              {photoUrl&&montageCoachPhoto===null?<>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className={montageRef.photoUploadPreview} src={photoUrl} alt="" loading="lazy"/>
+              </>:<span className={montageRef.photoUploadIcon}><Camera size={29} aria-hidden="true"/></span>}
+              <span className={montageRef.photoUploadLabel}>
+                {locale==="ru"?(photoUrl&&montageCoachPhoto===null?"Заменить фото":"Загрузить своё фото"):
+                  locale==="es"?(photoUrl&&montageCoachPhoto===null?"Cambiar foto":"Subir una foto"):
+                    photoUrl&&montageCoachPhoto===null?"Change Photo":"Upload Your Photo"}
+              </span>
+              <span className={montageRef.photoUploadHint}>{locale==="ru"?"Своё или значимого человека":
+                locale==="es"?"Tuya o de una persona especial":"Yours or a person you care about"}</span>
+              {/* The native input receives the actual iPhone Safari tap. No scripted picker. */}
+              <NativePhotoInput label={locale==="ru"?"Выбрать личное фото":locale==="es"?"Elegir foto personal":"Choose a personal photo"}
+                disabled={recording||preparing||photoPending}
+                onPhotoFileSelected={file=>{
+                  setMontagePhotoChoice(current=>current==="coach"?"library":current);
+                  setMontageLibraryTab("personal");setMontageCoachPhoto(null);setPhotoConsent(false);
+                  setNotice("");selectNativePhoto(file);
+                }}/>
+            </label>
             <div className={montageRef.photoChoices} data-video-montage-photo-options role="group"
-              aria-label={locale==="ru"?"Новая анимация или готовая фотография":locale==="es"?
-                "Nueva animación o imagen preparada":"New animation or ready photo"}>
-              <button type="button" className={montageRef.photoCard} data-video-montage-photo-choice="animate"
-                data-selected={montagePhotoChoice==="animate"} aria-pressed={montagePhotoChoice==="animate"}
+              aria-label={locale==="ru"?"Как использовать фото":locale==="es"?"Cómo usar la foto":"How to use the photo"}>
+              {([
+                {id:"animate",tab:"animated",price:250,en:{title:"Animate My Photo",hint:"Smile or nod · AI not yet enabled"},
+                  ru:{title:"Оживить моё фото",hint:"Улыбка, кивок · AI пока недоступен"},
+                  es:{title:"Animar mi foto",hint:"Sonrisa o gesto · IA no activada"}},
+                {id:"library",tab:"personal",price:100,en:{title:"My Photo · Still",hint:"Use an original image without animation"},
+                  ru:{title:"Моё фото без анимации",hint:"Ваше фото останется неподвижным"},
+                  es:{title:"Mi foto · Sin animación",hint:"Usar tu foto fija"}},
+                {id:"coach",tab:"coaches",price:0,en:{title:"AI Coach Photo",hint:"Choose a fictional coach portrait"},
+                  ru:{title:"Фото AI-коуча",hint:"Выберите портрет персонажа"},
+                  es:{title:"Foto de coach IA",hint:"Elige un retrato de coach"}}
+              ] as const).map(item=><button type="button" key={item.id}
+                className={montageRef.photoOption} data-video-montage-photo-choice={item.id}
+                data-selected={montagePhotoChoice===item.id} aria-pressed={montagePhotoChoice===item.id}
                 disabled={recording||preparing} onClick={()=>{
-                  setMontagePhotoChoice("animate");
-                  setNotice(locale==="ru"?"Создание новой AI-анимации пока не подключено к оплате. Можно выбрать фото, но платный рендер здесь не запускается.":
-                    locale==="es"?"La nueva animación de IA no está habilitada. Puedes elegir una foto, pero la generación no se inicia.":
-                      "External AI face animation is not payment-enabled. You can choose a photo, but no paid render starts here.");
+                  setMontagePhotoChoice(item.id);setMontageLibraryTab(item.tab);
+                  if(item.id==="library")setBackgroundOnly(!photoUrl||montageCoachPhoto!==null);
+                  if(item.id==="coach")setBackgroundOnly(montageCoachPhoto===null);
+                  setNotice(item.id==="animate"?(locale==="ru"?
+                    "Анимация улыбки или кивка требует подтверждённого провайдера и заказа. Пока она не запускается.":
+                    locale==="es"?"La animación de rostro aún no está disponible; no se inicia ningún render.":
+                      "Face animation needs an approved provider and verified order; no render is started."): "");
                 }}>
-                <span className={montageRef.photoImage}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={photoUrl||quickStyleFilmFor(theme,0)?.poster||quickCanvasPoster("sun-flight")} alt="" loading="lazy"/>
-                  <i>AI</i>
+                <span className={montageRef.photoOptionRadio}>{montagePhotoChoice===item.id?
+                  <Check size={17} strokeWidth={3} aria-hidden="true"/>:null}</span>
+                <span className={montageRef.photoOptionText}>
+                  <strong>{item[locale].title}</strong><small>{item[locale].hint}</small>
                 </span>
-                {montagePhotoChoice==="animate"?<span className={montageRef.photoCardCheck}><Check size={17}/></span>:null}
-                <strong className={montageRef.photoTitle}>{locale==="ru"?"Оживить моё новое фото":
-                  locale==="es"?"Animar una foto nueva":"Animate My New Photo"}</strong>
-                <span className={montageRef.photoHint}>{locale==="ru"?"Улыбка, приветствие, движение — после подключения AI.":
-                  locale==="es"?"Sonrisa o saludo, al activar el servicio IA.":
-                    "Smile or greeting, once AI rendering is activated."}</span>
-                <span className={montageRef.photoPrice}>500 XP</span>
-              </button>
-              <button type="button" className={montageRef.photoCard} data-video-montage-photo-choice="library"
-                data-selected={montagePhotoChoice==="library"} aria-pressed={montagePhotoChoice==="library"}
-                disabled={recording||preparing} onClick={()=>{
-                  setMontagePhotoChoice("library");setBackgroundOnly(true);
-                  quickPickStyle(0);setNotice("");
-                }}>
-                <span className={montageRef.photoImage+" "+montageRef.collage}>
-                  {([0,1,2] as const).map(index=><img key={index}
-                    src={quickStyleFilmFor(theme,index)?.poster||
-                      quickCanvasPoster(quickStyleSceneIds[theme][index] as LocalSceneId)}
-                    alt="" loading="lazy"/>)}
-                </span>
-                {montagePhotoChoice==="library"?<span className={montageRef.photoCardCheck}><Check size={17}/></span>:null}
-                <strong className={montageRef.photoTitle}>{locale==="ru"?"Фото из библиотеки или моё фото":
-                  locale==="es"?"Foto de la biblioteca o propia":"Choose a Ready Photo or Mine"}</strong>
-                <span className={montageRef.photoHint}>{locale==="ru"?"Готовые кадры или собственное фото без новой AI-анимации.":
-                  locale==="es"?"Imágenes listas o tu foto, sin animación IA nueva.":
-                    "Ready scenes or your photo, with no new AI animation."}</span>
-                <span className={montageRef.photoPrice}>250 XP</span>
-              </button>
+                <span className={montageRef.photoOptionPrice}>{item.price} XP</span>
+              </button>)}
             </div>
             <section className={montageRef.avatarLibrary} data-video-montage-avatar-library
-              aria-label={locale==="ru"?"Библиотека фото и аватаров":locale==="es"?"Biblioteca de fotos y avatares":"Photo and avatar library"}>
+              aria-label={locale==="ru"?"Библиотека фотографий":locale==="es"?"Biblioteca de fotos":"Photo library"}>
               <div className={montageRef.avatarHeader}>
                 <strong>{locale==="ru"?"Моя библиотека":locale==="es"?"Mi biblioteca":"My Library"}</strong>
-                <span>{locale==="ru"?"Фото, готовые сцены и сохранённые аватары":
-                  locale==="es"?"Fotos, escenas y avatares guardados":"Photos, scenes and saved avatars"}</span>
               </div>
-              <div className={montageRef.avatarRail}>
-                <label className={montageRef.photoUpload} data-video-montage-photo-upload
-                  aria-disabled={recording||preparing||photoPending}>
-                  <Camera size={25} aria-hidden="true"/>
-                  <span>{locale==="ru"?"Загрузить фото":locale==="es"?"Subir foto":"Upload Photo"}</span>
-                  {/* iOS Safari must tap the native file input itself, not a scripted hidden input. */}
-                  <NativePhotoInput label={locale==="ru"?"Загрузить фото":locale==="es"?"Subir foto":"Upload Photo"}
-                    disabled={recording||preparing||photoPending}
-                    onPhotoFileSelected={file=>{setMontagePhotoChoice("library");setNotice("");selectNativePhoto(file);}}/>
-                </label>
-                {photoUrl?<button type="button" className={montageRef.avatarThumb}
-                  data-video-montage-current-photo aria-pressed={!backgroundOnly}
-                  disabled={recording||preparing} onClick={()=>{setMontagePhotoChoice("library");setBackgroundOnly(false);}}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={photoUrl} alt="" loading="lazy"/><span>{locale==="ru"?"Моё фото":locale==="es"?"Mi foto":"My Photo"}</span>
-                </button>:null}
-                {([0,1,2] as const).map(index=><button type="button" key={index}
-                  className={montageRef.avatarThumb} data-video-montage-library-scene={index}
-                  aria-pressed={montagePhotoChoice==="library"&&quickStyleIndex===index&&backgroundOnly}
-                  disabled={recording||preparing||!quickStyleFilmFor(theme,index)}
-                  onClick={()=>{setMontagePhotoChoice("library");setBackgroundOnly(true);quickPickStyle(index);}}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={quickStyleFilmFor(theme,index)?.poster||
-                    quickCanvasPoster(quickStyleSceneIds[theme][index] as LocalSceneId)} alt="" loading="lazy"/>
-                  <span>{quick.styles[index]}</span>
+              <div className={montageRef.avatarTabs} role="group"
+                aria-label={locale==="ru"?"Разделы библиотеки":locale==="es"?"Secciones de biblioteca":"Photo library sections"}>
+                {([
+                  {id:"personal",en:"My Photos",ru:"Личные фото",es:"Mis fotos"},
+                  {id:"animated",en:"Animated",ru:"Анимированные",es:"Animadas"},
+                  {id:"coaches",en:"Coaches",ru:"Фото коучей",es:"Coaches"}
+                ] as const).map(item=><button type="button" key={item.id}
+                  data-video-montage-library-tab={item.id}
+                  aria-pressed={montageLibraryTab===item.id} disabled={recording||preparing}
+                  onClick={()=>setMontageLibraryTab(item.id)}>
+                  {item[locale]}
                 </button>)}
-                <Link className={montageRef.avatarLibraryLink} prefetch={false}
-                  href={"/"+locale+"/app/videos?tab=photos"}>
-                  <FolderOpen size={22} aria-hidden="true"/>
-                  {locale==="ru"?"Мои фото":locale==="es"?"Mis fotos":"My Photos"}
-                </Link>
               </div>
-              {/* The existing account-private gallery: explicit consent, upload, reuse and delete. */}
-              <div data-video-montage-saved-photos>
-                <VideoPhotoLibrary locale={locale} compact disabled={recording||preparing||photoPending}
-                  onSelectPhoto={file=>{setMontagePhotoChoice("library");setNotice("");selectNativePhoto(file);}}/>
+              <div className={montageRef.avatarPanel} data-video-montage-library-panel={montageLibraryTab}>
+                {montageLibraryTab==="personal"?<div className={montageRef.libraryPhotoRow}>
+                  {photoUrl&&montageCoachPhoto===null?<button type="button"
+                    className={montageRef.avatarThumb} data-video-montage-current-photo
+                    aria-pressed={!backgroundOnly} disabled={recording||preparing}
+                    onClick={()=>{setMontagePhotoChoice("library");setBackgroundOnly(false);}}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={photoUrl} alt="" loading="lazy"/>
+                    <span>{locale==="ru"?"Ваше фото":locale==="es"?"Tu foto":"Your photo"}</span>
+                  </button>:<p className={montageRef.emptyPhotoNote}>{locale==="ru"?
+                    "Загрузите фото выше или откройте сохранённые.":
+                    locale==="es"?"Sube una foto o abre las guardadas.":
+                      "Upload above or open your saved photos."}</p>}
+                  <div className={montageRef.savedPhotoDrawer} data-video-montage-saved-photos>
+                    <VideoPhotoLibrary locale={locale} compact disabled={recording||preparing||photoPending}
+                      onSelectPhoto={file=>{
+                        setMontagePhotoChoice("library");setMontageLibraryTab("personal");
+                        setMontageCoachPhoto(null);setPhotoConsent(false);setNotice("");
+                        selectNativePhoto(file);
+                      }}/>
+                  </div>
+                  <Link prefetch={false} className={montageRef.avatarLibraryLink}
+                    href={"/"+locale+"/app/videos?tab=photos"}>{locale==="ru"?"Все фото":locale==="es"?"Ver fotos":"See all"}</Link>
+                </div>:null}
+                {montageLibraryTab==="animated"?<p className={montageRef.emptyPhotoNote}
+                  role="status">{locale==="ru"?"Сохранённых анимированных фото пока нет. AI-рендер не запускается.":
+                  locale==="es"?"Aún no hay fotos animadas guardadas. No se inicia la IA.":
+                    "No saved animated photos yet. AI rendering is not enabled."}</p>:null}
+                {montageLibraryTab==="coaches"?<div className={montageRef.coachRail}>
+                  {([
+                    {id:"mira",en:"Mira",ru:"Мира",es:"Mira"},
+                    {id:"max",en:"Max",ru:"Макс",es:"Max"},
+                    {id:"sofia",en:"Sofia",ru:"София",es:"Sofía"},
+                    {id:"alex",en:"Alex",ru:"Алекс",es:"Alex"}
+                  ] as const).map(item=><button type="button" key={item.id}
+                    data-video-montage-coach={item.id} aria-pressed={montageCoachPhoto===item.id}
+                    disabled={recording||preparing||photoPending}
+                    onClick={()=>void pickMontageCoachPhoto(item.id)}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img alt="" loading="lazy"
+                      src={"/images/holistic-house/my-coach-motion/"+item.id+"-still.webp"}/>
+                    <span>{item[locale]}</span>
+                  </button>)}
+                </div>:null}
               </div>
             </section>
-            {photoUrl&&!backgroundOnly?<label className={montageRef.photoConsent}>
+            {photoUrl&&montageCoachPhoto===null&&montagePhotoChoice!=="coach"?<label className={montageRef.photoConsent}>
               <input type="checkbox" checked={photoConsent} data-video-montage-photo-rights
                 disabled={recording||preparing} onChange={e=>setPhotoConsent(e.currentTarget.checked)}/>
-              {locale==="ru"?"У меня есть право использовать это фото в видео.":
-                locale==="es"?"Tengo permiso para utilizar esta foto.":
+              {locale==="ru"?"Я имею право использовать это фото в видео.":
+                locale==="es"?"Tengo permiso para usar esta foto.":
                   "I have permission to use this photo in my video."}
             </label>:null}
             {montagePhotoChoice==="animate"?<p className={montageRef.photoGate} role="status">
-              {locale==="ru"?"Новая AI-анимация требует отдельного подтверждённого заказа. Пока выберите фото без оживления.":
-                locale==="es"?"La nueva animación de IA requiere un pedido habilitado. Elige una foto sin animación.":
-                  "New AI animation requires a verified order and is not enabled here yet. Choose a non-animated photo to continue."}
+              {locale==="ru"?"Анимация пока недоступна: нужен подтверждённый заказ и разрешённая AI-генерация.":
+                locale==="es"?"Animación no disponible: requiere un pedido verificado y la aprobación de IA.":
+                  "Face animation is not payment-enabled. Choose a still photo or coach to continue."}
             </p>:null}
+            <button type="button" className={videoStyles.montageStepNext+" "+montageRef.styleNext}
+              data-video-montage-next="audio"
+              disabled={recording||preparing||photoPending||montagePhotoChoice==="animate"||
+                (montagePhotoChoice==="library"&&(!photoUrl||montageCoachPhoto!==null||!photoConsent))||
+                (montagePhotoChoice==="coach"&&(!montageCoachPhoto||!photoUrl))}
+              onClick={()=>{setMontagePanel("audio");setBasicPanelTab("music");setNotice("");}}>
+              <Sparkles size={21} aria-hidden="true"/>
+              <span>{locale==="ru"?"Далее → Аудио":locale==="es"?"Continuar → Audio":"Continue to Audio"}</span>
+              <ArrowRight size={21} aria-hidden="true"/>
+            </button>
             <details className={montageRef.moreStyles} data-video-montage-more-styles>
               <summary>{locale==="ru"?"Другие визуальные стили и формат видео":
                 locale==="es"?"Más estilos y formato de vídeo":"More visual styles and video format"}</summary>
@@ -10648,7 +10733,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 const sceneId=quickStyleSceneIds[theme][index];
                 const film=quickStyleFilmFor(theme,index);
                 const art=film?.poster||quickCanvasPoster(sceneId as LocalSceneId);
-                return <button key={poster} type="button" data-video-montage-style={index}
+                return <button key={poster} type="button" data-video-montage-style={index} data-video-montage-library-scene={index}
                   aria-pressed={quickStyleIndex===index} disabled={recording||preparing||!film}
                   onClick={()=>quickPickStyle(index)}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -10693,20 +10778,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </fieldset>
 
             </details>
-            <button type="button" className={videoStyles.montageStepNext+" "+montageRef.styleNext}
-              data-video-montage-next="audio"
-              disabled={recording||preparing||montagePhotoChoice==="animate"||
-                Boolean(photoUrl&&!backgroundOnly&&!photoConsent)}
-              onClick={()=>{setMontagePanel("audio");setBasicPanelTab("music");setNotice("");}}>
-              <Sparkles size={22} aria-hidden="true"/>
-              <span>{locale==="ru"?"Далее → Аудио":locale==="es"?"Continuar → Audio":"Continue to Audio"}
-                {" · "}{montagePhotoChoice==="animate"?"500":"250"} XP</span>
-              <ArrowRight size={22} aria-hidden="true"/>
-            </button>
             <p className={montageRef.actualPriceNote}>{locale==="ru"?
-              "Это указанные тарифы пакетов. На этом шаге XP не списываются; итоговую цену подтверждает сервер при создании.":
-              locale==="es"?"Precios indicativos del paquete. No se cobran XP en este paso; el servidor valida el precio final.":
-                "Package prices shown. No XP is charged here; the final price is validated by the server."}
+              "Здесь XP не списываются. 250/100/0 XP — цены фотоопций в макете; стоимость создания видео подтверждает сервер.":
+              locale==="es"?"Aquí no se cobran XP. Las opciones 250/100/0 son orientativas; el servidor valida el vídeo.":
+                "No XP is charged here. Photo-mode XP is indicative; the server confirms the final video price."}
             </p>
           </div> : null}
           {montagePanel==="audio" ? <div className={videoStyles.montageAudioCompact+" "+montageRef.audioWrap} data-video-montage-audio>
