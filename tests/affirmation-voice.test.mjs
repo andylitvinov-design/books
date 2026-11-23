@@ -161,7 +161,7 @@ test("voice browser opens the native Style disclosure and applies six Montage st
  const end=source.indexOf("// Real guest route browser acceptance",start);
  const flow=source.slice(start,end);
  const click=flow.indexOf("await mirror.locator('[data-hh-mirror-next]').click();");
- const ideas=flow.indexOf("await enterPersonalAfterMontageExtra(page)",click);
+ const ideas=flow.indexOf("await enterPersonalAfterMontageExtra(page,engine)",click);
  const goal=flow.indexOf('const ideasGoalPane=page.locator',ideas);
  const choices=flow.indexOf('await expect(goalChoices).toHaveCount(3)',goal);
  const goalSelected=flow.indexOf('data-video-ideas-goal-choice="rest"',choices);
