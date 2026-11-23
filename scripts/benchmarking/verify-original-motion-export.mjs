@@ -215,17 +215,32 @@ try {
   // Disable that optional portrait using the actual visible visitor control
   // before comparing full encoded frames to the four source masters.
   // Do not lower source-identity thresholds or bypass the real MP4 encoder.
+  // The portrait option lives in the Goal workspace, not the hidden
+  // Montage editor DOM. Navigate using the *visible* app rail before tapping
+  // its public label; a hidden input click is not a real Safari user action.
+  const goalWorkspace=page.locator('[data-video-quick-control="video"]');
+  await press(goalWorkspace);
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-quick-control="video"]')
+      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
   const portraitOverlay=page.locator('[data-video-photo-enabled]');
-  await portraitOverlay.waitFor({state:'visible',timeout:15000});
+  const portraitLabel=portraitOverlay.locator('..');
+  await portraitLabel.waitFor({state:'visible',timeout:15000});
   assert.equal(await portraitOverlay.isChecked(),true,'COACH_PORTRAIT_WAS_ENABLED');
-  if(engine==='webkit')await portraitOverlay.tap();
-  else await portraitOverlay.uncheck();
+  await press(portraitLabel);
   await page.waitForFunction(()=>{
     const input=document.querySelector('[data-video-photo-enabled]');
     return input instanceof HTMLInputElement && !input.checked;
   },undefined,{timeout:15000});
   assert.equal(await portraitOverlay.isChecked(),false,'ORIGINAL_MOTION_EXPORT_HAS_NO_PORTRAIT_OVERLAY');
-  await page.locator('[data-video-quick-control="editor"]').click();
+  const editorWorkspace=page.locator('[data-video-quick-control="editor"]');
+  await press(editorWorkspace);
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-quick-control="editor"]')
+      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  assert.deepEqual(await page.locator('[data-free-film-source]').evaluateAll(nodes=>
+    nodes.map(node=>node.dataset.freeFilmSource)),ids,
+    'GOAL_VISIT_PRESERVES_ORIGINAL_FOUR_MASTER_SOURCES');
   // Match the real post-#3676 Montage. Format/duration remain available via Montage → Advanced storyboard → Video settings.
   await openMontageSettings(page);
   assert.equal(await page.locator('[data-video-basic-editor]').getAttribute('data-montage-panel'),'settings');
