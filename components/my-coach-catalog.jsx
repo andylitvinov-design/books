@@ -416,7 +416,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
             if (!persona) return null
             const stillImage = id === 'harry'
               ? '/images/holistic-house/my-coach-motion/harry-soft-still.webp'
-              : id === 'genie' ? '/images/holistic-house/my-coach-motion/genie-photo.webp'
+              : id === 'genie' ? '/images/holistic-house/my-coach-motion/genie-calm-loop-poster.webp'
               : `/images/holistic-house/my-coach-motion/${id}-still.webp`
             return <button type="button" key={id} className={heroStyles.railCard}
               aria-pressed={selected.id === id}
