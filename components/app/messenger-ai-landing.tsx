@@ -147,9 +147,9 @@ const ACTIONS=[
   {id:"ask",icon:MessageCircle},
 ] as const;
 
-export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupport,onTopicSelect,onStartAnalysis,composer}:{
+export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupport,onTopicSelect,onStartAnalysis,onGoalChoice,composer}:{
   locale:PublicLocale;onCreateVideo:()=>void;onPractice:()=>void;onAsk:()=>void;onSupport:()=>void;
-  onTopicSelect:(text:string)=>void;onStartAnalysis:()=>void;composer:ReactNode
+  onTopicSelect:(text:string)=>void;onStartAnalysis:()=>void;onGoalChoice:(text:string)=>void;composer:ReactNode
 }){
   const t=COPY[locale];
   const inner=INNER_COPY[locale];
@@ -236,9 +236,9 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupp
       </div>
       <div className={css.welcomeRow} data-hh-ali-first-message data-hh-ali-hero-persona={persona.id}>
         <article className={css.welcomeBubble} data-hh-ai-landing-question>
-          <h2>{locale==="ru"?<>Привет! Я {guideName} — твой ИИ-проводник к мечте. ✨</>:
-            locale==="es"?<>¡Hola! Soy {guideName}, tu guía de IA hacia tus sueños. ✨</>:
-              <>Hi! I&apos;m {guideName} — your AI guide to your dreams. ✨</>}</h2>
+          <h2>{locale==="ru"?<>Привет! Я {guideName} — {persona.id==="alex"?"твой ИИ-джин и проводник":"твой ИИ-проводник"} к мечте. ✨</>:
+            locale==="es"?<>¡Hola! Soy {guideName}, {persona.id==="alex"?"tu genio de IA y guía":"tu guía de IA"} hacia tus sueños. ✨</>:
+              <>Hi! I&apos;m {guideName} — {persona.id==="alex"?"your AI genie and guide":"your AI guide"} to your dreams. ✨</>}</h2>
           <p>{locale==="ru"?"У тебя есть желание, мечта или цель? А может, ты пока ищешь своё направление?":
             locale==="es"?"¿Tienes un deseo, un sueño o una meta? ¿O todavía buscas tu camino?":
               "Do you have a wish, a dream, or a goal? Or are you still finding your direction?"}</p>
@@ -263,14 +263,14 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupp
     <div className={css.goalButtons} role="group" data-hh-genie-goal-choices
       aria-label={locale==="ru"?"С чего начнём":locale==="es"?"Cómo empezamos":"Where shall we begin"}>
       <button type="button" data-hh-genie-goal-choice="discover"
-        onClick={()=>onTopicSelect(locale==="ru"?"Помоги мне найти мою цель. Я пока ищу направление и хочу разобраться, чего действительно хочу.":
+        onClick={()=>onGoalChoice(locale==="ru"?"Помоги мне найти мою цель. Я пока ищу направление и хочу разобраться, чего действительно хочу.":
           locale==="es"?"Ayúdame a descubrir mi meta. Todavía estoy buscando una dirección.":"Help me find my goal. I'm still looking for direction.")}>
         <Compass size={23} aria-hidden="true"/>
         <span>{locale==="ru"?"Помоги найти цель":locale==="es"?"Ayúdame a encontrar mi meta":"Help me find my goal"}</span>
         <ArrowRight size={21} aria-hidden="true"/>
       </button>
       <button type="button" data-hh-genie-goal-choice="defined"
-        onClick={()=>onTopicSelect(locale==="ru"?"У меня уже есть цель. Помоги уточнить её и найти лучший следующий шаг.":
+        onClick={()=>onGoalChoice(locale==="ru"?"У меня уже есть цель. Помоги уточнить её и найти лучший следующий шаг.":
           locale==="es"?"Ya tengo una meta. Ayúdame a aclararla y elegir el próximo paso.":"I already have a goal. Help me clarify it and choose the next step.")}>
         <Flag size={23} aria-hidden="true"/>
         <span>{locale==="ru"?"У меня уже есть цель":locale==="es"?"Ya tengo una meta":"I already have a goal"}</span>

@@ -12,7 +12,7 @@ test('genie dialogue opens in the established Messenger first turn, not a second
  assert.match(landing,/data-hh-ali-first-message/);
  assert.match(landing,/data-hh-genie-goal-choice="discover"/);
  assert.match(landing,/data-hh-genie-goal-choice="defined"/);
- assert.match(landing,/onTopicSelect\(locale===/);
+ assert.match(landing,/onGoalChoice\(locale===/);
  assert.match(landing,/data-hh-ai-inline-composer>\{composer\}/);
  assert.match(landing,/data-hh-ai-persona-voice-play/);
  assert.match(landing,/playAliPersonaAudio\(persona.id,locale/);
