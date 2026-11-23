@@ -12,5 +12,5 @@ test('Samir first viewport has one non-overlapping scene, goal choices, and menu
 test('initial input remains 16px, consent remains legible, plus menu opens above dock',()=>{
  for(const s of ['Samir one-viewport composer','not([data-gemini-pending="true"]):not([data-voice-onboarding="true"])',
   'height:42px;min-height:42px;max-height:72px','height:44px;min-height:44px',
-  'bottom:calc(100% + 9px)'])assert.ok(chat.includes(s),s);
+  'bottom:calc(100% + 9px)','height:48px;min-height:48px;padding:6px 7px'])assert.ok(chat.includes(s),s);
 });

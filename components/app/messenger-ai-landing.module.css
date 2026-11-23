@@ -589,3 +589,9 @@
  .root[data-hh-ai-landing] .goalButtons>button{min-height:43px}
  .root[data-hh-ai-landing] .inlineComposer{padding:3px!important}
 }
+
+/* Narrow-height Safari: a 320px first turn keeps greeting and form readable. */
+@media(max-width:365px){
+ .root[data-hh-ai-landing] .welcomeBubble{padding:8px 9px!important}
+ .root[data-hh-ai-landing] .welcomeBubble p{line-height:1.25!important}
+}
