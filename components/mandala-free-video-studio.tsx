@@ -10591,17 +10591,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   locale==="es"?"Fotos, escenas y avatares guardados":"Photos, scenes and saved avatars"}</span>
               </div>
               <div className={montageRef.avatarRail}>
-                <button type="button" className={montageRef.photoUpload} data-video-montage-photo-upload
-                  disabled={recording||preparing||photoPending} onClick={()=>{
-                    // Reuse the one native file input in the parent; no duplicate
-                    // input, no tariff change when a new portrait is selected.
-                    setBackgroundOnly(false);
-                    if(montagePhotoChoice!=="animate")setNotice("");
-                    onPickPhoto();
-                  }}>
+                <label className={montageRef.photoUpload} data-video-montage-photo-upload
+                  aria-disabled={recording||preparing||photoPending}>
                   <Camera size={25} aria-hidden="true"/>
                   <span>{locale==="ru"?"Загрузить фото":locale==="es"?"Subir foto":"Upload Photo"}</span>
-                </button>
+                  {/* iOS Safari must tap the native file input itself, not a scripted hidden input. */}
+                  <NativePhotoInput label={locale==="ru"?"Загрузить фото":locale==="es"?"Subir foto":"Upload Photo"}
+                    disabled={recording||preparing||photoPending}
+                    onPhotoFileSelected={file=>{setMontagePhotoChoice("library");setNotice("");selectNativePhoto(file);}}/>
+                </label>
                 {photoUrl?<button type="button" className={montageRef.avatarThumb}
                   data-video-montage-current-photo aria-pressed={!backgroundOnly}
                   disabled={recording||preparing} onClick={()=>{setMontagePhotoChoice("library");setBackgroundOnly(false);}}>
@@ -10619,10 +10617,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   <span>{quick.styles[index]}</span>
                 </button>)}
                 <Link className={montageRef.avatarLibraryLink} prefetch={false}
-                  href={"/"+locale+"/app/videos?tab=avatars"}>
+                  href={"/"+locale+"/app/videos?tab=photos"}>
                   <FolderOpen size={22} aria-hidden="true"/>
-                  {locale==="ru"?"Все материалы":locale==="es"?"Ver todos":"See All"}
+                  {locale==="ru"?"Мои фото":locale==="es"?"Mis fotos":"My Photos"}
                 </Link>
+              </div>
+              {/* The existing account-private gallery: explicit consent, upload, reuse and delete. */}
+              <div data-video-montage-saved-photos>
+                <VideoPhotoLibrary locale={locale} compact disabled={recording||preparing||photoPending}
+                  onSelectPhoto={file=>{setMontagePhotoChoice("library");setNotice("");selectNativePhoto(file);}}/>
               </div>
             </section>
             {photoUrl&&!backgroundOnly?<label className={montageRef.photoConsent}>
