@@ -30,7 +30,9 @@ test('minimal mode keeps accessible title and collapsed transcript without a lar
   assert.match(minimal, /styles.accessibleTitle/);
   assert.match(minimal, /<details ref=\{transcriptRef\} className="site-video-transcript">/);
   assert.match(minimal, /text.transcriptShort/);
-  assert.match(minimal, /site-video-ai-badge/);
+  // Provenance remains accessible in the collapsed Details text, not as a pill over the video.
+  assert.doesNotMatch(minimal, /site-video-ai-badge/);
+  assert.match(minimal, /isHeygen&&<p>\{aiDisclosure\}<\/p>/);
   assert.doesNotMatch(minimal, /site-video-title|site-video-description|site-video-duration-text|<details[^>]*\bopen/);
   assert.match(css, /left: 14px; bottom: 14px/);
   assert.match(css, /prefers-reduced-motion/);
@@ -38,7 +40,9 @@ test('minimal mode keeps accessible title and collapsed transcript without a lar
 
 test('playback remains click-gated and uses the unchanged stable provider embed', () => {
   assert.match(player, /useState\(false\)/);
-  assert.match(player, /onClick=\{\(\) => \{ setShowRecovery\(false\); setPlaying\(true\); \}\}/);
+  assert.match(player, /onClick=\{playSelected\}/);
+  assert.match(player, /if\(!englishYoutubeOnly\)\{setPlaying\(true\);return;\}/);
+  assert.match(player, /resolveVerifiedEnglishYouTubeId\(video.heygenId,controller.signal\)/);
   assert.match(player, /https:\/\/app\.heygen\.com\/embeds\//);
   assert.doesNotMatch(player, /<video|setInterval|fetch\(/);
 });

@@ -161,16 +161,51 @@ try {
     assert.equal(await block.locator('iframe').count(), 0)
     const play = block.getByRole('button', { name: /^(Watch video|Open video|Смотреть видео):/ })
     if (live) await pause(1200)
-    await play.click()
+    // English archival HeyGen IDs MUST have an actual verified upload receipt.
+    // The isolated CI Redis is intentionally empty; its first click must fail closed.
+    // The separately marked local fixture tests only the client click-to-iframe wiring.
+    let expectedYouTubeId = youtubeId
+    let isolatedReceiptRoute = null
+    if (locale === 'en') {
+      const endpoint = new URL('/api/public/english-intro-video?videoId='+encodeURIComponent(id), origin)
+      const receiptResponse = await context.request.get(endpoint.href, { timeout: 15000 })
+      assert.equal(receiptResponse.status(), 200, 'Verified-channel readback endpoint must respond')
+      const payload = await receiptResponse.json()
+      const verified = payload?.youtubeId
+      assert.ok(verified === null || (typeof verified === 'string' && /^[A-Za-z0-9_-]{11}$/.test(verified)),
+        'Never accept an unverifiable video ID')
+      if (verified) {
+        expectedYouTubeId = verified
+        await play.click()
+      } else {
+        await play.click()
+        await expect(block.locator('[data-english-video-source="youtube"]')).toContainText(
+          'not yet been verified on the English YouTube channel', { timeout: 15000 })
+        await expect(block.locator('iframe')).toHaveCount(0)
+        if (live) throw new Error('LIVE blocked: missing verified English YouTube receipt for '+slot)
+        // Isolated CI UI fixture is not provider confirmation or LIVE proof.
+        isolatedReceiptRoute = url => url.pathname === '/api/public/english-intro-video' &&
+          url.searchParams.get('videoId') === id
+        await page.route(isolatedReceiptRoute, route => route.fulfill({
+          status: 200, contentType: 'application/json',
+          headers: { 'cache-control': 'no-store' },
+          body: JSON.stringify({ youtubeId }),
+        }))
+        console.log('LOCAL_UI_FIXTURE_ONLY_NO_PROVIDER_PROOF '+slot)
+        await play.click()
+      }
+    } else {
+      await play.click()
+    }
     if (live && await block.locator('iframe').count() === 0) {
-      // A very fast synthetic click can land before Next hydration has attached
-      // client handlers to SSR markup. Retry once after hydration rather than
-      // treating that test-timing race as a playback failure.
+      // Retry a click once after real hydration, not after a provider failure.
       await pause(1200)
       if (await play.count()) await play.click()
     }
-    await expect(block.locator('iframe')).toHaveAttribute('src', new RegExp(`^https://www\\.youtube-nocookie\\.com/embed/${youtubeId}\\?`), { timeout: 10000 })
+    await expect(block.locator('iframe')).toHaveAttribute('src', new RegExp(
+      `^https://www\\.youtube-nocookie\\.com/embed/${expectedYouTubeId}\\?`), { timeout: 15000 })
     await expect(block.locator('iframe')).toHaveAttribute('data-video-playback', 'youtube')
+    if (isolatedReceiptRoute) await page.unroute(isolatedReceiptRoute)
   }
   let russianPresentationVerified = false
   for (const home of ['/?full=1', '/ru?full=1']) {

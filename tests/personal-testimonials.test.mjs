@@ -165,7 +165,9 @@ test("the testimonial gallery uses real ID-matched archived frames instead of de
   assert.ok(legacyClick || verifiedEnglishClick,
     'video must retain a real click-to-play path, with a verified EN YouTube ID when required');
   assert.match(player, /youtube-nocookie\.com\/embed\/\$\{playbackYouTubeId\}/);
-  assert.match(player, /href=\{watchUrl\}/);
+  // English HeyGen sources may link only to a verified YouTube receipt, never archival HeyGen.
+  assert.match(player, /href=\{verifiedWatchUrl\}/);
+  assert.match(player, /verifiedWatchUrl=englishYoutubeOnly/);
   // Two older RU About clips remain in the catalog without a wrong-person thumbnail.
   for (const id of ["m9RfDgK76PU", "5oj0BIbLT4w"]) {
     assert.ok(component.includes(`id: "${id}"`));
