@@ -241,8 +241,13 @@ async function verifyWorkspaceHydration(browser,locale){
     await purpose.locator('[data-video-ideas-goal-next]').click();
     await mirror.locator('[data-hh-mirror-video-format="pro"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
+    await expect(page.locator('[data-video-quick-control="video"]')).toHaveAttribute("aria-pressed","true");
     await expect(mirror.locator('[data-hh-mirror-composer] textarea')).toBeVisible();
+    await expect(mirror.locator('[data-hh-mirror-progress]')).toHaveCount(0);
+    await expect(mirror.locator('[data-hh-mirror-ideas-cta]')).toHaveCount(0);
+    await expect(mirror.locator('[data-hh-mirror-play-example]')).toHaveCount(0);
     await expect(page.locator('[data-video-live-stage]')).toBeHidden();
+    await mirror.locator('[data-hh-mirror-guide-menu]').click();
     await mirror.locator('[data-hh-mirror-play-example]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-video-preview","open");
     await expect(page.locator('[data-video-live-stage]')).toBeVisible();
@@ -258,6 +263,8 @@ async function verifyWorkspaceHydration(browser,locale){
     }[locale];
     for(let index=0;index<4;index++)await expect(mirror.locator('[data-hh-mirror-goal-choice]').nth(index))
       .toContainText(approvedAxisLabels[index]);
+    if(await mirror.locator('[data-hh-mirror-guide-menu]').getAttribute("aria-expanded")!=="true")
+      await mirror.locator('[data-hh-mirror-guide-menu]').click();
     await mirror.locator('[data-hh-mirror-back-landing]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-screen","format");
     await mirror.locator('[data-hh-mirror-back-format]').click();
@@ -271,6 +278,8 @@ async function verifyWorkspaceHydration(browser,locale){
     await mirror.locator('[data-hh-mirror-video-format="basic"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","present");
+    if(await mirror.locator('[data-hh-mirror-guide-menu]').getAttribute("aria-expanded")!=="true")
+      await mirror.locator('[data-hh-mirror-guide-menu]').click();
     await mirror.locator('[data-hh-mirror-back-landing]').click();
     await mirror.locator('[data-hh-mirror-back-format]').click();
     await mirror.locator('[data-hh-mirror-back-purpose]').click();
@@ -281,8 +290,10 @@ async function verifyWorkspaceHydration(browser,locale){
     await mirror.locator('[data-hh-mirror-video-format="vip"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","business");
-    await expect(mirror.locator('header').first()).toContainText({
-      en:"Videos for Work",ru:"Видео для работы",es:"Vídeos para el trabajo"
+    // Approved Goal deliberately has no second hero. Assert actual work input instead.
+    await expect(mirror.locator('[data-hh-mirror-wish]')).toHaveAttribute("placeholder",{
+      en:"Describe your video or service…",ru:"Опишите видео или услугу…",
+      es:"Describe tu vídeo o servicio…"
     }[locale]);
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","business");
     const workCards=mirror.locator('[data-hh-mirror-goal-choice]');
@@ -314,14 +325,28 @@ async function verifyWorkspaceHydration(browser,locale){
       .toHaveAttribute("aria-pressed","true",{timeout:15000});
     await page.locator('[data-video-quick-control="video"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-step","1");
-    await mirror.locator('[data-hh-mirror-audience="present"]').click();
+    // The removed audience submenu is not a navigational shortcut.
+    // Return through the existing Guide me and approved landing choice.
+    if(await mirror.locator('[data-hh-mirror-guide-menu]').getAttribute("aria-expanded")!=="true")
+      await mirror.locator('[data-hh-mirror-guide-menu]').click();
+    await mirror.locator('[data-hh-mirror-back-landing]').click();
+    await mirror.locator('[data-hh-mirror-back-format]').click();
+    await mirror.locator('[data-hh-mirror-back-purpose]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","landing");
+    await mirror.locator('[data-hh-mirror-enter="others"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","present");
     await expect(mirror).toHaveAttribute("data-hh-mirror-screen","purpose");
     await purpose.locator('[data-video-ideas-goal-choice="accept"]').click();
     await purpose.locator('[data-video-ideas-goal-next]').click();
     await mirror.locator('[data-hh-mirror-video-format="basic"]').click();
     await expect(mirror.locator('[data-hh-mirror-goal-choice="stress"]')).toBeVisible();
-    await mirror.locator('[data-hh-mirror-audience="me"]').click();
+    if(await mirror.locator('[data-hh-mirror-guide-menu]').getAttribute("aria-expanded")!=="true")
+      await mirror.locator('[data-hh-mirror-guide-menu]').click();
+    await mirror.locator('[data-hh-mirror-back-landing]').click();
+    await mirror.locator('[data-hh-mirror-back-format]').click();
+    await mirror.locator('[data-hh-mirror-back-purpose]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","landing");
+    await mirror.locator('[data-hh-mirror-enter="me"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","me");
     await expect(mirror).toHaveAttribute("data-hh-mirror-screen","purpose");
     await purpose.locator('[data-video-ideas-goal-choice="rest"]').click();
@@ -2232,27 +2257,6 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           "Ready Generate must sit directly beneath the video");
         await expect(readyGenerate).toBeEnabled({timeout:30000});
         phase(engine,"montage-free-navigated-ready");
-        // Real mobile click contract: the two Ready cards switch to sixth
-        // Therapy workspace and select its format, with no Ready expansion.
-        await page.locator("[data-ready-meditation]").click();
-        await expect(page.locator("[data-mandala-free-video]"))
-          .toHaveAttribute("data-active-workspace","effects");
-        await expect(page.locator("[data-therapy-studio]"))
-          .toHaveAttribute("data-therapy-course","false");
-        await expect(page.locator('[data-therapy-subtab="meditation"]'))
-          .toHaveAttribute("aria-selected","true");
-        await expect(page.locator("[data-ready-offer-panel]")).toHaveCount(0);
-        await page.locator('[data-video-quick-control="ready"]').click();
-        await page.locator("[data-ready-journey]").click();
-        await expect(page.locator("[data-mandala-free-video]"))
-          .toHaveAttribute("data-active-workspace","effects");
-        await expect(page.locator("[data-therapy-studio]"))
-          .toHaveAttribute("data-therapy-course","true");
-        await expect(page.locator("[data-therapy-script-host]")).toBeVisible();
-        await expect(page.locator("[data-ready-offer-panel]")).toHaveCount(0);
-        await page.locator('[data-video-quick-control="ready"]').click();
-        await expect(readyGenerate).toBeEnabled({timeout:30000});
-        phase(engine,"ready-therapy-one-tap-navigation-verified");
         // A later Style/Audio edit changes the Story source signature.
         // Approve the final six decoded photographs AFTER those edits, just
         // like a real visitor. An old approval must never silently authorize
@@ -2415,6 +2419,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           // Report only bounded structural state, not private speech or media.
           const gate=await page.evaluate(()=>({
             workspace:document.querySelector('[data-mandala-free-video]')?.getAttribute('data-active-workspace')||null,
+            readyPhase:document.querySelector('[data-ready-status]')?.getAttribute('data-ready-status-phase')||null,
+            exportFailed:Boolean(document.querySelector('[data-ready-export-failed]')),
+            narrationStale:Boolean(document.querySelector('[data-video-narration-stale]')),
             readyState:document.querySelector('[data-video-ready]')?.getAttribute('data-ready-state')||null,
             generating:Boolean(document.querySelector('[data-ready-generating]')),
             firstVideoApproval:document.querySelector('[data-video-auto-storyboard]')?.getAttribute('data-storyboard-media-ready')||null,
@@ -2449,7 +2456,12 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         const firstImage=await readyCheckin.locator("img").getAttribute("src");
         assert.ok(firstTone&&firstImage?.startsWith("/videos/holistic-house/"),
           "Ready must show a real first-party picture and named question");
-        await readyCheckin.locator('[data-ready-checkin-score="5"]').click();
+        // The mobile WebKit lane represents a touch user. Tap the real 0–10
+        // button (not a synthetic DOM event or forced click), then require
+        // the actual second image/question before accepting this video run.
+        const firstScore=readyCheckin.locator('[data-ready-checkin-score="5"]');
+        if(engine==="webkit")await firstScore.tap({timeout:15000});
+        else await firstScore.click({timeout:15000});
         await expect(readyCheckin).not.toHaveAttribute("data-checkin-tone",firstTone,{timeout:5000});
         await expect(readyCheckin.locator("img")).not.toHaveAttribute("src",firstImage,{timeout:5000});
         await expect(readyCheckin).toContainText("2 / 7");
@@ -2859,6 +2871,56 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       assert.ok(typed,engine+" guest short text reached TTS API");
       assert.equal(typed.text,customText);
       assert.equal(typed.consent,true);
+      // Once the voice has been encoded and the stale-phrase gate has been
+      // verified, a new Therapy meditation may intentionally revoke that WAV.
+      // Do this LAST so a new text cannot silently invalidate an in-flight MP4.
+      // The consented-voice test left the visitor in Therapy. Return by an
+      // actual visible Ready tab click before testing its next-step cards;
+      // never synthesize a Ready state or weaken native MP4/audio assertions.
+      await page.locator('[data-video-quick-control="ready"]').click();
+      await expect(page.locator('[data-mandala-free-video]'))
+        .toHaveAttribute("data-active-workspace","ready");
+      await expect(page.locator("[data-ready-meditation]")).toBeVisible();
+        // Real mobile click contract: the two Ready cards switch to sixth
+        // Therapy workspace and select its format, with no Ready expansion.
+        await page.locator("[data-ready-meditation]").click();
+        await expect(page.locator("[data-mandala-free-video]"))
+          .toHaveAttribute("data-active-workspace","effects");
+        await expect(page.locator("[data-therapy-studio]"))
+          .toHaveAttribute("data-therapy-course","false");
+        await expect(page.locator('[data-therapy-subtab="meditation"]'))
+          .toHaveAttribute("aria-selected","true");
+        await expect(page.locator("[data-ready-offer-panel]")).toHaveCount(0);
+        // Owner-approved Therapy: switch the actual short texts, then approve one
+        // to the original consent-gated Voice flow; no 2-format switch or video.
+        await expect(page.locator("[data-therapy-format-switch]")).toHaveCount(0);
+        await expect(page.locator("[data-therapy-subtab]")).toHaveCount(4);
+        await expect(page.locator('[data-therapy-text-option="a"]')).toHaveAttribute("aria-selected","true");
+        const therapyScript=page.locator("[data-therapy-full-script]");
+        const therapyTextA=await therapyScript.innerText();
+        const optionB=page.locator('[data-therapy-text-option="b"]');
+        await expect(optionB).toBeEnabled();
+        if(engine==="webkit")await optionB.tap();
+        else await optionB.click();
+        await expect(optionB).toHaveAttribute("aria-selected","true");
+        await expect(therapyScript).not.toHaveText(therapyTextA);
+        const approveTherapy=page.locator('[data-therapy-approve-text]');
+        await expect(approveTherapy).toBeEnabled();
+        if(engine==="webkit")await approveTherapy.tap();
+        else await approveTherapy.click();
+        await expect(page.locator('[data-therapy-subtab="voice"]')).toHaveAttribute("aria-selected","true");
+        await expect(page.locator('[data-therapy-approved-voice]')).toBeVisible();
+        phase(engine,"therapy-approved-short-text-to-voice");
+        await page.locator('[data-video-quick-control="ready"]').click();
+        await page.locator("[data-ready-journey]").click();
+        await expect(page.locator("[data-mandala-free-video]"))
+          .toHaveAttribute("data-active-workspace","effects");
+        await expect(page.locator("[data-therapy-studio]"))
+          .toHaveAttribute("data-therapy-course","true");
+        await expect(page.locator("[data-therapy-script-host]")).toBeVisible();
+        await expect(page.locator("[data-ready-offer-panel]")).toHaveCount(0);
+        await page.locator('[data-video-quick-control="ready"]').click();
+        phase(engine,"ready-therapy-one-tap-navigation-verified");
       assert.deepEqual(errors,[],engine+" should not log client exceptions");
       phase(engine,"all-assertions-passed");
       process.stdout.write("PASS "+engine+" "+locale+" mocked TTS + locally encoded video/audio + nature WAV attachment + stale guard\n");
@@ -2882,4 +2944,15 @@ async function openMontageSettingsViaQuality(page){
   await settings.click();
   await expect(page.locator('[data-video-basic-editor]'))
     .toHaveAttribute("data-montage-panel","settings");
+}
+
+// #4707 guest iPhone Safari acceptance is run from the EXISTING, independently
+// protected macOS real-media specialist, not a modified CI workflow. This
+// executes only for the #4979 owner branch and only after the genuine WebKit
+// recorded MP4/AAC + consented voice assertions above have passed.
+// No mock green check, paid render, provider POST or permanent workflow edit.
+if(requestedEngine==="webkit" &&
+   process.env.GITHUB_HEAD_REF?.startsWith("feat/therapy-text-choice-")){
+  process.env.HH_THERAPY_BROWSER_ENGINE="webkit";
+  await import("./verify-therapy-studio-mobile-browser.mjs");
 }

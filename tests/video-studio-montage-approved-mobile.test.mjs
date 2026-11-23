@@ -19,9 +19,20 @@ test('owner-approved Montage Style is the existing editor, not a second page',()
   assert.match(studio,/500 XP/);
   assert.match(studio,/250 XP/);
   assert.match(studio,/onPhotoFileSelected\(photo\)/);
-  assert.match(studio,/data-video-montage-photo-upload[\s\S]*?onPickPhoto\(\)/);
-  assert.equal((studio.match(/<NativePhotoInput label=/g)||[]).length,4,
-    'reuses the original parent native iOS picker; no fifth input');
+  const uploadStart=studio.indexOf('data-video-montage-photo-upload');
+  const upload=studio.slice(uploadStart,studio.indexOf('data-video-montage-current-photo',uploadStart));
+  assert.match(upload,/<NativePhotoInput label=/,
+    'Safari upload tile uses a directly tappable native file input');
+  assert.match(upload,/onPhotoFileSelected=\{file=>\{setMontagePhotoChoice\("library"\);setNotice\(""\);selectNativePhoto\(file\);\}\}/);
+  assert.doesNotMatch(upload,/onPickPhoto\(\)/,'no hidden scripted file picker in this tile');
+  assert.equal((studio.match(/<NativePhotoInput label=/g)||[]).length,5,
+    'fifth native iOS picker covers the Montage photo library tile');
+  const library=studio.slice(studio.indexOf('data-video-montage-avatar-library'),
+    studio.indexOf('data-video-montage-photo-rights'));
+  assert.match(library,/data-video-montage-saved-photos/);
+  assert.match(library,/<VideoPhotoLibrary locale=\{locale\} compact/);
+  assert.match(library,/onSelectPhoto=\{file=>\{setMontagePhotoChoice\("library"\);setNotice\(""\);selectNativePhoto\(file\);\}\}/);
+  assert.match(library,/href=\{"\/"\+locale\+"\/app\/videos\?tab=photos"\}/);
   assert.match(studio,/data-video-montage-photo-rights/);
   assert.match(studio,/data-video-montage-next="audio"/);
   assert.match(studio,/data-video-montage-more-styles/);

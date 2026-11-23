@@ -28,14 +28,17 @@ test("the approved mobile Mirror contains only three scopes, a compact input Nex
  for(const label of ["For Me","For Work","Present","Для работы","Подарок","Para el trabajo","Regalo"])
   assert.ok(mirror.includes(label),label);
  assert.equal((mirror.match(/categoryId:"(goals-money|love-relationships|energy-confidence|stress-anxiety)"/g)||[]).length,12);
- assert.match(mirror,/data-hh-mirror-audience=\{item\}/);
+ assert.doesNotMatch(mirror,/data-hh-mirror-audience=\{item\}/);
  assert.match(mirror,/data-hh-mirror-enter="me"/);
  assert.match(mirror,/data-hh-mirror-enter="others"/);
  assert.match(mirror,/data-hh-mirror-enter="work"/);
  assert.doesNotMatch(mirror,/data-hh-mirror-plan/);
  assert.match(mirror,/data-hh-mirror-tier-option=\{option.id\}/);
- assert.match(mirror,/data-hh-mirror-ideas-cta/);
+ assert.doesNotMatch(mirror,/data-hh-mirror-ideas-cta/);
  assert.match(mirror,/data-hh-mirror-open-advanced/);
+ assert.match(mirror,/data-hh-mirror-guide-menu/);
+ assert.match(mirror,/data-hh-mirror-back-landing/);
+ assert.match(mirrorCss,/Owner 2026-11-23 · approved Goal Topic/);
  assert.match(browser,/async function revealMirrorAdvanced/);
  assert.match(browser,/await revealMirrorAdvanced\(page,engine\)/);
  assert.doesNotMatch(browser,/await expect\(moreGoals\)\.toBeVisible\(\{timeout:15000\}\)/);
@@ -45,8 +48,8 @@ test("the approved mobile Mirror contains only three scopes, a compact input Nex
  assert.match(mirrorCss,/\.formatRows/);
  assert.match(mirrorCss,/\.composerToolbar/);
  assert.match(mirrorCss,/reiki-approved-sunrise-v3\.webp/);
- assert.match(mirror,/src="\/images\/holistic-house\/magic-mirror-lotus\.webp"/);
- assert.match(mirror,/src="\/images\/holistic-house\/magic-mirror-gift\.webp"/);
+ assert.equal((mirror.match(/className=\{css\.destinationImage\}/g)||[]).length,3);
+ assert.match(mirrorCss,/magic-mirror-owner-cards-20261123\.avif/);
  assert.match(mirror,/data-hh-mirror-wish/);
  assert.match(mirror,/data-hh-mirror-goal-choice=\{item\.id\}/);
  assert.match(mirror,/data-hh-mirror-next/);

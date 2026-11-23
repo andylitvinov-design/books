@@ -154,3 +154,25 @@ test('deleted ready masters also keep reservation until token expiration and re-
   assert.doesNotMatch(server,/status='deleted' and ready_at is null and released_at is null/)
   assert.match(server,/released_at=null where id=\$1 and account_id=\$2 and status='deleting'/)
 })
+
+test('production Cloud Save requires pilot scope or explicit global approval',async()=>{
+  const {personalVideoCloudEnabled}=await import('../lib/app/personal-video-cloud-policy.mjs')
+  const a={id:'11111111-1111-4111-8111-111111111111'}
+  const b={id:'22222222-2222-4222-8222-222222222222'}
+  const outsider={id:'33333333-3333-4333-8333-333333333333'}
+  const enabled={VERCEL_ENV:'production',HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED:'true'}
+  assert.equal(personalVideoCloudEnabled(a,enabled),false,'missing pilot cannot enable all production accounts')
+  assert.equal(personalVideoCloudEnabled(b,enabled),false)
+  assert.equal(personalVideoCloudEnabled(a,{...enabled,HH_PERSONAL_VIDEO_CLOUD_GLOBAL_APPROVED:'true'}),true)
+  assert.equal(personalVideoCloudEnabled(a,{...enabled,HH_PERSONAL_VIDEO_CLOUD_GLOBAL_APPROVED:'false'}),false)
+  const pilot={...enabled,HH_PERSONAL_VIDEO_CLOUD_SAVE_PILOT_ACCOUNT_IDS:a.id+','+b.id}
+  assert.equal(personalVideoCloudEnabled(a,pilot),true)
+  assert.equal(personalVideoCloudEnabled(b,pilot),true)
+  assert.equal(personalVideoCloudEnabled(outsider,pilot),false)
+  assert.equal(personalVideoCloudEnabled(outsider,{...pilot,HH_PERSONAL_VIDEO_CLOUD_GLOBAL_APPROVED:'true'}),false)
+  assert.equal(personalVideoCloudEnabled(a,{...enabled,HH_PERSONAL_VIDEO_CLOUD_SAVE_PILOT_ACCOUNT_IDS:''}),false)
+  assert.equal(personalVideoCloudEnabled(a,{...enabled,HH_PERSONAL_VIDEO_CLOUD_SAVE_PILOT_ACCOUNT_IDS:a.id+','+b.id+','+outsider.id}),false)
+  assert.equal(personalVideoCloudEnabled(a,{HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED:'true'}),true,'local/preview behavior remains unchanged')
+  assert.equal(personalVideoCloudEnabled(null,pilot),false)
+  assert.equal(personalVideoCloudEnabled(a,{...pilot,HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED:'false'}),false)
+})
