@@ -4,6 +4,10 @@ import {forwardRef,useEffect,useImperativeHandle,useRef,useState} from 'react'
 import {Mic,Play,Volume2,Square} from 'lucide-react'
 import styles from './my-coach-speech-loop.module.css'
 import {
+  prepareCoachIos27LiveDuplex,activateCoachIos27LiveDuplex,
+  restoreCoachIos27LiveDuplex,
+} from '@/lib/personal-coaching/coach-ios-live-duplex.mjs'
+import {
   GeminiLivePcmPlayer,GeminiLivePcmResampler,GeminiLiveBargeGate,GeminiLiveBargeDetector,
   geminiLiveAudioRms,geminiLiveSocketUrl,geminiLiveSetupMessage,
   geminiLivePcmMessage,geminiLiveTextMessage,geminiLiveStartMessage,
@@ -157,6 +161,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     try{r.source?.disconnect()}catch{}
     try{r.sink?.disconnect()}catch{}
     for(const track of r.stream?.getTracks?.()||[])try{track.stop()}catch{}
+    restoreCoachIos27LiveDuplex(navigator)
     silence(r)
     try{void r.context?.close?.().catch?.(()=>{})}catch{}
     if(r.timer)clearTimeout(r.timer)
@@ -705,6 +710,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     try{
       r.stream=await microphone
       if(r.ended){for(const track of r.stream.getTracks())track.stop();return}
+      // Keep both microphone and speaker active even if iPhone is on silent.
+      activateCoachIos27LiveDuplex(navigator)
       // Safari can revoke the microphone when a call takes over, privacy is
       // changed, or iOS suspends media. Do not leave a silent "Listening" UI.
       for(const track of r.stream.getAudioTracks()){
@@ -744,6 +751,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     // Both calls begin in the user's Play gesture, before the first await.
     let context,microphone
     try{
+      prepareCoachIos27LiveDuplex(navigator)
       context=new Ctx({latencyHint:'interactive'})
       void context.resume?.().catch?.(()=>{})
       const silence=context.createBuffer(1,128,context.sampleRate)
@@ -755,6 +763,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       })
     }catch{
       try{void context?.close?.()}catch{}
+      restoreCoachIos27LiveDuplex(navigator)
       notify(t.permission);return false
     }
     const r={context,stream:null,source:null,processor:null,sink:null,

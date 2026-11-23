@@ -1372,8 +1372,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     {!greetingAccepted&&<MyCoachGreetingGate
       personaId={personaId} locale={conversationLang} name={name}
       methodId={visibleMethodId} onStart={enterCoachingFromGreeting}/>}
+    {/* Keep Live mounted for Safari audio activation, but hide all legacy
+        controls until the cinematic greeting is explicitly accepted. */}
     <div className={greetingAccepted?styles.sessionScroll:styles.sessionScrollAwaitingGreeting}
-      data-coaching-session-scroll={greetingAccepted?'true':undefined}>
+      data-coaching-session-scroll={greetingAccepted?'true':undefined}
+      style={!greetingAccepted?{display:'none'}:undefined}
+      inert={!greetingAccepted} aria-hidden={!greetingAccepted}>
     <section className={styles.sessionHero} aria-label={name} data-voice-phase={voiceState.phase}>
       <div className={styles.sessionPortrait} data-persona={personaId}
         data-coach-motion-video={['mira','max','sofia','alex','merlin','harry','genie'].includes(personaId)?'true':undefined}
