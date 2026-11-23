@@ -14,6 +14,7 @@ const DaybookPersonalGoals=dynamic(()=>import('./daybook-personal-goals'))
 const DaybookToday=dynamic(()=>import('./daybook-today'))
 const DaybookWeekly=dynamic(()=>import('./daybook-weekly'))
 const DaybookGrowth=dynamic(()=>import('./my-inner-balance-preview'))
+const DaybookCoachLink=dynamic(()=>import('./daybook-coach-link'))
 
 const copy={
  en:{title:'Coaching Daybook',home:'My Space',today:'Today',journal:'Journal',goals:'Goals',growth:'My growth',intro:'A private place for your thoughts and voluntary reflections.',loading:'Opening your private journal…',login:'Sign in to your cabinet',error:'Could not load your journal.',retry:'Try again',new:'New entry',note:'A thought',morning:'Morning reflection',evening:'Evening reflection',text:'Your private entry',tags:'Tags, separated by commas',date:'Local date',save:'Save',saving:'Saving…',saved:'Saved and verified',failed:'Save not confirmed. Your draft remains here. Retry before editing.',empty:'No entries yet.',edit:'Edit',remove:'Delete permanently',confirm:'Permanently delete this entry?',more:'Load more',search:'Search loaded entries by text or tag',cancel:'Discard draft',discard:'Discard this unsaved draft?',privacy:'Drafts stay only in this page’s memory. Leaving or signing out clears them. Nothing is shared with a coach automatically.',plan:'Open my goals and actions',vectors:'Open my development vectors',deleteError:'Deletion not confirmed. Reload your journal before trying again.'},
@@ -156,7 +157,7 @@ export default function DaybookJournal({locale}){
     {next&&<button disabled={busy} onClick={()=>void collect(false)}>{exportCopy[locale].all}</button>}
     <p role="status">{exportCopy[locale][exportStatus]||''}</p>
     {!visible.length&&<p>{c.empty}</p>}
-    {visible.map(entry=><article key={entry.id}><time dateTime={entry.localDay}>{entry.localDay}</time><h2>{c[entry.kind]}</h2><p className={styles.entry}>{entry.text}</p><p>{entry.tags.join(' · ')}</p><button disabled={busy||status==='failed'} onClick={()=>open(entry)}>{c.edit}</button><button disabled={busy||status==='failed'} onClick={()=>void remove(entry)}>{c.remove}</button></article>)}
+    {visible.map(entry=><article key={entry.id}><time dateTime={entry.localDay}>{entry.localDay}</time><h2>{c[entry.kind]}</h2><p className={styles.entry}>{entry.text}</p><p>{entry.tags.join(' · ')}</p><button disabled={busy||status==='failed'} onClick={()=>open(entry)}>{c.edit}</button><button disabled={busy||status==='failed'} onClick={()=>void remove(entry)}>{c.remove}</button><DaybookCoachLink accountId={account} locale={locale} kind="journal" itemId={entry.id} revision={entry.revision} disabled={busy||status==='failed'} onSessionLost={sessionLost}/></article>)}
     {next&&<button disabled={busy} onClick={()=>void more()}>{c.more}</button>}
    </>}
   </>}

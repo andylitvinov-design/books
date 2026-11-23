@@ -572,3 +572,20 @@ test('catalog session entries load a new document with the session voice policy'
   assert.doesNotMatch(tag,/onClick|prefetch/)
  }
 })
+
+test('self-saved owner profile scores require specific Gemini Live axes opt-in',()=>{
+ const ids=['anchor','connection','freedom','agency','love','dignity','self-realization','recognition']
+ const axes=ids.map((id,i)=>({id,current:i,desired:Math.min(10,i+2),
+  status:'present',source:i===1?'combined_owner_sources':'owner_saved_profile',
+  updatedAt:'2026-11-22T17:00:00.000Z'}))
+ const personal={profileAudit:{version:'hh-coach-profile-intake-v2',
+  status:'available',completeArchive:true,axes},context:{items:[]}}
+ assert.equal(coachLiveMemoryNote({personal,profileAllowed:true,axesAllowed:false}),'')
+ const permitted=coachLiveMemoryNote({personal,profileAllowed:true,axesAllowed:true})
+ assert.match(permitted,/meaning_axes/)
+ assert.match(permitted,/owner_saved_profile/)
+ assert.match(permitted,/combined_owner_sources/)
+ assert.equal(coachLiveApprovedAxes({...personal.profileAudit,axes:axes.map(a=>
+  a.id==='anchor'?{...a,source:'ai_only'}:a)}),null)
+ assert.equal(coachLiveApprovedAxes({...personal.profileAudit,completeArchive:false}),null)
+})
