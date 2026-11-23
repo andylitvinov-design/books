@@ -5,6 +5,8 @@ import {appFetch} from '@/lib/app/client-fetch'
 import {savePrivateMp4} from '@/lib/mandala/signed-private-video-upload.mjs'
 import PersonalVideoMessengerPanel from './personal-video-messenger-panel'
 import SupportPhotoCabinet from '@/components/app/support-photo-cabinet'
+import {MATERIAL_TAB_IDS,selectedMaterialTab,materialTabSearch} from '@/lib/app/my-materials-tabs.mjs'
+import MyLivePhotos from '@/components/app/my-live-photos'
 
 const COPY={
   en:{title:'My Videos',subtitle:'Your private saved videos, separate from the public video editor.',new:'Create free video',myPage:'Publish on My Page',
@@ -41,6 +43,15 @@ const COPY={
     states:{ready:'Listo',pending:'Carga pendiente',failed:'Error de carga',deleting:'Eliminación pendiente'},
     themes:{money:'Dinero',relationships:'Relaciones',energy:'Energía',goals:'Objetivos',health:'Salud',life:'Crecimiento personal',gift:'Tarjeta viva'}}
 }
+// One shared library and three views over existing private assets.
+const MATERIAL_COPY={
+  en:{title:'My Materials',subtitle:'Your private media for future videos.',
+    label:'My private materials',tabs:{avatars:'AI Avatars',videos:'My Videos',photos:'My Photos'}},
+  ru:{title:'Мои материалы',subtitle:'Ваши приватные материалы для следующих роликов.',
+    label:'Личные медиаматериалы',tabs:{avatars:'AI-аватары',videos:'Мои видео',photos:'Мои фото'}},
+  es:{title:'Mis materiales',subtitle:'Tus archivos privados para próximos vídeos.',
+    label:'Mis materiales privados',tabs:{avatars:'Avatares IA',videos:'Mis vídeos',photos:'Mis fotos'}}
+}
 const formats={portrait:'9:16',square:'1:1',landscape:'16:9'}
 const limit=12_000_000
 async function verifyMp4(file){
@@ -63,7 +74,10 @@ async function verifyMp4(file){
   } finally {URL.revokeObjectURL(url)}
 }
 export default function MyPersonalVideos({accountId,locale='en'}){
-  const t=COPY[locale==='ru'?'ru':locale==='es'?'es':'en']
+  const language=locale==='ru'?'ru':locale==='es'?'es':'en'
+  const t=COPY[language]
+  const library=MATERIAL_COPY[language]
+  const [activeTab,setActiveTab]=useState('videos')
   const [list,setList]=useState([])
   const [status,setStatus]=useState('loading')
   const [notice,setNotice]=useState('')
@@ -89,7 +103,32 @@ export default function MyPersonalVideos({accountId,locale='en'}){
       if(generation.current===epoch)setStatus(error.code==='FEATURE_UNAVAILABLE'?'disabled':'error')
     }
   },[accountId])
-  useEffect(()=>{void reload();return()=>{generation.current++}},[reload])
+  useEffect(()=>{
+    const syncTab=()=>setActiveTab(selectedMaterialTab(window.location.search))
+    syncTab()
+    window.addEventListener('popstate',syncTab)
+    return()=>window.removeEventListener('popstate',syncTab)
+  },[])
+  useEffect(()=>{if(activeTab==='videos')void reload();return()=>{generation.current++}},[reload,activeTab])
+  function selectMaterialTab(id){
+    if(!MATERIAL_TAB_IDS.includes(id))return
+    setActiveTab(id)
+    window.history.replaceState(window.history.state,'',
+      window.location.pathname+materialTabSearch(window.location.search,id)+window.location.hash)
+  }
+  function handleMaterialTabKey(event,id){
+    let next=null
+    const index=MATERIAL_TAB_IDS.indexOf(id)
+    if(event.key==='ArrowRight')next=MATERIAL_TAB_IDS[(index+1)%MATERIAL_TAB_IDS.length]
+    if(event.key==='ArrowLeft')next=MATERIAL_TAB_IDS[(index+MATERIAL_TAB_IDS.length-1)%MATERIAL_TAB_IDS.length]
+    if(event.key==='Home')next=MATERIAL_TAB_IDS[0]
+    if(event.key==='End')next=MATERIAL_TAB_IDS[MATERIAL_TAB_IDS.length-1]
+    if(next){
+      event.preventDefault()
+      selectMaterialTab(next)
+      document.getElementById('my-materials-tab-'+next)?.focus()
+    }
+  }
   useEffect(()=>{
     setFile(null);setConsent(false);setPlay(null);setDownload(null);setList([])
     uploadSessionRef.current=null;setUploadPercent(null)
@@ -137,16 +176,39 @@ export default function MyPersonalVideos({accountId,locale='en'}){
       await reload()
     }catch{setNotice(t.error)}finally{setBusy(false)}
   }
-  return <section style={{maxWidth:840,margin:'0 auto',padding:'16px'}} data-my-personal-videos>
+  return <section style={{maxWidth:840,margin:'0 auto',padding:'16px'}} data-my-personal-videos data-my-materials-library>
     <div style={{display:'flex',justifyContent:'space-between',alignItems:'start',flexWrap:'wrap',gap:12}}>
-      <div><h1>{t.title}</h1><p>{t.subtitle}</p></div>
+      <div><h1>{library.title}</h1><p>{library.subtitle}</p></div>
       <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
         <Link href={'/'+locale+'/my-page'} prefetch={false} data-my-videos-publish-page>{t.myPage}</Link>
         <Link href={'/'+locale+'/holistic-support/mandala'} prefetch={false}>{t.new}</Link>
         <Link href={'/'+locale+'/holistic-support/mandala?mode=gift'} prefetch={false}>{t.themes.gift}</Link>
       </div>
     </div>
-    <SupportPhotoCabinet locale={locale} />
+    <div role="tablist" aria-label={library.label} data-my-materials-tabs
+      style={{display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:8,margin:'14px 0'}}>
+      {MATERIAL_TAB_IDS.map(id=><button type="button" key={id} role="tab"
+        id={'my-materials-tab-'+id} aria-controls={'my-materials-panel-'+id}
+        aria-selected={activeTab===id} tabIndex={activeTab===id?0:-1}
+        onClick={()=>selectMaterialTab(id)}
+        onKeyDown={event=>handleMaterialTabKey(event,id)}
+        style={{minWidth:0,minHeight:48,padding:'8px 5px',borderRadius:12,
+          border:activeTab===id?'2px solid #067a67':'1px solid #e9dfd1',
+          background:activeTab===id?'#e6f6f1':'#fffcf7',color:'#143d3a',
+          fontWeight:700,fontSize:14,overflowWrap:'anywhere',cursor:'pointer'}}>
+        {library.tabs[id]}
+      </button>)}
+    </div>
+    <div role="tabpanel" id="my-materials-panel-avatars" aria-labelledby="my-materials-tab-avatars"
+      hidden={activeTab!=='avatars'}>
+      {activeTab==='avatars'?<MyLivePhotos locale={locale}/>:null}
+    </div>
+    <div role="tabpanel" id="my-materials-panel-photos" aria-labelledby="my-materials-tab-photos"
+      hidden={activeTab!=='photos'}>
+      {activeTab==='photos'?<SupportPhotoCabinet locale={locale}/>:null}
+    </div>
+    <div role="tabpanel" id="my-materials-panel-videos" aria-labelledby="my-materials-tab-videos"
+      hidden={activeTab!=='videos'}>
     {status==='disabled'&&<p role="status">{t.disabled}</p>}
     {status==='error'&&<p role="alert">{t.error}</p>}
     {status==='ready'&&<>
@@ -188,5 +250,6 @@ export default function MyPersonalVideos({accountId,locale='en'}){
       </div>
     </>}
     {notice&&<p role="status" aria-live="polite">{notice}</p>}
+    </div>
   </section>
 }
