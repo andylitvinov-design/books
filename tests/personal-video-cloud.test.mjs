@@ -26,8 +26,8 @@ test('personal videos have separate private account-scoped RLS and zero anonymou
   assert.match(schema,/with check\(account_id=\(select auth\.uid\(\)\) and \(select app_private\.account_active\(\)\)\)/)
   assert.doesNotMatch(schema,/grant.*on app_private\.personal_videos to (?:anon|authenticated|public)/i)
 })
-test('no cloud spend or browser upload without explicit feature flag, session, consent and quota',()=>{
-  assert.match(read('lib/app/personal-video-cloud-policy.mjs'),/HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED!=='true'/)
+test('private Supabase uploads require verified session, consent and bounded quotas',()=>{
+  assert.doesNotMatch(read('lib/app/personal-video-cloud-policy.mjs'),/HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED|VERCEL_ENV|HH_PERSONAL_VIDEO_CLOUD_GLOBAL_APPROVED/)
   assert.match(server,/input\.consent!==true/)
   assert.match(server,/MAX_VIDEO_BYTES=12_000_000/)
   assert.match(server,/MAX_GLOBAL_BYTES=180_000_000/)
@@ -43,26 +43,16 @@ test('no cloud spend or browser upload without explicit feature flag, session, c
   for(const value of [server,list,item,gallery])
     assert.doesNotMatch(value,/HH_APP_SUPABASE_SECRET_KEY\s*=|service_role.*in.*client|NEXT_PUBLIC_.*SECRET/)
 })
-test('the cloud pilot uses verified actor IDs for both private operations and availability',async()=>{
+test('private storage availability depends on verified account identity only',async()=>{
   assert.equal((server.match(/^  requireEnabled\(actor\)$/gm)||[]).length,6)
   assert.match(read('lib/app/personal-video-messenger.js'),/cloudAvailable:personalVideoCloudEnabled\(actor\)/)
   const {personalVideoCloudEnabled}=await import('../lib/app/personal-video-cloud-policy.mjs')
-  const a={id:'11111111-1111-4111-8111-111111111111'}
-  const b={id:'22222222-2222-4222-8222-222222222222'}
-  const outsider={id:'33333333-3333-4333-8333-333333333333'}
-  const flag={HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED:'true'}
-  const scope='HH_PERSONAL_VIDEO_CLOUD_SAVE_PILOT_ACCOUNT_IDS'
-  const pilot={...flag,[scope]:`${a.id}, ${b.id}`}
-  assert.equal(personalVideoCloudEnabled(a,{}),false)
-  assert.equal(personalVideoCloudEnabled(a,{[scope]:a.id}),false)
-  assert.equal(personalVideoCloudEnabled(a,flag),true)
-  assert.equal(personalVideoCloudEnabled(null,flag),false)
-  assert.equal(personalVideoCloudEnabled(a,pilot),true)
-  assert.equal(personalVideoCloudEnabled(b,pilot),true)
-  assert.equal(personalVideoCloudEnabled(outsider,pilot),false)
-  for(const ids of ['',a.id+',invalid',`${a.id},${b.id},${outsider.id}`]){
-    assert.equal(personalVideoCloudEnabled(a,{...flag,[scope]:ids}),false)
-  }
+  const account={id:'11111111-1111-4111-8111-111111111111'}
+  assert.equal(personalVideoCloudEnabled(account),true)
+  assert.equal(personalVideoCloudEnabled(account,{VERCEL_ENV:'production'}),true)
+  assert.equal(personalVideoCloudEnabled(account,{HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED:'false'}),true)
+  for(const actor of [null,{}, {id:'invalid'}, {id:'11111111-1111-4111-8111-111111111111@evil'}])
+    assert.equal(personalVideoCloudEnabled(actor),false)
 })
 test('uploaded MP4 is verified by exact bytes, MIME and ftyp before ready status',()=>{
   assert.match(server,/mime!=='video\/mp4'/)
@@ -155,24 +145,15 @@ test('deleted ready masters also keep reservation until token expiration and re-
   assert.match(server,/released_at=null where id=\$1 and account_id=\$2 and status='deleting'/)
 })
 
-test('production Cloud Save requires pilot scope or explicit global approval',async()=>{
+test('Supabase private save is host-independent but capped and consented',async()=>{
   const {personalVideoCloudEnabled}=await import('../lib/app/personal-video-cloud-policy.mjs')
-  const a={id:'11111111-1111-4111-8111-111111111111'}
-  const b={id:'22222222-2222-4222-8222-222222222222'}
-  const outsider={id:'33333333-3333-4333-8333-333333333333'}
-  const enabled={VERCEL_ENV:'production',HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED:'true'}
-  assert.equal(personalVideoCloudEnabled(a,enabled),false,'missing pilot cannot enable all production accounts')
-  assert.equal(personalVideoCloudEnabled(b,enabled),false)
-  assert.equal(personalVideoCloudEnabled(a,{...enabled,HH_PERSONAL_VIDEO_CLOUD_GLOBAL_APPROVED:'true'}),true)
-  assert.equal(personalVideoCloudEnabled(a,{...enabled,HH_PERSONAL_VIDEO_CLOUD_GLOBAL_APPROVED:'false'}),false)
-  const pilot={...enabled,HH_PERSONAL_VIDEO_CLOUD_SAVE_PILOT_ACCOUNT_IDS:a.id+','+b.id}
-  assert.equal(personalVideoCloudEnabled(a,pilot),true)
-  assert.equal(personalVideoCloudEnabled(b,pilot),true)
-  assert.equal(personalVideoCloudEnabled(outsider,pilot),false)
-  assert.equal(personalVideoCloudEnabled(outsider,{...pilot,HH_PERSONAL_VIDEO_CLOUD_GLOBAL_APPROVED:'true'}),false)
-  assert.equal(personalVideoCloudEnabled(a,{...enabled,HH_PERSONAL_VIDEO_CLOUD_SAVE_PILOT_ACCOUNT_IDS:''}),false)
-  assert.equal(personalVideoCloudEnabled(a,{...enabled,HH_PERSONAL_VIDEO_CLOUD_SAVE_PILOT_ACCOUNT_IDS:a.id+','+b.id+','+outsider.id}),false)
-  assert.equal(personalVideoCloudEnabled(a,{HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED:'true'}),true,'local/preview behavior remains unchanged')
-  assert.equal(personalVideoCloudEnabled(null,pilot),false)
-  assert.equal(personalVideoCloudEnabled(a,{...pilot,HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED:'false'}),false)
+  const owner={id:'22222222-2222-4222-8222-222222222222'}
+  assert.equal(personalVideoCloudEnabled(owner),true)
+  assert.equal(personalVideoCloudEnabled(owner,{VERCEL_ENV:'production'}),true)
+  assert.match(server,/MAX_GLOBAL_BYTES=180_000_000/)
+  assert.match(server,/MAX_USER_VIDEOS=3/)
+  assert.match(server,/MAX_VIDEO_BYTES=12_000_000/)
+  assert.match(server,/input\.consent!==true/)
+  assert.match(list,/const actor=await auth\.verified\(\)/)
+  assert.match(item,/const actor=await auth\.verified\(\)/)
 })
