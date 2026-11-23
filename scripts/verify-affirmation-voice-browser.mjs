@@ -251,7 +251,12 @@ async function verifyWorkspaceHydration(browser,locale){
     await mirror.locator('[data-hh-mirror-play-example]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-video-preview","open");
     await expect(page.locator('[data-video-live-stage]')).toBeVisible();
-    await mirror.locator('[data-hh-mirror-ideas-menu]').click();
+    // Opening the example can preserve the current format menu state. A blind
+    // second click would close the real menu and report zero options in Safari.
+    // Assert the public expanded state before checking all three XP choices.
+    const formatMenu=mirror.locator('[data-hh-mirror-ideas-menu]');
+    if(await formatMenu.getAttribute('aria-expanded')!=='true')await formatMenu.click();
+    await expect(formatMenu).toHaveAttribute('aria-expanded','true');
     await expect(mirror.locator('[data-hh-mirror-tier-option]')).toHaveCount(3);
     await mirror.locator('[data-hh-mirror-tier-option="basic"]').click();
     await expect(mirror.locator('[data-hh-mirror-ideas-menu]')).toHaveAttribute("aria-expanded","false");
