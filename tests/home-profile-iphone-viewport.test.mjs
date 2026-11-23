@@ -3,19 +3,16 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
-test('Home shows Ali entry with four real choices in compact first mobile viewport',()=>{
- const source=read('components/home-dialogue-entry.tsx')
- const css=read('components/home-dialogue-entry.module.css')
- assert.match(source,/data-home-free-review/)
- assert.match(source,/data-home-focus-grid/)
- assert.match(source,/data-home-intent-composer/)
- assert.match(source,/data-home-send-to-ali/)
- assert.match(source,/data-home-mode-button="business"/)
- assert.match(css,/@media \(max-width:430px\)/)
- assert.match(css,/\.composer\{display:flex;flex-direction:row;align-items:center;/)
- assert.match(css,/\.composerButtons button\{width:44px;height:44px;/)
- assert.match(css,/\.focusCard\{min-height:72px;/)
- assert.match(css,/scroll-margin-bottom:calc\(var\(--ia222-bottom-height,100px\)/)
+test('Home offers three Samir intents, one composer and seven stages',()=>{
+ const source=read('components/home-dialogue-entry.tsx');
+ const css=read('components/home-dialogue-entry.module.css');
+ for(const fragment of ['data-home-focus-grid','data-home-intent-composer','data-home-send-to-ali',
+ 'data-home-intent-option="talk"','data-home-stage-scroll','data-home-stage-option={index+1}'])
+  assert.ok(source.includes(fragment),fragment);
+ assert.doesNotMatch(source,/data-home-mode-button=/);
+ assert.match(css,/@media\(max-width:650px\)/);
+ assert.match(css,/\.composerButtons \.send\{width:47px;min-width:47px;height:47px\}/);
+ assert.match(css,/scroll-snap-type:x mandatory/);
 })
 test('iHelp never obscures Home mode tabs on mobile; shared AI remains available',()=>{
  const css=read('components/sitewide-ihelp.module.css')

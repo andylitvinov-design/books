@@ -19,7 +19,7 @@ import { readPersonalCoaching, savePersonalCoaching, readTraditionCoaching, save
 import {personalCoachingBrainTurn,personalCoachingBrainProbe,myCoachGenerativeTurn,myCoachGenerativeStreamTurn,myCoachGenerativeProbe} from '@/lib/app/coaching-brain'
 import {geminiCoachTextConfig} from '@/lib/coaching/gemini-coach-text.mjs'
 import {geminiCoachTtsConfig} from '@/lib/coaching/gemini-coach-tts.mjs'
-import {geminiFreeLiveConfig,normalizeGeminiFreeLiveStart,issueGeminiFreeLiveToken,geminiFreeLiveCheckpoint} from '@/lib/coaching/gemini-live-free.mjs'
+import {geminiFreeLiveConfig,geminiFreeLiveUnavailableReason,normalizeGeminiFreeLiveStart,issueGeminiFreeLiveToken,geminiFreeLiveCheckpoint} from '@/lib/coaching/gemini-live-free.mjs'
 import { readCoachingReportDraft } from '@/lib/app/coaching-report-v2'
 import { listCoachingReports, exportCoachingReports, readCoachingReport, saveCoachingReport, deleteCoachingReport } from '@/lib/app/coaching-report-store'
 import { readCoachingLifePlan, updateCoachingLifePlanArea, importCoachingReportActions } from '@/lib/app/coaching-life-plan'
@@ -1042,7 +1042,22 @@ async function handle(request, { params }) {
       let token
       try{token=await issueGeminiFreeLiveToken(vendor,start,{
         signal:AbortSignal.any([request.signal,AbortSignal.timeout(12000)])})}
-      catch{throw new AppError('MY_COACH_GEMINI_LIVE_UNAVAILABLE',503)}
+      catch(error){
+        // Fixed allowlist only: NEVER log API key, token, URL, personal data,
+        // request payload, upstream response body or a raw exception message.
+        const reasons={
+          GEMINI_LIVE_RATE_LIMIT:['MY_COACH_GEMINI_LIVE_RATE_LIMIT',429],
+          GEMINI_LIVE_AUTH_FAILURE:['MY_COACH_GEMINI_LIVE_AUTH_FAILURE',503],
+          GEMINI_LIVE_PROVIDER_BAD_REQUEST:['MY_COACH_GEMINI_LIVE_SETUP_REJECTED',503],
+          GEMINI_LIVE_PROVIDER_MODEL_UNAVAILABLE:['MY_COACH_GEMINI_LIVE_MODEL_UNAVAILABLE',503],
+          GEMINI_LIVE_PROVIDER_UNAVAILABLE:['MY_COACH_GEMINI_LIVE_PROVIDER_UNAVAILABLE',503],
+          GEMINI_LIVE_TOKEN_INVALID:['MY_COACH_GEMINI_LIVE_BAD_TOKEN_REPLY',503],
+        }
+        const [safeCode,status]=reasons[error?.message]||
+          ['MY_COACH_GEMINI_LIVE_UNAVAILABLE',503]
+        console.warn('HH_MY_COACH_LIVE_TOKEN_FAILURE',safeCode)
+        throw new AppError(safeCode,status)
+      }
       return json(token)
     }
     // Server-only evidence checkpoint for the transcript of a Free Live call.
@@ -1065,6 +1080,7 @@ async function handle(request, { params }) {
         gemini_tts_free:Boolean(geminiCoachTtsConfig(process.env,'gemini_tts_free')),
         gemini_tts_paid:Boolean(geminiCoachTtsConfig(process.env,'gemini_tts_paid')),
         gemini_live_free:Boolean(geminiFreeLiveConfig(process.env)),
+        gemini_live_reason:geminiFreeLiveUnavailableReason(process.env),
         live:false})
     }
     if (joined === 'my-coach/turn') {

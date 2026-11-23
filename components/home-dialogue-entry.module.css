@@ -392,3 +392,111 @@
   .guideAudio{height:auto;min-height:34px}
 }
 /* Large primary text stays legible; on short devices, scrolling beats clipping. */
+
+/* Short, visible provider disclosure before the first microphone tap. */
+.speechDisclosure{margin:5px 11px 0;color:#356756;font:500 11px/1.32 system-ui,sans-serif;overflow-wrap:anywhere}
+
+/* SAMIR_HOME_OWNER_APPROVED_20261123: warm beige editorial first screen,
+   one WhatsApp-like composer, 3 conversational entries and 7 readable stages. */
+.root{width:min(calc(100% - 24px),920px);padding:6px 0 22px;color:#143d32}
+.header{background:#fff7eb;border:0;box-shadow:none}
+.modes{display:none!important}
+.hero{min-height:330px;margin:3px 0 0;padding:0;border-radius:25px;overflow:hidden;background:#f8ebda;box-shadow:0 8px 25px #503c2820;color:#153e34}
+.scene{display:block;z-index:-2;background:linear-gradient(110deg,#fff7e9dd 0%,#faecd9dd 65%,#efddbcae 100%),url("/images/holistic-house/ideas-pine-reference.webp") center/cover no-repeat}
+.heroContent{display:grid;grid-template-columns:44% 56%;align-items:stretch;gap:0;max-width:none;min-height:330px}
+.heroPortrait{position:relative;z-index:-1;inset:auto;top:auto;right:auto;display:block;height:100%;min-height:330px;width:100%;object-fit:cover;object-position:center 32%;-webkit-mask-image:linear-gradient(90deg,#000 0%,#000 70%,transparent 100%);mask-image:linear-gradient(90deg,#000 0%,#000 70%,transparent 100%)}
+.heroStory{position:relative;isolation:isolate;min-height:330px;height:auto;padding:40px 18px 19px 0;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:12px;overflow:visible;background:transparent;box-shadow:none;border-radius:0}
+.heroStory:before{display:none}
+.heroMessage{background:#fff9efed;border:1px solid #e5cda3;border-radius:20px;padding:15px 14px;box-shadow:0 5px 14px #82673f1b;max-width:100%}
+.kicker{font-size:10px;color:#ab7c34;letter-spacing:.08em;margin-bottom:6px}
+.hero h2.heroTitle{max-width:none;color:#123e33;text-shadow:none;font-size:clamp(28px,5vw,44px);line-height:1.05;margin:0 0 9px}
+.guideRole{max-width:none;color:#174939;font-size:clamp(16px,2.5vw,21px);margin:0}
+.hero .subtitle{max-width:none;margin:9px 0 0;color:#3b574a;font-size:clamp(14px,2.1vw,17px);line-height:1.35}
+.guideAudio{min-height:45px;margin:0;padding:8px 12px;color:#124d3d;border:1px solid #d2b37b;background:#ffedcc;font-size:13px;box-shadow:0 4px 13px #8b63262e}
+.guideAudio[aria-pressed=true]{background:#d3ecd9;color:#13543e}
+.audioWave{font-size:16px;letter-spacing:1px;color:#946b2d}
+.personaButton{z-index:3;right:9px;top:8px;background:#fff6e5}
+.composer{z-index:4;display:flex;flex-direction:row;align-items:center;gap:7px;box-sizing:border-box;width:calc(100% - 12px);min-height:84px;margin:-9px auto 0;padding:8px 10px;border:3px solid white;border-radius:28px;background:#fffbf5;color:#174739;box-shadow:0 6px 21px #74583825}
+.composer textarea{display:block;flex:1 1 0%;width:0;min-height:57px;height:57px;max-height:180px;resize:vertical;padding:7px 3px;font-size:clamp(16px,2.2vw,19px);line-height:1.3}
+.composerButtons{align-items:center;align-self:center;width:auto;gap:4px;flex:none;flex-wrap:nowrap}
+.composerButtons button{width:44px;min-width:44px;height:45px;border:0;border-radius:15px;background:transparent;color:#154939}
+.composerButtons .send{display:grid;place-items:center;flex:none;min-width:51px;width:51px;height:51px;margin:0;padding:0;border-radius:50%;background:linear-gradient(135deg,#0baf89,#006b4d);color:#fff;box-shadow:0 4px 13px #166e563c}
+.composer .moreTool{width:44px;min-width:44px;border-radius:50%;background:#fff0d7;color:#174f3e}
+.audioWave{white-space:nowrap}.privacy{margin:7px 3px 11px;font:500 11px/1.3 system-ui;color:#667a6a;text-align:center}
+.focusGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin:8px 0 2px}
+.focusCard{display:flex;flex-direction:column;position:relative;overflow:hidden;min-height:205px;padding:0;background:#fff8ef;border:1px solid #e2caa7;border-radius:23px;color:#123d32;text-align:left;box-shadow:0 6px 15px #54432f1a}
+.focusPhoto{display:block;width:100%;height:95px;object-fit:cover;border-radius:0}
+.focusCopy{display:grid;align-content:start;grid-template-columns:27px minmax(0,1fr);gap:4px 7px;padding:11px 37px 14px 12px}
+.focusCopy>svg{color:#95703d}.focusCopy strong{font:700 clamp(20px,3.2vw,27px)/1.07 Georgia,serif}.focusCopy small{grid-column:1/-1;font:500 clamp(13px,2vw,16px)/1.28 system-ui;color:#36584a}
+.focusArrow{position:absolute;right:9px;bottom:23px;width:20px;height:20px;padding:5px;box-sizing:content-box;background:#f8e9d0;border-radius:50%;color:#174d3e}
+.talkLink{display:flex;align-items:center;justify-content:center;gap:9px;min-height:44px;margin:8px auto 6px;padding:9px 20px;border:1px solid #e1c49c;border-radius:999px;color:#184736;background:#fff6e8;font:750 15px/1.2 system-ui;cursor:pointer}
+.howWorks{margin:7px 0 0;padding:12px 0 0;min-height:0;border:0;background:transparent;color:#143f35;box-shadow:none}
+.howWorks h3{margin:0 0 2px;font:700 clamp(30px,5vw,40px)/1.1 Georgia,serif;text-align:center}
+.journeyNote{margin:0 0 12px;font:500 14px/1.3 system-ui;color:#5b7163;text-align:center}
+.journeyScroll{display:flex;align-items:stretch;gap:11px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;scrollbar-color:#cfaa6c #fff8ed;scroll-padding-inline:4px;scroll-snap-type:x mandatory;padding:4px 5px 14px}
+.journeyCard{display:flex;flex:0 0 clamp(160px,24%,205px);flex-direction:column;align-items:center;gap:4px;min-height:240px;overflow:hidden;padding:0 0 11px;scroll-snap-align:start;border:1px solid #e3c796;border-radius:20px;color:#153e32;background:#fff7e9;box-shadow:0 4px 13px #8563391d;text-align:center;cursor:pointer}
+.journeyPhoto{display:grid;place-items:center;position:relative;width:100%;height:100px;flex:none;background-size:cover;background-position:center;color:#fff}
+.journeyPhoto>svg{filter:drop-shadow(0 2px 5px #143c38);stroke-width:2.5}
+.journeyPhoto b{position:absolute;bottom:0;left:11px;width:34px;height:34px;display:grid;place-items:center;border-radius:50% 50% 0 0;background:#f7e4bd;color:#694d24;font:800 18px Georgia}
+.journeyCard>strong{min-height:49px;padding:10px 10px 0;font:700 20px/1.07 Georgia,serif}
+.journeyCard>small{padding:2px 8px 0;font:500 13px/1.22 system-ui;color:#4c6757;flex:1}
+.journeyArrow{color:#9c773d}
+.methods{margin:13px 0 0;padding:17px 13px 19px;border:1px solid #e3cba8;border-radius:25px;background:linear-gradient(120deg,#fff9f0,#f6e7d4);box-shadow:0 3px 13px #6e573e18}
+.methods h3{display:flex;gap:8px;align-items:center;margin:0 0 14px;font:700 clamp(18px,3vw,23px)/1.12 Georgia,serif}
+.methods h3 svg{color:#b98b42}
+.methodGrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0}
+.method{display:flex;flex-direction:column;align-items:center;gap:6px;padding:6px 4px;text-align:center;border-right:1px solid #d7c09f;color:#194a3a;min-width:0}
+.method:last-child{border-right:0}
+.method span{font:650 clamp(12px,1.6vw,16px)/1.23 system-ui;overflow-wrap:break-word}
+.continue{margin-top:9px;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:8px 10px;color:#255d49;font:700 13px system-ui}
+.focusCard:focus-visible,.talkLink:focus-visible,.journeyCard:focus-visible,.composer button:focus-visible{outline:3px solid #b98b42;outline-offset:2px}
+@media(max-width:650px){
+ .root{width:calc(100% - 20px)}
+ .hero{min-height:289px}.heroContent{grid-template-columns:43% 57%;min-height:289px}
+ .heroPortrait{min-height:289px;object-position:55% center}
+ .heroStory{min-height:289px;padding:24px 10px 12px 0;gap:8px}
+ .heroMessage{padding:12px 10px;border-radius:17px}
+ .kicker{font-size:9px}.hero h2.heroTitle{font-size:clamp(25px,5.8vw,32px)}
+ .guideRole{font-size:clamp(14px,3.7vw,18px)}
+ .hero .subtitle{font-size:clamp(12px,3vw,14px);line-height:1.26;margin-top:6px}
+ .guideAudio{min-height:42px;margin:0;font-size:12px;padding:6px 8px}
+ .guideAudio .audioWave{display:none}
+ .personaButton{width:40px;height:40px;right:6px;top:5px}
+ .composer{padding:7px 7px;gap:4px;min-height:77px}
+ .composer textarea{font-size:clamp(15px,4vw,18px);min-height:54px;height:54px;padding:6px 2px}
+ .composerButtons{gap:0}
+ .composerButtons button{width:35px;min-width:35px;height:44px}
+ .composerButtons .send{width:47px;min-width:47px;height:47px}
+ .composer .moreTool{width:39px;min-width:39px}
+ .focusGrid{gap:9px}.focusCard{min-height:185px}
+ .focusPhoto{height:79px}.focusCopy{grid-template-columns:22px minmax(0,1fr);gap:4px 5px;padding:10px 31px 10px 9px}
+ .focusCopy>svg{width:21px}.focusCopy strong{font-size:clamp(17px,4.5vw,23px)}.focusCopy small{font-size:clamp(12px,3.15vw,14px)}
+ .focusArrow{right:4px;bottom:22px;width:17px;height:17px;padding:5px}
+ .journeyScroll{gap:9px}.journeyCard{flex-basis:clamp(156px,44%,198px)}
+ .method span{font-size:clamp(10px,2.4vw,13px)}.method svg{width:24px;height:24px}
+}
+@media(max-width:355px){
+ .root{width:calc(100% - 14px)}
+ .hero{min-height:306px}.heroContent{min-height:306px}.heroPortrait{min-height:306px}
+ .heroStory{min-height:306px;padding:20px 7px 9px 0}
+ .heroMessage{padding:10px 8px}
+ .hero h2.heroTitle{font-size:25px}.guideRole{font-size:13px}.hero .subtitle{font-size:12px}
+ .composer{padding:6px 5px;gap:2px}
+ .composer .moreTool{width:33px;min-width:33px}
+ .composerButtons .photoTool{width:32px;min-width:32px}
+ .composerButtons .microphone{width:36px;min-width:36px}
+ .composerButtons .send{width:44px;min-width:44px}
+ .focusPhoto{height:72px}
+}
+@media(prefers-reduced-motion:reduce){.journeyScroll{scroll-behavior:auto}}
+
+/* 320–430px accessibility repair: do not shrink meaningful touch targets
+   merely to fit four controls beside the edit field. */
+@media(max-width:430px){
+ .siteTools :global(.site-main-menu-trigger),
+ .siteTools :global([data-site-search-trigger]){width:44px;min-width:44px;height:44px;min-height:44px}
+ .language summary{min-width:44px;min-height:44px}
+ .composer .moreTool,.composerButtons .photoTool,.composerButtons .microphone,.composerButtons .send{
+   width:44px;min-width:44px;min-height:44px;height:44px
+ }
+}

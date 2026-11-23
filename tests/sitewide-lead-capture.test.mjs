@@ -108,7 +108,7 @@ test("single-field request is explicit opt-in with real CRM commit receipt and n
   assert.match(css, /:focus-visible/);
 });
 
-test("free landing's final slide is just the compact form, in all three languages", () => {
+test("free landing keeps one compact form; EN/RU/ES Services use approved consultation CTA", () => {
   const page = read("components/free-entry-landing.tsx");
   const pageCss = read("components/free-entry-landing.module.css");
   const main = read("app/[locale]/services/page.tsx");
@@ -125,10 +125,23 @@ test("free landing's final slide is just the compact form, in all three language
   assert.doesNotMatch(page, /<FreeResourceEnquiry/);
   assert.match(page, /data-optional-written-review/);
   assert.match(pageCss, /\.page\{padding-bottom:0\}/);
-  assert.match(main, /<CompactLeadCapture locale=\{locale\}/);
-  assert.match(es, /<CompactLeadCapture locale="es"/);
-  assert.ok(main.lastIndexOf("<CompactLeadCapture") > main.lastIndexOf("<ServicesDirectoryInvitation"));
-  assert.ok(es.lastIndexOf("<CompactLeadCapture") > es.lastIndexOf("<ServicesDirectoryInvitation"));
+  // The free-entry page finishes with CompactLeadCapture. The newer
+  // approved Services catalogue instead books via PublicConsultationCta
+  // inside its consultation panel; never demand or add a duplicate footer.
+  for (const [language, services, localeSyntax] of [
+    ["EN/RU", main, /<PublicConsultationCta locale=\{locale\} id="consultation" serviceBooking/],
+    ["ES", es, /<PublicConsultationCta locale="es" id="consultation" serviceBooking/],
+  ]) {
+    assert.match(services, /<ServicesCompactPanel id="consultation">/, language);
+    assert.match(services, localeSyntax, language + " real booking CTA");
+    assert.match(services, /<ServicesDirectoryInvitation locale=/, language);
+    assert.doesNotMatch(services, /<CompactLeadCapture/, language + " no duplicate capture");
+    assert.ok(
+      services.indexOf("<ServicesPersonalConsultationMobile") <
+        services.indexOf("<PublicConsultationCta"),
+      language + " booking immediately follows the real consultation",
+    );
+  }
 });
 
 
