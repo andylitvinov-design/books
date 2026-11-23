@@ -4,7 +4,7 @@ import {createRequestAuth} from '@/lib/app/session'
 import {consumeRate} from '@/lib/app/database'
 import {PRIVATE_HEADERS,readBody,safeError} from '@/lib/app/http'
 import {AppError} from '@/lib/assessments/contracts'
-import {myCoachFishConfig,myCoachFishVoice,normalizeMyCoachFishRequest} from '@/lib/coaching/my-coach-fish-voice.mjs'
+import {myCoachFishConfig,myCoachFishVoice,myCoachFishProsody,normalizeMyCoachFishRequest} from '@/lib/coaching/my-coach-fish-voice.mjs'
 import {geminiCoachTtsConfig,normalizeGeminiCoachTtsInput,synthesizeGeminiCoachTts} from '@/lib/coaching/gemini-coach-tts.mjs'
 import {GOOGLE_PROVIDER,GOOGLE_TTS_GLOBAL_DAILY_LIMIT,googleChirpConfig,
   normalizeGoogleChirpInput,synthesizeGoogleChirp} from '@/lib/coaching/my-coach-google-chirp.mjs'
@@ -100,7 +100,7 @@ export async function POST(request){
     // Never allow client-chosen voice IDs; bind the voice to the approved
     // fictional persona on the server. No generic male default for Mira.
     const referenceId=myCoachFishVoice(fishRaw.personaId,input.locale)
-    if(!referenceId)throw new AppError('MY_COACH_FISH_TTS_INVALID',400)
+    if(!referenceId)throw new AppError('MY_COACH_FISH_VOICE_NOT_APPROVED',503)
     await consumeRate(config,{op:'my-coach-fish-minute',actor:actor.id},5,60)
     await consumeRate(config,{op:'my-coach-fish-day',actor:actor.id},35,86400)
     const upstream=await fetch('https://api.fish.audio/v1/tts',{
@@ -113,7 +113,8 @@ export async function POST(request){
       body:JSON.stringify({text:input.text,format:'mp3',reference_id:referenceId,
         // Fish's low-latency mode starts synthesizing smaller speech segments.
         // One free-only request; never retry or silently upgrade to paid.
-        latency:'low',chunk_length:100}),
+        latency:'low',chunk_length:100,
+        ...(myCoachFishProsody(fishRaw.personaId,input.locale)?{prosody:myCoachFishProsody(fishRaw.personaId,input.locale)}:{})}),
     })
     const kind=upstream.headers.get('content-type')||''
     if(!upstream.ok||!upstream.body||
