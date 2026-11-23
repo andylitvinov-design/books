@@ -31,19 +31,43 @@ export default function SupportPhotoCabinet({locale='en'}){
   const [error,setError]=useState('')
   // Ignore mount-time signed URL reads that finish after Save or Delete.
   const photoStorageEpoch=useRef(0)
+  const signedPhotoLoadedAt=useRef(0)
   // Safari can deliver a second file choice before the previous decode finishes.
   // Only the newest completed decode may become the photo eligible for Save.
   const photoChoiceEpoch=useRef(0)
   useEffect(()=>()=>{photoChoiceEpoch.current+=1},[])
   useEffect(()=>{
     let mounted=true
-    const readEpoch=photoStorageEpoch.current
-    fetch('/api/app/support-photo',{credentials:'same-origin',cache:'no-store'})
-      .then(r=>r.ok?r.json():null).then(data=>{
-        if(mounted&&readEpoch===photoStorageEpoch.current&&data)
+    let reading=false
+    const read=async()=>{
+      if(reading)return
+      reading=true
+      const readEpoch=photoStorageEpoch.current
+      try{
+        const response=await fetch('/api/app/support-photo',{credentials:'same-origin',cache:'no-store'})
+        if(!response.ok)return
+        const data=await response.json()
+        if(mounted&&readEpoch===photoStorageEpoch.current){
           setUrl(typeof data.url==='string'?data.url:null)
-      }).catch(()=>{})
-    return()=>{mounted=false}
+          signedPhotoLoadedAt.current=Date.now()
+        }
+      }catch{/* An expired private preview never becomes a public fallback. */}
+      finally{reading=false}
+    }
+    void read()
+    const refreshOnReturn=()=>{
+      // Private Storage URLs last 120s. Refresh from our authenticated
+      // first-party endpoint after returning to an older open tab.
+      if(document.visibilityState==='visible'&&Date.now()-signedPhotoLoadedAt.current>=90_000)
+        void read()
+    }
+    window.addEventListener('focus',refreshOnReturn)
+    document.addEventListener('visibilitychange',refreshOnReturn)
+    return()=>{
+      mounted=false
+      window.removeEventListener('focus',refreshOnReturn)
+      document.removeEventListener('visibilitychange',refreshOnReturn)
+    }
   },[])
   useEffect(()=>()=>{if(preview)URL.revokeObjectURL(preview)},[preview])
   async function select(event){
@@ -74,6 +98,7 @@ export default function SupportPhotoCabinet({locale='en'}){
       const result=await response.json()
       if(!result.saved||typeof result.url!=='string')throw new Error('PHOTO_SAVE_FAILED')
       photoStorageEpoch.current+=1
+      signedPhotoLoadedAt.current=Date.now()
       setBlob(null);setPreview(null);setUrl(result.url)
       // A successful POST already returned the signed URL of the stored object.
       // A second GET could fail or lag and falsely label a completed save as failed.
@@ -89,6 +114,7 @@ export default function SupportPhotoCabinet({locale='en'}){
       const result=await response.json()
       if(result.removed!==true)throw new Error('PHOTO_DELETE_FAILED')
       photoStorageEpoch.current+=1
+      signedPhotoLoadedAt.current=Date.now()
       setUrl(null);setPreview(null);setBlob(null);setNotice(t.removed)
     }catch{setError(t.error)}finally{setBusy(false)}
   }
