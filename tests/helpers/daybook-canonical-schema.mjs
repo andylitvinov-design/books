@@ -3,7 +3,7 @@ import {readFile} from 'node:fs/promises'
 export async function initializeCanonicalDaybookSchema(admin){
  if(process.env.VERCEL||process.env.HH_APP_TEST_RUNTIME!=='isolated')throw Error('ISOLATED_DATABASE_REQUIRED')
  const name=(await admin.query('select current_database() as name')).rows[0].name
- assert.ok(['hh_daybook_schema_test','hh_daybook_weekly_test'].includes(name),'refuse unexpected database')
+ assert.ok(['hh_daybook_schema_test','hh_daybook_weekly_test','hh_daybook_coach_test'].includes(name),'refuse unexpected database')
  assert.equal((await admin.query("select to_regnamespace('app') as present")).rows[0].present,null,'refuse occupied database')
  const role=(await admin.query("select rolsuper,rolbypassrls from pg_roles where rolname='hh_app_backend'")).rows[0]
  assert.equal(role?.rolsuper,false);assert.equal(role.rolbypassrls,false)
