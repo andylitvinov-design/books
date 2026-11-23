@@ -16,6 +16,7 @@ import type {MessengerProjectId,MessengerProjectOption,MessengerTestFocus} from 
 import { prepareNaturalDialogue, finishNaturalDialogue } from "@/lib/holistic-support/natural-dialogue.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import { AXIS_REFS } from "@/lib/holistic-support/axis-offer-matcher.mjs";
+import { repairDialogueTopic } from "@/lib/holistic-support/dialogue-topic-repair.mjs";
 import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
 import { friendConversationReply } from "@/lib/holistic-support/friend-mind.mjs";
 import {wavePsychologistNativeTurn,wavePsychologistNativeSummary,
@@ -1382,11 +1383,13 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       const friendReply=supportSelection?.mode==="talk"&&judgmentChoice===null &&
         !requiresProtectedReply(text,turnLocale)
         ?friendConversationReply({message:text,locale:turnLocale,history:prior,tone:friendTone}):null;
-      const candidate=friendReply?null:planJudgmentTurn({message:text,locale:turnLocale,
+      const topicRepair=judgmentChoice===null&&!requiresProtectedReply(text,turnLocale)
+        ?repairDialogueTopic({message:text,locale:turnLocale,history:prior}):null;
+      const candidate=friendReply||topicRepair?null:planJudgmentTurn({message:text,locale:turnLocale,
         safety:{status:"clear"},history:prior,pending:judgmentView?.pending,choiceId:judgmentChoice});
       const handled=candidate!==null&&candidate.status!=="abstain";
       const answer=requiresProtectedReply(text,turnLocale)?boundaryReply:
-        friendReply?.reply||(handled?candidate!.reply:guestAnswer(text,prior,turnLocale));
+        topicRepair?.reply||friendReply?.reply||(handled?candidate!.reply:guestAnswer(text,prior,turnLocale));
       setJudgmentView(requiresProtectedReply(text,turnLocale)?null:
         handled?candidate as JudgmentView:null);
       judgmentClickLock.current=false;
@@ -1522,7 +1525,9 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         const unsafe=requiresProtectedReply(text,turnLocale);
         const companion=!unsafe&&!protectedQuestion&&supportSelection?.mode==="talk"
           ?friendConversationReply({message:text,locale:turnLocale,history:prior,tone:friendTone}):null;
-        const judgment=!unsafe&&!protectedQuestion&&!companion
+        const topicRepair=!unsafe&&!protectedQuestion
+          ?repairDialogueTopic({message:text,locale:turnLocale,history:prior}):null;
+        const judgment=!unsafe&&!protectedQuestion&&!companion&&!topicRepair
           ?planJudgmentTurn({message:text,locale:turnLocale,
             safety:{status:"clear"},history:prior,pending:null}):null;
         const known=!unsafe&&!protectedQuestion&&!companion&&
@@ -1531,7 +1536,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         const answer=unsafe?boundaryReply:
           judgmentChoice!==null?aliGentleContinuity({message:text,locale:turnLocale,
             history:prior,actionPending:true}):
-          companion?.reply||(judgment&&judgment.status!=="abstain"?judgment.reply:null)||
+          topicRepair?.reply||companion?.reply||(judgment&&judgment.status!=="abstain"?judgment.reply:null)||
           (known?.id&&!known.id.startsWith("video")&&typeof known.reply==="string"&&known.reply.trim()?known.reply:null)||
           aliGentleContinuity({message:text,locale:turnLocale,history:prior,requiresSignIn:needsSignIn});
         setChoices([]);setJudgmentView(null);setEvidenceUsed(false);setHistoryUsed(false);
