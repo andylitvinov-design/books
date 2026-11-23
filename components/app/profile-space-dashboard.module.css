@@ -684,3 +684,18 @@
  .dashboard[data-profile-space-dashboard] .profileTabs strong{font-size:20px}
  .dashboard[data-profile-space-dashboard] .diagnosticCard{min-height:122px;padding:14px}
 }
+
+/* Owner reference 3: keep the entire goal workspace compact, not the support routes. */
+@media(max-width:699px){
+.dashboard[data-profile-space-section="goals"] .mode{margin:0 0 4px;gap:5px}
+.dashboard[data-profile-space-section="goals"] .mode a{min-height:36px;padding:5px 3px}
+.dashboard[data-profile-space-section="goals"] .modeSettings{width:36px;min-width:36px;height:36px;min-height:36px}
+.dashboard[data-profile-space-section="goals"] .mode{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 36px}
+.dashboard[data-profile-space-section="goals"] .scenic{min-height:0;padding:6px 10px 7px;border-radius:13px;background-position:center,61% 25%}
+.dashboard[data-profile-space-section="goals"] .eyebrow{display:none}
+.dashboard[data-profile-space-section="goals"] .title{font-size:27px!important;margin:0!important;line-height:1.04!important}
+.dashboard[data-profile-space-section="goals"] .profileTabs{gap:5px;margin:5px 0 6px}
+.dashboard[data-profile-space-section="goals"] .profileTab,.dashboard[data-profile-space-section="goals"] .profileTabActive{min-height:48px;padding:4px 3px;gap:2px;border-radius:12px}
+.dashboard[data-profile-space-section="goals"] .profileTabs svg{width:19px;height:19px}
+.dashboard[data-profile-space-section="goals"] .profileTabs strong{font-size:13px!important;line-height:1.05}
+}
