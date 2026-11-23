@@ -44,13 +44,22 @@ test('photo options disclose unavailable AI, enforce rights and do not silently 
   const step=studio.slice(start,end);
   assert.match(step,/montagePhotoChoice==="animate"/);
   assert.match(step,/Face animation is not payment-enabled/);
-  assert.match(step,/!photoConsent/);
-  assert.match(step,/montagePhotoChoice==="coach"&&\(!montageCoachPhoto\|\|!photoUrl\)/);
+  assert.match(step,/!personalPhotoConsent/);
+  assert.match(step,/montagePhotoChoice==="coach"&&!coachPhotoUrl/);
+  assert.match(step,/montagePhotoChoice==="library"&&\(!personalPhotoUrl\|\|!personalPhotoConsent\)/);
   assert.match(step,/Photo-mode XP is indicative/);
   assert.doesNotMatch(step,/postVideoCreditAction\(|heygen\.ai\/v\d/i);
-  assert.match(studio,/image\.src="\/images\/holistic-house\/my-coach-motion\/"\+id\+"-still\.webp"/);
-  assert.match(studio,/canvas\.toBlob\(resolve,"image\/jpeg",0\.9\)/);
-  assert.match(studio,/selectNativePhoto\(new File\(\[blob\],id\+"-coach\.jpg"/);
+  assert.match(studio,/const coachPhotoUrl=montagePhotoChoice==="coach"&&montageCoachPhoto\s*\?"\/images\/holistic-house\/my-coach-motion\/"\+montageCoachPhoto\+"-still\.webp":null/);
+  assert.match(studio,/const photoUrl=montagePhotoChoice==="coach"\?coachPhotoUrl:personalPhotoUrl/);
+  assert.match(studio,/const photoConsent=Boolean\(coachPhotoUrl\)\|\|\(!photoPending&&personalPhotoConsent\)/);
+  const pick=studio.slice(studio.indexOf("const pickMontageCoachPhoto="),studio.indexOf("const [otherScene, setOtherScene]"));
+  assert.match(pick,/setMontageCoachPhoto\(id\);setMontagePhotoChoice\("coach"\)/);
+  assert.match(pick,/setBackgroundOnly\(false\);setPhotoConsent\(false\)/);
+  assert.doesNotMatch(pick,/onPhotoFileSelected|selectNativePhoto|new File|toBlob|await/);
+  const personal=studio.slice(studio.indexOf("const selectNativePhoto ="),studio.indexOf("const pickMontageCoachPhoto="));
+  assert.match(personal,/setMontageCoachPhoto\(null\)/);
+  assert.match(personal,/setPhotoConsent\(false\)/);
+  assert.match(personal,/onPhotoFileSelected\(photo\)/);
   assert.doesNotMatch(studio,/\bfetch\s*\(/,'editor retains no direct fetch call');
 });
 test('Montage Audio has one-row music filters and readable rows without album art',()=>{

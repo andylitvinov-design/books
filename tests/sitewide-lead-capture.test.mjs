@@ -183,14 +183,14 @@ test("deferred public lead capture contains interrupted imports and recovers onl
   const {loadOptionalLeadCapture}=await import("../lib/deferred-lead-capture.mjs");
   let active=true, attempts=0;
   const pause=async()=>{};
-  const module={SitewideLeadCapture:()=>null};
+  const loadedModule={SitewideLeadCapture:()=>null};
   const recovered=await loadOptionalLeadCapture(async()=>{
     if (++attempts===1) throw Error("ChunkLoadError");
-    return module;
+    return loadedModule;
   },()=>active,pause);
   assert.equal(attempts,2);
   assert.equal(recovered.status,"ready");
-  assert.equal(recovered.module,module);
+  assert.equal(recovered.module,loadedModule);
   attempts=0;
   const cancelled=await loadOptionalLeadCapture(async()=>{
     attempts++;active=false;throw Error("ChunkLoadError");
