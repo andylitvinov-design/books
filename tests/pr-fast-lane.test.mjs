@@ -156,23 +156,23 @@ test('single required check co-locates Core proof and real specialist; failed Co
 
 test('CORE merge gate may await slow mandatory WebKit without an early ubuntu-slim termination', () => {
   const source=workflow('hh-pr-core-release.yml');
-  const gate=source.match(/^  hh-merge-check:\\s*\\n([\\s\\S]*?)(?=^  [a-z][a-z0-9-]*:\\s*$)/m)?.[1];
+  const gate=source.match(/^  hh-merge-check:\s*\n([\s\S]*?)(?=^  [a-z][a-z0-9-]*:\s*$)/m)?.[1];
   assert.ok(gate, 'the real protected merge gate must exist');
-  const runner=gate.match(/^    runs-on: ([^\\n]+)$/m)?.[1] ?? '';
-  const budget=gate.match(/^    timeout-minutes: ([^\\n]+)$/m)?.[1] ?? '';
+  const runner=gate.match(/^    runs-on: ([^\n]+)$/m)?.[1] ?? '';
+  const budget=gate.match(/^    timeout-minutes: ([^\n]+)$/m)?.[1] ?? '';
   for (const line of [runner,budget]) {
-    assert.match(line, /needs\\.scope\\.outputs\\.route == 'ASSETS'/);
-    assert.match(line, /needs\\.scope\\.outputs\\.route == 'TEXT'/);
-    assert.doesNotMatch(line, /needs\\.scope\\.outputs\\.route == 'CORE'/,
+    assert.match(line, /needs\.scope\.outputs\.route == 'ASSETS'/);
+    assert.match(line, /needs\.scope\.outputs\.route == 'TEXT'/);
+    assert.doesNotMatch(line, /needs\.scope\.outputs\.route == 'CORE'/,
       'CORE must never inherit a 12-minute timeout or the 15-minute ubuntu-slim hard limit');
   }
-  assert.match(runner,/ubuntu-slim.*ubuntu-24\\.04/);
-  assert.match(budget,/&& 12 \\|\\| 45/,
+  assert.match(runner,/ubuntu-slim.*ubuntu-24\.04/);
+  assert.match(budget,/&& 12 \|\| 45/,
     'ASSETS/TEXT retain short budget, while CORE/DOCK/FULL keep 45 minutes');
-  assert.match(gate,/^    needs: \\[scope\\]$/m);
+  assert.match(gate,/^    needs: \[scope\]$/m);
   assert.match(gate,/Fail closed if mandatory Core failed/);
-  assert.match(gate,/git show "\\$HH_TRUSTED_BASE_SHA:scripts\\/ci-specialist-aggregate\\.mjs"/);
-  assert.doesNotMatch(gate,/continue-on-error:\\s*true|timeout-minutes:\\s*0/);
+  assert.match(gate,/git show "\$HH_TRUSTED_BASE_SHA:scripts\/ci-specialist-aggregate\.mjs"/);
+  assert.doesNotMatch(gate,/continue-on-error:\s*true|timeout-minutes:\s*0/);
 });
 
 test('PR automation policy and agent entry point require specialist safety gates', () => {
