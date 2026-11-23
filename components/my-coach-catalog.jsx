@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import { ArrowRight, BookOpen, Heart, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Sparkles, Users, MoreHorizontal, Zap, Leaf, Flower2, Target, ClipboardCheck } from 'lucide-react'
 import {
-  PUBLIC_COACH_PERSONA_IDS, PUBLIC_COACH_PERSONAS, PUBLIC_COACH_TOPICS, coachSessionHref, coachStagePrompt, getCoachPersona,
+  PUBLIC_COACH_PERSONA_IDS, PUBLIC_COACH_RAIL_IDS, PUBLIC_COACH_PERSONAS, PUBLIC_COACH_TOPICS, coachSessionHref, coachStagePrompt, getCoachPersona,
   localCoachText, normalizeCoachSettings,
 } from '@/lib/coaching/persona-registry.mjs'
 import {getCoachStylePassport} from '@/lib/coaching/coach-style-passports.mjs'
@@ -411,7 +411,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
           <a href="#all-coaches">{hw.all} <ArrowRight size={18} aria-hidden="true" /></a>
         </div>
         <div className={heroStyles.coachRail} role="group" aria-label={hw.choose}>
-          {PUBLIC_COACH_PERSONA_IDS.map(id => {
+          {PUBLIC_COACH_RAIL_IDS.map(id => {
             const persona = getCoachPersona(id)
             if (!persona) return null
             const stillImage = id === 'harry'
