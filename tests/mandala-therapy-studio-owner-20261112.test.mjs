@@ -11,15 +11,16 @@ test("Therapy is sixth, after Ready; six original destinations remain intact",()
  const block=parent.match(/const workspaceTabs=\[([\s\S]*?)\] as const;/)?.[1];
  assert.ok(block);
  assert.deepEqual([...block.matchAll(/id:"([a-z]+)"/g)].map(x=>x[1]),
-  ["video","phrases","editor","pro","ready","effects"]);
+  ["video","editor","phrases","pro","ready","effects"]);
  for(const l of ["ru","en","es"])assert.match(parent,new RegExp(l+":\\{[\\s\\S]*?effects:\\{tab:\"Therapy\""));
  assert.match(parent,/data-video-quick-control=\{item\.id\}/);
  assert.equal((parent.match(/<MandalaTherapyStudio /g)||[]).length,1);
 });
-test("Single and eight sessions selector appears BEFORE Meditation Voice Practice subtabs",()=>{
- assert.ok(ui.indexOf("data-therapy-format-switch")<ui.indexOf("data-therapy-tabs"));
- for(const format of ["single","course"])assert.match(ui,new RegExp('data-therapy-format="'+format+'"'));
- for(const tab of ["meditation","voice","practice"])assert.ok(ui.includes('data-therapy-subtab={id}'));
+test("Approved four Therapy tabs replace the format switch",()=>{
+ assert.doesNotMatch(ui,/data-therapy-format-switch|data-therapy-format="(?:single|course)"/);
+ assert.match(ui,/\["meditation","voice","practice","course"\] as const/);
+ assert.match(ui,/if\(id==="course"\)setIsCourse\(true\)/);
+ assert.match(ui,/else if\(id==="meditation"\)setIsCourse\(false\)/);
  assert.match(ui,/editor\(isCourse\)/);
  assert.match(parent,/coursePreview=\{isCourse\}/);
  assert.match(ui,/role="tablist"/);
@@ -52,11 +53,25 @@ test("Existing visual, quiet and binaural effects remain optional with no automa
  assert.match(browser,/data-therapy-effects-toggle/);
 });
 test("Mobile visuals have roomy touch targets and correct eight-draft disclosure",()=>{
- assert.match(css,/min-height:74px/);
+ assert.match(css,/grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
  assert.match(css,/min-height:50px/);
  assert.match(css,/@media\(max-width:355px\)/);
  assert.match(ui,/Eight-session mode starts with a plan and one script/);
  assert.match(ui,/Курс начинается с плана и первого текста/);
+});
+
+test("Mobile native controls and disclosures remain usable in Safari",()=>{
+ const browser=read("scripts/verify-therapy-studio-mobile-browser.mjs");
+ const workflow=read(".github/workflows/holistic-support-mandala.yml");
+ assert.match(css,/\[data-meditation-main-filters\] select\{height:44px;min-height:44px;box-sizing:border-box/);
+ assert.match(css,/\[data-meditation-context\] summary::after/);
+ assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);
+ for(const label of ["Therapy Studio steps","Этапы Therapy Studio","Pasos de Therapy Studio"])assert.ok(ui.includes(label));
+ assert.match(ui,/aria-label=\{t\.stepsA11y\}/);
+ for(const width of [320,354,390,430])assert.ok(browser.includes(String(width)));
+ assert.match(browser,/webkit/);
+ assert.match(browser,/data-therapy-action/);
+ assert.match(workflow,/node scripts\/verify-therapy-studio-mobile-browser\.mjs/);
 });
 
 test("Therapy WebKit preserves voice and reviewed recording rights",()=>{
@@ -125,50 +140,35 @@ test("Owner Therapy mobile: one introduction and compact controls, no feature re
  assert.match(ui,/data-therapy-advanced-effects/);
 });
 
-test("Therapy mobile guest path is tested in the existing WebKit release gate",()=>{
- const browser=read("scripts/verify-therapy-studio-mobile-browser.mjs");
- const ci=read(".github/workflows/holistic-support-mandala.yml");
- assert.match(browser,/\['en','ru','es'\]/);
- assert.match(browser,/\[320,354,390,430\]/);
- assert.match(browser,/data-video-studio-hydrated/);
- assert.match(browser,/data-therapy-format="course"/);
- assert.match(browser,/data-meditation-eight-day-plan/);
- assert.match(browser,/data-therapy-subtab="voice"/);
- assert.match(browser,/data-video-hypnocorrection-panel/);
- assert.match(browser,/No external provider or video renderer POST/);
- assert.match(browser,/No iPhone horizontal overflow/);
- assert.match(ci,/node --check scripts\/verify-therapy-studio-mobile-browser\.mjs/);
- assert.match(ci,/HH_THERAPY_BROWSER_ENGINE=webkit/);
- assert.match(ci,/artifacts\/therapy-mobile\/\*\.png/);
- assert.match(ui,/aria-label=\{t\.formatA11y\}/);
- assert.match(ui,/aria-label=\{t\.stepsA11y\}/);
- assert.match(css,/\[data-meditation-context\] summary::after/);
+test("Voice one-screen retains explicit cloud consent and existing real WAV path",()=>{
+ const voice=read("components/mandala-affirmation-voice.tsx");
+ const styles=read("components/mandala-affirmation-voice.module.css");
+ assert.match(parent,/therapyLayout=\{activeWorkspace==="effects"\}/);
+ assert.match(ui,/data-active-therapy-pane=\{pane\}/);
+ assert.match(voice,/data-therapy-voice-ui=\{therapyLayout\?"true":"false"\}/);
+ assert.match(voice,/data-video-therapy-own-voice/);
+ assert.match(voice,/role="checkbox" aria-checked=\{consent\}/);
+ assert.match(voice,/mode:"affirmations",voiceId,language,text:speechText,consent:true/);
+ assert.match(styles,/data-therapy-voice-ui="true"/);
+ assert.match(css,/\.scriptHost\[data-pane="practice"\],\.scriptHost\[data-pane="voice"\]\{display:none\}/);
 });
 
-// CSS Modules hash class names at runtime; use a semantic structure selector.
-// A raw '.chips' lookup would fail a real Safari run even with all context data present.
-test("Therapy WebKit uses robust native context chip selectors",()=>{
- const browser=read("scripts/verify-therapy-studio-mobile-browser.mjs");
- assert.match(browser,/contextPanel\.locator\('div > span'\)/);
- assert.doesNotMatch(browser,/contextPanel\.locator\('\.chips span'\)/);
-});
-
-// macOS WebKit E2E proved Safari's native <select> ignores min-height alone:
-// real 320px Therapy controls measured 23px before the explicit height fix.
-test("Therapy main selects have physical 44px height for iPhone WebKit, not just min-height",()=>{
- const cssText=read("components/mandala-therapy-studio.module.css");
- assert.match(cssText,/\[data-meditation-main-filters\] select\{height:44px;min-height:44px;box-sizing:border-box/);
- const browser=read("scripts/verify-therapy-studio-mobile-browser.mjs");
- assert.match(browser,/targets\.every\(\(\[w,h\]\)=>w>=44&&h>=44\)/);
-});
-
-// WebKit must target the two visible top-level Practice actions by stable ID:
-// the old last() selected a hidden optional Hypno-effects descendant.
-test("Therapy Practice browser targets only visible explicit voice and phrase actions",()=>{
- const browser=read("scripts/verify-therapy-studio-mobile-browser.mjs");
- assert.match(ui,/data-therapy-action="voice"/);
- assert.match(ui,/data-therapy-action="phrases"/);
- assert.match(browser,/shell\.locator\('\[data-therapy-action="voice"\]'\)\.tap\(\)/);
- assert.match(browser,/shell\.locator\('\[data-therapy-action="phrases"\]'\)\.tap\(\)/);
- assert.doesNotMatch(browser,/\[data-therapy-practice\] button'\)\.last\(\)/);
+test("Voice footer has exactly two large next-step actions, no charge or synthesis on navigation",()=>{
+ assert.match(ui,/data-therapy-voice-next/);
+ assert.match(ui,/data-therapy-voice-to-practice/);
+ assert.match(ui,/data-therapy-voice-to-course/);
+ assert.match(ui,/onClick=\{\(\)=>openFromVoice\("practice"\)\}/);
+ assert.match(ui,/onClick=\{\(\)=>openFromVoice\("course"\)\}/);
+ assert.match(ui,/if\(target==="course"\)setIsCourse\(true\)/);
+ for(const phrase of ["Narrate meditation (20 EXP)","Озвучить медитацию (20 EXP)","Narrar meditación (20 EXP)"])
+  assert.ok(ui.includes(phrase));
+ assert.match(ui,/Создать видео без озвучки/);
+ assert.doesNotMatch(ui,/fetch\(|checkout|supabase|credit|deduct|charge|createQuickVideo/);
+ const voice=read("components/mandala-affirmation-voice.tsx");
+ assert.match(voice,/data-therapy-voice-cloud-consent/);
+ assert.match(voice,/data-therapy-voice-cloud-limit/);
+ assert.match(css,/\.voicePrimaryNext\{/);
+ assert.match(css,/\.voiceSecondaryNext\{/);
+ assert.match(css,/data-video-generate-affirmation-audio/);
+ assert.match(css,/min-height:52px/);
 });

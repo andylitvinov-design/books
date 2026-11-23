@@ -53,3 +53,24 @@ test("real mobile browser acceptance verifies all three cards and crisis suppres
   assert.match(qa,/assist\.locator\("\[data-assist-homeopathy\]"\)\)\.toHaveCount\(0\)/);
   assert.match(qa,/data-assist-mytube/);
 });
+
+test("one evidence-backed archive card augments the approved mobile Homeopathy design",()=>{
+  assert.match(source,/matchRemedyDescriptions\(query, locale\)/);
+  assert.match(source,/data-assist-homeopathy-mind/);
+  assert.match(source,/matchedSymptoms/);
+  assert.match(source,/media\.poemSlugs/);
+  assert.match(source,/result\.status === "urgent"/);
+  assert.equal((assist.match(/<ServicesAssistHomeopathy locale=/g)||[]).length,1);
+  assert.match(assist,/query=\{selection\.text\}/);
+  assert.match(qa,/data-assist-remedy="ambra-grisea"/);
+  assert.match(qa,/medical red flag must suppress/i);
+});
+
+test("urgent symptoms suppress both product links and tools across all supported languages",()=>{
+  assert.match(assist,/containsUrgentSymptoms\(selection\.text\)/);
+  assert.match(assist,/!crisis\?<section className=\{styles\.tools\}/);
+  assert.match(assist,/!crisis&&selection\?<AssistTopRecommendations/);
+  assert.match(assist,/!crisis&&selection\?<ServicesAssistHomeopathy/);
+  for(const locale of ["Некоторые симптомы","Some symptoms","Algunos síntomas"])
+    assert.ok(assist.includes(locale),"missing medical-urgent copy: "+locale);
+});

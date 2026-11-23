@@ -154,6 +154,8 @@ test('actual middleware gives the new private route no-store, noindex and isolat
     .replace("from 'next/server'", `from ${JSON.stringify(moduleUrl('next/server.js'))}`)
     .replace("from './lib/app/admin-auth-refresh'", `from ${JSON.stringify(sourceUrl('lib/app/admin-auth-refresh.js'))}`)
     .replace("from './lib/canonical-redirect'", `from ${JSON.stringify(sourceUrl('lib/canonical-redirect.js'))}`)
+    .replace("from './lib/app/personal-video-storage-csp.mjs'", `from ${JSON.stringify(sourceUrl('lib/app/personal-video-storage-csp.mjs'))}`)
+    .replace("from './lib/instant-home-policy.mjs'", `from ${JSON.stringify(sourceUrl('lib/instant-home-policy.mjs'))}`)
   const { middleware } = await import(compiledModule(source))
   const { NextRequest } = await import('next/server.js')
   for (const query of ['', '?lang=ru&days=30', '?lang=es&days=1']) {

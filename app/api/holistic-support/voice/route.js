@@ -7,6 +7,8 @@ import { readBody, PRIVATE_HEADERS, safeError } from '@/lib/app/http'
 import { VOICE_STUDIO_MODEL, VOICE_STUDIO_OPENROUTER_MODEL, VOICE_STUDIO_OPENROUTER_FREE_MODEL, voiceStudioReady, voiceStudioKey, voiceStudioOpenRouterKey, voiceStudioOpenRouterFreeKey, voiceStudioProviders, validateStudioRequest, buildStudioPayload, buildOpenRouterStudioPayload, buildOpenRouterFreePayload } from '@/lib/mandala/voice-studio.mjs'
 import { requestStudioAudio } from '@/lib/mandala/voice-studio-provider.mjs'
 import { requestOpenRouterStudioAudio } from '@/lib/mandala/voice-studio-openrouter-provider.mjs'
+import {fishConfig,fishLanguages,validateFishRequest} from '@/lib/mandala/voice-studio-fish.mjs'
+import {requestFishWav,approvedFishReference} from '@/lib/mandala/voice-studio-fish-provider.mjs'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -19,11 +21,12 @@ const fail = (error, auth) => {
   return auth ? auth.apply(response) : response
 }
 export async function GET() {
-  const providers=voiceStudioProviders(process.env)
-  const configured = voiceStudioReady(process.env)
+  const fishAvailable=fishLanguages(process.env)
+  const providers={...voiceStudioProviders(process.env),fish:fishAvailable.length>0}
+  const configured = voiceStudioReady(process.env)||fishAvailable.length>0
   // Guest voices must reflect only provider routes that cannot bill.
   // The optional paid custom-voice provider never makes public samples ready.
-  const publicFree=providers.gemini||providers.openrouterFree
+  const publicFree=providers.gemini||providers.openrouterFree||providers.fish
   const languages=providers.gemini?['en','ru','es']:
     providers.openrouterFree?['en']:[]
   return NextResponse.json({
@@ -33,7 +36,9 @@ export async function GET() {
     freeBackupModel:VOICE_STUDIO_OPENROUTER_FREE_MODEL,
     providers,
     languages,
-    mode:'gemini-free-openrouter-free-optional-paid',
+    fishLanguages:fishAvailable,
+    fishLicenseHold:['fish-calm-meditation'],
+    mode:'gemini-free-openrouter-free-fish-free-optional-paid',
     customRequiresSignIn:true,
     publicAffirmationsEnabled:publicFree,
   },{headers:PRIVATE_HEADERS})
@@ -43,13 +48,13 @@ export async function POST(request) {
   try {
     // Opt-in reuse of the existing server-side Google credential is permitted
     // ONLY after Free-tier attestation and enabling the explicit reuse flag.
-    if(!voiceStudioReady(process.env))
+    if(!voiceStudioReady(process.env)&&!fishLanguages(process.env).length)
       throw new AppError('VOICE_STUDIO_NOT_CONFIGURED',503)
     const config = getAppConfig()
     requireSameOrigin(request,config)
     const body = await readBody(request,3500)
     let validated
-    try { validated = validateStudioRequest(body) }
+    try { validated = body?.provider==='fish'?validateFishRequest(body):validateStudioRequest(body) }
     catch { throw new AppError('VOICE_STUDIO_INVALID_INPUT',400) }
     if(validated.mode==='custom') {
       auth = createRequestAuth(request,config)
@@ -69,6 +74,23 @@ export async function POST(request) {
       }
     }
     await consumeRate(config,{op:'voice-studio-free-global'},120,3600)
+    if(validated.provider==='fish'){
+      const configuredVendor=fishConfig(process.env,validated.language)
+      if(!configuredVendor)throw new AppError('FISH_STUDIO_NOT_APPROVED',503)
+      const referenceId=approvedFishReference(validated.voiceId,process.env)
+      if(!referenceId)throw new AppError('FISH_VOICE_LICENSE_REQUIRED',403)
+      const vendor={...configuredVendor,referenceId}
+      await consumeRate(config,{op:'voice-studio-fish-global-hour'},12,3600)
+      await consumeRate(config,{op:'voice-studio-fish-global-day'},30,86400)
+      const wav=await requestFishWav({vendor,input:validated,env:process.env,
+        signal:AbortSignal.any([request.signal,AbortSignal.timeout(20000)])})
+      const response=new NextResponse(wav,{headers:{
+        ...PRIVATE_HEADERS,'Content-Type':'audio/wav',
+        'Content-Disposition':'inline; filename="holistic-house-fish.wav"',
+        'Content-Length':String(wav.length),'X-HH-Voice-Provider':'fish',
+      }})
+      return auth?auth.apply(response):response
+    }
     const primaryKey=voiceStudioKey(process.env)
     const freeKey=voiceStudioOpenRouterFreeKey(process.env)
     const backupKey=voiceStudioOpenRouterKey(process.env)

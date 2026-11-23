@@ -61,7 +61,7 @@ test("invalid, unknown, duplicate, paid or potentially private query fields are 
   }
 });
 
-test("voluntary WhatsApp and Telegram handoffs identify safe organic source without sending personal query data", () => {
+test("WhatsApp retains safe event attribution while Telegram sends only the public selected service", () => {
   const referral = "?" + en({
     utm_source: "eventbrite", utm_medium: "organic_event",
     utm_campaign: "stress-live-2026-11", utm_content: "event_followup",
@@ -81,7 +81,15 @@ test("voluntary WhatsApp and Telegram handoffs identify safe organic source with
     assert.deepEqual([...new URL(wa).searchParams.keys()], ["text"]);
     assert.match(text(wa), new RegExp(label));
     assert.match(text(wa), /Eventbrite · stress-live-2026-11/);
-    assert.match(text(telegramEnquiryUrlFromWhatsApp(wa)), /Eventbrite · stress-live-2026-11/);
+    // WhatsApp keeps verified, public event attribution. A separate Telegram
+    // recipient gets only the selected public service, not the WhatsApp text.
+    const telegram = telegramEnquiryUrlFromWhatsApp(wa);
+    assert.equal(new URL(telegram).origin, "https://t.me");
+    assert.equal(new URL(telegram).pathname, "/holistichouse");
+    assert.deepEqual([...new URL(telegram).searchParams.keys()], ["text"]);
+    assert.match(text(telegram), /Live workshop follow-up/);
+    assert.doesNotMatch(text(telegram),
+      /Eventbrite|stress-live-2026-11|event_followup|utm_|private|token=|Please send details for my free review/i);
     assert.doesNotMatch(text(wa), /utm_|private|token=/);
   }
 });

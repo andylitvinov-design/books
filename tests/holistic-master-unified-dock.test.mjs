@@ -22,6 +22,6 @@ test("Holistic first-screen WebKit/browser acceptance uses the real seven-tab do
     const overview="/"+locale+"/holistic-support";
     assert.equal(isUnifiedMobileDockPath(overview),true);
     assert.equal(unifiedMobileDockActive(overview),null);
-    assert.equal(unifiedMobileDockHref(locale,"practice"),"/"+locale+"/holistic-support/mobile");
+    assert.equal(unifiedMobileDockHref(locale,"practice"),"/"+locale+"/shamanica");
   }
 });

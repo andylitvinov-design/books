@@ -82,6 +82,12 @@ export declare function createVideoProjectV3(input:{
   aspect?:"portrait"|"landscape"|"square";fps?:12|15|20|24|25;
   goalText?:string
 }):VideoProjectV3;
+export declare function parseMotionGuideV3(markdown:string):Pick<VideoProjectV3,
+  "durationMs"|"aspect"|"fps"|"videoTracks"|"audioTracks"|"textTracks">;
+export declare function importMotionGuideV3(markdown:string,options:{
+  projectId:string;locale?:VideoProjectV3["locale"];
+  assets:readonly VideoV3Asset[];approvedAssets:readonly VideoV3ApprovedAsset[];
+}):VideoProjectV3;
 export declare function validateVideoProjectV3(value:unknown):VideoProjectV3;
 export declare function applyVideoProjectV3Action(project:VideoProjectV3,action:{
   type:string;value:unknown

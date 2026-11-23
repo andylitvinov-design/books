@@ -2,6 +2,8 @@ import {test} from 'node:test'
 import assert from 'node:assert/strict'
 import {generateKeyPairSync,verify} from 'node:crypto'
 import {readFileSync} from 'node:fs'
+import {runInNewContext} from 'node:vm'
+import {coachSpokenText} from '../lib/coaching/coach-spoken-text.mjs'
 import {GOOGLE_PROVIDER,GOOGLE_TTS_MAX_CHARS,GOOGLE_TTS_MONTHLY_UPPER_BOUND,
  GOOGLE_TTS_GLOBAL_DAILY_LIMIT,googleChirpConfig,googleChirpVoice,
  normalizeGoogleChirpInput,googleChirpAssertion,synthesizeGoogleChirp
@@ -36,7 +38,7 @@ test('Google Chirp is completely OFF by default and requires verified cost, priv
 test('fixed RU/EN/ES persona voices and strict independent Google Cloud consent',()=>{
  assert.deepEqual(googleChirpVoice('ru','mira'),{languageCode:'ru-RU',name:'ru-RU-Chirp3-HD-Aoede'})
  assert.deepEqual(googleChirpVoice('en','max'),{languageCode:'en-US',name:'en-US-Chirp3-HD-Charon'})
- assert.deepEqual(googleChirpVoice('es','sofia'),{languageCode:'es-ES',name:'es-ES-Chirp3-HD-Aoede'})
+ assert.deepEqual(googleChirpVoice('es','sofia'),{languageCode:'es-ES',name:'es-ES-Chirp3-HD-Kore'})
  assert.equal(googleChirpVoice('fr','max'),null)
  assert.deepEqual(normalizeGoogleChirpInput(valid),{locale:'ru',personaId:'mira',text:valid.text})
  for(const invalid of [{...valid,cloudVoiceConsent:false},{...valid,voiceConsent:false},
@@ -139,3 +141,66 @@ test('free Fish spoken turns have one bounded vendor call and no paid model fall
  assert.match(fish,/model:'s2\.1-pro-free'/)
  assert.doesNotMatch(route,/s2\.1-pro'|s2-pro'|setTimeout\(\(\)=>fetch/)
 });
+
+test('fixed public Play greeting chooses cost-gated Google when configured; never pays twice',async()=>{
+ const route=read('app/api/coaching/intro/[locale]/[coach]/route.js')
+ assert.ok(route.includes('const chirp=googleChirpConfig()'))
+ assert.ok(route.includes('coachSpokenText(intro.text).text'))
+ assert.ok(route.includes("{op:'my-coach-google-global'},GOOGLE_TTS_GLOBAL_DAILY_LIMIT,86400"),
+   'public editorial greeting shares the existing private 40/day hard budget')
+ assert.ok(route.includes("const vendor=myCoachFishConfig()"))
+ assert.doesNotMatch(route,/readBody\(|request\.json\(|input\.text|raw\.text|createRequestAuth/,
+   'public request never accepts private text, recordings, identity or client voice IDs')
+ const source=route.slice(route.indexOf('const CACHE_HEADERS={'))
+  .replace('export async function GET(request){','async function GET(request){')+'\nGET'
+ const request={url:'https://holistichouse.vercel.app/api/coaching/intro/ru/mira',
+  headers:{get:()=> 'same-origin'},signal:new AbortController().signal}
+ const recorded=[]
+ let googleEnabled=true,fishCalls=0,googleFails=false
+ class ResponseStub{
+  constructor(body,{status=200,headers={}}={}){this.body=body;this.status=status;this.headers=headers}
+  static json(value,options){return new ResponseStub(value,options)}
+ }
+ class FakeError extends Error{constructor(code,status){super(code);this.status=status}}
+ const sandbox={
+  NextResponse:ResponseStub,getAppConfig:()=>({}),
+  consumeRate:async(_config,actor,limit,interval)=>{recorded.push({actor,limit,interval})},
+  safeError:error=>({code:error.message,status:error.status||500}),AppError:FakeError,
+  getCoachPresentation:()=>({text:'Здравствуйте! Я Мира. '+('Расскажите, что для вас важно сегодня. '.repeat(22))}),
+  myCoachFishVoice:()=>'approved-reference-id',myCoachFishConfig:()=>({key:'placeholder',model:'free'}),
+  googleChirpConfig:()=>googleEnabled?{projectId:'isolated-test-project'}:null,
+  normalizeGoogleChirpInput,synthesizeGoogleChirp:async({config,input})=>{
+   assert.equal(config.projectId,'isolated-test-project')
+   assert.equal(input.locale,'ru');assert.equal(input.personaId,'mira')
+   assert.ok(input.text.length<=500)
+   assert.ok(new TextEncoder().encode(input.text).length<=1600)
+   assert.ok(input.text.includes('Здравствуйте! Я Мира.'))
+   if(googleFails)throw Error('GOOGLE_TTS_FAILED')
+   return Buffer.from('ID3-SYNTHETIC-ONLY')
+  },
+  coachSpokenText,GOOGLE_PROVIDER,GOOGLE_TTS_GLOBAL_DAILY_LIMIT,
+  AbortSignal,URL,Buffer,fetch:async()=>{fishCalls++;return {ok:true,headers:{get:()=> 'audio/mpeg'},
+   body:Buffer.from('fish-synthetic')}}
+ }
+ const GET=runInNewContext(source,sandbox,{timeout:1000})
+ const google=await GET(request)
+ assert.equal(google.status,200)
+ assert.equal(google.headers['Content-Type'],'audio/mpeg')
+ assert.equal(google.headers['Content-Length'],String('ID3-SYNTHETIC-ONLY'.length))
+ assert.equal(fishCalls,0,'configured Google never sends greeting to Fish')
+ assert.deepEqual(recorded.map(r=>r.actor.op),[
+  'my-coach-google-public-intro-minute','my-coach-google-public-intro-day',
+  'my-coach-google-global'])
+ assert.deepEqual(recorded.map(r=>r.limit),[12,24,40])
+ assert.ok(GOOGLE_TTS_MONTHLY_UPPER_BOUND<1000000)
+ googleFails=true
+ const failed=await GET(request)
+ assert.equal(failed.status,503,'Google failure fails closed')
+ assert.equal(fishCalls,0,'no undisclosed provider/training fallback')
+ googleEnabled=false
+ const fish=await GET(request)
+ assert.equal(fish.status,200,'approved Fish remains available while free pilot runs')
+ assert.equal(fishCalls,1)
+ const invalid=await GET({...request,url:request.url+'?text=secret'})
+ assert.equal(invalid.status,400,'arbitrary text in query never becomes public TTS')
+})

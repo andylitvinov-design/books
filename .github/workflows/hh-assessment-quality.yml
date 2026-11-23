@@ -3,7 +3,6 @@ name: Holistic House assessment evidence and authored-content QA
 on:
   pull_request:
     paths:
-      - '.github/workflows/hh-assessment-quality.yml'
       - 'data/assessments/research-directory-2026/**'
       - 'lib/assessments/research-directory-2026.js'
       - 'lib/assessments/psychometric-validity-2026.js'

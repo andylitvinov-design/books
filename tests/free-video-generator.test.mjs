@@ -11,7 +11,7 @@ test("Safari MP4 frame renderer receives the procedural plan and consent-gated p
   assert.ok(webCodecsRender,"Safari MP4 frame renderer is present");
   assert.match(webCodecsRender,/paintCinematicFrame\([\s\S]*?cinematicPlan,frame,currentFreeVideoPlan,/);
   assert.match(webCodecsRender,/if\(usingFreeFilmCompilation&&!frame&&!hasStoryboardPhotoAt\(time\)\)return false/);
-  assert.match(source,/await image\.decode\(\)/);
+  assert.match(source,/await withLocalMediaDeadline\(image\.decode\(\),20000\)/);
   assert.match(source,/activeStoryboardPhotos\(\)/);
   assert.match(webCodecsRender,/creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean\(photoUrl\)\?image:null/);
 });

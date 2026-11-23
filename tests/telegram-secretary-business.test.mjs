@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {telegramBusinessMessageFromUpdate,telegramBusinessClientChoice} from '../lib/assist/telegram-business-request.mjs';
+import {matchTelegramFreeReviewDraft,telegramFreeReviewAcknowledgement} from '../lib/crm/telegram-business-free-review.mjs';
+import {telegramExpressReviewHandoff} from '../lib/crm/express-review-channel-handoff.mjs';
 import {classifyTelegramSecretaryQuery,publishedTelegramServiceOffers,
   composeTelegramSecretaryAnswer,TELEGRAM_SITE} from '../lib/crm/telegram-secretary-offers.mjs';
 
@@ -96,7 +98,8 @@ test('same existing signed business webhook and no direct unconsented model or b
  const pending=f('lib/crm/telegram-business-service.js');
  assert.match(route,/verifyMessengerWebhook\(provider,raw,request.headers\)/);
  assert.match(route,/processTelegramBusinessConversation\(body,config\)/);
- assert.match(route,/processTelegramBusinessSecretary\(body,config\)/);
+ assert.match(route,/processTelegramBusinessSecretary\(body,config,process\.env,\{/);
+ assert.match(route,/allowClarification:telegramBusinessInbox\?\.matched===true/);
  assert.match(route,/hh-tg-secretary-reply/);
  assert.match(server,/HH_CRM_TG_CHAT_AUTOMATION_ENABLED!=='true'/);
  assert.match(server,/assertHolisticBusinessConnection/);
@@ -159,7 +162,7 @@ test('STOP before Business intake, exact signed ingress and RLS not weakened',()
  const sql=f('supabase/migrations/20261113232313_hh_crm_tg_business_secretary_optouts_v1.sql');
  const stop=route.indexOf('gateTelegramBusinessSecretaryOptOut(body,config)');
  const orders=route.indexOf('processTelegramBusinessConversation(body,config)');
- const rec=route.indexOf('processTelegramBusinessSecretary(body,config)');
+ const rec=route.indexOf('processTelegramBusinessSecretary(body,config,process.env,{');
  assert.ok(stop>0&&orders>stop&&rec>orders);
  assert.match(route,/verifyMessengerWebhook\(provider,raw,request.headers\)/);
  assert.match(sender,/holistichouse\.vercel\.app/);
@@ -169,4 +172,106 @@ test('STOP before Business intake, exact signed ingress and RLS not weakened',()
  assert.doesNotMatch(sql,/GRANT (?:SELECT|INSERT|UPDATE|DELETE).* TO (?:anon|authenticated|public)/i);
  assert.match(allSecure(),/secretaryStopped\(event,config\)/);
  function allSecure(){return f('lib/crm/telegram-secretary-service.js');}
+});
+
+test('customer Free personal express review draft is acknowledged in the human Business chat, not ignored',()=>{
+ const cases=[
+  ['Hello! I am interested in «Free personal express review». Could you help me make a request?','en'],
+  ['Здравствуйте! Меня интересует «Бесплатный личный экспресс-разбор». Подскажите, как оформить запрос.','ru'],
+  ['¡Hola! Me interesa «Revisión personal exprés gratuita». ¿Cómo puedo solicitarlo?','es'],
+ ];
+ for(const [draft,locale] of cases){
+  assert.equal(matchTelegramFreeReviewDraft(draft)?.locale,locale);
+  const reply=telegramFreeReviewAcknowledgement(locale);
+  assert.equal(reply.kind,'free_review');
+  assert.ok(reply.handled);
+  assert.ok(reply.text.length<450);
+  assert.equal(reply.buttons.length,1);
+  assert.equal(reply.buttons[0].url,'https://holistichouse.vercel.app/'+locale+'/services/free-situation-review');
+  assert.doesNotMatch(reply.text,/booking confirmed|payment confirmed|запись подтверждена/iu);
+ }
+ for(const text of ['Hello','Could you help me make a request?','A private medical report',
+   'Hello! I am interested in «Business coaching». Could you help me make a request?',
+   'Hello! I am interested in «Free personal express review». My private story is here.',
+   '/stop', 'x'.repeat(500)])
+  assert.equal(matchTelegramFreeReviewDraft(text),null,text.slice(0,70));
+ const handler=f('lib/crm/telegram-secretary-service.js');
+ const route=f('app/api/app/crm/messenger/webhook/[provider]/route.js');
+ assert.match(handler,/matchTelegramFreeReviewDraft\(event\.text\)/);
+ assert.match(handler,/telegramFreeReviewAcknowledgement\(locale\)/);
+ assert.match(handler,/assertHolisticBusinessConnection\(\{connectionId:event\.connectionId/);
+ assert.match(handler,/secretaryStopped\(event,config\)/);
+ assert.match(route,/gateTelegramBusinessSecretaryOptOut\(body,config\)/);
+ assert.match(route,/hh-tg-secretary-reply/);
+ const i=handler.indexOf("if(query&&query.kind!=='safety'&&query.kind!=='free_review')");
+ assert.ok(i>handler.indexOf('assertHolisticBusinessConnection'));
+ assert.doesNotMatch(handler,/sendMarketing|sendBroadcast/);
+});
+
+test('operational customer FAQs get one bounded guiding question in Russian, English and Spanish',()=>{
+ const cases=[
+  ['Сколько стоит?','ru','price'],['How much does it cost?','en','price'],['¿Cuánto cuesta?','es','price'],
+  ['Как записаться?','ru','booking'],['How can I book?','en','booking'],['¿Cómo puedo reservar?','es','booking'],
+  ['Можно консультацию онлайн?','ru','format'],['Do you offer online sessions?','en','format'],['¿Ofrecen consultas online?','es','format'],
+  ['Можно поговорить с человеком?','ru','human'],['Can I talk to a real person?','en','human'],['¿Puedo hablar con una persona?','es','human'],
+  ['Моя заявка отправлена?','ru','status'],['Is my request submitted?','en','status'],['¿Mi solicitud fue enviada?','es','status'],
+  ['Когда вы ответите?','ru','response_time'],['When will you reply?','en','response_time'],['¿Cuándo responden?','es','response_time'],
+  ['Как отключить бота?','ru','stop_help'],['How do I stop the bot?','en','stop_help'],['¿Cómo detener el bot?','es','stop_help'],
+  ['Как связаться с вами?','ru','contact'],['How can I contact you?','en','contact'],['¿Cómo contactar?','es','contact'],
+  ['Хочу бесплатный разбор ситуации','ru','free_review'],['I want a free situation review','en','free_review'],
+ ];
+ for(const [message,locale,topic] of cases){
+  const q=classifyTelegramSecretaryQuery(message,locale);
+  assert.equal(q?.kind,'faq',message);
+  assert.equal(q?.topic,topic,message);
+  const a=composeTelegramSecretaryAnswer(q,[make()]);
+  assert.equal(a?.kind,'faq',message);
+  assert.equal(a.modelUsed,false);
+  assert.ok(a.text.length>=25&&a.text.length<420);
+  assert.ok((a.text.match(/[?？]/g)||[]).length<=1,message);
+  assert.ok(a.buttons.length<=1);
+  for(const button of a.buttons){
+   assert.equal(new URL(button.url).origin,TELEGRAM_SITE);
+   assert.equal(new URL(button.url).pathname.startsWith('/'+locale+'/'),true);
+  }
+ }
+});
+test('new FAQs do not hijack personal messages, STOP, published named prices or emergency help',()=>{
+ for(const message of ['Привет','Давай просто поговорим','I feel overwhelmed','I need you to change my password','/stop','[HH-REQ:business:ru]'])
+  assert.equal(classifyTelegramSecretaryQuery(message,'ru'),null,message);
+ assert.equal(classifyTelegramSecretaryQuery('Не могу дышать','ru').kind,'safety');
+ const priced=classifyTelegramSecretaryQuery('Сколько стоит рейки?','ru');
+ assert.equal(priced.kind,'catalog');
+ assert.match(composeTelegramSecretaryAnswer(priced,[make()]).text,/от €50/);
+ assert.equal(classifyTelegramSecretaryQuery('рейки','ru').kind,'catalog');
+});
+
+test('free-review website starts the consented Ali Telegram bot; manual Telegram Business remains independent',()=>{
+ const view=f('components/telegram-diagnostic-entry.tsx');
+ const source=f('lib/crm/express-review-channel-handoff.mjs');
+ const expected={
+  en:'Hello! I am interested in «Free personal express review». Could you help me make a request?',
+  ru:'Здравствуйте! Меня интересует «Бесплатный личный экспресс-разбор». Подскажите, как оформить запрос.',
+  es:'¡Hola! Me interesa «Revisión personal exprés gratuita». ¿Cómo puedo solicitarlo?',
+ };
+ for(const [locale,draft] of Object.entries(expected)){
+  const link=telegramExpressReviewHandoff(locale);
+  const uri=new URL(link);
+  assert.equal(uri.origin,'https://t.me');
+  assert.equal(uri.pathname,'/holistichouse_bot');
+  assert.deepEqual([...uri.searchParams.keys()],['start']);
+  assert.equal(uri.searchParams.get('start'),'hhreview_'+locale);
+  assert.equal(matchTelegramFreeReviewDraft(draft)?.locale,locale);
+  assert.ok(view.includes(locale==='ru'?'Написать в Telegram':
+     locale==='es'?'Escribir a Andrey por Telegram':'Write on Telegram'));
+ }
+ assert.equal(telegramExpressReviewHandoff('invalid'),null);
+ assert.match(source,/telegramExpressReviewHandoff/);
+ assert.match(view,/data-telegram-route="ali-free-diagnostic-v3"/);
+ assert.doesNotMatch(view,/\/api\/public\/telegram-diagnostic|setTelegramUrl|telegramUnavailable|Telegram is not available right now|hhreview_/);
+ assert.match(view,/Opening Telegram does not send your request/);
+ assert.match(view,/Открытие Telegram не создаёт заявку/);
+ assert.match(view,/secure questionnaire/);
+ assert.match(view,/защищённую анкету/);
+ assert.doesNotMatch(view,/HH_CRM_MSG_TELEGRAM_TOKEN|https?:\/\/openrouter\.ai/i);
 });

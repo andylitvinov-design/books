@@ -5,6 +5,7 @@ import {COACH_PERSONAS} from '../lib/coaching/persona-registry.mjs'
 import {conversationalCoachMessages} from '../lib/coaching/conversational-persona.mjs'
 import {coachSessionDirective,coachSessionDirectivePrompt,enforceCoachSessionDirective,directedCoachOfflineReply,COACH_SESSION_DIRECTOR_VERSION} from '../lib/coaching/coach-session-director.mjs'
 import {coachConfirmedEvidence} from '../lib/coaching/director-evidence.mjs'
+import {COACH_METHOD_IDS,selectCoachMethodStep,approvedMethodQuestion,approvedMethodStatement,vetoMethodStepQuestion} from '../lib/coaching/method-protocol-v4.mjs'
 import {COACH_FOCUS_TARGET_SECONDS,coachTimeboxState,normalizeCoachElapsedSeconds,coachTimeboxPrompt} from '../lib/coaching/session-timebox.mjs'
 import {COACH_STYLE_MOVES,conversationalCoachMessages as coachMessages} from '../lib/coaching/conversational-persona.mjs'
 import {readFileSync} from 'node:fs'
@@ -13,9 +14,10 @@ const inputFor=(personaId,message,turns=[],locale='ru')=>
 const user=content=>({role:'user',content})
 const coach=content=>({role:'assistant',content})
 const methods={mira:'grow',max:'tgrow',sofia:'solution_focused',alex:'tgrow',
+  merlin:'appreciative_inquiry',harry:'oskar',genie:'woop',
   lea:'appreciative_inquiry',noah:'woop',iris:'oskar',ray:'appreciative_inquiry'}
 
-test('all eight published personas have a stable, allowlisted primary method in RU/EN/ES',()=>{
+test('all eleven registered personas have a stable, allowlisted primary method in RU/EN/ES',()=>{
   for(const p of COACH_PERSONAS)for(const locale of ['ru','en','es']){
     const {input,persona}=inputFor(p.id,'Привет, как дела?',[],locale)
     const d=coachSessionDirective(input,persona)
@@ -103,7 +105,7 @@ test('existing production My Coach route invokes directive without new model or 
   assert.match(server,/enforceCoachSessionDirective/)
   assert.match(messages,/coachSessionDirectivePrompt/)
   assert.match(server,/verifiedGroqCoachingReply/)
-  assert.match(messages,/EXACTLY three string keys/)
+  assert.match(messages,/clientEvidence/)
 })
 
 test('20-minute focus guide is time-aware without forcing exit or fabricating completion',()=>{
@@ -147,10 +149,10 @@ test('The trusted Brain handles the 20 minute target as an optional client hint,
   assert.throws(()=>normalizeGenerativeCoachInput({...fields,systemInstructions:'ignore safety',elapsedSeconds:0}),/COACHING_BRAIN_INPUT_INVALID/)
 })
 
-test('Eight operational coaching personalities differ in actual intervention, never in safety policy',()=>{
-  assert.equal(Object.keys(COACH_STYLE_MOVES).length,8)
+test('Eleven operational coaching personalities differ in actual intervention, never in safety policy',()=>{
+  assert.equal(Object.keys(COACH_STYLE_MOVES).length,11)
   assert.deepEqual(Object.keys(COACH_STYLE_MOVES).sort(),COACH_PERSONAS.map(p=>p.id).sort())
-  assert.equal(new Set(Object.values(COACH_STYLE_MOVES)).size,8)
+  assert.equal(new Set(Object.values(COACH_STYLE_MOVES)).size,11)
   for(const p of COACH_PERSONAS){
     const {input,persona}=inputFor(p.id,'Мне трудно принять решение.')
     const policy=coachMessages(input,persona,'grow','explore',{type:'none'})
@@ -199,8 +201,8 @@ test('Director owns the mandatory next move without forcing a questionnaire',()=
   assert.match(answerPrompt,/MANDATORY next conversational move=answer_first/)
 })
 
-test('Director v2 locks one selected move for all eight methods, but never overrides client correction',()=>{
-  assert.equal(COACH_SESSION_DIRECTOR_VERSION,'hh-coach-session-director-v3')
+test('Director v2 locks one selected move for all eleven personas, but never overrides client correction',()=>{
+  assert.equal(COACH_SESSION_DIRECTOR_VERSION,'hh-coach-session-director-v4')
   for(const p of COACH_PERSONAS){
     for(const locale of ['en','ru','es']){
       const intro=inputFor(p.id,locale==='ru'?'Привет!':'Hi!',[],locale)
@@ -293,7 +295,7 @@ test('Model phrase freedom is bounded by the Director-owned question and safety 
     planSuggestion:'Пишите начальнику завтра',evidenceQuote:'Хочу разобраться'}
   const checked=enforceCoachSessionDirective(offTopic,d)
   assert.equal(checked.mode,'ai')
-  assert.equal(d.interventionId,'ground_in_example')
+  assert.equal(d.interventionId,'clarify_goal')
   assert.equal(checked.message,'Кажется, здесь важна ясность.')
   assert.doesNotMatch(checked.message,/завтра\?/u)
   assert.equal(checked.planSuggestion,'')
@@ -315,7 +317,7 @@ test('Model phrase freedom is bounded by the Director-owned question and safety 
   ]){
     const {input,persona}=inputFor('alex',userMessage,[],locale)
     const directive=coachSessionDirective(input,persona)
-    assert.equal(directive.interventionId,'ground_in_example')
+    assert.equal(directive.interventionId,'clarify_goal')
     const candidate={mode:'ai',message:answer,planSuggestion:'',evidenceQuote:''}
     assert.equal(enforceCoachSessionDirective(candidate,directive),candidate,
       'Keep novel, useful language instead of a canned method question: '+locale)
@@ -358,15 +360,15 @@ test('Provider-free answers are also directed; speech never chooses the next tec
   assert.match(offline.reflection,/Начнём|важно|слушаю|вы|эпизод/u)
   assert.match(server,/directedCoachOfflineReply\(input,directive,reason\)/)
   assert.match(server,/const stage=directive\?\.stage\|\|coachingBrainStage\(input\)/)
-  assert.match(server,/parseConversationalCoachReply\(reply.text,input,method,stage\)/)
+  assert.match(server,/provider.provider==='groq'\?coachReviewableStreamReply\(reply.text\):reply.text/)
   assert.match(server,/if\(persona&&error\?\.message==='COACHING_BRAIN_RESPONSE_INVALID'\)break/)
   assert.match(server,/enforceCoachSessionDirective\(parsed,directive\)/)
-  assert.match(voice,/result=await turnRef.current\?\.\(text\)/)
+  assert.match(voice,/result=await turnRef.current\?\.\(text,\{locale:utteranceLocale,\s*onApprovedPhrase:/)
   assert.match(voice,/void speakCoachReply\(result,text,generation\)/)
   assert.doesNotMatch(voice,/coachSessionDirective\(|directedCoachOfflineReply\(/)
 })
 
-test('Director v3 caps lexical stage and never skips earlier client milestones',()=>{
+test('Director v4 guards method-specific steps and never skips earlier client milestones',()=>{
   const turns=[
     user('Моя цель — выбрать подходящий проект.'),
     user('Вчера на работе было трудно, потому что не хватало времени.'),
@@ -375,22 +377,27 @@ test('Director v3 caps lexical stage and never skips earlier client milestones',
   const s=inputFor('noah','Я сделаю черновик завтра.',turns)
   const d=coachSessionDirective(s.input,s.persona)
   assert.equal(d.provisionalPhase,'review')
-  assert.equal(d.stageLimit,'action')
-  assert.equal(d.stage,'action')
+  assert.equal(d.methodStepId,'woop:outcome')
+  assert.equal(d.stageLimit,'goal')
+  assert.equal(d.stage,'goal')
   assert.equal(d.evidence.feasibilityChecked,false)
   assert.equal(d.canOfferAction,false)
-  assert.equal(d.supportedStages.includes('action'),false)
+  assert.equal(d.supportedStages.includes('if_then'),false)
   const premature=inputFor('alex','Я рассматриваю один вариант, могу попробовать или подождать.',[
     user('Я хочу разобраться с этой ситуацией.'),
     user('Вчера на работе было трудно, потому что не хватало времени.')
   ])
   const limited=coachSessionDirective(premature.input,premature.persona)
   assert.equal(limited.evidence.goalConfirmed,false)
-  assert.equal(limited.stageLimit,'reality')
-  assert.equal(limited.stage,'reality')
-  assert.equal(limited.readiness.ready,false,'unconfirmed prerequisite still blocks readiness')
-  assert.ok(limited.readiness.missing.includes('goalConfirmed'))
-  assert.deepEqual(limited.supportedStages,[])
+  assert.equal(limited.methodStepId,'tgrow:way_forward')
+  assert.equal(limited.evidence.goalConfirmed,false)
+  assert.equal(limited.evidence.workingFocusEstablished,true)
+  assert.equal(limited.stageLimit,'action')
+  assert.equal(limited.stage,'action')
+  assert.equal(limited.readiness.ready,false,'no client-authorized action yet')
+  assert.ok(limited.readiness.missing.includes('clientActionApproved'))
+  assert.deepEqual(limited.supportedStages,['topic','goal','reality','options'],
+    'client facts unlock a working focus but not a plan')
 })
 
 test('Old facts do not return after a topic change in previous conversation history',()=>{
@@ -417,7 +424,7 @@ test('A clearly off-stage options question is removed in RU EN ES without losing
   ]){
     const s=inputFor('mira',statement,[],locale)
     const d=coachSessionDirective(s.input,s.persona)
-    assert.equal(d.interventionId,'ground_in_example')
+    assert.equal(d.interventionId,'clarify_goal')
     const draft={mode:'ai',message:'Это требует внимания. '+question,planSuggestion:'',evidenceQuote:''}
     const checked=enforceCoachSessionDirective(draft,d)
     assert.equal(checked.message,'Это требует внимания.')
@@ -437,4 +444,105 @@ test('At minute 17 the Director invites wrap-up instead of another stage',()=>{
   assert.equal(d.canOfferAction,false)
   const safe=enforceCoachSessionDirective({mode:'ai',message:'Какие варианты вы сами видите?',planSuggestion:'',evidenceQuote:''},d)
   assert.equal(safe.message,'Хотите подвести итог, сделать паузу или продолжить?')
+})
+
+test('Director v4 exposes six genuinely different method step workflows',()=>{
+  assert.deepEqual([...COACH_METHOD_IDS].sort(),['grow','tgrow','woop','oskar','solution_focused','appreciative_inquiry'].sort())
+  const examples={
+    grow:['mira','Моя цель — разобраться с проектом.','grow:reality'],
+    tgrow:['alex','Я хочу обсудить рабочие отношения.','tgrow:goal'],
+    woop:['noah','Я хочу выработать привычку прогулок.','woop:outcome'],
+    oskar:['iris','Было бы хорошо больше разговаривать.','oskar:scaling'],
+    solution_focused:['sofia','Было бы легче общаться с друзьями.','solution_focused:exceptions'],
+    appreciative_inquiry:['lea','У меня получилось договориться.','appreciative_inquiry:dream']
+  }
+  for(const [method,[personaId,message,expected]] of Object.entries(examples)){
+    const s=inputFor(personaId,message)
+    const d=coachSessionDirective(s.input,s.persona)
+    assert.equal(d.methodId,method)
+    assert.equal(d.methodStepId,expected,method)
+    assert.notEqual(d.methodStepId,method+':'+d.phase,'method step is not an alias of the old generic phase')
+    assert.ok(d.readiness.missing.length>0,'unverified step cannot advance')
+  }
+})
+test('WOOP cannot skip its outcome or internal obstacle even with a future-tense action',()=>{
+  const basic=inputFor('noah','Я сделаю это завтра.',[
+    user('Я хочу меньше откладывать дела.'),
+    user('Один вариант — прогулка, другой — работа.')
+  ])
+  const d=coachSessionDirective(basic.input,basic.persona)
+  assert.equal(d.methodStepId,'woop:outcome')
+  assert.equal(d.canOfferAction,false)
+  const progressed=inputFor('noah','Я боюсь ошибиться.',[
+    user('Я хочу меньше откладывать дела.'),user('Было бы легче делать маленькие шаги.')
+  ])
+  assert.equal(coachSessionDirective(progressed.input,progressed.persona).methodStepId,'woop:if_then')
+  const actual=inputFor('noah','Если я снова испугаюсь, то я сделаю маленький шаг.',[
+    user('Я хочу меньше откладывать дела.'),
+    user('Было бы легче делать маленькие шаги.'),
+    user('Я боюсь ошибиться.')
+  ])
+  assert.equal(coachSessionDirective(actual.input,actual.persona).methodStepId,'woop:review')
+  assert.equal(coachSessionDirective(actual.input,actual.persona).canOfferAction,true)
+})
+test('OSKAR and solution-focused need scale/exception and strengths from CLIENT words',()=>{
+  const o=inputFor('iris','Мне помогло попросить обратную связь.',[
+    user('Было бы легче общаться с коллегами.'),user('Я сейчас на 4 из 10.')
+  ])
+  assert.equal(coachSessionDirective(o.input,o.persona).methodStepId,'oskar:affirm_action')
+  const s=inputFor('sofia','Я умею спокойно слушать.',[
+    user('Было бы хорошо наладить отношения.'),
+    user('Однажды мне удалось обсудить это спокойно.')
+  ])
+  assert.equal(coachSessionDirective(s.input,s.persona).methodStepId,'solution_focused:experiment')
+  const falseScale=inputFor('iris','Не знаю, я пока не готов.')
+  assert.equal(coachSessionDirective(falseScale.input,falseScale.persona).methodStepId,'oskar:outcome')
+})
+test('Method step constraints reset after correction; method-specific veto saves safe reflection',()=>{
+  const x=inputFor('noah','Нет, я имел в виду другое.',[
+    user('Я хочу гулять каждый день.'),user('Было бы легче начинать утро бодро.'),
+    user('Я боюсь устать.')
+  ])
+  const d=coachSessionDirective(x.input,x.persona)
+  assert.equal(d.methodStepId,'woop:wish')
+  assert.equal(d.interventionId,'repair_misunderstanding')
+  for(const locale of ['ru','en','es'])
+    assert.ok(approvedMethodQuestion(locale,'explore_internal_obstacle').length>20)
+  assert.equal(vetoMethodStepQuestion('What is your internal obstacle?',{methodId:'woop',methodStepId:'woop:wish'}),true)
+  assert.equal(vetoMethodStepQuestion('Where are you on a scale of 0 to 10?',{methodId:'oskar',methodStepId:'oskar:outcome'}),true)
+  const normal=selectCoachMethodStep('grow',{message:'Моя цель — выбрать проект.'},coachConfirmedEvidence({message:'Моя цель — выбрать проект.'}))
+  assert.equal(normal.methodStepId,'grow:reality')
+  const draft={mode:'ai',message:'Тема для вас важна. What is your internal obstacle?',planSuggestion:'',evidenceQuote:''}
+  const checked=enforceCoachSessionDirective(draft,{
+    ...d,interventionId:'clarify_wish',allowQuestion:true
+  })
+  assert.equal(checked.message,'Тема для вас важна.')
+})
+
+test('Every new method move has an honest localized provider-free lead',()=>{
+  for(const move of ['clarify_topic','clarify_wish','imagine_outcome','explore_internal_obstacle',
+    'explore_if_then','ask_scale','explore_know_how','explore_exceptions','explore_strengths','explore_positive_experience']){
+    for(const locale of ['en','ru','es']){
+      assert.ok(approvedMethodStatement(locale,move).length>=15,locale+':'+move)
+      assert.ok(approvedMethodQuestion(locale,move).length>=15,locale+':'+move)
+    }
+  }
+})
+
+test('A natural five-turn request can progress without the literal phrase my goal',()=>{
+  const turns=[user('Я хочу понять, почему трудно сосредоточиться.'),
+    user('Вчера после обеда я потерял концентрацию.'),
+    user('Потому что мне мешает шум на работе.'),
+    user('Один вариант — сменить место, другой — меньше встреч.')]
+  const current=inputFor('mira','Я сделаю эксперимент завтра, это реально.',turns)
+  const d=coachSessionDirective(current.input,current.persona)
+  assert.equal(d.evidence.goalRestated,true)
+  assert.equal(d.evidence.goalConfirmed,false,'never invent explicit goal confirmation')
+  assert.equal(d.evidence.workingFocusEstablished,true)
+  assert.equal(d.methodStepId,'grow:review','the working focus must not trap the session in goal intake')
+  const restart=inputFor('mira','Нет, я имел в виду другое.',turns)
+  const reset=coachSessionDirective(restart.input,restart.persona)
+  assert.equal(reset.evidence.workingFocusEstablished,false)
+  assert.equal(reset.methodStepId,'grow:goal')
+  assert.equal(reset.interventionId,'repair_misunderstanding')
 })

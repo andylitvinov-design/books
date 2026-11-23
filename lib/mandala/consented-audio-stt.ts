@@ -8,7 +8,8 @@ export async function requestConsentedTimedTranscript(
   if(!consent)throw Error("AUDIO_STT_CONSENT_REQUIRED");
   if(!file||file.size<=0||file.size>4*1024*1024)
     throw Error("AUDIO_STT_INVALID_FILE");
-  if(!["ru","en","es"].includes(locale))throw Error("AUDIO_STT_INVALID_LOCALE");
+  // Auto lets the transcription service detect speech instead of forcing UI EN.
+  if(!["ru","en","es","auto"].includes(locale))throw Error("AUDIO_STT_INVALID_LOCALE");
   // iPhone Files may provide a valid audio with empty/generic MIME.
   // Retain the original bytes and name; normalize ONLY known extensions for
   // the unchanged server-side file-type gate (never upload on selection).

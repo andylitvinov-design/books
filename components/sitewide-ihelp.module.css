@@ -216,3 +216,14 @@
   padding:0;justify-content:center;
 }
 :global(body:has([data-mytube-page])) .launcher span{display:none}
+
+
+/* Home already has the real Ali composer and the shared AI/Chat dock.
+   Hide only the redundant mobile iHelp launcher on the dialogue-first home:
+   do not obscure For business, steal taps, or mount a second chatbot. */
+@media(max-width:600px){
+ :global(body:has([data-home-dialogue-entry])) .launcher{display:none!important}
+}
+
+/* Top business audience tab provides this same help action, so avoid a floating duplicate. */
+.launcher[hidden]{display:none!important}

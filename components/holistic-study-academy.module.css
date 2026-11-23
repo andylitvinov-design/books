@@ -1,0 +1,54 @@
+.page{min-height:100svh;background:var(--hh-light-canvas,#fbf5e9);color:#173d35;font-family:Arial,Helvetica,sans-serif}
+.page *{box-sizing:border-box}
+.page :is(a,button):focus-visible{outline:3px solid #176e6e;outline-offset:3px}
+.shell{width:min(860px,calc(100% - 24px));margin:0 auto;padding:8px 0 calc(132px + env(safe-area-inset-bottom))}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:43px;margin-bottom:8px}
+.brand{color:#164637;font-size:20px;font-weight:850;text-decoration:none;letter-spacing:-.03em}
+.languages{display:flex;gap:4px}.languages a{min-width:36px;min-height:36px;display:grid;place-items:center;border-radius:13px;color:#51635a;font-size:12px;font-weight:800;text-decoration:none}
+.languages a[aria-current="page"]{background:#dff3e8;color:#026c4b}
+.hero{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:flex-end;min-height:190px;padding:22px 19px;border-radius:25px;background:#175844;color:#fff}
+.heroPhoto{z-index:-2;object-fit:cover;object-position:70% center}
+.heroShade{position:absolute;z-index:-1;inset:0;background:linear-gradient(90deg,#073e35f0 0%,#0b4a3bd6 50%,#124f3770)}
+.heroCopy{position:relative;max-width:530px}.eyebrow{display:inline-flex;align-items:center;gap:6px;color:#d2ffe8;font-weight:800;font-size:12px;letter-spacing:.045em}
+.hero h1{margin:8px 0 7px;color:#fff;font-size:clamp(27px,6.9vw,36px);line-height:1.08;letter-spacing:-.03em}
+.hero p{max-width:345px;margin:0;color:#f1f9ef;font-size:16px;line-height:1.35}
+.quickNav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:11px 0 22px}
+.quickLink{min-width:0;min-height:78px;padding:12px 9px;display:flex;flex-direction:column;align-items:flex-start;gap:6px;position:relative;border:1px solid #e3dccc;border-radius:17px;background:#fffcf7;color:#174e3b;text-decoration:none;box-shadow:0 3px 10px #3348280d}
+.quickLink small{font-size:12px;font-weight:850;color:#128a65}.quickLink strong{font-size:clamp(13px,3.7vw,17px);line-height:1.1;overflow-wrap:anywhere}
+.quickLink svg{position:absolute;right:5px;top:9px;color:#09815e}
+.group{scroll-margin-top:14px;margin:0 0 24px}.groupHeader{display:flex;align-items:flex-start;gap:12px;padding:0 3px 12px}
+.groupIcon{display:grid;place-items:center;width:48px;height:48px;flex:0 0 48px;border-radius:17px;background:#e2f2e9;color:#087454}
+.groupIcon[data-tone="mysteries"]{background:#f3e9d9;color:#986b27}.groupIcon[data-tone="free"]{background:#e5f3ee;color:#08766d}
+.heading{flex:1;min-width:0}.heading small{font-weight:850;font-size:12px;letter-spacing:.035em;color:#178262}
+.heading h2{margin:2px 0 4px;font-size:clamp(22px,5.7vw,27px);line-height:1.1;letter-spacing:-.025em}
+.heading p{margin:0;font-size:15px;line-height:1.32;color:#5c665f}
+.courseList{display:grid;gap:10px}
+.course{position:relative;display:grid;grid-template-columns:minmax(98px,28%) minmax(0,1fr);min-height:150px;overflow:hidden;border-radius:21px;border:1px solid #e7dfd2;background:#fffcf7;box-shadow:0 3px 12px #1735270d;color:#17392d;text-decoration:none}
+.photo{position:relative;display:block;overflow:hidden;background:#dfebda}.photo img{object-fit:cover;object-position:center}
+.courseCopy{display:flex;flex-direction:column;gap:4px;min-width:0;padding:13px 25px 12px 13px}
+.tag{align-self:flex-start;font-size:12px;line-height:1.22;color:#078361;font-weight:850}
+.courseCopy strong{font-size:clamp(18px,4.9vw,22px);line-height:1.13;letter-spacing:-.02em}
+.description{font-size:14px;line-height:1.3;color:#5e6a62}
+.action{display:inline-flex;align-items:center;gap:5px;margin-top:auto;padding-top:7px;font-size:14px;font-weight:850;color:#087e5f}
+.chevron{position:absolute;right:8px;top:calc(50% - 10px);color:#078261}
+.footer{padding:15px;background:#fffaf1;border-radius:20px;border:1px solid #e7decf}.footer p{margin:0 0 11px;color:#596962;font-size:14px;line-height:1.42}
+.footer a{display:inline-flex;align-items:center;gap:7px;min-height:44px;color:#067a67;font-size:16px;font-weight:850;text-decoration:none}
+@media(min-width:640px){.hero{min-height:230px;padding:30px}.quickLink{min-height:83px;padding:15px}.course{grid-template-columns:150px minmax(0,1fr);min-height:138px}.courseCopy{padding:17px 30px 15px 20px}}
+@media(max-width:350px){.shell{width:calc(100% - 20px)}.hero{min-height:174px;padding:17px 15px}.hero p{font-size:14px}.quickLink{padding:10px 7px;min-height:77px}.quickLink strong{font-size:13px}.groupHeader{gap:9px}.groupIcon{width:42px;height:42px;flex-basis:42px}.heading h2{font-size:21px}.course{grid-template-columns:minmax(92px,30%) minmax(0,1fr);min-height:151px}.courseCopy{padding:11px 22px 10px 10px}.courseCopy strong{font-size:17px}.description{font-size:13px}.tag{font-size:11px}.action{font-size:13px}}
+@media(prefers-reduced-motion:reduce){.page *{scroll-behavior:auto!important;transition:none!important}}
+
+/* Owner-approved screenshot: on phones the five-step learning path is FIRST.
+   The eight genuine Academy cards, three schools, language links and unified
+   seven-item dock stay intact; desktop retains its existing introductory hero. */
+.mobileJourney{display:none}
+@media (max-width:759px){
+ .shell{display:flex;flex-direction:column}
+ .mobileJourney{display:block;order:0;min-width:0}
+ .hero{display:none}
+ .quickNav{order:1;margin:11px 0 20px}
+ .group{order:2;min-width:0}
+ .footer{order:3}
+ .top{order:4;min-height:42px;margin:12px 3px 0;padding-top:10px;
+   border-top:1px solid #e7dfd2}
+ .brand{font-size:16px}
+}

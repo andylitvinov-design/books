@@ -1,9 +1,35 @@
 .media{position:absolute;inset:0;display:block;overflow:hidden;isolation:isolate;pointer-events:none;border-radius:inherit;background:#d5ded2}
 .poster,.video{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 29%;border:0;border-radius:inherit;transform:none!important;animation:none!important}
-.video{opacity:0;transition:opacity 190ms ease-out;will-change:opacity}
+.video{opacity:0;transition:opacity 240ms ease-out;will-change:opacity}
 .media[data-coach-motion-ready='true'] .video{opacity:1}
 .media[data-coach-motion-context='hero'] .poster,.media[data-coach-motion-context='hero'] .video{object-position:center 33%}
 .media[data-coach-motion-context='avatar'] .poster,.media[data-coach-motion-context='avatar'] .video{object-position:center 22%}
 .media[data-coach-motion-context='session']{inset:-4% 0 -4% auto;height:108%;width:auto;aspect-ratio:328 / 456;max-width:75%;border-radius:0}
 .media[data-coach-motion-context='session'] .poster,.media[data-coach-motion-context='session'] .video{object-position:center center}
-@media(prefers-reduced-motion:reduce){.video{display:none!important;transition:none!important}.poster{animation:none!important}}
+/* Scene graphics are confined to the lower outer edge; no facial masks. */
+.sceneGraphics{--scene-color:rgba(110,190,163,.48);--scene-secondary:rgba(235,218,163,.34);
+ position:absolute;inset:0;z-index:2;pointer-events:none;opacity:.45;
+ transition:opacity .38s ease,background .38s ease;
+ background:radial-gradient(ellipse 36% 22% at 88% 98%,var(--scene-color),transparent 90%),linear-gradient(0deg,rgba(8,33,30,.13),transparent 23%)}
+.sceneHalo{position:absolute;right:4%;bottom:2%;width:31%;aspect-ratio:1;border-radius:50%;
+ background:radial-gradient(circle,var(--scene-secondary),transparent 68%);animation:hh-scene-halo 6s ease-in-out infinite alternate}
+.sceneArc{position:absolute;right:8%;bottom:7%;width:20%;aspect-ratio:1;border:1px solid var(--scene-secondary);
+ border-left-color:transparent;border-top-color:transparent;border-radius:50%;
+ transform:rotate(-20deg);animation:hh-scene-arc 12s linear infinite}
+.scenePoint{position:absolute;right:13%;bottom:12%;width:5px;height:5px;border-radius:50%;
+ background:var(--scene-secondary);box-shadow:0 0 12px 4px var(--scene-secondary)}
+.media[data-coach-motion-context='card'] .sceneGraphics{opacity:.18}
+.media[data-coach-motion-context='avatar'] .sceneGraphics{opacity:.25}
+.media[data-coach-motion-scene='welcome'] .sceneGraphics{--scene-color:rgba(236,190,116,.51);--scene-secondary:rgba(255,225,156,.52);opacity:.55}
+.media[data-coach-motion-scene='calm'] .sceneGraphics{--scene-color:rgba(123,174,161,.23);--scene-secondary:rgba(179,214,195,.24);opacity:.22}
+.media[data-coach-motion-scene='attentive'] .sceneGraphics{--scene-color:rgba(108,174,173,.35);--scene-secondary:rgba(178,223,219,.31);opacity:.32}
+.media[data-coach-motion-scene='empathy'] .sceneGraphics{--scene-color:rgba(132,156,192,.23);--scene-secondary:rgba(189,202,229,.26);opacity:.29}
+.media[data-coach-motion-scene='curiosity'] .sceneGraphics{--scene-color:rgba(123,175,194,.4);--scene-secondary:rgba(201,224,234,.5);opacity:.42}
+.media[data-coach-motion-scene='insight'] .sceneGraphics{--scene-color:rgba(212,178,114,.49);--scene-secondary:rgba(255,226,174,.58);opacity:.55}
+.media[data-coach-motion-scene='encourage'] .sceneGraphics{--scene-color:rgba(163,189,107,.4);--scene-secondary:rgba(225,240,176,.51);opacity:.43}
+.media[data-coach-motion-scene='action'] .sceneGraphics{--scene-color:rgba(85,171,162,.41);--scene-secondary:rgba(143,219,203,.48);opacity:.42}
+.media[data-coach-motion-scene='closure'] .sceneGraphics{--scene-color:rgba(147,157,187,.2);--scene-secondary:rgba(199,197,216,.25);opacity:.22}
+.media[data-coach-motion-scene='explain'] .sceneGraphics{--scene-color:rgba(131,182,154,.33);--scene-secondary:rgba(211,224,181,.29);opacity:.32}
+@keyframes hh-scene-halo{from{opacity:.45;transform:scale(.9)}to{opacity:.8;transform:scale(1.08)}}
+@keyframes hh-scene-arc{to{transform:rotate(340deg)}}
+@media(prefers-reduced-motion:reduce){.video,.sceneGraphics{display:none!important;transition:none!important}.poster{animation:none!important}}

@@ -87,6 +87,27 @@ test('unreadable changed JavaScript fails closed instead of silently passing',()
   }
 });
 
+test('Core restores trusted Next/TypeScript cache before standalone preflight and retains real checks',()=>{
+  const workflow=readFileSync('.github/workflows/hh-pr-core-release.yml','utf8');
+  const source=readFileSync('scripts/ci-source-preflight.mjs','utf8');
+  const restore=workflow.indexOf('      - name: Restore production-owned Next compiler cache (read-only)');
+  const preflight=workflow.indexOf('      - name: Source Preflight — syntax and TypeScript before costly Next build');
+  const nextBuild=workflow.indexOf('      - name: Exact proposed release production build and TypeScript check');
+  assert.ok(restore>0&&restore<preflight&&preflight<nextBuild,
+    'trusted cache must be available before the standalone typecheck and required Next build');
+  const cache=workflow.slice(restore,preflight);
+  assert.match(cache,/id: ci_trusted_next_cache/);
+  assert.match(cache,/uses: actions\/cache\/restore@v4/);
+  assert.match(cache,/tsconfig\.tsbuildinfo/);
+  assert.match(cache,/hh-core-next-v2-/);
+  assert.ok(cache.includes("steps.diff.outputs.ci_only != 'true'"),'no untrusted CI-only cache promotion');
+  assert.doesNotMatch(workflow,/actions\/cache\/save@v4/,'PR never publishes compiler cache');
+  assert.match(source,/run\(tsc,\['--noEmit','--incremental','--tsBuildInfoFile','tsconfig\.tsbuildinfo','--pretty','false'\]\)/);
+  assert.match(workflow,/run: npm run build -- --no-lint/,'mandatory Next build still independently checks TypeScript');
+  assert.match(source,/const typechecked=fullTypes\|\|\(!typecheckDelegated&&impactsTypes\(paths\)\)/,
+    'privileged and unknown routes still get standalone tsc');
+});
+
 test('Core preflight skips only redundant CSS/data typing; Next and DOCK remain type-safe',()=>{
   const workflow=readFileSync('.github/workflows/hh-pr-core-release.yml','utf8');
   const source=readFileSync('scripts/ci-source-preflight.mjs','utf8');
@@ -106,7 +127,7 @@ test('Core preflight skips only redundant CSS/data typing; Next and DOCK remain 
   assert.equal(impactsTypes(['package-lock.json']),true);
   assert.match(workflow,/name: Exact proposed release production build and TypeScript check/);
   assert.match(workflow,/run: npm run build/);
-  assert.match(workflow,/^  hh-specialist:/m);
+  assert.doesNotMatch(workflow,/^  hh-specialist:/m);
   assert.match(workflow,/^  hh-merge-check:/m);
 });
 
@@ -181,7 +202,7 @@ test('delegated preflight reports unchecked types honestly and still demands exa
   const step=flow.split('      - name: Source Preflight — syntax and TypeScript before costly Next build')[1]
     ?.split('      - name: Upload Source Preflight root diagnostics on failure')[0]||'';
   const build=flow.split('      - name: Exact proposed release production build and TypeScript check')[1]
-    ?.split('  hh-specialist:')[0]||'';
+    ?.split('  hh-merge-check:')[0]||'';
   for(const marker of ['HH_PREFLIGHT_ROUTE:', 'HH_PREFLIGHT_CI_ONLY:',
     '--defer-types-to-next', '--full-types'])assert.ok(step.includes(marker),'missing '+marker);
   assert.ok(step.includes('steps.fast.outputs.route'), 'require BASE-trusted router');
@@ -190,11 +211,12 @@ test('delegated preflight reports unchecked types honestly and still demands exa
   assert.ok(source.includes('FULL_MEDIA_EDITOR_ONLY'));
   assert.ok(source.includes("route==='FULL'"));
   assert.match(flow,/run: npm run build/);
-  assert.match(flow,/^  hh-specialist:/m);
+  assert.doesNotMatch(flow,/^  hh-specialist:/m);
   assert.ok(build.includes('run: npm run build'));
   assert.ok(build.includes("steps.diff.outputs.ci_only != 'true'"));
   assert.ok(build.includes("steps.fast.outputs.route != 'DOCK'"));
-  assert.ok(flow.includes('hh-specialist:')&&flow.includes('hh-merge-check:'));
+  assert.ok(!flow.includes('  hh-specialist:')&&flow.includes('  hh-merge-check:'));
+  assert.ok(flow.includes('ci-specialist-aggregate.mjs'), 'independent specialist cannot disappear');
   assert.ok(source.includes('CONFLICTING_TYPECHECK_OWNERS'));
   assert.ok(source.includes('mayDelegateTypesToNext(paths'));
   const report=formatReport(['components/public.tsx'],[],false,true);

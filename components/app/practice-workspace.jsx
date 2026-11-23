@@ -616,7 +616,10 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
     {!needsOnboarding&&!activePanel&&<>
       <nav className="hh-practice-quick" aria-label={ru?'Быстрые действия':'Quick actions'}>
         {isOwner&&<button type="button" disabled={busy} onClick={()=>openOwner('report')}>
-          <FileText aria-hidden="true" />{ru?'Полный отчёт · мой':locale==='es'?'Informe completo · propietario':'Full report · owner only'}
+          <FileText aria-hidden="true" />{ru?'Гомеопатический отчёт':locale==='es'?'Informe homeopático':'Homeopathic report'}
+        </button>}
+        {isOwner&&<button type="button" disabled={busy} onClick={()=>openOwner('reportGeneral')}>
+          <FileText aria-hidden="true" />{ru?'Отчёт без препаратов':locale==='es'?'Informe sin remedios':'Report without remedies'}
         </button>}
         <button type="button" aria-pressed={activePanel==='express-reports'} onClick={()=>choosePanel('express-reports')}>
           <FileText aria-hidden="true"/>{ru?'Экспресс-отчёт':locale==='es'?'Informe exprés':'Express report'}
@@ -652,6 +655,9 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
           <PracticeTile Icon={FileText} title={ru?'Экспресс-отчёты':locale==='es'?'Informes exprés':'Express reports'}
             description={ru?'Разбор ситуации без препаратов, в личный кабинет клиента.':locale==='es'?'Análisis sin remedios, en la cuenta del cliente.':'Private situation reviews without remedies.'}
             onClick={()=>choosePanel('express-reports')} active={activePanel==='express-reports'}/>
+          {isOwner&&<PracticeTile Icon={FileText} title={ru?'Отчёт без препаратов':locale==='es'?'Informe sin remedios':'Full report without remedies'}
+            description={ru?'Полный персональный отчёт с анализом и рекомендациями, без препаратов.':locale==='es'?'Informe completo sin remedios.':'Full personal report, no remedies.'}
+            onClick={()=>openOwner('reportGeneral')} />}
           {isOwner&&<PracticeTile Icon={FileText} title={d.reports} description={d.reportsHint}
             onClick={()=>openOwner('reports')} />}
           {isOwner?<PracticeTile Icon={ReceiptText} title={d.invoices} description={d.invoicesHint}

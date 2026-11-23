@@ -18,10 +18,29 @@ function followUpDateLabel(value, locale) {
  * Never infer missing dosages, frequencies, potencies or durations.
  */
 export function SessionPrescriptionOverview({recommendation,locale='en',part='summary'}) {
-  if(!recommendation || !Array.isArray(recommendation.items) || !recommendation.items.length)return null
+  if(!recommendation || !Array.isArray(recommendation.items) || (!recommendation.items.length && recommendation.recommendationType !== 'general'))return null
   const ru=locale==='ru'
   const labels=recommendationCopy(locale,recommendation.recommendationType)
   const items=recommendation.items
+  if(recommendation.recommendationType==='general' && part==='remedies')return null
+  if(recommendation.recommendationType==='general' && part==='summary')return <section id="session-prescription" className={styles.clientSection} aria-labelledby="prescription-title">
+    <header className={styles.sectionHeader}>
+      <span className={styles.sectionIcon}><ClipboardList size={19}/></span>
+      <div><span className={styles.sectionKicker}>{ru?'ШАГ 1 · ОТЧЁТ':'STEP 1 · REPORT'}</span>
+        <h2 id="prescription-title">{ru?'Отчёт по консультации':'Your consultation report'}</h2>
+      </div>
+    </header>
+    <div className={styles.prescriptionSummary}>
+      {recommendation.analysis&&<p>{recommendation.analysis}</p>}
+      {recommendation.recommendationsText&&<div className={styles.instructionPanel}>
+        <strong>{ru?'Рекомендации специалиста':'Practitioner recommendations'}</strong><p>{recommendation.recommendationsText}</p>
+      </div>}
+      {recommendation.generalInstructions&&<p>{recommendation.generalInstructions}</p>}
+      {recommendation.followUpDate&&<p className={styles.sessionFollowUp}>
+        <strong>{ru?'Дата повторной консультации':'Follow-up date'}:</strong> {followUpDateLabel(recommendation.followUpDate,locale)}
+      </p>}
+    </div>
+  </section>
   if(part==='summary')return <section id="session-prescription" className={styles.clientSection} aria-labelledby="prescription-title">
     <header className={styles.sectionHeader}>
       <span className={styles.sectionIcon}><ClipboardList size={19}/></span>

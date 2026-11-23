@@ -167,3 +167,53 @@ test('non-persisted pageshow does not trigger foreign-entry recovery', () => {
   assert.equal(f.emit('pageshow', { persisted: false }).stopped, false);
   assert.deepEqual(f.replacements, []);
 });
+
+function parserHistoryFixture(requestPath, addressPath) {
+  const calls = [], listeners = {};
+  let at = new URL(addressPath, 'https://example.test');
+  const location = {
+    get href() { return at.href; },
+    get origin() { return at.origin; },
+    get pathname() { return at.pathname; },
+    get search() { return at.search; },
+    replace(destination) { calls.push('replace:' + destination); },
+  };
+  const window = {
+    location,
+    performance: { getEntriesByType(type) {
+      return type === 'navigation' ? [{ name: new URL(requestPath, location.origin).href }] : [];
+    }},
+    stop() { calls.push('stop'); },
+    addEventListener(type, cb) { listeners[type] = cb; },
+    removeEventListener(type) { delete listeners[type]; },
+  };
+  const document = { visibilityState: 'visible' };
+  runInNewContext(CSP_PREHYDRATION_SCRIPT, { window, document, URL });
+  return { window, calls, listeners, navigate(url) { at = new URL(url, at); } };
+}
+
+test('rapid WebKit history traversal before parser-time script interrupts stale HTML and CSP', () => {
+  const f = parserHistoryFixture('/en/academy/reiki/tantra-reiki', '/en/about');
+  assert.deepEqual(f.calls, ['stop', 'replace:https://example.test/en/about']);
+  assert.equal(f.window.__hhOptionalReadsDeparting, true);
+  assert.equal(f.window.__cspPreHydration.destination, 'https://example.test/en/about');
+  assert.equal(f.listeners.popstate, undefined, 'No hydration/router guards may bootstrap on a stale document');
+});
+
+test('parser-time popstate stops incomplete React hydration before fresh document replace', () => {
+  const f = parserHistoryFixture('/en/academy/reiki/tantra-reiki', '/en/academy/reiki/tantra-reiki');
+  assert.deepEqual(f.calls, []);
+  f.navigate('/en/about');
+  f.listeners.popstate({ stopImmediatePropagation() { f.calls.push('block-router'); } });
+  assert.deepEqual(f.calls, ['block-router', 'stop', 'replace:https://example.test/en/about']);
+  assert.equal(f.window.__cspPreHydration.destination, 'https://example.test/en/about');
+});
+
+test('normal parser-time documents and hash-only navigation never reload spuriously', () => {
+  const fresh = parserHistoryFixture('/en/about', '/en/about');
+  const hash = parserHistoryFixture('/en/about', '/en/about#profile');
+  assert.deepEqual(fresh.calls, []);
+  assert.deepEqual(hash.calls, []);
+  assert.equal(fresh.window.__hhOptionalReadsDeparting, false);
+  assert.equal(typeof fresh.listeners.popstate, 'function');
+});

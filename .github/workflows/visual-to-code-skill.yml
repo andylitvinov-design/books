@@ -1,9 +1,11 @@
 name: Visual-to-Code Pro — PNG comparison unit checks
 on:
+  # Explicit extra QA only: add the qa-optional label to an affected PR.
+  workflow_dispatch:
   pull_request:
+    types: [labeled]
     branches: ['codex/public-book-library']
     paths:
-      - 'AGENTS.md'
       - 'app/holistic-light-tokens.css'
       - 'docs/design/HOLISTIC_LIGHT_DESIGN_BIBLE.md'
       - 'scripts/holistic-light-design-qa.mjs'
@@ -20,11 +22,11 @@ on:
       - '.codex/config.toml'
       - '.vscode/mcp.json'
       - 'docs/design/VISUAL_MCP_AUTO_QA.md'
-      - '.github/workflows/visual-to-code-skill.yml'
 permissions:
   contents: read
 jobs:
   compare-unit:
+    if: ${{ github.event_name != 'pull_request' || github.event.label.name == 'qa-optional' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

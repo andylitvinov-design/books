@@ -5,7 +5,6 @@ import {SiteVideoPlayer} from '@/components/site-video-player'
 import {ENGLISH_HEYGEN_INTRO_ID} from '@/lib/youtube/english-master-catalog.mjs'
 import styles from './profile-presentation-player.module.css'
 
-const ENGLISH_CHANNEL='https://www.youtube.com/@aatapro'
 const youtubeIdValid=id=>typeof id==='string'&&/^[A-Za-z0-9_-]{11}$/.test(id)
 
 // HeyGen is the owner's production/master library. My Space EN is strictly
@@ -19,24 +18,39 @@ export function ProfilePresentationPlayer({locale,presentation,poster}){
     setChecked(false)
     if(locale!=='en'||presentation?.heygenId!==ENGLISH_HEYGEN_INTRO_ID)return
     const controller=new AbortController()
-    fetch('/api/public/english-intro-video',{
-      method:'GET',cache:'no-store',credentials:'omit',signal:controller.signal
-    }).then(response=>response.ok?response.json():null)
-      .then(data=>{
-        if(!controller.signal.aborted)
-          setVerifiedId(youtubeIdValid(data?.youtubeId)?data.youtubeId:null)
-      }).catch(()=>{
-        if(!controller.signal.aborted)setVerifiedId(null)
-      }).finally(()=>{
-        if(!controller.signal.aborted)setChecked(true)
-      })
-    return ()=>controller.abort()
+    let active=true,checking=false,resolved=false
+    const refresh=async()=>{
+      if(!active||checking||resolved||document.visibilityState==='hidden')return
+      checking=true
+      try{
+        const response=await fetch('/api/public/english-intro-video',{
+          method:'GET',cache:'no-store',credentials:'omit',signal:controller.signal
+        })
+        const data=response.ok?await response.json():null
+        if(!active)return
+        const id=youtubeIdValid(data?.youtubeId)?data.youtubeId:null
+        if(id){resolved=true;setVerifiedId(id)}
+      }catch{/* Keep the honest in-page state; never guess or replace a video. */}
+      finally{checking=false;if(active)setChecked(true)}
+    }
+    void refresh()
+    // Refresh when the visitor returns from another tab after an upload.
+    // Do not poll every guest: this prevents unnecessary Vercel/Redis costs.
+    const onVisible=()=>{if(document.visibilityState!=='hidden')void refresh()}
+    window.addEventListener('focus',onVisible)
+    document.addEventListener('visibilitychange',onVisible)
+    return ()=>{
+      active=false
+      controller.abort()
+      window.removeEventListener('focus',onVisible)
+      document.removeEventListener('visibilitychange',onVisible)
+    }
   },[locale,presentation?.heygenId])
 
   const youtubeReady=locale==='en'&&
     presentation?.heygenId===ENGLISH_HEYGEN_INTRO_ID&&youtubeIdValid(verifiedId)
-  // If the verified upload is absent, display a real channel link and honest
-  // state. Never substitute the older 29-second video, RU narration, or HeyGen.
+  // If there is no verified upload, show an honest in-place state rather than an
+  // external action. Never substitute a short clip, RU narration or HeyGen.
   const source=youtubeReady
     ?{youtubeId:verifiedId,title:presentation.title,
       durationSeconds:presentation.durationSeconds,language:'en'}
@@ -52,13 +66,9 @@ export function ProfilePresentationPlayer({locale,presentation,poster}){
           <h3 className={styles.title}>It Starts With You</h3>
           <p className={styles.note} role="status">
             {checked
-              ?'Watch the full presentation here once its English YouTube upload is verified.'
+              ?'The full English YouTube presentation will play here once its upload is verified.'
               :'Checking the English YouTube presentation…'}
           </p>
-          <a className={styles.channelLink} href={ENGLISH_CHANNEL}
-            target="_blank" rel="noopener noreferrer">
-            Visit our English YouTube · @aatapro
-          </a>
         </div>
       </div>
     </div>
@@ -67,6 +77,6 @@ export function ProfilePresentationPlayer({locale,presentation,poster}){
   return <div data-profile-presentation-locale={locale}
     data-profile-presentation-source="youtube">
     <SiteVideoPlayer key={locale+':'+(verifiedId||source.youtubeId)}
-      video={source} locale={locale} minimal fallbackPoster={poster} />
+      video={source} locale={locale} minimal fallbackPoster={poster} internalOnly />
   </div>
 }

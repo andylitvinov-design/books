@@ -5,7 +5,12 @@ import {runInNewContext} from 'node:vm'
 import {TRADITION_COURSES,traditionCourse,traditionEndcaps} from '../lib/personal-coaching/traditions.js'
 
 const source=readFileSync(new URL('../lib/app/personal-coaching.js',import.meta.url),'utf8')
-const server=source.replace(/^import[^\n]*\n/gm,'').replace(/^export /gm,'')
+const server=source
+  // The isolated VM test strips real module imports. The new archive helper
+  // has a multiline import; keep the legacy test hermetic without removing
+  // any of the production archive code or altering its access rules.
+  .replace(/^import \{MY_COACH_PROTOCOL_PAGE_SIZE,[\s\S]*?protocol-archive\.mjs'\n/m,'')
+  .replace(/^import[^\n]*\n/gm,'').replace(/^export /gm,'')
 const actorA={id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'}
 const actorB={id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'}
 

@@ -12,13 +12,13 @@
 .format button small{font:500 11px/1.35 system-ui,sans-serif;color:#637c6f}
 .format button[aria-pressed=true]{background:linear-gradient(120deg,#329f7c,#007e61);color:#fff;box-shadow:0 4px 11px #0b6c5127}
 .format button[aria-pressed=true] svg,.format button[aria-pressed=true] small{color:#fff}
-.tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:12px}
+.tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:12px}
 .tabs button{display:flex;align-items:center;justify-content:center;gap:6px;min-height:50px;min-width:0;padding:8px 4px;border:1px solid #e5ded4;border-radius:17px;background:#fffaf5;color:#205e4d;cursor:pointer;font:800 clamp(12px,3.4vw,15px)/1.2 system-ui,sans-serif}
 .tabs button svg{flex:none}
 .tabs button[aria-selected=true]{background:#e2f5eb;border-color:#c7e6d5;color:#08735b;box-shadow:inset 0 -3px 0 #128467}
 .main{min-width:0;padding:clamp(9px,3vw,16px);border:1px solid #eee4d8;border-radius:22px;background:#fffdf9;box-shadow:0 5px 19px #574a3511}
 .scriptHost [data-video-personal-meditation]{margin:0;padding:12px;background:#fffefa;border-color:#ebdfd1;box-shadow:none}
-.scriptHost[data-pane="practice"]{display:none}
+.scriptHost[data-pane="practice"],.scriptHost[data-pane="voice"]{display:none}
 .scriptHost[data-pane="voice"] [data-video-personal-meditation]>:not([data-meditation-result]){display:none!important}
 .scriptHost[data-pane="voice"] [data-meditation-result] > textarea,.scriptHost[data-pane="voice"] [data-meditation-result] > div:first-child{display:none!important}
 .scriptHost[data-pane="voice"] [data-video-personal-meditation]:has([data-meditation-result]){display:block}
@@ -49,7 +49,7 @@
  .format button small{font-size:10px;line-height:1.2}
  .format button svg{width:19px;height:19px}
  .tabs{gap:5px;margin-bottom:8px}
- .tabs button{min-height:45px;padding:7px 3px;border-radius:13px;font-size:clamp(11px,3.3vw,14px)}
+ .tabs button{min-height:46px;padding:7px 2px;border-radius:13px;font-size:clamp(10px,2.95vw,13px)}
  .tabs button svg{width:17px;height:17px}
  .main{padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
  .scriptHost [data-video-personal-meditation]{
@@ -76,8 +76,6 @@
  .scriptHost [data-meditation-main-filters] label:first-child{grid-column:1;grid-row:1}
  .scriptHost [data-meditation-main-filters] label:nth-child(2){grid-column:1/-1;grid-row:2}
  .scriptHost [data-meditation-main-filters] label:nth-child(3){grid-column:2;grid-row:1}
- /* WebKit's native select can ignore min-height and render 23px. An explicit
-    height makes the three actual input controls touchable on 320px iPhone. */
  .scriptHost [data-meditation-main-filters] select{height:44px;min-height:44px;box-sizing:border-box;width:100%;padding:7px 9px;font-size:13px;text-overflow:ellipsis;white-space:nowrap}
  .scriptHost [data-meditation-accents]{margin:8px 0}
  .scriptHost [data-meditation-accents] summary{min-height:44px;padding:8px 10px;font-size:12px}
@@ -88,6 +86,15 @@
  .scriptHost [data-meditation-generate]{min-height:52px;padding:10px;font-size:13px}
  .safety{margin:7px 4px;font-size:10.5px}
 }
+
+/* Safari hides its native disclosure marker when the summary is flex. */
+@media(max-width:759px){
+ .scriptHost [data-meditation-context] summary{gap:8px;list-style:none}
+ .scriptHost [data-meditation-context] summary::-webkit-details-marker{display:none}
+ .scriptHost [data-meditation-context] summary::after{content:"";flex:none;display:block;width:8px;height:8px;margin:0 4px 4px auto;border-right:2px solid #087e62;border-bottom:2px solid #087e62;transform:rotate(45deg);transition:transform .16s ease}
+ .scriptHost [data-meditation-context][open] summary::after{transform:rotate(225deg);margin-bottom:0;margin-top:4px}
+}
+@media(prefers-reduced-motion:reduce){.scriptHost [data-meditation-context] summary::after{transition:none}}
 @media(max-width:355px){
  .format button{min-height:61px;padding:7px 5px}
  .format button strong{font-size:11.5px}
@@ -96,18 +103,48 @@
  .scriptHost [data-meditation-main-filters] select{font-size:12px}
 }
 
-/* The native <summary> marker disappears in Safari when it is display:flex.
-   Restore an explicit disclosure chevron in the one compact Therapy composer. */
+/* Approved 18 Nov Voice redesign: leave shared header and other tabs untouched. */
+.shell[data-active-therapy-pane="voice"] .main{padding:0;border:0;background:transparent;box-shadow:none}
+.voiceArea{margin-top:0;padding:13px;border:1px solid #e9dfd1;border-radius:23px;background:#fffcf7;box-shadow:0 5px 16px #59452b12}
+.voiceArea :global([data-hypno-voice]) > :first-child{display:none}
+.voiceArea :global([data-video-affirmation-voice]){margin:0;padding:0;border:0;background:transparent;box-shadow:none}
+.voiceEmpty{display:flex;justify-content:center;align-items:center;margin:5px 0 0;padding:1px 0;min-height:28px;text-align:center}
+.voiceEmpty button{font-size:12px;min-height:28px}
 @media(max-width:759px){
- .scriptHost [data-meditation-context] summary{gap:8px;list-style:none}
- .scriptHost [data-meditation-context] summary::-webkit-details-marker{display:none}
- .scriptHost [data-meditation-context] summary::after{
-  content:"";flex:none;display:block;width:8px;height:8px;margin:0 4px 4px auto;
-  border-right:2px solid #087e62;border-bottom:2px solid #087e62;
-  transform:rotate(45deg);transition:transform .16s ease
- }
- .scriptHost [data-meditation-context][open] summary::after{transform:rotate(225deg);margin-bottom:0;margin-top:4px}
+ .shell[data-active-therapy-pane="voice"]{margin-top:2px}
+ .voiceArea{padding:clamp(9px,2.7vw,13px);border-radius:20px}
+ .tabs{gap:5px;margin-bottom:9px}
+ .tabs button{gap:4px}
+ .tabs button svg{width:17px;height:17px}
+ /* Voice is an audio editor: avoid showing an unrelated film preview above it. */
+ /* The ancestor-only preview selector is intentionally excluded: CSS Modules requires a local class. */
 }
-@media(prefers-reduced-motion:reduce){
- .scriptHost [data-meditation-context] summary::after{transition:none}
+@media(max-width:355px){
+ .tabs button{font-size:clamp(9px,2.8vw,11px);gap:2px}
+ .tabs button svg{width:15px;height:15px}
+ .voiceArea{padding:8px}
+}
+
+/* 18 Nov follow-up: two user-requested next-step buttons at the END of Therapy Voice. */
+.voiceNextActions{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin:10px 0 0}
+.voiceNextActions button{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;min-height:52px;padding:10px 14px;border-radius:16px;cursor:pointer;font:800 clamp(14px,3.7vw,17px)/1.22 system-ui,sans-serif;text-align:center}
+.voiceNextActions button span{min-width:0;flex:1;overflow-wrap:break-word}
+.voiceNextActions button svg{flex:none}
+.voicePrimaryNext{border:1px solid #087e62;background:linear-gradient(110deg,#159c78,#006e56);color:#fff;box-shadow:0 3px 9px #006d4e26}
+.voiceSecondaryNext{border:1px solid #cdddcf;background:#fffcf7;color:#155a47;box-shadow:0 2px 6px #59432b13}
+.voiceArea :global([data-hypno-voice]) > :global(button),
+.voiceArea :global([data-hypno-voice]) > :global([data-video-voice-studio]),
+.voiceArea :global([data-hypno-voice]) > :global(p):not([data-video-narration-stale]){display:none}
+.voiceArea :global([data-video-affirmation-voice]) :global([data-video-generate-affirmation-audio]),
+.voiceArea :global([data-video-affirmation-voice]) :global([data-therapy-voice-cloud-consent]),
+.voiceArea :global([data-video-affirmation-voice]) :global([data-therapy-voice-cloud-limit]){display:none}
+@media(max-width:759px){
+ .voiceArea{padding:9px 10px}
+ .voiceNextActions{gap:7px;margin-top:6px}
+ .voiceNextActions button{min-height:48px;padding:8px 10px;border-radius:14px}
+ .voiceEmpty{min-height:26px;padding:0;margin:3px 0 0}
+}
+@media(max-width:355px){
+ .voiceNextActions button{gap:6px;font-size:14px;min-height:49px;padding:7px 8px}
+ .voiceNextActions button svg{width:19px;height:19px}
 }

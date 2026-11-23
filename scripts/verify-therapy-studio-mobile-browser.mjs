@@ -6,6 +6,7 @@
 import assert from 'node:assert/strict';
 import {mkdirSync} from 'node:fs';
 import {chromium,webkit,expect} from '@playwright/test';
+import {completeThreeStepGoalsQuiz} from './benchmarking/complete-three-step-goals-quiz.mjs';
 
 const BASE=(process.env.HH_TEST_PUBLIC_ORIGIN||'http://127.0.0.1:3100').replace(/\/$/,'');
 const engine=process.env.HH_THERAPY_BROWSER_ENGINE||'webkit';
@@ -17,6 +18,7 @@ try{
    serviceWorkers:'block',acceptDownloads:true,reducedMotion:'reduce'});
   try{
    const page=await context.newPage(),errors=[],posts=[];
+   await page.route('**/*',route=>route.request().method()==='POST'?route.abort():route.continue());
    page.setDefaultTimeout(20000);
    page.on('pageerror',error=>errors.push(error.message));
    page.on('request',req=>{if(req.method()==='POST'&&
@@ -25,37 +27,40 @@ try{
    await page.goto(BASE+'/'+locale+'/holistic-support/mandala',
     {waitUntil:'domcontentloaded',timeout:90000});
    await page.locator('[data-video-studio-hydrated="true"]').waitFor({state:'attached',timeout:60000});
+   await completeThreeStepGoalsQuiz(page,{engine});
+   const continueToMontage=page.locator('[data-video-continue-scenarios]');
+   await expect(continueToMontage).toBeVisible();
+   if(engine==='webkit')await continueToMontage.tap();else await continueToMontage.click();
    const studio=page.locator('[data-mandala-free-video]'),tab=page.locator('[data-video-quick-control="effects"]');
    await expect(tab).toBeEnabled();
    await tab.tap();
    await expect(studio).toHaveAttribute('data-active-workspace','effects');
    const shell=page.locator('[data-therapy-studio]');
    await expect(shell).toBeVisible();
-   await expect(shell.locator('[data-therapy-tabs] [role="tab"]')).toHaveCount(3);
+   await expect(shell.locator('[data-therapy-tabs] [role="tab"]')).toHaveCount(4);
+   for(const id of ['meditation','voice','practice','course'])
+    await expect(shell.locator('[data-therapy-tabs] [data-therapy-subtab="'+id+'"]')).toHaveCount(1);
    await expect(shell.locator('[data-meditation-generate]')).toBeVisible();
    await expect(shell.locator('[data-therapy-advanced-effects]')).toHaveCount(0);
    assert.equal(await page.locator('[data-video-mandala-hero]').count(),1,'One original video player');
-   const labels={en:['Practice format','Therapy Studio steps'],
-    ru:['Формат практики','Этапы Therapy Studio'],es:['Formato de práctica','Pasos de Therapy Studio']};
-   await expect(shell.locator('[data-therapy-format-switch]')).toHaveAttribute('aria-label',labels[locale][0]);
-   await expect(shell.locator('[data-therapy-tabs]')).toHaveAttribute('aria-label',labels[locale][1]);
+   const labels={en:'Therapy Studio steps',ru:'Этапы Therapy Studio',es:'Pasos de Therapy Studio'};
+   await expect(shell.locator('[data-therapy-tabs]')).toHaveAttribute('aria-label',labels[locale]);
    for(const width of [320,354,390,430]){
     await page.setViewportSize({width,height:820});
+    if(width===320){const first=shell.locator('[data-meditation-main-filters] select').first();await first.locator('..').tap({position:{x:5,y:5}});await expect(first).toBeFocused();}
     const measure=await shell.evaluate(node=>{
       const box=selector=>node.querySelector(selector)?.getBoundingClientRect();
-      const targets=[...node.querySelectorAll('[data-therapy-format-switch] button,'+
-       '[data-therapy-tabs] button,[data-meditation-main-filters] select,'+
+      const targets=[...node.querySelectorAll('[data-therapy-tabs] button,[data-meditation-main-filters] select,'+
        '[data-meditation-writer-choices] button,[data-meditation-generate]')].map(x=>{
-        const b=x.getBoundingClientRect();return [b.width,b.height];
+        const b=x.getBoundingClientRect(),s=getComputedStyle(x);return [b.width,b.height,x.tagName,s.minHeight,s.display];
       });
       return {hidden:getComputedStyle(node.querySelector('header')).display==='none',
-       fmt:box('[data-therapy-format-switch]')?.top,tabs:box('[data-therapy-tabs]')?.top,
+       tabs:box('[data-therapy-tabs]')?.top,
        editor:box('[data-video-personal-meditation]')?.top,
        doc:document.documentElement.scrollWidth,viewport:document.documentElement.clientWidth,targets};
     });
     assert.ok(measure.hidden,'No duplicate photograph banner on mobile: '+locale+'/'+width);
-    assert.ok(measure.fmt<measure.tabs&&measure.tabs<measure.editor,
-     'Format, tabs and editable script order '+JSON.stringify(measure));
+    assert.ok(measure.tabs<measure.editor,'Tabs precede editable script '+JSON.stringify(measure));
     assert.ok(measure.doc<=measure.viewport+2,'No iPhone horizontal overflow '+JSON.stringify(measure));
     assert.ok(measure.targets.length>=9&&measure.targets.every(([w,h])=>w>=44&&h>=44),
      'Touchable Therapy controls '+JSON.stringify(measure));
@@ -84,16 +89,18 @@ try{
    await expect(shell.locator('[data-meditation-ai-opt-in] input')).toHaveCount(2);
    await shell.locator('[data-meditation-writer-mode="local"]').tap();
    await expect(shell.locator('[data-meditation-generate]')).toBeEnabled();
-   const course=shell.locator('[data-therapy-format="course"]');
+   const course=shell.locator('[data-therapy-subtab="course"]');
    await course.tap();
-   await expect(course).toHaveAttribute('aria-pressed','true');
+   await expect(course).toHaveAttribute('aria-selected','true');
+   const courseEditor=shell.locator('[data-meditation-course-request]').locator('xpath=ancestor::details');
+   await courseEditor.locator(':scope > summary').tap();
    await expect(shell.locator('[data-meditation-course-request]')).toBeVisible();
    await shell.locator('[data-meditation-generate]').tap();
    await expect(shell.locator('[data-meditation-eight-day-plan]')).toBeVisible();
    await expect(shell.locator('[data-meditation-course-day]')).toHaveCount(8);
-   const single=shell.locator('[data-therapy-format="single"]');
+   const single=shell.locator('[data-therapy-subtab="meditation"]');
    await single.tap();
-   await expect(single).toHaveAttribute('aria-pressed','true');
+   await expect(single).toHaveAttribute('aria-selected','true');
    await expect(shell.locator('[data-meditation-course-request]')).toHaveCount(0);
    await shell.locator('[data-meditation-generate]').tap();
    const written=shell.locator('[data-meditation-script]');
@@ -106,8 +113,9 @@ try{
    const voice=shell.locator('[data-therapy-subtab="voice"]');
    await voice.tap();
    await expect(voice).toHaveAttribute('aria-selected','true');
-   await expect(shell.locator('[data-meditation-narration]')).toBeVisible();
+   await expect(shell.locator('[data-meditation-narration]')).toBeHidden();
    await expect(shell.locator('[data-therapy-voice]')).toBeVisible();
+   await expect(shell.locator('[data-therapy-voice] [data-hypno-voice]')).toBeVisible();
    const practice=shell.locator('[data-therapy-subtab="practice"]');
    await practice.tap();
    await expect(shell.locator('[data-therapy-practice]')).toBeVisible();

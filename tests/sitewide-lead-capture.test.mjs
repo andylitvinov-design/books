@@ -125,7 +125,7 @@ test("free landing's final slide is just the compact form, in all three language
   assert.doesNotMatch(page, /<FreeResourceEnquiry/);
   assert.match(page, /data-optional-written-review/);
   assert.match(pageCss, /\.page\{padding-bottom:0\}/);
-  assert.match(main, /<CompactLeadCapture locale=\{locale as Locale\}/);
+  assert.match(main, /<CompactLeadCapture locale=\{locale\}/);
   assert.match(es, /<CompactLeadCapture locale="es"/);
   assert.ok(main.lastIndexOf("<CompactLeadCapture") > main.lastIndexOf("<ServicesDirectoryInvitation"));
   assert.ok(es.lastIndexOf("<CompactLeadCapture") > es.lastIndexOf("<ServicesDirectoryInvitation"));

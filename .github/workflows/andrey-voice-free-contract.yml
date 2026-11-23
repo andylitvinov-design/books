@@ -11,8 +11,11 @@ on:
       - 'tests/local-narration*'
       - 'tests/report-narration.test.mjs'
       - 'tests/test_andrey_voice_*.py'
-      - '.github/workflows/andrey-voice-free-contract.yml'
   workflow_dispatch:
+concurrency:
+  group: hh-andrey-voice-free-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
+
 permissions:
   contents: read
 jobs:
