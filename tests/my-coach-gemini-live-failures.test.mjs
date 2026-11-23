@@ -54,7 +54,10 @@ test('provider token errors return precise safe categories, never upstream body 
       now:Date.parse('2026-11-23T01:00:00Z'),
       fetcher:async(_url,options)=>{
         assert.equal(options.method,'POST')
-        assert.ok(JSON.parse(options.body).liveConnectConstraints)
+        const payload=JSON.parse(options.body)
+        assert.ok(payload.bidiGenerateContentSetup)
+        assert.equal(Object.hasOwn(payload,'liveConnectConstraints'),false)
+        assert.equal(Object.hasOwn(payload,'fieldMask'),false)
         return {ok:false,status,async json(){throw Error(secretSentinel)}}
       },
     }),error=>error.message===code&&
