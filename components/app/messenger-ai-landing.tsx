@@ -156,7 +156,7 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupp
   const {persona}=useAliPersona();
   const [speaking,setSpeaking]=useState(false);
   const [moreTopics,setMoreTopics]=useState(false);
-  useEffect(()=>{void prepareAliNaturalVoice();return ()=>stopAliPersonaAudio();},[]);
+  useEffect(()=>{void prepareAliNaturalVoice(persona.id,locale);return ()=>stopAliPersonaAudio();},[persona.id,locale]);
   const playGreeting=()=>{
     if(speaking){stopAliPersonaAudio();setSpeaking(false);return;}
     playAliPersonaAudio(persona.id,locale,(isPlaying:boolean)=>setSpeaking(isPlaying));

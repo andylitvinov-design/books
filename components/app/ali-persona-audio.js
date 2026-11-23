@@ -4,19 +4,23 @@ import {aliPersonaGreeting,getAliPersona} from '@/lib/holistic-support/ali-perso
 // The cloud endpoint serves only fixed editorial greetings and retains its
 // existing rate/cost caps. A HEAD never synthesizes paid audio.
 let current=null
-let naturalStatus='unknown'
-let inFlight=null
+const voiceUrl=(personaId,locale)=>'/api/ali/voice/'+encodeURIComponent(locale)+'/'+encodeURIComponent(getAliPersona(personaId).id)
 
-export function prepareAliNaturalVoice(){
- if(typeof window==='undefined')return Promise.resolve(false)
- if(naturalStatus==='available')return Promise.resolve(true)
- if(naturalStatus==='unavailable')return Promise.resolve(false)
- if(inFlight)return inFlight
- inFlight=fetch('/api/ali/voice/en/alex',{method:'HEAD',credentials:'same-origin'})
-  .then(response=>{naturalStatus=response.ok?'available':'unavailable';return response.ok})
-  .catch(()=>{naturalStatus='unavailable';return false})
-  .finally(()=>{inFlight=null})
- return inFlight
+// Readiness is advisory. Never cache a failure or delay a real Play gesture.
+/** @param {string} personaId @param {'en'|'ru'|'es'} locale */
+export async function prepareAliNaturalVoice(personaId,locale){
+ if(typeof window==='undefined')return false
+ const url=voiceUrl(personaId,locale)
+ for(let attempt=0;attempt<2;attempt++){
+  const controller=new AbortController()
+  const timeout=window.setTimeout(()=>controller.abort(),4000)
+  try{
+   const response=await fetch(url,{method:'HEAD',credentials:'same-origin',cache:'no-store',signal:controller.signal})
+   if(response.ok)return true
+  }catch{/* A transient failure must not poison the next Play. */}
+  finally{window.clearTimeout(timeout)}
+ }
+ return false
 }
 
 export function stopAliPersonaAudio(){
@@ -34,7 +38,7 @@ function deviceSpeech(persona,locale,onStart,onFinish){
  utterance.lang={en:'en-US',ru:'ru-RU',es:'es-ES'}[locale]||'en-US'
  utterance.rate=persona.voice.rate
  utterance.pitch=persona.voice.pitch
- const voices=speech.getVoices().filter(voice=>voice.lang?.toLowerCase().replace('_','-').startsWith(locale))
+ const voices=(speech.getVoices?.()||[]).filter(voice=>voice.lang?.toLowerCase().replace('_','-').startsWith(locale))
   .sort((a,b)=>a.name.localeCompare(b.name))
  if(voices.length)utterance.voice=voices[persona.voice.slot%voices.length]
  let stopped=false,started=false
@@ -86,7 +90,8 @@ export function playAliPersonaAudio(personaId,locale,onPlaying=()=>{}){
  stopAliPersonaAudio()
  if(typeof window==='undefined')return ()=>{}
  const persona=getAliPersona(personaId)
- let active=true,timer=null,stopDevice=()=>{},audio=null
+ void prepareAliNaturalVoice(persona.id,locale)
+ let active=true,timer=null,stopDevice=()=>{},audio=null,attemptId=0,started=false,retries=0
  let session=null
  const clear=()=>{if(timer!==null){window.clearTimeout(timer);timer=null}}
  const finish=result=>{
@@ -112,42 +117,45 @@ export function playAliPersonaAudio(personaId,locale,onPlaying=()=>{}){
    ()=>{if(active)onPlaying(true,'playing')},finish)
  }
  const hasDevice=Boolean(window.speechSynthesis&&window.SpeechSynthesisUtterance)
- const isIos=/iPad|iPhone|iPod/.test(window.navigator?.userAgent||'')||
-  (window.navigator?.platform==='MacIntel'&&window.navigator?.maxTouchPoints>1)
- // iOS SpeechSynthesis can claim "started" while producing no sound.
- // Even after a HEAD failure, ALWAYS attempt native media on iPhone so a
- // later recovered cloud greeting can play from the user's next tap.
- if(naturalStatus==='unavailable'&&hasDevice&&!isIos){
-  startDevice()
-  return ()=>{if(current===session)stopAliPersonaAudio()}
+ const releaseAudio=()=>{
+  clear()
+  if(!audio)return
+  audio.onplaying=null;audio.onended=null;audio.onerror=null
+  try{audio.pause();audio.removeAttribute('src');audio.load?.()}catch{}
  }
  const fallback=()=>{
   if(!active)return
-  // Transient errors must never permanently switch every subsequent Listen
-  // to a potentially silent device voice. Retry the cloud source on next tap.
-  naturalStatus='unknown'
-  clear()
-  if(audio){audio.onplaying=null;audio.onended=null;audio.onerror=null;audio.pause();audio.removeAttribute('src')}
-  // After the original iPhone gesture has expired, speechSynthesis can be
-  // silently blocked. Show retry instead of a false "playing" state.
-  if(hasDevice&&!isIos)startDevice()
+  attemptId++
+  releaseAudio()
+  // Retry only before audible start, avoiding duplicate greetings.
+  if(started){finish('error');return}
+  if(retries===0&&audio){retries++;startAudio();return}
+  // iOS is eligible too; if speech fails, the watchdog exposes Retry.
+  if(hasDevice)startDevice()
   else finish('error')
  }
- // Native HTMLAudioElement respects an iOS user gesture and plays through
- // iPhone's media audio route, unlike the sometimes silent Web Speech API.
- try{audio=new Audio()}catch{fallback();return ()=>{if(current===session)stopAliPersonaAudio()}}
- audio.preload='auto'
- audio.autoplay=false
- audio.muted=false
- audio.volume=1
- audio.onplaying=()=>{if(!active)return;clear();onPlaying(true,'playing')}
- audio.onended=()=>finish('ended')
- audio.onerror=fallback
- audio.src='/api/ali/voice/'+encodeURIComponent(locale)+'/'+encodeURIComponent(persona.id)
- timer=window.setTimeout(fallback,24000)
+ const startAudio=()=>{
+  const id=++attemptId
+  const fail=()=>{if(active&&id===attemptId)fallback()}
+  audio.onplaying=()=>{if(!active||id!==attemptId)return;started=true;clear();onPlaying(true,'playing')}
+  audio.onended=()=>{if(active&&id===attemptId)finish('ended')}
+  audio.onerror=fail
+  audio.src=voiceUrl(persona.id,locale)
+  timer=window.setTimeout(fail,24000)
+  try{
+   const attempt=audio.play()
+   if(attempt&&typeof attempt.catch==='function')void attempt.catch(fail)
+  }catch{fail()}
+ }
+ // Never await HEAD before native media Play; iOS needs user activation.
  try{
-  const attempt=audio.play()
-  if(attempt&&typeof attempt.catch==='function')void attempt.catch(fallback)
+  audio=new window.Audio()
+  audio.preload='auto'
+  audio.autoplay=false
+  audio.playsInline=true
+  audio.muted=false
+  audio.volume=1
+  startAudio()
  }catch{fallback()}
  return ()=>{if(current===session)stopAliPersonaAudio()}
 }
