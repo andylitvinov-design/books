@@ -68,3 +68,15 @@ test('receipt index accepts every current CRM status, including send lifecycle s
  for(const status of accepted)assert.ok(statuses.has(status),'missing CRM status '+status);
  assert.match(migration,/after insert or update of status on app\.crm_msg_items/i);
 });
+
+test('receipt index is consent-sensitive on insert, regrant, revocation and backfill',()=>{
+  assert.match(migration,/from app_private\.agent_chat_history_consent c[\s\S]*c\.accepted is true/);
+  assert.match(migration,/create trigger wave_history_consent_changed[\s\S]*after insert or update of accepted or delete/i);
+  assert.match(migration,/delete from app_private\.wave_conversation_receipts r[\s\S]*r\.source='agent_history' and r\.owner_id=v_owner/);
+  assert.match(migration,/create trigger wave_coaching_archive_consent_changed[\s\S]*after insert or update of accepted, revoked_at/i);
+  assert.match(migration,/new\.accepted is false or new\.revoked_at is not null/);
+  assert.match(migration,/c\.accepted and c\.revoked_at is null/);
+  assert.match(migration,/delete from app_private\.wave_conversation_receipts r\s+using app_private\.coaching_session_messages m/);
+  assert.match(migration,/revoke all on function app_private\.wave_reconcile_history_consent\(\)/i);
+  assert.match(migration,/revoke all on function app_private\.wave_reconcile_coaching_consent\(\)/i);
+});
