@@ -762,10 +762,10 @@
    private identity, new player or new price/checkout state is introduced. */
 @media (max-width:759px) {
   [data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) [data-video-quick-builder]:has(> .goals.landing) {
-    margin-top:-12px!important;
-    padding-inline:10px!important;
+    margin-top:-25px!important;
+    padding-inline:5px!important;
     background-image:
-      linear-gradient(90deg,rgba(5,55,45,.97),rgba(5,68,55,.80) 42%,rgba(8,62,51,.02) 100%),
+      linear-gradient(90deg,rgba(5,55,45,.95),rgba(5,68,55,.69) 43%,rgba(8,62,51,.02) 100%),
       url("/images/holistic-house/reiki-approved-sunrise-v3.webp"),
       linear-gradient(175deg,#fff9f0,#fdf1e5 82%,#fff8ef)!important;
     background-position:top center,top right,center!important;
@@ -773,8 +773,8 @@
     background-repeat:no-repeat!important;
   }
   [data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) [data-video-quick-builder]:has(> .goals.landing) > [data-video-hypno-scroll-start] {
-    min-height:52px!important;
-    padding:4px 3px 1px!important;
+    min-height:48px!important;
+    padding:3px 3px 1px!important;
     gap:5px!important;
   }
   [data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) [data-video-quick-builder]:has(> .goals.landing) > [data-video-hypno-scroll-start] > a:first-child {
@@ -811,8 +811,8 @@
     align-content:start;
     align-items:center;
     gap:3px 6px;
-    min-height:clamp(145px,18.7dvh,169px)!important;
-    padding:8px 14px 15px!important;
+    min-height:clamp(134px,17.5dvh,154px)!important;
+    padding:5px 14px 10px!important;
     margin:0!important;
     background:transparent!important;
     color:#fff!important;
@@ -850,7 +850,7 @@
     transform:rotate(-3deg);
   }
   .goals.landing {
-    padding:0 0 5px!important;
+    padding:0 0 max(72px, env(safe-area-inset-bottom))!important;
     gap:0!important;
     margin:0!important;
   }
@@ -976,7 +976,7 @@
 }
 @media (max-width:359px) {
   [data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) [data-video-quick-builder]:has(> .goals.landing) {padding-inline:7px!important}
-  .title:has(+ .goals.landing) {padding-inline:8px!important;min-height:138px!important}
+  .title:has(+ .goals.landing) {padding-inline:8px!important;min-height:126px!important}
   .title:has(+ .goals.landing) h2 {font-size:30px!important}
   .title:has(+ .goals.landing) strong {font-size:21px!important}
   .goals.landing .destination {grid-template-columns:39% minmax(0,1fr) 31px!important;gap:4px!important;min-height:140px!important;padding-right:4px!important}
@@ -987,6 +987,6 @@
 }
 @media (max-width:759px) and (max-height:740px) {
   [data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) [data-video-quick-builder]:has(> .goals.landing) {background-size:100% 191px,100% 191px,100% 100%!important}
-  .title:has(+ .goals.landing) {min-height:126px!important}
+  .title:has(+ .goals.landing) {min-height:114px!important}
   .goals.landing .destination {min-height:clamp(128px,18dvh,145px)!important}
 }
