@@ -69,6 +69,15 @@ test('first generation writes the original MP3 exactly once and never upserts',a
   assert.equal(calls,1)
 })
 
+test('new Supabase secret keys go on apikey, never JWT Bearer Authorization',async()=>{
+  await saveCoachGreetingOnce({...config,secretKey:'sb_secret_0123456789'},'mira','ru',audio,
+    async(_url,init)=>{
+      assert.equal(init.headers.apikey,'sb_secret_0123456789')
+      assert.equal(init.headers.Authorization,undefined)
+      return new Response('{}',{status:201})
+    })
+})
+
 test('concurrent first write recognizes canonical object and missing secret denies writes',async()=>{
   const concurrent=await saveCoachGreetingOnce(config,'max','ru',audio,
     async()=>new Response('exists',{status:409}))
