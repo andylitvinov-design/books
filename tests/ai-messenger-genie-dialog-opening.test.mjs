@@ -10,16 +10,18 @@ test('genie dialogue opens in the established Messenger first turn, not a second
  assert.match(chat,/<MessengerAiLanding locale=\{locale\} composer=\{composer\}/);
  assert.match(landing,/data-hh-genie-scene/);
  assert.match(landing,/data-hh-ali-first-message/);
- assert.match(landing,/data-hh-genie-goal-choice="discover"/);
- assert.match(landing,/data-hh-genie-goal-choice="defined"/);
- assert.match(landing,/onGoalChoice\(locale===/);
+ assert.match(landing,/data-hh-genie-path-choice="therapy"/);
+ assert.match(landing,/data-hh-genie-path-choice="consultation"/);
+ assert.match(landing,/data-hh-genie-path-choice="goal"/);
+ assert.match(landing,/onJourneySelect\('therapy'\)/);
+ assert.match(chat,/onJourneySelect=\{startJourney\}/);
  assert.match(landing,/data-hh-ai-inline-composer>\{composer\}/);
  assert.match(landing,/data-hh-ai-persona-voice-play/);
  assert.match(landing,/playAliPersonaAudio\(persona.id,locale/);
  assert.match(landing,/data-hh-ai-chat-shortcuts/);
  assert.match(landing,/data-hh-alchemist-topics/);
- for(const label of ['Помоги найти цель','У меня уже есть цель','Help me find my goal',
-  'I already have a goal','Ayúdame a encontrar mi meta']){
+ for(const label of ['Поговорить','Разобраться','Достичь цели','Talk',
+  'Understand','Reach my goal','Hablar','Comprender','Lograr mi meta']){
   assert.ok(landing.includes(label),label);
  }
 });
