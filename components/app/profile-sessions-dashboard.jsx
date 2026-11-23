@@ -75,7 +75,7 @@ export default function ProfileSessionsDashboard({locale='en',savedSessions=[],s
     <span className={styles.orderBody}>
       <small className={styles.kind}>{t.tag}</small><strong>{orderTitle(order,lang,t.unknown)}</strong>
       {dateLabel(order.createdAt,lang)&&<small className={styles.date}><CalendarDays size={14} aria-hidden="true" />{dateLabel(order.createdAt,lang)}</small>}
-      {Number(order.newMessageCount)>0&&<small className={styles.messages}>{order.newMessageCount} {t.messages}</small>}
+      {Number(order.unread)>0&&<small className={styles.messages}>{order.unread} {t.messages}</small>}
     </span>
     <span className={styles.orderRight}><span className={closed?(order.status==='completed'?styles.completed:styles.pending):PENDING.has(order.status)?styles.pending:styles.inProgress}>
       {closed&&order.status==='completed'?<CheckCircle2 size={15} aria-hidden="true"/>:<Clock3 size={15} aria-hidden="true"/>}
