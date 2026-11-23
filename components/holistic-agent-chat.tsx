@@ -321,6 +321,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const [mode,setMode]=useState<Mode>("rules");
   const [journeyPath,setJourneyPath]=useState<JourneyPath|null>(null);
   const [journeyAction,setJourneyAction]=useState<string|null>(null);
+  const journeyPrefsRef=useRef({noAdvice:false,noQuestions:false});
   // Pro intentionally selects the already budget-gated Gemini FREE API, never Paid.
   const [proSelected,setProSelected]=useState(false);
   const [proConsent,setProConsent]=useState(false);
@@ -1129,6 +1130,15 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     const boundaryReply=reviewPracticeBoundary(text,turnLocale)?.reply||turnStarter.safety;
     if(!text||busy||(mode==="owned"&&!agree&&!(compact&&(testChatOpen||testOfferFromText(text))))||
       (judgmentChoice!==null&&judgmentClickLock.current))return;
+    // Session-only constraints survive the 12-turn provider-safe history window.
+    // They restrict replies; they are never consent to use private data.
+    if(journeyPath&&judgmentChoice===null){
+      const prefs=journeyPrefsRef.current;
+      if(/без советов|просто выслушай|без предложений|не предлагай|no advice|just listen|no offers|sin consejos|solo esc[uú]chame|sin ofertas/iu.test(text))prefs.noAdvice=true;
+      else if(/дай совет|можешь посоветовать|можно совет|give me advice|what do you recommend|dame un consejo|puedes aconsejarme/iu.test(text))prefs.noAdvice=false;
+      if(/без вопросов|не задавай вопросов|no questions|don't ask questions|sin preguntas|no me preguntes/iu.test(text))prefs.noQuestions=true;
+      else if(/можешь задать вопрос|давай вопросы|спроси меня|you can ask|ask me a question|puedes preguntar|hazme una pregunta/iu.test(text))prefs.noQuestions=false;
+    }
     alternativeAbortRef.current?.abort();alternativeAbortRef.current=null;
     lastAnswerRef.current=null;setAlternativeError("");
     if(judgmentChoice===null)setJourneyAction(null);
@@ -1385,7 +1395,9 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       // The existing sensitive-content boundary and signed choices still win.
       const selectedJourney=!leaveSupport&&journeyPath&&judgmentChoice===null&&
         !requiresProtectedReply(text,turnLocale)
-        ?threeJourneyTurn({path:journeyPath,message:text,locale:turnLocale,history:prior}):null;
+        ?threeJourneyTurn({path:journeyPath,message:text,locale:turnLocale,history:prior,
+          preferenceNoAdvice:journeyPrefsRef.current.noAdvice,
+          preferenceNoQuestions:journeyPrefsRef.current.noQuestions}):null;
       const friendReply=selectedJourney?null:supportSelection?.mode==="talk"&&judgmentChoice===null &&
         !requiresProtectedReply(text,turnLocale)
         ?friendConversationReply({message:text,locale:turnLocale,history:prior,tone:friendTone}):null;
@@ -1411,6 +1423,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       if(!stateTurn)nativeSession.current=null;
       const payload={locale:turnLocale,message:text,mode,history:prior,
           journeyPath:!leaveSupport?journeyPath:null,
+          journeyNoAdvice:journeyPath?journeyPrefsRef.current.noAdvice:false,
+          journeyNoQuestions:journeyPath?journeyPrefsRef.current.noQuestions:false,
           // Only explicit coaching choice in this first-party quiz sets the goal preference.
           // Safety, price and stop questions still override it server-side.
           selectedGoal:!leaveSupport&&supportSelection?.mode==="coach"
@@ -1709,7 +1723,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     }
     sendSelectedTurn(draft);
   }
-  function resetConversation(){setJourneyPath(null);setJourneyAction(null);setPsychInterview("off");setPsychStage("situation");setPsychSlots({});setPsychSummaryVisible(false);setPsychFinalSummary(null);setPsychCopyStatus("idle");nativeSession.current=null;voice.stopDialogue();lastSpeechTurn.current=null;alternativeAbortRef.current?.abort();alternativeAbortRef.current=null;lastAnswerRef.current=null;setAlternativeBusy(false);controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setSupportQuizOpen(false);setSupportSelection(null);setFriendTone("friendly");setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setTestFocus(null);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);setRecorderOpen(false);setVoicePermissionOpen(false);proAbort.current?.abort();proAbort.current=null;proTurns.current=[];
+  function resetConversation(){setJourneyPath(null);setJourneyAction(null);journeyPrefsRef.current={noAdvice:false,noQuestions:false};setPsychInterview("off");setPsychStage("situation");setPsychSlots({});setPsychSummaryVisible(false);setPsychFinalSummary(null);setPsychCopyStatus("idle");nativeSession.current=null;voice.stopDialogue();lastSpeechTurn.current=null;alternativeAbortRef.current?.abort();alternativeAbortRef.current=null;lastAnswerRef.current=null;setAlternativeBusy(false);controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setSupportQuizOpen(false);setSupportSelection(null);setFriendTone("friendly");setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setTestFocus(null);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);setRecorderOpen(false);setVoicePermissionOpen(false);proAbort.current?.abort();proAbort.current=null;proTurns.current=[];
     setProBusy(false);setProSelected(false);setProConsent(false);setProDataConsent(false);setGeminiAvailable(null);}
 
   useEffect(()=>{
