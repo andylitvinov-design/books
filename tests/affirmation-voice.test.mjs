@@ -133,7 +133,7 @@ test("all six voices can be selected and their real samples requested before phr
   assert.match(editor,/approvalPending\?\:boolean/);
   assert.match(editor,/disabled=\{busy\|\|disabled\} onClick=\{\(\)=>\{/);
   assert.doesNotMatch(editor,/disabled=\{busy\|\|disabled\|\|approvalPending\} onClick/);
-  assert.ok(editor.includes("disabled={!languageAvailable||!speechText||!consent||busy||mixing||disabled||approvalPending||Boolean(FISH_PUBLIC_VOICES.find(v=>v.id===voiceId)?.requiresProviderLicense)}"),"new Fish license gate extends rather than replaces consent/pending-state safeguards");
+  assert.ok(editor.includes("disabled={!languageAvailable||!speechText||!consent||busy||mixing||disabled||approvalPending||Boolean(FISH_PUBLIC_VOICES.find(v=>v.id===voiceId)?.requiresProviderLicense&&!fishLicensedIds.includes(voiceId))}"),"new Fish license gate extends rather than replaces consent/pending-state safeguards");
   for(const marker of ['data-video-affirmation-voice-preview={v.id}',
     'data-video-affirmation-sample-ready','mode:"sample",voiceId:id,language',
     'sampleCacheRef','sampleControllerRef','sampleAudioRef','aria-label={t.sample+" "+v.name[locale]}'])
@@ -161,7 +161,7 @@ test("voice browser opens the native Style disclosure and applies six Montage st
  const end=source.indexOf("// Real guest route browser acceptance",start);
  const flow=source.slice(start,end);
  const click=flow.indexOf("await mirror.locator('[data-hh-mirror-next]').click();");
- const ideas=flow.indexOf("await enterPersonalAfterMontageExtra(page)",click);
+ const ideas=flow.indexOf("await enterPersonalAfterMontageExtra(page,engine)",click);
  const goal=flow.indexOf('const ideasGoalPane=page.locator',ideas);
  const choices=flow.indexOf('await expect(goalChoices).toHaveCount(3)',goal);
  const goalSelected=flow.indexOf('data-video-ideas-goal-choice="rest"',choices);

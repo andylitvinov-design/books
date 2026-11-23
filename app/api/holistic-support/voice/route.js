@@ -7,7 +7,7 @@ import { readBody, PRIVATE_HEADERS, safeError } from '@/lib/app/http'
 import { VOICE_STUDIO_MODEL, VOICE_STUDIO_OPENROUTER_MODEL, VOICE_STUDIO_OPENROUTER_FREE_MODEL, voiceStudioReady, voiceStudioKey, voiceStudioOpenRouterKey, voiceStudioOpenRouterFreeKey, voiceStudioProviders, validateStudioRequest, buildStudioPayload, buildOpenRouterStudioPayload, buildOpenRouterFreePayload } from '@/lib/mandala/voice-studio.mjs'
 import { requestStudioAudio } from '@/lib/mandala/voice-studio-provider.mjs'
 import { requestOpenRouterStudioAudio } from '@/lib/mandala/voice-studio-openrouter-provider.mjs'
-import {fishConfig,fishLanguages,validateFishRequest} from '@/lib/mandala/voice-studio-fish.mjs'
+import {fishConfig,fishLanguages,validateFishRequest,FISH_PUBLIC_VOICES} from '@/lib/mandala/voice-studio-fish.mjs'
 import {requestFishWav,approvedFishReference} from '@/lib/mandala/voice-studio-fish-provider.mjs'
 
 export const runtime = 'nodejs'
@@ -23,6 +23,9 @@ const fail = (error, auth) => {
 export async function GET() {
   const fishAvailable=fishLanguages(process.env)
   const providers={...voiceStudioProviders(process.env),fish:fishAvailable.length>0}
+  const fishLicensedVoices=FISH_PUBLIC_VOICES.filter(v=>
+    fishAvailable.includes(v.language)&&Boolean(approvedFishReference(v.id,process.env)))
+    .map(v=>v.id)
   const configured = voiceStudioReady(process.env)||fishAvailable.length>0
   // Guest voices must reflect only provider routes that cannot bill.
   // The optional paid custom-voice provider never makes public samples ready.
@@ -37,7 +40,8 @@ export async function GET() {
     providers,
     languages,
     fishLanguages:fishAvailable,
-    fishLicenseHold:['fish-calm-meditation'],
+    fishLicensedVoices,
+    fishLicenseHold:FISH_PUBLIC_VOICES.filter(v=>v.requiresProviderLicense&&!fishLicensedVoices.includes(v.id)).map(v=>v.id),
     mode:'gemini-free-openrouter-free-fish-free-optional-paid',
     customRequiresSignIn:true,
     publicAffirmationsEnabled:publicFree,

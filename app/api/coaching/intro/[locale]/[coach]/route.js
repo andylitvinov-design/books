@@ -5,7 +5,7 @@ import {safeError} from '@/lib/app/http'
 import {AppError} from '@/lib/assessments/contracts'
 import {getCoachPresentation} from '@/lib/coaching/persona-presentations.mjs'
 import {coachOpeningIntro} from '@/lib/coaching/coach-opening-protocol.mjs'
-import {myCoachFishConfig,myCoachFishVoice} from '@/lib/coaching/my-coach-fish-voice.mjs'
+import {myCoachFishConfig,myCoachFishVoice,myCoachFishProsody} from '@/lib/coaching/my-coach-fish-voice.mjs'
 import {GOOGLE_PROVIDER,GOOGLE_TTS_GLOBAL_DAILY_LIMIT,googleChirpConfig,
   normalizeGoogleChirpInput,synthesizeGoogleChirp} from '@/lib/coaching/my-coach-google-chirp.mjs'
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
@@ -67,7 +67,7 @@ export async function GET(request){
     }
 
     const referenceId=myCoachFishVoice(personaId,locale)
-    if(!referenceId)throw new AppError('MY_COACH_INTRO_INVALID',400)
+    if(!referenceId)throw new AppError('MY_COACH_NATIVE_VOICE_NOT_APPROVED',503)
     const vendor=myCoachFishConfig()
     if(!vendor)throw new AppError('MY_COACH_NATURAL_VOICE_UNAVAILABLE',503)
     // Atomic DB limits on origin (uncached) requests, never per audio chunk.
@@ -81,7 +81,8 @@ export async function GET(request){
         headers:{Authorization:`Bearer ${vendor.key}`,
           'Content-Type':'application/json',Accept:'audio/mpeg',model:vendor.model},
         body:JSON.stringify({text:introduction,format:'mp3',reference_id:referenceId,
-          latency:'low',chunk_length:100}),
+          latency:'low',chunk_length:100,
+          ...(myCoachFishProsody(personaId,locale)?{prosody:myCoachFishProsody(personaId,locale)}:{})}),
       })
     }catch{throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)}
     const type=upstream.headers.get('content-type')||''
