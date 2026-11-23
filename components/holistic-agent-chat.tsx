@@ -17,6 +17,7 @@ import { prepareNaturalDialogue, finishNaturalDialogue } from "@/lib/holistic-su
 import type { PublicLocale } from "@/lib/public-locales";
 import { AXIS_REFS } from "@/lib/holistic-support/axis-offer-matcher.mjs";
 import { repairDialogueTopic } from "@/lib/holistic-support/dialogue-topic-repair.mjs";
+import { buildWaveGoalMenu, readWaveGoalMenu, waveGoalDialogueTurn } from "@/lib/holistic-support/wave-goal-dialogue.mjs";
 import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
 import { friendConversationReply } from "@/lib/holistic-support/friend-mind.mjs";
 import {wavePsychologistNativeTurn,wavePsychologistNativeSummary,
@@ -884,9 +885,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     if(busy)return;
     setPsychInterview("off");setPsychSlots({});setPsychSummaryVisible(false);setPsychFinalSummary(null);setPsychCopyStatus("idle");
     const prompt=choice.mode==="coach"
-      ?(locale==="ru"?"Какое изменение в этой теме было бы для вас самым важным?":
-        locale==="es"?"¿Qué cambio te importaría más en este tema?":
-          "What change would matter most to you in this area?")
+      ?buildWaveGoalMenu(({stress:"energy",relationships:"relationships",money:"money",business:"business"} as const)[choice.category],locale).reply
       :choice.mode==="talk"
         ?(locale==="ru"?"Можем просто поболтать — о радостях, переживаниях или о чём угодно. Что у тебя на душе?":
           locale==="es"?"Podemos charlar sin prisas, de lo bueno o lo difícil. ¿Qué tienes en mente?":
@@ -1374,6 +1373,19 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     const prior=previousTurns.map(row=>({
       role:row.role,text:row.role==="user"?row.text:row.text.slice(0,4000),
     })),abort=new AbortController();
+    // First-party goal/support navigation is deterministic for guests and signed-in users.
+    // Explicit private interview, media, booking, protected replies and signed choices retain precedence.
+    const goalNavigation=compact&&judgmentChoice===null&&!requiresProtectedReply(text,turnLocale)
+      ?waveGoalDialogueTurn({message:text,locale:turnLocale,history:prior,
+        allowNewGoal:!supportSelection||supportSelection.mode==="coach"}):null;
+    if(goalNavigation){
+      nativeSession.current=null;setDraft("");setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;
+      setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setNeedsPrivateSignIn(false);
+      setShowVideoSignIn(false);setEntryOpen(false);followTail.current=true;setNewBelow(false);
+      setMessages(prev=>[...prev,{role:"user" as const,text},{role:"assistant" as const,text:goalNavigation.reply}].slice(-30));
+      if(authenticated)void privateTranscript.savePair(text,goalNavigation.reply);
+      return;
+    }
     // Guest discovery uses public editorial rules, not private account APIs.
     if(compact&&!authenticated&&mode==="rules"){
       followTail.current=true;setNewBelow(false);setStatus("");setSource("");setChoices([]);
@@ -1666,8 +1678,24 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     }
   }
   function sendSelectedTurn(raw:string){
-    if(messengerView&&proSelected){void sendProTurn(raw);return;}
+    if(messengerView&&proSelected){
+      if(!proBusy&&!videoStep&&!contentStep&&!testChatOpen&&psychInterview==="off"&&waveGoalDialogueTurn({message:raw,locale,history:messages,allowNewGoal:!supportSelection||supportSelection.mode==="coach"})){void sendTurn(raw);return;}
+      void sendProTurn(raw);return;
+    }
     void sendTurn(raw);
+  }
+  function renderWaveGoalMenu(text:string,index:number){
+    const menu=readWaveGoalMenu(text);if(!menu)return null;
+    return <div className={styles.assistant} data-hh-wave-goal-menu style={{minWidth:0,display:"grid",gap:10}}>
+      <span>{menu.intro}</span><strong>{menu.question}</strong>
+      <div role="group" aria-label={menu.question} style={{display:"grid",gap:7}}>
+        {menu.stages.map((label:string,i:number)=><button key={i} type="button" data-hh-wave-goal-step={i+1}
+          disabled={busy||proBusy||index!==messages.length-1} onClick={()=>void sendTurn(label)}
+          style={{display:"flex",alignItems:"center",gap:9,textAlign:"start",minHeight:44,padding:"9px 10px",border:"1px solid #D5E5DB",borderRadius:12,background:"#F1F6F0",color:"#164D40",font:"inherit",fontWeight:600,whiteSpace:"normal",overflowWrap:"anywhere"}}>
+          <span aria-hidden="true" style={{flexShrink:0,background:"#E1EDE3",borderRadius:8,padding:"5px 7px"}}>{String(i+1).padStart(2,"0")}</span><span>{label}</span>
+        </button>)}
+      </div><span data-hh-wave-goal-closing>{menu.closing}</span>
+    </div>;
   }
   function submit(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -2092,7 +2120,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         <div key={index} className={styles.messageWithAvatar} data-hh-ai-assistant-message>
           <img src={persona.image||"/images/holistic-house/reiki-approved-sunrise-v3.webp"}
             width={37} height={37} loading="lazy" alt="" className={styles.messagePortrait}/>
-          <p className={styles.assistant}>{m.variant==="alternative"&&<strong className={styles.alternativeLabel}>{locale==="ru"?"Альтернативный ответ · AI на устройстве":locale==="es"?"Respuesta alternativa · IA en el dispositivo":"Alternative answer · On-device AI"}{"\n"}</strong>}{m.text}</p>
+          {renderWaveGoalMenu(m.text,index)??<p className={styles.assistant}>{m.variant==="alternative"&&<strong className={styles.alternativeLabel}>{locale==="ru"?"Альтернативный ответ · AI на устройстве":locale==="es"?"Respuesta alternativa · IA en el dispositivo":"Alternative answer · On-device AI"}{"\n"}</strong>}{m.text}</p>}
           {voiceEnabled&&<button type="button" data-hh-voice-turn={index}
             aria-label={voice.t.play} title={voice.t.play}
             disabled={!voice.playbackConsent||!voice.supported}
