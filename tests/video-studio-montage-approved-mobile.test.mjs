@@ -46,8 +46,10 @@ test('photo options disclose unavailable AI, enforce rights and do not silently 
   assert.match(step,/montagePhotoChoice==="coach"&&\(!montageCoachPhoto\|\|!photoUrl\)/);
   assert.match(step,/Photo-mode XP is indicative/);
   assert.doesNotMatch(step,/postVideoCreditAction\(|heygen\.ai\/v\d/i);
-  assert.match(studio,/fetch\("\/images\/holistic-house\/my-coach-motion\/"\+id\+"-still\.webp"/);
-  assert.match(studio,/selectNativePhoto\(new File\(\[blob\],id\+"-coach\.webp"/);
+  assert.match(studio,/image\.src="\/images\/holistic-house\/my-coach-motion\/"\+id\+"-still\.webp"/);
+  assert.match(studio,/canvas\.toBlob\(resolve,"image\/jpeg",0\.9\)/);
+  assert.match(studio,/selectNativePhoto\(new File\(\[blob\],id\+"-coach\.jpg"/);
+  assert.doesNotMatch(studio,/\bfetch\s*\(/,'editor retains no direct fetch call');
 });
 test('Montage Audio has one-row music filters and readable rows without album art',()=>{
   const start=studio.indexOf('data-video-montage-audio-columns>');

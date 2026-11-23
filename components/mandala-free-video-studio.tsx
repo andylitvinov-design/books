@@ -2252,13 +2252,28 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const pickMontageCoachPhoto=async (id:"mira"|"max"|"sofia"|"alex")=>{
     if(recording||preparing||photoPending)return;
     try{
-      const response=await fetch("/images/holistic-house/my-coach-motion/"+id+"-still.webp",
-        {credentials:"same-origin",cache:"force-cache"});
-      if(!response.ok)throw new Error("COACH_PHOTO_UNAVAILABLE");
-      const blob=await response.blob();
-      if(blob.type!=="image/webp"||blob.size<128||blob.size>2_000_000)
-        throw new Error("COACH_PHOTO_INVALID");
-      selectNativePhoto(new File([blob],id+"-coach.webp",{type:"image/webp"}));
+      // Same-origin first-party poster, decoded locally; never calls a provider.
+      const image=new Image();
+      image.decoding="async";
+      image.src="/images/holistic-house/my-coach-motion/"+id+"-still.webp";
+      if(typeof image.decode==="function")await image.decode();
+      else if(!image.complete||!image.naturalWidth){
+        await new Promise<void>((resolve,reject)=>{
+          image.onload=()=>resolve();image.onerror=()=>reject(new Error("COACH_IMAGE_LOAD_FAILED"));
+        });
+      }
+      if(image.naturalWidth<1||image.naturalHeight<1)throw new Error("COACH_IMAGE_INVALID");
+      const scale=Math.min(1,900/Math.max(image.naturalWidth,image.naturalHeight));
+      const canvas=document.createElement("canvas");
+      canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));
+      canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));
+      const context=canvas.getContext("2d");
+      if(!context)throw new Error("COACH_IMAGE_CANVAS_UNAVAILABLE");
+      context.drawImage(image,0,0,canvas.width,canvas.height);
+      const blob=await new Promise<Blob|null>(resolve=>canvas.toBlob(resolve,"image/jpeg",0.9));
+      canvas.width=0;canvas.height=0;
+      if(!blob||blob.size<128||blob.size>2_000_000)throw new Error("COACH_IMAGE_INVALID");
+      selectNativePhoto(new File([blob],id+"-coach.jpg",{type:"image/jpeg"}));
       setMontageCoachPhoto(id);setMontagePhotoChoice("coach");setMontageLibraryTab("coaches");
       setPhotoConsent(true);setNotice("");
     }catch{
