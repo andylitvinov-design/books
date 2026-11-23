@@ -124,7 +124,7 @@ function validNativeSession(value) {
 function inputOf(body) {
   onlyKeys(body,["locale","message","history","mode","ownedInferenceConsent","selectedGoal",
     "chosenAxes","usePrivateProfile","usePrivateHistory","preferredFormat","feedback","useAgentMemory",
-    "judgmentContext","judgmentChoice","nativeSession","companionMode","companionTone","journeyPath"]);
+    "judgmentContext","judgmentChoice","nativeSession","companionMode","companionTone","journeyPath","journeyNoAdvice","journeyNoQuestions"]);
   if (!LOCALES.has(body.locale) || typeof body.message !== "string" ||
     !body.message.trim() || body.message.length > 3000 ||
     !MODES.has(body.mode) || typeof body.ownedInferenceConsent !== "boolean" ||
@@ -139,6 +139,8 @@ function inputOf(body) {
     (body.feedback !== undefined && !validFeedback(body.feedback)) ||
     (body.journeyPath !== undefined && body.journeyPath !== null &&
       !["therapy","consultation","goal"].includes(body.journeyPath)) ||
+    (body.journeyNoAdvice !== undefined && typeof body.journeyNoAdvice !== "boolean") ||
+    (body.journeyNoQuestions !== undefined && typeof body.journeyNoQuestions !== "boolean") ||
     (body.companionMode !== undefined && body.companionMode !== null && body.companionMode !== "friend") ||
     (body.companionTone !== undefined && body.companionTone !== null &&
       (!["friendly","confiding","tender"].includes(body.companionTone) || body.companionMode !== "friend")) ||
@@ -410,7 +412,9 @@ export async function POST(request) {
       body.companionMode==null &&
       (!nativeFrame || stateEvent?.type==="ordinary")
       ?threeJourneyTurn({path:body.journeyPath,message:body.message,
-          history:body.history,locale:body.locale}):null;
+          history:body.history,locale:body.locale,
+          preferenceNoAdvice:body.journeyNoAdvice===true,
+          preferenceNoQuestions:body.journeyNoQuestions===true}):null;
     if(scopedJourney)return await finish({
       status:"clarify",reply:scopedJourney.reply,modelUsed:false,
       source:scopedJourney.version,memorySaved:false,userAuthorized:true,
