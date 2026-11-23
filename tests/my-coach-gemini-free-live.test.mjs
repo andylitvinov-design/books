@@ -7,10 +7,12 @@ import {GEMINI_FREE_LIVE_MODEL,GEMINI_FREE_LIVE_MAX_SECONDS,geminiFreeLiveConfig
  geminiFreeLiveCheckpoint} from '../lib/coaching/gemini-live-free.mjs'
 import {GEMINI_LIVE_WEBSOCKET,GEMINI_LIVE_INPUT_RATE,GEMINI_LIVE_OUTPUT_RATE,
  GeminiLivePcmPlayer,GeminiLivePcmResampler,GeminiLiveBargeGate,GeminiLiveBargeDetector,geminiLiveSocketUrl,
- geminiLiveSetupMessage,geminiLivePcmMessage,geminiLiveTextMessage,
+ geminiLiveSetupMessage,geminiLivePcmMessage,geminiLiveTextMessage,geminiLiveStartMessage,
+ geminiLiveContextMessage,geminiLiveDirectorMessage,
  base64ToPcmFloats,bytesToBase64,readGeminiLiveServerMessage,
  appendGeminiLiveTranscript} from '../lib/coaching/gemini-live-transport.mjs'
 import {GEMINI_COACH_VOICE_OPTIONS} from '../lib/coaching/gemini-voice-catalog.mjs'
+import {coachLiveMemoryNote,coachLiveApprovedAxes} from '../lib/coaching/coach-live-memory-note.mjs'
 
 const key='AIza'+'A'.repeat(36)
 const free={
@@ -35,8 +37,8 @@ test('Free Live cannot use Paid key or be enabled without all the privacy gates'
  assert.equal(geminiFreeLiveConfig(free).model,GEMINI_FREE_LIVE_MODEL)
  assert.equal(GEMINI_FREE_LIVE_MAX_SECONDS,1200)
 })
-test('all ten personas, four locked voices, RU/EN/ES and separate audio-training consent',()=>{
- assert.equal(Object.keys(GEMINI_COACH_VOICE_OPTIONS).length,10)
+test('all eleven personas, four locked voices, RU/EN/ES and separate audio-training consent',()=>{
+ assert.equal(Object.keys(GEMINI_COACH_VOICE_OPTIONS).length,11)
  for(const personaId of Object.keys(GEMINI_COACH_VOICE_OPTIONS))
  for(const locale of ['ru','en','es'])
  for(const voiceName of GEMINI_COACH_VOICE_OPTIONS[personaId]){
@@ -192,6 +194,10 @@ test('discarded speaker frames cannot repopulate captions or create a completed 
  const wrapper=runInNewContext(src+'\nhandleAudio',{
   readGeminiLiveServerMessage:frame=>frame,phaseChange:()=>{},deliverReviewedMemory:()=>{},
   appendGeminiLiveTranscript,
+  queueLivePart:(_r,value)=>{pcm.push(value);return 'queued'},
+  finishAudibleTurn:state=>{
+    if(!state.player.playing&&state.outputText){final.push(state.outputText);state.outputText=''}
+  },
   propsRef:{current:{onOutputInterim:value=>interim.push(value)}},
   commitInput:state=>{heardUser.push(state.inputText);state.inputText=''},
   commitOutput:state=>{if(state.outputText)final.push(state.outputText);state.outputText=''},
@@ -359,33 +365,227 @@ test('legacy archived name/topic never enters the Free token/setup or onward gui
  assert.doesNotMatch(local.guidance,/Q831|P942/)
 })
 
-test('Free Live widget never forwards a staged memory note and retains normal WebSocket traffic',()=>{
+test('Free Live uses only provider-granted context, never raw client memory props',()=>{
  const live=load('components/my-coach-gemini-live.jsx')
  const ui=load('components/my-coach-live-dialogue.jsx')
  const token=live.split('async function getToken(r){')[1].split('async function begin(')[0]
  assert.doesNotMatch(token,/openingPrior|allowOpeningPrior/)
- assert.doesNotMatch(live,/memoryNote|memoryScopes|geminiLiveContextMessage|deliverReviewedMemory/)
+ assert.doesNotMatch(live,/memoryNote|memoryScopes|deliverReviewedMemory/)
+ assert.match(live,/fetch\('\/api\/app\/my-coach\/live-context'/)
+ assert.match(live,/r\.contextVersion!==revisionAtRequest/)
+ assert.match(live,/r\.pendingContext=result\.note/)
  assert.doesNotMatch(ui,/memoryNote=|memoryScopes=|coachLiveMemoryNote/)
+ assert.match(ui,/liveContextAccess=\{liveContextAccess\}/)
  assert.match(live,/fetch\('\/api\/app\/my-coach\/live-checkpoint'/)
  assert.match(live,/openingPrior:p\.openingPrior/)
  assert.match(ui,/memoryStageToken:stagedMemory\.stageToken/,
   'non-Live engines retain the existing staged server memory contract')
  const socketCalls=[...live.matchAll(/sendSocket\(r,([^\n]+)/g)].map(match=>match[1].trim())
- assert.deepEqual(socketCalls,['packet){','geminiLivePcmMessage(pcm))','setup)','geminiLiveTextMessage(body)))return false'])
+ assert.equal(socketCalls.filter(value=>value.startsWith('geminiLiveStartMessage()')).length,1)
+ assert.ok(socketCalls.some(value=>value.startsWith('geminiLivePcmMessage(pcm)')))
+ assert.ok(socketCalls.some(value=>value.startsWith('geminiLiveTextMessage(body)')))
+ assert.match(live,/const packet=geminiLiveContextMessage\(r\.pendingContext\)/)
+ assert.match(live,/const packet=geminiLiveDirectorMessage\(r\.pendingDirectorHint\)/)
+ assert.ok(socketCalls.some(value=>value.startsWith('packet))')))
+ assert.ok(!socketCalls.some(value=>/memoryNote/.test(value)))
  const src=live.slice(live.indexOf('  function handleAudio('),live.indexOf('  function capture('))
  const phases=[], traffic=[], outputs=[]
- const r={ended:false,ready:false,inputText:'',outputText:'',
+ const r={ended:false,ready:false,introSent:false,sessionStarted:false,inputText:'',outputText:'',
   socket:{send:packet=>traffic.push(packet)},audioGate:{accept:()=>true},player:{playing:false}}
  const wrapper=runInNewContext(src+'\nhandleAudio',{
   readGeminiLiveServerMessage:frame=>frame,phaseChange:phase=>phases.push(phase),
+  finishAudibleTurn:state=>{
+    if(!state.player?.playing){outputs.push('complete');phases.push('listening')}
+  },
+  geminiLiveStartMessage:()=>({clientContent:{turns:[{role:'user',parts:[{text:'APP START'}]}],turnComplete:true}}),
+  setTimeout:()=>1,
   commitOutput:()=>outputs.push('complete'),propsRef:{current:{
+   onSessionStart:()=>{},
    memoryNote:'Synthetic Staged Goal N583',memoryScopes:['goals:career']}},
-  sendSocket:(_runtime,packet)=>traffic.push(packet),
+  sendSocket:(_runtime,packet)=>{traffic.push(packet);return true},
  },{timeout:1000})
  wrapper(r,{setupComplete:true})
  wrapper(r,{turnComplete:true})
  assert.equal(r.ready,true)
- assert.deepEqual(phases,['listening','listening'])
+ assert.deepEqual(phases,['thinking','listening'])
  assert.deepEqual(outputs,['complete'])
- assert.deepEqual(traffic,[])
+ assert.deepEqual(traffic,[{clientContent:{
+   turns:[{role:'user',parts:[{text:'APP START'}]}],turnComplete:true}}])
+})
+
+test('Play emits one marked app cue but never fabricated visitor consent',()=>{
+ const cue=geminiLiveStartMessage()
+ assert.deepEqual(Object.keys(cue),['clientContent'])
+ assert.equal(cue.clientContent.turnComplete,true)
+ assert.equal(cue.clientContent.turns.length,1)
+ const speech=cue.clientContent.turns[0].parts[0].text
+ assert.match(speech,/APPLICATION START EVENT/)
+ assert.match(speech,/NOT HUMAN SPEECH OR CONSENT/)
+ assert.match(speech,/first invitation question/)
+ assert.doesNotMatch(speech,/previous goal|private session|account ID|API key/i)
+ const client=load('components/my-coach-gemini-live.jsx')
+ assert.match(client,/if\(!r\.introSent\)/)
+ assert.match(client,/sendSocket\(r,geminiLiveStartMessage\(\)\)/)
+ assert.match(client,/r\.sessionStarted=true/)
+})
+test('server turnComplete waits for audible PCM tail onended before transcript final',()=>{
+ const client=load('components/my-coach-gemini-live.jsx')
+ const body=client.slice(client.indexOf('  function finishAudibleTurn('),
+   client.indexOf('  function maybeReconnectOnGoAway('))
+ assert.ok(body.includes('r.player?.playing'))
+ const committed=[]
+ const finish=runInNewContext(body+'\nfinishAudibleTurn',{
+   commitOutput:state=>{committed.push({text:state.outputText,interrupted:state.interrupted});state.outputText=''},
+   phaseChange:()=>{},
+   flushSideband:()=>{},
+   maybeReconnectOnGoAway:()=>{throw Error('unexpected reconnect')},
+ },{timeout:1000})
+ const state={ended:false,modelTurnComplete:true,pendingAudio:[],hadAudio:true,
+   outputWithoutAudio:false,outputText:'Words scheduled but not heard yet',
+   interrupted:false,reconnectSoon:false,player:{playing:true}}
+ finish(state)
+ assert.equal(committed.length,0)
+ state.player.playing=false
+ finish(state)
+ assert.equal(committed.length,1)
+ assert.equal(committed[0].interrupted,false)
+ finish(state)
+ assert.equal(committed.length,1)
+ const neverHeard={...state,modelTurnComplete:true,outputText:'No PCM',
+  hadAudio:false,interrupted:false,player:{playing:false}}
+ finish(neverHeard)
+ assert.equal(committed.at(-1).interrupted,true)
+})
+test('iPhone audio resume and bounded network backpressure are wired',()=>{
+ const live=load('components/my-coach-gemini-live.jsx')
+ const worklet=load('public/audio/my-coach-gemini-live-worklet.js')
+ assert.match(worklet,/Float32Array\(1536\)/)
+ assert.doesNotMatch(worklet,/Float32Array\(2048\)/)
+ assert.match(live,/data-coach-live-resume-audio/)
+ assert.match(live,/r\.context\.resume\?\.\(\)/)
+ assert.match(live,/r\.pendingAudio\.length>=24/)
+ assert.match(live,/r\.backpressureChunks>30/)
+ assert.match(live,/r\.modelTurnComplete=true\s+finishAudibleTurn\(r\)/)
+ assert.match(live,/if\(r\.modelTurnComplete\)finishAudibleTurn\(r\)/)
+})
+
+test('meaning axes are withheld from Gemini until separate opt-in, with null never zero',()=>{
+ const ids=['anchor','connection','freedom','agency','love','dignity','self-realization','recognition']
+ const axes=ids.map((id,i)=>({id,current:i,desired:i===4?null:Math.min(10,i+2),
+   status:i===4?'partial':'present',source:'client_reviewed_dialogue',
+   updatedAt:'2026-11-21T12:00:00Z'}))
+ const personal={profile:{preferredLanguage:'ru'},
+   profileAudit:{version:'hh-coach-profile-intake-v2',status:'available',completeArchive:true,axes},
+   context:{items:[]}}
+ const off=coachLiveMemoryNote({personal,profileAllowed:true,axesAllowed:false})
+ assert.doesNotMatch(off,/meaning_axes/)
+ const on=coachLiveMemoryNote({personal,profileAllowed:true,axesAllowed:true})
+ assert.match(on,/meaning_axes/)
+ assert.match(on,/"current":0/)
+ assert.match(on,/"desired":null/)
+ assert.equal(coachLiveApprovedAxes({...personal.profileAudit,axes:axes.slice(1)}),null)
+ assert.equal(coachLiveApprovedAxes({...personal.profileAudit,completeArchive:false}),null,
+   'bounded unknown archive is not a model-verified profile')
+ const packet=geminiLiveContextMessage(on)
+ assert.equal(packet.clientContent.turnComplete,false)
+ assert.throws(()=>geminiLiveContextMessage('unsanctioned raw client details'))
+ const next=geminiLiveDirectorMessage('Required opening: ask the client their preferred name')
+ assert.equal(next.clientContent.turnComplete,false)
+ assert.match(next.clientContent.turns[0].parts[0].text,/APPLICATION DIRECTOR CHECKPOINT/)
+ const opening=load('lib/coaching/coach-opening-protocol.mjs')
+ assert.match(opening,/Self-realization, Recognition/)
+ assert.doesNotMatch(opening,/Self-realization, Meaning/)
+})
+test('signed owner-scoped Live memory service rejects fake data, wrong account and missing consent',async()=>{
+ const src=load('lib/app/my-coach-live-context.js')
+  .replace(/^import[^\n]*\n/gm,'').replace(/^export /gm,'')
+ class Err extends Error{constructor(code,status){super(code);this.status=status}}
+ const onlyKeys=(obj,keys)=>{
+  if(Object.keys(obj).some(key=>!keys.includes(key)))throw new Err('INVALID_FIELDS',400)
+ }
+ const service=runInNewContext(src+'\nreadMyCoachLiveContext',{
+  AppError:Err,onlyKeys,
+  verifyCoachMemoryTicket:(token,args)=>args.accountId==='client-A'&&
+   args.provider==='gemini_free'&&(token==='prior-ticket'||(!args.requirePrior&&token==='basic-ticket')),
+  geminiFreeLiveConfig:()=>({provider:'gemini_live_free'}),
+  coachLiveMemoryNote,coachLiveMemoryScopes:()=>[],
+ },{timeout:1000})
+ const axes=['anchor','connection','freedom','agency','love','dignity','self-realization','recognition']
+  .map((id,i)=>({id,current:i,desired:i+2,status:'present',
+   source:'client_reviewed_dialogue',updatedAt:'2026-11-21T12:00:00Z'}))
+ const reads=[]
+ const readStaged=async(_cfg,_actor,body)=>{
+  reads.push(body)
+  return body.stage==='identity'
+   ?{prior:{hasPreviousSession:true,preferredName:'Anna',
+     previous:[{topic:'Career goal',clientConclusions:'Reviewed last goal',
+       provenance:'client_reviewed_dialogue',date:'2026-11-21'}]}}
+   :{profile:{preferredLanguage:'ru'},profileAudit:{
+      version:'hh-coach-profile-intake-v2',status:'available',completeArchive:true,axes},
+      context:{items:[{kind:'goals',sourceKind:'saved_life_plan',text:'Reviewed chosen action'}]}}
+ }
+ const actor={id:'client-A'},config={encryptionKey:'fixture-key'}
+ const consent={priorSessions:true,goals:true,profile:true,assessments:false,axes:false}
+ const body={stage:'personal',stageToken:'prior-ticket',shareApproved:true,
+  consent,continuity:'previous',topicKey:'career_business'}
+ const first=await service(config,actor,body,{}, {readStaged})
+ assert.equal(first.available,true)
+ assert.match(first.note,/Reviewed chosen action/)
+ assert.match(first.note,/Reviewed last goal/)
+ assert.doesNotMatch(first.note,/meaning_axes/)
+ assert.equal(reads.length,2)
+ const second=await service(config,actor,{...body,consent:{...consent,axes:true}},{},{readStaged})
+ assert.match(second.note,/meaning_axes/)
+ await assert.rejects(service(config,actor,{...body,shareApproved:false},{},{readStaged}),/CONSENT_REQUIRED/)
+ await assert.rejects(service(config,{id:'client-B'},body,{},{readStaged}),/MY_COACH_MEMORY_STAGE_REQUIRED/)
+ await assert.rejects(service(config,actor,{...body,stageToken:'basic-ticket'},{},{readStaged}),/MY_COACH_MEMORY_STAGE_REQUIRED/)
+ await assert.rejects(service(config,actor,{...body,axesRaw:axes},{},{readStaged}),/INVALID_FIELDS/)
+ await assert.rejects(service(config,actor,{...body,consent:{...consent,axes:true,profile:false}},{},{readStaged}),/MY_COACH_LIVE_CONTEXT_INVALID/)
+ const route=load('app/api/app/my-coach/live-context/route.js')
+ assert.match(route,/requireSameOrigin\(request,config\)/)
+ assert.match(route,/await auth\.verified\(\)/)
+ assert.match(route,/PRIVATE_HEADERS/)
+ assert.doesNotMatch(route,/console\.log|\.send\(/)
+})
+test('Director guidance and consented references never interrupt human speech; revocation closes Live',()=>{
+ const live=load('components/my-coach-gemini-live.jsx')
+ const ui=load('components/my-coach-live-dialogue.jsx')
+ const consent=load('components/my-coach-staged-memory-controls.jsx')
+ assert.match(live,/r\.lastAssistantTurnFinished&&!r\.speaking/)
+ assert.match(live,/!r\.bargeDetector\.userActive/)
+ assert.match(live,/ticket===r\.checkpointSerial/)
+ assert.match(live,/r\.contextVersion!==revisionAtRequest/)
+ assert.match(live,/notify\(t\.contextRevoked\);stop\(\)/)
+ assert.match(live,/r\.contextSentKey!==liveContextAccess/)
+ assert.match(ui,/shareApproved:true,consent:liveContextConsent/)
+ assert.match(consent,/data-coach-prior-provider-sharing/)
+ assert.match(consent,/data-coach-axes-provider-sharing/)
+ assert.match(consent,/setSharePersonal\(false\);setShareAxes\(false\)/)
+})
+
+test('catalog session entries load a new document with the session voice policy',()=>{
+ const catalog=load('components/my-coach-catalog.jsx')
+ const entryTags=[...catalog.matchAll(/<(a|Link)\b[^<>]*href=\{(?:startHref|coachSessionHref\(lang, persona\.id, normalizeCoachSettings\(persona\.id\)\))\}[^<>]*>/g)]
+ assert.equal(entryTags.length,4,'hero Talk, plan, persona card and legacy Start are session links')
+ for(const [tag,name] of entryTags){
+  assert.equal(name,'a','Next Link retains the catalog microphone/CSP policy')
+  assert.doesNotMatch(tag,/onClick|prefetch/)
+ }
+})
+
+test('self-saved owner profile scores require specific Gemini Live axes opt-in',()=>{
+ const ids=['anchor','connection','freedom','agency','love','dignity','self-realization','recognition']
+ const axes=ids.map((id,i)=>({id,current:i,desired:Math.min(10,i+2),
+  status:'present',source:i===1?'combined_owner_sources':'owner_saved_profile',
+  updatedAt:'2026-11-22T17:00:00.000Z'}))
+ const personal={profileAudit:{version:'hh-coach-profile-intake-v2',
+  status:'available',completeArchive:true,axes},context:{items:[]}}
+ assert.equal(coachLiveMemoryNote({personal,profileAllowed:true,axesAllowed:false}),'')
+ const permitted=coachLiveMemoryNote({personal,profileAllowed:true,axesAllowed:true})
+ assert.match(permitted,/meaning_axes/)
+ assert.match(permitted,/owner_saved_profile/)
+ assert.match(permitted,/combined_owner_sources/)
+ assert.equal(coachLiveApprovedAxes({...personal.profileAudit,axes:axes.map(a=>
+  a.id==='anchor'?{...a,source:'ai_only'}:a)}),null)
+ assert.equal(coachLiveApprovedAxes({...personal.profileAudit,completeArchive:false}),null)
 })

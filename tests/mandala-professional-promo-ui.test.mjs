@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {requiresRealMediaWebKit} from '../lib/ci/merge-check-light.mjs';
 const component=readFileSync('components/mandala-professional-promo.tsx','utf8');
 const css=readFileSync('components/mandala-professional-promo.module.css','utf8');
 test('UI reuses the professional source-safe director and only proposes a draft',()=>{
@@ -27,8 +28,8 @@ const liveStudio=readFileSync('components/mandala-free-video-studio.tsx','utf8')
 const parent=readFileSync('components/mandala-meditation-client.tsx','utf8');
 test('professional card is wired to the existing local four-MP4 editor',()=>{
   assert.ok(parent.includes('professionalSource={professionalSource} professionalMode={professionalMode}'));
-  assert.ok(liveStudio.includes('professionalMode ? <MandalaProfessionalPromo'));
-  assert.ok(liveStudio.includes('presets={FREE_FILM_PRESETS} scenes={FREE_FILM_CATALOG}'));
+  assert.ok(liveStudio.includes('(professionalMode||reelModeActive) ? <MandalaProfessionalPromo'));
+  assert.ok(liveStudio.includes('presets={aspectFilmPresets} scenes={FREE_FILM_CATALOG}'));
   assert.ok(liveStudio.includes('publicOffer={professionalSource?.publicOffer ?? null}'));
   assert.ok(liveStudio.includes('existing.clips.join("|")!==proposal.montage.sceneIds.join("|")'));
   assert.ok(liveStudio.includes('applyAutoFilm(presetId,seconds,undefined,outputAspect)'), 'current director keeps edit argument before aspect');
@@ -43,7 +44,9 @@ test('shot keys are stable and public catalog arrays are readonly-safe',()=>{
 
 test('professional video branch executes real macOS WebKit rather than a skipped optional media gate',()=>{
   const workflow=readFileSync('.github/workflows/holistic-support-mandala.yml','utf8');
-  assert.ok(workflow.includes("startsWith(github.head_ref, 'feat/video-') || github.head_ref == 'codex/professional-growth-templates-20261031'"));
+  assert.match(workflow,/needs\.webkit_preflight\.outputs\.media_required == 'true'/);
+  assert.match(workflow,/requiresRealMediaWebKit\(changed\)/);
+  assert.equal(requiresRealMediaWebKit([{status:'M',filename:'components/mandala-free-video-studio.tsx'}]),true);
   assert.ok(!workflow.includes("startsWith(github.head_ref, 'feat/video-' ||"),'startsWith argument must close before separate branch match');
   assert.ok(workflow.includes('voice-webkit-macos:'));
   assert.ok(workflow.includes('runs-on: macos-15'));

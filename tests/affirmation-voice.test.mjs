@@ -133,7 +133,7 @@ test("all six voices can be selected and their real samples requested before phr
   assert.match(editor,/approvalPending\?\:boolean/);
   assert.match(editor,/disabled=\{busy\|\|disabled\} onClick=\{\(\)=>\{/);
   assert.doesNotMatch(editor,/disabled=\{busy\|\|disabled\|\|approvalPending\} onClick/);
-  assert.ok(editor.includes("disabled={!languageAvailable||!speechText||!consent||busy||mixing||disabled||approvalPending||Boolean(FISH_PUBLIC_VOICES.find(v=>v.id===voiceId)?.requiresProviderLicense)}"),"new Fish license gate extends rather than replaces consent/pending-state safeguards");
+  assert.ok(editor.includes("disabled={!languageAvailable||!speechText||!consent||busy||mixing||disabled||approvalPending||Boolean(FISH_PUBLIC_VOICES.find(v=>v.id===voiceId)?.requiresProviderLicense&&!fishLicensedIds.includes(voiceId))}"),"new Fish license gate extends rather than replaces consent/pending-state safeguards");
   for(const marker of ['data-video-affirmation-voice-preview={v.id}',
     'data-video-affirmation-sample-ready','mode:"sample",voiceId:id,language',
     'sampleCacheRef','sampleControllerRef','sampleAudioRef','aria-label={t.sample+" "+v.name[locale]}'])
@@ -156,12 +156,12 @@ test("all six voices can be selected and their real samples requested before phr
 });
 
 
-test("voice browser opens Ideas and applies six visible Montage styles with decoded playback",()=>{
+test("voice browser opens the native Style disclosure and applies six Montage styles with decoded playback",()=>{
  const start=source.indexOf("async function verifyWorkspaceHydration");
  const end=source.indexOf("// Real guest route browser acceptance",start);
  const flow=source.slice(start,end);
  const click=flow.indexOf("await mirror.locator('[data-hh-mirror-next]').click();");
- const ideas=flow.indexOf('data-active-workspace","phrases"',click);
+ const ideas=flow.indexOf("await enterPersonalAfterMontageExtra(page,engine)",click);
  const goal=flow.indexOf('const ideasGoalPane=page.locator',ideas);
  const choices=flow.indexOf('await expect(goalChoices).toHaveCount(3)',goal);
  const goalSelected=flow.indexOf('data-video-ideas-goal-choice="rest"',choices);
@@ -170,13 +170,17 @@ test("voice browser opens Ideas and applies six visible Montage styles with deco
  const mood=flow.indexOf('data-video-personalization-choice="desired-calm"',personal);
  const energy=flow.indexOf('data-video-personalization-energy="5"',mood);
  const montage=flow.indexOf('await montage.tap()',energy);
- const style=flow.indexOf('const styles=page.locator("[data-video-montage-style]")',montage);
+ const disclosure=flow.indexOf('const moreStyles=page.locator("[data-video-montage-more-styles]")',montage);
+ const disclosureTap=flow.indexOf('await moreStyles.locator("summary").tap()',disclosure);
+ const disclosureOpen=flow.indexOf('await expect(moreStyles).toHaveAttribute("open","")',disclosureTap);
+ const style=flow.indexOf('const styles=moreStyles.locator("[data-video-montage-style]")',disclosureOpen);
  const six=flow.indexOf('await expect(styles).toHaveCount(6)',style);
  const selected=flow.indexOf('await minimal.tap()',six);
  const reflected=flow.indexOf('data-video-preview-style","minimal"',selected);
  const decoded=flow.indexOf('video.readyState>=2&&video.videoWidth>0',reflected);
- assert.ok(start>=0&&end>start&&click>=0&&ideas>click&&goal>ideas&&choices>goal&&goalSelected>choices&&next>goalSelected&&personal>next&&mood>personal&&energy>mood&&montage>energy&&style>montage&&six>style&&selected>six&&reflected>selected&&decoded>reflected,
+ assert.ok(start>=0&&end>start&&click>=0&&ideas>click&&goal>ideas&&choices>goal&&goalSelected>choices&&next>goalSelected&&personal>next&&mood>personal&&energy>mood&&montage>energy&&disclosure>montage&&disclosureTap>disclosure&&disclosureOpen>disclosureTap&&style>disclosureOpen&&six>style&&selected>six&&reflected>selected&&decoded>reflected,
    "real leisure Goal, mood and energy selections precede six Montage styles and decoded MP4");
+ assert.match(source,/async function enterPersonalAfterMontageExtra\(page,engine="chromium"\)/);
  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
  assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
  assert.match(source,/voiceOptions\.locator\(":scope > summary"\)\.tap\(\)[\s\S]*?data-video-affirmation-bed/);
@@ -320,15 +324,17 @@ test("WebKit macOS media acceptance is headed, real encoded audio and never a mo
 
 test("post-edit consent reset is checked after entering custom narration text",()=>{
   const panel=source.indexOf('const voicePanel=page.locator("[data-video-voice-studio]")');
-  const studio=source.indexOf('const studio=voicePanel.locator("[data-voice-studio]")',panel);
-  const custom=source.indexOf('await studio.getByRole("button",{name:locale==="ru"?"Мой текст":"My own script",exact:true}).click()',studio);
-  const fill=source.indexOf('await studio.locator("textarea").fill(customText)',custom);
-  const consent=source.indexOf('studio.locator(\'input[type="checkbox"]\')',fill);
+  const mainStudio=source.indexOf('const studio=page.locator("[data-video-studio-hydrated]")');
+  const voiceStudio=source.indexOf('const voiceStudio=voicePanel.locator("[data-voice-studio]")',panel);
+  const custom=source.indexOf('await voiceStudio.getByRole("button",{name:locale==="ru"?"Мой текст":"My own script",exact:true}).click()',voiceStudio);
+  const fill=source.indexOf('await voiceStudio.locator("textarea").fill(customText)',custom);
+  const consent=source.indexOf('voiceStudio.locator(\'input[type="checkbox"]\')',fill);
   const unchecked=source.indexOf('await expect(studioConsent).not.toBeChecked({timeout:10000})',consent);
-  const disabled=source.indexOf('await expect(studio.locator("[data-voice-studio-generate]")).toBeDisabled()',unchecked);
+  const disabled=source.indexOf('await expect(voiceStudio.locator("[data-voice-studio-generate]")).toBeDisabled()',unchecked);
   const grant=source.indexOf('await studioConsent.check()',disabled);
-  assert.ok(panel>=0&&studio>panel&&custom>studio&&fill>custom&&consent>fill&&unchecked>consent&&disabled>unchecked&&grant>disabled,
-    "enter custom text, prove consent starts unchecked and generation is disabled, then explicitly grant consent");
+  assert.ok(mainStudio>=0&&mainStudio<panel&&panel<voiceStudio&&custom>voiceStudio&&fill>custom&&
+    consent>fill&&unchecked>consent&&disabled>unchecked&&grant>disabled,
+    "main Studio is available; custom voice text requires fresh explicit consent");
 });
 
 test("real WebKit export enables inline Hypno whisper and binaural controls before stereo movie recording",()=>{
@@ -528,7 +534,7 @@ test("post-export stale narration refusal reopens mounted Audio and consented Vo
  const safariTap=source.indexOf('if(engine==="webkit")await voiceSummary.tap()',summary);
  const desktopClick=source.indexOf('else await voiceSummary.click()',safariTap);
  const opened=source.indexOf('await expect(voicePanel).toHaveAttribute("open","",{timeout:15000})',desktopClick);
- const mounted=source.indexOf('await studio.waitFor({state:"visible",timeout:25000})',opened);
+ const mounted=source.indexOf('await voiceStudio.waitFor({state:"visible",timeout:25000})',opened);
  assert.ok(start>=0&&audio>start&&tap>audio&&selected>tap&&disabled>selected&&voice>disabled&&
    summary>voice&&safariTap>summary&&desktopClick>safariTap&&opened>desktopClick&&mounted>opened,
    "stale WAV must be blocked before visitor opens real Safari/desktop Voice and mounted editor");
@@ -550,7 +556,7 @@ test("WebKit release follows fifth Montage advanced settings, Audio, and voice d
  assert.match(source,/if\(engine===\"webkit\"\)await voiceSummary\.tap\(\)/);
  assert.match(source,/else await voiceSummary\.click\(\)/);
  assert.match(source,/await expect\(voicePanel\)\.toHaveAttribute\(\"open\",\"\",\{timeout:15000\}\)/);
- assert.match(source,/await studio\.waitFor\(\{state:\"visible\",timeout:25000\}\)/);
+ assert.match(source,/await voiceStudio\.waitFor\(\{state:\"visible\",timeout:25000\}\)/);
  assert.doesNotMatch(source,/data-video-montage-settings|data-video-basic-tab=|data-video-audio-length="/);
 });
 

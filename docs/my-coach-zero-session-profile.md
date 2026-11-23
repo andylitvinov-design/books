@@ -36,3 +36,48 @@
 - Оценки словами RU/EN/ES, неверный формат, подделанная цитата и обычный протокол без профиля.
 - Gemini Live: обе стадии в системном контракте и локальном checkpoint; клиентские ответы, а не AI-текст, определяют прогресс.
 - LIVE требует отдельно: защищённого merge, штатной почасовой публикации и реального end-to-end smoke; наличие PR само по себе не значит LIVE.
+
+## Session 0 v2 · review / completion of a saved profile (issue #5415)
+
+A user may ask to check, refine, complete, or update a profile, including a phrase
+mentioning both a "profile" and a "goal". This route remains a Session 0 profile
+conversation, not an implicit GROW intervention.
+
+1. Six consent/name/history/focus/feelings/confirmation gates remain. Existing
+   `/api/app/my-coach/staged-memory` gives a signed, account/provider-bound,
+   expiring ticket. After the profile access toggle is checked, the **private
+   owner-facing** `personal.profileAudit` preview reads only client-reviewed,
+   encrypted My Coach protocols. Missing access is *unavailable*, not zero.
+2. `lib/coaching/coach-profile-review.mjs` merges the latest confirmed
+   `current` and `desired` values separately per canonical eight-axis ID.
+   Profile v1 and sparse v2 records are read together, with the source date.
+   Up to six existing 20-record archive pages are inspected; an incomplete
+   scan cannot declare absent values genuinely "missing".
+3. Once a private preview has been read, the conversation starts asking only
+   unfilled values. A completed axis is not repeated. A partially completed
+   axis asks only for its absent half, accepts one clear number, and respects
+   "skip". Earlier skipped axes are left alone by default.
+4. The existing private Life Plan contributes only its owner-consented goals
+   count and missing desired outcomes. The separate tests opt-in permits a
+   bounded **recorded result metadata** overview, never treating it as a
+   measurement of the meaning wheel. Detailed AI sharing remains governed by
+   the separately reviewed grants and the existing provider privacy policy.
+5. `profileCheckin` v2 stores **only the client-authored sparse updates** from
+   the current reviewed and explicitly saved protocol. It rejects values
+   outside 0–10, duplicate axes, fabricated quotations/numbers, and false
+   completion claims. Older v1 protocols are untouched and still valid.
+6. Client review is not model input: no raw transcripts, goal titles, audit
+   values or test scores are forwarded to the LLM from this private preview.
+   Normal selected-item provider grants remain separate. The goal/GROW
+   message path stays disabled throughout Session 0, including completion.
+7. After completing the gaps, the existing `/app/my-coaching-plan` and
+   `/app/tests` pages provide optional next actions, without automatically
+   enrolling a client or changing goals.
+
+**Validation:** `tests/coach-profile-review.test.mjs` covers saved 5/8 → only
+three questions, one-half saved scores, sparse update merge, skipped axes,
+unreviewed history rejection, exact-quote/score validator, and privacy boundaries.
+All EN/RU/ES copy remains explicitly authored. A merge or a green CI is not a
+verified Live deployment: use only the existing hourly Vercel production
+publisher and independently confirm the served production SHA and functional
+flow in the client's authenticated account.

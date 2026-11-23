@@ -6,7 +6,8 @@ import styles from './my-coach-speech-loop.module.css'
 import {
   GeminiLivePcmPlayer,GeminiLivePcmResampler,GeminiLiveBargeGate,GeminiLiveBargeDetector,
   geminiLiveAudioRms,geminiLiveSocketUrl,geminiLiveSetupMessage,
-  geminiLivePcmMessage,geminiLiveTextMessage,readGeminiLiveServerMessage,
+  geminiLivePcmMessage,geminiLiveTextMessage,geminiLiveStartMessage,
+  geminiLiveContextMessage,geminiLiveDirectorMessage,readGeminiLiveServerMessage,
   appendGeminiLiveTranscript,
 } from '@/lib/coaching/gemini-live-transport.mjs'
 
@@ -16,18 +17,39 @@ const ui={
     interrupt:'Перебить коуча',stop:'Завершить разговор',mic:'Микрофон недоступен',
     failure:'Живой голос недоступен. Можно продолжить текстом.',
     permission:'Разрешите микрофон в Safari.',requires:'Выберите Gemini Live и дайте согласие.',
+    reconnecting:'Восстанавливаю голосовую связь…',audioRoute:'Звук приостановлен. Нажмите «Включить звук».',
+    resumeAudio:'Включить звук',networkSlow:'Связь нестабильна. Часть слов может потеряться; можно перейти к тексту.',
+    rateLimit:'Лимит бесплатных голосовых подключений достигнут. Можно продолжить текстом.',
+    login:'Для голосовой сессии снова войдите в Holistic House.',
+    greetingLate:'Соединение готово, но первая фраза задерживается. Вы можете начать говорить.',
+    contextUnavailable:'Разрешённые сведения пока не загружены. Можно продолжить без них.',
+    contextRevoked:'Доступ отозван: голосовая связь завершена. Ранее переданные сведения могут остаться у провайдера.',
     ended:'20 минут — голосовую сессию можно завершить или начать новую.'},
   en:{start:'Start live conversation',connecting:'Connecting Gemini Live…',
     listening:'Listening',speaking:'Coach speaking',thinking:'Coach replying…',
     interrupt:'Interrupt coach',stop:'End conversation',mic:'Microphone unavailable',
     failure:'Live voice is unavailable. You can continue by text.',
     permission:'Allow microphone access in Safari.',requires:'Select Gemini Live and consent.',
+    reconnecting:'Restoring live voice…',audioRoute:'Audio is paused. Tap Enable audio to hear the coach.',
+    resumeAudio:'Enable audio',networkSlow:'The connection is unstable. Some words may be missed; text remains available.',
+    rateLimit:'Free live voice limit reached. You can continue by text.',
+    login:'Sign in to Holistic House again to use live voice.',
+    greetingLate:'Connected, but the first spoken reply is delayed. You can start speaking.',
+    contextUnavailable:'Approved context was not loaded. You can keep talking without it.',
+    contextRevoked:'Access changed: this voice connection was closed. Previously shared data may remain with the provider.',
     ended:'20 minutes — close the voice session or begin a new one.'},
   es:{start:'Iniciar voz en vivo',connecting:'Conectando voz Gemini…',
     listening:'Escuchando',speaking:'El coach habla',thinking:'Respondiendo…',
     interrupt:'Interrumpir al coach',stop:'Terminar conversación',mic:'Micrófono no disponible',
     failure:'La voz en vivo no está disponible. Puedes seguir por texto.',
     permission:'Permite el micrófono en Safari.',requires:'Selecciona Gemini Live y acepta.',
+    reconnecting:'Restableciendo la voz…',audioRoute:'El audio está pausado. Toca Activar audio.',
+    resumeAudio:'Activar audio',networkSlow:'La conexión es inestable. Puede faltar parte de la voz; puedes escribir.',
+    rateLimit:'Se alcanzó el límite de voz gratuita. Puedes seguir escribiendo.',
+    login:'Inicia sesión de nuevo en Holistic House para usar la voz.',
+    greetingLate:'Conectado, pero la primera frase tarda. Puedes empezar a hablar.',
+    contextUnavailable:'No se cargó el contexto autorizado. Puedes continuar sin él.',
+    contextRevoked:'Se revocó el acceso: se cerró esta conversación. El proveedor puede conservar datos enviados antes.',
     ended:'20 minutos: puedes terminar la sesión o comenzar otra.'},
 }
 const MAX_SESSION_MS=1200000
@@ -45,16 +67,19 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   onMicLevel,onInputInterim,onInputFinal,onOutputInterim,onOutputFinal,
   onInterrupted,onDirectorProgress,onOpeningProgress,onNotice,
   openingPrior=null,allowOpeningPrior=false,
+  liveContextAccess='',contextRevision=0,
 },ref){
   const lang=safeLocale(locale),t=ui[lang]
   const [phase,setPhase]=useState('idle')
   const [notice,setNotice]=useState('')
+  const [audioNeedsGesture,setAudioNeedsGesture]=useState(false)
   const runtime=useRef(null),starting=useRef(false),generation=useRef(0)
   const propsRef=useRef({})
   propsRef.current={locale:lang,personaId,settings,voiceName,enabled,canStart,
     elapsedSeconds,onSessionStart,onVoiceStateChange,onMicLevel,onInputInterim,
     onInputFinal,onOutputInterim,onOutputFinal,onInterrupted,
-    onDirectorProgress,onOpeningProgress,onNotice,openingPrior,allowOpeningPrior}
+    onDirectorProgress,onOpeningProgress,onNotice,openingPrior,allowOpeningPrior,
+    liveContextAccess,contextRevision}
 
   const notify=text=>{
     setNotice(text)
@@ -69,6 +94,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     r.player?.stop()
     r.speaking=false
     r.outputText=''
+    r.pendingAudio=[]
+    r.pendingAudioChars=0
     propsRef.current.onOutputInterim?.('')
   }
   function teardown(r){
@@ -86,6 +113,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     try{void r.context?.close?.().catch?.(()=>{})}catch{}
     if(r.timer)clearTimeout(r.timer)
     if(r.reconnectTimer)clearTimeout(r.reconnectTimer)
+    if(r.greetingTimer)clearTimeout(r.greetingTimer)
+    if(r.sidebandTimer)clearTimeout(r.sidebandTimer)
+    r.pendingContext='';r.pendingDirectorHint=''
     propsRef.current.onMicLevel?.(0)
   }
   function stop(){
@@ -94,6 +124,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const r=runtime.current
     runtime.current=null
     teardown(r)
+    setAudioNeedsGesture(false)
     phaseChange('idle')
     propsRef.current.onInputInterim?.('')
   }
@@ -108,6 +139,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       // network turn ends. A partial transcript is always marked interrupted.
       r.player.stop()
       r.audioGate.interrupt()
+      r.modelTurnComplete=false
+      r.pendingAudio=[]
+      r.pendingAudioChars=0
       r.speaking=false
       if(partial)commitOutput(r)
       else propsRef.current.onOutputInterim?.('')
@@ -120,11 +154,12 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(r.ended||!r.socket||r.socket.readyState!==1)return false
     try{r.socket.send(JSON.stringify(packet));return true}catch{return false}
   }
-  async function checkpoint(r,message){
+  async function checkpoint(r,message,preceding=null){
     const text=audioTranscription(message)
     if(!text||r.ended)return
     const p=propsRef.current
-    const previous=r.history.slice(-10)
+    const ticket=++r.checkpointSerial
+    const previous=Array.isArray(preceding)?preceding:r.history.slice(-10)
     // A typed or ASR turn is sent to the SAME bounded server Director.
     // This does NOT request another text/audio model or persist a transcript.
     try{
@@ -139,11 +174,21 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
           consent:true,voiceConsent:true,trainingUseConsent:true}),
       })
       const data=response.ok?await response.json().catch(()=>null):null
-      if(!r.ended&&data?.schema==='HH_GEMINI_LIVE_DIRECTOR_V1'&&
-         data.sessionProgress?.source==='director-client-evidence')
+      if(!r.ended&&ticket===r.checkpointSerial&&
+         data?.schema==='HH_GEMINI_LIVE_DIRECTOR_V1'&&
+         data.source==='director-client-evidence'&&
+         data.sessionProgress?.source==='director-client-evidence'){
         p.onDirectorProgress?.(data.sessionProgress)
-      if(!r.ended&&data?.openingProgress?.schema==='hh-coach-opening-v1-20261122')
-        p.onOpeningProgress?.(data.openingProgress)
+        if(data.openingProgress?.schema==='hh-coach-opening-v1-20261122')
+          p.onOpeningProgress?.(data.openingProgress)
+        // This is the NEXT-turn reviewed Director hint, never a replacement
+        // for client words, approval, provider consent, or authoritative state.
+        const guidance=typeof data.guidance==='string'?data.guidance.trim():''
+        if(guidance&&guidance.length<=620){
+          r.pendingDirectorHint=guidance
+          flushSideband(r)
+        }
+      }
     }catch{/* Ignore failed evidence check; never promote unverified model speech. */}
   }
   function commitInput(r){
@@ -157,7 +202,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     propsRef.current.onInputFinal?.(value)
     r.openingHistory.push(value)
     r.openingHistory=r.openingHistory.slice(0,33)
-    void checkpoint({...r,history:preceding},value)
+    r.lastAssistantTurnFinished=false
+    r.pendingDirectorHint=''
+    void checkpoint(r,value,preceding)
   }
   function commitOutput(r){
     const value=audioTranscription(r.outputText)
@@ -169,6 +216,160 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     propsRef.current.onOutputFinal?.(value,{interrupted:r.interrupted})
     r.interrupted=false
   }
+  // Deliver server-rechecked references and Director hints ONLY after the
+  // previous audible assistant turn ends and the human microphone is idle.
+  // clientContent can interrupt a Google model, even with turnComplete:false.
+  function canSendSideband(r){
+    return !r.ended&&r.ready&&r.socket?.readyState===1&&
+      r.lastAssistantTurnFinished&&!r.speaking&&!r.player?.playing&&
+      !r.modelTurnComplete&&!r.pendingAudio?.length&&!r.inputText&&
+      !r.bargeDetector.userActive&&!r.reconnectSoon&&
+      Date.now()-(r.lastHumanAudioAt||0)>350
+  }
+  function flushSideband(r){
+    if(!canSendSideband(r)){
+      if(!r.ended&&r.ready&&r.lastAssistantTurnFinished&&
+         (r.pendingContext||r.pendingDirectorHint)&&
+         Date.now()-(r.lastHumanAudioAt||0)<=350&&!r.sidebandTimer){
+        r.sidebandTimer=setTimeout(()=>{
+          r.sidebandTimer=null
+          if(!r.ended)flushSideband(r)
+        },400)
+      }
+      return
+    }
+    if(r.sidebandTimer){clearTimeout(r.sidebandTimer);r.sidebandTimer=null}
+    if(r.pendingContext){
+      if(propsRef.current.liveContextAccess!==r.contextRequestKey){
+        r.pendingContext=''
+      }else try{
+        const packet=geminiLiveContextMessage(r.pendingContext)
+        if(sendSocket(r,packet)){
+          r.contextSentKey=r.contextRequestKey
+          r.pendingContext=''
+        }
+      }catch{r.pendingContext=''}
+    }
+    if(r.pendingDirectorHint&&!r.pendingContext){
+      try{
+        const packet=geminiLiveDirectorMessage(r.pendingDirectorHint)
+        if(sendSocket(r,packet))r.pendingDirectorHint=''
+      }catch{r.pendingDirectorHint=''}
+    }
+  }
+  async function loadApprovedContext(r){
+    const key=propsRef.current.liveContextAccess
+    if(!key||r.ended||!r.ready||r.contextRequestKey===key)return
+    if(r.contextSentKey&&r.contextSentKey!==key){
+      notify(t.contextRevoked);stop();return
+    }
+    r.contextRequestKey=key
+    r.pendingContext=''
+    const revisionAtRequest=propsRef.current.contextRevision
+    try{
+      const response=await fetch('/api/app/my-coach/live-context',{
+        method:'POST',credentials:'same-origin',cache:'no-store',
+        signal:r.abort.signal,headers:{'Content-Type':'application/json'},body:key,
+      })
+      const result=response.ok?await response.json().catch(()=>null):null
+      if(r.ended||propsRef.current.liveContextAccess!==key||
+         r.contextRequestKey!==key||r.contextVersion!==revisionAtRequest||
+         propsRef.current.contextRevision!==revisionAtRequest)return
+      if(!result||result.schema!=='HH_MY_COACH_LIVE_CONTEXT_V1'||
+         typeof result.note!=='string')throw Error('LIVE_CONTEXT_INVALID')
+      if(result.note){
+        r.pendingContext=result.note
+        flushSideband(r)
+      }
+    }catch{
+      if(!r.ended&&propsRef.current.liveContextAccess===key)
+        notify(t.contextUnavailable)
+    }
+  }
+  // A generated/queued assistant turn is not completed until its last PCM
+  // source finishes playing. Do not tell the Director it was fully heard early.
+  function finishAudibleTurn(r){
+    if(r.ended||!r.modelTurnComplete||r.player?.playing||r.pendingAudio?.length)return
+    if(r.outputText){
+      if(!r.hadAudio||r.outputWithoutAudio)r.interrupted=true
+      commitOutput(r)
+    }
+    r.modelTurnComplete=false
+    r.hadAudio=false
+    r.outputWithoutAudio=false
+    r.lastAssistantTurnFinished=true
+    if(r.reconnectSoon)maybeReconnectOnGoAway(r)
+    else{phaseChange('listening');flushSideband(r)}
+  }
+  function maybeReconnectOnGoAway(r){
+    if(!r.reconnectSoon||r.ended||r.reconnects>=1||!r.resumeHandle||
+      r.player?.playing||r.inputText||r.bargeDetector.userActive)return
+    r.reconnectSoon=false
+    notify(t.reconnecting)
+    try{if(r.socket?.readyState===1)r.socket.close(1000,'session-resume')}catch{}
+  }
+  // iOS Safari may suspend its output after the async vendor setup. Hold a
+  // bounded, in-tab PCM tail; never call held audio heard or store it remotely.
+  function flushPendingAudio(r){
+    if(r.ended||r.context.state!=='running')return
+    const pending=r.pendingAudio.splice(0)
+    r.pendingAudioChars=0
+    let queued=false
+    for(const part of pending){
+      try{if(r.player.append(part)){queued=true;r.hadAudio=true}}
+      catch{r.outputWithoutAudio=true}
+    }
+    setAudioNeedsGesture(false)
+    r.audioNoticeShown=false
+    if(queued){
+      r.firstAudio=true
+      if(r.greetingTimer)clearTimeout(r.greetingTimer)
+      r.speaking=true
+      setNotice('')
+      phaseChange('speaking')
+    }
+    if(!queued&&pending.length)r.outputWithoutAudio=true
+    if(r.modelTurnComplete&&!r.player?.playing)finishAudibleTurn(r)
+  }
+  function requestAudioResume(r){
+    if(r.ended||r.audioResuming||r.context.state==='running')return
+    r.audioResuming=true
+    try{
+      Promise.resolve(r.context.resume?.()).then(()=>{
+        r.audioResuming=false
+        if(r.ended)return
+        if(r.context.state==='running')flushPendingAudio(r)
+        else setAudioNeedsGesture(true)
+      }).catch(()=>{
+        r.audioResuming=false
+        if(!r.ended)setAudioNeedsGesture(true)
+      })
+    }catch{r.audioResuming=false;setAudioNeedsGesture(true)}
+  }
+  function queueLivePart(r,part){
+    if(r.outputWithoutAudio)return 'dropped'
+    if(r.context.state!=='running'){
+      if(r.pendingAudio.length>=24||r.pendingAudioChars+part.length>160000){
+        r.pendingAudio=[];r.pendingAudioChars=0
+        r.outputWithoutAudio=true
+        r.audioGate.interrupt()
+        if(!r.audioNoticeShown){notify(t.audioRoute);r.audioNoticeShown=true}
+        setAudioNeedsGesture(true)
+        return 'dropped'
+      }
+      r.pendingAudio.push(part)
+      r.pendingAudioChars+=part.length
+      if(!r.audioNoticeShown){notify(t.audioRoute);r.audioNoticeShown=true}
+      setAudioNeedsGesture(true)
+      requestAudioResume(r)
+      return 'held'
+    }
+    if(r.pendingAudio.length)flushPendingAudio(r)
+    try{
+      if(r.player.append(part)){r.hadAudio=true;return 'queued'}
+    }catch{/* Do not declare corrupt PCM audible. */}
+    return 'failed'
+  }
   function handleAudio(r,packet){
     if(r.ended)return
     let frame
@@ -176,7 +377,21 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(frame.setupComplete){
       r.ready=true
       r.interrupted=false
-      phaseChange('listening')
+      if(!r.sessionStarted){
+        r.sessionStarted=true
+        propsRef.current.onSessionStart?.()
+      }
+      // One Play-triggered app control event. It is never a human statement,
+      // consent, name or archived memory; do not repeat it on reconnect.
+      if(!r.introSent){
+        r.introSent=true
+        if(!sendSocket(r,geminiLiveStartMessage())){notify(t.failure);stop();return}
+        phaseChange('thinking')
+        r.greetingTimer=setTimeout(()=>{
+          if(!r.ended&&!r.firstAudio)notify(t.greetingLate)
+        },10000)
+      }else phaseChange('listening')
+      if(propsRef.current.liveContextAccess)void loadApprovedContext(r)
       return
     }
     if(!r.ready)return
@@ -184,6 +399,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       interrupt()
       r.audioGate.accept(frame) // Gemini acknowledged the cut; flush queued network audio.
       if(r.outputText){r.interrupted=true;commitOutput(r)}
+      r.modelTurnComplete=false
+      r.pendingAudio=[];r.pendingAudioChars=0
       r.interrupted=false
       phaseChange('listening')
       return
@@ -214,33 +431,38 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(frame.audio?.length){
       if(r.inputText)commitInput(r)
       if(allowAudio){
-        let queued=false
+        let outcome='dropped'
         for(const part of frame.audio){
-          try{queued=r.player.append(part)||queued}catch{notify(t.failure)}
+          const status=queueLivePart(r,part)
+          if(status==='failed'){notify(t.failure);stop();return}
+          if(status==='queued')outcome='queued'
+          else if(status==='held'&&outcome!=='queued')outcome='held'
         }
-        if(queued){
+        if(outcome==='queued'){
+          r.firstAudio=true
+          if(r.greetingTimer)clearTimeout(r.greetingTimer)
           r.speaking=true
           phaseChange('speaking')
-        }else{
-          // An iOS AudioContext can silently suspend during an async handshake.
-          // Never claim speech was audible when no chunk was scheduled.
-          notify(t.failure);stop();return
-        }
+        }else if(outcome==='held')phaseChange('loading')
       }
     }
     if(frame.turnComplete){
       if(r.inputText)commitInput(r)
-      commitOutput(r)
-      if(!r.player?.playing)phaseChange('listening')
+      r.modelTurnComplete=true
+      finishAudibleTurn(r)
     }
     if(frame.resumeHandle)r.resumeHandle=frame.resumeHandle
-    if(frame.goAway&&r.resumeHandle)r.reconnectSoon=true
+    if(frame.goAway&&r.resumeHandle){
+      r.reconnectSoon=true
+      maybeReconnectOnGoAway(r)
+    }
   }
   function capture(r,chunk){
     if(r.ended||!r.ready||r.socket?.readyState!==1)return
     const audio=chunk instanceof Float32Array?chunk:new Float32Array(chunk)
     if(!audio.length)return
     const level=geminiLiveAudioRms(audio)
+    if(level>=0.013)r.lastHumanAudioAt=Date.now()
     propsRef.current.onMicLevel?.(Math.max(0,Math.min(1,level*4)))
     // Listen CONTINUOUSLY while the coach plays, including very quiet speech.
     // First candidate ducks playback to rule out its own acoustic echo; a
@@ -249,7 +471,14 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(event==='duck')r.player?.setVolume(0.08)
     else if(event==='restore')r.player?.setVolume(1)
     else if(event==='interrupt')interrupt()
-    if(r.socket.bufferedAmount>MAX_BUFFERED_SOCKET_BYTES)return
+    if(r.socket.bufferedAmount>MAX_BUFFERED_SOCKET_BYTES){
+      r.backpressureChunks=(r.backpressureChunks||0)+1
+      if(r.backpressureChunks===6)notify(t.networkSlow)
+      // An explicit text fallback is safer than silent lost microphone seconds.
+      if(r.backpressureChunks>30){notify(t.failure);stop()}
+      return
+    }
+    r.backpressureChunks=0
     let pcm
     try{pcm=r.resampler.push(audio)}catch{return}
     if(pcm.length)sendSocket(r,geminiLivePcmMessage(pcm))
@@ -312,9 +541,13 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     socket.onclose=()=>{
       clearTimeout(setupTimer)
       if(r.ended||r.socket!==socket)return
-      // One bounded reconnect, using a new one-use Free-only token.
+      if(r.player?.playing||r.speaking)interrupt()
+      else if(r.outputText){r.interrupted=true;commitOutput(r)}
+      // A uses:1 ephemeral token cannot reliably be reused; at most one
+      // resumed FREE connection with its own constrained one-use token.
       if(r.reconnects<1&&r.resumeHandle&&r.stream?.active!==false){
         r.reconnects++
+        notify(t.reconnecting)
         phaseChange('loading')
         r.reconnectTimer=setTimeout(()=>{void reconnect(r)},450)
       }else{notify(t.failure);stop()}
@@ -325,7 +558,10 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     try{
       const token=await getToken(r)
       if(!r.ended)connect(r,token,{resume:true})
-    }catch{if(!r.ended){notify(t.failure);stop()}}
+    }catch(error){if(!r.ended){
+      notify(error?.message==='GEMINI_LIVE_LIMIT'?t.rateLimit:t.failure)
+      stop()
+    }}
   }
   async function getToken(r){
     const response=await fetch('/api/app/my-coach/live-token',{
@@ -335,6 +571,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
         settings:r.settings,voiceName:r.voiceName,consent:true,
         voiceConsent:true,trainingUseConsent:true}),
     })
+    if(response.status===429)throw Error('GEMINI_LIVE_LIMIT')
+    if(response.status===401)throw Error('GEMINI_LIVE_LOGIN')
     if(!response.ok)throw Error('GEMINI_LIVE_UNAVAILABLE')
     const data=await response.json().catch(()=>null)
     if(data?.schema!=='HH_GEMINI_LIVE_FREE_TOKEN_V1'||!data.token||!data.model)
@@ -358,8 +596,12 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       if(r.ended)return
       connect(r,token)
       r.timer=setTimeout(()=>{if(!r.ended){notify(t.ended);stop()}},MAX_SESSION_MS)
-    }catch{
-      if(!r.ended){notify(t.failure);stop()}
+    }catch(error){
+      if(!r.ended){
+        notify(error?.message==='GEMINI_LIVE_LIMIT'?t.rateLimit:
+          error?.message==='GEMINI_LIVE_LOGIN'?t.login:t.failure)
+        stop()
+      }
     }finally{starting.current=false}
   }
   function startSession(){
@@ -388,6 +630,13 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const r={context,stream:null,source:null,processor:null,sink:null,
       socket:null,ready:false,ended:false,history:[],openingHistory:[],inputText:'',outputText:'',
       speaking:false,interrupted:false,resumeHandle:null,
+      modelTurnComplete:false,hadAudio:false,outputWithoutAudio:false,
+      introSent:false,sessionStarted:false,firstAudio:false,greetingTimer:null,
+      pendingAudio:[],pendingAudioChars:0,audioResuming:false,audioNoticeShown:false,
+      reconnectSoon:false,backpressureChunks:0,
+      checkpointSerial:0,lastAssistantTurnFinished:false,lastHumanAudioAt:0,
+      contextRequestKey:'',contextSentKey:'',contextVersion:propsRef.current.contextRevision,
+      pendingContext:'',pendingDirectorHint:'',sidebandTimer:null,
       bargeDetector:new GeminiLiveBargeDetector(),
       reconnects:0,voiceName:p.voiceName,locale:p.locale,personaId:p.personaId,
       settings:p.settings,allowOpeningPrior:p.allowOpeningPrior===true,
@@ -397,7 +646,11 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       audioGate:new GeminiLiveBargeGate()}
     r.player=new GeminiLivePcmPlayer(context,{
       onStart:()=>{if(!r.ended)phaseChange('speaking')},
-      onEnd:()=>{if(!r.ended){r.speaking=false;phaseChange('listening')}},
+      onEnd:()=>{if(!r.ended){
+        r.speaking=false
+        if(r.modelTurnComplete)finishAudibleTurn(r)
+        else phaseChange('thinking')
+      }},
       onLevel:level=>{if(level!==null)propsRef.current.onMicLevel?.(level)},
     })
     runtime.current=r
@@ -405,7 +658,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     starting.current=true
     setNotice('')
     phaseChange('loading')
-    propsRef.current.onSessionStart?.()
+    setAudioNeedsGesture(false)
+    // Only verified setupComplete marks a session connected.
     void begin(r,microphone)
     return true
   }
@@ -421,9 +675,24 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     propsRef.current.onInputFinal?.(body)
     r.openingHistory.push(body)
     r.openingHistory=r.openingHistory.slice(0,33)
-    void checkpoint({...r,history:previous},body)
+    r.lastAssistantTurnFinished=false
+    r.pendingDirectorHint=''
+    void checkpoint(r,body,previous)
     phaseChange('thinking')
     return true
+  }
+  function resumeAudioByTap(){
+    const r=runtime.current
+    if(!r||r.ended)return
+    try{
+      // The resume is initiated in the real browser user-activation tap.
+      const recovery=r.context.resume?.()
+      void Promise.resolve(recovery).then(()=>{
+        if(r.ended)return
+        if(r.context.state==='running')flushPendingAudio(r)
+        else notify(t.audioRoute)
+      }).catch(()=>{if(!r.ended)notify(t.audioRoute)})
+    }catch{notify(t.audioRoute)}
   }
   useImperativeHandle(ref,()=>({startSession,stop,sendText,interrupt}),[startSession])
   useEffect(()=>{
@@ -437,6 +706,24 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       stop()
     }
   },[])
+  useEffect(()=>{
+    const r=runtime.current
+    if(!r||r.ended)return
+    // The Google socket retains previously delivered reference data. A
+    // withdrawal, provider/topic/grant revision change MUST retire it; do not
+    // pretend that a new context packet can retract an earlier disclosure.
+    if(r.contextSentKey&&(r.contextSentKey!==liveContextAccess||
+       r.contextVersion!==contextRevision)){
+      notify(t.contextRevoked);stop();return
+    }
+    const revisionChanged=r.contextVersion!==contextRevision
+    r.contextVersion=contextRevision
+    if(revisionChanged||r.contextRequestKey!==liveContextAccess){
+      r.pendingContext=''
+      r.contextRequestKey=''
+      if(r.ready&&liveContextAccess)void loadApprovedContext(r)
+    }
+  },[liveContextAccess,contextRevision])
   useEffect(()=>{
     // Changing persona, language, voice or consent must never silently keep
     // streaming captured audio under the previous server-locked token.
@@ -465,6 +752,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
         {phase==='loading'?t.connecting:
           phase==='listening'?t.listening:phase==='speaking'?t.speaking:t.thinking}
       </span>}
+    {audioNeedsGesture&&phase!=='idle'&&
+      <button type="button" className={styles.button}
+        data-coach-live-resume-audio onClick={resumeAudioByTap}>{t.resumeAudio}</button>}
     {notice&&<p className={styles.note} role="status">{notice}</p>}
   </div>
 })
