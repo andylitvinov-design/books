@@ -253,12 +253,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const geminiAvailabilityInFlightRef=useRef(false)
   const [geminiConsent,setGeminiConsent]=useState(false)
   const [geminiLiveConsent,setGeminiLiveConsent]=useState(false)
-  // Connected-session marker contains a persona ID only, never user data.
-  // Gemini sets this consent flag only after an actual Live setupComplete.
-  useEffect(()=>{
-    if(geminiLiveConsent&&sessionClockStarted)
-      markCoachGreetingConnected(personaId)
-  },[geminiLiveConsent,sessionClockStarted,personaId])
   const [liveDirectorProgress,setLiveDirectorProgress]=useState(null)
   const [geminiVoiceTier,setGeminiVoiceTier]=useState('existing')
   const [geminiVoiceConsent,setGeminiVoiceConsent]=useState(false)
@@ -298,6 +292,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const protocolIdRef=useRef(null)
   const protocolStartedRef=useRef(null)
   const [sessionClockStarted,setSessionClockStarted]=useState(false)
+  // Connected-session marker contains a persona ID only, never user data.
+  // Gemini sets this consent flag only after an actual Live setupComplete.
+  useEffect(()=>{
+    if(geminiLiveConsent&&sessionClockStarted)
+      markCoachGreetingConnected(personaId)
+  },[geminiLiveConsent,sessionClockStarted,personaId])
   const [introComplete,setIntroComplete]=useState(false)
   const [activeSessionSeconds,setActiveSessionSeconds]=useState(0)
   const [busy,setBusy]=useState(false)
