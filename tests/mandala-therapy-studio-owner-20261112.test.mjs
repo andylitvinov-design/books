@@ -11,7 +11,7 @@ test("Therapy is sixth, after Ready; six original destinations remain intact",()
  const block=parent.match(/const workspaceTabs=\[([\s\S]*?)\] as const;/)?.[1];
  assert.ok(block);
  assert.deepEqual([...block.matchAll(/id:"([a-z]+)"/g)].map(x=>x[1]),
-  ["video","phrases","editor","pro","ready","effects"]);
+  ["video","editor","phrases","pro","ready","effects"]);
  for(const l of ["ru","en","es"])assert.match(parent,new RegExp(l+":\\{[\\s\\S]*?effects:\\{tab:\"Therapy\""));
  assert.match(parent,/data-video-quick-control=\{item\.id\}/);
  assert.equal((parent.match(/<MandalaTherapyStudio /g)||[]).length,1);
