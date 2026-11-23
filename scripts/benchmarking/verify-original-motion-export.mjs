@@ -83,6 +83,23 @@ try {
   await press(styleTab);
   const styleNext=page.locator('[data-video-montage-effects] [data-video-montage-next="audio"]');
   await styleNext.waitFor({state:'visible',timeout:20000});
+  // Photo-first Montage must not silently bypass personal-image rights.
+  // This anonymous export chooses a first-party fictional coach still, rather
+  // than fabricating consent to use somebody else's photograph.
+  assert.equal(await styleNext.isEnabled(),false,'PHOTO_FIRST_REQUIRES_EXPLICIT_PHOTO_CHOICE');
+  const coachMode=page.locator('[data-video-montage-photo-choice="coach"]');
+  await coachMode.waitFor({state:'visible',timeout:20000});
+  await press(coachMode);
+  const coachPhoto=page.locator('[data-video-montage-coach="mira"]');
+  await coachPhoto.waitFor({state:'visible',timeout:20000});
+  await press(coachPhoto);
+  await page.waitForFunction(() => {
+    const coach=document.querySelector('[data-video-montage-coach="mira"]');
+    const next=document.querySelector('[data-video-montage-effects] [data-video-montage-next="audio"]');
+    return coach?.getAttribute('aria-pressed')==='true' &&
+      next instanceof HTMLButtonElement && !next.disabled;
+  },undefined,{timeout:15000});
+  assert.equal(await coachPhoto.getAttribute('aria-pressed'),'true','FIRST_PARTY_COACH_STILL_SELECTED');
   await press(styleNext);
   await page.waitForFunction(()=>document.querySelector('[data-video-montage-tab="audio"]')
     ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
