@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict'
 import {test} from 'node:test'
 import {readFileSync,readdirSync} from 'node:fs'
+import {runInNewContext} from 'node:vm'
+import ts from 'typescript'
+import {NextRequest,NextResponse} from 'next/server.js'
+import {personalVideoStorageCsp} from '../lib/app/personal-video-storage-csp.mjs'
+import {inspectPersonalVideoFile,personalVideoDuration,validPersonalVideoDuration} from '../lib/app/personal-video-file-contract.mjs'
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
 const server=read('lib/app/personal-videos.js')
 const list=read('app/api/app/personal-videos/route.js')
@@ -11,6 +16,94 @@ const gallery=read('components/app/my-personal-videos.jsx')
 const uploader=read('lib/mandala/signed-private-video-upload.mjs')
 const shell=read('components/app/app-workspace.jsx')
 const route=read('app/[locale]/app/[[...path]]/page.jsx')
+
+test('ordinary short client clips keep their duration instead of requiring a generator preset',()=>{
+  for(const seconds of [0.25,1,8,8.5,15,23,45,59.4,60]){
+    const stored=personalVideoDuration(seconds)
+    assert.equal(stored,Math.ceil(seconds))
+    assert.equal(validPersonalVideoDuration(stored),true)
+  }
+  for(const seconds of [0,-1,60.1,Infinity,NaN,'45'])
+    assert.throws(()=>personalVideoDuration(seconds),{code:'VIDEO_DURATION_NOT_ALLOWED'})
+  for(const seconds of [0,61,1.5,'45',null])assert.equal(validPersonalVideoDuration(seconds),false)
+  assert.match(server,/validPersonalVideoDuration\(input\.duration\)/)
+  const durationMigration=read('supabase/migrations/20261123225621_hh_client_video_upload_duration_20261124.sql')
+  assert.match(durationMigration,/check \(duration_seconds between 1 and 60\) not valid/)
+  assert.match(durationMigration,/validate constraint personal_videos_duration_seconds_check/)
+  assert.doesNotMatch(durationMigration.replace(/^--.*$/gm,''),/delete from|update app_private|disable row level security|grant /i)
+})
+test('iPhone MP4 with an omitted MIME still needs the extension and actual MP4 signature',async()=>{
+  const bytes=new Uint8Array(2048)
+  bytes.set(new TextEncoder().encode('ftypisom'),4)
+  for(const mime of ['video/mp4','','application/octet-stream'])
+    await inspectPersonalVideoFile(new File([bytes],'clip.MP4',{type:mime}))
+  for(const file of [
+    new File([bytes],'clip.mov',{type:''}),
+    new File([bytes],'clip.mp4',{type:'video/quicktime'}),
+    new File([bytes],'clip.mp4',{type:'image/jpeg'}),
+    new File([new Uint8Array(2048)],'clip.mp4',{type:'video/mp4'}),
+  ])await assert.rejects(()=>inspectPersonalVideoFile(file),{code:'INVALID_VIDEO_FILE'})
+  for(const brand of ['qt  ','heic']){
+    const renamed=bytes.slice();renamed.set(new TextEncoder().encode(brand),8)
+    await assert.rejects(()=>inspectPersonalVideoFile(new File([renamed],'renamed.mp4')),
+      {code:'INVALID_VIDEO_FILE'})
+  }
+  await assert.rejects(()=>inspectPersonalVideoFile({size:12_000_001,slice(){throw new Error('must not read')}}),
+    {code:'VIDEO_TOO_LARGE'})
+})
+
+// Run the actual document middleware: an API can authorize a private upload
+// while the delivered browser CSP still blocks its upload or photo preview.
+function mediaMiddleware(env){
+  const modules={
+    'next/server':{NextResponse},
+    './lib/canonical-redirect':{canonicalRedirectTarget:()=>null,privateMigrationBridge:()=>null},
+    './lib/app/admin-auth-refresh':{refreshAdminAuth:async()=>[]},
+    './lib/app/personal-video-storage-csp.mjs':{personalVideoStorageCsp},
+    './lib/instant-home-policy.mjs':{instantHomeLocale:()=>null},
+  }
+  const runtime={exports:{},Headers,URL,crypto:globalThis.crypto,process:{env},
+    require(name){assert.ok(Object.hasOwn(modules,name),name);return modules[name]}}
+  runInNewContext(ts.transpileModule(read('middleware.ts'),{compilerOptions:{
+    module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,
+  }}).outputText,runtime)
+  return runtime.exports.middleware
+}
+async function browserPolicy(middleware,path){
+  const response=await middleware(new NextRequest('https://holistichouse.vercel.app'+path))
+  assert.equal(response.status,200)
+  return Object.fromEntries(response.headers.get('content-security-policy').split('; ')
+    .map(directive=>{const [name,...values]=directive.split(' ');return [name,values]}))
+}
+test('actual cabinet and Studio policies allow private images and signed uploads without the retired hosting flag',async()=>{
+  const api='https://abcdefghijklmnopqrst.supabase.co'
+  const tus='https://abcdefghijklmnopqrst.storage.supabase.co'
+  const middleware=mediaMiddleware({HH_APP_SUPABASE_URL:api,NODE_ENV:'production'})
+  for(const locale of ['en','ru','es']){
+    for(const path of ['/'+locale+'/app/videos','/'+locale+'/holistic-support/mandala']){
+      const csp=await browserPolicy(middleware,path)
+      assert.ok(csp['connect-src'].includes(api),path+' signed PUT and photo reuse')
+      assert.ok(csp['connect-src'].includes(tus),path+' resumable MP4 upload')
+      assert.ok(csp['img-src'].includes(api),path+' saved photo preview')
+      assert.ok(csp['media-src'].includes(api),path+' saved media playback')
+      assert.ok(csp['frame-ancestors'].includes("'none'"),path+' framing restriction preserved')
+      assert.ok(!csp['connect-src'].includes('*'))
+    }
+  }
+})
+test('private media CSP retains exact-route and configured-project boundaries',async()=>{
+  const api='https://abcdefghijklmnopqrst.supabase.co'
+  const middleware=mediaMiddleware({HH_APP_SUPABASE_URL:api,NODE_ENV:'production'})
+  for(const path of ['/en/app','/ru/app/videos/other','/api/app/personal-videos','/admin/videos']){
+    const csp=await browserPolicy(middleware,path)
+    for(const directive of ['connect-src','img-src','media-src'])
+      assert.ok(!csp[directive].some(value=>value.includes('.supabase.co')),path+' '+directive)
+  }
+  const unconfigured=mediaMiddleware({NODE_ENV:'production'})
+  const csp=await browserPolicy(unconfigured,'/ru/app/videos')
+  assert.ok(!csp['connect-src'].some(value=>value.includes('.supabase.co')))
+})
+
 test('the private upload checkpoint uses the single migration recorded by Supabase',()=>{
   const migrations=readdirSync(new URL('../supabase/migrations/',import.meta.url))
   assert.deepEqual(

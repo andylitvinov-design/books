@@ -3,28 +3,34 @@ import {useCallback,useEffect,useRef,useState} from 'react'
 import {appFetch} from '@/lib/app/client-fetch'
 import {createPersonalGoalRemover} from '@/lib/app/daybook-goal-delete-client.mjs'
 import {createGoalEditorSession} from '@/lib/app/daybook-goal-editor-session.mjs'
+import {createVectorGoalSession} from '@/lib/app/daybook-vector-session.mjs'
+import {vectorStartDecision} from '@/lib/app/daybook-route-intent.mjs'
 import css from './daybook-goal-editor.module.css'
 import DaybookGoalEditor from './daybook-goal-editor'
+import DaybookVectorStart from './daybook-vector-start'
 import DaybookActionEditor from './daybook-action-editor'
 import DaybookCoachLink from './daybook-coach-link'
 import {createActionEditorSession} from '@/lib/app/daybook-personal-action-session.mjs'
 const COPY={
- en:{newAction:'Add a step',actions:'My steps',editAction:'Edit step',title:'My personal goals',new:'Create a goal',edit:'Edit',remove:'Delete permanently',confirm:'Permanently delete this goal, its actions and encrypted change history?',close:'Close editor',switch:'Close this editor? Unsaved changes will be lost.',loading:'Loading saved goals…',error:'Could not load your goals.',retry:'Reload goals',empty:'No saved goals yet.',failed:'Deletion not confirmed. Retry the same goal or reload to check its current state.',deleted:'Deletion verified'},
- ru:{newAction:'Добавить шаг',actions:'Мои шаги',editAction:'Изменить шаг',title:'Мои личные цели',new:'Создать цель',edit:'Изменить',remove:'Удалить навсегда',confirm:'Безвозвратно удалить цель, её действия и зашифрованную историю изменений?',close:'Закрыть редактор',switch:'Закрыть редактор? Несохранённые изменения будут потеряны.',loading:'Загрузка сохранённых целей…',error:'Не удалось загрузить цели.',retry:'Обновить цели',empty:'Сохранённых целей пока нет.',failed:'Удаление не подтверждено. Повторите для той же цели или обновите её состояние.',deleted:'Удаление проверено'},
- es:{newAction:'Añadir un paso',actions:'Mis pasos',editAction:'Editar paso',title:'Mis objetivos personales',new:'Crear un objetivo',edit:'Editar',remove:'Eliminar permanentemente',confirm:'¿Eliminar permanentemente este objetivo, sus acciones y el historial cifrado?',close:'Cerrar editor',switch:'¿Cerrar este editor? Se perderán los cambios sin guardar.',loading:'Cargando objetivos guardados…',error:'No se pudieron cargar los objetivos.',retry:'Recargar objetivos',empty:'Aún no hay objetivos guardados.',failed:'Eliminación sin confirmar. Reintenta el mismo objetivo o recarga su estado actual.',deleted:'Eliminación verificada'},
+ en:{newAction:'Add a step',actions:'My steps',editAction:'Edit step',title:'My Goals',resumed:'Your open draft is preserved. Close it when you are ready to start another goal.',new:'Create a goal',edit:'Edit',remove:'Delete permanently',confirm:'Permanently delete this goal, its actions and encrypted change history?',close:'Close editor',switch:'Close this editor? Unsaved changes will be lost.',loading:'Loading saved goals…',error:'Could not load your goals.',retry:'Reload goals',empty:'No saved goals yet.',failed:'Deletion not confirmed. Retry the same goal or reload to check its current state.',deleted:'Deletion verified'},
+ ru:{newAction:'Добавить шаг',actions:'Мои шаги',editAction:'Изменить шаг',title:'Мои цели',resumed:'Открытый черновик сохранён на экране. Закройте его, когда захотите начать другую цель.',new:'Создать цель',edit:'Изменить',remove:'Удалить навсегда',confirm:'Безвозвратно удалить цель, её действия и зашифрованную историю изменений?',close:'Закрыть редактор',switch:'Закрыть редактор? Несохранённые изменения будут потеряны.',loading:'Загрузка сохранённых целей…',error:'Не удалось загрузить цели.',retry:'Обновить цели',empty:'Сохранённых целей пока нет.',failed:'Удаление не подтверждено. Повторите для той же цели или обновите её состояние.',deleted:'Удаление проверено'},
+ es:{newAction:'Añadir un paso',actions:'Mis pasos',editAction:'Editar paso',title:'Mis metas',resumed:'Tu borrador abierto se conserva. Ciérralo cuando quieras empezar otra meta.',new:'Crear un objetivo',edit:'Editar',remove:'Eliminar permanentemente',confirm:'¿Eliminar permanentemente este objetivo, sus acciones y el historial cifrado?',close:'Cerrar editor',switch:'¿Cerrar este editor? Se perderán los cambios sin guardar.',loading:'Cargando objetivos guardados…',error:'No se pudieron cargar los objetivos.',retry:'Recargar objetivos',empty:'Aún no hay objetivos guardados.',failed:'Eliminación sin confirmar. Reintenta el mismo objetivo o recarga su estado actual.',deleted:'Eliminación verificada'},
 }
-export default function DaybookPersonalGoals({accountId,locale='en',onSessionLost,memory}){
+export default function DaybookPersonalGoals({accountId,locale='en',onSessionLost,memory,autoStartVector=false,vectorStartRequest=1,onVectorDone}){
  const c=COPY[locale]||COPY.en
  const [view,setView]=useState({owner:null,goals:[],phase:'loading'}),[selection,setSelection]=useState(null),[busy,setBusy]=useState(false),[status,setStatus]=useState(''),[reload,setReload]=useState(0),[pendingDelete,setPendingDelete]=useState(null)
  const epoch=useRef(0),working=useRef(false),remover=useRef(null),lost=useRef(onSessionLost)
  const cache=useRef(null)
+ const vectorStartReceipt=useRef({owner:null,request:0})
  const invalidate=useCallback(()=>{epoch.current++},[])
- const remember=useCallback((selection,pendingDelete)=>{cache.current={selection,pendingDelete,remover:remover.current};memory?.set(accountId,cache.current)},[memory,accountId])
+ const remember=useCallback((selection,pendingDelete)=>{cache.current={selection,pendingDelete,remover:remover.current,vectorStartConsumed:vectorStartReceipt.current.owner===accountId?vectorStartReceipt.current.request:0};memory?.set(accountId,cache.current)},[memory,accountId])
  useEffect(()=>{lost.current=onSessionLost},[onSessionLost])
  const sessionLost=useCallback(()=>{invalidate();memory?.clear();remover.current?.discard();cache.current?.selection?.session?.dispose();setSelection(null);setView({owner:null,goals:[],phase:'error'});lost.current?.()},[invalidate,memory])
  useEffect(()=>{
   const token=++epoch.current,abort=new AbortController()
   const checkpoint=memory?.get(accountId)
+  if(vectorStartReceipt.current.owner!==accountId)vectorStartReceipt.current={owner:accountId,request:0}
+  if(Number.isSafeInteger(checkpoint?.vectorStartConsumed))vectorStartReceipt.current.request=Math.max(vectorStartReceipt.current.request,checkpoint.vectorStartConsumed)
   let restoredSelection=checkpoint?.selection||null,restoredPending=checkpoint?.pendingDelete||null
   setSelection(restoredSelection);setBusy(false);working.current=false;setStatus(restoredPending?'failed':'');setPendingDelete(restoredPending);setView({owner:accountId,goals:[],phase:'loading'})
   remover.current=checkpoint?.remover||(accountId?createPersonalGoalRemover(appFetch,accountId):null)
@@ -46,13 +52,20 @@ export default function DaybookPersonalGoals({accountId,locale='en',onSessionLos
      setStatus('failed')
     }
    }
+   const intent=vectorStartDecision({autoStartVector,request:vectorStartRequest,consumed:vectorStartReceipt.current.request,hasSelection:Boolean(restoredSelection),selectionStatus:restoredSelection?.session?.snapshot()?.status,pendingDelete:Boolean(restoredPending)})
+   if(intent.consume){
+    vectorStartReceipt.current={owner:accountId,request:vectorStartRequest}
+    if(intent.open)restoredSelection={key:crypto.randomUUID(),kind:'vector',session:createVectorGoalSession(appFetch,accountId)}
+    if(intent.resume&&!restoredPending)setStatus('resumed')
+    remember(restoredSelection,restoredPending);setSelection(restoredSelection)
+   }
    setView({owner:accountId,goals:plan.goals,phase:'ready'})
   }).catch(error=>{if(token===epoch.current){if(error.status===401||error.status===403||error.code==='ACCOUNT_CHANGED')sessionLost();else setView({owner:accountId,goals:[],phase:'error'})}})
   const activeRemover=remover.current
   return ()=>{invalidate();abort.abort();if(!memory){activeRemover?.discard();cache.current?.selection?.session?.dispose()}}
- },[accountId,locale,reload,invalidate,sessionLost,memory,remember])
- function canSwitch(){return !selection||window.confirm(c.switch)}
- function fresh(){if(!canSwitch())return;const selected={key:crypto.randomUUID(),goal:null,session:createGoalEditorSession(appFetch,accountId)};remember(selected,null);setSelection(selected);setStatus('')}
+ },[accountId,locale,reload,invalidate,sessionLost,memory,remember,autoStartVector,vectorStartRequest])
+ function canSwitch(){return !selection||selection.session?.snapshot()?.status==='saved'||window.confirm(c.switch)}
+ function fresh(){if(!canSwitch())return;vectorStartReceipt.current={owner:accountId,request:vectorStartRequest};const selected={key:crypto.randomUUID(),kind:'vector',session:createVectorGoalSession(appFetch,accountId)};remember(selected,null);setSelection(selected);setStatus('')}
  async function edit(goal){
   if(working.current||!canSwitch())return
   working.current=true;setBusy(true);const token=epoch.current
@@ -101,9 +114,9 @@ export default function DaybookPersonalGoals({accountId,locale='en',onSessionLos
  }
  if(!accountId)return null
  if(view.owner!==accountId||view.phase!=='ready')return <section className={css.workspace}><h2>{c.title}</h2><p role="status">{view.phase==='error'?c.error:c.loading}</p>{view.phase==='error'&&<button onClick={()=>setReload(v=>v+1)}>{c.retry}</button>}</section>
- return <section className={css.workspace}><h2>{c.title}</h2><button disabled={busy||Boolean(pendingDelete)} onClick={fresh}>{c.new}</button>
+ return <section className={css.workspace} id="daybook-goals"><h2>{c.title}</h2><button disabled={busy||Boolean(pendingDelete)} onClick={fresh}>{c.new}</button>
   <button disabled={busy} onClick={()=>{if(canSwitch()){memory?.clear();cache.current?.selection?.session?.dispose();setReload(v=>v+1)}}}>{c.retry}</button>
-  {selection&&<><button disabled={busy} onClick={()=>{if(canSwitch()){remember(null,pendingDelete);setSelection(null)}}}>{c.close}</button>{selection.kind==='action'?<DaybookActionEditor key={selection.key} goalTitle={selection.goalTitle} accountId={accountId} locale={locale} editorSession={selection.session} onSaved={actionSaved} onDeleted={actionDeleted} onSessionLost={sessionLost}/>:<DaybookGoalEditor key={selection.key} accountId={accountId} locale={locale} editorSession={selection.session} onSaved={saved} onSessionLost={sessionLost}/>}</>}
+  {selection&&<><button disabled={busy} onClick={()=>{if(canSwitch()){remember(null,pendingDelete);setSelection(null)}}}>{c.close}</button>{selection.kind==='vector'?<DaybookVectorStart key={selection.key} accountId={accountId} locale={locale} editorSession={selection.session} onSaved={saved} onSessionLost={sessionLost} onDone={()=>{remember(null,pendingDelete);setSelection(null);onVectorDone?.()}}/>:selection.kind==='action'?<DaybookActionEditor key={selection.key} goalTitle={selection.goalTitle} accountId={accountId} locale={locale} editorSession={selection.session} onSaved={actionSaved} onDeleted={actionDeleted} onSessionLost={sessionLost}/>:<DaybookGoalEditor key={selection.key} accountId={accountId} locale={locale} editorSession={selection.session} onSaved={saved} onSessionLost={sessionLost}/>}</>}
   <p role="status">{c[status]||''}</p>{pendingDelete&&<button disabled={busy} onClick={()=>void remove(null)}>{c.retry}</button>}{!view.goals.length&&<p>{c.empty}</p>}
   {view.goals.map(goal=><article key={goal.id}><h3>{goal.title}</h3><button disabled={busy||Boolean(pendingDelete)} onClick={()=>void edit(goal)}>{c.edit}</button><button disabled={busy||Boolean(pendingDelete&&pendingDelete!==goal.id)} onClick={()=>void remove(goal)}>{c.remove}</button>
    {['accepted','active'].includes(goal.status)&&<button disabled={busy||Boolean(pendingDelete)} onClick={()=>void actionEditor(goal)}>{c.newAction}</button>}
