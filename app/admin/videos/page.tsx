@@ -63,6 +63,11 @@ export default async function SiteVideosPage() {
         description={{ en: "Choose a page, add a YouTube link, and preview before publishing.", ru: "Выберите страницу, добавьте ссылку YouTube и проверьте видео перед публикацией." }}
       />
       <SiteVideoManager initialRecords={records} initialLocale={initialLocale} storageReady={storageReady} entities={entities} masters={masters} />
+      <section className="site-video-review-entry" aria-label="Owner video review queue">
+        <div><strong>{klingLocale === "ru" ? "Проверка обучающих видео · RU/EN" : "Educational video review · RU/EN"}</strong>
+          <p>{klingLocale === "ru" ? "Содержание, длительность, права и категории перед появлением в MyTube." : "Verify content, length, rights and categories before MyTube."}</p></div>
+        <Link href="/admin/videos/review">{klingLocale === "ru" ? "Открыть очередь" : "Open review queue"}</Link>
+      </section>
       <section className="site-video-review-entry" aria-label="Video library coverage">
         <div>
           <strong>{klingLocale === "ru" ? "Покрытие видеобиблиотеки" : "Video Library Coverage"}</strong>
