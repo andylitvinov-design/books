@@ -17,6 +17,7 @@ import type { PublicLocale } from "@/lib/public-locales";
 import { AXIS_REFS } from "@/lib/holistic-support/axis-offer-matcher.mjs";
 import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
 import { friendConversationReply } from "@/lib/holistic-support/friend-mind.mjs";
+import {threeJourneyTurn,threeJourneyOpening,threeJourneyLabel} from "@/lib/holistic-support/three-journeys.mjs";
 import {wavePsychologistNativeTurn,wavePsychologistNativeSummary,
   wavePsychologistQuestion} from "@/lib/assist/wave-psychologist-native.mjs";
 import { reviewPracticeBoundary } from "@/lib/holistic-support/practice-boundary.mjs";
@@ -51,6 +52,7 @@ const MessengerAudioVideo = dynamic(() => import("@/components/app/messenger-aud
   .then(module => module.MessengerAudioVideo), { ssr: false });
 
 type Mode = "rules" | "device" | "owned";
+type JourneyPath = "therapy" | "consultation" | "goal";
 type PublicVideoGoal = "all" | "stress" | "energy" | "relationships" | "work" | "meaning" | "practices";
 type GuidedTrack = "video" | "meditation" | "hint" | null;
 type PreviewFocus = "" | "stress" | "relationships" | "self_worth" | "meaning";
@@ -72,7 +74,8 @@ type JudgmentView = {status:string;state:string;choices:{id:JudgmentChoiceId;lab
 type AgentReply = { judgment?:JudgmentView|null;status:string;reply:string;modelUsed:boolean;source:string;
   suggestions:{id:string;kind:string;title:string;href:string}[];decision:AgentDecision;
   browserModelAllowed:boolean; usedSavedTestEvidence?:boolean; usedSavedVideoHistory?:boolean;
-  nativeSession?:{id:string;revision:number} };
+  nativeSession?:{id:string;revision:number};
+  journey?:{path:JourneyPath;stage:number|null;action:string|null} };
 
 function recommendationPortrait(item:AgentReply["suggestions"][number]):string {
   const title=item.title.toLowerCase();
@@ -316,6 +319,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     if(Math.abs(voice.rate-persona.voice.rate)>0.015)voice.setRate(persona.voice.rate);
   },[messengerView,voiceEnabled,locale,persona.id,voice.voices,voice.voiceId,voice.rate,voice.setVoiceId,voice.setRate,voice.speechLocale,voice.setSpeechLocale,voice.conversing]);
   const [mode,setMode]=useState<Mode>("rules");
+  const [journeyPath,setJourneyPath]=useState<JourneyPath|null>(null);
+  const [journeyAction,setJourneyAction]=useState<string|null>(null);
   // Pro intentionally selects the already budget-gated Gemini FREE API, never Paid.
   const [proSelected,setProSelected]=useState(false);
   const [proConsent,setProConsent]=useState(false);
@@ -1127,6 +1132,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       (judgmentChoice!==null&&judgmentClickLock.current))return;
     alternativeAbortRef.current?.abort();alternativeAbortRef.current=null;
     lastAnswerRef.current=null;setAlternativeError("");
+    if(judgmentChoice===null)setJourneyAction(null);
     // After a tap and separate explicit Yes, this entire interview runs only
     // in the browser's temporary memory. It never calls /api/holistic-agent/turn,
     // external AI, profile memory, or privateTranscript.savePair().
@@ -1358,7 +1364,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     // Keep the user's explicit quiz choices present after older chat turns roll out.
     // A fresh topic or stop request must not inherit the old goal.
     const leaveSupport=/^(?:стоп|сменим тему|сменить тему|новая тема|другая тема|stop|cancel|switch topics|new topic|change topic|cambiar de tema|otro tema)[.!?\\s]*$/iu.test(text);
-    if(leaveSupport){setSupportSelection(null);setFriendTone("friendly");}
+    if(leaveSupport){setSupportSelection(null);setFriendTone("friendly");setJourneyPath(null);setJourneyAction(null);}
     // Preserve five-stage first-contact context without exposing additional
     // history to optional owned/browser inference modes.
     const historyLimit=mode==="rules"?12:6;
@@ -1378,14 +1384,18 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       setNeedsPrivateSignIn(false);setShowVideoSignIn(false);setEntryOpen(false);setDraft("");
       // Guest Friend uses the same offline engine as the authenticated route.
       // The existing sensitive-content boundary and signed choices still win.
-      const friendReply=supportSelection?.mode==="talk"&&judgmentChoice===null &&
+      const selectedJourney=!leaveSupport&&journeyPath&&judgmentChoice===null&&
+        !requiresProtectedReply(text,turnLocale)
+        ?threeJourneyTurn({path:journeyPath,message:text,locale:turnLocale,history:prior}):null;
+      const friendReply=selectedJourney?null:supportSelection?.mode==="talk"&&judgmentChoice===null &&
         !requiresProtectedReply(text,turnLocale)
         ?friendConversationReply({message:text,locale:turnLocale,history:prior,tone:friendTone}):null;
-      const candidate=friendReply?null:planJudgmentTurn({message:text,locale:turnLocale,
+      const candidate=selectedJourney||friendReply?null:planJudgmentTurn({message:text,locale:turnLocale,
         safety:{status:"clear"},history:prior,pending:judgmentView?.pending,choiceId:judgmentChoice});
       const handled=candidate!==null&&candidate.status!=="abstain";
       const answer=requiresProtectedReply(text,turnLocale)?boundaryReply:
-        friendReply?.reply||(handled?candidate!.reply:guestAnswer(text,prior,turnLocale));
+        selectedJourney?.reply||friendReply?.reply||(handled?candidate!.reply:guestAnswer(text,prior,turnLocale));
+      setJourneyAction(selectedJourney?.action||null);
       setJudgmentView(requiresProtectedReply(text,turnLocale)?null:
         handled?candidate as JudgmentView:null);
       judgmentClickLock.current=false;
@@ -1401,6 +1411,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         ?newNativeSessionTurn(nativeSession.current,crypto.randomUUID()):null;
       if(!stateTurn)nativeSession.current=null;
       const payload={locale:turnLocale,message:text,mode,history:prior,
+          journeyPath:!leaveSupport?journeyPath:null,
           // Only explicit coaching choice in this first-party quiz sets the goal preference.
           // Safety, price and stop questions still override it server-side.
           selectedGoal:!leaveSupport&&supportSelection?.mode==="coach"
@@ -1492,6 +1503,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       }
       if(abort.signal.aborted)return;
       setChoices(Array.isArray(data.suggestions)?data.suggestions:[]);
+      setJourneyAction(data.journey?.action||null);
       setJudgmentView(data.judgment&&Array.isArray(data.judgment.choices)?
         data.judgment:null);
       setEvidenceUsed(data.usedSavedTestEvidence===true);
@@ -1659,8 +1671,27 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       if(proAbort.current===abort){proAbort.current=null;setProBusy(false);}
     }
   }
+  function startJourney(path:JourneyPath){
+    if(busy||proBusy)return;
+    // Journey is an editorial preference. No third-party call, account write,
+    // saved profile access or paid booking occurs when choosing a path.
+    voice.stopDialogue();setMode("rules");setProSelected(false);
+    setJourneyPath(path);setJourneyAction(null);setSupportSelection(null);
+    setEntryOpen(false);setDraft("");setPageHelpLink(null);setChoices([]);
+    setMessages(prev=>[...prev,{role:"assistant" as const,
+      text:threeJourneyOpening(path,locale)||"",localOnly:true}].slice(-30));
+    window.requestAnimationFrame(()=>composerRef.current?.focus({preventScroll:true}));
+  }
   function sendSelectedTurn(raw:string){
-    if(messengerView&&proSelected){void sendProTurn(raw);return;}
+    if(messengerView&&proSelected&&journeyPath){
+      // Never mislabel an ordinary Coach Gemini session as therapy/consultation.
+      // Switch visibly to the first-party response route for this path.
+      setProSelected(false);setMode("rules");
+      setStatus(locale==="ru"?"Для выбранного сценария используется встроенный режим без Gemini.":
+        locale==="es"?"Esta ruta utiliza el modo integrado, sin Gemini.":
+          "This journey uses the built-in mode, without Gemini.");
+    }
+    if(messengerView&&proSelected&&!journeyPath){void sendProTurn(raw);return;}
     void sendTurn(raw);
   }
   function submit(event:FormEvent<HTMLFormElement>) {
@@ -1679,7 +1710,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     }
     sendSelectedTurn(draft);
   }
-  function resetConversation(){setPsychInterview("off");setPsychStage("situation");setPsychSlots({});setPsychSummaryVisible(false);setPsychFinalSummary(null);setPsychCopyStatus("idle");nativeSession.current=null;voice.stopDialogue();lastSpeechTurn.current=null;alternativeAbortRef.current?.abort();alternativeAbortRef.current=null;lastAnswerRef.current=null;setAlternativeBusy(false);controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setSupportQuizOpen(false);setSupportSelection(null);setFriendTone("friendly");setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setTestFocus(null);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);setRecorderOpen(false);setVoicePermissionOpen(false);setRecordedSttConsent(false);proAbort.current?.abort();proAbort.current=null;proTurns.current=[];
+  function resetConversation(){setJourneyPath(null);setJourneyAction(null);setPsychInterview("off");setPsychStage("situation");setPsychSlots({});setPsychSummaryVisible(false);setPsychFinalSummary(null);setPsychCopyStatus("idle");nativeSession.current=null;voice.stopDialogue();lastSpeechTurn.current=null;alternativeAbortRef.current?.abort();alternativeAbortRef.current=null;lastAnswerRef.current=null;setAlternativeBusy(false);controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setSupportQuizOpen(false);setSupportSelection(null);setFriendTone("friendly");setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setTestFocus(null);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);setRecorderOpen(false);setVoicePermissionOpen(false);setRecordedSttConsent(false);proAbort.current?.abort();proAbort.current=null;proTurns.current=[];
     setProBusy(false);setProSelected(false);setProConsent(false);setProDataConsent(false);setGeminiAvailable(null);}
 
   useEffect(()=>{
@@ -1998,7 +2029,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
               onAsk={()=>composerRef.current?.focus({preventScroll:true})}
               onTopicSelect={text=>{setDraft(text);window.requestAnimationFrame(()=>composerRef.current?.focus({preventScroll:true}));}}
               onStartAnalysis={()=>{if(draft.trim()){void sendTurn(draft);}else openSupportQuiz();}}
-              onGoalChoice={text=>sendSelectedTurn(text)}/>
+              onJourneySelect={startJourney}/>
 
           </>}
       </>}
@@ -2070,6 +2101,21 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
                 "Automatic copying failed. You can select the summary text directly in the chat.")}
         </p>}
       </div>}
+      {compact&&messengerView&&journeyPath&&messages.length>0&&
+        <div data-hh-chat-journey-tabs role="group"
+          aria-label={locale==="ru"?"Режим разговора":locale==="es"?"Modo de conversación":"Conversation path"}
+          style={{display:"flex",gap:6,flexWrap:"wrap",padding:"4px 0"}}>
+          {(["therapy","consultation","goal"] as const).map(path=>
+            <button type="button" key={path} data-hh-chat-journey-path={path}
+              aria-pressed={journeyPath===path} disabled={busy||proBusy||journeyPath===path}
+              onClick={()=>startJourney(path)}
+              style={{borderRadius:16,padding:"5px 10px",fontSize:12,
+                border:"1px solid #b8cbbf",
+                background:journeyPath===path?"#e1eee5":"#fffdf8",
+                color:"#16483b",fontWeight:journeyPath===path?700:500}}>
+              {threeJourneyLabel(path,locale)}
+            </button>)}
+        </div>}
       {messages.map((m,index)=>messengerView&&m.role==="assistant"?
         <div key={index} className={styles.messageWithAvatar} data-hh-ai-assistant-message>
           <img src={persona.image||"/images/holistic-house/reiki-approved-sunrise-v3.webp"}
@@ -2122,6 +2168,26 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
             <small>{sessionOfferDescription(locale,option.id)}</small></a>)}
         </div>}
       {compact&&pageHelpLink&&<a className={styles.testLink} data-hh-ihelp-link href={pageHelpLink.href}>{pageHelpLink.label} · {t.option}</a>}
+      {compact&&messengerView&&journeyPath&&journeyAction&&
+        <div data-hh-chat-journey-resources
+          style={{display:"flex",gap:8,flexWrap:"wrap",padding:"4px 0"}}>
+          {(journeyAction==="practices"?[
+            {href:"/practice",ru:"Практики",en:"Practices",es:"Prácticas"},
+            {href:"/meditations",ru:"Медитации",en:"Meditations",es:"Meditaciones"}
+          ]:journeyAction==="tests"?[
+            {href:"/tests",ru:"Библиотека тестов",en:"Test library",es:"Biblioteca de pruebas"}
+          ]:journeyAction==="diagnostic"?[
+            {href:"/holistic-support",ru:"Разбор ситуации",en:"Situation review",es:"Revisión de situación"}
+          ]:journeyAction==="coaches"?[
+            {href:"/my-coach",ru:"ИИ-коучи",en:"AI coaches",es:"Coaches de IA"},
+            {href:"/coaching/sessions",ru:"Встречи",en:"Sessions",es:"Sesiones"}
+          ]:journeyAction==="program"?[
+            {href:"/my-coach",ru:"ИИ-коуч",en:"AI coach",es:"Coach de IA"},
+            {href:"/coaching/sessions",ru:"Коучинговые встречи",en:"Coaching sessions",es:"Sesiones de coaching"}
+          ]:[]).map(link=><a key={link.href} className={styles.testLink}
+            data-hh-journey-resource={link.href} href={"/"+locale+link.href}>
+            {link[locale]}</a>)}
+        </div>}
       {compact&&guideLink==="tests"&&<a className={styles.testLink} data-hh-ai-tests-link
         href={"/"+locale+"/tests"}>{starter.testsLink}</a>}
       {compact&&testChatOpen&&<MessengerTestJourney key={testFocus||"all"} locale={locale} focus={testFocus}
