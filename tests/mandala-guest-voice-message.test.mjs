@@ -71,7 +71,7 @@ test("macOS WebKit hydration follows visible Goal → Montage Extra → Personal
  assert.ok(flow.includes("const preservedGoal=ideasGoalPane.locator"),"the selected Goal must be checked after personalization");
  // Test the exact supported user path, not the retired Goal → Ideas shortcut.
  const mirrorNext=flow.indexOf("await mirror.locator('[data-hh-mirror-next]').click()");
- const extraToPersonal=flow.indexOf("await enterPersonalAfterMontageExtra(page)",mirrorNext);
+ const extraToPersonal=flow.indexOf("await enterPersonalAfterMontageExtra(page,engine)",mirrorNext);
  const personalGoal=flow.indexOf("data-video-ideas-goal-panel",extraToPersonal);
  const selectGoal=flow.indexOf("await expect(ideasGoalPane.locator('[data-video-ideas-goal-choice=\"rest\"]'))",personalGoal);
  const nextControl=flow.indexOf("const ideasNext=ideasGoalPane.locator('[data-video-ideas-goal-next]')",selectGoal);
