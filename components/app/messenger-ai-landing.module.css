@@ -550,3 +550,42 @@
   .root .goalButtons>button{min-height:48px}
 }
 @media(prefers-reduced-motion:reduce){.root .goalButtons>button{transition:none}}
+
+
+/* Samir iPhone first-screen fix: grow art, never hide the goal choices behind Send. */
+@media(max-width:760px){
+ .root[data-hh-ai-landing]{position:relative;display:flex;flex-direction:column;justify-content:flex-start;box-sizing:border-box;height:100%;min-height:0;gap:6px;padding:2px 2px 3px;overflow:visible}
+ .root[data-hh-ai-landing] .genieScene{display:flex;flex-direction:column;justify-content:flex-end;flex:1 1 auto;height:auto;min-height:0;max-height:none;overflow:hidden}
+ .root[data-hh-ai-landing] .dialogueProfile{position:absolute;z-index:1;top:0;left:0;right:0;min-height:50px;padding:7px 54px 7px 11px}
+ .root[data-hh-ai-landing] .profileSparkle{visibility:hidden}
+ .root[data-hh-ai-landing] .welcomeRow{position:relative;flex:none;margin:auto 8px 8px!important}
+ .root[data-hh-ai-landing] .welcomeBubble{gap:5px!important;padding:10px 12px 9px!important}
+ .root[data-hh-ai-landing] .welcomeBubble h2{font-size:clamp(16px,4.45vw,20px)!important;line-height:1.13!important}
+ .root[data-hh-ai-landing] .welcomeBubble p{font-size:clamp(13px,3.55vw,15px)!important;line-height:1.28!important}
+ .root[data-hh-ai-landing] .welcomeMeta{min-height:26px}
+ .root[data-hh-ai-landing] .welcomeListen{min-height:25px!important;padding:4px 10px!important}
+ .root[data-hh-ai-landing] .goalButtons{flex:none;gap:6px}
+ .root[data-hh-ai-landing] .goalButtons>button{min-height:46px;padding:7px 12px;font-size:clamp(13px,3.7vw,16px);line-height:1.14}
+ .root[data-hh-ai-landing] .inlineComposer{position:relative;bottom:auto;flex:none;margin:0;padding:4px!important}
+ .root[data-hh-ai-landing] .extraDirections{position:absolute;z-index:12;top:8px;right:8px;box-sizing:border-box;width:40px;max-width:calc(100vw - 30px);border:1px solid #f4d69e;border-radius:12px;background:#013f35e8;overflow:visible}
+ .root[data-hh-ai-landing] .extraDirections>summary{display:flex;align-items:center;justify-content:center;gap:0;box-sizing:border-box;width:40px;height:42px;min-height:42px;padding:8px;font-size:0;color:white}
+ .root[data-hh-ai-landing] .extraDirections>summary svg{display:block;flex:none;width:20px;height:20px;color:inherit}
+ .root[data-hh-ai-landing] .extraDirections[open]{width:min(310px,calc(100vw - 30px));max-height:min(59dvh,490px);overflow-y:auto;overflow-x:hidden;background:#fffaf2;box-shadow:0 12px 25px #061d1a80}
+ .root[data-hh-ai-landing] .extraDirections[open]>summary{width:auto;min-height:44px;height:auto;justify-content:space-between;gap:8px;padding:9px 12px;color:#164d3c;font-size:12px}
+}
+@media(max-width:365px){
+ .root[data-hh-ai-landing] .welcomeRow{margin:auto 6px 7px!important}
+ .root[data-hh-ai-landing] .welcomeBubble{padding:9px 9px!important;gap:4px!important}
+ .root[data-hh-ai-landing] .welcomeBubble h2{font-size:16px!important}
+ .root[data-hh-ai-landing] .welcomeBubble p{font-size:12.7px!important}
+ .root[data-hh-ai-landing] .goalButtons>button{min-height:43px;padding:6px 9px;font-size:13px}
+}
+@media(max-height:740px) and (max-width:760px){
+ .root[data-hh-ai-landing] .dialogueProfile{min-height:46px;padding:5px 50px 5px 8px}
+ .root[data-hh-ai-landing] .welcomeRow{margin:auto 6px 7px!important}
+ .root[data-hh-ai-landing] .welcomeBubble{gap:4px!important;padding:8px 10px!important}
+ .root[data-hh-ai-landing] .welcomeBubble h2{font-size:16px!important}
+ .root[data-hh-ai-landing] .welcomeBubble p{font-size:12.7px!important}
+ .root[data-hh-ai-landing] .goalButtons>button{min-height:43px}
+ .root[data-hh-ai-landing] .inlineComposer{padding:3px!important}
+}
