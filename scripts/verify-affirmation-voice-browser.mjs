@@ -241,8 +241,13 @@ async function verifyWorkspaceHydration(browser,locale){
     await purpose.locator('[data-video-ideas-goal-next]').click();
     await mirror.locator('[data-hh-mirror-video-format="pro"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
+    await expect(page.locator('[data-video-quick-control="video"]')).toHaveAttribute("aria-pressed","true");
     await expect(mirror.locator('[data-hh-mirror-composer] textarea')).toBeVisible();
+    await expect(mirror.locator('[data-hh-mirror-progress]')).toHaveCount(0);
+    await expect(mirror.locator('[data-hh-mirror-ideas-cta]')).toHaveCount(0);
+    await expect(mirror.locator('[data-hh-mirror-play-example]')).toHaveCount(0);
     await expect(page.locator('[data-video-live-stage]')).toBeHidden();
+    await mirror.locator('[data-hh-mirror-guide-menu]').click();
     await mirror.locator('[data-hh-mirror-play-example]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-video-preview","open");
     await expect(page.locator('[data-video-live-stage]')).toBeVisible();
@@ -258,6 +263,8 @@ async function verifyWorkspaceHydration(browser,locale){
     }[locale];
     for(let index=0;index<4;index++)await expect(mirror.locator('[data-hh-mirror-goal-choice]').nth(index))
       .toContainText(approvedAxisLabels[index]);
+    if(await mirror.locator('[data-hh-mirror-guide-menu]').getAttribute("aria-expanded")!=="true")
+      await mirror.locator('[data-hh-mirror-guide-menu]').click();
     await mirror.locator('[data-hh-mirror-back-landing]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-screen","format");
     await mirror.locator('[data-hh-mirror-back-format]').click();
@@ -271,6 +278,8 @@ async function verifyWorkspaceHydration(browser,locale){
     await mirror.locator('[data-hh-mirror-video-format="basic"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","present");
+    if(await mirror.locator('[data-hh-mirror-guide-menu]').getAttribute("aria-expanded")!=="true")
+      await mirror.locator('[data-hh-mirror-guide-menu]').click();
     await mirror.locator('[data-hh-mirror-back-landing]').click();
     await mirror.locator('[data-hh-mirror-back-format]').click();
     await mirror.locator('[data-hh-mirror-back-purpose]').click();

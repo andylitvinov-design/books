@@ -1,7 +1,7 @@
 "use client";
 
 import {useRef,useState} from "react";
-import {ArrowLeft,ArrowRight,Briefcase,Check,ChevronDown,Clapperboard,Ellipsis,Film,Flower2,Gift,Heart,ImagePlus,Mic,Play,Plus,Sparkles,TrendingUp,UserRound,WandSparkles,Zap} from "lucide-react";
+import {ArrowLeft,ArrowRight,Briefcase,Check,ChevronDown,Clapperboard,Film,Flower2,Gift,Heart,ImagePlus,Mic,Play,Plus,Sparkles,TrendingUp,UserRound,Zap} from "lucide-react";
 import type {VideoLocale} from "@/lib/mandala/holistic-video-themes";
 import {listMyTubeCategories,listMyTubeSubcategories,listMyTubeTopics,getMyTubeTopic} from "@/lib/mandala/mytube-content-taxonomy.mjs";
 import {classifyMyTubeRequest} from "@/lib/mandala/mytube-prompt-classifier.mjs";
@@ -26,9 +26,9 @@ const choices:Record<MirrorScope,GoalOption[]>={
  me:[
   {id:"stress",theme:"health",categoryId:"stress-anxiety",image:"/videos/holistic-house/film-collection-v3/sun-warm-ocean-dawn.jpg",defaultTopicId:"low-energy",
    request:{en:"I want to release stress and restore my energy.",ru:"Хочу снизить стресс и восстановить энергию.",es:"Quiero aliviar el estrés y recuperar energía."}},
-  {id:"love",theme:"relationships",categoryId:"love-relationships",image:"/videos/holistic-house/film-collection-v3/heart-flow.jpg",defaultTopicId:"emotional-intimacy",
+  {id:"love",theme:"relationships",categoryId:"love-relationships",image:"/videos/holistic-house/film-collection-v3/petal-hope.jpg",defaultTopicId:"emotional-intimacy",
    request:{en:"I want loving, trusting relationships.",ru:"Хочу тёплых и доверительных отношений.",es:"Quiero relaciones amorosas y de confianza."}},
-  {id:"money",theme:"money",categoryId:"goals-money",image:"/videos/holistic-house/film-collection-v2/lone-tree.jpg",defaultTopicId:"financial-stability",
+  {id:"money",theme:"money",categoryId:"goals-money",image:"/videos/holistic-house/film-collection-v2/mountain-air.jpg",defaultTopicId:"financial-stability",
    request:{en:"I want greater confidence and financial stability.",ru:"Хочу уверенности и финансовой устойчивости.",es:"Quiero más confianza y estabilidad financiera."}},
   {id:"growth",theme:"goals",categoryId:"energy-confidence",image:"/videos/holistic-house/film-collection-v3/sun-autumn-hills.jpg",defaultTopicId:"personal-growth",
    request:{en:"I want personal growth and a clearer direction.",ru:"Хочу личностного развития и ясного направления.",es:"Quiero crecer personalmente y tener una dirección clara."}},
@@ -295,47 +295,11 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
  </section>;
  return <section className={css.goals} data-hh-mirror-screen="topic" data-hh-mirror-goals data-hh-mirror-mode={scope}
   data-hh-mirror-step={step} data-hh-mirror-video-preview={introExpanded?"open":"closed"} aria-label={scope==="business"?t.workQuestion:t.question}>
-  <button type="button" data-hh-mirror-back-landing className={css.backLanding}
-   onClick={()=>{closeExistingIntro();setScreen("format");changeStep(1);}}><ArrowLeft size={16}/>{copy.formatTitle}</button>
-  <header className={css.therapyHero}>
-   <span className={css.therapyEyebrow}><Sparkles size={23} aria-hidden="true"/>{scope==="me"?copy.therapy:scope==="business"?copy.work:copy.other}</span>
-   <p>{scope==="me"?copy.therapyHint:scope==="business"?copy.workHint:copy.otherHint}</p>
-  </header>
-  <button type="button" className={css.exampleVideo} data-hh-mirror-play-example
-    aria-label={copy.watch} onClick={playExistingIntro}>
-   <img src="/videos/holistic-house/film-collection-v3/sun-autumn-hills.jpg"
-    alt="" loading="eager"/>
-   <span className={css.videoPlay}><Play size={31} fill="currentColor" aria-hidden="true"/></span>
-   <span className={css.videoCaption}>{copy.watch}</span>
-  </button>
-  <div className={css.audience} role="group" aria-label={t.question}>
-   {(["me","business","present"] as const).map(item=>{
-    const Icon=item==="me"?UserRound:item==="business"?Briefcase:Gift;
-    return <button type="button" key={item} data-hh-mirror-audience={item}
-     aria-pressed={scope===item} disabled={disabled} onClick={()=>enterScreen(item)}>
-     <Icon size={17} aria-hidden="true"/>{t[item]}
-    </button>;
-   })}
-  </div>
-  <div className={css.progress} data-hh-mirror-progress
-    aria-label={(locale==="ru"?"Шаг ":locale==="es"?"Paso ":"Step ")+"1 / 3"}>
-   <strong data-hh-mirror-stage-label>{copy.step}</strong>
-   <span className={css.progressStages}>
-    <span aria-current="step"><b>1</b>{copy.topic}</span>
-    <i aria-hidden="true">—</i>
-    <span><b>2</b>{copy.script}</span>
-    <i aria-hidden="true">—</i>
-    <span><b>3</b>{copy.create}</span>
-   </span>
-  </div>
   {step>1?<button type="button" className={css.back} data-hh-mirror-back
-    disabled={disabled} onClick={()=>changeStep(step===3?2:1)}>
-    <ArrowLeft size={17} aria-hidden="true"/>{t.back}
-   </button>:<button type="button" className={css.more} data-hh-mirror-more-goals
-     disabled={disabled} onClick={onExpand} aria-label={t.advanced} title={t.advanced}>
-     <Ellipsis size={20} aria-hidden="true"/>
-   </button>}
-  <h3 className={css.question}>{scope==="business"?t.workQuestion:step===1?t.question:step===2?t.sub:t.topic}</h3>
+     disabled={disabled} onClick={()=>changeStep(step===3?2:1)}>
+     <ArrowLeft size={17} aria-hidden="true"/>{t.back}
+    </button>:null}
+   {step>1?<h3 className={css.question}>{scope==="business"?t.workQuestion:step===2?t.sub:t.topic}</h3>:null}
   {step===1?<>
    <div className={css.composer} data-hh-mirror-composer>
     <textarea id="hh-mirror-own-wish" ref={inputRef} rows={3} maxLength={500} autoComplete="off"
@@ -357,7 +321,7 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
       onClick={()=>{setFormatMenuOpen(value=>!value);setGuideOpen(false);}}>
       <Sparkles size={18} aria-hidden="true"/>{copy.ideas}<ChevronDown size={16} aria-hidden="true"/>
      </button>
-     <button type="button" className={css.toolbarMenu} aria-expanded={guideOpen}
+     <button type="button" className={css.toolbarMenu} data-hh-mirror-guide-menu aria-expanded={guideOpen}
       onClick={()=>{setGuideOpen(value=>!value);setFormatMenuOpen(false);}}>
       {copy.guide}<ChevronDown size={16} aria-hidden="true"/>
      </button>
@@ -373,7 +337,16 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
       </button>)}
      <small className={css.formatDisclosure}>{copy.formatNote}</small>
     </div>:null}
-    {guideOpen?<p className={css.guide}>{copy.guideHelp}</p>:null}
+    {guideOpen?<div className={css.guide}>
+      <p>{copy.guideHelp}</p>
+      <div className={css.guideActions}>
+       <button type="button" data-hh-mirror-play-example disabled={disabled}
+        onClick={playExistingIntro}><Play size={17} aria-hidden="true"/>{copy.watch}</button>
+       <button type="button" data-hh-mirror-back-landing disabled={disabled}
+        onClick={()=>{closeExistingIntro();setScreen("format");changeStep(1);}}>
+        <ArrowLeft size={17} aria-hidden="true"/>{copy.formatTitle}</button>
+      </div>
+     </div>:null}
    </div>
    <p className={css.example}>{copy.example}</p>
    <p className={css.alternative}>{copy.quiz}</p>
@@ -404,8 +377,7 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
       {selectedId===item.id?<Check className={css.check} size={18} aria-hidden="true"/>:null}
     </button>)}
    </div>
-   <button type="button" data-hh-mirror-ideas-cta className={css.primaryAction}
-     disabled={disabled} onClick={autoNext}><WandSparkles size={22} aria-hidden="true"/>{copy.next}<ArrowRight size={21} aria-hidden="true"/></button>
+   {/* Composer arrow is the only submit action. */}
   </>:<div className={css.cards} role="group" aria-label={step===2?t.sub:t.topic}>
    {step===2?subcategories.map((item,index)=><button type="button" className={css.card}
      key={item.id} data-hh-mirror-subcategory={item.id} disabled={disabled}
