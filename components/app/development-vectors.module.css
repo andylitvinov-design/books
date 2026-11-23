@@ -34,3 +34,7 @@
 @media(max-width:450px){.root{padding:12px 11px 40px}.hero{padding:22px}.card{padding:13px}.cardHead h3{font-size:18px}.focus{max-width:119px}.numbers{grid-template-columns:1fr 1fr 52px;gap:6px}.numbers select{font-size:15px}.delta strong{font-size:18px}.tabs button{font-size:15px;padding:14px 7px}}
 
 .prompt{border-left:3px solid #067a67;padding:8px 12px;margin:4px 0 14px;background:#f5ecdc;border-radius:0 10px 10px 0;font-size:16px;line-height:1.5;color:#143d3a}
+
+.guidedProgress{display:block;padding:10px 14px;border-radius:14px;background:#f5ecdc;color:#143d3a;font-size:15px;font-weight:750}
+.guidedDone{margin:14px 0;padding:18px;background:#e6f6f1;border:1px solid #bfded4;border-radius:18px}
+.guidedDone strong{font-size:18px}.guidedDone p{font-size:15px;line-height:1.5}.guidedDone button{min-height:44px;padding:10px 14px;border-radius:11px;background:#067a67;color:white;border:0;font-weight:700}
