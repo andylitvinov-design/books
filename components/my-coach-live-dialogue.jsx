@@ -38,6 +38,7 @@ import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coa
 import CoachingAvatar from '@/components/app/coaching-avatar'
 import MyCoachMotionMedia from '@/components/my-coach-motion-media'
 import MyCoachGreetingGate from './my-coach-greeting-gate'
+import {markCoachGreetingConnected} from '@/lib/coaching/coach-greeting-visit.mjs'
 import MyCoachCourseJourney from './my-coach-course-journey'
 import {DEFAULT_COACH_COURSE_SESSION_ID,coachCourseFocusLabel} from '@/lib/coaching/coach-course-journey.mjs'
 import MyCoachCompactProfile,{MyCoachInlineProfile} from './my-coach-compact-profile'
@@ -252,6 +253,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const geminiAvailabilityInFlightRef=useRef(false)
   const [geminiConsent,setGeminiConsent]=useState(false)
   const [geminiLiveConsent,setGeminiLiveConsent]=useState(false)
+  // Connected-session marker contains a persona ID only, never user data.
+  // Gemini sets this consent flag only after an actual Live setupComplete.
+  useEffect(()=>{
+    if(geminiLiveConsent&&sessionClockStarted)
+      markCoachGreetingConnected(personaId)
+  },[geminiLiveConsent,sessionClockStarted,personaId])
   const [liveDirectorProgress,setLiveDirectorProgress]=useState(null)
   const [geminiVoiceTier,setGeminiVoiceTier]=useState('existing')
   const [geminiVoiceConsent,setGeminiVoiceConsent]=useState(false)
@@ -1432,12 +1439,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             openingPrior={openingPrior} allowOpeningPrior={Boolean(openingPrior)&&openingProgress.checkmarks.invitation}
             enabled={liveVoiceReady} canStart={!busy&&!paused&&!replaying&&liveVoiceReady}
             liveContextAccess={liveContextAccess} contextRevision={contextRevision}
-            onSessionStart={()=>{
-               setGeminiLiveConsent(true);setSessionClockStarted(true);setIntroComplete(true)
-               // A marker is only recorded after a confirmed Live setup, never
-               // after greeting, failed token mint or attempted microphone.
-               try{window.sessionStorage.setItem('hh-coach-connected-'+personaId,'1')}catch{}
-             }}
+            onSessionStart={()=>{setGeminiLiveConsent(true);setSessionClockStarted(true);setIntroComplete(true)}}
             onVoiceStateChange={setVoiceState}
             onMicLevel={level=>{
               const wave=micWaveRef.current

@@ -8,6 +8,7 @@ import {getCoachPresentation} from '@/lib/coaching/persona-presentations.mjs'
 import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
 import MyCoachMotionMedia from './my-coach-motion-media'
 import {MyCoachInlineProfile} from './my-coach-compact-profile'
+import {hasCoachGreetingConnection} from '@/lib/coaching/coach-greeting-visit.mjs'
 import styles from './my-coach-greeting-gate.module.css'
 
 const words={
@@ -44,10 +45,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
  useEffect(()=>()=>{audioRun.current++;player.current?.cancel?.();player.current=null},[])
  // Presence-only flag for an actual previously connected Live session in
  // this tab. Never store session text, transcript, user identifiers or audio.
- useEffect(()=>{
-   try{setPriorSession(window.sessionStorage.getItem('hh-coach-connected-'+personaId)==='1')}
-   catch{setPriorSession(false)}
- },[personaId])
+ useEffect(()=>setPriorSession(hasCoachGreetingConnection(personaId)),[personaId])
  useEffect(()=>{audioRun.current++;player.current?.cancel?.();player.current=null;
    setPhase('preview');setError('')},[personaId,lang])
  function playGreeting(){
