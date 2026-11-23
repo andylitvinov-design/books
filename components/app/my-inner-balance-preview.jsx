@@ -5,6 +5,7 @@ import {appFetch} from '@/lib/app/client-fetch'
 import {INNER_VECTOR_ITEMS} from '@/lib/profile/development-vectors.mjs'
 import {savedDaybookBalance} from '@/lib/profile/daybook-growth-balance.mjs'
 import DevelopmentVectorWheel from './development-vector-wheel'
+import ClientLifeContextEditor from './client-life-context-editor'
 import styles from './my-inner-balance-preview.module.css'
 
 const COPY={
@@ -16,7 +17,7 @@ export default function MyInnerBalancePreview({accountId,locale='en',onSessionLo
  const lang=COPY[locale]?locale:'en',t=COPY[lang]
  const lost=useRef(onSessionLost)
  useEffect(()=>{lost.current=onSessionLost},[onSessionLost])
- const [snapshot,setSnapshot]=useState({owner:null,loading:true,error:false,vectors:null})
+ const [snapshot,setSnapshot]=useState({owner:null,loading:true,error:false,vectors:null,goals:null,revision:0})
  useEffect(()=>{
   if(!accountId)return undefined
   let active=true,sequence=0
@@ -27,10 +28,11 @@ export default function MyInnerBalancePreview({accountId,locale='en',onSessionLo
     .then(result=>{
      if(!active||controller.signal.aborted||token!==sequence)return
      const values=savedDaybookBalance(result)
-     setSnapshot({owner:accountId,loading:false,error:false,vectors:values})
+     setSnapshot({owner:accountId,loading:false,error:false,vectors:values,
+      goals:result.goals,revision:result.revision})
     }).catch(error=>{
      if(active&&!controller.signal.aborted&&token===sequence){
-      setSnapshot({owner:accountId,loading:false,error:true,vectors:null})
+      setSnapshot({owner:accountId,loading:false,error:true,vectors:null,goals:null,revision:0})
       if(error.status===401||error.status===403||error.code==='ACCOUNT_CHANGED')lost.current?.()
      }
     })
@@ -51,7 +53,18 @@ export default function MyInnerBalancePreview({accountId,locale='en',onSessionLo
   </div>
   {!own||snapshot.loading?<p role="status" className={styles.status}>{t.loading}</p>:
    snapshot.error?<p role="alert" className={styles.status}>{t.error}</p>:
-   <DevelopmentVectorWheel items={INNER_VECTOR_ITEMS} ratings={snapshot.vectors.inner.ratings}
-    focusId={snapshot.vectors.inner.focusId} locale={lang} track="inner"/>}
+   <>
+    <ClientLifeContextEditor key={accountId} accountId={accountId} locale={lang}
+     goals={snapshot.goals} revision={snapshot.revision}
+     onSessionLost={()=>lost.current?.()}
+     onSaved={result=>{
+      setSnapshot(previous=>previous.owner!==accountId?previous:{
+       owner:accountId,loading:false,error:false,vectors:savedDaybookBalance(result),
+       goals:result.goals,revision:result.revision
+      })
+     }}/>
+    <DevelopmentVectorWheel items={INNER_VECTOR_ITEMS} ratings={snapshot.vectors.inner.ratings}
+     focusId={snapshot.vectors.inner.focusId} locale={lang} track="inner"/>
+   </>}
  </section>
 }
