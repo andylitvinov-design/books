@@ -286,3 +286,20 @@ test('free first-party video greeting gates Live Play, not charge on preview',()
   assert.match(gateCss,/min-height:calc\(100dvh - 65px\)/)
   assert.match(gateCss,/overflow-y:auto/)
 })
+
+test('intro hides all original dialogue siblings; voice failures expose safe stages',()=>{
+ const css=load('components/my-coach-live-dialogue.module.css')
+ const source=load('components/my-coach-gemini-live.jsx')
+ assert.match(css,/data-coach-greeting-stage="introduction"\]\s*>\s*:not\(\.sessionTopbar\):not\(\[data-my-coach-greeting-gate\]\)/)
+ assert.match(css,/display:none!important/)
+ for(const [code,reason] of [['G-L8','microphoneRejected'],['G-L9','captureFailure'],['G-L10','tokenNetwork']]){
+   assert.match(source,new RegExp(code.replace('-','\\-')))
+   assert.match(source,new RegExp('GEMINI_LIVE_'))
+   assert.ok(source.includes(reason))
+ }
+ assert.match(source,/stage='microphone'/)
+ assert.match(source,/stage='capture'/)
+ assert.match(source,/stage='token'/)
+ assert.match(source,/catch\{throw Error\('GEMINI_LIVE_TOKEN_NETWORK'\)\}/)
+ assert.match(source,/onSessionStart/)
+})
