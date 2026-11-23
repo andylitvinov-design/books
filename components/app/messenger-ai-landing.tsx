@@ -225,83 +225,100 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupp
 
   return <section className={css.root} data-hh-ai-landing aria-label={welcomeTitle}
     data-hh-chat-opening="true">
-    <nav className={css.chatShortcuts} data-hh-ai-chat-shortcuts
-      aria-label={locale==="ru"?"Разделы AI чата":locale==="es"?"Secciones del chat":"Chat sections"}>
-      <Link className={css.chatShortcut} data-hh-chat-shortcut="ai" aria-current="page"
-        href={`/${locale}/app/messages?section=ai`}>
-        <Sparkles size={18} aria-hidden="true"/>
-        <span>{locale==="ru"?"ИИ":locale==="es"?"IA":"AI"}</span>
-      </Link>
-      <Link className={css.chatShortcut} data-hh-chat-shortcut="page"
-        href={`/${locale}/app/portrait`}>
-        <UserRound size={18} aria-hidden="true"/>
-        <span>{locale==="ru"?"Моя страница":locale==="es"?"Mi página":"My page"}</span>
-      </Link>
-      <Link className={css.chatShortcut} data-hh-chat-shortcut="orders"
-        href={`/${locale}/app/messages?section=orders`}>
-        <ShoppingBag size={18} aria-hidden="true"/>
-        <span>{locale==="ru"?"Мои заказы":locale==="es"?"Mis pedidos":"My orders"}</span>
-      </Link>
-      <Link className={css.chatShortcut} data-hh-chat-shortcut="clients"
-        href={`/${locale}/app/messages?section=clients`}>
-        <UsersRound size={18} aria-hidden="true"/>
-        <span>{locale==="ru"?"Мои клиенты":locale==="es"?"Mis clientes":"My clients"}</span>
-      </Link>
-    </nav>
-    <div className={css.welcomeRow} data-hh-ali-first-message data-hh-ali-hero-persona={persona.id}>
-      <img className={css.welcomePortrait} src={"/images/holistic-house/my-coach-motion/"+persona.id+"-living.webp"} alt="" width={330} height={250}
-        loading="eager" fetchPriority="high"/>
-      <article className={css.welcomeBubble} data-hh-ai-landing-question>
-        <span className={css.heroLabel}><Sparkles size={16} aria-hidden="true"/>
-          {locale==="ru"?"ИИ-помощник":locale==="es"?"Asistente de IA":"AI Assistant"}
-        </span>
-        <h2>{welcomeTitle} <span>{guideRole}</span></h2>
-        <p>{inner.promise}</p>
-        <div className={css.welcomeMeta}>
-          <button type="button" className={css.welcomeListen} data-hh-ai-persona-voice-play
-            aria-pressed={speaking} onClick={playGreeting}
-            aria-label={locale==="ru"?(speaking?"Остановить приветствие":"Послушать приветствие"):
-              locale==="es"?(speaking?"Detener saludo":"Escuchar saludo"):
-              (speaking?"Stop greeting":"Listen to greeting")}>
-            {speaking?<X size={17} aria-hidden="true"/>:<Play size={17} fill="currentColor" aria-hidden="true"/>}
-            {speaking?(locale==="ru"?"Стоп":locale==="es"?"Detener":"Stop"):
-              locale==="ru"?"Послушать":locale==="es"?"Escuchar":"Listen"}
-          </button>
+    <div className={css.genieScene} data-hh-genie-scene>
+      <div className={css.dialogueProfile}>
+        <img className={css.profilePortrait} src={persona.image} alt="" width={48} height={48} loading="eager"/>
+        <div className={css.profileIdentity}>
+          <strong>Holistic House · {guideName}</strong>
+          <span><i aria-hidden="true"/>{locale==="ru"?"На связи":locale==="es"?"En línea":"Online"}</span>
         </div>
-      </article>
+        <span className={css.profileSparkle} aria-hidden="true"><Sparkles size={20}/></span>
+      </div>
+      <div className={css.welcomeRow} data-hh-ali-first-message data-hh-ali-hero-persona={persona.id}>
+        <article className={css.welcomeBubble} data-hh-ai-landing-question>
+          <h2>{locale==="ru"?<>Привет! Я {guideName} — твой ИИ-проводник к мечте. ✨</>:
+            locale==="es"?<>¡Hola! Soy {guideName}, tu guía de IA hacia tus sueños. ✨</>:
+              <>Hi! I'm {guideName} — your AI guide to your dreams. ✨</>}</h2>
+          <p>{locale==="ru"?"У тебя есть желание, мечта или цель? А может, ты пока ищешь своё направление?":
+            locale==="es"?"¿Tienes un deseo, un sueño o una meta? ¿O todavía buscas tu camino?":
+              "Do you have a wish, a dream, or a goal? Or are you still finding your direction?"}</p>
+          <p><strong>{locale==="ru"?"Давай найдём путь к ней,":locale==="es"?"Encontremos tu camino,":"Let's find your way,"}</strong>{" "}
+            {locale==="ru"?"раскроем твои силы и сделаем следующий шаг.":
+              locale==="es"?"descubramos tus fortalezas y demos el siguiente paso.":
+                "discover your strengths, and take the next step."}</p>
+          <div className={css.welcomeMeta}>
+            <button type="button" className={css.welcomeListen} data-hh-ai-persona-voice-play
+              aria-pressed={speaking} onClick={playGreeting}
+              aria-label={locale==="ru"?(speaking?"Остановить голос ведущего":"Послушать голос ведущего"):
+                locale==="es"?(speaking?"Detener voz del guía":"Escuchar voz del guía"):
+                  (speaking?"Stop guide voice":"Listen to guide voice")}>
+              {speaking?<X size={16} aria-hidden="true"/>:<Play size={16} aria-hidden="true"/>}
+              {speaking?(locale==="ru"?"Стоп":locale==="es"?"Detener":"Stop"):
+                locale==="ru"?"Послушать":locale==="es"?"Escuchar":"Listen"}
+            </button>
+          </div>
+        </article>
+      </div>
     </div>
-    <div className={css.inlineComposer} data-hh-ai-inline-composer>{composer}</div>
-    <div className={css.topicTitleRow}>
-      <h3 className={css.topicHeading}>
-        {locale==="ru"?"Выберите направление":locale==="es"?"Elige una dirección":"Choose a direction"}
-      </h3>
-      <button type="button" className={css.moreTopics} data-hh-alchemist-more-topics
-        aria-expanded={moreTopics} onClick={()=>{
-          if(moreTopics){videoRef.current?.pause();setPlaying(false);}
-          setMoreTopics(value=>!value);
-        }}>
-        {moreTopics?(locale==="ru"?"Меньше тем":locale==="es"?"Menos temas":"Fewer topics"):
-          (locale==="ru"?"Все темы":locale==="es"?"Todos los temas":"All topics")}
-        <ArrowRight size={17} aria-hidden="true"/>
+    <div className={css.goalButtons} role="group" data-hh-genie-goal-choices
+      aria-label={locale==="ru"?"С чего начнём":locale==="es"?"Cómo empezamos":"Where shall we begin"}>
+      <button type="button" data-hh-genie-goal-choice="discover"
+        onClick={()=>onTopicSelect(locale==="ru"?"Помоги мне найти мою цель. Я пока ищу направление и хочу разобраться, чего действительно хочу.":
+          locale==="es"?"Ayúdame a descubrir mi meta. Todavía estoy buscando una dirección.":"Help me find my goal. I'm still looking for direction.")}>
+        <Compass size={23} aria-hidden="true"/>
+        <span>{locale==="ru"?"Помоги найти цель":locale==="es"?"Ayúdame a encontrar mi meta":"Help me find my goal"}</span>
+        <ArrowRight size={21} aria-hidden="true"/>
+      </button>
+      <button type="button" data-hh-genie-goal-choice="defined"
+        onClick={()=>onTopicSelect(locale==="ru"?"У меня уже есть цель. Помоги уточнить её и найти лучший следующий шаг.":
+          locale==="es"?"Ya tengo una meta. Ayúdame a aclararla y elegir el próximo paso.":"I already have a goal. Help me clarify it and choose the next step.")}>
+        <Flag size={23} aria-hidden="true"/>
+        <span>{locale==="ru"?"У меня уже есть цель":locale==="es"?"Ya tengo una meta":"I already have a goal"}</span>
+        <ArrowRight size={21} aria-hidden="true"/>
       </button>
     </div>
-    <div className={css.topics} role="group"
-      aria-label={locale==="ru"?"Выберите тему для разговора":locale==="es"?"Elige un tema":"Choose a conversation topic"}
-      data-hh-alchemist-topics data-hh-alchemist-visible-topics={moreTopics?8:4}>
-      {(moreTopics?TOPICS:TOPICS.slice(0,4)).map(item=>{
-        const Icon=item.icon;
-        const topic=inner.topics[item.id];
-        return <button key={item.id} type="button" data-hh-alchemist-topic={item.id}
-          onClick={()=>onTopicSelect(topic.prompt)} title={topic.label}>
-          <span className={css.topicIllustration}>
-            <img src={item.art} alt="" loading="lazy" width={80} height={80}/>
-          </span>
-          <span className={css.topicLabel}><Icon size={17} strokeWidth={1.8} aria-hidden="true"/>
-            {topic.label}</span>
-          <span className={css.topicArrow}><ArrowRight size={17} aria-hidden="true"/></span>
-        </button>;
-      })}
-    </div>
+    <div className={css.inlineComposer} data-hh-ai-inline-composer>{composer}</div>
+    <details className={css.extraDirections} data-hh-genie-extra-directions>
+      <summary>{locale==="ru"?"Другие направления и разделы":locale==="es"?"Más temas y secciones":"More topics and sections"} <ChevronDown size={16} aria-hidden="true"/></summary>
+      <nav className={css.chatShortcuts} data-hh-ai-chat-shortcuts
+        aria-label={locale==="ru"?"Разделы AI чата":locale==="es"?"Secciones del chat":"Chat sections"}>
+        <Link className={css.chatShortcut} data-hh-chat-shortcut="ai" aria-current="page"
+          href={"/"+locale+"/app/messages?section=ai"}><Sparkles size={17} aria-hidden="true"/>
+          <span>{locale==="ru"?"ИИ":locale==="es"?"IA":"AI"}</span></Link>
+        <Link className={css.chatShortcut} data-hh-chat-shortcut="page"
+          href={"/"+locale+"/app/portrait"}><UserRound size={17} aria-hidden="true"/>
+          <span>{locale==="ru"?"Моя страница":locale==="es"?"Mi página":"My page"}</span></Link>
+        <Link className={css.chatShortcut} data-hh-chat-shortcut="orders"
+          href={"/"+locale+"/app/messages?section=orders"}><ShoppingBag size={17} aria-hidden="true"/>
+          <span>{locale==="ru"?"Мои заказы":locale==="es"?"Mis pedidos":"My orders"}</span></Link>
+        <Link className={css.chatShortcut} data-hh-chat-shortcut="clients"
+          href={"/"+locale+"/app/messages?section=clients"}><UsersRound size={17} aria-hidden="true"/>
+          <span>{locale==="ru"?"Мои клиенты":locale==="es"?"Mis clientes":"My clients"}</span></Link>
+      </nav>
+      <div className={css.topicTitleRow}>
+        <h3 className={css.topicHeading}>{locale==="ru"?"Выбери направление":locale==="es"?"Elige una dirección":"Choose a direction"}</h3>
+        <button type="button" className={css.moreTopics} data-hh-alchemist-more-topics
+          aria-expanded={moreTopics} onClick={()=>setMoreTopics(value=>!value)}>
+          {moreTopics?(locale==="ru"?"Меньше":locale==="es"?"Menos":"Fewer"):
+            locale==="ru"?"Все темы":locale==="es"?"Todos los temas":"All topics"}
+          <ArrowRight size={17} aria-hidden="true"/>
+        </button>
+      </div>
+      <div className={css.topics} role="group"
+        aria-label={locale==="ru"?"Темы для разговора":locale==="es"?"Temas de conversación":"Conversation topics"}
+        data-hh-alchemist-topics data-hh-alchemist-visible-topics={moreTopics?8:4}>
+        {(moreTopics?TOPICS:TOPICS.slice(0,4)).map(item=>{
+          const Icon=item.icon;
+          const topic=inner.topics[item.id];
+          return <button key={item.id} type="button" data-hh-alchemist-topic={item.id}
+            onClick={()=>onTopicSelect(topic.prompt)} title={topic.label}>
+            <span className={css.topicIllustration}><img src={item.art} alt="" loading="lazy" width={80} height={80}/></span>
+            <span className={css.topicLabel}><Icon size={17} strokeWidth={1.8} aria-hidden="true"/>{topic.label}</span>
+            <span className={css.topicArrow}><ArrowRight size={17} aria-hidden="true"/></span>
+          </button>;
+        })}
+      </div>
+    </details>
     {moreTopics&&<div className={css.expandedContent} data-hh-ali-more-options>
       <button type="button" className={css.analysisButton} data-hh-alchemist-start-analysis
         onClick={onStartAnalysis}>
