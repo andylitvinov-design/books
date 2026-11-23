@@ -97,7 +97,7 @@ routeSource = routeSource
     `import { requireSameOrigin, requestOrigin } from '${new URL('../lib/app/config.js', import.meta.url)}'; const getAppConfig = () => (${JSON.stringify({...config, origins:[origin]})})`)
   .replace(/import \{ createAppRepository \} from '@\/lib\/app\/repository'/,
     'export const accountWrites = []; export let syntheticOnboardingState = "active"; export const setSyntheticOnboardingState = value => { syntheticOnboardingState = value }; const createAppRepository = () => ({ensureAccount: async actor => { accountWrites.push(actor.id); return { onboardingState: syntheticOnboardingState } }})')
-  .replace(/import \\{ consumeRate,\\s*consumeRateBatch,\\s*transaction \\} from '@\\/lib\\/app\\/database'/,
+  .replace(/import \{ consumeRate,\s*consumeRateBatch,\s*transaction \} from '@\/lib\/app\/database'/,
     'const consumeRate = async () => {}; const consumeRateBatch = async () => { throw new Error("UNEXPECTED_RATE_BATCH") }; const transaction = async () => { throw new Error("UNEXPECTED_TRANSACTION") }')
   .replace(/import \{ operationHash \} from '@\/lib\/app\/crypto'/, 'const operationHash = () => { throw new Error("UNEXPECTED_OPERATION_HASH") }')
   .replace("await import('@/lib/holistic-support/intelligence-plan.mjs')", `await import('${new URL('../lib/holistic-support/intelligence-plan.mjs', import.meta.url)}')`)
