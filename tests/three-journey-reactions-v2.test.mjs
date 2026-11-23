@@ -133,6 +133,7 @@ test('existing messenger and server authority still own actual actions, safety a
  assert.match(server,/journeyPath/);
  assert.match(server,/safety\.status==="clear"/);
  assert.match(server,/threeJourneyTurn/);
+ assert.match(server,/body\.journeyPath==null\|\|body\.judgmentContext!=null\|\|body\.judgmentChoice!=null/);
  assert.match(chat,/journeyPath:!leaveSupport\?journeyPath:null/);
  assert.match(chat,/onJourneySelect=\{startJourney\}/);
  assert.match(chat,/consentOnStart:true/); // preserves recent iPhone mic fix
