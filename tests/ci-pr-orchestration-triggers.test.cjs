@@ -643,9 +643,22 @@ test('hourly Vercel dedupes exact SHA across v6 readyState and state',()=>{
  check([],false);
  assert.match(workflow,/target=production&limit=100/,
    'a single bounded GET covers recent production deployments');
- assert.match(workflow,/cron: '13,43 \* \* \* \*'/);
-  assert.ok(workflow.includes("github.event.schedule == '13,43 * * * *'"),
+ assert.match(workflow,/cron: '24,54 \* \* \* \*'/);
+  assert.ok(workflow.includes("github.event.schedule == '24,54 * * * *'"),
     'publisher schedule predicate must match its only routine cron');
+ assert.match(workflow,/^  workflow_run:\n    workflows: \['HH full open-PR production coordinator'\]\n    types: \[completed\]/m,
+   'same publisher may wake from existing coordinator without another cron or publisher');
+ for (const guard of [
+   "github.repository == 'andylitvinov-design/books'",
+   "github.ref == 'refs/heads/codex/bootstrap-books'",
+   "github.event.workflow_run.event == 'schedule'",
+   "github.event.workflow_run.conclusion == 'success'",
+   "github.event.workflow_run.path == '.github/workflows/hh-pr-full-inventory.yml'",
+   "github.event.workflow_run.head_branch == 'codex/bootstrap-books'",
+   "github.event.workflow_run.repository.full_name == 'andylitvinov-design/books'",
+   "github.event.workflow_run.head_repository.full_name == 'andylitvinov-design/books'",
+ ]) assert.ok(workflow.includes(guard),'untrusted coordinator must never trigger release: '+guard);
+
   assert.match(workflow,/cutoff_ms=.*3600000/,
     'rolling 60-minute budget cap remains enforceable for both cron chances');
  assert.match(workflow,/if \[\[ "\$EMERGENCY" != "true" \]\]; then/);
