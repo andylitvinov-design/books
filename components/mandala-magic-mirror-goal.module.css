@@ -628,3 +628,238 @@
  .purposeScreen [data-video-ideas-goal-page]{gap:5px!important}
  .purposeScreen [data-video-ideas-goal-next]{min-height:44px!important}
 }
+
+
+/* Owner mobile visual reference · 2026-11-23 · landing only.
+   Photo strip contains three cropped approved illustration areas; no screenshot,
+   private identity, new player or new price/checkout state is introduced. */
+@media (max-width:759px) {
+  [data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) [data-video-quick-builder]:has(> .goals.landing) {
+    margin-top:-12px!important;
+    padding-inline:10px!important;
+    background-image:
+      linear-gradient(90deg,rgba(5,55,45,.97),rgba(5,68,55,.80) 42%,rgba(8,62,51,.02) 100%),
+      url("/images/holistic-house/reiki-approved-sunrise-v3.webp"),
+      linear-gradient(175deg,#fff9f0,#fdf1e5 82%,#fff8ef)!important;
+    background-position:top center,top right,center!important;
+    background-size:100% 224px,100% 224px,100% 100%!important;
+    background-repeat:no-repeat!important;
+  }
+  [data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) [data-video-quick-builder]:has(> .goals.landing) > [data-video-hypno-scroll-start] {
+    min-height:52px!important;
+    padding:4px 3px 1px!important;
+    gap:5px!important;
+  }
+  [data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) [data-video-quick-builder]:has(> .goals.landing) > [data-video-hypno-scroll-start] > a:first-child {
+    width:42px!important;
+    min-width:42px!important;
+    height:45px!important;
+  }
+  [data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) [data-video-quick-builder]:has(> .goals.landing) > [data-video-hypno-scroll-start] > a:first-child svg {
+    width:37px!important;
+    height:37px!important;
+    color:#b9e856!important;
+  }
+  [data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) [data-video-quick-builder]:has(> .goals.landing) > [data-video-hypno-scroll-start] > span:nth-of-type(2) {
+    display:grid!important;
+    gap:2px!important;
+    min-width:0;
+  }
+  [data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) [data-video-quick-builder]:has(> .goals.landing) > [data-video-hypno-scroll-start] > span:nth-of-type(2) strong {
+    font:750 clamp(17px,5vw,23px)/1.04 Georgia,serif!important;
+    color:#fffaf2!important;
+    white-space:nowrap;
+  }
+  [data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) [data-video-quick-builder]:has(> .goals.landing) > [data-video-hypno-scroll-start] > span:nth-of-type(2) small {
+    font:550 clamp(9px,2.6vw,11px)/1.12 system-ui,sans-serif!important;
+    color:#f3faed!important;
+  }
+  /* The dock retains AI help, so a duplicate header iHelp control is unnecessary. */
+  [data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) [data-video-quick-builder]:has(> .goals.landing) > [data-video-hypno-scroll-start] > button[data-video-ihelp-header-trigger] {
+    display:none!important;
+  }
+  .title:has(+ .goals.landing) {
+    display:grid!important;
+    grid-template-columns:32px minmax(0,1fr);
+    align-content:start;
+    align-items:center;
+    gap:3px 6px;
+    min-height:clamp(145px,18.7dvh,169px)!important;
+    padding:8px 14px 15px!important;
+    margin:0!important;
+    background:transparent!important;
+    color:#fff!important;
+    text-align:left;
+  }
+  .title:has(+ .goals.landing) > svg {
+    grid-column:1;
+    grid-row:1;
+    width:30px;height:30px;
+    color:#fffdf5;
+  }
+  .title:has(+ .goals.landing) h2 {
+    grid-column:2;
+    grid-row:1;
+    font:750 clamp(33px,8.9vw,43px)/1.02 Georgia,serif!important;
+    color:#fffdf5!important;
+    letter-spacing:-.03em;
+  }
+  .title:has(+ .goals.landing) strong {
+    grid-column:1/-1;
+    grid-row:2;
+    max-width:min(78%,305px)!important;
+    font:800 clamp(22px,6.25vw,27px)/1.08 system-ui,sans-serif!important;
+    color:#ffe1a0!important;
+    letter-spacing:-.02em;
+    text-wrap:balance;
+  }
+  .title:has(+ .goals.landing) .heroSwoosh {
+    grid-column:1/-1;
+    width:clamp(154px,43vw,205px);
+    height:12px;
+    margin:2px 0 0 7px;
+    border-bottom:5px solid #f8d573;
+    border-radius:55%;
+    transform:rotate(-3deg);
+  }
+  .goals.landing {
+    padding:0 0 5px!important;
+    gap:0!important;
+    margin:0!important;
+  }
+  .goals.landing .destinationCards {
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    gap:clamp(10px,1.4dvh,13px)!important;
+  }
+  .goals.landing .destination {
+    position:relative;
+    isolation:isolate;
+    display:grid;
+    grid-template-columns:42% minmax(0,1fr) 39px!important;
+    align-items:stretch;
+    min-width:0;
+    min-height:clamp(142px,18.7dvh,174px)!important;
+    gap:6px!important;
+    padding:0 7px 0 0!important;
+    overflow:hidden;
+    border:2px solid #fff9f2!important;
+    border-radius:29px!important;
+    background:linear-gradient(105deg,#e6fff3,#fbfff8 78%,#e2fff5)!important;
+    box-shadow:0 5px 17px #6c4f3726;
+    text-align:left;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .goals.landing .destination:first-child {
+    border:2px solid #16e6a2!important;
+    background:linear-gradient(108deg,#d9ffee,#f8fff7 73%,#d5ffe9)!important;
+    box-shadow:0 0 0 2px #b9ffe8,0 0 15px #00cf9d6b,0 5px 16px #0d986657!important;
+  }
+  .goals.landing .destination:nth-child(2) {
+    background:linear-gradient(105deg,#fff5e6,#fffdf8 70%,#ffebd2)!important;
+    box-shadow:0 5px 17px #87603833;
+  }
+  .goals.landing .destination:nth-child(3) {
+    background:linear-gradient(105deg,#e8f7ff,#fffefb 71%,#dff6ff)!important;
+    box-shadow:0 5px 16px #4b6f7930;
+  }
+  .goals.landing .destinationImage {
+    display:block;
+    width:100%;
+    height:100%;
+    min-height:0;
+    align-self:stretch;
+    border-radius:26px 10px 10px 26px;
+    background-image:url("/images/holistic-house/magic-mirror-owner-cards-20261123.avif");
+    background-repeat:no-repeat;
+    background-size:100% 300%;
+    background-position:center top;
+    -webkit-mask-image:linear-gradient(to right,#000 87%,transparent 100%);
+    mask-image:linear-gradient(to right,#000 87%,transparent 100%);
+  }
+  .goals.landing .destination:nth-child(2) .destinationImage {background-position:center center}
+  .goals.landing .destination:nth-child(3) .destinationImage {background-position:center bottom}
+  .goals.landing .destinationCopy {
+    position:relative;
+    z-index:1;
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    justify-content:center;
+    gap:5px!important;
+    padding:8px 0!important;
+    min-width:0;
+  }
+  .goals.landing .destinationCopy > svg {
+    flex:none;
+    width:clamp(26px,7vw,35px);
+    height:clamp(26px,7vw,35px);
+    stroke-width:2;
+    color:#00875e;
+  }
+  .goals.landing .destination:nth-child(2) .destinationCopy > svg {color:#8a5c0f}
+  .goals.landing .destination:nth-child(3) .destinationCopy > svg {color:#0b6b80}
+  .goals.landing .destinationCopy strong {
+    font:830 clamp(17px,5.35vw,23px)/1.03 system-ui,sans-serif!important;
+    letter-spacing:-.036em;
+    color:#073d31;
+    overflow-wrap:normal;
+    text-wrap:pretty;
+  }
+  .goals.landing .destinationCopy small {
+    font:610 clamp(11.5px,3.62vw,15px)/1.18 system-ui,sans-serif!important;
+    color:#3e4e4d;
+  }
+  .goals.landing .destinationArrow {
+    position:relative;
+    z-index:2;
+    align-self:center;
+    justify-self:center;
+    width:38px!important;
+    height:43px!important;
+    border-radius:99px;
+    color:#fff;
+    background:linear-gradient(135deg,#00b588,#00694d)!important;
+    box-shadow:0 4px 13px #0876593b;
+  }
+  .goals.landing .destination:nth-child(2) .destinationArrow {
+    background:linear-gradient(135deg,#d3a558,#885c20)!important;
+  }
+  .goals.landing .destination:nth-child(3) .destinationArrow {
+    background:linear-gradient(135deg,#18b1bd,#00778c)!important;
+  }
+  .goals.landing .destinationArrow svg {width:25px;height:25px}
+  .goals.landing .destination:after {
+    content:"";
+    position:absolute;
+    right:-19px;
+    bottom:-19px;
+    width:119px;
+    height:70px;
+    border-top:6px solid #ffffffb3;
+    border-radius:90% 10% 0 0;
+    background:linear-gradient(180deg,#ffffff05,#56ce8750);
+    transform:rotate(-24deg);
+    pointer-events:none;
+  }
+  .goals.landing .destination:nth-child(2):after {background:linear-gradient(180deg,#ffffff00,#deae714f)}
+  .goals.landing .destination:nth-child(3):after {background:linear-gradient(180deg,#ffffff00,#2eb6d459)}
+  .goals.landing .destination:focus-visible {outline:3px solid #066f57;outline-offset:3px}
+}
+@media (max-width:359px) {
+  [data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) [data-video-quick-builder]:has(> .goals.landing) {padding-inline:7px!important}
+  .title:has(+ .goals.landing) {padding-inline:8px!important;min-height:138px!important}
+  .title:has(+ .goals.landing) h2 {font-size:30px!important}
+  .title:has(+ .goals.landing) strong {font-size:21px!important}
+  .goals.landing .destination {grid-template-columns:39% minmax(0,1fr) 31px!important;gap:4px!important;min-height:140px!important;padding-right:4px!important}
+  .goals.landing .destinationCopy strong {font-size:16px!important}
+  .goals.landing .destinationCopy small {font-size:11px!important}
+  .goals.landing .destinationArrow {width:31px!important;height:38px!important}
+  .goals.landing .destinationArrow svg {width:22px;height:22px}
+}
+@media (max-width:759px) and (max-height:740px) {
+  [data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="landing"]) [data-video-quick-builder]:has(> .goals.landing) {background-size:100% 191px,100% 191px,100% 100%!important}
+  .title:has(+ .goals.landing) {min-height:126px!important}
+  .goals.landing .destination {min-height:clamp(128px,18dvh,145px)!important}
+}
