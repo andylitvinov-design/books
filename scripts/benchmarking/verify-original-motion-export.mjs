@@ -210,6 +210,21 @@ try {
   }
   assert.equal(await preset.getAttribute('aria-pressed'), 'true');
   assert.deepEqual(await page.locator('[data-free-film-source]').evaluateAll(nodes => nodes.map(node => node.dataset.freeFilmSource)), ids);
+  // This is the ORIGINAL-FOOTAGE export contract. Montage now requires a
+  // photo choice, exercised above with a licensed fictional coach still.
+  // Disable that optional portrait using the actual visible visitor control
+  // before comparing full encoded frames to the four source masters.
+  // Do not lower source-identity thresholds or bypass the real MP4 encoder.
+  const portraitOverlay=page.locator('[data-video-photo-enabled]');
+  await portraitOverlay.waitFor({state:'visible',timeout:15000});
+  assert.equal(await portraitOverlay.isChecked(),true,'COACH_PORTRAIT_WAS_ENABLED');
+  if(engine==='webkit')await portraitOverlay.tap();
+  else await portraitOverlay.uncheck();
+  await page.waitForFunction(()=>{
+    const input=document.querySelector('[data-video-photo-enabled]');
+    return input instanceof HTMLInputElement && !input.checked;
+  },undefined,{timeout:15000});
+  assert.equal(await portraitOverlay.isChecked(),false,'ORIGINAL_MOTION_EXPORT_HAS_NO_PORTRAIT_OVERLAY');
   await page.locator('[data-video-quick-control="editor"]').click();
   // Match the real post-#3676 Montage. Format/duration remain available via Montage → Advanced storyboard → Video settings.
   await openMontageSettings(page);
