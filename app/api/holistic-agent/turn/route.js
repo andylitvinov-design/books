@@ -215,7 +215,12 @@ export async function POST(request) {
         psychologistConsent:false,selectedService:false,safety}):null;
     // Verify signed continuations before reading optional state or producing an
     // early answer. Judgment is evaluated once for this exact safe turn.
-    const judgmentEligible=body.mode==="rules"&&safety.status==="clear"&&!recentUnsafe;
+    // A user-selected dialogue journey owns ordinary safe free-text turns;
+    // otherwise generic Judgment Mind would intercept fear/procrastination and
+    // silently bypass that explicit choice. Signed judgment continuations still
+    // take precedence and MUST be verified normally.
+    const judgmentEligible=body.mode==="rules"&&safety.status==="clear"&&!recentUnsafe&&
+      (body.journeyPath==null||body.judgmentContext!=null||body.judgmentChoice!=null);
     const judgmentContext=judgmentEligible&&body.judgmentContext
       ?verifyJudgmentChoice({config,actor,token:body.judgmentContext,history:body.history}):null;
     if(judgmentEligible&&body.judgmentContext&&!judgmentContext)throw new AppError("INVALID_JUDGMENT_CONTEXT",400);
