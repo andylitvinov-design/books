@@ -7,7 +7,7 @@ import { consultationSavingAvailable } from '@/lib/consultations/availability'
 import { changeConsultationDocumentStatus as changeDocumentStatus } from '@/lib/consultations/lifecycle'
 import { createConsultation, updateConsultation } from '@/lib/consultations/service'
 import { parseDaoResourceScore } from '@/lib/consultations/dao-resource-stage'
-import { parseReportMaterialIds, stageReportMaterials } from '@/lib/consultations/report-material-staging'
+import { parseReportMaterialIds, parseReportMaterialPlacements, stageReportMaterials } from '@/lib/consultations/report-material-staging'
 import { deliveryEnabled } from '@/lib/clients/delivery-model'
 import { getAppConfig } from '@/lib/app/config'
 import { transaction } from '@/lib/app/database'
@@ -56,10 +56,12 @@ export async function createConsultationAction(previous, formData) {
   if (!store) return { error: 'Documents are temporarily unavailable. Please try again.' }
   let pair
   let selectedMaterialIds = []
+  let selectedPlacements = {}
   let materialConfig
   try {
     const data = input(formData)
     selectedMaterialIds = parseReportMaterialIds(formData.get('materialIdsJson'))
+    selectedPlacements = parseReportMaterialPlacements(formData.get('materialPlacementsJson'), selectedMaterialIds)
     if (selectedMaterialIds.length) {
       if (!deliveryEnabled() || !data.includeRecommendation) throw new Error('INVALID_SESSION_MATERIALS')
       // Check the chosen IDs against the approved, ready catalog BEFORE creating the document.
@@ -75,7 +77,7 @@ export async function createConsultationAction(previous, formData) {
     if (selectedMaterialIds.length) {
       try {
         await stageReportMaterials({ config: materialConfig, store,
-          report: pair.recommendation, materialIds: selectedMaterialIds }, {
+          report: pair.recommendation, materialIds: selectedMaterialIds, materialPlacements: selectedPlacements }, {
           createSession: createClientSession, getSession: getOwnerSession, saveDraft: saveOwnerDraft,
         })
       } catch {

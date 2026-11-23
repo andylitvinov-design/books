@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import {runInNewContext} from 'node:vm';
 import { parsePrTrigger, matchesTrigger } from '../lib/ci/specialist-aggregate.mjs';
 
 const workflows = [
@@ -101,7 +102,6 @@ test('Draft, failed Core, non-PR and failed specialist cannot pass one-runner re
 const runGroupSuffix = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
 const prOnlyCancellation = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}";
 const firstAttemptGroupSuffix = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
-const firstAttemptCancellation = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}";
 const syncOnlyFirstAttemptCancellation = "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}";
 const supersededRunWorkflows = [
   ['hh-crm-source-check.yml', 'hh-crm-source'],
@@ -162,7 +162,6 @@ for (const name of draftStageWorkflows) {
     assert.match(source, /^concurrency:\s*\n  group:/m);
     const attemptScoped = ['hh-crm-source-check.yml', 'hh-private-audio-e2e.yml', 'practice-visual-browser.yml'].includes(name);
     const syncOnlyCondition = "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize'";
-    const firstAttemptCondition = "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize'";
     const prOnlyCondition = "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize'";
     const condition = attemptScoped ? syncOnlyCondition : prOnlyCondition;
     assert.ok(source.includes("  cancel-in-progress: ${{ " + condition + " }}"));
@@ -535,7 +534,25 @@ for (const [name, jobs] of heavyDraftStage) {
     assert.ok(block);
     const suffix = '$' + "{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
     for (const job of jobs) {
-      assert.ok(block.includes('  ' + job + ':\n    if: ' + suffix + '\n'), name + '/' + job + ' Ready gate missing');
+      if(name==='hh-public-performance-audit.yml'&&job==='measure-public'){
+        // #5212 deliberately collects Draft perf(home) evidence before owner review.
+        // Ordinary Drafts must still skip it; this never grants merge/release readiness.
+        const condition=block.match(/^  measure-public:\n    if: (.+)$/m)?.[1];
+        assert.ok(condition,name+'/'+job+' condition missing');
+        const expression=condition.replace(/^\$\{\{\s*|\s*\}\}$/g,'');
+        for(const [event,draft,title,expected] of [
+          ['pull_request',true,'feat: ordinary draft',false],
+          ['pull_request',true,'perf(home): measured candidate',true],
+          ['pull_request',true,'feat: perf(home): embedded prefix',false],
+          ['pull_request',true,'perf(home-other): unrelated',false],
+          ['pull_request',false,'feat: ready candidate',true],
+          ['workflow_dispatch',false,'manual audit',true],
+        ]){
+          const github={event_name:event,event:{pull_request:{draft,title}}};
+          const script='const github='+JSON.stringify(github)+';const startsWith=(value,prefix)=>value.startsWith(prefix);Boolean('+expression+')';
+          assert.equal(runInNewContext(script,{}, {timeout:100}),expected,name+'/'+job+' '+title);
+        }
+      }else assert.ok(block.includes('  ' + job + ':\n    if: ' + suffix + '\n'), name + '/' + job + ' Ready gate missing');
     }
     assert.doesNotMatch(source, /continue-on-error:\s*true/);
   });

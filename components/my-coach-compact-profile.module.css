@@ -26,6 +26,11 @@
 .card p{margin:0;color:#273d36;font:520 clamp(14px,3.82vw,16px)/1.22 system-ui}
 .cardChevron{position:absolute;right:8px;top:50%;transform:translateY(-50%);color:#167555;pointer-events:none}
 .characterCard .cardBody,.modelCard .cardBody,.focusCard .cardBody{padding-right:21px}
+.stylePassport{display:grid;gap:3px;margin:6px 0 0;padding:0;color:#29473c}
+.stylePassport>div{display:flex;align-items:baseline;gap:5px;min-width:0;font:520 clamp(11.5px,3vw,13px)/1.2 system-ui}
+.stylePassport dt{flex:none;font-weight:800;color:#16674d}
+.stylePassport dt::after{content:':' }
+.stylePassport dd{min-width:0;margin:0;overflow-wrap:anywhere}
 .model{display:block;color:#155941;font:800 clamp(13.5px,3.6vw,15px)/1.2 system-ui}
 .steps{display:flex;flex-wrap:wrap;align-items:center;gap:1px 5px;margin-top:2px!important;font:600 clamp(12px,3.18vw,13.5px)/1.22 system-ui!important}
 .steps>span{white-space:nowrap}.steps b{display:inline-block;margin-right:5px;color:#158464}
@@ -50,7 +55,7 @@
 @media(max-width:355px){
 .page{gap:5px;padding-inline:8px}.brand{gap:4px;font-size:15px}.mark{width:30px;height:30px;font-size:28px}.language{min-width:59px;padding-inline:4px;gap:1px}.language select{font-size:12px}.back{padding-inline:7px;font-size:13px}
 .heroCopy{inset:10px 10px 9px}.heroCopy h1{font-size:clamp(28px,8.6vw,35px)}.heroTags{gap:4px;margin-top:4px}.heroTags span{font-size:10px;padding:5px 5px;gap:2px}.heroTags svg{width:11px;height:11px}
-.card{grid-template-columns:44px minmax(0,1fr);gap:8px;padding:6px 9px;border-radius:19px}.cardIcon{width:44px;height:44px;border-radius:14px}.cardIcon svg{width:26px;height:26px}.card h2{font-size:16px;margin-bottom:3px}.card p{font-size:14px;line-height:1.2}
+.card{grid-template-columns:44px minmax(0,1fr);gap:8px;padding:6px 9px;border-radius:19px}.cardIcon{width:44px;height:44px;border-radius:14px}.cardIcon svg{width:26px;height:26px}.card h2{font-size:16px;margin-bottom:3px}.card p{font-size:14px;line-height:1.2}.stylePassport>div{font-size:11.5px}
 .characterCard .cardBody,.modelCard .cardBody,.focusCard .cardBody{padding-right:13px}.cardChevron{right:2px;width:17px}.focus span{padding:5px 6px;font-size:11.5px}
 .featureBody{display:flex;flex-direction:column;align-items:flex-start;gap:4px}.features{display:flex;flex-wrap:wrap;gap:4px 9px;padding:0;border:0}.features li{font-size:12px}
 .quote{padding:8px 10px}.quoteCopy p{font-size:15px}
@@ -64,3 +69,137 @@
 .header{min-height:39px}.language{height:39px}.back{min-height:39px}.card{grid-template-columns:40px minmax(0,1fr);padding-top:5px;padding-bottom:5px}.cardIcon{width:40px;height:40px;border-radius:12px}.card h2{font-size:15.5px}.quoteCopy p{font-size:14px}
 }
 @media(prefers-reduced-motion:reduce){.dialog{scroll-behavior:auto}}
+
+/* Pre-Play view shares the dialog profile's card and quote styles without
+   duplicating its portrait, already visible in the session hero above. */
+.inlineProfile{
+  box-sizing:border-box;display:grid;grid-template-rows:none;
+  gap:9px;width:min(100%,900px);margin:0 auto;
+  padding:4px 2px 16px;color:#163f34;
+}
+.inlineHeading{
+  display:flex;align-items:center;gap:8px;margin:4px 3px 2px;
+  color:#075340;font:800 clamp(17px,4.6vw,21px)/1.25 system-ui;
+  letter-spacing:-.02em;
+}
+.inlineHeading svg{flex:none;color:#098469}
+.inlineProfile .card{width:100%;min-height:66px}
+.inlineProfile .quote{width:100%;min-height:126px}
+@media(max-width:355px){
+  .inlineProfile{gap:7px}
+  .inlineHeading{font-size:17px}
+}
+
+
+/* Owner-approved pre-Play profile: large original coach portrait/video ABOVE is
+   deliberately untouched. The page can scroll; never shrink it to one viewport. */
+.inlineProfile{
+  gap:12px;
+  padding:6px 2px 24px;
+}
+.inlineHeader{
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;column-gap:9px;row-gap:7px;
+  min-width:0;margin:4px 2px 2px;
+}
+.inlineHeading{
+  flex:1 1 auto;min-width:0;
+  margin:0;gap:7px;
+  font:800 clamp(18px,4.7vw,23px)/1.2 system-ui;
+  white-space:nowrap;letter-spacing:-.035em;
+}
+.inlineHeading svg{flex:none;width:20px;height:20px}
+.priceBadge{
+  flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;
+  min-height:33px;padding:6px 10px;box-sizing:border-box;
+  border:1px solid #e8c77a;border-radius:999px;
+  background:#fff1cf;color:#125340;
+  font:800 clamp(12px,3.22vw,15px)/1.15 system-ui;
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+.stylePassport{display:grid;gap:11px;margin:0;padding:0}
+.inlineProfile .card{
+  grid-template-columns:clamp(52px,14vw,66px) minmax(0,1fr);
+  align-items:center;gap:12px;min-height:98px;
+  padding:13px clamp(12px,3.5vw,19px);
+  border-radius:23px;border-color:#e9dfd3;
+  background:#fffcf7;box-shadow:0 5px 14px #40362b17;
+}
+.inlineProfile .cardIcon{
+  width:clamp(52px,14vw,66px);
+  height:clamp(52px,14vw,66px);
+  border-radius:18px;
+}
+.inlineProfile .cardIcon svg{width:29px;height:29px}
+.inlineProfile .cardBody{min-width:0;padding-right:0}
+.inlineProfile .modelCard .cardBody,
+.inlineProfile .focusCard .cardBody{padding-right:20px}
+.inlineProfile .card h2{
+  margin-bottom:5px;color:#073e32;
+  font:800 clamp(20px,5.5vw,25px)/1.13 system-ui;
+  letter-spacing:-.035em;
+}
+.inlineProfile .card p{
+  margin:0;color:#263e35;
+  font:520 clamp(16px,4.4vw,19px)/1.34 system-ui;
+  overflow-wrap:normal;
+}
+.inlineProfile .archetypeValue,
+.page .archetypeValue{
+  display:inline-block;width:fit-content;
+  max-width:100%;padding:7px 11px;
+  border-radius:999px;background:#fff0cc;
+  color:#15563f!important;font-weight:750!important;
+}
+.inlineProfile .model{font:800 clamp(17px,4.7vw,20px)/1.25 system-ui}
+.inlineProfile .steps{
+  display:flex;gap:4px 7px;align-items:center;
+  font:650 clamp(14px,3.9vw,17px)/1.35 system-ui!important;
+  margin-top:5px!important;
+}
+.inlineProfile .focus{gap:7px;margin-top:7px}
+.inlineProfile .focus span{
+  padding:7px 10px;border-radius:999px;
+  font:750 clamp(13px,3.65vw,16px)/1.2 system-ui;
+}
+.inlineProfile .focus svg{width:16px;height:16px}
+.inlineProfile .featureBody{display:block}
+.inlineProfile .featureBody h2{margin-bottom:7px}
+.inlineProfile .features{display:grid;gap:8px;padding:0;margin:0;border:0}
+.inlineProfile .features li{font:550 clamp(15px,4vw,18px)/1.3 system-ui;gap:8px}
+.inlineProfile .features svg{width:18px;height:18px}
+.inlineProfile .quote{
+  min-height:158px;padding:18px;border-radius:25px;
+  background-position:center,center 38%,center;
+}
+.inlineProfile .quoteCopy{max-width:83%}
+.inlineProfile .quoteCopy p{font-size:clamp(18px,4.9vw,23px);line-height:1.3}
+.inlineProfile .quoteCopy footer{font-size:clamp(15px,3.8vw,18px)}
+.quoteCopy{max-width:83%}
+@media(max-width:355px){
+  .inlineProfile{gap:10px}
+  .inlineHeader{align-items:flex-start}
+  .inlineHeading{width:100%;font-size:18px}
+  .priceBadge{margin-left:auto;font-size:12.5px}
+  .inlineProfile .card{gap:10px;padding:12px 11px}
+  .inlineProfile .card h2{font-size:20px}
+  .inlineProfile .card p{font-size:16px}
+  .inlineProfile .features li{font-size:15px}
+  .inlineProfile .focus span{font-size:13px}
+}
+
+/* User-opened full profile also scrolls naturally; the portrait is not a
+   small grid row and the cards are never squeezed to one phone screen. */
+.page{height:auto;min-height:100%;display:flex;flex-direction:column;gap:11px}
+.page .hero{flex:0 0 auto;min-height:clamp(310px,56dvh,510px)}
+.page .card{flex:0 0 auto;min-height:79px;padding:12px 13px}
+.page .card h2{font-size:clamp(20px,5.1vw,24px)}
+.page .card p{font-size:clamp(16px,4.1vw,19px);line-height:1.3}
+.page .cardIcon{width:55px;height:55px}
+.page .card{grid-template-columns:55px minmax(0,1fr)}
+.page .featureBody{display:block}
+.page .features{padding:0;margin-top:6px;border:0}
+.page .features li{font-size:15px}
+.page .model{font-size:17px}
+.page .steps{font-size:14px!important}
+.page .quote{flex:0 0 auto;min-height:150px}

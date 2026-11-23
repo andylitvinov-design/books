@@ -235,7 +235,7 @@
   min-width:0;padding:8px 12px 23px;color:#fff2d7;background-color:#1a1009;
   background-image:
    linear-gradient(180deg,rgba(13,8,4,.24),rgba(16,8,4,.13) 34%,rgba(22,11,5,.43) 60%,#1a1009 98%),
-   url("/images/holistic-house/support-therapy-cabinet.webp");
+   url("/images/holistic-house/support-therapy-cabinet-hd.webp");
   background-size:100% 870px,100% auto;background-position:top center;background-repeat:no-repeat;
   overflow:visible
  }
@@ -387,7 +387,7 @@
  .root{
   background-image:
    linear-gradient(180deg,rgba(13,8,4,.10) 0%,rgba(16,8,4,.12) 34%,rgba(22,11,5,.41) 57%,#1a1009 96%),
-   url("/images/holistic-house/support-therapy-cabinet.webp");
+   url("/images/holistic-house/support-therapy-cabinet-hd.webp");
   background-size:100% 760px,100% auto;
   background-position:center top,center -28px;
   background-repeat:no-repeat
@@ -416,12 +416,12 @@
  }
  .choiceMedia{height:45px;min-height:45px}
  .choices[data-question-kind="topic"] .choiceMedia{
-  background-image:url("/images/holistic-house/support-luxury-choice-photos.webp");
+  background-image:url("/images/holistic-house/support-personal-choice-photos-hd.webp");
   background-size:200% 200%;background-repeat:no-repeat
  }
  .choices[data-question-kind="topic"] .choice:nth-child(1) .choiceMedia{background-position:0 0}
- .choices[data-question-kind="topic"] .choice:nth-child(2) .choiceMedia{background-position:0 100%}
- .choices[data-question-kind="topic"] .choice:nth-child(3) .choiceMedia{background-position:100% 0}
+ .choices[data-question-kind="topic"] .choice:nth-child(2) .choiceMedia{background-position:0 83%}
+ .choices[data-question-kind="topic"] .choice:nth-child(3) .choiceMedia{background-position:100% 17%}
  .choices[data-question-kind="topic"] .choice:nth-child(4) .choiceMedia{background-position:100% 100%}
  .choiceContent{min-height:50px;gap:4px;padding:5px 7px 6px;
   font-size:clamp(12.5px,3.5vw,15px);line-height:1.09}
@@ -443,4 +443,215 @@
  .heroStage{min-height:146px}
  .choiceMedia{height:60px;min-height:60px}
  .choice,.choices[data-question-kind="topic"] .choice{min-height:118px}
+}
+
+/* SUPPORT_TEN_INLINE_AREAS_20261121: preserve the original 3×2 gateway;
+   four additional photo cards are visible immediately in a balanced 2×2 row. */
+.categoryGridMore{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:9px}
+.categorySecondary{min-height:109px;border-radius:18px}
+.categorySecondary .categoryMedia{height:62px;background-size:cover;background-position:center;background-repeat:no-repeat}
+.categorySecondary .categoryInfo{padding:16px 10px 8px}
+.categorySecondary .categoryName{font-size:clamp(13px,3.7vw,16px);line-height:1.13}
+.categorySecondary[data-services-quiz-category="constellations"] .categoryMedia{
+ background-image:url("/images/holistic-house/video-posters/constellations-en-v1.webp")}
+.categorySecondary[data-services-quiz-category="practices"] .categoryMedia{
+ background-image:url("/images/holistic-house/assist-video-meditation.webp")}
+.categorySecondary[data-services-quiz-category="courses"] .categoryMedia{
+ background-image:url("/images/holistic-house/course-focus-mountain-boy.webp")}
+.categorySecondary[data-services-quiz-category="tests"] .categoryMedia{
+ background-image:url("/images/holistic-house/video-posters/hypnotherapy-en-v1.webp")}
+/* Results are one tidy inset panel, not a full-width pale box of oversized text. */
+.results{margin:16px 0 0;padding:10px;border:1px solid #d5b88c;border-radius:20px;
+ background:linear-gradient(160deg,#fffaf0,#f5ead9);box-shadow:0 5px 15px #0905024d;color:#173e34}
+.summary{margin:0 0 9px;padding:0;border:1px solid #e0cba8;border-radius:12px;
+ background:#f4ead8;color:#1b493b;box-shadow:none}
+.summary summary{display:flex;align-items:center;gap:8px;min-height:39px;padding:7px 10px;
+ cursor:pointer;list-style:none;font:500 12.5px/1.25 Arial,Helvetica,sans-serif}
+.summary summary::-webkit-details-marker{display:none}
+.summary summary strong{flex:none;font-weight:800;color:#075943}
+.summary summary span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.summary summary svg{flex:none;color:#1c7154;transition:transform .15s ease}
+.summary[open] summary svg{transform:rotate(180deg)}
+.summary p{margin:0;padding:1px 11px 10px;color:#4d5c50;font:500 12px/1.43 Arial,Helvetica,sans-serif;overflow-wrap:anywhere}
+@media (max-width:350px){
+ .categoryGridMore{gap:6px}
+ .categorySecondary{min-height:104px}
+ .categorySecondary .categoryMedia{height:58px}
+ .categorySecondary .categoryInfo{padding:15px 7px 7px}
+ .categorySecondary .categoryName{font-size:12.5px}
+ .results{padding:8px}
+}
+
+/* One first-party HD room, shared by For Me and For Business.
+   The mobile photo stays behind real accessible interactive controls, never text baked into a raster. */
+@media(max-width:760px){
+ .root{background-color:#190e09;background-position:center top,center -28px}
+}
+
+
+/* SUPPORT_MOBILE_FIRST_SCREEN_FIT_20261121
+   Actual iPhone 390×844: CTA/goal must remain above the fixed dock.
+   Small screens can scroll, never clip interactions or diminish readable text. */
+@media (max-width:520px) {
+ .hero .lotusMark{
+   width:42px;height:29px;display:block;margin:0 auto 1px;
+   background:none;filter:none;color:#f3c271;overflow:visible
+ }
+ .choices[data-question-kind="topic"] .choiceMedia{
+   background-image:url("/images/holistic-house/support-personal-choice-photos-hd.webp");
+   background-size:200% auto
+ }
+ .root :is(.next,.submit,.goalComposer){scroll-margin-bottom:calc(96px + env(safe-area-inset-bottom))}
+}
+@media (max-width:520px) and (max-height:920px) {
+ .root{
+   padding-top:3px;
+   background-position:center top,center -68px;
+   background-size:100% 720px,100% auto
+ }
+ .brandBar{min-height:38px;padding-block:0 2px}
+ .brand>svg{height:27px;width:26px}
+ .brand strong{font-size:clamp(18px,4.9vw,22px)}
+ .languageMenu summary,.help,.profile{min-height:35px;height:35px;min-width:35px}
+ .hero{padding:0}
+ .hero .lotusMark{height:23px;width:37px}
+ .hero h1{font-size:clamp(23px,6.35vw,27px);line-height:1.015}
+ .hero .heroTagline{margin-top:4px;font-size:clamp(12px,3.45vw,14px)}
+ .heroPrompt{min-height:25px;margin-top:5px;padding:4px 14px;font-size:clamp(12px,3.45vw,14px)}
+ .heroStage{min-height:clamp(24px,4dvh,38px)}
+ .audienceSwitch{min-height:42px;margin:0 auto 1px;padding:2px}
+ .audienceSwitch button{min-height:36px;font-size:clamp(12px,3.5vw,15px)}
+ .progress{gap:0;margin-bottom:0;font-size:12px}
+ .progressDot,.progressDot[aria-current="step"]{height:19px;width:19px}
+ .question legend{margin-bottom:4px;font-size:clamp(20px,5.7vw,24px);line-height:1.02}
+ .choices{gap:6px}
+ .choice,.choices[data-question-kind="topic"] .choice{min-height:82px;border-radius:15px}
+ .choiceMedia{height:34px;min-height:34px}
+ .choiceContent{min-height:46px;padding:4px 5px;font-size:clamp(12px,3.4vw,14px);line-height:1.06}
+ .choiceContent>svg{height:20px;width:20px}
+ .orDivider{margin:3px 0 2px}
+ .goalComposer{min-height:43px;padding-left:10px}
+ .goalComposer input{height:41px;font-size:clamp(13px,3.65vw,16px)}
+ .goalComposer button{height:40px}
+ .next,.submit{min-height:44px;margin-top:6px;padding:6px 12px;font-size:clamp(17px,4.7vw,21px)}
+ .categories{margin-top:20px}
+}
+/* When a business category is opened, remove redundant hero text so the
+   five Express formats and their Get details action remain easy to browse. */
+@media(max-width:520px) and (max-height:920px){
+ .root:has([data-services-business-menu][data-business-step="2"]) .hero .lotusMark,
+ .root:has([data-services-business-menu][data-business-step="2"]) .hero .heroTagline,
+ .root:has([data-services-business-menu][data-business-step="2"]) .heroPrompt{display:none}
+ .root:has([data-services-business-menu][data-business-step="2"]) .heroStage{min-height:12px}
+ .root:has([data-services-business-menu][data-business-step="2"]) .hero h1{font-size:clamp(21px,5.9vw,25px);max-width:95%}
+}
+
+/* SUPPORT_GOAL_FIRST_PROGRESSIVE_20261121: one shared goal entry above the
+   progressive four-choice quiz; the compact Next is RIGHT of the input. */
+@media(max-width:760px){
+ .root .goalEntry{display:grid;grid-template-columns:minmax(0,1fr) 79px;align-items:stretch;gap:7px;margin:9px 2px 6px;min-width:0}
+ .root .goalEntry .goalComposer{display:flex;align-items:center;min-width:0;min-height:54px;padding:0 6px 0 10px;gap:6px;border-radius:29px}
+ .root .goalEntry .goalComposer>svg{flex:none;width:19px;height:19px}
+ .root .goalEntry .goalComposer input{flex:1;min-width:0;height:49px;font-size:clamp(14px,3.75vw,17px)}
+ .root .goalEntry .dictation{flex:none;display:grid;place-items:center;width:32px;height:44px;border:0;background:transparent;color:#075c41}
+ .root .goalNext{display:flex;align-items:center;justify-content:center;gap:3px;min-width:0;min-height:54px;padding:4px 7px;border:1.5px solid #dcbd83;border-radius:27px;background:linear-gradient(180deg,#0c9b70,#00583d);color:#fff6d7;box-shadow:0 4px 11px #0009;font:700 clamp(13px,3.55vw,16px)/1 Georgia,serif;cursor:pointer}
+ .root .goalNext svg{flex:none;width:17px}
+ .root .goalNext:disabled{opacity:.55;cursor:not-allowed}
+ .root .orDivider{margin:5px 0 8px}
+ .root .progress{margin:0 0 4px;font-size:13px}
+ .root .question legend{margin-bottom:8px;font-size:clamp(23px,6.4vw,29px);line-height:1.07}
+ .root .choices{gap:9px}
+ .root .choice,.root .choices[data-question-kind="topic"] .choice{min-height:121px;border-radius:17px}
+ .root .choiceMedia{height:57px;min-height:57px}
+ .root .choiceContent{min-height:62px;gap:6px;padding:7px 8px;font-size:clamp(14.5px,3.9vw,18px);line-height:1.1}
+ .root .choiceContent>svg{width:24px;height:24px}
+ .root .choices:not([data-question-kind="topic"]) .choiceMedia{display:none}
+ .root .choices:not([data-question-kind="topic"]) .choice{min-height:79px}
+ .root .choices:not([data-question-kind="topic"]) .choiceContent{min-height:78px}
+ .root .submit{display:flex;align-items:center;justify-content:center;gap:8px;width:88%;min-height:52px;margin:13px auto 4px;font-size:clamp(18px,4.8vw,23px)}
+ .root :is(.goalEntry,.question,.submit){scroll-margin-bottom:calc(108px + env(safe-area-inset-bottom))}
+}
+@media(max-width:350px){
+ .root .goalEntry{grid-template-columns:minmax(0,1fr) 67px;gap:5px;margin-inline:0}
+ .root .goalNext{font-size:12px;padding-inline:4px}
+ .root .goalNext svg{width:14px}
+ .root .goalEntry .goalComposer{padding-left:7px;gap:4px}
+ .root .goalEntry .goalComposer input{font-size:13px}
+ .root .choiceContent{font-size:14px}
+}
+
+
+/* SUPPORT_FROSTED_GOAL_ABOVE_AUDIENCE_20261121
+   Approved final mobile mock: room → translucent goal + Next → For Me/Business
+   → four progress dots → the existing photograph-led quiz. One real input,
+   no duplicate composer, second navigation bar, OR label or static UI image. */
+@media(max-width:760px){
+ .root .goalEntry{
+  display:grid;grid-template-columns:minmax(0,1fr) clamp(73px,20vw,92px);
+  align-items:stretch;gap:8px;min-width:0;
+  margin:clamp(7px,1.6dvh,13px) 4px 10px
+ }
+ .root .goalEntry .goalComposer{
+  display:flex;align-items:center;gap:6px;
+  min-width:0;min-height:54px;padding:0 7px 0 11px;border-radius:999px;
+  border:2px solid rgba(255,245,222,.95);
+  background:linear-gradient(112deg,rgba(255,251,241,.77),rgba(249,231,211,.67));
+  -webkit-backdrop-filter:blur(15px) saturate(1.14);
+  backdrop-filter:blur(15px) saturate(1.14);
+  box-shadow:0 0 0 1px rgba(201,148,84,.40),
+   0 5px 16px rgba(12,7,4,.46),
+   inset 0 1px 9px rgba(255,255,255,.38)
+ }
+ .root .goalEntry .goalComposer>svg{
+  width:22px;height:22px;flex:none;color:#e3a229
+ }
+ .root .goalEntry .goalComposer input{
+  height:49px;min-width:0;width:100%;flex:1;
+  color:#223a33;font:550 clamp(14px,3.7vw,17px)/1.2 Arial,Helvetica,sans-serif;
+  text-overflow:ellipsis
+ }
+ .root .goalEntry .goalComposer input::placeholder{
+  color:rgba(73,69,62,.84);opacity:1
+ }
+ .root .goalEntry .goalComposer .dictation{
+  display:grid;place-items:center;flex:none;width:35px;min-width:35px;
+  height:46px;border:0;background:transparent;color:#075d42
+ }
+ .root .goalEntry .goalComposer:focus-within{
+  outline:2px solid #8fefd1;outline-offset:2px;
+  box-shadow:0 0 0 1px rgba(247,224,176,.9),
+   0 5px 16px rgba(12,7,4,.45),
+   inset 0 1px 9px rgba(255,255,255,.4)
+ }
+ .root .goalNext{
+  display:flex;align-items:center;justify-content:center;gap:4px;
+  min-width:0;min-height:54px;padding:6px 6px;
+  border:2px solid #ecc889;border-radius:999px;
+  background:linear-gradient(180deg,#078e61,#005337 89%);
+  color:#fff4d8;font:700 clamp(15px,3.8vw,19px)/1.08 Georgia,"Times New Roman",serif;
+  box-shadow:0 5px 14px #080502b0,inset 0 1px 0 #84e0a75b;
+  white-space:nowrap
+ }
+ .root .goalNext svg{width:19px;height:19px;flex:none}
+ .root .goalNext:disabled{opacity:.58;cursor:not-allowed}
+ .root .audienceSwitch{margin:0 auto 6px;max-width:435px}
+ .root .orDivider{display:none}
+ .root :is(.goalEntry,.audienceSwitch,.question){scroll-margin-top:20px}
+}
+@media(max-width:520px) and (max-height:920px){
+ /* Expose the leather armchairs between the header and frosted entry.
+    Unlike the old 24px spacer, the room remains a visible part of the hero. */
+ .root .heroStage{min-height:clamp(54px,8dvh,75px)}
+}
+@media(max-width:350px){
+ .root .heroStage{min-height:46px}
+ .root .goalEntry{
+  grid-template-columns:minmax(0,1fr) 67px;gap:5px;margin-inline:0
+ }
+ .root .goalEntry .goalComposer{gap:4px;padding:0 5px 0 8px}
+ .root .goalEntry .goalComposer input{font-size:13px}
+ .root .goalEntry .goalComposer>svg{width:18px;height:18px}
+ .root .goalEntry .goalComposer .dictation{width:31px;min-width:31px}
+ .root .goalNext{font-size:13px;padding-inline:3px}
+ .root .goalNext svg{width:14px;height:14px}
 }

@@ -158,3 +158,329 @@
   .card[data-profile-space-card="state"] .cardBody small,
   .card[data-profile-space-card="reports"] .cardBody small{font-size:11.5px}
 }
+
+/* Compact My Courses hero: scoped to CourseSpaceIntro, not the personal Profile hero. */
+@media(max-width:760px){
+  .dashboard[data-profile-course-landing] .mode{margin:4px 0 7px;gap:8px}
+  .dashboard[data-profile-course-landing] .mode .life{color:#fff!important}
+  .dashboard[data-profile-course-landing] .scenic{padding:15px 13px 11px}
+  .dashboard[data-profile-course-landing] .path{
+    margin-top:12px;min-height:62px;padding:8px 10px;gap:8px
+  }
+  .dashboard[data-profile-course-landing] .pathText strong{color:#103f35!important}
+  .dashboard[data-profile-course-landing] .pathArrow{color:#08745b!important}
+}
+
+/* MY_SPACE_CINEMATIC_20261121 — owner-approved lounge variant.
+   Only the profile landing carries this palette: the CourseSpaceIntro
+   shares this CSS module but MUST keep its separate teal design. */
+.dashboard[data-profile-space-dashboard]{
+  width:100%;max-width:900px;margin:0 auto;color:#fff4da;
+}
+.dashboard[data-profile-space-dashboard] .mode{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;margin:3px 0 9px;
+}
+.dashboard[data-profile-space-dashboard] .mode a{
+  box-sizing:border-box;min-width:0;min-height:46px;
+  padding:8px 5px;border:1.5px solid #f6d69a;border-radius:999px;
+  box-shadow:0 3px 10px #120a0670,inset 0 1px #fff7d37a;
+  font:700 clamp(15px,4vw,21px)/1.1 Georgia,serif;
+  letter-spacing:-.01em;
+}
+.dashboard[data-profile-space-dashboard] .mode a svg{width:21px;height:21px;flex:none}
+.dashboard[data-profile-space-dashboard] .life{
+  background:linear-gradient(125deg,#048968,#004c34);color:#fff6db;
+}
+.dashboard[data-profile-space-dashboard] .work{
+  background:linear-gradient(140deg,#fff6dd,#f5dba7);color:#123f2b;
+}
+.dashboard[data-profile-space-dashboard] .scenic{
+  position:relative;isolation:isolate;display:flex;flex-direction:column;
+  box-sizing:border-box;min-height:198px;overflow:hidden;
+  padding:16px 15px 12px;border:1px solid #e0b873a6;border-radius:25px;
+  background-image:
+    linear-gradient(92deg,rgba(24,20,11,.91) 0%,rgba(27,31,19,.74) 42%,rgba(40,32,20,.12) 83%),
+    url("/images/holistic-house/reiki-approved-sunrise-v3.webp");
+  background-size:cover,cover;background-position:center,61% 49%;
+  color:#fff3d7;box-shadow:0 7px 23px #100b07a6;
+}
+.dashboard[data-profile-space-dashboard] .eyebrow{
+  margin:0 0 3px 1px!important;color:#fff2d1!important;
+  letter-spacing:.19em;font:760 10px/1.25 system-ui,sans-serif;
+  text-shadow:0 2px 7px #110b06a8;
+}
+.dashboard[data-profile-space-dashboard] .title{
+  margin:0 0 4px!important;color:#fff4da!important;
+  font:700 clamp(33px,7.6vw,55px)/1 Georgia,serif!important;
+  letter-spacing:-.04em;text-shadow:0 3px 13px #100905d9;
+}
+.dashboard[data-profile-space-dashboard] .intro{
+  max-width:31ch;margin:0 0 7px 1px!important;
+  color:#fff7e6!important;
+  font:500 clamp(12.5px,3.15vw,16px)/1.33 system-ui,sans-serif;
+  text-shadow:0 2px 9px #100a06e8;
+}
+.dashboard[data-profile-space-dashboard] .path{
+  box-sizing:border-box;display:flex;min-height:58px;margin-top:auto;
+  gap:9px;padding:8px 10px;border:1.5px solid #fff0b8;
+  border-radius:999px;
+  background:linear-gradient(128deg,#fff9e7 0%,#ffe9b5 67%,#f4cb87 100%);
+  box-shadow:0 4px 14px #160e098c,inset 0 1px #fffdf1;
+  color:#073b2b;
+}
+.dashboard[data-profile-space-dashboard] .pathIcon{
+  width:39px;min-width:39px;height:39px;
+  border-right:1px solid #a17d43;color:#006a47;
+}
+.dashboard[data-profile-space-dashboard] .pathIcon svg{width:27px;height:27px}
+.dashboard[data-profile-space-dashboard] .pathText{gap:2px}
+.dashboard[data-profile-space-dashboard] .pathText strong{
+  font:700 clamp(18px,4.2vw,25px)/1 Georgia,serif;color:#073a29;
+}
+.dashboard[data-profile-space-dashboard] .pathText small{
+  font:520 clamp(11px,2.75vw,14px)/1.18 system-ui,sans-serif;color:#244331;
+}
+.dashboard[data-profile-space-dashboard] .pathArrow{
+  box-sizing:border-box;flex:none;width:36px;height:36px;
+  padding:8px;border:1px solid #eddb9c;border-radius:50%;
+  color:#fff8da;background:linear-gradient(135deg,#048553,#00432c);
+}
+.dashboard[data-profile-space-dashboard] .cards{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  align-items:stretch;gap:8px;margin-top:9px;
+}
+.dashboard[data-profile-space-dashboard] .card{
+  position:relative;display:flex;flex-direction:column;
+  min-width:0;min-height:151px;height:auto;overflow:hidden;
+  border:1.5px solid #e8bb72;border-radius:21px;
+  background:#fbe5b7;color:#123b2d;
+  box-shadow:0 5px 13px #110b0699;
+}
+.dashboard[data-profile-space-dashboard] .photo{
+  display:block;flex:none;align-self:stretch;
+  box-sizing:border-box;width:100%;height:55px;min-height:55px;
+  background-image:url("/images/holistic-house/support-personal-choice-photos-hd.webp");
+  background-repeat:no-repeat;background-size:400% 100%;background-position:0% center;
+}
+.dashboard[data-profile-space-dashboard] .photo[data-profile-photo="courses"]{
+  background-image:url("/images/holistic-house/books-library.webp");
+  background-size:cover;background-position:center 56%;
+}
+.dashboard[data-profile-space-dashboard] .photo[data-profile-photo="reports"]{
+  background-position:33.333% center;
+}
+.dashboard[data-profile-space-dashboard] .photo[data-profile-photo="sessions"]{
+  background-position:100% center;
+}
+.dashboard[data-profile-space-dashboard] .cardBody{
+  position:static;box-sizing:border-box;display:grid;flex:1;
+  grid-template-columns:24px minmax(0,1fr);
+  grid-template-areas:"icon title" "detail detail";
+  grid-template-rows:min-content auto;
+  align-items:start;justify-content:initial;
+  column-gap:6px;row-gap:3px;
+  min-width:0;min-height:95px;
+  margin-top:-6px;padding:8px 10px 12px;
+  border-radius:17px 17px 19px 19px;
+  background:linear-gradient(160deg,#fff9e5,#f9dea8 68%,#f5cd8b);
+}
+.dashboard[data-profile-space-dashboard] .cardIcon{
+  grid-area:icon;align-self:center;
+  width:24px;height:24px;border-radius:50%;
+  background:transparent;color:#005b3b;
+}
+.dashboard[data-profile-space-dashboard] .cardIcon svg{width:23px;height:23px}
+.dashboard[data-profile-space-dashboard] .cardBody strong{
+  grid-area:title;align-self:center;
+  color:#142c20;font:700 clamp(13px,3.7vw,18px)/1.07 Georgia,serif;
+  letter-spacing:-.025em;overflow-wrap:normal;word-break:normal;
+}
+.dashboard[data-profile-space-dashboard] .cardBody small{
+  grid-area:detail;align-self:start;
+  max-width:calc(100% - 17px);
+  color:#244134;font:530 clamp(10.7px,2.77vw,13.3px)/1.18 system-ui,sans-serif;
+  overflow-wrap:normal;word-break:normal;
+}
+.dashboard[data-profile-space-dashboard] .cardArrow{
+  position:absolute;top:auto;bottom:8px;right:8px;
+  transform:none;box-sizing:border-box;width:20px;height:20px;
+  padding:1px;border-radius:50%;background:transparent;color:#075d3a;
+}
+.dashboard[data-profile-space-dashboard] .count{
+  position:absolute;z-index:2;top:7px;right:7px;
+  min-width:23px;padding:3px 5px;
+  border:1px solid #efd48d;border-radius:999px;
+  color:#fff7df;background:#07865b;font:800 11px/1 system-ui,sans-serif;
+}
+.dashboard[data-profile-space-dashboard] .account{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;margin-top:9px;
+}
+.dashboard[data-profile-space-dashboard] .account a{
+  display:flex;box-sizing:border-box;gap:7px;
+  min-width:0;min-height:50px;padding:8px 9px;
+  border:1.5px solid #e4ba79;border-radius:20px;
+  background:linear-gradient(120deg,#05563c,#023a29);color:#fff2d3;
+  box-shadow:0 5px 14px #0a100bcc;
+}
+.dashboard[data-profile-space-dashboard] .account a:last-child{
+  color:#143d2e;background:linear-gradient(120deg,#fff7de,#f6d8a1);
+}
+.dashboard[data-profile-space-dashboard] .account a>svg{
+  flex:none;width:25px;height:25px;
+}
+.dashboard[data-profile-space-dashboard] .account a strong{
+  font:700 clamp(15px,3.8vw,21px)/1 Georgia,serif;
+}
+.dashboard[data-profile-space-dashboard] .account a small{
+  font:510 clamp(10px,2.5vw,12.5px)/1.15 system-ui,sans-serif;
+}
+.dashboard[data-profile-space-dashboard] a:focus-visible{
+  outline:3px solid #ffe4a1;outline-offset:3px;
+}
+@media(max-width:430px){
+  .dashboard[data-profile-space-dashboard] .mode a{min-height:43px;padding:7px 4px}
+  .dashboard[data-profile-space-dashboard] .mode{gap:7px;margin:3px 0 7px}
+  .dashboard[data-profile-space-dashboard] .scenic{
+    min-height:171px;padding:12px 12px 9px;border-radius:22px;
+  }
+  .dashboard[data-profile-space-dashboard] .eyebrow{font-size:9.5px}
+  .dashboard[data-profile-space-dashboard] .title{font-size:clamp(32px,8vw,39px)!important}
+  .dashboard[data-profile-space-dashboard] .intro{
+    max-width:29ch;font-size:clamp(12px,3.27vw,14px);
+    line-height:1.27;
+  }
+  .dashboard[data-profile-space-dashboard] .path{
+    min-height:52px;gap:7px;padding:6px 8px;
+  }
+  .dashboard[data-profile-space-dashboard] .pathIcon{
+    width:33px;min-width:33px;height:34px;
+  }
+  .dashboard[data-profile-space-dashboard] .pathIcon svg{width:24px;height:24px}
+  .dashboard[data-profile-space-dashboard] .pathText strong{font-size:clamp(17px,4.35vw,20px)}
+  .dashboard[data-profile-space-dashboard] .pathText small{font-size:clamp(10.5px,2.7vw,12px)}
+  .dashboard[data-profile-space-dashboard] .pathArrow{width:32px;height:32px;padding:6px}
+  .dashboard[data-profile-space-dashboard] .cards{margin-top:8px;gap:7px}
+  .dashboard[data-profile-space-dashboard] .card{
+    min-height:149px;border-radius:19px;
+  }
+  .dashboard[data-profile-space-dashboard] .photo{
+    height:53px;min-height:53px;
+  }
+  .dashboard[data-profile-space-dashboard] .cardBody{
+    min-height:96px;padding:8px 9px 12px;gap:3px 6px;
+  }
+  .dashboard[data-profile-space-dashboard] .cardIcon{width:22px;height:22px}
+  .dashboard[data-profile-space-dashboard] .cardIcon svg{width:21px;height:21px}
+  .dashboard[data-profile-space-dashboard] .cardBody strong{font-size:clamp(12.5px,3.7vw,16px)}
+  .dashboard[data-profile-space-dashboard] .cardBody small{font-size:clamp(10.2px,2.7vw,11.8px)}
+  .dashboard[data-profile-space-dashboard] .account{margin-top:8px;gap:7px}
+  .dashboard[data-profile-space-dashboard] .account a{
+    min-height:48px;padding:7px 6px;gap:6px;border-radius:17px;
+  }
+}
+@media(max-width:354px){
+  .dashboard[data-profile-space-dashboard] .mode a{font-size:14px;gap:4px}
+  .dashboard[data-profile-space-dashboard] .mode a svg{width:18px;height:18px}
+  .dashboard[data-profile-space-dashboard] .scenic{min-height:174px;padding:11px 9px 9px}
+  .dashboard[data-profile-space-dashboard] .title{font-size:31px!important}
+  .dashboard[data-profile-space-dashboard] .intro{font-size:12px}
+  .dashboard[data-profile-space-dashboard] .path{gap:5px;padding:5px 6px}
+  .dashboard[data-profile-space-dashboard] .pathIcon{width:27px;min-width:27px}
+  .dashboard[data-profile-space-dashboard] .pathText strong{font-size:16px}
+  .dashboard[data-profile-space-dashboard] .pathText small{font-size:10px}
+  .dashboard[data-profile-space-dashboard] .cardBody{
+    padding:7px 7px 13px;grid-template-columns:19px minmax(0,1fr);column-gap:4px;
+  }
+  .dashboard[data-profile-space-dashboard] .cardIcon,
+  .dashboard[data-profile-space-dashboard] .cardIcon svg{width:19px;height:19px}
+  .dashboard[data-profile-space-dashboard] .cardBody strong{font-size:12.5px}
+  .dashboard[data-profile-space-dashboard] .cardBody small{font-size:10px}
+  .dashboard[data-profile-space-dashboard] .account a>svg{width:20px;height:20px}
+  .dashboard[data-profile-space-dashboard] .account a strong{font-size:14px}
+  .dashboard[data-profile-space-dashboard] .account a small{font-size:9.5px}
+}
+@media(min-width:700px){
+  .dashboard[data-profile-space-dashboard] .scenic{min-height:270px;padding:26px 27px 21px}
+  .dashboard[data-profile-space-dashboard] .cards{gap:12px;margin-top:12px}
+  .dashboard[data-profile-space-dashboard] .card{min-height:203px}
+  .dashboard[data-profile-space-dashboard] .photo{height:100px;min-height:100px}
+  .dashboard[data-profile-space-dashboard] .cardBody{min-height:103px;padding:12px 18px 20px;grid-template-columns:33px 1fr}
+  .dashboard[data-profile-space-dashboard] .cardIcon,.dashboard[data-profile-space-dashboard] .cardIcon svg{width:29px;height:29px}
+  .dashboard[data-profile-space-dashboard] .cardBody strong{font-size:23px}
+  .dashboard[data-profile-space-dashboard] .cardBody small{font-size:15px}
+  .dashboard[data-profile-space-dashboard] .account a{min-height:68px}
+}
+
+
+/* OWNER_DAYBOOK_FOCUS_20261122 — owner's second approved My Space layout:
+   actual client focus below the hero copy and ABOVE the ONE Daybook action.
+   Signed-out preview is neutral, never filled with fictitious goals/axes.
+   Scoped to My Space, NOT My Courses or reports. */
+.dashboard[data-profile-space-dashboard] .scenic{
+  min-height:258px;
+  background-position:center,61% 50%;
+  padding-bottom:13px;
+}
+.focusRow{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:9px;width:100%;margin:12px 0 10px;min-width:0;
+}
+.focusChip{
+  display:flex;align-items:center;gap:9px;box-sizing:border-box;
+  min-width:0;min-height:57px;padding:8px 10px;
+  border:1.5px solid #f5d58f;border-radius:999px;
+  background:linear-gradient(128deg,#fff9e7,#fbe5b8 67%,#f3ca89);
+  box-shadow:0 4px 12px #160c0875,inset 0 1px #fffef0;
+  color:#082e1e;text-decoration:none;
+}
+.focusIcon{
+  display:grid;place-items:center;flex:0 0 32px;
+  width:32px;height:32px;border-right:1px solid #ba935f;
+  color:#00603c;
+}
+.focusChip > span:nth-child(2){display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.focusChip > svg:last-child{flex:none}
+.focusChip small{
+  color:#133c2a;font:740 clamp(10px,2.6vw,13px)/1.08 Georgia,serif;
+  white-space:nowrap;
+}
+.focusChip strong{
+  color:#092f20;font:620 clamp(11.5px,2.9vw,16px)/1.15 system-ui,sans-serif;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+  line-clamp:2;overflow:hidden;overflow-wrap:anywhere;
+}
+.focusChip:focus-visible{outline:3px solid #ffeda9;outline-offset:3px}
+.dashboard[data-profile-space-dashboard] .path{
+  margin-top:0;min-height:65px;
+}
+.dashboard[data-profile-space-dashboard] .pathText strong{
+  font-size:clamp(19px,4.5vw,28px);
+}
+@media(max-width:430px){
+  .dashboard[data-profile-space-dashboard] .scenic{min-height:260px;padding:14px 10px 11px}
+  .focusRow{gap:6px;margin:12px 0 9px}
+  .focusChip{gap:5px;min-height:53px;padding:7px 7px;border-radius:21px}
+  .focusIcon{width:26px;height:28px;flex-basis:26px}
+  .focusIcon svg{width:23px;height:23px}
+  .focusChip small{font-size:clamp(10px,2.55vw,12px)}
+  .focusChip strong{font-size:clamp(10.7px,2.8vw,13px)}
+  .dashboard[data-profile-space-dashboard] .path{min-height:61px}
+  .dashboard[data-profile-space-dashboard] .pathText strong{font-size:clamp(18px,5.1vw,23px)}
+}
+@media(max-width:350px){
+  .focusChip{gap:4px;padding:6px 5px}
+  .focusIcon{width:23px;flex-basis:23px}
+  .focusChip small{font-size:9.6px}
+  .focusChip strong{font-size:10.5px}
+}
+@media(min-width:700px){
+  .dashboard[data-profile-space-dashboard] .scenic{min-height:316px}
+  .focusRow{gap:12px;margin-top:22px}
+  .focusChip{min-height:70px;padding:11px 16px;gap:12px}
+  .focusIcon{width:42px;height:42px;flex-basis:42px}
+  .focusChip small{font-size:15px}
+  .focusChip strong{font-size:18px}
+  .dashboard[data-profile-space-dashboard] .path{min-height:80px}
+}

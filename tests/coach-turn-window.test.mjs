@@ -151,11 +151,21 @@ test('My Coach UI sends an authored goal visibly and does not create account per
  assert.match(body,/const goalTurn=coachGoalTurn\(/)
  assert.ok(body.indexOf('const wisdomRequested=')<body.indexOf('goalTurn=coachGoalTurn'))
  assert.match(body,/skip:wisdomRequested/)
- assert.match(body,/message=goalTurn\.message/)
+ assert.match(body,/message=goalEligible\?goalTurn\.message:message/)
+  assert.match(ui,/const profileActive=Boolean\(profileSelected\)/)
+ assert.match(body,/openingProgress\.completed/)
  assert.equal((body.match(/commitGoalTurn\(\)/g)||[]).length,2)
  assert.match(body,/lastSharedGoalRef\.current=goalTurn\.goal/)
  assert.match(ui,/Your goal is added to your next sent message/)
  assert.doesNotMatch(ui,/localStorage|sessionStorage|sendBeacon/)
+})
+
+test('goal state remains held during every Session 0 turn, including a completed profile',async()=>{
+ const fs=await import('node:fs')
+ const ui=fs.readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const body=ui.slice(ui.indexOf('async function sendMessage(raw'))
+ assert.match(body,/const goalEligible=openingProgress\.completed&&openingProgress\.answers\.focus\?\.kind!=='profile'/)
+ assert.match(body,/const commitGoalTurn=\(\)=>\{\s*if\(!goalEligible\)return/)
 })
  
 test('ephemeral context recalls client-only goal, constraint and example from a long session',()=>{

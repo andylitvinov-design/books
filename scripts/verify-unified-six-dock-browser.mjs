@@ -316,6 +316,35 @@ async function inspect(browserType,locale,width){
       waitUntil:"domcontentloaded",timeout:75000,
     });
     const ideaButton=page.locator('[data-video-quick-control="phrases"]');
+    // Follow the same visible Magic Mirror path as the existing voice E2E.
+    // Selecting the format does not generate a video or spend credits.
+    if(!await ideaButton.isVisible()){
+      const mirror=page.locator('[data-hh-mirror-goals]');
+      const entry=mirror.locator('[data-hh-mirror-enter="me"]');
+      await expect(entry).toBeVisible({timeout:30000});
+      await entry.click();
+      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","purpose");
+      const goal=mirror.locator('[data-hh-mirror-purpose-step]');
+      await goal.locator('[data-video-ideas-goal-choice="rest"]').click();
+      const next=goal.locator('[data-video-ideas-goal-next]');
+      await expect(next).toBeEnabled();
+      await next.click();
+      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","format");
+      await mirror.locator('[data-hh-mirror-video-format="basic"]').click();
+      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
+      const composer=mirror.locator('[data-hh-mirror-composer]');
+      for(let step=0;step<3&&!await composer.isVisible();step++){
+        const back=mirror.locator('[data-hh-mirror-back]');
+        await expect(back).toBeVisible();
+        await back.click();
+      }
+      const advanced=composer.locator('[data-hh-mirror-open-advanced]');
+      await expect(advanced).toBeVisible();
+      await expect(advanced).toBeEnabled();
+      await advanced.click();
+      await expect(page.locator('[data-mandala-free-video]'))
+        .toHaveAttribute("data-hh-mirror-advanced","true",{timeout:15000});
+    }
     await ideaButton.waitFor({state:"visible",timeout:30000});
     await page.waitForFunction(()=>{
       const link=document.querySelector('[data-video-quick-control="phrases"]');
@@ -401,6 +430,41 @@ async function inspect(browserType,locale,width){
   if(browserType===webkit && locale==="ru" && width===390){
     for(const tab of ["video","phrases","editor","effects","pro","ready"]){
       const nav=page.locator('[data-video-quick-control="'+tab+'"]');
+      // In the approved compact Video/Magic Mirror entrance the workspace
+      // rail closes after a real tool selection. It is reopened only by a
+      // visible "More goals" tap, never via forced clicks or DOM mutation.
+      if(!await nav.isVisible()){
+        const studio=page.locator('[data-mandala-free-video]');
+        assert.equal(await studio.getAttribute("data-active-workspace"),"video",
+          "Only the compact Magic Mirror Video entrance may hide the tool rail");
+        const mirror=page.locator('[data-hh-mirror-goals]');
+        const legacyMore=mirror.locator('[data-hh-mirror-more-goals]');
+        if(await legacyMore.isVisible()){
+          await legacyMore.click();
+        }else{
+          const entry=mirror.locator('[data-hh-mirror-enter="me"]');
+          if(await entry.isVisible())await entry.click();
+          const purpose=mirror.locator('[data-hh-mirror-purpose-step]');
+          if(await purpose.isVisible()){
+            await purpose.locator('[data-video-ideas-goal-choice="rest"]').click();
+            await purpose.locator('[data-video-ideas-goal-next]').click();
+          }
+          const basic=mirror.locator('[data-hh-mirror-video-format="basic"]');
+          if(await basic.isVisible())await basic.click();
+          const composer=mirror.locator('[data-hh-mirror-composer]');
+          for(let step=0;step<3&&!await composer.isVisible();step++){
+            const back=mirror.locator('[data-hh-mirror-back]');
+            await expect(back).toBeVisible();
+            await back.click();
+          }
+          const advanced=composer.locator('[data-hh-mirror-open-advanced]');
+          await expect(advanced).toBeVisible();
+          await expect(advanced).toBeEnabled();
+          await advanced.click();
+        }
+        await expect(studio).toHaveAttribute("data-hh-mirror-advanced","true",{timeout:15000});
+        await nav.waitFor({state:"visible",timeout:15000});
+      }
       await nav.click({timeout:30000});
       await page.waitForFunction(expected=>{
         return document.querySelector('[data-active-workspace]')?.getAttribute("data-active-workspace")===expected;
@@ -433,7 +497,12 @@ async function inspect(browserType,locale,width){
         id+" "+tab+" active control remains readable");
       assert.ok(palette.width<=palette.viewport+2,id+" "+tab+" no document overflow");
       assert.equal(palette.dockCount,1,id+" "+tab+" one fixed Holistic House dock");
-      await nav.scrollIntoViewIfNeeded();
+      // Switching workspaces can retire/collapse the original rail after
+      // its real click. The selected workspace surface remains visible:
+      // capture THAT rendered view, not the detached/hidden old tab node.
+      const visibleStudio=page.locator('[data-mandala-free-video][data-active-workspace="'+tab+'"]');
+      await visibleStudio.waitFor({state:"visible",timeout:15000});
+      await visibleStudio.scrollIntoViewIfNeeded({timeout:15000});
       await page.screenshot({
         path:folder+"/studio-palette-"+tab+"-ru-390-webkit.png",
         fullPage:false,animations:"disabled",
@@ -600,7 +669,7 @@ try{
  // Inner Alchemist begins with an inviting question, not a wall of service cards.
  // Keep the entire canonical six-project catalogue available after user intent.
  const alchemistTools=chat.locator('[data-hh-alchemist-tools]');
- await alchemistTools.waitFor({state:"visible",timeout:15000});
+ await alchemistTools.waitFor({state:"attached",timeout:15000});
  assert.equal(await alchemistTools.evaluate(node=>node.open),false,
    "six legacy service cards are tucked away until requested");
  assert.equal(await chat.locator('[data-hh-alchemist-topic]').count(),4,
@@ -613,7 +682,15 @@ try{
  await chat.locator('[data-hh-ai-chat-composer] textarea').waitFor({state:"visible",timeout:15000});
  assert.equal(await chat.locator('[data-hh-ai-chat-composer]').count(),1,
    "first screen owns one real pinned message composer");
- await alchemistTools.locator('summary').click();
+ // "More ways Ali can help" is nested in the real composer More actions menu.
+ // Verify both disclosures start closed, then open them through visible summaries.
+ const composerMore=chat.locator('[data-hh-ai-more]');
+ await composerMore.waitFor({state:"visible",timeout:15000});
+ assert.equal(await composerMore.evaluate(node=>node.open),false,
+   "More actions starts collapsed to keep the first-screen composer compact");
+ await composerMore.locator(':scope > summary').click();
+ await alchemistTools.waitFor({state:"visible",timeout:15000});
+ await alchemistTools.locator(':scope > summary').click();
  await projectGrid.waitFor({state:"visible",timeout:15000});
  const projects=chat.locator('[data-hh-messenger-six-projects] [data-hh-ai-project]');
  const six=["hint","test","mytube","sessions","practice","ai-video"];
@@ -667,7 +744,7 @@ try{
  await videoGoals.first().waitFor({state:"visible"});
  assert.deepEqual(await videoGoals.evaluateAll(nodes=>nodes.map(node=>
    node.getAttribute("data-hh-video-chat-choice"))),
-   ["goals-money","love-relationships","energy-confidence","stress-anxiety"]);
+   ["stress-anxiety","love-relationships","goals-money","energy-confidence"]);
  assert.equal(await chat.locator("[data-hh-guest-ready-videos]").count(),0,
    "personal video branch must not offer ready-made videos");
  assert.equal(await chat.locator("[data-hh-video-sign-in]").count(),0,
@@ -754,13 +831,13 @@ try{
  const resetViaMore=async()=>{
    const more=chat.locator('details[data-hh-ai-more]');
    await more.waitFor({state:"visible",timeout:15000});
-   if(await more.evaluate(node=>!node.open)) await more.locator("summary").click();
+   if(await more.evaluate(node=>!node.open)) await more.locator(":scope > summary").click();
    // The More menu also contains legitimate voice/psychologist actions.
    // Require exactly one accessible Reset, not exactly one button total.
    const resetButtons=more.getByRole("button",{name:"Новый разговор",exact:true});
    await expect(resetButtons).toHaveCount(1);
    await resetButtons.click();
-   if(await more.evaluate(node=>node.open)) await more.locator("summary").click();
+   if(await more.evaluate(node=>node.open)) await more.locator(":scope > summary").click();
    await chat.locator('[data-hh-ai-landing]').waitFor({state:"visible",timeout:15000});
    await expect.poll(()=>chat.locator('[data-hh-chat-turn="user"]').count()).toBe(0);
  };
@@ -770,8 +847,11 @@ try{
    // “More ways Ali can help” disclosure on the conversation-first landing.
    // Test the real disclosure, rather than waiting for a hidden button.
    const tools=chat.locator("details[data-hh-alchemist-tools]");
+   const more=chat.locator("details[data-hh-ai-more]");
+   await more.waitFor({state:"visible",timeout:15000});
+   if(await more.evaluate(node=>!node.open))await more.locator(":scope > summary").click();
    await tools.waitFor({state:"visible",timeout:15000});
-   if(await tools.evaluate(node=>!node.open))await tools.locator("summary").click();
+   if(await tools.evaluate(node=>!node.open))await tools.locator(":scope > summary").click();
    await chat.locator('[data-hh-ai-project="'+id+'"]').waitFor({state:"visible",timeout:15000});
    await chat.locator('[data-hh-ai-project="'+id+'"]').click();
    // Sessions has a goal-first two-step intake; other projects use one-step choices.
@@ -892,6 +972,94 @@ try{
  assert.ok(mirrorScreen.overflowX<=2,"Shamanic must not scroll horizontally: "+JSON.stringify(mirrorScreen));
  await page.screenshot({path:folder+"/shamanica-first-screen-ru-390-webkit.png",fullPage:false,animations:"disabled"});
  results.push({journey:"Shamanic six-shelf alchemist first screen",mirrorScreen,passed:true});
+ const geanieAsk=shamanicaHome.locator('[data-shamanica-genie-ask]');
+ await geanieAsk.waitFor({state:"visible",timeout:15000});
+ assert.ok((await geanieAsk.innerText()).trim().length>0);
+ assert.equal(await shamanicaHome.locator('[data-shamanica-ai-geanie] img').count(),1);
+ await geanieAsk.click();
+ const geanieHelp=page.locator('[data-hh-ihelp-dialog]:visible');
+ await geanieHelp.waitFor({state:"visible",timeout:15000});
+ await geanieHelp.locator('header button[aria-label]').first().click();
+ await geanieHelp.waitFor({state:"hidden",timeout:15000});
+ results.push({journey:"Shamanic Geanie opens existing real iHelp dialog",passed:true});
+
+
+ // Browser-rendered iPhone first-fold acceptance for BOTH audiences.
+ // No CSS-only or screenshot-of-the-other-view substitute is accepted:
+ // all six photo tiles must clear the same fixed seven-item dock.
+ const verifyLoungeFold=async(cardSelector,atlas)=>{
+   const previous=page.viewportSize();
+   const folds=[];
+   for(const width of [320,353,390,430]){
+     await page.setViewportSize({width,height:768});
+     await page.evaluate(async()=>{
+       window.scrollTo({top:0,behavior:"instant"});
+       await new Promise(done=>requestAnimationFrame(()=>requestAnimationFrame(done)));
+     });
+     const fold=await page.evaluate(selector=>{
+       const tiles=[...document.querySelectorAll(selector)];
+       const nav=document.querySelector("[data-hh-unified-dock]");
+       const heading=document.getElementById("shamanica-hero-title");
+       const room=heading?.closest("section");
+       const image=tiles[0]?.firstElementChild;
+       return {
+         tiles:tiles.length,
+         firstTop:tiles[0]?.getBoundingClientRect().top??-1,
+         lastBottom:tiles.at(-1)?.getBoundingClientRect().bottom??Infinity,
+         dockTop:nav?.getBoundingClientRect().top??-1,
+         room:room?getComputedStyle(room,"::before").backgroundImage:"",
+         atlas:image?getComputedStyle(image).backgroundImage:"",
+         overflowX:document.documentElement.scrollWidth-innerWidth
+       };
+     },cardSelector);
+     assert.equal(fold.tiles,6,"Both Shamanic audiences retain six real buttons: "+width);
+     assert.ok(fold.firstTop>=0&&fold.lastBottom<=fold.dockTop-4,
+       "All six cards must clear the dock on "+width+"x768: "+JSON.stringify(fold));
+     assert.ok(fold.overflowX<=2,"No sideways overflow at "+width+": "+JSON.stringify(fold));
+     assert.match(fold.room,/shamanic-genie-lounge\.webp/,
+       "Both tabs must show the same HD lounge background");
+     assert.ok(fold.atlas.includes(atlas),"Photo atlas must stay HD: "+JSON.stringify(fold));
+     folds.push({width,firstTop:fold.firstTop,lastBottom:fold.lastBottom,dockTop:fold.dockTop});
+   }
+   if(previous)await page.setViewportSize(previous);
+   return folds;
+ };
+ const personalFolds=await verifyLoungeFold("[data-shamanica-service]",
+   "shamanic-genie-cards-personal.webp");
+ results.push({journey:"Shamanic personal one-screen HD photos at 320/353/390/430",folds:personalFolds,passed:true});
+ await shamanicaHome.locator('nav[aria-label="Audience"] a[href="/ru/shamanica/business"]').click();
+ await page.waitForURL(/\/ru\/shamanica\/business\/?$/,{timeout:45000});
+ const businessCabinet=page.locator("[data-shamanica-business] [data-business-cabinet-shelves]");
+ await businessCabinet.waitFor({state:"visible",timeout:30000});
+ assert.equal(await page.locator('[data-shamanica-ai-geanie] [data-shamanica-genie-ask]:visible').count(),1,
+ "Business shares the interactive Geanie help action");
+ const businessCards=businessCabinet.locator("[data-business-shelf]");
+ assert.deepEqual(await businessCards.evaluateAll(nodes=>nodes.map(node=>node.dataset.businessShelf)),
+   ["express","remedies","strategy","artifacts","energy","energywork"],
+   "Business uses the same six-tile lounge with approved distinct categories");
+ const businessFolds=await verifyLoungeFold("[data-business-shelf]",
+   "shamanic-cards-business-hd.avif");
+ await page.screenshot({path:folder+"/shamanica-business-first-screen-ru-390-webkit.png",
+   fullPage:false,animations:"disabled"});
+ await businessCards.first().click();
+ const businessExpress=businessCabinet.locator('[data-business-second-level="express"]');
+ await businessExpress.waitFor({state:"visible",timeout:15000});
+ const expressChoices=await businessExpress.locator("[data-business-subservice]").allTextContents();
+ assert.equal(expressChoices.length,5,"Express business opens five real pricing choices");
+ for(const price of ["FREE","45 CAD","75 CAD","200 CAD","300 CAD"]){
+   assert.ok(expressChoices.some(label=>label.includes(price)),"Approved business offer price: "+price);
+ }
+ assert.equal(await businessCabinet.locator('[data-business-get-details="express"]').count(),1,
+   "Express options retain their existing WhatsApp/Telegram Get details handoff");
+ await businessCabinet.locator("[data-business-back-to-shelves]").click();
+ assert.equal(await businessCabinet.locator("[data-business-shelf]").count(),6,
+   "Business Back returns to the six categories");
+ await page.locator('[data-shamanica-mobile] nav[aria-label="Audience"] a[href="/ru/shamanica"]').click();
+ await page.waitForURL(/\/ru\/shamanica\/?$/,{timeout:45000});
+ await shamanicaHome.waitFor({state:"visible",timeout:30000});
+ results.push({journey:"Shamanic Business same HD lounge → 5 priced suboptions → Back → Personal",
+   folds:businessFolds,passed:true});
+
  const originalShamanicaViewport=page.viewportSize();
  await shamanicaHome.locator("[data-shamanica-extras] > summary").click();
  await page.setViewportSize({width:353,height:768});
@@ -930,15 +1098,44 @@ try{
  if(originalShamanicaViewport)await page.setViewportSize(originalShamanicaViewport);
  assert.equal(await shamanicaHome.locator("[data-shamanica-service]").count(),6,
    "Shamanic has exactly six approved functional shelves");
- // A category tile must open the concrete Support-style offer list right
- // away, without requiring any of the three Shamanic quiz answers.
+ // The approved Shamanic category is an in-page two-stage selector, not
+ // the old immediate navigation. Exercise category → subcategories → the
+ // unchanged three concrete priced Details/Order offers without quiz answers.
  const energyEntrance=shamanicaHome.locator('[data-shamanica-service="energy"]');
- assert.equal(await energyEntrance.getAttribute("href"),"/ru/shamanica/results?category=energy");
- assert.equal(await shamanicaHome.locator('[data-shamanica-service="academy"]').getAttribute("href"),
-   "/ru/shamanica/results?category=learning");
- assert.equal(await shamanicaHome.locator('[data-shamanica-service="guidance"]').getAttribute("href"),
-   "/ru/shamanica/results?category=guidance");
+ assert.equal(await energyEntrance.evaluate(node=>node.tagName),"BUTTON",
+   "Category is an interactive in-page selector, not a stale direct href");
  await energyEntrance.click();
+ const energySubcategories=shamanicaHome.locator('[data-shamanica-subcategories="energy"]');
+ await energySubcategories.waitFor({state:"visible",timeout:30000});
+ assert.equal(new URL(page.url()).pathname,"/ru/shamanica",
+   "Category tap reveals a local second level, not another page");
+ assert.equal(await shamanicaHome.locator("[data-shamanica-service]").count(),0,
+   "Subcategory choices replace the six category buttons");
+ assert.equal(await energySubcategories.locator("[data-shamanica-subcategory]").count(),3,
+   "Energy shows three real next-step service choices");
+ assert.equal(await energySubcategories.locator('[data-shamanica-subcategory="energy-0"]').getAttribute("href"),
+   "/ru/services/remote-energy-support",
+   "First energy choice opens the existing booking service");
+ const energyAll=energySubcategories.locator('a[href="/ru/shamanica/results?category=energy"]');
+ assert.equal(await energyAll.count(),1,
+   "All-services action keeps the original three priced offer page reachable");
+ await energySubcategories.locator("button").click();
+ assert.equal(await shamanicaHome.locator("[data-shamanica-service]").count(),6,
+   "Back restores all six category buttons");
+ await shamanicaHome.locator('[data-shamanica-service="academy"]').click();
+ const academySubcategories=shamanicaHome.locator('[data-shamanica-subcategories="academy"]');
+ await academySubcategories.waitFor({state:"visible",timeout:15000});
+ assert.equal(await academySubcategories.locator("[data-shamanica-subcategory]").count(),4,
+   "Academy keeps the four existing course pathways");
+ await academySubcategories.locator("button").click();
+ await shamanicaHome.locator('[data-shamanica-service="guidance"]').click();
+ const guidanceSubcategories=shamanicaHome.locator('[data-shamanica-subcategories="guidance"]');
+ await guidanceSubcategories.waitFor({state:"visible",timeout:15000});
+ assert.equal(await guidanceSubcategories.locator("[data-shamanica-subcategory]").count(),3,
+   "Guidance exposes three published readings");
+ await guidanceSubcategories.locator("button").click();
+ await shamanicaHome.locator('[data-shamanica-service="energy"]').click();
+ await shamanicaHome.locator('[data-shamanica-subcategories="energy"] a[href="/ru/shamanica/results?category=energy"]').click();
  await page.waitForURL(url => url.pathname==="/ru/shamanica/results" &&
    url.searchParams.get("category")==="energy",{timeout:45000});
  const categoryOffers=page.locator('[data-shamanica-category-offers="energy"]');

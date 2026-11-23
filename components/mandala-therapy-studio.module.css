@@ -76,7 +76,7 @@
  .scriptHost [data-meditation-main-filters] label:first-child{grid-column:1;grid-row:1}
  .scriptHost [data-meditation-main-filters] label:nth-child(2){grid-column:1/-1;grid-row:2}
  .scriptHost [data-meditation-main-filters] label:nth-child(3){grid-column:2;grid-row:1}
- .scriptHost [data-meditation-main-filters] select{min-height:44px;width:100%;padding:7px 9px;font-size:13px;text-overflow:ellipsis;white-space:nowrap}
+ .scriptHost [data-meditation-main-filters] select{height:44px;min-height:44px;box-sizing:border-box;width:100%;padding:7px 9px;font-size:13px;text-overflow:ellipsis;white-space:nowrap}
  .scriptHost [data-meditation-accents]{margin:8px 0}
  .scriptHost [data-meditation-accents] summary{min-height:44px;padding:8px 10px;font-size:12px}
  .scriptHost [data-meditation-accents] .extra{margin:9px 0}
@@ -160,3 +160,12 @@
  .tabs button{flex-direction:column;gap:2px;min-height:55px;font-size:10px}
  .tabs button svg{width:17px;height:17px}
 }
+
+/* Safari iPhone #4707: explicit course disclosure and reduced-motion chevron. */
+@media(max-width:759px){
+ .scriptHost [data-meditation-context] summary{gap:8px;list-style:none}
+ .scriptHost [data-meditation-context] summary::-webkit-details-marker{display:none}
+ .scriptHost [data-meditation-context] summary::after{content:"";flex:none;display:block;width:8px;height:8px;margin:0 4px 4px auto;border-right:2px solid #087e62;border-bottom:2px solid #087e62;transform:rotate(45deg);transition:transform .16s ease}
+ .scriptHost [data-meditation-context][open] summary::after{transform:rotate(225deg);margin-bottom:0;margin-top:4px}
+}
+@media(prefers-reduced-motion:reduce){.scriptHost [data-meditation-context] summary::after{transition:none}}

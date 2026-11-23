@@ -246,3 +246,5 @@
  .goalBadge{max-width:52px;font-size:9px;padding:5px 4px}
  .fieldRow{grid-template-columns:minmax(100px,42%) minmax(0,1fr)}
 }
+
+.daybookExcerpt{box-sizing:border-box;display:block;width:100%;min-width:0;max-width:100%;min-height:140px;max-height:360px;resize:vertical;font:inherit;line-height:1.6;color:var(--hh-light-ink);background:var(--hh-light-surface);border:1px solid var(--hh-light-border);border-radius:16px;padding:12px}.daybookExcerpt:focus-visible{outline:3px solid var(--hh-light-focus);outline-offset:3px}

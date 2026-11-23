@@ -515,3 +515,83 @@
   .healthShortcuts>a{min-height:67px;padding:10px 12px}
   .healthShortcuts>a>svg:last-child{display:block}
 }
+
+/* Profile-parity course header: prevent the wordmark icon from stacking over the title. */
+@media(max-width:760px){
+  .hub[data-profile-course-index="true"]{margin-top:0}
+  .hub[data-profile-course-index="true"] .heading{
+    display:flex;flex-wrap:nowrap;align-items:center;min-height:51px;
+    margin-bottom:6px;padding:5px 7px;gap:4px;border-radius:17px
+  }
+  .hub[data-profile-course-index="true"] .headingTitle{
+    display:flex;flex:1 1 auto;align-items:center;gap:5px;min-width:0
+  }
+  .hub[data-profile-course-index="true"] .brandMark{
+    display:block;flex:none;width:25px;height:25px
+  }
+  .hub[data-profile-course-index="true"] .heading h2{
+    font:700 clamp(14px,4.4vw,19px)/1.1 Georgia,serif;
+    letter-spacing:-.04em;white-space:nowrap;overflow-wrap:normal
+  }
+  .hub[data-profile-course-index="true"] .heading>.profileHeadingActions{
+    flex:0 0 auto;gap:3px;margin-left:auto
+  }
+}
+@media(max-width:350px){
+  .hub[data-profile-course-index="true"] .heading{padding:5px 4px;gap:2px}
+  .hub[data-profile-course-index="true"] .headingTitle{gap:3px}
+  .hub[data-profile-course-index="true"] .brandMark{width:20px;height:20px}
+  .hub[data-profile-course-index="true"] .heading h2{font-size:13px}
+}
+
+/* MY_SPACE_CINEMATIC_20261121: restyle only the landing header.
+   Reports, settings, course, coaching and practitioner headers are unchanged. */
+.hub[data-profile-active="today"]{max-width:900px;margin:0 auto 5px}
+.hub[data-profile-active="today"] .heading{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:7px;min-height:48px;margin:0 0 3px;padding:2px 0;
+  border:0;border-radius:0;background:transparent;box-shadow:none;
+}
+.hub[data-profile-active="today"] .headingTitle{display:flex;align-items:center;gap:6px;min-width:0}
+.hub[data-profile-active="today"] .brandMark{
+  flex:none;width:27px;height:27px;
+  filter:brightness(0) invert(93%) sepia(21%) saturate(566%) hue-rotate(336deg);
+}
+.hub[data-profile-active="today"] .heading h2{
+  margin:0!important;color:#fff1cf!important;
+  font:700 clamp(16px,4.7vw,23px)/1 Georgia,serif!important;
+  letter-spacing:-.025em;white-space:nowrap;text-shadow:0 2px 9px #120802;
+}
+.hub[data-profile-active="today"] .profileHeadingActions{gap:5px}
+.hub[data-profile-active="today"] .languageSwitch summary{
+  color:#fff4d9;background:#302014cf;border:1px solid #caa35f;
+  border-radius:999px;box-shadow:inset 0 1px #f8d78c3a;
+}
+.hub[data-profile-active="today"] .languageSwitch[open] summary{background:#064d37}
+.hub[data-profile-active="today"] .headingNav :global(.site-navigation--profile-compact){gap:5px}
+.hub[data-profile-active="today"] .headingNav :global(.site-main-menu-trigger),
+.hub[data-profile-active="today"] .headingNav :global([data-site-search-trigger]){
+  color:#fff3d8!important;background:#2d2015c9!important;
+  border:1px solid #d9af6e!important;border-radius:999px!important;
+  box-shadow:inset 0 1px #ffedbb3b;
+}
+.hub[data-profile-active="today"] .headingNav :global(.site-main-menu-trigger) svg,
+.hub[data-profile-active="today"] .headingNav :global([data-site-search-trigger]) svg{color:#fff3d8!important}
+.hub[data-profile-active="today"] .languageSwitch summary:focus-visible,
+.hub[data-profile-active="today"] .headingNav :global(.site-main-menu-trigger:focus-visible),
+.hub[data-profile-active="today"] .headingNav :global([data-site-search-trigger]:focus-visible){
+  outline:3px solid #ffe7a3;outline-offset:2px;
+}
+@media(max-width:430px){
+  .hub[data-profile-active="today"] .heading{min-height:46px;padding:0;gap:4px}
+  .hub[data-profile-active="today"] .headingTitle{gap:4px}
+  .hub[data-profile-active="today"] .brandMark{width:23px;height:23px}
+  .hub[data-profile-active="today"] .heading h2{font-size:clamp(15px,4.65vw,20px)!important}
+  .hub[data-profile-active="today"] .profileHeadingActions{gap:4px}
+}
+@media(max-width:354px){
+  .hub[data-profile-active="today"] .brandMark{width:21px;height:21px}
+  .hub[data-profile-active="today"] .heading h2{font-size:15px!important}
+  .hub[data-profile-active="today"] .profileHeadingActions{gap:2px}
+  .hub[data-profile-active="today"] .headingNav :global(.site-navigation--profile-compact){gap:2px}
+}

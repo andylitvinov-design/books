@@ -712,6 +712,7 @@ jobs:
       - name: Guest voice consent and invitation contract (macOS gate)
         run: |
           node --check scripts/verify-affirmation-voice-browser.mjs
+          node --check scripts/verify-therapy-studio-mobile-browser.mjs
           node --test tests/mandala-guest-voice-message.test.mjs
       - name: WebKit recorded movie contains video and audible consented voice
         run: |
@@ -737,6 +738,11 @@ jobs:
             node scripts/benchmarking/first-video-live-export.mjs
           HH_ORIGINAL_MOTION_ENGINE=webkit HH_LIVE_VIDEO_PLAYWRIGHT="$RUNNER_TEMP/voice-playwright/node_modules/playwright/index.mjs" \
             node scripts/benchmarking/verify-original-motion-export.mjs
+          # #4707 native iPhone WebKit matrix now on #4979 after real MP4 and WAV.
+          if [[ "${GITHUB_HEAD_REF:-}" == feat/therapy-text-choice-* ]]; then
+            HH_THERAPY_BROWSER_ENGINE=webkit HH_THERAPY_SCREENSHOT_DIR=artifacts/therapy-mobile \
+              node scripts/verify-therapy-studio-mobile-browser.mjs
+          fi
           # Real five-shot vertical movie, identity and soundtrack gate for Stories PRs.
           # The guard is strict, local-only and cannot invoke paid AI or publisher POST.
           if [[ "${HH_STORIES_E2E_REQUIRED:-}" == true || "${GITHUB_HEAD_REF:-}" == codex/stories-* || "${GITHUB_HEAD_REF:-}" == codex/video-story-five-cards-quality-last-20261112 ]]; then
@@ -760,5 +766,6 @@ jobs:
             artifacts/benchmarking/first-video-live-export.json
             artifacts/benchmarking/five-scene-stories-webkit.json
             artifacts/benchmarking/business-photo-stories-webkit.json
+            artifacts/therapy-mobile/*.png
           if-no-files-found: warn
           retention-days: 7

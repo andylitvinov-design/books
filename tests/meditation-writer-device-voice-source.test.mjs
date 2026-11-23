@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
+import {requiresRealMediaWebKit} from "../lib/ci/merge-check-light.mjs";
 const source=readFileSync(new URL("../components/meditation-writer-device-voice.tsx",import.meta.url),"utf8");
 const page=readFileSync(new URL("../components/meditation-writer-preview.tsx",import.meta.url),"utf8");
 test("device speech is optional local preview, with stop and no external provider",()=>{
@@ -27,6 +28,14 @@ test("Writer Mandala changes must execute real Linux media and macOS WebKit inst
  // historical Meditation Writer branch name. Preserve fail-closed real WebKit.
  assert.ok(lines[mac+1]?.includes("needs.webkit_preflight.outputs.media_required == 'true'"),
    "macOS WebKit must run for a changed-file media-required PR");
+ assert.ok(workflow.includes('git show "$tested_base:lib/ci/merge-check-light.mjs"'),
+  "real-media impact must be loaded from protected BASE, not candidate PR code");
+ assert.equal(requiresRealMediaWebKit([{status:'M',filename:'components/meditation-writer-device-voice.tsx'}]),true,
+  "Writer source edit must run macOS WebKit");
+ assert.equal(requiresRealMediaWebKit([{status:'M',filename:'components/mandala-free-video-studio.tsx'}]),true,
+  "real video editor must run WebKit");
+ assert.equal(requiresRealMediaWebKit([{status:'M',filename:'tests/meditation-writer-device-voice-source.test.mjs'}]),false,
+  "test-only changes need Core but not paid media runner");
  const macBody=lines.slice(mac).join(String.fromCharCode(10));
  for(const entry of ["runs-on: macos-15","node scripts/verify-affirmation-voice-browser.mjs","node scripts/benchmarking/first-video-live-export.mjs"])
   assert.ok(macBody.includes(entry),"missing real Safari-platform media acceptance: "+entry);

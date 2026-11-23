@@ -222,5 +222,6 @@ test('procedural native recorder cannot silently downgrade H264/AAC to generic M
   assert.match(verifier,/!video\|\|await video\.getCodec\(\)!=="avc"/);
   assert.match(client,/recordingMimes\(Boolean\(musicSession\),true\)\.filter\(mime=>mime===explicitWebmMime\)/);
   assert.match(client,/proceduralRoute==="unsupported"/);
-  assert.match(client,/allowProceduralBrowser:procedural&&!safariWebKit/);
+  assert.match(client,/allowProceduralBrowser:reelModeActive\|\|\(procedural&&!safariWebKit\)/);
+  assert.match(client,/if\(reelModeActive&&\(!useWebCodecsMp4\|\|!hasWebCodecs\|\|preferWebm\|\|forceMp4ForRetry\)\)/);
 });

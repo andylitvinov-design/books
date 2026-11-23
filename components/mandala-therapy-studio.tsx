@@ -15,7 +15,7 @@ type Props={locale:PublicLocale;disabled:boolean;theme:VideoTheme;wish:string;fo
  onNarrationInvalidated?:()=>void};
 const dict={
  en:{
-  title:"Therapy Studio",intro:"Meditation, voice and guided practice.",
+  title:"Therapy Studio",stepsA11y:"Therapy Studio steps",intro:"Meditation, voice and guided practice.",
   meditation:"Meditation",voice:"Voice",practice:"Practice",course:"My Course",
   voiceTitle:"Voice for your meditation",voiceHint:"Only your approved text is offered for narration. External speech requires a separate choice and consent.",
   voiceEmpty:"Choose one of the two short meditation texts first.",voiceBack:"Choose meditation",
@@ -28,7 +28,7 @@ const dict={
   safety:"A gentle reflective practice, not medical treatment."
  },
  ru:{
-  title:"Therapy Studio",intro:"Медитация, голос и бережная практика.",
+  title:"Therapy Studio",stepsA11y:"Этапы Therapy Studio",intro:"Медитация, голос и бережная практика.",
   meditation:"Медитация",voice:"Голос",practice:"Практика",course:"Мой курс",
   voiceTitle:"Голос вашей медитации",voiceHint:"Для озвучки предлагается только утверждённый текст. Облачная озвучка требует отдельного выбора и согласия.",
   voiceEmpty:"Сначала выберите один из двух коротких текстов медитации.",voiceBack:"Выбрать медитацию",
@@ -41,7 +41,7 @@ const dict={
   safety:"Бережная рефлексивная практика, не медицинское лечение."
  },
  es:{
-  title:"Therapy Studio",intro:"Meditación, voz y práctica guiada.",
+  title:"Therapy Studio",stepsA11y:"Pasos de Therapy Studio",intro:"Meditación, voz y práctica guiada.",
   meditation:"Meditación",voice:"Voz",practice:"Práctica",course:"Mi curso",
   voiceTitle:"Voz para tu meditación",voiceHint:"Solo el texto aprobado puede narrarse. La voz externa exige una elección y consentimiento aparte.",
   voiceEmpty:"Primero elige uno de los dos textos breves.",voiceBack:"Elegir meditación",
@@ -80,7 +80,7 @@ export function MandalaTherapyStudio({locale,disabled,theme,wish,focus,scenarioI
  };
  return <div className={css.shell} data-therapy-studio data-therapy-course={isCourse?"true":"false"} data-active-therapy-pane={pane} data-therapy-scenario-id={scenarioId||undefined}>
   <header className={css.hero}><h3>{t.title}</h3><p>{t.intro}</p></header>
-  <div className={css.tabs} data-therapy-tabs role="tablist" aria-label="Therapy Studio">
+  <div className={css.tabs} data-therapy-tabs role="tablist" aria-label={t.stepsA11y}>
    {(["meditation","voice","practice","course"] as const).map((id,i)=>{
     const Icon=[Leaf,Mic2,Film,BookOpen][i];
     return <button key={id} type="button" role="tab" aria-selected={pane===id}

@@ -1,10 +1,11 @@
 'use client'
 
-import {useCallback,useEffect,useMemo,useState} from 'react'
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react'
 import Link from 'next/link'
 import {useSearchParams} from 'next/navigation'
 import {appFetch} from '@/lib/app/client-fetch'
 import MyCoachContext from './my-coach-context'
+import DaybookDailySettings from './daybook-daily-settings'
 import CoachMemoryReview from './coach-memory-review'
 import {ArrowRight,BarChart3,Check,CheckCircle2,ChevronDown,ChevronRight,ClipboardList,Compass,Download,Heart,HeartPulse,Leaf,LoaderCircle,MapPin,Mountain,Plus,Printer,RefreshCw,Save,Sparkles,Sun,Target,Trash2,TrendingUp,Trophy,Users,Wallet} from 'lucide-react'
 import {PRIMARY_GOAL_AREAS,orderedCoachingAreas,summarizeCoachingProgress} from '@/lib/app/coaching-plan-summary.mjs'
@@ -145,13 +146,21 @@ export default function MyCoachingPlan({accountId,locale='en'}){
  const requestedTab=searchParams?.get('tab')
  const [tab,setTab]=useState(['reports','context'].includes(requestedTab)?requestedTab:'plan'),[plan,setPlan]=useState(null),[reports,setReports]=useState([])
  const [protocols,setProtocols]=useState([]),[protocolError,setProtocolError]=useState(''),[protocolDeleting,setProtocolDeleting]=useState('')
+ const [protocolPage,setProtocolPage]=useState({accountId:'',hasMore:false,nextCursor:null})
+ const [protocolPageLoading,setProtocolPageLoading]=useState(false)
+ const activeAccountRef=useRef(accountId),loadRevision=useRef(0)
+ activeAccountRef.current=accountId
+ const visibleProtocols=protocolPage.accountId===accountId?protocols:[]
  const [drafts,setDrafts]=useState({}),[selections,setSelections]=useState({}),[areas,setAreas]=useState({}),[planConsents,setPlanConsents]=useState({})
  const [loading,setLoading]=useState(true),[error,setError]=useState(''),[saving,setSaving]=useState(''),[importing,setImporting]=useState('')
  const [notice,setNotice]=useState(''),[reportError,setReportError]=useState(''),[revoking,setRevoking]=useState(''),[contextError,setContextError]=useState(''),[deleting,setDeleting]=useState(''),[deleteError,setDeleteError]=useState('')
  const [expandedArea,setExpandedArea]=useState(''),[showAllAreas,setShowAllAreas]=useState(false),[areaPicker,setAreaPicker]=useState(false),[showProgressDetails,setShowProgressDetails]=useState(false)
  const load=useCallback(async()=>{
-  if(!accountId)return
+  const revision=++loadRevision.current
+  if(!accountId){setProtocols([]);setProtocolPage({accountId:'',hasMore:false,nextCursor:null});return}
   setLoading(true);setError('');setReportError('');setProtocolError('')
+  // New account/reload invalidates every previous page and in-flight request.
+  setProtocols([]);setProtocolPage({accountId:'',hasMore:false,nextCursor:null});setProtocolPageLoading(false)
   try{
    const [life,reportsResult,protocolResult]=await Promise.all([
     appFetch('coaching-life-plan?locale='+lang,undefined,'GET',{accountId}),
@@ -159,17 +168,35 @@ export default function MyCoachingPlan({accountId,locale='en'}){
     fetch('/api/app/my-coach/protocol',{method:'GET',credentials:'same-origin',cache:'no-store',headers:{'x-hh-account-id':accountId}})
       .then(async response=>response.ok?response.json():null).catch(()=>null),
    ])
+   if(activeAccountRef.current!==accountId||loadRevision.current!==revision)return
    if(!Array.isArray(life?.domains)||life.domains.length!==8)throw new Error('COACHING_PLAN_RESPONSE_INVALID')
    setPlan(life)
    setReports(Array.isArray(reportsResult?.reports)?reportsResult.reports:[])
    setProtocols(Array.isArray(protocolResult?.protocols)?protocolResult.protocols:[])
+   setProtocolPage({accountId,hasMore:protocolResult?.hasMore===true,
+     nextCursor:protocolResult?.nextCursor||null})
    if(!protocolResult)setProtocolError(protocolCopy[lang].error)
    if(!reportsResult)setReportError('load')
    setDrafts(Object.fromEntries(life.domains.map(area=>[area.areaKey,domainState(area)])))
-  }catch(e){setError(e?.code||'load');setReportError(e?.code||'load')}
-  finally{setLoading(false)}
+  }catch(e){if(activeAccountRef.current===accountId&&loadRevision.current===revision){
+    setError(e?.code||'load');setReportError(e?.code||'load')
+  }}
+  finally{if(activeAccountRef.current===accountId&&loadRevision.current===revision)setLoading(false)}
  },[accountId,lang])
  useEffect(()=>{void load()},[load])
+ useEffect(()=>{
+  const wanted=searchParams?.get('goal')
+  if(!wanted||!plan?.domains)return
+  const area=plan.domains.find(item=>item.goals?.some(goal=>goal.id===wanted))
+  if(!area)return
+  setTab('plan');setExpandedArea(area.areaKey)
+  if(!PRIMARY_GOAL_AREAS.includes(area.areaKey))setShowAllAreas(true)
+ },[searchParams,plan])
+ useEffect(()=>{
+  const wanted=searchParams?.get('goal')
+  if(!wanted||!expandedArea)return
+  document.getElementById('goal-'+wanted)?.scrollIntoView({block:'center',behavior:'smooth'})
+ },[searchParams,expandedArea,plan])
  const importedKeys=useMemo(()=>new Set((plan?.actions||[]).filter(item=>item.sourceReportId&&item.sourceActionKey).map(item=>item.sourceReportId+'|'+item.sourceActionKey)),[plan])
  const change=(areaKey,key,value)=>setDrafts(prev=>({...prev,[areaKey]:{...prev[areaKey],[key]:value}}))
  async function saveArea(area){
@@ -220,6 +247,37 @@ export default function MyCoachingPlan({accountId,locale='en'}){
    setProtocolError('')
   }catch{setProtocolError(protocolCopy[lang].pdfError)}
  }
+ async function loadEarlierProtocols(){
+  const cursor=protocolPage.accountId===accountId?protocolPage.nextCursor:null
+  if(!accountId||!cursor||!protocolPage.hasMore||protocolPageLoading)return
+  const revision=loadRevision.current
+  setProtocolPageLoading(true);setProtocolError('')
+  try{
+   const params=new URLSearchParams({before:cursor.before,beforeId:cursor.beforeId})
+   const response=await fetch('/api/app/my-coach/protocol?'+params.toString(),{
+    method:'GET',credentials:'same-origin',cache:'no-store',
+    headers:{'x-hh-account-id':accountId},
+   })
+   const data=await response.json().catch(()=>null)
+   if(!response.ok||!Array.isArray(data?.protocols)||typeof data?.hasMore!=='boolean')
+    throw Error('MY_COACH_PROTOCOL_PAGE_UNAVAILABLE')
+   if(activeAccountRef.current!==accountId||loadRevision.current!==revision)return
+   setProtocols(previous=>{
+    const known=new Set(previous.map(item=>item.id))
+    return [...previous,...data.protocols.filter(item=>{
+      if(!item||typeof item.id!=='string'||known.has(item.id))return false
+      known.add(item.id);return true
+    })]
+   })
+   setProtocolPage({accountId,hasMore:data.hasMore,nextCursor:data.nextCursor||null})
+  }catch{
+   if(activeAccountRef.current===accountId&&loadRevision.current===revision)
+    setProtocolError(protocolCopy[lang].error)
+  }finally{
+   if(activeAccountRef.current===accountId&&loadRevision.current===revision)
+    setProtocolPageLoading(false)
+  }
+ }
  async function deleteProtocol(protocol){
   if(!window.confirm(protocolCopy[lang].confirm))return
   setProtocolDeleting(protocol.id);setProtocolError('')
@@ -261,7 +319,7 @@ export default function MyCoachingPlan({accountId,locale='en'}){
    <h1>{t.title}</h1><p>{t.subtitle}</p>
    <div className={styles.tabs} role="tablist" aria-label={t.title}>
     <button type="button" role="tab" aria-selected={tab==='plan'} className={tab==='plan'?styles.tabActive:styles.tab} onClick={()=>setTab('plan')}><Target size={16}/>{t.plan}</button>
-    <button type="button" role="tab" aria-selected={tab==='reports'} className={tab==='reports'?styles.tabActive:styles.tab} onClick={()=>setTab('reports')}><ClipboardList size={16}/>{t.reports}<span>{reports.length+protocols.length}</span></button>
+    <button type="button" role="tab" aria-selected={tab==='reports'} className={tab==='reports'?styles.tabActive:styles.tab} onClick={()=>setTab('reports')}><ClipboardList size={16}/>{t.reports}<span>{reports.length+visibleProtocols.length}</span></button>
     <button type="button" role="tab" id="coach-context-tab" aria-controls={tab==='context'?'coach-context-panel':undefined} aria-selected={tab==='context'} className={tab==='context'?styles.tabActive:styles.tab} onClick={()=>setTab('context')}><Sparkles size={16}/>{t.context}</button>
    </div>
   </header>
@@ -270,6 +328,7 @@ export default function MyCoachingPlan({accountId,locale='en'}){
   {deleteError&&<div className={styles.error} role="alert">{deleteError}</div>}
   {tab==='context'&&<MyCoachContext key={accountId} accountId={accountId} locale={lang} domains={domains}/>}
   {tab==='plan'&&<>
+   <DaybookDailySettings accountId={accountId} locale={lang} goals={plan?.goals||[]}/>
    <section className={styles.sectionHead}><h2>{t.overviewTitle}</h2>
     <button type="button" className={styles.smallPill} aria-expanded={showProgressDetails}
      onClick={()=>setShowProgressDetails(value=>!value)}><BarChart3 size={19}/>{showProgressDetails?t.hideDetails:t.details}<ArrowRight size={17}/></button>
@@ -332,7 +391,7 @@ export default function MyCoachingPlan({accountId,locale='en'}){
         {busy?<LoaderCircle className={styles.spin} size={17}/>:<Save size={17}/>} {busy?t.saving:t.save}</button>
        <div className={styles.goalList}><strong>{t.goals} · {count}</strong>
         {count===0&&<p>{t.noGoals}</p>}
-        {(area.goals||[]).map(goal=><div className={styles.goal} key={goal.id}>
+        {(area.goals||[]).map(goal=><div className={styles.goal} key={goal.id} id={'goal-'+goal.id}>
          <b>{goal.title}</b>{goal.desiredOutcome&&<p>{goal.desiredOutcome}</p>}
          <span>{goal.status}</span>
          {(goal.actions||[]).map(action=><div className={styles.action} key={action.id}>
@@ -362,7 +421,7 @@ export default function MyCoachingPlan({accountId,locale='en'}){
   {tab==='reports'&&<section className={styles.reports}>
    {reportError&&<p className={styles.inlineError} role="alert">{t.reportError}</p>}
    {protocolError&&<p className={styles.inlineError} role="alert">{protocolError}</p>}
-   {protocols.map(protocol=><article key={protocol.id} className={styles.reportCard} data-my-coach-saved-protocol={protocol.id}>
+   {visibleProtocols.map(protocol=><article key={protocol.id} className={styles.reportCard} data-my-coach-saved-protocol={protocol.id}>
     <div className={styles.reportTop}><div><span>{protocolCopy[lang].transcript}</span><h2>{protocolCopy[lang].title} · {protocol.personaId}</h2><small>{formatDate(protocol.completedAt,lang)} · {protocol.turns?.length||0} {lang==='ru'?'реплик':lang==='es'?'turnos':'turns'}</small></div></div>
     {protocol.clientSummary&&<div className={styles.reportSection}><b>{lang==='ru'?'Мой итог':lang==='es'?'Mi conclusión':'My takeaway'}</b><p>{protocol.clientSummary}</p></div>}
     {protocol.clientNextStep&&<div className={styles.reportSection}><b>{lang==='ru'?'Мой следующий шаг':lang==='es'?'Mi próximo paso':'My next step'}</b><p>{protocol.clientNextStep}</p></div>}
@@ -381,7 +440,16 @@ export default function MyCoachingPlan({accountId,locale='en'}){
      </div>
     </div>
    </article>)}
-   {!reports.length&&!protocols.length&&!reportError&&!protocolError&&<div className={styles.empty}><ClipboardList size={24}/><p>{t.reportsEmpty}</p></div>}
+   {protocolPage.accountId===accountId&&protocolPage.hasMore&&protocolPage.nextCursor&&
+    <button type="button" className={styles.primaryButton} data-my-coach-load-earlier
+      disabled={protocolPageLoading} onClick={()=>void loadEarlierProtocols()}>
+      {protocolPageLoading?({
+        en:'Loading earlier sessions…',ru:'Загружаем предыдущие сессии…',es:'Cargando sesiones anteriores…',
+      }[lang]):({
+        en:'Show earlier sessions',ru:'Показать предыдущие сессии',es:'Mostrar sesiones anteriores',
+      }[lang])}
+    </button>}
+   {!reports.length&&!visibleProtocols.length&&!reportError&&!protocolError&&<div className={styles.empty}><ClipboardList size={24}/><p>{t.reportsEmpty}</p></div>}
    {reports.map(record=>{
     const report=record.report||{},accepted=(report.actionCandidates||[]).filter(item=>item.status==='accepted')
     const available=accepted.filter(item=>!importedKeys.has(record.id+'|'+item.candidateId))

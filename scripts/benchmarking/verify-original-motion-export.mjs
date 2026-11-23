@@ -34,17 +34,16 @@ try {
   await page.locator('[data-video-studio-hydrated="true"]').waitFor({ timeout: 60000 });
   // Complete all three real Goal selections before the visitor's Ideas CTA.
   await completeThreeStepGoalsQuiz(page,{engine});
-  const ideasEntry=page.locator('[data-video-quick-control="phrases"]');
-  const openIdeas=page.locator('[data-video-continue-scenarios]');
+  const openMontage=page.locator('[data-video-continue-scenarios]');
+  await openMontage.waitFor({state:'visible',timeout:15000});
   const press=button=>engine==='webkit'?button.tap({timeout:15000}):button.click({timeout:15000});
-  await press(openIdeas);
-  await page.waitForFunction(()=>
-    document.querySelector('[data-video-quick-control="phrases"]')
-      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
-  assert.equal(await ideasEntry.getAttribute('aria-pressed'),
-    'true','GOALS_MUST_OPEN_IDEAS');
+  await press(openMontage);
   const editor=page.locator('[data-video-quick-control="editor"]');
-  await editor.click();
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-quick-control="editor"]')
+      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  assert.equal(await editor.getAttribute('aria-pressed'),
+    'true','GOALS_MUST_OPEN_MONTAGE');
   // Use the same actual Montage entry flow proven by the physical voice test.
   // The compact Settings control appears only after activating the visible
   // Style stage; a hidden Settings click must never be force-clicked.
@@ -54,6 +53,11 @@ try {
   await page.locator('[data-video-montage-tab="effects"]').waitFor({state:'visible',timeout:20000});
   // Style is the first visible Montage tab; source selection is an actual tap.
   await page.locator('[data-video-montage-tab="effects"]').click();
+  const moreStyles=page.locator('[data-video-montage-more-styles]');
+  const styleSummary=moreStyles.locator(':scope > summary');
+  await styleSummary.waitFor({state:'visible',timeout:20000});
+  if(await moreStyles.getAttribute('open')===null)await press(styleSummary);
+  assert.notEqual(await moreStyles.getAttribute('open'),null,'MORE_STYLES_MUST_BE_OPEN');
   const selectedStyle=page.locator('[data-video-montage-style="3"]');
   await selectedStyle.waitFor({state:'visible',timeout:20000});
   if(engine==='webkit')await selectedStyle.tap();
@@ -76,33 +80,12 @@ try {
   // reachable through Settings → advanced Concept, not a fifth visible tab.
   const styleTab=page.locator('[data-video-montage-tab="effects"]');
   await styleTab.waitFor({state:'visible',timeout:20000});
-  await styleTab.click();
+  await press(styleTab);
   const styleNext=page.locator('[data-video-montage-effects] [data-video-montage-next="audio"]');
   await styleNext.waitFor({state:'visible',timeout:20000});
-  // Use the genuine iPhone touch path: a fast compatibility click can land
-  // on the newly revealed footer after Style unmounts during pointer-up.
-  if(engine==='webkit')await styleNext.tap();
-  else await styleNext.click();
-  try {
-    await page.waitForFunction(()=>{
-      const editor=document.querySelector('[data-video-basic-editor]');
-      const audioTab=document.querySelector('[data-video-montage-tab="audio"]');
-      const audioPane=document.querySelector('[data-video-montage-audio]');
-      return editor?.getAttribute('data-montage-panel')==='audio' &&
-        audioTab?.getAttribute('aria-pressed')==='true' &&
-        Boolean(audioPane?.getClientRects().length);
-    },undefined,{timeout:15000});
-  } catch(error) {
-    // Only safe UI state; no prompts, customer inputs, audio or credentials.
-    const state=await page.evaluate(()=>({
-      activePanel:document.querySelector('[data-video-basic-editor]')?.getAttribute('data-montage-panel')??null,
-      audioPressed:document.querySelector('[data-video-montage-tab="audio"]')?.getAttribute('aria-pressed')??null,
-      audioVisible:Boolean(document.querySelector('[data-video-montage-audio]')?.getClientRects().length),
-      footerTarget:document.querySelector('[data-video-stage-actions="montage"] [data-video-montage-next]')?.getAttribute('data-video-montage-next')??null,
-    })).catch(()=>({diagnosticsUnavailable:true}));
-    console.error('HH_ORIGINAL_MOTION_STYLE_TO_AUDIO_FAILURE '+JSON.stringify({engine,state}));
-    throw error;
-  }
+  await press(styleNext);
+  await page.waitForFunction(()=>document.querySelector('[data-video-montage-tab="audio"]')
+    ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
   assert.equal(await page.locator('[data-video-montage-tab="audio"]').getAttribute('aria-pressed'),
     'true','VISIBLE_STYLE_NEXT_MUST_OPEN_AUDIO');
   await page.locator('[data-video-quick-control="phrases"]').click();
@@ -114,6 +97,24 @@ try {
   await press(quiz.locator('[data-personalization-kind="desired"] [data-video-personalization-choice]').first());
   await press(quiz.locator('[data-video-personalization-energy="3"]'));
   await press(quiz.locator('[data-video-personalization-clarify-continue]'));
+  // Personal requires all eight current/desired ratings and an explicit focus.
+  const axes=page.locator('[data-video-meaning-axes-screen]');
+  await axes.waitFor({state:'visible',timeout:15000});
+  const cards=axes.locator('[data-video-meaning-axis]');
+  assert.equal(await cards.count(),8,'PERSONAL_MUST_EXPOSE_EIGHT_AXES');
+  for(let index=0;index<8;index++){
+    const card=cards.nth(index);
+    await card.locator('[data-axis-slider="now"] input').press('ArrowLeft');
+    await card.locator('[data-axis-slider="desired"] input').press('ArrowRight');
+    assert.equal(await card.locator('[data-axis-slider="now"] output').textContent(),'4');
+    assert.equal(await card.locator('[data-axis-slider="desired"] output').textContent(),'6');
+  }
+  const focus=cards.first().locator('[data-video-meaning-focus]');
+  await press(focus);
+  assert.equal(await focus.getAttribute('aria-checked'),'true');
+  const axesNext=axes.locator('[data-video-meaning-axes-continue]');
+  assert.equal(await axesNext.isEnabled(),true,'EIGHT_AXES_AND_FOCUS_REQUIRED');
+  await press(axesNext);
   const conceptPanel=page.locator('[data-video-ideas-concept-panel]');
   await conceptPanel.waitFor({state:'visible',timeout:15000});
   await conceptPanel.locator('[data-video-concept-approve]').click();
@@ -128,6 +129,10 @@ try {
   const textTools=page.locator('[data-video-concept-text-tools]');
   await textTools.locator(':scope > summary').click();
   assert.equal(await textTools.getAttribute('open'),'','TIMELINE_DISCLOSURE_MUST_OPEN');
+  // The shared timeline is mounted in Audio, not within the text tools disclosure.
+  const timelineAudioTab=page.locator('[data-video-montage-tab="audio"]');
+  await press(timelineAudioTab);
+  assert.equal(await timelineAudioTab.getAttribute('aria-pressed'),'true','AUDIO_MUST_EXPOSE_SHARED_TIMELINE');
   const addVideo=page.locator('[data-video-timeline-add-video]');
   await addVideo.waitFor({state:'visible',timeout:20000});
   // Native touch must commit the real visitor's opt-in. Desktop click can be

@@ -47,11 +47,13 @@ test("initial paint is local and deferred: no media network or large course bund
  assert.match(styles,/ideas-pine-reference\.webp/);
  assert.match(lazy,/IntersectionObserver/);
  assert.match(lazy,/rootMargin:"220px 0px"/);
- assert.match(lazy,/ssr:false/);
- assert.match(content,/ssr:false/);
+ assert.match(lazy,/const HomeDeferredContent = lazy\(/);
+ assert.match(content,/const HomeExpandedCatalog = lazy\(/);
  assert.match(content,/MySpaceTopics/);
- assert.doesNotMatch(content,/^import \{ MySpaceTopics \} from/m);
- assert.match(content,/import\("\.\/my-space-topics"\)/);
+ // The topic component is allowed as a direct import INSIDE the deferred module.
+ // The first-screen observer must not import its CSS-bearing content eagerly.
+ assert.doesNotMatch(lazy,/^import \{ MySpaceTopics \} from/m);
+ assert.match(content,/^import \{ MySpaceTopics \} from/m);
  assert.match(catalog,/HomeFeaturedWorkspace/);
  assert.doesNotMatch(main,/<HomeFeaturedWorkspace|<HomeSectionCarousel|<MySpaceTopics/);
  assert.doesNotMatch(entry,/https:\/\/|<iframe|<video|fetch\(/);

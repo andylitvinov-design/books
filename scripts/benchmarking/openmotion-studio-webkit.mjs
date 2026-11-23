@@ -37,12 +37,14 @@ try{
  await context.route('**/*',route=>route.request().url().startsWith('blob:'+origin+'/')||
     (route.request().url().startsWith(origin+'/')&&['GET','HEAD'].includes(route.request().method()))?route.continue():route.abort());
  const page=await context.newPage();
- const response=await page.goto(origin+'/ru/holistic-support/mandala',{waitUntil:'commit',timeout:180000});
+ const response=await page.goto(origin+'/ru/holistic-support/mandala?videoMode=openmotion',{waitUntil:'commit',timeout:180000});
  assert.equal(response.status(),200);
  await page.waitForFunction(()=>document.querySelector('[data-mandala-free-video]')?.getAttribute('data-video-studio-hydrated')==='true',undefined,{timeout:90000});
- await page.locator('[data-video-open-motion-templates]').tap({timeout:30000});
  const advanced=page.locator('[data-video-first-video-advanced]').first();
- await advanced.locator('[data-first-video-openmotion-library] summary').first().tap({timeout:30000});
+ const library=advanced.locator('[data-first-video-openmotion-library]');
+ const summary=library.locator('summary');
+ await summary.waitFor({state:'visible',timeout:30000});
+ if(await library.getAttribute('open')===null)await summary.tap({timeout:30000});
  const picker=advanced.locator('[data-openmotion-library-loaded]').first();
  await picker.locator('select').selectOption('focused-action',{timeout:45000});
  await picker.locator('[data-openmotion-edit-preset]').tap();
@@ -53,13 +55,29 @@ try{
  const replacement=scenes.locator('[data-openmotion-replace-scene="ocean-pulse"]');
  await replacement.tap();
  assert.match(await scenes.locator('[data-openmotion-replace-clip] option:checked').textContent(),/ocean-pulse/);
- await scenes.locator('[data-openmotion-undo-scene]').tap();
+ await picker.locator('[data-openmotion-undo-scene]').tap();
  assert.match(await scenes.locator('[data-openmotion-replace-clip] option:checked').textContent(),/solar-surge/);
  await replacement.tap();
  await scenes.locator('[data-openmotion-move-scene="1"]').tap();
  const clipSelect=scenes.locator('[data-openmotion-replace-clip]');
  assert.match(await clipSelect.locator('option[value="shot-2"]').textContent(),/path-to-goals/);
  assert.match(await clipSelect.locator('option[value="shot-3"]').textContent(),/ocean-pulse/);
+ const audio=picker.locator('details').filter({hasText:'Музыка для Motion.md'});
+ await audio.locator('summary').tap();
+ await audio.locator('[data-openmotion-replace-audio]').selectOption('ambience');
+ await audio.getByRole('searchbox').fill('classic-fur-elise');
+ await audio.locator('[data-openmotion-audio-source="classic-fur-elise"]').tap();
+ assert.match(await audio.locator('[data-openmotion-replace-audio] option:checked').textContent(),/classic-fur-elise/);
+ const sourceEditor=picker.locator('[data-openmotion-source-editor]');
+ await sourceEditor.locator('summary').tap();
+ const sourceText=sourceEditor.getByRole('textbox');
+ const draft=await sourceText.inputValue();
+ const changedDraft=draft.replace('"startMs": 0,\n          "endMs": 3000',
+   '"startMs": 0,\n          "endMs": 2000');
+ assert.notEqual(draft,changedDraft);
+ await sourceText.fill(changedDraft);
+ await sourceEditor.locator('[data-openmotion-apply-source]').tap();
+ assert.equal(decodeURIComponent((await sourceEditor.locator('[data-openmotion-download-edited]').getAttribute('href')).split(',')[1]),changedDraft);
  const started=Date.now();
  await picker.locator('[data-openmotion-render-imported]').tap();
  await page.locator('[data-video-ready]').waitFor({state:'visible',timeout:15000});

@@ -2,17 +2,18 @@
 
 import {useEffect,useMemo,useState} from "react";
 import type {PublicLocale} from "@/lib/public-locales";
-import standardMotionFilms from "@/data/video-catalog/standard-motion-films-v1.json";
+import {PublishedStandardMotionFilm, getPublishedStandardMotionFilm} from "./published-standard-motion-film";
 import {
   OPENMOTION_REFERENCE_COLLECTIONS,OPENMOTION_REFERENCE_COUNT,OPENMOTION_GUIDE_COUNT,
   listOpenMotionReferences,planOpenMotionReferenceSelection,
   type OpenMotionLocalSelection,
 } from "@/lib/mandala/openmotion-reference.mjs";
-import {createPresetMotionGuideV3,importCatalogMotionGuideV3,listPresetMotionGuides,moveMotionGuideScene,replaceMotionGuideScene,searchMotionGuideScenes} from "@/lib/mandala/openmotion-preset-guide.mjs";
+import {createPresetMotionGuideV3,importCatalogMotionGuideV3,listPresetMotionGuides,moveMotionGuideScene,replaceMotionGuideAudio,replaceMotionGuideScene,searchMotionGuideAudio,searchMotionGuideScenes} from "@/lib/mandala/openmotion-preset-guide.mjs";
 import css from "./mandala-openmotion-picker.module.css";
 
 type EditableGuide={markdown:string;aspect:"portrait"|"landscape"|"square";
-  clips:{id:string;assetId:string;canMoveEarlier:boolean;canMoveLater:boolean}[]};
+  clips:{id:string;assetId:string;canMoveEarlier:boolean;canMoveLater:boolean}[];
+  audio:readonly {id:string;assetId:string}[]};
 
 type Props={
   locale:PublicLocale;
@@ -24,12 +25,13 @@ type Props={
 
 const words={
   en:{
-    editPreset:"Edit in Studio",replaceScene:"Scene to replace",undoScene:"Undo scene edit",
+    editPreset:"Edit in Studio",replaceScene:"Scene to replace",undoScene:"Undo edit",
     earlier:"Move earlier",later:"Move later",
+    audioSearch:"Catalog music for Motion.md",replaceAudio:"Soundtrack to replace",
+    editSource:"Edit Motion.md source",applySource:"Apply edits",downloadEdited:"Download edited Motion.md",
     sceneSearch:"Catalog scenes for Motion.md",
     importGuide:"Import Motion.md",importedRender:"Render imported MP4",importError:"The Motion.md guide or its assets are unsupported.",
     templates:"Holistic House templates",downloadGuide:"Download Motion.md",renderPreset:"Render template MP4",
-    publishedFilm:"Ready filmed Anti-stress video",publishedNote:"Fixed 30-second film with English captions. No phone render, personalization or credit hold.",downloadPublished:"Download finished MP4",
     title:"OpenMotion ideas",intro:"Explore external video references, then make your own original film using Holistic House's free scenes and editor.",
     caution:"These are video references, not licensed footage or guaranteed editable templates. Local results adapt the rhythm and format, not the original brand visuals.",
     search:"Find a video style",searchHint:"Search title, movement or creator",
@@ -39,12 +41,13 @@ const words={
     external:"External video — original rights holder",source:"Original source",count:"public reference entries",approx:"Local adaptation",
   },
   ru:{
-    editPreset:"Редактировать в Studio",replaceScene:"Сцена для замены",undoScene:"Отменить правку сцены",
+    editPreset:"Редактировать в Studio",replaceScene:"Сцена для замены",undoScene:"Отменить правку",
     earlier:"Сдвинуть раньше",later:"Сдвинуть позже",
+    audioSearch:"Музыка для Motion.md",replaceAudio:"Дорожка для замены",
+    editSource:"Редактировать исходник Motion.md",applySource:"Применить правки",downloadEdited:"Скачать изменённый Motion.md",
     sceneSearch:"Каталожные сцены для Motion.md",
     importGuide:"Загрузить Motion.md",importedRender:"Собрать загруженный MP4",importError:"Формат Motion.md или исходники не поддерживаются.",
     templates:"Шаблоны Holistic House",downloadGuide:"Скачать Motion.md",renderPreset:"Собрать шаблон в MP4",
-    publishedFilm:"Готовый видеофильм «Антистресс»",publishedNote:"30 секунд, английские титры. Без генерации на телефоне, персонализации и списания кредитов.",downloadPublished:"Скачать готовый MP4",
     title:"Идеи OpenMotion",intro:"Посмотрите внешние видеореференсы и создайте собственный ролик из наших бесплатных сцен в редакторе Holistic House.",
     caution:"Это примеры движения, а не лицензированные исходники и не обязательно редактируемые проекты. Локальное видео повторяет общий ритм и формат, а не чужой бренд.",
     search:"Найти стиль видео",searchHint:"Название, анимация или автор",
@@ -54,12 +57,13 @@ const words={
     external:"Внешнее видео — права у автора",source:"Источник",count:"видеореференсов",approx:"Локальная адаптация",
   },
   es:{
-    editPreset:"Editar en Studio",replaceScene:"Escena que se reemplazará",undoScene:"Deshacer edición de escena",
+    editPreset:"Editar en Studio",replaceScene:"Escena que se reemplazará",undoScene:"Deshacer edición",
     earlier:"Mover antes",later:"Mover después",
+    audioSearch:"Música para Motion.md",replaceAudio:"Pista que se reemplazará",
+    editSource:"Editar el código Motion.md",applySource:"Aplicar cambios",downloadEdited:"Descargar Motion.md editado",
     sceneSearch:"Escenas del catálogo para Motion.md",
     importGuide:"Importar Motion.md",importedRender:"Crear MP4 importado",importError:"La guía Motion.md o sus recursos no son compatibles.",
     templates:"Plantillas de Holistic House",downloadGuide:"Descargar Motion.md",renderPreset:"Crear MP4 de la plantilla",
-    publishedFilm:"Vídeo Antiestrés terminado",publishedNote:"Película de 30 s con subtítulos en inglés. Sin exportación móvil, personalización ni créditos.",downloadPublished:"Descargar MP4 listo",
     title:"Ideas OpenMotion",intro:"Explora vídeos externos y crea tu propia película con escenas originales en el editor gratuito de Holistic House.",
     caution:"Son referencias, no material con licencia para reutilizar ni proyectos editables garantizados. La versión local adapta el ritmo y el formato, no la marca.",
     search:"Buscar estilo de vídeo",searchHint:"Título, movimiento o creador",
@@ -86,10 +90,15 @@ export function MandalaOpenMotionPicker({locale,disabled,onPick,exportReady,onEx
   },[]);
   const [imported,setImported]=useState<EditableGuide|null>(null);
   const [previousGuide,setPreviousGuide]=useState<EditableGuide|null>(null);
+  const [sourceDraft,setSourceDraft]=useState("");
+  const [sourceEditorOpen,setSourceEditorOpen]=useState(false);
   const [replaceClipId,setReplaceClipId]=useState("");
+  const [audioQuery,setAudioQuery]=useState("");
+  const [audioSearchOpen,setAudioSearchOpen]=useState(false);
+  const [replaceAudioId,setReplaceAudioId]=useState("");
   function readEditableGuide(markdown:string):EditableGuide{
     const {project}=importCatalogMotionGuideV3(markdown,"imported-motion",locale);
-    return {markdown,aspect:project.aspect,clips:project.videoTracks.flatMap(track=>
+    return {markdown,aspect:project.aspect,audio:project.audioTracks,clips:project.videoTracks.flatMap(track=>
       track.clips.map((clip,index)=>({id:clip.id,assetId:clip.assetId,
         canMoveEarlier:index>0,canMoveLater:index<track.clips.length-1})))};
 
@@ -98,10 +107,12 @@ export function MandalaOpenMotionPicker({locale,disabled,onPick,exportReady,onEx
   const activeClip=imported?.clips.find(clip=>clip.id===replaceClipId);
   const presets=useMemo(()=>listPresetMotionGuides(locale),[locale]);
   const selectedPreset=presets.find(preset=>preset.id===presetId);
-  const publishedMaster=standardMotionFilms.films.find(film=>film.id===presetId)?.publishedMaster;
+  const publishedMaster=getPublishedStandardMotionFilm(presetId);
   const scenes=useMemo(()=>sceneSearchOpen
     ?searchMotionGuideScenes(sceneQuery,locale,imported?.aspect??selectedPreset?.aspect??"portrait")
     :[],[sceneSearchOpen,sceneQuery,locale,imported?.aspect,selectedPreset?.aspect]);
+  const music=useMemo(()=>audioSearchOpen?searchMotionGuideAudio(audioQuery,locale):[],
+    [audioQuery,audioSearchOpen,locale]);
   const guideHref=useMemo(()=>presetId
     ?"data:text/markdown;charset=utf-8,"+encodeURIComponent(createPresetMotionGuideV3(presetId,locale))
     :null,[presetId,locale]);
@@ -169,24 +180,14 @@ export function MandalaOpenMotionPicker({locale,disabled,onPick,exportReady,onEx
         {presets.map(preset=><option key={preset.id} value={preset.id}>{preset.label}</option>)}
       </select>
     </label>
-    {publishedMaster?<div className={css.publishedMaster} data-openmotion-standard-master>
-      <strong>{t.publishedFilm}</strong>
-      <video controls playsInline preload="metadata"
-        src={publishedMaster.path}
-        poster="/videos/holistic-house/film-collection-v2/mountain-air.jpg"
-        aria-label={t.publishedFilm}/>
-      <p>{t.publishedNote}</p>
-      <a href={publishedMaster.path} download="anti-stress-30s-en.mp4">
-        {t.downloadPublished}
-      </a>
-    </div>:null}
+    {publishedMaster?<PublishedStandardMotionFilm locale={locale} master={publishedMaster}/>:null}
     {guideHref&&selectedPreset&&!disabled?<div className={css.actions}>
       <button type="button" data-openmotion-render-preset disabled={!exportReady}
         onClick={()=>onExport(selectedPreset.id,selectedPreset.aspect)}>{t.renderPreset}</button>
       <button type="button" data-openmotion-edit-preset onClick={()=>{
         setImported(readEditableGuide(createPresetMotionGuideV3(selectedPreset.id,locale)));
         setPreviousGuide(null);
-        setReplaceClipId("");
+        setReplaceClipId("");setReplaceAudioId("");
         setImportError(false);
       }}>{t.editPreset}</button>
       <a data-openmotion-download-guide href={guideHref} download={presetId+".Motion.md"}>
@@ -204,7 +205,7 @@ export function MandalaOpenMotionPicker({locale,disabled,onPick,exportReady,onEx
             if(!file)return;
             setImported(null);
             setPreviousGuide(null);
-            setReplaceClipId("");
+            setReplaceClipId("");setReplaceAudioId("");
             setImportError(false);
             try{
               if(file.size>65536)throw Error("motion_guide_size");
@@ -217,6 +218,35 @@ export function MandalaOpenMotionPicker({locale,disabled,onPick,exportReady,onEx
       {imported?<button type="button" data-openmotion-render-imported disabled={disabled||!exportReady}
         onClick={()=>onExport("imported-motion",imported.aspect,imported.markdown)}>{t.importedRender}</button>:null}
     </div>
+        {previousGuide?<button type="button" data-openmotion-undo-scene disabled={disabled} onClick={()=>{
+          setImported(previousGuide);setSourceDraft(previousGuide.markdown);setPreviousGuide(null);setImportError(false);
+        }}>{t.undoScene}</button>:null}
+    {imported?<details data-openmotion-source-editor onToggle={event=>{
+      const open=event.currentTarget.open;
+      setSourceEditorOpen(open);
+      if(open)setSourceDraft(imported.markdown);
+    }}>
+      <summary>{t.editSource}</summary>
+      {sourceEditorOpen?<div>
+        <textarea className={css.search} aria-label={t.editSource} rows={8} maxLength={65536}
+          value={sourceDraft} disabled={disabled} spellCheck={false}
+          onChange={event=>setSourceDraft(event.currentTarget.value)}/>
+        <div className={css.actions}>
+          <button type="button" data-openmotion-apply-source
+            disabled={disabled||sourceDraft===imported.markdown} onClick={()=>{
+              try{
+                const next=readEditableGuide(sourceDraft);
+                setPreviousGuide(imported);setImported(next);setImportError(false);
+                setReplaceClipId("");setReplaceAudioId("");
+              }catch{setImportError(true);}
+            }}>{t.applySource}</button>
+          <a data-openmotion-download-edited download="edited.Motion.md"
+            href={"data:text/markdown;charset=utf-8,"+encodeURIComponent(imported.markdown)}>
+            {t.downloadEdited}
+          </a>
+        </div>
+      </div>:null}
+    </details>:null}
     <details onToggle={event=>setSceneSearchOpen(event.currentTarget.open)}>
       <summary>{t.sceneSearch}</summary>
       {sceneSearchOpen?<div>
@@ -239,9 +269,6 @@ export function MandalaOpenMotionPicker({locale,disabled,onPick,exportReady,onEx
               }catch{setImportError(true);}
             }}>{direction<0?t.earlier:t.later}</button>)}
         </div>:null}
-        {previousGuide?<button type="button" data-openmotion-undo-scene disabled={disabled} onClick={()=>{
-          setImported(previousGuide);setPreviousGuide(null);setImportError(false);
-        }}>{t.undoScene}</button>:null}
         {scenes.length?<ul>{scenes.map(scene=><li key={scene.id}>
           {imported&&replaceClipId?<button type="button" data-openmotion-replace-scene={scene.id}
             disabled={disabled} onClick={()=>{
@@ -253,6 +280,30 @@ export function MandalaOpenMotionPicker({locale,disabled,onPick,exportReady,onEx
             }}>{scene.label}</button>:scene.label} <code>{scene.id}</code>
         </li>)}</ul>
           :<p role="status">{t.none}</p>}
+      </div>:null}
+    </details>
+    <details onToggle={event=>setAudioSearchOpen(event.currentTarget.open)}>
+      <summary>{t.audioSearch}</summary>
+      {audioSearchOpen?<div>
+        <input type="search" className={css.search} aria-label={t.audioSearch}
+          value={audioQuery} maxLength={100} onChange={event=>setAudioQuery(event.currentTarget.value)}/>
+        {imported?.audio.length?<label>{t.replaceAudio}
+          <select data-openmotion-replace-audio value={replaceAudioId} disabled={disabled}
+            onChange={event=>setReplaceAudioId(event.currentTarget.value)}>
+            <option value="">—</option>
+            {imported.audio.map(lane=><option key={lane.id} value={lane.id}>{lane.id} · {lane.assetId}</option>)}
+          </select>
+        </label>:null}
+        {music.length?<ul>{music.map(track=><li key={track.id}>
+          {imported&&replaceAudioId?<button type="button" data-openmotion-audio-source={track.id}
+            disabled={disabled} onClick={()=>{
+              try{
+                const edited=replaceMotionGuideAudio(imported.markdown,replaceAudioId,track.id,locale);
+                const next=readEditableGuide(edited);
+                setPreviousGuide(imported);setImported(next);setImportError(false);
+              }catch{setImportError(true);}
+            }}>{track.label}</button>:track.label} <code>{track.id}</code>
+        </li>)}</ul>:<p role="status">{t.none}</p>}
       </div>:null}
     </details>
     <p className={css.footer}>{t.guide}: <a target="_blank" rel="noopener noreferrer"

@@ -232,7 +232,7 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
     if (current === 'sessions') return targetRoot + '/portrait?space=sessions'
     return targetRoot + '/portrait'
   }
-  return <section className={styles.hub} data-profile-hub-tabs data-profile-active={current}>
+  return <section className={styles.hub} data-profile-hub-tabs data-profile-active={current} data-profile-course-index={isCourseLanding ? 'true' : undefined}>
     <header className={styles.heading}>
       <div className={styles.headingTitle}>
         {(brandedSpace || settingsMode) && <span className={styles.brandMark} aria-hidden="true" />}
@@ -290,7 +290,7 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
         {selected==='ru'?'Настройки':selected==='es'?'Ajustes':'Settings'}
       </Link>
     </div>}
-    {current === 'today' && <ProfileSpaceDashboard locale={selected} root={root} resultCount={resultCount} />}
+    {current === 'today' && <ProfileSpaceDashboard locale={selected} root={root} resultCount={resultCount} accountId={account?.id || null} />}
      {isCourseLanding && <CourseSpaceIntro locale={selected} root={root} />}
     {settingsMode && <ProfileSettingsLanding locale={selected} root={root} plans={NEW_PACKAGES} />}
     {!simplifiedSpace && current !== 'create' && current !== 'reports' && !settingsMode && !publicEntry && <div className={styles.sectionIntro}>
