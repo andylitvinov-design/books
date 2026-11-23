@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {runInNewContext} from 'node:vm'
+import {createHmac} from 'node:crypto'
 import {GEMINI_FREE_LIVE_MODEL,GEMINI_FREE_LIVE_MAX_SECONDS,geminiFreeLiveConfig,
  normalizeGeminiFreeLiveStart,geminiFreeLiveSetup,issueGeminiFreeLiveToken,
  geminiFreeLiveCheckpoint} from '../lib/coaching/gemini-live-free.mjs'
@@ -504,7 +505,7 @@ test('signed owner-scoped Live memory service rejects fake data, wrong account a
   if(Object.keys(obj).some(key=>!keys.includes(key)))throw new Err('INVALID_FIELDS',400)
  }
  const service=runInNewContext(src+'\nreadMyCoachLiveContext',{
-  AppError:Err,onlyKeys,
+  AppError:Err,onlyKeys,createHmac,
   verifyCoachMemoryTicket:(token,args)=>args.accountId==='client-A'&&
    args.provider==='gemini_free'&&(token==='prior-ticket'||(!args.requirePrior&&token==='basic-ticket')),
   geminiFreeLiveConfig:()=>({provider:'gemini_live_free'}),
@@ -530,12 +531,18 @@ test('signed owner-scoped Live memory service rejects fake data, wrong account a
   consent,continuity:'previous',topicKey:'career_business'}
  const first=await service(config,actor,body,{}, {readStaged})
  assert.equal(first.available,true)
+ assert.match(first.fingerprint,/^[a-f0-9]{64}$/)
+ assert.doesNotMatch(JSON.stringify(first),/fixture-key/)
  assert.match(first.note,/Reviewed chosen action/)
  assert.match(first.note,/Reviewed last goal/)
  assert.doesNotMatch(first.note,/meaning_axes/)
  assert.equal(reads.length,2)
  const second=await service(config,actor,{...body,consent:{...consent,axes:true}},{},{readStaged})
  assert.match(second.note,/meaning_axes/)
+ assert.match(second.fingerprint,/^[a-f0-9]{64}$/)
+ assert.notEqual(second.fingerprint,first.fingerprint)
+ const same=await service(config,actor,body,{},{readStaged})
+ assert.equal(same.fingerprint,first.fingerprint)
  await assert.rejects(service(config,actor,{...body,shareApproved:false},{},{readStaged}),/CONSENT_REQUIRED/)
  await assert.rejects(service(config,{id:'client-B'},body,{},{readStaged}),/MY_COACH_MEMORY_STAGE_REQUIRED/)
  await assert.rejects(service(config,actor,{...body,stageToken:'basic-ticket'},{},{readStaged}),/MY_COACH_MEMORY_STAGE_REQUIRED/)
@@ -571,4 +578,52 @@ test('catalog session entries load a new document with the session voice policy'
   assert.equal(name,'a','Next Link retains the catalog microphone/CSP policy')
   assert.doesNotMatch(tag,/onClick|prefetch/)
  }
+})
+
+test('in-call Live context grants are checked without a second Gemini inference',async()=>{
+ const live=load('components/my-coach-gemini-live.jsx')
+ const helper=live.slice(live.indexOf('  function scheduleContextFreshnessCheck(r){'),
+   live.indexOf('  async function loadApprovedContext(r){'))
+ assert.match(live,/LIVE_CONTEXT_CHECK_MS=5\*60\*1000/)
+ assert.match(live,/LIVE_CONTEXT_PACKET_MAX_AGE_MS=60\*1000/)
+ assert.match(live,/r\.pendingContextReadAt/)
+ assert.match(live,/r\.contextSentFingerprint=r\.pendingContextFingerprint/)
+ const key=JSON.stringify({stage:'personal',shareApproved:true})
+ const fingerprint='a'.repeat(64),calls=[],timers=[],events=[]
+ const access={current:{liveContextAccess:key,contextRevision:3}}
+ let currentFingerprint=fingerprint
+ const handlers=runInNewContext(helper+
+   '\n({scheduleContextFreshnessCheck,recheckApprovedContext})',{
+   propsRef:access,notify:value=>events.push(value),
+   t:{contextRevoked:'access revoked'},stop:()=>events.push('stopped'),
+   fetch:async(url,opts)=>{
+     calls.push({url,method:opts.method,body:opts.body})
+     return {ok:true,json:async()=>({schema:'HH_MY_COACH_LIVE_CONTEXT_V1',
+       available:true,fingerprint:currentFingerprint})}
+   },
+   setTimeout:(fn,ms)=>{timers.push({fn,ms});return timers.length},
+   LIVE_CONTEXT_CHECK_MS:5*60*1000,
+ },{timeout:1000})
+ const r={ended:false,contextSentKey:key,contextSentFingerprint:fingerprint,
+   contextVersion:3,contextCheckTimer:null,contextCheckInFlight:false,abort:{signal:{}}}
+ handlers.scheduleContextFreshnessCheck(r)
+ assert.equal(timers.length,1)
+ assert.equal(timers[0].ms,5*60*1000)
+ assert.equal(calls.length,0)
+ await handlers.recheckApprovedContext(r)
+ assert.equal(calls.length,1)
+ assert.equal(calls[0].url,'/api/app/my-coach/live-context')
+ assert.equal(calls[0].method,'POST')
+ assert.equal(calls[0].body,key)
+ assert.deepEqual(events,[],'unchanged authorization never stops live speech')
+ currentFingerprint='b'.repeat(64)
+ await handlers.recheckApprovedContext(r)
+ assert.deepEqual(events,['access revoked','stopped'])
+ assert.equal(calls.length,2)
+ events.length=0;access.current.contextRevision=4
+ await handlers.recheckApprovedContext(r)
+ assert.deepEqual(events,['access revoked','stopped'])
+ assert.equal(calls.length,2,'new scope revision short-circuits database retrieval')
+ assert.ok(calls.every(c=>c.url==='/api/app/my-coach/live-context'),
+   'freshness checks use only the existing first-party read route')
 })
