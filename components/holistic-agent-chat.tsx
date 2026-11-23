@@ -1823,7 +1823,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           <summary aria-label={locale==="ru"?"Дополнительные действия":locale==="es"?"Más acciones":"More actions"}><Plus size={19} aria-hidden="true"/></summary>
           <div className={styles.composerMenu}>
             {voiceAttachment}
-            {messengerView&&!pageHelp&&<MessengerVoiceNote locale={locale}
+            {messengerView&&!pageHelp&&<MessengerVoiceNote locale={locale} accountAuthenticated={authenticated}
               resetRevision={voiceNoteRevision}
               disabled={busy||proBusy||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"||
                 (proSelected&&!proReady)||(mode==="owned"&&!agree)}

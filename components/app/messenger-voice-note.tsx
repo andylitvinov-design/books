@@ -60,11 +60,12 @@ function fileExtension(mime:string) {
 }
 
 export function MessengerVoiceNote({
-  locale, disabled = false, resetRevision = 0, onSendTranscript, onBegin,
+  locale, disabled = false, resetRevision = 0, accountAuthenticated = false, onSendTranscript, onBegin,
 }:{
   locale:Locale;
   disabled?:boolean;
   resetRevision?:number;
+  accountAuthenticated?:boolean;
   onSendTranscript:(text:string,file:File,seconds:number)=>boolean;
   onBegin?:()=>void;
 }) {
@@ -225,6 +226,8 @@ export function MessengerVoiceNote({
       const body = new FormData();
       body.append("file",file,file.name);
       body.append("locale",locale);
+      // Authenticated Ali uses its own existing free STT quota; guests retain the no-login allowance.
+      if (accountAuthenticated) body.append("purpose","ali_chat");
       body.append("consent","yes");
       const response = await fetch("/api/holistic-support/audio-storyboard",{
         method:"POST",credentials:"same-origin",cache:"no-store",body,signal:abort.signal,
