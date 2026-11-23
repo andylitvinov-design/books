@@ -35,6 +35,7 @@ try {
   // Complete all three real Goal selections before the visitor's Ideas CTA.
   await completeThreeStepGoalsQuiz(page,{engine});
   const openMontage=page.locator('[data-video-continue-scenarios]');
+  await openMontage.waitFor({state:'visible',timeout:15000});
   const press=button=>engine==='webkit'?button.tap({timeout:15000}):button.click({timeout:15000});
   await press(openMontage);
   const editor=page.locator('[data-video-quick-control="editor"]');

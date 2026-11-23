@@ -6,7 +6,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {portraitMouthAperture,speechRms,speechPcmEnvelope} from '../lib/coaching/living-portrait-motion.mjs'
 import {normalizeMyCoachFishRequest,myCoachFishConfig,myCoachFishVoice,
- MY_COACH_FISH_VOICES,MIRA_RU_FISH_VOICE_CANDIDATE} from '../lib/coaching/my-coach-fish-voice.mjs'
+ MY_COACH_FISH_VOICES,OWNER_FISH_RU_CAST} from '../lib/coaching/my-coach-fish-voice.mjs'
 import {COACH_PRESENTATIONS,getCoachPresentation,coachPresentationVoice}
   from '../lib/coaching/persona-presentations.mjs'
 import {
@@ -166,10 +166,12 @@ test('mobile My Coach hero displays a still/MP4 scene with no CSS lip or eye dis
 // field and every opted-in natural-voice request failed before TTS.
 test('Mira Russian voice is locale-specific and never enabled without approved usage rights',()=>{
  assert.equal(myCoachFishVoice('mira','en',{}),MY_COACH_FISH_VOICES.mira)
- assert.equal(myCoachFishVoice('mira','ru',{}),MY_COACH_FISH_VOICES.mira)
- assert.equal(myCoachFishVoice('mira','ru',{HH_MY_COACH_MIRA_RU_VOICE_RIGHTS_APPROVED:'false'}),MY_COACH_FISH_VOICES.mira)
- assert.equal(myCoachFishVoice('mira','ru',{HH_MY_COACH_MIRA_RU_VOICE_RIGHTS_APPROVED:'true'}),MIRA_RU_FISH_VOICE_CANDIDATE)
- assert.equal(myCoachFishVoice('max','ru',{HH_MY_COACH_MIRA_RU_VOICE_RIGHTS_APPROVED:'true'}),MY_COACH_FISH_VOICES.max)
+ assert.equal(myCoachFishVoice('mira','ru',{}),null)
+ assert.equal(myCoachFishVoice('mira','ru',{HH_MY_COACH_MIRA_RU_VOICE_RIGHTS_APPROVED:'false'}),null)
+ // Obsolete Mira 'mur' approval must never resurrect an EN or wrong RU voice.
+ assert.equal(myCoachFishVoice('mira','ru',{HH_MY_COACH_MIRA_RU_VOICE_RIGHTS_APPROVED:'true'}),null)
+ assert.equal(myCoachFishVoice('mira','ru',{HH_MY_COACH_FISH_RU_CAST_RIGHTS_APPROVED:'true'}),null)
+ assert.equal(myCoachFishVoice('max','ru',{HH_MY_COACH_FISH_RU_CAST_RIGHTS_APPROVED:'true'}),OWNER_FISH_RU_CAST.max)
  assert.equal(myCoachFishVoice('__proto__','ru',{}),null)
  const privateRoute=readFileSync(new URL('../app/api/app/my-coach/voice/synthesize/route.js',import.meta.url),'utf8')
  const introRoute=readFileSync(new URL('../app/api/coaching/intro/[locale]/[coach]/route.js',import.meta.url),'utf8')

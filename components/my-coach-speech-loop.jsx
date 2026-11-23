@@ -1022,6 +1022,9 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       voice.rate=0.96
       const matches=(synth.getVoices?.()||[]).filter(item=>
         String(item.lang||'').toLowerCase().startsWith(replyLocale))
+      // A device without a RU/ES voice must not silently pronounce translated
+      // coach text with the phone's English default voice.
+      if(replyLocale!=='en'&&!matches.length)return false
       voice.voice=matches.find(item=>item.localService)||matches[0]||null
       const clear=()=>{
         if(speechTimerRef.current)clearTimeout(speechTimerRef.current)

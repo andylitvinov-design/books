@@ -84,6 +84,7 @@ async function enterPersonalAfterMontageExtra(page,engine="chromium"){
   const extra=page.locator('[data-video-montage-tab="promo"]');
   await expect(extra).toBeVisible({timeout:15000});
   if(engine==="webkit")await extra.tap();else await extra.click();
+  await expect(extra).toHaveAttribute("aria-pressed","true",{timeout:15000});
   const choice=page.locator('[data-video-extra-text-option="personal"]');
   await expect(choice).toBeVisible({timeout:15000});
   if(engine==="webkit")await choice.tap();else await choice.click();
@@ -147,6 +148,7 @@ function wav(seconds=3) {
 // Hold only this fresh context's same-origin JS, then verify one real tap after
 // hydration. All writes and third-party requests remain blocked.
 async function verifyWorkspaceHydration(browser,locale){
+  const engine=browser.browserType().name();
   const context=await browser.newContext({viewport:{width:390,height:840},isMobile:true,hasTouch:true,serviceWorkers:"block"});
   let release;const hold=new Promise(resolve=>{release=resolve});let held=0;
   try{
@@ -303,7 +305,7 @@ async function verifyWorkspaceHydration(browser,locale){
     }
     await page.setViewportSize({width:390,height:840});
     await mirror.locator('[data-hh-mirror-goal-choice="insta-reels"]').click();
-    await enterPersonalAfterMontageExtra(page);
+    await enterPersonalAfterMontageExtra(page,engine);
     // Preserve the visitor-selected VIP tier through the new Personal path.
     await expect(studio).toHaveAttribute("data-hh-mirror-planned-format","vip");
     await expect(page.locator('[data-video-ideas-goal-panel]')).toBeVisible();
@@ -331,7 +333,7 @@ async function verifyWorkspaceHydration(browser,locale){
       ?"Quiero tener más comprensión mutua":"I want more mutual understanding";
     await mirror.locator('[data-hh-mirror-wish]').fill(customWish);
     await mirror.locator('[data-hh-mirror-next]').click();
-    await enterPersonalAfterMontageExtra(page);
+    await enterPersonalAfterMontageExtra(page,engine);
     await expect(page.locator('[data-video-ideas-goal-panel]')).toBeVisible();
     await expect(page.locator('[data-video-ideas-tab="goal"]')).toHaveAttribute("aria-pressed","true");
     // Return to the genuine Goal tab to exercise the second path:
@@ -364,7 +366,7 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(mirror).toHaveAttribute('data-hh-mirror-step','3');
     await expect(mirror.locator('[data-hh-mirror-topic]')).toHaveCount(4);
     await mirror.locator('[data-hh-mirror-topic]').first().click();
-    await enterPersonalAfterMontageExtra(page);
+    await enterPersonalAfterMontageExtra(page,engine);
     const ideas=page.locator('[data-video-quick-control="phrases"]');
     await expect(ideas).toHaveAttribute("aria-pressed","true");
     await expect(page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]')).toBeVisible();
@@ -887,7 +889,7 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(recipientCreate).toBeVisible({timeout:15000});
     await expect(recipientCreate).toBeEnabled();
     await recipientCreate.click();
-    await enterPersonalAfterMontageExtra(page);
+    await enterPersonalAfterMontageExtra(page,engine);
     await expect(ideas).toHaveAttribute("aria-pressed","true");
     await expect(studio).toHaveAttribute("data-active-workspace","phrases");
     // These are the actual source-backed montage title inputs; source edits
@@ -1534,7 +1536,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(compactVoicePanel.locator('[data-video-affirmation-voice-card^="fish-"]')).toHaveCount(4);
       await expect(compactVoicePanel.locator('[data-video-affirmation-voice-card="fish-igor"]')).toBeVisible();
       if(engine==="webkit")await meditationRole.tap(); else await meditationRole.click();
-      await expect(compactVoicePanel.locator('[data-video-affirmation-voice-card^="fish-"]')).toHaveCount(2);
+      // The approved meditation cast contains three EN and three RU candidates.
+      // All six must remain discoverable, while unlicensed voices stay disabled.
+      await expect(compactVoicePanel.locator('[data-video-affirmation-voice-card^="fish-"]')).toHaveCount(6);
+      for(const id of ['fish-selene','fish-calm-meditation','fish-e1','fish-zorya','fish-sasha','fish-m4'])
+        await expect(compactVoicePanel.locator('[data-video-affirmation-voice-card="'+id+'"]')).toHaveCount(1);
       await expect(compactVoicePanel.locator('[data-video-affirmation-voice-card="fish-selene"]')).toBeVisible();
       await expect(compactVoicePanel.locator('[data-video-affirmation-voice-card="fish-calm-meditation"]')).toBeDisabled();
       await expect(compactVoicePanel.locator('[data-voice-fish-status]')).toBeVisible();
@@ -1650,11 +1656,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(firstIdea).toHaveAttribute("aria-pressed","true");
       // The real text editor owns phrase choice: deselecting the first phrase
       // drops below the minimum; restoring it returns the editor to a valid state.
-      await firstIdea.click();
+      if(engine==="webkit")await firstIdea.tap();else await firstIdea.click();
       await expect(firstIdea).toHaveAttribute("aria-pressed","false");
       await expect(montageCountLabel).toHaveText(new RegExp("^\\s*"+(initialMontageCount-1)+"\\s*/\\s*\\d+\\b"));
       await expect(montageIdeas.locator("[data-video-ideas-minimum]")).toBeVisible();
-      await firstIdea.click();
+      if(engine==="webkit")await firstIdea.tap();else await firstIdea.click();
       await expect(firstIdea).toHaveAttribute("aria-pressed","true");
       await expect(montageCountLabel).toHaveText(new RegExp("^\\s*"+initialMontageCount+"\\s*/\\s*\\d+\\b"));
       await expect(montageIdeas.locator("[data-video-ideas-minimum]")).toHaveCount(0);
