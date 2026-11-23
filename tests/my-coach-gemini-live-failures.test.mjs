@@ -303,3 +303,39 @@ test('intro hides all original dialogue siblings; voice failures expose safe sta
  assert.match(source,/catch\{throw Error\('GEMINI_LIVE_TOKEN_NETWORK'\)\}/)
  assert.match(source,/onSessionStart/)
 })
+
+test('iPhone Safari 27 restores real-time mic+speaker audio after muted greeting',async()=>{
+ const mod=await import('../lib/personal-coaching/coach-ios-live-duplex.mjs')
+ const {prepareCoachIos27LiveDuplex,activateCoachIos27LiveDuplex,
+   restoreCoachIos27LiveDuplex}=mod
+ const steps=[]
+ const session={_type:'ambient',get type(){return this._type},
+   set type(next){steps.push(next);this._type=next}}
+ const ios={userAgent:'Mozilla/5.0 (iPhone; CPU iPhone OS 27_2 like Mac OS X) AppleWebKit/605.1.15 Version/27.2 Mobile/15E148 Safari/604.1',
+   audioSession:session}
+ assert.equal(prepareCoachIos27LiveDuplex(ios),true)
+ assert.equal(session.type,'auto')
+ assert.equal(activateCoachIos27LiveDuplex(ios),true)
+ assert.equal(session.type,'play-and-record')
+ assert.equal(restoreCoachIos27LiveDuplex(ios),true)
+ assert.equal(session.type,'auto')
+ assert.deepEqual(steps,['auto','play-and-record','playback','auto'])
+ assert.equal(prepareCoachIos27LiveDuplex({userAgent:'Android AppleWebKit/123',audioSession:session}),false)
+ assert.equal(activateCoachIos27LiveDuplex({userAgent:'Android AppleWebKit/123',audioSession:session}),false)
+ assert.equal(restoreCoachIos27LiveDuplex({userAgent:'Android AppleWebKit/123',audioSession:session}),false)
+ assert.deepEqual(steps,['auto','play-and-record','playback','auto'])
+ assert.equal(activateCoachIos27LiveDuplex({userAgent:ios.userAgent}),false)
+ const denied={...ios,audioSession:{get type(){return 'ambient'},set type(value){throw Error('device unsupported')}}}
+ assert.equal(prepareCoachIos27LiveDuplex(denied),false)
+ assert.equal(activateCoachIos27LiveDuplex(denied),false)
+ assert.equal(restoreCoachIos27LiveDuplex(denied),false)
+ const live=load('components/my-coach-gemini-live.jsx')
+ const b=live.indexOf('prepareCoachIos27LiveDuplex(navigator)')
+ const mic=live.indexOf('microphone=navigator.mediaDevices.getUserMedia')
+ const activate=live.indexOf('activateCoachIos27LiveDuplex(navigator)')
+ const token=live.indexOf('const token=await getToken(r)')
+ assert.ok(b>0&&mic>b&&activate>0&&token>activate)
+ assert.match(live,/restoreCoachIos27LiveDuplex\(navigator\)/)
+ assert.match(live,/getUserMedia\(\{/)
+ assert.match(live,/new GeminiLivePcmPlayer\(context/)
+})
