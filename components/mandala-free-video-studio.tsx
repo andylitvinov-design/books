@@ -7313,10 +7313,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <div className={videoStyles.quickSectionHeading}>
             <div><h3 id="quick-image-title"><Camera size={20} aria-hidden="true"/>{approved.preview}</h3>
               <p>{approved.covers}</p></div>
-            <label className={videoStyles.quickEdit+" "+videoStyles.nativePhotoControl} aria-disabled={recording||preparing}>
-              <Camera size={15} aria-hidden="true"/>{quick.pick}
-              <NativePhotoInput label={photoUrl ? ui.replace : quick.pick} disabled={recording||preparing} onPhotoFileSelected={selectNativePhoto}/>
-            </label>
           </div>
 
           <div className={videoStyles.quickImageRail}>

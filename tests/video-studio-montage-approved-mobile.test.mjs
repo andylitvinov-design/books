@@ -23,6 +23,8 @@ test('photo-first Montage uses the original editor, native iPhone input and real
   const end=studio.indexOf('data-video-montage-audio>',start);
   const step=studio.slice(start,end);
   assert.match(step,/<NativePhotoInput label=/,'real native input at main upload label');
+  assert.equal((studio.match(/<NativePhotoInput label=/g)||[]).length,4,
+    "one main Montage input plus three original native iPhone pickers");
   assert.doesNotMatch(step,/onPickPhoto\(\)/,'no scripted iOS picker inside Montage photo step');
   assert.match(step,/data-video-montage-photo-rights/);
   assert.match(step,/data-video-montage-next="audio"/);
