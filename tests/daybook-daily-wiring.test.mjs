@@ -23,7 +23,7 @@ test('API requires verified account and same-origin write; no WhatsApp sends',()
  assert.doesNotMatch(read('lib/app/daybook-daily-dispatch.js'),/sendWhatsApp|wa\.me/)
 })
 test('private schema prevents double sends and public grants',()=>{
- const ddl=read('supabase/migrations/20261122185000_hh_daybook_daily_telegram_optin.sql')
+ const ddl=read('supabase/migrations/20261122173516_hh_daybook_daily_telegram_optin_20261122.sql')
  assert.match(ddl,/primary key\(account_id,local_day\)/)
  assert.match(ddl,/force row level security/)
  assert.match(ddl,/revoke all on app_private.daybook_daily_preferences/)
@@ -32,7 +32,7 @@ test('private schema prevents double sends and public grants',()=>{
 })
 
 test('30-day nonrepeat selection is persisted on server, not browser',()=>{
- const migration=read('supabase/migrations/20261122201000_hh_daybook_daily_35_variant_history.sql')
+ const migration=read('supabase/migrations/20261122183243_hh_daybook_daily_35_variant_history_20261122.sql')
  assert.match(migration,/generate_series\(0,34\)/)
  assert.match(migration,/p_day - 30/)
  assert.match(migration,/pg_catalog\.random\(\)/)
