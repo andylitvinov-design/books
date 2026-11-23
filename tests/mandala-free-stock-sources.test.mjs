@@ -6,9 +6,17 @@ import {STOCK_POLICIES,assessStockClip,validateFreeSceneBrief} from "../lib/mand
 const read=p=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
 const now=new Date("2026-10-30T12:00:00Z");
 const clip=(i,p="mixkit")=>({provider:p,file:"video-"+i+".mp4",author:"Owner "+i,
- clipTitle:"Landscape "+i,sourcePage:"https://"+STOCK_POLICIES[p].host+"/nature/"+i,
+ clipTitle:"Landscape "+i,sourcePage:p==="free_nature_stock"
+   ? "https://freenaturestock.com/video/red-sunset/"
+   : ["wikimedia_commons","wikimedia_ccby"].includes(p)
+     ? "https://commons.wikimedia.org/wiki/File:Quiet_River.webm"
+   : STOCK_POLICIES[p].sourcePath
+     ? STOCK_POLICIES[p].license
+     : "https://"+STOCK_POLICIES[p].host+"/nature/"+i,
  licenseId:STOCK_POLICIES[p].id,licenseUrl:STOCK_POLICIES[p].license,checkedOn:"2026-10-29",
  licenseEvidence:"Verified on individual stock asset page",
+ attributionText:"Owner "+i+" / CC BY 4.0 / adapted / "+(p.startsWith("wikimedia")?
+ "https://commons.wikimedia.org/wiki/File:Quiet_River.webm":"https://"+STOCK_POLICIES[p].host),
  exactClipLicenseConfirmed:true,commercialUseApproved:true,editingApproved:true,identifiableSubjectsCleared:true,
  noRecognizablePeople:true,noVisibleBrandLogos:true});
 const example=()=>({id:"quiet-meadow-01",theme:"health",symbol:"≋",tags:["calm","nature"],
@@ -17,6 +25,9 @@ const example=()=>({id:"quiet-meadow-01",theme:"health",symbol:"≋",tags:["calm
 test("licence is checked for each stock video, not provider globally",()=>{
  assert.equal(validateFreeSceneBrief(example(),now),true);
  for(const p of Object.keys(STOCK_POLICIES))assert.equal(assessStockClip(clip(1,p),now),null);
+ const badNps=clip(1,"nps_grca");
+ badNps.sourcePage="https://www.nps.gov/grca/learn/photosmultimedia/unlicensed-video.htm";
+ assert.equal(assessStockClip(badNps,now),"untrusted_source_page");
  const restricted=clip(1);restricted.licenseId="mixkit_video_restricted";
  assert.equal(assessStockClip(restricted,now),"unverified_license");
  const unsafe=clip(1);unsafe.sourcePage="https://mixkit.co.evil.example/watch";
@@ -35,6 +46,19 @@ test("requires owner approval, two different sources, EN/RU/ES and no raw distri
  v.sources[1]=clip(2);v.label.ru="";assert.throws(()=>validateFreeSceneBrief(v,now));
  v.label.ru="Тихий луг";v.ownerApproved=false;assert.throws(()=>validateFreeSceneBrief(v,now));
 });
+test("one-source licensed video is explicitly opt-in and money theme can be safely imported",()=>{
+  const brief={...example(),theme:"money",sources:[clip(3,"dareful")]};
+  assert.throws(()=>validateFreeSceneBrief(brief,now),/two_clips_required/);
+  assert.equal(validateFreeSceneBrief(brief,now,{allowSingleSource:true}),true);
+  const empty={...brief,sources:[]};
+  assert.throws(()=>validateFreeSceneBrief(empty,now,{allowSingleSource:true}),/two_clips_required/);
+  const notReviewed={...brief,ownerApproved:false};
+  assert.throws(()=>validateFreeSceneBrief(notReviewed,now,{allowSingleSource:true}),/owner_review_required/);
+  const importer=read("scripts/import-free-stock-scene.mjs");
+  assert.match(importer,/single_source_requires_five_seconds_of_real_motion/);
+  assert.match(importer,/licensed_single_shot_edit/);
+});
+
 test("static JSON-backed gallery only activates approved pre-encoded films",()=>{
  const data=JSON.parse(read("data/video-catalog/free-stock-scenes.json"));
  assert.ok(Array.isArray(data));assert.ok(data.every(x=>x.status==="approved"&&x.sha256));
@@ -50,7 +74,7 @@ test("static JSON-backed gallery only activates approved pre-encoded films",()=>
 
 test("all twelve produced CC-BY H.264 film files have matching SHA-256, posters and credits",()=>{
  const scenes=JSON.parse(read("data/video-catalog/free-stock-scenes.json"));
- assert.equal(scenes.length,12);
+ assert.ok(scenes.length>=12,'new licensed MP4s must be allowed after the original twelve');
  for(const scene of scenes){
   const file=new URL("../public"+scene.video,import.meta.url);
   const poster=new URL("../public"+scene.poster,import.meta.url);

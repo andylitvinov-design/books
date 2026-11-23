@@ -62,12 +62,18 @@ test("negated visuals are not scored as positive subjects",()=>{
 });
 test("requested silence and no captions remain silent and caption-free",()=>{
   const script=compileExecutableVideoScenario({...base,
-    draft:{...draft,duration:10,aspect:"square",music:"none",phrases:false}});
+    draft:{...draft,duration:10,aspect:"portrait",music:"none",phrases:false}});
   assert.equal(script.audio.kind,"silent");
   assert.equal(script.audio.trackId,"none");
   assert.ok(script.edit.captionTexts.every(x=>x===""));
   assert.equal(script.shots.reduce((sum,s)=>sum+s.durationSeconds,0),10);
   assert.ok(script.shots.every(s=>s.durationSeconds>=2));
+  // No square-native MP4 is in this rights-checked inventory. The aspect
+  // filter now rejects the request before attempting a four-shot render plan:
+  // never treat portrait/landscape clips as square or weaken source validation.
+  assert.throws(()=>compileExecutableVideoScenario({...base,
+    draft:{...draft,duration:10,aspect:"square",music:"none",phrases:false}}),
+    /insufficient_licensed_video_sources/);
 });
 test("AI cannot invent clip, duplicate source, bypass excluded motif or distort duration",()=>{
   const candidates=executableSceneCandidates({presetId:base.selectedPresetId,
@@ -158,7 +164,8 @@ test("verified script is submitted through the only existing renderer and soundt
   assert.match(editor,/setAttachedAudio\(soundtrack==="none"\?null/);
   assert.match(editor,/setSoundVolume\(scenario\.audio\.volumePercent\)/);
   assert.match(editor,/setCaptionMode\("none"\)/);
-  assert.match(editor,/onCreate=\{createQuickVideo\}/);
+  assert.match(editor,/onCreate=\{openReadyForGeneration\}/);
+   assert.match(editor,/onGenerateBasicVideo=\{\(\)=>\{[\s\S]*?return createQuickVideo\(\)/);
   assert.match(editor,/new MediaRecorder\(/);
   assert.match(route,/requireSameOrigin\(request,config\)/);
   assert.match(route,/consumeRate\(config/);
@@ -248,4 +255,22 @@ test("chat commands confirm and create the currently approved AI cut without sil
   assert.ok(action>=0&&confirm>action&&create>confirm&&invalidate>create,
     "confirm/create command must run before the editor drops the approved AI cut");
   assert.match(chat,/approvedPlanKeyRef.current!==executionKey/);
+});
+
+test("sunlight dual-aspect director never selects a landscape MP4 for portrait output",()=>{
+  const extra=JSON.parse(readFileSync(new URL("../data/video-catalog/free-film-presets-v2.json",import.meta.url),"utf8"));
+  const sun=extra.presets.find(p=>p.id==="warm-pleasant-sun");
+  assert.ok(sun&&sun.portraitClips?.length===4);
+  const common={...base,presets:[...presets,sun],selectedPresetId:sun.id,
+    alternativePresetIds:[],excludedMotifs:[],goal:"Тёплое приятное солнце"};
+  for(const aspect of ["portrait","landscape"]){
+    const film=compileExecutableVideoScenario({...common,
+      draft:{...draft,aspect,goal:"Тёплое приятное солнце"}});
+    assert.equal(film.shots.length,4);
+    assert.ok(validateMontageClips(film.edit.clipIds,scenes,[],aspect));
+    const ids=aspect==="portrait"?sun.portraitClips:sun.clips;
+    assert.ok(film.edit.clipIds.some(id=>ids.includes(id)),aspect+" preserves some selected preset clips");
+    assert.ok(film.edit.clipIds.every(id=>scenes.some(scene=>scene.id===id&&
+      (!scene.allowedAspects||scene.allowedAspects.includes(aspect)))));
+  }
 });

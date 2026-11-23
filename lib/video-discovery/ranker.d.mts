@@ -17,6 +17,9 @@ export type DiscoveryVideo = {
   curation?:"verified"|"published";
 };
 export declare const VIDEO_GOALS:readonly string[];
+/** Public, coarse video topic only; no user text enters the resulting URL. */
+export declare function publicVideoGoalForMessage(message:unknown):
+  "stress"|"energy"|"relationships"|"work"|"meaning"|"practices"|null;
 export declare function getVideoTopics(video:Partial<DiscoveryVideo>):string[];
 export declare function rankDiscoveryVideos<T extends DiscoveryVideo>(
   videos:readonly T[],

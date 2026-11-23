@@ -103,7 +103,7 @@ test("an asynchronous WebKit encoder must not auto-play source masters before fr
     assert.equal(selector.includes(unexpected),false,"preflight cannot start source clocks: "+unexpected);
   assert.ok(source.includes("const firstStockFrame=freeFilmVideoAt(0,false)"),
     "initial still must remain paused during asynchronous audio preparation");
-  for(const required of ["freeFilmVideoAt(0,previewPlaying)",
+  for(const required of ["const scrubFrame=freeFilmVideoAt(previewSeekSeconds,false)",
     "freeFilmVideoAt(frameSecond,previewPlaying)","freeFilmVideoAt(frameTime,true)",
     "freeFilmVideoAt(time,true)"])
     assert.ok(source.includes(required),"missing explicit playback intent: "+required);

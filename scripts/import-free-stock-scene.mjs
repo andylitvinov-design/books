@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * OFFLINE two-source film importer for the existing Holistic House editor.
+ * OFFLINE one- or two-source film importer for the existing Holistic House editor.
  * Usage: node scripts/import-free-stock-scene.mjs path/to/brief.json
- * Expects two LICENSE-CHECKED local MP4/MOV files next to brief.json.
+ * Expects 1–2 LICENSE-CHECKED local MP4/MOV files next to brief.json.
  * Creates a branded five-second H.264 film, JPG and provenance catalog.
  * Original files stay outside public/; no provider API or client data.
  */
@@ -39,7 +39,7 @@ export async function importFreeStockScene(briefName){
  if(!briefName)throw Error("missing_brief_json");
  const briefFile=await realpath(resolve(briefName)),dir=dirname(briefFile);
  const brief=JSON.parse(await readFile(briefFile,"utf8"));
- validateFreeSceneBrief(brief);
+ validateFreeSceneBrief(brief,new Date(),{allowSingleSource:true});
  const catalog=JSON.parse(await readFile(register,"utf8"));
  if(!Array.isArray(catalog)||catalog.some(s=>s.status!=="approved"))throw Error("invalid_scene_catalog");
  const legacy=["film-collection-v2","money-films-v1"];
@@ -57,10 +57,11 @@ export async function importFreeStockScene(briefName){
    throw Error("unsafe_source_path");
   const details=await stat(path);
   if(!details.isFile()||details.size<10000||details.size>150*1024*1024)throw Error("source_size_rejected");
-  probe(path);
+  const meta=probe(path);
+  if(brief.sources.length===1&&meta.seconds<5.1)throw Error("single_source_requires_five_seconds_of_real_motion");
   sources.push({...clip,path,bytes:details.size,sha256:await checksum(path)});
  }
- if(sources[0].sha256===sources[1].sha256)throw Error("duplicate_video");
+ if(sources.length===2&&sources[0].sha256===sources[1].sha256)throw Error("duplicate_video");
  await mkdir(destination,{recursive:true});
  const temp=await mkdtemp(join(destination,".import-"+brief.id+"-"));
  const output=join(destination,brief.id+".mp4"),poster=join(destination,brief.id+".jpg");
@@ -74,14 +75,17 @@ export async function importFreeStockScene(briefName){
   await writeFile(creditPath,line.slice(0,180),"utf8");
   await writeFile(brandPath,"HOLISTIC HOUSE  |  "+brief.label.en.slice(0,60),"utf8");
   const safeRel=path=>relative(root,path).split(sep).join("/");
-  const normalize=i=>"["+i+":v:0]trim=duration=2.5,setpts=PTS-STARTPTS,fps=24,scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,eq=saturation=0.86,format=yuv420p[v"+i+"]";
-  const filters=[normalize(0),normalize(1),
-   "[v0][v1]concat=n=2:v=1:a=0,drawbox=x=0:y=ih*0.87:w=iw:h=ih*0.13:color=black@0.44:t=fill,"+
+  const shotSeconds=sources.length===1?5:2.5;
+  const normalize=i=>"["+i+":v:0]trim=duration="+shotSeconds+",setpts=PTS-STARTPTS,fps=24,scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,eq=saturation=0.86,format=yuv420p[v"+i+"]";
+  const sequence=sources.length===1?"[v0]":"[v0][v1]concat=n=2:v=1:a=0,";
+  const filters=[...sources.map((_,i)=>normalize(i)),
+   sequence+"drawbox=x=0:y=ih*0.87:w=iw:h=ih*0.13:color=black@0.44:t=fill,"+
    "drawtext=textfile="+safeRel(brandPath)+":fontcolor=white:fontsize=31:x=20:y=h-120:expansion=none,"+
    "drawtext=textfile="+safeRel(creditPath)+":fontcolor=white:fontsize=16:x=20:y=h-57:expansion=none,"+
    "fade=t=in:st=0:d=0.3,fade=t=out:st=4.5:d=0.5,format=yuv420p[v]"].join(";");
-  command("ffmpeg",["-hide_banner","-loglevel","error","-nostdin","-y","-i",sources[0].path,
-   "-i",sources[1].path,"-filter_complex",filters,"-map","[v]","-t","5","-an",
+  command("ffmpeg",["-hide_banner","-loglevel","error","-nostdin","-y",
+   ...sources.flatMap(source=>["-i",source.path]),
+   "-filter_complex",filters,"-map","[v]","-t","5","-an",
    "-c:v","libx264","-pix_fmt","yuv420p","-preset","medium","-crf","27",
    "-movflags","+faststart","-metadata","comment="+brief.sources.map(s=>s.author+" / "+s.sourcePage+" / "+s.licenseUrl).join(" | "),tmp]);
   const verified=probe(tmp);
@@ -92,7 +96,7 @@ export async function importFreeStockScene(briefName){
   const [stats,hash]=await Promise.all([stat(tmp),checksum(tmp)]);
   const record={
    id:brief.id,theme:brief.theme,label:brief.label,symbol:brief.symbol,tags:brief.tags,status:"approved",
-   sourceKind:"licensed_two_shot_composite",durationSeconds:5,width:1080,height:1920,fps:24,
+   sourceKind:sources.length===1?"licensed_single_shot_edit":"licensed_two_shot_composite",durationSeconds:5,width:1080,height:1920,fps:24,
    codec:"h264",bytes:stats.size,sha256:hash,rawRedistributionAllowed:false,modelTrainingAllowed:false,
    video:"/videos/holistic-house/film-collection-v3/"+brief.id+".mp4",
    poster:"/videos/holistic-house/film-collection-v3/"+brief.id+".jpg",

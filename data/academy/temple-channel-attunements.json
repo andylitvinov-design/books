@@ -1,0 +1,990 @@
+{
+  "schemaVersion": 1,
+  "contentPolicy": "Author-original Russian tunings, never inferred historical quotations or guaranteed outcomes; photo provenance by export message ID.",
+  "traditions": [
+    {
+      "id": "greek",
+      "name": {
+        "ru": "Греческая",
+        "en": "Greek",
+        "es": "Griega"
+      }
+    },
+    {
+      "id": "egyptian",
+      "name": {
+        "ru": "Египетская",
+        "en": "Egyptian",
+        "es": "Egipcia"
+      }
+    },
+    {
+      "id": "roman",
+      "name": {
+        "ru": "Римская",
+        "en": "Roman",
+        "es": "Romana"
+      }
+    },
+    {
+      "id": "norse",
+      "name": {
+        "ru": "Скандинавская",
+        "en": "Norse",
+        "es": "Nórdica"
+      }
+    },
+    {
+      "id": "maya",
+      "name": {
+        "ru": "Майя",
+        "en": "Maya",
+        "es": "Maya"
+      }
+    },
+    {
+      "id": "dao",
+      "name": {
+        "ru": "Даосская",
+        "en": "Daoist",
+        "es": "Taoísta"
+      }
+    }
+  ],
+  "channels": [
+    {
+      "tradition": "greek",
+      "id": "zeus",
+      "name": {
+        "ru": "Зевс",
+        "en": "Zeus",
+        "es": "Zeus"
+      },
+      "aliases": [
+        "Зевса",
+        "Ζεύς"
+      ]
+    },
+    {
+      "tradition": "greek",
+      "id": "apollo",
+      "name": {
+        "ru": "Аполлон",
+        "en": "Apollo",
+        "es": "Apolo"
+      },
+      "aliases": [
+        "Аполлона"
+      ]
+    },
+    {
+      "tradition": "greek",
+      "id": "dionysus",
+      "name": {
+        "ru": "Дионис",
+        "en": "Dionysus",
+        "es": "Dioniso"
+      },
+      "aliases": [
+        "Диониса"
+      ]
+    },
+    {
+      "tradition": "greek",
+      "id": "aphrodite",
+      "name": {
+        "ru": "Афродита",
+        "en": "Aphrodite",
+        "es": "Afrodita"
+      },
+      "aliases": [
+        "Афродиты"
+      ]
+    },
+    {
+      "tradition": "greek",
+      "id": "demeter",
+      "name": {
+        "ru": "Деметра",
+        "en": "Demeter",
+        "es": "Deméter"
+      },
+      "aliases": [
+        "Деметры"
+      ]
+    },
+    {
+      "tradition": "greek",
+      "id": "hermes",
+      "name": {
+        "ru": "Гермес",
+        "en": "Hermes",
+        "es": "Hermes"
+      },
+      "aliases": [
+        "Гермеса"
+      ]
+    },
+    {
+      "tradition": "greek",
+      "id": "helios",
+      "name": {
+        "ru": "Гелиос",
+        "en": "Helios",
+        "es": "Helios"
+      },
+      "aliases": [
+        "Гелиоса"
+      ]
+    },
+    {
+      "tradition": "greek",
+      "id": "tyche",
+      "name": {
+        "ru": "Тихе",
+        "en": "Tyche",
+        "es": "Tique"
+      },
+      "aliases": [
+        "Тихи",
+        "Тюхе"
+      ]
+    },
+    {
+      "tradition": "egyptian",
+      "id": "isis",
+      "name": {
+        "ru": "Исида",
+        "en": "Isis",
+        "es": "Isis"
+      },
+      "aliases": []
+    },
+    {
+      "tradition": "egyptian",
+      "id": "osiris",
+      "name": {
+        "ru": "Осирис",
+        "en": "Osiris",
+        "es": "Osiris"
+      },
+      "aliases": []
+    },
+    {
+      "tradition": "egyptian",
+      "id": "horus",
+      "name": {
+        "ru": "Гор",
+        "en": "Horus",
+        "es": "Horus"
+      },
+      "aliases": []
+    },
+    {
+      "tradition": "egyptian",
+      "id": "thoth",
+      "name": {
+        "ru": "Тот",
+        "en": "Thoth",
+        "es": "Tot"
+      },
+      "aliases": []
+    },
+    {
+      "tradition": "egyptian",
+      "id": "maat",
+      "name": {
+        "ru": "Маат",
+        "en": "Ma'at",
+        "es": "Maat"
+      },
+      "aliases": []
+    },
+    {
+      "tradition": "egyptian",
+      "id": "ra",
+      "name": {
+        "ru": "Ра",
+        "en": "Ra",
+        "es": "Ra"
+      },
+      "aliases": []
+    },
+    {
+      "tradition": "roman",
+      "id": "jupiter",
+      "name": {
+        "ru": "Юпитер",
+        "en": "Jupiter",
+        "es": "Júpiter"
+      },
+      "aliases": []
+    },
+    {
+      "tradition": "roman",
+      "id": "venus",
+      "name": {
+        "ru": "Венера",
+        "en": "Venus",
+        "es": "Venus"
+      },
+      "aliases": []
+    },
+    {
+      "tradition": "norse",
+      "id": "odin",
+      "name": {
+        "ru": "Один",
+        "en": "Odin",
+        "es": "Odín"
+      },
+      "aliases": []
+    },
+    {
+      "tradition": "norse",
+      "id": "freyja",
+      "name": {
+        "ru": "Фрейя",
+        "en": "Freyja",
+        "es": "Freyja"
+      },
+      "aliases": []
+    },
+    {
+      "tradition": "maya",
+      "id": "kinich-ahau",
+      "name": {
+        "ru": "Кинич-Ахау",
+        "en": "Kinich Ahau",
+        "es": "K'inich Ajaw"
+      },
+      "aliases": []
+    },
+    {
+      "tradition": "dao",
+      "id": "dao",
+      "name": {
+        "ru": "Дао",
+        "en": "Dao",
+        "es": "Dao"
+      },
+      "aliases": []
+    }
+  ],
+  "attunements": [
+    {
+      "id": "greek-zeus-antalya-2021",
+      "tradition": "greek",
+      "channel": "zeus",
+      "title": {
+        "ru": "Зевс · Музей Анталии",
+        "en": "Zeus · Antalya Museum",
+        "es": "Zeus · Museo de Antalya"
+      },
+      "place": {
+        "city": {
+          "ru": "Анталия",
+          "en": "Antalya",
+          "es": "Antalya"
+        },
+        "site": {
+          "ru": "Археологический музей Анталии",
+          "en": "Antalya Archaeological Museum",
+          "es": "Museo Arqueológico de Antalya"
+        },
+        "type": "museum",
+        "country": {
+          "ru": "Турция",
+          "en": "Türkiye",
+          "es": "Turquía"
+        }
+      },
+      "originalLanguage": "ru",
+      "text": "Орел - не дрогнет при полете.\nОн знает скорости красу.\nМгновенно схватит цель в полете,\nПоднявшись снова в высоту. \n\nТех Сил широкая могучесть\nЧто держит времени покой\nТворит Волну - Миров текучесть,\nВскрывая бездны приговор. \n\nТем силам нет границ, пределов.\nСияет в звездах их судьба.\nБлагое дело с ними смело\nВедет к победе сквозь года. \n\nПолет идей рождая смело\nНесут масштабности поток\nТворят грядущего пределы\nВзрастив величия росток.",
+      "photos": [
+        {
+          "src": "/images/temple-channels/zeus-antalya.jpg",
+          "sourceFile": "photo_222@16-11-2021_15-11-39.jpg",
+          "sourceMessageId": 437
+        }
+      ],
+      "source": {
+        "kind": "telegram_export",
+        "archiveId": "1xtpeR3ntz1QJOSSyFrDfwUHqShIWGUDL",
+        "messageId": 437,
+        "publishedAt": "2021-11-16"
+      },
+      "editorialNote": null
+    },
+    {
+      "id": "greek-zeus-kaunos-2021",
+      "tradition": "greek",
+      "channel": "zeus",
+      "title": {
+        "ru": "Зевс · Каунос",
+        "en": "Zeus · Kaunos",
+        "es": "Zeus · Cauno"
+      },
+      "place": {
+        "city": {
+          "ru": "Каунос",
+          "en": "Kaunos",
+          "es": "Cauno"
+        },
+        "site": {
+          "ru": "Храмовый комплекс Кауноса (Зевс/Аполлон в источнике)",
+          "en": "Kaunos temple site (Zeus/Apollo per source)",
+          "es": "Santuario de Cauno (Zeus/Apolo según fuente)"
+        },
+        "type": "archaeological_site",
+        "country": {
+          "ru": "Турция",
+          "en": "Türkiye",
+          "es": "Turquía"
+        }
+      },
+      "originalLanguage": "ru",
+      "text": "Тебя окружает бесчетность миров\nСиянье светил среди белого дня\nТы здесь во плоти, светоч огненных звезд\nТы вестник клокочущей силы огня. \n\nТы голос Богов, центр жизни Земли.\nДержатель всех сил и Воятель миров.\nТы центр мирозданья, всех сил властелен.\nТворишь чудеса, водворяя добро.",
+      "photos": [
+        {
+          "src": "/images/temple-channels/zeus-kaunos.jpg",
+          "sourceFile": "photo_274@13-12-2021_04-19-17.jpg",
+          "sourceMessageId": 506
+        },
+        {
+          "src": "/images/temple-channels/zeus-kaunos-detail.jpg",
+          "sourceFile": "photo_273@13-12-2021_04-19-17.jpg",
+          "sourceMessageId": 505
+        }
+      ],
+      "source": {
+        "kind": "telegram_export",
+        "archiveId": "1xtpeR3ntz1QJOSSyFrDfwUHqShIWGUDL",
+        "messageId": 509,
+        "publishedAt": "2021-12-13"
+      },
+      "editorialNote": {
+        "ru": "В авторском тексте указана неоднозначная атрибуция комплекса: храм Зевса или Аполлона.",
+        "en": "The author notes an uncertain Zeus/Apollo attribution.",
+        "es": "El autor indica una atribución incierta a Zeus/Apolo."
+      }
+    },
+    {
+      "id": "greek-zeus-pergamon-2021",
+      "tradition": "greek",
+      "channel": "zeus",
+      "title": {
+        "ru": "Зевс · Пергамон",
+        "en": "Zeus · Pergamon",
+        "es": "Zeus · Pérgamo"
+      },
+      "place": {
+        "city": {
+          "ru": "Пергамон",
+          "en": "Pergamon",
+          "es": "Pérgamo"
+        },
+        "site": {
+          "ru": "«Престол Зевса» (по авторскому описанию)",
+          "en": "Seat of Zeus (as described by the author)",
+          "es": "Trono de Zeus (según el autor)"
+        },
+        "type": "archaeological_site",
+        "country": {
+          "ru": "Турция",
+          "en": "Türkiye",
+          "es": "Turquía"
+        }
+      },
+      "originalLanguage": "ru",
+      "text": "Умеренность, решительность.\nВерховные права.\nСудьбы хранишь величие.\nСтираяя рябь до тла. \n\nВершишь миров развитие\nВнося порядки там\nБлюстишь красот наличие\nВоздвигая жизни Храм.",
+      "photos": [
+        {
+          "src": "/images/temple-channels/zeus-pergamon.jpg",
+          "sourceFile": "photo_275@13-12-2021_04-19-17.jpg",
+          "sourceMessageId": 507
+        }
+      ],
+      "source": {
+        "kind": "telegram_export",
+        "archiveId": "1xtpeR3ntz1QJOSSyFrDfwUHqShIWGUDL",
+        "messageId": 509,
+        "publishedAt": "2021-12-13"
+      },
+      "editorialNote": {
+        "ru": "Фото взято из соседнего сообщения того же поста; место съёмки не подтверждено.",
+        "en": "Photo from the same post; actual shooting location is not verified.",
+        "es": "Foto de la misma publicación; lugar de captura no verificado."
+      }
+    },
+    {
+      "id": "greek-tyche-antalya-2021",
+      "tradition": "greek",
+      "channel": "tyche",
+      "title": {
+        "ru": "Тихе · Музей Анталии",
+        "en": "Tyche · Antalya Museum",
+        "es": "Tique · Museo de Antalya"
+      },
+      "place": {
+        "city": {
+          "ru": "Анталия",
+          "en": "Antalya",
+          "es": "Antalya"
+        },
+        "site": {
+          "ru": "Археологический музей Анталии",
+          "en": "Antalya Archaeological Museum",
+          "es": "Museo Arqueológico de Antalya"
+        },
+        "type": "museum",
+        "country": {
+          "ru": "Турция",
+          "en": "Türkiye",
+          "es": "Turquía"
+        }
+      },
+      "originalLanguage": "ru",
+      "text": "Течет река - в судьбы пределы.\nПрохладна, чиста и легка.\nПривносит ясности надежду\nБезбрежна, тиха и светла. \n\nПронзая взором безпристрастным\nВсе, что прибудет и уйдет. \nПодскажет жизни путь прекрасный.\nОбнимет, встретит, сбережет. \n\nС тобой не стрАшны жизни смуты,\nНи ураганы, ни пески.\nТы проведешь, коль кто запутан.\nТы жизни свет даешь в пути.",
+      "photos": [
+        {
+          "src": "/images/temple-channels/tyche-antalya.jpg",
+          "sourceFile": "photo_223@18-11-2021_15-38-39.jpg",
+          "sourceMessageId": 442
+        },
+        {
+          "src": "/images/temple-channels/tyche-antalya-detail.jpg",
+          "sourceFile": "photo_224@18-11-2021_15-38-39.jpg",
+          "sourceMessageId": 443
+        }
+      ],
+      "source": {
+        "kind": "telegram_export",
+        "archiveId": "1xtpeR3ntz1QJOSSyFrDfwUHqShIWGUDL",
+        "messageId": 440,
+        "publishedAt": "2021-11-18"
+      },
+      "editorialNote": null
+    },
+    {
+      "id": "greek-zeus-olympion-2026",
+      "tradition": "greek",
+      "channel": "zeus",
+      "title": {
+        "ru": "Зевс · Олимпион",
+        "en": "Zeus · Olympieion",
+        "es": "Zeus · Olimpeion"
+      },
+      "place": {
+        "city": {
+          "ru": "Афины",
+          "en": "Athens",
+          "es": "Atenas"
+        },
+        "site": {
+          "ru": "Олимпион, храм Зевса Олимпийского",
+          "en": "Olympieion, Temple of Olympian Zeus",
+          "es": "Olimpeion, Templo de Zeus Olímpico"
+        },
+        "type": "temple",
+        "country": {
+          "ru": "Греция",
+          "en": "Greece",
+          "es": "Grecia"
+        }
+      },
+      "originalLanguage": "ru",
+      "text": "Зевс.\nТы тот, кто создает материю этой реальности\nБлагодаря тебе сияют звезды\nИ Солнце обретает свой ход.\n\nТы определяешь то, что будет\nИ твое дыхание наполняет жизнь.\n\nЗЕВС\nВеликий Славный Могучий\nВластитель\nУдерживающий порядок в этом мире\nХранящий правосудие и закон.\n\nТы, только ты\nЗнаешь и даешь ход\nВсему, что должно произойти\nИ всему, к чему я так жаждю приблизиться.\n\nТрижды славься, \nСияющий, блистательный\nПовелитель народов и земель.\n\nДа будет власть твоя вечна.\nВеления неосудны.\nДоблесть и величие выше всех \nЗнанных, видимых и невидимых границ.\n\nСлавься\nИ освещай меня своим величием\nБесподобный.",
+      "photos": [
+        {
+          "src": "/images/temple-channels/zeus-olympion.jpg",
+          "sourceFile": "photo_1864@24-06-2026_16-47-38.jpg",
+          "sourceMessageId": 2854
+        }
+      ],
+      "source": {
+        "kind": "telegram_export",
+        "archiveId": "17kLNIZjC-OeRJlyxrv4-66jldyI9nPAP",
+        "messageId": 2854,
+        "publishedAt": "2026-06-24"
+      },
+      "editorialNote": null
+    },
+    {
+      "id": "greek-zeus-nemea-2026",
+      "tradition": "greek",
+      "channel": "zeus",
+      "title": {
+        "ru": "Зевс · Храм в Немее",
+        "en": "Zeus · Nemea",
+        "es": "Zeus · Nemea"
+      },
+      "place": {
+        "city": {
+          "ru": "Немея",
+          "en": "Nemea",
+          "es": "Nemea"
+        },
+        "site": {
+          "ru": "Храм Зевса",
+          "en": "Temple of Zeus",
+          "es": "Templo de Zeus"
+        },
+        "type": "temple",
+        "country": {
+          "ru": "Греция",
+          "en": "Greece",
+          "es": "Grecia"
+        }
+      },
+      "originalLanguage": "ru",
+      "text": "Это первозданное величие, \nмощь, которая не требует доказательств\nОна есть, как основа этого мира\nБез нее не может быть ничего в античной реальности\n\nЗевс - это фундамент силы.\nОснова порядка и \nЗалог спокойствия \nВнутри и снаружи\n\nТам где чтут, проявлены энергии Зевса, там будет стабильность и порядок.\nТам будет жизнь.\n\nЗевс - это стержень мироздания\nОпора опор.",
+      "photos": [
+        {
+          "src": "/images/temple-channels/zeus-nemea.jpg",
+          "sourceFile": "photo_1873@28-06-2026_15-54-12.jpg",
+          "sourceMessageId": 2867
+        }
+      ],
+      "source": {
+        "kind": "telegram_export",
+        "archiveId": "17kLNIZjC-OeRJlyxrv4-66jldyI9nPAP",
+        "messageId": 2864,
+        "publishedAt": "2026-06-28"
+      },
+      "editorialNote": null
+    },
+    {
+      "id": "greek-apollo-corinth-2026",
+      "tradition": "greek",
+      "channel": "apollo",
+      "title": {
+        "ru": "Аполлон · Коринф",
+        "en": "Apollo · Corinth",
+        "es": "Apolo · Corinto"
+      },
+      "place": {
+        "city": {
+          "ru": "Коринф",
+          "en": "Corinth",
+          "es": "Corinto"
+        },
+        "site": {
+          "ru": "Храм Аполлона",
+          "en": "Temple of Apollo",
+          "es": "Templo de Apolo"
+        },
+        "type": "temple",
+        "country": {
+          "ru": "Греция",
+          "en": "Greece",
+          "es": "Grecia"
+        }
+      },
+      "originalLanguage": "ru",
+      "text": "1\nМощь внутреннего света необьятна и несокрушима\nБесконечное сияние лучей силы \nПронзают хаос и тьму\n\nЛучезарность присутсивия Источника \nОсвещает триумф победы.\n\n2\nСияние силы света\nБесповоротно и неумолимо\nЕго Победоносная энергия искореняет зло\nНаполняет дальние уголки души устойчивостью и опорой.\n\n3\nСветоносные струны правды\nСчищают страх и невежесто\nЗаконность и порядок будет торжествовать в мире\nИ за его пределами\n\n4\nПослание света неумолимо и неостановимо\nТам где будет свет,\nВоля твоя будет проявлена\n\n5.\nСветом твоего дыхания\nДа наполнятся наши сердца\n\nТвоя мягкая благородная сила \nДа озарит дух каждого из нас\n\nНеиссякаемое\nВечное горение твоего сердца \nда привнесет гармонию и порядок \nв наши семьи, дома и дела.",
+      "photos": [
+        {
+          "src": "/images/temple-channels/apollo-corinth.jpg",
+          "sourceFile": "photo_1880@30-06-2026_01-44-25.jpg",
+          "sourceMessageId": 2874
+        }
+      ],
+      "source": {
+        "kind": "telegram_export",
+        "archiveId": "17kLNIZjC-OeRJlyxrv4-66jldyI9nPAP",
+        "messageId": 2873,
+        "publishedAt": "2026-06-30"
+      },
+      "editorialNote": null
+    },
+    {
+      "id": "greek-dionysus-athens-2026",
+      "tradition": "greek",
+      "channel": "dionysus",
+      "title": {
+        "ru": "Дионис · Афины",
+        "en": "Dionysus · Athens",
+        "es": "Dioniso · Atenas"
+      },
+      "place": {
+        "city": {
+          "ru": "Афины",
+          "en": "Athens",
+          "es": "Atenas"
+        },
+        "site": null,
+        "type": "city",
+        "country": {
+          "ru": "Греция",
+          "en": "Greece",
+          "es": "Grecia"
+        }
+      },
+      "originalLanguage": "ru",
+      "text": "Наслаждение текуче\nЛьется, стелится в тиши.\nЖизни сладость вездесуща\nТы ласкай ее, ищи.\n\nМир раскроет неги кладезь\nТем, кто пустится в полет.\nХороводами соблазнов\nОн влечет тебя, несет.\n\nГолова уж сладко кружит\nТела члены горячи\nТы вбираешь жизни струны\nТы живой, ты цвет ночи.",
+      "photos": [
+        {
+          "src": "/images/temple-channels/dionysus-athens.jpg",
+          "sourceFile": "photo_1889@30-06-2026_16-07-17.jpg",
+          "sourceMessageId": 2889
+        }
+      ],
+      "source": {
+        "kind": "telegram_export",
+        "archiveId": "17kLNIZjC-OeRJlyxrv4-66jldyI9nPAP",
+        "messageId": 2889,
+        "publishedAt": "2026-06-30"
+      },
+      "editorialNote": null
+    },
+    {
+      "id": "greek-hermes-athens-2026",
+      "tradition": "greek",
+      "channel": "hermes",
+      "title": {
+        "ru": "Гермес · Афины",
+        "en": "Hermes · Athens",
+        "es": "Hermes · Atenas"
+      },
+      "place": {
+        "city": {
+          "ru": "Афины",
+          "en": "Athens",
+          "es": "Atenas"
+        },
+        "site": null,
+        "type": "city",
+        "country": {
+          "ru": "Греция",
+          "en": "Greece",
+          "es": "Grecia"
+        }
+      },
+      "originalLanguage": "ru",
+      "text": "Поиск. \nИдеи.\nСтремительность мысли.\n\nМечта.\nВдохновение.\nСмелость идей.\n\nГорит неустанно\nТут творчества искра\n\nБыстрее.\nРешайся.\nПопробуй.\nСмелей!",
+      "photos": [
+        {
+          "src": "/images/temple-channels/hermes-athens.jpg",
+          "sourceFile": "photo_1890@30-06-2026_16-24-40.jpg",
+          "sourceMessageId": 2890
+        }
+      ],
+      "source": {
+        "kind": "telegram_export",
+        "archiveId": "17kLNIZjC-OeRJlyxrv4-66jldyI9nPAP",
+        "messageId": 2890,
+        "publishedAt": "2026-06-30"
+      },
+      "editorialNote": null
+    },
+    {
+      "id": "greek-demeter-eleusis-2026",
+      "tradition": "greek",
+      "channel": "demeter",
+      "title": {
+        "ru": "Деметра · Элевсин",
+        "en": "Demeter · Eleusis",
+        "es": "Deméter · Eleusis"
+      },
+      "place": {
+        "city": {
+          "ru": "Элевсин",
+          "en": "Eleusis",
+          "es": "Eleusis"
+        },
+        "site": {
+          "ru": "Элевсинский комплекс мистерий",
+          "en": "Eleusinian sanctuary",
+          "es": "Santuario de Eleusis"
+        },
+        "type": "temple",
+        "country": {
+          "ru": "Греция",
+          "en": "Greece",
+          "es": "Grecia"
+        }
+      },
+      "originalLanguage": "ru",
+      "text": "Мягкость, надежда \nТепло и уют.\nЗдесь тебя встретят\nЗдесь помнят.\nЗдесь ждут.\n\nЛюбовь растекается\nВ волнах простора\nТепло и поддержка\nОкутают снова.\n\nГорит в полумраке \nМерцающий свет\nНадежд возвращая \nСквозь тысячи лет\n\nЗовет к возрожденью\nИз древних времен\nК любви воскрешенью -\nДеметры Закон.",
+      "photos": [
+        {
+          "src": "/images/temple-channels/demeter-eleusis.jpg",
+          "sourceFile": "photo_1892@03-07-2026_16-33-30.jpg",
+          "sourceMessageId": 2903
+        }
+      ],
+      "source": {
+        "kind": "telegram_export",
+        "archiveId": "17kLNIZjC-OeRJlyxrv4-66jldyI9nPAP",
+        "messageId": 2903,
+        "publishedAt": "2026-07-03"
+      },
+      "editorialNote": null
+    },
+    {
+      "id": "greek-helios-athens-2026",
+      "tradition": "greek",
+      "channel": "helios",
+      "title": {
+        "ru": "Гелиос · Античный форум",
+        "en": "Helios · Ancient forum",
+        "es": "Helios · Foro antiguo"
+      },
+      "place": {
+        "city": {
+          "ru": "Афины",
+          "en": "Athens",
+          "es": "Atenas"
+        },
+        "site": {
+          "ru": "Античный форум (по авторскому описанию)",
+          "en": "Ancient forum (per original account)",
+          "es": "Foro antiguo (según autor)"
+        },
+        "type": "archaeological_site",
+        "country": {
+          "ru": "Греция",
+          "en": "Greece",
+          "es": "Grecia"
+        }
+      },
+      "originalLanguage": "ru",
+      "text": "Сиящий.\nОзаряющий дальние пределы Космоса.\nЛегко и звонко расстилающий свои лучи-стрелы\nВо все дали Галактики.\n\nТы проявляешь свет во тьме\nОзаряешь ясность разума\nСвоей всеведящей чистотой\nТуманное становится видимым\nСпутанное легким и и свежим, как новый день\n\nТы наполняешь силою сознание\nПозволяешь родиться светлым мыслям и ясности.\n\nСияй и славься.\nСлавься и сияй.",
+      "photos": [
+        {
+          "src": "/images/temple-channels/helios-athens.jpg",
+          "sourceFile": "photo_1869@26-06-2026_16-41-44.jpg",
+          "sourceMessageId": 2859
+        }
+      ],
+      "source": {
+        "kind": "telegram_export",
+        "archiveId": "17kLNIZjC-OeRJlyxrv4-66jldyI9nPAP",
+        "messageId": 2859,
+        "publishedAt": "2026-06-26"
+      },
+      "editorialNote": null
+    },
+    {
+      "id": "greek-aphrodite-side1-2024",
+      "tradition": "greek",
+      "channel": "aphrodite",
+      "title": {
+        "ru": "Афродита · Сиде, часть 1",
+        "en": "Aphrodite · Side, part 1",
+        "es": "Afrodita · Side, parte 1"
+      },
+      "place": {
+        "city": {
+          "ru": "Сиде",
+          "en": "Side",
+          "es": "Side"
+        },
+        "site": {
+          "ru": "Храм Афродиты (по авторскому описанию)",
+          "en": "Aphrodite temple site (per original account)",
+          "es": "Templo de Afrodita (según autor)"
+        },
+        "type": "temple",
+        "country": {
+          "ru": "Турция",
+          "en": "Türkiye",
+          "es": "Turquía"
+        }
+      },
+      "originalLanguage": "ru",
+      "text": "Отдавшись круженью Бесчисленных нитей\nСтекают осколки\nбылого пути. \n\nЯ здесь - как я есть.\nЗабирай, Повелитель\nВ служеньи Богине.\nНа струнах зари.",
+      "photos": [
+        {
+          "src": "/images/temple-channels/aphrodite-side1.jpg",
+          "sourceFile": "photo_1196@09-05-2024_13-58-12.jpg",
+          "sourceMessageId": 1829
+        }
+      ],
+      "source": {
+        "kind": "telegram_export",
+        "archiveId": "1o7MUzmHAsQWI86aTraAdHTjrzj5zpHzL",
+        "messageId": 1829,
+        "publishedAt": "2024-05-09"
+      },
+      "editorialNote": null
+    },
+    {
+      "id": "greek-aphrodite-side2-2024",
+      "tradition": "greek",
+      "channel": "aphrodite",
+      "title": {
+        "ru": "Афродита · Сиде, часть 2",
+        "en": "Aphrodite · Side, part 2",
+        "es": "Afrodita · Side, parte 2"
+      },
+      "place": {
+        "city": {
+          "ru": "Сиде",
+          "en": "Side",
+          "es": "Side"
+        },
+        "site": {
+          "ru": "Храм Афродиты (по авторскому описанию)",
+          "en": "Aphrodite temple site (per original account)",
+          "es": "Templo de Afrodita (según autor)"
+        },
+        "type": "temple",
+        "country": {
+          "ru": "Турция",
+          "en": "Türkiye",
+          "es": "Turquía"
+        }
+      },
+      "originalLanguage": "ru",
+      "text": "Я ваша вся\nО, ветра Океана,\nО, звезды, палящие ночью. \n\nЯ в ласканьи волны\nОпускаюсь на дно,\nЧтоб воспрять вновь и вновь. \n\nО, мои небеса,\nУкажите мне путь,\nЯ готова идти еженощно. \n\nК встрече с новой зарей,\nЧтоб цвести,\nЧтобы сеять любовь.",
+      "photos": [
+        {
+          "src": "/images/temple-channels/aphrodite-side2.jpg",
+          "sourceFile": "photo_1200@09-05-2024_14-28-21.jpg",
+          "sourceMessageId": 1833
+        }
+      ],
+      "source": {
+        "kind": "telegram_export",
+        "archiveId": "1o7MUzmHAsQWI86aTraAdHTjrzj5zpHzL",
+        "messageId": 1832,
+        "publishedAt": "2024-05-09"
+      },
+      "editorialNote": null
+    },
+    {
+      "id": "greek-apollo-side1-2024",
+      "tradition": "greek",
+      "channel": "apollo",
+      "title": {
+        "ru": "Аполлон · Сиде, вариант 1",
+        "en": "Apollo · Side, version 1",
+        "es": "Apolo · Side, versión 1"
+      },
+      "place": {
+        "city": {
+          "ru": "Сиде",
+          "en": "Side",
+          "es": "Side"
+        },
+        "site": {
+          "ru": "Храм Аполлона",
+          "en": "Temple of Apollo",
+          "es": "Templo de Apolo"
+        },
+        "type": "temple",
+        "country": {
+          "ru": "Турция",
+          "en": "Türkiye",
+          "es": "Turquía"
+        }
+      },
+      "originalLanguage": "ru",
+      "text": "Лучезарность совершенства\nВкус, роскошество побед\nБлагородности блаженство\nТриумфальности расцвет.",
+      "photos": [
+        {
+          "src": "/images/temple-channels/apollo-side.jpg",
+          "sourceFile": "photo_1212@11-05-2024_08-31-16.jpg",
+          "sourceMessageId": 1875
+        }
+      ],
+      "source": {
+        "kind": "telegram_export",
+        "archiveId": "1o7MUzmHAsQWI86aTraAdHTjrzj5zpHzL",
+        "messageId": 1874,
+        "publishedAt": "2024-05-11"
+      },
+      "editorialNote": null
+    },
+    {
+      "id": "greek-apollo-side2-2024",
+      "tradition": "greek",
+      "channel": "apollo",
+      "title": {
+        "ru": "Аполлон · Сиде, вариант 2",
+        "en": "Apollo · Side, version 2",
+        "es": "Apolo · Side, versión 2"
+      },
+      "place": {
+        "city": {
+          "ru": "Сиде",
+          "en": "Side",
+          "es": "Side"
+        },
+        "site": {
+          "ru": "Храм Аполлона",
+          "en": "Temple of Apollo",
+          "es": "Templo de Apolo"
+        },
+        "type": "temple",
+        "country": {
+          "ru": "Турция",
+          "en": "Türkiye",
+          "es": "Turquía"
+        }
+      },
+      "originalLanguage": "ru",
+      "text": "Бесподобность совершенства.\nЛучезарность красоты.\nБезграничности блаженство.\nСолнце рядом. Солнце - ты. \n\n(Солнце здесь. Свеченье - ты).",
+      "photos": [
+        {
+          "src": "/images/temple-channels/apollo-side-detail.jpg",
+          "sourceFile": "photo_1213@11-05-2024_08-31-17.jpg",
+          "sourceMessageId": 1876
+        }
+      ],
+      "source": {
+        "kind": "telegram_export",
+        "archiveId": "1o7MUzmHAsQWI86aTraAdHTjrzj5zpHzL",
+        "messageId": 1874,
+        "publishedAt": "2024-05-11"
+      },
+      "editorialNote": null
+    },
+    {
+      "id": "greek-dionysus-side-2024",
+      "tradition": "greek",
+      "channel": "dionysus",
+      "title": {
+        "ru": "Дионис · Храм в Сиде",
+        "en": "Dionysus · Temple in Side",
+        "es": "Dioniso · Templo de Side"
+      },
+      "place": {
+        "city": {
+          "ru": "Сиде",
+          "en": "Side",
+          "es": "Side"
+        },
+        "site": {
+          "ru": "Храм Диониса (по авторскому описанию)",
+          "en": "Dionysus temple site (per original account)",
+          "es": "Templo de Dioniso (según autor)"
+        },
+        "type": "temple",
+        "country": {
+          "ru": "Турция",
+          "en": "Türkiye",
+          "es": "Turquía"
+        }
+      },
+      "originalLanguage": "ru",
+      "text": "Освежает, очищает\nНеги сладкая волна\nЖизни искры пробуждает\nВихрем чувств.\nВ любви пленя.",
+      "photos": [
+        {
+          "src": "/images/temple-channels/dionysus-side.jpg",
+          "sourceFile": "photo_1201@09-05-2024_14-53-00.jpg",
+          "sourceMessageId": 1834
+        }
+      ],
+      "source": {
+        "kind": "telegram_export",
+        "archiveId": "1o7MUzmHAsQWI86aTraAdHTjrzj5zpHzL",
+        "messageId": 1834,
+        "publishedAt": "2024-05-09"
+      },
+      "editorialNote": null
+    }
+  ]
+}

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {
   voiceStudioReady,voiceStudioOpenRouterKey,voiceStudioOpenRouterFreeKey,voiceStudioProviders,
-  validateStudioRequest,buildOpenRouterStudioPayload,buildOpenRouterFreePayload,
+  VOICE_STUDIO_SAMPLE,validateStudioRequest,buildOpenRouterStudioPayload,buildOpenRouterFreePayload,
 } from '../lib/mandala/voice-studio.mjs';
 import {requestOpenRouterStudioAudio} from '../lib/mandala/voice-studio-openrouter-provider.mjs';
 const code=expected=>error=>error.code===expected;
@@ -46,7 +46,7 @@ test('free OpenRouter Deepgram Flux requires explicit opt-in; paid stays disable
 });
 test('fixed xAI route reads only validated public text and 5 allowed voices',()=>{
   assert.deepEqual(payload,{model:'x-ai/grok-voice-tts-1.0',voice:'eve',
-    input:'Notice how the surface beneath you offers support. There is nothing you need to change right now. Allow a quiet moment, and imagine gentle daylight ahead.',
+    input:VOICE_STUDIO_SAMPLE.en,
     response_format:'pcm'});
   assert.throws(()=>buildOpenRouterStudioPayload({text:'hello',voice:{id:'unknown'}}));
 });

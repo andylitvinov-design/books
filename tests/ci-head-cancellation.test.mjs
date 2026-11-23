@@ -3,6 +3,10 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const workflows = [
+  ['andrey-voice-free-contract.yml', 'hh-andrey-voice-free'],
+  ['hh-agent-secrets-ci.yml', 'hh-agent-secrets'],
+  ['hh-business-coaching.yml', 'hh-business-coaching'],
+  ['hh-practice-telegram-digest.yml', 'hh-practice-telegram'],
   ['hh-assessment-quality.yml', 'hh-assessment-evidence'],
   ['hh-direct-video-notes.yml', 'hh-direct-media'],
   ['hh-gauntlet-loop.yml', 'hh-gauntlet'],
@@ -61,7 +65,6 @@ const workflows = [
   ['hh-growth-journey.yml', 'hh-growth-journeys'],
   ['hh-home-conversation.yml', 'hh-home-conversation'],
   ['hh-my-progress-release.yml', 'hh-my-progress'],
-  ['hh-profile-axis-matching.yml', 'profile-axis'],
   ['hh-public-services-production.yml', 'public-services-production'],
   ['hh-public-test-collections.yml', 'hh-public-test-collections'],
   ['hh-sitemap-runtime-assets.yml', 'sitemap-runtime-assets'],
@@ -71,19 +74,17 @@ const workflows = [
   ['site-video-browser.yml', 'site-video-browser'],
 ];
 
-const stablePRConcurrency = new Set([
-  'hh-app-browser.yml', 'hh-app-r1.yml', 'ia-v2.yml',
-  'site-video-browser.yml', 'hh-public-services-production.yml',
-  'holistic-support-mandala.yml',
-]);
-
-test('specialist concurrency isolates unrelated events and only cancels an older PR head', () => {
-  const condition = "github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after";
+test('specialist concurrency isolates manual attempts and cancels only superseded PR HEAD runs', () => {
+  const groupCondition = "github.event_name == 'pull_request' && github.run_attempt == 1";
+  const cancelCondition = "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize'";
   for (const [file, prefix] of workflows) {
     const source = readFileSync(`.github/workflows/${file}`, 'utf8');
-    const groupCondition = stablePRConcurrency.has(file) ? "github.event_name == 'pull_request'" : condition;
-    assert.ok(source.includes(`group: ${prefix}-` + '${{ ' + groupCondition + " && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"), file);
-    assert.ok(source.includes('cancel-in-progress: ${{ ' + condition + ' }}'), file);
+    const groupExpression = `${prefix}-` + '${{ ' + groupCondition + " && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
+    assert.ok(source.includes('group: ' + groupExpression) || source.includes('group: >-\n    ' + groupExpression), file);
+    const expectedCancel = ['hh-app-r1.yml', 'hh-app-browser.yml'].includes(file)
+      ? "github.event_name == 'pull_request' && github.run_attempt == 1 && (github.event.action == 'synchronize' || github.event.action == 'converted_to_draft')" : cancelCondition;
+    assert.ok(source.includes('cancel-in-progress: ${{ ' + expectedCancel + ' }}'), file);
+    assert.ok(!source.includes('github.event.before != github.event.after'), file+' must not use undefined synchronize fields');
   }
 });
 
@@ -91,4 +92,45 @@ test('feature branch regression runs never cancel each other', () => {
   const source = readFileSync('.github/workflows/hh-app-regression.yml', 'utf8');
   assert.ok(source.includes('group: app-r1-full-regression-${{ github.run_id }}'));
   assert.ok(source.includes('cancel-in-progress: false'));
+});
+
+// Keep Profile Axis unchanged in this independent concurrency-only rollout.
+// Current protected policy requires both real writer and Axis on every Ready PR;
+// the retired writer-only branch exception is no longer part of production.
+test('Profile Axis retains both genuine Ready checks and its BASE-trusted lease', () => {
+  const source = readFileSync('.github/workflows/hh-profile-axis-matching.yml', 'utf8');
+  const ready = "    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
+  assert.ok(source.includes('  writer-practical-focused:\n'+ready),
+    'independent writer verification must run on Ready PR');
+  assert.ok(source.includes('  axis-unit-types-build:\n'+ready),
+    'independent Axis verification must run on Ready PR');
+  assert.ok(source.includes('group: profile-axis-'));
+  assert.ok(source.includes('github.event.before != github.event.after'),
+    'do not alter separately protected Profile Axis concurrency in this migration');
+});
+
+test('four previously unscoped specialist workflows cancel obsolete PR attempts but retain independent real checks',()=>{
+ const names=["andrey-voice-free-contract.yml","hh-agent-secrets-ci.yml","hh-business-coaching.yml","hh-practice-telegram-digest.yml"];
+ for(const name of names){
+  const source=readFileSync('.github/workflows/'+name,'utf8');
+  const required=['pull_request:','jobs:','group:','cancel-in-progress:'];
+  for(const needle of required)assert.ok(source.includes(needle),name+' lost '+needle);
+  assert.match(source,/github\.run_attempt == 1/);
+  assert.match(source,/format\('pr-\{0\}', github\.event\.pull_request\.number\)/);
+  assert.match(source,/format\('run-\{0\}', github\.run_id\)/);
+  assert.match(source,/github\.event\.action == 'synchronize'/);
+  assert.doesNotMatch(source,/cancel-in-progress: true|github\.event\.before != github\.event\.after/,
+    'manual, retry and other-PR work must not be cancelled');
+ }
+ const digest=readFileSync('.github/workflows/hh-practice-telegram-digest.yml','utf8');
+ for(const job of ['enquiry-attribution-rls-postgres17','offline-contracts','production-build'])
+  assert.ok(digest.includes('  '+job+':'),'real independent Telegram/SQL check lost '+job);
+ assert.match(digest,/postgres:17-alpine/);
+ assert.match(digest,/tests\/public-enquiry-attribution-rls\.integration\.mjs/);
+ const voice=readFileSync('.github/workflows/andrey-voice-free-contract.yml','utf8');
+ assert.match(voice,/redis-atomic:/);assert.match(voice,/node --test tests\/local-narration-redis-runtime\.test\.mjs/);
+ const agent=readFileSync('.github/workflows/hh-agent-secrets-ci.yml','utf8');
+ assert.match(agent,/Test protected secret transport without live credentials/);
+ const business=readFileSync('.github/workflows/hh-business-coaching.yml','utf8');
+ assert.match(business,/tests\/business-coaching-90-days\.test\.mjs/);
 });

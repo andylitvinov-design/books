@@ -1,0 +1,408 @@
+/* iChat approved 7 Nov: visual, not another chatbot or an automatic player. */
+.root{display:grid;gap:10px;min-width:0;color:var(--hh-light-ink,#143d3a);
+ padding:0 0 8px;align-self:stretch}
+.hero{position:relative;min-width:0;min-height:195px;overflow:hidden;isolation:isolate;
+ display:flex;align-items:center;padding:16px 14px 19px;box-sizing:border-box;
+ border-radius:23px;background:
+ linear-gradient(90deg,rgba(39,44,40,.61),rgba(64,54,48,.30) 56%,rgba(35,37,37,.06)),
+ url("/images/holistic-house/reiki-approved-sunrise-v3.webp") center 43%/cover no-repeat}
+.heroCopy{position:relative;z-index:1;display:grid;gap:7px;max-width:58%;
+ color:#fff;text-shadow:0 2px 10px #1b28245a}
+.heroCopy em{font:italic 850 clamp(29px,7.5vw,41px)/1 system-ui,sans-serif}
+.heroCopy h2{margin:0;color:inherit;font:800 clamp(21px,5vw,28px)/1.1 system-ui,sans-serif;
+ letter-spacing:-.035em}
+.heroCopy p{margin:0;font:650 clamp(12px,3.2vw,15px)/1.32 system-ui,sans-serif;color:#fff}
+.play{position:absolute;z-index:2;top:50%;left:56%;transform:translate(-50%,-50%);
+ display:grid;place-items:center;width:57px;height:57px;padding:0 0 0 3px;
+ border:2px solid #ffffffee;border-radius:50%;color:#fff;background:#243e3744;
+ backdrop-filter:blur(3px);cursor:pointer;box-shadow:0 4px 18px #18392e26}
+.play:hover{background:#1d63578a}
+.languageNote{position:absolute;right:10px;bottom:9px;z-index:1;
+ padding:4px 7px;background:#203c38b8;color:#fff;border-radius:10px;
+ font:700 10px/1.25 system-ui,sans-serif}
+.player{position:absolute;inset:0;z-index:4;background:#143d3a;
+ opacity:0;visibility:hidden;pointer-events:none}
+.hero[data-playing="true"] .player{opacity:1;visibility:visible;pointer-events:auto}
+.player video{display:block;width:100%;height:100%;object-fit:contain;background:#101d1b}
+.player[data-backup="true"] video{display:none}
+.player iframe{display:block;width:100%;height:100%;border:0;background:#101d1b}
+.videoError{position:absolute;left:7px;right:59px;top:7px;z-index:6;
+ display:flex;align-items:center;justify-content:flex-start;
+ flex-wrap:wrap;gap:5px;padding:5px 7px;border-radius:10px;
+ color:#fff;background:#102c2ae8;font:650 11px/1.25 system-ui,sans-serif}
+.videoError button,.videoError a{padding:6px 8px;border:1px solid #ffffff99;
+ border-radius:9px;background:#fff;color:#153d38;text-decoration:none;
+ cursor:pointer;font:inherit}
+.videoError button:focus-visible,.videoError a:focus-visible{outline:3px solid #fff;outline-offset:2px}
+.dismiss{position:absolute;z-index:8;top:7px;right:7px;display:grid;place-items:center;
+ width:44px;height:44px;border:1px solid #fff7;border-radius:50%;
+ color:#fff;background:#102c2acc;cursor:pointer}
+.question{display:flex;align-items:center;gap:10px;min-width:0}
+.question img{flex:none;width:42px;height:42px;object-fit:cover;object-position:80% 39%;
+ border-radius:50%;box-shadow:0 2px 7px #213e321e}
+.question strong{flex:1;min-width:0;padding:10px 12px;border-radius:18px;
+ border:1px solid #eee6da;background:#fffcf7;color:#14443d;
+ font:700 15px/1.32 system-ui,sans-serif;box-shadow:0 3px 12px #443d3410}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;min-width:0}
+.card{position:relative;isolation:isolate;display:flex;flex-direction:column;
+ justify-content:flex-start;align-items:center;min-width:0;min-height:117px;
+ gap:6px;padding:10px 5px 31px;box-sizing:border-box;
+ border:1px solid #cce9d9;border-radius:21px;background:#e9f7ee;color:#155f4e;
+ cursor:pointer;text-decoration:none;text-align:center;overflow:hidden;
+ font:inherit;box-shadow:0 2px 8px #31392413}
+.card>svg,.card>strong{position:relative;z-index:1;flex:none}
+.card strong{font:780 clamp(11px,3.1vw,15px)/1.2 system-ui,sans-serif;
+ overflow-wrap:anywhere;text-wrap:balance}
+.art{position:absolute;bottom:0;inset-inline:0;height:47px;z-index:0;
+ background-position:center;background-size:cover;
+ -webkit-mask-image:linear-gradient(transparent,#000 66%);
+ mask-image:linear-gradient(transparent,#000 66%);opacity:.85}
+.card[data-hh-ai-choice="test"] .art{background-image:url("/images/holistic-house/ideas-pine-reference.webp")}
+.card[data-hh-ai-choice="video"]{background:#f0e7fb;border-color:#e7d8f0;color:#7742a9}
+.card[data-hh-ai-choice="video"] .art{background-image:url("/images/holistic-house/ideas-zen-landscape.svg")}
+.card[data-hh-ai-choice="practice"]{background:#fff0e9;border-color:#f3ded5;color:#ad5d65}
+.card[data-hh-ai-choice="practice"] .art{background-image:url("/images/holistic-house/messenger-zen-stones.svg")}
+.card[data-hh-ai-choice="session"]{background:#fff4dc;border-color:#f1e6cb;color:#99681e}
+.card[data-hh-ai-choice="session"] .art{background-image:url("/images/holistic-house/reiki-practitioner-sunrise.webp")}
+.card[data-hh-ai-choice="course"]{background:#eaf4fa;border-color:#d8e5ed;color:#31718c}
+.card[data-hh-ai-choice="course"] .art{background-image:url("/images/holistic-house/books-library.webp")}
+.card[data-hh-ai-choice="ask"]{background:#e8f7ef;border-color:#cfe6dc;color:#168268}
+.card[data-hh-ai-choice="ask"] .art{background-image:url("/images/holistic-house/course-journey-landscape.svg")}
+.card:hover{border-color:#66a892;box-shadow:0 5px 14px #214e3a24}
+.card:focus-visible,.play:focus-visible,.dismiss:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+@media(max-width:355px){
+ .root{gap:7px}
+ .hero{min-height:147px;padding:10px 11px}
+ .heroCopy{gap:4px;max-width:59%}
+ .heroCopy em{font-size:28px}
+ .heroCopy h2{font-size:20px}
+ .heroCopy p{font-size:12px}
+ .play{width:46px;height:46px;left:59%}
+ .languageNote{font-size:9px;max-width:115px;text-align:right}
+ .cards{gap:5px}
+ .card{min-height:101px;border-radius:16px;padding:8px 4px 25px;gap:4px}
+ .card strong{font-size:11px}
+ .card>svg{width:19px;height:19px}
+ .art{height:37px}
+ .question strong{font-size:13px;padding:8px 9px}
+}
+@media(max-height:700px){
+ .hero{min-height:136px}
+ .card{min-height:100px;padding-bottom:23px}
+ .art{height:33px}
+}
+@media(prefers-reduced-motion:reduce){
+ .card{scroll-behavior:auto}
+}
+
+/* The single live message field follows the welcome question, before topic cards. */
+.inlineComposer{min-width:0;padding:7px 8px;border:1px solid #e9dfd1;border-radius:16px;
+ background:#fffcf7;box-sizing:border-box;box-shadow:0 2px 8px #443d3410}
+
+/* The new primary support path opens a staged quiz inside the same AI chat. */
+.card[data-hh-ai-choice="support"]{grid-column:1/-1;min-height:66px;flex-direction:row;
+ justify-content:center;gap:12px;padding:12px 18px;background:#e1f5ec;
+ border-color:#9dd1b8;color:#0c684d}
+.card[data-hh-ai-choice="support"] .art{background-image:url("/images/holistic-house/reiki-approved-sunrise-v3.webp");opacity:.16;height:100%}
+.card[data-hh-ai-choice="support"] strong{font-size:clamp(14px,3.7vw,17px)}
+@media(max-width:355px){.card[data-hh-ai-choice="support"]{min-height:57px;padding:9px 14px}}
+
+
+/* Guide portrait and user-triggered audio greeting: never autoplay speech. */
+.heroPortrait{position:absolute;z-index:0;inset:0 0 0 auto;width:49%;height:100%;
+ object-fit:cover;object-position:center 26%;border-radius:0 23px 23px 0;
+ -webkit-mask-image:linear-gradient(to right,transparent,#000 30%);
+ mask-image:linear-gradient(to right,transparent,#000 30%);pointer-events:none}
+.heroCopy{max-width:62%}
+.heroCopy em{font-size:clamp(25px,6.5vw,37px)}
+.heroCopy h2{font-size:clamp(15px,4.2vw,21px)}
+.heroCopy p{font-size:clamp(12px,3.2vw,15px)}
+.voicePlay{position:absolute;z-index:3;right:11px;bottom:38px;min-height:41px;
+ display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 11px;
+ border:1px solid #d8efe3;border-radius:999px;
+ color:#086c54;background:#fffdf1ed;box-shadow:0 3px 12px #213a3433;
+ cursor:pointer;font:780 12px/1 system-ui,sans-serif}
+.voicePlay[aria-pressed="true"]{background:#126d57;color:#fff}
+.play{top:11px;left:auto;right:11px;transform:none;width:39px;height:39px;padding:0;
+ border-width:1px;background:#fef8eeed;color:#165747;border-color:#fff8}
+.play:hover{background:#e7f5e9}
+.voicePlay:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+@media(max-width:355px){
+ .heroPortrait{width:49%}
+ .heroCopy{max-width:62%}
+ .heroCopy em{font-size:24px}
+ .heroCopy h2{font-size:15px}
+ .heroCopy p{font-size:11px}
+ .play{right:8px;top:8px;width:33px;height:33px}
+ .voicePlay{right:8px;bottom:34px;min-height:36px;padding:6px 8px;font-size:11px}
+}
+
+/* Ali / Inner Alchemist — owner-approved conversation-first 18 Nov mock. */
+.root{gap:8px;padding-bottom:8px}
+.hero{min-height:174px;padding:16px 17px;border-radius:25px;
+ background:linear-gradient(90deg,#263d36aa 0%,#263d360a 80%),
+ url("/images/holistic-house/ali-inner-alchemist-hero.webp") center center / cover no-repeat}
+.heroCopy{max-width:60%;gap:8px}
+.heroCopy em{font:italic 800 clamp(25px,7.3vw,38px)/1.05 Georgia,serif;letter-spacing:-.045em}
+.heroCopy p{font:650 clamp(12px,3.3vw,15px)/1.37 system-ui,-apple-system,sans-serif;
+ color:#fff;text-shadow:0 2px 10px #1a2626aa}
+.play{top:auto;left:auto;right:9px;bottom:8px;transform:none;width:43px;height:43px;padding-left:2px}
+.play svg{width:20px;height:20px}
+.languageNote{right:58px;bottom:12px;font-size:9px}
+.startCard{display:grid;gap:9px;padding:14px 14px 13px;background:var(--hh-light-surface,#fffcf7);
+ border:1px solid #e9dfd1;border-radius:22px;box-shadow:0 4px 18px #5a462512;min-width:0}
+.question{display:grid;gap:5px;min-width:0}
+.question strong{padding:0;border:0;background:none;box-shadow:none;
+ color:#143d3a;font:800 clamp(18px,4.7vw,24px)/1.17 system-ui,sans-serif;letter-spacing:-.03em}
+.question p{margin:0;font:530 clamp(12px,3.2vw,14px)/1.35 system-ui,sans-serif;color:#6b665d}
+.inlineComposer{border:0;border-radius:16px;padding:0;background:transparent;box-shadow:none}
+.topics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;min-width:0}
+.topics button{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:42px;
+ border:1px solid #e8daca;border-radius:22px;padding:7px 5px;background:#fffcf7;color:#194c41;
+ font:700 clamp(10px,2.6vw,12px)/1.16 system-ui,-apple-system,sans-serif;text-align:center;cursor:pointer;
+ box-shadow:0 2px 6px #48352b0d}
+.topics button svg{flex:none;width:15px;height:15px;color:#0c7968}
+.topics button span{min-width:0;overflow-wrap:anywhere}
+.topics button:hover{background:#eaf6ef;border-color:#8dc9b4}
+.topics button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.journey{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;
+ padding:9px 5px;gap:6px;border:1px solid #e9e0d1;border-radius:19px;
+ background:linear-gradient(125deg,#fff8ee,#f1f5eae8),url('/images/holistic-house/course-journey-landscape.svg') center/cover no-repeat}
+.journey>div{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-width:0;
+ padding:2px 4px;text-align:center;color:#194c3f}
+.journey>div+div{border-left:1px solid #dcd5c4}
+.journey svg{color:#9e8047}
+.journey span{font:740 clamp(10px,2.9vw,13px)/1.2 system-ui,sans-serif;text-wrap:balance}
+.analysisButton{width:100%;min-height:66px;display:flex;align-items:center;gap:10px;min-width:0;
+ padding:10px 14px;border:1px solid #8bc4ab;border-radius:24px;
+ background:linear-gradient(110deg,#20725c,#067a67 70%,#09584d);color:#fff;
+ text-align:left;box-shadow:0 6px 18px #076f572c;cursor:pointer}
+.analysisButton:focus-visible{outline:3px solid #176e6e;outline-offset:3px}
+.analysisSparkle{display:grid;place-items:center;flex:none;width:32px;height:32px;color:#ffefbb}
+.analysisWords{display:flex;flex:1;flex-direction:column;gap:3px;min-width:0}
+.analysisWords strong{font:800 clamp(15px,4.1vw,19px)/1.18 system-ui,sans-serif}
+.analysisWords small{font:550 clamp(11px,2.9vw,13px)/1.2 system-ui,sans-serif;color:#e0f6eb}
+.analysisArrow{font:800 28px/1 system-ui,sans-serif}
+@media(max-width:355px){
+ .hero{min-height:144px;padding:11px 12px}
+ .heroCopy{max-width:64%;gap:5px}
+ .heroCopy em{font-size:24px}
+ .heroCopy p{font-size:11px}
+ .startCard{padding:11px;gap:7px}
+ .question strong{font-size:18px}
+ .question p{font-size:11px}
+ .topics{gap:4px}
+ .topics button{min-height:40px;padding:6px 3px;font-size:9.5px;gap:3px}
+ .topics button svg{width:12px;height:12px}
+ .journey{padding:7px 3px;gap:3px}
+ .journey span{font-size:10px}
+ .analysisButton{min-height:58px;padding:8px 10px;gap:6px}
+ .analysisWords small{font-size:10px}
+}
+@media(max-height:740px){
+ .hero{min-height:145px}
+ .startCard{padding:11px}
+ .journey{padding:7px 5px}
+ .analysisButton{min-height:59px}
+}
+@media(prefers-reduced-motion:reduce){.topics button,.analysisButton{transition:none}}
+
+
+/* 19 Nov owner-approved first-open WhatsApp-like Ali conversation.
+   Real send form is pinned OUTSIDE the scroll log; these are editable topic starters. */
+.root[data-hh-ai-landing]{gap:12px;padding:9px 3px 18px;min-width:0}
+.welcomeRow{display:flex;align-items:flex-start;gap:9px;min-width:0}
+.welcomePortrait{flex:none;width:39px;height:39px;border-radius:50%;
+ object-fit:cover;object-position:center 32%;box-shadow:0 3px 10px #1d4f3a24}
+.welcomeBubble{position:relative;display:grid;gap:11px;min-width:0;flex:1;
+ padding:16px 16px 11px;background:#fffefa;color:#173d36;
+ border:1px solid #eee9df;border-radius:19px 19px 19px 5px;
+ box-shadow:0 3px 12px #614d3115}
+.welcomeBubble h2{margin:0;color:#0d4338;letter-spacing:-.025em;
+ font:800 clamp(21px,5.5vw,25px)/1.21 system-ui,-apple-system,sans-serif}
+.welcomeBubble h2 span{display:block}
+.welcomeBubble p{margin:0;color:#35423d;font:510 clamp(16px,4.25vw,18px)/1.47 system-ui,-apple-system,sans-serif}
+.welcomeQuestion{font:780 clamp(17px,4.5vw,19px)/1.34 system-ui,-apple-system,sans-serif;color:#0e453a}
+.welcomeMeta{display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:36px}
+.welcomeMeta time{font:500 12px/1.2 system-ui,sans-serif;color:#8b918b;white-space:nowrap}
+.welcomeListen{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+ min-height:36px;padding:6px 10px;border:1px solid #cfe5d7;border-radius:20px;
+ background:#eff8f2;color:#12644e;font:760 14px/1 system-ui,sans-serif;cursor:pointer}
+.welcomeListen[aria-pressed="true"]{background:#d9f0e4;color:#0f5e4e}
+.root .topics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.root .topics button{display:flex;flex-direction:row;justify-content:flex-start;align-items:center;
+ gap:9px;box-sizing:border-box;min-height:92px;min-width:0;padding:8px;
+ border:1px solid #e8e0d6;border-radius:19px;background:#fffdfa;color:#164a40;
+ text-align:left;box-shadow:0 3px 11px #56463410;
+ font:inherit;cursor:pointer;overflow:hidden}
+.root .topics button:hover{background:#f0faf4;border-color:#93c9ad}
+.root .topics button:active{background:#e5f6ec}
+.root .topics button:focus-visible,.moreTopics:focus-visible,
+.welcomeListen:focus-visible,.introDetails summary:focus-visible{outline:3px solid #108b71;outline-offset:2px}
+.topicIllustration{position:relative;flex:none;display:block;width:67px;height:75px;
+ border-radius:13px;overflow:hidden;background:#e8f4ed}
+.topicIllustration img{display:block;width:100%;height:100%;object-fit:cover}
+.topicIllustration svg{position:absolute;bottom:5px;right:5px;width:20px;height:20px;
+ padding:2px;background:#fffcf5d9;border-radius:8px;color:#0e725e;box-sizing:content-box}
+.root .topics .topicLabel{display:block;min-width:0;overflow-wrap:break-word;
+ font:760 clamp(14px,3.75vw,16px)/1.23 system-ui,-apple-system,sans-serif;
+ letter-spacing:-.015em}
+.moreTopics{justify-self:center;display:flex;align-items:center;justify-content:center;gap:10px;
+ min-height:46px;padding:9px 24px;border:1px solid #d3e4d8;border-radius:26px;
+ background:#f6fbf6;color:#155547;font:710 16px/1.2 system-ui,sans-serif;
+ box-shadow:0 3px 10px #4d624020;cursor:pointer}
+.moreTopics .chevronUp{transform:rotate(180deg)}
+.expandedContent{display:grid;gap:12px;min-width:0}
+.introDetails{min-width:0}
+.introDetails>summary{min-height:44px;display:flex;align-items:center;padding:9px 13px;
+ border:1px solid #ddd6cb;border-radius:14px;background:#fffcf7;
+ color:#15574a;font:700 14px/1.3 system-ui,sans-serif;cursor:pointer}
+.introDetails[open] .hero{margin-top:9px}
+@media(max-width:355px){
+ .root[data-hh-ai-landing]{gap:9px;padding-inline:1px}
+ .welcomeRow{gap:6px}
+ .welcomePortrait{width:32px;height:32px}
+ .welcomeBubble{padding:12px 11px 8px;gap:8px}
+ .welcomeBubble h2{font-size:20px}
+ .welcomeBubble p{font-size:16px}
+ .welcomeQuestion{font-size:17px}
+ .root .topics{gap:6px}
+ .root .topics button{min-height:86px;padding:6px;gap:6px;border-radius:15px}
+ .topicIllustration{width:50px;height:70px}
+ .root .topics .topicLabel{font-size:14px}
+ .moreTopics{font-size:16px}
+}
+@media(prefers-reduced-motion:reduce){.moreTopics .chevronUp{transition:none}}
+
+/* Approved homepage-like opening, scoped strictly to the first AI/Chat turn. */
+.root[data-hh-ai-landing]{gap:12px;padding:3px 3px 16px}
+.root .chatShortcuts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;
+  min-width:0;align-items:stretch}
+.root .chatShortcut{box-sizing:border-box;display:flex;align-items:center;justify-content:center;
+  gap:5px;min-width:0;min-height:49px;padding:8px 5px;border:1px solid #ded9cc;
+  border-radius:999px;background:#fffcf7;color:#1e4a3d;text-align:center;
+  text-decoration:none;font:760 clamp(10px,2.95vw,13px)/1.14 system-ui,sans-serif;
+  box-shadow:0 3px 8px #314b3410}
+.root .chatShortcut svg{width:17px;height:17px;flex:none}
+.root .chatShortcut span{min-width:0;overflow-wrap:normal}
+.root .chatShortcut[aria-current="page"]{color:#fff;border-color:#087c62;
+  background:linear-gradient(110deg,#0caa86,#046c54);box-shadow:0 4px 12px #06755a24}
+.root .chatShortcut:focus-visible{outline:3px solid #168b71;outline-offset:2px}
+@media(max-width:360px){
+  .root .chatShortcuts{gap:4px}
+  .root .chatShortcut{flex-direction:column;gap:2px;min-height:53px;padding:6px 2px;
+    border-radius:17px;font-size:10px;line-height:1.1}
+  .root .chatShortcut svg{height:16px;width:16px}
+}
+.root .welcomeRow{position:relative;display:block;min-height:204px;border:1px solid #d1decf;
+  border-radius:24px;overflow:hidden;isolation:isolate;
+  background:linear-gradient(105deg,#07533c 0%,#086443 60%,#b8ab8e 100%);
+  box-shadow:0 7px 20px #26554322}
+.root .welcomePortrait{position:absolute;inset:0 0 0 auto;width:57%;height:100%;z-index:-1;
+  display:block;border:0;border-radius:0;box-shadow:none;object-fit:cover;object-position:center 23%;
+  -webkit-mask-image:linear-gradient(to right,transparent 0%,#000 39%);
+  mask-image:linear-gradient(to right,transparent 0%,#000 39%)}
+.root .welcomeBubble{position:relative;display:flex;flex-direction:column;align-items:flex-start;
+  justify-content:center;gap:8px;min-height:204px;max-width:61%;box-sizing:border-box;
+  padding:15px 0 16px 15px;border:0;border-radius:0;background:transparent;
+  box-shadow:none;color:#fff;text-shadow:0 1px 5px #092a2460}
+.root .heroLabel{display:inline-flex;align-items:center;gap:6px;letter-spacing:.08em;
+  font:770 11px/1.2 system-ui,sans-serif;color:#f4fff8}
+.root .welcomeBubble h2{font:700 clamp(26px,8.1vw,37px)/1.04 Georgia,serif;
+  color:#fff;letter-spacing:-.04em;margin:0}
+.root .welcomeBubble h2 span{font:800 clamp(14px,4.3vw,19px)/1.18 system-ui,sans-serif;
+  letter-spacing:-.015em;margin-top:6px}
+.root .welcomeBubble p{font:560 clamp(12px,3.35vw,15px)/1.31 system-ui,sans-serif;
+  color:#f4fff8;margin:0;max-width:100%;text-wrap:pretty}
+.root .welcomeMeta{display:flex;justify-content:flex-start;min-height:0;margin-top:4px}
+.root .welcomeListen{display:inline-flex;gap:8px;min-height:40px;padding:8px 17px;
+  border:1.5px solid #fff;border-radius:999px;background:#ffffff13;
+  color:#fff;font:760 14px/1.1 system-ui,sans-serif;cursor:pointer}
+.root .welcomeListen[aria-pressed="true"]{background:#10573b;color:#fff}
+.root .inlineComposer{padding:0;min-width:0;background:transparent;border:0;box-shadow:none}
+.root .topicTitleRow{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.root .topicHeading{min-width:0;margin:0;color:#104636;letter-spacing:-.035em;
+  font:700 clamp(23px,6.7vw,30px)/1.16 Georgia,serif}
+.root .moreTopics{justify-self:auto;flex:none;display:flex;gap:7px;min-height:40px;
+  padding:7px 12px;border:1px solid #dedbd1;border-radius:999px;
+  background:#fffdfa;color:#174e3e;box-shadow:none;
+  font:740 12px/1 system-ui,sans-serif;white-space:nowrap}
+.root .moreTopics svg{flex:none;color:#176955}
+.root .topics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.root .topics button{display:grid;grid-template-columns:63px minmax(0,1fr) 23px;
+  align-items:center;justify-content:initial;gap:7px;min-width:0;min-height:86px;
+  padding:7px;border-radius:20px;border:1px solid #e8dfd3;
+  background:#fffbf3;box-shadow:0 3px 12px #57463112;text-align:left}
+.root .topics button:nth-child(2){background:#fff4f7}
+.root .topics button:nth-child(3){background:#fff9ea}
+.root .topics button:nth-child(4){background:#eef8f4}
+.root .topicIllustration{width:63px;height:70px;border-radius:14px;overflow:hidden}
+.root .topicIllustration img{width:100%;height:100%;object-fit:cover}
+.root .topics .topicLabel{display:flex;flex-direction:column;align-items:flex-start;
+  gap:4px;min-width:0;overflow-wrap:break-word;letter-spacing:-.025em;
+  font:800 clamp(12px,3.5vw,15px)/1.14 system-ui,sans-serif;color:#164c3c}
+.root .topics .topicLabel svg{flex:none;color:#078970}
+.root .topicArrow{display:grid;place-items:center;width:23px;height:23px;
+  border-radius:50%;background:#e8f2eb;color:#135443}
+.root .journey{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;
+  padding:12px 13px;border:1px solid #d2eadc;border-radius:22px;
+  background:linear-gradient(130deg,#f1fff7,#e5f6ee);box-shadow:0 4px 14px #2269490f}
+.root .journeyHeading{margin:0;color:#135140;letter-spacing:-.025em;
+  font:700 clamp(20px,5.7vw,26px)/1.15 Georgia,serif}
+.root .journeySteps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.root .journeySteps>div{display:grid;justify-items:center;align-content:start;gap:5px;
+  padding:3px 5px;text-align:center;min-width:0;color:#195a46}
+.root .journeySteps>div+div{border-left:1px solid #b9dfce}
+.root .journeySteps svg{color:#07947c;width:24px;height:24px}
+.root .journeySteps span{font:750 clamp(10px,2.9vw,12px)/1.24 system-ui,sans-serif;text-wrap:balance}
+@media(max-width:365px){
+ .root .welcomeRow{min-height:192px}
+ .root .welcomeBubble{max-width:64%;min-height:192px;padding-left:11px;gap:6px}
+ .root .welcomeBubble h2{font-size:25px}
+ .root .welcomeBubble h2 span{font-size:14px}
+ .root .welcomeBubble p{font-size:11px}
+ .root .topics button{grid-template-columns:53px minmax(0,1fr) 20px;gap:5px;padding:5px;min-height:78px}
+ .root .topicIllustration{width:53px;height:66px}
+ .root .topics .topicLabel{font-size:11px}
+ .root .topicArrow{width:20px;height:20px}
+ .root .topicHeading{font-size:22px}
+ .root .moreTopics{font-size:11px;min-height:38px;padding:6px 8px}
+}
+
+/* 21 Nov: one-viewport first screen; the three-step explainer was removed. */
+.root[data-hh-ai-landing]{gap:7px;padding:0 1px 8px}
+.root .chatShortcuts{gap:5px}
+.root .chatShortcut{min-height:42px;padding:6px 3px}
+.root .welcomeRow{min-height:157px;border-radius:20px}
+.root .welcomeBubble{min-height:157px;gap:5px;padding:9px 0 10px 12px;max-width:63%}
+.root .welcomeBubble h2{font-size:clamp(24px,6.8vw,32px);line-height:1.03}
+.root .welcomeBubble h2 span{font-size:clamp(12px,3.4vw,16px);margin-top:4px}
+.root .welcomeBubble p{font-size:clamp(11px,3vw,13px);line-height:1.26}
+.root .heroLabel{font-size:10px}
+.root .welcomeMeta{margin-top:2px}
+.root .welcomeListen{min-height:34px;padding:5px 12px;font-size:12px}
+.root .topicTitleRow{gap:5px}
+.root .topicHeading{font-size:clamp(21px,5.8vw,27px)}
+.root .moreTopics{min-height:36px;padding:6px 9px}
+.root .topics{gap:6px}
+.root .topics button{grid-template-columns:56px minmax(0,1fr) 20px;
+  gap:6px;min-height:71px;padding:5px;border-radius:17px}
+.root .topicIllustration{width:56px;height:59px;border-radius:12px}
+.root .topics .topicLabel{font-size:clamp(11px,3vw,13px);gap:2px}
+.root .topics .topicLabel svg{width:15px;height:15px}
+.root .topicArrow{width:20px;height:20px}
+@media(max-width:365px){
+ .root .welcomeRow{min-height:144px}
+ .root .welcomeBubble{min-height:144px;padding-left:9px;max-width:64%}
+ .root .welcomeBubble h2{font-size:23px}
+ .root .welcomeBubble p{font-size:10px}
+ .root .topics button{grid-template-columns:48px minmax(0,1fr) 18px;gap:4px;min-height:65px}
+ .root .topicIllustration{width:48px;height:54px}
+ .root .topics .topicLabel{font-size:10.5px}
+ .root .topicArrow{width:18px;height:18px}
+}
+@media(max-height:740px) and (max-width:760px){
+ .root .welcomeRow,.root .welcomeBubble{min-height:130px}
+ .root .welcomeBubble p{font-size:10.5px}
+ .root .topics button{min-height:64px}
+}

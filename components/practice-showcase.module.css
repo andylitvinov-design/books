@@ -4,7 +4,7 @@
   --green: #008b70;
   --green-deep: #006f58;
   min-height: 100svh;
-  background: radial-gradient(circle at 8% 0%, #e2f3e9 0, transparent 36%), linear-gradient(165deg, #f6f0e6 0%, #eeeadd 65%, #f6f2e9 100%);
+  background: radial-gradient(circle at 8% 0%, #fff0d6 0, transparent 36%), linear-gradient(165deg, #fff9ef 0%, var(--hh-light-canvas) 65%, #f8eddd 100%);
   color: var(--ink);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 14px;
@@ -22,7 +22,7 @@
 .header p { font-size: clamp(12px, 3.2vw, 15px); line-height: 1.35; color: #6c766f; margin: 0; }
 .notification { border: 1px solid #e3e1d7; border-radius: 50%; background: #fffdf7; color: #53635b; flex: none; width: 44px; height: 44px; display: grid; place-items: center; position: relative; box-shadow: 0 4px 14px #2e463015; }
 .notificationDot { position: absolute; top: 6px; right: 7px; width: 9px; height: 9px; background: #039a7b; border-radius: 50%; border: 2px solid white; }
-.identity { display: grid; grid-template-columns: 68px minmax(0,1fr) minmax(132px, .72fr); gap: 12px; align-items: center; background: #ffffffd9; border: 1px solid #fff; border-radius: 22px; padding: 12px; box-shadow: 0 9px 25px #253b2612; margin-bottom: 19px; }
+.identity { display: grid; grid-template-columns: 68px minmax(0,1fr) minmax(132px, .72fr); gap: 12px; align-items: center; background: #fffcf7e6; border: 1px solid #fff4e8; border-radius: 22px; padding: 12px; box-shadow: 0 9px 25px #253b2612; margin-bottom: 19px; }
 .avatar { width: 66px; height: 66px; border-radius: 50%; border: 3px solid #ddf5f0; outline: 2px solid #9bd7cd; display: grid; place-items: center; background: linear-gradient(140deg,#b7e6d7,#f8efdb); color: #177c67; font-size: 28px; font-weight: 850; }
 .avatar img { width: 100%; height: 100%; display: block; object-fit: cover; border-radius: 50%; }
 .identityCopy { display: grid; justify-items: start; gap: 4px; }
@@ -133,7 +133,7 @@
 
 /* Approved practitioner phone mock: compact, uninterrupted workspace.
    Scoped above legacy rules to survive global mobile typography and iOS viewport. */
-.screen { background:radial-gradient(circle at 12% 8%,#e6f1e9,transparent 35%),linear-gradient(165deg,#f7f1e6,#f1ecdf); font-size:13px; line-height:1.32; overflow-x:clip; }
+.screen { background:radial-gradient(circle at 12% 8%,#fff0d8,transparent 35%),linear-gradient(165deg,#fffaf1,var(--hh-light-canvas)); font-size:13px; line-height:1.32; overflow-x:clip; }
 .screen .shell { width:min(100%,760px); margin:0 auto; padding:16px clamp(11px,4.3vw,27px) 100px; }
 .screen .header { gap:10px; margin-bottom:11px; }
 .screen .header h1 { font-size:clamp(23px,5.65vw,32px); line-height:1.1; font-weight:850; margin-bottom:4px; }
@@ -257,3 +257,124 @@
  .resumeDismiss{justify-self:center}
 }
 @media(prefers-reduced-motion:reduce){.resumePanel *{transition:none!important}}
+
+
+/* Master Network approved two-mode mobile composition. Preserve real data and actions. */
+.screen .networkHeader{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 15px}
+.screen .networkHeader h1{margin:0 0 4px;color:#143d3a;font-size:clamp(25px,6vw,34px);font-weight:870;line-height:1.07;letter-spacing:-.05em}
+.screen .networkHeader p{margin:0;color:#68746f;font-size:clamp(12px,3.2vw,15px);line-height:1.35}
+.screen .networkHeader .notification{width:44px;height:44px}
+.screen .header{margin-bottom:12px}
+.screen .identity{background:#fffcf7;box-shadow:0 9px 24px #5e412512}
+.screen .quickTile{box-shadow:0 5px 15px #4b39201a}
+.screen .hero{background:linear-gradient(90deg,#0b322bf0 0%,#214839c7 48%,#244e2e0d 100%),url('/images/holistic-house/reiki-practitioner-sunrise.webp') 65% center/cover no-repeat}
+.screen .heroButton{background:linear-gradient(120deg,#008b73,#08b998)}
+.screen .offerCard{box-shadow:0 4px 12px #17362f29}
+.screen .tool{position:relative;background:#fffcf7;box-shadow:0 5px 13px #4b392015}
+.screen .requestBadge{position:absolute;top:3px;right:5px;display:grid;place-items:center;min-width:19px;height:19px;padding:0 4px;border-radius:99px;background:#f04435;color:#fff;font-size:10px;font-weight:800}
+@media(min-width:540px){.screen .toolGrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:430px){
+ .screen .networkHeader{margin-bottom:12px}
+ .screen .networkHeader h1{font-size:clamp(25px,6.8vw,30px)}
+ .screen .networkHeader p{font-size:12px}
+}
+
+/* All users get a personal public page, professional services remain opt-in Work. */
+.workProfileActions{display:flex;justify-content:flex-end;align-items:center;gap:7px;flex-wrap:wrap}
+.myPageLink{display:inline-flex;min-height:44px;align-items:center;justify-content:center;border-radius:13px;padding:8px 11px;text-decoration:none;border:1px solid #d5e8df;background:#eff8f2;color:#075f4f;font-size:12px;font-weight:780;white-space:nowrap}
+.myPageLink:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+@media(max-width:420px){.workProfileActions{gap:4px}.myPageLink{padding:7px 9px;font-size:11px}}
+
+/* Work actions stay in the existing consent-aware auth dialog. */
+.modalTelegram{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:44px;margin-top:9px;padding:10px 13px;border:1px solid #a4d1c6;border-radius:15px;background:#f2faf5;color:#126d58;font:750 14px/1.25 system-ui,sans-serif!important}
+.modalTelegram svg{margin-left:auto}
+.signInModal .telegramNote{font:500 11px/1.45 system-ui,sans-serif;color:#66766c;margin:9px 0 0;text-align:left}
+
+/* My Page belongs with profile actions BELOW the scenic film, never in the Live/Work header. */
+.screen .identityActions{display:flex;align-items:center;align-content:center;flex-wrap:wrap;gap:3px 9px;width:100%;min-width:0}
+.screen .identityCopy .identityActions button{min-height:44px;padding:3px 0;text-align:left}
+.screen .identityCopy .myPageAction{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:44px;padding:5px 9px;border:1px solid #badbce;border-radius:11px;background:#eef8f2;color:#076950;font:750 clamp(10px,2.7vw,12px)/1.2 system-ui,sans-serif;text-decoration:none;white-space:normal;max-width:100%}
+.screen .identityCopy .myPageAction svg{flex:none}
+@media(max-width:590px){.screen .identityActions{gap:0 6px}.screen .identityCopy .identityActions button,.screen .identityCopy .myPageAction{min-height:44px}}
+@media(max-width:354px){.screen .identityCopy .myPageAction{padding:5px 6px;font-size:10px}}
+
+
+/* Work: identity and secondary tools below the photography-led primary navigation. */
+.screen .shell{width:min(100%,980px);padding-top:12px}
+.screen .identity{display:flex;align-items:center;gap:13px;padding:13px 16px;margin:5px 0 14px;border:1px solid #e6e8df;border-radius:22px;background:#fffdf9;box-shadow:0 6px 18px #23432a17}
+.screen .avatar{flex:none;width:64px;height:64px}
+.screen .identityCopy{display:grid;flex:1;justify-items:start;gap:4px}
+.screen .identityCopy strong{font-size:clamp(17px,4vw,23px)}
+.screen .identityCopy small{font-size:clamp(12px,3vw,14px)}
+.screen .identityCopy .identityActions{display:flex;gap:3px 11px;flex-wrap:wrap}
+.screen .identityCopy .identityActions button{min-height:44px;color:#08705a;font-size:13px}
+.screen .identityCopy .myPageAction{font-size:13px;min-height:44px}
+.createDisclosure,.moreDisclosure{margin:11px 0;border:1px solid #e0e7dc;border-radius:21px;background:#fffdf8;box-shadow:0 5px 14px #183b2d14}
+.createDisclosure>summary,.moreDisclosure>summary{display:flex;align-items:center;gap:12px;min-height:69px;padding:11px 16px;color:#104b40;font-size:clamp(16px,3.8vw,19px);font-weight:790;line-height:1.2;cursor:pointer;list-style:none}
+.createDisclosure>summary::-webkit-details-marker,.moreDisclosure>summary::-webkit-details-marker{display:none}
+.createDisclosure>summary::marker,.moreDisclosure>summary::marker{content:""}
+.disclosureIcon{display:grid;place-items:center;flex:none;width:43px;height:43px;border-radius:15px;background:#e2f4e8;color:#067458}
+.createDisclosure>summary>span:nth-child(2),.moreDisclosure>summary>span:nth-child(2){flex:1}
+.createDisclosure>summary>svg:last-child,.moreDisclosure>summary>svg:last-child{flex:none;transition:transform .16s}
+.createDisclosure[open]>summary>svg:last-child,.moreDisclosure[open]>summary>svg:last-child{transform:rotate(90deg)}
+.screen .createDisclosure .quickGrid{padding:0 13px 15px;margin:0}
+.screen .moreDisclosure .offers,.screen .moreDisclosure .toolbox{padding:6px 13px 13px;margin:0}
+.screen .moreDisclosure .offerRail{grid-template-columns:repeat(3,minmax(0,1fr))}
+.screen .moreDisclosure .offerCard{height:104px}
+.screen .moreDisclosure .toolGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:590px){
+.screen .shell{padding-top:10px;padding-inline:clamp(10px,3vw,18px)}
+.screen .identity{gap:10px;padding:11px 12px}.screen .avatar{width:54px;height:54px}
+.screen .identityCopy strong{font-size:17px}.screen .identityCopy small{font-size:12px}
+.screen .identityCopy .myPageAction,.screen .identityCopy .identityActions button{font-size:12px}
+}
+@media(max-width:360px){
+.screen .identity{gap:7px}.screen .avatar{width:48px;height:48px}
+.screen .identityCopy .identityActions{gap:1px 4px}
+.screen .identityCopy .myPageAction{font-size:11px;padding:4px 6px}
+.screen .moreDisclosure .offerCard strong{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){.createDisclosure>summary>svg:last-child,.moreDisclosure>summary>svg:last-child{transition:none}}
+
+/* Approved mock fidelity: two account cards and four immediate creation choices. */
+.screen .accountNav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin:15px 0 16px}
+.screen .accountTile{display:flex;align-items:center;gap:13px;min-height:78px;padding:11px 14px;border:1px solid #e2ece3;border-radius:22px;background:linear-gradient(100deg,#f1faf3,#fffdfa);box-shadow:0 6px 16px #173b2d14;color:#104538;text-decoration:none}
+.screen .accountIcon{display:grid;place-items:center;flex:none;width:49px;height:49px;border-radius:17px;background:#e6f4e9;color:#075e4b}
+.screen .accountTile>span:nth-child(2){display:grid;gap:3px;min-width:0}
+.screen .accountTile strong{font-size:clamp(15px,3.7vw,20px);font-weight:830;line-height:1.1}
+.screen .accountTile small{font-size:clamp(11px,2.8vw,14px);line-height:1.28;color:#597168}
+.screen .createActions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:0 0 13px}
+.screen .createAction{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:104px;padding:10px 4px;border:1px solid #e6e5df;border-radius:22px;background:#fffdfa;color:#164c42;box-shadow:0 7px 17px #1b382a19;text-align:center;font:inherit}
+.screen .createAction strong{font-size:clamp(12px,2.9vw,16px);font-weight:780;line-height:1.2}
+.screen .createAction svg{flex:none;color:#0d6653}
+.screen .createActionPrimary{background:linear-gradient(145deg,#10af8a,#007660);border-color:#39a992;color:#fff}
+.screen .createActionPrimary svg{color:#fff}
+.screen .extraCreateChoices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:-1px 0 15px}
+.screen .extraCreateChoices[hidden]{display:none}
+.screen .extraCreateChoices .quickTile{min-height:72px}
+.screen .moreDisclosure .identity{margin:0 13px 13px}
+@media(max-width:590px){
+.screen .accountNav{gap:8px;margin:12px 0}
+.screen .accountTile{gap:7px;min-height:68px;padding:8px 9px;border-radius:19px}
+.screen .accountIcon{width:39px;height:39px;border-radius:14px}
+.screen .accountIcon svg{width:26px;height:26px}
+.screen .accountTile strong{font-size:clamp(14px,3.7vw,17px)}
+.screen .accountTile small{font-size:clamp(10px,2.6vw,12px)}
+.screen .createActions{gap:6px}
+.screen .createAction{gap:7px;min-height:93px;padding:8px 3px;border-radius:17px}
+.screen .createAction svg{width:24px;height:24px}
+.screen .createAction strong{font-size:clamp(11px,2.9vw,14px)}
+.screen .extraCreateChoices{gap:6px}
+.screen .extraCreateChoices .quickTile{min-height:66px}
+}
+@media(max-width:360px){
+.screen .accountNav{gap:6px}
+.screen .accountTile{gap:5px;padding:6px}
+.screen .accountIcon{width:33px;height:35px}
+.screen .accountIcon svg{width:23px;height:23px}
+.screen .accountTile strong{font-size:12.5px}
+.screen .accountTile small{font-size:10px}
+.screen .createAction{min-height:92px;padding:7px 2px;border-radius:14px}
+.screen .createAction strong{font-size:10.5px}
+.screen .extraCreateChoices{grid-template-columns:repeat(3,minmax(0,1fr))}
+}

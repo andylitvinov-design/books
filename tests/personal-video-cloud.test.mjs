@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import {test} from 'node:test'
-import {readFileSync} from 'node:fs'
+import {readFileSync,readdirSync} from 'node:fs'
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
 const server=read('lib/app/personal-videos.js')
 const list=read('app/api/app/personal-videos/route.js')
@@ -8,8 +8,16 @@ const item=read('app/api/app/personal-videos/[id]/route.js')
 const schema=read('supabase/migrations/20261028161029_hh_account_personal_videos_private_20261028.sql')
 const consentMigration=read('supabase/migrations/20261028165914_hh_personal_video_consent_purpose_20261028.sql')
 const gallery=read('components/app/my-personal-videos.jsx')
+const uploader=read('lib/mandala/signed-private-video-upload.mjs')
 const shell=read('components/app/app-workspace.jsx')
 const route=read('app/[locale]/app/[[...path]]/page.jsx')
+test('the private upload checkpoint uses the single migration recorded by Supabase',()=>{
+  const migrations=readdirSync(new URL('../supabase/migrations/',import.meta.url))
+  assert.deepEqual(
+    migrations.filter(name=>name.endsWith('_hh_personal_video_resumable_checkpoint.sql')).sort(),
+    ['20261122193053_hh_personal_video_resumable_checkpoint.sql'],
+  )
+})
 test('personal videos have separate private account-scoped RLS and zero anonymous grants',()=>{
   assert.match(schema,/app_private\.personal_videos/)
   assert.match(schema,/enable row level security/)
@@ -19,7 +27,7 @@ test('personal videos have separate private account-scoped RLS and zero anonymou
   assert.doesNotMatch(schema,/grant.*on app_private\.personal_videos to (?:anon|authenticated|public)/i)
 })
 test('no cloud spend or browser upload without explicit feature flag, session, consent and quota',()=>{
-  assert.match(server,/HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED==='true'/)
+  assert.match(read('lib/app/personal-video-cloud-policy.mjs'),/HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED!=='true'/)
   assert.match(server,/input\.consent!==true/)
   assert.match(server,/MAX_VIDEO_BYTES=12_000_000/)
   assert.match(server,/MAX_GLOBAL_BYTES=180_000_000/)
@@ -31,8 +39,30 @@ test('no cloud spend or browser upload without explicit feature flag, session, c
   assert.match(list,/requireSameOrigin\(request,config\)/)
   assert.match(item,/const actor=await auth\.verified\(\)/)
   assert.match(item,/requireSameOrigin\(request,config\)/)
+  assert.match(item,/checkpointPersonalVideoUpload\(config,actor,id,await readBody\(request,8192\)\)/)
   for(const value of [server,list,item,gallery])
     assert.doesNotMatch(value,/HH_APP_SUPABASE_SECRET_KEY\s*=|service_role.*in.*client|NEXT_PUBLIC_.*SECRET/)
+})
+test('the cloud pilot uses verified actor IDs for both private operations and availability',async()=>{
+  assert.equal((server.match(/^  requireEnabled\(actor\)$/gm)||[]).length,6)
+  assert.match(read('lib/app/personal-video-messenger.js'),/cloudAvailable:personalVideoCloudEnabled\(actor\)/)
+  const {personalVideoCloudEnabled}=await import('../lib/app/personal-video-cloud-policy.mjs')
+  const a={id:'11111111-1111-4111-8111-111111111111'}
+  const b={id:'22222222-2222-4222-8222-222222222222'}
+  const outsider={id:'33333333-3333-4333-8333-333333333333'}
+  const flag={HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED:'true'}
+  const scope='HH_PERSONAL_VIDEO_CLOUD_SAVE_PILOT_ACCOUNT_IDS'
+  const pilot={...flag,[scope]:`${a.id}, ${b.id}`}
+  assert.equal(personalVideoCloudEnabled(a,{}),false)
+  assert.equal(personalVideoCloudEnabled(a,{[scope]:a.id}),false)
+  assert.equal(personalVideoCloudEnabled(a,flag),true)
+  assert.equal(personalVideoCloudEnabled(null,flag),false)
+  assert.equal(personalVideoCloudEnabled(a,pilot),true)
+  assert.equal(personalVideoCloudEnabled(b,pilot),true)
+  assert.equal(personalVideoCloudEnabled(outsider,pilot),false)
+  for(const ids of ['',a.id+',invalid',`${a.id},${b.id},${outsider.id}`]){
+    assert.equal(personalVideoCloudEnabled(a,{...flag,[scope]:ids}),false)
+  }
 })
 test('uploaded MP4 is verified by exact bytes, MIME and ftyp before ready status',()=>{
   assert.match(server,/mime!=='video\/mp4'/)
@@ -44,18 +74,37 @@ test('uploaded MP4 is verified by exact bytes, MIME and ftyp before ready status
 test('signed read only owner video and bounded TTL, no public bucket',()=>{
   assert.match(server,/const row=await owned\(config,actor,id\)/)
   assert.match(server,/row\.status!=='ready'/)
-  assert.match(server,/createSignedUrl\(row\.object_key,60\)/)
+  assert.match(server,/createSignedUrl\(row\.object_key,60,options\)/)
   assert.match(server,/BUCKET='hh-client-private-media'/)
   assert.match(server,/status='deleting'/)
   assert.match(server,/status='deleted',deleted_at=now\(\)/)
   assert.doesNotMatch(server,/\.getPublicUrl\(/)
+})
+test('private video item routes use shared UUID validation with a uniform not-found response',()=>{
+  assert.match(server,/import \{AppError,requireUUID\} from '\.\.\/assessments\/contracts\.js'/)
+  assert.match(server,/try\{requireUUID\(id\)\}catch\{deny\(\)\}/)
+})
+test('a finalization race reuses only the same owner’s committed ready row',()=>{
+  const finalize=server.split('export async function completePersonalVideoUpload')[1]
+    .split('export async function personalVideoReadUrl')[0]
+  assert.match(finalize,/status='pending' returning \*/)
+  assert.match(finalize,/select \* from app_private\.personal_videos where id=\$1 and account_id=\$2 and status='ready'/)
+  assert.match(finalize,/if\(!committed\)deny\(\)/)
+})
+test('My Videos requests a signed attachment separately from inline playback',()=>{
+  assert.match(gallery,/appFetch\('personal-videos\/'\+id\+'\?download=1',undefined,'GET',\{accountId\}\)/)
+  assert.match(gallery,/appFetch\('personal-videos\/'\+id,undefined,'GET',\{accountId\}\).*setPlay/)
+  assert.match(item,/download:new URL\(request\.url\)\.searchParams\.get\('download'\)==='1'/)
+  assert.match(server,/download:\s*'holistic-house-personal\.mp4'/)
 })
 test('gallery is lazy in same signed-in cabinet with account switch guard and real file upload',()=>{
   assert.match(route,/'videos'\]\.includes\(path\[0\]\)/)
   assert.match(shell,/const MyPersonalVideos = dynamic/)
   assert.match(shell,/page === 'videos' && <MyPersonalVideos/)
   assert.match(gallery,/data-my-personal-videos/)
-  assert.match(gallery,/uploadToSignedUrl/)
+  assert.match(gallery,/savePrivateMp4/)
+  assert.match(uploader,/uploadToSignedUrl/)
+  assert.match(uploader,/uploadSignedPrivateVideoChunks/)
   assert.match(gallery,/video\/mp4/)
   assert.match(gallery,/accountId/)
   assert.match(gallery,/setFile\(null\);setConsent\(false\)/)
@@ -74,7 +123,22 @@ test('canceled 2h signed uploads keep their storage quota until safe cleanup',()
 test('no client image or wish in personal videos API input or storage schema',()=>{
   assert.doesNotMatch(server,/photoUrl|wishText|clientMessage|rawPrompt|faceImage/i)
   assert.doesNotMatch(schema,/photo_url|raw_photo|client_wish|test_result|health_history/i)
-  assert.match(server,/\['theme','sceneId','aspect','duration','bytes','consent'\]/)
+  assert.match(server,/\['theme','sceneId','aspect','duration','bytes','consent','fingerprint'\]/)
+})
+
+test('Ready and the delivery drawer require an unchecked cloud consent for the finished MP4',()=>{
+  const ready=read('components/mandala-video-ready.tsx')
+  const delivery=read('components/mandala-video-delivery.tsx')
+  const studio=read('components/mandala-free-video-studio.tsx')
+  assert.match(ready,/cloudConsentUrl===video\.url/)
+  assert.match(ready,/type="checkbox" checked=\{cloudConsent\}/)
+  assert.match(ready,/if\(cloudConsent\)onSaveDirect\(true\)/)
+  assert.match(studio,/saveToLibrary\(consentApproved\)/)
+  assert.match(delivery,/if\(consentApproved!==true\)return;/)
+  assert.match(delivery,/const \[cloudConsent,setCloudConsent\]=useState\(false\)/)
+  assert.match(delivery,/saveToLibrary\(cloudConsent\)/)
+  assert.match(delivery,/privateUpload\(accountId\)/)
+  assert.match(delivery,/appFetch\(path,body,method,\{accountId\}\)/)
 })
 
 test('video save consent has a valid purpose while preserving all previous purposes',()=>{

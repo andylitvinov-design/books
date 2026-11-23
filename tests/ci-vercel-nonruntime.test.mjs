@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { maySkipBuild, inspectGithubCompare, changedFilesViaGithub, changedFilesBetween } from '../scripts/vercel-ignore-build.mjs';
+import { maySkipBuild, inspectGithubCompare, changedFilesViaGithub, changedFilesBetween, maySkipAgentPolicyBootstrap } from '../scripts/vercel-ignore-build.mjs';
 
 test('verified non-runtime GitHub CI changes do not create redundant Vercel builds', () => {
   assert.equal(maySkipBuild([
@@ -13,6 +13,9 @@ test('verified non-runtime GitHub CI changes do not create redundant Vercel buil
   ]), true);
   assert.equal(maySkipBuild(['.github/workflows/hh-pr-sweep-guard.yml', 'tests/ci-vercel-nonruntime.test.mjs']), true);
   assert.equal(maySkipBuild(['README.md']), true);
+  // Exact #3555 test-only verifier must not consume a production build.
+  assert.equal(maySkipBuild(['scripts/verify-unified-six-dock-browser.mjs']), true);
+  assert.equal(maySkipBuild(['scripts/verify-unified-six-dock-browser.mjs', 'tests/ci-vercel-nonruntime.test.mjs']), true);
 });
 
 test('site code, configuration, secrets, dependency and test fixtures always build', () => {
@@ -21,6 +24,7 @@ test('site code, configuration, secrets, dependency and test fixtures always bui
     'app/api/auth/route.js', 'lib/app/session.js', 'supabase/migrations/20260101000000_test.sql',
     'package.json', 'package-lock.json', 'next.config.ts', 'vercel.json',
     'scripts/vercel-ignore-build.mjs', 'tests/fixtures/sample.data.mjs',
+    'scripts/verify-other-browser.mjs', 'scripts/verify-unified-six-dock-browser.mjs.bak',
     'tests/checkout-security.test.mjs', 'lib/ci/../app/auth.mjs',
     'docs/myspace/../../app/page.md', 'scripts/ci-../build.mjs',
   ];
@@ -69,4 +73,19 @@ test('GitHub compare is fail-closed on missing hashes, rate limits, divergence a
   assert.equal((await inspectGithubCompare(prev,cur,fetcher({files:new Array(300).fill({filename:'README.md',status:'modified'})}))).paths,null);
   assert.equal((await inspectGithubCompare(prev,cur,fetcher({files:[{filename:'README.md',status:'renamed'}]}))).paths,null);
   assert.equal((await inspectGithubCompare(prev,cur,async()=>{throw Error('network');})).reason,'github-request-failed');
+});
+
+test('production AGENTS.md policy is non-runtime, but guard edits stay fail-closed',()=>{
+  assert.equal(maySkipBuild(['AGENTS.md']),true);
+  assert.equal(maySkipBuild(['AGENTS.md','tests/ci-vercel-nonruntime.test.mjs']),true);
+  assert.equal(maySkipBuild(['scripts/vercel-ignore-build.mjs']),false);
+  const pin='ef9652df948e2ae1d8e15c681d16d3166c4d964f';
+  const paths=['AGENTS.md','scripts/vercel-ignore-build.mjs','tests/ci-vercel-nonruntime.test.mjs'];
+  assert.equal(maySkipAgentPolicyBootstrap(paths,pin),true);
+  for(const changed of [[],['AGENTS.md'],['scripts/vercel-ignore-build.mjs'],
+    [...paths,'app/page.tsx'],[...paths,'AGENTS.md'],['AGENTS.md','scripts/vercel-ignore-build.mjs','vercel.json']]){
+    assert.equal(maySkipAgentPolicyBootstrap(changed,pin),false,JSON.stringify(changed));
+  }
+  assert.equal(maySkipAgentPolicyBootstrap(paths,'b'.repeat(40)),false);
+  assert.equal(maySkipAgentPolicyBootstrap(paths,null),false);
 });

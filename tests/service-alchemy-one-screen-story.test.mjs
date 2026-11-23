@@ -66,7 +66,8 @@ test("Alchemy/browser routes use semantic readiness with real booking and privac
  assert.match(s,/assert\.equal\(response\?\.status\(\), 200/);
  assert.match(s,/data-session-booking-flow/);
  assert.match(s,/data-booking-payment-options/);
- assert.match(s,/booking submit enabled before phone and consent/);
+ assert.match(s,/no standalone email or phone booking/);
+ assert.match(s,/data-messenger-only-contact/);
  assert.doesNotMatch(s,/data-compact-phone-trigger/);
  const pub=read("scripts/verify-public-services-production.mjs");
  assert.doesNotMatch(pub,/waitUntil:\s*"networkidle"/);
@@ -79,7 +80,9 @@ test("Alchemy/browser routes use semantic readiness with real booking and privac
 test("Public Services real consent flow opens optional contact name disclosure before typing",()=>{
  const chooser=read("components/contact-channel-chooser.tsx");
  const helper=read("scripts/helpers/contact-channel-verifier.mjs");
- assert.match(chooser,/<details className={styles.optionalName}>/);
+ assert.match(chooser,/<details key=\{resetSignature\} className=\{styles\.optionalName\}>/);
+ assert.match(chooser,/<summary>\{c\.nameOptional\}<\/summary>/);
+ assert.doesNotMatch(chooser,/nameOpen|setNameOpen/);
  assert.match(chooser,/autoComplete="name"/);
  assert.ok(helper.includes('const nameDisclosure = form.locator(\'details:has(input[autocomplete="name"])\')'));
  assert.ok(helper.includes('const name = nameDisclosure.locator(\'input[autocomplete="name"]\')'));

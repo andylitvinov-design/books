@@ -34,15 +34,23 @@ on:
       - 'lib/app/repository.js'
       - 'middleware.ts'
       - 'app/api/app/**'
+      # Provider-signed CRM webhook requests never read/write session audio
+      # or guest recordings. Existing CRM/App Core checks validate ingress;
+      # preserve ALL private media/auth/session paths and postmerge push audit.
+      - '!app/api/app/crm/messenger/webhook/**'
       - 'app/admin/api/recorder-auth/**'
       - 'tests/admin-*.test.mjs'
       - 'tests/practitioner-bridge.test.mjs'
       - 'tests/client-session-recorder-auth.test.mjs'
       - 'tests/cabinet-v2-ux.test.mjs'
       - 'tests/prescription-access.test.mjs'
-      - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/hh-private-audio-e2e.yml'
+      # Commander signed PR completion is validated by Core and the focused Guard, not this unrelated heavy suite.
+      - '!app/api/app/commander/**'
+      # Client Live Photo APIs have their own App/IA/billing/video owners.
+      # Keep the literal shared catch-all dispatcher and all source/security routes.
+      - '!app/api/app/live-photos/**'
   push:
     branches: ['codex/public-book-library']
     paths:
@@ -82,12 +90,11 @@ on:
       - 'tests/client-session-recorder-auth.test.mjs'
       - 'tests/cabinet-v2-ux.test.mjs'
       - 'tests/prescription-access.test.mjs'
-      - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/hh-private-audio-e2e.yml'
 concurrency:
-  group: hh-private-audio-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+  group: hh-private-audio-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 
 permissions:
   contents: read
@@ -103,7 +110,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Stage checksum-verified FFmpeg before npm lifecycle
+        uses: ./.github/actions/ci-ffmpeg-static
       - run: npm ci --no-audit --no-fund
+      - name: Materialize checksum-verified FFmpeg for package runtime
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
       - name: Expiring admin sessions and pinned SDK refresh regressions
         run: node --conditions=react-server --test tests/admin-session-lifecycle.test.mjs tests/admin-auth-refresh.test.mjs tests/admin-login-security.test.mjs tests/practitioner-bridge.test.mjs tests/client-session-recorder-auth.test.mjs tests/cabinet-v2-ux.test.mjs tests/prescription-access.test.mjs
       - name: Lint admin authorization and refresh boundaries

@@ -1,0 +1,61 @@
+.root{display:none}
+@media(max-width:760px){
+.root,.root *{box-sizing:border-box}
+.root{display:block;width:calc(100% - 24px);max-width:540px;margin:18px auto 28px;color:#143d3a;font:16px/1.4 Arial,Helvetica,sans-serif;overflow-wrap:anywhere}
+.hero{position:relative;isolation:isolate;overflow:hidden;min-height:158px;padding:17px 19px;border-radius:25px 25px 15px 15px;background:linear-gradient(90deg,rgba(255,249,240,.96),rgba(255,249,240,.75) 55%,rgba(255,249,240,.12)),url("/images/holistic-house/reiki-approved-sunrise-v3.webp") center/cover no-repeat}
+.overline{display:flex;align-items:center;gap:7px;color:#966a1f;font-size:11px;font-weight:800;letter-spacing:.08em}
+.hero h2{margin:16px 0 4px;color:#17334b;font:700 clamp(29px,8vw,36px)/1.1 Georgia,serif;letter-spacing:-.025em}
+.hero>p{max-width:290px;margin:0;color:#546169;font-size:15px;line-height:1.35}
+.settings{margin-top:11px;border:1px solid #e9dfd1;background:#fffcf7;border-radius:22px;padding:13px;box-shadow:0 4px 18px rgb(85 58 39 / 6%)}
+.dateRow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px}
+.field{display:flex;flex-direction:column;min-width:0;gap:7px;font-size:14px;font-weight:750}
+.field>span,.durationLabel{display:flex;align-items:center;gap:7px;color:#334f4c}
+.field svg,.durationLabel svg{color:#b88b32}
+.field input{display:block;width:100%;min-width:0;height:49px;padding:9px 8px;border:1px solid #d8cfbf;border-radius:14px;background:#fff;color:#143d3a;font:650 14px Arial,Helvetica,sans-serif;color-scheme:light}
+.durationLabel{margin:14px 0 8px;font-size:14px;font-weight:750}
+.durations{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.durations button{min-height:45px;padding:9px 4px;border:1px solid #d8cfbf;border-radius:999px;background:#fffaf3;color:#17334b;font:700 14px Arial,Helvetica,sans-serif;cursor:pointer}
+.durations button.active{border-color:#005c55;background:linear-gradient(180deg,#158c81,#00584d);color:white;box-shadow:0 3px 8px rgb(9 105 95 / 16%)}
+.timezone{margin:11px 1px 1px;color:#66716b;font-size:12px;line-height:1.5}
+.subheading{margin:20px 3px 12px;color:#17334b;font:700 26px/1.15 Georgia,serif}
+.list{display:grid;gap:11px}
+.master{display:grid;grid-template-columns:108px minmax(0,1fr);gap:13px;min-width:0;padding:12px;border:1px solid #e9dfd1;border-radius:24px;background:#fffcf7;box-shadow:0 5px 17px rgb(85 58 39 / 7%)}
+.portrait{position:relative;display:grid;place-items:center;align-self:stretch;min-height:145px;overflow:hidden;border-radius:18px;color:#ad8d47;background:linear-gradient(140deg,#e7f3e6,#fbebd0)}
+.portrait img{object-fit:cover;object-position:center 28%}
+.masterInfo{display:flex;min-width:0;flex-direction:column;gap:3px}
+.masterInfo small{color:#08736b;font-size:11px;font-weight:800}
+.masterInfo h4{margin:1px 0 2px;color:#17334b;font:700 20px/1.13 Georgia,serif}
+.masterInfo>p{display:-webkit-box;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:3;margin:0 0 8px;color:#536066;font-size:13px;line-height:1.32}
+.bookingRow{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-top:auto}
+.bookingRow strong{font-size:17px;white-space:nowrap;color:#065a55}
+.order{display:inline-flex;flex:1;align-items:center;justify-content:center;gap:5px;min-height:44px;min-width:98px;padding:8px 10px;border:0;border-radius:14px;background:linear-gradient(180deg,#168d84,#00574f);color:white;font:700 14px Arial,Helvetica,sans-serif;text-decoration:none;cursor:pointer}
+.order:disabled{opacity:.5;cursor:not-allowed}
+.empty{margin:0 0 10px;padding:18px;border:1px solid #e9dfd1;border-radius:20px;background:#fffcf7;color:#536066;font-size:14px}
+.empty p{margin:0 0 10px}
+.empty button{min-height:44px;border:1px solid #067a67;border-radius:12px;padding:8px 14px;background:#e6f6f1;color:#065a55;font-weight:700}
+.invalid{margin:10px 3px;color:#944a38;font-size:13px}
+.more{display:flex;align-items:center;justify-content:center;gap:9px;min-height:54px;margin-top:15px;padding:10px 14px;border:1px solid #006b61;border-radius:999px;color:#005e57;background:#fffcf7;font-size:15px;font-weight:750;text-align:center;text-decoration:none}
+.more svg:last-child{flex:none}
+.caution{margin:11px 5px 0;color:#66716b;font-size:12px;line-height:1.5}
+.root :is(button,a,input):focus-visible{outline:3px solid #176e6e;outline-offset:3px}
+}
+@media(max-width:350px){
+.root{width:calc(100% - 20px)}.hero{padding:15px}.master{grid-template-columns:88px minmax(0,1fr);gap:9px;padding:9px}.portrait{min-height:142px;border-radius:15px}.masterInfo h4{font-size:18px}.bookingRow strong{font-size:15px}.order{min-width:90px;padding:7px;font-size:13px}
+}
+@media(prefers-reduced-motion:reduce){.root *{transition:none!important}}
+
+/* Match the shared mobile Services frame without changing published offer logic. */
+@media(max-width:760px){
+.root{width:calc(100% - 24px);max-width:520px;margin:14px auto;padding:12px;border:1px solid #dfcbae;border-radius:22px;background:#fffcf7;box-shadow:0 5px 16px rgb(72 49 27 / 7%)}
+.hero{min-height:108px;padding:12px;border-radius:16px}.hero h2{margin:8px 0 4px;font-size:clamp(24px,6.5vw,28px)}.hero>p{font-size:13px}
+.settings{margin-top:9px;padding:10px;border-radius:16px;box-shadow:none}.dateRow{gap:7px}
+.field{gap:5px;font-size:12px}.field input{min-height:44px;height:44px;font-size:13px;border-radius:12px}
+.durationLabel{margin:9px 0 7px;font-size:12px}.durations{gap:6px}
+.durations button{min-height:44px;padding:7px 4px;border-radius:12px;font-size:12px}
+.subheading{margin:13px 2px 9px;font-size:21px}.list{gap:8px}
+.master{grid-template-columns:90px minmax(0,1fr);gap:9px;padding:8px;border-radius:16px;box-shadow:none}
+.portrait{min-height:112px;border-radius:12px}.masterInfo h4{font-size:18px}.masterInfo>p{font-size:12px}
+.order{min-height:44px;border-radius:12px}.more{min-height:44px;margin-top:11px;border-radius:13px;font-size:13px}
+.caution{margin-top:9px;font-size:11px}
+}
+@media(max-width:350px){.root{width:calc(100% - 24px);padding:10px}.master{grid-template-columns:76px minmax(0,1fr)}}

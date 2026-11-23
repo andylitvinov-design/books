@@ -127,3 +127,47 @@ test('PR WebKit public navigation stays bounded while full manual/Chromium and p
   assert.match(source, /await authenticateOwner\(safari\)/)
   assert.match(source, /await expect\(sp\.locator\('\.canonical-progress-item'\)\)\.toHaveCount\(2\)/)
 })
+
+test('full IA public matrices retain all languages and viewports with isolated parallel pages', () => {
+  const source = readFileSync(new URL('../scripts/verify-ia-v2.mjs', import.meta.url), 'utf8')
+  const helper = source.slice(source.indexOf('async function verifyPublicByLocale'), source.indexOf('async function verifyPublicHeaderMatrix'))
+  const header = source.slice(source.indexOf('async function verifyPublicHeaderMatrix'), source.indexOf('async function verifyPublicDiscoveryNavigation'))
+  const discovery = source.slice(source.indexOf('async function verifyPublicDiscoveryNavigation'), source.indexOf('\ntry {\n  await redis('))
+  assert.match(helper, /page\.context\(\)\.browser\(\)\.newContext\(/, 'each locale needs its own cookie-isolated browser context')
+  assert.match(helper, /Promise\.allSettled\(/, 'all locale outcomes must complete before closing pages')
+  assert.match(helper, /if \(failed\) throw failed\.reason/, 'a failed locale must fail the job')
+  assert.match(helper, /assert\.deepEqual\(pageErrors, \[\]/, 'side-page JavaScript errors cannot be lost')
+  assert.match(helper, /finally \{[\s\S]*\.close\(\)/, 'temporary browser contexts must always close')
+  assert.match(header, /if \(locales\.length > 1\) return verifyPublicByLocale\(page, engine, locales, verifyPublicHeaderMatrix\)/)
+  assert.match(discovery, /if \(locales\.length > 1\) return verifyPublicByLocale\(page, engine, locales, verifyPublicDiscoveryNavigation\)/)
+  assert.match(header, /for \(const locale of locales\)/)
+  assert.equal((discovery.match(/for \(const locale of locales\)/g) || []).length, 2, 'discovery and real link clicks retain each locale')
+  assert.match(header, /const fullHeaderWidths = \[320, 360, 374, 375, 390, 430, 768, 1023, 1024, 1100, 1280\]/)
+  assert.match(header, /const prWebkitHeaderWidths = \[320, 390, 768, 1280\]/)
+  for (const entry of [
+    "await verifyPublicHeaderMatrix(page, 'chromium')",
+    "await verifyPublicDiscoveryNavigation(page, 'chromium')",
+    "await verifyPublicHeaderMatrix(sp, 'webkit')",
+    "await verifyPublicDiscoveryNavigation(sp, 'webkit')",
+  ]) assert.ok(source.includes(entry), entry + ' must remain in actual browser acceptance')
+})
+
+
+test('IA seven-link dock waits for real hydration before strict href, focus and geometry checks', () => {
+  const source=readFileSync(new URL('../scripts/verify-ia-v2.mjs',import.meta.url),'utf8')
+  const start=source.indexOf('async function assertUnifiedBottomNavigation')
+  const end=source.indexOf('async function verifyDirectNavigation',start)
+  assert.ok(start>=0&&end>start,'actual shared browser helper still exists')
+  const helper=source.slice(start,end)
+  const wait=helper.indexOf('await expect(links).toHaveCount(7)')
+  const snapshot=helper.indexOf('assert.deepEqual(await links.evaluateAll')
+  assert.ok(wait>=0&&snapshot>wait,'wait for seven real hydrated links BEFORE immediate snapshot')
+  assert.match(helper,/await expect\(dock\)\.toHaveCount\(1\)/)
+  assert.match(helper,/await expect\(legacy\)\.toHaveCount\(0\)/)
+  assert.match(helper,/await links\.first\(\)\.focus\(\)/)
+  assert.match(helper,/await expect\(link\)\.toBeFocused\(\)/)
+  assert.match(helper,/await expect\(link\)\.toHaveAccessibleName\(/)
+  assert.match(helper,/box\.width>=44&&box\.height>=44/)
+  assert.match(helper,/await expect\(dock\)\.toBeVisible\(\)/)
+  assert.match(helper,/await expect\(dock\)\.toBeHidden\(\)/)
+})

@@ -4,6 +4,8 @@ import {redirect} from 'next/navigation'
 import {PrescriptionAdminHeader} from '@/components/prescription-admin-header'
 import {YoutubePhoneUploader} from '@/components/youtube-phone-uploader'
 import AdminYoutubePublications from '@/components/admin-youtube-publications'
+import HeygenEnYoutubePublisher from '@/components/heygen-en-youtube-publisher'
+import HeygenEnYoutubeCatalog from '@/components/heygen-en-youtube-catalog'
 import {requireAdminRequest} from '@/lib/prescriptions/admin'
 import {ownerVideoOauthConfigured} from '@/lib/practitioners/owner-telegram-video-oauth-config.mjs'
 import {meditationApprovedHandoff} from '@/lib/practitioners/meditation-studio-service'
@@ -21,18 +23,22 @@ export const metadata = {
 }
 
 export default async function YoutubeUploadPage({searchParams}) {
-  if (!await requireAdminRequest()) redirect('/admin/login')
+  if (!await requireAdminRequest()) redirect('/admin/login?destination=youtube')
   const locale = (await cookies()).get(uiLocaleCookie)?.value === 'en' ? 'en' : 'ru'
-  const query=await searchParams
-  const importTelegramCut=query?.import==='telegramCut'
+  const params=await searchParams
+  const importTelegramCut=params?.import==='telegramCut'
   let approvedMeditation=null
-  if(typeof query?.meditation==='string'&&/^[0-9a-f-]{36}$/i.test(query.meditation))try{
-    approvedMeditation=await meditationApprovedHandoff(getAppConfig(),query.meditation)
+  if(typeof params?.meditation==='string'&&/^[0-9a-f-]{36}$/i.test(params.meditation))try{
+    approvedMeditation=await meditationApprovedHandoff(getAppConfig(),params.meditation)
   }catch{/* Do not expose unavailable or unapproved private media. */}
+  const heygenVideoId=/^[a-f0-9]{32}$/i.test(params?.heygen||'')?params.heygen:''
+  const initialHeygenTitle=typeof params?.title==='string'?params.title.slice(0,100):''
+  const initialHeygenDescription=typeof params?.description==='string'?params.description.slice(0,3000):''
   const telegramVideoConfigured = ownerVideoOauthConfigured()
   const telegramVideoEnabled = process.env.HH_OWNER_VIDEO_ENABLED === 'true'
   let telegramVideoConnected = false
   let telegramVisibilityConnected = false
+  let englishServerConnected = false
   if(telegramVideoConfigured)try{
     // Avoid importing the large Telegram/DB/media service into the phone uploader
     // when video OAuth has not been set up; the standalone uploader must work.
@@ -41,9 +47,10 @@ export default async function YoutubeUploadPage({searchParams}) {
       import('@/lib/practitioners/owner-telegram-video-service')
     ])
     const appConfig=getAppConfig()
-    ;[telegramVideoConnected,telegramVisibilityConnected]=await Promise.all([
+    ;[telegramVideoConnected,telegramVisibilityConnected,englishServerConnected]=await Promise.all([
       ownerVideoYoutubeConnected(appConfig),
-      ownerVideoVisibilityConnected(appConfig)
+      ownerVideoVisibilityConnected(appConfig),
+      ownerVideoYoutubeConnected(appConfig,process.env,'en')
     ])
   }catch{/* Authorisation remains unconfirmed. */}
   // The client ID is public; the separate server-side OAuth secret never
@@ -126,6 +133,35 @@ export default async function YoutubeUploadPage({searchParams}) {
         </Link>}
       </div>}
     </section>
+    <section aria-label="English YouTube server connection" style={{
+      margin:'14px 0',padding:12,borderRadius:12,border:'1px solid #bcae94'}}>
+      <h2 style={{margin:'0 0 6px',fontSize:'1rem'}}>🇬🇧 AATA Pro · @aatapro</h2>
+      <p style={{fontSize:14,margin:'0 0 8px'}}>
+        {englishServerConnected
+          ?'✅ English YouTube server OAuth connected. HeyGen videos can be uploaded after your per-video approval.'
+          :'🔐 Connect @aatapro once with Google. The verified English channel is paired automatically, with no extra phone step.'}
+      </p>
+      {initialChannels.en&&<p style={{fontSize:13,margin:'0 0 8px'}}>
+        Connected phone channel ID: <code>{initialChannels.en.id}</code>
+      </p>}
+      {!initialChannels.en&&<p style={{fontSize:13,margin:'0 0 8px'}}>
+        Google verifies that your chosen YouTube channel is exactly @aatapro,
+        then pairs it automatically. No separate phone pairing is required.
+      </p>}
+      {telegramVideoConfigured?<Link prefetch={false}
+        href="/api/admin/telegram-video/youtube/start?target=en">
+        {englishServerConnected?'Reconnect AATA Pro server OAuth':
+          'Connect English @aatapro with Google'}
+      </Link>:<p role="status" style={{fontSize:13}}>
+        Google server OAuth is not configured. Check the existing owner video
+        OAuth Web Client settings; no accounts or tokens were changed.
+      </p>}
+    </section>
+    <HeygenEnYoutubeCatalog locale={locale}/>
+    <HeygenEnYoutubePublisher key={heygenVideoId||'manual'} locale={locale}
+      initialVideoId={heygenVideoId}
+      initialTitle={initialHeygenTitle}
+      initialDescription={initialHeygenDescription}/>
     <AdminYoutubePublications locale={locale}/>
     <YoutubePhoneUploader locale={locale} enabled={enabled} clientId={configuredClientId || ''}
       oauthSource={oauthSource} setupAvailable={setupAvailable} importTelegramCut={importTelegramCut}

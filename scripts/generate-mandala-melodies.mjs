@@ -9,6 +9,7 @@ import {writeFileSync,mkdirSync,readFileSync} from "node:fs";
 import {resolve,dirname} from "node:path";
 import {fileURLToPath} from "node:url";
 import {createHash} from "node:crypto";
+import {createStaticMediaCache,isPcmWav} from "./vercel-static-media-cache.mjs";
 
 // Unique 8-bar melodic forms with four-bar harmonic movement and an answering
 // second phrase. MIDI pitch is scale-quantized to avoid harsh non-chord noise.
@@ -34,7 +35,10 @@ export const SONGS=[
   {id:"strings",key:53,mode:"major",chords:[0,4,5,3],motif:[4,2,1,0,2,4,5,4],lead:"strings",back:"piano",color:0},
   {id:"marimba",key:52,mode:"major",chords:[0,3,5,4],motif:[0,2,4,2,5,7,4,2],lead:"marimba",back:"harp",color:3},
   {id:"lullaby",key:48,mode:"major",chords:[0,5,3,4],motif:[2,null,4,2,0,null,1,2],lead:"piano",back:"celesta",color:0},
-  {id:"handpan",key:50,mode:"dorian",chords:[0,3,4,0],motif:[0,4,2,1,0,2,4,2],lead:"handpan",back:"flute",color:1}
+  {id:"handpan",key:50,mode:"dorian",chords:[0,3,4,0],motif:[0,4,2,1,0,2,4,2],lead:"handpan",back:"flute",color:1},
+  // Own arrangements of public-domain melodies, without third-party recordings.
+  {id:"ode-to-joy",key:48,mode:"major",chords:[0,0,3,4],motif:[2,2,3,4,4,3,2,1],lead:"piano",back:"strings",color:1},
+  {id:"greensleeves",key:57,mode:"minor",chords:[0,4,5,3],motif:[0,2,3,4,5,4,3,1],lead:"flute",back:"harp",color:0}
 ];
 export const MASTER_IDS=Object.freeze(SONGS.map(x=>x.id));
 export const SAMPLE_RATE=22050;
@@ -172,9 +176,16 @@ const out=resolve(dirname(fileURLToPath(import.meta.url)),"../public/audio/manda
 const direct=process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url);
 export function writeMelodyMasters({verify=false}={}){
   if(!verify)mkdirSync(out,{recursive:true});
+  const cache=createStaticMediaCache({
+    root:resolve(dirname(fileURLToPath(import.meta.url)),".."),
+    group:"mandala-wav",sources:["scripts/generate-mandala-melodies.mjs"],
+    enabled:!verify && process.env.VERCEL_ENV==="production",
+  });
+  const valid=bytes=>isPcmWav(bytes,SAMPLE_RATE,DURATION_SECONDS);
   const report=[];
   for(const song of SONGS){
-    const pcm=renderMelody(song),path=resolve(out,song.id+".wav");
+    const pcm=cache.get(song.id,valid) ?? cache.put(song.id,renderMelody(song),valid);
+    const path=resolve(out,song.id+".wav");
     if(verify){
       const published=readFileSync(path);
       if(!pcm.equals(published))throw Error("original_melody_master_mismatch_"+song.id);
@@ -185,3 +196,4 @@ export function writeMelodyMasters({verify=false}={}){
   return {verified:verify,masters:report.length,songs:report};
 }
 if(direct)console.log(JSON.stringify(writeMelodyMasters({verify:process.argv.includes("--check")}),null,2));
+

@@ -56,6 +56,38 @@ for(const engine of [chromium,webkit]){
         assert.equal(await guide.locator("[data-support-guide-recommendation]").count(),0,
           tag+" no recommendations before the conversation");
 
+        // Test free conversation on actual mobile screens in all three
+        // languages, then return to the original scored guided journey.
+        // No model downloads, private profile requests, CRM writes or media autoplay.
+        if(width===390){
+          const toggle=guide.locator("[data-support-guide-mode-toggle]");
+          assert.equal(await toggle.count(),1,tag+" explicit conversation toggle");
+          await toggle.click();
+          const free=guide.locator("[data-holistic-language-conversation]");
+          await free.waitFor({state:"visible",timeout:12000});
+          const lines={
+            ru:["Я устал, хочу видео","Раньше были отношения, а сейчас работа и деньги. Нужен тест"],
+            en:["I'm tired and want a video","I used to think of love, but now my job matters. I want a test"],
+            es:["Estoy cansado, quiero un video","Antes amor, pero ahora trabajo. Quiero una prueba"],
+          }[locale];
+          for(const line of lines){
+            await free.locator("textarea").fill(line);
+            await free.locator('button[type="submit"]').click();
+            assert.ok((await free.locator('[role="log"]').innerText()).includes(line),
+              tag+" natural language turn retained");
+          }
+          assert.equal(await free.locator('[role="log"] > div').count(),5,
+            tag+" two complete user/assistant exchanges and greeting");
+          assert.equal(await guide.locator('[data-support-guide-phase="review"]').count(),0,
+            tag+" guided steps hidden during free conversation");
+          const bodyWidth=await page.evaluate(()=>document.documentElement.scrollWidth);
+          assert.ok(bodyWidth<=width+3,tag+" free dialogue has no horizontal overflow");
+          await toggle.click();
+          assert.equal(await guide.locator('[data-support-guide-phase="review"]').count(),1,
+            tag+" original guided conversation restored without reset");
+          assert.deepEqual(writes,[],tag+" public conversation causes no API writes");
+        }
+
         if(locale==="ru"&&width===390){
           await guide.locator("[data-support-guide-compose] input").fill("Почему именно эта тема?");
           await guide.locator("[data-support-guide-compose] button").click();
@@ -154,7 +186,7 @@ for(const engine of [chromium,webkit]){
         if(locale==="ru"&&width===390)await page.screenshot({
           path:output+"/"+engine.name()+"-ru-390-my-path.png",fullPage:true,
         });
-        await guide.locator("header button").click();
+        await guide.locator("[data-support-guide-close]").click();
         assert.equal(await root.locator("[data-support-inline-guide]").count(),0,tag+" closes gracefully");
         console.log("PASS V2 test→practice→path "+tag);
       }finally{await page.close();}

@@ -773,3 +773,14 @@
     scroll-behavior:auto;animation:none;transition:none;
   }
 }
+
+/* Day-specific OPORA completion is visible without opening an extra screen. */
+.frame.receipt .panel{gap:clamp(8px,1.2vh,12px)}
+.learnedSkill{display:grid;gap:5px;min-width:0;padding:12px 14px;
+  border:1.5px solid #9dd5c9;border-radius:16px;
+  background:linear-gradient(120deg,#e0f8f0,#effbf7);overflow-wrap:anywhere}
+.learnedSkill>span{color:#1a797e;font-size:11px;font-weight:850;letter-spacing:.09em;line-height:1.25}
+.learnedSkill>strong{color:#184b54;font:700 clamp(19px,5.3vw,24px)/1.22 Georgia,'Times New Roman',serif}
+.learnedSkill>p{margin:2px 0 0;color:#365e67;font-size:clamp(13px,3.7vw,15px);line-height:1.36}
+.learnedSkill>p b{color:#215661;font-weight:760}
+@media(max-height:680px){.frame.receipt .panel{gap:7px}.learnedSkill{padding:9px 11px}}

@@ -2,7 +2,6 @@ name: Release re-audit
 on:
   pull_request:
     paths:
-      - '.github/workflows/release-reaudit.yml'
       - 'scripts/verify-release-reaudit.mjs'
       - 'scripts/about-player-hydration-probe.mjs'
       - 'components/psychic-alchemy-intro-video.tsx'
@@ -60,12 +59,15 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: release-reaudit-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+  group: release-reaudit-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 jobs:
   browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # Full Chromium + WebKit, mobile + desktop CSP/reader acceptance exceeded
+    # the previous 20m job cap after a real Next build on PR #3113.
+    # Preserve all assertions and browsers; allow them to finish fail-closed.
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
         with:

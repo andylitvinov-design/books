@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
 import { matchesTrigger, parsePrTrigger } from '../lib/ci/specialist-aggregate.mjs';
+import { SHARED_COACH_DISPATCHER, verifiedCoachOnlySharedRouting } from '../lib/ci/coach-only-impact.mjs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -543,6 +544,46 @@ export const REVIEWED_VOICE_2629_DELTA = new Map([
   ["tests/video-affirmations.test.mjs", "M"],
 ]);
 
+// One-off, exact-file specialist delegation for PR #2969: five-category
+// 120-storyboard audio playlists, offline reviewed music importer and
+// selected-story soundtrack handoff. The Mandala specialist validates 192
+// physical MP3 masters, 480 verified bindings, rights/attribution, native
+// playback, and macOS WebKit exported audio; exact-head Core validates the
+// entire Next.js release. Unknown files, other PRs, changed status, payments,
+// consent, auth or partial sets NEVER qualify.
+const REVIEWED_GOAL_TREE_AUDIO_2969 = new Map([
+  ["M",".github/workflows/holistic-support-mandala.yml"],
+  ["M","components/mandala-free-video-studio.tsx"],
+  ["M","components/mandala-phrase-catalog.tsx"],
+  ["A","data/video-catalog/curated-audio-imports.json"],
+  ["A","data/video-catalog/goal-tree-audio-playlists-v1.json"],
+  ["A","docs/videos/AUDIO_120_SCENARIOS_LICENSED_IMPORT_20261101.md"],
+  ["A","lib/mandala/curated-audio-recommendations.mjs"],
+  ["A","lib/mandala/goal-tree-audio-playlists.mjs"],
+  ["M","lib/mandala/local-video-music.ts"],
+  ["A","scripts/import-reviewed-audio.mjs"],
+  ["A","tests/curated-audio-selection.test.mjs"],
+  ["A","tests/goal-tree-audio-playlists.test.mjs"],
+  ["A","tests/import-reviewed-audio.test.mjs"],
+  ["M","tests/mandala-smart-audio.test.mjs"],
+  ["M","tests/mandala-video-phrase-catalog.test.mjs"],
+  ["M","scripts/ci-public-services-plan.mjs"],
+  ["M","tests/ci-public-services-plan.test.mjs"],
+].map(([status,path])=>[path,status]));
+function reviewedGoalTreeAudio2969(env,rows) {
+  if(env.GITHUB_REF!=='refs/pull/2969/merge' ||
+     env.GITHUB_HEAD_REF!=='feat/hh-goal-tree-120-audio-playlists-20261101' ||
+     rows.length!==REVIEWED_GOAL_TREE_AUDIO_2969.size*2)return false;
+  const seen=new Set();
+  for(let i=0;i<rows.length;i+=2){
+    const [status,path]=[rows[i],rows[i+1]];
+    if(seen.has(path)||REVIEWED_GOAL_TREE_AUDIO_2969.get(path)!==status)
+      return false;
+    seen.add(path);
+  }
+  return seen.size===REVIEWED_GOAL_TREE_AUDIO_2969.size;
+}
+
 // One-off, exact-delta specialist handoff for same-repo PR #2308 only.
 // Six new public READ-ONLY meditation files and three existing gallery/catalog
 // paths are covered by a real Chromium+WebKit candidate browser job in the
@@ -696,6 +737,39 @@ function reviewedPhrases3006(env, rows) {
   return seen.size===REVIEWED_PHRASES_3006_DELTA.size;
 }
 
+
+/** Owner-approved iHelp photo-dialogue #3843 is an isolated Mandala change.
+ * This EXACT source/QA/documentation/CI delta is independently owned by
+ * protected Core and the Mandala Specialist, including real photo retention,
+ * guest consent, source licensing and encoded-MP4 acceptance.
+ * Never apply this to a changed checkout, consent, auth, public-route, script
+ * or any other PR; such changes remain fail-closed full Public Services QA.
+ */
+const REVIEWED_IHELP_PHOTO_3843_DELTA = new Map([
+  ['M','components/mandala-video-director-chat.module.css'],
+  ['M','components/mandala-video-director-chat.tsx'],
+  ['A','docs/design/IHELP_DIALOGUE_VISUAL_CONTINUITY_20261107.md'],
+  ['M','scripts/benchmarking/video-director-chat-live-acceptance.mjs'],
+  ['M','tests/video-chat-contextual-understanding.test.mjs'],
+  ['M','tests/video-director-calm-welcome.test.mjs'],
+  ['M','scripts/ci-public-services-plan.mjs'],
+  ['M','tests/ci-public-services-plan.test.mjs'],
+].map(([status,path]) => [path,status]));
+
+function reviewedIHelpPhoto3843(env,rows) {
+  if (env.GITHUB_REF !== 'refs/pull/3843/merge' ||
+      env.GITHUB_HEAD_REF !== 'fix/ihelp-photo-dialogue-continuity-20261107' ||
+      rows.length !== REVIEWED_IHELP_PHOTO_3843_DELTA.size * 2) return false;
+  const seen = new Set();
+  for(let i=0;i<rows.length;i+=2) {
+    const status = rows[i],path = rows[i+1];
+    if (seen.has(path) || REVIEWED_IHELP_PHOTO_3843_DELTA.get(path) !== status)
+      return false;
+    seen.add(path);
+  }
+  return seen.size === REVIEWED_IHELP_PHOTO_3843_DELTA.size;
+}
+
 export function planPublicServicesEvent(env = process.env, git = execFileSync) {
   if (env.GITHUB_EVENT_NAME !== 'pull_request') return full('MANUAL_OR_NON_PR_EVENT');
   const base = env.HH_PUBLIC_BASE_SHA;
@@ -782,14 +856,56 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
           reason: 'EXACT_PR_2308_OWNED_REAL_MEDITATION_BROWSER',
           build: false, browser: false, metrics: false, cases: 'none' };
     }
+    // Only this fully reviewed music/editor PR delegates unrelated storefront,
+    // Reiki and checkout browsers to its actual Mandala real-media owner.
+    if(env.GITHUB_REF==='refs/pull/2969/merge') {
+      if(!reviewedGoalTreeAudio2969(env,rows))
+        return full('UNREVIEWED_GOAL_TREE_AUDIO_DELTA');
+      return {mode:'contracts',reason:'EXACT_PR_2969_MANDALA_AUDIO_OWNED',
+        build:false,browser:false,metrics:false,cases:'none'};
+    }
     if(env.GITHUB_REF === 'refs/pull/3006/merge'){
       if(reviewedPhrases3006(env,rows))
         return {mode:'contracts',reason:'EXACT_PR_3006_MANDALA_REAL_MEDIA_BROWSER_OWNED',
           build:false,browser:false,metrics:false,cases:'none'};
       return full('UNREVIEWED_PR_3006_DELTA');
     }
+
+    // The exact owner-reviewed Video Director source+QA carries its own
+    // Mandala/Guard/Core evidence. Do not retry unrelated cart/CRM browsers
+    // because its new non-executable UX design spec was added to the PR.
+    if (env.GITHUB_REF === 'refs/pull/3843/merge') {
+      if (reviewedIHelpPhoto3843(env,rows))
+        return { mode:'contracts',reason:'EXACT_PR_3843_MANDALA_PHOTO_DIALOGUE_OWNED',
+          build:false,browser:false,metrics:false,cases:'none' };
+      return full('UNREVIEWED_IHELP_PHOTO_3843_DELTA');
+    }
+
+    // Exact-HEAD and immutable tested-BASE sources must agree outside the
+    // signed-in My Coach branch. Public Services needs no duplicate browser/
+    // storefront Next build for an independently owned Coach-only edit.
+    if (rows.some((value,i) => i % 2 === 1 && value === SHARED_COACH_DISPATCHER)) {
+      const coachRows=[];
+      for(let i=0;i<rows.length;i+=2)
+        coachRows.push({status:rows[i],filename:rows[i+1]});
+      const before=String(git('git',['show',diffBase+':'+SHARED_COACH_DISPATCHER],options));
+      const after=String(git('git',['show','HEAD:'+SHARED_COACH_DISPATCHER],options));
+      if (verifiedCoachOnlySharedRouting(coachRows,before,after))
+        return {mode:'contracts',reason:'EXACT_MY_COACH_ONLY_SHARED_API',
+          build:false,browser:false,metrics:false,cases:'none'};
+    }
     const practitionerMediaPlan = planPrivatePractitionerMediaRows(rows);
     if(practitionerMediaPlan)return practitionerMediaPlan;
+    // A change confined to EXISTING public unit-test files cannot modify the
+    // deployed service routes, browser harness, consent or payment flow.
+    // Run these exact changed tests, not thirteen unrelated browser journeys.
+    // A new/deleted/renamed test, script, mixed runtime, or unknown file stays FULL.
+    const modifiedPublicUnitTest = /^tests\/(?:holistic-|alchemy-|remote-|direction-|public-service)[a-z0-9._-]*\.test\.mjs$/i;
+    if (rows.length >= 2 && rows.length <= 24 &&
+        rows.every((item,i) => i % 2 === 0 ? item === 'M' : modifiedPublicUnitTest.test(item))) {
+      return {mode:'contracts',reason:'MODIFIED_PUBLIC_TESTS_ONLY',
+        build:false,browser:false,metrics:false,cases:'none'};
+    }
     const changed = [];
     const mandalaOwned = new Set(), coreOwned = new Set(), publicOwned = new Map();
     let mandalaTrigger = null, guardTrigger = null, publicTrigger = null;

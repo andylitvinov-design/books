@@ -5,6 +5,7 @@ import ts from "typescript";
 import {createHash} from "node:crypto";
 import { mandalaAudioTracks, recommendMandalaAudio } from "../lib/mandala/audio-recommendations.mjs";
 import { SONGS, MASTER_IDS, SAMPLE_RATE, DURATION_SECONDS, renderMelody } from "../scripts/generate-mandala-melodies.mjs";
+import {stripApprovedIntroVideoSources} from "./helpers/approved-mandala-intro-sources.mjs";
 
 const read = path => readFileSync(new URL("../"+path,import.meta.url),"utf8");
 const studio = read("components/mandala-free-video-studio.tsx");
@@ -22,9 +23,9 @@ function audioApi() {
   return exports;
 }
 
-test("39 original first-party tracks: 22 real composed melodies, 17 optional textures",async()=>{
-  assert.equal(mandalaAudioTracks.length,39);
-  assert.equal(new Set(mandalaAudioTracks.map(t=>t.id)).size,39);
+test("41 first-party tracks: 24 authored melodic performances, 17 optional textures",async()=>{
+  assert.equal(mandalaAudioTracks.length,MASTER_IDS.length+17);
+  assert.equal(new Set(mandalaAudioTracks.map(t=>t.id)).size,MASTER_IDS.length+17);
   const api=audioApi();
   for(const track of mandalaAudioTracks){
     assert.ok(["tones","pulse","nature","melody"].includes(track.kind),track.id);
@@ -56,15 +57,15 @@ test("39 original first-party tracks: 22 real composed melodies, 17 optional tex
     for(let i=44;i<file.length;i+=2){const a=file.readInt16LE(i)/32768;sum+=a*a}
     assert.ok(Math.sqrt(sum/((file.length-44)/2))>.028,track.id+" must contain audible sound");
   }
-  assert.equal(mastered.size,22);
-  assert.equal(mandalaAudioTracks.filter(t=>t.kind==="melody").length,22);
+  assert.equal(mastered.size,24);
+  assert.equal(mandalaAudioTracks.filter(t=>t.kind==="melody").length,MASTER_IDS.length);
   assert.ok(mandalaAudioTracks.filter(t=>t.kind!=="melody").length===17);
   const apiIds=api.ORIGINAL_MELODY_IDS;
   assert.deepEqual([...apiIds].sort(),[...MASTER_IDS].sort(),"export uses same WAV as player");
 });
 
 test("every original melody master has authored scores, harmonic movement and distinct WAV bytes",()=>{
-  assert.equal(SONGS.length,22);
+  assert.equal(SONGS.length,24);
   const bytes=SONGS.map(song=>{
     assert.equal(song.chords.length,4);
     assert.ok(new Set(song.chords).size>=3,song.id+" needs changing chords");
@@ -74,7 +75,7 @@ test("every original melody master has authored scores, harmonic movement and di
     return {id:song.id,length:file.length,file};
   });
   assert.equal(new Set(bytes.map(x=>x.length)).size,1,"same 32 second loop duration");
-  assert.equal(new Set(bytes.map(x=>createHash("sha256").update(x.file).digest("hex"))).size,22,
+  assert.equal(new Set(bytes.map(x=>createHash("sha256").update(x.file).digest("hex"))).size,SONGS.length,
     "each melodic song must have distinct arranged sound, not renamed noise");
   for(const id of ["prosperity","heart-harmony"]){
     const score=SONGS.find(x=>x.id===id);
@@ -85,7 +86,7 @@ test("every original melody master has authored scores, harmonic movement and di
 test("smart selection ranks the current theme rather than inventing profile or test data",()=>{
   for(const theme of ["energy","money","relationships","goals","life","health"]){
     const recommended=recommendMandalaAudio({theme});
-    assert.equal(recommended.length,39);
+    assert.equal(recommended.length,mandalaAudioTracks.length);
     assert.ok(recommended[0].themes.includes(theme),theme+" should have relevant first pick");
     assert.equal(recommended[0].kind,"melody",theme+" must suggest a composed melody, not a sound effect");
   }
@@ -96,7 +97,7 @@ test("smart selection ranks the current theme rather than inventing profile or t
   assert.ok(recommendMandalaAudio({pace:"slow"}).every(x=>x.pace==="slow"));
   assert.ok(recommendMandalaAudio({voiceFriendly:true}).every(x=>x.voiceSafe));
   assert.equal(recommendMandalaAudio({kind:"nature",pace:"active"}).length,0);
-  assert.equal(recommendMandalaAudio({kind:"melody"}).length,22);
+  assert.equal(recommendMandalaAudio({kind:"melody"}).length,MASTER_IDS.length);
   assert.deepEqual(recommendMandalaAudio({theme:"money"}).map(x=>x.id),
     recommendMandalaAudio({theme:"money"}).map(x=>x.id),"local order must be stable");
 });
@@ -111,14 +112,38 @@ test("mobile audio controls preserve native HTTPS playback, private files, EN/RU
   ])assert.ok(studio.includes(selector),selector);
   assert.match(studio,/const \[audioKind,setAudioKind\] = useState\("melody"\)/);
   assert.match(studio,/const \[audioAuto,setAudioAuto\] = useState\(true\)/);
-  assert.match(studio,/const featuredMelodies=\(scenarioTracks\.length\?scenarioTracks:recommendMandalaAudio/);
+  assert.match(studio,/const featuredMelodies=rankPersonalMusic/);
   assert.match(studio,/scenarioAudioTracks\(activeFreeFilmPreset\)/);
-  assert.match(studio,/const baseAudioMatches=recommendMandalaAudio/);
-  assert.match(studio,/const audioMatches=\[\.\.\.matchingScenarioTracks,\.\.\.baseAudioMatches,\.\.\.classicMatches\]/);
+  assert.doesNotMatch(studio,/const baseAudioMatches=recommendMandalaAudio/);
+  assert.match(studio,/const curatedMatches=recommendCuratedAudio/);
+  // The full first-party scenario catalog follows context-specific suggestions,
+  // without duplicating masters or bypassing the explicit theme filter.
+  assert.match(studio,/SCENARIO_AUDIO_REGISTRY\.flatMap\(\(scene:\{id:string\}\)=>scenarioAudioTracks\(scene\.id\)\)/);
+  assert.match(studio,/const audioCandidates=\[\.\.\.curatedMatches\]/);
+  assert.match(studio,/const seenAudioSearchIds=new Set<string>\(\)/);
+  assert.match(studio,/const rankedAudioPool=filteredLibraryAudio\.filter/);
+  assert.match(studio,/rankPersonalMusic\(\{tracks:rankedAudioPool/);
+  // New recommendations must obey production's reviewed-real-recordings-only rule.
+  // Legacy synthetic voice beds stay resolvable for saved projects, never offered
+  // as newly selected background music beside a confirmed voice.
+  assert.ok(studio.includes("tracks:voiceBedMode?[]:rankedAudioPool,"));
+  assert.match(studio,/data-phrase-music-guidance=\{voiceBedMode\?"voice":"melody"\}/);
+  assert.match(studio,/if\(seenAudioSearchIds\.has\(track\.id\)\)return false/);
+  assert.match(studio,/return !audioThemeOverride\|\|track\.themes\.includes\(audioThemeOverride\)/);
+  for (const text of ["Real recording", "Реальная запись", "Grabación real", "shortened and loudness-normalized", "сокращена и нормализована по громкости", "acortada y normalizada"]) assert.ok(studio.includes(text),text);
+  // A selected music ID stays playable by the same local player after filter changes.
+  assert.match(studio,/const availableAudioCandidates=\[\.\.\.scenarioTracks,\.\.\.filmScenarioTracks,\s*\.\.\.curatedAudioTracks,\.\.\.libraryScenarioTracks,\.\.\.classicalAudioTracks,\.\.\.mandalaAudioTracks\]/);
+  assert.match(studio,/const seenAvailableAudioIds=new Set<string>\(\)/);
+  assert.match(studio,/if\(seenAvailableAudioIds\.has\(track\.id\)\)return false/);
   assert.match(studio,/kind:audioKind,mood:audioMood,pace:audioPace/);
   assert.match(studio,/theme:audioTheme,kind:audioKind/);
-  assert.match(studio,/voiceFriendly:audioVoiceFriendly,wish/);
-  assert.match(studio,/if \(audioAuto && !uploadedAudio\) setMusic/);
+  assert.match(studio,/voiceFriendly:audioVoiceFriendly/);
+  // Automatic recommendations attach sound in Montage and Ready; manual audio rights still apply.
+  assert.match(studio,/if\(!audioAuto\|\|uploadedAudio\|\|attachedAudio\?\.kind==="file"/);
+  assert.match(studio,/if\(activeWorkspace!=="editor"&&activeWorkspace!=="ready"\)return;/);
+  assert.match(studio,/setMusic\(current=>current===recommended\?current:recommended\)/);
+  assert.match(studio,/setAttachedAudio\(current=>/);
+  assert.match(studio,/current\?\.kind==="presets"/);
   assert.match(studio,/setAudioAuto\(false\);chooseMusic/);
   assert.match(studio,/controls preload="metadata"/);
   assert.match(studio,/presetAudioUrl\(music\)/);
@@ -127,13 +152,13 @@ test("mobile audio controls preserve native HTTPS playback, private files, EN/RU
   assert.match(css,/\.audioFileInput\{position:absolute!important/);
   assert.match(css,/@media\(max-width:380px\)/);
   assert.ok(studio.includes("Под вашу тему")&&studio.includes("For your video theme")&&studio.includes("Para el tema elegido"));
-  assert.doesNotMatch(studio+audioSource,/XMLHttpRequest|FormData|sendBeacon|api\.kling|heygen|higgsfield/i);
+  assert.doesNotMatch(stripApprovedIntroVideoSources(studio)+audioSource,/XMLHttpRequest|FormData|sendBeacon|api\.kling|heygen|higgsfield/i);
   assert.match(audioSource,/fetch\(presetAudioUrl\(id\),\{cache:"force-cache"\}\)/,"melody master is fetched from the same-origin preset path");
 });
 
-test("published audio helper copy accurately describes the 39 first-party WAV catalog in EN/RU/ES",()=>{
-  assert.match(studio,/originalAudio:"22 original instrumental melodies/);
-  assert.match(studio,/originalAudio:"22 авторские инструментальные мелодии/);
-  assert.match(studio,/originalAudio:"22 melodías instrumentales originales/);
+test("published audio helper copy accurately describes new scenario MP3s plus WAV melodies in EN/RU/ES",()=>{
+  assert.match(studio,/originalAudio:"Only reviewed, licensed music recordings/);
+  assert.match(studio,/originalAudio:"Для новых видео доступны только проверенные/);
+  assert.match(studio,/originalAudio:"Los vídeos nuevos ofrecen solo grabaciones/);
   assert.doesNotMatch(studio,/originalAudio:"13 /,"obsolete soundtrack count must not be displayed");
 });

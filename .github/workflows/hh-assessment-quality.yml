@@ -3,7 +3,6 @@ name: Holistic House assessment evidence and authored-content QA
 on:
   pull_request:
     paths:
-      - '.github/workflows/hh-assessment-quality.yml'
       - 'data/assessments/research-directory-2026/**'
       - 'lib/assessments/research-directory-2026.js'
       - 'lib/assessments/psychometric-validity-2026.js'
@@ -41,8 +40,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: hh-assessment-evidence-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+  group: hh-assessment-evidence-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 
 jobs:
   authored-content-and-evidence:

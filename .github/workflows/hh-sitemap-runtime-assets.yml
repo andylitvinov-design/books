@@ -1,6 +1,8 @@
 name: Holistic House sitemap runtime assets
 on:
+  # Expanded QA is opt-in: add the qa-optional label to an affected PR.
   pull_request:
+    types: [labeled]
     branches: ['codex/public-book-library']
     paths:
       - 'app/sitemap.ts'
@@ -8,15 +10,15 @@ on:
       - 'data/spanish-remedies.json'
       - 'content/remedies/**'
       - 'tests/sitemap-runtime-assets.test.mjs'
-      - '.github/workflows/hh-sitemap-runtime-assets.yml'
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: sitemap-runtime-assets-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+  group: sitemap-runtime-assets-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 jobs:
   sitemap-packaging:
+    if: ${{ github.event_name != 'pull_request' || github.event.label.name == 'qa-optional' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

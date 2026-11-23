@@ -29,7 +29,8 @@ test("therapy mode is a dedicated programme directly under the central moving vi
   assert.match(studio,/if\(!photoUrl\)setBackgroundOnly\(true\)/);
   assert.match(studio,/setAffirmations\(current=>\(\{\.\.\.defaultAffirmations,enabled:current\.enabled/);
   assert.match(guided,/data-video-key-difficulty/);
-  assert.match(guided,/data-video-key-goal/);
+  assert.match(guided,/data-guided-focus-vector/);
+  assert.doesNotMatch(guided,/data-video-key-goal/);
   assert.match(guided,/data-video-goal-accents/);
   assert.match(guided,/data-guided-create-plan/);
   assert.match(guided,/data-guided-profile-consent/);
@@ -87,7 +88,8 @@ test("approved courses & practices mobile flow preserves consent and reverses me
   }
   for(const marker of ["data-guided-focus-state","data-guided-generate-meditation",
     "data-guided-add-meditation","data-guided-skip-meditation",
-    "data-guided-practice-step","data-guided-programme-step",
+    "data-guided-personal-meditation-step","data-guided-open-personal-meditation",
+    "data-guided-practice-step","data-guided-ritual-moment","data-guided-create-ritual","data-guided-programme-step",
     "data-guided-create-plan","data-guided-free-video"]){
     assert.ok(guided.includes(marker),`real interaction exists: ${marker}`);
   }
@@ -101,5 +103,17 @@ test("approved courses & practices mobile flow preserves consent and reverses me
   assert.ok(meditation.includes('current===previousSeed?"":current'));
   assert.ok(styles.includes(".sessionList{display:grid;grid-template-columns:1fr;grid-auto-flow:row"));
   assert.ok(studio.includes("MandalaGuidedCourse"));
+  assert.match(guided,/ritualMoments\.map/);
+  assert.match(guided,/f\.programStages\.map/);
+  assert.match(guided,/onClick=\{openPersonalMeditation\}/);
+  assert.match(styles,/\.personalPreview\{/);
+  assert.match(styles,/\.ritualMoments\{/);
+  assert.match(styles,/\.programTiles\{/);
+  assert.match(guided,/vectorOptions\.map/);
+  assert.match(guided,/stateOptions:\{calm:[\s\S]*confidence:[\s\S]*clarity:/);
+  assert.match(guided,/focusChoiceHeading/);
+  assert.match(guided,/focusNote/);
+  assert.match(styles,/\.focusChoiceHeading\{/);
+  assert.match(styles,/\.focusNote\{/);
 
 });

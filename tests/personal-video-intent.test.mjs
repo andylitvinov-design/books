@@ -86,8 +86,8 @@ test("native audio preview is user-clicked, media-controlled, and the selected a
   assert.match(ui,/data-video-audio-player/);
   assert.match(ui,/audioPreviewRef\.current/);
   assert.match(ui,/data-video-audio-upload/);
-  assert.match(ui,/startUploadedAudio\(attachedAudio\.file,soundVolume,\{loop:attachedAudio\.narration!==true&&attachedAudio\.nonLoop!==true\}\)/);
-  assert.match(ui,/startPresetAudio\(attachedAudio\.id,soundVolume\)/);
+  assert.match(ui,/startUploadedAudio\(attachedAudio\.file,soundVolume,\{loop:attachedAudio\.narration!==true&&attachedAudio\.nonLoop!==true,startSeconds:effectiveAudioStartSeconds,deferStart:true\}\)/);
+  assert.match(ui,/startPresetAudio\(attachedAudio\.id,soundVolume,\{startSeconds:effectiveAudioStartSeconds,deferStart:true\}\)/);
   assert.match(ui,/!audioNeedsAttachment &&/);
   assert.match(ui,/job\.musicSession\?\.fadeOut\(\)/);
   assert.match(audio,/if \(audible\) master\.connect\(context\.destination\)/);

@@ -1,10 +1,8 @@
 name: HH native auto-merge
 on:
   pull_request_target:
-    # Only onboarding and review-state changes need an early preflight.
-    # Synchronize commits are reevaluated on successful Core CI completion,
-    # not before their new-HEAD tests have run; removes duplicate Action runs.
-    types: [opened, reopened, ready_for_review]
+    # Core AutoMerge stays CI-completed; synchronize and close only wake the trusted janitor.
+    types: [synchronize, closed]
     branches: ['codex/public-book-library']
   # A completed *interrupted* core run can be retried once. Workflow-run hooks
   # require this trusted workflow to also be present on the GitHub default branch.
@@ -24,6 +22,8 @@ jobs:
     name: event-driven exact-head auto-merge reevaluation
     if: >-
       (github.event_name == 'pull_request_target' &&
+       github.event.action != 'synchronize' &&
+       github.event.action != 'closed' &&
        github.event.pull_request.draft == false &&
        github.event.pull_request.head.repo.full_name == github.repository) ||
       (github.event_name == 'workflow_run' &&
@@ -103,7 +103,11 @@ jobs:
                 item.number === number &&
                 item.head?.sha === pr.head.sha && item.head?.ref === pr.head.ref &&
                 item.base?.ref === "codex/public-book-library" &&
-                item.base?.sha === pr.base.sha);
+                // The original PR event base SHA may have advanced since CI
+                // began. Exact source HEAD, PR number, branch and green
+                // hh-merge-check must still match. Do not discard valid runs
+                // solely because a DIFFERENT PR moved the protected target.
+                (!item.base?.sha || /^[0-9a-f]{40}$/.test(item.base.sha)));
             // Some active PRs have >100 CI runs on a single source HEAD.
             // Read only as many pages as necessary (max 3) and never infer
             // green from a truncated current-head page. Use the short path
@@ -201,12 +205,17 @@ jobs:
                 number + ": " + notPassed.join(","));
               return;
             }
-            const blocked = observed.find(run => run.status !== "completed" ||
-              !["success","skipped","neutral"].includes(run.conclusion));
-            if (blocked) {
-              log("SKIP exact-head CI " + blocked.name + "=" + blocked.status + "/" +
-                blocked.conclusion + " for PR #" + number);
-              return;
+            // The exact-head Core workflow's hh-specialist job already aggregates
+            // every applicable specialist through its trusted BASE/HEAD policy.
+            // Do not apply a second all-workflow barrier here: optional diagnostics
+            // can still be queued after the protected gate passes, and their completion
+            // does not emit a callback to retry this merge review.
+            const pendingOptional = observed.filter(run => run.id !== coreRun.id &&
+              (run.status !== "completed" ||
+               !["success","skipped","neutral"].includes(run.conclusion)));
+            if (pendingOptional.length) {
+              log("IGNORE " + pendingOptional.length +
+                " non-required workflow runs after exact-head Core+Specialist and branch protection passed");
             }
             // Do not modify branches or mark checks green; GitHub still enforces
             // current effective protection, unresolved discussions and merge method.
@@ -308,7 +317,7 @@ jobs:
           exit 1
   recover-interrupted-core:
     name: recover-interrupted-core
-    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.name == 'HH PR core release gate' && github.event.workflow_run.conclusion != 'success' }}
+    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.name == 'HH PR core release gate' && contains(fromJSON('["timed_out","startup_failure"]'), github.event.workflow_run.conclusion) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 4
     concurrency:
@@ -327,7 +336,7 @@ jobs:
             const {owner,repo} = context.repo;
             const event = context.payload.workflow_run;
             const fullRepo = owner + "/" + repo;
-            const retryConclusions = new Set(["cancelled","timed_out","startup_failure","failure"]);
+            const retryConclusions = new Set(["timed_out","startup_failure"]);
             const log = message => core.info("CORE_CI_RECOVERY: " + message);
             if (!event || event.name !== "HH PR core release gate" ||
                 event.path?.split("@")[0] !== ".github/workflows/hh-pr-core-release.yml" ||
@@ -359,6 +368,25 @@ jobs:
                 (reference.base?.sha && reference.base?.sha !== live.base.sha)) {
               log("SKIP PR moved, changed base, became draft, or has conflicts");
               return;
+            }
+            // Every rerun must belong to THIS immutable source HEAD or the exact
+            // synthetic merge of this HEAD into the current protected BASE.
+            // GitHub may rewrite pull_requests[].head.sha inside the run event,
+            // so that mutable association alone is insufficient.
+            if (!/^[0-9a-f]{40}$/.test(event.head_sha || "")) {
+              log("SKIP invalid immutable Core run SHA");
+              return;
+            }
+            if (event.head_sha !== live.head.sha) {
+              const mergeCommit = (await github.rest.repos.getCommit({
+                owner,repo,ref:event.head_sha
+              })).data;
+              const parents = mergeCommit.parents || [];
+              if (parents.length !== 2 || parents[1]?.sha !== live.head.sha ||
+                  parents[0]?.sha !== live.base.sha) {
+                log("SKIP superseded Core HEAD or BASE; no stale retry");
+                return;
+              }
             }
             // Never treat a code failure as recoverable infrastructure failure.
             // Zero-job runs have no code results; interrupted jobs may only be
@@ -399,3 +427,37 @@ jobs:
                 throw error;
               }
             }
+
+  prune-head:
+    # Reuse trusted production workflow; no extra GitHub Actions workflow.
+    if: >-
+      github.repository == 'andylitvinov-design/books' &&
+      github.event_name == 'pull_request_target' &&
+      (github.event.action == 'synchronize' || github.event.action == 'closed') &&
+      github.event.pull_request.base.ref == 'codex/public-book-library' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    concurrency:
+      group: hh-ci-prune-head-${{ github.event.pull_request.number || github.run_id }}
+      cancel-in-progress: true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: write
+    steps:
+      - name: Checkout trusted production only
+        uses: actions/checkout@v4
+        with:
+          ref: codex/public-book-library
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test exact-HEAD cancellation policy before mutation
+        run: node --test tests/ci-prune-stale-runs.test.mjs
+      - name: Cancel ancestor-proven superseded queued or running PR HEADs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          HH_CI_PRUNE_LIMIT: '60'
+        run: node scripts/ci-prune-stale-runs.mjs

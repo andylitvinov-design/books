@@ -4,6 +4,8 @@ import "./mandala-phrases-mobile.test.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import ts from "typescript";
+import {planIdeaSelection} from "../lib/mandala/video-idea-selection.mjs";
+import {affirmationNarrationText,isApprovedAffirmationNarration} from "../lib/mandala/affirmation-voice.mjs";
 
 const read = path => readFileSync(new URL("../" + path,import.meta.url),"utf8");
 const library = read("lib/mandala/video-affirmations.ts");
@@ -43,6 +45,18 @@ test("selected presets and custom lines are local-only, normalized and bounded",
   assert.ok(lines.every(line=>!/[<>]/.test(line)));
 });
 
+test("deselecting an Ideas phrase removes it from narration and invalidates the old WAV text", () => {
+  const suggested=suggestedVideoAffirmations.en.energy;
+  const original=planIdeaSelection(suggested,[0,1,2,3,4],suggested,"energy:profile");
+  const originalLines=linesForVideoAffirmations("en","energy",original.settingsPatch);
+  const oldSpokenText=affirmationNarrationText(originalLines);
+  const changed=planIdeaSelection(original.editor.options,[1,2,3,4],suggested,"energy:profile");
+  const currentLines=linesForVideoAffirmations("en","energy",changed.settingsPatch);
+  assert.deepEqual(currentLines,suggested.slice(1));
+  assert.equal(isApprovedAffirmationNarration(currentLines,oldSpokenText,true),false,
+    "an old WAV must never remain approved after one of its selected phrases is removed");
+});
+ 
 test("custom affirmations are visibly limited to five concise lines", () => {
   const input=["A".repeat(90),"B".repeat(45),"I am calm","I choose care","I can rest","ignored"].join("\n");
   const short=compactCustomAffirmationInput(input);
@@ -87,10 +101,11 @@ test("existing video preview and export use identical overlays; frame mode reque
   assert.match(studio,/const \[affirmations,setAffirmations\]/);
   // Invalidate both the old single-shot film and the NEW cinematic export
   // when visual grade or shot selection changes, without dropping affirmation state.
-  assert.match(studio,/caption,affirmations,hypnoLight,\s*cinematicPlan\?\.version,cinematicPlan\?\.styleId/);
-  assert.match(studio,/cinematicPlan\?\.shots\.map\(shot=>\[shot\.sceneId,shot\.startSeconds,shot\.durationSeconds,shot\.overlayText\|\|""\]\),appliedStory\]\)/,
+  // A changed approved music bed invalidates an exported voice/music film too.
+  assert.match(studio,/caption,singleTextSource,wish,affirmations,hypnoLight,\s*attachedAudio\?\.kind==="file"\?musicBed:null,\s*cinematicPlan\?\.version,cinematicPlan\?\.styleId/);
+  assert.match(studio,/cinematicPlan\?\.shots\.map\(shot=>\[shot\.sceneId,shot\.startSeconds,shot\.durationSeconds,shot\.overlayText\|\|""\s*,\s*shot\.transitionIn\|\|"soft",shot\.colorLook\|\|"original",shot\.motion\?\?null,\s*shot\.sourcePhasePercent\?\?0,shot\.sourceSpeed\?\?1\]\),appliedStory,\s*creationMode,activeMontageStyleId,currentFreeVideoPlan\?\.seed/,
     "changing a shot boundary must invalidate old recorded output as well as the source ID");
-  assert.equal((studio.match(/paintVideoAffirmations\(ctx,/g)||[]).length,5, "both native and WebCodecs MP4 must draw affirmations");
+  assert.equal((studio.match(/paintSingleVideoTextOverlay\(ctx,/g)||[]).length,5, "both native and WebCodecs MP4 must draw affirmations");
   assert.match(studio,/affirmations\.enabled && affirmations\.visibility\.includes\("frame"\)/);
   assert.match(studio,/\? 25 : quality === "fullhd" \? 12 : 15/);
   assert.match(studio,/setAffirmations\(defaultAffirmations\)/);
@@ -204,29 +219,34 @@ test("personal matching is click-only, auth-gated and no scores leave the server
   assert.deepEqual(jsx.diagnostics||[],[]);
 });
 
-test("HD master starts its own load and remains gated on a decoded frame in WebKit",()=>{
+
+test("HD master fetch starts from Play/Create, never from a background effect",()=>{
   assert.match(studio,/const decoded=Boolean\(activeFilm && master && master\.readyState>=2 &&[\s\S]*master\.videoWidth>0 && master\.videoHeight>0\)/);
-  assert.match(studio,/setPremiumReady\(decoded\)/,
-    "already decoded HD frames must remain ready even if preload beat the effect");
-  assert.match(studio,/if\(activeFilm && master && !decoded\)master\.load\(\)/,
-    "unready scenes must still request real media data");
+  assert.match(studio,/setPremiumReady\(decoded\)/,"reuse only an actually decoded frame");
+  assert.doesNotMatch(studio,/if\(activeFilm && master && !decoded\)master\.load\(\)/,
+    "an initial page view must not download the source video");
+  assert.match(studio,/muted playsInline loop preload="none"[\s\S]*?data-mandala-master-mp4/);
+  assert.match(studio,/const masterPreparation=activeFilm[\s\S]*?ensureDecodedVideoOnUserIntent\(premiumVideoRef\.current,\{timeoutMs:20000\}\)/,
+    "the real Create gesture starts a bounded MP4 decoder");
+  assert.match(studio,/if\(!\(await masterPreparation\)\)[\s\S]*?setExportUnavailable\(true\)/,
+    "failed decoding must block export, not fabricate a downloadable file");
   assert.match(studio,/onLoadedData=\{event=>\{[\s\S]*event\.currentTarget\.readyState>=2 && event\.currentTarget\.videoWidth>0/);
-  assert.match(studio,/onCanPlay=\{\(\)=>setPremiumReady\(true\)\}/);
-  assert.match(studio,/\(!activeFilm \|\| premiumReady\)/);
+  assert.match(studio,/onCanPlay=\{event=>\{\s*setPremiumReady\(true\);[\s\S]*?event.currentTarget.play\(\)/);
   assert.match(studio,/master\.readyState < 2\)throw new Error\("HD MP4 scene not loaded"\)/);
 });
 
-test("iPhone photo-consent gesture wakes the real HD scene without bypassing readiness",()=>{
+test("iPhone photo-consent and Create both prime real media without leaving Create disabled",()=>{
   assert.match(studio,/function primeNativeMasterFromUserGesture\(\)/);
   assert.match(studio,/if\(!activeFilm \|\| !video \|\| video\.readyState>=2\)return/);
   assert.match(studio,/video\.load\(\)/);
   assert.match(studio,/void video\.play\(\)\.then/);
   assert.match(studio,/if\(video\.readyState>=2 && video\.videoWidth>0 && video\.videoHeight>0\)/);
   assert.match(studio,/if\(approved\)primeNativeMasterFromUserGesture\(\)/);
-  assert.match(studio,/\(!activeFilm \|\| premiumReady\)/,
-    "Create stays disabled until a real decoded master frame is present");
+  assert.match(studio,/const canGenerate = Boolean\(source\) &&/,
+    "Create is tappable; async media readiness is enforced inside createVideo");
+  assert.doesNotMatch(studio,/const canGenerate = Boolean\(source\) && \(!activeFilm \|\| premiumReady\)/,
+    "hidden Safari MP4 preload must never deadlock the Create button");
 });
-
 
 test("compact request flows are locally sourced, goal-first, nonclinical and localized",()=>{
   const compact=read("components/mandala-hypno-compact.tsx");

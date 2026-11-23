@@ -1,0 +1,48 @@
+.hub{display:grid;gap:14px;min-width:0;margin-bottom:14px;color:#233b2d}
+.path{position:relative;isolation:isolate;min-width:0;min-height:235px;overflow:hidden;border-radius:24px;color:#fff;background:#124b3c;box-shadow:0 6px 20px #132d1f36}
+.backdrop{z-index:-2;object-fit:cover;object-position:50% 50%}
+.shade{position:absolute;inset:0;z-index:-1;background:linear-gradient(93deg,#093d34ee,#124c40b8 62%,#10524561),linear-gradient(0deg,#173f36d9,transparent)}
+.pathContent{position:relative;padding:23px 24px 17px}
+.path h2{margin:0;font-size:clamp(24px,3.4vw,36px);line-height:1.1;color:#fff;font-weight:850;letter-spacing:-.02em}
+.path p{max-width:590px;margin:8px 0 16px;font-size:clamp(13px,1.8vw,16px);line-height:1.4}
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:0;margin:0;list-style:none}
+.steps li{display:flex;flex-direction:column;gap:8px;align-items:center;text-align:center;font-size:clamp(10px,1.5vw,14px);line-height:1.2;font-weight:770}
+.stepIcon{display:grid;place-items:center;width:44px;height:44px;border:2px solid #adecc5;border-radius:50%;background:#fffffff2;color:#078359}
+.start{display:flex;align-items:center;justify-content:center;gap:9px;min-height:42px;padding:8px 18px;margin:15px auto 0;border:1px solid #a8e3bb;border-radius:14px;background:#078662;color:#fff;font-size:14px;font-weight:850;cursor:pointer}
+.start:hover{background:#006f50}
+.directory{min-width:0;padding:17px 16px 18px;border:1px solid #dfded5;border-radius:25px;background:#fffefaef;box-shadow:0 4px 18px #29362619;scroll-margin-top:80px}
+.header{display:flex;align-items:start;justify-content:space-between;gap:9px;margin-bottom:12px}
+.header h2{margin:0;color:#193b2d;font-size:clamp(21px,2.8vw,28px);line-height:1.12;letter-spacing:-.025em}
+.header p{margin:5px 0 0;color:#677367;font-size:12px}
+.allLink{display:inline-flex;align-items:center;gap:4px;min-height:38px;flex:none;text-decoration:none;color:#007852;font-weight:790;font-size:12px}
+.categories{display:flex;gap:9px;overflow-x:auto;max-width:100%;margin-bottom:13px;padding:3px 2px 8px;scrollbar-width:thin}
+.category,.active{display:inline-flex;gap:7px;align-items:center;justify-content:center;min-height:43px;flex:none;padding:8px 13px;border:1px solid #dddcd1;border-radius:13px;background:#fbf9f4;color:#345244;font-size:14px;font-weight:800;cursor:pointer}
+.active{border:2px solid #078d66;padding:7px 12px;background:#e2f6e8;color:#006143}
+.category:hover{background:#edf8f1}
+.filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:11px}
+.filters label{display:flex;flex-direction:column;gap:2px;min-width:0;padding:7px 8px;border:1px solid #e1e1d8;border-radius:12px;background:#faf9f4}
+.filters label span{font-size:12px;font-weight:780}
+.filters select{width:100%;min-height:30px;border:0;background:transparent;color:#34443a;text-overflow:ellipsis;font-size:13px;cursor:pointer}
+.results{display:grid;gap:10px;min-width:0}
+.count{font-size:12px;color:#677368;text-align:right}
+.offer{display:grid;grid-template-columns:33% minmax(0,1fr);min-height:160px;min-width:0;overflow:hidden;border:1px solid #e1e2d9;border-radius:20px;color:#1c3027;background:#fffefa;text-decoration:none;box-shadow:0 2px 7px #152d2114}
+.offer:hover{box-shadow:0 6px 16px #152d2125}
+.offer:focus-visible,.category:focus-visible,.active:focus-visible,.start:focus-visible{outline:3px solid #dba638;outline-offset:2px}
+.photo{position:relative;min-height:160px;display:block;background:#125b48}
+.photo img{object-fit:cover;object-position:center}
+.kindTag{position:absolute;left:7px;bottom:9px;display:flex;align-items:center;gap:5px;padding:5px 8px;border:1px solid #afdfc2aa;border-radius:20px;background:#076c50e5;color:#fff;font-size:11px;font-weight:800}
+.body{display:flex;flex-direction:column;min-width:0;gap:6px;padding:14px 15px 12px}
+.offerTitle{font-weight:870;line-height:1.16;font-size:clamp(16px,2.3vw,21px);overflow-wrap:anywhere}
+.about{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;color:#496352;font-size:clamp(12px,1.7vw,15px);line-height:1.4}
+.footerLine{display:flex;justify-content:space-between;align-items:end;flex-wrap:wrap;gap:7px;margin-top:auto}
+.price{color:#007752;font-weight:850;font-size:clamp(13px,1.9vw,17px)}
+.details{display:inline-flex;align-items:center;gap:2px;padding:5px 8px;border:1px solid #b7ddbf;border-radius:9px;background:#f0f8f1;color:#087452;font-size:12px;font-weight:800}
+.empty{padding:26px 15px;border:1px dashed #b5d9c1;border-radius:14px;text-align:center;background:#f3f9f5}
+.empty p{margin:0 0 12px}
+.empty button{min-height:42px;padding:9px 15px;border:1px solid #067759;border-radius:12px;background:#e5f4ea;color:#056c51;font-weight:800;cursor:pointer}
+.foot{display:flex;justify-content:space-between;align-items:start;gap:12px;margin-top:13px}
+.foot p{margin:0;max-width:600px;color:#67756d;font-size:11px;line-height:1.4}
+.foot a{display:inline-flex;gap:4px;align-items:center;flex:none;font-size:12px;font-weight:800;color:#007955;text-decoration:none}
+@media(max-width:600px){.hub{gap:12px}.path{min-height:220px;border-radius:20px}.pathContent{padding:18px 14px 14px}.path h2{font-size:25px}.path p{margin:7px 0 14px;font-size:12px}.steps{gap:3px}.steps li{font-size:10px}.stepIcon{width:36px;height:36px}.start{margin-top:13px}.directory{padding:13px 10px 15px;border-radius:21px}.header h2{font-size:21px}.header p{font-size:11px}.allLink{font-size:11px}.category,.active{min-height:42px;padding-inline:10px;font-size:13px}.filters{gap:6px}.filters label{padding:6px}.filters label span{font-size:11px}.filters select{font-size:12px}.offer{grid-template-columns:34% minmax(0,1fr);min-height:167px;border-radius:17px}.photo{min-height:167px}.kindTag{left:5px;bottom:7px;font-size:10px;padding:4px 6px}.body{padding:10px;gap:5px}.offerTitle{font-size:16px}.about{font-size:12px}.price{font-size:13px}.details{font-size:11px;padding:5px}.foot{display:block}.foot a{margin-top:9px}}
+@media(max-width:350px){.stepIcon{width:33px;height:33px}.steps li{font-size:9px}.header h2{font-size:19px}.offer{grid-template-columns:31% minmax(0,1fr)}.offerTitle{font-size:15px}.about{font-size:11px}.kindTag{font-size:9px}}
+@media(prefers-reduced-motion:reduce){.offer{transition:none}}

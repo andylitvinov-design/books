@@ -8,7 +8,11 @@ import { GREEK_VIDEO_SERIES } from "@/data/academy/greek-video-series";
 import { freeMeditationVideos, type MeditationTopic } from "@/data/academy/holistic-support-meditations";
 import { academyDisplayTitle, findAcademyRecord, isPublicLocale, mediaForRecord, youtubeIdFromUrl } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
+import { getAppConfig } from "@/lib/app/config";
+import { createPractitionerCourseRepository } from "@/lib/practitioners/course-repository";
+import { buildSupportLearningCatalog, type PublishedLearningCourse } from "@/lib/holistic-support/learning-catalog";
 import { buildSupportGuideTestShortlists } from "@/lib/assessments/support-guide-tests";
+import { HolisticStudyAcademy } from "@/components/holistic-study-academy";
 
 type Props = { params: Promise<{ locale: string }>; searchParams: Promise<{ view?: string | string[]; topic?: string | string[] }> };
 
@@ -111,7 +115,10 @@ export default async function HolisticSupportMobilePage({ params, searchParams }
   const initialTheme = ["business", "love", "energy", "health"].includes(String(query.topic))
     ? query.topic as "business" | "love" | "energy" | "health" : "all";
   const availableViews: SupportMobileChoice[] = ["meditation", "consultation", "talisman", "pump", "healing", "masters", "tests"];
-  const initialChoice = availableViews.find(view => view === requestedView) ?? "meditation";
+  const initialChoice = availableViews.find(view => view === requestedView) ?? "pump";
+  // Study is a focused Academy entry. Existing video, services and test views remain intact.
+  if (initialChoice === "pump") return <HolisticStudyAcademy locale={locale}
+    learningItems={buildSupportLearningCatalog(locale, [], [])} />;
 
   const originalMysteryCourses: SupportMobileCourse[] = [];
 
@@ -196,8 +203,18 @@ export default async function HolisticSupportMobilePage({ params, searchParams }
 
   // Public, verified catalogue metadata only; no user test results in this prop.
   const guideTests = buildSupportGuideTestShortlists({ locale });
+  // This existing repository returns approved published practitioner courses only.
+  // Database unavailability never exposes drafts or disables source-backed Academy.
+  let publishedCourses: PublishedLearningCourse[] = [];
+  try {
+    publishedCourses = await createPractitionerCourseRepository(getAppConfig()).catalog();
+  } catch {
+    publishedCourses = [];
+  }
+  const learningItems = buildSupportLearningCatalog(locale, originalMysteryCourses, publishedCourses);
   return (
     <HolisticSupportMobile locale={locale} videos={videos} courses={originalMysteryCourses}
-      initialChoice={initialChoice} initialTheme={initialTheme} guideTests={guideTests} />
+      initialChoice={initialChoice} initialTheme={initialTheme} guideTests={guideTests}
+      learningItems={learningItems} />
   );
 }

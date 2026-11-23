@@ -26,13 +26,12 @@ on:
       - 'lib/app/client-telegram-*.js'
       - 'app/api/app/practitioner-client-messages/route.js'
       - 'supabase/migrations/*messenger_pending_contacts*'
-      - '.github/workflows/hh-messenger-notification-build.yml'
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: hh-messenger-notifications-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+  group: hh-messenger-notifications-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 jobs:
   notification-build:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
@@ -49,6 +48,11 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Messenger policy, privacy and Settings smoke tests
         run: node --test tests/messenger-notification-subscriptions.test.mjs tests/messenger-telegram-link.test.mjs tests/client-telegram-owner-pilot.test.mjs tests/notification-stack-integration.test.mjs tests/holistic-house-post-signup-install.test.mjs
+      - name: Shared Telegram transport owner menu and digest contracts
+        run: |
+          node --check lib/app/client-telegram-transport.js
+          node --test tests/practitioner-owner-ai-telegram.test.mjs
+          node --test --test-skip-pattern='R1 database and browser workflows verify canonical-base pull requests|existing daily cron is reused with separate feature flag; no extra Vercel cron/billing|bot schedule is daily and independent of the existing housekeeping job' tests/practitioner-daily-telegram.test.mjs tests/owner-telegram-enquiry-pilot.test.mjs
       - name: Atomic booking arrival, replay, ownership and neutral email adapter
         run: node --conditions=react-server --test tests/booking-arrival-transaction.test.mjs tests/booking-master-email-behavior.test.mjs tests/booking-notification-route-behavior.test.mjs tests/remote-booking-master-alerts.test.mjs tests/remote-energy-support-booking.test.mjs tests/remote-support-privacy-contract.test.mjs
       - name: Booking lint and TypeScript

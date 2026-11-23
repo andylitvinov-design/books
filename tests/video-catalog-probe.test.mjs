@@ -108,3 +108,29 @@ test('resolver fails closed for missing evidence and tampered scene identity',as
     assert.equal(resolveVerifiedVideoPreset({...preset,clips:['a','a','c','d']},[scene],r).status,'rejected');
   }finally{await rm(f.root,{recursive:true,force:true});}
 });
+
+test('one licensed edited source is accepted, two-shot masquerades and duplicate source pages fail closed',async()=>{
+  const f=await fixture();
+  try{
+    f.catalog.scenes=[{...scene,rightsReference:{
+      kind:'dareful_cc_by_4_0',attribution:'Joel Holland / Dareful / CC BY 4.0 / adapted',
+    }}];
+    const first={licenseId:'cc_by_4_0',sourcePage:'https://dareful.com/sunrise-forest/'};
+    const master=f.manifests[collection][0];
+    master.sourceKind='licensed_single_shot_edit';
+    master.sources=[first];
+    let result=await run(f);
+    assert.equal(result.status,'pass');
+    assert.equal(result.counts.individualAttributionRecords,1);
+
+    master.sourceKind='licensed_two_shot_composite';
+    assert.equal((await run(f)).assets[0].reason,'INDIVIDUAL_RIGHTS_EVIDENCE');
+    master.sources=[first,{...first}];
+    assert.equal((await run(f)).assets[0].reason,'INDIVIDUAL_RIGHTS_EVIDENCE');
+
+    master.sources=[first,{licenseId:'cc_by_4_0',sourcePage:'https://dareful.com/sunset-coast/'}];
+    assert.equal((await run(f)).status,'pass');
+    master.sources[1].sourcePage='https://untrusted.example.com/sunset-coast/';
+    assert.equal((await run(f)).assets[0].reason,'INDIVIDUAL_RIGHTS_EVIDENCE');
+  }finally{await rm(f.root,{recursive:true,force:true});}
+});

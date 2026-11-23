@@ -227,7 +227,7 @@ test("Ideas has one compact photographic question banner and two choices immedia
   assert.match(ui, /client\?startTests=hh-current-state/);
   assert.match(catalog, /key: 'hh-current-state',[\s\S]*?startable: true,[\s\S]*?rightsStatus: 'cleared',[\s\S]*?guestEligible: true/);
   for (const label of ["Get free coaching session", "Пройти бесплатную коуч-сессию", "Sesión gratuita de coaching"]) assert.ok(ui.includes(label));
-  assert.ok(ui.includes('const coachingHref = "/" + locale + "/coaching"'));
+  assert.ok(ui.includes('const coachingHref = "/" + locale + "/coaching/sessions"'));
   assert.ok(ui.includes('testLink: "Or explore a free test"'));
   assert.match(css, /\.hero::before \{[\s\S]*?ideas-pine-sharp\.avif/);
   assert.match(css, /\.freeTestLink \{/);

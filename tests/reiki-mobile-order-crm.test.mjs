@@ -119,6 +119,6 @@ test("the existing Google or phone consent path writes only after a real server 
   assert.match(chooser, /contactConsent: consent/);
   assert.match(chooser, /if \(!response\.ok \|\| data\.saved !== true/);
   assert.match(chooser, /onSaved\?\.\(data\.referenceCode\)/);
-  assert.match(endpoint, /createPublicServiceEnquiry\(config, payload\)/);
+  assert.match(endpoint, /createPublicServiceEnquiry\(config, payload, readPublicEnquiryAttribution\(request\)\)/);
   assert.match(read("lib/practitioners/public-service-enquiry.js"), /app\.crm_contacts/);
 });

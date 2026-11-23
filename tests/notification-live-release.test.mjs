@@ -36,6 +36,27 @@ test('private push dispatch remains manual, cron paths are unique and housekeepi
    assert.ok(start>=0&&start<=end&&end<=23,'invalid cron hour range')
    for(let hour=start;hour<=end;hour+=step)hours.add(hour)
   }
-  assert.ok(hours.size<24,'hourly Vercel Cron is not allowed')
+  if(cron.path==='/api/internal/direct-message-push'){
+   // Reviewed Vercel Pro exception: bounded, private five-minute recovery only.
+   // All other jobs retain the existing no-hourly policy.
+   assert.equal(cron.schedule,'*/5 * * * *','reviewed phone-push cadence is exact')
+   const pushRoute=readFileSync('app/api/internal/direct-message-push/route.js','utf8')
+   assert.ok(pushRoute.includes('cronAuthorized(request,process.env)'), 'private recovery must require the current Cron authorization')
+   assert.match(pushRoute,/VERCEL_ENV==='preview'/)
+   assert.match(pushRoute,/status:401/)
+   assert.match(pushRoute,/PRIVATE_HEADERS/)
+  }else if(cron.path==='/api/internal/video-scout-hourly'){
+   // Explicitly reviewed existing Vercel Pro metadata-only scout; not a
+   // blanket allowance for new hourly cron jobs or paid video downloads.
+   assert.equal(cron.schedule,'17 * * * *','approved hourly scout slot must be exact')
+   const scoutRoute=readFileSync('app/api/internal/video-scout-hourly/route.js','utf8')
+   assert.match(scoutRoute,/process\.env\.VERCEL_ENV!=='production'/)
+   assert.match(scoutRoute,/cronAuthorized\(request,process\.env\)/)
+   assert.match(scoutRoute,/status:401/)
+   assert.match(scoutRoute,/maxDuration=90/)
+   const scoutRunner=readFileSync('lib/automations/scout-runner.js','utf8')
+   assert.match(scoutRunner,/HH_VIDEO_SCOUT_ENABLED/)
+   assert.match(scoutRunner,/runHourlyVideoScout/)
+  }else assert.ok(hours.size<24,'hourly Vercel Cron is not allowed')
  }
 })

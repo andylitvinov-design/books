@@ -12,15 +12,14 @@ on:
       - 'scripts/helpers/assessment-range-mobile-fixture.mjs'
       - 'scripts/verify-assessment-range-mobile-browser.mjs'
       - 'tests/assessment-range-mobile-fixture.test.mjs'
-      - '.github/workflows/assessment-range-mobile-browser.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: hh-report-mobile-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+  group: hh-report-mobile-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 
 jobs:
   assessment-mobile:

@@ -216,7 +216,7 @@ export function TestsCoachingSwitchboard({ locale, templeContent }: { locale: Pu
         // Coaching is already a topic-first chooser. Do not open another
         // "self-guided / traditions / personal" interstitial before it.
         return key === "coaching"
-          ? <Link key={key} className={styles.card} href={`/${locale}/coaching`}
+          ? <Link key={key} className={styles.card} href={`/${locale}/coaching/sessions`}
               data-tests-coaching-path={key} data-tests-coaching-direct prefetch={false}>
               {content}
             </Link>

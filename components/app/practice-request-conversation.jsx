@@ -16,6 +16,7 @@ const COPY={
     hint:'Write through the portal. No phone numbers, email, @handles, external links or health details.',contactBlocked:'Contact details cannot be exchanged. Please reply through Holistic House.',
     send:'Send through Holistic House',saved:'Reply saved to the private conversation.',
     loadOlder:'Earlier messages',refresh:'Refresh',newMessages:'New for you',markViewed:'Mark as viewed',viewed:'Messages marked as viewed.',retry:'Try again',error:'Could not load this conversation.',
+    messengerVerifyClient:'Verify Telegram in Cabinet Settings before messaging this practitioner. WhatsApp verification is not connected yet.',messengerVerifyMaster:'This client has not verified a messenger for this practitioner. Older messages remain readable, and private notes are still available.',messengerVerifyLink:'Verify Telegram',
     closed:'This enquiry is closed; the history remains readable.',
     conflict:'This reply conflicts with an earlier request. Change the text or refresh.',
     private:'Please remove medical information and private links.',
@@ -28,6 +29,7 @@ const COPY={
     hint:'Пишите через портал. Без телефонов, email, @ников, внешних ссылок и медицинских данных.',contactBlocked:'Контактами обмениваться нельзя. Продолжайте переписку через Holistic House.',
     send:'Отправить через Holistic House',saved:'Ответ сохранён в защищённой переписке.',
     loadOlder:'Ранние сообщения',refresh:'Обновить',newMessages:'Новые для вас',markViewed:'Отметить просмотренными',viewed:'Сообщения отмечены просмотренными.',retry:'Повторить',error:'Не удалось загрузить переписку.',
+    messengerVerifyClient:'Сначала подтвердите Telegram в настройках кабинета, чтобы написать мастеру. Подтверждение WhatsApp пока недоступно.',messengerVerifyMaster:'Клиент ещё не подтвердил мессенджер для этого мастера. Старые сообщения доступны для чтения, а внутренние заметки можно сохранять.',messengerVerifyLink:'Подтвердить Telegram',
     closed:'Заявка закрыта; история доступна для просмотра.',
     conflict:'Этот запрос противоречит ранее сохранённому ответу. Измените текст или обновите историю.',
     private:'Уберите медицинские данные и приватные ссылки.',
@@ -40,6 +42,7 @@ const COPY={
     hint:'Responde aquí. Sin teléfonos, emails, @usuarios, enlaces externos ni datos médicos.',contactBlocked:'No se pueden intercambiar contactos. Responde dentro de Holistic House.',
     send:'Enviar por Holistic House',saved:'Respuesta guardada en la conversación privada.',
     loadOlder:'Mensajes anteriores',refresh:'Actualizar',newMessages:'Nuevos para ti',markViewed:'Marcar como vistos',viewed:'Mensajes marcados como vistos.',retry:'Intentar de nuevo',error:'No se pudo cargar la conversación.',
+    messengerVerifyClient:'Verifica Telegram en los ajustes antes de escribir al profesional. WhatsApp aún no está conectado.',messengerVerifyMaster:'El cliente aún no ha verificado un mensajero para este profesional. Los mensajes anteriores siguen visibles y puedes guardar notas privadas.',messengerVerifyLink:'Verificar Telegram',
     closed:'Solicitud cerrada; el historial sigue disponible.',
     conflict:'Esta solicitud entra en conflicto con una respuesta anterior.',private:'Elimina datos médicos y enlaces privados.',
     limit:'Límite diario alcanzado.',unknown:'Estado desconocido; no volver a enviar automáticamente.',
@@ -272,6 +275,7 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
           ?t.audioError:err.message==='CONTACT_EXCHANGE_BLOCKED'?t.contactBlocked:
           err.message==='PRIVATE_CONTENT_BLOCKED'?t.private:
           err.message==='CONVERSATION_CLOSED'?t.closed:
+           err.message==='MESSENGER_VERIFICATION_REQUIRED'?t.messengerVerifyClient:
           err.message==='PRACTICE_MESSAGE_DAILY_LIMIT'?t.limit:
           err.message==='CONFLICT'?t.conflict:t.unknown)
       }
@@ -292,6 +296,10 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
       <strong>{t.title}</strong>
       <button type="button" disabled={busy||paging||markingViewed} onClick={()=>reload()}>{t.refresh}</button>
     </div>
+      {view.requiresMessengerVerification&&<p className={styles.notice} data-messenger-first-consultation>
+         {view.actorRole==='client'?t.messengerVerifyClient:t.messengerVerifyMaster}
+         {view.actorRole==='client'&&<a href={'/'+lang+'/app/settings#hh-telegram-connect'}>{t.messengerVerifyLink}</a>}
+       </p>}
       {view.unseenCount>0&&<div className={styles.unseenBanner} role="status">
         <strong>{t.newMessages}: {view.unseenCount}</strong>
         <button type="button" disabled={busy||markingViewed||
@@ -377,7 +385,7 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
           <Send size={18} aria-hidden="true"/>{visibility==='practitioner_note'?t.saveNote:t.send}
         </button>
       </div>}
-      {!view.canReply&&<p className={styles.notice}>{t.closed}</p>}
+      {!view.canReply&&!view.requiresMessengerVerification&&<p className={styles.notice}>{t.closed}</p>}
     </>}
     {notice&&<p className={styles.notice} role="status">{notice}</p>}
   </section>

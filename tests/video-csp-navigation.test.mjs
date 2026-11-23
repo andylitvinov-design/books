@@ -32,6 +32,9 @@ test("CSP class boundary reloads only cross-policy client navigation", async () 
   ]);
   assert.match(middleware, /requestHeaders\.set\('x-csp-class', cspClass\)/);
   assert.match(layout, /<body className="font-sans" data-csp-class=\{cspClass\}>/);
+  assert.match(layout, /standaloneCommander \? children :/);
+  assert.match(layout, /data-csp-class=\{cspClass\}/);
+  assert.match(layout, /standaloneCommander \? children/);
   assert.match(layout, /<CspNavigationBoundary \/>/);
   assert.match(boundary, /window\.location\.assign\(url\.href\)/);
   assert.match(boundary, /window\.location\.replace\(window\.location\.href\)/);

@@ -1,0 +1,277 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
+import {telegramBusinessMessageFromUpdate,telegramBusinessClientChoice} from '../lib/assist/telegram-business-request.mjs';
+import {matchTelegramFreeReviewDraft,telegramFreeReviewAcknowledgement} from '../lib/crm/telegram-business-free-review.mjs';
+import {telegramExpressReviewHandoff} from '../lib/crm/express-review-channel-handoff.mjs';
+import {classifyTelegramSecretaryQuery,publishedTelegramServiceOffers,
+  composeTelegramSecretaryAnswer,TELEGRAM_SITE} from '../lib/crm/telegram-secretary-offers.mjs';
+
+const make=(patch={})=>({
+ id:'eb4ab8cc-dbc1-4603-b674-42b8cd619bf9',
+ slug:'remote-energy-support',active:true,status:'published',
+ practitioner_slug:'andy-litvinov',practitioner_active:true,
+ practitioner_status:'approved',category:'energy_spiritual',
+ offering_type:'session',pricing_mode:'from',confirmed_price:'50.00',currency:'EUR',
+ localized_copy:{ru:{title:'Энергетическая поддержка цели'},
+  en:{title:'Energy Support'},es:{title:'Apoyo energético'}},...patch
+});
+const f=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
+test('only explicit catalogue needs trigger secretary, not private chats or stop',()=>{
+ for(const text of ['Привет','Отмена','/stop','проблемы в отношениях','hello',
+  'I feel overwhelmed','I need you to change my password','[HH-REQ:reiki:ru]']){
+  assert.equal(classifyTelegramSecretaryQuery(text,'ru'),null,text);
+ }
+ for(const [message,l] of [['Пришли курс','ru'],['Show me videos','en'],
+  ['Quiero un curso','es'],['Сколько стоит рейки','ru']]){
+  assert.equal(classifyTelegramSecretaryQuery(message,l)?.kind,'catalog',message);
+ }
+});
+test('unverified/hidden/wrong-owner products never appear, even when supplied by caller',()=>{
+ const forged=[
+  make({id:'123',status:'published'}),make({active:false}),
+  make({status:'draft'}),make({practitioner_status:'submitted'}),
+  make({practitioner_active:false}),
+  make({localized_copy:{ru:{title:'<script>Pay me</script>'}}}),
+  make({slug:'../../secret'}),make({practitioner_slug:'hacker?to=external'}),
+ ];
+ for(const row of forged)
+  assert.deepEqual(publishedTelegramServiceOffers([row],'ru'),[],JSON.stringify(row).slice(0,100));
+ assert.equal(publishedTelegramServiceOffers([make(),make()],'en').length,1);
+});
+test('verified personal service price displayed only from published source',()=>{
+ const q=classifyTelegramSecretaryQuery('Пришли сеанс рейки','ru');
+ const from=composeTelegramSecretaryAnswer(q,[make()]);
+ assert.equal(from.buttons.length,1);
+ assert.match(from.text,/от €50/);
+ assert.match(from.buttons[0].url,/^https:\/\/holistichouse\.vercel\.app\/ru\/services\//);
+ const contact=composeTelegramSecretaryAnswer(q,[make({pricing_mode:'contact',confirmed_price:null,currency:null})]);
+ assert.match(contact.text,/Уточняется у специалиста/);
+ assert.doesNotMatch(contact.text,/€50/);
+ const unknown=composeTelegramSecretaryAnswer(q,[make({pricing_mode:'fixed',confirmed_price:null,currency:'EUR'})]);
+ assert.match(unknown.text,/Уточняется у специалиста/);
+ assert.doesNotMatch(unknown.text,/Бесплатно/);
+ const free=composeTelegramSecretaryAnswer(q,[make({pricing_mode:'free',confirmed_price:null,currency:null})]);
+ assert.match(free.text,/Бесплатно/);
+});
+test('public programmes link to real approved index, never guessed course product',()=>{
+ for(const [message,locale] of [
+  ['Покажи видео','ru'],['Show me courses','en'],['Quiero un curso','es'],
+  ['Покажи тесты','ru'],['Show me practitioners','en'],
+ ]){
+  const q=classifyTelegramSecretaryQuery(message,locale);
+  const answer=composeTelegramSecretaryAnswer(q,[make()]);
+  assert.ok(answer?.buttons?.length>0&&answer.buttons.length<=3);
+  for(const button of answer.buttons){
+    assert.equal(new URL(button.url).origin,TELEGRAM_SITE);
+    assert.ok(new URL(button.url).pathname.startsWith('/'+locale+'/'));
+    assert.ok(button.text.length<=48);
+  }
+  if(q.category.course||q.category.video||q.category.test||q.category.master)
+    assert.equal(answer.buttons.some(x=>x.url.includes('remote-energy-support')),false,
+      'do not force unrelated paid services into informational resource requests');
+ }
+});
+test('budget free filter excludes paid services',()=>{
+ const q=classifyTelegramSecretaryQuery('Подскажи бесплатную консультацию','ru');
+ const answer=composeTelegramSecretaryAnswer(q,[make()]);
+ assert.equal(answer.buttons.some(x=>x.url.includes('/remote-energy-support')),false);
+});
+test('urgent concern stops commercial suggestions, prevents default upsell',()=>{
+ for(const l of ['ru','en','es']){
+  const s=l==='ru'?'Хочу покончить с собой, посоветуй курс':
+   l==='en'?'I want to kill myself, show me a course':
+    'Quiero morir, muéstrame un curso';
+  const q=classifyTelegramSecretaryQuery(s,l);
+  assert.equal(q.kind,'safety');
+  const response=composeTelegramSecretaryAnswer(q,[make()]);
+  assert.equal(response.buttons.length,0);
+  assert.equal(response.kind,'safety');
+  assert.match(response.text,/помощ|help|ayuda/iu);
+ }
+});
+test('same existing signed business webhook and no direct unconsented model or booking',()=>{
+ const route=f('app/api/app/crm/messenger/webhook/[provider]/route.js');
+ const server=f('lib/crm/telegram-secretary-service.js');
+ const provider=f('lib/crm/messenger-provider.js');
+ const pending=f('lib/crm/telegram-business-service.js');
+ assert.match(route,/verifyMessengerWebhook\(provider,raw,request.headers\)/);
+ assert.match(route,/processTelegramBusinessConversation\(body,config\)/);
+ assert.match(route,/processTelegramBusinessSecretary\(body,config,process\.env,\{/);
+ assert.match(route,/allowClarification:telegramBusinessInbox\?\.matched===true/);
+ assert.match(route,/hh-tg-secretary-reply/);
+ assert.match(server,/HH_CRM_TG_CHAT_AUTOMATION_ENABLED!=='true'/);
+ assert.match(server,/assertHolisticBusinessConnection/);
+ assert.match(server,/where s\.active and s\.status='published'/);
+ assert.match(provider,/business_connection_id:connectionId/);
+ assert.match(provider,/reply_markup:\{inline_keyboard:/);
+ assert.match(provider,/holistichouse\.vercel\.app/);
+ assert.match(pending,/if\(!old\)return \{handled:false\}/);
+ assert.match(server,/HH_TG_SECRETARY_OWNED_ENABLED==='true'/);
+ assert.match(server,/HH_AGENT_OWNED_ENABLED==='true'/);
+ assert.match(server,/generateOwnedOllama/);
+ assert.match(server,/reviewQwenOwnedReply/);
+ assert.match(server,/Published titles:/);
+ assert.match(server,/\/ai/);
+ assert.doesNotMatch(server,/createPublicServiceEnquiry|https:\/\/openrouter\.ai|fetch\(/);
+});
+
+
+test('STOP persists even without prior order; new explicit queries cannot undo it',async()=>{
+ const all=f('lib/crm/telegram-secretary-service.js');
+ const before=all.indexOf("const STOP_TABLE=");
+ const after=all.indexOf("/**\n * One source-bounded Secretary",before);
+ assert.ok(before>=0&&after>before);
+ const program=all.slice(before,after).replace(/^export /gm,'');
+ let stopped=false;
+ const db={async query(sql,params=[]){
+   if(sql.includes('pg_advisory_xact_lock'))return {rows:[]};
+   if(sql.startsWith('select stopped_at'))return {rows:stopped?[{stopped_at:new Date()}]:[]};
+   if(sql.startsWith('insert into app_private.crm_tg_business_secretary_optouts')){
+     stopped=true;return {rowCount:1,rows:[]};
+   }
+   throw new Error('UNEXPECTED SQL: '+sql.slice(0,75));
+ }};
+ const ctx=vm.createContext({
+   telegramBusinessMessageFromUpdate,telegramBusinessClientChoice,
+   operationHash:({scope})=>scope==='hh-tg-business-connection'?'a'.repeat(64):'b'.repeat(64),
+   webhookTransaction:async(_c,fn)=>fn(db),
+   process:{env:{HH_CRM_TG_CHAT_AUTOMATION_ENABLED:'true'}},Date,Number,String,Boolean
+ },{codeGeneration:{strings:false,wasm:false}});
+ vm.runInContext(program,ctx,{timeout:2000});
+ const evt=(text,n)=>({update_id:n,business_message:{
+   business_connection_id:'conn-test-123',message_id:n,
+   date:Math.floor(Date.now()/1000),text,
+   chat:{type:'private',id:123456789},from:{id:123456789,is_bot:false},
+ }});
+ const env={HH_CRM_TG_CHAT_AUTOMATION_ENABLED:'true'};
+ const beforeStop=await ctx.gateTelegramBusinessSecretaryOptOut(evt('Покажи курс',301),{},env);
+ assert.equal(beforeStop.blocked,false);
+ const stop=await ctx.gateTelegramBusinessSecretaryOptOut(evt('/stop',302),{},env);
+ assert.equal(stop.justStopped,true);
+ assert.equal(stopped,true);
+ const afterStop=await ctx.gateTelegramBusinessSecretaryOptOut(evt('Show me videos',303),{},env);
+ assert.equal(afterStop.blocked,true);
+ const replay=await ctx.gateTelegramBusinessSecretaryOptOut(evt('/stop',302),{},env);
+ assert.equal(replay.blocked,true);
+});
+test('STOP before Business intake, exact signed ingress and RLS not weakened',()=>{
+ const route=f('app/api/app/crm/messenger/webhook/[provider]/route.js');
+ const sender=f('lib/crm/messenger-provider.js');
+ const sql=f('supabase/migrations/20261113232313_hh_crm_tg_business_secretary_optouts_v1.sql');
+ const stop=route.indexOf('gateTelegramBusinessSecretaryOptOut(body,config)');
+ const orders=route.indexOf('processTelegramBusinessConversation(body,config)');
+ const rec=route.indexOf('processTelegramBusinessSecretary(body,config,process.env,{');
+ assert.ok(stop>0&&orders>stop&&rec>orders);
+ assert.match(route,/verifyMessengerWebhook\(provider,raw,request.headers\)/);
+ assert.match(sender,/holistichouse\.vercel\.app/);
+ assert.match(sql,/ENABLE ROW LEVEL SECURITY/);
+ assert.match(sql,/FORCE ROW LEVEL SECURITY/);
+ assert.match(sql,/GRANT SELECT,INSERT ON app_private\.crm_tg_business_secretary_optouts TO hh_app_inbox/);
+ assert.doesNotMatch(sql,/GRANT (?:SELECT|INSERT|UPDATE|DELETE).* TO (?:anon|authenticated|public)/i);
+ assert.match(allSecure(),/secretaryStopped\(event,config\)/);
+ function allSecure(){return f('lib/crm/telegram-secretary-service.js');}
+});
+
+test('customer Free personal express review draft is acknowledged in the human Business chat, not ignored',()=>{
+ const cases=[
+  ['Hello! I am interested in «Free personal express review». Could you help me make a request?','en'],
+  ['Здравствуйте! Меня интересует «Бесплатный личный экспресс-разбор». Подскажите, как оформить запрос.','ru'],
+  ['¡Hola! Me interesa «Revisión personal exprés gratuita». ¿Cómo puedo solicitarlo?','es'],
+ ];
+ for(const [draft,locale] of cases){
+  assert.equal(matchTelegramFreeReviewDraft(draft)?.locale,locale);
+  const reply=telegramFreeReviewAcknowledgement(locale);
+  assert.equal(reply.kind,'free_review');
+  assert.ok(reply.handled);
+  assert.ok(reply.text.length<450);
+  assert.equal(reply.buttons.length,1);
+  assert.equal(reply.buttons[0].url,'https://holistichouse.vercel.app/'+locale+'/services/free-situation-review');
+  assert.doesNotMatch(reply.text,/booking confirmed|payment confirmed|запись подтверждена/iu);
+ }
+ for(const text of ['Hello','Could you help me make a request?','A private medical report',
+   'Hello! I am interested in «Business coaching». Could you help me make a request?',
+   'Hello! I am interested in «Free personal express review». My private story is here.',
+   '/stop', 'x'.repeat(500)])
+  assert.equal(matchTelegramFreeReviewDraft(text),null,text.slice(0,70));
+ const handler=f('lib/crm/telegram-secretary-service.js');
+ const route=f('app/api/app/crm/messenger/webhook/[provider]/route.js');
+ assert.match(handler,/matchTelegramFreeReviewDraft\(event\.text\)/);
+ assert.match(handler,/telegramFreeReviewAcknowledgement\(locale\)/);
+ assert.match(handler,/assertHolisticBusinessConnection\(\{connectionId:event\.connectionId/);
+ assert.match(handler,/secretaryStopped\(event,config\)/);
+ assert.match(route,/gateTelegramBusinessSecretaryOptOut\(body,config\)/);
+ assert.match(route,/hh-tg-secretary-reply/);
+ const i=handler.indexOf("if(query&&query.kind!=='safety'&&query.kind!=='free_review')");
+ assert.ok(i>handler.indexOf('assertHolisticBusinessConnection'));
+ assert.doesNotMatch(handler,/sendMarketing|sendBroadcast/);
+});
+
+test('operational customer FAQs get one bounded guiding question in Russian, English and Spanish',()=>{
+ const cases=[
+  ['Сколько стоит?','ru','price'],['How much does it cost?','en','price'],['¿Cuánto cuesta?','es','price'],
+  ['Как записаться?','ru','booking'],['How can I book?','en','booking'],['¿Cómo puedo reservar?','es','booking'],
+  ['Можно консультацию онлайн?','ru','format'],['Do you offer online sessions?','en','format'],['¿Ofrecen consultas online?','es','format'],
+  ['Можно поговорить с человеком?','ru','human'],['Can I talk to a real person?','en','human'],['¿Puedo hablar con una persona?','es','human'],
+  ['Моя заявка отправлена?','ru','status'],['Is my request submitted?','en','status'],['¿Mi solicitud fue enviada?','es','status'],
+  ['Когда вы ответите?','ru','response_time'],['When will you reply?','en','response_time'],['¿Cuándo responden?','es','response_time'],
+  ['Как отключить бота?','ru','stop_help'],['How do I stop the bot?','en','stop_help'],['¿Cómo detener el bot?','es','stop_help'],
+  ['Как связаться с вами?','ru','contact'],['How can I contact you?','en','contact'],['¿Cómo contactar?','es','contact'],
+  ['Хочу бесплатный разбор ситуации','ru','free_review'],['I want a free situation review','en','free_review'],
+ ];
+ for(const [message,locale,topic] of cases){
+  const q=classifyTelegramSecretaryQuery(message,locale);
+  assert.equal(q?.kind,'faq',message);
+  assert.equal(q?.topic,topic,message);
+  const a=composeTelegramSecretaryAnswer(q,[make()]);
+  assert.equal(a?.kind,'faq',message);
+  assert.equal(a.modelUsed,false);
+  assert.ok(a.text.length>=25&&a.text.length<420);
+  assert.ok((a.text.match(/[?？]/g)||[]).length<=1,message);
+  assert.ok(a.buttons.length<=1);
+  for(const button of a.buttons){
+   assert.equal(new URL(button.url).origin,TELEGRAM_SITE);
+   assert.equal(new URL(button.url).pathname.startsWith('/'+locale+'/'),true);
+  }
+ }
+});
+test('new FAQs do not hijack personal messages, STOP, published named prices or emergency help',()=>{
+ for(const message of ['Привет','Давай просто поговорим','I feel overwhelmed','I need you to change my password','/stop','[HH-REQ:business:ru]'])
+  assert.equal(classifyTelegramSecretaryQuery(message,'ru'),null,message);
+ assert.equal(classifyTelegramSecretaryQuery('Не могу дышать','ru').kind,'safety');
+ const priced=classifyTelegramSecretaryQuery('Сколько стоит рейки?','ru');
+ assert.equal(priced.kind,'catalog');
+ assert.match(composeTelegramSecretaryAnswer(priced,[make()]).text,/от €50/);
+ assert.equal(classifyTelegramSecretaryQuery('рейки','ru').kind,'catalog');
+});
+
+test('free-review website starts the consented Ali Telegram bot; manual Telegram Business remains independent',()=>{
+ const view=f('components/telegram-diagnostic-entry.tsx');
+ const source=f('lib/crm/express-review-channel-handoff.mjs');
+ const expected={
+  en:'Hello! I am interested in «Free personal express review». Could you help me make a request?',
+  ru:'Здравствуйте! Меня интересует «Бесплатный личный экспресс-разбор». Подскажите, как оформить запрос.',
+  es:'¡Hola! Me interesa «Revisión personal exprés gratuita». ¿Cómo puedo solicitarlo?',
+ };
+ for(const [locale,draft] of Object.entries(expected)){
+  const link=telegramExpressReviewHandoff(locale);
+  const uri=new URL(link);
+  assert.equal(uri.origin,'https://t.me');
+  assert.equal(uri.pathname,'/holistichouse_bot');
+  assert.deepEqual([...uri.searchParams.keys()],['start']);
+  assert.equal(uri.searchParams.get('start'),'hhreview_'+locale);
+  assert.equal(matchTelegramFreeReviewDraft(draft)?.locale,locale);
+  assert.ok(view.includes(locale==='ru'?'Написать в Telegram':
+     locale==='es'?'Escribir a Andrey por Telegram':'Write on Telegram'));
+ }
+ assert.equal(telegramExpressReviewHandoff('invalid'),null);
+ assert.match(source,/telegramExpressReviewHandoff/);
+ assert.match(view,/data-telegram-route="ali-free-diagnostic-v3"/);
+ assert.doesNotMatch(view,/\/api\/public\/telegram-diagnostic|setTelegramUrl|telegramUnavailable|Telegram is not available right now|hhreview_/);
+ assert.match(view,/Opening Telegram does not send your request/);
+ assert.match(view,/Открытие Telegram не создаёт заявку/);
+ assert.match(view,/secure questionnaire/);
+ assert.match(view,/защищённую анкету/);
+ assert.doesNotMatch(view,/HH_CRM_MSG_TELEGRAM_TOKEN|https?:\/\/openrouter\.ai/i);
+});

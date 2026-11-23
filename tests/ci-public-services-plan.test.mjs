@@ -2,10 +2,31 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { matchesGlob } from 'node:path';
 import { parsePrTrigger } from '../lib/ci/specialist-aggregate.mjs';
+import { requiresRealMediaWebKit } from '../lib/ci/merge-check-light.mjs';
 import test from 'node:test';
+import { approvedTelegramPresentation } from '../lib/crm/telegram-presentation.mjs';
 import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines, isTrustedMandalaOwnerPath, isTrustedCoreCiOwnerPath, verifiedCriticalPublicCases, REVIEWED_VOICE_2629_DELTA, REVIEWED_PHRASES_3006_DELTA , exactReleaseProofAddition, EXACT_RELEASE_PROOF_BLOBS, planPrivatePractitionerMediaRows, PRIVATE_PRACTITIONER_MEDIA_OWNERS, PRIVATE_PRACTITIONER_MEDIA_REVIEWED_ADDITIONS } from '../scripts/ci-public-services-plan.mjs';
 
 const workflow = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
+const verifyPinnedPublicBrowsers = src => {
+  // Preinstalled Chromium/WebKit on the exact container: every required run
+  // must still launch the real engines before sensitive public acceptance.
+  for(const token of [
+    'image: mcr.microsoft.com/playwright:v1.63.0-noble',
+    'Verify preinstalled Chromium and WebKit for isolated public acceptance',
+    "HH_PUBLIC_BROWSER_ENGINES: ${{ steps.scope.outputs.engines }}",
+    "steps.scope.outputs.browser == 'true'",
+    "steps.scope.outputs.pr_heavy == 'true'",
+    'playwright@1.63.0',
+    'await engine.launch({ headless: true, timeout: 15000 })',
+    "['chromium', chromium]",
+    "['webkit', webkit]",
+    'Production build and public browser acceptance',
+  ])assert.ok(src.includes(token),'missing required real browser guarantee: '+token);
+  assert.doesNotMatch(src,/playwright install --with-deps/,
+    'pinned container must not repeat OS browser installation');
+};
+
 const pathsOf = name => {
   const pr = workflow(name).split('  pull_request:')[1]?.split(/^  [a-z_]+:|^permissions:/m)[0] || '';
   return [...pr.matchAll(/^      - '([^']+)'$/gm)].map(x => x[1]);
@@ -132,8 +153,8 @@ test('13 current browser owners are unique and the old contact UI duplicate is r
   for (const prereq of ['ensure-owner-video-renderer.mjs', 'cache-ancient-coaching-photos.mjs',
     'generate-soft-ocean-melody.mjs', 'build-public-card-artwork.mjs',
     'build-report-pdf-art.mjs']) assert.ok(source.includes('node scripts/' + prereq));
-  assert.match(source, /playwright install --with-deps chromium webkit/);
-  assert.match(source, /timeout-minutes: 20/);
+  verifyPinnedPublicBrowsers(source);
+  assert.match(source, /timeout-minutes: 23/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
 
@@ -604,8 +625,7 @@ test('Public Services preserves protected high-risk real-browser QA and fast low
   assert.match(src, /^  pull_request:$/m);
   assert.match(src, /^  workflow_dispatch:$/m);
   for (const [name, output] of [
-    ['Cache exact Playwright Chromium and WebKit browsers', 'browser'],
-    ['Install Chromium and WebKit for isolated public acceptance', 'browser'],
+    ['Verify preinstalled Chromium and WebKit for isolated public acceptance', 'browser'],
     ['Production build and public browser acceptance', 'build'],
   ]) {
     const step = src.split('      - name: ' + name + '\n')[1];
@@ -614,6 +634,7 @@ test('Public Services preserves protected high-risk real-browser QA and fast low
       'sensitive PR browser and build must remain blocking: ' + name);
   }
   assert.match(src, /if: always\(\) && steps\.scope\.outputs\.build == 'true' && \(github\.event_name != 'pull_request' \|\| steps\.scope\.outputs\.pr_heavy == 'true'\)/);
+  verifyPinnedPublicBrowsers(src);
   assert.match(src, /Fast public consent, service and Reiki contract tests/);
   assert.match(src, /node --test tests\/contact-channel-chooser\.test\.mjs tests\/services-browser-order-contract\.test\.mjs tests\/reiki-unified-order-capture\.test\.mjs tests\/public-service-enquiries\.test\.mjs/);
   assert.match(src, /Sensitive PRs run risk-scoped protected real browser QA/);
@@ -739,7 +760,7 @@ test('impact planner preserves sensitive required browser acceptance while low-r
   const yml=workflow('hh-public-services-production.yml');
   assert.match(yml,/steps\.scope\.outputs\.browser == 'true' && \(github\.event_name != 'pull_request' \|\| steps\.scope\.outputs\.pr_heavy == 'true'\)/);
   assert.match(yml,/node --test tests\/ci-public-services-plan\.test\.mjs/);
-  assert.match(yml,/playwright install --with-deps chromium webkit/);
+  verifyPinnedPublicBrowsers(yml);
   assert.match(yml,/run_case "verify-service-cart-browser.mjs"/);
   assert.doesNotMatch(yml,/continue-on-error:\s*true/);
 });
@@ -790,8 +811,7 @@ test('common public display changes use only relevant browser cases, not unrelat
   const yml=workflow('hh-public-services-production.yml');
   assert.match(yml,/HH_PUBLIC_BROWSER_ENGINES/);
   assert.match(yml,/steps\.scope\.outputs\.engines/);
-  assert.match(yml,/playwright install --with-deps chromium\n/);
-  assert.match(yml,/playwright install --with-deps chromium webkit/);
+  verifyPinnedPublicBrowsers(yml);
 });
 
 test('browser CI accepts only observed credential-free 503 paths without body-read races',()=>{
@@ -913,7 +933,18 @@ test('only exact owner-approved Home film PR #2758 uses verified Home+Site Video
   assert.match(home,/pull_request:/);
   assert.match(video,/pull_request:/);
   const source=readFileSync(new URL('../components/home-presentation-video-section.tsx',import.meta.url),'utf8');
-  assert.ok(source.includes('G0Db6yOCMto'),'only approved Russian video source');
+  // The site and Telegram now share ONE reviewed, immutable locale allowlist.
+  // The previously hard-coded RU ID moved into that registry in #3651.
+  const ru=approvedTelegramPresentation('ru');
+  assert.equal(ru?.youtubeId,'G0Db6yOCMto','exact owner-approved RU public film');
+  assert.equal(ru?.locale,'ru');
+  assert.ok(ru.durationSeconds>=70,'no 29-second or private preview substitute');
+  assert.equal(approvedTelegramPresentation('en'),null,'no Russian audio on English site');
+  assert.equal(approvedTelegramPresentation('es'),null,'no Russian audio on Spanish site');
+  assert.ok(source.includes('approvedTelegramPresentation("ru")?.youtubeId'),
+    'Home RU slot resolves the reviewed shared registry, not a hidden hard-coded ID');
+  assert.ok(source.includes('approvedTelegramPresentation("en")?.youtubeId'),
+    'English slot remains gated until a real approved English master exists');
 });
 
 
@@ -1265,18 +1296,22 @@ test('Public Services performance guards preserve the exact-head and sensitive-b
   for (const fragment of [
     'fetch-depth: 2',
     'Verify bounded Public Services PR ancestry before impact routing',
-    'git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base"',
-    'git fetch --quiet --no-tags --deepen="$extra" origin "$tested_base"',
+    'GH_TOKEN: ${{ github.token }}',
+    'https://api.github.com/repos/${GITHUB_REPOSITORY}/compare/${EVENT_BASE_SHA}...${tested_base}',
+    'Authorization: Bearer ${GH_TOKEN}',
+    '[[ "$relation" == "ahead" || "$relation" == "identical" ]] || {',
     'actions/cache/restore@v4',
     'actions/cache/save@v4',
     'hh-public-next-',
     'steps.public_acceptance.outputs.build_ok',
-    'playwright install chromium',
-    'smoke_engines',
-    'playwright install --with-deps chromium webkit',
+    'image: mcr.microsoft.com/playwright:v1.63.0-noble',
+    'Verify preinstalled Chromium and WebKit for isolated public acceptance',
+    'HH_PUBLIC_BROWSER_ENGINES',
+    'await engine.launch({ headless: true, timeout: 15000 })',
     './node_modules/.bin/next build',
   ]) assert.ok(src.includes(fragment), 'missing CI speed guard: '+fragment);
-  assert.ok(src.includes('github.event.pull_request.number'), 'cache must be PR-local');
+  assert.ok(src.includes('github.event.pull_request.number'), 'Next compiler cache must be PR-local');
+  verifyPinnedPublicBrowsers(src);
   assert.doesNotMatch(src, /continue-on-error:\s*true/);
   for (const unsafe of ['app/api/payments/checkout/route.js',
     'middleware.ts', 'components/commerce/cart-nav-link.tsx']) {
@@ -1307,14 +1342,16 @@ test('Core-only PR fast-lane regression cannot summon unrelated public browser E
   }
 });
 
-test('trusted production Playwright cache is shared read-only without weakening sensitive PR browser coverage', () => {
+test('production-only browser seed remains isolated; PR runs pinned Playwright container', () => {
   const serviceWorkflow=workflow('hh-public-services-production.yml');
   const seed=workflow('hh-public-playwright-cache.yml');
   const key='hh-public-browser-blobs-';
   assert.ok(serviceWorkflow.includes('actions/cache/restore@v4'));
   assert.ok(!serviceWorkflow.includes('uses: actions/cache@v4'),
     'pull-request jobs must not publish cross-PR browser caches');
-  assert.ok(serviceWorkflow.includes(key) && seed.includes(key));
+  assert.ok(!serviceWorkflow.includes(key) && seed.includes(key),
+    'PR must use the pinned image; binary seed remains production-only');
+  verifyPinnedPublicBrowsers(serviceWorkflow);
   assert.match(seed, /^  push:\s*$/m);
   assert.ok(seed.includes("branches: ['codex/public-book-library']"));
   assert.ok(seed.includes("if: github.ref == 'refs/heads/codex/public-book-library'"));
@@ -1485,4 +1522,293 @@ test('private media declarations initialize before CLI main to avoid hidden full
   const execute=src.lastIndexOf('main();');
   assert.ok(declaration>=0 && entry>declaration && execute>entry,
     'private media ownership constants must be initialized before direct CLI invocation');
+});
+
+test('PR #2969 exactly reviewed 120-scenario audio cannot trigger 13 unrelated public checkout journeys',()=>{
+  const delta=[["M",".github/workflows/holistic-support-mandala.yml"],["M","components/mandala-free-video-studio.tsx"],["M","components/mandala-phrase-catalog.tsx"],["A","data/video-catalog/curated-audio-imports.json"],["A","data/video-catalog/goal-tree-audio-playlists-v1.json"],["A","docs/videos/AUDIO_120_SCENARIOS_LICENSED_IMPORT_20261101.md"],["A","lib/mandala/curated-audio-recommendations.mjs"],["A","lib/mandala/goal-tree-audio-playlists.mjs"],["M","lib/mandala/local-video-music.ts"],["A","scripts/import-reviewed-audio.mjs"],["A","tests/curated-audio-selection.test.mjs"],["A","tests/goal-tree-audio-playlists.test.mjs"],["A","tests/import-reviewed-audio.test.mjs"],["M","tests/mandala-smart-audio.test.mjs"],["M","tests/mandala-video-phrase-catalog.test.mjs"],["M","scripts/ci-public-services-plan.mjs"],["M","tests/ci-public-services-plan.test.mjs"]];
+  const base='a'.repeat(40),head='b'.repeat(40),nul=String.fromCharCode(0);
+  const env={GITHUB_EVENT_NAME:'pull_request',
+    GITHUB_REF:'refs/pull/2969/merge',
+    GITHUB_HEAD_REF:'feat/hh-goal-tree-120-audio-playlists-20261101',
+    HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
+  const run=(rows=delta,envChange={})=>planPublicServicesEvent({...env,...envChange},(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='diff')return Buffer.from(rows.flatMap(([status,path])=>[status,path]).join(nul)+nul);
+    throw Error('Unexpected git command '+args.join(' '));
+  });
+  const answer=run();
+  assert.deepEqual([answer.mode,answer.build,answer.browser,answer.cases],
+    ['contracts',false,false,'none']);
+  assert.equal(requiresPublicServicesHeavyPr(answer),false);
+  const mandala=workflow('holistic-support-mandala.yml');
+  for(const must of [
+    'tests/goal-tree-audio-playlists.test.mjs',
+    'tests/import-reviewed-audio.test.mjs',
+    'tests/curated-audio-selection.test.mjs',
+    'node --test tests/goal-tree-audio-playlists.test.mjs',
+    'node --test tests/import-reviewed-audio.test.mjs',
+    'node --test tests/curated-audio-selection.test.mjs',
+    'node --test tests/mandala-video-phrase-catalog.test.mjs',
+    // Reviewed Mandala owner requires real impact and an independently Ready PR.
+    "if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}",
+    'run: node scripts/ci-heavy-impact.mjs mandala',
+    "if: steps.policy.outputs.policy_only != 'true'",
+    // The Mandala specialist now triggers on reviewed media paths for any PR,
+    // rather than on a historical branch-name allowlist. Both the changed
+    // source path and the actual 120-scenario manifest must route to it.
+    "- 'components/mandala-free-video-studio.tsx'",
+    "- 'data/video-catalog/goal-tree-audio-playlists-v1.json'",
+  ])assert.ok(mandala.includes(must),'owning audio specialist missing '+must);
+  // Workflow ownership is content-based now. An old one-PR branch name must
+  // not be a substitute for the real audio contracts asserted above.
+  assert.doesNotMatch(mandala,/startsWith\(github\.head_ref, 'feat\/hh-goal-tree-'\)/,
+    'audio owner tests must not rely on a retired branch-specific gate');
+  // Protected macOS release ownership follows exact changed source, never branch prefixes.
+  assert.ok(mandala.includes("needs.webkit_preflight.outputs.media_required == 'true'"),
+    'macOS job must require tested-base real media impact');
+  assert.ok(mandala.includes('git show "$tested_base:lib/ci/merge-check-light.mjs"'),
+    'trusted production classifier must decide whether WebKit runs');
+  assert.equal(requiresRealMediaWebKit(delta.map(([status,filename])=>({status,filename}))),true,
+    'real 120-scenario audio source changes must run macOS WebKit');
+  assert.equal(requiresRealMediaWebKit([{status:'M',filename:'tests/goal-tree-audio-playlists.test.mjs'}]),false,
+    'Node contract-only edits do not spend on macOS browser');
+  for(const path of [
+    'app/api/payments/checkout/route.js','app/api/service-enquiries/route.js',
+    'middleware.ts','components/commerce/service-cart.tsx',
+    'components/mandala-unknown-video-ai.tsx',
+    'data/video-catalog/unreviewed-remote-music.json',
+  ])assert.equal(run([...delta,['A',path]]).mode,'full',path);
+  assert.equal(run(delta.slice(1)).mode,'full','partial set is never trusted');
+  assert.equal(run([...delta.slice(0,-1),['D','tests/mandala-video-phrase-catalog.test.mjs']]).mode,
+    'full','deleted or duplicated phrase test cannot be treated as reviewed');
+  assert.equal(run([...delta.slice(0,-1),['M','tests/mandala-video-phrase-catalog-renamed.test.mjs']]).mode,
+    'full','unexpected phrase test path cannot bypass real Public Services');
+  assert.equal(run([...delta.slice(0,-1),['A','tests/ci-public-services-plan.test.mjs']]).mode,
+    'full','changed source test status does not qualify');
+  assert.equal(run(delta,{GITHUB_REF:'refs/pull/9999/merge'}).mode,'full');
+  assert.equal(run(delta,{GITHUB_HEAD_REF:'feat/other-audio-pr'}).mode,'full');
+  assert.equal(run([...delta.slice(0,-1),['D','tests/ci-public-services-plan.test.mjs']]).mode,'full',
+    'deleted protection test never qualifies');
+});
+
+test('Public Services checkout uses the exact event merge and authenticated GitHub ancestry proof',()=>{
+  const yaml=workflow('hh-public-services-production.yml');
+  for(const critical of [
+    'ref: ${{ github.sha }}',
+    'EXPECTED_MERGE_SHA: ${{ github.sha }}',
+    'git rev-parse HEAD',
+    'git cat-file -p HEAD',
+    'mapfile -t tested_parents',
+    '"\${#tested_parents[@]}" -eq 2',
+    'tested_base="\${tested_parents[0]}"',
+    'tested_head="\${tested_parents[1]}"',
+    'GH_TOKEN: ${{ github.token }}',
+    'https://api.github.com/repos/${GITHUB_REPOSITORY}/compare/${EVENT_BASE_SHA}...${tested_base}',
+    'Authorization: Bearer ${GH_TOKEN}',
+    '[[ "$relation" == "ahead" || "$relation" == "identical" ]] || {',
+  ])assert.ok(yaml.includes(critical),'missing fail-closed exact event verification '+critical);
+  assert.ok(yaml.includes('mapfile -t tested_parents'),
+    'the final proof must read raw parent SHAs even after bounded recovery');
+  assert.ok(yaml.includes('PR_HEAD_SHA'),'event PR head must remain exact');
+});
+
+test('Playwright Public Services container trusts only the GitHub checkout path before exact merge verification',()=>{
+ const yaml=workflow('hh-public-services-production.yml');
+ const setup=yaml.indexOf('name: Trust checked-out workspace inside Public Services container');
+ const ancestry=yaml.indexOf('name: Verify bounded Public Services PR ancestry');
+ assert.ok(setup>0 && ancestry>setup,'container safe.directory setup precedes fail-closed ancestry');
+ for(const required of [
+   'git config --global --add safe.directory "$GITHUB_WORKSPACE"',
+   '[[ "$(git rev-parse --show-toplevel)" == "$GITHUB_WORKSPACE" ]]',
+   '[[ "$(git rev-parse HEAD)" == "$EXPECTED_MERGE_SHA" ]]',
+   'mapfile -t tested_parents',
+ ])assert.ok(yaml.includes(required),'missing exact container checkout proof: '+required);
+ assert.equal(yaml.includes('git config --global --add safe.directory "*"'),false,
+   'never globally whitelist untrusted directories');
+})
+
+
+test('modified-only public unit tests take the focused unit lane', () => {
+  const base = 'a'.repeat(40), head = 'b'.repeat(40);
+  const invoke = entries => planPublicServicesEvent({
+    GITHUB_EVENT_NAME: 'pull_request', HH_PUBLIC_BASE_SHA: base, HH_PUBLIC_HEAD_SHA: head,
+  }, (_command, args) => {
+    if (args[0] === 'rev-parse') return Buffer.from(head + '\n');
+    if (args[0] === 'merge-base') return Buffer.alloc(0);
+    if (args[0] === 'diff') return Buffer.from(entries.flatMap(([status,file])=>[status,file]).join('\0') + '\0');
+    throw Error('Unexpected git command: ' + args.join(' '));
+  });
+  const good = invoke([['M','tests/holistic-support-first-screen.test.mjs'],
+                       ['M','tests/public-service-enquiries.test.mjs']]);
+  assert.deepEqual([good.mode,good.reason,good.build,good.browser,good.cases],
+    ['contracts','MODIFIED_PUBLIC_TESTS_ONLY',false,false,'none']);
+  assert.equal(requiresPublicServicesHeavyPr(good),false);
+  for (const unsafe of [
+    [['A','tests/holistic-new.test.mjs']],
+    [['D','tests/holistic-old.test.mjs']],
+    [['M','tests/holistic-x.test.mjs'],['M','app/api/payments/checkout/route.js']],
+    [['M','tests/holistic-x.test.mjs'],['M','scripts/verify-service-cart-browser.mjs']],
+    [['M','tests/holistic-x.test.mjs'],['M','tests/ci-pr-readiness.test.mjs']],
+  ]) assert.equal(invoke(unsafe).mode,'full');
+  const wf=workflow('hh-public-services-production.yml');
+  assert.match(wf,/Run exact modified public unit tests/);
+  assert.match(wf,/node --test/);
+});
+
+test('exact #3843 iHelp photo dialogue uses real Mandala owner, never unrelated storefront',()=>{
+  const expected=[
+    ['M','components/mandala-video-director-chat.module.css'],
+    ['M','components/mandala-video-director-chat.tsx'],
+    ['A','docs/design/IHELP_DIALOGUE_VISUAL_CONTINUITY_20261107.md'],
+    ['M','scripts/benchmarking/video-director-chat-live-acceptance.mjs'],
+    ['M','tests/video-chat-contextual-understanding.test.mjs'],
+    ['M','tests/video-director-calm-welcome.test.mjs'],
+    ['M','scripts/ci-public-services-plan.mjs'],
+    ['M','tests/ci-public-services-plan.test.mjs'],
+  ];
+  const mandala=workflow('holistic-support-mandala.yml');
+  const guard=workflow('hh-pr-sweep-guard.yml');
+  const pub=workflow('hh-public-services-production.yml');
+  assert.equal(covers(pathsOf('holistic-support-mandala.yml'),
+    'components/mandala-video-director-chat.tsx'),true);
+  assert.ok(mandala.includes('node scripts/benchmarking/video-director-chat-live-acceptance.mjs'),
+    'real photo-dialogue browser acceptance must remain in the Mandala specialist');
+  assert.match(mandala,/node --test tests\/video-chat-understanding\.test\.mjs tests\/video-chat-tree\.test\.mjs tests\/video-chat-contextual-understanding\.test\.mjs/);
+  assert.ok(pub.includes("run_case \"verify-storefront-shop-browser.mjs\""),
+    'cart QA must remain required when storefront/payment sources change');
+  const base='a'.repeat(40),head='b'.repeat(40),nul=String.fromCharCode(0);
+  const env={GITHUB_EVENT_NAME:'pull_request',
+    GITHUB_REF:'refs/pull/3843/merge',
+    GITHUB_HEAD_REF:'fix/ihelp-photo-dialogue-continuity-20261107',
+    HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
+  const examine=(rows,extra={})=>planPublicServicesEvent({...env,...extra},(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='diff')return Buffer.from(rows.flatMap(([st,p])=>[st,p]).join(nul)+nul);
+    if(args[0]==='show'){
+      const file=String(args[1]);
+      return Buffer.from(file.includes('holistic-support-mandala.yml')?mandala:
+        file.includes('hh-pr-sweep-guard.yml')?guard:pub);
+    }
+    throw Error('unexpected fake git command');
+  });
+  const result=examine(expected);
+  assert.deepEqual([result.mode,result.reason,result.build,result.browser,result.cases],
+    ['contracts','EXACT_PR_3843_MANDALA_PHOTO_DIALOGUE_OWNED',false,false,'none']);
+  assert.equal(requiresPublicServicesHeavyPr(result),false);
+  for(const delta of [
+    [...expected,['M','components/commerce/personal-cart.tsx']],
+    [...expected,['M','components/contact-channel-chooser.tsx']],
+    [...expected,['A','app/api/payments/new-gateway/route.ts']],
+    [...expected,['M','middleware.ts']],
+    [...expected,['A','docs/design/UNKNOWN_NEW_DOC.md']],
+    expected.slice(1),
+    expected.map(([st,p],i)=>i===2?['M',p]:[st,p]),
+    expected.map(([st,p],i)=>i===1?['D',p]:[st,p]),
+    [...expected,expected[0]],
+  ])assert.equal(examine(delta).mode,'full','unsafe/mixed iHelp changes must be FULL');
+  assert.equal(examine(expected,{GITHUB_REF:'refs/pull/3844/merge'}).mode,'full');
+  assert.equal(examine(expected,{GITHUB_HEAD_REF:'any-other-branch'}).mode,'full');
+  assert.equal(examine(expected,{HH_PUBLIC_BASE_SHA:''}).mode,'full');
+  assert.equal(planPublicServicesChangedPaths([
+    'components/contact-channel-chooser.tsx']).mode,'full');
+});
+
+test('Nov 16 isolated Video Studio PRs do not allocate unrelated public-services browser matrix', () => {
+  const publicPaths = pathsOf('hh-public-services-production.yml');
+  const mandalaPaths = pathsOf('holistic-support-mandala.yml');
+  const isolated = [
+    'components/mandala-automatic-storyboard.tsx',
+    'components/mandala-video-concept.tsx',
+    'components/mandala-video-concept.module.css',
+    'components/mandala-video-ready.tsx',
+    'components/mandala-video-ready.module.css',
+    'components/mandala-video-effect-journey.module.css',
+    'components/mandala-therapy-studio.tsx',
+  ];
+  for (const file of isolated) {
+    assert.equal(covers(mandalaPaths, file), true,
+      'real Mandala specialist must still test ' + file);
+    assert.equal(covers(publicPaths, file), false,
+      'unrelated Public Services E2E must not run for ' + file);
+  }
+  // Actual video-focused changed-path inventories from PR #4732 and #4742.
+  const videoPRs = [
+    [
+      'components/mandala-video-effect-journey.module.css',
+      'components/mandala-video-mobile.module.css',
+      'components/mandala-video-ready.module.css',
+      'components/mandala-video-ready.tsx',
+      'docs/design/VIDEO_READY_APPROVED_LAYOUT_20261115.md',
+      'scripts/verify-affirmation-voice-browser.mjs',
+      'tests/mandala-ready-approved-layout-20261115.test.mjs',
+      'tests/mandala-video-ready.test.mjs',
+    ],
+    [
+      'components/mandala-free-video-studio.tsx',
+      'components/mandala-therapy-studio.tsx',
+      'components/mandala-video-ready.tsx',
+      'scripts/verify-affirmation-voice-browser.mjs',
+      'tests/mandala-video-ready.test.mjs',
+    ],
+  ];
+  for (const paths of videoPRs) {
+    assert.equal(paths.some(file => covers(publicPaths, file)), false,
+      'video-only PR must not launch unrelated Public Services browser suite');
+    assert.equal(paths.some(file => covers(mandalaPaths, file)), true,
+      'video-only PR must still execute Mandala required specialist');
+  }
+  for (const sensitive of [
+    'middleware.ts',
+    'components/sitewide-lead-capture.tsx',
+    'app/api/payments/new-gateway/route.js',
+    'scripts/verify-home-consultation-first-screen.mjs',
+    'components/mandala-service-cart.tsx',
+    'components/mandala-new-public-booking.tsx',
+  ]) assert.equal(covers(publicPaths, sensitive), true,
+    'mixed service/auth/consent/payment source still requires Public Services browser QA: ' + sensitive);
+});
+
+test('Practice SSR is owned by exact practitioner browser workflows, not the unrelated 13-case Public Services matrix',()=>{
+  const pub=pathsOf('hh-public-services-production.yml');
+  const visual=pathsOf('practice-visual-browser.yml');
+  const owner=pathsOf('practice-visual-services.yml');
+  for(const path of ['components/practice-showcase.jsx','components/practice-showcase.module.css']){
+    assert.equal(covers(pub,path),false,path+' must not launch 20-minute public checkout QA');
+    assert.equal(covers(visual,path),true,path+' must keep real Chromium and WebKit');
+    assert.equal(covers(owner,path),true,path+' must keep practitioner editor checks');
+  }
+  const browser=workflow('practice-visual-browser.yml');
+  assert.match(browser,/verify-practice-visual-browser\.mjs/);
+  assert.match(browser,/Chromium and WebKit/);
+  assert.match(browser,/320, 354, 390 and 430 pixels/);
+  for(const path of ['components/consultation-choice-capture.tsx',
+    'components/commerce/service-cart.tsx','app/api/service-enquiries/route.ts'])
+    assert.equal(covers(pub,path),true,path+' must still have Public Services coverage');
+});
+
+
+test('Coach-only shared App dispatcher keeps Public Services source contracts but not unrelated full browser',()=>{
+  const base='b'.repeat(40),head='a'.repeat(40),merge='c'.repeat(40),z=String.fromCharCode(0);
+  const before="import {myCoachGenerativeTurn} from '@/lib/app/coaching-brain'\nconst globalAuth = true;\n    // Signed-in, stateless dialogue for the selected My Coach persona. Client\n    if (joined === 'my-coach/turn') { return json(myCoachGenerativeTurn()); }\n    // A synthetic preflight proves verified ZDR free-model access before any\nconst billingGuard = true;\n";
+  const after="import {myCoachGenerativeTurn,myCoachGenerativeStreamTurn} from '@/lib/app/coaching-brain'\nconst globalAuth = true;\n    // Signed-in, stateless dialogue for the selected My Coach persona. Client\n    if (joined === 'my-coach/stream') { return new Response('stream'); }\n    if (joined === 'my-coach/turn') { return json(myCoachGenerativeTurn()); }\n    // A synthetic preflight proves verified ZDR free-model access before any\nconst billingGuard = true;\n";
+  const env={GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head,
+    GITHUB_REF:'refs/pull/9999/merge',GITHUB_SHA:merge};
+  const git=(_bin,args)=>{
+    if(args[0]==='rev-parse')return ({HEAD:merge,'HEAD^1':base,'HEAD^2':head})[args[1]]+'\n';
+    if(args[0]==='merge-base')return '';
+    if(args[0]==='diff')return 'M'+z+'app/api/app/[...path]/route.js'+z+'A'+z+'lib/coaching/gemini-voice-catalog.mjs'+z;
+    if(args[0]==='show')return args[1].startsWith(base+':')?before:after;
+    throw Error('unexpected git command');
+  };
+  assert.deepEqual(planPublicServicesEvent(env,git),{mode:'contracts',reason:'EXACT_MY_COACH_ONLY_SHARED_API',
+    build:false,browser:false,metrics:false,cases:'none'});
+  const unsafe=(_bin,args)=>args[0]==='show'&&args[1].startsWith('HEAD:')
+    ? after.replace('const billingGuard = true;','const billingGuard = false;') : git(_bin,args);
+  assert.equal(planPublicServicesEvent(env,unsafe).mode,'full',
+    'changed shared billing or auth source cannot bypass Public Services browser');
+  const notPure=(_bin,args)=>args[0]==='diff'
+    ? 'M'+z+'app/api/app/[...path]/route.js'+z+'M'+z+'app/api/payments/route.js'+z : git(_bin,args);
+  assert.equal(planPublicServicesEvent(env,notPure).mode,'full','mixed payments always require real browser acceptance');
 });

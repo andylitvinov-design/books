@@ -279,6 +279,23 @@ export default function CabinetJourney({ accountId, locale = 'en' }) {
       </div>
     </header>
 
+    <div data-cabinet-learning-path-entry style={{display:'flex',alignItems:'center',
+      gap:12,flexWrap:'wrap',justifyContent:'space-between',padding:'12px 15px',
+      margin:'10px 0 16px',background:'#fff9f3',border:'1px solid #e9dfd1',borderRadius:15}}>
+      <span style={{color:'#143d3a',fontWeight:700,fontSize:15}}>
+        {lang === 'ru' ? 'Личный маршрут обучения на 4–6 недель'
+          : lang === 'es' ? 'Mi ruta personal de 4–6 semanas'
+          : 'Your personal 4–6 week learning path'}
+      </span>
+      <Link href={'/' + lang + '/app/learning-path'} prefetch={false}
+        style={{display:'inline-flex',alignItems:'center',minHeight:44,
+          padding:'10px 13px',borderRadius:12,background:'#067a67',
+          color:'#fff',fontWeight:700,textDecoration:'none'}}>
+        {lang === 'ru' ? 'Мой маршрут' : lang === 'es' ? 'Mi ruta' : 'My route'}
+        <ArrowRight size={16} aria-hidden="true" style={{marginLeft:6}} />
+      </Link>
+    </div>
+
     {ready && <div className={styles.overview}>
       <p className={styles.position}>
         <span>{t.here} · {t.step} {currentIndex + 1} {t.of} {t.stages.length}</span>

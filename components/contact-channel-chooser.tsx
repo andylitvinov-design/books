@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronDown, MessageCircle, Send, ShoppingBag } from "lucide-react";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { PhoneCountryInput } from "@/components/phone-country-input";
+import { EnquiryAttributionChoice } from "@/components/enquiry-attribution-choice";
 import { FreeExpressGoogleClaim } from "@/components/free-express-google-claim";
 import { ACQUISITION_EVENTS } from "@/data/local-acquisition";
 import { emitPublicAnalyticsEvent, type PublicAnalyticsEvent } from "@/lib/public-analytics";
@@ -15,6 +16,8 @@ import { readOrganicEventReferral, withOrganicEventReferral } from "@/lib/organi
 import { readPaidAdReferral, withPaidAdReferral } from "@/lib/paid-ad-referrals";
 import { RECEIPT_SESSION_KEY } from "@/lib/practitioners/enquiry-receipt.mjs";
 import styles from "./contact-channel-chooser.module.css";
+import {MandatoryMessengerActions} from "@/components/mandatory-messenger-actions";
+import {websiteMessengerOnlyUi} from "@/lib/crm/website-messenger-only.mjs";
 
 type AcquisitionEvent = (typeof ACQUISITION_EVENTS)[number] | PublicAnalyticsEvent;
 type SavedEnquiry = { referenceCode: string; saved: true };
@@ -50,7 +53,7 @@ const copy = {
     quickConsent: "Check the box to request one personal reply. No marketing, charge or confirmed booking.",
     compactConsent: "I agree to a personal reply about this request only. No marketing.",
     compactPhoneLabel: "Phone number", compactPhoneError: "Enter your international phone number.",
-    compactSaved: "Request saved. Review the message and tap Send in your chat.",
+    compactSaved: "Request saved. A messenger message is optional.", compactSave: "Save request without a messenger",
     compactHandoff: "Chat did not open automatically. Use a button below.",
     expressQuestion: "What would you like to explore? (optional)",
     expressHint: "One or two sentences. Please avoid medical records, symptoms, or test results.",
@@ -87,7 +90,7 @@ const copy = {
     quickConsent: "Отметьте согласие выше, чтобы получить личный ответ. Без рекламы, оплаты и автоматической записи.",
     compactConsent: "Согласен(на) на личный ответ по заявке. Без рекламы.",
     compactPhoneLabel: "Номер телефона", compactPhoneError: "Введите номер телефона с кодом страны.",
-    compactSaved: "Заявка сохранена. Проверьте сообщение и нажмите «Отправить» в чате.",
+    compactSaved: "Заявка сохранена. Писать в мессенджер необязательно.", compactSave: "Сохранить заявку без мессенджера",
     compactHandoff: "Чат не открылся автоматически. Нажмите кнопку ниже.",
     expressQuestion: "В чём суть вашего вопроса? (необязательно)",
     expressHint: "Одно-два предложения. Не указывайте симптомы, анализы и результаты тестов.",
@@ -124,7 +127,7 @@ const copy = {
     quickConsent: "Marca la casilla para solicitar una respuesta personal. Sin publicidad, cobro ni reserva confirmada.",
     compactConsent: "Acepto recibir una respuesta personal sobre esta solicitud. Sin publicidad.",
     compactPhoneLabel: "Número de teléfono", compactPhoneError: "Introduce tu teléfono con prefijo internacional.",
-    compactSaved: "Solicitud guardada. Revisa el mensaje y pulsa Enviar en el chat.",
+    compactSaved: "Solicitud guardada. La mensajería es opcional.", compactSave: "Guardar solicitud sin mensajería",
     compactHandoff: "El chat no se abrió. Usa un botón de abajo.",
     expressQuestion: "¿Cuál es tu consulta? (opcional)",
     expressHint: "Una o dos frases. Evita síntomas, informes médicos y resultados de pruebas.",
@@ -136,6 +139,8 @@ const copy = {
 type Props = {
   locale: PublicLocale;
   whatsappUrl: string;
+  /** Explicit first-party course/service message URL, bypassing the unrelated diagnostic bot. */
+  telegramEnquiryUrl?: string;
   className?: string;
   label?: string;
   event?: AcquisitionEvent;
@@ -154,6 +159,8 @@ type Props = {
   bookingSku?: "express-consultation-30" | "personal-session-60";
   /** Keep the original request button but reveal the compact phone-only form. */
   compactTrigger?: boolean;
+  /** Services-only two-channel inline expansion, without the large sheet. */
+  compactMessenger?: boolean;
   /** Keep the verified receipt in place so the visitor can select a messenger after saving. */
   stayAfterSave?: boolean;
   resetKey?: string;
@@ -166,11 +173,14 @@ type Props = {
 
 /** Anonymous first-party lead save, followed by an explicit client-initiated messenger handoff. */
 export function ContactChannelChooser({
-  locale, whatsappUrl, className, label, event = "contact_click", analyticsEvent,
-  onChannelClick, onSaved, attributes, id, quick = false, cartContact = false, compactPhone = false, compactTrigger = false, stayAfterSave = false, resetKey, publicTopic, publicServiceTitle, allowSecureExpressClaim = false, bookingSku,
+  locale, whatsappUrl, telegramEnquiryUrl, className, label, event = "contact_click", analyticsEvent,
+  onChannelClick, onSaved, attributes, id, quick = false, cartContact = false, compactPhone = false, compactTrigger = false, compactMessenger = false, stayAfterSave = false, resetKey, publicTopic, publicServiceTitle, allowSecureExpressClaim = false, bookingSku,
 }: Props) {
+  const [settledResetSignature, setSettledResetSignature] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState("");
+  // Preserve a user-opened private note through React updates and WebKit hydration.
+  const [noteOpen, setNoteOpen] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [method, setMethod] = useState<"email" | "phone">(cartContact ? "phone" : "email");
   const [googleReady, setGoogleReady] = useState(false);
@@ -199,6 +209,10 @@ export function ContactChannelChooser({
   const panelRef = useRef<HTMLDivElement>(null);
   const c = copy[locale];
   const enquiryResetKey = resetKey || whatsappUrl;
+  // A changed offer renders before its reset effect runs. Keep every action
+  // disabled in that interval so the reset cannot erase a visitor's click.
+  const resetSignature = JSON.stringify([enquiryResetKey, quick, compactPhone, cartContact]);
+  const interactive = settledResetSignature === resetSignature;
 
   useEffect(() => {
     const referral = readOrganicEventReferral(window.location.search, window.location.pathname);
@@ -217,7 +231,9 @@ export function ContactChannelChooser({
     }).toString() : "");
   }, [pathname]);
 
-  useEffect(() => {
+  // Reconcile a changed selected offer before Safari can paint/tap the new
+  // trigger. A delayed passive reset could close a form the user just opened.
+  useLayoutEffect(() => {
     if (compactPhone) {
       // A changed option must create a fresh enquiry, but keep an entered phone
       // so switching between free/personal choices never requires retyping it.
@@ -228,10 +244,12 @@ export function ContactChannelChooser({
       setPaymentExpanded(false);
       setError("");
       operationId.current = null;
+      setSettledResetSignature(resetSignature);
       return;
     }
     setOpen(false);
     setDescription("");
+    setNoteOpen(false);
     setDisplayName("");
     setMethod(cartContact ? "phone" : "email");
     setGoogleReady(false);
@@ -242,7 +260,8 @@ export function ContactChannelChooser({
     setSaved(null);
     setError("");
     operationId.current = null;
-  }, [enquiryResetKey, quick, compactPhone, cartContact]);
+    setSettledResetSignature(resetSignature);
+  }, [enquiryResetKey, quick, compactPhone, cartContact, resetSignature]);
 
   useEffect(() => {
     if (compactPhone || (!open && !(quick && saved))) return;
@@ -371,7 +390,7 @@ export function ContactChannelChooser({
   }, [quick, cartContact]);
 
   async function startGoogle() {
-    if (googleBusy || busy) return;
+    if (!interactive || googleBusy || busy) return;
     setGoogleBusy(true);
     setError("");
     try {
@@ -399,7 +418,7 @@ export function ContactChannelChooser({
   }
 
   async function saveEnquiry(channel?: "whatsapp" | "telegram") {
-    if (busy || saved) return;
+    if (!interactive || busy || saved) return;
     if (submitting.current) return;
     const cleanedPhone = phone.replace(/[\s().-]/g, "");
     const usePhone = (compactPhone && !bookingSku) || method === "phone";
@@ -494,6 +513,13 @@ export function ContactChannelChooser({
     preparedWhatsApp = draftUrl.toString();
   }
 
+  if (websiteMessengerOnlyUi()) return <div data-contact-channel-chooser
+    data-session-booking-flow={bookingSku?"":undefined} data-booking-sku={bookingSku||undefined}
+    data-contact-compact-messenger={compactMessenger?"true":undefined}>
+    <MandatoryMessengerActions locale={locale} whatsappUrl={referredWhatsappUrl} telegramUrl={telegramEnquiryUrl}
+      label={label||c.order} collapsed={compactMessenger||((compactPhone||compactTrigger)&&!allowSecureExpressClaim)}
+      compact={compactMessenger} id={id} className={className}/>
+  </div>;
   if (compactPhone && bookingSku) {
     const paidReady = bookingConfirmed && Boolean(saved && bookingStartsAt);
     const sessionText = bookingSku === "express-consultation-30"
@@ -504,7 +530,7 @@ export function ContactChannelChooser({
     return (
       <div className={[styles.compactPhone, styles.compactPhoneToggle].join(" ")}
         data-contact-channel-chooser data-session-booking-flow data-booking-sku={bookingSku}>
-        <button id={id} type="button" className={[styles.trigger, className].filter(Boolean).join(" ")}
+        <button id={id} type="button" disabled={!interactive} className={[styles.trigger, className].filter(Boolean).join(" ")}
           aria-expanded={open} aria-controls={panelId} data-contact-order
           data-booking-cta={paidReady ? "pay" : "book"}
           onClick={() => {
@@ -515,7 +541,7 @@ export function ContactChannelChooser({
           <span>{paidReady ? payLabel : bookLabel}</span>
           <ChevronDown className={styles.chevron} size={21} aria-hidden="true" />
         </button>
-        <div ref={panelRef} id={panelId} className={styles.compactTogglePanel} hidden={!open}>
+        <div ref={panelRef} id={panelId} className={styles.compactTogglePanel} hidden={!interactive || !open}>
           {!saved ? (
             <form className={styles.bookingForm} data-booking-step="contact" onSubmit={submit}>
               <p className={styles.bookingIntro}>{locale === "ru"
@@ -552,6 +578,7 @@ export function ContactChannelChooser({
                   onChange={event => { setConsent(event.target.checked); setError(""); operationId.current = null; }} />
                 <span>{c.compactConsent}</span>
               </label>
+              <EnquiryAttributionChoice locale={locale} disabled={busy || googleBusy || !interactive} />
               <label className={styles.honeypot} aria-hidden="true">
                 Website <input type="text" tabIndex={-1} autoComplete="off"
                   value={website} onChange={event => setWebsite(event.target.value)} />
@@ -641,7 +668,7 @@ export function ContactChannelChooser({
       <div className={[styles.compactPhone, compactTrigger ? styles.compactPhoneToggle : ""].filter(Boolean).join(" ")}
         data-contact-channel-chooser data-reiki-phone-enquiry data-compact-phone-trigger={compactTrigger ? "true" : undefined}>
         {compactTrigger ? (
-          <button id={id} type="button" className={[styles.trigger, className].filter(Boolean).join(" ")}
+          <button id={id} type="button" disabled={!interactive} className={[styles.trigger, className].filter(Boolean).join(" ")}
             aria-expanded={open} aria-controls={panelId} data-contact-order
             onClick={() => setOpen((value) => !value)}>
             <MessageCircle size={20} aria-hidden="true" />
@@ -650,13 +677,13 @@ export function ContactChannelChooser({
           </button>
         ) : null}
         <div ref={panelRef} id={panelId} className={compactTrigger ? styles.compactTogglePanel : undefined}
-          hidden={compactTrigger && !open}>
+          hidden={!interactive || (compactTrigger && !open)}>
           {!saved ? (
-          <form className={styles.compactPhoneForm} onSubmit={event => event.preventDefault()}>
+          <form className={styles.compactPhoneForm} onSubmit={event => { event.preventDefault(); void saveEnquiry(); }}>
             <div className={styles.compactPhoneField}>
               <label htmlFor={panelId + "-phone"}>{c.compactPhoneLabel}</label>
               <PhoneCountryInput id={panelId + "-phone"} locale={locale} value={phone}
-                disabled={busy} required onChange={value => {
+                disabled={busy || !interactive} required onChange={value => {
                   setPhone(value); setError(""); operationId.current = null;
                 }} />
             </div>
@@ -664,26 +691,32 @@ export function ContactChannelChooser({
               <summary>{c.expressAddDetails}</summary>
               <label className={styles.compactQuestion}>
                 <span>{c.expressQuestion}</span>
-                <textarea rows={2} maxLength={300} value={description} disabled={busy}
+                <textarea rows={2} maxLength={300} value={description} disabled={busy || !interactive}
                   placeholder={c.expressHint}
                   onChange={event => { setDescription(event.target.value); setError(""); operationId.current = null; }} />
               </label>
             </details>}
             <label className={styles.compactConsent}>
-              <input type="checkbox" checked={consent} required disabled={busy}
+              <input type="checkbox" checked={consent} required disabled={busy || !interactive}
                 onChange={event => { setConsent(event.target.checked); setError(""); operationId.current = null; }} />
               <span>{c.compactConsent}</span>
             </label>
+            <EnquiryAttributionChoice locale={locale} disabled={busy || !interactive} />
             <label className={styles.honeypot} aria-hidden="true">
               Website <input type="text" tabIndex={-1} autoComplete="off"
                 value={website} onChange={event => setWebsite(event.target.value)} />
             </label>
+            <button type="submit" className={styles.compactSave}
+              disabled={busy || !interactive || !consent || !phone.trim()}
+              data-contact-save-without-messenger>
+              {busy ? c.sending : c.compactSave}
+            </button>
             <div className={styles.compactChannels} role="group" aria-label={c.messengers}>
-              <button type="button" className={styles.whatsapp} disabled={busy}
+              <button type="button" className={styles.whatsapp} disabled={busy || !interactive}
                 data-contact-channel-submit="whatsapp" onClick={() => { void saveEnquiry("whatsapp"); }}>
                 <MessageCircle size={19} aria-hidden="true" />{busy ? c.sending : "WhatsApp"}
               </button>
-              <button type="button" className={styles.telegram} disabled={busy}
+              <button type="button" className={styles.telegram} disabled={busy || !interactive}
                 data-contact-channel-submit="telegram" onClick={() => { void saveEnquiry("telegram"); }}>
                 <Send size={19} aria-hidden="true" />{busy ? c.sending : "Telegram"}
               </button>
@@ -724,32 +757,32 @@ export function ContactChannelChooser({
 
   return (
     <div className={styles.wrapper} data-contact-channel-chooser data-open={open || quick} data-quick={quick}>
-      {!quick && <button id={id} type="button" className={[styles.trigger, className].filter(Boolean).join(" ")}
+      {!quick && <button id={id} type="button" disabled={!interactive} className={[styles.trigger, className].filter(Boolean).join(" ")}
         aria-expanded={open} aria-controls={panelId} onClick={() => setOpen((value) => !value)}
         data-contact-order>
         <ShoppingBag size={20} aria-hidden="true" />
         <span>{label || c.order}</span>
         <ChevronDown className={styles.chevron} size={21} aria-hidden="true" />
       </button>}
-      <div ref={panelRef} className={[styles.panel, quick ? styles.quickPanel : ""].join(" ")} id={panelId} hidden={!open && !quick}>
+      <div ref={panelRef} className={[styles.panel, quick ? styles.quickPanel : ""].join(" ")} id={panelId} hidden={!interactive || (!open && !quick)}>
         {(!quick || saved) && <p className={styles.question}>{saved ? c.messengers : c.question}</p>}
         {!saved ? (
           <form onSubmit={submit} className={styles.enquiryForm}
             data-contact-hydrated={cartContact ? String(cartFormHydrated) : undefined}
             aria-busy={cartContact && !cartFormHydrated ? true : undefined}>
             {(!quick || !googleReady) && <button type="button" className={styles.googleButton} onClick={startGoogle}
-              disabled={busy || googleBusy || (cartContact && !cartFormHydrated)} aria-label={c.google}>
+              disabled={busy || googleBusy || !interactive || (cartContact && !cartFormHydrated)} aria-label={c.google}>
               <span className={styles.googleMark} aria-hidden="true">G</span>
               {googleBusy ? c.googleBusy : c.google}
             </button>}
             {googleReady && method === "email" && <p className={styles.googleReady} role="status">{quick ? c.quickReady : c.googleReady}</p>}
             {(!quick || !googleReady) && <p className={styles.separator}><span>{c.divider}</span></p>}
             {!quick && <div className={styles.methodChoices} role="group" aria-label={c.replyVia}>
-              <button type="button" aria-pressed={method === "email"} disabled={busy || googleBusy}
+              <button type="button" aria-pressed={method === "email"} disabled={busy || googleBusy || !interactive}
                 onClick={() => { setMethod("email"); setError(""); operationId.current = null; }}>
                 {c.email}
               </button>
-              <button type="button" aria-pressed={method === "phone"} disabled={busy || googleBusy}
+              <button type="button" aria-pressed={method === "phone"} disabled={busy || googleBusy || !interactive}
                 onClick={() => { setMethod("phone"); setError(""); operationId.current = null; }}>
                 {c.phone}
               </button>
@@ -757,7 +790,7 @@ export function ContactChannelChooser({
             <div className={styles.contactFields}>
               {method === "email" ? (
                 <label>{c.email}
-                  <input type="email" autoComplete="email" maxLength={254} required disabled={busy || googleBusy || (cartContact && !cartFormHydrated)}
+                  <input type="email" autoComplete="email" maxLength={254} required disabled={busy || googleBusy || !interactive || (cartContact && !cartFormHydrated)}
                     value={email} onChange={event => {
                       setEmail(event.target.value); setError(""); operationId.current = null;
                     }} />
@@ -766,27 +799,32 @@ export function ContactChannelChooser({
                 <div className={styles.phoneField}>
                   <label htmlFor={panelId + "-phone"}>{c.phone}</label>
                   <PhoneCountryInput id={panelId + "-phone"} locale={locale} required
-                    disabled={busy || googleBusy || (cartContact && !cartFormHydrated)} value={phone} onChange={value => {
+                    disabled={busy || googleBusy || !interactive || (cartContact && !cartFormHydrated)} value={phone} onChange={value => {
                       setPhone(value); setError(""); operationId.current = null;
                     }} />
                 </div>
               )}
             </div>
-            {!quick && <><details className={styles.optionalName}>
+            {!quick && <><details key={resetSignature} className={styles.optionalName}>
               <summary>{c.nameOptional}</summary>
               <label>{c.name}
                 <input type="text" autoComplete="name" minLength={2} maxLength={120}
-                  disabled={busy || googleBusy} value={displayName} onChange={event => {
+                  disabled={busy || googleBusy || !interactive} value={displayName} onChange={event => {
                     setDisplayName(event.target.value); setError(""); operationId.current = null;
                   }} />
               </label>
             </details>
             <small className={styles.privateNote}>{c.contactHelp}</small>
-            <details className={styles.optionalNote}>
-              <summary>{c.description}</summary>
+            <details className={styles.optionalNote} open={noteOpen}>
+              <summary onClick={event => {
+                // One genuine click owns the disclosure state; suppress the
+                // native toggle that may race a WebKit hydration remount.
+                event.preventDefault();
+                if (interactive && !busy) setNoteOpen(value => !value);
+              }}>{c.description}</summary>
               <textarea id={panelId + "-situation"} aria-label={c.description}
                 maxLength={1400} rows={2}
-                placeholder={c.placeholder} value={description} disabled={busy}
+                placeholder={c.placeholder} value={description} disabled={busy || !interactive}
                 onChange={event => {
                   setDescription(event.target.value); setError(""); operationId.current = null;
                 }} />
@@ -794,12 +832,19 @@ export function ContactChannelChooser({
             </details>
             </>}
             <label className={styles.consent}>
-              <input type="checkbox" required checked={consent} disabled={busy || (cartContact && !cartFormHydrated)}
-                onChange={event => { setConsent(event.target.checked); operationId.current = null; }} />
+              {/* Safari can deliver a genuine cart checkbox click before React's
+                  synthetic change settles. Read only the native clicked state. */}
+              <input type="checkbox" required checked={consent} disabled={busy || !interactive || (cartContact && !cartFormHydrated)}
+                onChange={event => { setConsent(event.target.checked); operationId.current = null; }}
+                onClick={cartContact ? event => {
+                  setConsent(event.currentTarget.checked);
+                  operationId.current = null;
+                } : undefined} />
               <span>{c.consent}</span>
             </label>
+            <EnquiryAttributionChoice locale={locale} disabled={busy || !interactive} />
             {quick && (!cartContact || (googleReady && method === "email")) &&
-              <button type="button" className={styles.quickSwitch} disabled={busy || googleBusy}
+              <button type="button" className={styles.quickSwitch} disabled={busy || googleBusy || !interactive}
                 onClick={() => { setMethod(current => current === "email" ? "phone" : "email"); setError(""); operationId.current = null; }}>
                 {method === "email" ? c.quickPhone : c.quickEmail}
               </button>}
@@ -809,7 +854,7 @@ export function ContactChannelChooser({
                 value={website} onChange={event => setWebsite(event.target.value)} />
             </label>
             <button type="submit" className={styles.submit}
-              disabled={busy || googleBusy || (cartContact && !cartFormHydrated) ||
+              disabled={busy || googleBusy || !interactive || (cartContact && !cartFormHydrated) ||
                 (method === "email" ? !email.trim() : !phone.trim()) || !consent}>
               <Send size={17} aria-hidden="true" />{busy ? c.sending : (quick && cartContact ? c.submit : quick ? c.quickSubmit : c.submit)}
             </button>
@@ -837,7 +882,7 @@ export function ContactChannelChooser({
               </AcquisitionEventLink>
             </div>
             <button type="button" className={styles.again} onClick={() => {
-              setSaved(null); setDescription(""); setDisplayName(""); setEmail("");
+              setSaved(null); setDescription(""); setNoteOpen(false); setDisplayName(""); setEmail("");
               setMethod("email"); setGoogleReady(false);
               setPhone(""); setConsent(false); setWebsite(""); setError(""); operationId.current = null;
             }}>{c.again}</button>

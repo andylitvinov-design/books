@@ -10,6 +10,8 @@ on:
       - 'lib/profile/development-program.js'
       - 'lib/app/development-goals.js'
       - 'app/api/app/**'
+      # The Commander PR API is independently guarded by Core and PR Sweep Guard.
+      - '!app/api/app/commander/**'
       - 'tests/reports-development-program.test.mjs'
       - 'tests/profile-portrait-test-suggestions.test.mjs'
       - 'tests/goal-profile-journey.test.mjs'
@@ -17,7 +19,6 @@ on:
       - 'components/app/goal-profile-panel.jsx'
       - 'components/app/goal-profile-panel.module.css'
       - 'lib/profile/portrait-test-suggestions.js'
-      - 'package.json'
       - 'lib/clients/session-delivery-service.js'
       - 'lib/documents/report-progress.js'
       - 'components/prescription-document.jsx'
@@ -31,6 +32,8 @@ on:
       - 'public/images/holistic-house/report-lighthouse-coast.svg'
       - 'tests/client-report-coastal-v2.test.mjs'
       - '.github/workflows/hh-client-report-coastal-v2.yml'
+      # Signed Telegram CRM provider ingress has dedicated CRM/App security owners, not report builder.
+      - '!app/api/app/crm/messenger/webhook/**'
   pull_request:
     branches: ['codex/public-book-library']
     paths:
@@ -62,8 +65,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: hh-development-program-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+  group: hh-development-program-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 jobs:
   isolated-unit-lint-build:
     runs-on: ubuntu-latest

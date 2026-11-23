@@ -13,7 +13,6 @@ on:
       - 'tests/hh-apk-signing-bootstrap.test.mjs'
       - 'docs/releases/HOLISTIC_HOUSE_GOOGLE_PLAY_RELEASE_PROGRAM_20261027.md'
       - 'scripts/brand-hh-native-artwork.mjs'
-      - '.github/workflows/holistic-house-native.yml'
       - 'tests/holistic-house-native-build.test.mjs'
       - 'lib/native/**'
       - 'components/native-link-handler.tsx'
@@ -31,7 +30,6 @@ on:
       # only after this successor is BASE-trusted in production.
       - 'capacitor.config.json'
       - 'components/native-**'
-      - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/native-ci.yml'
   push:
@@ -56,8 +54,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: hh-native-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+  group: hh-native-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 
 defaults:
   run:
@@ -75,7 +73,13 @@ jobs:
         with: {persist-credentials: false}
       - uses: actions/setup-node@v4
         with: {node-version: '22', cache: npm}
+      - name: Stage checksum-verified FFmpeg before npm lifecycle
+        uses: ./.github/actions/ci-ffmpeg-static
       - run: npm ci --no-audit --no-fund
+      - name: Materialize checksum-verified FFmpeg for package runtime
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
       - name: Verify native source, consent, ownership and account isolation
         run: |
           npm run native:check

@@ -5,15 +5,22 @@ on:
     branches: ['codex/public-book-library']
     paths:
       - 'app/api/app/**/route.js'
+      # Signed CRM messenger webhooks are independently owned by CRM, App
+      # security and required Core; they cannot affect Google Practice return.
+      # Keep the shared catch-all dispatcher and every other API route.
+      - '!app/api/app/crm/messenger/webhook/**'
       - 'components/app/app-workspace.jsx'
       - 'components/app/my-services-dashboard.jsx'
       - 'components/app/practice-inner-navigation.jsx'
-      - 'components/practice-showcase.jsx'
       - 'components/practice-showcase.module.css'
       - 'app/*/practice/page.jsx'
       - 'tests/practice-google-return-and-services-v5.test.mjs'
       - 'scripts/verify-practice-post-google-browser.mjs'
-      - '.github/workflows/practice-google-browser.yml'
+      # Commander signed PR completion is validated by Core and the focused Guard, not this unrelated heavy suite.
+      - '!app/api/app/commander/**'
+      # Client Live Photo APIs have their own App/IA/billing/video owners.
+      # Keep the literal shared catch-all dispatcher and all source/security routes.
+      - '!app/api/app/live-photos/**'
   push:
     branches: ['codex/public-book-library']
     paths:
@@ -25,8 +32,8 @@ on:
       - '.github/workflows/practice-google-browser.yml'
   workflow_dispatch:
 concurrency:
-  group: hh-practice-google-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+  group: hh-practice-google-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 
 permissions:
   contents: read
@@ -46,8 +53,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Load original checksum-verified FFmpeg for npm ci
+        uses: ./.github/actions/ci-ffmpeg-static
       - name: Install locked application dependencies
         run: npm ci --no-audit --no-fund
+      - name: Install SHA-verified FFmpeg into package after npm ci
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
       - name: Focused auth, layout and regression source tests
         run: |
           node --check scripts/verify-practice-post-google-browser.mjs

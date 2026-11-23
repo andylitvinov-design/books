@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { prepareFourFilmSources, playableFilmSource } from "../lib/mandala/free-film-source-loader.mjs";
+import { ensureDecodedVideoOnUserIntent } from "../lib/mandala/intent-video-loading.mjs";
 
 class FakeVideo extends EventTarget {
   constructor() {
@@ -17,6 +18,7 @@ class FakeVideo extends EventTarget {
     this.plays = 0;
     this.pauses = 0;
     this._currentTime = 0;
+    this.duration = 10;
     this.seeking = false;
     this.rewinds = 0;
   }
@@ -157,4 +159,78 @@ test("a missing seeked event after rewind times out rather than certifying stale
     prepareFourFilmSources(shots, refs, {timeoutMs: 10}),
     /four_scene_load_timeout/,
   );
+});
+
+
+test("fresh export seeks all four approved sources to their authored slip starts", async () => {
+  const {videos,refs}=setup();
+  const edited=shots.map((shot,index)=>({...shot,sourcePhasePercent:index*10}));
+  videos.forEach(video=>video.ready());
+  const pending=prepareFourFilmSources(edited,refs,{timeoutMs:200});
+  assert.equal(videos[0].currentTime,0);
+  for(let index=1;index<4;index++){
+    assert.equal(videos[index].currentTime,index);
+    assert.equal(videos[index].seeking,true);
+    assert.equal(videos[index].rewinds,1);
+  }
+  videos.slice(1).forEach(video=>video.finishSeek());
+  assert.deepEqual(await pending,{ready:4,total:4});
+});
+test("a phase edit without real finite source duration is rejected, not silently exported",async()=>{
+  const {videos,refs}=setup();
+  const edited=shots.map((shot,index)=>({...shot,sourcePhasePercent:index===1?35:0}));
+  videos[1].duration=Infinity;
+  videos.forEach(video=>video.ready());
+  await assert.rejects(prepareFourFilmSources(edited,refs,{timeoutMs:100}),
+    /four_scene_source_duration_invalid:abundance-tree/);
+  await assert.rejects(prepareFourFilmSources(
+    shots.map((s,i)=>({...s,sourcePhasePercent:i===1?100:0})),refs),
+    /invalid_four_scene_montage/);
+});
+
+test("single source stays lazy at rest but primes inline decoding on an explicit gesture",async()=>{
+  const video=new FakeVideo();
+  assert.equal(video.preload,"none");
+  const pending=ensureDecodedVideoOnUserIntent(video,{timeoutMs:1000});
+  assert.equal(video.preload,"auto","Safari may now load the previously idle master");
+  assert.equal(video.playsInline,true);
+  assert.equal(video.muted,true);
+  assert.equal(video.loads,1);
+  assert.equal(video.plays,1);
+  video.ready();
+  assert.equal(await pending,true,"only physically decoded frames count");
+});
+
+test("single-source intent never restarts a loading decoder or accepts a corrupt frame",async()=>{
+  const loading=new FakeVideo();loading.networkState=2;
+  const first=ensureDecodedVideoOnUserIntent(loading,{timeoutMs:1000});
+  assert.equal(loading.preload,"auto");
+  assert.equal(loading.loads,0,"an existing network request must not restart");
+  loading.ready();
+  assert.equal(await first,true);
+  const failed=new FakeVideo();
+  const second=ensureDecodedVideoOnUserIntent(failed,{timeoutMs:1000});
+  failed.readyState=2;failed.videoWidth=0;failed.videoHeight=270;
+  failed.dispatchEvent(new Event("loadeddata"));
+  failed.fail();
+  assert.equal(await second,false,"readyState without width must fail closed");
+});
+
+
+test("licensed mixed storyboard may rewind only its actual filmed subset",async()=>{
+  // The Studio separately verifies allowlisted photo identities and JPEG.decode.
+  // The default four-MP4 contract remains strict for every other caller.
+  const {videos,refs}=setup();
+  await assert.rejects(prepareFourFilmSources(shots.slice(0,2),refs),
+    /invalid_four_scene_montage/);
+  const onlyTwo=prepareFourFilmSources(shots.slice(0,2),refs,{
+    adaptive:true,verifiedMixedPhotoSubset:true,timeoutMs:200
+  });
+  videos.slice(0,2).forEach(v=>v.ready());
+  assert.deepEqual(await onlyTwo,{ready:2,total:2});
+  assert.equal(videos[2].plays,0,"unused film never starts");
+  assert.deepEqual(await prepareFourFilmSources([],{},
+    {adaptive:true,verifiedMixedPhotoSubset:true,timeoutMs:200}),{ready:0,total:0});
+  await assert.rejects(prepareFourFilmSources([],{},{adaptive:true}),
+    /invalid_four_scene_montage/);
 });

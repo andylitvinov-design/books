@@ -99,7 +99,9 @@ test("mobile Courses selects one Greek channel, not the combined 12-video Greece
 });
 
 test("Video Blogs have two standalone, filterable original channels, episodes before other videos", () => {
-  assert.match(library, /greekVideoSeries\(locale\)/);
+  // Original series are Russian-language assets, shown on every MyTube UI locale.
+  assert.match(library, /greekVideoSeries\("ru"\)/);
+  assert.match(library, /audioLanguage:"ru" as const/);
   assert.match(library, /seriesId: series\.id/);
   assert.match(library, /seriesOrder: lesson\.order/);
   assert.match(library, /buildPublishedVideoIndex\(/);

@@ -1,6 +1,6 @@
 /**
  * Build-time, reproducible first-party MP3 masters.
- * Four DIFFERENT original scores for EVERY approved scenario (currently 48×4),
+ * Four DIFFERENT original scores for EVERY approved scenario (currently 49×4),
  * plus four original digital performances of familiar public-domain melodies.
  * All files are derived build artifacts; no external provider, paid API,
  * unlicensed music sample or visitor information is involved.
@@ -11,6 +11,8 @@
  */
 import {spawnSync} from "node:child_process";
 import {createHash} from "node:crypto";
+import {availableParallelism} from "node:os";
+import {Worker,isMainThread,workerData,parentPort} from "node:worker_threads";
 import {existsSync,mkdirSync,readFileSync,writeFileSync,unlinkSync,statSync} from "node:fs";
 import {dirname,resolve} from "node:path";
 import {fileURLToPath} from "node:url";
@@ -110,10 +112,21 @@ function encodeMaster(file,wav) {
   ],{input:wav,maxBuffer:2*1024*1024,timeout:30000});
   if(result.error||result.status!==0||!plausibleMp3(file)){
     try{unlinkSync(file)}catch{}
-    throw Error("scenario_mp3_encode_failed_"+file+": "+String(result.stderr||result.error).slice(0,350));
+    // Emit actionable error metadata when FFmpeg exits without stderr under
+    // resource contention; never count a partial MP3 as a successful encode.
+    const detail=[
+      "status="+String(result.status),
+      "signal="+String(result.signal),
+      "code="+String(result.error?.code||"none"),
+      "stderr="+String(result.stderr||result.error?.message||"none").slice(0,350)
+    ].join(" ");
+    throw Error("scenario_mp3_encode_failed_"+file+": "+detail);
   }
 }
-export function buildScenarioMusic({check=CHECK,force=FORCE}={}){
+export function buildScenarioMusic({check=CHECK,force=FORCE,shardIndex=null,shardCount=1}={}){
+  if(!Number.isInteger(shardCount)||shardCount<1||
+     (shardIndex!==null&&(!Number.isInteger(shardIndex)||shardIndex<0||shardIndex>=shardCount)))
+    throw Error("invalid_scenario_music_shard");
   if(SCENARIO_AUDIO_REGISTRY.length===0||SCENARIO_AUDIO_VARIANTS.length!==4)throw Error("empty_music_tree");
   if(!check)mkdirSync(dir,{recursive:true});
   const all=[];
@@ -130,7 +143,8 @@ export function buildScenarioMusic({check=CHECK,force=FORCE}={}){
     seenIds.add(theme.id);all.push({id:theme.id,theme});
   }
   let generated=0;const fingerprints=new Set();
-  for(const item of all){
+  for(const [index,item] of all.entries()){
+    if(shardIndex!==null&&index%shardCount!==shardIndex)continue;
     const path=resolve(dir,item.id+".mp3");
     if(check){
       if(!plausibleMp3(path))throw Error("missing_or_invalid_mp3_"+item.id);
@@ -150,5 +164,68 @@ export function buildScenarioMusic({check=CHECK,force=FORCE}={}){
     publicDomainThemes:CLASSICAL_THEMES.length,totalMasterFiles:all.length,
     generated,verified:check};
 }
-if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url))
+// Cold-cache synthesis is CPU-bound. Use at most two threads within the
+// EXISTING runner; never create more Actions jobs, paid services or shared
+// PR-written caches. The public synchronous API stays unchanged for QA.
+export async function buildScenarioMusicParallel({check=CHECK,force=FORCE,workers=2}={}){
+  if(check)return buildScenarioMusic({check:true});
+  // Most PRs already have all production-seeded MP3s. Verify the complete
+  // catalogue before allocating even one worker; fail closed on duplicates.
+  if(!force){
+    try{
+      const ready=buildScenarioMusic({check:true});
+      return {...ready,generated:0,verified:false};
+    }catch(error){
+      if(!String(error?.message||error).startsWith("missing_or_invalid_mp3_"))throw error;
+    }
+  }
+  const count=Math.max(1,Math.min(2,availableParallelism(),Number.isInteger(workers)?workers:1));
+  if(count===1)return buildScenarioMusic({force});
+  const shards=await Promise.allSettled(Array.from({length:count},(_,shardIndex)=>new Promise((resolve,reject)=>{
+    const thread=new Worker(new URL(import.meta.url),{
+      workerData:{hhScenarioMusicShard:true,shardIndex,shardCount:count,force}
+    });
+    let report=null;
+    thread.on("message",message=>{
+      if(message?.ok===true)report=message.report;
+      else reject(Error("scenario_music_worker_failed: "+String(message?.error||"unknown")));
+    });
+    thread.once("error",reject);
+    thread.once("exit",code=>{
+      if(code!==0||!report)reject(Error("scenario_music_worker_exit_"+code));
+      else resolve(report);
+    });
+  })));
+  // A parallel encoder can transiently fail on a shared 2-vCPU runner.
+  // Wait for EVERY shard to finish before a strictly serial, missing-file-only
+  // recovery. Any other worker error (e.g. a duplicate score) fails closed.
+  const failures=shards.filter(s=>s.status==="rejected");
+  let recovered=0;
+  if(failures.length){
+    if(failures.some(s=>!String(s.reason).includes("scenario_mp3_encode_failed_")))
+      throw new AggregateError(failures.map(s=>s.reason),"scenario_music_worker_failed");
+    console.warn("[hh-scenario-music] ffmpeg contention: serial recovery of missing masters");
+    recovered=buildScenarioMusic({force:false}).generated;
+  }
+  // Audit EVERY resulting file again, including pairs generated in different
+  // workers. A missing/corrupt/duplicate MP3 remains a hard build failure.
+  const audit=buildScenarioMusic({check:true});
+  return {...audit,verified:false,
+    generated:shards.reduce((n,s)=>n+(s.status==="fulfilled"?s.value.generated:0),recovered),
+    fallbackSerial:failures.length>0};
+}
+if(!isMainThread&&workerData?.hhScenarioMusicShard===true){
+  try{
+    const report=buildScenarioMusic({
+      force:workerData.force,shardIndex:workerData.shardIndex,shardCount:workerData.shardCount
+    });
+    parentPort.postMessage({ok:true,report});
+  }catch(error){
+    parentPort.postMessage({ok:false,error:String(error?.message||error)});
+    process.exitCode=1;
+  }
+}
+// Workers only run their assigned shard; the inherited argv may otherwise
+// rerun the complete CLI generator inside EACH worker, racing FFmpeg outputs.
+if(isMainThread&&process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url))
   console.log("[hh-scenario-audio]",JSON.stringify(buildScenarioMusic()));

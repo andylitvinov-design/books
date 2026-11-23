@@ -9,7 +9,7 @@ const css = read("components/holistic-support-mobile.module.css");
 const manifest = read("data/academy/holistic-support-meditations.ts");
 const mobilePage = read("app/[locale]/holistic-support/mobile/page.tsx");
 
-test("six original meditation directions share one mobile player across EN/RU/ES", () => {
+test("four canonical content directions and All share one source-backed mobile player across EN/RU/ES", () => {
   const chooser = ui.indexOf("data-support-meditation-category-switcher");
   const player = ui.indexOf('id="support-meditation-player"');
   const thumbnails = ui.indexOf('id="support-meditation-gallery"');
@@ -18,18 +18,26 @@ test("six original meditation directions share one mobile player across EN/RU/ES
   assert.match(ui,/meditationCategory === id/);
   assert.match(ui,/aria-controls="meditation-category-options"/);
   assert.match(ui,/data-support-meditation-categories-next/);
-  for (const id of ["energy","money","relationships","meaning","health","all"]) {
+  for (const id of ["goals-money","love-relationships","energy-confidence","stress-anxiety","all"]) {
     assert.match(ui,new RegExp('id: "'+id+'"'),id+" category");
     assert.ok(css.includes('.meditationCategoryCard[data-category="'+id+'"]'));
   }
-  for (const label of ["Энергия","Деньги","Любовь","Смыслы","Здоровье","Все",
-    "Energy","Money","Love","Meaning","Wellbeing","All",
-    "Energía","Dinero","Amor","Sentido","Bienestar","Todas"]) {
+  for (const label of ["Деньги и развитие","Любовь и отношения","Энергия и уверенность","Стресс и тревога","Все записи",
+    "Goals & development","Love & relationships","Energy & confidence","Stress & anxiety","All recordings",
+    "Metas y desarrollo","Amor y relaciones","Energía y confianza","Estrés y ansiedad","Todas las grabaciones"]) {
     assert.ok(ui.includes(label),"missing label "+label);
   }
-  assert.match(ui,/meditationCategory === "meaning" \? filtered\.filter\(video => video\.program === "sun"\)/);
-  assert.match(ui,/meditationCategoryRelated: "Близкие оригинальные практики Солнца/);
-  assert.match(ui,/data-support-meditation-category-related role="status"/);
+  // Keep source-backed legacy video tags under the canonical content directions.
+  assert.match(ui,/const meditationCategoryTopics: Partial<Record<MeditationCategory, readonly MeditationTopic\[\]>>/);
+  // Verify each old-recording tag maps to its specific new content direction.
+  assert.match(ui,/"goals-money": \["business"\]/);
+  assert.match(ui,/"love-relationships": \["love"\]/);
+  assert.match(ui,/"energy-confidence": \["energy", "health"\]/);
+  assert.match(ui,/"stress-anxiety": \["health"\]/);
+  assert.match(ui,/const categoryFiltered = choice !== "meditation" \|\| meditationCategory === "all" \? filtered/);
+  assert.match(ui,/\.some\(topic => video\.topics\.includes\(topic\)\)/);
+  assert.ok(!css.includes('.meditationCategoryCard[data-category="meaning"]'),
+    "retired category styling must not override the canonical content directions");
   const start = ui.indexOf("const chooseMeditationCategory = (value: MeditationCategory) => {");
   const end = ui.indexOf("const scrollMeditationCategories = ", start);
   assert.ok(start > 0 && end > start, "real meditation-category handler is present");

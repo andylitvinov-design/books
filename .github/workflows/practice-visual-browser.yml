@@ -4,10 +4,6 @@ on:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
-      - '.agents/skills/visual-to-code-pro/**'
-      - '.codex/config.toml'
-      - '.vscode/mcp.json'
-      - 'AGENTS.md'
       - 'app/*/practice/page.jsx'
       - 'components/practice-showcase.jsx'
       - 'components/practice-showcase.module.css'
@@ -15,10 +11,8 @@ on:
       - 'components/app/practice-inner-navigation.jsx'
       - 'app/api/app/practice/**'
       - 'app/api/app/\[...path\]/route.js'
-      # The exact dispatcher is cross-domain. Node's BASE-trusted glob reader
-      # does not match GitHub's escaped Next route, so also use this narrowly
-      # bounded one-segment route with explicit Messenger exclusions.
-      - 'app/api/app/*/route.js'
+      # Practice visuals keep explicit Practice APIs and the real shared dispatcher.
+      # Generic sibling app API routes belong to the private App/IA owners.
       - '!app/api/app/direct-messages/**'
       - '!app/api/app/practitioner-client-messages/**'
       - '!app/api/app/notification-channels/**'
@@ -30,7 +24,6 @@ on:
       - 'tests/capture-public-ui-reference.test.mjs'
       - 'scripts/capture-public-ui-reference.mjs'
       - 'scripts/fixtures/practice-approved-reference-20261028.json'
-      - '.github/workflows/practice-visual-browser.yml'
   push:
     branches: ['codex/public-book-library']
     paths:
@@ -41,26 +34,24 @@ on:
       - 'components/app/practice-inner-navigation.jsx'
       - 'app/api/app/practice/**'
       - 'app/api/app/\[...path\]/route.js'
-      # The exact dispatcher is cross-domain. Node's BASE-trusted glob reader
-      # does not match GitHub's escaped Next route, so also use this narrowly
-      # bounded one-segment route with explicit Messenger exclusions.
-      - 'app/api/app/*/route.js'
+      # Practice visuals keep explicit Practice APIs and the real shared dispatcher.
+      # Generic sibling app API routes belong to the private App/IA owners.
       - '!app/api/app/direct-messages/**'
       - '!app/api/app/practitioner-client-messages/**'
       - '!app/api/app/notification-channels/**'
       - 'scripts/verify-practice-visual-browser.mjs'
       - 'scripts/compare-ui-screenshots.mjs'
-      - '.github/workflows/practice-visual-browser.yml'
 concurrency:
-  group: hh-practice-visual-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+  group: hh-practice-visual-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 
 permissions:
   contents: read
 jobs:
   practice-visual-parity:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
-    runs-on: ubuntu-latest
+    # PR source proof runs dependency-free; full screenshots still run on protected push.
+    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-slim' || 'ubuntu-latest' }}
     timeout-minutes: 24
     env:
       NEXT_TELEMETRY_DISABLED: '1'
@@ -73,16 +64,27 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Load original checksum-verified FFmpeg for npm ci
+        if: github.event_name != 'pull_request'
+        uses: ./.github/actions/ci-ffmpeg-static
       - name: Install existing project dependencies
+        if: github.event_name != 'pull_request'
         run: npm ci --no-audit --no-fund
+      - name: Install SHA-verified FFmpeg into package after npm ci
+        if: github.event_name != 'pull_request'
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
       - name: Check screenshot comparator, source flow and browser script
         run: |
           node --check scripts/verify-practice-visual-browser.mjs
           node --check scripts/compare-ui-screenshots.mjs
           node --check scripts/capture-public-ui-reference.mjs
           node --test tests/compare-ui-screenshots.test.mjs tests/visual-browser-tooling-config.test.mjs tests/capture-public-ui-reference.test.mjs
-          npx eslint scripts/verify-practice-visual-browser.mjs scripts/compare-ui-screenshots.mjs
+          # Core already validates changed-file ESLint and the full TypeScript project.
+          # On a production PR, retain exact-head dependency-free source/unit contracts.
           if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "${GITHUB_BASE_REF:-}" != "codex/public-book-library" ]]; then
+            npx --no-install eslint scripts/verify-practice-visual-browser.mjs scripts/compare-ui-screenshots.mjs
             npx --no-install tsc --noEmit --pretty false
           else
             echo 'Full TypeScript delegated to required Core release-ready'

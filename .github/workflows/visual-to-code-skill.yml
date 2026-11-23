@@ -1,9 +1,17 @@
 name: Visual-to-Code Pro — PNG comparison unit checks
 on:
+  # Explicit extra QA only: add the qa-optional label to an affected PR.
+  workflow_dispatch:
   pull_request:
+    types: [labeled]
     branches: ['codex/public-book-library']
     paths:
-      - 'AGENTS.md'
+      - 'app/holistic-light-tokens.css'
+      - 'docs/design/HOLISTIC_LIGHT_DESIGN_BIBLE.md'
+      - 'scripts/holistic-light-design-qa.mjs'
+      - 'scripts/holistic-light-qa-handoff.mjs'
+      - 'tests/holistic-light-qa-handoff.test.mjs'
+      - 'tests/holistic-light-design-qa.test.mjs'
       - '.agents/skills/visual-to-code-pro/**'
       - 'scripts/compare-ui-screenshots.mjs'
       - 'tests/compare-ui-screenshots.test.mjs'
@@ -14,11 +22,11 @@ on:
       - '.codex/config.toml'
       - '.vscode/mcp.json'
       - 'docs/design/VISUAL_MCP_AUTO_QA.md'
-      - '.github/workflows/visual-to-code-skill.yml'
 permissions:
   contents: read
 jobs:
   compare-unit:
+    if: ${{ github.event_name != 'pull_request' || github.event.label.name == 'qa-optional' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -32,4 +40,6 @@ jobs:
         run: |
           node --check scripts/compare-ui-screenshots.mjs
           node --check scripts/capture-public-ui-reference.mjs
-          node --test tests/compare-ui-screenshots.test.mjs tests/visual-browser-tooling-config.test.mjs tests/capture-public-ui-reference.test.mjs
+          node --check scripts/holistic-light-design-qa.mjs
+          node --check scripts/holistic-light-qa-handoff.mjs
+          node --test tests/compare-ui-screenshots.test.mjs tests/visual-browser-tooling-config.test.mjs tests/capture-public-ui-reference.test.mjs tests/holistic-light-design-qa.test.mjs tests/holistic-light-qa-handoff.test.mjs

@@ -4,7 +4,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PersonalConsultationForm } from "@/components/personal-consultation-form";
-import { PersonalTestimonials } from "@/components/personal-testimonials";
+import { AboutTestimonialGallery } from "@/components/about-testimonial-gallery";
+import { archivedTestimonialPosterFor, testimonialVideos } from "@/components/personal-testimonials";
 import { PageVideo } from "@/components/page-video";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { PublicPathwayStrip } from "@/components/public-pathway-strip";
@@ -102,7 +103,24 @@ export default async function AboutPage({ params }: PageProps) {
         <nav aria-label={current.explore.heading}>{current.explore.links.map((link) => <Link href={link.href} key={link.href}>{link.label}<span aria-hidden="true">→</span></Link>)}</nav>
       </section>
 
-      <PersonalTestimonials locale={typedLocale} variant="about" />
+      <section className="about-testimonials" aria-labelledby="testimonials-title">
+        <div className="about-section-heading">
+          <p className="homeopathy-kicker">{typedLocale === "ru" ? "Отзывы" : "Testimonials"}</p>
+          <h2 id="testimonials-title">{typedLocale === "ru" ? "Видео-отзывы" : "Video testimonials"}</h2>
+          <p>{typedLocale === "ru"
+            ? "Сначала шесть видеоотзывов с оригинальным русским звуком. Англоязычные отзывы можно открыть отдельно ниже."
+            : "Start with six authentic testimonials with original English audio. Russian-language testimonials are available separately below."}</p>
+        </div>
+        <AboutTestimonialGallery
+          locale={typedLocale === "ru" ? "ru" : "en"}
+          primaryVideos={testimonialVideos[typedLocale === "ru" ? "ru" : "en"].map(item => ({
+            ...item, fallbackPoster: archivedTestimonialPosterFor(item.id),
+          }))}
+          otherLanguageVideos={testimonialVideos[typedLocale === "ru" ? "en" : "ru"].map(item => ({
+            ...item, fallbackPoster: archivedTestimonialPosterFor(item.id),
+          }))}
+        />
+      </section>
 
       <PageVideo slot="consultation" locale={typedLocale} internalOnly />
 

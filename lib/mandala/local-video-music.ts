@@ -4,7 +4,7 @@
  * Only started from an explicit user Create click and attached to that export.
  */
 export type ExpandedAudioPreset = "soft-piano" | "kalimba" | "harp" | "flute" | "celesta" | "strings" | "marimba" | "lullaby" | "handpan" | "forest" | "stream" | "waterfall" | "fireplace" | "night" | "birdsong" | "singing-bowl" | "wind-chimes" | "crystal" | "cosmos" | "soft-beat" | "earth-drum";
-export type OriginalMelodyPreset = "warm-morning" | "wings-of-light" | "heart-harmony" | "quiet-stars" | "bright-path";
+export type OriginalMelodyPreset = "warm-morning" | "wings-of-light" | "heart-harmony" | "quiet-stars" | "bright-path" | "ode-to-joy" | "greensleeves";
 /** Individually mastered first-party MP3 for each approved video scenario. */
 export type ScenarioAudioPreset = `score-${string}-${1|2|3|4}` |
   "classic-ode-to-joy" | "classic-fur-elise" | "classic-greensleeves" | "classic-twinkle";
@@ -12,24 +12,31 @@ export function isScenarioAudioPreset(value: AmbientMusic): value is ScenarioAud
   return /^score-[a-z0-9]+(?:-[a-z0-9]+)*-[1-4]$/.test(value) ||
     /^classic-(?:ode-to-joy|fur-elise|greensleeves|twinkle)$/.test(value);
 }
+export type CuratedAudioPreset = `curated-${string}`;
+export function isCuratedAudioPreset(value: AmbientMusic): value is CuratedAudioPreset {
+  return /^curated-[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value);
+}
 export type AmbientMusic = "none" | "harmony" | "prosperity" | "energy" | "love" | "meditation" |
-  "rain" | "ocean" | "breeze" | "focus" | "grounding" | "breath" | "sunrise" | "pulse" | ExpandedAudioPreset | OriginalMelodyPreset | ScenarioAudioPreset;
+  "rain" | "ocean" | "breeze" | "focus" | "grounding" | "breath" | "sunrise" | "pulse" | ExpandedAudioPreset | OriginalMelodyPreset | ScenarioAudioPreset | CuratedAudioPreset;
 /** Cacheable first-party files: Safari in-app browsers cannot reliably open
  * synthetic blob: audio, even when WAV bytes are valid.
  * HTTPS /audio/mandala/*.wav lets WebKit request the actual media using Range.
  */
 export function presetAudioUrl(preset: Exclude<AmbientMusic, "none">): string {
-  return isScenarioAudioPreset(preset)
-    ? "/audio/mandala/scenarios/" + preset + ".mp3"
-    : "/audio/mandala/" + preset + ".wav";
+  return isCuratedAudioPreset(preset)
+    ? "/audio/mandala/curated/" + preset + ".mp3"
+    : isScenarioAudioPreset(preset)
+      ? "/audio/mandala/scenarios/" + preset + ".mp3"
+      : "/audio/mandala/" + preset + ".wav";
 }
 export type AmbientSession = {
   track: MediaStreamTrack;
   close: () => void;
+  begin?: () => void;
   fadeOut: () => void;
   setVolume: (value: number) => void;
 };
-const NOTES: Record<Exclude<AmbientMusic,"none" | ScenarioAudioPreset>, readonly [number,number,number,number]> = {
+const NOTES: Record<Exclude<AmbientMusic,"none" | ScenarioAudioPreset | CuratedAudioPreset>, readonly [number,number,number,number]> = {
   harmony:[174.61,261.63,349.23,523.25],
   prosperity:[196.00,246.94,392.00,493.88],
   energy:[164.81,246.94,329.63,493.88],
@@ -69,6 +76,8 @@ const NOTES: Record<Exclude<AmbientMusic,"none" | ScenarioAudioPreset>, readonly
   "heart-harmony":[174.61,220.00,261.63,329.63],
   "quiet-stars":[146.83,174.61,220.00,293.66],
   "bright-path":[164.81,196.00,246.94,329.63],
+  "ode-to-joy":[130.81,164.81,196.00,261.63],
+  "greensleeves":[110.00,164.81,220.00,261.63],
 };
 
 // On iOS a Web Audio graph uses the ringer-silenced "ambient" session by
@@ -101,7 +110,7 @@ function outputGain(volume: number): number {
 export async function startAmbientMusic(
   preset: AmbientMusic, volume = 30, audible = false,
 ): Promise<AmbientSession | null> {
-  if (preset === "none" || typeof window === "undefined" || isScenarioAudioPreset(preset)) return null;
+  if (preset === "none" || typeof window === "undefined" || isScenarioAudioPreset(preset) || isCuratedAudioPreset(preset)) return null;
   const AudioCtor = window.AudioContext ||
     (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!AudioCtor) return null;
@@ -326,7 +335,7 @@ function createExpandedSoundWav(preset: ExpandedAudioPreset): Blob {
  * the original screenshot showed native media "Error" for that source.
  */
 export function createAmbientPreviewWav(preset: Exclude<AmbientMusic, "none">): Blob {
-  if(isScenarioAudioPreset(preset)) throw Error("scenario_mp3_has_no_synthetic_wav");
+  if(isScenarioAudioPreset(preset)||isCuratedAudioPreset(preset)) throw Error("authored_mp3_has_no_synthetic_wav");
   if (preset in EXPANDED_AUDIO_SCORES) return createExpandedSoundWav(preset as ExpandedAudioPreset);
   // Original five presets retain byte-for-byte identical 44.1kHz masters.
   // Additional first-party loops use 22.05kHz mono for mobile download size.
@@ -395,20 +404,35 @@ export function isSupportedLocalAudio(file: Pick<File, "name" | "size" | "type">
  */
 export function startPresetAudio(
   preset: Exclude<AmbientMusic, "none">, volume = 75,
+  options: {startSeconds?:number;deferStart?:boolean} = {},
 ): Promise<AmbientSession | null> {
   // For authored melodies, record the same static WAV heard in the browser.
-  if (isMelodyPreset(preset)) return startPresetMixAudio([preset],volume);
+  if (isMelodyPreset(preset)) return startPresetMixAudio([preset],volume,options);
   const wave = createAmbientPreviewWav(preset);
   const file = new File([wave], "holistic-house-" + preset + ".wav", { type: "audio/wav" });
-  return startUploadedAudio(file, volume);
+  return startUploadedAudio(file, volume, options);
 }
 
 /** Export one user-supplied audio recording alongside the canvas stream.
  * Decode locally using Web Audio because audio.captureStream() is unavailable
  * on many iPhones. This graph deliberately does not connect to speakers.
  */
+/** Trim looping music only; narration remains unmodified. */
+export function clipMusicBuffer(context:AudioContext,sound:AudioBuffer,maxSeconds=30):AudioBuffer {
+  if (!sound.length || !Number.isFinite(sound.duration) || sound.duration <= 0 ||
+      !Number.isFinite(maxSeconds) || maxSeconds <= 0 || maxSeconds > 60) throw new Error("invalid_music_excerpt");
+  const rate = Number.isFinite(sound.sampleRate) && sound.sampleRate > 0 ? sound.sampleRate : sound.length / sound.duration;
+  if (!Number.isFinite(rate) || rate <= 0) throw new Error("invalid_music_excerpt");
+  const frames = Math.min(sound.length, Math.max(1, Math.ceil(maxSeconds * rate)));
+  if (frames === sound.length) return sound;
+  const excerpt = context.createBuffer(sound.numberOfChannels, frames, rate);
+  for (let channel = 0; channel < sound.numberOfChannels; channel++)
+    excerpt.copyToChannel(sound.getChannelData(channel).subarray(0, frames), channel);
+  return excerpt;
+}
+
 export async function startUploadedAudio(
-  file: File, volume = 80, options: { loop?: boolean } = {},
+  file: File, volume = 80, options: { loop?: boolean; startSeconds?:number; deferStart?:boolean } = {},
 ): Promise<AmbientSession | null> {
   if (typeof window === "undefined" || !isSupportedLocalAudio(file)) return null;
   const AudioCtor = window.AudioContext ||
@@ -425,7 +449,8 @@ export async function startUploadedAudio(
     const data = await file.arrayBuffer();
     await resumed;
     const buffer = await context.decodeAudioData(data);
-    if (!buffer.length || !Number.isFinite(buffer.duration) || buffer.duration > 180) {
+    // Encoded MP3 can decode slightly longer than its source due to encoder padding.
+    if (!buffer.length || !Number.isFinite(buffer.duration) || buffer.duration > (options.loop === false ? 180 : 180.5)) {
       throw new Error("Audio is empty or too long to decode on a phone");
     }
     if (context.state !== "running") await context.resume();
@@ -435,15 +460,22 @@ export async function startUploadedAudio(
     master.gain.setValueAtTime(Math.max(0, Math.min(100, volume)) / 100, context.currentTime);
     master.connect(destination);
     source = context.createBufferSource();
-    source.buffer = buffer;
+    source.buffer = options.loop === false ? buffer : clipMusicBuffer(context,buffer);
     source.loop = options.loop !== false;
     source.connect(master);
     const track = destination.stream.getAudioTracks()[0];
     if (!track) throw new Error("No decoded audio output track");
-    source.start();
-    let closed = false, faded = false;
+    let closed = false, faded = false, started = false;
+    const begin=()=>{
+      if(closed||started)return;
+      started=true;
+      const offset=Number.isFinite(options.startSeconds)
+        ?Math.max(0,Math.min(60,options.startSeconds||0)):0;
+      source?.start(context.currentTime+offset);
+    };
+    if(!options.deferStart)begin();
     return {
-      track,
+      track,begin,
       setVolume: (value: number) => {
         if (closed || faded) return;
         const now = context.currentTime;
@@ -502,12 +534,15 @@ export const ORIGINAL_MELODY_IDS = [
   "marimba",
   "lullaby",
   "handpan",
+  "ode-to-joy",
+  "greensleeves",
 ] as const;
 export function isMelodyPreset(preset: AmbientMusic): boolean {
-  return isScenarioAudioPreset(preset) || ORIGINAL_MELODY_IDS.some(id => id===preset);
+  return isScenarioAudioPreset(preset) || isCuratedAudioPreset(preset) || ORIGINAL_MELODY_IDS.some(id => id===preset);
 }
 export async function startPresetMixAudio(
   ids: readonly Exclude<AmbientMusic,"none">[], volume=75,
+  options: {startSeconds?:number;deferStart?:boolean} = {},
 ): Promise<AmbientSession | null> {
   if(typeof window==="undefined"||ids.length<1||ids.length>3||new Set(ids).size!==ids.length)return null;
   const AudioCtor=window.AudioContext ||
@@ -527,7 +562,7 @@ export async function startPresetMixAudio(
     }));
     await resumed;
     if(context.state!=="running")await context.resume();
-    if(context.state!=="running"||decoded.some(sound=>!sound.length||sound.duration>180))
+    if(context.state!=="running"||decoded.some(sound=>!sound.length||sound.duration>180.5))
       throw new Error("Music mix could not start");
     const destination=context.createMediaStreamDestination();
     const master=context.createGain();
@@ -538,12 +573,19 @@ export async function startPresetMixAudio(
     if(!track)throw new Error("No mixed audio track");
     for(const buffer of decoded){
       const player=context.createBufferSource();
-      player.buffer=buffer;player.loop=true;player.connect(master);sources.push(player);
+      player.buffer=clipMusicBuffer(context,buffer);player.loop=true;player.connect(master);sources.push(player);
     }
-    sources.forEach(player=>player.start());
-    let closed=false,faded=false;
+    let closed=false,faded=false,started=false;
+    const begin=()=>{
+      if(closed||started)return;
+      started=true;
+      const offset=Number.isFinite(options.startSeconds)
+        ?Math.max(0,Math.min(60,options.startSeconds||0)):0;
+      sources.forEach(player=>player.start(context.currentTime+offset));
+    };
+    if(!options.deferStart)begin();
     return {
-      track,
+      track,begin,
       setVolume(value:number){
         if(closed||faded)return;
         const now=context.currentTime;
@@ -570,5 +612,148 @@ export async function startPresetMixAudio(
     sources.forEach(player=>{try{player.stop();}catch{}player.disconnect();});
     void context.close().catch(()=>{});
     restoreSession();return null;
+  }
+}
+
+
+/**
+ * Independent voice/audio-file + original soundtrack for native MediaRecorder.
+ * Both are mixed into ONE AudioContext destination track; never two competing
+ * media-recorder tracks, never an external upload, and no paid TTS provider.
+ * The Safari WebCodecs path uses the same per-lane gains with OfflineAudioContext.
+ */
+export async function startLayeredVideoAudio(
+  file:File,bedId:OriginalMelodyPreset|CuratedAudioPreset,masterVolume=80,bedVolumePercent=30,
+  options:{seconds:number;startSeconds?:number;loop?:boolean;
+    fadeSeconds?:number;deferStart?:boolean;
+    approvedCuratedBedIds?:readonly CuratedAudioPreset[]}={seconds:30},
+):Promise<AmbientSession|null>{
+  // Preserve import-free legacy preview and require a caller-approved curated bed ID.
+  // No new await before iOS AudioContext.resume() in the Create click.
+  const names:readonly OriginalMelodyPreset[]=[
+    "warm-morning","wings-of-light","heart-harmony","quiet-stars","bright-path"
+  ];
+  const fadeSeconds=options.fadeSeconds??1;
+  if(typeof window==="undefined"||!isSupportedLocalAudio(file)||
+     !(names.includes(bedId as OriginalMelodyPreset)||
+       (isCuratedAudioPreset(bedId)&&options.approvedCuratedBedIds?.includes(bedId)===true))||
+     !Number.isFinite(options.seconds)||options.seconds<3||options.seconds>60||
+     !Number.isFinite(options.startSeconds??0)||(options.startSeconds??0)<0||
+     (options.startSeconds??0)>=options.seconds||
+     !Number.isFinite(masterVolume)||masterVolume<0||masterVolume>100||
+     !Number.isInteger(bedVolumePercent)||bedVolumePercent<0||
+     bedVolumePercent>60||bedVolumePercent%5!==0||
+     ![0,.5,1,2].includes(fadeSeconds))return null;
+  const myTubeAudioLaneGains=(volume:number)=>{
+    const primary=volume/100/Math.sqrt(2);
+    return {primary,bed:primary*bedVolumePercent/100};
+  };
+  const safe={volumePercent:bedVolumePercent,fadeSeconds};
+  const AudioCtor=window.AudioContext||
+    (window as typeof window&{webkitAudioContext?:typeof AudioContext}).webkitAudioContext;
+  if(!AudioCtor)return null;
+  const restoreSession=acquirePlaybackSession();
+  let context:AudioContext;
+  try{context=new AudioCtor();}catch{restoreSession();return null;}
+  const sources:AudioBufferSourceNode[]=[];
+  const gains:GainNode[]=[];
+  let destination:MediaStreamAudioDestinationNode|null=null;
+  try{
+    // Prime iOS AudioContext inside the actual Create tap, before all awaits.
+    const resumed=context.resume();
+    const [voiceBytes,musicResponse]=await Promise.all([
+      file.arrayBuffer(),
+      fetch(presetAudioUrl(bedId),{credentials:"same-origin",cache:"force-cache"}),
+    ]);
+    if(!musicResponse.ok)throw Error("first_party_audio_unavailable");
+    const [voice,music]=await Promise.all([
+      context.decodeAudioData(voiceBytes),
+      context.decodeAudioData(await musicResponse.arrayBuffer()),
+    ]);
+    await resumed;
+    if(context.state!=="running")await context.resume();
+    if(context.state!=="running"||!voice.length||!music.length||
+       voice.duration>180||music.duration>180.5)
+      throw Error("local_audio_decode_invalid");
+    const offset=options.startSeconds??0;
+    if(options.loop===false&&voice.duration>options.seconds-offset+.10)
+      throw Error("narration_longer_than_video");
+    destination=context.createMediaStreamDestination();
+    const track=destination.stream.getAudioTracks()[0];
+    if(!track)throw Error("mixed_audio_track_unavailable");
+    for(const [index,buffer] of [voice,music].entries()){
+      const source=context.createBufferSource();
+      source.buffer=index === 1 ? clipMusicBuffer(context,buffer,Math.min(options.seconds,30)) : buffer;
+      source.loop=index===1||options.loop!==false;
+      const gain=context.createGain();gain.gain.value=0;
+      source.connect(gain);gain.connect(destination);
+      sources.push(source);gains.push(gain);
+    }
+    let closed=false,started=false,faded=false,lastMaster=masterVolume;
+    const begin=()=>{
+      if(closed||started)return;
+      started=true;
+      const now=context.currentTime,finish=now+options.seconds;
+      const voiceStart=now+offset;
+      const levels=myTubeAudioLaneGains(lastMaster);
+      const gainPlan=[
+        {node:gains[0],value:levels.primary,start:voiceStart,
+          inSeconds:.035,outSeconds:.1},
+        {node:gains[1],value:levels.bed,start:now,
+          inSeconds:safe.fadeSeconds,outSeconds:safe.fadeSeconds},
+      ];
+      for(const {node,value,start,inSeconds,outSeconds} of gainPlan){
+        const available=finish-start;
+        const fadeIn=Math.min(inSeconds,available);
+        const fadeOut=Math.min(outSeconds,available);
+        node.gain.setValueAtTime(0,now);
+        node.gain.setValueAtTime(0,start);
+        if(fadeIn>0)node.gain.linearRampToValueAtTime(value,start+fadeIn);
+        else node.gain.setValueAtTime(value,start);
+        node.gain.setValueAtTime(value,Math.max(start+fadeIn,finish-fadeOut));
+        if(fadeOut>0)node.gain.linearRampToValueAtTime(0,finish);
+        else node.gain.setValueAtTime(0,finish);
+      }
+      sources[0].start(voiceStart);
+      sources[1].start(now);
+    };
+    if(!options.deferStart)begin();
+    return {
+      track,begin,
+      setVolume(value:number){
+        if(closed||faded||!Number.isFinite(value)||value<0||value>100)return;
+        lastMaster=value;
+        const current=myTubeAudioLaneGains(value);
+        const now=context.currentTime;
+        for(const [i,level] of [current.primary,current.bed].entries()){
+          const gain=gains[i].gain;
+          gain.cancelScheduledValues(now);
+          gain.setTargetAtTime(level,now,.05);
+        }
+      },
+      fadeOut(){
+        if(closed||faded)return;faded=true;
+        const now=context.currentTime;
+        for(const node of gains){
+          node.gain.cancelScheduledValues(now);
+          node.gain.setValueAtTime(node.gain.value,now);
+          node.gain.linearRampToValueAtTime(0,now+.7);
+        }
+      },
+      close(){
+        if(closed)return;closed=true;
+        sources.forEach(source=>{try{source.stop()}catch{}source.disconnect()});
+        gains.forEach(gain=>gain.disconnect());
+        track.stop();void context.close().catch(()=>{});
+        restoreSession();
+      },
+    };
+  }catch{
+    sources.forEach(source=>{try{source.stop()}catch{}source.disconnect()});
+    gains.forEach(gain=>gain.disconnect());
+    destination?.stream.getTracks().forEach(track=>track.stop());
+    void context.close().catch(()=>{});
+    restoreSession();
+    return null;
   }
 }

@@ -17,26 +17,57 @@ const evidence = [];
 // Wait for the exact synthetic result identities, including EUR/CAD exclusion.
 async function waitForConsultationFixtures(page, locale, ids, label) {
   const expected = ids.map(id => "/" + locale + "/services/fixture/" + id).sort();
-  await page.waitForFunction(async wanted => {
-    const isExact = () => {
-      const results = document.querySelector("#holistic-inline-results");
-      if (!results || results.hidden) return false;
-      const articles = [...results.querySelectorAll("article")];
-      const links = articles.flatMap(article => [...article.querySelectorAll("a[href]")])
-        .map(link => link.getAttribute("href")).sort();
-      return articles.length === wanted.length &&
-        links.length === wanted.length &&
-        links.every((href, index) => href === wanted[index]);
-    };
-    if (!isExact()) return false;
-    // Reject the stale previous React commit if the async directory rerender
-    // clears articles on the following frames; never relax EUR/CAD assertions.
-    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    return isExact();
-  }, expected, { timeout: 15000 });
-  const actual = await page.locator("#holistic-inline-results article a[href]")
-    .evaluateAll(links => links.map(link => link.getAttribute("href")).sort());
-  assert.deepEqual(actual, expected, label + " only the requested published EUR fixture; CAD and stale results excluded");
+  // Playwright waitForFunction must use a synchronous predicate. In WebKit the
+  // previous async predicate yielded a JSHandle to false before results settled.
+  // Wait for an uninterrupted 900-ms exact DOM state in one page.evaluate task,
+  // not a separate post-wait locator that can race React's next commit.
+  const actual = await page.evaluate(wanted => {
+    const results = document.querySelector("#holistic-inline-results");
+    if (!results) throw new Error("Public consultation results container missing");
+    return new Promise((resolve, reject) => {
+      let settled = null;
+      let deadline = null;
+      const exactLinks = () => {
+        if (results.hidden) return null;
+        const articles = [...results.querySelectorAll("article")];
+        const links = articles.flatMap(article => [...article.querySelectorAll("a[href]")])
+          .map(link => link.getAttribute("href")).sort();
+        return articles.length === wanted.length &&
+          links.length === wanted.length &&
+          links.every((href, index) => href === wanted[index]) ? links : null;
+      };
+      const cleanup = () => {
+        observer.disconnect();
+        if (settled !== null) clearTimeout(settled);
+        if (deadline !== null) clearTimeout(deadline);
+      };
+      const check = () => {
+        if (!exactLinks()) {
+          if (settled !== null) clearTimeout(settled);
+          settled = null;
+          return;
+        }
+        if (settled !== null) return;
+        settled = setTimeout(() => {
+          settled = null;
+          // This is the same DOM task as the final accepted snapshot.
+          // Missing, stale or wrong-currency items cannot satisfy it.
+          const links = exactLinks();
+          if (links) { cleanup(); resolve(links); }
+          else check();
+        }, 900);
+      };
+      const observer = new MutationObserver(check);
+      observer.observe(results, { childList: true, subtree: true, attributes: true });
+      deadline = setTimeout(() => {
+        cleanup();
+        reject(new Error("Consultation fixtures did not remain exact for 900 ms"));
+      }, 20000);
+      check();
+    });
+  }, expected);
+  assert.deepEqual(actual, expected,
+    label + " only the requested published EUR fixture; CAD and stale results excluded");
 }
 
 // The user must perform a NEW search against the isolated public directory.
@@ -102,10 +133,18 @@ for (const engine of [chromium, webkit]) {
           const response = await page.goto(origin + "/" + locale + "/holistic-support",
             { waitUntil: "domcontentloaded", timeout: 60000 });
           assert.equal(response?.status(), 200, label + " HTTP status");
-          await page.waitForFunction(() => {
-            const button = document.querySelector('[data-holistic-topic="business"]');
-            return !!button && Object.keys(button).some(key => key.startsWith("__reactProps$"));
-          }, null, {timeout:15000});
+          // Slow WebKit hydration under concurrent browser suites is not a
+          // functional failure; preserve the React hydration assertion and
+          // allow one bounded 30-second wait with diagnostic page errors.
+          try {
+            await page.waitForFunction(() => {
+              const button = document.querySelector('[data-holistic-topic="business"]');
+              return !!button && Object.keys(button).some(key => key.startsWith("__reactProps$"));
+            }, null, {timeout:engine.name() === "webkit" ? 30000 : 15000});
+          } catch(error) {
+            throw new Error(label + " failed to hydrate topic controls: " + String(error) +
+              "; runtime errors: " + JSON.stringify(errors.slice(-5)));
+          }
           const root = page.locator("[data-holistic-topic-filter]");
           await root.waitFor({ state: "visible", timeout: 30000 });
           assert.equal(await root.locator('[role="tab"]').count(), 3, label + " exactly three topic filters");
@@ -171,19 +210,45 @@ for (const engine of [chromium, webkit]) {
           await waitForConsultationFixtures(page, locale, ["eur20", "eur100"], label + " EUR 100");
           assert.equal(await finder.locator('#holistic-inline-results article').count(), 2,
             label + " EUR 100 includes 2 EUR offers, not CAD");
-          await finder.locator('[data-support-theme="relationships"]').click();
-          await finder.locator('[data-support-budget="free"]').click();
-          await page.waitForFunction(() => document.querySelector('[data-support-budget="free"]')
-            ?.getAttribute("aria-pressed") === "true", null, {timeout:15000});
+          // Wait for Relationships to commit before the real budget touch;
+          // selecting two independent React controls without this wait can
+          // race the topic transition under concurrent mobile WebKit load.
+          const relationshipsTheme=finder.locator('[data-support-theme="relationships"]');
+          await relationshipsTheme.click();
+          await page.waitForFunction(() => document.querySelector(
+            '#holistic-inline-order [data-support-theme="relationships"]')
+              ?.getAttribute('aria-pressed')==='true',null,{timeout:15000});
+          const freeBudget=finder.locator('[data-support-budget="free"]');
+          await freeBudget.click();
+          await page.waitForFunction(() => document.querySelector(
+            '#holistic-inline-order [data-support-budget="free"]')
+              ?.getAttribute('aria-pressed')==='true',null,{timeout:15000});
           await searchConsultationFixtures(page, finder);
           await waitForConsultationFixtures(page, locale, ["free"], label + " free");
           assert.equal(await finder.locator('#holistic-inline-results article').count(), 1,
             label + " free relationship consultation");
 
-          await finder.locator('[data-support-choice="talisman"]').click();
-          await finder.locator('[data-support-budget="20"]').click();
+          // Preserve the real published-price safety gate after both React
+          // controls commit. Fast consecutive taps can otherwise search an
+          // older service kind and incorrectly await a non-existent empty state.
+          const talismanChoice = finder.locator('[data-support-choice="talisman"]');
+          await talismanChoice.click();
+          await page.waitForFunction(() => document.querySelector(
+            '#holistic-inline-order [data-support-choice="talisman"]')
+              ?.getAttribute("aria-pressed") === "true", null, { timeout: 15000 });
+          const talismanBudget = finder.locator('[data-support-budget="20"]');
+          await talismanBudget.click();
+          await page.waitForFunction(() => document.querySelector(
+            '#holistic-inline-order [data-support-budget="20"]')
+              ?.getAttribute("aria-pressed") === "true", null, { timeout: 15000 });
           await finder.locator("[data-support-search]").click();
-          await finder.locator('#remote-results [role="status"]').first().waitFor();
+          const unpricedTalismanStatus = finder.locator('#remote-results [role="status"]').first();
+          await unpricedTalismanStatus.waitFor({ state: "visible", timeout: 20000 });
+          assert.ok((await unpricedTalismanStatus.innerText()).includes({
+            en: "Talisman prices are not published.",
+            ru: "Цены на талисманы не опубликованы.",
+            es: "Los talismanes no tienen precio publicado.",
+          }[locale]), label + " unpriced talisman is explained without inventing a cost");
           assert.equal(await finder.locator("[data-remote-support-specialist]").count(), 0,
             label + " never quote an unpublished talisman price");
 

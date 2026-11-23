@@ -5,7 +5,7 @@
 .lead{margin:0 0 18px;color:#6c5b4c;font:14px/1.52 Arial,Helvetica,sans-serif}
 .card{position:relative;display:grid;grid-template-columns:minmax(220px,31%) minmax(0,1fr);min-height:290px;padding:0;border:1px solid #ddcab8;border-radius:18px;background:#fffcf7;box-shadow:0 4px 18px #6746320b;overflow:hidden;overflow-wrap:anywhere}
 .photo{position:relative;isolation:isolate;min-width:0;min-height:290px;margin:0;background:#dfcdb6}
-.photo img{object-fit:cover}
+.photo img{object-fit:contain}
 .photo::after{position:absolute;z-index:0;inset:0;content:"";pointer-events:none;background:linear-gradient(0deg,rgba(24,25,25,.65),transparent 48%)}
 .photoLabel{position:absolute;z-index:1;bottom:18px;left:17px;display:inline-flex;align-items:center;min-height:34px;padding:7px 12px;border:1px solid #ffffff78;border-radius:99px;background:#2f3027b3;color:#fffaf1;font:700 12px/1.2 Arial,Helvetica,sans-serif;backdrop-filter:blur(4px)}
 .cardBody{position:relative;display:flex;flex-direction:column;gap:13px;min-width:0;padding:clamp(20px,3vw,31px)}
@@ -22,7 +22,7 @@
   .heading h2{font-size:30px}
   .lead{font-size:12.5px;line-height:1.48}
   .card{grid-template-columns:minmax(0,1fr);min-height:0;border-radius:14px}
-  .photo{min-height:0;height:clamp(156px,46vw,196px)}
+  .photo{min-height:0;height:clamp(230px,72vw,315px)}
   .photoLabel{bottom:11px;left:12px;min-height:30px;padding:6px 10px;font-size:11px}
   .cardBody{gap:10px;padding:17px 14px 19px}
   .cardBody::after{font-size:58px;right:10px;top:7px}
@@ -33,8 +33,31 @@
 @media(max-width:360px){
   .board{padding:13px 10px}
   .heading h2{font-size:27px}
-  .photo{height:155px}
+  .photo{height:230px}
   .cardBody{padding:15px 12px}
   .quote{font-size:21px}
 }
 @media(prefers-reduced-motion:reduce){.refresh{scroll-behavior:auto}}
+
+/* Manuscript image captions, stage interpretation and free personal reflection. */
+.stageExplanation{margin-top:19px;padding:clamp(18px,2.6vw,25px);border:1px solid #dcc4ad;border-radius:17px;background:#fffaf3}
+.stageEyebrow{margin:0 0 7px;color:#855d41;letter-spacing:.11em;font:750 11px/1.4 Arial,Helvetica,sans-serif;text-transform:uppercase}
+.stageExplanation h3{margin:0 0 9px;color:#3e3028;font:400 clamp(22px,2.7vw,30px)/1.2 Georgia,"Times New Roman",serif}
+.stageTask{max-width:690px;margin:0;color:#655141;font:14px/1.65 Arial,Helvetica,sans-serif}
+.stageLinks{display:flex;flex-wrap:wrap;gap:10px 20px;margin-top:15px}
+.stageLinks a{display:inline-flex;align-items:center;min-height:44px;color:#67432d;font:750 13px/1.4 Arial,Helvetica,sans-serif;text-decoration:underline;text-underline-offset:3px}
+.stageLinks a:hover{color:#39291e}
+.diagnostic{display:flex;align-items:center;justify-content:space-between;gap:22px;margin-top:18px;padding:clamp(19px,3vw,28px);border-radius:18px;background:#654732;color:#fff9f1}
+.diagnosticEyebrow{margin:0 0 8px!important;color:#f0d4bd!important;letter-spacing:.1em;font:750 11px/1.4 Arial,Helvetica,sans-serif}
+.diagnostic h3{margin:0 0 10px;color:#fff8ed;font:400 clamp(24px,3vw,32px)/1.17 Georgia,"Times New Roman",serif}
+.diagnostic p:not(.diagnosticEyebrow){max-width:590px;margin:0;color:#f2e3d5;font:13px/1.6 Arial,Helvetica,sans-serif}
+.diagnosticAction{flex-shrink:0;display:flex;align-items:center;justify-content:center;min-width:215px;min-height:48px;padding:12px 15px;border-radius:12px;background:#fff8ed;color:#52341f;font:750 13px/1.4 Arial,Helvetica,sans-serif;text-align:center;text-decoration:none}
+.diagnosticAction:hover{background:#fff;color:#38251a}
+.stageLinks a:focus-visible,.diagnosticAction:focus-visible{outline:3px solid #b68b59;outline-offset:3px}
+@media(max-width:720px){
+ .stageExplanation{padding:17px 15px}
+ .stageLinks{flex-direction:column;align-items:flex-start;gap:3px}
+ .stageTask{font-size:13px}
+ .diagnostic{flex-direction:column;align-items:stretch;gap:17px;padding:19px 16px}
+ .diagnosticAction{width:100%;min-width:0}
+}

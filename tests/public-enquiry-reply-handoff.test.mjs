@@ -53,7 +53,12 @@ test('shared master request JSON, contact card and composer expose NO visitor co
   assert.equal(inMessagesTab({kind:'request',item:{accountRequest:true,requestKind:'public'}},'chats'),false)
   assert.equal(inMessagesTab({kind:'request',item:{}},'chats'),false)
  }else assert.match(inbox,/requestKind!=='public'/)
- assert.match(inbox,/selected\.item\.requestKind==='public'&&<PublicEnquiryReply key=\{selected\.id\}/)
+  // A verified linked Telegram thread opens its original owner-scoped CRM chat.
+  // Other public enquiries retain the contactless copy-only reply fallback.
+  assert.match(inbox,/selected\.item\.requestKind==='public'&&\(crmEnabled&&validId\(selected\.item\.telegramThreadId\)/)
+  assert.match(inbox,/\?<CrmMessengerPanel key=\{accountId\+':linked:'\+selected\.item\.telegramThreadId\}/)
+  assert.match(inbox,/initialThreadId=\{selected\.item\.telegramThreadId\}/)
+  assert.match(inbox,/:<PublicEnquiryReply key=\{selected\.id\}/)
  assert.match(inbox,/selected\?\.kind==='request'&&<div className=\{styles\.requestPane\} hidden=\{showCard\}/)
  assert.match(css,/\.requestPane\[hidden\]\{display:none!important\}/)
  assert.doesNotMatch(reply,/publicEnquiryReplyHandoffs|replyContact|mailto:|wa\.me|emailUrl|whatsAppUrl/)

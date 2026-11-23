@@ -36,7 +36,7 @@ test("Spanish Alchemy booking formats, safe handoff and navigation mirror EN/RU"
   const landing = read("components/alchemy-soul-landing.tsx");
   const review = read("app/[locale]/services/free-situation-review/page.tsx");
   const redirect = read("app/[locale]/services/psychohomeopathy/page.tsx");
-  for (const phrase of ["Sesión personal · 60 minutos · €100", "Revisión exprés · 30 minutos · €50", "Acompañamiento de cuatro semanas", "¿Cómo te llamas?", "Reserva con tu teléfono o Google"]) {
+  for (const phrase of ["Sesión personal · 60 minutos · €100", "Revisión exprés · 30 minutos · €50", "Acompañamiento de cuatro semanas", "¿Cómo te llamas?", "Elige una modalidad y escribe por Telegram o WhatsApp"]) {
     assert.ok(form.includes(phrase), phrase);
   }
   for (const selection of ["30", "60", "month"]) {
@@ -58,7 +58,18 @@ test("Spanish Services shares the concise personal studio with EN/RU and origina
   const videos = read("components/services-studio-extras.tsx");
   const offers = read("data/core-service-offers.ts");
   const reviews = read("components/personal-testimonials.tsx");
-  assert.match(es, /<ServicesStudioOffers locale="es" \/>/);
+  // The same real Studio offers are present once inside the owner-approved
+  // compact catalogue; nested course/coach/video shelves split out to avoid
+  // duplicate services while preserving all Spanish routes and actions.
+  assert.match(es, /<ServicesCompactCatalog locale="es">/);
+  assert.match(es, /<ServicesCompactPanel id="services"><ServicesStudioOffers locale="es" splitExtras \/><\/ServicesCompactPanel>/);
+  assert.match(studio, /splitExtras = false/);
+  assert.match(studio, /!splitExtras \? <ServicesCoursesShelf/);
+  assert.match(studio, /!splitExtras \? <ServicesCoachTherapistMobile/);
+  for (const name of ["ServicesVideoGenerationCard", "ServicesCoursesShelf", "ServicesCoachTherapistMobile"]) {
+    assert.equal(es.split("<" + name + ' locale="es"').length - 1, 1,
+      "Spanish Services should render each separate mobile shelf exactly once: " + name);
+  }
   assert.match(es, /<ServicesIntroMedia locale="es" \/>/);
   assert.match(es, /<PersonalTestimonials locale="es" variant="services" \/>/);
   assert.match(es, /<ServicesMethodVideos locale="es" \/>/);

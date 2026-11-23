@@ -46,17 +46,20 @@ on:
       - 'tests/helpers/course-ui-harness.mjs'
       - 'tests/course-concurrency-ui.test.mjs'
       - 'tests/course-free-slot-restart.test.mjs'
-      - 'tests/ci-growth-course-core-reuse.test.mjs'
-      - 'package.json'
+      # Core already owns edits to its CI-only policy contract. Workflow
+      # changes still run this specialist's real domain checks before merge.
       - '.github/workflows/hh-course-presets.yml'
+      # Client Live Photo APIs have their own App/IA/billing/video owners.
+      # Keep the literal shared catch-all dispatcher and all source/security routes.
+      - '!app/api/app/live-photos/**'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: hh-course-presets-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+  group: hh-course-presets-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 
 jobs:
   course-presets:
@@ -70,8 +73,14 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+      - name: Load original checksum-verified FFmpeg for npm ci
+        uses: ./.github/actions/ci-ffmpeg-static
       - name: Install locked dependencies
         run: npm ci
+      - name: Install SHA-verified FFmpeg into package after npm ci
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
       - name: Verify Core reuse and domain scope
         run: node --test tests/ci-growth-course-core-reuse.test.mjs
       - name: Test exact five-test fixed curricula, old R3 and multicourse

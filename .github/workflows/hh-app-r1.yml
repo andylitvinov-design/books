@@ -6,6 +6,14 @@ on:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
+      - 'tests/development-vector-wheel.test.mjs'
+      - 'tests/daybook-*.mjs'
+      - 'tests/helpers/daybook-canonical-schema.mjs'
+      - 'tests/ci-daybook-*.mjs'
+      - 'scripts/ci-daybook*.mjs'
+      - 'scripts/ci-coaching-rls*.mjs'
+      - 'tests/ci-coaching-rls-guard.test.mjs'
+      - 'tests/personal-coaching-rls-isolated.integration.mjs'
       - 'scripts/verify-eight-v2-registry-proposal.mjs'
       - 'tests/author-score-clusters.test.mjs'
       - 'tests/cabinet-today.test.mjs'
@@ -52,23 +60,33 @@ on:
       - 'supabase/migrations/**'
       - 'middleware.ts'
       - 'next.config.*'
-      - 'package.json'
       - 'package-lock.json'
       - 'scripts/ci-heavy-impact.mjs'
-      - 'tests/ci-heavy-impact.test.mjs'
       - '.github/workflows/hh-app-r1.yml'
+      - '!app/api/app/crm/messenger/webhook/**'
+      - '!lib/app/client-telegram-transport.js'
+      # Commander signed PR completion is validated by Core and the focused Guard, not this unrelated heavy suite.
+      - '!app/api/app/commander/**'
+      # Public Ali greeting and support quiz: focused conversation owner; private Messenger/auth changes keep full tests.
+      - '!components/app/messenger-ai-landing.*'
+      - '!components/app/messenger-support-quiz.*'
+      # Public Ali greeting and decorative coach portrait are not authenticated
+      # App/CRM, assessment, cabinet or SQL/RLS changes. Core now runs focused
+      # persona/media contracts. Mixed private changes still run App QA.
+      - '!components/app/ali-persona-audio.js'
+      - '!components/app/coaching-avatar.jsx'
 permissions:
   contents: read
   pull-requests: read
 concurrency:
-  group: app-r1-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+  group: app-r1-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && (github.event.action == 'synchronize' || github.event.action == 'converted_to_draft') }}
 jobs:
   impact:
     name: route-expensive-app-suites
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 3
+    runs-on: ubuntu-slim
+    timeout-minutes: 8
     outputs:
       full_app: ${{ steps.choose.outputs.full_app }}
       database: ${{ steps.choose.outputs.database }}
@@ -79,6 +97,9 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 2
+          # Verify exact synthetic merge with full git trees, not media blobs.
+          sparse-checkout: |
+            scripts
       - uses: actions/setup-node@v4
         with: {node-version: 22}
       - name: Classify exact-head changes, otherwise run all original jobs
@@ -92,7 +113,8 @@ jobs:
     needs: impact
     # CI-only changes are validated by Core + actionlint + focused routing tests.
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.draft == false) && needs.impact.result == 'success' }}
-    runs-on: ubuntu-latest
+    # Full App assertions retain the original runner; a proven no-op uses one lightweight shell check.
+    runs-on: ${{ needs.impact.outputs.profile == 'true' && 'ubuntu-latest' || 'ubuntu-slim' }}
     timeout-minutes: 20
     steps:
       - name: Confirm App R1 profile was safely routed away
@@ -111,8 +133,19 @@ jobs:
       - uses: actions/setup-node@v4
         if: needs.impact.outputs.profile == 'true'
         with: {node-version: 22, cache: npm}
+      - name: Load original checksum-verified FFmpeg for npm ci
+        uses: ./.github/actions/ci-ffmpeg-static
+        if: needs.impact.outputs.profile == 'true'
       - run: npm ci --no-audit --no-fund
         if: needs.impact.outputs.profile == 'true'
+      - name: Install SHA-verified FFmpeg into package after npm ci
+        uses: ./.github/actions/ci-ffmpeg-static
+        if: needs.impact.outputs.profile == 'true'
+        with:
+          stage: materialize
+      - name: Daybook private workspace unit acceptance
+        if: needs.impact.outputs.full_app == 'true'
+        run: node --conditions=react-server --test tests/daybook-*.test.mjs tests/ci-daybook-isolated.test.mjs tests/development-vector-wheel.test.mjs tests/profile-inner-balance-preview.test.mjs
       - name: Check-in evidence, scoring and report-priority regressions
         if: needs.impact.outputs.full_app == 'true'
         run: node --conditions=react-server --test tests/checkin-scoring-analysis-quality.test.mjs tests/checkin-course-result-integrity.test.mjs tests/author-score-clusters.test.mjs tests/hh-original-review-ledger.test.mjs tests/full-assessment-library-quality.test.mjs tests/professional-test-expansion-2026.test.mjs tests/assessment-selectable-report.test.mjs tests/assessment-interpretation-band-model.test.mjs tests/assessment-report-semantic-summary.test.mjs tests/assessment-interpretation-consumer.test.mjs tests/psychometric-validity-directory.test.mjs tests/public-test-match-paging.test.mjs
@@ -156,9 +189,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium, webkit]
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+        # Both real browsers when needed; otherwise one fail-closed no-op job.
+        browser: ${{ fromJSON(needs.impact.outputs.banner == 'true' && '["chromium","webkit"]' || '["none"]') }}
+    # Standard free runner; pin distro and launch the prebuilt browser image
+    # only in the actual browser step. The 'none' route stays lightweight.
+    # The "none" matrix runs no browser tools; real Chromium/WebKit stay on ubuntu-24.04.
+    runs-on: ${{ matrix.browser != 'none' && 'ubuntu-24.04' || 'ubuntu-slim' }}
+    timeout-minutes: 15
     env:
       HH_TEST_BROWSER: ${{ matrix.browser }}
     steps:
@@ -178,18 +215,38 @@ jobs:
       - uses: actions/setup-node@v4
         if: needs.impact.outputs.banner == 'true'
         with: {node-version: 22, cache: npm}
+      - name: Load original checksum-verified FFmpeg for npm ci
+        uses: ./.github/actions/ci-ffmpeg-static
+        if: needs.impact.outputs.banner == 'true'
       - run: npm ci --no-audit --no-fund
         if: needs.impact.outputs.banner == 'true'
-      - name: Isolated synthetic browser tools
+      - name: Install SHA-verified FFmpeg into package after npm ci
+        uses: ./.github/actions/ci-ffmpeg-static
+        if: needs.impact.outputs.banner == 'true'
+        with:
+          stage: materialize
+      - name: Install isolated exact-version Playwright test tools (without browser downloads)
         if: needs.impact.outputs.banner == 'true'
         run: |
+          set -euo pipefail
           mkdir -p /tmp/hh-course-banner-tools
-          npm install --prefix /tmp/hh-course-banner-tools --no-audit --no-fund @playwright/test@1.63.0
+          npm install --prefix /tmp/hh-course-banner-tools --ignore-scripts --no-audit --no-fund @playwright/test@1.63.0
           ln -s /tmp/hh-course-banner-tools/node_modules/@playwright node_modules/@playwright
-          /tmp/hh-course-banner-tools/node_modules/.bin/playwright install --with-deps ${{ matrix.browser }}
-      - name: EN/RU course disclosure, keyboard and narrow-screen acceptance
+      - name: EN/RU course disclosure, keyboard and narrow-screen acceptance in pinned browsers
         if: needs.impact.outputs.banner == 'true'
-        run: node tests/course-banner/browser.mjs
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Only synthetic local DOM: no secrets or external network exposed.
+          # The image carries 1.63.0 Chromium/WebKit and system dependencies.
+          # No apt/playwright install --with-deps and no container pull on no-op.
+          docker run --rm --init --ipc=host --network none \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v /tmp/hh-course-banner-tools:/tmp/hh-course-banner-tools:ro \
+            -w "$GITHUB_WORKSPACE" \
+            -e HH_TEST_BROWSER="$HH_TEST_BROWSER" -e CI=true \
+            mcr.microsoft.com/playwright:v1.63.0-noble \
+            bash -lc 'test "${PLAYWRIGHT_BROWSERS_PATH:-}" = /ms-playwright && node tests/course-banner/browser.mjs'
       - uses: actions/upload-artifact@v4
         if: always() && needs.impact.outputs.banner == 'true'
         with:
@@ -199,11 +256,13 @@ jobs:
   database:
     needs: impact
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.draft == false) && needs.impact.result == 'success' }}
-    runs-on: ubuntu-latest
+    # SQL/RLS still use a Docker-capable runner; the proof-only no-op uses ubuntu-slim.
+    runs-on: ${{ needs.impact.outputs.database == 'true' && 'ubuntu-latest' || 'ubuntu-slim' }}
     timeout-minutes: 15
     services:
       postgres:
-        image: postgres:17-alpine
+        # Empty image disables the unneeded service on a verified no-database path.
+        image: ${{ needs.impact.outputs.database == 'true' && 'postgres:17-alpine' || '' }}
         env:
           POSTGRES_DB: hh_app_test
           POSTGRES_PASSWORD: synthetic-ci-admin
@@ -242,11 +301,30 @@ jobs:
       - uses: actions/setup-node@v4
         if: needs.impact.outputs.database == 'true'
         with: {node-version: 22, cache: npm}
+      - name: Load original checksum-verified FFmpeg for npm ci
+        uses: ./.github/actions/ci-ffmpeg-static
+        if: needs.impact.outputs.database == 'true'
       - run: npm ci --no-audit --no-fund
         if: needs.impact.outputs.database == 'true'
+      - name: Install SHA-verified FFmpeg into package after npm ci
+        uses: ./.github/actions/ci-ffmpeg-static
+        if: needs.impact.outputs.database == 'true'
+        with:
+          stage: materialize
       - name: Execute SQL, restricted-role RLS, concurrency, rollback and repository tests
         if: needs.impact.outputs.database == 'true'
         run: npm run test:app:db
+      - name: Isolated two-client/two-master client memory SQL and RLS acceptance
+        if: needs.impact.outputs.database == 'true'
+        run: node scripts/ci-client-memory-rls.mjs
+      - name: Isolated Daybook journal goals and daily acceptance
+        if: needs.impact.outputs.database == 'true'
+        run: node scripts/ci-daybook-isolated.mjs
+      - name: Isolated personal coaching owner RLS acceptance
+        if: needs.impact.outputs.database == 'true'
+        run: |
+          node --test tests/ci-coaching-rls-guard.test.mjs
+          node scripts/ci-coaching-rls.mjs
       - name: Prove exact eight-row registry proposal, atomic conflicts and full readback
         if: needs.impact.outputs.database == 'true'
         run: node scripts/verify-eight-v2-registry-proposal.mjs

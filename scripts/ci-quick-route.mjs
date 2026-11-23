@@ -1,18 +1,39 @@
 // Exact-merge, fail-closed fast-route planner. Run the version pinned to HEAD^1,
 // never a candidate-PR version, before deciding whether to skip Core Next.js.
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, appendFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 
 const IMAGE = /^public\/(?:[\w.-]+\/)*[\w.-]+\.(?:png|jpe?g|webp|gif|avif|ico)$/i;
+// Merge Check Light v2: a tightly bounded public CSS-only exception to the
+// broad lexical "profile/coaching" FULL heuristic. Core still performs the
+// real Next.js build, types and lint. No changes to required branch checks.
+const LIGHT_PUBLIC_STYLE = /^(?:components\/(?!app\/)[a-z0-9][a-z0-9._-]*\.module\.css|app\/\[locale\]\/(?:about|academy|articles|books|events|explore|holistic-support|library|practices|shamanic|shamanica|tests|video-studio)\/(?:[a-z0-9._-]+\/)*[a-z0-9._-]+\.module\.css)$/i;
+const LIGHT_PRIVATE = /(?:^|[\/._-])(?:account|auth|billing|cabinet|checkout|client|consent|credential|crm|database|identity|login|medical|message|messaging|migration|patient|payment|permission|private|privacy|provider|rls|secret|security|session|storage|supabase|token|wallet)(?:$|[\/._-])/i;
+const LIGHT_PHYSICAL = /^components\/mandala-(?:video-mobile|multitrack-timeline|free-video-studio|auto-video-director)(?:\.module)?\.css$/i;
+export function lightPublicStyleOnly(rows) {
+  return Array.isArray(rows) && rows.length > 0 && rows.length <= 100 &&
+    rows.every(({filename,status}={}) => status === 'M' &&
+      LIGHT_PUBLIC_STYLE.test(filename||'') && !LIGHT_PRIVATE.test(filename) &&
+      !LIGHT_PHYSICAL.test(filename) &&
+      !/(?:^|\/)(?:global|globals|layout|template)\./i.test(filename));
+}
 const PUBLIC_JSX = /^app\/\[locale\]\/(?:about|articles|books|events|explore|install)\/[\w.\[\]/-]+\.(?:jsx|tsx)$/;
 const ORDINARY = /^(?:app\/\[locale\]\/|components\/|lib\/|tests\/|public\/|content\/|data\/|docs\/)/;
 const PROTECTED_ROOT = /^(?:app\/\[locale\]\/(?:app|client|admin|services|booking|consultation)\/|components\/(?:app|commerce)\/|lib\/(?:app|practitioners|assessments|ci|auth|billing|crm|payments|security|supabase|integrations)\/|docs\/(?:operations|billing|payments)\/)/i;
 const SENSITIVE = /(?:^|[\/_.-])(?:auth|oauth|login|logout|security|privacy|private|payment|payments|billing|checkout|rls|secret|token|consent|admin|migration|crm|messenger|message|messages|messaging|conversation|client|contact|email|phone|order|booking|consultation|coaching|patient|medical|health|user|account|subscription|supabase|database|api|webhook|middleware|wallet|storage|provider|practitioner|assessment|credential|receipt|refund|permission|role|salesbot|notification|inbox|profile)(?:[\/_.-]|$)/i;
+// Edits to the real media renderer, voice attachment, or text/video timeline
+// must wait for independently completed, exact-HEAD Mandala/macOS checks.
+// A green Next build on a CORE route cannot prove a playable MP4 with audio.
+// Keep this scoped to physical media source files: ordinary UI still uses CORE.
+const PHYSICAL_MEDIA_SPECIALIST = /^(?:components\/mandala-(?:free-video-studio|auto-video-director|affirmation-voice|video-mobile|multitrack-timeline)(?:\.module)?\.(?:tsx|jsx|css)|lib\/mandala\/(?:creative-editor-[a-z0-9-]+|editable-timeline|cinematic-director)\.(?:mjs|js|ts|tsx))$/i;
 const ALLOWED_STATUS = new Set(['A','M']);
 const MAX_BYTES = 25 * 1024 * 1024, MAX_PIXELS = 90_000_000;
+// Large, legitimate media PRs require FULL Core instead of a parser failure.
+// Still bound input length and validate every NUL-delimited changed path.
+const MAX_PARSED_DIFF_ROWS = 2048, MAX_FAST_DIFF_ROWS = 512;
 
 function git(args, options = {}) {
   return execFileSync('git', args, { encoding: options.binary ? 'buffer' : 'utf8',
@@ -26,7 +47,7 @@ export function parseChangedRows(raw) {
   if (typeof raw !== 'string') throw Error('INVALID_DIFF');
   const parts = raw.split('\0');
   if (parts.at(-1) === '') parts.pop();
-  if (!parts.length || parts.length % 2 || parts.length > 1000) throw Error('INVALID_DIFF_ROWS');
+  if (!parts.length || parts.length % 2 || parts.length > MAX_PARSED_DIFF_ROWS * 2) throw Error('INVALID_DIFF_ROWS');
   const rows = [];
   for (let i=0; i<parts.length; i+=2) {
     const status=parts[i], filename=parts[i+1];
@@ -38,13 +59,29 @@ export function parseChangedRows(raw) {
   }
   return rows;
 }
-export function decideRoute(rows, classifier, sources) {
+export function decideRoute(rows, classifier, sources, options = {}) {
   if (!Array.isArray(rows) || !rows.length ||
       rows.some(r=>!r || typeof r.filename!=='string' || typeof r.status!=='string')) return 'FULL';
+  // More than 512 changed entries are never a fast/no-build lane: the
+  // complete mandatory checks must run even if all paths look like images.
+  if (rows.length > MAX_FAST_DIFF_ROWS) return 'FULL';
   const filenames = rows.map(r=>r.filename);
+  // Four exact Mobile Dock production files have trusted geometry/keyboard
+  // tests, full TypeScript source preflight and changed-file ESLint. The tests
+  // themselves are intentionally excluded from the diff allowlist.
+  const mobileDock = new Map([
+    ['app/[locale]/app/[[...path]]/workspace.css','M'],
+    ['app/[locale]/app/messages/messages-page.css','M'],
+    ['components/app/messages-bottom-navigation.jsx','M'],
+    ['lib/mobile-visual-bottom.mjs','M'],
+  ]);
   // Deletions/type-changes can alter release protection and never use the advisory lane.
   if (rows.some(r=>!ALLOWED_STATUS.has(r.status))) return 'FULL';
-  if (filenames.some(f=>!ORDINARY.test(f) || PROTECTED_ROOT.test(f) || SENSITIVE.test(f) || /^\.github\/|^supabase\/|^scripts\/ci-|^lib\/ci\/|^tests\/ci-/.test(f) ||
+  if (rows.length===mobileDock.size &&
+      rows.every(r=>r.status==='M' && mobileDock.get(r.filename)==='M') &&
+      [...mobileDock.keys()].every(path=>rows.some(r=>r.filename===path))) return 'DOCK';
+  if (options.light !== false && lightPublicStyleOnly(rows)) return 'CORE';
+  if (filenames.some(f=>!ORDINARY.test(f) || PROTECTED_ROOT.test(f) || SENSITIVE.test(f) || PHYSICAL_MEDIA_SPECIALIST.test(f) || /^\.github\/|^supabase\/|^scripts\/ci-|^lib\/ci\/|^tests\/ci-/.test(f) ||
       /(?:^|\/)(?:package(?:-lock)?\.json|next\.config\.\w+|middleware\.\w+|AGENTS\.md|CI_RELEASE_POLICY\.md)$/.test(f))) return 'FULL';
   if (rows.every(r=>ALLOWED_STATUS.has(r.status) && IMAGE.test(r.filename)) &&
       typeof classifier === 'function' && classifier(filenames) === 'FAST') return 'ASSETS';
@@ -266,7 +303,11 @@ async function main() {
     writeFileSync(path,git(['show',base+':lib/ci/specialist-aggregate.mjs']),{mode:0o600});
     classifier=(await import(pathToFileURL(path).href)).classifyReleaseRisk;
   } finally { rmSync(trustDir,{recursive:true,force:true}); }
+  const legacyRoute=decideRoute(rows,classifier,()=>{}, {light:false});
   const route=decideRoute(rows,classifier,()=>{});
+  if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY,
+    'Merge Check Light v2 shadow: legacy='+legacyRoute+'; scoped='+route+
+    '; actual protected Core and Specialist evidence unchanged.\n');
   if(route==='ASSETS') {
     validateAssets(rows,head);
     process.stdout.write('ASSETS\n');

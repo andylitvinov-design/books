@@ -682,5 +682,708 @@
         "attributionRequired": true
       }
     ]
+  },
+  {
+    "id": "sun-trees-forest",
+    "theme": "health",
+    "label": {
+      "ru": "Солнечный зимний лес",
+      "en": "Sunlit snowy forest",
+      "es": "Bosque nevado al sol"
+    },
+    "symbol": "≋",
+    "tags": [
+      "forest",
+      "snow",
+      "winter",
+      "sunlight",
+      "nature"
+    ],
+    "status": "approved",
+    "sourceKind": "licensed_single_shot_edit",
+    "durationSeconds": 5,
+    "width": 720,
+    "height": 1280,
+    "fps": 24,
+    "codec": "h264",
+    "bytes": 2382205,
+    "sha256": "82156e7fae970c6705b322c156b5736ae5962877b9efd0eb034c201416ed972d",
+    "rawRedistributionAllowed": false,
+    "modelTrainingAllowed": false,
+    "video": "/videos/holistic-house/film-collection-v3/sun-trees-forest.mp4",
+    "poster": "/videos/holistic-house/film-collection-v3/sun-trees-forest.jpg",
+    "attribution": "Joel Holland / Dareful / CC BY 4.0; 5-second excerpt, cropped from 1920x1080 landscape to 720x1280 portrait and re-encoded; https://dareful.com/sun-trees-forest/",
+    "sourceFormat": "portrait_9x16_only",
+    "allowedAspects": [
+      "portrait"
+    ],
+    "sourceOriginalDimensions": {
+      "width": 1920,
+      "height": 1080
+    },
+    "createdAt": "2026-11-04",
+    "sources": [
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Sunlit snowy forest",
+        "sourcePage": "https://dareful.com/sun-trees-forest/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-11-04",
+        "licenseEvidence": "Individual official Dareful page states CC BY 4.0 for 1920x1080 original; verified five-second edited excerpt; raw original file hash not asserted.",
+        "rawOriginalSha256": null,
+        "editedExcerptSha256": "82156e7fae970c6705b322c156b5736ae5962877b9efd0eb034c201416ed972d",
+        "attributionRequired": true
+      }
+    ]
+  },
+  {
+    "id": "warm-clouds-sunset",
+    "theme": "relationships",
+    "label": {
+      "ru": "Тёплые облака на закате",
+      "en": "Warm sunset clouds",
+      "es": "Nubes cálidas al atardecer"
+    },
+    "symbol": "♡",
+    "tags": [
+      "sky",
+      "clouds",
+      "sunset",
+      "nature",
+      "calm"
+    ],
+    "status": "approved",
+    "sourceKind": "licensed_single_shot_edit",
+    "durationSeconds": 5,
+    "width": 720,
+    "height": 1280,
+    "fps": 24,
+    "codec": "h264",
+    "bytes": 293260,
+    "sha256": "692ed60e4cb9789c89bbd2c8facace4bb74f4cebbe154e6e01121717566e360a",
+    "rawRedistributionAllowed": false,
+    "modelTrainingAllowed": false,
+    "video": "/videos/holistic-house/film-collection-v3/warm-clouds-sunset.mp4",
+    "poster": "/videos/holistic-house/film-collection-v3/warm-clouds-sunset.jpg",
+    "attribution": "Joel Holland / Dareful / CC BY 4.0; 5-second excerpt, cropped from 1920x1080 landscape to 720x1280 portrait and re-encoded; https://dareful.com/warm-clouds-sunset/",
+    "sourceFormat": "portrait_9x16_only",
+    "allowedAspects": [
+      "portrait"
+    ],
+    "sourceOriginalDimensions": {
+      "width": 1920,
+      "height": 1080
+    },
+    "createdAt": "2026-11-04",
+    "sources": [
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Warm sunset clouds",
+        "sourcePage": "https://dareful.com/warm-clouds-sunset/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-11-04",
+        "licenseEvidence": "Individual official Dareful page states CC BY 4.0 for 1920x1080 original; verified five-second edited excerpt; raw original file hash not asserted.",
+        "rawOriginalSha256": null,
+        "editedExcerptSha256": "692ed60e4cb9789c89bbd2c8facace4bb74f4cebbe154e6e01121717566e360a",
+        "attributionRequired": true
+      }
+    ]
+  },
+  {
+    "id": "fall-foliage-forest",
+    "theme": "life",
+    "label": {
+      "ru": "Осенний лес",
+      "en": "Autumn forest canopy",
+      "es": "Bosque otoñal"
+    },
+    "symbol": "♧",
+    "tags": [
+      "forest",
+      "trees",
+      "autumn",
+      "nature",
+      "renewal"
+    ],
+    "status": "approved",
+    "sourceKind": "licensed_single_shot_edit",
+    "durationSeconds": 5,
+    "width": 720,
+    "height": 1280,
+    "fps": 24,
+    "codec": "h264",
+    "bytes": 733455,
+    "sha256": "8e5aa88bed6d3315a3a33f1f85c98116f98cfdee565c5f57b21d3739566d85a9",
+    "rawRedistributionAllowed": false,
+    "modelTrainingAllowed": false,
+    "video": "/videos/holistic-house/film-collection-v3/fall-foliage-forest.mp4",
+    "poster": "/videos/holistic-house/film-collection-v3/fall-foliage-forest.jpg",
+    "attribution": "Joel Holland / Dareful / CC BY 4.0; 5-second excerpt, cropped from 1920x1080 landscape to 720x1280 portrait and re-encoded; https://dareful.com/fall-foliage-forest/",
+    "sourceFormat": "portrait_9x16_only",
+    "allowedAspects": [
+      "portrait"
+    ],
+    "sourceOriginalDimensions": {
+      "width": 1920,
+      "height": 1080
+    },
+    "createdAt": "2026-11-04",
+    "sources": [
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Autumn forest canopy",
+        "sourcePage": "https://dareful.com/fall-foliage-forest/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-11-04",
+        "licenseEvidence": "Individual official Dareful page states CC BY 4.0 for 1920x1080 original; verified five-second edited excerpt; raw original file hash not asserted.",
+        "rawOriginalSha256": null,
+        "editedExcerptSha256": "8e5aa88bed6d3315a3a33f1f85c98116f98cfdee565c5f57b21d3739566d85a9",
+        "attributionRequired": true
+      }
+    ]
+  },
+  {
+    "id": "snow-forest-winter",
+    "theme": "health",
+    "label": {
+      "ru": "Зимний лес",
+      "en": "Snowy winter forest",
+      "es": "Bosque invernal nevado"
+    },
+    "symbol": "≋",
+    "tags": [
+      "forest",
+      "water",
+      "snow",
+      "winter",
+      "nature",
+      "calm"
+    ],
+    "status": "approved",
+    "sourceKind": "licensed_single_shot_edit",
+    "durationSeconds": 5,
+    "width": 720,
+    "height": 1280,
+    "fps": 24,
+    "codec": "h264",
+    "bytes": 1007986,
+    "sha256": "bf249c8f5ea904cad9dbbcfe79d366c852de2e40f07700430b4da6181de2a254",
+    "rawRedistributionAllowed": false,
+    "modelTrainingAllowed": false,
+    "video": "/videos/holistic-house/film-collection-v3/snow-forest-winter.mp4",
+    "poster": "/videos/holistic-house/film-collection-v3/snow-forest-winter.jpg",
+    "attribution": "Joel Holland / Dareful / CC BY 4.0; 5-second excerpt, cropped from 1920x1080 landscape to 720x1280 portrait and re-encoded; https://dareful.com/snow-forest-winter/",
+    "sourceFormat": "portrait_9x16_only",
+    "allowedAspects": [
+      "portrait"
+    ],
+    "sourceOriginalDimensions": {
+      "width": 1920,
+      "height": 1080
+    },
+    "createdAt": "2026-11-04",
+    "sources": [
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Snowy winter forest",
+        "sourcePage": "https://dareful.com/snow-forest-winter/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-11-04",
+        "licenseEvidence": "Individual official Dareful page states CC BY 4.0 for 1920x1080 original; verified five-second edited excerpt; raw original file hash not asserted.",
+        "rawOriginalSha256": null,
+        "editedExcerptSha256": "bf249c8f5ea904cad9dbbcfe79d366c852de2e40f07700430b4da6181de2a254",
+        "attributionRequired": true
+      }
+    ]
+  },
+  {
+    "id": "sun-warm-ocean-dawn",
+    "theme": "relationships",
+    "label": {
+      "ru": "Тёплый рассвет над океаном",
+      "en": "Warm ocean dawn",
+      "es": "Amanecer cálido sobre el océano"
+    },
+    "symbol": "♡",
+    "tags": [
+      "sun",
+      "sunrise",
+      "sunlight",
+      "sky",
+      "ocean",
+      "calm",
+      "warm",
+      "golden_hour",
+      "water",
+      "nature"
+    ],
+    "status": "approved",
+    "sourceKind": "licensed_single_shot_dual_aspect_edit",
+    "sourceOriginalGroupId": "sun-warm-ocean-dawn",
+    "durationSeconds": 5,
+    "width": 1280,
+    "height": 720,
+    "fps": 24,
+    "codec": "h264",
+    "bytes": 3015951,
+    "sha256": "1a89e3da7715a9c7b2b801be92dd9447294913f65e9fd8ec90a52ba09f3fc0de",
+    "rawRedistributionAllowed": false,
+    "modelTrainingAllowed": false,
+    "video": "/videos/holistic-house/film-collection-v3/sun-warm-ocean-dawn.mp4",
+    "poster": "/videos/holistic-house/film-collection-v3/sun-warm-ocean-dawn.jpg",
+    "attribution": "Joel Holland / Dareful / CC BY 4.0; 5-second excerpt, silent, rescaled landscape or center-cropped portrait and re-encoded H.264 at 24fps; https://dareful.com/dusk-dawn-ocean/",
+    "sourceFormat": "landscape_16x9_reframed",
+    "allowedAspects": [
+      "landscape"
+    ],
+    "sourceOriginalDimensions": {
+      "width": 1920,
+      "height": 1080
+    },
+    "createdAt": "2026-11-06",
+    "sources": [
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Dusk Dawn Ocean",
+        "sourcePage": "https://dareful.com/dusk-dawn-ocean/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-11-06",
+        "licenseEvidence": "Official Dareful source page with CC BY 4.0 and verified 2026-11-05 screening artifact",
+        "rawOriginalSha256": null,
+        "editedExcerptSha256": "1a89e3da7715a9c7b2b801be92dd9447294913f65e9fd8ec90a52ba09f3fc0de",
+        "attributionRequired": true
+      }
+    ]
+  },
+  {
+    "id": "sun-warm-ocean-dawn-portrait",
+    "theme": "relationships",
+    "label": {
+      "ru": "Тёплый рассвет над океаном",
+      "en": "Warm ocean dawn",
+      "es": "Amanecer cálido sobre el océano"
+    },
+    "symbol": "♡",
+    "tags": [
+      "sun",
+      "sunrise",
+      "sunlight",
+      "sky",
+      "ocean",
+      "calm",
+      "warm",
+      "golden_hour",
+      "water",
+      "nature"
+    ],
+    "status": "approved",
+    "sourceKind": "licensed_single_shot_dual_aspect_edit",
+    "sourceOriginalGroupId": "sun-warm-ocean-dawn",
+    "durationSeconds": 5,
+    "width": 720,
+    "height": 1280,
+    "fps": 24,
+    "codec": "h264",
+    "bytes": 1581958,
+    "sha256": "beea9c128b162f3a9e9caa0ceb5994a1d15ecccd810dcff2e82a3ff011d5af66",
+    "rawRedistributionAllowed": false,
+    "modelTrainingAllowed": false,
+    "video": "/videos/holistic-house/film-collection-v3/sun-warm-ocean-dawn-portrait.mp4",
+    "poster": "/videos/holistic-house/film-collection-v3/sun-warm-ocean-dawn-portrait.jpg",
+    "attribution": "Joel Holland / Dareful / CC BY 4.0; 5-second excerpt, silent, rescaled landscape or center-cropped portrait and re-encoded H.264 at 24fps; https://dareful.com/dusk-dawn-ocean/",
+    "sourceFormat": "portrait_9x16_cropped",
+    "allowedAspects": [
+      "portrait"
+    ],
+    "sourceOriginalDimensions": {
+      "width": 1920,
+      "height": 1080
+    },
+    "createdAt": "2026-11-06",
+    "sources": [
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Dusk Dawn Ocean",
+        "sourcePage": "https://dareful.com/dusk-dawn-ocean/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-11-06",
+        "licenseEvidence": "Official Dareful source page with CC BY 4.0 and verified 2026-11-05 screening artifact",
+        "rawOriginalSha256": null,
+        "editedExcerptSha256": "beea9c128b162f3a9e9caa0ceb5994a1d15ecccd810dcff2e82a3ff011d5af66",
+        "attributionRequired": true
+      }
+    ]
+  },
+  {
+    "id": "sun-golden-aspen",
+    "theme": "life",
+    "label": {
+      "ru": "Золотые солнечные осины",
+      "en": "Golden sunlit aspens",
+      "es": "Álamos dorados al sol"
+    },
+    "symbol": "♧",
+    "tags": [
+      "sun",
+      "sunlight",
+      "autumn",
+      "forest",
+      "trees",
+      "golden",
+      "warm",
+      "leaves",
+      "nature"
+    ],
+    "status": "approved",
+    "sourceKind": "licensed_single_shot_dual_aspect_edit",
+    "sourceOriginalGroupId": "sun-golden-aspen",
+    "durationSeconds": 5,
+    "width": 1280,
+    "height": 720,
+    "fps": 24,
+    "codec": "h264",
+    "bytes": 4742379,
+    "sha256": "fcab61b3b327d7b204a1365e221e49c255ed6a35f087d6d52c7d13243985d408",
+    "rawRedistributionAllowed": false,
+    "modelTrainingAllowed": false,
+    "video": "/videos/holistic-house/film-collection-v3/sun-golden-aspen.mp4",
+    "poster": "/videos/holistic-house/film-collection-v3/sun-golden-aspen.jpg",
+    "attribution": "Joel Holland / Dareful / CC BY 4.0; 5-second excerpt, silent, rescaled landscape or center-cropped portrait and re-encoded H.264 at 24fps; https://dareful.com/free-4k-stock-video-of-autumn-fall-foliage-aspen-trees-stock-footage/",
+    "sourceFormat": "landscape_16x9_reframed",
+    "allowedAspects": [
+      "landscape"
+    ],
+    "sourceOriginalDimensions": {
+      "width": 1920,
+      "height": 1012
+    },
+    "createdAt": "2026-11-06",
+    "sources": [
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Aspen Trees During Autumn 4k",
+        "sourcePage": "https://dareful.com/free-4k-stock-video-of-autumn-fall-foliage-aspen-trees-stock-footage/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-11-06",
+        "licenseEvidence": "Official Dareful source page with CC BY 4.0 and verified 2026-11-05 screening artifact",
+        "rawOriginalSha256": null,
+        "editedExcerptSha256": "fcab61b3b327d7b204a1365e221e49c255ed6a35f087d6d52c7d13243985d408",
+        "attributionRequired": true
+      }
+    ]
+  },
+  {
+    "id": "sun-golden-aspen-portrait",
+    "theme": "life",
+    "label": {
+      "ru": "Золотые солнечные осины",
+      "en": "Golden sunlit aspens",
+      "es": "Álamos dorados al sol"
+    },
+    "symbol": "♧",
+    "tags": [
+      "sun",
+      "sunlight",
+      "autumn",
+      "forest",
+      "trees",
+      "golden",
+      "warm",
+      "leaves",
+      "nature"
+    ],
+    "status": "approved",
+    "sourceKind": "licensed_single_shot_dual_aspect_edit",
+    "sourceOriginalGroupId": "sun-golden-aspen",
+    "durationSeconds": 5,
+    "width": 720,
+    "height": 1280,
+    "fps": 24,
+    "codec": "h264",
+    "bytes": 2091098,
+    "sha256": "d6d2a9e7bf12216876ee16e35dbd3f5b4ea840e29aa443cecec0b5a5da648024",
+    "rawRedistributionAllowed": false,
+    "modelTrainingAllowed": false,
+    "video": "/videos/holistic-house/film-collection-v3/sun-golden-aspen-portrait.mp4",
+    "poster": "/videos/holistic-house/film-collection-v3/sun-golden-aspen-portrait.jpg",
+    "attribution": "Joel Holland / Dareful / CC BY 4.0; 5-second excerpt, silent, rescaled landscape or center-cropped portrait and re-encoded H.264 at 24fps; https://dareful.com/free-4k-stock-video-of-autumn-fall-foliage-aspen-trees-stock-footage/",
+    "sourceFormat": "portrait_9x16_cropped",
+    "allowedAspects": [
+      "portrait"
+    ],
+    "sourceOriginalDimensions": {
+      "width": 1920,
+      "height": 1012
+    },
+    "createdAt": "2026-11-06",
+    "sources": [
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Aspen Trees During Autumn 4k",
+        "sourcePage": "https://dareful.com/free-4k-stock-video-of-autumn-fall-foliage-aspen-trees-stock-footage/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-11-06",
+        "licenseEvidence": "Official Dareful source page with CC BY 4.0 and verified 2026-11-05 screening artifact",
+        "rawOriginalSha256": null,
+        "editedExcerptSha256": "d6d2a9e7bf12216876ee16e35dbd3f5b4ea840e29aa443cecec0b5a5da648024",
+        "attributionRequired": true
+      }
+    ]
+  },
+  {
+    "id": "sun-leaves-canopy",
+    "theme": "energy",
+    "label": {
+      "ru": "Солнечный свет в кронах деревьев",
+      "en": "Sunlight among the leaves",
+      "es": "Luz del sol entre las hojas"
+    },
+    "symbol": "☀",
+    "tags": [
+      "sun",
+      "sunlight",
+      "forest",
+      "trees",
+      "leaves",
+      "autumn",
+      "warm",
+      "wind",
+      "nature"
+    ],
+    "status": "approved",
+    "sourceKind": "licensed_single_shot_dual_aspect_edit",
+    "sourceOriginalGroupId": "sun-leaves-canopy",
+    "durationSeconds": 5,
+    "width": 1280,
+    "height": 720,
+    "fps": 24,
+    "codec": "h264",
+    "bytes": 2130254,
+    "sha256": "00416f1d8e4f8295f45224cc1949a44ce08791a3d73e47f7d3826c7e4e9197ff",
+    "rawRedistributionAllowed": false,
+    "modelTrainingAllowed": false,
+    "video": "/videos/holistic-house/film-collection-v3/sun-leaves-canopy.mp4",
+    "poster": "/videos/holistic-house/film-collection-v3/sun-leaves-canopy.jpg",
+    "attribution": "Joel Holland / Dareful / CC BY 4.0; 5-second excerpt, silent, rescaled landscape or center-cropped portrait and re-encoded H.264 at 24fps; https://dareful.com/trees-looking-up/",
+    "sourceFormat": "landscape_16x9_reframed",
+    "allowedAspects": [
+      "landscape"
+    ],
+    "sourceOriginalDimensions": {
+      "width": 1920,
+      "height": 1080
+    },
+    "createdAt": "2026-11-06",
+    "sources": [
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Trees Looking Up",
+        "sourcePage": "https://dareful.com/trees-looking-up/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-11-06",
+        "licenseEvidence": "Official Dareful source page with CC BY 4.0 and verified 2026-11-05 screening artifact",
+        "rawOriginalSha256": null,
+        "editedExcerptSha256": "00416f1d8e4f8295f45224cc1949a44ce08791a3d73e47f7d3826c7e4e9197ff",
+        "attributionRequired": true
+      }
+    ]
+  },
+  {
+    "id": "sun-leaves-canopy-portrait",
+    "theme": "energy",
+    "label": {
+      "ru": "Солнечный свет в кронах деревьев",
+      "en": "Sunlight among the leaves",
+      "es": "Luz del sol entre las hojas"
+    },
+    "symbol": "☀",
+    "tags": [
+      "sun",
+      "sunlight",
+      "forest",
+      "trees",
+      "leaves",
+      "autumn",
+      "warm",
+      "wind",
+      "nature"
+    ],
+    "status": "approved",
+    "sourceKind": "licensed_single_shot_dual_aspect_edit",
+    "sourceOriginalGroupId": "sun-leaves-canopy",
+    "durationSeconds": 5,
+    "width": 720,
+    "height": 1280,
+    "fps": 24,
+    "codec": "h264",
+    "bytes": 1141503,
+    "sha256": "c8566130f83c3feb400044cf5b22d854d3873b49da8228b377108a33cbb40002",
+    "rawRedistributionAllowed": false,
+    "modelTrainingAllowed": false,
+    "video": "/videos/holistic-house/film-collection-v3/sun-leaves-canopy-portrait.mp4",
+    "poster": "/videos/holistic-house/film-collection-v3/sun-leaves-canopy-portrait.jpg",
+    "attribution": "Joel Holland / Dareful / CC BY 4.0; 5-second excerpt, silent, rescaled landscape or center-cropped portrait and re-encoded H.264 at 24fps; https://dareful.com/trees-looking-up/",
+    "sourceFormat": "portrait_9x16_cropped",
+    "allowedAspects": [
+      "portrait"
+    ],
+    "sourceOriginalDimensions": {
+      "width": 1920,
+      "height": 1080
+    },
+    "createdAt": "2026-11-06",
+    "sources": [
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Trees Looking Up",
+        "sourcePage": "https://dareful.com/trees-looking-up/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-11-06",
+        "licenseEvidence": "Official Dareful source page with CC BY 4.0 and verified 2026-11-05 screening artifact",
+        "rawOriginalSha256": null,
+        "editedExcerptSha256": "c8566130f83c3feb400044cf5b22d854d3873b49da8228b377108a33cbb40002",
+        "attributionRequired": true
+      }
+    ]
+  },
+  {
+    "id": "sun-autumn-hills",
+    "theme": "goals",
+    "label": {
+      "ru": "Тёплые осенние холмы",
+      "en": "Warm autumn hills",
+      "es": "Colinas cálidas de otoño"
+    },
+    "symbol": "△",
+    "tags": [
+      "sun",
+      "sunlight",
+      "autumn",
+      "hills",
+      "mountain",
+      "forest",
+      "warm",
+      "aerial",
+      "nature"
+    ],
+    "status": "approved",
+    "sourceKind": "licensed_single_shot_dual_aspect_edit",
+    "sourceOriginalGroupId": "sun-autumn-hills",
+    "durationSeconds": 5,
+    "width": 1280,
+    "height": 720,
+    "fps": 24,
+    "codec": "h264",
+    "bytes": 1550301,
+    "sha256": "4c9a0236ead8ef6ade89e6e2b57a02e258bd21a3178530dff0929610edbd29d0",
+    "rawRedistributionAllowed": false,
+    "modelTrainingAllowed": false,
+    "video": "/videos/holistic-house/film-collection-v3/sun-autumn-hills.mp4",
+    "poster": "/videos/holistic-house/film-collection-v3/sun-autumn-hills.jpg",
+    "attribution": "Joel Holland / Dareful / CC BY 4.0; 5-second excerpt, silent, rescaled landscape or center-cropped portrait and re-encoded H.264 at 24fps; https://dareful.com/autumn-mountain-landscape/",
+    "sourceFormat": "landscape_16x9_reframed",
+    "allowedAspects": [
+      "landscape"
+    ],
+    "sourceOriginalDimensions": {
+      "width": 1920,
+      "height": 1080
+    },
+    "createdAt": "2026-11-06",
+    "sources": [
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Autumn Mountain Landscape 4k",
+        "sourcePage": "https://dareful.com/autumn-mountain-landscape/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-11-06",
+        "licenseEvidence": "Official Dareful source page with CC BY 4.0 and verified 2026-11-05 screening artifact",
+        "rawOriginalSha256": null,
+        "editedExcerptSha256": "4c9a0236ead8ef6ade89e6e2b57a02e258bd21a3178530dff0929610edbd29d0",
+        "attributionRequired": true
+      }
+    ]
+  },
+  {
+    "id": "sun-autumn-hills-portrait",
+    "theme": "goals",
+    "label": {
+      "ru": "Тёплые осенние холмы",
+      "en": "Warm autumn hills",
+      "es": "Colinas cálidas de otoño"
+    },
+    "symbol": "△",
+    "tags": [
+      "sun",
+      "sunlight",
+      "autumn",
+      "hills",
+      "mountain",
+      "forest",
+      "warm",
+      "aerial",
+      "nature"
+    ],
+    "status": "approved",
+    "sourceKind": "licensed_single_shot_dual_aspect_edit",
+    "sourceOriginalGroupId": "sun-autumn-hills",
+    "durationSeconds": 5,
+    "width": 720,
+    "height": 1280,
+    "fps": 24,
+    "codec": "h264",
+    "bytes": 681807,
+    "sha256": "908405640deb9169676c9ddef2388dbcd56b0a14c092344e21c5475dcbece493",
+    "rawRedistributionAllowed": false,
+    "modelTrainingAllowed": false,
+    "video": "/videos/holistic-house/film-collection-v3/sun-autumn-hills-portrait.mp4",
+    "poster": "/videos/holistic-house/film-collection-v3/sun-autumn-hills-portrait.jpg",
+    "attribution": "Joel Holland / Dareful / CC BY 4.0; 5-second excerpt, silent, rescaled landscape or center-cropped portrait and re-encoded H.264 at 24fps; https://dareful.com/autumn-mountain-landscape/",
+    "sourceFormat": "portrait_9x16_cropped",
+    "allowedAspects": [
+      "portrait"
+    ],
+    "sourceOriginalDimensions": {
+      "width": 1920,
+      "height": 1080
+    },
+    "createdAt": "2026-11-06",
+    "sources": [
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Autumn Mountain Landscape 4k",
+        "sourcePage": "https://dareful.com/autumn-mountain-landscape/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-11-06",
+        "licenseEvidence": "Official Dareful source page with CC BY 4.0 and verified 2026-11-05 screening artifact",
+        "rawOriginalSha256": null,
+        "editedExcerptSha256": "908405640deb9169676c9ddef2388dbcd56b0a14c092344e21c5475dcbece493",
+        "attributionRequired": true
+      }
+    ]
   }
 ]

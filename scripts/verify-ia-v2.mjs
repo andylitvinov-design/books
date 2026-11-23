@@ -17,6 +17,7 @@ import { createClient } from '../lib/clients/service.js'
 import { getOwnerCabinetLink, rotateCabinetAccess, revokeCabinetAccess } from '../lib/clients/access.js'
 import { createAssessment, updateAssessment, transitionAssessment } from '../lib/clients/assessments.js'
 import { getSiteNavigation, getCompactNavigation } from '../lib/site-navigation-model.js'
+import { UNIFIED_DOCK_IDS, unifiedMobileDockHref } from '../lib/unified-mobile-dock.mjs'
 import { loopbackHeaders, loopbackLocation } from './ia-v2-loopback-proxy.mjs'
 assert.equal(process.env.CI, 'true', 'Only isolated CI execution is supported')
 assert.equal(process.argv.length, 2, 'No runtime URL or live mode is accepted')
@@ -101,33 +102,51 @@ async function go(page, path) {
   return response
 }
 
-function expectedMobileNavigation(locale) { return getCompactNavigation(locale) }
-function visibleMobileLabel(locale, id) {
-  const names = {
-    en: {home:'Home',analysis:'Free Analysis',courses:'Courses',profile:'My Profile',alchemy:'Psychic Alchemy',pro:'Pro',temple:'Holistic Support'},
-    ru: {home:'Домой',analysis:'Разбор',courses:'Курсы',profile:'Профиль',alchemy:'Алхимия души',pro:'Pro',temple:'Поддержка'},
-    es: {home:'Inicio',analysis:'Análisis',courses:'Cursos',profile:'Mi perfil',alchemy:'Alquimia del Alma',pro:'Pro',temple:'Apoyo holístico'},
-  }
-  return names[locale][id]
-}
 
-async function assertPublicBottomNavigation(bottom, { locale, surface, label }) {
-  const expected = expectedMobileNavigation(locale)
-  const links = bottom.locator('[data-nav-item]')
-  assert.deepEqual(await links.evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expected.map(({ id, href }) => ({ id, href })), label + ': exact seven bottom destinations')
+// Home, all public editorial pages and guest tests share one real seven-item app dock,
+// not the retired public footer. Assert the real rendered destination list,
+// visible tap geometry, keyboard order and absence of a second overlapping dock.
+async function assertUnifiedBottomNavigation(page,{locale,label,active=null,visible=true}){
+  const dock=page.locator('[data-hh-unified-dock]')
+  const legacy=page.locator('.mobile-bottom-navigation')
+  await expect(dock).toHaveCount(1)
+  await expect(legacy).toHaveCount(0)
+  const items=UNIFIED_DOCK_IDS.map(id=>({id,href:unifiedMobileDockHref(locale,id)}))
+  assert.equal(items.length,7,label+': seven approved destinations')
+  assert.ok(items.every(item=>typeof item.href==='string'&&item.href.startsWith('/')))
+  const links=dock.locator('[data-unified-dock-item]')
+  // Client hydration can replace the empty public shell after the enclosing
+  // dock appeared. Wait for the REAL seven links before comparing contents:
+  // evaluateAll() returns [] immediately and would otherwise misreport a
+  // hydration race as missing navigation. This still fails if links stay absent.
   await expect(links).toHaveCount(7)
-  const visible = await bottom.isVisible()
-  for (let index = 0; index < expected.length; index++) {
-    await expect(links.nth(index)).toHaveText(visibleMobileLabel(locale, expected[index].id))
-    if (visible) await expect(links.nth(index)).toHaveAccessibleName(expected[index].ariaLabel)
-  }
-  const active = ({home:'home',analysis:'analysis',courses:'courses',academy:'courses',pro:'pro',profile:'profile',alchemy:'alchemy',temple:'temple',
-    'temple-support':'temple','services/free-situation-review':'analysis',
-    'services/alchemy-of-soul':'alchemy','services/psychohomeopathy':'alchemy',
-    'client':'profile','client/tests':'profile','personality-profiles':'profile','temple-insights':'temple','holistic-support':'temple'})[surface]
-  await expect(bottom.locator('[aria-current="page"]')).toHaveCount(active ? 1 : 0)
-  if (active) await expect(bottom.locator('[data-nav-item="' + active + '"]')).toHaveAttribute('aria-current', 'page')
-  return expected
+  assert.deepEqual(await links.evaluateAll(nodes=>nodes.map(el=>({
+    id:el.getAttribute('data-unified-dock-item'),href:el.getAttribute('href')}))),
+    items,label+': exact global seven-dock destinations')
+  await expect(dock.locator('[aria-current="page"]')).toHaveCount(active?1:0)
+  if(active)await expect(dock.locator('[data-unified-dock-item="'+active+'"]')).toHaveAttribute('aria-current','page')
+  if(visible){
+    await expect(dock).toBeVisible()
+    await links.first().focus()
+    let previousRight=0
+    const viewport=page.viewportSize()
+    for(let index=0;index<items.length;index++){
+      const link=links.nth(index)
+      await expect(link).toBeVisible()
+      await expect(link).toBeFocused()
+      await expect(link).toHaveAccessibleName(/\S+/)
+      const box=await link.boundingBox()
+      assert.ok(box&&box.width>=44&&box.height>=44&&box.x>=previousRight-1
+        &&box.x+box.width<=viewport.width+1&&box.y>=-1
+        &&box.y+box.height<=viewport.height+1,
+        label+': non-overlapping keyboard-focusable 44px global destination '+items[index].id)
+      previousRight=box.x+box.width
+      if(index<items.length-1)await link.press('Tab')
+    }
+  }else await expect(dock).toBeHidden()
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),
+    label+': shared dock horizontal overflow')
+  return dock
 }
 
 async function verifyDirectNavigation(nav, { locale, surface, expected, label }) {
@@ -184,7 +203,40 @@ async function verifySiteMenu(page, header, { locale, surface, label, expectedMe
   await expect(header.locator('details.site-main-menu')).toHaveJSProperty('open', false)
 }
 
-async function verifyPublicHeaderMatrix(page, engine) {
+// Public navigation matrices are independent by locale. Keep every route,
+// breakpoint, keyboard and privacy assertion, but overlap their browser I/O.
+// Dedicated pages prevent viewport, focus and language navigation races.
+// Never shorten the matrix or treat a rejected case as an advisory check.
+async function verifyPublicByLocale(page, engine, locales, verify) {
+  const pages = [page]
+  const extraContexts = []
+  const pageErrors = []
+  try {
+    for (let i = 1; i < locales.length; i++) {
+      // Separate contexts avoid locale-cookie and session collisions between
+      // concurrent EN/RU/ES navigations. No test credentials are copied.
+      const context = await page.context().browser().newContext({
+        ignoreHTTPSErrors: true, serviceWorkers: 'block', viewport: page.viewportSize()
+      })
+      extraContexts.push(context)
+      const sibling = await context.newPage()
+      sibling.on('pageerror', error => pageErrors.push(engine + '/' + locales[i] + ': ' + error.message))
+      pages.push(sibling)
+    }
+    // Wait for every locale, including failures, before closing shared contexts.
+    const outcomes = await Promise.allSettled(
+      locales.map((locale, i) => verify(pages[i], engine, [locale]))
+    )
+    const failed = outcomes.find(result => result.status === 'rejected')
+    if (failed) throw failed.reason
+    assert.deepEqual(pageErrors, [], engine + ': secondary locale browser errors')
+  } finally {
+    await Promise.allSettled(extraContexts.map(context => context.close()))
+  }
+}
+
+async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es']) {
+  if (locales.length > 1) return verifyPublicByLocale(page, engine, locales, verifyPublicHeaderMatrix)
   const diagnostic = await observePublicNavigation(page, { engine, origin, record: event => publicNavigationDiagnostics.push(event) })
   try {
   const originalViewport = page.viewportSize()
@@ -203,21 +255,138 @@ async function verifyPublicHeaderMatrix(page, engine) {
   const prWebkitHeaderWidths = [320, 390, 768, 1280]
   const publicHeaderWidths = engine === 'webkit' && process.env.GITHUB_EVENT_NAME === 'pull_request'
     ? prWebkitHeaderWidths : fullHeaderWidths
-  for (const locale of ['en', 'ru', 'es']) {
-    for (const [surface, path] of [['home', locale === 'es' ? '/es' : '/?lang=' + locale], ['energy', '/' + locale + '/explore/energy'], ['love', '/' + locale + '/explore/love'], ['business', '/' + locale + '/explore/business'], ['library', '/' + locale + '/library']]) {
+  for (const locale of locales) {
+    for (const [surface, path] of [['home', locale === 'es' ? '/es' : '/?full=1&lang=' + locale], ['energy', '/' + locale + '/explore/energy'], ['love', '/' + locale + '/explore/love'], ['business', '/' + locale + '/explore/business'], ['library', '/' + locale + '/library']]) {
       for (const width of publicHeaderWidths) {
         const label = engine + '/' + locale + '/' + surface + '/' + width
         diagnostic.phase(label)
         await resizePublicViewport(page, { width, height: 900 })
         assert.equal((await go(page, path)).status(), 200, label)
+        // The home now owns the compact My Space chrome. Keep all eleven
+        // responsive widths, real interactions, accessibility and lower dock.
+        if(surface==='home'){
+          const entry=page.locator('[data-home-dialogue-entry]')
+          const header=entry.locator('[data-home-dialogue-header]')
+          await expect(entry).toHaveCount(1)
+          await expect(header).toBeVisible()
+          await expect(header.locator('h1')).toHaveText('Holistic House')
+          // The former top marketing ribbon, duplicate brand header and large
+          // Profile dashboard must NEVER displace the first conversation.
+          await expect(page.locator('header.house-header--services')).toHaveCount(0)
+          await expect(page.locator('[data-sitewide-antistress-banner]')).toHaveCount(0)
+          await expect(page.locator('[data-profile-hub-tabs]')).toHaveCount(0)
+          const language=header.locator('[data-home-language-switch]')
+          const languageTrigger=language.locator('summary')
+          const langOptions=language.locator('a[lang]')
+          await expect(languageTrigger).toContainText(locale.toUpperCase())
+          await expect(langOptions).toHaveCount(3)
+          await expect(langOptions.locator('[aria-current="page"]')).toHaveCount(0)
+          await expect(language.locator('a[aria-current="page"]')).toHaveAttribute('lang',locale)
+          const search=header.locator('[data-site-search-trigger]')
+          const menu=header.locator('details.site-main-menu')
+          for(const [name,control] of [['language',languageTrigger],['search',search],['menu',menu.locator('summary')]]){
+            if(width>=360)await inViewport(control,label+'/'+name)
+            else{
+              const box=await control.boundingBox()
+              assert.ok(box&&box.width>=39&&box.height>=44&&box.x>=-1&&
+                box.x+box.width<=width+1,label+': compact 320px '+name+' is tappable')
+            }
+          }
+          const geom=await header.evaluate(node=>{
+            const title=node.querySelector('h1').getBoundingClientRect()
+            const actions=node.lastElementChild.getBoundingClientRect()
+            const rect=node.getBoundingClientRect()
+            return {right:rect.right,overlap:title.right-actions.left,
+              centerGap:Math.abs(title.top+title.height/2-actions.top-actions.height/2)}
+          })
+          assert.ok(geom.right<=width+1&&geom.overlap<=1&&geom.centerGap<=12,
+            label+': Holistic House title and tools must share ONE line')
+          const self=entry.locator('[data-home-mode-button="self"]')
+          const business=entry.locator('[data-home-mode-button="business"]')
+          await expect(self).toHaveAttribute('aria-pressed','true')
+          await expect(business).toHaveAttribute('aria-pressed','false')
+          await business.click()
+          await expect(entry).toHaveAttribute('data-home-mode','business')
+          await expect(business).toHaveAttribute('aria-pressed','true')
+          await self.click()
+          await expect(entry).toHaveAttribute('data-home-mode','self')
+          const form=entry.locator('[data-home-intent-form]')
+          const input=form.locator('[data-home-intent-composer]')
+          const send=form.locator('[data-home-send-to-ali]')
+          await expect(entry.locator('[data-home-free-review]')).toHaveAttribute('href','/'+locale+'/services/free-situation-review')
+          // Measure both rectangles in ONE animation frame, BEFORE focusing the
+          // lower textarea. Separate boundingBox calls during mobile keyboard
+          // auto-scroll can use different scroll offsets and produce a false
+          // overlap even when layout order and spacing are correct.
+          const homeLayout=await entry.evaluate(root=>{
+            const topics=root.querySelector('[data-home-focus-grid]')
+            const how=root.querySelector('[data-home-how-it-works]')
+            const review=root.querySelector('[data-home-free-review]')
+            const support=root.querySelector('[data-home-request-session]')
+            if(!topics||!how||!review||!support)return null
+            const topicsBox=topics.getBoundingClientRect()
+            const howBox=how.getBoundingClientRect()
+            const reviewBox=review.getBoundingClientRect()
+            return {
+              topicsBeforeHow:Boolean(topics.compareDocumentPosition(how)&Node.DOCUMENT_POSITION_FOLLOWING),
+              howBeforeReview:Boolean(how.compareDocumentPosition(review)&Node.DOCUMENT_POSITION_FOLLOWING),
+              reviewBeforeSupport:Boolean(review.compareDocumentPosition(support)&Node.DOCUMENT_POSITION_FOLLOWING),
+              topicsBottom:topicsBox.bottom,howTop:howBox.top,
+              howBottom:howBox.bottom,reviewTop:reviewBox.top,
+            }
+          })
+          // Owner-approved dialogue-first Home order: four directions, 3 steps,
+          // then Get Ideas / Get Support side by side. Do not restore the old
+          // free-review-before-topics marketing order or weaken geometry checks.
+          assert.ok(homeLayout?.topicsBeforeHow&&homeLayout.howBeforeReview&&homeLayout.reviewBeforeSupport&&
+            homeLayout.topicsBottom<=homeLayout.howTop+1&&homeLayout.howBottom<=homeLayout.reviewTop+1,
+            label+': four directions → 3 steps → Get Ideas / Get Support '+JSON.stringify(homeLayout))
+          await expect(entry.locator('[data-home-intent-option]')).toHaveCount(4)
+          await expect(input).toBeVisible()
+          // Approved free-chat entry opens Ali even without a prefilled wish.
+          // Users may also describe their goal first; neither action is blocked.
+          await expect(send).toBeEnabled()
+          await input.fill(locale==='ru'?'Хочу создать курс':locale==='es'?'Quiero crear un curso':'I want to create a course')
+          await expect(send).toBeEnabled()
+          await input.fill('')
+          await expect(send).toBeEnabled()
+          await expect(page.locator('[data-home-deferred-sections]')).toHaveCount(1)
+          const hero=entry.locator('[data-home-dialogue-hero]')
+          const rect=await hero.boundingBox()
+          assert.ok(rect&&rect.y<700,label+': hero visible in first mobile viewport')
+          await languageTrigger.click()
+          await expect(language).toHaveJSProperty('open',true)
+          await expect(langOptions.first()).toBeVisible()
+          await languageTrigger.click()
+          await expect(language).toHaveJSProperty('open',false)
+          await search.click()
+          await expect(header.locator('[data-site-search-panel]')).toBeVisible()
+          await page.keyboard.press('Escape')
+          await expect(header.locator('[data-site-search-panel]')).toHaveCount(0)
+          await menu.locator('summary').click()
+          await expect(menu).toHaveJSProperty('open',true)
+          await expect(menu.locator('.site-main-menu-panel [data-nav-item="services"]')).toBeVisible()
+          await page.keyboard.press('Escape')
+          await expect(menu).toHaveJSProperty('open',false)
+          assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),
+            label+': no overflow')
+          await header.screenshot({path:evidence+'/header-'+engine+'-'+locale+'-home-'+width+'.png'})
+          const bottom=await assertUnifiedBottomNavigation(page,{locale,label,visible:width<760})
+          if(width<760)await bottom.screenshot({path:evidence+'/bottom-'+engine+'-'+locale+'-home-'+width+'.png'})
+          pass('Dialogue-first Home: '+label)
+          continue
+        }
         const header = page.locator('header.house-header--services')
         await expect(header).toBeVisible()
         const expected = getSiteNavigation(locale)
-        const expectedMenu = ['/' + locale + '/services/free-situation-review', ...getCompactNavigation(locale).map(item => item.href), '/' + locale + '/shop', '/' + locale + '/cart', '/' + locale + '/install', ...expected.filter(item => ['energy','love','business','library','events'].includes(item.id)).map(item => item.href), '/' + locale + '/temple-insights', '/' + locale + '/services', '/' + locale + '/about']
+        const expectedMenu = ['/' + locale + '/services/free-situation-review', ...getCompactNavigation(locale).map(item => item.href), '/' + locale + '/shop', '/' + locale + '/cart', '/' + locale + '/install', ...expected.filter(item => ['energy','love','business','library','events'].includes(item.id)).map(item => item.href), '/' + locale + '/holistic-support/mobile', '/' + locale + '/temple-insights', '/' + locale + '/my-coach', '/' + locale + '/services', '/' + locale + '/masters', '/' + locale + '/about']
         await verifyDirectNavigation(header.locator('.site-navigation'), { locale, surface, expected, label })
         const cabinetEntry = header.locator('.site-cabinet-entry')
         const menu = header.locator('details.site-language-menu')
         const trigger = menu.locator('summary')
+        // Wait for React's real keyboard handlers, not only SSR DOM visibility.
+        // Escape and focus-return assertions below remain strict.
+        await expect(menu).toHaveAttribute('data-hh-keyboard-ready', 'true')
         await expect(trigger).toHaveText(locale.toUpperCase())
         await expect(cabinetEntry).toHaveCount(1)
         await expect(cabinetEntry).toHaveAttribute('aria-haspopup', 'dialog')
@@ -273,44 +442,24 @@ async function verifyPublicHeaderMatrix(page, engine) {
         await expect(trigger).toBeFocused()
         await inViewport(trigger, label + '/language-after-escape')
         await header.screenshot({ path: evidence + '/header-' + engine + '-' + locale + '-' + surface + '-' + width + '.png' })
-        const bottom = page.locator('.mobile-bottom-navigation')
-        const expectedBottom = await assertPublicBottomNavigation(bottom, { locale, surface, label })
-        const bottomLinks = bottom.locator('[data-nav-item]')
-        assert.deepEqual(await bottomLinks.evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedBottom.map(item => ({ id: item.id, href: item.href })), label + ': exact seven bottom destinations')
-        await expect(bottomLinks).toHaveCount(7)
-        await expect(bottom.locator('[aria-current="page"]')).toHaveCount(surface === 'home' ? 1 : 0)
-        if (surface === 'home') await expect(bottom.locator('[data-nav-item="home"]')).toHaveAttribute('aria-current', 'page')
-        if (width < 768) {
-          await inViewport(bottom, label + '/bottom-navigation')
-          await bottomLinks.first().focus()
-          let previousRight = 0
-          for (let index = 0; index < expectedBottom.length; index++) {
-            const link = bottomLinks.nth(index)
-            await inViewport(link, label + '/bottom-' + expectedBottom[index].id)
-            await expect(link).toHaveAccessibleName(expectedBottom[index].ariaLabel)
-            await expect(link).toBeFocused()
-            const box = await link.boundingBox()
-            assert.ok(box.x >= previousRight - 1, label + ': bottom navigation items must not overlap')
-            previousRight = box.x + box.width
-            if (index < expectedBottom.length - 1) await link.press('Tab')
-          }
-          assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Bottom navigation overflow: ' + label)
-          await bottom.screenshot({ path: evidence + '/bottom-' + engine + '-' + locale + '-' + surface + '-' + width + '.png' })
-        } else {
-          await expect(bottom).toBeHidden()
-        }
+        // All editorial pages use the same dock as Home. Keep the complete
+        // locale-specific destination list, absence of the retired footer,
+        // 44px touch geometry, keyboard Tab order and desktop hide assertion.
+        const bottom=await assertUnifiedBottomNavigation(page,{locale,label,visible:width<760})
+        if(width<760)await bottom.screenshot({path:evidence+'/bottom-'+engine+'-'+locale+'-'+surface+'-'+width+'.png'})
         await verifySiteMenu(page, header, { locale, surface, label, expectedMenu, inViewport })
         pass('Public navigation: ' + label)
       }
     }
   }
   await page.setViewportSize(originalViewport)
-  pass(engine + ': public header Home/Energy/Love/Business/Library EN/RU/ES at ' + publicHeaderWidths.join('/') + 'px; visible Cabinet/language controls, menu bounds, keyboard Enter/Tab/Escape and focus return; exact accessible seven-slot mobile bottom navigation')
+  pass(engine + ': public header Home/Energy/Love/Business/Library EN/RU/ES at ' + publicHeaderWidths.join('/') + 'px; verified locales ' + locales.join('/') + '; visible Cabinet/language controls, menu bounds, keyboard Enter/Tab/Escape and focus return; exact accessible seven-slot mobile bottom navigation')
   } finally { diagnostic.stop() }
 }
-async function verifyPublicDiscoveryNavigation(page, engine) {
+async function verifyPublicDiscoveryNavigation(page, engine, locales = ['en', 'ru', 'es']) {
+  if (locales.length > 1) return verifyPublicByLocale(page, engine, locales, verifyPublicDiscoveryNavigation)
   const originalViewport = page.viewportSize()
-  for (const locale of ['en', 'ru', 'es']) {
+  for (const locale of locales) {
     for (const suffix of ['client', 'client/tests']) {
       for (const width of [320, 390, 768, 1280]) {
         const path = '/' + locale + '/' + suffix
@@ -325,43 +474,37 @@ async function verifyPublicDiscoveryNavigation(page, engine) {
         assert.match(response.headers()['x-robots-tag'], /noindex/, label)
         assert.equal(response.headers()['referrer-policy'], 'no-referrer', label)
         await expect(page.locator('body')).toHaveAttribute('data-csp-class', 'private')
-        const bottom = page.locator('.mobile-bottom-navigation')
-        const expected = await assertPublicBottomNavigation(bottom, { locale, surface: 'profile', label })
-        if (width < 768) {
-          await expect(bottom).toBeVisible()
-          const links = bottom.locator('[data-nav-item]')
-          await links.first().focus()
-          let previousRight = 0
-          for (let index = 0; index < expected.length; index++) {
-            const link = links.nth(index)
-            await expect(link).toBeVisible()
-            await expect(link).toBeFocused()
-            const box = await link.boundingBox()
-            assert.ok(box && box.width >= 44 && box.height >= 44 && box.x >= previousRight - 1 && box.x + box.width <= width + 1 && box.y >= -1 && box.y + box.height <= 901, label + ': visible non-overlapping 44px mobile control')
-            previousRight = box.x + box.width
-            if (index < expected.length - 1) await link.press('Tab')
-          }
-        } else await expect(bottom).toBeHidden()
+        // Guest /client and /client/tests keep private CSP and the one global
+        // dock. Opening the public test catalogue is not a signed-in Profile.
+        const bottom=await assertUnifiedBottomNavigation(page,{locale,label,visible:width<760})
+        await expect(bottom.locator('[data-unified-dock-item="profile"]')).toHaveAttribute(
+          'href','/'+(locale==='es'?'en':locale)+'/app/portrait')
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), label + ': discovery overflow')
       }
     }
   }
     // Real mobile click into the canonical existing service, once per language.
     // A working link is not evidence of booking or payment.
-    for (const locale of ['en', 'ru', 'es']) {
+    for (const locale of locales) {
       await resizePublicViewport(page, { width: 390, height: 900 })
       const from = '/' + locale + '/services/free-situation-review'
       assert.equal((await go(page, from)).status(), 200, locale + ': free-review entry')
-      const alchemy = page.locator('.mobile-bottom-navigation [data-nav-item="alchemy"]')
+      await assertUnifiedBottomNavigation(page,{locale,label:engine+'/'+locale+'/free-review/390',active:'services'})
+      // Alchemy remains accessible in the existing expanded public menu;
+      // it is no longer a bottom-dock destination on this route.
+      const menu=page.locator('header.house-header--services details.site-main-menu')
+      await expect(menu).toHaveCount(1)
+      await menu.locator('summary').click()
+      await expect(menu).toHaveJSProperty('open',true)
+      const alchemy=menu.locator('.site-main-menu-panel a[href="/'+locale+'/services/alchemy-of-soul"]')
       await expect(alchemy).toBeVisible()
-      await expect(alchemy).toHaveAttribute('href', '/' + locale + '/services/alchemy-of-soul')
       await alchemy.click()
       await expect(page).toHaveURL(origin + '/' + locale + '/services/alchemy-of-soul')
       await expect(page.locator('[data-alchemy-soul-landing]')).toHaveCount(1)
-      await expect(page.locator('.mobile-bottom-navigation [data-nav-item="alchemy"]')).toHaveAttribute('aria-current', 'page')
+      await assertUnifiedBottomNavigation(page,{locale,label:engine+'/'+locale+'/alchemy/390',active:'services'})
     }
   await resizePublicViewport(page, originalViewport)
-  pass(engine + ': public client and client/tests discovery retain seven-slot navigation with My Profile active on free tests, keyboard order, responsive bounds and private headers in EN/RU/ES')
+  pass(engine + ': public client and client/tests discovery retain a single seven-slot dock and protected Profile link, keyboard order, responsive bounds and private headers in ' + locales.join('/'))
 }
 
 try {
@@ -457,43 +600,37 @@ try {
   const errors = []
   page.on('pageerror', error => errors.push(error.message))
   if (!messengerOnly) {
-  assert.equal((await go(page, '/')).status(), 200)
+  // The private IA suite verifies the existing full React app. The CDN-first
+  // anonymous Home is covered by a separate Chromium/WebKit first-screen QA.
+  assert.equal((await go(page, '/?full=1')).status(), 200)
   assert.equal(await page.locator('html').getAttribute('lang'), 'en')
   for (const locale of ['en', 'ru', 'es']) {
     for (const width of [320, 360, 390, 430, 768, 1280]) {
       await page.setViewportSize({ width, height: 900 })
       assert.equal((await go(page, `/${locale}/library`)).status(), 200)
       const expected = getSiteNavigation(locale)
-      for (const selector of ['.site-navigation', '.mobile-bottom-navigation']) {
-        const nav = page.locator(selector)
-        if (selector === '.site-navigation') {
-          await verifyDirectNavigation(nav, { locale, surface: 'library', expected, label: locale + '/library/' + width })
-          const current = nav.locator('.site-main-menu-panel a[aria-current="page"]')
-          await expect(current).toHaveCount(1)
-          await expect(current).toHaveAttribute('href', '/' + locale + '/library')
-        } else {
-          // Library remains in the expanded menu; it is not among the seven fixed tabs.
-          const expectedItems = await assertPublicBottomNavigation(nav, { locale, surface: 'library', label: locale + '/library/' + width })
-          assert.deepEqual(await nav.locator('[data-nav-item]').evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedItems.map(x => ({ id: x.id, href: x.href })))
-          await expect(nav.locator('[data-nav-item]')).toHaveCount(7)
-          await expect(nav.locator('[aria-current="page"]')).toHaveCount(0)
-          await expect(nav.locator('[data-nav-item="profile"]')).toHaveAttribute('href', '/' + locale + '/personality-profiles')
-        }
-      }
+      const siteNav=page.locator('.site-navigation')
+      await verifyDirectNavigation(siteNav,{locale,surface:'library',expected,label:locale+'/library/'+width})
+      const current=siteNav.locator('.site-main-menu-panel a[aria-current="page"]')
+      await expect(current).toHaveCount(1)
+      await expect(current).toHaveAttribute('href','/'+locale+'/library')
+      const bottom=await assertUnifiedBottomNavigation(page,{
+        locale,label:locale+'/library/'+width,visible:width<760,
+      })
+      await expect(bottom.locator('[data-unified-dock-item="profile"]')).toHaveAttribute(
+        'href','/'+(locale==='es'?'en':locale)+'/app/portrait')
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), `Overflow: ${locale}/${width}`)
-      const bottom = page.locator('.mobile-bottom-navigation')
-      if (await bottom.isVisible()) {
-        for (const link of await bottom.locator('[data-nav-item]').all()) {
-          const box = await link.boundingBox(); assert.ok(box.width >= 44 && box.height >= 44)
-        }
-        const last = page.locator('.library-note'); await last.scrollIntoViewIfNeeded()
-        const box = await last.boundingBox(), bar = await bottom.boundingBox()
-        assert.ok(box.y + box.height <= bar.y + 2, 'Bottom navigation overlaps final content')
+      if(width<760){
+        const last=page.locator('.library-note')
+        await last.scrollIntoViewIfNeeded()
+        const box=await last.boundingBox(),bar=await bottom.boundingBox()
+        assert.ok(box&&bar&&box.y+box.height<=bar.y+2,
+          'Global seven-slot dock overlaps final Library content: '+locale+'/'+width)
       }
       await page.screenshot({ path: `${evidence}/library-${locale}-${width}.png`, fullPage: true })
     }
   }
-  pass('Desktop Cabinet entry and seven-slot mobile navigation with My Profile EN/RU/ES, active states, 320–1280px, tap targets and bottom spacing')
+  pass('Desktop Cabinet entry and global seven-slot mobile dock with Profile hrefs EN/RU/ES, 320–1280px, tap targets and bottom spacing')
   await verifyPublicHeaderMatrix(page, 'chromium')
   await verifyPublicDiscoveryNavigation(page, 'chromium')
   for (const path of ['/en/books', '/ru/books', '/es/books', '/en/homeopathy', '/ru/homeopathy', '/es/homeopathy', '/en/services', '/ru/services', '/es/services', '/en/about', '/ru/about', '/es/about']) assert.equal((await go(page, path)).status(), 200, path)
@@ -713,7 +850,7 @@ try {
   pass('WebKit 390px: secure original report viewer remains readable with exactly two measurements')
   if(!messengerOnly){
     await go(sp, '/ru/library')
-    await expect(sp.locator('.mobile-bottom-navigation [data-nav-item="home"]')).toBeVisible()
+    await assertUnifiedBottomNavigation(sp,{locale:'ru',label:'webkit/ru/library/390',visible:true})
     assert.ok(await sp.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1))
     await sp.screenshot({ path: `${evidence}/library-ru-webkit.png`, fullPage: true })
     pass('WebKit narrow navigation')

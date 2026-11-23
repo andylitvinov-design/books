@@ -3,6 +3,7 @@ import test from "node:test";
 import { prefersSafariWebm, orderRecordingMimes } from "../lib/mandala/recording-codecs.mjs";
 import { readFileSync } from "node:fs";
 import ts from "typescript";
+import {stripApprovedIntroVideoSources} from "./helpers/approved-mandala-intro-sources.mjs";
 
 const read = p => readFileSync(new URL("../"+p,import.meta.url),"utf8");
 const audioSource = read("lib/mandala/local-video-music.ts");
@@ -152,8 +153,9 @@ test("iPhone editor wires native <audio> controls, explicit file input, EN/RU/ES
   assert.match(client,/data-video-audio-player/);
   assert.match(client,/controls preload="metadata"/);
   assert.match(client,/void player\.play\(\)\.catch/);
-  assert.match(client,/onPlay=\{\(\)=>/);
-  assert.match(client,/onPause=\{\(\)=>/);
+  // Native event handlers may take an event to reject stale Safari media nodes.
+  assert.match(client,/onPlay=\{(?:\(\)=>|event=>)/);
+  assert.match(client,/onPause=\{(?:\(\)=>|event=>)/);
   assert.match(client,/type="file"/);
   assert.match(client,/data-video-audio-upload/);
   assert.match(client,/isSupportedLocalAudio\(file\)/);
@@ -161,14 +163,18 @@ test("iPhone editor wires native <audio> controls, explicit file input, EN/RU/ES
   assert.doesNotMatch(client,/URL\.createObjectURL\(createAmbientPreviewWav/);
   assert.match(client,/audioPlaybackError/);
   assert.match(client,/data-video-audio-direct/);
-  assert.match(client,/startUploadedAudio\(attachedAudio\.file,soundVolume,\{loop:attachedAudio\.narration!==true&&attachedAudio\.nonLoop!==true\}\)/);
+  assert.match(client,/startUploadedAudio\(attachedAudio\.file,soundVolume,\{loop:attachedAudio\.narration!==true&&attachedAudio\.nonLoop!==true,startSeconds:effectiveAudioStartSeconds,deferStart:true\}\)/);
   for(const phrase of ["Добавить аудиофайл","Add audio file","Añadir archivo de audio"]){
     assert.ok(client.includes(phrase),phrase);
   }
-  // Permit one safe same-origin static WAV GET, never arbitrary networking or uploads.
+  // No arbitrary network upload. A second exact same-origin GET is allowed
+  // solely for the user-selected original music bed, never for private audio.
   const firstPartyWav=/fetch\(presetAudioUrl\(id\),\{cache:"force-cache"\}\)/g;
+  const approvedMusicBed=/fetch\(presetAudioUrl\(bedId\),\{credentials:"same-origin",cache:"force-cache"\}\)/g;
   assert.equal((audioSource.match(firstPartyWav)||[]).length,1,"one verified site-owned WAV GET");
-  assert.doesNotMatch((audioSource+client).replace(firstPartyWav,""),/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|postMessage|api\.kling|heygen|higgsfield|analytics/i);
+  assert.equal((audioSource.match(approvedMusicBed)||[]).length,1,"one explicit approved music-bed GET");
+  assert.doesNotMatch((audioSource+stripApprovedIntroVideoSources(client)).replace(firstPartyWav,"").replace(approvedMusicBed,""),
+    /\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|postMessage|api\.kling|heygen|higgsfield|analytics/i);
 });
 
 
@@ -191,4 +197,31 @@ test("desktop Safari WebM preference is capability-gated even with Playwright-st
   assert.equal(prefersSafariWebm(chrome),false);
   assert.deepEqual(orderRecordingMimes({mp4:["video/mp4"],webm:["video/webm"],userAgent:chrome}),
     ["video/mp4","video/webm"],"Chrome default must not be rewritten");
+});
+
+test('procedural export requires real AVC/AAC, supported WebCodecs, or explicitly labelled VP8/Opus WebM',async()=>{
+  const {proceduralMp4Route}=await import('../lib/mandala/recording-codecs.mjs');
+  assert.equal(proceduralMp4Route({nativeAvc:true,webCodecs:false}),'native');
+  assert.equal(proceduralMp4Route({nativeAvc:false,webCodecs:true}),'webcodecs');
+  assert.equal(proceduralMp4Route({nativeAvc:false,webCodecs:false}),'unsupported');
+  assert.equal(proceduralMp4Route({nativeAvc:false,webCodecs:true,nativeWebm:true,preferNativeWebm:true}),'native-webm');
+  assert.equal(proceduralMp4Route({nativeAvc:false,webCodecs:false,nativeWebm:true,preferNativeWebm:true}),'native-webm');
+  assert.equal(proceduralMp4Route({nativeAvc:false,webCodecs:true,nativeWebm:true,preferNativeWebm:false}),'webcodecs');
+});
+
+test('procedural native recorder cannot silently downgrade H264/AAC to generic MP4',()=>{
+  assert.match(client,/MediaRecorder\.isTypeSupported\(explicitAvcMime\)/);
+  assert.match(client,/recordingMimes\(Boolean\(musicSession\),false,true\)\.filter\(mime=>\s*mime===explicitAvcMime\|\|\(nativeAppleMp4Available&&mime==="video\/mp4"\)\)/);
+  assert.match(client,/if\(isApplePhone&&isMp4\)\{/);
+  assert.match(client,/await withLocalMediaDeadline\(\s*verifyNativeSafariMp4Tracks\(blob,Boolean\(job\.musicSession\)\),15000\)/,
+    "native MP4 AVC/AAC track validation remains mandatory and is bounded on iPhone");
+  const verifier=read("lib/mandala/webcodecs-mp4-export.ts");
+  assert.match(verifier,/export async function verifyNativeSafariMp4Tracks/);
+  assert.match(verifier,/const audio=await input\.getPrimaryAudioTrack\(\)/);
+  assert.match(verifier,/!audio\|\|await audio\.getCodec\(\)!=="aac"/);
+  assert.match(verifier,/!video\|\|await video\.getCodec\(\)!=="avc"/);
+  assert.match(client,/recordingMimes\(Boolean\(musicSession\),true\)\.filter\(mime=>mime===explicitWebmMime\)/);
+  assert.match(client,/proceduralRoute==="unsupported"/);
+  assert.match(client,/allowProceduralBrowser:reelModeActive\|\|\(procedural&&!safariWebKit\)/);
+  assert.match(client,/if\(reelModeActive&&\(!useWebCodecsMp4\|\|!hasWebCodecs\|\|preferWebm\|\|forceMp4ForRetry\)\)/);
 });

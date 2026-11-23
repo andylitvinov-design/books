@@ -1,6 +1,7 @@
 name: Holistic House Messages wellness synthetic browser QA
 on:
   pull_request:
+    types: [labeled]
     branches: [codex/public-book-library]
     paths:
       - 'app/**/app/messages/**'
@@ -11,17 +12,17 @@ on:
       - 'scripts/verify-messages-wellness-browser.mjs'
       - 'components/sitewide-antistress-banner.tsx'
       - 'public/images/holistic-house/messenger-zen-stones.svg'
-      - '.github/workflows/hh-messages-wellness-browser.yml'
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: hh-messages-visual-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+  group: hh-messages-visual-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 jobs:
   synthetic-browser:
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
-    runs-on: ubuntu-24.04
+    # Browser runs only on manual dispatch; labeled PRs get cheap source syntax.
+    if: ${{ github.event_name != 'pull_request' || (github.event.label.name == 'qa-optional' && github.event.pull_request.draft == false) }}
+    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-slim' || 'ubuntu-24.04' }}
     timeout-minutes: 35
     env:
       NEXT_TELEMETRY_DISABLED: '1'
@@ -32,7 +33,16 @@ jobs:
         with: {persist-credentials: false}
       - uses: actions/setup-node@v4
         with: {node-version: '22',cache: npm}
+      - name: Stage checksum-verified FFmpeg before npm lifecycle
+        if: github.event_name != 'pull_request'
+        uses: ./.github/actions/ci-ffmpeg-static
       - run: npm ci --no-audit --no-fund
+        if: github.event_name != 'pull_request'
+      - name: Materialize checksum-verified FFmpeg for package runtime
+        if: github.event_name != 'pull_request'
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
       - name: Script syntax and typecheck
         run: |
           node --check scripts/verify-messages-wellness-browser.mjs

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, Quote } from "lucide-react";
 
 import { SiteVideoPlayer } from "@/components/site-video-player";
+import { HomeYoutubeFacade } from "@/components/home-youtube-facade";
 import { HomeTestimonialMore } from "@/components/home-testimonial-more";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./personal-testimonials.module.css";
@@ -19,6 +20,12 @@ export const locallyArchivedVideoPosterIds = new Set([
   "4NrryHcEF1A", "hYwRNMxIMjc", "MIVLm1GUTtM", "ttQxUHopaUM",
   "VABgpmn4ZYA", "muOnIHllI7E",
 ]);
+
+/** The exact-ID local video still, or YouTube's own fallback if none is approved. */
+export const archivedTestimonialPosterFor = (id: string): string | undefined =>
+  locallyArchivedVideoPosterIds.has(id)
+    ? `/images/holistic-house/testimonial-posters/${id}.webp`
+    : undefined;
 
 export const testimonialVideos = {
   ru: [
@@ -107,9 +114,11 @@ const copy = {
 export function PersonalTestimonials({
   locale,
   variant = "home",
+  sameAudioOnly = false,
 }: {
   locale: PublicLocale;
   variant?: "home" | "services" | "all" | "about";
+  sameAudioOnly?: boolean;
 }) {
   const current = copy[locale];
   const isHome = variant === "home";
@@ -118,7 +127,7 @@ export function PersonalTestimonials({
   const videos = isHome ? testimonialVideos[locale].slice(0, 4) : testimonialVideos[locale].slice(0, 4);
   // Full consultation landing: show all 12 provenance-checked videos, not the compact home/services subset.
   const presentedVideos = isFullArchive
-    ? [...testimonialVideos[locale], ...testimonialVideos[locale === "ru" ? "en" : "ru"]]
+    ? sameAudioOnly ? [...testimonialVideos[locale]] : [...testimonialVideos[locale], ...testimonialVideos[locale === "ru" ? "en" : "ru"]]
     : videos;
   // On About, use only genuine, matching local video stills. Never render a blank archived photo.
   const visibleVideos = isAbout ? presentedVideos.filter((item) => locallyArchivedVideoPosterIds.has(item.id)) : presentedVideos;
@@ -139,14 +148,23 @@ export function PersonalTestimonials({
             : locale === "ru" ? "Английский · EN" : locale === "es" ? "Inglés · EN" : "English · EN"}
         </p>
       ) : null}
-      <SiteVideoPlayer
-        video={{ youtubeId: item.id, language: item.language, title: item.title }}
-        locale={locale}
-        compact
-        minimal={isAbout}
-        internalOnly={isAbout}
-        fallbackPoster={locallyArchivedVideoPosterIds.has(item.id) ? `/images/holistic-house/testimonial-posters/${item.id}.webp` : undefined}
-      />
+      {isHome ? (
+        <HomeYoutubeFacade
+          video={{ youtubeId: item.id, language: item.language, title: item.title }}
+          locale={locale}
+          compact
+          fallbackPoster={locallyArchivedVideoPosterIds.has(item.id) ? `/images/holistic-house/testimonial-posters/${item.id}.webp` : undefined}
+        />
+      ) : (
+        <SiteVideoPlayer
+          video={{ youtubeId: item.id, language: item.language, title: item.title }}
+          locale={locale}
+          compact
+          minimal={isAbout}
+          internalOnly={isAbout}
+          fallbackPoster={locallyArchivedVideoPosterIds.has(item.id) ? `/images/holistic-house/testimonial-posters/${item.id}.webp` : undefined}
+        />
+      )}
     </div>
   ));
 
@@ -172,7 +190,9 @@ export function PersonalTestimonials({
       <header className={styles.intro}>
         <p className={styles.eyebrow}>{current.eyebrow}</p>
         <h2 id={titleId}>{isHome || isFullArchive ? current.title : current.serviceTitle}</h2>
-        <p>{isAbout ? (locale === "ru" ? "Письменный отзыв, опубликованный с разрешения автора, и 10 оригинальных видеоотзывов — здесь, на Holistic House." : locale === "es" ? "Un testimonio escrito compartido con permiso y 10 testimonios reales en vídeo, disponibles aquí en Holistic House." : "A written client story shared with permission and 10 original video reviews — all here on Holistic House.") : variant === "all" ? (locale === "ru" ? "12 настоящих видеоотзывов на русском и английском. История клиента — по нажатию." : locale === "es" ? "12 testimonios reales en vídeo, con audio en inglés y ruso. Pulsa para leer una historia personal." : "12 authentic video testimonials in English and Russian. Tap to read a client story.") : isHome ? current.lead : current.serviceLead}</p>
+        <p>{isAbout ? (locale === "ru" ? "Письменный отзыв, опубликованный с разрешения автора, и 10 оригинальных видеоотзывов — здесь, на Holistic House." : locale === "es" ? "Un testimonio escrito compartido con permiso y 10 testimonios reales en vídeo, disponibles aquí en Holistic House." : "A written client story shared with permission and 10 original video reviews — all here on Holistic House.") : variant === "all" ? (sameAudioOnly
+          ? (locale === "ru" ? "Шесть видеоотзывов с оригинальным русским звуком. История клиента — по нажатию." : locale === "es" ? "Seis vídeos con títulos en español y voz original en inglés. Puedes leer una historia traducida." : "Six genuine video reviews with original English audio. Tap to read a client story.")
+          : (locale === "ru" ? "12 настоящих видеоотзывов на русском и английском. История клиента — по нажатию." : locale === "es" ? "12 testimonios reales en vídeo, con audio en inglés y ruso. Pulsa para leer una historia personal." : "12 authentic video testimonials in English and Russian. Tap to read a client story.")) : isHome ? current.lead : current.serviceLead}</p>
       </header>
 
       {variant === "all" ? (
@@ -184,7 +204,9 @@ export function PersonalTestimonials({
 
       <div className={styles.videoHeader}>
         <h3>{current.videoHeading}</h3>
-        <span>{isAbout ? (locale === "ru" ? "10 видео · RU/EN" : locale === "es" ? "10 vídeos · audio RU/EN" : "10 videos · RU/EN audio") : variant === "all" ? (locale === "ru" ? "12 видео · русский и английский" : locale === "es" ? "12 vídeos · audio en inglés y ruso" : "12 videos · English and Russian audio") : current.videoLanguage}</span>
+        <span>{isAbout ? (locale === "ru" ? "10 видео · RU/EN" : locale === "es" ? "10 vídeos · audio RU/EN" : "10 videos · RU/EN audio") : variant === "all" ? (sameAudioOnly
+          ? (locale === "ru" ? "6 видео · русский звук" : locale === "es" ? "6 vídeos · audio en inglés" : "6 videos · English audio")
+          : (locale === "ru" ? "12 видео · русский и английский" : locale === "es" ? "12 vídeos · audio en inglés y ruso" : "12 videos · English and Russian audio")) : current.videoLanguage}</span>
       </div>
       {isAbout && <p className={styles.swipeHint}>{locale === "ru" ? "Листайте видеоотзывы в сторону →" : locale === "es" ? "Desliza para ver más testimonios →" : "Swipe or scroll to see all video reviews →"}</p>}
       <div className={styles.videoGrid}

@@ -159,7 +159,8 @@ test("first session offers script and optional device voice; seven other episode
   assert.match(ui,/new Blob\(\[script\+"\\n"\],\{type:"text\/plain;charset=utf-8"\}\)/);
   assert.match(ui,/index===0\?<div className=\{css\.first\}>/);
   assert.match(ui,/index>0\?<LockKeyhole/);
-  assert.match(ui,/\/services\/imagery-therapy/);
+  // Eight-video enquiries now use explicit consent and the existing CRM form.
+  assert.match(ui,/<MeditationCourseEnquiry key=\{journeySignature\} locale=\{locale\} focus=\{activeTheme\} courseKind="video-series"\/>/);
   assert.doesNotMatch(ui,/stripe|paypal|charge|paymentIntent|storage\.upload|navigator\.sendBeacon|fetch\("https:/i);
 });
 

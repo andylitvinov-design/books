@@ -5,7 +5,7 @@ import { books, filterLibraryBooks } from '../data/library.js';
 
 const source = path => readFile(new URL('../' + path, import.meta.url), 'utf8');
 
-test('Ideas shows three book categories before listing individual books', async () => {
+test('Ideas shows all known book categories before listing individual books', async () => {
   const [catalog, picker, css, sections, spanish] = await Promise.all([
     source('components/book-catalog.tsx'),
     source('components/book-category-picker.tsx'),
@@ -38,7 +38,7 @@ test('Ideas shows three book categories before listing individual books', async 
 });
 
 test('all books belong to one restored category and original search still works', () => {
-  const collections = ['alchemy', 'dao', 'maya'];
+  const collections = ['alchemy', 'dao', 'maya', 'egypt', 'greek', 'roman', 'zoroastrian'];
   for (const collection of collections) {
     assert.ok(books.some(book => book.mediaSeries === collection), collection);
   }
@@ -46,20 +46,32 @@ test('all books belong to one restored category and original search still works'
   assert.equal(books.filter(book => book.mediaSeries === 'alchemy').length, 9);
   assert.equal(books.filter(book => book.mediaSeries === 'dao').length, 10);
   assert.equal(books.filter(book => book.mediaSeries === 'maya').length, 4);
+  assert.equal(books.filter(book => book.mediaSeries === 'egypt').length, 2);
+  assert.equal(books.filter(book => book.mediaSeries === 'greek').length, 3);
+  assert.equal(books.filter(book => book.mediaSeries === 'roman').length, 1);
+  assert.equal(books.filter(book => book.mediaSeries === 'zoroastrian').length, 2);
   assert.ok(filterLibraryBooks(books, { query: 'ритуал' }).length > 0);
 });
 
 test('Ideas, its book readers and Library navigation remain available', async () => {
-  const [page, hub, home, carousel] = await Promise.all([
+  const [page, hub, home, lazy, deferred, expanded, carousel] = await Promise.all([
     source('app/[locale]/books/page.tsx'),
     source('components/library-hub.tsx'),
     source('components/holistic-house-home.tsx'),
+    source('components/home-deferred-sections.tsx'),
+    source('components/home-deferred-content.tsx'),
+    source('components/home-expanded-catalog.tsx'),
     source('components/home-section-carousel.tsx'),
   ]);
   assert.match(page, /<BookCatalog/);
   assert.match(hub, /\/books/);
   assert.match(hub, /\/homeopathy\/remedies/);
   assert.match(hub, /\/wu-xing/);
-  assert.match(home, /<HomeSectionCarousel locale=\{locale\}/);
+  // Current Home is Ali-first. Ideas remains available from the expanded
+  // deferred catalogue without restoring the retired first-paint carousel.
+  assert.match(home, /<HomeDeferredSections locale=\{locale\}/);
+  assert.match(lazy, /<HomeDeferredContent locale=\{locale\}/);
+  assert.match(deferred, /<HomeExpandedCatalog locale=\{locale\}/);
+  assert.match(expanded, /<HomeSectionCarousel locale=\{locale\}/);
   assert.match(carousel, /key: "ideas", href: "\/books"/);
 });

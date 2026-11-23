@@ -56,6 +56,17 @@ for (const browserType of [chromium, webkit]) {
             label + " four top check-ins; Goals is part of Meaning");
           assert.equal(await root.locator('[data-support-scale="goals"]').count(),0,
             label+" no duplicate Goals scale");
+          const newCategoryCopy = {
+            en: { energy: "Body & energy", confidence: "Confidence", category: "Confidence & harmony" },
+            ru: { energy: "Тело и энергия", confidence: "Уверенность", category: "Уверенность и гармония" },
+            es: { energy: "Cuerpo y energía", confidence: "Confianza", category: "Confianza y armonía" },
+          }[locale];
+          assert.equal((await root.locator('[data-support-scale="energy"] [class*="scaleLabel"]').innerText()).trim(),
+            newCategoryCopy.energy, label + " Body & energy shared check-in");
+          assert.equal((await root.locator('[data-support-scale="meaning"] [class*="scaleLabel"]').innerText()).trim(),
+            newCategoryCopy.confidence, label + " Confidence is the fourth check-in");
+          assert.ok((await root.locator('[data-support-active-focus]').innerText()).includes(newCategoryCopy.energy),
+            label + " profile focus uses same Body & energy label");
           assert.equal(await root.locator('[data-support-tool]').count(), 7, label + " four modes plus Courses/Masters/Tests");
           const testsAction=root.locator('[data-support-photo]').locator('..').locator('[data-support-tool="tests"]');
           assert.equal(await testsAction.count(),1,label+" Tests shortcut is directly under the portrait");
@@ -190,6 +201,10 @@ for (const browserType of [chromium, webkit]) {
           assert.equal(await filter.locator('[data-goal-sector]').count(),4,label+" four merged goal sectors");
           assert.equal(await filter.locator('[data-goal-sector="goals"]').count(),0,
             label+" no standalone Goals category");
+          assert.ok((await filter.locator('[data-goal-sector="meaning"]').innerText()).includes(newCategoryCopy.category),
+            label + " detailed fourth category uses Confidence & harmony");
+          assert.ok((await filter.locator('[data-goal-sector="energy"]').innerText()).includes(newCategoryCopy.energy),
+            label + " filter Body & energy matches top scale");
           // Live two-way sync between upper-left check-ins and the new compact
           // first slider in the filter, without dragging the separate axes.
           const checkinPairs = [
@@ -442,8 +457,10 @@ for (const browserType of [chromium, webkit]) {
           await root.locator('[data-support-tool="meditation"]').click();
           const meditationCategories=root.locator('[data-support-meditation-category-switcher]');
           await meditationCategories.waitFor({state:"visible",timeout:8000});
-          assert.equal(await meditationCategories.locator('[data-support-meditation-category]').count(),6,
-            label+" all six original categories are available");
+          const categoryIds = await meditationCategories.locator('[data-support-meditation-category]')
+            .evaluateAll(nodes => nodes.map(node => node.getAttribute('data-support-meditation-category')));
+          assert.deepEqual(categoryIds, ['goals-money','love-relationships','energy-confidence','stress-anxiety','all'],
+            label+" canonical four directions plus all recordings, without retired duplicates");
           const featuredIds=await root.locator('[data-support-meditation-gallery] [data-support-video]')
             .evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-support-video')));
           const catalogIds=await root.locator('[data-support-meditation-feed-item]')
@@ -456,8 +473,8 @@ for (const browserType of [chromium, webkit]) {
           const selectedVideoId=await root.locator('[data-support-player]').getAttribute('data-selected-video');
           assert.equal(fullscreenHref,"/"+locale+"/meditations?video="+encodeURIComponent(selectedVideoId),
             label+" full-screen player receives the selected published source ID");
-          await meditationCategories.locator('[data-support-meditation-category="money"]').click();
-          assert.equal(await meditationCategories.locator('[data-support-meditation-category="money"]').getAttribute("aria-pressed"),"true",
+          await meditationCategories.locator('[data-support-meditation-category="goals-money"]').click();
+          assert.equal(await meditationCategories.locator('[data-support-meditation-category="goals-money"]').getAttribute("aria-pressed"),"true",
             label+" money topic responds to the original user action");
           await meditationCategories.locator('[data-support-meditation-category="all"]').click();
           assert.equal(await root.locator('[data-support-player] iframe').count(),0,
@@ -767,8 +784,22 @@ for (const browserType of [chromium, webkit]) {
           await reikiFilter.waitFor({state:"visible"});
           const navPosition=await root.locator('[data-support-mobile-bottom-nav]')
             .evaluate(element => getComputedStyle(element).position);
-          assert.equal(navPosition, "static",
-            label+" the bottom nav must not obscure an expanded Reiki filter");
+          assert.equal(navPosition, "fixed",
+            label+" the mobile bottom dock stays anchored to the viewport");
+          // Scroll the real final Reiki action as a visitor would. Prove that
+          // the fixed dock does not obscure the action; never make the dock
+          // artificially static just to satisfy an obsolete geometry oracle.
+          const finalReikiAction=reikiFilter.locator('[data-support-reiki-apply]');
+          await finalReikiAction.scrollIntoViewIfNeeded();
+          const clearance=await page.evaluate(() => {
+            const button=document.querySelector('[data-support-reiki-filter] [data-support-reiki-apply]');
+            const dock=document.querySelector('[data-support-mobile-bottom-nav]');
+            const action=button?.getBoundingClientRect(),nav=dock?.getBoundingClientRect();
+            return { actionBottom:action?.bottom, dockTop:nav?.top,
+              actionWidth:action?.width, viewportHeight:innerHeight };
+          });
+          assert.ok(clearance.actionWidth > 40 && clearance.actionBottom <= clearance.dockTop - 2,
+            label+" last Reiki action must remain reachable ABOVE fixed dock: "+JSON.stringify(clearance));
           if (width === 390) await page.screenshot({
             path: output+"/"+browserType.name()+"-"+locale+"-reiki-filter-390.png", fullPage: true,
           });
