@@ -328,7 +328,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
         data-home-intent-composer autoComplete="off"/>
       <div className={styles.composerButtons}>
         <button type="button" className={styles.photoTool} onClick={openAttachments} aria-label={msg.photo} title={msg.photo}><ImageIcon size={21} aria-hidden="true"/></button>
-        {draft&&<button type="button" className={styles.clear} aria-label={msg.clear} onClick={()=>{setDraft("");inputRef.current?.focus()}}><X size={18}/></button>}
+        
         <button type="button" className={styles.microphone} aria-pressed={listening} aria-label={listening?t.stopMic:t.mic} onClick={dictate}><Mic size={23} aria-hidden="true"/></button>
         <button type="submit" className={styles.send} data-home-send-to-ali aria-label={msg.send} title={msg.send}><ArrowUp size={21} aria-hidden="true"/></button>
       </div>
