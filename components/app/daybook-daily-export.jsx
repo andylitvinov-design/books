@@ -7,8 +7,8 @@ const COPY={
  ru:{title:'Экспорт моих планов дня',note:'Включает сохранённый выбор по дням и текущие формулировки связанных целей и шагов. Несохранённый выбор не включён.',button:'Экспорт сохранённых планов дня (JSON)',working:'Чтение сохранённых планов дня…',done:'Файл подготовлен для скачивания.',failed:'Не удалось завершить экспорт. Неполный файл не скачан. Повторите попытку.',large:'Экспорт превышает лимит браузера 32 МиБ. Неполный файл не скачан.'},
  es:{title:'Exportar mis planes diarios',note:'Incluye las elecciones diarias guardadas y el texto actual de los objetivos y pasos vinculados. No incluye elecciones sin guardar.',button:'Exportar planes diarios guardados (JSON)',working:'Leyendo los planes diarios guardados…',done:'Descarga preparada.',failed:'No se pudo completar la exportación. No se descargó un archivo parcial. Reintenta.',large:'La exportación supera el límite del navegador de 32 MiB. No se descargó un archivo parcial.'},
 }
-export default function DaybookDailyExport({accountId,locale='en',onSessionLost,disabled=false}){
- const c=COPY[locale]||COPY.en,[state,setState]=useState({owner:null,status:''})
+export default function DaybookDailyExport({accountId,locale='en',onSessionLost,disabled=false,collector=collectDailyExport,copy=COPY,downloadPrefix='holistic-house-daily-plans'}){
+ const c=copy[locale]||copy.en,[state,setState]=useState({owner:null,status:''})
  const epoch=useRef(0),pending=useRef(null),lost=useRef(onSessionLost)
  const invalidate=useCallback(()=>{epoch.current++;pending.current?.abort();pending.current=null},[])
  useEffect(()=>{lost.current=onSessionLost},[onSessionLost])
@@ -23,10 +23,10 @@ export default function DaybookDailyExport({accountId,locale='en',onSessionLost,
   setState({owner:accountId,status:'working'})
   try{
    const fetcher=(path,body,method,options)=>appFetch(path,body,method,{...options,signal:controller.signal})
-   const result=await collectDailyExport(fetcher,accountId,current,locale)
+   const result=await collector(fetcher,accountId,current,locale)
    if(!current())return
    const url=URL.createObjectURL(new Blob([JSON.stringify(result)],{type:'application/json'})),anchor=document.createElement('a')
-   try{anchor.href=url;anchor.download='holistic-house-daily-plans-'+result.exportedAt.slice(0,10)+'.json';anchor.click()}
+   try{anchor.href=url;anchor.download=downloadPrefix+'-'+result.exportedAt.slice(0,10)+'.json';anchor.click()}
    finally{URL.revokeObjectURL(url)}
    setState({owner:accountId,status:'done'})
   }catch(error){

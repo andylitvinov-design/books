@@ -7,9 +7,10 @@ export function daybookCiTargets(env=process.env){
   ['hh_daybook_daily_repo_test','HH_DAILY_TEST_DATABASE_URL','tests/daybook-daily-repository.integration.mjs'],
   ['hh_personal_action_test','HH_ACTION_TEST_DATABASE_URL','tests/daybook-personal-action-store.integration.mjs'],
   ['hh_daybook_schema_test','HH_DAYBOOK_SCHEMA_TEST_DATABASE_URL','tests/daybook-canonical-schema.integration.mjs'],
+  ['hh_daybook_weekly_test','HH_WEEKLY_TEST_DATABASE_URL','tests/daybook-weekly-repository.integration.mjs'],
  ]
  return {control,targets:definitions.map(([database,variable,file])=>{
   const url=new URL(control);url.pathname='/'+database
-  return {database,variable,file,url:url.toString(),minimumPasses:8}
+  return {database,variable,file,url:url.toString(),minimumPasses:variable==='HH_WEEKLY_TEST_DATABASE_URL'?9:8}
  })}
 }
