@@ -55,6 +55,10 @@ const ui={
 const MAX_SESSION_MS=1200000
 const MAX_BUFFERED_SOCKET_BYTES=200000
 const LIVE_START_TIMEOUT_MS=15000
+// Recheck client-approved context only after it has actually reached Gemini.
+// This read-only endpoint never calls a model or records microphone data.
+const LIVE_CONTEXT_CHECK_MS=5*60*1000
+const LIVE_CONTEXT_PACKET_MAX_AGE_MS=60*1000
 const safeLocale=locale=>['en','ru','es'].includes(locale)?locale:'en'
 function audioTranscription(value){return typeof value==='string'?value.trim().slice(0,1200):''}
 
@@ -115,7 +119,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(r.reconnectTimer)clearTimeout(r.reconnectTimer)
     if(r.greetingTimer)clearTimeout(r.greetingTimer)
     if(r.sidebandTimer)clearTimeout(r.sidebandTimer)
-    r.pendingContext='';r.pendingDirectorHint=''
+    if(r.contextCheckTimer)clearTimeout(r.contextCheckTimer)
+    r.pendingContext='';r.pendingDirectorHint='';r.contextSentFingerprint=''
     propsRef.current.onMicLevel?.(0)
   }
   function stop(){
@@ -241,14 +246,22 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(r.sidebandTimer){clearTimeout(r.sidebandTimer);r.sidebandTimer=null}
     if(r.pendingContext){
       if(propsRef.current.liveContextAccess!==r.contextRequestKey){
-        r.pendingContext=''
+        r.pendingContext='';r.pendingContextFingerprint=''
+      }else if(Date.now()-(r.pendingContextReadAt||0)>LIVE_CONTEXT_PACKET_MAX_AGE_MS){
+        // Never send old cached facts after a long client turn.
+        r.pendingContext='';r.pendingContextFingerprint=''
+        r.contextRequestKey=''
+        void loadApprovedContext(r)
+        return
       }else try{
         const packet=geminiLiveContextMessage(r.pendingContext)
         if(sendSocket(r,packet)){
           r.contextSentKey=r.contextRequestKey
-          r.pendingContext=''
+          r.contextSentFingerprint=r.pendingContextFingerprint
+          r.pendingContext='';r.pendingContextFingerprint=''
+          scheduleContextFreshnessCheck(r)
         }
-      }catch{r.pendingContext=''}
+      }catch{r.pendingContext='';r.pendingContextFingerprint=''}
     }
     if(r.pendingDirectorHint&&!r.pendingContext){
       try{
@@ -256,6 +269,44 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
         if(sendSocket(r,packet))r.pendingDirectorHint=''
       }catch{r.pendingDirectorHint=''}
     }
+  }
+  function scheduleContextFreshnessCheck(r){
+    if(r.ended||!r.contextSentKey||r.contextCheckTimer)return
+    r.contextCheckTimer=setTimeout(()=>{
+      r.contextCheckTimer=null
+      if(!r.ended)void recheckApprovedContext(r)
+    },LIVE_CONTEXT_CHECK_MS)
+  }
+  async function recheckApprovedContext(r){
+    if(r.ended||!r.contextSentKey||r.contextCheckInFlight)return
+    const key=r.contextSentKey
+    const fingerprint=r.contextSentFingerprint
+    const version=r.contextVersion
+    if(key!==propsRef.current.liveContextAccess||
+       version!==propsRef.current.contextRevision){
+      notify(t.contextRevoked);stop();return
+    }
+    // Re-read server owner grants/source revisions without delaying audio.
+    // Not a new Gemini call, and no client secrets go to analytics/logs.
+    r.contextCheckInFlight=true
+    let valid=false
+    try{
+      const response=await fetch('/api/app/my-coach/live-context',{
+        method:'POST',credentials:'same-origin',cache:'no-store',
+        signal:r.abort.signal,headers:{'Content-Type':'application/json'},body:key
+      })
+      const data=response.ok?await response.json().catch(()=>null):null
+      valid=data?.schema==='HH_MY_COACH_LIVE_CONTEXT_V1'&&
+        data.available===true&&/^[a-f0-9]{64}$/.test(data.fingerprint||'')&&
+        data.fingerprint===fingerprint
+    }catch{/* Fail closed if previously disclosed data cannot be verified. */}
+    r.contextCheckInFlight=false
+    if(r.ended)return
+    if(!valid||key!==propsRef.current.liveContextAccess||
+       version!==propsRef.current.contextRevision){
+      notify(t.contextRevoked);stop();return
+    }
+    scheduleContextFreshnessCheck(r)
   }
   async function loadApprovedContext(r){
     const key=propsRef.current.liveContextAccess
@@ -276,9 +327,13 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
          r.contextRequestKey!==key||r.contextVersion!==revisionAtRequest||
          propsRef.current.contextRevision!==revisionAtRequest)return
       if(!result||result.schema!=='HH_MY_COACH_LIVE_CONTEXT_V1'||
-         typeof result.note!=='string')throw Error('LIVE_CONTEXT_INVALID')
+         typeof result.note!=='string'||
+         (result.note&&!/^[a-f0-9]{64}$/.test(result.fingerprint||'')))
+        throw Error('LIVE_CONTEXT_INVALID')
       if(result.note){
         r.pendingContext=result.note
+        r.pendingContextFingerprint=result.fingerprint
+        r.pendingContextReadAt=Date.now()
         flushSideband(r)
       }
     }catch{
@@ -636,6 +691,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       reconnectSoon:false,backpressureChunks:0,
       checkpointSerial:0,lastAssistantTurnFinished:false,lastHumanAudioAt:0,
       contextRequestKey:'',contextSentKey:'',contextVersion:propsRef.current.contextRevision,
+      contextSentFingerprint:'',pendingContextFingerprint:'',pendingContextReadAt:0,
+      contextCheckTimer:null,contextCheckInFlight:false,
       pendingContext:'',pendingDirectorHint:'',sidebandTimer:null,
       bargeDetector:new GeminiLiveBargeDetector(),
       reconnects:0,voiceName:p.voiceName,locale:p.locale,personaId:p.personaId,
