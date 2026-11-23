@@ -147,9 +147,9 @@ const ACTIONS=[
   {id:"ask",icon:MessageCircle},
 ] as const;
 
-export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupport,onTopicSelect,onStartAnalysis,composer}:{
+export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupport,onTopicSelect,onStartAnalysis,onGoalChoice,composer}:{
   locale:PublicLocale;onCreateVideo:()=>void;onPractice:()=>void;onAsk:()=>void;onSupport:()=>void;
-  onTopicSelect:(text:string)=>void;onStartAnalysis:()=>void;composer:ReactNode
+  onTopicSelect:(text:string)=>void;onStartAnalysis:()=>void;onGoalChoice:(text:string)=>void;composer:ReactNode
 }){
   const t=COPY[locale];
   const inner=INNER_COPY[locale];
@@ -162,6 +162,33 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupp
     playAliPersonaAudio(persona.id,locale,(isPlaying:boolean)=>setSpeaking(isPlaying));
   };
   const guideName=persona.name[locale];
+  const samir=persona.id==="alex";
+  const sceneImage=samir?"/images/holistic-house/my-coach-motion/genie-calm-loop-poster.webp":persona.image;
+  const sceneCopy=locale==="ru"?{
+   status:"ИИ-проводник", greeting:samir?`Привет! Я ${guideName} — твой ИИ-джин и проводник к мечте. ✨`:`Привет! Я ${guideName} — твой ИИ-проводник. ✨`,
+   question:"У тебя есть желание, мечта или цель? А может, ты пока ищешь своё направление?",
+   promise:"Давай найдём путь к ней, раскроем твои силы и сделаем следующий шаг.",
+   find:"Помоги найти цель",already:"У меня уже есть цель",
+   findPrompt:"Я пока ищу свою цель. Помоги прояснить, чего я действительно хочу. Задай один короткий вопрос.",
+   havePrompt:"У меня уже есть цель. Помоги мне уточнить её. Сначала спроси, какую цель я хочу достичь.",
+   menu:"Разделы чата",more:"Другие темы",listen:"Послушать",stop:"Остановить"
+  }:locale==="es"?{
+   status:"Guía de IA",greeting:samir?`¡Hola! Soy ${guideName}, tu genio de IA y guía hacia tus sueños. ✨`:`¡Hola! Soy ${guideName}, tu guía de IA. ✨`,
+   question:"¿Tienes un deseo, un sueño o una meta? ¿O aún estás buscando tu rumbo?",
+   promise:"Exploremos el camino, tus fortalezas y el siguiente paso.",
+   find:"Ayúdame a encontrar mi meta",already:"Ya tengo una meta",
+   findPrompt:"Todavía busco mi meta. Ayúdame a aclarar qué deseo realmente. Hazme una pregunta breve.",
+   havePrompt:"Ya tengo una meta. Ayúdame a precisarla. Primero pregúntame qué quiero lograr.",
+   menu:"Secciones del chat",more:"Más temas",listen:"Escuchar",stop:"Detener"
+  }:{
+   status:"AI guide",greeting:samir?`Hi! I'm ${guideName}, your AI genie and guide to your dream. ✨`:`Hi! I'm ${guideName}, your AI guide. ✨`,
+   question:"Do you have a wish, dream, or goal? Or are you still finding your direction?",
+   promise:"Let's find the path, discover your strengths, and take the next step.",
+   find:"Help me find my goal",already:"I already have a goal",
+   findPrompt:"I'm still looking for my goal. Help me discover what I truly want. Ask one short question.",
+   havePrompt:"I already have a goal. Help me clarify it. First ask what I want to achieve.",
+   menu:"Chat sections",more:"More topics",listen:"Listen",stop:"Stop"
+  };
   const welcomeTitle=locale==="ru"?`Привет! Я ${guideName}.`:
     locale==="es"?`¡Hola! Soy ${guideName}.`:`Hi! I'm ${guideName}.`;
   const guideRole=locale==="ru"?"Ваш внутренний алхимик":
@@ -224,8 +251,22 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupp
   };
 
   return <section className={css.root} data-hh-ai-landing aria-label={welcomeTitle}
-    data-hh-chat-opening="true">
-    <nav className={css.chatShortcuts} data-hh-ai-chat-shortcuts
+    data-hh-chat-opening="true" data-hh-genie-scene={samir?"samir":"guide"}
+    style={{backgroundImage:`linear-gradient(180deg,rgba(6,32,33,.48),rgba(8,30,29,.04) 28%,rgba(25,23,25,.63) 66%,rgba(25,18,23,.92)),url("${sceneImage}")`}}>
+
+    <header className={css.sceneHeader} data-hh-genie-header>
+      <img className={css.sceneAvatar} src={persona.image} alt="" width={48} height={48}/>
+      <div className={css.sceneIdentity}><strong>Holistic House · {guideName}</strong>
+        <span><i aria-hidden="true"/>{sceneCopy.status}</span></div>
+      <button className={css.sceneListen} type="button" data-hh-ai-persona-voice-play
+        aria-pressed={speaking} onClick={playGreeting}
+        aria-label={speaking?sceneCopy.stop:sceneCopy.listen}>
+        {speaking?<X size={18} aria-hidden="true"/>:<Play size={18} fill="currentColor" aria-hidden="true"/>}
+      </button>
+      <details className={css.sceneMenu} data-hh-genie-menu>
+        <summary aria-label={sceneCopy.menu}><ChevronDown size={20} aria-hidden="true"/></summary>
+        <div className={css.sceneMenuPanel}>
+              <nav className={css.chatShortcuts} data-hh-ai-chat-shortcuts
       aria-label={locale==="ru"?"Разделы AI чата":locale==="es"?"Secciones del chat":"Chat sections"}>
       <Link className={css.chatShortcut} data-hh-chat-shortcut="ai" aria-current="page"
         href={`/${locale}/app/messages?section=ai`}>
@@ -248,29 +289,36 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupp
         <span>{locale==="ru"?"Мои клиенты":locale==="es"?"Mis clientes":"My clients"}</span>
       </Link>
     </nav>
-    <div className={css.welcomeRow} data-hh-ali-first-message data-hh-ali-hero-persona={persona.id}>
-      <img className={css.welcomePortrait} src={"/images/holistic-house/my-coach-motion/"+persona.id+"-living.webp"} alt="" width={330} height={250}
-        loading="eager" fetchPriority="high"/>
-      <article className={css.welcomeBubble} data-hh-ai-landing-question>
-        <span className={css.heroLabel}><Sparkles size={16} aria-hidden="true"/>
-          {locale==="ru"?"ИИ-помощник":locale==="es"?"Asistente de IA":"AI Assistant"}
-        </span>
-        <h2>{welcomeTitle} <span>{guideRole}</span></h2>
-        <p>{inner.promise}</p>
-        <div className={css.welcomeMeta}>
-          <button type="button" className={css.welcomeListen} data-hh-ai-persona-voice-play
-            aria-pressed={speaking} onClick={playGreeting}
-            aria-label={locale==="ru"?(speaking?"Остановить приветствие":"Послушать приветствие"):
-              locale==="es"?(speaking?"Detener saludo":"Escuchar saludo"):
-              (speaking?"Stop greeting":"Listen to greeting")}>
-            {speaking?<X size={17} aria-hidden="true"/>:<Play size={17} fill="currentColor" aria-hidden="true"/>}
-            {speaking?(locale==="ru"?"Стоп":locale==="es"?"Detener":"Stop"):
-              locale==="ru"?"Послушать":locale==="es"?"Escuchar":"Listen"}
+          <button type="button" className={css.sceneMore} data-hh-genie-more
+            aria-expanded={moreTopics} onClick={()=>setMoreTopics(v=>!v)}>
+            <Sparkles size={17} aria-hidden="true"/>{sceneCopy.more}
           </button>
         </div>
-      </article>
+      </details>
+    </header>
+    <div className={css.sceneArtwork} aria-hidden="true">✦</div>
+    <span className={css.sceneDay} aria-hidden="true">
+      {locale==="ru"?"Сегодня":locale==="es"?"Hoy":"Today"}
+    </span>
+    <article className={css.welcomeBubble} data-hh-ali-first-message data-hh-ai-landing-question
+      data-hh-ali-hero-persona={persona.id}>
+      <h2>{sceneCopy.greeting}</h2>
+      <p>{sceneCopy.question}</p>
+      <p className={css.scenePromise}>{sceneCopy.promise}</p>
+    </article>
+    <div className={css.goalActions} role="group"
+      aria-label={locale==="ru"?"Начало разговора":locale==="es"?"Inicio de conversación":"Start conversation"}>
+      <button type="button" data-hh-ai-goal-choice="find" className={css.discoverGoal}
+        onClick={()=>onGoalChoice(sceneCopy.findPrompt)}>
+        <Compass size={22} aria-hidden="true"/><strong>{sceneCopy.find}</strong><ArrowRight size={22} aria-hidden="true"/>
+      </button>
+      <button type="button" data-hh-ai-goal-choice="already" className={css.alreadyGoal}
+        onClick={()=>onGoalChoice(sceneCopy.havePrompt)}>
+        <Flag size={22} aria-hidden="true"/><strong>{sceneCopy.already}</strong><ArrowRight size={22} aria-hidden="true"/>
+      </button>
     </div>
     <div className={css.inlineComposer} data-hh-ai-inline-composer>{composer}</div>
+    {moreTopics&&<div className={css.auxiliaryOptions} data-hh-genie-auxiliary>
     <div className={css.topicTitleRow}>
       <h3 className={css.topicHeading}>
         {locale==="ru"?"Выберите направление":locale==="es"?"Elige una dirección":"Choose a direction"}
@@ -376,6 +424,7 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupp
     </div>
 
       </details>
+    </div>}
     </div>}
   </section>;
 }

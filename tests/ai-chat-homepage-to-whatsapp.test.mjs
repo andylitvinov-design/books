@@ -62,7 +62,7 @@ test('AI Chat reuses the actual homepage photos, icon types and living persona',
    assert.ok(home.includes(art),'homepage art '+art)
    assert.ok(intro.includes('/images/video-goal-art/'+art),'AI opening art '+art)
  }
- assert.ok(intro.includes('persona.id+"-living.webp"'))
+ assert.ok(intro.includes('genie-calm-loop-poster.webp'),'Samir scene reuses an owned approved asset')
  assert.ok(intro.includes('icon:TrendingUp'))
  assert.ok(intro.includes('icon:Leaf'))
  assert.ok(landCss.includes('23 Nov: approved homepage images'))

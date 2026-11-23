@@ -457,3 +457,126 @@
  .root .welcomeBubble p{font-size:11px;line-height:1.2}
  .root .topics button{min-height:62px}
 }
+
+
+/* Samir: one conversation-first mobile opening; keep one established chat engine. */
+.root[data-hh-ai-landing]{display:flex;flex-direction:column;gap:8px;box-sizing:border-box;
+ min-width:0;min-height:100%;padding:9px;border-radius:17px;isolation:isolate;
+ background-color:#153b37;background-repeat:no-repeat;background-size:cover;
+ background-position:center top;color:#112f28}
+.root[data-hh-ai-landing] .sceneHeader{position:relative;z-index:4;display:flex;align-items:center;
+ gap:7px;min-height:52px;min-width:0;padding:5px 7px;border-radius:19px;
+ background:#042e2ac9;color:white;box-shadow:0 4px 17px #0004}
+.root[data-hh-ai-landing] .sceneAvatar{flex:none;width:42px;height:42px;object-fit:cover;
+ object-position:66% 35%;border:2px solid #fbe5ac;border-radius:50%}
+.root[data-hh-ai-landing] .sceneIdentity{display:grid;gap:4px;flex:1;min-width:0}
+.root[data-hh-ai-landing] .sceneIdentity strong{overflow:hidden;text-overflow:ellipsis;
+ white-space:nowrap;font:750 clamp(13px,4vw,17px)/1.15 system-ui,sans-serif}
+.root[data-hh-ai-landing] .sceneIdentity span{display:flex;align-items:center;
+ gap:6px;font:550 12px/1.2 system-ui,sans-serif;color:#f4ffed}
+.root[data-hh-ai-landing] .sceneIdentity i{width:8px;height:8px;border-radius:50%;
+ background:#00d98f}
+.root[data-hh-ai-landing] .sceneListen,
+.root[data-hh-ai-landing] .sceneMenu>summary{display:grid;place-items:center;
+ box-sizing:border-box;flex:none;width:37px;height:42px;border:1px solid #ffffff64;
+ border-radius:12px;background:#00513d99;color:#fff;cursor:pointer}
+.root[data-hh-ai-landing] .sceneMenu{position:relative;flex:none}
+.root[data-hh-ai-landing] .sceneMenu>summary{list-style:none}
+.root[data-hh-ai-landing] .sceneMenu>summary::-webkit-details-marker{display:none}
+.root[data-hh-ai-landing] .sceneMenuPanel{position:absolute;z-index:20;right:0;top:calc(100% + 7px);
+ display:grid;gap:7px;width:min(305px,calc(100vw - 34px));padding:10px;
+ border:1px solid #f0dba8;border-radius:17px;background:#fff8ed;box-shadow:0 14px 28px #0006}
+.root[data-hh-ai-landing] .sceneMenuPanel .chatShortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.root[data-hh-ai-landing] .sceneMenuPanel .chatShortcut{min-height:44px;padding:6px;
+ border-radius:12px;background:#fffdf8;border-color:#e5d5ba;color:#164635}
+.root[data-hh-ai-landing] .sceneMenuPanel .chatShortcut[aria-current=page]{background:#087d62;color:#fff}
+.root[data-hh-ai-landing] .sceneMore{display:flex;justify-content:center;
+ align-items:center;gap:8px;min-height:44px;border:1px solid #cce2d4;
+ border-radius:12px;background:#e7f7eb;color:#175a45;font:720 13px system-ui;cursor:pointer}
+.root[data-hh-ai-landing] .sceneArtwork{display:flex;flex:0 0 auto;justify-content:flex-end;
+ align-items:flex-end;min-height:clamp(88px,19dvh,200px);color:#ffe2a0;
+ font-size:24px;text-shadow:0 0 18px #f8c15f}
+.root[data-hh-ai-landing] .sceneDay{align-self:center;margin-top:-9px;
+ padding:5px 15px;border:1px solid #fff7;border-radius:99px;background:#473523c9;
+ color:#fff;font:600 11px/1 system-ui,sans-serif}
+.root[data-hh-ai-landing] .welcomeBubble{position:relative;flex:none;display:grid;gap:6px;
+ align-self:flex-start;box-sizing:border-box;max-width:92%;min-height:0;margin:0;
+ padding:12px 14px;border:1px solid #fff3dd;border-radius:5px 20px 20px 20px;
+ color:#143b32;background:#fffaf2f5;box-shadow:0 7px 18px #140d0c55;text-shadow:none}
+.root[data-hh-ai-landing] .welcomeBubble h2{margin:0;color:#092f2a;
+ font:800 clamp(17px,4.6vw,23px)/1.16 system-ui,sans-serif;letter-spacing:-.02em;text-shadow:none}
+.root[data-hh-ai-landing] .welcomeBubble p{margin:0;color:#202f2d;
+ font:510 clamp(13px,3.65vw,17px)/1.33 system-ui,sans-serif;text-shadow:none}
+.root[data-hh-ai-landing] .welcomeBubble .scenePromise{font-weight:760;color:#0d5241}
+.root[data-hh-ai-landing] .goalActions{display:grid;gap:8px;flex:none;min-width:0}
+.root[data-hh-ai-landing] .goalActions button{display:grid;grid-template-columns:24px minmax(0,1fr) 22px;
+ align-items:center;gap:9px;box-sizing:border-box;min-width:0;width:100%;min-height:50px;
+ padding:9px 14px;border:1.5px solid #f8dba6;border-radius:999px;
+ box-shadow:0 3px 14px #0005;cursor:pointer;
+ font:780 clamp(13px,3.8vw,17px)/1.15 system-ui,sans-serif}
+.root[data-hh-ai-landing] .goalActions button strong{text-align:center;font:inherit;min-width:0}
+.root[data-hh-ai-landing] .discoverGoal{background:linear-gradient(110deg,#019d7d,#005340);color:white}
+.root[data-hh-ai-landing] .alreadyGoal{background:linear-gradient(110deg,#fff9e7,#ffdc9c);color:#123e2e}
+.root[data-hh-ai-landing] .inlineComposer{flex:none;min-width:0;margin-top:1px;padding:5px;
+ border:1px solid #fff6d8;border-radius:20px;background:#fffbf3f5;box-shadow:0 4px 15px #0004}
+.root[data-hh-ai-landing] .inlineComposer :global(form[data-hh-ai-chat-composer]){
+ display:grid;gap:3px;position:relative;box-sizing:border-box;min-height:94px;
+ padding:2px;margin:0;border:0;background:transparent}
+.root[data-hh-ai-landing] .inlineComposer :global(form[data-hh-ai-chat-composer] textarea){
+ display:block;box-sizing:border-box;width:100%;height:45px;min-height:45px;max-height:90px;
+ padding:8px 9px;border:0;border-radius:12px;background:#fffdfa;color:#183b31;
+ box-shadow:none;font:500 16px/1.3 system-ui,sans-serif;resize:vertical}
+.root[data-hh-ai-landing] .inlineComposer :global(form[data-hh-ai-chat-composer] > div:first-of-type){
+ position:static;display:flex;align-items:center;justify-content:flex-end;
+ flex-wrap:nowrap;gap:4px;min-width:0}
+.root[data-hh-ai-landing] .inlineComposer :global([data-hh-ai-gemini-tier]){margin-right:auto}
+.root[data-hh-ai-landing] .inlineComposer :global([data-hh-ai-more] > summary){
+ min-width:38px;width:38px;height:38px;min-height:38px}
+.root[data-hh-ai-landing] .inlineComposer :global([data-hh-conversation-mic]){
+ min-width:38px;width:38px;height:38px;min-height:38px}
+.root[data-hh-ai-landing] .inlineComposer :global(button[type=submit]){
+ display:grid;place-items:center;width:43px;min-width:43px;height:43px;min-height:43px;
+ padding:6px;border-radius:50%;background:linear-gradient(140deg,#00b582,#00513d);
+ border:1px solid #0d7456;color:white}
+.root[data-hh-ai-landing] .inlineComposer :global(button[type=submit] span){display:none}
+.root[data-hh-ai-landing] .auxiliaryOptions{display:grid;gap:9px;padding:9px;
+ border-radius:17px;background:#fffaf3f5}
+.root[data-hh-ai-landing] :is(button,summary,textarea,a):focus-visible{
+ outline:3px solid #f6bd5e;outline-offset:2px}
+@media(max-width:360px){
+ .root[data-hh-ai-landing]{gap:6px;padding:6px}
+ .root[data-hh-ai-landing] .sceneAvatar{width:36px;height:36px}
+ .root[data-hh-ai-landing] .sceneHeader{gap:5px}
+ .root[data-hh-ai-landing] .sceneListen,
+ .root[data-hh-ai-landing] .sceneMenu>summary{width:32px;height:38px}
+ .root[data-hh-ai-landing] .sceneArtwork{min-height:80px}
+ .root[data-hh-ai-landing] .welcomeBubble{max-width:96%;padding:10px}
+ .root[data-hh-ai-landing] .welcomeBubble h2{font-size:17px}
+ .root[data-hh-ai-landing] .welcomeBubble p{font-size:13px}
+ .root[data-hh-ai-landing] .goalActions button{min-height:46px;padding:7px 9px;font-size:12px}
+}
+@media(max-width:760px) and (max-height:740px){
+ .root[data-hh-ai-landing] .sceneArtwork{min-height:70px}
+ .root[data-hh-ai-landing] .welcomeBubble{padding:10px;gap:5px}
+ .root[data-hh-ai-landing] .welcomeBubble h2{font-size:17px}
+ .root[data-hh-ai-landing] .welcomeBubble p{font-size:13px}
+ .root[data-hh-ai-landing] .goalActions button{min-height:44px}
+}
+
+/* Override older textarea/action placement only for the new actual welcome composer. */
+.root[data-hh-ai-landing][data-hh-chat-opening=true] .inlineComposer
+ :global(form[data-hh-ai-chat-composer][data-landing-composer]){
+  position:relative;display:grid;gap:3px;min-height:94px;
+  margin:0;padding:2px;border:0;background:transparent}
+.root[data-hh-ai-landing][data-hh-chat-opening=true] .inlineComposer
+ :global(form[data-hh-ai-chat-composer][data-landing-composer] textarea){
+  box-sizing:border-box;display:block;position:static;width:100%;
+  height:45px;min-height:45px;max-height:90px;padding:8px 9px;
+  border:0;border-radius:12px;background:#fffdfa;color:#183b31}
+.root[data-hh-ai-landing][data-hh-chat-opening=true] .inlineComposer
+ :global(form[data-hh-ai-chat-composer][data-landing-composer] > div:first-of-type){
+  position:static;right:auto;bottom:auto;display:flex;gap:4px;
+  align-items:center;justify-content:flex-end;flex-wrap:nowrap;min-width:0}
+@media(max-width:760px){
+ .root[data-hh-ai-landing] .sceneMenuPanel .chatShortcuts{display:grid}
+}
