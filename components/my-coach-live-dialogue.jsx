@@ -1313,7 +1313,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   // Preserve the approved pre-session profile until voice or a client turn starts.
   const sessionHasStarted=sessionClockStarted||voiceState.phase!=='idle'||turns.length>0
   const motionPhase=paused?'idle':voiceState.phase==='speaking'?'speaking':
-    voiceState.phase==='listening'?'listening':!introComplete?'greeting':'idle'
+    voiceState.phase==='listening'?'listening':
+    (voiceState.phase==='thinking'||busy)?'thinking':!introComplete?'greeting':'idle'
   const visualScene=selectCoachVisualScene({phase:motionPhase,text:latestCoachText,stage:currentStage})
   const videoViewLabel=viewExpanded?
     ({ru:'Свернуть видео коуча',en:'Collapse coach video',es:'Contraer el vídeo del coach'})[lang]:
@@ -1350,7 +1351,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     <div className={styles.sessionScroll} data-coaching-session-scroll>
     <section className={styles.sessionHero} aria-label={name} data-voice-phase={voiceState.phase}>
       <div className={styles.sessionPortrait} data-persona={personaId}
-        data-coach-motion-video={['mira','max','sofia','alex','harry'].includes(personaId)?'true':undefined}
+        data-coach-motion-video={['mira','max','sofia','alex','merlin','harry','genie'].includes(personaId)?'true':undefined}
         role="img" aria-label={name}>
         <MyCoachMotionMedia personaId={personaId} phase={motionPhase} context="session" scene={visualScene} />
       </div>
