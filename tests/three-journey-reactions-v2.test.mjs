@@ -51,6 +51,21 @@ test('sticky no-advice and no-questions and correction/refusal take priority',()
  assert.equal(turn('goal','План не работает',[]).reaction,'rejection');
  assert.equal(turn('therapy','Не готов сейчас',[]).reaction,'refusal');
 });
+test('long sessions keep explicit restrictions without blocking direct resource requests',()=>{
+ const distant=Array.from({length:22},(_,i)=>({role:i%2?'assistant':'user',text:'Обычная реплика'}));
+ const blocked=threeJourneyTurn({path:'therapy',message:'Хочу медитацию',locale:'ru',
+   history:distant,preferenceNoAdvice:true});
+ assert.equal(blocked.action,null);
+ const noQuestions=threeJourneyTurn({path:'therapy',message:'Мне грустно',locale:'ru',
+   history:distant,preferenceNoQuestions:true});
+ assert.doesNotMatch(noQuestions.reply,/[?？]/);
+ const directResource=threeJourneyTurn({path:'therapy',message:'Хочу медитацию',locale:'ru',
+   history:distant,preferenceNoQuestions:true});
+ assert.equal(directResource.action,'practices');
+ const resumed=threeJourneyTurn({path:'therapy',message:'Можешь задать вопрос',locale:'ru',
+   history:distant,preferenceNoQuestions:true});
+ assert.match(resumed.reply,/[?？]/);
+});
 test('unknown and short replies do not hallucinate a consent or completed action',()=>{
  const first=turn('goal','Не знаю');
  const second=turn('goal','Не знаю',[{role:'user',text:'Не знаю'}]);
@@ -136,6 +151,8 @@ test('existing messenger and server authority still own actual actions, safety a
  assert.match(server,/body\.journeyPath==null\|\|body\.judgmentContext!=null\|\|body\.judgmentChoice!=null/);
  assert.match(chat,/journeyPath:!leaveSupport\?journeyPath:null/);
  assert.match(chat,/onJourneySelect=\{startJourney\}/);
+ assert.match(chat,/journeyPrefsRef=useRef/);
+ assert.match(server,/journeyNoAdvice !== undefined && typeof body.journeyNoAdvice !== "boolean"/);
  assert.match(chat,/consentOnStart:true/); // preserves recent iPhone mic fix
  for(const path of ['therapy','consultation','goal'])
   assert.match(landing,new RegExp('data-hh-genie-path-choice="'+path+'"'));
