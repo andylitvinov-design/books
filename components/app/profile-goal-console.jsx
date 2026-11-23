@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, BookOpen, CheckCircle2, ChevronRight, ClipboardList, Compass, Flame, Heart, Leaf, LockKeyhole, Plus, Rocket, ShieldCheck, Target } from 'lucide-react'
+import { ArrowRight, BookOpen, Brain, CalendarDays, ChartNoAxesColumnIncreasing, CheckCircle2, ChevronRight, ClipboardList, Compass, Flame, Heart, Leaf, LockKeyhole, Plus, Rocket, ShieldCheck, Target } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import css from './profile-goal-console.module.css'
 
@@ -104,8 +104,8 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
   const hrefFor = id => id === 'plan' ? planLink : id === 'coach' ? '/' + lang + '/my-coach'
     : id === 'courses' ? root + '/course?view=courses' : root + '/portrait?space=path'
   return <section className={css.console} data-profile-goal-console data-account-scoped={Boolean(accountId)}>
-    <div className={css.goalsHeader}><h2><Target size={25} aria-hidden="true" />{t.goals}</h2>{selected && <p>{t.hint}</p>}</div>
     <div className={css.goalStrip} aria-label={t.goals}>
+      <h2 className={css.stripTitle}><Target size={18} aria-hidden="true" />{t.goals} ({goals.length})</h2>
       {goals.map(goal => {
         const active = selected?.id === goal.id
         return <button key={goal.id} type="button" className={active ? css.goalActive : css.goalChip}
@@ -118,7 +118,7 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
     </div>
     {view.loading && <p className={css.notice} role="status">…</p>}
     {view.error && <p className={css.notice} role="alert">{t.error} <Link href={root + '/my-coaching-plan'}>{t.retry}</Link></p>}
-    {!view.loading && !view.error && !selected && <p className={css.notice} data-goal-empty-state>{t.empty}</p>}
+    {!view.loading && !view.error && !selected && <span className={css.emptyHint} data-goal-empty-state>{t.empty}</span>}
     {selected && !view.loading && !view.error && <>
         <div className={css.selectedGoal}>
           <div className={css.goalText}><span>{t.goals}</span><h2>{selected.title}</h2>
@@ -141,14 +141,21 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
               data-goal-step={index + 1} data-goal-step-status={selected && records[index]?.status || 'explore'}>
               <span className={css.number}>{index + 1}</span>
               <Icon className={css.stepIcon} size={27} aria-hidden="true" />
-              <span className={css.stepBody}><strong>{t.title[index]}</strong><small>{t.tool[index]} · {t.detail[index]}</small>
+              <span className={css.stepBody}><strong>{t.title[index]}</strong><small>{t.detail[index]}</small>
                 {selected && value !== null && <span className={css.progressTrack}><span style={{ width: value + '%' }}/></span>}</span>
-              <span className={css.stepState}><b>{value === null ? '—' : value + '%'}</b><small>{status}</small></span>
+              <span className={css.stepState}>{value !== null && <b>{value + '%'}</b>}<small>{status}</small></span>
               {isLocked ? <LockKeyhole size={18} aria-hidden="true" /> : <ChevronRight size={22} aria-hidden="true" />}
             </Link>
           })}
     </div>
     {selected && <p className={css.disclaimer}>{t.noStages}</p>}
-    <Link className={css.daybook} href={root + '/portrait?space=path'} prefetch={false}><BookOpen size={20} aria-hidden="true" />{t.tool[3]}<ArrowRight size={19} aria-hidden="true" /></Link>
+    <nav className={css.shortcuts} aria-label={t.goals}>
+      {[
+        [CalendarDays, root + '/portrait?space=path', {en:'Daybook',ru:'Дневник',es:'Diario'}[lang]],
+        [ChartNoAxesColumnIncreasing, root + '/my-coaching-plan', {en:'Reports',ru:'Отчёты',es:'Informes'}[lang]],
+        [BookOpen, root + '/course?view=courses', {en:'Courses',ru:'Курсы',es:'Cursos'}[lang]],
+        [Brain, root + '/portrait?space=reports', {en:'Psychic Health',ru:'Психика',es:'Salud mental'}[lang]],
+      ].map(([Icon, href, label]) => <Link key={href} href={href} prefetch={false}><Icon size={21} aria-hidden="true"/><strong>{label}</strong></Link>)}
+    </nav>
   </section>
 }
