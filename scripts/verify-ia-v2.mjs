@@ -343,7 +343,7 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
           await expect(send).toBeEnabled()
           await input.fill('')
           await expect(send).toBeEnabled()
-          await expect(page.locator('[data-home-deferred-sections]')).toHaveCount(1)
+          await expect(entry.locator('[data-home-intent-mic]')).toBeVisible()
           const hero=entry.locator('[data-home-dialogue-hero]')
           const rect=await hero.boundingBox()
           assert.ok(rect&&rect.y<700,label+': hero visible in first mobile viewport')
