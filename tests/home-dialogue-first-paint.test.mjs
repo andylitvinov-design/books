@@ -155,7 +155,7 @@ test("Samir approved homepage has three gentle entry paths and a seven-step jour
  assert.match(entry,/data-home-request-session/);
  assert.match(entry,/data-home-continue-path/);
  assert.match(styles,/SAMIR_HOME_OWNER_APPROVED_20261123/);
- assert.match(styles,/\.journeyScroll\{display:flex/);
+ assert.match(styles,/SAMIR_MOCK_FIDELITY_20261123_V2/);
  assert.match(styles,/scroll-snap-type:x mandatory/);
  assert.match(styles,/max-height:800px/);
  assert.match(deferred,/<MySpaceTopics locale=\{locale\} publicHome\/>/);

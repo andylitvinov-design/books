@@ -38,7 +38,7 @@ for(const engine of [chromium,webkit]){
      assert.ok((await root.locator('[data-home-intent-option="goal"]').innerText()).includes(labels[1]),name);
      assert.equal(await root.locator("[data-home-ali-greeting-play]").count(),1,name+": real greeting control");
      const hitTargets=await root.locator('[data-home-intent-form] button').evaluateAll(buttons=>buttons.map(button=>{const r=button.getBoundingClientRect();return {width:r.width,height:r.height}}));
-     assert.ok(hitTargets.length>=4&&hitTargets.every(r=>r.width>=44&&r.height>=44),name+": safe 44px mobile input controls "+JSON.stringify(hitTargets));
+     assert.ok(hitTargets.length===2&&hitTargets.every(r=>r.width>=44&&r.height>=44),name+": safe 44px mobile input controls "+JSON.stringify(hitTargets));
      const input=root.locator("[data-home-intent-composer]"),send=root.locator("[data-home-send-to-ali]");
      await input.fill(locale==="ru"?"Хочу разобраться":locale==="es"?"Quiero comprender":"I want clarity");
      assert.equal(await send.isEnabled(),true,name+": editable send");
@@ -47,8 +47,13 @@ for(const engine of [chromium,webkit]){
       return keys.map(key=>{const el=element.querySelector(key);if(!el)return null;const r=el.getBoundingClientRect();return {x:r.x,width:r.width,top:r.top,bottom:r.bottom}})});
      assert.ok(layout.every(Boolean),name+": all graphic sections rendered");
      assert.ok(layout[0].top<layout[1].top&&layout[1].top<layout[2].top&&layout[2].top<layout[3].top,name+": hierarchy");
+     assert.ok(layout[2].bottom-layout[2].top<=205,name+": compact goal choices");
+     assert.ok(layout[3].bottom-layout[3].top<=185,name+": compact stages");
      assert.ok(layout.every(box=>box.x>=-2&&box.x+box.width<=width+2),name+": sections fit");
-     assert.ok(await root.locator("[data-home-stage-scroll]").evaluate(el=>el.scrollWidth>el.clientWidth),name+": readable scrolling journey");
+     assert.ok(await root.locator("[data-home-stage-scroll]").evaluate(el=>el.scrollWidth<=el.clientWidth+2),name+": all seven stages visible without swipe");
+     const stageBoxes=await root.locator('[data-home-stage-option]').evaluateAll(items=>items.map(el=>{const r=el.getBoundingClientRect();return {x:r.x,right:r.right,top:r.top}}));
+     assert.equal(stageBoxes.length,7,name+": seven visible steps");
+     assert.ok(stageBoxes.every((s,i)=>s.x>=0&&s.right<=width+2&&(i===0||s.x>=stageBoxes[i-1].x)),name+": steps in one row");
      assert.equal(await page.locator("iframe").count(),0,name+": no video iframe");
      const dock=page.locator("[data-hh-unified-dock]");
      await dock.waitFor({state:"visible",timeout:30000});

@@ -199,3 +199,149 @@ test('user-visible token failure stays in the existing voice request and a 429 r
     await assert.rejects(token(sample),x=>x.message===expected)
   }
 })
+
+test('Live Free token quota separates failed provider attempts from delivered sessions',async()=>{
+  const {geminiLiveTokenQuota}=await import('../lib/coaching/gemini-live-quota.mjs')
+  const actor='123e4567-e89b-42d3-a456-426614174000'
+  const plan=geminiLiveTokenQuota(actor)
+  assert.deepEqual(plan.attempts.map(x=>[x.limit,x.seconds]),[
+    [4,3600],[8,86400],[40,86400]])
+  assert.deepEqual(plan.successful.map(x=>[x.limit,x.seconds]),[
+    [2,3600],[4,86400],[20,86400]])
+  assert.deepEqual(plan.successful.map(x=>x.bucket.op),[
+    'my-coach-live-free-actor-hour','my-coach-live-free-actor-day',
+    'my-coach-live-free-global-day'])
+  assert.equal(plan.attempts[0].bucket.actor,actor)
+  assert.equal(plan.attempts[2].bucket.actor,undefined)
+  assert.equal(new Set(plan.attempts.map(x=>x.bucket.op)).size,3)
+  assert.ok(!plan.attempts.some(x=>
+    plan.successful.some(y=>y.bucket.op===x.bucket.op)))
+  assert.throws(()=>geminiLiveTokenQuota('not-a-uuid'))
+  const route=load('app/api/app/[...path]/route.js')
+  const start=route.indexOf("if (joined === 'my-coach/live-token')")
+  const end=route.indexOf("if (joined === 'my-coach/live-checkpoint')",start)
+  assert.ok(start>0&&end>start)
+  const handler=route.slice(start,end)
+  const attempted=handler.indexOf('await consumeRateBatch(config,liveQuota.attempts)')
+  const mint=handler.indexOf('issueGeminiFreeLiveToken(vendor,start')
+  const delivered=handler.indexOf('await consumeRateBatch(config,liveQuota.successful)')
+  assert.ok(attempted>0&&mint>attempted&&delivered>mint)
+  assert.ok(delivered>handler.indexOf("throw new AppError(safeCode,status)"))
+  assert.doesNotMatch(handler,/await consumeRate\(config,\{op:'my-coach-live-free-actor/)
+  const database=load('lib/app/database.js')
+  assert.match(database,/export async function consumeRateBatch\(config, entries\)/)
+  assert.match(database,/if\(!ok\)throw new AppError\('RATE_LIMITED',429\)/)
+  assert.match(database,/return transaction\(config,null,async db=>/)
+  assert.match(database,/for\(const row of entries\)/)
+  assert.match(database,/operationHash\(row.bucket,config\)/)
+  assert.match(database,/hh_app_inbox|inbox:true/)
+})
+
+test('only server-verified owner gets a bounded trial budget for all coach personas',async()=>{
+  const {geminiLiveTokenQuota}=await import('../lib/coaching/gemini-live-quota.mjs')
+  const actor='123e4567-e89b-42d3-a456-426614174000'
+  const owner=geminiLiveTokenQuota(actor,{ownerTrial:true})
+  const regular=geminiLiveTokenQuota(actor)
+  assert.deepEqual(owner.attempts.map(x=>x.limit),[24,24,40])
+  assert.deepEqual(owner.successful.map(x=>x.limit),[12,12,20])
+  assert.deepEqual(regular.attempts.map(x=>x.limit),[4,8,40])
+  assert.deepEqual(regular.successful.map(x=>x.limit),[2,4,20])
+  assert.equal(owner.successful[2].bucket.op,regular.successful[2].bucket.op)
+  assert.equal(owner.attempts[2].bucket.op,regular.attempts[2].bucket.op)
+  assert.notEqual(owner.successful[0].bucket.op,regular.successful[0].bucket.op)
+  assert.equal(owner.attempts[0].bucket.actor,actor)
+  const route=load('app/api/app/[...path]/route.js')
+  const section=route.slice(route.indexOf("if (joined === 'my-coach/live-token')"),
+    route.indexOf("if (joined === 'my-coach/live-checkpoint')"))
+  assert.match(section,/ownerTrial:practitionerEmailAllowed\(actor\)/)
+  assert.match(route,/const actor=await auth\.verified\(\)/)
+  assert.doesNotMatch(section,/ownerTrial:\s*(?:true|body\.|request\.)/)
+  assert.match(section,/await consumeRateBatch\(config,liveQuota\.attempts\)/)
+  assert.match(section,/await consumeRateBatch\(config,liveQuota\.successful\)/)
+})
+
+test('free first-party video greeting gates Live Play, not charge on preview',()=>{
+  const gate=load('components/my-coach-greeting-gate.jsx')
+  const dialogue=load('components/my-coach-live-dialogue.jsx')
+  const gateCss=load('components/my-coach-greeting-gate.module.css')
+  assert.match(gate,/coachIntroAudioPath\(personaId,lang\)/)
+  assert.match(gate,/startDirectCoachIntroAudio\(url,/)
+  assert.match(gate,/MyCoachMotionMedia personaId=\{personaId\}/)
+  assert.match(gate,/MyCoachInlineProfile personaId=\{personaId\}/)
+  assert.match(gate,/data-coach-greeting-start/)
+  assert.match(gate,/data-coach-greeting-replay/)
+  assert.match(gate,/phase==='complete'/)
+  assert.match(gate,/priorSession\?t\.continue:t\.start/)
+  assert.match(gate,/hasCoachGreetingConnection\(personaId\)/)
+  assert.match(dialogue,/markCoachGreetingConnected\(personaId\)/)
+  const marker=load('lib/coaching/coach-greeting-visit.mjs')
+  assert.match(marker,/PUBLIC_COACH_PERSONA_IDS\.includes\(personaId\)/)
+  assert.doesNotMatch(dialogue,/sessionStorage|localStorage|sendBeacon/)
+  assert.doesNotMatch(marker,/setItem\([^)]*(?:transcript|providerToken|sessionText)/)
+  assert.doesNotMatch(gate,/my-coach\/live-token|issueGeminiFreeLiveToken|speechRef|getUserMedia|XP.*deduct/)
+  assert.match(dialogue,/data-coach-greeting-stage=\{greetingAccepted\?'session':'introduction'\}/)
+  assert.match(dialogue,/!greetingAccepted&&<MyCoachGreetingGate/)
+  assert.match(dialogue,/speechRef\.current\?\.startSession\?\.\(\)/)
+  assert.match(dialogue,/greetingAccepted\?styles\.sessionScroll:styles\.sessionScrollAwaitingGreeting/)
+  assert.match(gateCss,/min-height:calc\(100dvh - 65px\)/)
+  assert.match(gateCss,/overflow-y:auto/)
+})
+
+test('intro hides all original dialogue siblings; voice failures expose safe stages',()=>{
+ const css=load('components/my-coach-live-dialogue.module.css')
+ const source=load('components/my-coach-gemini-live.jsx')
+ assert.match(css,/data-coach-greeting-stage="introduction"\]\s*>\s*:not\(\.sessionTopbar\):not\(\[data-my-coach-greeting-gate\]\)/)
+ assert.match(css,/display:none!important/)
+ for(const [code,reason] of [['G-L8','microphoneRejected'],['G-L9','captureFailure'],['G-L10','tokenNetwork']]){
+   assert.match(source,new RegExp(code.replace('-','\\-')))
+   assert.match(source,new RegExp('GEMINI_LIVE_'))
+   assert.ok(source.includes(reason))
+ }
+ assert.match(source,/stage='microphone'/)
+ assert.match(source,/stage='capture'/)
+ assert.match(source,/stage='token'/)
+ assert.match(source,/catch\{throw Error\('GEMINI_LIVE_TOKEN_NETWORK'\)\}/)
+ assert.match(source,/onSessionStart/)
+})
+
+test('iPhone Safari 27 restores real-time mic+speaker audio after muted greeting',async()=>{
+ const mod=await import('../lib/personal-coaching/coach-ios-live-duplex.mjs')
+ const {prepareCoachIos27LiveDuplex,activateCoachIos27LiveDuplex,
+   restoreCoachIos27LiveDuplex}=mod
+ const steps=[]
+ const session={_type:'ambient',get type(){return this._type},
+   set type(next){steps.push(next);this._type=next}}
+ const ios={userAgent:'Mozilla/5.0 (iPhone; CPU iPhone OS 27_2 like Mac OS X) AppleWebKit/605.1.15 Version/27.2 Mobile/15E148 Safari/604.1',
+   audioSession:session}
+ assert.equal(prepareCoachIos27LiveDuplex(ios),true)
+ assert.equal(session.type,'auto')
+ assert.equal(activateCoachIos27LiveDuplex(ios),true)
+ assert.equal(session.type,'play-and-record')
+ assert.equal(restoreCoachIos27LiveDuplex(ios),true)
+ assert.equal(session.type,'auto')
+ assert.deepEqual(steps,['auto','play-and-record','playback','auto'])
+ assert.equal(prepareCoachIos27LiveDuplex({userAgent:'Android AppleWebKit/123',audioSession:session}),false)
+ assert.equal(activateCoachIos27LiveDuplex({userAgent:'Android AppleWebKit/123',audioSession:session}),false)
+ assert.equal(restoreCoachIos27LiveDuplex({userAgent:'Android AppleWebKit/123',audioSession:session}),false)
+ assert.deepEqual(steps,['auto','play-and-record','playback','auto'])
+ assert.equal(activateCoachIos27LiveDuplex({userAgent:ios.userAgent}),false)
+ const denied={...ios,audioSession:{get type(){return 'ambient'},set type(value){throw Error('device unsupported')}}}
+ assert.equal(prepareCoachIos27LiveDuplex(denied),false)
+ assert.equal(activateCoachIos27LiveDuplex(denied),false)
+ assert.equal(restoreCoachIos27LiveDuplex(denied),false)
+ const live=load('components/my-coach-gemini-live.jsx')
+ // Functions are declared in reverse source order: begin() precedes
+ // startSession(). Assert ordering within each function independently.
+ const start=live.slice(live.indexOf('function startSession()'),
+   live.indexOf('function sendText('))
+ const begin=live.slice(live.indexOf('async function begin(r,microphone)'),
+   live.indexOf('function startSession()'))
+ const b=start.indexOf('prepareCoachIos27LiveDuplex(navigator)')
+ const mic=start.indexOf('microphone=navigator.mediaDevices.getUserMedia')
+ const activate=begin.indexOf('activateCoachIos27LiveDuplex(navigator)')
+ const token=begin.indexOf('const token=await getToken(r)')
+ assert.ok(b>=0&&mic>b&&activate>=0&&token>activate)
+ assert.match(live,/restoreCoachIos27LiveDuplex\(navigator\)/)
+ assert.match(live,/getUserMedia\(\{/)
+ assert.match(live,/new GeminiLivePcmPlayer\(context/)
+})
