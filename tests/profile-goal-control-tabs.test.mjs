@@ -28,7 +28,7 @@ test('Each goal has seven accessible navigation rows; owner-only fetch; no demo 
  assert.match(s, /if \(!accountId\) return undefined/)
  assert.match(s, /VALID_GOALS\.has\(goal\.status\)/)
  assert.match(s, /goals\.find\(goal => String\(goal\.id\) === selectedId\)/)
- assert.match(s, /STEPS\.map\(\(\{ id, icon: Icon, href \}, index\)/)
+ assert.match(s, /STEPS\.map\(\(\{ id, icon: Icon \}, index\)/)
  assert.match(s, /progressPercent/)
  assert.match(s, /scores\.every\(value => value !== null\)/)
  assert.match(s, /data-goal-step-status/)
