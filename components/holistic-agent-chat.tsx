@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import {Mic, Paperclip, Plus, Send, X} from "lucide-react";
 import {MessengerAiLanding} from "@/components/app/messenger-ai-landing";
+import {MessengerVoiceNote} from "@/components/app/messenger-voice-note";
 import {useAliPersona} from "@/components/app/use-ali-persona";
 import {ALI_GEMINI_FREE_ENDPOINT,aliGeminiRequest,aliGeminiResult} from "@/lib/holistic-support/ali-gemini-consultant.mjs";
 import {MessengerSupportQuiz, type SupportQuizSelection} from "@/components/app/messenger-support-quiz";
@@ -362,6 +363,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const [dismissedIds,setDismissedIds]=useState<string[]>([]);
   const [completedIds,setCompletedIds]=useState<string[]>([]);
   const [draft,setDraft]=useState("");
+  const [voiceNoteRevision,setVoiceNoteRevision]=useState(0);
   const [voiceFile,setVoiceFile]=useState<File|null>(null);
   const [voiceConsent,setVoiceConsent]=useState(false);
   const [voiceBusy,setVoiceBusy]=useState(false);
@@ -373,7 +375,6 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const [entryOpen,setEntryOpen]=useState(true);
   const [recorderOpen,setRecorderOpen]=useState(false);
   const [voicePermissionOpen,setVoicePermissionOpen]=useState(false);
-  const [recordedSttConsent,setRecordedSttConsent]=useState(false);
   const voiceRequiresRecorded=voice.prefersRecorded||!voice.recognitionSupported;
   const [guideLink,setGuideLink]=useState<"tests"|null>(null);
   const [testChatOpen,setTestChatOpen]=useState(false);
@@ -1679,7 +1680,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     }
     sendSelectedTurn(draft);
   }
-  function resetConversation(){setPsychInterview("off");setPsychStage("situation");setPsychSlots({});setPsychSummaryVisible(false);setPsychFinalSummary(null);setPsychCopyStatus("idle");nativeSession.current=null;voice.stopDialogue();lastSpeechTurn.current=null;alternativeAbortRef.current?.abort();alternativeAbortRef.current=null;lastAnswerRef.current=null;setAlternativeBusy(false);controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setSupportQuizOpen(false);setSupportSelection(null);setFriendTone("friendly");setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setTestFocus(null);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);setRecorderOpen(false);setVoicePermissionOpen(false);setRecordedSttConsent(false);proAbort.current?.abort();proAbort.current=null;proTurns.current=[];
+  function resetConversation(){setVoiceNoteRevision(value=>value+1);setPsychInterview("off");setPsychStage("situation");setPsychSlots({});setPsychSummaryVisible(false);setPsychFinalSummary(null);setPsychCopyStatus("idle");nativeSession.current=null;voice.stopDialogue();lastSpeechTurn.current=null;alternativeAbortRef.current?.abort();alternativeAbortRef.current=null;lastAnswerRef.current=null;setAlternativeBusy(false);controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setSupportQuizOpen(false);setSupportSelection(null);setFriendTone("friendly");setProjectFlow(null);setSessionStep(null);setSessionGoal(null);setSessionOffers([]);setTestFocus(null);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);setRecorderOpen(false);setVoicePermissionOpen(false);proAbort.current?.abort();proAbort.current=null;proTurns.current=[];
     setProBusy(false);setProSelected(false);setProConsent(false);setProDataConsent(false);setGeminiAvailable(null);}
 
   useEffect(()=>{
@@ -1708,15 +1709,19 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         "Sign in and approve the Gemini Pro consents before voice.");
       return;
     }
-    if(!voice.supported||!voice.playbackConsent||!voice.sttConsent)return;
-    if(voiceRequiresRecorded&&(!voice.recordedSupported||!recordedSttConsent))return;
+    if(!voice.supported||(voiceRequiresRecorded&&!voice.recordedSupported)){
+      setStatus(locale==="ru"?"Микрофон недоступен. Проверьте разрешение Safari или введите текст.":locale==="es"?
+        "Micrófono no disponible. Comprueba Safari o escribe.":
+        "Microphone unavailable. Check Safari permissions or type instead.");
+      return;
+    }
     const launched=voice.startDialogue(text=>{
       if(busy||proBusy||(proSelected&&!proReady)||(mode==="owned"&&!agree)){
         setDraft(text);voice.stopDialogue();return;
       }
       if(requiresProtectedReply(text,locale))voice.stopDialogue();
       setDraft(text);sendSelectedTurn(text);
-    },{allowRecorded:voiceRequiresRecorded&&recordedSttConsent,
+    },{allowRecorded:voiceRequiresRecorded,consentOnStart:true,
       recordedPurpose:authenticated?'ali_chat':'public'});
     if(launched){setVoicePermissionOpen(false);setStatus("");}
   }
@@ -1819,7 +1824,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       data-gemini-pending={messengerView&&proSelected&&!proReady||undefined}
       data-voice-onboarding={messengerView&&(voicePermissionOpen||voice.conversing||Boolean(voice.notice))||undefined}>
       <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)}
-        placeholder={showLandingComposer?(locale==="ru"?"Опиши ситуацию, вопрос или цель…":locale==="es"?"Describe tu situación, pregunta o meta…":"Describe your situation, concern, or goal…"):t.placeholder}
+        placeholder={showLandingComposer?(locale==="ru"?"Расскажи, чего ты хочешь или что сейчас мешает…":locale==="es"?"Cuéntame qué deseas o qué te preocupa…":"Tell me what you want or what is holding you back…"):t.placeholder}
         onFocus={()=>{
           if(!compact||!messengerView)return;
           composerFocused.current=true;
@@ -1833,6 +1838,17 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           <summary aria-label={locale==="ru"?"Дополнительные действия":locale==="es"?"Más acciones":"More actions"}><Plus size={19} aria-hidden="true"/></summary>
           <div className={styles.composerMenu}>
             {voiceAttachment}
+            {messengerView&&!pageHelp&&<MessengerVoiceNote locale={locale} accountAuthenticated={authenticated}
+              resetRevision={voiceNoteRevision}
+              disabled={busy||proBusy||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"||
+                (proSelected&&!proReady)||(mode==="owned"&&!agree)}
+              onBegin={()=>{if(voice.conversing)voice.stopDialogue();}}
+              onSendTranscript={(text,_file,_seconds)=>{
+                if(busy||proBusy||homeHandoffPhase==="queued"||homeHandoffPhase==="sending"||
+                    (proSelected&&!proReady)||(mode==="owned"&&!agree)||!text.trim())return false;
+                sendSelectedTurn(text);
+                return true;
+              }}/>}
             {voiceEnabled&&<details className={styles.voiceSettings} data-hh-voice-settings>
               <summary>{locale==="ru"?"Настройки голоса":locale==="es"?"Ajustes de voz":"Voice settings"}</summary>
               {voiceControls}
@@ -1879,7 +1895,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
             if(voice.conversing){
               if(voice.speaking)voice.interruptReply();
               else voice.stopDialogue();
-            }else setVoicePermissionOpen(true);
+            }else if(voice.playbackConsent&&voice.sttConsent)beginMessengerVoice();
+            else setVoicePermissionOpen(true);
           }}
           disabled={!voiceEnabled}
           aria-pressed={voice.conversing}
@@ -1900,31 +1917,27 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         id="hh-ai-voice-onboarding" className={styles.voiceOnboarding}
         data-hh-ai-voice-consent role="group" aria-label={locale==="ru"?"Голосовой разговор":locale==="es"?"Conversación por voz":"Voice conversation"}>
         <strong>{locale==="ru"?"Говорите с Ali":locale==="es"?"Habla con Ali":"Talk with Ali"}</strong>
-        <label><input type="checkbox" checked={voice.playbackConsent}
-          onChange={event=>voice.setPlayback(event.target.checked)}/>
-          {voice.t.playConsent}</label>
-        <label><input type="checkbox" checked={voice.sttConsent}
-          onChange={event=>voice.setRecognitionConsent(event.target.checked)}/>
-          {voice.t.sttConsent}</label>
-        {voiceRequiresRecorded&&<div className={styles.recordedVoiceGate}>
-          <label><input type="checkbox" checked={recordedSttConsent}
-            onChange={event=>setRecordedSttConsent(event.target.checked)}/>
-            {locale==="ru"?"Разрешаю отправлять короткие голосовые реплики Groq Whisper Free для распознавания. Аудио Holistic House не хранит.":
-             locale==="es"?"Autorizo enviar frases cortas a Groq Whisper Free para transcripción. No se guarda audio.":
-             "I consent to sending short speech clips to Groq Whisper Free for transcription. Holistic House does not store audio."}
-          </label>
-          {!authenticated&&<p>{locale==="ru"?"Для гостей действует общая ограниченная бесплатная квота. Вход даёт отдельный лимит.":locale==="es"?
-            "Para invitados hay una cuota gratuita compartida y limitada. Inicia sesión para un límite personal.":
-            "Guests share a small free quota. Sign in for a separate personal limit."}{" "}
-            <a href={"/"+locale+"/app/portrait"}>{locale==="ru"?"Войти":locale==="es"?"Entrar":"Sign in"}</a></p>}
-        </div>}
+        <p className={styles.voiceDisclosure} data-hh-ai-voice-disclosure>{
+          voiceRequiresRecorded?
+            (locale==="ru"?"Нажимая «Начать говорить», вы разрешаете передавать короткие реплики Groq Whisper Free для распознавания. Аудио не сохраняется.":
+             locale==="es"?"Al empezar, autorizas enviar frases cortas a Groq Whisper Free para transcribirlas. No guardamos audio.":
+             "Start talking allows short audio clips to be sent to Groq Whisper Free for transcription. Audio is not stored.") :
+            (locale==="ru"?"Нажимая «Начать говорить», вы разрешаете озвучивание на устройстве и распознавание речи браузером (возможна передача поставщику браузера).":
+             locale==="es"?"Al empezar, permites la voz del dispositivo y el reconocimiento del navegador, que puede enviar audio a su proveedor.":
+             "Start talking enables device playback and browser speech recognition, which may send audio to your browser provider.")
+        }</p>
+        {voiceRequiresRecorded&&!voice.recordedSupported&&<small role="status">{
+          locale==="ru"?"На этом устройстве недоступна запись. Используйте микрофон клавиатуры или введите текст.":
+          locale==="es"?"Grabación no disponible. Usa el micrófono del teclado o escribe.":
+          "Recording is unavailable here. Use your keyboard microphone or type."
+        }</small>}
         {voice.notice&&<small role="status">{voice.notice}</small>}
         <div className={styles.voiceConsentActions}>
           <button type="button" onClick={()=>setVoicePermissionOpen(false)}>
             {locale==="ru"?"Не сейчас":locale==="es"?"Ahora no":"Not now"}</button>
           <button type="button" data-hh-ai-start-voice
-            disabled={!voice.supported||!voice.playbackConsent||!voice.sttConsent||
-              (voiceRequiresRecorded&&(!voice.recordedSupported||!recordedSttConsent))||
+            disabled={!voice.supported||
+              (voiceRequiresRecorded&&!voice.recordedSupported)||
               (proSelected&&!proReady)}
             onClick={beginMessengerVoice}>
             <Mic size={17} aria-hidden="true"/>
@@ -1997,7 +2010,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
               onPractice={()=>startGuided("meditation")} onSupport={openSupportQuiz}
               onAsk={()=>composerRef.current?.focus({preventScroll:true})}
               onTopicSelect={text=>{setDraft(text);window.requestAnimationFrame(()=>composerRef.current?.focus({preventScroll:true}));}}
-              onStartAnalysis={()=>{if(draft.trim()){void sendTurn(draft);}else openSupportQuiz();}}/>
+              onStartAnalysis={()=>{if(draft.trim()){void sendTurn(draft);}else openSupportQuiz();}}
+              onGoalChoice={text=>sendSelectedTurn(text)}/>
 
           </>}
       </>}

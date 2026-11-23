@@ -457,3 +457,141 @@
  .root .welcomeBubble p{font-size:11px;line-height:1.2}
  .root .topics button{min-height:62px}
 }
+
+
+/* Genie-inspired, conversation-first AI Messenger opening. Same chat engine,
+   selected guide, privacy and voice controls; no second navigation dock. */
+.root[data-hh-ai-landing]{display:flex;flex-direction:column;gap:9px;min-height:100%;
+  padding:0 2px 8px;box-sizing:border-box;isolation:isolate}
+.root .genieScene{position:relative;isolation:isolate;min-height:280px;overflow:hidden;
+  border-radius:23px;background:
+  linear-gradient(180deg,rgba(5,41,37,.22) 0%,rgba(6,40,36,.08) 38%,rgba(36,23,35,.33) 100%),
+  url("/images/holistic-house/my-coach-motion/genie-calm-loop-poster.webp") center 30% / cover no-repeat;
+  box-shadow:0 9px 21px #33230e2e}
+.root .dialogueProfile{display:flex;gap:9px;align-items:center;min-height:56px;
+  padding:10px 12px;color:#fff;background:linear-gradient(#052d2b92,transparent);
+  text-shadow:0 2px 6px #0528229c}
+.root .profilePortrait{flex:none;width:40px;height:40px;object-fit:cover;object-position:center 24%;
+  border-radius:50%;border:2px solid #fff4d6;box-shadow:0 2px 6px #051d1b66}
+.root .profileIdentity{display:grid;gap:3px;min-width:0}
+.root .profileIdentity strong{font:760 16px/1.2 system-ui,-apple-system,sans-serif;
+  overflow-wrap:anywhere}
+.root .profileIdentity span{display:flex;align-items:center;gap:6px;
+  font:550 12px/1.1 system-ui,sans-serif}
+.root .profileIdentity i{width:8px;height:8px;flex:none;border-radius:50%;
+  background:#16d887;box-shadow:0 0 6px #16d887}
+.root .profileSparkle{margin-left:auto;color:#f9da91;flex:none}
+.root .welcomeRow{position:relative;display:block!important;min-height:0!important;
+  margin:75px 11px 11px;overflow:visible;border:0!important;background:transparent!important;
+  border-radius:0!important;box-shadow:none!important;isolation:auto}
+.root .welcomeBubble{position:relative;display:grid!important;max-width:min(94%,400px)!important;
+  min-height:0!important;gap:8px!important;padding:14px 16px 12px!important;
+  color:#112e27!important;border:1px solid #e2d4c2!important;
+  border-radius:18px 18px 18px 5px!important;background:#fffdf6f5!important;
+  box-shadow:0 6px 22px #061f1e70!important;text-shadow:none!important}
+.root .welcomeBubble:before{content:"";position:absolute;top:12px;left:-10px;
+  border-style:solid;border-width:0 11px 13px 0;
+  border-color:transparent #fffdf6 transparent transparent}
+.root .welcomeBubble h2{font:800 clamp(17px,4.65vw,21px)/1.16 system-ui,-apple-system,sans-serif!important;
+  color:#0b3228!important;letter-spacing:-.022em}
+.root .welcomeBubble p{font:520 clamp(13px,3.55vw,16px)/1.37 system-ui,-apple-system,sans-serif!important;
+  color:#1d2c28!important;margin:0!important}
+.root .welcomeBubble p strong{color:#08523c;font-weight:800}
+.root .welcomeMeta{margin:1px 0 0!important;justify-content:flex-end!important}
+.root .welcomeListen{min-height:30px!important;padding:5px 10px!important;
+  color:#10533f!important;background:#ebf5eb!important;border:1px solid #a9cdb8!important;
+  font:730 11px/1 system-ui,sans-serif!important;text-shadow:none!important}
+.root .goalButtons{display:grid;gap:8px;min-width:0}
+.root .goalButtons>button{display:flex;align-items:center;gap:12px;min-height:53px;
+  width:100%;box-sizing:border-box;padding:10px 16px;border-radius:999px;
+  border:1.5px solid #f7d498;background:linear-gradient(110deg,#088b70,#035341);
+  color:#fff;box-shadow:0 4px 13px #143b2e30;cursor:pointer;
+  font:790 clamp(14px,4.2vw,18px)/1.2 system-ui,-apple-system,sans-serif;text-align:left}
+.root .goalButtons>button:nth-child(2){background:linear-gradient(110deg,#fff6e5,#f5dbb0);
+  color:#093b32;border-color:#e8c58d}
+.root .goalButtons>button>svg{flex:none}
+.root .goalButtons>button>span{flex:1;min-width:0}
+.root .goalButtons>button:focus-visible,.root .extraDirections>summary:focus-visible{
+  outline:3px solid #078a70;outline-offset:2px}
+.root .inlineComposer{margin-top:auto;position:sticky;bottom:0;z-index:5;
+  background:#fff9efe9!important;border:1px solid #e6d8c5!important;
+  border-radius:22px!important;padding:7px!important;box-shadow:0 3px 18px #61462721!important}
+.root .inlineComposer :global([data-hh-ai-chat-composer]){margin:0!important}
+.root .inlineComposer :global([data-hh-ai-chat-composer] textarea){font-size:16px;min-height:50px}
+.root .extraDirections{min-width:0;border:1px solid #e1d4bd;border-radius:18px;
+  background:#fffaf2e8;color:#164d3c;overflow:clip}
+.root .extraDirections>summary{display:flex;align-items:center;justify-content:center;gap:9px;
+  list-style:none;min-height:44px;padding:9px 12px;cursor:pointer;
+  font:730 12px/1.2 system-ui,sans-serif}
+.root .extraDirections>summary::-webkit-details-marker{display:none}
+.root .extraDirections[open]>summary{border-bottom:1px solid #e8dbc8}
+.root .extraDirections>nav,.root .extraDirections>.topicTitleRow,
+.root .extraDirections>.topics{margin:8px;max-width:calc(100% - 16px)}
+.root .extraDirections .chatShortcuts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.root .extraDirections .chatShortcut{min-height:44px;gap:3px;padding:6px 3px;
+  font-size:clamp(10px,2.75vw,12px)}
+.root .extraDirections .topics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.root .extraDirections .topics button{min-height:74px}
+@media(min-width:761px){.root[data-hh-ai-landing]{max-width:700px;margin:0 auto;width:100%}
+  .root .genieScene{min-height:340px;background-position:center 38%}
+  .root .welcomeRow{margin-top:145px}}
+@media(max-width:365px){.root .genieScene{min-height:275px}
+  .root .dialogueProfile{padding:8px;min-height:51px}
+  .root .welcomeRow{margin:69px 8px 9px}
+  .root .welcomeBubble{padding:11px 12px!important;gap:6px!important}
+  .root .welcomeBubble h2{font-size:17px!important}
+  .root .welcomeBubble p{font-size:13px!important}
+  .root .goalButtons>button{min-height:50px;padding:8px 12px;font-size:14px}}
+@media(max-height:740px) and (max-width:760px){
+  .root .genieScene{min-height:257px}
+  .root .welcomeRow{margin-top:57px}
+  .root .welcomeBubble{gap:5px!important;padding:10px 12px!important}
+  .root .welcomeBubble p{font-size:12.5px!important}
+  .root .goalButtons>button{min-height:48px}
+}
+@media(prefers-reduced-motion:reduce){.root .goalButtons>button{transition:none}}
+
+
+/* Samir iPhone first-screen fix: grow art, never hide the goal choices behind Send. */
+@media(max-width:760px){
+ .root[data-hh-ai-landing]{position:relative;display:flex;flex-direction:column;justify-content:flex-start;box-sizing:border-box;height:100%;min-height:0;gap:6px;padding:2px 2px 3px;overflow:visible}
+ .root[data-hh-ai-landing] .genieScene{display:flex;flex-direction:column;justify-content:flex-end;flex:1 1 auto;height:auto;min-height:0;max-height:none;overflow:hidden}
+ .root[data-hh-ai-landing] .dialogueProfile{position:absolute;z-index:1;top:0;left:0;right:0;min-height:50px;padding:7px 54px 7px 11px}
+ .root[data-hh-ai-landing] .profileSparkle{visibility:hidden}
+ .root[data-hh-ai-landing] .welcomeRow{position:relative;flex:none;margin:auto 8px 8px!important}
+ .root[data-hh-ai-landing] .welcomeBubble{gap:5px!important;padding:10px 12px 9px!important}
+ .root[data-hh-ai-landing] .welcomeBubble h2{font-size:clamp(16px,4.45vw,20px)!important;line-height:1.13!important}
+ .root[data-hh-ai-landing] .welcomeBubble p{font-size:clamp(13px,3.55vw,15px)!important;line-height:1.28!important}
+ .root[data-hh-ai-landing] .welcomeMeta{min-height:26px}
+ .root[data-hh-ai-landing] .welcomeListen{min-height:25px!important;padding:4px 10px!important}
+ .root[data-hh-ai-landing] .goalButtons{flex:none;gap:6px}
+ .root[data-hh-ai-landing] .goalButtons>button{min-height:46px;padding:7px 12px;font-size:clamp(13px,3.7vw,16px);line-height:1.14}
+ .root[data-hh-ai-landing] .inlineComposer{position:relative;bottom:auto;flex:none;margin:0;padding:4px!important}
+ .root[data-hh-ai-landing] .extraDirections{position:absolute;z-index:12;top:8px;right:8px;box-sizing:border-box;width:40px;max-width:calc(100vw - 30px);border:1px solid #f4d69e;border-radius:12px;background:#013f35e8;overflow:visible}
+ .root[data-hh-ai-landing] .extraDirections>summary{display:flex;align-items:center;justify-content:center;gap:0;box-sizing:border-box;width:40px;height:42px;min-height:42px;padding:8px;font-size:0;color:white}
+ .root[data-hh-ai-landing] .extraDirections>summary svg{display:block;flex:none;width:20px;height:20px;color:inherit}
+ .root[data-hh-ai-landing] .extraDirections[open]{width:min(310px,calc(100vw - 30px));max-height:min(59dvh,490px);overflow-y:auto;overflow-x:hidden;background:#fffaf2;box-shadow:0 12px 25px #061d1a80}
+ .root[data-hh-ai-landing] .extraDirections[open]>summary{width:auto;min-height:44px;height:auto;justify-content:space-between;gap:8px;padding:9px 12px;color:#164d3c;font-size:12px}
+}
+@media(max-width:365px){
+ .root[data-hh-ai-landing] .welcomeRow{margin:auto 6px 7px!important}
+ .root[data-hh-ai-landing] .welcomeBubble{padding:9px 9px!important;gap:4px!important}
+ .root[data-hh-ai-landing] .welcomeBubble h2{font-size:16px!important}
+ .root[data-hh-ai-landing] .welcomeBubble p{font-size:12.7px!important}
+ .root[data-hh-ai-landing] .goalButtons>button{min-height:43px;padding:6px 9px;font-size:13px}
+}
+@media(max-height:740px) and (max-width:760px){
+ .root[data-hh-ai-landing] .dialogueProfile{min-height:46px;padding:5px 50px 5px 8px}
+ .root[data-hh-ai-landing] .welcomeRow{margin:auto 6px 7px!important}
+ .root[data-hh-ai-landing] .welcomeBubble{gap:4px!important;padding:8px 10px!important}
+ .root[data-hh-ai-landing] .welcomeBubble h2{font-size:16px!important}
+ .root[data-hh-ai-landing] .welcomeBubble p{font-size:12.7px!important}
+ .root[data-hh-ai-landing] .goalButtons>button{min-height:43px}
+ .root[data-hh-ai-landing] .inlineComposer{padding:3px!important}
+}
+
+/* Narrow-height Safari: a 320px first turn keeps greeting and form readable. */
+@media(max-width:365px){
+ .root[data-hh-ai-landing] .welcomeBubble{padding:8px 9px!important}
+ .root[data-hh-ai-landing] .welcomeBubble p{line-height:1.25!important}
+}

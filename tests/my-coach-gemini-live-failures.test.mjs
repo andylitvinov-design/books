@@ -52,15 +52,79 @@ test('provider token errors return precise safe categories, never upstream body 
     const secretSentinel='SENSITIVE_DO_NOT_SHOW'
     await assert.rejects(issueGeminiFreeLiveToken(config,start,{
       now:Date.parse('2026-11-23T01:00:00Z'),
+      pause:async()=>{},
       fetcher:async(_url,options)=>{
         assert.equal(options.method,'POST')
-        assert.ok(JSON.parse(options.body).liveConnectConstraints)
+        const payload=JSON.parse(options.body)
+        assert.ok(payload.bidiGenerateContentSetup)
+        assert.equal(Object.hasOwn(payload,'liveConnectConstraints'),false)
+        assert.equal(Object.hasOwn(payload,'fieldMask'),false)
         return {ok:false,status,async json(){throw Error(secretSentinel)}}
       },
     }),error=>error.message===code&&
        !error.message.includes(secretSentinel))
   }
 })
+test('G-L6 retries one server-owned Free token after transient 5xx without new model calls',async()=>{
+  const config=geminiFreeLiveConfig(enabled)
+  const bodies=[],headers=[],delays=[]
+  const token=await issueGeminiFreeLiveToken(config,start,{
+    now:Date.parse('2026-11-23T15:40:00Z'),
+    pause:async ms=>{delays.push(ms)},
+    fetcher:async(url,options)=>{
+      assert.equal(url,'https://generativelanguage.googleapis.com/v1beta/auth_tokens')
+      headers.push(options.headers['x-goog-api-key'])
+      const body=JSON.parse(options.body)
+      assert.equal(body.uses,1)
+      assert.equal(body.bidiGenerateContentSetup.model,'models/gemini-3.1-flash-live-preview')
+      assert.match(body.bidiGenerateContentSetup.systemInstruction.parts[0].text,/coaching method/)
+      assert.equal(Object.hasOwn(body,'fieldMask'),false)
+      bodies.push(options.body)
+      return bodies.length===1?{ok:false,status:503}:
+        {ok:true,status:200,json:async()=>({name:'auth_tokens/recovered-one-use'})}
+    },
+  })
+  assert.equal(token.token,'auth_tokens/recovered-one-use')
+  assert.equal(bodies.length,2)
+  assert.equal(bodies[0],bodies[1])
+  assert.deepEqual(headers,[key,key])
+  assert.equal(delays.length,1)
+  assert.ok(delays[0]>=800&&delays[0]<1100)
+  assert.ok(!JSON.stringify(token).includes(key))
+
+  for(const status of [500,502,503,504]){
+    let attempts=0,pauses=0
+    await assert.rejects(issueGeminiFreeLiveToken(config,start,{
+      pause:async()=>{pauses++},
+      fetcher:async()=>{attempts++;return {ok:false,status}},
+    }),{message:'GEMINI_LIVE_PROVIDER_UNAVAILABLE'})
+    assert.equal(attempts,2,'bounded attempt count for '+status)
+    assert.equal(pauses,1,'one wait for '+status)
+  }
+  for(const status of [400,401,403,404,422,429]){
+    let attempts=0,pauses=0
+    await assert.rejects(issueGeminiFreeLiveToken(config,start,{
+      pause:async()=>{pauses++},
+      fetcher:async()=>{attempts++;return {ok:false,status}},
+    }))
+    assert.equal(attempts,1,'non-retryable '+status)
+    assert.equal(pauses,0)
+  }
+  const controller=new AbortController()
+  let attempted=0
+  await assert.rejects(issueGeminiFreeLiveToken(config,start,{
+    signal:controller.signal,pause:async()=>{assert.fail('aborted session must not pause')},
+    fetcher:async()=>{attempted++;controller.abort();return {ok:false,status:503}},
+  }),{message:'GEMINI_LIVE_PROVIDER_UNAVAILABLE'})
+  assert.equal(attempted,1)
+  let transportAttempts=0
+  await assert.rejects(issueGeminiFreeLiveToken(config,start,{
+    pause:async()=>{assert.fail('transport error is not retried')},
+    fetcher:async()=>{transportAttempts++;throw Error('private transport failure')},
+  }),{message:'GEMINI_LIVE_TOKEN_UNAVAILABLE'})
+  assert.equal(transportAttempts,1)
+})
+
 test('public authenticated token endpoint preserves fixed error codes and keeps keys out of logs',()=>{
   const route=load('app/api/app/[...path]/route.js')
   const service=load('lib/coaching/gemini-live-free.mjs')

@@ -208,9 +208,9 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   };
   playNext();
  },[enabled,speechLocale,playbackConsent,rate,stop,stopDialogue,supported,t,voiceId,voices]);
- const dictate=useCallback((onTranscript:(text:string)=>void)=>{
+ const dictate=useCallback((onTranscript:(text:string)=>void,consentOnStart=false)=>{
   if(!enabled)return;
-  if(!sttConsent){setNotice(t.sttConsent);return;}
+  if(!sttConsent&&!consentOnStart){setNotice(t.sttConsent);return;}
   const Ctor=(window as SpeechWindow).SpeechRecognition||(window as SpeechWindow).webkitSpeechRecognition;
   if(!Ctor){stopDialogue();setNotice(t.inputUnavailable);return;}
   stop();setNotice('');
@@ -270,20 +270,25 @@ export function useVoiceCompanion(locale:PublicLocale,enabled=false){
   if(capture){recordedTurn.current=capture;setRecording(true);}
   else{stopDialogue();setNotice(t.inputUnavailable);}
  },[enabled,recordedSupported,stop,stopDialogue,speechLocale,t]);
- const startDialogue=useCallback((onTurn:(text:string)=>void,options:{allowRecorded?:boolean;recordedPurpose?:'ali_chat'|'public'}={})=>{
+ const startDialogue=useCallback((onTurn:(text:string)=>void,options:{allowRecorded?:boolean;recordedPurpose?:'ali_chat'|'public';consentOnStart?:boolean}={})=>{
   if(!enabled)return false;
-  if(!supported||!playbackConsent||!sttConsent){setNotice(t.permission);return false;}
+  const consentOnStart=options.consentOnStart===true;
+  if(!supported||(!consentOnStart&&(!playbackConsent||!sttConsent))){setNotice(t.permission);return false;}
   const recordedNeeded=prefersRecorded||!recognitionSupported;
   if(recordedNeeded&&(!recordedSupported||options.allowRecorded!==true)){
    setNotice(t.recordedConsent);return false;
   }
   if(!recordedNeeded&&!recognitionSupported){setNotice(t.inputUnavailable);return false;}
+  // An informed Start talking click is the single activation. Set session-only
+  // device playback and STT consent without losing Safari's user gesture.
+  // Native browser microphone permission is still requested separately.
+  if(consentOnStart){setPlaybackConsent(true);setSttConsent(true);}
   useRecordedDialogue.current=recordedNeeded;
   recordedPurpose.current=options.recordedPurpose==='public'?'public':'ali_chat';
   dialogueActive.current=true;dialogueOnTurn.current=onTurn;setConversing(true);
   const receive=(text:string)=>{if(dialogueActive.current)dialogueOnTurn.current?.(text);};
   if(recordedNeeded)dictateRecorded(receive);
-  else dictate(receive);
+  else dictate(receive,consentOnStart);
   return true;
  },[enabled,dictate,dictateRecorded,playbackConsent,recognitionSupported,
    recordedSupported,prefersRecorded,sttConsent,supported,t]);
