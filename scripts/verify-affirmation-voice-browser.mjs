@@ -204,14 +204,14 @@ async function verifyWorkspaceHydration(browser,locale){
     for(const width of [320,354,390,430])await checkGeometry('[data-hh-mirror-enter]',width);
     await page.setViewportSize({width:390,height:840});
 
-    const hero=page.locator('[data-video-live-stage]');
+    const quizHero=page.locator('[data-video-live-stage]');
     const lamps=mirror.locator('[data-hh-mirror-quiz-lightbulb]');
     const stepIs=async n=>{
       await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
       await expect(mirror).toHaveAttribute("data-hh-mirror-step",String(n));
       await expect(lamps).toHaveCount(3);
       await expect(lamps.nth(n-1)).toHaveAttribute("aria-current","step");
-      await expect(hero).toBeVisible();
+      await expect(quizHero).toBeVisible();
     };
     const openDescription=async()=>{
       const details=mirror.locator('[data-hh-mirror-own-description]');
@@ -266,7 +266,7 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(subs).toHaveCount(4);
     for(const width of [320,354,390,430]){
       await page.setViewportSize({width,height:840});
-      await expect(hero).toBeVisible();
+      await expect(quizHero).toBeVisible();
       const widths=await subs.evaluateAll(els=>els.map(el=>el.getBoundingClientRect().width));
       assert.ok(widths.length===4&&widths.every(w=>w>=125),"stage 2 large cards "+width);
     }
@@ -275,6 +275,7 @@ async function verifyWorkspaceHydration(browser,locale){
     await stepIs(3);
     await expect(mirror.locator('[data-hh-mirror-topic]')).toHaveCount(4);
     await mirror.locator('[data-hh-mirror-topic]').first().click();
+    await expect(mirror.locator('[data-hh-mirror-back-purpose]')).toBeVisible();
     await confirmPurposeAndFormat("rest","pro");
     await enterPersonalAfterMontageExtra(page,engine);
     await page.locator('[data-video-quick-control="video"]').click();
