@@ -22,7 +22,7 @@ test('approved third Samir MP4 is an actual first-party silent H264 file',()=>{
   assert.equal(read(root+'genie-calm-loop-v1.gif').toString('ascii',0,6),'GIF89a')
 })
 
-test('Samir's only three visual reactions follow actual voice phase and reviewed scene',()=>{
+test("Samir's only three visual reactions follow actual voice phase and reviewed scene",()=>{
   for(const phase of ['idle','greeting','loading','paused','speaking']){
     assert.equal(samirMotionTake(phase,'calm'),'idle')
   }
@@ -47,7 +47,7 @@ test('Samir's only three visual reactions follow actual voice phase and reviewed
   assert.equal(samirMotionPath('encourage'),'/images/holistic-house/my-coach-motion/genie-natural-encourage-v2.mp4')
 })
 
-test('shared selected hero, live session and large avatar follow Samir's 3-state player',()=>{
+test("shared selected hero, live session and large avatar follow Samir's 3-state player",()=>{
   const motion=source('components/my-coach-motion-media.jsx')
   const layers=source('components/samir-motion-videos.jsx')
   const catalog=source('components/my-coach-catalog.jsx')
