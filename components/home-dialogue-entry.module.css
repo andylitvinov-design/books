@@ -392,3 +392,6 @@
   .guideAudio{height:auto;min-height:34px}
 }
 /* Large primary text stays legible; on short devices, scrolling beats clipping. */
+
+/* Short, visible provider disclosure before the first microphone tap. */
+.speechDisclosure{margin:5px 11px 0;color:#356756;font:500 11px/1.32 system-ui,sans-serif;overflow-wrap:anywhere}
