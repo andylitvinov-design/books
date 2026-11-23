@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {v3ServiceCopy,v3ServiceStart,V3_LABELS,v3ButtonsFor,v3Action,v3WantsGeneralChat} from '../lib/crm/telegram-ai-diagnostic-v3.mjs';
 import {aliServiceScenario} from '../lib/assist/ali-service-scenario.mjs';
 import {aliGuidedIntakeTurn,aliGuidedIntakeSummary,aliIntakeStageFromTurns} from '../lib/assist/ali-guided-intake.mjs';
+import {aliServiceSecretaryTurn,aliServiceSecretarySummary} from '../lib/assist/ali-service-secretary.mjs';
 import {TELEGRAM_SERVICE_OPTIONS} from '../lib/assist/telegram-service-options.mjs';
 import {aliWelcomePhotoKey,aliWelcomePhotoUrl} from '../lib/crm/telegram-welcome-photo-catalog.mjs';
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
@@ -17,7 +18,10 @@ test('first service response is a short thematic photo caption; one button start
   assert.ok(intro.length<260,lang+' '+service+' should fit one light Telegram photo caption');
   assert.match(intro,/Ali/);
   assert.doesNotMatch(intro,/OpenRouter|medical records|медицинских документов|documentos médicos|\/stop|consent|соглас|aprobación|payment|оплат/i);
-  assert.equal(countQuestions(intro),0);
+  // Service-first welcome is informational, never a premature booking request.
+  assert.ok(countQuestions(intro)<=1);
+  assert.match(intro,/Выберите, что вам хотелось бы узнать|What would you like to know first|Qué te gustaría saber primero/u);
+  assert.doesNotMatch(intro,/Would you like to request this service|Хотите оформить заявку|Quieres solicitar este servicio/i);
   const consent=v3ServiceCopy(lang,service).consent;
   assert.doesNotMatch(consent,/OpenRouter/);
   assert.doesNotMatch(consent,/external AI model|медицинских документов|documentos médicos/i);
@@ -105,6 +109,14 @@ test('service welcome photo is limited to first signed consent message and uses 
  assert.match(v3,/const agrees=general\?action==='chatagree':/);
  assert.match(v3,/serviceCopy\?\(action==='agree'\|\|action==='serviceagree'/);
  assert.match(v3,/!event\.inlineAction&&isExplicitYes\(raw\)/);
+ // The signed CRM/Secretary purpose router must retain these consent and privacy gates.
+ assert.ok(v3.includes("const emergency=v3ChatPreConsentSafetyReply(raw,lang)"));
+ assert.ok(v3.includes("const purposeReady=general||ctx.mode===FREE_DIAGNOSTIC_MODE||"));
+ assert.ok(v3.includes("(ctx.supportSelection&&ctx.conversationKind!=='general')?chatAllowed:serviceAllowed;"));
+ assert.ok(v3.includes("if(!agrees||!purposeReady)"));
+ assert.ok(v3.includes("const menuBooking=Boolean(serviceCopy&&ctx.serviceMenuShown&&"));
+ assert.ok(v3.includes("menuBooking?'service_consent':serviceCopy?'consent':"));
+ assert.ok(v3.includes("if(serviceCopy&&ctx.serviceMenuShown&&ctx.conversationKind!=='general')"));
  assert.match(v3,/if\(!agrees\|\|!purposeReady\)/);
  assert.match(v3,/stage='interview',locale=\$3,ai_consent_at=now\(\)/);
  assert.match(v3,/serviceCopy\?\.first/);
@@ -128,4 +140,64 @@ test('typed friendly consent/decline labels never switch a selected service to g
  assert.match(service,/const activeServiceConsent=active/);
  assert.match(service,/!activeServiceConsent&&/);
  assert.match(service,/openContext\(\{\.\.\.row,owner_id:connected\.owner_id\},config\)\.serviceRequest/);
+});
+
+test('dry Secretary accepts natural RU EN ES interest and honors refusal at every stage',()=>{
+ for(const [locale,interested,later] of [
+  ['ru','Да, хочу консультацию','не сейчас'],
+  ['en',"I'm interested",'not now'],
+  ['es','Me gustaría reservar','ahora no'],
+ ]){
+  const first=aliServiceSecretaryTurn({locale,message:interested});
+  assert.equal(first.stage,'challenge',locale);
+  assert.equal(countQuestions(first.reply),1,locale);
+  for(const stage of ['goal','challenge','situation','ready']){
+   const slots=stage==='goal'?{}:stage==='challenge'?{goal:interested}:
+     {goal:interested,challenge:'Friday evening',situation:'online'};
+   const stop=aliServiceSecretaryTurn({locale,message:later,stage,slots});
+   assert.equal(stop.kind,'boundary',locale+' '+stage);
+   assert.deepEqual(stop.slots,{},locale+' '+stage);
+   assert.equal(stop.stage,'goal');
+   assert.equal(aliServiceSecretarySummary({locale,slots:stop.slots}),null);
+  }
+  const time=aliServiceSecretaryTurn({locale,message:'Friday evening',
+    stage:first.stage,slots:first.slots});
+  assert.equal(time.stage,'situation',locale);
+  const format=aliServiceSecretaryTurn({locale,message:'online',
+    stage:time.stage,slots:time.slots});
+  assert.equal(format.stage,'ready',locale);
+  const summary=aliServiceSecretarySummary({locale,
+    title:'Guided imagery',slots:format.slots});
+  assert.ok(summary?.includes('Friday evening'),locale);
+  assert.ok(summary?.includes('online'),locale);
+  assert.equal(countQuestions(format.reply),0);
+ }
+});
+test('clarifications do not interrogate or leak personal details from old sessions',()=>{
+ const slots={goal:'yes',challenge:'Friday evening'};
+ const confused=aliServiceSecretaryTurn({message:'??',stage:'situation',slots});
+ assert.equal(confused.stage,'situation');
+ assert.equal(confused.kind,'meta');
+ assert.match(confused.reply,/online|in person/i);
+ assert.equal(confused.slots.situation,undefined);
+ const availability=aliServiceSecretaryTurn({message:'What time is available?',
+   stage:'challenge',slots:{goal:'yes'}});
+ assert.equal(availability.kind,'meta');
+ assert.equal(availability.slots.challenge,undefined);
+ const prior=aliServiceSecretaryTurn({message:'online',stage:'situation',
+   slots:{goal:'My relationship trauma',challenge:'I feel stuck'}});
+ assert.equal(prior.stage,'goal');
+ assert.deepEqual(prior.slots,{});
+ assert.equal(aliServiceSecretarySummary({title:'Guided imagery',
+   slots:{goal:'yes',challenge:'relationship trauma',situation:'online'}}),null);
+ assert.equal(aliServiceSecretarySummary({title:'Guided imagery',
+   slots:{goal:'yes',challenge:'Friday evening with anxiety',situation:'online'}}),null);
+ const stale=aliServiceSecretaryTurn({stage:'situation',message:'online',
+   slots:{goal:'yes',challenge:'Friday evening with anxiety'}});
+ assert.equal(stale.stage,'challenge');
+ assert.equal(stale.slots.challenge,undefined);
+ const notReady=aliServiceSecretaryTurn({locale:'ru',message:'не знаю',
+   stage:'challenge',slots:{goal:'да'}});
+ assert.equal(notReady.stage,'situation');
+ assert.match(notReady.slots.challenge,/не знаю/);
 });

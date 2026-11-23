@@ -14,6 +14,8 @@ function middlewareModule(refreshAdminAuth) {
     './lib/canonical-redirect': redirects,
     './lib/app/admin-auth-refresh': { refreshAdminAuth },
     './lib/app/personal-video-storage-csp.mjs': { personalVideoStorageCsp },
+    // The public-only static router is inert on these protected auth paths.
+    './lib/instant-home-policy.mjs': { instantHomeLocale: () => null },
   }
   const runtime = { exports: {}, Headers, crypto: globalThis.crypto, process: { env: {} }, require(name) {
     assert.ok(Object.hasOwn(modules, name), name)

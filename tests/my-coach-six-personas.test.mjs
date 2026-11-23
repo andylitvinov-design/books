@@ -9,10 +9,10 @@ import {COACH_CHIRP_VOICE_NAMES,googleChirpVoice} from '../lib/coaching/my-coach
 import {MY_COACH_FISH_VOICES,myCoachFishVoice} from '../lib/coaching/my-coach-fish-voice.mjs'
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
-test('six public AI coaches and four historical hidden characters',()=>{
-  assert.deepEqual(PUBLIC_COACH_PERSONA_IDS,['mira','max','sofia','alex','merlin','harry'])
+test('seven public AI coaches and four historical hidden characters',()=>{
+  assert.deepEqual(PUBLIC_COACH_PERSONA_IDS,['mira','max','sofia','alex','merlin','harry','genie'])
   assert.deepEqual(PUBLIC_COACH_PERSONAS.map(p=>p.id),PUBLIC_COACH_PERSONA_IDS)
-  assert.equal(COACH_PERSONAS.length,10)
+  assert.equal(COACH_PERSONAS.length,11)
   for(const id of ['lea','noah','iris','ray'])assert.ok(!PUBLIC_COACH_PERSONA_IDS.includes(id))
   const catalog=read('components/my-coach-catalog.jsx')
   assert.ok(catalog.includes('const displayedCoaches = visibleList'))
@@ -39,41 +39,52 @@ test('Merlin and Harry have distinct EN/RU/ES voices, safe stages and session ro
   }
   assert.notEqual(getCoachPresentation('merlin','ru').style,getCoachPresentation('harry','ru').style)
 })
-test('six unique Google voices retain the previous cost and consent gates',()=>{
+test('seven unique public Google voices retain the previous cost and consent gates',()=>{
   for(const lang of ['en','ru','es']){
     const voices=PUBLIC_COACH_PERSONA_IDS.map(id=>googleChirpVoice(lang,id)?.name)
-    assert.equal(new Set(voices).size,6)
+    assert.equal(new Set(voices).size,7)
     assert.ok(voices.every(Boolean))
   }
-  assert.equal(Object.keys(COACH_CHIRP_VOICE_NAMES).length,10)
-  // Never narrate Russian with English Fish references when native rights are pending.
+  assert.equal(Object.keys(COACH_CHIRP_VOICE_NAMES).length,11)
   assert.equal(myCoachFishVoice('merlin','ru',{}),null)
   assert.equal(myCoachFishVoice('harry','ru',{}),null)
   assert.match(read('lib/coaching/my-coach-google-chirp.mjs'),/HH_MY_COACH_GOOGLE_CHIRP_COST_APPROVED/)
 })
-test('Merlin remains static while Harry has a real still and silent MP4 loop',()=>{
+test('Harry approved soft portrait is used in rail, profile, avatar and listening session',()=>{
   assert.ok(statSync(new URL('../public/images/holistic-house/my-coach-motion/merlin-still.webp',import.meta.url)).size>1000)
-  const poster=readFileSync(new URL('../public/images/holistic-house/my-coach-motion/harry-still.webp',import.meta.url))
-  const video=readFileSync(new URL('../public/images/holistic-house/my-coach-motion/harry-calm.mp4',import.meta.url))
-  const listeningVideo=readFileSync(new URL('../public/images/holistic-house/my-coach-motion/harry-attentive.mp4',import.meta.url))
-  assert.ok(poster.length>10000)
-  assert.equal(poster.toString('ascii',0,4),'RIFF')
-  assert.equal(poster.toString('ascii',8,12),'WEBP')
-  assert.ok(video.length>10000)
-  assert.equal(video.toString('ascii',4,8),'ftyp')
-  assert.ok(listeningVideo.length>30000)
-  assert.equal(listeningVideo.toString('ascii',4,8),'ftyp')
+  const mediaRoot='../public/images/holistic-house/my-coach-motion/'
+  const still=readFileSync(new URL(mediaRoot+'harry-soft-still.webp',import.meta.url))
+  const calm=readFileSync(new URL(mediaRoot+'harry-soft-calm.mp4',import.meta.url))
+  const listening=readFileSync(new URL(mediaRoot+'harry-soft-attentive.mp4',import.meta.url))
+  assert.ok(still.length>15000)
+  assert.equal(still.toString('ascii',0,4),'RIFF')
+  assert.equal(still.toString('ascii',8,12),'WEBP')
+  for(const clip of [calm,listening]){
+    assert.ok(clip.length>30000)
+    assert.equal(clip.toString('ascii',4,8),'ftyp')
+  }
   const media=read('components/my-coach-motion-media.jsx')
-  assert.ok(media.includes("const VIDEO_PERSONAS=new Set(['mira','max','sofia','alex','harry'])"))
-  assert.ok(media.includes("MEDIA_ROOT+personaId+'-still.webp'"))
-  assert.ok(media.includes("const harryClip=state==='listening'?'attentive':'calm'"))
-  assert.ok(media.includes("personaId==='harry'?MEDIA_ROOT+'harry-'+harryClip+'.mp4'"))
-  assert.ok(media.includes("key={src}"))
-  assert.ok(!media.includes("harry-still.svg"))
   const avatar=read('components/app/coaching-avatar.jsx')
   const catalog=read('components/my-coach-catalog.jsx')
-  assert.ok(avatar.includes("'alex','harry'].includes(photoId)"))
-  assert.ok(catalog.includes('my-coach-motion/${id}-still.webp'))
+  const rail=read('components/my-coach-mira-landing.module.css')
+  assert.ok(media.includes("const VIDEO_PERSONAS=new Set(['mira','max','sofia','alex','merlin','harry'])"))
+  assert.ok(!media.includes("'merlin','harry','genie'])"))
+  assert.ok(media.includes("MEDIA_ROOT+'harry-soft-still.webp'"))
+  assert.ok(media.includes("const harryClip=state==='listening'?'attentive':'calm'"))
+  assert.ok(media.includes("personaId==='harry'?MEDIA_ROOT+'harry-soft-'+harryClip+'.mp4'"))
+  assert.ok(media.includes("coachNaturalVideoPath(personaId,state,visualScene)"))
+  assert.ok(media.includes('key={src}'))
+  assert.ok(media.includes("window.matchMedia?.('(prefers-reduced-motion: reduce)')"))
+  assert.ok(media.includes('muted loop playsInline autoPlay'))
+  assert.ok(avatar.includes("photoId==='harry'?'harry-soft-still.webp'"))
+  assert.ok(avatar.includes("['mira','max','sofia','alex','merlin','harry'].includes(photoId)"))
+  assert.ok(catalog.includes("const stillImage = id === 'harry'"))
+  assert.ok(catalog.includes('srcSet={stillImage}'))
+  assert.ok(catalog.includes('src={stillImage}'))
+  assert.ok(rail.includes('harry-soft-still.webp'))
+  for(const source of [media,avatar,catalog,rail]){
+    assert.doesNotMatch(source,/harry-still\.svg|harry-still\.webp|harry-calm\.mp4|harry-attentive\.mp4/)
+  }
   const api=read('app/api/coaching/intro/[locale]/[coach]/route.js')
   const audio=read('lib/personal-coaching/direct-coach-intro-audio.mjs')
   for(const source of [api,audio])assert.match(source,/mira\|max\|sofia\|alex\|merlin\|harry/)

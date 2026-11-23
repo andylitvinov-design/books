@@ -2,8 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
+import {aliBusinessReviewConsent,aliBusinessReviewAnswer,aliBusinessReviewSummary,aliBusinessReviewValidated} from '../lib/assist/ali-business-review-intake.mjs';
 import {HOLISTIC_TELEGRAM_ACCOUNT,telegramServiceRequestDraft,telegramServiceRequestUrl,parseTelegramServiceDraft,parseTelegramPublicServiceRequest,telegramBusinessRequestFromUpdate,isHolisticBusinessConnection,telegramBusinessRequestReply,telegramBusinessMessageFromUpdate,
- telegramBusinessClientChoice,telegramBusinessConversationReply,telegramBusinessServiceTitle,detectTelegramMessageLocale} from '../lib/assist/telegram-business-request.mjs';
+ telegramBusinessClientChoice,telegramBusinessConversationReply,telegramBusinessServiceTitle,detectTelegramMessageLocale,telegramPersonalReviewReplyIntent} from '../lib/assist/telegram-business-request.mjs';
 const get=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('15 real service request drafts are filled into a normal user chat, no /start',()=>{
  assert.equal(HOLISTIC_TELEGRAM_ACCOUNT,'holistichouse');
@@ -107,12 +108,19 @@ test('subsequent private Telegram Business messages are accepted but forwarded/o
  const follow=fixture();follow.business_message.text='Подтвердить';
  assert.equal(telegramBusinessMessageFromUpdate(follow)?.request,null);
  assert.equal(telegramBusinessMessageFromUpdate(follow)?.text,'Подтвердить');
+ const long=fixture();long.business_message.text='x'.repeat(801);
+ const large=telegramBusinessMessageFromUpdate(long);
+ assert.equal(large?.longText,true);
+ assert.equal(large?.text.length,800);
+ assert.equal(large?.request,null);
+ const media=fixture();delete media.business_message.text;
+ media.business_message.sticker={file_id:'fixture'};
+ assert.equal(telegramBusinessMessageFromUpdate(media)?.mediaKind,'sticker');
  for(const change of [
    v=>{v.business_message.forward_origin={type:'user'}},
    v=>{v.business_message.sender_business_bot={id:77}},
    v=>{v.business_message.chat.type='group'},
    v=>{v.business_message.from.id=999},
-   v=>{v.business_message.text='x'.repeat(801)},
    v=>{v.business_message.date=0},
    v=>{v.update_id=0.4},
  ]){
@@ -142,19 +150,38 @@ test('the actual locked state machine requires initial request, format and disti
       offer_id:review?args[5]:null,source_path:review?args[6]:null,
       locale:review?args[7]:args[6],telegram_peer_hash:args[2],
       stage:review?'review_understanding':'format',delivery_format:null,
+      intake_answers_ciphertext:null,
       consent_at:null,reference_code:null,last_update_id:args[review?8:7]};
     return {rows:[]};
    }
    if(sql.startsWith('update app_private.crm_tg_business_service_sessions')){
+    if(sql.includes('intake_answers_ciphertext=$3'))
+      row.intake_answers_ciphertext=args[2];
+    if(sql.includes('intake_answers_ciphertext=$4')){
+      row.intake_answers_ciphertext=args[3];
+      if(sql.includes("delivery_format=case when $3='confirm'"))
+        row.delivery_format=args[2]==='confirm'?'async':row.delivery_format;
+    }
     if(sql.includes('set stage=$3'))row.stage=args[2];
     else if(sql.includes("stage='stopped'"))row.stage='stopped';
     else if(sql.includes("stage='cancelled'"))row.stage='cancelled';
+    else if(sql.includes("stage='review_understanding'")){
+      row.stage='review_understanding';
+      // A consented first question retains its encrypted progress. Only
+      // the explicit legacy-reset query removes the old private draft.
+      if(sql.includes("delivery_format=null")){
+        row.delivery_format=null;
+        row.intake_answers_ciphertext=null;row.consent_at=null;
+      }
+    }
     else if(sql.includes("stage='confirm'")){
       row.stage='confirm';row.delivery_format=sql.includes("delivery_format='async'")?'async':args[2];
     }else if(sql.includes("stage='committing'")){
       row.stage='committing';row.consent_at=new Date().toISOString();
     }
-    row.last_update_id=sql.includes('set stage=$3')?args[3]:
+    row.last_update_id=sql.includes('intake_answers_ciphertext=$4')?args[4]:
+      sql.includes('intake_answers_ciphertext=$3')?args[3]:
+      sql.includes('set stage=$3')?args[3]:
       sql.includes("delivery_format='async'")?args[2]:
       args[sql.includes('delivery_format=$3')?3:2];
     return {rows:[],rowCount:1};
@@ -167,7 +194,13 @@ test('the actual locked state machine requires initial request, format and disti
    randomUUID:()=> '11111111-1111-4111-8111-111111111111',
    PRACTITIONER_ID:'246aa1a3-a371-5a83-9f4b-cd23ff027a76',
    telegramBusinessClientChoice,telegramBusinessConversationReply,
-   detectTelegramMessageLocale,
+   detectTelegramMessageLocale,telegramPersonalReviewReplyIntent,
+   classifyTelegramSecretaryQuery:()=>null,
+   aliBusinessReviewConsent,aliBusinessReviewAnswer,aliBusinessReviewSummary,
+   reviewedAnswers:r=>r?.intake_answers_ciphertext
+     ?aliBusinessReviewValidated(JSON.parse(r.intake_answers_ciphertext)):null,
+   reviewContext:()=>({}),
+   seal:payload=>JSON.stringify(payload),
    webhookTransaction:async(_config,fn)=>fn(mock),
    Date,Number,String,
  },{codeGeneration:{strings:false,wasm:false}});
@@ -215,24 +248,50 @@ test('the actual locked state machine requires initial request, format and disti
  assert.equal(row.offer_id,'personal_extended_review');
  assert.equal(row.stage,'review_understanding');
  assert.match(review.reply,/Extended review/);
+
  const reminder=await context.stage(event('Услугу я ж заказал',32),{},k);
  assert.match(reminder.reply,/Extended review/);
- assert.match(reminder.reply,/Извините/iu);
+ assert.match(reminder.reply,/Согласны/iu);
  assert.equal(row.offer_id,'personal_extended_review');
- const situation=await context.stage(event('The situation is about work.',33),{},k);
+ assert.equal(row.intake_answers_ciphertext,null,'personal facts cannot be collected before opt-in');
+ const agree=await context.stage(event('yes',33),{},k);
+ assert.equal(row.stage,'review_understanding');
+ assert.ok(row.intake_answers_ciphertext,'consent establishes protected encrypted intake');
+ assert.match(agree.reply,/clarify/i);
+ const goal=await context.stage(event('I want more clarity about work decisions',34),{},k);
  assert.equal(row.stage,'review_outcome');
- assert.match(situation.reply,/helpful outcome/);
- const outcome=await context.stage(event('I want clarity.',34),{},k);
+ assert.match(goal.reply,/difficult/i);
+ const obstacle=await context.stage(event('I struggle to choose the right path',35),{},k);
  assert.equal(row.stage,'review_action');
- assert.match(outcome.reply,/Send request/);
- const request=await context.stage(event('Send request',35),{},k);
+ assert.match(obstacle.reply,/happening/i);
+ const question=await context.stage(event('How much?',36),{},k);
+ assert.equal(row.stage,'review_action','FAQ does not count as current situation');
+ assert.match(question.reply,/happening/i);
+ const situation=await context.stage(event('At present I have two possible jobs',37),{},k);
  assert.equal(row.stage,'confirm');
  assert.equal(row.delivery_format,'async');
- assert.match(request.reply,/Confirm/);
- const confirmation=await context.stage(event('Confirm',36),{},k);
+ assert.match(situation.reply,/Confirm/i);
+ assert.match(situation.reply,/possible jobs/);
+ const approvedFacts=aliBusinessReviewValidated(JSON.parse(row.intake_answers_ciphertext));
+ assert.equal(approvedFacts.answers.goal,'I want more clarity about work decisions');
+ assert.equal(approvedFacts.answers.challenge,'I struggle to choose the right path');
+ assert.equal(approvedFacts.answers.situation,'At present I have two possible jobs');
+ const early=await context.stage(event('Send request',38),{},k);
+ assert.equal(early.commit,undefined,'Send request alone cannot confirm a private review');
+ assert.equal(row.stage,'confirm');
+ const confirmation=await context.stage(event('Confirm',39),{},k);
  assert.equal(row.stage,'committing');
  assert.equal(confirmation.commit.service,'personal_review');
  assert.equal(confirmation.commit.format,'async');
+ // A confirmed PRE-UPGRADE request without three client facts can no
+ // longer be finalized and the visitor is re-offered consent safely.
+ row.stage='confirm';row.delivery_format='async';
+ row.intake_answers_ciphertext=null;row.consent_at=null;
+ const legacy=await context.stage(event('Confirm',40),{},k);
+ assert.equal(legacy.commit,undefined);
+ assert.equal(row.stage,'review_understanding');
+ assert.equal(row.delivery_format,null);
+ assert.match(legacy.reply,/Extended review/);
 });
 test('only explicit confirmed provider session can create an existing encrypted CRM enquiry',()=>{
  const source=get('lib/crm/telegram-business-service.js');
@@ -389,4 +448,16 @@ test('exact published Business Strategy & Archetypal Coaching site request begin
  assert.match(handler,/if\(request&&\(!old\|\|old\.stage==='submitted'/);
  assert.match(handler,/response\(event,request\.locale,request\.service,'format'\)/);
  assert.match(handler,/assertHolisticBusinessConnection/);
+});
+
+test('personal review interest is a preview only and never implies personal questions',()=>{
+ for(const [message,expected] of [
+  ['Услугу я ж заказал','already_selected'],['I already ordered','already_selected'],
+  ['да','proceed'],['yes','proceed'],['sí','proceed'],['хочу заказать','proceed'],
+  ['нет','decline'],['not interested','decline'],['no gracias','decline'],
+  ['I have a question','clarify'],['x'.repeat(801),'clarify']
+ ])assert.equal(telegramPersonalReviewReplyIntent(message),expected,message);
+ assert.equal(telegramBusinessClientChoice('yes'),null);
+ assert.equal(telegramBusinessClientChoice('Send request')?.kind,'submit');
+ assert.equal(telegramBusinessClientChoice('Confirm')?.kind,'confirm');
 });

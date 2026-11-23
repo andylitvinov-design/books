@@ -34,7 +34,31 @@ test("Approved calm mobile layout, localized quiz, service cards and real taps",
  const ui=read("components/shamanica-business-content.tsx"),css=read("components/shamanica-business-content.module.css");
  for(const value of ["Бизнес-анализ и поддержка","Экспресс-диагностика ситуации","Что сейчас больше всего нужно вашему бизнесу?","Аналитическая поддержка","Диагностика команды","Поддержка руководителя","Предметы силы","Подбор препаратов"])assert.ok(ui.includes(value),value);
  for(const value of ["Business analysis & support","Análisis y apoyo empresarial"])assert.ok(ui.includes(value));
- assert.match(ui,/data-business-quiz/);assert.match(ui,/data-business-recommendations/);assert.match(ui,/data-business-service/);
+ assert.match(ui,/data-business-quiz/);assert.match(ui,/data-business-recommendations/);assert.match(ui,/data-business-shelf=/);assert.match(ui,/data-business-subservice=/);
  assert.match(css,/@media\(max-width:359px\)/);assert.match(css,/min-height:78px/);assert.match(css,/focus-visible/);
  assert.match(css,/prefers-reduced-motion/);
+});
+
+test("Business mobile fits the approved illustrated screen with one real help trigger",()=>{
+ const ui=read("components/shamanica-business-content.tsx");
+ const compact=read("components/shamanica-business-content.module.css");
+ const shell=read("components/shamanica-mobile.tsx");
+ const shellCss=read("components/shamanica-mobile.module.css");
+ const siteBanner=read("components/sitewide-antistress-banner.tsx");
+ const help=read("components/sitewide-ihelp.tsx");
+ assert.match(shellCss,/shamanic-lounge-hd\.avif/);
+ assert.match(compact,/shamanic-cards-business-hd\.avif/);
+ assert.match(shell,/data-shamanica-business-page/);
+ assert.match(shell,/data-shamanica-ihelp-trigger/);
+ assert.ok(siteBanner.includes("shamanica(?:\\/business)?"));
+ assert.match(help,/hh:open-ihelp/);
+ assert.match(help,/hidden=\{businessShamanica\}/);
+ assert.match(shellCss,/--hh-unified-nav-height/);
+ assert.match(compact,/max-height:885px/);
+ assert.match(compact,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+ assert.match(compact,/grid-auto-rows:clamp\(72px,10\.8dvh,99px\)/);
+ assert.match(compact,/@media\(max-width:359px\)/);
+ assert.match(compact,/focus-visible/);
+ for(const id of ["express","remedies","strategy","artifacts","energy","energywork"])assert.ok(ui.includes(`id:"${id}"`),id);
+ assert.match(shell,/className=\{styles\.helpButton\} data-shamanica-ihelp-trigger=\{business\|\|undefined\}/);
 });

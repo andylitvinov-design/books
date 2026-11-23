@@ -1,4 +1,6 @@
 import test from 'node:test'
+// Keep profile contract tests inside the already-tested coaching/navigation suite.
+import './my-coach-compact-profile.test.mjs'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { isUnifiedMobileDockPath, unifiedMobileDockActive, unifiedMobileDockHref } from '../lib/unified-mobile-dock.mjs'

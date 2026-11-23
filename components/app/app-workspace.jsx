@@ -75,6 +75,7 @@ import { SavedSessionsPanel } from '@/components/app/saved-sessions-panel'
 import ProfileSettingsDisclosure from '@/components/app/profile-settings-disclosure'
 import CabinetToday from '@/components/app/cabinet-today'
 import MyCoachingPlan from '@/components/app/my-coaching-plan'
+import CoachingDaybook from '@/components/app/coaching-daybook'
 import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/app/personal-analysis-panel'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
@@ -246,6 +247,8 @@ export default function AppWorkspace({ locale, path = [] }) {
   // Discovery and OPORA previews are public; a saved lesson belongs to My courses.
   const courseChoiceMode = stressSignup || (searchParams.get('view') === 'discover' && !searchParams.get('courseId'))
     ? 'discover' : 'saved'
+  // The visual Course index inherits the Profile's unified shell; lesson/discovery views remain unchanged.
+  const courseLanding = page === 'course' && searchParams.get('view') === 'courses' && !searchParams.get('courseId')
   // Tab changes can race an earlier bootstrap; never show a stale account snapshot.
   const loadEpoch = useRef(0)
   const load = useCallback(async ({ refresh = true } = {}) => {
@@ -741,8 +744,8 @@ export default function AppWorkspace({ locale, path = [] }) {
     <PostSignupInstallOffer key={'install:'+data.account.id} locale={locale}
       visible={data.account.onboardingState==='active' && installOfferAccountId===data.account.id}
       context={savedInstallContext ? 'saved' : 'signup'} onDismiss={dismissInstallOffer} />
-    <main className={documentReader ? 'hh-app hh-app--document-reader' : practiceInner ? 'hh-app hh-app--practice-inner' : page === 'portrait' ? 'hh-app hh-app--profile' : 'hh-app'} data-profile-page-shell={page === 'portrait' ? 'life' : undefined}>
-      {!documentReader && !practiceInner && page !== 'portrait' && <header className="hh-header">
+    <main className={documentReader ? 'hh-app hh-app--document-reader' : practiceInner ? 'hh-app hh-app--practice-inner' : page === 'portrait' ? 'hh-app hh-app--profile' : courseLanding ? 'hh-app hh-app--course-index' : 'hh-app'} data-profile-page-shell={page === 'portrait' ? 'life' : undefined}>
+      {!documentReader && !practiceInner && page !== 'portrait' && !courseLanding && <header className="hh-header">
         <Link href={root} prefetch={false} className="hh-brand">
           Holistic House<span>{nav.find(item => navIsActive(item.id))?.label || c.account}</span>
         </Link>
@@ -774,7 +777,7 @@ export default function AppWorkspace({ locale, path = [] }) {
           </div>
         </details>
       </header>}
-      {!documentReader && !practiceInner && page !== 'portrait' && page !== 'runs' && page !== 'settings' && (
+      {!documentReader && !practiceInner && page !== 'portrait' && page !== 'runs' && page !== 'settings' && page !== 'my-coaching-plan' && !courseLanding && (
         <nav className="hh-nav" aria-label={c.account}>
           {nav.map(({ id, label, href }) => (
             <InstantCabinetLink key={id} href={href} prefetch={false}
@@ -808,7 +811,7 @@ export default function AppWorkspace({ locale, path = [] }) {
         }} />
       ) : (
         <>
-          {['portrait','portfolio','tests','settings','monitoring','course','reports'].includes(page) && <ProfileHubTabs locale={locale} active={page === 'settings' ? 'settings' : page === 'portrait' ? (searchParams.get('space') === 'path' ? 'path' : ['reports', 'sessions'].includes(searchParams.get('space')) ? searchParams.get('space') : 'today') : page === 'portfolio' || page === 'reports' ? 'reports' : page === 'monitoring' ? 'state' : page === 'course' ? 'courses' : 'tests'} resultCount={page === 'portrait' && !searchParams.get('space') ? (data.results || []).length : null} account={page === 'settings' ? data.account : null} />}
+          {['portrait','portfolio','tests','settings','monitoring','course','reports'].includes(page) && <ProfileHubTabs locale={locale} active={page === 'settings' ? 'settings' : page === 'portrait' ? (searchParams.get('space') === 'path' ? 'path' : ['reports', 'sessions'].includes(searchParams.get('space')) ? searchParams.get('space') : 'today') : page === 'portfolio' || page === 'reports' ? 'reports' : page === 'monitoring' ? 'state' : page === 'course' ? 'courses' : 'tests'} resultCount={page === 'portrait' && !searchParams.get('space') ? (data.results || []).length : null} account={page === 'settings' || page === 'portrait' ? data.account : null} courseLanding={courseLanding} />}
           {page === 'continue' && (
             <SaveContinuation data={data} locale={locale} reload={load} onComplete={completeSaveContinuation} />
           )}
@@ -819,6 +822,7 @@ export default function AppWorkspace({ locale, path = [] }) {
                  <AccountMessagingEntry key={'messaging:' + data.account.id} accountId={data.account.id} locale={locale} />
                </>}
                {searchParams.get('space') === 'path' && <>
+                 <CoachingDaybook key={'daybook:' + data.account.id} accountId={data.account.id} locale={locale} />
                  <CabinetJourney key={'journey:' + data.account.id} accountId={data.account.id} locale={locale} />
                  <DevelopmentProgram key={'development:' + data.account.id} accountId={data.account.id} locale={locale} results={data.results || []} hideBottomNotes />
                </>}
@@ -847,7 +851,8 @@ export default function AppWorkspace({ locale, path = [] }) {
           {page === 'portfolio' && <PortfolioPage data={data} locale={locale} />}
            {page === 'progress' && <MyProgress key={data.account.id} data={data} locale={locale} />}
           {page === 'my-coaching-plan' && <MyCoachingPlan key={data.account.id} accountId={data.account.id} locale={locale} />}
-          {page === 'course' && <ProfileCoursesSwitch locale={locale} mode={courseChoiceMode} />}
+          {page === 'course' && !courseLanding && <ProfileCoursesSwitch locale={locale} mode={courseChoiceMode} />}
+           {page === 'course' && <div id="my-courses-content" data-course-content aria-hidden="true" />}
            {page === 'course' && <MyCourse data={data} locale={locale} />}
           {page === 'business' && <BusinessCoaching key={data.account.id} accountId={data.account.id} locale={locale} />}
           {page === 'coaching' && (['egyptian','greek'].includes(recordId)
@@ -1001,7 +1006,7 @@ export default function AppWorkspace({ locale, path = [] }) {
         <p>{c.nonDiagnostic}</p>
         <a href={`/${locale}/client`}>{c.legacy}</a>
       </footer>}
-      {!documentReader && !practiceInner && page !== 'runs' && <nav className="hh-mobile-app-nav" aria-label={locale === 'ru' ? 'Быстрая навигация' : 'Quick navigation'}>
+      {!documentReader && !practiceInner && page !== 'runs' && page !== 'my-coaching-plan' && <nav className="hh-mobile-app-nav" aria-label={locale === 'ru' ? 'Быстрая навигация' : 'Quick navigation'}>
         <Link href={locale === 'ru' ? '/ru' : locale === 'es' ? '/es' : '/'} prefetch={false}
           className="hh-mobile-app-nav-home"
           aria-label={locale === 'ru' ? 'На главную страницу Holistic House' : 'Go to Holistic House homepage'}
@@ -2751,7 +2756,7 @@ function PortfolioPage({ data, locale }) {
 
       {allGroups.length > 0 && <p className="hh-insights-scale-note">{ru ? 'Показатели относятся к отдельным шкалам, а не к проценту здоровья.' : 'Scores reflect individual scales, not an overall health percentage.'}</p>}
       {allGroups.length > 0 && (
-        <details className="hh-insights-export">
+        <details id="hh-insights-export" className="hh-insights-export">
           <summary>{ru ? 'Скачать общий отчёт по всем тестам (PDF)' : 'Download a complete PDF report'}</summary>
           <ClientReportActions data={data} locale={locale} />
         </details>

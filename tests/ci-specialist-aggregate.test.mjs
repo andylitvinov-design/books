@@ -10,6 +10,7 @@ import { verify, githubReader, optionalMandalaMacosSkip, optionalProfileWriterSk
 // Run the focused dependency state/timeout regressions inside the existing
 // Core CI-policy test step; no new hosted workflow or required status.
 import './ci-specialist-wait.test.mjs';
+import './ci-merge-check-light.test.mjs';
 
 const repo='andylitvinov-design/books', SHA='a'.repeat(40), BASE='b'.repeat(40);
 
@@ -908,7 +909,9 @@ test('package and lockfile routing is exact-base scoped, with unknown changes fu
   dependencies.dependencies.next='16.0.0';
   const unsafe=classifyPackageImpact({changed,basePackage:original,currentPackage:JSON.stringify(dependencies)});
   assert.equal(unsafe.mode,'full');
-  assert.deepEqual(expectedWorkflows({base,current,changed,packageImpact:unsafe}),[owner,ocean,opora]);
+  assert.throws(() => expectedWorkflows({base,current,changed,packageImpact:unsafe}),
+    /UNROUTED_PACKAGE_MANIFEST_CHANGE/,
+    'unexpected root manifest changes without the lockfile must not bypass specialists');
   const lockImpact=classifyPackageImpact({changed:['package-lock.json'],basePackage:original,currentPackage:proposed});
   assert.equal(lockImpact.mode,'full');
   assert.deepEqual(expectedWorkflows({base,current,changed:['package-lock.json'],packageImpact:lockImpact}),
@@ -953,10 +956,35 @@ test('pinned parser manifests are CI-scoped but all other dependency changes rem
   ]) {
     const outcome=classifyPackageImpact({changed:unsafe,basePackage:'{}',currentPackage:'{}'});
     assert.equal(outcome.mode,'full','unknown and root dependencies must stay full scope: '+unsafe.join(','));
-    const required=expectedWorkflows({base:source,current:source,changed:unsafe,packageImpact:outcome});
-    assert.ok(required.includes(billing) && required.includes(app) && required.includes(guard),
-      'root/unknown manifest change must retain application specialists');
+    if (unsafe.includes('package-lock.json')) {
+      const required=expectedWorkflows({base:source,current:source,changed:unsafe,packageImpact:outcome});
+      assert.ok(required.includes(billing) && required.includes(app) && required.includes(guard),
+        'root lockfile change must retain all real application specialists');
+    } else {
+      assert.throws(() => expectedWorkflows({base:source,current:source,
+        changed:unsafe,packageImpact:outcome}),/UNROUTED_PACKAGE_MANIFEST_CHANGE/,
+      'unrouted root or nested manifests must fail instead of incorrectly passing CI');
+    }
   }
+});
+
+test('package.json-only dependency changes cannot bypass security owners after static trigger pruning',()=>{
+  const root='.github/workflows/';
+  const billing=root+'hh-billing-isolated.yml',app=root+'hh-app-r1.yml';
+  const paths=['package-lock.json','lib/billing/**'];
+  const workflow=items=>"on:\n  pull_request:\n    paths:\n"+items.map(x=>"      - '"+x+"'\n").join('');
+  const source=new Map([[billing,workflow(['package.json',...paths])],
+    [app,workflow(['package-lock.json','lib/app/**'])]]);
+  const unsafe={mode:'full',reason:'DEPENDENCY_OR_PACKAGE_METADATA_CHANGED',workflows:[]};
+  for(const changed of [['package.json'],['package.json','tests/coach-release.test.mjs'],
+    ['lib/other/package.json'],['lib/other/package-lock.json']]) {
+    assert.throws(()=>expectedWorkflows({base:source,current:source,changed,packageImpact:unsafe}),
+      /UNROUTED_PACKAGE_MANIFEST_CHANGE/,'unowned dependency change must fail closed');
+  }
+  const expected=expectedWorkflows({base:source,current:source,
+    changed:['package.json','package-lock.json'],packageImpact:unsafe});
+  assert.deepEqual(expected,[app,billing].sort(),
+    'full dependency changes WITH root lockfile still require billing and App specialists');
 });
 
 test('Video Studio-only edits run dedicated Mandala real-media acceptance without unrelated Public Services suites',()=>{
@@ -1199,14 +1227,17 @@ test('base advances fail closed while matching tested checkout retains HEAD chec
   api.target = async () => BASE;
   api.pr = async () => currentPr();
   assert.deepEqual((await verify(api, ctx, sources, { maxWaitMs: 0 })).expected, [path]);
-  // Detect a real target move during Specialist aggregation, not stale PR metadata.
+  // The final target read must be definitive; don't invent a future target
+  // movement from another speculative read while a real specialist is green.
   let targetReads = 0;
-  api.target = async () => (++targetReads === 1 ? BASE : advanced);
+  api.target = async () => { targetReads++; return BASE; };
   api.compare = async () => ({ status:'diverged' });
   api.pr = async () => currentPr();
-  await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }),
-    /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/, 'production target may not advance unsafely during aggregation');
+  assert.deepEqual((await verify(api, ctx, sources, { maxWaitMs: 0 })).expected,[path]);
+  assert.equal(targetReads,1,'complete specialist evidence precedes one final target scan');
   api.target = async () => advanced;
+  await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }),
+    /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/, 'unsafe production target remains blocking at final review');
   const legacySources = { base: sources.base, current: sources.current };
   await assert.rejects(() => verify(api, ctx, legacySources, { maxWaitMs: 0 }), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
   api.pr = async () => ({ ...currentPr(), head: { ...currentPr().head, sha: 'd'.repeat(40) } });
@@ -1475,13 +1506,15 @@ test('Native installer successor claims old native triggers before retiring dupl
   assert.equal(APPROVED_SPECIALIST_REPLACEMENTS[old], replacement);
   const source=readFileSync(replacement,'utf8');
   for(const required of ["'capacitor.config.json'","'components/native-**'",
-    "'package.json'","'package-lock.json'","'.github/workflows/native-ci.yml'",
+    "'package-lock.json'","'.github/workflows/native-ci.yml'",
     'node --test tests/holistic-house-native-build.test.mjs',
     'npm run native:check',
     'tests/native-private-message-push.test.mjs',
     'workflow_dispatch:',"branches: ['codex/public-book-library']"]) {
     assert.ok(source.includes(required), 'native successor missing coverage '+required);
   }
+  assert.doesNotMatch(source,/^\s*-\s*['"]?package\.json['"]?\s*$/m,
+    'Core covers the proved additive coaching-test manifest route; native CI must not fan out from package-only edits');
   assert.ok(source.includes("  native-current-contracts:"), 'source contracts owner missing');
   assert.match(source, /^  android-test-installer:/m);
   assert.match(source, /^  ios-simulator:/m);
@@ -1583,8 +1616,10 @@ test('Messenger-only PRs skip unrelated specialist workflow dispatch without ski
   ]) assert.equal(present(specialistName), false, 'Messenger must not dispatch ' + specialistName);
   for (const owner of [
     'hh-app-r1','hh-app-browser','ia-v2','hh-crm-source-check',
-    'hh-messenger-mobile-release','hh-messages-wellness-v2','hh-messages-wellness-browser',
+    'hh-messenger-mobile-release','hh-messages-wellness-v2',
   ]) assert.equal(present(owner), true, 'Messenger needs ' + owner);
+  assert.equal(present('hh-messages-wellness-browser'),false,
+    'synthetic browser check is opt-in; genuine Messages/IA/CRM/Core owners remain required');
   const core = parsePrTrigger(all.get(root + 'hh-pr-core-release.yml'));
   assert.ok(matchesTrigger(core, changed), 'Core remains unconditionally required');
 
@@ -1799,7 +1834,8 @@ test('Only BASE-guarded optional Mandala macOS skip is neutral; real failures st
   assert.equal(optionalMandalaMacosSkip(files,'codex/perf-video-studio-lazy-panels-20261101',ui),true);
   assert.equal(optionalMandalaMacosSkip(files,'codex/hypno-third-workspace-owner-v2-20261101',ui),true);
   assert.equal(optionalMandalaMacosSkip(files,'fix/video-studio-restore-approved-mobile-20261101',ui),false);
-  assert.equal(optionalMandalaMacosSkip(files,'codex/perf-video-studio-lazy-panels-20261101',['scripts/verify-affirmation-voice-browser.mjs']),false);
+  assert.equal(optionalMandalaMacosSkip(files,'codex/perf-video-studio-lazy-panels-20261101',['scripts/verify-affirmation-voice-browser.mjs']),true,
+    'read-only browser verifier changes cannot turn branch-excluded WebKit into a phantom required job');
   // A route/glob-only Mandala change is NOT a change to the BASE macOS job.
   const updatedPaths = workflow.replace("paths: ['components/mandala-*']",
     "paths: ['components/mandala-*', 'tests/video-chat-*.test.mjs']");
@@ -1835,67 +1871,50 @@ test('Only BASE-guarded optional Mandala macOS skip is neutral; real failures st
   assert.throws(()=>inspectJobs([{...jobs[0],conclusion:'failure'},jobs[1]],path,['voice-webkit-macos']),/UNSUCCESSFUL_SPECIALIST_JOB/);
 });
 
-test('trusted Mandala WebKit allowlist accepts exact branch entries and the full prefix list',()=>{
-  const path='.github/workflows/holistic-support-mandala.yml';
-  const actual=readFileSync(path,'utf8');
-  const files={base:new Map([[path,actual]]),current:new Map([[path,actual]])};
-  assert.equal(optionalMandalaMacosSkip(files,
-    'feat/support-confidence-harmony-goal-filter-20261102',
-    ['components/holistic-support-goal-filter.tsx']),true);
-  assert.equal(optionalMandalaMacosSkip(files,
-    'codex/professional-growth-templates-20261031',
-    ['components/holistic-support-goal-filter.tsx']),false,
-    'the exact BASE branch remains required to execute WebKit');
-  assert.equal(optionalMandalaMacosSkip(files,
-    'feat/video-studio-project-renderplan-v2-20261102',
-    ['lib/mandala/video-project-v2.mjs']),false,
-    'encoded video work is never excused from WebKit');
+test('dynamic immutable-base WebKit excludes browser-only UI, requires codec and voices',()=>{
+ const name='.github/workflows/holistic-support-mandala.yml';
+ const actual=readFileSync(name,'utf8');
+ const files={base:new Map([[name,actual]]),current:new Map([[name,actual]])};
+ assert.equal(optionalMandalaMacosSkip(files,'codex/ideas-only',
+   ['components/mandala-video-idea-goal.tsx','scripts/verify-affirmation-voice-browser.mjs']),true);
+ assert.equal(optionalMandalaMacosSkip(files,'codex/ideas-only',
+   ['lib/mandala/webcodecs-mp4-export.ts']),false);
+ assert.equal(optionalMandalaMacosSkip(files,'codex/ideas-only',
+   ['app/api/holistic-support/voice/route.js']),false);
 });
-
-test('BASE-owned Mandala WebKit list accepts 25-32 strict literal routes, never 33 or a changed guard',()=>{
-  const path='.github/workflows/holistic-support-mandala.yml';
-  const original=readFileSync(path,'utf8');
-  const guard=original.match(/^  voice-webkit-macos:\n    if: \$\{\{ (.+) \}\}$/m)?.[0];
-  assert.ok(guard,'trusted macOS job has a single literal branch guard');
-  const extra=n=>Array.from({length:n},(_,i)=>
-    "startsWith(github.head_ref, 'fix/ci-webkit-budget-probe-"+i+"-')");
-  const extended=n=>n===0?original:original.replace(guard,guard.replace(/\) \}\}$/,
-    ' || '+extra(n).join(' || ')+') }}'));
-  const safe=['components/holistic-support-goal-filter.tsx'];
-  const out='feat/support-confidence-harmony-goal-filter-20261102';
-  const skip=(base,branch=out,changed=safe,current=base)=>optionalMandalaMacosSkip({
-    base:new Map([[path,base]]),current:new Map([[path,current]])
-  },branch,changed);
-  const literalRoutes=guard.match(/(?:startsWith\(github\.head_ref, '[^']+'\)|github\.head_ref == '[^']+')/g)||[];
-  const toLimit=32-literalRoutes.length;
-  assert.ok(toLimit>=0 && toLimit<=8,'the reviewed BASE allowlist has 24-32 literal routes');
-  const ownerVoice="github.head_ref == 'feat/approved-fish-coach-meditation-voices-20261119'";
-  assert.ok(literalRoutes.includes(ownerVoice),'owner voice casting must execute the real macOS gate');
-  assert.equal(skip(original),true,'reviewed BASE literal routes remain checkable');
-  if(toLimit>=1)
-    assert.equal(skip(extended(1)),true,'one more literal prefix within 32 remains checkable');
-  assert.equal(skip(extended(toLimit)),true,'exactly 32 static predicates remain checkable');
-  assert.equal(skip(extended(toLimit+1)),false,'33 predicates fail closed');
-  assert.equal(skip(original,'feat/approved-fish-coach-meditation-voices-20261119'),false,
-    'newly-required owner Fish release branch must run macOS WebKit');
-  if(toLimit>=1)
-    assert.equal(skip(extended(toLimit),'fix/ci-webkit-budget-probe-'+(toLimit-1)+'-check'),false,
-      'a matching WebKit branch must actually execute macOS');
-  assert.equal(skip(extended(toLimit),out,['lib/mandala/audio-render.mjs']),false,
-    'encoded audio source cannot skip macOS');
-  assert.equal(skip(original,out,safe,extended(1)),false,
-    'PR changing the trusted macOS guard cannot certify its own skip');
-  assert.equal(skip(original.replace(ownerVoice,'success()')),false,
-    'arbitrary GitHub expressions are never trusted allowlist predicates');
+test('real shared video-renderer source always requires macOS irrespective of branch',()=>{
+ const name='.github/workflows/holistic-support-mandala.yml';
+ const yaml=readFileSync(name,'utf8');
+ const files={base:new Map([[name,yaml]]),current:new Map([[name,yaml]])};
+ const ui=['components/mandala-video-personalization.module.css',
+   'scripts/verify-affirmation-voice-browser.mjs'];
+ assert.equal(optionalMandalaMacosSkip(files,'codex/ideas-goal-first-personalization-20261120',ui),true);
+ assert.equal(optionalMandalaMacosSkip(files,'codex/ideas-goal-first-personalization-20261120',
+   [...ui,'components/mandala-free-video-studio.tsx']),false);
+ assert.equal(optionalMandalaMacosSkip(files,'codex/ideas-goal-first-personalization-20261120',
+   [...ui,'lib/mandala/recording-codecs.mjs']),false);
 });
-
+test('changed macOS/preflight job cannot self-authorize skipped WebKit',()=>{
+ const path='.github/workflows/holistic-support-mandala.yml';
+ const yaml=readFileSync(path,'utf8');
+ const files={base:new Map([[path,yaml]]),current:new Map([[path,yaml]])};
+ const ui=['components/mandala-video-personalization.module.css'];
+ assert.equal(optionalMandalaMacosSkip(files,'codex/ideas-ui',ui),true);
+ assert.equal(optionalMandalaMacosSkip(files,'codex/ideas-ui',[path]),false);
+ for(const changed of [
+   yaml.replace('runs-on: macos-15','runs-on: ubuntu-24.04'),
+   yaml.replace("media_required == 'true'","media_required == 'false'"),
+   yaml.replace('TESTED_BASE_MACOS_IMPACT:','MUTATED_MACOS_IMPACT:'),
+ ]) assert.equal(optionalMandalaMacosSkip(
+   {...files,current:new Map([[path,changed]])},'codex/ideas-ui',ui),false);
+});
 test('VideoProjectV2 source changes require real macOS WebKit acceptance on video feature PRs', () => {
   const path = '.github/workflows/holistic-support-mandala.yml';
   const actual = readFileSync(path, 'utf8');
   const guard = actual.match(/^  voice-webkit-macos:\n    if: \$\{\{ (.+) \}\}$/m)?.[1];
   assert.ok(guard, 'Real macOS WebKit job guard must remain intact');
-  assert.ok(guard.includes("startsWith(github.head_ref, 'feat/video-')"),
-    'Video feature branches must route into genuine macOS encoded movie acceptance');
+  assert.ok(guard.includes("needs.webkit_preflight.outputs.media_required == 'true'"),
+    'Real media source changes must route to macOS independent of branch prefix');
   assert.ok(guard.includes("github.event.pull_request.draft == false"));
   assert.match(actual,/voice-webkit-macos:[\s\S]*?runs-on: macos-15/);
   assert.match(actual,/HH_LIVE_VIDEO_ENGINE=webkit/);
@@ -2031,8 +2050,11 @@ test('Mandala accepts only an exact required-preflight dependency before optiona
   assert.equal(run(candidate,'fix/video-release-20261103'),false,
     'original BASE-required WebKit must execute on matching video branch');
   assert.equal(run(candidate,'codex/ci-cheap-browser-preflight-20261103',
-    ['scripts/verify-affirmation-voice-browser.mjs']),false,
-    'a relevant voice or encoded media change must still require WebKit');
+    ['scripts/verify-affirmation-voice-browser.mjs']),true,
+    'browser assertions do not force branch-excluded macOS');
+  assert.equal(run(candidate,'codex/ci-cheap-browser-preflight-20261103',
+    ['lib/mandala/webcodecs-mp4-export.ts']),false,
+    'real encoded movie source changes still require WebKit');
   const invalid=[
     candidate.replace('needs: [webkit_preflight]', 'needs: [other_job]'),
     candidate.replace('    needs: [webkit_preflight]\n','    needs: [webkit_preflight, other_job]\n'),
@@ -2315,7 +2337,7 @@ test('base movement during Specialist preserves exact-HEAD results only for prov
   let liveReads=0;
   const api={
     pr:async()=>pr(),
-    target:async()=>(++liveReads===1?BASE:live),
+    target:async()=>{liveReads++;return live;},
     compare:async()=>comparison('tests/pr-fast-lane.test.mjs'),
     runs:async()=>[run()],
     jobs:async()=>[{name:'test',status:'completed',conclusion:'success'}],
@@ -2325,7 +2347,7 @@ test('base movement during Specialist preserves exact-HEAD results only for prov
   const ctx={repo,number:27,head:SHA,base:BASE};
   const good=await verify(api,ctx,files,{maxWaitMs:0});
   assert.deepEqual(good.expected,[path]);
-  assert.ok(liveReads>=2,'base drift must be inspected after real Specialist jobs');
+  assert.equal(liveReads,1,'verified disjoint production drift is reviewed once after real Specialist jobs');
   api.target=async()=>live;
   api.compare=async()=>comparison('.github/workflows/hh-pr-core-release.yml');
   await assert.rejects(()=>verify(api,ctx,files,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);
@@ -2399,7 +2421,7 @@ test('additive coaching build registration drops unrelated specialists', () => {
   const workflow = patterns => "on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths:\n" +
     patterns.map(pattern => "      - '" + pattern + "'\n").join('');
   const sources = new Map([
-    [app, workflow(['package.json', 'lib/app/**'])],
+    [app, workflow(['lib/app/**'])],
     [coach, workflow(['tests/coaching-live-voice.test.mjs', 'lib/personal-coaching/**'])],
     [audio, workflow(['package.json', 'app/api/live-audio/**'])],
     [ia, workflow(['package.json', 'lib/security/**'])],
@@ -2424,19 +2446,14 @@ test('additive coaching build registration drops unrelated specialists', () => {
   });
   const impact = classify();
   assert.deepEqual(impact, {
-    mode: 'scoped', reason: 'ADDITIVE_COACHING_BUILD_TEST', workflows: [app],
+    mode: 'core', reason: 'ADDITIVE_COACHING_BUILD_TEST', workflows: [],
   });
   const before = expectedWorkflows({base:sources, current:sources, changed});
   const after = expectedWorkflows({base:sources, current:sources, changed,
     packageImpact:impact});
-  assert.equal(before.length, 6, 'package changes previously triggered six independent suites');
-  assert.deepEqual(after, [app, coach],
-    'retain App and coaching owners but not unrelated billing, audio, IA and OPORA owners');
-  assert.ok(after.length * 2 <= before.length, 'more than halve the routed suites');
-  const missingOwner = new Map(sources);
-  missingOwner.delete(app);
-  assert.throws(() => expectedWorkflows({base:missingOwner, current:sources, changed,
-    packageImpact:impact}), /PACKAGE_ROUTE_OWNER_UNAVAILABLE/);
+  assert.equal(before.length, 5, 'static package paths previously fanned out to four unrelated suites');
+  assert.deepEqual(after, [coach],
+    'exact Core owns the registered build test while the coaching owner remains protected');
   assert.equal(classify(proposed, changed.filter(path => path !== added)).mode, 'full');
   assert.equal(classify(proposed, [...changed, 'package-lock.json']).mode, 'full');
   const mutate = (change) => {
@@ -2456,6 +2473,55 @@ test('additive coaching build registration drops unrelated specialists', () => {
   const proposedNoBuild = structuredClone(proposed);
   proposedNoBuild.scripts.prebuild = 'echo skip';
   assert.equal(classify(proposedNoBuild, changed, noBuild).mode, 'full');
+});
+
+test('additive coaching build registration is covered by exact Core without a generic package specialist', () => {
+  const original = {
+    scripts: {
+      'test:coaching:release': 'node --test tests/coaching-life-plan.test.mjs',
+      prebuild: 'node --check scripts/source-check.mjs && npm run test:coaching:release',
+    },
+    dependencies: { next: '15.0.0' },
+  };
+  const proposed = structuredClone(original);
+  const added = 'tests/coaching-voice-safety.test.mjs';
+  proposed.scripts['test:coaching:release'] =
+    'node --test ' + added + ' ' + original.scripts['test:coaching:release'].slice('node --test '.length);
+
+  assert.deepEqual(classifyPackageImpact({
+    changed: ['package.json', added],
+    basePackage: JSON.stringify(original),
+    currentPackage: JSON.stringify(proposed),
+  }), {
+    mode: 'core', reason: 'ADDITIVE_COACHING_BUILD_TEST', workflows: [],
+  });
+
+  const packageSpecialists = [
+    'hh-app-browser.yml', 'hh-app-r1.yml', 'hh-course-presets.yml',
+    'hh-interpretation-database.yml', 'hh-live-audio-ci.yml',
+    'hh-private-audio-e2e.yml', 'hh-public-services-production.yml',
+    'hh-reports-development-program.yml', 'holistic-house-native.yml',
+    'holistic-house-ocean-audio.yml', 'ia-v2.yml', 'opora-module-ci.yml',
+  ];
+  for (const name of packageSpecialists) {
+    const yaml = readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
+    assert.doesNotMatch(yaml, /^\s*-\s*['"]?package\.json['"]?\s*$/m,
+      name + ': package-only script registration is protected by Core, not this unrelated specialist');
+  }
+  const lockfileSpecialists = [
+    'hh-app-browser.yml', 'hh-app-r1.yml', 'hh-interpretation-database.yml',
+    'hh-live-audio-ci.yml', 'hh-private-audio-e2e.yml',
+    'hh-public-services-production.yml', 'holistic-house-native.yml', 'ia-v2.yml',
+    'opora-module-ci.yml',
+  ];
+  for (const name of lockfileSpecialists) {
+    const yaml = readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
+    assert.match(yaml, /^\s*-\s*['"]?package-lock\.json['"]?\s*$/m,
+      name + ': lockfile changes must continue to invoke dependency-sensitive specialist coverage');
+  }
+  const billing = readFileSync(new URL('../.github/workflows/hh-billing-isolated.yml', import.meta.url), 'utf8');
+  assert.match(billing, /^\s*-\s*['"]?package\.json['"]?\s*$/m,
+    'the explicitly reviewed test:monetization route retains isolated billing coverage');
 });
 
 test('disjoint, protected public presentation advances retain successful sensitive PR evidence', async () => {
@@ -3243,4 +3309,68 @@ test('exact 20-file #5093 video PR accepts independent Services plus protected p
   'an unknown additional candidate script cannot inherit unrelated-video safety');
  assert.equal(safeTrustedPolicyAdvance(diff([...policyTarget,...safeTarget],{status:'diverged'}),
   BASE,latest,candidate),false);
+});
+
+
+test('prebuild add-only test registration does not schedule unrelated package specialists', () => {
+  const old = {scripts: {
+    'test:academy:release':'node --test tests/academy-intro.test.mjs tests/academy-lessons.test.mjs',
+    prebuild:'node scripts/prepare.mjs && npm run test:academy:release && node scripts/make-art.mjs',
+  }, dependencies: {next:'15.0.0'}};
+  const next=structuredClone(old), testFile='tests/academy-voice-guide.test.mjs';
+  next.scripts['test:academy:release'] =
+    'node --test ' + testFile + ' ' + old.scripts['test:academy:release'].slice('node --test '.length);
+  const paths=['package.json',testFile,'components/academy-reader.tsx'];
+  const classify=(proposal=next,files=paths)=>classifyPackageImpact({
+    changed:files,basePackage:JSON.stringify(old),currentPackage:JSON.stringify(proposal),
+  });
+  assert.deepEqual(classify(),{mode:'core',reason:'ADDITIVE_PREBUILD_TEST',workflows:[]});
+  const unrelated='.github/workflows/hh-live-audio-ci.yml';
+  const owned='.github/workflows/hh-energywork-ai.yml';
+  const yaml=items=>"on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths:\n"+
+    items.map(p=>"      - '"+p+"'\n").join('');
+  const sources=new Map([
+    [unrelated,yaml(['package.json','app/api/live-audio/**'])],
+    [owned,yaml(['package.json','components/academy-**'])],
+  ]);
+  assert.deepEqual(expectedWorkflows({base:sources,current:sources,changed:paths,
+    packageImpact:classify()}),[owned]);
+  const noPrebuild=structuredClone(next);
+  noPrebuild.scripts.prebuild='node scripts/prepare.mjs';
+  assert.equal(classify(noPrebuild).mode,'full');
+  const injection=structuredClone(next);
+  injection.scripts['test:academy:release']+=' && echo skipped';
+  assert.equal(classify(injection).mode,'full');
+  const replacement=structuredClone(next);
+  replacement.scripts['test:academy:release'] =
+    replacement.scripts['test:academy:release'].replace('tests/academy-lessons.test.mjs','tests/new.test.mjs');
+  assert.equal(classify(replacement).mode,'full');
+  assert.equal(classify(next,paths.concat('package-lock.json')).mode,'full');
+  const deps=structuredClone(next);
+  deps.dependencies.next='16.0.0';
+  assert.equal(classify(deps).mode,'full');
+});
+
+test('required hh-merge-check aggregates BASE-trusted specialists for CORE as well as FULL and DOCK',()=>{
+  const file=readFileSync(new URL('../.github/workflows/hh-pr-core-release.yml',import.meta.url),'utf8');
+  const step=file.split('      - name: Validate exact-head risk and required specialist workflows')[1]
+    ?.split('      - name: Confirm one-runner Core and independent specialist release evidence')[0];
+  assert.ok(step,'actual required specialist step must exist inside hh-merge-check');
+  const predicate=step.match(/^\s*if:\s*(.+)$/m)?.[1];
+  assert.ok(predicate,'specialist gate must be conditioned on the real pull_request');
+  assert.match(predicate,/github\.event_name == 'pull_request'/);
+  for(const route of ['CORE','FULL','DOCK'])
+    assert.ok(predicate.includes("steps.specialist_route.outputs.route == '"+route+"'"),
+      route+' must not mark a red or pending specialist as green');
+  for(const waived of ['ASSETS','TEXT'])
+    assert.ok(!predicate.includes("steps.specialist_route.outputs.route == '"+waived+"'"),
+      waived+' must remain within the pre-existing non-runtime fast route');
+  assert.match(step,/git show "\$HH_TRUSTED_BASE_SHA:scripts\/ci-specialist-aggregate\.mjs"/,
+    'the candidate may not self-certify its applicable specialists');
+  assert.match(step,/node "\$RUNNER_TEMP\/hh-ci-trusted\/scripts\/ci-specialist-aggregate\.mjs"/);
+  assert.doesNotMatch(step,/continue-on-error\s*:/);
+  const job=file.split('  hh-merge-check:')[1]?.split('  hh-eslint-repair:')[0];
+  assert.match(job||'',/needs: \[scope\]/);
+  assert.match(job||'',/Fail closed if mandatory Core failed/);
+  assert.match(job||'',/Validate exact-head risk and required specialist workflows/);
 });

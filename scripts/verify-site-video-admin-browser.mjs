@@ -96,15 +96,6 @@ async function navigate(target){
 }
 // Keep first-paint fast; the real user must deliberately open discovery
 // before the source-backed testimonial videos are expected in the DOM.
-async function revealHomeTestimonials() {
-  const discovery=page.locator('[data-home-deferred-sections]');
-  await discovery.scrollIntoViewIfNeeded();
-  const disclosure=discovery.locator('[data-home-discover-more]');
-  await disclosure.waitFor({state:'visible',timeout:30000});
-  await disclosure.locator('summary').click();
-  await expect(discovery.locator('[data-home-expanded-catalog]')).toHaveCount(1);
-  await expect(page.locator('[data-personal-testimonials="home"]')).toHaveCount(1);
-}
 let page
 try{
   const db = new pg.Client({connectionString:process.env.HH_TEST_ADMIN_DATABASE_URL})
@@ -270,11 +261,10 @@ try{
           await expect(page.locator('[data-video-slot="home-intro"]')).toHaveCount(0)
           assert.ok(!(await page.content()).includes(title),
             'Retired Home intro must not leak a published admin title: '+locale)
-          // Owner-approved Ali-first Home defers the testimonial catalog
-          // until the visitor reaches discovery and explicitly expands it.
-          // Still verify that the original 12 source videos remain accessible
-          // after that interaction; never demand their JS on first paint.
-          await revealHomeTestimonials();
+          // The approved dialogue-first Home has no legacy testimonial gallery.
+          // Keep testing the real published home and the withdrawn video gate.
+          await expect(page.locator('[data-home-dialogue-entry]')).toHaveCount(1);
+          await expect(page.locator('[data-personal-testimonials="home"]')).toHaveCount(0);
           continue
         }
         if (slot.id === 'thank-you') {
@@ -324,9 +314,10 @@ try{
     await expect(page.locator('[data-video-slot="home-intro"]')).toHaveCount(0)
     pass('Concurrent edit rejected; refresh keeps edits and resets review; republish works')
     assert.equal(await page.locator('iframe').count(), 0)
-    // Owner withdrew approval: even a newly published archived home intro cannot
-    // leak back onto the public homepage. Testimonial videos remain independent.
-    await revealHomeTestimonials()
+    // Even after an owner republish, the withdrawn intro stays absent from the
+    // new Ali-first Home; do not require the retired testimonial gallery.
+    await expect(page.locator('[data-home-dialogue-entry]')).toHaveCount(1)
+    await expect(page.locator('[data-personal-testimonials="home"]')).toHaveCount(0)
     pass('Archived unpublished-quality home introduction cannot reappear in public')
     await save('hide', second)
     await navigate('/?lang=en')

@@ -70,8 +70,8 @@ test("Ideas Concept owns the single editor and Montage retains its real timeline
   assert.ok(navStart>0&&navEnd>navStart,'The real five-tab Montage navigator must render');
   const navigation=source.slice(navStart,navEnd);
   assert.deepEqual([...navigation.matchAll(/id:"(effects|audio|text|promo|concept)",Icon:/g)]
-    .map(match=>match[1]),["effects","audio","text","concept","promo"],
-    "Style → Audio → Text → Story → Montage PRO without missing or repeated tabs");
+    .map(match=>match[1]),["effects","audio","promo","text","concept"],
+    "Style → Audio → Extra before optional Text/Story, with no duplicated steps");
   assert.match(source,/data-video-montage-next=\{montagePanel==="effects"\?"audio"/);
   assert.match(source,/onClick=\{continueMontageOrGenerate\}/);
   assert.match(source,/data-video-story-open-settings/);
@@ -99,14 +99,15 @@ test("Ideas Concept owns the single editor and Montage retains its real timeline
 
 test("macOS WebKit opens Style by default and still allows reviewed Concept",()=>{
   const source=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
-  const start=source.indexOf('const editorTab=page.locator');
-  const end=source.indexOf('const selectedStyle=page.locator',start);
+  const start=source.indexOf('const styleTab=page.locator');
+  const end=source.indexOf('const styles=moreStyles.locator',start);
   assert.ok(start>0&&end>start);
   const route=source.slice(start,end);
   assert.match(route,/\[data-video-montage-tab="effects"\]/);
   assert.match(source,/\[data-video-ideas-concept-panel\]/);
-  assert.match(route,/await montageStyleTab\.click\(\)/);
-  assert.match(route,/await expect\(montageStyleTab\)\.toHaveAttribute\("aria-pressed","true"/);
+  assert.match(route,/await styleTab\.tap\(\)/);
+  assert.match(route,/await expect\(styleTab\)\.toHaveAttribute\("aria-pressed","true"/);
+  assert.match(route,/moreStyles\.locator\("summary"\)\.tap\(\)/);
   assert.doesNotMatch(route,/force:\s*true|setMontagePanel/);
 });
 
@@ -120,14 +121,19 @@ test("required Hypno three tabs, relocated effects and guided kind remain browse
   assert.match(webkit,/await expect\(briefFrame\)\.toHaveAttribute\("aria-checked","false"\)/);
   assert.match(guided,/await expect\(kind\)\.toHaveAttribute\("aria-pressed","true",\{timeout:15000\}\)/);
   assert.match(guided,/GUIDED_KIND_DID_NOT_COMMIT/);
-  assert.match(exportFlow,/const montageStyle=page\.locator/);
-  // The real first-video browser route uses a checked, native tap/click
-  // locator rather than the retired inline click expression.
-  assert.match(exportFlow,/const conceptApprove=concept\.locator\('\[data-video-concept-approve\]'\)/);
-  assert.match(exportFlow,/await conceptApprove\.isEnabled\(\)/);
-  assert.match(exportFlow,/if\(engine==='webkit'\)await conceptApprove\.tap\(\)/);
-  assert.match(exportFlow,/else await conceptApprove\.click\(\)/);
-  assert.match(exportFlow,/FOUR_DISTINCT_SOURCES_REQUIRED/);
+  // The real Express route starts at Goal and uses visible browser taps,
+  // source identity and six moving photo scenes in the single Canvas renderer.
+  assert.match(exportFlow,/\[data-auto-video-input\]/);
+  assert.match(exportFlow,/getByRole\('button',\{name:'Just make it'\}\)/);
+  assert.match(exportFlow,/data-video-request-design\]\[data-video-request-flow="instant"\]/);
+  assert.match(exportFlow,/if\(engine==='webkit'\)await generate\.tap\(\)/);
+  assert.match(exportFlow,/EXPRESS_VIDEO_MUST_BE_30_SECONDS/);
+  assert.match(exportFlow,/EXPRESS_CANONICAL_PHOTO_NOT_VISIBLE/);
+  assert.match(exportFlow,/EXPRESS_CANONICAL_SCENE_ORDER_OR_IDENTITY_MISMATCH/);
+  assert.match(exportFlow,/EXPRESS_SCENE_NOT_MOVING/);
+  assert.match(exportFlow,/MP4_EXPRESS_VIDEO_MUST_USE_H264/);
+  assert.match(exportFlow,/MP4_EXPRESS_AUDIO_MUST_USE_AAC/);
+  assert.doesNotMatch(exportFlow,/data-video-continue-scenarios/);
 });
 
 test("macOS same-runner heap permits the existing real WebKit movie and voice gate",()=>{

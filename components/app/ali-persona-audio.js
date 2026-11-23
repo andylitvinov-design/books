@@ -111,32 +111,43 @@ export function playAliPersonaAudio(personaId,locale,onPlaying=()=>{}){
   stopDevice=deviceSpeech(persona,locale,
    ()=>{if(active)onPlaying(true,'playing')},finish)
  }
- const ua=window.navigator?.userAgent||''
- const iOS=/iPad|iPhone|iPod/.test(ua)||
-  (window.navigator?.platform==='MacIntel'&&window.navigator?.maxTouchPoints>1)
  const hasDevice=Boolean(window.speechSynthesis&&window.SpeechSynthesisUtterance)
- // On iPhone, an async cloud error cannot reliably start TTS after Safari's
- // one-tap audio activation expires. Speak directly inside the tap instead.
- if((iOS&&hasDevice)||(naturalStatus!=='available'&&hasDevice)){
+ const isIos=/iPad|iPhone|iPod/.test(window.navigator?.userAgent||'')||
+  (window.navigator?.platform==='MacIntel'&&window.navigator?.maxTouchPoints>1)
+ // iOS SpeechSynthesis can claim "started" while producing no sound.
+ // Even after a HEAD failure, ALWAYS attempt native media on iPhone so a
+ // later recovered cloud greeting can play from the user's next tap.
+ if(naturalStatus==='unavailable'&&hasDevice&&!isIos){
   startDevice()
   return ()=>{if(current===session)stopAliPersonaAudio()}
  }
  const fallback=()=>{
   if(!active)return
-  naturalStatus='unavailable'
+  // Transient errors must never permanently switch every subsequent Listen
+  // to a potentially silent device voice. Retry the cloud source on next tap.
+  naturalStatus='unknown'
   clear()
   if(audio){audio.onplaying=null;audio.onended=null;audio.onerror=null;audio.pause();audio.removeAttribute('src')}
-  if(hasDevice)startDevice()
+  // After the original iPhone gesture has expired, speechSynthesis can be
+  // silently blocked. Show retry instead of a false "playing" state.
+  if(hasDevice&&!isIos)startDevice()
   else finish('error')
  }
- audio=new Audio()
+ // Native HTMLAudioElement respects an iOS user gesture and plays through
+ // iPhone's media audio route, unlike the sometimes silent Web Speech API.
+ try{audio=new Audio()}catch{fallback();return ()=>{if(current===session)stopAliPersonaAudio()}}
  audio.preload='auto'
+ audio.autoplay=false
+ audio.muted=false
+ audio.volume=1
  audio.onplaying=()=>{if(!active)return;clear();onPlaying(true,'playing')}
  audio.onended=()=>finish('ended')
  audio.onerror=fallback
  audio.src='/api/ali/voice/'+encodeURIComponent(locale)+'/'+encodeURIComponent(persona.id)
- // A slow or broken server must never leave the interface permanently busy.
- timer=window.setTimeout(fallback,13500)
- try{void audio.play().catch(fallback)}catch{fallback()}
+ timer=window.setTimeout(fallback,24000)
+ try{
+  const attempt=audio.play()
+  if(attempt&&typeof attempt.catch==='function')void attempt.catch(fallback)
+ }catch{fallback()}
  return ()=>{if(current===session)stopAliPersonaAudio()}
 }

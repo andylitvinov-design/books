@@ -1,16 +1,20 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowRight, ArrowUp, BriefcaseBusiness, ChevronDown, HeartHandshake, Mic, Route, Sparkles, Leaf, Heart, TrendingUp, X, CheckCircle2, Play, Pause, UserRound } from "lucide-react";
+import { ArrowRight, ArrowUp, BriefcaseBusiness, ChevronDown, HeartHandshake, Mic, Route, Sparkles, Leaf, Heart, TrendingUp, X, CheckCircle2, Play, Pause, UsersRound, Plus, Image as ImageIcon, MessageCircle, CalendarDays } from "lucide-react";
 import { SiteNavigation } from "@/components/site-navigation";
-import AliPersonaPicker from "@/components/app/ali-persona-picker";
+
 import {useAliPersona} from "@/components/app/use-ali-persona";
 import {playAliPersonaAudio,stopAliPersonaAudio} from "@/components/app/ali-persona-audio";
 import { stageHomeAliHandoff } from "@/lib/home-ali-handoff.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./home-dialogue-entry.module.css";
+
+// Load the 4-persona selection dialog, its cards and styles only when asked.
+const AliPersonaPicker=dynamic(()=>import("@/components/app/ali-persona-picker"),{ssr:false});
 
 type Mode = "self" | "business";
 type SpeechEvent = { results: ArrayLike<ArrayLike<{ transcript: string }>> };
@@ -98,10 +102,73 @@ const COPY = {
 } as const;
 const FOCUS_ICONS = [Leaf, Heart, TrendingUp, BriefcaseBusiness] as const;
 
+const SCREEN_COPY = {
+  en: {
+    brandTag:"Therapy · Coaching · Growth", guideRole:"Your Inner Alchemist",
+    welcome:"Let’s understand your needs and find the next step together.",
+    listen:"Listen", choosePersona:"Choose your AI guide", entry:"Describe your goal or wish…",
+    start:"Start free chat", tools:"Open more tools in Ali chat", photo:"Open Ali chat to add a photo",
+    direction:"Choose a direction", all:"All topics",
+    stress:"Stress & Anxiety Relief", love:"Love & Relationships",
+    money:"Money & Growth", energy:"Energy & Life Balance",
+    energyPrompt:"I'd like more energy and a better balance in everyday life. What can I start with?",
+    businessFocus:"Business Support", strategy:"Strategy & Decisions",
+    strategyPrompt:"I'd like to clarify a business decision and plan the next step.",
+    team:"Team & Leadership", teamPrompt:"I need help with my team or leadership at work.",
+    how:"How it works — in 3 simple steps",
+    steps:["Tell us your goal","Get a personal plan","Take the next step"],
+    stepNotes:["Or choose a topic","Analysis, practices, ideas","Practice, course or a session"],
+    ideas:"Get Ideas",ideasDetail:"Diagnostic & Hints",
+    support:"Get Support",supportDetail:"Session & Service",
+  },
+  ru: {
+    brandTag:"Терапия · Коучинг · Развитие", guideRole:"Ваш внутренний алхимик",
+    welcome:"Разберёмся в вашей ситуации и вместе найдём следующий шаг.",
+    listen:"Послушать",choosePersona:"Выбрать ведущего ИИ",entry:"Опишите свою цель или желание…",
+    start:"Начать бесплатный чат",tools:"Открыть инструменты в чате Ali",photo:"Открыть чат Ali, чтобы добавить фото",
+    direction:"Выберите направление",all:"Все темы",
+    stress:"Стресс и тревога",love:"Любовь и отношения",
+    money:"Деньги и развитие",energy:"Энергия и баланс",
+    energyPrompt:"Хочу восстановить силы и найти баланс в повседневной жизни. С чего начать?",
+    businessFocus:"Поддержка бизнеса",strategy:"Стратегия и решения",
+    strategyPrompt:"Помогите прояснить бизнес-решение и наметить следующий шаг.",
+    team:"Команда и лидерство",teamPrompt:"Хочу разобраться в вопросах команды или лидерства.",
+    how:"Как это работает — 3 простых шага",
+    steps:["Расскажите о цели","Получите личный план","Сделайте следующий шаг"],
+    stepNotes:["Или выберите тему","Анализ и практики","Практика, курс или сессия"],
+    ideas:"Получить идеи",ideasDetail:"Диагностика и подсказки",
+    support:"Получить поддержку",supportDetail:"Сессии и услуги",
+  },
+  es: {
+    brandTag:"Terapia · Coaching · Crecimiento",guideRole:"Tu alquimista interior",
+    welcome:"Comprendamos tu situación y encontremos juntos el próximo paso.",
+    listen:"Escuchar",choosePersona:"Elegir tu guía de IA",entry:"Describe tu objetivo o deseo…",
+    start:"Iniciar chat gratis",tools:"Abrir herramientas en el chat de Ali",photo:"Abrir el chat de Ali para añadir una foto",
+    direction:"Elige un tema",all:"Todos los temas",
+    stress:"Estrés y ansiedad",love:"Amor y relaciones",
+    money:"Dinero y crecimiento",energy:"Energía y equilibrio",
+    energyPrompt:"Me gustaría recuperar energía y equilibrio en mi vida. ¿Por dónde empiezo?",
+    businessFocus:"Apoyo empresarial",strategy:"Estrategia y decisiones",
+    strategyPrompt:"Quiero aclarar una decisión de negocios y planificar mi siguiente paso.",
+    team:"Equipo y liderazgo",teamPrompt:"Quiero mejorar el trabajo con mi equipo y el liderazgo.",
+    how:"Cómo funciona — 3 pasos sencillos",
+    steps:["Cuéntanos tu meta","Recibe un plan personal","Da el siguiente paso"],
+    stepNotes:["O elige un tema","Ideas, análisis y prácticas","Práctica, curso o sesión"],
+    ideas:"Obtener ideas",ideasDetail:"Diagnóstico y consejos",
+    support:"Recibir apoyo",supportDetail:"Sesiones y servicios",
+  },
+} as const;
+
 export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
   const router=useRouter();
   const t=COPY[locale];
-  const {persona}=useAliPersona();
+  const {persona,select}=useAliPersona("max");
+  // New visitors meet Max as in the approved mobile design. An explicit
+  // previous selection is respected across the whole Ali conversation.
+  useEffect(()=>{
+    try{if(!window.localStorage.getItem("hh:ai-chat-persona-v1"))select("max")}
+    catch{/* Private-mode storage may be unavailable; keep the safe default. */}
+  },[select]);
   const [personaOpen,setPersonaOpen]=useState(false);
   const closePersona=useCallback(()=>setPersonaOpen(false),[]);
   const [greetingSpeaking,setGreetingSpeaking]=useState(false);
@@ -142,7 +209,9 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
     router.push(chatPath);
   }
   function startConversation(event:FormEvent<HTMLFormElement>) {
-    event.preventDefault();startConversationWith(draft);
+    event.preventDefault();
+    if(!draft.trim()){router.push(chatPath);return}
+    startConversationWith(draft);
   }
   function dictate() {
     if(speechRef.current){speechRef.current.stop();return}
@@ -164,10 +233,35 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
     setListening(true);
     try{speech.start()}catch{setVoiceMessage(t.speechError);setListening(false);speechRef.current=null}
   }
+  const screen=SCREEN_COPY[locale];
+  const categories=mode==="self" ? [
+    {...hints[0],label:screen.stress,image:"stress.webp"},
+    {...hints[1],label:screen.love,image:"love.webp"},
+    {...hints[2],label:screen.money,image:"growth.webp"},
+    {id:"energy",label:screen.energy,detail:screen.energy,prompt:screen.energyPrompt,image:"energy.webp"},
+  ] : [
+    {...hints[3],label:screen.businessFocus,image:"growth.webp"},
+    {...hints[2],label:screen.money,image:"growth.webp"},
+    {id:"strategy",label:screen.strategy,detail:screen.strategy,prompt:screen.strategyPrompt,image:"energy.webp"},
+    {id:"team",label:screen.team,detail:screen.team,prompt:screen.teamPrompt,image:"love.webp"},
+  ];
+  const picture="/images/holistic-house/my-coach-motion/"+persona.id+"-living.webp";
+  const chatRoute="/"+locale+"/app/messages?section=ai";
+  const ideasRoute="/"+locale+(mode==="business"?"/explore/business":"/services/free-situation-review");
+  const supportRoute="/"+locale+(mode==="business"?"/services#service-group-business":"/services/free-consultation");
+
+  // A CSS background cannot be discovered by the HTML preload scanner.
+  // React hoists resource hints into the initial document <head> without
+  // changing the existing portrait, hero, copy or mobile layout.
   return <section className={styles.root} data-home-dialogue-entry data-home-mode={mode}
     data-home-interactive={interactive?"true":"false"} lang={locale}>
+    <link rel="preload" as="image" href={picture} fetchPriority="high" />
+    <link rel="preload" as="image" href="/images/holistic-house/ideas-pine-reference.webp" fetchPriority="high" />
     <header className={styles.header} data-home-dialogue-header>
-      <div className={styles.brand}><span className={styles.brandIcon} aria-hidden="true"><Leaf size={25}/></span><h1>Holistic House</h1></div>
+      <div className={styles.brand}>
+        <span className={styles.brandIcon} aria-hidden="true"><Leaf size={25}/></span>
+        <span className={styles.brandCopy}><h1>Holistic House</h1><small>{screen.brandTag}</small></span>
+      </div>
       <div className={styles.headerActions}>
         <details className={styles.language} data-home-language-switch>
           <summary aria-label={locale==="ru"?"Выбрать язык":locale==="es"?"Elegir idioma":"Choose language"}>
@@ -184,7 +278,9 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
         </div>
       </div>
     </header>
-    <div className={styles.modes} role="group" aria-label={locale==="ru"?"Режим главной":locale==="es"?"Modo principal":"Home mode"}>
+
+    <div className={styles.modes} role="group"
+      aria-label={locale==="ru"?"Режим главной":locale==="es"?"Modo principal":"Home mode"}>
       <button type="button" data-home-mode-button="self" aria-pressed={mode==="self"}
         className={mode==="self"?styles.modeActive:styles.mode}
         onClick={()=>{setMode("self");setError("")}}>
@@ -196,78 +292,111 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
         <BriefcaseBusiness size={19} aria-hidden="true"/>{t.business}
       </button>
     </div>
+
     <div className={styles.hero} data-home-dialogue-hero>
       <div className={styles.scene} aria-hidden="true"/>
       <div className={styles.heroContent}>
-        <div className={styles.kicker}><Sparkles size={18} aria-hidden="true"/> HOLISTIC HOUSE</div>
-        <div className={styles.guideRow} data-home-ali-persona={persona.id}>
-          <button type="button" className={styles.guideIdentity}
+        <div className={styles.heroStory} data-home-ali-persona={persona.id}>
+          <img className={styles.heroPortrait} src={picture} width={530} height={480}
+            loading="eager" fetchPriority="high" alt="" aria-hidden="true"/>
+          <div className={styles.kicker}><Sparkles size={18} aria-hidden="true"/> AI Assistant</div>
+          <h2 className={styles.heroTitle}>{guideLine}</h2>
+          <p className={styles.guideRole}>{screen.guideRole}</p>
+          <p className={styles.subtitle}>{screen.welcome}</p>
+          <button type="button" className={styles.guideAudio}
+            data-home-ali-greeting-play onClick={startGuideGreeting}
+            aria-pressed={greetingSpeaking}
+            aria-label={greetingSpeaking?t.stopMic:screen.listen}>
+            {greetingSpeaking?<Pause size={19} aria-hidden="true"/>:<Play size={19} aria-hidden="true"/>}
+            {screen.listen}
+          </button>
+          <button type="button" className={styles.personaButton}
             data-home-open-ali-persona onClick={()=>setPersonaOpen(true)}
-            aria-label={locale==="ru"?"Персоналия · выбрать ведущего":
-              locale==="es"?"Personaje · elegir guía":"Persona · choose your guide"}>
-            <img src={persona.image} alt="" width={48} height={48} loading="lazy"/>
-            <span><strong>{guideLine}</strong><small>{guideSubtitle}</small></span>
-            <UserRound size={17} aria-hidden="true"/>
+            aria-label={screen.choosePersona} title={screen.choosePersona}>
+            <UsersRound size={22} aria-hidden="true"/>
           </button>
-          <button type="button" className={styles.guideAudio} data-home-ali-greeting-play
-            onClick={startGuideGreeting} aria-pressed={greetingSpeaking}
-            aria-label={greetingSpeaking?
-              (locale==="ru"?"Остановить приветствие":locale==="es"?"Detener saludo":"Stop greeting"):
-              (locale==="ru"?"Послушать приветствие":locale==="es"?"Escuchar saludo":"Listen to greeting")}>
-            {greetingSpeaking?<Pause size={18} aria-hidden="true"/>:
-              <Play size={18} fill="currentColor" aria-hidden="true"/>}
-          </button>
-        </div>
-        <h2>{t.title}</h2>
-        <p className={styles.subtitle}>{mode==="business"?t.businessSubtitle:t.subtitle}</p>
-        <Link href={"/"+locale+"/services/free-situation-review"} prefetch={false}
-          className={styles.reviewCta} data-home-free-review>
-          <span className={styles.reviewCtaIcon}><Sparkles size={27} aria-hidden="true"/></span>
-          <span className={styles.reviewCtaText}>
-            <strong>{t.freeReviewTitle}</strong>
-            <small>{t.freeReviewDetail}</small>
-          </span>
-          <ArrowRight size={23} className={styles.reviewCtaArrow} aria-hidden="true"/>
-        </Link>
-        <div className={styles.focusGrid} role="group" aria-label={t.focusTitle} data-home-focus-grid>
-          {hints.map((hint,index)=>{
-            const Icon=FOCUS_ICONS[index];
-            return <button type="button" key={hint.id} className={styles.focusCard}
-              data-home-intent-option={hint.id}
-              aria-label={hint.label+" · "+hint.detail+" · "+t.send}
-              onClick={()=>startConversationWith(hint.prompt,hint.id==="business"?"business":mode)}>
-              <Icon className={styles.focusIcon} size={29} aria-hidden="true"/>
-              <span className={styles.focusCopy}><strong>{hint.label}</strong></span>
-              <ArrowRight className={styles.focusArrow} size={19} aria-hidden="true"/>
-            </button>
-          })}
         </div>
         <form className={styles.composer} onSubmit={startConversation} data-home-intent-form>
           <label className={styles.visuallyHidden} htmlFor={"home-intent-"+locale}>{t.placeholder}</label>
           <textarea id={"home-intent-"+locale} ref={inputRef} value={draft}
             onChange={event=>{setDraft(event.target.value);setError("")}}
-            maxLength={2000} rows={3} placeholder={t.placeholder}
+            maxLength={2000} rows={2} placeholder={screen.entry}
             data-home-intent-composer autoComplete="off"/>
           <div className={styles.composerButtons}>
-            {draft&&<button type="button" className={styles.clear} aria-label={locale==="ru"?"Очистить":locale==="es"?"Borrar":"Clear"}
-              onClick={()=>{setDraft("");inputRef.current?.focus()}}><X size={18}/></button>}
-            <button type="button" className={styles.microphone} aria-label={listening?t.stopMic:t.mic}
-              aria-pressed={listening} onClick={dictate}><Mic size={24} aria-hidden="true"/></button>
-            <button type="submit" className={styles.send} disabled={!draft.trim()} data-home-send-to-ali
-              aria-label={t.send} title={t.send}><ArrowUp size={25} aria-hidden="true"/></button>
+            <button type="button" className={styles.moreTool} onClick={()=>router.push(chatRoute)}
+              aria-label={screen.tools} title={screen.tools}><Plus size={23} aria-hidden="true"/></button>
+            <button type="button" className={styles.photoTool} onClick={()=>router.push(chatRoute)}
+              aria-label={screen.photo} title={screen.photo}><ImageIcon size={22} aria-hidden="true"/></button>
+            {draft&&<button type="button" className={styles.clear}
+              aria-label={locale==="ru"?"Очистить":locale==="es"?"Borrar":"Clear"}
+              onClick={()=>{setDraft("");inputRef.current?.focus()}}><X size={19} aria-hidden="true"/></button>}
+            <button type="button" className={styles.microphone}
+              aria-label={listening?t.stopMic:t.mic} aria-pressed={listening} onClick={dictate}>
+              <Mic size={23} aria-hidden="true"/>
+            </button>
+            <button type="submit" className={styles.send} data-home-send-to-ali
+              aria-label={t.send} title={screen.start}>
+              <ArrowUp className={styles.sendIcon} size={21} aria-hidden="true"/>
+              <span>{screen.start}</span>
+            </button>
           </div>
         </form>
         {error&&<p className={styles.error} role="alert">{error}</p>}
         {voiceMessage&&<p className={styles.voiceStatus} role="status">{voiceMessage}</p>}
-        <div className={styles.benefits} aria-label={t.benefits.join(", ")}>
-          <span><CheckCircle2 size={15} aria-hidden="true"/>{t.benefits[0]}</span>
-          <span><Leaf size={15} aria-hidden="true"/>{t.benefits[1]}</span>
-          <span><Sparkles size={15} aria-hidden="true"/>{t.benefits[2]}</span>
-        </div>
-        <small className={styles.privacy}>{t.transferPrivacy}</small>
       </div>
     </div>
-    <AliPersonaPicker open={personaOpen} onClose={closePersona} locale={locale}/>
+    {personaOpen&&<AliPersonaPicker open={personaOpen} onClose={closePersona} locale={locale}/>}
+
+    <div className={styles.directionHead}>
+      <h3>{screen.direction}</h3>
+      <Link href="#home-discover" prefetch={false}>{screen.all}<ArrowRight size={18} aria-hidden="true"/></Link>
+    </div>
+    <div className={styles.focusGrid} role="group" aria-label={t.focusTitle} data-home-focus-grid>
+      {categories.map((hint,index)=>{
+        const TopicIcon=hint.id==="love"?Heart:hint.id==="money"?TrendingUp:
+          (hint.id==="business"||hint.id==="strategy"||hint.id==="team")?BriefcaseBusiness:Leaf;
+        return <button type="button" key={hint.id} className={styles.focusCard}
+          data-home-intent-option={hint.id}
+          aria-label={hint.label+" · "+hint.detail+" · "+t.send}
+          onClick={()=>startConversationWith(hint.prompt,hint.id==="business"?"business":mode)}>
+          <img className={styles.focusPhoto} src={"/images/video-goal-art/"+hint.image}
+            width={72} height={72} alt="" loading="eager" aria-hidden="true"/>
+          <span className={styles.focusCopy}>
+            <TopicIcon className={styles.focusIcon} size={18} aria-hidden="true"/>
+            <strong>{hint.label}</strong>
+          </span>
+          <ArrowRight className={styles.focusArrow} size={17} aria-hidden="true"/>
+        </button>;
+      })}
+    </div>
+
+    <section className={styles.howWorks} data-home-how-it-works aria-label={screen.how}>
+      <h3>{screen.how}</h3>
+      <div className={styles.steps}>
+        {screen.steps.map((step,index)=><div className={styles.step} key={step}>
+          <span className={styles.stepIcon}>
+            {index===0?<MessageCircle size={18}/>:index===1?<Sparkles size={18}/>:<Leaf size={18}/>}
+          </span>
+          <strong>{index+1}. {step}</strong>
+          <small>{screen.stepNotes[index]}</small>
+        </div>)}
+      </div>
+    </section>
+    <div className={styles.finalActions}>
+      <Link className={styles.reviewCta} href={ideasRoute} prefetch={false}
+        data-home-free-review>
+        <Sparkles size={25} aria-hidden="true"/>
+        <span><strong>{screen.ideas}</strong><small>{screen.ideasDetail}</small></span>
+        <ArrowRight size={22} aria-hidden="true"/>
+      </Link>
+      <Link className={styles.supportCta} href={supportRoute} prefetch={false}
+        data-home-request-session>
+        <CalendarDays size={24} aria-hidden="true"/>
+        <span><strong>{screen.support}</strong><small>{screen.supportDetail}</small></span>
+        <ArrowRight size={22} aria-hidden="true"/>
+      </Link>
+    </div>
+
     <Link className={styles.continue} href={"/"+(locale==="es"?"en":locale)+"/app/portrait?space=path"}
       prefetch={false} data-home-continue-path>
       <span className={styles.continueIcon}><Route size={25} aria-hidden="true"/></span>

@@ -373,8 +373,8 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",sourceIsPublic=fal
               onClick={()=>{resetAudio();setVoiceId(voice.id);}}
               className={css.voice}>
               <span className={css.voiceTop}>{voice.name[locale]}</span>
-              <span className={css.provider}>{voice.requiresProviderLicense&&!fishLicensedIds.includes(voice.id)?
-                (locale==="ru"?"Требуется лицензия":locale==="es"?"Licencia requerida":"License required"):
+              <span className={css.provider}>{voice.requiresProviderLicense?
+                (!fishLicensedIds.includes(voice.id)?(locale==="ru"?"Требуется лицензия":locale==="es"?"Licencia requerida":"License required"):"Fish Audio · S2.1 Pro Free"):
                 "Fish Official · S2.1 Pro Free"}</span>
             </button>)}
         </div>

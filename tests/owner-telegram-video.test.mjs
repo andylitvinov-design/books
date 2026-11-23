@@ -666,7 +666,16 @@ test('YouTube owner auth recovery uses fixed destinations across admin, practiti
   const entry=read('components/practitioner-auto-entry.jsx')
   const access=read('lib/app/practitioner-access.js')
   const auth=read('app/api/app/[...path]/route.js')
-  assert.match(login,/['"]youtubeConnect['"]\]\.includes\(params\?\.destination\)/)
+  // Both public owner entry targets are finite, and no query URL is accepted.
+   assert.match(login,/['"]youtube['"],['"]youtubeConnect['"],['"]youtubeConnectEn['"]\]\.includes\(params\?\.destination\)/)
+   assert.match(entry,/youtube: '\/admin\/youtube-upload'/)
+   assert.equal(auth.split("'practitioner-youtube'").length-1,3,
+     'Owner uploader must have exact start/callback/redirect destinations')
+  assert.match(entry,/youtubeConnectEn: '\/api\/admin\/telegram-video\/youtube\/start\?target=en'/)
+  assert.match(access,/youtubeConnectEn: '\/api\/admin\/telegram-video\/youtube\/start\?target=en'/)
+  assert.equal(auth.split("'practitioner-youtubeConnectEn'").length-1,3,
+    'EN owner entry must be allowlisted in auth/start, callback and destination only')
+  assert.match(auth,/continueTo === 'practitioner-youtubeConnectEn'\s*\? `\$\{origin\}\/admin\/login\?destination=youtubeConnectEn`/)
   assert.match(login,/requireAdminRequest\(\)/)
   assert.match(entry,/youtubeConnect: '\/api\/admin\/telegram-video\/youtube\/start'/)
   assert.match(entry,/response\.redirectUrl !== ADMIN_DESTINATIONS\[safeDestination\]/)

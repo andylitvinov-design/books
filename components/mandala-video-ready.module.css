@@ -466,3 +466,26 @@
 .walletInfo{display:grid;gap:8px;margin:0;padding:10px;border-radius:12px;background:#fff3e6;color:#6e5842;font:600 12px/1.4 system-ui,sans-serif}.walletInfo p{margin:0}.walletInfo a{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border-radius:11px;background:#0b866a;color:#fff;text-decoration:none}.walletInfo button{min-height:40px;border:1px solid #b9d0bc;border-radius:10px;background:white;color:#1c614e;font-weight:750}
 .walletMethodLabel{color:#2a5d4b;font:750 12px/1.3 system-ui,sans-serif}.walletMethods{display:grid;grid-template-columns:1fr 1fr;gap:7px}.walletMethods button{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:6px;border:1px solid #bed8c8;border-radius:12px;background:white;color:#245b4d;font:750 12px/1.3 system-ui,sans-serif;cursor:pointer}.walletMethods button[aria-pressed=true]{border-color:#087f64;background:#e2f4e8}.walletMethods button:disabled{opacity:.45;cursor:not-allowed}.walletPrivacy{display:flex;align-items:flex-start;gap:6px;margin:0;color:#68796e;font:500 11px/1.38 system-ui,sans-serif}.walletPrivacy svg{flex:none;color:#0a7b62}
 @media(max-width:350px){.walletDialog{padding:12px 10px;gap:8px}.walletPresets{gap:4px}.walletPresets button{font-size:11px;padding:4px 2px}.walletPresets button:last-child{font-size:10px}}
+
+/* Instant personalized preview mirrors one existing Canvas, without recording. */
+.selectedVideo[data-personal-preview="true"]{background:#182d28}
+.selectedVideo[data-personal-preview="true"][data-aspect="portrait"]{
+  width:min(100%,290px);aspect-ratio:9/16;margin-inline:auto}
+.selectedVideo[data-personal-preview="true"][data-aspect="square"]{
+  width:min(100%,420px);aspect-ratio:1/1;margin-inline:auto}
+.selectedVideo [data-ready-sequence-canvas]{
+  display:block;width:100%;height:100%;object-fit:contain;background:#182d28}
+.sequenceControls{display:grid;gap:8px;padding:10px 12px;border:1px solid #d4e7d9;
+  border-radius:13px;background:#f6fbf4}
+.sequenceControls p{margin:0;color:#235845;font:700 13px/1.4 Arial,sans-serif}
+.sequenceControls button{width:100%;min-height:44px;padding:8px 12px;border:1px solid #087c60;
+  border-radius:12px;background:#e4f3e8;color:#126044;font:750 14px/1.25 Arial,sans-serif}
+.sequenceControls input{width:100%;min-height:30px;accent-color:#087c60;touch-action:pan-y}
+.sequenceControls small{font:600 11px/1.25 Arial,sans-serif;color:#5d7264}
+.sequenceControls button:disabled{opacity:.6;cursor:not-allowed}
+
+/* Direct local file actions shown only after verified MP4, never for preview. */
+.localFileActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0}
+.localFileActions>a,.localFileActions>button{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:48px;padding:9px 10px;border:1px solid #b9d8c7;border-radius:12px;background:#ecf6ef;color:#15614c;text-decoration:none;text-align:center;font:750 13px/1.3 Arial,sans-serif;cursor:pointer}
+.localFileActions>a:focus-visible,.localFileActions>button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+@media(max-width:350px){.localFileActions{gap:5px}.localFileActions>a,.localFileActions>button{font-size:12px;padding:8px 6px}}

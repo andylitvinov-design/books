@@ -15,9 +15,9 @@ import {
   coachSessionHref, coachStagePrompt, buildCoachBehaviorPolicy, personaMethodFit,
 } from '../lib/coaching/persona-registry.mjs'
 
-test('ten distinct fictional AI coaches have complete EN/RU/ES profiles and stage examples', () => {
-  assert.equal(COACH_PERSONAS.length, 10)
-  assert.equal(new Set(COACH_PERSONAS.map(persona => persona.id)).size, 10)
+test('eleven distinct fictional AI coaches have complete EN/RU/ES profiles and stage examples', () => {
+  assert.equal(COACH_PERSONAS.length, 11)
+  assert.equal(new Set(COACH_PERSONAS.map(persona => persona.id)).size, 11)
   assert.equal(new Set(COACH_PERSONAS.map(persona => persona.topic)).size, 8)
   for (const persona of COACH_PERSONAS) {
     assert.ok(COACH_TOPICS.includes(persona.topic), persona.id)
@@ -125,9 +125,13 @@ test('Living Coach keeps static face identity and uses real MP4 playback, never 
   assert.ok(avatar.includes('MyCoachMotionMedia personaId={photoId}'))
   assert.match(css,/\.livingPortraitMouth\{display:none!important\}/)
   assert.match(css,/\.frame \.head,\.frame \.eyes,\.frame \.mouthTalk,\.frame \.halo\{animation:none!important/)
-  assert.ok(media.includes("const VIDEO_PERSONAS=new Set(['mira','max','sofia','alex','harry'])"))
+  assert.ok(media.includes("const VIDEO_PERSONAS=new Set(['mira','max','sofia','alex','merlin','harry'])"))
+  assert.ok(media.includes("MEDIA_ROOT+personaId+'-greeting-real-v1.mp4'"),
+    'Merlin and Harry use pre-rendered greeting videos rather than synthesized facial movement')
   assert.ok(media.includes("MEDIA_ROOT+personaId+'-still.webp'"))
-  assert.ok(media.includes("MEDIA_ROOT+personaId+'-'+clip+'.mp4'"))
+  assert.ok(media.includes('coachNaturalVideoPath(personaId,state,visualScene)'))
+  assert.ok(media.includes("MEDIA_ROOT+'harry-soft-'+harryClip+'.mp4'"))
+  assert.match(media,/data-coach-natural-performance/)
   assert.ok(media.includes('muted loop playsInline autoPlay'))
   assert.ok(media.includes("window.matchMedia?.('(prefers-reduced-motion: reduce)')"))
   assert.match(mediaCss,/\.poster,\.video\{[^}]*transform:none!important;animation:none!important/)
@@ -172,6 +176,7 @@ test('Mira Russian voice is locale-specific and never enabled without approved u
  const introRoute=readFileSync(new URL('../app/api/coaching/intro/[locale]/[coach]/route.js',import.meta.url),'utf8')
  assert.ok(privateRoute.includes('myCoachFishVoice(fishRaw.personaId,input.locale)'))
  assert.ok(introRoute.includes('myCoachFishVoice(personaId,locale)'))
+ assert.ok(introRoute.includes('coachOpeningIntro(personaId,locale)'))
 })
 
 test('Fish natural voice accepts the exact live/replay persona payload but no extra fields', () => {
@@ -179,7 +184,8 @@ test('Fish natural voice accepts the exact live/replay persona payload but no ex
   const dialog=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
   const route=readFileSync(new URL('../app/api/app/my-coach/voice/synthesize/route.js',import.meta.url),'utf8')
   assert.match(speech,/body:JSON\.stringify\(\{provider:voiceProvider,locale:replyLocale,personaId,/)
-  assert.match(dialog,/body:JSON\.stringify\(\{provider:cloudProvider,personaId,/)
+  assert.match(dialog,/body:JSON\.stringify\(\{provider:chosenCloudProvider,personaId,/)
+  assert.match(dialog,/const chosenCloudProvider=usingExistingVoice\?cloudProvider:\s*geminiVoiceReady\?geminiVoiceTier:null/)
   assert.match(route,/const \{provider:_,\.\.\.fishRaw\}=raw/)
   assert.match(route,/normalizeMyCoachFishRequest\(fishRaw\)/)
   const normal={locale:'ru',text:'Какой следующий шаг сейчас поможет?',voiceConsent:true,
@@ -225,7 +231,7 @@ test('PCM analysis remains bounded but cannot deform the photographic face',()=>
 test('Play starts the authored natural voice once, without recording or extra checkbox',()=>{
   const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
   const voice=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
-  assert.ok(ui.includes('getCoachPresentation(personaId,conversationLang)?.text'))
+  assert.ok(ui.includes('coachOpeningIntro(personaId,conversationLang)'))
   assert.ok(ui.includes("const conversationLang=['en','ru','es'].includes(speechLocale)?speechLocale:lang"))
   assert.ok(ui.includes('const [cloudAgreed,setCloudAgreed]=useState(false)'))
   assert.ok(ui.includes('introduction={introduction} onSessionStart={()=>setCloudAgreed(true)}'))
@@ -238,7 +244,7 @@ test('Play starts the authored natural voice once, without recording or extra ch
   assert.ok(voice.includes('sessionStartRef.current?.()'))
   assert.ok(voice.includes('<Play size={19}'))
   assert.ok(voice.includes('(naturalVoice||voiceAgreed)&&voiceAvailable'))
-  assert.ok(voice.includes('voiceConfigRef.current={cloudAgreed,cloudAvailable,cloudProvider}'))
+  assert.ok(voice.includes('voiceConfigRef.current={cloudAgreed,cloudAvailable,cloudProvider,voiceName}'))
   assert.ok(voice.includes('trainingUseConsent:true'))
   assert.ok(voice.includes('cloudVoiceConsent:true'))
   assert.ok(voice.includes('introPlayerRef.current=startDirectCoachIntroAudio'))
@@ -247,7 +253,7 @@ test('Play starts the authored natural voice once, without recording or extra ch
   assert.ok(!voice.includes('audio-storyboard'))
 })
 
-test('each of ten AI personae introduces its own approach and unique speech style in EN/RU/ES',()=>{
+test('each of eleven AI personae introduces its own approach and unique speech style in EN/RU/ES',()=>{
   assert.deepEqual(Object.keys(COACH_PRESENTATIONS).sort(),COACH_PERSONAS.map(p=>p.id).sort())
   for(const locale of COACH_LOCALES){
     const voices=new Set(),introductions=new Set(),styles=new Set()
@@ -264,9 +270,9 @@ test('each of ten AI personae introduces its own approach and unique speech styl
       const behavior=buildCoachBehaviorPolicy(persona.id,{},locale)
       assert.ok(behavior.systemInstructions.includes(intro.style),persona.id+' model keeps its style')
     }
-    assert.equal(introductions.size,10)
-    assert.equal(styles.size,10)
-    assert.equal(voices.size,10)
+    assert.equal(introductions.size,11)
+    assert.equal(styles.size,11)
+    assert.equal(voices.size,11)
   }
   assert.equal(getCoachPresentation('__proto__'),null)
   assert.equal(getCoachPresentation('unknown'),null)
@@ -291,13 +297,13 @@ test('legacy persona speech profiles remain pure and do not trigger device playb
   }
 })
 
-test('the ten approved presentations flow directly into the same live dialogue',()=>{
+test('the eleven registered presentations flow directly into the same live dialogue',()=>{
   const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
   const voice=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
   const css=readFileSync(new URL('../components/my-coach-live-dialogue.module.css',import.meta.url),'utf8')
   const intro=readFileSync(new URL('../components/my-coach-voice-introduction.jsx',import.meta.url),'utf8')
   const introCss=readFileSync(new URL('../components/my-coach-voice-introduction.module.css',import.meta.url),'utf8')
-  assert.ok(ui.includes('getCoachPresentation(personaId,conversationLang)?.text'))
+  assert.ok(ui.includes('coachOpeningIntro(personaId,conversationLang)'))
   assert.ok(ui.includes('introduction={introduction}'))
   assert.ok(ui.includes('onSessionStart={()=>setCloudAgreed(true)}'))
   assert.ok(ui.includes('replayingIntro'))

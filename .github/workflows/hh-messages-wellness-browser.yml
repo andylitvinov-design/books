@@ -1,7 +1,7 @@
 name: Holistic House Messages wellness synthetic browser QA
 on:
   pull_request:
-    types: [opened, reopened, synchronize, ready_for_review]
+    types: [labeled]
     branches: [codex/public-book-library]
     paths:
       - 'app/**/app/messages/**'
@@ -20,8 +20,9 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 jobs:
   synthetic-browser:
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
-    runs-on: ubuntu-24.04
+    # Browser runs only on manual dispatch; labeled PRs get cheap source syntax.
+    if: ${{ github.event_name != 'pull_request' || (github.event.label.name == 'qa-optional' && github.event.pull_request.draft == false) }}
+    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-slim' || 'ubuntu-24.04' }}
     timeout-minutes: 35
     env:
       NEXT_TELEMETRY_DISABLED: '1'

@@ -23,7 +23,7 @@ export const metadata = {
 }
 
 export default async function YoutubeUploadPage({searchParams}) {
-  if (!await requireAdminRequest()) redirect('/admin/login')
+  if (!await requireAdminRequest()) redirect('/admin/login?destination=youtube')
   const locale = (await cookies()).get(uiLocaleCookie)?.value === 'en' ? 'en' : 'ru'
   const params=await searchParams
   const importTelegramCut=params?.import==='telegramCut'

@@ -18,7 +18,7 @@ const methods={
  solution_focused:['preferred_future','exceptions','strengths','experiment','review'],
  appreciative_inquiry:['discover','dream','design','deliver','review']
 }
-const personaIds=['mira','max','sofia','alex','merlin','lea','noah','iris','ray']
+const personaIds=['mira','max','sofia','alex','merlin','harry','genie','lea','noah','iris','ray']
 const directive=(methodId='grow',step='goal',extra={})=>({
  locale:'ru',personaId:'mira',methodId,methodStepId:methodId+':'+step,
  stage:step==='review'?'review':'goal',interventionId:'clarify_goal',
@@ -55,7 +55,7 @@ test('all six existing method shapes have three unique original questions per st
  }
  assert.equal(uniqueIds.size,93)
 })
-test('all nine persona styles have eight distinct speech acts per locale, no imposed scripted questions',()=>{
+test('all eleven persona styles have eight distinct speech acts per locale, no imposed scripted questions',()=>{
  assert.deepEqual(Object.keys(COACH_PERSONA_SPEECH_VARIANTS).sort(),[...personaIds].sort())
  const acts=['contact','reflect','clarify','repair','transition','pause','review','action']
  for(const id of personaIds){

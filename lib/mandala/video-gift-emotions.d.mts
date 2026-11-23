@@ -1,0 +1,15 @@
+export type VideoGiftEmotionLocale="en"|"ru"|"es";
+export type GiftEmotionCategoryId="miss-you" | "thank-you" | "support-motivation" | "congratulations";
+export type GiftEmotionMessageId="thinking-of-you" | "sending-you-a-hug" | "youre-amazing" | "youre-in-my-heart" | "for-my-family" | "for-your-support" | "from-the-heart" | "you-mean-so-much" | "youre-not-alone" | "this-too-shall-pass" | "better-days-ahead" | "i-believe-in-you" | "happy-birthday" | "happy-holidays" | "im-proud-of-you" | "you-deserve-it";
+export type GiftEmotionStyleId="gentle" | "warm" | "joyful" | "inspiring";
+export type GiftOccasion="birthday"|"love"|"thanks"|"support"|"anniversary"|"custom";
+export type GiftEmotionLabel=Record<VideoGiftEmotionLocale,string>;
+export type GiftEmotionMessage={id:GiftEmotionMessageId;occasion:GiftOccasion;label:GiftEmotionLabel;copy:Record<VideoGiftEmotionLocale,{message:string;finalWish:string}>};
+export type GiftEmotionCategory={id:GiftEmotionCategoryId;label:GiftEmotionLabel;defaultStyle:GiftEmotionStyleId;messages:readonly GiftEmotionMessage[]};
+export type GiftEmotionStyle={id:GiftEmotionStyleId;label:GiftEmotionLabel;motion:"zoom"|"pan"|"float";palette:"sunrise"|"rose"|"ocean"|"forest";soundtrack:"forest"|"breeze"|"crystal";group:"sky"|"flowers"|"forest"|"mountain"};
+export declare const VIDEO_GIFT_EMOTIONS:readonly GiftEmotionCategory[];
+export declare const VIDEO_GIFT_STYLES:readonly GiftEmotionStyle[];
+export declare function getGiftEmotionCategory(id:unknown):GiftEmotionCategory|null;
+export declare function getGiftEmotionMessage(categoryId:unknown,messageId:unknown):GiftEmotionMessage|null;
+export declare function getGiftEmotionStyle(id:unknown):GiftEmotionStyle|null;
+export declare function suggestGiftEmotionText(locale:VideoGiftEmotionLocale,categoryId:GiftEmotionCategoryId,messageId:GiftEmotionMessageId):{intro:string;message:string;finalWish:string};

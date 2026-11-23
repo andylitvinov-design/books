@@ -23,10 +23,13 @@ import {captureTelegramBusinessInbox,setTelegramBusinessReplyState,telegramBotHu
 import {telegramBusinessReplyFailure,telegramBusinessReplyCrmState} from '@/lib/crm/telegram-delivery-status.mjs'
 import {captureTelegramLeadBestEffort} from '@/lib/crm/telegram-lead-capture-policy.mjs'
 import {captureWhatsAppFirstContact,recordWhatsAppInboundReceipt} from '@/lib/crm/whatsapp-lead-capture'
+import {whatsappHumanTakeoverActive} from '@/lib/crm/whatsapp-human-takeover'
+import {archiveWhatsAppAliAcceptedReply} from '@/lib/crm/whatsapp-ali-reply-archive'
 import {telegramBusinessMessageFromUpdate} from '@/lib/assist/telegram-business-request.mjs'
 import {parseHiTelegramRating} from '@/lib/holistic-support/hi-learning-policy.mjs'
 import {insertHiLearningQuality} from '@/lib/holistic-support/hi-learning-store'
 import {processTelegramBusinessSecretary,gateTelegramBusinessSecretaryOptOut} from '@/lib/crm/telegram-secretary-service'
+import {composeTelegramSecretaryClarification} from '@/lib/crm/telegram-secretary-offers.mjs'
 
 import {notifyConfirmedTelegramBusinessOwner} from '@/lib/crm/telegram-business-owner-notice'
 import {processWhatsAppSecretary} from '@/lib/crm/whatsapp-secretary-service'
@@ -117,6 +120,11 @@ export async function POST(request,{params}){
       telegramBusinessInbox=await captureTelegramBusinessInbox(body,config,businessLead)
       // A confirmed human reply takes precedence over AI service/FAQ scripts.
       if(telegramBusinessInbox.humanActive)return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
+      // crm_msg_ingest rejects duplicate signed provider events durably, even
+      // after the 24h SQL rate-limit window expires. Never reply a second time
+      // to an old update (or reply before its CRM receipt was persisted).
+      if(telegramBusinessInbox.matched&&telegramBusinessInbox.recorded!==true)
+        return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
     }
     // Separate signed Business-chat service intake: only public service-code
     // messages and explicit short replies, never ordinary personal text or
@@ -141,7 +149,7 @@ export async function POST(request,{params}){
           try{
             await consumeRate(config,{op:'hh-tg-business-intent-message',
               connectionId:business.connectionId,chatId:business.to,
-              messageId:business.messageId},1,7*86400)
+              messageId:business.messageId},1,86400)
             // Reserve bounded receipt/STOP capacity beyond the 3 dialogue
             // prompts. Abuse still uses event-idempotency and the global cap.
             if(business.terminal){
@@ -189,17 +197,27 @@ export async function POST(request,{params}){
       }
       // After the existing consent/format/STOP workflow, respond to explicit
       // product lookup questions using only reviewed first-party sources.
-      const secretary=await processTelegramBusinessSecretary(body,config)
+      const secretary=await processTelegramBusinessSecretary(body,config,process.env,{
+        // A verified, non-suppressed existing CRM contact replied after Ali's
+        // one-time welcome. New contacts still use the original greeting.
+        allowClarification:telegramBusinessInbox?.matched===true&&
+          telegramBusinessInbox.recorded===true&&
+          businessLead?.created!==true&&businessLead?.suppressed!==true,
+      })
       if(secretary.handled){
         if(secretary.reply){
           let providerAccepted=false
           try{
             await consumeRate(config,{op:'hh-tg-secretary-reply',
               connectionId:secretary.connectionId,chatId:secretary.to,
-              messageId:secretary.messageId},1,7*86400)
+              messageId:secretary.messageId},1,86400)
             await consumeRate(config,{op:'hh-tg-secretary-chat',
               connectionId:secretary.connectionId,chatId:secretary.to},15,86400)
             await consumeRate(config,{op:'hh-tg-secretary-global'},100,86400)
+            // Bounded generic clarifications prevent an endless echo loop.
+            if(secretary.kind==='clarify')
+              await consumeRate(config,{op:'hh-tg-secretary-clarify-chat',
+                connectionId:secretary.connectionId,chatId:secretary.to},12,86400)
             // Telemetry failures do not silence otherwise permitted messages.
             try{await setTelegramBusinessReplyState(config,telegramBusinessInbox,'send_pending')}
             catch{console.error('HH_TG_SECRETARY_REPLY_STATE_UNAVAILABLE')}
@@ -281,6 +299,14 @@ export async function POST(request,{params}){
           continue
         }
         if(event.type==='incoming'){
+          if(waCaptureSuppressed)continue
+          // When the owner takes this WhatsApp thread, Ali must not speak
+          // over the human. Preserve one neutral CRM receipt for the inbound.
+          // STOP deliberately bypasses the pause and remains suppressible.
+          if(await whatsappHumanTakeoverActive(event,config)){
+            await recordWhatsAppInboundReceipt(event,config)
+            continue
+          }
           // Reuse the verified public Secretary catalogue, not a second AI
           // provider. Never intercept consent, STOP or an active private intake.
           const secretary=await processWhatsAppSecretary(event,config)
@@ -289,13 +315,18 @@ export async function POST(request,{params}){
             // but outside explicit intake only a neutral receipt is retained.
             if(!waCaptureSuppressed)
               await recordWhatsAppInboundReceipt(event,config)
-            if(secretary.reply){
+            if(secretary.reply&&!(await whatsappHumanTakeoverActive(event,config))){
               try{
                 await consumeRate(config,{op:'hh-wa-secretary-chat',
                   peer:operationHash({business:event.accountId,peer:event.userId},config)},12,86400)
                 await consumeRate(config,{op:'hh-wa-secretary-global'},100,86400)
-                await sendWhatsAppDiagnosticPrompt({to:secretary.to,text:secretary.reply,
+                const accepted=await sendWhatsAppDiagnosticPrompt({to:secretary.to,text:secretary.reply,
                   locale:secretary.locale})
+                // Provider acceptance is not delivery. Archive only when a
+                // prior private CRM consent exists; no second Meta send.
+                if(accepted?.status==='accepted'&&accepted.providerId)try{
+                  await archiveWhatsAppAliAcceptedReply(event,config,secretary.reply,accepted.providerId)
+                }catch{console.error('HH_CRM_WA_ALI_REPLY_ARCHIVE_UNCONFIRMED')}
               }catch{console.error('HH_CRM_WA_SECRETARY_SEND_UNCONFIRMED')}
             }
             continue
@@ -327,12 +358,17 @@ export async function POST(request,{params}){
           // Otherwise retain a neutral touchpoint, never personal text/media.
           if(!waCaptureSuppressed)
             await recordWhatsAppInboundReceipt(event,config)
-          if(intake.handled&&intake.reply){
+          if(intake.handled&&intake.reply&&!(await whatsappHumanTakeoverActive(event,config))){
             // Consent/CRM state are committed before one reply attempt.
             // Uncertain provider outcomes must not automatically repeat.
-            try{await sendWhatsAppDiagnosticPrompt({
-              to:intake.to,text:intake.reply,keyboard:intake.keyboard,locale:intake.locale
-            })}catch{console.error('HH_CRM_WA_PROMPT_SEND_UNCONFIRMED')}
+            try{
+              const accepted=await sendWhatsAppDiagnosticPrompt({
+                to:intake.to,text:intake.reply,keyboard:intake.keyboard,locale:intake.locale
+              })
+              if(accepted?.status==='accepted'&&accepted.providerId)try{
+                await archiveWhatsAppAliAcceptedReply(event,config,intake.reply,accepted.providerId)
+              }catch{console.error('HH_CRM_WA_ALI_REPLY_ARCHIVE_UNCONFIRMED')}
+            }catch{console.error('HH_CRM_WA_PROMPT_SEND_UNCONFIRMED')}
           }
           // Every verified, connected inbound has a contact and at least
           // a neutral message receipt, independent of the chosen scenario.
@@ -589,12 +625,35 @@ export async function POST(request,{params}){
           })}catch{console.error('HH_CRM_TG_DIAGNOSTIC_FALLBACK_UNCONFIRMED')}
           continue
         }
-        // Diagnostic buttons must never fall through to ordinary CRM ingestion.
+        // Diagnostic buttons cannot become generic CRM events. Non-text
+        // unhandled voice/photo/sticker stays a NEUTRAL receipt, never a
+        // fabricated transcript or an implicit photo/diagnostic consent.
         if(event.callbackId)continue
-        // Never turn untranscribed private audio into a fake text CRM lead.
-        if(event.isTelegramVoice)continue
       }
-      await ingestMessengerUpdate(provider,event,config)
+      const archived=await ingestMessengerUpdate(provider,event,config)
+      // After Companion, V3, legacy interview and human takeover had their
+      // chance, reply to EACH newly archived signed Bot turn. CRM replay
+      // receipts prevent duplicates across retries and serverless instances.
+      if(provider==='telegram'&&event?.type==='incoming'&&archived===true&&
+         !event.callbackId&&typeof event.rawText==='string'){
+        const raw=event.rawText
+        const locale=/[а-яё]/iu.test(raw)?'ru':
+          /[¡¿áéíóúñ]|\b(?:hola|gracias|qué|que|cómo|dónde)\b/iu.test(raw)?'es':
+          event.language?.startsWith('ru')?'ru':event.language?.startsWith('es')?'es':'en'
+        const mediaKind=event.isTelegramVoice?'voice':
+          event.photoFileId?'photo':!raw?'media':null
+        const clarified=composeTelegramSecretaryClarification(raw,locale,{mediaKind})
+        if(clarified?.text)try{
+          await consumeRate(config,{op:'hh-tg-bot-clarify-chat',to:event.userId},12,86400)
+          await consumeRate(config,{op:'hh-tg-bot-clarify-global'},100,86400)
+          await sendTelegramDiagnosticPrompt({
+            to:String(event.userId),text:clarified.text,locale,
+          })
+        }catch{
+          // Never retry unknown Telegram acceptance and risk duplicates.
+          console.error('HH_TG_BOT_CLARIFY_SEND_UNCONFIRMED')
+        }
+      }
     }
     // If the contact write failed, Telegram retries this signed update. The
     // committed Companion/V3 stages and provider event hashes prevent a

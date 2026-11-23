@@ -1,19 +1,20 @@
 import Link from 'next/link'
 import {
-  Activity, ArrowRight, BookOpen, BriefcaseBusiness, CalendarDays,
-  FileText, Heart, Route, Settings2, Sparkles, UserRound,
+  ArrowRight, BookOpen, Brain, BriefcaseBusiness, CalendarDays,
+  Heart, NotebookPen, Settings2, Sparkles, Target, UserRound,
 } from 'lucide-react'
 import styles from './profile-space-dashboard.module.css'
+import { ProfileSpaceFocus } from './profile-space-focus'
 
 const TEXT = {
   en: {
     label: 'MY SPACE', title: 'My Space',
     intro: 'Your wellbeing, progress and personal growth — all in one place.',
     life: 'My Life', work: 'My Work',
-    path: 'My Path', pathDetail: 'Continue your journey and next steps.',
-    state: 'My State', stateDetail: 'Tests, wellbeing and dynamics',
+    path: 'Coaching Daybook', pathDetail: 'Intentions, notes & check-ins.',
+    state: 'My Goals & Coaching Reports', stateDetail: 'Goals, actions & session reports',
     courses: 'My Courses', coursesDetail: 'My learning and progress',
-    reports: 'My Reports', reportsDetail: 'Personal analyses and guidance',
+    reports: 'My Psychic Health', reportsDetail: 'Tests & therapy plan',
     sessions: 'My Sessions', sessionsDetail: 'Saved consultations and history',
     page: 'My Page', pageDetail: 'My profile and info',
     settings: 'Settings', settingsDetail: 'Preferences and account',
@@ -23,10 +24,10 @@ const TEXT = {
     label: 'МОЁ ПРОСТРАНСТВО', title: 'Моё пространство',
     intro: 'Самочувствие, развитие и личные результаты — всё в одном месте.',
     life: 'Моя жизнь', work: 'Моя работа',
-    path: 'Мой путь', pathDetail: 'Продолжить развитие и следующие шаги.',
-    state: 'Моё состояние', stateDetail: 'Тесты, самочувствие и динамика',
+    path: 'Дневник коучинга', pathDetail: 'Цели, заметки и ежедневные шаги.',
+    state: 'Мои цели и отчёты коучинга', stateDetail: 'Цели, действия и итоги сессий',
     courses: 'Мои курсы', coursesDetail: 'Обучение и прогресс',
-    reports: 'Мои отчёты', reportsDetail: 'Личный анализ и рекомендации',
+    reports: 'Моё психическое здоровье', reportsDetail: 'Тесты и план терапии',
     sessions: 'Мои сессии', sessionsDetail: 'Сохранённые консультации',
     page: 'Моя страница', pageDetail: 'Профиль и информация',
     settings: 'Настройки', settingsDetail: 'Личные параметры и аккаунт',
@@ -36,10 +37,10 @@ const TEXT = {
     label: 'MI ESPACIO', title: 'Mi espacio',
     intro: 'Bienestar, progreso y crecimiento personal en un solo lugar.',
     life: 'Mi vida', work: 'Mi trabajo',
-    path: 'Mi camino', pathDetail: 'Continúa tu recorrido y próximos pasos.',
-    state: 'Mi estado', stateDetail: 'Tests, bienestar y evolución',
+    path: 'Diario de coaching', pathDetail: 'Intenciones, notas y seguimiento.',
+    state: 'Mis metas e informes de coaching', stateDetail: 'Metas, acciones y sesiones',
     courses: 'Mis cursos', coursesDetail: 'Aprendizaje y progreso',
-    reports: 'Mis informes', reportsDetail: 'Análisis y orientación personal',
+    reports: 'Mi salud mental', reportsDetail: 'Tests y plan terapéutico',
     sessions: 'Mis sesiones', sessionsDetail: 'Consultas guardadas',
     page: 'Mi página', pageDetail: 'Perfil e información',
     settings: 'Ajustes', settingsDetail: 'Preferencias y cuenta',
@@ -47,13 +48,13 @@ const TEXT = {
   },
 }
 
-export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultCount = null }) {
+export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultCount = null, accountId = null }) {
   const selected = Object.hasOwn(TEXT, locale) ? locale : 'en'
   const t = TEXT[selected]
   const cards = [
-    { id: 'state', icon: Activity, href: root + '/monitoring', title: t.state, detail: t.stateDetail },
+    { id: 'state', icon: Target, href: root + '/my-coaching-plan', title: t.state, detail: t.stateDetail },
     { id: 'courses', icon: BookOpen, href: root + '/course?view=courses', title: t.courses, detail: t.coursesDetail },
-    { id: 'reports', icon: FileText, href: root + '/portrait?space=reports', title: t.reports, detail: t.reportsDetail },
+    { id: 'reports', icon: Brain, href: root + '/portrait?space=reports', title: t.reports, detail: t.reportsDetail },
     { id: 'sessions', icon: CalendarDays, href: root + '/portrait?space=sessions', title: t.sessions, detail: t.sessionsDetail },
   ]
 
@@ -68,9 +69,10 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
       <p className={styles.eyebrow}><Sparkles size={17} aria-hidden="true" />{t.label}</p>
       <h1 className={styles.title}>{t.title}</h1>
       <p className={styles.intro}>{t.intro}</p>
+      <ProfileSpaceFocus locale={selected} root={root} accountId={accountId} />
       <Link className={styles.path} href={root + '/portrait?space=path'} prefetch={false}
         data-profile-space-path>
-        <span className={styles.pathIcon} aria-hidden="true"><Route size={30}/></span>
+        <span className={styles.pathIcon} aria-hidden="true"><NotebookPen size={30}/></span>
         <span className={styles.pathText}><strong>{t.path}</strong><small>{t.pathDetail}</small></span>
         <ArrowRight className={styles.pathArrow} size={23} aria-hidden="true"/>
       </Link>
@@ -83,7 +85,7 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
           <span className={styles.cardBody}>
             <span className={styles.cardIcon} aria-hidden="true"><Icon size={21}/></span>
             <strong>{title}</strong>
-            {id === 'state' && Number.isInteger(resultCount) && resultCount > 0
+            {id === 'reports' && Number.isInteger(resultCount) && resultCount > 0
               && <span className={styles.count} aria-label={resultCount + ' ' + t.completed}>{resultCount}</span>}
             <small>{detail}</small>
           </span>

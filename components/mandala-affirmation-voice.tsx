@@ -621,7 +621,7 @@ export function MandalaAffirmationVoice({
               disabled={busy||disabled||Boolean(v.requiresProviderLicense&&!fishLicensedIds.includes(v.id))} onClick={()=>{
                 resetSample();setVoiceId(v.id);setLanguage(v.language as SpeechLanguage);setConsent(false);
               }}>
-              <span><strong>{v.name[locale]}</strong><small>{v.language==="ru"?"Русский":"English"} · {v.requiresProviderLicense?f.license:"Fish Official"}</small></span>
+              <span><strong>{v.name[locale]}</strong><small>{v.language==="ru"?"Русский":"English"} · {v.requiresProviderLicense?(fishLicensedIds.includes(v.id)?"Fish Audio":f.license):"Fish Official"}</small></span>
               <span aria-hidden="true">{voiceId===v.id?"✓":"○"}</span>
             </button>
             <button type="button" className={css.sampleButton} data-video-affirmation-voice-preview={v.id}

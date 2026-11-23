@@ -425,6 +425,24 @@ jobs:
       - name: Verify specialist ownership and Messenger isolation on CI-policy changes
         if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT')) && (github.event_name != 'pull_request' || steps.diff.outputs.ci_touched == 'true') }}
         run: node --test tests/ci-workflow-globs.test.mjs tests/workflow-next-route-filters.test.mjs tests/ci-specialist-aggregate.test.mjs tests/ci-growth-course-core-reuse.test.mjs
+      # Public greeting and motion changes no longer book unrelated private App
+      # or storefront E2E. Retain source/persona/media checks in mandatory Core.
+      - name: Public Ali greeting + coach motion release contracts
+        if: ${{ github.event_name == 'pull_request' && steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ -f /tmp/hh-pr-changed-files.z ]] || { echo 'Missing verified Core changed-file list' >&2; exit 1; }
+          tr '\0' '\n' < /tmp/hh-pr-changed-files.z > "$RUNNER_TEMP/hh-public-greeting-changes.txt"
+          if grep -Eq '^(components/app/(ali-persona-audio\.js|coaching-avatar\.jsx)|components/my-coach-motion-media\.jsx|app/api/ali/voice/|lib/holistic-support/ali-gemini-free-tts\.mjs|public/images/holistic-house/my-coach-motion/|tests/(ali-persona-selector|coach-greeting-video|my-coach-personas)\.test\.mjs)' "$RUNNER_TEMP/hh-public-greeting-changes.txt"; then
+            tests=(tests/ali-persona-selector.test.mjs tests/my-coach-personas.test.mjs)
+            # The coach-video contract is introduced by its own release PR.
+            # Require and execute it wherever it exists on the tested HEAD.
+            if [[ -f tests/coach-greeting-video.test.mjs ]]; then
+              tests+=(tests/coach-greeting-video.test.mjs)
+            fi
+            node --test "${tests[@]}"
+          fi
       - name: Commander PR served-LIVE provenance contracts
         if: >-
           github.event_name == 'pull_request' &&
@@ -613,7 +631,7 @@ jobs:
           echo "route=$route" >> "$GITHUB_OUTPUT"
           echo "Independent trusted specialist route: $route" >> "$GITHUB_STEP_SUMMARY"
       - name: Validate exact-head risk and required specialist workflows
-        if: github.event_name == 'pull_request' && (steps.specialist_route.outputs.route == 'FULL' || steps.specialist_route.outputs.route == 'DOCK')
+        if: github.event_name == 'pull_request' && (steps.specialist_route.outputs.route == 'FULL' || steps.specialist_route.outputs.route == 'DOCK' || steps.specialist_route.outputs.route == 'CORE')
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -639,6 +657,9 @@ jobs:
             fi
             if git cat-file -e "$HH_TRUSTED_BASE_SHA:lib/ci/production-base-impact.mjs" 2>/dev/null; then
               git show "$HH_TRUSTED_BASE_SHA:lib/ci/production-base-impact.mjs" > "$RUNNER_TEMP/hh-ci-trusted/lib/ci/production-base-impact.mjs"
+            fi
+            if git cat-file -e "$HH_TRUSTED_BASE_SHA:lib/ci/merge-check-light.mjs" 2>/dev/null; then
+              git show "$HH_TRUSTED_BASE_SHA:lib/ci/merge-check-light.mjs" > "$RUNNER_TEMP/hh-ci-trusted/lib/ci/merge-check-light.mjs"
             fi
             node "$RUNNER_TEMP/hh-ci-trusted/scripts/ci-specialist-aggregate.mjs"
           else

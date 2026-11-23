@@ -3,9 +3,9 @@
 import {useEffect,useRef,useState,type ReactNode} from "react";
 import Link from "next/link";
 import {BookOpen, CalendarDays, ClipboardCheck, Clapperboard, Flower2,
-  HandHeart, MessageCircle, Play, X} from "lucide-react";
+  HandHeart, MessageCircle, Play, X, ChevronDown} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
-import {Heart,Sun,Compass,BriefcaseBusiness,Sprout,SearchCheck,Lightbulb,Flag} from "lucide-react";
+import {Heart,Sun,Compass,BriefcaseBusiness,Sprout,Lightbulb,Flag,ArrowRight,Sparkles,UserRound,ShoppingBag,UsersRound} from "lucide-react";
 import css from "./messenger-ai-landing.module.css";
 import {useAliPersona} from "./use-ali-persona";
 import {playAliPersonaAudio,stopAliPersonaAudio,prepareAliNaturalVoice} from "./ali-persona-audio";
@@ -71,10 +71,14 @@ const COPY={
 
 /* Conversation-first welcome: topics are editable starters, not diagnostic labels. */
 const TOPICS=[
- {id:"stress",icon:Flower2},{id:"relationships",icon:Heart},
- {id:"confidence",icon:Sun},{id:"money",icon:BriefcaseBusiness},
- {id:"energy",icon:Sprout},{id:"direction",icon:Compass},
- {id:"business",icon:Lightbulb},{id:"growth",icon:Flag},
+ {id:"stress",icon:Flower2,art:"/images/holistic-house/assessment-lotus.svg"},
+ {id:"relationships",icon:Heart,art:"/images/holistic-house/ideas-zen-landscape.svg"},
+ {id:"money",icon:BriefcaseBusiness,art:"/images/holistic-house/ideas-pine-reference.webp"},
+ {id:"energy",icon:Sprout,art:"/images/holistic-house/messenger-zen-stones.svg"},
+ {id:"confidence",icon:Sun,art:"/images/holistic-house/ideas-zen-landscape.svg"},
+ {id:"direction",icon:Compass,art:"/images/holistic-house/ideas-pine-reference.webp"},
+ {id:"business",icon:Lightbulb,art:"/images/holistic-house/books-library.webp"},
+ {id:"growth",icon:Flag,art:"/images/holistic-house/course-journey-landscape.svg"},
 ] as const;
 const INNER_COPY={
  en:{
@@ -82,15 +86,15 @@ const INNER_COPY={
   promise:"Let's understand your situation, find what matters most, and choose a helpful next step together.",
   question:"What would you like to begin with today?",
   help:"Tell me about your situation, your goal, or what you would like to change.",
-  steps:["Understand your situation","Find the right support","Choose your next step"],
+  steps:["Tell us your goal","Get a personal next step","Choose support or action"],
   analysis:"Start personal analysis",analysisHelp:"A gentle, free exploration of your situation",
   topics:{
-   stress:{label:"Stress & anxiety",prompt:"I feel stressed or anxious and would like to understand what is happening."},
-   relationships:{label:"Relationships",prompt:"I would like to talk about a difficult situation in my relationships."},
+   stress:{label:"Stress & Anxiety Relief",prompt:"I feel stressed or anxious and would like to understand what is happening."},
+   relationships:{label:"Love & Relationships",prompt:"I would like to talk about a difficult situation in my relationships."},
    confidence:{label:"Confidence",prompt:"I would like to regain confidence in myself."},
-   money:{label:"Work & money",prompt:"I would like to understand my challenges with work or money."},
-   energy:{label:"Energy & burnout",prompt:"I am tired or burned out and want to understand how to restore my energy."},
-   direction:{label:"Life direction",prompt:"I want to find clarity about my direction in life."},
+   money:{label:"Money & Growth",prompt:"I would like to understand my challenges with work or money."},
+   energy:{label:"Energy & Life Balance",prompt:"I am tired or burned out and want to understand how to restore my energy."},
+   direction:{label:"Goals & meaning",prompt:"I want to find clarity about my direction in life."},
    business:{label:"Business support",prompt:"I want to discuss a business challenge and find a practical next step."},
    growth:{label:"Personal growth",prompt:"I would like to understand myself better and grow."},
   },
@@ -100,15 +104,15 @@ const INNER_COPY={
   promise:"Давай разберёмся, что происходит в твоей ситуации, что действительно важно, и вместе найдём подходящий следующий шаг.",
   question:"С чего тебе хотелось бы начать сегодня?",
   help:"Расскажи о своей ситуации, проблеме, цели или о том, чего хотелось бы достичь.",
-  steps:["Разберём ситуацию","Найдём поддержку","Выберем следующий шаг"],
+  steps:["Расскажите о цели","Получите личную рекомендацию","Выберите действие"],
   analysis:"Начать личный разбор",analysisHelp:"Бережно и бесплатно разберёмся в твоём вопросе",
   topics:{
    stress:{label:"Стресс и тревога",prompt:"Я испытываю стресс или тревогу и хочу разобраться, что происходит."},
-   relationships:{label:"Отношения",prompt:"Я хочу разобраться в сложной ситуации в отношениях."},
+   relationships:{label:"Любовь и отношения",prompt:"Я хочу разобраться в сложной ситуации в отношениях."},
    confidence:{label:"Уверенность",prompt:"Я хочу вернуть уверенность в себе."},
-   money:{label:"Работа и деньги",prompt:"Я хочу разобраться с трудностями в работе или финансах."},
-   energy:{label:"Усталость и силы",prompt:"Я чувствую усталость или выгорание и хочу восстановить силы."},
-   direction:{label:"Мой путь",prompt:"Я хочу лучше понять, куда двигаться дальше в жизни."},
+   money:{label:"Деньги и развитие",prompt:"Я хочу разобраться с трудностями в работе или финансах."},
+   energy:{label:"Энергия и баланс",prompt:"Я чувствую усталость или выгорание и хочу восстановить силы."},
+   direction:{label:"Цели и смысл",prompt:"Я хочу лучше понять, куда двигаться дальше в жизни."},
    business:{label:"Поддержка бизнеса",prompt:"Я хочу обсудить сложность в бизнесе и найти практичное решение."},
    growth:{label:"Личный рост",prompt:"Я хочу лучше понять себя и развиваться."},
   },
@@ -118,15 +122,15 @@ const INNER_COPY={
   promise:"Exploremos juntos tu situación, lo que más importa y un siguiente paso que pueda ayudarte.",
   question:"¿Por dónde te gustaría empezar hoy?",
   help:"Cuéntame tu situación, un problema, una meta o lo que te gustaría cambiar.",
-  steps:["Comprender la situación","Encontrar apoyo","Elegir el próximo paso"],
+  steps:["Cuéntanos tu meta","Recibe un paso personal","Elige cómo avanzar"],
   analysis:"Iniciar análisis personal",analysisHelp:"Una exploración amable y gratuita de tu situación",
   topics:{
    stress:{label:"Estrés y ansiedad",prompt:"Siento estrés o ansiedad y quiero comprender lo que me ocurre."},
-   relationships:{label:"Relaciones",prompt:"Quisiera comprender una situación difícil en mis relaciones."},
+   relationships:{label:"Amor y relaciones",prompt:"Quisiera comprender una situación difícil en mis relaciones."},
    confidence:{label:"Confianza",prompt:"Quiero recuperar la confianza en mí."},
-   money:{label:"Trabajo y dinero",prompt:"Quiero aclarar dificultades relacionadas con el trabajo o el dinero."},
-   energy:{label:"Energía y cansancio",prompt:"Me siento cansado o agotado y quiero recuperar energía."},
-   direction:{label:"Rumbo en la vida",prompt:"Quiero aclarar qué dirección tomar en mi vida."},
+   money:{label:"Dinero y crecimiento",prompt:"Quiero aclarar dificultades relacionadas con el trabajo o el dinero."},
+   energy:{label:"Energía y equilibrio",prompt:"Me siento cansado o agotado y quiero recuperar energía."},
+   direction:{label:"Metas y sentido",prompt:"Quiero aclarar qué dirección tomar en mi vida."},
    business:{label:"Apoyo empresarial",prompt:"Quiero hablar de un problema de negocio y encontrar un próximo paso."},
    growth:{label:"Crecimiento personal",prompt:"Quiero conocerme mejor y crecer."},
   },
@@ -145,12 +149,13 @@ const ACTIONS=[
 
 export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupport,onTopicSelect,onStartAnalysis,composer}:{
   locale:PublicLocale;onCreateVideo:()=>void;onPractice:()=>void;onAsk:()=>void;onSupport:()=>void;
-  onTopicSelect:(text:string)=>void;onStartAnalysis:()=>void;composer?:ReactNode
+  onTopicSelect:(text:string)=>void;onStartAnalysis:()=>void;composer:ReactNode
 }){
   const t=COPY[locale];
   const inner=INNER_COPY[locale];
   const {persona}=useAliPersona();
   const [speaking,setSpeaking]=useState(false);
+  const [moreTopics,setMoreTopics]=useState(false);
   useEffect(()=>{void prepareAliNaturalVoice();return ()=>stopAliPersonaAudio();},[]);
   const playGreeting=()=>{
     if(speaking){stopAliPersonaAudio();setSpeaking(false);return;}
@@ -218,7 +223,110 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupp
     });
   };
 
-  return <section className={css.root} data-hh-ai-landing aria-label={welcomeTitle}>
+  return <section className={css.root} data-hh-ai-landing aria-label={welcomeTitle}
+    data-hh-chat-opening="true">
+    <nav className={css.chatShortcuts} data-hh-ai-chat-shortcuts
+      aria-label={locale==="ru"?"Разделы AI чата":locale==="es"?"Secciones del chat":"Chat sections"}>
+      <Link className={css.chatShortcut} data-hh-chat-shortcut="ai" aria-current="page"
+        href={`/${locale}/app/messages?section=ai`}>
+        <Sparkles size={18} aria-hidden="true"/>
+        <span>{locale==="ru"?"ИИ":locale==="es"?"IA":"AI"}</span>
+      </Link>
+      <Link className={css.chatShortcut} data-hh-chat-shortcut="page"
+        href={`/${locale}/app/portrait`}>
+        <UserRound size={18} aria-hidden="true"/>
+        <span>{locale==="ru"?"Моя страница":locale==="es"?"Mi página":"My page"}</span>
+      </Link>
+      <Link className={css.chatShortcut} data-hh-chat-shortcut="orders"
+        href={`/${locale}/app/messages?section=orders`}>
+        <ShoppingBag size={18} aria-hidden="true"/>
+        <span>{locale==="ru"?"Мои заказы":locale==="es"?"Mis pedidos":"My orders"}</span>
+      </Link>
+      <Link className={css.chatShortcut} data-hh-chat-shortcut="clients"
+        href={`/${locale}/app/messages?section=clients`}>
+        <UsersRound size={18} aria-hidden="true"/>
+        <span>{locale==="ru"?"Мои клиенты":locale==="es"?"Mis clientes":"My clients"}</span>
+      </Link>
+    </nav>
+    <div className={css.welcomeRow} data-hh-ali-first-message data-hh-ali-hero-persona={persona.id}>
+      <img className={css.welcomePortrait} src={persona.image} alt="" width={330} height={250}
+        loading="eager" fetchPriority="high"/>
+      <article className={css.welcomeBubble} data-hh-ai-landing-question>
+        <span className={css.heroLabel}><Sparkles size={16} aria-hidden="true"/>
+          {locale==="ru"?"ИИ-помощник":locale==="es"?"Asistente de IA":"AI Assistant"}
+        </span>
+        <h2>{welcomeTitle} <span>{guideRole}</span></h2>
+        <p>{inner.promise}</p>
+        <div className={css.welcomeMeta}>
+          <button type="button" className={css.welcomeListen} data-hh-ai-persona-voice-play
+            aria-pressed={speaking} onClick={playGreeting}
+            aria-label={locale==="ru"?(speaking?"Остановить приветствие":"Послушать приветствие"):
+              locale==="es"?(speaking?"Detener saludo":"Escuchar saludo"):
+              (speaking?"Stop greeting":"Listen to greeting")}>
+            {speaking?<X size={17} aria-hidden="true"/>:<Play size={17} fill="currentColor" aria-hidden="true"/>}
+            {speaking?(locale==="ru"?"Стоп":locale==="es"?"Detener":"Stop"):
+              locale==="ru"?"Послушать":locale==="es"?"Escuchar":"Listen"}
+          </button>
+        </div>
+      </article>
+    </div>
+    <div className={css.inlineComposer} data-hh-ai-inline-composer>{composer}</div>
+    <div className={css.topicTitleRow}>
+      <h3 className={css.topicHeading}>
+        {locale==="ru"?"Выберите направление":locale==="es"?"Elige una dirección":"Choose a direction"}
+      </h3>
+      <button type="button" className={css.moreTopics} data-hh-alchemist-more-topics
+        aria-expanded={moreTopics} onClick={()=>{
+          if(moreTopics){videoRef.current?.pause();setPlaying(false);}
+          setMoreTopics(value=>!value);
+        }}>
+        {moreTopics?(locale==="ru"?"Меньше тем":locale==="es"?"Menos temas":"Fewer topics"):
+          (locale==="ru"?"Все темы":locale==="es"?"Todos los temas":"All topics")}
+        <ArrowRight size={17} aria-hidden="true"/>
+      </button>
+    </div>
+    <div className={css.topics} role="group"
+      aria-label={locale==="ru"?"Выберите тему для разговора":locale==="es"?"Elige un tema":"Choose a conversation topic"}
+      data-hh-alchemist-topics data-hh-alchemist-visible-topics={moreTopics?8:4}>
+      {(moreTopics?TOPICS:TOPICS.slice(0,4)).map(item=>{
+        const Icon=item.icon;
+        const topic=inner.topics[item.id];
+        return <button key={item.id} type="button" data-hh-alchemist-topic={item.id}
+          onClick={()=>onTopicSelect(topic.prompt)} title={topic.label}>
+          <span className={css.topicIllustration}>
+            <img src={item.art} alt="" loading="lazy" width={80} height={80}/>
+          </span>
+          <span className={css.topicLabel}><Icon size={17} strokeWidth={1.8} aria-hidden="true"/>
+            {topic.label}</span>
+          <span className={css.topicArrow}><ArrowRight size={17} aria-hidden="true"/></span>
+        </button>;
+      })}
+    </div>
+    {moreTopics&&<div className={css.expandedContent} data-hh-ali-more-options>
+      <button type="button" className={css.analysisButton} data-hh-alchemist-start-analysis
+        onClick={onStartAnalysis}>
+        <span aria-hidden="true" className={css.analysisSparkle}><Sprout size={22}/></span>
+        <span className={css.analysisWords}><strong>{inner.analysis}</strong><small>{inner.analysisHelp}</small></span>
+        <span aria-hidden="true" className={css.analysisArrow}>→</span>
+      </button>
+      <div className={css.cards} role="group" aria-label={t.choices} data-hh-ai-quick-actions>
+        {ACTIONS.map(item=>{
+          const Icon=item.icon;
+          const label=t[item.id];
+          const content=<><Icon size={23} strokeWidth={1.9} aria-hidden="true"/>
+            <strong>{label}</strong><span className={css.art} aria-hidden="true"/></>;
+          return "href" in item?
+            <Link key={item.id} data-hh-ai-choice={item.id}
+              href={"/"+locale+"/"+item.href} className={css.card}>{content}</Link>:
+            <button type="button" key={item.id} data-hh-ai-choice={item.id}
+              className={css.card} onClick={item.id==="support"?onSupport:item.id==="video"?onCreateVideo:
+                item.id==="practice"?onPractice:onAsk}>{content}</button>;
+        })}
+      </div>
+      <details className={css.introDetails} onToggle={event=>{
+        if(!event.currentTarget.open){videoRef.current?.pause();setPlaying(false);}
+      }}>
+        <summary>{t.watch}</summary>
     <div className={css.hero} data-hh-ai-video-hero data-playing={playing?"true":"false"}
       data-hh-ali-hero-persona={persona.id}>
       <img className={css.heroPortrait} src={persona.image} alt="" width={320} height={285}
@@ -266,50 +374,8 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupp
         </span>
       </>}
     </div>
-    <div className={css.startCard} data-hh-alchemist-start>
-      <div className={css.question} data-hh-ai-landing-question>
-        <strong>{inner.question}</strong>
-        <p>{inner.help}</p>
-      </div>
-      {composer&&<div className={css.inlineComposer} data-hh-ai-inline-composer>{composer}</div>}
-    </div>
-    <div className={css.topics} role="group"
-      aria-label={locale==="ru"?"Подсказки для начала разговора":locale==="es"?"Ideas para empezar":"Ideas to start with"}
-      data-hh-alchemist-topics>
-      {TOPICS.map(item=>{
-        const Icon=item.icon;
-        const topic=inner.topics[item.id];
-        return <button key={item.id} type="button" data-hh-alchemist-topic={item.id}
-          onClick={()=>onTopicSelect(topic.prompt)} title={topic.label}>
-          <Icon size={16} strokeWidth={1.8} aria-hidden="true"/><span>{topic.label}</span>
-        </button>;
-      })}
-    </div>
-    <div className={css.journey} data-hh-alchemist-journey
-      aria-label={locale==="ru"?"Как мы будем искать решение":locale==="es"?"Cómo podemos avanzar":"How we can move forward"}>
-      {[SearchCheck,Lightbulb,Flag].map((Icon,index)=>
-        <div key={index}><Icon size={20} aria-hidden="true"/><span>{inner.steps[index]}</span></div>)}
-    </div>
-    <button type="button" className={css.analysisButton} data-hh-alchemist-start-analysis
-      onClick={onStartAnalysis}>
-      <span aria-hidden="true" className={css.analysisSparkle}><Sprout size={22}/></span>
-      <span className={css.analysisWords}><strong>{inner.analysis}</strong><small>{inner.analysisHelp}</small></span>
-      <span aria-hidden="true" className={css.analysisArrow}>→</span>
-    </button>
-    <div className={css.cards} role="group" aria-label={t.choices} data-hh-ai-quick-actions>
-      {ACTIONS.map(item=>{
-        const Icon=item.icon;
-        const label=t[item.id];
-        const content=<><Icon size={23} strokeWidth={1.9} aria-hidden="true"/>
-          <strong>{label}</strong><span className={css.art} aria-hidden="true"/></>;
-        return "href" in item?
-          <Link key={item.id} data-hh-ai-choice={item.id}
-            href={"/"+locale+"/"+item.href} className={css.card}>{content}</Link>:
-          <button type="button" key={item.id} data-hh-ai-choice={item.id}
-            className={css.card} onClick={item.id==="support"?onSupport:item.id==="video"?onCreateVideo:
-              item.id==="practice"?onPractice:onAsk}>{content}</button>;
-      })}
-    </div>
 
+      </details>
+    </div>}
   </section>;
 }

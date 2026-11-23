@@ -10,7 +10,13 @@ test("Stories keep compact Story, Extra choices, and advanced editing in Story s
  assert.match(nav,/id:"concept",Icon:Film/);
  assert.match(nav,/id:"promo",Icon:Zap/);
  assert.doesNotMatch(nav,/id:"settings",Icon:SlidersHorizontal/);
- assert.match(studio,/montagePanel==="promo" \? <MandalaMontageProOffer/);
+ // The new Extra screen presents the three text choices first. Existing
+ // PRO film format selection remains preserved under Other video formats.
+ assert.match(studio,/montagePanel==="promo" \? <>/);
+ const extraStart=studio.indexOf("<MandalaMontageExtraPersonal",studio.indexOf('montagePanel==="promo" ? <>'));
+ const extraFormats=studio.indexOf("<MandalaMontageProOffer",extraStart);
+ assert.ok(extraStart>=0&&extraFormats>extraStart,"Extra offers text modes first, with original PRO formats retained");
+ assert.match(studio.slice(extraStart,extraFormats),/Other video formats/);
  assert.match(studio,/data-video-story-open-settings\s+aria-label=/);
  assert.match(mobile,/data-video-story-open-settings\]\{\s*display:inline-flex!important/);
  assert.doesNotMatch(mobile,/data-video-story-open-settings\]\{\s*display:none!important/);
@@ -104,7 +110,7 @@ test("paid cinematic story never triggers Veo and the owner-only gate remains ex
 
 test('real five-scene WebKit acceptance uses original UI, local-only requests, distinct MP4 frames and audible H264/AAC',()=>{
  const script=readFileSync(new URL('../scripts/benchmarking/verify-five-scene-stories-browser.mjs',import.meta.url),'utf8');
- for(const marker of ['data-video-story-select-quality','data-video-stories-advanced',
+ for(const marker of ['data-video-story-open-settings','data-video-stories-advanced',
   'data-video-stories-format','data-video-stories-create','data-video-stories-scene-list',
   'data-video-montage-pro-choice="free"','readRealGuestVideo','ffprobe','STORIES_H264_REQUIRED',
   'STORIES_AAC_REQUIRED','STORIES_AUDIO_SILENT','STORIES_SCENE_FRAME_MISMATCH_',
@@ -112,6 +118,10 @@ test('real five-scene WebKit acceptance uses original UI, local-only requests, d
    assert.ok(script.includes(marker),marker);
  assert.match(script,/\['GET','HEAD'\]\.includes\(request\.method\(\)\)/);
  assert.match(script,/url\.origin===origin/);
+ assert.match(script,/await storySettings\.tap\(\)/,
+  'visitor must select real filmed sources in Story settings before Extra');
+ assert.doesNotMatch(script,/await quality\.tap\(\)/,
+  'pending editorial references must not unlock Quality prematurely');
  assert.doesNotMatch(script,/method:\s*['"]POST|api\/instagram|api\/payment/);
 });
 

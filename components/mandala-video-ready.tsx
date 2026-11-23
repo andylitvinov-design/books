@@ -1,5 +1,6 @@
 "use client";
 
+import {PublishedStandardMotionFilm, getPublishedStandardMotionFilm} from "./published-standard-motion-film";
 import {useCallback,useEffect,useMemo,useRef,useState} from "react";
 import type {ReactNode} from "react";
 import Link from "next/link";
@@ -7,7 +8,7 @@ import {ArrowRight,BookOpen,CheckCircle2,Clock3,Download,Flower2,FolderOpen,Head
 import type {PublicLocale} from "@/lib/public-locales";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import type {GuidedMeditationFocus} from "./mandala-guided-course";
-import type {VideoDeliveryStatus} from "./mandala-video-delivery";
+import {PRIVATE_VIDEO_SAVE_CONSENT,type VideoDeliveryStatus} from "./mandala-video-delivery";
 import {selectResourcePractice} from "@/lib/mandala/resource-practice-selector.mjs";
 import {buildPersonalMeditationScript} from "@/lib/mandala/personal-meditation-script.mjs";
 import {buildPersonalImageryCourse} from "@/lib/mandala/personal-guided-course.mjs";
@@ -24,14 +25,18 @@ type CourseText={number:number;title:string;motif:string;script:string};
 type Props={
   locale:PublicLocale;theme:VideoTheme;wish:string;focus:GuidedMeditationFocus;aspect:"portrait"|"landscape"|"square";
   video:VideoFile|null;verified:boolean;checking:boolean;rendering:boolean;renderProgress:number;
+  reelDownloadName?:string|null;
+  previewSourceCanvasRef?:{readonly current:HTMLCanvasElement|null};
+  previewAvailable:boolean;previewPlaying:boolean;previewDurationSeconds:number;previewPositionSeconds:number;
+  onPreviewToggle:()=>void;onPreviewSeek:(seconds:number)=>void;
   progressQuestionnaire:ReactNode;generationNotice:string;signedIn:boolean;
   exportFailed:boolean;canRetryExport:boolean;onRetryExport:()=>void;nativeIphoneMp4Retry?:boolean;
-  onPlaybackError:(player:HTMLVideoElement)=>void;
+  onPlaybackError:(player:HTMLVideoElement)=>void;onCancelExport?:()=>void;
   loginUnavailable:boolean;disabled:boolean;meditationEditor:ReactNode;
   onOpenDelivery:()=>void;onRefreshLogin:()=>void;onOpenCourse:()=>void;onOpenTherapy:(format:"single"|"course")=>void;onReturnToPro:()=>void;
   onGenerateBasicVideo:()=>boolean;onStartNewVideo:()=>void;onVerifyPlayback:(player:HTMLVideoElement)=>void;
-  onSaveDirect:()=>void;onSendTelegramDirect:()=>void;onShareWhatsApp:(consentApproved?:boolean)=>void;
-  saveStatus:VideoDeliveryStatus;basicFreeAvailable:boolean;
+  onSaveDirect:(consentApproved:boolean)=>void;onSendTelegramDirect:()=>void;onShareWhatsApp:(consentApproved?:boolean)=>void;
+  saveStatus:VideoDeliveryStatus;exportMode?:"personal"|"openmotion"|"express";basicFreeAvailable:boolean;
   basicFreeIssue:"checking"|"unavailable"|"guest_used"|"insufficient"|null;basicCreditCost:number;courseFlow?:boolean;
 };
 const COPY={
@@ -177,19 +182,31 @@ const courseActionCopy={
 
 export function MandalaVideoReady({
   locale,theme,wish,focus,aspect,video,verified,checking,rendering,renderProgress,
-  generationNotice,exportFailed,canRetryExport,onRetryExport,onPlaybackError,nativeIphoneMp4Retry=false,
+  previewSourceCanvasRef,previewAvailable,previewPlaying,previewDurationSeconds,previewPositionSeconds,
+  onPreviewToggle,onPreviewSeek,
+  generationNotice,exportFailed,canRetryExport,onRetryExport,onPlaybackError,onCancelExport,nativeIphoneMp4Retry=false,
   signedIn,loginUnavailable,disabled,
   meditationEditor,onOpenDelivery,onRefreshLogin,onOpenCourse,onOpenTherapy,onReturnToPro,
   onGenerateBasicVideo,onStartNewVideo,onVerifyPlayback,onSaveDirect,
   onSendTelegramDirect,onShareWhatsApp,saveStatus,
-  basicFreeAvailable,basicFreeIssue,basicCreditCost,courseFlow=false
+  basicFreeAvailable,basicFreeIssue,basicCreditCost,courseFlow=false,exportMode="personal",reelDownloadName=null
 }:Props){
   const t=COPY[locale];
+  const readyDownloadName=video?.extension==="mp4"&&reelDownloadName
+    ?reelDownloadName:"holistic-house-personal."+(video?.extension||"mp4");
   const courseActions=courseActionCopy[locale];
+  const expressMaster=exportMode==="express"?getPublishedStandardMotionFilm("anti-stress-30s",locale):undefined;
   const [view,setView]=useState<View>("home");
+  const [cloudConsentUrl,setCloudConsentUrl]=useState<string|null>(null);
+  const cloudConsentRef=useRef<HTMLInputElement>(null);
+  const cloudConsent=Boolean(signedIn&&video&&cloudConsentUrl===video.url);
+  useEffect(()=>{if(!signedIn)setCloudConsentUrl(null);},[signedIn]);
   const [walletOpen,setWalletOpen]=useState(false);
   const closeWallet=useCallback(()=>setWalletOpen(false),[]);
   const [videoGenerationNotice,setVideoGenerationNotice]=useState("");
+  const [fileShareSupported,setFileShareSupported]=useState(false);
+  useEffect(()=>setFileShareSupported(typeof navigator.share==="function"&&
+    typeof File!=="undefined"),[]);
   const [checkinEngaged,setCheckinEngaged]=useState(false);
   const [checkinDismissed,setCheckinDismissed]=useState(false);
   // Exactly ONE decodable video is mounted in Ready. iPhone Safari supports
@@ -198,6 +215,28 @@ export function MandalaVideoReady({
   const readyPlayerRef=useRef<HTMLVideoElement|null>(null);
   const readySourceModeRef=useRef<"safari-blob"|"object-url">("object-url");
   const readyUrlRecoveryRef=useRef<string|null>(null);
+  const sequencePreviewRef=useRef<HTMLCanvasElement|null>(null);
+  // Mirror the one existing Studio painter. No encode, upload or credit hold.
+  useEffect(()=>{
+    if(video||!previewAvailable||exportMode==="express")return;
+    let animation=0,last=0;
+    const paint=(now:number)=>{
+      if(now-last>=1000/15&&!document.hidden){
+        const source=previewSourceCanvasRef?.current,target=sequencePreviewRef.current;
+        if(source&&target&&source.width>0&&source.height>0){
+          if(target.width!==source.width||target.height!==source.height){
+            target.width=source.width;target.height=source.height;
+          }
+          try{target.getContext("2d",{alpha:false})?.drawImage(source,0,0);}
+          catch{/* Unavailable source cannot count as exported video. */}
+        }
+        last=now;
+      }
+      animation=window.requestAnimationFrame(paint);
+    };
+    animation=window.requestAnimationFrame(paint);
+    return()=>window.cancelAnimationFrame(animation);
+  },[video,previewAvailable,previewSourceCanvasRef,exportMode]);
   useEffect(()=>{
     const player=readyPlayerRef.current;
     if(!video||!player)return;
@@ -313,9 +352,13 @@ export function MandalaVideoReady({
     ...ritual.steps,ritual.transfer
   ].filter(Boolean).join("\n\n"):"";
   function closeSaveGate(){setView("home");setTelegramLink("");setTelegramError("");}
+  function saveWithConsent(){
+    if(cloudConsent)onSaveDirect(true);
+    else window.requestAnimationFrame(()=>cloudConsentRef.current?.focus());
+  }
   function openDelivery(){
     closeSaveGate();
-    if(gateIntent==="save"){onSaveDirect();return;}
+    if(gateIntent==="save"){saveWithConsent();return;}
     if(gateIntent==="telegram"){onSendTelegramDirect();return;}
     if(gateIntent==="whatsapp"){onShareWhatsApp();return;}
     onOpenDelivery();
@@ -326,10 +369,32 @@ export function MandalaVideoReady({
       gateLauncherRef.current=document.activeElement instanceof HTMLElement?document.activeElement:null;
       setGateIntent(intent);setView("login");return;
     }
-    if(intent==="save"){onSaveDirect();return;}
+    if(intent==="save"){saveWithConsent();return;}
     if(intent==="telegram"){onSendTelegramDirect();return;}
     if(intent==="whatsapp"){onShareWhatsApp();return;}
     onOpenDelivery();
+  }
+  function shareVerifiedLocalFile(){
+    // Only a truly verified local Blob may reach the iOS share sheet.
+    if(!verified||!video?.blob||typeof navigator.share!=="function")return;
+    const file=new File([video.blob],
+      readyDownloadName,
+      {type:video.extension==="mp4"?"video/mp4":"video/webm"});
+    try{
+      const payload:ShareData={files:[file],title:"Holistic House"};
+      if(typeof navigator.canShare==="function"&&!navigator.canShare(payload))
+        throw new Error("LOCAL_FILE_SHARE_UNSUPPORTED");
+      void navigator.share(payload).catch(error=>{
+        if(error instanceof Error&&error.name==="AbortError")return;
+        setNotice(locale==="ru"?"Не удалось передать файл. Используйте «Скачать MP4»."
+          :locale==="es"?"No se pudo compartir. Usa Descargar MP4."
+          :"Could not share the file. Use Download MP4.");
+      });
+    }catch{
+      setNotice(locale==="ru"?"Не удалось открыть меню отправки. Используйте «Скачать MP4»."
+        :locale==="es"?"No se pudo abrir el menú Compartir. Usa Descargar MP4."
+        :"Could not open the Share sheet. Use Download MP4.");
+    }
   }
   async function requestTelegramLink(){
     if(!signedIn||telegramStatus==="loading")return;
@@ -408,15 +473,23 @@ export function MandalaVideoReady({
   const completed=Boolean(verified&&video);
   const videoTime=video?`${Math.floor(video.duration/60)}:${String(Math.round(video.duration%60)).padStart(2,"0")}`:"0:00";
   const waiting=rendering||checking;
-  const pendingStatus=rendering?t.generating:checking?t.verifying:t.notReady;
+  const pendingStatus=rendering?t.generating:checking?t.verifying:
+    previewAvailable
+      ?(locale==="ru"?"Предпросмотр готов · MP4 ещё не создан":
+        locale==="es"?"Vista previa lista · MP4 sin crear":"Preview ready · MP4 not created yet")
+      :t.notReady;
   const header=<div className={css.selectedVideo} data-aspect={aspect}
-    data-video-file={video?"true":undefined}>
+    data-video-file={video?"true":undefined}
+    data-personal-preview={!video&&previewAvailable?"true":undefined}>
     {video?<video key={video.url} ref={readyPlayerRef} playsInline controls preload="auto"
       data-mandala-video-preview data-ready-native-player="true"
       onLoadedData={event=>onVerifyPlayback(event.currentTarget)}
       onCanPlay={event=>onVerifyPlayback(event.currentTarget)}
       onError={event=>handleReadyPlaybackError(event.currentTarget)}
       aria-label={completed?t.ready:t.verifying}/>:
+    previewAvailable?<canvas ref={sequencePreviewRef} data-ready-sequence-canvas
+      aria-label={locale==="ru"?"Персональный предпросмотр, не готовый MP4":
+        locale==="es"?"Vista previa personalizada, no es un MP4":"Personal preview, not an exported MP4"}/>:
     /* Approved first-party example, never labelled an exported personal movie. */
     <div className={css.example}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -432,10 +505,14 @@ export function MandalaVideoReady({
       <p className={css.readyStatus} role="status" data-ready-status
         data-ready-status-phase={completed?"complete":rendering?"rendering":checking?"verifying":"idle"}>
         {completed?<CheckCircle2 size={19} aria-hidden="true"/>:<Clock3 size={19} aria-hidden="true"/>}
-        <strong>{completed?t.ready:pendingStatus}</strong>
+        <strong>{exportMode==="express"?"Express":completed?t.ready:pendingStatus}</strong>
         {completed?<span className={css.readyTime}><Clock3 size={15} aria-hidden="true"/>{videoTime}</span>:
           rendering?<span className={css.readyTime} aria-hidden="true">{Math.round(Math.max(0,Math.min(100,renderProgress)))}%</span>:null}
       </p>
+      {rendering&&onCancelExport?<button type="button" className={css.secondary}
+        data-ready-cancel-export onClick={onCancelExport}>
+        {locale==="ru"?"Отменить экспорт":locale==="es"?"Cancelar exportación":"Cancel export"}
+      </button>:null}
       {exportFailed&&!waiting&&!completed?<div className={css.exportFailure}
         role="alert" data-ready-export-failed>
         <strong>{t.failed}</strong>
@@ -445,7 +522,26 @@ export function MandalaVideoReady({
             (locale==="ru"?"Повторить через Safari MP4":locale==="es"?"Reintentar con MP4 nativo de Safari":"Retry with native Safari MP4"):
             t.retryCompatible}<ArrowRight size={17} aria-hidden="true"/></button>:null}
       </div>:null}
-      {header}
+      {exportMode!=="express"?header:null}
+      {exportMode!=="express"&&!video&&previewAvailable?<div className={css.sequenceControls} data-ready-sequence-controls>
+        <p>{locale==="ru"?"Ваши сцены и текст · предпросмотр без экспорта":
+          locale==="es"?"Tus escenas y textos · vista previa sin exportar":
+          "Your scenes and captions · preview without exporting"}</p>
+        <button type="button" onClick={onPreviewToggle}
+          disabled={disabled||waiting} data-ready-sequence-play aria-pressed={previewPlaying}>
+          {previewPlaying?(locale==="ru"?"Пауза":locale==="es"?"Pausa":"Pause"):
+            locale==="ru"?"Смотреть персональную историю":
+              locale==="es"?"Reproducir mi historia":"Play my personal story"}
+        </button>
+        <input type="range" min={0} max={Math.max(1,previewDurationSeconds)}
+          step={0.5} value={Math.min(previewDurationSeconds,previewPositionSeconds)}
+          aria-label={locale==="ru"?"Позиция предпросмотра":
+            locale==="es"?"Posición de vista previa":"Preview position"}
+          disabled={disabled||waiting}
+          onChange={event=>onPreviewSeek(Number(event.currentTarget.value))}
+          data-ready-sequence-seek/>
+        <small>{Math.floor(previewPositionSeconds)} / {Math.floor(previewDurationSeconds)} s · Preview ≠ MP4</small>
+      </div>:null}
       {checking&&video&&!rendering?<button type="button" data-ready-play-verify
         className={css.secondary} onClick={()=>{
           const player=readyPlayerRef.current;
@@ -456,11 +552,23 @@ export function MandalaVideoReady({
         <Play size={16} aria-hidden="true"/>
         {locale==="ru"?"Воспроизвести и проверить":locale==="es"?"Reproducir y comprobar":"Play & verify video"}
       </button>:null}
-      {!completed&&!waiting&&!exportFailed&&!courseFlow?<button type="button" className={css.primary}
+      {!completed&&!waiting&&exportMode==="openmotion"?<button type="button" className={css.secondary}
+        data-ready-open-motion-picker onClick={onStartNewVideo}>
+        {locale==="ru"?"Выбрать шаблон OpenMotion":locale==="es"?"Elegir plantilla OpenMotion":"Choose OpenMotion template"}
+        <ArrowRight size={17} aria-hidden="true"/>
+      </button>:null}
+      {!completed&&!waiting&&exportMode==="express"?expressMaster?
+        <div data-ready-express-standard><PublishedStandardMotionFilm locale={locale} master={expressMaster}/></div>:
+        <p className={css.note} role="status" data-ready-express-unavailable>
+          {locale==="ru"?"Готовый Express MP4 на русском пока недоступен.":
+            locale==="es"?"Todavía no hay un MP4 Express terminado en español.":
+            "No finished verified Express MP4 is available."}
+        </p>:null}
+      {!completed&&!waiting&&!exportFailed&&!courseFlow&&exportMode==="personal"?<button type="button" className={css.primary}
         disabled={disabled||checking} onClick={generateSelectedVideo} data-ready-generate>
         <Play size={19} aria-hidden="true"/>{t.videoGenerate}<ArrowRight size={18} aria-hidden="true"/>
       </button>:null}
-      {courseFlow&&!waiting?<div className={css.courseChoices} data-ready-course-choices>
+      {courseFlow&&!waiting&&exportMode==="personal"?<div className={css.courseChoices} data-ready-course-choices>
         <button type="button" className={css.courseFree} data-ready-course-free
           disabled={disabled||checking} onClick={generateSelectedVideo}>
           <Play size={19} aria-hidden="true"/>{courseActions.free}</button>
@@ -469,7 +577,7 @@ export function MandalaVideoReady({
           <BookOpen size={19} aria-hidden="true"/>{courseActions.paid}</button>
         <p>{courseActions.note}</p>
       </div>:null}
-      {!completed&&basicFreeAvailable&&basicCreditCost>0&&!waiting?
+      {exportMode==="personal"&&!completed&&basicFreeAvailable&&basicCreditCost>0&&!waiting?
         <p className={css.note} data-ready-video-credit-cost>
           <ShieldCheck size={17} aria-hidden="true"/>{basicCreditCost} {t.videoIncludedCredit}
         </p>:null}
@@ -496,9 +604,33 @@ export function MandalaVideoReady({
           {t.backPro}<ArrowRight size={17} aria-hidden="true"/>
         </button>:null}
       {completed?<>
+        {video?.blob?<div className={css.localFileActions} data-ready-local-file-actions>
+          <a href={video.url} download={readyDownloadName}
+            data-ready-direct-download>
+            <Download size={20} aria-hidden="true"/>
+            <span>{locale==="ru"?"Скачать "+video.extension.toUpperCase():
+              locale==="es"?"Descargar "+video.extension.toUpperCase():
+                "Download "+video.extension.toUpperCase()}</span>
+          </a>
+          {fileShareSupported?<button type="button" onClick={shareVerifiedLocalFile}
+            data-ready-share-file>
+            <Send size={20} aria-hidden="true"/>
+            <span>{locale==="ru"?"Сохранить / поделиться":locale==="es"?"Guardar / compartir":"Save / Share"}</span>
+          </button>:null}
+        </div>:null}
+        {signedIn&&!saveStatus.savedId?<div className={css.linkConsent}>
+          <label>
+            <input ref={cloudConsentRef} type="checkbox" checked={cloudConsent}
+              disabled={saveStatus.busy}
+              onChange={event=>setCloudConsentUrl(event.currentTarget.checked&&video?video.url:null)}
+              data-ready-cloud-consent/>
+            <span>{PRIVATE_VIDEO_SAVE_CONSENT[locale]}</span>
+          </label>
+        </div>:null}
         <div className={css.actions} data-ready-save-choices>
           <button type="button" onClick={()=>chooseDelivery("save")}
-            disabled={disabled||saveStatus.busy} aria-busy={saveStatus.busy}
+            disabled={disabled||saveStatus.busy||(signedIn&&!cloudConsent&&!saveStatus.savedId)}
+            aria-busy={saveStatus.busy}
             data-ready-save><Download size={21} aria-hidden="true"/><span>{t.save}</span></button>
           <button type="button" onClick={()=>chooseDelivery("telegram")} disabled={disabled||saveStatus.busy}
             data-ready-telegram><Send size={21} aria-hidden="true"/><span>{t.sendTelegram}</span></button>
@@ -535,7 +667,7 @@ export function MandalaVideoReady({
           {saveStatus.savedId?<Link href={myVideos} target="_blank" rel="noopener noreferrer"
             prefetch={false} data-ready-saved-video-link>{t.house}</Link>:null}
           {saveStatus.cloudAvailable===false&&!saveStatus.savedId&&video?
-            <a href={video.url} download={"holistic-house-personal."+video.extension}
+            <a href={video.url} download={readyDownloadName}
               data-ready-download-fallback>{t.download}</a>:null}
         </div>:null}
       </>:null}

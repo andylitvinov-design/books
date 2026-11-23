@@ -1,24 +1,32 @@
 "use client";
-import Image from "next/image";
 import Link from "next/link";
 import {useState} from "react";
 import {ArrowLeft, ArrowRight, ClipboardCheck, Compass, Gem, Search, Sprout, Target, TrendingUp, UserRound, Users} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
 import {BUSINESS_SERVICES,shamanicaBusinessHref,shamanicaBusinessRecommendations} from "@/lib/shamanica-business.mjs";
+import {MandatoryMessengerActions} from "@/components/mandatory-messenger-actions";
+import {whatsappEnquiryUrl} from "@/lib/whatsapp-enquiry";
+import {telegramBusinessStrategyRequestUrl,telegramServiceRequestUrl} from "@/lib/assist/telegram-business-request.mjs";
 import styles from "./shamanica-business-content.module.css";
 
 const goalChoices=[{id:"express",Icon:Search},{id:"analysis",Icon:TrendingUp},{id:"team",Icon:Users},{id:"leader",Icon:UserRound}] as const;
 const concernChoices=[{id:"unclear",Icon:Search},{id:"decision",Icon:Compass},{id:"conflict",Icon:Users},{id:"resources",Icon:Sprout}] as const;
 const startChoices=[{id:"free",Icon:ClipboardCheck},{id:"consultation",Icon:UserRound},{id:"team",Icon:Users},{id:"tools",Icon:Gem}] as const;
-const serviceIcons={analysis:TrendingUp,support:ClipboardCheck,team:Users,leader:UserRound,artifacts:Gem,remedies:Sprout} as const;
-const serviceImages={
- analysis:"/images/holistic-house/report-lighthouse-coast.webp",
- support:"/images/holistic-house/books-library.webp",
- team:"/images/holistic-house/homepage-constellations.svg",
- leader:"/images/holistic-house/course-focus-mountain-boy.webp",
- artifacts:"/images/holistic-house/tao-fu-balance.webp",
- remedies:"/images/holistic-house/distance-homeopathy.webp"
-} as const;
+const businessShelves=[
+ {id:"express",target:"express",Icon:Search,image:"/images/holistic-house/report-lighthouse-coast.webp",routes:["express","support","analysis","analysis"]},
+ {id:"remedies",target:"remedies",Icon:Sprout,image:"/images/holistic-house/distance-homeopathy.webp",routes:["remedies","remedies","remedies","remedies"]},
+ {id:"strategy",target:"analysis",Icon:TrendingUp,image:"/images/holistic-house/books-library.webp",routes:["analysis","support","team","leader"]},
+ {id:"artifacts",target:"artifacts",Icon:Gem,image:"/images/holistic-house/tao-fu-balance.webp",routes:["artifacts","artifacts","artifacts","artifacts"]},
+ {id:"energy",target:"support",Icon:Target,image:"/images/holistic-house/reiki-approved-sunrise-v3.webp",routes:["remote-energy","remote-energy","artifacts","remote-energy"]},
+ {id:"energywork",target:"team",Icon:Users,image:"/images/holistic-house/homepage-constellations.svg",routes:["team","remote-energy","ritual","team"]}
+] as const;
+const businessDetailHref=(locale:PublicLocale,id:string)=>{
+ if(id==="remote-energy")return "/"+locale+"/services/remote-energy-support";
+ if(id==="ritual")return "/"+locale+"/holistic-support/mandala";
+ return shamanicaBusinessHref(locale,id);
+};
+const expressPrices=["FREE","45 CAD","75 CAD","200 CAD","300 CAD"] as const;
+type ShelfId=(typeof businessShelves)[number]["id"];
 const translations={
  ru:{
   title:"Бизнес-анализ и поддержка",
@@ -30,11 +38,21 @@ const translations={
   concerns:["Неясна причина проблем","Сложно принять решение","Напряжение в команде","Не хватает ресурсов"],
   starts:["Письменный разбор","Личная консультация","Работа с командой","Другие методы поддержки"],
   featured:"Главная услуга",featureTitle:"Экспресс-диагностика ситуации",
-  featureDesc:"Быстрое прояснение проблемы, ключевых факторов и ближайших решений.",
+  featureDesc:"Ключевые факторы и ближайшие решения.",
   begin:"Начать",servicesTitle:"Ключевые услуги",resultTitle:"Два направления для вашего запроса",
   resultLead:"Подборка основана на ваших ответах. Выберите подходящий вариант.",
   restart:"Изменить ответы",
   express:["Экспресс-диагностика","Начните с письменного разбора вашей бизнес-ситуации."],
+  shelves:["Экспресс-бизнес-инсайт","Средства для ясности и лидерства","Стратегический бизнес-анализ","Артефакты для поддержки целей","Энергоподдержка бизнеса","Академия бизнес-энергопрактик"],
+  subservices:[["Экспресс-инсайт","Расширенный инсайт","Экспресс-консультация онлайн","Полная онлайн-консультация","Онлайн-консультация + поддержка"],["Ясность и концентрация","Уверенность и лидерство","Стресс и эмоциональный баланс","Индивидуальный подбор средств"],["Анализ стратегической цели","Анализ бизнес-функций","Анализ бизнес-команды","Стратегия роста и внедрение"],["Персональный бизнес-талисман","Мандала для концентрации","Символ успеха и процветания","Индивидуальный ритуальный артефакт"],["Восстановительные практики руководителя","Баланс и поддержка команды","Гармонизация рабочего пространства","Дистанционная энергоподдержка"],["Расстановка о деньгах и ценности","Активация лидерских качеств","Ритуал запуска проекта","Согласование команды и партнёрства"]],
+  expressMeta:["Короткий текстовый формат","Подробный анализ + даосские подсказки","30 минут, онлайн","60 минут, онлайн","Поддержка в течение 2 недель"],
+  getDetails:"Узнать подробнее",
+  contactRequest:"Хочу узнать подробнее о бизнес-услуге и доступном формате.",
+  contactNote:"WhatsApp откроет подготовленное сообщение с выбранным форматом. В Telegram укажите его в разговоре с Ali. Открытие чата — ещё не заявка, запись или оплата.",
+  chooseFocus:"Выберите конкретное направление",
+  backToShelves:"Все 6 направлений",
+  details:"Подробнее",
+  categoryHint:"Ссылки ведут к ближайшим существующим услугам. Формат и стоимость уточняются на странице услуги.",
   services:[
    ["Бизнес-анализ","Расширенный разбор ситуации, факторов и направлений роста."],
    ["Аналитическая поддержка","Сопровождение решений и регулярный разбор бизнеса."],
@@ -54,11 +72,21 @@ const translations={
   concerns:["The causes are unclear","A difficult decision","Team tensions","Not enough resources"],
   starts:["Written review","Personal consultation","Work with the team","Other support methods"],
   featured:"Featured service",featureTitle:"Quick business situation review",
-  featureDesc:"Clarify the challenge, key factors and next steps.",
+  featureDesc:"Key factors and the next steps.",
   begin:"Begin",servicesTitle:"Key services",resultTitle:"Two paths for your situation",
   resultLead:"Selected from your answers. Choose how to begin.",
   restart:"Change answers",
   express:["Quick situation review","Start with a written review of your business situation."],
+  shelves:["Express Business Insight","Remedies for Clarity & Leadership","Strategic Business Analyses","Artefacts for Goal Support","Business Energy Support","Academy of Business Energywork"],
+  subservices:[["Express Insight","Advanced Insight","Express Live Consulting","Full Live Consulting","Live Consulting + Support"],["Clarity & Focus","Confidence & Leadership","Stress & Emotional Balance","Personal Remedy Selection"],["Strategic Goal Review","Business Functions Analyses","Business Teams Review","Growth Strategy & Implementation"],["Personal Business Talisman","Mandala for Focus","Success & Prosperity Symbol","Custom Ritual Artifact"],["Executive Energy Recovery","Team Energy Balance","Business Space Harmony","Remote Energy Support"],["Money & Value Constellation","Leadership Activation","Business Launch Ritual","Partnership & Team Alignment"]],
+  expressMeta:["Short text format","Detailed analyses + Taoist hints","30-minute live consultation","60-minute live consultation","2 weeks of consulting support"],
+  getDetails:"Get details",
+  contactRequest:"I would like details about this business service and its available formats.",
+  contactNote:"WhatsApp prepares a message with your selected option. In Telegram, tell Ali which option you chose. Opening the chat does not submit a request, book or charge you.",
+  chooseFocus:"Choose a specific focus",
+  backToShelves:"All 6 categories",
+  details:"Details",
+  categoryHint:"Links open the closest existing service pages. Format and price are confirmed on the service page.",
   services:[
    ["Business analysis","A fuller look at your situation, factors and growth paths."],
    ["Analytical support","Ongoing reviews and support for business decisions."],
@@ -78,11 +106,21 @@ const translations={
   concerns:["Causas poco claras","Decisión difícil","Tensiones del equipo","Faltan recursos"],
   starts:["Análisis escrito","Consulta personal","Trabajo con el equipo","Otros métodos de apoyo"],
   featured:"Servicio principal",featureTitle:"Diagnóstico rápido de la situación",
-  featureDesc:"Aclara el problema, los factores clave y los próximos pasos.",
+  featureDesc:"Factores clave y próximos pasos.",
   begin:"Empezar",servicesTitle:"Servicios principales",resultTitle:"Dos opciones para tu situación",
   resultLead:"Selección basada en tus respuestas. Elige cómo empezar.",
   restart:"Cambiar respuestas",
   express:["Diagnóstico rápido","Comienza con un análisis escrito de tu situación empresarial."],
+  shelves:["Diagnóstico empresarial exprés","Remedios para claridad y liderazgo","Análisis estratégicos empresariales","Artefactos para apoyar objetivos","Apoyo energético empresarial","Academia de trabajo energético empresarial"],
+  subservices:[["Diagnóstico exprés","Diagnóstico avanzado","Consultoría exprés en vivo","Consultoría completa en vivo","Consultoría en vivo + apoyo"],["Claridad y concentración","Confianza y liderazgo","Estrés y equilibrio emocional","Selección individual de remedios"],["Revisión del objetivo estratégico","Análisis de funciones empresariales","Revisión de equipos","Estrategia de crecimiento e implementación"],["Talismán empresarial personal","Mandala para concentrarse","Símbolo de éxito y prosperidad","Artefacto ritual personalizado"],["Recuperación energética del líder","Equilibrio energético del equipo","Armonía del espacio de trabajo","Apoyo energético a distancia"],["Constelación de dinero y valor","Activación del liderazgo","Ritual de lanzamiento","Alineación de socios y equipos"]],
+  expressMeta:["Formato de texto breve","Análisis detallados + orientación taoísta","Consulta en vivo de 30 minutos","Consulta en vivo de 60 minutos","Apoyo durante 2 semanas"],
+  getDetails:"Ver detalles",
+  contactRequest:"Quisiera información sobre este servicio empresarial y sus modalidades.",
+  contactNote:"WhatsApp prepara un mensaje con tu opción. En Telegram, indícale a Ali cuál elegiste. Abrir el chat no envía una solicitud ni confirma una reserva o un pago.",
+  chooseFocus:"Elige un área específica",
+  backToShelves:"Las 6 categorías",
+  details:"Detalles",
+  categoryHint:"Los enlaces abren los servicios existentes más cercanos. El formato y el precio se confirman allí.",
   services:[
    ["Análisis empresarial","Revisión de la situación, los factores y el crecimiento."],
    ["Apoyo analítico","Acompañamiento y revisión continua de decisiones."],
@@ -106,6 +144,10 @@ export function ShamanicaBusinessContent({locale}:{locale:PublicLocale}){
  const [concern,setConcern]=useState<Concern>("unclear");
  const [start,setStart]=useState<Start>("free");
  const [finished,setFinished]=useState(false);
+ const [selectedShelf,setSelectedShelf]=useState<ShelfId|null>(null);
+ const [selectedOption,setSelectedOption]=useState<number|null>(null);
+ const activeShelf=businessShelves.find(item=>item.id===selectedShelf);
+ const shelfIndex=businessShelves.findIndex(item=>item.id===selectedShelf);
  const current=step===0?goalChoices:step===1?concernChoices:startChoices;
  const labels=step===0?t.goals:step===1?t.concerns:t.starts;
  const choose=(id:string)=>{
@@ -120,17 +162,7 @@ export function ShamanicaBusinessContent({locale}:{locale:PublicLocale}){
   return t.services[index>=0?index:0];
  };
  return <div className={styles.root} data-shamanica-business>
-  <section className={styles.hero} aria-labelledby="shamanica-business-title">
-   <Image src="/images/holistic-house/hero-olive-incense.webp" alt="" fill priority className={styles.heroImage} sizes="(max-width:640px) 100vw, 920px"/>
-   <div className={styles.heroCopy}>
-    <h1 id="shamanica-business-title">{t.title}</h1>
-    <p>{t.subtitle}</p>
-   </div>
-   <div className={styles.heroActions}>
-    <Link className={styles.primary} href={shamanicaBusinessHref(locale,"express")} prefetch={false}>{t.diagnosis}<ArrowRight size={19} aria-hidden="true"/></Link>
-    <a className={styles.secondary} href="#business-quiz"><Target size={19} aria-hidden="true"/>{t.choose}</a>
-   </div>
-  </section>
+  <details className={styles.quizDrawer} data-business-extras><summary>{locale==="ru"?"Подобрать решение · 3 вопроса":locale==="es"?"Encontrar solución · 3 preguntas":"Find my approach · 3 questions"}<ArrowRight size={17} aria-hidden="true"/></summary>
   <section id="business-quiz" className={styles.quiz} data-business-quiz data-quiz-step={step+1} aria-labelledby="business-quiz-heading">
    <div className={styles.quizTop}>
     <span className={styles.stepLabel}>{t.step} {step+1} {t.of} 3</span>
@@ -158,29 +190,53 @@ export function ShamanicaBusinessContent({locale}:{locale:PublicLocale}){
      </div>
     </>}
   </section>
-  <section className={styles.feature} aria-labelledby="business-feature-heading">
-   <Image src="/images/holistic-house/books-library.webp" alt="" fill className={styles.featureImage} sizes="(max-width:640px) 100vw, 920px"/>
-   <div className={styles.featureContent}>
-    <span className={styles.featureBadge}><Target size={17} aria-hidden="true"/>{t.featured}</span>
-    <h2 id="business-feature-heading">{t.featureTitle}</h2>
-    <p>{t.featureDesc}</p>
-   </div>
-   <Link className={styles.featureLink} href={shamanicaBusinessHref(locale,"express")} prefetch={false}>{t.begin}<ArrowRight size={19} aria-hidden="true"/></Link>
-  </section>
-  <section className={styles.services} aria-labelledby="business-services-heading">
-   <h2 id="business-services-heading">{t.servicesTitle}</h2>
-   <div className={styles.serviceGrid}>
-    {BUSINESS_SERVICES.map((id,index)=>{
-     const Icon=serviceIcons[id as keyof typeof serviceIcons];
-     const details=t.services[index];
-     return <Link className={styles.serviceCard} href={shamanicaBusinessHref(locale,id)} prefetch={false} key={id} data-business-service={id}>
-      <Image src={serviceImages[id as keyof typeof serviceImages]} fill alt="" className={styles.serviceImage} sizes="(max-width:359px) 100vw, (max-width:760px) 50vw, 360px"/>
-      <Icon size={27} className={styles.serviceIcon} strokeWidth={1.5} aria-hidden="true"/>
-      <span className={styles.serviceText}><strong>{details[0]}</strong><span>{details[1]}</span></span>
-      <ArrowRight size={17} className={styles.cardArrow} aria-hidden="true"/>
-     </Link>;
-    })}
-   </div>
+  </details>
+  <section className={styles.services} data-business-cabinet-shelves data-expanded={activeShelf?"true":"false"} aria-labelledby="business-services-heading">
+   <h2 id="business-services-heading">{activeShelf?t.shelves[shelfIndex]:t.servicesTitle}</h2>
+   {activeShelf?<>
+    <button type="button" className={styles.shelfBack} onClick={()=>{setSelectedShelf(null);setSelectedOption(null);}} data-business-back-to-shelves><ArrowLeft size={18} aria-hidden="true"/>{t.backToShelves}</button>
+    <p className={styles.focusLead}>{t.chooseFocus}</p>
+    {activeShelf.id==="express"||activeShelf.id==="strategy"?<>
+     <div className={styles.offerChoices} role="group" aria-label={t.chooseFocus} data-business-second-level={activeShelf.id}>
+      {t.subservices[shelfIndex].map((name,index)=><button key={activeShelf.id+"-"+index} type="button"
+       className={styles.offerChoice} aria-pressed={selectedOption===index} onClick={()=>setSelectedOption(index)}
+       data-business-subservice={activeShelf.id+"-"+index}>
+       <span className={styles.secondNumber}>{index+1}</span>
+       <span className={styles.offerText}><strong>{name}</strong>
+        {activeShelf.id==="express"&&<small>{t.expressMeta[index]}</small>}
+       </span>
+       {activeShelf.id==="express"&&<span className={styles.offerPrice}>{expressPrices[index]}</span>}
+      </button>)}
+     </div>
+     <div className={styles.detailsWrap} data-business-get-details={activeShelf.id} key={activeShelf.id}>
+      <MandatoryMessengerActions locale={locale} collapsed compact
+       label={t.getDetails} className={styles.getDetailsButton}
+       whatsappUrl={whatsappEnquiryUrl({
+        locale,service:t.shelves[shelfIndex],request:t.contactRequest,
+        option:selectedOption===null?undefined:
+         t.subservices[shelfIndex][selectedOption]+(activeShelf.id==="express"?" · "+expressPrices[selectedOption]:"")
+       })}
+       telegramUrl={activeShelf.id==="strategy"
+        ?(telegramBusinessStrategyRequestUrl(locale)||undefined)
+        :(telegramServiceRequestUrl("business",locale)||undefined)}/>
+      <p className={styles.contactNote}>{t.contactNote}</p>
+     </div>
+    </>:<>
+     <div className={styles.secondGrid} data-business-second-level={activeShelf.id}>
+      {activeShelf.routes.map((target,index)=><Link key={activeShelf.id+"-"+index} href={businessDetailHref(locale,target)} prefetch={false} className={styles.secondCard} data-business-subservice={activeShelf.id+"-"+index}>
+       <span className={styles.secondNumber}>{index+1}</span><strong>{t.subservices[shelfIndex][index]}</strong>
+       <span className={styles.detailLabel}>{t.details}</span><ArrowRight size={16} aria-hidden="true"/>
+      </Link>)}
+     </div>
+     <p className={styles.catalogHint}>{t.categoryHint}</p>
+    </>}
+   </>:<div className={styles.serviceGrid}>
+    {businessShelves.map(({id,Icon},index)=><button className={styles.serviceCard} type="button" key={id}
+     onClick={()=>{setSelectedShelf(id);setSelectedOption(null);}} data-business-shelf={id} aria-label={t.shelves[index]}>
+     <span className={styles.serviceImage} aria-hidden="true"/>
+     <span className={styles.serviceText}><Icon size={25} className={styles.serviceIcon} strokeWidth={1.6} aria-hidden="true"/><strong>{t.shelves[index]}</strong><ArrowRight size={16} className={styles.cardArrow} aria-hidden="true"/></span>
+    </button>)}
+   </div>}
   </section>
  </div>;
 }

@@ -58,6 +58,9 @@ export async function verifyHistoryProvenance({ browser, origin, evidencePath })
     key: window.navigation?.currentEntry?.key ?? null, owned: window.__hhOwnsHistoryEntry?.() ?? null,
     pathname: location.pathname, hash: location.hash }));
   const ready = async path => {
+    // This probe exercises the full Next.js Home while the normal entry is
+    // served as a separate, cacheable CDN document. Never conflate their
+    // navigation ownership or assume the CDN shell has a Next router.
     await expect(page).toHaveURL(origin + path);
     if (path === "/") await expect(page.locator('main[data-home-design="dialogue-first-v1"] [data-home-dialogue-entry]')).toBeVisible();
     else await expect(page.locator("#psychic-alchemy-video")).toBeVisible();
@@ -65,7 +68,14 @@ export async function verifyHistoryProvenance({ browser, origin, evidencePath })
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   };
   try {
+    // The owner's approved React Home is now canonical at the ordinary URL.
+    // Verify both first-paint identity and the real hydrated Native Navigation path;
+    // an old static shell must not satisfy this security/history provenance proof.
     await page.goto(origin + '/', { waitUntil: 'networkidle' });
+    await expect(page.locator('body[data-fast-home]')).toHaveCount(0);
+    await expect(page.locator('main[data-home-design="dialogue-first-v1"] [data-home-dialogue-entry]')).toBeVisible();
+    await expect(page.locator('[data-home-intent-option]')).toHaveCount(4);
+    await expect(page.locator('[data-home-intent-form]')).toBeVisible();
     await ready('/'); result.home = await snapshot();
     await page.locator('.service-home-about a[href="/en/about"]').click();
     await ready('/en/about'); result.about = await snapshot();
