@@ -318,6 +318,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   },[messengerView,voiceEnabled,locale,persona.id,voice.voices,voice.voiceId,voice.rate,voice.setVoiceId,voice.setRate,voice.speechLocale,voice.setSpeechLocale,voice.conversing]);
   const [mode,setMode]=useState<Mode>("rules");
   // Pro intentionally selects the already budget-gated Gemini FREE API, never Paid.
+  // Unified chat: default protected engine; no user-facing provider tier.
   const [proSelected,setProSelected]=useState(false);
   const [proConsent,setProConsent]=useState(false);
   const [proDataConsent,setProDataConsent]=useState(false);
@@ -1824,7 +1825,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       data-gemini-pending={messengerView&&proSelected&&!proReady||undefined}
       data-voice-onboarding={messengerView&&(voicePermissionOpen||voice.conversing||Boolean(voice.notice))||undefined}>
       <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)}
-        placeholder={showLandingComposer?(locale==="ru"?"Расскажи, чего ты хочешь или что сейчас мешает…":locale==="es"?"Cuéntame qué deseas o qué te preocupa…":"Tell me what you want or what is holding you back…"):t.placeholder}
+        placeholder={messengerView?(locale==="ru"?"Расскажи, чего ты хочешь или что сейчас мешает…":locale==="es"?"Cuéntame qué deseas o qué te preocupa…":"Tell me what you want or what is holding you back…"):t.placeholder}
         onFocus={()=>{
           if(!compact||!messengerView)return;
           composerFocused.current=true;
@@ -1861,26 +1862,10 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
               onClick={offerPsychologistInterview} disabled={busy||proBusy}>
               {locale==="ru"?"Мягко разобраться в проблеме":locale==="es"?"Explorar mi situación":"Explore my situation gently"}
             </button>}
-            {showLandingComposer&&<div className={styles.freeProSwitch} data-hh-ai-gemini-tier
-              role="group" aria-label={locale==="ru"?"Режим консультации":locale==="es"?"Modo de consulta":"Consultation mode"}>
-              <button type="button" data-hh-ai-tier="free" aria-pressed={!proSelected} disabled={busy||proBusy}
-                onClick={()=>{setProSelected(false);setStatus("");setSource("");}}>Free</button>
-              <button type="button" data-hh-ai-tier="pro" aria-pressed={proSelected} disabled={busy||proBusy}
-                onClick={()=>{setProSelected(true);setStatus("");setSource("");}}>Pro</button>
-            </div>}
             {resetControl}
           </div>
         </details>:voiceAttachment}
-        {messengerView&&!showLandingComposer&&<div className={styles.freeProSwitch} data-hh-ai-gemini-tier role="group"
-          aria-label={locale==="ru"?"Режим консультации":locale==="es"?"Modo de consulta":"Consultation mode"}>
-          <button type="button" data-hh-ai-tier="free" aria-pressed={!proSelected} disabled={busy||proBusy}
-            onClick={()=>{setProSelected(false);setStatus("");setSource("");}}
-          >Free</button>
-          <button type="button" data-hh-ai-tier="pro" aria-pressed={proSelected} disabled={busy||proBusy}
-            onClick={()=>{setProSelected(true);setStatus("");setSource("");}}
-          >Pro</button>
-        </div>}
-        {messengerView&&showLandingComposer&&<button type="button"
+        {messengerView&&<button type="button"
           className={styles.photoShortcut} data-hh-ai-photo-shortcut
           onClick={()=>{
             const more=document.querySelector<HTMLDetailsElement>("[data-hh-ai-more]");
@@ -1890,9 +1875,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           title={locale==="ru"?"Открыть вложения":locale==="es"?"Abrir adjuntos":"Open attachments"}>
           <ImageIcon size={21} aria-hidden="true"/>
         </button>}
-        {messengerView&&!showLandingComposer&&<EmotionalAvatar messages={messages} busy={busy||proBusy}
-          status={status} locale={locale} compact={compact} iconOnly personaId={persona.id}
-          companionVoice={voiceEnabled?voice:undefined}/>}
+        
         {!messengerView&&resetControl}
         <button type="submit" disabled={busy||proBusy||homeHandoffPhase==="queued"||
           homeHandoffPhase==="sending"||(!draft.trim()&&!showLandingComposer)||
@@ -1901,11 +1884,11 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
             (!proSelected&&mode==="owned"&&!agree&&!(compact&&(testChatOpen||testOfferFromText(draft))))))}
           aria-label={showLandingComposer?(proSelected?
             (locale==="ru"?"Начать с Gemini":locale==="es"?"Hablar con Gemini":"Start Gemini chat"):
-            (locale==="ru"?"Начать бесплатный чат":locale==="es"?"Empezar chat gratis":"Start free chat")):
+            (locale==="ru"?"Начать чат":locale==="es"?"Empezar chat":"Start chat")):
             (messengerView?(busy||proBusy?t.loading:t.send):undefined)}>{messengerView?<><Send size={20} aria-hidden="true"/>
           {showLandingComposer&&<span>{proSelected?
             (locale==="ru"?"Начать с Gemini":locale==="es"?"Hablar con Gemini":"Start Gemini chat"):
-            (locale==="ru"?"Начать бесплатный чат":locale==="es"?"Empezar chat gratis":"Start free chat")}</span>}</>:busy?t.loading:t.send}</button>
+            (locale==="ru"?"Начать чат":locale==="es"?"Empezar chat":"Start chat")}</span>}</>:busy?t.loading:t.send}</button>
         {messengerView&&!pageHelp&&<button type="button"
           className={styles.recorderToggle} data-hh-conversation-mic
           onClick={()=>{
@@ -1998,6 +1981,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     data-video-auth-status={compact?(authenticated?"authenticated":authStatus):undefined}
     data-page-help={pageHelp?"true":undefined} data-has-messages={Boolean(messages.length>0||homeHandoffPreview)||undefined}
     data-chat-skin={messengerView?"messenger":undefined}
+    data-hh-immersive-dialogue={compact&&messengerView&&!pageHelp&&!supportQuizOpen&&Boolean(messages.length||homeHandoffPreview)||undefined}
     data-hh-ai-provider={messengerView?(proSelected?"pro":"free"):undefined}>
     {!compact&&<><h1>{t.title}</h1><p>{t.disclosure}</p><p>{t.intro}</p></>}
     {!compact&&settings}

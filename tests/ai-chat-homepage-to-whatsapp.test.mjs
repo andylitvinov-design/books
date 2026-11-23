@@ -24,7 +24,7 @@ test('approved opening has one live composer and selected voice',()=>{
  assert.match(agent,/composer=\{composer\}/)
  assert.match(agent,/\{!supportQuizOpen&&!showLandingComposer&&composer\}/)
  assert.match(agent,/data-has-messages=\{Boolean\(messages\.length>0\|\|homeHandoffPreview\)\|\|undefined\}/)
- assert.match(agent,/Start free chat/)
+ assert.match(agent,/Start chat/)
 })
 test('one user turn removes intro, retains a slim WhatsApp chat and real navigation',()=>{
  const agent=read('components/holistic-agent-chat.tsx')
@@ -85,9 +85,22 @@ test('Samir entry uses a full-height WhatsApp layout without duplicate site chro
  assert.match(hubCss,/data-section="ai"\]:has\(\[data-hh-ai-landing\]\)/)
  assert.match(landingCss,/23 Nov: mobile chat screenshot fidelity/)
  assert.match(chat,/data-hh-ai-photo-shortcut/)
- assert.match(chat,/showLandingComposer&&<div className=\{styles\.freeProSwitch\}/)
+ assert.doesNotMatch(chat,/className=\{styles\.freeProSwitch\}/)
  assert.match(composerCss,/23 Nov full-screen Samir first turn/)
  for(const marker of ['data-hh-genie-goal-choice="discover"','data-hh-genie-goal-choice="defined"','data-hh-ai-inline-composer']){
    assert.ok(landing.includes(marker),marker)
  }
+})
+
+test('established Samir chat retains immersive design and no provider tier selector',()=>{
+ const chat=read('components/holistic-agent-chat.tsx')
+ const css=read('components/holistic-agent-chat.module.css')
+ const page=read('app/[locale]/app/messages/messages-page.css')
+ assert.match(chat,/data-hh-immersive-dialogue=/)
+ assert.doesNotMatch(chat,/data-hh-ai-tier=/)
+ assert.match(css,/font:550 19px\/1\.4/)
+ assert.match(css,/\.thread>\.user\{background:#d9f0ce/)
+ assert.match(page,/data-hh-immersive-dialogue="true"/)
+ assert.match(chat,/data-hh-conversation-mic/)
+ assert.match(chat,/data-hh-ai-photo-shortcut/)
 })
