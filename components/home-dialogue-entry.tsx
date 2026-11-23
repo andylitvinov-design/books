@@ -432,7 +432,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
         </form>
         <p className={styles.speechDisclosure} data-home-voice-disclosure>{t.speechPrivacy}</p>
         {error&&<p className={styles.error} role="alert">{error}</p>}
-        {voiceMessage&&<p className={styles.voiceStatus} role="status">{voiceMessage}</p>
+        {voiceMessage&&<p className={styles.voiceStatus} role="status">{voiceMessage}</p>}
       </div>
     </div>
     {personaOpen&&<AliPersonaPicker open={personaOpen} onClose={closePersona} locale={locale}/>}
