@@ -1,8 +1,14 @@
 name: HH hourly Vercel production batch
 on:
   schedule:
-    - cron: '13,43 * * * *' # two off-peak chances/hour for GitHub scheduler; still one Vercel build/60m
+    - cron: '24,54 * * * *' # two staggered chances/hour; re-register GitHub schedule actor; at most 1 build/60m
     - cron: '11 05 * * *' # one daily safe storage prune; NEVER run a production build
+  # Backup from the EXISTING scheduled PR coordinator. This is a second
+  # wake-up for the SAME publisher, never a second publisher or a second build.
+  # Its event fields and exact trusted source are verified again below.
+  workflow_run:
+    workflows: ['HH full open-PR production coordinator']
+    types: [completed]
   # Trusted default-branch release; protected PR merge never triggers a new build.
   workflow_dispatch:
     inputs:
@@ -29,7 +35,17 @@ jobs:
     # Manual dry-run/apply cleanup remains separate and never starts a build.
     # Exact HEAD, last-60-minutes and UTC-hour guards remain unchanged.
     if: >-
-      (github.event_name == 'schedule' && github.event.schedule == '13,43 * * * *' &&
+      (github.event_name == 'schedule' && github.event.schedule == '24,54 * * * *' &&
+       vars.HH_VERCEL_HOURLY_ENABLED == 'true') ||
+      (github.event_name == 'workflow_run' &&
+       github.repository == 'andylitvinov-design/books' &&
+       github.ref == 'refs/heads/codex/bootstrap-books' &&
+       github.event.workflow_run.event == 'schedule' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.path == '.github/workflows/hh-pr-full-inventory.yml' &&
+       github.event.workflow_run.head_branch == 'codex/bootstrap-books' &&
+       github.event.workflow_run.repository.full_name == 'andylitvinov-design/books' &&
+       github.event.workflow_run.head_repository.full_name == 'andylitvinov-design/books' &&
        vars.HH_VERCEL_HOURLY_ENABLED == 'true') ||
       (github.event_name == 'workflow_dispatch' &&
        inputs.emergency == true && inputs.cleanup_mode == 'off')
