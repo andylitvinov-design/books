@@ -228,10 +228,27 @@ for (const engine of [chromium, webkit]) {
           assert.equal(await finder.locator('#holistic-inline-results article').count(), 1,
             label + " free relationship consultation");
 
-          await finder.locator('[data-support-choice="talisman"]').click();
-          await finder.locator('[data-support-budget="20"]').click();
+          // Preserve the real published-price safety gate after both React
+          // controls commit. Fast consecutive taps can otherwise search an
+          // older service kind and incorrectly await a non-existent empty state.
+          const talismanChoice = finder.locator('[data-support-choice="talisman"]');
+          await talismanChoice.click();
+          await page.waitForFunction(() => document.querySelector(
+            '#holistic-inline-order [data-support-choice="talisman"]')
+              ?.getAttribute("aria-pressed") === "true", null, { timeout: 15000 });
+          const talismanBudget = finder.locator('[data-support-budget="20"]');
+          await talismanBudget.click();
+          await page.waitForFunction(() => document.querySelector(
+            '#holistic-inline-order [data-support-budget="20"]')
+              ?.getAttribute("aria-pressed") === "true", null, { timeout: 15000 });
           await finder.locator("[data-support-search]").click();
-          await finder.locator('#remote-results [role="status"]').first().waitFor();
+          const unpricedTalismanStatus = finder.locator('#remote-results [role="status"]').first();
+          await unpricedTalismanStatus.waitFor({ state: "visible", timeout: 20000 });
+          assert.ok((await unpricedTalismanStatus.innerText()).includes({
+            en: "Talisman prices are not published.",
+            ru: "Цены на талисманы не опубликованы.",
+            es: "Los talismanes no tienen precio publicado.",
+          }[locale]), label + " unpriced talisman is explained without inventing a cost");
           assert.equal(await finder.locator("[data-remote-support-specialist]").count(), 0,
             label + " never quote an unpublished talisman price");
 

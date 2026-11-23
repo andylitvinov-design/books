@@ -9,6 +9,7 @@ import type { PublicLocale } from "@/lib/public-locales";
 type Props = {
   video: PublishedSiteVideo;
   locale: PublicLocale;
+  textLanguage?: PublicLocale;
   compact?: boolean;
   fallbackPoster?: string;
 };
@@ -25,7 +26,7 @@ const labels = {
  * This small first-screen facade neither imports that player nor mounts an
  * iframe until the visitor explicitly chooses to play the film.
  */
-export function HomeYoutubeFacade({ video, locale, compact = false, fallbackPoster }: Props) {
+export function HomeYoutubeFacade({ video, locale, textLanguage, compact = false, fallbackPoster }: Props) {
   const [playing, setPlaying] = useState(false);
   // Server-rendered Play markup must not accept an unhandled tap before React hydration.
   const [interactive, setInteractive] = useState(false);
@@ -72,7 +73,7 @@ export function HomeYoutubeFacade({ video, locale, compact = false, fallbackPost
         )}
       </div>
       <figcaption className="site-video-caption">
-        <div className="site-video-copy" lang={video.language}>
+        <div className="site-video-copy" lang={textLanguage ?? video.language}>
           <p className="site-video-title" id={titleId}>{video.title}</p>
           {video.description ? <p className="site-video-description">{video.description}</p> : null}
         </div>

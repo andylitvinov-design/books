@@ -75,7 +75,7 @@ async function run(script,{live=true,present=false,badIframe=false,hydrationRead
    const full=parent+' '+selector;
    return {
      full,locator:s=>loc(s,full),
-     count:async()=>full.includes('home-presentation')?(home==='/ru'&&present?1:0):1,
+     count:async()=>full.includes('home-presentation')?(home.startsWith('/ru')&&present?1:0):1,
      scrollIntoViewIfNeeded:async()=>{assert.ok(present);scrolled=true},
      click:async()=>{
        // The legacy page-video checker verifies click/iframe but does not

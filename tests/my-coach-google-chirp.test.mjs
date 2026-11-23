@@ -38,7 +38,7 @@ test('Google Chirp is completely OFF by default and requires verified cost, priv
 test('fixed RU/EN/ES persona voices and strict independent Google Cloud consent',()=>{
  assert.deepEqual(googleChirpVoice('ru','mira'),{languageCode:'ru-RU',name:'ru-RU-Chirp3-HD-Aoede'})
  assert.deepEqual(googleChirpVoice('en','max'),{languageCode:'en-US',name:'en-US-Chirp3-HD-Charon'})
- assert.deepEqual(googleChirpVoice('es','sofia'),{languageCode:'es-ES',name:'es-ES-Chirp3-HD-Aoede'})
+ assert.deepEqual(googleChirpVoice('es','sofia'),{languageCode:'es-ES',name:'es-ES-Chirp3-HD-Kore'})
  assert.equal(googleChirpVoice('fr','max'),null)
  assert.deepEqual(normalizeGoogleChirpInput(valid),{locale:'ru',personaId:'mira',text:valid.text})
  for(const invalid of [{...valid,cloudVoiceConsent:false},{...valid,voiceConsent:false},

@@ -2,6 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import "./mandala-therapy-video-intro.test.mjs";
 import "./resource-practice-selector.test.mjs";
+ // #4979: new Therapy A/B and complete 512 RU catalogue run in the pre-existing
+ // focused specialist job; preserve same runner and required unit coverage.
+import "./mandala-therapy-studio-owner-20261112.test.mjs";
+import "./mandala-therapy-text-picker-20261118.test.mjs";
+import "./mytube-meditation-512.test.mjs";
 import {readFileSync} from "node:fs";
 import {buildPersonalImageryCourse} from "../lib/mandala/personal-guided-course.mjs";
 

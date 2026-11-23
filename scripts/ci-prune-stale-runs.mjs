@@ -50,6 +50,18 @@ const isRunningBrowserWorkflow = value => typeof value === 'string' &&
 const CORE_FORCE_JOBS = new Set(['classify-change', 'core-lint-types-build', 'hh-core-verified',
   'hh-specialist', 'hh-merge-check', 'hh-eslint-repair', 'release-ready']);
 
+// Only a long-abandoned run from a separately proved merged PR can be
+// cancelled after GitHub reports it as still in_progress. Open PRs and
+// current HEADs keep the original strict cleanup policy.
+const MERGED_ORPHAN_RUNNING_GRACE_MS = 6 * 60 * 60_000;
+const historicalOrphanStatus = (run, now = Date.now()) => {
+  if (run?.status === 'queued') return true;
+  if (run?.status !== 'in_progress') return false;
+  const createdAt = Date.parse(run.created_at || '');
+  return Number.isFinite(createdAt) && Number.isFinite(now) &&
+    now >= createdAt + MERGED_ORPHAN_RUNNING_GRACE_MS;
+};
+
 // GitHub may erase workflow_runs[].pull_requests after PR closure.
 // A trusted production-push janitor can also prove historical ancestry through
 // GitHub's commit-to-PR association API, an exact merged PR and Compare API.
@@ -70,13 +82,14 @@ export function closedEvidence(run, pr) {
 
 
 /**
- * Production-push-only proof for orphaned, queued checks from already merged PRs.
+ * Production-push-only proof for orphaned queued checks and abandoned running
+ * checks from already merged PRs (running requires a separate six-hour grace).
  * A unique GitHub commit->PR association is mandatory; ancestry is *separately*
  * proved via Compare before cancellation. Never cover open or unmerged PRs.
  */
 export function orphanClosedEvidence(run, pr, ctx, linked) {
   if (!ctx || ctx.number || ctx.headSha || ctx.closedHeadSha ||
-      !run || run.event !== 'pull_request' || run.status !== 'queued' ||
+      !run || run.event !== 'pull_request' || !historicalOrphanStatus(run) ||
       !Array.isArray(run.pull_requests) || run.pull_requests.length !== 0 ||
       !Number.isSafeInteger(Number(run.id)) || Number(run.id) < 1 ||
       !pr || pr.state !== 'closed' || !pr.merged_at ||
@@ -129,9 +142,11 @@ export async function prune(api, ctx, { limit = 300, dryRun = false,
   const current = ctx.number ? await api.pr(ctx.number) : null;
   const found = [];
   let truncated = false;
-  // The event handler may cancel an already-running old HEAD; production push
-  // cleanup remains queued-only. Current HEAD is guarded by an exact event lease.
-  const filters = (ctx.headSha || ctx.closedHeadSha) ? ['queued', 'in_progress'] : ['queued'];
+  // Targeted events preserve their existing policy. A production push also
+  // scans abandoned in-progress PR runs first, but only after independent
+  // merged-PR association, ancestry and age proofs (no running open-PR jobs).
+  const filters = (ctx.headSha || ctx.closedHeadSha)
+    ? ['queued', 'in_progress'] : ['in_progress', 'queued'];
   for (const status of filters) {
     for (let page = 1; page <= 10; page++) {
       const res = await api.list(page, current?.head?.ref, status);
@@ -170,7 +185,8 @@ export async function prune(api, ctx, { limit = 300, dryRun = false,
     } catch { closedScanPartial = true; }
   }
   const summary = { scanned: found.length, candidates: 0, closedCandidates: 0,
-    cancelled: [], forced: [], confirmed: [], dryRun: [], errors: [], jobless409: [],
+    cancelled: [], cancelledRunning: [], forced: [], confirmed: [], dryRun: [], errors: [], jobless409: [],
+    staleRunningMetadata: [],
     partial: truncated || closedScanPartial };
   const accepted = new Map();
   const baseWorkflows = new Map();
@@ -185,7 +201,8 @@ export async function prune(api, ctx, { limit = 300, dryRun = false,
     seen.add(run.id);
     if (run.event !== 'pull_request' ||
         (run.status !== 'queued' && run.status !== 'in_progress') ||
-        (run.status === 'in_progress' && !(ctx.headSha || ctx.closedHeadSha)) ||
+        (run.status === 'in_progress' && !(ctx.headSha || ctx.closedHeadSha) &&
+          !historicalOrphanStatus(run)) ||
         !int(run.id) || !Array.isArray(run.pull_requests) || run.pull_requests.length > 1) continue;
     let n, association = null;
     if (ctx.number) {
@@ -233,8 +250,8 @@ export async function prune(api, ctx, { limit = 300, dryRun = false,
     const freshEligible = historical
       ? orphanClosedEvidence(freshRun, freshPR, ctx, association)
       : eligible(freshRun, freshPR, ctx);
-    if (!freshEligible || freshRun.head_sha !== run.head_sha ||
-        freshRun.path !== run.path) continue;
+    if (!freshEligible || freshRun.status !== run.status ||
+        freshRun.head_sha !== run.head_sha || freshRun.path !== run.path) continue;
     if (freshPR.state === 'open' || historical) {
       let relation;
       try { relation = await api.compare(freshRun.head_sha, freshPR.head.sha); }
@@ -248,11 +265,43 @@ export async function prune(api, ctx, { limit = 300, dryRun = false,
     const lastEligible = historical
       ? orphanClosedEvidence(verifiedRun, verifiedPR, ctx, association)
       : eligible(verifiedRun, verifiedPR, ctx);
-    if (!lastEligible || verifiedRun.head_sha !== freshRun.head_sha ||
+    if (!lastEligible || verifiedRun.status !== freshRun.status ||
+        verifiedRun.head_sha !== freshRun.head_sha ||
         verifiedRun.path !== freshRun.path || verifiedPR.head.sha !== freshPR.head.sha) continue;
     if (historical) orphanAncestors++;
+    // GitHub sometimes marks a run in_progress for days even though EVERY
+    // actual job has completed. Cancel returns 409; this is an API ghost,
+    // not active runner capacity. Require complete live job evidence before
+    // acting on an old, merged PR's allegedly running workflow.
+    if (historical && verifiedRun.status === 'in_progress') {
+      let page;
+      try { page = await api.jobs(run.id); } catch { summary.partial = true; continue; }
+      if (!Number.isSafeInteger(page?.total_count) || page.total_count < 1 ||
+          page.total_count > 100 || !Array.isArray(page.jobs) ||
+          page.jobs.length !== page.total_count) {
+        summary.partial = true;
+        continue;
+      }
+      if (page.jobs.every(job => job?.status === 'completed')) {
+        summary.staleRunningMetadata.push({id:run.id,
+          reason:'RUN_IN_PROGRESS_ALL_JOBS_COMPLETED',
+          url:'https://github.com/' + ctx.repo + '/actions/runs/' + run.id});
+        summary.partial = true; // Never count this as successfully cancelled.
+        continue;
+      }
+      // Unknown/unindexed terminal states must also never authorize cancel.
+      if (!page.jobs.some(job => ['queued','in_progress','waiting','pending','requested'].includes(job?.status))) {
+        summary.partial = true;
+        continue;
+      }
+    }
     if (dryRun) { summary.dryRun.push(run.id); continue; }
-    try { await api.cancel(run.id); summary.cancelled.push(run.id); accepted.set(run.id, {number:n, head:freshRun.head_sha, path:verifiedRun.path}); }
+    try {
+      await api.cancel(run.id);
+      summary.cancelled.push(run.id);
+      if (verifiedRun.status === 'in_progress') summary.cancelledRunning.push(run.id);
+      accepted.set(run.id, {number:n, head:freshRun.head_sha, path:verifiedRun.path});
+    }
     catch (e) {
       // Another janitor may have cancelled the same run between GET and POST.
       const after = await api.run(run.id).catch(() => null);
@@ -266,6 +315,22 @@ export async function prune(api, ctx, { limit = 300, dryRun = false,
           if (jobs?.total_count === 0 && Array.isArray(jobs.jobs) && jobs.jobs.length === 0) {
             summary.jobless409.push({ id: run.id, reason: 'GITHUB_QUEUED_ZERO_JOBS_CANCEL_409',
               url: 'https://github.com/' + ctx.repo + '/actions/runs/' + run.id });
+            summary.partial = true;
+            continue;
+          }
+        }
+        // Jobs can finish between the preflight and POST. A real GitHub 409
+        // with an immutable run status and complete terminal job listing is
+        // another metadata ghost, never grounds for force cancellation.
+        if (after.status === 'in_progress' && /HTTP 409\b/.test(message)) {
+          const page = await api.jobs(run.id).catch(() => null);
+          if (Number.isSafeInteger(page?.total_count) && page.total_count > 0 &&
+              page.total_count <= 100 && Array.isArray(page.jobs) &&
+              page.jobs.length === page.total_count &&
+              page.jobs.every(job => job?.status === 'completed')) {
+            summary.staleRunningMetadata.push({id:run.id,
+              reason:'GITHUB_IN_PROGRESS_TERMINAL_JOBS_CANCEL_409',
+              url:'https://github.com/' + ctx.repo + '/actions/runs/' + run.id});
             summary.partial = true;
             continue;
           }
@@ -451,14 +516,16 @@ async function main() {
     } catch (e) { metricError = String(e.message || e).slice(0, 150); }
   }
   const fmt = ms => ms == null ? 'n/a' : (ms / 60000).toFixed(2) + ' min';
-  const msg = (ctx.closedHeadSha ? 'CI closed-PR cleanup: ' : ctx.headSha ? 'CI targeted stale-HEAD prune: ' : 'CI queued-only prune: ') +
+  const msg = (ctx.closedHeadSha ? 'CI closed-PR cleanup: ' : ctx.headSha ? 'CI targeted stale-HEAD prune: ' : 'CI merged-PR orphan prune: ') +
     'scanned=' + s.scanned + ' eligible=' + s.candidates + ' closed_PR_eligible=' + s.closedCandidates +
-    ' cancelled=' + s.cancelled.length + ' dry_run=' + s.dryRun.length +
+    ' cancelled=' + s.cancelled.length + ' old_running_cancelled=' + s.cancelledRunning.length + ' dry_run=' + s.dryRun.length +
     ' orphan_proofs=' + s.orphanAncestorCandidates + ' orphan_lookups=' + s.orphanLookups +
-    ' jobless_409=' + s.jobless409.length + ' errors=' + s.errors.length +
+    ' jobless_409=' + s.jobless409.length + ' running_metadata_ghosts=' + s.staleRunningMetadata.length + ' errors=' + s.errors.length +
     '\nCancellation accepted IDs: ' + (s.cancelled.join(',') || 'none') +
     '\nGitHub queued/jobless 409 (unresolved, not cancelled): ' +
     (s.jobless409.slice(0, 8).map(x => x.url).join(', ') || 'none') + '\n' +
+    'GitHub in-progress runs with all jobs terminal (unresolved): ' +
+    (s.staleRunningMetadata.slice(0, 8).map(x => x.url).join(', ') || 'none') + '\n' +
     '\n## CI queue monitoring\n\n| Metric | Observation |\n| --- | --- |\n' +
     '| New PR workflow checks (last 60 min) | ' + (m ? m.newChecks + (m.truncated ? ' (PARTIAL)' : '') : 'n/a') + ' |\n' +
     '| Queued / running checks (last 60 min) | ' + (m ? m.queuedChecks + ' / ' + m.runningChecks : 'n/a') + ' |\n' +
@@ -475,6 +542,7 @@ async function main() {
     orphanAncestorCandidates: s.orphanAncestorCandidates,
     cancelAccepted: s.cancelled.length, forceAccepted: s.forced.length, cancelConfirmed: s.confirmed.length,
     partial: s.partial, errors: s.errors.length, jobless409: s.jobless409.length,
+    runningMetadataGhosts: s.staleRunningMetadata.length,
     jobless409RunIds: s.jobless409.slice(0, 8).map(x => x.id), snapshot: m, metricError }));
   if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY, msg);
   if (s.errors.length) { console.error(s.errors); process.exitCode = 1; }

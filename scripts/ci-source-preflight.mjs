@@ -171,7 +171,10 @@ function checkTypes() {
       root:rootFingerprint('source.typegen','next.config.ts','NEXT_TYPEGEN',message)}];
   }
   const tsc=resolve('node_modules','.bin',process.platform==='win32'?'tsc.cmd':'tsc');
-  const r=run(tsc,['--noEmit','--incremental','false','--pretty','false']);
+  // Reuse only TypeScript's validated incremental graph; compiler still
+  // rechecks changed inputs, and Next always re-typechecks the exact PR merge.
+  // A missing/stale/corrupt cache never becomes a pass-through gate.
+  const r=run(tsc,['--noEmit','--incremental','--tsBuildInfoFile','tsconfig.tsbuildinfo','--pretty','false']);
   if (r.ok) return [];
   const findings=parseTypescriptDiagnostics(r.output);
   if (findings.length) return findings;

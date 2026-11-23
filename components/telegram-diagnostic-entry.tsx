@@ -6,33 +6,33 @@ import styles from "./telegram-diagnostic-entry.module.css";
 const copy = {
 en: {
     title: "Where would you like to write?",
-    intro: "You can write to me directly on Telegram or WhatsApp. Telegram opens my personal chat, not a separate bot. If my assistant is connected, it may ask a few questions; otherwise I can reply myself.",
+    intro: "Choose Telegram or WhatsApp, whichever is easier. Ali can guide your free review, and Andrey will personally read the summary you choose to send.",
     telegram: "Write on Telegram",
-    telegramHint: "Personal chat with Andrey · English",
+    telegramHint: "Ali assistant · English",
     whatsapp: "Write on WhatsApp",
     whatsappHint: "Personal message",
     manual: "WhatsApp opens a prepared message. You decide whether to send it.",
-    note: "Opening a link doesn't send a request or register it in CRM. Review the message and tap Send in the messenger. Keep health documents and other sensitive details in the secure questionnaire.",
+    note: "Opening Telegram does not send your request. Tap Start to begin. Your summary reaches Andrey only after your approval. Photos and drawings are optional; private documents belong in the secure questionnaire.",
   },
 ru: {
     title: "Где вам удобнее написать?",
-    intro: "Напишите мне в Telegram или WhatsApp. В Telegram откроется мой личный чат, а не отдельный бот. Если помощник подключён, он может задать несколько вопросов. Если нет — я отвечу сам.",
+    intro: "Напишите в Telegram или WhatsApp — как вам удобнее. Ali поможет с бесплатным разбором, а Андрей лично прочитает резюме, которое вы решите отправить.",
     telegram: "Написать в Telegram",
-    telegramHint: "Личный чат с Андреем · на русском",
+    telegramHint: "Помощник Ali · на русском",
     whatsapp: "Написать в WhatsApp",
     whatsappHint: "Личное сообщение",
     manual: "WhatsApp откроет готовый текст. Проверьте его и нажмите «Отправить».",
-    note: "Переход по ссылке не отправляет сообщение и не создаёт заявку в CRM. Нажмите «Отправить» в мессенджере. Личные документы и сведения о здоровье передавайте через защищённую анкету.",
+    note: "Открытие Telegram не создаёт заявку. Нажмите Start, чтобы начать. Резюме попадёт Андрею только после вашего согласия; фото и рисунок необязательны. Личные документы — через защищённую анкету.",
   },
   es: {
     title: "¿Dónde prefieres escribir?",
-    intro: "Puedes escribirme por Telegram o WhatsApp. Telegram abre mi chat personal, no otro bot. Si el asistente está conectado, puede hacer algunas preguntas; si no, podré responderte yo.",
+    intro: "Escribe por Telegram o WhatsApp, como prefieras. Ali te acompaña en la revisión gratuita y Andrey leerá el resumen que decidas compartir.",
     telegram: "Escribir a Andrey por Telegram",
-    telegramHint: "Chat personal · español",
+    telegramHint: "Asistente Ali · español",
     whatsapp: "Escribir a Andrey por WhatsApp",
     whatsappHint: "Mensaje personal",
     manual: "WhatsApp abre un mensaje preparado. Revísalo y pulsa Enviar.",
-    note: "Abrir el enlace no envía el mensaje ni registra una solicitud en el CRM. Para documentos médicos y datos privados utiliza el formulario seguro.",
+    note: "Abrir Telegram no envía una solicitud. Pulsa Start para comenzar; el resumen llegará al profesional solo si lo apruebas. La foto y el dibujo son opcionales; usa el formulario protegido para documentos privados.",
   },
 } as const;
 
@@ -51,7 +51,7 @@ export function TelegramDiagnosticEntry({ locale }: { locale: PublicLocale }) {
         {telegramUrl ? (
           <a href={telegramUrl} target="_blank" rel="noopener noreferrer nofollow"
             referrerPolicy="no-referrer" data-express-review-channel="telegram"
-            data-channel-locale={locale} data-telegram-route="human-business" className={styles.action}>
+            data-channel-locale={locale} data-telegram-route="ali-free-diagnostic-v3" className={styles.action}>
             <span className={styles.icon} aria-hidden="true"><Send size={21} strokeWidth={2.2} /></span>
             <span className={styles.actionText}><strong>{t.telegram}</strong><small>{t.telegramHint}</small></span>
           </a>

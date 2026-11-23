@@ -1,3 +1,4 @@
+import "./openmotion-standard-antistress.test.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync, statSync} from "node:fs";
@@ -119,3 +120,58 @@ test("49 Director questions truthfully expose local/free vs AI-only options with
 
 // The existing focused Mandala job also verifies the optional original-motion library.
 import "./original-motion-library.test.mjs";
+
+import {createHash} from "node:crypto";
+import {existsSync} from "node:fs";
+import {listApprovedLocalFilmScenes} from "../lib/video-discovery/approved-local-scenes.mjs";
+import {isMyTubeEducationalVideo,matchesMyTubeShelf} from "../lib/video-discovery/mytube-shelves.mjs";
+
+test("MyTube exposes only the 12 locally present two-source CC BY 4.0 film composites",()=>{
+ const publicScenes=listApprovedLocalFilmScenes("ru");
+ assert.equal(publicScenes.length,12);
+ assert.equal(new Set(publicScenes.map(item=>item.id)).size,12);
+ const english=listApprovedLocalFilmScenes("en");
+ const spanish=listApprovedLocalFilmScenes("es");
+ assert.deepEqual(publicScenes.map(item=>item.id),english.map(item=>item.id));
+ assert.deepEqual(publicScenes.map(item=>item.id),spanish.map(item=>item.id));
+ for(const item of publicScenes){
+   assert.equal(item.kind,"video");
+   assert.equal(item.sourceGroup,"approved-local-film-scenes");
+   assert.equal(item.sourceApproved,true);
+   assert.equal(item.curation,"verified");
+   assert.equal(item.mediaRightsApproved,true);
+   assert.equal(item.localMediaVerified,true);
+   assert.equal(item.mediaLicense,"CC BY 4.0");
+   assert.equal(item.durationVerifiedSeconds,5);
+   assert.match(item.videoSrc,/^\/videos\/holistic-house\/film-collection-v3\/[a-z0-9-]+\.mp4$/);
+   assert.match(item.image,/^\/videos\/holistic-house\/film-collection-v3\/[a-z0-9-]+\.jpg$/);
+   const videoPath=join(projectRoot,"public",item.videoSrc);
+   const posterPath=join(projectRoot,"public",item.image);
+   assert.ok(existsSync(videoPath),item.id+" MP4 exists in public assets");
+   assert.ok(existsSync(posterPath),item.id+" poster exists in public assets");
+   const bytes=readFileSync(videoPath);
+   assert.equal(bytes.length,item.mediaBytes,item.id+" byte count matches reviewed manifest");
+   assert.equal(createHash("sha256").update(bytes).digest("hex"),item.mediaSha256,item.id+" content hash matches manifest");
+   assert.match(item.mediaAttribution,/Joel Holland|Dareful/);
+   assert.ok(matchesMyTubeShelf(item,"videos"),item.id+" appears on MyTube Videos shelf");
+   assert.ok(isMyTubeEducationalVideo(item),item.id+" is a playable public video");
+ }
+ const unreviewed={
+   id:"research-only",sourceGroup:"approved-local-film-scenes",kind:"video",
+   sourceApproved:true,curation:"verified",mediaRightsApproved:false,localMediaVerified:false,
+   mediaLicense:"CC BY 4.0",videoSrc:"/videos/holistic-house/film-collection-v3/fake.mp4",
+   image:"/videos/holistic-house/film-collection-v3/fake.jpg",durationVerifiedSeconds:5,
+ };
+ assert.equal(matchesMyTubeShelf(unreviewed,"videos"),false);
+ assert.equal(isMyTubeEducationalVideo(unreviewed),false);
+ assert.equal(listApprovedLocalFilmScenes("ru").length,12,"unverified external/research candidates remain excluded");
+});
+
+test("MyTube local films open the native inline MP4 player and show license attribution",()=>{
+ const feed=read("components/library-feed.tsx");
+ assert.match(feed,/Boolean\(item\.youtubeId \|\| item\.videoSrc\)/);
+ assert.match(feed,/<video className=\{styles\.iframe\} data-local-video-player/);
+ assert.match(feed,/controls playsInline preload="metadata" poster=\{poster\}/);
+ assert.match(feed,/data-video-attribution/);
+ assert.match(feed,/mediaAttributionUrl/);
+});

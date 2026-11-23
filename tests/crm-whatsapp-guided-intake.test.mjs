@@ -28,9 +28,10 @@ test('WhatsApp stays off without Meta credentials and never reuses Telegram pilo
   assert.equal(channelTransportReady('telegram',env),false)
   assert.equal(messengerSetupStatus('whatsapp',env).pilot,true)
 })
-test('WhatsApp six-stage first-person dialogue does not create a lead before consent',()=>{
+test('WhatsApp six-stage intake never transfers private diagnostic text before consent',()=>{
   const input=(rawText,extra={})=>({rawText,locale:'ru',...extra})
-  const first=whatsappIntakeEvent(null,input('Привет'))
+  const websiteReview=new URL(whatsappExpressReviewHandoff('ru')).searchParams.get('text')
+  const first=whatsappIntakeEvent(null,input(websiteReview))
   assert.equal(first.stage,'consent')
   assert.equal(first.body,null)
   assert.equal(first.consent,false)
@@ -82,13 +83,15 @@ test('STOP before consent creates no lead; STOP after consent is suppressible',(
   assert.equal(canReply({channel:'whatsapp',enabled:true,
     lastInboundAt:new Date(Date.now()-24*3600_000).toISOString()}).reason,'REPLY_WINDOW_CLOSED')
 })
-test('signed webhook routes WhatsApp to consent-first CRM, not a second inbox',()=>{
+test('signed webhook captures every connected WhatsApp contact before consent-first intake',()=>{
   const hook=source('lib/crm/messenger-webhook.js')
   const route=source('app/api/app/crm/messenger/webhook/[provider]/route.js')
   const policy=source('lib/crm/messenger-policy.js')
   const db=source('supabase/migrations/20261026193500_hh_crm_whatsapp_diagnostic_intake_20261026.sql')
   assert.match(route,/verifyMessengerWebhook\(provider,raw,request.headers\)/)
   assert.match(route,/processWhatsAppDiagnostic\(event,config\)/)
+  assert.match(route,/captureWhatsAppFirstContact\(event,config\)/)
+  assert.match(route,/recordWhatsAppInboundReceipt\(event,config\)/)
   assert.match(route,/sendWhatsAppDiagnosticPrompt/)
   assert.match(hook,/x-hub-signature-256/)
   assert.match(hook,/app_private\.crm_wa_diagnostic_sessions/)

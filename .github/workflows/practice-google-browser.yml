@@ -16,6 +16,11 @@ on:
       - 'app/*/practice/page.jsx'
       - 'tests/practice-google-return-and-services-v5.test.mjs'
       - 'scripts/verify-practice-post-google-browser.mjs'
+      # Commander signed PR completion is validated by Core and the focused Guard, not this unrelated heavy suite.
+      - '!app/api/app/commander/**'
+      # Client Live Photo APIs have their own App/IA/billing/video owners.
+      # Keep the literal shared catch-all dispatcher and all source/security routes.
+      - '!app/api/app/live-photos/**'
   push:
     branches: ['codex/public-book-library']
     paths:

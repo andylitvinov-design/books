@@ -13,6 +13,10 @@ on:
       - 'tests/home-conversation-browser.mjs'
       - 'tests/home-carousel-first-screen-cta.test.mjs'
       - 'tests/home-diagnosis-messenger.test.mjs'
+      # Public Ali support intake owner, avoiding unrelated private App/IA tests.
+      - 'components/app/messenger-ai-landing.*'
+      - 'components/app/messenger-support-quiz.*'
+      - 'tests/messenger-support-quiz.test.mjs'
   push:
     branches: ['codex/public-book-library']
     paths:
@@ -44,11 +48,11 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Localized conversation, topic routing and existing carousel regressions
-        run: node --test tests/ideas-guidance.test.mjs tests/home-section-carousel.test.mjs tests/home-carousel-first-screen-cta.test.mjs tests/home-diagnosis-messenger.test.mjs
+        run: node --test tests/ideas-guidance.test.mjs tests/home-section-carousel.test.mjs tests/home-carousel-first-screen-cta.test.mjs tests/home-diagnosis-messenger.test.mjs tests/messenger-support-quiz.test.mjs
       - name: Check affected TypeScript and React UI
         run: |
           if [[ "$GITHUB_EVENT_NAME" != 'pull_request' ]]; then npx --no-install tsc --noEmit; fi
-          npx eslint components/home-conversation-guide.tsx components/holistic-house-home.tsx app/es/page.tsx components/home-free-diagnosis-banner.tsx
+          npx eslint components/home-conversation-guide.tsx components/holistic-house-home.tsx app/es/page.tsx components/home-free-diagnosis-banner.tsx components/app/messenger-ai-landing.tsx components/app/messenger-support-quiz.tsx
       - name: Build with the project's production dependencies
         if: github.event_name != 'pull_request'
         run: npm run build

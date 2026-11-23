@@ -6,7 +6,7 @@ import ts from 'typescript';
 
 const source = readFileSync(new URL('../components/personal-testimonials.tsx', import.meta.url), 'utf8');
 const jsx = (type, props) => typeof type === 'function' ? type(props ?? {}) : { type, props: props ?? {} };
-function render(locale, variant, input = source) {
+function render(locale, variant, input = source, options = {}) {
   const modules = {
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'next/link': { default: props => jsx('a', props) },
@@ -19,7 +19,7 @@ function render(locale, variant, input = source) {
   const compiled = ts.transpileModule(input, { fileName: 'personal-testimonials.tsx', compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022 } }).outputText;
   const exports = {};
   runInNewContext(compiled, { exports, require(name) { assert.ok(Object.hasOwn(modules, name), name); return modules[name]; } });
-  return exports.PersonalTestimonials({ locale, variant });
+  return exports.PersonalTestimonials({ locale, variant, ...options });
 }
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : Array.isArray(tree) ? tree.flatMap(nodes) : [tree, ...nodes(tree.props.children)];
 function assertLinks(locale, variant, input) {
@@ -71,4 +71,14 @@ test('free review shows all twelve genuine videos vertically with original-langu
   assert.match(stack, /scroll-snap-type:\s*none/);
   assert.match(source, /\{isAbout && <p className=\{styles\.swipeHint\}>/);
   assert.match(css, /@media \(max-width: 767px\)[\s\S]*?\.section\[data-personal-testimonials="all"\] \.videoItem/);
+});
+
+test('free-review archive has matching original RU/EN audio and clearly labeled English ES audio', () => {
+ const en=['Dk0LBmOivQo','aUJde6A-9p0','fE6sD1zr1Js','itjo2_z2NGk','4NrryHcEF1A','hYwRNMxIMjc'];
+ const ru=['m9RfDgK76PU','MIVLm1GUTtM','ttQxUHopaUM','VABgpmn4ZYA','muOnIHllI7E','5oj0BIbLT4w'];
+ for(const [locale,ids,audio] of [['en',en,'en'],['ru',ru,'ru'],['es',en,'en']]){
+  const rendered=nodes(render(locale,'all',source,{sameAudioOnly:true}));
+  assert.deepEqual(rendered.filter(v=>v.props['data-testimonial-video-id']).map(v=>v.props['data-testimonial-video-id']),ids);
+  assert.deepEqual(rendered.filter(v=>v.type==='video-fixture').map(v=>v.props.video.language),Array(6).fill(audio));
+ }
 });

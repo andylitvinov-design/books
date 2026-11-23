@@ -22,19 +22,22 @@ test("seven ordered stages with unique media and one visible journey in EN/RU/ES
   assert.match(component, /data-home-journey-count=\{moduleIds\.length\}/);
   assert.match(component, /<h1 id="hh-home-features-title">/);
   assert.match(component, /<h2 id=\{"hh-home-" \+ id \+ "-title"\}>/);
-  for (const page of ["components/holistic-house-home.tsx","app/es/page.tsx"]) {
-    const home = read(page);
-    const tags = ["HomeSectionCarousel","HomeMoreDisclosure","HomeFeaturedWorkspace"];
-    let last = -1;
-    for (const tag of tags) {
-      const at = home.indexOf("<" + tag);
-      assert.ok(at > last, page + " ordering of " + tag);
-      last = at;
-    }
-    assert.equal((home.match(/<HomeFeaturedWorkspace\b/g) || []).length, 1);
-    for (const removed of ["HomeFreeDiagnosisBanner","HomePersonalSpaceCard","HomepageTopicJourneys","HomeMasterPath","HomeCoreMethods"])
-      assert.ok(!home.includes("<" + removed), page + " repeats " + removed);
+  const expanded=read("components/home-expanded-catalog.tsx");
+  const deferred=read("components/home-deferred-sections.tsx");
+  for(const page of ["components/holistic-house-home.tsx","app/es/page.tsx"]){
+    const home=read(page);
+    assert.match(home,/<HomeDialogueEntry locale=/);
+    assert.match(home,/<HomeDeferredSections locale=/);
+    assert.ok(home.indexOf("<HomeDialogueEntry")<home.indexOf("<HomeDeferredSections"),
+      page+" first interactive paint must precede the catalogue");
+    assert.doesNotMatch(home,/<HomeSectionCarousel|<HomeMoreDisclosure|<HomeFeaturedWorkspace/);
+    for(const removed of ["HomeFreeDiagnosisBanner","HomePersonalSpaceCard","HomepageTopicJourneys","HomeMasterPath","HomeCoreMethods"])
+      assert.ok(!home.includes("<"+removed),page+" repeats "+removed);
   }
+  assert.match(deferred,/IntersectionObserver/);
+  assert.match(expanded,/<HomeSectionCarousel locale=\{locale\}\s*\/>/);
+  assert.match(expanded,/<HomeFeaturedWorkspace locale=\{locale\}\s*\/>/);
+  assert.equal((expanded.match(/<HomeFeaturedWorkspace\b/g)||[]).length,1);
   for (const locale of ["en","ru","es"]) assert.deepEqual(Object.keys(copy[locale].modules), expected);
 });
 

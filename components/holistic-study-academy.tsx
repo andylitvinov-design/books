@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight, BookOpen, ChevronRight, GraduationCap, Leaf, Sparkles } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import type { LearningCatalogItem } from "@/components/holistic-support-learning-catalog";
+import { HolisticStudyJourney } from "@/components/holistic-study-journey";
 import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import { findAcademyRecord } from "@/data/academy/catalog";
 import styles from "./holistic-study-academy.module.css";
@@ -248,10 +249,35 @@ function courseHref(key: Key, locale: PublicLocale, learningItems: LearningCatal
    : key === "kundalini" ? "/academy/reiki/kundalini-reiki"
    : "/academy/reiki/yggdrasil");
 }
+
+/** The eight source-backed Academy offers are the only extra quiz recommendations.
+ * Preserve canonical route ownership; don't manufacture enrollment or prices. */
+function academyRecommendationItems(locale: PublicLocale, learningItems: LearningCatalogItem[]): LearningCatalogItem[] {
+ const t = copy[locale];
+ return groups.flatMap(group => group.keys.map((key): LearningCatalogItem => ({
+  id: "academy-" + key,
+  direction: group.id === "reiki" || key === "practitioner" ? "reiki"
+    : key === "magic" ? "magic" : "temple",
+  topic: key,
+  title: t.items[key][0],
+  description: t.items[key][2],
+  href: courseHref(key, locale, learningItems),
+  image: artwork[key],
+  kind: key === "greece" || key === "egypt" ? "program"
+    : key === "meditation" ? "video" : "course",
+  cost: group.id === "free" ? "free" : "ask",
+ })));
+}
+
 export function HolisticStudyAcademy({locale,learningItems}: {locale: PublicLocale;learningItems: LearningCatalogItem[]}) {
  const t = copy[locale];
  return <main className={styles.page} data-holistic-study-academy lang={locale}>
   <div className={styles.shell}>
+   <div className={styles.mobileJourney} data-study-mobile-quiz>
+    <HolisticStudyJourney locale={locale}
+      learningItems={academyRecommendationItems(locale, learningItems)}
+      defaultGoal="stress" headingLevel={1}/>
+   </div>
    <header className={styles.top}>
     <Link href={"/" + locale} prefetch={false} className={styles.brand}>Holistic House</Link>
     <nav aria-label="Language" className={styles.languages}>

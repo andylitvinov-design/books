@@ -125,3 +125,104 @@
   .panel:has(> [data-service-card-actions] button[aria-expanded="true"]){grid-column:1/-1}
   .panel:has(> [data-service-card-actions] button[aria-expanded="true"]) .panelActions{padding:0 10px 12px}
 }
+
+/* 17 Nov approved photographic mobile cards: one design across all 14 panels.
+   Click the header/photo to expand existing service variants; two actions remain
+   directly beneath the card and the order chooser stays in this card. */
+@media(max-width:760px){
+ .grid{grid-template-columns:minmax(0,1fr);gap:10px}
+ .panel,.panel[data-expanded="true"]{
+   grid-column:1/-1;overflow:hidden;border-radius:20px;border-color:#e7d9c6;
+   background:#fffdf9;box-shadow:0 4px 13px #60432b12
+ }
+ .panel .preview,.panel[data-expanded="true"] .preview{
+   position:relative;display:grid;width:100%;grid-template-columns:94px minmax(0,1fr);
+   align-items:center;gap:11px;min-height:115px;padding:9px 10px;border:0;
+   background:transparent;text-align:left;cursor:pointer;color:#193f38
+ }
+ .panel .icon,.panel[data-expanded="true"] .icon{
+   position:relative;display:block;width:94px;height:106px;
+   overflow:hidden;border-radius:15px;background:#e5ecdf
+ }
+ .icon img{object-fit:cover;object-position:center}
+ .iconOverlay{position:absolute;left:6px;bottom:6px;z-index:1;display:grid;
+   place-items:center;width:27px;height:27px;border-radius:50%;
+   background:#fffdf9e8;color:#07634c}
+ .panel .previewText,.panel[data-expanded="true"] .previewText{
+   display:grid;gap:4px;min-width:0;padding:24px 16px 6px 0
+ }
+ .panel .previewText strong,.panel[data-expanded="true"] .previewText strong{
+   color:#112c3e;font:700 clamp(17px,4.8vw,21px)/1.14 Georgia,"Times New Roman",serif;
+   overflow-wrap:anywhere
+ }
+ .panel .previewText small,.panel[data-expanded="true"] .previewText small{
+   color:#5d6463;font:400 clamp(12px,3.35vw,14px)/1.35 Arial,Helvetica,sans-serif
+ }
+ .priceBadge{
+   position:absolute;z-index:2;top:9px;right:10px;max-width:calc(100% - 113px);
+   min-height:24px;padding:4px 10px;border-radius:999px;
+   background:#e0f0e5;color:#07533e;white-space:nowrap;
+   font:700 clamp(10px,3vw,12px)/1.15 Arial,Helvetica,sans-serif
+ }
+ .priceBadge[data-service-price-kind="session"],
+ .priceBadge[data-service-price-kind="from"]{background:#fff0cc;color:#6d5018}
+ .priceBadge[data-service-price-kind="quote"],
+ .priceBadge[data-service-price-kind="mixed"]{background:#f1eddf;color:#66563d}
+ .panel .chevron{position:absolute;right:14px;bottom:14px;transform:none;color:#08705a}
+ .panel[data-expanded="true"] .chevron{transform:rotate(180deg)}
+ .panelActions,.panel[data-expanded="true"] .panelActions{display:block;padding:0 10px 11px}
+ .panel[data-expanded="true"] .content{padding:12px;border-top:1px solid #e9e0d3}
+ .panel .preview:focus-visible{outline:3px solid #08705a;outline-offset:-3px}
+}
+@media(max-width:350px){
+ .panel .preview,.panel[data-expanded="true"] .preview{
+   grid-template-columns:82px minmax(0,1fr);gap:9px;padding:8px;min-height:105px
+ }
+ .panel .icon,.panel[data-expanded="true"] .icon{width:82px;height:99px}
+ .panel .previewText strong,.panel[data-expanded="true"] .previewText strong{font-size:16px}
+ .priceBadge{right:8px;top:7px;max-width:calc(100% - 99px);font-size:10px;padding:4px 7px}
+}
+
+
+/* #4874: source-backed options remain visible while the owner-approved
+   photographic header and upper-right price badge from #4900 are preserved.
+   The full legacy interactive module is a separate optional disclosure. */
+.moreFormats{display:flex;align-items:center;justify-content:center;gap:7px;max-width:calc(100% - 20px);min-height:43px;margin:2px auto 11px;padding:8px 13px;border:1px solid #d6e5db;border-radius:13px;background:#f3f8f0;color:#116453;cursor:pointer;font:700 12px/1.3 Arial,Helvetica,sans-serif}
+.moreFormats svg{flex:none}
+.moreFormats[aria-expanded="true"] svg{transform:rotate(90deg)}
+.moreFormats:focus-visible{outline:3px solid #08705a;outline-offset:2px}
+@media(max-width:760px){
+  .panel[data-services-has-three="true"]{grid-column:1/-1}
+  .panel[data-services-has-three="true"] > .content{display:none}
+  .panel[data-services-has-three="true"][data-expanded="true"] > .content{display:block}
+  .panel[data-services-has-three="true"] .preview{cursor:pointer}
+  .panel[data-services-has-three="true"] .priceBadge{pointer-events:none}
+}
+@media(min-width:761px){
+  .catalog{display:block;width:calc(100% - 36px);max-width:1120px;margin:24px auto 38px;color:#143d3a}
+  .catalogHeading{display:block;margin:0 2px 15px}
+  .catalogHeading h2{margin:0 0 6px;color:#17334b;font:700 30px/1.12 Georgia,"Times New Roman",serif}
+  .catalogHeading p{margin:0;font:14px/1.4 Arial,Helvetica,sans-serif;color:#5d6a71}
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+  .panel{display:block;min-width:0;overflow:hidden;border:1px solid #e7d9c6;border-radius:20px;background:#fffdf9;box-shadow:0 4px 13px #60432b12}
+  .preview{position:relative;display:grid;width:100%;grid-template-columns:96px minmax(0,1fr);align-items:center;gap:12px;min-height:119px;padding:10px;border:0;background:transparent;text-align:left;cursor:pointer}
+  .icon{position:relative;display:block;width:96px;height:102px;overflow:hidden;border-radius:14px;background:#e5ecdf}
+  .icon img{object-fit:cover;object-position:center}
+  .iconOverlay{position:absolute;left:6px;bottom:6px;z-index:1;display:grid;place-items:center;width:27px;height:27px;border-radius:50%;background:#fffdf9e8;color:#07634c}
+  .previewText{display:grid;gap:4px;min-width:0;padding:25px 14px 5px 0}
+  .previewText strong{color:#112c3e;font:700 21px/1.16 Georgia,"Times New Roman",serif}
+  .previewText small{color:#5d6463;font:13px/1.4 Arial,Helvetica,sans-serif}
+  .priceBadge{position:absolute;top:10px;right:11px;max-width:calc(100% - 123px);padding:5px 9px;border-radius:999px;background:#e0f0e5;color:#07533e;font:700 12px/1.2 Arial,Helvetica,sans-serif;white-space:nowrap}
+  .priceBadge[data-service-price-kind="session"],.priceBadge[data-service-price-kind="from"]{background:#fff0cc;color:#6d5018}
+  .priceBadge[data-service-price-kind="quote"],.priceBadge[data-service-price-kind="mixed"]{background:#f1eddf;color:#66563d}
+  .chevron{position:absolute;right:15px;bottom:16px;color:#08705a}
+  .panel[data-expanded="true"]{grid-column:auto}
+  .panelActions{display:block;padding:0 12px 12px}
+  .content{display:none}
+  .panel[data-expanded="true"] .content{display:block;padding:12px;border-top:1px solid #e9e0d3}
+}
+
+/* Same-page first-screen category links target the full visible three-offer group. */
+.panel[id^="service-group-"]{scroll-margin-top:74px}
+.panel[id^="service-group-"]:target{outline:2px solid #248268;outline-offset:-2px}
+@media(prefers-reduced-motion:reduce){.panel[id^="service-group-"]{scroll-behavior:auto}}

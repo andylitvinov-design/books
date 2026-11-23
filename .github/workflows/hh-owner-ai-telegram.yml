@@ -47,6 +47,7 @@ on:
       - 'supabase/migrations/*owner_ai_telegram_updates*.sql'
       - 'docs/integrations/OWNER_AI_CONSOLE_TELEGRAM_20261020.md'
       - '.github/workflows/hh-owner-ai-telegram.yml'
+      - '!lib/app/client-telegram-transport.js'
   workflow_dispatch:
 permissions:
   contents: read

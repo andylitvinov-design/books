@@ -8,6 +8,7 @@ import { COACHING_FIELDS, COACHING_GROUPS, COACHING_INTAKE_VERSION, COACHING_TOP
 import { DIAGNOSTIC_START_KEY, parseDiagnosticStart } from "@/lib/coaching/diagnostic-enquiry.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./coaching-intake-form.module.css";
+import ExpressGoogleParityForm from "./express-google-parity-form";
 import {MandatoryMessengerActions} from "@/components/mandatory-messenger-actions";
 import {websiteMessengerOnlyUi} from "@/lib/crm/website-messenger-only.mjs";
 
@@ -257,6 +258,7 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
   const [error, setError] = useState("");
   const [fallbackCopy, setFallbackCopy] = useState(false);
   const [replyContact, setReplyContact] = useState({ email: "", phone: "" });
+  const [crmEmailConsent,setCrmEmailConsent]=useState(false);
   const [showMore, setShowMore] = useState(false);
   const [showPhone, setShowPhone] = useState(false);
   const [offerChoice, setOfferChoice] = useState<"free" | "short" | "full">("free");
@@ -276,6 +278,7 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
   const total = visibleFields.length;
   const optionalCount = COACHING_FIELDS.filter(field => !field.required).length;
   const miniLinked=telegramStatus==="linked" && Boolean(telegramInitData);
+  const freeDiagnosticLinked=Boolean(telegramHandoff?.startsWith('h2.'));
 
   useEffect(() => {
     // Read and erase the short-lived opaque bearer token from the URL fragment.
@@ -283,7 +286,10 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
     const url = new URL(window.location.href);
     const handoff = new URLSearchParams(url.hash.slice(1)).get("handoff");
     setTelegramEntry(url.searchParams.get("from") === "telegram");
-    if (handoff && /^h1\.[A-Za-z0-9_-]{120,1100}$/.test(handoff)) setTelegramHandoff(handoff);
+    if (handoff && /^h(?:1\.[A-Za-z0-9_-]{120,1100}|2\.[A-Za-z0-9_-]{120,1200})$/.test(handoff)) {
+      setTelegramHandoff(handoff);
+      if(handoff.startsWith('h2.'))setOfferChoice('free');
+    }
     if (handoff) {
       url.hash = "";
       window.history.replaceState(window.history.state, "", url.pathname + url.search);
@@ -446,19 +452,36 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
     if(telegramEntry && !miniLinked && !telegramHandoff){
       setLeadError(t.telegramUnavailable);return;
     }
+    if(freeDiagnosticLinked&&replyContact.email.trim()&&
+      (!/^[^\s@]{1,64}@[^\s@]{1,185}\.[A-Za-z]{2,24}$/.test(replyContact.email.trim())||!crmEmailConsent)){
+      setLeadError(locale==='ru'
+        ?'Укажите корректный email и подтвердите, что его можно сохранить для ответа в CRM.'
+        :locale==='es'
+          ?'Indica un correo válido y autoriza guardarlo en el CRM para responderte.'
+          :'Enter a valid email and agree to save it in the CRM for your reply.');
+      return;
+    }
     if(missing || (!miniLinked && !replyContact.email.trim() && !replyContact.phone.trim() && !telegramHandoff)){
       setLeadError(t.sendError);return;
     }
     setLeadBusy(true); setLeadError("");
+    let expiredFreeLink=false;
     try {
       if (!leadAttempt.current) {
         const id = window.crypto.randomUUID();
         const intake={operationId:id,locale,offer:offerChoice,
           topic:draft.topic,name:draft.name,city:draft.city,
           answers:draft.answers,questions:draft.questions};
-        const endpoint=miniLinked?"/api/coaching-diagnostic/telegram":"/api/coaching-diagnostic";
+        const endpoint=miniLinked?"/api/coaching-diagnostic/telegram"
+          :freeDiagnosticLinked?"/api/coaching-diagnostic/telegram"
+          :"/api/coaching-diagnostic";
         const payload=miniLinked
           ? {action:"submit",initData:telegramInitData,questionnaire:{...intake,confirmed:true}}
+          : freeDiagnosticLinked
+          ? {action:"submit",handoff:telegramHandoff,
+             questionnaire:{...intake,offer:"free",confirmed:true,
+               replyEmail:replyContact.email.trim(),
+               replyEmailConsent:Boolean(replyContact.email.trim())&&crmEmailConsent}}
           : {...intake,contact:{displayName:draft.name,email:replyContact.email.trim(),phone:replyContact.phone.trim()},
              contactConsent:true,website:"",...(telegramHandoff?{handoff:telegramHandoff}:{})};
         // A lost response never changes the destination or creates a new lead.
@@ -470,6 +493,7 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
         body: leadAttempt.current.body,
       });
       const result = await response.json().catch(() => null);
+      if(response.status===409&&freeDiagnosticLinked)expiredFreeLink=true;
       if (!response.ok || result?.saved !== true || !/^HH-[A-F0-9]{12}$/.test(result.referenceCode || "")) {
         // A rejected payload was never saved, so edits must get a fresh idempotency key.
         if (response.status === 400) leadAttempt.current = null;
@@ -480,7 +504,13 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
     } catch {
       // Retain the exact idempotency key and frozen payload across retries.
       // A lost response must not create a second coach request.
-      setLeadError(t.sendFailure);
+      setLeadError(expiredFreeLink
+        ?locale==="ru"
+          ?"Ссылка на анкету больше не действует. Вернитесь в чат Ali и отправьте /form — новая ссылка позволит повторить отправку."
+          :locale==="es"
+            ?"El enlace ha caducado. Vuelve al chat de Ali y envía /form para recibir uno nuevo."
+            :"The form link has expired. Return to Ali in Telegram and send /form for a fresh link."
+        :t.sendFailure);
     } finally { setLeadBusy(false); }
   }
 
@@ -507,11 +537,25 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
     setCollision(false); setDirty(true); setNotice(""); setError("");
   }
 
+  // A verified V3 Telegram handoff renders the source-faithful Express Google
+  // questionnaire; unrelated public forms, V2 Mini App and private drafts retain
+  // the original questionnaire and authorization path.
+  if(freeDiagnosticLinked&&telegramHandoff&&(locale==="ru"||locale==="en"))
+    return <ExpressGoogleParityForm locale={locale} handoff={telegramHandoff}/>;
+
   return <section className={styles.form} aria-labelledby="coaching-form-title" data-coaching-intake lang={locale}>
     <header className={styles.intro}>
       <div className={styles.introCopy}>
-        <h2 id="coaching-form-title">{t.title}</h2>
-        <p className={styles.lead}>{t.lead}</p>
+        <h2 id="coaching-form-title">{freeDiagnosticLinked
+          ?locale==="ru"?"Экспресс-диагностика — анкета":locale==="es"?"Formulario de diagnóstico exprés":"Express Diagnostic Form"
+          :t.title}</h2>
+        <p className={styles.lead}>{freeDiagnosticLinked
+          ?locale==="ru"
+            ?"Выберите одну ситуацию и ответьте на ключевые вопросы. Ответы останутся в защищённой CRM Holistic House и будут отмечены как полученные только после успешной отправки."
+            :locale==="es"
+              ?"Describe una situación y responde a las preguntas esenciales. Solo se confirmará la recepción tras guardar el formulario en el CRM protegido."
+              :"Please describe one situation and answer the essential questions. Receipt is confirmed only after the answers are saved to your protected Holistic House CRM conversation."
+          :t.lead}</p>
         <p className={styles.education}><ShieldCheck size={15} aria-hidden="true" />{t.note}</p>
       </div>
       <div className={styles.stats} role="status" aria-live="polite">
@@ -594,17 +638,17 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
       {!privateCopyMode ? <div className={styles.requestBox} data-coaching-request>
         <p className={styles.requestEyebrow}>{t.sendEyebrow}</p>
         <h3>{offerChoice === "free" ? t.sendTitle : t.sendPaidTitle}</h3>
-        <p className={styles.requestLead}>{miniLinked?t.telegramMiniLinked:t.sendLead}</p>
+        <p className={styles.requestLead}>{miniLinked?t.telegramMiniLinked:freeDiagnosticLinked?t.telegramLinked:t.sendLead}</p>
         {leadReceipt ? <div className={styles.requestSuccess} data-coaching-enquiry-saved role="status">
           <Check size={18} aria-hidden="true" /><div><strong>{t.sendSuccess} {leadReceipt}</strong><p>{t.sendNext}</p></div>
-          {offerChoice === "free" ? <Link className={styles.requestUpgrade} href={"/" + locale + "/holistic-support#personal-insights-master"} prefetch={false}>
+          {offerChoice === "free" && !freeDiagnosticLinked ? <Link className={styles.requestUpgrade} href={"/" + locale + "/holistic-support#personal-insights-master"} prefetch={false}>
             {t.sendUpgrade}<ArrowRight size={17} aria-hidden="true" />
           </Link> : null}
         </div> : <>
           <fieldset className={styles.choiceFieldset} disabled={leadBusy || busy || collision}>
             <legend>{t.sendOption}</legend>
             <div className={styles.choiceGrid}>
-              {(["free", "short", "full"] as const).map(option => <label key={option} data-selected={offerChoice === option}>
+              {(["free", "short", "full"] as const).filter(option=>!freeDiagnosticLinked||option==='free').map(option => <label key={option} data-selected={offerChoice === option}>
                 <input type="radio" name="coaching-service-request" checked={offerChoice === option}
                   onChange={() => { setOfferChoice(option); setLeadError(""); }} />
                 <span>{option === "free" ? t.sendFree : option === "short" ? t.sendShort : t.sendFull}</span>
@@ -613,7 +657,28 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
           </fieldset>
           {miniLinked ? <p className={styles.requestFootnote} role="status">{t.telegramMiniLinked}</p>
             : telegramHandoff ? <p className={styles.requestFootnote}>{t.telegramLinked}</p> : null}
-          {telegramStatus==="checking" ? <p role="status">{t.telegramChecking}</p> : null}
+          {freeDiagnosticLinked ? <div className={styles.replyFields} data-free-diagnostic-reply-email>
+             <label htmlFor="hh-free-reply-email">
+               {locale==="ru"?"Email для ответа специалиста (по желанию)":
+                 locale==="es"?"Email para recibir respuesta (opcional)":
+                 "Email for a reply from the practitioner (optional)"}
+               <input id="hh-free-reply-email" type="email" autoComplete="email" maxLength={254}
+                 value={replyContact.email} disabled={leadBusy||busy||collision||Boolean(leadAttempt.current)}
+                 placeholder="you@example.com"
+                 onChange={event=>{setReplyContact(p=>({...p,email:event.target.value}));setLeadError("");}}/>
+             </label>
+             {replyContact.email.trim() ? <label className={styles.requestDisclosure}>
+               <input type="checkbox" checked={crmEmailConsent}
+                 disabled={leadBusy||busy||collision||Boolean(leadAttempt.current)}
+                 onChange={event=>setCrmEmailConsent(event.target.checked)}/>
+               <span>{locale==="ru"
+                 ?"Согласен сохранить мой email вместе с анкетой в защищённой CRM для личного ответа. Это не согласие на рассылку."
+                 :locale==="es"
+                   ?"Acepto guardar mi email con el formulario en el CRM privado para una respuesta personal. No autorizo marketing."
+                   :"I agree to save my email with this form in the protected CRM for a personal reply. This is not marketing consent."}</span>
+             </label> : null}
+           </div> : null}
+           {telegramStatus==="checking" ? <p role="status">{t.telegramChecking}</p> : null}
           {telegramEntry && !miniLinked && !telegramHandoff && telegramStatus!=="checking"
             ? <p className={styles.requestError} role="alert">{t.telegramUnavailable}</p> : null}
           {websiteMessengerOnlyUi() && !miniLinked && !telegramHandoff
@@ -621,7 +686,7 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
                 label={locale==="ru"?"Подтвердите мессенджер":locale==="es"?"Verifica tu mensajería":"Verify your messenger"}
                 telegramUrl={"https://t.me/holistichouse_bot?start=hhreview_"+locale}
                 whatsappUrl={"https://wa.me/14376066502?text="+encodeURIComponent("Holistic House: please contact me about a written situation review.")}/> : null}
-          {!miniLinked && !telegramEntry && !websiteMessengerOnlyUi() ? <div className={styles.replyFields}>
+          {!miniLinked && !telegramHandoff && !telegramEntry && !websiteMessengerOnlyUi() ? <div className={styles.replyFields}>
             <label>{t.sendEmail}<input type="email" autoComplete="email" maxLength={254}
               disabled={leadBusy || busy || collision} value={replyContact.email}
               onChange={event => { setReplyContact(value => ({ ...value, email: event.target.value })); setLeadError(""); }} /></label>

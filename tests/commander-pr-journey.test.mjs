@@ -93,7 +93,7 @@ test('GitHub new HEAD alone does not prove AI wrote commit or CI went green',()=
  const gh={pr:{...pr,head:{...pr.head,sha:NEW}},checksComplete:true,checks:[checked(NEW,'failure')],
   commentsComplete:true,comments:[]};
  const r=buildPrCompletionJourney({item,github:gh,observedAt:NOW});
- assert.equal(byId(r,'commit').state,'done');
+ assert.equal(byId(r,'commit').state,'working');
  assert.match(byId(r,'commit').detail,/авторство AI не подтверждается/);
  assert.equal(byId(r,'model').state,'unknown');
  assert.equal(byId(r,'recheck').state,'attention');
@@ -150,4 +150,115 @@ test('details are on demand, owner authenticated, and mobile timeline expandable
  for(const field of ['firstAttemptAt','leaseUntil','checkedCount','dispatchAttemptedAt'])
   assert.ok(edge.includes(field),'owner-only status supplies '+field);
  assert.doesNotMatch(client,/dangerouslySetInnerHTML|openrouter|localStorage|GITHUB_TOKEN/);
+});
+
+test('real GitHub merge supersedes stale BLOCKED owner queue without inventing LIVE',()=>{
+ const item={...ownerItem,status:'BLOCKED',reasonCode:'EXISTING_HOLD_NO_OVERRIDE',
+  firstAttemptAt:'2026-11-17T00:09:00Z',leaseUntil:'2026-11-17T00:13:00Z'};
+ const gh={pr:{...pr,state:'closed',merged:true,merge_commit_sha:MERGE,merged_at:NOW,
+   head:{...pr.head,sha:NEW},labels:[]},
+  checks:[checked(NEW,'success')],checksComplete:true,commentsComplete:false};
+ const result=buildPrCompletionJourney({item,github:gh,observedAt:NOW});
+ assert.equal(result.githubVerified,true);
+ assert.equal(result.currentStage,'live');
+ assert.equal(result.stalled,false);
+ assert.equal(result.attention,null);
+ assert.equal(result.currentHeadSha,NEW);
+ assert.equal(byId(result,'merge').state,'done');
+ assert.match(byId(result,'merge').detail,/GitHub подтвердил merge SHA/);
+ assert.equal(byId(result,'live').state,'unknown');
+});
+test('without independently verified merge a stale BLOCKED remains stalled',()=>{
+ const item={...ownerItem,status:'BLOCKED',reasonCode:'EXISTING_HOLD_NO_OVERRIDE'};
+ const result=buildPrCompletionJourney({item,github:evidence,observedAt:NOW});
+ assert.equal(result.stalled,true);
+ assert.equal(result.currentStage,'handoff');
+ assert.equal(byId(result,'merge').state,'waiting');
+ assert.equal(byId(result,'live').state,'unknown');
+});
+
+test('a served Vercel descendant with independent proof upgrades merged PR to LIVE',()=>{
+ const item={...ownerItem,status:'MERGED',mergeSha:MERGE};
+ const gh={pr:{...pr,state:'closed',merged:true,merge_commit_sha:MERGE,merged_at:NOW},
+  checks:[checked(ORIGINAL,'success')],checksComplete:true,commentsComplete:false};
+ const production={verified_live:true,
+  proof_method:'CANONICAL_RUNTIME_AND_GITHUB_VERCEL_ANCESTRY',
+  alias:'holistichouse.vercel.app',merge_sha:MERGE,
+  production_sha:'c'.repeat(40),deployment_id:'dpl_B34A56cd78'};
+ const live=buildPrCompletionJourney({item,github:gh,production,observedAt:NOW});
+ assert.equal(live.productionVerified,true);
+ assert.equal(live.deploymentId,production.deployment_id);
+ assert.equal(byId(live,'merge').state,'done');
+ assert.equal(byId(live,'live').state,'done');
+ assert.equal(live.currentStage,'live');
+ const unproven=buildPrCompletionJourney({item,github:gh,
+  production:{...production,merge_sha:'d'.repeat(40)},observedAt:NOW});
+ assert.equal(unproven.productionVerified,false);
+ assert.equal(byId(unproven,'live').state,'unknown');
+});
+test('live check is server-owned, details-only and cannot accept user-supplied success',()=>{
+ const route=readFileSync(new URL('../app/api/app/commander/pr-completion/route.js',import.meta.url),'utf8');
+ const client=readFileSync(new URL('../app/commander/pr/PrCompletionClient.jsx',import.meta.url),'utf8');
+ assert.match(route,/verifyPrLiveReadback\(evidence\.pr\)/);
+ assert.match(route,/siteRuntimeOnly/);
+ assert.match(route,/NON_SITE_RUNTIME_SCOPE_UNVERIFIED/);
+ assert.match(route,/if\(detailsRequested\)/);
+ assert.match(route,/await auth\.verified\(\)/);
+ assert.match(client,/productionVerified===true/);
+ assert.match(client,/Vercel LIVE/);
+ assert.doesNotMatch(client,/dangerouslySetInnerHTML|GITHUB_TOKEN|VERCEL_TOKEN/);
+});
+
+test('bot-signed exact AI Worker run confirms model response but NOT a patch',()=>{
+ const receipt={schema:'HH_PR_TASK_V1',task_key:'a'.repeat(32),
+  pr_number:4811,head_sha:ORIGINAL,lane:'repair',state:'MANUAL',
+  owner_run_id:'44101341789',source_published:false,new_sha:null,
+  ai_execution:{schema:'HH_PR_AI_EXECUTION_EVIDENCE_V1',
+   model_request_attempted:true,model_response_confirmed:true,patch_verified:false},
+  model_run:{schema:'HH_FREE_AI_MODEL_RUN_V1',pr_number:4811,
+   source_head:ORIGINAL,run_id:'44101341789',
+   model:'recursive/flint-v1.0:free',
+   model_call_started_at:'2026-11-17T00:32:00Z',
+   response_received_at:'2026-11-17T00:33:00Z'}};
+ const comment={...bot,body:'<!-- HH_PR_TASK_V1 -->\n'+
+  String.fromCharCode(96).repeat(3)+'json\n'+JSON.stringify(receipt)+'\n'+
+  String.fromCharCode(96).repeat(3)};
+ const result=buildPrCompletionJourney({item:ownerItem,
+  github:{...evidence,comments:[comment]},observedAt:NOW});
+ assert.equal(byId(result,'model').state,'done');
+ assert.match(byId(result,'model').detail,/recursive\/flint-v1\.0:free/);
+ assert.equal(byId(result,'commit').state,'waiting');
+ assert.equal(result.modelCallVerified,true);
+ assert.equal(result.repairCommitVerified,false);
+ const forged=buildPrCompletionJourney({item:ownerItem,
+  github:{...evidence,comments:[{...comment,user:{...bot.user,id:0}}]},observedAt:NOW});
+ assert.equal(byId(forged,'model').state,'unknown');
+ const incomplete=buildPrCompletionJourney({item:ownerItem,
+  github:{...evidence,commentsComplete:false,comments:[comment]},observedAt:NOW});
+ assert.equal(incomplete.modelCallVerified,false);
+});
+test('published repair commit requires bot signature plus independent GitHub source SHA',()=>{
+ const receipt={schema:'HH_PR_TASK_V1',task_key:'b'.repeat(32),
+  pr_number:4811,head_sha:ORIGINAL,lane:'repair',state:'PUBLISHED',
+  owner_run_id:'44101341789',source_published:true,verified_source_fix:true,
+  new_sha:NEW,created_at:'2026-11-17T00:36:00Z'};
+ const comment={...bot,body:'<!-- HH_PR_TASK_V1 -->\n'+
+   String.fromCharCode(96).repeat(3)+'json\n'+JSON.stringify(receipt)+'\n'+
+   String.fromCharCode(96).repeat(3)};
+ const gh={...evidence,pr:{...pr,head:{...pr.head,sha:NEW}},
+  checks:[checked(NEW,'success')],comments:[comment]};
+ const valid=buildPrCompletionJourney({item:ownerItem,github:gh,observedAt:NOW});
+ assert.equal(byId(valid,'commit').state,'done');
+ assert.equal(valid.repairCommitVerified,true);
+ const moved=buildPrCompletionJourney({item:ownerItem,
+  github:{...gh,pr:{...pr,head:{...pr.head,sha:'c'.repeat(40)}}},observedAt:NOW});
+ assert.equal(byId(moved,'commit').state,'working');
+ assert.equal(moved.repairCommitVerified,false);
+ const historical=buildPrCompletionJourney({item:ownerItem,
+  github:{...gh,pr:{...pr,head:{...pr.head,sha:'c'.repeat(40)}}},
+  verifiedCommitShas:[NEW],observedAt:NOW});
+ assert.equal(historical.repairCommitVerified,true);
+ const foreign=buildPrCompletionJourney({item:ownerItem,
+  github:{...gh,comments:[{...comment,body:comment.body.replace('"pr_number":4811','"pr_number":9999')}]},observedAt:NOW});
+ assert.equal(foreign.repairCommitVerified,false);
 });

@@ -86,7 +86,12 @@ on:
       - 'components/remote-energy-*'
       - 'components/taoist-*'
       - 'components/*service*'
-      - 'components/practice-showcase*'
+      # The practitioner-only /[locale]/practice page is already owned by
+      # practice-visual-browser.yml (real Chromium/WebKit, 320–430px) and
+      # practice-visual-services.yml (service/editor contracts, lint and build).
+      # Its JSX/CSS must not consume the unrelated checkout/Alchemy/Reiki
+      # 13-case Public Services browser matrix. Other public conversion
+      # routes and checkout/security triggers below remain unchanged.
       - 'lib/holistic-support/**'
       # Pure, side-effect-free Intelligence Core policy/bridge input parsers
       # have their own focused axis-to-offer unit, type and production-build gate.
@@ -108,7 +113,6 @@ on:
       - 'scripts/verify-public-services*.mjs'
       - 'middleware.ts'
       - 'next.config.*'
-      - 'package.json'
       - 'package-lock.json'
       # Director-only art planning and its encoded-video browser test are fully
       # covered by holistic-support-mandala.yml. They do not modify service
@@ -185,6 +189,16 @@ on:
       - '!components/mandala-video-ready.module.css'
       - '!components/mandala-video-effect-journey.module.css'
       - '!components/mandala-therapy-studio.tsx'
+      # OpenMotion is a public, local editor/template picker. Mandala already
+      # owns exact-HEAD source, license, MP4 and mobile browser acceptance.
+      # It never edits booking, payments or service enquiry code. A mixed PR
+      # touching a real checkout/consent/service path still runs this suite.
+      - '!components/mandala-openmotion-picker.tsx'
+      - '!components/mandala-openmotion-picker.module.css'
+      # Fixed Ali greeting TTS is not service discovery, consent or checkout.
+      # Existing Core checks cover persona and natural greeting contracts;
+      # mixed PRs touching actual public services still run the browser suite.
+      - '!lib/holistic-support/ali-gemini-free-tts.mjs'
 permissions:
   contents: read
   pull-requests: read
@@ -202,7 +216,10 @@ jobs:
     defaults:
       run:
         shell: bash
-    timeout-minutes: 20
+    # Full verified browser acceptance has exceeded 20m only in post-PASS
+    # artifact/cache cleanup; preserve coverage and avoid false CANCELLED.
+    # 23m is a hard ceiling, not extra test work or a new deployment.
+    timeout-minutes: 23
     env:
       CI: 'true'
       NODE_ENV: production

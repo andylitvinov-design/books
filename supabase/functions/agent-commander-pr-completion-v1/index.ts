@@ -8,7 +8,15 @@ const SHA=/^[a-f0-9]{40}$/i;
 const OWNER_WORKFLOW=REPO+'/.github/workflows/hh-pr-ten-minute-watchdog.yml@refs/heads/codex/bootstrap-books';
 const AUD='hh-commander-pr';
 const T='business_brain.commander_pr_completions';
-const label=x=>typeof x==='string'&&/^[A-Z_]{3,90}$/.test(x)?x:'UNKNOWN';
+// Strictly prove *no dispatch* before rearming a source repair grant.
+// OIDC worker + HEAD/lease CAS still required; ambiguous results never retry.
+const SAFE_CAPACITY_HOLDS=new Set([
+ 'OWNER_REPAIR_DIRECT_CAPACITY_UNVERIFIED','OWNER_REPAIR_DIRECT_CAPACITY_UNKNOWN',
+ 'OWNER_REPAIR_DIRECT_GHOST_WORKER_BUSY','OWNER_REPAIR_DIRECT_WORKER_BUSY',
+ 'OWNER_REPAIR_DIRECT_RUNNERS_SATURATED','OWNER_REPAIR_DIRECT_JOBS_SATURATED',
+ 'OWNER_REPAIR_DIRECT_CORE_PRIORITY_PENDING'
+]);
+const label=x=>typeof x==='string'&&/^[A-Z0-9_]{3,90}$/.test(x)?x:'UNKNOWN';
 const validNum=n=>Number.isSafeInteger(n)&&n>0&&n<=99999999;
 const json=(status,value,origin)=>new Response(JSON.stringify(value),{status,headers:{
  'content-type':'application/json; charset=utf-8','cache-control':'private, no-store',
@@ -36,7 +44,7 @@ async function checkOidc(request){
    claims.repository_owner!=='andylitvinov-design'||
    claims.ref!=='refs/heads/codex/bootstrap-books'||
    claims.workflow_ref!==OWNER_WORKFLOW||
-   !['schedule','workflow_dispatch'].includes(claims.event_name)||
+   !['schedule','workflow_dispatch','workflow_run','push'].includes(claims.event_name)||
    (claims.job_workflow_ref&&claims.job_workflow_ref!==OWNER_WORKFLOW)||
    !Number.isSafeInteger(claims.exp)||!Number.isSafeInteger(claims.iat)||
    claims.exp<=now||claims.exp>now+900||claims.iat>now+60||claims.iat<now-900||
@@ -69,7 +77,7 @@ async function authenticatedOwner(req){
  const user=await r.json().catch(()=>null);
  return user&&UUID.test(user.id||'')&&user.email_confirmed_at?user.id:null;
 }
-async function readPR(number){
+async function readPR(number,{terminalControlReadback=false}={}){
  const r=await fetch('https://api.github.com/repos/'+REPO+'/pulls/'+number,{
   cache:'no-store',redirect:'error',signal:AbortSignal.timeout(9000),
   headers:{Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',
@@ -78,7 +86,12 @@ async function readPR(number){
  const raw=await r.text();
  if(raw.length>200000)throw Error('GITHUB_PR_RESPONSE_OVERSIZED');
  const pr=JSON.parse(raw);
- if(pr.number!==number||pr.base?.ref!==BASE||pr.base?.repo?.full_name!==REPO||
+ // Only a previously BLOCKED owner request may reconcile a terminal PR on
+ // the protected control base. Never admit an open control PR for repair.
+ const controlTerminal=terminalControlReadback&&pr.state==='closed'&&
+  pr.base?.ref==='codex/bootstrap-books';
+ if(pr.number!==number||(!controlTerminal&&pr.base?.ref!==BASE)||
+  pr.base?.repo?.full_name!==REPO||
   pr.head?.repo?.full_name!==REPO||!SHA.test(pr.head?.sha||''))
   throw Error('PR_UNSUPPORTED_REPO_OR_SHA');
  return pr;
@@ -91,6 +104,54 @@ const publicRow=r=>({requestId:r.request_id,prNumber:r.pr_number,headSha:r.obser
  requestedHeadSha:r.requested_head_sha,firstAttemptAt:r.first_attempt_at||null,
  leaseUntil:r.lease_until||null,dispatchAttemptedAt:r.dispatch_attempted_at||null,
  checkedCount:Number.isSafeInteger(Number(r.checked_count))?Number(r.checked_count):0});
+
+const safeInfo=(value,max=110)=>typeof value==='string'?value.slice(0,max):null;
+const cleanCiRow=r=>{
+ const cls=r.classification&&typeof r.classification==='object'?r.classification:{};
+ const route=r.route_receipt&&typeof r.route_receipt==='object'?r.route_receipt:{};
+ const assignment=r.assignment_receipt&&typeof r.assignment_receipt==='object'?r.assignment_receipt:{};
+ const response=r.diagnostic_receipt&&typeof r.diagnostic_receipt==='object'?r.diagnostic_receipt:{};
+ const model=safeInfo(r.diagnostic_model,130);
+ const status=safeInfo(r.diagnostic_status,30);
+ const verified=status==='COMPLETED'&&
+   response.schema==='HH_OPENROUTER_WORKER_RECEIPT_V1'&&
+   response.status==='COMPLETED'&&
+   response.proofLevel==='MODEL_RESPONSE_ZERO_COST_VERIFIED_READ_ONLY'&&
+   r.diagnostic_cost!==null&&Number(r.diagnostic_cost)===0&&
+   response.costUsd===0&&typeof model==='string'&&model.endsWith(':free')&&
+   typeof response.answerSha256==='string'&&
+   /^[a-f0-9]{64}$/.test(response.answerSha256);
+ const diagnostic=typeof assignment.diagnosticRunId==='string'&&
+   /^[0-9a-f-]{36}$/i.test(assignment.diagnosticRunId)?{
+    runId:assignment.diagnosticRunId,executor:'openrouter',
+    status:verified?'COMPLETED_VERIFIED':status==='COMPLETED'?'COMPLETED_UNVERIFIED':
+      ['QUEUED','RUNNING','FAILED','BLOCKED'].includes(status)?status:'NOT_CONFIRMED',
+    workerClaimed:!!r.diagnostic_started_at&&
+      ['RUNNING','COMPLETED','FAILED'].includes(status),
+    modelResponseVerified:verified,model:verified?model:null,
+    costUsd:verified?0:null,answerSha256:verified?response.answerSha256:null,
+    reasonCode:safeInfo(r.diagnostic_reason,100),
+    attempts:Number.isSafeInteger(Number(r.diagnostic_attempts))?Number(r.diagnostic_attempts):null,
+    startedAt:r.diagnostic_started_at||null,completedAt:r.diagnostic_completed_at||null
+   }:null;
+ const sha=SHA.test(r.head_sha||'')?r.head_sha:
+  SHA.test(r.workflow_run_head_sha||'')?r.workflow_run_head_sha:null;
+ return {headSha:sha,runId:r.workflow_run_id!=null&&Number.isSafeInteger(Number(r.workflow_run_id))?
+   Number(r.workflow_run_id):null,
+  attempt:r.run_attempt!=null&&Number.isSafeInteger(Number(r.run_attempt))?Number(r.run_attempt):null,
+  workflowName:safeInfo(r.workflow_name,90),
+  conclusion:safeInfo(r.conclusion,30),
+  category:safeInfo(r.category||cls.category,70),
+  reasonCode:safeInfo(cls.reason_code,100),
+  classificationStatus:safeInfo(cls.status,60),
+  responsibleRole:safeInfo(cls.responsible_role||route.responsibleRole,90),
+  routeState:safeInfo(route.state,65),
+  routeReason:safeInfo(route.reason,100),
+  workerStarted:route.workerStarted===true||assignment.workerStarted===true,
+  dispatchAccepted:route.dispatchAcknowledged===true||assignment.dispatchAccepted===true,
+  diagnostic,sourceRunAt:r.source_run_created_at||null,recordedAt:r.created_at||null};
+};
+
 async function eventFor(sql,row){
  if(!row.chat_id||!['MERGED','CLOSED_UNMERGED','BLOCKED'].includes(row.state))return;
  const hash=new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(
@@ -114,19 +175,74 @@ async function eventFor(sql,row){
  await sql.unsafe('update business_brain.commander_chats set updated_at=now() where chat_id=$1::uuid and owner_id=$2::uuid',
   [row.chat_id,row.owner_id]);
 }
+// Owner-only public control heartbeat; successful pg_cron polling is NOT
+// proof that GitHub Actions actually scheduled the trusted Watchdog.
+async function watchdogHealth(sql){
+ try{
+  const rows=await sql.unsafe(
+   "select checked_at,last_request_at,last_http_200_at,"+
+   " watchdog_scheduled_at,status,"+
+   " round(extract(epoch from (checked_at-watchdog_scheduled_at))/60)::integer as age_minutes"+
+   " from agent_ops.github_scheduler_overview limit 1");
+  const r=rows[0];
+  if(!r||!['MONITOR_STALE','GITHUB_API_NOT_VERIFIED','GITHUB_WATCHDOG_STALE',
+     'WATCHDOG_RECENT_VERIFY_CONSECUTIVE_RUNS'].includes(r.status))
+   return {status:'HEALTH_UNAVAILABLE',watchdogLastRun:null,ageMinutes:null};
+  return {status:r.status,
+   watchdogLastRun:r.watchdog_scheduled_at||null,
+   monitorLastPoll:r.last_request_at||null,
+   lastGithubApi200:r.last_http_200_at||null,
+   ageMinutes:Number.isSafeInteger(Number(r.age_minutes))?Number(r.age_minutes):null};
+ }catch{return {status:'HEALTH_UNAVAILABLE',watchdogLastRun:null,ageMinutes:null}}
+}
 async function ownerAction(sql,req,body,action,origin){
  const owner=await authenticatedOwner(req);
  if(!owner)return json(401,{error:'OWNER_SESSION_REQUIRED'},origin);
  const acl=await sql.unsafe('select can_read,can_write from business_brain.owner_access where user_id=$1::uuid limit 1',[owner]);
  if(acl.length!==1||acl[0].can_read!==true||(action==='submit'&&acl[0].can_write!==true))
   return json(403,{error:'OWNER_ACCESS_DENIED'},origin);
+ if(action==='history'){
+  const pr=Number(body.prNumber),page=body.page===undefined?1:Number(body.page);
+  if(!validNum(pr)||!Number.isSafeInteger(page)||page<1||page>1000)
+   return json(400,{error:'PR_HISTORY_QUERY_INVALID'},origin);
+  const queue=await sql.unsafe('select * from '+T+
+   ' where owner_id=$1::uuid and pr_number=$2 order by created_at desc limit 5',
+   [owner,pr]);
+  if(!queue.length)return json(404,{error:'OWNER_PR_NOT_IN_QUEUE'},origin);
+  // Read only the verified owner's linked diagnostic runs; never expose prompts.
+  const ci=await sql.unsafe(
+   "select e.head_sha,e.workflow_run_head_sha,e.workflow_run_id,e.run_attempt,"+
+   " e.workflow_name,e.conclusion,e.category,e.classification,e.route_receipt,"+
+   " e.assignment_receipt,e.source_run_created_at,e.created_at,"+
+   " r.status as diagnostic_status,r.actual_model_id as diagnostic_model,"+
+   " r.cost_usd as diagnostic_cost,r.reason_code as diagnostic_reason,"+
+   " r.worker_attempt_count as diagnostic_attempts,r.started_at as diagnostic_started_at,"+
+   " r.completed_at as diagnostic_completed_at,r.receipt as diagnostic_receipt"+
+   " from business_brain.commander_ci_event_inbox e"+
+   " left join business_brain.commander_execution_runs r"+
+   " on r.run_id=case when (e.assignment_receipt->>'diagnosticRunId')"+
+   " ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'"+
+   " then (e.assignment_receipt->>'diagnosticRunId')::uuid else null end"+
+   " and r.owner_id=e.inbox_owner_id and r.task_id=e.associated_task_id"+
+   " and r.executor='openrouter'"+
+   " and r.request_payload->'contextCapsule'->>'headSha'=e.head_sha"+
+   " and r.request_payload->'contextCapsule'->>'prNumber'=e.pr_number::text"+
+   " where e.pr_number=$1 and e.repository=$2 and e.inbox_owner_id=$4::uuid"+
+   " order by e.created_at desc,e.ci_event_id desc limit 31 offset $3",
+   [pr,REPO,(page-1)*30,owner]);
+  return json(200,{schema:FUNCTION,items:queue.map(publicRow),ownerOnly:true,
+   ciHistoryAvailable:true,ciPage:page,ciHasMore:ci.length>30,
+   ciEvents:ci.slice(0,30).map(cleanCiRow)},origin);
+ }
  if(action==='status'){
   const pr=body.prNumber===undefined?null:Number(body.prNumber);
   if(pr!==null&&!validNum(pr))return json(400,{error:'PR_NUMBER_INVALID'},origin);
   const rows=pr===null
    ?await sql.unsafe('select * from '+T+' where owner_id=$1::uuid order by created_at desc limit 20',[owner])
    :await sql.unsafe('select * from '+T+' where owner_id=$1::uuid and pr_number=$2 order by created_at desc limit 5',[owner,pr]);
-  return json(200,{schema:FUNCTION,items:rows.map(publicRow),ownerOnly:true},origin);
+  const watchdog=await watchdogHealth(sql);
+  return json(200,{schema:FUNCTION,items:rows.map(publicRow),ownerOnly:true,
+   watchdogHealth:watchdog},origin);
  }
  const n=Number(body.prNumber),id=body.requestId,chatNumber=body.chatNumber===undefined?null:Number(body.chatNumber);
  if(!validNum(n)||!UUID.test(id||'')||chatNumber!==null&&(!Number.isSafeInteger(chatNumber)||chatNumber<1))
@@ -167,16 +283,29 @@ async function workerAction(sql,body,action,origin){
    const rows=await tx.unsafe('select * from '+T+
     " where state='QUEUED' or (state='WATCHING' and (last_checked_at is null or last_checked_at<now()-interval '3 minutes'))"+
     " or (state='LEASED' and lease_until<now())"+
-    " order by case when state='QUEUED' then 0 else 1 end, coalesce(last_checked_at,created_at),created_at for update skip locked limit 1");
+    // Stale historical BLOCKED tasks are observed at low frequency, after all
+    // live requests. They are NEVER new repair grants, even if HEAD changed.
+    " or (state='BLOCKED' and (last_checked_at is null or last_checked_at<now()-interval '45 minutes'))"+
+    " order by case when state='QUEUED' then 0 when state='WATCHING' then 1 when state='LEASED' then 2 else 3 end, coalesce(last_checked_at,created_at),created_at for update skip locked limit 1");
    if(!rows.length)return null;
-   const row=rows[0],first=row.dispatch_attempted_at==null;
+   // An already-blocked owner command remains forever read-only, including
+   // after verified conflict resolution moves BLOCKED -> WATCHING. A new
+   // authenticated owner command is needed for a new code-writer grant.
+   const row=rows[0],previouslyBlocked=row.state==='BLOCKED'||
+    row.evidence?.blockedRecheckOnly===true;
+   const first=!previouslyBlocked&&row.dispatch_attempted_at==null;
    const lease=crypto.randomUUID();
+   const evidence={...(row.evidence&&typeof row.evidence==='object'?row.evidence:{}),
+    blockedRecheckOnly:previouslyBlocked};
    await tx.unsafe('update '+T+
     " set state='LEASED',lease_token=$1::uuid,lease_until=now()+interval '4 minutes',"+
-    " first_attempt_at=coalesce(first_attempt_at,now()),updated_at=now()"+
-    ' where request_id=$2::uuid',[lease,row.request_id]);
+    " first_attempt_at=coalesce(first_attempt_at,now()),updated_at=now(),"+
+    " evidence=$3::text::jsonb"+
+    ' where request_id=$2::uuid',[lease,row.request_id,JSON.stringify(evidence)]);
    return {requestId:row.request_id,leaseToken:lease,prNumber:row.pr_number,
-    requestedHeadSha:row.requested_head_sha,dispatchEligibleOnce:first};
+    requestedHeadSha:row.requested_head_sha,dispatchEligibleOnce:first,
+    blockedRecheckOnly:previouslyBlocked,
+    previousReasonCode:previouslyBlocked?label(row.reason_code):null};
   });
   return json(200,{schema:FUNCTION,item:result},origin);
  }
@@ -204,8 +333,29 @@ async function workerAction(sql,body,action,origin){
   [id,lease]);
  if(prior.length!==1)return json(409,{error:'LEASE_EXPIRED_OR_MOVED'},origin);
  let mergedAt=null,mergeSha=null,code=label(body.reasonCode);
+ // Trust only an OIDC worker's explicit non-dispatch witness for a known
+ // pre-dispatch capacity refusal. An active or past accepted worker is fenced.
+ const verifiedNoDispatch=state==='WATCHING'&&
+  body.noDispatchVerified===true&&body.dispatchAccepted!==true&&
+  prior[0].dispatch_accepted!==true&&prior[0].dispatch_attempted_at!=null&&
+  SAFE_CAPACITY_HOLDS.has(code);
+ // Follow a changing HEAD only after a fresh exact-GitHub PR readback.
+ // Signed owner intent is for the PR, not one stale SHA. Preserve the one
+ // source-write fence and never treat the new SHA as an AI patch receipt.
+ let verifiedFollowedHead=null;
+ if(state==='WATCHING'&&body.headSha!==prior[0].requested_head_sha){
+  try{
+   const current=await readPR(prior[0].pr_number);
+   if(current.state==='open'&&current.draft!==true&&
+      current.head.sha===body.headSha)verifiedFollowedHead=current.head.sha;
+  }catch{
+   // GitHub temporary failure cannot authorize a source writer.
+  }
+ }
  if(state==='MERGED'||state==='CLOSED_UNMERGED'){
-  const pr=await readPR(prior[0].pr_number);
+  const pr=await readPR(prior[0].pr_number,{
+   terminalControlReadback:body.blockedRecheckOnly===true&&
+    prior[0].evidence?.blockedRecheckOnly===true});
   if(pr.state!=='closed'||state==='MERGED'&&(
     pr.merged!==true||!SHA.test(pr.merge_commit_sha||'')||
     !Number.isFinite(Date.parse(pr.merged_at||'')))||
@@ -217,14 +367,19 @@ async function workerAction(sql,body,action,origin){
  const rows=await sql.unsafe('update '+T+
   ' set state=$1,reason_code=$2,observed_head_sha=$3,observed_merge_sha=$4,'+
   ' merged_at=$5::timestamptz,dispatch_accepted=dispatch_accepted or $6,'+
+  ' requested_head_sha=coalesce($10::text,requested_head_sha),'+
+  ' dispatch_attempted_at=case when $11::boolean then null else dispatch_attempted_at end,'+
   ' lease_token=null,lease_until=null,last_checked_at=now(),checked_count=checked_count+1,updated_at=now(),'+
-  ' evidence=$7::text::jsonb where request_id=$8::uuid and lease_token=$9::uuid and state=\'LEASED\' returning *',
+  ' evidence=$7::text::jsonb where request_id=$8::uuid and lease_token=$9::uuid and state=\'LEASED\' and lease_until>now() returning *',
   [state,code,body.headSha,mergeSha,mergedAt,body.dispatchAccepted===true,
    JSON.stringify({schema:'HH_PR_COMPLETION_WORKER_V1',source:'SIGNED_GITHUB_ACTIONS_OIDC',
     workflowRunId:validNum(body.workflowRunId)?body.workflowRunId:null,
     dispatchAccepted:body.dispatchAccepted===true,
-    candidateProof:'NOT_ATTESTED_BY_GATEWAY',liveVerified:false}),
-   id,lease]);
+    candidateProof:'NOT_ATTESTED_BY_GATEWAY',liveVerified:false,
+    followedCurrentHead:verifiedFollowedHead!==null,
+    blockedRecheckOnly:prior[0].evidence?.blockedRecheckOnly===true,
+    safeCapacityRetryDeferred:verifiedNoDispatch}),
+   id,lease,verifiedFollowedHead,verifiedNoDispatch]);
  if(rows.length!==1)return json(409,{error:'LEASE_CAS_FAILED'},origin);
  if(['MERGED','CLOSED_UNMERGED','BLOCKED'].includes(state))await eventFor(sql,rows[0]);
  return json(200,{schema:FUNCTION,accepted:true,item:publicRow(rows[0])},origin);
@@ -240,7 +395,7 @@ Deno.serve(async request=>{
  if(!body||typeof body!=='object'||Array.isArray(body)||typeof body.action!=='string')
   return json(400,{error:'INVALID_ENVELOPE'},origin);
  const action=body.action;
- if(!['submit','status','next','finish','arm_dispatch'].includes(action))return json(400,{error:'UNKNOWN_ACTION'},origin);
+ if(!['submit','status','history','next','finish','arm_dispatch'].includes(action))return json(400,{error:'UNKNOWN_ACTION'},origin);
  if(['next','finish','arm_dispatch'].includes(action)&&!(await checkOidc(request)))
   return json(401,{error:'GITHUB_WORKFLOW_OIDC_DENIED'},origin);
  const dbUrl=Deno.env.get('SUPABASE_DB_URL');

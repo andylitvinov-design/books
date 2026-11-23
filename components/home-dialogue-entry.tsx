@@ -1,0 +1,475 @@
+"use client";
+
+import Link from "next/link";
+import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { ArrowRight, ArrowUp, BriefcaseBusiness, ChevronDown, HeartHandshake, Mic, Route, Sparkles, Leaf, Heart, TrendingUp, X, CheckCircle2, Play, Pause, UsersRound, Plus, Image as ImageIcon, MessageCircle, CalendarDays } from "lucide-react";
+import { SiteNavigation } from "@/components/site-navigation";
+
+import {useAliPersona} from "@/components/app/use-ali-persona";
+import {playAliPersonaAudio,stopAliPersonaAudio} from "@/components/app/ali-persona-audio";
+import { stageHomeAliHandoff } from "@/lib/home-ali-handoff.mjs";
+import {startCoachRecordedTurn,coachRecordedSupported} from "@/lib/personal-coaching/coach-recorded-turn.mjs";
+import {ios27NeedsSpeechRecovery} from "@/lib/personal-coaching/my-coach-dictation.mjs";
+import type { PublicLocale } from "@/lib/public-locales";
+import styles from "./home-dialogue-entry.module.css";
+
+// Load the 4-persona selection dialog, its cards and styles only when asked.
+const AliPersonaPicker=dynamic(()=>import("@/components/app/ali-persona-picker"),{ssr:false});
+
+type Mode = "self" | "business";
+type SpeechEvent = { results: ArrayLike<ArrayLike<{ transcript: string }>> };
+type SpeechRecognitionEngine = {
+  lang: string; interimResults: boolean; continuous: boolean;
+  onresult: ((event: SpeechEvent) => void) | null;
+  onerror: (() => void) | null; onend: (() => void) | null;
+  start: () => void; stop: () => void; abort: () => void;
+};
+type SpeechWindow = Window & {
+  SpeechRecognition?: new () => SpeechRecognitionEngine;
+  webkitSpeechRecognition?: new () => SpeechRecognitionEngine;
+};
+const LOCALES = ["ru", "en", "es"] as const;
+const COPY = {
+  ru: {
+    title:"Что вам нужно сегодня?",
+    subtitle:"Выберите направление или расскажите Ali о своей ситуации.",
+    businessSubtitle:"Обсудите задачу с Ali — вместе определим следующий шаг.",
+    personal:"Для себя", business:"Для бизнеса",
+    placeholder:"Расскажите Ali, что вам нужно…",
+    send:"Отправить сообщение Ali", mic:"Продиктовать запрос", stopMic:"Остановить диктовку",
+    unsupported:"Используйте микрофон клавиатуры или напишите запрос.",
+    speechError:"Не удалось распознать речь. Можно написать запрос.",
+    speechRunning:"Слушаю. Скажите, что вас беспокоит.",
+    speechPrivacy:"Нажимая микрофон, вы разрешаете распознавание через браузер или Groq Whisper Free. Аудио не сохраняется.",
+    speechRecognized:"Речь распознана. Проверьте текст и начните чат.",
+    speechTranscribing:"Распознаю запись…",
+    speechDenied:"Микрофон заблокирован. Разрешите доступ в Safari или введите текст.",
+    speechQuota:"Бесплатный лимит распознавания исчерпан. Попробуйте позже или введите текст.",
+    speechSilent:"Не удалось услышать речь. Нажмите микрофон ещё раз.",
+    speechFallback:"Браузер не распознал голос. Нажмите микрофон ещё раз для записи.",
+    transferError:"Не удалось передать запрос. Попробуйте ещё раз или откройте AI/Chat.",
+    transferPrivacy:"Сообщение передаётся в чат Ali. Начать можно без регистрации.",
+    freeReviewTitle:"Разобраться в своей ситуации", freeReviewDetail:"Бесплатный личный разбор",
+    focusTitle:"Что важно для вас сегодня?",
+    focusHints:[
+      {id:"stress",label:"Энергия и снятие стресса",detail:"Меньше тревоги, больше сил",prompt:"Мне нужна помощь со стрессом и энергией. Хочу спокойно понять, с чего начать."},
+      {id:"love",label:"Любовь и уверенность",detail:"Отношения и самооценка",prompt:"Хочу разобраться в отношениях или уверенности в себе. Помоги выбрать первый шаг."},
+      {id:"money",label:"Деньги и развитие",detail:"Цели, работа, личный рост",prompt:"Хочу разобраться с целями, деньгами и личным развитием. С чего мне начать?"},
+      {id:"business",label:"Поддержка бизнеса",detail:"Стратегия, команда, развитие",prompt:"Мне нужна бизнес-поддержка: стратегия, команда или рост. Помоги разобраться в задаче."},
+    ],
+    path:"Продолжить мой путь", pathDetail:"Мои практики, обучение и прогресс", benefits:["Личный взгляд","Практические шаги","Следующие возможности"], more:"Ещё возможности",
+  },
+  en: {
+    title:"What do you need today?",
+    subtitle:"Choose a direction or describe what you need.",
+    businessSubtitle:"Tell Ali what you're working on and explore your options.",
+    personal:"For myself", business:"For business",
+    placeholder:"Tell Ali what you need…",
+    send:"Send a message to Ali", mic:"Dictate your request", stopMic:"Stop dictation",
+    unsupported:"Use your keyboard microphone or type a message.",
+    speechError:"Speech recognition did not work. You can type your request.",
+    speechRunning:"Listening. Tell me what is on your mind.",
+    speechPrivacy:"Tapping the mic allows speech processing by your browser or Groq Whisper Free. No audio is stored.",
+    speechRecognized:"Recognized. Review your text and start the chat.",
+    speechTranscribing:"Transcribing the recording…",
+    speechDenied:"Microphone blocked. Allow access in Safari or type instead.",
+    speechQuota:"Free transcription limit reached. Try later or type.",
+    speechSilent:"No speech heard. Tap the microphone and try again.",
+    speechFallback:"Browser speech failed. Tap the microphone again to record.",
+    transferError:"Couldn't pass your message to Ali. Try again or open AI/Chat.",
+    transferPrivacy:"Your message goes to Ali’s chat. You can start without signing in.",
+    freeReviewTitle:"Understand my situation", freeReviewDetail:"Get a free personal review",
+    focusTitle:"What do you need today?",
+    focusHints:[
+      {id:"stress",label:"Energy & Stress Release",detail:"Calm stress and restore balance",prompt:"I'd like help with stress and low energy. Can we work out a gentle first step?"},
+      {id:"love",label:"Love & Confidence",detail:"Relationships and self-esteem",prompt:"I'd like to understand my relationships or self-confidence better. Where should I begin?"},
+      {id:"money",label:"Money & Growth",detail:"Goals, work and direction",prompt:"I'd like help with money, goals and personal growth. Can we explore my next step?"},
+      {id:"business",label:"Business Support",detail:"Work, strategy and growth",prompt:"I need business support with strategy, team or growth. Help me clarify the issue."},
+    ],
+    path:"Continue my path", pathDetail:"My practices, learning and progress", benefits:["Personal insights","Practical steps","Next best options"], more:"More ways to explore",
+  },
+  es: {
+    title:"¿Qué necesitas hoy?",
+    subtitle:"Elige un tema o cuéntale a Ali qué necesitas.",
+    businessSubtitle:"Cuéntale a Ali tu reto y explora las opciones.",
+    personal:"Para mí", business:"Para mi negocio",
+    placeholder:"Cuéntale a Ali qué necesitas…",
+    send:"Enviar un mensaje a Ali", mic:"Dictar tu mensaje",stopMic:"Detener dictado",
+    unsupported:"Usa el micrófono del teclado o escribe un mensaje.",
+    speechError:"No se pudo reconocer tu voz. Puedes escribir tu mensaje.",
+    speechRunning:"Te escucho. Cuéntame qué necesitas.",
+    speechPrivacy:"Al tocar el micrófono, aceptas el reconocimiento del navegador o Groq Whisper Free. No guardamos audio.",
+    speechRecognized:"Voz reconocida. Revisa el texto e inicia el chat.",
+    speechTranscribing:"Transcribiendo la grabación…",
+    speechDenied:"Micrófono bloqueado. Permite el acceso en Safari o escribe.",
+    speechQuota:"Límite gratuito de transcripción alcanzado. Inténtalo después.",
+    speechSilent:"No se escuchó voz. Toca el micrófono e inténtalo otra vez.",
+    speechFallback:"El navegador no reconoció tu voz. Toca de nuevo para grabar.",
+    transferError:"No pudimos pasar el mensaje a Ali. Inténtalo de nuevo o abre IA/Chat.",
+    transferPrivacy:"Tu mensaje llega al chat de Ali. Puedes empezar sin registrarte.",
+    freeReviewTitle:"Comprender mi situación", freeReviewDetail:"Recibir una revisión personal gratuita",
+    focusTitle:"¿Qué necesitas hoy?",
+    focusHints:[
+      {id:"stress",label:"Energía y alivio del estrés",detail:"Más calma y vitalidad",prompt:"Necesito apoyo para manejar el estrés y recuperar energía. ¿Por dónde empezar?"},
+      {id:"love",label:"Amor y confianza",detail:"Relaciones y autoestima",prompt:"Quiero entender mejor mis relaciones o mi confianza personal. ¿Cuál es el primer paso?"},
+      {id:"money",label:"Dinero y crecimiento",detail:"Metas, trabajo y rumbo",prompt:"Quiero mejorar mis metas, trabajo y crecimiento personal. ¿Por dónde empezar?"},
+      {id:"business",label:"Apoyo empresarial",detail:"Estrategia, equipo y progreso",prompt:"Necesito apoyo para mi negocio: estrategia, equipo o crecimiento. Ayúdame a aclararlo."},
+    ],
+    path:"Continuar mi camino", pathDetail:"Mis prácticas, aprendizaje y progreso", benefits:["Ideas personales","Pasos prácticos","Próximas opciones"], more:"Más posibilidades",
+  },
+} as const;
+const FOCUS_ICONS = [Leaf, Heart, TrendingUp, BriefcaseBusiness] as const;
+
+const SCREEN_COPY = {
+  en: {
+    brandTag:"Therapy · Coaching · Growth", guideRole:"Your Inner Alchemist",
+    welcome:"Let’s understand your needs and find the next step together.",
+    listen:"Listen", choosePersona:"Choose your AI guide", entry:"Describe your goal or wish…",
+    start:"Start free chat", tools:"Open more tools in Ali chat", photo:"Open Ali chat to add a photo",
+    direction:"Choose a direction", all:"All topics",
+    stress:"Stress & Anxiety Relief", love:"Love & Relationships",
+    money:"Money & Growth", energy:"Energy & Life Balance",
+    energyPrompt:"I'd like more energy and a better balance in everyday life. What can I start with?",
+    businessFocus:"Business Support", strategy:"Strategy & Decisions",
+    strategyPrompt:"I'd like to clarify a business decision and plan the next step.",
+    team:"Team & Leadership", teamPrompt:"I need help with my team or leadership at work.",
+    how:"How it works — in 3 simple steps",
+    steps:["Tell us your goal","Get a personal plan","Take the next step"],
+    stepNotes:["Or choose a topic","Analysis, practices, ideas","Practice, course or a session"],
+    ideas:"Get Ideas",ideasDetail:"Diagnostic & Hints",
+    support:"Get Support",supportDetail:"Session & Service",
+  },
+  ru: {
+    brandTag:"Терапия · Коучинг · Развитие", guideRole:"Ваш внутренний алхимик",
+    welcome:"Разберёмся в вашей ситуации и вместе найдём следующий шаг.",
+    listen:"Послушать",choosePersona:"Выбрать ведущего ИИ",entry:"Опишите свою цель или желание…",
+    start:"Начать бесплатный чат",tools:"Открыть инструменты в чате Ali",photo:"Открыть чат Ali, чтобы добавить фото",
+    direction:"Выберите направление",all:"Все темы",
+    stress:"Стресс и тревога",love:"Любовь и отношения",
+    money:"Деньги и развитие",energy:"Энергия и баланс",
+    energyPrompt:"Хочу восстановить силы и найти баланс в повседневной жизни. С чего начать?",
+    businessFocus:"Поддержка бизнеса",strategy:"Стратегия и решения",
+    strategyPrompt:"Помогите прояснить бизнес-решение и наметить следующий шаг.",
+    team:"Команда и лидерство",teamPrompt:"Хочу разобраться в вопросах команды или лидерства.",
+    how:"Как это работает — 3 простых шага",
+    steps:["Расскажите о цели","Получите личный план","Сделайте следующий шаг"],
+    stepNotes:["Или выберите тему","Анализ и практики","Практика, курс или сессия"],
+    ideas:"Получить идеи",ideasDetail:"Диагностика и подсказки",
+    support:"Получить поддержку",supportDetail:"Сессии и услуги",
+  },
+  es: {
+    brandTag:"Terapia · Coaching · Crecimiento",guideRole:"Tu alquimista interior",
+    welcome:"Comprendamos tu situación y encontremos juntos el próximo paso.",
+    listen:"Escuchar",choosePersona:"Elegir tu guía de IA",entry:"Describe tu objetivo o deseo…",
+    start:"Iniciar chat gratis",tools:"Abrir herramientas en el chat de Ali",photo:"Abrir el chat de Ali para añadir una foto",
+    direction:"Elige un tema",all:"Todos los temas",
+    stress:"Estrés y ansiedad",love:"Amor y relaciones",
+    money:"Dinero y crecimiento",energy:"Energía y equilibrio",
+    energyPrompt:"Me gustaría recuperar energía y equilibrio en mi vida. ¿Por dónde empiezo?",
+    businessFocus:"Apoyo empresarial",strategy:"Estrategia y decisiones",
+    strategyPrompt:"Quiero aclarar una decisión de negocios y planificar mi siguiente paso.",
+    team:"Equipo y liderazgo",teamPrompt:"Quiero mejorar el trabajo con mi equipo y el liderazgo.",
+    how:"Cómo funciona — 3 pasos sencillos",
+    steps:["Cuéntanos tu meta","Recibe un plan personal","Da el siguiente paso"],
+    stepNotes:["O elige un tema","Ideas, análisis y prácticas","Práctica, curso o sesión"],
+    ideas:"Obtener ideas",ideasDetail:"Diagnóstico y consejos",
+    support:"Recibir apoyo",supportDetail:"Sesiones y servicios",
+  },
+} as const;
+
+export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
+  const router=useRouter();
+  const t=COPY[locale];
+  const {persona,select}=useAliPersona("alex");
+  // New visitors meet Max as in the approved mobile design. An explicit
+  // previous selection is respected across the whole Ali conversation.
+  useEffect(()=>{
+    try{if(!window.localStorage.getItem("hh:ai-chat-persona-v1"))select("alex")}
+    catch{/* Private-mode storage may be unavailable; keep the safe default. */}
+  },[select]);
+  const [personaOpen,setPersonaOpen]=useState(false);
+  const closePersona=useCallback(()=>setPersonaOpen(false),[]);
+  const [greetingSpeaking,setGreetingSpeaking]=useState(false);
+  useEffect(()=>()=>stopAliPersonaAudio(),[]);
+  const startGuideGreeting=()=>{
+    if(greetingSpeaking){stopAliPersonaAudio();setGreetingSpeaking(false);return}
+    playAliPersonaAudio(persona.id,locale,(playing:boolean)=>setGreetingSpeaking(playing));
+  };
+  const greetingName=persona.name[locale];
+  const guideLine=locale==="ru"?`Привет! Я ${greetingName}.`:
+    locale==="es"?`¡Hola! Soy ${greetingName}.`:`Hi! I’m ${greetingName}.`;
+  const guideSubtitle=locale==="ru"?"Вместе найдём подходящий следующий шаг":
+    locale==="es"?"Encontraremos juntos el mejor siguiente paso":"Let’s find your best next step together";
+  const [mode]=useState<Mode>("self");
+  const [draft,setDraft]=useState("");
+  const [error,setError]=useState("");
+  const [voiceMessage,setVoiceMessage]=useState("");
+  const [listening,setListening]=useState(false);
+  const [interactive,setInteractive]=useState(false);
+  const inputRef=useRef<HTMLTextAreaElement|null>(null);
+  const speechRef=useRef<SpeechRecognitionEngine|null>(null);
+  const recordedRef=useRef<{cancel:()=>void}|null>(null);
+  const voiceAttempt=useRef(0);
+  const [preferRecorder,setPreferRecorder]=useState(false);
+  useEffect(()=>{
+    setInteractive(true);
+    return ()=>{
+      voiceAttempt.current+=1;
+      speechRef.current?.abort();speechRef.current=null;
+      recordedRef.current?.cancel();recordedRef.current=null;
+    };
+  },[]);
+  const chatPath="/"+locale+"/app/messages?section=ai";
+  const hints=t.focusHints;
+
+  function startConversationWith(value:string, selectedMode:Mode=audienceFor(value)) {
+    const prompt=value.trim();
+    if(!prompt)return;
+    // The explicit Send tap OR a starter choice carries the exact user's words.
+    let passed=false;
+    try{passed=stageHomeAliHandoff(window.sessionStorage,{text:prompt,locale,mode:selectedMode})}
+    catch{/* Some private browsers prohibit sessionStorage; don't silently lose text. */}
+    if(!passed){setDraft(prompt);setError(t.transferError);return}
+    setError("");
+    router.push(chatPath);
+  }
+  function startConversation(event:FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if(!draft.trim()){startConversationWith(locale==="ru"?"Привет, Самир! Помоги разобраться, с чего начать.":locale==="es"?"Hola Samir, ¿por dónde empiezo?":"Hi Samir! Help me figure out where to begin.");return}
+    startConversationWith(draft);
+  }
+  function dictate() {
+    // Aborting invalidates any late iPhone Safari recognition callbacks.
+    if(speechRef.current){
+      voiceAttempt.current+=1;
+      const speech=speechRef.current;speechRef.current=null;
+      speech.abort();setListening(false);setVoiceMessage("");return;
+    }
+    if(recordedRef.current){
+      voiceAttempt.current+=1;
+      recordedRef.current.cancel();recordedRef.current=null;
+      setListening(false);setVoiceMessage("");return;
+    }
+    const attempt=++voiceAttempt.current;
+    const scope=window as SpeechWindow;
+    const Constructor=scope.SpeechRecognition||scope.webkitSpeechRecognition;
+    // iOS 27 Web Speech can silently produce no transcript even while active.
+    // Reuse the existing ephemeral recorder; no audio persistence or new API.
+    const recordedAvailable=coachRecordedSupported(window);
+    if(recordedAvailable&&(ios27NeedsSpeechRecovery(window.navigator)||preferRecorder||!Constructor)){
+      const capture=startCoachRecordedTurn({
+        locale,environment:window,purpose:"public",
+        onState:state=>{
+          if(attempt!==voiceAttempt.current)return;
+          setListening(true);
+          setVoiceMessage(state==="transcribing"?t.speechTranscribing:t.speechRunning);
+        },
+        onResult:text=>{
+          if(attempt!==voiceAttempt.current)return;
+          recordedRef.current=null;setListening(false);
+          setDraft(previous=>(previous?previous+" ":"")+text.slice(0,2000-previous.length));
+          setVoiceMessage(t.speechRecognized);
+        },
+        onFailure:code=>{
+          if(attempt!==voiceAttempt.current)return;
+          recordedRef.current=null;setListening(false);
+          setVoiceMessage(code==="MIC_PERMISSION"?t.speechDenied:
+            code==="STT_RATE_LIMIT"?t.speechQuota:
+            code==="MIC_NO_SIGNAL"?t.speechSilent:t.speechError);
+        },
+      });
+      if(capture){
+        recordedRef.current=capture;
+        setVoiceMessage(t.speechRunning);setListening(true);return;
+      }
+    }
+    if(!Constructor){setVoiceMessage(t.unsupported);inputRef.current?.focus();return}
+    const speech=new Constructor();
+    let hadResult=false;
+    speech.lang=locale==="ru"?"ru-RU":locale==="es"?"es-ES":"en-US";
+    speech.interimResults=false;
+    speech.continuous=false;
+    speech.onresult=event=>{
+      if(attempt!==voiceAttempt.current||speechRef.current!==speech)return;
+      const spoken=event.results?.[0]?.[0]?.transcript?.trim();
+      if(spoken){
+        hadResult=true;
+        setDraft(previous=>(previous?previous+" ":"")+spoken.slice(0,2000-previous.length));
+        setVoiceMessage(t.speechRecognized);
+      }
+    };
+    speech.onerror=()=>{
+      if(attempt!==voiceAttempt.current||speechRef.current!==speech)return;
+      speechRef.current=null;setListening(false);
+      if(recordedAvailable)setPreferRecorder(true);
+      setVoiceMessage(recordedAvailable?t.speechFallback:t.speechError);
+    };
+    speech.onend=()=>{
+      if(attempt!==voiceAttempt.current||speechRef.current!==speech)return;
+      speechRef.current=null;setListening(false);
+      if(!hadResult){
+        if(recordedAvailable)setPreferRecorder(true);
+        setVoiceMessage(recordedAvailable?t.speechFallback:t.speechError);
+      }
+    };
+    speechRef.current=speech;
+    setVoiceMessage(t.speechRunning);setListening(true);
+    try{speech.start()}catch{
+      speechRef.current=null;setListening(false);
+      if(recordedAvailable)setPreferRecorder(true);
+      setVoiceMessage(recordedAvailable?t.speechFallback:t.speechError);
+    }
+  }
+  const screen=SCREEN_COPY[locale];
+  const categories=mode==="self" ? [
+    {...hints[0],label:screen.stress,image:"stress.webp"},
+    {...hints[1],label:screen.love,image:"love.webp"},
+    {...hints[2],label:screen.money,image:"growth.webp"},
+    {id:"energy",label:screen.energy,detail:screen.energy,prompt:screen.energyPrompt,image:"energy.webp"},
+  ] : [
+    {...hints[3],label:screen.businessFocus,image:"growth.webp"},
+    {...hints[2],label:screen.money,image:"growth.webp"},
+    {id:"strategy",label:screen.strategy,detail:screen.strategy,prompt:screen.strategyPrompt,image:"energy.webp"},
+    {id:"team",label:screen.team,detail:screen.team,prompt:screen.teamPrompt,image:"love.webp"},
+  ];
+  const picture=persona.image;
+  const chatRoute="/"+locale+"/app/messages?section=ai";
+  const ideasRoute="/"+locale+(mode==="business"?"/explore/business":"/services/free-situation-review");
+  const supportRoute="/"+locale+(mode==="business"?"/services#service-group-business":"/services/free-consultation");
+
+  const audienceFor=(message:string):Mode=>/business|company|revenue|clients|startup|бизнес|компан|клиент|продаж|negocio|empresa|ventas/i.test(message)?"business":"self";
+  const stageWords={
+    ru:[["Найти цель","Разберём, что важно."],["Зажечь желание","Уточним смысл."],["Открыть силу","Найдём ресурсы."],["Построить путь","Составим план."],["Преодолеть страхи","Исследуем препятствия."],["Открыть возможности","Найдём новые решения."],["Ускорить движение","Поддержим действия."]],
+    en:[["Find your goal","Clarify what matters."],["Ignite desire","Discover your why."],["Find your strength","Explore your resources."],["Build your path","Create a clear plan."],["Face your fears","Work through obstacles."],["Find opportunities","Explore solutions."],["Build momentum","Support real actions."]],
+    es:[["Encontrar la meta","Aclaremos prioridades."],["Encender el deseo","Exploremos tu porqué."],["Descubrir la fuerza","Encontremos recursos."],["Crear el camino","Hagamos un plan."],["Superar los miedos","Exploremos obstáculos."],["Ver posibilidades","Busquemos soluciones."],["Seguir avanzando","Apoyemos acciones."]]
+  } as const;
+  const journeyLabels={
+    ru:{intro:"Твой ИИ-проводник к важной цели.",welcome:"Давай вместе разберёмся, чего ты хочешь, где твоя сила и какой шаг приведёт тебя ближе к желаемому.",listen:"Послушать моё приветствие",prompt:"Расскажи, чего ты хочешь или что сейчас мешает…",find:"Помоги разобраться",findDetail:"Разберём твою ситуацию и определим, что важно.",have:"У меня уже есть цель",haveDetail:"Наметим путь и следующий реальный шаг.",talk:"Давай просто поговорим",journey:"7 шагов к твоей цели",sub:"Выбери этап или начни разговор с Самиром",methods:"В нашей работе мы используем:",tools:["ИИ-коучи","Специалисты","Видео","Тесты","Практики"],findPrompt:"Помоги мне разобраться в ситуации и понять свои желания.",havePrompt:"У меня уже есть цель. Помоги её прояснить и составить план.",talkPrompt:"Мне хочется просто поговорить. Поддержи меня в спокойном разговоре.",stagePrompt:"Хочу начать этап",send:"Отправить сообщение Самиру",listenOn:"Воспроизвести приветствие",photo:"Открыть чат и добавить фото",more:"Открыть вложения в чате",clear:"Очистить сообщение",privacy:"Начать можно бесплатно без регистрации. Сохранение памяти — только с разрешения."},
+    en:{intro:"Your AI guide to a meaningful goal.",welcome:"Let's find out what you want, discover your strengths and choose a practical next step.",listen:"Listen to my greeting",prompt:"Tell me what you want or what is holding you back…",find:"Help me figure it out",findDetail:"Understand your situation and what matters.",have:"I already have a goal",haveDetail:"Find a path and the next real step.",talk:"Let's just talk",journey:"7 steps to your goal",sub:"Pick a step or let Samir guide you",methods:"What we use to help:",tools:["AI coaches","Specialists","Videos","Tests","Practices"],findPrompt:"Help me understand my situation and what I really want.",havePrompt:"I already have a goal. Help me clarify it and make a plan.",talkPrompt:"I would just like to talk. Please support me gently.",stagePrompt:"I want to work on step",send:"Send a message to Samir",listenOn:"Play my greeting",photo:"Open chat to add a photo",more:"Open chat attachments",clear:"Clear message",privacy:"Start free without signing in. Long-term memory requires your permission."},
+    es:{intro:"Tu guía de IA hacia una meta importante.",welcome:"Descubramos lo que quieres, dónde está tu fuerza y qué paso puedes dar ahora.",listen:"Escucha mi bienvenida",prompt:"Cuéntame qué deseas o qué te está frenando…",find:"Ayúdame a entender",findDetail:"Exploremos tu situación y prioridades.",have:"Ya tengo una meta",haveDetail:"Definamos el camino y el siguiente paso.",talk:"Solo quiero hablar",journey:"7 pasos hacia tu meta",sub:"Elige un paso o deja que Samir te guíe",methods:"Trabajamos con:",tools:["Coaches IA","Especialistas","Vídeos","Tests","Prácticas"],findPrompt:"Ayúdame a entender mi situación y lo que deseo.",havePrompt:"Ya tengo una meta. Ayúdame a aclararla y crear un plan.",talkPrompt:"Solo quiero hablar contigo y recibir apoyo.",stagePrompt:"Quiero trabajar en el paso",send:"Enviar mensaje a Samir",listenOn:"Reproducir bienvenida",photo:"Abrir chat para añadir foto",more:"Abrir archivos adjuntos",clear:"Borrar mensaje",privacy:"Empieza gratis sin registrarte. Guardamos memoria solo con tu permiso."}
+  } as const;
+  const msg=journeyLabels[locale];
+  const stepIcons=[Route,Sparkles,Leaf,CheckCircle2,Heart,TrendingUp,ArrowUp] as const;
+  const methodIcons=[UsersRound,CheckCircle2,Play,Leaf,Sparkles] as const;
+  const stepPhotos=["growth.webp","love.webp","energy.webp","stress.webp","stress.webp","love.webp","growth.webp"];
+  function openGoalIntent(prompt:string) {
+    const typed=draft.trim();
+    startConversationWith(typed?prompt+"\\n"+typed:prompt,audienceFor(typed||prompt));
+  }
+  function openAttachments(){
+    openGoalIntent(locale==="ru"?"Я хочу добавить фотографию к своему вопросу.":locale==="es"?"Quiero adjuntar una imagen a mi pregunta.":"I'd like to add a photo to my question.");
+  }
+  // A CSS background cannot be discovered by the HTML preload scanner.
+  // React hoists resource hints into the initial document <head> without
+  // changing the existing portrait, hero, copy or mobile layout.
+  return <section className={styles.root} data-home-dialogue-entry data-home-mode="self"
+    data-home-interactive={interactive?"true":"false"} lang={locale}>
+    <link rel="preload" as="image" href={picture} fetchPriority="high"/>
+    <link rel="preload" as="image" href="/images/holistic-house/ideas-pine-reference.webp" fetchPriority="high"/>
+    <header className={styles.header} data-home-dialogue-header>
+      <Link href={locale==="en"?"/":"/"+locale} className={styles.brand} prefetch={false} aria-label="Holistic House">
+        <span className={styles.brandIcon} aria-hidden="true"><Leaf size={25}/></span>
+        <span className={styles.brandCopy}><h1>Holistic House</h1><small>{screen.brandTag}</small></span>
+      </Link>
+      <div className={styles.headerActions}>
+        <details className={styles.language} data-home-language-switch>
+          <summary aria-label={locale==="ru"?"Выбрать язык":locale==="es"?"Elegir idioma":"Choose language"}>{locale.toUpperCase()} <ChevronDown size={14} aria-hidden="true"/></summary>
+          <div className={styles.languageMenu}>
+            {LOCALES.map(next=><Link key={next} href={next==="en"?"/":"/"+next} lang={next} hrefLang={next} prefetch={false} aria-current={locale===next?"page":undefined}>{next.toUpperCase()}</Link>)}
+          </div>
+        </details>
+        <div className={styles.siteTools} data-home-site-tools><SiteNavigation locale={locale} compact /></div>
+      </div>
+    </header>
+
+    <div className={styles.hero} data-home-dialogue-hero>
+      <div className={styles.scene} aria-hidden="true"/>
+      <div className={styles.heroContent} data-home-ali-persona={persona.id}>
+        <img className={styles.heroPortrait} src={picture} width={530} height={480} loading="eager" fetchPriority="high" alt={locale==="ru"?"Самир — ИИ-проводник":locale==="es"?"Samir, guía de IA":"Samir, AI guide"}/>
+        <div className={styles.heroStory}>
+          <div className={styles.heroMessage}>
+            <div className={styles.kicker}><Sparkles size={15} aria-hidden="true"/> AI GUIDE</div>
+            <h2 className={styles.heroTitle}>{guideLine}</h2>
+            <p className={styles.guideRole}>{persona.id==="alex"?msg.intro:persona.role[locale]}</p>
+            <p className={styles.subtitle}>{msg.welcome}</p>
+          </div>
+          <button type="button" className={styles.guideAudio} data-home-ali-greeting-play
+            aria-pressed={greetingSpeaking} aria-label={msg.listenOn} onClick={startGuideGreeting}>
+            {greetingSpeaking?<Pause size={19} aria-hidden="true"/>:<Play size={19} aria-hidden="true"/>}
+            <span>{msg.listen}</span><span className={styles.audioWave} aria-hidden="true">▂▅▃▆▂</span>
+          </button>
+          <button type="button" className={styles.personaButton} data-home-open-ali-persona
+            onClick={()=>setPersonaOpen(true)} aria-label={screen.choosePersona} title={screen.choosePersona}>
+            <UsersRound size={21} aria-hidden="true"/>
+          </button>
+        </div>
+      </div>
+    </div>
+    {personaOpen&&<AliPersonaPicker open={personaOpen} onClose={closePersona} locale={locale}/>}
+
+    <form className={styles.composer} onSubmit={startConversation} data-home-intent-form>
+      <button type="button" className={styles.moreTool} onClick={openAttachments} aria-label={msg.more} title={msg.more}><Plus size={23} aria-hidden="true"/></button>
+      <label className={styles.visuallyHidden} htmlFor={"home-intent-"+locale}>{msg.prompt}</label>
+      <textarea id={"home-intent-"+locale} ref={inputRef} value={draft} rows={2} maxLength={2000}
+        onChange={event=>{setDraft(event.target.value);setError("")}} placeholder={msg.prompt}
+        data-home-intent-composer autoComplete="off"/>
+      <div className={styles.composerButtons}>
+        <button type="button" className={styles.photoTool} onClick={openAttachments} aria-label={msg.photo} title={msg.photo}><ImageIcon size={21} aria-hidden="true"/></button>
+        
+        <button type="button" className={styles.microphone} data-home-intent-mic aria-pressed={listening} aria-label={listening?t.stopMic:t.mic} onClick={dictate}><Mic size={23} aria-hidden="true"/></button>
+        <button type="submit" className={styles.send} data-home-send-to-ali aria-label={msg.send} title={msg.send}><ArrowUp size={21} aria-hidden="true"/></button>
+      </div>
+    </form>
+    <p className={styles.speechDisclosure} data-home-voice-disclosure>{t.speechPrivacy}</p>
+    {error&&<p className={styles.error} role="alert">{error}</p>}
+    {voiceMessage&&<p className={styles.voiceStatus} role="status">{voiceMessage}</p>}
+    <p className={styles.privacy}>{msg.privacy}</p>
+
+    <div className={styles.focusGrid} role="group" aria-label={msg.journey} data-home-focus-grid>
+      <button type="button" className={styles.focusCard} data-home-intent-option="understand" data-home-free-review
+        onClick={()=>openGoalIntent(msg.findPrompt)}>
+        <img className={styles.focusPhoto} src="/images/video-goal-art/growth.webp" width={400} height={160} alt="" loading="lazy"/>
+        <span className={styles.focusCopy}><Route size={24} aria-hidden="true"/><strong>{msg.find}</strong><small>{msg.findDetail}</small></span>
+        <ArrowRight className={styles.focusArrow} size={20} aria-hidden="true"/>
+      </button>
+      <button type="button" className={styles.focusCard} data-home-intent-option="goal" data-home-request-session
+        onClick={()=>openGoalIntent(msg.havePrompt)}>
+        <img className={styles.focusPhoto} src="/images/video-goal-art/energy.webp" width={400} height={160} alt="" loading="lazy"/>
+        <span className={styles.focusCopy}><CheckCircle2 size={24} aria-hidden="true"/><strong>{msg.have}</strong><small>{msg.haveDetail}</small></span>
+        <ArrowRight className={styles.focusArrow} size={20} aria-hidden="true"/>
+      </button>
+    </div>
+    <button type="button" className={styles.talkLink} data-home-intent-option="talk" onClick={()=>openGoalIntent(msg.talkPrompt)}>
+      <MessageCircle size={18} aria-hidden="true"/>{msg.talk}<ArrowRight size={17} aria-hidden="true"/>
+    </button>
+    <section className={styles.howWorks} data-home-how-it-works aria-label={msg.journey}>
+      <h3>{msg.journey}</h3><p className={styles.journeyNote}>{msg.sub}</p>
+      <div className={styles.journeyScroll} data-home-stage-scroll role="group" aria-label={msg.journey}>
+        {stageWords[locale].map((step,index)=>{
+          const StepIcon=stepIcons[index];
+          return <button type="button" className={styles.journeyCard} key={index} data-home-stage-option={index+1}
+            onClick={()=>openGoalIntent(msg.stagePrompt+" "+(index+1)+": "+step[0]+". "+step[1])}>
+            <span className={styles.journeyPhoto} style={{backgroundImage:'linear-gradient(180deg,transparent,rgba(20,57,46,.23)),url("/images/video-goal-art/'+stepPhotos[index]+'")'}}>
+              <StepIcon size={31} aria-hidden="true"/><b>{index+1}</b>
+            </span>
+            <strong>{step[0]}</strong><small>{step[1]}</small><ArrowRight className={styles.journeyArrow} size={19} aria-hidden="true"/>
+          </button>;
+        })}
+      </div>
+    </section>
+    <section className={styles.methods} aria-label={msg.methods}>
+      <h3><Sparkles size={20} aria-hidden="true"/>{msg.methods}</h3>
+      <div className={styles.methodGrid}>
+        {msg.tools.map((name,index)=>{
+          const ToolIcon=methodIcons[index];
+          return <div className={styles.method} key={name}><ToolIcon size={27} aria-hidden="true"/><span>{name}</span></div>;
+        })}
+      </div>
+    </section>
+    <Link className={styles.continue} data-home-continue-path href={"/"+(locale==="es"?"en":locale)+"/app/portrait?space=path"} prefetch={false}>
+      {locale==="ru"?"Мой личный путь":locale==="es"?"Mi camino":"My journey"} <ArrowRight size={19}/>
+    </Link>
+  </section>;
+}

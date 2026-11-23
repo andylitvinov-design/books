@@ -11,6 +11,7 @@ import {tmpdir} from "node:os";
 import path from "node:path";
 import {pathToFileURL} from "node:url";
 import {installGuestVideoBlobCapture,readRealGuestVideo} from "./real-guest-video-file.mjs";
+import {completeThreeStepGoalsQuiz} from "./complete-three-step-goals-quiz.mjs";
 import {STORY_PHOTO_BY_ID,isTrustedStoryPhoto} from "../../lib/mandala/story-photo-library.mjs";
 
 const origin="http://127.0.0.1:3100",browserModule=process.env.HH_LIVE_VIDEO_PLAYWRIGHT;
@@ -58,11 +59,10 @@ try{
  await page.locator('[data-video-studio-hydrated="true"]').waitFor({timeout:60000});
  // Enter a concrete workplace story through the visible Goal controls, not
  // the old hidden Hypno wish disclosure inside advanced Montage settings.
- const businessGoal=page.locator('[data-auto-video-category="goals-money"]');
- await businessGoal.waitFor({state:"visible",timeout:15000});
- await businessGoal.tap();
- await page.waitForFunction(()=>document.querySelector('[data-auto-video-category="goals-money"]')
-   ?.getAttribute("aria-pressed")==="true",null,{timeout:15000});
+ await completeThreeStepGoalsQuiz(page,{engine:"webkit",
+   categorySelector:'[data-auto-video-category="goals-money"]'});
+ assert.equal(await page.locator('[data-auto-video-category="goals-money"]').getAttribute("aria-pressed"),
+   "true","BUSINESS_CATEGORY_MUST_BE_SELECTED");
  const wish=page.locator("[data-auto-video-input]");
  await wish.waitFor({state:"visible",timeout:15000});
  // A literal career/salary action, not generic 'growth' theme.

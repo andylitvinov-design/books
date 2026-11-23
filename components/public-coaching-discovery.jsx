@@ -32,6 +32,8 @@ const preferredCoachingStarters=Object.freeze({
   max:['grow_quick_v1','tgrow_compass_v1'],
   sofia:['solution_relationship_dialogue_v1','clear_dialogue_v1'],
   alex:['tgrow_compass_v1','grow_quick_v1'],
+  merlin:['appreciative_future_v1','grow_reflect_v1'],
+  harry:['oskar_resources_v1','woop_habit_v1'],
   lea:['appreciative_future_v1','grow_reflect_v1'],
   noah:['woop_habit_v1','woop_wellbeing_routine_v1'],
   iris:['oskar_resources_v1','solution_focus_quick_v1'],
@@ -44,9 +46,9 @@ const coachTopicTags={
   clarity:['unclear','confidence','goal'],creativity:['creativity','growth'],
 }
 const myCoachCopy={
-  en:{eyebrow:'HOLISTIC HOUSE · YOUR AI COACH',edit:'Choose another coach',back:'Back to my coach',ready:'Here with you',start:'Start conversation',guided:'Or use a guided session',unavailable:'The guided session is temporarily unavailable. Please try again later.',note:'Text AI responds only after sign-in and explicit consent, when a privacy-preserving free model is configured. Otherwise the reviewed guided session remains available. Live two-way voice is not enabled.'},
-  ru:{eyebrow:'HOLISTIC HOUSE · ВАШ AI-КОУЧ',edit:'Выбрать другого коуча',back:'Назад к коучу',ready:'Я рядом',start:'Начать общение',guided:'Или пройти пошаговую программу',unavailable:'Сессия временно недоступна. Попробуйте снова позже.',note:'Текстовый AI отвечает после входа и явного согласия, если настроена бесплатная модель с защитой данных. Иначе доступна программа с проверенными вопросами. Двусторонний голосовой AI-чат пока не включён.'},
-  es:{eyebrow:'HOLISTIC HOUSE · TU COACH DE IA',edit:'Elegir otro coach',back:'Volver al coach',ready:'Aquí contigo',start:'Empezar conversación',guided:'O usar sesión guiada',unavailable:'La sesión guiada no está disponible ahora. Vuelve a intentarlo más tarde.',note:'La IA de texto responde tras iniciar sesión y dar consentimiento, si hay un modelo gratuito con privacidad verificada. Si no, sigue disponible la sesión guiada. La voz bidireccional aún no está activada.'},
+  en:{eyebrow:'HOLISTIC HOUSE · YOUR AI COACH',edit:'Choose another coach',back:'Back to my coach',ready:'Here with you',start:'Start conversation',guided:'Or use a guided session',unavailable:'The guided session is temporarily unavailable. Please try again later.',note:'Text AI responds only after sign-in and explicit consent, when a privacy-preserving free model is configured. Otherwise the reviewed guided session remains available. Gemini Live Free is offered in coach settings when available, after sign-in and separate microphone consent.'},
+  ru:{eyebrow:'HOLISTIC HOUSE · ВАШ AI-КОУЧ',edit:'Выбрать другого коуча',back:'Назад к коучу',ready:'Я рядом',start:'Начать общение',guided:'Или пройти пошаговую программу',unavailable:'Сессия временно недоступна. Попробуйте снова позже.',note:'Текстовый AI отвечает после входа и явного согласия, если настроена бесплатная модель с защитой данных. Иначе доступна программа с проверенными вопросами. Gemini Live Free доступен в настройках коуча, если активирован, после входа и отдельного согласия на микрофон.'},
+  es:{eyebrow:'HOLISTIC HOUSE · TU COACH DE IA',edit:'Elegir otro coach',back:'Volver al coach',ready:'Aquí contigo',start:'Empezar conversación',guided:'O usar sesión guiada',unavailable:'La sesión guiada no está disponible ahora. Vuelve a intentarlo más tarde.',note:'La IA de texto responde tras iniciar sesión y dar consentimiento, si hay un modelo gratuito con privacidad verificada. Si no, sigue disponible la sesión guiada. Gemini Live Free está disponible en los ajustes del coach cuando se habilita, con acceso y consentimiento separado del micrófono.'},
 }
 const copy={
   en:{

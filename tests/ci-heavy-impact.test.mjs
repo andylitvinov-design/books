@@ -231,7 +231,8 @@ test('Video Studio and Hypnocorrection release branches run real browser and mac
   const mac = yaml.match(/voice-webkit-macos:\n\s*if: ([^\n]+)/)?.[1] || '';
   for (const branch of ['fix/video-', 'codex/perf-video-studio-', 'codex/hypno-third-workspace-']) {
     assert.ok(browser.includes(`startsWith(github.head_ref, '${branch}')`), `browser gate: ${branch}`);
-    assert.ok(mac.includes(`startsWith(github.head_ref, '${branch}')`), `macOS gate: ${branch}`);
+    assert.ok(mac.includes("needs.webkit_preflight.outputs.media_required == 'true'"),
+      'macOS uses actual tested media changes, never branch naming: '+branch);
   }
   assert.match(yaml, /node scripts\/verify-holistic-mandala-browser\.mjs/);
   assert.match(yaml, /ffprobe -version/);
@@ -242,7 +243,9 @@ test('Video browser: avoid all unrelated route edits while retaining actual vide
   const trigger = parsePrTrigger(yaml, 'site-video-browser.yml');
   assert.equal(trigger.branches.includes('codex/public-book-library'), true);
   assert.equal(matchesTrigger(trigger, ['app/[locale]/app/page.tsx']), false);
-  assert.equal(matchesTrigger(trigger, ['app/[locale]/services/alchemy-of-soul/page.tsx']), true);
+  assert.equal(matchesTrigger(trigger, ['app/es/services/page.tsx']), false);
+  assert.equal(matchesTrigger(trigger, ['app/api/app/unrelated/route.js']), false);
+  assert.equal(matchesTrigger(trigger, ['app/[locale]/services/alchemy-of-soul/page.tsx']), false);
   assert.equal(matchesTrigger(trigger, ['app/[locale]/about/page.tsx']), true);
   assert.equal(matchesTrigger(trigger, ['components/site-video-player.tsx']), true);
   assert.equal(matchesTrigger(trigger, ['app/page.tsx']), true);
@@ -503,11 +506,13 @@ test('App R1 trigger covers all critical routes and preserves mandatory sensitiv
     'lib/app/owner.ts', 'lib/profile/secure-profile.ts',
     'lib/assessments/calculate.ts', 'lib/security/authorization.ts',
     'data/assessments/checkin.json', 'supabase/migrations/20261104_security.sql',
-    'middleware.ts', 'next.config.ts', 'package.json', 'package-lock.json'
+    'middleware.ts', 'next.config.ts', 'package-lock.json'
   ]) {
     assert.equal(matchesTrigger(trigger, [path]), true, path + ' must schedule App R1');
     assert.deepEqual(decideHeavyImpact('app-r1', one(path)), strict, path + ' requires full checks');
   }
+  assert.equal(matchesTrigger(trigger, ['package.json']), false,
+    'a Core-covered package-only script edit must not fan out into App R1');
   for (const path of ['components/profile-compact-design.tsx', 'components/my-course-dashboard.tsx'])
     assert.equal(matchesTrigger(trigger, [path]), true, path + ' must still run the owned scope');
   for (const path of ['docs/unrelated-changelog.md', 'components/telegram-message-list.tsx'])

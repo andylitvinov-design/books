@@ -57,6 +57,9 @@ on:
       - "next.config.ts"
       - "package.json"
       - "package-lock.json"
+      - '!app/api/app/crm/messenger/webhook/**'
+      - '!lib/app/client-telegram-transport.js'
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:

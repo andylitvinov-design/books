@@ -18,13 +18,13 @@ test("one real iChat, one scroll log, 6 first-party actions and always-visible c
  assert.match(workspace,/<HolisticAgentChat locale=\{locale\} compact messengerView/);
  assert.doesNotMatch(workspace,/IHelpTopics|fetch\(|new WebSocket|new AudioContext/);
  assert.match(chat,/data-chat-skin=\{messengerView\?"messenger":undefined\}/);
- assert.match(chat,/\{compact&&messengerView&&!pageHelp&&!messages.length&&<>/);
+ assert.match(chat,/\{compact&&messengerView&&!pageHelp&&!messages.length&&!homeHandoffPreview&&<>/);
  assert.match(chat,/<MessengerAiLanding locale=\{locale\}/);
  assert.ok(chat.includes('onCreateVideo={()=>startContent()}'), 'Messenger launches the original Video workflow with user gesture');
  assert.match(chat,/onPractice=\{\(\)=>startGuided\("meditation"\)\}/);
  assert.match(chat,/composerRef.current\?\.focus/);
  assert.match(chat,/!pageHelp&&!messengerView&&<div className=\{styles.startActions\}/);
- assert.match(chat,/<form onSubmit=\{submit\} className=\{styles.form\}>/);
+ assert.match(chat,/<form onSubmit=\{submit\} className=\{styles.form\} data-hh-ai-chat-composer=/);
  assert.match(chatCss,/\.root\[data-compact\]\[data-chat-skin="messenger"\]>.thread/);
  assert.match(chatCss,/order:4;flex:none;display:flex;align-items:center/);
  assert.match(workspaceCss,/min-height:0;min-width:0;overflow:hidden/);
@@ -127,7 +127,7 @@ test("Messenger hides big Voice strip and keeps the settings behind composer plu
  assert.match(menu,/\{voiceControls\}/);
  assert.match(menu,/\{voiceAttachment\}/);
  assert.equal((chat.match(/<VoiceCompanionControls\b/g)||[]).length,1);
- assert.match(chat,/privacyOnly=\{Boolean\(pageHelp\)\}/);
+ assert.match(chat,/privacyOnly=\{Boolean\(pageHelp\)\|\|messengerView\}/);
  assert.match(chat,/\{compact&&!messengerView&&voiceEnabled&&<details className=\{styles.compactSettings\} data-hh-voice-settings>/);
  assert.match(chat,/\{!compact&&settings\}/);
  assert.match(chat,/data-hh-conversation-mic/);
@@ -184,12 +184,12 @@ test("Messenger and Goal Studio alone permit direct HeyGen CDN MP4; other privat
 test("initial AI Assistant places its single live composer immediately under the welcome question",()=>{
  assert.ok(chat.includes("const showLandingComposer=compact&&messengerView&&!pageHelp&&!messages.length"));
  assert.ok(chat.includes("<MessengerAiLanding locale={locale} composer={composer}"));
- assert.ok(chat.includes("{!showLandingComposer&&composer}"));
- assert.equal((chat.match(/<form onSubmit=\{submit\} className=\{styles.form\}>/g)||[]).length,1);
+ assert.ok(chat.includes("{!supportQuizOpen&&!showLandingComposer&&composer}"));
+ assert.equal((chat.match(/<form onSubmit=\{submit\} className=\{styles.form\} data-hh-ai-chat-composer=/g)||[]).length,1);
  assert.ok(landing.indexOf("data-hh-ai-landing-question")<landing.indexOf("data-hh-ai-inline-composer"));
  assert.ok(landing.indexOf("data-hh-ai-inline-composer")<landing.indexOf("data-hh-ai-quick-actions"));
  assert.ok(chat.includes("messages.length===0?thread.querySelector('[data-hh-ai-inline-composer]'):null"));
- assert.ok(landing.includes("composer?:ReactNode"));
+ assert.ok(landing.includes("composer:ReactNode"));
  assert.ok(chatCss.includes("data-hh-ai-inline-composer"));
  assert.ok(landingCss.includes(".inlineComposer{"));
  assert.ok(chatCss.includes("min-width:44px;min-height:44px"));

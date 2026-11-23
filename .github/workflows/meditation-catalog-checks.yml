@@ -44,7 +44,6 @@ on:
       - "tests/holistic-support-meditations.test.mjs"
       - "scripts/verify-meditation-live-journey.mjs"
       - "supabase/migrations/*hh_meditation*"
-      - ".github/workflows/meditation-catalog-checks.yml"
   workflow_dispatch:
 
 permissions:

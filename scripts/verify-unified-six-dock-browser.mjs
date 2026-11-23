@@ -12,9 +12,9 @@ mkdirSync(folder,{recursive:true});
 const results=[];
 const ids=["mytube","video","coach","ai","services","practice","profile"];
 const labels={
-  en:["MyTube","MyVideo","My Coach","AI/Chat","Services","Study","Profile"],
-  ru:["MyTube","MyVideo","Мой коуч","ИИ/Чат","Услуги","Обучение","Профиль"],
-  es:["MyTube","MyVideo","Mi coach","IA/Chat","Servicios","Estudiar","Perfil"],
+  en:["MyTube","MyVideo","My Coach","AI/Chat","Support","Shamanic","Profile"],
+  ru:["MyTube","MyVideo","Мой коуч","ИИ/Чат","Поддержка","Шаманик","Профиль"],
+  es:["MyTube","MyVideo","Mi coach","IA/Chat","Apoyo","Shamanic","Perfil"],
 };
 
 // The fixed dock belongs to the ROOT shell, not to individual pages. Check
@@ -282,7 +282,7 @@ async function inspect(browserType,locale,width){
   if(locale==="ru" || width===390){
     const prefix="/"+locale;
     const routeCases=[
-      ["practice",prefix+"/holistic-support/mobile","practice"],
+      ["practice",prefix+"/shamanica","practice"],
       ["video",prefix+"/holistic-support/mandala","video"],
       ["ai",prefix+"/app/messages?section=ai","ai"],
       ["coach",prefix+"/my-coach","coach"],
@@ -316,16 +316,56 @@ async function inspect(browserType,locale,width){
       waitUntil:"domcontentloaded",timeout:75000,
     });
     const ideaButton=page.locator('[data-video-quick-control="phrases"]');
+    // Follow the same visible Magic Mirror path as the existing voice E2E.
+    // Selecting the format does not generate a video or spend credits.
+    if(!await ideaButton.isVisible()){
+      const mirror=page.locator('[data-hh-mirror-goals]');
+      const entry=mirror.locator('[data-hh-mirror-enter="me"]');
+      await expect(entry).toBeVisible({timeout:30000});
+      await entry.click();
+      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","purpose");
+      const goal=mirror.locator('[data-hh-mirror-purpose-step]');
+      await goal.locator('[data-video-ideas-goal-choice="rest"]').click();
+      const next=goal.locator('[data-video-ideas-goal-next]');
+      await expect(next).toBeEnabled();
+      await next.click();
+      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","format");
+      await mirror.locator('[data-hh-mirror-video-format="basic"]').click();
+      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
+      const composer=mirror.locator('[data-hh-mirror-composer]');
+      for(let step=0;step<3&&!await composer.isVisible();step++){
+        const back=mirror.locator('[data-hh-mirror-back]');
+        await expect(back).toBeVisible();
+        await back.click();
+      }
+      const advanced=composer.locator('[data-hh-mirror-open-advanced]');
+      await expect(advanced).toBeVisible();
+      await expect(advanced).toBeEnabled();
+      await advanced.click();
+      await expect(page.locator('[data-mandala-free-video]'))
+        .toHaveAttribute("data-hh-mirror-advanced","true",{timeout:15000});
+    }
     await ideaButton.waitFor({state:"visible",timeout:30000});
     await page.waitForFunction(()=>{
       const link=document.querySelector('[data-video-quick-control="phrases"]');
       return link&&Object.keys(link).some(k=>k.startsWith("__reactProps$"));
     },null,{timeout:20000});
     await ideaButton.click();
+    // The approved Magic Mirror sequence is Goal → Personalization → Concept.
+    // Test the REAL visitor's choice instead of assuming the retired
+    // Personalization-first interface, especially on 320px iPhone Safari.
+    const goalTab=page.locator('[data-video-ideas-tab="goal"]');
+    await expect(goalTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
+    const goalPicker=page.locator('[data-video-ideas-goal-picker]');
+    await goalPicker.waitFor({state:"visible",timeout:30000});
+    const goalChoice=goalPicker.locator('[data-video-ideas-goal-choice]').first();
+    await goalChoice.click();
+    await expect(goalChoice).toHaveAttribute("aria-pressed","true",{timeout:15000});
+    const goalNext=goalPicker.locator('[data-video-ideas-goal-next]');
+    await expect(goalNext).toBeEnabled();
+    await goalNext.click();
     const personalizationTab=page.locator('[data-video-ideas-tab="personalization"]');
-    await personalizationTab.waitFor({state:"visible",timeout:30000});
-    assert.equal(await personalizationTab.getAttribute("aria-pressed"),"true",
-      id+" Ideas opens on the current Personalization tab");
+    await expect(personalizationTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
     // Advanced voice is hidden by design until the visitor opens its visible
     // audio-guidance shortcut. Do not bypass the UI or force hidden controls.
     const voiceShortcut=page.locator('[data-video-phrase-audio-shortcut]');
@@ -390,6 +430,41 @@ async function inspect(browserType,locale,width){
   if(browserType===webkit && locale==="ru" && width===390){
     for(const tab of ["video","phrases","editor","effects","pro","ready"]){
       const nav=page.locator('[data-video-quick-control="'+tab+'"]');
+      // In the approved compact Video/Magic Mirror entrance the workspace
+      // rail closes after a real tool selection. It is reopened only by a
+      // visible "More goals" tap, never via forced clicks or DOM mutation.
+      if(!await nav.isVisible()){
+        const studio=page.locator('[data-mandala-free-video]');
+        assert.equal(await studio.getAttribute("data-active-workspace"),"video",
+          "Only the compact Magic Mirror Video entrance may hide the tool rail");
+        const mirror=page.locator('[data-hh-mirror-goals]');
+        const legacyMore=mirror.locator('[data-hh-mirror-more-goals]');
+        if(await legacyMore.isVisible()){
+          await legacyMore.click();
+        }else{
+          const entry=mirror.locator('[data-hh-mirror-enter="me"]');
+          if(await entry.isVisible())await entry.click();
+          const purpose=mirror.locator('[data-hh-mirror-purpose-step]');
+          if(await purpose.isVisible()){
+            await purpose.locator('[data-video-ideas-goal-choice="rest"]').click();
+            await purpose.locator('[data-video-ideas-goal-next]').click();
+          }
+          const basic=mirror.locator('[data-hh-mirror-video-format="basic"]');
+          if(await basic.isVisible())await basic.click();
+          const composer=mirror.locator('[data-hh-mirror-composer]');
+          for(let step=0;step<3&&!await composer.isVisible();step++){
+            const back=mirror.locator('[data-hh-mirror-back]');
+            await expect(back).toBeVisible();
+            await back.click();
+          }
+          const advanced=composer.locator('[data-hh-mirror-open-advanced]');
+          await expect(advanced).toBeVisible();
+          await expect(advanced).toBeEnabled();
+          await advanced.click();
+        }
+        await expect(studio).toHaveAttribute("data-hh-mirror-advanced","true",{timeout:15000});
+        await nav.waitFor({state:"visible",timeout:15000});
+      }
       await nav.click({timeout:30000});
       await page.waitForFunction(expected=>{
         return document.querySelector('[data-active-workspace]')?.getAttribute("data-active-workspace")===expected;
@@ -422,7 +497,12 @@ async function inspect(browserType,locale,width){
         id+" "+tab+" active control remains readable");
       assert.ok(palette.width<=palette.viewport+2,id+" "+tab+" no document overflow");
       assert.equal(palette.dockCount,1,id+" "+tab+" one fixed Holistic House dock");
-      await nav.scrollIntoViewIfNeeded();
+      // Switching workspaces can retire/collapse the original rail after
+      // its real click. The selected workspace surface remains visible:
+      // capture THAT rendered view, not the detached/hidden old tab node.
+      const visibleStudio=page.locator('[data-mandala-free-video][data-active-workspace="'+tab+'"]');
+      await visibleStudio.waitFor({state:"visible",timeout:15000});
+      await visibleStudio.scrollIntoViewIfNeeded({timeout:15000});
       await page.screenshot({
         path:folder+"/studio-palette-"+tab+"-ru-390-webkit.png",
         fullPage:false,animations:"disabled",
@@ -451,7 +531,7 @@ async function inspect(browserType,locale,width){
       ["mytube","/ru/mytube"],
       ["coach","/ru/my-coach"],
       ["services","/ru/services"],
-      ["practice","/ru/holistic-support/mobile"],
+      ["practice","/ru/shamanica"],
     ]){
       await page.locator('[data-unified-dock-item="'+tab+'"]').click();
       await page.waitForURL(url=>url.pathname===path||url.pathname===path+"/",{timeout:45000});
@@ -556,9 +636,20 @@ try{
  results.push({journey:"Owner iHelp screenshot → visible composer and category chips at 320/390/430 → real Director choices",passed:true});
  await page.locator('[data-unified-dock-item="ai"]').click();
  await page.waitForURL(/\/ru\/app\/messages\?section=ai/,{timeout:30000});
- await page.locator("[data-chat-top-tabs]").waitFor({state:"visible",timeout:30000});
- assert.equal(await page.locator("[data-chat-top-tabs] > *").count(),4,
-   "Messenger rail now has AI, Orders, Clients and News");
+ // The mobile Ali sections live in the real expandable menu, not an always-visible rail.
+ const messengerTabs=page.locator("[data-chat-top-tabs]");
+ const messengerMenu=page.locator("[data-hh-ai-chat-menu]");
+ await messengerMenu.waitFor({state:"visible",timeout:30000});
+ assert.equal(await messengerMenu.getAttribute("aria-expanded"),"false",
+   "Mobile AI menu starts collapsed to leave room for the conversation");
+ assert.equal(await messengerTabs.isVisible(),false,
+   "Mobile AI tabs are hidden until the user opens the menu");
+ await messengerMenu.click();
+ await messengerTabs.waitFor({state:"visible",timeout:30000});
+ assert.equal(await messengerMenu.getAttribute("aria-expanded"),"true",
+   "Mobile AI menu expands on the real tap");
+ assert.equal(await messengerTabs.locator("button").count(),4,
+   "Messenger menu retains the AI, Orders, Clients and News tabs");
  const news=page.locator('[data-chat-top-tabs] button[aria-controls="hh-news-panel"]');
  assert.equal(await news.count(),1,"News tab is visible and uniquely addressable");
  await news.click();
@@ -575,6 +666,31 @@ try{
  await chat.locator('[data-hh-ai-landing]').waitFor({state:"visible",timeout:15000});
  const log=chat.locator('[role="log"]');
  const projectGrid=chat.locator('[data-hh-messenger-six-projects]');
+ // Inner Alchemist begins with an inviting question, not a wall of service cards.
+ // Keep the entire canonical six-project catalogue available after user intent.
+ const alchemistTools=chat.locator('[data-hh-alchemist-tools]');
+ await alchemistTools.waitFor({state:"attached",timeout:15000});
+ assert.equal(await alchemistTools.evaluate(node=>node.open),false,
+   "six legacy service cards are tucked away until requested");
+ assert.equal(await chat.locator('[data-hh-alchemist-topic]').count(),4,
+   "first screen presents four large conversational problem starters");
+ const moreTopics=chat.locator('[data-hh-alchemist-more-topics]');
+ await moreTopics.click();
+ assert.equal(await chat.locator('[data-hh-alchemist-topic]').count(),8,
+   "More topics reveals the remaining four conversational suggestions");
+ await moreTopics.click();
+ await chat.locator('[data-hh-ai-chat-composer] textarea').waitFor({state:"visible",timeout:15000});
+ assert.equal(await chat.locator('[data-hh-ai-chat-composer]').count(),1,
+   "first screen owns one real pinned message composer");
+ // "More ways Ali can help" is nested in the real composer More actions menu.
+ // Verify both disclosures start closed, then open them through visible summaries.
+ const composerMore=chat.locator('[data-hh-ai-more]');
+ await composerMore.waitFor({state:"visible",timeout:15000});
+ assert.equal(await composerMore.evaluate(node=>node.open),false,
+   "More actions starts collapsed to keep the first-screen composer compact");
+ await composerMore.locator(':scope > summary').click();
+ await alchemistTools.waitFor({state:"visible",timeout:15000});
+ await alchemistTools.locator(':scope > summary').click();
  await projectGrid.waitFor({state:"visible",timeout:15000});
  const projects=chat.locator('[data-hh-messenger-six-projects] [data-hh-ai-project]');
  const six=["hint","test","mytube","sessions","practice","ai-video"];
@@ -628,7 +744,7 @@ try{
  await videoGoals.first().waitFor({state:"visible"});
  assert.deepEqual(await videoGoals.evaluateAll(nodes=>nodes.map(node=>
    node.getAttribute("data-hh-video-chat-choice"))),
-   ["goals-money","love-relationships","energy-confidence","stress-anxiety"]);
+   ["stress-anxiety","love-relationships","goals-money","energy-confidence"]);
  assert.equal(await chat.locator("[data-hh-guest-ready-videos]").count(),0,
    "personal video branch must not offer ready-made videos");
  assert.equal(await chat.locator("[data-hh-video-sign-in]").count(),0,
@@ -715,16 +831,27 @@ try{
  const resetViaMore=async()=>{
    const more=chat.locator('details[data-hh-ai-more]');
    await more.waitFor({state:"visible",timeout:15000});
-   if(await more.evaluate(node=>!node.open)) await more.locator("summary").click();
-   const resetButtons=more.locator("button");
-   await expect.poll(()=>resetButtons.count()).toBe(1);
-   await resetButtons.first().click();
-   if(await more.evaluate(node=>node.open)) await more.locator("summary").click();
+   if(await more.evaluate(node=>!node.open)) await more.locator(":scope > summary").click();
+   // The More menu also contains legitimate voice/psychologist actions.
+   // Require exactly one accessible Reset, not exactly one button total.
+   const resetButtons=more.getByRole("button",{name:"Новый разговор",exact:true});
+   await expect(resetButtons).toHaveCount(1);
+   await resetButtons.click();
+   if(await more.evaluate(node=>node.open)) await more.locator(":scope > summary").click();
    await chat.locator('[data-hh-ai-landing]').waitFor({state:"visible",timeout:15000});
    await expect.poll(()=>chat.locator('[data-hh-chat-turn="user"]').count()).toBe(0);
  };
  const openProject=async(id)=>{
    await resetViaMore();
+   // The six legacy projects are intentionally inside a collapsed accessible
+   // “More ways Ali can help” disclosure on the conversation-first landing.
+   // Test the real disclosure, rather than waiting for a hidden button.
+   const tools=chat.locator("details[data-hh-alchemist-tools]");
+   const more=chat.locator("details[data-hh-ai-more]");
+   await more.waitFor({state:"visible",timeout:15000});
+   if(await more.evaluate(node=>!node.open))await more.locator(":scope > summary").click();
+   await tools.waitFor({state:"visible",timeout:15000});
+   if(await tools.evaluate(node=>!node.open))await tools.locator(":scope > summary").click();
    await chat.locator('[data-hh-ai-project="'+id+'"]').waitFor({state:"visible",timeout:15000});
    await chat.locator('[data-hh-ai-project="'+id+'"]').click();
    // Sessions has a goal-first two-step intake; other projects use one-step choices.
@@ -797,16 +924,326 @@ try{
  await page.setViewportSize({width:390,height:844});
  results.push({journey:"Sessions goal-first → keyboard viewport → full AI reply visible",passed:true});
 
- await page.locator("[data-chat-top-tabs]").waitFor({state:"visible",timeout:30000});
+ // After the goal-first Sessions exchange, Ali's mobile sections remain
+ // a deliberate disclosure. Expand them with a real user tap before Orders.
+ await messengerMenu.waitFor({state:"visible",timeout:30000});
+ if(!(await messengerTabs.isVisible())){
+   assert.equal(await messengerMenu.getAttribute("aria-expanded"),"false",
+     "Ali menu must report collapsed state after the Sessions conversation");
+   await messengerMenu.click();
+ }
+ await messengerTabs.waitFor({state:"visible",timeout:30000});
+ assert.equal(await messengerMenu.getAttribute("aria-expanded"),"true",
+   "Orders and Clients stay behind the mobile menu until expanded");
  await page.locator('[data-chat-top-tabs] button[aria-controls="hh-orders-panel"]').click();
  await page.locator("#hh-orders-panel").waitFor({state:"visible"});
  await page.locator('[data-chat-top-tabs] button[aria-controls="hh-clients-panel"]').click();
  await page.locator("#hh-clients-panel").waitFor({state:"visible"});
  assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);
  await page.locator("[data-unified-dock-item=practice]").click();
- await page.waitForURL(/\/ru\/holistic-support\/mobile\/?$/,{timeout:30000});
- // Practice now opens the owner's published three-pathway Academy, not
- // the obsolete five-question personalized quiz. Verify real catalogue links.
+ await page.waitForURL(/\/ru\/shamanica\/?$/,{timeout:30000});
+
+ const shamanicaHome=page.locator("[data-shamanica-mobile]");
+ await shamanicaHome.waitFor({state:"visible",timeout:30000});
+ // The approved first viewport is a six-object alchemist cabinet; the
+ // unchanged three-step quiz and film open only when the user expands details.
+ await page.evaluate(async()=>{
+  window.scrollTo({top:0,behavior:"instant"});
+  await new Promise(done=>requestAnimationFrame(()=>requestAnimationFrame(done)));
+ });
+ const mirrorScreen=await page.evaluate(()=>{
+  const cards=[...document.querySelectorAll("[data-shamanica-service]")];
+  const answers=[...document.querySelectorAll("[data-shamanica-answer]")];
+  const video=document.querySelector("[data-shamanica-mobile] video");
+  return {
+   cards:cards.length,choices:answers.length,
+   photoCards:answers.every(a=>!!a.querySelector("img")),
+   video:!!video&&video.getAttribute("preload")==="none",
+   next:!!document.querySelector("[data-shamanica-next]"),
+   promo:!!document.querySelector("[data-sitewide-antistress-banner]"),
+   overflowX:document.documentElement.scrollWidth-innerWidth
+  };
+ });
+ assert.equal(mirrorScreen.cards,6,"Shamanic retains all six photographic service entrances");
+ assert.equal(mirrorScreen.choices,4,"Shamanic initial question keeps four real goals");
+ assert.ok(mirrorScreen.photoCards&&mirrorScreen.video&&mirrorScreen.next,
+  "Shamanic must show playable media, visual answers and Next: "+JSON.stringify(mirrorScreen));
+ assert.equal(mirrorScreen.promo,false,"Shamanic must not show the redundant promo ribbon");
+ assert.ok(mirrorScreen.overflowX<=2,"Shamanic must not scroll horizontally: "+JSON.stringify(mirrorScreen));
+ await page.screenshot({path:folder+"/shamanica-first-screen-ru-390-webkit.png",fullPage:false,animations:"disabled"});
+ results.push({journey:"Shamanic six-shelf alchemist first screen",mirrorScreen,passed:true});
+ const geanieAsk=shamanicaHome.locator('[data-shamanica-genie-ask]');
+ await geanieAsk.waitFor({state:"visible",timeout:15000});
+ assert.ok((await geanieAsk.innerText()).trim().length>0);
+ assert.equal(await shamanicaHome.locator('[data-shamanica-ai-geanie] img').count(),1);
+ await geanieAsk.click();
+ const geanieHelp=page.locator('[data-hh-ihelp-dialog]:visible');
+ await geanieHelp.waitFor({state:"visible",timeout:15000});
+ await geanieHelp.locator('header button[aria-label]').first().click();
+ await geanieHelp.waitFor({state:"hidden",timeout:15000});
+ results.push({journey:"Shamanic Geanie opens existing real iHelp dialog",passed:true});
+
+
+ // Browser-rendered iPhone first-fold acceptance for BOTH audiences.
+ // No CSS-only or screenshot-of-the-other-view substitute is accepted:
+ // all six photo tiles must clear the same fixed seven-item dock.
+ const verifyLoungeFold=async(cardSelector,atlas)=>{
+   const previous=page.viewportSize();
+   const folds=[];
+   for(const width of [320,353,390,430]){
+     await page.setViewportSize({width,height:768});
+     await page.evaluate(async()=>{
+       window.scrollTo({top:0,behavior:"instant"});
+       await new Promise(done=>requestAnimationFrame(()=>requestAnimationFrame(done)));
+     });
+     const fold=await page.evaluate(selector=>{
+       const tiles=[...document.querySelectorAll(selector)];
+       const nav=document.querySelector("[data-hh-unified-dock]");
+       const heading=document.getElementById("shamanica-hero-title");
+       const room=heading?.closest("section");
+       const image=tiles[0]?.firstElementChild;
+       return {
+         tiles:tiles.length,
+         firstTop:tiles[0]?.getBoundingClientRect().top??-1,
+         lastBottom:tiles.at(-1)?.getBoundingClientRect().bottom??Infinity,
+         dockTop:nav?.getBoundingClientRect().top??-1,
+         room:room?getComputedStyle(room,"::before").backgroundImage:"",
+         atlas:image?getComputedStyle(image).backgroundImage:"",
+         overflowX:document.documentElement.scrollWidth-innerWidth
+       };
+     },cardSelector);
+     assert.equal(fold.tiles,6,"Both Shamanic audiences retain six real buttons: "+width);
+     assert.ok(fold.firstTop>=0&&fold.lastBottom<=fold.dockTop-4,
+       "All six cards must clear the dock on "+width+"x768: "+JSON.stringify(fold));
+     assert.ok(fold.overflowX<=2,"No sideways overflow at "+width+": "+JSON.stringify(fold));
+     assert.match(fold.room,/shamanic-genie-lounge\.webp/,
+       "Both tabs must show the same HD lounge background");
+     assert.ok(fold.atlas.includes(atlas),"Photo atlas must stay HD: "+JSON.stringify(fold));
+     folds.push({width,firstTop:fold.firstTop,lastBottom:fold.lastBottom,dockTop:fold.dockTop});
+   }
+   if(previous)await page.setViewportSize(previous);
+   return folds;
+ };
+ const personalFolds=await verifyLoungeFold("[data-shamanica-service]",
+   "shamanic-genie-cards-personal.webp");
+ results.push({journey:"Shamanic personal one-screen HD photos at 320/353/390/430",folds:personalFolds,passed:true});
+ await shamanicaHome.locator('nav[aria-label="Audience"] a[href="/ru/shamanica/business"]').click();
+ await page.waitForURL(/\/ru\/shamanica\/business\/?$/,{timeout:45000});
+ const businessCabinet=page.locator("[data-shamanica-business] [data-business-cabinet-shelves]");
+ await businessCabinet.waitFor({state:"visible",timeout:30000});
+ assert.equal(await page.locator('[data-shamanica-ai-geanie] [data-shamanica-genie-ask]:visible').count(),1,
+ "Business shares the interactive Geanie help action");
+ const businessCards=businessCabinet.locator("[data-business-shelf]");
+ assert.deepEqual(await businessCards.evaluateAll(nodes=>nodes.map(node=>node.dataset.businessShelf)),
+   ["express","remedies","strategy","artifacts","energy","energywork"],
+   "Business uses the same six-tile lounge with approved distinct categories");
+ const businessFolds=await verifyLoungeFold("[data-business-shelf]",
+   "shamanic-cards-business-hd.avif");
+ await page.screenshot({path:folder+"/shamanica-business-first-screen-ru-390-webkit.png",
+   fullPage:false,animations:"disabled"});
+ await businessCards.first().click();
+ const businessExpress=businessCabinet.locator('[data-business-second-level="express"]');
+ await businessExpress.waitFor({state:"visible",timeout:15000});
+ const expressChoices=await businessExpress.locator("[data-business-subservice]").allTextContents();
+ assert.equal(expressChoices.length,5,"Express business opens five real pricing choices");
+ for(const price of ["FREE","45 CAD","75 CAD","200 CAD","300 CAD"]){
+   assert.ok(expressChoices.some(label=>label.includes(price)),"Approved business offer price: "+price);
+ }
+ assert.equal(await businessCabinet.locator('[data-business-get-details="express"]').count(),1,
+   "Express options retain their existing WhatsApp/Telegram Get details handoff");
+ await businessCabinet.locator("[data-business-back-to-shelves]").click();
+ assert.equal(await businessCabinet.locator("[data-business-shelf]").count(),6,
+   "Business Back returns to the six categories");
+ await page.locator('[data-shamanica-mobile] nav[aria-label="Audience"] a[href="/ru/shamanica"]').click();
+ await page.waitForURL(/\/ru\/shamanica\/?$/,{timeout:45000});
+ await shamanicaHome.waitFor({state:"visible",timeout:30000});
+ results.push({journey:"Shamanic Business same HD lounge → 5 priced suboptions → Back → Personal",
+   folds:businessFolds,passed:true});
+
+ const originalShamanicaViewport=page.viewportSize();
+ await shamanicaHome.locator("[data-shamanica-extras] > summary").click();
+ await page.setViewportSize({width:353,height:768});
+ await page.evaluate(async()=>{
+  window.scrollTo({top:0,behavior:"instant"});
+  await new Promise(done=>requestAnimationFrame(()=>requestAnimationFrame(done)));
+ });
+ const readablePhone=await page.evaluate(()=>{
+  const answers=[...document.querySelectorAll("[data-shamanica-answer]")];
+  const services=[...document.querySelectorAll("[data-shamanica-service]")];
+  const labels=[...document.querySelectorAll("[data-hh-unified-dock] [data-unified-dock-item] span")];
+  const measure=element=>element?parseFloat(getComputedStyle(element).fontSize):0;
+  return {
+   minAnswerFont:Math.min(...answers.map(measure)),
+   minAnswerPhoto:Math.min(...answers.map(x=>x.querySelector("img")?.getBoundingClientRect().height??0)),
+   minServiceHeading:Math.min(...services.map(x=>measure(x.querySelector("strong")))),
+   minDockLabel:Math.min(...labels.map(measure)),
+   overflowX:document.documentElement.scrollWidth-innerWidth
+  };
+ });
+ assert.ok(readablePhone.minAnswerFont>=12.5,"Shamanic choices must remain readable: "+JSON.stringify(readablePhone));
+ assert.ok(readablePhone.minAnswerPhoto>=60,"Shamanic option photos must remain visible: "+JSON.stringify(readablePhone));
+ assert.ok(readablePhone.minServiceHeading>=12,"Shamanic categories must remain readable: "+JSON.stringify(readablePhone));
+ assert.ok(readablePhone.minDockLabel>=10,"Shamanic dock labels must remain readable: "+JSON.stringify(readablePhone));
+ assert.ok(readablePhone.overflowX<=2,"Shamanic phone has no horizontal overflow: "+JSON.stringify(readablePhone));
+ // Selection is explicit. No old automatic jump on card tap.
+ await shamanicaHome.locator('[data-shamanica-answer="relationships"]').click();
+ assert.equal(await shamanicaHome.locator("[data-shamanica-quiz]").getAttribute("data-quiz-step"),"1");
+ assert.equal(await shamanicaHome.locator('[data-shamanica-answer="relationships"]').getAttribute("aria-pressed"),"true");
+ await shamanicaHome.locator("[data-shamanica-next]").click();
+ assert.equal(await shamanicaHome.locator("[data-shamanica-quiz]").getAttribute("data-quiz-step"),"2");
+ await shamanicaHome.locator('[data-shamanica-quiz] button[aria-label="Назад"]').click();
+ assert.equal(await shamanicaHome.locator("[data-shamanica-quiz]").getAttribute("data-quiz-step"),"1");
+ await page.screenshot({path:folder+"/shamanica-readable-353x768-webkit.png",fullPage:false,animations:"disabled"});
+ results.push({journey:"Shamanic readable photo quiz with explicit Next and back",readablePhone,passed:true});
+ if(originalShamanicaViewport)await page.setViewportSize(originalShamanicaViewport);
+ assert.equal(await shamanicaHome.locator("[data-shamanica-service]").count(),6,
+   "Shamanic has exactly six approved functional shelves");
+ // The approved Shamanic category is an in-page two-stage selector, not
+ // the old immediate navigation. Exercise category → subcategories → the
+ // unchanged three concrete priced Details/Order offers without quiz answers.
+ const energyEntrance=shamanicaHome.locator('[data-shamanica-service="energy"]');
+ assert.equal(await energyEntrance.evaluate(node=>node.tagName),"BUTTON",
+   "Category is an interactive in-page selector, not a stale direct href");
+ await energyEntrance.click();
+ const energySubcategories=shamanicaHome.locator('[data-shamanica-subcategories="energy"]');
+ await energySubcategories.waitFor({state:"visible",timeout:30000});
+ assert.equal(new URL(page.url()).pathname,"/ru/shamanica",
+   "Category tap reveals a local second level, not another page");
+ assert.equal(await shamanicaHome.locator("[data-shamanica-service]").count(),0,
+   "Subcategory choices replace the six category buttons");
+ assert.equal(await energySubcategories.locator("[data-shamanica-subcategory]").count(),3,
+   "Energy shows three real next-step service choices");
+ assert.equal(await energySubcategories.locator('[data-shamanica-subcategory="energy-0"]').getAttribute("href"),
+   "/ru/services/remote-energy-support",
+   "First energy choice opens the existing booking service");
+ const energyAll=energySubcategories.locator('a[href="/ru/shamanica/results?category=energy"]');
+ assert.equal(await energyAll.count(),1,
+   "All-services action keeps the original three priced offer page reachable");
+ await energySubcategories.locator("button").click();
+ assert.equal(await shamanicaHome.locator("[data-shamanica-service]").count(),6,
+   "Back restores all six category buttons");
+ await shamanicaHome.locator('[data-shamanica-service="academy"]').click();
+ const academySubcategories=shamanicaHome.locator('[data-shamanica-subcategories="academy"]');
+ await academySubcategories.waitFor({state:"visible",timeout:15000});
+ assert.equal(await academySubcategories.locator("[data-shamanica-subcategory]").count(),4,
+   "Academy keeps the four existing course pathways");
+ await academySubcategories.locator("button").click();
+ await shamanicaHome.locator('[data-shamanica-service="guidance"]').click();
+ const guidanceSubcategories=shamanicaHome.locator('[data-shamanica-subcategories="guidance"]');
+ await guidanceSubcategories.waitFor({state:"visible",timeout:15000});
+ assert.equal(await guidanceSubcategories.locator("[data-shamanica-subcategory]").count(),3,
+   "Guidance exposes three published readings");
+ await guidanceSubcategories.locator("button").click();
+ await shamanicaHome.locator('[data-shamanica-service="energy"]').click();
+ await shamanicaHome.locator('[data-shamanica-subcategories="energy"] a[href="/ru/shamanica/results?category=energy"]').click();
+ await page.waitForURL(url => url.pathname==="/ru/shamanica/results" &&
+   url.searchParams.get("category")==="energy",{timeout:45000});
+ const categoryOffers=page.locator('[data-shamanica-category-offers="energy"]');
+ await categoryOffers.waitFor({state:"visible",timeout:30000});
+ assert.equal(await categoryOffers.locator("[data-support-uniform-card]").count(),3);
+ assert.equal(await categoryOffers.locator("[data-service-price]").count(),3);
+ assert.equal(await categoryOffers.locator("[data-support-uniform-photo] img").count(),3);
+ assert.equal(await categoryOffers.locator("[data-service-card-controls]").count(),3);
+ assert.equal(await page.locator("[data-recommended-service]").count(),0,
+   "Clicking a category shows only that category's concrete offers, not quiz priorities");
+ const firstOffer=categoryOffers.locator("[data-support-uniform-card]").first();
+ await firstOffer.locator("[data-service-card-controls] button").first().click();
+ assert.equal(await firstOffer.locator("[data-service-card-details]:visible").count(),1);
+ await firstOffer.locator("[data-service-card-controls] button").nth(1).click();
+ assert.equal(await firstOffer.locator("[data-service-card-order]:visible").count(),1);
+ assert.ok(await firstOffer.locator("[data-messenger-only-channel]").count()>=1,
+   "Order must expose a real messenger handoff");
+ // The 320px first-fold acceptance measures the compact, *collapsed* list.
+ // First prove the real Order panel and messenger handoff, then close it using
+ // the same accessible user control; do not fake visibility or change styles.
+ await firstOffer.locator("[data-service-card-controls] button").nth(1).click();
+ assert.equal(await firstOffer.locator('[data-service-card-controls] button').nth(1).getAttribute("aria-expanded"),"false",
+   "Order control must collapse back to the one-screen service cards");
+ assert.equal(await firstOffer.locator("[data-service-card-order]:visible").count(),0,
+   "Expanded Order panel must close before compact first-fold acceptance");
+ assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth<=2),
+   "Shamanic service list must not overflow mobile width");
+ // The 3 compact offers AND their category heading must fit above the fixed
+ // dock in the collapsed state on a normal iPhone (including the owner 353px).
+ const originalCategoryViewport=page.viewportSize();
+ for(const width of [320,353,390,430]){
+   await page.setViewportSize({width,height:768});
+   await page.evaluate(async()=>{
+     window.scrollTo({top:0,behavior:"instant"});
+     await new Promise(done=>requestAnimationFrame(()=>requestAnimationFrame(done)));
+   });
+   const geometry=await page.evaluate(()=>{
+     const boxes=[...document.querySelectorAll('[data-shamanica-category-offers="energy"] [data-support-uniform-card]')];
+     const nav=document.querySelector("[data-hh-unified-dock]");
+     const title=document.querySelector("[data-shamanica-results-title]");
+     const tabs=document.querySelector("[data-shamanica-category-nav]");
+     const inside=(child,parent)=>{
+       const a=child?.getBoundingClientRect(),b=parent?.getBoundingClientRect();
+       return !!a&&!!b&&a.left>=b.left-2&&a.right<=b.right+2&&a.top>=b.top-2&&a.bottom<=b.bottom+2;
+     };
+     return {
+       titleTop:title?.getBoundingClientRect().top,
+       tabsBottom:tabs?.getBoundingClientRect().bottom,
+       dockTop:nav?.getBoundingClientRect().top,
+       overflowX:document.documentElement.scrollWidth-innerWidth,
+       cards:boxes.map(el=>({
+         top:el.getBoundingClientRect().top,bottom:el.getBoundingClientRect().bottom,
+         buttonsInside:inside(el.querySelector("[data-service-card-controls]"),el),
+         photoInside:inside(el.querySelector("[data-support-uniform-photo]"),el),
+         priceInside:inside(el.querySelector("[data-service-price]"),el)
+       }))
+     };
+   });
+   assert.equal(geometry.cards.length,3,"Category always contains three real services");
+   assert.ok(geometry.cards.every(c=>c.buttonsInside&&c.photoInside&&c.priceInside),
+     "Compact Shamanic controls/photos/prices must remain inside their own cards: "+
+       width+" "+JSON.stringify(geometry));
+   assert.ok(geometry.titleTop>=-1 && geometry.cards[2].bottom<=geometry.dockTop-4,
+     "Shamanic category header + all three cards must clear fixed dock at "+width+
+     "x768: "+JSON.stringify(geometry));
+   assert.ok(geometry.overflowX<=2,
+     "Shamanic category has no page overflow at "+width+": "+JSON.stringify(geometry));
+   await page.screenshot({path:folder+"/shamanica-category-energy-"+width+"-webkit.png",
+     fullPage:false,animations:"disabled"});
+ }
+ if(originalCategoryViewport)await page.setViewportSize(originalCategoryViewport);
+ for(const lang of ["en","es"]){
+   await page.goto(origin+"/"+lang+"/shamanica/results?category=learning",
+     {waitUntil:"domcontentloaded",timeout:75000});
+   await page.locator('[data-shamanica-category-offers="learning"]').waitFor({state:"visible",timeout:30000});
+   assert.equal(await page.locator("[data-support-uniform-card]").count(),3,
+     "Localized Shamanic category must contain three offers in "+lang);
+ }
+ await page.goto(origin+"/ru/shamanica",{waitUntil:"domcontentloaded",timeout:75000});
+ await shamanicaHome.waitFor({state:"visible",timeout:30000});
+ results.push({journey:"Shamanic category → three live priced offers → Details/Order; EN/ES routes",passed:true});
+
+ await shamanicaHome.locator("[data-shamanica-extras] > summary").click();
+ const shamanicaQuiz=shamanicaHome.locator("[data-shamanica-quiz]");
+ await expect(shamanicaQuiz).toHaveAttribute("data-quiz-step","1");
+ assert.equal(await shamanicaQuiz.locator("[data-shamanica-answer]").count(),4,
+   "Shamanica asks the four requested goals in a compact 2-by-2 mobile quiz");
+ await shamanicaQuiz.locator('[data-shamanica-answer="energy"]').click();
+ await expect(shamanicaQuiz).toHaveAttribute("data-quiz-step","1");
+ await expect(shamanicaQuiz.locator('[data-shamanica-answer="energy"]')).toHaveAttribute("aria-pressed","true");
+ await shamanicaQuiz.locator("[data-shamanica-next]").click();
+ await expect(shamanicaQuiz).toHaveAttribute("data-quiz-step","2");
+ await shamanicaQuiz.locator('[data-shamanica-answer="learning"]').click();
+ await expect(shamanicaQuiz.locator('[data-shamanica-answer="learning"]')).toHaveAttribute("aria-pressed","true");
+ await shamanicaQuiz.locator("[data-shamanica-next]").click();
+ await expect(shamanicaQuiz).toHaveAttribute("data-quiz-step","3");
+ await shamanicaQuiz.locator('[data-shamanica-answer="free"]').click();
+ await expect(shamanicaQuiz.locator('[data-shamanica-answer="free"]')).toHaveAttribute("aria-pressed","true");
+ await shamanicaQuiz.locator("[data-shamanica-next]").click();
+ await page.waitForURL(/\/ru\/shamanica\/results(?:\?|\/$)/,{timeout:45000});
+ await page.locator("[data-shamanica-results]").waitFor({state:"visible",timeout:30000});
+ assert.equal(await page.locator("[data-recommended-service]").count(),2,
+   "Shamanica shows exactly two personal directions on a separate screen");
+ // The previous Academy and its five-question learning quiz remain available
+ // through their explicit legacy address; the new dock no longer targets it.
+ await page.goto(origin+"/ru/holistic-support/mobile",{waitUntil:"domcontentloaded",timeout:75000});
+ // Legacy Study offers the approved five-question learning quiz above the three Academy schools.
+ // Verify the first question requires a real choice before advancing.
  const studyEntry=page.locator("[data-holistic-study-academy]");
  await studyEntry.waitFor({state:"visible",timeout:30000});
  assert.equal(await studyEntry.locator("[data-study-school-nav]").count(),3,
@@ -815,8 +1252,27 @@ try{
    "Practice lists the three grouped Academy programs");
  assert.equal(await studyEntry.locator("[data-study-academy-course]").count(),8,
    "Practice links to eight source-backed courses");
- assert.equal(await page.locator("[data-study-personalized-path]").count(),0,
-   "Retired personalized quiz must not reappear on the Academy default");
+ const academyQuiz=studyEntry.locator('[data-study-mobile-quiz] [data-study-personalized-path]');
+ await academyQuiz.waitFor({state:"visible",timeout:30000});
+ assert.equal(await academyQuiz.getAttribute("data-study-step"),"1",
+   "Approved Academy quiz starts at the first question");
+ assert.equal(await academyQuiz.locator('[aria-current="step"]').count(),1,
+   "The quiz exposes exactly one active step");
+ const choices=academyQuiz.locator('[role="group"]').first().locator('button[aria-pressed]');
+ assert.equal(await choices.count(),4,
+   "The active first question offers four genuine choices, excluding the four recommendation-tab buttons");
+ const nextStep=academyQuiz.locator('[data-study-next]');
+ // Academy intentionally presets the published stress goal. Verify that
+ // the selected choice enables Next and a real different answer replaces it.
+ await expect(choices.first()).toHaveAttribute("aria-pressed","true");
+ await expect(nextStep).toBeEnabled();
+ await choices.nth(1).click();
+ await expect(choices.first()).toHaveAttribute("aria-pressed","false");
+ await expect(choices.nth(1)).toHaveAttribute("aria-pressed","true");
+ await expect(nextStep).toBeEnabled();
+ await nextStep.click();
+ assert.equal(await academyQuiz.getAttribute("data-study-step"),"2",
+   "Only a genuine selected first answer advances the Academy quiz");
  await studyEntry.locator('[data-study-school-nav="free"]').click();
  assert.equal(new URL(page.url()).hash,"#study-free",
    "Public Academy navigation reaches the free programs without a fake request");
@@ -827,7 +1283,7 @@ try{
  assert.equal(await page.locator("[data-support-practice-tabs] > *").count(),3);
  await page.locator('[data-support-practice-tabs] button').nth(1).click();
  assert.equal(await page.locator('[data-support-practice-tabs] button').nth(1).getAttribute("aria-pressed"),"true");
- results.push({journey:"MyTube → Video → six real iChat choices → one protected transcript → private Orders/Clients → Practice",passed:true});
+ results.push({journey:"MyTube → Video → six real iChat choices → Orders/Clients → Shamanica quiz → published Academy",passed:true});
  // Both Home and Practice now share the original Practice visual dock,
  // with canonical Services and My Coach destinations.
  await page.goto(origin+"/ru",{waitUntil:"domcontentloaded",timeout:75000});
@@ -858,14 +1314,15 @@ try{
  assert.equal(await page.locator('[data-unified-dock-item="services"][aria-current="page"]').count(),1);
  assert.equal(await page.locator(".mobile-bottom-navigation:visible").count(),0);
  await homeDock.locator('[data-unified-dock-item="practice"]').click();
- await page.waitForURL(/\/ru\/holistic-support\/mobile\/?$/,{timeout:45000});
- await page.locator("[data-holistic-study-academy]").waitFor({state:"visible",timeout:30000});
- assert.equal(await page.locator("[data-holistic-study-academy] [data-study-academy-course]").count(),8);
+ await page.waitForURL(/\/ru\/shamanica\/?$/,{timeout:45000});
+ await page.locator("[data-shamanica-mobile]").waitFor({state:"visible",timeout:30000});
+ assert.equal(await page.locator("[data-shamanica-service]").count(),6);
+ await expect(page.locator("[data-shamanica-quiz]")).toHaveAttribute("data-quiz-step","1");
  assert.equal(await page.locator("[data-support-practice-tabs]:visible").count(),0,
-   "the approved Study page does not show the retired top menu");
+   "the approved Shamanica landing does not show the old Support top menu");
  assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);
  assert.equal(await page.locator('[data-hh-unified-dock] [data-unified-dock-item]').count(),7);
- results.push({journey:"Holistic House Home → Services → Practice with one seven-tab dock",passed:true});
+ results.push({journey:"Holistic House Home → Services → Shamanica with one seven-tab dock",passed:true});
 
  // Profile unification: both Home and Practice open the existing private hub.
  // The protected CSP transition must remain a full server-authorized reload.
@@ -879,20 +1336,27 @@ try{
  // #4301 restored My Space / Today as the canonical Profile landing.
  // A signed-out visitor sees the public Cabinet overview and may deliberately
  // open guest Tests; the old auto-opened Tests-first page is no longer mounted.
- assert.equal(await page.locator('[data-profile-tab="today"][aria-current="page"]').count(),1,
-   "guest Profile opens the current My Space Today tab, not the retired Tests-first view");
+ assert.equal(await page.locator('[data-profile-hub-tabs][data-profile-active="today"]').count(),1,
+   "guest Profile opens the current My Space Today dashboard, not the retired Tests-first view");
+ await page.locator('[data-profile-space-dashboard]').waitFor({state:"visible",timeout:30000});
+ assert.equal(await page.locator('[data-profile-space-life][aria-current="page"]').count(),1,
+   "My Life is the current guest dashboard mode");
  const guestOverview=page.locator('[data-cabinet-guest-overview="true"]');
  await guestOverview.waitFor({state:"visible",timeout:45000});
  const publicTests=guestOverview.locator('a[href="/ru/client/tests"]');
  await publicTests.waitFor({state:"visible",timeout:15000});
  assert.equal(await page.locator('[data-profile-tests-first]').count(),0,
    "retired standalone test-first component must not replace the My Space overview");
- // The same six canonical tabs remain visible, but private tabs are explicit
- // account routes rather than in-page guest anchors.
- assert.deepEqual(await page.locator('[data-profile-hub-tabs] [data-profile-tab]').evaluateAll(
-   links=>links.map(link=>link.dataset.profileTab)),
-   ["today","tests","state","path","courses","reports"],
-   "My Space retains six canonical sections for guest and signed-in users");
+ // Today's approved layout uses the scenic My Space dashboard, not the
+ // retired horizontal tab bar. Assert its exact routes and four real cards.
+ assert.equal(await page.locator('[data-profile-hub-tabs] [data-profile-tab]').count(),0,
+   "Today uses the photographic dashboard instead of duplicate tabs");
+ assert.deepEqual(await page.locator('[data-profile-space-card]').evaluateAll(
+   links=>links.map(link=>link.dataset.profileSpaceCard)),
+   ["state","courses","reports","sessions"],
+   "The four signed-in-capable sections remain visible as honest guest entries");
+ assert.equal(await page.locator('[data-profile-space-path]').getAttribute("href"),"/ru/app/portrait?space=path");
+ assert.equal(await page.locator('[data-profile-space-work]').getAttribute("href"),"/ru/practice");
  assert.equal(await page.locator('[data-hh-unified-dock] [data-unified-dock-item="profile"][aria-current="page"]').count(),1);
  assert.equal(await page.locator('.mobile-bottom-navigation:visible').count(),0);
  // In Profile, every account action is gated on an explicit guest click.
@@ -907,7 +1371,7 @@ try{
  await login.getByRole('button',{name:'Продолжить просмотр'}).click();
  await login.waitFor({state:'hidden',timeout:15000});
  // The mode switch itself never prompts or creates a private account.
- await page.locator('[data-profile-mode="work"]').click();
+ await page.locator('[data-profile-space-work]').click();
  await page.waitForURL(/\/ru\/practice\/?$/,{timeout:45000});
  await page.locator('[data-practice-showcase]').waitFor({state:'visible',timeout:45000});
  results.push({journey:"Public Profile → guest action opens OAuth choice → dismiss → free Life/Work mode switch",passed:true});

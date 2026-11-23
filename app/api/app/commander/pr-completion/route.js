@@ -4,6 +4,8 @@ import {createRequestAuth} from '@/lib/app/session';
 import {PRIVATE_HEADERS,safeError} from '@/lib/app/http';
 import {AppError} from '@/lib/assessments/contracts';
 import {buildPrCompletionJourney} from '@/lib/agent-director/pr-completion-journey.mjs';
+import {verifyPrLiveReadback} from '@/lib/agent-director/pr-live-identity.mjs';
+import {buildPrHeadHistory} from '@/lib/agent-director/pr-head-history.mjs';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -47,6 +49,58 @@ async function githubJourneyEvidence(number){
   comments:commented?comments.value:[],commentsComplete:commented};
 }
 
+
+async function githubHistoryEvidence(pr,ciEvents,page){
+ if(!pr)return {commits:[],checksBySha:{},forcePushes:[],
+  page,pageCount:1,commitHistoryComplete:false,checksComplete:false};
+ const total=Number.isSafeInteger(pr.commits)&&pr.commits>=0?pr.commits:0;
+ const pageCount=Math.max(1,Math.ceil(total/10)),gitPage=pageCount-page+1;
+ const [commitsResponse,timelineResponse,filesResponse]=await Promise.allSettled([
+  gitPage>0?githubJson('/pulls/'+pr.number+'/commits?per_page=10&page='+gitPage,220000):Promise.resolve([]),
+  page===1?githubJson('/issues/'+pr.number+'/timeline?per_page=100&page=1',360000):Promise.resolve([]),
+  githubJson('/pulls/'+pr.number+'/files?per_page=100',220000)
+ ]);
+ const commitHistoryComplete=commitsResponse.status==='fulfilled'&&Array.isArray(commitsResponse.value);
+ const commits=commitHistoryComplete?commitsResponse.value:[];
+ const timeline=timelineResponse.status==='fulfilled'&&Array.isArray(timelineResponse.value)?
+  timelineResponse.value:[];
+ const forcePushes=timeline.filter(x=>x?.event==='head_ref_force_pushed').map(x=>({
+  before:x.before_commit?.sha||x.before_commit,
+  after:x.after_commit?.sha||x.after_commit,at:x.created_at
+ }));
+ const files=filesResponse.status==='fulfilled'&&Array.isArray(filesResponse.value)?filesResponse.value:[];
+ const siteRuntimeOnly=Number.isSafeInteger(pr.changed_files)&&
+  pr.changed_files>0&&pr.changed_files===files.length&&
+  files.every(f=>typeof f.filename==='string'&&
+    !/^supabase\/(?:functions|migrations)\//.test(f.filename))&&
+  files.some(f=>/^(?:app\/|components\/|public\/|lib\/(?!ci\/)|styles\/|content\/|data\/|next\.config\.)/.test(f.filename));
+ const releaseScope=Number.isSafeInteger(pr.changed_files)&&pr.changed_files>0&&
+  pr.changed_files===files.length&&files.every(f=>typeof f.filename==='string'&&
+   /^supabase\/(functions|migrations)\//.test(f.filename))?'SUPABASE_ONLY':
+  pr.changed_files===files.length?'SITE_OR_MIXED':'UNKNOWN';
+ const unique=new Set();
+ for(const sha of [pr.head.sha,...commits.map(x=>x?.sha),
+  ...ciEvents.slice(0,8).map(x=>x?.headSha),
+  ...forcePushes.flatMap(x=>[x.before,x.after])]){
+  if(SHA.test(sha||''))unique.add(sha.toLowerCase());
+ }
+ // Bounded, on-demand source reads. Never poll every PR or trigger CI.
+ const selected=[...unique].slice(0,20);
+ const checksBySha={};let checksComplete=unique.size<=selected.length;
+ const result=await Promise.allSettled(selected.map(sha=>
+  githubJson('/commits/'+sha+'/check-runs?per_page=100&filter=all',320000)));
+ result.forEach((out,i)=>{
+  const sha=selected[i];
+  if(out.status==='fulfilled'&&Array.isArray(out.value?.check_runs)&&
+    Number.isSafeInteger(out.value?.total_count)&&
+    out.value.total_count===out.value.check_runs.length){
+   checksBySha[sha]=out.value.check_runs;
+  }else checksComplete=false;
+ });
+ return {commits,checksBySha,forcePushes,page,pageCount,
+  commitHistoryComplete,checksComplete,releaseScope,siteRuntimeOnly};
+}
+
 async function route(request,method){
  let auth=null;
  try{
@@ -55,7 +109,7 @@ async function route(request,method){
   else requestOrigin(request,config);
   auth=createRequestAuth(request,config);
   const actor=await auth.verified();
-  let payload,detailsRequested=false,detailsPr=null;
+  let payload,detailsRequested=false,detailsPr=null,historyPage=1;
   if(method==='POST'){
    const raw=await request.text();
    if(raw.length>2500)throw new AppError('INVALID_PR_REQUEST',400);
@@ -70,8 +124,9 @@ async function route(request,method){
    payload={action:'submit',...payload};
   }else{
    const u=new URL(request.url);
-   if([...u.searchParams.keys()].some(k=>!['pr','details'].includes(k))||
+   if([...u.searchParams.keys()].some(k=>!['pr','details','historyPage'].includes(k))||
      u.searchParams.getAll('pr').length>1||u.searchParams.getAll('details').length>1||
+     u.searchParams.getAll('historyPage').length>1||
      u.searchParams.has('details')&&u.searchParams.get('details')!=='1')
     throw new AppError('INVALID_PR_QUERY',400);
    const raw=u.searchParams.get('pr');
@@ -81,16 +136,31 @@ async function route(request,method){
    if(detailsRequested&&raw===null)
     throw new AppError('PR_DETAILS_REQUIRE_EXACT_NUMBER',400);
    detailsPr=raw?Number(raw):null;
-   payload={action:'status',...(raw?{prNumber:detailsPr}:{})};
+   const rawHistoryPage=u.searchParams.get('historyPage');
+   if(rawHistoryPage!==null&&(!detailsRequested||!/^[1-9]\d{0,2}$/.test(rawHistoryPage)))
+    throw new AppError('INVALID_PR_HISTORY_PAGE',400);
+   historyPage=rawHistoryPage?Number(rawHistoryPage):1;
+   payload={action:detailsRequested?'history':'status',
+    ...(raw?{prNumber:detailsPr}:{}),...(detailsRequested?{page:historyPage}:{})};
   }
-  const response=await fetch(config.supabaseUrl+'/functions/v1/'+EDGE,{
+  const edgeRequest=body=>fetch(config.supabaseUrl+'/functions/v1/'+EDGE,{
    method:'POST',cache:'no-store',redirect:'error',signal:AbortSignal.timeout(11000),
    headers:{apikey:config.publishableKey,Authorization:'Bearer '+actor.accessToken,
     'Content-Type':'application/json',Accept:'application/json'},
-   body:JSON.stringify(payload)});
-  const raw=await response.text();
-  if(raw.length>20000)throw new AppError('PR_COMPLETION_RESULT_TOO_LARGE',502);
+   body:JSON.stringify(body)});
+  let response=await edgeRequest(payload);
+  let raw=await response.text();
+  if(raw.length>(detailsRequested?65000:20000))
+   throw new AppError('PR_COMPLETION_RESULT_TOO_LARGE',502);
   let data;try{data=JSON.parse(raw)}catch{throw new AppError('PR_COMPLETION_RESULT_INVALID',502)}
+  // Until the compatible Edge update is deployed, keep the existing owner queue usable.
+  if(detailsRequested&&response.status===400&&data?.error==='UNKNOWN_ACTION'){
+   response=await edgeRequest({action:'status',prNumber:detailsPr});
+   raw=await response.text();
+   if(raw.length>20000)throw new AppError('PR_COMPLETION_RESULT_TOO_LARGE',502);
+   try{data=JSON.parse(raw)}catch{throw new AppError('PR_COMPLETION_RESULT_INVALID',502)}
+   data.ciHistoryAvailable=false;
+  }
   const status=[200,400,401,403,404,409].includes(response.status)?response.status:503;
   if(!response.ok||data?.schema!=='HH_COMMANDER_PR_COMPLETION_V1'&&method==='GET')
    return auth.apply(NextResponse.json({error:data?.error||'PR_COMPLETION_UNAVAILABLE'},
@@ -101,10 +171,46 @@ async function route(request,method){
    if(!item)return auth.apply(NextResponse.json({error:'OWNER_PR_NOT_IN_QUEUE'},
     {status:404,headers:PRIVATE_HEADERS}));
    const evidence=await githubJourneyEvidence(detailsPr);
-   const result=buildPrCompletionJourney({
-    item,github:evidence,observedAt:new Date().toISOString()
-   });
-   return auth.apply(NextResponse.json(result,{status:200,headers:PRIVATE_HEADERS}));
+   const observedAt=new Date().toISOString();
+   const ciEvents=data.ciHistoryAvailable===true&&Array.isArray(data.ciEvents)?
+    data.ciEvents:[];
+   const historyEvidence=await githubHistoryEvidence(evidence.pr,ciEvents,historyPage);
+   const scope=historyEvidence.releaseScope||'UNKNOWN';
+   // The site bundle cannot prove separate Supabase Edge or SQL changes.
+   const production=historyEvidence.siteRuntimeOnly===true&&
+     evidence.pr?.state==='closed'&&evidence.pr.merged===true?
+     await verifyPrLiveReadback(evidence.pr):
+     {verified_live:false,reason:historyEvidence.siteRuntimeOnly===true?
+      'PR_NOT_MERGED':'NON_SITE_RUNTIME_SCOPE_UNVERIFIED'};
+   const journey=buildPrCompletionJourney({item,github:evidence,production,ciEvents,observedAt,
+    verifiedCommitShas:historyEvidence.commitHistoryComplete?
+     historyEvidence.commits.map(c=>c.sha):[]});
+   const history=evidence.pr?buildPrHeadHistory({
+    pr:evidence.pr,item,ciEvents,observedAt,...historyEvidence,
+    ciHistoryAvailable:data.ciHistoryAvailable===true,
+    ciHistoryComplete:data.ciHistoryAvailable===true&&data.ciHasMore!==true
+   }):null;
+   const isSupabaseOnly=scope==='SUPABASE_ONLY';
+   const receipt=evidence.pr?.merged===true&&evidence.commentsComplete?
+    evidence.comments.find(c=>c?.user?.login==='andylitvinov-design'&&
+     typeof c.body==='string'&&
+     c.body.includes('<!-- HH_PR_PRODUCTION_RECEIPT_V1 pr='+detailsPr+
+      ' merge='+evidence.pr.merge_commit_sha+' ')):null;
+   const reportedRelease=receipt?{
+    status:/status=`([A-Z_]+)`/.exec(receipt.body)?.[1]||'UNVERIFIED',
+    observedAt:receipt.created_at||null,
+    url:Number.isSafeInteger(receipt.id)?
+     'https://github.com/'+REPO+'/pull/'+detailsPr+'#issuecomment-'+receipt.id:null,
+    proofLevel:'OWNER_NOTE_NOT_INDEPENDENT_ACCEPTANCE'}:null;
+   const corrected=isSupabaseOnly&&journey.currentStage==='live'?{
+    ...journey,currentStageTitle:'Проверка Supabase runtime',
+    stages:journey.stages.map(step=>step.id==='live'?{...step,
+     title:'Проверка Supabase runtime',
+     detail:'Это изменение только Supabase. GitHub merge и Vercel READY не подтверждают работу Edge/API; нужен отдельный runtime-тест.'}:step)
+   }:journey;
+   return auth.apply(NextResponse.json({...corrected,
+    history:history?{...history,releaseScope:scope,reportedRelease}:null},
+    {status:200,headers:PRIVATE_HEADERS}));
   }
   return auth.apply(NextResponse.json(data,{status:response.status,headers:PRIVATE_HEADERS}));
  }catch(error){

@@ -6,7 +6,8 @@ const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8'
 test('Home uses My Space as its only top chrome and hides the sitewide promo ribbon', () => {
   const home=read('components/holistic-house-home.tsx')
   const banner=read('components/sitewide-antistress-banner.tsx')
-  assert.match(home, /<ProfileHubTabs locale=\{locale\} publicEntry \/>/)
+  assert.match(home, /<HomeDialogueEntry locale=\{locale\} \/>/)
+  assert.doesNotMatch(home, /<ProfileHubTabs locale=\{locale\} publicEntry \/>/)
   assert.doesNotMatch(home, /<header className="house-header house-header--services">/)
   assert.match(banner, /pathname === "\/" \|\|/)
   assert.match(banner, /\(\?:ru\|en\|es\)/)
@@ -14,6 +15,10 @@ test('Home uses My Space as its only top chrome and hides the sitewide promo rib
 
 test('Home and Profile share real search/menu, compact locale switch and working public links', () => {
   const hub=read('components/app/profile-hub-tabs.jsx')
+  const first=read('components/home-dialogue-entry.tsx')
+  assert.match(first, /<SiteNavigation locale=\{locale\} compact \/>/)
+  assert.match(first, /data-home-language-switch/)
+  assert.match(first, /data-home-intent-option="goal"/)
   const nav=read('components/site-navigation.tsx')
   const workspace=read('components/app/app-workspace.jsx')
   assert.match(hub, /data-profile-language-switch/)
@@ -34,19 +39,43 @@ test('Both profile presentations keep true 16:9 without the extra blue caption r
   assert.match(css, /\[data-profile-mode-switch\]/)
 })
 
-test('Home, Profile and Work render one real My Space header row, not two', () => {
-  const hub=read('components/app/profile-hub-tabs.jsx')
+test('Work mirrors Life and Home visual design without duplicate primary navigation', () => {
   const work=read('components/practice-work-profile-intro.jsx')
-  const css=read('components/app/profile-hub-tabs.module.css')
-  for(const source of [hub,work]) {
-    assert.match(source,/className=\{styles\.headingTitle\}/)
-    assert.match(source,/className=\{styles\.profileHeadingActions\}/)
-    assert.match(source,/className=\{styles\.titleCompact\}>/)
-    assert.match(source,/My Space/)
-    assert.doesNotMatch(source,/<p className=\{styles\.eyebrow\}>/)
-  }
-  assert.match(css,/\.hub \.heading\{flex-wrap:nowrap;/)
-  assert.match(css,/\.hub \.heading h2\{font-size:clamp\(16px,4\.5vw,20px\)/)
-  assert.match(css,/:global\(\[data-site-search-trigger\]\)/)
-  assert.match(css,/:global\(\.site-main-menu-trigger\)/)
+  const css=read('components/practice-work-profile-intro.module.css')
+  const screen=read('components/practice-showcase.jsx')
+  assert.match(work,/Holistic House/)
+  assert.match(work,/data-practice-workspace-heading/)
+  assert.match(work,/data-work-home-link/)
+  assert.match(work,/data-profile-mode-switch/)
+  assert.match(work,/data-profile-language-switch/)
+  assert.match(work,/data-profile-chrome-navigation/)
+  assert.match(work,/<SiteNavigation locale=\{language\} compact \/>/)
+  assert.match(work,/data-work-profile-scenic-hero/)
+  assert.match(work,/data-work-primary-grid/)
+  assert.match(work,/data-work-primary-action="services"/)
+  assert.match(work,/data-work-card="reports"/)
+  assert.match(work,/showVideo&&<div id="work-profile-presentation"/)
+  assert.doesNotMatch(work,/TABS\.map|ACTIONS\.map/)
+  assert.match(css,/\.workGrid\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
+  assert.match(css,/@media\(max-width:360px\)/)
+  assert.match(screen,/data-work-create-tools/)
+  assert.match(screen,/data-work-create-buttons/)
+  assert.match(screen,/data-work-account-actions/)
+  assert.match(screen,/FEATURED_CREATIONS\.map/)
+  assert.match(screen,/CREATE\.filter/)
+  assert.match(work,/className=\{styles\.activeCount\}/)
+  assert.match(screen,/data-work-more-tools/)
+  assert.match(screen,/activeCount=\{metric\} requestCount=\{requestMetric\}/)
+  assert.match(screen,/reports:root \+ '\?panel=express-reports'/)
+  assert.match(screen,/onClickCapture=\{interceptGuestWorkLink\}/)
+  assert.match(screen,/data-work-settings/)
 });
+
+test('Work does not crash SSR when expandable practitioner tools render', () => {
+  const screen=read('components/practice-showcase.jsx')
+  const lucideImports=screen.match(/import\s*\{([\s\S]*?)\}\s*from 'lucide-react'/)?.[1] || ''
+  assert.match(screen, /<BriefcaseBusiness\s+size=/)
+  assert.match(lucideImports, /\bBriefcaseBusiness\b/, 'missing lucide icon caused /en/practice HTTP 500')
+  assert.match(screen, /data-work-more-tools/)
+  assert.match(screen, /data-work-create-tools/)
+})

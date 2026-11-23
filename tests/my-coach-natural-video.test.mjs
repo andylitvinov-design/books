@@ -1,0 +1,103 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import {readFileSync} from 'node:fs'
+import {spawnSync} from 'node:child_process'
+import {coachNaturalTake,coachNaturalVideoPath,coachNaturalFilename} from '../lib/coaching/coach-natural-motion.mjs'
+const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
+
+test('all four coaches have two unique real MP4 take routes; speaking follows meaning',()=>{
+ for(const id of ['mira','max','sofia','alex']){
+  assert.equal(coachNaturalVideoPath(id,'idle'),'/images/holistic-house/my-coach-motion/'+id+'-natural-calm-v1.mp4')
+  assert.equal(coachNaturalVideoPath(id,'listening'),'/images/holistic-house/my-coach-motion/'+id+'-natural-attentive-v1.mp4')
+  assert.equal(coachNaturalVideoPath(id,'speaking','empathy'),'/images/holistic-house/my-coach-motion/'+id+'-natural-attentive-v1.mp4')
+  assert.equal(coachNaturalVideoPath(id,'speaking','insight'),'/images/holistic-house/my-coach-motion/'+id+'-natural-calm-v1.mp4')
+ }
+ assert.equal(coachNaturalVideoPath('merlin'),null)
+ assert.equal(coachNaturalVideoPath('harry'),null)
+ assert.equal(coachNaturalVideoPath('unknown'),null)
+ assert.equal(coachNaturalTake('idle','empathy'),'calm')
+})
+test('build filenames and every browser media path use the exact same asset',()=>{
+ const build=source('scripts/prepare-my-coach-natural-mp4.mjs')
+ assert.match(build,/coachNaturalFilename\(persona,take\)/)
+ assert.doesNotMatch(build,/name\+'-natural-v1\\.mp4'/)
+ for(const personaId of ['mira','sofia','max','alex']){
+  for(const take of ['calm','attentive']){
+   const expected=personaId+'-natural-'+take+'-v1.mp4'
+   const actual=coachNaturalFilename(personaId,take)
+   assert.equal(actual,expected)
+   assert.equal(coachNaturalVideoPath(personaId,take==='attentive'?'listening':'idle').split('/').at(-1),expected)
+  }
+ }
+ assert.equal(coachNaturalFilename('harry','calm'),null)
+ assert.equal(coachNaturalFilename('mira','unknown'),null)
+})
+test('mounted player uses only natural owner-generated MP4, never the rejected face-warp loops',()=>{
+ const player=source('components/my-coach-motion-media.jsx')
+ const faceCss=source('components/app/coaching-avatar.module.css')
+ assert.match(player,/coachNaturalVideoPath\(personaId,state,visualScene\)/)
+ assert.doesNotMatch(player,/greeting-real-v3|MEDIA_ROOT\+personaId\+'-'\+clip\+'\.mp4'/)
+ assert.doesNotMatch(player,/resource2\.heygen|https?:\/\//)
+ assert.match(player,/muted loop playsInline autoPlay/)
+ assert.match(player,/data-coach-natural-performance=/)
+ assert.match(faceCss,/\.frame\[data-photo-persona\] \.illustration\{display:none!important\}/)
+})
+test('existing production build mirrors local silent H264, never calls video provider in user sessions',()=>{
+ const build=source('scripts/prepare-my-coach-natural-mp4.mjs')
+ const pkg=JSON.parse(source('package.json'))
+ assert.match(pkg.scripts.prebuild,/node scripts\/prepare-my-coach-natural-mp4\.mjs/)
+ assert.equal((build.match(/'(mira|sofia|max|alex)-(calm|attentive)':'01a1/g)||[]).length,8)
+ assert.match(build,/VERCEL_ENV==='production'/)
+ assert.match(build,/12000000/)
+ assert.match(build,/900000/)
+ assert.match(build,/-movflags','\+faststart'/)
+ assert.match(build,/resource2\.heygen\.ai/)
+ assert.match(build,/HH_COACH_NATURAL_MP4_STATIC_FALLBACK/)
+ const proc=spawnSync(process.execPath,['scripts/prepare-my-coach-natural-mp4.mjs'],{
+   cwd:new URL('../',import.meta.url),encoding:'utf8',timeout:8000,
+   env:{...process.env,VERCEL_ENV:'preview',HH_COACH_NATURAL_BUILD:'0'}
+ })
+ assert.equal(proc.status,0,proc.stderr)
+ assert.match(proc.stdout,/SKIP_NON_PROD/)
+})
+
+test('coach video can expand to the full hero width while typed replies restore without resetting the live session',()=>{
+ const dialogue=source('components/my-coach-live-dialogue.jsx')
+ const portraitCss=source('components/my-coach-live-dialogue.module.css')
+ assert.match(dialogue,/const \[viewExpanded,setViewExpanded\]=useState\(false\)/)
+ assert.match(dialogue,/data-coach-view-expanded=\{viewExpanded\?'true':'false'\}/)
+ assert.match(dialogue,/data-coach-view-toggle/)
+ assert.match(dialogue,/aria-pressed=\{viewExpanded\}/)
+ assert.match(dialogue,/setViewExpanded\(value=>!value\)/)
+ assert.match(dialogue,/if\(viewExpanded\)\{\s*setViewExpanded\(false\)/)
+ assert.match(dialogue,/window\.requestAnimationFrame\(\(\)=>composerRef\.current\?\.focus\(\)\)/)
+ assert.match(dialogue,/<MyCoachMotionMedia personaId=\{personaId\}/)
+ assert.match(portraitCss,/\.root\[data-coach-view-expanded='true'\] \.sessionPortrait :global\(\[data-coach-motion-context='session'\]\)/)
+ assert.match(portraitCss,/inset:0;width:100%;height:100%;max-width:none/)
+ assert.match(portraitCss,/\.root\[data-coach-view-expanded='true'\] \.sessionPortrait\[data-persona\]\{\s*background-image:none!important/)
+ assert.match(portraitCss,/\.root\[data-coach-view-expanded='true'\] \.textComposer\{display:none!important\}/)
+ assert.match(portraitCss,/\.root\[data-coach-view-expanded='true'\] \.sessionHeroShade\{/)
+})
+
+test('Samir uses three first-party MP4 reactions without lip-sync or inference',async()=>{
+ const {samirMotionTake,samirMotionPath}=await import('../lib/coaching/samir-motion.mjs')
+ const motion=source('components/my-coach-motion-media.jsx')
+ const layered=source('components/samir-motion-videos.jsx')
+ const build=source('scripts/prepare-samir-motion-mp4.mjs')
+ assert.equal(samirMotionTake('greeting','welcome'),'idle')
+ assert.equal(samirMotionTake('thinking','calm'),'listening')
+ assert.equal(samirMotionTake('listening','encourage'),'listening')
+ assert.equal(samirMotionTake('speaking','empathy'),'idle')
+ assert.equal(samirMotionTake('speaking','action'),'encourage')
+ assert.equal(samirMotionPath('encourage'),
+  '/images/holistic-house/my-coach-motion/genie-natural-encourage-v2.mp4')
+ assert.match(motion,/samirMotionTake\(state,visualScene\)/)
+ assert.match(motion,/<SamirMotionVideos take=\{samirTake\}/)
+ assert.match(layered,/muted playsInline loop/)
+ assert.doesNotMatch(layered,/heygen\.ai|fetch\(|speechSynthesis/)
+ assert.match(build,/HH_SAMIR_MOTION/)
+ const approved=readFileSync(new URL('../public/images/holistic-house/my-coach-motion/genie-natural-encourage-v2.mp4',import.meta.url))
+ assert.equal(approved.toString('ascii',4,8),'ftyp')
+ assert.ok(approved.includes(Buffer.from('avc1')))
+ assert.equal(approved.includes(Buffer.from('soun')),false)
+})

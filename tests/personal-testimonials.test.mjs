@@ -10,9 +10,12 @@ test("homepage keeps four matching-audio videos; Services uses four and preserve
   const services = read("app", "[locale]", "services", "page.tsx");
   const extra = read("components", "services-studio-extras.tsx");
   const testimonials = read("components", "personal-testimonials.tsx");
-  assert.match(home, /<PersonalTestimonials locale=\{locale\} variant="home"/);
+  const expanded=read("components","home-expanded-catalog.tsx");
+  assert.match(expanded,/<PersonalTestimonials locale=\{locale\} variant="home"/);
+  assert.match(home,/<HomeDeferredSections locale=\{locale\}/);
+  assert.doesNotMatch(home,/<PersonalTestimonials/);
   assert.match(services, /<PersonalTestimonials locale=\{locale\} variant="services"/);
-  assert.ok(home.indexOf("PersonalTestimonials locale") < home.indexOf('className="service-home-about"'));
+  assert.ok(expanded.indexOf("PersonalTestimonials locale")>expanded.indexOf("HomeFeaturedWorkspace"));
   assert.ok(services.indexOf("PersonalTestimonials locale") > services.indexOf('<ServicesIntroMedia'));
   // Conversion-first Services intentionally presents the booking action in the first screen.
   // Genuine customer stories follow the offers + intro media rather than delaying the booking CTA.
@@ -151,7 +154,16 @@ test("the testimonial gallery uses real ID-matched archived frames instead of de
   assert.doesNotMatch(component, /homepage-constellations\.svg|homepage-guided-imagery\.svg/);
   assert.match(component, /data-testimonial-video-id=\{item\.id\}/);
   assert.match(player, /fallbackPoster\?: string/);
-  assert.match(player, /onClick=\{\(\) => \{ setShowRecovery\(false\); setPlaying\(true\); \}\}/);
+  // The legacy direct click and the verified-English handler are both real
+  // user-initiated playback; implementation syntax alone is not a regression.
+  const legacyClick = player.includes('onClick={() => { setShowRecovery(false); setPlaying(true); }}');
+  const verifiedEnglishClick = player.includes('onClick={playSelected}') &&
+    player.includes('const playSelected=()=>{') &&
+    player.includes('if(!englishYoutubeOnly){setPlaying(true);return;}') &&
+    player.includes('resolveVerifiedEnglishYouTubeId(video.heygenId,controller.signal)') &&
+    player.includes('if(id){setVerifiedEnglishYoutubeId(id);setYoutubeLookup("idle");setPlaying(true);}');
+  assert.ok(legacyClick || verifiedEnglishClick,
+    'video must retain a real click-to-play path, with a verified EN YouTube ID when required');
   assert.match(player, /youtube-nocookie\.com\/embed\/\$\{playbackYouTubeId\}/);
   assert.match(player, /href=\{watchUrl\}/);
   // Two older RU About clips remain in the catalog without a wrong-person thumbnail.

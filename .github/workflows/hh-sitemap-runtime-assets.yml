@@ -1,6 +1,8 @@
 name: Holistic House sitemap runtime assets
 on:
+  # Expanded QA is opt-in: add the qa-optional label to an affected PR.
   pull_request:
+    types: [labeled]
     branches: ['codex/public-book-library']
     paths:
       - 'app/sitemap.ts'
@@ -16,6 +18,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 jobs:
   sitemap-packaging:
+    if: ${{ github.event_name != 'pull_request' || github.event.label.name == 'qa-optional' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

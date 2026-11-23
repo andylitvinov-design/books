@@ -20,7 +20,7 @@ export async function GET(request){
  // existing verified-owner bridge and return to this exact OAuth start route.
  // A login redirect never grants YouTube access or creates a video.
  if(!await requireAdminRequest())return NextResponse.redirect(
-   target==='en'?'https://holistichouse.vercel.app/admin/login':
+   target==='en'?'https://holistichouse.vercel.app/admin/login?destination=youtubeConnectEn':
      'https://holistichouse.vercel.app/admin/login?destination=youtubeConnect',
    {status:303,headers:HEADERS})
  if(!ownerVideoOauthConfigured())return new Response(

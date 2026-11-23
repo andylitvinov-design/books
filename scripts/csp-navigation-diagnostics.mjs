@@ -63,11 +63,16 @@ export function classifyCspNavigationCancellation(error, { engine, readiness, or
     // WebKit rapid history: old private Tests initiated this exact home RSC
     // fetch while forwarding to the public home, then cancelled before pagehide.
     // Never classify arbitrary CSP errors or new-document requests as teardown.
-    const englishIntroCancel = englishIntroTeardown && error.phase === 'forward-to-public'
+    // Only an old public home document's first-party metadata request may
+    // be classified across the two proven history boundaries; all real CSP
+    // violations, new-document errors and loaded journeys remain fatal.
+    const englishIntroDestination = error.phase === 'forward-to-public'
+      ? '/en/about' : error.phase === 'back-to-private' ? '/en/client/tests' : null;
+    const englishIntroCancel = englishIntroTeardown && englishIntroDestination !== null
       && source.url === new URL('/', origin).href
       && navigation.documentClass === 'public-video'
       && navigation.navigationType === 'traverse'
-      && navigation.destination === new URL('/en/about', origin).href
+      && navigation.destination === new URL(englishIntroDestination, origin).href
       && lifecycle.some(event => event.type === 'pageshow'
         && event.documentProbe === source.documentProbe
         && event.documentClass === 'public-video'
@@ -118,7 +123,8 @@ export function classifyCspNavigationCancellation(error, { engine, readiness, or
         || nextInitTime < error.time || nextInitTime - error.time > 200
         || !lifecycle.some(event => event.type === 'domcontentloaded'
           && event.documentProbe === nextDocument.documentProbe
-          && event.documentClass === 'public-video' && event.time >= nextDocument.time)
+          && event.documentClass === (error.phase === 'back-to-private' ? 'private' : 'public-video')
+          && event.time >= nextDocument.time)
         || lifecycle.some(event => event.type === 'policy-violation'
           && event.documentProbe === source.documentProbe
           && event.time >= source.time && event.time <= nextDocument.time)) continue;

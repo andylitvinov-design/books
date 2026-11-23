@@ -23,3 +23,17 @@ Node unit and targeted tests; lint, typecheck, build; macOS WebKit video/audio/e
 ## AI LIVE verification (separate from local script acceptance)
 - Require exact-HEAD tests plus real authenticated provider request before claiming free AI LIVE. Vercel BRIEF + PRODUCTION_APPROVED flags must remain OFF until confirmed free quota/credentials, privacy and server acceptance. Running with unavailable flags visibly falls back to local authoring.
 - Tests must cover guest local authoring, no pre-consent requests, real 7-segment provider provenance, 401/403/422/429/503/fallback, concurrent edits and cancelled requests, 8 individual local scripts, no duplicate editor, and unchanged WebKit voice/Hypno consent and real MP4 gates.
+
+## Superseding owner design decision · 18 November 2026: compact Therapy Voice
+Owner approved a warmer large-type Voice card based on the provided lotus screenshot, keeping the classical sitewide header and fixed dock. Exact route/state: public Video Studio /en|ru|es/holistic-support/mandala, top Therapy, internal Voice. This is a visual specification, not a screenshot pasted as a static fake UI.
+
+Four real tabs: Meditation / Voice / Practice / My Course. Remove Single practice / 8-session format switch. My Course reuses the eight-day plan plus local on-demand script writer; it is NOT eight finished video therapies. Ready single/course deep-link targets actual new tab. Voice shows only one actual phrase/voice narrator, 3 voices per gender with separate real Listen samples, record/upload my voice, device-voice demo, real free narration CTA, optional settings and edit text. No duplicated script panel or repetitive introduction. EN/RU/ES controls at 320/354/390/430 and 44px minimum tap sizes; warm ivory #FBF5E9, card #FFFCF7, text #143D3A, emerald #087E61.
+
+Short **explicit and revocable** cloud provider consent remains required before any selected-text POST (details are expandable), even though long “I agree” copy is removed. Existing provider constraints, health/test-text privacy, voice generation, WAV mixing and attachment unchanged. No unapproved costs. Visual overlay, provider sound, exact protected CI and live alias/SHA are separately required acceptance evidence.
+
+## Owner follow-up · 18 Nov 2026, ~08:01 Toronto: two navigation CTAs on Voice
+At the **bottom** of Therapy → Voice after the real voice preview and optional editing, show only two full-width, thumb-sized actions (at least 48px high):
+1. EN: Narrate meditation (20 EXP); RU: Озвучить медитацию (20 EXP); ES: Narrar meditación (20 EXP). **Navigate to Therapy subtab 3 Practice**, with no automatic TTS, credit/EXP debit or provider request.
+2. EN: Create video without narration; RU: Создать видео без озвучки; ES: Crear vídeo sin narración. **Navigate to Therapy subtab 4 My Course**, preserving eight-topic plan + on-demand drafts; no automatic completed video or spend.
+
+Voice remains a compact voice choice/preview step. The former separate cloud free-narration consent/CTA, duplicated own-recording section and RU/EN Voice Studio expander are not shown in this Therapy subtab; the original cloud consented creation remains in its existing other editor. Server-side approved-text validation, no-paid-fallback and privacy are unchanged. Menu navigation must be actual state changes, scroll back to four tabs on iPhone and never silently trigger paid rendering. 320/354/390/430, EN/RU/ES and physical iPhone/real WebKit are acceptance checks; no static mock is proof.

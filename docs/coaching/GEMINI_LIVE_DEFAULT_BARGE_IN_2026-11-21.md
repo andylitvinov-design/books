@@ -1,0 +1,20 @@
+# My Coach — default Gemini Live and full-duplex interruption
+Date: 2026-11-21. Owner: Holistic House. Affects all configured My Coach personas and RU/EN/ES interfaces.
+
+## User experience
+1. On entering a signed-in My Coach conversation, the primary selected engine is `gemini_live_free` if the authenticated /engines capabilities check reports it enabled. If not, fall back to the existing Groq selector (never Paid Gemini). A manually changed engine must not be overwritten when capabilities arrive.
+2. The user sees the Free-tier provider/training-use disclosure before the microphone starts. Tapping the visible Play button affirmatively consents for this session; no additional modal/checkbox is needed. Mounting the page / loading capabilities does NOT call Live token or microphone APIs. Ending, navigating, changing persona/voice or backgrounding closes the microphone and socket.
+3. Only the browser streams captured 16 kHz PCM into a single ephemeral-token Gemini Live WebSocket. Playback uses 24 kHz PCM and the same unlocked WebAudio context; no TTS queue, cloud audio proxy, file recording, automatic paid upgrade or implicit vendor retries.
+4. While the model speaks, microphone capture remains active. First plausible user voice sample ducks speaker audio; after three audio frames of sustained input, browser playback is stopped immediately, marked interrupted, and new input continues flowing to Gemini with server-side `START_OF_ACTIVITY_INTERRUPTS`. A brief acoustic echo alone restores full volume without interrupting.
+5. If the user was already speaking when Gemini starts output, suppress that stale output locally even if Google does not emit `serverContent.interrupted`. Buffered old audio remains blocked until its turn-complete/interruption signal. The visible transcript records an interrupted assistant reply as interrupted, not fully heard.
+6. The Google ephemeral token REST body uses `liveConnectConstraints` with server-locked `model`, `config` and voice/activity policy, as documented by Google's official REST example. The subsequent browser WebSocket uses a separate `setup` with nested `generationConfig`. Constrain voice, persona policy, model, RU/EN/ES and automatic VAD on the server; issue one short-lived Free-only token per authenticated Play.
+7. Retain existing rate caps (2/hour/user, 4/day/user, 20/day/global) and 20-minute Live session maximum. A rate-limited session must not silently initiate Paid calls.
+
+## Automated checks
+`node --test tests/coaching-gemini-live-release.test.mjs` including `tests/my-coach-gemini-free-live.test.mjs`: verify token REST shape, socket speech config, PCM, volume duck/restore, quiet speech interruption, playback echo discrimination, early user speech overlap, and no extra consent gates. `node --test tests/coaching-live-voice.test.mjs`: verify default engine, Basic/Pro routing and informed Play consent. Run project production build after merge eligibility.
+
+## Device acceptance before confirming LIVE
+On a *real iPhone running Safari*, using both RU and EN, start each coach using Play. Confirm the Google Free disclosure is present and microphone requires only Play/OS permission; verify speech is audible and user voice is transcribed. While the coach speaks at normal and low playback volume, say `Стоп, у меня другой вопрос` / `Wait, one more thing`: the coach's output should stop within approximately three capture frames (~130 ms at 48 kHz) and process the user's turn without needing a separate mic button. Repeat for a user already speaking as output starts, for an incidental noise/no speech, for a 2-minute session and for changing persona or backgrounding Safari. The model/server may still take additional time to generate its next reply; do not claim a measured response latency without device QA.
+
+## Rollout / safety
+Do not modify Paid Gemini flags or spend approval. Keep Free key encrypted and off the client. Merge through the existing protected CI; verify Vercel production READY SHA and actual device tests before describing this as verified LIVE.

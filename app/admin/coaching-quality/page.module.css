@@ -1,0 +1,14 @@
+.page{max-width:1160px;margin:0 auto;padding:24px 16px 90px;color:var(--hh-light-ink,#143d3a);font-family:inherit}
+.hero{border:1px solid var(--hh-light-border,#e9dfd1);border-radius:22px;background:linear-gradient(125deg,#fff9f3,#fbf5e9);padding:26px 24px;margin-bottom:22px}
+.eyebrow{color:#587a68;font-size:12px;font-weight:700;letter-spacing:.11em}
+.hero h1{font-size:clamp(25px,4vw,38px);line-height:1.13;margin:9px 0 14px;color:var(--hh-light-ink,#143d3a)}
+.hero p{max-width:750px;line-height:1.55;font-size:16px;margin:0 0 15px}
+.meta{display:flex;gap:9px;flex-wrap:wrap}.meta span{font-size:12px;padding:6px 10px;border:1px solid #d9e4da;background:#fff9;border-radius:50px}
+.back{display:inline-block;color:#245944;font-weight:600;margin-top:16px;text-decoration:underline;text-underline-offset:3px}
+.section{padding:22px;background:var(--hh-light-surface,#fffcf7);border:1px solid var(--hh-light-border,#e9dfd1);border-radius:20px;margin-top:18px}
+.section h2{font-size:20px;color:#244d3d;margin:0 0 15px}
+.tableScroll{overflow-x:auto;max-width:100%}.tableScroll table{width:100%;border-collapse:collapse;min-width:800px;text-align:left;font-size:14px}
+.tableScroll th,.tableScroll td{padding:12px 11px;border-bottom:1px solid #e9e8e2;vertical-align:top}.tableScroll thead th{color:#506c5c;font-size:12px;background:var(--hh-light-surface-soft,#f5ecdc)}
+.empty,.note,.warning{font-size:14px;line-height:1.55;color:#616e63}.note{margin:14px 0 0}.warning{border-left:3px solid #b27040;padding:12px 14px;background:#fff9ef}
+.gaps{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}.group{border:1px solid #dfe9df;padding:16px;border-radius:16px;background:var(--hh-light-surface,#fffcf7)}.group h3{font-size:15px;margin:0 0 12px}.group ul{padding:0;margin:0;list-style:none}.group li{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid #e0ebe0;font-size:13px}.group li span{text-align:right}
+@media(max-width:600px){.page{padding:12px 10px 70px}.hero,.section{padding:18px 14px;border-radius:17px}.hero p{font-size:15px}.group li{flex-direction:column;gap:2px}.group li span{text-align:left}}

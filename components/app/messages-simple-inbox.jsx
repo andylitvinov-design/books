@@ -43,7 +43,7 @@ const COPY={
     offline:'Sin conexión — conéctate para leer y enviar mensajes.',botLink:'Copiar enlace de Telegram',botCopied:'Enlace copiado',updated:'Actualizado',noMessage:'Sin descripción',private:'No se envían respuestas web automáticamente por Telegram.',
     more:'Más conversaciones',other:'Otras solicitudes',portal:'Conversaciones privadas del sitio',previewNeedsReply:'Abre el chat para responder',previewHistory:'Abrir historial de mensajes'},
 }
-const channelNames={telegram:'Telegram',whatsapp:'WhatsApp',instagram:'Instagram · @tao.ideas',messenger:'Messenger'}
+const channelNames={telegram:'Telegram · bot',telegram_business:'Telegram · @holistichouse',whatsapp:'WhatsApp',instagram:'Instagram · @tao.ideas',messenger:'Messenger'}
 const validId=value=>/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(String(value||''))
 const fmtDate=(value,locale)=>{
   const ms=Date.parse(value||'')
@@ -133,7 +133,7 @@ export default function MessagesSimpleInbox({
   const rows=useMemo(()=>{
     const crm=(crmState.threads||[]).map(item=>({
       key:'crm:'+item.id,kind:'crm',id:item.id,contactId:item.contactId,lifecycle:item.lifecycle,name:item.name||t.choose,
-      source:channelNames[item.channel]||item.channel,unread:Number(item.unreadCount)||0,
+      source:channelNames[item.transport||item.channel]||item.channel,unread:Number(item.unreadCount)||0,
       needsReply:Boolean(item.needsReply),at:item.lastMessageAt||item.lastInboundAt,
       preview:item.needsReply?t.previewNeedsReply:t.previewHistory,
     }))
@@ -176,6 +176,8 @@ export default function MessagesSimpleInbox({
   useEffect(()=>{if(embedded)onClientsCount?.(rows.length)},[embedded,rows.length,onClientsCount])
   useEffect(()=>{if(embedded)onDetailChange?.(openDetail)},[embedded,openDetail,onDetailChange])
   const unreadCount=rows.reduce((sum,item)=>sum+Math.max(0,item.unread),0)
+  const telegramLeadCount=rows.filter(item=>item.kind==='crm'&&item.lifecycle==='lead'&&
+    item.unread>0&&[channelNames.telegram,channelNames.telegram_business].includes(item.source)).length
   const crmThreadId=selected?.kind==='crm'?selected.id:''
   const directThreadId=selected?.kind==='direct'?selected.id:''
 
@@ -390,6 +392,9 @@ export default function MessagesSimpleInbox({
         {crmEnabled&&(embedded||tab==='requests')&&
           <MessagesLeadMetrics locale={locale} accountId={accountId} requests={requests}
             businessEnquiries={businessEnquiries}/>}
+        {telegramLeadCount>0&&<p className={styles.info} role="status" data-owner-telegram-leads>
+          {locale==='ru'?'Новых лидов Telegram':locale==='es'?'Nuevos clientes de Telegram':'New Telegram leads'}: {telegramLeadCount}
+        </p>}
         <div className={styles.peopleScroll}>
           {tabLoading?<p className={styles.info} role="status">{t.loading}</p>:null}
           {!tabTotal&&!tabLoading&&!sourcesUnavailable?<p className={styles.info}>{tab==='requests'?t.emptyRequests:embedded?t.empty:t.emptyChats}</p>:null}

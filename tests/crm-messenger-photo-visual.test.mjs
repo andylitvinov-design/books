@@ -29,7 +29,12 @@ test('Telegram photo blob previews are allowed only on the two owner messenger r
   for(const path of ['/en/app/videos','/ru/app/videos','/es/app/videos/']) assert.equal(onlyCabinet.test(path),true,path)
   for(const path of ['/','/en','/en/client/123','/en/app/messages','/en/app/portrait']) assert.equal(onlyCabinet.test(path),false,path)
   assert.match(middleware,/directMessageStorageOrigin/)
-  assert.match(middleware,/directMessageStorageOrigin \+ \(\(messengerIntroductionVideo\|\|studioIntroductionVideo\) \? ' https:\/\/resource2\.heygen\.ai' : ''\)/);
+  // Keep messenger attachments private, while the independently scoped studio
+  // music origin is permitted only on the exact EN/RU/ES Mandala editor route.
+  assert.match(middleware,/const studioMusicStorageOrigin = \(\(\) => \{/);
+  assert.match(middleware,/if \(!publicMandalaLocalImages\) return ''/);
+  assert.match(middleware,/directMessageStorageOrigin \+ personalVideoStorage\.media \+ studioMusicStorageOrigin \+ \(\(messengerIntroductionVideo\|\|studioIntroductionVideo\) \? ' https:\/\/resource2\.heygen\.ai' : ''\)/);
+  assert.match(middleware,/personalVideoStorage\.connect \+ studioMusicStorageOrigin \+ externalVideoUploadOrigin/);
   assert.ok(middleware.includes("const messengerIntroductionVideo = /^\\/(en|ru|es)\\/app\\/messages\\/?$/.test(pathname)"));
   assert.ok(middleware.includes("const studioIntroductionVideo = /^\\/(en|ru|es)\\/holistic-support\\/mandala\\/?$/.test(pathname)"));
   assert.doesNotMatch(middleware,/messengerIntroductionEmbed/);

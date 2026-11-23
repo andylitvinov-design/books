@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import {useMemo,useState} from "react";
+import {useEffect,useMemo,useState} from "react";
 import {ArrowRight,BookOpen,Check,ChevronRight,Flower2,GraduationCap,Heart,MessageCircle,RotateCcw,Sparkles,UserRound,Zap} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
 import type {LearningCatalogItem} from "@/components/holistic-support-learning-catalog";
@@ -11,13 +11,14 @@ import styles from "./holistic-study-journey.module.css";
 
 type StepKey="goal"|"format"|"time"|"level"|"support";
 type Answers=Partial<Record<StepKey,string>>;
+type StudyGoal="stress"|"relationships"|"energy"|"growth";
 type Tab="courses"|"programs"|"sessions"|"masters";
 type Question={key:StepKey,title:string,choices:readonly [string,string][]};
-type StudyText={title:string,intro:string,step:string,next:string,ready:string,retry:string,recommended:string,note:string,related:string,all:string,free:string,ask:string,tabs:Record<Tab,string>,questions:readonly Question[],sessions:string,sessionsText:string,masters:string,mastersText:string};
+type StudyText={title:string,intro:string,step:string,stepOf:string,next:string,ready:string,retry:string,recommended:string,note:string,related:string,all:string,free:string,ask:string,tabs:Record<Tab,string>,questions:readonly Question[],sessions:string,sessionsText:string,masters:string,mastersText:string};
 const COPY:Record<PublicLocale,StudyText>={
  ru:{
   title:"Ваш путь обучения",intro:"Ответьте на несколько вопросов, чтобы мы подобрали для вас лучшие курсы.",
-  step:"Шаг",next:"Далее",ready:"Подборка готова",retry:"Пройти заново",
+  step:"Шаг",stepOf:"из",next:"Далее",ready:"Подборка готова",retry:"Пройти заново",
   recommended:"Рекомендовано для вас",note:"Подборка курсов на основе ваших ответов.",
   related:"Близкие варианты: точного совпадения пока нет",all:"Все курсы Академии",free:"Бесплатно",ask:"Уточнить условия",
   tabs:{courses:"Курсы",programs:"Программы",sessions:"Сессии",masters:"Мастера"},
@@ -33,7 +34,7 @@ const COPY:Record<PublicLocale,StudyText>={
  },
  en:{
   title:"Your learning path",intro:"Answer a few questions to find courses that fit you.",
-  step:"Step",next:"Next",ready:"Your selection is ready",retry:"Start again",
+  step:"Step",stepOf:"of",next:"Next",ready:"Your selection is ready",retry:"Start again",
   recommended:"Recommended for you",note:"Published learning options based on your answers.",
   related:"Related options: no exact match is available",all:"All Academy courses",free:"Free",ask:"Ask about conditions",
   tabs:{courses:"Courses",programs:"Programs",sessions:"Sessions",masters:"Teachers"},
@@ -49,7 +50,7 @@ const COPY:Record<PublicLocale,StudyText>={
  },
  es:{
   title:"Tu camino de aprendizaje",intro:"Responde unas preguntas para encontrar cursos adecuados.",
-  step:"Paso",next:"Siguiente",ready:"Tu selección está lista",retry:"Empezar de nuevo",
+  step:"Paso",stepOf:"de",next:"Siguiente",ready:"Tu selección está lista",retry:"Empezar de nuevo",
   recommended:"Recomendado para ti",note:"Cursos publicados según tus respuestas.",
   related:"Opciones relacionadas: no hay coincidencia exacta",all:"Todos los cursos",free:"Gratis",ask:"Consultar condiciones",
   tabs:{courses:"Cursos",programs:"Programas",sessions:"Sesiones",masters:"Maestros"},
@@ -80,13 +81,16 @@ function priceLabel(item:LearningCatalogItem,locale:PublicLocale,t:StudyText):st
 function safeHref(item:LearningCatalogItem,locale:PublicLocale):string{
  return item.id==="reiki-practitioner" ? item.href.replace(/^\/en\//,"/"+locale+"/") : item.href;
 }
-export function HolisticStudyJourney({locale,learningItems}:{locale:PublicLocale;learningItems:LearningCatalogItem[]}){
+export function HolisticStudyJourney({locale,learningItems,defaultGoal,headingLevel=2}:{locale:PublicLocale;learningItems:LearningCatalogItem[];defaultGoal?:StudyGoal;headingLevel?:1|2}){
  const t=COPY[locale];
  const [step,setStep]=useState(0);
- const [answers,setAnswers]=useState<Answers>({});
+ const [answers,setAnswers]=useState<Answers>(defaultGoal?{goal:defaultGoal}:{});
+ const [hydrated,setHydrated]=useState(false);
+ useEffect(()=>setHydrated(true),[]);
  const [finished,setFinished]=useState(false);
  const [tab,setTab]=useState<Tab>("courses");
  const question=t.questions[step], selected=answers[question.key];
+ const Heading=headingLevel===1?"h1":"h2";
  const allItems=useMemo(()=>[opora(locale),...learningItems],[locale,learningItems]);
  const ranked=useMemo(()=>rankPublishedStudyCourses(allItems,answers,tab==="programs"?"programs":"courses"),[allItems,answers,tab]);
  const exact=studyGoalHasDirectMatch(ranked,answers.goal);
@@ -94,31 +98,34 @@ export function HolisticStudyJourney({locale,learningItems}:{locale:PublicLocale
  const answer=(value:string)=>{setAnswers(old=>({...old,[question.key]:value}));setFinished(false);};
  const next=()=>{if(!selected)return;if(step<4)setStep(s=>s+1);else setFinished(true);};
  const reset=()=>{setStep(0);setAnswers({});setFinished(false);setTab("courses");};
- return <div className={styles.root} data-study-personalized-path data-study-step={step+1}>
+ return <div className={styles.root} data-study-personalized-path data-study-step={step+1}
+   data-study-hydrated={hydrated?"true":"false"}
+   data-study-active-goal={answers.goal??"none"}
+   data-study-finished={finished?"true":"false"}>
    <section className={styles.hero} aria-label={t.title}>
     <div className={styles.heroTop}>
      <Image src="/images/holistic-house/reiki-approved-sunrise-v3.webp" alt="" fill sizes="(max-width:600px) 100vw,660px" className={styles.heroPhoto} priority />
      <span className={styles.heroTint} aria-hidden="true" />
      <div className={styles.heroCopy}>
-      <h2>{t.title}</h2><p>{t.intro}</p>
+      <Heading>{t.title}</Heading><p>{t.intro}</p>
       <nav className={styles.progress} aria-label={t.step+" "+(step+1)+" / 5"}>
        {t.questions.map((q,i)=><button key={q.key} type="button" className={styles.progressStep}
          data-active={i===step} data-done={i!==step&&Boolean(answers[q.key])}
-         disabled={i>completed||(i>0&&!answers[t.questions[i-1].key])}
+         disabled={!hydrated||i>completed||(i>0&&!answers[t.questions[i-1].key])}
          aria-label={t.step+" "+(i+1)+": "+q.title} aria-current={i===step?"step":undefined}
          onClick={()=>{setStep(i);setFinished(false);}}><span>{i+1}</span></button>)}
       </nav>
      </div>
     </div>
     <div className={styles.quiz}>
-     <div className={styles.questionRow}><span className={styles.stepLabel}>{t.step} {step+1} / 5</span><h3>{question.title}</h3></div>
+     <div className={styles.questionRow}><span className={styles.stepLabel}>{t.step} {step+1} {t.stepOf} 5</span><h3>{question.title}</h3></div>
      <div className={styles.answerGrid} role="group" aria-label={question.title}>
-      {question.choices.map(([id,label],i)=>{const Icon=step===0?icons[i]:null;return <button key={id} type="button" className={styles.answer} aria-pressed={selected===id} onClick={()=>answer(id)}>
+      {question.choices.map(([id,label],i)=>{const Icon=step===0?icons[i]:null;return <button key={id} type="button" className={styles.answer} aria-pressed={selected===id} disabled={!hydrated} onClick={()=>answer(id)}>
        {Icon?<Icon size={25} strokeWidth={1.8} aria-hidden="true"/>:null}<span>{label}</span>
        {selected===id?<Check className={styles.check} size={15} strokeWidth={3} aria-hidden="true"/>:null}
       </button>;})}
      </div>
-     <button type="button" className={styles.next} onClick={next} disabled={!selected} data-study-next>{step===4?t.ready:t.next}<ArrowRight size={20} aria-hidden="true"/></button>
+     <button type="button" className={styles.next} onClick={next} disabled={!selected||!hydrated} data-study-next>{step===4?t.ready:t.next}<ArrowRight size={20} aria-hidden="true"/></button>
     </div>
    </section>
    <section className={styles.recommendations} aria-labelledby="study-recommended-title">

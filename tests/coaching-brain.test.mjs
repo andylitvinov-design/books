@@ -13,12 +13,15 @@ import {understandCoachingTurn,coachingTurnPrompt} from '../lib/personal-coachin
 // Run the same Director v2 method/persona regression contracts in both
 // focused coaching verification and the existing production prebuild suite.
 import './coach-session-director.test.mjs'
+import './my-coach-session-progress.test.mjs'
 // Reuse this existing trusted coaching prebuild gate; changing package.json
 // would trigger unrelated expensive CI fan-out.
 import './my-coach-dictation.test.mjs'
 import './my-coach-five-turn-flow.test.mjs'
 import './my-coach-low-latency.test.mjs'
 import './my-coach-webcodecs-stream.test.mjs'
+import './my-coach-barge-in.test.mjs'
+import './my-coach-duplex-barge.test.mjs'
 
 const uuid='e620286d-62ac-4efb-87e3-e58baa2c71b5'
 const req=(overrides={})=>({sessionId:uuid,locale:'en',consent:true,
@@ -590,5 +593,6 @@ test('My Coach local unavailable-model path uses semantic Coach Mind instead of 
  assert.match(ui,/stage:offlineReply\.stage\|\|semanticStage/)
  assert.doesNotMatch(ui,/const userCount=turns\.filter/)
  assert.match(ui,/coachingBrainSafety\(input\)\|\|coachingBrainBoundary\(input\)/)
- assert.match(ui,/readiness\.status!=='verified'&&!wisdomRequested/)
+ assert.match(ui,/selectedGeminiEngine\?!geminiEngineReady:readiness\.status!=='verified'/)
+ assert.match(ui,/!selectedGeminiEngine&&await retryCoachModelAfterOutage\(\)/)
 })

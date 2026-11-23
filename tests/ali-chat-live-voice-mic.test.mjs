@@ -1,0 +1,59 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import {readFileSync} from 'node:fs'
+import {coachRecordingMime,coachRecordedSupported,coachRecordingFailureCode} from '../lib/personal-coaching/coach-recorded-turn.mjs'
+
+const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
+test('iOS fallback checks actual microphone, codec and audio path before promising voice',()=>{
+ assert.equal(coachRecordedSupported({}),false)
+ assert.equal(coachRecordedSupported({navigator:{mediaDevices:{getUserMedia(){}}}}),false)
+ const Recorder=class{static isTypeSupported(type){return type==='audio/mp4'}}
+ const fake={navigator:{mediaDevices:{getUserMedia(){}}},MediaRecorder:Recorder,AudioContext:class{}}
+ assert.equal(coachRecordedSupported(fake),true)
+ assert.deepEqual(coachRecordingMime(Recorder),{mime:'audio/mp4',extension:'m4a'})
+ assert.equal(coachRecordingFailureCode(Error('AUDIO_STT_429')),'STT_RATE_LIMIT')
+ assert.equal(coachRecordingFailureCode({name:'NotAllowedError'}),'MIC_PERMISSION')
+})
+test('AI Chat gives one informed voice activation without three onboarding checkboxes',()=>{
+ const chat=read('components/holistic-agent-chat.tsx')
+ const voice=read('components/voice-companion-controls.tsx')
+ const css=read('components/holistic-agent-chat.module.css')
+ for(const id of ['data-hh-conversation-mic','data-hh-ai-voice-consent',
+  'data-hh-ai-voice-disclosure','data-hh-ai-start-voice',
+  'data-hh-ai-stop-voice','data-hh-ai-voice-status'])
+   assert.ok(chat.includes(id),id)
+ assert.match(chat,/onClick=\{\(\)=>\{\s*if\(voice\.conversing\)/)
+ assert.match(chat,/else setVoicePermissionOpen\(true\)/)
+ assert.match(chat,/onClick=\{beginMessengerVoice\}/)
+ assert.match(chat,/voice\.startDialogue\(text=>/)
+ assert.match(chat,/consentOnStart:true/)
+ assert.doesNotMatch(chat,/checked=\{voice\.playbackConsent\}/)
+ assert.doesNotMatch(chat,/checked=\{voice\.sttConsent\}/)
+ assert.doesNotMatch(chat,/recordedSttConsent/)
+ assert.match(chat,/if\(voice\.speaking\)voice\.interruptReply\(\)/)
+ assert.match(css,/\.voiceOnboarding/)
+ assert.match(css,/\.voiceDisclosure/)
+ assert.match(voice,/if\(!enabled\)return false;/)
+ assert.match(voice,/const consentOnStart=options\.consentOnStart===true/)
+ assert.match(voice,/if\(!supported\|\|\(!consentOnStart&&\(!playbackConsent\|\|!sttConsent\)\)\)/)
+ assert.match(voice,/dictate\(receive,consentOnStart\)/)
+ assert.match(voice,/if\(recordedNeeded&&\(!recordedSupported\|\|options\.allowRecorded!==true\)\)/)
+})
+test('client audio is ephemeral; guest and account STT both use existing free provider and quotas',()=>{
+ const route=read('app/api/holistic-support/audio-storyboard/route.js')
+ const capture=read('lib/personal-coaching/coach-recorded-turn.mjs')
+ const chat=read('components/holistic-agent-chat.tsx')
+ assert.match(route,/requireSameOrigin\(request,config\)/)
+ assert.match(route,/HH_AUDIO_STT_FREE_CONFIRMED/)
+ assert.match(route,/HH_FIRST_VIDEO_GROQ_FREE_CONFIRMED/)
+ assert.match(route,/op:"ali-chat-stt-free-user-day"/)
+ assert.match(route,/op:"ali-chat-stt-free-global-day"/)
+ assert.match(route,/op:"my-coach-stt-free-global-day"/)
+ assert.match(route,/op:"audio-stt-free-global-day"/)
+ assert.match(capture,/if\(purpose!=='public'\)body\.set\('purpose'/)
+ assert.match(capture,/body\.set\('consent','yes'\)/)
+ assert.match(capture,/onResult\(answer\)/)
+ assert.match(capture,/for\(const track of stream\.getTracks\(\)\)track\.stop\(\)/)
+ assert.match(chat,/recordedPurpose:authenticated\?'ali_chat':'public'/)
+ assert.doesNotMatch(route,/GEMINI_PAID|STRIPE|PAYMENT/)
+})

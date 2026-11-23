@@ -351,3 +351,45 @@ test('English My Space metadata cancellation needs the exact old-home fetch plus
       stack:diagnostic(url.startsWith('http')?url:origin+url,1500).stack},state),null,url);
   }
 });
+
+test('English My Space on Back-to-private requires observed old home GET and real private Tests document',()=>{
+  const home=origin+'/',privateTests=origin+'/en/client/tests';
+  const life=[
+    {type:'init',time:1000,documentProbe:'home',url:home},
+    {type:'pageshow',time:1331,documentProbe:'home',documentClass:'public-video'},
+    {type:'navigate',time:1354,documentProbe:'home',documentClass:'public-video',
+      sameDocument:false,navigationType:'traverse',destination:privateTests},
+    {type:'pagehide',time:1503,documentProbe:'home'},
+    {type:'init',time:1512,documentProbe:'private',url:privateTests},
+    {type:'domcontentloaded',time:1636,documentProbe:'private',documentClass:'private'},
+  ];
+  const fetches=[{type:'fetch-start',path:'/api/public/english-intro-video',
+    rsc:false,documentProbe:'home',time:1338}];
+  const info={...detail,lifecycle:life,fetchTelemetry:fetches};
+  const error={...diagnostic(origin+'/api/public/english-intro-video',1500),
+    phase:'back-to-private'};
+  assert.equal(classifyCspNavigationCancellation(error,info)?.kind,'webkit-traced-english-intro-teardown');
+  for(const overrides of [
+    {engine:'chromium'},{readiness:'loaded-history'},{fetchTelemetry:[]},
+    {fetchTelemetry:[{...fetches[0],path:'/api/private'}]},
+    {fetchTelemetry:[{...fetches[0],rsc:true}]},
+    {fetchTelemetry:[{...fetches[0],documentProbe:'private'}]},
+    {fetchTelemetry:[{...fetches[0],time:1501}]},
+    {lifecycle:life.filter(e=>e.type!=='pageshow')},
+    {lifecycle:life.filter(e=>e.type!=='pagehide')},
+    {lifecycle:life.filter(e=>e.type!=='domcontentloaded')},
+    {lifecycle:life.map(e=>e.type==='navigate'?{...e,documentClass:'private'}:e)},
+    {lifecycle:life.map(e=>e.type==='navigate'?{...e,navigationType:'push'}:e)},
+    {lifecycle:life.map(e=>e.type==='navigate'?{...e,destination:origin+'/en/about'}:e)},
+    {lifecycle:life.map(e=>e.type==='init'&&e.documentProbe==='home'?{...e,url:origin+'/en/about'}:e)},
+    {lifecycle:life.map(e=>e.type==='domcontentloaded'?{...e,documentClass:'public-video'}:e)},
+    {lifecycle:[...life,{type:'policy-violation',documentProbe:'home',time:1498}]},
+    {lifecycle:[...life,{type:'unhandled-rejection',documentProbe:'home',time:1498}]},
+  ])assert.equal(classifyCspNavigationCancellation(error,{...info,...overrides}),null,
+    'Only proven old-home teardown may be classified');
+  for(const change of [
+    {phase:'forward-to-public'},{time:1353},{time:1450},{time:1504},
+    {stack:diagnostic(origin+'/api/public/english-intro-video?secret=bad',1500).stack},
+    {stack:diagnostic('https://other.test/api/public/english-intro-video',1500).stack},
+  ])assert.equal(classifyCspNavigationCancellation({...error,...change},info),null);
+});

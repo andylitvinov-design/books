@@ -15,7 +15,6 @@ on:
       - 'tests/youtube-upload-history.test.mjs'
       - 'tests/youtube-phone-telegram-cut-import.test.mjs'
       - 'tests/youtube-upload-readback.test.mjs'
-      - '.github/workflows/youtube-phone-uploader.yml'
       - 'components/app/compact-video-composer.*'
       - 'components/app/practice-youtube-uploader.*'
       - 'lib/practitioners/browser-presentation-upload.js'

@@ -144,12 +144,17 @@ try {
     ['/ru/homeopathy', 'homeopathy-intro', 'ru', '0f984780d06948b1e78166e6e553e4e9', 'Q9NvYECKWuc'],
   ]) {
     await navigate(target)
-    if (slot === 'services-intro' && await page.locator('#method-videos').count()) {
-      // Videos are visible by default; old production may still use a closed disclosure.
-      if (await page.locator('#method-videos').getAttribute('open') === null) {
-        await page.locator('#method-videos > summary').click()
-      }
-      await expect(page.locator('#method-videos')).toHaveAttribute('open', '')
+    if (slot === 'services-intro') {
+      // The approved Services page keeps the introduction under an explicit About panel.
+      // Exercise the real user-opened disclosure before validating the actual player.
+      const about = page.locator('[data-services-unified-panel="about"]')
+      await expect(about).toHaveCount(1)
+      await expect.poll(
+        () => page.evaluate(() => history.pushState.toString().includes("__NA")),
+        { timeout: 30000, message: 'Services introduction requires hydrated disclosure' },
+      ).toBe(true)
+      await about.locator(':scope > button[aria-controls="services-unified-about"]').click()
+      await expect(about).toHaveAttribute('data-expanded', 'true')
     }
     const block = page.locator(`[data-video-slot="${slot}"][data-video-locale="${locale}"]`)
     await expect(block).toHaveCount(1)
@@ -168,13 +173,13 @@ try {
     await expect(block.locator('iframe')).toHaveAttribute('data-video-playback', 'youtube')
   }
   let russianPresentationVerified = false
-  for (const home of ['/', '/ru']) {
+  for (const home of ['/?full=1', '/ru?full=1']) {
     await navigate(home)
     // The withdrawn 2026-10-01 intro remains retired; this is a different
     // owner-approved 2026-10-30 presentation, not an old HeyGen fallback.
     await expect(page.locator('[data-video-slot="home-intro"]')).toHaveCount(0)
     const presentation = page.locator('[data-video-slot="home-presentation"]')
-    if (home === '/ru') {
+    if (home.startsWith('/ru')) {
       // A production-domain check may run before this PR is deployed.
       // Local/preview builds MUST show the approved RU presentation.
       if (!live || await presentation.count()) {
@@ -205,7 +210,10 @@ try {
       await expect(presentation).toHaveAttribute('data-video-locale', 'en')
       await expect(presentation.locator('iframe')).toHaveCount(0)
     }
-    await expect(page.locator('[data-personal-testimonials="home"]')).toHaveCount(1)
+    await expect(page.locator('[data-home-dialogue-entry]')).toHaveCount(1)
+    await expect(page.locator('[data-home-intent-form]')).toHaveCount(1)
+    // Testimonial galleries now load only when the visitor explicitly expands
+    // the lower catalogue, never before Ali's main composer is interactive.
   }
   pass(`${live ? 'Production' : 'Local'}: withdrawn intros hidden; EN publication gate checked`)
   if (russianPresentationVerified) {
@@ -217,80 +225,105 @@ try {
   }
 
   // Regressions reported by the owner: the Services videos were buried inside
-  // a collapsed block, while the detailed service pages contained no players.
-  // These checks run against built/served pages in an isolated local environment.
+  // Approved 10x3 Services catalogue: the legacy intro and video gallery remain
+  // available when their informational panels are opened by the visitor.
+  // First-screen Videos is a three-offer shelf, not a duplicate page or hidden checkout.
   if (!live) {
     for (const locale of ['en', 'ru']) {
       await navigate('/' + locale + '/services')
-      const visibleGallery = page.locator('#method-videos')
-      await expect(visibleGallery).toHaveAttribute('open', '')
-      // Services introduction is a sibling of #method-videos after the studio layout revision.
-      // Verify the real poster is present without an eagerly mounted YouTube iframe.
-      const intro = page.locator(`[data-services-meet] [data-video-slot="services-intro"][data-video-locale="${locale}"]`)
+      await expect.poll(
+        () => page.evaluate(() => history.pushState.toString().includes("__NA")),
+        { timeout: 30000, message: 'Services media disclosures require hydrated React' },
+      ).toBe(true)
+      const aboutPanel = page.locator('[data-services-unified-panel="about"]')
+      const galleryPanel = page.locator('[data-services-unified-panel="mytube"]')
+      const intro = aboutPanel.locator('[data-services-meet] [data-video-slot="services-intro"][data-video-locale="' + locale + '"]')
+      const gallery = galleryPanel.locator('#method-videos')
+      await expect(aboutPanel).toHaveCount(1)
+      await expect(galleryPanel).toHaveCount(1)
+      await expect(intro.locator('button.site-video-play')).toBeHidden()
+      await expect(gallery).toBeHidden()
+      await aboutPanel.locator(':scope > button[aria-controls="services-unified-about"]').click()
+      await galleryPanel.locator(':scope > button[aria-controls="services-unified-mytube"]').click()
+      await expect(aboutPanel).toHaveAttribute('data-expanded','true')
+      await expect(galleryPanel).toHaveAttribute('data-expanded','true')
       await expect(intro.locator('button.site-video-play')).toBeVisible()
       await expect(intro.locator('iframe')).toHaveCount(0)
-      // Keep the current production's additional EN method-poster acceptance.
+      await expect(gallery).toBeVisible()
+      await expect(gallery).toHaveAttribute('open', '')
       if (locale === 'en') {
-        await expect(visibleGallery.locator('[data-video-slot="method-hypnotherapy"] .site-video-play')).toBeVisible()
-        await expect(visibleGallery.locator('[data-video-slot="method-constellations"] .site-video-play')).toBeVisible()
+        await expect(gallery.locator('[data-video-slot="method-hypnotherapy"] .site-video-play')).toBeVisible()
+        await expect(gallery.locator('[data-video-slot="method-constellations"] .site-video-play')).toBeVisible()
       }
+      // The original paid service modules remain mounted under the optional
+      // nested details; the new three-offer cards are their primary discovery.
       const offers = page.locator('[data-services-studio-paid] [data-services-studio-card]')
       const expectedPaidOfferIds = ["monthly-support", "alchemy", "hypnotherapy", "constellations", "business", "remote-energy-support"]
       await expect(offers).toHaveCount(expectedPaidOfferIds.length)
       const paidOfferIds = await offers.evaluateAll(cards => cards.map(card => card.getAttribute('data-services-studio-card')))
-      assert.deepEqual(paidOfferIds, expectedPaidOfferIds, 'Services paid catalogue changed: ' + locale)
+      assert.deepEqual(paidOfferIds, expectedPaidOfferIds, 'Original Services paid catalogue changed: ' + locale)
       for (const [id, suffix] of [['alchemy', 'alchemy-of-soul'], ['hypnotherapy', 'hypnotherapy-course']]) {
-        // The offer itself is the matching card, not an obsolete direct-video link.
         const hrefs = await page.locator('[data-services-studio-card="' + id + '"] a[href]')
           .evaluateAll(links => links.map(link => link.getAttribute('href')))
         assert.ok(hrefs.includes('/' + locale + '/services/' + suffix), id + ' route not reachable from Services')
       }
+      // Return to the initial collapsed informational presentation before
+      // checking the REAL phone UI: six upper category links + three video offers.
+      await aboutPanel.locator(':scope > button[aria-controls="services-unified-about"]').click()
+      await galleryPanel.locator(':scope > button[aria-controls="services-unified-mytube"]').click()
       await page.setViewportSize({ width: 390, height: 844 })
-      // The owner-approved mobile Services page deliberately hides the legacy
-      // method-video gallery and intro; desktop above still verifies both.
-      // On phones validate the replacement three-scenario Personal video card
-      // and its real first-party studio destination, not a hidden old player.
       await expect(intro.locator('button.site-video-play')).toBeHidden()
-      await expect(visibleGallery).toBeHidden()
+      await expect(gallery).toBeHidden()
       const videoPanel = page.locator('[data-services-unified-panel="video"]')
-      const actions = videoPanel.locator(':scope > [data-service-card-actions]')
-      await expect(actions).toBeVisible()
-      const controls = actions.locator('[role="group"] > button')
-      await expect(controls).toHaveCount(2)
-      const detailsButton = controls.nth(0)
-      const orderButton = controls.nth(1)
-      await expect(detailsButton).toHaveAttribute('aria-expanded', 'false')
-      await expect(orderButton).toHaveAttribute('aria-expanded', 'false')
-      // The Services redesign replaced the old expandable thumbnail with
-      // two explicit Details / Order actions, retaining the Video Studio link.
-      await expect.poll(
-        () => page.evaluate(() => history.pushState.toString().includes("__NA")),
-        { timeout: 30000, message: 'Services actions must hydrate before click' },
-      ).toBe(true)
-      await expect(videoPanel.locator('[data-assist-video-generation]')).toBeHidden()
-      await detailsButton.click()
-      await expect(detailsButton).toHaveAttribute('aria-expanded', 'true')
-      const details = actions.locator('[data-service-card-details]')
-      await expect(details).toBeVisible()
-      await expect(details.locator('p')).toBeVisible()
-      const studioLink = details.locator('a[href]')
+      await expect(videoPanel).toBeVisible()
+      const variants = videoPanel.locator(':scope > [data-services-three-visible] > [data-service-variant]')
+      await expect(variants).toHaveCount(3)
+      for (const variant of await variants.all()) {
+        await expect(variant).toBeVisible()
+        await expect(variant.locator('[data-service-price]')).toBeVisible()
+        await expect(variant.locator('img')).toBeVisible()
+        const buttons=variant.locator(':scope > [data-service-card-actions] > div[role="group"] > button')
+        await expect(buttons).toHaveCount(2)
+        await expect(buttons.first()).toBeVisible()
+        await expect(buttons.nth(1)).toBeVisible()
+      }
+      const actions = variants.first().locator(':scope > [data-service-card-actions]')
+      const controls = actions.locator(':scope > div[role="group"] > button')
+      const details = controls.first()
+      const order = controls.nth(1)
+      await expect(details).toHaveAttribute('aria-expanded','false')
+      await expect(order).toHaveAttribute('aria-expanded','false')
+      const mobileVideo = videoPanel.locator('[data-assist-video-generation]')
+      await expect(mobileVideo).toBeHidden()
+      await details.click()
+      await expect(details).toHaveAttribute('aria-expanded','true')
+      await expect(order).toHaveAttribute('aria-expanded','false')
+      const description = actions.locator(':scope > [data-service-card-details]')
+      await expect(description).toBeVisible()
+      await expect(description.locator('p')).toBeVisible()
+      const studioLink = description.locator('a[href]')
+      await expect(studioLink).toHaveCount(1)
       await expect(studioLink).toHaveAttribute('href', '/' + locale + '/holistic-support/mandala')
-      const linkBox = await studioLink.boundingBox()
-      assert.ok(linkBox && linkBox.height >= 44, 'Services mobile Video Studio link is finger-sized: ' + locale)
-      await orderButton.click()
-      await expect(orderButton).toHaveAttribute('aria-expanded', 'true')
-      await expect(details).toBeHidden()
-      const order = actions.locator('[data-service-card-order]')
-      await expect(order).toBeVisible()
-      await expect(order.locator('[data-messenger-only-channel]')).toHaveCount(2)
-      await expect(order.locator('[data-messenger-only-channel="telegram"]')).toHaveAttribute('target', '_blank')
-      await expect(order.locator('[data-messenger-only-channel="whatsapp"]')).toHaveAttribute('target', '_blank')
-      await expect(videoPanel.locator('iframe')).toHaveCount(0)
+      const studioLinkBox = await studioLink.boundingBox()
+      assert.ok(studioLinkBox && studioLinkBox.height >= 44, 'Mobile video studio link must be finger-sized: ' + locale)
+      await expect(actions.locator(':scope > [data-service-card-order]')).toBeHidden()
+      await order.click()
+      await expect(details).toHaveAttribute('aria-expanded','false')
+      await expect(order).toHaveAttribute('aria-expanded','true')
+      await expect(description).toBeHidden()
+      const orderRegion = actions.locator(':scope > [data-service-card-order]')
+      await expect(orderRegion).toBeVisible()
+      await expect(orderRegion.locator('[data-messenger-only-channel="whatsapp"]')).toBeVisible()
+      await expect(orderRegion.locator('[data-messenger-only-channel="telegram"]')).toBeVisible()
+      await order.click()
+      await expect(order).toHaveAttribute('aria-expanded','false')
+      await expect(orderRegion).toBeHidden()
+      await expect(mobileVideo.locator('iframe')).toHaveCount(0)
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), 'Services mobile overflow: ' + locale)
       await page.screenshot({ path: `${evidence}/services-${locale}-mobile-video.png`, fullPage: true })
       await page.setViewportSize({ width: 1365, height: 1000 })
     }
-    pass('EN/RU Services galleries are open on load, video links work, and mobile width is safe')
+    pass('EN/RU Services legacy videos play after user disclosure; all 3 mobile video offers preserve Details, Order and links')
 
     const detailRoutes = [
       ['/en/services/alchemy-of-soul', 'alchemy', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],

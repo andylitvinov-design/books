@@ -60,7 +60,7 @@ const copy={
  },
 } as const;
 
-export function VideoCartPayment({locale,paypalEnabled}:{locale:ServiceLocale;paypalEnabled:boolean}) {
+export function VideoCartPayment({locale,paypalEnabled,trackingEnabled=false}:{locale:ServiceLocale;paypalEnabled:boolean;trackingEnabled?:boolean}) {
  const t=copy[locale];
  const [selection,setSelection]=useState<{id:string;brief:string}|null>(null);
  const [open,setOpen]=useState(false);
@@ -69,6 +69,12 @@ export function VideoCartPayment({locale,paypalEnabled}:{locale:ServiceLocale;pa
  const [popupBlocked,setPopupBlocked]=useState(false);
  const [reference,setReference]=useState("");
  const [feedback,setFeedback]=useState("");
+ const [paidTheme,setPaidTheme]=useState("energy");
+ const [paidConsent,setPaidConsent]=useState(false);
+ const [tracking,setTracking]=useState<{id:string;status:string}|null>(null);
+ const [trackingError,setTrackingError]=useState("");
+ const [trackingBusy,setTrackingBusy]=useState(false);
+ const operationIdRef=useRef("");
  const openButton=useRef<HTMLButtonElement|null>(null);
  const closeButton=useRef<HTMLButtonElement|null>(null);
 
@@ -100,6 +106,23 @@ export function VideoCartPayment({locale,paypalEnabled}:{locale:ServiceLocale;pa
  },[open]);
 
  const product=selection?videoCartProduct(selection.id):null;
+ async function registerVideoOrder(){
+   if(!product||!paidConsent||!trackingEnabled||trackingBusy||tracking)return;
+   setTrackingBusy(true);setTrackingError("");
+   if(!operationIdRef.current)operationIdRef.current=window.crypto.randomUUID();
+   try{
+     const response=await fetch("/api/app/video-paid/orders",{
+       method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},
+       body:JSON.stringify({operationId:operationIdRef.current,
+         tier:product.id==="video-extra"?"extra":"pro",theme:paidTheme,locale,aspectRatio:"16:9",
+         fictionalSceneConsent:true}),
+     });
+     const data=await response.json();
+     if(!response.ok)throw Error(data.error||"VIDEO_ORDER_NOT_AVAILABLE");
+     setTracking({id:data.order.id,status:data.order.status});
+   }catch(error){setTrackingError(String((error as Error).message))}
+   finally{setTrackingBusy(false)}
+ }
  if(!product)return null;
  const title=product.title[locale],price="€"+String(product.amountMinor/100);
  const redirect="/api/payments/paypal/video/"+product.id;
@@ -108,6 +131,7 @@ export function VideoCartPayment({locale,paypalEnabled}:{locale:ServiceLocale;pa
    try{window.sessionStorage.removeItem(VIDEO_CART_STORAGE_KEY);}catch{}
    window.history.replaceState(window.history.state,"",window.location.pathname);
    setSelection(null);setOpen(false);setAgreed(false);setFeedback("");setReference("");
+   setTracking(null);setTrackingError("");operationIdRef.current="";
    window.dispatchEvent(new Event(SERVICE_CART_UPDATED_EVENT));
  }
  function startPayPal() {
@@ -138,6 +162,24 @@ export function VideoCartPayment({locale,paypalEnabled}:{locale:ServiceLocale;pa
    </div>:null}
    <div className={styles.total}><strong>{t.price}</strong><b>{price}</b></div>
    <p className={styles.note}>{t.note}</p>
+   {trackingEnabled?<section data-paid-video-order-request style={{marginBlock:10}}>
+    <strong>{locale==="ru"?"Заказ с номером":locale==="es"?"Pedido con número":"Tracked video order"}</strong>
+    <p style={{fontSize:13}}>{locale==="ru"?"Регистрация заказа не списывает деньги. После перевода мастер отдельно проверяет реальный платёж.":locale==="es"?"El pedido no cobra dinero; el pago se verifica aparte.":"Registering does not charge you. Payment is verified separately."}</p>
+    <label style={{display:"block",fontSize:13}}>{locale==="ru"?"Тема":locale==="es"?"Tema":"Theme"}
+     <select value={paidTheme} onChange={e=>{setPaidTheme(e.target.value);setTracking(null);operationIdRef.current="";}}>
+      {["energy","money","relationships","goals","life","health"].map(theme=><option key={theme} value={theme}>{theme}</option>)}
+     </select>
+    </label>
+    <label style={{display:"block",fontSize:13,marginBlock:6}}>
+     <input type="checkbox" checked={paidConsent} onChange={e=>setPaidConsent(e.target.checked)}/>
+     {locale==="ru"?" Согласен только на нейтральные AI-сцены без моих персональных данных, фото, голоса и тестов.":locale==="es"?" Solo escenas ficticias; sin mis fotos, voz, informes ni datos personales.":" Fictional scenes only; no personal notes, photos, voice or test results."}
+    </label>
+    <button type="button" disabled={!paidConsent||trackingBusy||!!tracking}
+      onClick={()=>void registerVideoOrder()}>
+      {trackingBusy?"…":locale==="ru"?"Зарегистрировать заказ":locale==="es"?"Registrar pedido":"Register order"}</button>
+    {tracking?<p role="status" style={{fontSize:12,overflowWrap:"anywhere"}}>ID: {tracking.id} · {tracking.status}</p>:null}
+    {trackingError?<p role="alert" style={{fontSize:12}}>{trackingError}</p>:null}
+   </section>:null}
    <div className={styles.actions}>
      <Link href={"/"+locale+"/holistic-support/mandala"} className={styles.edit}>{t.edit}</Link>
      <button ref={openButton} type="button" data-video-cart-pay onClick={()=>{setOpen(true);setAgreed(false);setFeedback("");}}>

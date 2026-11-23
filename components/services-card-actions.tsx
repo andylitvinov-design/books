@@ -42,11 +42,13 @@ type Props = {
   whatsappUrl?: string;
   className?: string;
   trackingId?: string;
+  telegramUrl?: string;
+  actionTrackingId?: string;
 };
 
 /** One source of truth for the two actions on every public Services card. */
 export function ServicesCardActions({
-  locale, title, description, href, request, option, whatsappUrl, className, trackingId,
+  locale, title, description, href, request, option, whatsappUrl, className, trackingId, telegramUrl, actionTrackingId,
 }: Props) {
   const [expanded, setExpanded] = useState<"details" | "order" | null>(null);
   const id = useId().replace(/:/g, "");
@@ -61,13 +63,13 @@ export function ServicesCardActions({
   return (
     <div className={[styles.root, className].filter(Boolean).join(" ")}
       data-service-card-actions data-service-card-tracking={trackingId} lang={locale}>
-      <div className={styles.controls} role="group" aria-label={title}>
+      <div className={styles.controls} data-service-card-controls role="group" aria-label={title}>
         <button type="button" className={styles.detailsButton}
           aria-expanded={expanded === "details"} aria-controls={id + "-details"}
           onClick={() => toggle("details")}>
           {t.details}<ChevronDown size={16} aria-hidden="true" />
         </button>
-        <button type="button" className={styles.orderButton}
+        <button type="button" className={styles.orderButton} data-assist-best-action={actionTrackingId}
           aria-expanded={expanded === "order"} aria-controls={id + "-order"}
           onClick={() => toggle("order")}>
           {t.order}<ChevronDown size={16} aria-hidden="true" />
@@ -80,9 +82,9 @@ export function ServicesCardActions({
           {t.full}<ArrowRight size={16} aria-hidden="true" />
         </Link>
       </div>
-      <div className={styles.panel} id={id + "-order"} role="region"
+      <div className={[styles.panel, styles.orderPanel].join(" ")} id={id + "-order"} role="region"
         aria-label={t.order + ": " + title} data-service-card-order hidden={expanded !== "order"}>
-        <MandatoryMessengerActions locale={locale} whatsappUrl={messageUrl}
+        <MandatoryMessengerActions locale={locale} whatsappUrl={messageUrl} telegramUrl={telegramUrl}
           compact collapsed={false} label={t.choose} active={expanded==="order"} />
       </div>
     </div>

@@ -36,3 +36,19 @@
 @media(min-width:640px){.hero{min-height:230px;padding:30px}.quickLink{min-height:83px;padding:15px}.course{grid-template-columns:150px minmax(0,1fr);min-height:138px}.courseCopy{padding:17px 30px 15px 20px}}
 @media(max-width:350px){.shell{width:calc(100% - 20px)}.hero{min-height:174px;padding:17px 15px}.hero p{font-size:14px}.quickLink{padding:10px 7px;min-height:77px}.quickLink strong{font-size:13px}.groupHeader{gap:9px}.groupIcon{width:42px;height:42px;flex-basis:42px}.heading h2{font-size:21px}.course{grid-template-columns:minmax(92px,30%) minmax(0,1fr);min-height:151px}.courseCopy{padding:11px 22px 10px 10px}.courseCopy strong{font-size:17px}.description{font-size:13px}.tag{font-size:11px}.action{font-size:13px}}
 @media(prefers-reduced-motion:reduce){.page *{scroll-behavior:auto!important;transition:none!important}}
+
+/* Owner-approved screenshot: on phones the five-step learning path is FIRST.
+   The eight genuine Academy cards, three schools, language links and unified
+   seven-item dock stay intact; desktop retains its existing introductory hero. */
+.mobileJourney{display:none}
+@media (max-width:759px){
+ .shell{display:flex;flex-direction:column}
+ .mobileJourney{display:block;order:0;min-width:0}
+ .hero{display:none}
+ .quickNav{order:1;margin:11px 0 20px}
+ .group{order:2;min-width:0}
+ .footer{order:3}
+ .top{order:4;min-height:42px;margin:12px 3px 0;padding-top:10px;
+   border-top:1px solid #e7dfd2}
+ .brand{font-size:16px}
+}

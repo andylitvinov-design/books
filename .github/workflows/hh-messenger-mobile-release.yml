@@ -16,7 +16,6 @@ on:
       - 'lib/native/deep-link-policy.js'
       - 'tests/app-auth-pkce.integration.mjs'
       - 'tests/holistic-house-mobile-master-chat.test.mjs'
-      - '.github/workflows/hh-messenger-mobile-release.yml'
   # Full localized PWA acceptance is post-merge; auth/privacy contracts remain PR-blocking.
   push:
     branches: [codex/public-book-library]

@@ -26,3 +26,9 @@
 .review .check{flex-direction:row;align-items:flex-start}
 .check input{margin-top:4px;flex:none}.player{width:100%;max-width:100%}
 @media(max-width:500px){.panel{padding:13px}.head{gap:8px}.grid{grid-template-columns:1fr}.tools{align-items:stretch}.tools .primary{width:100%}}
+
+.filters{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 14px}
+.filters input,.filters select{min-width:0;max-width:100%;border:1px solid #cbd8cc;border-radius:10px;padding:9px;color:#183e35;background:white}
+.filters input{flex:1 1 180px}.filters small{color:#62766e}
+.tags{display:flex;flex-wrap:wrap;gap:4px;margin:5px 0}
+.tags small{font-size:.75rem;margin:0;border-radius:8px;padding:3px 6px;background:#e9f6ee;color:#326456}

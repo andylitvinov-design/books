@@ -162,24 +162,24 @@ const directStaticServiceImages = new Set([
 
 function ServiceCard({ offer, locale, index, hidden = false }: { offer: Offer; locale: PublicLocale; index: number; hidden?: boolean }) {
   return (
-    <article className={styles.card} data-services-studio-card={offer.id} hidden={hidden}>
-      <Link href={offer.href} className={styles.photo} tabIndex={-1} aria-hidden="true" prefetch={false}>
+    <article className={styles.card} data-support-uniform-card data-services-studio-card={offer.id} hidden={hidden}>
+      <Link href={offer.href} className={styles.photo} data-support-uniform-photo tabIndex={-1} aria-hidden="true" prefetch={false}>
         {offer.image === "/images/holistic-house/andy-about.png" ? (
           <StaticPortrait src="/images/holistic-house/andy-about.png" alt="" fill
-            sizes="(max-width: 680px) 112px, (max-width: 980px) 165px, 175px" loading={index === 0 ? "eager" : "lazy"} />
+            sizes="(max-width: 680px) 34vw, (max-width: 980px) 165px, 175px" loading={index === 0 ? "eager" : "lazy"} />
         ) : (
           <Image src={offer.image} alt="" fill unoptimized={directStaticServiceImages.has(offer.image)}
-            sizes="(max-width: 680px) 112px, (max-width: 980px) 165px, 175px" loading={index === 0 ? "eager" : "lazy"} />
+            sizes="(max-width: 680px) 34vw, (max-width: 980px) 165px, 175px" loading={index === 0 ? "eager" : "lazy"} />
         )}
       </Link>
-      <div className={styles.cardContent}>
+      <div className={styles.cardContent} data-support-uniform-copy>
         <div className={styles.cardTop}>
           <span className={styles.category}>{offer.category}</span>
-          {offer.isFree ? <span className={styles.freeBadge}>{locale === "ru" ? "БЕСПЛАТНО" : locale === "es" ? "GRATIS" : "FREE"}</span> : null}
+          {offer.isFree ? <span className={styles.freeBadge} data-support-uniform-price>{locale === "ru" ? "БЕСПЛАТНО" : locale === "es" ? "GRATIS" : "FREE"}</span> : null}
         </div>
         <h3><Link href={offer.href} prefetch={false}>{offer.title}</Link></h3>
         <p className={styles.description}>{offer.description}</p>
-        {offer.price ? <p className={styles.price}>{offer.price}</p> : null}
+        {offer.price ? <p className={styles.price} data-support-uniform-price>{offer.price}</p> : null}
       </div>
       <ServicesCardActions locale={locale} title={offer.title} description={offer.details}
         href={offer.href} option={offer.price} trackingId={offer.id} />

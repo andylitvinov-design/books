@@ -82,7 +82,7 @@ test('signed official WhatsApp webhook stores language marker as locale only, ne
   assert.equal(unmarked[0].language,null)
   assert.equal(unmarked[0].diagnosticLocale,null)
 })
-test('free review offers human-first Telegram and consented manual WhatsApp without private fields',()=>{
+test('free review routes Telegram to signed Free Diagnostic bot while keeping manual WhatsApp without private fields',()=>{
   const component=read('components/telegram-diagnostic-entry.tsx')
   const page=read('components/free-entry-landing.tsx')
   const hook=read('lib/crm/messenger-webhook.js')
@@ -92,17 +92,17 @@ test('free review offers human-first Telegram and consented manual WhatsApp with
   assert.match(component,/data-express-review-messenger-choice=\{locale\}/)
   assert.match(component,/data-express-review-channel="telegram"/)
   assert.match(component,/data-express-review-channel="whatsapp-manual"/)
-  assert.match(component,/data-telegram-route="human-business"/)
+  assert.match(component,/data-telegram-route="ali-free-diagnostic-v3"/)
   assert.match(component,/telegramExpressReviewHandoff\(locale\)/)
   assert.match(component,/whatsappExpressReviewHandoff\(locale\)/)
   assert.doesNotMatch(component,/\/api\/public\/telegram-diagnostic|setTelegramUrl|hhreview_|telegramUnavailable|useEffect|fetch\(/)
   for(const locale of ['en','ru','es']){
     const url=new URL(telegramExpressReviewHandoff(locale))
     assert.equal(url.origin,'https://t.me')
-    assert.equal(url.pathname,'/holistichouse')
-    assert.deepEqual([...url.searchParams.keys()],['text'])
-    assert.ok((url.searchParams.get('text')||'').length>20)
-    assert.doesNotMatch(url.searchParams.get('text'),/symptom|diagnos|medical|password|token|\bphone\b/i)
+    assert.equal(url.pathname,'/holistichouse_bot')
+    assert.deepEqual([...url.searchParams.keys()],['start'])
+    assert.equal(url.searchParams.get('start'),'hhreview_'+locale)
+    assert.doesNotMatch(url.href,/symptom|medical|password|token|\\bphone\\b/i)
   }
   assert.match(hook,/whatsappExpressReviewLocale\((?:String\(body\?\?''\)|body)\)/)
   assert.match(hook,/const safeBody=safeString\(body,1200\)/)

@@ -86,8 +86,10 @@ test('CI-only policy changes run the existing Core owner, not two independent fu
   const course=read('hh-course-presets.yml');
   for(const realPath of ["      - 'tests/growth-journey-public.test.mjs'", "      - 'tests/business-consultation-finder.test.mjs'", "      - 'tests/topic-journey-account-scope.test.mjs'"])
     assert.ok(growth.includes(realPath),'Growth still requires real user-facing domain verification for '+realPath);
-  for(const realPath of ["      - 'tests/my-course.test.mjs'", "      - 'lib/billing/**'", "      - 'app/api/app/courses/**'", "      - 'package.json'"])
+  for(const realPath of ["      - 'tests/my-course.test.mjs'", "      - 'lib/billing/**'", "      - 'app/api/app/courses/**'"])
     assert.ok(course.includes(realPath),'Course still requires real private/billing/domain verification for '+realPath);
+  assert.doesNotMatch(course,/^\s*-\s*['"]?package\.json['"]?\s*$/m,
+    'Core owns the proven additive coaching-test prebuild route; Course must not start from package-only fan-out');
   assert.ok(growth.includes('run: node --test '+policy));
   assert.ok(course.includes('run: node --test '+policy));
   assert.doesNotMatch(growth,/continue-on-error:\s*true/);

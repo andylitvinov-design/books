@@ -58,6 +58,18 @@
 
 
 /* Ready has one Free Generate; paid €3/€5 choices stay in Montage Extra. */
+/* A failed native iPhone decoder is not an empty Ready screen.
+   Keep a short, accessible recovery message ABOVE the poster; no modal. */
+.exportFailure{display:grid;gap:7px;min-width:0;margin:0;padding:10px 12px;
+ border:1px solid #e3c7ae;border-radius:14px;background:#fffaf5;color:#604630;
+ font:600 clamp(12px,3.2vw,14px)/1.38 Arial,Helvetica,sans-serif}
+.exportFailure strong{font-weight:800;color:#63411f}
+.exportFailure p{margin:0;overflow-wrap:anywhere;font-weight:500}
+.exportFailure button{display:flex;align-items:center;justify-content:space-between;gap:8px;
+ min-height:44px;padding:8px 12px;border:1px solid #b8d7c6;border-radius:12px;
+ background:#eff7f1;color:#12654d;text-align:left;font:800 13px/1.28 Arial,Helvetica,sans-serif;cursor:pointer}
+.exportFailure button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+
 .generateProgress{display:grid;gap:8px;padding:10px 12px;border:1px solid #bfdfd0;
   border-radius:13px;background:#eaf7f1;color:#155d49;font:700 13px/1.4 Arial,sans-serif}
 .generateProgress progress{width:100%;height:8px;accent-color:#087b61}
@@ -392,3 +404,88 @@
   .checkinResults{grid-template-columns:1fr}
 }
 @media(prefers-reduced-motion:reduce){.checkinNumbers button{transform:none!important}}
+
+
+/* Approved iPhone Ready reference: one 16:9 preview, compact status and two continuation cards.
+   A pending export shares the layout but never claims to be a playable file. */
+.root[data-ready-state="choose"]{gap:10px;padding:clamp(10px,2.6vw,16px)}
+.root[data-ready-state="choose"] .selectedVideo:not([data-video-file="true"]){
+  width:100%;height:auto;min-height:0;max-height:none;aspect-ratio:16/9;
+  border-radius:19px;box-shadow:0 3px 11px rgba(22,58,45,.09)}
+.root[data-ready-state="choose"] .example img{opacity:1;object-fit:cover}
+.root[data-ready-state="choose"] .selectedVideo:not([data-video-file="true"]) .example span{display:none}
+.root[data-ready-state="choose"] .nextTitle{font:750 clamp(21px,5.5vw,26px)/1.16 Georgia,serif;margin:6px 0 0}
+.root[data-ready-state="choose"] .journey{grid-template-columns:minmax(0,1fr);gap:9px}
+.root[data-ready-state="choose"] .journey>button{
+  grid-template-columns:clamp(105px,29vw,180px) minmax(0,1fr) 19px;
+  min-height:86px;padding:8px;gap:11px;border-radius:19px}
+.root[data-ready-state="choose"] .journey>button>svg:nth-child(2){display:none}
+.root[data-ready-state="choose"] .journey .thumbnail{height:74px;border-radius:14px}
+.root[data-ready-state="choose"] .journey strong{font-size:clamp(13px,3.8vw,17px)}
+.root[data-ready-state="choose"] .journey small{font-size:clamp(11px,3.2vw,14px)}
+.root[data-ready-state="choose"] .readyStatus{margin:0}
+.root[data-ready-state="choose"] .readyStatus[data-ready-status-phase="idle"]{background:#f1f3e9;color:#315c49}
+.root[data-ready-state="choose"] .readyStatus[data-ready-status-phase="rendering"],
+.root[data-ready-state="choose"] .readyStatus[data-ready-status-phase="verifying"]{background:#eaf5ef;color:#175f4b}
+.generateProgress{border:0;background:none;padding:0 2px;margin:-6px 0 2px;gap:0}
+.generateProgress progress{display:block;height:5px;border-radius:999px;overflow:hidden}
+.progressQuestionnaire{margin:0;max-width:100%}
+.root[data-ready-state="complete"] > [data-ready-generate-new]{display:flex;align-items:center;justify-content:center;gap:12px;
+  margin:10px 0 2px;width:100%;min-height:53px;padding:11px 17px;
+  border:1px solid #08775c;border-radius:17px;background:linear-gradient(110deg,#178e70,#006a4d);
+  color:#fff;box-shadow:0 3px 11px rgba(22,58,45,.09);cursor:pointer;
+  font:800 clamp(14px,4vw,18px)/1.25 Arial,Helvetica,sans-serif}
+.root[data-ready-state="complete"] > [data-ready-generate-new] strong{flex:1;text-align:center}
+.root[data-ready-state="complete"] > [data-ready-generate-new] svg{flex:none}
+.root[data-ready-state="complete"] > [data-ready-generate-new]:focus-visible{outline:3px solid #176e6e;outline-offset:3px}
+@media(max-width:600px){
+  .root[data-ready-state="complete"] .journey>button,
+  .root[data-ready-state="choose"] .journey>button{
+    grid-template-columns:clamp(90px,31vw,112px) minmax(0,1fr) 19px;
+    min-height:82px;padding:7px;gap:10px}
+  .root[data-ready-state="complete"] .journey .thumbnail,
+  .root[data-ready-state="choose"] .journey .thumbnail{height:69px}
+  .root[data-ready-state="choose"] .selectedVideo:not([data-video-file="true"]){
+    width:100%;height:auto;aspect-ratio:16/9;min-height:0}
+}
+@media(max-width:350px){
+  .root[data-ready-state="complete"] .journey>button,
+  .root[data-ready-state="choose"] .journey>button{
+    grid-template-columns:88px minmax(0,1fr) 17px;gap:7px;min-height:76px}
+  .root[data-ready-state="complete"] .journey .thumbnail,
+  .root[data-ready-state="choose"] .journey .thumbnail{height:64px}
+}
+
+
+/* Approved course flow in existing Ready; wallet reuses existing accessible gate. */
+.courseChoices{display:grid;gap:8px;margin:2px 0 4px}.courseChoices button{display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:9px 12px;border-radius:14px;font:800 clamp(13px,3.7vw,16px)/1.26 system-ui,sans-serif;text-align:center;cursor:pointer}.courseChoices button:disabled{opacity:.5;cursor:not-allowed}.courseFree{border:1px solid #add6c4;background:#e8f7ed;color:#0c745a}.coursePaid{border:1px solid #087f63;background:linear-gradient(115deg,#2aa988,#08775c);color:#fff}.courseChoices p{margin:1px 0 0;color:#65796c;font:500 11px/1.4 system-ui,sans-serif}
+.walletDialog{padding:16px 17px 14px;gap:10px;max-width:450px}.walletDialog .gateClose{margin-bottom:-43px}.walletHeading{display:flex;align-items:center;gap:9px;padding-right:42px;color:#0c7d62}.walletHeading svg{flex:none}.walletHeading h2{margin:0;color:#153f34;font:750 clamp(24px,6vw,29px)/1.2 Georgia,serif}.walletLead{margin:0;color:#587165;font:500 14px/1.38 system-ui,sans-serif}
+.walletPresets{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}.walletPresets button{min-height:47px;padding:6px 3px;border:1px solid #c6ddcf;border-radius:11px;background:white;color:#215b49;font:800 clamp(11px,3.1vw,14px)/1.3 system-ui,sans-serif;cursor:pointer}.walletPresets button:last-child{font-size:11px}.walletPresets button[aria-pressed=true]{border-color:#0c8b6b;background:#ddf4e7;box-shadow:inset 0 -2px #0c8b6b}
+.walletCustom{display:grid;gap:6px;font:750 12px/1.35 system-ui,sans-serif}.walletCustom span{display:flex;align-items:center;gap:6px;min-height:44px;padding:0 11px;border:1px solid #c1dccd;border-radius:11px;background:white}.walletCustom input{flex:1;min-width:0;width:100%;min-height:42px;border:0;background:transparent;color:#19513e;font:700 15px/1.2 system-ui,sans-serif}
+.walletAmount,.walletQuote{display:flex;align-items:center;justify-content:space-between;gap:9px;padding:10px 11px;border-radius:12px;background:#eaf7ed;font:650 12px/1.35 system-ui,sans-serif}.walletAmount strong{color:#08745b;font:800 22px/1.1 Georgia,serif;white-space:nowrap}.walletQuote{margin:0;background:#f8f2e8}.walletQuote strong{max-width:56%;text-align:right;color:#7b623a}
+.walletInfo{display:grid;gap:8px;margin:0;padding:10px;border-radius:12px;background:#fff3e6;color:#6e5842;font:600 12px/1.4 system-ui,sans-serif}.walletInfo p{margin:0}.walletInfo a{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border-radius:11px;background:#0b866a;color:#fff;text-decoration:none}.walletInfo button{min-height:40px;border:1px solid #b9d0bc;border-radius:10px;background:white;color:#1c614e;font-weight:750}
+.walletMethodLabel{color:#2a5d4b;font:750 12px/1.3 system-ui,sans-serif}.walletMethods{display:grid;grid-template-columns:1fr 1fr;gap:7px}.walletMethods button{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:6px;border:1px solid #bed8c8;border-radius:12px;background:white;color:#245b4d;font:750 12px/1.3 system-ui,sans-serif;cursor:pointer}.walletMethods button[aria-pressed=true]{border-color:#087f64;background:#e2f4e8}.walletMethods button:disabled{opacity:.45;cursor:not-allowed}.walletPrivacy{display:flex;align-items:flex-start;gap:6px;margin:0;color:#68796e;font:500 11px/1.38 system-ui,sans-serif}.walletPrivacy svg{flex:none;color:#0a7b62}
+@media(max-width:350px){.walletDialog{padding:12px 10px;gap:8px}.walletPresets{gap:4px}.walletPresets button{font-size:11px;padding:4px 2px}.walletPresets button:last-child{font-size:10px}}
+
+/* Instant personalized preview mirrors one existing Canvas, without recording. */
+.selectedVideo[data-personal-preview="true"]{background:#182d28}
+.selectedVideo[data-personal-preview="true"][data-aspect="portrait"]{
+  width:min(100%,290px);aspect-ratio:9/16;margin-inline:auto}
+.selectedVideo[data-personal-preview="true"][data-aspect="square"]{
+  width:min(100%,420px);aspect-ratio:1/1;margin-inline:auto}
+.selectedVideo [data-ready-sequence-canvas]{
+  display:block;width:100%;height:100%;object-fit:contain;background:#182d28}
+.sequenceControls{display:grid;gap:8px;padding:10px 12px;border:1px solid #d4e7d9;
+  border-radius:13px;background:#f6fbf4}
+.sequenceControls p{margin:0;color:#235845;font:700 13px/1.4 Arial,sans-serif}
+.sequenceControls button{width:100%;min-height:44px;padding:8px 12px;border:1px solid #087c60;
+  border-radius:12px;background:#e4f3e8;color:#126044;font:750 14px/1.25 Arial,sans-serif}
+.sequenceControls input{width:100%;min-height:30px;accent-color:#087c60;touch-action:pan-y}
+.sequenceControls small{font:600 11px/1.25 Arial,sans-serif;color:#5d7264}
+.sequenceControls button:disabled{opacity:.6;cursor:not-allowed}
+
+/* Direct local file actions shown only after verified MP4, never for preview. */
+.localFileActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0}
+.localFileActions>a,.localFileActions>button{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:48px;padding:9px 10px;border:1px solid #b9d8c7;border-radius:12px;background:#ecf6ef;color:#15614c;text-decoration:none;text-align:center;font:750 13px/1.3 Arial,sans-serif;cursor:pointer}
+.localFileActions>a:focus-visible,.localFileActions>button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+@media(max-width:350px){.localFileActions{gap:5px}.localFileActions>a,.localFileActions>button{font-size:12px;padding:8px 6px}}

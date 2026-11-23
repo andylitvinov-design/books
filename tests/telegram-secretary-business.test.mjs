@@ -98,7 +98,8 @@ test('same existing signed business webhook and no direct unconsented model or b
  const pending=f('lib/crm/telegram-business-service.js');
  assert.match(route,/verifyMessengerWebhook\(provider,raw,request.headers\)/);
  assert.match(route,/processTelegramBusinessConversation\(body,config\)/);
- assert.match(route,/processTelegramBusinessSecretary\(body,config\)/);
+ assert.match(route,/processTelegramBusinessSecretary\(body,config,process\.env,\{/);
+ assert.match(route,/allowClarification:telegramBusinessInbox\?\.matched===true/);
  assert.match(route,/hh-tg-secretary-reply/);
  assert.match(server,/HH_CRM_TG_CHAT_AUTOMATION_ENABLED!=='true'/);
  assert.match(server,/assertHolisticBusinessConnection/);
@@ -161,7 +162,7 @@ test('STOP before Business intake, exact signed ingress and RLS not weakened',()
  const sql=f('supabase/migrations/20261113232313_hh_crm_tg_business_secretary_optouts_v1.sql');
  const stop=route.indexOf('gateTelegramBusinessSecretaryOptOut(body,config)');
  const orders=route.indexOf('processTelegramBusinessConversation(body,config)');
- const rec=route.indexOf('processTelegramBusinessSecretary(body,config)');
+ const rec=route.indexOf('processTelegramBusinessSecretary(body,config,process.env,{');
  assert.ok(stop>0&&orders>stop&&rec>orders);
  assert.match(route,/verifyMessengerWebhook\(provider,raw,request.headers\)/);
  assert.match(sender,/holistichouse\.vercel\.app/);
@@ -202,7 +203,7 @@ test('customer Free personal express review draft is acknowledged in the human B
  assert.match(handler,/secretaryStopped\(event,config\)/);
  assert.match(route,/gateTelegramBusinessSecretaryOptOut\(body,config\)/);
  assert.match(route,/hh-tg-secretary-reply/);
- const i=handler.indexOf("if(query.kind!=='safety'&&query.kind!=='free_review')");
+ const i=handler.indexOf("if(query&&query.kind!=='safety'&&query.kind!=='free_review')");
  assert.ok(i>handler.indexOf('assertHolisticBusinessConnection'));
  assert.doesNotMatch(handler,/sendMarketing|sendBroadcast/);
 });
@@ -245,7 +246,7 @@ test('new FAQs do not hijack personal messages, STOP, published named prices or 
  assert.equal(classifyTelegramSecretaryQuery('рейки','ru').kind,'catalog');
 });
 
-test('free-review website always opens the verified HUMAN Telegram account, regardless of bot readiness',()=>{
+test('free-review website starts the consented Ali Telegram bot; manual Telegram Business remains independent',()=>{
  const view=f('components/telegram-diagnostic-entry.tsx');
  const source=f('lib/crm/express-review-channel-handoff.mjs');
  const expected={
@@ -257,18 +258,20 @@ test('free-review website always opens the verified HUMAN Telegram account, rega
   const link=telegramExpressReviewHandoff(locale);
   const uri=new URL(link);
   assert.equal(uri.origin,'https://t.me');
-  assert.equal(uri.pathname,'/holistichouse');
-  assert.deepEqual([...uri.searchParams.keys()],['text']);
-  assert.equal(uri.searchParams.get('text'),draft);
+  assert.equal(uri.pathname,'/holistichouse_bot');
+  assert.deepEqual([...uri.searchParams.keys()],['start']);
+  assert.equal(uri.searchParams.get('start'),'hhreview_'+locale);
   assert.equal(matchTelegramFreeReviewDraft(draft)?.locale,locale);
   assert.ok(view.includes(locale==='ru'?'Написать в Telegram':
      locale==='es'?'Escribir a Andrey por Telegram':'Write on Telegram'));
  }
  assert.equal(telegramExpressReviewHandoff('invalid'),null);
  assert.match(source,/telegramExpressReviewHandoff/);
- assert.match(view,/data-telegram-route="human-business"/);
+ assert.match(view,/data-telegram-route="ali-free-diagnostic-v3"/);
  assert.doesNotMatch(view,/\/api\/public\/telegram-diagnostic|setTelegramUrl|telegramUnavailable|Telegram is not available right now|hhreview_/);
- assert.match(view,/Opening a link doesn't send a request or register it in CRM/);
- assert.match(view,/Переход по ссылке не отправляет сообщение и не создаёт заявку в CRM/);
+ assert.match(view,/Opening Telegram does not send your request/);
+ assert.match(view,/Открытие Telegram не создаёт заявку/);
+ assert.match(view,/secure questionnaire/);
+ assert.match(view,/защищённую анкету/);
  assert.doesNotMatch(view,/HH_CRM_MSG_TELEGRAM_TOKEN|https?:\/\/openrouter\.ai/i);
 });
