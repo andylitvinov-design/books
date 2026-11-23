@@ -510,7 +510,7 @@ background:linear-gradient(180deg,#f5e8d2,#123d36 420px,#103c36);border-radius:0
 .brand{color:#fff9e9;text-decoration:none}.brandIcon{color:#f6db8f;display:grid}
 .brandCopy h1{color:#fff8e7;text-shadow:0 2px 8px #183c29bb;font:700 clamp(21px,5.25vw,32px)/1 Georgia,serif}
 .brandCopy small{color:#f9ead1;text-shadow:0 1px 5px #20402abb}
-.language summary,.siteTools :global(.site-main-menu-trigger),.siteTools :global([data-site-search-trigger]){background:#163c33d9;color:#fff8e9;border:1px solid #e6cd96;box-shadow:0 2px 9px #26382938;min-width:43px;width:43px;height:43px;min-height:43px;border-radius:50%}
+.language summary,.siteTools :global(.site-main-menu-trigger),.siteTools :global([data-site-search-trigger]){background:#163c33d9;color:#fff8e9;border:1px solid #e6cd96;box-shadow:0 2px 9px #26382938;min-width:44px;width:44px;height:44px;min-height:44px;border-radius:50%}
 .language summary{min-width:51px;width:auto;border-radius:999px}
 .hero{min-height:220px;margin:0;padding:0;overflow:visible;border-radius:0;color:#153f33;background:transparent;box-shadow:none}
 .scene{display:none}
@@ -617,3 +617,17 @@ background:linear-gradient(180deg,#f5e8d2,#123d36 420px,#103c36);border-radius:0
 
 /* Keep persona control on the portrait, never on top of the greeting. */
 .heroStory .personaButton{left:-46px;right:auto;top:5px;z-index:4}
+
+/* Keep the approved compact home header keyboard/touch accessible after the
+   Samir visual overrides. Fit the brand in the remaining 320px width, not by
+   shrinking interactive controls below the existing 44px contract. */
+@media(max-width:359px){
+ .root .header{gap:3px;padding-inline:0}
+ .root .headerActions{gap:3px}
+ .root .brand{gap:3px}
+ .root .brandIcon svg{width:18px;height:18px}
+ .root .brandCopy h1{font-size:18px;letter-spacing:-.045em}
+ .root .brandCopy small{font-size:9px;white-space:normal}
+ .root .language summary{min-width:44px;width:44px;padding:0 2px;gap:1px}
+ .root .language summary svg{width:11px;height:11px;flex:none}
+}
