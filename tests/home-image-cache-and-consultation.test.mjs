@@ -1,9 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 const config = readFileSync(new URL("../next.config.ts", import.meta.url), "utf8");
 const dialogue = readFileSync(new URL("../components/home-dialogue-entry.tsx", import.meta.url), "utf8");
+
+test("approved homepage first-screen artwork exists at its cacheable public paths", () => {
+  for (const path of [
+    "public/images/holistic-house/my-coach-motion/max-living.webp",
+    "public/images/holistic-house/ideas-pine-reference.webp",
+    ...["stress", "love", "growth", "energy"].map(name => `public/images/video-goal-art/${name}.webp`),
+  ]) assert.ok(existsSync(new URL("../" + path, import.meta.url)), `Missing homepage image: ${path}`);
+});
 
 test("homepage first-screen photography is CDN/browser cached without HTML or private routes", () => {
   for (const source of [

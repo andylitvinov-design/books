@@ -7394,8 +7394,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       return;
     }
     setMusicWarning("");
-    setActiveWorkspace("editor");setMontagePanel("concept");
-    setShowAdvancedVideo(true);setVideoScenarioOpen(true);setStudioMode("pump");
+    flushSync(()=>{setActiveWorkspace("editor");setMontagePanel("concept");
+      setShowAdvancedVideo(true);setVideoScenarioOpen(true);setStudioMode("pump");});
     window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
       document.querySelector("[data-video-montage-concept]")?.scrollIntoView({
         block:"start",behavior:"smooth"
@@ -7410,8 +7410,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setAttachedAudio({kind:"file",file:entry.file,id:entry.url,nonLoop:true});
     if(suppliedText)setWish(suppliedText);
     setAudioAuto(false);setMusic("none");setMusicWarning("");
-    setActiveWorkspace("editor");setMontagePanel("concept");
-    setShowAdvancedVideo(true);setVideoScenarioOpen(true);setStudioMode("pump");
+    flushSync(()=>{setActiveWorkspace("editor");setMontagePanel("concept");
+      setShowAdvancedVideo(true);setVideoScenarioOpen(true);setStudioMode("pump");});
     setNotice(voiceTranscript
       ?(locale==="ru"?"Голос и расшифровка перенесены. Подходящих кадров недостаточно — выберите их в «Сюжет».":locale==="es"
         ?"Audio y texto conservados. Faltan clips aprobados: elígelos en Guion."
