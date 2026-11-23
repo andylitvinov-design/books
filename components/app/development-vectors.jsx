@@ -7,6 +7,7 @@ import {INNER_VECTOR_ITEMS,OUTER_VECTOR_ITEMS,emptyDevelopmentVectors,
 } from '@/lib/profile/development-vectors.mjs'
 import styles from './development-vectors.module.css'
 import DevelopmentVectorWheel from './development-vector-wheel'
+import {vectorGuidedProgress,firstIncompleteVector,nextIncompleteVector} from '@/lib/profile/development-guided-path.mjs'
 import {promptForDevelopmentVector} from '@/lib/profile/development-vector-prompts.mjs'
 const C={
  en:{title:'Two vectors of development',inner:'Inner · meaning axes',outer:'Outer · life goals',
@@ -27,7 +28,7 @@ const C={
  copy:'Copy',copied:'Copied',coaching:'Talk with an AI coach',plan:'My Life Plan',
  privacy:'These voluntary 0–10 ratings are not psychometric test scores or proof of goal achievement.',
  linked:'Saved goal',help:'Choose 0–10 as it feels to you; leave empty if you prefer.',
- protocol:'You can save a voice-session protocol separately, with consent, then import its inner scores here.'},
+ protocol:'You can save a voice-session protocol separately, with consent, then import its inner scores here.',rated:'rated',guidedComplete:'All eight areas have been rated.',guidedReview:'Review or update a score in self-fill mode.',guidedFinished:'The remaining unanswered areas can be revisited later.',nextMissing:'Next missing area',skipHint:'You can leave this area blank and return later. Missing values are never saved as zero.'},
  ru:{title:'Два вектора развития',inner:'Внутренний · смысловые оси',outer:'Внешний · жизненные цели',
  lead:'Внутренние качества и внешние результаты — разные направления развития.',
  self:'Заполнить самостоятельно',guided:'С вопросами коуча',guide:'По одному вопросу. Цифры выбираете только вы.',
@@ -46,7 +47,7 @@ const C={
  copy:'Копировать',copied:'Скопировано',coaching:'Обсудить с AI-коучем',plan:'Мой план целей',
  privacy:'Оценки 0–10 — личные наблюдения, не результаты тестов и не процент достижения цели.',
  linked:'Сохранённая цель',help:'Оцените от 0 до 10 по своим ощущениям. Можно оставить пустым.',
- protocol:'После голосовой сессии можно отдельно сохранить протокол по согласию и импортировать отсюда оценки осей.'},
+ protocol:'После голосовой сессии можно отдельно сохранить протокол по согласию и импортировать отсюда оценки осей.',rated:'заполнено',guidedComplete:'Все восемь направлений оценены.',guidedReview:'При необходимости измените оценки в самостоятельном режиме.',guidedFinished:'Незаполненные пункты можно дополнить позже.',nextMissing:'Следующий незаполненный',skipHint:'Пункт можно пропустить и вернуться позже. Пустые значения не считаются нулём.'},
  es:{title:'Dos vectores de desarrollo',inner:'Interior · ejes de sentido',outer:'Exterior · metas de vida',
  lead:'Las cualidades internas y los resultados externos son dimensiones distintas.',
  self:'Completar por mi cuenta',guided:'Preguntas guiadas',guide:'Una pregunta a la vez. Solo tú eliges las puntuaciones.',
@@ -65,7 +66,7 @@ const C={
  copy:'Copiar',copied:'Copiado',coaching:'Hablar con un coach IA',plan:'Mis metas',
  privacy:'Valoraciones personales 0–10, no resultados de tests ni progreso demostrado.',
  linked:'Meta guardada',help:'Elige de 0 a 10 como lo sientes. Puedes dejarlo vacío.',
- protocol:'Puedes guardar un protocolo de voz con consentimiento e importar aquí los valores.'}
+ protocol:'Puedes guardar un protocolo de voz con consentimiento e importar aquí los valores.',rated:'evaluados',guidedComplete:'Has evaluado los ocho ámbitos.',guidedReview:'Puedes revisar o actualizar tus valores en el modo individual.',guidedFinished:'Puedes completar las áreas pendientes más tarde.',nextMissing:'Siguiente área pendiente',skipHint:'Puedes omitir este ámbito y regresar más tarde. Un valor vacío no es cero.'}
 }
 const options=Array.from({length:11},(_,n)=>String(n))
 export default function DevelopmentVectors({locale='en'}){
@@ -98,6 +99,17 @@ export default function DevelopmentVectors({locale='en'}){
  },[lang])
  useEffect(()=>{void load()},[load])
  const items=track==='inner'?INNER_VECTOR_ITEMS:OUTER_VECTOR_ITEMS
+ const guidedProgress=vectorGuidedProgress(items,draft[track].ratings)
+ const guidedComplete=guidedProgress.total===8&&guidedProgress.complete===8
+ const resumeGuided=()=>{
+  const first=firstIncompleteVector(items,draft[track].ratings)
+  setIndex(first??0);setGuided(true);setNotice('');setError('')
+ }
+ const nextGuided=()=>{
+  const next=nextIncompleteVector(items,draft[track].ratings,index)
+  if(next===null){setGuided(false);setNotice(t.guidedFinished)}
+  else setIndex(next)
+ }
  const update=(id,field,val)=>{
   setDraft(old=>({...old,[track]:{...old[track],ratings:{...old[track].ratings,
     [id]:{...(old[track].ratings[id]||{current:'',desired:''}),[field]:val,source:'self'}}}}))
@@ -180,21 +192,31 @@ export default function DevelopmentVectors({locale='en'}){
   {state==='ready'?<>
    <div className={styles.tabs} role="tablist" aria-label={t.title}>
     {['inner','outer'].map(key=><button type="button" key={key}
-     role="tab" aria-selected={track===key} onClick={()=>{setTrack(key);setIndex(0);setShare('')}}>
+     role="tab" aria-selected={track===key} onClick={()=>{setTrack(key);setIndex(firstIncompleteVector(key==='inner'?INNER_VECTOR_ITEMS:OUTER_VECTOR_ITEMS,draft[key].ratings)??0);setShare('')}}>
       {key==='inner'?t.inner:t.outer}</button>)}
    </div>
    <nav className={styles.modes} aria-label={t.title}>
     <button type="button" aria-pressed={!guided} onClick={()=>setGuided(false)}>{t.self}</button>
-    <button type="button" aria-pressed={guided} onClick={()=>setGuided(true)}>{t.guided}</button>
+    <button type="button" aria-pressed={guided} onClick={resumeGuided}>{t.guided}</button>
    </nav>
    <p className={styles.help}>{guided?t.guide:t.help}</p>
    <DevelopmentVectorWheel items={items} ratings={draft[track].ratings}
     focusId={draft[track].focusId} locale={lang} track={track} pending={dirty}/>
-   {guided?<section><p className={styles.help}>{t.step} {index+1}/8</p>{row(items[index])}
-     <div className={styles.navigation}>
-      <button type="button" disabled={index===0} onClick={()=>setIndex(n=>n-1)}>{t.back}</button>
-      <button type="button" disabled={index===7} onClick={()=>setIndex(n=>n+1)}>{t.next}</button>
-     </div></section>:<div className={styles.grid}>{items.map(row)}</div>}
+   {guided?<section data-guided-vector-progress>
+     <p className={styles.guidedProgress}>{t.step} {index+1}/8 · {guidedProgress.complete}/8 {t.rated}</p>
+     {guidedComplete?<div className={styles.guidedDone} role="status">
+      <strong>{t.guidedComplete}</strong>
+      <p>{t.guidedReview}</p>
+      <button type="button" onClick={()=>setGuided(false)}>{t.self}</button>
+     </div>:<>
+      {row(items[index])}
+      <div className={styles.navigation}>
+       <button type="button" disabled={index===0} onClick={()=>setIndex(n=>n-1)}>{t.back}</button>
+       <button type="button" onClick={nextGuided}>{t.nextMissing}</button>
+      </div>
+      <p className={styles.help}>{t.skipHint}</p>
+     </>}
+    </section>:<div className={styles.grid}>{items.map(row)}</div>}
    {error&&<p className={styles.error} role="alert">{error}</p>}
    {notice&&<p className={styles.notice} role="status">{notice}</p>}
    <button type="button" className={styles.save} disabled={!dirty||busy}
