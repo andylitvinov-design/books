@@ -234,12 +234,15 @@ test("real macOS WebKit Montage navigation opens visible Magic Mirror controls b
  assert.doesNotMatch(editor,/await editorTab\.click\(\)|await page\.locator\('\[data-video-quick-control="editor"\]'\)\.click\(\)/);
 });
 
-test("shared original-motion WebKit quiz uses real Scope → Goal → Format → Topic touches",()=>{
+test("original-motion WebKit opens current Screen-2 Goal through real Details and Plus",()=>{
  const source=read("scripts/benchmarking/complete-three-step-goals-quiz.mjs");
- for(const token of ['[data-hh-mirror-enter="me"]','[data-hh-mirror-purpose-step]',
-   '[data-video-ideas-goal-choice="rest"]','[data-video-ideas-goal-next]',
-   '[data-hh-mirror-video-format="basic"]','[data-hh-mirror-open-advanced="true"]'])
+ for(const token of ['[data-hh-mirror-enter="me"]','[data-hh-mirror-own-description]',
+   '[data-hh-mirror-composer]','[data-hh-mirror-open-advanced="true"]',
+   '[data-auto-video-category]','[data-auto-video-subcategory]','[data-video-goal-topic]'])
   assert.ok(source.includes(token),token);
- assert.doesNotMatch(source,/data-hh-mirror-plan|MIRROR_VISIBLE_BACK_UNAVAILABLE/);
- assert.match(source,/step==='2'\|\|step==='3'/);
+ assert.match(source,/await awaitScreen\('topic'\)/);
+ assert.match(source,/details\.getAttribute\('open'\)/);
+ assert.match(source,/await tap\(details\.locator\(':scope > summary'\)\)/);
+ assert.doesNotMatch(source,/data-hh-mirror-plan|MIRROR_VISIBLE_BACK_UNAVAILABLE|force:\s*true/);
+ assert.doesNotMatch(source,/await awaitScreen\('purpose'\)|await awaitScreen\('format'\)/);
 });
