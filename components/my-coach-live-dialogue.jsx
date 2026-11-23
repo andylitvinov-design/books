@@ -1432,7 +1432,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             openingPrior={openingPrior} allowOpeningPrior={Boolean(openingPrior)&&openingProgress.checkmarks.invitation}
             enabled={liveVoiceReady} canStart={!busy&&!paused&&!replaying&&liveVoiceReady}
             liveContextAccess={liveContextAccess} contextRevision={contextRevision}
-            onSessionStart={()=>{setGeminiLiveConsent(true);setSessionClockStarted(true);setIntroComplete(true)}}
+            onSessionStart={()=>{
+               setGeminiLiveConsent(true);setSessionClockStarted(true);setIntroComplete(true)
+               // A marker is only recorded after a confirmed Live setup, never
+               // after greeting, failed token mint or attempted microphone.
+               try{window.sessionStorage.setItem('hh-coach-connected-'+personaId,'1')}catch{}
+             }}
             onVoiceStateChange={setVoiceState}
             onMicLevel={level=>{
               const wave=micWaveRef.current

@@ -12,19 +12,19 @@ import styles from './my-coach-greeting-gate.module.css'
 
 const words={
  en:{eyebrow:'MEET YOUR AI COACH',play:'Hear my greeting',playing:'Your coach is speaking…',
-    start:'Start a session with',again:'Listen to the greeting again',
+    start:'Start a session with',continue:'Continue coaching with',again:'Listen to the greeting again',
     failed:'The greeting audio could not play. You can try again or start the session.',
     free:'The introduction is free. Live voice starts only when you choose a session.',
     back:'Choose a different coach'},
  ru:{eyebrow:'ЗНАКОМСТВО С AI-КОУЧЕМ',play:'Послушать приветствие',
     playing:'Коуч приветствует вас…',start:'Начать сессию с',
-    again:'Прослушать приветствие ещё раз',
+    continue:'Продолжить сессию с',again:'Прослушать приветствие ещё раз',
     failed:'Приветствие не удалось воспроизвести. Повторите попытку или начните сессию.',
     free:'Приветствие бесплатно. Живой разговор начинается только по вашему выбору.',
     back:'Выбрать другого коуча'},
  es:{eyebrow:'CONOCE A TU COACH DE IA',play:'Escuchar la bienvenida',
     playing:'Tu coach te está saludando…',start:'Iniciar sesión con',
-    again:'Volver a escuchar la presentación',
+    continue:'Continuar la sesión con',again:'Volver a escuchar la presentación',
     failed:'No se pudo reproducir la bienvenida. Puedes intentarlo otra vez o iniciar la sesión.',
     free:'La presentación es gratuita. La sesión de voz empieza solo cuando tú lo decides.',
     back:'Elegir otro coach'},
@@ -38,9 +38,16 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
  const presentation=getCoachPresentation(personaId,lang)
  const [phase,setPhase]=useState('preview')
  const [error,setError]=useState('')
+ const [priorSession,setPriorSession]=useState(false)
  const player=useRef(null)
  const audioRun=useRef(0)
  useEffect(()=>()=>{audioRun.current++;player.current?.cancel?.();player.current=null},[])
+ // Presence-only flag for an actual previously connected Live session in
+ // this tab. Never store session text, transcript, user identifiers or audio.
+ useEffect(()=>{
+   try{setPriorSession(window.sessionStorage.getItem('hh-coach-connected-'+personaId)==='1')}
+   catch{setPriorSession(false)}
+ },[personaId])
  useEffect(()=>{audioRun.current++;player.current?.cancel?.();player.current=null;
    setPhase('preview');setError('')},[personaId,lang])
  function playGreeting(){
@@ -88,7 +95,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
          <p className={styles.greetingQuote}>“{presentation?.text||localCoachText(persona?.opening,lang)}”</p>
          <button type="button" className={styles.primary} data-coach-greeting-start
            onClick={chooseSession}><Play size={22} fill="currentColor" aria-hidden="true"/>
-           {t.start} {label}</button>
+           {priorSession?t.continue:t.start} {label}</button>
          <button type="button" className={styles.secondary} data-coach-greeting-replay
            onClick={playGreeting}><RotateCcw size={19} aria-hidden="true"/>{t.again}</button>
          {error&&<p className={styles.error} role="status">{error}</p>}
