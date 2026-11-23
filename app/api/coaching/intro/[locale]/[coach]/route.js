@@ -9,6 +9,7 @@ import {myCoachFishConfig,myCoachFishVoice,myCoachFishProsody} from '@/lib/coach
 import {GOOGLE_PROVIDER,GOOGLE_TTS_GLOBAL_DAILY_LIMIT,googleChirpConfig,
   normalizeGoogleChirpInput,synthesizeGoogleChirp} from '@/lib/coaching/my-coach-google-chirp.mjs'
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
+import {readSavedCoachGreeting,saveCoachGreetingOnce,isMp3Bytes} from '@/lib/coaching/coach-greeting-mp3-store.mjs'
 
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
@@ -16,11 +17,40 @@ export const revalidate=0
 export const preferredRegion='yul1'
 export const maxDuration=25
 
+const ARCHIVED_CACHE_CONTROL='public, max-age=31536000, s-maxage=31536000, immutable'
 const CACHE_HEADERS={
   'Content-Type':'audio/mpeg',
   'Cache-Control':'public, max-age=300, s-maxage=86400, stale-while-revalidate=86400',
   'X-Content-Type-Options':'nosniff',
   'X-Robots-Tag':'noindex, nofollow',
+}
+
+// MP3 bytes are stored only on the first successful v=2 request; every later
+// Play and Replay serves the SAME immutable Supabase object, without TTS.
+function storedAudioResponse(stored){
+  const headers={...CACHE_HEADERS,'Cache-Control':ARCHIVED_CACHE_CONTROL,'Accept-Ranges':'bytes'}
+  for(const key of ['content-length','content-range']){
+    const value=stored.headers.get(key)
+    if(value)headers[key]=value
+  }
+  return new NextResponse(stored.body,{status:stored.status,headers})
+}
+async function persistGreeting(config,personaId,locale,audio){
+  if(!isMp3Bytes(audio))throw new AppError('MY_COACH_INTRO_INVALID_MP3',502)
+  let saved
+  try{saved=await saveCoachGreetingOnce(config,personaId,locale,audio)}
+  catch{throw new AppError('MY_COACH_INTRO_STORAGE_UNAVAILABLE',503)}
+  if(!saved.created){
+    // Concurrent first Play: always use the FIRST recording, not the loser's
+    // freshly synthesized version (which may have different prosody).
+    try{
+      const canonical=await readSavedCoachGreeting(config,personaId,locale)
+      if(canonical)return storedAudioResponse(canonical)
+    }catch{}
+    throw new AppError('MY_COACH_INTRO_STORAGE_UNAVAILABLE',503)
+  }
+  return new NextResponse(audio,{status:200,headers:{...CACHE_HEADERS,
+    'Cache-Control':ARCHIVED_CACHE_CONTROL,'Content-Length':String(audio.length)}})
 }
 
 // Public, editorial-only natural voice. Path parameters survive browsers and
@@ -39,6 +69,16 @@ export async function GET(request){
     if(!introduction||introduction.length>900)
       throw new AppError('MY_COACH_INTRO_INVALID',400)
     const config=getAppConfig()
+    const useRecordedGreeting=url.search==='?v=2'
+    if(useRecordedGreeting){
+      // Storage failure must not be interpreted as a cache miss: that would
+      // trigger paid TTS again on every transient outage.
+      let saved
+      try{saved=await readSavedCoachGreeting(config,personaId,locale,fetch,
+        request.headers.get('range'))}
+      catch{throw new AppError('MY_COACH_INTRO_STORAGE_UNAVAILABLE',503)}
+      if(saved)return storedAudioResponse(saved)
+    }
 
     // Google is the owner-approved long-term voice ONLY when every existing
     // GCP project, billing, consent and service-account flag is configured.
@@ -62,6 +102,7 @@ export async function GET(request){
         audio=await synthesizeGoogleChirp({config:chirp,input,
           signal:AbortSignal.any([request.signal,AbortSignal.timeout(19000)])})
       }catch{throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)}
+      if(useRecordedGreeting)return persistGreeting(config,personaId,locale,audio)
       return new NextResponse(audio,{status:200,headers:{
         ...CACHE_HEADERS,'Content-Length':String(audio.length)}})
     }
@@ -89,7 +130,15 @@ export async function GET(request){
     if(!upstream.ok||!upstream.body||
       (!type.startsWith('audio/')&&!type.startsWith('application/octet-stream')))
       throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)
-    // Stream MP3 immediately: do not buffer an entire generated introduction.
+    if(useRecordedGreeting){
+      // Buffer exactly once to make an immutable MP3 before replying. Every
+      // later visit streams it directly from Storage (no vendor call/XP).
+      let audio
+      try{audio=Buffer.from(await upstream.arrayBuffer())}
+      catch{throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)}
+      return persistGreeting(config,personaId,locale,audio)
+    }
+    // Keep existing legacy v=1 streaming untouched.
     return new NextResponse(upstream.body,{status:200,headers:CACHE_HEADERS})
   }catch(error){
     const safe=safeError(error)
