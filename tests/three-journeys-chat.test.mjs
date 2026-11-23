@@ -82,7 +82,7 @@ test('implementation respects same Messenger safety/consent route and does not c
  assert.match(server,/safety\.status==="clear" && !recentUnsafe && !judgmentPriority/);
  assert.match(server,/threeJourneyTurn/);
  assert.match(client,/journeyPath:!leaveSupport\?journeyPath:null/);
- assert.match(client,/threeJourneyTurn\(\{path:journeyPath,message:text,locale:turnLocale,history:prior\}\)/);
+ assert.match(client,/threeJourneyTurn\(\{path:journeyPath,message:text,locale:turnLocale,history:prior,/);
  assert.match(client,/onJourneySelect=\{startJourney\}/);
  for(const id of ['therapy','consultation','goal']){
    assert.ok(landing.includes('data-hh-genie-path-choice="'+id+'"'));
