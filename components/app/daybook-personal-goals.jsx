@@ -6,6 +6,7 @@ import {createGoalEditorSession} from '@/lib/app/daybook-goal-editor-session.mjs
 import css from './daybook-goal-editor.module.css'
 import DaybookGoalEditor from './daybook-goal-editor'
 import DaybookActionEditor from './daybook-action-editor'
+import DaybookCoachLink from './daybook-coach-link'
 import {createActionEditorSession} from '@/lib/app/daybook-personal-action-session.mjs'
 const COPY={
  en:{newAction:'Add a step',actions:'My steps',editAction:'Edit step',title:'My personal goals',new:'Create a goal',edit:'Edit',remove:'Delete permanently',confirm:'Permanently delete this goal, its actions and encrypted change history?',close:'Close editor',switch:'Close this editor? Unsaved changes will be lost.',loading:'Loading saved goals…',error:'Could not load your goals.',retry:'Reload goals',empty:'No saved goals yet.',failed:'Deletion not confirmed. Retry the same goal or reload to check its current state.',deleted:'Deletion verified'},
@@ -107,6 +108,7 @@ export default function DaybookPersonalGoals({accountId,locale='en',onSessionLos
   {view.goals.map(goal=><article key={goal.id}><h3>{goal.title}</h3><button disabled={busy||Boolean(pendingDelete)} onClick={()=>void edit(goal)}>{c.edit}</button><button disabled={busy||Boolean(pendingDelete&&pendingDelete!==goal.id)} onClick={()=>void remove(goal)}>{c.remove}</button>
    {['accepted','active'].includes(goal.status)&&<button disabled={busy||Boolean(pendingDelete)} onClick={()=>void actionEditor(goal)}>{c.newAction}</button>}
    {goal.actions?.length>0&&<section aria-label={c.actions}><h4>{c.actions}</h4><ul>{goal.actions.map(action=><li key={action.id}>{action.status==='completed'?<s>{action.description}</s>:action.description} <button disabled={busy||Boolean(pendingDelete)} onClick={()=>void actionEditor(goal,action)}>{c.editAction}</button></li>)}</ul></section>}
+   {['accepted','active','in_progress'].includes(goal.status)&&<DaybookCoachLink accountId={accountId} locale={locale} kind="goal" itemId={goal.id} revision={goal.revision} disabled={busy||Boolean(pendingDelete)} onSessionLost={sessionLost}/>}
   </article>)}
  </section>
 }
