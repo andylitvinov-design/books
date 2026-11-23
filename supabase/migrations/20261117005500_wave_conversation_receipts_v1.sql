@@ -56,6 +56,11 @@ for each row execute function app_private.wave_sync_crm_receipt();
 create function app_private.wave_sync_history_receipt()
 returns trigger language plpgsql security definer set search_path = '' as $fn$
 begin
+  -- Consent must still be active when a pair is inserted.
+  if not exists (
+    select 1 from app_private.agent_chat_history_consent c
+    where c.account_id=new.account_id and c.accepted is true
+  ) then return new; end if;
   insert into app_private.wave_conversation_receipts
     (source,source_id,owner_id,channel,direction,delivery,source_at)
   values('agent_history',new.id,new.account_id,'site','pair','stored',new.created_at)
@@ -67,10 +72,51 @@ create trigger wave_history_receipt_write
 after insert on app_private.agent_chat_history_pairs
 for each row execute function app_private.wave_sync_history_receipt();
 
+-- A later withdrawal must remove the metadata index even if the
+-- authorized source archive is retained by a separate retention workflow.
+create function app_private.wave_reconcile_history_consent()
+returns trigger language plpgsql security definer set search_path = '' as $fn$
+declare v_owner uuid; v_active boolean;
+begin
+  if tg_op='DELETE' then
+    v_owner:=old.account_id;
+    v_active:=false;
+  else
+    v_owner:=new.account_id;
+    v_active:=new.accepted;
+  end if;
+
+  if v_active then
+    insert into app_private.wave_conversation_receipts
+      (source,source_id,owner_id,channel,direction,delivery,source_at)
+    select 'agent_history',h.id,h.account_id,'site','pair','stored',h.created_at
+    from app_private.agent_chat_history_pairs h
+    where h.account_id=v_owner
+    on conflict(source,source_id) do nothing;
+  else
+    delete from app_private.wave_conversation_receipts r
+    where r.source='agent_history' and r.owner_id=v_owner;
+  end if;
+  if tg_op='DELETE' then return old; end if;
+  return new;
+end;
+$fn$;
+create trigger wave_history_consent_changed
+after insert or update of accepted or delete on app_private.agent_chat_history_consent
+for each row execute function app_private.wave_reconcile_history_consent();
+
 create function app_private.wave_sync_coaching_receipt()
 returns trigger language plpgsql security definer set search_path = '' as $fn$
 begin
   if new.speaker not in ('client','coach') then return new; end if;
+  -- The latest archive consent must still be affirmative and not revoked.
+  if not coalesce((
+    select c.accepted and c.revoked_at is null
+    from app_private.coaching_session_consents c
+    where c.session_id=new.session_id and c.account_id=new.account_id
+      and c.consent_type='message_archive'
+    order by c.occurred_at desc,c.id desc limit 1
+  ),false) then return new; end if;
   insert into app_private.wave_conversation_receipts
     (source,source_id,owner_id,channel,direction,delivery,locale,source_at)
   values('coaching',new.id,new.account_id,'my_coach',
@@ -83,6 +129,30 @@ $fn$;
 create trigger wave_coaching_receipt_write
 after insert on app_private.coaching_session_messages
 for each row execute function app_private.wave_sync_coaching_receipt();
+
+-- Prevent revoked coaching archives from contributing to quality metrics.
+create function app_private.wave_reconcile_coaching_consent()
+returns trigger language plpgsql security definer set search_path = '' as $fn$
+begin
+  if new.consent_type='message_archive'
+     and (new.accepted is false or new.revoked_at is not null)
+     and new.id = (
+       select c.id from app_private.coaching_session_consents c
+       where c.session_id=new.session_id and c.account_id=new.account_id
+         and c.consent_type='message_archive'
+       order by c.occurred_at desc,c.id desc limit 1
+     ) then
+    delete from app_private.wave_conversation_receipts r
+    using app_private.coaching_session_messages m
+    where r.source='coaching' and r.source_id=m.id
+      and m.session_id=new.session_id and m.account_id=new.account_id;
+  end if;
+  return new;
+end;
+$fn$;
+create trigger wave_coaching_archive_consent_changed
+after insert or update of accepted, revoked_at on app_private.coaching_session_consents
+for each row execute function app_private.wave_reconcile_coaching_consent();
 
 create function app_private.wave_delete_source_receipt()
 returns trigger language plpgsql security definer set search_path = '' as $fn$
@@ -135,6 +205,13 @@ select 'coaching',m.id,m.account_id,'my_coach',
        'stored',m.locale,m.created_at
 from app_private.coaching_session_messages m
 where m.speaker in ('client','coach')
+  and coalesce((
+    select c.accepted and c.revoked_at is null
+    from app_private.coaching_session_consents c
+    where c.session_id=m.session_id and c.account_id=m.account_id
+      and c.consent_type='message_archive'
+    order by c.occurred_at desc,c.id desc limit 1
+  ),false)
 on conflict(source,source_id) do nothing;
 
 create function app_private.wave_quality_receipt_summary(p_days integer default 31)
@@ -163,5 +240,9 @@ revoke all on function app_private.wave_sync_history_receipt()
 revoke all on function app_private.wave_sync_coaching_receipt()
   from public,anon,authenticated,hh_app_inbox,hh_crm_backend,hh_app_backend;
 revoke all on function app_private.wave_delete_source_receipt()
+  from public,anon,authenticated,hh_app_inbox,hh_crm_backend,hh_app_backend;
+revoke all on function app_private.wave_reconcile_history_consent()
+  from public,anon,authenticated,hh_app_inbox,hh_crm_backend,hh_app_backend;
+revoke all on function app_private.wave_reconcile_coaching_consent()
   from public,anon,authenticated,hh_app_inbox,hh_crm_backend,hh_app_backend;
 commit;
