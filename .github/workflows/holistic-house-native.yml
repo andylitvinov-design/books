@@ -182,7 +182,7 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' }}
         env:
           HH_PLAY_VERSION_CODE: '2'
-          HH_PLAY_VERSION_NAME: '0.0.0-ci'
+          HH_PLAY_VERSION_NAME: '0.0.0'
           HH_ANDROID_KEYSTORE_PASSWORD: 'ci-only-not-a-production-credential'
           HH_ANDROID_KEY_ALIAS: 'ci-hh-test'
           HH_ANDROID_KEY_PASSWORD: 'ci-only-not-a-production-credential'
