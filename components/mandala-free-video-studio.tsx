@@ -2243,8 +2243,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const effect: Effect = "glow";
   const [moneyScene, setMoneyScene] = useState<MoneySceneId | null>("golden-rain");
   const [backgroundOnly,setBackgroundOnly]=useState(true);
-  const selectNativePhoto = (photo: File) => {
-    // Canceled picker preserves the previous choice; no upload takes place.
+  const selectNativePhoto = (photo: File, trustedCoachStill = false) => {
+    // Every visitor-selected photo revokes prior approval, including the
+    // alternate native pickers outside Montage. Only the bounded internal
+    // fictional coach poster may keep its verified first-party provenance.
+    if (!trustedCoachStill) {
+      setMontageCoachPhoto(null);
+      setPhotoConsent(false);
+    }
     setBackgroundOnly(false);
     onPhotoFileSelected(photo);
   };
@@ -2273,7 +2279,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       const blob=await new Promise<Blob|null>(resolve=>canvas.toBlob(resolve,"image/jpeg",0.9));
       canvas.width=0;canvas.height=0;
       if(!blob||blob.size<128||blob.size>2_000_000)throw new Error("COACH_IMAGE_INVALID");
-      selectNativePhoto(new File([blob],id+"-coach.jpg",{type:"image/jpeg"}));
+      selectNativePhoto(new File([blob],id+"-coach.jpg",{type:"image/jpeg"}), true);
       setMontageCoachPhoto(id);setMontagePhotoChoice("coach");setMontageLibraryTab("coaches");
       setPhotoConsent(true);setNotice("");
     }catch{
