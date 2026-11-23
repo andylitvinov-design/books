@@ -3,7 +3,13 @@ on:
   schedule:
     - cron: '13,43 * * * *' # two off-peak chances/hour for GitHub scheduler; still one Vercel build/60m
     - cron: '11 05 * * *' # one daily safe storage prune; NEVER run a production build
-  # Trusted default-branch release; protected PR merge never triggers a new build.
+  # GitHub can drop schedule ticks under load. Reuse this SAME publisher after a
+  # trusted closed-PR cleanup completes; this is NOT another deploy workflow.
+  # The existing rolling-60-minute, UTC-hour and exact-SHA guards apply equally.
+  workflow_run:
+    workflows: ['HH closed PR Actions cleanup']
+    types: [completed]
+  # Trusted default-branch release; PR source code is never checked out here.
   workflow_dispatch:
     inputs:
       emergency:
@@ -23,13 +29,20 @@ concurrency:
   cancel-in-progress: false
 jobs:
   publish:
-    # Two off-peak scheduled checks tolerate dropped GitHub ticks; the same
-    # Vercel history, rolling-60-minute and UTC-hour guards allow at most one paid build.
+    # Off-peak schedule plus a trusted merged-PR completion event tolerate missed
+    # GitHub cron ticks; the same Vercel history, rolling-60-minute and UTC-hour
+    # guards allow at most one normal paid build.
     # An explicit emergency=true manual action is the sole off-schedule exception.
     # Manual dry-run/apply cleanup remains separate and never starts a build.
     # Exact HEAD, last-60-minutes and UTC-hour guards remain unchanged.
     if: >-
       (github.event_name == 'schedule' && github.event.schedule == '13,43 * * * *' &&
+       vars.HH_VERCEL_HOURLY_ENABLED == 'true') ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.name == 'HH closed PR Actions cleanup' &&
+       github.event.workflow_run.event == 'pull_request_target' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_repository.full_name == github.repository &&
        vars.HH_VERCEL_HOURLY_ENABLED == 'true') ||
       (github.event_name == 'workflow_dispatch' &&
        inputs.emergency == true && inputs.cleanup_mode == 'off')
