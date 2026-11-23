@@ -241,8 +241,13 @@ async function verifyWorkspaceHydration(browser,locale){
     await purpose.locator('[data-video-ideas-goal-next]').click();
     await mirror.locator('[data-hh-mirror-video-format="pro"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
+    await expect(page.locator('[data-video-quick-control="video"]')).toHaveAttribute("aria-pressed","true");
     await expect(mirror.locator('[data-hh-mirror-composer] textarea')).toBeVisible();
+    await expect(mirror.locator('[data-hh-mirror-progress]')).toHaveCount(0);
+    await expect(mirror.locator('[data-hh-mirror-ideas-cta]')).toHaveCount(0);
+    await expect(mirror.locator('[data-hh-mirror-play-example]')).toHaveCount(0);
     await expect(page.locator('[data-video-live-stage]')).toBeHidden();
+    await mirror.locator('[data-hh-mirror-guide-menu]').click();
     await mirror.locator('[data-hh-mirror-play-example]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-video-preview","open");
     await expect(page.locator('[data-video-live-stage]')).toBeVisible();
@@ -258,6 +263,8 @@ async function verifyWorkspaceHydration(browser,locale){
     }[locale];
     for(let index=0;index<4;index++)await expect(mirror.locator('[data-hh-mirror-goal-choice]').nth(index))
       .toContainText(approvedAxisLabels[index]);
+    if(await mirror.locator('[data-hh-mirror-guide-menu]').getAttribute("aria-expanded")!=="true")
+      await mirror.locator('[data-hh-mirror-guide-menu]').click();
     await mirror.locator('[data-hh-mirror-back-landing]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-screen","format");
     await mirror.locator('[data-hh-mirror-back-format]').click();
@@ -271,6 +278,8 @@ async function verifyWorkspaceHydration(browser,locale){
     await mirror.locator('[data-hh-mirror-video-format="basic"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","present");
+    if(await mirror.locator('[data-hh-mirror-guide-menu]').getAttribute("aria-expanded")!=="true")
+      await mirror.locator('[data-hh-mirror-guide-menu]').click();
     await mirror.locator('[data-hh-mirror-back-landing]').click();
     await mirror.locator('[data-hh-mirror-back-format]').click();
     await mirror.locator('[data-hh-mirror-back-purpose]').click();
@@ -281,8 +290,10 @@ async function verifyWorkspaceHydration(browser,locale){
     await mirror.locator('[data-hh-mirror-video-format="vip"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","business");
-    await expect(mirror.locator('header').first()).toContainText({
-      en:"Videos for Work",ru:"Видео для работы",es:"Vídeos para el trabajo"
+    // Approved Goal deliberately has no second hero. Assert actual work input instead.
+    await expect(mirror.locator('[data-hh-mirror-wish]')).toHaveAttribute("placeholder",{
+      en:"Describe your video or service…",ru:"Опишите видео или услугу…",
+      es:"Describe tu vídeo o servicio…"
     }[locale]);
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","business");
     const workCards=mirror.locator('[data-hh-mirror-goal-choice]');
@@ -314,14 +325,28 @@ async function verifyWorkspaceHydration(browser,locale){
       .toHaveAttribute("aria-pressed","true",{timeout:15000});
     await page.locator('[data-video-quick-control="video"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-step","1");
-    await mirror.locator('[data-hh-mirror-audience="present"]').click();
+    // The removed audience submenu is not a navigational shortcut.
+    // Return through the existing Guide me and approved landing choice.
+    if(await mirror.locator('[data-hh-mirror-guide-menu]').getAttribute("aria-expanded")!=="true")
+      await mirror.locator('[data-hh-mirror-guide-menu]').click();
+    await mirror.locator('[data-hh-mirror-back-landing]').click();
+    await mirror.locator('[data-hh-mirror-back-format]').click();
+    await mirror.locator('[data-hh-mirror-back-purpose]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","landing");
+    await mirror.locator('[data-hh-mirror-enter="others"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","present");
     await expect(mirror).toHaveAttribute("data-hh-mirror-screen","purpose");
     await purpose.locator('[data-video-ideas-goal-choice="accept"]').click();
     await purpose.locator('[data-video-ideas-goal-next]').click();
     await mirror.locator('[data-hh-mirror-video-format="basic"]').click();
     await expect(mirror.locator('[data-hh-mirror-goal-choice="stress"]')).toBeVisible();
-    await mirror.locator('[data-hh-mirror-audience="me"]').click();
+    if(await mirror.locator('[data-hh-mirror-guide-menu]').getAttribute("aria-expanded")!=="true")
+      await mirror.locator('[data-hh-mirror-guide-menu]').click();
+    await mirror.locator('[data-hh-mirror-back-landing]').click();
+    await mirror.locator('[data-hh-mirror-back-format]').click();
+    await mirror.locator('[data-hh-mirror-back-purpose]').click();
+    await expect(mirror).toHaveAttribute("data-hh-mirror-screen","landing");
+    await mirror.locator('[data-hh-mirror-enter="me"]').click();
     await expect(mirror).toHaveAttribute("data-hh-mirror-mode","me");
     await expect(mirror).toHaveAttribute("data-hh-mirror-screen","purpose");
     await purpose.locator('[data-video-ideas-goal-choice="rest"]').click();
