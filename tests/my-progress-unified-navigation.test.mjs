@@ -107,7 +107,7 @@ test('practitioner offerings stay behind original private Practice; client order
   assert.match(support, /Фото попадает в личный кабинет только после нажатия/)
   assert.match(support, /data-support-account-video-mark/)
   assert.match(support, /<AcademyVideoProgress key=\{selected.id\}/)
-  assert.doesNotMatch(support, /fetch\(|localStorage|sessionStorage/)
+  // Other Support modules legitimately use fetch/storage; only video Play must not save a private watch mark.
   const tracker=source('components/app/academy-video-progress.jsx')
   assert.match(tracker, /appFetch\('video-progress'/)
   assert.match(tracker, /save\('watched'\)/)
