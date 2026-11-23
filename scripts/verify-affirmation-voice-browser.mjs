@@ -1654,11 +1654,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(firstIdea).toHaveAttribute("aria-pressed","true");
       // The real text editor owns phrase choice: deselecting the first phrase
       // drops below the minimum; restoring it returns the editor to a valid state.
-      await firstIdea.click();
+      if(engine==="webkit")await firstIdea.tap();else await firstIdea.click();
       await expect(firstIdea).toHaveAttribute("aria-pressed","false");
       await expect(montageCountLabel).toHaveText(new RegExp("^\\s*"+(initialMontageCount-1)+"\\s*/\\s*\\d+\\b"));
       await expect(montageIdeas.locator("[data-video-ideas-minimum]")).toBeVisible();
-      await firstIdea.click();
+      if(engine==="webkit")await firstIdea.tap();else await firstIdea.click();
       await expect(firstIdea).toHaveAttribute("aria-pressed","true");
       await expect(montageCountLabel).toHaveText(new RegExp("^\\s*"+initialMontageCount+"\\s*/\\s*\\d+\\b"));
       await expect(montageIdeas.locator("[data-video-ideas-minimum]")).toHaveCount(0);
