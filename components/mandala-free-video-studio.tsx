@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {resolveVerifiedEnglishYouTubeId} from "@/lib/youtube/verified-english-player-client";
 import dynamic from "next/dynamic";
 import { MandalaSmartAnimation } from "./mandala-smart-animation";
 import Link from "next/link";
@@ -2252,43 +2253,60 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [previewSeekSeconds,setPreviewSeekSeconds]=useState(0);
   const [previewPlayhead,setPreviewPlayhead]=useState(0);
   const [previewFrameRevision,setPreviewFrameRevision]=useState(0);
-  // Exact owner-approved captioned media masters: EN on EN, RU on RU.
-  // Spanish UI falls back to EN with an explicit English-audio label.
+
+  // RU master stays intact. The EN/ES intro is the owner's exact verified
+  // @aatapro YouTube upload, never a direct provider MP4 or provider iframe.
   const introVideo = locale==="ru" ? {
     src:"https://resource2.heygen.ai/movio/video/72e3e6f45c3664b0b8d75281b1b413a5/2e30e44294964059b57670860ee3828b/caption.mp4",
     embed:"https://app.heygen.com/embeds/72e3e6f45c3664b0b8d75281b1b413a5",
     locale:"ru" as const,durationSeconds:96.862,
   } : {
-    src:"https://resource2.heygen.ai/movio/video/8d998c778af3b563aa63233aa4fb4a06/89b101dc9dbb4fcea06aab3eb6ce5094/caption.mp4",
-    embed:"https://app.heygen.com/embeds/8d998c778af3b563aa63233aa4fb4a06",
-    locale:"en" as const,durationSeconds:91.2457,
+    src:"",embed:"",locale:"en" as const,durationSeconds:91.2457,
   };
   const introVideoRef=useRef<HTMLVideoElement>(null);
   const [introPlaying,setIntroPlaying] = useState(false);
   const [introDismissed,setIntroDismissed] = useState(false);
   const [introFailed,setIntroFailed] = useState(false);
+  const [introYoutubeId,setIntroYoutubeId] = useState<string|null>(null);
+  const [introYoutubeStatus,setIntroYoutubeStatus] =
+    useState<"idle"|"checking"|"ready"|"missing">("idle");
+  const introYoutubeRequestRef=useRef(0);
+  useEffect(()=>()=>{introYoutubeRequestRef.current+=1;},[]);
   const playIntro=()=>{
     stopMovieSound();premiumVideoRef.current?.pause();setPreviewPlaying(false);
     setStudioIntroOpen(false);setIntroDismissed(false);setIntroFailed(false);
+    if(locale!=="ru"){
+      // Lazy read of an exact permanent verified English-channel receipt only.
+      const requestId=++introYoutubeRequestRef.current;
+      setIntroYoutubeId(null);setIntroPlaying(false);
+      setIntroYoutubeStatus("checking");
+      void (async()=>{
+        const id=await resolveVerifiedEnglishYouTubeId();
+        if(requestId!==introYoutubeRequestRef.current)return;
+        if(id){setIntroYoutubeId(id);setIntroYoutubeStatus("ready");setIntroPlaying(true);}
+        else setIntroYoutubeStatus("missing");
+      })();
+      return;
+    }
     const media=introVideoRef.current;
     if(media){
-      // Safari can keep a failed HTMLMediaElement in an error state. Retry must
-      // explicitly reload it, not call play() on the same failed resource.
+      // Safari can keep a failed HTMLMediaElement in an error state.
       if(media.error||introFailed)media.load();
-      try{media.currentTime=0;}catch{/* No metadata yet; play still starts loading. */}
+      try{media.currentTime=0;}catch{/* No metadata yet. */}
       const task=media.play();
       if(task)void task.catch(error=>{
-        // React cleanup/close can abort a pending play without a source failure.
         if(error?.name!=="AbortError")setIntroFailed(true);
       });
     }
     setIntroPlaying(true);
   };
   const closeIntro=()=>{
+    introYoutubeRequestRef.current+=1;
     introVideoRef.current?.pause();
     try{if(introVideoRef.current)introVideoRef.current.currentTime=0;}
     catch{/* A failed iOS media element might not be seekable. */}
     setIntroPlaying(false);setIntroDismissed(true);setIntroFailed(false);
+    setIntroYoutubeStatus("idle");
   };
   useEffect(()=>{
     if(!introPlaying){const media=introVideoRef.current;if(media){
@@ -2296,7 +2314,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     }}
   },[introPlaying]);
   useEffect(()=>{
-    // Only the fallback player may produce audio after the native video fails.
     if(introFailed)introVideoRef.current?.pause();
   },[introFailed]);
   const [aspect, setAspect] = useState<Aspect>("landscape");
@@ -8255,48 +8272,73 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         {attachedAudio ? <span className={videoStyles.quickSoundBadge} data-video-live-audio aria-live="polite">
           <Music2 size={13} aria-hidden="true"/>{appliedAudioName}
         </span> : null}
+
         {showIntroHero ? <div className={videoStyles.therapyHero} data-video-therapy-info
           data-intro-spoken-locale={introVideo.locale}>
           <div className={videoStyles.therapyHeroPlayback}
             data-video-therapy-intro={introPlaying?"playing":"ready"}
             data-playing={introPlaying?"true":"false"}
-            data-intro-playback-source={introFailed?"fallback":"mp4"}>
-            <video ref={introVideoRef} className={videoStyles.therapyHeroVideo}
+            data-intro-playback-source={locale==="ru"?(introFailed?"fallback":"mp4"):"youtube"}>
+            {locale==="ru"?<video ref={introVideoRef} className={videoStyles.therapyHeroVideo}
               src={introVideo.src} controls={introPlaying} playsInline preload="none"
               poster="/images/video-studio-presentation-ru.jpg"
-              aria-label={locale==="ru"?"Презентация Holistic House — русская озвучка":
-                locale==="es"?"Holistic House — presentación, audio en inglés":"Holistic House introduction — English audio"}
+              aria-label="Презентация Holistic House — русская озвучка"
               tabIndex={introPlaying?0:-1} onError={()=>setIntroFailed(true)}
-              onPlaying={()=>setIntroFailed(false)} onEnded={closeIntro}/>
-            {introPlaying&&<button type="button" className={videoStyles.therapyHeroClose}
-              data-video-therapy-intro-close onClick={closeIntro}>
-              {locale==="ru"?"К моему видео":locale==="es"?"Volver a mi vídeo":"Back to my video"}
-            </button>}
-            {introPlaying&&introFailed&&<>
+              onPlaying={()=>setIntroFailed(false)} onEnded={closeIntro}/>:null}
+            {locale!=="ru"&&introPlaying&&introYoutubeId?
+              <iframe className={videoStyles.therapyHeroYoutube}
+                data-video-therapy-youtube="verified"
+                src={`https://www.youtube-nocookie.com/embed/${introYoutubeId}?autoplay=1&playsinline=1&rel=0`}
+                title="Holistic House — It Starts With You, English YouTube"
+                allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen loading="eager"/>:null}
+            {locale==="ru"&&introPlaying&&introFailed&&<>
               <iframe className={videoStyles.therapyHeroFallbackFrame}
                 data-video-therapy-fallback="provider"
                 src={introVideo.embed}
-                title={locale==="ru"?"Резервный проигрыватель русской презентации":locale==="es"?"Reproductor alternativo, audio en inglés":"Alternative player, English introduction"}
+                title="Резервный проигрыватель русской презентации"
                 allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
                 allowFullScreen loading="eager"/>
               <div className={videoStyles.therapyHeroRecovery} role="status">
-                <button type="button" onClick={playIntro}>{locale==="ru"?"Повторить MP4":locale==="es"?"Reintentar MP4":"Retry MP4"}</button>
-                <a href={introVideo.embed} target="_blank" rel="noopener noreferrer">
-                  {locale==="ru"?"Открыть отдельно":locale==="es"?"Abrir vídeo":"Open video"}
-                </a>
+                <button type="button" onClick={playIntro}>Повторить MP4</button>
+                <a href={introVideo.embed} target="_blank" rel="noopener noreferrer">Открыть отдельно</a>
               </div>
             </>}
           </div>
-          {!introPlaying&&<button type="button" className={videoStyles.therapyHeroLaunch}
-            data-video-therapy-intro="ready" disabled={recording||preparing}
-            aria-label={locale==="ru"?"Смотреть презентацию о видеотерапии, 1 минута 37 секунд":
-              locale==="es"?"Ver la presentación, audio en inglés":"Play the Video Therapy introduction, English audio, 1 minute 31 seconds"}
-            onClick={playIntro}>
-            <span className={videoStyles.therapyHeroKicker}>HOLISTIC HOUSE</span>
-            <span className={videoStyles.therapyHeroPlayIcon}><Play size={22} fill="currentColor" aria-hidden="true"/></span>
-            <strong className={videoStyles.therapyHeroTitle}>{locale==="ru"?"О видеотерапии":locale==="es"?"Descubre la videoterapia":"Discover Video Therapy"}</strong>
-            <span className={videoStyles.therapyHeroCaption}>{locale==="ru"?"Русская озвучка · 01:37":locale==="es"?"Audio en inglés · 01:31":"English audio · 01:31"}</span>
-          </button>}
+          {locale!=="ru"&&introYoutubeStatus==="checking"?
+            <div className={videoStyles.therapyHeroError} role="status"
+              data-video-english-youtube-status="checking">
+              {locale==="es"?"Comprobando el vídeo en YouTube…":"Checking the English YouTube video…"}
+            </div>:null}
+          {locale!=="ru"&&introYoutubeStatus==="missing"?
+            <div className={videoStyles.therapyHeroError} role="status"
+              data-video-english-youtube-status="unavailable">
+              {locale==="es"?"La presentación aún no está verificada en el YouTube inglés.":
+                "This introduction is not yet verified on the English YouTube channel."}
+              <button type="button" onClick={playIntro}>
+                {locale==="es"?"Reintentar":"Try again"}
+              </button>
+            </div>:null}
+          {!introPlaying&&introYoutubeStatus!=="checking"&&introYoutubeStatus!=="missing"&&
+            <button type="button" className={videoStyles.therapyHeroLaunch}
+              data-video-therapy-intro="ready" disabled={recording||preparing}
+              aria-label={locale==="ru"?"Смотреть русскую презентацию, 1 минута 37 секунд":
+                locale==="es"?"Ver presentación del YouTube inglés, 1 minuto 31 segundos":
+                "Play the English YouTube introduction, 1 minute 31 seconds"}
+              onClick={playIntro}>
+              <span className={videoStyles.therapyHeroKicker}>HOLISTIC HOUSE</span>
+              <span className={videoStyles.therapyHeroPlayIcon}>
+                <Play size={22} fill="currentColor" aria-hidden="true"/>
+              </span>
+              <strong className={videoStyles.therapyHeroTitle}>
+                {locale==="ru"?"О видеотерапии":locale==="es"?"Descubre la videoterapia":"Discover Video Therapy"}
+              </strong>
+              <span className={videoStyles.therapyHeroCaption}>
+                {locale==="ru"?"Русская озвучка · 01:37":
+                  locale==="es"?"Audio en inglés · 01:31":"English audio · 01:31"}
+              </span>
+            </button>}
         </div> : (
         <button className={videoStyles.heroPlay} type="button" data-mandala-money-preview
           data-video-preview-toggle aria-pressed={previewPlaying}
@@ -8316,7 +8358,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           aria-controls="video-studio-intro-guide video-hero"
           onClick={()=>{
             if(introVideo){
-              if(introPlaying)closeIntro();
+              if(introPlaying||introYoutubeStatus==="checking")closeIntro();
               else playIntro();
               setStudioIntroOpen(false);
             }else if(locale==="en"){
@@ -8328,7 +8370,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <ChevronRight size={17} aria-hidden="true"/>
         </button>
         <button type="button" className={videoStyles.heroRailMine} data-video-my-film
+          data-video-therapy-intro-close={introPlaying?"true":undefined}
           onClick={()=>{
+            if(introPlaying||introYoutubeStatus!=="idle")closeIntro();
             setStudioIntroOpen(false);
             setIntroPlaying(false);setIntroDismissed(true);
             if(result){
@@ -8344,7 +8388,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             }
           }}>
           <FolderOpen size={20} aria-hidden="true"/>
-          <strong>{locale==="ru"?"Мой ролик":locale==="es"?"Mi vídeo":"My video"}</strong>
+          <strong>{introPlaying||introYoutubeStatus!=="idle" ?
+            (locale==="ru"?"К моему видео":locale==="es"?"Volver a mi vídeo":"Back to my video"):
+            (locale==="ru"?"Мой ролик":locale==="es"?"Mi vídeo":"My video")}</strong>
           <span>{locale==="ru"?"Ролик и черновик":locale==="es"?"Vídeo y borrador":"Video & draft"}</span>
           <ChevronRight size={17} aria-hidden="true"/>
         </button>

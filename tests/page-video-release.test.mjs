@@ -35,8 +35,12 @@ for (const [key, id, poster, hash] of cases) {
 test('a cold SSR play control cannot accept a click before its handler is mounted', () => {
   assert.match(player, /const \[interactive, setInteractive\] = useState\(false\)/);
   assert.match(player, /useEffect\(\(\) => \{ setInteractive\(true\); \}, \[\]\)/);
-  assert.match(player, /disabled=\{!interactive\}/);
-  assert.match(player, /onClick=\{\(\) => \{ setShowRecovery\(false\); setPlaying\(true\); \}\}/);
+  assert.match(player, /disabled=\{!interactive\|\|youtubeLookup==="checking"\}/);
+  assert.match(player, /aria-busy=\{!interactive\|\|youtubeLookup==="checking"\}/);
+  // Every playback is user-initiated; English masters additionally require a verified channel receipt.
+  assert.match(player, /onClick=\{playSelected\}/);
+  assert.match(player, /if\(!englishYoutubeOnly\)\{setPlaying\(true\);return;\}/);
+  assert.match(player, /resolveVerifiedEnglishYouTubeId\(video.heygenId,controller.signal\)/);
   assert.doesNotMatch(player, /Expires=|Signature=|\.mp4\?/);
 });
 test('posters keep the video title visible over the shared warm treatment', () => {
