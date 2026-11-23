@@ -101,7 +101,7 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
     { id: 'sessions', icon: CalendarDays, href: root + '/portrait?space=sessions', title: t.sessions, detail: t.sessionsDetail },
   ]
 
-  return <div className={styles.dashboard} data-profile-space-dashboard>
+  return <div className={styles.dashboard} data-profile-space-dashboard data-profile-space-section={section}>
     <nav className={styles.mode} aria-label={t.label}>
       <Link className={styles.life} href={root + '/portrait'} prefetch={false}
         aria-current="page" data-profile-space-life><Heart size={20} aria-hidden="true" />{t.life}</Link>
