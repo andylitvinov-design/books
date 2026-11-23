@@ -94,6 +94,7 @@ const PsiMonitoring = dynamic(() => import('@/components/app/psi-monitoring'))
 const AccountTestBattery = dynamic(() => import('@/components/app/account-test-battery').then(module => module.AccountTestBattery))
 const ProfileDomains = dynamic(() => import('@/components/app/profile-domains').then(module => module.ProfileDomains))
 const CabinetJourney = dynamic(() => import('@/components/app/cabinet-journey'))
+const SupportGoalCabinet = dynamic(() => import('@/components/app/support-goal-cabinet'), { ssr: false })
 const DevelopmentProgram = dynamic(() => import('@/components/app/development-program'), { ssr: false })
 const ClientExpressReports = dynamic(() => import('@/components/app/practice-express-reports').then(module => module.ClientExpressReports))
 const LabResults = dynamic(() => import('@/components/app/lab-results'), { ssr: false })
@@ -818,6 +819,7 @@ export default function AppWorkspace({ locale, path = [] }) {
           {page === 'portrait' && (
              <>
                {!['path','reports','sessions'].includes(searchParams.get('space')) && <>
+                 <SupportGoalCabinet key={'support-goals:'+data.account.id} accountId={data.account.id} locale={locale} />
                  <CabinetToday locale={locale} practitioner={Boolean(data.practitioner || data.practice)} owner={Boolean(data.practitioner)} />
                  <AccountMessagingEntry key={'messaging:' + data.account.id} accountId={data.account.id} locale={locale} />
                </>}
