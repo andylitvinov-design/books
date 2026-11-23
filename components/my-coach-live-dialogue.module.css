@@ -1865,3 +1865,7 @@
   padding-bottom:0!important;gap:0!important}
 .root[data-coach-greeting-stage="introduction"] .sessionScrollAwaitingGreeting{display:none!important}
 .root[data-coach-greeting-stage="session"] .sessionScrollAwaitingGreeting{display:contents}
+
+/* Profile lives immediately below the greeting viewport, via scroll.
+   Do not duplicate a separate profile button on the welcome screen. */
+.root[data-coach-greeting-stage="introduction"] .headerProfileControl{display:none!important}
