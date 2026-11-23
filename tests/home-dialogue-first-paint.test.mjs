@@ -123,7 +123,7 @@ test("Home starter sends on one tap, Ali preserves original wording and shows re
  const chat=read("components/holistic-agent-chat.tsx");
  const hub=read("components/app/messages-orders-clients.jsx");
  assert.match(home,/openGoalIntent\(msg\.findPrompt\)/);
- assert.match(home,/startConversationWith\(draft\)/);
+ assert.match(home,/startConversationWith\(draft,audienceFor\(draft\)\)/);
  assert.match(chat,/homeHandoffPhase==="queued"/);
  assert.match(chat,/homeHandoffPhase==="retry"/);
  assert.match(chat,/data-home-handoff-pending/);
