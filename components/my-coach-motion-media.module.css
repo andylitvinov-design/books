@@ -33,3 +33,8 @@
 @keyframes hh-scene-halo{from{opacity:.45;transform:scale(.9)}to{opacity:.8;transform:scale(1.08)}}
 @keyframes hh-scene-arc{to{transform:rotate(340deg)}}
 @media(prefers-reduced-motion:reduce){.video,.sceneGraphics{display:none!important;transition:none!important}.poster{animation:none!important}}
+
+/* Two clips overlap only during Samir's short state crossfade; no face warps. */
+.samirLayer{opacity:0;transition:opacity 300ms ease-in-out;will-change:opacity}
+.samirLayer[data-samir-visible='true']{opacity:1}
+@media(prefers-reduced-motion:reduce){.samirLayer{transition:none!important}}
