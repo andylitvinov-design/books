@@ -1,0 +1,37 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import {readFileSync} from 'node:fs'
+const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
+
+test('Messenger voice note is opt-in, does not replace the live Ali microphone',()=>{
+  const chat=read('components/holistic-agent-chat.tsx')
+  const note=read('components/app/messenger-voice-note.tsx')
+  assert.match(chat,/data-hh-conversation-mic/)
+  assert.match(chat,/voice\.interruptReply\(\)/)
+  assert.match(chat,/MessengerVoiceNote locale=\{locale\}/)
+  assert.match(chat,/onBegin=\{\(\)=>\{if\(voice\.conversing\)voice\.stopDialogue\(\);\}\}/)
+  assert.match(chat,/onSendTranscript=\{\(text,_file,_seconds\)=>\{/)
+  assert.match(chat,/sendSelectedTurn\(text\)/)
+  assert.match(chat,/\(proSelected&&!proReady\)/)
+  assert.match(note,/getUserMedia/)
+  assert.match(note,/new MediaRecorder\(/)
+  assert.match(note,/recorder\.start\(300\)/)
+  assert.match(note,/aria-pressed=\{phase === "recording"\}/)
+})
+
+test('voice note requires review and consent; keeps audio local and enforces limits',()=>{
+  const note=read('components/app/messenger-voice-note.tsx')
+  const styles=read('components/app/messenger-voice-note.module.css')
+  assert.match(note,/LIMIT_BYTES = 4 \* 1024 \* 1024/)
+  assert.match(note,/LIMIT_SECONDS = 59/)
+  assert.match(note,/new FormData\(\)/)
+  assert.match(note,/body\.append\("consent","yes"\)/)
+  assert.match(note,/\/api\/holistic-support\/audio-storyboard/)
+  assert.match(note,/<audio controls preload="metadata" src=\{preview\}/)
+  assert.match(note,/URL\.revokeObjectURL/)
+  assert.match(note,/generationRef\.current/)
+  assert.match(note,/abortRef\.current\?\.abort\(\)/)
+  assert.match(note,/stopTracks\(streamRef\.current\)/)
+  assert.match(styles,/\.panel\{/)
+  assert.doesNotMatch(note,/localStorage|sessionStorage|navigator\.sendBeacon/)
+})
