@@ -202,7 +202,7 @@ test("WebKit selects a real male narration voice with native touch before consen
   assert.doesNotMatch(stage,/force:\s*true|node\.click\(\)/);
 });
 
-test("voice browser opens Montage through visible Magic Mirror Plan and composer controls before recording",()=>{
+test("voice browser opens Montage through visible Magic Mirror Screen-2 Goal and composer controls before recording",()=>{
   const start=source.indexOf('phase(engine,"offline-remix-ready")');
   const end=source.indexOf('await expect(generate).toBeVisible',start);
   assert.ok(start>=0&&end>start,"inspect the real post-remix route before MP4 export");
@@ -228,8 +228,8 @@ test("voice browser opens Montage through visible Magic Mirror Plan and composer
   const reveal=source.slice(revealStart,revealEnd);
   for(const action of [
     '[data-hh-mirror-enter="me"]',
-    '[data-hh-mirror-purpose-step]',
-    '[data-video-ideas-goal-choice="rest"]',
+    '[data-hh-mirror-own-description]',
+    '[data-hh-mirror-back]',
     '[data-hh-mirror-composer]',
     '[data-hh-mirror-open-advanced]',
     'if(engine==="webkit")await entry.tap()',

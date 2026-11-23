@@ -178,3 +178,34 @@ test("Kundalini course appears correctly in all locales' prepared messenger requ
     assert.doesNotMatch(text, /secret|health|password/i);
   }
 });
+
+test("deferred public lead capture contains interrupted imports and recovers only on active documents", async () => {
+  const {loadOptionalLeadCapture}=await import("../lib/deferred-lead-capture.mjs");
+  let active=true, attempts=0;
+  const pause=async()=>{};
+  const module={SitewideLeadCapture:()=>null};
+  const recovered=await loadOptionalLeadCapture(async()=>{
+    if (++attempts===1) throw Error("ChunkLoadError");
+    return module;
+  },()=>active,pause);
+  assert.equal(attempts,2);
+  assert.equal(recovered.status,"ready");
+  assert.equal(recovered.module,module);
+  attempts=0;
+  const cancelled=await loadOptionalLeadCapture(async()=>{
+    attempts++;active=false;throw Error("ChunkLoadError");
+  },()=>active,pause);
+  assert.equal(cancelled.status,"cancelled");
+  assert.equal(attempts,1);
+  active=true;attempts=0;
+  const failed=await loadOptionalLeadCapture(async()=>{
+    attempts++;throw Error("ChunkLoadError");
+  },()=>active,pause);
+  assert.equal(failed.status,"failed");
+  assert.equal(attempts,2);
+  const component=read("components/sitewide-lead-capture-deferred.tsx");
+  assert.match(component,/classifyPublicLead\(pathname\)/);
+  assert.match(component,/__hhOptionalReadsDeparting/);
+  assert.match(component,/data-sitewide-capture-retry/);
+  assert.match(component,/addEventListener\("pageshow"/);
+});

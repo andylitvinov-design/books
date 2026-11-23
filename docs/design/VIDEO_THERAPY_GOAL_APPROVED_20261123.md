@@ -21,3 +21,33 @@ Browser geometry + real taps for 320, 354, 390, 430 CSS px in Chromium/WebKit; E
 One atomic protected PR from verified `codex/public-book-library`; Core, Specialist/WebKit and hh-merge-check; native protected auto-merge. Use the existing hourly Vercel production publisher only, **never** independently deploy or spend XP. Verify Vercel production READY and matching SHA on canonical `https://holistichouse.vercel.app` plus the meaningful Goal interactions before saying LIVE.
 
 GLOBAL_PR_ONE_PUBLISH_V1: staged_before_open=yes; local_checks=partial; post_open_head_updates=0; extra_waves=none; cost_new_spend=NO_NEW_SERVICES
+
+## Superseding owner approval · 23 November 2026 · Goal Screen 2
+
+The existing Magic Mirror landing is Screen 1. Immediately after selecting
+For Me / Others / Work, Goal Screen 2 displays the photo-based **three-step
+category → subcategory → topic quiz**. It is a single cohesive composition:
+the original global brand/XP, six workspace tabs (Goal active), the SAME
+native 16:9 source-backed video player on **every** quiz stage, ONE question
+with three numbered lightbulbs indicating the current stage, four large
+scenic 2-column image cards, and unchanged global mobile dock.
+
+Stage 1 Me card order is **Love / Money / Stress / Personal Growth** with
+pink flowers / blue mountains / sea sunrise / green hills. Stage 2 and 3
+change only the question, active lightbulb, and real taxonomy choices;
+the shared original video is never replaced, duplicated or played by default.
+An optional disclosure below the four cards preserves the genuine free-text
+goal composer, existing mic/image buttons, AI Ideas, Guide me and Next.
+
+After stage 3, the canonical existing **Purpose** selection and
+**250 / 500 / 2000 XP planning Format** screens remain; only choosing a
+Format after both steps enters the original Montage/Personal/Ready workflow.
+Direct typed intent follows the same downstream confirmation. This revises
+the earlier ordering and no-video directives in this document, not the
+first landing screen. There is no new API/render/credit charge/CRM action.
+
+Acceptance: exact-head EN/RU/ES and mobile 320/354/390/430 Chromium/WebKit;
+real taps category→sub→topic→Purpose→Format→Montage, photo loading, video
+playback, hidden/expanded optional typed composer, no overflow and dock
+overlap. Physical iPhone Safari and final canonical READY/SHA require
+separate proof; CI alone is not LIVE.

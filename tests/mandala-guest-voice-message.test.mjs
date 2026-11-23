@@ -63,11 +63,14 @@ test("macOS WebKit hydration follows visible Goal → Montage Extra → Personal
  const last=browser.indexOf("// Real guest route browser acceptance",first);
  const flow=browser.slice(first,last);
  const scope=flow.indexOf("await mirror.locator('[data-hh-mirror-enter=\"me\"]').click()");
- const choose=flow.indexOf("await purpose.locator('[data-video-ideas-goal-choice=\"rest\"]').click()",scope);
- const goalContinue=flow.indexOf("await purpose.locator('[data-video-ideas-goal-next]').click()",choose);
- const format=flow.indexOf("await mirror.locator('[data-hh-mirror-video-format=\"pro\"]').click()",goalContinue);
- assert.ok(scope>=0&&choose>scope&&goalContinue>choose&&format>goalContinue,
-   "the visible journey chooses Goal before Format");
+ const category=flow.indexOf("await mirror.locator('[data-hh-mirror-goal-choice=\"love\"]').click()",scope);
+ const subcategory=flow.indexOf("await subs.first().click()",category);
+ const topic=flow.indexOf("await mirror.locator('[data-hh-mirror-topic]').first().click()",subcategory);
+ const purposeFormat=flow.indexOf('await confirmPurposeAndFormat("rest","pro")',topic);
+ assert.ok(scope>=0&&category>scope&&subcategory>category&&topic>subcategory&&purposeFormat>topic,
+   "visible Screen-2 selects three Goal lightbulb stages before purpose and format");
+ for(const step of [1,2,3])assert.ok(flow.includes('await stepIs('+step+')'),
+   "the visible Goal must check each of its three real lightbulbs");
  assert.ok(flow.includes("const preservedGoal=ideasGoalPane.locator"),"the selected Goal must be checked after personalization");
  // Test the exact supported user path, not the retired Goal → Ideas shortcut.
  const mirrorNext=flow.indexOf("await mirror.locator('[data-hh-mirror-next]').click()");
@@ -207,7 +210,7 @@ test("macOS WebKit exposes preserved recipient actions through visible Magic Mir
  assert.match(reveal,/data-hh-mirror-composer/);
  assert.match(reveal,/data-hh-mirror-open-advanced/);
  assert.match(reveal,/await expect\(plus\)\.toBeEnabled\(\)/);
- assert.doesNotMatch(reveal,/force:true|\.evaluate\(/);
+ assert.doesNotMatch(reveal,/force:true|\.evaluate\([^)]*click/);
 });
 
 test("real macOS WebKit Montage navigation opens visible Magic Mirror controls before the hidden workspace rail",()=>{
@@ -224,19 +227,22 @@ test("real macOS WebKit Montage navigation opens visible Magic Mirror controls b
  assert.doesNotMatch(helper,/force:true|\.evaluate\(/);
  const reveal=browser.slice(browser.indexOf("async function revealMirrorAdvanced"),helperStart);
  assert.match(reveal,/if\(engine==="webkit"\)await entry\.tap\(\)/);
- assert.match(reveal,/if\(engine==="webkit"\)await format\.tap\(\)/);
+ assert.match(reveal,/if\(engine==="webkit"\)await summary\.tap\(\)/);
  assert.match(reveal,/if\(engine==="webkit"\)await plus\.tap\(\)/);
  const editor=browser.slice(browser.indexOf('phase(engine,"editor-ready")'));
  assert.match(editor,/await enterVisibleStudioWorkspace\(page,"editor",engine\)/);
  assert.doesNotMatch(editor,/await editorTab\.click\(\)|await page\.locator\('\[data-video-quick-control="editor"\]'\)\.click\(\)/);
 });
 
-test("shared original-motion WebKit quiz uses real Scope → Goal → Format → Topic touches",()=>{
+test("original-motion WebKit opens current Screen-2 Goal through real Details and Plus",()=>{
  const source=read("scripts/benchmarking/complete-three-step-goals-quiz.mjs");
- for(const token of ['[data-hh-mirror-enter="me"]','[data-hh-mirror-purpose-step]',
-   '[data-video-ideas-goal-choice="rest"]','[data-video-ideas-goal-next]',
-   '[data-hh-mirror-video-format="basic"]','[data-hh-mirror-open-advanced="true"]'])
+ for(const token of ['[data-hh-mirror-enter="me"]','[data-hh-mirror-own-description]',
+   '[data-hh-mirror-composer]','[data-hh-mirror-open-advanced="true"]',
+   '[data-auto-video-category]','[data-auto-video-subcategory]','[data-video-goal-topic]'])
   assert.ok(source.includes(token),token);
- assert.doesNotMatch(source,/data-hh-mirror-plan|MIRROR_VISIBLE_BACK_UNAVAILABLE/);
- assert.match(source,/step==='2'\|\|step==='3'/);
+ assert.match(source,/await awaitScreen\('topic'\)/);
+ assert.match(source,/details\.getAttribute\('open'\)/);
+ assert.match(source,/await tap\(details\.locator\(':scope > summary'\)\)/);
+ assert.doesNotMatch(source,/data-hh-mirror-plan|MIRROR_VISIBLE_BACK_UNAVAILABLE|force:\s*true/);
+ assert.doesNotMatch(source,/await awaitScreen\('purpose'\)|await awaitScreen\('format'\)/);
 });

@@ -144,7 +144,16 @@ try {
   await page.locator('[data-video-quick-control="editor"]').click();
   await openMontageSettings(page);
   const textTools=page.locator('[data-video-concept-text-tools]');
-  await textTools.locator(':scope > summary').click();
+  const textSummary=textTools.locator(':scope > summary');
+  await textSummary.waitFor({state:'visible',timeout:15000});
+  // Native <details> toggles closed when its summary is pressed while open.
+  // Settings can preserve its state across real workspace navigation.
+  if(await textTools.getAttribute('open')===null)await press(textSummary);
+  await page.waitForFunction(() => {
+    const tools=document.querySelector('[data-video-concept-text-tools]');
+    const timeline=tools?.querySelector('[data-video-concept-timeline]');
+    return tools?.hasAttribute('open')&&Boolean(timeline?.getClientRects().length);
+  },undefined,{timeout:15000});
   assert.equal(await textTools.getAttribute('open'),'','TIMELINE_DISCLOSURE_MUST_OPEN');
   // The shared timeline is mounted in Audio, not within the text tools disclosure.
   const timelineAudioTab=page.locator('[data-video-montage-tab="audio"]');
