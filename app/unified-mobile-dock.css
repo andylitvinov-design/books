@@ -100,7 +100,7 @@ body:has([data-hh-unified-dock]) [data-video-director-chat-details]{scroll-margi
   padding-top:12px;
  }
  body:has(main[data-shamanica-audience="self"]) [data-hh-unified-dock] [data-unified-dock-item] span {
-  font-size:clamp(8.5px,2.45vw,11px);
+  font-size:clamp(10px,3.05vw,12px);
   white-space:nowrap;
   overflow-wrap:normal;
   letter-spacing:-.24px;
@@ -115,5 +115,114 @@ body:has([data-hh-unified-dock]) [data-video-director-chat-details]{scroll-margi
  body:has(main[data-shamanica-audience="self"]) [data-hh-unified-dock] [data-unified-dock-item] span{
   font-size:clamp(9.6px,2.95vw,11.3px);
   letter-spacing:-.38px;
+ }
+}
+
+
+/* HOME_APPROVED_MOBILE_BANNER_20261120 — legal global selector, not a CSS Module. */
+@media(max-width:759px){
+ body:has([data-home-dialogue-entry]) [data-sitewide-antistress-banner]{display:none!important}
+}
+
+
+/* SHAMANIC_LUXURY_LOUNGE_DOCK_20261121: only personal Shamanic page. */
+@media(max-width:759px){
+ body:has(main[data-shamanica-audience="self"]) [data-sitewide-antistress-banner]{
+  display:none!important;
+ }
+ body:has(main[data-shamanica-audience="self"]) [data-hh-unified-dock]{
+  border:1px solid #97763b;border-bottom:0;border-radius:32px 32px 0 0;
+  background:linear-gradient(180deg,#064b33f7 0,#063421fa 70%,#032516 100%);
+  box-shadow:0 -6px 18px #080c0677,inset 0 1px #c9be726b;
+  backdrop-filter:blur(15px);-webkit-backdrop-filter:blur(15px);
+ }
+ body:has(main[data-shamanica-audience="self"]) [data-hh-unified-dock] [data-unified-dock-item]{
+  color:#fff5de;
+ }
+ body:has(main[data-shamanica-audience="self"]) [data-hh-unified-dock] [data-unified-dock-item="practice"][aria-current="page"]{
+  color:#fffadf;background:#456b26af;border-radius:17px;
+ }
+ body:has(main[data-shamanica-audience="self"]) [data-hh-unified-dock] [data-unified-dock-item="ai"] svg{
+  border:2px solid #ffe5a2;
+  background:radial-gradient(circle at 35% 18%,#18d08c 0,#07945e 52%,#055735 100%);
+  box-shadow:0 0 0 3px #e9b95a75,0 0 18px 5px #f5c65a70;
+ }
+ body:has(main[data-shamanica-audience="self"]) [data-hh-unified-dock] [data-unified-dock-item="ai"] span{
+  color:#fff9da;background:#066a45;
+ }
+}
+
+/* SUPPORT_LUXURY_DOCK_20261121: dark emerald/gold only on the approved
+   mobile Support intake, not on the optional Ali chat or other pages. */
+@media(max-width:759px){
+ body:has(main[data-support-luxe="true"]){background:#1a1009!important}
+ main[data-support-luxe="true"]{background:#1a1009!important;overflow-x:clip}
+ main[data-support-luxe="true"] > .house-header--services{display:none!important}
+ body:has(main[data-support-luxe="true"]) [data-hh-unified-dock]{
+  border:1px solid #e2bf76a6;border-bottom:0;
+  background:linear-gradient(180deg,#0b3926ed,#03291dec)!important;
+  box-shadow:0 -6px 22px #0703029e,inset 0 1px 0 #f9df984d;
+  -webkit-backdrop-filter:blur(15px);backdrop-filter:blur(15px)
+ }
+ body:has(main[data-support-luxe="true"]) [data-hh-unified-dock] [data-unified-dock-item]{
+  color:#fff0ce;white-space:normal
+ }
+ body:has(main[data-support-luxe="true"]) [data-hh-unified-dock] [data-unified-dock-item][aria-current="page"]:not([data-unified-dock-item="ai"]){
+  color:#fff2cd;background:linear-gradient(#276a42,#0c462e);
+  box-shadow:inset 0 1px 0 #b9df8844
+ }
+ body:has(main[data-support-luxe="true"]) [data-hh-unified-dock] [data-unified-dock-item="ai"] svg{
+  border-color:#f9cf83;background:linear-gradient(160deg,#14b87b,#02674d);
+  box-shadow:inset 0 1px 6px #c2f8c444,0 4px 15px #051f17,
+    0 0 0 3px #d3aa6fa8
+ }
+ body:has(main[data-support-luxe="true"]) [data-hh-unified-dock] [data-unified-dock-item="ai"] span{
+  background:linear-gradient(#087d57,#044e3b);color:#fff0d4
+ }
+ body:has(main[data-support-luxe="true"]) [data-hh-unified-dock] [data-unified-dock-item] span{
+  font-size:clamp(10px,2.6vw,12px)
+ }
+}
+
+
+/* SHAMANIC_UNIFIED_HD_DOCK_20261121: personal AND business first screens. */
+@media(max-width:759px){
+ body:has([data-hh-unified-dock]):has(main[data-shamanica-mobile]){
+  padding-bottom:0!important;
+ }
+ /* The page header already contains a working Help button. A duplicate
+    fixed iHelp pill would cover the illustrated scene and block taps. */
+ body:has(main[data-shamanica-mobile]) [data-hh-ihelp-trigger]{
+  display:none!important;
+ }
+ body:has(main[data-shamanica-mobile]) [data-sitewide-antistress-banner]{
+  display:none!important;
+ }
+ body:has(main[data-shamanica-mobile]) [data-hh-unified-dock]{
+  min-height:78px;padding:12px max(3px,env(safe-area-inset-right))
+    calc(5px + env(safe-area-inset-bottom))
+    max(3px,env(safe-area-inset-left));
+  border:1px solid #ae9049;border-bottom:0;border-radius:28px 28px 0 0;
+  background:linear-gradient(180deg,#04462ffb,#063421f9 70%,#032918);
+  box-shadow:0 -5px 17px #080b067a,inset 0 1px #e5d3987d;
+ }
+ body:has(main[data-shamanica-mobile]) [data-hh-unified-dock] [data-unified-dock-item]{
+  color:#f9f0d8;
+ }
+ body:has(main[data-shamanica-mobile]) [data-hh-unified-dock] [data-unified-dock-item] span{
+  max-width:100%;white-space:normal!important;overflow-wrap:break-word!important;
+  font-size:clamp(10px,2.5vw,10.3px)!important;line-height:1.08;
+  letter-spacing:-.12px!important;text-align:center;
+ }
+ body:has(main[data-shamanica-mobile]) [data-hh-unified-dock] [data-unified-dock-item="practice"][aria-current="page"]{
+  background:#426523a6;color:#fff5d9;border-radius:13px;
+ }
+ body:has(main[data-shamanica-mobile]) [data-hh-unified-dock] [data-unified-dock-item="ai"] svg{
+  border:2px solid #ffe6a3;
+  background:radial-gradient(circle at 35% 18%,#18c988 0,#078b5b 55%,#054b30 100%);
+  box-shadow:0 0 0 3px #dab6657a,0 0 15px 3px #f0c76a6b;
+ }
+ body:has(main[data-shamanica-mobile]) [data-hh-unified-dock] [data-unified-dock-item="ai"] span{
+  color:#fff6d6;background:#076745;
  }
 }

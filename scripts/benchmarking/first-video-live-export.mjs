@@ -176,19 +176,71 @@ try {
   // Require real, visible controls and native browser taps; never use the
   // hidden legacy Continue control or mutate application state from the test.
   row.phase='goal-visible-express-request';
+  // On the approved mobile Magic Mirror, all detailed tools remain behind
+  // the visible More goals disclosure. Open it with a genuine user gesture
+  // before the existing aspect/instant controls; never force-click hidden
+  // legacy controls, bypass the renderer, or create a second test-only path.
+  const mirrorMore=page.locator('[data-hh-mirror-more-goals]');
+  if(await mirrorMore.count() && await mirrorMore.isVisible()){
+    if(engine==='webkit')await mirrorMore.tap();
+    else await mirrorMore.click();
+  }else{
+    // Follow actual visible Landing → Format → Topic → Plus; no hidden controls.
+    const mirror=page.locator('[data-hh-mirror-goals]');
+    const screen=()=>mirror.getAttribute('data-hh-mirror-screen');
+    if(await screen()==='landing'){
+      row.phase='mirror-audience-native-selection';
+      const entry=mirror.locator('[data-hh-mirror-enter="me"]');
+      if(engine==='webkit')await entry.tap();else await entry.click();
+      await expect(mirror).toHaveAttribute('data-hh-mirror-screen','purpose');
+    }
+    if(await screen()==='purpose'){
+      row.phase='mirror-canonical-goal-native-selection';
+      const goal=mirror.locator('[data-hh-mirror-purpose-step]');
+      const rest=goal.locator('[data-video-ideas-goal-choice="rest"]');
+      if(engine==='webkit')await rest.tap();else await rest.click();
+      const next=goal.locator('[data-video-ideas-goal-next]');
+      await expect(next).toBeEnabled();
+      if(engine==='webkit')await next.tap();else await next.click();
+      await expect(mirror).toHaveAttribute('data-hh-mirror-screen','format');
+    }
+    if(await screen()==='format'){
+      row.phase='mirror-format-native-selection';
+      const format=mirror.locator('[data-hh-mirror-video-format="basic"]');
+      if(engine==='webkit')await format.tap();else await format.click();
+      await expect(mirror).toHaveAttribute('data-hh-mirror-screen','topic');
+    }
+    const composer=page.locator('[data-hh-mirror-composer]');
+    await expect(composer).toBeVisible({timeout:15000});
+    const plus=composer.locator('[data-hh-mirror-open-advanced]');
+    await expect(plus).toBeVisible();
+    if(engine==='webkit')await plus.tap();else await plus.click();
+  }
+  const studio=page.locator('[data-mandala-free-video]');
+  await expect(studio).toHaveAttribute('data-hh-mirror-advanced','true');
+  await expect(studio).toHaveAttribute('data-video-scenario-open','true');
   const aspectMenu=page.locator('[data-video-prompt-aspect]');
-  await aspectMenu.locator(':scope > summary').click();
-  const landscape=page.locator('[data-video-request-aspect="landscape"]');
-  await landscape.waitFor({state:'visible',timeout:10000});
-  if(engine==='webkit')await landscape.tap();
-  else await landscape.click();
-  await expect(landscape).toHaveAttribute('aria-pressed','true');
-  await aspectMenu.locator(':scope > summary').click();
-  const portrait=page.locator('[data-video-request-aspect="portrait"]');
-  await portrait.waitFor({state:'visible',timeout:10000});
-  if(engine==='webkit')await portrait.tap();
-  else await portrait.click();
-  await expect(portrait).toHaveAttribute('aria-pressed','true');
+  const aspectSummary=aspectMenu.locator(':scope > summary');
+  await expect(aspectSummary).toBeVisible({timeout:15000});
+  // Selecting an aspect closes the native <details>. A WebKit React update
+  // may leave it open on the next render, so blindly clicking the summary
+  // again sometimes CLOSES the menu and hides the second choice.
+  // Inspect the real native state before each trusted user gesture.
+  const selectAspect=async format=>{
+    if(!await aspectMenu.evaluate(node=>node.open)){
+      if(engine==='webkit')await aspectSummary.tap();
+      else await aspectSummary.click();
+    }
+    await expect.poll(()=>aspectMenu.evaluate(node=>node.open),
+      {timeout:15000}).toBe(true);
+    const choice=aspectMenu.locator(`[data-video-request-aspect="${format}"]`);
+    await expect(choice).toBeVisible({timeout:10000});
+    if(engine==='webkit')await choice.tap();
+    else await choice.click();
+    await expect(choice).toHaveAttribute('aria-pressed','true');
+  };
+  await selectAspect('landscape');
+  await selectAspect('portrait');
   const request=page.locator('[data-auto-video-input]');
   await request.waitFor({state:'visible',timeout:40000});
   await request.fill(EXPRESS_GOAL);
@@ -218,6 +270,28 @@ try {
   const bytes=captured.bytes;
   row.anonymousSaveAuthGateVerified=captured.authGateVerified;
   row.recordedBlobVerified=true;row.downloadedVideo=false;
+  // The previous test inspected the encoded Blob but never clicked Download.
+  // Assert real guest Ready user-gesture download yields identical encoded MP4
+  // bytes. Save-to-My-Videos still separately requires signed-in consent.
+  const directDownload=page.locator('[data-video-ready][data-ready-state="complete"] [data-ready-direct-download]');
+  await expect(directDownload).toBeVisible({timeout:10000});
+  const expectedFilename='holistic-house-personal.'+captured.extension;
+  await expect(directDownload).toHaveAttribute('download',expectedFilename);
+  row.phase='verified-ready-user-download';
+  const [download]=await Promise.all([
+    page.waitForEvent('download',{timeout:20000}),
+    engine==='webkit'?directDownload.tap():directDownload.click(),
+  ]);
+  assert.equal(download.suggestedFilename(),expectedFilename,
+    'VERIFIED_READY_DOWNLOAD_WRONG_FILENAME');
+  const parts=[];
+  for await(const chunk of await download.createReadStream())
+    parts.push(Buffer.from(chunk));
+  const savedBytes=Buffer.concat(parts);
+  assert.ok(savedBytes.length>20000,'VERIFIED_READY_DOWNLOAD_EMPTY');
+  assert.deepEqual(savedBytes,bytes,'VERIFIED_READY_DOWNLOAD_BYTES_DIFFER_FROM_MP4');
+  row.downloadedVideo=true;
+  row.downloadedBytes=savedBytes.length;
   assert.ok(bytes.length > 20000, 'VIDEO_EXPORT_EMPTY');
   const filename = 'holistic-house-guest.'+captured.extension;
   assert.match(filename, /\.(mp4|webm)$/, 'INCORRECT_VIDEO_FILENAME');
@@ -245,6 +319,11 @@ try {
   assert.equal(video.width, 720, 'WRONG_PORTRAIT_WIDTH');
   assert.equal(video.height, 1280, 'WRONG_PORTRAIT_HEIGHT');
   const seconds = Number(probe.format?.duration || video.duration || 0);
+  row.probedTiming = {
+    containerDurationSeconds: Number(probe.format?.duration) || null,
+    videoDurationSeconds: Number(video.duration) || null,
+    audioDurationSeconds: Number(audio.duration) || null,
+  };
   assert.ok(seconds >= 29 && seconds <= 32, 'EXPRESS_VIDEO_MUST_BE_30_SECONDS');
   const energy = rmsPcm(mediaFile);
   Object.assign(row, {recordedBlobVerified: true, encodedBytes: bytes.length,

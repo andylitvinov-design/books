@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {coachInformationCoverage,COACH_METHOD_INFORMATION,COACH_INFORMATION_PERSONA_METHODS} from '../lib/coaching/coach-information-coverage.mjs'
+import {coachInformationCoverage,COACH_METHOD_INFORMATION,COACH_INFORMATION_PERSONA_METHODS,COACH_INFORMATION_METHOD_IDS} from '../lib/coaching/coach-information-coverage.mjs'
 import {getCoachPersona} from '../lib/coaching/persona-registry.mjs'
 import {coachSessionCard} from '../lib/coaching/coach-session-card.mjs'
 const report=(personaId,methodId,evidence={},clientClauses=[],currentMissing=[]) =>
@@ -20,6 +20,19 @@ test('every registered coach has its exact primary methodology and six localized
   assert.equal(audit.isPersisted,false)
  }
  assert.equal(Object.keys(COACH_METHOD_INFORMATION).length,6)
+})
+test('each persona secondary approved method has six fields, unrelated methods are rejected',()=>{
+ for(const id of Object.keys(COACH_INFORMATION_PERSONA_METHODS)){
+  const persona=getCoachPersona(id)
+  for(const name of persona.methods){
+   const methodId=COACH_INFORMATION_METHOD_IDS[name]
+   assert.ok(methodId,id+' '+name)
+   assert.equal(report(id,methodId)?.fields.length,6,id+' '+name)
+  }
+ }
+ assert.equal(report('merlin','oskar'),null)
+ assert.equal(report('harry','grow'),null)
+ assert.equal(report('unknown','grow'),null)
 })
 test('client quote alone or Director flag alone is incomplete',()=>{
  const quote='Я хочу понять, как поговорить с руководителем, чтобы это стало легче.'
@@ -47,7 +60,7 @@ test('Merlin appreciative discover never accepts hypothetical evidence as a fact
  assert.equal(field(a,'discover').quote,null)
  const positive=report('merlin','appreciative_inquiry',{positiveExperience:true},['В прошлый раз у меня получилось спокойно принять важное решение.'])
  assert.equal(field(positive,'discover').status,'supported')
- assert.equal(report('merlin','grow'),null)
+ assert.equal(report('merlin','grow')?.fields.length,6)
 })
 test('Sofia solution-focused exceptions and resources are separate and not fabricated',()=>{
  const a=report('sofia','solution_focused',{pastException:true,existingStrength:true},[
@@ -95,4 +108,12 @@ test('integration: existing model context card receives six-field audit, no pers
  assert.equal(card.informationAudit.fields.length,6)
  assert.ok(card.informationAudit.fields.every(f=>!('label' in f)))
  assert.equal(card.informationAudit.semanticRelevanceVerified,false)
+})
+
+test('80 client turns preserve early method-specific evidence even after many later clauses',()=>{
+ const first='Я хочу спокойно перейти на новую работу, сохраняя отношения с коллегами.'
+ const clauses=[first,...Array.from({length:79},(_,i)=>'Сегодня я рассказываю пример ситуации номер '+(i+1)+'.')]
+ const item=report('mira','grow',{goalRestated:true,workingFocusEstablished:true},clauses)
+ assert.equal(field(item,'goal').status,'supported')
+ assert.equal(field(item,'goal').quote,first)
 })

@@ -1,6 +1,6 @@
 "use client";
 import {useEffect,useMemo,useState} from "react";
-import {ArrowRight,Film,Play} from "lucide-react";
+import {ArrowRight,Film,Play,Pencil} from "lucide-react";
 import {suggestVideoConcept} from "@/lib/mandala/auto-video-concept.mjs";
 import {getVideoCreativeDirections,applyVideoCreativeDirection} from "@/lib/mandala/video-creative-directions.mjs";
 import {buildAlignedStorySceneGuides} from "@/lib/mandala/storyboard-content-alignment.mjs";
@@ -35,6 +35,7 @@ type Props={
  onApprovalRequiredChange?:(pending:boolean)=>void;
  fiveSceneShots?:readonly Shot[]|null;
  onPreview:(second:number)=>void;onOpenIdeas:()=>void;
+ onEditPhrase:(phrase:string)=>void;
 };
 const words={
  ru:{source:"Автоматически из «Идей»",scene:"Сцена",visual:"В кадре",preview:"Посмотреть кадр",
@@ -99,7 +100,7 @@ const clock=(time:number)=>{
 export function MandalaAutomaticStoryboard({
  locale,goal,theme,durationSeconds,aspect,styleIndex,pace,personalization,appliedStoryKey,selectedTopic=null,
  phrases,transcript,approvedConcept,draftConcept=null,suggestedConcept=null,selectedDirectionId=null,
- scenes,appliedShots,resolveMedia,disabled,onApply,onChooseQuality,onApprovalRequiredChange,fiveSceneShots,onOpenIdeas
+ scenes,appliedShots,resolveMedia,disabled,onApply,onChooseQuality,onApprovalRequiredChange,fiveSceneShots,onOpenIdeas,onEditPhrase
 }:Props){
  const t=words[locale];
  const [expandedScene,setExpandedScene]=useState<number|null>(null);
@@ -145,8 +146,9 @@ export function MandalaAutomaticStoryboard({
  ]);
  const references=useMemo(()=>storyboardPhotoReferences({
   scenarioId:concept.scenarioId||"",categoryId:concept.categoryId||"",
-  shotCount:guides.scenes.length,avoidImagery:concept.avoidImagery||[]
- }),[concept.scenarioId,concept.categoryId,concept.avoidImagery,guides.scenes.length]);
+  shotCount:guides.scenes.length,avoidImagery:concept.avoidImagery||[],
+  sceneGuides:guides.scenes,aspect:photoOutputAspect
+ }),[concept.scenarioId,concept.categoryId,concept.avoidImagery,guides.scenes,photoOutputAspect]);
  const hasSixPhotoReferences=references.length===6&&
    references.every(photo=>photo&&isTrustedStoryPhoto(photo))&&
    new Set(references.map(photo=>photo?.id)).size===6;
@@ -239,6 +241,7 @@ export function MandalaAutomaticStoryboard({
  const visibleCount=manualFiveReady?5:guides.scenes.length;
  // Source-reviewed photos remain visible as REFERENCES until a visitor
  // explicitly accepts the illustrative photomontage.
+ const linkedPhraseCount=guides.scenes.filter(beat=>Boolean(beat.sourcePhrase)).length;
  const photoReferenceCount=references.slice(0,visibleCount).filter((photo,index)=>
    Boolean(photo&&!(manualFiveReady?fiveSceneShots?.[index]:
      photoAdaptationApplied?appliedShots?.[index]:shots[index]))).length;
@@ -296,6 +299,11 @@ export function MandalaAutomaticStoryboard({
     {eligible?<small>({proposal.shots.length} {t.clips})</small>:null}
    </p>
    <small className={styles.storyAutoLead}>{lead} · {statusText} · {paceText}</small>
+   {linkedPhraseCount>0?<small className={styles.storyAutoPhraseSummary}
+     data-storyboard-phrase-summary>
+     {locale==="ru"?"Фразы по сценам: ":locale==="es"?"Frases por escena: ":"Phrases in scenes: "}
+     {linkedPhraseCount}/{guides.scenes.length}
+   </small>:null}
   </div>
   <ol className={styles.storyAutoList} data-video-auto-storyboard-list>
    {compactCards.map((item,index)=>{
@@ -311,10 +319,12 @@ export function MandalaAutomaticStoryboard({
       concept.emotionalProgram?.[Math.min(3,guide.stage-1)];
     const generic=/^(?:step|шаг|paso)\s*\d+$/i.test(guide.title);
     const title=generic?(emotion||media?.title||lead):guide.title;
+    const sourcePhrase=guide.sourcePhrase;
     return <li key={index} className={styles.storyAutoCard}
       data-video-story-scene={index+1} data-concept-scene-id={authored?.sceneId||undefined}
       data-video-story-media-matched={Boolean(shot)}
       data-storyboard-expanded={expandedScene===index}
+      data-storyboard-has-phrase={Boolean(sourcePhrase)}
       data-story-media-kind={photo?"photo":shot?"video":reference?"reference":"missing"}
       data-storyboard-reference-only={Boolean(reference&&!shot)}
       data-storyboard-reference-id={reference?.id||undefined}
@@ -339,6 +349,16 @@ export function MandalaAutomaticStoryboard({
       <span className={styles.srOnly}>{t.scene} {index+1}</span>
       <small data-storyboard-scene-time>{clock(from)}–{clock(to)}</small>
       <strong>{title}</strong>
+      {sourcePhrase?<button type="button" className={styles.storyAutoPhraseEdit}
+        data-storyboard-scene-phrase data-storyboard-edit-phrase={index+1}
+        aria-label={(locale==="ru"?"Редактировать установку в сцене ":
+          locale==="es"?"Editar frase de la escena ":"Edit phrase in scene ")+(index+1)+": "+sourcePhrase}
+        title={locale==="ru"?"Редактировать во вкладке Текст":
+          locale==="es"?"Editar en Texto":"Edit in Text"}
+        disabled={disabled} onClick={()=>onEditPhrase(sourcePhrase)}>
+        <span className={styles.storyAutoPhraseText}>{sourcePhrase}</span>
+        <Pencil size={15} aria-hidden="true"/>
+      </button>:null}
       <button type="button" className={styles.storyAutoAction}
         data-storyboard-scene-action aria-expanded={expandedScene===index}
         title={guide.visual}

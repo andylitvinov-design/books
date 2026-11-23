@@ -417,6 +417,20 @@ export function startPresetAudio(
  * Decode locally using Web Audio because audio.captureStream() is unavailable
  * on many iPhones. This graph deliberately does not connect to speakers.
  */
+/** Trim looping music only; narration remains unmodified. */
+export function clipMusicBuffer(context:AudioContext,sound:AudioBuffer,maxSeconds=30):AudioBuffer {
+  if (!sound.length || !Number.isFinite(sound.duration) || sound.duration <= 0 ||
+      !Number.isFinite(maxSeconds) || maxSeconds <= 0 || maxSeconds > 60) throw new Error("invalid_music_excerpt");
+  const rate = Number.isFinite(sound.sampleRate) && sound.sampleRate > 0 ? sound.sampleRate : sound.length / sound.duration;
+  if (!Number.isFinite(rate) || rate <= 0) throw new Error("invalid_music_excerpt");
+  const frames = Math.min(sound.length, Math.max(1, Math.ceil(maxSeconds * rate)));
+  if (frames === sound.length) return sound;
+  const excerpt = context.createBuffer(sound.numberOfChannels, frames, rate);
+  for (let channel = 0; channel < sound.numberOfChannels; channel++)
+    excerpt.copyToChannel(sound.getChannelData(channel).subarray(0, frames), channel);
+  return excerpt;
+}
+
 export async function startUploadedAudio(
   file: File, volume = 80, options: { loop?: boolean; startSeconds?:number; deferStart?:boolean } = {},
 ): Promise<AmbientSession | null> {
@@ -435,7 +449,8 @@ export async function startUploadedAudio(
     const data = await file.arrayBuffer();
     await resumed;
     const buffer = await context.decodeAudioData(data);
-    if (!buffer.length || !Number.isFinite(buffer.duration) || buffer.duration > 180) {
+    // Encoded MP3 can decode slightly longer than its source due to encoder padding.
+    if (!buffer.length || !Number.isFinite(buffer.duration) || buffer.duration > (options.loop === false ? 180 : 180.5)) {
       throw new Error("Audio is empty or too long to decode on a phone");
     }
     if (context.state !== "running") await context.resume();
@@ -445,7 +460,7 @@ export async function startUploadedAudio(
     master.gain.setValueAtTime(Math.max(0, Math.min(100, volume)) / 100, context.currentTime);
     master.connect(destination);
     source = context.createBufferSource();
-    source.buffer = buffer;
+    source.buffer = options.loop === false ? buffer : clipMusicBuffer(context,buffer);
     source.loop = options.loop !== false;
     source.connect(master);
     const track = destination.stream.getAudioTracks()[0];
@@ -547,7 +562,7 @@ export async function startPresetMixAudio(
     }));
     await resumed;
     if(context.state!=="running")await context.resume();
-    if(context.state!=="running"||decoded.some(sound=>!sound.length||sound.duration>180))
+    if(context.state!=="running"||decoded.some(sound=>!sound.length||sound.duration>180.5))
       throw new Error("Music mix could not start");
     const destination=context.createMediaStreamDestination();
     const master=context.createGain();
@@ -558,7 +573,7 @@ export async function startPresetMixAudio(
     if(!track)throw new Error("No mixed audio track");
     for(const buffer of decoded){
       const player=context.createBufferSource();
-      player.buffer=buffer;player.loop=true;player.connect(master);sources.push(player);
+      player.buffer=clipMusicBuffer(context,buffer);player.loop=true;player.connect(master);sources.push(player);
     }
     let closed=false,faded=false,started=false;
     const begin=()=>{
@@ -658,7 +673,7 @@ export async function startLayeredVideoAudio(
     await resumed;
     if(context.state!=="running")await context.resume();
     if(context.state!=="running"||!voice.length||!music.length||
-       voice.duration>180||music.duration>180)
+       voice.duration>180||music.duration>180.5)
       throw Error("local_audio_decode_invalid");
     const offset=options.startSeconds??0;
     if(options.loop===false&&voice.duration>options.seconds-offset+.10)
@@ -668,7 +683,7 @@ export async function startLayeredVideoAudio(
     if(!track)throw Error("mixed_audio_track_unavailable");
     for(const [index,buffer] of [voice,music].entries()){
       const source=context.createBufferSource();
-      source.buffer=buffer;
+      source.buffer=index === 1 ? clipMusicBuffer(context,buffer,Math.min(options.seconds,30)) : buffer;
       source.loop=index===1||options.loop!==false;
       const gain=context.createGain();gain.gain.value=0;
       source.connect(gain);gain.connect(destination);

@@ -7,6 +7,8 @@ import {AppError,onlyKeys,requireUUID} from '../lib/assessments/contracts.js'
 import {seal,openSealed,operationHash} from '../lib/app/crypto.js'
 import {buildCoachingReportV2Draft,validateCoachingReportV2} from '../lib/personal-coaching/report-v2.js'
 import {reviewCoachingReportDraft} from '../lib/personal-coaching/report-review.mjs'
+import {assertCoachingGoalNotErased} from '../lib/app/coaching-goal-erasure.js'
+import {reviewedReportMemoryCandidates} from '../lib/personal-coaching/context-memory-candidates.mjs'
 
 const owner={id:'10000000-0000-4000-8000-000000000001'}
 const reportId='20000000-0000-4000-8000-000000000001'
@@ -28,13 +30,14 @@ function makeReport(status='accepted'){
  return reviewCoachingReportDraft(draft,[{candidateId:draft.actionCandidates[0].candidateId,status}],now)
 }
 
-function buildService({report=makeReport(),ownerId=owner.id,storageConsent={accepted:true,revoked_at:null}}={}){
+function buildService({report=makeReport(),ownerId=owner.id,storageConsent={accepted:true,revoked_at:null},erasedGoal=false}={}){
  const source=readFileSync(new URL('../lib/app/coaching-life-plan.js',import.meta.url),'utf8')
   .replace(/^import[^\n]*\n/gm,'').replace(/^export /gm,'')
  const state={plan:null,area:null,goal:null,actions:new Map(),changes:[],consents:[],queries:[],planVersion:1}
  const reportRecord={id:reportId,session_id:sessionId,status:'confirmed',current_revision:1,content_hash:operationHash(report,config)}
  const db={query:async(sql,args=[])=>{
   state.queries.push({sql,args})
+  if(sql.includes('select 1 from app_private.coaching_erased_goal_receipts'))return {rows:erasedGoal?[{found:1}]:[]}
   if(sql.includes('select 1 from app_private.coaching_erased_action_receipts'))return {rows:[]}
   if(sql.includes('from app_private.coaching_session_consents')&&sql.trimStart().startsWith('select'))return {rows:storageConsent?[storageConsent]:[]}
   if(sql.includes('select id from app.accounts'))return {rows:[{id:ownerId}]}
@@ -74,9 +77,9 @@ function buildService({report=makeReport(),ownerId=owner.id,storageConsent={acce
    state.actions.set(key,row)
    return {rows:[{id:row.id,status:row.status,client_confirmed_at:row.client_confirmed_at}]}
   }
-  if(sql.includes('select id,goal_id,status,client_confirmed_at from app_private.coaching_action_items')){
+  if(sql.includes('select id,goal_id,status,client_confirmed_at,description_ciphertext from app_private.coaching_action_items')){
    const row=state.actions.get(args[2])
-   return {rows:row?[{id:row.id,goal_id:row.goal_id,status:row.status,client_confirmed_at:row.client_confirmed_at}]:[]}
+   return {rows:row?[row]:[]}
   }
   if(sql.includes('insert into app_private.coaching_session_consents')){
    state.consents.push(args);return {rows:[]}
@@ -97,8 +100,8 @@ function buildService({report=makeReport(),ownerId=owner.id,storageConsent={acce
   if(actor.id!==owner.id||id!==reportId)throw new AppError('COACHING_REPORT_NOT_FOUND',404)
   return {report:{id,sessionId,revision:1,report}}
  }
- const factory=runInNewContext('(deps)=>{const {randomUUID,createHash,AppError,onlyKeys,requireUUID,transaction,seal,openSealed,operationHash,readCoachingReport,validateCoachingReportV2}=deps;'+source+';return {readCoachingLifePlan,importCoachingReportActions}}')
- return {service:factory({randomUUID,createHash,AppError,onlyKeys,requireUUID,transaction,seal,openSealed,operationHash,readCoachingReport,validateCoachingReportV2}),state,report}
+ const factory=runInNewContext('(deps)=>{const {randomUUID,createHash,AppError,onlyKeys,requireUUID,transaction,seal,openSealed,operationHash,readCoachingReport,validateCoachingReportV2,reviewedReportMemoryCandidates,assertCoachingGoalNotErased}=deps;'+source+';return {readCoachingLifePlan,importCoachingReportActions}}')
+ return {service:factory({randomUUID,createHash,AppError,onlyKeys,requireUUID,transaction,seal,openSealed,operationHash,readCoachingReport,validateCoachingReportV2,reviewedReportMemoryCandidates,assertCoachingGoalNotErased}),state,report}
 }
 
 function buildAreaEditService({existing=false}={}){
@@ -243,11 +246,29 @@ test('report import is retry-safe and does not duplicate goal, action, consent o
  assert.equal(second.planVersion,2)
 })
 
+test('an edited reviewed action is encrypted and only an identical retry is idempotent',async()=>{
+ const {service,state,report}=buildService()
+ const candidateId=report.actionCandidates[0].candidateId
+ const input={reportId,reportRevision:1,areaKey:'career_business',candidateIds:[candidateId],
+  planConsent:true,reviewedActionText:'Compare the two role descriptions on Friday.'}
+ await service.importCoachingReportActions(config,owner,input)
+ const row=state.actions.get(candidateId)
+ assert.equal(row.source_report_id,reportId)
+ assert.equal(openSealed(row.description_ciphertext,{
+  accountId:owner.id,recordId:row.id,field:'coaching.life_plan.action.description',
+ },config),input.reviewedActionText)
+ assert.equal((await service.importCoachingReportActions(config,owner,input)).imported,0)
+ await assert.rejects(()=>service.importCoachingReportActions(config,owner,{
+  ...input,reviewedActionText:'Try a different action.',
+ }),err=>err.code==='COACHING_PLAN_IMPORT_CONFLICT')
+ assert.equal(state.actions.size,1)
+})
+
 test('empty Life Plan reads do not create plan/domain records and still return all eight domains',async()=>{
  const source=readFileSync(new URL('../lib/app/coaching-life-plan.js',import.meta.url),'utf8')
  const body=source.replace(/^import[^\n]*\n/gm,'').replace(/^export /gm,'')
  const calls=[]
- const transaction=async(_config,_actor,fn)=>fn({query:async(sql,args=[])=>{
+ const transaction=async(_config,_actor,fn)=>fn({query:async(sql)=>{
   calls.push(sql)
   if(sql.includes('select id from app.accounts'))return {rows:[{id:owner.id}]}
   if(sql.includes('select latest.session_id,s.completed_at'))return {rows:[]}
@@ -357,4 +378,11 @@ test('revoked report storage consent prevents every plan write',async()=>{
   assert.equal(state.queries.some(q=>q.sql.trimStart().startsWith('insert ')),false)
  }
 
+})
+
+test('erased goal receipts block report retry before any canonical plan or sharing write',async()=>{
+ const {service,state,report}=buildService({erasedGoal:true})
+ await assert.rejects(service.importCoachingReportActions(config,owner,{reportId,reportRevision:1,areaKey:'career_business',candidateIds:[report.actionCandidates[0].candidateId],planConsent:true}),error=>error.code==='COACHING_PLAN_GOAL_DELETED')
+ assert.equal(state.plan,null);assert.equal(state.goal,null);assert.equal(state.actions.size,0);assert.equal(state.changes.length,0);assert.equal(state.consents.length,0)
+ assert.ok(state.queries.some(({sql})=>sql.includes('coaching_erased_goal_receipts')))
 })

@@ -4,9 +4,10 @@ import {readFileSync} from 'node:fs'
 import {detectedSpeechLocale,chooseDictationLanguage,coachSpokenTurnLocale,readDictationResults,ios27NeedsSpeechRecovery,hasCoachSpokenAnswer} from '../lib/personal-coaching/my-coach-dictation.mjs'
 import {appendSpokenAnswer} from '../lib/personal-coaching/speech-text.js'
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
-test('Auto follows device language and remembered transcript; manual RU/EN override works',()=>{
- assert.equal(chooseDictationLanguage({locale:'en',browserLanguages:['ru-RU','en-CA']}),'ru-RU')
- assert.equal(chooseDictationLanguage({locale:'ru',browserLanguages:['en-US','ru-RU']}),'en-GB')
+test('Fresh speech prioritizes page RU over an English iPhone; manual choice and prior transcript still win',()=>{
+ assert.equal(chooseDictationLanguage({locale:'en',browserLanguages:['ru-RU','en-CA']}),'en-GB')
+ assert.equal(chooseDictationLanguage({locale:'ru',browserLanguages:['en-US','ru-RU']}),'ru-RU')
+ assert.equal(chooseDictationLanguage({locale:'auto',browserLanguages:['ru-RU','en-CA']}),'ru-RU')
  assert.equal(chooseDictationLanguage({locale:'en',browserLanguages:['en-US'],lastTranscript:'Я хочу поговорить'}),'ru-RU')
  assert.equal(chooseDictationLanguage({locale:'ru',browserLanguages:['ru-RU'],lastTranscript:'I want to talk'}),'en-GB')
  assert.equal(chooseDictationLanguage({locale:'en',selection:'ru',browserLanguages:['en-US']}),'ru-RU')
@@ -25,7 +26,8 @@ test('explicit spoken locale beats wrong-script ASR and live RU/EN switch does n
    'recognizedLanguageRef.current=recognition.lang',
    'if(heardRef.current.trim())return',
    'restartSilentRecognition(recognition)',
-   'turnRef.current?.(text,{locale:utteranceLocale})'])assert.ok(loop.includes(token),token)
+   'turnRef.current?.(text,{locale:utteranceLocale,'])assert.ok(loop.includes(token),token)
+ assert.ok(loop.includes('onApprovedPhrase:(phrase,locale)=>offerEarlyPhrase'))
  assert.ok(ui.includes('utteranceLocale:spoken?.locale'))
  assert.ok(ui.includes("voiceTurn&&['en','ru','es'].includes(utteranceLocale)"))
  assert.ok(!ui.includes("disabled={voiceState.phase!=='idle'}>"),'the live language selector must never be disabled')
@@ -285,7 +287,7 @@ test('toolbar language setting controls transcription, response, persona intro a
  assert.ok(!ui.includes('setDeviceSpeechLocale('))
  assert.ok(!ui.includes('<option value="auto">'))
  assert.ok(ui.includes('locale={conversationLang} speechLocale={speechLocale}'))
- assert.ok(ui.includes('getCoachPresentation(personaId,conversationLang)?.text'))
+ assert.ok(ui.includes('coachOpeningIntro(personaId,conversationLang)'))
  assert.ok(ui.includes('coachIntroAudioPath(personaId,conversationLang)'))
  assert.ok(ui.includes("?utteranceLocale:['en','ru','es'].includes(speechLocale)"))
  assert.ok(ui.includes("role:'assistant',content:answer,locale:responseLocale"))
@@ -344,6 +346,45 @@ test('approved one-row mobile voice: manual language in header, real volume, Tex
  assert.doesNotMatch(row,/replayControl|data-coach-language-control/)
  assert.match(css,/grid-template-columns:62px minmax\(0,1fr\) 50px 50px/)
  assert.match(css,/\.voicePlayNotice\{display:none\}/)
+ assert.match(css,/\.voicePlayNotice\[data-coach-voice-consent-one-play\]\{[\s\S]*?display:block/)
+ assert.match(ui,/data-coach-voice-consent-one-play/)
  assert.match(speech,/micLevelRef.current\?\.\(value\)/)
  assert.match(recorded,/onLevel\(Math.min\(1,Math.max\(0,\(rms-0.012\)\*7\)\)\)/)
+})
+
+test('Gemini Free retry preserves Basic audio until readiness and prefers duplex Live over separate text TTS',()=>{
+  const ui=source('components/my-coach-live-dialogue.jsx')
+  const toggle=ui.slice(ui.indexOf('data-coach-basic-pro-toggle'),
+    ui.indexOf('data-coach-pro-same-tap-disclosure'))
+  assert.match(ui,/async function readGeminiEngineStatus\(signal\)/)
+  assert.match(ui,/if\(response\.status===401\)return \{kind:'login'\}/)
+  assert.match(toggle,/onClick=\{async \(\)=>\{/)
+  assert.ok(toggle.indexOf('if(selectedGeminiEngine){')<
+    toggle.indexOf('if(geminiAvailabilityInFlightRef.current)return'))
+  const fromProbe=toggle.indexOf('await readGeminiEngineStatus(checkController.signal)')
+  const checked=toggle.indexOf('if(!status.capabilities.gemini_live_free&&!status.capabilities.gemini_free)')
+  const selected=toggle.indexOf("setCoachEngine(chooseLive?'gemini_live_free':'gemini_free')")
+  assert.ok(fromProbe>0&&checked>fromProbe&&selected>checked)
+  const preflight=toggle.slice(toggle.indexOf('if(geminiAvailabilityInFlightRef.current)return'),checked)
+  assert.doesNotMatch(preflight,/speechRef\.current\?\.stop\?\.\(\)|cancelPendingCoachTurn\(\)/,
+    'failed metadata check must not stop Basic')
+  const enabled=toggle.slice(checked)
+  assert.match(enabled,/pauseForTypedTurn\?\.\(\)/)
+  assert.match(enabled,/cancelPendingCoachTurn\(\)/)
+  assert.match(enabled,/setGeminiConsent\(!chooseLive\)/)
+  assert.match(enabled,/const chooseLive=status\.capabilities\.gemini_live_free===true/)
+  assert.match(enabled,/setGeminiVoiceConsent\(freeTtsReady\)/)
+  assert.match(enabled,/resumeAfterTypedFailure\?\.\(\)/)
+  assert.doesNotMatch(ui,/data-coach-experience-consent|experienceTextConsent|experienceTtsConsent/)
+})
+test('iPhone 27 STT outage uses bounded recorded-mic recovery, never silent Web Speech',()=>{
+ const loop=source('components/my-coach-speech-loop.jsx')
+ const recovery=loop.slice(loop.indexOf('function recoverRecordedStt('),loop.indexOf('  function startListening(){'))
+ assert.match(loop,/if\(ios27&&coachRecordedSupported\(window\)\)/)
+ assert.match(loop,/\['STT_UNAVAILABLE','STT_RATE_LIMIT','STT_SIGN_IN'\]\.includes\(code\)/)
+ assert.match(recovery,/if\(recovery\.retries>=1\)/)
+ assert.match(recovery,/changePhase\('ready'\)/)
+ assert.match(recovery,/code==='STT_RATE_LIMIT'\?61000:2200/)
+ assert.match(recovery,/phaseRef\.current==='starting'\)startListening\(\)/)
+ assert.doesNotMatch(loop,/recordedSttUnavailableRef/)
 })

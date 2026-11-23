@@ -30,7 +30,9 @@ async function check(name, detail, fn) {
 }
 async function assertCspPublicHome(page) {
   await expect(page).toHaveURL(origin + '/');
-  // Real direct CDN Home: visible markup alone is not enough. Require the
+  // The approved owner reference is the canonical React Home, never legacy CDN HTML.
+  await expect(page.locator('body[data-fast-home]')).toHaveCount(0);
+  // Real Home: visible markup alone is not enough. Require the
   // lightweight first-party script to have initialized its controls.
   // A rapid back-navigation may still be replacing the outgoing document.
   // Verify the REAL CDN or React Home rather than testing a stale DOM.
@@ -630,7 +632,33 @@ async function exercise(engine, browserType, width) {
           } else {
             await expect.poll(() => cspPage.evaluate(() => history.pushState.toString().includes('__NA'))).toBe(true);
           }
-          await cspPage.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          // A WebKit Back/Forward restore can start a second, mandatory full
+          // document navigation when the CSP boundary rejects a foreign router
+          // history tree. Do not evaluate the outgoing document while it is
+          // being replaced. Retry ONLY that transient navigation race; the
+          // actual CSP, JS-error and history assertions below remain fatal.
+          await expect.poll(async () => {
+            let settled;
+            try {
+              settled = await cspPage.evaluate(() => new Promise(resolve =>
+                requestAnimationFrame(() => requestAnimationFrame(() => resolve({
+                  href: location.href, readyState: document.readyState,
+                  policy: document.body?.dataset.cspClass,
+                })))));
+            } catch (error) {
+              if (engine === 'webkit' &&
+                  /Execution context was destroyed, most likely because of a navigation/.test(String(error?.message)))
+                return false; // A navigation is in flight, NOT a successful check.
+              throw error;
+            }
+            const pathname = new URL(settled.href).pathname;
+            const expectedPolicy = pathname === '/en/academy/reiki/tantra-reiki'
+              ? 'tantra-media'
+              : ['/en/client/tests', '/en/app/portrait'].includes(pathname)
+                ? 'private' : 'public-video';
+            return settled.href === cspPage.url() && settled.readyState === 'complete'
+              && settled.policy === expectedPolicy;
+          }, { timeout: 20000, message: 'After history traversal wait for the final loaded document and matching CSP' }).toBe(true);
         };
         if (engine === 'chromium') {
           const cdp = await cspContext.newCDPSession(cspPage);

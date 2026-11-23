@@ -1,0 +1,9 @@
+# Owner site-generated avatars in My Materials · 2026-11-21
+
+Owner request: display the eight **already generated** 5-second HeyGen Creator My Coach takes (Mira, Sofia, Max, Alex × calm/attentive) in the existing signed-in `/{locale}/app/videos?tab=avatars`. The existing `MyLivePhotos` component mounts one additional owner-only preset view, with the same `coachNaturalFilename` URLs and still posters. No second media bucket, copied public files, API rendering, token purchase or new video pipeline.
+
+**Deletion semantics:** A site preset uses `/api/app/site-avatar-visibility` to hide/restore it **only from the owner's cabinet**. No public source MP4 or My Coach page is deleted; hidden items are restorable. The server requires verified Google app session, active account, existing practitioner email allowlist, same-origin write, request allowlist, rate limit, no-store and private RLS table `app_private.site_avatar_hidden_v1` (account FK, FORCE RLS, no public grants). Clients do **not** see owner site presets.
+
+Client-owned uploaded photos stay in existing `/api/app/support-photo` (portrait) and the pending #5339 `/api/app/video-photos` gallery; their owner-only DELETE removes private stored images, not site assets. Client AI-generated animations use existing #5337 `/api/app/live-photos/[id]` and private tombstone/removal. HeyGen provider source-asset cleanup is separately unverified: never claim provider-side erasure from cabinet deletion.
+
+Acceptance requires exact-HEAD Core/Specialist/hh-merge-check, table migration readback, merge via protected auto-merge, existing **hourly** Vercel publisher, canonical domain/READY/SHA, signed-in owner hide-refresh-restore, unrelated client 403 and real iPhone personal photo/video deletion. A source commit is not LIVE or provider E2E. No paid HeyGen call is permitted by this work.

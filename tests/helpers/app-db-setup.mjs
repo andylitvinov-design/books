@@ -75,6 +75,11 @@ export async function setup(){const db=await adminClient();try{
   '20261110153118_hh_coaching_report_storage_v1.sql',
   '20261110153139_hh_coaching_plan_account_delete_cascade.sql',
   '20261110153142_hh_coaching_action_erasure.sql',
+  '20261122182733_hh_daybook_private_journal_20261122.sql',
+  '20261122215422_hh_personal_goal_statuses_20261122.sql',
+  '20261122215436_hh_personal_goal_erasure_20261122.sql',
+  '20261122215437_hh_daybook_daily_intentions_20261122.sql',
+  '20261122215438_hh_personal_action_erasure_20261122.sql',
  ])await db.query(await readFile(new URL('../../supabase/migrations/'+filename,import.meta.url),'utf8'))
  await db.query("create role hh_app_ci_login login noinherit nosuperuser nobypassrls password 'synthetic-ci-only';grant hh_app_backend,hh_app_inbox to hh_app_ci_login;grant usage on schema auth to hh_app_backend,hh_app_inbox;grant execute on function auth.uid(),auth.jwt() to hh_app_backend,hh_app_inbox;")
  for(const[id,session,email]of[[A,SA,'a@example.invalid'],[B,SB,'b@example.invalid']]){await db.query('insert into auth.users(id,email) values($1,$2)',[id,email]);await db.query('insert into auth.sessions(id,user_id) values($1,$2)',[session,id])}

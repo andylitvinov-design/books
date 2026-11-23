@@ -135,6 +135,9 @@ on:
       - '!app/api/app/commander/**'
       # Shared Practice editor routes are independently covered by App/Practice owners.
       - '!app/api/app/practice/**'
+      # Client Live Photo APIs have their own App/IA/billing/video owners.
+      # Keep the literal shared catch-all dispatcher and all source/security routes.
+      - '!app/api/app/live-photos/**'
 permissions:
   contents: read
 concurrency:

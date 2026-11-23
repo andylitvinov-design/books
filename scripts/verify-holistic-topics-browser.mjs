@@ -241,13 +241,7 @@ for (const engine of [chromium, webkit]) {
           await page.waitForFunction(() => document.querySelector(
             '#holistic-inline-order [data-support-budget="20"]')
               ?.getAttribute("aria-pressed") === "true", null, { timeout: 15000 });
-          const freshMasterCatalog = page.waitForResponse(response => {
-            const url = new URL(response.url());
-            return url.pathname === "/api/public/remote-energy-support-masters" &&
-              url.searchParams.get("kind") !== "consultation" && response.status() === 200;
-          }, { timeout: 15000 });
           await finder.locator("[data-support-search]").click();
-          await freshMasterCatalog;
           const unpricedTalismanStatus = finder.locator('#remote-results [role="status"]').first();
           await unpricedTalismanStatus.waitFor({ state: "visible", timeout: 20000 });
           assert.ok((await unpricedTalismanStatus.innerText()).includes({

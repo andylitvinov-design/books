@@ -1,4 +1,5 @@
 import test from "node:test";
+import {buildFfmpegArgs,validateAssemblyInput} from "../scripts/cinematic-video-assemble.mjs";
 import assert from "node:assert/strict";
 import {personalVideoStorageCsp} from "../lib/app/personal-video-storage-csp.mjs";
 import {readFileSync} from "node:fs";
@@ -292,21 +293,22 @@ test("real Safari encoded-Blob guest helper gates Save without relying on the re
 });
 
 
-test("verified signed-in Ready Save uploads directly through the existing signed private MP4 uploader",()=>{
+test("verified signed-in Ready Save uses the existing signed uploader after private MP4 consent",()=>{
   const css=readFileSync(new URL("../components/mandala-video-ready.module.css",import.meta.url),"utf8");
   assert.match(ready,/if\(!signedIn\|\|intent==="house"\)/);
-  assert.match(ready,/if\(intent==="save"\)\{onSaveDirect\(\);return;\}/);
+  assert.match(ready,/if\(intent==="save"\)\{saveWithConsent\(\);return;\}/);
+  assert.match(ready,/if\(cloudConsent\)onSaveDirect\(true\)/);
   assert.match(ready,/data-ready-save-status/);
   assert.match(ready,/disabled=\{disabled\|\|saveStatus\.busy\}/);
   assert.match(ready,/data-ready-download-fallback/);
   assert.match(studio,/const deliveryRef=useRef<VideoDeliveryHandle\|null>\(null\)/);
-  assert.match(studio,/if\(deliveryRef\.current\)void deliveryRef\.current\.saveToLibrary\(\)/);
+  assert.match(studio,/if\(deliveryRef\.current\)void deliveryRef\.current\.saveToLibrary\(consentApproved\)/);
   assert.match(studio,/onStatusChange=\{setReadySaveStatus\}/);
   assert.match(delivery,/forwardRef<VideoDeliveryHandle,Props>/);
   assert.match(delivery,/useImperativeHandle\(ref,\(\)=>\(\{saveToLibrary,sendToTelegram,shareToWhatsApp\}\)/);
   assert.match(delivery,/if\(!current\.cloudAvailable\)\{setNotice\(t\.cloudSaveOff\);return;\}/);
   assert.match(delivery,/savingRef\.current=true/);
-  assert.match(delivery,/const id=await privateUpload\(\)/);
+  assert.match(delivery,/const id=await privateUpload\(accountId\)/);
   assert.match(delivery,/setSavedId\(id\)/);
   assert.match(css,/\.saveStatus\{display:flex/);
   for(const loc of ["en","ru","es"]){
@@ -554,4 +556,72 @@ test("iPhone Ready verifies one visible exported MP4 and retries its transport w
     "one clear retry CTA rather than another identical Generate action when MP4 failed");
   assert.match(studio,/if\(creditOpRef\.current\)return/);
   assert.match(studio,/playbackStatus==="ready"&&creditConfirmed/);
+});
+
+// Fast Assembly inherits the existing six-shot plan and source rights.
+test("Fast Assembly compiles 6 x 5s, visible RU captions and one AAC mix",()=>{
+  const clips=Array.from({length:6},(_,i)=>({file:"s"+i+".mp4",seconds:5,rightsConfirmed:true}));
+  const plan={version:"hh-assembly-1",locale:"ru",aspect:"portrait",fast:true,
+    audioMode:"narration_with_music",clips,
+    narration:{file:"voice.wav",rightsConfirmed:true},
+    music:{file:"music.mp3",rightsConfirmed:true},
+    subtitles:{file:"captions.srt",rightsConfirmed:true}};
+  assert.deepEqual(validateAssemblyInput(plan),{seconds:30,clips:6});
+  const args=buildFfmpegArgs(plan,{clips:clips.map((_,i)=>"/tmp/s"+i+".mp4"),
+    narration:"/tmp/voice.wav",music:"/tmp/music.mp3",
+    subtitles:"/tmp/captions.srt"},"/tmp/final.mp4");
+  const graph=args[args.indexOf("-filter_complex")+1];
+  assert.equal((graph.match(/setpts=PTS-STARTPTS,scale=/g)||[]).length,6);
+  assert.match(graph,/concat=n=6:v=1:a=0\[vbase\]/);
+  assert.match(graph,/subtitles=filename='\/tmp\/captions\.srt'/);
+  assert.match(graph,/\[voice\]\[bed\]amix=/);
+  assert.doesNotMatch(graph,/boxblur|fade=t|force_original_aspect_ratio=increase/);
+  assert.equal(args[args.indexOf("-preset")+1],"veryfast");
+  assert.equal(args[args.indexOf("-crf")+1],"24");
+  assert.equal(args[args.indexOf("-r")+1],"24");
+  assert.equal(args[args.indexOf("-c:a")+1],"aac");
+  assert.equal(args.filter(x=>x==="[aout]").length,1);
+  assert.equal(args[args.indexOf("-t")+1],"30");
+  assert.ok(args.includes("+faststart"));
+});
+test("Fast Assembly rejects unlicensed sources and dangerous subtitle paths",()=>{
+  const clips=Array.from({length:6},(_,i)=>({file:"s"+i+".mp4",seconds:5,rightsConfirmed:true}));
+  const plan={version:"hh-assembly-1",locale:"en",aspect:"landscape",fast:true,
+    audioMode:"silent",clips,subtitles:{file:"captions.srt",rightsConfirmed:true}};
+  assert.throws(()=>validateAssemblyInput({...plan,clips:[...clips,...clips]}));
+  assert.throws(()=>validateAssemblyInput({...plan,
+    clips:clips.map((clip,i)=>i===3?{...clip,rightsConfirmed:false}:clip)}));
+  assert.throws(()=>buildFfmpegArgs(plan,{clips:clips.map(x=>x.file),
+    subtitles:"/tmp/unsafe:captions.srt"},"/tmp/final.mp4"));
+});
+test("Narration-only requires Fast mode, keeps AAC, and checks length before render",()=>{
+  const clips=Array.from({length:6},(_,i)=>({file:"s"+i+".mp4",seconds:5,rightsConfirmed:true}));
+  const input={version:"hh-assembly-1",locale:"en",aspect:"portrait",
+    audioMode:"narration",clips,
+    narration:{file:"narration.wav",rightsConfirmed:true}};
+  assert.throws(()=>validateAssemblyInput(input),
+    "the legacy assembler does not mux narration-only and must reject it up front");
+  assert.deepEqual(validateAssemblyInput({...input,fast:true}),{seconds:30,clips:6});
+  const args=buildFfmpegArgs({...input,fast:true},
+    {clips:clips.map(c=>"/tmp/"+c.file),narration:"/tmp/narration.wav"},
+    "/tmp/voice-film.mp4");
+  assert.equal(args[args.indexOf("-c:a")+1],"aac");
+  assert.ok(args.includes("[aout]"),"narration maps to the single output AAC stream");
+  const assembler=readFileSync(new URL("../scripts/cinematic-video-assemble.mjs",import.meta.url),"utf8");
+  const beforeEncode=assembler.slice(assembler.indexOf("if(input.narration){"),
+    assembler.indexOf("const out=inside("));
+  assert.match(beforeEncode,/narrationProbe\.seconds>check\.seconds\+0\.25/);
+  assert.match(beforeEncode,/fast_narration_longer_than_video/);
+  assert.doesNotMatch(beforeEncode,/runner\('ffmpeg'/);
+});
+test("Ready uses existing Canvas for personal preview, not a fake exported file",()=>{
+  assert.match(ready,/data-ready-sequence-canvas/);
+  assert.match(ready,/data-ready-sequence-play/);
+  assert.match(ready,/data-ready-sequence-seek/);
+  assert.match(ready,/previewSourceCanvasRef\?\.current/);
+  assert.match(studio,/previewSourceCanvasRef=\{canvasRef\}/);
+  assert.match(studio,/previewAvailable=\{Boolean\(cinematicPlan/);
+  assert.match(ready,/if\(video\|\|!previewAvailable\)return/);
+  assert.match(ready,/Preview ≠ MP4/);
+  assert.match(ready,/if\(!verified\|\|!video\|\|disabled\)return/);
 });

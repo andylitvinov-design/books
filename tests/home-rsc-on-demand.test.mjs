@@ -19,9 +19,11 @@ test("Home ships only Ali first; seven-offer catalog remains explicitly deferred
   assert.doesNotMatch(source,/<ServicesSolutions|<HomeExploreSections|<TestSelectionCourseBanner/);
  }
  assert.match(deferred,/IntersectionObserver/);
- assert.match(deferred,/ssr:false/);
+ assert.match(deferred,/const HomeDeferredContent = lazy\(/);
+ assert.match(deferred,/visible\?<Suspense fallback=\{null\}>/);
  assert.match(content,/HomeExpandedCatalog/);
- assert.match(content,/ssr:false/);
+ assert.match(content,/const HomeExpandedCatalog = lazy\(/);
+ assert.match(content,/expanded\?<Suspense fallback=\{null\}>/);
  for(const item of ["HomeSectionCarousel","HomeFeaturedWorkspace","PersonalTestimonials"])
   assert.ok(expanded.includes(item),"optional catalog retains "+item);
  assert.match(filters,/data-home-topic-filters/);

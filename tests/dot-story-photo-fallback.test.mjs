@@ -67,3 +67,25 @@ test('physical FFmpeg planner preserves both 9:16 portrait and 16:9 landscape di
  assert.throws(()=>args('square',30000,[]),/VIDEO_STORY_PHOTO_PLAN_INVALID/);
  assert.throws(()=>args('portrait',30000,['bogus']),/VIDEO_STORY_PHOTO_PLAN_INVALID/);
 });
+
+test('historical plot shard preserves vetted palette when public category is regrouped',()=>{
+ const moved=[
+   ['morning-energy-s1-p1','stress-anxiety','energy-confidence'],
+   ['self-confidence-s1-p1','goals-money','energy-confidence'],
+   ['life-purpose-s1-p1','energy-confidence','goals-money'],
+   ['childhood-trauma-s1-p1','energy-confidence','stress-anxiety'],
+ ];
+ for(const [id,current,original] of moved){
+   const plot=resolveTelegramStoryPlot(id);
+   assert.ok(plot,id);
+   assert.equal(plot.categoryId,current,id);
+   for(const aspect of ['landscape','portrait']){
+     const actual=selectDotStoryPhotos(plot,catalog,stock,aspect);
+     const expected=selectDotStoryPhotos({categoryId:original},catalog,stock,aspect);
+     assert.equal(actual.length,4,id+':'+aspect);
+     assert.deepEqual(actual,expected,id+':'+aspect);
+     const origins=actual.flatMap(row=>catalog.scenes.find(scene=>scene.id===row.id).originMasterKeys);
+     assert.equal(new Set(origins).size,origins.length);
+   }
+ }
+});

@@ -9,12 +9,12 @@ test("exactly six real workspaces with all RU EN ES labels",()=>{
  const tabBlock=studio.match(/const workspaceTabs=\[([\s\S]*?)\] as const;/)?.[1];
  assert.ok(tabBlock,"workspace registry");
  const ids=[...tabBlock.matchAll(/id:"([a-z]+)"/g)].map(m=>m[1]);
- assert.deepEqual(ids,["video","phrases","editor","pro","ready","effects"]);
+ assert.deepEqual(ids,["video","editor","phrases","pro","ready","effects"]);
  for(const locale of ["ru","en","es"]){
    assert.match(studio,new RegExp(locale+":[\\s\\S]*?video:\\{tab:"));
    for(const id of ids)assert.match(studio,new RegExp(id+":\\{tab:"));
  }
- assert.match(studio,/phrases:\{tab:"Идеи",title:"Идеи для видео"/);
+ assert.match(studio,/phrases:\{tab:"Personal",title:"Персональное видео"/);
  assert.match(studio,/Therapy Studio/);
  assert.match(studio,/Курс практик/);
  assert.match(studio,/pro:\{tab:"PRO",title:"PRO генерация"/);
@@ -71,17 +71,24 @@ const source=readFileSync(new URL('../components/mandala-free-video-studio.tsx',
 const workspaces=[null,'video','phrases','effects','practices','editor','pro'];
 function exercise(input,workspace,overrides={}){
  const ast=ts.createSourceFile('studio.tsx',input,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
- let handler;const visit=n=>{if(ts.isVariableDeclaration(n)&&n.name.getText(ast)==='startFromHero')handler=n.initializer;ts.forEachChild(n,visit);};visit(ast);
- assert.ok(handler);
- const js=ts.transpileModule('const startFromHero='+handler.getText(ast)+';startFromHero();',{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
+ let handler,personalExportGuard;
+ const visit=n=>{
+  if(ts.isVariableDeclaration(n)){
+   if(n.name.getText(ast)==='startFromHero')handler=n.initializer;
+   if(n.name.getText(ast)==='blockUnpricedPersonalExport')personalExportGuard=n.initializer;
+  }
+  ts.forEachChild(n,visit);
+ };visit(ast);
+ assert.ok(handler&&personalExportGuard,"execute the production pricing guard instead of mocking success");
+ const js=ts.transpileModule('const blockUnpricedPersonalExport='+personalExportGuard.getText(ast)+';const startFromHero='+handler.getText(ast)+';startFromHero();',{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
  let active=workspace,queued=workspace,basicTab=null,renders=0,picks=0;const cover={open:false},frames=[],scrolls=[],notices=[];
- const state={recording:false,preparing:false,storySourcePending:false,hypnoAudioBusy:false,photoPending:false,phrasePending:false,narrationInvalid:false,locale:'ru',photoUrl:'blob:synthetic',backgroundOnly:false,photoConsent:false,audioNeedsAttachment:false,uploadedAudio:null,audioRights:false,source:'synthetic',...overrides};
+ const state={recording:false,preparing:false,storySourcePending:false,hypnoAudioBusy:false,photoPending:false,phrasePending:false,narrationInvalid:false,locale:'ru',photoUrl:'blob:synthetic',backgroundOnly:false,photoConsent:false,extraTextChoice:null,montageTextMode:"standard",ideasProfileConfirmed:false,chosenIdeaGoal:null,audioNeedsAttachment:false,uploadedAudio:null,audioRights:false,source:'synthetic',...overrides};
  // Models only the source-defined workspace/display and native-details state,
  // not pixels or a real browser. React state commits at the frame boundary.
  const consent={scrollIntoView:()=>scrolls.push({open:cover.open,workspace:active,
    visible:cover.open&&(active==='video'||active==='editor')})};
  runInNewContext(js,{...state,storySourcePendingRef:{current:Boolean(state.storySourcePending)},canGenerate:true,preparingRef:{current:state.preparing},jobRef:{current:null},webCodecJobRef:{current:null},activeWorkspace:workspace,setActiveWorkspace:value=>{queued=value;},
-   setBasicPanelTab:value=>{basicTab=value;},setMontagePanel:()=>{},setMontageStyleSettingsOpen:()=>{},setIntroPlaying:()=>{},setNotice:value=>notices.push(value),supportUi:{heroConsent:'Consent required'},audioUi:{needsAttach:'Attach audio'},ui:{audioRightsHelp:'Audio rights required'},onPickPhoto:()=>picks++,createVideo:()=>renders++,window:{requestAnimationFrame:cb=>frames.push(cb)},document:{querySelector:selector=>selector==='[data-video-cover-options]'?cover:selector==='[data-video-photo-consent]'?consent:{scrollIntoView(){}}}},{timeout:1000});
+   setBasicPanelTab:value=>{basicTab=value;},setIdeasSubtab:()=>{},setMontagePanel:()=>{},setMontageStyleSettingsOpen:()=>{},setIntroPlaying:()=>{},setNotice:value=>notices.push(value),supportUi:{heroConsent:'Consent required'},audioUi:{needsAttach:'Attach audio'},ui:{audioRightsHelp:'Audio rights required'},onPickPhoto:()=>picks++,createVideo:()=>renders++,window:{requestAnimationFrame:cb=>frames.push(cb)},document:{querySelector:selector=>selector==='[data-video-cover-options]'?cover:selector==='[data-video-photo-consent]'?consent:{scrollIntoView(){}}}},{timeout:1000});
  assert.equal(scrolls.length,0,'scroll must retain two-frame boundary');
  while(frames.length){active=queued;frames.shift()();}
  // A guarded handler may return before scheduling rAF; React still commits
@@ -89,6 +96,17 @@ function exercise(input,workspace,overrides={}){
  active=queued;
  return {workspace:active,basicTab,open:cover.open,scrolls,notices,renders,picks};
 }
+test("personalized +50 XP export is refused before local MP4 starts",()=>{
+ for(const workspace of workspaces){
+  for(const extra of [{extraTextChoice:"personal"},{montageTextMode:"personalized"}]){
+   const result=exercise(source,workspace,{photoConsent:true,...extra});
+   assert.equal(result.renders,0,"unpriced personalization must not render");
+   assert.equal(result.workspace,"phrases","return to editable Personal");
+   assert.ok(result.notices.some(line=>line.includes("+50 XP")),"show the unpriced surcharge");
+  }
+ }
+});
+
 test('one original consent pane is accessible in Video or fifth Montage Photo',()=>{
  assert.match(source,/activeWorkspace==="video" \? deepCharacterPhotoPane : null/);
  assert.match(source,/basicPanelTab==="photo" \? deepCharacterPhotoPane : null/);
@@ -197,7 +215,7 @@ test("video studio lazily loads optional editor workspaces and collapsed tools",
 });
 
 test("final approved six tabs lead to exactly one real workspace each",()=>{
-  const expected=['tab:"Цель"','tab:"Идеи"','tab:"Монтаж"',
+  const expected=['tab:"Цель"','tab:"Монтаж"','tab:"Personal"',
     'tab:"PRO"','tab:"Ready"','tab:"Therapy"'];
   for(const label of expected)assert.ok(studio.includes(label),"missing "+label);
   assert.match(studio,/data-video-quick-control=\{item.id\}/);
@@ -228,10 +246,15 @@ test("compact Ideas preserves one opt-in advanced phrase and voice editor",()=>{
  const audio=section.indexOf('data-video-phrase-audio-shortcut');
  assert.ok(editor>0&&audio>editor);
  assert.equal((section.match(/\{deepHypnoPane\}/g)||[]).length,1);
- assert.doesNotMatch(section,/<MandalaVideoIdeas/);
+ assert.match(section,/data-video-personal-phrases/,
+  "approved Personal Concept owns personalized phrase selection");
+ assert.match(section,/<MandalaVideoIdeas key=\{"personal-phrases-"/);
  assert.match(section,/data-video-ideas-open-montage-text/);
  assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
- assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1);
+ assert.equal((studio.match(/<MandalaVideoIdeas key=/g)||[]).length,2,
+   "one basic Text editor and one conditional Personal editor, both reuse one Canvas");
+ assert.match(studio,/extraTextChoice==="support"&&montageTextStage==="edit"/);
+ assert.match(studio,/active=\{activeWorkspace==="phrases"&&ideasSubtab==="concept"\}/);
  assert.match(section,/data-video-legacy-phrase-editor/);
  assert.match(section,/data-video-ideas-recording-open=\{ideasVoiceAdvancedOpen\?"true":"false"\}/);
  assert.match(section,/hidden=\{activeWorkspace!=="phrases"\|\|ideasSubtab!=="personalization"\}/);
@@ -243,7 +266,7 @@ test("compact Ideas preserves one opt-in advanced phrase and voice editor",()=>{
  assert.match(studio,/onPendingChange=\{setPhrasePending\}/);
  assert.match(studio,/onChange=\{setAffirmations\}/);
  assert.match(studio,/onPreview=\{openAffirmationPreview\}/);
- for(const label of ['tab:"Идеи"','tab:"Ideas"'])
+ for(const label of ['phrases:{tab:"Personal"','phrases:"Personal"'])
    assert.ok(studio.includes(label),label);
  assert.match(css,/\.studio\[data-active-workspace="phrases"\] \.phraseEditorLead\{/);
 });
@@ -259,7 +282,7 @@ test("hydrated Studio gates the first local MP4 test before its first real user 
 
 test("owner 03 Nov: compact tabs, real scenario updates and moved settings",()=>{
  const tabs=studio.slice(studio.indexOf("const workspaceTabs=["),studio.indexOf("] as const;",studio.indexOf("const workspaceTabs=[")));
- assert.ok(tabs.indexOf('id:"phrases"')<tabs.indexOf('id:"editor"'),"Ideas is second, Montage third");
+ assert.ok(tabs.indexOf('id:"editor"')<tabs.indexOf('id:"phrases"'),"Montage second, Personal third");
  const nav=studio.slice(studio.indexOf("<nav className={videoStyles.quickVideoNav}"),studio.indexOf("</nav>",studio.indexOf("<nav className={videoStyles.quickVideoNav}")));
  assert.match(nav,/quickNavCompact/,"iPhone labels are genuinely short");
  assert.match(nav,/quickNavFull/,"full labels remain on wider screens");
@@ -332,8 +355,10 @@ test("validated Messenger video handoff visibly opens the original Studio Direct
  assert.match(director,/if\(panel instanceof HTMLDetailsElement\)panel\.open=true/);
  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
  assert.match(browser,/const handoffPanel=page\.locator/);
- assert.match(browser,/await handoffPanel\.evaluate\(element=>\{element\.open=true;\}\)/);
- assert.match(browser,/await expect\(handoffPanel\)\.toBeVisible/);
+ assert.match(browser,/await expect\(handoffPanel\)\.toBeHidden\(\)/,
+   "ordinary guests must not see a private Messenger handoff");
+ assert.doesNotMatch(browser,/await handoffPanel\.evaluate\(element=>\{element\.open=true;\}\)/,
+   "browser QA must not forge handoff state");
 
  assert.match(studio,/data-video-director-chat-details data-workspace-section="video"/);
  const handoffStart=css.lastIndexOf("/* Messenger Video validated handoff visibility.");
@@ -343,17 +368,20 @@ test("validated Messenger video handoff visibly opens the original Studio Direct
  assert.match(rule,/data-video-scenario-open="false"\]:not\(\[data-hh-video-ihelp-open="true"\]\)/);
  assert.match(rule,/\[data-video-director-chat-details\]\[data-workspace-section="video"\]\[open\]\s*\{\s*display:grid!important;/);
  assert.doesNotMatch(rule,/display:none!important/,"the opened handoff must be visible");
+ const compactCss=css.slice(css.indexOf("/* Magic Mirror v3"));
+ assert.match(compactCss,/:not\(\[data-video-director-chat-details\]\[open\]\)/,
+   "compact Mirror keeps validated, explicitly opened Messenger handoffs visible");
  assert.match(css,/\[data-workspace-section="video"\]:not\(\[data-video-topic-section\]\)\s*\{\s*display:none!important;/,
    "unopened legacy Goals sections remain hidden");
 });
 
-test("Ideas → Montage cancels stale scroll on a genuine quick-tab action",()=>{
-  const at=studio.indexOf("const continueToIdeas = () => {");
+test("Goal → Montage cancels stale scroll on a genuine quick-tab action",()=>{
+  const at=studio.indexOf("const continueToMontage = () => {");
   const until=studio.indexOf("  const openVideoScenarioStep",at);
-  assert.ok(at>=0&&until>at,"one real Continue to Ideas handler");
+  assert.ok(at>=0&&until>at,"one real Continue to Montage handler");
   const handler=studio.slice(at,until);
-  assert.match(handler,/navigationToken=\+\+quickNavTokenRef\.current/);
-  assert.match(handler,/if\(navigationToken!==quickNavTokenRef\.current\)return/);
+  assert.match(handler,/token=\+\+quickNavTokenRef\.current/);
+  assert.match(handler,/if\(token!==quickNavTokenRef\.current\)return/);
   assert.match(handler,/behavior:"instant" as ScrollBehavior/);
   const navAt=studio.indexOf("const activateQuickWorkspace=");
   assert.ok(navAt>=0);

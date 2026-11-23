@@ -55,31 +55,54 @@ test("actual browser route checks speaker consent, fragment invitation, and no p
  assert.ok(browser.includes('toHaveAttribute("data-guest-voice-hydrated","true"'),"real WebKit must wait for React hydration");
 });
 
-test("macOS WebKit hydration follows visible Goals → Ideas → Montage without legacy clicks",()=>{
+test("macOS WebKit hydration follows visible Goal → Montage Extra → Personal without legacy clicks",()=>{
  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
  const studio=read("components/mandala-free-video-studio.tsx");
  const style=read("components/mandala-video-mobile.module.css");
  const first=browser.indexOf("async function verifyWorkspaceHydration");
  const last=browser.indexOf("// Real guest route browser acceptance",first);
  const flow=browser.slice(first,last);
- const click=flow.indexOf("await continueToIdeas.click()");
- const ideas=flow.indexOf('toHaveAttribute("data-active-workspace","phrases")',click);
- const refinement=flow.indexOf('const refinement=page.locator',ideas);
- const open=flow.indexOf('await refinement.locator(":scope > summary").click()',refinement);
- const verify=flow.indexOf('await expect(refinement).toHaveAttribute("open","")',open);
- const montage=flow.indexOf("await montage.tap()",verify);
- assert.ok(first>=0&&last>first&&click>=0&&ideas>click&&refinement>ideas&&open>refinement&&verify>open&&montage>verify,
-   "one real visitor click reaches Ideas, native topic disclosure, then Montage");
+ const scope=flow.indexOf("await mirror.locator('[data-hh-mirror-enter=\"me\"]').click()");
+ const choose=flow.indexOf("await purpose.locator('[data-video-ideas-goal-choice=\"rest\"]').click()",scope);
+ const goalContinue=flow.indexOf("await purpose.locator('[data-video-ideas-goal-next]').click()",choose);
+ const format=flow.indexOf("await mirror.locator('[data-hh-mirror-video-format=\"pro\"]').click()",goalContinue);
+ assert.ok(scope>=0&&choose>scope&&goalContinue>choose&&format>goalContinue,
+   "the visible journey chooses Goal before Format");
+ assert.ok(flow.includes("const preservedGoal=ideasGoalPane.locator"),"the selected Goal must be checked after personalization");
+ // Test the exact supported user path, not the retired Goal → Ideas shortcut.
+ const mirrorNext=flow.indexOf("await mirror.locator('[data-hh-mirror-next]').click()");
+ const extraToPersonal=flow.indexOf("await enterPersonalAfterMontageExtra(page)",mirrorNext);
+ const personalGoal=flow.indexOf("data-video-ideas-goal-panel",extraToPersonal);
+ const selectGoal=flow.indexOf("await expect(ideasGoalPane.locator('[data-video-ideas-goal-choice=\"rest\"]'))",personalGoal);
+ const nextControl=flow.indexOf("const ideasNext=ideasGoalPane.locator('[data-video-ideas-goal-next]')",selectGoal);
+ const nextGoal=flow.indexOf("await ideasNext.tap()",nextControl);
+ const personalization=flow.indexOf("data-video-ideas-personalization-panel",nextGoal);
+ const backToMontageText=flow.indexOf("await openVisibleMontageText(page",personalization);
+ assert.ok(first>=0&&last>first&&mirrorNext>=0&&extraToPersonal>mirrorNext&&personalGoal>extraToPersonal&&
+   selectGoal>personalGoal&&nextControl>selectGoal&&nextGoal>nextControl&&personalization>nextGoal&&backToMontageText>personalization,
+   "real visitor goes from Goal to Montage Extra, chooses Personal, then returns to Montage Text after answering");
+ const helperStart=browser.indexOf("async function enterPersonalAfterMontageExtra");
+ const helperEnd=browser.indexOf("async function openVisibleMontageText",helperStart);
+ const helper=browser.slice(helperStart,helperEnd);
+ const editor=helper.indexOf('toHaveAttribute("data-active-workspace","editor"');
+ const extra=helper.indexOf('data-video-montage-tab=\"promo\"',editor);
+ const choice=helper.indexOf('data-video-extra-text-option=\"personal\"',extra);
+ const personal=helper.indexOf('toHaveAttribute("data-active-workspace","phrases"',choice);
+ assert.ok(helperStart>=0&&helperEnd>helperStart&&editor>=0&&extra>editor&&choice>extra&&personal>choice,
+   "the helper must exercise visible Extra and Personal buttons and await React workspace state");
+ assert.doesNotMatch(helper,/click\(\{force:true\}\)|\.evaluate\(/);
  assert.match(flow,/data-video-continue-scenarios/);
  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
  assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
  assert.match(studio,/data-video-scenario-open=\{videoScenarioOpen\?"true":"false"\}/);
- assert.match(studio,/onClick=\{continueToIdeas\}/);
+ assert.match(studio,/onClick=\{continueToMontage\}/);
  assert.match(style,/\[data-video-scenario-open="false"\]/);
- // The live Style controls are direct buttons, not the removed legacy wrapper.
+ // The live Style controls remain real buttons, not a removed legacy wrapper.
  assert.ok(flow.includes('const styleTab=page.locator(\'[data-video-montage-tab="effects"]\')'));
  assert.ok(flow.includes('await styleTab.tap()'));
- assert.ok(flow.includes('const styles=page.locator("[data-video-montage-style]")'));
+ assert.ok(flow.includes('const moreStyles=page.locator("[data-video-montage-more-styles]")'));
+ assert.ok(flow.includes('await moreStyles.locator("summary").tap()'));
+ assert.ok(flow.includes('const styles=moreStyles.locator("[data-video-montage-style]")'));
  assert.ok(flow.includes('await expect(styles).toHaveCount(6)'));
  assert.ok(flow.includes('await minimal.tap()'));
  assert.ok(flow.includes('await expect(minimal).toHaveAttribute("aria-pressed","true")'));
@@ -166,4 +189,54 @@ test("guided meditation include/omit commits native narration disclosure after R
  assert.match(studio,/setCourseMeditationIncluded\(true\);\s*setCourseMeditationDraft\(script\);/);
  assert.match(studio,/onOmitMeditation=\{\(\)=>\{\s*setCourseMeditationIncluded\(false\);/);
  assert.doesNotMatch(studio,/onAddMeditation=\{script=>\{[\s\S]{0,500}requestAnimationFrame/);
+});
+
+
+test("macOS WebKit exposes preserved recipient actions through visible Magic Mirror Plan and composer controls",()=>{
+ const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+ const start=browser.indexOf("async function verifyWorkspaceHydration");
+ const end=browser.indexOf("// Real guest route browser acceptance",start);
+ const flow=browser.slice(start,end);
+ assert.match(flow,/const openAdvancedGoal=async\(\)=>\{/);
+ assert.match(flow,/await revealMirrorAdvanced\(page\)/);
+ assert.equal((flow.match(/await openAdvancedGoal\(\)/g)||[]).length,3);
+ assert.doesNotMatch(flow,/backGoal\.click\(\{force:true\}\)|backGoal\.evaluate\(/);
+ const reveal=browser.slice(browser.indexOf("async function revealMirrorAdvanced"),
+  browser.indexOf("async function enterVisibleStudioWorkspace"));
+ assert.match(reveal,/data-hh-mirror-enter="me"/);
+ assert.match(reveal,/data-hh-mirror-composer/);
+ assert.match(reveal,/data-hh-mirror-open-advanced/);
+ assert.match(reveal,/await expect\(plus\)\.toBeEnabled\(\)/);
+ assert.doesNotMatch(reveal,/force:true|\.evaluate\(/);
+});
+
+test("real macOS WebKit Montage navigation opens visible Magic Mirror controls before the hidden workspace rail",()=>{
+ const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+ const helperStart=browser.indexOf("async function enterVisibleStudioWorkspace");
+ const helperEnd=browser.indexOf("async function openVisibleMontageText",helperStart);
+ assert.ok(helperStart>=0&&helperEnd>helperStart);
+ const helper=browser.slice(helperStart,helperEnd);
+ assert.match(helper,/if\(!await control\.isVisible\(\)\)/);
+ assert.match(helper,/await revealMirrorAdvanced\(page,engine\)/);
+ assert.match(helper,/await expect\(control\)\.toBeVisible/);
+ assert.match(helper,/if\(engine==="webkit"\)await control\.tap\(\)/);
+ assert.match(helper,/else await control\.click\(\)/);
+ assert.doesNotMatch(helper,/force:true|\.evaluate\(/);
+ const reveal=browser.slice(browser.indexOf("async function revealMirrorAdvanced"),helperStart);
+ assert.match(reveal,/if\(engine==="webkit"\)await entry\.tap\(\)/);
+ assert.match(reveal,/if\(engine==="webkit"\)await format\.tap\(\)/);
+ assert.match(reveal,/if\(engine==="webkit"\)await plus\.tap\(\)/);
+ const editor=browser.slice(browser.indexOf('phase(engine,"editor-ready")'));
+ assert.match(editor,/await enterVisibleStudioWorkspace\(page,"editor",engine\)/);
+ assert.doesNotMatch(editor,/await editorTab\.click\(\)|await page\.locator\('\[data-video-quick-control="editor"\]'\)\.click\(\)/);
+});
+
+test("shared original-motion WebKit quiz uses real Scope → Goal → Format → Topic touches",()=>{
+ const source=read("scripts/benchmarking/complete-three-step-goals-quiz.mjs");
+ for(const token of ['[data-hh-mirror-enter="me"]','[data-hh-mirror-purpose-step]',
+   '[data-video-ideas-goal-choice="rest"]','[data-video-ideas-goal-next]',
+   '[data-hh-mirror-video-format="basic"]','[data-hh-mirror-open-advanced="true"]'])
+  assert.ok(source.includes(token),token);
+ assert.doesNotMatch(source,/data-hh-mirror-plan|MIRROR_VISIBLE_BACK_UNAVAILABLE/);
+ assert.match(source,/step==='2'\|\|step==='3'/);
 });

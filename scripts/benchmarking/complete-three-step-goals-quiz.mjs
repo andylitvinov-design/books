@@ -8,6 +8,59 @@ export async function completeThreeStepGoalsQuiz(page,{
   engine='chromium',categorySelector='[data-auto-video-category]'
 }={}){
   assert.ok(['chromium','webkit'].includes(engine),'GOAL_QUIZ_INVALID_BROWSER');
+  // The approved Magic Mirror is the initial one-screen choice on mobile.
+  // The full original 3-step taxonomy is intentionally collapsed until a
+  // real visitor taps More goals. Never force-click the hidden legacy CTA.
+  // New Magic Mirror has a real landing screen before the topic composer.
+  const collapsedMirror=page.locator(
+    '[data-mandala-free-video][data-hh-mirror-advanced="false"] [data-hh-mirror-goals]'
+  );
+  if(await collapsedMirror.isVisible()){
+    const tap=async locator=>{
+      await locator.waitFor({state:'visible',timeout:15000});
+      if(engine==='webkit')await locator.tap();
+      else await locator.click();
+    };
+    const overflow=collapsedMirror.locator('[data-hh-mirror-more-goals]');
+    if(await overflow.isVisible())await tap(overflow);
+    else{
+      // 3 real mobile pages; no retired Plan, hidden Back or test-only React state.
+      const screen=()=>collapsedMirror.getAttribute('data-hh-mirror-screen');
+      // React/WebKit can commit the next page AFTER the trusted native tap
+      // resolves. Wait for actual visible state; never patch DOM or force-click.
+      const awaitScreen=async expected=>page.waitForFunction(expected=>
+        document.querySelector('[data-hh-mirror-goals]')
+          ?.getAttribute('data-hh-mirror-screen')===expected,
+        expected,{timeout:15000});
+      if(await screen()==='landing'){
+        await tap(collapsedMirror.locator('[data-hh-mirror-enter="me"]'));
+        await awaitScreen('purpose');
+      }
+      if(await screen()==='purpose'){
+        const picker=collapsedMirror.locator('[data-hh-mirror-purpose-step]');
+        await tap(picker.locator('[data-video-ideas-goal-choice="rest"]'));
+        await tap(picker.locator('[data-video-ideas-goal-next]'));
+        await awaitScreen('format');
+      }
+      if(await screen()==='format'){
+        await tap(collapsedMirror.locator('[data-hh-mirror-video-format="basic"]'));
+        await awaitScreen('topic');
+      }
+      assert.equal(await screen(),'topic','GOAL_QUIZ_EXPECTS_REAL_VISIBLE_TOPIC');
+      const composer=collapsedMirror.locator('[data-hh-mirror-composer]');
+      // Topic Back exists only for the nested 2/3 taxonomy substeps.
+      for(let i=0;i<2&&!await composer.isVisible();i++){
+        const step=await collapsedMirror.getAttribute('data-hh-mirror-step');
+        assert.ok(step==='2'||step==='3','GOAL_QUIZ_COMPOSER_HIDDEN_AT_STEP_'+step);
+        await tap(collapsedMirror.locator('[data-hh-mirror-back]'));
+      }
+      await composer.waitFor({state:'visible',timeout:15000});
+      await tap(composer.locator('[data-hh-mirror-open-advanced="true"]'));
+    }
+    await page.waitForFunction(()=>
+      document.querySelector('[data-mandala-free-video]')
+        ?.getAttribute('data-hh-mirror-advanced')==='true',undefined,{timeout:15000});
+  }
   const progress=page.locator('[data-video-goal-quiz-progress]');
   const next=page.locator('[data-video-continue-scenarios]');
   // The compact mobile flow may visually hide the progress caption while
