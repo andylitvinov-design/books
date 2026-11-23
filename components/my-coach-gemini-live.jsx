@@ -66,7 +66,7 @@ function audioTranscription(value){return typeof value==='string'?value.trim().s
 // ONE unlocked AudioContext. No server audio proxy, retrying cloud TTS,
 // client-side transcript persistence or unconsented fallback.
 const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
-  locale='en',personaId='mira',settings={},voiceName='Puck',enabled=false,
+  locale='en',personaId='mira',settings={},courseSessionId='life_direction',voiceName='Puck',enabled=false,
   canStart=true,elapsedSeconds=0,onSessionStart,onVoiceStateChange,
   onMicLevel,onInputInterim,onInputFinal,onOutputInterim,onOutputFinal,
   onInterrupted,onDirectorProgress,onOpeningProgress,onNotice,
@@ -79,7 +79,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   const [audioNeedsGesture,setAudioNeedsGesture]=useState(false)
   const runtime=useRef(null),starting=useRef(false),generation=useRef(0)
   const propsRef=useRef({})
-  propsRef.current={locale:lang,personaId,settings,voiceName,enabled,canStart,
+  propsRef.current={locale:lang,personaId,settings,courseSessionId,voiceName,enabled,canStart,
     elapsedSeconds,onSessionStart,onVoiceStateChange,onMicLevel,onInputInterim,
     onInputFinal,onOutputInterim,onOutputFinal,onInterrupted,
     onDirectorProgress,onOpeningProgress,onNotice,openingPrior,allowOpeningPrior,
@@ -623,7 +623,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       method:'POST',credentials:'same-origin',cache:'no-store',
       signal:r.abort.signal,headers:{'Content-Type':'application/json'},
       body:JSON.stringify({personaId:r.personaId,locale:r.locale,
-        settings:r.settings,voiceName:r.voiceName,consent:true,
+        settings:r.settings,courseSessionId:r.courseSessionId,voiceName:r.voiceName,consent:true,
         voiceConsent:true,trainingUseConsent:true}),
     })
     if(response.status===429)throw Error('GEMINI_LIVE_LIMIT')
@@ -696,7 +696,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       pendingContext:'',pendingDirectorHint:'',sidebandTimer:null,
       bargeDetector:new GeminiLiveBargeDetector(),
       reconnects:0,voiceName:p.voiceName,locale:p.locale,personaId:p.personaId,
-      settings:p.settings,allowOpeningPrior:p.allowOpeningPrior===true,
+      settings:p.settings,courseSessionId:p.courseSessionId,allowOpeningPrior:p.allowOpeningPrior===true,
       openingPrior:p.allowOpeningPrior===true?p.openingPrior:null,
       abort:new AbortController(),timer:null,reconnectTimer:null,
       resampler:new GeminiLivePcmResampler(context.sampleRate),
