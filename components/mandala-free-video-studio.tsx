@@ -3895,6 +3895,39 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     updateFreeFilmReadiness();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[cinematicPlan,storyboardPhotoRevision,freeFilmPhotoRevision,freeFilmKey]);
+  // Approved still-image stories must decode before export, otherwise Ready
+  // can never expose its personal preview until after Generate has run.
+  // The export still independently verifies every image and source.
+  useEffect(()=>{
+    if(!cinematicPlan||!usingFreeFilmCompilation||!freeFilmSourcesListed)return;
+    const photos=freeFilmShots.flatMap(shot=>shot.photo?[shot.photo]:[]);
+    if(!photos.length)return;
+    let cancelled=false;
+    void Promise.all(photos.map(async photo=>{
+      if(!isTrustedStoryPhoto(photo))throw Error("unverified_story_photo");
+      const image=new Image();
+      image.decoding="async";
+      image.src=photo.src;
+      await withLocalMediaDeadline(image.decode(),20000);
+      const resolved=new URL(image.currentSrc||image.src,window.location.href);
+      if(resolved.origin!==window.location.origin||!image.complete||
+        image.naturalWidth<600||image.naturalHeight<600)
+        throw Error("licensed_story_photo_decode_failed");
+      return {id:photo.id,image};
+    })).then(decoded=>{
+      // A different plan, unmount or an export in progress must not inherit
+      // late preview images from an obsolete source selection.
+      if(cancelled||preparingRef.current||jobRef.current||webCodecJobRef.current)return;
+      decoded.forEach(({id,image})=>{freeFilmPhotoRefs.current[id]=image;});
+      setFreeFilmPhotoRevision(value=>value+1);
+    }).catch(()=>{
+      if(!cancelled&&!preparingRef.current&&!jobRef.current&&!webCodecJobRef.current)
+        setReadyFreeFilmKey("");
+    });
+    return()=>{cancelled=true;};
+    // The plan and verified source key identify all trusted stills.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[cinematicPlan,freeFilmKey,freeFilmSourcesListed]);
   useEffect(()=>{
     if(previewPlaying||recording||preparing)return;
     Object.values(freeFilmPlayerRefs.current).forEach(video=>video.pause());
@@ -6448,6 +6481,19 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     // Query is an initial route intent. Later changes come from the site menu.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[studioHydrated]);
+  const revealPendingStoryApproval = () => {
+    setNotice(locale==="ru"?"Сначала выберите «Использовать эти 6 фото в видео» в разделе «Сюжет».":
+      locale==="es"?"Primero selecciona «Usar estas 6 fotos en el vídeo» en Guion.":
+      "First select «Use these 6 photos in my video» in Story.");
+    setActiveWorkspace("editor");setMontagePanel("concept");
+    window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
+      const approval=document.querySelector<HTMLButtonElement>("[data-storyboard-apply-reference-photos]");
+      const destination=approval||document.querySelector<HTMLElement>("[data-video-montage-tools]");
+      destination?.scrollIntoView({behavior:"auto",block:"center"});
+      if(approval&&!approval.disabled)approval.focus({preventScroll:true});
+    }));
+    return false;
+  };
   // Goal and Montage Generate only open Ready. This action starts no encoder,
   // check-in or credit transaction; the separate Ready Generate click does.
   const openReadyForGeneration = () => {
@@ -6458,6 +6504,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       setActiveWorkspace("ready");setReadyGenerationPending(false);
       setNotice(expressUnavailable);return false;
     }
+    if(storySourcePendingRef.current)return revealPendingStoryApproval();
     ++quickNavTokenRef.current;
     stopSoundPreview();stopMovieSound();
     setIntroPlaying(false);setPreviewPlaying(false);setNotice("");
@@ -6476,13 +6523,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       else setNotice(expressUnavailable);
       return false;
     }
-    if(storySourcePendingRef.current){
-      setNotice(locale==="ru"?"Сначала выберите «Использовать эти 6 фото в видео» в разделе «Сюжет».":
-        locale==="es"?"Primero selecciona «Usar estas 6 fotos en el vídeo» en Guion.":
-        "First select «Use these 6 photos in my video» in Story.");
-      setActiveWorkspace("editor");setMontagePanel("concept");
-      return false;
-    }
+    if(storySourcePendingRef.current)return revealPendingStoryApproval();
     // The direct shortcut must preserve the approved paid-format gate.
     if(!freeVideoSelected){
       setNotice(locale==="ru"?"Для этого формата необходимо отдельное оформление. Выберите базовое видео для бесплатной генерации.":
