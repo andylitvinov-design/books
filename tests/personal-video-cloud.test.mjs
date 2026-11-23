@@ -44,6 +44,8 @@ test('private Supabase uploads require verified session, consent and bounded quo
     assert.doesNotMatch(value,/HH_APP_SUPABASE_SECRET_KEY\s*=|service_role.*in.*client|NEXT_PUBLIC_.*SECRET/)
 })
 test('private storage availability depends on verified account identity only',async()=>{
+  assert.equal((server.match(/^  requireEnabled\(actor\)$/gm)||[]).length,6)
+  assert.match(read('lib/app/personal-video-messenger.js'),/cloudAvailable:personalVideoCloudEnabled\(actor\)/)
   const {personalVideoCloudEnabled}=await import('../lib/app/personal-video-cloud-policy.mjs')
   const account={id:'11111111-1111-4111-8111-111111111111'}
   assert.equal(personalVideoCloudEnabled(account),true)

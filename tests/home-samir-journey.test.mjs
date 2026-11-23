@@ -18,8 +18,8 @@ test("all seven stages and five tools are real content in RU EN ES",()=>{
   "ИИ-коучи","Специалисты","Видео","Тесты","Практики"])
   assert.ok(home.includes(phrase),phrase);
  assert.match(home,/data-home-stage-option=\{index\+1\}/);
- assert.match(home,/stepIcons=\[Route,Sparkles,Leaf,CheckCircle2,Heart,TrendingUp,ArrowUp\]/);
- assert.match(home,/methodIcons=\[UsersRound,CheckCircle2,Play,Leaf,Sparkles\]/);
+ assert.match(home,/stepIcons=\[Compass,Flame,Flower2,ClipboardList,Shield,Sprout,ChevronsRight\]/);
+ assert.match(home,/methodIcons=\[UsersRound,GraduationCap,Play,BarChart3,Flower2\]/);
  assert.match(home,/data-home-stage-scroll/);
 });
 test("home graphics reuse verified local assets, audio, microphone and same-tab handoff",()=>{
@@ -32,4 +32,15 @@ test("home graphics reuse verified local assets, audio, microphone and same-tab 
  assert.match(home,/router\.push\(chatPath\)/);
  assert.match(home,/app\/messages\?section=ai/);
  assert.doesNotMatch(home,/URLSearchParams/);
+});
+
+test("approved mock: seven connected circles, separate graphics, shared dock untouched",()=>{
+ const home=read("components/home-dialogue-entry.tsx"),style=read("components/home-dialogue-entry.module.css"),dock=read("components/unified-mobile-dock.tsx");
+ assert.match(style,/SAMIR_MOCK_FIDELITY_20261123_V2/);
+ assert.match(style,/grid-template-columns:repeat\(7,minmax\(0,1fr\)\)/);
+ assert.match(style,/\.journeyScroll:before/);
+ for(const picture of ["samir-goal-sunrise.svg","samir-goal-sailboat.svg"])assert.ok(home.includes(picture));
+ assert.match(home,/startCoachRecordedTurn\(\{/);
+ assert.match(dock,/UNIFIED_DOCK_IDS/);
+ assert.doesNotMatch(home,/UnifiedMobileDock|data-hh-unified-dock/);
 });
