@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import {
-  ArrowRight, BarChart3, BookOpen, Brain, BriefcaseBusiness, CalendarDays,
-  Heart, Leaf, NotebookPen, Settings2, Sparkles, Target, UserRound,
+  ArrowRight, BarChart3, BookOpen, Brain, CalendarDays,
+  Heart, Leaf, Settings2, Sparkles, Target, UserRound,
 } from 'lucide-react'
 import styles from './profile-space-dashboard.module.css'
 import { ProfileSpaceFocus } from './profile-space-focus'
@@ -83,10 +83,11 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
   const selected = Object.hasOwn(TEXT, locale) ? locale : 'en'
   const t = TEXT[selected]
   const [section, setSection] = useState('goals')
+  const diary = { en: ['GOAL DIARY', 'Goal Diary', 'Set, develop and achieve your goals — all in one place.', 'Tests', 'Support'], ru: ['ДНЕВНИК ЦЕЛЕЙ', 'Дневник целей', 'Постановка, развитие и достижение ваших целей — в одном месте.', 'Тесты', 'Поддержка'], es: ['DIARIO DE METAS', 'Diario de metas', 'Define, desarrolla y alcanza tus metas en un solo lugar.', 'Tests', 'Apoyo'] }[selected]
   const tabs = [
-    { id: 'support', title: t.support, detail: t.supportDetail, icon: Heart },
-    { id: 'tests', title: t.testsTab, detail: t.testsDetail, icon: BarChart3 },
-    { id: 'goals', title: t.goalsTab, detail: t.goalsDetail, icon: Target },
+    { id: 'goals', title: t.goalsTab, icon: Target },
+    { id: 'tests', title: diary[3], icon: BarChart3 },
+    { id: 'support', title: diary[4], icon: Heart },
   ]
   const diagnostics = [
     { id: 'life', title: t.lifeWheel, detail: t.lifeWheelDetail, icon: BarChart3, href: '/' + selected + '/development-vectors' },
@@ -102,35 +103,19 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
   ]
 
   return <div className={styles.dashboard} data-profile-space-dashboard data-profile-space-section={section}>
-    <nav className={styles.mode} aria-label={t.label}>
-      <Link className={styles.life} href={root + '/portrait'} prefetch={false}
-        aria-current="page" data-profile-space-life><Heart size={20} aria-hidden="true" />{t.life}</Link>
-      <Link className={styles.work} href={'/' + selected + '/practice'} prefetch={false}
-        data-profile-space-work><BriefcaseBusiness size={20} aria-hidden="true" />{t.work}</Link>
-      <Link className={styles.modeSettings} href={root + '/settings'} prefetch={false}
-        aria-label={t.settings} data-profile-settings-gear><Settings2 size={24} aria-hidden="true" /></Link>
-    </nav>
-    <section className={styles.scenic} aria-label={t.title} data-profile-space-scenic>
-      <p className={styles.eyebrow}><Sparkles size={17} aria-hidden="true" />{t.label}</p>
-      <h1 className={styles.title}>{t.title}</h1>
-      <p className={styles.intro}>{t.intro}</p>
-      {section === 'support' && <>
-      <ProfileSpaceFocus locale={selected} root={root} accountId={accountId} />
-      <Link className={styles.path} href={root + '/portrait?space=path'} prefetch={false}
-        data-profile-space-path>
-        <span className={styles.pathIcon} aria-hidden="true"><NotebookPen size={30}/></span>
-        <span className={styles.pathText}><strong>{t.path}</strong><small>{t.pathDetail}</small></span>
-        <ArrowRight className={styles.pathArrow} size={23} aria-hidden="true"/>
-      </Link>
-      </>}
-    </section>
-    <nav className={styles.profileTabs} aria-label={t.label} data-goal-profile-tabs>
-      {tabs.map(({ id, title, detail, icon: Icon }) => <button key={id} type="button"
+    <nav className={styles.profileTabs} aria-label={diary[1]} data-goal-profile-tabs data-profile-mode-switch>
+      {tabs.map(({ id, title, icon: Icon }) => <button key={id} type="button"
         className={section === id ? styles.profileTabActive : styles.profileTab}
         onClick={() => setSection(id)} aria-pressed={section === id} data-goal-profile-tab={id}>
-        <Icon size={25} aria-hidden="true"/><strong>{title}</strong><small>{detail}</small>
+        <Icon size={23} aria-hidden="true"/><strong>{title}</strong>
       </button>)}
     </nav>
+    {section === 'goals' && <section className={styles.scenic} aria-label={diary[1]} data-profile-space-scenic>
+      <p className={styles.eyebrow}><Sparkles size={17} aria-hidden="true" />{diary[0]}</p>
+      <h1 className={styles.title}>{diary[1]}</h1>
+      <p className={styles.intro}>{diary[2]}</p>
+      <ProfileSpaceFocus locale={selected} root={root} accountId={accountId} />
+    </section>}
     {section === 'goals' && <ProfileGoalConsole locale={selected} root={root} accountId={accountId} />}
     {section === 'tests' && <section className={styles.discovery} data-goal-stage-zero>
       <h2>{t.discovery}</h2><p>{t.discoveryHint}</p>
@@ -146,6 +131,7 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
       </Link>
     </section>}
     {section === 'support' && <>
+    <h1 className={styles.secondaryTitle}>{t.support}</h1>
     <div className={styles.cards} data-profile-space-cards>
       {cards.map(({ id, icon: Icon, href, title, detail }) =>
         <Link key={id} className={styles.card} href={href} prefetch={false}
@@ -172,6 +158,7 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
         <span><strong>{t.settings}</strong><small>{t.settingsDetail}</small></span>
       </Link>
     </nav>
+    <Link className={styles.profileInsight} href={'/' + selected + '/practice'} prefetch={false}><UserRound size={23} aria-hidden="true" />{t.work}<ArrowRight size={19} aria-hidden="true" /></Link>
     </>}
   </div>
 }
