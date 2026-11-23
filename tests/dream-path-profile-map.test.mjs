@@ -1,0 +1,60 @@
+import assert from 'node:assert/strict'
+import {readFileSync} from 'node:fs'
+import test from 'node:test'
+const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
+const map=read('components/app/dream-path-map.jsx')
+const workspace=read('components/app/app-workspace.jsx')
+const css=read('components/app/dream-path-map.module.css')
+test('My Space Today and My Path mount the one shared seven-step map only for authenticated profile',()=>{
+ assert.match(workspace,/const DreamPathMap = dynamic\(\(\) => import\('@\/components\/app\/dream-path-map'\)\)/)
+ assert.equal((workspace.match(/<DreamPathMap locale=\{locale\} \/>/g)||[]).length,2)
+ assert.ok(workspace.indexOf('<DreamPathMap locale={locale} />')>workspace.indexOf("page === 'portrait' && ("))
+ assert.ok(workspace.indexOf('<DreamPathMap locale={locale} />')<workspace.indexOf("page === 'labs'"))
+ assert.match(map,/data-dream-path-map/)
+})
+test('Seven directions preserve plan before resources and four distinct offers each',()=>{
+ for(const id of ['discover','vision','plan','resources','obstacles','options','progress'])
+   assert.match(map,new RegExp("id:'"+id+"'"))
+ const order=['id:\'discover\'','id:\'vision\'','id:\'plan\'','id:\'resources\'','id:\'obstacles\'','id:\'options\'','id:\'progress\''].map(x=>map.indexOf(x))
+ assert.ok(order.every((at,i)=>at>=0&&(i===0||at>order[i-1])))
+ for(const mode of ["kind:'free'","kind:'coach'","kind:'personal'","kind:'human'"])assert.match(map,new RegExp(mode))
+ assert.match(map,/1000 XP \/ €100/)
+ assert.match(map,/250 XP/)
+ assert.match(map,/100 XP/)
+})
+test('No video purchase recommendation during discovery, vision or planning',()=>{
+ for(const id of ['discover','vision','plan']){
+  const part=map.slice(map.indexOf("id:'"+id+"'"),map.indexOf("id:'",map.indexOf("id:'"+id+"'")+1))
+  assert.doesNotMatch(part,/видео ресурсной|видеовизуализац|мотивационное видео|support video/i)
+ }
+ assert.match(map,/Видео ресурсной поддержки/)
+ assert.match(map,/Видео эмоциональной поддержки/)
+ assert.match(map,/Мотивационное видео/)
+})
+test('Existing real free tools and voluntary self-guided prompts, not an invented paid AI chat',()=>{
+ assert.match(map,/freeRoute:'vectors'/)
+ assert.equal((map.match(/freeRoute:'daybook'/g)||[]).length,2)
+ assert.match(map,/\/development-vectors/)
+ assert.match(map,/\/app\/daybook/)
+ assert.match(map,/const \[answers,setAnswers\]=useState\(\{\}\)/)
+ assert.match(map,/maxLength=\{600\}/)
+ assert.doesNotMatch(map,/localStorage|sessionStorage|document\.cookie|fakeCheckout|autoCharge/)
+})
+test('Requests require explicit click; product title and public price only go into manual messenger draft',()=>{
+ assert.match(map,/whatsappEnquiryUrl\(/)
+ assert.match(map,/telegramEnquiryUrlFromWhatsApp\(whatsapp\)/)
+ assert.match(map,/setShowRequest\(v=>/)
+ assert.match(map,/rel="noopener noreferrer"/)
+ assert.match(map,/pagePath:localRoot\+'\/services'/)
+ assert.doesNotMatch(map,/pagePath:.*app\/portrait|context:answers|context:lines/)
+ assert.match(map,/automatic|автоматического|automático/i)
+})
+test('Responsive readable UI with seven stage disclosures, no hidden tab selectors or fake completion',()=>{
+ assert.match(map,/aria-expanded=\{open\}/)
+ assert.match(map,/setOpen\(x=>!x\)/)
+ assert.match(map,/data-dream-offers=\{step.id\}/)
+ assert.match(css,/@media\(max-width:680px\)/)
+ assert.match(css,/\.offers\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
+ assert.match(css,/\.offers\{grid-template-columns:1fr/)
+ assert.doesNotMatch(map,/completedStep|markCompleted|fakeProgress/)
+})
