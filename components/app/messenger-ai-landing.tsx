@@ -238,7 +238,7 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupp
         <article className={css.welcomeBubble} data-hh-ai-landing-question>
           <h2>{locale==="ru"?<>Привет! Я {guideName} — твой ИИ-проводник к мечте. ✨</>:
             locale==="es"?<>¡Hola! Soy {guideName}, tu guía de IA hacia tus sueños. ✨</>:
-              <>Hi! I'm {guideName} — your AI guide to your dreams. ✨</>}</h2>
+              <>Hi! I&apos;m {guideName} — your AI guide to your dreams. ✨</>}</h2>
           <p>{locale==="ru"?"У тебя есть желание, мечта или цель? А может, ты пока ищешь своё направление?":
             locale==="es"?"¿Tienes un deseo, un sueño o una meta? ¿O todavía buscas tu camino?":
               "Do you have a wish, a dream, or a goal? Or are you still finding your direction?"}</p>
