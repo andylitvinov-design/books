@@ -37,6 +37,8 @@ for(const engine of [chromium,webkit]){
      assert.ok((await root.locator('[data-home-intent-option="understand"]').innerText()).includes(labels[0]),name);
      assert.ok((await root.locator('[data-home-intent-option="goal"]').innerText()).includes(labels[1]),name);
      assert.equal(await root.locator("[data-home-ali-greeting-play]").count(),1,name+": real greeting control");
+     const hitTargets=await root.locator('[data-home-intent-form] button').evaluateAll(buttons=>buttons.map(button=>{const r=button.getBoundingClientRect();return {width:r.width,height:r.height}}));
+     assert.ok(hitTargets.length>=4&&hitTargets.every(r=>r.width>=44&&r.height>=44),name+": safe 44px mobile input controls "+JSON.stringify(hitTargets));
      const input=root.locator("[data-home-intent-composer]"),send=root.locator("[data-home-send-to-ali]");
      await input.fill(locale==="ru"?"Хочу разобраться":locale==="es"?"Quiero comprender":"I want clarity");
      assert.equal(await send.isEnabled(),true,name+": editable send");

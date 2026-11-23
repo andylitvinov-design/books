@@ -182,7 +182,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
     locale==="es"?`¡Hola! Soy ${greetingName}.`:`Hi! I’m ${greetingName}.`;
   const guideSubtitle=locale==="ru"?"Вместе найдём подходящий следующий шаг":
     locale==="es"?"Encontraremos juntos el mejor siguiente paso":"Let’s find your best next step together";
-  const mode:Mode="self";
+  const [mode]=useState<Mode>("self");
   const [draft,setDraft]=useState("");
   const [error,setError]=useState("");
   const [voiceMessage,setVoiceMessage]=useState("");
@@ -298,7 +298,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
     <div className={styles.hero} data-home-dialogue-hero>
       <div className={styles.scene} aria-hidden="true"/>
       <div className={styles.heroContent} data-home-ali-persona={persona.id}>
-        <img className={styles.heroPortrait} src={picture} width={530} height={480} fetchPriority="high" alt={locale==="ru"?"Самир — ИИ-проводник":locale==="es"?"Samir, guía de IA":"Samir, AI guide"}/>
+        <img className={styles.heroPortrait} src={picture} width={530} height={480} loading="eager" fetchPriority="high" alt={locale==="ru"?"Самир — ИИ-проводник":locale==="es"?"Samir, guía de IA":"Samir, AI guide"}/>
         <div className={styles.heroStory}>
           <div className={styles.heroMessage}>
             <div className={styles.kicker}><Sparkles size={15} aria-hidden="true"/> AI GUIDE</div>

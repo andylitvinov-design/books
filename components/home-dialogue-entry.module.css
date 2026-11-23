@@ -487,3 +487,14 @@
  .focusPhoto{height:72px}
 }
 @media(prefers-reduced-motion:reduce){.journeyScroll{scroll-behavior:auto}}
+
+/* 320–430px accessibility repair: do not shrink meaningful touch targets
+   merely to fit four controls beside the edit field. */
+@media(max-width:430px){
+ .siteTools :global(.site-main-menu-trigger),
+ .siteTools :global([data-site-search-trigger]){width:44px;min-width:44px;height:44px;min-height:44px}
+ .language summary{min-width:44px;min-height:44px}
+ .composer .moreTool,.composerButtons .photoTool,.composerButtons .microphone,.composerButtons .send{
+   width:44px;min-width:44px;min-height:44px;height:44px
+ }
+}
