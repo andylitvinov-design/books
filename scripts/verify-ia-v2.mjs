@@ -301,47 +301,40 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
           })
           assert.ok(geom.right<=width+1&&geom.overlap<=1&&geom.centerGap<=12,
             label+': Holistic House title and tools must share ONE line')
-          const self=entry.locator('[data-home-mode-button="self"]')
-          const business=entry.locator('[data-home-mode-button="business"]')
-          await expect(self).toHaveAttribute('aria-pressed','true')
-          await expect(business).toHaveAttribute('aria-pressed','false')
-          await business.click()
-          await expect(entry).toHaveAttribute('data-home-mode','business')
-          await expect(business).toHaveAttribute('aria-pressed','true')
-          await self.click()
+          // Approved Home now has three entry intentions, not the removed
+          // Self/Business toggle. Exercise all entry and step elements.
           await expect(entry).toHaveAttribute('data-home-mode','self')
           const form=entry.locator('[data-home-intent-form]')
           const input=form.locator('[data-home-intent-composer]')
           const send=form.locator('[data-home-send-to-ali]')
-          await expect(entry.locator('[data-home-free-review]')).toHaveAttribute('href','/'+locale+'/services/free-situation-review')
-          // Measure both rectangles in ONE animation frame, BEFORE focusing the
-          // lower textarea. Separate boundingBox calls during mobile keyboard
-          // auto-scroll can use different scroll offsets and produce a false
-          // overlap even when layout order and spacing are correct.
+          const choices=entry.locator('[data-home-intent-option]')
+          await expect(choices).toHaveCount(3)
+          for(const intention of ['understand','goal','talk']){
+            const button=entry.locator('[data-home-intent-option="'+intention+'"]')
+            await expect(button).toHaveCount(1)
+            await expect(button).toHaveAttribute('type','button')
+            await expect(button).toBeVisible()
+          }
+          await expect(entry.locator('[data-home-stage-option]')).toHaveCount(7)
+          await expect(entry.locator('[data-home-free-review]')).toHaveAttribute('data-home-intent-option','understand')
+          await expect(entry.locator('[data-home-request-session]')).toHaveAttribute('data-home-intent-option','goal')
+          // Same-frame geometry: composer, two large choices, gentle Talk
+          // option and seven steps must follow in order without overflow.
           const homeLayout=await entry.evaluate(root=>{
-            const topics=root.querySelector('[data-home-focus-grid]')
-            const how=root.querySelector('[data-home-how-it-works]')
-            const review=root.querySelector('[data-home-free-review]')
-            const support=root.querySelector('[data-home-request-session]')
-            if(!topics||!how||!review||!support)return null
-            const topicsBox=topics.getBoundingClientRect()
-            const howBox=how.getBoundingClientRect()
-            const reviewBox=review.getBoundingClientRect()
+            const nodes=['[data-home-intent-form]','[data-home-focus-grid]',
+              '[data-home-intent-option="talk"]','[data-home-how-it-works]']
+              .map(selector=>root.querySelector(selector))
+            if(nodes.some(node=>!node))return null
+            const boxes=nodes.map(node=>node.getBoundingClientRect())
             return {
-              topicsBeforeHow:Boolean(topics.compareDocumentPosition(how)&Node.DOCUMENT_POSITION_FOLLOWING),
-              howBeforeReview:Boolean(how.compareDocumentPosition(review)&Node.DOCUMENT_POSITION_FOLLOWING),
-              reviewBeforeSupport:Boolean(review.compareDocumentPosition(support)&Node.DOCUMENT_POSITION_FOLLOWING),
-              topicsBottom:topicsBox.bottom,howTop:howBox.top,
-              howBottom:howBox.bottom,reviewTop:reviewBox.top,
+              ordered:nodes.every((node,i)=>i===0||Boolean(
+                nodes[i-1].compareDocumentPosition(node)&Node.DOCUMENT_POSITION_FOLLOWING)),
+              noOverlap:boxes.every((box,i)=>i===0||boxes[i-1].bottom<=box.top+1),
+              inWidth:boxes.every(box=>box.left>=-1&&box.right<=innerWidth+1),
             }
           })
-          // Owner-approved dialogue-first Home order: four directions, 3 steps,
-          // then Get Ideas / Get Support side by side. Do not restore the old
-          // free-review-before-topics marketing order or weaken geometry checks.
-          assert.ok(homeLayout?.topicsBeforeHow&&homeLayout.howBeforeReview&&homeLayout.reviewBeforeSupport&&
-            homeLayout.topicsBottom<=homeLayout.howTop+1&&homeLayout.howBottom<=homeLayout.reviewTop+1,
-            label+': four directions → 3 steps → Get Ideas / Get Support '+JSON.stringify(homeLayout))
-          await expect(entry.locator('[data-home-intent-option]')).toHaveCount(4)
+          assert.ok(homeLayout?.ordered&&homeLayout.noOverlap&&homeLayout.inWidth,
+            label+': composer → three intentions → seven steps '+JSON.stringify(homeLayout))
           await expect(input).toBeVisible()
           // Approved free-chat entry opens Ali even without a prefilled wish.
           // Users may also describe their goal first; neither action is blocked.
