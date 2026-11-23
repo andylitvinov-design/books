@@ -1,7 +1,7 @@
 "use client";
 
 import {useRef,useState} from "react";
-import {ArrowLeft,ArrowRight,Briefcase,Check,ChevronDown,Clapperboard,Film,Flower2,Gift,Heart,ImagePlus,Mic,Play,Plus,Sparkles,TrendingUp,UserRound,Zap} from "lucide-react";
+import {ArrowLeft,ArrowRight,Briefcase,Check,ChevronDown,Clapperboard,Film,Flower2,Gift,Heart,ImagePlus,Lightbulb,Mic,Play,Plus,Sparkles,TrendingUp,UserRound,Zap} from "lucide-react";
 import type {VideoLocale} from "@/lib/mandala/holistic-video-themes";
 import {listMyTubeCategories,listMyTubeSubcategories,listMyTubeTopics,getMyTubeTopic} from "@/lib/mandala/mytube-content-taxonomy.mjs";
 import {classifyMyTubeRequest} from "@/lib/mandala/mytube-prompt-classifier.mjs";
@@ -24,12 +24,12 @@ type GoalOption={
 };
 const choices:Record<MirrorScope,GoalOption[]>={
  me:[
-  {id:"stress",theme:"health",categoryId:"stress-anxiety",image:"/videos/holistic-house/film-collection-v3/sun-warm-ocean-dawn.jpg",defaultTopicId:"low-energy",
-   request:{en:"I want to release stress and restore my energy.",ru:"Хочу снизить стресс и восстановить энергию.",es:"Quiero aliviar el estrés y recuperar energía."}},
   {id:"love",theme:"relationships",categoryId:"love-relationships",image:"/videos/holistic-house/film-collection-v3/petal-hope.jpg",defaultTopicId:"emotional-intimacy",
    request:{en:"I want loving, trusting relationships.",ru:"Хочу тёплых и доверительных отношений.",es:"Quiero relaciones amorosas y de confianza."}},
   {id:"money",theme:"money",categoryId:"goals-money",image:"/videos/holistic-house/film-collection-v2/mountain-air.jpg",defaultTopicId:"financial-stability",
    request:{en:"I want greater confidence and financial stability.",ru:"Хочу уверенности и финансовой устойчивости.",es:"Quiero más confianza y estabilidad financiera."}},
+  {id:"stress",theme:"health",categoryId:"stress-anxiety",image:"/videos/holistic-house/film-collection-v3/sun-warm-ocean-dawn.jpg",defaultTopicId:"low-energy",
+   request:{en:"I want to release stress and restore my energy.",ru:"Хочу снизить стресс и восстановить энергию.",es:"Quiero aliviar el estrés y recuperar energía."}},
   {id:"growth",theme:"goals",categoryId:"energy-confidence",image:"/videos/holistic-house/film-collection-v3/sun-autumn-hills.jpg",defaultTopicId:"personal-growth",
    request:{en:"I want personal growth and a clearer direction.",ru:"Хочу личностного развития и ясного направления.",es:"Quiero crecer personalmente y tener una dirección clara."}},
  ],
@@ -100,6 +100,12 @@ const onboardingCopy={
  ru:{therapy:"Видео терапия для себя",other:"Видео для других",work:"Видео для работы",therapyHint:"Эмоциональная поддержка и развитие важных качеств.",otherHint:"Личные подарки, поздравления и поддержка близких.",workHint:"Создание персональных рилзов, презентаций и описаний услуг.",formatTitle:"Выберите формат видео",formatNote:"Выбор формата пока задаёт предпочтение. Кредиты подтверждаются перед генерацией.",basic:"Простое видео",pro:"Живое фото",vip:"Кинематографическое видео",basicHelp:"Короткое поддерживающее видео",proHelp:"Оживление фото с разрешения",vipHelp:"История с видеосценами",plan:"Спланировать и создать видео",back:"Magic Mirror",step:"Шаг 1 из 3",topic:"Тема",script:"Сценарий и стиль",create:"Создание",describe:"Опишите ситуацию или цель…",example:"Пример: «Испытываю стресс и хочу восстановить силы»",ideas:"ИИ-идеи",guide:"Помоги мне",guideHelp:"Выберите одно из четырёх направлений, затем подтему и тему. Или опишите запрос и переходите дальше.",quiz:"Или выберите тему через короткий квиз",next:"Предложить тему и сценарий",watch:"Смотреть пример видео",media:"Открыть медианастройки",keyboard:"Открыть клавиатуру для диктовки"},
  es:{therapy:"Videoterapia para mí",other:"Vídeos para otros",work:"Vídeos para el trabajo",therapyHint:"Apoyo emocional y crecimiento personal.",otherHint:"Regalos personales, felicitaciones y apoyo a tus seres queridos.",workHint:"Reels personales, presentaciones y vídeos sobre tus servicios.",formatTitle:"Elige un formato de vídeo",formatNote:"El formato es una preferencia de planificación. Los créditos se confirman antes de generar.",basic:"Vídeo sencillo",pro:"Foto animada",vip:"Vídeo cinematográfico",basicHelp:"Vídeo breve de apoyo",proHelp:"Anima tu foto con permiso",vipHelp:"Historia con escenas cinematográficas",plan:"Planificar y generar vídeo",back:"Magic Mirror",step:"Paso 1 de 3",topic:"Tema",script:"Guion y estilo",create:"Crear",describe:"Describe tu situación u objetivo…",example:"Ejemplo: «Me siento estresado y quiero recuperar energía»",ideas:"Ideas de IA",guide:"Guíame",guideHelp:"Elige una de las cuatro categorías, después una subcategoría y un tema, o describe tu objetivo.",quiz:"O elige un tema con un cuestionario corto",next:"Sugerir ideas y guion",watch:"Ver vídeo de ejemplo",media:"Abrir opciones multimedia",keyboard:"Enfocar el campo para dictar"},
 } as const;
+type PendingMirrorPath=Omit<MirrorResolution,"videoFormat"|"goalPurposeId">;
+const topicQuizCopy={
+ en:{question:"Which goal topic would you like to explore?",subcategory:"Choose a more specific direction",topic:"What exactly would you like to change?",describe:"Or describe your goal in your own words",steps:"Three steps to choose a topic"},
+ ru:{question:"Какую тему цели ты хочешь проработать?",subcategory:"Выбери более точное направление",topic:"Что именно ты хочешь изменить?",describe:"Или опиши свою цель своими словами",steps:"Три шага выбора темы"},
+ es:{question:"¿Qué tema de tu objetivo quieres explorar?",subcategory:"Elige una dirección más específica",topic:"¿Qué quieres cambiar exactamente?",describe:"O describe tu objetivo con tus palabras",steps:"Tres pasos para elegir un tema"}
+} as const;
 export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSelectCategory,
  onStepChange,onScopeChange,onComplete,onExpand}:{
  locale:VideoLocale;wish:string;disabled:boolean;
@@ -114,7 +120,8 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
  const [formatMenuOpen,setFormatMenuOpen]=useState(false);
  const [guideOpen,setGuideOpen]=useState(false);
  const [introExpanded,setIntroExpanded]=useState(false);
- const [selectedId,setSelectedId]=useState("stress");
+ const [selectedId,setSelectedId]=useState("love");
+ const [pendingPath,setPendingPath]=useState<PendingMirrorPath|null>(null);
  // Each intent keeps its own local wish, avoiding accidental cross-purpose reuse.
  const [scopeWishes,setScopeWishes]=useState<Record<MirrorScope,string>>(()=>({me:wish,business:"",present:""}));
  const [step,setStep]=useState<1|2|3>(1);
@@ -128,7 +135,7 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
  const topics=subcategoryId?listMyTubeTopics(selected.categoryId,subcategoryId,locale):[];
  // Screen 2 reuses the real three-purpose Ideas Goal composer, not a copy.
  const purposeOptions=buildPersonalVideoGoalOptions({locale,wish,theme:selected.theme,
-  selectedTopic:{topicId:selected.defaultTopicId}});
+  selectedTopic:{topicId:pendingPath?.topicId||selected.defaultTopicId}});
  const changeStep=(next:1|2|3)=>{setStep(next);onStepChange(next);setBlocked(false);};
  const closeExistingIntro=()=>{
   // Leaving the page must stop the original MP4, not keep audio playing hidden.
@@ -150,15 +157,17 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
   if(next!==scope)switchScope(next);
   else changeStep(1);
   closeExistingIntro();
-  setScreen("purpose");setFormatMenuOpen(false);setGuideOpen(false);
+  setScreen("topic");setPendingPath(null);setFormatMenuOpen(false);setGuideOpen(false);
  };
  const continueFromGoal=()=>{
   if(disabled||!purposeOptions.goals.some(goal=>goal.id===goalPurposeId))return;
   closeExistingIntro();setScreen("format");
  };
  const chooseFormat=(next:MirrorVideoFormat)=>{
-  if(disabled||!goalPurposeId)return;
-  setVideoFormat(next);closeExistingIntro();changeStep(1);
+  if(disabled||!goalPurposeId||!pendingPath)return;
+  const accepted=onComplete({...pendingPath,videoFormat:next,goalPurposeId});
+  if(accepted===false){setBlocked(true);return;}
+  closeExistingIntro();setVideoFormat(next);setPendingPath(null);changeStep(1);
   setScreen("topic");setFormatMenuOpen(false);setGuideOpen(false);
  };
  const playExistingIntro=()=>{
@@ -172,17 +181,15 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
  };
  const finish=(categoryId:MirrorCategory,subId:string,topicId:string,goalText:string,workFormat?:WorkVideoFormat)=>{
   const found=getMyTubeTopic(topicId);
-  if(!found||found.category.id!==categoryId||found.subcategory.id!==subId){
-   setBlocked(true);return;
-  }
+  if(!found||found.category.id!==categoryId||found.subcategory.id!==subId){setBlocked(true);return;}
   const theme=scope==="business"?categoryTheme[categoryId]:
-    categoryId===selected.categoryId?selected.theme:categoryTheme[categoryId];
-  const accepted=onComplete({scope,categoryId,subcategoryId:subId,topicId,theme,
-    wish:goalText.slice(0,500),goalChoiceId:workFormat||selected.id,workFormat,videoFormat,
-    goalPurposeId:goalPurposeId||undefined});
-  if(accepted===false){setBlocked(true);return;}
-  closeExistingIntro();
-  setSubcategoryId("");changeStep(1);
+   categoryId===selected.categoryId?selected.theme:categoryTheme[categoryId];
+  // Persist one canonical path until Purpose and Format confirm the original editor handoff.
+  setPendingPath({scope,categoryId,subcategoryId:subId,topicId,theme,
+   wish:goalText.slice(0,500),goalChoiceId:workFormat||selected.id,workFormat});
+  setGoalPurposeId(null);setVideoFormat(undefined);
+  closeExistingIntro();setSubcategoryId("");changeStep(1);
+  setScreen("purpose");setFormatMenuOpen(false);setGuideOpen(false);
  };
  const autoNext=()=>{
   if(disabled)return;
@@ -251,7 +258,7 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
   data-hh-mirror-goals data-hh-mirror-screen="purpose" data-hh-mirror-mode={scope}
   data-hh-mirror-step={1} aria-label={locale==="ru"?"Зачем вам видео?":locale==="es"?"¿Para qué quieres este vídeo?":"Why do you want this video?"}>
   <button type="button" data-hh-mirror-back-purpose className={css.formatBack}
-    disabled={disabled} onClick={()=>{closeExistingIntro();setScreen("landing");changeStep(1);}}>
+    disabled={disabled} onClick={()=>{closeExistingIntro();setScreen("topic");changeStep(1);}}>
     <ArrowLeft size={17} aria-hidden="true"/>{copy.back}
   </button>
   <div data-hh-mirror-purpose-step>
@@ -295,12 +302,25 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
  </section>;
  return <section className={css.goals} data-hh-mirror-screen="topic" data-hh-mirror-goals data-hh-mirror-mode={scope}
   data-hh-mirror-step={step} data-hh-mirror-video-preview={introExpanded?"open":"closed"} aria-label={scope==="business"?t.workQuestion:t.question}>
-  {step>1?<button type="button" className={css.back} data-hh-mirror-back
-     disabled={disabled} onClick={()=>changeStep(step===3?2:1)}>
-     <ArrowLeft size={17} aria-hidden="true"/>{t.back}
-    </button>:null}
-   {step>1?<h3 className={css.question}>{scope==="business"?t.workQuestion:step===2?t.sub:t.topic}</h3>:null}
+  <header data-hh-mirror-quiz-heading>
+    <div data-hh-mirror-quiz-question>
+     {step>1?<button type="button" className={css.back} data-hh-mirror-back
+      disabled={disabled} onClick={()=>changeStep(step===3?2:1)}
+      aria-label={t.back}><ArrowLeft size={18} aria-hidden="true"/></button>:null}
+     <h3>{step===1?topicQuizCopy[locale].question:
+      step===2?topicQuizCopy[locale].subcategory:topicQuizCopy[locale].topic}</h3>
+    </div>
+    <ol data-hh-mirror-quiz-lights aria-label={topicQuizCopy[locale].steps}>
+     {([1,2,3] as const).map(number=><li key={number}
+      data-hh-mirror-quiz-lightbulb={number} data-active={step===number?"true":"false"}
+      aria-current={step===number?"step":undefined}>
+      <Lightbulb size={31} aria-hidden="true"/><span aria-hidden="true">{number}</span>
+     </li>)}
+    </ol>
+   </header>
   {step===1?<>
+   <details data-hh-mirror-own-description>
+    <summary>{topicQuizCopy[locale].describe}</summary>
    <div className={css.composer} data-hh-mirror-composer>
     <textarea id="hh-mirror-own-wish" ref={inputRef} rows={3} maxLength={500} autoComplete="off"
      data-hh-mirror-wish disabled={disabled} value={wish}
@@ -343,30 +363,24 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
        <button type="button" data-hh-mirror-play-example disabled={disabled}
         onClick={playExistingIntro}><Play size={17} aria-hidden="true"/>{copy.watch}</button>
        <button type="button" data-hh-mirror-back-landing disabled={disabled}
-        onClick={()=>{closeExistingIntro();setScreen("format");changeStep(1);}}>
+        onClick={()=>{closeExistingIntro();setScreen("landing");setPendingPath(null);changeStep(1);}}>
         <ArrowLeft size={17} aria-hidden="true"/>{copy.formatTitle}</button>
       </div>
      </div>:null}
    </div>
    <p className={css.example}>{copy.example}</p>
-   <p className={css.alternative}>{copy.quiz}</p>
-   <div className={css.cards} role="group" aria-label={t.alternative}>
-    {available.map(item=><button type="button" key={item.id} className={css.card}
+   </details>
+   <div className={css.cards} data-hh-mirror-quiz-cards role="group" aria-label={t.alternative}>
+    {available.map(item=><button type="button" key={item.id} className={css.card} data-hh-mirror-quiz-card
       data-hh-mirror-goal-choice={item.id} disabled={disabled}
       aria-pressed={selectedId===item.id}
       onClick={()=>{setSelectedId(item.id);setSubcategoryId("");
-       onSelectCategory(item.theme);
-       if(scope==="business"){
-        const match=getMyTubeTopic(item.defaultTopicId);
-        if(!match){setBlocked(true);return;}
-        finish(match.category.id as MirrorCategory,match.subcategory.id,match.topic.id,
-         wish.trim()||item.request[locale],item.workFormat);
-       }else changeStep(2);}}>
+       onSelectCategory(item.theme);changeStep(2);}}>
       <img src={item.image.startsWith("/")?item.image:
         "/videos/holistic-house/film-collection-v2/"+item.image}
        alt="" aria-hidden="true" loading="lazy" decoding="async"
        referrerPolicy={scope==="business"?"no-referrer":undefined}/>
-      <span className={css.cardLabel}>
+      <span className={css.cardLabel} data-hh-mirror-quiz-card-label>
        {scope==="business"?<Briefcase className={css.choiceIcon} size={20} aria-hidden="true"/>:
         item.id==="stress"?<Zap className={css.choiceIcon} size={20} aria-hidden="true"/>:
         item.id==="love"?<Heart className={css.choiceIcon} size={20} aria-hidden="true"/>:
@@ -378,18 +392,18 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
     </button>)}
    </div>
    {/* Composer arrow is the only submit action. */}
-  </>:<div className={css.cards} role="group" aria-label={step===2?t.sub:t.topic}>
-   {step===2?subcategories.map((item,index)=><button type="button" className={css.card}
+  </>:<div className={css.cards} data-hh-mirror-quiz-cards role="group" aria-label={step===2?t.sub:t.topic}>
+   {step===2?subcategories.map((item,index)=><button type="button" className={css.card} data-hh-mirror-quiz-card
      key={item.id} data-hh-mirror-subcategory={item.id} disabled={disabled}
      onClick={()=>{setSubcategoryId(item.id);changeStep(3);}}>
      <img src={mirrorPosterUrl(available[index%available.length].image)} alt="" loading="lazy"/>
-     <span className={css.cardLabel}>{item.label}</span>
-    </button>):topics.map((item,index)=><button type="button" className={css.card}
+     <span className={css.cardLabel} data-hh-mirror-quiz-card-label>{item.label}</span>
+    </button>):topics.map((item,index)=><button type="button" className={css.card} data-hh-mirror-quiz-card
      key={item.id} data-hh-mirror-topic={item.id} disabled={disabled}
      onClick={()=>finish(selected.categoryId,subcategoryId,item.id,
-      wish.trim()||selected.request[locale])}>
+      wish.trim()||selected.request[locale],selected.workFormat)}>
      <img src={mirrorPosterUrl(available[index%available.length].image)} alt="" loading="lazy"/>
-     <span className={css.cardLabel}>{item.label}</span>
+     <span className={css.cardLabel} data-hh-mirror-quiz-card-label>{item.label}</span>
     </button>)}
    </div>}
   {blocked?<p className={css.error} role="alert">

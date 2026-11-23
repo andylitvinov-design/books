@@ -185,30 +185,18 @@ try {
     if(engine==='webkit')await mirrorMore.tap();
     else await mirrorMore.click();
   }else{
-    // Follow actual visible Landing → Format → Topic → Plus; no hidden controls.
+    // Real browser entry: Landing -> Topic Screen 2 -> explicitly opened editor.
     const mirror=page.locator('[data-hh-mirror-goals]');
-    const screen=()=>mirror.getAttribute('data-hh-mirror-screen');
-    if(await screen()==='landing'){
+    if(await mirror.getAttribute('data-hh-mirror-screen')==='landing'){
       row.phase='mirror-audience-native-selection';
       const entry=mirror.locator('[data-hh-mirror-enter="me"]');
       if(engine==='webkit')await entry.tap();else await entry.click();
-      await expect(mirror).toHaveAttribute('data-hh-mirror-screen','purpose');
-    }
-    if(await screen()==='purpose'){
-      row.phase='mirror-canonical-goal-native-selection';
-      const goal=mirror.locator('[data-hh-mirror-purpose-step]');
-      const rest=goal.locator('[data-video-ideas-goal-choice="rest"]');
-      if(engine==='webkit')await rest.tap();else await rest.click();
-      const next=goal.locator('[data-video-ideas-goal-next]');
-      await expect(next).toBeEnabled();
-      if(engine==='webkit')await next.tap();else await next.click();
-      await expect(mirror).toHaveAttribute('data-hh-mirror-screen','format');
-    }
-    if(await screen()==='format'){
-      row.phase='mirror-format-native-selection';
-      const format=mirror.locator('[data-hh-mirror-video-format="basic"]');
-      if(engine==='webkit')await format.tap();else await format.click();
       await expect(mirror).toHaveAttribute('data-hh-mirror-screen','topic');
+    }
+    const description=mirror.locator('[data-hh-mirror-own-description]');
+    if(!await description.evaluate(el=>el.open)){
+      const summary=description.locator('summary');
+      if(engine==='webkit')await summary.tap();else await summary.click();
     }
     const composer=page.locator('[data-hh-mirror-composer]');
     await expect(composer).toBeVisible({timeout:15000});
