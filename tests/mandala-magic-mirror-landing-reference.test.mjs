@@ -16,6 +16,7 @@ test("approved mobile reference renders three separate photo regions and real ta
  for(const keyword of [".destinationCards",".destinationImage","background-position:center top","background-position:center center","background-position:center bottom","max-width:359px","max-height:740px"])assert.ok(styles.includes(keyword),keyword);
  assert.match(styles,/\.title:has\(\+ \.goals\.landing\)/);
  assert.match(styles,/data-video-quick-builder\]:has\(> \.goals\.landing\)/);
+ assert.match(styles,/\[data-active-workspace="video"\]\[data-hh-mirror-advanced="false"\]:has\(\[data-hh-mirror-screen="landing"\]\)/);
  assert.match(studio,/HeaderCreditProfile locale=\{locale\}/);
 });
 test("landing polish preserves three-screen purpose and format flow without touching render, debit or login",()=>{

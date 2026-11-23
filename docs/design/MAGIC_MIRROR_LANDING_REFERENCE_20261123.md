@@ -31,3 +31,6 @@ The source image strip is 180×540 AVIF, 4,485 B, three approved non-private ill
 
 Visual status: **IN REVIEW — real browser screenshots not captured**.
 Functional E2E status: **NOT RE-RUN**. Live status: **NOT DEPLOYED** until independent proof.
+
+## Cascade correction · same PR exact-head repair
+The global Video Studio stylesheet has higher-specificity `!important` rules on `.quickBuilder` and `.quickBrandBar` than the initial module-local landing selector. Landing-only selectors include the parent workspace/advanced/landing attributes to win that explicit cascade, without editing shared CSS. Title content is anchored at its reference top while the extra min-height contributes spacing **below** the headline rather than moving it downward.
