@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, BookOpen, Brain, CalendarDays, ChartNoAxesColumnIncreasing, CheckCircle2, ChevronDown, ChevronRight, ClipboardList, Compass, Flame, Heart, Leaf, Plus, Rocket, ShieldCheck, Target } from 'lucide-react'
+import { CheckCircle2, ChevronDown, ChevronRight, ClipboardList, Compass, Flame, Leaf, Plus, Rocket, ShieldCheck, Target } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import css from './profile-goal-console.module.css'
 import { goalStageOptions, goalOptionHref } from '@/lib/profile/goal-stage-options.mjs'
@@ -105,8 +105,8 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
     ? Math.round(scores.reduce((sum, value) => sum + value, 0) / 7) : null
   const planLink = selected ? root + '/my-coaching-plan?goal=' + encodeURIComponent(selected.id) : root + '/my-coaching-plan'
   const optionHref = route => goalOptionHref(route, { lang, root, planLink })
-  return <section className={css.console} data-profile-goal-console data-account-scoped={Boolean(accountId)}>
-    <div className={css.goalStrip} aria-label={t.goals}>
+  return <section className={css.console} data-profile-goal-console data-account-scoped={Boolean(accountId)} data-goal-selected={Boolean(selected)}>
+    {goals.length > 1 && <div className={css.goalStrip} aria-label={t.goals}>
       <h2 className={css.stripTitle}><Target size={18} aria-hidden="true" />{t.goals} ({goals.length})</h2>
       {goals.map(goal => {
         const active = selected?.id === goal.id
@@ -117,10 +117,10 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
         </button>
       })}
       <Link className={css.addGoal} href={root + '/my-coaching-plan'} prefetch={false}><Plus size={26} aria-hidden="true" /><strong>{t.add}</strong></Link>
-    </div>
+    </div>}
     {view.loading && <p className={css.notice} role="status">…</p>}
     {view.error && <p className={css.notice} role="alert">{t.error} <Link href={root + '/my-coaching-plan'}>{t.retry}</Link></p>}
-    {!view.loading && !view.error && !selected && <span className={css.emptyHint} data-goal-empty-state>{t.empty}</span>}
+    {!view.loading && !view.error && !selected && <span className={css.emptyHint} data-goal-empty-state hidden>{t.empty}</span>}
     {selected && !view.loading && !view.error && <>
         <div className={css.selectedGoal}>
           <div className={css.goalText}><span>{t.goals}</span><h2>{selected.title}</h2>
@@ -145,12 +145,12 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
                 aria-expanded={expanded} aria-controls={'goal-stage-options-' + id}
                 onClick={() => setExpandedStage(current => current === id ? null : id)}
                 aria-label={(index + 1) + '. ' + t.title[index] + '. ' + t.tool[index] + '. ' + status}
-                data-goal-step={index + 1} data-goal-step-status={selected && records[index]?.status || 'explore'}>
+                data-profile-mode-switch data-goal-step={index + 1} data-goal-step-status={selected && records[index]?.status || 'explore'}>
               <span className={css.number}>{index + 1}</span>
               <Icon className={css.stepIcon} size={27} aria-hidden="true" />
               <span className={css.stepBody}><strong>{t.title[index]}</strong><small>{t.detail[index]}</small>
                 {selected && value !== null && <span className={css.progressTrack}><span style={{ width: value + '%' }}/></span>}</span>
-              <span className={css.stepState}>{value !== null && <b>{value + '%'}</b>}<small>{status}</small></span>
+              {selected && <span className={css.stepState}>{value !== null && <b>{value + '%'}</b>}<small>{status}</small></span>}
               <ChevronDown size={18} aria-hidden="true" className={css.stageChevron} />
               </button>
               <div id={'goal-stage-options-' + id} role="region" aria-labelledby={'goal-stage-button-' + id}
@@ -166,13 +166,5 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
           })}
     </div>
     {selected && <p className={css.disclaimer}>{t.noStages}</p>}
-    <nav className={css.shortcuts} aria-label={t.goals}>
-      {[
-        [CalendarDays, root + '/portrait?space=path', {en:'Daybook',ru:'Дневник',es:'Diario'}[lang]],
-        [ChartNoAxesColumnIncreasing, root + '/my-coaching-plan', {en:'Reports',ru:'Отчёты',es:'Informes'}[lang]],
-        [BookOpen, root + '/course?view=courses', {en:'Courses',ru:'Курсы',es:'Cursos'}[lang]],
-        [Brain, root + '/portrait?space=reports', {en:'Psychic Health',ru:'Психика',es:'Salud mental'}[lang]],
-      ].map(([Icon, href, label]) => <Link key={href} href={href} prefetch={false}><Icon size={21} aria-hidden="true"/><strong>{label}</strong></Link>)}
-    </nav>
   </section>
 }
