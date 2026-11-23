@@ -142,7 +142,7 @@ const MandalaCloudVoiceStudio = dynamic(() => import("./mandala-cloud-voice-stud
 const MandalaPhraseCatalog = dynamic(() => import("./mandala-phrase-catalog").then(module => module.MandalaPhraseCatalog));
 const MandalaMultiTrackTimeline = dynamic(() => import("./mandala-multitrack-timeline").then(module => module.MandalaMultiTrackTimeline));
 const VideoPhotoLibrary = dynamic<{locale: PublicLocale; onSelectPhoto: (photo: File)=>void;
-  disabled?: boolean; compact?: boolean}>(()=>import("./app/video-photo-library").then(module=>module.default));
+  disabled?: boolean; compact?: boolean; rail?: boolean}>(()=>import("./app/video-photo-library").then(module=>module.default));
 
 type Effect = "glow" | "energy" | "prosperity" | "temple";
 const BACKGROUND_CLIP="local-money-background-only";
@@ -9905,6 +9905,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </nav>
           <div data-video-director-style-controls hidden={montagePanel!=="effects"} />
           <div id="video-montage-active-panel" className={videoStyles.montageActivePanel+" "+montageRef.orderedPanel}>
+          {montagePanel==="effects"?<section className={montageRef.livingHero} data-video-montage-living-hero
+            aria-labelledby="montage-living-photo-title">
+            <div>
+              <h2 id="montage-living-photo-title"><Sparkles size={21} aria-hidden="true"/><span>{locale==="ru"?"Создайте живое фото":locale==="es"?"Crea tu foto viva":"Create Your Living Photo"}</span></h2>
+              <p>{locale==="ru"?"Превратите фото в короткое видео с голосом и эмоциями.":locale==="es"?"Transforma una foto en un vídeo con voz y emoción.":"Turn a photo into a short video with voice and emotion."}</p>
+            </div>
+          </section>:null}
           {(montagePanel==="effects"||montagePanel==="audio")?<nav className={montageRef.stepStrip}
             data-video-montage-progress aria-label={locale==="ru"?"Этапы создания видео":
               locale==="es"?"Pasos para crear el vídeo":"Video creation steps"}>
@@ -10581,10 +10588,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </details>
           </div> : null}
           {montagePanel==="effects" ? <div className={videoStyles.montagePane+" "+montageRef.stylePane} data-video-montage-effects>
-            <div className={montageRef.photoLead}>
-              <h3>{locale==="ru"?"Создайте живое фото":locale==="es"?"Crea tu foto viva":"Create Your Living Photo"}</h3>
-              <p>{locale==="ru"?"Ваше фото или фото близкого человека.":locale==="es"?"Tu foto o la de alguien importante.":"Your photo or someone important to you."}</p>
-            </div>
+            <div className={montageRef.photoWorkspace} data-video-montage-photo-workspace>
             <label className={montageRef.photoUploadHero} data-video-montage-photo-upload
               data-has-photo={photoUrl&&montageCoachPhoto===null?"true":"false"}>
               {photoUrl&&montageCoachPhoto===null?<>
@@ -10596,8 +10600,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   locale==="es"?(photoUrl&&montageCoachPhoto===null?"Cambiar foto":"Subir una foto"):
                     photoUrl&&montageCoachPhoto===null?"Change Photo":"Upload Your Photo"}
               </span>
-              <span className={montageRef.photoUploadHint}>{locale==="ru"?"Своё или значимого человека":
-                locale==="es"?"Tuya o de una persona especial":"Yours or a person you care about"}</span>
+              <span className={montageRef.photoUploadHint}>{locale==="ru"?"Своё или близкого человека":
+                locale==="es"?"Tuya o de alguien especial":"Yours or a loved one"}</span>
+              <span className={montageRef.choosePhoto}>{locale==="ru"?"Выбрать фото":locale==="es"?"Elegir foto":"Choose Photo"}</span>
               {/* The native input receives the actual iPhone Safari tap. No scripted picker. */}
               <NativePhotoInput label={locale==="ru"?"Выбрать личное фото":locale==="es"?"Elegir foto personal":"Choose a personal photo"}
                 disabled={recording||preparing||photoPending}
@@ -10607,6 +10612,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   setNotice("");selectNativePhoto(file);
                 }}/>
             </label>
+            <div className={montageRef.photoChoiceColumn}>
+              <div className={montageRef.photoLead}>
+                <h3>{locale==="ru"?"Как использовать фото":locale==="es"?"Cómo usar tu foto":"Choose how to use the photo"}</h3>
+              </div>
             <div className={montageRef.photoChoices} data-video-montage-photo-options role="group"
               aria-label={locale==="ru"?"Как использовать фото":locale==="es"?"Cómo usar la foto":"How to use the photo"}>
               {([
@@ -10633,23 +10642,27 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 }}>
                 <span className={montageRef.photoOptionRadio}>{montagePhotoChoice===item.id?
                   <Check size={17} strokeWidth={3} aria-hidden="true"/>:null}</span>
+                <span className={montageRef.photoOptionArt} aria-hidden="true">{item.id==="animate"?<Smile size={20}/>:item.id==="library"?<Camera size={20}/>:<Sparkles size={20}/>}</span>
                 <span className={montageRef.photoOptionText}>
                   <strong>{item[locale].title}</strong><small>{item[locale].hint}</small>
                 </span>
                 <span className={montageRef.photoOptionPrice}>{item.price} XP</span>
               </button>)}
             </div>
+            </div>
+            </div>
             <section className={montageRef.avatarLibrary} data-video-montage-avatar-library
               aria-label={locale==="ru"?"Библиотека фотографий":locale==="es"?"Biblioteca de fotos":"Photo library"}>
               <div className={montageRef.avatarHeader}>
-                <strong>{locale==="ru"?"Моя библиотека":locale==="es"?"Mi biblioteca":"My Library"}</strong>
+                <strong><Camera size={17} aria-hidden="true"/>{locale==="ru"?"Моя библиотека":locale==="es"?"Mi biblioteca":"My Library"}</strong>
+                <span>{locale==="ru"?"Выберите фото":locale==="es"?"Elige una foto":"Choose a photo"}</span>
               </div>
               <div className={montageRef.avatarTabs} role="group"
                 aria-label={locale==="ru"?"Разделы библиотеки":locale==="es"?"Secciones de biblioteca":"Photo library sections"}>
                 {([
-                  {id:"personal",en:"My Photos",ru:"Личные фото",es:"Mis fotos"},
-                  {id:"animated",en:"Animated",ru:"Анимированные",es:"Animadas"},
-                  {id:"coaches",en:"Coaches",ru:"Фото коучей",es:"Coaches"}
+                  {id:"personal",en:"Personal Photos",ru:"Личные фото",es:"Mis fotos"},
+                  {id:"animated",en:"Animated Photos",ru:"Анимации",es:"Animadas"},
+                  {id:"coaches",en:"Coach Photos",ru:"Фото коучей",es:"Coaches"}
                 ] as const).map(item=><button type="button" key={item.id}
                   data-video-montage-library-tab={item.id}
                   aria-pressed={montageLibraryTab===item.id} disabled={recording||preparing}
@@ -10666,12 +10679,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={photoUrl} alt="" loading="lazy"/>
                     <span>{locale==="ru"?"Ваше фото":locale==="es"?"Tu foto":"Your photo"}</span>
-                  </button>:<p className={montageRef.emptyPhotoNote}>{locale==="ru"?
-                    "Загрузите фото выше или откройте сохранённые.":
-                    locale==="es"?"Sube una foto o abre las guardadas.":
-                      "Upload above or open your saved photos."}</p>}
+                  </button>:null}
                   <div className={montageRef.savedPhotoDrawer} data-video-montage-saved-photos>
-                    <VideoPhotoLibrary locale={locale} compact disabled={recording||preparing||photoPending}
+                    <VideoPhotoLibrary locale={locale} compact rail disabled={recording||preparing||photoPending}
                       onSelectPhoto={file=>{
                         setMontagePhotoChoice("library");setMontageLibraryTab("personal");
                         setMontageCoachPhoto(null);setPhotoConsent(false);setNotice("");
@@ -10715,16 +10725,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 locale==="es"?"Animación no disponible: requiere un pedido verificado y la aprobación de IA.":
                   "Face animation is not payment-enabled. Choose a still photo or coach to continue."}
             </p>:null}
-            <button type="button" className={videoStyles.montageStepNext+" "+montageRef.styleNext}
-              data-video-montage-next="audio"
-              disabled={recording||preparing||photoPending||montagePhotoChoice==="animate"||
-                (montagePhotoChoice==="library"&&(!photoUrl||montageCoachPhoto!==null||!photoConsent))||
-                (montagePhotoChoice==="coach"&&(!montageCoachPhoto||!photoUrl))}
-              onClick={()=>{setMontagePanel("audio");setBasicPanelTab("music");setNotice("");}}>
-              <Sparkles size={21} aria-hidden="true"/>
-              <span>{locale==="ru"?"Далее → Аудио":locale==="es"?"Continuar → Audio":"Continue to Audio"}</span>
-              <ArrowRight size={21} aria-hidden="true"/>
-            </button>
+            <div className={montageRef.styleFooter}>
             <details className={montageRef.moreStyles} data-video-montage-more-styles>
               <summary>{locale==="ru"?"Другие визуальные стили и формат видео":
                 locale==="es"?"Más estilos y formato de vídeo":"More visual styles and video format"}</summary>
@@ -10778,11 +10779,19 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </fieldset>
 
             </details>
-            <p className={montageRef.actualPriceNote}>{locale==="ru"?
-              "Здесь XP не списываются. 250/100/0 XP — цены фотоопций в макете; стоимость создания видео подтверждает сервер.":
-              locale==="es"?"Aquí no se cobran XP. Las opciones 250/100/0 son orientativas; el servidor valida el vídeo.":
-                "No XP is charged here. Photo-mode XP is indicative; the server confirms the final video price."}
-            </p>
+            <p className={montageRef.actualPriceNote} title={locale==="ru"?"Стоимость готового видео подтверждает сервер.":locale==="es"?"El servidor confirma el precio final.":"Photo-mode XP is indicative; the server confirms the final video price."}>{locale==="ru"?"XP ориентировочно · без списания":locale==="es"?"XP estimados · sin cargo":"Estimated XP · no charge now"}</p>
+            </div>
+            <button type="button" className={videoStyles.montageStepNext+" "+montageRef.styleNext}
+              data-video-montage-next="audio"
+              disabled={recording||preparing||photoPending||montagePhotoChoice==="animate"||
+                (montagePhotoChoice==="library"&&(!photoUrl||montageCoachPhoto!==null||!photoConsent))||
+                (montagePhotoChoice==="coach"&&(!montageCoachPhoto||!photoUrl))}
+              onClick={()=>{setMontagePanel("audio");setBasicPanelTab("music");setNotice("");}}>
+              <Sparkles size={21} aria-hidden="true"/>
+              <span>{locale==="ru"?"Далее → Аудио":locale==="es"?"Continuar → Audio":"Continue to Audio"}</span>
+              <b className={montageRef.nextPrice}>{montagePhotoChoice==="animate"?250:montagePhotoChoice==="library"?100:0} XP</b>
+              <ArrowRight size={21} aria-hidden="true"/>
+            </button>
           </div> : null}
           {montagePanel==="audio" ? <div className={videoStyles.montageAudioCompact+" "+montageRef.audioWrap} data-video-montage-audio>
             <div className={montageRef.audioColumns} data-video-montage-audio-columns>

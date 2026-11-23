@@ -103,3 +103,22 @@ test('mobile-safe sizes, scoping and EN/RU/ES parity',()=>{
     assert.ok(studio.includes(phrase),phrase);
   }
 });
+
+test('owner 23 Nov actual Montage screen has hero, two-column upload and thumbnail rail, CTA last',()=>{
+  assert.match(studio,/data-video-montage-living-hero/);
+  assert.match(studio,/data-video-montage-photo-workspace/);
+  const start=studio.indexOf('data-video-montage-effects>');
+  const end=studio.indexOf('data-video-montage-audio>',start);
+  const step=studio.slice(start,end);
+  assert.match(step,/<VideoPhotoLibrary locale=\{locale\} compact rail/);
+  assert.ok(step.indexOf('data-video-montage-more-styles')<step.indexOf('data-video-montage-next="audio"'));
+  assert.ok(step.indexOf('actualPriceNote')<step.indexOf('data-video-montage-next="audio"'));
+  assert.match(css,/\.photoWorkspace\{display:grid;grid-template-columns:minmax/);
+  assert.match(css,/\.livingHero::after/);
+  assert.match(css,/data-client-photo-rail/);
+  const gallery=readFileSync(new URL('../components/app/video-photo-library.jsx',import.meta.url),'utf8');
+  assert.match(gallery,/if\(!opened&&!rail\)return/);
+  assert.match(gallery,/data-client-photo-rail aria-label/);
+  assert.match(gallery,/photos\.map\(photo=><button/);
+  assert.match(gallery,/void usePhoto\(photo\.id\)/);
+});

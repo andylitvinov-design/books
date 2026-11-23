@@ -273,3 +273,92 @@
  .orderedPanel>[data-video-montage-progress] button{min-height:40px}
 }
 @media(prefers-reduced-motion:reduce){.photoOption,.coachRail button{transition:none}}
+
+/* 23 Nov owner screenshot correction: one existing Montage/Style screen.
+   The editorial banner is NOT another video player. All imagery is first-party. */
+.livingHero{display:none}
+.photoWorkspace{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,2fr);align-items:stretch;gap:8px;min-width:0}
+.photoChoiceColumn{display:grid;gap:5px;min-width:0}
+.photoChoiceColumn .photoLead h3{font:800 clamp(14px,3.7vw,20px)/1.18 Arial,sans-serif;color:#143d3a}
+.photoUploadHero{min-height:100%;padding:8px 5px;gap:5px;justify-content:center;background:linear-gradient(150deg,#e9fff4,#fffcf3)}
+.photoUploadHero[data-has-photo="true"]{padding:5px}
+.photoUploadHero .photoUploadPreview{position:static;width:100%;height:70px;max-width:120px;border-radius:10px;object-fit:cover}
+.photoUploadIcon{width:36px;height:36px}
+.photoUploadLabel{font:800 clamp(13px,3.4vw,17px)/1.15 Arial,sans-serif}
+.photoUploadHint{font:500 12px/1.15 Arial,sans-serif}
+.choosePhoto{display:grid;place-items:center;min-height:36px;width:100%;padding:4px 3px;border-radius:999px;color:#fff;background:linear-gradient(115deg,#0bb68b,#006f53);font:750 12px/1.15 Arial,sans-serif}
+.photoOption{gap:5px;min-height:49px;padding:5px 5px}
+.photoOption[data-selected="true"]{padding:4px;border-color:#10b989;background:linear-gradient(110deg,#eafff1,#f8fff8)}
+.photoOptionRadio{width:19px;height:19px;border-radius:6px}
+.photoOptionRadio svg{width:14px;height:14px}
+.photoOptionArt{display:grid;place-items:center;width:26px;height:28px;flex:none;border-radius:7px;background:#edf3e8;color:#08745e}
+.photoOption[data-video-montage-photo-choice="animate"] .photoOptionArt{background:#e6f8e8}
+.photoOption[data-video-montage-photo-choice="coach"] .photoOptionArt{background:#fff4d9;color:#a36b0a}
+.photoOptionText strong{font:800 clamp(13px,3.25vw,16px)/1.13 Arial,sans-serif;overflow-wrap:anywhere}
+.photoOptionText small{font:500 clamp(11px,2.85vw,13px)/1.15 Arial,sans-serif;color:#52675e;overflow-wrap:anywhere}
+.photoOptionPrice{min-width:45px;padding:6px 4px;font:850 clamp(11px,3vw,15px)/1 Arial,sans-serif;background:#f1eee1}
+.photoOption[data-video-montage-photo-choice="animate"] .photoOptionPrice{background:#ffe9a1}
+.photoOption[data-video-montage-photo-choice="coach"] .photoOptionPrice{background:#d8f3e5}
+.avatarLibrary{position:relative;gap:5px;padding:6px 7px}
+.avatarHeader{align-items:center;justify-content:space-between}
+.avatarHeader strong{display:flex;align-items:center;gap:5px;font-size:16px}
+.avatarHeader span{font-size:11px}
+.avatarTabs button{min-height:36px;border-radius:999px;font:750 clamp(11px,2.8vw,14px)/1.13 Arial,sans-serif}
+.avatarTabs button[aria-pressed="true"]{background:linear-gradient(110deg,#11b88a,#00694d)}
+.libraryPhotoRow{gap:5px;min-height:61px}
+.savedPhotoDrawer{display:flex;align-items:stretch;gap:5px;min-width:0}
+.savedPhotoDrawer :global([data-client-video-photo-library]){flex:none;width:66px;min-width:0;margin:0!important;padding:0!important;border:1px dashed #65bca5!important;background:#eafff5!important;border-radius:10px!important}
+.savedPhotoDrawer :global([data-client-photo-rail-manage]){display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:59px!important;text-align:center;padding:3px;font-size:11px!important;color:#0a684e!important}
+.savedPhotoDrawer :global([data-client-photo-rail-manage])::before{content:"+";display:block;font:800 24px/1 Arial,sans-serif}
+.savedPhotoDrawer :global([data-client-photo-rail-manage])::-webkit-details-marker{display:none}
+.savedPhotoDrawer :global([data-client-photo-drawer-body]){position:absolute;z-index:30;inset:auto 0 calc(100% + 5px) 0;max-height:min(48dvh,390px);overflow-y:auto;overscroll-behavior:contain;background:#fffcf7;border:1px solid #d7c7b6;border-radius:15px;padding:12px!important;box-shadow:0 8px 28px #103c3540}
+.savedPhotoDrawer :global([data-client-photo-rail]){display:flex;gap:5px;align-items:center;overflow-x:auto;scrollbar-width:thin;min-width:0;flex:1}
+.savedPhotoDrawer :global([data-client-photo-rail]>button){flex:0 0 60px;width:60px;height:60px;min-width:0;padding:0;border:1px solid #d7e7d8;border-radius:9px;background:#fff;overflow:hidden;cursor:pointer}
+.savedPhotoDrawer :global([data-client-photo-rail]>button img){display:block;width:100%;height:100%;object-fit:cover}
+.savedPhotoDrawer :global([data-client-photo-rail]>p){margin:0;font:500 12px/1.25 Arial,sans-serif;color:#52675e;overflow-wrap:anywhere}
+.avatarLibraryLink{min-height:44px;padding:4px 5px;font-size:11px}
+.styleFooter{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:4px}
+.styleFooter .moreStyles{margin:0;padding:0 6px;border-radius:9px}
+.styleFooter .moreStyles summary{min-height:29px;padding:5px 0;font-size:11.5px;line-height:1.2}
+.styleFooter .moreStyles[open]{grid-column:1/-1}
+.styleFooter .actualPriceNote{font-size:11px;line-height:1.15;text-align:right}
+.styleNext{margin:0!important;min-height:48px!important;background:linear-gradient(120deg,#0ab287,#006549)!important;box-shadow:0 3px 12px #08765335!important}
+.styleNext .nextPrice{flex:none;background:#ffe99d;color:#174a37;border-radius:999px;padding:6px 8px;font:850 13px/1 Arial,sans-serif;white-space:nowrap}
+.styleNext>span{font-size:15px}
+@media(max-width:699px){
+ .orderedPanel:has(>.livingHero){gap:5px}
+ .orderedPanel>.livingHero{order:-6;display:flex;align-items:center;position:relative;isolation:isolate;overflow:hidden;min-height:88px;padding:9px 11px;border-radius:15px;color:#fff;
+  background:linear-gradient(90deg,#0b3e3ae6 0%,#104c438f 49%,#103d3510 100%),url("/videos/holistic-house/film-collection-v2/solar-surge.jpg") center/cover no-repeat,#385f50}
+ .livingHero::after{content:"";position:absolute;z-index:-1;inset:0 0 0 auto;width:38%;background:url("/images/holistic-house/my-coach-motion/mira-still.webp") center 34%/cover no-repeat;mask-image:linear-gradient(90deg,transparent,#000 29%);-webkit-mask-image:linear-gradient(90deg,transparent,#000 29%)}
+ .livingHero>div{max-width:68%;min-width:0}
+ .livingHero h2{display:flex;align-items:flex-start;gap:5px;margin:0;color:#fff;font:800 clamp(20px,5vw,28px)/1.04 Georgia,serif;text-shadow:0 1px 5px #093a35}
+ .livingHero h2 svg{flex:none;margin-top:1px;width:19px;height:19px;color:#fff0b2}
+ .livingHero p{font:500 12px/1.2 Arial,sans-serif;margin:4px 0 0;color:white;text-shadow:0 1px 4px #092b25}
+ .orderedPanel:has(>.livingHero)>[data-video-montage-progress]{margin:0;padding:3px;gap:3px}
+ .orderedPanel:has(>.livingHero)>[data-video-montage-progress] button{min-height:38px;padding:4px 2px;font-size:12px}
+ .orderedPanel:has(>.livingHero)>[data-video-montage-progress] button span{width:20px;height:20px;font-size:11px}
+ .stylePane{gap:5px!important;padding:6px!important;border-radius:15px!important}
+ .photoOptionArt{display:none}
+ .photoConsent{min-height:24px;font-size:12px;line-height:1.15}
+ .photoGate{font-size:12px;line-height:1.2;padding:4px 6px}
+}
+@media(min-width:700px){
+ .photoWorkspace{grid-template-columns:minmax(150px,1fr) minmax(0,2fr)}
+ .photoUploadHero{min-height:180px}
+ .photoOption{min-height:53px}
+}
+@media(max-width:359px){
+ .photoWorkspace{grid-template-columns:minmax(0,.88fr) minmax(0,2fr);gap:5px}
+ .photoUploadHero{padding:5px 3px;gap:3px}
+ .photoUploadLabel{font-size:13px}
+ .photoUploadHint{font-size:11px}
+ .photoOption{gap:4px;padding:4px;min-height:45px}
+ .photoOption[data-selected="true"]{padding:3px}
+ .photoOptionRadio{width:17px;height:17px}
+ .photoOptionText strong{font-size:12px}
+ .photoOptionText small{font-size:11px}
+ .photoOptionPrice{font-size:11px;min-width:39px;padding:5px 3px}
+ .avatarTabs button{font-size:11px}
+ .avatarLibraryLink{font-size:10px}
+ .styleNext>span{font-size:14px}
+}
