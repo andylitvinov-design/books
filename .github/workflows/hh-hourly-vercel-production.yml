@@ -1,7 +1,7 @@
 name: HH hourly Vercel production batch
 on:
   schedule:
-    - cron: '37 * * * *' # only routine production release trigger; no merge event build
+    - cron: '13,43 * * * *' # two off-peak chances/hour for GitHub scheduler; still one Vercel build/60m
     - cron: '11 05 * * *' # one daily safe storage prune; NEVER run a production build
   # Trusted default-branch release; protected PR merge never triggers a new build.
   workflow_dispatch:
@@ -23,12 +23,13 @@ concurrency:
   cancel-in-progress: false
 jobs:
   publish:
-    # Routine builds only at the hourly cron, when the owner-enabled budget gate is on.
+    # Two off-peak scheduled checks tolerate dropped GitHub ticks; the same
+    # Vercel history, rolling-60-minute and UTC-hour guards allow at most one paid build.
     # An explicit emergency=true manual action is the sole off-schedule exception.
     # Manual dry-run/apply cleanup remains separate and never starts a build.
     # Exact HEAD, last-60-minutes and UTC-hour guards remain unchanged.
     if: >-
-      (github.event_name == 'schedule' && github.event.schedule == '37 * * * *' &&
+      (github.event_name == 'schedule' && github.event.schedule == '13,43 * * * *' &&
        vars.HH_VERCEL_HOURLY_ENABLED == 'true') ||
       (github.event_name == 'workflow_dispatch' &&
        inputs.emergency == true && inputs.cleanup_mode == 'off')
