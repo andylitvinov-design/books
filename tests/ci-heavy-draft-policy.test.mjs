@@ -984,12 +984,12 @@ test('Core specialist uses slim only on verified non-strict paths, with unchange
   const core = read('hh-pr-core-release.yml');
   const job = core.split(/^  hh-merge-check:\s*$/m)[1]?.split(/^  hh-eslint-repair:\s*$/m)[0];
   assert.ok(job, 'required specialist job must exist');
-  const fast = "needs.scope.outputs.route == 'ASSETS' || needs.scope.outputs.route == 'TEXT' || needs.scope.outputs.route == 'CORE'";
+  const fast = "needs.scope.outputs.route == 'ASSETS' || needs.scope.outputs.route == 'TEXT'";
   const expr = '$' + '{{ ';
   assert.ok(job.includes("runs-on: " + expr + '(' + fast + ") && 'ubuntu-slim' || 'ubuntu-24.04' }}"),
-    'unknown, FULL and DOCK must use standard Ubuntu');
+    'CORE, unknown, FULL and DOCK must use standard Ubuntu');
   assert.ok(job.includes("timeout-minutes: " + expr + '(' + fast + ') && 12 || 45 }}'),
-    'slim must stay under its 15-minute cap, FULL/DOCK retain original timeout');
+    'slim must stay under its 15-minute cap, CORE/FULL/DOCK retain original timeout');
   assert.ok(job.includes('needs: [scope]'));
   assert.ok(job.includes('Fail closed if mandatory Core failed')); 
   assert.ok(job.includes('[[ "$EVENT_NAME" == pull_request && "$PR_DRAFT" != true && "$SCOPE_RESULT" == success ]]'));
