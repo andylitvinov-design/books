@@ -4,6 +4,10 @@ import {forwardRef,useEffect,useImperativeHandle,useRef,useState} from 'react'
 import {Mic,Play,Volume2,Square} from 'lucide-react'
 import styles from './my-coach-speech-loop.module.css'
 import {
+  prepareCoachIos27LiveDuplex,activateCoachIos27LiveDuplex,
+  restoreCoachIos27LiveDuplex,
+} from '@/lib/personal-coaching/coach-ios-live-duplex.mjs'
+import {
   GeminiLivePcmPlayer,GeminiLivePcmResampler,GeminiLiveBargeGate,GeminiLiveBargeDetector,
   geminiLiveAudioRms,geminiLiveSocketUrl,geminiLiveSetupMessage,
   geminiLivePcmMessage,geminiLiveTextMessage,geminiLiveStartMessage,
@@ -31,6 +35,9 @@ const ui={
      setupTimeout:'Gemini Live не подтвердил подключение за 15 секунд (G-L5).',
      providerUnavailable:'Google Gemini Live временно недоступен (G-L6).',
      setupInvalid:'Не удалось настроить голосовую сессию (G-L7).',
+     microphoneRejected:'Safari не предоставил микрофон (G-L8). Проверьте доступ к микрофону в настройках сайта.',
+     captureFailure:'Не удалось запустить аудиозахват на устройстве (G-L9). Обновите Safari.',
+     tokenNetwork:'Не удалось связаться с сервером голосовой связи (G-L10). Проверьте интернет.',
      ended:'20 минут — голосовую сессию можно завершить или начать новую.'},
   en:{start:'Start live conversation',connecting:'Connecting Gemini Live…',
     listening:'Listening',speaking:'Coach speaking',thinking:'Coach replying…',
@@ -51,6 +58,9 @@ const ui={
      setupTimeout:'Gemini Live did not confirm the connection within 15 seconds (G-L5).',
      providerUnavailable:'Google Gemini Live is temporarily unavailable (G-L6).',
      setupInvalid:'Could not initialize the voice session (G-L7).',
+     microphoneRejected:'Safari could not open the microphone (G-L8). Check microphone permission for this site.',
+     captureFailure:'Audio capture could not start on this device (G-L9). Reload Safari.',
+     tokenNetwork:'Could not reach the voice token server (G-L10). Check your connection.',
      ended:'20 minutes — close the voice session or begin a new one.'},
   es:{start:'Iniciar voz en vivo',connecting:'Conectando voz Gemini…',
     listening:'Escuchando',speaking:'El coach habla',thinking:'Respondiendo…',
@@ -71,6 +81,9 @@ const ui={
      setupTimeout:'Gemini Live no confirmó la conexión en 15 segundos (G-L5).',
      providerUnavailable:'Gemini Live está temporalmente no disponible (G-L6).',
      setupInvalid:'No se pudo iniciar la sesión de voz (G-L7).',
+     microphoneRejected:'Safari no pudo abrir el micrófono (G-L8). Comprueba los permisos.',
+     captureFailure:'No se pudo activar la captura de audio (G-L9). Recarga Safari.',
+     tokenNetwork:'No se pudo conectar con el servidor de voz (G-L10). Revisa la conexión.',
      ended:'20 minutos: puedes terminar la sesión o comenzar otra.'},
 }
 const MAX_SESSION_MS=1200000
@@ -120,6 +133,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     GEMINI_LIVE_PROVIDER_MODEL:t.providerModel,
     GEMINI_LIVE_PROVIDER_OUTAGE:t.providerUnavailable,
     GEMINI_LIVE_SETUP_INVALID:t.setupInvalid,
+    GEMINI_LIVE_MICROPHONE_REJECTED:t.microphoneRejected,
+    GEMINI_LIVE_CAPTURE_UNAVAILABLE:t.captureFailure,
+    GEMINI_LIVE_TOKEN_NETWORK:t.tokenNetwork,
   })[error?.message]||t.failure
   const phaseChange=value=>{
     setPhase(value)
@@ -145,6 +161,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     try{r.source?.disconnect()}catch{}
     try{r.sink?.disconnect()}catch{}
     for(const track of r.stream?.getTracks?.()||[])try{track.stop()}catch{}
+    restoreCoachIos27LiveDuplex(navigator)
     silence(r)
     try{void r.context?.close?.().catch?.(()=>{})}catch{}
     if(r.timer)clearTimeout(r.timer)
@@ -657,13 +674,15 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     }}
   }
   async function getToken(r){
-    const response=await fetch('/api/app/my-coach/live-token',{
+    let response
+    try{response=await fetch('/api/app/my-coach/live-token',{
       method:'POST',credentials:'same-origin',cache:'no-store',
       signal:r.abort.signal,headers:{'Content-Type':'application/json'},
       body:JSON.stringify({personaId:r.personaId,locale:r.locale,
         settings:r.settings,courseSessionId:r.courseSessionId,voiceName:r.voiceName,consent:true,
         voiceConsent:true,trainingUseConsent:true}),
-    })
+    })}
+    catch{throw Error('GEMINI_LIVE_TOKEN_NETWORK')}
     if(response.status===429)throw Error('GEMINI_LIVE_LIMIT')
     if(response.status===401)throw Error('GEMINI_LIVE_LOGIN')
     if(!response.ok){
@@ -687,9 +706,12 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     return data
   }
   async function begin(r,microphone){
+    let stage='microphone'
     try{
       r.stream=await microphone
       if(r.ended){for(const track of r.stream.getTracks())track.stop();return}
+      // Keep both microphone and speaker active even if iPhone is on silent.
+      activateCoachIos27LiveDuplex(navigator)
       // Safari can revoke the microphone when a call takes over, privacy is
       // changed, or iOS suspends media. Do not leave a silent "Listening" UI.
       for(const track of r.stream.getAudioTracks()){
@@ -697,15 +719,24 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
           if(!r.ended){notify(t.mic);stop()}
         },{once:true})
       }
+      stage='capture'
       await installCapture(r)
       if(r.ended)return
+      stage='token'
       const token=await getToken(r)
       if(r.ended)return
       connect(r,token)
       r.timer=setTimeout(()=>{if(!r.ended){notify(t.ended);stop()}},MAX_SESSION_MS)
     }catch(error){
       if(!r.ended){
-        notify(errorNotice(error))
+        // Only the finite stage is disclosed, never a provider URL, key,
+        // user audio, raw browser error or private model response.
+        const known=String(error?.message||'')
+        const typed=known.startsWith('GEMINI_LIVE_')?error:
+          Error(stage==='microphone'?'GEMINI_LIVE_MICROPHONE_REJECTED':
+            stage==='capture'?'GEMINI_LIVE_CAPTURE_UNAVAILABLE':
+            'GEMINI_LIVE_TOKEN_NETWORK')
+        notify(errorNotice(typed))
         stop()
       }
     }finally{starting.current=false}
@@ -720,6 +751,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     // Both calls begin in the user's Play gesture, before the first await.
     let context,microphone
     try{
+      prepareCoachIos27LiveDuplex(navigator)
       context=new Ctx({latencyHint:'interactive'})
       void context.resume?.().catch?.(()=>{})
       const silence=context.createBuffer(1,128,context.sampleRate)
@@ -731,6 +763,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       })
     }catch{
       try{void context?.close?.()}catch{}
+      restoreCoachIos27LiveDuplex(navigator)
       notify(t.permission);return false
     }
     const r={context,stream:null,source:null,processor:null,sink:null,

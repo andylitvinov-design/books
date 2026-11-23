@@ -24,3 +24,16 @@ test("landing polish preserves three-screen purpose and format flow without touc
  assert.doesNotMatch(mirror,/fetch\(|localStorage|createQuickVideo\(/);
  assert.doesNotMatch(styles,/\.goals\[data-hh-mirror-screen="topic"\]\s*\{\s*display:none/);
 });
+
+// Owner screenshot follow-up 2026-11-23: preserve actual cards and space for iPhone dock.
+test("landing phone composition moves hero up, shows all three options and keeps a scroll escape",()=>{
+ const scoped=styles.slice(styles.indexOf("/* Owner mobile visual reference · 2026-11-23"));
+ assert.match(scoped,/margin-top:-25px!important/);
+ assert.match(scoped,/min-height:clamp\(134px,17\.5dvh,154px\)!important/);
+ assert.match(scoped,/padding:0 0 max\(72px, env\(safe-area-inset-bottom\)\)!important/);
+ assert.match(scoped,/min-height:114px!important/);
+ assert.match(scoped,/background-position:center top/);
+ assert.match(scoped,/background-position:center center/);
+ assert.match(scoped,/background-position:center bottom/);
+ assert.equal((mirror.match(/data-hh-mirror-enter="(?:me|others|work)"/g)||[]).length,3);
+});

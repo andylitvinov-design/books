@@ -4,7 +4,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowRight, ArrowUp, BriefcaseBusiness, ChevronDown, HeartHandshake, Mic, Route, Sparkles, Leaf, Heart, TrendingUp, X, CheckCircle2, Play, Pause, UsersRound, Plus, Image as ImageIcon, MessageCircle, CalendarDays } from "lucide-react";
+import { ArrowRight, ArrowUp, BriefcaseBusiness, ChevronDown, HeartHandshake, Mic, Route, Sparkles, Leaf, Heart, TrendingUp, X, CheckCircle2, Play, Pause, UsersRound, Plus, Image as ImageIcon, MessageCircle, CalendarDays, Compass, Flame, Flower2, ClipboardList, Shield, Sprout, ChevronsRight, GraduationCap, BarChart3 } from "lucide-react";
 import { SiteNavigation } from "@/components/site-navigation";
 
 import {useAliPersona} from "@/components/app/use-ali-persona";
@@ -351,8 +351,8 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
     es:{intro:"Tu guía de IA hacia una meta importante.",welcome:"Descubramos lo que quieres, dónde está tu fuerza y qué paso puedes dar ahora.",listen:"Escucha mi bienvenida",prompt:"Cuéntame qué deseas o qué te está frenando…",find:"Ayúdame a entender",findDetail:"Exploremos tu situación y prioridades.",have:"Ya tengo una meta",haveDetail:"Definamos el camino y el siguiente paso.",talk:"Solo quiero hablar",journey:"7 pasos hacia tu meta",sub:"Elige un paso o deja que Samir te guíe",methods:"Trabajamos con:",tools:["Coaches IA","Especialistas","Vídeos","Tests","Prácticas"],findPrompt:"Ayúdame a entender mi situación y lo que deseo.",havePrompt:"Ya tengo una meta. Ayúdame a aclararla y crear un plan.",talkPrompt:"Solo quiero hablar contigo y recibir apoyo.",stagePrompt:"Quiero trabajar en el paso",send:"Enviar mensaje a Samir",listenOn:"Reproducir bienvenida",photo:"Abrir chat para añadir foto",more:"Abrir archivos adjuntos",clear:"Borrar mensaje",privacy:"Empieza gratis sin registrarte. Guardamos memoria solo con tu permiso."}
   } as const;
   const msg=journeyLabels[locale];
-  const stepIcons=[Route,Sparkles,Leaf,CheckCircle2,Heart,TrendingUp,ArrowUp] as const;
-  const methodIcons=[UsersRound,CheckCircle2,Play,Leaf,Sparkles] as const;
+  const stepIcons=[Compass,Flame,Flower2,ClipboardList,Shield,Sprout,ChevronsRight] as const;
+  const methodIcons=[UsersRound,GraduationCap,Play,BarChart3,Flower2] as const;
   const stepPhotos=["growth.webp","love.webp","energy.webp","stress.webp","stress.webp","love.webp","growth.webp"];
   function openGoalIntent(prompt:string) {
     const typed=draft.trim();
@@ -410,13 +410,13 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
     {personaOpen&&<AliPersonaPicker open={personaOpen} onClose={closePersona} locale={locale}/>}
 
     <form className={styles.composer} onSubmit={startConversation} data-home-intent-form>
-      <button type="button" className={styles.moreTool} onClick={openAttachments} aria-label={msg.more} title={msg.more}><Plus size={23} aria-hidden="true"/></button>
+      <span className={styles.composerSparkle} aria-hidden="true"><Sparkles size={24}/></span>
       <label className={styles.visuallyHidden} htmlFor={"home-intent-"+locale}>{msg.prompt}</label>
       <textarea id={"home-intent-"+locale} ref={inputRef} value={draft} rows={2} maxLength={2000}
         onChange={event=>{setDraft(event.target.value);setError("")}} placeholder={msg.prompt}
         data-home-intent-composer autoComplete="off"/>
       <div className={styles.composerButtons}>
-        <button type="button" className={styles.photoTool} onClick={openAttachments} aria-label={msg.photo} title={msg.photo}><ImageIcon size={21} aria-hidden="true"/></button>
+        
         
         <button type="button" className={styles.microphone} data-home-intent-mic aria-pressed={listening} aria-label={listening?t.stopMic:t.mic} onClick={dictate}><Mic size={23} aria-hidden="true"/></button>
         <button type="submit" className={styles.send} data-home-send-to-ali aria-label={msg.send} title={msg.send}><ArrowUp size={21} aria-hidden="true"/></button>
@@ -430,13 +430,13 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
     <div className={styles.focusGrid} role="group" aria-label={msg.journey} data-home-focus-grid>
       <button type="button" className={styles.focusCard} data-home-intent-option="understand" data-home-free-review
         onClick={()=>openGoalIntent(msg.findPrompt)}>
-        <img className={styles.focusPhoto} src="/images/video-goal-art/growth.webp" width={400} height={160} alt="" loading="lazy"/>
+        <img className={styles.focusPhoto} src="/images/holistic-house/samir-goal-sunrise.svg" width={400} height={160} alt="" loading="lazy"/>
         <span className={styles.focusCopy}><Route size={24} aria-hidden="true"/><strong>{msg.find}</strong><small>{msg.findDetail}</small></span>
         <ArrowRight className={styles.focusArrow} size={20} aria-hidden="true"/>
       </button>
       <button type="button" className={styles.focusCard} data-home-intent-option="goal" data-home-request-session
         onClick={()=>openGoalIntent(msg.havePrompt)}>
-        <img className={styles.focusPhoto} src="/images/video-goal-art/energy.webp" width={400} height={160} alt="" loading="lazy"/>
+        <img className={styles.focusPhoto} src="/images/holistic-house/samir-goal-sailboat.svg" width={400} height={160} alt="" loading="lazy"/>
         <span className={styles.focusCopy}><CheckCircle2 size={24} aria-hidden="true"/><strong>{msg.have}</strong><small>{msg.haveDetail}</small></span>
         <ArrowRight className={styles.focusArrow} size={20} aria-hidden="true"/>
       </button>
@@ -445,16 +445,15 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
       <MessageCircle size={18} aria-hidden="true"/>{msg.talk}<ArrowRight size={17} aria-hidden="true"/>
     </button>
     <section className={styles.howWorks} data-home-how-it-works aria-label={msg.journey}>
-      <h3>{msg.journey}</h3><p className={styles.journeyNote}>{msg.sub}</p>
+      <h3>{msg.journey}</h3>
       <div className={styles.journeyScroll} data-home-stage-scroll role="group" aria-label={msg.journey}>
         {stageWords[locale].map((step,index)=>{
           const StepIcon=stepIcons[index];
           return <button type="button" className={styles.journeyCard} key={index} data-home-stage-option={index+1}
+            aria-label={String(index+1)+". "+step[0]+". "+step[1]}
             onClick={()=>openGoalIntent(msg.stagePrompt+" "+(index+1)+": "+step[0]+". "+step[1])}>
-            <span className={styles.journeyPhoto} style={{backgroundImage:'linear-gradient(180deg,transparent,rgba(20,57,46,.23)),url("/images/video-goal-art/'+stepPhotos[index]+'")'}}>
-              <StepIcon size={31} aria-hidden="true"/><b>{index+1}</b>
-            </span>
-            <strong>{step[0]}</strong><small>{step[1]}</small><ArrowRight className={styles.journeyArrow} size={19} aria-hidden="true"/>
+            <span className={styles.journeyPhoto}><StepIcon size={25} aria-hidden="true"/><b>{index+1}</b></span>
+            <strong>{step[0]}</strong>
           </button>;
         })}
       </div>
