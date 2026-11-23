@@ -2,8 +2,9 @@
 .mic[data-recording="true"]{color:#b53c33!important;background:#fff0ec!important;border-color:#e9b7ad!important}
 .mic:focus-visible{outline:3px solid #188972;outline-offset:2px}
 .panel{
-  position:absolute;inset-inline-end:0;bottom:calc(100% + 12px);z-index:50;
-  box-sizing:border-box;width:min(324px,calc(100vw - 30px));min-width:0;
+  /* Stay within the existing scrollable + menu; an absolute overlay is clipped on iPhone. */
+  position:relative;inset:auto;z-index:1;
+  box-sizing:border-box;width:100%;min-width:0;max-width:100%;overflow-wrap:anywhere;
   padding:10px;border:1px solid #c8ded2;border-radius:16px;
   background:#fffdfa;color:#1f4639;box-shadow:0 12px 30px #183f302b;
   font:500 12px/1.4 system-ui,sans-serif;text-align:start;
@@ -29,4 +30,4 @@
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes pulse{50%{opacity:.36}}
 @media(prefers-reduced-motion:reduce){.live i,.spinner{animation:none}}
-@media(max-width:354px){.panel{width:min(300px,calc(100vw - 20px));padding:8px}.send{max-width:48%}}
+@media(max-width:354px){.panel{width:100%;padding:8px}.send{max-width:48%}}
