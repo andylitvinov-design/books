@@ -1371,11 +1371,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     {!greetingAccepted&&<MyCoachGreetingGate
       personaId={personaId} locale={conversationLang} name={name}
       methodId={visibleMethodId} onStart={enterCoachingFromGreeting}/>}
+    {/* Keep Live mounted for Safari audio activation, but hide all legacy
+        controls until the cinematic greeting is explicitly accepted. */}
     <div className={greetingAccepted?styles.sessionScroll:styles.sessionScrollAwaitingGreeting}
       data-coaching-session-scroll={greetingAccepted?'true':undefined}
-      // A CSS-only display gate can lose to legacy immersive/mobile layout rules.
-      // Keep Live mounted for synchronous Safari audio activation but never expose
-      // its toolbar or course/profile before the cinematic greeting is accepted.
       style={!greetingAccepted?{display:'none'}:undefined}
       inert={!greetingAccepted} aria-hidden={!greetingAccepted}>
     <section className={styles.sessionHero} aria-label={name} data-voice-phase={voiceState.phase}>
