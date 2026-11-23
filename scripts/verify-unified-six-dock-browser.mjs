@@ -591,7 +591,17 @@ try{
  },null,{timeout:10000});
  // Owner-approved iHelp first turn: browser geometry is checked on the real
  // Video Studio route, not a static mock. No media render or external AI call.
- await page.locator('[data-video-ihelp-header-trigger]').click();
+ // The current Magic Mirror opens on a visible, user-chosen destination screen.
+ // Enter Video for Me using the actual card before opening the Goal-screen iHelp.
+ // A hidden legacy editor trigger must never be force-clicked by acceptance QA.
+ const mirrorLanding=page.locator('[data-hh-mirror-screen="landing"]');
+ if (await mirrorLanding.isVisible()) {
+   await mirrorLanding.locator('[data-hh-mirror-enter="me"]').click();
+   await page.locator('[data-hh-mirror-screen="purpose"]').waitFor({state:'visible',timeout:15000});
+ }
+ const visibleIHelp=page.locator('[data-video-ihelp-header-trigger]:visible');
+ await visibleIHelp.waitFor({state:'visible',timeout:15000});
+ await visibleIHelp.click();
  const iHelpDialog=page.locator('[data-video-director-chat-details][role="dialog"]');
  await iHelpDialog.waitFor({state:'visible',timeout:30000});
  const iHelpWelcome=iHelpDialog.locator('[data-video-chat-welcome]');
