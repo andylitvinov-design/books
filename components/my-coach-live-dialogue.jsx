@@ -736,8 +736,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   }
 
   function replayCoachReply(overrideText){
-    // Replay is always high-quality remote audio. Never replace it with
-    // native speechSynthesis even if Fish or Google fails.
+    // Dynamic replies preserve their consented remote provider. Fixed public
+    // introductions may recover using localized device speech.
     const spokenText=typeof overrideText==='string'?overrideText:latestCoachText
     if(speechRef.current?.resumeVoice?.())return
     if(replayBlocked&&replayPlayerRef.current){
@@ -772,6 +772,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(!introUrl){fail();return}
       try{
         replayPlayerRef.current=startDirectCoachIntroAudio(introUrl,{
+          fallbackText:spokenText,locale:conversationLang,
           onStart:()=>{
             if(controller.signal.aborted||replayControllerRef.current!==controller)return
             setReplayBlocked(false);setReplaying(true);setPlaybackNotice('')

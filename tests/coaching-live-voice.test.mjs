@@ -113,7 +113,7 @@ test('private voice route is account-bound and reuses the pre-existing Brain zer
 test('mic permission is only for signed-in coaching routes and voice conversation remounts between sessions',()=>{
   const config=source('next.config.ts')
   const page=source('components/app/personal-coaching.jsx')
-  assert.match(config,/const privateCoachingVoiceSources = \["\/en\/app\/coaching", "\/ru\/app\/coaching"\]/)
+  assert.match(config,/const privateCoachingVoiceSources = \["\/en\/app\/coaching", "\/ru\/app\/coaching", "\/es\/app\/coaching"\]/)
   assert.match(config,/\.\.\.privateCoachingVoiceSources\.map/)
   assert.match(config,/microphone=\(\)/)
   assert.match(config,/microphone=\(self\)/)
@@ -199,7 +199,8 @@ test('My Coach persona dialogue speaks and listens on exactly the consented sess
     'activeRef.current=false','document.visibilityState===\'hidden\'',
     'recognition.abort()','onCancelTurn','aria-pressed={active&&!ready}'])
     assert.ok(loop.includes(phrase),phrase)
-  assert.match(conf,/const publicMyCoachVoiceSources = \["\/en\/coaching\/sessions", "\/ru\/coaching\/sessions", "\/es\/coaching\/sessions"\]/)
+  for(const locale of ['en','ru','es'])assert.ok(conf.includes('"/'+locale+'/coaching/sessions"'))
+  assert.match(conf,/const publicMyCoachVoiceSources = \[/)
   assert.match(conf,/\.\.\.publicMyCoachVoiceSources\.map/)
   assert.match(conf,/microphone=\(self\)/)
   assert.doesNotMatch(loop,/\/api\/app\/coaching\/voice\/synthesize|api\.fish\.audio|HH_COACHING_FISH_API_KEY|reference_id/)

@@ -67,10 +67,10 @@ function deviceSpeech(persona,locale,onStart,onFinish){
   // iPhone WebKit can silently discard a new utterance if cancel() is called
   // immediately before speak() while the synthesizer was already idle.
   if(speech.speaking||speech.pending)speech.cancel()
-  speech.speak(utterance)
-  if(speech.paused)speech.resume()
   nudge=window.setTimeout(()=>{if(!started&&!stopped&&speech.paused)speech.resume()},1200)
   watchdog=window.setTimeout(()=>{if(!started)done('error')},5000)
+  speech.speak(utterance)
+  if(speech.paused)speech.resume()
  }catch{done('error')}
  return ()=>{
   if(stopped)return
@@ -140,9 +140,9 @@ export function playAliPersonaAudio(personaId,locale,onPlaying=()=>{}){
   audio.onplaying=()=>{if(!active||id!==attemptId)return;started=true;clear();onPlaying(true,'playing')}
   audio.onended=()=>{if(active&&id===attemptId)finish('ended')}
   audio.onerror=fail
-  audio.src=voiceUrl(persona.id,locale)
   timer=window.setTimeout(fail,24000)
   try{
+   audio.src=voiceUrl(persona.id,locale)
    const attempt=audio.play()
    if(attempt&&typeof attempt.catch==='function')void attempt.catch(fail)
   }catch{fail()}
