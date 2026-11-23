@@ -385,6 +385,7 @@ export default function AppWorkspace({ locale, path = [] }) {
         ...(page === 'course' ? { continueTo: 'course', ...(['stress','confidence','focus'].includes(searchParams.get('program')) ? { program: searchParams.get('program') } : {}) } : {}),
         ...(page === 'business' ? { continueTo: 'business' } : {}),
         ...(page === 'progress' ? { continueTo: 'progress' } : {}),
+        ...(page === 'settings' ? { continueTo: 'settings' } : {}),
         ...(page === 'coaching' ? { continueTo: 'coaching', ...(['egyptian','greek'].includes(recordId) ? { coachingMode: recordId, ...(searchParams.get('lang')==='es'?{coachingLang:'es'}:{}) } : {}) } : {}),
         ...(page === 'consultations' && searchParams.get('request')
           ? { continueTo: 'consultations', requestId: searchParams.get('request') } : {}),
@@ -1262,6 +1263,8 @@ function Preferences({ data, locale, onboarding = false, onDone }) {
             adult: values.adult,
             necessary: values.necessary,
             marketing: false,
+            displayName: values.displayName || '',
+            goal: values.goal,
             uiLocale: locale,
             timezone: localZone(),
           }
@@ -1282,6 +1285,23 @@ function Preferences({ data, locale, onboarding = false, onDone }) {
       <h1>{onboarding ? c.continue : c.settings}</h1>
       <p>{c.privacy}</p>
       <form className="hh-form" onSubmit={submit}>
+        {onboarding && (
+          <>
+            <label>
+              {c.name}
+              <input value={values.displayName || ''} maxLength={120}
+                onChange={(e) => change('displayName', e.target.value)} autoComplete="name" />
+            </label>
+            <label>
+              {c.goal}
+              <select value={values.goal} onChange={(e) => change('goal', e.target.value)}>
+                {['explore','body','relationships','resource','business'].map(key => (
+                  <option value={key} key={key}>{c[key]}</option>
+                ))}
+              </select>
+            </label>
+          </>
+        )}
         {!onboarding && (
           <>
             <label>

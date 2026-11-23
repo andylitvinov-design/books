@@ -67,6 +67,11 @@ export function HolisticSupportMandalaDock({ locale, photoMode = false }: { loca
               </Link>
             ))}
           </div>
+          <Link href={"/" + (locale === "es" ? "en" : locale) + "/app/settings"} prefetch={false} className={styles.accountSettingsLink}
+            data-mandala-account-settings>
+            <Settings2 size={19} aria-hidden="true" />
+            {locale === "ru" ? "Профиль и настройки" : locale === "es" ? "Perfil y ajustes · English" : "Profile & settings"}
+          </Link>
           {!photoMode?<section className={styles.videoExportSettings}
             data-video-export-menu-settings aria-label={t.modeLabel}>
             <p>{t.modeLabel}</p>

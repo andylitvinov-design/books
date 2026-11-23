@@ -215,7 +215,7 @@ const copy = {
     progress: "Activity on this page", openFullProgress: "Open my saved progress", started: "Videos opened here", focusStatus: "Lowest self-rating",
     private: "Private on this page", privateInfo: "Ratings and viewing history stay on your device. Your photo enters your private Cabinet only when you choose Save.",
     newUi: "Mobile support experience", standard: "Standard Support page", navHome: "Home", navPractices: "My practices", navMessages: "Messages", navProgress: "My progress", navSettings: "Settings",
-    settings: "Languages & privacy", language: "Language", close: "Close settings",
+    settings: "Profile & settings", language: "Language", close: "Close settings",
     healthNote: "These are reflective practices, not medical diagnoses or treatment.",
   },
   ru: {
@@ -329,7 +329,7 @@ const copy = {
     progress: "На этом экране", openFullProgress: "Открыть мой прогресс в кабинете", started: "Видео открыто здесь", focusStatus: "Минимальная оценка",
     private: "Лично на этом экране", privateInfo: "Оценки и история просмотра остаются на устройстве. Фото попадает в личный кабинет только после нажатия «Сохранить».",
     newUi: "Мобильная поддержка", standard: "Обычная страница поддержки", navHome: "Главная", navPractices: "Мои практики", navMessages: "Сообщения", navProgress: "Мой прогресс", navSettings: "Настройки",
-    settings: "Язык и приватность", language: "Язык", close: "Закрыть настройки",
+    settings: "Профиль и настройки", language: "Язык", close: "Закрыть настройки",
     healthNote: "Это практики для рефлексии, не медицинская диагностика или лечение.",
   },
   es: {
@@ -443,7 +443,7 @@ const copy = {
     progress: "Actividad en esta página", openFullProgress: "Abrir mi progreso guardado", started: "Vídeos abiertos aquí", focusStatus: "Puntuación más baja",
     private: "Solo en esta pantalla", privateInfo: "Las puntuaciones y el historial permanecen en el dispositivo. La foto solo se guarda en tu cuenta cuando pulsas Guardar.",
     newUi: "Apoyo móvil", standard: "Página de apoyo clásica", navHome: "Inicio", navPractices: "Mis prácticas", navMessages: "Mensajes", navProgress: "Mi progreso", navSettings: "Ajustes",
-    settings: "Idioma y privacidad", language: "Idioma", close: "Cerrar ajustes",
+    settings: "Perfil y ajustes", language: "Idioma", close: "Cerrar ajustes",
     healthNote: "Prácticas de reflexión, no diagnósticos ni tratamientos médicos.",
   },
 } as const;
@@ -1289,6 +1289,11 @@ export function HolisticSupportMobile({ locale, videos, courses = [], learningIt
             href={"/" + language + "/holistic-support/mobile"} hrefLang={language} aria-current={locale === language ? "page" : undefined}>
             {language.toUpperCase()}</Link>)}
         </div>
+        <Link href={"/" + (locale === "es" ? "en" : locale) + "/app/settings"} prefetch={false} className={styles.accountSettingsLink}
+          data-support-mobile-account-settings>
+          <UserRound size={20} aria-hidden="true" />
+          {locale === "ru" ? "Профиль и настройки" : locale === "es" ? "Perfil y ajustes · English" : "Profile & settings"}
+        </Link>
         <p>{t.privateInfo}</p>
         <button type="button" onClick={() => setSettingsOpen(false)}>{t.close}</button>
       </section> : null}
