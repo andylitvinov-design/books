@@ -330,11 +330,17 @@ test('iPhone Safari 27 restores real-time mic+speaker audio after muted greeting
  assert.equal(activateCoachIos27LiveDuplex(denied),false)
  assert.equal(restoreCoachIos27LiveDuplex(denied),false)
  const live=load('components/my-coach-gemini-live.jsx')
- const b=live.indexOf('prepareCoachIos27LiveDuplex(navigator)')
- const mic=live.indexOf('microphone=navigator.mediaDevices.getUserMedia')
- const activate=live.indexOf('activateCoachIos27LiveDuplex(navigator)')
- const token=live.indexOf('const token=await getToken(r)')
- assert.ok(b>0&&mic>b&&activate>0&&token>activate)
+ // Functions are declared in reverse source order: begin() precedes
+ // startSession(). Assert ordering within each function independently.
+ const start=live.slice(live.indexOf('function startSession()'),
+   live.indexOf('function sendText('))
+ const begin=live.slice(live.indexOf('async function begin(r,microphone)'),
+   live.indexOf('function startSession()'))
+ const b=start.indexOf('prepareCoachIos27LiveDuplex(navigator)')
+ const mic=start.indexOf('microphone=navigator.mediaDevices.getUserMedia')
+ const activate=begin.indexOf('activateCoachIos27LiveDuplex(navigator)')
+ const token=begin.indexOf('const token=await getToken(r)')
+ assert.ok(b>=0&&mic>b&&activate>=0&&token>activate)
  assert.match(live,/restoreCoachIos27LiveDuplex\(navigator\)/)
  assert.match(live,/getUserMedia\(\{/)
  assert.match(live,/new GeminiLivePcmPlayer\(context/)
