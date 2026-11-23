@@ -26,8 +26,12 @@ try{
     {waitUntil:'domcontentloaded',timeout:90000});
    await page.locator('[data-video-studio-hydrated="true"]').waitFor({state:'attached',timeout:60000});
    await completeThreeStepGoalsQuiz(page,{engine});
-   const advance=page.locator('[data-video-goal-create-cta]');
+   // After the real three-step quiz, the single-screen Create CTA is
+   // intentionally hidden by the expanded layout; use its VISIBLE native
+   // Continue to Montage button (ARIA snapshot from macOS WebKit run 45124044568).
+   const advance=page.locator('[data-video-continue-scenarios]');
    await expect(advance).toBeVisible();
+   await expect(advance).toBeEnabled();
    if(engine==='webkit')await advance.tap();else await advance.click();
    const studio=page.locator('[data-mandala-free-video]');
    const therapy=page.locator('[data-video-quick-control="effects"]');
