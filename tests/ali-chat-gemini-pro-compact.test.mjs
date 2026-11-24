@@ -39,7 +39,7 @@ test('approved iPhone layout removes journey; microphone follows Send; Pro conse
  assert.match(agent,/aliGeminiResult\(result\)/)
  assert.match(agent,/data-hh-conversation-mic/)
  const form=agent.slice(agent.indexOf('const composer=('),agent.indexOf('    </form>',agent.indexOf('const composer=(')))
- assert.ok(form.indexOf('type="submit"')<form.lastIndexOf('className={styles.recorderToggle}'))
+ assert.ok(form.indexOf('type="submit"')<form.lastIndexOf('micClassName={styles.recorderToggle}'))
  assert.match(css,/\.freeProSwitch/)
  assert.match(css,/\.geminiConsent/)
  assert.match(art,/\.root \.welcomeRow\{min-height:157px/)
