@@ -43,16 +43,16 @@ function storedAudioResponse(stored){
   }
   return new NextResponse(stored.body,{status:stored.status,headers})
 }
-async function persistGreeting(config,personaId,locale,audio){
+async function persistGreeting(config,personaId,locale,audio,version='v2'){
   if(!isMp3Bytes(audio))throw new AppError('MY_COACH_INTRO_INVALID_MP3',502)
   let saved
-  try{saved=await saveCoachGreetingOnce(config,personaId,locale,audio)}
+  try{saved=await saveCoachGreetingOnce(config,personaId,locale,audio,fetch,version)}
   catch{throw new AppError('MY_COACH_INTRO_STORAGE_UNAVAILABLE',503)}
   if(!saved.created){
     // Concurrent first Play: always use the FIRST recording, not the loser's
     // freshly synthesized version (which may have different prosody).
     try{
-      const canonical=await readSavedCoachGreeting(config,personaId,locale)
+      const canonical=await readSavedCoachGreeting(config,personaId,locale,fetch,null,version)
       if(canonical)return storedAudioResponse(canonical)
     }catch{}
     throw new AppError('MY_COACH_INTRO_STORAGE_UNAVAILABLE',503)
@@ -71,21 +71,23 @@ export async function GET(request){
       throw new AppError('MY_COACH_INTRO_CROSS_SITE',403)
     const url=new URL(request.url)
     const match=/^\/api\/coaching\/intro\/(en|ru|es)\/(mira|max|sofia|alex|merlin|harry|genie|lea|noah|iris|ray)\/?$/.exec(url.pathname)
-    if(!match||!['','?v=2'].includes(url.search))throw new AppError('MY_COACH_INTRO_INVALID',400)
+    if(!match||!['','?v=2','?v=3'].includes(url.search))throw new AppError('MY_COACH_INTRO_INVALID',400)
     const [,locale,personaId]=match
+    const version=url.search==='?v=3'?'v3':'v2'
+    if(version==='v3'&&(personaId!=='genie'||locale==='es'))throw new AppError('MY_COACH_INTRO_INVALID',400)
     const intro=getCoachPresentation(personaId,locale)
     // Record the same authored greeting shown on the coach's introduction card.
     const introduction=intro?.text||coachOpeningIntro(personaId,locale)
     if(!introduction||introduction.length>900)
       throw new AppError('MY_COACH_INTRO_INVALID',400)
     const config=getAppConfig()
-    const useRecordedGreeting=url.search==='?v=2'
+    const useRecordedGreeting=url.search==='?v=2'||url.search==='?v=3'
     if(useRecordedGreeting){
       // Storage failure must not be interpreted as a cache miss: that would
       // trigger paid TTS again on every transient outage.
       let saved
       try{saved=await readSavedCoachGreeting(config,personaId,locale,fetch,
-        request.headers.get('range'))}
+        request.headers.get('range'),version)}
       catch{throw new AppError('MY_COACH_INTRO_STORAGE_UNAVAILABLE',503)}
       if(saved)return storedAudioResponse(saved)
     }
@@ -111,8 +113,10 @@ export async function GET(request){
           signal:AbortSignal.any([request.signal,AbortSignal.timeout(30000)])})
         audio=await encodeCoachGreetingMp3(wav,{signal:request.signal})
       }catch{throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)}
-      return await persistGreeting(config,personaId,locale,audio)
+      return await persistGreeting(config,personaId,locale,audio,version)
     }
+    // The newly selected Samir greeting must be Gemini, never a substituted voice.
+    if(version==='v3')throw new AppError('MY_COACH_INTRO_TTS_UNAVAILABLE',503)
 
     // Google is the owner-approved long-term voice ONLY when every existing
     // GCP project, billing, consent and service-account flag is configured.

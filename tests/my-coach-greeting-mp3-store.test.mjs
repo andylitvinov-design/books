@@ -172,3 +172,13 @@ test('failed uploads are not mistaken for an existing recording',async()=>{
     await assert.rejects(saveCoachGreetingOnce(config,'genie','ru',audio,async()=>response),
       /STORAGE_WRITE_FAILED/)
 })
+
+
+test('Samir v3 object keys are separate from v2 and cannot affect other personas',()=>{
+  assert.equal(coachGreetingObjectKey('genie','ru','v3'),'v3/ru/genie.mp3')
+  assert.equal(coachGreetingObjectKey('genie','en','v3'),'v3/en/genie.mp3')
+  assert.equal(coachGreetingObjectKey('genie','ru'),'v2/ru/genie.mp3')
+  assert.equal(coachGreetingObjectKey('genie','es','v3'),null)
+  assert.equal(coachGreetingObjectKey('mira','ru','v3'),null)
+  assert.equal(coachGreetingObjectKey('genie','ru','../other'),null)
+})
