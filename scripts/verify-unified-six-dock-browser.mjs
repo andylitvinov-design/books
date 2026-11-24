@@ -312,6 +312,32 @@ async function inspect(browserType,locale,width){
     for(const [caseName,path,active] of routeCases){
       const marker=id+":"+caseName;
       await page.goto(origin+path,{waitUntil:"domcontentloaded",timeout:75000});
+      if(caseName==="ai"){
+        // The separately approved immersive Samir opening intentionally hides
+        // the dock. Verify replacement navigation and a single composer,
+        // then use the real back action and verify the dock returns.
+        const landing=page.locator("[data-hh-ai-landing]");
+        await expect(landing).toBeVisible({timeout:30000});
+        const hiddenDock=page.locator("[data-hh-unified-dock]");
+        await expect(hiddenDock).toHaveCount(1);
+        await expect(hiddenDock).toBeHidden();
+        await expect(landing.locator("[data-hh-genie-goal-choice]")).toHaveCount(2);
+        for(const goal of ["discover","defined"]){
+          const choice=landing.locator('[data-hh-genie-goal-choice="'+goal+'"]');
+          await expect(choice).toBeVisible();
+          const box=await choice.boundingBox();
+          assert.ok(box&&box.height>=43&&box.width>=44,marker+" accessible "+goal);
+        }
+        await expect(landing.locator("[data-hh-ai-inline-composer] form[data-hh-ai-chat-composer]")).toHaveCount(1);
+        await expect(landing.locator("[data-hh-ai-inline-composer] textarea")).toBeVisible();
+        const back=landing.locator('a[href="'+prefix+'"]');
+        await expect(back).toBeVisible();
+        await back.click();
+        await page.waitForURL(url=>url.pathname.replace(/\/$/,"")===prefix,{timeout:45000});
+        await assertPinnedSixDock(page,marker+":return-home",null);
+        results.push({id:marker,immersive:true,returnDock:true,route:path,authenticated:false});
+        continue;
+      }
       await assertPinnedSixDock(page,marker,active);
       if(caseName==="development-vectors"){
         const root=page.locator("main[data-daybook-vectors]");
@@ -667,20 +693,21 @@ try{
  results.push({journey:"Owner iHelp screenshot → visible composer and category chips at 320/390/430 → real Director choices",passed:true});
  await page.locator('[data-unified-dock-item="ai"]').click();
  await page.waitForURL(/\/ru\/app\/messages\?section=ai/,{timeout:30000});
- // The mobile Ali sections live in the real expandable menu, not an always-visible rail.
+ // Immersive first turn has a dedicated expandable directions menu.
+ // Reach Orders through its real shortcut, then verify all four folder tabs.
+ const opening=page.locator("[data-hh-ai-landing]");
+ await expect(opening).toBeVisible({timeout:30000});
+ const directions=opening.locator("details[data-hh-genie-extra-directions]");
+ await expect(directions).toHaveJSProperty("open",false);
+ await directions.locator(":scope > summary").click();
+ await expect(directions).toHaveJSProperty("open",true);
+ await expect(directions.locator("[data-hh-chat-shortcut]")).toHaveCount(4);
+ await directions.locator('[data-hh-chat-shortcut="orders"]').click();
+ await page.locator('[data-orders-clients-hub][data-section="orders"]').waitFor({state:"visible",timeout:30000});
  const messengerTabs=page.locator("[data-chat-top-tabs]");
- const messengerMenu=page.locator("[data-hh-ai-chat-menu]");
- await messengerMenu.waitFor({state:"visible",timeout:30000});
- assert.equal(await messengerMenu.getAttribute("aria-expanded"),"false",
-   "Mobile AI menu starts collapsed to leave room for the conversation");
- assert.equal(await messengerTabs.isVisible(),false,
-   "Mobile AI tabs are hidden until the user opens the menu");
- await messengerMenu.click();
  await messengerTabs.waitFor({state:"visible",timeout:30000});
- assert.equal(await messengerMenu.getAttribute("aria-expanded"),"true",
-   "Mobile AI menu expands on the real tap");
  assert.equal(await messengerTabs.locator("button").count(),4,
-   "Messenger menu retains the AI, Orders, Clients and News tabs");
+   "Messenger retains the AI, Orders, Clients and News tabs outside immersive opening");
  const news=page.locator('[data-chat-top-tabs] button[aria-controls="hh-news-panel"]');
  assert.equal(await news.count(),1,"News tab is visible and uniquely addressable");
  await news.click();
@@ -705,11 +732,14 @@ try{
    "six legacy service cards are tucked away until requested");
  assert.equal(await chat.locator('[data-hh-alchemist-topic]').count(),4,
    "first screen presents four large conversational problem starters");
+ const topicsMenu=chat.locator('details[data-hh-genie-extra-directions]');
+ if(!await topicsMenu.evaluate(node=>node.open))await topicsMenu.locator(":scope > summary").click();
  const moreTopics=chat.locator('[data-hh-alchemist-more-topics]');
  await moreTopics.click();
  assert.equal(await chat.locator('[data-hh-alchemist-topic]').count(),8,
    "More topics reveals the remaining four conversational suggestions");
  await moreTopics.click();
+ await topicsMenu.locator(":scope > summary").click();
  await chat.locator('[data-hh-ai-chat-composer] textarea').waitFor({state:"visible",timeout:15000});
  assert.equal(await chat.locator('[data-hh-ai-chat-composer]').count(),1,
    "first screen owns one real pinned message composer");

@@ -738,10 +738,10 @@
  .dashboard[data-profile-space-section="goals"] .focusRow{margin-top:18px}
 }
 
-/* CLARITY_SUPPORT_20261124 — two tabs and compact cream/emerald program.
+/* CLARITY_SUPPORT_20261124 — compact cream/emerald program.
    Scoped to the profile dashboard, preserving the shared CourseSpaceIntro. */
 .dashboard[data-profile-space-dashboard] .profileTabs{
- grid-template-columns:minmax(0,.88fr) minmax(0,1.12fr);
+ grid-template-columns:repeat(3,minmax(0,1fr));
 }
 .dashboard[data-profile-space-dashboard] .profileTabs .profileTab,
 .dashboard[data-profile-space-dashboard] .profileTabs .profileTabActive{
@@ -813,3 +813,226 @@
  .clarityNeed{min-height:106px;padding:15px 16px 22px}
  .clarityStep{min-height:68px;padding:12px 18px}
 }
+
+/* CLARITY_MOCK_PARITY_20261124
+   The workspace's .hh-app button rule previously won over single-class
+   module selectors, turning these cards white and centered on production.
+   Scope the visual contract to this dashboard section only. */
+.dashboard[data-profile-space-section="clarity"] .clarity{
+ gap:6px;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityHero{
+ padding:10px 12px 9px;border-radius:19px;
+ background-position:center,66% 48%;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityHero h1{
+ font-size:clamp(25px,6.5vw,40px)!important;
+ line-height:1.06;margin:3px 0 5px!important;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityHero>p:not(.eyebrow){
+ font-size:clamp(11.5px,3.0vw,15px);line-height:1.28;
+ max-width:34ch;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityHeroActions{
+ margin-top:9px;gap:8px;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityHeroActions button,
+.dashboard[data-profile-space-section="clarity"] button.clarityNeed,
+.dashboard[data-profile-space-section="clarity"] button.clarityStep,
+.dashboard[data-profile-space-section="clarity"] .clarityAccount>summary{
+ appearance:none;box-sizing:border-box;
+ border:1.5px solid #e8c185;
+ background:linear-gradient(135deg,#fff9e6 0%,#f8dca7 100%);
+ color:#103e2d;
+ text-align:left;
+ box-shadow:0 3px 10px #1e10094a;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityHeroActions button{
+ min-height:44px;padding:6px 9px;gap:7px;
+ justify-content:flex-start;align-items:center;
+ border-radius:999px;font:700 clamp(12px,3.65vw,18px)/1.1 Georgia,serif;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityHeroActions button>svg{
+ width:21px;height:21px;box-sizing:content-box;
+ padding-right:7px;border-right:1px solid #b99a60;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityHeading{
+ font-size:clamp(17px,4.7vw,25px)!important;
+ line-height:1.12;margin:3px 0 0!important;gap:6px;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityNeeds{
+ gap:6px;align-items:stretch;
+}
+.dashboard[data-profile-space-section="clarity"] button.clarityNeed{
+ display:grid;grid-template-columns:22px minmax(0,1fr) 13px;
+ align-items:start;justify-content:stretch;gap:5px;
+ min-height:53px;padding:8px 7px;border-radius:14px;
+}
+.dashboard[data-profile-space-section="clarity"] button.clarityNeed>svg:first-child{
+ width:22px;height:22px;margin-top:1px;color:#075d3b;
+}
+.dashboard[data-profile-space-section="clarity"] button.clarityNeed>svg:last-child{
+ position:static;width:14px;height:14px;align-self:end;color:#075d3b;
+}
+.dashboard[data-profile-space-section="clarity"] button.clarityNeed>span,
+.dashboard[data-profile-space-section="clarity"] button.clarityStep>span,
+.dashboard[data-profile-space-section="clarity"] .clarityPersonal>span{
+ display:flex;flex-direction:column;align-items:flex-start;
+ justify-content:center;text-align:left;gap:2px;min-width:0;
+}
+.dashboard[data-profile-space-section="clarity"] button.clarityNeed strong{
+ font:700 clamp(13px,3.6vw,18px)/1.1 Georgia,serif;
+ color:#103e2d;overflow-wrap:break-word;
+}
+.dashboard[data-profile-space-section="clarity"] button.clarityNeed small{
+ font:500 clamp(11px,2.8vw,14px)/1.18 system-ui,sans-serif;
+ color:#193c2c;overflow-wrap:break-word;
+}
+.dashboard[data-profile-space-section="clarity"] button.clarityNeed[aria-pressed="true"]{
+ border-color:#b9d8a3;box-shadow:0 0 0 2px #8eb685;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityStages{gap:5px}
+.dashboard[data-profile-space-section="clarity"] button.clarityStep{
+ display:grid;grid-template-columns:24px 22px minmax(0,1fr) 15px;
+ align-items:center;justify-content:stretch;gap:7px;
+ min-height:44px;padding:6px 9px;border-radius:14px;
+}
+.dashboard[data-profile-space-section="clarity"] button.clarityStep b{
+ width:24px;height:24px;font-size:14px;
+}
+.dashboard[data-profile-space-section="clarity"] button.clarityStep>svg{
+ color:#075d3b;width:22px;height:22px;
+}
+.dashboard[data-profile-space-section="clarity"] button.clarityStep>svg:last-child{
+ width:15px;height:15px;
+}
+.dashboard[data-profile-space-section="clarity"] button.clarityStep>span{
+ padding-left:7px;border-left:1px solid #b99a60;
+}
+.dashboard[data-profile-space-section="clarity"] button.clarityStep strong{
+ font:700 clamp(14px,3.8vw,20px)/1.1 Georgia,serif;
+ color:#241f16;overflow-wrap:break-word;
+}
+.dashboard[data-profile-space-section="clarity"] button.clarityStep small{
+ font:500 clamp(11px,2.85vw,14px)/1.18 system-ui,sans-serif;
+ color:#29261c;overflow-wrap:break-word;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityStep[aria-expanded="true"]>svg:last-child{
+ transform:rotate(90deg);
+}
+.dashboard[data-profile-space-section="clarity"] .clarity>.profileInsight{
+ min-height:44px;margin:0!important;padding:6px 11px;
+ border-radius:15px;font-size:clamp(15px,4vw,20px);
+}
+.dashboard[data-profile-space-section="clarity"] .clarityPersonal{
+ min-height:52px;padding:8px 11px;border-radius:18px;gap:9px;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityPersonal>span{
+ border-left:1px solid #e6c68e;padding-left:10px;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityPersonal strong{
+ font:700 clamp(15px,4.15vw,23px)/1.12 Georgia,serif;color:#fff6df;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityPersonal small{
+ font:500 clamp(11px,2.9vw,14px)/1.2 system-ui,sans-serif;color:#fff6df;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityNotice{
+ font-size:11px;line-height:1.3;margin:3px 4px!important;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityAccount>summary{
+ min-height:44px;padding:8px 12px;font:700 15px/1.2 Georgia,serif;
+}
+@media(max-width:374px){
+ .dashboard[data-profile-space-section="clarity"] button.clarityNeed{
+  grid-template-columns:18px minmax(0,1fr) 11px;gap:4px;padding:7px 5px;
+ }
+ .dashboard[data-profile-space-section="clarity"] button.clarityNeed>svg:first-child{
+  width:18px;height:18px;
+ }
+ .dashboard[data-profile-space-section="clarity"] button.clarityNeed>svg:last-child{
+  width:12px;height:12px;
+ }
+ .dashboard[data-profile-space-section="clarity"] button.clarityStep{
+  grid-template-columns:22px 19px minmax(0,1fr) 13px;gap:5px;padding:6px 7px;
+ }
+ .dashboard[data-profile-space-section="clarity"] button.clarityStep b{width:22px;height:22px}
+ .dashboard[data-profile-space-section="clarity"] button.clarityStep>svg:nth-child(2){width:19px;height:19px}
+}
+@media(min-width:700px){
+ .dashboard[data-profile-space-section="clarity"] .clarityHero{padding:20px;min-height:0}
+ .dashboard[data-profile-space-section="clarity"] button.clarityNeed{min-height:69px;padding:12px}
+ .dashboard[data-profile-space-section="clarity"] button.clarityStep{min-height:56px;padding:10px 13px}
+}
+
+/* PROFILE_THREE_DESTINATIONS_20261124 — approved Clarity / My Goal / My Business. */
+.dashboard[data-profile-space-dashboard] .profileTabs{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:5px 0 8px;
+}
+.dashboard[data-profile-space-dashboard] .profileTabs button.profileTab,
+.dashboard[data-profile-space-dashboard] .profileTabs button.profileTabActive{
+ display:flex;flex-direction:row;align-items:center;justify-content:center;
+ min-width:0;min-height:44px;padding:6px 3px;gap:4px;box-sizing:border-box;
+ border:1.5px solid #efd19d;border-radius:999px;
+ background:linear-gradient(140deg,#fff8e6,#f8daaa);color:#133c29;
+ box-shadow:0 3px 9px #0c100b66;
+}
+.dashboard[data-profile-space-dashboard] .profileTabs button.profileTabActive{
+ background:linear-gradient(130deg,#00845c,#00402e);color:#fff5d9;
+ border-color:#fbe5ae;box-shadow:0 0 0 1px #e7c169,0 3px 9px #18100877;
+}
+.dashboard[data-profile-space-dashboard] .profileTabs strong{
+ min-width:0;font:700 clamp(12px,3.35vw,18px)/1.1 Georgia,serif!important;
+ overflow-wrap:normal;white-space:nowrap;
+}
+.dashboard[data-profile-space-dashboard] .profileTabs svg{width:clamp(15px,4.6vw,22px);height:clamp(15px,4.6vw,22px);flex:none}
+.dashboard[data-profile-space-dashboard] .business{display:grid;gap:8px;min-width:0}
+@media(max-width:374px){
+ .dashboard[data-profile-space-dashboard] .profileTabs{gap:4px}
+ .dashboard[data-profile-space-dashboard] .profileTabs button.profileTab,
+ .dashboard[data-profile-space-dashboard] .profileTabs button.profileTabActive{gap:3px;padding:5px 2px}
+ .dashboard[data-profile-space-dashboard] .profileTabs strong{font-size:11.5px!important}
+ .dashboard[data-profile-space-dashboard] .profileTabs svg{width:15px;height:15px}
+}
+@media(min-width:700px){
+ .dashboard[data-profile-space-dashboard] .profileTabs button.profileTab,
+ .dashboard[data-profile-space-dashboard] .profileTabs button.profileTabActive{min-height:55px}
+}
+
+/* CLARITY_LANDING_THREE_20261124 — approved static photo-led mobile landing. */
+.dashboard[data-profile-space-section="clarity"] .clarity{background:linear-gradient(155deg,#fff7e5,#f5dfb9);border-radius:22px;padding:8px;gap:10px;color:#153d2d;box-sizing:border-box}
+.dashboard[data-profile-space-section="clarity"] .clarityHero{position:relative;overflow:hidden;min-height:200px;padding:18px 14px;background:linear-gradient(90deg,#21190ff5 0%,#201a10b8 47%,#201a1020 100%),url("/images/holistic-house/reiki-approved-sunrise-v3.webp") center/cover no-repeat;border-radius:21px;border:1px solid #e9c583}
+.dashboard[data-profile-space-section="clarity"] .clarityHero:before{content:"";position:absolute;inset:0 0 0 45%;background:linear-gradient(90deg,#21190f00,#21190f00),url("/images/holistic-house/andy-about.png") center 35%/cover no-repeat;mask-image:linear-gradient(90deg,transparent,#000 35%);opacity:.88;pointer-events:none}
+.dashboard[data-profile-space-section="clarity"] .clarityHero>*{position:relative;z-index:1}
+.dashboard[data-profile-space-section="clarity"] .clarityHero h1{max-width:65%;font-size:clamp(29px,8vw,48px)!important}
+.dashboard[data-profile-space-section="clarity"] .clarityHero>p:not(.eyebrow){max-width:65%;font-size:clamp(13px,3.6vw,17px)!important}
+.dashboard[data-profile-space-section="clarity"] .clarityHeroActions{grid-template-columns:1fr;margin-top:14px;max-width:100%}
+.dashboard[data-profile-space-section="clarity"] .clarityHeroActions button{background:linear-gradient(145deg,#fff19b,#ffc520 44%,#e99000);color:#2b210c!important;min-height:49px;padding:10px 16px;border:2px solid #fff4ba;box-shadow:0 3px 12px #e8a33199;font:700 clamp(17px,4.6vw,22px)/1.12 Georgia,serif}
+.dashboard[data-profile-space-section="clarity"] .clarityHeading{color:#103f30!important;font-size:clamp(21px,5.3vw,30px)!important;margin:5px 0 0!important}
+.dashboard[data-profile-space-section="clarity"] .clarityHeading:before,.dashboard[data-profile-space-section="clarity"] .clarityHeading:after{background:linear-gradient(90deg,transparent,#b9955c)}
+.clarityProgramHint{text-align:center;font:500 13px/1.35 system-ui,sans-serif;color:#264337!important;margin:-4px 5px 2px!important}
+.dashboard[data-profile-space-section="clarity"] .clarityNeeds{gap:7px}
+.dashboard[data-profile-space-section="clarity"] button.clarityNeed{display:grid;grid-template-columns:30% minmax(0,1fr);padding:0 5px 0 0;gap:6px;min-height:94px;overflow:hidden;text-align:left;border-radius:17px;align-items:stretch;position:relative}
+.dashboard[data-profile-space-section="clarity"] button.clarityNeed>span.clarityNeedPhoto,.dashboard[data-profile-space-section="clarity"] button.clarityStep>span.clarityStagePhoto{display:block;position:relative;align-self:stretch;min-width:0;border:0;padding:0;background-size:cover;background-position:center;border-radius:14px}
+.clarityNeedPhoto[data-need-photo="0"],.clarityStagePhoto[data-stage-photo="0"]{background-image:url("/images/holistic-house/course-focus-mountain-boy.webp")}
+.clarityNeedPhoto[data-need-photo="1"]{background-image:url("/images/holistic-house/messenger-zen-stones.svg")}
+.clarityNeedPhoto[data-need-photo="2"],.clarityStagePhoto[data-stage-photo="1"],.clarityGuidancePhoto{background-image:url("/images/holistic-house/magic-mirror-lotus.webp")}
+.clarityNeedPhoto[data-need-photo="3"]{background-image:url("/images/holistic-house/ideas-pine-reference.webp")}
+.clarityStagePhoto[data-stage-photo="2"]{background-image:url("/images/holistic-house/reiki-approved-sunrise-v3.webp")}
+.dashboard[data-profile-space-section="clarity"] button.clarityNeed>span.clarityNeedCopy{display:flex;justify-content:center;gap:4px;padding:7px 0 15px;min-width:0}
+.dashboard[data-profile-space-section="clarity"] button.clarityNeed strong{font:700 clamp(14px,3.75vw,19px)/1.13 Georgia,serif;overflow-wrap:anywhere}
+.clarityNeedCopy strong svg,.clarityStageCopy strong svg{display:inline-block;vertical-align:middle;margin-right:4px;color:#08714b}
+.dashboard[data-profile-space-section="clarity"] button.clarityNeed small{font:500 clamp(11px,2.9vw,14px)/1.25 system-ui,sans-serif}
+.dashboard[data-profile-space-section="clarity"] button.clarityNeed>svg:last-child{position:absolute;right:4px;bottom:3px;width:15px;height:15px}
+.dashboard[data-profile-space-section="clarity"] .clarityStages{gap:8px}
+.dashboard[data-profile-space-section="clarity"] button.clarityStep{display:grid;grid-template-columns:35% minmax(0,1fr) 18px;min-height:100px;align-items:center;gap:9px;padding:5px 8px 5px 5px;border-radius:19px}
+.dashboard[data-profile-space-section="clarity"] button.clarityStep>span.clarityStagePhoto{min-height:90px}
+.dashboard[data-profile-space-section="clarity"] button.clarityStep b{position:absolute;left:7px;top:7px;width:28px;height:28px;border:1px solid #ffe4a4}
+.dashboard[data-profile-space-section="clarity"] button.clarityStep>span.clarityStageCopy{border:0;padding:4px 0;gap:5px}
+.dashboard[data-profile-space-section="clarity"] button.clarityStep strong{font:700 clamp(17px,4.5vw,23px)/1.12 Georgia,serif}
+.dashboard[data-profile-space-section="clarity"] button.clarityStep small{font:500 clamp(12px,3.1vw,15px)/1.3 system-ui,sans-serif}
+.dashboard[data-profile-space-section="clarity"] .clarityPersonal{display:grid;grid-template-columns:22% minmax(0,1fr);gap:8px;padding:8px;border-radius:19px;min-height:88px}
+.dashboard[data-profile-space-section="clarity"] .clarityPersonal>span.clarityGuidancePhoto{grid-row:1/3;min-height:85px;align-self:stretch;background-position:center;background-size:cover;border-radius:12px}
+.dashboard[data-profile-space-section="clarity"] .clarityPersonal>span.clarityPlanButton{grid-column:2;display:flex;flex-direction:row;justify-content:center;align-items:center;background:linear-gradient(145deg,#ffed95,#ffb600);color:#272006!important;border-radius:999px;padding:8px 10px;font:700 15px/1.15 Georgia,serif}
+.dashboard[data-profile-space-section="clarity"] .clarityNotice{color:#395044!important}
+.dashboard[data-profile-space-section="clarity"] .clarityAccount>.profileInsight{margin:6px 0!important}
+@media(max-width:374px){.dashboard[data-profile-space-section="clarity"] .clarity{padding:5px}.dashboard[data-profile-space-section="clarity"] button.clarityNeed{grid-template-columns:25% minmax(0,1fr);gap:4px}.dashboard[data-profile-space-section="clarity"] button.clarityStep{grid-template-columns:30% minmax(0,1fr) 15px;gap:6px}.clarityNeedCopy strong svg{width:15px;height:15px}}

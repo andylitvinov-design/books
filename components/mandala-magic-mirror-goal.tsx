@@ -82,7 +82,7 @@ const labels={
   advanced:"Opciones avanzadas",dictation:"Usa el micrófono del teclado para dictar",workQuestion:"¿Qué vídeo quieres crear?",workPlaceholder:"Describe tu vídeo o servicio…",workAlternative:"O elige un formato de vídeo",format:"Formato"},
 } as const;
 
-const formatOptions=[{id:"basic",credits:250,Icon:Film,image:"/videos/holistic-house/film-collection-v3/sun-warm-ocean-dawn.jpg"},{id:"pro",credits:500,Icon:UserRound,image:"/images/holistic-house/reiki-approved-sunrise-v3.webp"},{id:"vip",credits:2000,Icon:Clapperboard,image:"/videos/holistic-house/film-collection-v3/sun-autumn-hills.jpg"}] as const;
+const formatOptions=[{id:"pro",credits:500,Icon:UserRound,image:"/images/holistic-house/reiki-approved-sunrise-v3.webp"},{id:"basic",credits:250,Icon:Film,image:"/videos/holistic-house/film-collection-v3/sun-warm-ocean-dawn.jpg"},{id:"vip",credits:2000,Icon:Clapperboard,image:"/videos/holistic-house/film-collection-v3/sun-autumn-hills.jpg"}] as const;
 const mirrorPosterUrl=(image:string)=>image.startsWith("/")?image:"/videos/holistic-house/film-collection-v2/"+image;
 
 export function MandalaMagicMirrorTitle({locale}:{locale:VideoLocale}){
@@ -151,23 +151,24 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
   onWishChange(scopeWishes[next]||"");
   onScopeChange(next);onSelectCategory(choices[next][0].theme);changeStep(1);
  };
- // Direct card → original Goal → Format. No render or credit debit here.
+ // Audience → Format (screen 2) → Topic → Purpose → editor. Planning only.
  const enterScreen=(next:MirrorScope)=>{
   if(disabled)return;
   if(next!==scope)switchScope(next);
   else changeStep(1);
   closeExistingIntro();
-  setScreen("topic");setPendingPath(null);setFormatMenuOpen(false);setGuideOpen(false);
+  setVideoFormat(undefined);setScreen("format");setPendingPath(null);setFormatMenuOpen(false);setGuideOpen(false);
  };
  const continueFromGoal=()=>{
-  if(disabled||!purposeOptions.goals.some(goal=>goal.id===goalPurposeId))return;
-  closeExistingIntro();setScreen("format");
+  if(disabled||!goalPurposeId||!pendingPath||!videoFormat||!purposeOptions.goals.some(goal=>goal.id===goalPurposeId))return;
+  const accepted=onComplete({...pendingPath,videoFormat,goalPurposeId});
+  if(accepted===false){setBlocked(true);return;}
+  closeExistingIntro();setPendingPath(null);changeStep(1);
+  setScreen("topic");setFormatMenuOpen(false);setGuideOpen(false);
  };
  const chooseFormat=(next:MirrorVideoFormat)=>{
-  if(disabled||!goalPurposeId||!pendingPath)return;
-  const accepted=onComplete({...pendingPath,videoFormat:next,goalPurposeId});
-  if(accepted===false){setBlocked(true);return;}
-  closeExistingIntro();setVideoFormat(next);setPendingPath(null);changeStep(1);
+  if(disabled)return;
+  closeExistingIntro();setVideoFormat(next);setPendingPath(null);setGoalPurposeId(null);setSubcategoryId("");changeStep(1);
   setScreen("topic");setFormatMenuOpen(false);setGuideOpen(false);
  };
  const playExistingIntro=()=>{
@@ -184,10 +185,10 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
   if(!found||found.category.id!==categoryId||found.subcategory.id!==subId){setBlocked(true);return;}
   const theme=scope==="business"?categoryTheme[categoryId]:
    categoryId===selected.categoryId?selected.theme:categoryTheme[categoryId];
-  // Persist one canonical path until Purpose and Format confirm the original editor handoff.
+  // Preserve the selected format until Purpose confirms the existing editor handoff.
   setPendingPath({scope,categoryId,subcategoryId:subId,topicId,theme,
    wish:goalText.slice(0,500),goalChoiceId:workFormat||selected.id,workFormat});
-  setGoalPurposeId(null);setVideoFormat(undefined);
+  setGoalPurposeId(null);
   closeExistingIntro();setSubcategoryId("");changeStep(1);
   setScreen("purpose");setFormatMenuOpen(false);setGuideOpen(false);
  };
@@ -266,21 +267,21 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
     headingId="hh-mirror-purpose-heading"
     introOverride={locale==="ru"?"Выберите, что хотите получить от видео.":
       locale==="es"?"Elige lo que deseas recibir del vídeo.":"Choose what you want from this video."}
-    continueLabel={locale==="ru"?"Выбрать формат видео":
-      locale==="es"?"Elegir formato de vídeo":"Choose video format"}
+    continueLabel={locale==="ru"?"Продолжить":locale==="es"?"Continuar":"Continue"}
     selectedId={goalPurposeId} onSelect={setGoalPurposeId}
-    onContinue={continueFromGoal} disabled={disabled}/>
+    onContinue={continueFromGoal} disabled={disabled||!videoFormat}/>
   </div>
+  {blocked?<p className={css.error} role="alert">{locale==="ru"?"Не удалось продолжить. Выберите тему ещё раз.":locale==="es"?"No se pudo continuar. Elige el tema otra vez.":"Unable to continue. Select your topic again."}</p>:null}
  </section>;
  if(screen==="format")return <section className={css.goals+" "+css.formatScreen} data-hh-mirror-goals
   data-hh-mirror-screen="format" data-hh-mirror-mode={scope} data-hh-mirror-step={1}
   aria-label={copy.formatTitle}>
   <button type="button" data-hh-mirror-back-format className={css.formatBack}
-   onClick={()=>{closeExistingIntro();setScreen("purpose");changeStep(1);}}>
+   disabled={disabled} onClick={()=>{closeExistingIntro();setScreen("landing");setPendingPath(null);changeStep(1);}}>
    <ArrowLeft size={17} aria-hidden="true"/>{copy.back}
   </button>
   <header className={css.formatHero}>
-   <span className={css.formatHeroKicker}><Sparkles size={20} aria-hidden="true"/>{copy.formatTitle}</span>
+   <h2 className={css.formatHeroKicker}>{copy.formatTitle}</h2>
    <p>{scope==="me"?copy.therapy:scope==="business"?copy.work:copy.other}</p>
   </header>
   <div className={css.formatRows} role="group" aria-label={copy.formatTitle}>
@@ -301,12 +302,15 @@ export function MandalaMagicMirrorGoal({locale,wish,disabled,onWishChange,onSele
   <p className={css.formatPlanningNote}>{copy.formatNote}</p>
  </section>;
  return <section className={css.goals} data-hh-mirror-screen="topic" data-hh-mirror-goals data-hh-mirror-mode={scope}
-  data-hh-mirror-step={step} data-hh-mirror-video-preview={introExpanded?"open":"closed"} aria-label={scope==="business"?t.workQuestion:t.question}>
+  data-hh-mirror-selected-format={videoFormat} data-hh-mirror-step={step} data-hh-mirror-video-preview={introExpanded?"open":"closed"} aria-label={scope==="business"?t.workQuestion:t.question}>
   <header data-hh-mirror-quiz-heading>
     <div data-hh-mirror-quiz-question>
      {step>1?<button type="button" className={css.back} data-hh-mirror-back
       disabled={disabled} onClick={()=>changeStep(step===3?2:1)}
-      aria-label={t.back}><ArrowLeft size={18} aria-hidden="true"/></button>:null}
+      aria-label={t.back}><ArrowLeft size={18} aria-hidden="true"/></button>:
+      <button type="button" className={css.back} data-hh-mirror-back-to-format disabled={disabled}
+       onClick={()=>{closeExistingIntro();setScreen("format");setPendingPath(null);changeStep(1);}}
+       aria-label={copy.formatTitle}><ArrowLeft size={18} aria-hidden="true"/></button>}
      <h3>{step===1?topicQuizCopy[locale].question:
       step===2?topicQuizCopy[locale].subcategory:topicQuizCopy[locale].topic}</h3>
     </div>

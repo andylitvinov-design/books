@@ -1880,3 +1880,6 @@
 .root[data-coach-greeting-stage="introduction"] > [data-my-coach-greeting-gate]{
   display:block!important;flex:1 1 auto;min-height:0;position:relative;z-index:1;
 }
+
+/* Samir owns the full hero; never expose the four-coach sprite behind him. */
+.sessionPortrait[data-persona=genie]{background-image:none!important;background-color:#173c30}
