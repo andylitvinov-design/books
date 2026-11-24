@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   GUIDE_WEEKS, GUIDE_LEVELS, getGuideTask, guideTag, guideText,
-  parseGuideEntry, guideRecords, guideReadable, guideProgress,
+  parseGuideEntry, guideRecords, guideReadable, guideProgress, guideGoalProgress,
 } from '../lib/app/daybook-guide.mjs'
 import {STAGES, stageTag, stageText} from '../lib/app/daybook-stages.mjs'
 
@@ -259,4 +259,27 @@ test('legacy stage notes remain readable without inventing seven completed tasks
   assert.deepEqual(guideProgress([legacy], 'goal-a', 'discover'), {completed: 0, total: 7})
   assert.deepEqual(guideRecords([legacy], 'goal-a', 'discover', 1, 'direction'), [])
   assert.equal(guideReadable({...legacy, text: 'not structured'}, 'en'), null)
+})
+
+
+test('goal diary resumes first unfinished saved lesson, independent of other goals and optional preparation', () => {
+  const completedTask = (weekId, stepId, goalId = 'goal-a') => {
+    const task = getGuideTask(weekId, 1, stepId)
+    return note({weekId, stepId, goalId, id: goalId + weekId + stepId, completed: true, answers: Object.fromEntries(task.fields.map(field => [field.id, field.type === 'rating' ? '5' : 'answer']))})
+  }
+  const weekOne = GUIDE_WEEKS[0].steps.map(step => completedTask(GUIDE_WEEKS[0].id, step.id))
+  const first = weekOne[0]
+  assert.deepEqual(guideGoalProgress([], 'goal-a'), {completed: 0, total: 50, percent: 0, next: {week: 1, step: 1}, completedWeeks: 0})
+  assert.deepEqual(guideGoalProgress([first], 'goal-a').next, {week: 1, step: 2})
+  assert.deepEqual(guideGoalProgress(weekOne, 'goal-a').next, {week: 2, step: 1})
+  assert.equal(guideGoalProgress(weekOne, 'goal-a').percent, 14)
+  assert.equal(guideGoalProgress(weekOne, 'goal-b').percent, 0)
+  assert.deepEqual(guideGoalProgress(weekOne.slice(1), 'goal-a').next, {week: 1, step: 1})
+  const draft = note({weekId: 'discover', stepId: GUIDE_WEEKS[0].steps[0].id, updatedAt: '2026-11-25T00:00:00Z'})
+  assert.deepEqual(guideGoalProgress([...weekOne, draft], 'goal-a').next, {week: 1, step: 1})
+  const all = GUIDE_WEEKS.flatMap(week => week.steps.map(step => completedTask(week.id, step.id)))
+  assert.deepEqual(guideGoalProgress(all, 'goal-a').next, {week: 8, step: 1})
+  assert.equal(guideGoalProgress(all, 'goal-a').percent, 98)
+  assert.deepEqual(guideGoalProgress([...all, completedTask('review', 'summary')], 'goal-a'), {completed: 50, total: 50, percent: 100, next: null, completedWeeks: 8})
+  assert.equal(guideGoalProgress([], null), null)
 })
