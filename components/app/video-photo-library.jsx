@@ -17,6 +17,9 @@ async function request(url,options){
   }
   return response.json()
 }
+/**
+ * @param {{locale?: string, onSelectPhoto?: (photo: File) => void, disabled?: boolean, compact?: boolean, draftPhoto?: File|null, onDraftPhotoSettled?: (file: File) => void}} props
+ */
 export default function VideoPhotoLibrary({locale='en',onSelectPhoto,disabled=false,compact=false,draftPhoto=null,onDraftPhotoSettled}){
   const t=TEXT[locale]||TEXT.en
   const [opened,setOpened]=useState(Boolean(draftPhoto))
