@@ -41,3 +41,23 @@ test('share existing Gemini project and account budgets, separate minute guard',
  assert.ok(route.includes('reserve:()=>consumeRateBatch(config,waveGeminiPublicQuota(actor.id))'));
  assert.ok(route.includes('body.selectedGoal==null&&(!stateEvent||stateEvent.type==="ordinary")'));
 });
+
+test('public coaching questions cover every goal direction in all three languages',()=>{
+ const cases=[
+ ['clarity','Как найти цель?','How to choose a goal?','¿Cómo elegir una meta?'],
+ ['motivation','Что такое мотивация?','What is motivation?','¿Qué es la motivación?'],
+ ['resources','Как найти свои ресурсы?','How to identify strengths?','¿Cómo identificar fortalezas?'],
+ ['planning','Как составить план действий?','How to make an action plan?','¿Cómo hacer un plan de acción?'],
+ ['obstacles','Как преодолевать препятствия?','How to overcome obstacles?','¿Cómo superar obstáculos?'],
+ ['options','Как найти новые возможности?','How to find new opportunities?','¿Cómo encontrar nuevas oportunidades?'],
+ ['progress','Как отслеживать прогресс?','How to track progress?','¿Cómo medir el progreso?'],
+ ['business','Что такое бизнес цель?','What is a business goal?','¿Qué es una meta empresarial?'],
+ ['mindfulness','Что такое осознанность?','What is mindfulness?','¿Qué es la atención plena?'],
+ ];
+ for(const [topic,ru,en,es] of cases){
+  for(const [locale,text] of [['ru',ru],['en',en],['es',es]]){
+   assert.equal(waveGeminiPublicTopic(text,locale),topic);
+   assert.equal(waveGeminiPublicTopic(text+' private@invalid.example',locale),null);
+  }
+ }
+});
