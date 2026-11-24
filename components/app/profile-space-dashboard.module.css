@@ -997,3 +997,42 @@
  .dashboard[data-profile-space-dashboard] .profileTabs button.profileTab,
  .dashboard[data-profile-space-dashboard] .profileTabs button.profileTabActive{min-height:55px}
 }
+
+/* CLARITY_LANDING_THREE_20261124 — approved static photo-led mobile landing. */
+.dashboard[data-profile-space-section="clarity"] .clarity{background:linear-gradient(155deg,#fff7e5,#f5dfb9);border-radius:22px;padding:8px;gap:10px;color:#153d2d;box-sizing:border-box}
+.dashboard[data-profile-space-section="clarity"] .clarityHero{position:relative;overflow:hidden;min-height:200px;padding:18px 14px;background:linear-gradient(90deg,#21190ff5 0%,#201a10b8 47%,#201a1020 100%),url("/images/holistic-house/reiki-approved-sunrise-v3.webp") center/cover no-repeat;border-radius:21px;border:1px solid #e9c583}
+.dashboard[data-profile-space-section="clarity"] .clarityHero:before{content:"";position:absolute;inset:0 0 0 45%;background:linear-gradient(90deg,#21190f00,#21190f00),url("/images/holistic-house/andy-about.png") center 35%/cover no-repeat;mask-image:linear-gradient(90deg,transparent,#000 35%);opacity:.88;pointer-events:none}
+.dashboard[data-profile-space-section="clarity"] .clarityHero>*{position:relative;z-index:1}
+.dashboard[data-profile-space-section="clarity"] .clarityHero h1{max-width:65%;font-size:clamp(29px,8vw,48px)!important}
+.dashboard[data-profile-space-section="clarity"] .clarityHero>p:not(.eyebrow){max-width:65%;font-size:clamp(13px,3.6vw,17px)!important}
+.dashboard[data-profile-space-section="clarity"] .clarityHeroActions{grid-template-columns:1fr;margin-top:14px;max-width:100%}
+.dashboard[data-profile-space-section="clarity"] .clarityHeroActions button{background:linear-gradient(145deg,#fff19b,#ffc520 44%,#e99000);color:#2b210c!important;min-height:49px;padding:10px 16px;border:2px solid #fff4ba;box-shadow:0 3px 12px #e8a33199;font:700 clamp(17px,4.6vw,22px)/1.12 Georgia,serif}
+.dashboard[data-profile-space-section="clarity"] .clarityHeading{color:#103f30!important;font-size:clamp(21px,5.3vw,30px)!important;margin:5px 0 0!important}
+.dashboard[data-profile-space-section="clarity"] .clarityHeading:before,.dashboard[data-profile-space-section="clarity"] .clarityHeading:after{background:linear-gradient(90deg,transparent,#b9955c)}
+.clarityProgramHint{text-align:center;font:500 13px/1.35 system-ui,sans-serif;color:#264337!important;margin:-4px 5px 2px!important}
+.dashboard[data-profile-space-section="clarity"] .clarityNeeds{gap:7px}
+.dashboard[data-profile-space-section="clarity"] button.clarityNeed{display:grid;grid-template-columns:30% minmax(0,1fr);padding:0 5px 0 0;gap:6px;min-height:94px;overflow:hidden;text-align:left;border-radius:17px;align-items:stretch;position:relative}
+.dashboard[data-profile-space-section="clarity"] button.clarityNeed>span.clarityNeedPhoto,.dashboard[data-profile-space-section="clarity"] button.clarityStep>span.clarityStagePhoto{display:block;position:relative;align-self:stretch;min-width:0;border:0;padding:0;background-size:cover;background-position:center;border-radius:14px}
+.clarityNeedPhoto[data-need-photo="0"],.clarityStagePhoto[data-stage-photo="0"]{background-image:url("/images/holistic-house/course-focus-mountain-boy.webp")}
+.clarityNeedPhoto[data-need-photo="1"]{background-image:url("/images/holistic-house/messenger-zen-stones.svg")}
+.clarityNeedPhoto[data-need-photo="2"],.clarityStagePhoto[data-stage-photo="1"],.clarityGuidancePhoto{background-image:url("/images/holistic-house/magic-mirror-lotus.webp")}
+.clarityNeedPhoto[data-need-photo="3"]{background-image:url("/images/holistic-house/ideas-pine-reference.webp")}
+.clarityStagePhoto[data-stage-photo="2"]{background-image:url("/images/holistic-house/reiki-approved-sunrise-v3.webp")}
+.dashboard[data-profile-space-section="clarity"] button.clarityNeed>span.clarityNeedCopy{display:flex;justify-content:center;gap:4px;padding:7px 0 15px;min-width:0}
+.dashboard[data-profile-space-section="clarity"] button.clarityNeed strong{font:700 clamp(14px,3.75vw,19px)/1.13 Georgia,serif;overflow-wrap:anywhere}
+.clarityNeedCopy strong svg,.clarityStageCopy strong svg{display:inline-block;vertical-align:middle;margin-right:4px;color:#08714b}
+.dashboard[data-profile-space-section="clarity"] button.clarityNeed small{font:500 clamp(11px,2.9vw,14px)/1.25 system-ui,sans-serif}
+.dashboard[data-profile-space-section="clarity"] button.clarityNeed>svg:last-child{position:absolute;right:4px;bottom:3px;width:15px;height:15px}
+.dashboard[data-profile-space-section="clarity"] .clarityStages{gap:8px}
+.dashboard[data-profile-space-section="clarity"] button.clarityStep{display:grid;grid-template-columns:35% minmax(0,1fr) 18px;min-height:100px;align-items:center;gap:9px;padding:5px 8px 5px 5px;border-radius:19px}
+.dashboard[data-profile-space-section="clarity"] button.clarityStep>span.clarityStagePhoto{min-height:90px}
+.dashboard[data-profile-space-section="clarity"] button.clarityStep b{position:absolute;left:7px;top:7px;width:28px;height:28px;border:1px solid #ffe4a4}
+.dashboard[data-profile-space-section="clarity"] button.clarityStep>span.clarityStageCopy{border:0;padding:4px 0;gap:5px}
+.dashboard[data-profile-space-section="clarity"] button.clarityStep strong{font:700 clamp(17px,4.5vw,23px)/1.12 Georgia,serif}
+.dashboard[data-profile-space-section="clarity"] button.clarityStep small{font:500 clamp(12px,3.1vw,15px)/1.3 system-ui,sans-serif}
+.dashboard[data-profile-space-section="clarity"] .clarityPersonal{display:grid;grid-template-columns:22% minmax(0,1fr);gap:8px;padding:8px;border-radius:19px;min-height:88px}
+.dashboard[data-profile-space-section="clarity"] .clarityPersonal>span.clarityGuidancePhoto{grid-row:1/3;min-height:85px;align-self:stretch;background-position:center;background-size:cover;border-radius:12px}
+.dashboard[data-profile-space-section="clarity"] .clarityPersonal>span.clarityPlanButton{grid-column:2;display:flex;flex-direction:row;justify-content:center;align-items:center;background:linear-gradient(145deg,#ffed95,#ffb600);color:#272006!important;border-radius:999px;padding:8px 10px;font:700 15px/1.15 Georgia,serif}
+.dashboard[data-profile-space-section="clarity"] .clarityNotice{color:#395044!important}
+.dashboard[data-profile-space-section="clarity"] .clarityAccount>.profileInsight{margin:6px 0!important}
+@media(max-width:374px){.dashboard[data-profile-space-section="clarity"] .clarity{padding:5px}.dashboard[data-profile-space-section="clarity"] button.clarityNeed{grid-template-columns:25% minmax(0,1fr);gap:4px}.dashboard[data-profile-space-section="clarity"] button.clarityStep{grid-template-columns:30% minmax(0,1fr) 15px;gap:6px}.clarityNeedCopy strong svg{width:15px;height:15px}}
