@@ -657,3 +657,9 @@ background:linear-gradient(180deg,#f5e8d2,#123d36 420px,#103c36);border-radius:0
  .methods{margin-top:5px;padding:6px 8px;}
  .methods h3{margin-bottom:4px;}
 }
+
+/* One manual dictation row replaces the text field until confirm or cancel. */
+.composer:has(:global([data-hh-dictation-active="true"])){display:flex!important;flex-direction:column!important;align-items:stretch!important;min-height:0!important;gap:0!important;padding:8px!important}
+.composer:has(:global([data-hh-dictation-active="true"]))>textarea,.composer:has(:global([data-hh-dictation-active="true"]))>.composerSparkle{display:none!important}
+.composer:has(:global([data-hh-dictation-active="true"]))>.composerButtons{display:flex!important;position:static!important;width:100%;min-width:0;align-self:stretch;justify-content:stretch!important;gap:0!important}
+.composer:has(:global([data-hh-dictation-active="true"]))>.composerButtons>:not(:global([data-hh-dictation-active="true"])){display:none!important}
