@@ -47,7 +47,7 @@ export default function MyPageClient({locale='en'}){
  const page=data?.page
  const link=page?'/' + locale + '/u/' + page.handle:''
  const tags=[['tests',t.tests],['practices',t.practices],['videos',t.videos]]
- return <main className={css.page} data-universal-my-page>
+ return <main className={css.page} data-universal-my-page data-cabinet-theme="daybook">
   <nav className={css.socialModes} data-profile-mode-switch data-profile-mode-active="live" aria-label={locale==='ru'?'Страницы профиля':locale==='es'?'Páginas del perfil':'Profile pages'}>
     <Link href={'/'+locale+'/my-page'} data-profile-mode="live" prefetch={false} aria-current="page">{locale==='ru'?'Моя страничка':locale==='es'?'Mi página':'My Page'}</Link>
     <Link href={'/'+locale+'/practice'} data-profile-mode="work" prefetch={false}>{locale==='ru'?'Профиль мастера':locale==='es'?'Perfil profesional':'Practitioner profile'}</Link>

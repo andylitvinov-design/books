@@ -1,5 +1,6 @@
 'use client'
 import {useEffect,useRef,useState} from 'react'
+import {ArrowRight,BriefcaseBusiness,Compass,Heart,HeartPulse,Info,Sparkles,Target,Users} from 'lucide-react'
 import {appFetch} from '@/lib/app/client-fetch'
 import {createVectorGoalSession} from '@/lib/app/daybook-vector-session.mjs'
 import {VECTOR_SPHERES,VECTOR_FOCUSES,VECTOR_AXES,vectorDraftStepComplete,vectorSelectionFromDraft,vectorCombinationLabel} from '@/lib/app/daybook-vector-selection.mjs'
@@ -11,8 +12,14 @@ const COPY={
  es:{title:'Crear una nueva meta',intro:'Elige un ámbito de vida y una cualidad interior, valora cómo estás y cómo quieres estar, y escribe tu meta.',steps:['Ámbito de vida','Eje de sentido','Mi meta'],sphereQuestion:'¿Dónde quieres un cambio?',axisQuestion:'¿Qué cualidad interior quieres desarrollar?',sphere:'Elige un ámbito de vida',focus:'¿En qué quieres centrarte?',axis:'Elige uno de los ocho ejes de sentido',now:'Ahora',desired:'Deseado',ratingHint:'¿Cómo te sientes ahora y dónde te gustaría estar? Elige dos valores del 0 al 10.',empty:'Elegir',back:'Anterior',next:'Siguiente',review:'Ver mi dirección',intersection:'Tu dirección de desarrollo',suggestion:'Esta combinación puede orientar tu meta. Describe con tus palabras el resultado que quieres.',statement:'Mi meta',example:'¿Qué cambio concreto quieres conseguir?',why:'Por qué es importante para mí (opcional)',save:'Guardar mi meta',saving:'Guardando y verificando…',saved:'Tu meta está guardada',savedHint:'La ficha de tu meta y estas valoraciones están guardadas en tu cuenta privada. Podrás abrir la meta y continuar más tarde.',done:'Abrir mis metas',failed:'No se pudo confirmar el guardado. Tus respuestas siguen aquí. Reintenta el mismo guardado antes de editar.',retry:'Reintentar guardado',invalid:'Elige un ámbito, un enfoque y un eje de sentido, indica ambos pares de valores y escribe tu meta.',privacy:'Estas valoraciones describen tu experiencia; no son una prueba diagnóstica. Tu meta es privada y no se envía a un coach automáticamente.',draft:'Las respuestas permanecen en esta página hasta guardar. Salir borra el borrador sin guardar.'},
 }
 const SCORES=Array.from({length:11},(_,index)=>String(index))
+const VISUAL_COPY={
+ en:{eyebrow:'Goal journal',title:'0. Choose a direction',step:'Step',of:'of'},
+ ru:{eyebrow:'Дневник целей',title:'0. Выбор направления',step:'Шаг',of:'из'},
+ es:{eyebrow:'Diario de metas',title:'0. Elige una dirección',step:'Paso',of:'de'},
+}
+const SPHERE_ICONS={body:HeartPulse,work:BriefcaseBusiness,relationships:Users,growth:Sparkles}
 export default function DaybookVectorStart({accountId,locale='en',editorSession=null,onSaved,onSessionLost,onDone}){
- const lang=COPY[locale]?locale:'en',c=COPY[lang]
+ const lang=COPY[locale]?locale:'en',c=COPY[lang],v=VISUAL_COPY[lang]
  const [state,setState]=useState(null),active=useRef(null),notified=useRef(null),question=useRef(null)
  const callbacks=useRef({onSaved,onSessionLost})
  useEffect(()=>{callbacks.current={onSaved,onSessionLost}},[onSaved,onSessionLost])
@@ -38,25 +45,27 @@ export default function DaybookVectorStart({accountId,locale='en',editorSession=
  const ready=Boolean(vectorSelectionFromDraft(draft)),stepReady=vectorDraftStepComplete(draft,step)
  const combination=vectorCombinationLabel(draft,lang)
  async function submit(event){event.preventDefault();if(step<2){if(stepReady)position(step+1);return}await active.current?.save()}
- const options=(values,key)=>values.map(option=><label key={option.id} className={css.choice} data-selected={draft[key]===option.id}>
+ const options=(values,key)=>values.map(option=>{const Icon=SPHERE_ICONS[option.id];return <label key={option.id} className={css.choice} data-selected={draft[key]===option.id}>
   <input type="radio" name={key+'-'+draft.id} value={option.id} checked={draft[key]===option.id} disabled={locked} onChange={()=>change(key,option.id)}/>
+  {Icon&&<Icon className={css.choiceIcon} size={24} aria-hidden="true"/>}
   <span><strong>{option.name[lang]}</strong>{option.detail&&<small>{option.detail[lang]}</small>}</span>
- </label>)
+ </label>})
  const ratings=(track,id,title)=><section className={css.ratingSection} aria-label={title}>
   <h4>{title}</h4><p className={css.hint}>{c.ratingHint}</p>
   <div className={css.ratings}>{['current','desired'].map(key=><label key={key}>
    <span>{key==='current'?c.now:c.desired}</span><select required value={draft[track][id]?.[key]??''} disabled={locked} aria-label={title+': '+(key==='current'?c.now:c.desired)} onChange={event=>active.current?.rate(track,id,key,event.target.value)}>
-    <option value="">{c.empty}</option>{SCORES.map(score=><option key={score} value={score}>{score} / 10</option>)}
+    <option value="">{c.empty} 0–10</option>{SCORES.map(score=><option key={score} value={score}>{score} / 10</option>)}
    </select>
   </label>)}</div>
  </section>
  return <section className={css.wizard} data-daybook-vector-start data-hh-design="warm-sunrise">
-  <header><p className={css.eyebrow}>DAYBOOK · 0 + 8</p><h2>{result?c.saved:c.title}</h2><p>{result?c.savedHint:c.intro}</p></header>
-  {result?<div role="status"><h3 className={css.goalTitle}>{result.title}</h3><DaybookVectorSummary value={result.vectorSelection} locale={lang}/>{onDone&&<button type="button" className={css.primary} onClick={onDone}>{c.done}</button>}</div>:<>
-   <ol className={css.steps} aria-label={c.title}>{c.steps.map((label,i)=><li key={label} aria-current={step===i?'step':undefined}><span aria-hidden="true">{i+1}</span><strong>{label}</strong></li>)}</ol>
+  <header className={css.hero}><p className={css.eyebrow}><Sparkles size={19} aria-hidden="true"/>{v.eyebrow}</p><h2>{result?c.saved:v.title}</h2><p>{result?c.savedHint:c.intro}</p></header>
+  {result?<div className={css.saved} role="status"><h3 className={css.goalTitle}>{result.title}</h3><DaybookVectorSummary value={result.vectorSelection} locale={lang}/>{onDone&&<button type="button" className={css.primary} onClick={onDone}>{c.done}<ArrowRight size={20} aria-hidden="true"/></button>}</div>:<>
+   <ol className={css.steps} aria-label={c.title}>{c.steps.map((label,i)=><li key={label} aria-current={step===i?'step':undefined} data-complete={step>i}><span aria-hidden="true">{i+1}</span><strong>{label}</strong></li>)}</ol>
    <form onSubmit={submit}>
     {step<2?<section className={css.question} aria-labelledby={'vector-question-'+draft.id}>
-     <h3 id={'vector-question-'+draft.id} ref={question} tabIndex={-1}>{step===0?c.sphereQuestion:c.axisQuestion}</h3>
+     <p className={css.stepLabel}>{v.step} {step+1} {v.of} 3</p>
+     <div className={css.questionHeading}><span className={css.questionIcon}>{step===0?<Heart size={30} aria-hidden="true"/>:<Compass size={30} aria-hidden="true"/>}</span><h3 id={'vector-question-'+draft.id} ref={question} tabIndex={-1}>{step===0?c.sphereQuestion:c.axisQuestion}</h3></div>
      {step===0?<>
       <fieldset disabled={locked}><legend>{c.sphere}</legend><div className={css.choices}>{options(VECTOR_SPHERES,'sphereId')}</div></fieldset>
       {focuses.length>1&&<fieldset disabled={locked}><legend>{c.focus}</legend><div className={css.choices}>{options(focuses,'focusId')}</div></fieldset>}
@@ -65,9 +74,10 @@ export default function DaybookVectorStart({accountId,locale='en',editorSession=
       <fieldset disabled={locked}><legend>{c.axis}</legend><div className={css.choices}>{options(VECTOR_AXES,'axisId')}</div></fieldset>
       {selectedAxis&&ratings('axes',selectedAxis.id,selectedAxis.name[lang])}
      </>}
-     <div className={css.navigation}>{step>0&&<button type="button" className={css.secondary} disabled={locked} onClick={()=>position(step-1)}>{c.back}</button>}<button type="button" className={css.primary} disabled={locked||!stepReady} onClick={()=>position(step+1)}>{step===1?c.review:c.next}</button></div>
+     <div className={css.navigation}>{step>0&&<button type="button" className={css.secondary} disabled={locked} onClick={()=>position(step-1)}>{c.back}</button>}<button type="button" className={css.primary} disabled={locked||!stepReady} onClick={()=>position(step+1)}>{step===1?c.review:c.next}<ArrowRight size={20} aria-hidden="true"/></button></div>
     </section>:<section className={css.review}>
-     <h3 ref={question} tabIndex={-1}>{c.intersection}</h3>
+     <p className={css.stepLabel}>{v.step} 3 {v.of} 3</p>
+     <div className={css.questionHeading}><span className={css.questionIcon}><Target size={30} aria-hidden="true"/></span><h3 ref={question} tabIndex={-1}>{c.intersection}</h3></div>
      <p className={css.intersection} data-vector-combination>{combination}</p>
      <VectorSelectedRatings value={draft} locale={lang}/>
      <p>{c.suggestion}</p>
@@ -77,7 +87,7 @@ export default function DaybookVectorStart({accountId,locale='en',editorSession=
     </section>}
     {['failed','invalid'].includes(status)&&<p className={css.error} role="alert">{c[status]}</p>}
    </form>
-   <p className={css.hint}>{c.privacy}</p><p className={css.hint}>{c.draft}</p>
+   <aside className={css.privacy}><Info size={21} aria-hidden="true"/><div><p>{c.privacy}</p><p>{c.draft}</p></div></aside>
   </>}
  </section>
 }
