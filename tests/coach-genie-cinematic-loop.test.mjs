@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {samirMotionTake,samirMotionFilename,samirMotionPath} from '../lib/coaching/samir-motion.mjs'
+import {samirMotionTake,samirMotionFilename,samirMotionPath,nextSamirMotionTake} from '../lib/coaching/samir-motion.mjs'
 import {selectCoachVisualScene} from '../lib/coaching/coach-visual-cues.mjs'
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url))
@@ -60,7 +60,7 @@ test("shared selected hero, live session and large avatar follow Samir's 3-state
   assert.match(motion,/<SamirMotionVideos take=\{samirTake\}/)
   assert.match(motion,/const shouldPlay=supported&&hasVideo&&motionAllowed&&inViewport&&pageVisible/)
   assert.match(motion,/prefers-reduced-motion: reduce/)
-  assert.match(layers,/muted playsInline loop/)
+  assert.match(layers,/muted playsInline loop=\{!cycle\|\|next===name\}/)
   assert.match(layers,/onPlaying=/)
   assert.match(layers,/samirMotionPath\(name\)/)
   assert.match(css,/\.media \.video\.samirLayer\{opacity:0/)
@@ -86,4 +86,20 @@ test('same guarded prebuild prepares two previously completed originals, not new
   assert.match(samir,/b984e6733fa94bcf9b13713cd1a88676/)
   assert.match(samir,/344cf059da0149dda3e9d68f65d4e185/)
   assert.doesNotMatch(samir,/generate|createVideo|textToVideo|imageToVideo/i)
+})
+
+test('Samir idle reel rotates all three clips, skips missing takes and stops if all fail',()=>{
+  assert.equal(nextSamirMotionTake('idle'),'listening')
+  assert.equal(nextSamirMotionTake('listening'),'encourage')
+  assert.equal(nextSamirMotionTake('encourage'),'idle')
+  assert.equal(nextSamirMotionTake('idle',['listening']),'encourage')
+  assert.equal(nextSamirMotionTake('idle',['listening','encourage']),'idle')
+  assert.equal(nextSamirMotionTake('idle',['idle','listening','encourage']),null)
+  const motion=source('components/my-coach-motion-media.jsx')
+  const layers=source('components/samir-motion-videos.jsx')
+  assert.match(motion,/cycle=\{state==='idle'\|\|state==='greeting'\}/)
+  assert.match(layers,/onEnded=/)
+  assert.match(layers,/wanted\.current===name&&next/)
+  assert.match(source('components/my-coach-live-dialogue.module.css'),/\.sessionPortrait\[data-persona=genie\]\{background-image:none!important/)
+  assert.match(source('components/my-coach-motion-media.module.css'),/\[data-coach-motion-media='genie'\]\[data-coach-motion-context='session'\]\{inset:0;height:100%;width:100%;max-width:none/)
 })

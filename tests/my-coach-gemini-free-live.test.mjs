@@ -384,7 +384,7 @@ test('Free Live uses only provider-granted context, never raw client memory prop
  assert.match(ui,/memoryStageToken:stagedMemory\.stageToken/,
   'non-Live engines retain the existing staged server memory contract')
  const socketCalls=[...live.matchAll(/sendSocket\(r,([^\n]+)/g)].map(match=>match[1].trim())
- assert.equal(socketCalls.filter(value=>value.startsWith('geminiLiveStartMessage()')).length,1)
+ assert.equal(socketCalls.filter(value=>value.startsWith('r.continuing?geminiLiveContinueMessage():geminiLiveStartMessage()')).length,1)
  assert.ok(socketCalls.some(value=>value.startsWith('geminiLivePcmMessage(pcm)')))
  assert.ok(socketCalls.some(value=>value.startsWith('geminiLiveTextMessage(body)')))
  assert.match(live,/const packet=geminiLiveContextMessage\(r\.pendingContext\)/)
@@ -428,7 +428,7 @@ test('Play emits one marked app cue but never fabricated visitor consent',()=>{
  assert.doesNotMatch(speech,/previous goal|private session|account ID|API key/i)
  const client=load('components/my-coach-gemini-live.jsx')
  assert.match(client,/if\(!r\.introSent\)/)
- assert.match(client,/sendSocket\(r,geminiLiveStartMessage\(\)\)/)
+ assert.match(client,/sendSocket\(r,r\.continuing\?geminiLiveContinueMessage\(\):geminiLiveStartMessage\(\)\)/)
  assert.match(client,/r\.sessionStarted=true/)
 })
 test('server turnComplete waits for audible PCM tail onended before transcript final',()=>{
@@ -466,7 +466,8 @@ test('iPhone audio resume and bounded network backpressure are wired',()=>{
  assert.doesNotMatch(worklet,/Float32Array\(2048\)/)
  assert.match(live,/data-coach-live-resume-audio/)
  assert.match(live,/r\.context\.resume\?\.\(\)/)
- assert.match(live,/r\.pendingAudio\.length>=24/)
+ assert.match(live,/r\.pendingAudio\.length>=MAX_PENDING_AUDIO_CHUNKS/)
+ assert.match(live,/r\.pendingAudioChars\+part\.length>MAX_PENDING_AUDIO_CHARS/)
  assert.match(live,/r\.backpressureChunks>30/)
  assert.match(live,/r\.modelTurnComplete=true\s+finishAudibleTurn\(r\)/)
  assert.match(live,/if\(r\.modelTurnComplete\)finishAudibleTurn\(r\)/)

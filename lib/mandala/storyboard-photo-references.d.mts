@@ -16,3 +16,12 @@ export function storyboardPhotoReferences(options?:{
  aspect?:"portrait"|"landscape";
 }):readonly (StoryboardReferencePhoto|null)[];
 export const STORYBOARD_REFERENCE_STATUS:"editorial_photo_reference_not_action_verified";
+export function illustrativeStoryboardPhotoReferences(options?:{
+ scenarioId?:string;
+ categoryId?:string;
+ shotCount?:number;
+ aspect?:"portrait"|"landscape";
+ avoidImagery?:readonly string[];
+ userEditedFields?:readonly string[];
+}):readonly StoryboardReferencePhoto[];
+export const STORYBOARD_ILLUSTRATION_STATUS:"illustrative_topic_photos_not_action_verified";
