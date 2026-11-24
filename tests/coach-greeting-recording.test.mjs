@@ -1,5 +1,6 @@
 import './my-coach-greeting-mp3-store.test.mjs'
 import test from 'node:test'
+import {coachIntroAudioPath} from '../lib/personal-coaching/direct-coach-intro-audio.mjs'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {spawnSync} from 'node:child_process'
@@ -59,8 +60,8 @@ function harness({env=free,lookupError=false,writeError=false,synthError=false}=
     getAppConfig:()=>config,consumeRate:async(_c,bucket,limit,seconds)=>rates.push({bucket,limit,seconds}),
     safeError:error=>({code:error.code||'INTERNAL_ERROR',status:error.status||500}),AppError,
     getCoachPresentation,coachOpeningIntro,coachSpokenText,
-    readSavedCoachGreeting:(c,id,locale,_fetch,range)=>readSavedCoachGreeting(c,id,locale,fetcher,range),
-    saveCoachGreetingOnce:(c,id,locale,audio)=>saveCoachGreetingOnce(c,id,locale,audio,fetcher),isMp3Bytes,
+    readSavedCoachGreeting:(c,id,locale,_fetch,range,version)=>readSavedCoachGreeting(c,id,locale,fetcher,range,version),
+    saveCoachGreetingOnce:(c,id,locale,audio,_fetch,version)=>saveCoachGreetingOnce(c,id,locale,audio,fetcher,version),isMp3Bytes,
     approvedGeminiVoice,geminiCoachTtsConfig,normalizeGeminiCoachTtsInput,
     synthesizeGeminiCoachTts:async({config:vendor,input})=>{
       syntheses.push(input);assert.equal(vendor.provider,'gemini_tts_free')
@@ -160,4 +161,36 @@ test('public URL rejects injected text/cross-site requests and does not invent u
   assert.equal(disabled.syntheses.length,0)
   disabled.objects.set('v2/ru/genie.mp3',await encodedFixture())
   assert.equal((await disabled.GET(disabled.request())).status,200,'saved audio survives provider deactivation')
+})
+
+
+test('Samir switches to new immutable v3 recordings only, Puck RU and Orus EN',async()=>{
+  const h=harness()
+  const original=await encodedFixture()
+  h.objects.set('v2/ru/genie.mp3',original)
+  h.objects.set('v2/en/genie.mp3',original)
+  for(const [locale,voiceName] of [['ru','Puck'],['en','Orus']]){
+    const path=coachIntroAudioPath('genie',locale)
+    assert.equal(path,`/api/coaching/intro/${locale}/genie?v=3`)
+    const url='https://holistichouse.vercel.app'+path
+    const first=await h.GET(new Request(url))
+    assert.equal(first.status,200)
+    assert.equal(h.syntheses.at(-1).voiceName,voiceName)
+    assert.ok(h.objects.has('v3/'+locale+'/genie.mp3'))
+    const repeat=await h.GET(new Request(url))
+    assert.deepEqual(Buffer.from(await repeat.arrayBuffer()),Buffer.from(await first.arrayBuffer()))
+    assert.deepEqual(h.objects.get('v2/'+locale+'/genie.mp3'),original)
+    assert.equal((await h.GET(h.request('genie',locale))).status,200)
+  }
+  assert.equal(h.syntheses.length,2)
+  assert.equal(h.writes,2)
+  assert.equal(h.fishCalls,0)
+  assert.equal(coachIntroAudioPath('mira','ru'),'/api/coaching/intro/ru/mira?v=2')
+  assert.equal(coachIntroAudioPath('genie','es'),'/api/coaching/intro/es/genie?v=2')
+  for(const invalid of ['ru/mira','es/genie']){
+    assert.equal((await h.GET(new Request('https://holistichouse.vercel.app/api/coaching/intro/'+invalid+'?v=3'))).status,400)
+  }
+  const disabled=harness({env:{}})
+  assert.equal((await disabled.GET(new Request('https://holistichouse.vercel.app/api/coaching/intro/ru/genie?v=3'))).status,503)
+  assert.equal(disabled.fishCalls,0)
 })
