@@ -27,8 +27,10 @@ import {
 import { energyworkLessonRanges, energyworkAdvanceAlreadyStored, ENERGYWORK_REVIEW_MIN_CHARS, ENERGYWORK_TANTRA_STUDY_QUESTION_IDS, ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS, ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS, energyworkReikiStudyAnswerComplete, energyworkTantraStudyAnswerComplete, energyworkCombinedTantraAnswer } from "@/data/academy/energywork-ai-schema";
 import { readReikiInitiationRequest, writeReikiInitiationRequest, reikiInitiationRequestValid, formatReikiInitiationRequest, REIKI_PERSONAL_SESSIONS } from "@/data/academy/reiki-initiation-request.js";
 import styles from "./energywork-ai-learner.module.css";
+import daybookStyles from "./reiki-daybook.module.css";
+import "@/app/[locale]/app/cabinet-theme.css";
 
-type Props = { locale: EnergyworkLocale; startAtExperience?: boolean };
+type Props = { locale: EnergyworkLocale; startAtExperience?: boolean; layout?: "classic" | "daybook" };
 type AnswerMap = Record<string, string>;
 const TANTRA_STUDY_HINT_ANCHORS: Record<string, string> = {
   "tan-06": "#tantra-original-author-research",
@@ -789,7 +791,10 @@ function ReikiInitiationRequestForm({ value, locale, onChange }: {
   );
 }
 
-export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props) {
+export function EnergyworkAiLearner({ locale, startAtExperience = false, layout = "classic" }: Props) {
+  const daybook = layout === "daybook";
+  const db = locale === "ru" ? { title: "Практик Рейки", subtitle: "5 недель · Бесплатный курс", week: "Неделя", weeks: "Недели курса", steps: "Материалы и практики недели", done: "Пройдено", current: "Текущий шаг", locked: "Откроется после предыдущих шагов", classic: "Классический формат", shared: "Ваш прогресс общий для обоих форматов.", guest: "Прогресс до сохранения в кабинете временный." } : { title: "Reiki Practitioner", subtitle: "5 weeks · Free course", week: "Week", weeks: "Course weeks", steps: "Weekly lessons & practices", done: "Completed", current: "Current step", locked: "Unlocks after the preceding steps", classic: "Classic format", shared: "Your progress is shared across both formats.", guest: "Progress is temporary until saved to your account." };
+  const [guestFrontier, setGuestFrontier] = useState(startAtExperience ? 1 : 0);
   const t = copy[locale];
   // Referral entrants have already read the course overview; saved account progress still wins.
   const [index, setIndex] = useState(startAtExperience ? energyworkSlides().findIndex((item) => item.id === "welcome-02") : 0);
@@ -980,6 +985,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   // Reposition the whole lesson to the actual visual viewport so the CTA
   // stays tappable without sacrificing a long-answer textarea's scroll.
   useEffect(() => {
+    if (daybook) return; // Daybook scrolls normally, including when the keyboard is open.
     const page = pageRef.current;
     const viewport = window.visualViewport;
     if (!page || !viewport) return;
@@ -1019,7 +1025,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
       page.style.removeProperty("--reiki-visual-height");
       page.style.removeProperty("--reiki-visual-top");
     };
-  }, []);
+  }, [daybook]);
   async function startSaving() {
     if (!consented || busy) return;
     setBusy(true);
@@ -1052,7 +1058,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     if (busy) return;
     setBusy(true);
     try {
-      const response = await appFetch("auth/start", { locale, continueTo: "energywork" }, "POST") as { redirectUrl?: string };
+      const response = await appFetch("auth/start", { locale, continueTo: daybook ? "energywork-daybook" : "energywork" }, "POST") as { redirectUrl?: string };
       if (!response.redirectUrl || !response.redirectUrl.startsWith("https://")) throw new Error("BAD_OAUTH_URL");
       // The short-lived, consented first-lesson handoff is safely kept within
       // this tab, so an expected OAuth navigation should not warn of lost edits.
@@ -1099,7 +1105,18 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const currentLessonRange = lessonRanges.find((range) => index >= range.start && index < range.end);
   const savedIndex = sync === "ready" ? Math.max(0, slides.findIndex((item) => item.id === progressRef.current)) : index;
   const reachedIndex = Math.max(index, savedIndex);
-  const progressPercent = Math.round((reachedIndex + 1) / total * 100);
+  // Include the introductory screens in Week 1; every canonical slide appears exactly once.
+  const daybookWeeks = lessonRanges.map((range, i) => ({
+    ...range, start: i === 0 ? 0 : range.start, count: range.end - (i === 0 ? 0 : range.start),
+  }));
+  const activeWeek = daybookWeeks.find(range => index >= range.start && index < range.end) ?? daybookWeeks[0]!;
+  const daybookFrontier = sync === "ready" ? savedIndex : Math.min(Math.max(index, guestFrontier), daybookWeeks[0]!.end - 1);
+  const daybookDone = (position: number) => position < daybookFrontier ||
+    (position === total - 1 && daybookFrontier === position && sync === "ready");
+  const daybookCompletedCount = slides.filter((_, position) => daybookDone(position)).length;
+  const weeklyCompleted = slides.slice(activeWeek.start, activeWeek.end).filter((_, position) => daybookDone(activeWeek.start + position)).length;
+  const daybookCanOpen = (position: number) => !busy && sync !== "checking" && sync !== "unavailable" && position <= daybookFrontier;
+  const progressPercent = Math.round((daybook ? daybookCompletedCount : reachedIndex + 1) / total * 100);
   const lessonProgressLabel = currentLessonRange
     ? `${t.lesson} ${currentLessonRange.lesson} · ${t.step} ${index - currentLessonRange.start + 1} ${t.of} ${currentLessonRange.count}`
     : `${t.intro} · ${t.step} ${index + 1} ${t.of} ${lessonRanges[0]!.start}`;
@@ -1119,7 +1136,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const artSource = portraitArt || voicesArt ? "/images/holistic-house/reiki-approved-sunrise-v3.webp" : slide.image;
   // Decorative artwork belongs behind the lesson copy, never in a cropped strip.
   // Video playback and the existing welcome/testimonial backgrounds are unaffected.
-  const artBackground = Boolean(artSource) && !["welcome", "voices", "video"].includes(slide.kind);
+  const artBackground = !daybook && Boolean(artSource) && !["welcome", "voices", "video"].includes(slide.kind);
   const experienceMissing = slide.id === "welcome-02" && !slide.question?.options?.some((option) => option.id === answers[slide.id]);
   const isMeditationFeedback = MEDITATION_REPORT_IDS.has(slide.id);
   const meditationReview = meditationReviewText(answers[slide.id] ?? "");
@@ -1212,6 +1229,9 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     if (busy) return;
     const target = slides.findIndex((item) => item.id === (id === "tan-study-03" ? "tan-study-02" : id));
     if (target < 0) return;
+    // The Daybook navigation must not advance beyond the verified course cursor.
+    // Existing classic review links retain their original behaviour.
+    if (daybook && !daybookCanOpen(target)) return;
     // Without a verified private save, Lesson 2 and later remain locked.
     if (sync !== "ready" && target > slides.findIndex(item => item.id === "flight-done")) return;
     if (sync === "ready" && slide.question &&
@@ -1251,6 +1271,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
       setBusy(false);
     }
     setSaveError(null);
+    if (daybook && sync !== "ready") setGuestFrontier(current => Math.max(current, Math.min(index + 1, slides.length - 1)));
     setIndex((current) => Math.min(current + 1, slides.length - 1));
   }
   async function finishForToday() {
@@ -1299,7 +1320,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
       setBusy(false);
     }
     answersRef.current = {};
-    setIndex(0); setAnswers({}); setReviewReturn(false); setCopyState("idle");
+    setIndex(0); setGuestFrontier(0); setAnswers({}); setReviewReturn(false); setCopyState("idle");
     setSharingWithTeacher(false);setApplicationLead(null);setApplicationConsented(false);
     setInitiationPhoto(null);
     dirtyRef.current.clear();
@@ -1366,9 +1387,21 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   }
 
   return (
-    <main ref={pageRef} className={styles.page} lang={locale} data-course-one-screen="v1" data-course-theme="reiki-scenic-v1" data-course-visual="reiki-airy-v2" data-course-portrait="v3" data-reiki-reviews="v4" data-reiki-cover={slide.id === "welcome-01" ? "true" : undefined} data-reiki-full-reviews="v1" data-reiki-current-kind={slide.kind} data-reiki-first-lesson-gate={slide.id === "flight-done" && ["guest", "consent"].includes(sync) ? "true" : undefined} data-reiki-text-question={slide.kind === "reflection" && slide.question?.type === "text" ? "true" : undefined} data-energywork-screen={slide.kind === "welcome" ? "welcome" : "lesson"} data-energywork-phase={slide.phase} data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
-      <div className={styles.shell}>
-        {slide.kind === "welcome" ? (
+    <main ref={pageRef} className={styles.page + (daybook ? " " + daybookStyles.page : "")} lang={locale} data-course-one-screen="v1" data-course-theme="reiki-scenic-v1" data-course-visual="reiki-airy-v2" data-course-portrait="v3" data-reiki-reviews="v4" data-reiki-cover={slide.id === "welcome-01" ? "true" : undefined} data-reiki-full-reviews="v1" data-reiki-current-kind={slide.kind} data-reiki-first-lesson-gate={slide.id === "flight-done" && ["guest", "consent"].includes(sync) ? "true" : undefined} data-reiki-text-question={slide.kind === "reflection" && slide.question?.type === "text" ? "true" : undefined} data-energywork-screen={slide.kind === "welcome" ? "welcome" : "lesson"} data-energywork-phase={slide.phase} data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION} {...(daybook ? { "data-cabinet-theme": "daybook", "data-reiki-daybook": "true", "data-course-one-screen": undefined, "data-course-theme": undefined, "data-course-visual": undefined, "data-course-portrait": undefined, "data-reiki-reviews": undefined, "data-reiki-cover": undefined, "data-reiki-full-reviews": undefined } : {})}>
+      <div className={styles.shell} data-daybook-part={daybook ? "shell" : undefined}>
+        {daybook ? (
+          <header className={daybookStyles.hero}>
+            <Link href={"/" + locale + "/academy/principles-of-energywork"} className={daybookStyles.backLink}><ArrowLeft size={17} aria-hidden="true" />{t.backCourse}</Link>
+            <p className={daybookStyles.kicker}>MY DAYBOOK · REIKI</p>
+            <h1>{db.title}</h1>
+            <p>{db.subtitle}</p>
+            <div className={daybookStyles.heroBottom}>
+              <span>{daybookCompletedCount}/{total} {db.done.toLowerCase()}</span>
+              <Link href={"/" + locale + "/academy/principles-of-energywork/learn"}>{db.classic}</Link>
+            </div>
+          </header>
+        ) : null}
+        {!daybook && slide.kind === "welcome" ? (
           <header className={styles.top}>
             <Link className={styles.home} href={"/" + locale + "/academy/principles-of-energywork"} aria-label={t.backCourse}>
               <ArrowLeft size={19} aria-hidden="true" /><span>{t.backCourse}</span>
@@ -1378,6 +1411,32 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
           </header>
         ) : null}
 
+        {daybook ? (
+          <>
+            <nav className={daybookStyles.weeks} aria-label={db.weeks}>
+              {daybookWeeks.map((range, number) => {
+                const current = range.lesson === activeWeek.lesson;
+                const done = daybookDone(range.end - 1);
+                return (
+                  <button type="button" key={range.lesson} aria-pressed={current}
+                    disabled={!daybookCanOpen(range.start)} title={energyworkLessons[number]!.title[locale]}
+                    onClick={() => { if (!current) void jumpToSlide(slides[range.start]!.id); }}>
+                    <span>{db.week} <b>{range.lesson}</b></span>
+                    <small>{done ? <Check size={13} aria-label={db.done} /> : range.start > daybookFrontier ? <LockKeyhole size={12} aria-label={db.locked} /> : null}{energyworkLessons[number]!.title[locale]}</small>
+                  </button>
+                );
+              })}
+            </nav>
+            <div className={daybookStyles.weekHeading}>
+              <span>{db.week} {activeWeek.lesson} / 5</span>
+              <h2>{energyworkLessons[activeWeek.lesson - 1]!.title[locale]}</h2>
+              <div className={daybookStyles.weekProgress}>
+                <progress max={activeWeek.count} value={weeklyCompleted} aria-label={db.done} />
+                <strong>{weeklyCompleted}/{activeWeek.count}</strong>
+              </div>
+            </div>
+          </>
+        ) : (
         <nav className={styles.journey} aria-label={t.fiveLessons}>
           <ol>
             {energyworkLessons.map((lesson, number) => (
@@ -1392,11 +1451,11 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
               </li>
             ))}
           </ol>
-        </nav>
+        </nav>)}
 
-        <section className={styles.slide + (slide.kind === "welcome" ? " " + styles.welcomeSlide : "") + (slide.id === "welcome-02" ? " " + styles.experienceSlide : "")} key={slide.id} data-energywork-slide-kind={slide.kind} data-energywork-slide-id={slide.id} data-reiki-art-layout={artBackground ? "background" : undefined} aria-labelledby="energywork-slide-title">
-          <div className={styles.slideMain}>
-            <div className={styles.content}>
+        <section data-daybook-part={daybook ? "sheet" : undefined} className={styles.slide + (slide.kind === "welcome" ? " " + styles.welcomeSlide : "") + (slide.id === "welcome-02" ? " " + styles.experienceSlide : "")} key={slide.id} data-energywork-slide-kind={slide.kind} data-energywork-slide-id={slide.id} data-reiki-art-layout={artBackground ? "background" : undefined} aria-labelledby="energywork-slide-title">
+          <div className={styles.slideMain} data-daybook-part={daybook ? "slide-main" : undefined}>
+            <div className={styles.content} data-daybook-part={daybook ? "content" : undefined}>
               <span className={styles.eyebrow}><Compass size={17} aria-hidden="true" />{slide.kind === "welcome" ? t.eyebrow : energyworkPhases[slide.phase][locale]}</span>
               <h1 id="energywork-slide-title">{slide.title[locale]}</h1>
               <p className={styles.description}>{slide.body[locale]}</p>
@@ -1796,7 +1855,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
               ) : null}
             </div>
             {artSource ? (
-              <div className={styles.art} data-reiki-person={portraitArt || voicesArt ? "true" : undefined}
+              <div className={styles.art} data-daybook-part={daybook ? "art" : undefined} data-reiki-person={portraitArt || voicesArt ? "true" : undefined}
                  data-reiki-diagram={artBackground && artSource?.includes("kundalini-manual") ? "true" : undefined}
                  aria-hidden={artBackground ? true : undefined}>
                 <Image src={artSource}
@@ -1812,7 +1871,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
           </div>
         </section>
 
-        <div className={styles.progressFooter}>
+        <div className={styles.progressFooter} data-daybook-part={daybook ? "progress" : undefined}>
           <div className={styles.progressHeader}>
             <span className={styles.progressStep}>{lessonProgressLabel}</span>
             <div className={styles.progressStatus}>
@@ -1821,7 +1880,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
             </div>
           </div>
           <div className={styles.progress} role="progressbar" aria-valuemin={0} aria-valuemax={total}
-            aria-valuenow={reachedIndex + 1} aria-label={t.lesson}>
+            aria-valuenow={daybook ? daybookCompletedCount : reachedIndex + 1} aria-label={t.lesson}>
             <span style={{ width: progressPercent + "%" }} />
           </div>
           <div className={styles.savedLine} data-reiki-private-save-status aria-live="polite">
@@ -1857,7 +1916,30 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
           </div>
         </div>
 
-        <section className={styles.programme} data-expanded={programmeOpen ? "true" : "false"} aria-label={t.program}>
+        {daybook ? (
+          <details className={daybookStyles.steps} key={activeWeek.lesson} open>
+            <summary><BookOpen size={18} aria-hidden="true" /><strong>{db.steps}</strong><span>{weeklyCompleted}/{activeWeek.count}</span><ChevronDown size={18} aria-hidden="true" /></summary>
+            <ol>
+              {slides.slice(activeWeek.start, activeWeek.end).map((item, offset) => {
+                const position = activeWeek.start + offset;
+                const isCurrent = index === position;
+                const done = daybookDone(position);
+                return (
+                  <li key={item.id}>
+                    <button type="button" aria-current={isCurrent ? "step" : undefined}
+                      disabled={!daybookCanOpen(position)} onClick={() => { if (!isCurrent) void jumpToSlide(item.id); }}>
+                      <span className={daybookStyles.stepNumber}>{done ? <Check size={16} aria-hidden="true" /> : offset + 1}</span>
+                      <span className={daybookStyles.stepTitle}>{item.title[locale]}<small>{isCurrent ? db.current : done ? db.done : position > daybookFrontier ? db.locked : ""}</small></span>
+                      {position > daybookFrontier ? <LockKeyhole size={15} aria-hidden="true" /> : <ArrowRight size={15} aria-hidden="true" />}
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+            <p>{sync === "ready" ? db.shared : db.guest}</p>
+          </details>
+        ) : null}
+        <section className={styles.programme} data-daybook-part={daybook ? "resources" : undefined} data-expanded={programmeOpen ? "true" : "false"} aria-label={t.program}>
           <div className={styles.programmeBody} id="reiki-journey-help" hidden={!programmeOpen}>
             <p className={styles.programmeIntro}>{t.programmeIntro}</p>
             <div className={styles.programmeSystems}>
@@ -1883,7 +1965,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
             <ChevronDown className={styles.programmeChevron} size={18} aria-hidden="true" />
           </button>
         </section>
-        <footer className={styles.footer}>
+        <footer className={styles.footer} data-daybook-part={daybook ? "footer" : undefined}>
           <div className={styles.actions + (slide.kind === "milestone" ? " " + styles.milestoneActions : "")}>
             {slide.kind === "milestone" ? (
               <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"}

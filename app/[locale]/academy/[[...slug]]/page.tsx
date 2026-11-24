@@ -63,6 +63,7 @@ function pageTitle(locale: PublicLocale, slug: string[] | undefined) {
   if (routeKey(slug) === "egyptian-priesthood") return locale === "ru" ? "Египетское жречество — видеокурс Осириса" : locale === "es" ? "Sacerdocio egipcio — curso de Osiris" : "Egyptian Priesthood — Osiris Video Course";
   if (routeKey(slug) === "egyptian-priesthood/learn") return locale === "ru" ? "Египетское жречество — обучение" : locale === "es" ? "Sacerdocio egipcio — aprender" : "Egyptian Priesthood — Learning Journey";
   if (routeKey(slug) === "free-ai-courses") return locale === "ru" ? "Бесплатные ИИ-курсы" : locale === "es" ? "Cursos de IA gratuitos" : "Free AI Courses";
+  if (routeKey(slug) === "principles-of-energywork/daybook") return locale === "ru" ? "Практик Рейки — Daybook" : "Reiki Practitioner — Daybook";
   if (routeKey(slug) === "principles-of-energywork/learn") return locale === "ru" ? "Практик Рейки — бесплатный интерактивный курс" : locale === "es" ? "Reiki Practitioner — curso interactivo gratis" : "Reiki Practitioner — free interactive course";
   if (routeKey(slug) === "principles-of-energywork") return locale === "ru" ? "Бесплатный курс «Практик Рейки»: обучение и инициация" : locale === "es" ? "Curso gratis Reiki Practitioner: estudio e iniciación" : "Free Course Reiki Practitioner: Study & Initiation";
   if (routeKey(slug) === "reiki/kundalini-reiki/free-initiation") return locale === "ru" ? "Кундалини Рейки — бесплатная инициация 1-й ступени" : locale === "es" ? "Kundalini Reiki — iniciación gratis Nivel 1" : "Kundalini Reiki — Free Level 1 Initiation";
@@ -145,7 +146,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     metadataBase: metadataBaseFor(),
     title: resolvedTitle,
     description: resolvedDescription,
-    ...(["principles-of-energywork/learn", "egyptian-priesthood/learn"].includes(routeKey(slug)) ? { robots: { index: false, follow: false } } : {}),
+    ...(["principles-of-energywork/learn", "principles-of-energywork/daybook", "egyptian-priesthood/learn"].includes(routeKey(slug)) ? { robots: { index: false, follow: false } } : {}),
     alternates: { canonical: path, languages: { en: "/en/academy" + languageSuffix, ru: "/ru/academy" + languageSuffix, es: "/es/academy" + languageSuffix, "x-default": "/en/academy" + languageSuffix } },
     ...(tantraFreeInitiation || referralLanding ? {
       openGraph: {
@@ -190,6 +191,7 @@ export default async function AcademyPage({ params, searchParams }: Props) {
   }
   if (key === "free-ai-courses") return <><PublicGrowthCourses locale={locale} /><PublicPractitionerCourses locale={locale} /></>;
   if (key === "reiki/free-practitioner-course") return <ReikiReferralLanding locale={locale} />;
+  if (key === "principles-of-energywork/daybook") return <EnergyworkAiLearner locale={locale === "ru" ? "ru" : "en"} startAtExperience={query.start === "1"} layout="daybook" />;
   if (key === "principles-of-energywork/learn") return <EnergyworkAiLearner locale={locale === "ru" ? "ru" : "en"} startAtExperience={query.start === "1"} />;
   if (key === "principles-of-energywork") return <PrinciplesOfEnergywork locale={locale} />;
   if (key === "reiki/kundalini-reiki/free-initiation") return <KundaliniFreeInitiation locale={locale} />;

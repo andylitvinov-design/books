@@ -1,0 +1,70 @@
+
+/* Reiki Daybook is a separate presentation of the original learner.
+   No one-screen/fixed-height rules: long videos and study responses scroll normally. */
+.page[data-reiki-daybook] {
+  background:radial-gradient(ellipse at 85% 0,#6d502c45,transparent 48%),var(--hh-cabinet-canvas,#21160d);
+  color:#fff1d4; min-height:100dvh; width:100%; position:relative; overflow:visible;
+  font:400 16px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+.page[data-reiki-daybook] [data-daybook-part="shell"] {display:flex;flex-direction:column;gap:12px;max-width:740px;margin:auto;padding:12px clamp(12px,3vw,24px) calc(28px + env(safe-area-inset-bottom));min-height:0;overflow:visible;height:auto;}
+.hero {position:relative;min-height:132px;border-radius:19px;border:1px solid #d7b576;padding:13px 16px;background:linear-gradient(90deg,#fff7e8 2%,#fff5e5ed 51%,#fff3d74d),url('/images/holistic-house/reiki-approved-sunrise-v3.webp') right 45%/cover;color:#3c291c;}
+.hero h1 {margin:3px 0 2px;font:700 clamp(25px,6vw,34px)/1.15 Georgia,serif;color:#3c291c;}
+.hero p {margin:3px 0;font-size:14px;color:#695644;}
+.hero .kicker {font-size:10px;font-weight:750;letter-spacing:.12em;color:#75552c;margin-top:6px;}
+.backLink {min-height:44px;display:inline-flex;align-items:center;gap:6px;color:#694d2b;text-decoration:none;font-size:13px;font-weight:700;}
+.heroBottom {display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:7px;font-size:12px;font-weight:650;color:#695644;}
+.heroBottom a {display:flex;align-items:center;min-height:44px;color:#006b4e;text-decoration:underline;text-underline-offset:3px;}
+.weeks {display:grid;grid-template-columns:repeat(5,minmax(44px,1fr));gap:5px;min-width:0;}
+.weeks button {min-width:0;min-height:76px;padding:7px 3px;border:1px solid #d7b576;border-radius:12px;background:linear-gradient(135deg,#fff9ea,#f9e5bd);color:#3c291c;font:600 11px/1.2 system-ui,sans-serif;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;overflow-wrap:anywhere;}
+.weeks button span {display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:2px;}
+.weeks button b {font-size:18px;}
+.weeks button small {font-size:10px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:3px;text-align:center;}
+.weeks button[aria-pressed=true] {background:#006b4e;color:#fff9e7;box-shadow:inset 0 0 0 1px #d7b576;}
+.weeks button:disabled {opacity:.75;cursor:default;}
+.weekHeading {padding:2px 4px;color:#fff1d4;}
+.weekHeading>span {font-size:12px;color:#e1bf7c;font-weight:750;}
+.weekHeading h2 {font:700 clamp(21px,5.4vw,28px)/1.2 Georgia,serif;margin:3px 0 9px;color:#fff1d4;}
+.weekProgress {display:flex;align-items:center;gap:12px;font-size:13px;}
+.weekProgress progress {flex:1;min-width:0;height:7px;border:0;border-radius:99px;accent-color:#8ab78f;background:#5b4225;overflow:hidden;}
+.weekProgress progress::-webkit-progress-bar {background:#5b4225;border-radius:99px;}
+.weekProgress progress::-webkit-progress-value {background:#8ab78f;border-radius:99px;}
+.weekProgress progress::-moz-progress-bar {background:#8ab78f;border-radius:99px;}
+.page[data-reiki-daybook] [data-daybook-part="sheet"] {display:block;min-height:0;max-height:none;height:auto;overflow:visible;border:1px solid #d7b576;border-radius:19px;background:var(--hh-cabinet-card);color:#3c291c;box-shadow:var(--hh-cabinet-shadow);}
+.page[data-reiki-daybook] [data-daybook-part="slide-main"] {display:flex;flex-direction:column;align-items:stretch;min-height:0;max-height:none;height:auto;overflow:visible;gap:14px;padding:clamp(14px,3.2vw,24px);background:none;}
+.page[data-reiki-daybook] [data-daybook-part="content"] {padding:0;max-width:none;width:100%;min-width:0;background:none;color:#3c291c;}
+.page[data-reiki-daybook] [data-daybook-part="content"] h1 {font:700 clamp(23px,5.9vw,30px)/1.2 Georgia,serif;letter-spacing:normal;margin:6px 0 12px;color:#3c291c;text-wrap:pretty;}
+.page[data-reiki-daybook] [data-daybook-part="content"] :is(h2,h3,strong,label,p,small,span) {overflow-wrap:anywhere;}
+.page[data-reiki-daybook] [data-daybook-part="content"]>p {font-size:15px;line-height:1.55;color:#3c291c;margin-bottom:10px;}
+.page[data-reiki-daybook] [data-daybook-part="content"]>span {color:#75552c;margin-bottom:4px;}
+.page[data-reiki-daybook] [data-daybook-part="content"] :is(h2,h3) {color:#3c291c;}
+.page[data-reiki-daybook] [data-daybook-part="content"] :is(textarea,select,input:not([type=checkbox]):not([type=radio])) {font-size:16px;max-width:100%;border-color:#d7b576;color:#3c291c;background:#fffaf1;}
+.page[data-reiki-daybook] [data-daybook-part="content"] :is(input[type=radio],input[type=checkbox],input[type=range]) {accent-color:#006b4e;}
+.page[data-reiki-daybook] [data-daybook-part="art"] {position:relative;inset:auto;min-height:0;height:auto;max-height:none;aspect-ratio:16/9;width:100%;border-radius:14px;overflow:hidden;opacity:1;mask-image:none;-webkit-mask-image:none;box-shadow:none;}
+.page[data-reiki-daybook] [data-daybook-part="art"] img {object-fit:contain;background:#fff9ea;object-position:center;}
+.page[data-reiki-daybook] [data-daybook-part="progress"] {position:static;display:block;min-height:0;height:auto;max-height:none;color:#fff1d4;background:#3b2919;padding:10px 13px;border:1px solid #8b693f;border-radius:13px;}
+.page[data-reiki-daybook] [data-daybook-part="progress"] :is(p,span,a) {color:#fff1d4;}
+.page[data-reiki-daybook] [data-daybook-part="resources"] {position:static;min-height:0;max-height:none;height:auto;overflow:visible;background:#fff6e3;border:1px solid #d7b576;border-radius:13px;color:#3c291c;}
+.page[data-reiki-daybook] [data-daybook-part="footer"] {position:static;background:none;min-height:0;max-height:none;height:auto;padding:0;margin:0;}
+.page[data-reiki-daybook] [data-daybook-part="footer"]>div {display:flex;gap:8px;margin:0;}
+.page[data-reiki-daybook] [data-daybook-part="footer"] button {min-height:48px;min-width:44px;border-radius:12px;padding:10px 13px;font-size:14px;}
+.page[data-reiki-daybook] [data-daybook-part="footer"] button:last-child:not(:first-child) {background:linear-gradient(135deg,#07815e,#00513d);color:#fff9e7;flex:1;border:1px solid #d7b576;}
+.steps {border:1px solid #d7b576;border-radius:16px;background:#fff6e3;color:#3c291c;overflow:hidden;}
+.steps summary {min-height:50px;padding:10px 12px;display:flex;align-items:center;gap:8px;list-style:none;cursor:pointer;font-size:15px;}
+.steps summary::-webkit-details-marker {display:none;}
+.steps summary>strong {flex:1;}
+.steps summary>span {font-size:12px;color:#695644;}
+.steps[open] summary>svg:last-child {transform:rotate(180deg);}
+.steps ol {list-style:none;margin:0;padding:0 9px 5px;display:grid;gap:5px;}
+.steps li {margin:0;padding:0;}
+.steps li button {display:flex;align-items:center;gap:9px;min-height:50px;padding:8px 10px;text-align:left;width:100%;border:1px solid #d8bd8b;border-radius:10px;background:#f5e3bf;color:#3c291c;font:600 14px/1.3 system-ui,sans-serif;cursor:pointer;}
+.steps li button[aria-current=step] {background:#e3f0df;border-color:#006b4e;box-shadow:inset 0 0 0 1px #006b4e;color:#174a36;}
+.steps li button:disabled {cursor:default;background:#f4ead5;color:#695644;}
+.stepNumber {display:grid;place-items:center;width:29px;height:29px;flex:none;border-radius:9px;background:#fff9ea;color:#75552c;font-size:13px;}
+.stepTitle {flex:1;min-width:0;overflow-wrap:anywhere;}
+.stepTitle small {display:block;font-size:11px;font-weight:500;color:#695644;margin-top:2px;}
+.stepTitle small:empty {display:none;}
+.steps li button>svg {flex:none;}
+.steps>p {margin:8px 12px 13px;font-size:12px;color:#695644;}
+.page[data-reiki-daybook] :is(button,a,summary,input,select,textarea):focus-visible {outline:3px solid #a27025;outline-offset:2px;}
+@media(min-width:640px){.weeks button {min-height:67px;font-size:13px;}.weeks button small {font-size:12px;}.weeks button span {gap:4px;}.hero {padding:17px 21px;}}
+@media(max-width:360px){.weeks {gap:3px;}.weeks button {padding:5px 2px;}.weeks button small {font-size:9px;}.heroBottom {gap:5px;font-size:11px;}}
