@@ -9,6 +9,71 @@ const origin=process.env.HH_PUBLIC_QA_ORIGIN||"http://127.0.0.1:3100";
 if(!/^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(origin))throw new Error("Local-only Samir QA");
 const output="artifacts/home-first-screen";await mkdir(output,{recursive:true});
 const evidence=[];
+
+// Real React interactions, synthetic MediaRecorder and intercepted transcription.
+// These tests never open a real microphone or call a speech provider.
+async function installDictationMock(page){
+ await page.addInitScript(()=>{
+  const stats={opened:0,closed:0};
+  window.__hhDictationQA=stats;
+  const devices=navigator.mediaDevices||{};
+  if(!navigator.mediaDevices)Object.defineProperty(navigator,"mediaDevices",{configurable:true,value:devices});
+  Object.defineProperty(devices,"getUserMedia",{configurable:true,value:async()=>{
+   stats.opened++;
+   let stopped=false;
+   return {getTracks:()=>[{stop(){if(!stopped){stopped=true;stats.closed++;}}}]};
+  }});
+  class FakeRecorder{
+   static isTypeSupported(type){return type==="audio/mp4";}
+   constructor(){this.state="inactive";this.mimeType="audio/mp4";}
+   start(){this.state="recording";}
+   stop(){
+    this.state="inactive";
+    setTimeout(()=>{
+     this.ondataavailable?.({data:new Blob(["synthetic-local-qa-audio"],{type:"audio/mp4"})});
+     this.onstop?.();
+    },30);
+   }
+  }
+  Object.defineProperty(window,"MediaRecorder",{configurable:true,value:FakeRecorder});
+ });
+ const calls={count:0};
+ await page.route("**/api/holistic-support/audio-storyboard",async route=>{
+  calls.count++;
+  assert.equal(route.request().method(),"POST");
+  assert.match(route.request().headers()["content-type"]||"",/multipart\/form-data/);
+  await route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({version:"hh-audio-dictation-v1",text:"Я хочу больше денег",charged:false,locallyStored:false})});
+ });
+ return calls;
+}
+async function verifyDictation(page,form,marker,calls,baseText){
+ const input=form.locator("textarea");
+ const mic=form.locator(marker);
+ const panel=form.locator("[data-hh-dictation-active]");
+ const phase=form.locator('[data-hh-dictation-phase="recording"]');
+ await mic.waitFor({state:"visible",timeout:30000});
+ await input.fill(baseText);
+ const initialCalls=calls.count;
+ await mic.click();
+ await phase.waitFor({state:"visible",timeout:10000});
+ assert.equal(await input.isVisible(),false,"dictation replaces composer input");
+ assert.equal(calls.count,initialCalls,"no speech upload before confirm");
+ await panel.getByRole("button",{name:"Отменить",exact:true}).click();
+ await mic.waitFor({state:"visible"});
+ assert.equal(calls.count,initialCalls,"cancel never transmits audio");
+ assert.equal(await input.inputValue(),baseText,"cancel preserves draft");
+ await mic.click();
+ await phase.waitFor({state:"visible",timeout:10000});
+ assert.equal(await panel.getByRole("button",{name:"Распознать запись",exact:true}).isEnabled(),true);
+ await panel.getByRole("button",{name:"Распознать запись",exact:true}).click();
+ await mic.waitFor({state:"visible",timeout:15000});
+ assert.equal(calls.count,initialCalls+1,"one explicit recording upload");
+ assert.equal(await input.inputValue(),baseText+" Я хочу больше денег","transcription appends editable Russian text");
+ const stats=await page.evaluate(()=>window.__hhDictationQA);
+ assert.equal(stats.opened,stats.closed,"all synthetic microphone tracks released");
+ assert.ok(stats.opened>=2,"cancel and confirm each acquired microphone");
+}
+
 for(const engine of [chromium,webkit]){
  const browser=await engine.launch();
  try{
@@ -23,6 +88,7 @@ for(const engine of [chromium,webkit]){
     page.on("pageerror",e=>errors.push(e.message.slice(0,200)));
     page.on("console",m=>{if(m.type()==="error")errors.push(m.text().slice(0,200))});
     try{
+     const dictationCalls=locale==="ru"&&width===390?await installDictationMock(page):null;
      const response=await page.goto(origin+path,{waitUntil:"domcontentloaded",timeout:60000});
      assert.equal(response?.status(),200,name);
      const root=page.locator("[data-home-dialogue-entry]");
@@ -63,6 +129,16 @@ for(const engine of [chromium,webkit]){
      assert.deepEqual(errors,[],name+": no script errors");
      evidence.push({engine:engine.name(),locale,width,heroY:Math.round(layout[0].top),journeyWidth:Math.round(layout[4].width)});
      if(engine===webkit&&width===390)await page.screenshot({path:output+"/samir-"+locale+"-webkit-390.png",fullPage:true});
+     if(dictationCalls){
+      await verifyDictation(page,root.locator("[data-home-intent-form]"),"[data-home-intent-mic]",dictationCalls,"Хочу разобраться");
+      assert.equal(new URL(page.url()).pathname,path,"dictation alone does not navigate");
+      await page.goto(origin+"/ru/app/messages?section=ai",{waitUntil:"domcontentloaded",timeout:60000});
+      const form=page.locator("[data-hh-ai-chat-composer]");
+      await verifyDictation(page,form,"[data-hh-conversation-mic]",dictationCalls,"Моя цель");
+      assert.equal(new URL(page.url()).pathname,"/ru/app/messages","dictation alone stays in chat");
+      assert.equal(await form.locator("[data-hh-ai-voice-consent]").count(),0,"no old continuous-mode consent gate");
+      evidence.push({engine:engine.name(),locale,width,manualDictation:true,cancel:true,confirmed:true,requests:dictationCalls.count});
+     }
     }finally{await page.close()}
    }
   }

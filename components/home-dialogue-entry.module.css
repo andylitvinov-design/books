@@ -574,3 +574,9 @@ background:linear-gradient(180deg,transparent 0px,transparent 468px,#123d36 592p
  .root .language summary{min-width:44px;width:44px;padding:0 2px;gap:1px}
  .root .language summary svg{width:11px;height:11px;flex:none}
 }
+
+/* One manual dictation row replaces the text field until confirm or cancel. */
+.composer:has(:global([data-hh-dictation-active="true"])){display:flex!important;flex-direction:column!important;align-items:stretch!important;min-height:0!important;gap:0!important;padding:8px!important}
+.composer:has(:global([data-hh-dictation-active="true"]))>textarea,.composer:has(:global([data-hh-dictation-active="true"]))>.composerSparkle{display:none!important}
+.composer:has(:global([data-hh-dictation-active="true"]))>.composerButtons{display:flex!important;position:static!important;width:100%;min-width:0;align-self:stretch;justify-content:stretch!important;gap:0!important}
+.composer:has(:global([data-hh-dictation-active="true"]))>.composerButtons>:not(:global([data-hh-dictation-active="true"])){display:none!important}
