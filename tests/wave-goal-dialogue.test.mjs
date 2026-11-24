@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {threeJourneyTurn} from '../lib/holistic-support/three-journeys.mjs';
 import {buildWaveGoalMenu,readWaveGoalMenu,waveGoalDialogueTurn} from '../lib/holistic-support/wave-goal-dialogue.mjs';
 test('money immediately opens seven localized ordered steps and ends with the first-step invitation',()=>{
  for(const [locale,message,closing] of [['ru','Деньги','Можем начать с 1 пункта.'],['en','money','We can start with step 1.'],['es','dinero','Podemos empezar por el punto 1.']]){
@@ -35,4 +36,23 @@ test('messenger goal menu uses real buttons and selected stage handler',()=>{
  assert.match(source,/onClick=\{\(\)=>void sendTurn\(label\)\}/);
  assert.match(source,/data-hh-wave-goal-closing/);
  assert.match(source,/requiresProtectedReply\(text,turnLocale\)\s*\?waveDialogueEntryTurn/);
+});
+
+test('selecting a step after language switch responds in current language and preserves stable stage',()=>{
+ const menu=buildWaveGoalMenu('money','ru');
+ const history=[{role:'user',text:'Деньги'},{role:'assistant',text:menu.reply}];
+ const english=waveGoalDialogueTurn({message:'step 3',locale:'en',history});
+ assert.equal(english.stage,3);assert.equal(english.stageId,'goal-resources');
+ assert.equal(english.reply,'Strengthen your resources. What skills, knowledge and resources could help you reach your financial goal?');
+ const spanish=waveGoalDialogueTurn({message:'Fortalecer tus recursos',locale:'es',history});
+ assert.equal(spanish.stage,3);assert.equal(spanish.topic,'money');
+ assert.match(spanish.reply,/^Fortalecer tus recursos/);
+});
+
+test('an explicit chosen stage survives resource or planning keywords within an answer',()=>{
+ const menu=buildWaveGoalMenu('money','en');
+ const history=[{role:'user',text:'money'},{role:'assistant',text:menu.reply}];
+ const chosen=waveGoalDialogueTurn({message:'step 2',locale:'en',history});
+ const response=threeJourneyTurn({path:'goal',message:'I have skills and resources',locale:'en',history:[...history,{role:'user',text:'step 2'},{role:'assistant',text:chosen.reply}]});
+ assert.equal(response.stage,2);
 });
