@@ -7,6 +7,7 @@ import {createPersonalGoalRepository} from '../lib/app/daybook-personal-goals.js
 import {closeDatabase,transaction} from '../lib/app/database.js'
 import {assertCoachingGoalNotErased} from '../lib/app/coaching-goal-erasure.js'
 import {createPersonalGoalHandler} from '../lib/app/daybook-personal-goal-handler.mjs'
+import {VECTOR_SPHERES,VECTOR_AXES,emptyVectorSelectionDraft,vectorSelectionGoalDraft} from '../lib/app/daybook-vector-selection.mjs'
 const url=process.env.HH_GOAL_TEST_DATABASE_URL
 if(!url||process.env.VERCEL||process.env.HH_APP_TEST_RUNTIME!=='isolated')throw new Error('ISOLATED_DATABASE_REQUIRED')
 const parsed=new URL(url)
@@ -116,4 +117,30 @@ test('actual Request handler round-trips create/read/edit/delete through real re
  const deleted=await run(request(a,'DELETE',{id:input.id,operationId:randomUUID(),revision:2,confirmed:true}));assert.equal(deleted.status,200)
  assert.equal((await deleted.json()).deleted,true)
  assert.equal((await run(request(a,'GET',null,'?id='+input.id))).status,404)
+})
+
+test('stage-zero goal and complete 4+8 origin persist atomically, replay once and survive legacy edits',async()=>{
+ const selection=emptyVectorSelectionDraft(randomUUID())
+ for(const [track,items] of [['spheres',VECTOR_SPHERES],['axes',VECTOR_AXES]])for(const item of items)selection[track][item.id]={current:'0',desired:'8'}
+ Object.assign(selection,{sphereId:'work',axisId:'freedom',statement:'Synthetic stage-zero income direction',why:'Synthetic values'})
+ const input={...vectorSelectionGoalDraft(selection,'2026-11-23T23:00:00.000Z'),operationId:randomUUID()}
+ const results=await Promise.all([repo.save(a,input),repo.save(a,input)])
+ assert.equal(results.filter(result=>result.replayed).length,1)
+ const reopened=createPersonalGoalRepository(config),saved=(await reopened.read(a,input.id)).goal
+ assert.equal(saved.title,selection.statement);assert.deepEqual(saved.vectorSelection,input.vectorSelection)
+ assert.equal(saved.vectorSelection.spheres.body.current,0);assert.equal(saved.revision,1)
+ const raw=(await admin.query("select g.title_ciphertext,c.snapshot_ciphertext from app_private.coaching_goals g join app_private.coaching_life_plan_changes c on c.entity_id=g.id where g.account_id=$1 and g.id=$2",[a.id,input.id])).rows
+ assert.equal(raw.length,1);assert.equal(JSON.stringify(raw).includes(selection.statement),false)
+ assert.equal(JSON.stringify(raw).includes('hh-daybook-vector-selection-v1'),false)
+ await assert.rejects(reopened.read(b,input.id),{code:'NOT_FOUND'})
+ const legacyEdit={...input,revision:1,operationId:randomUUID(),title:'Synthetic refined goal'};delete legacyEdit.vectorSelection
+ const edited=await repo.save(a,legacyEdit)
+ assert.deepEqual(edited.goal.vectorSelection,saved.vectorSelection);assert.equal(edited.goal.title,legacyEdit.title)
+ assert.equal((await repo.save(a,legacyEdit)).replayed,true)
+ assert.deepEqual((await reopened.read(a,input.id)).goal.vectorSelection,saved.vectorSelection)
+ await assert.rejects(repo.save(a,{...input,revision:2,operationId:randomUUID(),vectorSelection:{...input.vectorSelection,axisId:'love'}}),{code:'GOAL_VECTOR_ORIGIN_IMMUTABLE'})
+ assert.equal((await reopened.read(a,input.id)).goal.revision,2)
+ const invalid={...input,id:randomUUID(),operationId:randomUUID(),vectorSelection:{...input.vectorSelection,spheres:{}}}
+ await assert.rejects(repo.save(a,invalid),{code:'INVALID_GOAL_VECTOR'})
+ assert.equal((await admin.query('select 1 from app_private.coaching_goals where id=$1',[invalid.id])).rowCount,0)
 })
