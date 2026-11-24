@@ -13,6 +13,7 @@ import {
   ensureTelegramInlineWebhookUpdates,
 } from '../lib/crm/messenger-provider.js'
 import { transitionTelegramDiagnostic } from '../lib/crm/telegram-diagnostic.mjs'
+import {telegramCanPairButtons} from '../lib/crm/telegram-button-layout.mjs'
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const WEBHOOK='https://holistichouse.vercel.app/api/app/crm/messenger/webhook/telegram'
 const env=Object.freeze({
@@ -310,7 +311,8 @@ test('Telegram presentation keeps service cards readable without changing approv
     for(const original of [menu,followup]){
       const before=JSON.stringify(original);
       const rendered=telegramReadableKeyboard(original);
-      assert.ok(rendered.inline_keyboard.every(row=>row.length===1));
+      assert.deepEqual(rendered.inline_keyboard.slice(0,3).map(row=>row.length),[1,1,1]);
+      assert.ok(rendered.inline_keyboard.every(row=>row.length===1||(row.length===2&&telegramCanPairButtons(...row))));
       assert.deepEqual(rendered.inline_keyboard.flat().map(b=>b.callback_data),original.inline_keyboard.flat().map(b=>b.callback_data));
       assert.equal(JSON.stringify(original),before);
       assert.deepEqual(telegramReadableKeyboard(rendered),rendered);
@@ -319,14 +321,14 @@ test('Telegram presentation keeps service cards readable without changing approv
       await sendTelegramDiagnosticPrompt({to:'123456789',locale:lang,text:'Ali — service information',keyboard:v3ButtonsFor(lang,'service_followup')},env);
       const actual=calls.find(c=>c.method==='sendMessage').body.reply_markup;
       assert.deepEqual(actual,telegramReadableKeyboard(followup));
-      if(lang==='en')assert.deepEqual(actual.inline_keyboard.slice(-2).map(row=>row[0].text),['✅ Book now','💬 Ask Ali']);
+      if(lang==='en')assert.deepEqual(actual.inline_keyboard.at(-1).map(b=>b.text),['✅ Book now','💬 Ask Ali']);
     });
   }
   assert.equal(v3Action({rawText:'Book now'}),'servicebegin');
   const reply={keyboard:[[{text:'Long reply-keyboard option'},{text:'Other option'}]],resize_keyboard:true};
   assert.deepEqual(telegramReadableKeyboard(reply),{keyboard:[[{text:'Long reply-keyboard option'}],[{text:'Other option'}]],resize_keyboard:true});
   const mood={inline_keyboard:[['😟','😕','😐','🙂','😄'].map((text,i)=>({text,callback_data:'checkin_'+i}))]};
-  assert.deepEqual(telegramReadableKeyboard(mood).inline_keyboard,mood.inline_keyboard.flat().map(b=>[b]));
+  assert.deepEqual(telegramReadableKeyboard(mood),mood);
   const links={inline_keyboard:[[{text:'Long public link',url:'https://holistichouse.vercel.app/en/about'},{text:'Back',callback_data:'home'}]]};
   assert.deepEqual(telegramReadableKeyboard(links).inline_keyboard.flat(),links.inline_keyboard.flat());
   const quiz={inline_keyboard:[[{text:'❤️ Improve relationships & esteem',callback_data:'hhsq:en:1'}]]};
@@ -334,14 +336,28 @@ test('Telegram presentation keeps service cards readable without changing approv
 });
 
 
-test('all V3 question, consent, review and FAQ stages use one Telegram button per row',()=>{
+test('all V3 question, consent, review and FAQ stages use full-width or safe short pairs',()=>{
   const stages=['consent','free_consent','free_ready','service_menu','service_followup','service_consent','chat_consent','voice_consent','free_interview','free_portrait','free_drawing','psych_interview','interview','review_confirm'];
   for(const lang of ['en','ru','es'])for(const stage of stages)for(const count of [0,2]){
     const rows=v3ButtonsFor(lang,stage,count,'coaching');
     if(!rows.length)continue;
     const before=telegramInlineMarkup(rows,lang);
     const after=telegramReadableKeyboard(before);
-    assert.ok(after.inline_keyboard.every(row=>row.length===1),lang+' '+stage);
+    assert.ok(after.inline_keyboard.every(row=>row.length===1||(row.length===2&&telegramCanPairButtons(...row))),lang+' '+stage);
     assert.deepEqual(after.inline_keyboard.flat().map(b=>b.callback_data),before.inline_keyboard.flat().map(b=>b.callback_data));
   }
+});
+
+
+test('compact pairs stay readable; long labels and three text actions never share a row',()=>{
+  const btn=(text,callback_data)=>({text,callback_data});
+  const short=[btn('✅ Book now','a'),btn('💬 Ask Ali','b')];
+  const long=[btn('📋 About the service','c'),btn('👤 About practitioner','d'),btn('🗓 How to book','e')];
+  const markup={inline_keyboard:[long,short,[btn('Yes','f'),btn('No','g'),btn('Skip','h')]]};
+  const rendered=telegramReadableKeyboard(markup);
+  assert.deepEqual(rendered.inline_keyboard.map(row=>row.map(b=>b.callback_data)),[['c'],['d'],['e'],['a','b'],['f','g'],['h']]);
+  assert.deepEqual(telegramReadableKeyboard(rendered),rendered);
+  assert.equal(telegramCanPairButtons(btn('123456789012','x'),btn('12345678901','y')),false);
+  assert.equal(telegramCanPairButtons(btn('1234567890123','x'),btn('No','y')),false);
+  assert.equal(telegramCanPairButtons(btn('A\nB','x'),btn('No','y')),false);
 });
