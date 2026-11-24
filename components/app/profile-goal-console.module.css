@@ -217,3 +217,5 @@
 .console :focus-visible{outline:3px solid #27754d;outline-offset:2px}
 @media(max-width:374px){.console .programActions{grid-template-columns:1fr}.console .benefitGrid{grid-template-columns:1fr}.console .benefit{grid-template-columns:76px 1fr;min-height:76px}.console .activeUtilities{grid-template-columns:1fr}.console[data-profile-goal-console] button.step,.console[data-profile-goal-console][data-goal-selected="true"] button.step{grid-template-columns:25px 20px minmax(0,1fr) 13px;gap:6px}.console[data-profile-goal-console] .stepBody strong{font-size:16px!important}.console[data-profile-goal-console] .stepBody small{font-size:14px!important}}
 @media(min-width:700px){.console[data-profile-goal-console]{padding:14px}.console .programHero,.console .activeHero{padding:24px}.console .benefit{grid-template-columns:94px minmax(0,1fr)}.console .programActions{max-width:520px}.console .programIntro{font-size:17px!important}}
+
+.console[data-profile-goal-console] button.step[data-current-week="true"]{border-color:#267348;background:#edf3e3;box-shadow:0 0 0 1px #26734833}
