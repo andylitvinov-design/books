@@ -706,3 +706,32 @@
  .root[data-section="ai"] .languageCompact{height:40px;width:45px}
  .root[data-section="ai"]:has([data-has-messages="true"]) .presenterIdentity p{display:none}
 }
+
+/* Mock parity applies ONLY to the untouched first AI/Chat turn. */
+@media(max-width:760px){
+ .root[data-section="ai"]:has([data-hh-ai-landing]){
+   top:0!important;left:0;right:0;height:100dvh!important;
+   max-height:100dvh!important;padding:0!important;background:#102d27!important}
+ .root[data-section="ai"]:has([data-hh-ai-landing])>.head,
+ .root[data-section="ai"]:has([data-hh-ai-landing])>.sections{display:none!important}
+ .root[data-section="ai"]:has([data-hh-ai-landing]) [data-hh-messenger-ai]{
+   flex:1;min-height:0;height:100%;background:#102d27}
+}
+
+.dialogueBack{display:none}.onlineDot{display:inline-block;width:9px;height:9px;margin-right:5px;border-radius:50%;background:#22d080}
+@media(max-width:760px){
+ .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]){padding:0!important;gap:0;background:linear-gradient(180deg,#082e3099,transparent 27%,#142c2b66),url("/images/holistic-house/my-coach-motion/genie-calm-loop-poster.webp") center 24%/cover no-repeat!important;height:var(--hh-messenger-height,100dvh);max-height:100dvh}
+ .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]) .head{order:-2;min-height:64px;height:auto;max-height:none;margin:0;padding:7px 8px;border:0;background:#082b30bd;color:#fff;gap:4px}
+ .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]) .sections{order:-1;background:#fffaef;padding:5px;margin:0}
+ .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]) .presenterIdentity{display:flex;flex:1;min-width:0;gap:6px;color:#fff}
+ .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]) .dialogueBack{display:grid;place-items:center;flex:none;width:26px;height:44px;color:#fff;text-decoration:none;font:400 39px/1 system-ui}
+ .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]) .presenterIdentity img{width:43px;height:43px;border:1px solid #e9ca87}
+ .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]) .presenterIdentity h1{color:#fff;font:750 clamp(14px,4.1vw,18px)/1.2 system-ui;overflow-wrap:anywhere}
+ .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]) .presenterIdentity p{display:block;color:#fff;font-size:12px}
+ .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]) .headerActions{gap:2px}
+ .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]) .headerActions>button{background:transparent;border:0;box-shadow:none;color:white;width:36px;min-width:36px}
+ .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]) .headerActions>button[data-hh-ali-persona-open]{width:36px;min-width:36px}
+ .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]) .personaActionText{display:none}
+ .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]) .languageCompact{background:#fff9;border:0;width:43px;min-width:43px}
+ .root[data-section="ai"]:has([data-hh-immersive-dialogue="true"]) [data-hh-messenger-ai]{background:transparent}
+}
