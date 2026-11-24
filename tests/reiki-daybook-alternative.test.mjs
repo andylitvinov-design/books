@@ -28,3 +28,26 @@ test("Classic route stays available; alternative uses the same curriculum, priva
   assert.ok(ui.includes('slides.slice(activeWeek.start, activeWeek.end)'));
   assert.ok(read("components/principles-of-energywork.tsx").includes("data-reiki-daybook-entry"));
 });
+
+test("Daybook is reachable from discovery and from the learner's saved slide", () => {
+  const catalog = read("components/app/profile-courses-switch.jsx");
+  const cabinet = read("components/app/cabinet-free-course-banners.jsx");
+  assert.ok(catalog.includes("data-reiki-daybook-discover"));
+  assert.ok(catalog.includes("/academy/principles-of-energywork/daybook"));
+  assert.ok(cabinet.includes("/daybook?slide=' + encodeURIComponent(academyProgress.slideId)"));
+});
+
+test("both learner formats can load private course media under the same scoped policy", () => {
+  const middleware = read("middleware.ts");
+  const matcher = middleware.match(/const reikiLessonAudioPage = \/(.+?)\/\.test\(pathname\)/);
+  assert.ok(matcher, "course media must be scoped to learner routes");
+  const learnerPage = new RegExp(matcher[1]);
+  for (const locale of ["en", "ru", "es"]) {
+    for (const page of ["learn", "daybook"]) {
+      assert.ok(learnerPage.test(`/${locale}/academy/principles-of-energywork/${page}`));
+    }
+    assert.equal(learnerPage.test(`/${locale}/academy/principles-of-energywork`), false);
+    assert.equal(learnerPage.test(`/${locale}/academy/principles-of-energywork/daybook-other`), false);
+  }
+  assert.ok(read("components/reiki-initiation-photo.tsx").includes("reader.readAsDataURL(file)"));
+});
