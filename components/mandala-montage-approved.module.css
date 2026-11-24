@@ -273,3 +273,7 @@
  .orderedPanel>[data-video-montage-progress] button{min-height:40px}
 }
 @media(prefers-reduced-motion:reduce){.photoOption,.coachRail button{transition:none}}
+
+/* Expanded private-photo consent needs the full mobile library width. */
+.libraryPhotoRow:has([data-client-video-photo-library][open]){flex-wrap:wrap;align-items:flex-start}
+.libraryPhotoRow:has([data-client-video-photo-library][open]) .savedPhotoDrawer{flex:1 0 100%;order:3;max-width:100%}

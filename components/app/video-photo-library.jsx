@@ -11,12 +11,15 @@ const TEXT={
 const MAX_PENDING=3
 async function request(url,options){
   const response=await fetch(url,{credentials:'same-origin',cache:'no-store',...options})
-  if(!response.ok){const e=new Error('photo_api');e.status=response.status;throw e}
+  if(!response.ok){
+    const payload=await response.json().catch(()=>null)
+    const e=new Error('photo_api');e.status=response.status;e.code=payload?.error;throw e
+  }
   return response.json()
 }
-export default function VideoPhotoLibrary({locale='en',onSelectPhoto,disabled=false,compact=false}){
+export default function VideoPhotoLibrary({locale='en',onSelectPhoto,disabled=false,compact=false,draftPhoto=null,onDraftPhotoSettled}){
   const t=TEXT[locale]||TEXT.en
-  const [opened,setOpened]=useState(false)
+  const [opened,setOpened]=useState(Boolean(draftPhoto))
   const [status,setStatus]=useState('idle')
   const [photos,setPhotos]=useState([])
   const [files,setFiles]=useState([])
@@ -31,6 +34,16 @@ export default function VideoPhotoLibrary({locale='en',onSelectPhoto,disabled=fa
   const [previews,setPreviews]=useState([])
   // Signed private previews expire after 120 seconds on the server.
   const lastLoadedAt=useRef(0)
+  const latestDraft=useRef(draftPhoto)
+  // The main editor picker is local-only until the owner explicitly saves.
+  // A new file opens the existing private-library consent flow, not a second picker.
+  useEffect(()=>{
+    latestDraft.current=draftPhoto
+    if(!draftPhoto)return
+    setFiles([draftPhoto]);setOpened(true);setError('');setNotice('')
+    setCloudConsent(false);setRights(false);setSubject('self')
+    setSubjectConsent(false);setGuardianConsent(false)
+  },[draftPhoto])
   useEffect(()=>{
     const urls=files.map(file=>URL.createObjectURL(file))
     setPreviews(urls)
@@ -74,6 +87,7 @@ export default function VideoPhotoLibrary({locale='en',onSelectPhoto,disabled=fa
     setPhotos(result.photos||[])
     setStatus('ready')
     lastLoadedAt.current=Date.now()
+    return result.photos||[]
   }
   async function retry(){
     if(busy)return
@@ -82,12 +96,27 @@ export default function VideoPhotoLibrary({locale='en',onSelectPhoto,disabled=fa
     try{await refresh()}
     catch(e){setStatus(e.status===401||e.status===403?'guest':'unavailable')}
   }
+  function actionError(e){
+    const copy={
+      en:{auth:'Sign in again to save photos privately.',quota:'Your photo library is full (8 photos). Delete one before adding another.',invalid:'This photo cannot be read. Try a JPG or PNG supported by your device.',storage:'Private photo storage is temporarily unavailable. Your selected photo has not been discarded.',rate:'Too many photo actions. Try again later.'},
+      ru:{auth:'Войдите снова, чтобы сохранить фото приватно.',quota:'Библиотека заполнена (8 фото). Удалите одно перед добавлением нового.',invalid:'Не удалось прочитать фото. Попробуйте JPG или PNG, поддерживаемый устройством.',storage:'Приватное хранилище временно недоступно. Выбранное фото не удалено.',rate:'Слишком много действий с фото. Попробуйте позже.'},
+      es:{auth:'Inicia sesión de nuevo para guardar las fotos en privado.',quota:'La biblioteca está llena (8 fotos). Elimina una antes de añadir otra.',invalid:'No se puede leer la foto. Prueba un JPG o PNG compatible.',storage:'El almacenamiento privado no está disponible temporalmente. Tu foto sigue seleccionada.',rate:'Demasiadas acciones. Inténtalo más tarde.'}
+    }[locale]||null
+    if(!copy)return t.error
+    if(e?.status===401||e?.status===403)return copy.auth
+    if(e?.code==='PHOTO_LIBRARY_QUOTA')return copy.quota
+    if(e?.status===413||e?.code==='INVALID_IMAGE'||e?.message==='PHOTO_FILE_INVALID')return copy.invalid
+    if(e?.status===429)return copy.rate
+    if(e?.status>=500)return copy.storage
+    return t.error
+  }
   async function save(){
-    if(busy||!files.length||status!=='ready')return
+    if(busy||disabled||!files.length||status!=='ready')return
     if(!cloudConsent||!rights||(subject!=='self'&&!subjectConsent)||
       (subject==='minor'&&!guardianConsent)){setError(t.denied);return}
     setBusy(true);setError('');setNotice('')
     try{
+      const savedIds=[]
       for(const file of files){
         const photo=await prepareBrowserPhoto(file)
         const form=new FormData()
@@ -97,15 +126,20 @@ export default function VideoPhotoLibrary({locale='en',onSelectPhoto,disabled=fa
         form.set('subject',subject)
         form.set('subjectConsent',String(subjectConsent))
         form.set('guardianConsent',String(guardianConsent))
-        await request('/api/app/video-photos',{method:'POST',body:form})
+        const result=await request('/api/app/video-photos',{method:'POST',body:form})
+        if(result.saved!==true||!result.id)throw new Error('photo_save_unconfirmed')
+        savedIds.push(result.id)
       }
-      setFiles([]);setCloudConsent(false);setRights(false);setSubjectConsent(false)
-      setGuardianConsent(false);setNotice(t.ready)
-    }catch{setError(t.error)}
-    finally{
-      try{await refresh()}catch{setError(t.error)}
-      setBusy(false)
-    }
+      const listed=await refresh()
+      if(!savedIds.every(id=>listed.some(photo=>photo.id===id)))throw new Error('photo_save_unconfirmed')
+      if(draftPhoto&&files.includes(draftPhoto))onDraftPhotoSettled?.(draftPhoto)
+      // A newer native selection must not be cleared by a previous save.
+      if(latestDraft.current===draftPhoto){
+        setFiles([]);setCloudConsent(false);setRights(false);setSubjectConsent(false)
+        setGuardianConsent(false);setNotice(t.ready)
+      }
+    }catch(e){if(latestDraft.current===draftPhoto){setError(actionError(e))}}
+    finally{setBusy(false)}
   }
   async function usePhoto(id){
     if(busy||!onSelectPhoto||disabled)return
@@ -130,7 +164,7 @@ export default function VideoPhotoLibrary({locale='en',onSelectPhoto,disabled=fa
       await refresh()
     }catch{setError(t.error)}finally{setBusy(false)}
   }
-  return <details data-client-video-photo-library data-compact={compact?'true':'false'}
+  return <details open={opened} data-client-video-photo-library data-compact={compact?'true':'false'}
     style={{margin:'8px 0',padding:compact?'6px 8px':'10px 12px',border:'1px solid #d7c7b6',borderRadius:12,background:'#fffaf5',minWidth:0}}
     onToggle={event=>setOpened(event.currentTarget.open)}>
     <summary style={{cursor:'pointer',fontSize:compact?13:15,fontWeight:700,color:'#514638'}}>{compact?t.open:t.heading}</summary>
@@ -138,6 +172,9 @@ export default function VideoPhotoLibrary({locale='en',onSelectPhoto,disabled=fa
       {!compact?<p style={{fontSize:13,margin:0}}>{t.about}</p>:null}
       {status==='guest'?<p role="status" style={{fontSize:13}}>{t.guest} <Link href={'/'+locale+'/app/videos'} prefetch={false}>My House</Link></p>:null}
       {status==='unavailable'?<p role="status" style={{fontSize:13}}>{t.unavailable}</p>:null}
+      {draftPhoto&&(status==='guest'||status==='unavailable')?<button type="button" disabled={busy}
+        onClick={()=>{onDraftPhotoSettled?.(draftPhoto);setFiles([]);setError('')}}
+        style={{minHeight:44,border:'1px solid #cbded0',borderRadius:9,background:'#fff',color:'#175c4a'}}>{locale==='ru'?'Использовать только на устройстве':locale==='es'?'Usar solo en este dispositivo':'Use only on this device'}</button>:null}
       {(status==='guest'||status==='unavailable')?<button type="button"
         disabled={busy} onClick={()=>void retry()}
         style={{minHeight:44,border:'1px solid #cbded0',borderRadius:9,background:'#fff',color:'#175c4a',fontWeight:650}}>
@@ -164,11 +201,14 @@ export default function VideoPhotoLibrary({locale='en',onSelectPhoto,disabled=fa
               const remaining=Math.max(0,8-photos.filter(photo=>!photo.isProfile).length)
               const allowed=Math.min(MAX_PENDING,remaining)
               setError(chosen.length>allowed?(chosen.length>MAX_PENDING?t.tooMany:t.error):'')
+              if(!chosen.length)return
+              if(draftPhoto)onDraftPhotoSettled?.(draftPhoto)
               setFiles(chosen.slice(0,allowed))
               setCloudConsent(false);setRights(false);setSubjectConsent(false);setGuardianConsent(false)}}
             style={{width:'100%',fontSize:12}}/>
         </label>:null}
-        {files.length>0?<div style={{display:'grid',gap:7}}>
+        {files.length>0?<div data-client-photo-pending-save style={{display:'grid',gap:7}}>
+          <p role="status" style={{fontSize:13,margin:0}}>{locale==='ru'?'Фото выбрано. Подтвердите разрешения и сохраните его в библиотеку.':locale==='es'?'Foto seleccionada. Confirma los permisos y guárdala en la biblioteca.':'Photo selected. Confirm permissions and save it to your library.'}</p>
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(78px,1fr))',gap:6}}>
             {previews.map((url,i)=><div key={url} style={{minWidth:0}}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -189,6 +229,8 @@ export default function VideoPhotoLibrary({locale='en',onSelectPhoto,disabled=fa
             style={{minHeight:48,border:0,borderRadius:8,background:'#067A67',color:'white',fontWeight:650}}>
             {busy?t.busy:t.save}
           </button>
+          <button type="button" disabled={busy} onClick={()=>{if(draftPhoto)onDraftPhotoSettled?.(draftPhoto);setFiles([]);setError('')}}
+            style={{minHeight:44,border:'1px solid #cbded0',borderRadius:9,background:'#fff',color:'#175c4a'}}>{locale==='ru'?'Не сохранять в библиотеку':locale==='es'?'No guardar en la biblioteca':'Do not save to library'}</button>
         </div>:null}
         <p style={{fontSize:11,color:'#665e53',margin:0}}>{t.quota}</p>
       </>:status==='idle'?<p role="status">{t.busy}</p>:null}
