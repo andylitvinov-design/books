@@ -278,3 +278,23 @@ test('live protocol does not silently discard old turns or limit profile evidenc
  assert.match(ui,/profileHistory=profileEvidence.slice\(openingProgress.consumedTurns\)/)
  assert.match(ui,/turnLayout:'chronological'/)
 })
+
+test('a single spoken pair cannot be copied into several profile axes',()=>{
+ const obj=sample()
+ obj.turns=[{role:'user',content:'3 и 7'},{role:'assistant',content:'Следующая сфера.'}]
+ obj.profileCheckin={version:'hh-coach-profile-intake-v1',completed:false,ratings:[
+  {axis:'anchor',kind:'rated',current:3,desired:7,quote:'3 и 7'},
+  {axis:'connection',kind:'rated',current:3,desired:7,quote:'3 и 7'}
+ ]}
+ assert.throws(()=>normalizeMyCoachProtocol(obj),/MY_COACH_PROTOCOL_INVALID/)
+ obj.turns.push({role:'user',content:'3 и 7'},{role:'assistant',content:'Спасибо.'})
+ assert.equal(normalizeMyCoachProtocol(obj).profileCheckin.ratings.length,2)
+})
+test('saved protocol cannot be rebound to a different signed-in account',()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const route=readFileSync(new URL('../app/api/app/my-coach/protocol/route.js',import.meta.url),'utf8')
+ assert.match(ui,/if\(!active\|\|turnsRef.current.length\|\|protocolStartedRef.current\)return/)
+ assert.match(ui,/const owner=protocolOwnerRef.current/)
+ assert.match(ui,/'X-HH-Account-ID':owner/)
+ assert.match(route,/provided&&provided!==actor.id/)
+})
