@@ -301,28 +301,29 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
           })
           assert.ok(geom.right<=width+1&&geom.overlap<=1&&geom.centerGap<=12,
             label+': Holistic House title and tools must share ONE line')
-          // Approved Home now has three entry intentions, not the removed
-          // Self/Business toggle. Exercise all entry and step elements.
+          // Approved Home presents Clarity, Goal and Business program cards.
+          // Verify the real three-program layout, not the retired intent names.
           await expect(entry).toHaveAttribute('data-home-mode','self')
           const form=entry.locator('[data-home-intent-form]')
           const input=form.locator('[data-home-intent-composer]')
           const send=form.locator('[data-home-send-to-ali]')
           const choices=entry.locator('[data-home-intent-option]')
           await expect(choices).toHaveCount(3)
-          for(const intention of ['understand','goal','talk']){
+          for(const intention of ['clarity','goal','business']){
             const button=entry.locator('[data-home-intent-option="'+intention+'"]')
             await expect(button).toHaveCount(1)
             await expect(button).toHaveAttribute('type','button')
             await expect(button).toBeVisible()
+            await expect(button.locator('[class*="programSteps"] > span')).toHaveCount(3)
+            const box=await button.boundingBox()
+            assert.ok(box&&box.width>=44&&box.height>=44&&box.x>=-1&&box.x+box.width<=width+1,label+': '+intention+' program is tappable and in bounds')
           }
-          await expect(entry.locator('[data-home-stage-option]')).toHaveCount(7)
-          await expect(entry.locator('[data-home-free-review]')).toHaveAttribute('data-home-intent-option','understand')
-          await expect(entry.locator('[data-home-request-session]')).toHaveAttribute('data-home-intent-option','goal')
-          // Same-frame geometry: composer, two large choices, gentle Talk
-          // option and seven steps must follow in order without overflow.
+          await expect(entry.locator('[data-home-methods] [class*="methodGrid"] > div')).toHaveCount(5)
+          await expect(entry.locator('[data-home-continue-path]')).toBeVisible()
+          // Same-frame geometry: composer, program cards, methods and journey link.
           const homeLayout=await entry.evaluate(root=>{
             const nodes=['[data-home-intent-form]','[data-home-focus-grid]',
-              '[data-home-intent-option="talk"]','[data-home-how-it-works]']
+              '[data-home-methods]','[data-home-continue-path]']
               .map(selector=>root.querySelector(selector))
             if(nodes.some(node=>!node))return null
             const boxes=nodes.map(node=>node.getBoundingClientRect())
@@ -334,7 +335,7 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
             }
           })
           assert.ok(homeLayout?.ordered&&homeLayout.noOverlap&&homeLayout.inWidth,
-            label+': composer → three intentions → seven steps '+JSON.stringify(homeLayout))
+            label+': composer → three programs → five methods → journey '+JSON.stringify(homeLayout))
           await expect(input).toBeVisible()
           // Approved free-chat entry opens Ali even without a prefilled wish.
           // Users may also describe their goal first; neither action is blocked.
