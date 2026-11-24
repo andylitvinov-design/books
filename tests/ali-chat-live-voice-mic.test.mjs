@@ -27,6 +27,8 @@ test('AI Chat primary mic sends recorded speech; optional live voice keeps its i
  assert.match(chat,/micMarker="data-hh-conversation-mic" instantSend/)
  assert.match(chat,/sendSelectedTurn\(combined\)/)
  assert.match(note,/window\.addEventListener\("pointerup",up,true\)/)
+ assert.match(note,/capture\?\.setPointerCapture\(pointer\)/)
+ assert.match(note,/capture\.releasePointerCapture\(pointer\)/)
  assert.match(note,/x-e\.clientX>=72\)\{discard\(\);return;\}/)
  assert.match(note,/deliveryRef\.current\.onSendTranscript\(text,recording,length\)/)
  assert.match(note,/onClick=\{\(\)=>stop\(false\)\}/)

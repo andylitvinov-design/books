@@ -350,6 +350,10 @@ export function MessengerVoiceNote({
     event.preventDefault();
     gestureCleanup.current?.();
     const pointer=event.pointerId, x=event.clientX, pressedAt=Date.now();
+    // Safari may implicitly capture the touch on the soon-to-be-removed
+    // mic. Transfer capture to the stable form before showing the tray.
+    const capture=event.currentTarget.closest("form");
+    try{capture?.setPointerCapture(pointer);}catch{/* window listeners remain the fallback */}
     let cancelling=false;
     const move=(e:PointerEvent)=>{
       if(e.pointerId!==pointer)return;
@@ -360,6 +364,7 @@ export function MessengerVoiceNote({
       window.removeEventListener("pointermove",move,true);
       window.removeEventListener("pointerup",up,true);
       window.removeEventListener("pointercancel",cancel,true);
+      try{if(capture?.hasPointerCapture(pointer))capture.releasePointerCapture(pointer);}catch{/* pointer already released */}
       gestureCleanup.current=null;
     };
     const up=(e:PointerEvent)=>{
