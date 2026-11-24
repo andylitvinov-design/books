@@ -248,3 +248,148 @@
 }
 
 .daybookExcerpt{box-sizing:border-box;display:block;width:100%;min-width:0;max-width:100%;min-height:140px;max-height:360px;resize:vertical;font:inherit;line-height:1.6;color:var(--hh-light-ink);background:var(--hh-light-surface);border:1px solid var(--hh-light-border);border-radius:16px;padding:12px}.daybookExcerpt:focus-visible{outline:3px solid var(--hh-light-focus);outline-offset:3px}
+
+/* Existing private goals, reports and context adopt the approved Daybook family. */
+:global(.hh-app[data-cabinet-theme="daybook"]) .root {
+  --hh-text: var(--hh-cabinet-ink, #3c291c);
+  --hh-muted: var(--hh-cabinet-muted, #695644);
+  --hh-border: var(--hh-cabinet-border, #d7b576);
+  --hh-surface: var(--hh-cabinet-surface, #fff6e3);
+  --hh-soft: var(--hh-cabinet-surface-soft, #f5e3bf);
+  color: var(--hh-text);
+  background: transparent;
+  padding-inline: 0;
+  padding-bottom: 24px;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .header {
+  border: 1px solid var(--hh-border);
+  background-image: linear-gradient(94deg,#2a1a12ed,#3b36229a 53%,#164e3430),
+    url("/images/holistic-house/reiki-approved-sunrise-v3.webp");
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .header :is(h1, p),
+:global(.hh-app[data-cabinet-theme="daybook"]) .eyebrow { color: #fff6e3; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .header h1 { font-family: var(--hh-cabinet-heading-font, Georgia, serif); }
+:global(.hh-app[data-cabinet-theme="daybook"]) :is(.tab, .tabActive) {
+  min-height: 48px;
+  color: var(--hh-text);
+  background: var(--hh-surface);
+  border-color: var(--hh-border);
+  font-size: 14px;
+  line-height: 1.3;
+  flex-wrap: wrap;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .tabActive {
+  color: #fff6e3;
+  background: var(--hh-cabinet-primary, #006b4e);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) :is(.tab, .tabActive) span {
+  color: var(--hh-cabinet-primary-hover, #00513d);
+  background: var(--hh-soft);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .sectionHead h2 {
+  color: #fff6e3;
+  font-family: var(--hh-cabinet-heading-font, Georgia, serif);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) :is(.domainCard, .reportCard, .progressCard, .permissions, .areaPicker, .contextPreview, .empty) {
+  color: var(--hh-text);
+  background: linear-gradient(135deg, var(--hh-surface), var(--hh-soft));
+  border-color: var(--hh-border);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) :is(.contextPanel, .loading) {
+  padding: 18px;
+  border: 1px solid var(--hh-border);
+  border-radius: 22px;
+  color: var(--hh-text);
+  background: var(--hh-surface);
+}
+/* Theme the embedded daily-support panel while retaining its feedback colors. */
+:global(.hh-app[data-cabinet-theme="daybook"]) .root [data-daybook-daily] {
+  color: var(--hh-text);
+  border-color: var(--hh-border);
+  background: linear-gradient(135deg, var(--hh-surface), var(--hh-soft));
+  box-shadow: var(--hh-cabinet-shadow, 0 6px 20px #130c0826);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .root [data-daybook-daily] h2 {
+  color: var(--hh-text);
+  font-family: var(--hh-cabinet-heading-font, Georgia, serif);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .root [data-daybook-daily] > header p { color: var(--hh-muted); }
+:global(.hh-app[data-cabinet-theme="daybook"]) .root [data-daybook-daily] :is(select, input:not([type="checkbox"])) {
+  color: var(--hh-text);
+  background: var(--hh-surface);
+  border-color: var(--hh-border);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .root [data-daybook-daily] > div:has(> div > strong) {
+  background: var(--hh-surface);
+  border-color: var(--hh-border);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .root [data-daybook-daily] div:has(> strong) {
+  color: var(--hh-text);
+  background: var(--hh-soft);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .root [data-daybook-daily] div:has(> strong) p { color: var(--hh-text); }
+:global(.hh-app[data-cabinet-theme="daybook"]) .root [data-daybook-daily] button:first-child {
+  color: #fff6e3;
+  background: var(--hh-cabinet-primary, #006b4e);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .root [data-daybook-daily] button + button {
+  color: var(--hh-cabinet-primary-hover, #00513d);
+  background: var(--hh-surface);
+  border-color: var(--hh-border)!important;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) :is(.domainHeading h2, .reportTop h2, .areaCopy strong, .gauge strong, .metrics b) {
+  color: var(--hh-text);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) :is(.areaCopy small, .editHint, .fieldRow>span, .metrics small) {
+  color: var(--hh-muted);
+  font-size: 14px;
+  line-height: 1.35;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .areaSummary[aria-expanded="true"] {
+  background: var(--hh-cabinet-selected, #e3f0df);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) :is(.areaEditor textarea, .areaEditor select, .domainCard textarea, .domainCard select, .importPanel select, .contextPanel select, .daybookExcerpt) {
+  color: var(--hh-text);
+  background: var(--hh-surface);
+  border-color: var(--hh-border);
+  min-height: 48px;
+  border-radius: 14px;
+  font-size: 16px;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) :is(.primaryLink, .primaryButton, .sessionLink),
+:global(.hh-app[data-cabinet-theme="daybook"]) .areaEditor .saveButton:not(:disabled) {
+  min-height: 48px;
+  color: #fff6e3;
+  border: 1px solid var(--hh-border);
+  background: linear-gradient(120deg, var(--hh-cabinet-primary, #006b4e), var(--hh-cabinet-primary-hover, #00513d));
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) :is(.smallPill, .moreAreas, .contextPanel button, .permissions .saveButton) {
+  min-height: 44px;
+  color: var(--hh-cabinet-primary-hover, #00513d);
+  background: var(--hh-surface);
+  border-color: var(--hh-border);
+  font-size: 14px;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) :is(.goal, .actionChoice) {
+  color: var(--hh-text);
+  background: var(--hh-surface);
+  border-color: var(--hh-border);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .inlineError {
+  padding: 10px 12px;
+  border: 1px solid #e5b8ac;
+  border-radius: 12px;
+  background: #fff1ef;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .root :is(button, a, select, textarea, input, summary):focus-visible {
+  outline: 3px solid var(--hh-cabinet-primary, #006b4e);
+  outline-offset: 3px;
+}
+@media(max-width:430px) {
+  :global(.hh-app[data-cabinet-theme="daybook"]) .areaCopy strong { font-size: 18px; line-height: 1.25; }
+  :global(.hh-app[data-cabinet-theme="daybook"]) .fieldRow { grid-template-columns: minmax(0,1fr); }
+}
+@media(max-width:360px) {
+  :global(.hh-app[data-cabinet-theme="daybook"]) .sectionHead { align-items: flex-start; flex-wrap: wrap; }
+  :global(.hh-app[data-cabinet-theme="daybook"]) :is(.tab, .tabActive) { font-size: 13px; }
+}

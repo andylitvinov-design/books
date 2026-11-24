@@ -21,6 +21,37 @@ function response(status,headers={}){
 const metadata={id:"aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",supabaseUrl:api,
  bucket,objectKey:key,token:"test-signed-token",publishableKey:"test-publishable"};
 
+test("small iPhone MP4s upload with video/mp4 in the actual Supabase multipart file part",async()=>{
+ for(const mime of ["","application/octet-stream","video/mp4"]){
+  const bytes=Buffer.from(await mp4(2048).arrayBuffer());
+  const file=new File([bytes],"phone.mp4",{type:mime});
+  let uploaded=false,complete=false;
+  const sessionRef={current:null};
+  const id=await savePrivateMp4({file,
+   details:{theme:"life",sceneId:"light-path",duration:45,aspect:"portrait"},
+   request:async(path,body,method)=>{
+    assert.equal(method,"POST");
+    if(path==="personal-videos")return metadata;
+    assert.equal(path,"personal-videos/"+metadata.id);
+    assert.equal(uploaded,true);complete=true;return {status:"ready"};
+   },
+   sessionRef,
+   fetchImpl:async(url,options)=>{
+    assert.equal(new URL(url).origin,new URL(api).origin);
+    assert.equal(options.method,"PUT");
+    assert.ok(options.body instanceof FormData);
+    const uploadedFile=options.body.get("");
+    assert.equal(uploadedFile.type,"video/mp4");
+    assert.deepEqual(Buffer.from(await uploadedFile.arrayBuffer()),bytes);
+    uploaded=true;
+    return Response.json({Id:metadata.id,Key:bucket+"/"+key},{status:200});
+   },
+  });
+  assert.equal(id,metadata.id);assert.equal(complete,true);
+  assert.equal(sessionRef.current.file,file,"MIME normalization must not replace retry identity");
+ }
+});
+
 test("files larger than 6 MiB use native signed TUS rather than a single Safari PUT",async()=>{
  assert.equal(needsPrivateVideoChunks(PRIVATE_VIDEO_CHUNK_BYTES+1),true);
  assert.equal(needsPrivateVideoChunks(PRIVATE_VIDEO_CHUNK_BYTES),false);

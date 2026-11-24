@@ -176,6 +176,8 @@ const nextConfig: NextConfig = {
     ],
   },
   outputFileTracingIncludes: {
+    // Reuse the pinned encoder only when recording a missing public greeting.
+    "/api/coaching/intro/*/*": ["./node_modules/ffmpeg-static/ffmpeg"],
     // The /sitemap.xml metadata route reads remedy files through fs at runtime.
     // They exist in Git, but automatic NFT tracing can omit them from Vercel Functions.
     // Keep this scoped to the sitemap; do not replicate the corpus across all routes.

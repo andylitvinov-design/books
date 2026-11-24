@@ -42,7 +42,7 @@ test("the approved mobile Mirror contains only three scopes, a compact input Nex
  assert.match(browser,/async function revealMirrorAdvanced/);
  assert.match(browser,/await revealMirrorAdvanced\(page,engine\)/);
  assert.doesNotMatch(browser,/await expect\(moreGoals\)\.toBeVisible\(\{timeout:15000\}\)/);
- assert.match(mirror,/videoFormat\}\);/);
+ assert.match(mirror,/videoFormat:next,goalPurposeId\}\);/);
  for(const price of ["250","500","2000"])assert.ok(mirror.includes("credits:"+price));
  assert.match(mirrorCss,/\.destinationCards/);
  assert.match(mirrorCss,/\.formatRows/);
@@ -171,8 +171,8 @@ test("Next uses a relevant canonical default for every approved card, never arbi
  const choices=[...mirror.matchAll(/\{id:"([^"]+)",theme:"[^"]+",categoryId:"([^"]+)",image:"[^"]+",defaultTopicId:"([^"]+)"/g)];
  assert.equal(choices.length,12,"four cards in each of three tabs");
  assert.deepEqual(choices.slice(0,4).map(([,id,category])=>category),
-  ["stress-anxiety","love-relationships","goals-money","energy-confidence"],
-  "first-screen axis order must match the canonical MyTube and Telegram taxonomy");
+  ["love-relationships","goals-money","stress-anxiety","energy-confidence"],
+  "owner-approved second-screen order keeps canonical MyTube category IDs");
  assert.match(mirror,/categoryLabels\.find\(category=>category\.id===item\.categoryId\)\?\.label/,
   "visible cards use real localized canonical category names");
 
@@ -231,7 +231,7 @@ test("three screen path reuses canonical Goal before Format; no early XP charge"
  assert.doesNotMatch(purpose,/data-hh-mirror-video-format/);
  assert.doesNotMatch(format,/data-hh-mirror-plan|data-hh-mirror-ideas-cta/);
  for(const price of ["250","500","2000"])assert.ok(mirror.includes("credits:"+price));
- assert.match(mirror,/goalPurposeId:goalPurposeId\|\|undefined/);
+ assert.match(mirror,/videoFormat:next,goalPurposeId/);
  assert.match(mirror,/useState<MirrorVideoFormat\|undefined>\(undefined\)/);
  assert.match(mirror,/data-hh-mirror-tier-option=\{option\.id\}/);
  assert.match(mirrorCss,/\.purposeScreen \[data-video-ideas-goal-picker\]/);
@@ -270,4 +270,16 @@ test("chosen format persists as planning state in original Studio, never a debit
  const landing=mirror.slice(mirror.indexOf('if(screen==="landing")'),mirror.indexOf('if(screen==="purpose")'));
  const purpose=mirror.slice(mirror.indexOf('if(screen==="purpose")'),mirror.indexOf('if(screen==="format")'));
  assert.doesNotMatch(landing+purpose,/fetch\(|createQuickVideo\(|confirmCredit\(/);
+});
+
+test("Screen 2 preserves one video and shows three progress bulbs on each topic quiz stage",()=>{
+ assert.match(mirror,/setScreen\("topic"\);setPendingPath\(null\)/);
+ assert.match(mirror,/data-hh-mirror-quiz-heading/);
+ assert.match(mirror,/data-hh-mirror-quiz-lightbulb=\{number\}/);
+ assert.match(mirror,/aria-current=\{step===number\?"step":undefined\}/);
+ assert.equal((mirror.match(/data-hh-mirror-quiz-card\b/g)||[]).length,3);
+ assert.match(mirror,/data-hh-mirror-own-description/);
+ assert.match(mobile,/all three numbered-bulb quiz screens/);
+ for(const text of ["Which goal topic","Какую тему цели","¿Qué tema de tu objetivo"])
+  assert.ok(mirror.includes(text),text);
 });
