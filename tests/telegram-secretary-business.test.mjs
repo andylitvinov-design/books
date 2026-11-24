@@ -41,7 +41,7 @@ test('unverified/hidden/wrong-owner products never appear, even when supplied by
  assert.equal(publishedTelegramServiceOffers([make(),make()],'en').length,1);
 });
 test('verified personal service price displayed only from published source',()=>{
- const q=classifyTelegramSecretaryQuery('Пришли сеанс рейки','ru');
+ const q=classifyTelegramSecretaryQuery('Сколько стоит рейки?','ru');
  const from=composeTelegramSecretaryAnswer(q,[make()]);
  assert.equal(from.buttons.length,1);
  assert.match(from.text,/от €50/);
@@ -274,4 +274,39 @@ test('free-review website starts the consented Ali Telegram bot; manual Telegram
  assert.match(view,/secure questionnaire/);
  assert.match(view,/защищённую анкету/);
  assert.doesNotMatch(view,/HH_CRM_MSG_TELEGRAM_TOKEN|https?:\/\/openrouter\.ai/i);
+});
+
+
+test('P0: Reiki? offers the actual FREE course first, then verified paid service without a price',()=>{
+ for(const [locale,message] of [['en','Reiki?'],['ru','Рейки?'],['es','¿Reiki?']]){
+  const q=classifyTelegramSecretaryQuery(message,locale);
+  const answer=composeTelegramSecretaryAnswer(q,[make()]);
+  assert.equal(answer.kind,'catalog');
+  assert.equal(answer.buttons[0].url,TELEGRAM_SITE+'/'+locale+'/academy/principles-of-energywork');
+  assert.ok(answer.buttons[1].url.includes('/remote-energy-support'));
+  assert.doesNotMatch(answer.text,/€50|\$50|CAD 50|от €|from €/iu);
+  assert.match(answer.text,/\?/);
+  assert.equal(composeTelegramSecretaryAnswer(q,[]).buttons[0].url,answer.buttons[0].url);
+ }
+});
+test('P0: relevant free published rows precede any paid row, even if rank favours paid',()=>{
+ const free=make({id:'eb4ab8cc-dbc1-4603-b674-42b8cd619bfa',slug:'reiki-free-intro',
+  offering_type:'intro',pricing_mode:'free',confirmed_price:null});
+ const q=classifyTelegramSecretaryQuery('Reiki?','en');
+ const answer=composeTelegramSecretaryAnswer(q,[make(),free]);
+ assert.equal(answer.buttons.length,3);
+ assert.ok(answer.buttons[0].url.includes('/academy/principles-of-energywork'));
+ assert.ok(answer.buttons[1].url.includes('reiki-free-intro'));
+ assert.ok(answer.buttons[2].url.includes('remote-energy-support'));
+ assert.doesNotMatch(answer.text,/€50/);
+ const asked=composeTelegramSecretaryAnswer(classifyTelegramSecretaryQuery('Reiki price?','en'),[make()]);
+ assert.match(asked.text,/from €50/);
+ const session=composeTelegramSecretaryAnswer(classifyTelegramSecretaryQuery('Reiki session','en'),[make()]);
+ assert.equal(session.buttons.length,1);
+ assert.doesNotMatch(session.text,/€50/);
+});
+test('P0: free-only Reiki enquiry cannot display a paid session',()=>{
+ const answer=composeTelegramSecretaryAnswer(classifyTelegramSecretaryQuery('Free Reiki course','en'),[make()]);
+ assert.equal(answer.buttons[0].url,TELEGRAM_SITE+'/en/academy/principles-of-energywork');
+ assert.ok(answer.buttons.every(b=>!b.url.includes('remote-energy-support')));
 });
