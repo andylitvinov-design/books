@@ -1,0 +1,466 @@
+/* Larger mobile-only Support cards; names, prices and destinations remain sourced. */
+.page {--support-paper:#fffcf7}
+@media(max-width:760px){
+.page :global([data-support-uniform-card]){
+ position:relative;display:grid!important;grid-template-columns:minmax(106px,35%) minmax(0,1fr)!important;
+ grid-template-rows:minmax(0,1fr) auto auto;align-items:start!important;
+ gap:9px 12px!important;min-width:0;min-height:198px;padding:12px!important;
+ border:1px solid #e2d5c5!important;border-radius:22px!important;
+ background:var(--support-paper)!important;box-shadow:0 5px 17px #60432b16!important;
+ overflow:visible!important;isolation:isolate
+}
+.page :global([data-support-uniform-card] > [data-support-uniform-photo]){
+ grid-column:1;grid-row:1/3;position:relative;display:block!important;
+ width:100%!important;height:100%!important;min-height:182px!important;align-self:stretch;
+ overflow:hidden;border-radius:16px!important;background:#e6ebdf
+}
+.page :global([data-support-uniform-card] [data-support-uniform-photo] img){object-fit:cover!important;object-position:center!important}
+.page :global([data-support-uniform-card] > [data-support-uniform-copy]){
+ grid-column:2;grid-row:1;display:flex!important;flex-direction:column;gap:6px;
+ min-width:0;align-self:start;padding:36px 0 0!important
+}
+.page :global([data-support-uniform-card] [data-support-uniform-copy] h3),
+.page :global([data-support-uniform-card] [data-support-uniform-copy] strong){
+ margin:0!important;color:#142b44!important;
+ font:700 clamp(19px,5.5vw,23px)/1.14 Georgia,"Times New Roman",serif!important;
+ letter-spacing:-.018em;overflow-wrap:anywhere;text-wrap:balance
+}
+.page :global([data-support-uniform-card] [data-support-uniform-copy] h3 a){color:#142b44!important;text-decoration:none!important}
+.page :global([data-support-uniform-card] [data-support-uniform-copy] p),
+.page :global([data-support-uniform-card] [data-support-uniform-copy] small),
+.page :global([data-support-uniform-card] [data-support-uniform-copy] .description){
+ display:block!important;margin:3px 0 0!important;
+ font:400 clamp(14px,3.8vw,16px)/1.34 Arial,Helvetica,sans-serif!important;
+ color:#56616a!important;overflow-wrap:break-word
+}
+.page :global([data-support-uniform-card] [data-support-uniform-price]){
+ position:absolute!important;z-index:4;top:10px!important;right:10px!important;
+ display:inline-flex!important;align-items:center;justify-content:center;
+ max-width:calc(100% - 121px);min-height:27px;margin:0!important;
+ padding:5px 10px!important;border:0!important;border-radius:999px!important;
+ background:#e3f2e8!important;color:#07563f!important;white-space:nowrap;
+ text-transform:none!important;font:750 clamp(11px,3.15vw,13px)/1.15 Arial,Helvetica,sans-serif!important
+}
+.page :global([data-support-uniform-card] [data-support-uniform-price][data-service-price-kind="paid"]),
+.page :global([data-support-uniform-card] [data-support-uniform-price][data-service-price-kind="express"]),
+.page :global([data-support-uniform-card] [data-support-uniform-price][data-service-price-kind="full"]),
+.page :global([data-support-uniform-card] [data-support-uniform-price][data-service-price-kind="from50"]),
+.page :global([data-support-uniform-card] [data-support-uniform-price][data-service-price-kind="from"]){
+ background:#fff0cd!important;color:#66450e!important
+}
+.page :global([data-support-uniform-card] > [data-service-card-actions]){display:contents!important}
+.page :global([data-support-uniform-card] > [data-service-card-actions] > [data-service-card-controls]){
+ grid-column:2;grid-row:2;z-index:5;align-self:end;display:flex!important;
+ align-items:center;gap:5px!important;min-width:0;width:100%;margin:0!important;padding:0!important
+}
+.page :global([data-support-uniform-card] [data-service-card-controls] button){
+ min-width:0;min-height:44px!important;margin:0!important;
+ font:700 clamp(14px,3.8vw,16px)/1.2 Arial,Helvetica,sans-serif!important;box-shadow:none!important
+}
+.page :global([data-support-uniform-card] [data-service-card-controls] button:first-child){
+ display:inline-flex;justify-content:center;flex:0 1 44%;padding:8px 1px!important;
+ border:0!important;border-radius:0!important;background:transparent!important;
+ color:#08705a!important;text-decoration:underline;text-underline-offset:3px
+}
+.page :global([data-support-uniform-card] [data-service-card-controls] button:last-child){
+ display:inline-flex;justify-content:center;flex:1 1 56%;min-width:88px;max-width:65%;
+ padding:8px 9px!important;border:0!important;border-radius:999px!important;
+ background:linear-gradient(130deg,#139a82,#006d5c)!important;
+ color:#fff!important;text-decoration:none!important
+}
+.page :global([data-support-uniform-card] [data-service-card-controls] button svg){width:15px;height:15px;flex:none}
+.page :global([data-support-uniform-card] > [data-service-card-actions] > [data-service-card-order]){
+ grid-column:1/-1;grid-row:3;z-index:2;position:relative;width:auto;
+ margin:4px -12px -12px!important;padding:10px 12px 12px!important;
+ border:0!important;border-top:1px solid #c2decf!important;border-radius:0 0 21px 21px!important;
+ background:#eaf6ef!important;box-shadow:none!important
+}
+.page :global([data-support-uniform-card] > [data-service-card-actions] > [data-service-card-details]){
+ grid-column:1/-1;grid-row:3;z-index:2;margin:3px 0 0!important;
+ padding:11px 12px!important;background:#f7fbf8!important
+}
+.page :global([data-support-uniform-card] > [data-service-card-actions] > [hidden]){display:none!important}
+.page :global([data-support-uniform-card] [data-service-card-order] [data-messenger-only-channel]){
+ min-width:0!important;min-height:48px!important;
+ font-size:clamp(13px,3.8vw,16px)!important;text-decoration:none!important
+}
+.page :global([data-services-unified-panel][data-support-uniform-card]){grid-template-rows:auto auto auto auto auto auto}
+.page :global([data-services-unified-panel] > [data-support-uniform-preview]){
+ grid-column:1/-1;grid-row:1/3;z-index:1;position:relative;display:grid!important;
+ grid-template-columns:minmax(106px,35%) minmax(0,1fr)!important;
+ grid-template-rows:minmax(0,1fr) auto;align-items:stretch;column-gap:12px!important;
+ min-height:182px!important;width:100%;margin:0!important;padding:0!important;
+ border:0!important;border-radius:16px;background:transparent!important
+}
+.page :global([data-services-unified-panel] > [data-support-uniform-preview] > [data-support-uniform-photo]){
+ position:relative;display:block!important;grid-column:1;grid-row:1/3;
+ align-self:stretch;width:100%!important;height:100%!important;
+ min-height:182px!important;border-radius:16px!important;overflow:hidden
+}
+.page :global([data-services-unified-panel] > [data-support-uniform-preview] > [data-support-uniform-copy]){
+ grid-column:2;grid-row:1/3;display:flex!important;flex-direction:column;gap:6px!important;
+ align-self:start;padding:36px 0 55px!important
+}
+.page :global([data-services-unified-panel] [data-support-uniform-chevron]){display:none!important}
+.page :global([data-services-unified-panel] > [data-service-card-actions] > [data-service-card-controls]){
+ z-index:5;align-self:end;margin-bottom:8px!important
+}
+.page :global([data-services-unified-panel] > [data-services-three-visible]){
+ grid-column:1/-1;grid-row:4;display:grid;min-width:0;
+ margin:7px -12px 0;padding:12px!important;border-top:1px solid #e5dccc
+}
+.page :global([data-services-unified-panel] > [data-support-more-formats]){grid-column:1/-1;grid-row:5;min-width:0}
+.page :global([data-services-unified-panel] > [role="region"][id^="services-unified-"]){
+ grid-column:1/-1;grid-row:6;min-width:0
+}
+.page :global([data-services-unified-panel][data-expanded="true"] > [role="region"][id^="services-unified-"]){
+ display:block!important;margin:5px -12px -12px;padding:12px!important
+}
+.page :global([data-support-uniform-card] :is(button,a):focus-visible){outline:3px solid #0b806c!important;outline-offset:2px!important}
+}
+@media(max-width:350px){
+.page :global([data-support-uniform-card]){
+ grid-template-columns:minmax(102px,35%) minmax(0,1fr)!important;
+ column-gap:9px!important;row-gap:6px!important;padding:9px!important
+}
+.page :global([data-support-uniform-card] > [data-support-uniform-photo]){min-height:181px!important}
+.page :global([data-support-uniform-card] > [data-service-card-actions] > [data-service-card-order]){
+ margin:4px -9px -9px!important;padding:8px 9px 9px!important
+}
+.page :global([data-support-uniform-card] [data-support-uniform-copy] h3),
+.page :global([data-support-uniform-card] [data-support-uniform-copy] strong){font-size:18px!important}
+.page :global([data-support-uniform-card] [data-support-uniform-copy] p),
+.page :global([data-support-uniform-card] [data-support-uniform-copy] small){font-size:14px!important}
+.page :global([data-support-uniform-card] [data-service-card-controls] button){font-size:13px!important}
+.page :global([data-support-uniform-card] [data-service-card-controls] button:last-child){min-width:78px;padding:8px 5px!important}
+.page :global([data-services-unified-panel] > [data-support-uniform-preview]){
+ grid-template-columns:minmax(102px,35%) minmax(0,1fr)!important;column-gap:9px!important
+}
+.page :global([data-services-unified-panel] > [data-services-three-visible]){margin-inline:-9px;padding:9px!important}
+}
+@media(prefers-reduced-motion:reduce){.page :global([data-support-uniform-card] *){transition:none!important}}
+
+
+/* Owner-approved 19 Nov 2026 Support catalogue: the landing quiz and six
+   entrance tiles above the catalogue are deliberately OUT OF SCOPE.
+   Ten real directions, each with exactly three price-backed horizontal offers.
+   Keep expanded Details / messenger choices full-width underneath each offer. */
+@media (max-width:760px) {
+  .page :global([data-services-unified-catalog]) {
+    /* The shell already reserves 16px at each phone edge. Do not subtract
+       another 32px inside the narrower catalogue and leave a blank right rail. */
+    box-sizing:border-box!important;
+    width:calc(100% - 8px)!important;
+    max-width:none!important;
+    margin:5px auto 18px!important;
+  }
+  .page :global([data-services-unified-catalog] > header) {
+    margin:0 2px 4px;
+  }
+  .page :global([data-services-unified-catalog] > header h2) {
+    font-size:clamp(18px,5vw,21px)!important;
+    line-height:1.2;
+  }
+  .page :global([data-services-unified-catalog] > header p) {
+    display:none;
+  }
+  .page :global([data-services-unified-catalog] > div) {
+    width:100%!important;
+    min-width:0!important;
+    gap:15px!important;
+  }
+  .page :global([data-services-unified-catalog] [data-services-unified-panel][data-services-has-three="true"]) {
+    display:block!important;
+    box-sizing:border-box!important;
+    width:100%!important;
+    min-width:0!important;
+    min-height:0!important;
+    margin:0!important;
+    padding:0!important;
+    border:0!important;
+    border-radius:0!important;
+    background:transparent!important;
+    box-shadow:none!important;
+    overflow:visible!important;
+  }
+  .page :global([data-services-unified-catalog] [data-services-unified-panel][data-services-has-three="true"] > [data-support-uniform-preview]) {
+    display:grid!important;
+    grid-template-columns:56px minmax(0,1fr) 19px!important;
+    grid-template-rows:auto!important;
+    min-height:64px!important;
+    align-items:center!important;
+    gap:9px!important;
+    padding:5px 2px 8px!important;
+    border:0!important;
+    background:transparent!important;
+    border-radius:0!important;
+  }
+  .page :global([data-services-unified-catalog] [data-services-unified-panel][data-services-has-three="true"] > [data-support-uniform-preview] > [data-support-uniform-photo]) {
+    grid-column:1!important;
+    grid-row:1!important;
+    display:block!important;
+    width:56px!important;
+    height:56px!important;
+    min-height:56px!important;
+    max-height:56px!important;
+    border-radius:15px!important;
+    overflow:hidden!important;
+  }
+  .page :global([data-services-unified-catalog] [data-services-unified-panel][data-services-has-three="true"] > [data-support-uniform-preview] > [data-support-uniform-copy]) {
+    grid-column:2!important;
+    grid-row:1!important;
+    padding:0!important;
+    margin:0!important;
+    align-self:center!important;
+    display:grid!important;
+    gap:3px!important;
+    min-height:0!important;
+  }
+  .page :global([data-services-unified-catalog] [data-services-unified-panel][data-services-has-three="true"] > [data-support-uniform-preview] [data-support-uniform-copy] strong) {
+    margin:0!important;
+    color:#143d3a!important;
+    font:700 clamp(20px,5.5vw,24px)/1.12 Georgia,"Times New Roman",serif!important;
+    text-wrap:wrap;
+  }
+  .page :global([data-services-unified-catalog] [data-services-unified-panel][data-services-has-three="true"] > [data-support-uniform-preview] [data-support-uniform-copy] small) {
+    display:block!important;
+    padding:0!important;
+    margin:0!important;
+    color:#5d6a71!important;
+    font:400 12.5px/1.28 Arial,Helvetica,sans-serif!important;
+  }
+  .page :global([data-services-unified-catalog] [data-services-unified-panel][data-services-has-three="true"] > [data-support-uniform-preview] > [data-support-uniform-price]),
+  .page :global([data-services-unified-catalog] [data-services-unified-panel][data-services-has-three="true"] > [data-service-card-actions]),
+  .page :global([data-services-unified-catalog] [data-services-unified-panel][data-services-has-three="true"] > [data-support-more-formats]) {
+    display:none!important;
+  }
+  .page :global([data-services-unified-catalog] [data-services-unified-panel][data-services-has-three="true"] [data-support-uniform-chevron]) {
+    display:block!important;
+    position:static!important;
+    grid-column:3!important;
+    grid-row:1!important;
+    justify-self:center!important;
+    width:18px!important;
+    height:18px!important;
+    color:#08705a!important;
+  }
+  .page :global([data-services-unified-catalog] [data-services-unified-panel][data-services-has-three="true"] > [data-services-three-visible]) {
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    gap:8px!important;
+    margin:0!important;
+    padding:0!important;
+    border:0!important;
+    min-width:0!important;
+  }
+  .page :global([data-services-unified-catalog] [data-services-three-visible] > [data-support-uniform-card]) {
+    box-sizing:border-box!important;
+    width:100%!important;
+    position:relative!important;
+    display:grid!important;
+    grid-template-columns:76px minmax(0,1fr)!important;
+    grid-template-rows:minmax(0,1fr) auto auto!important;
+    align-items:stretch!important;
+    column-gap:9px!important;
+    row-gap:2px!important;
+    min-height:133px!important;
+    padding:8px!important;
+    border:1px solid #e9dfd1!important;
+    border-radius:19px!important;
+    background:#fffcf7!important;
+    box-shadow:0 2px 9px rgb(73 46 24 / 7%)!important;
+    overflow:visible!important;
+    isolation:isolate;
+  }
+  .page :global([data-services-unified-catalog] [data-services-three-visible] > [data-support-uniform-card] > [data-support-uniform-photo]) {
+    grid-column:1!important;
+    grid-row:1/3!important;
+    width:100%!important;
+    height:100%!important;
+    min-height:116px!important;
+    align-self:stretch!important;
+    overflow:hidden!important;
+    border-radius:13px!important;
+  }
+  .page :global([data-services-unified-catalog] [data-services-three-visible] > [data-support-uniform-card] > [data-support-uniform-copy]) {
+    position:static!important;
+    grid-column:2!important;
+    grid-row:1!important;
+    display:flex!important;
+    flex-direction:column!important;
+    gap:3px!important;
+    min-height:0!important;
+    padding:23px 0 0!important;
+    align-self:start!important;
+  }
+  .page :global([data-services-unified-catalog] [data-services-three-visible] > [data-support-uniform-card] [data-support-uniform-copy] h3) {
+    margin:0!important;
+    color:#17334b!important;
+    font:700 clamp(16px,4.5vw,19px)/1.13 Georgia,"Times New Roman",serif!important;
+    letter-spacing:-.012em;
+    text-wrap:wrap;
+    overflow-wrap:anywhere;
+  }
+  .page :global([data-services-unified-catalog] [data-services-three-visible] > [data-support-uniform-card] [data-support-uniform-copy] p) {
+    display:-webkit-box!important;
+    -webkit-box-orient:vertical;
+    -webkit-line-clamp:2;
+    overflow:hidden!important;
+    margin:0!important;
+    color:#5d6a71!important;
+    font:400 clamp(12px,3.4vw,13.5px)/1.28 Arial,Helvetica,sans-serif!important;
+  }
+  .page :global([data-services-unified-catalog] [data-services-three-visible] > [data-support-uniform-card] [data-support-uniform-price]) {
+    position:absolute!important;
+    z-index:3!important;
+    top:8px!important;
+    right:8px!important;
+    min-height:22px!important;
+    max-width:calc(100% - 106px)!important;
+    padding:3px 8px!important;
+    color:#07563f!important;
+    background:#e3f2e8!important;
+    border:0!important;
+    border-radius:999px!important;
+    white-space:nowrap;
+    font:700 clamp(10px,2.85vw,12px)/1.18 Arial,Helvetica,sans-serif!important;
+  }
+  .page :global([data-services-unified-catalog] [data-services-three-visible] > [data-support-uniform-card][data-service-price-kind="express"] [data-support-uniform-price]),
+  .page :global([data-services-unified-catalog] [data-services-three-visible] > [data-support-uniform-card][data-service-price-kind="full"] [data-support-uniform-price]),
+  .page :global([data-services-unified-catalog] [data-services-three-visible] > [data-support-uniform-card][data-service-price-kind="from50"] [data-support-uniform-price]) {
+    color:#654613!important;
+    background:#fff0cc!important;
+  }
+  .page :global([data-services-unified-catalog] [data-services-three-visible] > [data-support-uniform-card][data-service-price-kind="quote"] [data-support-uniform-price]) {
+    color:#655039!important;
+    background:#f2ecdf!important;
+  }
+  .page :global([data-services-unified-catalog] [data-services-three-visible] > [data-support-uniform-card] > [data-service-card-actions]) {
+    display:contents!important;
+  }
+  .page :global([data-services-unified-catalog] [data-services-three-visible] > [data-support-uniform-card] > [data-service-card-actions] > [data-service-card-controls]) {
+    grid-column:2!important;
+    grid-row:2!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:space-between!important;
+    gap:4px!important;
+    min-width:0!important;
+    width:100%!important;
+    margin:0!important;
+    padding:0!important;
+    align-self:end!important;
+  }
+  .page :global([data-services-unified-catalog] [data-services-three-visible] > [data-support-uniform-card] [data-service-card-controls] button) {
+    min-height:44px!important;
+    padding:6px 3px!important;
+    gap:3px!important;
+    border-radius:999px!important;
+    font:700 clamp(12px,3.15vw,14px)/1.2 Arial,Helvetica,sans-serif!important;
+  }
+  .page :global([data-services-unified-catalog] [data-services-three-visible] > [data-support-uniform-card] [data-service-card-controls] button:first-child) {
+    flex:0 1 42%!important;
+    min-width:0!important;
+    max-width:none!important;
+    background:transparent!important;
+    border:0!important;
+    color:#08705a!important;
+    text-decoration:underline!important;
+    text-underline-offset:3px;
+  }
+  .page :global([data-services-unified-catalog] [data-services-three-visible] > [data-support-uniform-card] [data-service-card-controls] button:last-child) {
+    flex:1 1 58%!important;
+    min-width:0!important;
+    max-width:none!important;
+    padding:7px 8px!important;
+    background:linear-gradient(130deg,#139b82,#006d5b)!important;
+    color:#fff!important;
+    border:0!important;
+  }
+  .page :global([data-services-unified-catalog] [data-services-three-visible] > [data-support-uniform-card] [data-service-card-controls] button svg) {
+    width:13px!important;
+    height:13px!important;
+  }
+  .page :global([data-services-unified-catalog] [data-services-three-visible] > [data-support-uniform-card] > [data-service-card-actions] > [data-service-card-details]),
+  .page :global([data-services-unified-catalog] [data-services-three-visible] > [data-support-uniform-card] > [data-service-card-actions] > [data-service-card-order]) {
+    grid-column:1/-1!important;
+    grid-row:3!important;
+    min-width:0!important;
+    margin:7px 0 0!important;
+    padding:9px!important;
+    border-radius:12px!important;
+  }
+  .page :global([data-services-unified-catalog] [data-services-three-visible] > [data-support-uniform-card] > [data-service-card-actions] > [hidden]) {
+    display:none!important;
+  }
+  .page :global([data-services-unified-catalog] [data-services-unified-panel][data-services-has-three="true"][data-expanded="true"] > [role="region"]) {
+    display:block!important;
+    margin:8px 0 0!important;
+    padding:9px!important;
+    border:1px solid #e9dfd1!important;
+    border-radius:16px!important;
+    background:#fffcf7!important;
+  }
+}
+@media (max-width:350px) {
+  .page :global([data-services-unified-catalog] [data-services-unified-panel][data-services-has-three="true"] > [data-support-uniform-preview]) {
+    grid-template-columns:49px minmax(0,1fr) 16px!important;
+    gap:7px!important;
+  }
+  .page :global([data-services-unified-catalog] [data-services-unified-panel][data-services-has-three="true"] > [data-support-uniform-preview] > [data-support-uniform-photo]) {
+    width:49px!important;height:49px!important;min-height:49px!important;max-height:49px!important;
+  }
+  .page :global([data-services-unified-catalog] [data-services-three-visible] > [data-support-uniform-card]) {
+    grid-template-columns:70px minmax(0,1fr)!important;
+    column-gap:7px!important;
+    padding:7px!important;
+  }
+  .page :global([data-services-unified-catalog] [data-services-three-visible] > [data-support-uniform-card] > [data-support-uniform-photo]) {
+    min-height:120px!important;
+  }
+  .page :global([data-services-unified-catalog] [data-services-three-visible] > [data-support-uniform-card] [data-support-uniform-copy] h3) {
+    font-size:16px!important;
+  }
+  .page :global([data-services-unified-catalog] [data-services-three-visible] > [data-support-uniform-card] [data-service-card-controls] button) {
+    font-size:12px!important;
+    padding:5px 2px!important;
+  }
+}
+/* Desktop: same simple category heading + 3 photo-left offers, two catalogue
+   columns. The original desktop hero and legacy modules remain available. */
+@media (min-width:761px) {
+  .page :global([data-services-unified-catalog] [data-services-unified-panel][data-services-has-three="true"] > [data-service-card-actions]),
+  .page :global([data-services-unified-catalog] [data-services-unified-panel][data-services-has-three="true"] > [data-support-uniform-preview] > [data-support-uniform-price]),
+  .page :global([data-services-unified-catalog] [data-services-unified-panel][data-services-has-three="true"] > [data-support-more-formats]) {
+    display:none!important;
+  }
+  .page :global([data-services-unified-catalog] [data-services-unified-panel][data-services-has-three="true"] > [data-support-uniform-preview]) {
+    min-height:76px!important;
+    grid-template-columns:60px minmax(0,1fr)!important;
+    gap:9px!important;
+    padding:9px 10px!important;
+  }
+  .page :global([data-services-unified-catalog] [data-services-unified-panel][data-services-has-three="true"] > [data-support-uniform-preview] > [data-support-uniform-photo]) {
+    width:60px!important;height:60px!important;min-height:60px!important;
+  }
+  .page :global([data-services-unified-catalog] [data-services-unified-panel][data-services-has-three="true"] > [data-support-uniform-preview] > [data-support-uniform-copy]) {
+    padding:0 16px 0 0!important;
+  }
+  .page :global([data-services-unified-catalog] [data-services-unified-panel][data-services-has-three="true"] > [data-services-three-visible]) {
+    padding:0 10px 10px!important;gap:8px!important;margin:0!important;
+  }
+}
+
+/* Hidden is an accessibility and rendering contract, even when older shared
+   Services CSS uses display:block!important inside optional detail panels.
+   Only the visitor-opened panel may reveal those legacy inner modules. */
+@media(max-width:760px){
+ .page :global([data-services-unified-panel] > [role="region"][hidden]){display:none!important}
+}
+
+/* Only the ten compact source-backed offer groups are shown by default.
+   Hide duplicate legacy consultation formats until the visitor explicitly
+   expands that category; preserve its original booking actions afterward. */
+@media(max-width:760px){
+ .page :global([data-services-unified-catalog] [data-services-unified-panel="consultation"][data-expanded="false"] [data-assist-personal-consultation]){display:none!important}
+}

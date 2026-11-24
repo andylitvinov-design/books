@@ -1,6 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {recommendAutoVideo,AUTO_VIDEO_DIRECTOR_VERSION,AUTO_VIDEO_GOALS} from "../lib/mandala/auto-video-director.mjs";
+import {requestedVisualSignals} from "../lib/mandala/prompt-shot-director.mjs";
+
+test("visual signal stems respect word boundaries in multilingual requests",()=>{
+ assert.deepEqual(requestedVisualSignals("forest",[]),["forest"]);
+ assert.deepEqual(requestedVisualSignals("market",[]),[]);
+ assert.ok(requestedVisualSignals("resting under trees",[]).includes("rest"));
+ assert.ok(requestedVisualSignals("descansando en el bosque",[]).includes("rest"));
+ assert.deepEqual(requestedVisualSignals("отдых в лесу",[]),["forest","rest"]);
+ assert.deepEqual(requestedVisualSignals("mar y sol",[]).filter(x=>["water","sun"].includes(x)),["sun","water"]);
+});
 
 const library=[
   {id:"gentle-rest",theme:"health",clips:["morning-dew","gentle-falls","calm-sea","sea-breeze"]},

@@ -6,6 +6,7 @@ import { once } from 'node:events'
 import { createServer } from 'node:https'
 import { mkdirSync, readFileSync, writeFileSync, createWriteStream } from 'node:fs'
 import { promisify } from 'node:util'
+import {classifyIsolatedVideoRedisCommand} from './helpers/isolate-video-redis-command.mjs'
 import { chromium, expect } from '@playwright/test'
 import { verifyAboutTestimonials } from './verify-about-testimonials-browser.mjs'
 import {assertMessengerOnlyCapture} from './helpers/messenger-only-contract.mjs'
@@ -35,6 +36,14 @@ try {
         const command = JSON.parse(raw)
         assert.ok(Array.isArray(command))
         assert.ok(['HGET', 'HGETALL', 'EVAL'].includes(command[0]))
+        const redisScope=classifyIsolatedVideoRedisCommand(command)
+        assert.notEqual(redisScope,'deny')
+        if(redisScope==='synthetic-missing'){
+          // Missing optional EN YouTube upload is not a fabricated player.
+          response.writeHead(200,{'Content-Type':'application/json'})
+          response.end(JSON.stringify({result:null}))
+          return
+        }
         assert.equal(command[command[0] === 'EVAL' ? 3 : 1], namespace)
         const { stdout } = await exec('redis-cli', ['-h', '127.0.0.1', '-p', '6379', '--json', ...command.map(String)], { maxBuffer: 4 * 1024 * 1024 })
         response.writeHead(200, { 'Content-Type': 'application/json' })
@@ -71,11 +80,29 @@ try {
   }
   browser = await chromium.launch({ headless: true })
   const context = await browser.newContext({ viewport: { width: 1365, height: 1000 }, serviceWorkers: 'block' })
+  // Next 15 DEV can briefly lack a clientReferenceManifest on the first
+  // dynamically compiled /ru home render. Precompile both public Home routes
+  // by an isolated HTTP GET before any browser page can receive that transient
+  // server error. A genuine repeated 500 remains fatal; LIVE is unchanged.
+  if(!live){
+    for(const warmPath of ['/', '/ru']){
+      let ready=false
+      for(let attempt=0;attempt<3;attempt++){
+        const response=await context.request.get(origin+warmPath,{timeout:60000})
+        if(response.status()===200){ready=true;break}
+        if(response.status()!==500)throw new Error('Next DEV warmup unexpected status '+response.status()+' on '+warmPath)
+        await pause(450)
+      }
+      assert.ok(ready,'Next DEV public route failed first-render warmup: '+warmPath)
+    }
+  }
   const page = await context.newPage()
   const pageErrors = []
-  page.on('pageerror', error => pageErrors.push({ message: error.message, url: page.url() }))
+  // Keep every JavaScript error fatal and preserve bounded stack evidence.
+  page.on('pageerror', error => pageErrors.push({ message: error.message,
+    url: page.url(), stack: String(error.stack || '').slice(0, 1800) }))
   async function navigate(target) {
-    const options = { waitUntil: 'domcontentloaded', timeout: 60000 }
+    const options = { waitUntil: live ? 'domcontentloaded' : 'load', timeout: 60000 }
     const destination = new URL(target, origin)
     const previous = new URL(page.url())
     // Multiple placements can share one Services path and differ by #anchor.
@@ -117,12 +144,17 @@ try {
     ['/ru/homeopathy', 'homeopathy-intro', 'ru', '0f984780d06948b1e78166e6e553e4e9', 'Q9NvYECKWuc'],
   ]) {
     await navigate(target)
-    if (slot === 'services-intro' && await page.locator('#method-videos').count()) {
-      // Videos are visible by default; old production may still use a closed disclosure.
-      if (await page.locator('#method-videos').getAttribute('open') === null) {
-        await page.locator('#method-videos > summary').click()
-      }
-      await expect(page.locator('#method-videos')).toHaveAttribute('open', '')
+    if (slot === 'services-intro') {
+      // The approved Services page keeps the introduction under an explicit About panel.
+      // Exercise the real user-opened disclosure before validating the actual player.
+      const about = page.locator('[data-services-unified-panel="about"]')
+      await expect(about).toHaveCount(1)
+      await expect.poll(
+        () => page.evaluate(() => history.pushState.toString().includes("__NA")),
+        { timeout: 30000, message: 'Services introduction requires hydrated disclosure' },
+      ).toBe(true)
+      await about.locator(':scope > button[aria-controls="services-unified-about"]').click()
+      await expect(about).toHaveAttribute('data-expanded', 'true')
     }
     const block = page.locator(`[data-video-slot="${slot}"][data-video-locale="${locale}"]`)
     await expect(block).toHaveCount(1)
@@ -141,21 +173,33 @@ try {
     await expect(block.locator('iframe')).toHaveAttribute('data-video-playback', 'youtube')
   }
   let russianPresentationVerified = false
-  for (const home of ['/', '/ru']) {
+  for (const home of ['/?full=1', '/ru?full=1']) {
     await navigate(home)
     // The withdrawn 2026-10-01 intro remains retired; this is a different
     // owner-approved 2026-10-30 presentation, not an old HeyGen fallback.
     await expect(page.locator('[data-video-slot="home-intro"]')).toHaveCount(0)
     const presentation = page.locator('[data-video-slot="home-presentation"]')
-    if (home === '/ru') {
+    if (home.startsWith('/ru')) {
       // A production-domain check may run before this PR is deployed.
       // Local/preview builds MUST show the approved RU presentation.
       if (!live || await presentation.count()) {
         await expect(presentation).toHaveCount(1)
         await expect(presentation).toHaveAttribute('data-video-locale', 'ru')
         await expect(presentation.locator('iframe')).toHaveCount(0)
+        // This secondary player is below the initial Home fold. A DEV
+        // DOMContentLoaded response may precede React hydration, leaving
+        // its intentionally inert SSR Play button disabled. Simulate the
+        // real visitor scrolling into view and prove hydration rather than
+        // pressing an unbound control or waiving the playback assertion.
+        await presentation.scrollIntoViewIfNeeded()
+        if (!live) await page.waitForLoadState('load', { timeout: 60000 })
+        await expect.poll(
+          () => page.evaluate(() => history.pushState.toString().includes('__NA')),
+          { timeout: 30000, message: 'RU presentation requires a hydrated Next router' },
+        ).toBe(true)
         const play = presentation.locator('button.site-video-play')
-        await expect(play).toBeEnabled({ timeout: 30000 })
+        await expect(play).toHaveAttribute('aria-busy', 'false', { timeout: 30000 })
+        await expect(play).toBeEnabled()
         await play.click()
         await expect(presentation.locator('iframe')).toHaveAttribute('src', /^https:\/\/www\.youtube-nocookie\.com\/embed\/G0Db6yOCMto\?/, { timeout: 10000 })
         russianPresentationVerified = true
@@ -166,7 +210,10 @@ try {
       await expect(presentation).toHaveAttribute('data-video-locale', 'en')
       await expect(presentation.locator('iframe')).toHaveCount(0)
     }
-    await expect(page.locator('[data-personal-testimonials="home"]')).toHaveCount(1)
+    await expect(page.locator('[data-home-dialogue-entry]')).toHaveCount(1)
+    await expect(page.locator('[data-home-intent-form]')).toHaveCount(1)
+    // Testimonial galleries now load only when the visitor explicitly expands
+    // the lower catalogue, never before Ali's main composer is interactive.
   }
   pass(`${live ? 'Production' : 'Local'}: withdrawn intros hidden; EN publication gate checked`)
   if (russianPresentationVerified) {
@@ -178,69 +225,105 @@ try {
   }
 
   // Regressions reported by the owner: the Services videos were buried inside
-  // a collapsed block, while the detailed service pages contained no players.
-  // These checks run against built/served pages in an isolated local environment.
+  // Approved 10x3 Services catalogue: the legacy intro and video gallery remain
+  // available when their informational panels are opened by the visitor.
+  // First-screen Videos is a three-offer shelf, not a duplicate page or hidden checkout.
   if (!live) {
     for (const locale of ['en', 'ru']) {
       await navigate('/' + locale + '/services')
-      const visibleGallery = page.locator('#method-videos')
-      await expect(visibleGallery).toHaveAttribute('open', '')
-      // Services introduction is a sibling of #method-videos after the studio layout revision.
-      // Verify the real poster is present without an eagerly mounted YouTube iframe.
-      const intro = page.locator(`[data-services-meet] [data-video-slot="services-intro"][data-video-locale="${locale}"]`)
+      await expect.poll(
+        () => page.evaluate(() => history.pushState.toString().includes("__NA")),
+        { timeout: 30000, message: 'Services media disclosures require hydrated React' },
+      ).toBe(true)
+      const aboutPanel = page.locator('[data-services-unified-panel="about"]')
+      const galleryPanel = page.locator('[data-services-unified-panel="mytube"]')
+      const intro = aboutPanel.locator('[data-services-meet] [data-video-slot="services-intro"][data-video-locale="' + locale + '"]')
+      const gallery = galleryPanel.locator('#method-videos')
+      await expect(aboutPanel).toHaveCount(1)
+      await expect(galleryPanel).toHaveCount(1)
+      await expect(intro.locator('button.site-video-play')).toBeHidden()
+      await expect(gallery).toBeHidden()
+      await aboutPanel.locator(':scope > button[aria-controls="services-unified-about"]').click()
+      await galleryPanel.locator(':scope > button[aria-controls="services-unified-mytube"]').click()
+      await expect(aboutPanel).toHaveAttribute('data-expanded','true')
+      await expect(galleryPanel).toHaveAttribute('data-expanded','true')
       await expect(intro.locator('button.site-video-play')).toBeVisible()
       await expect(intro.locator('iframe')).toHaveCount(0)
-      // Keep the current production's additional EN method-poster acceptance.
+      await expect(gallery).toBeVisible()
+      await expect(gallery).toHaveAttribute('open', '')
       if (locale === 'en') {
-        await expect(visibleGallery.locator('[data-video-slot="method-hypnotherapy"] .site-video-play')).toBeVisible()
-        await expect(visibleGallery.locator('[data-video-slot="method-constellations"] .site-video-play')).toBeVisible()
+        await expect(gallery.locator('[data-video-slot="method-hypnotherapy"] .site-video-play')).toBeVisible()
+        await expect(gallery.locator('[data-video-slot="method-constellations"] .site-video-play')).toBeVisible()
       }
+      // The original paid service modules remain mounted under the optional
+      // nested details; the new three-offer cards are their primary discovery.
       const offers = page.locator('[data-services-studio-paid] [data-services-studio-card]')
       const expectedPaidOfferIds = ["monthly-support", "alchemy", "hypnotherapy", "constellations", "business", "remote-energy-support"]
       await expect(offers).toHaveCount(expectedPaidOfferIds.length)
       const paidOfferIds = await offers.evaluateAll(cards => cards.map(card => card.getAttribute('data-services-studio-card')))
-      assert.deepEqual(paidOfferIds, expectedPaidOfferIds, 'Services paid catalogue changed: ' + locale)
+      assert.deepEqual(paidOfferIds, expectedPaidOfferIds, 'Original Services paid catalogue changed: ' + locale)
       for (const [id, suffix] of [['alchemy', 'alchemy-of-soul'], ['hypnotherapy', 'hypnotherapy-course']]) {
-        // The offer itself is the matching card, not an obsolete direct-video link.
         const hrefs = await page.locator('[data-services-studio-card="' + id + '"] a[href]')
           .evaluateAll(links => links.map(link => link.getAttribute('href')))
         assert.ok(hrefs.includes('/' + locale + '/services/' + suffix), id + ' route not reachable from Services')
       }
+      // Return to the initial collapsed informational presentation before
+      // checking the REAL phone UI: six upper category links + three video offers.
+      await aboutPanel.locator(':scope > button[aria-controls="services-unified-about"]').click()
+      await galleryPanel.locator(':scope > button[aria-controls="services-unified-mytube"]').click()
       await page.setViewportSize({ width: 390, height: 844 })
-      // The owner-approved mobile Services page deliberately hides the legacy
-      // method-video gallery and intro; desktop above still verifies both.
-      // On phones validate the replacement three-scenario Personal video card
-      // and its real first-party studio destination, not a hidden old player.
       await expect(intro.locator('button.site-video-play')).toBeHidden()
-      await expect(visibleGallery).toBeHidden()
+      await expect(gallery).toBeHidden()
       const videoPanel = page.locator('[data-services-unified-panel="video"]')
-      const videoTrigger = videoPanel.locator(':scope > button')
-      await expect(videoTrigger).toBeVisible()
-      await expect(videoTrigger).toHaveAttribute('aria-expanded', 'false')
+      await expect(videoPanel).toBeVisible()
+      const variants = videoPanel.locator(':scope > [data-services-three-visible] > [data-service-variant]')
+      await expect(variants).toHaveCount(3)
+      for (const variant of await variants.all()) {
+        await expect(variant).toBeVisible()
+        await expect(variant.locator('[data-service-price]')).toBeVisible()
+        await expect(variant.locator('img')).toBeVisible()
+        const buttons=variant.locator(':scope > [data-service-card-actions] > div[role="group"] > button')
+        await expect(buttons).toHaveCount(2)
+        await expect(buttons.first()).toBeVisible()
+        await expect(buttons.nth(1)).toBeVisible()
+      }
+      const actions = variants.first().locator(':scope > [data-service-card-actions]')
+      const controls = actions.locator(':scope > div[role="group"] > button')
+      const details = controls.first()
+      const order = controls.nth(1)
+      await expect(details).toHaveAttribute('aria-expanded','false')
+      await expect(order).toHaveAttribute('aria-expanded','false')
       const mobileVideo = videoPanel.locator('[data-assist-video-generation]')
       await expect(mobileVideo).toBeHidden()
-      // A dev SSR snapshot can paint before Next attaches client event
-      // handlers. Do not misclassify an unhydrated early click as an app
-      // state regression; require the real Next router hydration first.
-      await expect.poll(
-        () => page.evaluate(() => history.pushState.toString().includes("__NA")),
-        { timeout: 30000, message: 'Services video panel must hydrate before the click' },
-      ).toBe(true)
-      await videoTrigger.click()
-      await expect(videoTrigger).toHaveAttribute('aria-expanded', 'true')
-      await expect(mobileVideo).toBeVisible()
-      await expect(mobileVideo.locator('a[data-assist-video-scenario]')).toHaveCount(3)
-      const createVideo = mobileVideo.locator('a[data-assist-video-create]')
-      await expect(createVideo).toBeVisible()
-      await expect(createVideo).toHaveAttribute('href', '/' + locale + '/holistic-support/mandala')
-      const createBox = await createVideo.boundingBox()
-      assert.ok(createBox && createBox.height >= 44, 'Services mobile create-video action is finger-sized: ' + locale)
+      await details.click()
+      await expect(details).toHaveAttribute('aria-expanded','true')
+      await expect(order).toHaveAttribute('aria-expanded','false')
+      const description = actions.locator(':scope > [data-service-card-details]')
+      await expect(description).toBeVisible()
+      await expect(description.locator('p')).toBeVisible()
+      const studioLink = description.locator('a[href]')
+      await expect(studioLink).toHaveCount(1)
+      await expect(studioLink).toHaveAttribute('href', '/' + locale + '/holistic-support/mandala')
+      const studioLinkBox = await studioLink.boundingBox()
+      assert.ok(studioLinkBox && studioLinkBox.height >= 44, 'Mobile video studio link must be finger-sized: ' + locale)
+      await expect(actions.locator(':scope > [data-service-card-order]')).toBeHidden()
+      await order.click()
+      await expect(details).toHaveAttribute('aria-expanded','false')
+      await expect(order).toHaveAttribute('aria-expanded','true')
+      await expect(description).toBeHidden()
+      const orderRegion = actions.locator(':scope > [data-service-card-order]')
+      await expect(orderRegion).toBeVisible()
+      await expect(orderRegion.locator('[data-messenger-only-channel="whatsapp"]')).toBeVisible()
+      await expect(orderRegion.locator('[data-messenger-only-channel="telegram"]')).toBeVisible()
+      await order.click()
+      await expect(order).toHaveAttribute('aria-expanded','false')
+      await expect(orderRegion).toBeHidden()
       await expect(mobileVideo.locator('iframe')).toHaveCount(0)
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), 'Services mobile overflow: ' + locale)
       await page.screenshot({ path: `${evidence}/services-${locale}-mobile-video.png`, fullPage: true })
       await page.setViewportSize({ width: 1365, height: 1000 })
     }
-    pass('EN/RU Services galleries are open on load, video links work, and mobile width is safe')
+    pass('EN/RU Services legacy videos play after user disclosure; all 3 mobile video offers preserve Details, Order and links')
 
     const detailRoutes = [
       ['/en/services/alchemy-of-soul', 'alchemy', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
@@ -339,6 +422,14 @@ try {
     await page.setViewportSize({ width, height: 900 })
     for (const path of paths) {
       await navigate(path)
+      // Do not abort in-flight Next DEV RSC/JSON while immediately navigating
+      // away at DOMContentLoaded. All page errors remain fatal below.
+      if (!live) {
+        await page.waitForLoadState('load', { timeout: 30000 })
+        // Next DEV keeps background RSC/metadata requests alive; networkidle can
+        // wait forever without indicating a page defect. Keep the real load
+        // readiness, all 14 route/overflow checks, and fatal page errors.
+      }
       const sizes = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth }))
       assert.ok(sizes.document <= sizes.viewport + 2, `Overflow on ${path}: ${JSON.stringify(sizes)}`)
     }

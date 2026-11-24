@@ -23,7 +23,6 @@ on:
       - 'lib/app/video-progress.js'
       - 'tests/my-progress.test.mjs'
       - 'supabase/migrations/20261023154000_hh_journey_free_intro_availability.sql'
-      - '.github/workflows/hh-cabinet-journey.yml'
       - 'components/app/cabinet-today.*'
       - 'lib/app/cabinet-today.mjs'
       - 'tests/cabinet-today.test.mjs'

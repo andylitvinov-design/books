@@ -50,8 +50,12 @@ test('render progress and the optional one-at-a-time check-in in a centered, dis
   assert.match(source,/document\.body\.style\.overflow="hidden"/);
   assert.match(source,/event\.key==="Escape"/);
   assert.match(source,/data-video-effect-reopen/);
+  assert.match(source,/const \[modalOpen,setModalOpen\]=useState\(false\)/,
+    "progress remains visible but the survey starts closed");
   assert.match(source,/if\(status==="ready"\)setModalOpen\(false\)/);
-  assert.match(source,/else if\(status==="failed"\)setModalOpen\(true\)/);
+  assert.doesNotMatch(source,/else if\(status==="failed"\)setModalOpen\(true\)/,
+    "failed rendering must not force an optional modal");
+  assert.match(source,/data-video-effect-reopen onClick=\{\(\)=>setModalOpen\(true\)\}/);
   assert.doesNotMatch(source,/if\(videoEnded\)setModalOpen\(true\)/);
   assert.match(source,/const viewed=videoStarted\|\|videoEnded\|\|confirmedWatched/);
   assert.match(source,/data-video-effect-watch/);

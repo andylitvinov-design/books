@@ -63,3 +63,42 @@
 @media (prefers-reduced-motion: reduce) {
   .action, .manualAction { transition: none; }
 }
+
+/* Mobile enquiry: messenger choices must be legible without zooming. */
+@media(max-width:720px){
+ .entry{gap:16px;margin:16px 0;padding:18px 16px}
+ .entry h3{font-size:20px;line-height:1.35}
+ .entry p{font-size:16px;line-height:1.55}
+ .entry small,.manualNote{font-size:14px!important;line-height:1.5}
+ .action,.manualAction{min-height:58px;padding:13px 12px;gap:12px}
+ .actionText strong{font-size:16px;line-height:1.4}
+ .actionText small{font-size:14px!important;line-height:1.4}
+ .unavailable{font-size:14px!important;line-height:1.55}
+}
+
+/* A short second chance to write after reading the story.
+   Keep the real messenger actions; do not repeat the full explanatory card. */
+:global([data-personal-express-enquiry]) .entry {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 9px;
+  margin: 8px 0 4px;
+  padding: 12px;
+  border-color: #e7d9cc;
+  background: #fffcf7;
+}
+:global([data-personal-express-enquiry]) .content p,
+:global([data-personal-express-enquiry]) .content > small,
+:global([data-personal-express-enquiry]) .manualNote { display: none; }
+:global([data-personal-express-enquiry]) .content h3 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.35;
+}
+:global([data-personal-express-enquiry]) .channels {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+@media (max-width: 580px) {
+  :global([data-personal-express-enquiry]) .entry { padding: 11px; }
+  :global([data-personal-express-enquiry]) .channels { grid-template-columns: minmax(0, 1fr); }
+}

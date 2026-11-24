@@ -58,3 +58,25 @@ test("verified RU presentation is opt-in on RU and EN; EN discloses spoken langu
   assert.match(source,/const showIntroHero =/);
   assert.doesNotMatch(source,/therapyIntroStandalone|therapyIntroOverlay/);
 });
+
+test("iPhone failed EN/RU MP4 restarts cleanly and switches to the same HeyGen master, not YouTube",()=>{
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const css=read("components/mandala-video-mobile.module.css");
+  const middleware=read("middleware.ts");
+  assert.match(studio,/if\(media\.error\|\|introFailed\)media\.load\(\)/);
+  assert.match(studio,/try\{media\.currentTime=0;\}catch/);
+  assert.match(studio,/if\(error\?\.name!=="AbortError"\)setIntroFailed\(true\)/);
+  assert.match(studio,/onError=\{\(\)=>setIntroFailed\(true\)\}/);
+  assert.match(studio,/onPlaying=\{\(\)=>setIntroFailed\(false\)\}/);
+  assert.match(studio,/introPlaying&&introFailed&&<>/);
+  assert.match(studio,/<iframe className=\{videoStyles\.therapyHeroFallbackFrame\}/);
+  assert.match(studio,/src=\{introVideo\.embed\}/);
+  assert.match(studio,/data-intro-playback-source=\{introFailed\?"fallback":"mp4"\}/);
+  assert.match(studio,/embed:"https:\/\/app\.heygen\.com\/embeds\/8d998c778af3b563aa63233aa4fb4a06"/);
+  assert.match(studio,/embed:"https:\/\/app\.heygen\.com\/embeds\/72e3e6f45c3664b0b8d75281b1b413a5"/);
+  assert.match(css,/\.studio \.therapyHeroFallbackFrame\{/);
+  assert.match(css,/\.studio \.therapyHeroRecovery\{/);
+  assert.match(middleware,/frame-src https:\/\/www\.youtube-nocookie\.com https:\/\/app\.heygen\.com/);
+  assert.match(studio,/data-video-therapy-fallback="provider"/);
+  assert.doesNotMatch(studio,/youtube-nocookie|data-video-therapy-youtube/);
+});

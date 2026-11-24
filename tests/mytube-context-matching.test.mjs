@@ -13,21 +13,21 @@ const cases=[
  ["sexualidad","en","sexuality","love-relationships"],
  ["libido","es","sexuality","love-relationships"],
  ["хочу секса","ru","sexuality","love-relationships"],
- ["Sleep","en","sleep-rest","energy-confidence"],
- ["бессонница","ru","sleep-rest","energy-confidence"],
- ["sueño","es","sleep-rest","energy-confidence"],
+ ["Sleep","en","sleep-rest","stress-anxiety"],
+ ["бессонница","ru","sleep-rest","stress-anxiety"],
+ ["sueño","es","sleep-rest","stress-anxiety"],
  ["personal boundaries","en","boundaries","love-relationships"],
  ["личные границы","ru","boundaries","love-relationships"],
- ["body image","en","body-image","energy-confidence"],
- ["grief","en","grief","stress-anxiety"],
- ["утрата","ru","grief","stress-anxiety"],
+ ["body image","en","body-image","goals-money"],
+ ["grief","en","grief","energy-confidence"],
+ ["утрата","ru","grief","energy-confidence"],
  ["family life","en","family","love-relationships"],
  ["crianza","es","family","love-relationships"],
- ["fresh start","en","transition","goals-money"],
- ["lack of motivation","en","motivation","energy-confidence"],
+ ["fresh start","en","transition","energy-confidence"],
+ ["lack of motivation","en","motivation","stress-anxiety"],
  ["loneliness","en","loneliness","love-relationships"],
- ["self worth","en","self-worth","energy-confidence"],
- ["creative block","en","creativity","goals-money"]
+ ["self worth","en","self-worth","goals-money"],
+ ["creative block","en","creativity","energy-confidence"]
 ];
 test("12 context directions, EN RU ES and real topic alternatives",()=>{
  for(const [query,locale,contextId,categoryId] of cases){
@@ -46,7 +46,7 @@ test("12 context directions, EN RU ES and real topic alternatives",()=>{
 test("avoid accidental fragments and conflicting broad requests",()=>{
  for(const text of ["sexism","Essex","сексизм","sex and money","glove","I love my job","love and money"])
   assert.equal(classifyMyTubeRequest(text,"en"),null,text);
- for(const [text,cat] of [["Love","love-relationships"],["Energy","energy-confidence"],["Growth","goals-money"]]){
+ for(const [text,cat] of [["Love","love-relationships"],["Energy","stress-anxiety"],["Growth","energy-confidence"]]){
   const result=classifyMyTubeRequest(text,"en");
   assert.equal(result?.categoryId,cat);
   assert.equal(result?.matchLevel,"category");

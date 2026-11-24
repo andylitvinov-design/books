@@ -4,6 +4,9 @@ import {readFileSync} from "node:fs";
 import {suggestVideoConcept,reviseVideoConcept,videoConceptIsValid}
   from "../lib/mandala/auto-video-concept.mjs";
 import {getMyTubeTopic,listMyTubeScenarios} from "../lib/mandala/mytube-content-taxonomy.mjs";
+import {getMyTubeTaxonomy} from "../lib/mandala/mytube-content-taxonomy.mjs";
+import {auditCompleteFilmScreenplays,listCompleteFilmScreenplays} from "../lib/mandala/film-screenplay-256.mjs";
+import {getVideoCreativeDirections,applyVideoCreativeDirection} from "../lib/mandala/video-creative-directions.mjs";
 
 test("Auto Concept produces a real canonical taxonomy path in RU/EN/ES without any provider",()=>{
   for(const locale of ["ru","en","es"]){
@@ -67,8 +70,8 @@ test("Ideas Concept owns the single editor and Montage retains its real timeline
   assert.ok(navStart>0&&navEnd>navStart,'The real five-tab Montage navigator must render');
   const navigation=source.slice(navStart,navEnd);
   assert.deepEqual([...navigation.matchAll(/id:"(effects|audio|text|promo|concept)",Icon:/g)]
-    .map(match=>match[1]),["effects","audio","text","concept","promo"],
-    "Style → Audio → Text → Story → Montage PRO without missing or repeated tabs");
+    .map(match=>match[1]),["effects","audio","promo","text","concept"],
+    "Style → Audio → Extra before optional Text/Story, with no duplicated steps");
   assert.match(source,/data-video-montage-next=\{montagePanel==="effects"\?"audio"/);
   assert.match(source,/onClick=\{continueMontageOrGenerate\}/);
   assert.match(source,/data-video-story-open-settings/);
@@ -96,14 +99,15 @@ test("Ideas Concept owns the single editor and Montage retains its real timeline
 
 test("macOS WebKit opens Style by default and still allows reviewed Concept",()=>{
   const source=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
-  const start=source.indexOf('const editorTab=page.locator');
-  const end=source.indexOf('const selectedStyle=page.locator',start);
+  const start=source.indexOf('const styleTab=page.locator');
+  const end=source.indexOf('const styles=moreStyles.locator',start);
   assert.ok(start>0&&end>start);
   const route=source.slice(start,end);
   assert.match(route,/\[data-video-montage-tab="effects"\]/);
   assert.match(source,/\[data-video-ideas-concept-panel\]/);
-  assert.match(route,/await montageStyleTab\.click\(\)/);
-  assert.match(route,/await expect\(montageStyleTab\)\.toHaveAttribute\("aria-pressed","true"/);
+  assert.match(route,/await styleTab\.tap\(\)/);
+  assert.match(route,/await expect\(styleTab\)\.toHaveAttribute\("aria-pressed","true"/);
+  assert.match(route,/moreStyles\.locator\("summary"\)\.tap\(\)/);
   assert.doesNotMatch(route,/force:\s*true|setMontagePanel/);
 });
 
@@ -117,9 +121,19 @@ test("required Hypno three tabs, relocated effects and guided kind remain browse
   assert.match(webkit,/await expect\(briefFrame\)\.toHaveAttribute\("aria-checked","false"\)/);
   assert.match(guided,/await expect\(kind\)\.toHaveAttribute\("aria-pressed","true",\{timeout:15000\}\)/);
   assert.match(guided,/GUIDED_KIND_DID_NOT_COMMIT/);
-  assert.match(exportFlow,/const montageStyle=page\.locator/);
-  assert.match(exportFlow,/await concept\.locator\('\[data-video-concept-approve\]'\)\.click\(\)/);
-  assert.match(exportFlow,/FOUR_DISTINCT_SOURCES_REQUIRED/);
+  // The real Express route starts at Goal and uses visible browser taps,
+  // source identity and six moving photo scenes in the single Canvas renderer.
+  assert.match(exportFlow,/\[data-auto-video-input\]/);
+  assert.match(exportFlow,/getByRole\('button',\{name:'Just make it'\}\)/);
+  assert.match(exportFlow,/data-video-request-design\]\[data-video-request-flow="instant"\]/);
+  assert.match(exportFlow,/if\(engine==='webkit'\)await generate\.tap\(\)/);
+  assert.match(exportFlow,/EXPRESS_VIDEO_MUST_BE_30_SECONDS/);
+  assert.match(exportFlow,/EXPRESS_CANONICAL_PHOTO_NOT_VISIBLE/);
+  assert.match(exportFlow,/EXPRESS_CANONICAL_SCENE_ORDER_OR_IDENTITY_MISMATCH/);
+  assert.match(exportFlow,/EXPRESS_SCENE_NOT_MOVING/);
+  assert.match(exportFlow,/MP4_EXPRESS_VIDEO_MUST_USE_H264/);
+  assert.match(exportFlow,/MP4_EXPRESS_AUDIO_MUST_USE_AAC/);
+  assert.doesNotMatch(exportFlow,/data-video-continue-scenarios/);
 });
 
 test("macOS same-runner heap permits the existing real WebKit movie and voice gate",()=>{
@@ -179,4 +193,40 @@ test("Concept shows editable story first, followed by all parameters in one colu
  assert.match(semantic,/const audience=matched\(low,AUDIENCES\)/);
  assert.match(semantic,/const anxiety=ANXIETY_CONTEXT\.test\(low\)/);
  assert.match(panel,/if\(signedIn\)setEditing\(true\);else setLoginOpen\(true\)/);
+});
+
+
+test("Video Studio mandatory gate: 256 film scenes × 3 languages, exactly 2 personal directions",()=>{
+ const topics=getMyTubeTaxonomy().categories.flatMap(c=>c.subcategories.flatMap(s=>s.topics));
+ assert.equal(topics.length,64);
+ for(const locale of ["ru","en","es"]){
+  const inventory=auditCompleteFilmScreenplays(locale);
+  assert.equal(inventory.total,256);
+  assert.deepEqual(inventory.errors,[],locale+": source/scene audit");
+  for(const topic of topics){
+   assert.equal(listCompleteFilmScreenplays(topic.id,locale).length,4);
+   const base=suggestVideoConcept({
+    locale,goal:topic.label[locale],theme:"life",selectedTopicId:topic.id,
+    personalization:{currentState:"Tired",desiredState:"Calm",focus:"Growth",
+     currentIds:["fatigue"],desiredIds:["calm"],focusIds:["growth"],
+     energyStart:3,energyTarget:6}
+   });
+   const choices=getVideoCreativeDirections(base,locale);
+   if(["practice","presentation","celebration","audio_visual"].includes(base.semanticPurpose)){
+    assert.equal(choices.length,0,topic.id+":"+locale+": direct practice is not fiction");
+    continue;
+   }
+   assert.equal(choices.length,2,topic.id+":"+locale+": two suitable stories");
+   assert.equal(new Set(choices.map(x=>x.id)).size,2);
+   for(const chosen of choices){
+    assert.equal(chosen.storyboard.length,6);
+    assert.equal(new Set(chosen.storyboard.map(shot=>shot.action)).size,6);
+    const applied=applyVideoCreativeDirection(base,chosen);
+    assert.equal(applied.conceptText,chosen.story);
+    assert.deepEqual(applied.storyboard.map(x=>x.action),
+      chosen.storyboard.map(x=>x.action),"no secondary storyboard scriptwriter");
+    assert.equal(applied.mediaBindingStatus,"editorial_only_unverified");
+   }
+  }
+ }
 });

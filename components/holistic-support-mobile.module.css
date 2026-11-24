@@ -1234,3 +1234,23 @@
 .learningGoalPicker[open]>summary{border-bottom:1px solid #d8e6d6}
 .learningGoalPicker> :not(summary){min-width:0}
 @media(max-width:350px){.learningCatalogBlock{margin:6px 0 10px}.learningGoalPicker>summary{min-height:44px;font-size:12px}}
+
+/* Compact five-step Study: hide legacy header/scales only on the course view;
+   preserve other mobile Support modes and the single sitewide bottom dock. */
+@media (max-width:759px){
+  .page[data-holistic-study-view="true"] .compactAppHeader,
+  .page[data-holistic-study-view="true"] .practiceTabs,
+  .page[data-holistic-study-view="true"] .topGrid{display:none!important}
+  .page[data-holistic-study-view="true"] .container{padding-top:5px}
+}
+
+/* Site Settings menu is opt-in; no new overlay, worker or standalone editor. */
+.settingsPanel{max-height:calc(100dvh - 103px);overflow-y:auto;overscroll-behavior:contain}
+.videoExportSettings{margin:12px 0;padding:10px 0;border-top:1px solid #e7e0d4;border-bottom:1px solid #e7e0d4}
+.videoExportSettings>p{margin:0 0 7px;font-size:13px;font-weight:800}
+.videoExportSettings>div{display:grid;gap:6px}
+.settingsPanel .videoExportSettings button{width:100%;min-height:44px;text-align:left;background:#faf7f0;
+ color:#285340;border:1px solid #d7e1d5;padding:9px 12px;font-size:12px}
+.settingsPanel .videoExportSettings button[aria-pressed="true"]{background:#e4efe5;color:#125b40;border-color:#218065}
+.videoExportSettings small{display:block;color:#65756a;margin:8px 0 0;font-size:11px;line-height:1.4}
+.videoExportSettings [data-video-export-busy]{color:#99512b;font-size:12px}

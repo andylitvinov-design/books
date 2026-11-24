@@ -39,6 +39,9 @@ on:
       - 'components/practice-showcase.*'
       - 'app/**/practice/page.jsx'
       - '.github/workflows/practice-visual-services.yml'
+      # Client Live Photo APIs have their own App/IA/billing/video owners.
+      # Keep the literal shared catch-all dispatcher and all source/security routes.
+      - '!app/api/app/live-photos/**'
 permissions:
   contents: read
 concurrency:

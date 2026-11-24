@@ -18,6 +18,7 @@ import { buildPublishedVideoIndex } from "@/lib/video-discovery/catalog.mjs";
 import { classifyMyTubeFormat } from "@/lib/video-discovery/mytube-duration.mjs";
 import { originalPsiMasterPracticeMetadata } from "@/lib/video-discovery/mytube-practice-collections.mjs";
 import { rankPublicMyTubeVideo } from "@/lib/mandala/mytube-video-tagging.mjs";
+import {listApprovedLocalFilmScenes} from "@/lib/video-discovery/approved-local-scenes.mjs";
 import { listMyTubeCategories } from "@/lib/mandala/mytube-content-taxonomy.mjs";
 
 export type LibraryView = "latest" | "books" | "videos" | "dao";
@@ -306,6 +307,22 @@ const videoYouTubeIds: Record<PublicLocale, Record<string, string>> = {
 };
 
 
+const PUBLIC_YOUTUBE_EDITORIAL_METADATA: Record<string,{sourceLabel:string;topicTags:string[]}> = {
+  "1Evwgu369Jw": {sourceLabel:"Royal Society of Arts",topicTags:["emotional-intimacy"]},
+  "8KkKuTCFvzI": {sourceLabel:"TED",topicTags:["family-relationships"]},
+  "Rqj7besaGg4": {sourceLabel:"TEDx Talks",topicTags:["money-mindset"]},
+  "l_NYrWqUR40": {sourceLabel:"TED-Ed",topicTags:["self-confidence"]},
+  "w-HYZv6HzAs": {sourceLabel:"TEDx Talks",topicTags:["self-confidence"]},
+  "RcGyVTAoXEU": {sourceLabel:"TED",topicTags:["stress-relief"]},
+  "F2hc2FLOdhI": {sourceLabel:"TED",topicTags:["stress-relief"]},
+  "eBz7iUJu9UM": {sourceLabel:"TED-Ed",topicTags:["personal-growth"]},
+  "7JtjrPcMjBg": {sourceLabel:"Анна Выровая",topicTags:["self-acceptance"]},
+  "KoZn6cKbxXg": {sourceLabel:"Валерий Гут",topicTags:["self-confidence"]},
+};
+
+/** The public videos remain in the shared approved library; this small
+ * editorial map supplies verified channel labels and precise MyTube topics.
+ */
 /** The Library and Ideas surfaces share a single published-media feed, including deduplication. */
 export function buildLibraryFeedItems(
   locale: PublicLocale,
@@ -314,14 +331,21 @@ export function buildLibraryFeedItems(
 ): { feedItems: LibraryFeedItem[]; guideFeed: LibraryFeedItem[] } {
   const guides = bookItems(locale);
   const publishedIds = new Set(publishedVideos.map(video => video.youtubeId));
-  const publicFeed: LibraryFeedItem[] = publishedVideos.map(video => ({
-    id: "owner-" + video.id, kind: "video",
-    title: video.title, description: video.description,
-    youtubeId: video.youtubeId, href: video.url,
-    publishedAt: video.publishedAt,
-    audioLanguage: video.locale, sourceLabel: "Holistic House",
-    curation: "published", sourceApproved: true, sourceGroup: "owner-library",
-  }));
+  const publicFeed: LibraryFeedItem[] = publishedVideos.map(video => {
+    const editorial = PUBLIC_YOUTUBE_EDITORIAL_METADATA[video.youtubeId];
+    return {
+      id: "owner-" + video.id, kind: "video",
+      title: video.title, description: video.description,
+      youtubeId: video.youtubeId, href: video.url,
+      publishedAt: video.publishedAt,
+      audioLanguage: video.locale,
+      // External recordings keep their real publisher label; only unmapped
+      // Holistic House-owned items use the house label.
+      sourceLabel: editorial?.sourceLabel || "Holistic House",
+      topicTags: editorial?.topicTags || [],
+      curation: "published", sourceApproved: true, sourceGroup: "owner-library",
+    };
+  });
   const articleFeed: LibraryFeedItem[] = articles.map(article => ({
     id: "article-" + article.id, kind: "article",
     title: article.published.title, description: article.published.excerpt,
@@ -450,7 +474,7 @@ export function buildPublicVideoDiscoveryItems(
   }));
   // One canonical public index, de-duplicated by YouTube ID. Unknown, private,
   // draft and unapproved clips never gain publication rights from this merge.
-  return buildPublishedVideoIndex([
+  const indexedVideos = buildPublishedVideoIndex([
     ...originalPsiMasterPractices,
     ...siteIntroductions,
     ...seriesItems,
@@ -467,8 +491,8 @@ export function buildPublicVideoDiscoveryItems(
       ?{mytubeSection:"masters" as const,author:"Andy",
          aiAssisted:approvedAiMasterIds.has(video.youtubeId)}:{}),
   }));
+  return [...indexedVideos, ...listApprovedLocalFilmScenes(locale)];
 }
-
 export function LibraryHub({ locale, view = "latest", publishedVideos = [], articles = [], approvedMeditations = [] }: {
   locale: PublicLocale;
   view?: LibraryView;

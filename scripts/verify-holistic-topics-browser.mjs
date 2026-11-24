@@ -210,19 +210,45 @@ for (const engine of [chromium, webkit]) {
           await waitForConsultationFixtures(page, locale, ["eur20", "eur100"], label + " EUR 100");
           assert.equal(await finder.locator('#holistic-inline-results article').count(), 2,
             label + " EUR 100 includes 2 EUR offers, not CAD");
-          await finder.locator('[data-support-theme="relationships"]').click();
-          await finder.locator('[data-support-budget="free"]').click();
-          await page.waitForFunction(() => document.querySelector('[data-support-budget="free"]')
-            ?.getAttribute("aria-pressed") === "true", null, {timeout:15000});
+          // Wait for Relationships to commit before the real budget touch;
+          // selecting two independent React controls without this wait can
+          // race the topic transition under concurrent mobile WebKit load.
+          const relationshipsTheme=finder.locator('[data-support-theme="relationships"]');
+          await relationshipsTheme.click();
+          await page.waitForFunction(() => document.querySelector(
+            '#holistic-inline-order [data-support-theme="relationships"]')
+              ?.getAttribute('aria-pressed')==='true',null,{timeout:15000});
+          const freeBudget=finder.locator('[data-support-budget="free"]');
+          await freeBudget.click();
+          await page.waitForFunction(() => document.querySelector(
+            '#holistic-inline-order [data-support-budget="free"]')
+              ?.getAttribute('aria-pressed')==='true',null,{timeout:15000});
           await searchConsultationFixtures(page, finder);
           await waitForConsultationFixtures(page, locale, ["free"], label + " free");
           assert.equal(await finder.locator('#holistic-inline-results article').count(), 1,
             label + " free relationship consultation");
 
-          await finder.locator('[data-support-choice="talisman"]').click();
-          await finder.locator('[data-support-budget="20"]').click();
+          // Preserve the real published-price safety gate after both React
+          // controls commit. Fast consecutive taps can otherwise search an
+          // older service kind and incorrectly await a non-existent empty state.
+          const talismanChoice = finder.locator('[data-support-choice="talisman"]');
+          await talismanChoice.click();
+          await page.waitForFunction(() => document.querySelector(
+            '#holistic-inline-order [data-support-choice="talisman"]')
+              ?.getAttribute("aria-pressed") === "true", null, { timeout: 15000 });
+          const talismanBudget = finder.locator('[data-support-budget="20"]');
+          await talismanBudget.click();
+          await page.waitForFunction(() => document.querySelector(
+            '#holistic-inline-order [data-support-budget="20"]')
+              ?.getAttribute("aria-pressed") === "true", null, { timeout: 15000 });
           await finder.locator("[data-support-search]").click();
-          await finder.locator('#remote-results [role="status"]').first().waitFor();
+          const unpricedTalismanStatus = finder.locator('#remote-results [role="status"]').first();
+          await unpricedTalismanStatus.waitFor({ state: "visible", timeout: 20000 });
+          assert.ok((await unpricedTalismanStatus.innerText()).includes({
+            en: "Talisman prices are not published.",
+            ru: "Цены на талисманы не опубликованы.",
+            es: "Los talismanes no tienen precio publicado.",
+          }[locale]), label + " unpriced talisman is explained without inventing a cost");
           assert.equal(await finder.locator("[data-remote-support-specialist]").count(), 0,
             label + " never quote an unpublished talisman price");
 

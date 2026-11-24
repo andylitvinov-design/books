@@ -124,6 +124,14 @@ export function AssistReikiSession({ locale }: { locale: PublicLocale }) {
 
   useEffect(() => {
     const controller = new AbortController();
+    // A practitioner-directory outage must never leave an infinite spinner.
+    // A timeout is an explicit error state with a working Retry action.
+    const deadline = window.setTimeout(() => {
+      if (!controller.signal.aborted) {
+        setFailed(true);
+        controller.abort();
+      }
+    }, 8000);
     setFailed(false);
     setMasters(null);
     fetch("/api/public/remote-energy-support-masters?locale=" + locale + "&kind=reiki",
@@ -136,8 +144,9 @@ export function AssistReikiSession({ locale }: { locale: PublicLocale }) {
         if (!Array.isArray(payload?.masters)) throw new Error("INVALID_DIRECTORY");
         if (!controller.signal.aborted) setMasters(payload.masters.filter(approvedMaster));
       })
-      .catch(() => { if (!controller.signal.aborted) setFailed(true); });
-    return () => controller.abort();
+      .catch(() => { if (!controller.signal.aborted) setFailed(true); })
+      .finally(() => window.clearTimeout(deadline));
+    return () => { window.clearTimeout(deadline); controller.abort(); };
   }, [locale, retry]);
 
   const matching = useMemo(() => {

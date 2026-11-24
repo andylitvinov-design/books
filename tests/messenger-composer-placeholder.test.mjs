@@ -90,10 +90,10 @@ test("focus and document visibility suspend timers; blur resumes from the first 
 test("reduced motion remains static, and cleanup cannot overwrite a typed or dictated message",()=>{
   const f=fixture({reduced:true});
   const stop=animateMessengerComposerPlaceholder(f.input,"es","¿Qué te preocupa ahora?");
-  assert.equal(f.input.placeholder,MESSENGER_COMPOSER_HINTS.es[0]);
+  assert.equal(f.input.placeholder,"¿Qué te preocupa ahora?");
   assert.equal(f.jobs.size,0);
   f.advance(60000);
-  assert.equal(f.input.placeholder,MESSENGER_COMPOSER_HINTS.es[0]);
+  assert.equal(f.input.placeholder,"¿Qué te preocupa ahora?");
   stop();
   assert.equal(f.input.placeholder,"¿Qué te preocupa ahora?");
   f.input.value="My dictated message";
@@ -106,10 +106,30 @@ test("reduced motion remains static, and cleanup cannot overwrite a typed or dic
 
 test("the real chat's sole textarea activates animation only while idle in Messenger",()=>{
   const chat=readFileSync(new URL("../components/holistic-agent-chat.tsx",import.meta.url),"utf8");
-  assert.match(chat,/animateMessengerComposerPlaceholder\(input,locale,t\.placeholder\)/);
-  assert.match(chat,/messengerView&&!pageHelp&&!busy&&!draft/);
+  assert.match(chat,/animateMessengerComposerPlaceholder\(input,locale,composerPlaceholder\)/);
+  assert.match(chat,/messengerView&&!pageHelp&&!busy&&!proBusy&&!draft/);
+  assert.match(chat,/!recorderOpen&&!voicePermissionOpen&&!voice.conversing&&!voice.speaking/);
+  assert.match(chat,/homeHandoffPhase==="idle"/);
   assert.match(chat,/messages\.length===0/);
-  assert.match(chat,/placeholder=\{t\.placeholder\}/);
+  assert.match(chat,/placeholder=\{composerPlaceholder\}/);
   assert.match(chat,/aria-label=\{t\.placeholder\}/);
-  assert.equal((chat.match(/<form onSubmit=\{submit\} className=\{styles\.form\}>/g)||[]).length,1);
+  assert.equal((chat.match(/<form onSubmit=\{submit\} className=\{styles\.form\} data-hh-ai-chat-composer=/g)||[]).length,1);
+  assert.match(chat,/micMarker="data-hh-conversation-mic"/);
+});
+
+
+test("placeholder stops during native voice capture without touching the draft",()=>{
+  const f=fixture();
+  let active=false;
+  f.input.closest=()=>({querySelector:()=>active?{}:null});
+  const stop=animateMessengerComposerPlaceholder(f.input,"en","Approved prompt");
+  f.advance(650);
+  assert.notEqual(f.input.placeholder,"Approved prompt");
+  active=true;
+  f.advance(55);
+  assert.equal(f.input.placeholder,"Approved prompt");
+  assert.equal(f.jobs.size,0);
+  f.input.value="Dictated words";
+  stop();
+  assert.equal(f.input.value,"Dictated words");
 });

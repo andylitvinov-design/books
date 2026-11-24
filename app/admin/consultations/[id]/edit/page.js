@@ -25,6 +25,7 @@ export default async function EditConsultation({ params }) {
   const payment = consultation?.paymentDocumentId ? await store.findById(consultation.paymentDocumentId) : undefined
   if (!consultation || consultation.kind === 'payment' ||
       (consultation.paymentDocumentId && payment?.kind !== 'payment')) notFound()
+  if (consultation.recommendationType === 'general') redirect(`/admin/reports/general/${encodeURIComponent(id)}/edit`)
   const publication = await inspectSavedClientReportPublication(consultation, store)
   const ru = consultation.languagePreference === 'ru'
   const mediaEditorProps = deliveryEnabled() && consultation.clientId && consultation.status === 'active'

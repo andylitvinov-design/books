@@ -53,9 +53,12 @@ export function assessPrReadiness(event, live, repository, ancestryProof = null,
   if ((live.mergeable === false || live.mergeable_state === 'dirty') && !exactFastForward) {
     return fail('conflict', 'Merge conflicts must be repaired before heavy CI');
   }
-  if ((live.mergeable !== true || live.mergeable_state === 'unknown') && !exactFastForward) {
-    return fail('mergeability_pending', 'GitHub has not confirmed mergeability');
-  }
+  // This is a preliminary CI efficiency guard, not merge authorization.
+  // GitHub briefly returns mergeable=null/unknown while recalculating a PR.
+  // Starting genuine exact-HEAD tests is safe: the final protected Specialist
+  // and native merge authority still demand positive mergeability and green CI.
+  const mergeabilityPending = !exactFastForward &&
+    (live.mergeable !== true || live.mergeable_state === 'unknown');
   // Only independently ancestor-proven event BASE -> live BASE is BASE_ADVANCED.
   // Missing/invalid Compare evidence cannot be silently treated as a verified move.
   const baseMoved = pr.base.sha !== live.base.sha;
@@ -67,8 +70,11 @@ export function assessPrReadiness(event, live, repository, ancestryProof = null,
     baseMoved?'BASE_CHANGED_UNVERIFIED':null;
   // Blocked/unstable may be caused by pending CI or reviews: never deadlock CI.
   // The immutable-base Specialist still independently enforces strict freshness.
-  return { ready: true, code: 'ready', diagnostic_signal,
-    message: 'Exact HEAD and mergeability verified; trusted release gate pins the tested merge base' };
+  return { ready: true, code: mergeabilityPending ? 'mergeability_deferred' : 'ready',
+    diagnostic_signal,
+    message: mergeabilityPending
+      ? 'GitHub mergeability still calculating; run exact-HEAD CI and leave final conflict/merge decision to protected gates'
+      : 'Exact HEAD and mergeability verified; trusted release gate pins the tested merge base' };
 }
 
 export async function readLivePr(repository, number, token,

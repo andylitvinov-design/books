@@ -7,7 +7,7 @@ const row=(id,overrides={})=>({
   source_evidence_url:"https://example.org/owner-channel",audio_language:"en",
   content_type:"talk",goals:["relationships"],subtopics:["relationships","connection"],
   duration_basis:"metadata_checked",duration_verified_seconds:600,
-  editorial_status:"approved",embed_status:"confirmed",rights_status:"embed_approved",
+  owner_review_status:"accepted",editorial_status:"approved",embed_status:"confirmed",rights_status:"embed_approved",
   metadata_checked_at:"2026-10-30T00:00:00Z",content_checked_at:"2026-11-08T00:00:00Z",
   embed_checked_at:"2026-11-08T00:00:00Z",claims_risk:"low",...overrides,
 });
@@ -28,7 +28,7 @@ test("short RU/EN educational talks are categorized for MyTube and topic chips",
 });
 test("unreviewed, unsafe, long or unknown-duration clips never appear",()=>{
   const variants=[
-    {editorial_status:"candidate"},{embed_status:"unverified"},
+    {editorial_status:"candidate"},{owner_review_status:"pending"},{embed_status:"unverified"},
     {rights_status:"pending_embed_check"},{content_checked_at:null},
     {embed_checked_at:null},{metadata_checked_at:null},
     {duration_verified_seconds:601},{duration_verified_seconds:null},
@@ -46,4 +46,16 @@ test("YouTube deduplication and no invented area",()=>{
 });
 test("approved Spanish-language sources keep compatibility",()=>{
   assert.equal(projectReviewedShortLessonRows([row(one,{audio_language:"es"})])[0].audioLanguage,"es");
+});
+
+test("only owner-reviewed talk can be a direct YouTube link",()=>{
+ const direct=row(one,{editorial_status:"candidate",embed_status:"unverified",
+  rights_status:"pending_embed_check",discovery_status:"link_only",
+  metadata_confidence:"public_listing",youtube_oembed_checked_at:"2026-11-16T00:00:00Z"});
+ const found=projectReviewedShortLessonRows([direct]);
+ assert.equal(found.length,1);assert.equal(found[0].contentType,"explanation");
+ assert.equal(found[0].playbackMode,"youtube_only");
+ for(const unsafe of [{owner_review_status:"pending"},{claims_risk:"unknown"},
+  {youtube_oembed_checked_at:null},{content_checked_at:null},{duration_verified_seconds:601}])
+  assert.deepEqual(projectReviewedShortLessonRows([{...direct,...unsafe}]),[]);
 });

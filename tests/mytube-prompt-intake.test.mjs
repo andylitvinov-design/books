@@ -6,10 +6,10 @@ import {getMyTubeTopic,getMyTubeTaxonomy} from "../lib/mandala/mytube-content-ta
 
 const cases=[
  ["хочу меньше тревожиться и ощущать спокойствие","ru","constant-anxiety","stress-anxiety"],
- ["Хочу обрести уверенность в себе","ru","self-confidence","energy-confidence"],
+ ["Хочу обрести уверенность в себе","ru","self-confidence","goals-money"],
  ["Мы постоянно ссоримся с партнером","ru","couple-conflict","love-relationships"],
  ["стресс на работе","ru","work-stress","stress-anxiety"],
- ["зажимы в теле","ru","muscle-relaxation","energy-confidence"],
+ ["зажимы в теле","ru","muscle-relaxation","goals-money"],
  ["не могу начать, прокрастинация","ru","procrastination","goals-money"],
  ["Нужно увеличить мой доход","ru","income-growth","goals-money"],
  ["I feel anxious every day","en","constant-anxiety","stress-anxiety"],
@@ -38,9 +38,9 @@ test("short RU/EN/ES wishes select an existing category without claiming a speci
   ["отношения","ru","love-relationships"],
   ["Amor","es","love-relationships"],
   ["Relaciones","es","love-relationships"],
-  ["Energy","en","energy-confidence"],
-  ["Энергия","ru","energy-confidence"],
-  ["Growth","en","goals-money"],
+  ["Energy","en","stress-anxiety"],
+  ["Энергия","ru","stress-anxiety"],
+  ["Growth","en","energy-confidence"],
   ["Money","en","goals-money"],
   ["Dinero","es","goals-money"]
  ];

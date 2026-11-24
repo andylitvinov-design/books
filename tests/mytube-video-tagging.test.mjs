@@ -13,8 +13,10 @@ test("all 56 physically present scene variants receive ranked topics",()=>{
   assert.equal(summary.topicPlacements,168);
   assert.equal(summary.scenarioVisualMatches,672);
   assert.equal(Object.values(summary.primaryCategoryCounts).reduce((n,v)=>n+v,0),56);
-  for(const [category,min] of Object.entries({"goals-money":23,"love-relationships":1,"energy-confidence":20,"stress-anxiety":4}))
-    assert.ok(summary.primaryCategoryCounts[category]>=min,category);
+  // The same 56 physical scenes must be reranked under the four approved axes.
+  assert.deepEqual(summary.primaryCategoryCounts,{
+    "stress-anxiety":16,"love-relationships":1,"goals-money":29,"energy-confidence":10,
+  });
   const ranked=rankAllApprovedMyTubeScenes(master.scenes);
   assert.equal(new Set(ranked.map(x=>x.sceneId)).size,56);
   for(const scene of ranked){

@@ -51,3 +51,60 @@
 .previewItem strong{display:block}
 @media(max-width:430px){.page{padding:12px 10px 95px}.card{padding:13px}.grid{gap:5px}.stat{padding:10px 5px}.stat span{font-size:11px}.actions .button,.actions .secondary,.actions .danger{flex:1 1 auto}.top{margin-bottom:8px}}
 @media(prefers-reduced-motion:reduce){.page *{scroll-behavior:auto!important}}
+
+/* The person and practitioner are two pages of one account, not a public/private switch. */
+.socialModes{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:0 0 14px}
+.socialModes a{display:flex;align-items:center;justify-content:center;text-align:center;padding:9px 10px;min-height:49px;background:#fffdfa;color:#15443a;border:1px solid #e0e0d5;border-radius:999px;text-decoration:none;font:800 clamp(13px,3.5vw,17px)/1.2 system-ui,sans-serif;box-shadow:0 3px 11px #1d44351a}
+.socialModes a[aria-current="page"]{background:linear-gradient(125deg,#008f71,#006b56);border-color:#008c72;color:#fff}
+.page:has([data-profile-personal-social]){padding-top:13px}
+.page:has([data-profile-personal-social]) .feed{font-size:15px}
+@media(max-width:355px){.socialModes{gap:6px}.socialModes a{padding:7px 5px}}
+
+/* Personal profile shares the cabinet palette without importing its workspace. */
+.page[data-cabinet-theme="daybook"] {
+  padding-bottom:calc(125px + env(safe-area-inset-bottom));
+  background:radial-gradient(ellipse at 85% 0,#6d502c45,transparent 48%),var(--hh-cabinet-canvas);
+  color:var(--hh-cabinet-ink);
+}
+.page[data-cabinet-theme="daybook"]>p[role="status"]:not(.notice):not(.error) { color:#e7d4b3; }
+.page[data-cabinet-theme="daybook"] .socialModes a {
+  min-height:52px;border-color:var(--hh-cabinet-border);
+  background:var(--hh-cabinet-card);color:var(--hh-cabinet-ink);
+}
+.page[data-cabinet-theme="daybook"] .socialModes a[aria-current="page"],
+.page[data-cabinet-theme="daybook"] .button {
+  background:linear-gradient(140deg,var(--hh-cabinet-primary),var(--hh-cabinet-primary-hover));
+  border:1px solid var(--hh-cabinet-border);color:#fff6e3;
+}
+.page[data-cabinet-theme="daybook"] .card {
+  background:var(--hh-cabinet-card);border-color:var(--hh-cabinet-border);box-shadow:var(--hh-cabinet-shadow);
+}
+.page[data-cabinet-theme="daybook"] .card :is(h1,h2,h3),
+.page[data-cabinet-theme="daybook"] .label,
+.page[data-cabinet-theme="daybook"] .entry p { color:var(--hh-cabinet-ink); }
+.page[data-cabinet-theme="daybook"] .card p,
+.page[data-cabinet-theme="daybook"] .entry time { color:var(--hh-cabinet-muted); }
+.page[data-cabinet-theme="daybook"] .small { font-size:14px!important; }
+.page[data-cabinet-theme="daybook"] .label { font-size:15px; }
+.page[data-cabinet-theme="daybook"] .field,
+.page[data-cabinet-theme="daybook"] .area {
+  min-height:52px;font-size:16px;background:#fffcf5;border-color:var(--hh-cabinet-border);color:var(--hh-cabinet-ink);
+}
+.page[data-cabinet-theme="daybook"] .button,
+.page[data-cabinet-theme="daybook"] .secondary,
+.page[data-cabinet-theme="daybook"] .danger { min-height:48px;font-size:15px;line-height:1.35;border-radius:16px; }
+.page[data-cabinet-theme="daybook"] .secondary {
+  background:var(--hh-cabinet-surface);border-color:var(--hh-cabinet-border);color:var(--hh-cabinet-primary);
+}
+.page[data-cabinet-theme="daybook"] .entry,
+.page[data-cabinet-theme="daybook"] .empty {
+  background:var(--hh-cabinet-surface);border-color:var(--hh-cabinet-border);
+}
+.page[data-cabinet-theme="daybook"] .entry>a { color:var(--hh-cabinet-primary); }
+.page[data-cabinet-theme="daybook"] .pill {
+  background:var(--hh-cabinet-selected);color:var(--hh-cabinet-primary);font-size:13px;
+}
+.page[data-cabinet-theme="daybook"] .private { background:var(--hh-cabinet-surface-soft);color:var(--hh-cabinet-muted); }
+.page[data-cabinet-theme="daybook"] :is(button,a,input,textarea):focus-visible {
+  outline-color:var(--hh-cabinet-primary);outline-offset:3px;
+}

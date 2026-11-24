@@ -8,7 +8,7 @@ test('owner sees one compact messenger rather than nested Requests + CRM + autom
   const hub=read('components/app/messages-hub.jsx')
   const simple=read('components/app/messages-simple-inbox.jsx')
   const css=read('components/app/messages-simple-inbox.module.css')
-  assert.match(hub,/if\(ownerAccountId\)return <MessagesSimpleInbox/)
+  assert.match(hub,/if\(ownerAccountId\)\{[\s\S]*?const ownerInbox=<MessagesSimpleInbox/)
   assert.match(hub,/ownerBootstrapPending&&!data/)
   assert.match(simple,/data-simple-messages/)
   assert.match(simple,/className=\{styles\.window\}/)
@@ -84,7 +84,8 @@ test('website consultation remains accessible and manual WhatsApp/email are neve
 test('owner account change remounts one-screen inbox before old private conversation state can render',()=>{
   const hub=read('components/app/messages-hub.jsx')
   const simple=read('components/app/messages-simple-inbox.jsx')
-  assert.match(hub,/if\(ownerAccountId\)return <MessagesSimpleInbox key=\{ownerAccountId\}/)
+  assert.match(hub,/const ownerInbox=<MessagesSimpleInbox key=\{ownerAccountId\}/)
+   assert.match(hub,/if\(!embedded\)return ownerInbox/)
   assert.match(hub,/const sameAccount=!data\|\|!ownerInfo\|\|data\.accountId===ownerInfo\.accountId/)
   assert.match(simple,/setSelectedKey\(''\);setOpenDetail\(false\)/)
   assert.match(simple,/setDirectThreads\(\[\]\);setPortraits\(\{\}\)/)
@@ -133,13 +134,19 @@ test('master link uses only a verified approved practitioner, never a name guess
   assert.match(card,/\/masters\/'\+masterSlug/)
   assert.match(middleware,/const ownerMessengerImages =/)
   assert.match(middleware,/ownerMessengerImages \|\| publicMandalaLocalImages \|\| supportMobilePublishedMedia \|\| privateSupportPhotoCabinet \? ' blob:' : ''/)
-  // Private photo signed URLs are allowed only in authenticated My Videos,
-  // with an actual supabase.co hostname (not an escaped-backslash regex).
-  assert.match(middleware,/const privateSupportPhotoCabinet =/);
-  assert.match(middleware,/if \(!privateSupportPhotoCabinet\) return ''/);
+  // Signed photo origins are confined to My Videos and the exact Video Studio
+  // route; the owner-authenticated API still controls access to signed URLs.
+  assert.ok(middleware.includes(String.raw`const privateSupportPhotoCabinet = /^\/(en|ru|es)\/app\/videos\/?$/.test(pathname)`));
+  assert.ok(middleware.includes(String.raw`const publicMandalaLocalImages = /^\/(en|ru|es)\/holistic-support\/mandala\/?$/.test(pathname)`));
+  assert.match(middleware,/const privateSupportPhotoOrigin = \(\(\) => \{\s*if \(!privateSupportPhotoCabinet && !publicMandalaLocalImages\) return ''/);
   assert.ok(middleware.includes(String.raw`/^[a-z0-9]{20}\.supabase\.co$/`));
   assert.match(middleware,/directMessageStorageOrigin/)
   assert.match(middleware,/directMessageStorageOrigin = \(\(\) => \{\s*if \(!ownerMessengerImages\) return ''/)
-  assert.match(middleware,/\+ directMessageStorageOrigin \+ externalVideoUploadOrigin/)
+  assert.match(middleware,/const personalVideoStorage = personalVideoStorageCsp\(pathname,process\.env\)/);
+  assert.match(middleware,/\+ directMessageStorageOrigin \+ personalVideoStorage\.connect \+ studioMusicStorageOrigin \+ externalVideoUploadOrigin/)
+  // The music origin is from a configured HTTPS Supabase host and is empty
+  // off the exact public Mandala editor; private Messages never inherit it.
+  assert.match(middleware,/const studioMusicStorageOrigin = \(\(\) => \{/)
+  assert.match(middleware,/if \(!publicMandalaLocalImages\) return ''/)
   assert.doesNotMatch(store,/master\.display_name=t\.sender_display_name/)
 })

@@ -30,8 +30,13 @@ test("Ideas and Library reuse exactly one public feed builder and publication re
   assert.match(libraryPage, /loadPublicLibraryFeed\(locale\)/);
   assert.match(ideas, /loadPublicLibraryFeed\(locale\)/);
   assert.match(loader, /import "server-only"/);
-  assert.match(loader, /listPublicLibraryVideos\(config, locale\)/);
-  assert.match(loader, /createArticleRepository\(config\)\.publicList\(locale\)/);
+  assert.match(loader, /cachedPublishedVideos = unstable_cache\(/);
+  assert.match(loader, /cachedPublishedArticles = unstable_cache\(/);
+  assert.match(loader, /listPublicLibraryVideos\(getAppConfig\(\), locale\)/);
+  assert.match(loader, /createArticleRepository\(getAppConfig\(\)\)\.publicList\(locale\)/);
+  assert.match(loader, /cachedPublishedVideos\(locale\)/);
+  assert.match(loader, /cachedPublishedArticles\(locale\)/);
+  assert.match(loader, /Promise\.allSettled\(/);
   assert.doesNotMatch(loader, /privateMediaObjectStream|storage\.from|client:record/);
 });
 

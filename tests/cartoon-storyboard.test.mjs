@@ -50,3 +50,24 @@ test('SVG and timeline deterministic and output HTML-safe',()=>{
   assert.equal(renderCartoonSvg(x,15000,{width:360,height:640}),renderCartoonSvg(x,15000,{width:360,height:640}));
   assert.notEqual(renderCartoonSvg(x,15000,{width:360,height:640}),renderCartoonSvg(x,30000,{width:360,height:640}));
 });
+
+test('two authored stories per locale and theme, with meaningful narration changes',()=>{
+  for(const locale of ['ru','en','es'])for(const preset of CARTOON_PRESETS){
+    const first=createCartoonStoryboard({locale,preset,variation:0});
+    const second=createCartoonStoryboard({locale,preset,variation:1});
+    assert.notEqual(first.title,second.title);
+    assert.notDeepEqual(first.scenes.map(s=>s.narration),second.scenes.map(s=>s.narration));
+    assert.equal(validateCartoonStoryboard(second),true);
+    assert.equal(renderCartoonSvg(second,12000,{width:360,height:640}).includes('id="fox-actor"'),true);
+    assert.deepEqual(second,createCartoonStoryboard({locale,preset,variation:1}));
+    const modified=structuredClone(second);modified.scenes[0].narration='unsupported text';
+    assert.throws(()=>validateCartoonStoryboard(modified),/invalid_cartoon_scene/);
+    const corrupt=structuredClone(second);corrupt.title=first.title;
+    assert.throws(()=>validateCartoonStoryboard(corrupt),/invalid_cartoon_storyboard/);
+  }
+});
+test('story text stays on an allowlisted fox and star, never stores a supplied child name',()=>{
+  const x=createCartoonStoryboard({locale:'ru',wish:'Сказка для Анечки про дружбу',variation:1});
+  assert.equal(x.shotCount,8);assert.equal(x.preset,'friendship');
+  assert.doesNotMatch(JSON.stringify(x),/Анечки/);
+});

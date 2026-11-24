@@ -116,11 +116,13 @@ test('two-speed routing prioritizes new and old clean PRs without treating unkno
     row(5,'2026-10-30T12:00:00Z','blocked'),
     row(6,'2026-10-29T11:00:00Z','clean',true),
   ],now);
-  assert.deepEqual(result.fast_ready.map(x=>x.number),[1,2]);
-  assert.deepEqual(result.stale_root.map(x=>x.number),[3,5,6]);
+  assert.deepEqual(result.fast_ready.map(x=>x.number),[1,2,5]);
+  assert.deepEqual(result.stale_root.map(x=>x.number),[3,6]);
   assert.deepEqual(result.unknown.map(x=>x.number),[4]);
   assert.equal(result.fast_ready[0].merge_ready,false);
   assert.equal(result.fast_ready[1].merge_ready,true);
+  assert.equal(result.fast_ready[2].merge_ready,false,
+    'older blocked/no-conflict PR gets attention, not merge authorization');
 });
 
 test('two-speed routing rejects incomplete, duplicate or future evidence',()=>{
@@ -654,4 +656,53 @@ test('unified required gate works without stale legacy and refuses unknown polic
   const missing=analyzeCI({pr:pr(),paths:['docs/a.md'],required:['hh-merge-check'],checks:[check('release-ready')]});
   assert.equal(missing.ci_ready,false);
   assert.ok(missing.blockers.includes('MISSING:hh-merge-check'));
+});
+
+test('early PR readiness never fails merely for GitHub mergeability still computing',async()=>{
+  const { assessPrReadiness }=await import('../scripts/ci-pr-readiness.mjs');
+  const repo='andylitvinov-design/books', sha=x=>x.repeat(40);
+  const event={repository:{full_name:repo},pull_request:{
+    number:77,draft:false,
+    head:{sha:sha('a'),repo:{full_name:repo}},
+    base:{sha:sha('b'),ref:'codex/public-book-library'},
+  }};
+  const live={number:77,draft:false,state:'open',
+    head:{sha:sha('a'),repo:{full_name:repo}},
+    base:{sha:sha('b'),ref:'codex/public-book-library'},
+    mergeable:null,mergeable_state:'unknown'};
+  const check=(change={})=>assessPrReadiness(event,{...live,...change},repo);
+  const deferred=check();
+  assert.equal(deferred.ready,true);
+  assert.equal(deferred.code,'mergeability_deferred',
+    'start genuine Core testing while native GitHub is computing mergeability');
+  assert.equal(check({mergeable:true,mergeable_state:'clean'}).code,'ready');
+  assert.equal(check({mergeable:true,mergeable_state:'blocked'}).code,'ready');
+  assert.equal(check({mergeable:false,mergeable_state:'dirty'}).code,'conflict');
+  assert.equal(check({mergeable:false,mergeable_state:'blocked'}).code,'conflict');
+  assert.equal(check({draft:true}).code,'draft');
+  assert.equal(check({state:'closed'}).code,'closed');
+  assert.equal(check({head:{...live.head,sha:sha('c')}}).code,'superseded_head');
+  assert.equal(check({base:{...live.base,ref:'another-branch'}}).code,'base_branch_changed');
+  assert.equal(check({head:{...live.head,repo:{full_name:'elsewhere/fork'}}}).code,'fork_head');
+  const advancing={...live,base:{...live.base,sha:sha('c')}};
+  const proof={status:'ahead',base_sha:sha('b'),head_sha:sha('c'),merge_base_sha:sha('b')};
+  const advance=assessPrReadiness(event,advancing,repo,null,proof);
+  assert.equal(advance.ready,true);
+  assert.equal(advance.code,'mergeability_deferred');
+  assert.equal(advance.diagnostic_signal,'BASE_ADVANCED');
+});
+test('aged positive-mergeability blocked and unstable PRs are triaged, never marked merge-authorized',()=>{
+  const now=Date.parse('2026-11-18T20:00:00Z');
+  const item=(n,mergeable,mergeable_state)=>({number:n,
+    created_at:'2026-11-15T20:00:00Z',state:'open',draft:false,
+    mergeable,mergeable_state,base:{ref:'codex/public-book-library'}});
+  const output=routeSweep([
+    item(1,true,'blocked'),item(2,true,'unstable'),item(3,true,'behind'),
+    item(4,false,'dirty'),item(5,null,'unknown'),
+    {...item(6,true,'blocked'),draft:true},
+  ],now);
+  assert.deepEqual(output.fast_ready.map(x=>x.number),[1,2,3]);
+  assert.ok(output.fast_ready.every(x=>x.merge_ready===false));
+  assert.deepEqual(output.stale_root.map(x=>x.number),[4,6]);
+  assert.deepEqual(output.unknown.map(x=>x.number),[5]);
 });

@@ -46,8 +46,12 @@ on:
       - 'tests/helpers/course-ui-harness.mjs'
       - 'tests/course-concurrency-ui.test.mjs'
       - 'tests/course-free-slot-restart.test.mjs'
-      - 'tests/ci-growth-course-core-reuse.test.mjs'
-      - 'package.json'
+      # Core already owns edits to its CI-only policy contract. Workflow
+      # changes still run this specialist's real domain checks before merge.
+      - '.github/workflows/hh-course-presets.yml'
+      # Client Live Photo APIs have their own App/IA/billing/video owners.
+      # Keep the literal shared catch-all dispatcher and all source/security routes.
+      - '!app/api/app/live-photos/**'
   workflow_dispatch:
 
 permissions:

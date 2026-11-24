@@ -1,0 +1,57 @@
+import assert from 'node:assert/strict'
+import {readFileSync} from 'node:fs'
+import test from 'node:test'
+
+const src = path => readFileSync(new URL('../'+path, import.meta.url), 'utf8')
+
+test('repeated Library and MyTube visits share bounded public snapshots only', () => {
+  const feed=src('lib/public-library-feed.ts')
+  const video=src('lib/clients/public-library-videos.js')
+  const article=src('lib/practitioners/article-repository.js')
+  assert.match(feed,/import \{ unstable_cache \} from "next\/cache"/)
+  assert.match(feed,/PUBLIC_SNAPSHOT_SECONDS = 60/)
+  assert.match(feed,/cachedPublishedVideos = unstable_cache\(/)
+  assert.match(feed,/cachedPublishedArticles = unstable_cache\(/)
+  assert.match(feed,/\["hh-public-library-videos-v1"\]/)
+  assert.match(feed,/\["hh-public-library-articles-v1"\]/)
+  assert.match(feed,/cachedPublishedVideos\(locale\)/)
+  assert.match(feed,/cachedPublishedArticles\(locale\)/)
+  assert.match(feed,/Promise\.allSettled/)
+  assert.match(feed,/\.map\(locale => cachedPublishedVideos\(locale\)\)/)
+  assert.match(feed,/listPublicLibraryVideos\(getAppConfig\(\), locale\)/)
+  assert.match(feed,/createArticleRepository\(getAppConfig\(\)\)\.publicList\(locale\)/)
+  assert.doesNotMatch(feed,/actor\.|getUser\(|cookies\(|privateMedia|privateStorage|process\.env|unstable_noStore/)
+  assert.match(video,/where kind='youtube' and status='ready' and public_locale=\$1 and published_at is not null/)
+  assert.match(video,/parseSessionYouTubeUrl\(row.url\)/)
+  assert.match(article,/a\.published<>'\{\}'::jsonb/)
+  assert.match(article,/p\.active/)
+  assert.match(article,/publicList\(locale='en'/)
+})
+
+test('72px public Academy footer portrait never downloads the two-megabyte PNG', () => {
+  const component=src('components/sitewide-lead-capture.tsx')
+  const manifest=JSON.parse(src('data/static-portrait.json'))
+  assert.match(component,/import \{ StaticPortrait \} from "@\/components\/static-portrait"/)
+  assert.match(component,/<StaticPortrait className=\{styles\.trainingPortrait\}/)
+  assert.match(component,/sizes="72px" loading="lazy"/)
+  assert.doesNotMatch(component,/import Image from "next\/image"|loading="lazy" unoptimized/)
+  assert.equal(manifest.sourceBytes, 2076018)
+  assert.equal(manifest.variants[0].width, 96)
+  assert.ok(manifest.variants[0].bytes < 5000)
+})
+
+test('PWA install listeners remain eager but SW networking waits until page load/idle',()=>{
+  const pwa=src('components/pwa-registration.tsx')
+  const sw=src('public/sw.js')
+  assert.match(pwa,/window\.addEventListener\('beforeinstallprompt', available\)/)
+  assert.match(pwa,/window\.addEventListener\('appinstalled', completed\)/)
+  assert.match(pwa,/window\.addEventListener\('load', afterLoad, \{ once: true \}\)/)
+  assert.match(pwa,/document\.readyState === 'complete'/)
+  assert.match(pwa,/window\.requestIdleCallback\(register, \{ timeout: 4000 \}\)/)
+  assert.match(pwa,/setTimeout\(register, 1200\)/)
+  assert.match(pwa,/window\.cancelIdleCallback\(idleId\)/)
+  assert.match(pwa,/navigator\.serviceWorker\.register\('\/sw\.js'\)/)
+  assert.doesNotMatch(pwa,/fetch\(/)
+  assert.match(sw,/network-only/)
+  assert.match(sw,/PRIVATE_PREFIXES/)
+})

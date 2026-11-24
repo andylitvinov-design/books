@@ -22,11 +22,22 @@ test('RU and EN show exactly six full-width actions and fixed first-party destin
    const action=TELEGRAM_EXPLORE_ACTIONS[index]
    assert.deepEqual(parseTelegramHomeCallback(row[0].callback_data),{locale:lang,action})
    const detail=telegramExploreDetailButtons(lang,action)
-   assert.equal(detail.inline_keyboard.length,2)
-   const url=new URL(detail.inline_keyboard[0][0].url)
+   const offset=action==='consultation'?1:0
+   const rows=action==='consultation'?3:0
+   assert.equal(detail.inline_keyboard.length,2+offset+rows)
+   if(offset){
+    assert.equal(detail.inline_keyboard[0][0].callback_data,'hhhome:'+lang+':review')
+    assert.deepEqual(parseTelegramHomeCallback(detail.inline_keyboard[0][0].callback_data),{locale:lang,action:'review'})
+   }
+   if(rows){
+     const choices=detail.inline_keyboard.slice(offset,offset+rows).flat()
+     assert.deepEqual(choices.map(b=>new URL(b.url).searchParams.get('start')),
+       ['homeopathy','coaching','reiki','constellations','business'].map(s=>'hhservice_'+s+'_'+lang))
+   }
+   const url=new URL(detail.inline_keyboard[offset+rows][0].url)
    assert.equal(url.origin,'https://holistichouse.vercel.app')
    assert.match(url.pathname,new RegExp('^/'+lang+'/'))
-   assert.deepEqual(parseTelegramHomeCallback(detail.inline_keyboard[1][0].callback_data),{locale:lang,action:'home'})
+   assert.deepEqual(parseTelegramHomeCallback(detail.inline_keyboard[offset+rows+1][0].callback_data),{locale:lang,action:'home'})
    assert.ok(telegramExploreDetailText(lang,action).length<200)
   }
  }
@@ -40,6 +51,7 @@ test('no Spanish on new menu; old diagnosis, cabinet auth, and opt-ins stay isol
   assert.equal(parseTelegramHomeCallback(text),null)
  assert.equal(telegramExploreDetailButtons('ru','unknown'),null)
  assert.deepEqual(parseTelegramHomeAction('/start'),{action:'home',locale:null})
+ assert.deepEqual(parseTelegramHomeAction('/order'),{action:'consultation',locale:null})
  assert.equal(parseTelegramHomeAction('/start hhreview_ru'),null)
  const svc=source('lib/crm/telegram-companion-service.js')
  assert.match(svc,/photo=!firstStart&&language!=='es'/)

@@ -147,65 +147,99 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           const radios = enquiry.locator('input[name="express-review-focus"]');
           assert.equal(await radios.count(), 2, "exactly two request focuses");
           assert.equal(await enquiry.locator('input[name="express-review-focus"]:checked').count(), 1, "a single selected focus");
-          assert.equal(await enquiry.locator('[data-messenger-only-contact]').count(),1,
-            "one customer-initiated messenger handoff; no email-only capture");
-          const featured = main.locator("[data-featured-free-review-testimonials]");
-          await featured.waitFor({ state: "visible" });
-          const featuredGeometry = await featured.evaluate(section => {
-            const cards = [...section.querySelectorAll("[data-testimonial-video-id]")];
-            const bounds = cards.map(card => {
-              const r = card.getBoundingClientRect();
-              return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+          // The secure messenger handoff is intentionally lazy-mounted only after
+          // this optional inline form is opened; the first screen has no form.
+          assert.equal(await enquiry.locator('[data-messenger-only-contact]').count(), 0,
+            "no unrequested messenger or contact form is mounted on first paint");
+
+          const reviews = main.locator("[data-featured-free-review-testimonials]");
+          await reviews.waitFor({ state: "visible" });
+          const reviewFeed = reviews.locator('[data-review-list-direction="vertical"]');
+          const reviewGeometry = await reviewFeed.evaluate(element => {
+            const cards = [...element.querySelectorAll("[data-testimonial-video-id]")];
+            const boxes = cards.map(card => {
+              const rect = card.getBoundingClientRect();
+              return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width:rect.width };
+            });
+            const captions = cards.map(card => {
+              const title = card.querySelector(".site-video-title");
+              const link = card.querySelector(".site-video-watch-link");
+              return {
+                title: title?.textContent?.trim() || "",
+                titleColor: title ? getComputedStyle(title).color : "",
+                linkVisible: !!link && getComputedStyle(link).display !== "none",
+              };
             });
             return {
               ids: cards.map(card => card.getAttribute("data-testimonial-video-id")),
-              bounds,
-              loadedIframes: section.querySelectorAll("iframe").length,
-              displayed: cards.every(card => getComputedStyle(card).display !== "none"),
-            };
-          });
-          assert.equal(featuredGeometry.ids.length, 3, "three authentic videos visible without opening archive");
-          assert.equal(new Set(featuredGeometry.ids).size, 3, "no repeated featured video");
-          assert.equal(featuredGeometry.ids[0], locale === "ru" ? "muOnIHllI7E" : "Dk0LBmOivQo",
-            "RU diagnosis story prioritized; EN/ES use original EN testimonials");
-          assert.equal(featuredGeometry.displayed, true, "three videos are not hidden");
-          assert.equal(featuredGeometry.loadedIframes, 0, "no testimonial autoplay");
-          assert.ok(featuredGeometry.bounds.every(r => r.left >= -2 && r.right <= width + 2),
-            "each featured poster fits the viewport");
-          if (width === 390) await page.screenshot({
-            path: output + "/" + name + "-featured-videos.png", animations: "disabled", timeout: 20000 });
-          const reviews = main.locator("[data-review-stories]");
-          assert.equal(await reviews.count(), 1, "existing authentic video reviews preserved");
-          assert.equal(await reviews.evaluate(element => element.open), false, "light page until requested");
-          await reviews.locator(":scope > summary").click();
-          const reviewFeed = reviews.locator('[data-personal-testimonials="all"] [data-vertical-review-list]');
-          await reviewFeed.waitFor({ state: "visible" });
-          const reviewGeometry = await reviewFeed.evaluate(element => {
-            const cards = [...element.querySelectorAll("[data-testimonial-video-id]")];
-            return {
               direction: getComputedStyle(element).flexDirection,
               overflowX: getComputedStyle(element).overflowX,
-              ids: cards.map(item => item.getAttribute("data-testimonial-video-id")),
-              boxes: cards.map(item => {
-                const r = item.getBoundingClientRect();
-                return { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
-              }),
+              boxes, captions,
+              allVisible: cards.every(card => getComputedStyle(card).display !== "none"),
               iframes: element.querySelectorAll("iframe").length,
+              frames: element.querySelectorAll(".site-video-frame").length,
+              documentOverflow: document.documentElement.scrollWidth - window.innerWidth,
             };
           });
-          assert.equal(reviewGeometry.ids.length, 12, "all twelve authentic testimonials remain");
-          assert.equal(new Set(reviewGeometry.ids).size, 12, "no duplicated testimonials");
-          assert.equal(reviewGeometry.ids[0], locale === "ru" ? "m9RfDgK76PU" : "Dk0LBmOivQo",
-            "primary locale audio first");
-          assert.equal(reviewGeometry.direction, "column", "vertical mobile reviews");
-          assert.ok(reviewGeometry.boxes.every((r,i) => i === 0 || r.top >= reviewGeometry.boxes[i-1].bottom - 2),
-            "testimonials vertically aligned");
-          assert.ok(reviewGeometry.boxes.every(r => r.left >= -2 && r.right <= width + 2),
-            "testimonials within viewport");
-          assert.equal(reviewGeometry.iframes, 0, "testimonials do not autoplay");
+          assert.equal(reviewGeometry.ids.length, 12, "all twelve original client videos visible without an extra tap");
+          assert.equal(new Set(reviewGeometry.ids).size, 12, "one card per original recording");
+          assert.equal(reviewGeometry.ids[0], locale === "ru" ? "muOnIHllI7E" : "Dk0LBmOivQo",
+            "Russian express review first in RU; first English original in EN/ES");
+          assert.equal(reviewGeometry.direction, "column", "every review vertically stacked, never a swipe carousel");
+          assert.equal(reviewGeometry.frames, 12, "each recording has a real click-to-play poster");
+          assert.equal(reviewGeometry.iframes, 0, "no video autoplays or loads a third-party player on first paint");
+          assert.ok(reviewGeometry.allVisible, "none of the twelve cards hidden behind an archive");
+          assert.ok(reviewGeometry.boxes.every((r,i) => r.left >= -2 && r.right <= width + 2
+            && (i === 0 || r.top >= reviewGeometry.boxes[i-1].bottom - 2)),
+            "all cards fit phone and stack in normal document flow");
+          assert.ok(reviewGeometry.captions.every(c => c.title.length > 8
+            && c.titleColor === "rgb(20, 61, 58)" && c.linkVisible),
+            "readable dark headings on warm white and genuine YouTube fallback links");
+          assert.ok(reviewGeometry.documentOverflow <= 2, "no sideways page overflow");
+          assert.equal(await main.locator("[data-review-stories]").count(), 0,
+            "no hidden duplicate video archive after the twelve visible reviews");
           record.testimonials = reviewGeometry.ids.length;
-          if (width === 390) await page.screenshot({
-            path: output + "/" + name + "-reviews.png", animations: "disabled", timeout: 20000 });
+          if (width === 390) {
+            const cards = reviewFeed.locator("[data-testimonial-video-id]");
+            await cards.first().screenshot({path: output + "/" + name + "-review-1.png",
+              animations:"disabled", timeout:20000});
+            await cards.last().screenshot({path: output + "/" + name + "-review-12.png",
+              animations:"disabled", timeout:20000});
+          }
+          // The FAQ is the final block after the enquiry. All six native
+          // disclosures are available without JS or a second navigation.
+          const faq = main.locator("[data-free-review-faq]");
+          await faq.waitFor({ state: "visible" });
+          const items = faq.locator("details");
+          assert.equal(await items.count(), 6, "all six localized questions appear at the bottom");
+          assert.equal(await faq.locator("img").count(), 1, "the FAQ has its own real photo");
+          assert.ok((await faq.locator("h2").innerText()).trim().length > 12,
+            "localized FAQ heading is visible");
+          const firstQuestion = items.first();
+          assert.equal(await firstQuestion.evaluate(el => el.open), false,
+            "FAQ questions start closed, not an intrusive pop-up");
+          const faqTrigger = firstQuestion.locator("summary");
+          const triggerBox = await faqTrigger.boundingBox();
+          assert.ok(triggerBox && triggerBox.height >= 44 && triggerBox.width <= width,
+            "native FAQ row remains a full-width, tappable phone control");
+          await faqTrigger.click();
+          assert.equal(await firstQuestion.evaluate(el => el.open), true,
+            "tap expands one answer in-place");
+          assert.ok((await firstQuestion.locator("p").innerText()).trim().length > 25,
+            "expanded answer contains meaningful, localized guidance");
+          await faqTrigger.click();
+          assert.equal(await firstQuestion.evaluate(el => el.open), false,
+            "second tap collapses the answer");
+          const faqOrder = await main.evaluate(root => {
+            const enquiry = root.querySelector("[data-personal-express-enquiry]");
+            const faq = root.querySelector("[data-free-review-faq]");
+            return !!(enquiry && faq && (enquiry.compareDocumentPosition(faq) & Node.DOCUMENT_POSITION_FOLLOWING));
+          });
+          assert.ok(faqOrder, "FAQ belongs at the bottom, after the enquiry");
+          assert.ok(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 2,
+            "FAQ remains inside iPhone width");
+          record.faq = 6;
+
           const play = video.locator("button.site-video-play");
           await play.waitFor({ state: "visible" });
           await play.click({ timeout: 15000 });
@@ -255,6 +289,7 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
             "no modal after clicking the hero CTA");
           const widget=enquiry.locator('[data-messenger-only-contact]');
           await widget.waitFor({state:"visible",timeout:15000});
+          assert.equal(await widget.count(), 1, "exactly one opted-in messenger handoff after opening the form");
           const details=widget.locator('details');
           if(await details.count()&&await details.getAttribute('open')===null)
             await details.locator(':scope > summary').click();

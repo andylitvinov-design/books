@@ -105,19 +105,19 @@ test("each conversation goal resolves to a real first-party destination without 
   assert.equal(homeGuideDestinations({ goal: "practice", topic: "work", locale: "es" }).secondary, "/es/explore/business");
 });
 
-test("EN/RU/ES let the visitor ask a question on demand after seven clear stages", () => {
+test("EN/RU/ES invite conversation immediately; the detailed seven-stage catalogue is deferred", () => {
   const en = read("components/holistic-house-home.tsx");
   const es = read("app/es/page.tsx");
-  const more = read("components/home-more-disclosure.tsx");
+  const deferred = read("components/home-deferred-sections.tsx");
+  const expanded = read("components/home-expanded-catalog.tsx");
   for (const page of [en,es]) {
-    assert.ok(page.indexOf("<HomeSectionCarousel") < page.indexOf("<HomeFeaturedWorkspace"));
-    // The approved first-visit flow places topic/disclosure navigation before
-    // the seven-stage workspace, preserving the on-demand conversation guide.
-    assert.ok(page.indexOf("<HomeMoreDisclosure") < page.indexOf("<HomeFeaturedWorkspace"));
-    assert.doesNotMatch(page, /<HomeConversationGuide locale=/);
+    assert.match(page, /<HomeDialogueEntry locale=\{/);
+    assert.match(page, /<HomeDeferredSections locale=\{/);
+    assert.doesNotMatch(page, /<HomeFeaturedWorkspace|<HomeConversationGuide locale=/);
   }
-  assert.match(more, /<HomeConversationGuide locale=\{locale\} \/>/);
-  assert.match(more, /ssr: false/);
+  assert.match(deferred, /IntersectionObserver/);
+  assert.match(deferred, /ssr:false/);
+  assert.match(expanded, /<HomeFeaturedWorkspace locale=\{locale\} \/>/);
   assert.ok(read("app/[locale]/page.tsx").includes("<HolisticHouseHome"));
 });
 

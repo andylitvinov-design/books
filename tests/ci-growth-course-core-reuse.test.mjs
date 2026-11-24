@@ -12,7 +12,8 @@ test('Core owns production PR type/build and specialists retain independent nonp
   assert.match(core,/^  hh-merge-check:/m);
   for(const name of ['hh-growth-journey.yml','hh-course-presets.yml']){
     const s=read(name);
-    assert.ok(s.includes("      - 'tests/ci-growth-course-core-reuse.test.mjs'"),name+' policy test path missing');
+    assert.ok(!s.includes("      - 'tests/ci-growth-course-core-reuse.test.mjs'"),name+' CI-only contract changes must not launch duplicate domain runners');
+    assert.ok(s.includes("      - '.github/workflows/"+name+"'"),name+' own workflow-policy edits must still trigger independent domain QA');
     assert.ok(s.includes("run: node --test tests/ci-growth-course-core-reuse.test.mjs"),name+' policy test execution missing');
     assert.ok(s.includes("    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"),name+' Draft work not gated');
     assert.ok(s.includes(gate),name+' nonproduction build gate missing');
@@ -57,7 +58,9 @@ test('P2 scoped specialists defer redundant compilation only to required product
   // Both source-scope optimizations rely on Core's mandatory real build.
   assert.match(core,/^  hh-merge-check:/m);
   assert.match(core,/run: npm run build/);
-  assert.match(core,/needs: \[scope, hh-specialist\]/);
+  assert.match(core,/needs: \[scope\]/);
+  assert.match(core,/ci-specialist-aggregate\.mjs/);
+  assert.match(core,/Fail closed if mandatory Core failed/);
   assert.ok(core.includes('tests/ci-growth-course-core-reuse.test.mjs'));
 });
 
@@ -72,4 +75,23 @@ test('P2 leaves real Visual Services QA untouched and mandatory on UI changes',(
     'node scripts/verify-visual-service-mobile.mjs',
   ]) assert.ok(visual.includes(contract),'Visual Services acceptance must remain: '+contract);
   assert.doesNotMatch(visual,/continue-on-error:\s*true/);
+});
+
+test('CI-only policy changes run the existing Core owner, not two independent full domain runners',()=>{
+  const policy='tests/ci-growth-course-core-reuse.test.mjs';
+  assert.ok(core.includes(policy+'|\\'), 'Core CI-only planner must retain this test');
+  assert.ok(core.includes('node --test tests/ci-workflow-globs.test.mjs tests/workflow-next-route-filters.test.mjs tests/ci-specialist-aggregate.test.mjs '+policy),
+    'mandatory Core must execute the entire exact policy contract when CI code changes');
+  const growth=read('hh-growth-journey.yml');
+  const course=read('hh-course-presets.yml');
+  for(const realPath of ["      - 'tests/growth-journey-public.test.mjs'", "      - 'tests/business-consultation-finder.test.mjs'", "      - 'tests/topic-journey-account-scope.test.mjs'"])
+    assert.ok(growth.includes(realPath),'Growth still requires real user-facing domain verification for '+realPath);
+  for(const realPath of ["      - 'tests/my-course.test.mjs'", "      - 'lib/billing/**'", "      - 'app/api/app/courses/**'"])
+    assert.ok(course.includes(realPath),'Course still requires real private/billing/domain verification for '+realPath);
+  assert.doesNotMatch(course,/^\s*-\s*['"]?package\.json['"]?\s*$/m,
+    'Core owns the proven additive coaching-test prebuild route; Course must not start from package-only fan-out');
+  assert.ok(growth.includes('run: node --test '+policy));
+  assert.ok(course.includes('run: node --test '+policy));
+  assert.doesNotMatch(growth,/continue-on-error:\s*true/);
+  assert.doesNotMatch(course,/continue-on-error:\s*true/);
 });
