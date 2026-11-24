@@ -158,7 +158,7 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
         <span><strong>{t.settings}</strong><small>{t.settingsDetail}</small></span>
       </Link>
     </nav>
-    <Link className={styles.profileInsight} href={'/' + selected + '/practice'} prefetch={false}><UserRound size={23} aria-hidden="true" />{t.work}<ArrowRight size={19} aria-hidden="true" /></Link>
+    <Link className={styles.profileInsight} href={'/' + selected + '/practice'} prefetch={false} data-profile-space-work><UserRound size={23} aria-hidden="true" />{t.work}<ArrowRight size={19} aria-hidden="true" /></Link>
     </>}
   </div>
 }

@@ -587,7 +587,20 @@ try{
  },null,{timeout:10000});
  // Owner-approved iHelp first turn: browser geometry is checked on the real
  // Video Studio route, not a static mock. No media render or external AI call.
- await page.locator('[data-video-ihelp-header-trigger]').click();
+ const helpMirror=page.locator('[data-hh-mirror-goals]');
+ const headerHelp=page.locator('[data-video-ihelp-header-trigger]');
+ await expect(helpMirror).toHaveAttribute('data-hh-mirror-screen','landing');
+ await expect(headerHelp).toHaveCount(1);
+ await expect(headerHelp).toBeHidden();
+ const helpEntry=helpMirror.locator('[data-hh-mirror-enter="me"]');
+ await expect(helpEntry).toBeVisible();
+ await expect(helpEntry).toBeEnabled();
+ await helpEntry.click();
+ await expect(helpMirror).toHaveAttribute('data-hh-mirror-screen','topic');
+ await expect(helpMirror).toHaveAttribute('data-hh-mirror-step','1');
+ await expect(headerHelp).toBeVisible();
+ await expect(headerHelp).toBeEnabled();
+ await headerHelp.click();
  const iHelpDialog=page.locator('[data-video-director-chat-details][role="dialog"]');
  await iHelpDialog.waitFor({state:'visible',timeout:30000});
  const iHelpWelcome=iHelpDialog.locator('[data-video-chat-welcome]');
@@ -681,10 +694,11 @@ try{
  await extraDirections.locator(':scope > summary').click();
  const moreTopics=chat.locator('[data-hh-alchemist-more-topics]');
  await moreTopics.click();
- await extraDirections.locator(':scope > summary').click();
  assert.equal(await chat.locator('[data-hh-alchemist-topic]').count(),8,
    "More topics reveals the remaining four conversational suggestions");
  await moreTopics.click();
+ await expect(chat.locator('[data-hh-alchemist-topic]')).toHaveCount(4);
+ await extraDirections.locator(':scope > summary').click();
  await chat.locator('[data-hh-ai-chat-composer] textarea').waitFor({state:"visible",timeout:15000});
  assert.equal(await chat.locator('[data-hh-ai-chat-composer]').count(),1,
    "first screen owns one real pinned message composer");
@@ -848,19 +862,19 @@ try{
    await expect.poll(()=>chat.locator('[data-hh-chat-turn="user"]').count()).toBe(0);
  };
  // Owner screenshot regression, on this isolated guest WebKit session only.
+ const assistantReplies=log.locator('[data-hh-ai-assistant-message], [data-hh-chat-turn="assistant"]');
  const sendDialogue=async(text)=>{
-   const replies=log.locator('[data-hh-chat-turn="assistant"]');
-   const before=await replies.count();
+   const before=await assistantReplies.count();
    await chat.locator('[data-hh-ai-chat-composer] textarea').fill(text);
    await chat.locator('[data-hh-ai-chat-composer] button[type="submit"]').click();
-   await expect.poll(()=>replies.count()).toBeGreaterThan(before);
+   await expect.poll(()=>assistantReplies.count()).toBeGreaterThan(before);
  };
  for(const path of ["therapy","consultation","goal"]){
    await resetViaMore();
    await chat.locator('[data-hh-genie-path-choice="'+path+'"]').click();
    if(path==="goal")await expect(chat.locator('[data-hh-wave-goal-menu]')).toBeVisible();
    else{
-     await expect(log.locator('[data-hh-chat-turn="assistant"]').last()).toContainText(path==="therapy"?"выслушать":"разберёмся");
+     await expect(assistantReplies.last()).toContainText(path==="therapy"?"выслушать":"разберёмся");
      await expect(chat.locator('[data-hh-wave-goal-menu]')).toHaveCount(0);
    }
  }
@@ -870,7 +884,7 @@ try{
  await expect(entryMenu).toBeVisible();
  assert.deepEqual(await entryMenu.locator('[data-hh-wave-journey]').allTextContents(),journeyLabels);
  await entryMenu.locator('[data-hh-wave-journey="consultation"]').click();
- await expect(log.locator('[data-hh-chat-turn="assistant"]').last()).toContainText("разберёмся");
+ await expect(assistantReplies.last()).toContainText("разберёмся");
  for(let step=1;step<=7;step++){
    await resetViaMore();
    await sendDialogue("Дай денег");
@@ -882,13 +896,13 @@ try{
    const rect=await choice.boundingBox();
    assert.ok(rect&&rect.height>=44,"goal step "+step+" remains touch accessible");
    await choice.click();
-   await expect(log.locator('[data-hh-chat-turn="assistant"]').last()).toContainText(/финанс/iu);
+   await expect(assistantReplies.last()).toContainText(/финанс/iu);
    await expect(choice).toBeDisabled();
  }
  await resetViaMore();
  await sendDialogue("Дай денег");
  await sendDialogue("Да");
- await expect(log.locator('[data-hh-chat-turn="assistant"]').last()).toContainText("Понять, что происходит, и выбрать цель");
+ await expect(assistantReplies.last()).toContainText("Понять, что происходит, и выбрать цель");
  await sendDialogue("Доход");
  await expect(chat.locator('[data-hh-wave-goal-menu]')).toHaveCount(1);
  results.push({journey:"Three needs → money → seven real clickable stages and Yes → retained financial conversation",passed:true});
@@ -1390,9 +1404,23 @@ try{
  // open guest Tests; the old auto-opened Tests-first page is no longer mounted.
  assert.equal(await page.locator('[data-profile-hub-tabs][data-profile-active="today"]').count(),1,
    "guest Profile opens the current My Space Today dashboard, not the retired Tests-first view");
- await page.locator('[data-profile-space-dashboard]').waitFor({state:"visible",timeout:30000});
- assert.equal(await page.locator('[data-profile-space-life][aria-current="page"]').count(),1,
-   "My Life is the current guest dashboard mode");
+ const profileDashboard=page.locator('[data-profile-space-dashboard]');
+ await profileDashboard.waitFor({state:"visible",timeout:30000});
+ await expect(profileDashboard).toHaveAttribute('data-profile-space-section','goals');
+ assert.deepEqual(await profileDashboard.locator('[data-goal-profile-tab]').evaluateAll(
+   buttons=>buttons.map(button=>button.dataset.goalProfileTab)),['goals','tests','support'],
+   'Profile offers the current Goals, Tests and Support views');
+ await expect(profileDashboard.locator('[data-goal-profile-tab="goals"]')).toHaveAttribute('aria-pressed','true');
+ await expect(profileDashboard.locator('[data-goal-vector-entry]')).toHaveAttribute('href','/ru/app/daybook?start=vector');
+ const login=page.locator('dialog[data-profile-auth-dialog]');
+ await expect(login).toBeHidden();
+ await profileDashboard.locator('[data-goal-profile-tab="tests"]').click();
+ await expect(profileDashboard.locator('[data-goal-stage-zero]')).toBeVisible();
+ await expect(profileDashboard.locator('[data-goal-diagnostic]')).toHaveCount(4);
+ await expect(login).toBeHidden();
+ await profileDashboard.locator('[data-goal-profile-tab="support"]').click();
+ await expect(profileDashboard).toHaveAttribute('data-profile-space-section','support');
+ await expect(login).toBeHidden();
  const guestOverview=page.locator('[data-cabinet-guest-overview="true"]');
  await guestOverview.waitFor({state:"visible",timeout:45000});
  const publicTests=guestOverview.locator('a[href="/ru/client/tests"]');
@@ -1407,26 +1435,24 @@ try{
    links=>links.map(link=>link.dataset.profileSpaceCard)),
    ["state","courses","reports","sessions"],
    "The four signed-in-capable sections remain visible as honest guest entries");
- assert.equal(await page.locator('[data-profile-space-path]').getAttribute("href"),"/ru/app/portrait?space=path");
  assert.equal(await page.locator('[data-profile-space-work]').getAttribute("href"),"/ru/practice");
  assert.equal(await page.locator('[data-hh-unified-dock] [data-unified-dock-item="profile"][aria-current="page"]').count(),1);
  assert.equal(await page.locator('.mobile-bottom-navigation:visible').count(),0);
  // In Profile, every account action is gated on an explicit guest click.
  // The sitewide public test catalogue remains accessible outside My Space.
  await publicTests.click();
- const login=page.locator('dialog[data-profile-auth-dialog]');
  await login.waitFor({state:"visible",timeout:45000});
  assert.equal(await login.getByRole('button',{name:'Продолжить через Google'}).isVisible(),true,
    'Profile guest action offers the existing Google OAuth entry');
  assert.match(page.url(),/\/ru\/app\/portrait\/?$/,
-   'clicking a Profile action keeps the guest on Life until authenticated');
+   'clicking a Profile account action keeps the guest in My Space until authenticated');
  await login.getByRole('button',{name:'Продолжить просмотр'}).click();
  await login.waitFor({state:'hidden',timeout:15000});
  // The mode switch itself never prompts or creates a private account.
  await page.locator('[data-profile-space-work]').click();
  await page.waitForURL(/\/ru\/practice\/?$/,{timeout:45000});
  await page.locator('[data-practice-showcase]').waitFor({state:'visible',timeout:45000});
- results.push({journey:"Public Profile → guest action opens OAuth choice → dismiss → free Life/Work mode switch",passed:true});
+ results.push({journey:"Public Profile Goals/Tests/Support → account action opens OAuth choice → dismiss → public Work",passed:true});
 
 }finally{await browser.close();}
 writeFileSync(folder+"/results.json",JSON.stringify(results,null,2));
