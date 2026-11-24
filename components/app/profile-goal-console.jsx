@@ -150,7 +150,6 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
           <strong>{goal.title}</strong>{active && <CheckCircle2 size={19} aria-hidden="true" />}
         </Link>
       })}
-      <Link className={css.addGoal} href={root + '/daybook?start=vector'} prefetch={false}><Plus size={26} aria-hidden="true" /><strong>{t.add}</strong></Link>
     </div>}
     {view.loading && <p className={css.notice} role="status">…</p>}
     {view.error && <p className={css.notice} role="alert">{t.error} <Link href={root + '/daybook?tab=goals'}>{t.retry}</Link></p>}
@@ -158,7 +157,7 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
     {selected && !view.loading && !view.error && <>
         <div className={css.selectedGoal} data-goal-program-active>
           <div className={css.activeHero} data-profile-space-scenic><p className={css.programEyebrow}><Target size={20} aria-hidden="true"/>{landing.label}</p><h1>{selected.title}</h1>{typeof selected.desiredOutcome === 'string' && selected.desiredOutcome.trim() && <p className={css.programIntro}>{selected.desiredOutcome}</p>}</div>
-          <Link className={css.goalSummary} href={goalHref} prefetch={false} data-profile-goal-summary><div className={css.goalText}><span>{landing.current}</span><h2>{selected.title}</h2>
+          <Link className={css.goalSummary} href={goalHref} prefetch={false} data-profile-goal-summary><div className={css.goalText}><span>{landing.current}</span><h2>{t.courseProgress}</h2>
           </div>
           <div className={css.circle} style={{ '--hh-circle-value': (overall ?? 0) + '%' }}
             aria-label={t.courseProgress + ': ' + (overall === null ? t.unmeasured : overall + '%')} role="img" data-goal-course-progress={overall ?? 'unknown'}>
@@ -195,7 +194,7 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
                 aria-expanded={expanded} aria-controls={'goal-stage-options-' + id}
                 onClick={() => setExpandedStage(current => current === id ? null : id)}
                 aria-label={(index + 1) + '. ' + t.title[index] + '. ' + t.tool[index] + '. ' + status}
-                data-profile-mode-switch data-goal-step={index + 1} data-goal-step-status={selected && records[index]?.status || 'explore'}>
+                data-profile-mode-switch data-goal-step={index + 1} data-goal-step-status={selected && records[index]?.status || 'explore'} data-current-week={Boolean(selected && next?.week === index + 1)}>
               <span className={css.number}>{index + 1}</span>
               <Icon className={css.stepIcon} size={27} aria-hidden="true" />
               <span className={css.stepBody}><strong>{t.title[index]}</strong><small>{t.detail[index]}</small>
