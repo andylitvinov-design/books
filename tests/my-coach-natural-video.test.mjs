@@ -93,7 +93,7 @@ test('Samir uses three first-party MP4 reactions without lip-sync or inference',
   '/images/holistic-house/my-coach-motion/genie-natural-encourage-v2.mp4')
  assert.match(motion,/samirMotionTake\(state,visualScene\)/)
  assert.match(motion,/<SamirMotionVideos take=\{samirTake\}/)
- assert.match(layered,/muted playsInline loop/)
+ assert.match(layered,/muted playsInline loop=\{!cycle\|\|next===name\}/)
  assert.doesNotMatch(layered,/heygen\.ai|fetch\(|speechSynthesis/)
  assert.match(build,/HH_SAMIR_MOTION/)
  const approved=readFileSync(new URL('../public/images/holistic-house/my-coach-motion/genie-natural-encourage-v2.mp4',import.meta.url))
