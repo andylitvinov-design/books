@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import {
   ArrowRight, BarChart3, BookOpen, Brain, CalendarDays,
-  Heart, Leaf, Settings2, Sparkles, Target, UserRound, Compass, Flag, HandHeart, ChevronDown, Flower2, BriefcaseBusiness,
+  Heart, Leaf, Settings2, Sparkles, Target, UserRound, Compass, ChevronDown, BriefcaseBusiness,
 } from 'lucide-react'
 import styles from './profile-space-dashboard.module.css'
 import { ProfileSpaceFocus } from './profile-space-focus'
@@ -82,24 +82,24 @@ const TEXT = {
 
 const CLARITY = {
   en: {
-    tab:'Clarity & Support', start:'START HERE', intro:'If your goal is unclear or your energy feels low, begin here to understand what you need.',
-    clarity:'Find clarity', restore:'Restore support', question:'Where would you like to begin?', program:'4-Step Clarity Program',
+    tab:'Clarity & Support', start:'START HERE', intro:'Find direction, restore your energy and create a clear next step.',
+    clarity:'Start Free Program', question:'Where would you like to begin?', program:'3-Step Clarity Program', programHint:'A practical path to understanding, support and your next goal.', planButton:'Get My Plan Now',
     needs:[['I don’t know my goal','Clarify wishes and direction'],['Low energy & health','Check body, stress and vitality'],['Emotional support','Anxiety, overwhelm, relationships'],['Need clarity','Understand your situation and next step']],
-    stages:[['Self-Discovery','Life Balance Wheel · Meaning Wheel · Wu Xing'],['Understand What’s Happening','Situation analysis · Profile insights'],['Restore Energy & Support','Practices · Courses · Sessions'],['Choose Your Next Goal','Form one clear direction and a personal plan']],
-    practices:'Free guided practices', freeReiki:'Free Reiki practices & learning', allTests:'Explore tests', goal:'Create a new goal', plan:'My coaching plan', consultation:'Explore personal support', personal:'Request Personal Diagnostic', personalHint:'Get personal guidance and recommendations', account:'My library & account', notice:'Self-reflection and wellbeing tools are not medical diagnosis or treatment. For health concerns, seek qualified medical care.'
+    stages:[['Clarify Your Situation','Understand what’s happening now: needs, challenges and resources.'],['Support Your State & Energy','Restore balance, release tension and recharge your vitality.'],['Analyze & Choose Your Goal','Define a clear direction, set your goal and create a simple plan.']],
+    practices:'Free guided practices', freeReiki:'Free Reiki practices & learning', allTests:'Explore tests', goal:'Create a new goal', plan:'My coaching plan', consultation:'Explore personal support', personal:'Get Personal Guidance', personalHint:'Get personal guidance and recommendations', account:'My library & account', notice:'Self-reflection and wellbeing tools are not medical diagnosis or treatment. For health concerns, seek qualified medical care.'
   },
   ru: {
-    tab:'Ясность и поддержка', start:'НАЧНИТЕ ЗДЕСЬ', intro:'Если цель пока неясна или не хватает энергии, начните с понимания своих потребностей.',
-    clarity:'Найти ясность', restore:'Восстановить силы', question:'С чего хотите начать?', program:'4 шага к ясности',
+    tab:'Ясность и поддержка', start:'НАЧНИТЕ ЗДЕСЬ', intro:'Проясните ситуацию, восстановите силы и найдите свой следующий шаг.',
+    clarity:'Начать бесплатно', question:'С чего хотите начать?', program:'3 шага к ясности', programHint:'Путь к пониманию, поддержке и новой цели.', planButton:'Получить мой план',
     needs:[['Не знаю свою цель','Понять желания и направление'],['Энергия и здоровье','Тело, стресс и жизненные силы'],['Эмоциональная поддержка','Тревога, напряжение, отношения'],['Нужна ясность','Понять ситуацию и следующий шаг']],
-    stages:[['Познать себя','Колесо баланса · Колесо смыслов · У-Син'],['Понять, что происходит','Анализ ситуации · Личный профиль'],['Восстановить силы и опору','Практики · Курсы · Сессии'],['Выбрать следующую цель','Определить направление и личный план']],
-    practices:'Бесплатные практики', freeReiki:'Бесплатное обучение и практики Рейки', allTests:'Все тесты', goal:'Создать новую цель', plan:'Мой план коучинга', consultation:'Подобрать личную поддержку', personal:'Запросить личную диагностику', personalHint:'Персональный анализ и рекомендации', account:'Мои материалы и аккаунт', notice:'Инструменты самопознания не заменяют медицинскую диагностику и лечение. При проблемах со здоровьем обратитесь к медицинскому специалисту.'
+    stages:[['Прояснение ситуации','Понять происходящее: потребности, трудности и ресурсы.'],['Поддержка состояния и энергии','Снизить напряжение и восстановить внутренние ресурсы.'],['Анализ и выбор цели развития','Определить направление, сформулировать цель и план.']],
+    practices:'Бесплатные практики', freeReiki:'Бесплатное обучение и практики Рейки', allTests:'Все тесты', goal:'Создать новую цель', plan:'Мой план коучинга', consultation:'Подобрать личную поддержку', personal:'Персональная поддержка', personalHint:'Персональный анализ и рекомендации', account:'Мои материалы и аккаунт', notice:'Инструменты самопознания не заменяют медицинскую диагностику и лечение. При проблемах со здоровьем обратитесь к медицинскому специалисту.'
   },
   es: {
-    tab:'Claridad y apoyo', start:'EMPIEZA AQUÍ', intro:'Si tu meta no está clara o te falta energía, empieza por entender lo que necesitas.',
-    clarity:'Encontrar claridad', restore:'Recuperar apoyo', question:'¿Por dónde quieres empezar?', program:'4 pasos hacia la claridad',
+    tab:'Claridad y apoyo', start:'EMPIEZA AQUÍ', intro:'Comprende tu situación, recupera energía y elige tu siguiente paso.',
+    clarity:'Empezar gratis', question:'¿Por dónde quieres empezar?', program:'3 pasos hacia la claridad', programHint:'Un camino hacia la comprensión, el apoyo y tu próxima meta.', planButton:'Obtener mi plan',
     needs:[['No conozco mi meta','Aclara tus deseos y rumbo'],['Energía y salud','Cuerpo, estrés y vitalidad'],['Apoyo emocional','Ansiedad, agobio y relaciones'],['Necesito claridad','Comprende tu situación y próximo paso']],
-    stages:[['Autoconocimiento','Rueda de equilibrio · Rueda de sentido · Wu Xing'],['Comprender qué sucede','Análisis de situación · Perfil personal'],['Recuperar energía y apoyo','Prácticas · Cursos · Sesiones'],['Elegir tu próxima meta','Define un rumbo y un plan personal']],
+    stages:[['Aclara tu situación','Comprende tus necesidades, retos y recursos.'],['Apoya tu estado y energía','Recupera el equilibrio y reduce la tensión.'],['Analiza y elige tu meta','Define tu rumbo, tu meta y un plan sencillo.']],
     practices:'Prácticas guiadas gratuitas', freeReiki:'Prácticas y aprendizaje Reiki gratuitos', allTests:'Explorar tests', goal:'Crear una nueva meta', plan:'Mi plan de coaching', consultation:'Explorar apoyo personal', personal:'Solicitar orientación personal', personalHint:'Orientación y recomendaciones personales', account:'Mi biblioteca y cuenta', notice:'Estas herramientas de reflexión no sustituyen el diagnóstico ni el tratamiento médico. Para problemas de salud, consulta a un profesional sanitario.'
   }
 }
@@ -139,16 +139,16 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
   const personal = support + '?view=consultation'
   const profile = '/' + selected + '/my-page'
   const stages = [
-    [diagnostics[0], diagnostics[1], diagnostics[3]],
-    [diagnostics[2], {title:t.insights,href:profile}, {title:c.allTests,href:root+'/tests'}],
+    [diagnostics[0], diagnostics[2], diagnostics[3], {title:t.insights,href:profile}, {title:c.allTests,href:root+'/tests'}],
     [{title:c.practices,href:support+'?view=meditation'+(selectedNeed===1?'&topic=energy':selectedNeed===2?'&topic=love':'')}, {title:c.freeReiki,href:REIKI_FREE_COURSE_PATH.replace(/^\/en\//, '/'+selected+'/')}, cards[1], cards[3], {title:c.consultation,href:personal}],
-    [{title:c.goal,action:true}, {title:c.plan,href:root+'/my-coaching-plan'}],
+    [diagnostics[1], {title:c.goal,action:true}, {title:c.plan,href:root+'/my-coaching-plan'}],
   ]
-  const stageIcons = [Flower2,BarChart3,Leaf,Flag]
+  const stageIcons = [BarChart3,Leaf,Target]
   const needs = [Target,Leaf,Heart,Sparkles]
   function openStage(index, need = null) {
     setSelectedNeed(need)
     setOpenedStage(index)
+    if (index !== null) requestAnimationFrame(()=>document.getElementById('clarity-stage-'+index)?.scrollIntoView({block:'nearest',behavior:'smooth'}))
   }
 
   return <div className={styles.dashboard} data-profile-space-dashboard data-profile-space-section={section}>
@@ -184,25 +184,24 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
         <p className={styles.eyebrow}><Sparkles size={17} aria-hidden="true"/>{c.start}</p>
         <h1>{c.tab}</h1><p>{c.intro}</p>
         <div className={styles.clarityHeroActions}>
-          <button type="button" onClick={()=>openStage(0)}><Compass size={22} aria-hidden="true"/>{c.clarity}</button>
-          <button type="button" onClick={()=>openStage(2)}><HandHeart size={22} aria-hidden="true"/>{c.restore}</button>
+          <button type="button" onClick={()=>openStage(0)}><Compass size={22} aria-hidden="true"/>{c.clarity}<ArrowRight size={21} aria-hidden="true"/></button>
         </div>
       </header>
       <h2 className={styles.clarityHeading}>{c.question}</h2>
       <div className={styles.clarityNeeds}>{c.needs.map(([title,detail],index)=>{
         const Icon=needs[index]
         return <button key={title} type="button" className={styles.clarityNeed} data-clarity-need={index}
-          aria-pressed={selectedNeed===index} onClick={()=>openStage([0,2,2,1][index],index)}>
-          <Icon size={25} aria-hidden="true"/><span><strong>{title}</strong><small>{detail}</small></span><ArrowRight size={17} aria-hidden="true"/>
+          aria-pressed={selectedNeed===index} onClick={()=>openStage([2,1,1,0][index],index)}>
+          <span className={styles.clarityNeedPhoto} data-need-photo={index} aria-hidden="true"/><span className={styles.clarityNeedCopy}><strong><Icon size={19} aria-hidden="true"/>{title}</strong><small>{detail}</small></span><ArrowRight size={17} aria-hidden="true"/>
         </button>
       })}</div>
-      <h2 className={styles.clarityHeading}>{c.program}</h2>
+      <h2 className={styles.clarityHeading}>{c.program}</h2><p className={styles.clarityProgramHint}>{c.programHint}</p>
       <div className={styles.clarityStages}>{c.stages.map(([title,detail],index)=>{
         const Icon=stageIcons[index]
         const expanded=openedStage===index
-        return <article key={index} className={styles.clarityStage} data-clarity-stage={index}>
+        return <article key={index} className={styles.clarityStage} data-clarity-stage={index} id={'clarity-stage-'+index}>
           <button className={styles.clarityStep} type="button" aria-expanded={expanded} aria-controls={'clarity-tools-'+index} onClick={()=>openStage(expanded?null:index)}>
-            <b>{index}</b><Icon size={24} aria-hidden="true"/><span><strong>{title}</strong><small>{detail}</small></span><ArrowRight size={19} aria-hidden="true"/>
+            <span className={styles.clarityStagePhoto} data-stage-photo={index} aria-hidden="true"><b>{index+1}</b></span><span className={styles.clarityStageCopy}><strong><Icon size={22} aria-hidden="true"/>{title}</strong><small>{detail}</small></span><ArrowRight size={19} aria-hidden="true"/>
           </button>
           <div className={styles.clarityTools} id={'clarity-tools-'+index} hidden={!expanded}>
             {stages[index].map((tool)=>tool.action ?
@@ -211,17 +210,18 @@ export function ProfileSpaceDashboard({ locale = 'en', root = '/en/app', resultC
           </div>
         </article>
       })}</div>
+      <Link href={personal} className={styles.clarityPersonal} prefetch={false} data-clarity-personal>
+        <span className={styles.clarityGuidancePhoto} aria-hidden="true"/><span><strong>{c.personal}</strong><small>{c.personalHint}</small></span><span className={styles.clarityPlanButton}>{c.planButton}<ArrowRight size={18} aria-hidden="true"/></span>
+      </Link>
+      <p className={styles.clarityNotice}>{c.notice}</p>
+      <details className={styles.clarityAccount}><summary>{c.account}<ChevronDown size={20} aria-hidden="true"/></summary>
       <Link href={profile} className={styles.profileInsight} prefetch={false}>
         <UserRound size={23} aria-hidden="true"/>{t.insights}<ArrowRight size={19} aria-hidden="true"/>
       </Link>
       <Link href={root+'/portrait?space=reports'} className={styles.profileInsight} prefetch={false}>
         <Brain size={23} aria-hidden="true"/>{t.reports}<ArrowRight size={19} aria-hidden="true"/>
       </Link>
-      <Link href={personal} className={styles.clarityPersonal} prefetch={false} data-clarity-personal>
-        <Sparkles size={27} aria-hidden="true"/><span><strong>{c.personal}</strong><small>{c.personalHint}</small></span><ArrowRight size={21} aria-hidden="true"/>
-      </Link>
-      <p className={styles.clarityNotice}>{c.notice}</p>
-      <details className={styles.clarityAccount}><summary>{c.account}<ChevronDown size={20} aria-hidden="true"/></summary>
+
     <div className={styles.cards} data-profile-space-cards>
       {cards.map(({ id, icon: Icon, href, title, detail }) =>
         <Link key={id} className={styles.card} href={href} prefetch={false}

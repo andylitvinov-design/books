@@ -26,12 +26,13 @@ test("existing persona, audio, microphone, same-tab chat handoff and shared dock
  for(const image of ["sun-warm-ocean-dawn.jpg","course-focus-mountain-boy.webp","shamanic-cards-business-hd.avif","ali-inner-alchemist-hero.webp"])assert.ok(home.includes(image),image);
  assert.match(home,/src=\{picture\}/);
  assert.match(home,/playAliPersonaAudio\(persona\.id,locale/);
- assert.match(home,/speech\.start\(\)/);
+ assert.match(home,/variant="dictation" micMarker="data-home-intent-mic"/);
  assert.match(home,/stageHomeAliHandoff\(window\.sessionStorage/);
  assert.match(home,/router\.push\(chatPath\)/);
  assert.match(home,/app\/messages\?section=ai/);
+
  assert.match(home,/data-home-methods/);
- assert.match(home,/startCoachRecordedTurn\(\{/);
+ assert.match(home,/MessengerVoiceNote locale=\{locale\} variant="dictation"/);
  assert.match(dock,/UNIFIED_DOCK_IDS/);
  assert.doesNotMatch(home,/URLSearchParams|UnifiedMobileDock|data-hh-unified-dock/);
 });

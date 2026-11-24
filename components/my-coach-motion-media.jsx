@@ -69,7 +69,7 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
     observer.observe(node)
     return()=>observer.disconnect()
   },[personaId,supported])
-  useEffect(()=>{setVideoReady(false)},[src,samirTake])
+  useEffect(()=>{setVideoReady(false)},[src,personaId])
   const shouldPlay=supported&&hasVideo&&motionAllowed&&inViewport&&pageVisible
   useEffect(()=>{
     const video=videoRef.current
@@ -87,7 +87,7 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
     aria-hidden="true">
     <img src={poster} className={styles.poster} alt="" draggable={false} loading="lazy" decoding="async" />
     {shouldPlay&&(isGenie
-      ? <SamirMotionVideos take={samirTake} onReady={setVideoReady} />
+      ? <SamirMotionVideos take={samirTake} cycle={state==='idle'||state==='greeting'} onReady={setVideoReady} />
       : <video key={src} ref={videoRef} className={styles.video}
           src={src} poster={poster} muted loop playsInline autoPlay preload="metadata"
           controls={false} disablePictureInPicture

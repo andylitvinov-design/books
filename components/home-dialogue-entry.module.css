@@ -684,3 +684,9 @@ background:linear-gradient(180deg,#f5e8d2,#123d36 420px,#103c36);border-radius:0
 .root .method span{font-size:clamp(10px,2.8vw,14px)}
 @media(max-width:365px){.programCard{grid-template-columns:minmax(69px,27%) minmax(0,1fr) 32px;min-height:105px}.programContent{padding:8px 0 8px 7px}.programContent>strong{font-size:17px}.programSteps{gap:3px 5px}.programSteps>span{flex-basis:45%}.programArrow{width:26px;height:26px}}
 @media(min-width:650px){.programCard{min-height:156px;grid-template-columns:30% minmax(0,1fr) 64px}.programContent{padding:15px 0 15px 20px;gap:7px}.programArrow{width:42px;height:42px}.programArrow svg{width:22px;height:22px}.programSteps>span>svg{width:18px;height:18px}.programImage>svg{width:37px;height:37px}.root .composer textarea{font-size:17px}}
+
+/* One manual dictation row replaces the text field until confirm or cancel. */
+.composer:has(:global([data-hh-dictation-active="true"])){display:flex!important;flex-direction:column!important;align-items:stretch!important;min-height:0!important;gap:0!important;padding:8px!important}
+.composer:has(:global([data-hh-dictation-active="true"]))>textarea,.composer:has(:global([data-hh-dictation-active="true"]))>.composerSparkle{display:none!important}
+.composer:has(:global([data-hh-dictation-active="true"]))>.composerButtons{display:flex!important;position:static!important;width:100%;min-width:0;align-self:stretch;justify-content:stretch!important;gap:0!important}
+.composer:has(:global([data-hh-dictation-active="true"]))>.composerButtons>:not(:global([data-hh-dictation-active="true"])){display:none!important}
