@@ -624,3 +624,30 @@ test("Ready uses existing Canvas for personal preview, not a fake exported file"
   assert.match(ready,/Preview ≠ MP4/);
   assert.match(ready,/if\(!verified\|\|!video\|\|disabled\)return/);
 });
+
+test("approved story stills decode before Ready preview without starting export",()=>{
+  const start=studio.indexOf("// Approved still-image stories must decode before export");
+  const end=studio.indexOf("// No autoplay: paint a still scene",start);
+  assert.ok(start>0&&end>start);
+  const preload=studio.slice(start,end);
+  assert.match(preload,/!cinematicPlan\|\|!usingFreeFilmCompilation\|\|!freeFilmSourcesListed/);
+  assert.match(preload,/isTrustedStoryPhoto\(photo\)/);
+  assert.match(preload,/withLocalMediaDeadline\(image\.decode\(\),20000\)/);
+  assert.match(preload,/resolved\.origin!==window\.location\.origin/);
+  assert.match(preload,/image\.naturalWidth<600\|\|image\.naturalHeight<600/);
+  assert.match(preload,/cancelled\|\|preparingRef\.current\|\|jobRef\.current\|\|webCodecJobRef\.current/);
+  assert.match(preload,/freeFilmPhotoRefs\.current\[id\]=image/);
+  assert.match(preload,/setFreeFilmPhotoRevision/);
+  assert.doesNotMatch(preload,/createVideo\(|videoCreditRequest\(|fetch\(/);
+  assert.match(studio,/previewAvailable=\{Boolean\(cinematicPlan\?\.shots\?\.length&&\s*\(!usingFreeFilmCompilation\|\|\(freeFilmReady&&freeFilmSourcesListed\)\)\)\}/);
+});
+test("pending Story approval routes both Generate paths to the existing confirmation",()=>{
+  const start=studio.indexOf("const revealPendingStoryApproval");
+  const end=studio.indexOf("const openMontageAudioFromSettings",start);
+  assert.ok(start>0&&end>start);
+  const flow=studio.slice(start,end);
+  assert.match(flow,/setActiveWorkspace\("editor"\);setMontagePanel\("concept"\)/);
+  assert.match(flow,/data-storyboard-apply-reference-photos/);
+  assert.match(flow,/approval\.focus/);
+  assert.equal((flow.match(/if\(storySourcePendingRef\.current\)return revealPendingStoryApproval\(\);/g)||[]).length,2);
+});
