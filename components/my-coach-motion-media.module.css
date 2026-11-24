@@ -39,3 +39,6 @@
 .media .video.samirLayer{opacity:0;transition:opacity 300ms ease-in-out;will-change:opacity}
 .media .video.samirLayer[data-samir-visible='true']{opacity:1}
 @media(prefers-reduced-motion:reduce){.samirLayer{transition:none!important}}
+
+/* Single edge-to-edge Samir portrait in the normal and expanded live hero. */
+.media[data-coach-motion-media='genie'][data-coach-motion-context='session']{inset:0;height:100%;width:100%;max-width:none;aspect-ratio:auto;border-radius:inherit}
