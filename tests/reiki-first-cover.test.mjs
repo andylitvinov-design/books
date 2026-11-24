@@ -18,7 +18,7 @@ test("The title page always precedes Andrey's video and the original meditation"
   const question = curriculum.indexOf('id: "welcome-02"');
   assert.ok(cover >= 0 && cover < question && question < teacher);
   assert.equal(new Set(order).size, order.length);
-  assert.deepEqual(energyworkLessonRanges().map(r => r.count), [7,15,17,15,6]);
+  assert.deepEqual(energyworkLessonRanges().map(r => r.count), [8,16,18,16,7]);
   assert.match(learner, /useState\(startAtExperience \? energyworkSlides\(\)\.findIndex\(\(item\) => item\.id === "welcome-02"\) : 0\)/);
 });
 

@@ -61,7 +61,7 @@ test('Private encrypted student journal can be revisited and edited in My Course
   assert.match(my,/action:'save',slideId:item\.id,nextSlideId:item\.id,answer:draft/)
   assert.match(my,/!enough\(draft\)\|\|!changed/)
   assert.match(repo,/revokePublicReviewOnEdit\(db,actor,body\.slideId\)/)
-  assert.match(repo,/await updateSharedReikiJournal\(db,actor,config,updated,answers\)/)
+  assert.match(repo,/await updateSharedReikiJournal\(db,actor,config,updated,answers,committed\)/)
   assert.match(repo,/answers_ciphertext/)
   assert.match(my,/action:'share',consent:true,teacherConsent:true/)
   assert.doesNotMatch(my,/localStorage|sessionStorage|sendBeacon/)
