@@ -42,6 +42,8 @@ for(const engine of [chromium,webkit]){
      const input=root.locator("[data-home-intent-composer]"),send=root.locator("[data-home-send-to-ali]");
      await input.fill(locale==="ru"?"Хочу разобраться":locale==="es"?"Quiero comprender":"I want clarity");
      assert.equal(await send.isEnabled(),true,name+": editable send");
+     await input.blur();
+     await page.evaluate(()=>window.scrollTo(0,0));
      const layout=await root.evaluate(element=>{
       const keys=["[data-home-dialogue-hero]","[data-home-intent-form]","[data-home-focus-grid]","[data-home-how-it-works]","[data-home-stage-scroll]"];
       return keys.map(key=>{const el=element.querySelector(key);if(!el)return null;const r=el.getBoundingClientRect();return {x:r.x,width:r.width,top:r.top,bottom:r.bottom}})});
@@ -54,15 +56,26 @@ for(const engine of [chromium,webkit]){
      const stageBoxes=await root.locator('[data-home-stage-option]').evaluateAll(items=>items.map(el=>{const r=el.getBoundingClientRect();return {x:r.x,right:r.right,top:r.top}}));
      assert.equal(stageBoxes.length,7,name+": seven visible steps");
      assert.ok(stageBoxes.every((s,i)=>s.x>=0&&s.right<=width+2&&(i===0||s.x>=stageBoxes[i-1].x)),name+": steps in one row");
+     const labelsFit=await root.locator('[data-home-stage-option] strong').evaluateAll(items=>items.every(el=>el.scrollWidth<=el.clientWidth+1));
+     assert.ok(labelsFit,name+": no overlapping stage labels");
+     const graphics=await root.locator('img').evaluateAll(async imgs=>Promise.all(imgs.map(async img=>{try{await img.decode()}catch{}return {url:img.getAttribute("src"),width:img.naturalWidth}})));
+     assert.ok(graphics.every(img=>img.width>0),name+": real photo assets loaded "+JSON.stringify(graphics));
      assert.equal(await page.locator("iframe").count(),0,name+": no video iframe");
      const dock=page.locator("[data-hh-unified-dock]");
      await dock.waitFor({state:"visible",timeout:30000});
      assert.deepEqual(await dock.locator("[data-unified-dock-item]").evaluateAll(xs=>xs.map(x=>x.getAttribute("data-unified-dock-item"))),
        ["mytube","video","coach","ai","services","practice","profile"],name+": seven dock targets");
+     const fold=await page.evaluate(()=>{
+       const methods=document.querySelector('[data-home-methods]');
+       const nav=document.querySelector('[data-hh-unified-dock]');
+       const orb=nav?.querySelector('[data-unified-dock-item="ai"] svg');
+       return {methodsBottom:methods?.getBoundingClientRect().bottom,dockTop:nav?.getBoundingClientRect().top,orbTop:orb?.getBoundingClientRect().top};
+     });
+     if(width>=390)assert.ok(fold.methodsBottom<=Math.min(fold.dockTop,fold.orbTop)+2,name+": all five method icons above existing dock "+JSON.stringify(fold));
      assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)<=1,name+": zero horizontal overflow");
      assert.deepEqual(errors,[],name+": no script errors");
      evidence.push({engine:engine.name(),locale,width,heroY:Math.round(layout[0].top),journeyWidth:Math.round(layout[4].width)});
-     if(engine===webkit&&width===390)await page.screenshot({path:output+"/samir-"+locale+"-webkit-390.png",fullPage:true});
+     if(engine===webkit&&width===390)await page.screenshot({path:output+"/samir-"+locale+"-webkit-390.png",fullPage:false});
     }finally{await page.close()}
    }
   }
