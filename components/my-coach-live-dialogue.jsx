@@ -561,7 +561,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     name:String(stagedMemory?.prior?.preferredName||'').slice(0,60),
     topic:String(stagedMemory?.prior?.previous?.[0]?.topic||'').slice(0,140)
   }:null
-  const openingHistory=turns.filter(turn=>turn.role==='user').slice(0,32)
+  const confirmedClientTurns=turns.filter(turn=>turn.role==='user'&&turn.unanswered!==true)
+  const openingHistory=confirmedClientTurns.slice(0,32)
     .map(turn=>String(turn.content||'').slice(0,160))
   const openingProgress=coachOpeningProgress({turns:openingHistory,locale:conversationLang,
     personaId,allowPrior:allowOpeningPrior,priorSession:openingPrior})
@@ -569,7 +570,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   // Session 0 is distinct from method coaching. Existing saved values are
   // consulted ONLY in an owner-authorized preview, never from model prose.
   const profileSelected=openingProgress.completed&&openingProgress.answers.focus?.kind==='profile'
-  const profileHistory=openingHistory.slice(openingProgress.consumedTurns)
+  const profileEvidence=confirmedClientTurns.map(turn=>String(turn.content||'').slice(0,300))
+  const profileHistory=profileEvidence.slice(openingProgress.consumedTurns)
   const newProfileProgress=profileSelected
     ?coachProfileProgress({locale:conversationLang,turns:profileHistory}):null
   const approvedProfileAudit=memoryReady&&stagedMemory?.allowProfile===true&&
@@ -583,17 +585,17 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(profileReviewStart===null&&newProfileProgress?.ratings.length)return
     if(profileReviewStart?.token!==stagedMemory.stageToken||
        profileReviewStart?.provider!==memoryProvider){
-      setProfileReviewStart({from:openingHistory.length,token:stagedMemory.stageToken,provider:memoryProvider})
+      setProfileReviewStart({from:profileEvidence.length,token:stagedMemory.stageToken,provider:memoryProvider})
     }
   },[profileSelected,approvedProfileAudit,stagedMemory?.stageToken,memoryProvider,
-    newProfileProgress?.ratings.length,openingHistory.length,profileReviewStart])
+    newProfileProgress?.ratings.length,profileEvidence.length,profileReviewStart])
   const reviewAvailable=profileSelected&&profileReviewStart!==null&&
     approvedProfileAudit?.status==='available'&&
     profileReviewStart.token===stagedMemory?.stageToken&&
     profileReviewStart.provider===memoryProvider
   const profileReviewProgress=reviewAvailable
     ?coachProfileReviewProgress({audit:approvedProfileAudit,
-      turns:openingHistory.slice(profileReviewStart.from),locale:conversationLang})
+      turns:profileEvidence.slice(profileReviewStart.from),locale:conversationLang})
     :null
   const profileProgress=profileReviewProgress||
     (profileReviewStart!==null?{version:COACH_PROFILE_REVIEW_VERSION,
@@ -932,21 +934,26 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   function appendLiveTranscript(role,text,{interrupted=false}={}){
     const value=String(text||'').trim().slice(0,1200)
     if(!value)return
-    setTurns(previous=>{
-      const last=previous.at(-1)
-      if(last?.role===role&&last?.content===value)return previous
-      const entry={role,content:value,locale:conversationLang,
-        ...(role==='assistant'?{mode:'ai',inference:{
-          provider:'gemini_live_free',model:'gemini-3.1-flash-live-preview'},
-          ...(interrupted?{interrupted:true}:{})}:{})}
-      const next=[...previous,entry].slice(-96)
-      turnsRef.current=next
-      return next
-    })
+    // The transport emits final utterances once; identical consecutive words
+    // can be legitimate client answers. Preserve them and the original opening.
+    // Use the synchronous ref so End immediately after an audio packet sees it.
+    const entry={role,content:value,locale:conversationLang,
+      ...(role==='assistant'?{mode:'ai',inference:{
+        provider:'gemini_live_free',model:'gemini-3.1-flash-live-preview'},
+        ...(interrupted?{interrupted:true}:{})}:{})}
+    const next=[...turnsRef.current,entry]
+    turnsRef.current=next
+    setTurns(next)
     setSessionClockStarted(true)
     setIntroComplete(true)
     if(role==='user'){setSpeechPreview('')}
     else setStreamingPreview('')
+    // Leave room for the last interrupted output when stopping; never silently
+    // roll the report window and erase the first client statements.
+    if(next.length>=159||next.reduce((sum,row)=>sum+String(row.content||'').length+String(row.suggestion||'').length,0)>=67500){
+      setError(protocolCopy[lang].limit)
+      queueMicrotask(()=>speechRef.current?.stop?.())
+    }
   }
   function markCoachSpeechInterrupted(spokenText){
     // The response remains in the report as visible text but is not reused as
@@ -1020,7 +1027,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(profileReviewProgress&&!localInterruption){
       const upcoming=coachProfileReviewProgress({
         audit:approvedProfileAudit,
-        turns:[...openingHistory.slice(profileReviewStart.from),message],
+        turns:[...profileEvidence.slice(profileReviewStart.from),message],
         locale:responseLocale,
       })
       const answer=coachProfileReviewNextReply(upcoming,{
@@ -1249,6 +1256,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       startedAt:protocolStartedRef.current||protocolFinishedAt,
       completedAt:protocolFinishedAt,durationSeconds:Math.floor(activeSessionSeconds),
       goal:selectedGoal,clientSummary:protocolSummary,clientNextStep:protocolNextStep,
+      ...(turns.some((row,index)=>row.role!==(index%2===0?'user':'assistant'))||
+         turns.at(-1)?.role==='user'?{turnLayout:'chronological'}:{}),
       opening:coachOpeningProtocolSnapshot(openingProgress),
       ...(profileReviewProgress
         ?{profileCheckin:coachProfileReviewProtocolSnapshot(profileReviewProgress)}:
