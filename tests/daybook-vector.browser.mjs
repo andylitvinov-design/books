@@ -14,7 +14,7 @@ import {tmpdir} from 'node:os'
 import {dirname,join,resolve} from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {randomUUID} from 'node:crypto'
-import {VECTOR_SPHERES,VECTOR_AXES} from '../lib/app/daybook-vector-selection.mjs'
+import {VECTOR_SELECTION_VERSION,vectorCombinationLabel} from '../lib/app/daybook-vector-selection.mjs'
 import {personalGoalWrite,preserveGoalVectorSelection} from '../lib/app/daybook-personal-goal-contract.mjs'
 
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..'),require=createRequire(import.meta.url)
@@ -32,9 +32,9 @@ const origin='http://127.0.0.1:'+port
 const screenshotDir=process.env.HH_VECTOR_QA_SCREENSHOT_DIR||await mkdtemp(join(tmpdir(),'daybook-vector-browser-'))
 await mkdir(screenshotDir,{recursive:true})
 const copy={
- en:{next:'Next',review:'Choose my vector',save:'Save my goal',retry:'Retry saving',done:'Open my goals',edit:'Edit',confirm:'I confirm these details and the selected stage.',editSave:'Save goal'},
- ru:{next:'Дальше',review:'Выбрать вектор',save:'Сохранить мою цель',retry:'Повторить сохранение',done:'К моим целям',edit:'Изменить',confirm:'Я подтверждаю эти данные и выбранный этап.',editSave:'Сохранить цель'},
- es:{next:'Siguiente',review:'Elegir mi vector',save:'Guardar mi meta',retry:'Reintentar guardado',done:'Abrir mis metas',edit:'Editar',confirm:'Confirmo estos detalles y la etapa seleccionada.',editSave:'Guardar objetivo'},
+ en:{new:'Create a new goal',back:'Back',next:'Next',review:'See my direction',save:'Save my goal',retry:'Retry saving',done:'Open my goals',edit:'Edit',confirm:'I confirm these details and the selected stage.',editSave:'Save goal'},
+ ru:{new:'Создать новую цель',back:'Назад',next:'Дальше',review:'Посмотреть мой вектор',save:'Сохранить мою цель',retry:'Повторить сохранение',done:'К моим целям',edit:'Изменить',confirm:'Я подтверждаю эти данные и выбранный этап.',editSave:'Сохранить цель'},
+ es:{new:'Crear una nueva meta',back:'Anterior',next:'Siguiente',review:'Ver mi dirección',save:'Guardar mi meta',retry:'Reintentar guardado',done:'Abrir mis metas',edit:'Editar',confirm:'Confirmo estos detalles y la etapa seleccionada.',editSave:'Guardar objetivo'},
 }
 const server=spawn(process.execPath,[join(root,'node_modules/next/dist/bin/next'),'dev','--hostname','127.0.0.1','--port',String(port)],{cwd:root,env:{...process.env,NEXT_TELEMETRY_DISABLED:'1'},stdio:['ignore','pipe','pipe']})
 let serverLog='',browser
@@ -63,7 +63,7 @@ try{
    if(revoked)return reply({error:'ACCOUNT_REQUIRED'},401)
    if(path==='bootstrap')return reply({account:{id:owner,onboardingState:'active'},results:[],runs:[],requests:[],consents:[],services:[]})
    if(path==='daybook-journal')return reply({entries:[],nextCursor:null})
-   if(path==='coaching-life-plan')return reply({plan:{id:randomUUID()},goals:[...records.values()].map(goal=>({...goal,actions:[]})),actions:[],domains:[],contextPermissions:[]})
+   if(path==='coaching-life-plan')return reply({plan:{id:randomUUID()},goals:[...records.values()].map(goal=>({id:goal.id,title:goal.title,desiredOutcome:goal.desiredOutcome,status:goal.status,revision:goal.revision,targetDate:goal.targetDate,actions:[]})),actions:[],domains:[],contextPermissions:[]})
    if(path==='personal-goals'){
     if(request.headers()['x-hh-account-id']!==owner)return reply({error:'ACCOUNT_CHANGED'},409)
     if(method==='GET')return records.has(url.searchParams.get('id'))?reply({goal:records.get(url.searchParams.get('id'))}):reply({error:'NOT_FOUND'},404)
@@ -82,8 +82,13 @@ try{
    }
    return reply({error:'SYNTHETIC_ENDPOINT_NOT_CONFIGURED'},404)
   })
-  await page.goto(origin+'/'+locale+'/app/daybook?start=vector',{waitUntil:'domcontentloaded',timeout:120000})
+  await page.goto(origin+'/'+locale+'/app/daybook'+(locale==='ru'?'?tab=goals':'?start=vector'),{waitUntil:'domcontentloaded',timeout:120000})
   const wizard=page.locator('[data-daybook-vector-start]')
+  if(locale==='ru'){
+   await page.locator('#daybook-goals').waitFor()
+   assert.equal(await wizard.count(),0)
+   await page.locator('#daybook-goals').getByRole('button',{name:c.new,exact:true}).click()
+  }
   await wizard.waitFor({state:'visible'})
   async function mobile(state){
    for(const width of [320,390,430]){
@@ -97,17 +102,50 @@ try{
    await page.setViewportSize({width:390,height:844})
   }
   await mobile('sphere')
-  for(const [track,items] of [['spheres',VECTOR_SPHERES],['axes',VECTOR_AXES]]){
-   for(let index=0;index<items.length;index++){
-    await wizard.getByRole('heading',{name:items[index].name[locale],exact:true}).waitFor()
-    assert.equal(await wizard.getByRole('button',{name:track==='axes'&&index===7?c.review:c.next,exact:true}).isDisabled(),true)
-    await wizard.locator('select').nth(0).selectOption('0')
-    await wizard.locator('select').nth(1).selectOption('8')
-    await wizard.getByRole('button',{name:track==='axes'&&index===7?c.review:c.next,exact:true}).click()
-   }
-  }
+  const next=()=>wizard.getByRole('button',{name:c.next,exact:true})
+  assert.equal(await wizard.locator('input[name^=sphereId]').count(),4)
+  assert.equal(await next().isDisabled(),true)
   await wizard.locator('input[type=radio][value=work]').check()
+  assert.equal(await next().isDisabled(),true)
+  await wizard.locator('input[type=radio][value=finance]').check()
+  await wizard.locator('select').nth(0).selectOption('3')
+  await wizard.locator('select').nth(1).selectOption('8')
+  await wizard.locator('input[type=radio][value=career_business]').check()
+  assert.deepEqual(await wizard.locator('select').evaluateAll(nodes=>nodes.map(node=>node.value)),['',''])
+  assert.equal(await next().isDisabled(),true)
+  await wizard.locator('input[type=radio][value=body]').check()
+  await wizard.locator('input[type=radio][value=body_health]').check()
+  assert.deepEqual(await wizard.locator('select').evaluateAll(nodes=>nodes.map(node=>node.value)),['',''])
+  await wizard.locator('input[type=radio][value=work]').check()
+  assert.equal(await wizard.locator('select').count(),0,'a new sphere needs an explicit focus before rating')
+  await wizard.locator('input[type=radio][value=finance]').check()
+  await wizard.locator('select').nth(0).selectOption('0')
+  await wizard.locator('select').nth(1).selectOption('8')
+  await next().click()
+  assert.equal(await wizard.locator('input[name^=axisId]').count(),8)
+  const review=()=>wizard.getByRole('button',{name:c.review,exact:true})
+  assert.equal(await review().isDisabled(),true)
+  await wizard.locator('input[type=radio][value=anchor]').check()
+  await wizard.locator('select').nth(0).selectOption('2')
+  await wizard.locator('select').nth(1).selectOption('9')
   await wizard.locator('input[type=radio][value=freedom]').check()
+  assert.deepEqual(await wizard.locator('select').evaluateAll(nodes=>nodes.map(node=>node.value)),['',''])
+  assert.equal(await review().isDisabled(),true)
+  await wizard.locator('input[type=radio][value=anchor]').check()
+  await wizard.locator('select').nth(0).selectOption('2')
+  await wizard.locator('select').nth(1).selectOption('9')
+  await wizard.getByRole('button',{name:c.back,exact:true}).click()
+  assert.equal(await wizard.locator('input[type=radio][value=work]').isChecked(),true)
+  assert.equal(await wizard.locator('input[type=radio][value=finance]').isChecked(),true)
+  assert.deepEqual(await wizard.locator('select').evaluateAll(nodes=>nodes.map(node=>node.value)),['0','8'])
+  await next().click()
+  assert.equal(await wizard.locator('input[type=radio][value=anchor]').isChecked(),true)
+  assert.deepEqual(await wizard.locator('select').evaluateAll(nodes=>nodes.map(node=>node.value)),['2','9'])
+  await mobile('axis')
+  await review().click()
+  assert.equal(await wizard.locator('[data-vector-combination]').textContent(),vectorCombinationLabel({sphereId:'work',focusId:'finance',axisId:'anchor'},locale))
+  assert.equal(await wizard.locator('[data-vector-selected-ratings] dt').count(),2)
+  assert.deepEqual(await wizard.locator('[data-vector-selected-ratings] strong').allTextContents(),['0/10','8/10','2/10','9/10'])
   assert.equal(await wizard.getByRole('button',{name:c.save,exact:true}).isDisabled(),true)
   const title='Synthetic '+locale+' goal from stage zero'
   await wizard.locator('textarea').nth(0).fill(title)
@@ -123,7 +161,8 @@ try{
   await wizard.getByRole('button',{name:c.done,exact:true}).waitFor()
   assert.equal(records.size,1)
   const saved=[...records.values()][0]
-  assert.equal(saved.vectorSelection.spheres.body.current,0);assert.equal(Object.keys(saved.vectorSelection.axes).length,8)
+  assert.equal(saved.areaKey,'finance');assert.equal(saved.vectorSelection.version,VECTOR_SELECTION_VERSION)
+  assert.deepEqual(saved.vectorSelection.spheres,{work:{current:0,desired:8}});assert.deepEqual(saved.vectorSelection.axes,{anchor:{current:2,desired:9}})
   await wizard.getByRole('button',{name:c.done,exact:true}).click()
   await page.waitForURL(origin+'/'+locale+'/app/daybook?tab=goals')
   await wizard.waitFor({state:'detached'})
@@ -132,6 +171,8 @@ try{
   await card.waitFor();assert.equal(await wizard.count(),0)
   await card.getByRole('button',{name:c.edit,exact:true}).click()
   await page.locator('[data-vector-origin]').waitFor()
+  assert.equal(await page.locator('[data-vector-origin] [data-vector-combination]').textContent(),vectorCombinationLabel(saved.vectorSelection,locale))
+  assert.deepEqual(await page.locator('[data-vector-origin] [data-vector-selected-ratings] strong').allTextContents(),['0/10','8/10','2/10','9/10'])
   const editor=page.locator('#daybook-goals form'),editedTitle=title+' refined'
   await editor.locator('textarea').nth(0).fill(editedTitle)
   await editor.getByRole('checkbox',{name:c.confirm,exact:true}).check()
@@ -146,7 +187,7 @@ try{
   await page.getByRole('heading',{name:editedTitle,exact:true}).waitFor({state:'detached'})
   assert.equal(await page.locator('[data-vector-origin]').count(),0)
   assert.deepEqual(errors,[],`${locale}: runtime errors`)
-  receipts.push({locale,widths:[320,390,430],completeQuestions:12,goals:records.size,roundTrip:true,originPreserved:true,revocationWipe:true,retry:locale==='ru'?'verified':'not simulated'})
+  receipts.push({locale,widths:[320,390,430],selectedRatings:2,entry:locale==='ru'?'create-button':'deep-link',selectionChangesClearScores:true,backPreservesScores:true,goals:records.size,roundTrip:true,originPreserved:true,revocationWipe:true,retry:locale==='ru'?'verified':'not simulated'})
   console.log(JSON.stringify(receipts.at(-1)))
   await context.close()
  }

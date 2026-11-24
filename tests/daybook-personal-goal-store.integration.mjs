@@ -7,7 +7,7 @@ import {createPersonalGoalRepository} from '../lib/app/daybook-personal-goals.js
 import {closeDatabase,transaction} from '../lib/app/database.js'
 import {assertCoachingGoalNotErased} from '../lib/app/coaching-goal-erasure.js'
 import {createPersonalGoalHandler} from '../lib/app/daybook-personal-goal-handler.mjs'
-import {VECTOR_SPHERES,VECTOR_AXES,emptyVectorSelectionDraft,vectorSelectionGoalDraft} from '../lib/app/daybook-vector-selection.mjs'
+import {VECTOR_SPHERES,VECTOR_AXES,VECTOR_SELECTION_LEGACY_VERSION,emptyVectorSelectionDraft,vectorSelectionGoalDraft} from '../lib/app/daybook-vector-selection.mjs'
 const url=process.env.HH_GOAL_TEST_DATABASE_URL
 if(!url||process.env.VERCEL||process.env.HH_APP_TEST_RUNTIME!=='isolated')throw new Error('ISOLATED_DATABASE_REQUIRED')
 const parsed=new URL(url)
@@ -120,7 +120,7 @@ test('actual Request handler round-trips create/read/edit/delete through real re
 })
 
 test('stage-zero goal and complete 4+8 origin persist atomically, replay once and survive legacy edits',async()=>{
- const selection=emptyVectorSelectionDraft(randomUUID())
+ const selection=emptyVectorSelectionDraft(randomUUID(),VECTOR_SELECTION_LEGACY_VERSION)
  for(const [track,items] of [['spheres',VECTOR_SPHERES],['axes',VECTOR_AXES]])for(const item of items)selection[track][item.id]={current:'0',desired:'8'}
  Object.assign(selection,{sphereId:'work',axisId:'freedom',statement:'Synthetic stage-zero income direction',why:'Synthetic values'})
  const input={...vectorSelectionGoalDraft(selection,'2026-11-23T23:00:00.000Z'),operationId:randomUUID()}
