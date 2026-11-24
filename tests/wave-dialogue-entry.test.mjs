@@ -36,9 +36,9 @@ test('localized intent labels and entry numbers choose the same stable paths',()
 });
 
 test('the screenshot money request reaches all seven steps in rules and native routes',()=>{
- for(const [locale,requests] of [['ru',['Деньги','Дай денег','Хочу увеличить доход']],['en',['money','Give me money','I want to earn more']],['es',['dinero','Dame dinero','Quiero ganar más']]]){
-  for(const message of requests)for(const turn of [ruleConversationReply,waveNativeTurn]){
-   const answer=turn({message,locale,history:[{role:'user',text:'Привет'},{role:'assistant',text:buildWaveEntryMenu(locale).reply}]});
+ for(const [locale,requests] of [["ru",["Деньги","Дай денег","Хочу денег","Хочу деньги","Хочу больше денег","Я хочу денег!","Мне очень нужны деньги","Хочу заработать денег","Хочу заработать","Хочу увеличить доход","Хочу больше зарабатывать","Пожалуйста, дай мне денег"]],["en",["money","Give me money","I want money","I want more money","I need more money","I want to make money","I want to earn more","I want to increase my income"]],["es",["dinero","Dame dinero","Quiero dinero","Quiero más dinero","Necesito más dinero","Quiero ganar dinero","Quiero ganar más","Quiero aumentar mis ingresos"]]]){
+  for(const message of requests)for(const turn of [waveDialogueEntryTurn,ruleConversationReply,waveNativeTurn])for(const history of [[],[{role:'user',text:'Привет'},{role:'assistant',text:buildWaveEntryMenu(locale).reply}]]){
+   const answer=turn({message,locale,history});
    const menu=readWaveGoalMenu(answer?.reply);
    assert.equal(menu?.topic,'money',`${locale}: ${message}`);
    assert.equal(menu.stages.length,7);
@@ -51,6 +51,8 @@ test('money as a topic does not override support or understanding intent',()=>{
  for(const [message,path] of [
   ['Мне нужна поддержка, я переживаю из-за денег','therapy'],
   ['Мне страшно из-за денег','therapy'],
+  ['Мне нужна поддержка, хочу денег','therapy'],
+  ['Хочу понять, почему хочу денег','consultation'],
   ['Хочу понять, почему постоянно не хватает денег','consultation'],
   ['Почему я боюсь денег?','consultation'],
   ['I need support because I am worried about money','therapy'],
@@ -62,7 +64,11 @@ test('money as a topic does not override support or understanding intent',()=>{
  }
  for(const path of ['therapy','consultation']){
   assert.equal(waveDialogueEntryTurn({message:'Деньги',locale:'ru',path}),null);
-  assert.equal(waveDialogueEntryTurn({message:'Хочу увеличить доход',locale:'ru',path}).path,'goal');
+  for(const message of ['Хочу увеличить доход','Хочу денег','Я хочу больше денег','Мне очень нужны деньги']){
+   const answer=waveDialogueEntryTurn({message,locale:'ru',path});
+   assert.equal(answer?.path,'goal',message);
+   assert.equal(readWaveGoalMenu(answer.reply)?.topic,'money');
+  }
  }
 });
 
@@ -95,7 +101,7 @@ test('topic repair, route restore and resets use only shareable conversation evi
 });
 
 test('entry navigation does not intercept verified actions, safety, factual or media requests',()=>{
- for(const message of ['Создай видео о деньгах','Подбери медитацию','Переведи деньги','Оплати заказ','Запиши меня к коучу',
+ for(const message of ['Создай видео о деньгах','Хочу видео про деньги','Подбери медитацию','Переведи деньги','Оплати заказ','Запиши меня к коучу',
   'Мне страшно, я хочу умереть','Я хочу понять, почему боль в груди','Не могу дышать','Что такое инфляция?',
   'Хочу понять, как исправить ошибку JavaScript','I want to understand how to pay for an order']){
   assert.equal(waveDialogueEntryTurn({message,locale:'ru'}),null,message);

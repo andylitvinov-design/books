@@ -184,3 +184,23 @@ test('explicit willingness to try after a maybe is consent; uncertainty alone is
   assert.equal(coachOpeningProgress({locale,turns:['no, let\'s try']}).lamps.invitation,false,locale)
  }
 })
+
+
+test('bare coaching topics never become a client name after a lost opening turn',()=>{
+ for(const [locale,yes,topics,name,explicit] of [
+  ['en','yes',['Money','money','Financial freedom','Work','Relationships'],'Andy','Call me Love'],
+  ['ru','да',['Деньги','деньги','Работа','Любовь','Опора'],'Андрей','Меня зовут Любовь'],
+  ['es','sí',['Dinero','dinero','Trabajo','Amor','Salud'],'María','Me llamo Amor'],
+ ]){
+  for(const topic of topics){
+   const p=coachOpeningProgress({personaId:'genie',locale,turns:[yes,topic]})
+   assert.equal(p.current,'name',locale+': '+topic)
+   assert.equal(p.checkmarks.name,false)
+   assert.equal(p.answers.name,undefined)
+  }
+  const p=coachOpeningProgress({personaId:'genie',locale,turns:[yes,name]})
+  assert.equal(p.answers.name.value,name)
+  const q=coachOpeningProgress({personaId:'genie',locale,turns:[yes,explicit]})
+  assert.equal(q.checkmarks.name,true,'an explicitly chosen name still works')
+ }
+})

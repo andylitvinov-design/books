@@ -136,3 +136,69 @@
   .quickActions { grid-template-columns:1fr; }
 }
 @media (prefers-reduced-motion:reduce) { .filterButton,.filterChevron { transition:none; } }
+
+/* Cabinet follows the approved Daybook palette; public discovery keeps its own theme. */
+:global(.hh-app[data-cabinet-theme="daybook"]) .dashboard {
+  color: var(--hh-cabinet-ink, #3c291c);
+  border-color: var(--hh-cabinet-border, #d7b576);
+  background: linear-gradient(135deg, var(--hh-cabinet-surface, #fff6e3), var(--hh-cabinet-surface-soft, #f5e3bf));
+  box-shadow: 0 8px 24px #130c0826;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .filterButton {
+  background: linear-gradient(120deg, var(--hh-cabinet-primary, #006b4e), var(--hh-cabinet-primary-hover, #00513d))!important;
+  border-color: var(--hh-cabinet-border, #d7b576)!important;
+  border-radius: 18px!important;
+  box-shadow: 0 4px 12px #173c2726!important;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .filterButton:hover,
+:global(.hh-app[data-cabinet-theme="daybook"]) .filterButton[aria-expanded=true] {
+  background: var(--hh-cabinet-primary-hover, #00513d)!important;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .filterCopy strong {
+  font-size: 17px!important;
+  line-height: 1.3!important;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .filterCopy small { color: #fff6e3; font-size: 14px; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .title {
+  color: var(--hh-cabinet-ink, #3c291c);
+  font-family: var(--hh-cabinet-heading-font, Georgia, serif)!important;
+  font-weight: 700!important;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .kicker { color: var(--hh-cabinet-primary, #006b4e); font-size: 12px!important; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .subtitle,
+:global(.hh-app[data-cabinet-theme="daybook"]) .privacy {
+  color: var(--hh-cabinet-muted, #695644)!important;
+  font-size: 14px!important;
+  line-height: 1.45!important;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .stat {
+  border-color: var(--hh-cabinet-border, #d7b576);
+  background: var(--hh-cabinet-surface, #fff6e3);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .stat>span:not(.circle) {
+  color: var(--hh-cabinet-muted, #695644);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .circle:after { background: var(--hh-cabinet-surface, #fff6e3); }
+:global(.hh-app[data-cabinet-theme="daybook"]) .reportQuick :global([data-client-complete-report]) button,
+:global(.hh-app[data-cabinet-theme="daybook"]) .guidanceButton {
+  min-height: 48px!important;
+  border-color: var(--hh-cabinet-border, #d7b576)!important;
+  background: var(--hh-cabinet-surface, #fff6e3)!important;
+  color: var(--hh-cabinet-primary, #006b4e)!important;
+  font-size: 14px!important;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .guidanceButton[aria-expanded=true] {
+  background: var(--hh-cabinet-selected, #e3f0df)!important;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .guidance {
+  border-color: var(--hh-cabinet-border, #d7b576);
+  background: var(--hh-cabinet-surface, #fff6e3);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .guidance p { font-size: 15px!important; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .guidance small { color: var(--hh-cabinet-muted, #695644); font-size: 14px; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .filterButton:focus-visible,
+:global(.hh-app[data-cabinet-theme="daybook"]) .guidanceButton:focus-visible {
+  outline-color: var(--hh-cabinet-primary, #006b4e)!important;
+}

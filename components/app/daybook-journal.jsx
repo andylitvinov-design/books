@@ -2,6 +2,8 @@
 import {useCallback,useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
+import {BarChart3,Heart,Sparkles,Target} from 'lucide-react'
+import {SiteNavigation} from '@/components/site-navigation'
 import {useSearchParams} from 'next/navigation'
 import {appFetch} from '@/lib/app/client-fetch'
 import {createJournalSaver} from '@/lib/app/daybook-journal-save.mjs'
@@ -182,8 +184,13 @@ export default function DaybookJournal({locale,...serverRoute}){
   routeIntent.current=advanceDaybookRouteIntent(routeIntent.current,{autoStartVector:false,initialTab:'stages'})
   replaceDaybookURL(url)
  }
- return <main className={styles.page} data-daybook-view={tab}>
-  <div className={styles.topline}><Link href={root+'/portrait'}>{c.home}</Link><span>DAYBOOK</span></div>
+ return <main className={styles.page} data-daybook-view={tab} data-cabinet-theme="daybook" data-daybook-page>
+  <header className={styles.masthead}><Link className={styles.brand} href={root+'/portrait'} aria-label={c.home}><Sparkles size={25} aria-hidden="true"/><span>Holistic House</span></Link><SiteNavigation locale={locale} compact/></header>
+  <nav className={styles.destinations} aria-label={c.home}>
+   <button type="button" aria-pressed={tab==='goals'} disabled={guideLocked} onClick={()=>selectTab('goals')}><Target size={21} aria-hidden="true"/>{({en:'My goals',ru:'Мои цели',es:'Mis metas'})[locale]}</button>
+   <Link href={root+'/tests'}><BarChart3 size={21} aria-hidden="true"/>{({en:'Tests',ru:'Тесты',es:'Tests'})[locale]}</Link>
+   <Link href={'/'+locale+'/holistic-support'}><Heart size={21} aria-hidden="true"/>{({en:'Support',ru:'Поддержка',es:'Apoyo'})[locale]}</Link>
+  </nav>
   {tab!=='stages'&&<><h1>{c.title}</h1><p>{c.intro}</p></>}
   {phase!=='ready'?<section aria-live="polite"><p>{['loading','checking'].includes(phase)?c.loading:phase==='signed-out'?c.login:c.error}</p>{phase==='signed-out'?<Link href={root+'/portrait'}>{c.login}</Link>:phase==='error'||phase==='locked-error'?<button onClick={()=>void(phase==='locked-error'?sessionGuard.current?.verify():load())}>{c.retry}</button>:null}</section>:<>
    <nav className={styles.workspaceNav} aria-label={c.title}>{['stages','today','journal','goals','growth'].map(key=><button key={key} disabled={guideLocked} aria-current={tab===key?'page':undefined} onClick={()=>selectTab(key)}>{key==='stages'?stageLabel:c[key]}</button>)}</nav>

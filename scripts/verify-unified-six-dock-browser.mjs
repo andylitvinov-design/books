@@ -827,6 +827,11 @@ try{
  await page.waitForFunction(()=>document.querySelector('[data-hh-agent-preview] textarea')?.getAttribute("placeholder")==="Что сейчас для вас важно?",null,{timeout:10000});
  await page.waitForFunction(()=>[...document.querySelectorAll('[data-hh-agent-preview] [data-hh-chat-turn="user"]')]
    .some(node=>node.textContent?.includes("Хочу денег")),null,{timeout:10000});
+ // The exact owner screenshot phrase must open the real menu, not just appear in the transcript.
+ const moneyWishMenu=chat.locator('[data-hh-wave-goal-menu]');
+ await expect(moneyWishMenu).toBeVisible();
+ await expect(moneyWishMenu.locator('[data-hh-wave-goal-step]')).toHaveCount(7);
+ await expect(moneyWishMenu.locator('[data-hh-wave-goal-closing]')).toHaveText("Можем начать с 1 пункта.");
  await bilingualInput.fill("I want to discuss my income");
  await chat.locator('button[type="submit"]').click();
  await page.waitForFunction(()=>document.querySelector('[data-hh-agent-preview]')?.getAttribute("lang")==="en",null,{timeout:15000});
@@ -887,7 +892,7 @@ try{
  await expect(assistantReplies.last()).toContainText("разберёмся");
  for(let step=1;step<=7;step++){
    await resetViaMore();
-   await sendDialogue("Дай денег");
+   await sendDialogue(step%2===1?"Хочу денег":"Дай денег");
    const menu=chat.locator('[data-hh-wave-goal-menu]');
    await expect(menu).toBeVisible();
    await expect(menu.locator('[data-hh-wave-goal-step]')).toHaveCount(7);
@@ -900,7 +905,7 @@ try{
    await expect(choice).toBeDisabled();
  }
  await resetViaMore();
- await sendDialogue("Дай денег");
+ await sendDialogue("Хочу денег");
  await sendDialogue("Да");
  await expect(assistantReplies.last()).toContainText("Понять, что происходит, и выбрать цель");
  await sendDialogue("Доход");
