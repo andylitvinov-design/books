@@ -26,7 +26,7 @@ export function OwnerClientSessions({clientId,sessions,documents,locale='en'}) {
     </div><button type="button" disabled={busy} onClick={create}>+ {ru?'Новая сессия':'New session'}</button></header>
     <div className={styles.sessionCards}>
       {sessions.map(item=><a key={item.id} href={'/admin/clients/'+clientId+'/sessions/'+item.id}>
-        <strong>{item.title}</strong><small>{item.occurredOn} · {item.status==='published'?(ru?'Опубликовано':'Published'):
+        <strong>{item.reportFormat==='pdf'?'PDF · ':''}{item.title}</strong><small>{item.occurredOn} · {item.status==='published'?(ru?'Опубликовано':'Published'):
           item.status==='archived'?(ru?'Архив':'Archived'):(ru?'Черновик':'Draft')}</small></a>)}
     </div>
     {!sessions.length&&<p style={{marginTop:16}}>{ru?'Начните с новой сессии, запись прикрепится автоматически.':

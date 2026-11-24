@@ -27,3 +27,17 @@ test('publication defaults closed, saved media route authenticates before inline
   assert.ok(route.indexOf('await auth.verified()')<route.indexOf('inlinePdf:'))
   assert.match(route,/saved\.session\.primaryPdfAssetId===assetId/)
 })
+
+import {listClientReportDirectory} from '../lib/consultations/report-directory.js'
+test('uploaded PDF and generated reports share the searchable and paginated archive',async()=>{
+  const clientId='12345678-1234-4234-9234-123456789abc'
+  const store={listClients:async()=>[{id:clientId,fullName:'Test client',status:'active',preferredLocale:'en'}],
+    listClientDocuments:async()=>[{id:'generated',clientId,kind:'prescription',status:'active',dateIssued:'2026-11-23'}]}
+  const listPdfSessions=async()=>[{id:'pdf',reportFormat:'pdf',reportLocale:'ru',title:'PDF',occurredOn:'2026-11-24',status:'draft'},{id:'unrelated',title:'Other session',occurredOn:'2026-11-24'}]
+  const first=await listClientReportDirectory(store,{query:'test',pageSize:1,listPdfSessions})
+  assert.equal(first.totalReports,2)
+  assert.equal(first.rows[0].reportType,'pdf')
+  assert.equal(first.rows[0].reportLocale,'ru')
+  const second=await listClientReportDirectory(store,{page:2,pageSize:1,listPdfSessions})
+  assert.equal(second.rows[0].reportType,'remedies')
+})

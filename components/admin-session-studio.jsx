@@ -139,6 +139,11 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
       return {...d,media:rows.map((row,i)=>({...row,sortOrder:i}))}
     })
   }
+  function choosePrimaryPdf(current,id) {
+    const previous=current.primaryPdfAssetId
+    return {...current,primaryPdfAssetId:id,
+      media:id&&previous&&previous!==id?current.media.filter(row=>row.assetId!==previous).map((row,index)=>({...row,sortOrder:index})):current.media}
+  }
   function discardMedia(id) {setDraft(d=>({...d,...(d.primaryPdfAssetId===id?{primaryPdfAssetId:null}:{}),media:d.media.filter(m=>m.assetId!==id).map((row,i)=>({...row,sortOrder:i}))}))}
   const block=Boolean(busy)
   return <div className={styles.adminStudio}>
@@ -156,7 +161,7 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
       {isPdf?<>
         <p>{ru?'Клиент получит оригинальный PDF после защищённого входа; оформление не меняется.':'The client receives the original PDF after protected sign-in; its layout is unchanged.'}</p>
         <label className={styles.field}>{ru?'Основной PDF':'Primary PDF'}
-          <select value={draft.primaryPdfAssetId||''} onChange={event=>setDraft({...draft,primaryPdfAssetId:event.target.value||null})}>
+          <select value={draft.primaryPdfAssetId||''} onChange={event=>setDraft(current=>choosePrimaryPdf(current,event.target.value||null))}>
             <option value="">{ru?'Выберите PDF':'Choose PDF'}</option>
             {draft.media.filter(row=>row.scope==='client'&&row.role!=='hidden'&&activeAssets.get(row.assetId)?.kind==='pdf').map(row=>
               <option key={row.assetId} value={row.assetId}>{row.title} · {row.assetId.slice(0,8)}</option>)}
@@ -165,7 +170,8 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
         {draft.primaryPdfAssetId&&<a href={base+'/media/'+draft.primaryPdfAssetId+'?view=inline'} target="_blank" rel="noopener noreferrer" className={styles.secondaryButton}>{ru?'Проверить PDF':'Preview PDF'}</a>}
         <OwnerPdfReportUpload key={clientId+session.id} clientId={clientId} sessionId={session.id} locale={locale}
           disabled={block||changed||session.status==='archived'} onBusy={value=>setBusy(value?'pdf-upload':'')}
-          onSaved={async(assetId)=>{const next=await load();if(next.draft.primaryPdfAssetId!==assetId){setDraft({...next.draft,primaryPdfAssetId:assetId})}}}/>
+          onSaved={async(assetId)=>{const next=await load();if(next.draft.primaryPdfAssetId!==assetId){setDraft(choosePrimaryPdf(next.draft,assetId))}}}/>
+        <p>{ru?'При замене основной PDF убирается из нового черновика. Уже опубликованная версия сохранится до повторной публикации.':'Replacing the primary PDF detaches the previous file from the new draft. The published version remains until you republish.'}</p>
         {changed&&<p>{ru?'Сохраните изменения перед следующей загрузкой.':'Save changes before uploading another file.'}</p>}
       </>:<><p>{ru?
         (sourceDocument?.recommendationType==='general'?'Анализ и рекомендации уже находятся в отчёте. Препараты не требуются.':'Анализ, назначения и рекомендации уже находятся в исходном отчёте. Заполнять их повторно для публикации не нужно.'):

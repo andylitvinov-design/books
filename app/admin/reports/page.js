@@ -9,6 +9,9 @@ import { listClientReportDirectory, parseReportDirectoryQuery } from '@/lib/cons
 import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import { uiLocaleCookie } from '@/lib/ui-locale'
+import {deliveryEnabled} from '@/lib/clients/delivery-model'
+import {getAppConfig} from '@/lib/app/config'
+import {listClientSessions} from '@/lib/clients/session-delivery-service'
 import styles from './reports.module.css'
 
 export const dynamic = 'force-dynamic'
@@ -56,7 +59,9 @@ export default async function ClientReports({ searchParams }) {
   const params = await searchParams
   const notice = typeof params?.notice === 'string' ? params.notice : ''
   const store = getPrescriptionStore()
-  const data = await listClientReportDirectory(store, { query, sort, page })
+  const pdfEnabled=deliveryEnabled()
+  const data = await listClientReportDirectory(store, { query, sort, page,
+    ...(pdfEnabled?{listPdfSessions:id=>listClientSessions(getAppConfig(),store,id)}:{}) })
   const sortHref = value => '/admin/reports?' + new URLSearchParams({ ...(query ? { q: query } : {}), sort: value }).toString()
   const pageHref = number => '/admin/reports?' + new URLSearchParams({ ...(query ? { q: query } : {}), sort, page: String(number) }).toString()
   return <main className={'prescription-admin-shell ' + styles.shell}>
@@ -64,7 +69,7 @@ export default async function ClientReports({ searchParams }) {
     <div className={styles.top}>
       <Link href={'/' + locale + '/app/practice'} className={styles.back} prefetch={false}>← {t.back}</Link>
       <Link href="/admin/reports/new" className={styles.primary} prefetch={false}>{t.create}</Link>
-      <Link href="/admin/consultations/new?format=pdf" className={styles.primary} prefetch={false}>{locale==='ru'?'+ Готовый PDF-отчёт':'+ Upload PDF report'}</Link>
+      {pdfEnabled&&<Link href="/admin/consultations/new?format=pdf" className={styles.primary} prefetch={false}>{locale==='ru'?'+ Готовый PDF-отчёт':'+ Upload PDF report'}</Link>}
       <Link href="/admin/reports/general/new" className={styles.primary} prefetch={false}>{t.createGeneral}</Link>
     </div>
     <section className={styles.sheet} aria-label={t.list}>
@@ -88,6 +93,7 @@ export default async function ClientReports({ searchParams }) {
       </nav>
       {notice && ['deleted', 'changed', 'unavailable'].includes(notice) && <p className={styles.notice} role="status">{notice === 'deleted' ? t.deleted : notice === 'changed' ? t.changed : t.storageError}</p>}
       {!store && <p role="alert" className={styles.empty}>{t.unavailable}</p>}
+      {data.pdfUnavailable&&<p role="alert">{locale==='ru'?'Часть PDF-отчётов временно недоступна.':'Some uploaded PDF reports are temporarily unavailable.'}</p>}
       {store && !data.rows.length && <div className={styles.empty}><strong>{t.empty}</strong><p>{t.emptyHint}</p></div>}
       {store && data.rows.length > 0 && <div className={styles.list}>
         {data.rows.map(row => <article key={row.id} className={styles.record}>
@@ -99,16 +105,20 @@ export default async function ClientReports({ searchParams }) {
                 <time dateTime={row.dateIssued || undefined} title={t.date}>{dateLabel(row.dateIssued, locale)}</time>
                 <span className={styles.localeTag} aria-label={row.reportLocale === 'ru' ? 'Russian report' : 'English report'}>{row.reportLocale.toUpperCase()}</span>
                 {row.reportType === 'general' && <span className={styles.localeTag}>{locale === 'ru' ? 'Без препаратов' : 'No remedies'}</span>}
-                {row.status !== 'active' && <span className={styles.status}>{t.inactive}</span>}
+                {row.reportType==='pdf'?<><span className={styles.localeTag}>PDF</span><span className={styles.status}>{row.status==='published'?(locale==='ru'?'Опубликован':'Published'):row.status==='archived'?(locale==='ru'?'Архив':'Archived'):(locale==='ru'?'Черновик':'Draft')}</span></>:
+                  row.status !== 'active' && <span className={styles.status}>{t.inactive}</span>}
               </div>
+              {row.reportType==='pdf'&&<p>{row.title}</p>}
               <Link href={'/admin/clients/' + encodeURIComponent(row.clientId)} prefetch={false}>{t.file} ↗</Link>
             </div>
           </div>
           <div className={styles.actions}>
+            {row.reportType==='pdf'?<Link className={styles.primary} href={'/admin/clients/'+encodeURIComponent(row.clientId)+'/sessions/'+encodeURIComponent(row.id)} prefetch={false}>{t.edit}</Link>:<>
             <Link className={styles.view} href={'/admin/documents/' + encodeURIComponent(row.id) + '/view?locale=' + row.reportLocale} prefetch={false}>{t.view}</Link>
             <Link className={styles.primary} href={documentPreviewEditHref(row)} prefetch={false}>{t.edit}</Link>
             <DeleteReportButton label={t.delete} confirmation={t.deleteConfirm}
               action={deleteSavedReportAction.bind(null, row.id, row.updatedAt, { q: query, sort, page: data.page })} />
+            </>}
           </div>
         </article>)}
       </div>}
