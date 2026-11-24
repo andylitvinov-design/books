@@ -7,6 +7,7 @@ import {
   subscriberQuizSafety, quizCopy,
 } from '../lib/app/subscriber-quiz-policy.mjs'
 import { parseSubscriberAiUpdate } from '../lib/app/subscriber-ai-policy.mjs'
+import {telegramReadableChoices,telegramReadablePayload} from '../lib/crm/telegram-button-layout.mjs'
 
 test('callback grammar and 64-byte limit reject forged or malformed quiz actions',()=>{
   assert.deepEqual(parseSubscriberQuizCallback('hhq:a:4:0'),{type:'answer',revision:4,value:0})
@@ -55,6 +56,7 @@ test('catalog enumerates only approved and real rights-cleared questionnaires',(
     assert.ok(!catalog.some(x=>x.definition.administration?.kind==='trauma-front-matter-v1'))
     const menu=subscriberQuizMenu(locale,0)
     assert.ok(menu.keyboard.inline_keyboard.length>0)
+    assert.ok(menu.keyboard.inline_keyboard.every(row=>row.length===1))
     assert.ok(menu.keyboard.inline_keyboard.every(row=>row.every(x=>x.callback_data.length<=64)))
   }
 })
@@ -69,6 +71,7 @@ test('consent precedes questionnaire and Telegram uses exact registered source t
   const first=subscriberQuizQuestion(entry.definition,'ru',0,2,{})
   assert.ok(first.text.includes(entry.definition.questions[0].text))
   assert.match(first.text,/1\/5/)
+  assert.ok(first.keyboard.inline_keyboard.every(row=>row.length===1))
   assert.ok(first.keyboard.inline_keyboard.some(row=>row.some(b=>b.callback_data==='hhq:a:2:0')))
   assert.ok(first.keyboard.inline_keyboard.every(row=>row.every(b=>b.callback_data.length<=64)))
 })
@@ -106,3 +109,17 @@ test('private table schema keeps RLS, encryption, single session, and revocation
   assert.match(runtime,/action==='tests'\|\|action==='quiz'/)
   assert.match(runtime,/writeResponse\(db,config,session,event\.updateId,'tests',reply\)/)
 })
+
+
+test('long validated quiz wording stays intact and every answer gets a full-width button',()=>{
+  const wording='A deliberately long questionnaire answer that must remain completely visible without truncation or changed meaning';
+  const choices=[{text:wording,callback_data:'hhq:a:2:0'},{text:'Never',callback_data:'hhq:a:2:1'}];
+  const result=telegramReadableChoices(choices);
+  assert.ok(result.legend.includes(wording));
+  assert.deepEqual(result.rows,[[{text:'1',callback_data:'hhq:a:2:0'}],[{text:'2',callback_data:'hhq:a:2:1'}]]);
+  const payload={text:'Question',reply_markup:{inline_keyboard:[choices]}};
+  assert.deepEqual(telegramReadablePayload(payload).reply_markup.inline_keyboard,choices.map(b=>[b]));
+  assert.equal(payload.reply_markup.inline_keyboard[0].length,2);
+  const runtime=readFileSync(new URL('../lib/app/subscriber-ai-telegram.js',import.meta.url),'utf8');
+  assert.match(runtime,/JSON\.stringify\(telegramReadablePayload\(body\)\)/);
+});

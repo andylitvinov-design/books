@@ -279,6 +279,7 @@ test('signed Telegram service welcome is exactly one portrait post with three in
     assert.equal(messages.length,0);
     assert.deepEqual(photos[0].body.reply_markup.inline_keyboard.flat().map(b=>b.callback_data),
       ['hhv3:en:serviceinfo','hhv3:en:masterinfo','hhv3:en:servicebooking']);
+    assert.ok(photos[0].body.reply_markup.inline_keyboard.every(row=>row.length===1));
     assert.ok(photos[0].body.photo.startsWith('https://holistichouse.vercel.app/images/'));
     assert.equal(photos[0].body.caption.includes('Would you like to request'),false);
   });
@@ -309,7 +310,7 @@ test('Telegram presentation keeps service cards readable without changing approv
     for(const original of [menu,followup]){
       const before=JSON.stringify(original);
       const rendered=telegramReadableKeyboard(original);
-      assert.deepEqual(rendered.inline_keyboard.slice(0,3).map(row=>row.length),[1,1,1]);
+      assert.ok(rendered.inline_keyboard.every(row=>row.length===1));
       assert.deepEqual(rendered.inline_keyboard.flat().map(b=>b.callback_data),original.inline_keyboard.flat().map(b=>b.callback_data));
       assert.equal(JSON.stringify(original),before);
       assert.deepEqual(telegramReadableKeyboard(rendered),rendered);
@@ -318,16 +319,29 @@ test('Telegram presentation keeps service cards readable without changing approv
       await sendTelegramDiagnosticPrompt({to:'123456789',locale:lang,text:'Ali — service information',keyboard:v3ButtonsFor(lang,'service_followup')},env);
       const actual=calls.find(c=>c.method==='sendMessage').body.reply_markup;
       assert.deepEqual(actual,telegramReadableKeyboard(followup));
-      if(lang==='en')assert.deepEqual(actual.inline_keyboard.at(-1).map(b=>b.text),['✅ Book now','💬 Ask Ali']);
+      if(lang==='en')assert.deepEqual(actual.inline_keyboard.slice(-2).map(row=>row[0].text),['✅ Book now','💬 Ask Ali']);
     });
   }
   assert.equal(v3Action({rawText:'Book now'}),'servicebegin');
   const reply={keyboard:[[{text:'Long reply-keyboard option'},{text:'Other option'}]],resize_keyboard:true};
   assert.deepEqual(telegramReadableKeyboard(reply),{keyboard:[[{text:'Long reply-keyboard option'}],[{text:'Other option'}]],resize_keyboard:true});
   const mood={inline_keyboard:[['😟','😕','😐','🙂','😄'].map((text,i)=>({text,callback_data:'checkin_'+i}))]};
-  assert.deepEqual(telegramReadableKeyboard(mood),mood);
+  assert.deepEqual(telegramReadableKeyboard(mood).inline_keyboard,mood.inline_keyboard.flat().map(b=>[b]));
   const links={inline_keyboard:[[{text:'Long public link',url:'https://holistichouse.vercel.app/en/about'},{text:'Back',callback_data:'home'}]]};
   assert.deepEqual(telegramReadableKeyboard(links).inline_keyboard.flat(),links.inline_keyboard.flat());
   const quiz={inline_keyboard:[[{text:'❤️ Improve relationships & esteem',callback_data:'hhsq:en:1'}]]};
   assert.equal(telegramReadableKeyboard(quiz).inline_keyboard[0][0].text,'❤️ Relationships & esteem');
+});
+
+
+test('all V3 question, consent, review and FAQ stages use one Telegram button per row',()=>{
+  const stages=['consent','free_consent','free_ready','service_menu','service_followup','service_consent','chat_consent','voice_consent','free_interview','free_portrait','free_drawing','psych_interview','interview','review_confirm'];
+  for(const lang of ['en','ru','es'])for(const stage of stages)for(const count of [0,2]){
+    const rows=v3ButtonsFor(lang,stage,count,'coaching');
+    if(!rows.length)continue;
+    const before=telegramInlineMarkup(rows,lang);
+    const after=telegramReadableKeyboard(before);
+    assert.ok(after.inline_keyboard.every(row=>row.length===1),lang+' '+stage);
+    assert.deepEqual(after.inline_keyboard.flat().map(b=>b.callback_data),before.inline_keyboard.flat().map(b=>b.callback_data));
+  }
 });
