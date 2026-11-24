@@ -8641,6 +8641,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
         disabled={recording||preparing}
         onRefreshLogin={()=>void refreshCreditSession()}
         onReturnToPro={()=>{setActiveWorkspace("pro");setStudioMode("pump");}}
+        storyApprovalRequired={storySourcePendingRef.current}
+        onReviewStory={()=>{revealPendingStoryApproval();}}
         basicFreeAvailable={basicVideoAccess.allowed}
         basicFreeIssue={basicVideoAccess.reason}
         basicCreditCost={basicVideoAccess.chargeCredits}
@@ -8652,6 +8654,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
             ?.scrollIntoView({behavior:"auto",block:"start"}));
         }}
         onGenerateBasicVideo={()=>{
+          // Ready delivery is not permission to replace an unapproved Story
+          // with a previously previewed movie or silently navigate away.
+          if(storySourcePendingRef.current){
+            setNotice(locale==="ru"?"Сначала подтвердите кадры в «Сюжете».":
+              locale==="es"?"Confirma primero las imágenes del guion.":"Approve the selected Story photos first.");
+            return false;
+          }
           if(videoExportMode!=="personal"){
             if(videoExportMode==="openmotion")openExistingMotionPicker();
             else setNotice(expressUnavailable);
