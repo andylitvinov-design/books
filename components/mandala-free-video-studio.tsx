@@ -2137,6 +2137,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
   const [appliedStoryKey,setAppliedStoryKey]=useState<string|null>(null);
   // Preserve a viewed, unapproved film choice when Story unmounts on Ready.
   const storySourcePendingRef=useRef(false);
+  const storyChoicePendingRef=useRef(false);
+  const storyRecoveryPendingRef=useRef(false);
+  const storySourceIssueRef=useRef<"photos"|"media"|"review"|"duration">("media");
   const [audioLibraryOpen,setAudioLibraryOpen] = useState(false);
   const audioLibraryCloseRef=useRef<HTMLButtonElement>(null);
   const audioLibraryTriggerRef=useRef<HTMLButtonElement>(null);
@@ -3875,6 +3878,39 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
     updateFreeFilmReadiness();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[cinematicPlan,storyboardPhotoRevision,freeFilmPhotoRevision,freeFilmKey]);
+  // Approved still-image stories must decode before export, otherwise Ready
+  // can never expose its personal preview until after Generate has run.
+  // The export still independently verifies every image and source.
+  useEffect(()=>{
+    if(!cinematicPlan||!usingFreeFilmCompilation||!freeFilmSourcesListed)return;
+    const photos=freeFilmShots.flatMap(shot=>shot.photo?[shot.photo]:[]);
+    if(!photos.length)return;
+    let cancelled=false;
+    void Promise.all(photos.map(async photo=>{
+      if(!isTrustedStoryPhoto(photo))throw Error("unverified_story_photo");
+      const image=new Image();
+      image.decoding="async";
+      image.src=photo.src;
+      await withLocalMediaDeadline(image.decode(),20000);
+      const resolved=new URL(image.currentSrc||image.src,window.location.href);
+      if(resolved.origin!==window.location.origin||!image.complete||
+        image.naturalWidth<600||image.naturalHeight<600)
+        throw Error("licensed_story_photo_decode_failed");
+      return {id:photo.id,image};
+    })).then(decoded=>{
+      // A different plan, unmount or an export in progress must not inherit
+      // late preview images from an obsolete source selection.
+      if(cancelled||preparingRef.current||jobRef.current||webCodecJobRef.current)return;
+      decoded.forEach(({id,image})=>{freeFilmPhotoRefs.current[id]=image;});
+      setFreeFilmPhotoRevision(value=>value+1);
+    }).catch(()=>{
+      if(!cancelled&&!preparingRef.current&&!jobRef.current&&!webCodecJobRef.current)
+        setReadyFreeFilmKey("");
+    });
+    return()=>{cancelled=true;};
+    // The plan and verified source key identify all trusted stills.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[cinematicPlan,freeFilmKey,freeFilmSourcesListed]);
   useEffect(()=>{
     if(previewPlaying||recording||preparing)return;
     Object.values(freeFilmPlayerRefs.current).forEach(video=>video.pause());
@@ -5695,7 +5731,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
       const plan=compileFreeFilmPreset(preset,locale,seconds,outputAspect,edit);
       // Do not keep a stale portrait-retry action after a verified selection.
       setPortraitRetry(null);
-      storySourcePendingRef.current=false;
+      storySourcePendingRef.current=false;storyChoicePendingRef.current=false;
       resetEditorHistory();setPortraitRetry(null);
       setCreationMode("catalog");setActiveFreeFilmPreset(preset.id);
       selectScenarioMusic(preset.id);
@@ -6027,7 +6063,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[pendingAutoVoice,uploadedAudio,audioRights,studioHydrated,recording,preparing]);
   const selectCategory=(next:VideoCategory)=>{
-    storySourcePendingRef.current=false;
+    storySourcePendingRef.current=false;storyChoicePendingRef.current=false;
     resetEditorHistory();
     setCinematicPlan(null);setTimelineTextClips(null);setPreviewSeekSeconds(0);setPreviewPlayhead(0);setIntroPlaying(false);
     setTheme(next);setVideoCategory(next);setSuggestion("");setShowAllMoney(false);
@@ -6084,13 +6120,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
   };
   const startFromHero=()=>{
     if(blockUnpricedPersonalExport())return false;
-    if(storySourcePendingRef.current){
-      setNotice(locale==="ru"?"Сначала примените шесть кадров в «Монтаж → Сюжет», затем создайте MP4.":
-        locale==="es"?"Primero aplica las seis escenas de Montaje → Guion antes de generar MP4.":
-        "First apply the six scenes in Montage → Story before creating MP4.");
-      setActiveWorkspace("editor");setMontagePanel("concept");
-      return false;
-    }
+    if(storySourcePendingRef.current)return revealPendingStoryApproval();
     if(hypnoAudioBusy)return false;
     if(recording||preparing||preparingRef.current||jobRef.current||webCodecJobRef.current||photoPending)return false;
     if(phrasePending){
@@ -6428,6 +6458,39 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
     // Query is an initial route intent. Later changes come from the site menu.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[studioHydrated]);
+  const revealPendingStoryApproval = (reportedIssue?:"photos"|"media"|"review"|"duration") => {
+    storyRecoveryPendingRef.current=true;
+    setActiveWorkspace("editor");setMontagePanel("concept");setNotice("");
+    // Story is lazy-loaded. Its mounted source callback supplies the actual
+    // reason; a fixed frame delay can run before the component has loaded.
+    if(!reportedIssue&&!document.querySelector("[data-video-auto-storyboard]"))return false;
+    storyRecoveryPendingRef.current=false;
+    const issue=reportedIssue||storySourceIssueRef.current;
+    setNotice(issue==="photos"?(locale==="ru"?
+      "Проверьте снимки в «Сюжете» и нажмите «Использовать эти 6 фото в видео».":
+      locale==="es"?"Revisa las fotos en Guion y pulsa «Usar estas 6 fotos en el vídeo».":
+      "Review the photos in Story and choose «Use these 6 photos in my video»."):
+      issue==="review"?(locale==="ru"?"Сначала проверьте изменённый сюжет в «Идеях».":
+        locale==="es"?"Primero revisa la historia modificada en Ideas.":
+        "Review the changed story in Ideas first."):
+      issue==="duration"?(locale==="ru"?"Для фотоистории выберите 30 секунд в настройках видео.":
+        locale==="es"?"Elige 30 segundos en los ajustes para esta historia fotográfica.":
+        "Choose 30 seconds in video settings for this photo story."):
+      (locale==="ru"?"Для этого сюжета ещё нет полного набора кадров. Выберите другой сюжет или подходящие материалы в настройках видео.":
+        locale==="es"?"Faltan imágenes para esta historia. Elige otra historia o material adecuado en los ajustes de vídeo.":
+        "This story is still missing matching media. Choose another story or suitable media in video settings."));
+    window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
+      const approval=document.querySelector<HTMLButtonElement>("[data-storyboard-apply-reference-photos]");
+      const recovery=document.querySelector<HTMLButtonElement>(issue==="photos"?
+        "[data-storyboard-retry-photos]":issue==="duration"?
+        "[data-video-story-open-settings]":"[data-storyboard-choose-another-story]");
+      const destination=recovery||approval||document.querySelector<HTMLElement>("[data-video-montage-tools]");
+      destination?.scrollIntoView({behavior:"auto",block:"center"});
+      if(recovery&&!recovery.disabled)recovery.focus({preventScroll:true});
+      else if(approval&&!approval.disabled)approval.focus({preventScroll:true});
+    }));
+    return false;
+  };
   // Goal and Montage Generate only open Ready. This action starts no encoder,
   // check-in or credit transaction; the separate Ready Generate click does.
   const openReadyForGeneration = () => {
@@ -6438,6 +6501,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
       setActiveWorkspace("ready");setReadyGenerationPending(false);
       setNotice(expressUnavailable);return false;
     }
+    if(storySourcePendingRef.current)return revealPendingStoryApproval();
     ++quickNavTokenRef.current;
     stopSoundPreview();stopMovieSound();
     setIntroPlaying(false);setPreviewPlaying(false);setNotice("");
@@ -6456,13 +6520,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
       else setNotice(expressUnavailable);
       return false;
     }
-    if(storySourcePendingRef.current){
-      setNotice(locale==="ru"?"Сначала выберите «Использовать эти 6 фото в видео» в разделе «Сюжет».":
-        locale==="es"?"Primero selecciona «Usar estas 6 fotos en el vídeo» en Guion.":
-        "First select «Use these 6 photos in my video» in Story.");
-      setActiveWorkspace("editor");setMontagePanel("concept");
-      return false;
-    }
+    if(storySourcePendingRef.current)return revealPendingStoryApproval();
     // The direct shortcut must preserve the approved paid-format gate.
     if(!freeVideoSelected){
       setNotice(locale==="ru"?"Для этого формата необходимо отдельное оформление. Выберите базовое видео для бесплатной генерации.":
@@ -6656,7 +6714,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
     const voiceBed=speech&&recipe.musicId&&
       MYTUBE_REVIEWED_MUSIC_BEDS.some(id=>id===recipe.musicId)?
       recipe.musicId as `curated-${string}`:null;
-    storySourcePendingRef.current=false; // New explicit Express recipe, not the old Story preview.
+    storySourcePendingRef.current=false;storyChoicePendingRef.current=false; // New explicit Express recipe, not the old Story preview.
     stopSoundPreview();stopMovieSound();
     // Updating React and invoking the current callback happen synchronously
     // within the same Safari tap. No intermediate Match Footage / Ready click.
@@ -8102,7 +8160,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
           rendering={recording||preparing} renderProgress={progress}
           resultReady={Boolean(result&&result.mode!=="catalog"&&playbackStatus==="ready"&&creditConfirmed)}
           resultFailed={Boolean(exportUnavailable||(result&&playbackStatus==="failed"))}
-          onGoalChange={next=>{storySourcePendingRef.current=false;setWish(next.slice(0,800));setSuggestion("");setCinematicPlan(null);}}
+          onGoalChange={next=>{storySourcePendingRef.current=false;storyChoicePendingRef.current=false;setWish(next.slice(0,800));setSuggestion("");setCinematicPlan(null);}}
           onInvalidate={()=>{setPreviewPlaying(false);setCinematicPlan(null);}}
           onConfirm={({scenario})=>{
             // The ONLY executable boundary: one validated scenario -> existing
@@ -8899,6 +8957,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
             disabled={recording||preparing}
             onRefreshLogin={()=>void refreshCreditSession()}
             onDraftChange={draft=>{
+              if(draft.storyboard?.length){
+                storyChoicePendingRef.current=true;storySourcePendingRef.current=true;
+                storySourceIssueRef.current="review";
+              }
               setDraftVideoConcept(draft);
               setChosenFilm(draft.creativeDirectionId?{
                 intentSignature:draft.baseSignature||draft.signature,
@@ -8910,6 +8972,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
             onOpenGoal={()=>{setIdeasSubtab("goal");}}
             onOpenStyle={()=>{setActiveWorkspace("editor");setMontagePanel("effects");}}
             onApprove={approved=>{
+              if(approved.storyboard?.length){
+                storyChoicePendingRef.current=true;storySourcePendingRef.current=true;
+                storySourceIssueRef.current="media";
+                setAppliedStoryKey(null);
+              }
               setApprovedVideoConcept(approved);
               setDraftVideoConcept(approved);
               setChosenFilm(approved.creativeDirectionId?{
@@ -9190,7 +9257,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
             setAttachedAudio({kind:"preset",id:chosenId});
             if(previewPlaying)startMovieSound({kind:"preset",id:chosenId},soundVolume);
           }}
-          onGoalChange={next=>{storySourcePendingRef.current=false;setWish(next.slice(0,800));setSuggestion("");setCinematicPlan(null);}}
+          onGoalChange={next=>{storySourcePendingRef.current=false;storyChoicePendingRef.current=false;setWish(next.slice(0,800));setSuggestion("");setCinematicPlan(null);}}
           onPickPhoto={()=>onPickPhoto()}
           onOpenPro={()=>activateQuickWorkspace("pro")}
           onConceptTopicChange={setSelectedConceptTopic}
@@ -10084,12 +10151,19 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
                 // Visiting Story for video settings must not revoke that
                 // explicit four-source choice. A selected Story still needs
                 // positive approval before it can replace any movie.
-                const independentCatalogSource=Boolean(usingFreeFilmCompilation&&freeFilmSourcesListed&&
+                const independentCatalogSource=Boolean(!storyChoicePendingRef.current&&usingFreeFilmCompilation&&freeFilmSourcesListed&&
                   cinematicPlan?.shots.every(shot=>!STORY_PHOTO_BY_ID.has(shot.sceneId)));
                 // A fresh, explicitly chosen approved MP4 catalogue montage
                 // is independent of an unverified editorial Story reference.
                 // Clear stale Story-only blocks; never authorize missing footage.
                 storySourcePendingRef.current=Boolean(pending&&!independentCatalogSource);
+              }}
+              onSourceIssueChange={issue=>{
+                storySourceIssueRef.current=issue;
+                if(storyRecoveryPendingRef.current){
+                  storyRecoveryPendingRef.current=false;
+                  if(storySourcePendingRef.current)revealPendingStoryApproval(issue);
+                }
               }}
               onApply={(shots,concept,key,captions,outputAspect="portrait")=>{
                 const preset=aspectFilmPresets.find(option=>option.theme===theme);
@@ -10100,7 +10174,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
                   captionTexts:shots.map((_,index)=>montageTextMode==="simple"?"":captions[index]||""),
                 };
                 if(applyAutoFilm(preset.id,duration,edit,outputAspect,true)){
-                  storySourcePendingRef.current=false;
+                  storySourcePendingRef.current=false;storyChoicePendingRef.current=false;
                   setAppliedStoryKey(key);
                   setMontageScriptText(montageTextMode==="simple"?"":(captions.filter(Boolean).join("\n")||
                     concept.sceneOutline.join("\n")));
@@ -10120,11 +10194,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
                   // must approve those exact photos; never export a previously
                   // selected unrelated montage as though it were this Story.
                   storySourcePendingRef.current=true;
-                  setNotice(locale==="ru"?"Нажмите «Использовать эти 6 фото в видео». Иначе они останутся референсами.":
-                    locale==="es"?"Pulsa «Usar estas 6 fotos en el vídeo» primero.":
-                    "Choose «Use these 6 photos in my video» before continuing.");
-                  document.querySelector("[data-storyboard-apply-reference-photos]")
-                    ?.scrollIntoView({behavior:"smooth",block:"center"});
+                  storyChoicePendingRef.current=true;
+                  revealPendingStoryApproval();
                   return;
                 }
                 // Selecting a video type is navigation, not source approval,

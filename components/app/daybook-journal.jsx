@@ -2,7 +2,7 @@
 import {useCallback,useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import {useRouter,useSearchParams} from 'next/navigation'
+import {useSearchParams} from 'next/navigation'
 import {appFetch} from '@/lib/app/client-fetch'
 import {createJournalSaver} from '@/lib/app/daybook-journal-save.mjs'
 import {localJournalDay} from '@/lib/app/daybook-journal-contract.mjs'
@@ -31,12 +31,15 @@ const exportCopy={
  ru:{download:'Экспорт сохранённых записей (JSON)',all:'Загрузить все записи для поиска',working:'Чтение всех сохранённых записей…',failed:'Не удалось завершить. Неполный файл не скачан. Повторите попытку.',large:'Экспорт превышает текущий лимит браузера 32 МиБ. Неполный файл не скачан.',done:'Файл экспорта подготовлен. Несохранённые черновики не включены.'},
  es:{download:'Exportar entradas guardadas (JSON)',all:'Cargar todas las entradas para buscar',working:'Leyendo todas las entradas guardadas…',failed:'No se pudo completar. No se descargó un archivo parcial. Reintenta.',large:'La exportación supera el límite actual de 32 MiB del navegador. No se descargó un archivo parcial.',done:'Archivo de exportación preparado. No incluye borradores sin guardar.'},
 }
+// Passing Next's internal history state bypasses its useSearchParams update.
+// Keep same-page controls synchronous so an older router.replace cannot later
+// overwrite a newly selected goal, week or step.
+function replaceDaybookURL(url){window.history.replaceState(null,'',url)}
 export default function DaybookJournal({locale,...serverRoute}){
  const searchParams=useSearchParams()
  const {autoStartVector=false,initialTab='stages',initialStage=1,initialLevel=1,initialStep=1,initialGoalId=null}=searchParams?daybookRouteOptions(Object.fromEntries(searchParams.entries())):serverRoute
  const c=copy[locale],root='/'+locale+'/app'
- const router=useRouter()
- const vectorDone=useCallback(()=>router.replace(root+'/daybook?tab=goals',{scroll:false}),[root,router])
+ const vectorDone=useCallback(()=>replaceDaybookURL(root+'/daybook?tab=goals'),[root])
  const [account,setAccount]=useState(null),[entries,setEntries]=useState([]),[next,setNext]=useState(null)
  const [phase,setPhase]=useState('loading'),[tab,setTab]=useState(autoStartVector?'goals':initialTab),[draft,setDraft]=useState(null),[status,setStatus]=useState(''),[query,setQuery]=useState(''),[busy,setBusy]=useState(false)
  const [stageNumber,setStageNumber]=useState(initialStage)
@@ -44,9 +47,9 @@ export default function DaybookJournal({locale,...serverRoute}){
  const [guideEntryRequest,setGuideEntryRequest]=useState(null)
  const stageLabel={en:'Coaching guide',ru:'Коучинг-гид',es:'Guía de coaching'}[locale]
  useEffect(()=>{if(!guideLocked)setStageNumber(initialStage)},[initialStage,guideLocked])
- function selectStage(n){setStageNumber(n);const url=new URL(window.location.href);url.searchParams.set('stage',String(n));url.searchParams.set('step','1');url.searchParams.set('tab','stages');url.searchParams.delete('start');window.history.replaceState(window.history.state,'',url)}
- function selectPosition({level,step,goalId}){const url=new URL(window.location.href);url.searchParams.set('level',String(level));url.searchParams.set('step',String(step));if(goalId)url.searchParams.set('goal',goalId);else url.searchParams.delete('goal');window.history.replaceState(window.history.state,'',url)}
- function selectTab(key){if(guideLocked)return;if(key==='goals')setGoalsVisited(true);setTab(key);routeIntent.current=advanceDaybookRouteIntent(routeIntent.current,{autoStartVector:false,initialTab:key});const url=new URL(window.location.href);url.searchParams.set('tab',key);url.searchParams.delete('start');router.replace(url.pathname+url.search,{scroll:false})}
+ function selectStage(n){setStageNumber(n);const url=new URL(window.location.href);url.searchParams.set('stage',String(n));url.searchParams.set('step','1');url.searchParams.set('tab','stages');url.searchParams.delete('start');replaceDaybookURL(url)}
+ function selectPosition({level,step,goalId}){const url=new URL(window.location.href);url.searchParams.set('level',String(level));url.searchParams.set('step',String(step));if(goalId)url.searchParams.set('goal',goalId);else url.searchParams.delete('goal');replaceDaybookURL(url)}
+ function selectTab(key){if(guideLocked)return;if(key==='goals')setGoalsVisited(true);setTab(key);routeIntent.current=advanceDaybookRouteIntent(routeIntent.current,{autoStartVector:false,initialTab:key});const url=new URL(window.location.href);url.searchParams.set('tab',key);url.searchParams.delete('start');replaceDaybookURL(url)}
  const [exportStatus,setExportStatus]=useState('')
  const [goalsVisited,setGoalsVisited]=useState(false),[weeklyVisited,setWeeklyVisited]=useState(false)
  const routeIntent=useRef(advanceDaybookRouteIntent(null,{autoStartVector,initialTab}))
@@ -177,7 +180,7 @@ export default function DaybookJournal({locale,...serverRoute}){
   setStageNumber(target.initialStage);setTab('stages')
   setGuideEntryRequest({goalId:target.initialGoalId,level:target.initialLevel,step:target.initialStep})
   routeIntent.current=advanceDaybookRouteIntent(routeIntent.current,{autoStartVector:false,initialTab:'stages'})
-  window.history.replaceState(window.history.state,'',url)
+  replaceDaybookURL(url)
  }
  return <main className={styles.page} data-daybook-view={tab}>
   <div className={styles.topline}><Link href={root+'/portrait'}>{c.home}</Link><span>DAYBOOK</span></div>

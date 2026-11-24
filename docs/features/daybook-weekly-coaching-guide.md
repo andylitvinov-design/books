@@ -95,7 +95,7 @@ Next/React page with an explicitly synthetic private API. It covers save and
 readback, lost-response retry, goal separation, in-memory drafts, journal
 deep links, account invalidation and responsive EN/RU/ES layouts.
 
-Local acceptance on 23 November 2026 (America/Toronto): 203 Daybook/design
+Local acceptance on 23 November 2026 (America/Toronto): 209 Daybook/design
 tests passed, TypeScript completed without errors, and ESLint reported no
 errors or warnings for the changed source (including JSX). Chromium
 138.0.7204.0 with Playwright 1.62.1 passed EN/RU/ES at 320, 390, 430 and 1024
@@ -110,6 +110,13 @@ a previously completed answer. Saving that cleared answer persists an empty
 draft, withdraws the completion and remains empty after reload. Browser
 runtime errors were absent. The fixture makes no external provider calls.
 
+Integration with stage-zero v2 is exercised through the rendered UI: create
+one goal, verify its independent readback, return to the guide without a page
+reload, select the newly saved goal, save an answer under its actual UUID and
+restore both the selected goal and answer after reload. Same-page navigation
+uses Next's supported native history integration without passing its internal
+history state, preventing delayed navigation from restoring an older goal.
+
 Browser fixture acceptance is not proof of real OAuth or hosted-database
 writes. The server API and encryption are unchanged and retain the existing
 Daybook API/database test gates. Chromium emulation is not a physical iPhone
@@ -118,12 +125,20 @@ The unsaved-draft guard covers links and document unload. Browser Back/Forward
 to a different route through SPA history is outside the custom guard and was
 not verified; save a draft before leaving by that path.
 
-Publication reuses PR #5518 with one coherent repair HEAD after local checks.
+Publication reuses PR #5518 with atomic, locally verified source updates.
 The existing required Core/App/Specialist/`hh-merge-check` gates remain intact.
 Production publication uses the sole existing hourly publisher. A protected
 merge is not evidence of LIVE until the canonical alias and served revision
 are independently verified. No preview deployment or extra publisher is added.
 
+After the initial guide publication, protected production advanced through
+the goal-creation update #5523 and video update #5512. The existing final gate
+correctly blocked reuse of the earlier base because goal creation shares the
+private Daybook flow. The next source update reconciles that exact base and
+rechecks the integration; it does not weaken the gate or rerun unchanged
+checks against a knowingly stale base.
+
 `GLOBAL_PR_ONE_PUBLISH_V1: staged_before_open=yes; local_checks=verified;
-post_open_head_updates=one_coherent_conflict_and_owner_extension;
-extra_waves=verified_route_conflict; cost_new_spend=NO_NEW_SERVICES`
+post_open_head_updates=batched_per_verified_repair;
+extra_waves=verified_route_conflict_and_goal_flow_base_freshness;
+cost_new_spend=NO_NEW_SERVICES`

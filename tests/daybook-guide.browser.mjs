@@ -21,6 +21,8 @@ import {randomUUID} from 'node:crypto'
 import {journalWrite} from '../lib/app/daybook-journal-contract.mjs'
 import {STAGES,stageTag,stageText} from '../lib/app/daybook-stages.mjs'
 import {GUIDE_WEEKS,guideTag,guideText,parseGuideEntry,guideProgress} from '../lib/app/daybook-guide.mjs'
+import {personalGoalWrite,preserveGoalVectorSelection} from '../lib/app/daybook-personal-goal-contract.mjs'
+import {VECTOR_SELECTION_VERSION} from '../lib/app/daybook-vector-selection.mjs'
 
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..'),require=createRequire(import.meta.url)
 const playwright=(()=>{
@@ -42,6 +44,11 @@ await mkdir(screenshotDir,{recursive:true})
 const locales=(process.env.HH_GUIDE_QA_LOCALES||'ru,en,es').split(',')
 assert.ok(locales.every(locale=>['ru','en','es'].includes(locale)))
 const receipts=[]
+const vectorCopy={
+ en:{goals:'Goals',guide:'Coaching guide',new:'Create a new goal',next:'Next',review:'See my direction',save:'Save my goal',done:'Open my goals'},
+ ru:{goals:'Цели',guide:'Коучинг-гид',new:'Создать новую цель',next:'Дальше',review:'Посмотреть мой вектор',save:'Сохранить мою цель',done:'К моим целям'},
+ es:{goals:'Objetivos',guide:'Guía de coaching',new:'Crear una nueva meta',next:'Siguiente',review:'Ver mi dirección',save:'Guardar mi meta',done:'Abrir mis metas'},
+}
 let server,browser,serverLog='',activeErrors=[]
 
 async function until(check,message,timeout=20000){
@@ -63,6 +70,8 @@ try{
  for(const locale of locales){
   let owner=randomUUID(),loseCompleteReply=locale==='ru',revoked=false
   const goal1=randomUUID(),goal2=randomUUID(),records=new Map(),writes=[],operationReceipts=new Map(),errors=[],unexpectedWrites=[],dialogs=[]
+  const goals=new Map([[goal1,{id:goal1,title:'Synthetic goal A',status:'active'}],[goal2,{id:goal2,title:'Synthetic goal B',status:'active'}]])
+  const goalWrites=[],goalReads=[],goalReceipts=new Map(),journalReads=[]
   const legacyId=randomUUID(),legacyAnswer='SYNTHETIC_LEGACY_OUTCOME'
   records.set(legacyId,entry({id:legacyId,revision:0,kind:'note',text:stageText(STAGES[1],{criteria:legacyAnswer},true),tags:[stageTag('vision')],locale,timezone:'America/Toronto',localDay:'2026-11-23',goalId:goal1}))
   const deepTask=GUIDE_WEEKS[2].steps[2],deepId=randomUUID(),deepAnswers=Object.fromEntries(deepTask.fields.map(field=>[field.id,field.type==='rating'?'6':'SYNTHETIC_DEEP_LINK '+field.id]))
@@ -80,11 +89,28 @@ try{
    if(revoked)return reply({error:'ACCOUNT_REQUIRED'},401)
    if(path==='bootstrap')return reply({account:{id:owner,onboardingState:'active'},results:[],runs:[],requests:[],consents:[],services:[]})
    if(request.headers()['x-hh-account-id']!==owner)return reply({error:'ACCOUNT_CHANGED'},409)
-   if(path==='coaching-life-plan')return reply({plan:{id:randomUUID()},goals:[{id:goal1,title:'Synthetic goal A',status:'active'},{id:goal2,title:'Synthetic goal B',status:'active'}],actions:[],domains:[],contextPermissions:[]})
+   if(path==='coaching-life-plan'&&method==='GET')return reply({plan:{id:randomUUID()},goals:[...goals.values()],actions:[],domains:[],contextPermissions:[]})
+   if(path==='personal-goals'){
+    if(method==='GET'){
+     const id=url.searchParams.get('id');goalReads.push(id)
+     return goals.has(id)?reply({goal:goals.get(id)}):reply({error:'NOT_FOUND'},404)
+    }
+    if(['POST','PATCH'].includes(method)){
+     try{
+      const input=personalGoalWrite(request.postDataJSON()),previous=goals.get(input.id),receipt=goalReceipts.get(input.operationId)
+      goalWrites.push(input)
+      if(receipt){assert.deepEqual(receipt.input,input);return reply({saved:true,replayed:true,goal:receipt.goal})}
+      if((previous?.revision||0)!==input.revision)return reply({error:'GOAL_REVISION_CONFLICT'},409)
+      const goal={...preserveGoalVectorSelection(input,previous),revision:input.revision+1};delete goal.operationId
+      goals.set(input.id,goal);goalReceipts.set(input.operationId,{input,goal})
+      return reply({saved:true,goal})
+     }catch(error){return reply({error:error.code||'SYNTHETIC_REQUEST_INVALID'},error.status||400)}
+    }
+   }
    if(path==='daybook-journal'){
     if(method==='GET'){
      const id=url.searchParams.get('id')
-     if(id)return records.has(id)?reply({entry:records.get(id)}):reply({error:'NOT_FOUND'},404)
+     if(id){journalReads.push(id);return records.has(id)?reply({entry:records.get(id)}):reply({error:'NOT_FOUND'},404)}
      const all=[...records.values()].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt)),limit=Number(url.searchParams.get('limit')||30)
      const before=url.searchParams.get('before'),start=before?all.findIndex(value=>value.id===before)+1:0,rows=all.slice(start,start+limit)
      return reply({entries:rows,nextCursor:all.length>start+limit?rows.at(-1).id:null})
@@ -269,6 +295,65 @@ try{
   await goalSelect.selectOption(goal1);await week(1).click();await step(clearTask.id).click()
   for(const field of clearTask.fields)assert.equal(await task.getByLabel(field.label[locale],{exact:false}).inputValue(),'','Cleared saved answers must stay blank after reload')
   assert.equal(await action('complete').isDisabled(),true)
+
+  // Shared stage-zero/guide acceptance: this goal is created by the rendered
+  // v2 questionnaire, not seeded into the guide fixture or injected into state.
+  const vc=vectorCopy[locale],beforeVectorRecords=[...records.entries()],beforeVectorWrites=writes.length
+  const nav=page.locator('main > nav'),wizard=page.locator('[data-daybook-vector-start]')
+  await nav.getByRole('button',{name:vc.goals,exact:true}).click()
+  await page.locator('#daybook-goals').getByRole('button',{name:vc.new,exact:true}).click()
+  await wizard.waitFor({state:'visible'})
+  await wizard.locator('input[type=radio][value=work]').check()
+  await wizard.locator('input[type=radio][value=finance]').check()
+  await wizard.locator('select').nth(0).selectOption('0')
+  await wizard.locator('select').nth(1).selectOption('8')
+  await wizard.getByRole('button',{name:vc.next,exact:true}).click()
+  await wizard.locator('input[type=radio][value=anchor]').check()
+  await wizard.locator('select').nth(0).selectOption('2')
+  await wizard.locator('select').nth(1).selectOption('9')
+  await wizard.getByRole('button',{name:vc.review,exact:true}).click()
+  const vectorTitle='Synthetic '+locale+' stage-zero guide goal'
+  await wizard.locator('textarea').nth(0).fill(vectorTitle)
+  await wizard.locator('textarea').nth(1).fill('Synthetic reason for this guide goal')
+  await wizard.getByRole('button',{name:vc.save,exact:true}).click()
+  await wizard.getByRole('button',{name:vc.done,exact:true}).waitFor({state:'visible'})
+  assert.equal(goalWrites.length,1,'Stage zero must create exactly one goal')
+  const created=goals.get(goalWrites[0].id)
+  assert.ok(created&&! [goal1,goal2].includes(created.id),'Stage zero must create a new goal UUID')
+  assert.ok(goalReads.includes(created.id),'Stage-zero success must verify the persisted goal by ID')
+  assert.equal(created.title,vectorTitle)
+  assert.equal(created.vectorSelection.version,VECTOR_SELECTION_VERSION)
+  assert.equal(created.vectorSelection.focusId,'finance')
+  assert.deepEqual(created.vectorSelection.spheres,{work:{current:0,desired:8}})
+  assert.deepEqual(created.vectorSelection.axes,{anchor:{current:2,desired:9}})
+  await wizard.getByRole('button',{name:vc.done,exact:true}).click()
+  await wizard.waitFor({state:'detached'})
+  await nav.getByRole('button',{name:vc.guide,exact:true}).click()
+  await guide.waitFor({state:'visible'})
+  await until(async()=>await goalSelect.locator('option[value="'+created.id+'"]').count()===1,'New stage-zero goal did not refresh in the guide without a page reload')
+  assert.equal(await goalSelect.locator('option[value="'+created.id+'"]').textContent(),vectorTitle)
+  await goalSelect.selectOption(created.id)
+  assert.equal(await goalSelect.inputValue(),created.id)
+  await week(1).click();await level(1).click();await step(GUIDE_WEEKS[0].steps[0].id).click()
+  assert.equal(await task.locator('textarea').first().inputValue(),'','A newly created goal must not inherit another goal’s guide answers')
+  await fillCurrent(0,'SYNTHETIC_STAGE_ZERO_GUIDE')
+  await action('save').click()
+  await until(async()=>writes.length>beforeVectorWrites&&await action('save').count()>0&&!await action('save').isDisabled(),'Guide answer for the newly created goal did not settle')
+  assert.equal(writes.length,beforeVectorWrites+1)
+  assert.equal(writes.at(-1).goalId,created.id,'Guide must persist the actual stage-zero goal ID')
+  const linked=records.get(writes.at(-1).id)
+  assert.ok(journalReads.includes(linked.id),'Guide save must verify the linked entry by ID')
+  assert.equal(linked.goalId,created.id)
+  assert.equal(parseGuideEntry(linked).completed,false)
+  for(const [id,value] of beforeVectorRecords)assert.deepEqual(records.get(id),value,'A new goal must not overwrite an existing goal’s answers')
+  await page.reload({waitUntil:'domcontentloaded'})
+  await guide.waitFor({state:'visible'})
+  await until(async()=>await goalSelect.locator('option[value="'+created.id+'"]').count()===1,'New stage-zero goal did not survive reload')
+  assert.equal(await goalSelect.inputValue(),created.id,'The guide route must restore the newly created goal after reload')
+  for(const field of GUIDE_WEEKS[0].steps[0].fields)assert.equal(await task.getByLabel(field.label[locale],{exact:false}).inputValue(),field.type==='rating'?'6':'SYNTHETIC_STAGE_ZERO_GUIDE '+field.id,'Reload must restore answers for the goal created in stage zero')
+  await page.addStyleTag({content:'nextjs-portal { display:none !important; }'})
+  await guide.screenshot({path:join(screenshotDir,engine+'-'+locale+'-stage-zero-guide.png')})
+  console.log(JSON.stringify({locale,checkpoint:'stage-zero-v2-to-guide-save-and-reload-passed'}))
   await step(GUIDE_WEEKS[0].steps[0].id).click()
   const privateText=await task.locator('textarea').first().inputValue()
   assert.ok(privateText)
@@ -281,7 +366,7 @@ try{
   assert.equal(await guide.count(),0,'Signed-out page must not mount a private guide')
   assert.deepEqual(unexpectedWrites,[],'No booking, payment or other provider write is authorized by this fixture')
   assert.deepEqual(errors,[],`${locale}: browser runtime errors`)
-  receipts.push({locale,engine,widths:[320,390,430,1024],weeks:7,levels:4,steps:7,reload:true,goalIsolation:true,draftRetention:true,legacyPreserved:true,journalDeepLink:true,clearSavedAnswers:true,accountChangeWipe:true,retry:locale==='ru',writes:writes.length})
+  receipts.push({locale,engine,widths:[320,390,430,1024],weeks:7,levels:4,steps:7,reload:true,goalIsolation:true,draftRetention:true,legacyPreserved:true,journalDeepLink:true,clearSavedAnswers:true,stageZeroV2ToGuide:{createdThroughUI:true,goalReadback:true,availableWithoutReload:true,selectedActualId:true,linkedAnswerReadback:true,reload:true,goalWrites:goalWrites.length},accountChangeWipe:true,retry:locale==='ru',writes:writes.length})
   console.log(JSON.stringify(receipts.at(-1)))
   await context.close()
  }
