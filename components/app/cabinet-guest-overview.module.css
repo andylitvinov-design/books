@@ -318,3 +318,52 @@
   .shell .primaryAction:not(:disabled):hover,
   .shell .secondaryAction:hover { transform: none; }
 }
+
+/* The guest entry uses the same palette as the signed-in client cabinet. */
+:global(.hh-app[data-cabinet-theme="daybook"]) .shell {
+  --portal-ink:var(--hh-cabinet-ink);--portal-muted:var(--hh-cabinet-muted);
+  --portal-wine:var(--hh-cabinet-primary);--portal-line:var(--hh-cabinet-border);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .hero {
+  border:1px solid var(--hh-cabinet-border);
+  background:linear-gradient(105deg,#291e12ed 0%,#302514d9 57%,#36261559 100%),url('/images/holistic-house/reiki-approved-sunrise-v3.webp') center/cover;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .shell .title,
+:global(.hh-app[data-cabinet-theme="daybook"]) .shell .sectionTitle,
+:global(.hh-app[data-cabinet-theme="daybook"]) .shell .practice h2,
+:global(.hh-app[data-cabinet-theme="daybook"]) .shell .card h3 {
+  font-family:var(--hh-cabinet-heading-font);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .shell .title,
+:global(.hh-app[data-cabinet-theme="daybook"]) .shell .intro,
+:global(.hh-app[data-cabinet-theme="daybook"]) .identityNote { color:#fff6e3; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .shell .primaryAction {
+  border-color:var(--hh-cabinet-border);border-radius:999px;
+  background:linear-gradient(140deg,var(--hh-cabinet-primary),var(--hh-cabinet-primary-hover));color:#fff6e3;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .shell .primaryAction:not(:disabled):hover { background:var(--hh-cabinet-primary-hover); }
+:global(.hh-app[data-cabinet-theme="daybook"]) .shell .secondaryAction {
+  border-color:var(--hh-cabinet-border);border-radius:999px;background:var(--hh-cabinet-surface);color:var(--hh-cabinet-ink);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .shell .secondaryAction:hover { background:var(--hh-cabinet-surface-soft); }
+:global(.hh-app[data-cabinet-theme="daybook"]) .shell .sectionEyebrow,
+:global(.hh-app[data-cabinet-theme="daybook"]) .shell .sectionIntro,
+:global(.hh-app[data-cabinet-theme="daybook"]) .shell .privacy,
+:global(.hh-app[data-cabinet-theme="daybook"]) .shell .previous { color:#e7d4b3; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .shell .sectionTitle { color:#fff1cf; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .card,
+:global(.hh-app[data-cabinet-theme="daybook"]) .practice {
+  background:linear-gradient(135deg,#fffaef,var(--hh-cabinet-surface-soft));border-color:var(--hh-cabinet-border);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .shell .card h3,
+:global(.hh-app[data-cabinet-theme="daybook"]) .shell .practice h2,
+:global(.hh-app[data-cabinet-theme="daybook"]) .shell .practiceCard h3 { color:var(--hh-cabinet-ink); }
+:global(.hh-app[data-cabinet-theme="daybook"]) .shell .card h3 { font-size:23px; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .practiceCard {
+  background:var(--hh-cabinet-surface);border-color:var(--hh-cabinet-border);color:var(--hh-cabinet-primary);
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .shell .practiceIntro,
+:global(.hh-app[data-cabinet-theme="daybook"]) .shell .practiceCard p,
+:global(.hh-app[data-cabinet-theme="daybook"]) .shell .practiceEyebrow { color:var(--hh-cabinet-muted); }
+:global(.hh-app[data-cabinet-theme="daybook"]) .shell .previous a { min-height:44px;align-items:center;color:#f5ddb0; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .privacy svg { color:#f5ddb0; }

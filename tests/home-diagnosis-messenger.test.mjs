@@ -48,7 +48,16 @@ test("message drafts carry public offer and nonsecret reference, not contact or 
   assert.doesNotMatch(url.searchParams.get("text") || "", /email|phone|diagnosis|medical record/i);
   const telegram = new URL(telegramEnquiryUrlFromWhatsApp(whatsapp));
   assert.equal(telegram.hostname, "t.me");
-  assert.equal(telegram.searchParams.get("text"), url.searchParams.get("text"));
+  // Telegram's approved reply-only handoff carries the PUBLIC service title,
+  // never WhatsApp's free text, source URL, CRM reference, contact or assessment.
+  // A legacy 1:1 equality would leak the saved reference to a different channel.
+  assert.equal(telegram.pathname, "/holistichouse");
+  const telegramText = telegram.searchParams.get("text") || "";
+  assert.match(telegramText, /Free drawing-based situation review/);
+  assert.doesNotMatch(telegramText,
+    /HH-1234ABCDEF56|written review instructions|Reference|\/en\/services\/|https?:|email|phone|diagnosis|medical record/i);
+  assert.notEqual(telegramText, url.searchParams.get("text"),
+    "Different messaging channels must not receive copied CRM or private details");
 });
 
 test("failed database save closes popup and never starts the chat", () => {

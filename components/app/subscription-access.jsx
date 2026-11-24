@@ -8,6 +8,7 @@ import { billingReadLifecycle } from '@/lib/billing/read-lifecycle'
 import { SUBSCRIPTION_COPY } from './subscription-copy'
 import ManualBillingRequest from './manual-billing-request'
 import styles from './subscription-access.module.css'
+import SubscriptionCompactPicker from './subscription-compact-picker'
 
 const noAction = () => {}
 const SubscriptionContext = createContext({
@@ -346,12 +347,11 @@ export function SubscriptionSettings() {
   return <section className={'hh-panel ' + styles.settings} aria-labelledby={headingId} data-subscription-settings="true">
     <p className={styles.kicker}><ShieldCheck size={17} aria-hidden="true"/>Holistic House</p>
     <h2 id={headingId}>{t.settings}</h2>
+    <SubscriptionCompactPicker locale={locale} />
     {phase === 'loading' ? <p role="status">{t.loading}</p> : phase !== 'ready' ?
       <><p role="status">{t.statusError}</p><button type="button" className={styles.secondary} disabled={Boolean(busy)} onClick={refresh}>{t.retry}</button></> : <>
       <p className={styles.status} role="status">{status.entitlement.active ? t.plans[planId].name + ' ' + t.active : t.basic}</p>
       <Price t={t} status={status} planId={planId}/>
-      <Benefits t={t} planId={planId}/>
-      <p className={styles.fine}>{t.history}</p>
       {status.entitlement.adFree && <p>{t.adFree}</p>}
       {status.manual?.autoRenew === false && <p className={styles.fine}>{locale === 'ru'
         ? 'Оплата подтверждена на один месяц. Автоматического продления нет — следующий месяц оплачивается отдельно.'
@@ -361,9 +361,15 @@ export function SubscriptionSettings() {
         date && status.entitlement.active ? <p>{t.paidThrough} {date}.</p> : null}
       {subscription?.status === 'canceled' && !status.entitlement.active && <p>{t.canceledState}</p>}
       {subscription && !['active', 'trialing', 'canceled'].includes(subscription.status) && <p className={styles.notice}>{t.attention}</p>}
-      <p className={styles.fine}>{t.free}</p>
-      <p className={styles.fine}>{t.retest}</p><p className={styles.fine}>{t.safety}</p>
-      {!status.entitlement.active && (!subscription || ['canceled', 'incomplete_expired'].includes(subscription.status)) && <PlanSelection t={t}/>}
+      <details className={styles.settingsExtra}>
+        <summary>{t.showDetails}</summary>
+        <Benefits t={t} planId={planId}/>
+        <p className={styles.fine}>{t.history}</p>
+        <p className={styles.fine}>{t.free}</p>
+        <p className={styles.fine}>{t.retest}</p>
+        <p className={styles.fine}>{t.safety}</p>
+        <p className={styles.fine}>{t.pending}</p>
+      </details>
       {status.entitlement.active && !status.available && <p className={styles.notice}>{t.unavailable}</p>}
       <div className={styles.actions}>
         {manageable && <button type="button" className={styles.secondary} disabled={Boolean(busy)} onClick={openPortal}>{busy === 'portal' ? t.working : t.manage}</button>}
@@ -382,7 +388,6 @@ export function SubscriptionSettings() {
           }}>{busy === 'cancel' ? t.working : t.confirmCancel}</button>
         </div>
       </div>}
-      <p className={styles.fine}>{t.pending}</p>
     </>}
     {cancelled && <p role="status">{t.cancelled}</p>}
     {error && <p role="alert" className={styles.error}>{error === 'checkoutConflict' ? t.checkoutConflict : t.actionError}</p>}

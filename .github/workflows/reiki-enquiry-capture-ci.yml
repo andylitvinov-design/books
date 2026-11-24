@@ -25,7 +25,6 @@ on:
       - "components/principles-of-energywork.tsx"
       - "tests/kundalini-reiki-course.test.mjs"
       - "tests/reiki-unified-order-capture.test.mjs"
-      - ".github/workflows/reiki-enquiry-capture-ci.yml"
 
 permissions:
   contents: read

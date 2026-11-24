@@ -31,6 +31,7 @@
 .backLink{display:inline-flex;align-items:center;justify-content:space-between;gap:8px;
  width:fit-content;min-height:42px;padding:6px 3px;border:0;background:transparent;color:#13735b;
  font:700 12px/1.3 system-ui,sans-serif;cursor:pointer}
+
 .backLink{justify-content:flex-start}
 .instructions{border:1px solid #e5e7dd;border-radius:12px;padding:0 10px;background:#fffdf8}
 .instructions summary{cursor:pointer;min-height:40px;display:flex;align-items:center;color:#27634f;font-weight:600}

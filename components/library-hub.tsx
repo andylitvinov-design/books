@@ -18,6 +18,7 @@ import { buildPublishedVideoIndex } from "@/lib/video-discovery/catalog.mjs";
 import { classifyMyTubeFormat } from "@/lib/video-discovery/mytube-duration.mjs";
 import { originalPsiMasterPracticeMetadata } from "@/lib/video-discovery/mytube-practice-collections.mjs";
 import { rankPublicMyTubeVideo } from "@/lib/mandala/mytube-video-tagging.mjs";
+import {listApprovedLocalFilmScenes} from "@/lib/video-discovery/approved-local-scenes.mjs";
 import { listMyTubeCategories } from "@/lib/mandala/mytube-content-taxonomy.mjs";
 
 export type LibraryView = "latest" | "books" | "videos" | "dao";
@@ -198,20 +199,20 @@ function bookItems(locale: PublicLocale): CatalogShowcaseItem[] {
   ];
 }
 
-const videoItemsByLocale: Record<PublicLocale, Array<Omit<CatalogShowcaseItem, "actionLabel">>> = {
+const videoItemsByLocale: Record<PublicLocale, Array<Omit<CatalogShowcaseItem, "actionLabel"> & {aiAssisted?: boolean}>> = {
   en: [
-    { id: "library-video-home", title: "Deeper Personal Work at Holistic House", subtitle: "Introduction", description: "A short introduction to the atmosphere and focus of deeper personal work at Holistic House.", href: "/en/", image: "/images/holistic-house/video-posters/home-en-v2.webp" },
-    { id: "library-video-services", title: "How I Choose the Right Method", subtitle: "Services", description: "A concise explanation of how the format is chosen around the person and the question rather than a fixed technique.", href: "/en/services", image: "/images/holistic-house/video-posters/services-en-v2.webp" },
+    { id: "library-video-home", title: "Deeper Personal Work at Holistic House", subtitle: "Introduction", description: "A short introduction to the atmosphere and focus of deeper personal work at Holistic House.", href: "/en/", image: "/images/holistic-house/video-posters/home-en-v2.webp", aiAssisted: true },
+    { id: "library-video-services", title: "How I Choose the Right Method", subtitle: "Services", description: "A concise explanation of how the format is chosen around the person and the question rather than a fixed technique.", href: "/en/services", image: "/images/holistic-house/video-posters/services-en-v2.webp", aiAssisted: true },
     { id: "library-video-hypnotherapy", title: "How I Work with Hypnotherapy", subtitle: "Method", description: "A short visual explanation of the hypnotherapy approach and how it fits into individual work.", href: "/en/services#methods", image: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp" },
     { id: "library-video-constellations", title: "How I Work with Systemic Constellations", subtitle: "Method", description: "A short explanation of systemic constellation work and the kinds of patterns it can help explore.", href: "/en/services#methods", image: "/images/holistic-house/video-posters/constellations-en-v1.webp" },
-    { id: "library-video-homeopathy", title: "My Approach to Homeopathy", subtitle: "Approach", description: "An introduction to the place of homeopathy inside the broader Holistic House approach.", href: "/en/homeopathy", image: "/images/holistic-house/video-posters/homeopathy-en-v2.webp" },
+    { id: "library-video-homeopathy", title: "My Approach to Homeopathy", subtitle: "Approach", description: "An introduction to the place of homeopathy inside the broader Holistic House approach.", href: "/en/homeopathy", image: "/images/holistic-house/video-posters/homeopathy-en-v2.webp", aiAssisted: true },
     { id: "library-video-psychotherapy", title: "Psychotherapy — introduction in English", subtitle: "Method", description: "An introduction to imagery psychotherapy and the individual working approach.", href: "/en/services#methods", image: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp" },
     { id: "library-video-business-constellations", title: "Business Constellations", subtitle: "Method", description: "A published introduction to systemic business constellations.", href: "/en/services#methods", image: "/images/holistic-house/andy-about.png" },
   ],
   ru: [
-    { id: "library-video-home", title: "Глубокая личная работа в Holistic House", subtitle: "Введение", description: "Короткое знакомство с атмосферой и фокусом глубокой индивидуальной работы в Holistic House.", href: "/?lang=ru", image: "/images/holistic-house/video-posters/home-ru-v1.webp" },
-    { id: "library-video-services", title: "Как я выбираю подходящий метод", subtitle: "Услуги", description: "Короткое объяснение того, как формат подбирается под человека и запрос, а не под заранее выбранную технику.", href: "/ru/services", image: "/images/holistic-house/video-posters/services-ru-v1.webp" },
-    { id: "library-video-homeopathy", title: "Мой подход к гомеопатии", subtitle: "Подход", description: "Введение в то, какое место гомеопатия занимает в более широкой системе Holistic House.", href: "/ru/homeopathy", image: "/images/holistic-house/video-posters/homeopathy-ru-v1.webp" },
+    { id: "library-video-home", title: "Глубокая личная работа в Holistic House", subtitle: "Введение", description: "Короткое знакомство с атмосферой и фокусом глубокой индивидуальной работы в Holistic House.", href: "/?lang=ru", image: "/images/holistic-house/video-posters/home-ru-v1.webp", aiAssisted: true },
+    { id: "library-video-services", title: "Как я выбираю подходящий метод", subtitle: "Услуги", description: "Короткое объяснение того, как формат подбирается под человека и запрос, а не под заранее выбранную технику.", href: "/ru/services", image: "/images/holistic-house/video-posters/services-ru-v1.webp", aiAssisted: true },
+    { id: "library-video-homeopathy", title: "Мой подход к гомеопатии", subtitle: "Подход", description: "Введение в то, какое место гомеопатия занимает в более широкой системе Holistic House.", href: "/ru/homeopathy", image: "/images/holistic-house/video-posters/homeopathy-ru-v1.webp", aiAssisted: true },
     { id: "library-video-psychotherapy", title: "Образная психотерапия — видео о подходе", subtitle: "Метод", description: "Знакомство с образной психотерапией и индивидуальной работой.", href: "/ru/services#methods", image: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp" },
   ],
   es: [
@@ -306,6 +307,22 @@ const videoYouTubeIds: Record<PublicLocale, Record<string, string>> = {
 };
 
 
+const PUBLIC_YOUTUBE_EDITORIAL_METADATA: Record<string,{sourceLabel:string;topicTags:string[]}> = {
+  "1Evwgu369Jw": {sourceLabel:"Royal Society of Arts",topicTags:["emotional-intimacy"]},
+  "8KkKuTCFvzI": {sourceLabel:"TED",topicTags:["family-relationships"]},
+  "Rqj7besaGg4": {sourceLabel:"TEDx Talks",topicTags:["money-mindset"]},
+  "l_NYrWqUR40": {sourceLabel:"TED-Ed",topicTags:["self-confidence"]},
+  "w-HYZv6HzAs": {sourceLabel:"TEDx Talks",topicTags:["self-confidence"]},
+  "RcGyVTAoXEU": {sourceLabel:"TED",topicTags:["stress-relief"]},
+  "F2hc2FLOdhI": {sourceLabel:"TED",topicTags:["stress-relief"]},
+  "eBz7iUJu9UM": {sourceLabel:"TED-Ed",topicTags:["personal-growth"]},
+  "7JtjrPcMjBg": {sourceLabel:"Анна Выровая",topicTags:["self-acceptance"]},
+  "KoZn6cKbxXg": {sourceLabel:"Валерий Гут",topicTags:["self-confidence"]},
+};
+
+/** The public videos remain in the shared approved library; this small
+ * editorial map supplies verified channel labels and precise MyTube topics.
+ */
 /** The Library and Ideas surfaces share a single published-media feed, including deduplication. */
 export function buildLibraryFeedItems(
   locale: PublicLocale,
@@ -314,14 +331,21 @@ export function buildLibraryFeedItems(
 ): { feedItems: LibraryFeedItem[]; guideFeed: LibraryFeedItem[] } {
   const guides = bookItems(locale);
   const publishedIds = new Set(publishedVideos.map(video => video.youtubeId));
-  const publicFeed: LibraryFeedItem[] = publishedVideos.map(video => ({
-    id: "owner-" + video.id, kind: "video",
-    title: video.title, description: video.description,
-    youtubeId: video.youtubeId, href: video.url,
-    publishedAt: video.publishedAt,
-    audioLanguage: video.locale, sourceLabel: "Holistic House",
-    curation: "published", sourceApproved: true, sourceGroup: "owner-library",
-  }));
+  const publicFeed: LibraryFeedItem[] = publishedVideos.map(video => {
+    const editorial = PUBLIC_YOUTUBE_EDITORIAL_METADATA[video.youtubeId];
+    return {
+      id: "owner-" + video.id, kind: "video",
+      title: video.title, description: video.description,
+      youtubeId: video.youtubeId, href: video.url,
+      publishedAt: video.publishedAt,
+      audioLanguage: video.locale,
+      // External recordings keep their real publisher label; only unmapped
+      // Holistic House-owned items use the house label.
+      sourceLabel: editorial?.sourceLabel || "Holistic House",
+      topicTags: editorial?.topicTags || [],
+      curation: "published", sourceApproved: true, sourceGroup: "owner-library",
+    };
+  });
   const articleFeed: LibraryFeedItem[] = articles.map(article => ({
     id: "article-" + article.id, kind: "article",
     title: article.published.title, description: article.published.excerpt,
@@ -391,12 +415,15 @@ export function buildPublicVideoDiscoveryItems(
         audioLanguage,curation:"published" as const,sourceApproved:true,
         sourceLabel:"Holistic House · "+audioLanguage.toUpperCase(),
         sourceGroup:"site-introduction",
+        aiAssisted:video.aiAssisted,
       }];
     }));
   // Publicly registered owner presentations already appear on the Services
   // and other landing pages. Their verified YouTube IDs, not vague titles or
   // arbitrary owner uploads, identify the existing Masters shelf.
   const approvedSiteMasterIds=new Set(siteIntroductions.map(video=>video.youtubeId));
+  const approvedAiMasterIds=new Set(siteIntroductions
+    .filter(video=>video.aiAssisted===true).map(video=>video.youtubeId));
   // Russian numbered teaching series are playable on EN/ES MyTube too.
   const seriesItems:LibraryFeedItem[]=greekVideoSeries("ru")
     .flatMap(series=>series.lessons.map(lesson=>({
@@ -447,7 +474,7 @@ export function buildPublicVideoDiscoveryItems(
   }));
   // One canonical public index, de-duplicated by YouTube ID. Unknown, private,
   // draft and unapproved clips never gain publication rights from this merge.
-  return buildPublishedVideoIndex([
+  const indexedVideos = buildPublishedVideoIndex([
     ...originalPsiMasterPractices,
     ...siteIntroductions,
     ...seriesItems,
@@ -461,10 +488,11 @@ export function buildPublicVideoDiscoveryItems(
     ...(approvedSiteMasterIds.has(video.youtubeId)&&video.sourceApproved===true&&
       !video.seriesId&&!Number.isInteger(video.seriesOrder)&&
       !Number.isInteger(video.mytubeLessonOrder)
-      ?{mytubeSection:"masters" as const,author:"Andy"}:{}),
+      ?{mytubeSection:"masters" as const,author:"Andy",
+         aiAssisted:approvedAiMasterIds.has(video.youtubeId)}:{}),
   }));
+  return [...indexedVideos, ...listApprovedLocalFilmScenes(locale)];
 }
-
 export function LibraryHub({ locale, view = "latest", publishedVideos = [], articles = [], approvedMeditations = [] }: {
   locale: PublicLocale;
   view?: LibraryView;

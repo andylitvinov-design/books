@@ -18,6 +18,17 @@ export type LibraryFeedItem = {
   image?: string;
   href?: string;
   youtubeId?: string;
+  /** Public outbound-only listing: never embed without owner and technical verification. */
+  playbackMode?: "embedded" | "youtube_only";
+  /** Same-origin, rights-reviewed local MP4; mutually exclusive with YouTube playback. */
+  videoSrc?: string;
+  mediaAttribution?: string;
+  mediaAttributionUrl?: string;
+  mediaLicense?: string;
+  mediaRightsApproved?: boolean;
+  localMediaVerified?: boolean;
+  mediaBytes?: number;
+  mediaSha256?: string;
   publishedAt?: string;
   author?: string;
   seriesId?: string;
@@ -31,6 +42,8 @@ export type LibraryFeedItem = {
   sourceGroup?: string;
   sourceLabel?: string;
   mytubeSection?: "masters";
+  /** Editorial AI-assisted origin, reviewed for public presentation sources. */
+  aiAssisted?: boolean;
   durationVerifiedSeconds?: number;
   mytubeFormat?: "shorts" | "study";
   sourceApproved?: boolean;
@@ -190,12 +203,12 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
 
     <div className={styles.list}>
       {visible.map((item, index) => {
-        const canPlay = item.kind === "video" && Boolean(item.youtubeId);
+        const canPlay = item.kind === "video" && Boolean(item.youtubeId || item.videoSrc) && item.playbackMode !== "youtube_only";
         const playing = canPlay && playingId === item.id;
         const poster = item.image || (item.youtubeId ?
           "https://i.ytimg.com/vi/" + encodeURIComponent(item.youtubeId) + "/hqdefault.jpg" : "");
         const date = dateLabel(item.publishedAt, locale);
-        const action = item.kind === "article" ? copy.read : item.kind === "guide" ? copy.open : copy.watch;
+        const action = item.kind === "article" ? copy.read : item.kind === "guide" ? copy.open : item.playbackMode === "youtube_only" ? copy.original : copy.watch;
         const matchingTopic=(item.mytubeRankings||[]).find(match=>
           (!mytubeFocus?.categoryId||mytubeFocus.categoryId==="all"||match.categoryId===mytubeFocus.categoryId)&&
           (!mytubeFocus?.subcategoryId||mytubeFocus.subcategoryId==="all"||match.subcategoryId===mytubeFocus.subcategoryId)&&
@@ -220,12 +233,17 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
           ) : null}
           <article className={[styles.card, playing && styles.playing].filter(Boolean).join(" ")}>
           <div className={styles.visual}>
-            {playing ? (
+            {playing ? (item.videoSrc ? (
+              <video className={styles.iframe} data-local-video-player
+                aria-label={item.title} controls playsInline preload="metadata" poster={poster}>
+                <source src={item.videoSrc} type="video/mp4" />
+              </video>
+            ) : (
               <iframe className={styles.iframe} title={item.title} loading="lazy"
                 src={"https://www.youtube-nocookie.com/embed/" + item.youtubeId + "?rel=0&playsinline=1"}
                 allow="encrypted-media; picture-in-picture; fullscreen"
                 allowFullScreen referrerPolicy="strict-origin-when-cross-origin" />
-            ) : canPlay ? (
+            )) : canPlay ? (
               <button type="button" className={styles.playButton} onClick={() => setPlayingId(item.id)}
                 aria-label={copy.watch + ": " + item.title}>
                 {poster ? <Image src={poster} alt="" fill unoptimized loading="lazy"
@@ -278,6 +296,12 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
             </p>
             )}
             {item.description && <p className={styles.description}>{item.description}</p>}
+            {item.mediaAttribution && <p className={styles.meta} data-video-attribution>
+              {item.mediaAttribution}{" · "}
+              {item.mediaAttributionUrl ? <a href={item.mediaAttributionUrl} target="_blank" rel="noopener noreferrer">
+                {item.mediaLicense || "License"}
+              </a> : item.mediaLicense}
+            </p>}
             {mytubeShelf==="practices"&&item.sourceGroup==="psimaster-original-meditations"&&
               !Number.isInteger(item.durationVerifiedSeconds)&&
               <p className={styles.meta} data-mytube-duration-unverified>

@@ -10,7 +10,13 @@ test("all three canonical service pages exist in EN/RU/ES with SEO and actual en
     assert.match(page,/generateMetadata/);
     assert.match(page,/generateStaticParams/);
     for (const locale of ["en","ru","es"]) assert.ok(page.includes("/" + locale + "/services/" + name), locale + " missing in " + name);
-    assert.match(page,/PersonalServiceLanding/);
+    if (name === "psychohomeopathy") {
+      // This legacy route intentionally redirects to the canonical Alchemy service.
+      assert.match(page, /permanentRedirect\("\/" \+ locale \+ "\/services\/alchemy-of-soul"\)/);
+      assert.match(read("app/[locale]/services/alchemy-of-soul/page.tsx"), /Alchemy/);
+    } else {
+      assert.match(page, /PersonalServiceLanding/);
+    }
     assert.match(page,/isPublicLocale/);
   }
   const component = read("components/personal-service-landing.tsx");
@@ -58,11 +64,11 @@ test("free written review keeps personal scope, optional private questionnaire a
   // The current Free Express introduction is an initial written review.
   // An optional paid consultation is separate, and clinical data stays private.
   for (const phrase of [
-    "no appointment or call is needed",
-    "без записи на звонок",
+    "One question. A personal written reply. No fee, no call.",
+    "Один вопрос. Мой письменный ответ. Без оплаты и созвона.",
     "sin cita o videollamada",
-    "Live consultations are separate and optional",
-    "Живая консультация — отдельно и по желанию",
+    "A live session is separate, and there\'s no obligation to book one.",
+    "Живая сессия — отдельная услуга",
     "Una consulta en directo es opcional y aparte",
     "educational and symbolic",
     "не диагностируют и не лечат заболевания",

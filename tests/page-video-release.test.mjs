@@ -62,18 +62,62 @@ test('compact defaults are limited to these eight published renders, not About o
 // Execute only the existing reporting blocks with a synthetic locator oracle.
 // This checks truthful evidence serialization, not actual browser playback.
 const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
-async function run(script,{live=true,present=false,badIframe=false}={}) {
+async function run(script,{live=true,present=false,badIframe=false,hydrationReady=true}={}) {
  const source=readFileSync(new URL(`../scripts/${script}`, import.meta.url), 'utf8');
  const pageScript=script==='verify-page-video-release.mjs';
  const start=pageScript?source.indexOf('    const approvedRussian ='):source.indexOf('  let russianPresentationVerified =')>=0?source.indexOf('  let russianPresentationVerified ='):source.indexOf("  for (const home of ['/', '/ru']) {");
  const end=pageScript?source.indexOf('  } catch (error)',start):source.indexOf('  // Regressions reported',start);
  assert.ok(start>=0&&end>start);
- let home='/ru',clicked=false;
+ let home='/ru',clicked=false,scrolled=false,hydrated=false;
  const results=[];
  const skippedResults=[];
- function loc(selector,parent='') {const full=parent+' '+selector;return {full,locator:s=>loc(s,full),count:async()=> full.includes('home-presentation')?(home==='/ru'&&present?1:0):1,click:async()=>{clicked=true}};}
- const page={locator:s=>loc(s)};
- const expect=l=>({toHaveCount:async n=>{let actual=l.full.includes('home-intro')?0:l.full.includes('iframe')?0:l.full.includes('home-presentation')?(present?1:0):1;assert.equal(actual,n)},toHaveAttribute:async (name,value)=>{if(name==='src'){assert.ok(clicked);assert.match(badIframe ? 'https://www.youtube-nocookie.com/embed/WRONG_VIDEO?autoplay=1' : 'https://www.youtube-nocookie.com/embed/G0Db6yOCMto?autoplay=1', value)}},toBeEnabled:async()=>{assert.ok(present)}});
+ function loc(selector,parent='') {
+   const full=parent+' '+selector;
+   return {
+     full,locator:s=>loc(s,full),
+     count:async()=>full.includes('home-presentation')?(home.startsWith('/ru')&&present?1:0):1,
+     scrollIntoViewIfNeeded:async()=>{assert.ok(present);scrolled=true},
+     click:async()=>{
+       // The legacy page-video checker verifies click/iframe but does not
+       // perform the new SiteVideo smoke's explicit scroll/hydration checks.
+       if(!pageScript && full.includes('site-video-play'))
+         assert.ok(scrolled&&hydrated,'RU player cannot play before hydration');
+       clicked=true;
+     },
+   };
+ }
+ const page={
+   locator:s=>loc(s),
+   waitForLoadState:async state=>{assert.equal(state,'load')},
+   // Synthetic browser oracle: never evaluate browser globals in Node.
+   evaluate:async()=>hydrationReady,
+ };
+ const expect=l=>({
+   toHaveCount:async n=>{
+     const actual=l.full.includes('home-intro')?0:l.full.includes('iframe')?0:
+       l.full.includes('home-presentation')?(present?1:0):1;
+     assert.equal(actual,n);
+   },
+   toHaveAttribute:async (name,value)=>{
+     if(name==='aria-busy'){
+       assert.equal(value,'false');
+       assert.ok(scrolled&&hydrated,'Hydration must complete before Play is ready');
+     } else if(name==='src'){
+       assert.ok(clicked,'Expected a real click before iframe is present');
+       assert.match(badIframe
+         ?'https://www.youtube-nocookie.com/embed/WRONG_VIDEO?autoplay=1'
+         :'https://www.youtube-nocookie.com/embed/G0Db6yOCMto?autoplay=1',value);
+     }
+   },
+   toBeEnabled:async()=>{assert.ok(present&&(pageScript||(scrolled&&hydrated)))},
+ });
+ expect.poll=callback=>({
+   toBe:async wanted=>{
+     const actual=await callback();
+     assert.equal(actual,wanted,'Next router is not hydrated');
+     hydrated=actual;
+   },
+ });
  const fn=new AsyncFunction('page','expect','origin','live','results','engine','pageErrors','assert','navigate','pass','console','skippedResults',source.slice(start,end));
  await fn(page,expect,live?'https://holistichouse.vercel.app':'http://127.0.0.1:3100',live,results,'synthetic',[],assert,async path=>{home=path},label=>results.push(`PASS: ${label}`),{log(){}},skippedResults);
  if (!pageScript) {
@@ -88,3 +132,8 @@ for(const script of ['verify-page-video-release.mjs','verify-site-video-browser.
  test(`${script}: absent local slot remains failure`,async()=>{await assert.rejects(run(script,{live:false}))});
  test(`${script}: failed iframe remains failure, not success evidence`,async()=>{await assert.rejects(run(script,{present:true,badIframe:true}))});
 }
+
+test('synthetic site-video reporter cannot pass before actual React hydration',async()=>{
+  await assert.rejects(run('verify-site-video-browser.mjs',{present:true,hydrationReady:false}),
+    /Next router is not hydrated/);
+});

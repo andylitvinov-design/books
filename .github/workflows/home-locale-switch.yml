@@ -29,7 +29,6 @@ on:
       - 'tests/home-locale-menu-state.test.mjs'
       - 'app/page.tsx'
       - 'scripts/verify-home-locale-switch.mjs'
-      - '.github/workflows/home-locale-switch.yml'
   push:
     branches: ['codex/public-book-library']
     paths:
@@ -61,6 +60,9 @@ on:
       - '.github/workflows/home-locale-switch.yml'
 permissions:
   contents: read
+concurrency:
+  group: hh-dedupe-home-locale-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 jobs:
   core-methods:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
@@ -77,8 +79,8 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Stable offer, manual carousel and early existing session selector
         run: |
-          node --test tests/stable-session-entry.test.mjs tests/home-section-carousel.test.mjs tests/home-carousel-first-screen-cta.test.mjs
-          npx --no-install eslint components/home-section-carousel.tsx app/'[locale]'/services/page.tsx app/es/services/page.tsx tests/stable-session-entry.test.mjs
+          node --test tests/stable-session-entry.test.mjs tests/home-section-carousel.test.mjs tests/home-carousel-first-screen-cta.test.mjs tests/home-locale-menu-state.test.mjs tests/navigation-cabinet.test.mjs tests/page-video-release.test.mjs
+          npx --no-install eslint components/home-section-carousel.tsx app/'[locale]'/services/page.tsx app/es/services/page.tsx tests/stable-session-entry.test.mjs components/site-navigation.tsx
       - name: Seven-step immersion, existing methods, privacy, typecheck and lint
         run: |
           node --test tests/home-featured-workspace.test.mjs tests/personality-profiles-builder.test.mjs tests/home-core-methods.test.mjs tests/home-master-path.test.mjs tests/home-rsc-on-demand.test.mjs
@@ -90,7 +92,10 @@ jobs:
         env:
           NEXT_TELEMETRY_DISABLED: '1'
   first-click:
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    # Source navigation, locale and first-play regression tests are already
+    # executed in the mandatory core-methods job on Ready production PRs.
+    # The real browser/production LIVE acceptance remains here on PUSH/manual.
+    if: ${{ github.event_name != 'pull_request' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

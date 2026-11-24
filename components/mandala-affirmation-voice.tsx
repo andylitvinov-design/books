@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { AudioLines, Check, Download, LoaderCircle, Play, Volume2 } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { VOICE_STUDIO_MODEL, VOICE_STUDIO_SAMPLE, VOICE_STUDIO_VOICES } from "@/lib/mandala/voice-studio.mjs";
+import {FISH_VOICES,FISH_PUBLIC_VOICES} from "@/lib/mandala/voice-studio-fish.mjs";
 import {deletePublicVoiceSample,loadPublicVoiceSample,publicVoiceSampleKey,storePublicVoiceSample} from "@/lib/mandala/public-voice-sample-cache";
 import {validatedPublicVoiceSampleDuration} from "@/lib/mandala/public-voice-sample-integrity.mjs";
 import { affirmationNarrationForSelection, wavDurationFromHeader } from "@/lib/mandala/affirmation-voice.mjs";
@@ -66,6 +67,11 @@ const copy={
     finished:"Voz en el vídeo",status:"Duración",seconds:"s",backupUsed:" · OpenRouter/xAI",freeUsed:" · OpenRouter/Deepgram gratis"
   }
 } as const;
+const fishCopy={
+ ru:{tab:"Fish (10)",coaching:"Коучинг",meditation:"Медитация",license:"Нужна лицензия Fish",inactive:"Fish Audio ещё не активирован. Голоса показаны, но прослушивание и WAV будут доступны после подтверждения прав и бесплатных условий.",active:"Утверждённые голоса Fish RU/EN. Текст не переводится автоматически.",consent:"Разрешаю отправить выбранную фразу в Fish Audio. Не включаю личные и медицинские данные; Fish может использовать текст для улучшения модели.",used:" · Fish Audio бесплатно",device:"Это системный голос устройства, НЕ голос Fish Audio."},
+ en:{tab:"Fish (10)",coaching:"Coaching",meditation:"Meditation",license:"Fish license required",inactive:"Fish Audio is not yet enabled. Voices are visible, but listening and WAV need approved rights and free-tier terms.",active:"Approved RU/EN Fish voices. Text is not translated automatically.",consent:"I agree to send this chosen phrase to Fish Audio. No personal or medical information; Fish may use text to improve models.",used:" · free Fish Audio",device:"This is your device voice, NOT Fish Audio."},
+ es:{tab:"Fish (10)",coaching:"Coaching",meditation:"Meditación",license:"Requiere licencia Fish",inactive:"Fish Audio no está activado. Las voces son visibles; escuchar y generar WAV requiere aprobar derechos y condiciones gratuitas.",active:"Voces Fish RU/EN aprobadas; el texto no se traduce automáticamente.",consent:"Autorizo enviar la frase a Fish Audio. Sin datos personales ni médicos; Fish puede usar el texto para mejorar sus modelos.",used:" · Fish Audio gratis",device:"Es la voz del dispositivo, NO Fish Audio."}
+} as const;
 const levelCopy={
   ru:{voice:"Голос",music:"Музыка",balanced:"Изменение громкости не расходует бесплатные запросы.",remixing:"Обновляем баланс без повторного вызова Gemini…"},
   en:{voice:"Voice",music:"Music",balanced:"Changing volume does not consume another free voice request.",remixing:"Updating the balance without calling Gemini again…"},
@@ -85,11 +91,11 @@ const backgroundNames:Record<string,{ru:string;en:string;es:string}>={
 };
 
 export function MandalaAffirmationVoice({
-  locale,lines,enabled,durationSeconds,disabled,approvalPending=false,initialPreferences,onAttach,onGenerating,onInvalidate,onPreferencesChange,onDetachLocal,compact=false,ownVoiceOnly=false,extraActions,
+  locale,lines,enabled,durationSeconds,disabled,approvalPending=false,initialPreferences,onAttach,onGenerating,onInvalidate,onPreferencesChange,onDetachLocal,compact=false,therapyLayout=false,ownVoiceOnly=false,extraActions,
 }:{
   locale:PublicLocale;lines:string[];enabled:boolean;durationSeconds:number;disabled:boolean;approvalPending?:boolean;
   initialPreferences?:AffirmationVoicePreferences;
-  compact?:boolean;ownVoiceOnly?:boolean;extraActions?:ReactNode;
+  compact?:boolean;therapyLayout?:boolean;ownVoiceOnly?:boolean;extraActions?:ReactNode;
   onAttach:(result:AffirmationVoiceResult)=>void;
   onGenerating:(value:boolean)=>void;
   onInvalidate?:()=>void;
@@ -97,21 +103,42 @@ export function MandalaAffirmationVoice({
   onPreferencesChange:(prefs:AffirmationVoicePreferences)=>void;
 }) {
   const t=copy[locale];
+  const f=fishCopy[locale];
   const levels=levelCopy[locale];
   const [phraseChoice,setPhraseChoice]=useState<number|"all">(0);
   const selectedIndex=phraseChoice==="all"?null:Math.min(phraseChoice,Math.max(0,lines.length-1));
   const speechText=enabled?affirmationNarrationForSelection(lines,phraseChoice==="all"?"all":selectedIndex??0):"";
-  const initialVoiceId=initialPreferences?.voiceId??"maya";
+  const savedVoiceId=initialPreferences?.voiceId??"maya";
+  const initialVoiceId=savedVoiceId==="fish-ru"?"fish-igor":savedVoiceId==="fish-en"?"fish-sarah":savedVoiceId;
   const [language,setLanguage]=useState<SpeechLanguage>(()=>initialPreferences?.language??locale);
   const [voiceId,setVoiceId]=useState(initialVoiceId);
-  const [voiceGender,setVoiceGender]=useState<"female"|"male"|"own">(()=>initialVoiceId.startsWith("local-")?"own":VOICE_STUDIO_VOICES.find(v=>v.id===initialVoiceId)?.gender==="male"?"male":"female");
+  const [voiceGender,setVoiceGender]=useState<"female"|"male"|"fish"|"own">(()=>initialVoiceId.startsWith("local-")?"own":initialVoiceId.startsWith("fish-")?"fish":VOICE_STUDIO_VOICES.find(v=>v.id===initialVoiceId)?.gender==="male"?"male":"female");
+  const [fishPurpose,setFishPurpose]=useState<"coaching"|"meditation">(()=>{
+    const selected=FISH_PUBLIC_VOICES.find(v=>v.id===initialVoiceId)?.purpose;
+    return selected==="meditation"?"meditation":selected==="coaching"?"coaching":locale==="ru"?"coaching":"meditation";
+  });
+  const chooseFishFirst=(purpose:"coaching"|"meditation",requestedLanguage:SpeechLanguage)=>{
+    const candidates=FISH_PUBLIC_VOICES.filter(v=>v.purpose===purpose);
+    // RU meditation must not silently jump to an unrelated EN voice.
+    return candidates.find(v=>v.language===requestedLanguage&&
+      (!v.requiresProviderLicense||fishLicensedIds.includes(v.id)))??
+      candidates.find(v=>v.language===requestedLanguage)??candidates[0];
+  };
   const [bed,setBed]=useState<Bed>(()=>initialPreferences?.bed??"none");
   const [voiceLevel,setVoiceLevel]=useState(90);
   const [musicLevel,setMusicLevel]=useState(12);
   const [consent,setConsent]=useState(false);
+  // Mobile Safari in touch emulation can report a native input click without
+  // toggling the checkbox. Use one real accessible button gesture, mirroring
+  // the already-verified guest consent, and never grant permission on mount.
+  const consentTouchStart=useRef<{x:number;y:number}|null>(null);
+  const lastConsentTouchAt=useRef(0);
   const [available,setAvailable]=useState(false);
   const [availableLanguages,setAvailableLanguages]=useState<string[]>([]);
-  const languageAvailable=available&&availableLanguages.includes(language);
+  const [fishAvailableLanguages,setFishAvailableLanguages]=useState<string[]>([]);
+  const [fishLicensedIds,setFishLicensedIds]=useState<string[]>([]);
+  const languageBeforeFishRef=useRef<SpeechLanguage|null>(null);
+  const languageAvailable=available&&(voiceGender==="fish"?fishAvailableLanguages:availableLanguages).includes(language);
   const [busy,setBusy]=useState(false);
   const [mixing,setMixing]=useState(false);
   const [generationPhase,setGenerationPhase]=useState<"idle"|"requesting"|"mixing"|"attached"|"cancelled"|"failed">("idle");
@@ -171,8 +198,12 @@ export function MandalaAffirmationVoice({
         setAvailable(data.enabled===true&&data.publicAffirmationsEnabled===true);
         setAvailableLanguages(Array.isArray(data.languages)?data.languages.filter(
           (value:unknown)=>value==="ru"||value==="en"||value==="es"):[]);
+        setFishAvailableLanguages(Array.isArray(data.fishLanguages)?data.fishLanguages.filter(
+          (value:unknown)=>value==="ru"||value==="en"):[]);
+        setFishLicensedIds(Array.isArray(data.fishLicensedVoices)?data.fishLicensedVoices.filter(
+          (value:unknown)=>typeof value==="string"&&FISH_PUBLIC_VOICES.some(v=>v.id===value)):[]);
       })
-      .catch(()=>{if(!controller.signal.aborted){setAvailable(false);setAvailableLanguages([]);}});
+      .catch(()=>{if(!controller.signal.aborted){setAvailable(false);setAvailableLanguages([]);setFishAvailableLanguages([]);setFishLicensedIds([]);}});
     return ()=>controller.abort();
   },[]);
 
@@ -279,9 +310,11 @@ export function MandalaAffirmationVoice({
     sampleControllerRef.current?.abort();
     sampleControllerRef.current=null;
     if(sampleAudioRef.current){
-      sampleAudioRef.current.pause();
-      sampleAudioRef.current.removeAttribute("src");
-      sampleAudioRef.current.load();
+      // A failed native decoder must never block a new explicit voice choice.
+      const sample=sampleAudioRef.current;
+      try {sample.pause();} catch {}
+      try {sample.removeAttribute("src");} catch {}
+      try {sample.load();} catch {}
     }
     samplePendingPersistRef.current=null;
     setSampleUrl("");setSampleVoiceId("");setSampleBusyId("");setSampleMessage("");
@@ -339,8 +372,9 @@ export function MandalaAffirmationVoice({
     void deletePublicVoiceSample(storageKey);
   }
 
-  async function previewSample(id:string){
+  async function previewSample(id:string,requestedLanguage:SpeechLanguage=language){
     if(disabled||busy)return;
+    const isFish=id.startsWith("fish-");
     // A second tap while waiting cancels the in-flight request. Other voice
     // buttons remain usable, cancelling stale requests instead of freezing UI.
     if(sampleBusyId===id){
@@ -360,12 +394,14 @@ export function MandalaAffirmationVoice({
       return;
     }
     resetSample();
-    if(!languageAvailable){setSampleMessage(t.unavailable);return;}
+    if(!(isFish?available&&fishAvailableLanguages.includes(requestedLanguage):languageAvailable)){
+      setSampleMessage(isFish?f.inactive:t.unavailable);return;
+    }
     const job=sampleJobRef.current;
-    const cacheKey=language+":"+id;
+    const cacheKey=requestedLanguage+":"+id;
     const profile=VOICE_STUDIO_VOICES.find(voice=>voice.id===id);
-    const persistentKey=publicVoiceSampleKey(language,id,profile?.provider??"",
-      VOICE_STUDIO_MODEL,VOICE_STUDIO_SAMPLE[language]);
+    const persistentKey=publicVoiceSampleKey(requestedLanguage,id,profile?.provider??"",
+      VOICE_STUDIO_MODEL,VOICE_STUDIO_SAMPLE[requestedLanguage]);
     setSampleBusyId(id);
     let timer:ReturnType<typeof setTimeout>|null=null;
     let timedOut=false;
@@ -374,7 +410,7 @@ export function MandalaAffirmationVoice({
       if(!uri){
         // A previously heard fixed public Gemini demo survives reloads and
         // free-tier 429 responses. Never persist personal affirmation audio.
-        const saved=sampleRejectedKeysRef.current.has(persistentKey)?null:await loadPublicVoiceSample(persistentKey);
+        const saved=isFish||sampleRejectedKeysRef.current.has(persistentKey)?null:await loadPublicVoiceSample(persistentKey);
         if(job!==sampleJobRef.current)return;
         if(saved){
           const seconds=validatedPublicVoiceSampleDuration(await saved.arrayBuffer());
@@ -390,12 +426,14 @@ export function MandalaAffirmationVoice({
         // The server already bounds the free Gemini call at 20 seconds, but
         // the browser must also bound the entire HTTP/body read on slow mobile.
         timer=setTimeout(()=>{timedOut=true;controller.abort();},27000);
-        const reply=await fetch("/api/holistic-support/voice",{
+        const sampleRequest={
           method:"POST",headers:{"Content-Type":"application/json"},
           // Fixed public text only, never the visitor's unapproved phrases.
           body:JSON.stringify({mode:"sample",voiceId:id,language}),
-          signal:controller.signal,cache:"no-store",
-        });
+          signal:controller.signal,cache:"no-store" as const,
+        };
+        if(isFish)sampleRequest.body=JSON.stringify({provider:"fish",mode:"sample",voiceId:id,language:requestedLanguage});
+        const reply=await fetch("/api/holistic-support/voice",sampleRequest);
         if(!reply.ok)throw new Error(reply.status===429?"QUOTA":"TTS");
         if(!/^audio\/wav(?:;|$)/i.test(reply.headers.get("content-type")||""))
           throw new Error("TTS");
@@ -408,7 +446,7 @@ export function MandalaAffirmationVoice({
         // Free English fallbacks may have different voices and must not be
         // mislabeled as Sofia/Maya/Alisa across future visits.
         uri=URL.createObjectURL(audio);
-        if(reply.headers.get("x-hh-voice-provider")==="gemini")
+        if(!isFish&&reply.headers.get("x-hh-voice-provider")==="gemini")
           samplePendingPersistRef.current={key:persistentKey,audio,uri};
         const cache=sampleCacheRef.current;
         cache.set(cacheKey,uri);
@@ -459,11 +497,13 @@ export function MandalaAffirmationVoice({
     onGeneratingRef.current(true);
     try {
       // No wishes, photos, client tests or profile fields in this request.
-      const reply=await fetch("/api/holistic-support/voice",{
+      const voiceRequest={
         method:"POST",headers:{"Content-Type":"application/json"},
         body:JSON.stringify({mode:"affirmations",voiceId,language,text:speechText,consent:true}),
-        signal:controller.signal,cache:"no-store",
-      });
+        signal:controller.signal,cache:"no-store" as const,
+      };
+      if(voiceGender==="fish")voiceRequest.body=JSON.stringify({provider:"fish",mode:"affirmations",voiceId,language,text:speechText,consent:true});
+      const reply=await fetch("/api/holistic-support/voice",voiceRequest);
       if(!reply.ok){
         if(reply.status===429)throw new Error("QUOTA");
         throw new Error("TTS");
@@ -476,7 +516,8 @@ export function MandalaAffirmationVoice({
       if(seconds>59)throw new Error("TOO_LONG");
       const mixSeconds=durationChoices.find(candidate=>candidate>=Math.ceil(seconds+0.4)&&candidate>=durationSeconds) || 60;
       if(job!==jobRef.current)return;
-      const providerNotice=reply.headers.get("X-HH-Voice-Provider")==="openrouter" ? t.backupUsed :
+      const providerNotice=reply.headers.get("X-HH-Voice-Provider")==="fish" ? f.used :
+        reply.headers.get("X-HH-Voice-Provider")==="openrouter" ? t.backupUsed :
         reply.headers.get("X-HH-Voice-Provider")==="openrouter-free" ? t.freeUsed : "";
       const clip={blob:voice,seconds,mixSeconds,providerNotice};
       voiceDataRef.current=clip;
@@ -501,16 +542,16 @@ export function MandalaAffirmationVoice({
       data-video-affirmation-device-voice onClick={previewDeviceSample}
       disabled={busy||disabled||Boolean(sampleBusyId)}>
       <Volume2 size={16} aria-hidden="true"/>{t.deviceSample}
-    </button><small className={css.sampleStatus}>{t.deviceNote}</small>
+    </button><small className={css.sampleStatus}>{voiceGender==="fish"?f.device:t.deviceNote}</small>
   </div>:null;
-  return <section className={css.panel} data-voice-layout={compact?"compact":"default"} data-own-voice-only={ownVoiceOnly?"true":"false"}
+  return <section className={css.panel} data-voice-layout={compact?"compact":"default"} data-therapy-voice-ui={therapyLayout?"true":"false"} data-own-voice-only={ownVoiceOnly?"true":"false"}
     id="video-affirmation-voice" data-video-affirmation-voice data-video-affirmation-phase={generationPhase} aria-labelledby="video-affirmation-voice-title">
     <div className={css.heading}>
       <AudioLines size={20} aria-hidden="true"/>
-      <div><h4 id="video-affirmation-voice-title">{ownVoiceOnly?t.own:t.title}</h4><p>{ownVoiceOnly?t.myVoiceLead:t.lead}</p></div>
+      <div><h4 id="video-affirmation-voice-title">{ownVoiceOnly?t.own:therapyLayout?(locale==="ru"?"Голос для ваших фраз":locale==="es"?"Voz para tus frases":"Voice for your phrases"):t.title}</h4><p>{ownVoiceOnly?t.myVoiceLead:therapyLayout?(locale==="ru"?"Выберите голос для выбранной фразы.":locale==="es"?"Elige una voz para tu frase.":"Choose a voice for your phrase."):t.lead}</p></div>
     </div>
     {!ownVoiceOnly&&voiceGender!=="own" && !compact ? <div className={css.selectedPhrase} data-video-affirmation-selection-summary>
-      <small>{t.phrase} · {t.voice}: <strong data-video-affirmation-selected-voice>{VOICE_STUDIO_VOICES.find(v=>v.id===voiceId)?.name[locale]}</strong></small>
+      <small>{t.phrase} · {t.voice}: <strong data-video-affirmation-selected-voice>{VOICE_STUDIO_VOICES.find(v=>v.id===voiceId)?.name[locale]||FISH_VOICES.find(v=>v.id===voiceId)?.name[locale]}</strong></small>
       <p data-video-affirmation-selected-phrase>{approvalPending?t.pendingText:speechText||t.enable}</p>
     </div>:null}
     {!ownVoiceOnly&&voiceGender!=="own" && (!compact || phraseChoice==="all") ? <details className={css.transcriptDisclosure} data-video-affirmation-transcript-review>
@@ -539,18 +580,62 @@ export function MandalaAffirmationVoice({
       <div className={css.voiceToolbar} hidden={ownVoiceOnly}>
         {compact?<strong className={css.chooseVoice}>{t.chooseVoice}</strong>:null}
         <div className={css.genderTabs} role="group" aria-label={t.voice}>
-        {(["female","male","own"] as const).map(id=><button type="button" key={id}
-          data-video-affirmation-gender={id} aria-pressed={voiceGender===id} hidden={compact&&id==="own"}
+        {(["female","male","fish","own"] as const).map(id=><button type="button" key={id}
+          data-video-affirmation-gender={id} aria-pressed={voiceGender===id} hidden={compact&&id==="own"&&!therapyLayout}
           disabled={busy||disabled} onClick={()=>{
-            resetSample();setVoiceGender(id);
-            if(id!=="own")setVoiceId(id==="female"?"maya":"mark");
+            // Commit the actual voice choice before Safari decoder teardown.
+            setVoiceGender(id);
+            if(id==="fish"){
+              languageBeforeFishRef.current=language;
+              const purpose=language==="ru"?"coaching":fishPurpose;
+              setFishPurpose(purpose);
+              const selected=chooseFishFirst(purpose,language);
+              if(selected){setVoiceId(selected.id);setLanguage(selected.language as SpeechLanguage);}
+            }else{
+              if(voiceGender==="fish"&&languageBeforeFishRef.current!==null){
+                setLanguage(languageBeforeFishRef.current);
+                languageBeforeFishRef.current=null;
+              }
+              if(id!=="own")setVoiceId(id==="female"?"maya":"mark");
+            }
             setConsent(false);
-          }}>{id==="female"?t.female:id==="male"?t.male:t.own}</button>)}
+            resetSample();
+          }}>{id==="female"?t.female:id==="male"?t.male:id==="fish"?f.tab:t.own}</button>)}
         </div>
       </div>
       <div className={css.presetVoiceGroup} hidden={ownVoiceOnly||voiceGender==="own"}>
-        <div className={css.voiceCards} role="group" aria-label={voiceGender==="female"?t.female:t.male}>
-          {VOICE_STUDIO_VOICES.filter(v=>v.gender===voiceGender).map(v=><div className={css.voiceCard} key={v.id}>
+        {voiceGender==="fish"?<div className={css.fishPurposes} data-fish-voice-purpose role="group"
+          aria-label={locale==="ru"?"Назначение голоса":locale==="es"?"Objetivo de la voz":"Voice purpose"}>
+          {(["coaching","meditation"] as const).map(purpose=><button key={purpose} type="button"
+            data-fish-purpose={purpose} aria-pressed={fishPurpose===purpose}
+            disabled={disabled||busy} onClick={()=>{
+              resetSample();setFishPurpose(purpose);setConsent(false);
+              const next=chooseFishFirst(purpose,language);
+              if(next){setVoiceId(next.id);setLanguage(next.language as SpeechLanguage);}
+            }}>{f[purpose]}</button>)}
+        </div>:null}
+        <div className={css.voiceCards+(voiceGender==="fish"?" "+css.fishCards:"")} role="group" aria-label={voiceGender==="female"?t.female:voiceGender==="fish"?f.tab:t.male}>
+          {voiceGender==="fish"?FISH_PUBLIC_VOICES.filter(v=>v.purpose===fishPurpose).map(v=><div className={css.voiceCard} key={v.id}>
+            <button type="button" className={css.voiceCardSelect}
+              data-video-affirmation-voice-card={v.id} aria-pressed={voiceId===v.id}
+              disabled={busy||disabled||Boolean(v.requiresProviderLicense&&!fishLicensedIds.includes(v.id))} onClick={()=>{
+                resetSample();setVoiceId(v.id);setLanguage(v.language as SpeechLanguage);setConsent(false);
+              }}>
+              <span><strong>{v.name[locale]}</strong><small>{v.language==="ru"?"Русский":"English"} · {v.requiresProviderLicense?(fishLicensedIds.includes(v.id)?"Fish Audio":f.license):"Fish Official"}</small></span>
+              <span aria-hidden="true">{voiceId===v.id?"✓":"○"}</span>
+            </button>
+            <button type="button" className={css.sampleButton} data-video-affirmation-voice-preview={v.id}
+              aria-label={t.sample+" "+v.name[locale]} aria-busy={sampleBusyId===v.id}
+              disabled={busy||disabled||Boolean(v.requiresProviderLicense&&!fishLicensedIds.includes(v.id))||!fishAvailableLanguages.includes(v.language)}
+              onClick={()=>{
+                if(voiceId!==v.id){setVoiceId(v.id);setConsent(false);}
+                setLanguage(v.language as SpeechLanguage);
+                void previewSample(v.id,v.language as SpeechLanguage);
+              }}>
+              {sampleBusyId===v.id?<LoaderCircle size={16} aria-hidden="true"/>:<Play size={16} aria-hidden="true"/>}
+              <span>{sampleBusyId===v.id?t.sampleCancel:t.sample}</span>
+            </button>
+          </div>):VOICE_STUDIO_VOICES.filter(v=>v.gender===voiceGender).map(v=><div className={css.voiceCard} key={v.id}>
             <button type="button" className={css.voiceCardSelect}
               data-video-affirmation-voice-card={v.id} aria-pressed={voiceId===v.id}
               disabled={busy||disabled} onClick={()=>{resetSample();setVoiceId(v.id);setConsent(false);}}>
@@ -570,10 +655,13 @@ export function MandalaAffirmationVoice({
             </button>
           </div>)}
         </div>
+        {voiceGender==="fish"?<small className={fishAvailableLanguages.length?css.fishNote:css.warning} data-voice-fish-status role="status">
+          {fishAvailableLanguages.length?f.active:f.inactive}
+        </small>:null}
         {sampleUrl?<div className={css.samplePlayer} data-video-affirmation-sample-ready>
-          <strong>{t.sampleTitle} · {VOICE_STUDIO_VOICES.find(v=>v.id===sampleVoiceId)?.name[locale]}</strong>
+          <strong>{t.sampleTitle} · {VOICE_STUDIO_VOICES.find(v=>v.id===sampleVoiceId)?.name[locale]||FISH_VOICES.find(v=>v.id===sampleVoiceId)?.name[locale]}</strong>
           <audio ref={sampleAudioRef} controls preload="metadata" src={sampleUrl}
-            aria-label={t.sampleTitle+" "+(VOICE_STUDIO_VOICES.find(v=>v.id===sampleVoiceId)?.name[locale]||"")}
+            aria-label={t.sampleTitle+" "+(VOICE_STUDIO_VOICES.find(v=>v.id===sampleVoiceId)?.name[locale]||FISH_VOICES.find(v=>v.id===sampleVoiceId)?.name[locale]||"")}
             onCanPlay={sampleCanPlay} onError={samplePlaybackError}/>
         </div>:null}
         {(sampleBusyId||sampleMessage)?<small className={css.sampleStatus} role="status" aria-live="polite">{sampleBusyId?t.sampleBusyHelp:sampleMessage}</small>:null}
@@ -583,6 +671,14 @@ export function MandalaAffirmationVoice({
         compact={ownVoiceOnly} uploadAction={ownVoiceOnly?extraActions:null}
         disabled={disabled||busy} approvalPending={approvalPending} onAttach={onAttach} onDetach={onDetachLocal}/>
     </div>
+    {therapyLayout&&voiceGender!=="own"?<div className={css.therapyVoiceTools}>
+      {deviceSampleControl}
+      <button type="button" className={css.recordShortcut} data-video-therapy-own-voice
+        disabled={busy||disabled} onClick={()=>{setVoiceGender("own");setConsent(false);resetSample();}}>
+        <AudioLines size={16} aria-hidden="true"/>
+        {locale==="ru"?"Записать или загрузить голос":locale==="es"?"Grabar o subir mi voz":"Record or upload my voice"}
+      </button>
+    </div>:null}
     {!ownVoiceOnly&&voiceGender!=="own" ? <>
     <details ref={bindVoiceAdvanced} className={css.voiceAdvanced} data-video-affirmation-voice-advanced
       onToggle={event=>{
@@ -598,13 +694,21 @@ export function MandalaAffirmationVoice({
         if(node instanceof HTMLDetailsElement)
           voiceAdvancedOpenRef.current=!node.open;
       }}>{locale==="ru"?"Дополнительные настройки озвучки":locale==="es"?"Opciones de narración":"Voice options"}</summary>
-    {compact?deviceSampleControl:null}
+    {compact&&!therapyLayout?deviceSampleControl:null}
     <div className={css.controls}>
       <label>{t.language}
         <select data-video-affirmation-language value={language} disabled={busy||disabled}
-          onChange={event=>{resetSample();setLanguage(event.currentTarget.value as SpeechLanguage);setConsent(false);}}>
+          onChange={event=>{
+            resetSample();const next=event.currentTarget.value as SpeechLanguage;
+            setLanguage(next);
+            if(voiceGender==="fish"&&next!=="es"){
+              const selected=chooseFishFirst(fishPurpose,next);
+              if(selected){setVoiceId(selected.id);setLanguage(selected.language as SpeechLanguage);}
+            }
+            setConsent(false);
+          }}>
           <option value="ru">Русский</option><option value="en">English</option>
-          <option value="es">Español</option>
+          <option value="es" disabled={voiceGender==="fish"}>Español</option>
         </select>
       </label>
       <label>{t.background}
@@ -631,15 +735,41 @@ export function MandalaAffirmationVoice({
     </div>
     <small className={css.hint}>{levels.balanced}</small>
     </details>
-    <div className={css.consentRow}><label className={css.consent}>
-      <input data-video-affirmation-voice-consent type="checkbox" checked={consent}
-        disabled={busy||disabled||approvalPending||!speechText} onChange={e=>setConsent(e.currentTarget.checked)}/>
-      <span>{compact?t.consentBrief:t.consent}</span>
-    </label>
+    <div className={css.consentRow} data-therapy-voice-cloud-consent><button className={css.consent} type="button"
+      data-video-affirmation-voice-consent role="checkbox" aria-checked={consent}
+      disabled={busy||disabled||approvalPending||!speechText}
+      onTouchStart={event=>{
+        const finger=event.touches.length===1?event.touches[0]:null;
+        consentTouchStart.current=finger?{x:finger.clientX,y:finger.clientY}:null;
+      }}
+      onTouchMove={event=>{
+        const start=consentTouchStart.current,finger=event.touches[0];
+        if(!start||event.touches.length!==1||!finger||
+          Math.hypot(finger.clientX-start.x,finger.clientY-start.y)>14)
+          consentTouchStart.current=null;
+      }}
+      onTouchCancel={()=>{consentTouchStart.current=null;}}
+      onTouchEnd={event=>{
+        const start=consentTouchStart.current,finger=event.changedTouches[0];
+        consentTouchStart.current=null;
+        if(!start||event.changedTouches.length!==1||!finger||
+          Math.hypot(finger.clientX-start.x,finger.clientY-start.y)>14)return;
+        lastConsentTouchAt.current=Date.now();
+        setConsent(previous=>!previous);
+      }}
+      onClick={()=>{
+        // Suppress Safari's compatibility click for the *same* real touch.
+        // Keyboard and pointer clicks still toggle and can revoke consent.
+        if(Date.now()-lastConsentTouchAt.current>=700)
+          setConsent(previous=>!previous);
+      }}>
+      <span className={css.consentMark} aria-hidden="true">{consent?"✓":""}</span>
+      <span>{voiceGender==="fish"?f.consent:therapyLayout?(locale==="ru"?"Разрешить бесплатную озвучку выбранного текста":locale==="es"?"Permitir la narración gratuita del texto":"Allow free narration of selected text"):compact?t.consentBrief:t.consent}</span>
+    </button>
     {compact?<details className={css.consentDetails}><summary>{t.privacyDetails}</summary>
-      <p>{t.consent}</p></details>:null}</div>
+      <p>{voiceGender==="fish"?f.consent:t.consent}</p></details>:null}</div>
     <button type="button" className={css.action} data-video-generate-affirmation-audio
-      disabled={!languageAvailable||!speechText||!consent||busy||mixing||disabled||approvalPending}
+      disabled={!languageAvailable||!speechText||!consent||busy||mixing||disabled||approvalPending||Boolean(FISH_PUBLIC_VOICES.find(v=>v.id===voiceId)?.requiresProviderLicense&&!fishLicensedIds.includes(voiceId))}
       // Mobile Safari may dispatch touchend but not pointerup or compatibility click.
       // Accept one short intentional touch, never a scroll or consent-free request.
       onTouchStart={event=>{
@@ -682,12 +812,12 @@ export function MandalaAffirmationVoice({
         void createAudio();
       }}>
       {busy?<LoaderCircle size={18} aria-hidden="true"/>:<Volume2 size={18} aria-hidden="true"/>}
-      {busy?mixing?t.mixing:t.busy:compact?t.generateApply:t.generate}
+      {busy?mixing?t.mixing:t.busy:therapyLayout?t.generate:compact?t.generateApply:t.generate}
     </button>
-    {!languageAvailable?<small className={css.warning} role="status">{t.unavailable}</small>:<small className={css.hint}>{t.limit}</small>}
+    {!languageAvailable?<small className={css.warning} role="status">{voiceGender==="fish"?f.inactive:t.unavailable}</small>:<small className={css.hint} data-therapy-voice-cloud-limit>{t.limit}</small>}
     {audioUrl?<div className={css.result} data-video-affimations-audio-ready>
-      <strong><Check size={16} aria-hidden="true"/>{t.finished} · {VOICE_STUDIO_VOICES.find(v=>v.id===voiceId)?.name[locale]} · {t.status}: {speechSeconds.toFixed(1)} {t.seconds}</strong>
-      <audio ref={generatedAudioRef} controls preload="metadata" src={audioUrl} aria-label={t.finished+" · "+(VOICE_STUDIO_VOICES.find(v=>v.id===voiceId)?.name[locale]||"")}/>
+      <strong><Check size={16} aria-hidden="true"/>{t.finished} · {VOICE_STUDIO_VOICES.find(v=>v.id===voiceId)?.name[locale]||FISH_VOICES.find(v=>v.id===voiceId)?.name[locale]} · {t.status}: {speechSeconds.toFixed(1)} {t.seconds}</strong>
+      <audio ref={generatedAudioRef} controls preload="metadata" src={audioUrl} aria-label={t.finished+" · "+(VOICE_STUDIO_VOICES.find(v=>v.id===voiceId)?.name[locale]||FISH_VOICES.find(v=>v.id===voiceId)?.name[locale]||"")}/>
       <a href={audioUrl} download={"holistic-house-affirmations-"+language+"-"+voiceId+".wav"}>
         <Download size={16} aria-hidden="true"/>{t.download}
       </a>

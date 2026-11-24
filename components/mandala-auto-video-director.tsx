@@ -2,8 +2,9 @@
 
 import {useCallback,useEffect,useMemo,useRef,useState,type ReactNode} from "react";
 import {createPortal} from "react-dom";
-import {Check,Sparkles,Target,Play,ArrowRight,Sun,Heart,Sprout,BriefcaseBusiness,Gift,AudioLines,Film,Leaf,Zap,Moon,Star} from "lucide-react";
-import {AUTO_VIDEO_GOALS,recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
+import {Check,Sparkles,Target,Play,ArrowRight,Heart,Sprout,BriefcaseBusiness,Gift,AudioLines,Film,Leaf,Zap,Mic,RectangleHorizontal,RectangleVertical,Square} from "lucide-react";
+import {startDeviceVoiceCapture} from "@/lib/mandala/device-audio-stt.mjs";
+import {recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
 import {recommendMyTubeTopicStoryClips} from "@/lib/mandala/mytube-video-tagging.mjs";
 import {searchApprovedVideoScenes,videoSceneTagLabel} from "@/lib/mandala/video-scene-search.mjs";
 import {recommendMyTubePlotMontage} from "@/lib/mandala/mytube-plot-montage.mjs";
@@ -28,6 +29,7 @@ import {montageReplacementOptions,validateMontageClips} from "@/lib/mandala/vide
 import {recommendPromptShotPlan} from "@/lib/mandala/prompt-shot-director.mjs";
 import {recommendCuratedAudio} from "@/lib/mandala/curated-audio-recommendations.mjs";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
+import type {MirrorResolution} from "./mandala-magic-mirror-goal";
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./mandala-auto-video-director.module.css";
 
@@ -58,11 +60,16 @@ type Props={
   recipientAudioPanel?:ReactNode;audioStoryboardReady?:boolean;onAudioToMontage?:()=>void;
   onAudioSelectionChange?:(active:boolean)=>void;
   onGoalChange:(value:string)=>void;
+  onPickPhoto?:()=>void;onOpenPro?:()=>void;
   onConceptTopicChange?:(selection:{categoryId:string;subcategoryId:string;topicId:string;brief?:string}|null)=>void;
+  onGoalQuizChange?:(state:{step:1|2|3;complete:boolean;audience:"self"|"others"})=>void;
   onCategoryChange?:(theme:VideoTheme)=>void;
   onAspectChange?:(value:"landscape"|"portrait"|"square")=>void;
   onContinue?:()=>void;onClarify?:()=>void;helpOpen?:boolean;
   goalContinueRef?:{current:(()=>boolean)|null};
+  mirrorDetailedWish?:string|null;
+  mirrorStartRef?:{current:((theme:VideoTheme,categoryId:CanonicalCategoryId,goalText:string)=>void)|null};
+  mirrorResolveRef?:{current:((path:MirrorResolution)=>boolean)|null};
   onShowAll?:()=>void;
   onInvalidate?:()=>void;
   onApply:(presetId:string,durationSeconds:10|15|20|30|60,
@@ -72,7 +79,7 @@ type Props={
         shots:readonly {sceneId:string;beatIndex:number;strategyId:string;
           requiredTags:readonly string[]}[]}},
     options?:{keepGoalFlow?:boolean})=>void|boolean;
-  onCreate?:()=>void;canCreate?:boolean;rendering?:boolean;createFeedback?:string;
+  onCreate?:()=>void;onInstantCreate?:()=>boolean;canCreate?:boolean;rendering?:boolean;createFeedback?:string;
 };
 const copy={
  ru:{
@@ -139,33 +146,18 @@ const copy={
    timeline:"Línea de montaje",openMontage:"Abrir montaje (opcional)",montageHelp:"Cambia el orden y la duración; después confirma el guion.",reorder:"Ordenar escena",less:"Acortar",more:"Alargar",audioHint:"Música, voz y frases se ajustan en las secciones actuales.",replaceScene:"Cambiar clip",replacementHint:"Solo están disponibles vídeos aprobados del catálogo.",
  }
 } as const;
+// First-screen categories and photographic art follow the canonical Telegram hierarchy.
 const videoGoalCategories=[
  {id:"stress-anxiety",theme:"health",Icon:Leaf,art:"stress"},
  {id:"love-relationships",theme:"relationships",Icon:Heart,art:"love"},
- {id:"energy-confidence",theme:"energy",Icon:Zap,art:"energy"},
  {id:"goals-money",theme:"money",Icon:Sprout,art:"growth"},
+ {id:"energy-confidence",theme:"life",Icon:Zap,art:"energy"},
 ] as const;
 type CanonicalCategoryId=(typeof videoGoalCategories)[number]["id"];
-const goalCardLabels={"ru":{"stress-anxiety":"Снятие стресса и расслабление","love-relationships":"Любовь и отношения","energy-confidence":"Энергия и уверенность","goals-money":"Развитие и изменения"},"en":{"stress-anxiety":"Stress relief and relaxation","love-relationships":"Love and relationships","energy-confidence":"Energy and confidence","goals-money":"Growth and change"},"es":{"stress-anxiety":"Aliviar el estrés y relajarse","love-relationships":"Amor y relaciones","energy-confidence":"Energía y confianza","goals-money":"Desarrollo y cambios"}} as const;
-// All buttons are canonical 4×4×4 taxonomy topics, not decorative tags.
-const goalTopicIds:Record<CanonicalCategoryId,readonly string[]>={"energy-confidence":["calm-presence","self-confidence","self-acceptance","healthy-habits","body-awareness","breathing-practices","motivation-drive","recovery-after-load","morning-energy"],"stress-anxiety":["stress-relief","constant-anxiety","anxiety-no-reason","work-stress","burnout","low-mood","inner-child","apathy","emotional-emptiness"],"love-relationships":["emotional-intimacy","couple-communication","find-love","ready-relationship","family-relationships","rebuilding-trust","choosing-partner","breakup-recovery","fear-intimacy"],"goals-money":["personal-growth","life-transitions","goal-setting","financial-stability","self-discipline","career-growth","income-growth","business-decisions","life-purpose"]};
-const quickTopicLabels={"ru":{"calm-presence":"Спокойствие","self-confidence":"Уверенность","self-acceptance":"Баланс","healthy-habits":"Здоровье","body-awareness":"Тело","breathing-practices":"Дыхание","motivation-drive":"Внутренняя сила","recovery-after-load":"Ресурс","morning-energy":"Новый день"},"en":{"calm-presence":"Calm","self-confidence":"Confidence","self-acceptance":"Balance","healthy-habits":"Wellbeing","body-awareness":"Body","breathing-practices":"Breathing","motivation-drive":"Inner strength","recovery-after-load":"Recharge","morning-energy":"New day"},"es":{"calm-presence":"Calma","self-confidence":"Confianza","self-acceptance":"Equilibrio","healthy-habits":"Bienestar","body-awareness":"Cuerpo","breathing-practices":"Respiración","motivation-drive":"Fuerza interior","recovery-after-load":"Recuperación","morning-energy":"Nuevo día"}} as const;
 const initialCategoryForTheme:Record<VideoTheme,CanonicalCategoryId>={
- energy:"energy-confidence",money:"goals-money",relationships:"love-relationships",
- goals:"goals-money",life:"goals-money",health:"stress-anxiety",
+ energy:"stress-anxiety",money:"goals-money",relationships:"love-relationships",
+ goals:"goals-money",life:"energy-confidence",health:"stress-anxiety",
 };
-const popularTopicIds=["confidence","connection","fresh-start","stability","calm","vitality"] as const;
-const popularTopicCopy={
- ru:{confidence:"Обрести уверенность",connection:"Больше близости",
-   "fresh-start":"Начать новый этап",stability:"Опора в работе",
-   calm:"Спокойствие и сон",vitality:"Энергия и сила"},
- en:{confidence:"Build confidence",connection:"More closeness",
-   "fresh-start":"Start a new chapter",stability:"Support at work",
-   calm:"Calm and sleep",vitality:"Energy and strength"},
- es:{confidence:"Ganar confianza",connection:"Más cercanía",
-   "fresh-start":"Empezar nueva etapa",stability:"Apoyo en el trabajo",
-   calm:"Calma y sueño",vitality:"Energía y fuerza"}
-} as const;
 const legacyThemeForSubcategory:Record<string,VideoTheme>={
  "purpose-development":"life","goal-achievement":"goals","money-abundance":"money","business-career":"money",
  "loneliness-breakups":"relationships","finding-love":"relationships","couple-relationships":"relationships","intimacy-family":"relationships",
@@ -182,7 +174,7 @@ const themeLabels={
 
 export function MandalaAutoVideoDirector({
  locale,goal,theme,aspect,presets,scenes,disabled,activePresetId,clipLabel,
- audioAttached=false,audioTrackLabel="",audioTrackId=null,onPickAudio,onOpenAudio,recipientAudioPanel,audioStoryboardReady=false,onAudioToMontage,onAudioSelectionChange,onGoalChange,onConceptTopicChange,onCategoryChange,onAspectChange,onContinue,goalContinueRef,onClarify,helpOpen=false,onShowAll,onInvalidate,onApply,onCreate,canCreate=false,rendering=false,createFeedback=""
+ audioAttached=false,audioTrackLabel="",audioTrackId=null,onPickAudio,onOpenAudio,recipientAudioPanel,audioStoryboardReady=false,onAudioToMontage,onAudioSelectionChange,onGoalChange,onPickPhoto,onOpenPro,onConceptTopicChange,onGoalQuizChange,onCategoryChange,onAspectChange,onContinue,goalContinueRef,mirrorDetailedWish=null,mirrorStartRef,mirrorResolveRef,onClarify,helpOpen=false,onShowAll,onInvalidate,onApply,onCreate,onInstantCreate,canCreate=false,rendering=false,createFeedback=""
 }:Props){
  const t=copy[locale];
  // A licensed four-shot sample is visible before any click; no recording begins automatically.
@@ -199,7 +191,22 @@ export function MandalaAutoVideoDirector({
  // Keep the user's wording in each mode separately; switching never silently replaces it.
  const [requestDrafts,setRequestDrafts]=useState({self:"",others:""});
  const requestDraft=requestDrafts[videoAudience];
+ // Only Life/Work selects the same real self/recipient modes.
+ const quickScope=videoAudience==="self"?"life":"work";
+ const promptDictationRef=useRef<{session:NonNullable<ReturnType<typeof startDeviceVoiceCapture>>;startedAt:number}|null>(null);
+ const promptDictationGeneration=useRef(0);
+ const [dictatingPrompt,setDictatingPrompt]=useState(false);
+ const [promptDictationMessage,setPromptDictationMessage]=useState("");
+ useEffect(()=>()=>{promptDictationGeneration.current+=1;promptDictationRef.current?.session.abort();promptDictationRef.current=null;},[]);
+ const [quickFlow,setQuickFlow]=useState<"guide"|"instant">("guide");
  const setRequestDraft=(next:string)=>setRequestDrafts(previous=>({...previous,[videoAudience]:next}));
+ // This is an explicit More goals handoff, not continuous text mirroring.
+ // It updates the ONE existing native director request, not a second draft.
+ useEffect(()=>{
+  if(mirrorDetailedWish===null||videoAudience!=="self")return;
+  setRequestDrafts(previous=>previous.self===mirrorDetailedWish
+    ?previous:{...previous,self:mirrorDetailedWish});
+ },[mirrorDetailedWish,videoAudience]);
  const [recipientKindId,setRecipientKindId]=useState<string>("");
  const [recipientAudioMode,setRecipientAudioMode]=useState(false);
  const [recipientOccasionId,setRecipientOccasionId]=useState<string>("");
@@ -217,15 +224,33 @@ export function MandalaAutoVideoDirector({
  const [includeMeaningCaption,setIncludeMeaningCaption]=useState(false);
  const [plotData,setPlotData]=useState<{scenarioId:string;locale:PublicLocale;plots:MyTubePlot[]}|null>(null);
  const [plotsLoading,setPlotsLoading]=useState(false);
- const [selectedGoalId,setSelectedGoalId]=useState<string|null>(null);
- const [selectedGoalIds,setSelectedGoalIds]=useState<string[]>([]);
  const [subcategoriesOpen,setSubcategoriesOpen]=useState(true);
  const [selectedCategoryId,setSelectedCategoryId]=useState<CanonicalCategoryId>(
    ()=>initialCategoryForTheme[theme]);
  const [,setCategoryManuallySelected]=useState(false);
  const [requestNeedsChoice,setRequestNeedsChoice]=useState(false);
+ // A suggested default category does not count as an explicit answer.
+ const [goalQuizStep,setGoalQuizStep]=useState<1|2|3>(1);
+ const [goalCategoryAnswered,setGoalCategoryAnswered]=useState(false);
+ const quizTopic=selectedTopicId?getMyTubeTopic(selectedTopicId):null;
+ const goalQuizComplete=videoAudience==="self"&&goalCategoryAnswered&&
+   Boolean(selectedSubcategoryId&&quizTopic&&
+     quizTopic.subcategory.id===selectedSubcategoryId&&
+     quizTopic.category.id===selectedCategoryId)&&!requestNeedsChoice;
+ useEffect(()=>{
+   onGoalQuizChange?.({step:goalQuizStep,complete:goalQuizComplete,audience:videoAudience});
+ },[goalQuizStep,goalQuizComplete,videoAudience,onGoalQuizChange]);
+ useEffect(()=>{
+   if(videoAudience!=="self"||goalQuizStep===1)return;
+   const selector=goalQuizStep===2
+     ?"[data-auto-video-subcategories] button"
+     :"[data-video-goal-topic-chips] button";
+   const first=document.querySelector<HTMLButtonElement>(selector);
+   first?.focus({preventScroll:true});
+   first?.scrollIntoView({block:"nearest"});
+ },[goalQuizStep,videoAudience]);
  const [goalTarget,setGoalTarget]=useState<HTMLElement|null>(null);
- const [audienceTarget,setAudienceTarget]=useState<HTMLElement|null>(null);
+ 
  const [topicTarget,setTopicTarget]=useState<HTMLElement|null>(null);
  const [ideaTarget,setIdeaTarget]=useState<HTMLElement|null>(null);
  const [montageTarget,setMontageTarget]=useState<HTMLElement|null>(null);
@@ -233,7 +258,7 @@ export function MandalaAutoVideoDirector({
  const [profileTarget,setProfileTarget]=useState<HTMLElement|null>(null);
  const [profileMode,setProfileMode]=useState<"short"|"extended"|null>(null);
  const [profileCategory,setProfileCategory]=useState<CanonicalCategoryId>("energy-confidence");
- const [profileFocus,setProfileFocus]=useState<keyof typeof popularTopicCopy.ru>("confidence");
+ const [profileTopicId,setProfileTopicId]=useState("life-purpose");
  const [profileDetails,setProfileDetails]=useState("");
  // Let Safari's native <details> own its open attribute. React's controlled
  // "open={state}" can close it between summary default activation and onToggle.
@@ -255,7 +280,7 @@ export function MandalaAutoVideoDirector({
  const [confirmedTimelineKey,setConfirmedTimelineKey]=useState<string|null>(null);
  useEffect(()=>{
    setGoalTarget(document.querySelector<HTMLElement>("[data-video-director-goal-controls]"));
-   setAudienceTarget(document.querySelector<HTMLElement>("[data-video-director-audience-controls]"));
+   
    setTopicTarget(document.querySelector<HTMLElement>("[data-video-director-topic-controls]"));
    setIdeaTarget(document.querySelector<HTMLElement>("[data-video-director-idea-controls]"));
    setMontageTarget(document.querySelector<HTMLElement>("[data-video-director-style-controls]"));
@@ -276,6 +301,12 @@ export function MandalaAutoVideoDirector({
    return ()=>{active=false;};
  },[selectedScenarioId,locale]);
  const taxonomyCategories=listMyTubeCategories(locale);
+ const profileTopicGroups=listMyTubeSubcategories(profileCategory,locale).map(subcategory=>({
+   subcategory,topics:listMyTubeTopics(profileCategory,subcategory.id,locale),
+ }));
+ const matchedProfileTopic=getMyTubeTopic(profileTopicId);
+ const effectiveProfileTopicId=matchedProfileTopic?.category.id===profileCategory
+   ?profileTopicId:profileTopicGroups[0]?.topics[0]?.id||"";
  const taxonomySubcategories=listMyTubeSubcategories(selectedCategoryId,locale);
  const taxonomyTopics=selectedSubcategoryId?listMyTubeTopics(selectedCategoryId,selectedSubcategoryId,locale):[];
  const selectedTaxonomyTopic=selectedTopicId?getMyTubeTopic(selectedTopicId):null;
@@ -481,6 +512,7 @@ export function MandalaAutoVideoDirector({
   });
  // The one visible Goal CTA stages this plan; it never exports or charges.
  const prepareGoalForIdeas=():boolean=>{
+   if(videoAudience==="self")return goalQuizComplete;
    if(videoAudience!=="others")return true;
    if(recipientAudioMode){
      if(!audioStoryboardReady){
@@ -569,39 +601,18 @@ export function MandalaAutoVideoDirector({
    .filter((id):id is string=>Boolean(id)): [];
  const choose=()=>{
    setRequestNeedsChoice(false);
-   setSelectedGoalId(null);setSelectedGoalIds([]);
+   
    setProposalContext({goal,theme});
    setProposal(recommendAutoVideo({goal,locale,fallbackTheme:theme,presets,scenes}));
    setOverrideId(null);setSeconds(null);setTimelineEdits(null);
  };
- const chooseReadyGoal=(goalId:string)=>{
-   setRequestNeedsChoice(false);
-   setPromptDesignedFor(null);setPromptClassification(null);
-   const item=AUTO_VIDEO_GOALS.find(entry=>entry.id===goalId);
-   if(!item||disabled)return;
-   const nextIds=selectedGoalIds.includes(goalId)
-     ?selectedGoalIds.filter(id=>id!==goalId)
-     :selectedGoalIds.length<2?[...selectedGoalIds,goalId]:selectedGoalIds;
-   if(nextIds.length===selectedGoalIds.length&&nextIds.every((id,index)=>id===selectedGoalIds[index]))return;
-   const nextGoal=nextIds.map(id=>
-     popularTopicCopy[locale][id as keyof typeof popularTopicCopy.ru]||
-     AUTO_VIDEO_GOALS.find(entry=>entry.id===id)?.labels[locale]||id
-   ).join(" · ");
-   const selectedTheme=(videoGoalCategories.find(category=>category.id===selectedCategoryId)?.theme||theme) as VideoTheme;
-   onInvalidate?.();onGoalChange(nextGoal);
-   setSelectedGoalIds(nextIds);setSelectedGoalId(nextIds[0]||null);
-   setSelectedSubcategoryId("");setSelectedTopicId("");setSelectedMeaningAxisId("");setSelectedScenarioId("");setSelectedPlotId("");setSymbolicPlotFallback(false);setSelectedMotifId("");setSelectedStyleId("");setMeaningHandoff(null);setIncludeMeaningCaption(false);
-   setProposalContext({goal:nextGoal,theme:selectedTheme});
-   setOverrideId(null);setSeconds(null);setTimelineEdits(null);setConfirmedTimelineKey(null);
-   setProposal(recommendAutoVideo({goal:nextGoal,goalId:nextIds[0],locale,
-     fallbackTheme:selectedTheme,preferredTheme:selectedTheme,presets,scenes}));
- };
  // All recipient formats reuse the existing licensed scene planner and Canvas export.
  // No second renderer, remote API, contact database or paid generation.
  const resetAudienceStory=()=>{
+   setGoalQuizStep(1);setGoalCategoryAnswered(false);
    setRequestNeedsChoice(false);
    setRecipientContinueError("");setRecipientCaptionOverrides({});
-   setSelectedGoalId(null);setSelectedGoalIds([]);
+   
    setSelectedSubcategoryId("");setSelectedTopicId("");setSelectedMeaningAxisId("");
    setSelectedScenarioId("");setSelectedPlotId("");setSymbolicPlotFallback(false);
    setSelectedMotifId("");setSelectedStyleId("");
@@ -611,7 +622,10 @@ export function MandalaAutoVideoDirector({
  };
  const changeVideoAudience=(mode:"self"|"others")=>{
    if(disabled||mode===videoAudience)return;
-   const kind=getRecipientVideoKind(recipientKindId);
+    promptDictationGeneration.current+=1;
+    promptDictationRef.current?.session.abort();promptDictationRef.current=null;
+    setDictatingPrompt(false);setPromptDictationMessage("");
+    const kind=getRecipientVideoKind(recipientKindId);
    const selectedSelfTheme=videoGoalCategories.find(item=>item.id===selectedCategoryId)?.theme||theme;
    const nextTheme=(mode==="others"?(kind?.theme||selectedSelfTheme):selectedSelfTheme) as VideoTheme;
    const nextGoal=mode==="others"
@@ -652,31 +666,52 @@ export function MandalaAutoVideoDirector({
    setRecipientAudioMode(true);setRecipientKindId("");setRecipientOccasionId("");
    resetAudienceStory();onInvalidate?.();onAudioSelectionChange?.(true);
  };
- const chooseCategory=(nextTheme:VideoTheme,categoryId:CanonicalCategoryId)=>{
+ const chooseCategory=(nextTheme:VideoTheme,categoryId:CanonicalCategoryId,mirrorWish?:string)=>{
+   if(disabled)return;
+   setGoalCategoryAnswered(true);setGoalQuizStep(2);
    setRequestNeedsChoice(false);
    setPromptDesignedFor(null);setPromptClassification(null);
    if(disabled)return;
    setCategoryManuallySelected(true);
-   const nextGoal=requestDraft.trim();
+   const nextGoal=mirrorWish??requestDraft.trim();
    onInvalidate?.();onCategoryChange?.(nextTheme);
    if(nextGoal!==goal)onGoalChange(nextGoal);
    setSelectedCategoryId(categoryId);setSubcategoriesOpen(true);
    setSelectedSubcategoryId("");setSelectedTopicId("");setSelectedMeaningAxisId("");setSelectedScenarioId("");setSelectedPlotId("");setSymbolicPlotFallback(false);setSelectedMotifId("");setSelectedStyleId("");setMeaningHandoff(null);setIncludeMeaningCaption(false);
-   setSelectedGoalId(null);setSelectedGoalIds([]);setOverrideId(null);setSeconds(null);
+   setOverrideId(null);setSeconds(null);
    setTimelineEdits(null);setConfirmedTimelineKey(null);
    setProposalContext({goal:nextGoal,theme:nextTheme});
    setProposal(recommendAutoVideo({goal:nextGoal,locale,fallbackTheme:nextTheme,
      preferredTheme:nextTheme,presets,scenes}));
  };
+ // Mirror reuses the original 4x4x4 native wizard. No automatic topic
+ // confirmation, no recipient delivery, second player or paid render.
+ useEffect(()=>{
+  if(!mirrorStartRef)return;
+  const begin=(nextTheme:VideoTheme,categoryId:CanonicalCategoryId,goalText:string)=>{
+   if(disabled)return;
+   const confirmedWish=goalText.trim().slice(0,500);
+   if(videoAudience==="others"){
+    setVideoAudience("self");setRecipientAudioMode(false);onAudioSelectionChange?.(false);
+    if(aspect!==selfAspectRef.current)onAspectChange?.(selfAspectRef.current);
+    resetAudienceStory();
+   }
+   setRequestDrafts(previous=>({...previous,self:confirmedWish}));
+   chooseCategory(nextTheme,categoryId,confirmedWish);
+  };
+  mirrorStartRef.current=begin;
+  return ()=>{if(mirrorStartRef.current===begin)mirrorStartRef.current=null;};
+ },[mirrorStartRef,disabled,videoAudience,aspect,resetAudienceStory,chooseCategory,onAspectChange,onAudioSelectionChange]);
  const chooseTaxonomySubcategory=(subcategoryId:string)=>{
    setRequestNeedsChoice(false);
    setPromptDesignedFor(null);setPromptClassification(null);
    const item=taxonomySubcategories.find(row=>row.id===subcategoryId);
-   if(!item)return;
+   if(!item||disabled)return;
+   setGoalCategoryAnswered(true);setGoalQuizStep(3);
    setCategoryManuallySelected(true);
    const nextTheme=legacyThemeForSubcategory[subcategoryId]||theme;
    onInvalidate?.();onCategoryChange?.(nextTheme);
-   setSelectedGoalId(null);setSelectedGoalIds([]);
+   
    setSelectedSubcategoryId(subcategoryId);setSelectedTopicId("");setSelectedMeaningAxisId("");setSelectedScenarioId("");setSelectedPlotId("");setSymbolicPlotFallback(false);setSelectedMotifId("");setSelectedStyleId("");setMeaningHandoff(null);setIncludeMeaningCaption(false);
    setOverrideId(null);setSeconds(null);setTimelineEdits(null);setConfirmedTimelineKey(null);
    const nextGoal=requestDraft.trim()||item.label;
@@ -688,7 +723,8 @@ export function MandalaAutoVideoDirector({
    setRequestNeedsChoice(false);
    setPromptDesignedFor(null);setPromptClassification(null);
    const found=getMyTubeTopic(topicId);
-   if(!found||found.category.id!==selectedCategoryId)return;
+   if(disabled||!found||found.category.id!==selectedCategoryId||
+      found.subcategory.id!==selectedSubcategoryId)return;
    const nextTheme=legacyThemeForSubcategory[found.subcategory.id]||theme;
    // Preserve optional user prose in requestDraft but publish the explicit topic
    // as the canonical Studio goal, avoiding stale unrelated wishes (e.g. Sex).
@@ -703,6 +739,69 @@ export function MandalaAutoVideoDirector({
    setProposal(recommended);
    setTimelineEdits(timelineForTopic(topicId,null,recommended));
  };
+ // The approved mobile Mirror owns only the visible three questions.
+ // Commit their real category/subcategory/topic to this ONE existing Director,
+ // not to a parallel saved profile or invented scenario.
+ useEffect(()=>{
+  if(!mirrorResolveRef)return;
+  const resolve=(path:MirrorResolution):boolean=>{
+   if(disabled)return false;
+   const found=getMyTubeTopic(path.topicId);
+   if(!found||found.category.id!==path.categoryId||
+     found.subcategory.id!==path.subcategoryId)return false;
+   const goalText=path.wish.trim().slice(0,500)||found.topic.label[locale];
+   const nextTheme=(legacyThemeForSubcategory[path.subcategoryId]||path.theme) as VideoTheme;
+   if(path.scope==="present"){
+    // Gifts remain subject to the existing recipient-format, source and
+    // rights checks. This selection is NOT a generated or deliverable gift.
+    const birthday=/birthday|день\s+рождени|cumplea/iu.test(path.wish);
+    const anniversary=/anniversary|годовщин|aniversario/iu.test(path.wish);
+    const kindId=birthday||anniversary?"greeting":"gift";
+    const occasionId=birthday?"birthday":anniversary?"anniversary":
+      path.goalChoiceId==="stress"?"support":"gratitude";
+    if(!getRecipientVideoKind(kindId)||!listRecipientVideoOccasions(kindId,locale)
+      .some(item=>item.id===occasionId))return false;
+    if(videoAudience==="self")selfAspectRef.current=aspect;
+    setVideoAudience("others");
+    setRecipientKindId(kindId);setRecipientOccasionId(occasionId);
+    if(aspect!=="portrait")onAspectChange?.("portrait");
+   }else{
+    setVideoAudience("self");setRecipientKindId("");setRecipientOccasionId("");
+    if(videoAudience==="others"&&aspect!==selfAspectRef.current)
+      onAspectChange?.(selfAspectRef.current);
+   }
+   // Reuse the existing Director; Work selects an output framing, not a therapy topic.
+   if(path.scope==="business"&&path.workFormat){
+    const workAspect=path.workFormat==="insta-reels"||path.workFormat==="client-video-offer"?"portrait":"landscape";
+    if(aspect!==workAspect)onAspectChange?.(workAspect);
+   }
+   setRecipientAudioMode(false);onAudioSelectionChange?.(false);
+   setRequestDrafts(previous=>({
+    ...previous,self:goalText,
+    ...(path.scope==="present"?{others:goalText}:{})
+   }));
+   setRequestNeedsChoice(false);setPromptDesignedFor(null);setPromptClassification(null);
+   setCategoryManuallySelected(true);
+   setGoalQuizStep(3);setGoalCategoryAnswered(true);setSubcategoriesOpen(true);
+   setSelectedCategoryId(path.categoryId);
+   setSelectedSubcategoryId(path.subcategoryId);
+   setSelectedTopicId(path.topicId);
+   
+   setSelectedMeaningAxisId("");setSelectedScenarioId("");setSelectedPlotId("");
+   setSymbolicPlotFallback(false);setSelectedMotifId("");setSelectedStyleId("");
+   setMeaningHandoff(null);setIncludeMeaningCaption(false);
+   setOverrideId(null);setSeconds(null);setTimelineEdits(null);
+   setConfirmedTimelineKey(null);setRecipientContinueError("");
+   onInvalidate?.();onCategoryChange?.(nextTheme);onGoalChange(goalText);
+   setProposalContext({goal:goalText,theme:nextTheme});
+   setProposal(recommendAutoVideo({goal:goalText,locale,fallbackTheme:nextTheme,
+     preferredTheme:nextTheme,presets,scenes}));
+   return true;
+  };
+  mirrorResolveRef.current=resolve;
+  return ()=>{if(mirrorResolveRef.current===resolve)mirrorResolveRef.current=null;};
+ },[mirrorResolveRef,disabled,locale,videoAudience,aspect,presets,scenes,
+   onAspectChange,onAudioSelectionChange,onInvalidate,onCategoryChange,onGoalChange]);
  const chooseMeaningAxis=(id:string)=>{
    if(!taxonomyMeanings.some(x=>x.id===id)||id===selectedMeaningAxisId)return;
    onInvalidate?.();setSelectedMeaningAxisId(id);
@@ -761,6 +860,7 @@ export function MandalaAutoVideoDirector({
  };
  const useAvailableSymbolicCategory=()=>{
    if(disabled||!categoryPlan.ok)return;
+   setGoalQuizStep(1);setGoalCategoryAnswered(false);
    onInvalidate?.();
    const category=videoGoalCategories.find(item=>item.id===selectedCategoryId);
    const nextTheme=(category?.theme||theme) as VideoTheme;
@@ -786,47 +886,39 @@ export function MandalaAutoVideoDirector({
      durations:allocateAdaptiveFilmTimeline(length,clipIds).map(shot=>shot.durationSeconds),
      captions});
  };
- const renderTopic=(item:(typeof AUTO_VIDEO_GOALS)[number],variant:"subcategory"|"popular"="subcategory")=>{
-   const Icon=item.id==="confidence"?Sun:item.id==="connection"?Heart:
-     item.id==="fresh-start"?Sprout:item.id==="stability"?BriefcaseBusiness:
-     item.id==="calm"?Moon:Star;
-   return <button key={item.id} type="button"
-       data-auto-video-goal={variant==="subcategory"?item.id:undefined}
-       data-auto-video-popular-topic={variant==="popular"?item.id:undefined}
-       aria-pressed={selectedGoalIds.includes(item.id)}
-       disabled={disabled||(!selectedGoalIds.includes(item.id)&&selectedGoalIds.length>=2)}
-       onClick={()=>chooseReadyGoal(item.id)}>
-       <Icon size={18} aria-hidden="true"/><span>{
-         popularTopicCopy[locale][item.id as keyof typeof popularTopicCopy.ru]||item.labels[locale]
-       }</span>
-     </button>;
- };
-
- // Device-only profile recommender. Never persists answers or contacts an external AI.
+ // Device-only profile recommender. Uses exactly one canonical category/subcategory/topic.
  const applyProfile=()=>{
-   setRequestNeedsChoice(false);
-   setPromptDesignedFor(null);setPromptClassification(null);
-   if(disabled)return;
+   if(disabled||videoAudience!=="self")return;
+   const found=getMyTubeTopic(effectiveProfileTopicId);
    const category=videoGoalCategories.find(item=>item.id===profileCategory);
-   if(!category)return;
-   const nextTheme=category.theme as VideoTheme;
-   const nextGoal=[taxonomyCategories.find(item=>item.id===profileCategory)?.label||profileCategory,popularTopicCopy[locale][profileFocus],
+   if(!found||!category||found.category.id!==profileCategory)return;
+   const nextTheme=(legacyThemeForSubcategory[found.subcategory.id]||category.theme) as VideoTheme;
+   const nextGoal=[found.topic.label[locale],
      ...(profileMode==="extended"&&profileDetails.trim()?[profileDetails.trim().slice(0,160)]:[])
    ].join(" · ").slice(0,300);
    onInvalidate?.();onCategoryChange?.(nextTheme);onGoalChange(nextGoal);
-   setSelectedCategoryId(profileCategory);setCategoryManuallySelected(true);setSelectedGoalId(profileFocus);
-   setSelectedGoalIds([profileFocus]);setSubcategoriesOpen(true);
-   setSelectedSubcategoryId("");setSelectedTopicId("");setSelectedMeaningAxisId("");setSelectedScenarioId("");setSelectedPlotId("");setSymbolicPlotFallback(false);setSelectedMotifId("");setSelectedStyleId("");setMeaningHandoff(null);setIncludeMeaningCaption(false);
-   setOverrideId(null);setSeconds(null);setTimelineEdits(null);setConfirmedTimelineKey(null);
+   setRequestDrafts(previous=>({...previous,self:nextGoal}));
+   setGoalQuizStep(3);setGoalCategoryAnswered(true);setRequestNeedsChoice(false);
+   setPromptDesignedFor(null);setPromptClassification(null);
+   setSelectedCategoryId(profileCategory);setCategoryManuallySelected(true);
+   setSelectedSubcategoryId(found.subcategory.id);setSelectedTopicId(found.topic.id);
+   setSelectedMeaningAxisId("");setSelectedScenarioId("");setSelectedPlotId("");
+   setSymbolicPlotFallback(false);setSelectedMotifId("");setSelectedStyleId("");
+   setMeaningHandoff(null);setIncludeMeaningCaption(false);
+   setOverrideId(null);setSeconds(null);setConfirmedTimelineKey(null);
+   const recommended=recommendAutoVideo({goal:nextGoal,locale,
+     fallbackTheme:nextTheme,preferredTheme:nextTheme,presets,scenes});
    setProposalContext({goal:nextGoal,theme:nextTheme});
-   setProposal(recommendAutoVideo({goal:nextGoal,goalId:profileFocus,locale,
-     fallbackTheme:nextTheme,preferredTheme:nextTheme,presets,scenes}));
+   setProposal(recommended);
+   setTimelineEdits(timelineForTopic(found.topic.id,null,recommended));
    setProfileMode(null);
  };
  // Interpret only when the visitor explicitly presses Design. Reuse existing
  // canonical category/topic UI and the same verified four-shot film renderer.
  const designFromRequest=()=>{
   if(disabled||!requestDraft.trim())return;
+  if(quickFlow==="instant"){onInstantCreate?.();return;}
+  setGoalQuizStep(1);setGoalCategoryAnswered(false);
   if(videoAudience==="others"){
    if(recipientAudioMode)return;
    const inferred=classifyRecipientVideoWish(requestDraft);
@@ -845,7 +937,7 @@ export function MandalaAutoVideoDirector({
   onInvalidate?.();
   setPromptClassification(classification);setPromptDesignedFor(goal);
   setRequestNeedsChoice(!classification);
-  setSelectedGoalId(null);setSelectedGoalIds([]);
+  
   // A broad context is provisional: neither the subcategory nor the specific
   // topic has been confirmed by the visitor.
   const matchLevel=(classification as (typeof classification & {matchLevel?:"category"|"context"}))?.matchLevel;
@@ -884,18 +976,8 @@ export function MandalaAutoVideoDirector({
  });
  const broadRequestMatch=requestAnalysisMeta?.matchLevel==="context"||
   requestAnalysisMeta?.matchLevel==="category";
- const requestField=<label className={css.topicInput} data-video-request-input>
-   <span className={css.srOnly}>{t.input}</span>
-   <input type="text" data-auto-video-input value={requestDraft}
-     maxLength={160} disabled={disabled}
-     placeholder={videoAudience==="others"
-       ?(locale==="ru"?"Кому и что вы хотите сказать?"
-         :locale==="es"?"¿Para quién es el vídeo y qué quieres decir?"
-         :"Who is it for, and what would you like to say?")
-       :t.placeholder}
-     onKeyDown={event=>{if(event.key==="Enter"){event.preventDefault();designFromRequest();}}}
-     onChange={event=>{
-       const text=event.currentTarget.value;
+ // Same prompt handler for speech and keyboard, without duplicate scene logic.
+ const applyRequestDraft=(text:string)=>{
        const fallback=selectedTaxonomyTopic?.topic.label[locale]||
          taxonomySubcategories.find(row=>row.id===selectedSubcategoryId)?.label||"";
        const nextGoal=videoAudience==="others"
@@ -905,6 +987,7 @@ export function MandalaAutoVideoDirector({
        const recipient=videoAudience==="others"?getRecipientVideoKind(recipientKindId):null;
        const requestTheme=(recipient?.theme||theme) as VideoTheme;
        setRequestDraft(text);
+       onConceptTopicChange?.(null); // A new wish cannot inherit an old confirmed topic.
        onInvalidate?.();onGoalChange(nextGoal);
        setPromptDesignedFor(null);setPromptClassification(null);
        setProposalContext({goal:nextGoal,theme:requestTheme});
@@ -914,16 +997,119 @@ export function MandalaAutoVideoDirector({
        setSelectedScenarioId("");setSelectedPlotId("");setSymbolicPlotFallback(false);
        setSelectedMotifId("");setSelectedStyleId("");setMeaningHandoff(null);
        setIncludeMeaningCaption(false);setTimelineEdits(null);setConfirmedTimelineKey(null);
-     }}/>
+     
+ };
+ const togglePromptDictation=()=>{
+   if(disabled)return;
+   const active=promptDictationRef.current;
+   if(active){
+     promptDictationRef.current=null;setDictatingPrompt(false);
+     const generation=promptDictationGeneration.current;
+     const duration=Math.max(.1,Math.min(59,(performance.now()-active.startedAt)/1000));
+     void active.session.stop(duration).then(transcript=>{
+       if(generation!==promptDictationGeneration.current)return;
+       const words=transcript?.text?.trim();
+       if(!words){
+         setPromptDictationMessage(locale==="ru"?"Речь не распознана. Попробуйте ещё раз или введите текст.":locale==="es"?"No se reconoció voz. Prueba otra vez o escribe.":"Speech not recognized. Try again or type.");
+         return;
+       }
+       const next=Array.from([requestDraft.trim(),words].filter(Boolean).join(" ")).slice(0,160).join("");
+       applyRequestDraft(next);
+       setPromptDictationMessage(locale==="ru"?"Речь добавлена в поле цели.":locale==="es"?"Voz añadida al objetivo.":"Speech added to your goal.");
+     }).catch(()=>{
+       if(generation===promptDictationGeneration.current)setPromptDictationMessage(locale==="ru"?"Не удалось завершить диктовку.":locale==="es"?"No se pudo terminar el dictado.":"Could not finish dictation.");
+     });
+     return;
+   }
+   const session=startDeviceVoiceCapture(locale);
+   if(!session){
+     setPromptDictationMessage(locale==="ru"?"Диктовка недоступна. Используйте микрофон клавиатуры или раздел Audio.":locale==="es"?"Dictado no disponible. Usa el micrófono del teclado o Audio.":"Dictation unavailable. Use the keyboard microphone or Audio.");
+     return;
+   }
+   promptDictationRef.current={session,startedAt:performance.now()};
+   setDictatingPrompt(true);
+   setPromptDictationMessage(locale==="ru"?"Говорите и нажмите микрофон ещё раз. Служба браузера может обрабатывать речь.":locale==="es"?"Habla y pulsa otra vez. El navegador puede procesar voz.":"Speak, then tap again to stop. Browser speech services may process audio.");
+ };
+ const requestField=<label className={css.topicInput} data-video-request-input>
+   <span className={css.srOnly}>{t.input}</span>
+   <textarea data-auto-video-input value={requestDraft}
+     rows={4} maxLength={160} disabled={disabled}
+     placeholder={videoAudience==="others"
+       ?(locale==="ru"?"Кому и что вы хотите сказать?"
+         :locale==="es"?"¿Para quién es el vídeo y qué quieres decir?"
+         :"Who is it for, and what would you like to say?")
+       :(locale==="ru"?"Опишите цель или пожелание…":locale==="es"?"Describe tu objetivo…":"Describe your goal or wish…")}
+     onKeyDown={event=>{if(event.key==="Enter"&&(event.ctrlKey||event.metaKey)){event.preventDefault();designFromRequest();}}}
+     onChange={event=>applyRequestDraft(event.currentTarget.value)}/>
  </label>;
- const requestInput=<div className={css.requestComposer} data-video-request-composer>
-  {requestField}
-  <button type="button" data-video-request-design className={css.designRequest}
-   disabled={disabled||!goal.trim()} onClick={designFromRequest}>
-   <Sparkles size={17} aria-hidden="true"/>
-   <span>{locale==="ru"?"Подобрать":locale==="es"?"Elegir":"Match"}</span>
-   <ArrowRight size={17} aria-hidden="true"/>
-  </button>
+ const requestInput=<div className={css.requestShell} data-video-request-composer>
+  <div className={css.requestComposer} data-video-request-card>
+   {requestField}
+   <div className={css.requestToolbar} data-video-request-toolbar>
+    <button type="button" data-video-request-add-photo className={css.toolbarIcon}
+      disabled={disabled||!onPickPhoto} onClick={()=>onPickPhoto?.()} aria-label={locale==="ru"?"Добавить фото":locale==="es"?"Añadir foto":"Add photo"}>+</button>
+    <details className={css.formatMenu} data-video-prompt-aspect>
+      <summary aria-label={(locale==="ru"?"Формат видео: ":locale==="es"?"Formato de vídeo: ":"Video format: ")+(aspect==="landscape"?"16:9":aspect==="portrait"?"9:16":"1:1")}
+        title={locale==="ru"?"Выбрать формат":locale==="es"?"Elegir formato":"Choose video format"}>
+        {aspect==="portrait"?<RectangleVertical size={21} aria-hidden="true"/>:aspect==="square"?<Square size={19} aria-hidden="true"/>:<RectangleHorizontal size={21} aria-hidden="true"/>}
+      </summary>
+      <div className={css.formatMenuList} role="group" aria-label={locale==="ru"?"Соотношение сторон":locale==="es"?"Relación de aspecto":"Video aspect ratio"}>
+        {(["landscape","portrait","square"] as const).map(format=><button type="button" key={format}
+          data-video-request-aspect={format} aria-pressed={aspect===format}
+          disabled={disabled||(videoAudience==="others"&&format!=="portrait")||!onAspectChange}
+          onClick={event=>{onAspectChange?.(format);event.currentTarget.closest("details")?.removeAttribute("open");}}>
+          {format==="landscape"?<RectangleHorizontal size={19} aria-hidden="true"/>:format==="portrait"?<RectangleVertical size={19} aria-hidden="true"/>:<Square size={18} aria-hidden="true"/>}
+          <span>{format==="landscape"?"16:9 · "+(locale==="ru"?"Горизонтальное":locale==="es"?"Horizontal":"Landscape"):
+            format==="portrait"?"9:16 · "+(locale==="ru"?"Вертикальное":locale==="es"?"Vertical":"Portrait"):
+            "1:1 · "+(locale==="ru"?"Квадрат":locale==="es"?"Cuadrado":"Square")}</span>
+          {aspect===format?<Check size={15} aria-hidden="true"/>:null}
+        </button>)}
+      </div>
+    </details>
+    <details className={css.composerMenu} data-video-prompt-tier>
+     <summary><Sparkles size={16} aria-hidden="true"/>{locale==="ru"?"Бесплатно":locale==="es"?"Gratis":"Free"}⌄</summary>
+     <div className={css.composerMenuList}>
+      <span aria-current="true">{locale==="ru"?"Бесплатно · локальное видео":locale==="es"?"Gratis · vídeo local":"Free · local video"}</span>
+      <button type="button" disabled={disabled||!onOpenPro} onClick={e=>{e.currentTarget.closest("details")?.removeAttribute("open");onOpenPro?.();}}>Pro · {locale==="ru"?"расширенный режим":locale==="es"?"modo avanzado":"advanced mode"}</button>
+     </div>
+    </details>
+    <details className={css.composerMenu} data-video-prompt-flow>
+     <summary>{quickFlow==="guide"?"Guide me":"Just make it"}⌄</summary>
+     <div className={css.composerMenuList}>
+      <button type="button" onClick={e=>{setQuickFlow("guide");e.currentTarget.closest("details")?.removeAttribute("open");}}>Guide me</button>
+      <button type="button" onClick={e=>{setQuickFlow("instant");e.currentTarget.closest("details")?.removeAttribute("open");}}>Just make it</button>
+     </div>
+    </details>
+    <button type="button" className={css.toolbarIcon} data-video-request-microphone
+      disabled={disabled} aria-pressed={dictatingPrompt} onClick={togglePromptDictation}
+      aria-label={dictatingPrompt
+        ?(locale==="ru"?"Завершить диктовку":locale==="es"?"Terminar dictado":"Stop dictation")
+        :(locale==="ru"?"Продиктовать цель":locale==="es"?"Dictar objetivo":"Dictate goal")}>
+      <Mic size={21} aria-hidden="true"/>
+    </button>
+    <button type="button" data-video-request-design className={css.designRequest}
+      disabled={disabled||!goal.trim()} onClick={designFromRequest}
+      data-video-request-flow={quickFlow}
+      aria-label={quickFlow==="instant"
+        ?locale==="ru"?"Автоматически создать видео":locale==="es"?"Crear vídeo automáticamente":"Create video automatically"
+        :locale==="ru"?"Продолжить":locale==="es"?"Continuar":"Continue"}>
+      <Play size={19} fill="currentColor"/></button>
+   </div>
+  </div>
+  {promptDictationMessage?<p className={css.promptMicStatus} role="status" aria-live="polite" data-video-prompt-dictation-status>{promptDictationMessage}</p>:null}
+   {videoAudience==="self"&&goalQuizStep===1?<div className={css.quickIntentRow} data-video-quick-intents role="group" aria-label="Quick wishes">
+   {([
+    ["calm",locale==="ru"?"Меньше тревоги":locale==="es"?"Menos ansiedad":"Less anxiety",locale==="ru"?"Хочу больше спокойствия":locale==="es"?"Quiero más calma":"I want more calm"],
+    ["love",locale==="ru"?"Больше любви":locale==="es"?"Más amor":"More love",locale==="ru"?"Хочу больше любви и близости":locale==="es"?"Quiero más amor":"I want more love"],
+    ["strength",locale==="ru"?"Внутренняя сила":locale==="es"?"Fuerza interior":"Inner strength",locale==="ru"?"Хочу быть увереннее":locale==="es"?"Quiero más confianza":"I want inner confidence"]
+   ] as const).map(([id,label,wishText])=><button type="button" key={id} data-video-quick-intent={id}
+     disabled={disabled} aria-pressed={requestDraft===wishText} onClick={()=>{
+      setRequestDraft(wishText);onConceptTopicChange?.(null);
+      onGoalChange(wishText);onInvalidate?.();
+      setPromptDesignedFor(null);setPromptClassification(null);
+      setProposalContext({goal:wishText,theme});setProposal(recommendAutoVideo({goal:wishText,locale,fallbackTheme:theme,presets,scenes}));
+     }}>{label}</button>)}
+  </div>:null}
   {promptDesignedFor===goal?<div className={css.requestAnalysis}
    data-video-request-analysis data-confidence={promptClassification?.confidence||"unresolved"}
    role="status" aria-live="polite">
@@ -993,16 +1179,22 @@ export function MandalaAutoVideoDirector({
      aria-label={locale==="ru"?"Анкета подбора видео":locale==="es"?"Cuestionario de vídeo":"Video questionnaire"}>
      <label>{locale==="ru"?"Что сейчас важнее?":locale==="es"?"¿Qué te importa más?":"What matters most?"}
        <select value={profileCategory} disabled={disabled}
-         onChange={event=>setProfileCategory(event.currentTarget.value as CanonicalCategoryId)}>
+         onChange={event=>{
+          const next=event.currentTarget.value as CanonicalCategoryId;
+          setProfileCategory(next);
+          const firstSub=listMyTubeSubcategories(next,locale)[0];
+          setProfileTopicId(firstSub?listMyTubeTopics(next,firstSub.id,locale)[0]?.id||"":"");
+        }}>
          {videoGoalCategories.map(category=><option key={category.id} value={category.id}>
            {taxonomyCategories.find(item=>item.id===category.id)?.label||category.id}</option>)}
        </select>
      </label>
-     <label>{locale==="ru"?"Что хочется почувствовать?":locale==="es"?"¿Cómo quieres sentirte?":"How would you like to feel?"}
-       <select value={profileFocus} disabled={disabled}
-         onChange={event=>setProfileFocus(event.currentTarget.value as keyof typeof popularTopicCopy.ru)}>
-         {popularTopicIds.map(id=><option key={id} value={id}>
-           {popularTopicCopy[locale][id]}</option>)}
+     <label>{locale==="ru"?"Уточните тему":locale==="es"?"Elige un tema concreto":"Choose a specific topic"}
+       <select value={effectiveProfileTopicId} disabled={disabled}
+         onChange={event=>setProfileTopicId(event.currentTarget.value)}>
+         {profileTopicGroups.map(({subcategory,topics})=><optgroup key={subcategory.id} label={subcategory.label}>
+           {topics.map(item=><option key={item.id} value={item.id}>{item.label}</option>)}
+         </optgroup>)}
        </select>
      </label>
      {profileMode==="extended"?<label>
@@ -1035,46 +1227,70 @@ export function MandalaAutoVideoDirector({
    title:locale==="ru"?"Видеоряд по аудио":locale==="es"?"Vídeo desde audio":"Video from audio",
    desc:locale==="ru"?"Речь → смысл → кадры":locale==="es"?"Voz → texto → escenas":"Speech → text → scenes"}
  ] as const;
- const audienceBar=<div className={css.audienceBar} data-video-audience-switch>
-     <span>{locale==="ru"?"Для кого видео?":locale==="es"?"¿Para quién?":"Who is this video for?"}</span>
-     <div className={css.audienceToggle} role="group" aria-label={
-       locale==="ru"?"Кому предназначено видео":locale==="es"?"Destinatario del vídeo":"Video audience"}>
-       {(["self","others"] as const).map(mode=><button key={mode} type="button"
-         data-auto-video-audience={mode} aria-pressed={videoAudience===mode}
-         disabled={disabled} onClick={()=>changeVideoAudience(mode)}>
-         {mode==="self"
-           ?locale==="ru"?"Для себя":locale==="es"?"Para mí":"For myself"
-           :locale==="ru"?"Для других":locale==="es"?"Para otros":"For others"}
-       </button>)}
-     </div>
-   </div>;
+ const backGoalQuiz=()=>{
+   if(disabled||videoAudience!=="self"||goalQuizStep===1)return;
+   onInvalidate?.();
+   if(goalQuizStep===2){setGoalQuizStep(1);setGoalCategoryAnswered(false);}
+   else setGoalQuizStep(2);
+   setSelectedSubcategoryId("");setSelectedTopicId("");
+   setSelectedMeaningAxisId("");setSelectedScenarioId("");setSelectedPlotId("");
+   setSelectedMotifId("");setSelectedStyleId("");setMeaningHandoff(null);
+   setIncludeMeaningCaption(false);setTimelineEdits(null);setConfirmedTimelineKey(null);
+ };
  const goalPanel=<div className={css.goalPanel} data-auto-video-goal-panel>
-   {audienceTarget?null:audienceBar}
+   
+   {(videoAudience==="others"||goalQuizStep===1)?<div className={css.quickStartHeading} data-video-quick-start>
+    <h3>{locale==="ru"?"Быстрый старт":locale==="es"?"Inicio rápido":"Quick Start"}</h3>
+    <div className={css.quickScopeToggle} role="group" aria-label={locale==="ru"?"Для себя или для других":locale==="es"?"Para mí o para otros":"For myself or others"}>
+     {(["life","work"] as const).map(scope=><button type="button" key={scope}
+       data-video-quick-scope={scope} aria-pressed={quickScope===scope} disabled={disabled} onClick={()=>changeVideoAudience(scope==="life"?"self":"others")}>
+       {scope==="life"?(locale==="ru"?"Жизнь":locale==="es"?"Vida":"Life"):locale==="ru"?"Работа":locale==="es"?"Trabajo":"Work"}</button>)}
+    </div>
+   </div>:null}
+   {videoAudience==="self"?<div data-video-goal-quiz-progress role="status" aria-live="polite">
+     <strong>{locale==="ru"?"Шаг":locale==="es"?"Paso":"Step"} {goalQuizStep} / 3</strong>
+     <span aria-hidden="true" data-video-goal-quiz-dots>
+       {([1,2,3] as const).map(step=><i key={step}
+         data-active={step<=goalQuizStep?"true":"false"}/>)}
+     </span>
+     {goalQuizStep>1?<button type="button" data-video-goal-quiz-back
+       disabled={disabled} onClick={backGoalQuiz}>
+       {locale==="ru"?"← Назад":locale==="es"?"← Atrás":"← Back"}
+     </button>:null}
+   </div>:null}
    {videoAudience==="self"?<>
-     <div className={css.goalChoices} role="group" aria-label={
+     {goalQuizStep===1?<div className={css.goalChoices} role="group" aria-label={
        locale==="ru"?"Выберите цель видео":locale==="es"?"Elige tu objetivo":"Choose your video goal"}>
        {videoGoalCategories.map(item=><button type="button" key={item.id}
-         data-auto-video-category={item.id} data-auto-video-category-theme={item.theme}
+         data-auto-video-category={item.id} data-auto-video-category-theme={item.theme} data-video-goal-photo-card
          aria-label={taxonomyCategories.find(category=>category.id===item.id)?.label||item.id}
-         aria-pressed={selectedCategoryId===item.id&&!requestNeedsChoice} disabled={disabled}
+         aria-pressed={selectedCategoryId===item.id&&goalCategoryAnswered&&!requestNeedsChoice} disabled={disabled}
          onClick={()=>chooseCategory(item.theme,item.id)}>
          {/* Cropped approved artwork is illustrative; underlying canonical category IDs are preserved. */}
        {/* eslint-disable-next-line @next/next/no-img-element */}
        <img data-video-goal-art src={"/images/video-goal-art/"+item.art+".webp"} alt="" loading="lazy"/>
        <span className={css.categoryIcon}><item.Icon size={21} aria-hidden="true"/></span>
-       <strong>{goalCardLabels[locale][item.id]}</strong>
-         {selectedCategoryId===item.id&&!requestNeedsChoice?<span className={css.categorySelected} aria-hidden="true">
+       <strong data-video-goal-category-label>{taxonomyCategories.find(category=>category.id===item.id)?.label||item.id}</strong>
+         {selectedCategoryId===item.id&&goalCategoryAnswered&&!requestNeedsChoice?<span className={css.categorySelected} aria-hidden="true">
            <Check size={15} strokeWidth={3}/></span>:null}
        </button>)}
-     </div>
-     {subcategoriesOpen&&!requestNeedsChoice?<div className={css.subcategories} data-auto-video-subcategories>
+     </div>:null}
+     {goalQuizStep===2&&goalCategoryAnswered&&subcategoriesOpen&&!requestNeedsChoice?<div className={css.subcategories} data-auto-video-subcategories>
        <p className={css.popularHeading} data-video-goal-category-title>{locale==="ru"?"2. Выберите подкатегорию":locale==="es"?"2. Elige una subcategoría":"2. Choose a subcategory"}</p>
-       <div className={css.topicChoices} role="group" data-mytube-subcategories
+       <div className={css.goalChoices} role="group" data-mytube-subcategories data-video-goal-subcategory-cards
          aria-label={locale==="ru"?"Подкатегории цели":locale==="es"?"Subcategorías":"Goal subcategories"}>
-         {taxonomySubcategories.map(item=><button type="button" key={item.id}
-           data-auto-video-subcategory={item.id} aria-pressed={selectedSubcategoryId===item.id}
+         {taxonomySubcategories.map((item,index)=><button type="button" key={item.id}
+           data-auto-video-subcategory={item.id} data-video-goal-photo-card aria-pressed={selectedSubcategoryId===item.id}
            disabled={disabled} title={item.chooseWhen}
-           onClick={()=>chooseTaxonomySubcategory(item.id)}><span>{item.label}</span></button>)}
+           onClick={()=>chooseTaxonomySubcategory(item.id)}>
+           {/* Reuse the exact four first-screen visual assets at every Goal question. */}
+           {/* eslint-disable-next-line @next/next/no-img-element */}
+           <img data-video-goal-art src={"/images/video-goal-art/"+videoGoalCategories[index].art+".webp"}
+             alt="" loading="lazy"/>
+           <span data-video-goal-subcategory-label>{item.label}</span>
+           {selectedSubcategoryId===item.id?<span className={css.categorySelected} aria-hidden="true">
+             <Check size={15} strokeWidth={3}/></span>:null}
+         </button>)}
        </div>
      </div>:null}
    </>:<div className={css.recipientCatalog} data-video-recipient-catalog data-video-recipient-aspect={aspect}>
@@ -1138,10 +1354,10 @@ export function MandalaAutoVideoDirector({
    </div>}
    {videoAudience==="others"&&recipientContinueError?<p role="status" data-video-recipient-continue-error>{recipientContinueError}</p>:null}
  </div>;
- const visibleQuickTopicIds=requestNeedsChoice?[]:[...new Set([
-   ...(selectedSubcategoryId?taxonomyTopics.map(item=>item.id):[]),
-   ...goalTopicIds[selectedCategoryId]
-  ])].slice(0,6);
+ // Only the four topics belonging to the chosen subcategory are answers.
+ const visibleQuickTopicIds=goalQuizStep===3&&goalCategoryAnswered&&
+   selectedSubcategoryId&&!requestNeedsChoice
+   ?taxonomyTopics.map(item=>item.id).slice(0,4):[];
  const quickTopicPanel=videoAudience==="others"
   ?<div className={css.recipientTopicSummary} data-video-optional-topic-field data-video-recipient-topic-summary>
      <span>{locale==="ru"?"2. Тема видео":locale==="es"?"2. Tema":"2. Video topic"}</span>
@@ -1156,15 +1372,17 @@ export function MandalaAutoVideoDirector({
   :<>
   <div data-video-goal-topic-chips role="group"
     aria-label={locale==="ru"?"Темы видео":locale==="es"?"Temas del vídeo":"Video topics"}>
-    {visibleQuickTopicIds.map(id=>{
+    {visibleQuickTopicIds.map((id,index)=>{
       const item=getMyTubeTopic(id);
       if(!item||item.category.id!==selectedCategoryId)return null;
       const fullLabel=item.topic.label[locale];
-      const shortLabels=quickTopicLabels[locale] as Partial<Record<string,string>>;
-      return <button type="button" key={id} data-video-goal-topic={id}
+      return <button type="button" key={id} data-video-goal-topic={id} data-video-goal-photo-card
         aria-pressed={selectedTopicId===id} aria-label={fullLabel} title={fullLabel}
         disabled={disabled} onClick={()=>chooseTaxonomyTopic(id)}>
-        <span>{shortLabels[id]||fullLabel}</span>
+        {/* Same approved first-party photograph layout for all three Goal questions. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img data-video-goal-art data-video-goal-topic-art src={"/images/video-goal-art/"+videoGoalCategories[index].art+".webp"} alt="" loading="lazy"/>
+        <span data-video-goal-topic-label>{fullLabel}</span>
         {selectedTopicId===id?<Check size={15} aria-hidden="true"/>:null}
       </button>;
     })}
@@ -1415,18 +1633,16 @@ export function MandalaAutoVideoDirector({
        setTimelineEdits(null);setConfirmedTimelineKey(null);
      }}>{t.addRefine}<ArrowRight size={15} aria-hidden="true"/></button>
    </div>:null}
-   <div className={css.popularRecommendations} data-auto-video-popular-topics>
-     <p className={css.popularHeading}>{locale==="ru"?"Популярные темы — выберите или напишите свою":
-       locale==="es"?"Temas populares: elige o escribe el tuyo":
-       "Popular themes — choose one or write your own"}</p>
-     <div className={css.popularTopics} role="group" aria-label={
-       locale==="ru"?"Популярные темы":locale==="es"?"Temas populares":"Popular themes"}>
-       {popularTopicIds.map(id=>{
-         const item=AUTO_VIDEO_GOALS.find(entry=>entry.id===id);
-         return item?renderTopic(item,"popular"):null;
-       })}
+   {videoAudience==="self"&&goalCategoryAnswered?<div className={css.popularRecommendations} data-auto-video-popular-topics>
+     <p className={css.popularHeading}>{locale==="ru"?"Подкатегории выбранного направления":locale==="es"?"Subcategorías de la categoría elegida":"Subcategories of your selected category"}</p>
+     <div className={css.popularTopics} role="group"
+       aria-label={taxonomyCategories.find(category=>category.id===selectedCategoryId)?.label||selectedCategoryId}>
+       {taxonomySubcategories.map(item=><button key={item.id} type="button"
+         data-auto-video-popular-subcategory={item.id} disabled={disabled}
+         aria-pressed={selectedSubcategoryId===item.id}
+         onClick={()=>chooseTaxonomySubcategory(item.id)}>{item.label}</button>)}
      </div>
-   </div>
+   </div>:null}
  </div>;
  return <section className={css.root} data-auto-video-director aria-labelledby="auto-video-heading">
    <div className={css.head}><Sparkles size={22} aria-hidden="true"/>
@@ -1440,7 +1656,7 @@ export function MandalaAutoVideoDirector({
    {requestTarget?createPortal(requestInput,requestTarget):requestInput}
    {profileTarget?createPortal(profilePanel,profileTarget):profilePanel}
    {goalTarget?createPortal(goalPanel,goalTarget):goalPanel}
-   {audienceTarget?createPortal(audienceBar,audienceTarget):null}
+   
    {topicTarget?createPortal(quickTopicPanel,topicTarget):null}
    {ideaTarget?createPortal(<details ref={bindIdeaRefinement}
      className={css.ideaRefinement} data-video-ideas-refinement

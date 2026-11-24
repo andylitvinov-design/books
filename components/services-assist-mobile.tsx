@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { consultServiceQuestion } from "@/lib/assist/consultant-mind.mjs";
 import { waveNativeTurn } from "@/lib/holistic-support/wave-native-router.mjs";
-import { ArrowDown, ArrowRight, BatteryCharging, BookOpen, BriefcaseBusiness, Coins, Filter, Flower2, HandHeart, Heart, HeartHandshake, Leaf, MessageCircle, Mic, Moon, Play, Sparkles, Sprout, TestTubeDiagonal, Zap } from "lucide-react";
+import { ArrowDown, ArrowRight, BatteryCharging, BookOpen, BriefcaseBusiness, Coins, Filter, Flower2, HandHeart, Heart, HeartHandshake, Leaf, MessageCircle, Mic, MicOff, Moon, Play, Sparkles, Sprout, TestTubeDiagonal, Zap } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { inferAssistPreferences, nextAssistQuestion, rankAssistOffers } from "@/lib/assist/service-match.mjs";
 import type { AssistPreferences } from "@/lib/assist/service-match.mjs";
@@ -13,6 +13,18 @@ import styles from "./services-assist-mobile.module.css";
 import { AssistTopRecommendations } from "./assist-top-recommendations";
 import { ServicesAssistMyTube } from "./services-assist-mytube";
 import { ServicesAssistHomeopathy } from "./services-assist-homeopathy";
+import { containsUrgentSymptoms } from "@/lib/remedies/assist-matcher.mjs";
+
+type LocalSpeechResult = { isFinal: boolean; [index: number]: { transcript: string } | boolean | undefined };
+type LocalSpeechEvent = { resultIndex: number; results: ArrayLike<LocalSpeechResult> };
+type LocalSpeechRecognizer = {
+  lang: string; interimResults: boolean; continuous: boolean; processLocally: boolean;
+  onresult: ((event: LocalSpeechEvent) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+  start: () => void; stop: () => void; abort: () => void;
+};
+type LocalSpeechConstructor = new () => LocalSpeechRecognizer;
 
 type Focus = "stress" | "relationships" | "energy" | "health" | "work" | "growth" | "general";
 const routes = {
@@ -38,10 +50,10 @@ const toolList: readonly Option[] = ["therapy","homeopathy","reiki","mandala","t
 
 const copy = {
   ru: {
-    eyebrow:"HOLISTIC HOUSE · SERVICES", title:"Wave", lead:"Помогу подобрать подходящую услугу или специалиста для вашей ситуации.", ask:"С чем вы хотели бы обратиться?", choose:"Выберите проблему или опишите её своими словами.",
+    eyebrow:"HOLISTIC HOUSE · SUPPORT", title:"Ali", lead:"Помогу подобрать подходящую услугу или специалиста для вашей ситуации.", ask:"С чем вы хотели бы обратиться?", choose:"Выберите проблему или опишите её своими словами.",
     placeholder:"Опишите вашу ситуацию или цель…", submit:"Показать рекомендации", topics:"Частые обращения",
     hints:[["Стресс / тревога","Меня беспокоят стресс и тревога","stress"],["Мало сил","Чувствую усталость и недостаток энергии","energy"],["Конфликты в паре","У меня конфликт в отношениях с партнером","relationships"],["Плохой сон","Мне трудно спать и расслабиться","stress"],["Работа / деньги","Меня тревожат работа и деньги","work"],["Душевная боль","Мне тяжело эмоционально, хочется поддержки","stress"],["Ссоры в семье","Есть напряжение и конфликты в семье","relationships"],["Нет ясности в жизни","Я потерял направление и смысл","growth"],["Симптомы в теле","Меня беспокоят физические симптомы и самочувствие","health"],["Сложно решиться","Мне трудно принять важное решение","growth"],["Нужна практика","Хочу освоить практику для поддержки себя","growth"],["Другое…","","general"]],
-    privacy:"Подбор работает в вашем браузере: текст не сохраняется и не отправляется внешнему ИИ.", voice:"Открыть клавиатуру для диктовки голосом",
+    privacy:"Подбор работает в вашем браузере: текст не сохраняется и не отправляется внешнему ИИ.", voice:"Голосовой ввод", voiceStop:"Остановить диктовку", voiceListening:"Слушаю — произнесите короткий запрос.", voiceFallback:"Локальное распознавание недоступно. Для диктовки используйте микрофон клавиатуры. Обработка зависит от настроек устройства.",
     label:"Ваш запрос", answer:"Что может помочь", change:"Изменить запрос", tools:"Инструменты поддержки", browse:"Можно выбрать метод самостоятельно — без разговора.", all:"Все услуги и мастера",
     reply:{stress:"Начните с самопроверки, затем попробуйте практику. Личная работа остаётся вашим выбором.",relationships:"Сначала можно прояснить ситуацию, а затем выбрать индивидуальную поддержку.",energy:"Оцените своё состояние и попробуйте подходящую практику.",health:"При физических симптомах важна медицинская оценка. Здесь — только дополнительная поддержка и самоисследование.",work:"Бесплатный разбор поможет сформулировать запрос. Затем можно обсудить решения на консультации.",growth:"Начните с прояснения вопроса, а затем выберите обучение или личную работу.",general:"Вот несколько реальных вариантов, с которых можно начать без обязательной записи."},
     skip:"Пропустить", adjust:"Изменить пожелания", noOffers:"С такими условиями сейчас нет подтверждённых вариантов. Можно изменить формат или бюджет.",
@@ -49,12 +61,13 @@ const copy = {
     cards:{tests:["Тесты самочувствия","Бесплатная самопроверка и наблюдение за динамикой.","Бесплатно"],review:["Разбор ситуации","Короткая анкета и личный письменный ответ.","Бесплатно"],opora:["Курс ОПОРА","Пошаговые упражнения для работы со стрессом.","Курс"],therapy:["Образная психотерапия","Индивидуальная работа с переживаниями и образами.","Личная сессия"],constellation:["Расстановки","Исследование отношений и повторяющихся сценариев.","Личная сессия"],business:["Бизнес-консультация","Прояснение рабочих целей и практических решений.","Консультация"],reiki:["Сеансы Рейки","Энергетические и символические практики по желанию.","По запросу"],mandala:["Персональная мандала","Визуальная символическая практика для саморефлексии.","Практика"],talisman:["Талисманы","Символический каталог в Holistic Support.","Символика"],homeopathy:["Психогомеопатия","Авторский подход и его ограничения.","Ознакомиться"],masters:["Мастера","Опубликованные профили и услуги специалистов.","Каталог"],academy:["Рейки Академия","Обучающие программы и доступные практики.","Обучение"],mytube:["Видео MyTube","Короткие практики и тематические видео.","Видео"],aiCoach:["ИИ-коуч","Разговор с ИИ-помощником для размышления, не психотерапия.","ИИ"]},
     caution:"Гомеопатия не имеет надёжных доказательств эффективности для лечения заболеваний. Символические и энергетические практики не заменяют медицинскую или психологическую помощь.",
     crisis:"Если вы можете причинить себе вред, испытываете опасные симптомы или находитесь в непосредственной опасности, обратитесь в местную экстренную или кризисную службу прямо сейчас.",
+    medicalUrgent:"Некоторые симптомы требуют срочной медицинской оценки. Не выбирайте лечение по каталогу — обратитесь за медицинской помощью.",
   },
   en: {
-    eyebrow:"HOLISTIC HOUSE · SERVICES", title:"Wave", lead:"Find the right support, service or specialist for your situation.", ask:"What would you like help with right now?", choose:"Choose a common issue or describe it in your own words.",
+    eyebrow:"HOLISTIC HOUSE · SUPPORT", title:"Ali", lead:"Find the right support, service or specialist for your situation.", ask:"What would you like help with right now?", choose:"Choose a common issue or describe it in your own words.",
     placeholder:"Describe your situation or goal…", submit:"See recommendations", topics:"Common concerns",
     hints:[["Stress / anxiety","I feel stressed and anxious","stress"],["Low energy","I feel tired and low on energy","energy"],["Relationship conflict","I have conflict with my partner","relationships"],["Sleep problems","I struggle with sleep and relaxation","stress"],["Work or money","I am worried about work and money","work"],["Emotional pain","I am in emotional pain and need support","stress"],["Family tension","I am dealing with tension in my family","relationships"],["Feeling lost","I feel lost and lack a sense of direction","growth"],["Body symptoms","I am concerned about physical symptoms","health"],["Hard decisions","I am struggling to make a decision","growth"],["Need a practice","I want to learn a supportive practice","growth"],["Other…","","general"]],
-    privacy:"Matching happens in your browser. Your text is not stored or sent to external AI.", voice:"Open keyboard to use voice dictation",
+    privacy:"Matching happens in your browser. Your text is not stored or sent to external AI.", voice:"Voice input", voiceStop:"Stop dictation", voiceListening:"Listening — say a short request.", voiceFallback:"On-device recognition is unavailable. Use your keyboard microphone instead. Processing follows your device settings.",
     label:"Your question", answer:"Suggested next steps", change:"Change my question", tools:"Support tools", browse:"Prefer browsing? Choose a method yourself.", all:"All services & practitioners",
     reply:{stress:"Start with a self-check, try a practice and consider personal support if helpful.",relationships:"Clarify your situation first, then choose individual support if you wish.",energy:"Explore your current state and consider a gentle practice.",health:"Physical symptoms deserve medical assessment. These options are for additional support and reflection only.",work:"A free review can clarify the question before a business consultation.",growth:"Clarify your goal, then explore learning or personal support.",general:"Here are real starting points that do not require a booking."},
     skip:"Skip", adjust:"Change preferences", noOffers:"No verified options match all these preferences. You can adjust the format or budget.",
@@ -62,12 +75,13 @@ const copy = {
     cards:{tests:["Wellbeing check-ins","Free self-checks and ways to observe changes.","Free"],review:["Situation review","Short form and personal written reply.","Free"],opora:["OPORA course","Step-by-step stress support exercises.","Course"],therapy:["Guided imagery therapy","One-to-one exploration of experiences and imagery.","Session"],constellation:["Constellations","Explore relationship patterns and perspectives.","Session"],business:["Business consulting","Clarify work goals and decisions.","Consultation"],reiki:["Reiki sessions","Optional symbolic and energy practices.","Enquire"],mandala:["Personal mandala","Visual symbolism for self-reflection.","Practice"],talisman:["Talismans","Symbolic catalogue in Holistic Support.","Symbolic"],homeopathy:["Psycho-homeopathy","Explore the author's approach and its limitations.","Learn more"],masters:["Practitioners","Browse published practitioner services.","Directory"],academy:["Reiki Academy","Explore learning programs and practices.","Learning"],mytube:["MyTube videos","Short practices and topic videos.","Video"],aiCoach:["AI coach","Talk to an AI reflection assistant, not psychotherapy.","AI"]},
     caution:"Homeopathy lacks reliable evidence for treating health conditions. Symbolic and energy practices do not replace medical or mental-health care.",
     crisis:"If you may harm yourself, have urgent symptoms or are in immediate danger, contact your local emergency or crisis service now.",
+    medicalUrgent:"Some symptoms may require urgent medical evaluation. Do not choose treatment through the catalogue; seek medical care.",
   },
   es: {
-    eyebrow:"HOLISTIC HOUSE · SERVICES", title:"Wave", lead:"Encuentra el servicio o profesional adecuado para tu situación.", ask:"¿Con qué necesitas ayuda ahora?", choose:"Elige una dificultad o describe tu situación.",
+    eyebrow:"HOLISTIC HOUSE · SUPPORT", title:"Ali", lead:"Encuentra el servicio o profesional adecuado para tu situación.", ask:"¿Con qué necesitas ayuda ahora?", choose:"Elige una dificultad o describe tu situación.",
     placeholder:"Describe tu situación o tu objetivo…", submit:"Ver recomendaciones", topics:"Problemas frecuentes",
     hints:[["Estrés / ansiedad","Siento estrés y ansiedad","stress"],["Poca energía","Me siento cansado y sin energía","energy"],["Conflicto de pareja","Tengo conflictos en mi relación de pareja","relationships"],["Problemas de sueño","Me cuesta dormir y relajarme","stress"],["Trabajo / dinero","Me preocupan el trabajo y el dinero","work"],["Dolor emocional","Siento dolor emocional y necesito apoyo","stress"],["Tensión familiar","Tengo tensiones y conflictos en mi familia","relationships"],["Sin rumbo","Me siento perdido y sin dirección","growth"],["Síntomas físicos","Me preocupan síntomas físicos y mi salud","health"],["Decisión difícil","Me cuesta tomar una decisión importante","growth"],["Busco una práctica","Quiero aprender una práctica de apoyo","growth"],["Otro…","","general"]],
-    privacy:"La selección ocurre en tu navegador. El texto no se guarda ni se envía a una IA externa.", voice:"Abrir teclado para usar dictado de voz",
+    privacy:"La selección ocurre en tu navegador. El texto no se guarda ni se envía a una IA externa.", voice:"Entrada de voz", voiceStop:"Detener dictado", voiceListening:"Escuchando — di tu consulta.", voiceFallback:"El reconocimiento local no está disponible. Usa el micrófono del teclado; el tratamiento depende de los ajustes del dispositivo.",
     label:"Tu consulta", answer:"Opciones que pueden ayudar", change:"Cambiar consulta", tools:"Herramientas de apoyo", browse:"También puedes explorar métodos directamente.", all:"Servicios y profesionales",
     reply:{stress:"Empieza con una autoevaluación, prueba ejercicios y considera apoyo personal si quieres.",relationships:"Aclara primero la situación y después elige apoyo individual.",energy:"Explora tu estado y prueba una práctica suave.",health:"Los síntomas físicos requieren evaluación médica. Estas opciones son solo apoyo adicional.",work:"Una revisión gratuita puede aclarar tus preguntas antes de una consulta.",growth:"Aclara tus objetivos y explora formación o apoyo personal.",general:"Estas son opciones reales que no requieren una reserva."},
     skip:"Omitir", adjust:"Cambiar preferencias", noOffers:"No hay opciones verificadas que cumplan todas estas preferencias. Puedes cambiar el formato o presupuesto.",
@@ -75,6 +89,7 @@ const copy = {
     cards:{tests:["Pruebas de bienestar","Autoevaluaciones gratuitas para observar cambios.","Gratis"],review:["Revisión de situación","Formulario breve y respuesta escrita personal.","Gratis"],opora:["Curso OPORA","Ejercicios guiados para el estrés.","Curso"],therapy:["Terapia de imágenes guiadas","Exploración individual de experiencias e imágenes.","Sesión"],constellation:["Constelaciones","Explora patrones de relación y perspectivas.","Sesión"],business:["Consultoría de negocios","Aclara metas y decisiones prácticas.","Consulta"],reiki:["Sesiones de Reiki","Prácticas simbólicas y energéticas opcionales.","Consultar"],mandala:["Mandala personal","Práctica visual para autorreflexión.","Práctica"],talisman:["Talismanes","Catálogo simbólico en Holistic Support.","Simbólico"],homeopathy:["Psico-homeopatía","Conoce el enfoque del autor y sus límites.","Información"],masters:["Profesionales","Explora servicios profesionales publicados.","Catálogo"],academy:["Academia Reiki","Formación y prácticas disponibles.","Formación"],mytube:["Videos MyTube","Prácticas breves y videos temáticos.","Video"],aiCoach:["Guía IA","Conversación con IA para reflexionar, no psicoterapia.","IA"]},
     caution:"La homeopatía carece de pruebas fiables de eficacia para tratar enfermedades. Las prácticas simbólicas y energéticas no sustituyen la atención médica o psicológica.",
     crisis:"Si podrías hacerte daño, tienes síntomas urgentes o estás en peligro inmediato, contacta con emergencias o con una línea de crisis local ahora.",
+    medicalUrgent:"Algunos síntomas requieren atención médica urgente. No elijas un tratamiento del catálogo; busca atención médica.",
   },
 } as const;
 
@@ -139,12 +154,74 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
   const [checkinScores,setCheckinScores]=useState<Record<CheckinKey,number>>({energy:5,money:5,relationships:5,confidence:5});
   const [editedCheckins,setEditedCheckins]=useState<CheckinKey[]>([]);
   const inputRef=useRef<HTMLTextAreaElement>(null);
+  const speechRef=useRef<LocalSpeechRecognizer|null>(null);
+  const [listening,setListening]=useState(false);
+  const [speechHint,setSpeechHint]=useState("");
   const chatRef=useRef<HTMLDivElement>(null);
   const formRef=useRef<HTMLFormElement>(null);
-  const crisis=selection!==null&&(critical||urgent.test(selection.text));
+  const medicalRisk=selection!==null&&containsUrgentSymptoms(selection.text);
+  const crisis=selection!==null&&(critical||urgent.test(selection.text)||medicalRisk);
   const question=selection&&!crisis?nextAssistQuestion(preferences):null;
   const suggestions=selection&&!crisis?rankAssistOffers(selection.focus,preferences):[];
   const selectedFocus=editedCheckins.length?editedCheckins.reduce((best,key)=>checkinScores[key]<checkinScores[best]?key:best):null;
+
+  // Browser-only speech input: refuse remote-capable recognition entirely.
+  // Safari/iPhone uses the explicit, native keyboard-microphone fallback.
+  useEffect(() => () => {
+    speechRef.current?.abort();
+    speechRef.current = null;
+  }, []);
+
+  function toggleLocalDictation() {
+    if (speechRef.current) {
+      speechRef.current.stop();
+      setListening(false);
+      return;
+    }
+    const browser = window as Window & {
+      SpeechRecognition?: LocalSpeechConstructor;
+      webkitSpeechRecognition?: LocalSpeechConstructor;
+    };
+    const Speech = browser.SpeechRecognition ?? browser.webkitSpeechRecognition;
+    const fallback = () => {
+      setListening(false);
+      setSpeechHint(t.voiceFallback);
+      inputRef.current?.focus();
+    };
+    if (!Speech) { fallback(); return; }
+    let speech: LocalSpeechRecognizer;
+    try { speech = new Speech(); } catch { fallback(); return; }
+    // Some browsers expose SpeechRecognition but send audio to a remote provider.
+    // Never call start() unless processLocally is natively supported.
+    if (!("processLocally" in speech)) { fallback(); return; }
+    speech.processLocally = true;
+    speech.lang = locale === "ru" ? "ru-RU" : locale === "es" ? "es-ES" : "en-US";
+    speech.interimResults = false;
+    speech.continuous = false;
+    speech.onresult = event => {
+      for (let index = event.resultIndex; index < event.results.length; index++) {
+        const result = event.results[index];
+        if (!result?.isFinal) continue;
+        const value = result[0];
+        const transcript = typeof value === "object" && value ? value.transcript.trim() : "";
+        if (transcript) setText(current => (current.trim() ? current.trim() + " " : "").concat(transcript).slice(0,280));
+      }
+    };
+    speech.onerror = () => { speechRef.current = null; fallback(); };
+    speech.onend = () => {
+      if (speechRef.current === speech) {
+        speechRef.current = null;
+        setListening(false);
+      }
+    };
+    try {
+      // Direct user click retains transient microphone permission activation.
+      speech.start();
+      speechRef.current = speech;
+      setListening(true);
+      setSpeechHint(t.voiceListening);
+    } catch { fallback(); }
+  }
 
   // Only the message history scrolls; never jump the page to a second questionnaire.
   useEffect(()=>{
@@ -314,7 +391,7 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
       <div className={styles.messages} id="assist-results" ref={chatRef} role="log" aria-live="polite" aria-label={t.answer} aria-relevant="additions text" tabIndex={0}>
         {selection?<>
           {turns.map((turn,index)=><div key={index} className={turn.role==="user"?styles.turnUser:styles.turnAssistant} data-assist-message={turn.role}><p>{turn.text}</p></div>)}
-          {crisis?<p role="alert" className={styles.crisis}>{t.crisis}</p>:<>
+          {crisis?<p role="alert" className={styles.crisis}>{medicalRisk&&!urgent.test(selection!.text)&&!critical?t.medicalUrgent:t.crisis}</p>:<>
             {question?<div className={styles.inlineQuestion} data-assist-question={question}>
               <p className={styles.questionPrompt}>{t.questions[question].prompt}</p>
               <div className={styles.answerOptions}>{t.questions[question].options.map(([label,value])=><button type="button" key={value} onClick={()=>chooseAnswer(value,label)}>{label}</button>)}</div>
@@ -351,17 +428,18 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
         <textarea id="assist-question" ref={inputRef} rows={1} value={text} maxLength={280} autoComplete="off"
           placeholder={t.placeholder} onChange={event=>setText(event.target.value)}
           onKeyDown={event=>{if(event.key==="Enter"&&!event.shiftKey&&!event.nativeEvent.isComposing){event.preventDefault();event.currentTarget.form?.requestSubmit();}}}/>
-        <button type="button" className={styles.voiceButton} aria-label={t.voice} title={t.voice} onClick={()=>inputRef.current?.focus()}><Mic size={20} aria-hidden="true"/></button>
+        <button type="button" className={styles.voiceButton} aria-label={listening?t.voiceStop:t.voice} title={listening?t.voiceStop:t.voice} aria-pressed={listening} data-assist-local-dictation onClick={toggleLocalDictation}>{listening?<MicOff size={20} aria-hidden="true"/>:<Mic size={20} aria-hidden="true"/>}</button>
         <button type="submit" className={styles.sendButton} disabled={!text.trim()} aria-label={t.submit} title={t.submit}><ArrowRight size={21} aria-hidden="true"/></button>
       </form>
+      {speechHint?<p className={styles.speechHint} role="status" data-assist-speech-status>{speechHint}</p>:null}
       {selection?<button type="button" className={styles.reset} data-assist-reset onClick={reset}>{t.change}</button>:null}
     </div>
     <p className={styles.privacy}>{t.privacy}</p>
     {!crisis&&selection?<AssistTopRecommendations locale={locale} focus={selection.focus} preferences={preferences}
       priorityIds={consultantPriority} matchingIds={suggestions.map(({id})=>id)} noMatchLabel={t.noOffers}/>:null}
     {!crisis&&selection?<ServicesAssistMyTube locale={locale} focus={selection.focus} question={selection.text}/>:null}
-    {!crisis&&selection?<ServicesAssistHomeopathy locale={locale}/>:null}
-    <section className={styles.tools} aria-labelledby="assist-tools-title">
+    {!crisis&&selection?<ServicesAssistHomeopathy locale={locale} query={selection.text}/>:null}
+    {!crisis?<section className={styles.tools} aria-labelledby="assist-tools-title">
       <h2 id="assist-tools-title">{t.tools}</h2><p>{t.browse}</p>
       <div className={styles.toolGrid}>{toolList.slice(0,expandedTools?toolList.length:4).map((key)=>{
         const card=t.cards[key];
@@ -373,7 +451,7 @@ export function ServicesAssistMobile({locale}:{locale:PublicLocale}) {
         {expandedTools?labels.lessTools:labels.moreTools}
       </button>
       <Link className={styles.all} href={"/"+locale+"/services/catalog#service-listings"} prefetch={false}>{t.all}<ArrowRight size={18} aria-hidden="true"/></Link>
-    </section>
+    </section>:null}
     <p className={styles.caution}>{t.caution}</p>
   </section>;
 }

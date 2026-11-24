@@ -1,0 +1,14 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {rankPublishedStudyCourses,studyGoalHasDirectMatch} from "../lib/holistic-support/study-recommendations.mjs";
+const opora={id:"study-opora",title:"ОПОРА: 14 дней антистресса",description:"Практики от стресса",href:"/ru/courses/antistress",kind:"course",cost:"free"};
+const reiki={id:"reiki-practitioner",title:"Практик Рейки",description:"Пять энергетических уроков",href:"/ru/academy/principles-of-energywork/learn",kind:"course",cost:"free",direction:"reiki"};
+const temple={id:"temple-studies",title:"Temple Studies",description:"Архетипы",href:"/ru/academy/temple-studies",kind:"program",cost:"ask"};
+const archive={id:"archive",title:"Стресс архив",href:"/ru/academy/archive",kind:"course",cost:"archive"};
+const items=[reiki,temple,archive,opora];
+test("goal prioritizes real OPORA",()=>assert.equal(rankPublishedStudyCourses(items,{goal:"stress"})[0].id,"study-opora"));
+test("energy prioritizes real Reiki",()=>assert.equal(rankPublishedStudyCourses(items,{goal:"energy"})[0].id,"reiki-practitioner"));
+test("programs never include course or archive",()=>assert.deepEqual(rankPublishedStudyCourses(items,{goal:"growth"},"programs").map(x=>x.id),["temple-studies"]));
+test("answers change ranking without mutation",()=>{const old=structuredClone(items);assert.notEqual(rankPublishedStudyCourses(items,{goal:"stress"})[0].id,rankPublishedStudyCourses(items,{goal:"energy"})[0].id);assert.deepEqual(items,old);});
+test("missing links and archives cannot surface",()=>{assert.ok(!rankPublishedStudyCourses([...items,{...opora,id:"draft",href:""}]).some(x=>x.id==="draft"||x.id==="archive"));assert.deepEqual(rankPublishedStudyCourses(undefined),[]);});
+test("no claim of relationship match without a match",()=>{assert.equal(studyGoalHasDirectMatch(items,"relationships"),false);assert.equal(studyGoalHasDirectMatch(items,"stress"),true);});

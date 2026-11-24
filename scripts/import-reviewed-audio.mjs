@@ -53,6 +53,15 @@ export function validateReviewedAudioMetadata(row){
   if(!exactSha.test(row.sha256||""))throw Error("missing_verified_sha256");
   if(row.reviewed!==true||!row.reviewedOn||!/^\d{4}-\d{2}-\d{2}$/.test(row.reviewedOn))
     throw Error("manual_rights_review_required");
+  // Commons candidates require an independent, explicitly scored real listening review;
+  // historic non-Commons imports retain their original compatibility contract.
+  if(row.originalCommonsSha1!==undefined){
+    if(!/^[a-f0-9]{40}$/i.test(row.originalCommonsSha1||""))
+      throw Error("commons_source_sha1_required");
+    if(typeof row.qualityScore!=="number"||!Number.isFinite(row.qualityScore)||
+       row.qualityScore<4||row.qualityScore>5)
+      throw Error("human_acoustic_quality_review_required");
+  }
   if(!allowedLicense.has(row.recordingLicense))throw Error("recording_not_reusable_standalone");
   if(row.compositionRights!=="public_domain"&&row.compositionRights!=="licensed_for_commercial_sync")
     throw Error("composition_license_not_cleared");

@@ -60,6 +60,9 @@ for (const engine of [chromium,webkit]) {
         // Owner P0: all public product enquiries must be customer-initiated
         // Telegram/WhatsApp, never a direct email/phone CRM write.
         const messenger=final.locator('[data-messenger-only-contact]');
+        // This contact component is dynamically imported only after the visitor opens intake.
+        // Await the real customer-initiated channels, but still fail if absent or duplicated.
+        await messenger.first().waitFor({state:"attached",timeout:15000});
         assert.equal(await messenger.count(),1,label+" one messenger-only final capture");
         const details=messenger.locator('details');
         if(await details.count()&&await details.getAttribute('open')===null)

@@ -126,3 +126,26 @@
  .capture[data-expanded="true"] .choice .choiceShort{display:inline}
  .capture[data-expanded="true"] .body :global([data-phone-country-input] select){font-size:16px}
 }
+
+/* The short mobile request still needs readable labels, even when expanded. */
+@media(max-width:720px){
+ .capture{padding:20px 16px;gap:14px}
+ .body h2{font-size:30px;line-height:1.18}
+ .lead{font-size:16px;line-height:1.6}
+ .eyebrow{font-size:12px;line-height:1.4}
+ .reveal{font-size:15px;line-height:1.45;min-height:44px}
+ .choices legend{font-size:16px;line-height:1.4}
+ .choice strong{font-size:16px;line-height:1.35}
+ .choice small{font-size:14px;line-height:1.45}
+ .step{font-size:15px;line-height:1.6}
+ .privacy,.note{font-size:14px;line-height:1.55}
+ .capture[data-expanded="true"]{padding:18px 16px}
+ .capture[data-expanded="true"] .body h2{font-size:23px;line-height:1.25}
+ .capture[data-expanded="true"] .choices legend{font-size:15px;margin-bottom:10px}
+ .capture[data-expanded="true"] .choice,
+ .capture[data-expanded="true"] .choice[data-selected="true"]{min-height:56px;padding:10px 9px;gap:8px}
+ .capture[data-expanded="true"] .choice strong{font-size:14px;line-height:1.38}
+ .capture[data-expanded="true"] .safetyDetails{font-size:14px;line-height:1.5}
+ .safetyDetails summary{min-height:44px}
+ .safetyDetails p{font-size:14px;line-height:1.55}
+}

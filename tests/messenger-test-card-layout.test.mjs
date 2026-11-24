@@ -41,7 +41,9 @@ test('Catalogue is immediately visible, with genuine kind facets, search and bou
 test('Topic selection reduces only the rendered transcript to the latest two turns', () => {
   assert.match(chat, /const testReply=locale==="ru"/)
   assert.match(chat, /\{role:"assistant" as const,text:testReply\}/)
-  assert.match(chat, /testChatOpen&&messengerView\?messages\.slice\(-2\):messages/)
+  assert.match(chat, /messages\.map\(\(m,index\)=>testChatOpen&&messengerView&&index<Math\.max\(0,messages\.length-2\)\?null:/)
+  assert.match(chat, /data-hh-voice-turn=\{index\}/)
+  assert.match(source, /ChatFullReportEntry/)
   assert.match(chat, /firstTurn=thread\.querySelector/)
   assert.match(chat, /thread\.scrollTop=target/)
   assert.match(chat, /followTail\.current=false/)
@@ -64,4 +66,11 @@ test('Existing consent, source language, recovery, safety and scoring remain in 
   for (const localized of ['Незавершённый тест','Your unfinished test','Test pendiente',
     'Пройти тест','Take test','Hacer test','Вся библиотека','Full library','Biblioteca completa'])
     assert.ok(source.includes(localized),localized)
+})
+
+
+test('Full catalogue stays scrollable rather than nesting a clipped panel',()=>{
+  assert.match(styles,/\.tests\{max-height:none;overflow:visible\}/)
+  assert.match(source,/item\.startable === true && item\.rightsStatus === 'cleared' && item\.guestEligible === true/)
+  assert.match(source,/restorableEntry\?\.item\.key === entry\.item\.key/)
 })

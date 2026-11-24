@@ -34,15 +34,23 @@ on:
       - 'lib/app/repository.js'
       - 'middleware.ts'
       - 'app/api/app/**'
+      # Provider-signed CRM webhook requests never read/write session audio
+      # or guest recordings. Existing CRM/App Core checks validate ingress;
+      # preserve ALL private media/auth/session paths and postmerge push audit.
+      - '!app/api/app/crm/messenger/webhook/**'
       - 'app/admin/api/recorder-auth/**'
       - 'tests/admin-*.test.mjs'
       - 'tests/practitioner-bridge.test.mjs'
       - 'tests/client-session-recorder-auth.test.mjs'
       - 'tests/cabinet-v2-ux.test.mjs'
       - 'tests/prescription-access.test.mjs'
-      - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/hh-private-audio-e2e.yml'
+      # Commander signed PR completion is validated by Core and the focused Guard, not this unrelated heavy suite.
+      - '!app/api/app/commander/**'
+      # Client Live Photo APIs have their own App/IA/billing/video owners.
+      # Keep the literal shared catch-all dispatcher and all source/security routes.
+      - '!app/api/app/live-photos/**'
   push:
     branches: ['codex/public-book-library']
     paths:
@@ -82,7 +90,6 @@ on:
       - 'tests/client-session-recorder-auth.test.mjs'
       - 'tests/cabinet-v2-ux.test.mjs'
       - 'tests/prescription-access.test.mjs'
-      - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/hh-private-audio-e2e.yml'
 concurrency:

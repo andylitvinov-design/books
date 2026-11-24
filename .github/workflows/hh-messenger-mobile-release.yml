@@ -16,7 +16,6 @@ on:
       - 'lib/native/deep-link-policy.js'
       - 'tests/app-auth-pkce.integration.mjs'
       - 'tests/holistic-house-mobile-master-chat.test.mjs'
-      - '.github/workflows/hh-messenger-mobile-release.yml'
   # Full localized PWA acceptance is post-merge; auth/privacy contracts remain PR-blocking.
   push:
     branches: [codex/public-book-library]
@@ -107,5 +106,5 @@ jobs:
             manifest="/holistic-house-app.webmanifest"
             if [ "$locale" != en ]; then manifest="/holistic-house-app-${locale}.webmanifest"; fi
             curl -fsS "http://127.0.0.1:3099${manifest}" -o "/tmp/hh-messenger-${locale}.webmanifest"
-            node -e "const fs=require('node:fs');const m=JSON.parse(fs.readFileSync('/tmp/hh-messenger-${locale}.webmanifest','utf8'));if(m.start_url!=='/${locale}/app/messages'||m.display!=='standalone'||m.id!=='/en/app')process.exit(1)"
+            node -e "const fs=require('node:fs');const m=JSON.parse(fs.readFileSync('/tmp/hh-messenger-${locale}.webmanifest','utf8'));if(m.start_url!=='/${locale}'||m.display!=='standalone'||m.id!=='/en/app'||!m.shortcuts?.some(s=>s.url==='/${locale}/app/messages'))process.exit(1)"
           done

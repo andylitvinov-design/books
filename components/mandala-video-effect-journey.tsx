@@ -59,18 +59,17 @@ export function MandalaVideoEffectJourney({locale,status,progress,videoStarted,v
   const [index,setIndex]=useState(0);
   const [reaction,setReaction]=useState<"yes"|"no"|"so-so"|null>(null);
   const [confirmedWatched,setConfirmedWatched]=useState(false);
-  // The per-export check-in must be immediately visible, not below Studio controls.
+  // Video generation does not imply consent to a subjective survey overlay.
+  // Keep progress visible in the existing voluntary in-page pill instead.
   const [mounted,setMounted]=useState(false);
-  const [modalOpen,setModalOpen]=useState(true);
+  const [modalOpen,setModalOpen]=useState(false);
   const dialogRef=useRef<HTMLDivElement>(null);
   useEffect(()=>{setMounted(true);},[]);
-  // Keep the optional check-in during rendering, but Ready never re-opens
-  // an unsolicited overlay — not immediately after export, nor after playback
-  // ends. The existing "Open progress and questions" pill remains user-invoked.
+  // Even a failed movie never forces a survey. Opening questions requires a
+  // user's actual action; finished playback returns to the video player.
   useEffect(()=>{
     if(status==="ready")setModalOpen(false);
-    else if(status==="failed")setModalOpen(true);
-  },[videoEnded,status]);
+  },[status]);
   const dialogVisible=mounted&&modalOpen&&status!=="idle";
   useEffect(()=>{
     if(!dialogVisible)return;

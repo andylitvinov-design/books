@@ -11,6 +11,7 @@ import { buildMotivatorMessage } from '@/lib/assessments/motivator-mind.mjs'
 import { hasTraumaAdministration } from '@/lib/assessments/trauma-administration'
 import { safetySignal, SAFETY_COPY } from '@/lib/assessments/safety'
 import { Asrs6SourceNotice, Asrs6ChoiceMarker, asrs6ChoiceClass } from '@/components/app/asrs6-source-notice'
+import { ChatFullReportEntry } from './chat-full-report-entry'
 import { TEST_KINDS, testKindFor, HOBBY_TEST_KEYS } from '@/lib/assessments/test-kinds'
 import css from './messenger-test-journey.module.css'
 
@@ -274,6 +275,7 @@ export default function MessengerTestJourney({ locale = 'en', focus = null, onAd
     ...recommended.filter(entry => entry.item.key !== featured?.item.key),
     ...ALL_TESTS.filter(entry => !recommended.some(option => option.item.key === entry.item.key)),
   ]
+
   const restorableEntry = restorable && ALL_TESTS.find(entry =>
     entry.definitions.some(def => def.id === restorable.definitionId))
   const restorableDefinition = restorableEntry?.definitions.find(def => def.id === restorable?.definitionId)
@@ -595,8 +597,7 @@ export default function MessengerTestJourney({ locale = 'en', focus = null, onAd
         </> : <p>{discussion?.reviewNote || extra.cannotInterpret}</p>}
         <p className={css.note}>{t.notDiagnostic}</p>
       </div>
-      <a className={css.primary} href={`/${locale === 'es' ? 'en' : locale}/client?result=${encodeURIComponent(result.id)}`}>{extra.report}</a>
-      <a className={css.plain} href={`/${locale === 'es' ? 'en' : locale}/client?result=${encodeURIComponent(result.id)}`}>{extra.save}</a>
+      <ChatFullReportEntry resultId={result.id} locale={locale} autoOpen />
       <button className={css.plain} type="button" onClick={()=>changeTest('')}>{t.again}</button>
       <p className={css.note}>{t.notDiagnostic}</p>
     </>}

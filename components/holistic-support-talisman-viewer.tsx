@@ -206,6 +206,9 @@ export function HolisticSupportTalismanViewer({
       return;
     }
     setBasketError(false);
+    // The quote is a user-triggered native dialog. Opening it during the
+    // actual Order gesture avoids a React effect race on mobile WebKit;
+    // the existing effect remains the only OAuth-return restoration path.
     // Immediate native opening preserves the real phone tap and does not
     // create a quote, payment or CRM request until the customer confirms.
     if (!showOrderDialog()) {
@@ -217,7 +220,8 @@ export function HolisticSupportTalismanViewer({
   };
 
   return (
-    <div className={styles.viewer} data-support-talisman-viewer>
+    <div className={styles.viewer} data-support-talisman-viewer
+      data-talisman-request-open={orderOpen?"true":"false"}>
       <section className={styles.categorySection} data-support-talisman-category-switcher aria-label={t.categoriesTitle}>
         <div className={styles.categoryHeader}>
           <div><h2>{t.categoriesTitle}</h2><p>{t.categoryLead}</p></div>

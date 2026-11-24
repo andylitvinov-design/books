@@ -5,6 +5,8 @@ import {routeMindRole, MIND_ROLE_ROUTER_VERSION, mindRoleInstruction} from '../l
 import {assessRoleReply} from '../lib/holistic-support/role-output-guard.mjs';
 import {prepareNaturalDialogue,finishNaturalDialogue} from '../lib/holistic-support/natural-dialogue.mjs';
 
+// Ali unified 2026-11-17: fear/uncertainty by itself does not grant Coach mode.
+// Explicit user goal/change intents still do. ES now uses the same role set.
 // Original synthetic, no private messages. A routing regression fixture, NOT
 // a blind real-model quality evaluation.
 const cases = [
@@ -23,11 +25,11 @@ const cases = [
 ['ru','Моя цель — сменить работу','coach'],
 ['ru','Мне сложно выбрать, куда двигаться дальше','coach'],
 ['ru','Я застряла и не знаю, чего хочу','coach'],
-['ru','Я боюсь выступать перед людьми','coach'],
+['ru','Я боюсь выступать перед людьми','secretary'],
 ['ru','Мне трудно решиться на перемены','coach'],
 ['ru','Хочу разобраться со своей целью','coach'],
-['ru','У меня пропала мотивация','coach'],
-['ru','Мне страшно начинать новый проект','coach'],
+['ru','У меня пропала мотивация','secretary'],
+['ru','Мне страшно начинать новый проект','secretary'],
 ['ru','Не хочу записываться, я хочу разобраться в отношениях','coach'],
 ['ru','Да','coach',null,[{role:'user',text:'Моя цель — выстроить режим'},{role:'assistant',text:'Как вы смотрите на это?'}]],
 ['ru','Продолжи','coach',null,[{role:'user',text:'Мне тяжело принимать решения'}]],
@@ -48,20 +50,20 @@ const cases = [
 ['en','I feel stuck with my goal','coach'],
 ['en',"I can't decide between two jobs",'coach'],
 ['en','I want to write a book this year','coach'],
-['en',"I'm afraid to give a presentation",'coach'],
+['en',"I'm afraid to give a presentation",'secretary'],
 ['en',"I'm struggling with motivation",'coach'],
 ['en','I want to improve my mornings','coach'],
 ['en',"I don't want to book an appointment; I want to understand my goals",'coach'],
-['en','I feel lost about my relationships','coach'],
+['en','I feel lost about my relationships','secretary'],
 ['en','Tell me more','coach',null,[{role:'user',text:'My goal is to start writing'}]],
-['en','I feel anxious about changing careers','coach'],
-['en','Can you explain?','coach',null,[{role:'assistant',text:'How much to book?'},{role:'user',text:'I feel stuck'}]],
-['en','I am not sure what I want','coach'],
+['en','I feel anxious about changing careers','secretary'],
+['en','Can you explain?','secretary',null,[{role:'assistant',text:'How much to book?'},{role:'user',text:'I feel stuck'}]],
+['en','I am not sure what I want','secretary'],
 ['en','Hi, what can you do?','secretary'],
 ['en',"Let's discuss",'coach','meaning'],
-['es','Quiero cambiar mi vida','general'],
+['es','Quiero cambiar mi vida','coach'],
 ];
-test('52 bilingual routing scenarios preserve boundaries and conversation context',()=>{
+test('52 RU/EN/ES routing scenarios preserve consent, boundaries and context',()=>{
   let passed=0;
   for (const [locale,message,expected,selectedGoal,history] of cases){
     const routed=routeMindRole({locale,message,selectedGoal,history});
@@ -70,7 +72,7 @@ test('52 bilingual routing scenarios preserve boundaries and conversation contex
     else console.error('Mismatch',locale,message,expected,routed.role);
   }
   assert.equal(cases.length,52);
-  assert.ok(passed/cases.length>=.95,passed+'/'+cases.length);
+  assert.equal(passed,cases.length,passed+'/'+cases.length);
   console.log('RU/EN routing gold: '+passed+'/'+cases.length);
 });
 test('role policy is server-owned and keeps the same single-model contract',()=>{
@@ -146,6 +148,6 @@ test('existing owned-only Qwen protection and role guard both survive a conflict
  const noOpt=prepareNaturalDialogue({...base,locale:'en',message:'I feel stuck',consent:{}});
  assert.equal(noOpt.modelAllowed,false);
  const es=prepareNaturalDialogue({...base,locale:'es',message:'Hola'});
- assert.equal(es.mindRole,'general');
- assert.doesNotMatch(es.modelRequest.messages[0].content,/Secretary Mind|Coach Mind/);
+ assert.equal(es.mindRole,'secretary');
+ assert.match(es.modelRequest.messages[0].content,/Secretary Mind/);
 });

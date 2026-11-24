@@ -108,7 +108,7 @@ test("single-field request is explicit opt-in with real CRM commit receipt and n
   assert.match(css, /:focus-visible/);
 });
 
-test("free landing's final slide is just the compact form, in all three languages", () => {
+test("free landing keeps one compact form; EN/RU/ES Services use approved consultation CTA", () => {
   const page = read("components/free-entry-landing.tsx");
   const pageCss = read("components/free-entry-landing.module.css");
   const main = read("app/[locale]/services/page.tsx");
@@ -125,10 +125,23 @@ test("free landing's final slide is just the compact form, in all three language
   assert.doesNotMatch(page, /<FreeResourceEnquiry/);
   assert.match(page, /data-optional-written-review/);
   assert.match(pageCss, /\.page\{padding-bottom:0\}/);
-  assert.match(main, /<CompactLeadCapture locale=\{locale as Locale\}/);
-  assert.match(es, /<CompactLeadCapture locale="es"/);
-  assert.ok(main.lastIndexOf("<CompactLeadCapture") > main.lastIndexOf("<ServicesDirectoryInvitation"));
-  assert.ok(es.lastIndexOf("<CompactLeadCapture") > es.lastIndexOf("<ServicesDirectoryInvitation"));
+  // The free-entry page finishes with CompactLeadCapture. The newer
+  // approved Services catalogue instead books via PublicConsultationCta
+  // inside its consultation panel; never demand or add a duplicate footer.
+  for (const [language, services, localeSyntax] of [
+    ["EN/RU", main, /<PublicConsultationCta locale=\{locale\} id="consultation" serviceBooking/],
+    ["ES", es, /<PublicConsultationCta locale="es" id="consultation" serviceBooking/],
+  ]) {
+    assert.match(services, /<ServicesCompactPanel id="consultation">/, language);
+    assert.match(services, localeSyntax, language + " real booking CTA");
+    assert.match(services, /<ServicesDirectoryInvitation locale=/, language);
+    assert.doesNotMatch(services, /<CompactLeadCapture/, language + " no duplicate capture");
+    assert.ok(
+      services.indexOf("<ServicesPersonalConsultationMobile") <
+        services.indexOf("<PublicConsultationCta"),
+      language + " booking immediately follows the real consultation",
+    );
+  }
 });
 
 
@@ -164,4 +177,35 @@ test("Kundalini course appears correctly in all locales' prepared messenger requ
     assert.ok(text.includes("holistichouse.vercel.app" + path));
     assert.doesNotMatch(text, /secret|health|password/i);
   }
+});
+
+test("deferred public lead capture contains interrupted imports and recovers only on active documents", async () => {
+  const {loadOptionalLeadCapture}=await import("../lib/deferred-lead-capture.mjs");
+  let active=true, attempts=0;
+  const pause=async()=>{};
+  const loadedModule={SitewideLeadCapture:()=>null};
+  const recovered=await loadOptionalLeadCapture(async()=>{
+    if (++attempts===1) throw Error("ChunkLoadError");
+    return loadedModule;
+  },()=>active,pause);
+  assert.equal(attempts,2);
+  assert.equal(recovered.status,"ready");
+  assert.equal(recovered.module,loadedModule);
+  attempts=0;
+  const cancelled=await loadOptionalLeadCapture(async()=>{
+    attempts++;active=false;throw Error("ChunkLoadError");
+  },()=>active,pause);
+  assert.equal(cancelled.status,"cancelled");
+  assert.equal(attempts,1);
+  active=true;attempts=0;
+  const failed=await loadOptionalLeadCapture(async()=>{
+    attempts++;throw Error("ChunkLoadError");
+  },()=>active,pause);
+  assert.equal(failed.status,"failed");
+  assert.equal(attempts,2);
+  const component=read("components/sitewide-lead-capture-deferred.tsx");
+  assert.match(component,/classifyPublicLead\(pathname\)/);
+  assert.match(component,/__hhOptionalReadsDeparting/);
+  assert.match(component,/data-sitewide-capture-retry/);
+  assert.match(component,/addEventListener\("pageshow"/);
 });

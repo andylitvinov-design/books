@@ -24,18 +24,23 @@ test("service needs and explicit refusals override suggested coaching", () => {
   assert.equal(routeMindRole({locale:"en",message:"Just answer, no coaching",selectedGoal:"goals"}).role,"secretary");
 });
 
-test("only a real user's prior topic carries through short follow-ups", () => {
+test("only a real user's explicit prior goal carries through short follow-ups", () => {
   assert.equal(routeMindRole({locale:"en",message:"what next", history:[
     {role:"user",text:"I feel stuck"},{role:"assistant",text:"How much to book?"}
+  ]}).role,"secretary");
+  assert.equal(routeMindRole({locale:"en",message:"what next",history:[
+    {role:"user",text:"I feel stuck with my goal"},{role:"assistant",text:"How much to book?"}
   ]}).role,"coach");
   assert.equal(routeMindRole({locale:"ru",message:"продолжи",history:[
     {role:"user",text:"сколько стоит подписка"},{role:"assistant",text:"Мне тяжело"}
   ]}).role,"secretary");
 });
 
-test("unknown text does not trigger coaching and RU/EN pilot doesn't switch Spanish", () => {
+test("unknown text does not trigger coaching and Spanish joins the same verified modes", () => {
   assert.equal(routeMindRole({locale:"en",message:"tell me something"}).role,"secretary");
-  assert.equal(routeMindRole({locale:"es",message:"me siento perdido",selectedGoal:"goals"}).role,"general");
+  assert.equal(routeMindRole({locale:"es",message:"me siento perdido"}).role,"secretary");
+  assert.equal(routeMindRole({locale:"es",message:"me interesa una consulta"}).role,"sales");
+  assert.equal(routeMindRole({locale:"es",message:"me siento perdido",selectedGoal:"goals"}).role,"coach");
   assert.equal(routeMindRole({locale:"en",message:"Let's discuss",selectedGoal:"meaning"}).role,"coach");
 });
 

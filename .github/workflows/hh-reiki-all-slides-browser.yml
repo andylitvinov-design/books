@@ -27,7 +27,6 @@ on:
       - 'data/academy/energywork-ai-curriculum.ts'
       - 'data/academy/energywork-ai-schema.js'
       - 'scripts/verify-reiki-all-slides-browser.mjs'
-      - '.github/workflows/hh-reiki-all-slides-browser.yml'
   workflow_dispatch:
 
 permissions:

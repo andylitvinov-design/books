@@ -1,0 +1,9 @@
+# Video Studio Personal · Eight meaning axes · 22 November 2026
+
+Canonical existing Video Studio route: \`/{en,ru,es}/holistic-support/mandala\`. Workspace Personal (Ideas rename/order in related PR #5377). In the Personal flow, Goal → Personalization questions → **new separate eight-axis screen** → existing Concept. The old single-axis question is superseded. No new route, Canvas, billing, auth or external media generation.
+
+Owner-approved mock: warm sunlit image, ivory/emerald cards, all eight axes shown without accordion, two editable native sliders (Now/Desired, 1–10), automatic signed Difference (desired−now) and one selected priority. Natural scroll on small 320–430px iPhones keeps large text and accessible 44px focus controls; there is no credible guarantee that all rows fit a short phone viewport simultaneously.
+
+Owner names are distinct from the older creative meaning-engine catalog. Love→Connection, Self-realization→Growth, Recognition→Dignity are only mapping aliases for screenplay concepts, not claimed psychological equivalence. The approved chosen label remains visible in summaries. All sixteen scores and priority stay in existing in-memory VideoGoalProfile; no sensitive localStorage, analytics, Telegram, CRM, test scores or provider calls. Scores remain unset until actual user interaction; CTA requires both scores on all eight axes and one focus.
+
+Acceptance: current production branch and PR diff, focused Node, required exact-head Core ESLint/TS/Next build and media/privacy specialists, WebKit/Chromium screenshots same view 320/354/390/430, touch/keyboard sliders, no horizontal overflow, unchanged video and credits. No manual Vercel production deploy; the existing hourly publisher alone moves merged release to READY/live. Do not claim real iPhone E2E from source tests.

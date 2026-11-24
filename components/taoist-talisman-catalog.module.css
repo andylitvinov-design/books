@@ -1,21 +1,49 @@
+/* Compact Fu cards reuse the visual scale of public Services offer cards. */
 .root{min-width:0;display:grid;gap:10px;font-family:Arial,Helvetica,sans-serif;color:#423327}
-.scroller{min-width:0;max-height:min(590px,68svh);overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#b99b7b transparent;display:grid;gap:10px;padding:2px 8px 2px 2px;scroll-snap-type:y proximity}
-.scroller:focus-visible,.order:focus-visible,.archiveToggle:focus-visible,.cartBanner:focus-visible{outline:3px solid #af7a57;outline-offset:3px}
-.card{display:grid;grid-template-columns:clamp(125px,19%,174px) minmax(0,1fr);min-width:0;min-height:168px;border:1px solid #e3d5c6;border-radius:16px;background:#fffcf7;overflow:hidden;scroll-snap-align:start;box-shadow:0 4px 12px #6e4c3210}
-.photo{position:relative;min-width:0;min-height:165px;background:#dbc5a4}.photo img{object-fit:cover}
-.details{min-width:0;display:flex;flex-direction:column;gap:8px;padding:15px 16px}
-.details h3{margin:0;font:400 clamp(21px,2.3vw,29px)/1.14 Georgia,"Times New Roman",serif;overflow-wrap:anywhere;color:#4a3327}
-.description{margin:0;color:#6d6054;font:13px/1.42 Arial,Helvetica,sans-serif}
-.purchase{display:flex;align-items:end;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:auto}
-.price{display:grid;gap:4px}.price small{font:700 10px/1.2 Arial,Helvetica,sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#837061}
-.price strong{font:700 12px/1.35 Arial,Helvetica,sans-serif;color:#674d35}
-.order{display:inline-flex;justify-content:center;align-items:center;gap:6px;min-height:44px;padding:10px 17px;background:#77513c;border:1px solid #77513c;border-radius:12px;color:white;font:750 13px/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
-.order:hover{background:#5e3e2f}.order[aria-pressed="true"]{background:#46614e;border-color:#46614e}
+.filters{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;margin-bottom:2px}
+.sortLabel{display:inline-flex;align-items:center;gap:6px;min-height:36px;font:500 12px/1.25 Arial,Helvetica,sans-serif}
+.sortLabel input{width:17px;height:17px;accent-color:#17705a}
+.scroller{min-width:0;max-height:min(590px,68svh);overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#b99b7b transparent;display:grid;gap:9px;padding:2px 6px 4px 2px}
+.scroller:focus-visible,.root button:focus-visible,.sortLabel input:focus-visible{outline:3px solid #17705a;outline-offset:3px}
+.card{display:grid;grid-template-columns:86px minmax(0,1fr);gap:8px 11px;align-items:start;min-width:0;padding:8px;border:1px solid #e2d9cd;border-radius:17px;background:#fffdfa;box-shadow:0 3px 10px #503d2912}
+.photo{position:relative;grid-column:1;grid-row:1;min-width:0;width:86px;height:91px;border-radius:11px;overflow:hidden;background:#dbc5a4}
+.photo img{object-fit:cover;object-position:center}
+.details{position:relative;grid-column:2;grid-row:1;min-width:0;padding:29px 1px 0 0}
+.price{position:absolute;top:0;right:0;display:inline-flex;align-items:center;justify-content:center;max-width:100%;min-height:23px;padding:3px 8px;border:1px solid #d9e5d5;border-radius:100px;background:#eaf4e8;color:#11644d;font:750 11px/1.15 Arial,Helvetica,sans-serif;white-space:nowrap}
+.details h3{margin:0;color:#493a30;font:700 clamp(17px,2.5vw,21px)/1.17 Georgia,"Times New Roman",serif;overflow-wrap:anywhere}
+.details :global([data-catalog-star-rating]){margin:5px 0 0;gap:3px 5px}
+.details :global([data-catalog-star-rating] .summary small){font-size:11px}
+.actions{grid-column:1/-1;grid-row:2;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0}
+.actions button{display:inline-flex;justify-content:center;align-items:center;gap:6px;min-width:0;min-height:44px;padding:8px 7px;border:1px solid #16806c;border-radius:12px;font:750 13px/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
+.detailsButton{background:#f0f8f2;color:#075d50}.detailsButton:hover,.detailsButton[aria-expanded="true"]{background:#dcefe4}
+.detailsButton svg{transition:transform .14s ease}.detailsButton[aria-expanded="true"] svg{transform:rotate(180deg)}
+.order{background:linear-gradient(130deg,#197b73,#00574e);color:#fff}.order:hover{background:#00594c}
+.moreDetails{grid-column:1/-1;grid-row:3;padding:10px 11px 9px;background:#faf7ef;border:1px solid #eee5d6;border-radius:11px}
+.moreDetails[hidden]{display:none!important}
+.description{margin:0;color:#554f48;font:13px/1.45 Arial,Helvetica,sans-serif}
+.terms{margin:7px 0 0;color:#7b6956;font:12px/1.4 Arial,Helvetica,sans-serif}
 .cartBanner{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;min-height:48px;padding:11px 14px;border:1px solid #3e6952;border-radius:12px;background:#e6f0e8;color:#315d43;text-align:left;font:750 13px/1.3 Arial,Helvetica,sans-serif;cursor:pointer}
 .error{margin:0;padding:9px;color:#963f35;font:12px/1.4 Arial,Helvetica,sans-serif}
 .note{margin:0 3px;color:#847366;font:11px/1.5 Arial,Helvetica,sans-serif}
 .archive{border-top:1px solid #e7dacb;padding:11px 0 0}.archiveToggle{min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:8px 13px;border:1px solid #ddccbb;border-radius:12px;background:#fbf6ee;color:#72513b;text-align:left;font:700 12px/1.35 Arial,Helvetica,sans-serif;cursor:pointer}
 .archiveContent{margin-top:12px}
-@media(max-width:430px){.scroller{max-height:min(520px,66svh);gap:8px;padding-right:5px}.card{grid-template-columns:96px minmax(0,1fr);min-height:163px;border-radius:13px}.photo{min-height:163px}.details{gap:5px;padding:10px}.details h3{font-size:19px;line-height:1.13}.description{font-size:11.2px;line-height:1.33}.purchase{gap:5px;align-items:center}.price small{font-size:9px}.price strong{font-size:10.3px;line-height:1.2}.order{padding:9px 11px;min-height:44px;font-size:11.8px}.note{font-size:10.3px}}
-@media(max-width:355px){.card{grid-template-columns:82px minmax(0,1fr);min-height:172px}.photo{min-height:172px}.details{padding:8px}.details h3{font-size:17.5px}.description{font-size:10.5px}.price strong{font-size:9.8px}.order{padding:8px 10px;font-size:11.2px}}
-@media(prefers-reduced-motion:reduce){.scroller{scroll-behavior:auto}}
+/* Mobile scrolls naturally with the page; a capped nested scroller cut off item 3. */
+@media(max-width:760px){
+ .scroller{max-height:none;overflow:visible;overscroll-behavior:auto;padding:2px 1px 5px;gap:9px}
+ .card{grid-template-columns:75px minmax(0,1fr);gap:7px 9px;padding:7px;border-radius:15px}
+ .photo{width:75px;height:82px;border-radius:10px}
+ .details{padding-top:27px}
+ .details h3{font-size:clamp(16px,4.2vw,18px);line-height:1.18}
+ .details :global([data-catalog-star-rating]){margin-top:4px}
+ .price{font-size:10.5px;padding:3px 7px;min-height:22px}
+ .actions button{font-size:13px}
+}
+@media(max-width:355px){
+ .card{grid-template-columns:66px minmax(0,1fr);gap:6px 7px;padding:6px}
+ .photo{width:66px;height:79px}
+ .details{padding-top:25px}
+ .details h3{font-size:15.5px}
+ .price{font-size:10px;padding:3px 6px}
+ .actions{gap:6px}.actions button{font-size:12px;padding:7px 4px}
+}
+@media(prefers-reduced-motion:reduce){.detailsButton svg{transition:none}}

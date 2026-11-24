@@ -4,7 +4,7 @@ import {readFileSync} from "node:fs";
 import {
   isMyTubeMeditationPractice,isMyTubeMasterPresentation,isMyTubeEducationalVideo,matchesMyTubeShelf,
   myTubeCourseInfo,listMyTubeCourseTypes,listMyTubeCourseTraditions,
-  listMyTubeCourseSeries,sortMyTubeCourseLessons
+  listMyTubeCourseSeries,sortMyTubeCourseLessons,sortMyTubeMasterPresentations
 } from "../lib/video-discovery/mytube-shelves.mjs";
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 
@@ -99,6 +99,39 @@ test("nine published site presentations are available in Masters without elevati
   assert.equal(matchesMyTubeShelf({sourceGroup:"site-introduction",title:"Our service",
     curation:"published",sourceApproved:true},"masters"),false);
   assert.match(feed,/mytubeShelf === "masters"\) \? filtered\.length/);
+});
+test("Masters prioritizes videos without a reviewed AI mark and keeps AI-assisted mirrors below",()=>{
+  const hub=read("components/library-hub.tsx");
+  const view=read("components/video-discovery.tsx");
+  const mirrorSource=read("components/site-video-player.tsx");
+  const catalog=hub.slice(hub.indexOf("const videoItemsByLocale:"),hub.indexOf("// Source-backed discovery indexes"));
+  const aiIds=["Y4K4piEwwA8","s30Y42IwPcg","ILyRWyHtJoE",
+    "AE8Pelpo424","Cz6SxXJNZbw","Q9NvYECKWuc"];
+  for(const id of aiIds){
+    assert.ok(mirrorSource.includes('"'+id+'"'),"AI marker needs a checked HeyGen source: "+id);
+  }
+  assert.equal((catalog.match(/aiAssisted: true/g)||[]).length,6);
+  for(const id of ["vqRmI79cecQ","eLsjFaKCBhI","sfVFOQNr2qk"]){
+    assert.ok(hub.includes('"'+id+'"'),"unmarked source video retained: "+id);
+    assert.equal(aiIds.includes(id),false);
+  }
+  assert.match(hub,/aiAssisted:video\.aiAssisted/);
+  assert.match(hub,/const approvedAiMasterIds=new Set\(siteIntroductions/);
+  assert.match(hub,/aiAssisted:approvedAiMasterIds\.has\(video\.youtubeId\)/);
+  assert.match(view,/if\(variant==="mytube"&&formatMode==="masters"\)return sortMyTubeMasterPresentations\(matches\)/);
+  const ranked=[
+    {id:"ai-1",aiAssisted:true},{id:"unmarked-en"},
+    {id:"ai-2",aiAssisted:true},{id:"unmarked-ru",aiAssisted:false},
+    {id:"unmarked-case"},{id:"ai-3",aiAssisted:true},
+  ];
+  assert.deepEqual(sortMyTubeMasterPresentations(ranked).map(item=>item.id),
+    ["unmarked-en","unmarked-ru","unmarked-case","ai-1","ai-2","ai-3"]);
+  assert.deepEqual(ranked.map(item=>item.id),
+    ["ai-1","unmarked-en","ai-2","unmarked-ru","unmarked-case","ai-3"],
+    "sorting must not mutate the ranked source feed");
+  assert.deepEqual(sortMyTubeMasterPresentations(ranked.filter(item=>item.id==="ai-2"||
+    item.id==="unmarked-ru")).map(item=>item.id),["unmarked-ru","ai-2"]);
+  assert.deepEqual(sortMyTubeMasterPresentations([]),[]);
 });
 test("MyTube routes preserve numbered original course order and do not change other Library layout",()=>{
  const page=read("app/[locale]/mytube/page.tsx");

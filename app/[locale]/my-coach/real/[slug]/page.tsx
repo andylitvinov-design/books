@@ -5,7 +5,7 @@ import { createPractitionerRepository } from '@/lib/practitioners/repository'
 import type { PublicPractitioner } from '@/lib/practitioners/public-types'
 import { getPublishedSiteVideos } from '@/lib/site-videos/public'
 import { siteVideoWatchUrl, parseSiteVideoSource } from '@/lib/site-videos/model'
-import { existingYouTubeMirrors } from '@/lib/site-videos/mirrors'
+import { existingYouTubeMirrors, compareVideoAuthenticity } from '@/lib/site-videos/mirrors'
 import { getServiceVideoMedia, englishPsychotherapyLandingVideo } from '@/data/service-video-library'
 import { getPublicServiceDetailHref } from '@/lib/practitioners/public-service-links'
 import { publicPresentationUrl } from '@/lib/practitioners/presentation-contract'
@@ -13,7 +13,7 @@ import HumanSpecialistDialogue, { type SpecialistVideo } from '@/components/my-c
 
 type Locale = 'en' | 'ru' | 'es'
 type PageProps = { params: Promise<{locale: string;slug: string}> }
-type RawVideo = {title: string;description?: string;locale: string;url: string;durationSeconds?: number;file?: boolean}
+type RawVideo = {title: string;description?: string;locale: string;url: string;durationSeconds?: number;file?: boolean;heygenId?: string;youtubeId?: string}
 const languages: Locale[] = ['en','ru','es']
 const ownerCopy = {
   en: { name: 'Andrey Litvinov', role: 'Psychotherapy & guided imagery', bio: 'Jung-oriented psychotherapy, guided affective imagery, body-oriented support and systemic constellations.' },
@@ -109,7 +109,7 @@ export default async function HumanSpecialistPage({params}: PageProps) {
         ? 'https://www.youtube.com/watch?v='+existingYouTubeMirrors[video.heygenId]
         : siteVideoWatchUrl(video)
       if (url) sourceVideos.push({title:video.title,description:video.description||'',
-        locale:video.language,url,durationSeconds:video.durationSeconds})
+        locale:video.language,url,durationSeconds:video.durationSeconds,heygenId:video.heygenId,youtubeId:video.youtubeId})
     }
   }
   if (isOwner) {
@@ -120,19 +120,27 @@ export default async function HumanSpecialistPage({params}: PageProps) {
         const url = video.heygenId && existingYouTubeMirrors[video.heygenId]
           ? 'https://www.youtube.com/watch?v='+existingYouTubeMirrors[video.heygenId]
           : siteVideoWatchUrl(video)
-        if(url) sourceVideos.push({title:video.title,description:video.description||'',locale:video.language,url,durationSeconds:video.durationSeconds})
+        if(url) sourceVideos.push({title:video.title,description:video.description||'',locale:video.language,url,durationSeconds:video.durationSeconds,heygenId:video.heygenId,youtubeId:video.youtubeId})
       }
     }
     const english = englishPsychotherapyLandingVideo.video
     sourceVideos.push({title:english.title,description:english.description||'',locale:english.language,
-      url:siteVideoWatchUrl(english),durationSeconds:english.durationSeconds})
+      url:siteVideoWatchUrl(english),durationSeconds:english.durationSeconds,heygenId:english.heygenId,youtubeId:english.youtubeId})
   }
   const seen = new Set<string>()
-  const videos = sourceVideos.map(safeVideo).filter((entry): entry is SpecialistVideo => {
-    if (!entry || seen.has(entry.id)) return false
-    seen.add(entry.id)
+  // Rank approved real/unmarked recordings before known HeyGen sources, even
+  // when a generated English clip is competing with a real Russian recording.
+  // Locale order and source order remain stable within each group.
+  const videos = sourceVideos.flatMap((source,index) => {
+    const video = safeVideo(source)
+    return video ? [{source,video,index}] : []
+  }).filter(({video}) => {
+    if (seen.has(video.id)) return false
+    seen.add(video.id)
     return true
-  }).sort((a,b)=>Number(b.language===locale)-Number(a.language===locale)).slice(0,24)
+  }).sort((a,b)=>compareVideoAuthenticity(a.source,b.source)
+    || Number(b.video.language===locale)-Number(a.video.language===locale)
+    || a.index-b.index).slice(0,24).map(({video})=>video)
   const service = practitioner?.services.find(item =>
     item.active && !['course','product'].includes(item.offeringType) &&
     (item.areaKey==='emotional_psychological'||item.areaKey==='personal_development'||item.areaKey==='body_somatic'))
