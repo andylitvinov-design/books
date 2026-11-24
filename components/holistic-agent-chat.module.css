@@ -1095,3 +1095,11 @@
  .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]>.form .photoShortcut{width:29px;min-width:29px}
  .root[data-hh-immersive-dialogue="true"][data-chat-skin="messenger"]>.form .recorderToggle{width:30px;min-width:30px}
 }
+
+/* While dictating, the same composer becomes a single X / waveform / check row.
+   Do not let the landing composer's absolute actions or old live consent take over. */
+.root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"])){display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:4px!important;min-height:0!important;padding:8px!important}
+.root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"]))>textarea{display:none!important}
+.root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"]))>.actions{position:static!important;display:flex!important;flex-wrap:nowrap!important;width:100%;min-width:0;align-self:stretch;justify-content:stretch!important;gap:0!important}
+.root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"]))>.actions>:not(:global([data-hh-dictation-active="true"])){display:none!important}
+.root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"]))>.voiceOnboarding,.root[data-compact][data-chat-skin="messenger"] .form:has(:global([data-hh-dictation-active="true"]))>.voiceConversationStatus{display:none}

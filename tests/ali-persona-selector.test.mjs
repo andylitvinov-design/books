@@ -61,7 +61,13 @@ test('UI retains protected chat and history while exposing visible selectable vo
  assert.match(landing,/data-hh-ai-intro-play onClick=\{start\}/)
  assert.match(chat,/src=\{persona.image\|\|/)
  assert.match(chat,/voice.setVoiceId\(selected\)/)
- assert.match(chat,/personaId=\{persona.id\}/)
+ // The unified Messenger removed the redundant animated avatar from its
+ // composer. Its actual voice controller still uses the selected persona.
+ assert.match(chat,/const \{persona\}=useAliPersona\(\)/)
+ assert.match(chat,/ordered\[persona\.voice\.slot%ordered\.length\]\?\.voiceURI/)
+ assert.match(chat,/voice\.setRate\(persona\.voice\.rate\)/)
+ assert.match(chat,/aliGeminiRequest\(\{message:text,locale:turnLocale,personaId:persona\.id,/)
+ assert.match(landing,/--hh-ai-persona-image/)
  const avatar=source('components/app/emotional-avatar.tsx')
  assert.match(avatar,/getAliPersona\(personaId\)/)
  assert.match(avatar,/rate:persona\?\.voice\.rate/)

@@ -1,13 +1,19 @@
 "use client";
 
 import {useCallback, useEffect, useRef, useState} from "react";
-import {Mic, Square, X, Send, LoaderCircle} from "lucide-react";
+import {Mic, Square, X, Send, LoaderCircle, Check} from "lucide-react";
 import styles from "./messenger-voice-note.module.css";
 
 type Locale = "ru" | "en" | "es";
-type Phase = "idle" | "recording" | "ready" | "sending";
+type Phase = "idle" | "starting" | "recording" | "finishing" | "ready" | "sending";
+type MicMarker = "data-hh-conversation-mic" | "data-home-intent-mic";
 const LIMIT_BYTES = 4 * 1024 * 1024;
 const LIMIT_SECONDS = 59;
+const DICTATION_COPY = {
+  ru:{mic:"Диктовать",starting:"Подключаю микрофон…",recording:"Запись речи",finish:"Распознать запись",processing:"Распознаю речь…",ready:"Запись готова",retry:"Повторить",cancel:"Отменить",privacy:"✓ — распознать через Groq Whisper Free. Только текст попадёт в поле сообщения.",quota:"Бесплатный лимит распознавания исчерпан. Повторите позже.",timeout:"Распознавание не ответило. Можно повторить.",unavailable:"Сервис распознавания недоступен. Попробуйте снова.",empty:"Речь не распознана. Запишите ещё раз."},
+  en:{mic:"Dictate",starting:"Connecting microphone…",recording:"Recording speech",finish:"Transcribe recording",processing:"Transcribing…",ready:"Recording ready",retry:"Try again",cancel:"Cancel",privacy:"✓ transcribes via Groq Whisper Free. Only text goes into the message field.",quota:"Free transcription limit reached. Try later.",timeout:"Transcription timed out. You can retry.",unavailable:"Transcription is unavailable. Try again.",empty:"No speech recognized. Record again."},
+  es:{mic:"Dictar",starting:"Conectando micrófono…",recording:"Grabando voz",finish:"Transcribir grabación",processing:"Transcribiendo…",ready:"Grabación lista",retry:"Reintentar",cancel:"Cancelar",privacy:"✓ transcribe con Groq Whisper Free. Solo el texto llega al campo de mensaje.",quota:"Se alcanzó el límite gratuito. Inténtalo más tarde.",timeout:"La transcripción tardó demasiado. Puedes reintentar.",unavailable:"Transcripción no disponible. Reintenta.",empty:"No se reconoció voz. Graba de nuevo."}
+} as const;
 const COPY = {
   ru: {
     start:"Записать голосовое сообщение", record:"Идёт запись", stop:"Остановить запись",
@@ -61,6 +67,7 @@ function fileExtension(mime:string) {
 
 export function MessengerVoiceNote({
   locale, disabled = false, resetRevision = 0, accountAuthenticated = false, onSendTranscript, onBegin,
+  variant = "note", micMarker, micClassName, micDescribedBy,
 }:{
   locale:Locale;
   disabled?:boolean;
@@ -68,9 +75,16 @@ export function MessengerVoiceNote({
   accountAuthenticated?:boolean;
   onSendTranscript:(text:string,file:File,seconds:number)=>boolean;
   onBegin?:()=>void;
+  variant?:"note"|"dictation";
+  micMarker?:MicMarker;
+  micClassName?:string;
+  micDescribedBy?:string;
 }) {
   const t = COPY[locale] || COPY.en;
+  const d = DICTATION_COPY[locale] || DICTATION_COPY.en;
+  const dictation = variant === "dictation";
   const [phase,setPhase] = useState<Phase>("idle");
+  const [readyToRecord,setReadyToRecord] = useState(false);
   const [file,setFile] = useState<File|null>(null);
   const [seconds,setSeconds] = useState(0);
   const [error,setError] = useState("");
@@ -79,25 +93,39 @@ export function MessengerVoiceNote({
   const streamRef = useRef<MediaStream|null>(null);
   const previewRef = useRef("");
   const intervalRef = useRef<ReturnType<typeof setInterval>|null>(null);
+  const finishTimerRef = useRef<ReturnType<typeof setTimeout>|null>(null);
   const abortRef = useRef<AbortController|null>(null);
   const generationRef = useRef(0);
   const startedRef = useRef(0);
   const cancelledRef = useRef(false);
+  const sendAfterStop = useRef(false);
+  const stoppingRef = useRef(false);
+  const openingRef = useRef(false);
+  const [levels,setLevels] = useState<number[]>(Array(18).fill(0));
+  const audioContextRef = useRef<AudioContext|null>(null);
+  const analyserRef = useRef<AnalyserNode|null>(null);
 
   const release = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
     intervalRef.current = null;
+    if(finishTimerRef.current!==null)clearTimeout(finishTimerRef.current);
+    finishTimerRef.current=null;
     stopTracks(streamRef.current);
     streamRef.current = null;
+    analyserRef.current = null;
+    const context=audioContextRef.current;audioContextRef.current=null;
+    if(context&&context.state!=="closed")void context.close().catch(()=>{});
   }, []);
   const discard = useCallback(() => {
     generationRef.current++;
     abortRef.current?.abort();
     abortRef.current = null;
     cancelledRef.current = true;
+    sendAfterStop.current = false;stoppingRef.current=false;openingRef.current=false;
     if (recorderRef.current) {
       const recorder = recorderRef.current;
       recorder.onstop = null;
+      recorder.ondataavailable = null;
       recorder.onerror = null;
       try { if (recorder.state !== "inactive") recorder.stop(); } catch { /* already closed */ }
     }
@@ -108,6 +136,7 @@ export function MessengerVoiceNote({
     setPreview("");
     setFile(null);
     setSeconds(0);
+    setLevels(Array(18).fill(0));
     setPhase("idle");
     setError("");
   }, [release]);
@@ -116,18 +145,21 @@ export function MessengerVoiceNote({
   // new conversation, language change, tab unmount or permission failure.
   useEffect(() => {
     discard();
+    setReadyToRecord(true);
   }, [locale,resetRevision,discard]);
   useEffect(() => {
     const hidden = () => {
-      if (document.hidden && recorderRef.current?.state === "recording") {
-        // Keep the audio captured so far but release the microphone.
-        try { recorderRef.current.stop(); } catch { release(); }
+      if (document.hidden) {
+        // Never keep a microphone or upload active in a hidden tab.
+        discard();
       }
     };
     document.addEventListener("visibilitychange",hidden);
+    window.addEventListener("pagehide",discard);
     return () => {
       document.removeEventListener("visibilitychange",hidden);
-      generationRef.current++;
+      window.removeEventListener("pagehide",discard);
+      generationRef.current++;openingRef.current=false;stoppingRef.current=false;sendAfterStop.current=false;
       abortRef.current?.abort();
       cancelledRef.current = true;
       if (recorderRef.current) {
@@ -138,7 +170,7 @@ export function MessengerVoiceNote({
       if (previewRef.current) URL.revokeObjectURL(previewRef.current);
       previewRef.current = "";
     };
-  }, [release]);
+  }, [release,discard]);
 
   const showFile = (recording:File, length:number) => {
     if (!recording.size) { setPhase("idle"); setError(t.empty); return; }
@@ -155,13 +187,15 @@ export function MessengerVoiceNote({
     setPhase("ready");
   };
   const start = async () => {
-    if (disabled || phase !== "idle") return;
+    if (!readyToRecord || disabled || phase !== "idle" || openingRef.current) return;
     setError("");
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
       setError(t.unsupported);
       return;
     }
     const generation = ++generationRef.current;
+    openingRef.current=true;sendAfterStop.current=false;stoppingRef.current=false;
+    setPhase("starting");
     let stream:MediaStream|null = null;
     try {
       onBegin?.();
@@ -169,63 +203,102 @@ export function MessengerVoiceNote({
         audio:{echoCancellation:true,noiseSuppression:true},video:false,
       });
       if (generation !== generationRef.current) { stopTracks(stream); return; }
-      streamRef.current = stream;
+      openingRef.current=false;streamRef.current = stream;
       cancelledRef.current = false;
       const mime = supportedType();
       const recorder = new MediaRecorder(stream,mime ? {mimeType:mime} : undefined);
       recorderRef.current = recorder;
       const chunks:Blob[] = [];
-      recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
+      recorder.ondataavailable = event => { if (generation===generationRef.current && event.data.size) chunks.push(event.data); };
       recorder.onerror = () => {
         if (generation !== generationRef.current) return;
-        cancelledRef.current = true;
+        cancelledRef.current = true;stoppingRef.current=false;sendAfterStop.current=false;
+        recorder.onstop=null;
+        try{if(recorder.state!=="inactive")recorder.stop();}catch{}
         release(); recorderRef.current = null;
         setPhase("idle"); setError(t.failed);
       };
       recorder.onstop = () => {
-        release(); recorderRef.current = null;
         if (cancelledRef.current || generation !== generationRef.current) return;
-        const type = recorder.mimeType.split(";")[0] || mime.split(";")[0] || "audio/webm";
+        const confirmed=sendAfterStop.current;
+        sendAfterStop.current=false;stoppingRef.current=false;
+        release(); recorderRef.current = null;
+        const type = (recorder.mimeType || chunks[0]?.type || mime || "audio/webm").split(";")[0];
         const blob = new Blob(chunks,{type});
-        const length = Math.max(1,Math.round((Date.now()-startedRef.current)/1000));
+        const length = Math.max(1,Math.min(LIMIT_SECONDS,Math.round((Date.now()-startedRef.current)/1000)));
         const recording = new File([blob],"voice-"+Date.now()+"."+fileExtension(type),{type});
         showFile(recording,length);
+        // A deliberate checkmark is the upload consent. A timer or silence NEVER uploads.
+        if (dictation && confirmed && recording.size>0 && recording.size<=LIMIT_BYTES) {
+          void submitRecording(recording,length);
+        }
       };
       startedRef.current = Date.now();
       recorder.start(300);
-      setSeconds(0);setPhase("recording");
+      setSeconds(0);setLevels(Array(18).fill(0));setPhase("recording");
+      // Optional actual microphone meter. MediaRecorder does not depend on Web Audio.
+      // If Safari suspends this context the timer/recording still work.
+      if(dictation){
+        try{
+          const Context=window.AudioContext||(window as Window & {webkitAudioContext?:typeof AudioContext}).webkitAudioContext;
+          if(Context){
+            const context=new Context();audioContextRef.current=context;
+            const analyser=context.createAnalyser();analyser.fftSize=256;
+            context.createMediaStreamSource(stream).connect(analyser);analyserRef.current=analyser;
+            void context.resume().catch(()=>{});
+          }
+        }catch{/* Recording must not fail due to an unavailable meter. */}
+      }
       intervalRef.current = setInterval(() => {
         const elapsed = Math.floor((Date.now()-startedRef.current)/1000);
         setSeconds(Math.min(elapsed,LIMIT_SECONDS));
-        if (elapsed >= LIMIT_SECONDS && recorder.state === "recording") {
-          try { recorder.stop(); } catch { release(); }
+        const analyser=analyserRef.current;
+        if(analyser&&audioContextRef.current?.state==="running"){
+          const values=new Uint8Array(analyser.fftSize);
+          analyser.getByteTimeDomainData(values);
+          let square=0;for(const value of values){const n=(value-128)/128;square+=n*n;}
+          const amplitude=Math.min(1,Math.sqrt(square/values.length)*5);
+          setLevels(old=>[...old.slice(1),amplitude]);
         }
-      },250);
+        if (elapsed >= LIMIT_SECONDS && recorder.state === "recording"&&!stoppingRef.current) {
+          stop(false);
+        }
+      },150);
     } catch (e) {
       stopTracks(stream);
       if (generation !== generationRef.current) return;
+      openingRef.current=false;stoppingRef.current=false;
       release(); recorderRef.current = null;
       setPhase("idle");
       setError(e instanceof DOMException && ["NotAllowedError","PermissionDeniedError"].includes(e.name)
         ? t.denied : t.failed);
     }
   };
-  const stop = () => {
-    if (recorderRef.current?.state === "recording") {
-      try { recorderRef.current.stop(); } catch { release(); setError(t.failed); setPhase("idle"); }
+  const stop = (confirmed=false) => {
+    if (recorderRef.current?.state === "recording"&&!stoppingRef.current) {
+      const recorder=recorderRef.current;
+      sendAfterStop.current=confirmed;stoppingRef.current=true;setPhase("finishing");
+      // Safari must not leave a frozen composer when its stop event is lost.
+      finishTimerRef.current=setTimeout(()=>{
+        if(stoppingRef.current&&recorderRef.current===recorder){discard();setError(t.failed);}
+      },5000);
+      try { recorder.stop(); } catch { discard();setError(t.failed); }
     }
   };
-  const send = async () => {
-    if (disabled || !file || phase !== "ready") return;
-    if (seconds > LIMIT_SECONDS) { setError(t.tooLarge); return; }
+  const submitRecording = async (recording:File,length:number) => {
+    if (disabled || abortRef.current || !recording.size) return;
+    if (length > LIMIT_SECONDS || recording.size > LIMIT_BYTES) { setError(t.tooLarge); return; }
     const generation = ++generationRef.current;
     const abort = new AbortController();
     abortRef.current = abort;
+    let timedOut=false;
+    const timeout=setTimeout(()=>{timedOut=true;abort.abort();},26000);
     setError("");setPhase("sending");
     try {
       const body = new FormData();
-      body.append("file",file,file.name);
-      body.append("locale",locale);
+      body.append("file",recording,recording.name);
+      body.append("locale",dictation?"auto":locale);
+      if(dictation)body.append("output","text");
       // Authenticated Ali uses its own existing free STT quota; guests retain the no-login allowance.
       if (accountAuthenticated) body.append("purpose","ali_chat");
       body.append("consent","yes");
@@ -233,25 +306,62 @@ export function MessengerVoiceNote({
         method:"POST",credentials:"same-origin",cache:"no-store",body,signal:abort.signal,
       });
       const result = await response.json().catch(() => null);
-      if (!response.ok || typeof result?.transcript?.text !== "string" ||
-          !result.transcript.text.trim()) throw Error("VOICE_TRANSCRIPT_UNAVAILABLE");
+      if (!response.ok)throw Error(response.status===429?"STT_QUOTA":response.status===422?"STT_EMPTY":"VOICE_TRANSCRIPT_UNAVAILABLE");
+      const recognized=dictation?result?.text:result?.transcript?.text;
+      if(typeof recognized!=="string"||!recognized.trim())throw Error("STT_EMPTY");
       if (generation !== generationRef.current) return;
-      const text = result.transcript.text.trim().slice(0,2000);
-      if (!onSendTranscript(text,file,seconds)) {
+      const text = recognized.trim().slice(0,2000);
+      if (!onSendTranscript(text,recording,length)) {
         setPhase("ready");setError(t.busy);return;
       }
-      discard(); // The parent keeps a separate local-only blob URL for playback.
-    } catch {
-      if (generation !== generationRef.current || abort.signal.aborted) return;
-      setPhase("ready");setError(t.transcription);
+      discard(); // Audio is never retained after accepted transcription.
+    } catch (failure) {
+      if (generation !== generationRef.current || (abort.signal.aborted&&!timedOut)) return;
+      const reason=failure instanceof Error?failure.message:"";
+      setPhase("ready");setError(dictation?(timedOut?d.timeout:reason==="STT_QUOTA"?d.quota:
+        reason==="STT_EMPTY"?d.empty:d.unavailable):t.transcription);
     } finally {
+      clearTimeout(timeout);
       if (abortRef.current === abort) abortRef.current = null;
     }
   };
+  const send=()=>{if(file&&phase==="ready")void submitRecording(file,seconds);};
+
+  if(dictation){
+    const active=phase!=="idle"||Boolean(error);
+    return !active?<button type="button" onClick={()=>void start()}
+      disabled={!readyToRecord||disabled} className={micClassName||styles.mic}
+      aria-describedby={micDescribedBy} data-hh-dictation-ready={readyToRecord?"true":undefined}
+      {...(micMarker?{[micMarker]:true}:{})} data-hh-composer-dictation-mic
+      aria-label={d.mic} title={d.mic}><Mic size={22} aria-hidden="true"/></button>:
+      <div className={styles.dictationPanel} data-hh-dictation-active="true" data-hh-dictation-phase={phase}>
+        <div className={styles.dictationRow}>
+          <button type="button" className={styles.dictationCancel} onClick={discard}
+            aria-label={d.cancel} title={d.cancel}><X size={21}/></button>
+          <div className={styles.dictationSignal} role="status" aria-live="polite">
+            {phase==="recording"?<><span className={styles.waveform} aria-hidden="true">
+              {levels.map((value,index)=><i key={index} style={{height:Math.round(4+25*value)+"px"}}/>)}
+            </span><span className={styles.dictationTime} aria-label={d.recording}>{durationLabel(seconds)}</span></>:
+             <span>{phase==="starting"?d.starting:phase==="sending"||phase==="finishing"?d.processing:
+              phase==="ready"?d.ready:t.failed}</span>}
+          </div>
+          <button type="button" className={styles.dictationConfirm}
+            disabled={disabled||phase==="starting"||phase==="sending"||phase==="finishing"}
+            aria-label={phase==="idle"?d.retry:phase==="ready"&&error?d.retry:d.finish}
+            title={phase==="idle"?d.retry:d.finish}
+            onClick={()=>{if(phase==="recording")stop(true);else if(phase==="ready")send();else void start();}}>
+            {phase==="sending"||phase==="starting"||phase==="finishing"?
+              <LoaderCircle size={20} className={styles.spinner}/>:<Check size={22}/>}
+          </button>
+        </div>
+        <p className={styles.dictationPrivacy}>{d.privacy}</p>
+        {error&&<p className={styles.error} role="alert">{error}</p>}
+      </div>;
+  }
 
   return <>
-    <button type="button" onClick={phase === "recording" ? stop : start}
-      disabled={disabled || phase === "ready" || phase === "sending"}
+    <button type="button" onClick={phase === "recording" ? ()=>stop() : ()=>void start()}
+      disabled={!readyToRecord || disabled || phase === "starting" || phase === "finishing" || phase === "ready" || phase === "sending"}
       className={styles.mic} data-hh-voice-note-mic
       data-recording={phase === "recording" || undefined}
       aria-pressed={phase === "recording"} aria-label={phase === "recording" ? t.stop : t.start}
@@ -261,9 +371,9 @@ export function MessengerVoiceNote({
     </button>
     {(phase !== "idle" || error) && <div className={styles.panel} data-hh-voice-note-panel
       role="group" aria-label={t.start}>
-      {phase === "recording" ? <div className={styles.row}>
+      {phase === "starting"||phase === "finishing"?<div className={styles.row}><span>{phase==="starting"?d.starting:d.processing}</span><button type="button" onClick={discard} className={styles.small} aria-label={t.cancel}><X size={17}/></button></div>:phase === "recording" ? <div className={styles.row}>
         <span className={styles.live}><i aria-hidden="true"/>{t.record} · {durationLabel(seconds)}</span>
-        <button type="button" onClick={stop} className={styles.primary} aria-label={t.stop}><Square size={15}/></button>
+        <button type="button" onClick={()=>stop()} className={styles.primary} aria-label={t.stop}><Square size={15}/></button>
         <button type="button" onClick={discard} className={styles.small} aria-label={t.cancel}><X size={17}/></button>
       </div> : file && preview ? <>
         <div className={styles.row}>

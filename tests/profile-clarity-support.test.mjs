@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs'
 const read = name=>readFileSync(new URL('../'+name,import.meta.url),'utf8')
 const source=read('components/app/profile-space-dashboard.jsx')
 const css=read('components/app/profile-space-dashboard.module.css')
-test('Profile has three ordered top tabs and one four-step Clarity & Support journey',()=>{
+test('Profile has three ordered top tabs and one three-step Clarity & Support journey',()=>{
  const tabs=source.slice(source.indexOf('const tabs = ['),source.indexOf('const diagnostics = ['))
  assert.match(tabs,/id: 'clarity'[\s\S]*id: 'goals'[\s\S]*id: 'business'/)
  assert.match(source,/useState\('clarity'\)/)
@@ -16,7 +16,7 @@ test('Profile has three ordered top tabs and one four-step Clarity & Support jou
  assert.doesNotMatch(tabs,/id: '(tests|support)'/)
  assert.match(source,/data-profile-clarity-support/)
  assert.match(source,/data-clarity-stage/)
- assert.match(source,/\[0,2,2,1\]/)
+ assert.match(source,/\[2,1,1,0\]/)
  assert.match(source,/aria-expanded=\{expanded\}/)
  assert.match(source,/hidden=\{!expanded\}/)
  assert.match(css,/PROFILE_THREE_DESTINATIONS_20261124/)
@@ -40,5 +40,19 @@ test('Clarity buttons outrank shared cabinet buttons and retain compact mock lay
  assert.match(scoped,/min-height:44px;padding:6px 9px/)
  assert.match(scoped,/grid-template-columns:24px 22px minmax\(0,1fr\) 15px/)
  assert.match(scoped,/@media\(max-width:374px\)/)
- assert.match(source,/const stageIcons = \[Flower2,BarChart3,Leaf,Flag\]/)
+ assert.match(source,/const stageIcons = \[BarChart3,Leaf,Target\]/)
+})
+
+test('Approved three-step landing uses one static hero action and numbered photo stages',()=>{
+ assert.match(source,/3-Step Clarity Program/)
+ assert.match(source,/3 шага к ясности/)
+ assert.match(source,/3 pasos hacia la claridad/)
+ assert.match(source,/Start Free Program/)
+ assert.match(source,/\{index\+1\}/)
+ assert.match(source,/data-stage-photo/)
+ const hero=source.slice(source.indexOf('<header className={styles.clarityHero}>'),source.indexOf('</header>',source.indexOf('<header className={styles.clarityHero}>')))
+ assert.equal((hero.match(/<button /g)||[]).length,1)
+ assert.doesNotMatch(hero,/<video|<iframe/)
+ assert.match(css,/CLARITY_LANDING_THREE_20261124/)
+ assert.match(css,/\.clarityStagePhoto/)
 })
