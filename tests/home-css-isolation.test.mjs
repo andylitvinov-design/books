@@ -10,8 +10,13 @@ test("root defers CSS-heavy sitewide enquiry controls and preserves the original
   const wrapper = read("components/sitewide-lead-capture-deferred.tsx");
   assert.match(layout, /<SitewideLeadCaptureDeferred \/>/);
   assert.doesNotMatch(layout, /<SitewideLeadCapture \/>/);
-  assert.match(wrapper, /dynamic\(/);
-  assert.match(wrapper, /ssr: false/);
+  // The import remains deferred until an eligible route mounts on the client.
+  // Its rejection must be handled instead of escaping React.lazy on WebKit.
+  assert.match(wrapper, /useEffect\(\(\) => \{/);
+  assert.match(wrapper, /if \(!classifyPublicLead\(pathname\) \|\| Capture\) return/);
+  assert.match(wrapper, /loadOptionalLeadCapture\(/);
+  assert.match(wrapper, /if \(!route\) return null/);
+  assert.doesNotMatch(wrapper, /import\s+[^;\n]+\s+from\s+["\']\.\/sitewide-lead-capture["\']/);
   assert.match(wrapper, /classifyPublicLead\(pathname\)/);
   assert.match(wrapper, /import\("\.\/sitewide-lead-capture"\)/);
   assert.match(read("components/sitewide-lead-capture.tsx"), /const route = clientPath \? classifyPublicLead\(clientPath\) : null/);

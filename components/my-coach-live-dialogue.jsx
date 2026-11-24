@@ -37,6 +37,8 @@ import {detectedSpeechLocale} from '@/lib/personal-coaching/my-coach-dictation.m
 import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
 import CoachingAvatar from '@/components/app/coaching-avatar'
 import MyCoachMotionMedia from '@/components/my-coach-motion-media'
+import MyCoachGreetingGate from './my-coach-greeting-gate'
+import {markCoachGreetingConnected} from '@/lib/coaching/coach-greeting-visit.mjs'
 import MyCoachCourseJourney from './my-coach-course-journey'
 import {DEFAULT_COACH_COURSE_SESSION_ID,coachCourseFocusLabel} from '@/lib/coaching/coach-course-journey.mjs'
 import MyCoachCompactProfile,{MyCoachInlineProfile} from './my-coach-compact-profile'
@@ -234,6 +236,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const persona=getCoachPersona(personaId)
   const [draft,setDraft]=useState('')
   const [viewExpanded,setViewExpanded]=useState(false)
+  // Public greeting remains a separate, free pre-session screen. No Google
+  // token, microphone or coaching clock starts until the user opts in.
+  const [greetingAccepted,setGreetingAccepted]=useState(false)
   const [coachProfileOpen,setCoachProfileOpen]=useState(false)
   const coachProfileOpenRef=useRef(false)
   const [speechPreview,setSpeechPreview]=useState('')
@@ -287,6 +292,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const protocolIdRef=useRef(null)
   const protocolStartedRef=useRef(null)
   const [sessionClockStarted,setSessionClockStarted]=useState(false)
+  // Connected-session marker contains a persona ID only, never user data.
+  // Gemini sets this consent flag only after an actual Live setupComplete.
+  useEffect(()=>{
+    if(geminiLiveConsent&&sessionClockStarted)
+      markCoachGreetingConnected(personaId)
+  },[geminiLiveConsent,sessionClockStarted,personaId])
   const [introComplete,setIntroComplete]=useState(false)
   const [activeSessionSeconds,setActiveSessionSeconds]=useState(0)
   const [busy,setBusy]=useState(false)
@@ -725,8 +736,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   }
 
   function replayCoachReply(overrideText){
-    // Replay is always high-quality remote audio. Never replace it with
-    // native speechSynthesis even if Fish or Google fails.
+    // Dynamic replies preserve their consented remote provider. Fixed public
+    // introductions may recover using localized device speech.
     const spokenText=typeof overrideText==='string'?overrideText:latestCoachText
     if(speechRef.current?.resumeVoice?.())return
     if(replayBlocked&&replayPlayerRef.current){
@@ -761,6 +772,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(!introUrl){fail();return}
       try{
         replayPlayerRef.current=startDirectCoachIntroAudio(introUrl,{
+          fallbackText:spokenText,locale:conversationLang,
           onStart:()=>{
             if(controller.signal.aborted||replayControllerRef.current!==controller)return
             setReplayBlocked(false);setReplaying(true);setPlaybackNotice('')
@@ -1312,6 +1324,14 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
 
   // Preserve the approved pre-session profile until voice or a client turn starts.
   const sessionHasStarted=sessionClockStarted||voiceState.phase!=='idle'||turns.length>0
+  function enterCoachingFromGreeting(){
+    // The same user gesture that approves the session starts the existing
+    // Gemini microphone path. A failed/disabled voice connection falls back
+    // to the ordinary explicit Play control; no token is minted on preview.
+    setGreetingAccepted(true)
+    if(liveVoiceSelected&&liveVoiceReady&&!busy&&!paused&&!replaying)
+      speechRef.current?.startSession?.()
+  }
   const motionPhase=paused?'idle':voiceState.phase==='speaking'?'speaking':
     voiceState.phase==='listening'?'listening':
     (voiceState.phase==='thinking'||busy)?'thinking':!introComplete?'greeting':'idle'
@@ -1319,7 +1339,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const videoViewLabel=viewExpanded?
     ({ru:'Свернуть видео коуча',en:'Collapse coach video',es:'Contraer el vídeo del coach'})[lang]:
     ({ru:'Развернуть видео коуча',en:'Expand coach video',es:'Ampliar el vídeo del coach'})[lang]
-  return <section ref={sessionRootRef} className={styles.root} lang={lang} data-my-coach-live-dialogue={personaId} data-my-coach-immersive-session data-session-visual-v2 data-session-visual-v3 data-session-visual-v4 data-coach-view-expanded={viewExpanded?'true':'false'} data-coach-session-started={sessionClockStarted?'true':'false'} data-coach-prestart-profile={sessionHasStarted?'false':'true'} data-coach-showcase={introComplete?'false':'true'}>
+  return <section ref={sessionRootRef} className={styles.root} lang={lang} data-my-coach-live-dialogue={personaId} data-my-coach-immersive-session data-session-visual-v2 data-session-visual-v3 data-session-visual-v4 data-coach-view-expanded={viewExpanded?'true':'false'} data-coach-session-started={sessionClockStarted?'true':'false'} data-coach-prestart-profile={sessionHasStarted?'false':'true'} data-coach-showcase={introComplete?'false':'true'}
+    data-coach-greeting-stage={greetingAccepted?'session':'introduction'}>
     <header className={styles.sessionTopbar}>
       <Link className={styles.sessionBrand} href={'/'+lang} onClick={interceptSessionExit} aria-label="Holistic House">
         <span className={styles.sessionBrandMark} aria-hidden="true">✿</span><span>Holistic House</span>
@@ -1348,7 +1369,15 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         </Link>
       </div>
     </header>
-    <div className={styles.sessionScroll} data-coaching-session-scroll>
+    {!greetingAccepted&&<MyCoachGreetingGate
+      personaId={personaId} locale={conversationLang} name={name}
+      methodId={visibleMethodId} onStart={enterCoachingFromGreeting}/>}
+    {/* Keep Live mounted for Safari audio activation, but hide all legacy
+        controls until the cinematic greeting is explicitly accepted. */}
+    <div className={greetingAccepted?styles.sessionScroll:styles.sessionScrollAwaitingGreeting}
+      data-coaching-session-scroll={greetingAccepted?'true':undefined}
+      style={!greetingAccepted?{display:'none'}:undefined}
+      inert={!greetingAccepted} aria-hidden={!greetingAccepted}>
     <section className={styles.sessionHero} aria-label={name} data-voice-phase={voiceState.phase}>
       <div className={styles.sessionPortrait} data-persona={personaId}
         data-coach-motion-video={['mira','max','sofia','alex','merlin','harry','genie'].includes(personaId)?'true':undefined}

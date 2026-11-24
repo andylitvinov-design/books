@@ -73,6 +73,9 @@ export default function CoachingDaybook({accountId,locale='en'}){
  },[ownerView.plan,ownerView.protocols])
  return <section className={css.daybook} id="hh-coaching-daybook" data-coaching-daybook>
   <header className={css.header}><span><NotebookPen size={18}/>{t.tag}</span><h1>{t.title}</h1><p>{t.intro}</p></header>
+  <Link className={css.coach} href={'/'+lang+'/app/daybook?start=vector'} prefetch={false}>
+   {({en:'Stage 0 · Choose a direction and save a goal',ru:'Этап 0 · Выбрать направление и сохранить цель',es:'Etapa 0 · Elegir una dirección y guardar una meta'})[lang]}<ArrowRight size={20}/>
+  </Link>
   {ownerView.loading?<p className={css.message} role="status">…</p>:ownerView.error?
    <p className={css.message} role="alert">{t.unavailable}</p>:
    <div className={css.grid}>

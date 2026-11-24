@@ -59,7 +59,8 @@ import {
   parseGuestCookie,
   setGuestCookie,
 } from '@/lib/app/guest-session'
-import { consumeRate,transaction } from '@/lib/app/database'
+import { consumeRate,consumeRateBatch,transaction } from '@/lib/app/database'
+import {geminiLiveTokenQuota} from '@/lib/coaching/gemini-live-quota.mjs'
 import { operationHash } from '@/lib/app/crypto'
 import { verifiedTelegramSubject } from '@/lib/app/telegram-business-identity.mjs'
 import { createBillingService } from '@/lib/billing/service'
@@ -1036,9 +1037,12 @@ async function handle(request, { params }) {
       let start
       try{start=normalizeGeminiFreeLiveStart(await readBody(request,2048))}
       catch{throw new AppError('MY_COACH_GEMINI_LIVE_INVALID',400)}
-      await consumeRate(config,{op:'my-coach-live-free-actor-hour',actor:actor.id},2,3600)
-      await consumeRate(config,{op:'my-coach-live-free-actor-day',actor:actor.id},4,86400)
-      await consumeRate(config,{op:'my-coach-live-free-global-day'},20,86400)
+      // Abuse control remains before Google, but a failed token mint must not
+      // consume the real 2/hour, 4/day and 20/day successful-session quota.
+      const liveQuota=geminiLiveTokenQuota(actor.id,{
+        ownerTrial:practitionerEmailAllowed(actor),
+      })
+      await consumeRateBatch(config,liveQuota.attempts)
       let token
       try{token=await issueGeminiFreeLiveToken(vendor,start,{
         signal:AbortSignal.any([request.signal,AbortSignal.timeout(12000)])})}
@@ -1058,6 +1062,10 @@ async function handle(request, { params }) {
         console.warn('HH_MY_COACH_LIVE_TOKEN_FAILURE',safeCode)
         throw new AppError(safeCode,status)
       }
+      // Three original delivered-token limits are an atomic DB commit. A
+      // rejected rate dimension rolls back all of them; invalid Google
+      // setup/auth/outage (G-L1..G-L7) never reaches this point.
+      await consumeRateBatch(config,liveQuota.successful)
       return json(token)
     }
     // Server-only evidence checkpoint for the transcript of a Free Live call.

@@ -34,3 +34,11 @@ test("approved 2x2 photo choices have text contrast, compact toolbar and narrow 
  assert.match(mirror,/petal-hope\.jpg/);
  assert.match(mirror,/mountain-air\.jpg/);
 });
+
+test("all three quiz screens keep the original video and full 2-column photo cards",()=>{
+ assert.match(mirror,/\(\[1,2,3\] as const\)\.map/);
+ assert.match(mirror,/data-hh-mirror-quiz-lights/);
+ assert.match(mirror,/data-hh-mirror-quiz-cards/);
+ assert.match(studio,/aspect-ratio:16\/9!important/);
+ assert.match(studio,/data-hh-mirror-step\]:has\(\[data-hh-mirror-screen="topic"\]\)/);
+});

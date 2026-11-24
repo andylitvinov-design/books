@@ -2,6 +2,9 @@
 import {useCallback,useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
+import {BarChart3,Heart,MessageCircleQuestion,Sparkles,Target} from 'lucide-react'
+import {SiteNavigation} from '@/components/site-navigation'
+import {useSearchParams} from 'next/navigation'
 import {appFetch} from '@/lib/app/client-fetch'
 import {createJournalSaver} from '@/lib/app/daybook-journal-save.mjs'
 import {localJournalDay} from '@/lib/app/daybook-journal-contract.mjs'
@@ -9,7 +12,11 @@ import {collectJournalExport} from '@/lib/app/daybook-journal-export.mjs'
 import DaybookGoalContext from './daybook-goal-context'
 import {createJournalSessionGuard} from '@/lib/app/daybook-session-guard.mjs'
 import {createGoalWorkspaceMemory} from '@/lib/app/daybook-goal-editor-session.mjs'
+import {advanceDaybookRouteIntent,daybookRouteOptions} from '@/lib/app/daybook-route-intent.mjs'
 import styles from './daybook-journal.module.css'
+import DaybookStages from './daybook-stages'
+import {stageReadable,parseStageEntry} from '@/lib/app/daybook-stages.mjs'
+import {GUIDE_WEEKS,guideReadable,parseGuideEntry} from '@/lib/app/daybook-guide.mjs'
 const DaybookPersonalGoals=dynamic(()=>import('./daybook-personal-goals'))
 const DaybookToday=dynamic(()=>import('./daybook-today'))
 const DaybookWeekly=dynamic(()=>import('./daybook-weekly'))
@@ -26,12 +33,37 @@ const exportCopy={
  ru:{download:'Экспорт сохранённых записей (JSON)',all:'Загрузить все записи для поиска',working:'Чтение всех сохранённых записей…',failed:'Не удалось завершить. Неполный файл не скачан. Повторите попытку.',large:'Экспорт превышает текущий лимит браузера 32 МиБ. Неполный файл не скачан.',done:'Файл экспорта подготовлен. Несохранённые черновики не включены.'},
  es:{download:'Exportar entradas guardadas (JSON)',all:'Cargar todas las entradas para buscar',working:'Leyendo todas las entradas guardadas…',failed:'No se pudo completar. No se descargó un archivo parcial. Reintenta.',large:'La exportación supera el límite actual de 32 MiB del navegador. No se descargó un archivo parcial.',done:'Archivo de exportación preparado. No incluye borradores sin guardar.'},
 }
-export default function DaybookJournal({locale}){
+// Passing Next's internal history state bypasses its useSearchParams update.
+// Keep same-page controls synchronous so an older router.replace cannot later
+// overwrite a newly selected goal, week or step.
+function replaceDaybookURL(url){window.history.replaceState(null,'',url)}
+export default function DaybookJournal({locale,...serverRoute}){
+ const searchParams=useSearchParams()
+ const {autoStartVector=false,initialTab='stages',initialStage=1,initialLevel=1,initialStep=1,initialGoalId=null}=searchParams?daybookRouteOptions(Object.fromEntries(searchParams.entries())):serverRoute
  const c=copy[locale],root='/'+locale+'/app'
+ const vectorDone=useCallback(()=>replaceDaybookURL(root+'/daybook?tab=goals'),[root])
  const [account,setAccount]=useState(null),[entries,setEntries]=useState([]),[next,setNext]=useState(null)
- const [phase,setPhase]=useState('loading'),[tab,setTab]=useState('today'),[draft,setDraft]=useState(null),[status,setStatus]=useState(''),[query,setQuery]=useState(''),[busy,setBusy]=useState(false)
+ const [phase,setPhase]=useState('loading'),[tab,setTab]=useState(autoStartVector?'goals':initialTab),[draft,setDraft]=useState(null),[status,setStatus]=useState(''),[query,setQuery]=useState(''),[busy,setBusy]=useState(false)
+ const [stageNumber,setStageNumber]=useState(initialStage)
+ const [guideLocked,setGuideLocked]=useState(false)
+ const [guideEntryRequest,setGuideEntryRequest]=useState(null)
+ const stageLabel={en:'Coaching guide',ru:'Коучинг-гид',es:'Guía de coaching'}[locale]
+ useEffect(()=>{if(!guideLocked)setStageNumber(initialStage)},[initialStage,guideLocked])
+ function selectStage(n){setStageNumber(n);const url=new URL(window.location.href);url.searchParams.set('stage',String(n));url.searchParams.set('step','1');url.searchParams.set('tab','stages');url.searchParams.delete('start');replaceDaybookURL(url)}
+ function selectPosition({level,step,goalId}){const url=new URL(window.location.href);url.searchParams.set('level',String(level));url.searchParams.set('step',String(step));if(goalId)url.searchParams.set('goal',goalId);else url.searchParams.delete('goal');replaceDaybookURL(url)}
+ function selectTab(key){if(guideLocked)return;if(key==='goals')setGoalsVisited(true);setTab(key);routeIntent.current=advanceDaybookRouteIntent(routeIntent.current,{autoStartVector:false,initialTab:key});const url=new URL(window.location.href);url.searchParams.set('tab',key);url.searchParams.delete('start');replaceDaybookURL(url)}
  const [exportStatus,setExportStatus]=useState('')
  const [goalsVisited,setGoalsVisited]=useState(false),[weeklyVisited,setWeeklyVisited]=useState(false)
+ const routeIntent=useRef(advanceDaybookRouteIntent(null,{autoStartVector,initialTab}))
+ const [vectorStartRequest,setVectorStartRequest]=useState(routeIntent.current.vectorStartRequest)
+ useEffect(()=>{
+  if(guideLocked)return
+  const nextIntent=advanceDaybookRouteIntent(routeIntent.current,{autoStartVector,initialTab})
+  if(nextIntent===routeIntent.current)return
+  routeIntent.current=nextIntent
+  setTab(nextIntent.tab);setVectorStartRequest(nextIntent.vectorStartRequest)
+  if(nextIntent.tab==='goals')setGoalsVisited(true)
+ },[autoStartVector,initialTab,initialStage,initialLevel,initialStep,initialGoalId,guideLocked])
  const epoch=useRef(0),owner=useRef(null),saver=useRef(null),saving=useRef(false)
  const sessionGuard=useRef(null)
  const journalField=useRef(null)
@@ -42,7 +74,7 @@ export default function DaybookJournal({locale}){
  if(!todayMemory.current)todayMemory.current=createGoalWorkspaceMemory()
  if(!weeklyMemory.current)weeklyMemory.current=createGoalWorkspaceMemory()
  const invalidate=useCallback(()=>{epoch.current++;saver.current?.discard()},[])
- const wipe=useCallback(()=>{invalidate();goalMemory.current?.clear();todayMemory.current?.clear();weeklyMemory.current?.clear();sessionGuard.current?.dispose();owner.current=null;saver.current=null;setAccount(null);setEntries([]);setDraft(null);setNext(null);setQuery('');setStatus('');setExportStatus('');setGoalsVisited(false);setWeeklyVisited(false);setBusy(false);saving.current=false},[invalidate])
+ const wipe=useCallback(()=>{invalidate();goalMemory.current?.clear();todayMemory.current?.clear();weeklyMemory.current?.clear();sessionGuard.current?.dispose();owner.current=null;saver.current=null;setAccount(null);setEntries([]);setDraft(null);setNext(null);setQuery('');setStatus('');setExportStatus('');setGoalsVisited(false);setWeeklyVisited(false);setBusy(false);setGuideLocked(false);setGuideEntryRequest(null);saving.current=false},[invalidate])
  const sessionLost=useCallback(()=>{wipe();setPhase('signed-out')},[wipe])
  const load=useCallback(async()=>{
   wipe();setPhase('loading');const token=epoch.current
@@ -132,16 +164,41 @@ export default function DaybookJournal({locale}){
   finally{if(token===epoch.current)setBusy(false)}
  }
  const today=localJournalDay(new Date().toISOString(),Intl.DateTimeFormat().resolvedOptions().timeZone)
- const visible=entries.filter(entry=>(tab!=='today'||entry.localDay===today)&&(!query||[entry.text,...entry.tags].join(' ').toLocaleLowerCase(locale).includes(query.toLocaleLowerCase(locale))))
- return <main className={styles.page}>
-  <Link href={root+'/portrait'}>{c.home}</Link><h1>{c.title}</h1><p>{c.intro}</p>
+ const visible=entries.filter(entry=>(tab!=='today'||entry.localDay===today)&&(!query||[guideReadable(entry,locale)??stageReadable(entry,locale)??entry.text,...entry.tags].join(' ').toLocaleLowerCase(locale).includes(query.toLocaleLowerCase(locale))))
+ function entryHref(entry){
+  const guide=parseGuideEntry(entry),legacy=parseStageEntry(entry)
+  const week=GUIDE_WEEKS.find(item=>item.id===(guide?.week||legacy?.stage))
+  const q=new URLSearchParams({tab:'stages',stage:String(guide?.week==='review'?8:week?.number||1)})
+  if(guide){q.set('level',String(guide.level));q.set('step',String(Math.max(1,(week?.steps.findIndex(item=>item.id===guide.step)??0)+1)))}
+  if(entry.goalId)q.set('goal',entry.goalId)
+  return root+'/daybook?'+q.toString()
+ }
+ function openGuideEntry(event,entry){
+  if(event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return
+  event.preventDefault()
+  if(guideLocked)return
+  const url=new URL(entryHref(entry),window.location.origin)
+  const target=daybookRouteOptions(Object.fromEntries(url.searchParams.entries()))
+  setStageNumber(target.initialStage);setTab('stages')
+  setGuideEntryRequest({goalId:target.initialGoalId,level:target.initialLevel,step:target.initialStep})
+  routeIntent.current=advanceDaybookRouteIntent(routeIntent.current,{autoStartVector:false,initialTab:'stages'})
+  replaceDaybookURL(url)
+ }
+ return <main className={styles.page} data-daybook-view={tab} data-cabinet-theme="daybook" data-daybook-page>
+  <header className={styles.masthead}><Link className={styles.brand} href={root+'/portrait'} aria-label={c.home}><Sparkles size={25} aria-hidden="true"/><span>Holistic House</span></Link><button type="button" className={styles.inlineHelp} data-daybook-inline-help aria-label={({en:'Open iHelp',ru:'Открыть iHelp',es:'Abrir iHelp'})[locale]} aria-haspopup="dialog" title="iHelp" onClick={()=>window.dispatchEvent(new Event('hh:open-ihelp'))}><MessageCircleQuestion size={19} aria-hidden="true"/></button><SiteNavigation locale={locale} compact/></header>
+  <nav className={styles.destinations} aria-label={c.home}>
+   <button type="button" aria-pressed={tab==='goals'} disabled={guideLocked} onClick={()=>selectTab('goals')}><Target size={21} aria-hidden="true"/>{({en:'My goals',ru:'Мои цели',es:'Mis metas'})[locale]}</button>
+   <Link href={root+'/tests'}><BarChart3 size={21} aria-hidden="true"/>{({en:'Tests',ru:'Тесты',es:'Tests'})[locale]}</Link>
+   <Link href={'/'+locale+'/holistic-support'}><Heart size={21} aria-hidden="true"/>{({en:'Support',ru:'Поддержка',es:'Apoyo'})[locale]}</Link>
+  </nav>
+  {tab!=='stages'&&<><h1>{c.title}</h1><p>{c.intro}</p></>}
   {phase!=='ready'?<section aria-live="polite"><p>{['loading','checking'].includes(phase)?c.loading:phase==='signed-out'?c.login:c.error}</p>{phase==='signed-out'?<Link href={root+'/portrait'}>{c.login}</Link>:phase==='error'||phase==='locked-error'?<button onClick={()=>void(phase==='locked-error'?sessionGuard.current?.verify():load())}>{c.retry}</button>:null}</section>:<>
-   <nav aria-label={c.title}>{['today','journal','goals','growth'].map(key=><button key={key} aria-current={tab===key?'page':undefined} onClick={()=>{if(key==='goals')setGoalsVisited(true);setTab(key)}}>{c[key]}</button>)}</nav>
+   <nav className={styles.workspaceNav} aria-label={c.title}>{['stages','today','journal','growth'].map(key=><button key={key} disabled={guideLocked} aria-current={tab===key?'page':undefined} aria-label={key==='stages'?stageLabel:undefined} onClick={()=>selectTab(key)}>{key==='stages'?({en:'Guide',ru:'Гид',es:'Guía'})[locale]:c[key]}</button>)}</nav>
    {tab==='today'&&<button onClick={()=>open(null)} disabled={busy||status==='failed'}>{c.new}</button>}
    {tab==='today'&&<DaybookToday key={account} accountId={account} locale={locale} initialDay={today} memory={todayMemory.current} onSessionLost={sessionLost}/>}
    {tab==='today'&&<details onToggle={event=>{if(event.currentTarget.open)setWeeklyVisited(true)}}><summary>{({en:'My weekly review',ru:'Мой недельный обзор',es:'Mi revisión semanal'})[locale]}</summary>{weeklyVisited&&<DaybookWeekly key={account} accountId={account} locale={locale} initialDay={today} memory={weeklyMemory.current} onSessionLost={sessionLost}/>}</details>}
-   {(goalsVisited||tab==='goals')&&<div hidden={tab!=='goals'}><DaybookPersonalGoals key={account} accountId={account} locale={locale} onSessionLost={sessionLost} memory={goalMemory.current}/><Link href={root+'/my-coaching-plan'}>{c.plan}</Link></div>}
-   {tab==='goals'?null:tab==='growth'?<section><h2>{c.growth}</h2><DaybookGrowth accountId={account} locale={locale} onSessionLost={sessionLost}/></section>:<>
+   {(goalsVisited||tab==='goals')&&<div hidden={tab!=='goals'}><DaybookPersonalGoals key={account} accountId={account} locale={locale} onSessionLost={sessionLost} memory={goalMemory.current} autoStartVector={autoStartVector} vectorStartRequest={vectorStartRequest} onVectorDone={vectorDone}/><Link href={root+'/my-coaching-plan'}>{c.plan}</Link></div>}
+   {tab==='goals'||tab==='stages'?null:tab==='growth'?<section><h2>{c.growth}</h2><DaybookGrowth accountId={account} locale={locale} onSessionLost={sessionLost}/></section>:<>
     {tab!=='today'&&<button onClick={()=>open(null)} disabled={busy||status==='failed'}>{c.new}</button>}
     {draft&&<section><label>{c.note}<select value={draft.kind} disabled={busy||status==='failed'} onChange={e=>change('kind',e.target.value)}>{['note','morning','evening'].map(kind=><option key={kind} value={kind}>{c[kind]}</option>)}</select></label>
      <DaybookGoalContext key={account} accountId={account} locale={locale} selectedId={draft.goalId} disabled={busy||status==='failed'} onChange={goalId=>change('goalId',goalId)} onSessionLost={sessionLost}/>
@@ -157,9 +214,10 @@ export default function DaybookJournal({locale}){
     {next&&<button disabled={busy} onClick={()=>void collect(false)}>{exportCopy[locale].all}</button>}
     <p role="status">{exportCopy[locale][exportStatus]||''}</p>
     {!visible.length&&<p>{c.empty}</p>}
-    {visible.map(entry=><article key={entry.id}><time dateTime={entry.localDay}>{entry.localDay}</time><h2>{c[entry.kind]}</h2><p className={styles.entry}>{entry.text}</p><p>{entry.tags.join(' · ')}</p><button disabled={busy||status==='failed'} onClick={()=>open(entry)}>{c.edit}</button><button disabled={busy||status==='failed'} onClick={()=>void remove(entry)}>{c.remove}</button><DaybookCoachLink accountId={account} locale={locale} kind="journal" itemId={entry.id} revision={entry.revision} disabled={busy||status==='failed'} onSessionLost={sessionLost}/></article>)}
+    {visible.map(entry=><article key={entry.id}><time dateTime={entry.localDay}>{entry.localDay}</time><h2>{c[entry.kind]}</h2><p className={styles.entry}>{guideReadable(entry,locale)??stageReadable(entry,locale)??entry.text}</p><p>{entry.tags.join(' · ')}</p>{parseStageEntry(entry)||parseGuideEntry(entry)?<Link href={entryHref(entry)} prefetch={false} onClick={event=>openGuideEntry(event,entry)}>{stageLabel}</Link>:<button disabled={busy||status==='failed'} onClick={()=>open(entry)}>{c.edit}</button>}<button disabled={busy||status==='failed'} onClick={()=>void remove(entry)}>{c.remove}</button><DaybookCoachLink accountId={account} locale={locale} kind="journal" itemId={entry.id} revision={entry.revision} disabled={busy||status==='failed'} onSessionLost={sessionLost}/></article>)}
     {next&&<button disabled={busy} onClick={()=>void more()}>{c.more}</button>}
    </>}
   </>}
+  {account&&<div className={styles.guide} hidden={phase!=='ready'||tab!=='stages'}><DaybookStages key={account} accountId={account} locale={locale} stageNumber={stageNumber} initialLevel={initialLevel} initialStep={initialStep} initialGoalId={initialGoalId} entryRequest={guideEntryRequest} onStage={selectStage} onPositionChange={selectPosition} entries={entries} hasMore={!!next} loadingAll={busy} loadError={['failed','large'].includes(exportStatus)} onLoadAll={()=>void collect(false)} onSaved={entry=>{if(owner.current===account)setEntries(old=>[entry,...old.filter(item=>item.id!==entry.id)])}} onSessionLost={sessionLost} onReload={()=>void load()} onTab={selectTab} onLockChange={setGuideLocked} ready={phase==='ready'&&tab==='stages'}/></div>}
  </main>
 }

@@ -41,7 +41,7 @@ async function assertCspPublicHome(page) {
   const fast = page.locator('body[data-fast-home="en"]');
   if (await fast.count()) {
     await expect(fast.locator('[data-home-dialogue-entry]')).toBeVisible();
-    await expect(fast.locator('[data-home-intent-option]')).toHaveCount(4);
+    await expect(fast.locator('[data-home-intent-option]')).toHaveCount(3);
     await expect(fast.locator('[data-home-intent-form]')).toBeVisible();
     await expect(fast.locator('[data-hh-unified-dock] [data-unified-dock-item]')).toHaveCount(7);
     await expect.poll(() => page.evaluate(() => document.documentElement.dataset.homeInteractive === 'true')).toBe(true);
@@ -55,6 +55,8 @@ async function assertCspPublicHome(page) {
   await expect(home).toHaveCount(1);
   await expect(home).toBeVisible();
   await expect(home.locator('[data-home-dialogue-entry]')).toBeVisible();
+  await expect(home.locator('[data-home-intent-option]')).toHaveCount(3);
+  for (const intention of ['understand','goal','talk']) await expect(home.locator('[data-home-intent-option="'+intention+'"]')).toBeVisible();
 }
 
 async function assertAnonymousPrivateNavigation(page) {

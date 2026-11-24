@@ -32,4 +32,53 @@
 .dashboard a:focus-visible,.dashboard button:focus-visible{outline:3px solid #0b8468;outline-offset:3px}
 @media(max-width:370px){.mode{gap:6px}.mode a{font-size:14px;min-height:47px;gap:5px}.hero{padding:15px 10px 10px;min-height:193px;border-radius:22px}.hero h1{font-size:30px!important}.summary{font-size:13px}.heroAction{min-height:64px;margin-top:13px;padding:8px;gap:7px}.heroActionIcon{width:37px}.heroAction strong{font-size:15px}.heroAction small{font-size:11px}.actionArrow{width:31px;height:31px}.activePanel{padding:10px 7px}.activeIcon{width:40px;height:42px}.activeHeader{gap:7px}.activeHeader h2{font-size:23px!important}.leaf{display:none}.orderCard{gap:6px;padding:6px}.orderImage{flex-basis:21%;min-height:67px}.kind{font-size:9px}.orderBody strong{font-size:13px}.orderRight{gap:2px;max-width:38%}.orderRight>svg{width:15px}.pending,.inProgress,.completed{padding:6px 5px;font-size:10px}.pending svg,.inProgress svg,.completed svg{width:12px}.sectionHeading h2{font-size:22px!important}.sectionHeading a{padding:7px;font-size:11px}.offerRail{grid-auto-columns:minmax(157px,48%)}}
 @media(min-width:700px){.hero{padding:33px 28px 20px;min-height:270px}.heroAction{max-width:760px}.activePanel{padding:18px;gap:12px}.orderImage{flex-basis:17%;min-height:100px}.offerRail{grid-auto-columns:minmax(230px,31%)}.offerImage{height:115px}.offerBody{min-height:135px}.summary{max-width:42ch}}
+
+:global(.hh-app[data-cabinet-theme="daybook"]) .dashboard { color:var(--hh-cabinet-ink); }
+:global(.hh-app[data-cabinet-theme="daybook"]) .mode a { border-color:var(--hh-cabinet-border);border-radius:999px;min-height:52px; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .life {
+  background:linear-gradient(140deg,var(--hh-cabinet-primary),var(--hh-cabinet-primary-hover));color:#fff6e3!important;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .work,
+:global(.hh-app[data-cabinet-theme="daybook"]) .heroAction,
+:global(.hh-app[data-cabinet-theme="daybook"]) .activePanel {
+  background:linear-gradient(135deg,#fffaef,var(--hh-cabinet-surface-soft));border-color:var(--hh-cabinet-border);color:var(--hh-cabinet-ink)!important;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .hero {
+  border:1px solid var(--hh-cabinet-border);
+  background:linear-gradient(95deg,#291e12ed 0%,#302514ad 47%,#36261512 100%),url('/images/holistic-house/reiki-approved-sunrise-v3.webp') center 44%/cover no-repeat;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .heroActionIcon { border-color:var(--hh-cabinet-border);color:var(--hh-cabinet-primary); }
+:global(.hh-app[data-cabinet-theme="daybook"]) .heroAction strong,
+:global(.hh-app[data-cabinet-theme="daybook"]) .orderBody strong,
+:global(.hh-app[data-cabinet-theme="daybook"]) .offerBody strong { color:var(--hh-cabinet-ink); }
+:global(.hh-app[data-cabinet-theme="daybook"]) .heroAction small,
+:global(.hh-app[data-cabinet-theme="daybook"]) .date,
+:global(.hh-app[data-cabinet-theme="daybook"]) .offerBody small { color:var(--hh-cabinet-muted);font-size:14px;line-height:1.4; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .activeHeader h2 { color:var(--hh-cabinet-ink)!important; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .activeHeader p { color:var(--hh-cabinet-muted)!important;font-size:14px; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .activeIcon,
+:global(.hh-app[data-cabinet-theme="daybook"]) .actionArrow,
+:global(.hh-app[data-cabinet-theme="daybook"]) .offerArrow { background:var(--hh-cabinet-selected);color:var(--hh-cabinet-primary); }
+:global(.hh-app[data-cabinet-theme="daybook"]) .orderCard,
+:global(.hh-app[data-cabinet-theme="daybook"]) .offer,
+:global(.hh-app[data-cabinet-theme="daybook"]) .retryRow,
+:global(.hh-app[data-cabinet-theme="daybook"]) .empty {
+  background:var(--hh-cabinet-surface);border-color:var(--hh-cabinet-border);color:var(--hh-cabinet-ink)!important;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .orderCard:hover { border-color:var(--hh-cabinet-primary); }
+:global(.hh-app[data-cabinet-theme="daybook"]) .retryRow button,
+:global(.hh-app[data-cabinet-theme="daybook"]) .sectionHeading a,
+:global(.hh-app[data-cabinet-theme="daybook"]) .noOffers {
+  min-height:44px;background:var(--hh-cabinet-surface);border-color:var(--hh-cabinet-border);color:var(--hh-cabinet-primary);font-size:14px;
+}
+:global(.hh-app[data-cabinet-theme="daybook"]) .moreActive { min-height:44px;color:var(--hh-cabinet-primary);font-size:14px; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .sectionHeading h2 { color:#fff1cf!important; }
+:global(.hh-app[data-cabinet-theme="daybook"]) .dashboard :is(a,button):focus-visible { outline-color:var(--hh-cabinet-primary); }
+@media(max-width:430px) {
+  :global(.hh-app[data-cabinet-theme="daybook"]) .offerRail { grid-auto-columns:minmax(170px,60%); }
+  :global(.hh-app[data-cabinet-theme="daybook"]) .offerBody strong { font-size:16px; }
+  :global(.hh-app[data-cabinet-theme="daybook"]) .orderBody strong { font-size:15px; }
+  :global(.hh-app[data-cabinet-theme="daybook"]) .orderCard { flex-wrap:wrap; }
+  :global(.hh-app[data-cabinet-theme="daybook"]) .orderRight { max-width:100%;margin-left:auto; }
+}
 @media(prefers-reduced-motion:reduce){.offerRail{scroll-behavior:auto}}

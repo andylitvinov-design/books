@@ -391,7 +391,19 @@ test('first signed Telegram Business enquiry sends the existing female avatar ex
  const photo=route.indexOf('await sendHolisticBusinessWelcomePhoto(',first);
  const message=route.indexOf('await sendHolisticBusinessRequestReply(',first);
  assert.ok(first>0&&photo>first&&message>photo,'must await photo first, then send text');
- assert.ok(route.indexOf('await sendHolisticBusinessWelcomePhoto(',photo+1)<0,'welcome only in first request branch');
+ // A first general CRM enquiry has a separate photo-before-menu path.
+ // The structured service path returns before the general path, so a
+ // single signed update cannot reach both photo sends.
+ const general=route.indexOf('if(businessLead?.created)',message);
+ const serviceReturn=route.indexOf('return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})',message);
+ const generalPhoto=route.indexOf('await sendHolisticBusinessWelcomePhoto(',general);
+ const generalMessage=route.indexOf('await sendHolisticBusinessRequestReply(',generalPhoto);
+ assert.ok(general>message&&serviceReturn>message&&serviceReturn<general,'service reply must return before general welcome');
+ assert.ok(generalPhoto>general&&generalMessage>generalPhoto,'general first contact sends photo before text');
+ assert.equal(route.indexOf('await sendHolisticBusinessWelcomePhoto(',photo+1),generalPhoto,'no additional photo in service or secretary paths');
+ assert.equal(route.indexOf('await sendHolisticBusinessWelcomePhoto(',generalPhoto+1),-1,'no further welcome photo sends');
+ assert.match(route.slice(generalPhoto,generalMessage),/generalWelcome:true/);
+ assert.match(route.slice(generalMessage,generalMessage+350),/welcomeLocale:welcome.locale/);
  assert.match(route,/HH_TG_BUSINESS_WELCOME_PHOTO_NOT_CONFIRMED/);
 });
 
