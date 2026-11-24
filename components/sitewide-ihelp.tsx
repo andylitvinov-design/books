@@ -154,7 +154,7 @@ export function SitewideIHelp(){
   return ()=>window.removeEventListener("hh:open-ihelp",onBusinessHelp);
  },[pathname,locale]);
  function restoreHelpFocus(){
-  const trigger=document.querySelector<HTMLButtonElement>("[data-shamanica-ihelp-trigger]");
+  const trigger=document.querySelector<HTMLButtonElement>("[data-daybook-inline-help], [data-shamanica-ihelp-trigger]");
   (trigger||launcher.current)?.focus({preventScroll:true});
  }
  function chooseTopic(prompt:string){

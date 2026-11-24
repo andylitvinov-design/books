@@ -2,7 +2,7 @@
 import {useCallback,useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import {BarChart3,Heart,Sparkles,Target} from 'lucide-react'
+import {BarChart3,Heart,MessageCircleQuestion,Sparkles,Target} from 'lucide-react'
 import {SiteNavigation} from '@/components/site-navigation'
 import {useSearchParams} from 'next/navigation'
 import {appFetch} from '@/lib/app/client-fetch'
@@ -185,7 +185,7 @@ export default function DaybookJournal({locale,...serverRoute}){
   replaceDaybookURL(url)
  }
  return <main className={styles.page} data-daybook-view={tab} data-cabinet-theme="daybook" data-daybook-page>
-  <header className={styles.masthead}><Link className={styles.brand} href={root+'/portrait'} aria-label={c.home}><Sparkles size={25} aria-hidden="true"/><span>Holistic House</span></Link><SiteNavigation locale={locale} compact/></header>
+  <header className={styles.masthead}><Link className={styles.brand} href={root+'/portrait'} aria-label={c.home}><Sparkles size={25} aria-hidden="true"/><span>Holistic House</span></Link><button type="button" className={styles.inlineHelp} data-daybook-inline-help aria-label={({en:'Open iHelp',ru:'Открыть iHelp',es:'Abrir iHelp'})[locale]} aria-haspopup="dialog" title="iHelp" onClick={()=>window.dispatchEvent(new Event('hh:open-ihelp'))}><MessageCircleQuestion size={19} aria-hidden="true"/></button><SiteNavigation locale={locale} compact/></header>
   <nav className={styles.destinations} aria-label={c.home}>
    <button type="button" aria-pressed={tab==='goals'} disabled={guideLocked} onClick={()=>selectTab('goals')}><Target size={21} aria-hidden="true"/>{({en:'My goals',ru:'Мои цели',es:'Mis metas'})[locale]}</button>
    <Link href={root+'/tests'}><BarChart3 size={21} aria-hidden="true"/>{({en:'Tests',ru:'Тесты',es:'Tests'})[locale]}</Link>
@@ -193,7 +193,7 @@ export default function DaybookJournal({locale,...serverRoute}){
   </nav>
   {tab!=='stages'&&<><h1>{c.title}</h1><p>{c.intro}</p></>}
   {phase!=='ready'?<section aria-live="polite"><p>{['loading','checking'].includes(phase)?c.loading:phase==='signed-out'?c.login:c.error}</p>{phase==='signed-out'?<Link href={root+'/portrait'}>{c.login}</Link>:phase==='error'||phase==='locked-error'?<button onClick={()=>void(phase==='locked-error'?sessionGuard.current?.verify():load())}>{c.retry}</button>:null}</section>:<>
-   <nav className={styles.workspaceNav} aria-label={c.title}>{['stages','today','journal','goals','growth'].map(key=><button key={key} disabled={guideLocked} aria-current={tab===key?'page':undefined} onClick={()=>selectTab(key)}>{key==='stages'?stageLabel:c[key]}</button>)}</nav>
+   <nav className={styles.workspaceNav} aria-label={c.title}>{['stages','today','journal','growth'].map(key=><button key={key} disabled={guideLocked} aria-current={tab===key?'page':undefined} aria-label={key==='stages'?stageLabel:undefined} onClick={()=>selectTab(key)}>{key==='stages'?({en:'Guide',ru:'Гид',es:'Guía'})[locale]:c[key]}</button>)}</nav>
    {tab==='today'&&<button onClick={()=>open(null)} disabled={busy||status==='failed'}>{c.new}</button>}
    {tab==='today'&&<DaybookToday key={account} accountId={account} locale={locale} initialDay={today} memory={todayMemory.current} onSessionLost={sessionLost}/>}
    {tab==='today'&&<details onToggle={event=>{if(event.currentTarget.open)setWeeklyVisited(true)}}><summary>{({en:'My weekly review',ru:'Мой недельный обзор',es:'Mi revisión semanal'})[locale]}</summary>{weeklyVisited&&<DaybookWeekly key={account} accountId={account} locale={locale} initialDay={today} memory={weeklyMemory.current} onSessionLost={sessionLost}/>}</details>}
