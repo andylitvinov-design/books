@@ -361,7 +361,8 @@ export default function MessagesOrdersClients({locale:routeLocale='en',children}
     </div>
   )
   return <section ref={hubRef} className={styles.root} lang={locale} data-orders-clients-hub
-    data-detail-open={detailMode||undefined} data-section={section}>
+    data-detail-open={detailMode||undefined} data-section={section}
+    style={{'--hh-ai-persona-image':`url("${persona.image}")`}}>
     <div id="hh-chat-tabs" className={styles.sections} role="tablist" aria-label={t.title}
       data-chat-top-tabs data-chat-tabs-open={chatTabsOpen||undefined}>
       <button type="button" role="tab" aria-controls="hh-ai-panel" aria-selected={section==='ai'}

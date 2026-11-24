@@ -466,7 +466,7 @@
 .root .genieScene{position:relative;isolation:isolate;min-height:280px;overflow:hidden;
   border-radius:23px;background:
   linear-gradient(180deg,rgba(5,41,37,.22) 0%,rgba(6,40,36,.08) 38%,rgba(36,23,35,.33) 100%),
-  url("/images/holistic-house/my-coach-motion/genie-calm-loop-poster.webp") center 30% / cover no-repeat;
+  var(--hh-ai-persona-image, none) center 30% / cover no-repeat #142f2b;
   box-shadow:0 9px 21px #33230e2e}
 .root .dialogueProfile{display:flex;gap:9px;align-items:center;min-height:56px;
   padding:10px 12px;color:#fff;background:linear-gradient(#052d2b92,transparent);

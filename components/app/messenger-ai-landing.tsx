@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect,useRef,useState,type ReactNode} from "react";
+import {useEffect,useRef,useState,type ReactNode,type CSSProperties} from "react";
 import Link from "next/link";
 import {BookOpen, CalendarDays, ClipboardCheck, Clapperboard, Flower2,
   HandHeart, MessageCircle, Play, X, ChevronDown} from "lucide-react";
@@ -225,7 +225,8 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupp
 
   return <section className={css.root} data-hh-ai-landing aria-label={welcomeTitle}
     data-hh-chat-opening="true">
-    <div className={css.genieScene} data-hh-genie-scene>
+    <div className={css.genieScene} data-hh-genie-scene
+      style={{'--hh-ai-persona-image':`url("${persona.image}")`} as CSSProperties}>
       <div className={css.dialogueProfile}>
         <Link href={"/"+locale} className={css.backToHome}
           aria-label={locale==="ru"?"На главную":locale==="es"?"Volver al inicio":"Back to home"}>
