@@ -63,3 +63,15 @@
 }
 @media(min-width:760px){.dock{width:min(92%,850px);border-radius:30px 30px 0 0}.dock[data-hh-editorial-dock="true"]{display:none}}
 @media(prefers-reduced-motion:reduce){.dock,.item{transition:none}}
+
+/* Home reference: integrated gold/emerald central action instead of the
+   protruding orb which covered the five-method panel. All seven established
+   destinations and measured safe-area / keyboard behavior remain. */
+.dock[data-hh-home-route="true"]{width:min(calc(100% - 14px),900px);min-height:68px;padding:4px 5px calc(4px + env(safe-area-inset-bottom));border:1px solid #f5dfb8;border-radius:30px 30px 24px 24px;background:linear-gradient(135deg,#fff8e9,#fae8c9);box-shadow:0 -3px 15px #392a1728,inset 0 1px 0 #fff9ed;align-items:center}
+.dock[data-hh-home-route="true"] .item{min-height:54px;gap:3px;padding:3px 0;font-size:clamp(9px,2.45vw,12px);color:#153e32}
+.dock[data-hh-home-route="true"] .item span{overflow-wrap:normal;word-break:normal}
+.dock[data-hh-home-route="true"] .item[data-unified-dock-item="ai"]{min-height:56px;border-radius:25px;background:radial-gradient(ellipse at 50% 15%,#24a681,#04744b 75%);border:1px solid #ffe287;box-shadow:0 0 8px #ffd65eaa;color:#fff;gap:2px}
+.dock[data-hh-home-route="true"] .item[data-unified-dock-item="ai"]::before,.dock[data-hh-home-route="true"] .item[data-unified-dock-item="ai"]::after{display:none}
+.dock[data-hh-home-route="true"] .item[data-unified-dock-item="ai"] svg{position:static;transform:none;top:auto;left:auto;width:28px;height:28px;padding:2px;border:0;background:none;box-shadow:none;color:#fff}
+.dock[data-hh-home-route="true"] .item[data-unified-dock-item="ai"] span{position:static;transform:none;top:auto;left:auto;padding:0;white-space:nowrap;max-width:none;border-radius:0;background:none;box-shadow:none;color:#fff;font-size:clamp(9px,2.45vw,12px)}
+@media(max-width:354px){.dock[data-hh-home-route="true"]{width:calc(100% - 8px);padding-inline:2px}.dock[data-hh-home-route="true"] .item{font-size:9px}}
