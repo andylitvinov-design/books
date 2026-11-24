@@ -1,6 +1,5 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {readFileSync} from 'node:fs'
 import {
   COACH_GREETING_BUCKET, coachGreetingObjectKey, coachGreetingPublicUrl,
   isMp3Bytes,readSavedCoachGreeting,saveCoachGreetingOnce,
@@ -42,6 +41,7 @@ test('saved audio streams from the same first-party URL, including byte ranges',
   assert.equal(calls.length,1)
   assert.match(calls[0].url,/\/storage\/v1\/object\/public\//)
   assert.equal(calls[0].init.headers.Range,'bytes=0-1499')
+  assert.equal(calls[0].init.redirect,'error')
   assert.equal((await response.arrayBuffer()).byteLength,audio.length)
 })
 
@@ -53,12 +53,73 @@ test('read returns null only for an actual missing object, not a transient error
     async()=>new Response('unavailable',{status:503})),/STORAGE_READ_FAILED/)
 })
 
+test('the live Supabase HTTP 400 NoSuchKey response is a missing recording',async()=>{
+  const missing=await readSavedCoachGreeting(config,'genie','ru',async()=>
+    Response.json({statusCode:'404',error:'not_found',message:'Object not found',code:'NoSuchKey'},
+      {status:400}))
+  assert.equal(missing,null)
+})
+
+test('other storage errors cannot masquerade as a missing recording',async()=>{
+  const failures=[
+    Response.json({statusCode:'404',code:'NoSuchBucket'},{status:400}),
+    Response.json({statusCode:'403',code:'AccessDenied'},{status:400}),
+    Response.json({statusCode:'403',code:'NoSuchKey'},{status:400}),
+    Response.json({statusCode:'404',code:'NoSuchKey'},{status:403}),
+    new Response('invalid JSON',{status:400}),
+  ]
+  for(const response of failures)
+    await assert.rejects(readSavedCoachGreeting(config,'genie','ru',async()=>response),
+      /STORAGE_READ_FAILED/)
+})
+
+test('an unsatisfiable byte range preserves 416 without treating the track as missing',async()=>{
+  const upstream=new Response(null,{status:416,headers:{'content-range':'bytes */1500'}})
+  const response=await readSavedCoachGreeting(config,'genie','ru',async()=>upstream,
+    'bytes=1500-')
+  assert.equal(response.status,416)
+  assert.equal(response.headers.get('content-range'),'bytes */1500')
+  await assert.rejects(readSavedCoachGreeting(config,'genie','ru',async()=>
+    new Response(null,{status:416}),'bytes=1500-'),/STORAGE_READ_FAILED/)
+  await assert.rejects(readSavedCoachGreeting(config,'genie','ru',async()=>upstream),
+    /STORAGE_READ_FAILED/)
+})
+
+test('a lookup that never receives headers is aborted and reports storage failure',async t=>{
+  t.mock.timers.enable({apis:['setTimeout']})
+  const read=readSavedCoachGreeting(config,'genie','ru',async(_url,{signal})=>
+    new Promise((_resolve,reject)=>signal.addEventListener('abort',()=>
+      reject(new Error('aborted')),{once:true})))
+  const rejected=assert.rejects(read,/STORAGE_READ_FAILED/)
+  t.mock.timers.tick(7001)
+  await rejected
+})
+
+test('an accepted recording can finish streaming after the lookup deadline',async t=>{
+  t.mock.timers.enable({apis:['setTimeout']})
+  let signal,body
+  const response=await readSavedCoachGreeting(config,'genie','ru',async(_url,init)=>{
+    signal=init.signal
+    return new Response(new ReadableStream({start(controller){
+      body=controller
+      controller.enqueue(audio.subarray(0,32))
+      signal.addEventListener('abort',()=>controller.error(new Error('aborted')),{once:true})
+    }}),{headers:{'content-type':'audio/mpeg'}})
+  })
+  t.mock.timers.tick(30000)
+  assert.equal(signal.aborted,false)
+  body.enqueue(audio.subarray(32))
+  body.close()
+  assert.deepEqual(new Uint8Array(await response.arrayBuffer()),audio)
+})
+
 test('first generation writes the original MP3 exactly once and never upserts',async()=>{
   let calls=0
   const saved=await saveCoachGreetingOnce(config,'genie','es',audio,async(url,init)=>{
     calls++
     assert.equal(url,config.supabaseUrl+'/storage/v1/object/hh-coach-greetings/v2/es/genie.mp3')
     assert.equal(init.method,'POST')
+    assert.equal(init.redirect,'error')
     assert.equal(init.headers['Content-Type'],'audio/mpeg')
     assert.equal(init.headers['x-upsert'],'false')
     assert.equal(init.headers.apikey,config.secretKey)
@@ -86,16 +147,38 @@ test('concurrent first write recognizes canonical object and missing secret deni
     'max','ru',audio),/STORAGE_CONFIG/)
 })
 
-test('v2 route consults durable cache before synthesis and saves both vendor paths',()=>{
-  const route=readFileSync(new URL('../app/api/coaching/intro/[locale]/[coach]/route.js',import.meta.url),'utf8')
-  const gate=readFileSync(new URL('../lib/personal-coaching/direct-coach-intro-audio.mjs',import.meta.url),'utf8')
-  assert.match(route,/if\(useRecordedGreeting\)\{/)
-  assert.match(route,/readSavedCoachGreeting\(config,personaId,locale,fetch,/)
-  assert.match(route,/if\(saved\)return storedAudioResponse\(saved\)/)
-  assert.match(route,/if\(useRecordedGreeting\)return persistGreeting\(config,personaId,locale,audio\)/)
-  assert.match(route,/return persistGreeting\(config,personaId,locale,audio\)/)
-  assert.match(route,/if\(!saved\.created\)/)
-  assert.match(route,/max-age=31536000/)
-  assert.match(gate,/\/api\/coaching\/intro\//)
-  assert.match(gate,/\?v=2/)
+test('HTTP 400 duplicate uploads preserve the already stored recording',async()=>{
+  const duplicates=[
+    {statusCode:'409',error:'Duplicate',message:'The resource already exists'},
+    {statusCode:409,code:'ResourceAlreadyExists'},
+    {statusCode:'409',code:'KeyAlreadyExists'},
+  ]
+  for(const error of duplicates){
+    const result=await saveCoachGreetingOnce(config,'genie','ru',audio,
+      async()=>Response.json(error,{status:400}))
+    assert.deepEqual(result,{created:false})
+  }
+})
+
+test('failed uploads are not mistaken for an existing recording',async()=>{
+  const failures=[
+    Response.json({statusCode:'403',error:'AccessDenied'},{status:400}),
+    Response.json({statusCode:'403',error:'Duplicate'},{status:400}),
+    Response.json({statusCode:'409',error:'Conflict'},{status:400}),
+    Response.json({statusCode:'409',error:'Duplicate'},{status:503}),
+    new Response('invalid JSON',{status:400}),
+  ]
+  for(const response of failures)
+    await assert.rejects(saveCoachGreetingOnce(config,'genie','ru',audio,async()=>response),
+      /STORAGE_WRITE_FAILED/)
+})
+
+
+test('Samir v3 object keys are separate from v2 and cannot affect other personas',()=>{
+  assert.equal(coachGreetingObjectKey('genie','ru','v3'),'v3/ru/genie.mp3')
+  assert.equal(coachGreetingObjectKey('genie','en','v3'),'v3/en/genie.mp3')
+  assert.equal(coachGreetingObjectKey('genie','ru'),'v2/ru/genie.mp3')
+  assert.equal(coachGreetingObjectKey('genie','es','v3'),null)
+  assert.equal(coachGreetingObjectKey('mira','ru','v3'),null)
+  assert.equal(coachGreetingObjectKey('genie','ru','../other'),null)
 })

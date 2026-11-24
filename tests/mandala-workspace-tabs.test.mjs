@@ -71,30 +71,47 @@ const source=readFileSync(new URL('../components/mandala-free-video-studio.tsx',
 const workspaces=[null,'video','phrases','effects','practices','editor','pro'];
 function exercise(input,workspace,overrides={}){
  const ast=ts.createSourceFile('studio.tsx',input,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
- let handler,personalExportGuard;
+ let handler,personalExportGuard,storyRecovery,storySourceReport;
  const visit=n=>{
   if(ts.isVariableDeclaration(n)){
    if(n.name.getText(ast)==='startFromHero')handler=n.initializer;
    if(n.name.getText(ast)==='blockUnpricedPersonalExport')personalExportGuard=n.initializer;
+   if(n.name.getText(ast)==='revealPendingStoryApproval')storyRecovery=n.initializer;
   }
+  if(ts.isJsxAttribute(n)&&n.name.getText(ast)==='onSourceIssueChange')storySourceReport=n.initializer?.expression;
   ts.forEachChild(n,visit);
  };visit(ast);
- assert.ok(handler&&personalExportGuard,"execute the production pricing guard instead of mocking success");
- const js=ts.transpileModule('const blockUnpricedPersonalExport='+personalExportGuard.getText(ast)+';const startFromHero='+handler.getText(ast)+';startFromHero();',{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
- let active=workspace,queued=workspace,basicTab=null,renders=0,picks=0;const cover={open:false},frames=[],scrolls=[],notices=[];
- const state={recording:false,preparing:false,storySourcePending:false,hypnoAudioBusy:false,photoPending:false,phrasePending:false,narrationInvalid:false,locale:'ru',photoUrl:'blob:synthetic',backgroundOnly:false,photoConsent:false,extraTextChoice:null,montageTextMode:"standard",ideasProfileConfirmed:false,chosenIdeaGoal:null,audioNeedsAttachment:false,uploadedAudio:null,audioRights:false,source:'synthetic',...overrides};
+ assert.ok(handler&&personalExportGuard&&storyRecovery&&storySourceReport,"execute the production pricing and Story guards instead of mocking success");
+ const js=ts.transpileModule('const blockUnpricedPersonalExport='+personalExportGuard.getText(ast)+';const revealPendingStoryApproval='+storyRecovery.getText(ast)+';const reportStorySourceIssue='+storySourceReport.getText(ast)+';const startFromHero='+handler.getText(ast)+';startFromHero();({reportStorySourceIssue});',{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
+ let active=workspace,queued=workspace,basicTab=null,montagePanel=null,renders=0,picks=0;const cover={open:false},frames=[],scrolls=[],notices=[],storyFocus=[];
+ const state={recording:false,preparing:false,storySourcePending:false,storyMounted:true,storySourceIssue:'photos',mountStoryAfterNavigation:false,hypnoAudioBusy:false,photoPending:false,phrasePending:false,narrationInvalid:false,locale:'ru',photoUrl:'blob:synthetic',backgroundOnly:false,photoConsent:false,extraTextChoice:null,montageTextMode:"standard",ideasProfileConfirmed:false,chosenIdeaGoal:null,audioNeedsAttachment:false,uploadedAudio:null,audioRights:false,source:'synthetic',...overrides};
+ let storyMounted=state.storyMounted;const storyRecoveryPendingRef={current:false};
+ const storyControl=id=>({disabled:false,scrollIntoView(){},focus(){storyFocus.push(id);}});
+ const photoApproval=storyControl('photos'),storyChoice=storyControl('media'),storySettings=storyControl('duration');
  // Models only the source-defined workspace/display and native-details state,
  // not pixels or a real browser. React state commits at the frame boundary.
  const consent={scrollIntoView:()=>scrolls.push({open:cover.open,workspace:active,
    visible:cover.open&&(active==='video'||active==='editor')})};
- runInNewContext(js,{...state,storySourcePendingRef:{current:Boolean(state.storySourcePending)},canGenerate:true,preparingRef:{current:state.preparing},jobRef:{current:null},webCodecJobRef:{current:null},activeWorkspace:workspace,setActiveWorkspace:value=>{queued=value;},
-   setBasicPanelTab:value=>{basicTab=value;},setIdeasSubtab:()=>{},setMontagePanel:()=>{},setMontageStyleSettingsOpen:()=>{},setIntroPlaying:()=>{},setNotice:value=>notices.push(value),supportUi:{heroConsent:'Consent required'},audioUi:{needsAttach:'Attach audio'},ui:{audioRightsHelp:'Audio rights required'},onPickPhoto:()=>picks++,createVideo:()=>renders++,window:{requestAnimationFrame:cb=>frames.push(cb)},document:{querySelector:selector=>selector==='[data-video-cover-options]'?cover:selector==='[data-video-photo-consent]'?consent:{scrollIntoView(){}}}},{timeout:1000});
+ const runtime=runInNewContext(js,{...state,storySourcePendingRef:{current:Boolean(state.storySourcePending)},storyRecoveryPendingRef,storySourceIssueRef:{current:state.storySourceIssue},canGenerate:true,preparingRef:{current:state.preparing},jobRef:{current:null},webCodecJobRef:{current:null},activeWorkspace:workspace,setActiveWorkspace:value=>{queued=value;},
+   setBasicPanelTab:value=>{basicTab=value;},setIdeasSubtab:()=>{},setMontagePanel:value=>{montagePanel=value;},setMontageStyleSettingsOpen:()=>{},setIntroPlaying:()=>{},setNotice:value=>notices.push(value),supportUi:{heroConsent:'Consent required'},audioUi:{needsAttach:'Attach audio'},ui:{audioRightsHelp:'Audio rights required'},onPickPhoto:()=>picks++,createVideo:()=>renders++,window:{requestAnimationFrame:cb=>frames.push(cb)},document:{querySelector:selector=>{
+    if(selector==='[data-video-cover-options]')return cover;
+    if(selector==='[data-video-photo-consent]')return consent;
+    if(selector==='[data-video-auto-storyboard]')return storyMounted?{}:null;
+    if(selector==='[data-storyboard-apply-reference-photos]')return storyMounted&&state.storySourceIssue==='photos'?photoApproval:null;
+    if(selector==='[data-storyboard-retry-photos]')return null;
+    if(selector==='[data-storyboard-choose-another-story]')return storyMounted&&['media','review'].includes(state.storySourceIssue)?storyChoice:null;
+    if(selector==='[data-video-story-open-settings]')return storyMounted?storySettings:null;
+    return {scrollIntoView(){}};
+   }}},{timeout:1000});
+ // The real child callback runs after React commits the requested Story pane.
+ // An omitted mount deliberately leaves recovery waiting, with no fake media.
+ if(state.mountStoryAfterNavigation){active=queued;storyMounted=true;runtime.reportStorySourceIssue(state.storySourceIssue);}
  assert.equal(scrolls.length,0,'scroll must retain two-frame boundary');
  while(frames.length){active=queued;frames.shift()();}
  // A guarded handler may return before scheduling rAF; React still commits
  // the queued setState at the end of the event, including denied Ready navigation.
  active=queued;
- return {workspace:active,basicTab,open:cover.open,scrolls,notices,renders,picks};
+ return {workspace:active,basicTab,montagePanel,open:cover.open,scrolls,notices,renders,picks,storyFocus,storyWaiting:storyRecoveryPendingRef.current};
 }
 test("personalized +50 XP export is refused before local MP4 starts",()=>{
  for(const workspace of workspaces){
@@ -428,7 +445,30 @@ test('unapproved six-frame Story stays fail-closed even when Ready is invoked di
  const result=exercise(source,'ready',{storySourcePending:true,photoConsent:true});
  assert.equal(result.renders,0,'a previous forest background must not be encoded');
  assert.equal(result.workspace,'editor','return the user to Story for explicit photo approval');
+ assert.equal(result.montagePanel,'concept');
  assert.equal(result.open,false);
- assert.equal(result.notices.length,1);
- assert.match(result.notices[0],/Сначала примените шесть кадров/);
+ assert.equal(result.notices.filter(Boolean).length,1);
+ assert.match(result.notices.at(-1),/Использовать эти 6 фото в видео/);
+ assert.deepEqual(result.storyFocus,['photos']);
+ assert.equal(result.storyWaiting,false);
+});
+
+test('lazy Story recovery waits for the actual mounted source reason without encoding',()=>{
+ const pending=exercise(source,'ready',{storySourcePending:true,photoConsent:true,storyMounted:false});
+ assert.equal(pending.renders,0);
+ assert.equal(pending.workspace,'editor');
+ assert.equal(pending.montagePanel,'concept');
+ assert.equal(pending.storyWaiting,true);
+ assert.deepEqual(pending.notices.filter(Boolean),[],'do not claim missing media before Story loads');
+ assert.deepEqual(pending.storyFocus,[]);
+ for(const issue of ['photos','media','duration']){
+  const mounted=exercise(source,'ready',{storySourcePending:true,photoConsent:true,storyMounted:false,mountStoryAfterNavigation:true,storySourceIssue:issue});
+  assert.equal(mounted.renders,0,'source reporting never starts an encoder');
+  assert.equal(mounted.workspace,'editor');
+  assert.equal(mounted.montagePanel,'concept');
+  assert.equal(mounted.storyWaiting,false);
+  assert.deepEqual(mounted.storyFocus,[issue]);
+  assert.equal(mounted.notices.filter(Boolean).length,1);
+  assert.match(mounted.notices.at(-1),issue==='photos'?/Использовать эти 6 фото/:issue==='duration'?/30 секунд/:/нет полного набора кадров/);
+ }
 });

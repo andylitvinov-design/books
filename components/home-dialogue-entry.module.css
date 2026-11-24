@@ -631,3 +631,29 @@ background:linear-gradient(180deg,#f5e8d2,#123d36 420px,#103c36);border-radius:0
  .root .language summary{min-width:44px;width:44px;padding:0 2px;gap:1px}
  .root .language summary svg{width:11px;height:11px;flex:none}
 }
+
+/* SAMIR_FOLD_CLEARANCE_V4: measured RU 390px failure (methods 740, orb 729).
+   The portrait must never determine the grid's intrinsic height. Reclaim space
+   from margins and padding, not the readable text or 44px input/audio targets.
+   Keep the raised shared dock and the exact browser fold assertion unchanged. */
+@media(max-width:649px){
+ .heroContent{position:relative;min-height:180px;grid-template-columns:minmax(0,48%) minmax(0,52%);}
+ .heroContent>.heroPortrait{position:absolute;inset:0 auto 0 0;width:48%;height:100%;min-height:0;max-height:none;object-fit:cover;}
+ .heroContent>.heroStory{grid-column:2;min-height:180px;height:auto;padding:3px 1px 3px 2px;gap:3px;}
+ .hero h2.heroTitle{margin:0 0 4px;}
+ .hero h2.heroTitle::after{margin-top:2px;}
+ .hero .subtitle{margin-top:4px;}
+ .guideAudio{margin-top:0;min-height:44px;}
+ .composer{margin-top:2px;}
+ .speechDisclosure{margin:2px 1px 3px;padding:1px 3px;}
+ .focusGrid{margin-top:3px;}
+ .focusCard{min-height:100px;}
+ .focusPhoto{height:46px;flex:none;}
+ .focusCopy{padding-top:4px;padding-bottom:5px;}
+ .talkLink{margin:3px auto 2px;min-height:44px;}
+ .howWorks{padding-top:3px;}
+ .howWorks h3{margin-bottom:5px;}
+ .journeyCard>strong{margin-top:10px;}
+ .methods{margin-top:5px;padding:6px 8px;}
+ .methods h3{margin-bottom:4px;}
+}
