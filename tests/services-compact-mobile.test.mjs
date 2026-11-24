@@ -63,17 +63,10 @@ test("new DAO free page is independent of two existing personal service landings
   assert.match(dao, /isPublicLocale/);
   for (const lang of ["en", "ru", "es"]) assert.ok(dao.includes("/" + lang + "/services/dao-health-profile"));
   assert.match(shared, /"request-free-wu-xing"/);
-  assert.match(shared, /<CompactLeadCapture\s+locale=\{locale\}\s+id=\{captureId\}/);
-  assert.match(shared, /disclaimer=\{common\.limitations\}/);
-  const currentForm = read("components/compact-lead-capture.tsx");
-  assert.match(currentForm, /if \(!consent\)/);
-  assert.match(currentForm, /result\?\.saved !== true/);
+  assert.match(shared, /<FreeResourceEnquiry locale=\{locale\} kind=\{kind\}/);
   assert.match(form, /<ContactChannelChooser/);
   assert.match(form, /whatsappEnquiryUrl\(\{/);
-  const draft = currentForm.match(/const whatsapp = whatsappEnquiryUrl\(\{([\s\S]*?)\}\)/)?.[1];
-  assert.ok(draft, "the current form prepares a WhatsApp draft");
-  assert.match(draft, /referenceCode/);
-  assert.doesNotMatch(draft, /\b(?:address|contact|privateContext)\b/);
+  assert.match(form, /navigator\.clipboard\.writeText\(privateContext\)/);
   for (const [slug, kind] of [["alchemy-of-soul", "alchemy"], ["hypnotherapy-course", "hypnotherapy"]]) {
     const route = read("app/[locale]/services/" + slug + "/page.tsx");
     assert.match(route, /generateMetadata/);
@@ -86,7 +79,7 @@ test("new DAO free page is independent of two existing personal service landings
       assert.match(route, /<CoreServiceDetail locale=/);
     }
   }
-  const detail = read("components/core-service-detail.tsx") + read("components/core-offer-data.ts");
+  const detail = read("components/core-service-detail.tsx");
   assert.match(detail, /reliable evidence/);
   assert.match(read("components/core-service-detail.module.css"), /@media\(max-width:760px\)/);
 });

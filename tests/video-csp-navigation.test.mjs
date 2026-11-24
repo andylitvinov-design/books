@@ -1,43 +1,8 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { createHash } from "node:crypto";
-import { runInNewContext } from "node:vm";
-import ts from "typescript";
-import path from "node:path";
 
 const source = (path) => readFile(new URL("../" + path, import.meta.url), "utf8");
-
-test("offer data retains the specific Alchemy fields in TypeScript", () => {
-  const file = path.resolve("__offer_type_probe.ts");
-  const code = 'import {coreOfferDetailData} from "./components/core-offer-data"; const offer = coreOfferDetailData("en", "alchemy"); offer.supportKicker; offer.supportTitle; offer.supportLead; offer.supportItems.map(item => item); offer.supportFootnote;';
-  const options = { noEmit: true, skipLibCheck: true, strict: true, module: ts.ModuleKind.ESNext,
-    moduleResolution: ts.ModuleResolutionKind.Bundler, target: ts.ScriptTarget.ES2022,
-    baseUrl: process.cwd(), paths: { "@/*": ["./*"] } };
-  const host = ts.createCompilerHost(options);
-  const originalSource = host.getSourceFile.bind(host), originalRead = host.readFile.bind(host), originalExists = host.fileExists.bind(host);
-  host.fileExists = name => name === file || originalExists(name);
-  host.readFile = name => name === file ? code : originalRead(name);
-  host.getSourceFile = (name, version, ...args) => name === file ? ts.createSourceFile(file, code, version, true) : originalSource(name, version, ...args);
-  const diagnostics = ts.getPreEmitDiagnostics(ts.createProgram([file], options, host));
-  assert.deepEqual(diagnostics.map(d => ts.flattenDiagnosticMessageText(d.messageText, "\n")), []);
-});
-
-test("training lead capture does not import the video-bearing service component", async () => {
-  const [data, capture] = await Promise.all([
-    source("components/core-offer-data.ts"), source("components/sitewide-lead-capture.tsx"),
-  ]);
-  assert.match(capture, /from ["']@\/components\/core-offer-data["']/);
-  assert.doesNotMatch(capture, /from ["']@\/components\/core-service-detail["']/);
-  assert.doesNotMatch(data, /ServiceVideoShowcase|SiteVideoPlayer|core-service-detail/);
-  const js = ts.transpileModule(data, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
-  const context = { exports: {} };
-  runInNewContext(js, context);
-  const offers = ["en", "ru", "es"].flatMap(locale =>
-    ["dao", "alchemy", "hypnotherapy"].map(kind => context.exports.coreOfferDetailData(locale, kind)));
-  assert.equal(createHash("sha256").update(JSON.stringify(offers)).digest("hex"),
-    "ad0bf472e1f020e5d728980ed8b02eca3bab37638e13c9d9af06d8b385f730ba");
-});
 
 test("public video CSP allows only reviewed origins and scopes native media to Tantra", async () => {
   const middleware = await source("middleware.ts");

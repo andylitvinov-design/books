@@ -148,15 +148,18 @@ try{
   assert.equal(await guide.locator('[data-guide-weeks] button').count(),7)
   assert.equal(await guide.locator('[data-guide-levels] button').count(),4)
   assert.equal(await guide.locator('[data-guide-steps] button').count(),7)
+  assert.equal(await page.locator('[data-daybook-inline-help]').isVisible(),true)
+  assert.equal(await page.locator('main > nav').last().locator('button').count(),4)
   assert.equal(await action('complete').isDisabled(),true,'An empty step must not be completable')
 
-  for(const width of [320,390,430,1024]){
+  for(const width of [320,354,390,430,768,1024]){
    await page.setViewportSize({width,height:844})
    const geometry=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,width:document.documentElement.clientWidth}))
    assert.ok(geometry.scroll<=geometry.width+1,`${locale}/${width}: document overflow ${JSON.stringify(geometry)}`)
    for(const rail of ['weeks','levels','steps']){
     const boxes=await guide.locator('[data-guide-'+rail+'] button').evaluateAll(nodes=>nodes.map(node=>{const r=node.getBoundingClientRect();return {y:r.y,height:r.height,width:r.width}}))
     assert.ok(boxes.every(box=>Math.abs(box.y-boxes[0].y)<=1),`${locale}/${width}/${rail}: rail wraps`)
+    if(width>=390){const railSize=await guide.locator('[data-guide-'+rail+']').evaluate(node=>({scroll:node.scrollWidth,client:node.clientWidth}));assert.ok(railSize.scroll<=railSize.client+1,`${locale}/${width}/${rail}: all controls should fit`)}
     assert.ok(boxes.every(box=>box.height>=44&&box.width>=44),`${locale}/${width}/${rail}: target smaller than 44 CSS pixels`)
    }
    const sizes=await task.locator('input,textarea,select').evaluateAll(nodes=>nodes.map(node=>parseFloat(getComputedStyle(node).fontSize)))
@@ -300,7 +303,7 @@ try{
   // v2 questionnaire, not seeded into the guide fixture or injected into state.
   const vc=vectorCopy[locale],beforeVectorRecords=[...records.entries()],beforeVectorWrites=writes.length
   const nav=page.locator('main > nav'),wizard=page.locator('[data-daybook-vector-start]')
-  await nav.getByRole('button',{name:vc.goals,exact:true}).click()
+  await nav.getByRole('button',{name:({en:'My goals',ru:'Мои цели',es:'Mis metas'})[locale],exact:true}).click()
   await page.locator('#daybook-goals').getByRole('button',{name:vc.new,exact:true}).click()
   await wizard.waitFor({state:'visible'})
   await wizard.locator('input[type=radio][value=work]').check()
@@ -366,7 +369,7 @@ try{
   assert.equal(await guide.count(),0,'Signed-out page must not mount a private guide')
   assert.deepEqual(unexpectedWrites,[],'No booking, payment or other provider write is authorized by this fixture')
   assert.deepEqual(errors,[],`${locale}: browser runtime errors`)
-  receipts.push({locale,engine,widths:[320,390,430,1024],weeks:7,levels:4,steps:7,reload:true,goalIsolation:true,draftRetention:true,legacyPreserved:true,journalDeepLink:true,clearSavedAnswers:true,stageZeroV2ToGuide:{createdThroughUI:true,goalReadback:true,availableWithoutReload:true,selectedActualId:true,linkedAnswerReadback:true,reload:true,goalWrites:goalWrites.length},accountChangeWipe:true,retry:locale==='ru',writes:writes.length})
+  receipts.push({locale,engine,widths:[320,354,390,430,768,1024],weeks:7,levels:4,steps:7,reload:true,goalIsolation:true,draftRetention:true,legacyPreserved:true,journalDeepLink:true,clearSavedAnswers:true,stageZeroV2ToGuide:{createdThroughUI:true,goalReadback:true,availableWithoutReload:true,selectedActualId:true,linkedAnswerReadback:true,reload:true,goalWrites:goalWrites.length},accountChangeWipe:true,retry:locale==='ru',writes:writes.length})
   console.log(JSON.stringify(receipts.at(-1)))
   await context.close()
  }

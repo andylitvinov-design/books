@@ -61,7 +61,13 @@ test('UI retains protected chat and history while exposing visible selectable vo
  assert.match(landing,/data-hh-ai-intro-play onClick=\{start\}/)
  assert.match(chat,/src=\{persona.image\|\|/)
  assert.match(chat,/voice.setVoiceId\(selected\)/)
- assert.match(chat,/personaId=\{persona.id\}/)
+ // The unified Messenger removed the redundant animated avatar from its
+ // composer. Its actual voice controller still uses the selected persona.
+ assert.match(chat,/const \{persona\}=useAliPersona\(\)/)
+ assert.match(chat,/ordered\[persona\.voice\.slot%ordered\.length\]\?\.voiceURI/)
+ assert.match(chat,/voice\.setRate\(persona\.voice\.rate\)/)
+ assert.match(chat,/aliGeminiRequest\(\{message:text,locale:turnLocale,personaId:persona\.id,/)
+ assert.match(landing,/--hh-ai-persona-image/)
  const avatar=source('components/app/emotional-avatar.tsx')
  assert.match(avatar,/getAliPersona\(personaId\)/)
  assert.match(avatar,/rate:persona\?\.voice\.rate/)
@@ -141,7 +147,7 @@ test('mobile AI guide picker keeps all four cards compact and voice states truth
  assert.match(audio,/onPlaying\(false,result\)/)
  assert.match(audio,/onFinish\('error'\)/)
  assert.match(audio,/method:'HEAD'/)
- assert.match(audio,/timer=window\.setTimeout\(fallback,24000\)/)
+ assert.match(audio,/timer=window\.setTimeout\(fail,24000\)/)
  assert.doesNotMatch(audio,/audio\.play\(\)\s*;\s*speech\.speak/)
 });
 
@@ -151,7 +157,7 @@ test('iPhone always prefers a real audible MP3 in the original user tap',()=>{
  assert.match(audio,/audio\.muted=false/)
  assert.match(audio,/audio\.volume=1/)
  assert.match(audio,/const attempt=audio\.play\(\)/)
- assert.match(audio,/naturalStatus==='unavailable'&&hasDevice/)
+ assert.doesNotMatch(audio,/naturalStatus/)
  assert.match(audio,/audio\.onplaying=\(\)=>/)
  assert.match(route,/Buffer\.from\(await upstream\.arrayBuffer\(\)\)/)
  assert.match(route,/'Content-Length':String\(audio.length\)/)
@@ -227,11 +233,68 @@ test('Ali Free Gemini voices preserve the owner-selected RU/EN identities after 
  assert.doesNotMatch(route,/gemini_tts_paid|s2\.1-pro['"]/)
 });
 
-test('a temporary voice API failure never strands Safari on silent device TTS',()=>{
- const audio=source('components/app/ali-persona-audio.js')
- assert.match(audio,/const isIos=\/iPad\|iPhone\|iPod\//)
- assert.match(audio,/naturalStatus==='unavailable'&&hasDevice&&!isIos/)
- assert.match(audio,/naturalStatus='unknown'/)
- assert.match(audio,/if\(hasDevice&&!isIos\)startDevice\(\)/)
- assert.match(audio,/else finish\('error'\)/)
-});
+test('failed HEAD is retried and never cached across selected voice requests',async t=>{
+ const code=source('components/app/ali-persona-audio.js').replace(
+  "'@/lib/holistic-support/ali-personas.mjs'",
+  JSON.stringify(new URL('../lib/holistic-support/ali-personas.mjs',import.meta.url).href))
+ const {prepareAliNaturalVoice}=await import('data:text/javascript,'+encodeURIComponent(code))
+ const previousWindow=globalThis.window,previousFetch=globalThis.fetch
+ t.after(()=>{globalThis.window=previousWindow;globalThis.fetch=previousFetch})
+ globalThis.window={setTimeout,clearTimeout}
+ const calls=[]
+ const answers=[false,false,true,false,true]
+ globalThis.fetch=async(url,opts)=>{calls.push([url,opts.method,opts.cache]);return {ok:answers.shift()}}
+ assert.equal(await prepareAliNaturalVoice('mira','ru'),false)
+ assert.equal(await prepareAliNaturalVoice('mira','ru'),true)
+ assert.equal(await prepareAliNaturalVoice('sofia','es'),true)
+ assert.deepEqual(calls,[
+  ['/api/ali/voice/ru/mira','HEAD','no-store'],
+  ['/api/ali/voice/ru/mira','HEAD','no-store'],
+  ['/api/ali/voice/ru/mira','HEAD','no-store'],
+  ['/api/ali/voice/es/sofia','HEAD','no-store'],
+  ['/api/ali/voice/es/sofia','HEAD','no-store'],
+ ])
+ const route=source('app/api/ali/voice/[locale]/[persona]/route.js')
+ assert.match(route.slice(route.indexOf('export async function HEAD'),route.indexOf('export async function GET')),/'Cache-Control':'no-store'/)
+})
+
+test('iPhone retries media once, then device voice; next Play returns to natural audio',async t=>{
+ const code=source('components/app/ali-persona-audio.js').replace(
+  "'@/lib/holistic-support/ali-personas.mjs'",
+  JSON.stringify(new URL('../lib/holistic-support/ali-personas.mjs',import.meta.url).href))
+ const {playAliPersonaAudio,stopAliPersonaAudio}=await import('data:text/javascript,'+encodeURIComponent(code)+'#ios')
+ const previousWindow=globalThis.window,previousFetch=globalThis.fetch
+ t.after(()=>{stopAliPersonaAudio();globalThis.window=previousWindow;globalThis.fetch=previousFetch})
+ let attempts=0,speechCalls=0,mediaReady=false
+ const phases=[]
+ class Audio{
+  play(){attempts++;if(mediaReady){this.onplaying?.();return Promise.resolve()}
+   return Promise.reject(Error('transient'))}
+  pause(){} removeAttribute(){} load(){}
+ }
+ class Utterance{constructor(text){this.text=text}}
+ globalThis.window={Audio,SpeechSynthesisUtterance:Utterance,navigator:{userAgent:'iPhone'},
+  setTimeout,clearTimeout,speechSynthesis:{getVoices:()=>[],speak(utterance){
+   speechCalls++;assert.equal(utterance.lang,'ru-RU');utterance.onstart?.();utterance.onend?.()
+  }}}
+ globalThis.fetch=async()=>({ok:mediaReady})
+ playAliPersonaAudio('mira','ru',(playing,phase)=>phases.push(phase))
+ assert.equal(attempts,1,'first Play is synchronous')
+ await new Promise(resolve=>setImmediate(resolve))
+ assert.equal(attempts,2)
+ assert.equal(speechCalls,1)
+ assert.deepEqual(phases,['loading','playing','ended'])
+ mediaReady=true
+ playAliPersonaAudio('mira','ru',(playing,phase)=>phases.push(phase))
+ assert.equal(attempts,3)
+ assert.equal(phases.at(-1),'playing')
+ assert.equal(speechCalls,1)
+ stopAliPersonaAudio()
+})
+
+test('same-origin microphone permission covers coach and dictation entry routes',()=>{
+ const config=source('next.config.ts')
+ for(const path of ['/','/ru','/es','/en/my-coach','/ru/coaching/sessions','/es/coaching/sessions','/es/app/coaching'])
+  assert.ok(config.includes('"'+path+'"'),path)
+ assert.ok(config.includes('camera=(), microphone=(self), geolocation=()'))
+})
