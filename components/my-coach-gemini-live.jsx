@@ -12,7 +12,7 @@ import {
   geminiLiveAudioRms,geminiLiveSocketUrl,geminiLiveSetupMessage,
   geminiLivePcmMessage,geminiLiveTextMessage,geminiLiveStartMessage,
   geminiLiveContextMessage,geminiLiveDirectorMessage,readGeminiLiveServerMessage,
-  appendGeminiLiveTranscript,
+  appendGeminiLiveTranscript,geminiLiveContinueMessage,geminiLiveLocalRecovery,
 } from '@/lib/coaching/gemini-live-transport.mjs'
 
 const ui={
@@ -112,7 +112,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   onMicLevel,onInputInterim,onInputFinal,onOutputInterim,onOutputFinal,
   onInterrupted,onDirectorProgress,onOpeningProgress,onNotice,
   openingPrior=null,allowOpeningPrior=false,
-  liveContextAccess='',contextRevision=0,
+  liveContextAccess='',contextRevision=0,localRecoveryTurns=[],onUnconfirmedInput,
 },ref){
   const lang=safeLocale(locale),t=ui[lang]
   const [phase,setPhase]=useState('idle')
@@ -124,7 +124,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     elapsedSeconds,onSessionStart,onVoiceStateChange,onMicLevel,onInputInterim,
     onInputFinal,onOutputInterim,onOutputFinal,onInterrupted,
     onDirectorProgress,onOpeningProgress,onNotice,openingPrior,allowOpeningPrior,
-    liveContextAccess,contextRevision}
+    liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput}
 
   const notify=text=>{
     setNotice(text)
@@ -184,6 +184,12 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     starting.current=false
     const r=runtime.current
     runtime.current=null
+    // Keep partial recognition as an editable draft, never as confirmed client evidence.
+    // A truncated reply remains visible but is not counted as heard.
+    if(r&&!r.ended){
+      preserveUnconfirmedInput(r)
+      if(r.outputText){r.interrupted=true;commitOutput(r)}
+    }
     teardown(r)
     setAudioNeedsGesture(false)
     phaseChange('idle')
@@ -257,6 +263,12 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
         }
       }
     }catch{/* Ignore failed evidence check; never promote unverified model speech. */}
+  }
+  function preserveUnconfirmedInput(r){
+    const text=audioTranscription(r.inputText)
+    r.inputText=''
+    propsRef.current.onInputInterim?.('')
+    if(text)propsRef.current.onUnconfirmedInput?.(text)
   }
   function commitInput(r){
     const value=audioTranscription(r.inputText)
@@ -544,7 +556,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       // consent, name or archived memory; do not repeat it on reconnect.
       if(!r.introSent){
         r.introSent=true
-        if(!sendSocket(r,geminiLiveStartMessage())){notify(t.failure);stop();return}
+        if(!sendSocket(r,r.continuing?geminiLiveContinueMessage():geminiLiveStartMessage())){notify(t.failure);stop();return}
         phaseChange('thinking')
         r.greetingTimer=setTimeout(()=>{
           if(!r.ended&&!r.firstAudio)notify(t.greetingLate)
@@ -719,7 +731,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       if(!denied&&r.reconnects<3&&r.resumeHandle&&r.stream?.active!==false&&
          Date.parse(r.liveToken?.expiresAt)>Date.now()){
         // A partial ASR fragment cannot become the client's next answer/name.
-        r.inputText='';propsRef.current.onInputInterim?.('')
+        preserveUnconfirmedInput(r)
         if(r.modelTurnComplete&&(r.player?.playing||r.pendingAudio?.length)){
           r.resumeAfterDrain=true
           return
@@ -851,8 +863,10 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       restoreCoachIos27LiveDuplex(navigator)
       notify(t.permission);return false
     }
+    const recovery=geminiLiveLocalRecovery(p.localRecoveryTurns)
     const r={context,stream:null,source:null,processor:null,sink:null,
-      socket:null,ready:false,ended:false,history:[],openingHistory:[],inputText:'',outputText:'',
+      socket:null,ready:false,ended:false,history:recovery.history,openingHistory:recovery.openingHistory,
+      continuing:recovery.continuing,inputText:'',outputText:'',
       speaking:false,interrupted:false,resumeHandle:null,
       modelTurnComplete:false,hadAudio:false,outputWithoutAudio:false,
       introSent:false,sessionStarted:false,firstAudio:false,greetingTimer:null,

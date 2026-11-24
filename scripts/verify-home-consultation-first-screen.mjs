@@ -72,7 +72,10 @@ async function verifyDictation(page,form,marker,calls,baseText){
  await phase.waitFor({state:"visible",timeout:10000});
  assert.equal(await panel.getByRole("button",{name:"Распознать запись",exact:true}).isEnabled(),true);
  await panel.getByRole("button",{name:"Распознать запись",exact:true}).click();
- await mic.waitFor({state:"visible",timeout:15000});
+ try{await mic.waitFor({state:"visible",timeout:15000});}catch(error){
+  console.error("dictation confirm diagnostic",{requests:calls.count-initialCalls,fixture:await page.evaluate(()=>({stats:window.__hhDictationQA,hidden:document.hidden,phase:document.querySelector("[data-hh-dictation-phase]")?.getAttribute("data-hh-dictation-phase"),alert:document.querySelector("[data-hh-dictation-active] [role=alert]")?.textContent}))});
+  throw error;
+ }
  assert.equal(calls.count,initialCalls+1,"one explicit recording upload");
  assert.equal(await input.inputValue(),baseText+" Я хочу больше денег","transcription appends editable Russian text");
  const stats=await page.evaluate(()=>window.__hhDictationQA);
@@ -90,7 +93,7 @@ for(const engine of [chromium,webkit]){
    ["es","/es",["Claridad y alivio del estrés","Alcanzar mi meta","Apoyo empresarial"]]
   ]){
    for(const width of [320,354,390,430]){
-    const page=await browser.newPage({viewport:{width,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true,reducedMotion:"reduce"});
+    const page=await browser.newPage({viewport:{width,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true,reducedMotion:"reduce",serviceWorkers:"block"});
     const name=engine.name()+":"+locale+":"+width;const errors=[];
     page.on("pageerror",e=>errors.push(e.message.slice(0,200)));
     page.on("console",m=>{if(m.type()==="error")errors.push(m.text().slice(0,200))});
