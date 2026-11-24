@@ -334,7 +334,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
     {id:"strategy",label:screen.strategy,detail:screen.strategy,prompt:screen.strategyPrompt,image:"energy.webp"},
     {id:"team",label:screen.team,detail:screen.team,prompt:screen.teamPrompt,image:"love.webp"},
   ];
-  const picture=persona.image;
+  const picture=persona.id==="alex"?"/images/holistic-house/ali-inner-alchemist-hero.webp":persona.image;
   const chatRoute="/"+locale+"/app/messages?section=ai";
   const ideasRoute="/"+locale+(mode==="business"?"/explore/business":"/services/free-situation-review");
   const supportRoute="/"+locale+(mode==="business"?"/services#service-group-business":"/services/free-consultation");
@@ -347,9 +347,10 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
   } as const;
   const journeyLabels={
     ru:{intro:"Твой ИИ-проводник к важной цели.",welcome:"Давай вместе разберёмся, чего ты хочешь, где твоя сила и какой шаг приведёт тебя ближе к желаемому.",listen:"Послушать моё приветствие",prompt:"Расскажи, чего ты хочешь или что сейчас мешает…",find:"Помоги разобраться",findDetail:"Разберём твою ситуацию и определим, что важно.",have:"У меня уже есть цель",haveDetail:"Наметим путь и следующий реальный шаг.",talk:"Давай просто поговорим",journey:"7 шагов к твоей цели",sub:"Выбери этап или начни разговор с Самиром",methods:"В нашей работе мы используем:",tools:["ИИ-коучи","Специалисты","Видео","Тесты","Практики"],findPrompt:"Помоги мне разобраться в ситуации и понять свои желания.",havePrompt:"У меня уже есть цель. Помоги её прояснить и составить план.",talkPrompt:"Мне хочется просто поговорить. Поддержи меня в спокойном разговоре.",stagePrompt:"Хочу начать этап",send:"Отправить сообщение Самиру",listenOn:"Воспроизвести приветствие",photo:"Открыть чат и добавить фото",more:"Открыть вложения в чате",clear:"Очистить сообщение",privacy:"Начать можно бесплатно без регистрации. Сохранение памяти — только с разрешения."},
-    en:{intro:"Your AI guide to a meaningful goal.",welcome:"Let's find out what you want, discover your strengths and choose a practical next step.",listen:"Listen to my greeting",prompt:"Tell me what you want or what is holding you back…",find:"Help me figure it out",findDetail:"Understand your situation and what matters.",have:"I already have a goal",haveDetail:"Find a path and the next real step.",talk:"Let's just talk",journey:"7 steps to your goal",sub:"Pick a step or let Samir guide you",methods:"What we use to help:",tools:["AI coaches","Specialists","Videos","Tests","Practices"],findPrompt:"Help me understand my situation and what I really want.",havePrompt:"I already have a goal. Help me clarify it and make a plan.",talkPrompt:"I would just like to talk. Please support me gently.",stagePrompt:"I want to work on step",send:"Send a message to Samir",listenOn:"Play my greeting",photo:"Open chat to add a photo",more:"Open chat attachments",clear:"Clear message",privacy:"Start free without signing in. Long-term memory requires your permission."},
+    en:{intro:"Your AI guide to a meaningful goal.",welcome:"Let's discover what you want, find your strengths and choose your next step.",listen:"Listen to my greeting",prompt:"Tell me what you want or what is holding you back…",find:"Help me figure it out",findDetail:"Understand yourself and what matters.",have:"I already have a goal",haveDetail:"Make a plan and move forward.",talk:"Let's just talk",journey:"7 steps to your goal",sub:"Pick a step or let Samir guide you",methods:"What we use to help:",tools:["AI coaches","Specialists","Videos","Tests","Practices"],findPrompt:"Help me understand my situation and what I really want.",havePrompt:"I already have a goal. Help me clarify it and make a plan.",talkPrompt:"I would just like to talk. Please support me gently.",stagePrompt:"I want to work on step",send:"Send a message to Samir",listenOn:"Play my greeting",photo:"Open chat to add a photo",more:"Open chat attachments",clear:"Clear message",privacy:"Start free without signing in. Long-term memory requires your permission."},
     es:{intro:"Tu guía de IA hacia una meta importante.",welcome:"Descubramos lo que quieres, dónde está tu fuerza y qué paso puedes dar ahora.",listen:"Escucha mi bienvenida",prompt:"Cuéntame qué deseas o qué te está frenando…",find:"Ayúdame a entender",findDetail:"Exploremos tu situación y prioridades.",have:"Ya tengo una meta",haveDetail:"Definamos el camino y el siguiente paso.",talk:"Solo quiero hablar",journey:"7 pasos hacia tu meta",sub:"Elige un paso o deja que Samir te guíe",methods:"Trabajamos con:",tools:["Coaches IA","Especialistas","Vídeos","Tests","Prácticas"],findPrompt:"Ayúdame a entender mi situación y lo que deseo.",havePrompt:"Ya tengo una meta. Ayúdame a aclararla y crear un plan.",talkPrompt:"Solo quiero hablar contigo y recibir apoyo.",stagePrompt:"Quiero trabajar en el paso",send:"Enviar mensaje a Samir",listenOn:"Reproducir bienvenida",photo:"Abrir chat para añadir foto",more:"Abrir archivos adjuntos",clear:"Borrar mensaje",privacy:"Empieza gratis sin registrarte. Guardamos memoria solo con tu permiso."}
   } as const;
+  const stageShortLabels={ru:["Найти цель","Зажечь желание","Открыть силу","План пути","Преодолеть страхи","Новые возможности","Ускорить движение"],en:["Find goal","Ignite desire","Find strength","Build path","Face fears","See options","Move ahead"],es:["Hallar meta","Crear deseo","Más fuerza","Trazar ruta","Superar miedos","Ver opciones","Avanzar"]} as const;
   const msg=journeyLabels[locale];
   const stepIcons=[Compass,Flame,Flower2,ClipboardList,Shield,Sprout,ChevronsRight] as const;
   const methodIcons=[UsersRound,GraduationCap,Play,BarChart3,Flower2] as const;
@@ -387,7 +388,7 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
     <div className={styles.hero} data-home-dialogue-hero>
       <div className={styles.scene} aria-hidden="true"/>
       <div className={styles.heroContent} data-home-ali-persona={persona.id}>
-        <img className={styles.heroPortrait} src={picture} width={530} height={480} loading="eager" fetchPriority="high" alt={locale==="ru"?"Самир — ИИ-проводник":locale==="es"?"Samir, guía de IA":"Samir, AI guide"}/>
+        <img className={styles.heroPortrait} src={picture} width={530} height={480} loading="eager" fetchPriority="high" alt={greetingName}/>
         <div className={styles.heroStory}>
           <div className={styles.heroMessage}>
             <div className={styles.kicker}><Sparkles size={15} aria-hidden="true"/> AI GUIDE</div>
@@ -418,11 +419,11 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
       <div className={styles.composerButtons}>
         
         
-        <button type="button" className={styles.microphone} data-home-intent-mic aria-pressed={listening} aria-label={listening?t.stopMic:t.mic} onClick={dictate}><Mic size={23} aria-hidden="true"/></button>
+        <button type="button" className={styles.microphone} data-home-intent-mic aria-describedby="home-voice-disclosure" aria-pressed={listening} aria-label={listening?t.stopMic:t.mic} onClick={dictate}><Mic size={23} aria-hidden="true"/></button>
         <button type="submit" className={styles.send} data-home-send-to-ali aria-label={msg.send} title={msg.send}><ArrowUp size={21} aria-hidden="true"/></button>
       </div>
     </form>
-    <p className={styles.speechDisclosure} data-home-voice-disclosure>{t.speechPrivacy}</p>
+    <p id="home-voice-disclosure" className={styles.speechDisclosure} data-home-voice-disclosure>{t.speechPrivacy}</p>
     {error&&<p className={styles.error} role="alert">{error}</p>}
     {voiceMessage&&<p className={styles.voiceStatus} role="status">{voiceMessage}</p>}
     <p className={styles.privacy}>{msg.privacy}</p>
@@ -430,13 +431,13 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
     <div className={styles.focusGrid} role="group" aria-label={msg.journey} data-home-focus-grid>
       <button type="button" className={styles.focusCard} data-home-intent-option="understand" data-home-free-review
         onClick={()=>openGoalIntent(msg.findPrompt)}>
-        <img className={styles.focusPhoto} src="/images/holistic-house/samir-goal-sunrise.svg" width={400} height={160} alt="" loading="lazy"/>
+        <img className={styles.focusPhoto} src="/videos/holistic-house/film-collection-v2/wealth-sunrise.jpg" width={400} height={160} alt="" loading="lazy"/>
         <span className={styles.focusCopy}><Route size={24} aria-hidden="true"/><strong>{msg.find}</strong><small>{msg.findDetail}</small></span>
         <ArrowRight className={styles.focusArrow} size={20} aria-hidden="true"/>
       </button>
       <button type="button" className={styles.focusCard} data-home-intent-option="goal" data-home-request-session
         onClick={()=>openGoalIntent(msg.havePrompt)}>
-        <img className={styles.focusPhoto} src="/images/holistic-house/samir-goal-sailboat.svg" width={400} height={160} alt="" loading="lazy"/>
+        <img className={styles.focusPhoto} src="/videos/holistic-house/film-collection-v3/sun-warm-ocean-dawn.jpg" width={400} height={160} alt="" loading="lazy"/>
         <span className={styles.focusCopy}><CheckCircle2 size={24} aria-hidden="true"/><strong>{msg.have}</strong><small>{msg.haveDetail}</small></span>
         <ArrowRight className={styles.focusArrow} size={20} aria-hidden="true"/>
       </button>
@@ -453,12 +454,12 @@ export function HomeDialogueEntry({locale}: {locale:PublicLocale}) {
             aria-label={String(index+1)+". "+step[0]+". "+step[1]}
             onClick={()=>openGoalIntent(msg.stagePrompt+" "+(index+1)+": "+step[0]+". "+step[1])}>
             <span className={styles.journeyPhoto}><StepIcon size={25} aria-hidden="true"/><b>{index+1}</b></span>
-            <strong>{step[0]}</strong>
+            <strong>{stageShortLabels[locale][index]}</strong>
           </button>;
         })}
       </div>
     </section>
-    <section className={styles.methods} aria-label={msg.methods}>
+    <section className={styles.methods} data-home-methods aria-label={msg.methods}>
       <h3><Sparkles size={20} aria-hidden="true"/>{msg.methods}</h3>
       <div className={styles.methodGrid}>
         {msg.tools.map((name,index)=>{

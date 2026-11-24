@@ -168,7 +168,7 @@ test('non-persisted pageshow does not trigger foreign-entry recovery', () => {
   assert.deepEqual(f.replacements, []);
 });
 
-function parserHistoryFixture(requestPath, addressPath) {
+function parserHistoryFixture(requestPath, addressPath, readyState = 'loading') {
   const calls = [], listeners = {};
   let at = new URL(addressPath, 'https://example.test');
   const location = {
@@ -187,7 +187,7 @@ function parserHistoryFixture(requestPath, addressPath) {
     addEventListener(type, cb) { listeners[type] = cb; },
     removeEventListener(type) { delete listeners[type]; },
   };
-  const document = { visibilityState: 'visible' };
+  const document = { visibilityState: 'visible', readyState };
   runInNewContext(CSP_PREHYDRATION_SCRIPT, { window, document, URL });
   return { window, calls, listeners, navigate(url) { at = new URL(url, at); } };
 }
@@ -200,7 +200,7 @@ test('rapid WebKit history traversal before parser-time script interrupts stale 
   assert.equal(f.listeners.popstate, undefined, 'No hydration/router guards may bootstrap on a stale document');
 });
 
-test('parser-time popstate stops incomplete React hydration before fresh document replace', () => {
+test('parser-time popstate stops a still-loading document before fresh document replace', () => {
   const f = parserHistoryFixture('/en/academy/reiki/tantra-reiki', '/en/academy/reiki/tantra-reiki');
   assert.deepEqual(f.calls, []);
   f.navigate('/en/about');
@@ -208,6 +208,26 @@ test('parser-time popstate stops incomplete React hydration before fresh documen
   assert.deepEqual(f.calls, ['block-router', 'stop', 'replace:https://example.test/en/about']);
   assert.equal(f.window.__cspPreHydration.destination, 'https://example.test/en/about');
 });
+
+for (const readyState of ['interactive', 'complete']) {
+  test(`${readyState} prehydration popstate preserves the destination without aborting runtime chunks`, () => {
+    const f = parserHistoryFixture('/en/about', '/en/about', readyState);
+    assert.deepEqual(f.calls, []);
+    f.navigate('/en/academy/reiki/tantra-reiki');
+    f.listeners.popstate({ stopImmediatePropagation() { f.calls.push('block-router'); } });
+    assert.deepEqual(f.calls, ['block-router', 'replace:https://example.test/en/academy/reiki/tantra-reiki']);
+    assert.equal(f.window.__hhOptionalReadsDeparting, true);
+    assert.equal(f.window.__cspPreHydration.destination, 'https://example.test/en/academy/reiki/tantra-reiki');
+  });
+
+  test(`${readyState} document whose URL already raced still stops stale HTML before startup`, () => {
+    const f = parserHistoryFixture('/en/academy/reiki/tantra-reiki', '/en/about', readyState);
+    assert.deepEqual(f.calls, ['stop', 'replace:https://example.test/en/about']);
+    assert.equal(f.window.__hhOptionalReadsDeparting, true);
+    assert.equal(f.window.__cspPreHydration.destination, 'https://example.test/en/about');
+    assert.equal(f.listeners.popstate, undefined);
+  });
+}
 
 test('normal parser-time documents and hash-only navigation never reload spuriously', () => {
   const fresh = parserHistoryFixture('/en/about', '/en/about');

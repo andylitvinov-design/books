@@ -41,7 +41,7 @@ test('unverified/hidden/wrong-owner products never appear, even when supplied by
  assert.equal(publishedTelegramServiceOffers([make(),make()],'en').length,1);
 });
 test('verified personal service price displayed only from published source',()=>{
- const q=classifyTelegramSecretaryQuery('Пришли сеанс рейки','ru');
+ const q=classifyTelegramSecretaryQuery('Сколько стоит рейки?','ru');
  const from=composeTelegramSecretaryAnswer(q,[make()]);
  assert.equal(from.buttons.length,1);
  assert.match(from.text,/от €50/);
@@ -274,4 +274,93 @@ test('free-review website starts the consented Ali Telegram bot; manual Telegram
  assert.match(view,/secure questionnaire/);
  assert.match(view,/защищённую анкету/);
  assert.doesNotMatch(view,/HH_CRM_MSG_TELEGRAM_TOKEN|https?:\/\/openrouter\.ai/i);
+});
+
+
+test('P0: Reiki? offers the actual FREE course first, then verified paid service without a price',()=>{
+ for(const [locale,message] of [['en','Reiki?'],['ru','Рейки?'],['es','¿Reiki?']]){
+  const q=classifyTelegramSecretaryQuery(message,locale);
+  const answer=composeTelegramSecretaryAnswer(q,[make()]);
+  assert.equal(answer.kind,'catalog');
+  assert.equal(answer.buttons[0].url,TELEGRAM_SITE+'/'+locale+'/academy/principles-of-energywork');
+  assert.equal(answer.buttons[1].url,TELEGRAM_SITE+'/'+locale+'/academy/reiki/tantra-reiki/free-initiation');
+  assert.ok(answer.buttons[2].url.includes('/remote-energy-support'));
+  assert.doesNotMatch(answer.text,/€50|\$50|CAD 50|от €|from €/iu);
+  assert.match(answer.text,/\?/);
+  assert.equal(composeTelegramSecretaryAnswer(q,[]).buttons[0].url,answer.buttons[0].url);
+ }
+});
+test('P0: relevant free published rows precede any paid row, even if rank favours paid',()=>{
+ const free=make({id:'eb4ab8cc-dbc1-4603-b674-42b8cd619bfa',slug:'reiki-free-intro',
+  offering_type:'intro',pricing_mode:'free',confirmed_price:null});
+ const q=classifyTelegramSecretaryQuery('Reiki?','en');
+ const answer=composeTelegramSecretaryAnswer(q,[make(),free]);
+ assert.equal(answer.buttons.length,3);
+ assert.ok(answer.buttons[0].url.includes('/academy/principles-of-energywork'));
+ assert.ok(answer.buttons[1].url.includes('tantra-reiki/free-initiation'));
+ assert.ok(answer.buttons[2].url.includes('reiki-free-intro'));
+ assert.ok(answer.buttons.every(b=>!b.url.includes('remote-energy-support')));
+ assert.doesNotMatch(answer.text,/€50/);
+ const asked=composeTelegramSecretaryAnswer(classifyTelegramSecretaryQuery('Reiki price?','en'),[make()]);
+ assert.match(asked.text,/from €50/);
+ const session=composeTelegramSecretaryAnswer(classifyTelegramSecretaryQuery('Reiki session','en'),[make()]);
+ assert.equal(session.buttons.length,1);
+ assert.doesNotMatch(session.text,/€50/);
+});
+test('P0: free-only Reiki enquiry cannot display a paid session',()=>{
+ const answer=composeTelegramSecretaryAnswer(classifyTelegramSecretaryQuery('Free Reiki course','en'),[make()]);
+ assert.equal(answer.buttons[0].url,TELEGRAM_SITE+'/en/academy/principles-of-energywork');
+ assert.ok(answer.buttons.every(b=>!b.url.includes('remote-energy-support')));
+});
+
+
+test('P0: generic discovery starts with the three verified free entry points',()=>{
+ for(const [locale,message] of [['en','What services do you offer?'],['ru','Какие у вас услуги?']]){
+  const answer=composeTelegramSecretaryAnswer(classifyTelegramSecretaryQuery(message,locale),[make()]);
+  assert.equal(answer.kind,'catalog');
+  assert.deepEqual(answer.buttons.map(b=>b.url),['services/free-situation-review','tests','academy/principles-of-energywork'].map(path=>TELEGRAM_SITE+'/'+locale+'/'+path));
+  assert.doesNotMatch(answer.text,/€50/);
+ }
+});
+
+test('Business welcome is a five-topic localized inline menu, free first, no prices',async()=>{
+ const {telegramBusinessWelcomeMenu,telegramBusinessWelcomeTopic,telegramBusinessWelcomeClick}=await import('../lib/crm/telegram-business-welcome-menu.mjs');
+ for(const locale of ['en','ru','es']){
+  const welcome=telegramBusinessWelcomeMenu(locale);
+  assert.equal(welcome.buttons.length,5);
+  assert.equal(welcome.buttons[0].callback_data,'hhbw1:'+locale+':free');
+  for(const button of welcome.buttons){
+   assert.ok(button.text.length<=48);
+   assert.ok(!button.url);
+   const topic=button.callback_data.split(':').at(-1);
+   const plan=telegramBusinessWelcomeTopic(locale,topic);
+   assert.ok(plan.text.length<600);
+   assert.doesNotMatch(plan.text,/€|\$|CAD|EUR/);
+   assert.ok(plan.buttons.length<=3);
+   for(const link of plan.buttons)assert.equal(new URL(link.url).origin,TELEGRAM_SITE);
+   const now=Date.now(),body={update_id:923,callback_query:{id:'test-callback-123',data:button.callback_data,
+    from:{id:123456789,is_bot:false},message:{message_id:55,date:Math.floor(now/1000),
+     chat:{id:123456789,type:'private'},sender_business_bot:{id:987654321,is_bot:true},
+     business_connection_id:'business-connection-123',text:welcome.text}}};
+   assert.equal(telegramBusinessWelcomeClick(body,'987654321',now)?.topic,topic);
+   assert.equal(telegramBusinessWelcomeClick(body,'111111111',now),null);
+   assert.equal(telegramBusinessWelcomeClick(body,'987654321',now+86400000),null);
+   assert.equal(telegramBusinessWelcomeClick({...body,callback_query:{...body.callback_query,from:{id:99999999,is_bot:false}}},'987654321',now),null);
+   assert.equal(telegramBusinessWelcomeClick({...body,callback_query:{...body.callback_query,data:'hhbw1:'+locale+':book'}},'987654321',now),null);
+  }
+  assert.equal(telegramBusinessWelcomeTopic(locale,'free').buttons.length,3);
+  assert.match(telegramBusinessWelcomeTopic(locale,'reiki').buttons[0].url,/principles-of-energywork$/);
+ }
+ const route=f('app/api/app/crm/messenger/webhook/[provider]/route.js');
+ const first=route.indexOf('if(businessLead?.created)');
+ assert.ok(first>0);
+ const welcomeRoute=route.slice(first,route.indexOf('const updates=normalizeMessengerUpdates',first));
+ assert.ok(welcomeRoute.indexOf('generalWelcome:true')<welcomeRoute.indexOf('welcomeLocale:welcome.locale'));
+ assert.match(welcomeRoute,/ensureTelegramInlineWebhookUpdates/);
+ assert.match(welcomeRoute,/fallback.buttons/);
+ assert.match(route,/secretaryStopped\(click,config\)/);
+ assert.match(route,/inbox.matched&&inbox.recorded&&!inbox.humanActive/);
+ const inbox=f('lib/crm/telegram-business-inbox.js');
+ assert.match(inbox,/business-callback:/);
+ assert.match(inbox,/Telegram Business menu selected:/);
 });

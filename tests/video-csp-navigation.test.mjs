@@ -118,7 +118,7 @@ test('parser-time history guard pins the destination before hydration and can ha
     addEventListener: (type, handler, capture) => listeners.set(type, { handler, capture }),
     removeEventListener: (type, handler, capture) => { assert.equal(listeners.get(type).handler, handler); assert.equal(capture, true); listeners.delete(type); },
   };
-  runInNewContext(CSP_PREHYDRATION_SCRIPT, { window });
+  runInNewContext(CSP_PREHYDRATION_SCRIPT, { window, document: { readyState: 'loading' } });
   assert.equal(listeners.get('popstate').capture, true);
   let stopped = false;
   listeners.get('popstate').handler({ stopImmediatePropagation() { stopped = true; } });
