@@ -341,7 +341,10 @@ async function inspect(browserType,locale,width){
       const entry=mirror.locator('[data-hh-mirror-enter="me"]');
       await expect(entry).toBeVisible({timeout:30000});
       await entry.click();
-      // The current approved flow selects a canonical topic BEFORE purpose.
+      // Current owner-approved sequence: audience → format → topic → purpose.
+      // Selecting Basic is only a planning preference; it never renders media.
+      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","format");
+      await mirror.locator('[data-hh-mirror-video-format="basic"]').click();
       await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
       await expect(mirror).toHaveAttribute("data-hh-mirror-step","1");
       await expect(mirror.locator('[data-hh-mirror-goal-choice]')).toHaveCount(4);
@@ -356,8 +359,6 @@ async function inspect(browserType,locale,width){
       const next=goal.locator('[data-video-ideas-goal-next]');
       await expect(next).toBeEnabled();
       await next.click();
-      await expect(mirror).toHaveAttribute("data-hh-mirror-screen","format");
-      await mirror.locator('[data-hh-mirror-video-format="basic"]').click();
       await expect(page.locator('[data-mandala-free-video]'))
         .toHaveAttribute("data-active-workspace","editor",{timeout:15000});
     }
@@ -460,6 +461,10 @@ async function inspect(browserType,locale,width){
         }else{
           const entry=mirror.locator('[data-hh-mirror-enter="me"]');
           if(await entry.isVisible())await entry.click();
+          const format=mirror.locator('[data-hh-mirror-video-format="basic"]');
+          if(await format.isVisible())await format.click();
+          const purposeBack=mirror.locator('[data-hh-mirror-back-purpose]');
+          if(await purposeBack.isVisible())await purposeBack.click();
           await expect(mirror).toHaveAttribute("data-hh-mirror-screen","topic");
           for(let step=0;step<3&&await mirror.getAttribute("data-hh-mirror-step")!=="1";step++){
             const back=mirror.locator('[data-hh-mirror-back]');
@@ -614,6 +619,8 @@ try{
  await expect(helpEntry).toBeVisible();
  await expect(helpEntry).toBeEnabled();
  await helpEntry.click();
+ await expect(helpMirror).toHaveAttribute('data-hh-mirror-screen','format');
+ await helpMirror.locator('[data-hh-mirror-video-format="basic"]').click();
  await expect(helpMirror).toHaveAttribute('data-hh-mirror-screen','topic');
  await expect(helpMirror).toHaveAttribute('data-hh-mirror-step','1');
  await expect(headerHelp).toBeVisible();

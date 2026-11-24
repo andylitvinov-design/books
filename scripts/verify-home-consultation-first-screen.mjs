@@ -85,9 +85,9 @@ for(const engine of [chromium,webkit]){
  const browser=await engine.launch();
  try{
   for(const [locale,path,labels] of [
-   ["en","/",["Help me figure it out","I already have a goal"]],
-   ["ru","/ru",["Помоги разобраться","У меня уже есть цель"]],
-   ["es","/es",["Ayúdame a entender","Ya tengo una meta"]]
+   ["en","/",["Clarity & Stress Relief","Achieving My Goal","Business Support"]],
+   ["ru","/ru",["Ясность и снятие стресса","Достижение моей цели","Поддержка бизнеса"]],
+   ["es","/es",["Claridad y alivio del estrés","Alcanzar mi meta","Apoyo empresarial"]]
   ]){
    for(const width of [320,354,390,430]){
     const page=await browser.newPage({viewport:{width,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true,reducedMotion:"reduce"});
@@ -105,10 +105,13 @@ for(const engine of [chromium,webkit]){
      assert.equal((await head.locator("h1").innerText()).trim(),"Holistic House",name);
      assert.equal(await root.locator('[data-home-mode-button]').count(),0,name+": no audience tabs");
      assert.equal(await root.locator("[data-home-intent-form]").count(),1,name+": one composer");
-     assert.equal(await root.locator("[data-home-stage-option]").count(),7,name+": seven stage cards");
-     assert.equal(await root.locator("[data-home-intent-option]").count(),3,name+": three conversational entries");
-     assert.ok((await root.locator('[data-home-intent-option="understand"]').innerText()).includes(labels[0]),name);
-     assert.ok((await root.locator('[data-home-intent-option="goal"]').innerText()).includes(labels[1]),name);
+     assert.equal(await root.locator("[data-home-stage-option]").count(),0,name+": no homepage seven-step panel");
+     assert.equal(await root.locator("[data-home-intent-option]").count(),3,name+": three program entries");
+     for(const [i,id] of ["clarity","goal","business"].entries()){
+       const card=root.locator('[data-home-intent-option="'+id+'"]');
+       assert.equal(await card.count(),1,name+": "+id);
+       assert.ok((await card.innerText()).includes(labels[i]),name+": localized "+id);
+     }
      assert.equal(await root.locator("[data-home-ali-greeting-play]").count(),1,name+": real greeting control");
      const hitTargets=await root.locator('[data-home-intent-form] button').evaluateAll(buttons=>buttons.map(button=>{const r=button.getBoundingClientRect();return {width:r.width,height:r.height}}));
      assert.ok(hitTargets.length===2&&hitTargets.every(r=>r.width>=44&&r.height>=44),name+": safe 44px mobile input controls "+JSON.stringify(hitTargets));
@@ -118,19 +121,17 @@ for(const engine of [chromium,webkit]){
      await input.blur();
      await page.evaluate(()=>window.scrollTo(0,0));
      const layout=await root.evaluate(element=>{
-      const keys=["[data-home-dialogue-hero]","[data-home-intent-form]","[data-home-focus-grid]","[data-home-how-it-works]","[data-home-stage-scroll]"];
+      const keys=["[data-home-dialogue-hero]","[data-home-intent-form]","[data-home-focus-grid]","[data-home-methods]"];
       return keys.map(key=>{const el=element.querySelector(key);if(!el)return null;const r=el.getBoundingClientRect();return {x:r.x,width:r.width,top:r.top,bottom:r.bottom}})});
      assert.ok(layout.every(Boolean),name+": all graphic sections rendered");
      assert.ok(layout[0].top<layout[1].top&&layout[1].top<layout[2].top&&layout[2].top<layout[3].top,name+": hierarchy");
-     assert.ok(layout[2].bottom-layout[2].top<=205,name+": compact goal choices");
-     assert.ok(layout[3].bottom-layout[3].top<=185,name+": compact stages");
+
      assert.ok(layout.every(box=>box.x>=-2&&box.x+box.width<=width+2),name+": sections fit");
-     assert.ok(await root.locator("[data-home-stage-scroll]").evaluate(el=>el.scrollWidth<=el.clientWidth+2),name+": all seven stages visible without swipe");
-     const stageBoxes=await root.locator('[data-home-stage-option]').evaluateAll(items=>items.map(el=>{const r=el.getBoundingClientRect();return {x:r.x,right:r.right,top:r.top}}));
-     assert.equal(stageBoxes.length,7,name+": seven visible steps");
-     assert.ok(stageBoxes.every((s,i)=>s.x>=0&&s.right<=width+2&&(i===0||s.x>=stageBoxes[i-1].x)),name+": steps in one row");
-     const labelsFit=await root.locator('[data-home-stage-option] strong').evaluateAll(items=>items.every(el=>el.scrollWidth<=el.clientWidth+1));
-     assert.ok(labelsFit,name+": no overlapping stage labels");
+     const cards=await root.locator('[data-home-intent-option]').evaluateAll(items=>items.map(el=>{const r=el.getBoundingClientRect();return {x:r.x,right:r.right,top:r.top,bottom:r.bottom,width:r.width,scrollWidth:el.scrollWidth,clientWidth:el.clientWidth}}));
+     assert.equal(cards.length,3,name+": three rows");
+     assert.ok(cards.every((s,i)=>s.x>=0&&s.right<=width+2&&s.width>=width*.85&&s.scrollWidth<=s.clientWidth+2&&(i===0||s.top>=cards[i-1].bottom)),name+": full width horizontal cards, no overflow");
+     const copyFits=await root.locator('[data-home-intent-option] strong, [data-home-intent-option] small').evaluateAll(items=>items.every(el=>el.scrollWidth<=el.clientWidth+2));
+     assert.ok(copyFits,name+": no clipped copy");
      const graphics=await root.locator('img').evaluateAll(async imgs=>Promise.all(imgs.map(async img=>{try{await img.decode()}catch{}return {url:img.getAttribute("src"),width:img.naturalWidth}})));
      assert.ok(graphics.every(img=>img.width>0),name+": real photo assets loaded "+JSON.stringify(graphics));
      assert.equal(await page.locator("iframe").count(),0,name+": no video iframe");
@@ -138,17 +139,18 @@ for(const engine of [chromium,webkit]){
      await dock.waitFor({state:"visible",timeout:30000});
      assert.deepEqual(await dock.locator("[data-unified-dock-item]").evaluateAll(xs=>xs.map(x=>x.getAttribute("data-unified-dock-item"))),
        ["mytube","video","coach","ai","services","practice","profile"],name+": seven dock targets");
+     await root.locator("[data-home-methods]").evaluate(el=>el.scrollIntoView({block:"center",behavior:"instant"}));
      const fold=await page.evaluate(()=>{
        const methods=document.querySelector('[data-home-methods]');
        const nav=document.querySelector('[data-hh-unified-dock]');
        const orb=nav?.querySelector('[data-unified-dock-item="ai"] svg');
        return {methodsBottom:methods?.getBoundingClientRect().bottom,dockTop:nav?.getBoundingClientRect().top,orbTop:orb?.getBoundingClientRect().top};
      });
-     if(width>=390)assert.ok(fold.methodsBottom<=Math.min(fold.dockTop,fold.orbTop)+2,name+": all five method icons above existing dock "+JSON.stringify(fold));
+     assert.ok(fold.methodsBottom<=Math.min(fold.dockTop,fold.orbTop)+2,name+": all five method icons reachable above existing dock "+JSON.stringify(fold));
      assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)<=1,name+": zero horizontal overflow");
      assert.deepEqual(errors,[],name+": no script errors");
-     evidence.push({engine:engine.name(),locale,width,heroY:Math.round(layout[0].top),journeyWidth:Math.round(layout[4].width)});
-     if(engine===webkit&&width===390)await page.screenshot({path:output+"/samir-"+locale+"-webkit-390.png",fullPage:false});
+     evidence.push({engine:engine.name(),locale,width,heroY:Math.round(layout[0].top),programWidth:Math.round(layout[2].width)});
+     if(engine===webkit&&width===390){await page.evaluate(()=>window.scrollTo(0,0));await page.screenshot({path:output+"/samir-"+locale+"-webkit-390.png",fullPage:false});}
      if(dictationCalls){
       await verifyDictation(page,root.locator("[data-home-intent-form]"),"[data-home-intent-mic]",dictationCalls,"Хочу разобраться");
       assert.equal(new URL(page.url()).pathname,path,"dictation alone does not navigate");
