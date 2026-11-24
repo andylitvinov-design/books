@@ -9,7 +9,7 @@ import { normalizeMessengerUpdates } from '../lib/crm/messenger-webhook.js'
 import {V3_LABELS,v3ButtonsFor,v3Action,v3Context,v3ServiceCopy} from '../lib/crm/telegram-ai-diagnostic-v3.mjs'
 import {telegramServiceMenuAnswer,telegramServiceMenuIntent} from '../lib/crm/telegram-service-intro.mjs'
 import {
-  sendTelegramDiagnosticPrompt,acknowledgeTelegramInlineCallback,
+  sendTelegramDiagnosticPrompt,acknowledgeTelegramInlineCallback,telegramReadableKeyboard,
   ensureTelegramInlineWebhookUpdates,
 } from '../lib/crm/messenger-provider.js'
 import { transitionTelegramDiagnostic } from '../lib/crm/telegram-diagnostic.mjs'
@@ -299,4 +299,35 @@ test('service introductory FAQ never authorizes intake, personal questioning or 
   assert.match(runtime,/if\(stop\)/);
   const intro=source('lib/crm/telegram-service-intro.mjs');
   assert.doesNotMatch(intro,/fetch\(|db\.query\(|openrouter|clientId/i);
+});
+
+
+test('Telegram presentation keeps service cards readable without changing approved callbacks',async()=>{
+  for(const lang of ['en','ru','es']){
+    const menu=telegramInlineMarkup(v3ButtonsFor(lang,'service_menu'),lang);
+    const followup=telegramInlineMarkup(v3ButtonsFor(lang,'service_followup'),lang);
+    for(const original of [menu,followup]){
+      const before=JSON.stringify(original);
+      const rendered=telegramReadableKeyboard(original);
+      assert.deepEqual(rendered.inline_keyboard.slice(0,3).map(row=>row.length),[1,1,1]);
+      assert.deepEqual(rendered.inline_keyboard.flat().map(b=>b.callback_data),original.inline_keyboard.flat().map(b=>b.callback_data));
+      assert.equal(JSON.stringify(original),before);
+      assert.deepEqual(telegramReadableKeyboard(rendered),rendered);
+    }
+    await mockedBotApi(async calls=>{
+      await sendTelegramDiagnosticPrompt({to:'123456789',locale:lang,text:'Ali — service information',keyboard:v3ButtonsFor(lang,'service_followup')},env);
+      const actual=calls.find(c=>c.method==='sendMessage').body.reply_markup;
+      assert.deepEqual(actual,telegramReadableKeyboard(followup));
+      if(lang==='en')assert.deepEqual(actual.inline_keyboard.at(-1).map(b=>b.text),['✅ Book now','💬 Ask Ali']);
+    });
+  }
+  assert.equal(v3Action({rawText:'Book now'}),'servicebegin');
+  const reply={keyboard:[[{text:'Long reply-keyboard option'},{text:'Other option'}]],resize_keyboard:true};
+  assert.deepEqual(telegramReadableKeyboard(reply),{keyboard:[[{text:'Long reply-keyboard option'}],[{text:'Other option'}]],resize_keyboard:true});
+  const mood={inline_keyboard:[['😟','😕','😐','🙂','😄'].map((text,i)=>({text,callback_data:'checkin_'+i}))]};
+  assert.deepEqual(telegramReadableKeyboard(mood),mood);
+  const links={inline_keyboard:[[{text:'Long public link',url:'https://holistichouse.vercel.app/en/about'},{text:'Back',callback_data:'home'}]]};
+  assert.deepEqual(telegramReadableKeyboard(links).inline_keyboard.flat(),links.inline_keyboard.flat());
+  const quiz={inline_keyboard:[[{text:'❤️ Improve relationships & esteem',callback_data:'hhsq:en:1'}]]};
+  assert.equal(telegramReadableKeyboard(quiz).inline_keyboard[0][0].text,'❤️ Relationships & esteem');
 });
