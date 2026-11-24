@@ -505,7 +505,7 @@
 /* SAMIR_MOCK_FIDELITY_20261123_V2: approved compact dark-teal seven-icon journey.
    The global seven-destination UnifiedMobileDock is unchanged. */
 .root{width:min(calc(100% - 8px),920px);margin:0 auto;padding:5px 9px calc(var(--hh-unified-nav-height,84px) + 6px);color:#123e34;
-background:linear-gradient(180deg,transparent 0px,transparent 468px,#123d36 592px,#103c36 100%),url("/images/holistic-house/samir-terrace.svg") center top/100% 570px no-repeat,#f5e8d2;border-radius:0 0 24px 24px;isolation:isolate}
+background:linear-gradient(180deg,#f5e8d2,#123d36 420px,#103c36);border-radius:0 0 24px 24px;isolation:isolate}
 .root .header{padding:3px 2px 7px;min-height:50px;background:transparent;box-shadow:none;border:0}
 .brand{color:#fff9e9;text-decoration:none}.brandIcon{color:#f6db8f;display:grid}
 .brandCopy h1{color:#fff8e7;text-shadow:0 2px 8px #183c29bb;font:700 clamp(21px,5.25vw,32px)/1 Georgia,serif}
@@ -561,6 +561,63 @@ background:linear-gradient(180deg,transparent 0px,transparent 468px,#123d36 592p
 @media(max-width:365px){.root{width:100%;padding-inline:6px}.heroContent{grid-template-columns:46% 54%;min-height:238px}.hero,.heroPortrait,.heroStory{min-height:238px}.hero h2.heroTitle{font-size:26px}.hero .subtitle{font-size:12px}.focusCopy strong{font-size:14px}.journeyPhoto{width:37px;height:37px}.journeyPhoto>svg{width:21px;height:21px}.journeyScroll:before{top:18px}.journeyCard>strong{font-size:8px}.method span{font-size:9px}}
 @media(min-width:650px){.root{padding:10px 18px 105px;background-size:100% 100%,100% 650px}.heroContent,.hero,.heroPortrait,.heroStory{min-height:300px}.hero h2.heroTitle{font-size:48px}.hero .subtitle{font-size:18px;line-height:1.34}.focusCard{min-height:175px}.focusPhoto{height:99px}.focusCopy{min-height:77px}.focusCopy strong{font-size:25px}.focusCopy small{font-size:16px}.journeyPhoto{width:66px;height:66px}.journeyPhoto>svg{width:37px;height:37px}.journeyPhoto b{bottom:-10px;width:23px;height:23px;font-size:13px}.journeyScroll:before{top:32px}.journeyCard>strong{font-size:14px;margin-top:17px}.method span{font-size:15px}.method svg{width:30px;height:30px}}
 
+/* SAMIR_PHOTO_FIRST_SCREEN_V3: real photographic assets, strong brand contrast,
+   seven bounded step labels, and clearance above the existing raised chat orb. */
+.root{width:min(100%,920px);padding:0 10px calc(var(--hh-unified-nav-height,94px) + 28px);background:linear-gradient(180deg,#233b2c 0%,#c6ab83 15%,#ebd9bb 36%,#1d5148 65%,#103d37 100%);border-radius:0;overflow:visible}
+.root .header{min-height:52px;margin-inline:-10px;padding:4px 10px 5px;border-radius:0;border:0;background:linear-gradient(90deg,#102b20ee,#173c31bb),url("/images/holistic-house/shamanic-genie-lounge.webp") center 35%/cover;box-shadow:none}
+.root .header h1{color:#fff9ed;font-size:clamp(18px,5.3vw,30px);text-shadow:0 1px 4px #112b22}
+.brandCopy small{color:#fff4df;text-shadow:0 1px 3px #112b22}
+.brandIcon{color:#f7e4ae}.headerActions{gap:3px}
+.language summary,.siteTools :global(.site-main-menu-trigger),.siteTools :global([data-site-search-trigger]){width:44px;height:44px;min-width:44px;min-height:44px;background:#143e35e8;border:1px solid #e1c28f;color:#fff8ed}
+.language summary{width:auto;min-width:48px}
+.hero{position:relative;min-height:0;margin:0 -10px;padding:0 8px;overflow:visible;background:linear-gradient(100deg,#7c6443 0%,#e2c9a5 44%,#fff3dc 63%,#fbefda 100%);border-radius:0}
+.heroContent{grid-template-columns:minmax(0,48%) minmax(0,52%);min-height:198px;gap:0;align-items:stretch}
+.heroPortrait{display:block;width:100%;height:100%;min-height:198px;max-height:260px;object-fit:cover;object-position:100% center;-webkit-mask-image:linear-gradient(90deg,#000 0%,#000 78%,transparent 100%);mask-image:linear-gradient(90deg,#000 0%,#000 78%,transparent 100%);filter:none;z-index:0}
+.heroContent:not([data-home-ali-persona="alex"]) .heroPortrait{object-position:center 28%}
+.heroStory{position:relative;z-index:1;min-width:0;min-height:198px;gap:5px;padding:8px 1px 9px 2px}
+.heroMessage{background:transparent;border:0;box-shadow:none;padding:0}
+.hero h2.heroTitle{font:700 clamp(25px,6.6vw,39px)/1.02 Georgia,serif;max-width:100%;color:#113d32;margin:0 0 7px;text-wrap:balance}
+.hero h2.heroTitle::after{content:"";display:block;width:72%;height:2px;margin:4px 0 0;background:linear-gradient(90deg,#be7e29,#eec67b,transparent)}
+.guideRole{font:750 clamp(12px,3.4vw,17px)/1.14 system-ui;color:#133c31;max-width:100%}
+.hero .subtitle{font:500 clamp(12px,3.05vw,15px)/1.22 system-ui;color:#253d33;margin:6px 0 0;text-wrap:wrap}
+.guideAudio{min-height:44px;max-width:100%;margin:2px 0 0;padding:5px 8px;gap:6px;background:linear-gradient(120deg,#ffe4b3,#fff0cc);border:1px solid #d9ad65;font:700 11px/1.1 system-ui;color:#244335}
+.guideAudio>svg{flex:none;width:20px;height:20px;color:#765016}
+.audioWave{display:block!important;font-size:10px;letter-spacing:-1px}
+.personaButton{top:3px;right:2px;width:44px;height:44px;background:#f8eacb;border:1px solid #c7a772}
+.personaButton svg{width:18px;height:18px}
+.composer{min-height:50px;margin:3px auto 0;padding:1px 4px;gap:1px;width:100%;border:2px solid #fff9e8;box-shadow:0 2px 8px #98673150;outline:1px solid #e1bb7b}
+.composerSparkle{width:27px;height:44px}
+.composer textarea{height:44px;min-height:44px;font:500 13px/1.2 system-ui;resize:none;padding:7px 1px}
+.composerButtons{width:auto;gap:0}
+.composerButtons button,.composerButtons .send{width:44px;min-width:44px;height:44px;min-height:44px}
+.speechDisclosure{color:#183e32;font:500 10px/1.15 system-ui;margin:3px 1px 4px;background:#f8e9cdbb;border-radius:4px;padding:1px 3px}
+.focusGrid{gap:7px;margin:5px 0 0}
+.focusCard{gap:0;min-height:107px;border-radius:16px;border:1.5px solid #f9e1ad;background:#fff1d9;box-shadow:0 2px 10px #e1bb7350}
+.focusPhoto{height:50px;width:100%;object-fit:cover;object-position:center 47%;border-radius:0}
+.focusCopy{min-height:0;gap:2px 4px;margin-top:-6px;padding:6px 17px 7px 7px;border-radius:13px 13px 0 0;background:linear-gradient(115deg,#fff7e8,#fae6c8)}
+.focusCopy strong{font:700 clamp(14px,3.7vw,19px)/1.03 Georgia,serif}
+.focusCopy small{font:500 clamp(10px,2.6vw,13px)/1.13 system-ui;color:#294339}
+.focusArrow{display:block!important;right:4px;bottom:28px;padding:3px;width:12px;height:12px;background:#f4dfba;color:#214b3b}
+.talkLink{min-height:44px;padding:4px 12px;margin:5px auto 3px;font:750 13px/1.1 system-ui;background:linear-gradient(120deg,#ffe3b2,#fff1d7);border:1px solid #f1ce96}
+.howWorks{padding:5px 0 1px;background:#143f38;color:#fff7e8;border:0;border-radius:14px;box-shadow:none}
+.howWorks h3{font:700 clamp(22px,5.6vw,34px)/1.06 Georgia,serif;margin:0 0 7px}
+.journeyScroll{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;padding:0 2px 4px;overflow:visible}
+.journeyScroll:before{top:19px;background:linear-gradient(90deg,#deb96e,#ffe4a0,#deb96e)}
+.journeyPhoto{width:min(38px,100%);height:38px;border:1.5px solid #f1cf80;box-shadow:0 0 6px #edc67c88}
+.journeyPhoto>svg{width:21px;height:21px}
+.journeyCard:nth-child(2) .journeyPhoto{background:radial-gradient(circle at 50% 45%,#ae7930,#3a4a32 76%);color:#ffe69d}
+.journeyCard>strong{display:block;width:100%;max-width:100%;min-width:0;margin:12px 0 0;padding:0 1px;white-space:normal;overflow-wrap:anywhere;word-break:normal;text-wrap:balance;font:650 clamp(8.5px,2.5vw,12px)/1.08 system-ui;color:#fff7e5}
+.journeyPhoto b{width:17px;height:17px;bottom:-7px;font-size:10px}
+.methods{margin:7px 0 0;padding:8px 8px 9px;border-radius:18px;border:1px solid #ffe8c1;background:linear-gradient(110deg,#fff4df,#f9e3c2);box-shadow:0 2px 10px #0c332b}
+.methods h3{font:700 14px/1.13 system-ui;margin:0 0 6px;color:#153b31}.methods h3 svg{display:none}
+.method{gap:3px;padding:1px 2px;color:#143f35}.method svg{width:22px;height:22px}
+.method span{font:650 clamp(9px,2.45vw,12px)/1.1 system-ui;max-width:100%;overflow-wrap:anywhere}
+@media(max-width:365px){.root{padding-inline:7px}.root .header{margin-inline:-7px;padding-inline:6px}.hero{margin-inline:-7px;padding-inline:5px}.heroContent,.heroStory,.heroPortrait{min-height:194px}.hero h2.heroTitle{font-size:24px}.hero .subtitle{font-size:11.5px}.guideAudio{font-size:10px;padding-inline:5px}.guideAudio .audioWave{display:none!important}.journeyPhoto{width:min(34px,100%);height:34px}.journeyScroll:before{top:17px}.journeyCard>strong{font-size:8.5px}}
+@media(min-width:650px){.root{padding-inline:18px}.root .header{margin-inline:-18px;padding-inline:18px}.hero{margin-inline:-18px;padding-inline:18px}.heroContent,.heroStory,.heroPortrait{min-height:300px}.heroPortrait{max-height:340px}.hero h2.heroTitle{font-size:48px}.hero .subtitle{font-size:17px}.guideAudio{font-size:15px}.focusPhoto{height:100px}.focusCopy strong{font-size:24px}.focusCopy small{font-size:15px}.journeyPhoto{width:55px;height:55px}.journeyPhoto>svg{width:32px;height:32px}.journeyScroll:before{top:27px}.journeyCard>strong{font-size:13px}.methods h3{font-size:20px}.method svg{width:29px;height:29px}.method span{font-size:14px}}
+
+/* Keep persona control on the portrait, never on top of the greeting. */
+.heroStory .personaButton{left:-46px;right:auto;top:5px;z-index:4}
+
 /* Keep the approved compact home header keyboard/touch accessible after the
    Samir visual overrides. Fit the brand in the remaining 320px width, not by
    shrinking interactive controls below the existing 44px contract. */
@@ -574,3 +631,35 @@ background:linear-gradient(180deg,transparent 0px,transparent 468px,#123d36 592p
  .root .language summary{min-width:44px;width:44px;padding:0 2px;gap:1px}
  .root .language summary svg{width:11px;height:11px;flex:none}
 }
+
+/* SAMIR_FOLD_CLEARANCE_V4: measured RU 390px failure (methods 740, orb 729).
+   The portrait must never determine the grid's intrinsic height. Reclaim space
+   from margins and padding, not the readable text or 44px input/audio targets.
+   Keep the raised shared dock and the exact browser fold assertion unchanged. */
+@media(max-width:649px){
+ .heroContent{position:relative;min-height:180px;grid-template-columns:minmax(0,48%) minmax(0,52%);}
+ .heroContent>.heroPortrait{position:absolute;inset:0 auto 0 0;width:48%;height:100%;min-height:0;max-height:none;object-fit:cover;}
+ .heroContent>.heroStory{grid-column:2;min-height:180px;height:auto;padding:3px 1px 3px 2px;gap:3px;}
+ .hero h2.heroTitle{margin:0 0 4px;}
+ .hero h2.heroTitle::after{margin-top:2px;}
+ .hero .subtitle{margin-top:4px;}
+ .guideAudio{margin-top:0;min-height:44px;}
+ .composer{margin-top:2px;}
+ .speechDisclosure{margin:2px 1px 3px;padding:1px 3px;}
+ .focusGrid{margin-top:3px;}
+ .focusCard{min-height:100px;}
+ .focusPhoto{height:46px;flex:none;}
+ .focusCopy{padding-top:4px;padding-bottom:5px;}
+ .talkLink{margin:3px auto 2px;min-height:44px;}
+ .howWorks{padding-top:3px;}
+ .howWorks h3{margin-bottom:5px;}
+ .journeyCard>strong{margin-top:10px;}
+ .methods{margin-top:5px;padding:6px 8px;}
+ .methods h3{margin-bottom:4px;}
+}
+
+/* One manual dictation row replaces the text field until confirm or cancel. */
+.composer:has(:global([data-hh-dictation-active="true"])){display:flex!important;flex-direction:column!important;align-items:stretch!important;min-height:0!important;gap:0!important;padding:8px!important}
+.composer:has(:global([data-hh-dictation-active="true"]))>textarea,.composer:has(:global([data-hh-dictation-active="true"]))>.composerSparkle{display:none!important}
+.composer:has(:global([data-hh-dictation-active="true"]))>.composerButtons{display:flex!important;position:static!important;width:100%;min-width:0;align-self:stretch;justify-content:stretch!important;gap:0!important}
+.composer:has(:global([data-hh-dictation-active="true"]))>.composerButtons>:not(:global([data-hh-dictation-active="true"])){display:none!important}

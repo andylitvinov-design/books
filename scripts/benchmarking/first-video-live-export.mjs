@@ -191,6 +191,11 @@ try {
       row.phase='mirror-audience-native-selection';
       const entry=mirror.locator('[data-hh-mirror-enter="me"]');
       if(engine==='webkit')await entry.tap();else await entry.click();
+      await expect(mirror).toHaveAttribute('data-hh-mirror-screen','format');
+    }
+    if(await mirror.getAttribute('data-hh-mirror-screen')==='format'){
+      const format=mirror.locator('[data-hh-mirror-video-format="basic"]');
+      if(engine==='webkit')await format.tap();else await format.click();
       await expect(mirror).toHaveAttribute('data-hh-mirror-screen','topic');
     }
     const description=mirror.locator('[data-hh-mirror-own-description]');

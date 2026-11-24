@@ -27,7 +27,7 @@ test("home graphics reuse verified local assets, audio, microphone and same-tab 
  for(const image of ["growth.webp","love.webp","energy.webp","stress.webp"])assert.ok(home.includes(image),image);
  assert.match(home,/src=\{picture\}/);
  assert.match(home,/playAliPersonaAudio\(persona\.id,locale/);
- assert.match(home,/speech\.start\(\)/);
+ assert.match(home,/variant="dictation" micMarker="data-home-intent-mic"/);
  assert.match(home,/stageHomeAliHandoff\(window\.sessionStorage/);
  assert.match(home,/router\.push\(chatPath\)/);
  assert.match(home,/app\/messages\?section=ai/);
@@ -39,8 +39,11 @@ test("approved mock: seven connected circles, separate graphics, shared dock unt
  assert.match(style,/SAMIR_MOCK_FIDELITY_20261123_V2/);
  assert.match(style,/grid-template-columns:repeat\(7,minmax\(0,1fr\)\)/);
  assert.match(style,/\.journeyScroll:before/);
- for(const picture of ["samir-goal-sunrise.svg","samir-goal-sailboat.svg"])assert.ok(home.includes(picture));
- assert.match(home,/startCoachRecordedTurn\(\{/);
+ for(const picture of ["wealth-sunrise.jpg","sun-warm-ocean-dawn.jpg","ali-inner-alchemist-hero.webp"])assert.ok(home.includes(picture));
+ assert.doesNotMatch(home,/src="[^"]*samir-goal-(sunrise|sailboat)\.svg"/);
+ assert.match(style,/SAMIR_PHOTO_FIRST_SCREEN_V3/);
+ assert.match(home,/data-home-methods/);
+ assert.match(home,/MessengerVoiceNote locale=\{locale\} variant="dictation"/);
  assert.match(dock,/UNIFIED_DOCK_IDS/);
  assert.doesNotMatch(home,/UnifiedMobileDock|data-hh-unified-dock/);
 });
