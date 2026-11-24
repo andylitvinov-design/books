@@ -813,3 +813,153 @@
  .clarityNeed{min-height:106px;padding:15px 16px 22px}
  .clarityStep{min-height:68px;padding:12px 18px}
 }
+
+/* CLARITY_MOCK_PARITY_20261124
+   The workspace's .hh-app button rule previously won over single-class
+   module selectors, turning these cards white and centered on production.
+   Scope the visual contract to this dashboard section only. */
+.dashboard[data-profile-space-section="clarity"] .clarity{
+ gap:6px;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityHero{
+ padding:10px 12px 9px;border-radius:19px;
+ background-position:center,66% 48%;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityHero h1{
+ font-size:clamp(25px,6.5vw,40px)!important;
+ line-height:1.06;margin:3px 0 5px!important;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityHero>p:not(.eyebrow){
+ font-size:clamp(11.5px,3.0vw,15px);line-height:1.28;
+ max-width:34ch;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityHeroActions{
+ margin-top:9px;gap:8px;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityHeroActions button,
+.dashboard[data-profile-space-section="clarity"] button.clarityNeed,
+.dashboard[data-profile-space-section="clarity"] button.clarityStep,
+.dashboard[data-profile-space-section="clarity"] .clarityAccount>summary{
+ appearance:none;box-sizing:border-box;
+ border:1.5px solid #e8c185;
+ background:linear-gradient(135deg,#fff9e6 0%,#f8dca7 100%);
+ color:#103e2d;
+ text-align:left;
+ box-shadow:0 3px 10px #1e10094a;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityHeroActions button{
+ min-height:44px;padding:6px 9px;gap:7px;
+ justify-content:flex-start;align-items:center;
+ border-radius:999px;font:700 clamp(12px,3.65vw,18px)/1.1 Georgia,serif;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityHeroActions button>svg{
+ width:21px;height:21px;box-sizing:content-box;
+ padding-right:7px;border-right:1px solid #b99a60;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityHeading{
+ font-size:clamp(17px,4.7vw,25px)!important;
+ line-height:1.12;margin:3px 0 0!important;gap:6px;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityNeeds{
+ gap:6px;align-items:stretch;
+}
+.dashboard[data-profile-space-section="clarity"] button.clarityNeed{
+ display:grid;grid-template-columns:22px minmax(0,1fr) 13px;
+ align-items:start;justify-content:stretch;gap:5px;
+ min-height:53px;padding:8px 7px;border-radius:14px;
+}
+.dashboard[data-profile-space-section="clarity"] button.clarityNeed>svg:first-child{
+ width:22px;height:22px;margin-top:1px;color:#075d3b;
+}
+.dashboard[data-profile-space-section="clarity"] button.clarityNeed>svg:last-child{
+ position:static;width:14px;height:14px;align-self:end;color:#075d3b;
+}
+.dashboard[data-profile-space-section="clarity"] button.clarityNeed>span,
+.dashboard[data-profile-space-section="clarity"] button.clarityStep>span,
+.dashboard[data-profile-space-section="clarity"] .clarityPersonal>span{
+ display:flex;flex-direction:column;align-items:flex-start;
+ justify-content:center;text-align:left;gap:2px;min-width:0;
+}
+.dashboard[data-profile-space-section="clarity"] button.clarityNeed strong{
+ font:700 clamp(13px,3.6vw,18px)/1.1 Georgia,serif;
+ color:#103e2d;overflow-wrap:break-word;
+}
+.dashboard[data-profile-space-section="clarity"] button.clarityNeed small{
+ font:500 clamp(11px,2.8vw,14px)/1.18 system-ui,sans-serif;
+ color:#193c2c;overflow-wrap:break-word;
+}
+.dashboard[data-profile-space-section="clarity"] button.clarityNeed[aria-pressed="true"]{
+ border-color:#b9d8a3;box-shadow:0 0 0 2px #8eb685;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityStages{gap:5px}
+.dashboard[data-profile-space-section="clarity"] button.clarityStep{
+ display:grid;grid-template-columns:24px 22px minmax(0,1fr) 15px;
+ align-items:center;justify-content:stretch;gap:7px;
+ min-height:44px;padding:6px 9px;border-radius:14px;
+}
+.dashboard[data-profile-space-section="clarity"] button.clarityStep b{
+ width:24px;height:24px;font-size:14px;
+}
+.dashboard[data-profile-space-section="clarity"] button.clarityStep>svg{
+ color:#075d3b;width:22px;height:22px;
+}
+.dashboard[data-profile-space-section="clarity"] button.clarityStep>svg:last-child{
+ width:15px;height:15px;
+}
+.dashboard[data-profile-space-section="clarity"] button.clarityStep>span{
+ padding-left:7px;border-left:1px solid #b99a60;
+}
+.dashboard[data-profile-space-section="clarity"] button.clarityStep strong{
+ font:700 clamp(14px,3.8vw,20px)/1.1 Georgia,serif;
+ color:#241f16;overflow-wrap:break-word;
+}
+.dashboard[data-profile-space-section="clarity"] button.clarityStep small{
+ font:500 clamp(11px,2.85vw,14px)/1.18 system-ui,sans-serif;
+ color:#29261c;overflow-wrap:break-word;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityStep[aria-expanded="true"]>svg:last-child{
+ transform:rotate(90deg);
+}
+.dashboard[data-profile-space-section="clarity"] .clarity>.profileInsight{
+ min-height:44px;margin:0!important;padding:6px 11px;
+ border-radius:15px;font-size:clamp(15px,4vw,20px);
+}
+.dashboard[data-profile-space-section="clarity"] .clarityPersonal{
+ min-height:52px;padding:8px 11px;border-radius:18px;gap:9px;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityPersonal>span{
+ border-left:1px solid #e6c68e;padding-left:10px;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityPersonal strong{
+ font:700 clamp(15px,4.15vw,23px)/1.12 Georgia,serif;color:#fff6df;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityPersonal small{
+ font:500 clamp(11px,2.9vw,14px)/1.2 system-ui,sans-serif;color:#fff6df;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityNotice{
+ font-size:11px;line-height:1.3;margin:3px 4px!important;
+}
+.dashboard[data-profile-space-section="clarity"] .clarityAccount>summary{
+ min-height:44px;padding:8px 12px;font:700 15px/1.2 Georgia,serif;
+}
+@media(max-width:374px){
+ .dashboard[data-profile-space-section="clarity"] button.clarityNeed{
+  grid-template-columns:18px minmax(0,1fr) 11px;gap:4px;padding:7px 5px;
+ }
+ .dashboard[data-profile-space-section="clarity"] button.clarityNeed>svg:first-child{
+  width:18px;height:18px;
+ }
+ .dashboard[data-profile-space-section="clarity"] button.clarityNeed>svg:last-child{
+  width:12px;height:12px;
+ }
+ .dashboard[data-profile-space-section="clarity"] button.clarityStep{
+  grid-template-columns:22px 19px minmax(0,1fr) 13px;gap:5px;padding:6px 7px;
+ }
+ .dashboard[data-profile-space-section="clarity"] button.clarityStep b{width:22px;height:22px}
+ .dashboard[data-profile-space-section="clarity"] button.clarityStep>svg:nth-child(2){width:19px;height:19px}
+}
+@media(min-width:700px){
+ .dashboard[data-profile-space-section="clarity"] .clarityHero{padding:20px;min-height:0}
+ .dashboard[data-profile-space-section="clarity"] button.clarityNeed{min-height:69px;padding:12px}
+ .dashboard[data-profile-space-section="clarity"] button.clarityStep{min-height:56px;padding:10px 13px}
+}
