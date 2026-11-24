@@ -23,6 +23,7 @@ const ui={
     permission:'Разрешите микрофон в Safari.',requires:'Выберите Gemini Live и дайте согласие.',
     reconnecting:'Восстанавливаю голосовую связь…',audioRoute:'Звук приостановлен. Нажмите «Включить звук».',
     resumeAudio:'Включить звук',networkSlow:'Связь нестабильна. Часть слов может потеряться; можно перейти к тексту.',
+    playbackInterrupted:'Ответ прервался (G-L11). Можно продолжать говорить.',
     rateLimit:'Лимит бесплатных голосовых подключений достигнут. Можно продолжить текстом.',
     login:'Для голосовой сессии снова войдите в Holistic House.',
     greetingLate:'Соединение готово, но первая фраза задерживается. Вы можете начать говорить.',
@@ -46,6 +47,7 @@ const ui={
     permission:'Allow microphone access in Safari.',requires:'Select Gemini Live and consent.',
     reconnecting:'Restoring live voice…',audioRoute:'Audio is paused. Tap Enable audio to hear the coach.',
     resumeAudio:'Enable audio',networkSlow:'The connection is unstable. Some words may be missed; text remains available.',
+    playbackInterrupted:'Reply interrupted (G-L11). You can keep talking.',
     rateLimit:'Free live voice limit reached. You can continue by text.',
     login:'Sign in to Holistic House again to use live voice.',
     greetingLate:'Connected, but the first spoken reply is delayed. You can start speaking.',
@@ -69,6 +71,7 @@ const ui={
     permission:'Permite el micrófono en Safari.',requires:'Selecciona Gemini Live y acepta.',
     reconnecting:'Restableciendo la voz…',audioRoute:'El audio está pausado. Toca Activar audio.',
     resumeAudio:'Activar audio',networkSlow:'La conexión es inestable. Puede faltar parte de la voz; puedes escribir.',
+    playbackInterrupted:'Respuesta interrumpida (G-L11). Puedes seguir hablando.',
     rateLimit:'Se alcanzó el límite de voz gratuita. Puedes seguir escribiendo.',
     login:'Inicia sesión de nuevo en Holistic House para usar la voz.',
     greetingLate:'Conectado, pero la primera frase tarda. Puedes empezar a hablar.',
@@ -89,6 +92,10 @@ const ui={
 const MAX_SESSION_MS=1200000
 const MAX_BUFFERED_SOCKET_BYTES=200000
 const LIVE_START_TIMEOUT_MS=15000
+// A short suspension may receive a whole answer in a burst. Bound held PCM
+// by memory (at most 60 seconds at 24kHz PCM16), not by network chunk timing.
+const MAX_PENDING_AUDIO_CHUNKS=4096
+const MAX_PENDING_AUDIO_CHARS=60*24000*2*4/3
 // Recheck client-approved context only after it has actually reached Gemini.
 // This read-only endpoint never calls a model or records microphone data.
 const LIVE_CONTEXT_CHECK_MS=5*60*1000
@@ -186,14 +193,18 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   function interrupt(){
     const r=runtime.current
     if(!r||r.ended)return
-    if(r.player?.playing||r.speaking){
+    if(r.player?.playing||r.speaking||r.pendingAudio?.length){
       const partial=r.outputText
       r.interrupted=true
       // Stop the audio graph on detected user speech, not when the coach's
       // network turn ends. A partial transcript is always marked interrupted.
       r.player.stop()
-      r.audioGate.interrupt()
+      // An already-received provider boundary means only local PCM remains.
+      // No server interruption acknowledgment is owed for that finished turn.
+      if(r.modelTurnComplete)r.audioGate.accept({turnComplete:true})
+      else r.audioGate.interrupt()
       r.modelTurnComplete=false
+      r.hadAudio=false;r.outputWithoutAudio=false
       r.pendingAudio=[]
       r.pendingAudioChars=0
       r.speaking=false
@@ -394,6 +405,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   // source finishes playing. Do not tell the Director it was fully heard early.
   function finishAudibleTurn(r){
     if(r.ended||!r.modelTurnComplete||r.player?.playing||r.pendingAudio?.length)return
+    // The provider turn boundary has arrived. A late local playback failure
+    // must not keep the next reply behind the interrupted turn's audio gate.
+    r.audioGate?.accept({turnComplete:true})
     if(r.outputText){
       if(!r.hadAudio||r.outputWithoutAudio)r.interrupted=true
       commitOutput(r)
@@ -412,16 +426,43 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     notify(t.reconnecting)
     try{if(r.socket?.readyState===1)r.socket.close(1000,'session-resume')}catch{}
   }
+  // A local playback fault only retires the current reply. Preserve the live
+  // microphone/socket, reject its late packets, and never call unheard text
+  // a completed spoken answer. No token, model retry or quota slot is spent.
+  function discardAudioTurn(r){
+    if(r.ended)return
+    r.player?.stop()
+    r.pendingAudio=[];r.pendingAudioChars=0
+    r.speaking=false
+    r.outputWithoutAudio=true
+    r.audioGate.interrupt()
+    const partial=r.outputText
+    if(partial){r.interrupted=true;commitOutput(r)}
+    propsRef.current.onOutputInterim?.('')
+    propsRef.current.onInterrupted?.(partial)
+    r.playbackNoticeShown=true
+    notify(t.playbackInterrupted)
+    phaseChange('listening')
+    if(r.modelTurnComplete)finishAudibleTurn(r)
+  }
   // iOS Safari may suspend its output after the async vendor setup. Hold a
   // bounded, in-tab PCM tail; never call held audio heard or store it remotely.
   function flushPendingAudio(r){
-    if(r.ended||r.context.state!=='running')return
-    const pending=r.pendingAudio.splice(0)
-    r.pendingAudioChars=0
-    let queued=false
-    for(const part of pending){
-      try{if(r.player.append(part)){queued=true;r.hadAudio=true}}
-      catch{r.outputWithoutAudio=true}
+    if(r.ended||r.context.state!=='running')return false
+    try{if(r.player.resume?.()===false)return false}
+    catch{discardAudioTurn(r);return false}
+    let queued=r.player.playing
+    while(r.pendingAudio.length){
+      const part=r.pendingAudio[0]
+      try{
+        if(!r.player.append(part)){
+          if(r.context.state!=='running'){requestAudioResume(r);return false}
+          discardAudioTurn(r);return false
+        }
+      }catch{discardAudioTurn(r);return false}
+      r.pendingAudio.shift()
+      r.pendingAudioChars-=part.length
+      queued=true;r.hadAudio=true
     }
     setAudioNeedsGesture(false)
     r.audioNoticeShown=false
@@ -429,11 +470,12 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       r.firstAudio=true
       if(r.greetingTimer)clearTimeout(r.greetingTimer)
       r.speaking=true
-      setNotice('')
+      notify('')
+      r.playbackNoticeShown=false
       phaseChange('speaking')
     }
-    if(!queued&&pending.length)r.outputWithoutAudio=true
     if(r.modelTurnComplete&&!r.player?.playing)finishAudibleTurn(r)
+    return true
   }
   function requestAudioResume(r){
     if(r.ended||r.audioResuming||r.context.state==='running')return
@@ -450,29 +492,37 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       })
     }catch{r.audioResuming=false;setAudioNeedsGesture(true)}
   }
+  function holdAudioPart(r,part){
+    if(r.pendingAudio.length>=MAX_PENDING_AUDIO_CHUNKS||
+       r.pendingAudioChars+part.length>MAX_PENDING_AUDIO_CHARS){
+      discardAudioTurn(r)
+      setAudioNeedsGesture(true)
+      return 'dropped'
+    }
+    r.pendingAudio.push(part)
+    r.pendingAudioChars+=part.length
+    if(!r.audioNoticeShown){notify(t.audioRoute);r.audioNoticeShown=true}
+    setAudioNeedsGesture(true)
+    requestAudioResume(r)
+    return 'held'
+  }
   function queueLivePart(r,part){
     if(r.outputWithoutAudio)return 'dropped'
-    if(r.context.state!=='running'){
-      if(r.pendingAudio.length>=24||r.pendingAudioChars+part.length>160000){
-        r.pendingAudio=[];r.pendingAudioChars=0
-        r.outputWithoutAudio=true
-        r.audioGate.interrupt()
-        if(!r.audioNoticeShown){notify(t.audioRoute);r.audioNoticeShown=true}
-        setAudioNeedsGesture(true)
-        return 'dropped'
-      }
-      r.pendingAudio.push(part)
-      r.pendingAudioChars+=part.length
-      if(!r.audioNoticeShown){notify(t.audioRoute);r.audioNoticeShown=true}
-      setAudioNeedsGesture(true)
-      requestAudioResume(r)
-      return 'held'
+    if(r.context.state!=='running')return holdAudioPart(r,part)
+    if(r.pendingAudio.length&&!flushPendingAudio(r)){
+      if(!r.outputWithoutAudio&&r.context.state!=='running')return holdAudioPart(r,part)
+      return 'dropped'
     }
-    if(r.pendingAudio.length)flushPendingAudio(r)
     try{
-      if(r.player.append(part)){r.hadAudio=true;return 'queued'}
-    }catch{/* Do not declare corrupt PCM audible. */}
-    return 'failed'
+      if(r.player.append(part)){
+        r.hadAudio=true
+        if(r.playbackNoticeShown){notify('');r.playbackNoticeShown=false}
+        return 'queued'
+      }
+      if(r.context.state!=='running')return holdAudioPart(r,part)
+    }catch{/* Retire only this unplayable reply, never the live connection. */}
+    discardAudioTurn(r)
+    return 'dropped'
   }
   function handleAudio(r,packet){
     if(r.ended)return
@@ -505,6 +555,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       if(r.outputText){r.interrupted=true;commitOutput(r)}
       r.modelTurnComplete=false
       r.pendingAudio=[];r.pendingAudioChars=0
+      r.outputWithoutAudio=false;r.hadAudio=false
       r.interrupted=false
       phaseChange('listening')
       return
@@ -538,7 +589,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
         let outcome='dropped'
         for(const part of frame.audio){
           const status=queueLivePart(r,part)
-          if(status==='failed'){notify(t.failure);stop();return}
+          if(status==='dropped'){outcome='dropped';break}
           if(status==='queued')outcome='queued'
           else if(status==='held'&&outcome!=='queued')outcome='held'
         }
@@ -772,6 +823,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       modelTurnComplete:false,hadAudio:false,outputWithoutAudio:false,
       introSent:false,sessionStarted:false,firstAudio:false,greetingTimer:null,
       pendingAudio:[],pendingAudioChars:0,audioResuming:false,audioNoticeShown:false,
+      playbackNoticeShown:false,
       reconnectSoon:false,backpressureChunks:0,
       checkpointSerial:0,lastAssistantTurnFinished:false,lastHumanAudioAt:0,
       contextRequestKey:'',contextSentKey:'',contextVersion:propsRef.current.contextRevision,
@@ -786,6 +838,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       resampler:new GeminiLivePcmResampler(context.sampleRate),
       audioGate:new GeminiLiveBargeGate()}
     r.player=new GeminiLivePcmPlayer(context,{
+      onError:()=>discardAudioTurn(r),
       onStart:()=>{if(!r.ended)phaseChange('speaking')},
       onEnd:()=>{if(!r.ended){
         r.speaking=false

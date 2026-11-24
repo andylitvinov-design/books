@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, BookOpen, Brain, CalendarDays, ChartNoAxesColumnIncreasing, CheckCircle2, ChevronDown, ChevronRight, ClipboardList, Compass, Flame, Heart, Leaf, Plus, Rocket, ShieldCheck, Target } from 'lucide-react'
+import { CheckCircle2, ChevronDown, ChevronRight, ClipboardList, Compass, Flame, Leaf, Plus, Rocket, ShieldCheck, Target } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import css from './profile-goal-console.module.css'
 import { goalStageOptions, goalOptionHref } from '@/lib/profile/goal-stage-options.mjs'
+import { goalStageRecord as stageRecord } from '@/lib/profile/goal-stage-progress.mjs'
 
 const VALID_GOALS = new Set(['active', 'accepted', 'in_progress'])
 const STEPS = [
@@ -15,39 +16,43 @@ const STEPS = [
   { id: 'plan', icon: ClipboardList, href: 'daybook' },
   { id: 'obstacles', icon: ShieldCheck, href: 'coach' },
   { id: 'possibilities', icon: Compass, href: 'coach' },
+  { id: 'acceleration', icon: Rocket, href: 'plan' },
   { id: 'integration', icon: Rocket, href: 'daybook' },
 ]
 const COPY = {
   en: {
-    goals: 'My Goals', add: 'Add Goal', empty: 'No goal selected yet. You can explore all 7 steps now.',
+    goals: 'My Goals', add: 'Add Goal', empty: 'No goal selected yet. You can explore all 8 steps now.',
     error: 'Saved goals are temporarily unavailable.', retry: 'Open my goals',
-    hint: 'Choose a goal to see its seven-step path.', plan: '7 Steps to My Goal',
+    hint: 'Choose a goal to see its eight-stage path.', plan: '8 Stages to My Goal',
+    zero: 'Choose a direction', zeroDetail: 'Four life spheres, eight meaning axes and a new saved goal',
     progress: 'Goal progress', unmeasured: 'Not measured', ready: 'Ready', active: 'Active', done: 'Done', locked: 'Locked',
-    title: ['Define the Result', 'Ignite Motivation', 'Activate Resources', 'Build an Action Plan', 'Overcome Inner Blocks', 'Find New Opportunities', 'Achieve & Integrate'],
-    detail: ['Clarify your desired outcome', 'Reconnect with your inner why', 'Find your energy and support', 'Choose your next practical actions', 'Work with obstacles gently', 'Discover new options and solutions', 'Reflect and sustain results'],
-    tool: ['Goal coaching', 'AI coach & My Why', 'Courses and practices', 'Coaching Daybook', 'Guided coaching', 'AI brainstorming', 'Progress review'],
+    title: ['Define the Result', 'Ignite Motivation', 'Activate Resources', 'Build an Action Plan', 'Overcome Inner Blocks', 'Find New Opportunities', 'Accelerate Toward the Goal', 'Results & New Perspectives'],
+    detail: ['Clarify your desired outcome', 'Reconnect with your inner why', 'Find your energy and support', 'Choose your next practical actions', 'Work with obstacles gently', 'Discover new options and solutions', 'Strengthen what works and adjust your next actions', 'Reflect on results and choose what comes next'],
+    tool: ['Goal coaching', 'AI coach & My Why', 'Courses and practices', 'Coaching Daybook', 'Guided coaching', 'AI brainstorming', 'Action review', 'Progress review'],
     noStages: 'Step progress appears after it has been saved; these are entry points, not completed stages.',
     stageProgress: 'Step progress', open: 'Explore',
   },
   ru: {
-    goals: 'Мои цели', add: 'Добавить цель', empty: 'Цель пока не выбрана. Все 7 этапов доступны для знакомства.',
+    goals: 'Мои цели', add: 'Добавить цель', empty: 'Цель пока не выбрана. Все 8 этапов доступны для знакомства.',
     error: 'Пока не удалось загрузить сохранённые цели.', retry: 'Открыть мои цели',
-    hint: 'Выберите цель, чтобы пройти её семь шагов.', plan: '7 шагов к моей цели',
+    hint: 'Выберите цель, чтобы пройти её восемь этапов.', plan: '8 этапов к моей цели',
+    zero: 'Выбор направления', zeroDetail: 'Четыре сферы жизни, восемь смысловых осей и новая сохранённая цель',
     progress: 'Прогресс цели', unmeasured: 'Не измерен', ready: 'Доступен', active: 'Активен', done: 'Пройден', locked: 'Закрыт',
-    title: ['Определить результат', 'Зажечь мотивацию', 'Активировать ресурсы', 'Построить план', 'Преодолеть препятствия', 'Найти возможности', 'Достичь и закрепить'],
-    detail: ['Что конкретно я хочу получить', 'Зачем мне это важно', 'Моя энергия, люди и поддержка', 'Мои следующие действия', 'Мягкая работа со страхами', 'Новые пути и решения', 'Оценить и закрепить результат'],
-    tool: ['Коучинг цели', 'ИИ-коуч и My Why', 'Курсы и практики', 'Дневник коучинга', 'Коучинг и образы', 'Поиск решений с ИИ', 'Обзор прогресса'],
+    title: ['Определить результат', 'Зажечь мотивацию', 'Активировать ресурсы', 'Построить план', 'Преодолеть препятствия', 'Найти возможности', 'Ускорение к цели', 'Итоги и новые перспективы'],
+    detail: ['Что конкретно я хочу получить', 'Зачем мне это важно', 'Моя энергия, люди и поддержка', 'Мои следующие действия', 'Мягкая работа со страхами', 'Новые пути и решения', 'Усилить работающие действия и скорректировать план', 'Оценить результаты и выбрать дальнейшее направление'],
+    tool: ['Коучинг цели', 'ИИ-коуч и My Why', 'Курсы и практики', 'Дневник коучинга', 'Коучинг и образы', 'Поиск решений с ИИ', 'Обзор действий', 'Обзор прогресса'],
     noStages: 'Процент появится после сохранения прогресса этапа. Доступ к практикам не означает завершение.',
     stageProgress: 'Прогресс этапа', open: 'Открыть',
   },
   es: {
-    goals: 'Mis metas', add: 'Añadir meta', empty: 'Aún no has elegido una meta. Puedes explorar los 7 pasos.',
+    goals: 'Mis metas', add: 'Añadir meta', empty: 'Aún no has elegido una meta. Puedes explorar las 8 etapas.',
     error: 'No se pudieron cargar las metas guardadas.', retry: 'Abrir mis metas',
-    hint: 'Elige una meta para explorar sus siete pasos.', plan: '7 pasos hacia mi meta',
+    hint: 'Elige una meta para explorar sus ocho etapas.', plan: '8 etapas hacia mi meta',
+    zero: 'Elegir una dirección', zeroDetail: 'Cuatro áreas vitales, ocho ejes de sentido y una nueva meta guardada',
     progress: 'Progreso de la meta', unmeasured: 'Sin medir', ready: 'Disponible', active: 'Activo', done: 'Hecho', locked: 'Bloqueado',
-    title: ['Definir el resultado', 'Encender la motivación', 'Activar recursos', 'Construir un plan', 'Superar obstáculos', 'Encontrar posibilidades', 'Lograr e integrar'],
-    detail: ['Aclarar el resultado deseado', 'Reconectar con tu porqué', 'Encontrar energía y apoyo', 'Planificar los próximos pasos', 'Abordar bloqueos con cuidado', 'Explorar nuevas soluciones', 'Consolidar lo conseguido'],
-    tool: ['Coaching de objetivos', 'Coach IA y My Why', 'Cursos y prácticas', 'Diario de coaching', 'Coaching guiado', 'Ideas con IA', 'Revisión del progreso'],
+    title: ['Definir el resultado', 'Encender la motivación', 'Activar recursos', 'Construir un plan', 'Superar obstáculos', 'Encontrar posibilidades', 'Acelerar hacia la meta', 'Resultados y nuevas perspectivas'],
+    detail: ['Aclarar el resultado deseado', 'Reconectar con tu porqué', 'Encontrar energía y apoyo', 'Planificar los próximos pasos', 'Abordar bloqueos con cuidado', 'Explorar nuevas soluciones', 'Reforzar lo que funciona y ajustar las acciones', 'Revisar resultados y elegir el siguiente rumbo'],
+    tool: ['Coaching de objetivos', 'Coach IA y My Why', 'Cursos y prácticas', 'Diario de coaching', 'Coaching guiado', 'Ideas con IA', 'Revisión de acciones', 'Revisión del progreso'],
     noStages: 'El porcentaje aparece cuando se guarda el avance. Abrir una práctica no significa completarla.',
     stageProgress: 'Progreso del paso', open: 'Explorar',
   },
@@ -64,12 +69,6 @@ function goalList(data) {
     seen.add(id)
     return true
   }).slice(0, 24)
-}
-function stageRecord(goal, index) {
-  const items = [goal?.sevenSteps, goal?.sevenStepProgress, goal?.stageProgress].find(Array.isArray)
-  if (!items) return null
-  const step = items.find((s, i) => s && (s.index === index + 1 || s.number === index + 1 || s.key === STEPS[index].id || (i === index && !('index' in s) && !('number' in s) && !('key' in s))))
-  return step && typeof step === 'object' ? step : null
 }
 function getStatus(step, value, t) {
   if (step?.status === 'completed' || step?.status === 'done') return t.done
@@ -101,12 +100,12 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
   const records = STEPS.map((_, index) => selected ? stageRecord(selected, index) : null)
   const scores = records.map(row => percent(row?.progressPercent ?? row?.percent))
   const verifiedGoalPercent = selected ? percent(selected.progressPercent) : null
-  const overall = verifiedGoalPercent !== null ? verifiedGoalPercent : scores.length === 7 && scores.every(value => value !== null)
-    ? Math.round(scores.reduce((sum, value) => sum + value, 0) / 7) : null
+  const overall = verifiedGoalPercent !== null ? verifiedGoalPercent : scores.length === STEPS.length && scores.every(value => value !== null)
+    ? Math.round(scores.reduce((sum, value) => sum + value, 0) / STEPS.length) : null
   const planLink = selected ? root + '/my-coaching-plan?goal=' + encodeURIComponent(selected.id) : root + '/my-coaching-plan'
   const optionHref = route => goalOptionHref(route, { lang, root, planLink })
-  return <section className={css.console} data-profile-goal-console data-account-scoped={Boolean(accountId)}>
-    <div className={css.goalStrip} aria-label={t.goals}>
+  return <section className={css.console} data-profile-goal-console data-account-scoped={Boolean(accountId)} data-goal-selected={Boolean(selected)}>
+    {goals.length > 1 && <div className={css.goalStrip} aria-label={t.goals}>
       <h2 className={css.stripTitle}><Target size={18} aria-hidden="true" />{t.goals} ({goals.length})</h2>
       {goals.map(goal => {
         const active = selected?.id === goal.id
@@ -116,11 +115,11 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
           <strong>{goal.title}</strong>{active && <CheckCircle2 size={19} aria-hidden="true" />}
         </button>
       })}
-      <Link className={css.addGoal} href={root + '/my-coaching-plan'} prefetch={false}><Plus size={26} aria-hidden="true" /><strong>{t.add}</strong></Link>
-    </div>
+      <Link className={css.addGoal} href={root + '/daybook?start=vector'} prefetch={false}><Plus size={26} aria-hidden="true" /><strong>{t.add}</strong></Link>
+    </div>}
     {view.loading && <p className={css.notice} role="status">…</p>}
     {view.error && <p className={css.notice} role="alert">{t.error} <Link href={root + '/my-coaching-plan'}>{t.retry}</Link></p>}
-    {!view.loading && !view.error && !selected && <span className={css.emptyHint} data-goal-empty-state>{t.empty}</span>}
+    {!view.loading && !view.error && !selected && <span className={css.emptyHint} data-goal-empty-state hidden>{t.empty}</span>}
     {selected && !view.loading && !view.error && <>
         <div className={css.selectedGoal}>
           <div className={css.goalText}><span>{t.goals}</span><h2>{selected.title}</h2>
@@ -132,6 +131,11 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
           </div>
         </div>
       </>}
+    <Link className={css.step} href={root + '/daybook?start=vector'} prefetch={false} data-goal-vector-entry>
+      <span className={css.number}>0</span><Compass className={css.stepIcon} size={27} aria-hidden="true" />
+      <span className={css.stepBody}><strong>{t.zero}</strong><small>{t.zeroDetail}</small></span>
+      <ChevronRight size={18} aria-hidden="true" />
+    </Link>
     <h2 className={css.stepsTitle}>{t.plan}</h2>
     <div className={css.steps}>
           {STEPS.map(({ id, icon: Icon }, index) => {
@@ -145,12 +149,12 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
                 aria-expanded={expanded} aria-controls={'goal-stage-options-' + id}
                 onClick={() => setExpandedStage(current => current === id ? null : id)}
                 aria-label={(index + 1) + '. ' + t.title[index] + '. ' + t.tool[index] + '. ' + status}
-                data-goal-step={index + 1} data-goal-step-status={selected && records[index]?.status || 'explore'}>
+                data-profile-mode-switch data-goal-step={index + 1} data-goal-step-status={selected && records[index]?.status || 'explore'}>
               <span className={css.number}>{index + 1}</span>
               <Icon className={css.stepIcon} size={27} aria-hidden="true" />
               <span className={css.stepBody}><strong>{t.title[index]}</strong><small>{t.detail[index]}</small>
                 {selected && value !== null && <span className={css.progressTrack}><span style={{ width: value + '%' }}/></span>}</span>
-              <span className={css.stepState}>{value !== null && <b>{value + '%'}</b>}<small>{status}</small></span>
+              {selected && <span className={css.stepState}>{value !== null && <b>{value + '%'}</b>}<small>{status}</small></span>}
               <ChevronDown size={18} aria-hidden="true" className={css.stageChevron} />
               </button>
               <div id={'goal-stage-options-' + id} role="region" aria-labelledby={'goal-stage-button-' + id}
@@ -166,13 +170,5 @@ export default function ProfileGoalConsole({ locale = 'en', root = '/en/app', ac
           })}
     </div>
     {selected && <p className={css.disclaimer}>{t.noStages}</p>}
-    <nav className={css.shortcuts} aria-label={t.goals}>
-      {[
-        [CalendarDays, root + '/portrait?space=path', {en:'Daybook',ru:'Дневник',es:'Diario'}[lang]],
-        [ChartNoAxesColumnIncreasing, root + '/my-coaching-plan', {en:'Reports',ru:'Отчёты',es:'Informes'}[lang]],
-        [BookOpen, root + '/course?view=courses', {en:'Courses',ru:'Курсы',es:'Cursos'}[lang]],
-        [Brain, root + '/portrait?space=reports', {en:'Psychic Health',ru:'Психика',es:'Salud mental'}[lang]],
-      ].map(([Icon, href, label]) => <Link key={href} href={href} prefetch={false}><Icon size={21} aria-hidden="true"/><strong>{label}</strong></Link>)}
-    </nav>
   </section>
 }

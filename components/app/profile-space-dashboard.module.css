@@ -699,3 +699,41 @@
 .dashboard[data-profile-space-section="goals"] .profileTabs svg{width:19px;height:19px}
 .dashboard[data-profile-space-section="goals"] .profileTabs strong{font-size:13px!important;line-height:1.05}
 }
+
+
+/* Approved goal diary, 23 Nov: top navigation replaces Life/Work and the
+   redundant lower tab bar. Retain the real focus links and original photo. */
+.dashboard[data-profile-space-dashboard] .profileTabs{
+ display:grid;grid-template-columns:1.16fr .86fr 1.12fr;gap:6px;margin:3px 0 8px;
+}
+.dashboard[data-profile-space-dashboard] .profileTabs .profileTab,
+.dashboard[data-profile-space-dashboard] .profileTabs .profileTabActive{
+ display:flex;flex-direction:row;align-items:center;justify-content:center;
+ min-height:45px;padding:7px 4px;gap:5px;border-radius:999px;
+}
+.dashboard[data-profile-space-dashboard] .profileTabs strong{
+ font:700 clamp(13px,3.65vw,18px)/1.12 Georgia,serif!important;overflow-wrap:normal;
+}
+.dashboard[data-profile-space-dashboard] .profileTabs svg{width:20px;height:20px;flex:none}
+.dashboard[data-profile-space-section="goals"] .scenic,
+.dashboard[data-profile-space-section="goals"] .scenic:has(.focusRow){
+ min-height:0;padding:12px 11px 10px;border-radius:19px;
+ background-position:center,61% 50%;
+}
+.dashboard[data-profile-space-section="goals"] .eyebrow{display:flex;letter-spacing:.16em;font-size:10px;margin-bottom:4px!important}
+.dashboard[data-profile-space-section="goals"] .title{font-size:clamp(28px,7.7vw,46px)!important;line-height:1.06!important;margin-bottom:4px!important}
+.dashboard[data-profile-space-section="goals"] .intro{display:block;max-width:32ch;font-size:clamp(12px,3.3vw,16px);line-height:1.27}
+.dashboard[data-profile-space-section="goals"] .focusRow{margin:10px 0 0;gap:6px}
+.dashboard[data-profile-space-section="goals"] .focusChip{min-height:48px}
+.dashboard[data-profile-space-dashboard] .secondaryTitle{color:#fff1d3!important;font:700 26px/1.15 Georgia,serif!important;margin:10px 0}
+@media(max-width:350px){
+ .dashboard[data-profile-space-dashboard] .profileTabs{gap:4px}
+ .dashboard[data-profile-space-dashboard] .profileTabs svg{width:16px;height:16px}
+ .dashboard[data-profile-space-dashboard] .profileTabs strong{font-size:12px!important}
+}
+@media(min-width:700px){
+ .dashboard[data-profile-space-dashboard] .profileTabs .profileTab,
+ .dashboard[data-profile-space-dashboard] .profileTabs .profileTabActive{min-height:55px}
+ .dashboard[data-profile-space-section="goals"] .scenic:has(.focusRow){padding:22px}
+ .dashboard[data-profile-space-section="goals"] .focusRow{margin-top:18px}
+}
