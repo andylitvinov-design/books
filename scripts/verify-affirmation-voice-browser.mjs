@@ -519,8 +519,10 @@ async function verifyWorkspaceHydration(browser,locale){
         // unrelated stock frames depict the six authored physical events.
         await expect(automaticStoryboard).toHaveAttribute("data-storyboard-action-proof","editorial_unverified");
         await expect(automaticStoryboard).toHaveAttribute("data-storyboard-media-ready","false");
-        // Authored scene references must match the actual action. Missing
-        // matches show an honest Footage needed sketch, never an unrelated photo.
+        // Scene matches and an explicitly labelled thematic photo story are
+        // distinct promises. Neither is accepted or filmed-action-verified.
+        const illustrativeReferences=await automaticStoryboard
+          .getAttribute("data-storyboard-reference-match")==="illustrative";
         const referenceCount=Number(await automaticStoryboard.getAttribute("data-storyboard-reference-count"));
         assert.ok(Number.isSafeInteger(referenceCount)&&referenceCount>=0&&
           referenceCount<=storyboardShotCount,
@@ -528,7 +530,13 @@ async function verifyWorkspaceHydration(browser,locale){
         await expect(automaticStoryboard).toHaveAttribute("data-storyboard-graphics-mode",
           referenceCount?"licensed-photographic-references":"screenplay-scene-sketch");
         assert.equal(await automaticStoryboard.getAttribute("data-storyboard-reference-status"),
-          referenceCount?"editorial_photo_reference_not_action_verified":null);
+          referenceCount?(illustrativeReferences?"illustrative_topic_photos_not_action_verified":
+            "editorial_photo_reference_not_action_verified"):null);
+        if(illustrativeReferences){
+          assert.equal(referenceCount,6,"the photo story needs a complete set before approval");
+          await expect(cards.locator('[data-storyboard-reference-title]')).toHaveCount(6);
+          await expect(automaticStoryboard.locator('[data-storyboard-apply-reference-photos]')).toHaveCount(1);
+        }
         const referencePhotos=cards.locator('img[data-storyboard-reference-photo]');
         await expect(referencePhotos).toHaveCount(referenceCount);
         const kinds=await cards.evaluateAll(nodes=>nodes.map(node=>
@@ -2160,46 +2168,49 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         }));
         console.log("VOICE_E2E_MEDIA_CAPABILITIES "+engine+" "+JSON.stringify(mediaCapabilities));
         phase(engine,"start-media-recorder");
-        // The Free card only navigates to Ready. The separate Ready button
-        // starts the real local encoder with a second trusted user gesture.
-        await montageProTab.click();
-        await openVideoFormats();
-        await expect(montageProOffer.locator('[data-video-montage-pro-choice="free"]')).toBeEnabled();
-        await montageProOffer.locator('[data-video-montage-pro-choice="free"]').click();
-        await expect(page.locator("[data-mandala-free-video]")).toHaveAttribute("data-active-workspace","ready");
-        await expect(page.locator("[data-video-ready]")).toHaveAttribute("data-ready-state","choose");
-        // Safari cannot export from a display:none Canvas; visually keep only
-        // Ready's single public player, and preserve the hidden compositor.
-        const readySourceStage=page.locator("[data-video-live-stage]");
-        const sourceCompositor=await readySourceStage.evaluate(node=>{
-          const box=node.getBoundingClientRect();
-          return {display:getComputedStyle(node).display,width:box.width,height:box.height,
-            canvas:Boolean(node.querySelector("canvas[data-mandala-cinematic-canvas]"))};
-        });
-        assert.notEqual(sourceCompositor.display,"none","Ready must retain Safari's real Canvas");
-        assert.ok(sourceCompositor.canvas&&sourceCompositor.width>0&&sourceCompositor.width<=4&&
-          sourceCompositor.height>0&&sourceCompositor.height<=4,
-          "Ready encoder must remain mounted at 2px without a duplicate visible player");
-        await expect(page.locator("[data-ready-video-tiers]")).toHaveCount(0);
-        const readyGenerate=page.locator("[data-ready-generate]");
-        // The primary action must follow the player immediately on phone.
-        const readyPreview=page.locator("[data-video-ready] [data-aspect]");
-        const previewBox=await readyPreview.boundingBox();
-        const buttonBox=await readyGenerate.boundingBox();
-        if(previewBox&&buttonBox)assert.ok(buttonBox.y>=previewBox.y+previewBox.height-2,
-          "Ready Generate must sit directly beneath the video");
-        await expect(readyGenerate).toBeEnabled({timeout:30000});
-        phase(engine,"montage-free-navigated-ready");
-        // A later Style/Audio edit changes the Story source signature.
-        // Approve the final six decoded photographs AFTER those edits, just
-        // like a real visitor. An old approval must never silently authorize
-        // a changed video, and this step cannot charge or start the encoder.
-        await enterVisibleStudioWorkspace(page,"editor",engine);
-        await expect(editorTab).toHaveAttribute("aria-pressed","true");
+        // Observe genuine credit requests and browser-created output Blobs.
+        // Story approval and format navigation must not start a paid export.
+        const approvalCreditActions=[];
+        const observeApprovalCreditAction=request=>{
+          const path=new URL(request.url()).pathname;
+          if(request.method()==="POST"&&
+            /^\/api\/app\/video-credits\/(?:hold|complete|release)$/.test(path))
+            approvalCreditActions.push(path.split("/").at(-1));
+        };
+        page.on("request",observeApprovalCreditAction);
+        const videosBeforeApproval=await page.evaluate(()=>window.__hhRecordedVideoBlobs.size);
+        // Style/Audio edits can invalidate an earlier Story approval. Resolve
+        // the FINAL source before testing Ready's player or starting an encoder.
+        // Use the visible Story controls, never mutate consent or media state.
         await montageStoryTab.click();
         await expect(montageStoryTab).toHaveAttribute("aria-pressed","true");
         const finalStoryboard=page.locator('[data-video-auto-storyboard]');
         await expect(finalStoryboard).toBeVisible();
+        if(await finalStoryboard.getAttribute("data-storyboard-media-ready")!=="true"){
+          // Explicitly ask to use this unapproved Story. Its existing Quality
+          // action cannot approve missing footage or a photographic adaptation.
+          await expect(chooseQuality).toBeEnabled();
+          if(engine==="webkit")await chooseQuality.tap();else await chooseQuality.click();
+          await expect(montageStoryTab).toHaveAttribute("aria-pressed","true");
+          await montageProTab.click();
+          await openVideoFormats();
+          const freeFormat=montageProOffer.locator('[data-video-montage-pro-choice="free"]');
+          await expect(freeFormat).toBeEnabled();
+          if(engine==="webkit")await freeFormat.tap();else await freeFormat.click();
+          // Free must reveal the unresolved Story instead of a dead-end Ready.
+          await expect(page.locator("[data-mandala-free-video]"))
+            .toHaveAttribute("data-active-workspace","editor");
+          await expect(page.locator('[data-video-basic-editor]'))
+            .toHaveAttribute("data-montage-panel","concept");
+          await expect(finalStoryboard).toBeVisible();
+          await expect(finalStoryboard).toHaveAttribute("data-storyboard-media-ready","false");
+          await expect(page.locator('[data-ready-generating]')).toHaveCount(0);
+          assert.deepEqual(approvalCreditActions,[],"pending Story navigation cannot hold or settle credits");
+          assert.equal(await page.evaluate(()=>window.__hhRecordedVideoBlobs.size),videosBeforeApproval,
+            "pending Story navigation cannot produce an encoded video");
+          phase(engine,"pending-story-revealed-without-export");
+        }
+        // Approve the exact decoded photographs only after the final edits.
         const finalApproval=page.locator('[data-storyboard-apply-reference-photos]');
         if(await page.locator('[data-storyboard-photo-approval-required]').count()){
           await expect(finalApproval).toBeVisible({timeout:20000});
@@ -2207,7 +2218,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           await finalApproval.click();
           phase(engine,"final-six-photo-consent-after-audio-style-edits");
           await expect(montageProTab).toHaveAttribute("aria-pressed","true");
-        }else{
+        }else if(await finalStoryboard.getAttribute("data-storyboard-media-ready")!=="true"){
           // An authored screenplay may have no action-matching licensed photos.
           // The editor must NOT claim media is ready or auto-approve unrelated
           // pictures. This Story integrity check is independent of the genuine
@@ -2310,12 +2321,47 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
             await expect(finalStoryboard).toHaveAttribute("data-storyboard-media-ready","true");
           }
           await montageProTab.click();
+        }else{
+          // Already-applied photos are export shots, not reference posters.
+          await expect(finalStoryboard).toHaveAttribute("data-storyboard-media-ready","true");
+          await montageProTab.click();
         }
+        // Free is navigation only; generation still needs the separate trusted
+        // Ready tap after source approval or a deliberate catalogue selection.
         await openVideoFormats();
-        await montageProOffer.locator('[data-video-montage-pro-choice="free"]').click();
+        const approvedFreeFormat=montageProOffer.locator('[data-video-montage-pro-choice="free"]');
+        await expect(approvedFreeFormat).toBeEnabled();
+        if(engine==="webkit")await approvedFreeFormat.tap();else await approvedFreeFormat.click();
         await expect(page.locator("[data-mandala-free-video]"))
           .toHaveAttribute("data-active-workspace","ready");
+        await expect(page.locator("[data-video-ready]")).toHaveAttribute("data-ready-state","choose");
+        // Safari cannot export from a display:none Canvas; visually keep only
+        // Ready's single public player, and preserve the hidden compositor.
+        const readySourceStage=page.locator("[data-video-live-stage]");
+        const sourceCompositor=await readySourceStage.evaluate(node=>{
+          const box=node.getBoundingClientRect();
+          return {display:getComputedStyle(node).display,width:box.width,height:box.height,
+            canvas:Boolean(node.querySelector("canvas[data-mandala-cinematic-canvas]"))};
+        });
+        assert.notEqual(sourceCompositor.display,"none","Ready must retain Safari's real Canvas");
+        assert.ok(sourceCompositor.canvas&&sourceCompositor.width>0&&sourceCompositor.width<=4&&
+          sourceCompositor.height>0&&sourceCompositor.height<=4,
+          "Ready encoder must remain mounted at 2px without a duplicate visible player");
+        await expect(page.locator("[data-ready-video-tiers]")).toHaveCount(0);
+        const readyGenerate=page.locator("[data-ready-generate]");
+        // The primary action must follow the player immediately on phone.
+        const readyPreview=page.locator("[data-video-ready] [data-aspect]");
+        const previewBox=await readyPreview.boundingBox();
+        const buttonBox=await readyGenerate.boundingBox();
+        if(previewBox&&buttonBox)assert.ok(buttonBox.y>=previewBox.y+previewBox.height-2,
+          "Ready Generate must sit directly beneath the video");
         await expect(readyGenerate).toBeEnabled({timeout:30000});
+        phase(engine,"montage-free-navigated-ready");
+        await expect(page.locator('[data-ready-generating]')).toHaveCount(0);
+        assert.deepEqual(approvalCreditActions,[],"source approval and Ready navigation cannot hold or settle credits");
+        assert.equal(await page.evaluate(()=>window.__hhRecordedVideoBlobs.size),videosBeforeApproval,
+          "source approval and Ready navigation cannot produce an encoded video");
+        page.off("request",observeApprovalCreditAction);
         // Capture transient real Ready progress before the trusted Generate tap:
         // a fast local export may unmount the seven-question panel immediately.
         await page.evaluate(()=>{

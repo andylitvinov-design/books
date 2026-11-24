@@ -21,10 +21,10 @@ const STEPS = [
 ]
 const COPY = {
   en: {
-    goals: 'My Goals', add: 'Add Goal', empty: 'No goal selected yet. You can explore all 8 steps now.',
+    goals: 'My Goals', add: 'Create a new goal', empty: 'No goal selected yet. You can explore all 8 steps now.',
     error: 'Saved goals are temporarily unavailable.', retry: 'Open my goals',
     hint: 'Choose a goal to see its eight-stage path.', plan: '8 Stages to My Goal',
-    zero: 'Choose a direction', zeroDetail: 'Four life spheres, eight meaning axes and a new saved goal',
+    zero: 'Create a new goal', zeroDetail: 'Choose a life sphere, a meaning axis and your direction',
     progress: 'Goal progress', unmeasured: 'Not measured', ready: 'Ready', active: 'Active', done: 'Done', locked: 'Locked',
     title: ['Define the Result', 'Ignite Motivation', 'Activate Resources', 'Build an Action Plan', 'Overcome Inner Blocks', 'Find New Opportunities', 'Accelerate Toward the Goal', 'Results & New Perspectives'],
     detail: ['Clarify your desired outcome', 'Reconnect with your inner why', 'Find your energy and support', 'Choose your next practical actions', 'Work with obstacles gently', 'Discover new options and solutions', 'Strengthen what works and adjust your next actions', 'Reflect on results and choose what comes next'],
@@ -33,10 +33,10 @@ const COPY = {
     stageProgress: 'Step progress', open: 'Explore',
   },
   ru: {
-    goals: 'Мои цели', add: 'Добавить цель', empty: 'Цель пока не выбрана. Все 8 этапов доступны для знакомства.',
+    goals: 'Мои цели', add: 'Создать новую цель', empty: 'Цель пока не выбрана. Все 8 этапов доступны для знакомства.',
     error: 'Пока не удалось загрузить сохранённые цели.', retry: 'Открыть мои цели',
     hint: 'Выберите цель, чтобы пройти её восемь этапов.', plan: '8 этапов к моей цели',
-    zero: 'Выбор направления', zeroDetail: 'Четыре сферы жизни, восемь смысловых осей и новая сохранённая цель',
+    zero: 'Создать новую цель', zeroDetail: 'Выберите сферу жизни, смысловую ось и свой вектор',
     progress: 'Прогресс цели', unmeasured: 'Не измерен', ready: 'Доступен', active: 'Активен', done: 'Пройден', locked: 'Закрыт',
     title: ['Определить результат', 'Зажечь мотивацию', 'Активировать ресурсы', 'Построить план', 'Преодолеть препятствия', 'Найти возможности', 'Ускорение к цели', 'Итоги и новые перспективы'],
     detail: ['Что конкретно я хочу получить', 'Зачем мне это важно', 'Моя энергия, люди и поддержка', 'Мои следующие действия', 'Мягкая работа со страхами', 'Новые пути и решения', 'Усилить работающие действия и скорректировать план', 'Оценить результаты и выбрать дальнейшее направление'],
@@ -45,10 +45,10 @@ const COPY = {
     stageProgress: 'Прогресс этапа', open: 'Открыть',
   },
   es: {
-    goals: 'Mis metas', add: 'Añadir meta', empty: 'Aún no has elegido una meta. Puedes explorar las 8 etapas.',
+    goals: 'Mis metas', add: 'Crear una nueva meta', empty: 'Aún no has elegido una meta. Puedes explorar las 8 etapas.',
     error: 'No se pudieron cargar las metas guardadas.', retry: 'Abrir mis metas',
     hint: 'Elige una meta para explorar sus ocho etapas.', plan: '8 etapas hacia mi meta',
-    zero: 'Elegir una dirección', zeroDetail: 'Cuatro áreas vitales, ocho ejes de sentido y una nueva meta guardada',
+    zero: 'Crear una nueva meta', zeroDetail: 'Elige un ámbito de vida, un eje de sentido y tu dirección',
     progress: 'Progreso de la meta', unmeasured: 'Sin medir', ready: 'Disponible', active: 'Activo', done: 'Hecho', locked: 'Bloqueado',
     title: ['Definir el resultado', 'Encender la motivación', 'Activar recursos', 'Construir un plan', 'Superar obstáculos', 'Encontrar posibilidades', 'Acelerar hacia la meta', 'Resultados y nuevas perspectivas'],
     detail: ['Aclarar el resultado deseado', 'Reconectar con tu porqué', 'Encontrar energía y apoyo', 'Planificar los próximos pasos', 'Abordar bloqueos con cuidado', 'Explorar nuevas soluciones', 'Reforzar lo que funciona y ajustar las acciones', 'Revisar resultados y elegir el siguiente rumbo'],
