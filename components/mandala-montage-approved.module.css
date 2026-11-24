@@ -311,7 +311,7 @@
 .savedPhotoDrawer :global([data-client-photo-rail-manage]){display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:59px!important;text-align:center;padding:3px;font-size:11px!important;color:#0a684e!important}
 .savedPhotoDrawer :global([data-client-photo-rail-manage])::before{content:"+";display:block;font:800 24px/1 Arial,sans-serif}
 .savedPhotoDrawer :global([data-client-photo-rail-manage])::-webkit-details-marker{display:none}
-.savedPhotoDrawer :global([data-client-photo-drawer-body]){position:absolute;z-index:30;inset:auto 0 calc(100% + 5px) 0;max-height:min(48dvh,390px);overflow-y:auto;overscroll-behavior:contain;background:#fffcf7;border:1px solid #d7c7b6;border-radius:15px;padding:12px!important;box-shadow:0 8px 28px #103c3540}
+.savedPhotoDrawer :global([data-client-photo-drawer-body]){position:static;max-height:none;overflow:visible;background:#fffcf7;border:1px solid #d7c7b6;border-radius:15px;padding:12px!important;box-shadow:0 8px 28px #103c3540}
 .savedPhotoDrawer :global([data-client-photo-rail]){display:flex;gap:5px;align-items:center;overflow-x:auto;scrollbar-width:thin;min-width:0;flex:1}
 .savedPhotoDrawer :global([data-client-photo-rail]>button){flex:0 0 60px;width:60px;height:60px;min-width:0;padding:0;border:1px solid #d7e7d8;border-radius:9px;background:#fff;overflow:hidden;cursor:pointer}
 .savedPhotoDrawer :global([data-client-photo-rail]>button img){display:block;width:100%;height:100%;object-fit:cover}
@@ -362,3 +362,16 @@
  .avatarLibraryLink{font-size:10px}
  .styleNext>span{font-size:14px}
 }
+
+/* Expanded private-photo consent needs the full mobile library width. */
+.libraryPhotoRow:has([data-client-video-photo-library][open]){flex-wrap:wrap;align-items:flex-start}
+.libraryPhotoRow:has([data-client-video-photo-library][open]) .savedPhotoDrawer{flex:1 0 100%;order:3;max-width:100%}
+
+/* Expanded explicit private save form stays in document flow. Compact thumbnails remain horizontal. */
+.savedPhotoDrawer:has([data-client-video-photo-library][open]){display:grid;grid-template-columns:minmax(0,1fr);width:100%}
+.savedPhotoDrawer :global([data-client-video-photo-library][open]){width:100%;border-style:solid!important}
+.savedPhotoDrawer :global([data-client-photo-drawer-body]){box-shadow:none;border:0;border-radius:10px}
+.savedPhotoDrawer :global([data-client-photo-rail]){min-height:60px}
+.orderedPanel:has(>.livingHero)>[data-video-montage-progress] button{min-height:44px}
+.avatarTabs button{min-height:44px}
+@media(min-width:390px) and (max-width:699px){.photoOptionArt{display:grid;width:22px;height:25px}.photoOptionArt svg{width:15px;height:15px}.photoOption[data-video-montage-photo-choice="animate"] .photoOptionArt{background:linear-gradient(#123a3530,#123a3570),url("/images/holistic-house/my-coach-motion/mira-still.webp") center 28%/cover;color:#fff}}

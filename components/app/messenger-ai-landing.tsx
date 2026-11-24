@@ -1,11 +1,11 @@
 "use client";
 
-import {useEffect,useRef,useState,type ReactNode} from "react";
+import {useEffect,useRef,useState,type ReactNode,type CSSProperties} from "react";
 import Link from "next/link";
 import {BookOpen, CalendarDays, ClipboardCheck, Clapperboard, Flower2,
   HandHeart, MessageCircle, Play, X, ChevronDown} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
-import {Heart,Sun,Compass,Leaf,TrendingUp,BriefcaseBusiness,Sprout,Lightbulb,Flag,ArrowRight,Sparkles,UserRound,ShoppingBag,UsersRound} from "lucide-react";
+import {Heart,Sun,Compass,Leaf,TrendingUp,BriefcaseBusiness,Sprout,Lightbulb,Flag,ArrowRight,ArrowLeft,Sparkles,UserRound,ShoppingBag,UsersRound} from "lucide-react";
 import css from "./messenger-ai-landing.module.css";
 import {useAliPersona} from "./use-ali-persona";
 import {playAliPersonaAudio,stopAliPersonaAudio,prepareAliNaturalVoice} from "./ali-persona-audio";
@@ -225,14 +225,24 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk,onSupp
 
   return <section className={css.root} data-hh-ai-landing aria-label={welcomeTitle}
     data-hh-chat-opening="true">
-    <div className={css.genieScene} data-hh-genie-scene>
+    <div className={css.genieScene} data-hh-genie-scene
+      style={{'--hh-ai-persona-image':`url("${persona.image}")`} as CSSProperties}>
       <div className={css.dialogueProfile}>
+        <Link href={"/"+locale} className={css.backToHome}
+          aria-label={locale==="ru"?"На главную":locale==="es"?"Volver al inicio":"Back to home"}>
+          <ArrowLeft size={26} aria-hidden="true"/>
+        </Link>
         <img className={css.profilePortrait} src={persona.image} alt="" width={48} height={48} loading="eager"/>
         <div className={css.profileIdentity}>
           <strong>Holistic House · {guideName}</strong>
           <span><i aria-hidden="true"/>{locale==="ru"?"На связи":locale==="es"?"En línea":"Online"}</span>
         </div>
-        <span className={css.profileSparkle} aria-hidden="true"><Sparkles size={20}/></span>
+        <button type="button" className={css.personaShortcut}
+          data-hh-genie-persona-shortcut
+          onClick={()=>window.dispatchEvent(new Event("hh:messenger-open-persona"))}
+          aria-label={locale==="ru"?"Выбрать голос и персонажа":locale==="es"?"Elegir guía":"Choose your guide"}>
+          <UsersRound size={22} aria-hidden="true"/>
+        </button>
       </div>
       <div className={css.welcomeRow} data-hh-ali-first-message data-hh-ali-hero-persona={persona.id}>
         <article className={css.welcomeBubble} data-hh-ai-landing-question>
