@@ -319,11 +319,16 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
             assert.ok(box&&box.width>=44&&box.height>=44&&box.x>=-1&&box.x+box.width<=width+1,label+': '+intention+' program is tappable and in bounds')
           }
           await expect(entry.locator('[data-home-methods] [class*="methodGrid"] > div')).toHaveCount(5)
-          await expect(entry.locator('[data-home-continue-path]')).toBeVisible()
-          // Same-frame geometry: composer, program cards, methods and journey link.
+          // The approved Home hides the redundant journey link; its actual
+          // destination remains available via the verified Profile navigation.
+          const journeyLink=entry.locator('[data-home-continue-path]')
+          await expect(journeyLink).toHaveCount(1)
+          await expect(journeyLink).toHaveAttribute('href','/'+(locale==='es'?'en':locale)+'/app/portrait?space=path')
+          await expect(journeyLink).toBeHidden()
+          // Same-frame geometry: composer, visible program cards and methods.
           const homeLayout=await entry.evaluate(root=>{
             const nodes=['[data-home-intent-form]','[data-home-focus-grid]',
-              '[data-home-methods]','[data-home-continue-path]']
+              '[data-home-methods]']
               .map(selector=>root.querySelector(selector))
             if(nodes.some(node=>!node))return null
             const boxes=nodes.map(node=>node.getBoundingClientRect())
@@ -335,7 +340,7 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
             }
           })
           assert.ok(homeLayout?.ordered&&homeLayout.noOverlap&&homeLayout.inWidth,
-            label+': composer → three programs → five methods → journey '+JSON.stringify(homeLayout))
+            label+': composer → three programs → five methods '+JSON.stringify(homeLayout))
           await expect(input).toBeVisible()
           // Approved free-chat entry opens Ali even without a prefilled wish.
           // Users may also describe their goal first; neither action is blocked.
